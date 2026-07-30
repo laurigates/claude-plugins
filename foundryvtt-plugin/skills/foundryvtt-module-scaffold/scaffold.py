@@ -22,6 +22,12 @@ Distribution is by GitHub release manifest URL: `manifest` points at
 `releases/latest/download/<id>.zip`. No foundryvtt.com submission is needed to
 install-by-URL; that is only required to be LISTED in the in-app package browser.
 
+The generated repo carries `tests/manifest.test.ts`, which asserts the manifest
+still matches the build output and the release assets (the id, `esmodules`, the
+install URLs, the release zip name) — the drift class CI is otherwise blind to.
+`--verify <module-dir>` re-runs the same audit from here and emits a machine
+verdict (`STATUS=OK|WARN|ERROR`, exit 1 on ERROR).
+
 Stdlib only. Run with `python3 scaffold.py` or `uv run scaffold.py`.
 
 Examples
@@ -51,6 +57,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import json
 import re
 import sys
 from pathlib import Path
@@ -939,6 +946,81 @@ describe('@@MODULE_ID@@', () => {
 });
 """
 
+# Carries NO @@TOKEN@@ placeholders on purpose: every value it asserts on is read
+# out of the generated repo at run time. That keeps it byte-identical to the
+# cargo-generate template's copy (nothing to substitute, nothing to diverge) and
+# means the check keeps working after a rename instead of asserting a literal
+# that a rename would have to remember to update.
+MANIFEST_TEST = """\
+import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
+import { MODULE_ID } from '../src/constants';
+
+// Foundry installs this module from the GitHub release and loads it out of
+// `dist/`, which the build assembles from `module.json` plus the Vite output.
+// Nothing else in CI compares the two: `tsc --noEmit`, `vite build`, `biome`,
+// and the smoke suite all pass while the manifest points at a file the build
+// never emits, or at a release asset the release job never uploads. The only
+// symptom is a module that silently fails to load, or an install URL that 404s.
+// These assertions are that comparison.
+
+function repoPath(relative: string): string {
+  return fileURLToPath(new URL(relative, import.meta.url));
+}
+
+function read(relative: string): string {
+  return readFileSync(repoPath(relative), 'utf8');
+}
+
+const manifest = JSON.parse(read('../module.json'));
+const viteConfig = read('../vite.config.ts');
+const releaseWorkflow = read('../.github/workflows/release-please.yml');
+
+/** The id the Vite config pins its library output filename to. */
+function viteModuleId(): string {
+  return viteConfig.match(/const MODULE_ID = '([^']+)'/)?.[1] ?? '';
+}
+
+/** The zip basename the release job attaches to the GitHub release. */
+function releaseZipName(): string {
+  return releaseWorkflow.match(/zip -r \\.\\.\\/(\\S+\\.zip) \\./)?.[1] ?? '';
+}
+
+describe('module.json matches the build output', () => {
+  it('uses one module id across the manifest, the source, and the Vite config', () => {
+    expect(manifest.id).toBe(MODULE_ID);
+    expect(viteModuleId()).toBe(manifest.id);
+  });
+
+  it('declares the esmodule the Vite library build actually emits', () => {
+    expect(manifest.esmodules).toEqual([`${manifest.id}.mjs`]);
+  });
+
+  it('declares only asset paths that exist in the repo', () => {
+    const declared: string[] = [
+      ...(manifest.styles ?? []),
+      ...(manifest.languages ?? []).map((lang: { path: string }) => lang.path),
+    ];
+    expect(declared.length).toBeGreaterThan(0);
+    for (const asset of declared) {
+      expect(existsSync(repoPath(`../${asset}`)), `declared asset missing: ${asset}`).toBe(true);
+    }
+  });
+});
+
+describe('module.json matches the release assets', () => {
+  it('points the manifest URL at the floating latest release', () => {
+    expect(manifest.manifest.endsWith('/releases/latest/download/module.json')).toBe(true);
+  });
+
+  it('points the download URL at the zip the release job uploads', () => {
+    expect(manifest.download.endsWith(`/releases/latest/download/${manifest.id}.zip`)).toBe(true);
+    expect(releaseZipName()).toBe(`${manifest.id}.zip`);
+  });
+});
+"""
+
 
 # --------------------------------------------------------------------------- #
 # Docs templates
@@ -1180,6 +1262,7 @@ def build_file_map(ctx: dict[str, str], variant: str) -> dict[str, str]:
         "styles/@@MODULE_ID@@.css": STYLES_CSS,
         "tests/setup.ts": TEST_SETUP,
         "tests/module.test.ts": TEST_MODULE,
+        "tests/manifest.test.ts": MANIFEST_TEST,
     }
     if app:
         files["src/app.ts"] = APP_TS
@@ -1191,13 +1274,280 @@ def build_file_map(ctx: dict[str, str], variant: str) -> dict[str, str]:
     return {subst(path, ctx): subst(body, ctx) for path, body in files.items()}
 
 
+# --------------------------------------------------------------------------- #
+# Finishing pass: one findings function, two thin callers
+# --------------------------------------------------------------------------- #
+#
+# Every invariant below is correct BY CONSTRUCTION on a fresh scaffold — the
+# generator derives all of them from one `--id`. They break later, in the
+# generated repo, in another session: someone renames the module in one of the
+# five places that carry the id, or repoints an install URL at a tagged release.
+# Nothing in the generated repo's CI notices (`tsc`, `vite build`, `biome`, and
+# the smoke suite all stay green), and the only symptom is a module that fails to
+# load in Foundry or an install URL that 404s.
+#
+# So the primary gate is the EMITTED `tests/manifest.test.ts`, which the repo's
+# own `test` CI job runs on every PR. `finishing_pass_findings` is the same
+# comparison in the generator, for the two callers below: the post-scaffold print
+# and `--verify <module-dir>`. One findings function means the printed note and
+# the machine verdict cannot disagree.
+#
+# NOT checked here, deliberately: `module.json` `$.version` staying in lockstep
+# with `package.json`. release-please owns that — `release-please-config.json`
+# carries an `extra-files` entry (`type: json`, `path: module.json`,
+# `jsonpath: $.version`), so both files are bumped by the same release PR. A
+# second gate over the same fact would be double-gating a working mechanism.
+
+SEVERITY_RANK = {"OK": 0, "WARN": 1, "ERROR": 2}
+
+LATEST_MANIFEST_SUFFIX = "/releases/latest/download/module.json"
+
+
+def _read(target: Path, rel: str) -> str:
+    path = target / rel
+    if not path.is_file():
+        return ""
+    return path.read_text(encoding="utf-8", errors="replace")
+
+
+def finishing_pass_findings(target: Path) -> list[tuple[str, str, str, str]]:
+    """Grade a module's manifest against the build and release it ships with.
+
+    Returns (severity, KEY, value, message) tuples. ERROR means Foundry could not
+    install, load, or update the module as published; WARN means the module still
+    loads but something is unfinished.
+    """
+    findings: list[tuple[str, str, str, str]] = []
+
+    raw = _read(target, "module.json")
+    try:
+        manifest = json.loads(raw) if raw else {}
+    except json.JSONDecodeError as exc:
+        return [
+            (
+                "ERROR",
+                "MODULE_JSON",
+                "unparseable",
+                f"module.json is not valid JSON ({exc}) — Foundry rejects the "
+                "module outright",
+            )
+        ]
+
+    mid = str(manifest.get("id") or "")
+    if not mid:
+        return [
+            (
+                "ERROR",
+                "MODULE_JSON",
+                "no-id",
+                "module.json has no `id` — it is the install folder, the zip "
+                "name, and the manifest key everything else derives from",
+            )
+        ]
+
+    # 1. The id must be the same string in all three places that pin it. A rename
+    #    in one of them leaves settings/i18n namespaced under a different id than
+    #    the manifest, or points `esmodules` at a file the build never writes.
+    vite_match = re.search(
+        r"const MODULE_ID = '([^']+)'", _read(target, "vite.config.ts")
+    )
+    const_match = re.search(
+        r"export const MODULE_ID = '([^']+)'", _read(target, "src/constants.ts")
+    )
+    vite_id = vite_match.group(1) if vite_match else ""
+    const_id = const_match.group(1) if const_match else ""
+    if vite_id == mid and const_id == mid:
+        findings.append(
+            ("OK", "MODULE_ID_MATCH", "ok", f"id '{mid}' agrees everywhere")
+        )
+    else:
+        findings.append(
+            (
+                "ERROR",
+                "MODULE_ID_MATCH",
+                "drift",
+                f"module.json id is '{mid}' but vite.config.ts pins "
+                f"'{vite_id or 'unset'}' and src/constants.ts exports "
+                f"'{const_id or 'unset'}' — the id must byte-match in all three",
+            )
+        )
+
+    # 2. `esmodules` is the path Foundry requests out of dist/. Vite writes
+    #    exactly `<id>.mjs`; anything else is a silent load failure.
+    esmodules = manifest.get("esmodules")
+    if esmodules == [f"{mid}.mjs"]:
+        findings.append(("OK", "ESMODULES", "ok", f"esmodules -> {mid}.mjs"))
+    else:
+        findings.append(
+            (
+                "ERROR",
+                "ESMODULES",
+                "mismatch",
+                f"esmodules is {esmodules!r} but the Vite library build emits "
+                f"dist/{mid}.mjs — Foundry loads nothing and reports no error",
+            )
+        )
+
+    # 3. Install/update URLs must float to the latest release. A tag-pinned URL
+    #    freezes every installed copy at that version.
+    manifest_url = str(manifest.get("manifest") or "")
+    if manifest_url.endswith(LATEST_MANIFEST_SUFFIX):
+        findings.append(("OK", "MANIFEST_URL", "ok", "manifest URL floats to latest"))
+    else:
+        findings.append(
+            (
+                "ERROR",
+                "MANIFEST_URL",
+                "not-latest",
+                f"manifest URL is '{manifest_url or 'unset'}' — it must end with "
+                f"{LATEST_MANIFEST_SUFFIX} or installed copies never see updates",
+            )
+        )
+
+    # 4. The download URL and the zip the release job actually uploads are two
+    #    hand-maintained strings for one fact; a drift is a 404 on install.
+    download_url = str(manifest.get("download") or "")
+    zip_match = re.search(
+        r"zip -r \.\./(\S+\.zip) \.",
+        _read(target, ".github/workflows/release-please.yml"),
+    )
+    release_zip = zip_match.group(1) if zip_match else ""
+    expected_zip = f"{mid}.zip"
+    if download_url.endswith(f"/releases/latest/download/{expected_zip}"):
+        findings.append(("OK", "DOWNLOAD_URL", "ok", f"download URL -> {expected_zip}"))
+    else:
+        findings.append(
+            (
+                "ERROR",
+                "DOWNLOAD_URL",
+                "mismatch",
+                f"download URL is '{download_url or 'unset'}' — it must end with "
+                f"/releases/latest/download/{expected_zip}",
+            )
+        )
+    if release_zip == expected_zip:
+        findings.append(("OK", "RELEASE_ZIP", "ok", f"release job zips {expected_zip}"))
+    else:
+        findings.append(
+            (
+                "ERROR",
+                "RELEASE_ZIP",
+                "mismatch",
+                f"release-please.yml zips '{release_zip or 'nothing'}' but the "
+                f"download URL resolves to {expected_zip} — installs 404",
+            )
+        )
+
+    # 5. Declared styles/languages. WARN: a missing one is a 404 in the console,
+    #    not a failed install — the module still loads.
+    declared = [str(s) for s in manifest.get("styles") or []]
+    declared += [str(lang.get("path", "")) for lang in manifest.get("languages") or []]
+    absent = [rel for rel in declared if rel and not (target / rel).exists()]
+    if not declared:
+        findings.append(
+            ("WARN", "DECLARED_ASSETS", "none", "no styles or languages declared")
+        )
+    elif absent:
+        findings.append(
+            (
+                "WARN",
+                "DECLARED_ASSETS",
+                "missing:" + ",".join(absent),
+                f"declared but absent: {', '.join(absent)} — Foundry 404s them",
+            )
+        )
+    else:
+        findings.append(
+            ("OK", "DECLARED_ASSETS", "ok", f"{len(declared)} declared assets present")
+        )
+
+    # 6. The lockfile CI installs from. WARN: a fresh scaffold legitimately lacks
+    #    it until `bun install` runs, which is exactly the finishing step.
+    if (target / "bun.lock").exists():
+        findings.append(("OK", "LOCKFILE", "present", "bun.lock committed"))
+    else:
+        findings.append(
+            (
+                "WARN",
+                "LOCKFILE",
+                "absent",
+                "no bun.lock — CI installs with --frozen-lockfile and will fail; "
+                "run 'bun install' and commit it",
+            )
+        )
+
+    return findings
+
+
+def print_finishing_pass_audit(target: Path) -> None:
+    """Human-readable audit printed right after a scaffold run.
+
+    A fresh scaffold is ERROR-free by construction; the WARN it does carry
+    (no bun.lock yet) is the next step the generator already prints.
+    """
+    findings = finishing_pass_findings(target)
+    marker = {"OK": "[x]", "WARN": "[ ]", "ERROR": "[!]"}
+
+    print("\nFinishing pass (manifest matches the build and the release):")
+    for severity, _key, _value, message in findings:
+        suffix = "" if severity == "OK" else f"   <- {severity}"
+        print(f"  {marker[severity]} {message}{suffix}")
+    print(
+        "\n  Re-check any time (this is a gate, not a note):\n"
+        f"    python3 {Path(__file__).name} --verify {target}\n"
+        "  The same invariants run in the module's own CI via tests/manifest.test.ts."
+    )
+
+
+def verify_module(target: Path) -> int:
+    """`--verify <module-dir>`: re-run the audit against an existing module.
+
+    Emits the structured-script-output contract so a later session, the
+    /foundryvtt-module orchestrator, or a drift sweep can read a verdict instead
+    of re-deriving one. Exit 0 on OK/WARN, 1 on ERROR.
+    """
+    print("=== SCAFFOLD FINISHING PASS ===")
+    if not (target / "module.json").is_file():
+        print(f"MODULE={target}")
+        print("ISSUE_COUNT=1")
+        print("STATUS=ERROR")
+        print(
+            f"ERROR_1=MODULE_JSON: not a FoundryVTT module (no module.json at {target})"
+        )
+        print("=== END SCAFFOLD FINISHING PASS ===")
+        return 1
+
+    findings = finishing_pass_findings(target)
+    worst = max((SEVERITY_RANK[f[0]] for f in findings), default=0)
+    item_status = {0: "OK", 1: "WARN", 2: "ERROR"}[worst]
+    issues = [f for f in findings if f[0] != "OK"]
+
+    print(f"MODULE={target.name}")
+    for _severity, key, value, _message in findings:
+        print(f"{key}={value}")
+    print(f"ISSUE_COUNT={len(issues)}")
+    print(f"STATUS={item_status}")
+    for i, (severity, key, _value, message) in enumerate(issues, 1):
+        print(f"{severity}_{i}={key}: {message}")
+    print("=== END SCAFFOLD FINISHING PASS ===")
+    return 1 if item_status == "ERROR" else 0
+
+
 def main() -> int:
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     p.add_argument(
+        "--verify",
+        metavar="MODULE_DIR",
+        help=(
+            "re-run the finishing-pass audit against an EXISTING module and emit "
+            "a machine verdict (STATUS=OK|WARN|ERROR); exits 1 on ERROR. "
+            "Scaffolding arguments are ignored in this mode."
+        ),
+    )
+    p.add_argument(
         "--name",
-        required=True,
         help="GitHub repo name, e.g. foundryvtt-initiative-tweaks",
     )
     p.add_argument(
@@ -1206,10 +1556,8 @@ def main() -> int:
         help="Foundry module id (lowercase kebab); default: --name without the "
         "leading 'foundryvtt-'",
     )
-    p.add_argument(
-        "--display", required=True, help='module title, e.g. "Initiative Tweaks"'
-    )
-    p.add_argument("--desc", required=True, help="one-line description")
+    p.add_argument("--display", help='module title, e.g. "Initiative Tweaks"')
+    p.add_argument("--desc", help="one-line description")
     p.add_argument("--variant", choices=VALID_VARIANTS, default="basic")
     p.add_argument("--fvtt-min", default=FVTT_MIN_DEFAULT, help="compatibility.minimum")
     p.add_argument(
@@ -1223,6 +1571,16 @@ def main() -> int:
         help="parent directory to create the module in (default: cwd)",
     )
     args = p.parse_args()
+
+    if args.verify:
+        return verify_module(Path(args.verify).resolve())
+
+    missing = [flag for flag in ("name", "display", "desc") if not getattr(args, flag)]
+    if missing:
+        p.error(
+            "the following arguments are required: "
+            + ", ".join(f"--{flag}" for flag in missing)
+        )
 
     ctx = derive(args.name, args.id)
     ctx.update(
@@ -1272,6 +1630,7 @@ def main() -> int:
         "    'foundryvtt' topic (gitops pushes the release-please App credentials)\n"
         "  - or run the /foundryvtt-module orchestrator, which does the gitops wiring\n"
     )
+    print_finishing_pass_audit(target)
     return 0
 
 
