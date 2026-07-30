@@ -29,6 +29,10 @@
 #       again when the PLACEHOLDER-GLYPH marker survives. Executed, not grepped:
 #       asserting the test's TEXT is emitted is a syntactic gate on a semantic
 #       property, which is exactly how the #1417 fix shipped broken.
+#   12. the two gates AGREE. The first cut shipped a pack test asserting only
+#       "at least one asset declared" while --verify graded an undeclared key
+#       ERROR, so a pack with Icon and no Banner was "ready" per CI and
+#       "broken" per the audit (comfyui-image-browser sat in that gap).
 #
 # Requires python3 and git; SKIPs cleanly when python3 is unavailable.
 
@@ -249,6 +253,65 @@ PY
     touch "$PT/icon.png"   # exists on disk, absent from the index
     OUT="$(run_asset_test "$PT")"; RC=$?
     check "pack test FAILS on an untracked icon.png" "1" "$RC"
+
+    # 12. The two gates must agree. The first cut of this fix shipped a pack
+    #     test asserting only "at least one asset declared" while --verify
+    #     graded an undeclared key ERROR — so a pack with `Icon` and no
+    #     `Banner` was simultaneously "ready" (CI) and "broken" (audit).
+    #     comfyui-image-browser sat in exactly that gap. Both gates now
+    #     require BOTH keys, and this block proves they move together.
+    DV="$WORK/comfyui-fp-divergence"
+    python3 "$SCAFFOLD" --name comfyui-fp-divergence --display "FP Divergence" \
+        --desc "v" --variant gesture --dir "$WORK" >/dev/null 2>&1
+    git -C "$DV" init -b main >/dev/null 2>&1
+
+    finish_pack() { # finish_pack <pack> — rasterize + commit both PNGs
+        touch "$1/icon.png" "$1/banner.png"
+        python3 - "$1" <<'PY'
+import pathlib, sys
+pack = pathlib.Path(sys.argv[1])
+for svg in ("icon.svg", "banner.svg"):
+    p = pack / svg
+    p.write_text(p.read_text().replace("PLACEHOLDER-GLYPH", "BESPOKE"))
+PY
+        git -C "$1" add -A >/dev/null 2>&1
+    }
+
+    # 12a. Guard integrity: a fully finished pack is green on BOTH gates.
+    #      Without this, 12b would also pass against a gate hardwired to fail.
+    finish_pack "$DV"
+    run_asset_test "$DV" >/dev/null 2>&1
+    check "agreement: finished pack PASSES the pack test" "0" "$?"
+    python3 "$SCAFFOLD" --verify "$DV" >/dev/null 2>&1
+    check "agreement: finished pack passes --verify (exit 0)" "0" "$?"
+
+    # 12b. Drop ONLY the Banner key — every PNG stays present and tracked, so
+    #      the sole difference is the undeclared key. Both gates must fail.
+    python3 - "$DV" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "pyproject.toml"
+kept = [ln for ln in p.read_text().splitlines(True) if not ln.startswith("Banner = ")]
+p.write_text("".join(kept))
+PY
+    git -C "$DV" add -A >/dev/null 2>&1
+    check "divergence fixture actually dropped the Banner key" "absent" \
+        "$(grep -q '^Banner = ' "$DV/pyproject.toml" && echo present || echo absent)"
+
+    OUT="$(run_asset_test "$DV")"; RC=$?
+    check "undeclared Banner FAILS the pack test" "1" "$RC"
+    check "  ...and names the missing Banner key" "yes" \
+        "$(grep -q 'Banner is unset' <<<"$OUT" && echo yes || echo no)"
+
+    VERIFY_OUT="$(python3 "$SCAFFOLD" --verify "$DV" 2>&1)"; VERIFY_RC=$?
+    check "undeclared Banner makes --verify exit 1" "1" "$VERIFY_RC"
+    check "  ...with STATUS=ERROR (the same verdict as the pack test)" "yes" \
+        "$(grep -qx 'STATUS=ERROR' <<<"$VERIFY_OUT" && echo yes || echo no)"
+    check "  ...reported as BANNER_PNG=undeclared" "yes" \
+        "$(grep -qx 'BANNER_PNG=undeclared' <<<"$VERIFY_OUT" && echo yes || echo no)"
+    # The Icon half must stay green, or "both gates fail" proves nothing about
+    # which key drove the failure.
+    check "  ...while the still-declared Icon stays ICON_PNG=present" "yes" \
+        "$(grep -qx 'ICON_PNG=present' <<<"$VERIFY_OUT" && echo yes || echo no)"
 fi
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
