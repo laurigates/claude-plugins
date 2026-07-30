@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.11.0...comfyui-plugin-v1.12.0) (2026-07-30)
+
+
+### Features
+
+* **comfyui-plugin:** gate the sub-family accent in the fleet-drift checker ([#2247](https://github.com/laurigates/claude-plugins/issues/2247)) ([2aac8e0](https://github.com/laurigates/claude-plugins/commit/2aac8e072a450f2f7af243352aadf431a56d45d8)), closes [#1877](https://github.com/laurigates/claude-plugins/issues/1877)
+
 ## [1.11.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.10.0...comfyui-plugin-v1.11.0) (2026-07-30)
 
 
