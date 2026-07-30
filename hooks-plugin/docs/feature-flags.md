@@ -42,6 +42,7 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 |---|---|---|
 | `CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION` | Blocking access to secret files / env-var exposure | `hooks/secret-protection.sh` |
 | `CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION` | Blocking writes on `main`/`master` (**human-operator only** — inline prefixes are ignored so agents can't self-serve) | `hooks/branch-protection.sh` |
+| `CLAUDE_HOOKS_DISABLE_EXTERNAL_PR_MERGE` | Blocking merges of PRs authored by someone other than you or a bot (**human-operator only** — inline prefixes are ignored so agents can't self-serve) | `hooks/external-pr-merge-guard.sh` |
 | `CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT` | Auto-stash checkpoint before destructive git/`rm -rf` ops | `hooks/auto-checkpoint.sh` |
 | `CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO` | Auto-approve/deny of safe/dangerous ops at PermissionRequest | `hooks/permission-auto-approve.sh` |
 | `CLAUDE_HOOKS_DISABLE_PERMISSION_REQUEST` | The permission-request hook | `skills/hooks-permission-request-hook/` |
