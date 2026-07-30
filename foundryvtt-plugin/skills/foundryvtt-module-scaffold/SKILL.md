@@ -1,7 +1,7 @@
 ---
 created: 2026-06-26
-modified: 2026-06-26
-reviewed: 2026-06-26
+modified: 2026-07-30
+reviewed: 2026-07-30
 name: foundryvtt-module-scaffold
 description: >-
   Scaffold a new FoundryVTT v13 module repo (Vite + TS + bun + biome, CI,
@@ -92,6 +92,27 @@ default = `--name` minus the leading `foundryvtt-`), `--display` (title),
 
 It refuses to overwrite an existing directory.
 
+### Verifying a module (`--verify`)
+
+```sh
+python3 ${CLAUDE_SKILL_DIR}/scaffold.py --verify foundryvtt-initiative-tweaks
+```
+
+Re-runs the finishing-pass audit against an **existing** module and emits a
+machine verdict (`MODULE_ID_MATCH=`, `ESMODULES=`, `MANIFEST_URL=`,
+`DOWNLOAD_URL=`, `RELEASE_ZIP=`, `DECLARED_ASSETS=`, `LOCKFILE=`, then
+`ISSUE_COUNT=` and `STATUS=`). Exit 1 on ERROR.
+
+| `STATUS=` | Meaning |
+|-----------|---------|
+| `ERROR` | Foundry cannot install, load, or update the published module — the id disagrees across `module.json` / `vite.config.ts` / `src/constants.ts`, `esmodules` names a file the build never emits, or an install URL resolves to a release asset nobody uploads. |
+| `WARN` | It loads, but something is unfinished (a declared asset that 404s, no `bun.lock` yet). A fresh scaffold is `WARN` until `bun install` runs. |
+| `OK` | Nothing outstanding. |
+
+The generated repo asserts the same invariants in `tests/manifest.test.ts`, which
+its own `test` CI job runs on every PR — so a rename that drifts one of the five
+places the module id appears fails a PR, not a user's install.
+
 ### Alternative: the cargo-generate template (pilot)
 
 `templates/foundryvtt-module/` is a cargo-generate port of `scaffold.py` whose
@@ -116,7 +137,8 @@ Liquid brace-collision fixes, and what promoting the template would take.
 A repo where `just check` passes from the first commit: a real `module.json`
 manifest, `package.json` (bun scripts), `vite.config.ts`, strict `tsconfig.json`,
 `biome.json`, `vitest.config.ts` + a green Vitest smoke test (Foundry globals
-stubbed in `tests/setup.ts`), `.github/workflows/` (`ci.yml`,
+stubbed in `tests/setup.ts`) and `tests/manifest.test.ts` (the manifest-vs-build
+gate above), `.github/workflows/` (`ci.yml`,
 `release-please.yml`, `renovate.yml`), `release-please-config.json` + manifest,
 `renovate.json`, a `justfile`, `src/module.ts` + `src/settings.ts` +
 `src/constants.ts` + `src/foundry-shims.d.ts`, `lang/en.json`,
@@ -159,7 +181,7 @@ chains scaffold → `gh repo create` → seed `main` → the gitops PR.
   only.
 - **ESM-only, paths byte-match the manifest.** `esmodules` references
   `<id>.mjs`; the Vite output filename is pinned to match. A mismatch is a silent
-  load failure.
+  load failure — `tests/manifest.test.ts` fails the PR that introduces it.
 - **Target the harness-pinned Foundry version.** Keep `module.json`
   `compatibility.{minimum,verified}` in sync with what you test against. Verify
   the Foundry API against <https://foundryvtt.com/api/> or the live console — not
@@ -178,7 +200,9 @@ chains scaffold → `gh repo create` → seed `main` → the gitops PR.
 | Scaffold a basic module | `python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name foundryvtt-X --display "X" --desc "…"` |
 | Scaffold an app module | `python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name foundryvtt-X --display "X" --desc "…" --variant app` |
 | Verify a generated module | `cd foundryvtt-X && bun install && just check` |
+| Gate the finishing pass (machine verdict) | `python3 ${CLAUDE_SKILL_DIR}/scaffold.py --verify foundryvtt-X` |
 | Check the pilot still matches scaffold.py | `bash ${CLAUDE_SKILL_DIR}/scripts/tests/test-template-parity.sh` |
+| Prove the finishing-pass gate still fires | `bash ${CLAUDE_SKILL_DIR}/scripts/tests/test-manifest-invariants.sh` |
 
 ## Notes & deferrals
 

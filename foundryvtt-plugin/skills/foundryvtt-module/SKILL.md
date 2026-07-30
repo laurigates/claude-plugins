@@ -1,7 +1,7 @@
 ---
 created: 2026-06-26
-modified: 2026-07-27
-reviewed: 2026-07-27
+modified: 2026-07-30
+reviewed: 2026-07-30
 name: foundryvtt-module
 description: >-
   FoundryVTT module idea to gitops-adopted repo: scaffold, create + seed the
@@ -157,7 +157,26 @@ The entry to add under the active repositories `locals` block, beside the other
 assets, not through a package registry, so there is no analogue of a ComfyUI
 pack's `comfy_registry`. `release_please = true` is the whole adoption surface.
 
-## Phase 6 — Hand back to implementation
+## Phase 6 — Verify the finishing pass, then hand back
+
+**Run the gate before declaring done** — do not close on a self-authored summary:
+
+```sh
+python3 ${CLAUDE_SKILL_DIR}/../foundryvtt-module-scaffold/scaffold.py --verify foundryvtt-initiative-tweaks
+```
+
+Read `STATUS=`; the exit code is 1 on ERROR.
+
+| `STATUS=` | Action |
+|-----------|--------|
+| `ERROR` | **Not done.** The ERROR rows are install-blocking — the module id disagrees across `module.json`/`vite.config.ts`/`src/constants.ts`, `esmodules` names a file the build never emits, or an install URL resolves to a release asset that does not exist. Fix and re-run. |
+| `WARN` | Deferrable. Log each WARN to `project:foundryvtt` in taskwarrior and say so in the hand-back. |
+| `OK` | Hand back. |
+
+An ERROR is never a follow-up item: every one of them ships a module Foundry
+either refuses to install or loads to nothing, with no error anywhere in CI. The
+same invariants run in the module's own `test` job (`tests/manifest.test.ts`), so
+a later drift fails a PR rather than a user's install.
 
 Once the apply lands, the delivery chain is live: conventional-commit PRs →
 release-please PR → tag → the release workflow builds, zips `dist/`, and attaches

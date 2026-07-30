@@ -31,6 +31,15 @@ Scaffold a new FoundryVTT v13 module repository ready for implementation, in the
   (`src/foundry-shims.d.ts`) — keeps the build self-contained and CI-green
   without the beta, git-only `fvtt-types`
 - `biome.json`, a green Vitest smoke test (Foundry globals stubbed), a justfile
+- `tests/manifest.test.ts` — a **gate in the generated repo**, run by its own
+  `test` CI job, asserting the manifest still matches the build and the release:
+  one module id across `module.json` / `vite.config.ts` / `src/constants.ts`,
+  `esmodules` naming the file Vite actually emits, declared asset paths that
+  exist, and install URLs resolving to the assets the release job uploads. None
+  of that is visible to lint, typecheck, build, or the smoke suite, and a drift
+  ships a module Foundry loads to nothing. `scaffold.py --verify <module-dir>`
+  re-runs the same audit from outside and emits `STATUS=OK|WARN|ERROR`
+  (exit 1 on ERROR)
 - CI + release-please + renovate GitHub Actions; release-please bumps both
   `package.json` and `module.json` `$.version`, and the release job zips `dist/`
   and attaches the install assets
