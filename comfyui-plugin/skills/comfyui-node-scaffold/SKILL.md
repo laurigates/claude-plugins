@@ -234,6 +234,37 @@ is why this can no longer go unnoticed — `comfyui-touch-manager` published wit
 `Icon = ""` for weeks with CI green, and `comfyui-output-swap` sat 31 hours after
 its own audit flagged the rasterize, both caught only when a human looked.
 
+## Fleet drift (the packs vs this template)
+
+`--verify` grades **one** pack's finishing pass. The complementary question —
+*have the 13 generated packs drifted apart from this template, and from each
+other?* — is answered by:
+
+```sh
+python3 ${CLAUDE_SKILL_DIR}/scripts/check-fleet-drift.py
+```
+
+It imports this generator, derives the context-invariant templates from
+`build_file_map` (never a hand-copied list), and compares them against every
+pack under `--fleet-root` (default `~/repos/laurigates/comfyui-nodes`;
+`--pack <name>` scopes it). Per-file authority lives in
+[`fleet-policy.toml`](fleet-policy.toml) — `managed` (byte-identity, ERROR),
+`seed` (never compared), `shared` (the fleet leads, the template back-ports),
+and `block` (a named `##########` section of a placeholder-carrying template —
+the justfile's `Assets` recipe, whose stale copy silently distorted banner
+artwork in one pack for months).
+
+**It reports; it never writes to a pack.** Drift is *bidirectional*: all 13
+packs are ahead of the template on `release-please.yml` (`ubuntu-slim` +
+`release-please-action@v5`), the template is ahead on `RELEASE-CHECKLIST.md`,
+Renovate independently pushes packs ahead on pinned versions, and
+`tests/js/__mocks__/app.js` is pack-owned. A template→pack apply would be a
+silent-revert bug across 13 repos, so a human classifies each row's direction.
+A new context-invariant template with no `fleet-policy.toml` entry is itself an
+ERROR, so the manifest cannot fall behind the scaffold. The weekly
+`Plugin: Fleet drift audit` workflow runs the same script and opens one issue
+when it finds drift.
+
 ## After scaffolding
 
 The generator prints the exact next steps. In order:
@@ -328,6 +359,9 @@ The generated `publish.yml` builds `web/dist/` then publishes via
 | Scaffold a gesture pack | `python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name comfyui-X --display "X" --desc "…" --variant gesture` |
 | Scaffold a CSS/shim pack | `python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name comfyui-X --display "X" --desc "…" --variant shim` |
 | Verify a generated pack | `cd comfyui-X && bun install && just check` |
+| Grade one pack's finishing pass | `python3 ${CLAUDE_SKILL_DIR}/scaffold.py --verify path/to/comfyui-X` |
+| Sweep the whole fleet for drift | `python3 ${CLAUDE_SKILL_DIR}/scripts/check-fleet-drift.py` |
+| Sweep one pack only | `python3 ${CLAUDE_SKILL_DIR}/scripts/check-fleet-drift.py --pack comfyui-X` |
 
 ## Notes & deferrals
 
