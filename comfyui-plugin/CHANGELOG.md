@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.10.0...comfyui-plugin-v1.11.0) (2026-07-30)
+
+
+### Features
+
+* **comfyui-plugin:** let the scaffold emit the documented sub-family accent ([#2243](https://github.com/laurigates/claude-plugins/issues/2243)) ([3611ac2](https://github.com/laurigates/claude-plugins/commit/3611ac2ab63477b026a4896116ab86d3f1da4e43))
+
 ## [1.10.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.9.8...comfyui-plugin-v1.10.0) (2026-07-30)
 
 
