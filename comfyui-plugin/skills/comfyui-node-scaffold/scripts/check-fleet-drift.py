@@ -132,18 +132,20 @@ def derive_invariant_templates(module: Any) -> dict[str, str]:
     }
 
 
-def load_policy(path: Path) -> tuple[dict[str, dict[str, Any]], list[str]]:
+def load_policy(
+    path: Path,
+) -> tuple[dict[str, dict[str, Any]], list[str], dict[str, str]]:
     problems: list[str] = []
     try:
         data = tomllib.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError:
-        return {}, [f"policy manifest not found: {path}"]
+        return {}, [f"policy manifest not found: {path}"], {}
     except tomllib.TOMLDecodeError as exc:
-        return {}, [f"policy manifest is not valid TOML: {exc}"]
+        return {}, [f"policy manifest is not valid TOML: {exc}"], {}
 
     files = data.get("files", {})
     if not isinstance(files, dict):
-        return {}, ["policy manifest has no [files] table"]
+        return {}, ["policy manifest has no [files] table"], {}
 
     entries: dict[str, dict[str, Any]] = {}
     for rel, entry in files.items():
@@ -155,7 +157,17 @@ def load_policy(path: Path) -> tuple[dict[str, dict[str, Any]], list[str]]:
             problems.append(f"{rel}: policy=block requires a `block` name")
             continue
         entries[rel] = entry
-    return entries, problems
+
+    subfamily = data.get("subfamily", {})
+    if not isinstance(subfamily, dict):
+        problems.append("policy manifest [subfamily] is not a table")
+        subfamily = {}
+    valid = {"touch", "info"}
+    for pack_name, value in sorted(subfamily.items()):
+        if value not in valid:
+            problems.append(f"subfamily.{pack_name}: unknown sub-family {value!r}")
+    subfamily = {k: v for k, v in subfamily.items() if v in valid}
+    return entries, problems, subfamily
 
 
 def discover_packs(root: Path, wanted: list[str]) -> list[Path]:
@@ -203,6 +215,28 @@ def pack_context(module: Any, pack: Path) -> tuple[dict[str, str], str]:
     # Python backend.
     variant = "backend" if (pack / f"{ctx['PY_MODULE']}.py").is_file() else "frontend"
     return ctx, variant
+
+
+def observed_subfamily(module: Any, svg: str) -> str | None:
+    """Which documented family accent does this SVG carry?
+
+    Reads the palettes from the scaffold so there is ONE definition of the
+    accent tokens. Only the PRIMARY glyph/tagline accent decides the
+    sub-family — comfy-registry-lifecycle allows secondary accents
+    (#ffd866, #6bff8e) to "appear sparingly" in either family, and two packs
+    legitimately use them, so matching on any blue/orange token would
+    false-positive on real artwork.
+    """
+    primary = {
+        name: palette["#ffb02e"] for name, palette in module.ACCENT_PALETTES.items()
+    }
+    lowered = svg.lower()
+    found = {name for name, token in primary.items() if token.lower() in lowered}
+    if not found:
+        return None
+    if len(found) > 1:
+        return "ambiguous"
+    return found.pop()
 
 
 BLOCK_RULE = "#" * 10
@@ -351,7 +385,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     fleet_root = args.fleet_root.expanduser()
-    policy, policy_problems = load_policy(args.policy.expanduser())
+    policy, policy_problems, subfamily_map = load_policy(args.policy.expanduser())
     module = load_scaffold()
     templates = derive_invariant_templates(module)
     packs = discover_packs(fleet_root, args.pack)
@@ -432,13 +466,52 @@ def main(argv: list[str] | None = None) -> int:
             elif have != want:
                 block_drift.append(f"{pack.name}|{rel}#{block_name}|differs")
 
+    # --- sub-family accent ----------------------------------------------------
+    #
+    # Artwork is pack-specific, so it is NOT in the managed set and no
+    # template comparison can speak to it. But the accent is not free: it
+    # encodes the sub-family (comfy-registry-lifecycle "Icon design system"),
+    # and the two files that carry it must agree with each other AND with the
+    # declared sub-family. Nothing checked that, which is how a restyle turned
+    # four info/gallery packs' banners orange against a still-blue icon.
+    subfamily_mismatch: list[str] = []
+    unclassified_packs: list[str] = []
+    for pack in packs:
+        declared = subfamily_map.get(pack.name)
+        if declared is None:
+            unclassified_packs.append(pack.name)
+            continue
+        for rel in ("icon.svg", "banner.svg"):
+            text = read_text(pack / rel)
+            if text is None:
+                subfamily_mismatch.append(f"{pack.name}|{rel}|absent")
+                continue
+            observed = observed_subfamily(module, text)
+            if observed is None:
+                subfamily_mismatch.append(
+                    f"{pack.name}|{rel}|no_family_accent(want={declared})"
+                )
+            elif observed == "ambiguous":
+                subfamily_mismatch.append(
+                    f"{pack.name}|{rel}|both_accents(want={declared})"
+                )
+            elif observed != declared:
+                subfamily_mismatch.append(
+                    f"{pack.name}|{rel}|{observed}(declared={declared})"
+                )
+
     # --- report --------------------------------------------------------------
     counts = defaultdict(int)
     for entry in policy.values():
         counts[entry["policy"]] += 1
 
     errors = (
-        len(managed_drift) + len(block_drift) + len(unclassified) + len(policy_problems)
+        len(managed_drift)
+        + len(block_drift)
+        + len(unclassified)
+        + len(policy_problems)
+        + len(subfamily_mismatch)
+        + len(unclassified_packs)
     )
     warnings = len(shared_minority) + len(backport) + len(stale_entries)
     issue_count = errors + warnings
@@ -480,6 +553,8 @@ def main(argv: list[str] | None = None) -> int:
     out(f"BACKPORT_SIGNAL_COUNT={len(backport)}")
     out(f"UNCLASSIFIED_TEMPLATE_COUNT={len(unclassified)}")
     out(f"STALE_POLICY_ENTRY_COUNT={len(stale_entries)}")
+    out(f"SUBFAMILY_MISMATCH_COUNT={len(subfamily_mismatch)}")
+    out(f"UNCLASSIFIED_PACK_COUNT={len(unclassified_packs)}")
 
     if packs:
         out("PACKS=" + ",".join(p.name for p in packs))
@@ -527,6 +602,21 @@ def main(argv: list[str] | None = None) -> int:
         out("--- policy entries for templates the scaffold no longer emits (WARN) ---")
         for rel in stale_entries:
             out(f"STALE_POLICY_ENTRY={rel}")
+
+    if unclassified_packs:
+        out("")
+        out(
+            "--- packs with no [subfamily] entry "
+            "(ERROR: add one to fleet-policy.toml) ---"
+        )
+        for name in unclassified_packs:
+            out(f"UNCLASSIFIED_PACK={name}")
+
+    if subfamily_mismatch:
+        out("")
+        out("--- sub-family accent mismatch (ERROR; icon and banner must agree) ---")
+        for row in subfamily_mismatch:
+            out(f"SUBFAMILY_MISMATCH={row}")
 
     out("")
     out(f"ISSUE_COUNT={issue_count}")

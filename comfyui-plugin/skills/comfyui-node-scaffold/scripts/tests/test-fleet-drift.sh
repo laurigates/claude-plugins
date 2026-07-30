@@ -105,10 +105,24 @@ scaffold_pack comfyui-fixture-two "Fixture Two" || {
 PACK1="${FLEET}/comfyui-fixture-one"
 PACK2="${FLEET}/comfyui-fixture-two"
 
+# The fixture packs are scaffolded, so they are absent from the real policy's
+# [subfamily] table and would every one of them raise UNCLASSIFIED_PACK. That
+# ERROR is correct for the live fleet (a new pack must declare its sub-family),
+# so the TEST declares its fixtures rather than the checker going quiet.
+POLICY_FIXTURE="${WORK}/fleet-policy-fixture.toml"
+{
+    cat "$POLICY"
+    # [subfamily] is the manifest's LAST table, so these append into it —
+    # repeating the header would be a duplicate-table TOML error.
+    printf '\ncomfyui-fixture-one = "touch"\ncomfyui-fixture-two = "touch"\n'
+} >"$POLICY_FIXTURE"
+
 run_checker() { # run_checker <outfile> [extra args...]
     local out="$1"
     shift
-    python3 "$CHECKER" --fleet-root "$FLEET" "$@" >"$out" 2>"${out}.err"
+    # --policy first so a caller-supplied --policy later on the line wins.
+    python3 "$CHECKER" --fleet-root "$FLEET" --policy "$POLICY_FIXTURE" "$@" \
+        >"$out" 2>"${out}.err"
     echo "$?"
 }
 
@@ -325,6 +339,90 @@ check "9: the untouched sibling's justfile is clean" "0" \
     "$(grep -c '^BLOCK_DRIFT=comfyui-fixture-two|' "$OUT")"
 
 # --------------------------------------------------------------------------- #
+# --------------------------------------------------------------------------- #
+# 11: sub-family accent — the regression that motivated the check
+# --------------------------------------------------------------------------- #
+# A restyle turned four info/gallery packs' banners orange while their icons
+# stayed blue. Artwork is pack-specific so no managed-file compare could see
+# it; only icon-vs-banner-vs-declared agreement can.
+
+# Rebuild the fixture policy with fixture-two declared as an INFO pack, and
+# recolour BOTH its SVGs blue so it is legitimately, consistently info.
+POLICY_INFO="${WORK}/fleet-policy-info.toml"
+{
+    cat "$POLICY"
+    printf '\ncomfyui-fixture-one = "touch"\ncomfyui-fixture-two = "info"\n'
+} >"$POLICY_INFO"
+
+recolor() { # recolor <file> <from> <to>
+    python3 - "$1" "$2" "$3" <<'PYEOF'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1])
+p.write_text(p.read_text().replace(sys.argv[2], sys.argv[3]))
+PYEOF
+}
+
+recolor "$PACK2/icon.svg" "#ffb02e" "#6ba6ff"
+recolor "$PACK2/banner.svg" "#ffb02e" "#6ba6ff"
+recolor "$PACK2/banner.svg" "#ff8a00" "#0a84ff"
+
+OUT="${WORK}/out11.txt"
+rc="$(run_checker "$OUT" --policy "$POLICY_INFO")"
+check "11a: consistent info pack raises no mismatch" "0" \
+    "$(field "$OUT" SUBFAMILY_MISMATCH_COUNT)"
+check "11a: and no pack is unclassified" "0" \
+    "$(field "$OUT" UNCLASSIFIED_PACK_COUNT)"
+
+# Now the regression itself: banner back to orange, icon left blue.
+recolor "$PACK2/banner.svg" "#6ba6ff" "#ffb02e"
+OUT="${WORK}/out11b.txt"
+rc="$(run_checker "$OUT" --policy "$POLICY_INFO")"
+check "11b: banner-vs-icon accent split is caught" "1" \
+    "$(field "$OUT" SUBFAMILY_MISMATCH_COUNT)"
+check "11b: it exits 1" "1" "$rc"
+check "11b: STATUS=ERROR" "ERROR" "$(field "$OUT" STATUS)"
+check "11b: the row names banner.svg and the declared family" "1" \
+    "$(grep -c '^SUBFAMILY_MISMATCH=comfyui-fixture-two|banner\.svg|touch(declared=info)$' "$OUT")"
+check "11b: the still-correct icon.svg is NOT reported" "0" \
+    "$(grep -c '^SUBFAMILY_MISMATCH=comfyui-fixture-two|icon\.svg' "$OUT")"
+check "11b: the untouched touch pack is NOT reported" "0" \
+    "$(grep -c '^SUBFAMILY_MISMATCH=comfyui-fixture-one' "$OUT")"
+
+# Restore fixture-two to a consistent touch pack for the remaining cases.
+recolor "$PACK2/icon.svg" "#6ba6ff" "#ffb02e"
+recolor "$PACK2/banner.svg" "#0a84ff" "#ff8a00"
+
+# --------------------------------------------------------------------------- #
+# 12: secondary accents must NOT be read as a sub-family (false-positive guard)
+# --------------------------------------------------------------------------- #
+# comfy-registry-lifecycle allows #ffd866 / #6bff8e to "appear sparingly" in
+# either family, and comfyui-gallery-loader + comfyui-sampler-info really do
+# use them. Matching on any blue/orange token would flag both as broken.
+recolor "$PACK1/icon.svg" '<rect x="28"' '<circle cx="60" cy="60" r="6" fill="#6bff8e"/><rect x="28"'
+recolor "$PACK1/banner.svg" '<rect width="1344"' '<circle cx="60" cy="60" r="6" fill="#ffd866"/><rect width="1344"'
+OUT="${WORK}/out12.txt"
+rc="$(run_checker "$OUT")"
+check "12: secondary accents do not trigger a mismatch" "0" \
+    "$(field "$OUT" SUBFAMILY_MISMATCH_COUNT)"
+# NOT an exit-code assertion: earlier cases deliberately leave managed drift in
+# the fixture, so the run exits 1 for reasons unrelated to accents. The guard
+# that matters is that no accent row names this pack.
+check "12: no accent row names the pack carrying secondary accents" "0" \
+    "$(grep -c '^SUBFAMILY_MISMATCH=comfyui-fixture-one' "$OUT")"
+
+# --------------------------------------------------------------------------- #
+# 13: a pack absent from [subfamily] is an ERROR (manifest completeness)
+# --------------------------------------------------------------------------- #
+# Mirrors UNCLASSIFIED_TEMPLATE: a new pack must state its sub-family rather
+# than silently opting out of the check.
+OUT="${WORK}/out13.txt"
+rc="$(run_checker "$OUT" --policy "$POLICY")"
+check "13: undeclared packs are counted" "2" "$(field "$OUT" UNCLASSIFIED_PACK_COUNT)"
+check "13: it exits 1" "1" "$rc"
+check "13: the row names the pack" "1" \
+    "$(grep -c '^UNCLASSIFIED_PACK=comfyui-fixture-one$' "$OUT")"
+
+
 printf '\n%s: %d passed, %d failed\n' "$(basename "$0")" "$pass" "$fail"
 [ "$fail" -eq 0 ] || exit 1
 exit 0
