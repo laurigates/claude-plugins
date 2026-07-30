@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.2](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.9.1...session-plugin-v1.9.2) (2026-07-30)
+
+
+### Bug Fixes
+
+* **session-plugin:** stop creating tasks an open PR or issue already tracks ([#2237](https://github.com/laurigates/claude-plugins/issues/2237)) ([418e210](https://github.com/laurigates/claude-plugins/commit/418e210c6acd82b5a2812a2166987cbe5a0231f0))
+
 ## [1.9.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.9.0...session-plugin-v1.9.1) (2026-07-27)
 
 
