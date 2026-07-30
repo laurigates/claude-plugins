@@ -116,3 +116,9 @@ again. Spinup closes the loop — open threads visible in 30 seconds
 before the user picks the next move. Sharing one read-only collector with
 wrap/end/hook keeps that survey deterministic, testable, and
 single-sourced.
+
+Surfacing open PRs and assigned issues here is load-bearing for the write
+side: `session-plugin:session-wrap` declines to create a task whose only
+content is "PR #N is open" **because** spinup replays the `PRS` and
+`GITHUB_DRIFT` sections. Dropping either from this briefing would make
+that redundancy rule wrong, so the two move together.
