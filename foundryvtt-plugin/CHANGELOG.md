@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/laurigates/claude-plugins/compare/foundryvtt-plugin-v1.2.0...foundryvtt-plugin-v1.3.0) (2026-07-30)
+
+
+### Features
+
+* **foundryvtt-plugin:** gate the manifest against the build and the release ([#2235](https://github.com/laurigates/claude-plugins/issues/2235)) ([0a1c305](https://github.com/laurigates/claude-plugins/commit/0a1c305a54e8b39e5336c272efd1d8f488e61f10)), closes [#1877](https://github.com/laurigates/claude-plugins/issues/1877)
+
 ## [1.2.0](https://github.com/laurigates/claude-plugins/compare/foundryvtt-plugin-v1.1.2...foundryvtt-plugin-v1.2.0) (2026-07-29)
 
 
