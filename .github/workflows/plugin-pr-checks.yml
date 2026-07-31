@@ -3,18 +3,18 @@ name: "Plugin: PR checks"
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-      - '*-plugin/**'
-      - '.claude-plugin/marketplace.json'
-      - '**/skills/**'
-      # Workflow changes must trigger the agent-model and workflow-model guards
-      # (both run unconditionally below) — workflow model/effort drift lives here.
-      - '.github/workflows/**'
-      # The ruff lint/format gate below is the repo's only Python check, so a
-      # PR touching Python outside a plugin (scripts/, vault-agent/,
-      # git-repo-agent/, experiments/) has to reach it too.
-      - '**/*.py'
-      - 'ruff.toml'
+    # NO `paths:` filter — deliberately.
+    #
+    # `compliance` is a REQUIRED status check. A path-filtered workflow does not
+    # run at all on a non-matching PR, so the context is never REPORTED — and a
+    # required check that never reports blocks the merge permanently, with no
+    # bypass (`bypass_actors` is empty). A PR touching only `scripts/*.sh` and
+    # `.claude/rules/**` is exactly that shape and is a routine PR here.
+    #
+    # Gating moved to the job/step level instead: the `changed` step below
+    # computes `plugin_count` / `skill_count` and the expensive work is already
+    # `if:`-gated on them, so a non-matching PR reports a fast trivially-green
+    # context rather than never reporting one.
 
 concurrency:
   group: plugin-pr-checks-${{ github.event.pull_request.number }}

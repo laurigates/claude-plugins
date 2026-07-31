@@ -93,3 +93,20 @@ jobs:
           "automate":"ci","automates":"ci","automated":"ci",
           "deploy":"ci","deploys":"ci","deployed":"ci"
         }
+
+  # In-repo gate whose context name we own.
+  #
+  # The check GitHub publishes for the job above is `conventional-commits / Fix PR
+  # title` — `<caller job id> / <reusable job NAME>`. Segment 2 lives in
+  # laurigates/.github@main, unpinned, so a rename THERE silently renames the
+  # required context HERE and every PR wedges with no signal. Pinning the `uses:`
+  # to a SHA does not help: the pin-bump PR is itself the rename.
+  #
+  # `gate` is defined in this file, so its context is `gate` no matter what the
+  # reusable calls its jobs. Require THIS, not the composite name.
+  gate:
+    needs: conventional-commits
+    runs-on: ubuntu-slim
+    steps:
+      - name: Conventional-commit check passed
+        run: echo "conventional-commits passed"
