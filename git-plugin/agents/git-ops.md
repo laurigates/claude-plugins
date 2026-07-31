@@ -157,10 +157,40 @@ git bisect reset
 ```
 
 ### Branch Cleanup
+
+**Never delete branches on `git branch --merged`.** It is an *ancestry* check, so it
+under-reports on every **squash-merge** repo (the release-please / conventional-commit
+default): a squash collapses a branch into one fresh-SHA commit on the base, so the
+branch's own commits are never ancestors and a fully-landed branch reads as unmerged.
+Piping that into `xargs git branch -d` is a **delete loop keyed on a signal known to be
+wrong** — the same defect already fixed for `git-plugin:deadbranch` (issue #1869).
+`-d` refuses the unsafe deletes today, but the classification is still wrong, and the
+usual "fix" for the refusals is `-D`, which deletes real work.
+
+Prefer the encoded recipe — it prints MERGED vs REVIEW plus a paste-ready delete:
+
 ```bash
-git branch --merged main | grep -v 'main\|master' | xargs git branch -d
+just -g branch-audit
+```
+
+Without it, classify each branch by a signal that survives a squash-merge. In order of
+authority:
+
+```bash
+gh pr list --state all --head <branch> --json state,mergedAt   # MERGED PR = authoritative
+git cherry main <branch>                                        # '-' = patch already upstream
+```
+
+`git cherry` marks a commit `-` when a patch-equivalent commit is already upstream, which
+survives both squash-merge and cherry-pick. Delete only what one of those two confirms;
+leave everything else for review. `git remote prune origin` is unaffected and always safe:
+
+```bash
 git remote prune origin
 ```
+
+Related: `~/.claude/rules/pr-merge-hazards.md` #1 (why `--merged` misses squash-merges,
+and why tree-containment is a one-way signal).
 
 ## Conflict Resolution Strategy
 
