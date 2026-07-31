@@ -9,6 +9,15 @@ on:
     - cron: "23,53 * * * *"
   workflow_dispatch: {}
 
+# Explicit least-privilege grant. A called workflow cannot escalate above its
+# caller, and a caller `permissions:` block sets every UNLISTED scope to `none` —
+# so this must mirror the reusable's own declaration exactly. Verified against
+# laurigates/.github at authoring time.
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
 jobs:
   fix-conflicts:
     uses: laurigates/.github/.github/workflows/reusable-fix-release-conflicts.yml@main
