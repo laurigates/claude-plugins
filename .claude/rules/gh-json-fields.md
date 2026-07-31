@@ -70,6 +70,40 @@ are *not* failures — so a naive `all(. == "SUCCESS")` reports red on a PR that
 merely pending or has a skipped job. When you only need the pass/fail signal,
 `gh pr checks <n> --required` exits non-zero on any failure or pending check.
 
+## Polling a PR: `mergeStateStatus` never settles on a merged PR
+
+A wait-for-CI loop written as *"poll until `mergeStateStatus` leaves `UNKNOWN`"*
+**never exits if the PR merges while you wait** — a merged PR keeps reporting
+`mergeStateStatus=UNKNOWN` and `mergeable=UNKNOWN` forever. In a repo where
+automation can merge a PR out from under you (release-please auto-merge), that
+is not a corner case.
+
+```bash
+# Wrong — spins forever once the PR is merged by anything but this loop
+until ms=$(gh pr view "$N" -R "$R" --json mergeStateStatus --jq .mergeStateStatus); [ "$ms" != "UNKNOWN" ]; do sleep 10; done
+
+# Right — MERGED is also a terminal state
+until s=$(gh pr view "$N" -R "$R" --json state,mergeStateStatus --jq '"\(.state)|\(.mergeStateStatus)"'); \
+      [ "${s%%|*}" = "MERGED" ] || [ "${s##*|}" != "UNKNOWN" ]; do sleep 20; done
+```
+
+**Always give a PR poll a terminal-state escape (`state=MERGED`/`CLOSED`) and a
+wall-clock deadline.** Observed 2026-07-30: two such loops burned a 6m40s and a
+10m timeout, one because the PR had already merged, the other per the next trap.
+
+### Gating on an expected check *count* is brittle
+
+The companion advice "wait for nothing-pending **and** at least N checks" (see
+`~/.claude/rules/pr-merge-hazards.md`) guards a real race — zero-pending is
+trivially true before jobs register. But a hardcoded `N` breaks on
+**path-filtered** workflows: the same repo yields 7 checks for a PR touching
+`*-plugin/**` and 5 for one touching only `.claude/rules/**`, so `-ge 6` waits
+forever on a perfectly green PR.
+
+Derive the expectation instead of hardcoding it — poll until the check count is
+**stable across two consecutive reads** with nothing pending, and bound the
+whole loop with a deadline.
+
 ## Default list cap: pass `--limit` when counting or verifying state
 
 `gh issue list` / `gh pr list` default to **30 items**. When the intent is to

@@ -357,6 +357,39 @@ Exclude `.claude-plugin` (hidden metadata directory) from `*-plugin` globs:
 find . -maxdepth 1 -type d -name '*-plugin' -not -name '.claude-plugin' -print0
 ```
 
+### zsh Eats `:x` After an Unbraced Parameter — Brace SHAs in Refspecs
+
+The Bash **tool** runs commands under the user's shell, which on this machine is
+**zsh**. zsh applies *history modifiers* to an unbraced parameter expansion, so
+`"$var:refs/..."` silently loses the `:r` — it is parsed as `${var}` with the
+`:r` (rootname) modifier applied. bash leaves it alone, so the bug appears only
+in the interactive/agent path, never in a `#!/usr/bin/env bash` script.
+
+```
+$ zsh -c 'sha=abc123def; print -r -- "$sha:refs/heads/x"'
+abc123defefs/heads/x          # the ":r" was consumed — note the missing ':r'
+
+$ zsh -c 'sha=abc123def; print -r -- "${sha}:refs/heads/x"'
+abc123def:refs/heads/x        # correct
+```
+
+This lands squarely on the **push-by-explicit-SHA** discipline that
+`~/.claude/rules/git-hazards.md` and `pr-merge-hazards.md` mandate for shared
+checkouts — the one command shape most likely to carry `<sha>:refs/heads/...`:
+
+```
+# Wrong under zsh — git rejects it with a confusing "src refspec ... does not match any"
+git push --force-with-lease origin "$sha:refs/heads/$branch"
+
+# Right — brace every parameter followed by ':'
+git push --force-with-lease origin "${sha}:refs/heads/${branch}"
+```
+
+The failure is loud (`error: src refspec … does not match any`) but the *reason*
+is not: the printed refspec looks almost right, and the natural reading is that
+the SHA is bad. **Brace any parameter immediately followed by `:`** — cheap,
+and it makes the same line correct in both shells.
+
 ### GNU vs BSD Tool Differences
 
 Even with bash 5+, some CLI tools differ between macOS (BSD) and Linux (GNU). Use portable patterns for:
