@@ -289,3 +289,4 @@ if [ "$issues" -gt 0 ] && [ "$strict" -eq 1 ]; then
   exit 1
 fi
 exit 0
+# probe: required-check reporting gate (PR closed unmerged)
