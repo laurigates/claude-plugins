@@ -189,6 +189,8 @@ Skills inherit the user's active model by default. Tag a skill with `model:` onl
 | Development | `Bash, BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite` |
 | Research | `Read, WebFetch, WebSearch, Grep, Glob` |
 
+The bare `Bash` above is deliberate and is the ratified standard for a skill whose payload is shell; `.claude/rules/agentic-permissions.md` owns that distinction (and names the one case that *is* a defect — a `Bash` grant in a skill that runs no shell).
+
 ### Permission Patterns
 
 When listing `Bash` in `allowed-tools`, prefer narrow `Bash(<command> *)` permission rules in the project's `.claude/settings.json` over broad wildcards:
