@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.12.0...comfyui-plugin-v1.13.0) (2026-07-31)
+
+
+### Features
+
+* **scripts:** lint skills that grant Bash without running shell ([#2254](https://github.com/laurigates/claude-plugins/issues/2254)) ([45b827b](https://github.com/laurigates/claude-plugins/commit/45b827b6e0211ae02102e1ddaab54601fc5486f6)), closes [#2250](https://github.com/laurigates/claude-plugins/issues/2250)
+
 ## [1.12.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.11.0...comfyui-plugin-v1.12.0) (2026-07-30)
 
 
