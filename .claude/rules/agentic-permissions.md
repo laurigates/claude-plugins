@@ -30,7 +30,30 @@ See `.claude/rules/auto-mode.md` for the full auto-mode model (decision order, d
 
 > **Note (2.1.152)**: Skills and slash commands can set `disallowed-tools` in frontmatter to **remove** tools while the skill is active — the subtractive complement to `allowed-tools`. Use it to keep a focused skill from reaching for capabilities it shouldn't (see `.claude/rules/skill-development.md` § Optional Frontmatter Fields).
 
-**Bottom line for skill authors**: write narrow `Bash(<command> *)` patterns. They reduce prompts in `default`/`acceptEdits`, survive transition into `auto`, and are required by `dontAsk`.
+## Where narrow `Bash(<command> *)` patterns belong: `settings.json`
+
+**Narrow patterns are for `settings.json`, not for a skill's `allowed-tools`.** They reduce prompts in `default`/`acceptEdits`, survive the transition into `auto`, and are required by `dontAsk` — but all of that is true of the *session's* grants, which is what `settings.json` configures.
+
+### A bare `Bash` in a skill's `allowed-tools` is correct — not an anti-pattern
+
+This file is the single source of truth for the distinction; `skill-development.md` links here rather than restating it.
+
+Skill frontmatter can only **subtract** from the session's grants, never add. A skill listing `Bash(git status *)` does not *grant* that pattern — it narrows what the skill may reach for out of what the session already permits. So enumerating narrow patterns in a skill:
+
+- **buys no safety** the `settings.json` layer isn't already providing, and
+- **costs a permission prompt** for every command the author failed to predict.
+
+When a skill's payload *is* shell, `Bash` (bare, unscoped) is the right grant. 191 of 408 SKILL.md files in this marketplace carry it, and that is the ratified house standard, not drift.
+
+The two genuinely broad patterns named below — `Bash(*)` and `Bash(python*)` — are a different thing: they are `settings.json` rules that auto mode **drops at runtime**, so they silently buy nothing. A bare `Bash` in skill frontmatter is not one of them.
+
+### The real anti-pattern: a `Bash` grant in a skill with no shell to run
+
+The defect worth linting is the opposite of over-breadth — a skill that grants `Bash` while its body runs no shell at all. That grant is pure surface: it can only widen what the skill may reach for, and it advertises a capability the skill never exercises.
+
+`scripts/check-unused-bash-grant.sh` is the lint. A skill counts as running shell if it has a fenced command block (including an **unlabeled** fence, or one whose commands start `./` or `.venv/`), a known command in inline backticks, a sibling `scripts/` directory, a `` !`…` `` context command, or shell in a bundled sidecar (`REFERENCE.md`, `references/**`) — a progressive-disclosure skill is not inert just because its commands live one file over.
+
+Do **not** "fix" a flagged skill by inventing narrow patterns. Either the skill runs shell (leave the bare `Bash`) or it does not (drop the `Bash` entirely).
 
 ## Permission Syntax
 
@@ -164,9 +187,9 @@ Scripts must follow these patterns (see `shell-scripting.md`):
 
 ## Design Principles
 
-### 1. Granular Over Broad
+### 1. Granular Over Broad — in `settings.json`
 
-Prefer specific command patterns over broad tool access.
+Prefer specific command patterns over broad tool access **in the session's `settings.json` grants**. (In a skill's own `allowed-tools`, a bare `Bash` is correct when the skill runs shell — see "Where narrow `Bash(<command> *)` patterns belong" above.)
 
 Use specific command patterns:
 
@@ -365,7 +388,7 @@ Use `find` for file/directory discovery (succeeds with empty output when no matc
 
 ## Checklist for New Skills
 
-- [ ] Uses granular `Bash(command *)` patterns for primary CLI tools
+- [ ] Grants a bare `Bash` **iff** the skill actually runs shell; omits `Bash` entirely otherwise (narrow `Bash(<command> *)` patterns belong in `settings.json` — see above)
 - [ ] Shell utility operations (`test`, `jq`, `find`, `cp`, `mkdir`) use scripts with `Bash(bash *)`
 - [ ] Context commands use JSON/porcelain output
 - [ ] Context commands contain no shell operators (`>`, `|`, `||`, `&&`, `;`)
