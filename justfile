@@ -50,6 +50,15 @@ lint-context-engineering *args:
 lint-shell *args:
     ./scripts/lint-shell-scripts.sh {{args}}
 
+# Deliberately NOT in lint-all: it needs the pack repos checked out locally
+# (~/repos/laurigates/comfyui-nodes), so on any other machine — and in CI — it
+# would report a clean no-op and make lint-all look greener than it is. The
+# scheduled sweep is .github/workflows/fleet-drift-audit.yml.
+# Report drift between the ComfyUI pack fleet and the scaffold template
+[group: "lint"]
+lint-fleet-drift *args:
+    ./comfyui-plugin/skills/comfyui-node-scaffold/scripts/check-fleet-drift.py {{args}}
+
 # Run all lint checks
 [group: "lint"]
 lint-all: lint-context-commands lint-compliance lint-health lint-infra lint-taskwarrior-tags lint-shell lint-context-engineering
