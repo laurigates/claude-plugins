@@ -173,3 +173,5 @@ what makes this useful for local-model testing.
 - [`../pi/tiers.yaml`](../pi/tiers.yaml) — the tier classification (source of truth)
 - [`opencode-export.md`](opencode-export.md) — the sibling local-model export (heavier rulesync pipeline)
 - [pi custom-provider docs](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/custom-provider.md) — upstream `models.json` schema
+
+<!-- probe: required-check reporting gate (PR closed unmerged) -->
