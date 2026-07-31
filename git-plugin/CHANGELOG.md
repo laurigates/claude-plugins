@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.50.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.3...git-plugin-v2.50.4) (2026-07-31)
+
+
+### Bug Fixes
+
+* **git-plugin:** stop git-ops instructing ancestry-based branch deletion ([#2249](https://github.com/laurigates/claude-plugins/issues/2249)) ([01fbdd8](https://github.com/laurigates/claude-plugins/commit/01fbdd82bfec2e2557ab951fed50d090becf09bd))
+
 ## [2.50.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.2...git-plugin-v2.50.3) (2026-07-16)
 
 
