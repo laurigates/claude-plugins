@@ -149,7 +149,7 @@
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
       "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
-      "version": "1.12.0",
+      "version": "1.13.0",
       "keywords": [
         "comfyui",
         "custom-node",
@@ -456,7 +456,7 @@
       "name": "migration-patterns-plugin",
       "source": "./migration-patterns-plugin",
       "description": "Safe database and system migration patterns - dual write, shadow mode, strangler fig",
-      "version": "1.4.2",
+      "version": "1.5.0",
       "keywords": [
         "migration",
         "dual-write",
@@ -652,7 +652,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.17.1",
+      "version": "3.18.0",
       "keywords": [
         "testing",
         "tdd",
