@@ -213,3 +213,8 @@ fi
 if [ "$stale_skills" -eq 0 ] && [ "$missing_plugin_json_fields" -eq 0 ] && [ "$missing_frontmatter_fields" -eq 0 ]; then
   echo "- All checks passed! Repository is in good health."
 fi
+
+# Explicit terminal exit — see the note in scripts/infra-compliance-check.sh.
+# This file previously ended on a bare `if` whose exit status leaked into the
+# script contract.
+exit 0

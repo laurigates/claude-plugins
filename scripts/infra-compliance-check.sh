@@ -338,3 +338,12 @@ echo "| Workflow health | 25% | ${score_workflow}/25 | ${workflow_pass}/${workfl
 echo "| Version consistency | 20% | ${score_version}/20 | ${version_pass}/${version_total} plugins consistent |"
 echo "| Skill coverage | 15% | ${score_skill}/15 | ${skill_pass}/${skill_total} plugins have skills |"
 echo "| Security posture | 15% | ${score_security}/15 | ${security_pass}/${security_total} files clean |"
+
+# Explicit terminal exit. Both audit scripts are REPORT GENERATORS consumed by
+# scheduled-audits.yml, which gates on the report body, not on the exit code — so
+# the contract is "always exit 0, having emitted a complete report". Without this
+# line that contract is *incidental*: the exit status is whatever the last
+# statement happened to return, so appending any command that can fail silently
+# changes it and freezes the monthly job (the class scripts/tests/test-audit-scripts-exit.sh
+# guards). State it rather than inherit it.
+exit 0
