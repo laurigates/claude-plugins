@@ -70,6 +70,78 @@ run_audit "infra-compliance-check.sh" \
   "$repo_root/scripts/infra-compliance-check.sh" \
   "Infrastructure Compliance Dashboard"
 
+
+##########
+# Unbounded-recursive-walk guard (#2214 class)
+##########
+#
+# infra-compliance-check.sh once carried `find . -path '*/skills/*' -iname SKILL.md`
+# with no prune. Every agent worktree under `.claude/worktrees/` is a full repo
+# clone, so in a checkout with 63 worktrees that walked ~26,000 files instead of
+# ~408 and the whole script timed out past 120s. It was removed with the
+# bare-Bash detector it served.
+#
+# A wall-clock bound ALONE cannot guard this: CI checks out a clean tree with no
+# worktrees, so a reintroduced unpruned walk would be fast there and the bound
+# would pass. The load-bearing half is therefore STRUCTURAL — assert that every
+# `find` in the audit scripts is bounded — with the timing check kept only as a
+# cheap backstop for a local run, where worktrees do exist.
+#
+# A find is bounded when it either:
+#   - carries -maxdepth, or
+#   - prunes .claude/worktrees, or
+#   - starts from a specific subdirectory rather than `.` (e.g. "$plugin/skills",
+#     .github/workflows) — such a walk cannot reach .claude/worktrees.
+
+assert_finds_bounded() {
+  # assert_finds_bounded <label> <script-path>
+  local label="$1" script="$2" line n=0 bad=0
+  # Strip whole-line comments BEFORE extracting, so the prose explaining the
+  # removed unpruned walk (which necessarily quotes it) is not itself a finding.
+  local code
+  code="$(grep -vE '^[[:space:]]*#' "$script")"
+  while IFS= read -r line; do
+    n=$((n + 1))
+    if grep -qE -- '-maxdepth' <<<"$line"; then continue; fi
+    if grep -qE -- '\.claude/worktrees' <<<"$line"; then continue; fi
+    # `find <path>` where <path> is not a bare `.`
+    if grep -qE -- 'find[[:space:]]+("?\$|[^.[:space:]])' <<<"$line"; then continue; fi
+    echo "  unbounded: $line" >&2
+    bad=$((bad + 1))
+  done < <(grep -oE 'find[[:space:]]+[^|)]*' <<<"$code" | grep -v '^find[[:space:]]*$')
+
+  echo "=== $label: find-boundedness ==="
+  assert "$label has at least one find (guard is not vacuous)" \
+    "$([ "$n" -gt 0 ] && echo true || echo false)"
+  assert "$label has no unbounded recursive find" \
+    "$([ "$bad" -eq 0 ] && echo true || echo false)"
+}
+
+assert_finds_bounded "blueprint-health-check.sh" "$repo_root/scripts/blueprint-health-check.sh"
+assert_finds_bounded "infra-compliance-check.sh" "$repo_root/scripts/infra-compliance-check.sh"
+
+# Wall-clock backstop. Generous on purpose: it is a catastrophe detector, not a
+# performance budget. Post-fix the script runs ~5s on a clean tree and the
+# pre-fix version exceeded 120s in a 63-worktree checkout. Override for a slow
+# box with AUDIT_SCRIPT_MAX_SECONDS.
+max_seconds="${AUDIT_SCRIPT_MAX_SECONDS:-90}"
+now_ms() {
+  if command -v python3 >/dev/null 2>&1; then
+    python3 -c 'import time; print(int(time.time()*1000))'
+  else
+    echo $(( $(date +%s) * 1000 ))
+  fi
+}
+for audit_script in blueprint-health-check.sh infra-compliance-check.sh; do
+  t0=$(now_ms)
+  bash "$repo_root/scripts/$audit_script" >/dev/null 2>&1 || true
+  t1=$(now_ms)
+  elapsed_ms=$(( t1 - t0 ))
+  echo "=== $audit_script: ${elapsed_ms}ms (bound ${max_seconds}s) ==="
+  assert "$audit_script completes within ${max_seconds}s" \
+    "$([ "$elapsed_ms" -lt $(( max_seconds * 1000 )) ] && echo true || echo false)"
+done
+
 echo ""
 echo "Passed: $pass_count, Failed: $fail_count"
 [ "$fail_count" -eq 0 ]
