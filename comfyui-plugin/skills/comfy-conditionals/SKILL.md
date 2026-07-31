@@ -1,11 +1,11 @@
 ---
 created: 2026-07-07
-modified: 2026-07-07
+modified: 2026-07-31
 reviewed: 2026-07-07
 name: comfy-conditionals
 description: >-
   ComfyUI predicate/boolean nodes: compare, AND/OR/XOR/NOT, ternary, null/empty/type probes, ExecutionBlocker. Use when forming the boolean that drives a workflow switch or blocker.
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Read, Grep, Glob
 ---
 
 # ComfyUI conditionals

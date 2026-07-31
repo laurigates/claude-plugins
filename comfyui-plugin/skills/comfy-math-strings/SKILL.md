@@ -1,11 +1,11 @@
 ---
 created: 2026-07-07
-modified: 2026-07-07
+modified: 2026-07-31
 reviewed: 2026-07-07
 name: comfy-math-strings
 description: >-
   ComfyUI compute/string nodes: constants, sliders, math expressions, string concat/split/replace/regex, type conversion, JSON/list utilities. Use when computing a value or assembling a string in a workflow.
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Read, Grep, Glob
 ---
 
 # ComfyUI math & strings
