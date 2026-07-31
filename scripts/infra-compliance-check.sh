@@ -216,14 +216,28 @@ while IFS= read -r -d '' wf; do
   fi
 done < <(find .github/workflows -maxdepth 1 -name '*.yml' -print0 2>/dev/null | sort -z)
 
-# Broad Bash permissions in skills
-while IFS= read -r -d '' skill_file; do
-  at_field=$(head -50 "$skill_file" 2>/dev/null | grep -m1 "^allowed-tools:" | sed 's/^[^:]*:[[:space:]]*//' || echo "")
-  if echo "$at_field" | grep -qE '(^|,\s*)Bash(\s*,|$)' 2>/dev/null; then
-    security_total=$((security_total+1))
-    security_rows+=("🟡 | ${skill_file#./} | Broad Bash permission (no command pattern)")
-  fi
-done < <(find . -path '*/skills/*' \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
+# NOTE: a "Broad Bash permission (no command pattern)" 🟡 check used to sit here,
+# flagging every skill whose `allowed-tools` grants a bare unscoped `Bash`. It was
+# REMOVED deliberately — do not reinstate it.
+#
+# A bare `Bash` in a *skill's* `allowed-tools` is the ratified house standard, not a
+# finding (see `.claude/rules/agentic-permissions.md`). Skill frontmatter can only
+# SUBTRACT from the session's grants, never add, so enumerating narrow
+# `Bash(<command> *)` patterns there buys no safety the settings.json layer isn't
+# already providing — while costing a permission prompt for every command the author
+# failed to predict. Narrow patterns belong in `settings.json`, which is where they
+# actually gate anything.
+#
+# Left in place, this check scored the repo down for following its own standard: it
+# fired on 191 of 408 SKILL.md files and inflated `security_total` once per offender
+# while never incrementing `security_pass`, so the Security Posture score fell as the
+# corpus grew more compliant. Its `find . -path '*/skills/*'` also had no
+# `.claude/worktrees/` or `dist/` prune, so it re-walked every agent worktree clone
+# and the rulesync build output (the #1492 / #1548 / #2214 class) — the >120s runtime
+# and a double count.
+#
+# The real defect worth linting is the opposite one: a `Bash` grant in a skill that
+# runs no shell at all. That is `scripts/check-unused-bash-grant.sh`, not this file.
 
 ##########
 # Scoring
