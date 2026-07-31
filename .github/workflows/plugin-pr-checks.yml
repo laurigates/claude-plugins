@@ -124,6 +124,20 @@ jobs:
       - name: Check every plugin agent runs on opus
         run: bash scripts/check-agent-model.sh
 
+      - name: Self-test the unused-Bash-grant guard
+        # A bare `Bash` in a skill's allowed-tools is the ratified standard
+        # (.claude/rules/agentic-permissions.md); the defect is the OPPOSITE — a
+        # Bash grant in a skill that runs no shell. The self-test proves the
+        # guard before it reports on the tree, and pins the two cases where the
+        # finding count swings hardest (unlabeled fences, known-command matching).
+        run: bash scripts/tests/test-check-unused-bash-grant.sh
+
+      - name: Check for unused Bash grants (advisory)
+        # ADVISORY on landing: reports findings without failing. The corpus was
+        # triaged to zero in the PR that added this, and the allowlist is empty,
+        # so the flip to `--strict` is a one-word change tracked separately.
+        run: bash scripts/check-unused-bash-grant.sh
+
       - name: Self-test the workflow-model guard
         # Whole-repo invariant (every Claude workflow must pin opus + explicit
         # effort). Runs unconditionally like the agent-model pair above — the

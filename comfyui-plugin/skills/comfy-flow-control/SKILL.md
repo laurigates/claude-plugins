@@ -1,11 +1,11 @@
 ---
 created: 2026-07-07
-modified: 2026-07-07
+modified: 2026-07-31
 reviewed: 2026-07-07
 name: comfy-flow-control
 description: >-
   ComfyUI routing nodes: typed switches, index switches, broadcast (Anything Everywhere), pipe/context bundles, for/while loops, ExecutionBlocker gates. Use when wiring where a signal routes in a workflow.
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Read, Grep, Glob
 ---
 
 # ComfyUI flow control
