@@ -7,6 +7,13 @@ on:
       - edited
       - synchronize
 
+# Explicit least-privilege grant. A called workflow cannot escalate above its
+# caller, and a caller `permissions:` block sets every UNLISTED scope to `none` —
+# so this must mirror the reusable's own declaration exactly. Verified against
+# laurigates/.github at authoring time.
+permissions:
+  pull-requests: write
+
 jobs:
   conventional-commits:
     uses: laurigates/.github/.github/workflows/reusable-enforce-conventional-commits.yml@main
