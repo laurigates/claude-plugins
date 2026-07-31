@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.3](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.13.2...taskwarrior-plugin-v1.13.3) (2026-07-31)
+
+
+### Documentation
+
+* **taskwarrior-plugin:** analyze taskwarrior + Claude Code hook composition ([#2262](https://github.com/laurigates/claude-plugins/issues/2262)) ([7461513](https://github.com/laurigates/claude-plugins/commit/7461513dfcb0f07e2a67e4ed331eca544ef25322))
+
 ## [1.13.2](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.13.1...taskwarrior-plugin-v1.13.2) (2026-07-17)
 
 
