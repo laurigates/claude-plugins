@@ -135,11 +135,45 @@ recipe-name:
 ```just
 build target:
     @echo "Building {{target}}..."
-    cd {{target}} && make
+    cd {{quote(target)}} && make
 
 test *args:
     uv run pytest {{args}}
 ```
+
+**Interpolation is UNQUOTED — quote anything that can contain spaces**
+
+`{{...}}` splices raw text into the recipe body *before* the shell parses it,
+so a value carrying spaces or quotes word-splits. This bites hardest on the
+`*args` passthrough above, because the error is reported by the *called
+program* rather than by just, which makes it read like a bug in the tool:
+
+```just
+# Trap — one argument with spaces arrives as several
+caption *ARGS:
+    ./tool.py {{ARGS}}
+```
+
+```
+$ just caption ./data "the subject's face"
+tool.py: error: unrecognized arguments: subjects face
+```
+
+The outer shell consumed the quotes (taking the apostrophe with them) and
+`the` / `subject's` / `face` arrived as three separate argv entries. Name the
+parameters that can contain spaces and run them through `quote()`, which emits
+a properly shell-escaped literal:
+
+```just
+# Correct — named params are quoted; trailing flags still pass through
+caption DIR SUBJECT="" *ARGS:
+    ./tool.py {{quote(DIR)}} {{quote(SUBJECT)}} {{ARGS}}
+```
+
+`quote()` covers embedded spaces, `'`, `"`, and `$`. Keep `{{ARGS}}` bare —
+that is what lets several trailing flags expand as separate words — and accept
+its corollary: an individual passthrough flag's value must not contain spaces.
+When one might, promote it to a named parameter too.
 
 **Recipe Dependencies**
 ```just
@@ -427,7 +461,10 @@ cargo install just-mcp
 - Prefer `set dotenv-load` for configuration
 - Use modules for large projects (>20 recipes)
 - Include variadic `*args` for passthrough flexibility
-- Quote all variables in shell commands
+- Quote all variables in shell commands — `{{...}}` interpolates **unquoted**,
+  so wrap any parameter that can contain spaces in `quote()` (see
+  "Interpolation is UNQUOTED" above); bare `{{args}}` is correct only for
+  space-free passthrough flags
 
 ## Comparison with Alternatives
 
