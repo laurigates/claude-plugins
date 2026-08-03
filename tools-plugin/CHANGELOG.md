@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.3](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.9.2...tools-plugin-v2.9.3) (2026-08-03)
+
+
+### Documentation
+
+* **tools-plugin:** warn that just's {{...}} interpolates unquoted ([#2264](https://github.com/laurigates/claude-plugins/issues/2264)) ([6ae573a](https://github.com/laurigates/claude-plugins/commit/6ae573a1747ae42db6dd36cad2d586bea87d6610))
+
 ## [2.9.2](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.9.1...tools-plugin-v2.9.2) (2026-07-18)
 
 
