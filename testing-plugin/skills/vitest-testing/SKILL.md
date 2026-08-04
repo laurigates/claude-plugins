@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-08-04
 reviewed: 2025-12-16
 name: vitest-testing
 description: "Vitest test runner — Vite-native, ESM, watch/UI mode, coverage, mocking, snapshots. Use when setting up tests for Vite projects, migrating from Jest, or needing fast execution."
@@ -29,6 +29,7 @@ Vitest is a modern test runner designed for Vite projects. It's fast, ESM-native
 - **Jest-compatible**: Drop-in replacement with similar API
 - **TypeScript**: First-class TypeScript support
 - **ESM**: Native ESM support, no transpilation needed
+- **jsdom DOM tests**: and the assertions that silently lie under it (see below)
 
 ## Installation
 
@@ -118,6 +119,68 @@ test('promise rejects', async () => {
   await expect(fetchBadData()).rejects.toThrow('error');
 });
 ```
+
+## DOM tests under jsdom — assertions that lie
+
+`environment: 'jsdom'` gives you a DOM without a **layout engine**, and its CSS
+parser is narrower than a browser's. Several natural-looking assertions are
+therefore *vacuous*: they pass against the very bug they were written to catch,
+and read as coverage so nobody looks again.
+
+| Trap | Why it passes against the bug | Assert instead |
+|---|---|---|
+| `el.style.overflowY` for a style set by a stylesheet | Inline style is empty; the declaration lives in a class rule | `getComputedStyle(el).overflowY` — jsdom **does** resolve injected `<style>` rules |
+| `getComputedStyle(el).width` for `min()` / `calc()` values | jsdom's parser silently **drops** the whole declaration, reporting `""`/`0` either way | the stylesheet **source text**, or defer to a real browser |
+| Anything about size or position | `getBoundingClientRect()` is all zeros; there is no layout | a real-browser tier |
+| Asserting right after clicking something that renders `async` | The panel is still empty, so "no bad element found" is trivially true | flush (`await new Promise(r => setTimeout(r, 0))`), then assert the container is **non-empty** *before* the real check |
+
+Also: `Element.prototype.scrollIntoView` **does not exist** in jsdom, so any code
+path that centres an element throws on mount. Stub it (`Element.prototype.scrollIntoView = () => {}`)
+— that is a harness gap, not a behaviour change.
+
+And never write a conditional assertion:
+
+```typescript
+// Passes silently in exactly the case it was meant to catch — a renamed class.
+if (found.length === 1) expect(found[0].textContent).toMatch(/x/);
+
+// Assert unconditionally.
+expect(found).toHaveLength(1);
+expect(found[0].textContent).toMatch(/x/);
+```
+
+### Make it fail on purpose
+
+A regression test that has never failed has not been shown to test anything.
+Before trusting one, force red and **read the message**:
+
+- Fix in this package → revert the fix in place, confirm red *for the right
+  reason*, restore.
+- Cross-package suite → re-pin the dependency to the release **before** the fix,
+  confirm red, restore the pin.
+
+Record the observed failure output in the PR body. "It goes red" is a claim; the
+message is the evidence.
+
+### Loading a sibling package's source for a real integration test
+
+When a defect is a property of **two packages together**, testing each against a
+stand-in keeps both green while the pair is broken. To load a sibling's real
+source:
+
+1. depend on it pinned to a **release tag** (e.g. a git dependency), so the suite
+   tests a published artifact rather than a moving branch;
+2. add it to `server.deps.inline` — vitest externalizes `node_modules` by default
+   and would hand Node raw TypeScript:
+
+```typescript
+export default defineConfig({
+  test: { server: { deps: { inline: [/sibling-package/] } } },
+});
+```
+
+3. export the host's real entry point, so the suite drives the actual code path
+   rather than a per-unit seam where the bug cannot appear.
 
 ## Mocking (Essential Patterns)
 
