@@ -190,7 +190,9 @@ screenshot pipeline like `comfyui-gallery-loader`.
 ComfyUI frontend/backend facts for writing or patching a custom node's code:
 pack layout (vanilla `web/js/` and TS+bun-build), hiding a widget correctly,
 the `widget.serialize = false` + append-last rule for non-persisted widgets,
-DOM event isolation on the canvas, endpoint/subfolder-safety patterns, the
+DOM event isolation on the canvas, why a widget's *name* is not proof its
+options come from `folder_paths` (and the overlap gate that keeps a pack from
+hijacking a hardcoded combo), endpoint/subfolder-safety patterns, the
 tooltip lookup chain, canvas hit-testing, and how to verify an undocumented
 LiteGraph/Vue API against the frontend's own sourcemap instead of guessing.
 

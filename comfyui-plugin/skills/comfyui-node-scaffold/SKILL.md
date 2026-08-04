@@ -1,6 +1,6 @@
 ---
 created: 2026-06-04
-modified: 2026-07-29
+modified: 2026-08-04
 reviewed: 2026-07-29
 name: comfyui-node-scaffold
 description: >-
@@ -58,6 +58,14 @@ fallback, never breaks serialized workflows); the modal is **touch-first** (16px
 inputs, big tap targets, momentum scroll). The modal primitives come from
 `@laurigates/comfy-modal-kit` (`openModalShell` / `fuzzyRank` /
 `highlightMatches`) — **imported, not copied** — and `bun build` inlines them.
+
+**Name-matching needs a gate when the modal's content is external.** The emitted
+`TARGET_WIDGETS` set matches on name alone, which is correct for a modal that
+renders the widget's *own* `options.values`. If your pack instead fills the modal
+from a `folder_paths` listing, an endpoint, or a corpus, a node that hardcodes a
+combo under the same name (RIFE VFI's `ckpt_name`) has its only valid choices
+replaced with values it rejects — see `comfyui-node-authoring` § "A widget name
+is not proof of its option source" for the overlap gate.
 
 ## Four variants
 
