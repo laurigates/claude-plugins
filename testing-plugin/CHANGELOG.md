@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.18.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.18.0...testing-plugin-v3.18.1) (2026-08-05)
+
+
+### Documentation
+
+* **testing-plugin:** document jsdom's limits and the assertions that lie ([#2273](https://github.com/laurigates/claude-plugins/issues/2273)) ([8b43807](https://github.com/laurigates/claude-plugins/commit/8b438076d41c84aae9573d35199c161d23ed2de2))
+
 ## [3.18.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.17.1...testing-plugin-v3.18.0) (2026-07-31)
 
 

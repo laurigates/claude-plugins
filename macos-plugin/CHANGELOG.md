@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.7.0...macos-plugin-v1.7.1) (2026-08-05)
+
+
+### Documentation
+
+* **macos-plugin:** correct du guidance for copy-on-write clones ([#2270](https://github.com/laurigates/claude-plugins/issues/2270)) ([194e7da](https://github.com/laurigates/claude-plugins/commit/194e7da4191e6cda120dbeb70d005fb8a312715f))
+
 ## [1.7.0](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.6.1...macos-plugin-v1.7.0) (2026-07-18)
 
 
