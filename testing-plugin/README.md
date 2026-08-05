@@ -23,7 +23,7 @@ This plugin provides comprehensive testing support including test runners, TDD w
 | `test-strategy-review` | Audit whether a green suite actually tests what you aim for (adversarial + tests-hidden cold read, verified) |
 | `property-based-testing` | Property-based testing with fast-check (TS/JS) and Hypothesis (Python) |
 | `mutation-testing` | Mutation testing for quality validation |
-| `vitest-testing` | Vitest testing framework patterns |
+| `vitest-testing` | Vitest testing framework patterns; jsdom's limits and the DOM assertions that silently pass against the bug |
 | `playwright-testing` | Playwright E2E testing framework patterns |
 | `playwright-cli` | Playwright CLI browser automation for AI agents |
 | `odiff-image-diffing` | Fast pixel-by-pixel image comparison for visual regression |
