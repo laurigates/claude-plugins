@@ -149,7 +149,7 @@
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
       "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
-      "version": "1.13.0",
+      "version": "1.13.1",
       "keywords": [
         "comfyui",
         "custom-node",
@@ -437,7 +437,7 @@
       "name": "macos-plugin",
       "source": "./macos-plugin",
       "description": "macOS-specific dev environment tooling - kitty session persistence, LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift",
-      "version": "1.7.0",
+      "version": "1.7.1",
       "keywords": [
         "macos",
         "darwin",
@@ -652,7 +652,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.18.0",
+      "version": "3.18.1",
       "keywords": [
         "testing",
         "tdd",
