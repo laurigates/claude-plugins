@@ -25,7 +25,10 @@ fallback is abstract ("call a different tool with different ergonomics"),
 so the lesson decays within the same session 21% of the time.
 
 Claude Code 2.1.121 added `PostToolUse` `hookSpecificOutput.updatedToolOutput`
-for **all** tools (PR #1301, `.claude/rules/hooks-reference.md`). That
+(PR #1301, `.claude/rules/hooks-reference.md`). It is accepted on every tool, but
+the value is validated against **that tool's** output schema, so it can only
+carry a hint for tools whose output object has a free-text field — `Bash.stdout`
+here (see § Output shape; `Write`/`Edit` has none, issue #2275). That
 unlocks a different teaching shape: let the command run, then prepend
 the corrective hint to the result the agent sees. The agent gets the
 data it asked for *and* the right-tool note in the same response.
@@ -266,7 +269,7 @@ delivering the correction the first time the agent reaches for each idiom.
 | Risk | Mitigation |
 |---|---|
 | Agent treats the augmented output as adversarial and stops reading tool results | Phase 1 is opt-in; W21 metric catches this |
-| `updatedToolOutput` not yet on the user's Claude Code version (<2.1.121) | Document the version requirement; teach hook degrades to silent passthrough on older versions |
+| The `updatedToolOutput` contract is not what we think it is — wrong version, or wrong **shape** | **Pin it in `test-bash-antipatterns-teach.sh`, not in a version note.** The version-requirement framing was the original mitigation and it failed: the field existed, the *shape* was wrong (a JSON string where the tool's own output object is required), and the hook degraded to a **silent no-op** rather than a silent passthrough — indistinguishable from working, for 7.5 days (issue #2275, see Implementation notes). A version comment cannot detect a contract change; an executable assertion on the emitted value's type can |
 | Hint replays in the transcript on every matching call for the rest of the session | Session-scoped dedup emits each distinct hint at most once per session (see Implementation notes), capping replayed banner at ~150 tokens/session |
 | The five soft-teach patterns drift between the two hooks | Phase 3 consolidates into a shared matcher; phase 1 documents the duplication |
 

@@ -103,6 +103,15 @@ All writes and judgment stay in the invoking skill.
 | `SESSION_SURVEY_RECENT_DAYS` | default for `--recent-days` |
 | `SESSION_SURVEY_TASK_BIN` / `_GIT_BIN` / `_GH_BIN` | binary overrides (tests) |
 
+Both numeric knobs are validated, and their effective values are echoed
+into the digest (`RECENT_DAYS=` in `TASKWARRIOR`, `GH_BUDGET=` in
+`PRS`). A non-numeric value falls back to the documented default and is
+reported (`RECENT_DAYS_INVALID=`, `GH_BUDGET_INVALID=`) rather than
+silently degrading — unvalidated, they
+produced exactly the silent zeros the rest of this collector exists to
+avoid (`RECENT_TASK_COUNT=0` for every task; `GH_READY=false` for every
+call, because the watchdog's `sleep` failed instantly and killed them).
+
 ### Degrade, don't die
 
 Every no-network section (PROJECT, GIT, TASKWARRIOR, JOURNAL, COMMITS,
@@ -110,12 +119,17 @@ BLUEPRINT, STALE_ACTIVE_ELSEWHERE) is emitted **before** the
 GitHub-backed ones, and the `gh` calls run **in parallel**, each under its
 own watchdog bounded by `SESSION_SURVEY_GH_TIMEOUT`. A hard kill at the
 SessionStart hook's timeout therefore truncates the digest rather than
-producing nothing at all. There is deliberately no `gh auth status`
-probe — that was a network round-trip spent deciding whether to make
-network round-trips. `GH_READY` is derived from whether a real query
-returned 0, so an unauthenticated, absent, or timed-out `gh` still reads
-as "not queried" (`GH_READY=false`, plus `GH_TIMEOUT=true` as a
-diagnostic) and never as a clean zero.
+producing nothing at all. `--summary` — the hook's own mode — obeys the
+same ordering: its local keys are written before the GitHub wait, so a
+kill mid-`gh` truncates that block too. There is deliberately no
+`gh auth status` probe — that was a network round-trip spent deciding
+whether to make network round-trips. `GH_READY` is derived from whether a
+real query returned 0, so an unauthenticated, absent, or timed-out `gh`
+still reads as "not queried" (`GH_READY=false`, plus `GH_TIMEOUT=true` as
+a diagnostic) and never as a clean zero. Each mode makes exactly the
+calls whose output it prints: the summary prints `GH_READY` and
+`ASSIGNED_ISSUES`, so it issues the assigned-issue query even without
+`--with-dedup`.
 
 ### Task scoping is honest about its guess
 
@@ -129,7 +143,7 @@ reporting a confident `OPEN_TASKS=0`:
 
 | `TASK_SCOPE` | Meaning | `PROJECT_CONFIDENCE` |
 |---|---|---|
-| `project` | The detected (or `--project`) slug owns the count | `high` |
+| `project` | The detected (or `--project`) slug owns the count. Scoping is a **hierarchy** match, exactly like `task project:<p>`: `bluepad32` covers `bluepad32.own` but not `bluepad32-extra` | `high` |
 | `remote-name` | The slug matched nothing; the **git remote's** repo name did (`PROJECT_RESOLVED=`) | `low` |
 | `all-projects-fallback` | No slug matched; `RECENT_TASK_*` rows list tasks touched within `--recent-days` across all projects | `low` |
 | `unknown` | `jq` unavailable, so no scoping was possible | `low` |

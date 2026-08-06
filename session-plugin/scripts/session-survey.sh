@@ -17,10 +17,10 @@
 # Every section is exit-0 on empty (parallel-safe-queries.md). Each task carries
 # its stable UUID so callers never operate on a volatile numeric ID (#1417).
 #
-# Ordering contract (#2276): every no-network section is emitted BEFORE the
-# GitHub-backed ones, and each GitHub call runs in parallel under its own
-# watchdog. A hard kill at the hook's timeout therefore truncates the digest
-# rather than producing nothing at all.
+# Ordering contract (#2276): in BOTH --summary and full mode, every no-network
+# key is emitted BEFORE the GitHub-backed ones, and each GitHub call runs in
+# parallel under its own watchdog. A hard kill at the hook's timeout therefore
+# truncates the digest rather than producing nothing at all.
 set -uo pipefail
 
 project=""
@@ -60,6 +60,17 @@ done
 : "${project_dir:=$(pwd)}"
 : "${home_dir:=$HOME}"
 
+# Numeric knobs are validated, never swallowed. A non-numeric --recent-days
+# made every window test false (a silent RECENT_TASK_COUNT=0 in the very change
+# that exists to stop producing silent zeros); a non-numeric gh budget made the
+# watchdog's `sleep` fail instantly and kill every gh call (a silent
+# GH_READY=false). Both now fall back to the documented default and say so.
+recent_days_invalid=""
+case "$recent_days" in
+  ''|*[!0-9]*) recent_days_invalid="$recent_days"; recent_days=2 ;;
+esac
+gh_budget_invalid=""
+
 # Test seams — override the binaries used so tests can stub them.
 task_bin="${SESSION_SURVEY_TASK_BIN:-task}"
 git_bin="${SESSION_SURVEY_GIT_BIN:-git}"
@@ -67,8 +78,21 @@ gh_bin="${SESSION_SURVEY_GH_BIN:-gh}"
 # Per-call network budget in seconds. One hung `gh` must not eat the whole
 # SessionStart hook timeout (#2276).
 gh_budget="${SESSION_SURVEY_GH_TIMEOUT:-4}"
+case "$gh_budget" in
+  ''|*[!0-9]*) gh_budget_invalid="$gh_budget"; gh_budget=4 ;;
+esac
 
 have() { command -v "$1" >/dev/null 2>&1; }
+
+# Row separator for the taskwarrior projections below. NOT a tab: TAB is an IFS
+# *whitespace* character, so `IFS=$'\t' read` collapses a run of tabs into one
+# delimiter and an EMPTY field silently shifts every later column left. That is
+# not hypothetical here — a task with no annotations reported its `ghid` as
+# TASK_n_ANNOT (and emitted no TASK_n_GHID at all), and a task with no project
+# shifted its description into RECENT_TASK_n_PROJECT. US (0x1F) is not IFS
+# whitespace, so empty fields are preserved. jq's join() stringifies booleans,
+# numbers, and null for us.
+US=$'\037'
 
 # Portable timestamp → epoch. Handles taskwarrior compact form
 # (YYYYMMDDTHHMMSSZ) and ISO-8601-with-separators (gh updatedAt). Full
@@ -227,7 +251,9 @@ if [ -n "$gh_dir" ]; then
         --json number,title,url,state,updatedAt
     fi
   fi
-  if [ "$with_dedup" = true ]; then
+  # The summary PRINTS GH_READY and ASSIGNED_ISSUES, so it must actually ask —
+  # otherwise both keys are a fabricated zero in a mode nobody gated them on.
+  if [ "$with_dedup" = true ] || [ "$summary_mode" = true ]; then
     gh_job issues issue list --assignee @me --state open \
       --json number,title,url,updatedAt
   fi
@@ -253,9 +279,26 @@ if have "$task_bin"; then
   [ -n "$all_tasks_json" ] || all_tasks_json="[]"
 fi
 
+# Scope the snapshot to a project the way `task project:<p>` would: taskwarrior
+# projects are a DOT-SEPARATED HIERARCHY and `project:bluepad32` matches
+# `bluepad32` AND every `bluepad32.<sub>`. Exact equality here silently dropped
+# every subproject task from the scope — which, in the fallback shape, meant a
+# task modified outside --recent-days vanished from the digest entirely.
+# `bluepad32-extra` is NOT a subproject: only a literal `.` separates levels.
 scope_of() {
   printf '%s' "$all_tasks_json" \
-    | jq -c --arg p "$1" '[.[] | select((.project // "") == $p)]' 2>/dev/null || echo "[]"
+    | jq -c --arg p "$1" '[.[]
+        | (.project // "") as $tp
+        | select($tp == $p or ($tp | startswith($p + ".")))]' 2>/dev/null || echo "[]"
+}
+
+# The same hierarchy predicate in shell, for the cross-project +ACTIVE footnote:
+# a subproject task counted inside the scope must not ALSO be reported as
+# "+ACTIVE elsewhere".
+in_project_scope() {  # $1 = a task's project, $2 = the scope project
+  [ -n "$2" ] || return 1
+  [ "$1" = "$2" ] && return 0
+  [ "${1#"$2".}" != "$1" ]
 }
 
 tasks_all=0
@@ -317,22 +360,49 @@ else
 fi
 
 # Recent-task fallback — only in all-projects-fallback, so the normal path
-# gains no noise. Recency is computed with the same days_since() helper the
-# rest of the digest uses (it already handles taskwarrior's compact stamp),
-# not an inline jq date parse.
+# gains no noise.
+#
+# This runs in the SessionStart hook path (#2276), over the WHOLE all-projects
+# store, so it must not fork per task. Two properties keep it flat:
+#   1. The window test is a STRING compare against a cutoff stamp computed ONCE.
+#      Taskwarrior's compact stamp (YYYYMMDDTHHMMSSZ) is lexicographically
+#      ordered, so this is exact — and days_since() (which forks `date`) is
+#      called only for the <=10 rows actually emitted.
+#   2. The feeding jq is already `sort_by(.modified) | reverse`, so the first
+#      out-of-window row ends the scan (`break`, not `continue`).
+# The cutoff is `now - (recent_days + 1) days`, exclusive: identical to the
+# floor-division `days_since <= recent_days` test it replaces.
 recent_uuids=()
 recent_projects=()
 recent_descs=()
 recent_ages=()
 recent_truncated=false
 if [ "$task_scope" = "all-projects-fallback" ] && have jq; then
-  while IFS=$'\t' read -r r_uuid r_proj r_desc r_mod; do
+  cutoff_epoch=$(( now_epoch - (recent_days + 1) * 86400 ))
+  cutoff_stamp=$(date -u -d "@$cutoff_epoch" +%Y%m%dT%H%M%SZ 2>/dev/null \
+    || date -u -r "$cutoff_epoch" +%Y%m%dT%H%M%SZ 2>/dev/null || echo "")
+  while IFS="$US" read -r r_uuid r_proj r_desc r_mod; do
     [ -n "$r_uuid" ] || continue
-    r_age=$(days_since "$r_mod" 2>/dev/null || echo "")
-    [ -n "$r_age" ] || continue
-    [ "$r_age" -le "$recent_days" ] 2>/dev/null || continue
+    case "$r_mod" in
+      [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z)
+        # Comparable stamp: a row at or before the cutoff ends the scan.
+        if [ -n "$cutoff_stamp" ]; then
+          [ "$r_mod" '>' "$cutoff_stamp" ] || break
+        else
+          r_age=$(days_since "$r_mod" 2>/dev/null || echo "")
+          [ -n "$r_age" ] || continue
+          [ "$r_age" -le "$recent_days" ] 2>/dev/null || break
+        fi
+        ;;
+      # A stamp we cannot order (empty / foreign format) is skipped, never
+      # treated as the end of the window.
+      *) continue ;;
+    esac
     recent_task_count=$((recent_task_count + 1))
     if [ "$recent_task_count" -le 10 ]; then
+      # The ONLY days_since() (and therefore `date`) call in this loop, and it
+      # runs at most 10 times regardless of store size.
+      r_age=$(days_since "$r_mod" 2>/dev/null || echo "")
       recent_uuids+=("$r_uuid")
       recent_projects+=("$r_proj")
       recent_descs+=("$r_desc")
@@ -340,13 +410,13 @@ if [ "$task_scope" = "all-projects-fallback" ] && have jq; then
     else
       recent_truncated=true
     fi
-  done < <(printf '%s' "$all_tasks_json" | jq -r '
+  done < <(printf '%s' "$all_tasks_json" | jq -r --arg us "$US" '
     sort_by(.modified // .entry // "") | reverse | .[]
     | [ .uuid,
         (.project // ""),
-        (.description | gsub("\t";" ")),
+        (.description | gsub("[\t\r\n\u001f]";" ")),
         (.modified // .entry // "")
-      ] | @tsv' 2>/dev/null)
+      ] | join($us)' 2>/dev/null)
 fi
 
 # Journal todos (spinup): first existing dated note in the last 7 days
@@ -418,6 +488,13 @@ reap_github() {
     fi
   fi
 
+  # The assigned-issue count is available whenever the issues query itself
+  # succeeded — it does not depend on the dedup pass below.
+  if [ "$issues_ok" = 0 ] && have jq; then
+    assigned_issues=$(printf '%s' "$assigned_json" | jq 'length' 2>/dev/null || echo 0)
+    [ -n "$assigned_issues" ] || assigned_issues=0
+  fi
+
   # GitHub drift (spinup): assigned-open issues minus those tracked in
   # taskwarrior. Dedup reads the WIDEST task set we trust — in the
   # all-projects fallback the project-scoped set is empty, and treating every
@@ -427,7 +504,6 @@ reap_github() {
     case "$task_scope" in
       all-projects-fallback|unknown) dedup_tasks_json="$all_tasks_json" ;;
     esac
-    assigned_issues=$(printf '%s' "$assigned_json" | jq 'length' 2>/dev/null || echo 0)
     # Tracked issue numbers: ghid UDA + any #N / issues/N in description/annotations.
     # scan() with a capture group yields arrays, so take [0] of each match.
     tracked_json=$(printf '%s' "$dedup_tasks_json" | jq -c '
@@ -451,20 +527,23 @@ gh_timeout=false
 prs_json="[]"
 drift_json="[]"
 
-if [ "$summary_mode" = true ]; then
-  reap_github
-fi
-
-threads=0
-[ "$dirty" = true ] && threads=$((threads + 1))
-[ "${unpushed:-0}" -gt 0 ] 2>/dev/null && threads=$((threads + 1))
-[ "${open_tasks:-0}" -gt 0 ] 2>/dev/null && threads=$((threads + open_tasks))
-[ "${recent_task_count:-0}" -gt 0 ] 2>/dev/null && threads=$((threads + recent_task_count))
-[ "${drift_issues:-0}" -gt 0 ] 2>/dev/null && threads=$((threads + drift_issues))
-[ "${journal_todos:-0}" -gt 0 ] 2>/dev/null && threads=$((threads + journal_todos))
+compute_threads() {
+  threads=0
+  [ "$dirty" = true ] && threads=$((threads + 1))
+  [ "${unpushed:-0}" -gt 0 ] 2>/dev/null && threads=$((threads + 1))
+  [ "${open_tasks:-0}" -gt 0 ] 2>/dev/null && threads=$((threads + open_tasks))
+  [ "${recent_task_count:-0}" -gt 0 ] 2>/dev/null && threads=$((threads + recent_task_count))
+  [ "${drift_issues:-0}" -gt 0 ] 2>/dev/null && threads=$((threads + drift_issues))
+  [ "${journal_todos:-0}" -gt 0 ] 2>/dev/null && threads=$((threads + journal_todos))
+  return 0
+}
 
 # ---------------------------------------------------------------------------
 # Summary mode — coarse counts only, for the SessionStart nudge hook.
+#
+# Same ordering contract as the full digest (#2276): every no-network key is
+# written BEFORE the GitHub wait, so a hard kill at the hook's timeout
+# truncates this block rather than producing nothing at all.
 # ---------------------------------------------------------------------------
 if [ "$summary_mode" = true ]; then
   echo "=== SESSION SURVEY SUMMARY ==="
@@ -477,6 +556,11 @@ if [ "$summary_mode" = true ]; then
   echo "UNPUSHED=${unpushed}"
   echo "OPEN_TASKS=${open_tasks}"
   echo "RECENT_TASK_COUNT=${recent_task_count}"
+  [ -n "$recent_days_invalid" ] && echo "RECENT_DAYS_INVALID=${recent_days_invalid}"
+  [ -n "$gh_budget_invalid" ] && echo "GH_BUDGET_INVALID=${gh_budget_invalid}"
+  # Network last.
+  reap_github
+  compute_threads
   echo "GH_READY=${gh_ready}"
   echo "ASSIGNED_ISSUES=${assigned_issues}"
   echo "THREADS=${threads}"
@@ -515,9 +599,11 @@ echo "TASKS_ALL_PROJECTS=${tasks_all}"
 [ -n "$project_remote_name" ] && echo "PROJECT_REMOTE_NAME=${project_remote_name}"
 [ -n "$project_resolved" ] && echo "PROJECT_RESOLVED=${project_resolved}"
 echo "RECENT_TASK_COUNT=${recent_task_count}"
+echo "RECENT_DAYS=${recent_days}"
+[ -n "$recent_days_invalid" ] && echo "RECENT_DAYS_INVALID=${recent_days_invalid}"
 if have jq && [ "$open_tasks" -gt 0 ] 2>/dev/null; then
   idx=0
-  while IFS=$'\t' read -r uuid desc active modified annot ghid; do
+  while IFS="$US" read -r uuid desc active modified annot ghid; do
     idx=$((idx + 1))
     sd=$(days_since "$modified" 2>/dev/null || echo "")
     echo "TASK_${idx}_UUID=${uuid}"
@@ -526,14 +612,14 @@ if have jq && [ "$open_tasks" -gt 0 ] 2>/dev/null; then
     [ -n "$sd" ] && echo "TASK_${idx}_STALE_DAYS=${sd}"
     [ -n "$annot" ] && [ "$annot" != "null" ] && echo "TASK_${idx}_ANNOT=${annot}"
     [ -n "$ghid" ] && [ "$ghid" != "null" ] && echo "TASK_${idx}_GHID=${ghid}"
-  done < <(printf '%s' "$project_tasks_json" | jq -r '
+  done < <(printf '%s' "$project_tasks_json" | jq -r --arg us "$US" '
     .[] | [ .uuid,
-            (.description | gsub("\t";" ")),
+            (.description | gsub("[\t\r\n\u001f]";" ")),
             (((.tags // []) | index("ACTIVE")) != null),
             (.modified // ""),
-            ((.annotations // []) | map(.description) | join(" | ") | gsub("\t";" ")),
+            ((.annotations // []) | map(.description) | join(" | ") | gsub("[\t\r\n\u001f]";" ")),
             (.ghid // "")
-          ] | @tsv' 2>/dev/null)
+          ] | join($us)' 2>/dev/null)
 fi
 if [ "${#recent_uuids[@]}" -gt 0 ]; then
   ridx=0
@@ -651,14 +737,19 @@ fi
 echo "=== STALE_ACTIVE_ELSEWHERE ==="
 elsewhere_count=0
 if have jq; then
-  while IFS=$'\t' read -r uuid eproj edesc; do
+  # "Elsewhere" means outside the scope the counts above used — so a subproject
+  # (bluepad32.own under bluepad32) and a remote-resolved slug are both already
+  # in scope and must not be double-reported here.
+  scope_project="${project_resolved:-$project}"
+  while IFS="$US" read -r uuid eproj edesc; do
     [ -n "$uuid" ] || continue
-    [ "$eproj" = "$project" ] && continue
+    in_project_scope "$eproj" "$scope_project" && continue
     elsewhere_count=$((elsewhere_count + 1))
     echo "STALE_${elsewhere_count}_UUID=${uuid}"
     echo "STALE_${elsewhere_count}_PROJECT=${eproj}"
     echo "STALE_${elsewhere_count}_DESC=${edesc}"
-  done < <(printf '%s' "$active_all_json" | jq -r '.[] | [ .uuid, (.project // ""), (.description | gsub("\t";" ")) ] | @tsv' 2>/dev/null)
+  done < <(printf '%s' "$active_all_json" | jq -r --arg us "$US" \
+    '.[] | [ .uuid, (.project // ""), (.description | gsub("[\t\r\n\u001f]";" ")) ] | join($us)' 2>/dev/null)
 fi
 echo "ELSEWHERE_COUNT=${elsewhere_count}"
 echo "STATUS=OK"
@@ -672,6 +763,8 @@ reap_github
 echo "=== PRS ==="
 echo "GH_READY=${gh_ready}"
 [ "$gh_timeout" = true ] && echo "GH_TIMEOUT=true"
+echo "GH_BUDGET=${gh_budget}"
+[ -n "$gh_budget_invalid" ] && echo "GH_BUDGET_INVALID=${gh_budget_invalid}"
 echo "PR_COUNT=${pr_count}"
 if have jq && [ "$pr_count" -gt 0 ] 2>/dev/null; then
   idx=0

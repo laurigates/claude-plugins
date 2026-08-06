@@ -24,6 +24,26 @@ When the config naming map maps the cwd to a project name other than the
 repo basename, pass it as `--project <name>`. If multiple projects are
 detectable (monorepo, multi-package), run the collector per project.
 
+## Task scoping is a guess, and says so
+
+The basename is a *guess*, so the `TASKWARRIOR` section reports how the
+count was scoped alongside the count itself — the same "not queried vs
+genuine zero" distinction `GH_READY` draws for GitHub. Read
+`TASK_SCOPE=` / `PROJECT_CONFIDENCE=` before asserting anything about the
+queue:
+
+| `TASK_SCOPE` | Meaning | `PROJECT_CONFIDENCE` | Briefing line |
+|---|---|---|---|
+| `project` | The detected (or `--project`) slug owns the count. Subprojects count too — `project:bluepad32` covers `bluepad32.own`, exactly as taskwarrior's own hierarchy match does | `high` | `nothing pending under project:<name>` is licensed |
+| `remote-name` | The basename matched nothing; the git remote's repo name did (`PROJECT_RESOLVED=`) | `low` | Name the **resolved** slug, not the directory |
+| `all-projects-fallback` | No slug matched while tasks exist elsewhere; `RECENT_TASK_*` rows list tasks touched within `--recent-days`, `TASKS_ALL_PROJECTS` is the denominator | `low` | `taskwarrior: project scope unresolved (N tasks across all projects)` — never a clean queue |
+| `unknown` / `none` | `jq` or `task` unavailable, so no scoping was possible | `low` | `taskwarrior: not queried` |
+
+A `RECENT_TASK_*` row is a **pointer**, not a task: it carries the UUID,
+project, description, and age, but no `ghid`, no annotations, and no
+`+ACTIVE` flag. Resolve the slug (re-run with `--project <name>`) before
+acting on one.
+
 The cross-project `+ACTIVE` footnote shape:
 
 ```
@@ -100,8 +120,15 @@ gracefully rather than omitting:
 - **`GH_READY=false`** — GitHub was never queried; fall back to the
   GitHub MCP tools (SKILL.md Step 1b) or say `github: not queried (gh
   unavailable)` — never present the zeros as a clean state.
-- **No tasks for the project** — `OPEN_TASKS=0`; say `nothing pending
-  under project:<name>` explicitly rather than an empty-looking section.
+- **No tasks for the project** — `OPEN_TASKS=0` **with
+  `PROJECT_CONFIDENCE=high`**; say `nothing pending under
+  project:<name>` explicitly rather than an empty-looking section.
+- **`PROJECT_CONFIDENCE=low`** — the slug was never confirmed, so
+  `OPEN_TASKS=0` means *unscoped*, not *empty*. Never present the zero as
+  a clean queue: follow the `TASK_SCOPE` table above (name the resolved
+  slug, or surface the `RECENT_TASK_*` rows with `TASKS_ALL_PROJECTS` as
+  the denominator and offer `--project <name>`). Same shape as
+  `GH_READY=false`.
 - **Clean tree, no PRs** — `DIRTY=false`, `PR_COUNT=0`; one line: `git
   state: clean`.
 - **All sources empty** — say so briefly, then step out of the way.

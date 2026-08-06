@@ -16,6 +16,21 @@
 #      seconds), and crucially it does not consume layer 2's budget.
 #   2. Once-per-session dedup — one cue per session, to bound transcript-replay cost.
 #
+# What each layer actually covers, stated precisely so the next reader does not
+# over-credit the debounce: the debounce is BACKWARD-looking (it can only see
+# edits that already happened), so it can never suppress edit 1 of a sequence —
+# which is exactly the case #2272 filed. What removes the harm there is the
+# reworded cue below ("once this edit sequence is complete"), which the issue
+# explicitly accepts as sufficient on its own. The debounce's job is narrower:
+# make sure the session's single cue lands on a *settled* edit rather than on a
+# mid-burst one, by not consuming layer 2's budget while a file is hot.
+#
+# Accepted true-positive loss (issue #2272 shape (1) takes this trade knowingly):
+# in a session that edits ONE file repeatedly at sub-TTL intervals and never
+# returns to it after a quiet period, the cue can never fire for that file — the
+# recency marker is refreshed by every edit, and PostToolUse only runs when an
+# edit happens, so no invocation ever observes the quiet gap.
+#
 # -e is intentionally omitted: a best-effort cue must never break a tool call.
 set -uo pipefail
 
@@ -102,7 +117,19 @@ fi
 # whether each individual edit happened to trip a signal.
 # CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR is the test seam (shared with the dedup
 # block below); CODE_QUALITY_PREFLIGHT_CUE_DEBOUNCE_TTL=0 disables the debounce.
-cq_cache_dir="${CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR:-${HOME}/.cache/code-quality-preflight-cue}"
+#
+# HOME is resolved defensively, NOT as a bare "${HOME}": under `set -u` an unset
+# HOME would abort the hook with "HOME: unbound variable" and a non-zero exit —
+# and because this block now runs before detection, that abort would hit EVERY
+# non-excluded Edit/Write rather than only structural ones. A best-effort cue
+# must never break a tool call (see the -e note in the header), so degrade to
+# the temp root instead of exploding.
+cq_cache_home="${HOME:-}"
+if [ -z "$cq_cache_home" ]; then
+    cq_cache_home="${TMPDIR:-/tmp}"
+    cq_cache_home="${cq_cache_home%/}"
+fi
+cq_cache_dir="${CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR:-${cq_cache_home}/.cache/code-quality-preflight-cue}"
 cq_debounce_ttl="${CODE_QUALITY_PREFLIGHT_CUE_DEBOUNCE_TTL:-120}"
 case "$cq_debounce_ttl" in ''|*[!0-9]*) cq_debounce_ttl=120 ;; esac
 
@@ -131,6 +158,32 @@ mkdir -p "$cq_edit_dir" 2>/dev/null || true
 # `printf … > f 2>/dev/null` would still leak "Not a directory" to stderr on
 # every invocation. A best-effort cue must stay silent on both channels.
 { printf '%s' "$cq_now" > "$cq_edit_marker"; } 2>/dev/null || true
+
+# --- Cache hygiene: bound the recency-marker population ---
+# The pre-#2272 cache held ONE dedup marker per session. The debounce adds one
+# marker per (session, file-touched) plus a directory per session, written for
+# every non-excluded Edit/Write — so an unswept ~/.cache would grow without
+# limit. Prune markers untouched for CODE_QUALITY_PREFLIGHT_CUE_MARKER_TTL
+# minutes (default 1440 = 24h; far above any plausible debounce TTL, so a live
+# sequence is never disarmed by the sweep), then drop the emptied session dirs.
+# The sweep is gated on a sentinel so it costs one stat() on the hot path and
+# runs at most hourly. The sentinel is refreshed BEFORE the sweep so a killed
+# run degrades to "skip until the next window" rather than sweeping every
+# invocation. `.last-sweep` cannot collide with a session marker: session ids
+# are sanitised to [a-zA-Z0-9_-], so none can begin with a dot.
+# 0 is rejected, NOT honoured: the sibling knob DEBOUNCE_TTL reads 0 as
+# "disable", but here 0 means `find -mmin +0` — prune anything a minute old —
+# which is the OPPOSITE, silently disarming every live 120s debounce. A reader
+# who generalises "0 disables" from the debounce row would get the inverse of
+# what they intended, so 0 falls back to the default like any other invalid value.
+cq_marker_ttl="${CODE_QUALITY_PREFLIGHT_CUE_MARKER_TTL:-1440}"
+case "$cq_marker_ttl" in ''|0|*[!0-9]*) cq_marker_ttl=1440 ;; esac
+cq_sweep_sentinel="${cq_cache_dir}/.last-sweep"
+if [ -z "$(find "$cq_sweep_sentinel" -mmin -60 2>/dev/null)" ]; then
+    { : > "$cq_sweep_sentinel"; } 2>/dev/null || true
+    find "${cq_cache_dir}/.edits" -type f -mmin "+${cq_marker_ttl}" -delete 2>/dev/null || true
+    find "${cq_cache_dir}/.edits" -mindepth 1 -type d -empty -delete 2>/dev/null || true
+fi
 
 # Fail open by construction: a broken clock leaves cq_now=0, the guard is false,
 # and the cue fires. A best-effort cue must never suppress on a degraded read.
@@ -191,6 +244,12 @@ fi
 # --- Dedup: one cue per session ---
 # cq_cache_dir (the CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR test seam) is resolved
 # once in the sequence-debounce block above.
+if [ -n "$cq_session_id" ]; then
+    cq_marker="${cq_cache_dir}/${cq_session_id}"
+    [ -f "$cq_marker" ] && exit 0
+    mkdir -p "$cq_cache_dir" 2>/dev/null || true
+    touch "$cq_marker" 2>/dev/null || true
+fi
 
 # The /evaluate:evaluate-skill half is only relevant when a skill file changed;
 # mention it exclusively for paths under a skills/ tree so it doesn't read as a
@@ -202,6 +261,10 @@ fi
 # knowingly half-applied refactor yields actively-wrong findings (an unused-symbol
 # rename for a symbol whose uses land in a later edit). "once this edit sequence
 # is complete" is correct for both the single-edit and mid-sequence cases.
+# This rewording — not the debounce — is what covers the case #2272 actually
+# filed: edit 1 of a 4-edit sequence still FIRES (a backward-looking debounce
+# cannot suppress the first edit of anything); only the instruction changed,
+# from "lint before continuing" to "lint once the sequence settles".
 case "$cq_file_path" in
     */skills/*|skills/*) cq_cue="[code-quality] Large/structural edit detected. Run /code-quality:code-lint as a pre-flight, and /evaluate:evaluate-skill since a skill changed, once this edit sequence is complete — not mid-sequence, where a partly-applied refactor lints as broken." ;;
     *)                   cq_cue="[code-quality] Large/structural edit detected. Run /code-quality:code-lint as a pre-flight once this edit sequence is complete — not mid-sequence, where a partly-applied refactor lints as broken." ;;
