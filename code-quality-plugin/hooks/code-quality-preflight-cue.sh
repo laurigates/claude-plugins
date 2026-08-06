@@ -9,7 +9,12 @@
 #
 # Mechanism: PostToolUse {"decision":"block","reason":"<cue>"} with continueOnBlock:true
 # so the model sees the cue and can act on it without the turn being terminated.
-# Dedup is per session (one cue per session) to bound transcript-replay cost.
+#
+# Two suppression layers (issue #2272):
+#   1. Sequence debounce — silent while edits to the SAME file are still in
+#      flight (another Edit/Write landed within CODE_QUALITY_PREFLIGHT_CUE_DEBOUNCE_TTL
+#      seconds), and crucially it does not consume layer 2's budget.
+#   2. Once-per-session dedup — one cue per session, to bound transcript-replay cost.
 #
 # -e is intentionally omitted: a best-effort cue must never break a tool call.
 set -uo pipefail
@@ -84,6 +89,56 @@ if [ -n "${TMPDIR:-}" ]; then
     esac
 fi
 
+# --- Sequence debounce: stay silent while edits to this file are in flight ---
+# (issue #2272) A PostToolUse cue on edit N of M is inherently early for N < M:
+# the pre-flight lint it asks for would run against a knowingly half-applied
+# refactor and produce actively-wrong findings — e.g. "`inline` is unused,
+# rename to `_inline`" on a symbol whose four uses land three edits later.
+# The hook cannot see the future, so it reads the past: when this same file was
+# edited moments ago a sequence is in flight — stay silent AND do not consume
+# the once-per-session budget below, so the one cue can still land on a later,
+# settled edit. Recency is recorded for EVERY non-excluded Edit/Write, not just
+# structural ones: "a sequence is in flight" is a property of the file, not of
+# whether each individual edit happened to trip a signal.
+# CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR is the test seam (shared with the dedup
+# block below); CODE_QUALITY_PREFLIGHT_CUE_DEBOUNCE_TTL=0 disables the debounce.
+cq_cache_dir="${CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR:-${HOME}/.cache/code-quality-preflight-cue}"
+cq_debounce_ttl="${CODE_QUALITY_PREFLIGHT_CUE_DEBOUNCE_TTL:-120}"
+case "$cq_debounce_ttl" in ''|*[!0-9]*) cq_debounce_ttl=120 ;; esac
+
+# Session-scoped so two concurrent sessions editing the same path never debounce
+# each other. The `.edits` subdirectory cannot collide with a session-id marker
+# file: session ids are sanitised to [a-zA-Z0-9_-] above, so none can begin with
+# a dot.
+cq_sid_key="${cq_session_id:-nosession}"
+cq_path_key=$(printf '%s' "$cq_file_path" | cksum 2>/dev/null | tr -cd '0-9')
+cq_path_key="${cq_path_key:-nohash}"
+cq_name_key="${cq_base_name//[^a-zA-Z0-9._-]/_}"
+cq_name_key="${cq_name_key:0:100}"
+cq_edit_dir="${cq_cache_dir}/.edits/${cq_sid_key}"
+cq_edit_marker="${cq_edit_dir}/${cq_name_key}-${cq_path_key}"
+
+cq_now=$(date +%s 2>/dev/null || echo 0)
+case "$cq_now" in ''|*[!0-9]*) cq_now=0 ;; esac
+cq_last=0
+if [ -f "$cq_edit_marker" ]; then
+    cq_last=$(cat "$cq_edit_marker" 2>/dev/null || echo 0)
+    case "$cq_last" in ''|*[!0-9]*) cq_last=0 ;; esac
+fi
+mkdir -p "$cq_edit_dir" 2>/dev/null || true
+# Braces + an OUTER stderr redirect: a *redirection* failure (unwritable or
+# non-directory cache path) is reported by the shell itself, not by printf, so
+# `printf … > f 2>/dev/null` would still leak "Not a directory" to stderr on
+# every invocation. A best-effort cue must stay silent on both channels.
+{ printf '%s' "$cq_now" > "$cq_edit_marker"; } 2>/dev/null || true
+
+# Fail open by construction: a broken clock leaves cq_now=0, the guard is false,
+# and the cue fires. A best-effort cue must never suppress on a degraded read.
+if [ "$cq_debounce_ttl" -gt 0 ] && [ "$cq_now" -gt 0 ] && [ "$cq_last" -gt 0 ] \
+    && [ "$((cq_now - cq_last))" -lt "$cq_debounce_ttl" ]; then
+    exit 0
+fi
+
 # --- Detection: fire if ANY signal matches ---
 cq_payload="${cq_new_string}
 ${cq_content}"
@@ -134,22 +189,22 @@ fi
 [ "$cq_is_structural" -eq 0 ] && exit 0
 
 # --- Dedup: one cue per session ---
-# CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR is the test seam.
-cq_cache_dir="${CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR:-${HOME}/.cache/code-quality-preflight-cue}"
-if [ -n "$cq_session_id" ]; then
-    cq_marker="${cq_cache_dir}/${cq_session_id}"
-    [ -f "$cq_marker" ] && exit 0
-    mkdir -p "$cq_cache_dir" 2>/dev/null || true
-    touch "$cq_marker" 2>/dev/null || true
-fi
+# cq_cache_dir (the CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR test seam) is resolved
+# once in the sequence-debounce block above.
 
 # The /evaluate:evaluate-skill half is only relevant when a skill file changed;
 # mention it exclusively for paths under a skills/ tree so it doesn't read as a
 # no-op suggestion on ordinary code edits (issue #1766). SKILL.md itself is .md
 # (excluded above), so in practice this fires for non-.md files under skills/.
+#
+# Phrasing is timing-aware (issue #2272): a PostToolUse hook cannot tell edit 1
+# of 4 from a finished edit, so it must never instruct a lint *now* — linting a
+# knowingly half-applied refactor yields actively-wrong findings (an unused-symbol
+# rename for a symbol whose uses land in a later edit). "once this edit sequence
+# is complete" is correct for both the single-edit and mid-sequence cases.
 case "$cq_file_path" in
-    */skills/*|skills/*) cq_cue="[code-quality] Large/structural edit detected. Run /code-quality:code-lint as a pre-flight, and /evaluate:evaluate-skill since a skill changed, before continuing." ;;
-    *)                   cq_cue="[code-quality] Large/structural edit detected. Run /code-quality:code-lint as a pre-flight before continuing." ;;
+    */skills/*|skills/*) cq_cue="[code-quality] Large/structural edit detected. Run /code-quality:code-lint as a pre-flight, and /evaluate:evaluate-skill since a skill changed, once this edit sequence is complete — not mid-sequence, where a partly-applied refactor lints as broken." ;;
+    *)                   cq_cue="[code-quality] Large/structural edit detected. Run /code-quality:code-lint as a pre-flight once this edit sequence is complete — not mid-sequence, where a partly-applied refactor lints as broken." ;;
 esac
 
 jq -n --arg reason "$cq_cue" '{"decision":"block","reason":$reason}'

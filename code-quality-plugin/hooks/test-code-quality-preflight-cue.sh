@@ -366,6 +366,139 @@ else
   cq_fail "(m) genuine repo .py should still fire; got: $CQ_OUT_M4"
 fi
 
+# --- (n) sequence debounce + sequence-aware phrasing (issue #2272) ---
+# A PostToolUse cue on edit N of M is inherently early for N < M: the pre-flight
+# lint it demands would run against a knowingly half-applied refactor. Two
+# guards: (1) stay silent while edits to the SAME file are still in flight, and
+# critically do NOT consume the once-per-session budget doing so, so the one cue
+# lands on a settled edit instead of the noisiest one; (2) phrase the cue so a
+# mid-sequence agent is never pushed to lint an incomplete tree.
+#
+# Block-local cache dir: n2-n5 use an empty session_id (like test (f)), so they
+# would key under `nosession` in the shared dir and collide with each other.
+CQ_N_CACHE="$(mktemp -d)"
+cq_n_cleanup() { rm -rf "$CQ_TEST_CACHE_DIR" "$CQ_N_CACHE"; }
+trap cq_n_cleanup EXIT
+
+# Invoke with the block-local cache dir. $2, when set, overrides the debounce TTL.
+cq_n() {
+  if [ -n "${2:-}" ]; then
+    CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_N_CACHE" \
+      CODE_QUALITY_PREFLIGHT_CUE_DEBOUNCE_TTL="$2" bash "$CQ_SCRIPT" <<< "$1"
+  else
+    CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_N_CACHE" bash "$CQ_SCRIPT" <<< "$1"
+  fi
+}
+
+# Payload with no session_id at all (mirrors test (f)'s shape).
+cq_payload_nosid() {
+  jq -n --arg tool_name "$1" --arg file_path "$2" --arg new_string "$3" \
+    '{tool_name: $tool_name, tool_input: {file_path: $file_path, new_string: $new_string}}'
+}
+
+echo "--- Test (n1): mid-sequence cue does not consume the session budget ---"
+CQ_SID_N1="test-sid-n1-$(date +%s%N)"
+# Call 1: trivial (non-structural) edit to seq-a.ts — silent, but arms recency.
+CQ_OUT_N1A="$(cq_n "$(cq_payload Edit /repo/src/seq-a.ts 'const x = 1;' '' "$CQ_SID_N1")")"
+if [ -z "$CQ_OUT_N1A" ]; then
+  cq_pass "(n1) trivial edit is silent"
+else
+  cq_fail "(n1) trivial edit should be silent; got: $CQ_OUT_N1A"
+fi
+# Call 2: structural edit to the SAME file moments later — a sequence is in
+# flight, so the cue must be suppressed AND must not burn the session marker.
+CQ_OUT_N1B="$(cq_n "$(cq_payload Edit /repo/src/seq-a.ts 'export function f(){}' '' "$CQ_SID_N1")")"
+if [ -z "$CQ_OUT_N1B" ]; then
+  cq_pass "(n1) mid-sequence structural edit is debounced"
+else
+  cq_fail "(n1) mid-sequence structural edit should be silent; got: $CQ_OUT_N1B"
+fi
+# Call 3: structural edit to a DIFFERENT, settled file, same session — the
+# once-per-session budget must still be available.
+CQ_OUT_N1C="$(cq_n "$(cq_payload Edit /repo/src/seq-b.ts 'export function g(){}' '' "$CQ_SID_N1")")"
+if echo "$CQ_OUT_N1C" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(n1) settled edit still fires (session budget not consumed)"
+else
+  cq_fail "(n1) settled edit should still fire; got: $CQ_OUT_N1C"
+fi
+
+echo "--- Test (n2): debounce is per-file, not a blanket second-call mute ---"
+CQ_OUT_N2A="$(cq_n "$(cq_payload_nosid Edit /repo/src/seq-c.ts 'export function c(){}')")"
+CQ_OUT_N2B="$(cq_n "$(cq_payload_nosid Edit /repo/src/seq-d.ts 'export function d(){}')")"
+if echo "$CQ_OUT_N2A" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(n2) first distinct file fires"
+else
+  cq_fail "(n2) first distinct file should fire; got: $CQ_OUT_N2A"
+fi
+if echo "$CQ_OUT_N2B" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(n2) second distinct file also fires"
+else
+  cq_fail "(n2) second distinct file should fire; got: $CQ_OUT_N2B"
+fi
+
+echo "--- Test (n3): same file, no session_id — second edit is suppressed ---"
+CQ_OUT_N3A="$(cq_n "$(cq_payload_nosid Edit /repo/src/seq-e.ts 'export function e1(){}')")"
+CQ_OUT_N3B="$(cq_n "$(cq_payload_nosid Edit /repo/src/seq-e.ts 'export function e2(){}')")"
+if echo "$CQ_OUT_N3A" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(n3) first edit fires without a session_id"
+else
+  cq_fail "(n3) first edit should fire; got: $CQ_OUT_N3A"
+fi
+if [ -z "$CQ_OUT_N3B" ]; then
+  cq_pass "(n3) repeat edit to same file is debounced without a session_id"
+else
+  cq_fail "(n3) repeat edit should be silent; got: $CQ_OUT_N3B"
+fi
+
+echo "--- Test (n4): debounce re-arms after the file goes quiet ---"
+CQ_OUT_N4A="$(cq_n "$(cq_payload_nosid Edit /repo/src/seq-f.ts 'export function f1(){}')" 1)"
+sleep 2
+CQ_OUT_N4B="$(cq_n "$(cq_payload_nosid Edit /repo/src/seq-f.ts 'export function f2(){}')" 1)"
+if echo "$CQ_OUT_N4A" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(n4) first edit fires"
+else
+  cq_fail "(n4) first edit should fire; got: $CQ_OUT_N4A"
+fi
+if echo "$CQ_OUT_N4B" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(n4) edit after TTL expiry fires again (debounce, not a mute)"
+else
+  cq_fail "(n4) edit after TTL expiry should fire again; got: $CQ_OUT_N4B"
+fi
+
+echo "--- Test (n5): CODE_QUALITY_PREFLIGHT_CUE_DEBOUNCE_TTL=0 disables debounce ---"
+CQ_OUT_N5A="$(cq_n "$(cq_payload_nosid Edit /repo/src/seq-g.ts 'export function g1(){}')" 0)"
+CQ_OUT_N5B="$(cq_n "$(cq_payload_nosid Edit /repo/src/seq-g.ts 'export function g2(){}')" 0)"
+if echo "$CQ_OUT_N5A" | jq -e '.decision == "block"' > /dev/null 2>&1 \
+  && echo "$CQ_OUT_N5B" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(n5) TTL=0 disables the debounce (both edits fire)"
+else
+  cq_fail "(n5) TTL=0 should disable the debounce; got: [$CQ_OUT_N5A] [$CQ_OUT_N5B]"
+fi
+
+echo "--- Test (n6): cue phrasing defers the lint to the end of the sequence ---"
+# Self-contained: its own fresh cache dir + first-ever edit to seq-h.ts, so this
+# always exercises a FIRING invocation. Chaining off another block's output would
+# let both assertions pass vacuously whenever that block happened to be silent.
+CQ_N6_CACHE="$(mktemp -d)"
+CQ_OUT_N6="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_N6_CACHE" bash "$CQ_SCRIPT" \
+  <<< "$(cq_payload Edit /repo/src/seq-h.ts 'export function h(){}' '' "test-sid-n6-$(date +%s%N)")")"
+rm -rf "$CQ_N6_CACHE"
+if echo "$CQ_OUT_N6" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(n6) guard: the probe invocation actually fires"
+else
+  cq_fail "(n6) guard: probe invocation should fire; got: $CQ_OUT_N6"
+fi
+if echo "$CQ_OUT_N6" | jq -r '.reason' | grep -q "once this edit sequence is complete"; then
+  cq_pass "(n6) reason defers to sequence completion"
+else
+  cq_fail "(n6) reason should defer to sequence completion; got: $CQ_OUT_N6"
+fi
+if echo "$CQ_OUT_N6" | jq -r '.reason' | grep -q "before continuing"; then
+  cq_fail "(n6) reason must not instruct a mid-sequence lint; got: $CQ_OUT_N6"
+else
+  cq_pass "(n6) reason omits the mid-sequence 'before continuing' phrasing"
+fi
+
 # --- Summary ---
 echo ""
 echo "=== RESULTS ==="

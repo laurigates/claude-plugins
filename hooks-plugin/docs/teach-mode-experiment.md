@@ -167,22 +167,58 @@ follow-up PR can extract the regex set into a shared helper.
 
 ### Output shape
 
-`hookSpecificOutput.updatedToolOutput` is a **string**, and it
-**replaces** what the model sees as the tool result — not appends to it.
-So the hook stringifies `tool_response` and constructs the full
-augmented payload:
+`hookSpecificOutput.updatedToolOutput` **replaces** what the model sees
+as the tool result — not appends to it — and it is validated against the
+**tool's own output schema**. For Bash that schema is an **object**:
+
+```json
+{"interrupted": false, "isImage": false, "noOutputExpected": false,
+ "stderr": "", "stdout": "…"}
+```
+
+So the hook reads `.tool_response` as an object, takes `stdout` (Bash's
+natural free-text field), appends the hint banner to it, and merges the
+result back into the original object:
 
 ```
-<original tool_response>
+updatedToolOutput = tool_response + {stdout: <augmented>}
+```
+
+where the augmented `stdout` is:
+
+```
+<original stdout>
 
 --- bash-antipatterns hint ---
 💡 <one-line corrective hint with concrete tool example>
 ```
 
+The merge overwrites exactly one field and invents no keys — if the
+harness schema is strict, unioning in a key the tool never emitted would
+be a fresh rejection.
+
 The leading blank line and the divider keep the hint visually distinct
 from command output. The 💡 prefix mirrors the existing reminder hook's
 voice without re-using the "REMINDER:" prefix (which signals
 exit-2-blocking to model and reader).
+
+> **The object shape is the contract, and it is pinned by
+> `test-bash-antipatterns-teach.sh`, not by a version comment.** The hook
+> originally emitted a JSON *string* here (`jq -n --arg out …`). The
+> harness rejected every emission — `Invalid input: expected object,
+> received string`, with `"path": []` proving the *top-level* value is
+> schema-checked — and silently fell back to the original output, so the
+> hint never reached the model and the hook was a **no-op** (issue
+> #2275). It failed silently: the script exited 0 in ~100ms and nothing
+> logged. Prior guidance stated the string shape citing "Claude Code
+> 2.1.121+"; a version note cannot detect a contract change, so the
+> shape now lives in an executable test.
+>
+> Write/Edit is *not* fixable this way — its output shape
+> (`{content, filePath, originalFile, structuredPatch, type,
+> userModified}`) has no free-text field, and `content` is the file's
+> actual content. See `blueprint-plugin/hooks/blueprint-structural-cue.sh`,
+> which moved to the `decision:block` + `continueOnBlock` channel instead.
 
 ### Session-scoped dedup (transcript replay cost)
 

@@ -230,7 +230,9 @@ Works well with:
 
 ## PostToolUse Pre-flight Cue
 
-The plugin ships a PostToolUse behavioral cue hook (ADR-0017) that fires **once per session** when an Edit or Write touches a file with structural signals. When it fires, it feeds back a short reminder to run `/code-quality:code-lint` before continuing — and, **only when a skill file under a `skills/` tree changed**, to also run `/evaluate:evaluate-skill`.
+The plugin ships a PostToolUse behavioral cue hook (ADR-0017) that fires **once per session** when an Edit or Write touches a file with structural signals. When it fires, it feeds back a short reminder to run `/code-quality:code-lint` **once the current edit sequence is complete** — and, **only when a skill file under a `skills/` tree changed**, to also run `/evaluate:evaluate-skill`.
+
+The cue deliberately does *not* ask for a lint *right now*. A PostToolUse hook cannot tell edit 1 of 4 from a finished change, and linting a knowingly half-applied refactor produces actively-wrong findings — e.g. "`inline` is unused, rename to `_inline`" for a symbol whose four uses land three edits later (issue #2272).
 
 ### How it works
 
@@ -241,6 +243,7 @@ The plugin ships a PostToolUse behavioral cue hook (ADR-0017) that fires **once 
   - The payload (new_string + content) is >= 50 lines
 - **`/evaluate:evaluate-skill` reminder**: appended only for paths under a `skills/` tree, so the cue points at a real action rather than a no-op on ordinary code edits (issue #1766)
 - **Silenced for**: `.md`/`.txt` files, `CHANGELOG.md`, test/spec files, lockfiles, docs under `docs/adrs/` or `docs/prds/`
+- **Sequence debounce** (issue #2272): the cue stays silent when another Edit/Write to the **same file** landed within the last `CODE_QUALITY_PREFLIGHT_CUE_DEBOUNCE_TTL` seconds (default 120) — a burst of edits to one file means a sequence is still in flight. A debounced edit **does not consume the once-per-session budget**, so the session's one cue lands on a settled edit rather than on the noisiest mid-burst one. Recency is recorded for every non-excluded Edit/Write (structural or not) in `~/.cache/code-quality-preflight-cue/.edits/<session_id>/<file-key>`, and re-arms once the file goes quiet. Keying is session-scoped so concurrent sessions editing the same path never debounce each other.
 - **Once per session**: after firing, a marker file under `~/.cache/code-quality-preflight-cue/<session_id>` prevents re-firing in the same session
 - **ADR-0017 compliance**: uses `{"decision":"block","reason":"..."}` with `continueOnBlock: true` — the reason is fed back to the model and the turn continues
 
@@ -248,9 +251,15 @@ The plugin ships a PostToolUse behavioral cue hook (ADR-0017) that fires **once 
 
 Set `CODE_QUALITY_SKIP_HOOKS=1` in your environment to disable the hook entirely for that session.
 
-### Test seam
+### Tuning and test seams
 
-Override `CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR` to redirect marker storage (used by the regression tests under `hooks/test-code-quality-preflight-cue.sh`).
+| Variable | Default | Effect |
+|----------|---------|--------|
+| `CODE_QUALITY_SKIP_HOOKS` | unset | `1` disables the hook entirely |
+| `CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR` | `~/.cache/code-quality-preflight-cue` | Redirects both the session dedup marker and the `.edits/` recency markers (used by the regression tests under `hooks/test-code-quality-preflight-cue.sh`) |
+| `CODE_QUALITY_PREFLIGHT_CUE_DEBOUNCE_TTL` | `120` (seconds) | Sequence-debounce window. `0` disables the debounce, restoring per-edit evaluation. A non-numeric value falls back to the default |
+
+Both suppression layers fail open: a broken clock or an unwritable cache dir lets the cue fire rather than silencing it.
 
 ## License
 

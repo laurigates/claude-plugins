@@ -45,7 +45,7 @@ user-local by convention (`agent-patterns-plugin:plugin-settings`).
 
 | Hook | Event | Behavior |
 |---|---|---|
-| `session-spinup-nudge.sh` | SessionStart (startup/resume) | Injects a one-time context note when open threads exist (dirty tree, unpushed commits, open tasks for the cwd project). Informational only — never blocks |
+| `session-spinup-nudge.sh` | SessionStart (startup/resume) | Injects a one-time context note when open threads exist (dirty tree, unpushed commits, open tasks for the cwd project, assigned GitHub issues). Names the scope the task count actually came from, so a remote-resolved or all-projects-fallback count is not passed off as `project:<basename>`. Informational only — never blocks |
 | `session-end-nudge.sh` | Stop | Offers `session-plugin:session-end` at most once per session when the user's own messages carry a wind-down phrase. Collapses the former separate wrap + distill nudges (design D4). When taskwarrior is on PATH and the project has open/active tasks, the offer also mentions a taskwarrior state-sync pass |
 
 The Stop nudge is deliberately conservative:
@@ -88,13 +88,57 @@ All writes and judgment stay in the invoking skill.
 
 | Flag | Adds |
 |---|---|
-| (none) | PROJECT, GIT, PRS, TASKWARRIOR, STALE_ACTIVE_ELSEWHERE |
+| (none) | PROJECT, GIT, TASKWARRIOR, STALE_ACTIVE_ELSEWHERE, PRS |
 | `--with-dedup` | GITHUB_DRIFT (assigned-open issues minus those tracked in taskwarrior) |
 | `--with-journal --journal-path <dir>` | JOURNAL (unchecked todos from the most recent dated note) |
 | `--with-commits` | COMMITS (recent commit subjects) |
 | `--with-blueprint` | BLUEPRINT (manifest/tracker presence, ready/blocked/in-flight feature counts, closed-but-undrained WO-linked tasks). Degrades to `MANIFEST=false` + zeroed counts when the repo isn't blueprint-enabled |
 | `--summary` | coarse counts only (used by the nudge hook) |
-| `--project <name>` | override the detected project |
+| `--project <name>` | override the detected project (also makes its zero *confident* — see below) |
+| `--recent-days <n>` | recency window for the all-projects task fallback (default 2) |
+
+| Env seam | Purpose |
+|---|---|
+| `SESSION_SURVEY_GH_TIMEOUT` | per-`gh`-call budget in seconds (default 4) |
+| `SESSION_SURVEY_RECENT_DAYS` | default for `--recent-days` |
+| `SESSION_SURVEY_TASK_BIN` / `_GIT_BIN` / `_GH_BIN` | binary overrides (tests) |
+
+### Degrade, don't die
+
+Every no-network section (PROJECT, GIT, TASKWARRIOR, JOURNAL, COMMITS,
+BLUEPRINT, STALE_ACTIVE_ELSEWHERE) is emitted **before** the
+GitHub-backed ones, and the `gh` calls run **in parallel**, each under its
+own watchdog bounded by `SESSION_SURVEY_GH_TIMEOUT`. A hard kill at the
+SessionStart hook's timeout therefore truncates the digest rather than
+producing nothing at all. There is deliberately no `gh auth status`
+probe — that was a network round-trip spent deciding whether to make
+network round-trips. `GH_READY` is derived from whether a real query
+returned 0, so an unauthenticated, absent, or timed-out `gh` still reads
+as "not queried" (`GH_READY=false`, plus `GH_TIMEOUT=true` as a
+diagnostic) and never as a clean zero.
+
+### Task scoping is honest about its guess
+
+The taskwarrior project slug is detected from the repo **directory
+basename**, which is wrong for chezmoi source dirs, worktrees, monorepo
+subdirs, portfolio checkouts, and repos cloned under another name. The
+collector takes **one** all-projects `(status:pending or +ACTIVE)`
+snapshot and scopes it in `jq`, so it can see that the detected slug
+matched nothing while tasks exist elsewhere — and says so instead of
+reporting a confident `OPEN_TASKS=0`:
+
+| `TASK_SCOPE` | Meaning | `PROJECT_CONFIDENCE` |
+|---|---|---|
+| `project` | The detected (or `--project`) slug owns the count | `high` |
+| `remote-name` | The slug matched nothing; the **git remote's** repo name did (`PROJECT_RESOLVED=`) | `low` |
+| `all-projects-fallback` | No slug matched; `RECENT_TASK_*` rows list tasks touched within `--recent-days` across all projects | `low` |
+| `unknown` | `jq` unavailable, so no scoping was possible | `low` |
+| `none` | `task` unavailable | `low` |
+
+`OPEN_TASKS` stays an integer in every branch (consumers do arithmetic on
+it); the uncertainty lives in `TASK_SCOPE` / `PROJECT_CONFIDENCE`.
+`TASKS_ALL_PROJECTS` gives the denominator. An explicit `--project` is
+user-asserted, so it keeps a confident zero.
 
 Regression test: `scripts/tests/test-session-survey.sh` (run directly
 with bash).
