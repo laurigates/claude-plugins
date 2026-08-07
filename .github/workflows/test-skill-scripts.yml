@@ -94,6 +94,10 @@ jobs:
       # on every run, for one test. Upstream publishes no checksum file
       # alongside these assets, so the pinned version tag is the anchor —
       # Renovate keeps it fresh via the customManager in renovate.json.
+      #
+      # `-gnu`, not `-musl`: upstream ships musl for aarch64 only, so the
+      # x86_64 musl URL 404s (caught by this workflow's first real run). If the
+      # runner ever moves to arm64, the target triple has to move with it.
       - name: Restore cached cargo-generate
         id: cargo-generate-cache
         uses: actions/cache@v4
@@ -107,7 +111,7 @@ jobs:
           mkdir -p "$HOME/.local/bin"
           tmp_dir="$(mktemp -d)"
           curl -fsSL -o "$tmp_dir/cargo-generate.tar.gz" \
-            "https://github.com/cargo-generate/cargo-generate/releases/download/v${CARGO_GENERATE_VERSION}/cargo-generate-v${CARGO_GENERATE_VERSION}-x86_64-unknown-linux-musl.tar.gz"
+            "https://github.com/cargo-generate/cargo-generate/releases/download/v${CARGO_GENERATE_VERSION}/cargo-generate-v${CARGO_GENERATE_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
           tar -xzf "$tmp_dir/cargo-generate.tar.gz" -C "$HOME/.local/bin" cargo-generate
           rm -rf "$tmp_dir"
 
