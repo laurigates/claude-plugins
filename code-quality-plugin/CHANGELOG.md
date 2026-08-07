@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.3](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.22.2...code-quality-plugin-v1.22.3) (2026-08-07)
+
+
+### Bug Fixes
+
+* **session-plugin:** repair five guards that silently did nothing or reported a confident wrong answer ([#2277](https://github.com/laurigates/claude-plugins/issues/2277)) ([fa53f8c](https://github.com/laurigates/claude-plugins/commit/fa53f8c377763faa0166b4d9d340b70d2bc27cca))
+
 ## [1.22.2](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.22.1...code-quality-plugin-v1.22.2) (2026-08-07)
 
 
