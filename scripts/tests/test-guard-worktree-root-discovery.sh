@@ -42,6 +42,15 @@ assert() {
 is_true() { [ "$1" = "true" ] && echo true || echo false; }
 contains() { printf '%s' "$1" | grep -q -- "$2" && echo true || echo false; }
 
+# Whole-LINE match. Required for NEGATIVE assertions over KEY=VALUE output:
+# `contains` is an unanchored substring test, so asserting "does not report
+# FILES_SCANNED=0" against a guard that legitimately emits BOTH
+# `FILES_SCANNED=1` and `TEMPLATE_FILES_SCANNED=0` matches inside the SECOND
+# key and fires on correct behaviour. A here-string (not a pipe) keeps this
+# safe under `set -o pipefail` — `grep -q` closes stdin on first match and a
+# piped writer would take SIGPIPE (141). See shell-pipefail-grep-q.md.
+contains_line() { grep -qxF -- "$2" <<<"$1" && echo true || echo false; }
+
 # Build a fixture whose ROOT PATH is worktree-shaped, exactly like a real
 # `<repo>/.claude/worktrees/agent-<id>` checkout.
 fx="$(mktemp -d)"
@@ -94,7 +103,7 @@ out="$(bash "$repo_root/scripts/check-unused-bash-grant.sh" --project-dir "$wt" 
 assert "check-unused-bash-grant: exits 0 from a worktree-shaped root" "$(is_true "$([ $rc -eq 0 ] && echo true)")"
 assert "check-unused-bash-grant: reports a NON-ZERO scan count" "$(contains "$out" 'SKILLS_SCANNED=1')"
 assert "check-unused-bash-grant: does not report SKILLS_SCANNED=0" \
-  "$([ "$(contains "$out" 'SKILLS_SCANNED=0')" = false ] && echo true || echo false)"
+  "$([ "$(contains_line "$out" 'SKILLS_SCANNED=0')" = false ] && echo true || echo false)"
 
 # The zero-scan discriminator: plugin dirs present but nothing discovered is a
 # MISFIRE and must be loud, not a green "nothing to do".
@@ -118,7 +127,7 @@ if command -v uv >/dev/null 2>&1; then
   out="$(bash "$repo_root/scripts/check-version-pin-coverage.sh" --project-dir "$wt" 2>&1)"; rc=$?
   assert "check-version-pin-coverage: reports a NON-ZERO scan count" "$(contains "$out" 'FILES_SCANNED=1')"
   assert "check-version-pin-coverage: does not report FILES_SCANNED=0" \
-    "$([ "$(contains "$out" 'FILES_SCANNED=0')" = false ] && echo true || echo false)"
+    "$([ "$(contains_line "$out" 'FILES_SCANNED=0')" = false ] && echo true || echo false)"
 else
   echo "SKIP: uv not on PATH — check-version-pin-coverage needs it to parse markdown"
 fi

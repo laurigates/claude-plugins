@@ -1,8 +1,8 @@
 ---
 created: 2025-12-16
 modified: 2026-08-07
-reviewed: 2026-04-25
-allowed-tools: Bash(ruff *), Bash(eslint *), Bash(rustfmt *), Bash(gofmt *), Bash(prettier *), Bash(bash *), Read, SlashCommand
+reviewed: 2026-08-07
+allowed-tools: Bash, Read, SlashCommand
 model: sonnet
 args: "[path] [--fix] [--format]"
 argument-hint: "[path] [--fix] [--format]"
@@ -21,67 +21,106 @@ name: code-lint
 
 ## Context
 
-- Package files: !`find . -maxdepth 1 \( -name "package.json" -o -name "pyproject.toml" -o -name "setup.py" -o -name "Cargo.toml" -o -name "go.mod" \) -type f`
+- Package files: !`find . -maxdepth 1 \( -name "package.json" -o -name "pyproject.toml" -o -name "setup.py" -o -name "requirements.txt" -o -name "Cargo.toml" -o -name "go.mod" \) -type f`
 - Pre-commit config: !`find . -maxdepth 1 -name ".pre-commit-config.yaml" -type f`
 
 ## Parameters
 
-- `$1`: Path to lint (defaults to current directory)
-- `$2`: --fix flag to automatically fix issues
-- `$3`: --format flag to also run formatters
+Parse `$ARGUMENTS` and bind three values before running anything. These are
+supplied by the **caller**; nothing substitutes them for you.
 
-## Linting Execution
+| Token in `$ARGUMENTS` | Binds | Default when absent |
+|---|---|---|
+| First non-flag token | `PATH` — the file or directory to lint | `.` (repo root) |
+| `--fix` | `FIX` — apply autofixes | off; check only |
+| `--format` | `FORMAT` — run formatters in write mode | off; formatters run in `--check` mode |
 
-### Python
-Run Python linters:
-1. Ruff check: `uv run ruff check ${1:-.} --output-format=concise ${2:+--fix}`
-2. Type checking: `uv run ty check ${1:-.} --hide-progress`
-3. Format check: `uv run ruff format ${1:-.} ${3:+--check}`
-4. Security: `uv run bandit -r ${1:-.}`
+Every command in Step 2 is written with a literal `PATH` placeholder. Substitute
+the bound value when you run it — e.g. with `$ARGUMENTS` empty, `ruff check PATH`
+is run as `ruff check .`.
 
-### JavaScript/TypeScript
-Run JavaScript/TypeScript linters:
-1. ESLint: `npm run lint ${1:-.} ${2:+-- --fix}`
-2. Prettier: `npx prettier ${3:+--write} ${3:---check} ${1:-.}`
-3. TypeScript: `npx tsc --noEmit`
+## Execution
 
-### Rust
-Run Rust linters:
-1. Clippy: `cargo clippy --message-format=short -- -D warnings`
-2. Format: `cargo fmt ${3:+} ${3:--- --check}`
-3. Check: `cargo check`
+Run this lint pass:
 
-### Go
-Run Go linters:
-1. Go fmt: `gofmt ${3:+-w} ${3:+-l} ${1:-.}`
-2. Go vet: `go vet ./...`
-3. Staticcheck: `staticcheck ./...` (if available)
+### Step 0: One-shot path (preferred when no `PATH` is given)
 
-## Pre-commit Integration
+When the caller passed no path (or passed `.`), the bundled detector already does
+detection, tool discovery, and fixing in a single call:
 
-If pre-commit is configured:
 ```bash
-pre-commit run --all-files ${2:+--show-diff-on-failure}
+bash "${CLAUDE_PLUGIN_ROOT}/skills/code-lint/scripts/detect-and-fix.sh"
+bash "${CLAUDE_PLUGIN_ROOT}/skills/code-lint/scripts/detect-and-fix.sh" --check-only
 ```
 
-## Multi-Language Projects
+Pass `--check-only` unless `FIX` is set. It detects biome, eslint, prettier,
+ruff, black, clippy, rustfmt, gofmt, golangci-lint, and shellcheck, reports which
+were found, and shows modified files. Report its output and stop.
 
-For projects with multiple languages:
-1. Detect all language files
-2. Run appropriate linters for each language
-3. Aggregate results
+Continue to Step 1 when the caller scoped the run to a specific `PATH`, or when
+the detector reports no linters found.
 
-## Fallback Strategy
+### Step 1: Detect the project language
 
-If no specific linters found:
-1. Check for Makefile: `make lint`
-2. Check for npm scripts: `npm run lint`
-3. Suggest installing appropriate linters via `/deps:install --dev`
-4. Suggest configuring project linting standards via /configure:linting
+Read the `Package files` line from Context above (or `ls` the target directory)
+and map each marker file to a language. **The signals are the marker files — do
+not guess from file extensions or the repo name.**
 
-## Auto-fixing
+| Marker file present in the repo root | Language |
+|---|---|
+| `pyproject.toml`, `setup.py`, `requirements.txt` | Python |
+| `package.json` | JavaScript / TypeScript |
+| `Cargo.toml` | Rust |
+| `go.mod` | Go |
 
-### Autofix Command Reference
+- **Exactly one match** → run that row of Step 2.
+- **Several matches** (polyglot repo) → run each matching row, then aggregate the
+  results into one summary. Do not pick one arbitrarily.
+- **No match** → skip to Step 3.
+
+### Step 2: Run the row for each detected language
+
+Run the **Lint** and **Format** commands for every detected language. Swap in the
+`--fix` / `--format` variants only when the caller set those flags.
+
+| Language | Lint (always) | Lint with `--fix` | Format check (default) | Format with `--format` |
+|---|---|---|---|---|
+| Python | `uv run ruff check PATH --output-format=concise` | `uv run ruff check PATH --output-format=concise --fix` | `uv run ruff format --check PATH` | `uv run ruff format PATH` |
+| JavaScript / TypeScript | `npx eslint PATH` | `npx eslint PATH --fix` | `npx prettier --check PATH` | `npx prettier --write PATH` |
+| Rust | `cargo clippy --message-format=short -- -D warnings` | `cargo clippy --fix --allow-dirty` | `cargo fmt -- --check` | `cargo fmt` |
+| Go | `go vet ./...` | (no autofix — fix by hand) | `gofmt -l PATH` | `gofmt -w PATH` |
+
+Then run each detected language's extra checks:
+
+| Language | Extra checks |
+|---|---|
+| Python | `uv run ty check PATH --hide-progress`, `uv run bandit -q -r PATH` |
+| JavaScript / TypeScript | `npx tsc --noEmit` |
+| Rust | `cargo check` |
+| Go | `staticcheck ./...` (only if installed) |
+
+When the repo defines its own lint script (`npm run lint`, a `just lint` recipe),
+prefer it over the raw command above — it encodes the project's own flags.
+
+### Step 3: Fallback when no language was detected
+
+In order, stopping at the first that applies:
+
+1. `Makefile` present → `make lint`
+2. `package.json` with a `lint` script → `npm run lint`
+3. Otherwise report that no linters were found, and suggest `/deps:install --dev`
+   and `/configure:linting`.
+
+### Step 4: Pre-commit integration
+
+If the `Pre-commit config` line in Context is non-empty:
+
+| Caller flags | Command |
+|---|---|
+| default | `pre-commit run --all-files` |
+| `--fix` | `pre-commit run --all-files --show-diff-on-failure` |
+
+## Autofix Command Reference
 
 | Language | Linter | Autofix Command |
 |----------|--------|-----------------|
@@ -94,17 +133,6 @@ If no specific linters found:
 | Go | gofmt | `gofmt -w .` |
 | Go | go mod | `go mod tidy` |
 | Shell | shellcheck | No autofix (manual only) |
-
-### Detect-and-Fix Script
-
-Auto-detect project linters and run all appropriate fixers in one command:
-
-```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/code-lint/scripts/detect-and-fix.sh"
-bash "${CLAUDE_PLUGIN_ROOT}/skills/code-lint/scripts/detect-and-fix.sh" --check-only
-```
-
-Detects biome, eslint, prettier, ruff, black, clippy, rustfmt, gofmt, golangci-lint, shellcheck. Reports which linters were found and shows modified files.
 
 ### Common Fix Patterns
 

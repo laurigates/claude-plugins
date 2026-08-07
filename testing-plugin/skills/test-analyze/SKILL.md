@@ -4,8 +4,8 @@ args: "<results-path> [--type <test-type>] [--focus <area>]"
 argument-hint: "Path to test results (e.g., ./test-results/), optional --type and --focus filters"
 allowed-tools: Task, Read, Glob, Grep, TodoWrite
 created: 2025-12-16
-modified: 2026-07-28
-reviewed: 2026-07-28
+modified: 2026-08-07
+reviewed: 2026-08-07
 name: test-analyze
 agent: general-purpose
 context: fork
@@ -142,21 +142,20 @@ The command produces:
 
 **Prompt:**
 
-Analyze test results from {{ARG1}} and create a systematic fix plan.
+Analyze test results from `<results-path>` and create a systematic fix plan.
 
-{{#if ARG2}}
-Test type: {{ARG2}}
-{{else}}
-Auto-detect test type from file formats and content.
-{{/if}}
+Bind the three values from `$ARGUMENTS` first (see [Parameters](#parameters)) —
+they come from the **caller**, and nothing substitutes them for you:
 
-{{#if ARG3}}
-Focus area: {{ARG3}}
-{{/if}}
+| Value | Source | When absent |
+|---|---|---|
+| `<results-path>` | first non-flag token (required) | ask for it; do not guess a path |
+| `<test-type>` | `--type <test-type>` | auto-detect from the result files' formats and content |
+| `<focus-area>` | `--focus <area>` | analyze all areas with no prioritization bias |
 
 **Step 1: Analyze Test Results**
 
-Read the test result files from {{ARG1}} and extract:
+Read the test result files from `<results-path>` and extract:
 - Failed tests with error messages
 - Warnings and deprecations
 - Performance metrics (if available)
@@ -195,9 +194,9 @@ Provide:
 - ✅ **Next Steps**: Concrete actions to take
 - 🔍 **Verification**: How to confirm fixes worked
 
-{{#if ARG3}}
-**Additional focus on {{ARG3}}**: Prioritize issues related to this area and provide extra context for relevant subagents.
-{{/if}}
+When a `<focus-area>` was bound: prioritize issues related to that area and give
+the relevant subagents extra context about it. When none was passed, skip this —
+do not invent a focus.
 
 **Documentation-First Reminder**: Before implementing fixes, research relevant documentation using context7 to verify:
 - Test framework best practices
