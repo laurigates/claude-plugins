@@ -1,6 +1,6 @@
 ---
 created: 2026-07-07
-modified: 2026-07-07
+modified: 2026-08-07
 reviewed: 2026-07-07
 name: comfy-registry-lifecycle
 description: >-
@@ -57,6 +57,12 @@ scalar values).
 To repair an already-drifted lock once: `uv lock` regenerates it to match
 `pyproject.toml` (the only diff is the self-version line, plus occasional uv
 specifier normalization like `>=1.40` → `>=1.40.0`).
+
+**New packs are born with it.** `comfyui-node-scaffold` emits this updater in
+the pack's `release-please-config.json`, and `scaffold.py --verify <pack>`
+grades an existing pack's wiring as `RELEASE_PLEASE_UVLOCK=wired|unwired|
+mistargeted` (issue #2187). Packs scaffolded before that still need the manual
+add below.
 
 **Sweeps miss packs — check before the first release, not after.** A pack
 created after a fix sweep can silently lack the updater. Before merging any
