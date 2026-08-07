@@ -37,8 +37,13 @@ cargo generate --path foundryvtt-plugin/templates/foundryvtt-module \
 
 `skills/foundryvtt-module-scaffold/scripts/tests/test-template-parity.sh` runs
 both generators over the same inputs and requires byte-identical output across
-all three variants, with defaults and with every value non-default. It SKIPs
-when `cargo-generate` is absent.
+all three variants, with defaults and with every value non-default. It SKIPs on
+a machine without `cargo-generate` — but **not in CI**: the `Test: Skill
+scripts` workflow installs the binary from its release tarball, and the test is
+listed in [`scripts/required-to-run-tests.txt`](../../scripts/required-to-run-tests.txt),
+where a SKIP is an error rather than a green log. It ran nowhere for weeks
+before that (issue #2221); this directory is also a path trigger for that
+workflow, so editing the template alone runs the gate.
 
 The non-default half of that matrix is load-bearing: the first parity run used
 defaults throughout and passed while two fields were still hardcoded in the
