@@ -235,17 +235,38 @@ check "case 5: skip still counted alongside the failure" "SKIPPED=1" \
 check_contains "case 5: failure log still echoed" "assertion blew up" "$out"
 
 # ---------------------------------------------------------------------------
-# CASE 6 — greenfield: no tests found is OK, not an error
+# CASE 6 — greenfield: no tests found stays exit 0, but is never a clean OK
+#
+# The denominator half of #2221 (and the same hole #2255/#2290 found in the
+# check-*.sh guards): "found nothing" and "checked nothing" must not look alike.
+# Exit stays 0 so the runner is still safe to wire in before any test exists.
 # ---------------------------------------------------------------------------
 EMPTY="${WORK}/empty"
 mkdir -p "$EMPTY"
 out="$(bash "$RUNNER" --root "$EMPTY" 2>&1)"
 rc=$?
-check "case 6: empty corpus exits 0" "0" "$rc"
-check "case 6: empty corpus is OK, not WARN/ERROR" "STATUS=OK" \
+check "case 6: empty corpus still exits 0 (greenfield-safe)" "0" "$rc"
+check "case 6: empty corpus is flagged, not a clean OK" "STATUS=WARN" \
     "$(printf '%s\n' "$out" | grep -m1 '^STATUS=')"
+check "case 6: scanning nothing is stated explicitly" "SCANNED_EMPTY=true" \
+    "$(printf '%s\n' "$out" | grep -m1 '^SCANNED_EMPTY=')"
 check "case 6: nothing discovered" "TOTAL=0" \
     "$(printf '%s\n' "$out" | grep -m1 '^TOTAL=')"
+
+# Guard integrity: SCANNED_EMPTY must actually discriminate. A runner that
+# hardcoded `true` would pass every assertion above.
+out="$(bash "$RUNNER" --root "$ROOT" 2>&1)"
+check "case 6: a non-empty corpus reports SCANNED_EMPTY=false" "SCANNED_EMPTY=false" \
+    "$(printf '%s\n' "$out" | grep -m1 '^SCANNED_EMPTY=')"
+
+# A declared manifest turns a discovery collapse into an ERROR by construction:
+# every entry raises required_test_missing. This is what makes the CI side fail
+# loudly rather than warn when discovery breaks.
+out="$(bash "$RUNNER" --root "$EMPTY" --required-file "$REQ" 2>&1)"
+rc=$?
+check "case 6: empty corpus + declared manifest is an ERROR, not a WARN" "1" "$rc"
+check_contains "case 6: the collapse names the undiscovered required test" \
+    "TYPE=required_test_missing" "$out"
 
 # ---------------------------------------------------------------------------
 # CASE 7 — an unknown argument is rejected, never swallowed (#2057)
