@@ -7,7 +7,7 @@ these links.
 
 | Path you are on | File | Carries |
 |---|---|---|
-| Composing the dispatch call and the brief's scaffolding | [`references/dispatch-contract.md`](references/dispatch-contract.md) | Return Contract schema (verbatim), failure mode → schema field, Skill-less `agentType` evidence (`skill_listing` tax) |
+| Composing the dispatch call and the brief's scaffolding | [`references/dispatch-contract.md`](references/dispatch-contract.md) | Return Contract schema (verbatim), failure mode → schema field, the contract as workflow primitives (JSON Schema + `parallel()` barrier, and their cost gate), Skill-less `agentType` evidence (`skill_listing` tax) |
 | Writing a refactor / bulk-edit brief | [`references/brief-templates.md`](references/brief-templates.md) | Refactor-brief template, completion manifest (#1601), verbatim-patch discipline, agent self-verification and reviewer-agent evidence |
 | An agent stalled, was cut off, went idle, was killed, or was rate-limited | [`references/failure-recovery.md`](references/failure-recovery.md) | Commit/push stall salvage, WIP salvage before re-dispatch (#1491), idle-without-report (#2039), `TaskStop` recovery + kill thresholds, rate-limit recovery-dispatch |
 | Setting up worktree isolation, or a git write went somewhere unexpected | [`references/worktree-hazards.md`](references/worktree-hazards.md) | cwd-reset guardrail (#1480), `GIT_DIR`-export leak (#1692), nested-repo isolation (#1838), target-branch preflight (#1969) |
