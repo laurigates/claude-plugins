@@ -149,7 +149,7 @@
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
       "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
-      "version": "1.13.2",
+      "version": "1.13.3",
       "keywords": [
         "comfyui",
         "custom-node",
@@ -263,7 +263,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.10.2",
+      "version": "1.10.3",
       "keywords": [
         "feedback",
         "session-analysis",
@@ -623,7 +623,7 @@
       "name": "taskwarrior-plugin",
       "source": "./taskwarrior-plugin",
       "description": "Coordination layer for multi-agent work using taskwarrior - parallel-safe queries, urgency scoring, and optional GitHub linkage via ghid/ghpr UDAs",
-      "version": "1.13.3",
+      "version": "1.13.4",
       "keywords": [
         "taskwarrior",
         "coordination",

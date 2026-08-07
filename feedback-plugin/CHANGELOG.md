@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.3](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.10.2...feedback-plugin-v1.10.3) (2026-08-07)
+
+
+### Bug Fixes
+
+* **feedback-plugin:** stop friction parser over-matching not-found and exit-2 ([#2288](https://github.com/laurigates/claude-plugins/issues/2288)) ([9b64821](https://github.com/laurigates/claude-plugins/commit/9b64821efc58db1d7f927eca189f272f78022c28))
+
 ## [1.10.2](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.10.1...feedback-plugin-v1.10.2) (2026-07-21)
 
 
