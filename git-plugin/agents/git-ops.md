@@ -12,8 +12,8 @@ skills:
   - git-commit
 maxTurns: 20
 created: 2026-01-24
-modified: 2026-06-18
-reviewed: 2026-06-18
+modified: 2026-08-07
+reviewed: 2026-08-07
 ---
 
 # Git Ops Agent
@@ -167,30 +167,56 @@ wrong** — the same defect already fixed for `git-plugin:deadbranch` (issue #18
 `-d` refuses the unsafe deletes today, but the classification is still wrong, and the
 usual "fix" for the refusals is `-D`, which deletes real work.
 
-Prefer the encoded recipe — it prints MERGED vs REVIEW plus a paste-ready delete:
+Classify each branch with the **authority ladder** below, in this order, and stop at the
+first signal that answers:
 
 ```bash
-just -g branch-audit
+# 1. Authoritative. A MERGED PR means the work landed, whatever the tree looks like now.
+gh pr list --state all --head <branch> --json number,state,mergedAt
+
+# 2. Patch-equivalence. Survives squash-merge AND cherry-pick.
+git cherry main <branch>          # every commit marked '-' => already upstream
+
+# 3. Positive-containment shortcut ONLY (see the caveat below).
+git merge-tree --write-tree main <branch>   # == `git rev-parse main^{tree}` => contained
 ```
 
-Without it, classify each branch by a signal that survives a squash-merge. In order of
-authority:
+Read `state` / `mergedAt`, never a `merged` field (`.claude/rules/gh-json-fields.md`).
+`git cherry` marks a commit `-` when a patch-equivalent commit is already upstream.
+**Delete only what step 1 or step 2 confirms; leave everything else for review.**
 
-```bash
-gh pr list --state all --head <branch> --json state,mergedAt   # MERGED PR = authoritative
-git cherry main <branch>                                        # '-' = patch already upstream
-```
+**`--head <branch>` is an exact per-branch query**, so it is unaffected by `gh pr list`'s
+30-item default page. Never substitute a repo-wide `gh pr list --limit N ... --json
+state,mergedAt` and grep it for the branch: on a repo with more PRs than the window, any
+branch whose merged PR falls outside reads as "no PR" and is silently misclassified.
 
-`git cherry` marks a commit `-` when a patch-equivalent commit is already upstream, which
-survives both squash-merge and cherry-pick. Delete only what one of those two confirms;
-leave everything else for review. `git remote prune origin` is unaffected and always safe:
+**`git merge-tree` is step 3, and it proves containment only in the positive direction.**
+Once `main` drifts over the same files, merging an already-landed branch back would
+re-introduce its older versions, so the trees differ and merge-tree reports "not
+contained" for work that fully landed (`~/.claude/rules/pr-merge-hazards.md` #1). A match
+proves containment; a non-match proves nothing.
+
+`git remote prune origin` is unaffected by all of this and always safe:
 
 ```bash
 git remote prune origin
 ```
 
+**On `just -g branch-audit`** (the encoded dotfiles recipe): it is a convenience for
+producing a paste-ready delete list, **not** the classification authority — and older
+copies of it are actively wrong. Measured 2026-08-04 (issue #2268), its REVIEW bucket was
+**~90% false** on two real repos: 191 REVIEW rows of which 174 had actually landed on
+`laurigates/claude-plugins` (91%), and 245 of which 216 had landed on
+`ForumViriumHelsinki/infrastructure` (88%). Both defects were the two named above — it
+used `merge-tree` as the *primary* signal, and paged `gh pr list --limit 500` against
+repos holding 1881 and 1684 PRs. **Verify anything it puts in REVIEW against the ladder
+before acting on it**, and treat its MERGED bucket as a starting point, not a verdict.
+The recipe lives in a private dotfiles repo, so this marketplace can neither version nor
+regression-test it.
+
 Related: `~/.claude/rules/pr-merge-hazards.md` #1 (why `--merged` misses squash-merges,
-and why tree-containment is a one-way signal).
+and why tree-containment is a one-way signal); `.claude/rules/gh-json-fields.md` (the
+`--limit` default-cap trap and the `state` / `mergedAt` fields).
 
 ## Conflict Resolution Strategy
 

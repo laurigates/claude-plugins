@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.3](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.9.2...workflow-orchestration-plugin-v1.9.3) (2026-08-07)
+
+
+### Code Refactoring
+
+* **agent-patterns-plugin:** land the Tier C schema and prose deltas, no harness ([#2283](https://github.com/laurigates/claude-plugins/issues/2283)) ([9a1c5e7](https://github.com/laurigates/claude-plugins/commit/9a1c5e70fa0f25467f4b3d8e67c564052c4b3671)), closes [#2173](https://github.com/laurigates/claude-plugins/issues/2173)
+
 ## [1.9.2](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.9.1...workflow-orchestration-plugin-v1.9.2) (2026-07-29)
 
 

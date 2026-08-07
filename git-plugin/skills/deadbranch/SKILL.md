@@ -3,10 +3,10 @@ name: deadbranch
 description: deadbranch CLI for stale-branch cleanup — dry-run preview, TUI or non-interactive delete, protects main/develop/WIP. Use when asked to clean up branches, prune branches, or remove stale branches.
 args: "[--days N] [--local] [--remote] [--force] [--interactive] [--dry-run] [--yes] [--stats-only]"
 argument-hint: "--days 30 --dry-run (default: survey + dry-run preview, then ask before deleting)"
-allowed-tools: Bash(deadbranch *), Bash(git branch *), Bash(git log *), Bash(git remote *), Bash(git rev-parse *), Bash(git merge-tree *), Bash(gh pr list *), AskUserQuestion, TodoWrite
+allowed-tools: Bash(deadbranch *), Bash(git branch *), Bash(git log *), Bash(git remote *), Bash(git rev-parse *), Bash(git cherry *), Bash(git merge-tree *), Bash(gh pr list *), AskUserQuestion, TodoWrite
 created: 2026-05-07
-modified: 2026-06-30
-reviewed: 2026-06-30
+modified: 2026-08-07
+reviewed: 2026-08-07
 ---
 
 # /git:deadbranch
@@ -71,11 +71,34 @@ a **lower bound** on squash-merge repos (in one real cleanup, only 4 of 28
 actually-merged branches were flagged safe).
 
 After the survey, reclassify each branch `deadbranch` marked **unmerged** using
-two deterministic signals that survive squash-merge **and** later file drift on
-the base. A branch matching **either** is safe to delete:
+the signals below **in this order of authority**. A branch confirmed by any of
+them is safe to delete; stop at the first one that answers.
 
-1. **`merge-tree` no-op** — merging the branch into the base changes nothing,
-   proving its content is already present (git ≥ 2.38):
+1. **A MERGED PR for the branch head** — authoritative. GitHub records that the
+   squash landed the work at merge time, regardless of any later drift on the
+   base:
+
+   ```bash
+   gh pr list --state all --head <branch> --json number,state,mergedAt
+   ```
+
+   A `MERGED` state means the branch's work landed (read `state` / `mergedAt`,
+   never a `merged` field — see `.claude/rules/gh-json-fields.md`). `--head
+   <branch>` is an **exact** per-branch query, so it is unaffected by `gh pr
+   list`'s 30-item default page — never build a branch→PR map from a repo-wide
+   `gh pr list --limit N`, which silently drops every PR outside the window and
+   misclassifies those branches as "no PR".
+
+2. **`git cherry`** — patch-equivalence, which survives squash-merge **and**
+   cherry-pick even after the base drifts:
+
+   ```bash
+   git cherry <base> <branch>   # every commit marked '-' => already upstream
+   ```
+
+3. **`merge-tree` — a positive-containment shortcut only** (git ≥ 2.38). When
+   the merged tree equals the base's tree, the branch contributes nothing not
+   already present:
 
    ```bash
    base_tree=$(git rev-parse <base>^{tree})
@@ -83,23 +106,16 @@ the base. A branch matching **either** is safe to delete:
    [ "$merged" = "$base_tree" ] && echo "MERGED (contained in base)"
    ```
 
-   A clean result whose tree equals the base's tree means the branch
-   contributes nothing not already in the base. A different tree / non-zero exit
-   is **not** proof of "unmerged" — treat it as "review", not "delete".
-
-2. **A MERGED PR for the branch head** — GitHub is authoritative; the squash
-   landed the work at merge time regardless of later drift:
-
-   ```bash
-   gh pr list --state all --head <branch> --json state --jq '.[0].state'
-   ```
-
-   A `MERGED` result means the branch's work landed (read `state` /
-   `mergedAt`, never a `merged` field — see `.claude/rules/gh-json-fields.md`).
+   **A match proves containment; a non-match proves nothing.** Once the base
+   drifts over the same files, merging an already-landed branch back would
+   re-introduce its older versions, so the trees differ for work that fully
+   landed. Never use this as the *primary* signal: doing so is what made the
+   `just -g branch-audit` recipe's REVIEW bucket ~90% false on two real repos
+   (issue #2268). Treat a non-match as "review", never as "unmerged".
 
 Report a "squash-merged (reclassified safe)" group alongside `deadbranch`'s own
 merged set so the user sees the true safe-to-delete count. Branches matching
-neither signal stay in the keep/review group — do **not** sweep them with
+none of the signals stay in the keep/review group — do **not** sweep them with
 `--force`, which also deletes genuinely-unmerged work.
 
 > This reclassification is read-only — it never deletes. Deletion still flows

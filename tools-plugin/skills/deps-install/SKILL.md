@@ -1,8 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
-reviewed: 2026-04-25
-allowed-tools: Bash(uv *), Bash(npm *), Bash(bun *), Bash(cargo *), Bash(go *), Bash(brew *), Read, Write
+modified: 2026-08-07
+reviewed: 2026-08-07
+allowed-tools: Bash, Read, Write
 model: sonnet
 args: "[package-names] [--dev] [--global]"
 argument-hint: "[package-names] [--dev] [--global]"
@@ -30,72 +30,58 @@ name: deps-install
 
 ## Parameters
 
-- `$1`: Package names to install (space-separated or "all" to install from manifest)
-- `$2`: --dev flag for development dependencies
-- `$3`: --global flag for global installation
+Parse `$ARGUMENTS` and bind these before running anything. They are supplied by
+the **caller**; nothing substitutes them for you.
 
-## Installation Execution
+| Token in `$ARGUMENTS` | Binds | Default when absent |
+|---|---|---|
+| Non-flag tokens | `PACKAGES` — space-separated package names | empty → install everything from the manifest |
+| `--dev` | `DEV` — add to development dependencies | off |
+| `--global` | `GLOBAL` — install globally rather than into the project | off |
 
-### Python (uv)
-{{ if PACKAGE_MANAGER == "uv" }}
-Install Python packages with uv:
-- Install all: `uv sync`
-- Add package: `uv add $1`
-- Add dev dependency: `uv add --dev $1`
-- Install from requirements: `uv pip install -r requirements.txt`
-{{ endif }}
+Every command below is written with a literal `PACKAGES` placeholder — substitute
+the bound value when you run it.
 
-### Node.js (Bun)
-{{ if PACKAGE_MANAGER == "bun" }}
-Install Node packages with Bun:
-- Install all: `bun install`
-- Add package: `bun add $1`
-- Add dev dependency: `bun add -d $1`
-- Global install: `bun add -g $1`
-{{ endif }}
+## Execution
 
-### Node.js (npm)
-{{ if PACKAGE_MANAGER == "npm" }}
-Install Node packages with npm:
-- Install all: `npm ci` (if lock exists) or `npm install`
-- Add package: `npm install $1`
-- Add dev dependency: `npm install -D $1`
-- Global install: `npm install -g $1`
-{{ endif }}
+Run this install:
 
-### Node.js (Yarn)
-{{ if PACKAGE_MANAGER == "yarn" }}
-Install Node packages with Yarn:
-- Install all: `yarn install --frozen-lockfile`
-- Add package: `yarn add $1`
-- Add dev dependency: `yarn add -D $1`
-- Global install: `yarn global add $1`
-{{ endif }}
+### Step 1: Detect the package manager
 
-### Node.js (pnpm)
-{{ if PACKAGE_MANAGER == "pnpm" }}
-Install Node packages with pnpm:
-- Install all: `pnpm install --frozen-lockfile`
-- Add package: `pnpm add $1`
-- Add dev dependency: `pnpm add -D $1`
-- Global install: `pnpm add -g $1`
-{{ endif }}
+Read the `Lock files` and `Package files` lines from Context above. **Lock files
+win** — they name the manager that actually produced the current install; a
+manifest alone only narrows the ecosystem.
 
-### Rust (Cargo)
-{{ if PACKAGE_MANAGER == "cargo" }}
-Install Rust packages with Cargo:
-- Build dependencies: `cargo build`
-- Add dependency: Edit Cargo.toml then `cargo build`
-- Install binary: `cargo install $1`
-{{ endif }}
+| Signal (repo root) | PACKAGE_MANAGER |
+|---|---|
+| `uv.lock`, or `pyproject.toml` with a `[tool.uv]` section | `uv` |
+| `bun.lock` / `bun.lockb` | `bun` |
+| `pnpm-lock.yaml` | `pnpm` |
+| `yarn.lock` | `yarn` |
+| `package-lock.json` | `npm` |
+| `Cargo.lock` / `Cargo.toml` | `cargo` |
+| `go.sum` / `go.mod` | `go` |
+| `pyproject.toml` / `requirements.txt` with no lock file | `uv` |
+| `package.json` with no lock file | `bun` (this portfolio's default — see `bun-package-manager`) |
 
-### Go
-{{ if PACKAGE_MANAGER == "go" }}
-Install Go packages:
-- Download modules: `go mod download`
-- Add dependency: `go get $1`
-- Install tool: `go install $1@latest`
-{{ endif }}
+- **Several matches** in one repo (a polyglot monorepo) → run the matching row for
+  each ecosystem, then report them together.
+- **No match** → report that no manifest was found and stop; do not guess.
+
+### Step 2: Run the row for the detected manager
+
+| PACKAGE_MANAGER | Install all (no `PACKAGES`) | Add `PACKAGES` | With `--dev` | With `--global` |
+|---|---|---|---|---|
+| `uv` | `uv sync` | `uv add PACKAGES` | `uv add --dev PACKAGES` | `uv tool install PACKAGES` |
+| `bun` | `bun install` | `bun add PACKAGES` | `bun add -d PACKAGES` | `bun add -g PACKAGES` |
+| `npm` | `npm ci` (lock present) else `npm install` | `npm install PACKAGES` | `npm install -D PACKAGES` | `npm install -g PACKAGES` |
+| `yarn` | `yarn install --frozen-lockfile` | `yarn add PACKAGES` | `yarn add -D PACKAGES` | `yarn global add PACKAGES` |
+| `pnpm` | `pnpm install --frozen-lockfile` | `pnpm add PACKAGES` | `pnpm add -D PACKAGES` | `pnpm add -g PACKAGES` |
+| `cargo` | `cargo build` | `cargo add PACKAGES` | `cargo add --dev PACKAGES` | `cargo install PACKAGES` |
+| `go` | `go mod download` | `go get PACKAGES` | (Go has no dev-dependency tier) | `go install PACKAGES@latest` |
+
+For Python without uv, `uv pip install -r requirements.txt` installs a legacy
+requirements file without migrating the project.
 
 ## System Dependencies
 
