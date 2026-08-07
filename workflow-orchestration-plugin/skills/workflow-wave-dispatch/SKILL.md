@@ -4,7 +4,7 @@ description: Sequential-wave dispatch for multi-agent work with cross-task depen
 user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 created: 2026-04-24
-modified: 2026-06-23
+modified: 2026-08-07
 reviewed: 2026-06-23
 ---
 
@@ -152,6 +152,7 @@ referenced — never restated — when scheduling waves:
 | Dispatching wave N+1 after a gate failure to "patch over it" | Fix in place, retry the gate; revert and re-brief if unrecoverable |
 | Scheduling extensions before the foundation they import | Foundation in the earliest implementation wave, extensions later |
 | Running the lock-holder concurrently with its consumers | Lock-holder alone in its wave; downstream reads pre-dumped artefacts |
+| Enforcing the wave boundary by discipline alone | Express it as a `parallel()` barrier |
 
 ## Related
 

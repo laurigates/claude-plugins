@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-07-29
+modified: 2026-08-07
 compatibility: claude-code
 reviewed: 2026-07-05
 ---
@@ -187,6 +187,19 @@ the only thing I can act on — a one-word summary loses all your work. On any
 blocker, push what you have, open a draft PR, and tell me exactly what stopped
 you."** Optional enforcement: a `SubagentStop` hook that flags sub-~20-char or
 bare-surrender final messages (see `hooks-plugin`).
+
+#### The same contract, expressed as workflow primitives
+
+A harness does not replace this contract; it turns what prose can only *request*
+into what a runtime *enforces*:
+
+| Here (prose) | Workflow primitive |
+|---|---|
+| The `## Result` schema pasted into each brief | a **JSON Schema** on the `agent()` call — validated, so a one-word surrender cannot parse |
+| "every returned summary parsed" (Orchestrator Checklist) | `parallel()` — the barrier that line already assumes |
+
+Cautions and the cost gate before reaching for one:
+[references/dispatch-contract.md → Workflow primitives](references/dispatch-contract.md#the-return-contract-as-workflow-primitives).
 
 ### 4. Agent self-verification in bulk-edit briefs
 
