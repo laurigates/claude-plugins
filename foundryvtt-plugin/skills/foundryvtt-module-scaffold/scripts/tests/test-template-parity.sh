@@ -13,8 +13,15 @@
 # reusable-workflow org, which scaffold.py pins to `laurigates` regardless of
 # --publisher). Defaults-only inputs cannot see that class of bug.
 #
-# Requires python3 + cargo-generate; SKIPs cleanly when either is unavailable
-# (cargo-generate is not part of the base image — see the skill's Requirements).
+# Requires python3 + cargo-generate; SKIPs cleanly when either is unavailable so
+# it degrades on a contributor's machine (cargo-generate is not part of the base
+# image — see the skill's Requirements).
+#
+# That SKIP is NOT acceptable in CI, and for weeks it was the only branch CI ever
+# took: the workflow installed nothing for cargo-generate and the runner reported
+# a skipped test as `PASS=`, so this gate ran nowhere while the log read green
+# (issue #2221). `Test: Skill scripts` now installs the binary, and this path is
+# listed in scripts/required-to-run-tests.txt — a skip there fails the run.
 
 set -uo pipefail
 
