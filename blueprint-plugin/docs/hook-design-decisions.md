@@ -168,28 +168,47 @@ Location: `.blueprint/hooks.json`
 
 ### Framework
 
-**ShellSpec** - BDD-style shell testing
+**Plain-bash `hooks/test-<hook-name>.sh`**, auto-discovered by
+`scripts/run-skill-script-tests.sh` via its `*/hooks/test-*.sh` glob — so a new
+suite is executed by CI and `just` the moment it is added, with no wiring.
 
-```shell
-Describe "validate-prp-frontmatter.sh"
-  It "blocks on missing required field"
-    When call validate_prp "fixtures/missing-status.md"
-    The status should equal 2
-    The stderr should include "ERROR: Missing required field: status"
-  End
-End
+Model a new suite on
+[`hooks/test-blueprint-structural-cue.sh`](../hooks/test-blueprint-structural-cue.sh):
+feed the hook the harness's **real** event JSON on stdin, assert on the emitted
+JSON with `jq`, and run each case against a scratch `HOME`/cache dir.
+
+```bash
+bash blueprint-plugin/hooks/test-blueprint-structural-cue.sh   # one suite
+./scripts/run-skill-script-tests.sh                            # every suite
 ```
+
+> **ShellSpec was the original plan and it never ran.** The BDD specs under
+> `hooks/spec/` (`validate_{adr,prd,prp}_frontmatter_spec.sh`,
+> `check_prp_readiness_spec.sh`) are **aspirational**: `shellspec` is not
+> installed, not in CI, not in any `just` recipe, and `spec/` matches no glob in
+> `run-skill-script-tests.sh`. That is not a cosmetic gap — a never-executed suite
+> is worse than none, because it reads as coverage. `spec/blueprint_structural_cue_spec.sh`
+> asserted `output should include updatedToolOutput` and thereby **pinned a broken
+> output shape** while the hook it "covered" was a silent no-op for weeks; it was
+> retired under issue #2275 and replaced by `hooks/test-blueprint-structural-cue.sh`.
+> The four surviving specs are dormant documentation of intent. Port them to
+> `hooks/test-*.sh` before treating any of them as a guard
+> (`.claude/rules/regression-testing.md`).
 
 ### Test Fixtures
 
-Create test documents in `hooks/spec/fixtures/`:
+The frontmatter-validator documents under `hooks/spec/fixtures/` are still on
+disk and still valid inputs — but they are only reachable by the dormant
+ShellSpec suites above. A ported suite may reuse them by path; a new one should
+create its fixtures in a `mktemp -d` scratch tree, as
+`test-blueprint-structural-cue.sh` does, so the suite is self-contained.
 
 - `valid-prp.md` - All requirements met
 - `missing-field-prp.md` - Missing required frontmatter
 - `low-confidence-prp.md` - Confidence < 7
-- `missing-section-prp.md` - Missing required section
 - `valid-adr.md` - Valid ADR
 - `invalid-status-adr.md` - Invalid status value
+- `valid-prd.md`, `missing-id-prd.md`, `invalid-id-prd.md` - PRD ID validation
 
 ## Hook Priority and Implementation
 
