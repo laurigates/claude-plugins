@@ -113,6 +113,61 @@ def test_tool_use_id_resolves_to_bash():
     assert by_kind["user_reject"]["signature"] == "reject:edit", by_kind["user_reject"]
 
 
+def test_not_found_signature_matches_only_shell_forms():
+    """Regression: `error:bash:not-found` must not absorb every payload that
+    happens to say "not found".
+
+    The signature regex used a bare `\\bnot found\\b`, so any tool output
+    reporting an absent *thing* (kubectl `pods "x" not found`, Blender
+    `enum "X" not found`) was clustered as a shell/PATH lookup failure. In the
+    W32 window that made `error:bash:not-found` the 3rd-largest signature by
+    raw count -- 28 events / 20 sessions -- of which exactly 1 was genuine
+    (3.6%), a 4.7x growth in the artifact over W31's 6 events.
+    See ~/.claude/friction-reports/2026-W32-frictions.md.
+    """
+    events = run_parser(FIXTURES / "regex_overmatch")
+
+    kubectl = next(e for e in events if "Error from server" in e["evidence"])
+    assert kubectl["signature"] == "error:bash", (
+        f"kubectl NotFound must not classify as not-found: {kubectl}"
+    )
+
+    blender = next(e for e in events if "bpy_struct" in e["evidence"])
+    assert blender["signature"] == "error:bash", (
+        f"Blender enum lookup must not classify as not-found: {blender}"
+    )
+
+    pnpm = next(e for e in events if "pnpm" in e["evidence"])
+    assert pnpm["signature"] == "error:bash:not-found", (
+        f"a real `command not found` must still classify as not-found: {pnpm}"
+    )
+
+
+def test_exit_code_2_is_not_a_hook_block():
+    """Regression: `hook_block` must be identified by the harness's own
+    wrapper prose, never by a bare "exit code 2" appearing in tool output.
+
+    `ugrep` exits 2 on a missing file and says so in its output, so those
+    events landed in `hook_block` and fell through to `hook:unclassified`.
+    In W32 that was 6 events -- 27% of all `hook_block` events were not hook
+    blocks at all, silently inflating the hook-friction numbers the weekly
+    report is built on.
+    """
+    events = run_parser(FIXTURES / "regex_overmatch")
+
+    ugrep = next(e for e in events if "ugrep" in e["evidence"])
+    assert ugrep["kind"] == "tool_error", (
+        f"exit-code-2 tool output must not classify as hook_block: {ugrep}"
+    )
+    assert ugrep["signature"] != "hook:unclassified", ugrep
+
+    hook = next(e for e in events if "PreToolUse:Bash hook error" in e["evidence"])
+    assert hook["kind"] == "hook_block", (
+        f"a real PreToolUse hook error must still classify as hook_block: {hook}"
+    )
+    assert hook["signature"] == "hook:bash-antipatterns:cat-head-tail", hook
+
+
 def main() -> int:
     tests = [
         fn
