@@ -5,8 +5,13 @@ name: "Test: Skill scripts"
 # suites (*/hooks/test-*.sh — bash-antipatterns, branch-protection, …), matching
 # what scripts/run-skill-script-tests.sh discovers. Mirrors the per-path-trigger
 # shape of plugin-enablement-drift.yml so it fires only when skill scripts, hook
-# scripts, or the runner itself change — independent of plugin-pr-checks.yml,
-# which gates the SKILL.md / compliance surface.
+# scripts, generator templates, or the runner itself change — independent of
+# plugin-pr-checks.yml, which gates the SKILL.md / compliance surface.
+#
+# The install steps below are load-bearing, not conveniences: each one exists so
+# a specific gate ACTUALLY RUNS here instead of taking its SKIP branch. The
+# tests that depend on them are declared in scripts/required-to-run-tests.txt,
+# where a skip is an error rather than a silent green (#2221).
 
 on:
   pull_request:
@@ -16,7 +21,13 @@ on:
       - '*-plugin/scripts/**'
       - '*-plugin/schemas/**'
       - '*-plugin/hooks/**'
+      # Generator templates live OUTSIDE skills/ (foundryvtt-plugin/templates/
+      # foundryvtt-module/), so a PR editing only the template — precisely what
+      # the parity gate exists to catch — matched no trigger (#2221). Kept
+      # generic: other plugins will grow template directories too.
+      - '*-plugin/templates/**'
       - 'scripts/run-skill-script-tests.sh'
+      - 'scripts/required-to-run-tests.txt'
       - 'scripts/configure-opencode.sh'
       - 'scripts/install-opencode-ocx.sh'
       - 'scripts/install-opencode.sh'
@@ -26,6 +37,7 @@ on:
       - 'scripts/tests/test-configure-opencode.sh'
       - 'scripts/tests/test-rewrite-skill-name-to-dir.sh'
       - 'scripts/tests/test-export-opencode-hooks.sh'
+      - 'scripts/tests/test-run-skill-script-tests.sh'
       - '*-plugin/hooks.json'
       - 'justfile'
       - '.github/workflows/test-skill-scripts.yml'
@@ -36,7 +48,9 @@ on:
       - '*-plugin/scripts/**'
       - '*-plugin/schemas/**'
       - '*-plugin/hooks/**'
+      - '*-plugin/templates/**'
       - 'scripts/run-skill-script-tests.sh'
+      - 'scripts/required-to-run-tests.txt'
       - 'scripts/configure-opencode.sh'
 
 concurrency:
@@ -45,6 +59,10 @@ concurrency:
 
 permissions:
   contents: read
+
+env:
+  # renovate: datasource=github-releases depName=cargo-generate/cargo-generate extractVersion=^v(?<version>.*)$
+  CARGO_GENERATE_VERSION: "0.23.14"
 
 jobs:
   test:
@@ -66,6 +84,48 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v6
 
+      # cargo-generate powers the foundryvtt-module-scaffold template-parity
+      # acceptance gate — it runs scaffold.py and the cargo-generate port of it
+      # over the same inputs and requires byte-identical trees. Absent, that
+      # test SKIPs; installed, the gate actually runs (#2221).
+      #
+      # Prebuilt release binary, NOT `cargo install cargo-generate --locked`:
+      # the from-source build compiles several hundred crates and costs minutes
+      # on every run, for one test. Upstream publishes no checksum file
+      # alongside these assets, so the pinned version tag is the anchor —
+      # Renovate keeps it fresh via the customManager in renovate.json.
+      #
+      # `-gnu`, not `-musl`: upstream ships musl for aarch64 only, so the
+      # x86_64 musl URL 404s (caught by this workflow's first real run). If the
+      # runner ever moves to arm64, the target triple has to move with it.
+      - name: Restore cached cargo-generate
+        id: cargo-generate-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/bin/cargo-generate
+          key: cargo-generate-${{ env.CARGO_GENERATE_VERSION }}-linux-x86_64
+
+      - name: Install cargo-generate
+        if: steps.cargo-generate-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          tmp_dir="$(mktemp -d)"
+          curl -fsSL -o "$tmp_dir/cargo-generate.tar.gz" \
+            "https://github.com/cargo-generate/cargo-generate/releases/download/v${CARGO_GENERATE_VERSION}/cargo-generate-v${CARGO_GENERATE_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+          tar -xzf "$tmp_dir/cargo-generate.tar.gz" -C "$HOME/.local/bin" cargo-generate
+          rm -rf "$tmp_dir"
+
+      - name: Put cargo-generate on PATH
+        run: |
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/cargo-generate" --version
+
+      - name: Regression-test the skill-script runner's SKIP accounting
+        run: bash scripts/tests/test-run-skill-script-tests.sh
+
+      # Exits 1 when a test fails OR when a test named in
+      # scripts/required-to-run-tests.txt SKIPs — the installs above exist so
+      # those gates run, and a silent skip made the log read green (#2221).
       - name: Run skill-local regression tests
         run: bash scripts/run-skill-script-tests.sh
 

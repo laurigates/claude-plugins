@@ -5,9 +5,17 @@
 # Exit 0 = all tests pass, Exit 1 = failures
 #
 # Unlike test-bash-antipatterns.sh (which asserts on exit codes), this hook
-# returns exit 0 always. The contract is the stdout JSON: presence of
-# `.hookSpecificOutput.updatedToolOutput` for matched antipatterns, empty
-# stdout for non-matches and when the env-var guard is off.
+# returns exit 0 always. The contract is the stdout JSON: for matched
+# antipatterns, `.hookSpecificOutput.updatedToolOutput` is an OBJECT matching the
+# Bash tool's own output shape ({interrupted,isImage,noOutputExpected,stderr,stdout})
+# with the hint merged into `.stdout`; empty stdout for non-matches and when the
+# env-var guard is off.
+#
+# The object shape is the point, not an implementation detail: the harness
+# validates updatedToolOutput against the tool's result schema, so a JSON string
+# there is rejected ("expected object, received string") and the hint is silently
+# discarded — the hook becomes a no-op (issue #2275). These tests pin the shape so
+# a version comment does not have to.
 # shellcheck disable=SC2016   # file-level: single-quoted `$(...)`/`$a` are deliberate literal command strings fed to the hook
 set -euo pipefail
 
@@ -15,15 +23,22 @@ HOOK="$(dirname "$0")/bash-antipatterns-teach.sh"
 PASS=0
 FAIL=0
 
-# Build a minimal PostToolUse input. tool_response is a stand-in for whatever
-# the harness actually produces; the hook just stringifies it.
+# Build a minimal PostToolUse input. tool_response is the REAL Bash result object
+# the harness sends — not a bare string, which the harness never produces and
+# which let the pre-#2275 suite pass against a broken hook.
 # Optional second arg sets session_id (enables the once-per-session dedup path).
 _payload() {
     local cmd="$1" session="${2:-}"
     jq -nc --arg cmd "$cmd" --arg session "$session" '{
         tool_name: "Bash",
         tool_input: {command: $cmd},
-        tool_response: "sample stdout output\n"
+        tool_response: {
+            interrupted: false,
+            isImage: false,
+            noOutputExpected: false,
+            stderr: "",
+            stdout: "sample stdout output\n"
+        }
     } + (if $session == "" then {} else {session_id: $session} end)'
 }
 
@@ -45,10 +60,13 @@ assert_emits() {
         FAIL=$((FAIL + 1))
         return
     fi
+    # Read the free text out of the OBJECT's stdout field. Against the pre-#2275
+    # hook, updatedToolOutput is a string, so `.stdout` on it errors and body is
+    # empty — which is exactly the regression signal.
     local body
-    body=$(echo "$out" | jq -r '.hookSpecificOutput.updatedToolOutput // empty' 2>/dev/null || true)
+    body=$(echo "$out" | jq -r '.hookSpecificOutput.updatedToolOutput.stdout // empty' 2>/dev/null || true)
     if [ -z "$body" ]; then
-        printf "  FAIL: %s (stdout missing hookSpecificOutput.updatedToolOutput)\n" "$desc"
+        printf "  FAIL: %s (updatedToolOutput.stdout missing — is updatedToolOutput still a string?)\n" "$desc"
         FAIL=$((FAIL + 1))
         return
     fi
@@ -202,6 +220,105 @@ else
 fi
 
 rm -f "$SEEN_FILE" "${TMPDIR:-/tmp}/claude-bash-teach-seen/${SID2}" 2>/dev/null || true
+
+echo ""
+echo "output contract: updatedToolOutput is an OBJECT (#2275):"
+
+# Run the hook against a fully-specified payload (these cases vary tool_response).
+_run_raw() {
+    printf '%s' "$1" | CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1 bash "$HOOK" 2>/dev/null || true
+}
+
+# Assert a jq filter is truthy over the hook's stdout JSON.
+assert_jq() {
+    local desc="$1" json="$2" filter="$3"
+    if printf '%s' "$json" | jq -e "$filter" >/dev/null 2>&1; then
+        printf "  PASS: %s\n" "$desc"
+        PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (jq filter false; got: %s)\n" "$desc" "$json"
+        FAIL=$((FAIL + 1))
+    fi
+}
+
+# Baseline: the standard object payload used by every assert_emits case above.
+CONTRACT_OUT=$(_payload "cat README.md" | CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1 bash "$HOOK" 2>/dev/null || true)
+
+# The direct contract. Pre-fix this is "string".
+assert_jq "updatedToolOutput is a JSON object, not a string" \
+    "$CONTRACT_OUT" '.hookSpecificOutput.updatedToolOutput | type == "object"'
+
+# Field completeness against the documented Bash output shape.
+assert_jq "updatedToolOutput carries the full Bash field set" \
+    "$CONTRACT_OUT" \
+    '.hookSpecificOutput.updatedToolOutput
+     | has("interrupted") and has("isImage") and has("noOutputExpected")
+       and has("stderr") and has("stdout")'
+
+# Integrity guard: without this, every "type == object" assertion above would
+# also pass against a hook that emitted an empty/placeholder object.
+assert_jq "updatedToolOutput.stdout is non-empty (suite cannot degrade to a no-op)" \
+    "$CONTRACT_OUT" '.hookSpecificOutput.updatedToolOutput.stdout | length > 0'
+
+# stdout is original-then-divider-then-hint, in that order.
+assert_jq "stdout preserves the original output, then the hint banner, in order" \
+    "$CONTRACT_OUT" \
+    '.hookSpecificOutput.updatedToolOutput.stdout
+     | index("sample stdout output") as $a
+     | index("--- bash-antipatterns hint ---") as $b
+     | index("Read tool") as $c
+     | ($a != null) and ($b != null) and ($c != null) and ($a < $b) and ($b < $c)'
+
+# Negative: the pre-fix `tostring` serialized the WHOLE response object into the
+# free text, leaking harness field names into what the model reads as stdout.
+assert_jq "stdout does not leak the serialized response object" \
+    "$CONTRACT_OUT" \
+    '.hookSpecificOutput.updatedToolOutput.stdout | contains("\"noOutputExpected\":") | not'
+
+# Non-stdout fields survive unmodified — catches a "fix" that rebuilds the
+# object from defaults instead of merging into the harness's own object.
+CONTRACT_PRESERVE=$(_run_raw '{
+    "tool_name": "Bash",
+    "tool_input": {"command": "cat README.md"},
+    "tool_response": {"interrupted": true, "isImage": false, "noOutputExpected": true,
+                      "stderr": "warn-line", "stdout": "partial output"}
+}')
+assert_jq "non-stdout fields are merged through unchanged" \
+    "$CONTRACT_PRESERVE" \
+    '.hookSpecificOutput.updatedToolOutput
+     | .interrupted == true and .noOutputExpected == true
+       and .stderr == "warn-line" and .isImage == false'
+assert_jq "original stdout is preserved when other fields are set" \
+    "$CONTRACT_PRESERVE" \
+    '.hookSpecificOutput.updatedToolOutput.stdout | contains("partial output")'
+
+# Defensive branch: a bare-string tool_response must still yield an object.
+CONTRACT_STRING=$(_run_raw '{
+    "tool_name": "Bash",
+    "tool_input": {"command": "cat README.md"},
+    "tool_response": "legacy string output"
+}')
+assert_jq "string tool_response still yields a full object" \
+    "$CONTRACT_STRING" \
+    '.hookSpecificOutput.updatedToolOutput
+     | (type == "object") and has("interrupted") and has("isImage")
+       and has("noOutputExpected") and has("stderr")
+       and (.stdout | contains("legacy string output")) and (.stdout | contains("Read tool"))'
+
+# Defensive branch: an absent tool_response must not crash or emit a string.
+CONTRACT_ABSENT=$(_run_raw '{
+    "tool_name": "Bash",
+    "tool_input": {"command": "cat README.md"}
+}')
+assert_jq "absent tool_response still yields a full object with the hint" \
+    "$CONTRACT_ABSENT" \
+    '.hookSpecificOutput.updatedToolOutput
+     | (type == "object") and has("interrupted") and has("isImage")
+       and has("noOutputExpected") and has("stderr")
+       and (.stdout | contains("Read tool"))'
+assert_jq "absent tool_response does not stringify null into stdout" \
+    "$CONTRACT_ABSENT" \
+    '.hookSpecificOutput.updatedToolOutput.stdout | startswith("null") | not'
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

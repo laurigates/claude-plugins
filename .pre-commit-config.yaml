@@ -336,6 +336,12 @@ repos:
         language: system
         files: '^scripts/(blueprint-health-check\.sh|infra-compliance-check\.sh|tests/test-audit-scripts-exit\.sh)$'
         pass_filenames: false
+      - id: test-run-skill-script-tests
+        name: skill-script runner reports SKIP separately from PASS (#2221)
+        entry: bash ./scripts/tests/test-run-skill-script-tests.sh
+        language: system
+        files: '^scripts/(run-skill-script-tests\.sh|required-to-run-tests\.txt|tests/test-run-skill-script-tests\.sh)$'
+        pass_filenames: false
       - id: test-audit-skill-descriptions-dedup
         name: skill-description audit counts each skill once, not 2x (#2119)
         entry: bash ./scripts/tests/test-audit-skill-descriptions-dedup.sh

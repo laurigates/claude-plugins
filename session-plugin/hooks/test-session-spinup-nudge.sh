@@ -28,9 +28,10 @@ echo "wip" > "$REPO_DIRTY/wip.txt"
 
 run_hook_output() {
     local session_id="$1" cwd="$2" source_kind="$3" gh_bin="${4:-/nonexistent/gh}"
+    local task_bin="${5:-/nonexistent/task}"
     jq -nc --arg sid "$session_id" --arg cwd "$cwd" --arg src "$source_kind" \
         '{session_id: $sid, cwd: $cwd, source: $src}' \
-        | HOME="$TEST_HOME" SESSION_NUDGE_TASK_BIN=/nonexistent/task \
+        | HOME="$TEST_HOME" SESSION_NUDGE_TASK_BIN="$task_bin" \
           SESSION_NUDGE_GH_BIN="$gh_bin" \
           bash "$HOOK" 2>/dev/null || true
 }
@@ -126,6 +127,48 @@ echo ""
 echo "once-per-session marker:"
 output=$(run_hook_output "sp-dirty" "$REPO_DIRTY" "startup")
 assert_silent "second call in same session is silent" "$output"
+
+# --- W1: the nudge names the scope the count actually came from (#2271) ------
+# A repo whose directory basename is not the taskwarrior project slug (chezmoi
+# source dir, worktree, renamed clone). Pre-fix the collector reported a
+# confident OPEN_TASKS=0 for the basename and the hook stayed silent.
+echo ""
+echo "remote-name-resolved tasks are named by their real slug (#2271):"
+REPO_CHEZMOI="$GH_STUB_DIR/chezmoi-src"
+git -C "$GH_STUB_DIR" init -q "chezmoi-src"
+git -C "$REPO_CHEZMOI" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+git -C "$REPO_CHEZMOI" remote add origin https://github.com/u/dotfiles.git
+cat > "$GH_STUB_DIR/task" <<'TASKSTUB'
+#!/usr/bin/env bash
+case "$*" in
+  *export*) echo '[{"uuid":"w1","project":"dotfiles","description":"chezmoi apply drift","modified":"20260601T101010Z"}]' ;;
+  *) echo "[]" ;;
+esac
+TASKSTUB
+chmod +x "$GH_STUB_DIR/task"
+output=$(run_hook_output "sp-remote-name" "$REPO_CHEZMOI" "startup" "/nonexistent/gh" "$GH_STUB_DIR/task")
+assert_contains "remote-resolved tasks fire the nudge" 'additionalContext' "$output"
+assert_contains "nudge names project:dotfiles, not the cwd basename" 'project:dotfiles' "$output"
+assert_contains "nudge still discloses the basename it detected" 'chezmoi-src' "$output"
+
+# --- W2: a hung gh cannot eat the SessionStart budget (#2276) ---------------
+echo ""
+echo "a hung gh is bounded, and the local threads still surface (#2276):"
+cat > "$GH_STUB_DIR/gh-slow" <<'SLOWSTUB'
+#!/usr/bin/env bash
+sleep 10
+echo "[]"
+SLOWSTUB
+chmod +x "$GH_STUB_DIR/gh-slow"
+start=$(date +%s)
+output=$(SESSION_SURVEY_GH_TIMEOUT=1 run_hook_output "sp-slow-gh" "$REPO_DIRTY" "startup" "$GH_STUB_DIR/gh-slow")
+elapsed=$(( $(date +%s) - start ))
+if [ "$elapsed" -le 4 ]; then
+    printf "  PASS: hung gh bounded (%ss)\n" "$elapsed"; PASS=$((PASS + 1))
+else
+    printf "  FAIL: hung gh not bounded (%ss, wanted <= 4)\n" "$elapsed"; FAIL=$((FAIL + 1))
+fi
+assert_contains "local dirty-tree thread survives a hung gh" 'uncommitted changes' "$output"
 
 echo ""
 echo "=== Results: ${PASS} passed, ${FAIL} failed ==="
