@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.2](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.7.1...macos-plugin-v1.7.2) (2026-08-07)
+
+
+### Bug Fixes
+
+* **macos-plugin:** report scaling efficiency instead of gating on it ([#2279](https://github.com/laurigates/claude-plugins/issues/2279)) ([86d1ff9](https://github.com/laurigates/claude-plugins/commit/86d1ff92591cff0b2357fefedc53e7f65c652252)), closes [#2183](https://github.com/laurigates/claude-plugins/issues/2183)
+
 ## [1.7.1](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.7.0...macos-plugin-v1.7.1) (2026-08-05)
 
 

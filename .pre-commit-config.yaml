@@ -137,6 +137,18 @@ repos:
         language: system
         files: '^scripts/(check-subagent-types\.sh|tests/test-check-subagent-types\.sh)$'
         pass_filenames: false
+      - id: check-unrendered-templates
+        name: no unrendered {{ if }} template conditionals in skill bodies (#2265)
+        entry: ./scripts/check-unrendered-templates.sh
+        language: script
+        files: '^([^/]+-plugin/skills/.*\.md|scripts/check-unrendered-templates\.sh)$'
+        pass_filenames: false
+      - id: test-check-unrendered-templates
+        name: unrendered-template-conditional regression
+        entry: bash ./scripts/tests/test-check-unrendered-templates.sh
+        language: system
+        files: '^scripts/(check-unrendered-templates\.sh|tests/test-check-unrendered-templates\.sh)$'
+        pass_filenames: false
       - id: check-workflow-model
         name: every Claude workflow pins opus + explicit effort
         entry: ./scripts/check-workflow-model.sh
