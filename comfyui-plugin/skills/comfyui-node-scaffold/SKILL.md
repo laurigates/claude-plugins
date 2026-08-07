@@ -1,6 +1,6 @@
 ---
 created: 2026-06-04
-modified: 2026-08-04
+modified: 2026-08-07
 reviewed: 2026-07-29
 name: comfyui-node-scaffold
 description: >-
@@ -186,6 +186,22 @@ forgotten placeholder publishes a generic letter tile to registry.comfy.org.
 comment is present — draw the bespoke pictogram (family spec: `#ffb02e` line-art
 on the dark tile), delete the marker, then run it.
 
+### Two pins the generator owns
+
+- **`uv.lock`** — release-please bumps `pyproject.toml` but has no native
+  `uv.lock` support, so without an explicit updater the lock's self-version
+  trails the manifest on **every** release (#2187). The emitted
+  `release-please-config.json` carries the `toml` `extra-files` updater, and
+  `--verify` grades it as `RELEASE_PLEASE_UVLOCK=`.
+  `comfyui-plugin:comfy-registry-lifecycle` §1 owns the detail — including the
+  two jsonpath forms that leave the lock stale while *looking* configured.
+- **`MODAL_KIT_VERSION`** — not Renovate-managed (this repo's customManagers see
+  only skill markdown + `install_pkgs.sh`; a `.py` generator is neither), which
+  is how it sat four minors behind the published kit until #2186. #2222 tracks
+  extending Renovate here; until then refresh with `npm view
+  @laurigates/comfy-modal-kit version`. `test-finishing-pass.sh` prints an
+  advisory NOTE when the published latest falls outside the pinned range.
+
 ## What you get
 
 A repo where `just check` (typecheck + build + lint + test) passes from the
@@ -195,7 +211,8 @@ dev deps), `.github/workflows/` (`ci.yml`, `publish.yml`, `release-please.yml`,
 `renovate.yml`, `registry-health.yml`, `clear-autorelease-labels.yml`),
 `renovate.json` (Renovate, **not** dependabot), strict `tsconfig.json`,
 `biome.json`, `knip.json`, `.pre-commit-config.yaml`,
-`release-please-config.json` + manifest, `vitest.config.js`, `package.json`
+`release-please-config.json` (carrying the `uv.lock` `toml` updater) + manifest,
+`vitest.config.js`, `package.json`
 (bun scripts; modal variants add `@laurigates/comfy-modal-kit`; the build
 carries a `--banner` provenance comment naming what the bundle inlines),
 `tests/` (a green pytest + vitest smoke test, plus
