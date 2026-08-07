@@ -75,6 +75,10 @@
   "pre-commit": {
     "enabled": true
   },
+  "github-actions": {
+    "description": "Plugin scaffold templates (*-plugin/templates/**) ship REAL workflow YAML that every generated repo inherits verbatim, so their pins are a managed dependency surface. The built-in patterns are '(^|/)'-prefixed rather than root-anchored, so they already reach a template's own .github/workflows/ subtree — but NOT a flat scaffold layout such as blueprint-plugin/templates/*.workflow.yml. managerFilePatterns is ADDITIVE for built-in managers, so this widens the matched set without restating the defaults. Deliberately not paired with a pinDigests rule: a scaffold emits a starting point a human will read, so templates keep tag-form refs like the repo's own CI workflows (the pinDigests rule stays confined to skill markdown).",
+    "managerFilePatterns": ["/(^|/)[^/]+-plugin/templates/.+\\.ya?ml$/"]
+  },
   "packageRules": [
     {
       "description": "Automerge minor/patch devDependencies",
