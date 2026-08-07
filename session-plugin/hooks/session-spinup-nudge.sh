@@ -52,11 +52,23 @@ dirty=$(get DIRTY)
 unpushed=$(get UNPUSHED)
 open_tasks=$(get OPEN_TASKS)
 assigned_issues=$(get ASSIGNED_ISSUES)
+# Scoping signals (#2271/#2232): the detected slug is a guess, so name the
+# scope the count actually came from instead of asserting project:<basename>.
+task_scope=$(get TASK_SCOPE)
+project_resolved=$(get PROJECT_RESOLVED)
+recent_tasks=$(get RECENT_TASK_COUNT)
 
 threads=""
 [ "$dirty" = "true" ] && threads="${threads}uncommitted changes; "
 [ "${unpushed:-0}" -gt 0 ] 2>/dev/null && threads="${threads}unpushed commits; "
-[ "${open_tasks:-0}" -gt 0 ] 2>/dev/null && threads="${threads}${open_tasks} open taskwarrior task(s) under project:${project}; "
+if [ "${open_tasks:-0}" -gt 0 ] 2>/dev/null; then
+    if [ "$task_scope" = "remote-name" ] && [ -n "$project_resolved" ]; then
+        threads="${threads}${open_tasks} open taskwarrior task(s) under project:${project_resolved} (resolved from the git remote; the cwd basename is ${project}); "
+    else
+        threads="${threads}${open_tasks} open taskwarrior task(s) under project:${project}; "
+    fi
+fi
+[ "${recent_tasks:-0}" -gt 0 ] 2>/dev/null && threads="${threads}${recent_tasks} recently-touched taskwarrior task(s) in other projects — nothing under project:${project}, so the detected slug may be wrong; "
 [ "${assigned_issues:-0}" -gt 0 ] 2>/dev/null && threads="${threads}${assigned_issues} assigned GitHub issue(s); "
 
 # Nothing open — stay silent; spinup doesn't nudge for nothing

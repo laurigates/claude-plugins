@@ -1,9 +1,21 @@
 # ADR-0017: Hook-Based Behavioral Cues for Multi-Plugin Utilization
 
+> **Amended in part (2026-08-06, issue #2275):** every claim below about
+> `hookSpecificOutput.updatedToolOutput` as a general point-of-performance cue
+> channel is **wrong as written** — notably the Channel bullet of the worked
+> example (§ "Worked example (first MVP)"), which instructed the blueprint cue to
+> use it. That field is validated against the **tool's own output schema** and
+> must be an object of that shape; `Write`/`Edit` has no free-text field, so the
+> cue was silently discarded and the hook shipped as a no-op. The decision to use
+> hooks as the cue substrate, the token-budget contract, and the worked example's
+> trigger/dedup/test design all stand — only the channel changes. Affected
+> passages are marked *(amended — see [Amendment](#amendment-2026-08-06--updatedtooloutput-is-schema-bound-not-a-general-cue-channel))*;
+> the corrected contract is in that section.
+
 ---
 date: 2026-06-13
 created: 2026-06-13
-modified: 2026-06-13
+modified: 2026-08-06
 status: Proposed
 deciders: claude-plugins team
 domain: architecture
@@ -13,6 +25,7 @@ relates-to:
   - ADR-0016
 github-issues:
   - 1599  # Behavioral forcing functions and point-of-performance hooks
+  - 2275  # updatedToolOutput schema rejection — see Amendment (2026-08-06)
 ---
 
 ## Context
@@ -67,7 +80,7 @@ fixed by the harness and documented in `.claude/rules/hooks-reference.md`:
 | Channel | Event | Effect |
 |---|---|---|
 | `permissionDecision: allow\|deny\|ask` | PreToolUse | gate a tool call |
-| `hookSpecificOutput.updatedToolOutput` | PostToolUse | append/replace a tool's result text |
+| `hookSpecificOutput.updatedToolOutput` | PostToolUse | replace a tool's result with an **object of that tool's own output shape** — *(amended)* only usable where the tool has a free-text field (`Bash`.`stdout`); not `Write`/`Edit` |
 | `{"decision":"block","reason":…,"continueOnBlock":true}` | PostToolUse | feed a reason back and continue the turn |
 | `hookSpecificOutput.additionalContext` | SessionStart, UserPromptSubmit | prepend context to a turn |
 | `{"decision":"block","reason":…}` | Stop, SubagentStop | nudge before the turn ends |
@@ -92,13 +105,16 @@ manifest, one narrow worked example at a time, each with a regression test.**
 | Issue mechanism | Feasible hook-based mechanism | Status today | Evidence |
 |---|---|---|---|
 | Forcing function / gate | PreToolUse `deny`/`ask`; Stop/TaskCompleted `block` | **Exists** | `branch-protection.sh`, `bash-antipatterns.sh`, `task-completeness.sh` |
-| Point-of-performance cue | PostToolUse `updatedToolOutput`; SessionStart `additionalContext` — conditional, deduped, self-extinguishing | **Partial** | `bash-antipatterns-teach.sh`, `session-spinup-nudge.sh`, `drift-aggregator.sh`. Broad per-plugin coverage is the **gap** this ADR opens |
+| Point-of-performance cue | PostToolUse `updatedToolOutput` *(amended — free-text-field tools only)* or `decision:block` + `continueOnBlock`; SessionStart `additionalContext` — conditional, deduped, self-extinguishing | **Partial** | `bash-antipatterns-teach.sh`, `session-spinup-nudge.sh`, `drift-aggregator.sh`. Broad per-plugin coverage is the **gap** this ADR opens |
 | Deterministic task chaining | SlashCommand invocation between skills; session bookends | **Partial** | `session-plugin` spinup→work→end; no declarative "after tool X suggest Y" surface |
 | Poka-yoke / defect prevention | Mandated return-contract schema; optional `SubagentStop` enforcement | **Exists** | `parallel-agent-dispatch` loud-failure contract (#1422) |
 
 The realizable form of "next-action hints on every tool" is already the
-PostToolUse `updatedToolOutput` cue pattern — and its own author comments
-document why it must be capped and deduped rather than emitted on every call.
+PostToolUse cue pattern — and its own author comments document why it must be
+capped and deduped rather than emitted on every call. *(Amended: "on every tool"
+overstates it — `updatedToolOutput` reaches only tools whose output object has a
+free-text field, and the rest need the `decision:block` + `continueOnBlock`
+channel.)*
 
 ### The token-budget contract
 
@@ -120,7 +136,7 @@ A cue is text the model sees, so it is never a one-time cost — it is
 | SessionStart `additionalContext` | yes (from first turn) | ~30 tok × remaining turns | **Preferred** — amortized |
 | Stop `block` reason | yes, until cleared | ~30 tok × turns until cleared | Good when self-extinguishing |
 | UserPromptSubmit context | yes, every turn | ~30 tok × every turn | Only if hard-gated + deduped |
-| PostToolUse `updatedToolOutput` | yes (× calls) | ~30 tok × calls × remaining turns | **Avoid** unless rare-tool + deduped |
+| PostToolUse `updatedToolOutput` / `block`+`continueOnBlock` *(amended)* | yes (× calls) | ~30 tok × calls × remaining turns | **Avoid** unless rare-tool + deduped |
 | Exit 0, disk only | no | 0 | Free, but invisible — not a cue |
 
 ### Worked example (first MVP): blueprint cue on structural change
@@ -139,17 +155,29 @@ check blueprint context. This ADR specifies it; implementation is a follow-up PR
 - **Dedup.** Marker file `~/.cache/blueprint-structural-cue/<session_id>`,
   fire-once. Empty/absent `session_id` → graceful no-op. Shell follows
   `set -uo pipefail` with prefixed variable names (`.claude/rules/shell-scripting.md`).
-- **Channel.** `additionalContext` is **not** a valid PostToolUse field (verified
+- **Channel.** *(Amended 2026-08-06 — this bullet as originally written is what
+  produced the #2275 no-op; see [Amendment](#amendment-2026-08-06--updatedtooloutput-is-schema-bound-not-a-general-cue-channel)
+  for the corrected contract. Original text retained below for the record.)*
+  ~~`additionalContext` is **not** a valid PostToolUse field (verified
   against `hooks-reference.md` — it is SessionStart/UserPromptSubmit only).
   Use `hookSpecificOutput.updatedToolOutput` to append the cue to the edit's own
   result (cleanest — no turn-flow interaction); `{"decision":"block",
   "continueOnBlock":true,"reason":…}` is the alternative when the cue should make
-  the model actively re-decide. Cue text, ≤25 words: *"Structural change detected
+  the model actively re-decide.~~
+  **Corrected:** `additionalContext` remains invalid on PostToolUse. Because the
+  matcher is `Edit|Write` — tools with **no free-text output field** —
+  `updatedToolOutput` is unusable here, and the cue **must** use
+  `{"decision":"block","reason":…}` with `continueOnBlock: true` set on the hook
+  handler in `hooks.json`. That config half is not optional: `decision:block`
+  without it *ends the turn*. Cue text, ≤25 words: *"Structural change detected
   (manifest / public API / ADR). Consider `/blueprint:blueprint-derive-plans` or
   `blueprint-adr-validate` to keep blueprint context current."*
 - **Wiring.** `blueprint-plugin/hooks/blueprint-structural-cue.sh`, registered
-  under `PostToolUse` (matcher `Edit|Write`) in
-  `blueprint-plugin/.claude-plugin/plugin.json`.
+  under `PostToolUse` (matcher `Edit|Write`) in `blueprint-plugin/hooks.json`
+  — which `blueprint-plugin/.claude-plugin/plugin.json` points at via its
+  `"hooks": "./hooks.json"` key. *(Amended: `hooks.json` is the file that carries
+  the registration, and therefore the `continueOnBlock: true` the corrected
+  channel requires on **both** the `Write` and `Edit` entries.)*
 - **Regression test** (`.claude/rules/regression-testing.md`).
   `test-blueprint-structural-cue.sh` asserts semantic invariants: (a) a structural
   edit fires once and the output contains the `blueprint-derive-plans` cue; (b) a
@@ -203,7 +231,55 @@ check blueprint context. This ADR specifies it; implementation is a follow-up PR
 | Cue fatigue / over-firing trains the model to ignore cues | Dedup-once-per-session + narrow signal gating; start with one cue |
 | "Structural" detection misjudged (false positives) | Start narrow (manifests + public-symbol lines + ADR/PRD paths); widen only on evidence |
 | Cue collisions (multiple plugins nudge at once) | Registry doc lists all cues, events, dedup keys for audit |
-| Unsupported hook field used (`additionalContext` on PostToolUse) | Verified channel table here; regression test pins the field name |
+| Unsupported hook field used (`additionalContext` on PostToolUse) | ~~Verified channel table here; regression test pins the field name~~ *(amended — this mitigation **failed**: the risk landed as a wrong-**shape** field, not a wrong field **name**, and a test pinning the name passed against the broken value. See the Amendment.)* Pin the **emitted value's type and the harness's own response shape**, and register the suite where the runner discovers it |
+
+## Amendment (2026-08-06) — `updatedToolOutput` is schema-bound, not a general cue channel
+
+This ADR presented `hookSpecificOutput.updatedToolOutput` as *the* canonical
+point-of-performance channel and told the worked example to use it. That is
+wrong, and the error shipped: `blueprint-structural-cue.sh` — this ADR's own
+first MVP — was a **silent no-op** from the day it merged, alongside
+`bash-antipatterns-teach.sh` (29 discarded outputs over 50 transcripts /
+7.5 days, issue #2275).
+
+**The real contract.** `updatedToolOutput` is validated against the **tool's own
+output schema**. It must be an **object of that shape**. A string is rejected
+(`Invalid input: expected object, received string`, `"path": []` — the top-level
+value is what is checked) and the harness then **silently falls back** to the
+original output. The hook exits 0 in ~100ms and logs nothing, so the failure is
+invisible from the outside.
+
+| Tool | Output shape | Cue channel |
+|---|---|---|
+| `Bash` | `{stdout, stderr, interrupted, isImage, noOutputExpected}` — `stdout` is free text | `updatedToolOutput`, built as `$orig + {stdout: $augmented}`: read the harness's own `.tool_response` object and overwrite exactly one field. Rebuilding it from defaults loses `interrupted`/`stderr`; inventing keys risks a fresh rejection with the same silent fallback |
+| `Write` / `Edit` | `{content, filePath, originalFile, structuredPatch, type, userModified}` — **no free-text field** | `{"decision":"block","reason":…}` **plus `continueOnBlock: true` in `hooks.json`**. `content` is the file's actual content, so a cue banner appended there would make the model believe the banner was written to disk |
+
+**`continueOnBlock` is load-bearing, not decoration.** `decision:block` without
+it *ends the turn*, converting a silent no-op into an active regression on the
+first structural edit of every session. It is set per hook handler in
+`hooks.json`, so the channel decision spans two files and both must land
+together.
+
+**What this changes about the token-budget contract:** nothing. Conditional
+firing, per-session dedup, one terse line, cheapest event — all still hold, and
+`decision:block` + `continueOnBlock` carries the same replay cost as
+`updatedToolOutput`. What it changes is the cost *shape* on `Edit|Write`: two
+cue hooks now share one channel on one event, which is documented in
+`blueprint-plugin/docs/behavioral-cue-registry.md` § Collision Audit.
+
+**Why the Risks-table mitigation didn't catch it.** "Regression test pins the
+field name" was too weak by one level of abstraction — the field *name* was
+always right; the *value's type* was wrong. Worse, the blueprint suite that
+"pinned" it was ShellSpec under `hooks/spec/`, which **never ran anywhere**
+(shellspec is not installed, not in CI, not in any recipe, and `spec/` matches no
+glob in `run-skill-script-tests.sh`), so it pinned the broken shape indefinitely.
+A cue-hook regression test must therefore (a) feed the **harness's real
+`tool_response` object**, (b) assert the emitted value's **type**, and (c) live
+where `scripts/run-skill-script-tests.sh` discovers it —
+`*/hooks/test-*.sh`. Current suites:
+`blueprint-plugin/hooks/test-blueprint-structural-cue.sh` and
+`hooks-plugin/hooks/test-bash-antipatterns-teach.sh`; the former also gates
+`hooks.json` on `length == 2 and all(.continueOnBlock == true)`.
 
 ## References
 

@@ -127,8 +127,9 @@ scaffold itself, or to try the flow before it is promoted:
 cargo generate --path ${CLAUDE_SKILL_DIR}/../../templates/foundryvtt-module --name foundryvtt-initiative-tweaks --vcs none --define 'display_name=Initiative Tweaks' --define 'description=…' --define variant=basic
 ```
 
-Needs `cargo install cargo-generate --locked` — not in the base image, and the
-main cost of the port. See [`templates/README.md`](../../templates/README.md)
+Needs `cargo-generate` locally — not in the base image, and the main cost of the
+port. CI installs it from the release tarball so the parity gate actually runs
+(#2221). See [`templates/README.md`](../../templates/README.md)
 for the comparison, the one deliberate divergence (a non-kebab-case name), the
 Liquid brace-collision fixes, and what promoting the template would take.
 

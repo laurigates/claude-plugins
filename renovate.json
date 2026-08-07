@@ -70,6 +70,15 @@
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: extractVersion=(?<extractVersion>\\S+))?\\s+\\w+_VERSION=\"(?<currentValue>[^\"]+)\""
       ],
       "datasourceTemplate": "github-releases"
+    },
+    {
+      "customType": "regex",
+      "description": "Tool version pins in GitHub Actions workflow `env:` blocks, annotated with `# renovate: datasource=... depName=... [extractVersion=...]` above each <TOOL>_VERSION: \"x.y.z\" line. Covers binaries a workflow downloads from a GitHub release in a run step, which no built-in manager sees.",
+      "managerFilePatterns": ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: extractVersion=(?<extractVersion>\\S+))?\\s+\\w+_VERSION:\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "github-releases"
     }
   ],
   "pre-commit": {

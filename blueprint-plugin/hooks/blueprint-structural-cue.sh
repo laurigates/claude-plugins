@@ -2,12 +2,23 @@
 # blueprint-structural-cue.sh — PostToolUse cue for architecture-affecting edits.
 #
 # When an Edit/Write touches a plugin/marketplace manifest or adds a public-API
-# (export) line, this appends a one-line, once-per-session cue to the tool result
-# suggesting a blueprint check. It is a behavioral cue (ADR-0017), not a gate:
-# it never blocks an edit and degrades to silence on any error.
+# (export) line, this emits a one-line, once-per-session cue suggesting a
+# blueprint check. It is a behavioral cue (ADR-0017), not a gate: the edit has
+# already happened, and it degrades to silence on any error.
 #
-# Mechanism: PostToolUse hookSpecificOutput.updatedToolOutput replaces the tool
-# result, so the original tool_response is preserved and the cue is appended.
+# Mechanism: PostToolUse {"decision":"block","reason":"<cue>"} with
+# continueOnBlock:true in hooks.json, so the model sees the cue and the turn
+# continues - the same channel code-quality-preflight-cue.sh uses for this event.
+#
+# Why not hookSpecificOutput.updatedToolOutput (the pre-#2275 mechanism): that
+# field is validated against the TOOL'S OWN output shape. Write/Edit's shape is
+# {content, filePath, originalFile, structuredPatch, type, userModified} - it has
+# no free-text field, and `content` is the file's actual content, so appending a
+# cue banner there would make the model believe the banner was written to disk.
+# Emitting a string instead was rejected outright ("expected object, received
+# string") and silently discarded, making this hook a no-op. The block channel
+# is the only correct carrier for a cue on this event.
+#
 # Dedup is per session (one cue per session) to bound transcript-replay cost.
 #
 # -e is intentionally omitted: a best-effort cue must never break a tool call.
@@ -24,7 +35,6 @@ tool_name=$(printf '%s' "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null || ec
 file_path=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null || echo "")
 new_string=$(printf '%s' "$INPUT" | jq -r '.tool_input.new_string // empty' 2>/dev/null || echo "")
 content=$(printf '%s' "$INPUT" | jq -r '.tool_input.content // empty' 2>/dev/null || echo "")
-original=$(printf '%s' "$INPUT" | jq -r '.tool_response | if type == "string" then . else tostring end // empty' 2>/dev/null || echo "")
 session_id=$(printf '%s' "$INPUT" | jq -r '.session_id // empty' 2>/dev/null | tr -cd 'a-zA-Z0-9_-')
 
 # Only Edit/Write carry structural edits.
@@ -112,15 +122,11 @@ fi
 
 cue="Structural change detected (manifest / public API). Consider /blueprint:derive-plans or /blueprint:adr-validate to keep PRDs/ADRs current."
 
-augmented="${original}
-
-[blueprint] ${cue}"
-
-jq -n --arg out "$augmented" '{
-    hookSpecificOutput: {
-        hookEventName: "PostToolUse",
-        updatedToolOutput: $out
-    }
-}'
+# Block-with-reason channel (see the header): hooks.json sets continueOnBlock so
+# the turn continues with the reason fed back to the model. Deliberately does NOT
+# echo tool_response back - the Write/Edit response carries the file's content,
+# and re-emitting it here would both bloat the transcript and risk the model
+# reading hook text as file text.
+jq -n --arg reason "[blueprint] ${cue}" '{"decision":"block","reason":$reason}'
 
 exit 0

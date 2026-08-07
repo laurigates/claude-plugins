@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.43.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.43.0...blueprint-plugin-v3.43.1) (2026-08-07)
+
+
+### Bug Fixes
+
+* **session-plugin:** repair five guards that silently did nothing or reported a confident wrong answer ([#2277](https://github.com/laurigates/claude-plugins/issues/2277)) ([fa53f8c](https://github.com/laurigates/claude-plugins/commit/fa53f8c377763faa0166b4d9d340b70d2bc27cca))
+
 ## [3.43.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.42.0...blueprint-plugin-v3.43.0) (2026-07-27)
 
 
