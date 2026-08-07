@@ -7,9 +7,8 @@
 # invisible unless the runner is told the test was expected to run (#2221).
 #
 # A test NOT listed here may skip freely (it just reports SKIP= and WARN) —
-# taskwarrior, lizard, and similar optional dependencies are absent on the
-# runner by design, and a blanket fail-on-any-skip would be red on arrival and
-# get disabled.
+# lizard and similar optional dependencies are absent on the runner by design,
+# and a blanket fail-on-any-skip would be red on arrival and get disabled.
 #
 # A listed path that matches no discovered test is also an ERROR, so this
 # manifest cannot silently drift away from the corpus it declares.
@@ -27,3 +26,11 @@ hooks-plugin/hooks/test-bash-antipatterns.sh
 
 # uv  (workflow: "Set up uv")
 blueprint-plugin/scripts/tests/test-check-manifest-schema.sh
+
+# taskwarrior  (workflow: "Build taskwarrior")
+#
+# Both are EXECUTABLE semantic gates, and the first one is the direct fix for a
+# syntactic-only guard that let a non-working command ship (#1417/#1819) — so a
+# silent skip returns it to exactly the state it was written to escape.
+taskwarrior-plugin/skills/task-add/scripts/tests/test-uuid-capture.sh
+taskwarrior-plugin/scripts/tests/test-task-id-stability.sh

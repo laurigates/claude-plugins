@@ -15,7 +15,14 @@
 #   2. the working `+LATEST uuids` form returns a valid UUID
 #   3. the SKILL.md actually uses the working form, not the broken one
 #
-# Requires the real `task` CLI; SKIPs cleanly when taskwarrior is unavailable.
+# Requires the real `task` CLI; SKIPs cleanly when taskwarrior is unavailable so
+# it degrades on a contributor's machine.
+#
+# That SKIP is NOT acceptable in CI, and it was the only branch CI ever took: the
+# runner had no taskwarrior, so the executable gate written to replace a
+# syntactic one never executed — the failure mode it exists to prevent, one level
+# up (#2221). `Test: Skill scripts` now builds Taskwarrior 3.x, and this path is
+# listed in scripts/required-to-run-tests.txt — a skip there fails the run.
 
 set -uo pipefail
 
