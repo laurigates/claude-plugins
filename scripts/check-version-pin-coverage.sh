@@ -15,6 +15,12 @@
 # `version:` input at its floating default, the workflow looks pinned but pulls
 # a fresh binary on every run. See INSTALLER_ACTIONS below.
 #
+# It also catches the *path* gap (#2222): a plugin scaffold template
+# (*-plugin/templates/**) ships REAL workflow/manifest files that a generated
+# repo inherits verbatim. Such a pin can be perfectly well shaped and still be
+# invisible, because no manager's file pattern matches its path. See the
+# "Plugin scaffold templates" section below.
+#
 # Only fenced code blocks are scanned, so illustrative version numbers in prose
 # tables are ignored by design (see the "illustrative vs. managed" table in the
 # rule). Fence detection comes from a real markdown parse (tree-sitter) via the
@@ -54,6 +60,8 @@ from_covered=0
 image_covered=0
 rev_covered=0
 version_input_covered=0
+template_files_scanned=0
+template_pins_covered=0
 
 add_issue() {
   # add_issue <severity> <type> <message>
@@ -203,17 +211,25 @@ files_scanned=${#scan_files[@]}
 # Plugin directories present but no skill markdown discovered means the scan
 # misfired (a prune that swallowed the root); no plugin directories at all means
 # there is genuinely nothing to audit.
-plugin_dir_count=$(find . -maxdepth 1 -type d -name '*-plugin' -not -name '.claude-plugin' 2>/dev/null | wc -l | tr -d ' ')
+# The population signal is a plugin dir that actually HAS a skills/ tree, not a
+# plugin dir per se. A plugin carrying only templates/ (or only agents/) is a
+# legitimate zero-markdown corpus, and counting it made a template-only tree
+# report a misfire it had not suffered. A prune that swallows the scan root
+# still fires: every real plugin dir has skills/, so the count stays > 0.
+plugin_dir_count=$(find . -maxdepth 2 -type d -name 'skills' -not -path '*/.claude/worktrees/*' -not -path '*/dist/*' 2>/dev/null | wc -l | tr -d ' ')
+# Recorded as a normal ERROR issue rather than an early exit. The misfire is a
+# verdict about the MARKDOWN corpus only, and the scaffold-template scan below
+# (#2222) is independent of it — reading its own file set and emitting its own
+# TEMPLATE_* counters. Exiting here suppressed that scan entirely, so a
+# template-only tree (plugin dirs + templates, no skill markdown) reported
+# neither counter and any consumer reading TEMPLATE_FILES_SCANNED got an empty
+# string. Falling through keeps the check loud: the ERROR still forces
+# STATUS=ERROR and `--strict` still exits 1, via the normal report path.
+# The markdown parse block below is already gated on `files_scanned > 0`, so it
+# no-ops on an empty corpus without needing a second guard.
 if [ "$files_scanned" -eq 0 ] && [ "$plugin_dir_count" -gt 0 ]; then
-  echo "=== VERSION PIN COVERAGE ==="
-  echo "FILES_SCANNED=0"
-  echo "PLUGIN_DIRS=$plugin_dir_count"
-  echo "STATUS=ERROR"
-  echo "ISSUE_COUNT=1"
-  echo "ISSUES:"
-  echo "  - SEVERITY=ERROR TYPE=nothing_scanned MSG=$plugin_dir_count plugin dirs but zero skill markdown discovered; scan misfired (see #2219)"
-  echo "=== END VERSION PIN COVERAGE ==="
-  exit 1
+  add_issue ERROR nothing_scanned \
+    "$plugin_dir_count plugin dirs but zero skill markdown discovered; scan misfired (see #2219)"
 fi
 
 # Fence-awareness comes from a real markdown parse (tree-sitter via the shared
@@ -321,6 +337,160 @@ if [ "$files_scanned" -gt 0 ]; then
   flush_pending_uses
 fi
 
+# --- Plugin scaffold templates (#2222) ----------------------------------------
+# The scan above covers pins written as EXAMPLES in skill markdown. A plugin
+# scaffold template (*-plugin/templates/**) is the other shape: real workflow /
+# manifest files that a generated repo inherits verbatim, so whatever pin the
+# template carries at generation time is what every new repo starts on.
+#
+# The failure mode here is not the pin's SHAPE (a template's `uses: x@v6` is a
+# perfectly good tag-form pin) — it is the pin's PATH. Renovate's built-in
+# managers are '(^|/)'-prefixed rather than root-anchored, so they already reach
+# a template's own .github/workflows/ subtree and its package.json; a FLAT
+# scaffold layout (blueprint-plugin/templates/*.workflow.yml) matches nothing.
+# Such a pin looks managed, is shaped correctly, and silently never updates.
+#
+# So this check asks the coverage question directly: is the FILE matched by any
+# manager pattern? The configured patterns are read out of renovate.json rather
+# than restated here, so the guard tracks the config instead of drifting from it
+# (the built-in defaults below are Renovate's own, which do not change often).
+if command -v python3 >/dev/null 2>&1; then
+  template_report="$(
+    python3 - "$proj_dir" <<'PY'
+import json, os, re, sys
+
+proj = sys.argv[1]
+
+# Renovate's own defaults for the managers that carry version pins. Additive
+# user patterns from renovate.json are appended below.
+patterns = [
+    r"(^|/)(workflow-templates|\.(?:github|gitea|forgejo)/(?:workflows|actions))/.+\.ya?ml$",
+    r"(^|/)action\.ya?ml$",
+    r"(^|/)package\.json$",
+    r"(^|/)\.pre-commit-config\.ya?ml$",
+    r"(^|/)([Dd]ocker|[Cc]ontainer)file[^/]*$",
+    r"(^|/)(docker-)?compose[^/]*\.ya?ml$",
+]
+
+
+def add(raw):
+    # Renovate treats a /…/-delimited value as a regex; anything else is a glob.
+    # Only the regex form is understood here — a glob pattern is reported as
+    # unparsed rather than silently treated as covering nothing.
+    if isinstance(raw, str) and len(raw) > 1 and raw.startswith("/") and raw.endswith("/"):
+        try:
+            re.compile(raw[1:-1])
+        except re.error:
+            return
+        patterns.append(raw[1:-1])
+
+
+cfg_path = os.path.join(proj, "renovate.json")
+try:
+    with open(cfg_path, encoding="utf-8") as fh:
+        cfg = json.load(fh)
+except (OSError, ValueError):
+    cfg = {}
+
+for key, value in cfg.items():
+    if isinstance(value, dict):
+        for raw in value.get("managerFilePatterns", []) or []:
+            add(raw)
+for cm in cfg.get("customManagers", []) or []:
+    for raw in cm.get("managerFilePatterns", []) or []:
+        add(raw)
+
+compiled = [re.compile(p) for p in patterns]
+
+USES = re.compile(r"uses:\s*[\"']?([\w.-]+/[\w./-]+)@([^\s\"']+)")
+FROM = re.compile(r"^\s*FROM\s+\S+:\S+", re.M)
+IMAGE = re.compile(r"^\s*image:\s*[\"']?[\w./-]+:[\w][\w.-]*", re.M)
+REV = re.compile(r"^\s*rev:\s*\S+", re.M)
+FLOATING = {"main", "master", "stable", "nightly", "latest", "HEAD"}
+
+files = 0
+covered = 0
+issues = []
+
+for dirpath, dirnames, filenames in os.walk(proj):
+    dirnames[:] = [
+        d for d in dirnames
+        if d not in (".git", "node_modules", "dist") and d != "worktrees"
+    ]
+    parts = os.path.relpath(dirpath, proj).split(os.sep)
+    # Only a `templates/` tree that lives directly inside a *-plugin directory.
+    if not any(
+        parts[i].endswith("-plugin") and parts[i + 1] == "templates"
+        for i in range(len(parts) - 1)
+    ):
+        continue
+    for name in sorted(filenames):
+        # Markdown under a plugin is either a skill example (scanned above) or
+        # prose; either way it is not a file a manager would ever match.
+        if name.endswith(".md"):
+            continue
+        abspath = os.path.join(dirpath, name)
+        rel = os.path.relpath(abspath, proj)
+        try:
+            with open(abspath, encoding="utf-8", errors="replace") as fh:
+                text = fh.read()
+        except OSError:
+            continue
+
+        pins = []
+        for owner_repo, ref in USES.findall(text):
+            if ref in FLOATING:
+                continue
+            pins.append("uses: %s@%s" % (owner_repo, ref))
+        if FROM.search(text):
+            pins.append("FROM <image>:<tag>")
+        if IMAGE.search(text):
+            pins.append("image: <image>:<tag>")
+        if REV.search(text):
+            pins.append("rev: <ref>")
+        if name == "package.json":
+            try:
+                pkg = json.loads(text)
+            except ValueError:
+                pkg = {}
+            for dep_type in ("dependencies", "devDependencies", "peerDependencies"):
+                if pkg.get(dep_type):
+                    pins.append("package.json %s" % dep_type)
+
+        if not pins:
+            continue
+        files += 1
+        if any(rx.search(rel) for rx in compiled):
+            covered += len(pins)
+            continue
+        issues.append(
+            "ERROR\ttemplate_pin_unmanaged\t"
+            "%s: scaffold template carries a version pin (%s) at a path no "
+            "Renovate manager matches — add the path to a manager's "
+            "managerFilePatterns in renovate.json (see .claude/rules/version-pinning.md)"
+            % (rel, pins[0])
+        )
+
+print("COUNT_FILES=%d" % files)
+print("COUNT_COVERED=%d" % covered)
+for line in issues:
+    print("ISSUE\t%s" % line)
+PY
+  )"
+  while IFS= read -r report_line; do
+    case "$report_line" in
+      COUNT_FILES=*) template_files_scanned="${report_line#COUNT_FILES=}" ;;
+      COUNT_COVERED=*) template_pins_covered="${report_line#COUNT_COVERED=}" ;;
+      ISSUE*)
+        report_line="${report_line#ISSUE	}"
+        add_issue "${report_line%%	*}" \
+          "$(printf '%s' "${report_line#*	}" | cut -f1)" \
+          "$(printf '%s' "$report_line" | cut -f3-)"
+        ;;
+    esac
+  done <<< "$template_report"
+fi
+
 # --- Status -------------------------------------------------------------------
 overall_status="OK"
 exit_severity=0
@@ -336,11 +506,14 @@ fi
 # --- Output -------------------------------------------------------------------
 echo "=== VERSION PIN COVERAGE ==="
 echo "FILES_SCANNED=$files_scanned"
+echo "PLUGIN_DIRS=$plugin_dir_count"
 echo "USES_COVERED=$uses_covered"
 echo "FROM_COVERED=$from_covered"
 echo "IMAGE_COVERED=$image_covered"
 echo "REV_COVERED=$rev_covered"
 echo "VERSION_INPUT_COVERED=$version_input_covered"
+echo "TEMPLATE_FILES_SCANNED=$template_files_scanned"
+echo "TEMPLATE_PINS_COVERED=$template_pins_covered"
 echo "STATUS=$overall_status"
 echo "ISSUE_COUNT=$issue_count"
 if [ "$issue_count" -gt 0 ]; then
