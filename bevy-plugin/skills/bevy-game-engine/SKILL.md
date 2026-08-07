@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-08-07
 reviewed: 2025-12-16
 name: bevy-game-engine
 description: "Bevy game engine: ECS, rendering, input, and asset management. Use when building Bevy games, working with entities/components/systems, or mentioning Rust gamedev or 2D/3D games."
@@ -39,6 +39,19 @@ Expert knowledge for developing games with Bevy, the data-driven game engine bui
 - **3D Rendering**: PBR materials, meshes, lighting, shadows, cameras
 - **UI**: bevy_ui for in-game interfaces
 - **Shaders**: Custom WGSL shaders and render pipelines
+
+## Reference Files
+
+The ECS core, project setup, and the command set below are everything a first
+pass needs. Follow one link when the task calls for it — nothing under
+`references/` is loaded unless you open it.
+
+| Path you are on | File | Carries |
+|---|---|---|
+| Reading player input | [`references/input.md`](references/input.md) | `ButtonInput` keyboard/mouse polling, pressed vs just-pressed, cursor position, gamepad and rebinding pointers |
+| Loading assets, or driving the state machine | [`references/assets-and-states.md`](references/assets-and-states.md) | `AssetServer` handles and `LoadState` gating, `States` enum, `OnEnter`/`OnExit`/`run_if(in_state)`, `NextState` timing |
+| Decoupling two systems that must communicate | [`references/events.md`](references/events.md) | `#[derive(Event)]`, `EventWriter`/`EventReader`, `add_event` registration, the two-frame buffer and ordering caveat |
+| Laying out a growing game, or chasing frame time | [`references/project-architecture.md`](references/project-architecture.md) | Directory layout, plugin/marker-component organization, query-filter and profiling guidance, bundles and system sets |
 
 ## Key Capabilities
 
@@ -114,140 +127,6 @@ impl Plugin for GamePlugin {
 }
 ```
 
-**Input Handling**
-```rust
-fn player_input(
-    keyboard: Res<ButtonInput<KeyCode>>,
-    mut query: Query<&mut Velocity, With<Player>>,
-) {
-    let mut direction = Vec2::ZERO;
-
-    if keyboard.pressed(KeyCode::KeyW) { direction.y += 1.0; }
-    if keyboard.pressed(KeyCode::KeyS) { direction.y -= 1.0; }
-    if keyboard.pressed(KeyCode::KeyA) { direction.x -= 1.0; }
-    if keyboard.pressed(KeyCode::KeyD) { direction.x += 1.0; }
-
-    for mut velocity in &mut query {
-        velocity.0 = direction.normalize_or_zero() * 200.0;
-    }
-}
-
-// Mouse input
-fn mouse_click(
-    mouse: Res<ButtonInput<MouseButton>>,
-    windows: Query<&Window>,
-) {
-    if mouse.just_pressed(MouseButton::Left) {
-        if let Some(position) = windows.single().cursor_position() {
-            println!("Clicked at: {:?}", position);
-        }
-    }
-}
-```
-
-**Asset Loading**
-```rust
-#[derive(Resource)]
-struct GameAssets {
-    player_sprite: Handle<Image>,
-    font: Handle<Font>,
-    sound: Handle<AudioSource>,
-}
-
-fn load_assets(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
-    commands.insert_resource(GameAssets {
-        player_sprite: asset_server.load("sprites/player.png"),
-        font: asset_server.load("fonts/game.ttf"),
-        sound: asset_server.load("sounds/jump.ogg"),
-    });
-}
-
-// Check if assets are loaded
-fn check_assets_loaded(
-    asset_server: Res<AssetServer>,
-    assets: Res<GameAssets>,
-    mut next_state: ResMut<NextState<GameState>>,
-) {
-    use bevy::asset::LoadState;
-
-    if asset_server.get_load_state(&assets.player_sprite) == Some(LoadState::Loaded) {
-        next_state.set(GameState::Playing);
-    }
-}
-```
-
-**Game States**
-```rust
-#[derive(States, Debug, Clone, Eq, PartialEq, Hash, Default)]
-enum GameState {
-    #[default]
-    Loading,
-    Menu,
-    Playing,
-    Paused,
-    GameOver,
-}
-
-fn setup_states(app: &mut App) {
-    app.init_state::<GameState>()
-       .add_systems(OnEnter(GameState::Menu), setup_menu)
-       .add_systems(OnExit(GameState::Menu), cleanup_menu)
-       .add_systems(Update, menu_input.run_if(in_state(GameState::Menu)))
-       .add_systems(Update, game_logic.run_if(in_state(GameState::Playing)));
-}
-
-fn pause_game(
-    keyboard: Res<ButtonInput<KeyCode>>,
-    state: Res<State<GameState>>,
-    mut next_state: ResMut<NextState<GameState>>,
-) {
-    if keyboard.just_pressed(KeyCode::Escape) {
-        match state.get() {
-            GameState::Playing => next_state.set(GameState::Paused),
-            GameState::Paused => next_state.set(GameState::Playing),
-            _ => {}
-        }
-    }
-}
-```
-
-**Events**
-```rust
-#[derive(Event)]
-struct CollisionEvent {
-    entity_a: Entity,
-    entity_b: Entity,
-}
-
-#[derive(Event)]
-struct ScoreEvent(u32);
-
-fn detect_collisions(
-    mut collision_events: EventWriter<CollisionEvent>,
-    query: Query<(Entity, &Transform, &Collider)>,
-) {
-    // Collision detection logic
-    for [(entity_a, transform_a, _), (entity_b, transform_b, _)] in query.iter_combinations() {
-        if colliding(transform_a, transform_b) {
-            collision_events.send(CollisionEvent { entity_a, entity_b });
-        }
-    }
-}
-
-fn handle_collisions(
-    mut collision_events: EventReader<CollisionEvent>,
-    mut score_events: EventWriter<ScoreEvent>,
-) {
-    for event in collision_events.read() {
-        // Handle collision
-        score_events.send(ScoreEvent(10));
-    }
-}
-```
-
 ## Essential Commands
 
 ```bash
@@ -276,77 +155,6 @@ cargo add bevy_rapier2d       # 2D physics
 cargo add bevy_rapier3d       # 3D physics
 cargo add bevy_asset_loader   # Asset loading helpers
 cargo add leafwing-input-manager  # Advanced input
-```
-
-## Project Structure
-
-```
-my_game/
-├── Cargo.toml
-├── assets/
-│   ├── sprites/
-│   ├── fonts/
-│   ├── sounds/
-│   └── shaders/
-└── src/
-    ├── main.rs
-    ├── lib.rs           # Optional library crate
-    ├── plugins/
-    │   ├── mod.rs
-    │   ├── player.rs
-    │   ├── enemy.rs
-    │   └── ui.rs
-    ├── components/
-    │   └── mod.rs
-    ├── resources/
-    │   └── mod.rs
-    ├── systems/
-    │   └── mod.rs
-    └── events/
-        └── mod.rs
-```
-
-## Best Practices
-
-**Performance**
-- Use `Query` filters (`With<T>`, `Without<T>`) to narrow iteration
-- Avoid `Query::iter()` when you need specific entities
-- Use `Changed<T>` and `Added<T>` filters for reactive systems
-- Profile with `bevy_diagnostic` and Tracy
-- Use asset preprocessing for production builds
-
-**Code Organization**
-- Group related components, systems, and events into plugins
-- Use marker components for entity classification
-- Keep systems focused and single-purpose
-- Use resources for global game state
-- Prefer events over direct component modification for decoupling
-
-**Common Patterns**
-```rust
-// Marker components
-#[derive(Component)]
-struct Enemy;
-
-#[derive(Component)]
-struct Bullet;
-
-// Component bundles for common entity types
-#[derive(Bundle)]
-struct EnemyBundle {
-    enemy: Enemy,
-    health: Health,
-    sprite: SpriteBundle,
-}
-
-// System sets for ordering
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-enum GameSet {
-    Input,
-    Movement,
-    Collision,
-    Render,
-}
 ```
 
 ## Agentic Optimizations
