@@ -211,17 +211,25 @@ files_scanned=${#scan_files[@]}
 # Plugin directories present but no skill markdown discovered means the scan
 # misfired (a prune that swallowed the root); no plugin directories at all means
 # there is genuinely nothing to audit.
-plugin_dir_count=$(find . -maxdepth 1 -type d -name '*-plugin' -not -name '.claude-plugin' 2>/dev/null | wc -l | tr -d ' ')
+# The population signal is a plugin dir that actually HAS a skills/ tree, not a
+# plugin dir per se. A plugin carrying only templates/ (or only agents/) is a
+# legitimate zero-markdown corpus, and counting it made a template-only tree
+# report a misfire it had not suffered. A prune that swallows the scan root
+# still fires: every real plugin dir has skills/, so the count stays > 0.
+plugin_dir_count=$(find . -maxdepth 2 -type d -name 'skills' -not -path '*/.claude/worktrees/*' -not -path '*/dist/*' 2>/dev/null | wc -l | tr -d ' ')
+# Recorded as a normal ERROR issue rather than an early exit. The misfire is a
+# verdict about the MARKDOWN corpus only, and the scaffold-template scan below
+# (#2222) is independent of it — reading its own file set and emitting its own
+# TEMPLATE_* counters. Exiting here suppressed that scan entirely, so a
+# template-only tree (plugin dirs + templates, no skill markdown) reported
+# neither counter and any consumer reading TEMPLATE_FILES_SCANNED got an empty
+# string. Falling through keeps the check loud: the ERROR still forces
+# STATUS=ERROR and `--strict` still exits 1, via the normal report path.
+# The markdown parse block below is already gated on `files_scanned > 0`, so it
+# no-ops on an empty corpus without needing a second guard.
 if [ "$files_scanned" -eq 0 ] && [ "$plugin_dir_count" -gt 0 ]; then
-  echo "=== VERSION PIN COVERAGE ==="
-  echo "FILES_SCANNED=0"
-  echo "PLUGIN_DIRS=$plugin_dir_count"
-  echo "STATUS=ERROR"
-  echo "ISSUE_COUNT=1"
-  echo "ISSUES:"
-  echo "  - SEVERITY=ERROR TYPE=nothing_scanned MSG=$plugin_dir_count plugin dirs but zero skill markdown discovered; scan misfired (see #2219)"
-  echo "=== END VERSION PIN COVERAGE ==="
-  exit 1
+  add_issue ERROR nothing_scanned \
+    "$plugin_dir_count plugin dirs but zero skill markdown discovered; scan misfired (see #2219)"
 fi
 
 # Fence-awareness comes from a real markdown parse (tree-sitter via the shared
@@ -498,6 +506,7 @@ fi
 # --- Output -------------------------------------------------------------------
 echo "=== VERSION PIN COVERAGE ==="
 echo "FILES_SCANNED=$files_scanned"
+echo "PLUGIN_DIRS=$plugin_dir_count"
 echo "USES_COVERED=$uses_covered"
 echo "FROM_COVERED=$from_covered"
 echo "IMAGE_COVERED=$image_covered"

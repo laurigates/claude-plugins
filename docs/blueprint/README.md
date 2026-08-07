@@ -73,7 +73,7 @@ Curated AI context lives in `.claude/rules/` (hand-written here); the former `ai
 | `feat(blueprint-plugin): …` | Minor version bump on `blueprint-plugin` | Skill changes inside `blueprint-plugin/` |
 | `fix(blueprint-plugin): …` | Patch version bump | Bug fixes inside `blueprint-plugin/` |
 
-The unscoped `blueprint` scope deliberately exists separately from `blueprint-plugin` so dogfooding maintenance never accidentally publishes the plugin.
+The `blueprint` scope exists to keep dogfooding commits legible in the changelog — it is **not** what stops them publishing the plugin. release-please routes a commit to every package whose directory it touches, regardless of scope (`.claude/rules/conventional-commits.md`). What actually protects the plugin is the `chore` **type** (no bump) plus keeping these edits under `docs/blueprint/`. A `fix(blueprint): …` touching a file inside `blueprint-plugin/` **would** publish.
 
 ## Re-enabling tasks
 
