@@ -63,6 +63,8 @@ permissions:
 env:
   # renovate: datasource=github-releases depName=cargo-generate/cargo-generate extractVersion=^v(?<version>.*)$
   CARGO_GENERATE_VERSION: "0.23.14"
+  # renovate: datasource=github-releases depName=GothenburgBitFactory/taskwarrior extractVersion=^v(?<version>.*)$
+  TASKWARRIOR_VERSION: "3.4.2"
 
 jobs:
   test:
@@ -115,10 +117,59 @@ jobs:
           tar -xzf "$tmp_dir/cargo-generate.tar.gz" -C "$HOME/.local/bin" cargo-generate
           rm -rf "$tmp_dir"
 
-      - name: Put cargo-generate on PATH
+      # taskwarrior powers two EXECUTABLE semantic gates that had never run here:
+      # taskwarrior-plugin/skills/task-add/.../test-uuid-capture.sh and
+      # taskwarrior-plugin/scripts/tests/test-task-id-stability.sh. The first one
+      # exists specifically because a SYNTACTIC guard — a grep for the literal
+      # `task +LATEST _get uuid` — let a non-working command ship (#1417/#1819):
+      # `_get` is a DOM accessor that returns empty when handed a tag filter. The
+      # executable test was the fix for that class, so leaving it unrun defeats
+      # its purpose (#2221).
+      #
+      # Built from source, unlike cargo-generate above, because there is no
+      # prebuilt to download: the v3.4.2 release carries exactly one uploaded
+      # asset, the `task-3.4.2.tar.gz` SOURCE tarball, plus GitHub's two
+      # auto-generated source archives. `apt-get install taskwarrior` is not an
+      # option either — ubuntu-24.04 universe pins 2.6.2, and these skills
+      # document Taskwarrior 3.x, so a 2.x gate could read green on guidance
+      # that is broken for every real user.
+      #
+      # ~4 minutes cold on a 4-vCPU runner (C++ plus the Rust taskchampion
+      # crate), which is why it is cached on the version tag; a warm run restores
+      # one binary in ~1s (56 MB unstripped, 17 MB in the cache — `strip` only
+      # takes it to 39 MB, so it is not worth a step). The tag is the only
+      # integrity anchor — upstream
+      # publishes no checksum file — and Renovate keeps it fresh via the
+      # workflow-env customManager in renovate.json.
+      - name: Restore cached taskwarrior
+        id: taskwarrior-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/bin/task
+          key: taskwarrior-${{ env.TASKWARRIOR_VERSION }}-linux-x86_64
+
+      - name: Build taskwarrior
+        if: steps.taskwarrior-cache.outputs.cache-hit != 'true'
+        run: |
+          # cmake, g++ and the Rust toolchain are already on the runner image;
+          # uuid-dev is the one header package the configure step probes for
+          # ("Looking for libuuid"), and it is cheap enough not to gamble on.
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq uuid-dev
+          mkdir -p "$HOME/.local/bin"
+          tmp_dir="$(mktemp -d)"
+          git clone --depth 1 --branch "v${TASKWARRIOR_VERSION}" \
+            https://github.com/GothenburgBitFactory/taskwarrior.git "$tmp_dir/src"
+          cmake -S "$tmp_dir/src" -B "$tmp_dir/build" -DCMAKE_BUILD_TYPE=Release
+          cmake --build "$tmp_dir/build" -j"$(nproc)"
+          install -m 0755 "$tmp_dir/build/src/task" "$HOME/.local/bin/task"
+          rm -rf "$tmp_dir"
+
+      - name: Put installed tools on PATH
         run: |
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           "$HOME/.local/bin/cargo-generate" --version
+          "$HOME/.local/bin/task" --version
 
       - name: Regression-test the skill-script runner's SKIP accounting
         run: bash scripts/tests/test-run-skill-script-tests.sh

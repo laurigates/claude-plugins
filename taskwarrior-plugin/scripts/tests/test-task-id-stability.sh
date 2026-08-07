@@ -26,7 +26,14 @@
 #      uses $TASK_UUID, and that none of them still use the stale $TASKID —
 #      catching a conversion that only fixed some of a skill's mutating calls.
 #
-# Requires the real `task` CLI; SKIPs cleanly when taskwarrior is unavailable.
+# Requires the real `task` CLI; SKIPs cleanly when taskwarrior is unavailable so
+# it degrades on a contributor's machine.
+#
+# That SKIP is NOT acceptable in CI, and it was the only branch CI ever took —
+# note that the skip gates Parts 2 and 3 as well, which need no `task` binary at
+# all, so the partial-conversion and citation-drift guards went unrun too
+# (#2221). `Test: Skill scripts` now builds Taskwarrior 3.x, and this path is
+# listed in scripts/required-to-run-tests.txt — a skip there fails the run.
 
 set -uo pipefail
 
