@@ -6,7 +6,7 @@ argument-hint: "diff|PR|files to verify; optional --criteria <file> of acceptanc
 allowed-tools: Agent, Read, Glob, Grep, Bash(git diff *), Bash(git log *), Bash(gh pr view *), Bash(npm *), Bash(npx *), Bash(uv run *), Bash(pytest *), Bash(cargo *), Bash(go test *), TodoWrite
 model: opus
 created: 2026-06-22
-modified: 2026-07-28
+modified: 2026-08-07
 compatibility: claude-code
 reviewed: 2026-07-05
 ---
@@ -91,7 +91,64 @@ nothing to ground a verdict in. Each criterion is one ledger row in Step 3.
 ### Step 3: Dispatch the intent-starved verifier
 
 One `Agent`, `model: opus`, reading **only** the criteria, the diff, and the
-captured execution-evidence file — not the author's reasoning. Template:
+captured execution-evidence file — not the author's reasoning. Bind its output
+to the `LEDGER` schema below and paste that schema **verbatim** into the brief:
+a schema forces a determinate answer on every row where prose lets a row go
+quietly unanswered.
+
+#### The `LEDGER` schema
+
+```json
+{
+  "type": "object",
+  "required": ["rows", "coverage", "verdict"],
+  "properties": {
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["criterion", "evidence", "verdict", "sequenceMatchesProduction"],
+        "properties": {
+          "criterion": { "type": "string" },
+          "evidence": { "type": "string" },
+          "verdict": { "enum": ["PASS", "FAIL", "PARTIAL", "UNVERIFIED"] },
+          "sequenceMatchesProduction": { "enum": ["yes", "no", "not-applicable"] }
+        }
+      }
+    },
+    "coverage": { "type": "string" },
+    "verdict": { "enum": ["pass", "fail"] }
+  }
+}
+```
+
+`evidence` is the test name / `file:line` / observed output drawn from the
+execution-evidence file, or the literal `none`. `coverage` is
+`<#rows with PASS/FAIL evidence> / <total rows>`.
+
+| Row verdict | Meaning |
+|---|---|
+| `PASS` | execution evidence demonstrates the criterion holds |
+| `FAIL` | execution evidence demonstrates it is violated — name the concrete failing input/test |
+| `PARTIAL` | covered for some inputs; a *stated* edge case is unhandled |
+| `UNVERIFIED` | no execution exercises this criterion (a coverage gap) — never pass a row because the code "looks right" |
+
+**`sequenceMatchesProduction` is required on every row**, and that requirement
+is the entire gain of the schema. Step 3a's check is the one a verifier skips
+silently when it is only prose, because a green test *looks* like evidence — a
+required enum makes "I did not check" unrepresentable.
+
+| Value | When |
+|---|---|
+| `yes` | the test's operation sequence reproduces the real production call path |
+| `no` | the test passes over a shorter or rearranged sequence than production uses → the row's `verdict` becomes `UNVERIFIED` |
+| `not-applicable` | the criterion makes no round-trip / determinism / reproducibility / idempotence claim |
+
+The overall `verdict` is `pass` only when every row is `PASS` **and** no row is
+`sequenceMatchesProduction: "no"`. Any `FAIL`, any `UNVERIFIED`, or any sequence
+divergence makes it `fail`.
+
+Template:
 
 ```
 subagent_type: general-purpose
@@ -107,25 +164,20 @@ prompt: |
   Do NOT read the author's plan, commit narrative, or rationale — grade the
   behaviour, not the intent.
 
-  Build a ledger with ONE row per criterion:
-    CRITERION=<n: the criterion text>
-    EVIDENCE=<the test name / file:line / observed output that demonstrates it,
-              drawn from the execution evidence — or "none">
-    VERDICT=PASS|FAIL|PARTIAL|UNVERIFIED
-      PASS        — execution evidence demonstrates the criterion holds
-      FAIL        — execution evidence demonstrates it is violated (name the
-                    concrete failing input/test)
-      PARTIAL     — covered for some inputs, a stated edge case is unhandled
-      UNVERIFIED  — no execution exercises this criterion (a COVERAGE GAP; do
-                    NOT pass it on the basis that the code "looks right")
+  Emit ONE object conforming to this schema, with one row per criterion:
+    <paste the LEDGER schema verbatim>
 
-  Then:
-    COVERAGE=<#criteria with PASS/FAIL evidence> / <total criteria>
-    VERDICT: exactly one of `pass` | `fail`.
-      `pass` requires every criterion PASS with execution evidence.
-      Any FAIL, or any UNVERIFIED criterion, makes the overall verdict `fail`.
+  For every row, decide `sequenceMatchesProduction` explicitly: identify what
+  real call sequence exercises the claim in production and confirm the test
+  reproduces that sequence, not just a convenient shorter one.
   Cite evidence for every row. Your final message is the deliverable.
 ```
+
+> **No workflow harness here — deliberately.** The schema is the whole delta;
+> agent count stays at one. This skill is the Pillar-1 oracle other loops
+> delegate their stop condition to, so a fan-out design would multiply through
+> every iteration of every loop in the repo — the one place where per-invocation
+> cost compounds rather than adds (`.claude/rules/workflow-vs-skill.md`).
 
 For several independent targets, dispatch one verifier per target in a
 single-message parallel `Agent` batch — except on a `[1m]` model, where the
@@ -157,7 +209,8 @@ deferred state at the *same relative point in each stream*, so the round-trip
 passing test is real; it just exercises the one ordering that can't see the bug.
 
 Grade such a claim `UNVERIFIED` until the test reproduces the production
-sequence, even though a green test exists.
+sequence, even though a green test exists — that is the row whose
+`sequenceMatchesProduction` is `no`.
 
 ### Step 4: Triage against over-correction
 
@@ -204,4 +257,7 @@ human, not to keep grinding.
 - `workflow-orchestration-plugin:workflow-checkpoint-refactor` — a loop whose
   phase gate delegates its independent verdict here
 - `.claude/rules/loop-integrity.md` — Pillar 1: a loop's stop condition is judged
-  by an independent verifier like this one, not the worker
+  by an independent verifier like this one, not the worker. **Keep this literal
+  path in the body**: `scripts/check-loop-integrity.sh` requires the token
+  `loop-integrity.md` in this file, so a later "tighten the Related section" edit
+  that drops it fails the build.
