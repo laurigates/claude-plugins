@@ -92,20 +92,20 @@ if require_tool openssl; then
   mc_ssl="$(openssl speed -multi "$NCPU" aes-256-cbc 2>&1)"
   echo "$mc_ssl"
   mc_16k="$(echo "$mc_ssl" | grep "aes-256-cbc" | tail -1 | awk '{print $NF}')"
-  if [[ -n "$mc_16k" ]] && [[ -n "${aes_16k:-}" ]]; then
+  if [[ -n "$mc_16k" ]]; then
     mc_mbs="$(ossl_mbs "$mc_16k")"
-    sc_mbs="$(ossl_mbs "$aes_16k")"
-    if (( sc_mbs > 0 )); then
-      scaling=$(( mc_mbs * 100 / (sc_mbs * NCPU) ))
-      info "Multi-core AES-256-CBC: ${mc_mbs} MB/s  Scaling efficiency: ${scaling}%"
-      if (( scaling < SCALING_WARN_PCT )); then
-        warn "Multi-core scaling efficiency: ${scaling}% < ${SCALING_WARN_PCT}%"
-      else
-        pass "Multi-core scaling efficiency: ${scaling}%"
-      fi
+    # The absolute multi-core throughput IS scored — it self-calibrates against
+    # this machine's own baseline, so it carries no cross-topology assumption.
+    score_hib bench_aes_mc_mbs "AES-256-CBC multi-core (${NCPU} threads)" "$mc_mbs" " MB/s"
+    # The scaling *ratio* is reported only — see report_scaling() (issue #2183).
+    if [[ -n "${aes_16k:-}" ]]; then
+      sc_mbs="$(ossl_mbs "$aes_16k")"
+      report_scaling "$mc_mbs" "$sc_mbs" "$NCPU"
+    else
+      info "Single-core AES baseline unavailable — scaling efficiency not computed"
     fi
   else
-    info "Multi-core AES: ${mc_16k:-unknown} (single-core baseline not available for comparison)"
+    info "Multi-core AES throughput could not be parsed from openssl output"
     pass "OpenSSL multi-thread completed"
   fi
 fi
