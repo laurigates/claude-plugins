@@ -49,6 +49,34 @@ check_lt() {
     echo "FAIL: $label (got '$a', wanted < '$b')"
   fi
 }
+# Whole-line KEY=VALUE match. `check` is a substring test, and several keys are
+# suffixes of others — `RECENT_TASK_1_PROJECT=x` and `STALE_1_PROJECT=x` both
+# CONTAIN `PROJECT=x`, so an unanchored assertion can be satisfied by a
+# neighbouring row instead of the key under test (the #2219 lesson).
+check_line() {
+  local label="$1" haystack="$2" needle="$3"
+  if printf '%s\n' "$haystack" | grep -qxF "$needle"; then
+    pass=$((pass + 1))
+  else
+    fail=$((fail + 1))
+    echo "FAIL: $label"
+    echo "  expected a whole line: $needle"
+  fi
+}
+# Exact count of whole lines matching an anchored ERE. The injection guard:
+# a value carrying a newline shows up as an EXTRA `KEY=` line, and neither a
+# presence assertion (`check_line`) nor an absence one can see a duplicate —
+# only counting can.
+check_count_line() {
+  local label="$1" haystack="$2" pattern="$3" want="$4" got
+  got=$(printf '%s\n' "$haystack" | grep -cE "$pattern" || true)
+  if [ "$got" = "$want" ]; then
+    pass=$((pass + 1))
+  else
+    fail=$((fail + 1))
+    echo "FAIL: $label (got '$got' lines matching /$pattern/, wanted '$want')"
+  fi
+}
 check_eq() {
   local label="$1" actual="$2" want="$3"
   if [ "$actual" = "$want" ]; then
@@ -803,6 +831,328 @@ check "AE: spinup names the fallback rows" "$spinup_docs" "RECENT_TASK_"
 check "AE: spinup names the widened scope by value" "$spinup_docs" "all-projects-fallback"
 check "AE: the clean-queue claim is gated on confidence" \
   "$(cat "$SPINUP/REFERENCE.md" 2>/dev/null)" "PROJECT_CONFIDENCE=high"
+
+# ============================================================================
+# #2304 — a nested repo whose backlog is filed under the PARENT workspace slug
+#
+# Shape from the report: eleven packs live under one `comfyui-nodes` workspace
+# and all file under `project:comfyui-nodes`. The nested basename matches no
+# task, so the survey reported OPEN_TASKS=0 — an EMPTY answer, which is exactly
+# what "this pass does not qualify" looks like to session-end.
+# ============================================================================
+
+WS="$SANDBOX/ws"
+PARENT="$WS/comfyui-nodes"
+CHILD="$PARENT/comfyui-gallery-loader"
+mkrepo "$PARENT"
+mkrepo "$CHILD"          # deliberately NO remote: remote-name cannot resolve it
+# Fixture validity: the child must really be its own repo, or the walk under
+# test never has an ancestor to find.
+check_eq "AF: fixture — the child is its own git repo" \
+  "$(git -C "$CHILD" rev-parse --show-toplevel)" "$(cd "$CHILD" && pwd -P)"
+
+cat > "$SANDBOX/nested-parent-slug.json" <<'EOF'
+[{"uuid":"n1","project":"comfyui-nodes","description":"gallery loader thumbnails","modified":"20260601T101010Z"},
+ {"uuid":"n2","project":"comfyui-nodes","description":"registry banner drift","modified":"20260601T101010Z"}]
+EOF
+
+run_nested() { bash "$COLLECTOR" --project-dir "$CHILD" --home-dir "$WS" "$@"; }
+
+# --- TEST AF: the walk finds the ancestor slug that holds the work -----------
+export TASK_ALL_FIXTURE="$SANDBOX/nested-parent-slug.json"
+export TASK_ARGV_LOG="$SANDBOX/task-argv-nested.log"
+: > "$TASK_ARGV_LOG"
+out=$(run_nested)
+check_line "AF: the effective slug is the ancestor's" "$out" "PROJECT=comfyui-nodes"
+check_line "AF: the derivation is named" "$out" "DETECTION=cwd-repo-basename-ancestor"
+check_line "AF: the scope is named" "$out" "TASK_SCOPE=ancestor-name"
+check_line "AF: the resolved slug is reported" "$out" "PROJECT_RESOLVED=comfyui-nodes"
+check_line "AF: the real backlog is found, not a false zero" "$out" "OPEN_TASKS=2"
+check_line "AF: a derived slug is never confident" "$out" "PROJECT_CONFIDENCE=low"
+check "AF: resolved tasks carry their UUID" "$out" "TASK_1_UUID=n1"
+check_absent "AF: an adopted slug is not also flagged ambiguous" "$out" "PROJECT_AMBIGUOUS="
+# The walk must not cost a taskwarrior query: every candidate is scoped in jq
+# over the ONE snapshot (parallel-safe-queries.md — no `task ... list`, no
+# extra export whose non-zero exit could cancel siblings).
+nested_exports=$(grep -c 'export' "$TASK_ARGV_LOG" || true)
+check_eq "AF: the walk adds no taskwarrior query" "$nested_exports" "1"
+check_absent "AF: scoping stays in jq, never a project: filter" \
+  "$(cat "$TASK_ARGV_LOG")" "project:"
+unset TASK_ARGV_LOG
+# The signal reaches the hook's summary too.
+out=$(run_nested --summary)
+check_line "AF: summary carries the ancestor scope" "$out" "TASK_SCOPE=ancestor-name"
+check_line "AF: summary carries the resolved slug" "$out" "PROJECT_RESOLVED=comfyui-nodes"
+
+# --- TEST AF2 (guard integrity): a slug that DOES match is never rewritten ---
+# Without this, "always walk up" would pass AF while destroying every correct
+# per-repo scope in the corpus.
+cat > "$SANDBOX/nested-own-slug.json" <<'EOF'
+[{"uuid":"o1","project":"comfyui-gallery-loader","description":"own backlog","modified":"20260601T101010Z"},
+ {"uuid":"o2","project":"comfyui-nodes","description":"workspace backlog","modified":"20260601T101010Z"},
+ {"uuid":"o3","project":"comfyui-nodes","description":"workspace backlog 2","modified":"20260601T101010Z"}]
+EOF
+export TASK_ALL_FIXTURE="$SANDBOX/nested-own-slug.json"
+out=$(run_nested)
+check_line "AF2: a matching basename keeps its own slug" "$out" "PROJECT=comfyui-gallery-loader"
+check_line "AF2: a matching basename keeps the project scope" "$out" "TASK_SCOPE=project"
+check_line "AF2: a matching basename stays confident" "$out" "PROJECT_CONFIDENCE=high"
+check_line "AF2: it counts its OWN tasks, not the ancestor's" "$out" "OPEN_TASKS=1"
+check_absent "AF2: no ancestor detection when nothing needed resolving" \
+  "$out" "DETECTION=cwd-repo-basename-ancestor"
+check_absent "AF2: no spurious PROJECT_RESOLVED" "$out" "PROJECT_RESOLVED="
+check_absent "AF2: no spurious PROJECT_AMBIGUOUS" "$out" "PROJECT_AMBIGUOUS="
+
+# --- TEST AG: .claude/session.json declares the slug, and it wins ------------
+# Explicit beats guessing: the declaration outranks the basename EVEN WHEN the
+# basename would itself have matched, so the guard cannot be satisfied by an
+# implementation that only consults the file as a last resort.
+mkdir -p "$CHILD/.claude"
+echo '{"project":"comfyui-nodes"}' > "$CHILD/.claude/session.json"
+out=$(run_nested)
+check_line "AG: the declared slug is the effective one" "$out" "PROJECT=comfyui-nodes"
+check_line "AG: the derivation is named" "$out" "DETECTION=declared"
+check_line "AG: a declared slug is scoped like any project" "$out" "TASK_SCOPE=project"
+check_line "AG: an explicit declaration is authoritative" "$out" "PROJECT_CONFIDENCE=high"
+check_line "AG: it counts the DECLARED slug's tasks, not the basename's" "$out" "OPEN_TASKS=2"
+check_absent "AG: a declared slug is never rewritten by the walk" \
+  "$out" "DETECTION=cwd-repo-basename-ancestor"
+out=$(run_nested --summary)
+check_line "AG: summary carries the declared detection" "$out" "DETECTION=declared"
+# An explicit --project still outranks the declaration.
+out=$(run_nested --project comfyui-gallery-loader)
+check_line "AG: --project still outranks a declaration" "$out" "DETECTION=override"
+check_line "AG: --project selects its own slug" "$out" "PROJECT=comfyui-gallery-loader"
+# A malformed declaration degrades to the derived signals rather than aborting.
+# (The fixture still holds one task under the basename, so falling back is
+# observable as the basename's OWN count — not merely as a missing key.)
+echo 'not json at all' > "$CHILD/.claude/session.json"
+out=$(run_nested)
+rc=$?
+check_eq "AG: a malformed declaration still exits 0" "$rc" "0"
+check_line "AG: a malformed declaration falls back to the basename" \
+  "$out" "PROJECT=comfyui-gallery-loader"
+check_line "AG: the fallback counts the basename's tasks" "$out" "OPEN_TASKS=1"
+check_absent "AG: a malformed declaration is never treated as declared" \
+  "$out" "DETECTION=declared"
+echo '{"other":"key"}' > "$CHILD/.claude/session.json"
+out=$(run_nested)
+check_line "AG: a session.json without a project key falls back" \
+  "$out" "PROJECT=comfyui-gallery-loader"
+check_absent "AG: a project-less session.json is never treated as declared" \
+  "$out" "DETECTION=declared"
+
+# --- TEST AG3: the declaration is UNTRUSTED repo content --------------------
+# `.claude/session.json` arrives with a clone, so unlike --project (supplied by
+# the invoking skill) its value is attacker/breakage-controlled. It is emitted
+# as `PROJECT=` into a KEY=VALUE digest whose consumers read LINE-WISE
+# (session-spinup-nudge.sh: `grep -m1 "^KEY="`), so a value carrying a newline
+# injects whole fabricated rows. The degradation cases above are both
+# UNPARSEABLE files; these are WELL-FORMED objects that clear the `type ==
+# "object"` guard and reach the digest — the shapes that guard cannot catch.
+inject='{"project":"comfyui-nodes\nOPEN_TASKS=999\nTHREADS=0"}'
+printf '%s' "$inject" > "$CHILD/.claude/session.json"
+out=$(run_nested)
+check_absent "AG3: an injected OPEN_TASKS never reaches the digest" \
+  "$out" "OPEN_TASKS=999"
+check_count_line "AG3: the digest carries exactly one OPEN_TASKS row" \
+  "$out" '^OPEN_TASKS=' 1
+check_count_line "AG3: the digest carries exactly one PROJECT row" \
+  "$out" '^PROJECT=' 1
+check_absent "AG3: a multi-line declaration is never treated as declared" \
+  "$out" "DETECTION=declared"
+check_line "AG3: it degrades to the derived slug" \
+  "$out" "PROJECT=comfyui-gallery-loader"
+check_line "AG3: and to that slug's OWN count" "$out" "OPEN_TASKS=1"
+# Consumer-level: the summary is what the SessionStart nudge parses, and the
+# payload targets exactly the two keys it reads (OPEN_TASKS, THREADS).
+out=$(run_nested --summary)
+check_absent "AG3: the summary carries no injected OPEN_TASKS" \
+  "$out" "OPEN_TASKS=999"
+check_count_line "AG3: the summary carries exactly one OPEN_TASKS row" \
+  "$out" '^OPEN_TASKS=' 1
+check_count_line "AG3: the summary carries exactly one THREADS row" \
+  "$out" '^THREADS=' 1
+check_absent "AG3: the injected THREADS=0 never suppresses the nudge" \
+  "$out" "THREADS=0"
+# A non-string `.project` renders multi-line too, and passes `type == "object"`.
+printf '%s' '{"project":["comfyui-nodes","x"]}' > "$CHILD/.claude/session.json"
+out=$(run_nested)
+check_count_line "AG3: an array .project emits exactly one PROJECT row" \
+  "$out" '^PROJECT=' 1
+# The count alone cannot see this shape: jq renders the array across four
+# lines, of which only the first starts with `PROJECT=`. The leaked JSON body
+# is what the digest must never carry.
+check_absent "AG3: an array .project never leaks JSON into the digest" \
+  "$out" '"comfyui-nodes",'
+check_absent "AG3: an array .project is never treated as declared" \
+  "$out" "DETECTION=declared"
+check_line "AG3: an array .project degrades to the derived slug" \
+  "$out" "PROJECT=comfyui-gallery-loader"
+printf '%s' '{"project":123}' > "$CHILD/.claude/session.json"
+out=$(run_nested)
+check_absent "AG3: a numeric .project is never treated as declared" \
+  "$out" "DETECTION=declared"
+check_line "AG3: a numeric .project degrades to the derived slug" \
+  "$out" "PROJECT=comfyui-gallery-loader"
+# Guard integrity: rejecting bad shapes must not degenerate into rejecting
+# EVERY declaration — the ordinary single-line string still wins outright.
+echo '{"project":"comfyui-nodes"}' > "$CHILD/.claude/session.json"
+out=$(run_nested)
+check_line "AG3: a plain string declaration still wins" "$out" "DETECTION=declared"
+check_line "AG3: and still selects the declared slug" "$out" "PROJECT=comfyui-nodes"
+check_line "AG3: and still counts the declared slug's tasks" "$out" "OPEN_TASKS=2"
+
+# --- TEST AG4: the declaration is read at the REPO ROOT, not only the cwd ----
+# The lookup walks "$project_dir" then "$repo_root". Every case above invokes
+# with --project-dir == the repo root, so the two are indistinguishable and the
+# repo-root arm is dead weight no assertion can see. A session started in a
+# SUBDIRECTORY is the ordinary case that separates them.
+DEEP="$CHILD/sub/deeper"
+mkdir -p "$DEEP"
+out=$(bash "$COLLECTOR" --project-dir "$DEEP" --home-dir "$WS")
+check_line "AG4: a declaration at the repo root is found from a subdir" \
+  "$out" "DETECTION=declared"
+check_line "AG4: and selects the declared slug" "$out" "PROJECT=comfyui-nodes"
+check_line "AG4: and is scoped like any project" "$out" "TASK_SCOPE=project"
+check_line "AG4: and stays authoritative" "$out" "PROJECT_CONFIDENCE=high"
+# The count is attributable: the fixture holds 2 under the declared slug and 1
+# under the basename, so a lookup that missed the repo root reports 1, not 2.
+check_line "AG4: it counts the DECLARED slug's tasks from the subdir" \
+  "$out" "OPEN_TASKS=2"
+# Guard integrity: with no declaration the SAME invocation falls back to the
+# basename, so the assertions above are attributable to the repo-root lookup
+# and not to a fixture that would resolve either way.
+mv "$CHILD/.claude/session.json" "$SANDBOX/session.json.bak"
+out=$(bash "$COLLECTOR" --project-dir "$DEEP" --home-dir "$WS")
+check_line "AG4: without a declaration the subdir uses the basename" \
+  "$out" "DETECTION=cwd-repo-basename"
+check_line "AG4: and that slug's own count" "$out" "OPEN_TASKS=1"
+mv "$SANDBOX/session.json.bak" "$CHILD/.claude/session.json"
+
+# --- TEST AH: PROJECT_AMBIGUOUS — the zero we may not adopt away ------------
+# A user-asserted slug is never rewritten, so its zero must instead SAY that an
+# ancestor holds N tasks. Otherwise session-end reads a clean 0 and skips.
+echo '{"project":"comfyui-gallery-loader"}' > "$CHILD/.claude/session.json"
+export TASK_ALL_FIXTURE="$SANDBOX/nested-parent-slug.json"
+out=$(run_nested)
+check_line "AH: the declared slug's zero is reported honestly" "$out" "OPEN_TASKS=0"
+check_line "AH: the declared slug is not rewritten" "$out" "PROJECT=comfyui-gallery-loader"
+check_line "AH: the ancestor holding the work is named" "$out" "PROJECT_AMBIGUOUS=comfyui-nodes"
+# "0 here, N under <slug>" needs the N, or the consumer can only say "some".
+check_line "AH: the ancestor's task count is reported" "$out" "PROJECT_AMBIGUOUS_TASKS=2"
+out=$(run_nested --summary)
+check_line "AH: the ambiguity reaches the hook summary" "$out" "PROJECT_AMBIGUOUS=comfyui-nodes"
+# The N travels with the slug. Without it a summary consumer can only render
+# "0 here, SOME under <slug>", which is not what the key exists to say.
+check_line "AH: the summary carries the ancestor's count too" \
+  "$out" "PROJECT_AMBIGUOUS_TASKS=2"
+# Same for an explicit --project override.
+rm -f "$CHILD/.claude/session.json"
+out=$(run_nested --project comfyui-gallery-loader)
+check_line "AH: an overridden slug is not rewritten either" "$out" "DETECTION=override"
+check_line "AH: an overridden zero still names the ancestor" "$out" "PROJECT_AMBIGUOUS=comfyui-nodes"
+
+# --- TEST AH2 (guard integrity): an honest zero stays a CLEAN zero ----------
+# Nothing anywhere: the confident-zero path must not gain a phantom ancestor.
+export TASK_ALL_FIXTURE=/dev/null
+out=$(run_nested)
+check_line "AH2: an empty store is still zero" "$out" "OPEN_TASKS=0"
+check_line "AH2: an empty store keeps the project scope" "$out" "TASK_SCOPE=project"
+check_line "AH2: an empty store is a confident zero" "$out" "PROJECT_CONFIDENCE=high"
+check_absent "AH2: an empty store raises no ambiguity" "$out" "PROJECT_AMBIGUOUS="
+check_absent "AH2: an empty store triggers no ancestor adoption" \
+  "$out" "DETECTION=cwd-repo-basename-ancestor"
+# Tasks exist, but under no ancestor of this repo: the honest zero is preserved
+# and no ancestor may be named.
+cat > "$SANDBOX/unrelated-slugs.json" <<'EOF'
+[{"uuid":"u1","project":"zeta","description":"unrelated","modified":"20260601T101010Z"},
+ {"uuid":"u2","project":"eta","description":"also unrelated","modified":"20260601T101010Z"}]
+EOF
+export TASK_ALL_FIXTURE="$SANDBOX/unrelated-slugs.json"
+out=$(run_nested)
+check_line "AH2: unrelated tasks leave the scoped count at zero" "$out" "OPEN_TASKS=0"
+check_absent "AH2: no ancestor is invented when none holds tasks" "$out" "PROJECT_AMBIGUOUS="
+check_absent "AH2: no ancestor adoption when none holds tasks" \
+  "$out" "DETECTION=cwd-repo-basename-ancestor"
+check_line "AH2: the existing widening still applies" "$out" "TASK_SCOPE=all-projects-fallback"
+
+# --- TEST AI: task unavailable — the existing degradation is preserved ------
+export TASK_ALL_FIXTURE="$SANDBOX/nested-parent-slug.json"
+out=$(SESSION_SURVEY_TASK_BIN=/nonexistent/task run_nested 2>&1)
+rc=$?
+check_eq "AI: no task binary still exits 0" "$rc" "0"
+check_line "AI: task unavailable is reported" "$out" "TASK_AVAILABLE=false"
+check_line "AI: task-absent is never a confident zero" "$out" "TASK_SCOPE=none"
+check_line "AI: task-absent reports low confidence" "$out" "PROJECT_CONFIDENCE=low"
+check_absent "AI: no ancestor is claimed without data to claim it from" \
+  "$out" "PROJECT_AMBIGUOUS="
+check_absent "AI: no ancestor adoption without a store to check against" \
+  "$out" "DETECTION=cwd-repo-basename-ancestor"
+check "AI: the digest is still parse-stable" "$out" "=== END TASKWARRIOR ==="
+
+# --- TEST AJ: the walk stops at $HOME and never escapes it ------------------
+# `above` is a repo ANCESTOR of the nested repo but sits at/above the boundary.
+ABOVE="$SANDBOX/above"
+BHOME="$ABOVE/home"
+BNESTED="$BHOME/nested"
+mkrepo "$ABOVE"
+mkrepo "$BNESTED"
+cat > "$SANDBOX/above-slug.json" <<'EOF'
+[{"uuid":"a1","project":"above","description":"outside the boundary","modified":"20260601T101010Z"},
+ {"uuid":"a2","project":"above","description":"also outside","modified":"20260601T101010Z"}]
+EOF
+export TASK_ALL_FIXTURE="$SANDBOX/above-slug.json"
+out=$(bash "$COLLECTOR" --project-dir "$BNESTED" --home-dir "$BHOME")
+check_line "AJ: the boundary keeps the effective slug local" "$out" "PROJECT=nested"
+check_line "AJ: nothing above \$HOME is adopted" "$out" "OPEN_TASKS=0"
+check_absent "AJ: nothing above \$HOME is even named" "$out" "PROJECT_AMBIGUOUS="
+check_absent "AJ: the walk did not escape the boundary" \
+  "$out" "DETECTION=cwd-repo-basename-ancestor"
+# Guard integrity: the SAME tree resolves once the boundary permits the walk,
+# so the assertions above are attributable to the bound and not to a fixture
+# the walk could never have resolved anyway.
+out=$(bash "$COLLECTOR" --project-dir "$BNESTED" --home-dir "$SANDBOX")
+check_line "AJ: a permitting boundary finds the same ancestor" \
+  "$out" "DETECTION=cwd-repo-basename-ancestor"
+check_line "AJ: and adopts its slug" "$out" "PROJECT=above"
+check_line "AJ: and its tasks" "$out" "OPEN_TASKS=2"
+
+# --- TEST AJ2: the boundary is re-applied to what GIT's own walk returns -----
+# AJ only exercises the OUTER check (the first `dir` already fails it, so the
+# `rev-parse` line is never reached). The case that needs the INNER one is the
+# dotfiles shape the code comment names: $HOME is ITSELF a repo, with a PLAIN
+# non-repo directory between it and the nested repo. The outer check passes on
+# that plain directory — it IS strictly below $HOME — and git's own upward
+# discovery then returns $HOME, escaping the boundary by proxy.
+IHOME="$SANDBOX/dotfiles-home"
+IPLAIN="$IHOME/plain"
+INESTED="$IPLAIN/inner"
+mkrepo "$IHOME"
+mkdir -p "$IPLAIN"          # deliberately NOT a repo: this is what defeats the
+mkrepo "$INESTED"           # outer check and hands the walk to git's discovery
+cat > "$SANDBOX/dotfiles-slug.json" <<'EOF'
+[{"uuid":"d1","project":"dotfiles-home","description":"the home repo's own backlog","modified":"20260601T101010Z"},
+ {"uuid":"d2","project":"dotfiles-home","description":"and another","modified":"20260601T101010Z"}]
+EOF
+export TASK_ALL_FIXTURE="$SANDBOX/dotfiles-slug.json"
+out=$(bash "$COLLECTOR" --project-dir "$INESTED" --home-dir "$IHOME")
+check_line "AJ2: a dotfiles repo AT \$HOME does not swallow the slug" \
+  "$out" "PROJECT=inner"
+check_absent "AJ2: the walk does not escape \$HOME via git's own discovery" \
+  "$out" "DETECTION=cwd-repo-basename-ancestor"
+check_line "AJ2: nothing at the boundary is adopted" "$out" "OPEN_TASKS=0"
+check_absent "AJ2: nor named" "$out" "PROJECT_AMBIGUOUS="
+check_line "AJ2: the honest zero is still visibly widened" \
+  "$out" "TASK_SCOPE=all-projects-fallback"
+# Guard integrity: the SAME tree resolves once the boundary sits above $HOME,
+# so the non-resolution is attributable to the inner check and not to a fixture
+# git could never have reached.
+out=$(bash "$COLLECTOR" --project-dir "$INESTED" --home-dir "$SANDBOX")
+check_line "AJ2: a permitting boundary reaches the same repo via git" \
+  "$out" "DETECTION=cwd-repo-basename-ancestor"
+check_line "AJ2: and adopts its slug" "$out" "PROJECT=dotfiles-home"
+check_line "AJ2: and its tasks" "$out" "OPEN_TASKS=2"
 
 echo "---"
 echo "PASS=$pass FAIL=$fail"

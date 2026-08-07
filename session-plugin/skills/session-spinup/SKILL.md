@@ -120,8 +120,19 @@ under `project:<name>`". Otherwise:
 | `TASK_SCOPE` | What to say / do |
 |---|---|
 | `remote-name` | The count is real but came from `PROJECT_RESOLVED=` — name **that** slug in the briefing, not the directory basename |
+| `ancestor-name` | An **ancestor** repo's slug was adopted (`DETECTION=cwd-repo-basename-ancestor`); the count is real but belongs to `PROJECT_RESOLVED=` — name that slug, not the directory |
 | `all-projects-fallback` | Never say the queue is clean. Present the `RECENT_TASK_*` rows as "recently touched (project scope unresolved)" with `TASKS_ALL_PROJECTS` as the denominator, and offer to re-run with `--project <name>` |
 | `unknown` / `none` | State `taskwarrior: not queried` — `jq` or `task` was unavailable, so the zeros are unqueried |
+
+`DETECTION=` names how the slug was chosen: `override` (`--project`), `declared`
+(a `.claude/session.json` `.project` string), `cwd-repo-basename` (the guess),
+`cwd-repo-basename-ancestor` (an adopted ancestor), or `ambiguous`.
+
+Independently of `TASK_SCOPE`, when `PROJECT_AMBIGUOUS=<slug>` and
+`PROJECT_AMBIGUOUS_TASKS=N` are present the detected slug owns **zero** tasks
+while that ancestor slug owns N. Brief it as `0 here, N under <slug>` — never as
+a clean queue, even at `PROJECT_CONFIDENCE=high` (a user-asserted `--project` or
+a repo declaration deliberately keeps `high`).
 
 A `RECENT_TASK_*` row carries no `ghid` / annotations / `+ACTIVE` flag —
 it is a pointer, not a full task. Resolve the slug before acting on one.

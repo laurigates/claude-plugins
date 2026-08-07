@@ -22,6 +22,11 @@
 #   H. the gitignored dist/ rulesync build output is pruned, not scanned
 #      (#2214) — with a guard-integrity half proving the same defective pin at
 #      a real path is still reported
+#   J. trigger gap (#2285): the guard body is whole-repo, so the invariant that
+#      matters is that its TRIGGERS select a template-only / renovate.json-only
+#      change — the pre-commit `files:` regex (evaluated with pre-commit's own
+#      matcher) and the workflow step's `if:` (evaluated against outputs from
+#      EXECUTING the workflow's own `changed` step against real git diffs)
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -54,7 +59,10 @@ assert "--strict should exit 0 on the real repo" \
   "$([ "$clean_rc" -eq 0 ] && echo true || echo false)"
 
 # --- Build a synthetic fixture with one uncovered pin -------------------------
-fixture="$(mktemp -d)"
+# Guarded because TEST J below runs git against throwaway sandboxes in this same
+# script: an empty $VAR would make `git -C ""` act on the real checkout (#1692).
+fixture="$(mktemp -d)" || exit 1
+[ -n "$fixture" ] || { echo "FAIL: mktemp -d returned empty" >&2; exit 1; }
 trap 'rm -rf "$fixture"' EXIT
 mkdir -p "$fixture/demo-plugin/skills/demo"
 
@@ -375,6 +383,310 @@ assert "--strict exits 0 once the path is covered" \
   "$([ "$post_rc" -eq 0 ] && echo true || echo false)"
 assert "the newly-covered pin is counted, not merely un-flagged" \
   "$([ "$(field "$post_out" TEMPLATE_PINS_COVERED)" -gt "$(field "$pre_out" TEMPLATE_PINS_COVERED)" ] && echo true || echo false)"
+
+echo "=== TEST J: the TRIGGERS reach every surface the guard scans (#2285) ==="
+# The guard body is whole-repo (`pass_filenames: false`), so TESTS A-I would all
+# pass while the check never RAN on the shape it exists for. This block asserts
+# the two trigger surfaces select a template-only / renovate.json-only change:
+#   J1  the pre-commit `files:` regex, evaluated with pre-commit's OWN matcher
+#   J2  the workflow's `if:`, evaluated against outputs produced by EXECUTING
+#       the workflow's own `changed` step against real git diffs
+# Both are read out of the config files rather than restated here, so a config
+# that stops selecting these paths fails regardless of how it is spelled.
+
+# The git ops below build throwaway repos. Neutralize any inherited git context
+# so `git -C "$sandbox"` cannot be hijacked into the shared checkout (#1745).
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
+      GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX
+
+trigger_root="$(mktemp -d)"
+[ -n "$trigger_root" ] || { echo "FAIL: mktemp -d returned empty" >&2; exit 1; }
+trap 'rm -rf "$fixture" "$fixture_bad" "$fixture_good" "$tpl" "$trigger_root"' EXIT
+
+# --- J1: pre-commit `files:` regex ------------------------------------------
+# pre-commit matches with `re.search` against repo-relative paths. Where the
+# pre_commit package is importable we use its own filter function, so the test
+# tracks the real semantics instead of an assumption about them.
+precommit_match() {
+  # precommit_match <candidate-path> [hook-id]
+  python3 - "$repo_root/.pre-commit-config.yaml" "$1" "${2:-check-version-pin-coverage}" <<'PY'
+import re, sys, yaml
+cfg_path, candidate, hook_id = sys.argv[1], sys.argv[2], sys.argv[3]
+cfg = yaml.safe_load(open(cfg_path))
+pats = [h for r in cfg["repos"] for h in r.get("hooks") or []
+        if h.get("id") == hook_id]
+if len(pats) != 1:
+    print("ERROR: expected exactly 1 %s hook, found %d" % (hook_id, len(pats)))
+    raise SystemExit(0)
+include = pats[0].get("files", "")
+exclude = pats[0].get("exclude") or cfg.get("exclude") or "^$"
+try:
+    from pre_commit.commands.run import filter_by_include_exclude as filt
+    hit = bool(list(filt([candidate], include, exclude)))
+except Exception:
+    hit = bool(re.search(include, candidate)) and not re.search(exclude, candidate)
+print("true" if hit else "false")
+PY
+}
+
+assert "pre-commit selects a flat plugin scaffold template" \
+  "$(precommit_match 'blueprint-plugin/templates/x.workflow.yml')"
+assert "pre-commit selects a nested plugin scaffold template" \
+  "$(precommit_match 'foundryvtt-plugin/templates/mod/.github/workflows/ci.yml')"
+# The guard scans EVERY non-.md file under a plugin's templates/ tree, not just
+# YAML — so the trigger must too. Without these two rows the regex could be
+# narrowed to `-plugin/templates/.*\.ya?ml` (or any `\.<ext>$` form) and every
+# other assertion here would still pass, while a real pin at a non-YAML
+# extension went silently un-triggered. `package.json` is a real repo file the
+# guard already reads pins out of; `Dockerfile` has no extension at all, so an
+# extension-anchored narrowing cannot slip past it either.
+assert "pre-commit selects a non-YAML plugin scaffold template (package.json)" \
+  "$(precommit_match 'foundryvtt-plugin/templates/foundryvtt-module/package.json')"
+assert "pre-commit selects an extensionless plugin scaffold template (Dockerfile)" \
+  "$(precommit_match 'demo-plugin/templates/Dockerfile')"
+assert "pre-commit selects the root renovate.json (its patterns are the verdict)" \
+  "$(precommit_match 'renovate.json')"
+# Guard integrity: without these the regex could be widened to `.` and pass.
+assert "pre-commit still selects skill markdown (today's behaviour preserved)" \
+  "$(precommit_match 'some-plugin/skills/foo/SKILL.md')"
+assert "pre-commit ignores an unrelated markdown file" \
+  "$([ "$(precommit_match 'docs/notes.md')" = "false" ] && echo true || echo false)"
+assert "pre-commit ignores a nested renovate.json (not the root config)" \
+  "$([ "$(precommit_match 'vendor/renovate.json')" = "false" ] && echo true || echo false)"
+
+# --- J2: the workflow step's `if:` ------------------------------------------
+wf="$repo_root/.github/workflows/plugin-pr-checks.yml"
+meta="$trigger_root/meta"
+mkdir -p "$meta"
+
+# Extract the `changed` step's run block (+ env) and the version-pin step's
+# `if:` expression. Any unresolved `${{ }}` in the run block is a hard failure:
+# the executed copy must be the real script, not a partially-substituted one.
+extract_rc=0
+python3 - "$wf" "$meta" <<'PY' || extract_rc=$?
+import re, shlex, sys, yaml
+wf_path, out_dir = sys.argv[1], sys.argv[2]
+wf = yaml.safe_load(open(wf_path))
+steps = wf["jobs"]["compliance"]["steps"]
+changed = [s for s in steps if s.get("id") == "changed"]
+pin = [s for s in steps if "scripts/check-version-pin-coverage.sh" in (s.get("run") or "")]
+if len(changed) != 1:
+    sys.exit("expected exactly 1 step with id 'changed', found %d" % len(changed))
+if len(pin) != 1:
+    sys.exit("expected exactly 1 step running scripts/check-version-pin-coverage.sh, found %d" % len(pin))
+run = changed[0]["run"]
+env = {k: str(v) for k, v in (changed[0].get("env") or {}).items()}
+subst = {"${{ github.base_ref }}": "main"}
+for needle, value in subst.items():
+    run = run.replace(needle, value)
+    env = {k: v.replace(needle, value) for k, v in env.items()}
+if "${{" in run:
+    sys.exit("unresolved ${{ }} interpolation in the changed step's run block:\n" + run)
+open(out_dir + "/changed.sh", "w").write(run)
+with open(out_dir + "/env.sh", "w") as fh:
+    fh.write("export BASE_REF=main\n")  # default when the step carries no env
+    for k, v in env.items():
+        fh.write("export %s=%s\n" % (k, shlex.quote(v)))
+open(out_dir + "/if.txt", "w").write(pin[0].get("if", ""))
+PY
+assert "workflow parses: one 'changed' step and one version-pin step" \
+  "$([ "$extract_rc" -eq 0 ] && echo true || echo false)"
+
+# Evaluate the extracted `if:` against a GITHUB_OUTPUT file. Every referenced
+# output must also be one the `changed` step actually SET — an `if:` keyed on a
+# typo'd output name is silently always-false, which is this bug wearing a hat.
+eval_if() {
+  python3 - "$meta/if.txt" "$1" <<'PY'
+import re, sys
+expr = open(sys.argv[1]).read().strip()
+raw = open(sys.argv[2]).read().split("\n")
+outputs, i = {}, 0
+while i < len(raw):
+    line = raw[i]
+    if not line:
+        i += 1
+        continue
+    m = re.match(r"^([A-Za-z0-9_-]+)<<(.+)$", line)
+    if m:
+        key, delim, i, buf = m.group(1), m.group(2), i + 1, []
+        while i < len(raw) and raw[i] != delim:
+            buf.append(raw[i]); i += 1
+        outputs[key] = "\n".join(buf); i += 1
+    else:
+        k, _, v = line.partition("=")
+        outputs[k] = v; i += 1
+missing = []
+
+def split_top(text, op):
+    parts, depth, buf, i = [], 0, "", 0
+    while i < len(text):
+        c = text[i]
+        if c == "(":
+            depth += 1
+        elif c == ")":
+            depth -= 1
+        if depth == 0 and text[i:i + len(op)] == op:
+            parts.append(buf); buf = ""; i += len(op); continue
+        buf += c; i += 1
+    parts.append(buf)
+    return parts
+
+def operand(tok):
+    tok = tok.strip()
+    if len(tok) >= 2 and tok[0] == tok[-1] == "'":
+        return tok[1:-1]
+    m = re.match(r"^steps\.changed\.outputs\.([A-Za-z0-9_-]+)$", tok)
+    if m:
+        if m.group(1) not in outputs:
+            missing.append(m.group(1))
+        return outputs.get(m.group(1), "")
+    raise SystemExit("UNSUPPORTED_OPERAND=%s" % tok)
+
+def balanced(text):
+    depth = 0
+    for c in text:
+        depth += (c == "(") - (c == ")")
+        if depth < 0:
+            return False
+    return depth == 0
+
+def ev(text):
+    text = text.strip()
+    while text.startswith("(") and text.endswith(")") and balanced(text[1:-1]):
+        text = text[1:-1].strip()
+    for op, fold in (("||", any), ("&&", all)):
+        parts = split_top(text, op)
+        if len(parts) > 1:
+            return fold([ev(p) for p in parts])
+    m = re.match(r"^(.+?)\s*(!=|==)\s*(.+)$", text)
+    if not m:
+        raise SystemExit("UNSUPPORTED_EXPRESSION=%s" % text)
+    left, op, right = operand(m.group(1)), m.group(2), operand(m.group(3))
+    return (left != right) if op == "!=" else (left == right)
+
+verdict = ev(expr)
+print("MISSING=%s" % ",".join(missing))
+print("RESULT=%s" % ("true" if verdict else "false"))
+PY
+}
+
+# Build a throwaway repo whose only change vs origin/main is $1 (a path), then
+# run the workflow's own `changed` step against it and evaluate the `if:`.
+trigger_verdict() {
+  local scenario="$1" changed_path="$2" repo out
+  [ -n "$trigger_root" ] || return 1
+  repo="$trigger_root/$scenario"
+  mkdir -p "$repo"
+  git -C "$repo" init -q -b main >/dev/null 2>&1 || return 1
+  git -C "$repo" config user.email "test@example.com"
+  git -C "$repo" config user.name "Trigger Test"
+  mkdir -p "$repo/demo-plugin/templates"
+  printf 'seed\n' > "$repo/README.md"
+  printf '{\n  "extends": ["config:recommended"]\n}\n' > "$repo/renovate.json"
+  git -C "$repo" add -A >/dev/null 2>&1
+  git -C "$repo" commit -qm "base" >/dev/null 2>&1 || return 1
+  git -C "$repo" update-ref refs/remotes/origin/main HEAD
+  git -C "$repo" checkout -q -b pr
+  mkdir -p "$repo/$(dirname "$changed_path")"
+  case "$changed_path" in
+    *.workflow.yml)
+      printf 'name: Scaffolded\njobs:\n  build:\n    steps:\n      - uses: actions/checkout@v6\n' \
+        > "$repo/$changed_path" ;;
+    *.toml)
+      # A pin at a NON-YAML template extension — the same acceptance shape as
+      # the .workflow.yml case above, which the guard flags identically.
+      printf '[services.db]\nimage: postgres:16\n' > "$repo/$changed_path" ;;
+    *SKILL.md)
+      cat > "$repo/$changed_path" <<'MD'
+# Demo
+
+Managed tag form:
+
+~~~yaml
+- uses: actions/checkout@v5
+~~~
+MD
+      ;;
+    *)
+      printf 'changed\n' >> "$repo/$changed_path" ;;
+  esac
+  git -C "$repo" add -A >/dev/null 2>&1
+  git -C "$repo" commit -qm "change" >/dev/null 2>&1 || return 1
+  out="$repo/.github_output"
+  : > "$out"
+  # `bash -e` mirrors GitHub's default shell for a `run:` block with no `shell:`.
+  # shellcheck source=/dev/null
+  ( cd "$repo" && . "$meta/env.sh" && GITHUB_OUTPUT="$out" bash -e "$meta/changed.sh" ) >/dev/null 2>&1
+  eval_if "$out"
+}
+
+tpl_verdict="$(trigger_verdict template-only demo-plugin/templates/x.workflow.yml)"
+assert "template-only change: the version-pin step's if: is TRUE" \
+  "$(contains "$tpl_verdict" 'RESULT=true')"
+assert "template-only change: the if: references only outputs the step sets" \
+  "$(contains "$tpl_verdict" 'MISSING=$')"
+
+# Same hole as J1's, on the CI side: the step's diff pathspec must reach every
+# non-.md file under templates/, not just YAML. Narrowing it to
+# `'*-plugin/templates/**.yml'` leaves template_count=0 for this change, the
+# `if:` evaluates FALSE, and the guard never runs in CI — while the .yml
+# scenario above still passes.
+tpl_nonyaml_verdict="$(trigger_verdict template-nonyaml demo-plugin/templates/stack.toml)"
+assert "non-YAML template-only change: the version-pin step's if: is TRUE" \
+  "$(contains "$tpl_nonyaml_verdict" 'RESULT=true')"
+
+rnv_verdict="$(trigger_verdict renovate-only renovate.json)"
+assert "renovate.json-only change: the version-pin step's if: is TRUE" \
+  "$(contains "$rnv_verdict" 'RESULT=true')"
+
+# Guard integrity #1: today's behaviour must survive the widening.
+skill_verdict="$(trigger_verdict skill-only demo-plugin/skills/demo/SKILL.md)"
+assert "skill-markdown-only change: the if: is still TRUE (unchanged behaviour)" \
+  "$(contains "$skill_verdict" 'RESULT=true')"
+
+# Guard integrity #2: without this, dropping the `if:` entirely would pass every
+# assertion above while removing the gating the workflow header argues for.
+other_verdict="$(trigger_verdict unrelated-only README.md)"
+assert "unrelated-file-only change: the if: is FALSE (the guard is still gated)" \
+  "$(contains "$other_verdict" 'RESULT=false')"
+
+# End-to-end: the acceptance shape must fail the GUARD too, not just be selected
+# by the trigger — a template pin with no renovate.json pattern covering it.
+tpl_repo_rc=0
+bash "$checker" --project-dir "$trigger_root/template-only" --strict >/dev/null 2>&1 || tpl_repo_rc=$?
+assert "the selected template-only tree also FAILS --strict (trigger + guard)" \
+  "$([ "$tpl_repo_rc" -eq 1 ] && echo true || echo false)"
+
+# ...and the same end-to-end at a NON-YAML extension, so the pairing of a
+# reaching trigger with a firing guard is proven for the whole scanned surface
+# rather than only for *.yml.
+tpl_nonyaml_out="$(bash "$checker" --project-dir "$trigger_root/template-nonyaml" 2>/dev/null)"
+tpl_nonyaml_rc=0
+bash "$checker" --project-dir "$trigger_root/template-nonyaml" --strict >/dev/null 2>&1 || tpl_nonyaml_rc=$?
+assert "the selected non-YAML template tree also FAILS --strict (trigger + guard)" \
+  "$([ "$tpl_nonyaml_rc" -eq 1 ] && echo true || echo false)"
+assert "the non-YAML template finding is the template_pin_unmanaged shape" \
+  "$(contains "$tpl_nonyaml_out" 'template_pin_unmanaged')"
+
+# --- J3: THIS test's own trigger reaches the files it asserts on -------------
+# J1/J2 assert on `.pre-commit-config.yaml` and the workflow, but neither is a
+# `scripts/` path — so this hook's own `files:` regex has to name them, or
+# editing a trigger locally never re-runs the test that guards it (the
+# allowlist-drift shape in .claude/rules/regression-testing.md).
+assert "this test's trigger reaches .pre-commit-config.yaml (it asserts on it)" \
+  "$(precommit_match '.pre-commit-config.yaml' test-check-version-pin-coverage)"
+assert "this test's trigger reaches the workflow it asserts on" \
+  "$(precommit_match '.github/workflows/plugin-pr-checks.yml' test-check-version-pin-coverage)"
+# Guard integrity: the widened regex must keep its original members and must
+# not become a catch-all.
+assert "this test's trigger still reaches the checker it exercises" \
+  "$(precommit_match 'scripts/check-version-pin-coverage.sh' test-check-version-pin-coverage)"
+assert "this test's trigger still reaches the test file itself" \
+  "$(precommit_match 'scripts/tests/test-check-version-pin-coverage.sh' test-check-version-pin-coverage)"
+assert "this test's trigger ignores an unrelated workflow" \
+  "$([ "$(precommit_match '.github/workflows/stranded-work-audit.yml' test-check-version-pin-coverage)" = "false" ] && echo true || echo false)"
+assert "this test's trigger ignores an unrelated script" \
+  "$([ "$(precommit_match 'scripts/check-docs-index.sh' test-check-version-pin-coverage)" = "false" ] && echo true || echo false)"
 
 echo ""
 echo "=== SUMMARY ==="
