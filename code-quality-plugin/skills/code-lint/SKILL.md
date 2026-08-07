@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-23
+modified: 2026-08-07
 reviewed: 2026-04-25
 allowed-tools: Bash(ruff *), Bash(eslint *), Bash(rustfmt *), Bash(gofmt *), Bash(prettier *), Bash(bash *), Read, SlashCommand
 model: sonnet
@@ -33,37 +33,29 @@ name: code-lint
 ## Linting Execution
 
 ### Python
-{{ if PROJECT_TYPE == "python" }}
 Run Python linters:
 1. Ruff check: `uv run ruff check ${1:-.} --output-format=concise ${2:+--fix}`
 2. Type checking: `uv run ty check ${1:-.} --hide-progress`
 3. Format check: `uv run ruff format ${1:-.} ${3:+--check}`
 4. Security: `uv run bandit -r ${1:-.}`
-{{ endif }}
 
 ### JavaScript/TypeScript
-{{ if PROJECT_TYPE == "node" }}
 Run JavaScript/TypeScript linters:
 1. ESLint: `npm run lint ${1:-.} ${2:+-- --fix}`
 2. Prettier: `npx prettier ${3:+--write} ${3:---check} ${1:-.}`
 3. TypeScript: `npx tsc --noEmit`
-{{ endif }}
 
 ### Rust
-{{ if PROJECT_TYPE == "rust" }}
 Run Rust linters:
 1. Clippy: `cargo clippy --message-format=short -- -D warnings`
 2. Format: `cargo fmt ${3:+} ${3:--- --check}`
 3. Check: `cargo check`
-{{ endif }}
 
 ### Go
-{{ if PROJECT_TYPE == "go" }}
 Run Go linters:
 1. Go fmt: `gofmt ${3:+-w} ${3:+-l} ${1:-.}`
 2. Go vet: `go vet ./...`
 3. Staticcheck: `staticcheck ./...` (if available)
-{{ endif }}
 
 ## Pre-commit Integration
 

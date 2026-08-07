@@ -1027,6 +1027,24 @@ check_skill_body() {
       done
     fi
 
+    # Regression: code-lint shipped literal `{{ if PROJECT_TYPE == "..." }}` /
+    # `{{ endif }}` template directives in its body. Nothing renders them —
+    # Claude Code performs `$ARGUMENTS`/`$N`/`${CLAUDE_*}` substitution only, and
+    # `PROJECT_TYPE` was never bound anywhere — so the agent received raw
+    # template syntax as if it were instruction (issue #2265). The `### Python` /
+    # `### Rust` / ... headings already do the language selection the
+    # conditionals were meant to gate, so the directives were pure noise.
+    # Scoped to this skill: sibling skills (tools-plugin:deps-install,
+    # project-plugin:project-init, typescript-plugin:bun-add) carry the same
+    # defect and are swept separately — a repo-wide ban here would fail on
+    # out-of-scope files. Widen this to all skills once that sweep lands.
+    if [ "$skill_name" = "code-lint" ] && [ "$plugin" = "code-quality-plugin" ]; then
+      if grep -qE '\{\{ *(if|endif|else|for|endfor)\b' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md ships unrendered '{{ if ... }}' template directives; nothing renders them — use the language headings instead (issue #2265)")
+        has_errors=true
+      fi
+    fi
+
     # Regression: comfyui-node-scaffold must emit a TypeScript + bun-build pack
     # consuming @laurigates/comfy-modal-kit (NOT a vanilla-JS pack with copied-in
     # modal primitives), and its biome pin must be consistent across biome.json,
