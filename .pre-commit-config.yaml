@@ -147,7 +147,7 @@ repos:
         name: guards still scan from a worktree-shaped root (#2219)
         entry: ./scripts/tests/test-guard-worktree-root-discovery.sh
         language: script
-        files: '^scripts/(check-(agent-model|unused-bash-grant|version-pin-coverage|workflow-js-model)\.sh|tests/test-guard-worktree-root-discovery\.sh)$'
+        files: '^scripts/(check-(agent-model|unused-bash-grant|version-pin-coverage|workflow-js-model)\.sh|run-skill-script-tests\.sh|tests/test-guard-worktree-root-discovery\.sh)$'
         pass_filenames: false
       - id: check-auto-resolve-mergeability-poll
         name: auto-resolve-conflicts polls until mergeability settles (#1786)

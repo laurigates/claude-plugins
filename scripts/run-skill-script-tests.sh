@@ -43,7 +43,7 @@
 # Usage: bash scripts/run-skill-script-tests.sh [--root <dir>] [--required-file <path>]
 #
 # Exit codes: 0 = OK or WARN, 1 = ERROR (a failure or a required-test violation),
-#             2 = unknown argument.
+#             2 = unknown argument, or a --root that does not resolve.
 
 set -uo pipefail
 
@@ -83,13 +83,24 @@ if [ "$required_file_given" -eq 0 ]; then
   required_file="${root_dir}/scripts/required-to-run-tests.txt"
 fi
 
-# Repo-relative form of a discovered path, so it can be matched against the
-# manifest regardless of whether --root was `.` or an absolute fixture dir.
+# Absolute form of the root, used only to invoke a discovered test. Discovery
+# itself runs from INSIDE the root against relative paths (see the `find` below),
+# so the loop needs the absolute base back to build a runnable path without
+# depending on the caller's cwd.
+root_abs="$(cd "$root_dir" 2>/dev/null && pwd)" || root_abs=""
+if [ -z "$root_abs" ]; then
+  # A root that does not resolve must not read as "found nothing" — that is the
+  # same silent-empty-corpus failure this runner reports on (#2219). Fail fast.
+  echo "run-skill-script-tests.sh: --root does not resolve to a directory: $root_dir" >&2
+  exit 2
+fi
+
+# Repo-relative form of a discovered path, for manifest matching and reporting.
+# Discovery runs from inside the root, so every path arrives as `./<rel>`
+# regardless of how --root was spelled; stripping the `./` is all that is needed.
 norm_path() {
   local p="$1"
-  p="${p#"$root_dir"/}"
-  p="${p#./}"
-  printf '%s' "$p"
+  printf '%s' "${p#./}"
 }
 
 # A run counts as SKIPPED when it exited 0 and every non-empty, non-indented
@@ -142,6 +153,18 @@ skip_list=""
 
 # Prune `.claude/worktrees/` (sibling agent clones of the whole repo, #1492) so
 # we don't run the same test many times over from worktree copies.
+#
+# Discovery runs from INSIDE the root against RELATIVE paths (#2219). With an
+# absolute base, the bare `*/.claude/worktrees/*` prune fires on the whole tree
+# whenever the root is ITSELF an agent worktree — its own path contains
+# `/.claude/worktrees/`, so every descendant matches, the scan root is pruned
+# entirely, and the runner reports TOTAL=0 having discovered nothing. Since
+# worktree-isolated subagents are this repo's normal way of doing plugin work,
+# that made an agent's own local `--root "$PWD"` verification structurally
+# incapable of finding a test. Relative paths make the root `.`, so its absolute
+# prefix cannot match while worktree copies nested ANYWHERE below it still prune
+# correctly. Same fix, and same reasoning, as scripts/check-agent-model.sh and
+# scripts/check-subagent-types.sh.
 while IFS= read -r -d '' test_file; do
   total=$((total + 1))
   rel="$(norm_path "$test_file")"
@@ -149,7 +172,7 @@ while IFS= read -r -d '' test_file; do
   # </dev/null: the loop's stdin IS the find stream — a test that reads stdin
   # would otherwise swallow the remaining file list (and mis-parse it as its
   # own input). Observed with hooks-plugin/hooks/test-verification.sh.
-  if bash "$test_file" >"$log_file" 2>&1 </dev/null; then
+  if bash "${root_abs}/${rel}" >"$log_file" 2>&1 </dev/null; then
     if is_skipped_log "$log_file"; then
       reason="$(skip_reason "$log_file")"
       echo "SKIP=${test_file}"
@@ -173,7 +196,7 @@ while IFS= read -r -d '' test_file; do
     seen_required="${seen_required}${rel}"$'\n'
   fi
   rm -f "$log_file"
-done < <(find "$root_dir" \
+done < <(cd "$root_abs" && find . \
   -path '*/.claude/worktrees/*' -prune -o \
   \( -path '*/skills/*/scripts/tests/test-*.sh' -o -path '*-plugin/scripts/tests/test-*.sh' -o -path '*/hooks/test-*.sh' \) \
   -type f -print0 | sort -z)

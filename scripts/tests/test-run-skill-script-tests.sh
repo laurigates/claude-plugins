@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
-# Regression test for scripts/run-skill-script-tests.sh (issue #2221).
+# Regression test for scripts/run-skill-script-tests.sh (issues #2221, #2219).
 #
-# The defect: the runner printed `PASS=<file>` for a test that SKIPped, so a
+# #2221 — the runner printed `PASS=<file>` for a test that SKIPped, so a
 # gate whose dependency was absent on the runner was indistinguishable, in the
 # CI log, from a gate that ran and passed. The foundryvtt template-parity test
 # sat in that state for weeks.
+#
+# #2219 (CASE 9) — discovery pruned `.claude/worktrees/` with a bare glob against
+# an ABSOLUTE base, so a scan root that was ITSELF an agent worktree matched its
+# own prune and the whole walk was skipped: TOTAL=0, reading as "no tests here".
 #
 # This test is SEMANTIC, not syntactic: it EXECUTES the real runner against
 # planted fixture trees and asserts on its structured output. A grep for the
@@ -81,7 +85,13 @@ write_test() { # write_test <abs-path> <body...>
 # Fixture: one tree carrying every classification the runner must distinguish.
 # ---------------------------------------------------------------------------
 ROOT="${WORK}/tree"
-TDIR="${ROOT}/demo-plugin/skills/alpha/scripts/tests"
+RELDIR="demo-plugin/skills/alpha/scripts/tests"
+TDIR="${ROOT}/${RELDIR}"
+
+# Discovery runs from inside --root against relative paths (#2219), so the
+# runner reports `./<repo-relative>` no matter how --root was spelled. Assert on
+# that form, not on the absolute fixture path.
+REPDIR="./${RELDIR}"
 
 # Real work happened → PASS.
 write_test "${TDIR}/test-aaa-passes.sh" \
@@ -141,21 +151,21 @@ check "case 1: a run with skips is not silently OK" "STATUS=WARN" \
 
 # The headline defect, asserted per test file.
 check_contains "case 1: colon-form skip reported as SKIP=" \
-    "SKIP=${TDIR}/test-bbb-skips.sh" "$out"
+    "SKIP=${REPDIR}/test-bbb-skips.sh" "$out"
 check_absent "case 1: colon-form skip NOT reported as PASS=" \
-    "PASS=${TDIR}/test-bbb-skips.sh" "$out"
+    "PASS=${REPDIR}/test-bbb-skips.sh" "$out"
 check_contains "case 1: dash-form skip reported as SKIP=" \
-    "SKIP=${TDIR}/test-ccc-skips-dash.sh" "$out"
+    "SKIP=${REPDIR}/test-ccc-skips-dash.sh" "$out"
 check_contains "case 1: skip with indented continuation reported as SKIP=" \
-    "SKIP=${TDIR}/test-ddd-skips-continuation.sh" "$out"
+    "SKIP=${REPDIR}/test-ddd-skips-continuation.sh" "$out"
 check_contains "case 1: stderr-only skip reported as SKIP=" \
-    "SKIP=${TDIR}/test-fff-skips-stderr.sh" "$out"
+    "SKIP=${REPDIR}/test-fff-skips-stderr.sh" "$out"
 
 # False-positive guard: a partial skip is a pass, not a skip.
 check_contains "case 1: partial skip stays a PASS" \
-    "PASS=${TDIR}/test-eee-partial-skip.sh" "$out"
+    "PASS=${REPDIR}/test-eee-partial-skip.sh" "$out"
 check_absent "case 1: partial skip is NOT reported as SKIP=" \
-    "SKIP=${TDIR}/test-eee-partial-skip.sh" "$out"
+    "SKIP=${REPDIR}/test-eee-partial-skip.sh" "$out"
 
 # The reason has to survive to the summary, or the operator cannot act on it.
 check_contains "case 1: SKIPS: block present" "SKIPS:" "$out"
@@ -305,6 +315,69 @@ else
     echo "FAIL: case 8: scripts/required-to-run-tests.txt not found" >&2
     fail=$((fail + 1))
 fi
+
+# ---------------------------------------------------------------------------
+# CASE 9 — the scan root is ITSELF an agent worktree (#2219)
+#
+# The defect: discovery ran `find "$root_dir"` against an ABSOLUTE base while
+# pruning the bare glob `*/.claude/worktrees/*`. When the root's own path
+# contains `/.claude/worktrees/`, every descendant matches the prune, the whole
+# walk is skipped, and the runner reports TOTAL=0 — a discovery collapse that
+# reads as "this tree has no tests".
+#
+# This is the shape an agent hits verifying its own change: worktree-isolated
+# subagents are this repo's normal way of doing plugin work, so `--root "$PWD"`
+# from inside one was structurally incapable of finding a test.
+# ---------------------------------------------------------------------------
+WTROOT="${WORK}/host/.claude/worktrees/agent-f00dcafe"
+write_test "${WTROOT}/${RELDIR}/test-aaa-passes.sh" 'echo "STATUS=OK"' 'exit 0'
+write_test "${WTROOT}/${RELDIR}/test-bbb-skips.sh" 'echo "SKIP: widget CLI not available"' 'exit 0'
+
+out="$(bash "$RUNNER" --root "$WTROOT" 2>&1)"
+rc=$?
+
+check "case 9: a worktree-shaped root still discovers its tests" "TOTAL=2" \
+    "$(printf '%s\n' "$out" | grep -m1 '^TOTAL=')"
+check "case 9: discovery did not collapse to an empty corpus" "SCANNED_EMPTY=false" \
+    "$(printf '%s\n' "$out" | grep -m1 '^SCANNED_EMPTY=')"
+# Guard integrity: TOTAL=2 alone would hold for a runner that discovered the
+# files but ran none of them. The tests must actually EXECUTE and classify.
+check "case 9: the discovered test actually ran (guard integrity)" "PASSED=1" \
+    "$(printf '%s\n' "$out" | grep -m1 '^PASSED=')"
+check_contains "case 9: classification still works from a worktree-shaped root" \
+    "SKIP=${REPDIR}/test-bbb-skips.sh" "$out"
+check "case 9: run is otherwise clean" "0" "$rc"
+
+# The manifest is matched on the repo-relative form, so a required test declared
+# under a worktree-shaped root must still resolve. Pre-fix this raised
+# `required_test_missing` for every entry, because nothing was ever discovered.
+out="$(bash "$RUNNER" --root "$WTROOT" --required-file "$REQ_OK" 2>&1)"
+rc=$?
+check "case 9: required-test matching survives a worktree-shaped root" "0" "$rc"
+check_absent "case 9: no phantom manifest drift" "required_test_missing" "$out"
+
+# Guard integrity, the other direction: the fix must not have simply disabled
+# pruning. A worktree clone NESTED below the root is still pruned, even when the
+# root is itself worktree-shaped.
+write_test "${WTROOT}/.claude/worktrees/agent-nested/${RELDIR}/test-aaa-passes.sh" \
+    'echo "STATUS=OK"' 'exit 0'
+out="$(bash "$RUNNER" --root "$WTROOT" 2>&1)"
+check "case 9: a nested worktree clone is still pruned" "TOTAL=2" \
+    "$(printf '%s\n' "$out" | grep -m1 '^TOTAL=')"
+check_absent "case 9: no nested worktree path leaks into the report" \
+    "agent-nested" "$out"
+
+# ---------------------------------------------------------------------------
+# CASE 10 — a --root that does not resolve fails fast
+#
+# It must not read as "found nothing": a typo'd root reporting SCANNED_EMPTY /
+# WARN / exit 0 is the same silent-empty-corpus failure #2219 is about.
+# ---------------------------------------------------------------------------
+out="$(bash "$RUNNER" --root "${WORK}/no-such-tree" 2>&1)"
+rc=$?
+check "case 10: an unresolvable --root exits 2" "2" "$rc"
+check_contains "case 10: the bad root is named" "no-such-tree" "$out"
+check_absent "case 10: it is not reported as an empty scan" "SCANNED_EMPTY=true" "$out"
 
 echo "=== SUMMARY ==="
 echo "PASS_COUNT=${pass}"
