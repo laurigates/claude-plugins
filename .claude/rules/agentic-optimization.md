@@ -125,9 +125,19 @@ bun test --dots --bail=1 $PATTERN
 
 ## Environment Detection
 
-Use CI environment to switch modes:
+Switch modes on the CI environment with a **lookup table the agent reads**, not a
+template conditional. Claude Code renders nothing in a `SKILL.md` body — a
+`{{ if CI }}…{{ endif }}` block reaches the agent verbatim, so every branch
+arrives at once and the selection is left as an exercise (issue #2265).
+
+| Environment | Install | Test reporter |
+|---|---|---|
+| CI (`$CI` is set) | `bun install --frozen-lockfile` | `bun test --reporter=junit` |
+| Local | `bun install` | `bun test --dots` |
+
+Detect it once, then run the matching row. A real shell conditional is fine when
+the command genuinely runs in a shell:
 
 ```bash
-{{ if CI }}--frozen-lockfile{{ endif }}
-{{ if CI }}--reporter=junit{{ else }}--dots{{ endif }}
+[ -n "${CI:-}" ] && bun install --frozen-lockfile || bun install
 ```
