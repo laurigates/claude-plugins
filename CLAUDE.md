@@ -163,7 +163,7 @@ This repo runs `blueprint-plugin` against itself in a deliberately constrained m
 | `feat(blueprint-plugin): …` | Minor version bump on the published plugin | Skill changes inside `blueprint-plugin/` |
 | `fix(blueprint-plugin): …` | Patch version bump | Bug fixes inside `blueprint-plugin/` |
 
-The `blueprint` scope (no `-plugin` suffix) intentionally does **not** match any release-please package, so dogfooding maintenance never accidentally publishes the plugin.
+What keeps dogfooding from publishing the plugin is the `chore` **type** (no bump) plus keeping edits under `docs/blueprint/` — **not** the `blueprint` scope. release-please routes by files touched, not by scope (`.claude/rules/conventional-commits.md`), so `fix(blueprint): …` on a file inside `blueprint-plugin/` **would** publish.
 
 ## Conventions
 
