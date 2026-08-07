@@ -22,6 +22,7 @@
 #   scripts/check-unused-bash-grant.sh
 #   scripts/check-version-pin-coverage.sh
 #   scripts/check-workflow-js-model.sh   (corpus legitimately empty — see below)
+#   scripts/run-skill-script-tests.sh    (the test runner — same prune, same bug)
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -171,6 +172,36 @@ assert "check-workflow-js-model: discovers a .js under a worktree-shaped root" "
 assert "check-workflow-js-model: no longer reports SCANNED_EMPTY=true" "$(contains_line "$out" 'SCANNED_EMPTY=false')"
 assert "check-workflow-js-model: flags the non-opus model" "$(contains "$out" 'non_opus_model')"
 assert "check-workflow-js-model: --strict exits 1 on the defect" "$(is_true "$([ $rc -eq 1 ] && echo true)")"
+
+# --- run-skill-script-tests.sh -----------------------------------------------
+# The test RUNNER carries the same prune, so it fails the same way — and it fails
+# worst: a collapse here means every skill-local and hook regression suite in the
+# tree silently does not run. Its `--root` is the analogue of the others'
+# `--project-dir`.
+mkdir -p "$wt/demo-plugin/skills/demo-skill/scripts/tests"
+cat > "$wt/demo-plugin/skills/demo-skill/scripts/tests/test-fixture-passes.sh" <<'EOF'
+#!/usr/bin/env bash
+echo "STATUS=OK"
+exit 0
+EOF
+out="$(bash "$repo_root/scripts/run-skill-script-tests.sh" --root "$wt" 2>&1)"; rc=$?
+assert "run-skill-script-tests: exits 0 from a worktree-shaped root" "$(is_true "$([ $rc -eq 0 ] && echo true)")"
+assert "run-skill-script-tests: reports a NON-ZERO discovery count" "$(contains "$out" 'TOTAL=1')"
+assert "run-skill-script-tests: does not collapse to an empty corpus" \
+  "$([ "$(contains "$out" 'SCANNED_EMPTY=true')" = false ] && echo true || echo false)"
+
+# Guard integrity: discovering the file is not the same as running it. Without
+# this, every assertion above would also pass against a runner that listed tests
+# and executed none — so plant a FAILING test and require it to be caught.
+cat > "$wt/demo-plugin/skills/demo-skill/scripts/tests/test-fixture-fails.sh" <<'EOF'
+#!/usr/bin/env bash
+echo "assertion blew up"
+exit 1
+EOF
+out="$(bash "$repo_root/scripts/run-skill-script-tests.sh" --root "$wt" 2>&1)"; rc=$?
+assert "run-skill-script-tests: actually executes what it discovers" "$(contains "$out" 'assertion blew up')"
+assert "run-skill-script-tests: a failure under a worktree-shaped root exits 1" \
+  "$(is_true "$([ $rc -eq 1 ] && echo true)")"
 
 echo ""
 echo "Passed: $pass_count  Failed: $fail_count"
