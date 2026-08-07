@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-07-27
-reviewed: 2026-07-27
+modified: 2026-08-07
+reviewed: 2026-08-07
 allowed-tools: Write, Bash(mkdir *), Bash(git init *), Bash(gh repo create *), Bash(pwd *), Bash(git config *), Bash(which *), SlashCommand, TodoWrite
 args: <project-name> [project-type] [--github] [--private]
 argument-hint: <project-name> [project-type] [--github] [--private]
@@ -202,7 +202,9 @@ configure skills you actually need.
 
 ## GitHub Repository Creation
 
-{{ if $3 == "--github" }}
+**Run this section only when the caller passed `--github` in `$ARGUMENTS`.** When
+the flag is absent, skip to "Final Steps" — the scaffold stays local.
+
 Requires `gh` — check "GitHub CLI Availability" above first. When `gh` is
 unavailable, skip this section, finish the local scaffold, and report that repo
 creation was skipped plus the install link.
@@ -214,7 +216,6 @@ Create GitHub repository. `${4:---public}` expands to `--private` when `$4` is
 gh repo create $1 "${4:---public}" --clone
 git remote add origin https://github.com/$(gh api user -q .login)/$1.git
 ```
-{{ endif }}
 
 ## Final Steps
 

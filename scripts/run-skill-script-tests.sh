@@ -28,8 +28,17 @@
 # exists (the manifest must not drift from the corpus it declares).
 #
 # Exits 0 when no tests are found (greenfield) so the runner is safe to wire in
-# before any test exists. Emits the `structured-script-output.md` contract:
-# `=== … ===` delimiters, `KEY=VALUE` body, `STATUS=`, `ISSUE_COUNT=`.
+# before any test exists — but reports `SCANNED_EMPTY=true` and `STATUS=WARN`
+# rather than a clean `OK`, because "found nothing" and "checked nothing" must
+# not look alike either (the denominator half of #2221, same hole #2255/#2290
+# found in the `check-*.sh` guards: a value assertion with no companion check
+# that anything was scanned). Note that a non-empty required-test manifest
+# already converts a discovery collapse into an ERROR by construction — every
+# declared entry raises `required_test_missing` — so in this repo, where five
+# tests are declared, TOTAL=0 exits 1 rather than warning.
+#
+# Emits the `structured-script-output.md` contract: `=== … ===` delimiters,
+# `KEY=VALUE` body, `STATUS=`, `ISSUE_COUNT=`.
 #
 # Usage: bash scripts/run-skill-script-tests.sh [--root <dir>] [--required-file <path>]
 #
@@ -186,9 +195,14 @@ echo "SKIPPED=${skipped}"
 echo "FAILED=${failed}"
 echo "REQUIRED_DECLARED=${#required_tests[@]}"
 echo "REQUIRED_VIOLATIONS=${required_violations}"
+if [ "$total" -eq 0 ]; then
+  echo "SCANNED_EMPTY=true"
+else
+  echo "SCANNED_EMPTY=false"
+fi
 if [ "$issue_count" -gt 0 ]; then
   echo "STATUS=ERROR"
-elif [ "$skipped" -gt 0 ]; then
+elif [ "$skipped" -gt 0 ] || [ "$total" -eq 0 ]; then
   echo "STATUS=WARN"
 else
   echo "STATUS=OK"

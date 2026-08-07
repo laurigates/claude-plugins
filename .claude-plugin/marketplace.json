@@ -24,7 +24,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.37.4",
+      "version": "2.37.5",
       "keywords": [
         "agents",
         "configuration",
@@ -69,7 +69,7 @@
       "name": "bevy-plugin",
       "source": "./bevy-plugin",
       "description": "Bevy game engine development - ECS, rendering, game architecture",
-      "version": "1.4.0",
+      "version": "1.4.1",
       "keywords": [
         "bevy",
         "game-engine",
@@ -98,7 +98,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking",
-      "version": "3.43.0",
+      "version": "3.43.1",
       "keywords": [
         "blueprint",
         "prd",
@@ -117,7 +117,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, dependency auditing, dead code detection, test quality, complexity metrics, and static analysis",
-      "version": "1.22.1",
+      "version": "1.22.3",
       "keywords": [
         "code-review",
         "refactoring",
@@ -293,7 +293,7 @@
       "name": "foundryvtt-plugin",
       "source": "./foundryvtt-plugin",
       "description": "FoundryVTT module lifecycle - scaffold a v13 module (Vite + TS + bun), create + seed the repo, open the gitops adoption PR",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "keywords": [
         "foundryvtt",
         "foundry-vtt",
@@ -310,7 +310,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.50.4",
+      "version": "2.50.5",
       "keywords": [
         "git",
         "github",
@@ -390,7 +390,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.8.0",
+      "version": "2.8.1",
       "keywords": [
         "hooks",
         "automation",
@@ -437,7 +437,7 @@
       "name": "macos-plugin",
       "source": "./macos-plugin",
       "description": "macOS-specific dev environment tooling - kitty session persistence, LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift",
-      "version": "1.7.1",
+      "version": "1.7.2",
       "keywords": [
         "macos",
         "darwin",
@@ -511,7 +511,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, changelog review, and continuous development workflows",
-      "version": "1.21.1",
+      "version": "1.21.2",
       "keywords": [
         "project",
         "initialization",
@@ -589,7 +589,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation",
-      "version": "1.9.2",
+      "version": "1.9.3",
       "keywords": [
         "session",
         "spinup",
@@ -652,7 +652,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.18.1",
+      "version": "3.18.2",
       "keywords": [
         "testing",
         "tdd",
@@ -669,7 +669,7 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.9.3",
+      "version": "2.9.4",
       "keywords": [
         "tools",
         "utilities",
@@ -684,7 +684,7 @@
       "name": "typescript-plugin",
       "source": "./typescript-plugin",
       "description": "TypeScript development - strict types, ESLint, Biome",
-      "version": "1.8.9",
+      "version": "1.8.10",
       "keywords": [
         "typescript",
         "eslint",
@@ -697,7 +697,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - parallel agents, CI pipelines, preflight checks, checkpoint refactoring",
-      "version": "1.9.2",
+      "version": "1.9.3",
       "keywords": [
         "workflow",
         "orchestration",

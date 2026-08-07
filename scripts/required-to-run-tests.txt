@@ -11,7 +11,11 @@
 # and a blanket fail-on-any-skip would be red on arrival and get disabled.
 #
 # A listed path that matches no discovered test is also an ERROR, so this
-# manifest cannot silently drift away from the corpus it declares.
+# manifest cannot silently drift away from the corpus it declares. That rule
+# doubles as the runner's denominator guard: if test discovery ever collapses
+# to zero, every entry below raises `required_test_missing` and the run exits 1
+# instead of reporting a clean OK over nothing scanned (#2255 / #2290 found the
+# same hole in the check-*.sh guards).
 #
 # Add an entry when you add a dependency install step to
 # .github/workflows/test-skill-scripts.yml — the two belong together.

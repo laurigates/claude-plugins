@@ -101,6 +101,18 @@ repos:
         language: script
         files: '/agents/.*\.md$'
         pass_filenames: false
+      - id: check-branch-containment-guidance
+        name: branch containment is routed to the authority ladder, not branch-audit
+        entry: ./scripts/check-branch-containment-guidance.sh
+        language: script
+        files: '^([^/]+-plugin/.*\.md|scripts/check-branch-containment-guidance\.sh)$'
+        pass_filenames: false
+      - id: check-branch-containment-guidance-test
+        name: branch-containment guidance lint regression
+        entry: ./scripts/tests/test-check-branch-containment-guidance.sh
+        language: script
+        files: '^scripts/(check-branch-containment-guidance\.sh|tests/test-check-branch-containment-guidance\.sh)$'
+        pass_filenames: false
       - id: check-unused-bash-grant
         name: no skill grants Bash without running shell
         entry: ./scripts/check-unused-bash-grant.sh --strict
@@ -124,6 +136,18 @@ repos:
         entry: bash ./scripts/tests/test-check-subagent-types.sh
         language: system
         files: '^scripts/(check-subagent-types\.sh|tests/test-check-subagent-types\.sh)$'
+        pass_filenames: false
+      - id: check-unrendered-templates
+        name: no unrendered {{ if }} template conditionals in skill bodies (#2265)
+        entry: ./scripts/check-unrendered-templates.sh
+        language: script
+        files: '^([^/]+-plugin/skills/.*\.md|scripts/check-unrendered-templates\.sh)$'
+        pass_filenames: false
+      - id: test-check-unrendered-templates
+        name: unrendered-template-conditional regression
+        entry: bash ./scripts/tests/test-check-unrendered-templates.sh
+        language: system
+        files: '^scripts/(check-unrendered-templates\.sh|tests/test-check-unrendered-templates\.sh)$'
         pass_filenames: false
       - id: check-workflow-model
         name: every Claude workflow pins opus + explicit effort

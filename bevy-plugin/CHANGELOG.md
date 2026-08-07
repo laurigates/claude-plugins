@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/laurigates/claude-plugins/compare/bevy-plugin-v1.4.0...bevy-plugin-v1.4.1) (2026-08-07)
+
+
+### Code Refactoring
+
+* **bevy-plugin:** split bevy-game-engine into a references/ sidecar ([#2278](https://github.com/laurigates/claude-plugins/issues/2278)) ([a6fe57c](https://github.com/laurigates/claude-plugins/commit/a6fe57cc15fbf82cbfeb7c7cb25e87090ccb1b3e)), closes [#2225](https://github.com/laurigates/claude-plugins/issues/2225)
+
 ## [1.4.0](https://github.com/laurigates/claude-plugins/compare/bevy-plugin-v1.3.3...bevy-plugin-v1.4.0) (2026-07-29)
 
 

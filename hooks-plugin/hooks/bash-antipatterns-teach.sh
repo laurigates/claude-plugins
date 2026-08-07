@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 # PostToolUse hook for Bash tool - teaches built-in-tool alternatives by augmenting
-# the agent-visible tool output rather than blocking the command (Claude Code 2.1.121+).
+# the agent-visible tool output rather than blocking the command.
+#
+# Output contract: hookSpecificOutput.updatedToolOutput is validated against the
+# TOOL'S OWN output schema. For Bash that is an OBJECT
+# ({interrupted,isImage,noOutputExpected,stderr,stdout}) - a string is rejected
+# ("Invalid input: expected object, received string") and the harness silently
+# falls back to the original output, making this hook a no-op (issue #2275).
+# The contract is pinned by test-bash-antipatterns-teach.sh, not by a version
+# comment: state the shape, not the release it was introduced in.
 #
 # Companion to bash-antipatterns.sh: that hook continues to PreToolUse-block patterns
 # that risk data loss or security (git reset --hard, curl | bash, fork bombs, etc.).
@@ -169,20 +177,39 @@ if [ -n "$SESSION_ID" ]; then
 fi
 
 # Build the augmented tool output: original response first, then the hint banner.
-# We stringify tool_response defensively because its shape varies per Bash exit code
-# and per harness version. jq's `tostring` handles strings, objects, and null.
-ORIGINAL=$(echo "$INPUT" | jq -r '.tool_response | if type == "string" then . else tostring end // empty')
+#
+# updatedToolOutput is validated against the Bash tool's own output shape, which
+# is an OBJECT - emitting a JSON string here is rejected and the hint is silently
+# discarded (issue #2275). So read tool_response as an object, take the free text
+# out of its `stdout` field (Bash's natural free-text channel), and merge the
+# augmented text back into the ORIGINAL object so every field the harness expects
+# survives untouched.
+TOOL_RESPONSE=$(echo "$INPUT" | jq -c '.tool_response // null')
+
+ORIGINAL=$(jq -r 'if type == "object" then (.stdout // "")
+                  elif type == "string" then .
+                  elif type == "null" then ""
+                  else tostring end' <<<"$TOOL_RESPONSE")
 
 # Compose the augmented output. Trailing newline before the hint keeps the banner
 # visually distinct from command output, especially when stdout ends without one.
 AUGMENTED=$(printf '%s\n\n--- bash-antipatterns hint ---\n💡 %s\n' "$ORIGINAL" "$hint")
 
-# Emit the PostToolUse JSON envelope. hookSpecificOutput.updatedToolOutput replaces
-# what the model sees as the tool result (Claude Code 2.1.121+).
-jq -n --arg out "$AUGMENTED" '{
+# Emit the PostToolUse JSON envelope. `$orig + {stdout: $out}` overwrites exactly
+# one field of the harness's own object and invents nothing - if the harness
+# schema is strict, unioning in a key the tool never emitted would be a fresh
+# rejection with the same silent-fallback failure mode. The default field set is
+# used only on the non-object branch (a legacy/absent tool_response, which does
+# not occur on a live harness) so the emitted value is still schema-shaped.
+jq -n --argjson orig "$TOOL_RESPONSE" --arg out "$AUGMENTED" '{
     hookSpecificOutput: {
         hookEventName: "PostToolUse",
-        updatedToolOutput: $out
+        updatedToolOutput: (
+            (if ($orig | type) == "object" then $orig
+             else {interrupted: false, isImage: false, noOutputExpected: false, stderr: ""}
+             end)
+            + {stdout: $out}
+        )
     }
 }'
 

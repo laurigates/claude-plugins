@@ -86,8 +86,10 @@ project other than the repo basename. When the session is in journal
 scope, add `--with-journal --journal-path <dir>` (plus
 `--journal-todo-heading` / `--journal-todo-stop` if the config overrides
 the defaults). The digest sections: `PROJECT`, `GIT`, `PRS`,
-`TASKWARRIOR` (each task with its stable UUID + `STALE_DAYS`),
-`GITHUB_DRIFT`, `JOURNAL`, `BLUEPRINT`, `STALE_ACTIVE_ELSEWHERE`.
+`TASKWARRIOR` (each task with its stable UUID + `STALE_DAYS`, plus
+`TASK_SCOPE` / `PROJECT_CONFIDENCE` / `TASKS_ALL_PROJECTS` and the
+`RECENT_TASK_*` fallback rows), `GITHUB_DRIFT`, `JOURNAL`, `BLUEPRINT`,
+`STALE_ACTIVE_ELSEWHERE`.
 
 ### Step 1b: If `GH_READY=false`, fetch GitHub state via MCP instead
 
@@ -105,6 +107,24 @@ Do not present them as a clean state. Instead:
    or annotations. Treat what survives as the `GITHUB_DRIFT` set.
 2. If no GitHub path exists at all, the briefing's github line must say
    `github: not queried (gh unavailable)` — never omit it silently.
+
+### Step 1c: If `PROJECT_CONFIDENCE=low`, do not claim a clean queue
+
+The `TASKWARRIOR` section carries `TASK_SCOPE=` and
+`PROJECT_CONFIDENCE=`. The project slug is detected from the repo
+**directory basename** — a guess that is wrong for chezmoi source dirs,
+worktrees, monorepo subdirs, portfolio checkouts, and repos cloned under
+another name. Only `PROJECT_CONFIDENCE=high` licenses "nothing pending
+under `project:<name>`". Otherwise:
+
+| `TASK_SCOPE` | What to say / do |
+|---|---|
+| `remote-name` | The count is real but came from `PROJECT_RESOLVED=` — name **that** slug in the briefing, not the directory basename |
+| `all-projects-fallback` | Never say the queue is clean. Present the `RECENT_TASK_*` rows as "recently touched (project scope unresolved)" with `TASKS_ALL_PROJECTS` as the denominator, and offer to re-run with `--project <name>` |
+| `unknown` / `none` | State `taskwarrior: not queried` — `jq` or `task` was unavailable, so the zeros are unqueried |
+
+A `RECENT_TASK_*` row carries no `ghid` / annotations / `+ACTIVE` flag —
+it is a pointer, not a full task. Resolve the slug before acting on one.
 
 ### Step 2: Apply the signal filter
 
