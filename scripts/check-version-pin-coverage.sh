@@ -37,6 +37,15 @@
 #   --strict        Exit 1 when an ERROR-severity pin is found (default: exit 0)
 set -uo pipefail
 
+# Resolve the script's own directory BEFORE anything cds elsewhere. Discovery
+# later cds into $proj_dir (#2219), and when this script is invoked by a
+# relative path (`bash scripts/check-version-pin-coverage.sh` — the form
+# pre-commit and CI use), $BASH_SOURCE is relative too, so resolving it after
+# that cd looks for `scripts` inside the scan root. Harmless to the verdict (the
+# failed cd is confined to a subshell) but it printed a bogus
+# "cd: scripts: No such file or directory" to stderr on every relative-path run.
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 proj_dir=""
 strict=false
 
@@ -241,7 +250,9 @@ fi
 # fenced. Illustrative version numbers in prose tables are never fenced, so they
 # are excluded by construction (the "illustrative vs. managed" rule).
 if [ "$files_scanned" -gt 0 ]; then
-  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  # $script_dir was resolved at the top of the file, before the cd into
+  # $proj_dir — resolving a relative $BASH_SOURCE here would look for `scripts`
+  # inside the scan root.
   helper="$script_dir/lib/extract-md-elements.py"
   if ! command -v uv >/dev/null 2>&1; then
     echo "check-version-pin-coverage: 'uv' not found on PATH; cannot parse markdown structure" >&2

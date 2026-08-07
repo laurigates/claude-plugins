@@ -17,6 +17,9 @@ mobile-first **TypeScript + bun build** architecture of `comfyui-gallery-loader`
 `comfyui-sampler-info`, and `comfyui-touch-numeric`, leaving only the actual
 node logic to implement.
 
+Supporting material is split across `references/` by the path that needs it;
+see [REFERENCE.md](REFERENCE.md) for the index.
+
 ## When to Use This Skill
 
 | Use this skill when... | Use the alternative when... |
@@ -76,19 +79,6 @@ is not proof of its option source" for the overlap gate.
 | `gesture` | The UX is a **canvas interaction**, not a widget — pinch/drag/long-press on nodes or groups (resize, move, region-box). | Empty `NODE_CLASS_MAPPINGS`; a canvas pointer layer in `src/index.ts` with exported pure geometry helpers. Like touch-resize. | **no kit** |
 | `shim` | The pack's whole job is **injecting scoped CSS / registering commands** to paper over upstream frontend bugs — no modal, no widget hook. | Empty `NODE_CLASS_MAPPINGS`; a `SHIMS` registry in `src/index.ts` with `applyCssShim`/`removeCssShim`, one managed `<style>` per shim driven by a boolean setting, + a jsdom lifecycle smoke test. Like comfyui-touch-shim. | **no kit** |
 
-**The `--widgets` switch picks the modal shape.** On a modal variant
-(`frontend` / `backend`), passing `--widgets a,b` emits the **widget-intercept**
-`src/index.ts` (`TARGET_WIDGETS` + `openPicker` + `widget.onPointerDown`).
-**Omitting `--widgets`** emits a **standalone-modal** `src/index.ts` instead — a
-`registerExtension` skeleton with an `actionBarButtons` entry + a
-`command`/`menuCommand` that calls an exported `openShell()` (no `TARGET_WIDGETS`,
-no per-widget hook). Use the standalone skeleton for a manager / dashboard /
-gallery-actions panel whose modal is launched from the app chrome rather than a
-node widget (e.g. comfyui-touch-manager). It still imports the modal kit, and it
-ships a **jsdom modal-mount smoke test** (`jsdom` added to `devDependencies`)
-that asserts `openShell()` populates the modal body — the empty-modal gap that
-otherwise passes pure-helper unit tests.
-
 **Decision rule:** `frontend`/`backend` **with** `--widgets` for a per-widget
 modal; `frontend`/`backend` **without** `--widgets` for a standalone modal opened
 from the toolbar/command palette; `gesture` when the interaction is on the
@@ -99,26 +89,9 @@ genuinely needs the server to read files or serve data. A non-bundled Python
 dependency is never allowed — if you reach for one, it belongs in a separate
 companion pack.
 
-The `gesture` variant intercepts the **canvas pointer stream** (capture-phase
-`pointerdown`/`move`/`up` on `app.canvas.canvas`), hit-tests against selected
-nodes/groups in screen space (via `ds.scale`/`ds.offset`), and acts only when
-the gesture lands on a selected target. It is a no-op when `app.canvas` is
-absent, so the native control always survives. Pure math (distance, hit-test,
-scale-clamp) lives in exported, unit-tested helpers; DOM/canvas wiring stays
-below them. It has **no** `@laurigates/comfy-modal-kit` dependency.
-
-The `shim` variant is a home for **small, individually-toggleable stopgap
-fixes** that paper over upstream ComfyUI-frontend bugs. It has **no modal and no
-widget hook**: `src/index.ts` is a `SHIMS` registry where each entry injects a
-scoped, managed `<style>` tag (idempotent `applyCssShim`/`removeCssShim`, one
-`<style>` per shim) driven by a boolean setting, plus a command. Every shim
-links the upstream issue it papers over (in `upstream` + the settings tooltip)
-and is deleted the release the upstream fix ships; selectors should target
-stable `data-testid` hooks and every shim must **fail soft** (a dead selector
-styles nothing, never throws). The lifecycle helpers are exported and covered by
-a jsdom smoke test (inject / idempotent / remove; `jsdom` added to
-`devDependencies`). It has **no** `@laurigates/comfy-modal-kit` dependency. Like
-comfyui-touch-shim.
+For what `--widgets` changes about the emitted modal, and what the `gesture`
+and `shim` skeletons contain, see
+[references/variants.md](references/variants.md).
 
 ## How to run
 
@@ -131,164 +104,9 @@ Frontend-only pack:
 python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name comfyui-touch-numeric --display "Touch Numeric" --desc "Touch-friendly keypad + slider modal for seed and INT/FLOAT widgets." --variant frontend --widgets seed,noise_seed,cfg,steps,denoise
 ```
 
-Pack with a Python backend:
-
-```sh
-python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name comfyui-model-gallery --display "Model Gallery" --desc "Touch-first card-grid picker for the folder-backed model combos." --variant backend --widgets lora_name,ckpt_name,vae_name,control_net_name
-```
-
-Standalone-modal pack (manager/dashboard launched from a toolbar button — modal
-variant, **no** `--widgets`):
-
-```sh
-python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name comfyui-touch-manager --display "Touch Manager" --desc "Touch-first node/extension manager modal opened from the toolbar." --variant backend
-```
-
-Canvas-gesture pack (resize/move/region — no widget, no modal, no kit):
-
-```sh
-python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name comfyui-touch-resize --display "Touch Resize" --desc "Selection-gated pinch-to-resize for ComfyUI nodes and groups on touch devices." --variant gesture
-```
-
-CSS/shim pack (scoped `<style>` injection + commands — no modal, no widget, no kit):
-
-```sh
-python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name comfyui-touch-shim --display "Touch Shim" --desc "Stopgap mobile CSS shims for upstream ComfyUI frontend bugs." --variant shim
-```
-
-Flags: `--name` (repo + served URL segment), `--display` (Comfy DisplayName),
-`--desc`, `--subfamily` (`touch`|`info`, accent palette), `--tagline` (banner subtitle, ≤46 chars — see below), `--variant
-{frontend,backend,gesture,shim}`, `--widgets` (CSV → the TS stub's
-`TARGET_WIDGETS`; on a modal variant, **omitting** it emits the standalone-modal
-skeleton instead of the widget-intercept one; ignored by `gesture` and `shim`),
-`--publisher` (default `laurigates`), `--dir` (parent dir, default cwd).
-
-It refuses to overwrite an existing directory.
-
-### The banner tagline is not the description
-
-`banner.svg` renders its subtitle at 44px starting at x=340 on a 1344px canvas,
-so anything past **~46 characters runs off the edge** — invisible until someone
-rasterizes the PNG and looks at it. Omitting `--tagline` derives one from
-`--desc` (first clause, trimmed to a word boundary) and warns when it had to
-truncate. Pass `--tagline` for anything better than a machine truncation:
-
-```sh
---desc "Drag one output onto another to take over its downstream links — reroute a connection's source." --tagline "Move a connection's source in one drag"
-```
-
-### The placeholder glyph is gated, not just commented
-
-`icon.svg`/`banner.svg` ship a letter-initial glyph so they're valid from commit
-one, but `pyproject.toml` already points `Icon`/`Banner` at the PNGs, so a
-forgotten placeholder publishes a generic letter tile to registry.comfy.org.
-**`just assets` refuses to rasterize** while the `PLACEHOLDER-GLYPH` marker
-comment is present — draw the bespoke pictogram (family spec: `#ffb02e` line-art
-on the dark tile), delete the marker, then run it.
-
-### Two pins the generator owns
-
-- **`uv.lock`** — release-please bumps `pyproject.toml` but has no native
-  `uv.lock` support, so without an explicit updater the lock's self-version
-  trails the manifest on **every** release (#2187). The emitted
-  `release-please-config.json` carries the `toml` `extra-files` updater, and
-  `--verify` grades it as `RELEASE_PLEASE_UVLOCK=`.
-  `comfyui-plugin:comfy-registry-lifecycle` §1 owns the detail — including the
-  two jsonpath forms that leave the lock stale while *looking* configured.
-- **`MODAL_KIT_VERSION`** — not Renovate-managed (this repo's customManagers see
-  only skill markdown + `install_pkgs.sh`; a `.py` generator is neither), which
-  is how it sat four minors behind the published kit until #2186. #2222 tracks
-  extending Renovate here; until then refresh with `npm view
-  @laurigates/comfy-modal-kit version`. `test-finishing-pass.sh` prints an
-  advisory NOTE when the published latest falls outside the pinned range.
-
-## What you get
-
-A repo where `just check` (typecheck + build + lint + test) passes from the
-first commit: `pyproject.toml` (`[tool.comfy]` metadata with `includes =
-["web/dist"]` and `Icon`/`Banner` wired to the raw-GitHub PNG URLs, ruff config,
-dev deps), `.github/workflows/` (`ci.yml`, `publish.yml`, `release-please.yml`,
-`renovate.yml`, `registry-health.yml`, `clear-autorelease-labels.yml`),
-`renovate.json` (Renovate, **not** dependabot), strict `tsconfig.json`,
-`biome.json`, `knip.json`, `.pre-commit-config.yaml`,
-`release-please-config.json` (carrying the `uv.lock` `toml` updater) + manifest,
-`vitest.config.js`, `package.json`
-(bun scripts; modal variants add `@laurigates/comfy-modal-kit`; the build
-carries a `--banner` provenance comment naming what the bundle inlines),
-`tests/` (a green pytest + vitest smoke test, plus
-`test_publish_hygiene.py` — simulates the comfy-cli tarball and pins the
-registry scan surface; kept byte-identical across all pack repos),
-`src/index.ts` + `src/comfyui-shims.d.ts`,
-`__init__.py` (`WEB_DIRECTORY = "./web/dist"`), `icon.svg` + `banner.svg`
-(family-style placeholders — `just assets` rasterizes them to the PNGs the
-registry serves), `CLAUDE.md`, the migration ADR, `README`, `LICENSE`, and
-`RELEASE-CHECKLIST.md`. The `backend` variant additionally gets `<module>.py`
-(node + endpoint + whitelist gate) and `tests/conftest.py` (stubs aiohttp/server).
-
-## The finishing pass
-
-A CI-green pack is not yet a registry-ready, fleet-consistent one. The scaffold
-**emits** the deterministic finishing-pass pieces and **audits + warns** (at the
-end of every run) for the two it can't do from stdlib alone (issue #1877):
-
-| Piece | Severity if absent | Follow-up |
-|-------|--------------------|-----------|
-| Registry icon | **ERROR** — `Icon` already points at `…/main/icon.png`, so a missing PNG publishes a 404 | `just assets` (needs `rsvg-convert`) → commit `icon.png` |
-| Registry banner | **ERROR** — same, for `Banner` | `just assets` → commit `banner.png` |
-| Bespoke artwork | **ERROR** while `PLACEHOLDER-GLYPH` survives | draw the pictogram, delete the marker, re-run `just assets` |
-| Renovate (not dependabot) + registry workflows | WARN | emitted by the scaffold; a gap means drift |
-| Screenshot pipeline / README prose | WARN — pack-specific, deferrable | run `comfyui-screenshot-pipeline`, then `just screenshots` |
-
-**Ask the generator; do not read this table for status.** The audit is
-re-runnable against any existing pack, and it is the authority:
-
-```sh
-python3 ${CLAUDE_SKILL_DIR}/scaffold.py --verify path/to/comfyui-<name>
-```
-
-It emits `ICON_PNG=`, `PLACEHOLDER_GLYPH=`, `SCREENSHOTS=`, a `SIBLING_GAP_COUNT=`
-diff against a mature sibling, and a `STATUS=OK|WARN|ERROR` verdict — exit 1 on
-ERROR. Run it before opening the registry PR, and any time you inherit a pack
-someone else scaffolded.
-
-Two gates back it up, because a printed note is not a gate: `just assets` refuses
-to rasterize placeholder art, and the pack's own
-`tests/test_publish_hygiene.py::test_registry_display_assets_present` fails CI
-while the PNGs `[tool.comfy]` names are missing or still placeholders. That test
-is why this can no longer go unnoticed — `comfyui-touch-manager` published with
-`Icon = ""` for weeks with CI green, and `comfyui-output-swap` sat 31 hours after
-its own audit flagged the rasterize, both caught only when a human looked.
-
-## Fleet drift (the packs vs this template)
-
-`--verify` grades **one** pack's finishing pass. The complementary question —
-*have the 13 generated packs drifted apart from this template, and from each
-other?* — is answered by:
-
-```sh
-python3 ${CLAUDE_SKILL_DIR}/scripts/check-fleet-drift.py
-```
-
-It imports this generator, derives the context-invariant templates from
-`build_file_map` (never a hand-copied list), and compares them against every
-pack under `--fleet-root` (default `~/repos/laurigates/comfyui-nodes`;
-`--pack <name>` scopes it). Per-file authority lives in
-[`fleet-policy.toml`](fleet-policy.toml) — `managed` (byte-identity, ERROR),
-`seed` (never compared), `shared` (the fleet leads, the template back-ports),
-and `block` (a named `##########` section of a placeholder-carrying template —
-the justfile's `Assets` recipe, whose stale copy silently distorted banner
-artwork in one pack for months).
-
-**It reports; it never writes to a pack.** Drift is *bidirectional*: all 13
-packs are ahead of the template on `release-please.yml` (`ubuntu-slim` +
-`release-please-action@v5`), the template is ahead on `RELEASE-CHECKLIST.md`,
-Renovate independently pushes packs ahead on pinned versions, and
-`tests/js/__mocks__/app.js` is pack-owned. A template→pack apply would be a
-silent-revert bug across 13 repos, so a human classifies each row's direction.
-A new context-invariant template with no `fleet-policy.toml` entry is itself an
-ERROR, so the manifest cannot fall behind the scaffold. The weekly
-`Plugin: Fleet drift audit` workflow runs the same script and opens one issue
-when it finds drift.
+The `backend`, standalone-modal, `gesture`, and `shim` recipes, the full flag
+list, and the banner-tagline rule live in
+[references/invocation.md](references/invocation.md).
 
 ## After scaffolding
 
@@ -326,55 +144,12 @@ Then implement, and wire up infra:
 **Or skip steps 1–2 entirely:** run the **`/comfy-node`** orchestrator, which
 chains scaffold → `gh repo create` → seed `main` → the gitops PR.
 
-## Hard rules baked into the output
-
-- **TypeScript source, bun build.** Author in `src/`; build to `web/dist/`.
-  `tsc --noEmit` checks, `bun build` emits — decoupled. Never hand-edit
-  `web/dist/` (it is generated; rebuild with `bun run build` and commit).
-- **Modal primitives come from `@laurigates/comfy-modal-kit`** (modal variants)
-  — import them; never copy `modal-shell.js`/`modal-fuzzy.js` into the pack.
-  `bun build` inlines the imported code. The `gesture` and `shim` variants have
-  no kit (no modal at all).
-- **Pack directory name is part of the served URL** (`/extensions/<name>/index.js`).
-- **No non-bundled Python deps.** `dependencies` is `comfyui-frontend-package`
-  only; the backend variant may use ComfyUI-bundled `aiohttp` / `folder_paths` /
-  `server` and nothing else.
-- **Additive, never clobbering;** always fall back to the native control.
-- **Never hand-edit `CHANGELOG.md` or the `version` field** — release-please
-  owns them.
-- **Arbitrary-path endpoints gate on an extension whitelist** (backend variant).
-- **`openModalShell` has NO `body` option.** It returns a controller
-  (`{ bodyEl, close, setBusy, setStatus, ... }`) whose `bodyEl` starts empty;
-  fill it *after* opening (`const m = openModalShell({title}); m.bodyEl.appendChild(el)`).
-  Passing `body:` is silently ignored and the dialog renders empty — a bug that
-  **passes green unit tests** because modal builders are DOM-uncovered. The stub
-  does it right.
-
-## Registry publishing
-
-The generated `publish.yml` builds `web/dist/` then publishes via
-`Comfy-Org/publish-node-action`. Three registry facts worth knowing:
-
-- **Active vs Flagged is a pointer.** The registry serves one *Active* version
-  per node; publishing moves that pointer to the new version. A version that gets
-  **Flagged** (review) stays in the registry but is no longer the Active target —
-  installs fall back to the last Active version. Publishing a fresh good version
-  re-points Active forward.
-- **Flags fire on ANY finding, even info severity.** Full reasons are on the
-  public API via `GET /nodes/<id>/versions?include_status_reason=true`
-  (notifications otherwise post to the Comfy Org Discord
-  `#security-review-council`). Known classes: `python_network_operations`
-  (yara) on any urllib/requests use in shipped `.py`, and `vendored_unknown`
-  (provenance_scan) on **any bundler-built dist file** — even pure own-source
-  bundles. The scaffold's `tests/test_publish_hygiene.py` + `.comfyignore` +
-  `--banner` attribution keep the scan surface minimal, and its
-  `registry-health.yml` writes the findings into the tracking issue — see the
-  `comfy-registry-lifecycle` skill's security-scan section.
-- **`.comfyignore` trims the tarball.** comfy-cli builds the published `node.zip`
-  as *git-tracked files − `.comfyignore` matches + `[tool.comfy] includes`*. The
-  scaffold ships a default `.comfyignore` so only the runtime backend, the built
-  `web/dist`, and metadata ship — CI, tests, docs, build inputs, and the TS source
-  stay out. Tarball trimming requires **comfy-cli >= 1.10.3**.
+Before opening the registry PR, grade the pack's finishing pass — the artwork
+gate, the `--verify` audit, and the registry-publishing facts are in
+[references/registry-readiness.md](references/registry-readiness.md). What the
+generator emits, the invariants the emitted code assumes, and what it
+deliberately does not generate are in
+[references/implementing-the-pack.md](references/implementing-the-pack.md).
 
 ## Agentic Optimizations
 
@@ -387,39 +162,3 @@ The generated `publish.yml` builds `web/dist/` then publishes via
 | Grade one pack's finishing pass | `python3 ${CLAUDE_SKILL_DIR}/scaffold.py --verify path/to/comfyui-X` |
 | Sweep the whole fleet for drift | `python3 ${CLAUDE_SKILL_DIR}/scripts/check-fleet-drift.py` |
 | Sweep one pack only | `python3 ${CLAUDE_SKILL_DIR}/scripts/check-fleet-drift.py --pack comfyui-X` |
-
-## Notes & deferrals
-
-- The screenshot pipeline (`screenshots/` Docker + Playwright) and the full
-  `docs/blueprint/` PRD/ADR set (beyond the single migration ADR) are **not**
-  generated — they are heavy and pack-specific. Add them later (the
-  `comfyui-screenshot-pipeline` skill wires the screenshots). The
-  finishing-pass audit at the end of a scaffold flags this so it isn't silently
-  forgotten (issue #1877).
-- Icon/banner ship as **source SVGs** in the pack-family spec (400×400 dark
-  inset tile `rect 28,28,344,344 rx76` + one accent glyph; 1344×576 family
-  banner) — canonical spec in `comfy-registry-lifecycle` "Icon design system".
-  The emitted glyph is a **placeholder letter**: replace it with a bespoke
-  pictogram (no sibling pack ships a letter) in the family accent — pass
-  `--subfamily touch` (default, `#ffb02e`) or `--subfamily info` (`#6ba6ff`)
-  and BOTH the icon and the banner are emitted in that accent. Before this
-  flag both templates hardcoded orange, so an info/gallery pack silently
-  started off-spec and had to be recoloured by hand. The PNGs the registry serves are produced by
-  `just assets` (rsvg-convert), not at scaffold time (stdlib-only generator);
-  that recipe also **gates framing** — the tile must trim to `346×346+27+27` on
-  a 400×400 canvas, which catches an icon that drifted off-spec (the trap that
-  left `comfyui-touch-shim` shipping the raw 512×512 full-bleed placeholder).
-  Edit the SVG and re-run `just assets` to keep the PNG in sync.
-- Action/tool versions in the generated workflows mirror the reference packs as
-  of scaffolding; Dependabot/Renovate will bump them. The biome pin is
-  single-sourced in `scaffold.py`'s `BIOME_VERSION` constant so biome.json,
-  pre-commit, CI, and the justfile never drift (a guard in
-  `scripts/plugin-compliance-check.sh` enforces this).
-- The TS stub imports only `openModalShell`; add `fuzzyRank` /
-  `highlightMatches` from `@laurigates/comfy-modal-kit` when the real modal's
-  search lands.
-- **Add at least one jsdom DOM-attach test for each modal builder** (assert the
-  expected element exists in `modal.bodyEl` after `openX()`). The generated
-  pytest + vitest gate covers pure helpers only; modal DOM is otherwise left to
-  the manual browser smoke matrix — which is exactly the gap that let an
-  empty-modal bug ship green. (`vitest --environment jsdom`.)

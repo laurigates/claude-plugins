@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.50.5](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.4...git-plugin-v2.50.5) (2026-08-07)
+
+
+### Bug Fixes
+
+* **git-plugin:** route branch containment to the authority ladder, not branch-audit ([#2281](https://github.com/laurigates/claude-plugins/issues/2281)) ([76f13e1](https://github.com/laurigates/claude-plugins/commit/76f13e1b20d1c5322c5b2036dd010fda238e6490)), closes [#2268](https://github.com/laurigates/claude-plugins/issues/2268)
+
 ## [2.50.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.3...git-plugin-v2.50.4) (2026-07-31)
 
 

@@ -51,6 +51,14 @@ contains() { printf '%s' "$1" | grep -q -- "$2" && echo true || echo false; }
 # safe under `set -o pipefail` — `grep -q` closes stdin on first match and a
 # piped writer would take SIGPIPE (141). See shell-pipefail-grep-q.md.
 contains_line() { grep -qxF -- "$2" <<<"$1" && echo true || echo false; }
+lacks_line() { [ "$(contains_line "$1" "$2")" = false ] && echo true || echo false; }
+
+# The same trap runs in the POSITIVE direction, which is why every KEY=VALUE
+# assertion below uses contains_line, not just the negative ones: an unanchored
+# `SCANNED=1` is satisfied by any `*_SCANNED=1` sibling key, so a guard that
+# discovered nothing in its OWN corpus could still pass on a sibling counter.
+# These guards keep gaining keys (TEMPLATE_FILES_SCANNED, EXEMPTED_CALLS, …), so
+# anchoring both polarities is what keeps the suite honest as they grow.
 
 # Build a fixture whose ROOT PATH is worktree-shaped, exactly like a real
 # `<repo>/.claude/worktrees/agent-<id>` checkout.
@@ -92,7 +100,7 @@ echo "=== Guard discovery from a worktree-shaped scan root (#2219) ==="
 # --- check-agent-model.sh ----------------------------------------------------
 out="$(bash "$repo_root/scripts/check-agent-model.sh" --project-dir "$wt" 2>&1)"; rc=$?
 assert "check-agent-model: exits 0 from a worktree-shaped root" "$(is_true "$([ $rc -eq 0 ] && echo true)")"
-assert "check-agent-model: reports a NON-ZERO scan count" "$(contains "$out" 'AGENT_FILES_SCANNED=1')"
+assert "check-agent-model: reports a NON-ZERO scan count" "$(contains_line "$out" 'AGENT_FILES_SCANNED=1')"
 assert "check-agent-model: does not claim an empty corpus" \
   "$([ "$(contains "$out" 'No agent files found')" = false ] && echo true || echo false)"
 
@@ -102,15 +110,15 @@ assert "check-agent-model: does not claim an empty corpus" \
 # a clean-looking reading of a corpus that was never opened.
 out="$(bash "$repo_root/scripts/check-unused-bash-grant.sh" --project-dir "$wt" 2>&1)"; rc=$?
 assert "check-unused-bash-grant: exits 0 from a worktree-shaped root" "$(is_true "$([ $rc -eq 0 ] && echo true)")"
-assert "check-unused-bash-grant: reports a NON-ZERO scan count" "$(contains "$out" 'SKILLS_SCANNED=1')"
+assert "check-unused-bash-grant: reports a NON-ZERO scan count" "$(contains_line "$out" 'SKILLS_SCANNED=1')"
 assert "check-unused-bash-grant: does not report SKILLS_SCANNED=0" \
-  "$([ "$(contains_line "$out" 'SKILLS_SCANNED=0')" = false ] && echo true || echo false)"
+  "$(lacks_line "$out" 'SKILLS_SCANNED=0')"
 
 # The zero-scan discriminator: plugin dirs present but nothing discovered is a
 # MISFIRE and must be loud, not a green "nothing to do".
 mkdir -p "$fx/misfire/demo-plugin"
 out="$(bash "$repo_root/scripts/check-unused-bash-grant.sh" --project-dir "$fx/misfire" 2>&1)"; rc=$?
-assert "check-unused-bash-grant: plugin dirs but zero skills is ERROR, not OK" "$(contains "$out" 'STATUS=ERROR')"
+assert "check-unused-bash-grant: plugin dirs but zero skills is ERROR, not OK" "$(contains_line "$out" 'STATUS=ERROR')"
 assert "check-unused-bash-grant: misfire names the cause" "$(contains "$out" 'nothing_scanned')"
 assert "check-unused-bash-grant: misfire exits non-zero" "$(is_true "$([ $rc -ne 0 ] && echo true)")"
 
@@ -120,15 +128,22 @@ assert "check-unused-bash-grant: misfire exits non-zero" "$(is_true "$([ $rc -ne
 mkdir -p "$fx/genuinely-empty"
 out="$(bash "$repo_root/scripts/check-unused-bash-grant.sh" --project-dir "$fx/genuinely-empty" 2>&1)"; rc=$?
 assert "check-unused-bash-grant: no plugin dirs exits 0" "$(is_true "$([ $rc -eq 0 ] && echo true)")"
-assert "check-unused-bash-grant: no plugin dirs marks SCANNED_EMPTY" "$(contains "$out" 'SCANNED_EMPTY=true')"
-assert "check-unused-bash-grant: no plugin dirs stays STATUS=OK" "$(contains "$out" 'STATUS=OK')"
+assert "check-unused-bash-grant: no plugin dirs marks SCANNED_EMPTY" "$(contains_line "$out" 'SCANNED_EMPTY=true')"
+assert "check-unused-bash-grant: no plugin dirs stays STATUS=OK" "$(contains_line "$out" 'STATUS=OK')"
 
 # --- check-version-pin-coverage.sh -------------------------------------------
 if command -v uv >/dev/null 2>&1; then
   out="$(bash "$repo_root/scripts/check-version-pin-coverage.sh" --project-dir "$wt" 2>&1)"; rc=$?
-  assert "check-version-pin-coverage: reports a NON-ZERO scan count" "$(contains "$out" 'FILES_SCANNED=1')"
+  assert "check-version-pin-coverage: reports a NON-ZERO scan count" "$(contains_line "$out" 'FILES_SCANNED=1')"
   assert "check-version-pin-coverage: does not report FILES_SCANNED=0" \
-    "$([ "$(contains_line "$out" 'FILES_SCANNED=0')" = false ] && echo true || echo false)"
+    "$(lacks_line "$out" 'FILES_SCANNED=0')"
+  # Invoked by a RELATIVE path on purpose: $BASH_SOURCE is then relative too, so
+  # a script resolving its own directory AFTER cding into the scan root emits
+  # "cd: scripts: No such file or directory". The absolute invocation above
+  # cannot reproduce it, which is why this runs from $repo_root instead.
+  err="$(cd "$repo_root" && bash scripts/check-version-pin-coverage.sh --project-dir "$wt" 2>&1 >/dev/null)"
+  assert "check-version-pin-coverage: relative invocation prints nothing on stderr" \
+    "$(is_true "$([ -z "$err" ] && echo true)")"
 else
   echo "SKIP: uv not on PATH — check-version-pin-coverage needs it to parse markdown"
 fi
@@ -140,8 +155,8 @@ fi
 # tell "nothing to check" from "checked and clean" without re-deriving it.
 out="$(bash "$repo_root/scripts/check-workflow-js-model.sh" --project-dir "$wt" 2>&1)"; rc=$?
 assert "check-workflow-js-model: empty corpus still exits 0" "$(is_true "$([ $rc -eq 0 ] && echo true)")"
-assert "check-workflow-js-model: empty corpus is marked SCANNED_EMPTY=true" "$(contains "$out" 'SCANNED_EMPTY=true')"
-assert "check-workflow-js-model: empty corpus stays STATUS=OK" "$(contains "$out" 'STATUS=OK')"
+assert "check-workflow-js-model: empty corpus is marked SCANNED_EMPTY=true" "$(contains_line "$out" 'SCANNED_EMPTY=true')"
+assert "check-workflow-js-model: empty corpus stays STATUS=OK" "$(contains_line "$out" 'STATUS=OK')"
 
 # Guard integrity: with a real .js present under the SAME worktree-shaped root the
 # guard must both discover it AND flag its defect. Without this, every assertion
@@ -153,8 +168,8 @@ export default async function ({ agent }) {
 }
 EOF
 out="$(bash "$repo_root/scripts/check-workflow-js-model.sh" --project-dir "$wt" --strict 2>&1)"; rc=$?
-assert "check-workflow-js-model: discovers a .js under a worktree-shaped root" "$(contains "$out" 'FILES_SCANNED=1')"
-assert "check-workflow-js-model: no longer reports SCANNED_EMPTY=true" "$(contains "$out" 'SCANNED_EMPTY=false')"
+assert "check-workflow-js-model: discovers a .js under a worktree-shaped root" "$(contains_line "$out" 'FILES_SCANNED=1')"
+assert "check-workflow-js-model: no longer reports SCANNED_EMPTY=true" "$(contains_line "$out" 'SCANNED_EMPTY=false')"
 assert "check-workflow-js-model: flags the non-opus model" "$(contains "$out" 'non_opus_model')"
 assert "check-workflow-js-model: --strict exits 1 on the defect" "$(is_true "$([ $rc -eq 1 ] && echo true)")"
 

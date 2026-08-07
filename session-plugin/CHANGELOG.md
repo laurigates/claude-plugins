@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.3](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.9.2...session-plugin-v1.9.3) (2026-08-07)
+
+
+### Bug Fixes
+
+* **session-plugin:** repair five guards that silently did nothing or reported a confident wrong answer ([#2277](https://github.com/laurigates/claude-plugins/issues/2277)) ([fa53f8c](https://github.com/laurigates/claude-plugins/commit/fa53f8c377763faa0166b4d9d340b70d2bc27cca))
+
 ## [1.9.2](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.9.1...session-plugin-v1.9.2) (2026-07-30)
 
 

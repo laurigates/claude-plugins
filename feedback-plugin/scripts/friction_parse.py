@@ -30,8 +30,13 @@ from typing import Iterator
 HOME = Path(os.path.expanduser("~"))
 DEFAULT_ROOT = HOME / ".claude" / "projects"
 
+# A hook block is identified by the harness's own wrapper prose, never by a
+# bare "exit code 2": that phrase appears verbatim in ordinary tool output
+# (e.g. `ugrep: ... exit code 2` on a missing file), so matching it anywhere
+# misclassified unrelated tool errors as hook blocks (27% of W32 hook_block
+# events were not hook blocks at all).
 HOOK_BLOCK_RE = re.compile(
-    r"(blocked by (?:a |the )?hook|exit(?:ed)? (?:with )?(?:code )?2|PreToolUse.*blocked)",
+    r"(blocked by (?:a |the )?hook|PreToolUse[^\n]*hook error|PreToolUse.*blocked)",
     re.I,
 )
 USER_REJECT_RE = re.compile(
@@ -161,13 +166,23 @@ def canonical_signature(kind: str, tool: str, evidence: str) -> str:
     if kind == "user_interrupt":
         return "interrupt:user"
     if kind == "tool_error":
+        # "not found" is anchored to the shell/PATH forms only. A bare
+        # \bnot found\b matched any payload that merely reported something
+        # absent (kubectl `pods "x" not found`, Blender `enum "X" not found`),
+        # so 27 of 28 W32 `error:bash:not-found` events were false positives.
         m = re.search(
-            r"\b(ENOENT|EACCES|not found|permission denied|timeout|connection refused)\b",
+            r"(\bENOENT\b|\bEACCES\b|command not found|: not found"
+            r"|\bpermission denied\b|\btimeout\b|\bconnection refused\b)",
             ev,
             re.I,
         )
         if m:
-            return f"error:{tool.lower()}:{m.group(1).lower().replace(' ', '-')}"
+            token = m.group(1).lower().lstrip(": ")
+            # Both shell forms collapse to the historical `not-found` token so
+            # the signature stays comparable across weeks.
+            if "not found" in token:
+                token = "not found"
+            return f"error:{tool.lower()}:{token.replace(' ', '-')}"
         return f"error:{tool.lower()}"
     return f"{kind}:{tool.lower()}"
 

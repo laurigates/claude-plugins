@@ -155,22 +155,38 @@ else
 fi
 
 # --- (e) fire-once dedup: second structural edit with marker present is silent ---
+# GUARD INTEGRITY (issue #2272 follow-up): every invocation here pins
+# CODE_QUALITY_PREFLIGHT_CUE_DEBOUNCE_TTL=0, which makes the sequence-debounce
+# layer inert. Without that pin these assertions are VACUOUS — repeat edits to
+# the same file are silenced by the debounce whether or not the once-per-session
+# dedup exists, so deleting the entire dedup block still passes. Proven: with the
+# pin, deleting the dedup block from the hook turns (e) red; without it, green.
 echo "--- Test (e): fire-once dedup ---"
 CQ_SID_E="test-sid-e-fixed"
 CQ_PAYLOAD_E="$(cq_payload Edit /repo/src/app.ts 'export function doThing() { return 1; }' '' "$CQ_SID_E")"
 # First call should fire
-CQ_OUT_E1="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_E")"
+CQ_OUT_E1="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" CODE_QUALITY_PREFLIGHT_CUE_DEBOUNCE_TTL=0 bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_E")"
 # Second call with same session id should be silent
-CQ_OUT_E2="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_E")"
+CQ_OUT_E2="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" CODE_QUALITY_PREFLIGHT_CUE_DEBOUNCE_TTL=0 bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_E")"
+# Third call: same session, a DIFFERENT (never-touched, so never-debounced) file.
+# The dedup is session-wide, so this must be silent too — and no per-file
+# mechanism can explain that silence.
+CQ_PAYLOAD_E3="$(cq_payload Edit /repo/src/dedup-other.ts 'export function other() { return 2; }' '' "$CQ_SID_E")"
+CQ_OUT_E3="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" CODE_QUALITY_PREFLIGHT_CUE_DEBOUNCE_TTL=0 bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_E3")"
 if echo "$CQ_OUT_E1" | jq -e '.decision == "block"' > /dev/null 2>&1; then
   cq_pass "(e) first call fires"
 else
   cq_fail "(e) first call did not fire; got: $CQ_OUT_E1"
 fi
 if [ -z "$CQ_OUT_E2" ]; then
-  cq_pass "(e) second call is silent (dedup)"
+  cq_pass "(e) second call is silent (dedup, debounce pinned off)"
 else
   cq_fail "(e) second call should be silent; got: $CQ_OUT_E2"
+fi
+if [ -z "$CQ_OUT_E3" ]; then
+  cq_pass "(e) dedup is session-wide: a different file in the same session is silent"
+else
+  cq_fail "(e) different file in same session should be silent; got: $CQ_OUT_E3"
 fi
 
 # --- (f) empty session_id does not crash and still emits ---
@@ -364,6 +380,286 @@ if echo "$CQ_OUT_M4" | jq -e '.decision == "block"' > /dev/null 2>&1; then
   cq_pass "(m) genuine repo .py still fires"
 else
   cq_fail "(m) genuine repo .py should still fire; got: $CQ_OUT_M4"
+fi
+
+# --- (n) sequence debounce + sequence-aware phrasing (issue #2272) ---
+# A PostToolUse cue on edit N of M is inherently early for N < M: the pre-flight
+# lint it demands would run against a knowingly half-applied refactor. Two
+# guards: (1) stay silent while edits to the SAME file are still in flight, and
+# critically do NOT consume the once-per-session budget doing so, so the one cue
+# lands on a settled edit instead of the noisiest one; (2) phrase the cue so a
+# mid-sequence agent is never pushed to lint an incomplete tree.
+#
+# Block-local cache dir: n2-n5 use an empty session_id (like test (f)), so they
+# would key under `nosession` in the shared dir and collide with each other.
+CQ_N_CACHE="$(mktemp -d)"
+cq_n_cleanup() { rm -rf "$CQ_TEST_CACHE_DIR" "$CQ_N_CACHE"; }
+trap cq_n_cleanup EXIT
+
+# Invoke with the block-local cache dir. $2, when set, overrides the debounce TTL.
+cq_n() {
+  if [ -n "${2:-}" ]; then
+    CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_N_CACHE" \
+      CODE_QUALITY_PREFLIGHT_CUE_DEBOUNCE_TTL="$2" bash "$CQ_SCRIPT" <<< "$1"
+  else
+    CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_N_CACHE" bash "$CQ_SCRIPT" <<< "$1"
+  fi
+}
+
+# Payload with no session_id at all (mirrors test (f)'s shape).
+cq_payload_nosid() {
+  jq -n --arg tool_name "$1" --arg file_path "$2" --arg new_string "$3" \
+    '{tool_name: $tool_name, tool_input: {file_path: $file_path, new_string: $new_string}}'
+}
+
+echo "--- Test (n1): mid-sequence cue does not consume the session budget ---"
+CQ_SID_N1="test-sid-n1-$(date +%s%N)"
+# Call 1: trivial (non-structural) edit to seq-a.ts — silent, but arms recency.
+CQ_OUT_N1A="$(cq_n "$(cq_payload Edit /repo/src/seq-a.ts 'const x = 1;' '' "$CQ_SID_N1")")"
+if [ -z "$CQ_OUT_N1A" ]; then
+  cq_pass "(n1) trivial edit is silent"
+else
+  cq_fail "(n1) trivial edit should be silent; got: $CQ_OUT_N1A"
+fi
+# Call 2: structural edit to the SAME file moments later — a sequence is in
+# flight, so the cue must be suppressed AND must not burn the session marker.
+CQ_OUT_N1B="$(cq_n "$(cq_payload Edit /repo/src/seq-a.ts 'export function f(){}' '' "$CQ_SID_N1")")"
+if [ -z "$CQ_OUT_N1B" ]; then
+  cq_pass "(n1) mid-sequence structural edit is debounced"
+else
+  cq_fail "(n1) mid-sequence structural edit should be silent; got: $CQ_OUT_N1B"
+fi
+# Call 3: structural edit to a DIFFERENT, settled file, same session — the
+# once-per-session budget must still be available.
+CQ_OUT_N1C="$(cq_n "$(cq_payload Edit /repo/src/seq-b.ts 'export function g(){}' '' "$CQ_SID_N1")")"
+if echo "$CQ_OUT_N1C" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(n1) settled edit still fires (session budget not consumed)"
+else
+  cq_fail "(n1) settled edit should still fire; got: $CQ_OUT_N1C"
+fi
+
+echo "--- Test (n2): debounce is per-file, not a blanket second-call mute ---"
+CQ_OUT_N2A="$(cq_n "$(cq_payload_nosid Edit /repo/src/seq-c.ts 'export function c(){}')")"
+CQ_OUT_N2B="$(cq_n "$(cq_payload_nosid Edit /repo/src/seq-d.ts 'export function d(){}')")"
+if echo "$CQ_OUT_N2A" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(n2) first distinct file fires"
+else
+  cq_fail "(n2) first distinct file should fire; got: $CQ_OUT_N2A"
+fi
+if echo "$CQ_OUT_N2B" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(n2) second distinct file also fires"
+else
+  cq_fail "(n2) second distinct file should fire; got: $CQ_OUT_N2B"
+fi
+
+echo "--- Test (n3): same file, no session_id — second edit is suppressed ---"
+CQ_OUT_N3A="$(cq_n "$(cq_payload_nosid Edit /repo/src/seq-e.ts 'export function e1(){}')")"
+CQ_OUT_N3B="$(cq_n "$(cq_payload_nosid Edit /repo/src/seq-e.ts 'export function e2(){}')")"
+if echo "$CQ_OUT_N3A" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(n3) first edit fires without a session_id"
+else
+  cq_fail "(n3) first edit should fire; got: $CQ_OUT_N3A"
+fi
+if [ -z "$CQ_OUT_N3B" ]; then
+  cq_pass "(n3) repeat edit to same file is debounced without a session_id"
+else
+  cq_fail "(n3) repeat edit should be silent; got: $CQ_OUT_N3B"
+fi
+
+echo "--- Test (n4): debounce re-arms after the file goes quiet ---"
+CQ_OUT_N4A="$(cq_n "$(cq_payload_nosid Edit /repo/src/seq-f.ts 'export function f1(){}')" 1)"
+sleep 2
+CQ_OUT_N4B="$(cq_n "$(cq_payload_nosid Edit /repo/src/seq-f.ts 'export function f2(){}')" 1)"
+if echo "$CQ_OUT_N4A" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(n4) first edit fires"
+else
+  cq_fail "(n4) first edit should fire; got: $CQ_OUT_N4A"
+fi
+if echo "$CQ_OUT_N4B" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(n4) edit after TTL expiry fires again (debounce, not a mute)"
+else
+  cq_fail "(n4) edit after TTL expiry should fire again; got: $CQ_OUT_N4B"
+fi
+
+echo "--- Test (n5): CODE_QUALITY_PREFLIGHT_CUE_DEBOUNCE_TTL=0 disables debounce ---"
+CQ_OUT_N5A="$(cq_n "$(cq_payload_nosid Edit /repo/src/seq-g.ts 'export function g1(){}')" 0)"
+CQ_OUT_N5B="$(cq_n "$(cq_payload_nosid Edit /repo/src/seq-g.ts 'export function g2(){}')" 0)"
+if echo "$CQ_OUT_N5A" | jq -e '.decision == "block"' > /dev/null 2>&1 \
+  && echo "$CQ_OUT_N5B" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(n5) TTL=0 disables the debounce (both edits fire)"
+else
+  cq_fail "(n5) TTL=0 should disable the debounce; got: [$CQ_OUT_N5A] [$CQ_OUT_N5B]"
+fi
+
+echo "--- Test (n6): cue phrasing defers the lint to the end of the sequence ---"
+# Self-contained: its own fresh cache dir + first-ever edit to seq-h.ts, so this
+# always exercises a FIRING invocation. Chaining off another block's output would
+# let both assertions pass vacuously whenever that block happened to be silent.
+CQ_N6_CACHE="$(mktemp -d)"
+CQ_OUT_N6="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_N6_CACHE" bash "$CQ_SCRIPT" \
+  <<< "$(cq_payload Edit /repo/src/seq-h.ts 'export function h(){}' '' "test-sid-n6-$(date +%s%N)")")"
+rm -rf "$CQ_N6_CACHE"
+if echo "$CQ_OUT_N6" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(n6) guard: the probe invocation actually fires"
+else
+  cq_fail "(n6) guard: probe invocation should fire; got: $CQ_OUT_N6"
+fi
+if echo "$CQ_OUT_N6" | jq -r '.reason' | grep -q "once this edit sequence is complete"; then
+  cq_pass "(n6) reason defers to sequence completion"
+else
+  cq_fail "(n6) reason should defer to sequence completion; got: $CQ_OUT_N6"
+fi
+if echo "$CQ_OUT_N6" | jq -r '.reason' | grep -q "before continuing"; then
+  cq_fail "(n6) reason must not instruct a mid-sequence lint; got: $CQ_OUT_N6"
+else
+  cq_pass "(n6) reason omits the mid-sequence 'before continuing' phrasing"
+fi
+
+# --- (o) unset HOME must not break the tool call (issue #2272 follow-up) ---
+# The cache-dir resolution moved ABOVE the detection block, so a bare "${HOME}"
+# under `set -u` would abort on EVERY non-excluded Edit/Write, not just the
+# structural ones — contradicting the header's "-e is intentionally omitted: a
+# best-effort cue must never break a tool call". Both payload shapes are covered
+# because the pre-fix blast radius was exactly the non-structural path.
+#
+# CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR is deliberately UNSET here: the seam's
+# `:-` default is what references HOME, so leaving the seam set would never
+# expand the fallback and the assertion would be vacuous. TMPDIR redirects the
+# degraded cache into a temp dir so the run stays hermetic.
+echo "--- Test (o): unset HOME degrades gracefully ---"
+CQ_O_TMP="$(mktemp -d)"
+
+cq_o_probe() {
+  # $1 = payload. Echoes "<exit>|<stderr>|<stdout>".
+  local cq_o_err cq_o_out cq_o_rc=0
+  cq_o_err="$(mktemp)"
+  cq_o_out="$(env -u HOME -u CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR TMPDIR="$CQ_O_TMP" \
+    bash "$CQ_SCRIPT" <<< "$1" 2>"$cq_o_err")" || cq_o_rc=$?
+  printf '%s|%s|%s' "$cq_o_rc" "$(tr -d '\n' < "$cq_o_err")" "$cq_o_out"
+  rm -f "$cq_o_err"
+}
+
+# Non-structural payload — the path the regression widened to.
+CQ_O1="$(cq_o_probe "$(cq_payload Edit /repo/src/home-trivial.ts 'const x = 1;' '' "test-sid-o1-$(date +%s%N)")")"
+if [ "${CQ_O1%%|*}" = "0" ]; then
+  cq_pass "(o) non-structural edit exits 0 with HOME unset"
+else
+  cq_fail "(o) non-structural edit with HOME unset should exit 0; got: $CQ_O1"
+fi
+CQ_O1_REST="${CQ_O1#*|}"
+if [ -z "${CQ_O1_REST%%|*}" ]; then
+  cq_pass "(o) non-structural edit is silent on stderr with HOME unset"
+else
+  cq_fail "(o) non-structural edit leaked stderr with HOME unset; got: $CQ_O1"
+fi
+
+# Structural payload — must still exit 0, stay clean on stderr, and still fire.
+CQ_O2="$(cq_o_probe "$(cq_payload Edit /repo/src/home-structural.ts 'export function ho(){}' '' "test-sid-o2-$(date +%s%N)")")"
+if [ "${CQ_O2%%|*}" = "0" ]; then
+  cq_pass "(o) structural edit exits 0 with HOME unset"
+else
+  cq_fail "(o) structural edit with HOME unset should exit 0; got: $CQ_O2"
+fi
+CQ_O2_REST="${CQ_O2#*|}"
+if [ -z "${CQ_O2_REST%%|*}" ]; then
+  cq_pass "(o) structural edit is silent on stderr with HOME unset"
+else
+  cq_fail "(o) structural edit leaked stderr with HOME unset; got: $CQ_O2"
+fi
+if echo "${CQ_O2_REST#*|}" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(o) structural edit still fires with HOME unset (degrades, not silences)"
+else
+  cq_fail "(o) structural edit should still fire with HOME unset; got: $CQ_O2"
+fi
+rm -rf "$CQ_O_TMP"
+
+# --- (p) recency markers are swept, so the cache cannot grow without bound ---
+# The debounce writes one marker per (session, file) for every non-excluded
+# Edit/Write, plus a directory per session — unlike the pre-#2272 cache, which
+# held one marker per session. The sweep prunes markers older than
+# CODE_QUALITY_PREFLIGHT_CUE_MARKER_TTL minutes and the emptied session dirs.
+echo "--- Test (p): stale recency markers are pruned ---"
+CQ_P_CACHE="$(mktemp -d)"
+mkdir -p "$CQ_P_CACHE/.edits/old-session" "$CQ_P_CACHE/.edits/live-session"
+CQ_P_STALE="$CQ_P_CACHE/.edits/old-session/gone.ts-123"
+CQ_P_FRESH="$CQ_P_CACHE/.edits/live-session/here.ts-456"
+echo 1 > "$CQ_P_STALE"
+echo 2 > "$CQ_P_FRESH"
+
+# Backdate the stale marker two days (> the 1440-minute default TTL).
+# GNU `date -d` and BSD `date -v` differ; try both before giving up.
+CQ_P_OLD_STAMP="$(date -d '2 days ago' +%Y%m%d%H%M 2>/dev/null || date -v-2d +%Y%m%d%H%M 2>/dev/null || echo '')"
+if [ -n "$CQ_P_OLD_STAMP" ] && touch -t "$CQ_P_OLD_STAMP" "$CQ_P_STALE" 2>/dev/null; then
+  CQ_OUT_P="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_P_CACHE" bash "$CQ_SCRIPT" \
+    <<< "$(cq_payload Edit /repo/src/sweep.ts 'export function sw(){}' '' "test-sid-p-$(date +%s%N)")")"
+  if echo "$CQ_OUT_P" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+    cq_pass "(p) guard: the sweeping invocation actually fires"
+  else
+    cq_fail "(p) guard: sweeping invocation should fire; got: $CQ_OUT_P"
+  fi
+  if [ ! -e "$CQ_P_STALE" ]; then
+    cq_pass "(p) stale recency marker is pruned"
+  else
+    cq_fail "(p) stale recency marker should have been pruned: $CQ_P_STALE"
+  fi
+  if [ ! -e "$CQ_P_CACHE/.edits/old-session" ]; then
+    cq_pass "(p) emptied session directory is pruned"
+  else
+    cq_fail "(p) emptied session directory should have been pruned"
+  fi
+  # Over-broad-sweep guard: a marker inside the TTL must survive, or the sweep
+  # would disarm live debounces instead of just reclaiming space.
+  if [ -e "$CQ_P_FRESH" ]; then
+    cq_pass "(p) in-TTL recency marker survives the sweep"
+  else
+    cq_fail "(p) in-TTL recency marker must survive the sweep"
+  fi
+  # The sentinel gates the sweep to at most hourly.
+  if [ -e "$CQ_P_CACHE/.last-sweep" ]; then
+    cq_pass "(p) sweep sentinel is written"
+  else
+    cq_fail "(p) sweep sentinel should be written"
+  fi
+else
+  cq_fail "(p) could not backdate a marker (neither GNU nor BSD date/touch worked)"
+fi
+rm -rf "$CQ_P_CACHE"
+
+# --- (p2) MARKER_TTL=0 is rejected, not honoured as "disable" -----------------
+# The sibling knob DEBOUNCE_TTL reads 0 as "disable", so a reader generalising
+# that would expect 0 to switch the sweep off. Here 0 means `find -mmin +0` --
+# prune anything a minute old -- the OPPOSITE, silently disarming every live
+# debounce. 0 must fall back to the default like any other invalid value.
+echo "--- Test (p2): MARKER_TTL=0 does not disarm live debounces ---"
+CQ_P2_CACHE="$(mktemp -d)"
+if [ -n "$CQ_P2_CACHE" ] && [ -d "$CQ_P2_CACHE" ]; then
+  mkdir -p "$CQ_P2_CACHE/.edits/live-session"
+  CQ_P2_FRESH="$CQ_P2_CACHE/.edits/live-session/active.ts-789"
+  echo 1 > "$CQ_P2_FRESH"
+  # Age it 3 minutes: well inside the 1440-minute default, but `-mmin +0` eats it.
+  CQ_P2_STAMP="$(date -d '3 minutes ago' +%Y%m%d%H%M 2>/dev/null || date -v-3M +%Y%m%d%H%M 2>/dev/null || echo '')"
+  if [ -n "$CQ_P2_STAMP" ] && touch -t "$CQ_P2_STAMP" "$CQ_P2_FRESH" 2>/dev/null; then
+    CQ_OUT_P2="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_P2_CACHE" \
+      CODE_QUALITY_PREFLIGHT_CUE_MARKER_TTL=0 bash "$CQ_SCRIPT" \
+      <<< "$(cq_payload Edit /repo/src/other.ts 'export function ot(){}' '' "test-sid-p2-$(date +%s%N)")")"
+    # Guard integrity: the sweeping invocation must actually run, or the
+    # survival assertion below would pass against a hook that never swept.
+    if echo "$CQ_OUT_P2" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+      cq_pass "(p2) guard: the sweeping invocation actually fires"
+    else
+      cq_fail "(p2) guard: sweeping invocation should fire; got: $CQ_OUT_P2"
+    fi
+    if [ -e "$CQ_P2_FRESH" ]; then
+      cq_pass "(p2) MARKER_TTL=0 falls back to the default; live marker survives"
+    else
+      cq_fail "(p2) MARKER_TTL=0 pruned a 3-minute-old marker, disarming live debounces"
+    fi
+  else
+    cq_fail "(p2) could not backdate a marker (neither GNU nor BSD date/touch worked)"
+  fi
+  rm -rf "$CQ_P2_CACHE"
+else
+  cq_fail "(p2) could not create a scratch cache dir"
 fi
 
 # --- Summary ---

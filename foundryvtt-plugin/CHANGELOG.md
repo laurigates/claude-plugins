@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/laurigates/claude-plugins/compare/foundryvtt-plugin-v1.3.0...foundryvtt-plugin-v1.3.1) (2026-08-07)
+
+
+### Bug Fixes
+
+* **ci:** make the template-parity gate actually run, and stop skips reading as passes ([#2282](https://github.com/laurigates/claude-plugins/issues/2282)) ([f738254](https://github.com/laurigates/claude-plugins/commit/f73825434d94cf3b95d9be11da2c5b115545c38e))
+
 ## [1.3.0](https://github.com/laurigates/claude-plugins/compare/foundryvtt-plugin-v1.2.0...foundryvtt-plugin-v1.3.0) (2026-07-30)
 
 
