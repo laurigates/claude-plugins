@@ -97,6 +97,41 @@ now_ms() {
 # (e.g. 1869895.00k). Convert that field to decimal MB/s (value_k * 1000 / 1e6).
 ossl_mbs() { awk -v s="$1" 'BEGIN{ sub(/k$/,"",s); printf "%.0f", s*1000/1000000 }'; }
 
+# ── CPU topology (Apple Silicon P/E split) ────────────────────────────────────
+# hw.perflevel0.physicalcpu / hw.perflevel1.physicalcpu are the performance and
+# efficiency core counts. They exist only on Apple Silicon; on Intel Macs (and
+# any non-Darwin host) the lookup yields nothing and callers omit the topology.
+# Echoes e.g. "10P+4E", "8P" (no E cores), or "" when the counters are absent.
+core_topology() {
+  local p_cores e_cores
+  p_cores="$(sysctl -n hw.perflevel0.physicalcpu 2>/dev/null || true)"
+  e_cores="$(sysctl -n hw.perflevel1.physicalcpu 2>/dev/null || true)"
+  [[ "$p_cores" =~ ^[0-9]+$ ]] || return 0
+  if [[ "$e_cores" =~ ^[0-9]+$ ]]; then
+    printf '%sP+%sE' "$p_cores" "$e_cores"
+  else
+    printf '%sP' "$p_cores"
+  fi
+}
+
+# ── Multi-core scaling efficiency: REPORTED, never scored (issue #2183) ───────
+# report_scaling <multi_core_mbs> <single_core_mbs> <ncpu>
+#
+# Linear scaling (multi ≈ ncpu × single) only holds when every core is
+# equivalent. Apple Silicon's P+E topology breaks that assumption: a healthy
+# 10P+4E machine measures 24–27%, so the old 70% floor WARNed on every healthy
+# asymmetric Mac. A metric whose "good" value depends on the P:E ratio of the
+# machine under test is a reporting value, not a health gate — so this emits
+# `info` only and can never produce a PASS/WARN/FAIL verdict.
+report_scaling() {
+  local mc="$1" sc="$2" ncpu="$3" scaling topo
+  [[ "$mc" =~ ^[0-9]+$ && "$sc" =~ ^[0-9]+$ && "$ncpu" =~ ^[0-9]+$ ]] || return 0
+  (( sc > 0 && ncpu > 0 )) || return 0
+  scaling=$(( mc * 100 / (sc * ncpu) ))
+  topo="$(core_topology)"
+  info "Multi-core scaling efficiency: ${scaling}% of ${ncpu}x single-core${topo:+ (cores: ${topo})} — informational, not scored (P and E cores scale asymmetrically)"
+}
+
 # ── Benchmark helper: keep the machine awake for the duration ─────────────────
 caffeinate_start() { caffeinate -i & CAFF_PID=$!; }
 caffeinate_stop() {

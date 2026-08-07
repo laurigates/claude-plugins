@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.2](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.1...comfyui-plugin-v1.13.2) (2026-08-07)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** back-port the modal-kit pin and uv.lock updater into the scaffold ([#2291](https://github.com/laurigates/claude-plugins/issues/2291)) ([2313db7](https://github.com/laurigates/claude-plugins/commit/2313db7ab937222dbb0487cbf83daf0be851e76f)), closes [#2186](https://github.com/laurigates/claude-plugins/issues/2186) [#2187](https://github.com/laurigates/claude-plugins/issues/2187)
+
 ## [1.13.1](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.0...comfyui-plugin-v1.13.1) (2026-08-05)
 
 

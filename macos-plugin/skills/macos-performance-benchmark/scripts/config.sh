@@ -48,9 +48,12 @@ LAUNCHCTL_WARN="${MACOS_PERF_LAUNCHCTL_WARN:-30}"
 BENCH_WARN_DEGRADE="${MACOS_PERF_BENCH_WARN_DEGRADE:-10}"  # % below best -> WARN
 BENCH_FAIL_DEGRADE="${MACOS_PERF_BENCH_FAIL_DEGRADE:-30}"  # % below best -> FAIL
 
-# Multi-core scaling efficiency keeps an absolute architectural floor (%) —
-# it's a quality ratio, not a raw score, so it doesn't self-calibrate.
-SCALING_WARN_PCT="${MACOS_PERF_SCALING_WARN_PCT:-70}"
+# Multi-core scaling efficiency has NO threshold and is not scored (issue #2183).
+# The former MACOS_PERF_SCALING_WARN_PCT floor (70%) assumed symmetric cores: on
+# Apple Silicon's P+E topology a healthy 10P+4E machine measures 24–27%, because
+# 4 of the 14 cores run at a fraction of P-core throughput. No single number is
+# meaningful across both topologies, so the ratio is now emitted as an info line
+# by `report_scaling()` in lib/common.sh. Exporting the old variable is a no-op.
 # 16 GB allocation pressure drop (health signal, absolute, percentage points):
 MEM_PRESSURE_DROP_WARN_PP="${MACOS_PERF_MEM_PRESSURE_DROP_WARN_PP:-10}"
 # NVMe benchmark test-file size (MB):
