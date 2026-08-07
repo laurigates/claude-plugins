@@ -3,7 +3,7 @@ name: session-end
 description: End-of-session orchestrator. Previews which of wrap/distill/feedback/taskwarrior-sync qualify, single confirm, then sequence. Use when winding down a session.
 allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Skill, AskUserQuestion, TodoWrite
 created: 2026-06-10
-modified: 2026-07-30
+modified: 2026-08-06
 compatibility: claude-code
 reviewed: 2026-06-24
 ---
@@ -42,7 +42,13 @@ single confirmation gate below is mandatory.
 One shared decision pass — do not let each sub-skill re-survey. Run the
 shared collector (the same one the wrap/spinup skills and the nudge hook
 use); it emits detection, git state, PRs, taskwarrior tasks **with stable
-UUIDs**, and recent commits in one parallel-safe pass:
+UUIDs**, and recent commits in one parallel-safe pass. Note two scoping
+keys in its `TASKWARRIOR` section: `TASK_SCOPE` (`project` /
+`remote-name` / `all-projects-fallback` / `unknown` / `none`) names where
+`OPEN_TASKS` was actually counted, and `PROJECT_CONFIDENCE` (`high` /
+`low`) says whether that slug can be trusted — the detected project is a
+directory-basename guess and can be wrong (chezmoi source dirs,
+worktrees, portfolio checkouts, renamed clones):
 
 ```sh
 bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits --with-blueprint
@@ -74,7 +80,7 @@ failure mode.
 | Wrap | ≥1 genuine loose thread per session-wrap's LOG IT filter |
 | Distill | A durable, generalizable learning emerged AND the repo has a distillable surface (`.claude/rules/` or a justfile). Corroborate the mechanical half with the distill collector's `--summary` (below): `RECIPE_CANDIDATE_COUNT` / `HOT_FILE_COUNT` / `PROCESS_SIGNAL` > 0 means recipes/hot-files/process are worth a pass even if no conceptual rule emerged |
 | Feedback | A plugin/skill behaved notably well or badly — bug, enhancement, or positive worth filing |
-| Taskwarrior sync | `TASK_AVAILABLE=true` AND `OPEN_TASKS` ≥ 1 in the Step 1 digest |
+| Taskwarrior sync | `TASK_AVAILABLE=true` AND (`OPEN_TASKS` ≥ 1 OR `RECENT_TASK_COUNT` ≥ 1) in the Step 1 digest. When `PROJECT_CONFIDENCE=low`, name the scope actually used (`TASK_SCOPE`, plus `PROJECT_RESOLVED` when set) in the Step 3 preview and offer `--project <slug>` — a low-confidence zero is an unqueried project, never a clean queue |
 | Blueprint tracker-sync | `UNDRAINED_COUNT` ≥ 1 in the Step 1 digest's `BLUEPRINT` section. Non-blueprint / tracker-missing repos auto-disqualify (count is 0) → silent skip. If `blueprint-plugin` isn't installed, note it and skip (as with Feedback) |
 
 **Blueprint auto-drain (ADR-0020 level 1):** when the qualifying repo's
@@ -176,6 +182,7 @@ already in the transcript. Pre-silence:
 | Context | Command |
 |---|---|
 | One-pass survey (detection + git + PRs + tasks-with-UUIDs + commits + blueprint tracker state) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits --with-blueprint` |
+| Trust the task count? | `TASK_SCOPE=` + `PROJECT_CONFIDENCE=` in the `TASKWARRIOR` section (`low` ⇒ re-run with `--project <slug>` before treating 0 as clean) |
 | Distill qualify signal (recipe/hot-file/process counts) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/distill-survey.sh" --session-id "${CLAUDE_SESSION_ID}" --summary` |
 | Re-derive the drain wave before delegating | `task bpid.any: status:completed export \| jq …` intersected with tracker `tasks.pending` (Step 4.3) |
 | Stable UUID for latest task | `task +LATEST uuids` |

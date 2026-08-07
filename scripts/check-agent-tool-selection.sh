@@ -33,11 +33,15 @@
 # "fix" for the refusals is `-D`, which deletes real work.
 #
 # The two accepted signals survive a squash-merge and are what an agent should
-# be told to use instead:
+# be told to use instead, in this order of authority:
 #   gh pr list --state all --head <branch> --json state,mergedAt   (authoritative)
 #   git cherry main <branch>                                        ('-' = upstream)
-# or the encoded recipe `just -g branch-audit`. See
-# `~/.claude/rules/pr-merge-hazards.md` #1.
+# `git merge-tree` is a POSITIVE-containment shortcut only (a match proves
+# containment, a non-match proves nothing once the base drifts), and the
+# `just -g branch-audit` recipe is a convenience, not the authority — its REVIEW
+# bucket measured ~90% false on two real repos (issue #2268). The routing/caveat
+# side of that is guarded by scripts/check-branch-containment-guidance.sh.
+# See `~/.claude/rules/pr-merge-hazards.md` #1.
 #
 # Detection is a per-line shape denylist (the accepted form for this repo's
 # denylist lints — see issue #2009, which deliberately did NOT migrate them to
@@ -152,9 +156,12 @@ for agent_file in "${agent_files[@]}"; do
     echo "   \`git branch --merged\` is an ANCESTRY check: it misses every" >&2
     echo "   squash-merged branch, so a fully-landed branch reads as unmerged." >&2
     echo "   Deleting on it is the defect already fixed for deadbranch (#1869)." >&2
-    echo "   Use \`just -g branch-audit\`, or classify with a squash-surviving signal:" >&2
+    echo "   Classify with the authority ladder instead (stop at the first answer):" >&2
     echo "     gh pr list --state all --head <branch> --json state,mergedAt   # authoritative" >&2
     echo "     git cherry main <branch>                                        # '-' = upstream" >&2
+    echo "   \`git merge-tree\` is a positive-containment shortcut only, never primary;" >&2
+    echo "   \`just -g branch-audit\` is a convenience whose REVIEW bucket measured ~90%" >&2
+    echo "   false on two repos (issue #2268) — verify its REVIEW rows against the ladder." >&2
     echo "   See ~/.claude/rules/pr-merge-hazards.md #1." >&2
     errors=$((errors + 1))
     continue

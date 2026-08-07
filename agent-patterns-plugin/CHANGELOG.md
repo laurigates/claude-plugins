@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.37.5](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.37.4...agent-patterns-plugin-v2.37.5) (2026-08-07)
+
+
+### Code Refactoring
+
+* **agent-patterns-plugin:** land the Tier C schema and prose deltas, no harness ([#2283](https://github.com/laurigates/claude-plugins/issues/2283)) ([9a1c5e7](https://github.com/laurigates/claude-plugins/commit/9a1c5e70fa0f25467f4b3d8e67c564052c4b3671)), closes [#2173](https://github.com/laurigates/claude-plugins/issues/2173)
+
 ## [2.37.4](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.37.3...agent-patterns-plugin-v2.37.4) (2026-07-29)
 
 

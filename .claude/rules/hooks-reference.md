@@ -394,16 +394,50 @@ Optionally modify the tool input before execution:
 
 ### PostToolUse -- Replace Tool Output (2.1.121+)
 
-`PostToolUse` hooks can replace tool output for any tool via `hookSpecificOutput.updatedToolOutput`:
+`PostToolUse` hooks can replace tool output via `hookSpecificOutput.updatedToolOutput`.
 
-```json
+**`updatedToolOutput` is validated against the tool's own output schema and must
+be an object of that shape.** A bare string is rejected — `Invalid input:
+expected object, received string`, with `"path": []` proving the *top-level*
+value is schema-checked — and the harness then **silently falls back** to the
+original output. The hook exits 0, nothing is logged, and it is a no-op (issue
+#2275: two hooks shipped this way and discarded 29 outputs over 7.5 days).
+
+The only safe construction is to read `.tool_response` (the harness's own object
+for that tool) and overwrite exactly the field you mean, inventing no keys:
+
+```jsonc
+// Bash — tool_response is {stdout, stderr, interrupted, isImage, noOutputExpected}
 {
   "hookSpecificOutput": {
     "hookEventName": "PostToolUse",
-    "updatedToolOutput": "Filtered or modified tool output"
+    "updatedToolOutput": {
+      "stdout": "<original stdout>\n\n---\n💡 hint",
+      "stderr": "",
+      "interrupted": false,
+      "isImage": false,
+      "noOutputExpected": false
+    }
   }
 }
 ```
+
+```bash
+# jq: merge into the harness's own object rather than rebuilding it.
+jq -n --argjson orig "$tool_response" --arg out "$augmented" \
+  '{hookSpecificOutput: {hookEventName: "PostToolUse",
+                         updatedToolOutput: ($orig + {stdout: $out})}}'
+```
+
+**Not every tool can carry a cue this way.** `Write`/`Edit` output is
+`{content, filePath, originalFile, structuredPatch, type, userModified}` — it has
+**no free-text field**, and `content` is the file's actual content, so a banner
+appended there makes the model believe the banner was written to disk. For a cue
+on `Write`/`Edit`, use the block-with-reason channel below with
+`continueOnBlock: true` instead.
+
+Pin the shape with an executable test, not a version comment — a version note
+cannot detect a contract change (`.claude/rules/regression-testing.md`).
 
 ### PostToolUse -- Continue After Block (2.1.139+)
 
@@ -561,7 +595,7 @@ replayed transcript" as deliberately as "never reaches a diff."
 |---|---|---|
 | Exit 0, write to a log file / disk only | No | No — **free** |
 | PreToolUse exit-2 stderr (block message) | Yes (as the tool result) | Yes |
-| PostToolUse `updatedToolOutput` | Yes (replaces the tool result) | Yes |
+| PostToolUse `updatedToolOutput` | Yes (replaces the tool result) — **must be an object matching the tool's own output schema**; unusable for Write/Edit, which have no free-text field (#2275) | Yes |
 | SessionStart `additionalContext` | Yes (prepended to first turn) | Yes |
 | `Stop` / `SubagentStop` `{"decision":"block","reason":...}` | **Yes** — the `reason` is shown so the model keeps working | Yes |
 | `Stop` exit 0 (allow) | No | No — **free** |

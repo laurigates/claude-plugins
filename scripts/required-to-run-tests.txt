@@ -1,0 +1,33 @@
+# Tests that MUST actually execute — a SKIP here is an ERROR, not a warning.
+#
+# Read by scripts/run-skill-script-tests.sh. Every entry is a repo-relative
+# path to a test the `Test: Skill scripts` workflow installs a dependency for
+# ON PURPOSE. Those installs exist precisely so the gate runs; if the test
+# skips anyway the install is broken and the gate is decorative — which is
+# invisible unless the runner is told the test was expected to run (#2221).
+#
+# A test NOT listed here may skip freely (it just reports SKIP= and WARN) —
+# taskwarrior, lizard, and similar optional dependencies are absent on the
+# runner by design, and a blanket fail-on-any-skip would be red on arrival and
+# get disabled.
+#
+# A listed path that matches no discovered test is also an ERROR, so this
+# manifest cannot silently drift away from the corpus it declares. That rule
+# doubles as the runner's denominator guard: if test discovery ever collapses
+# to zero, every entry below raises `required_test_missing` and the run exits 1
+# instead of reporting a clean OK over nothing scanned (#2255 / #2290 found the
+# same hole in the check-*.sh guards).
+#
+# Add an entry when you add a dependency install step to
+# .github/workflows/test-skill-scripts.yml — the two belong together.
+
+# cargo-generate  (workflow: "Install cargo-generate")
+foundryvtt-plugin/skills/foundryvtt-module-scaffold/scripts/tests/test-template-parity.sh
+
+# ast-grep  (workflow: "Install ast-grep")
+code-quality-plugin/skills/code-antipatterns/scripts/tests/test-rules-project.sh
+code-quality-plugin/skills/code-hidden-failures/scripts/tests/test-rules-project.sh
+hooks-plugin/hooks/test-bash-antipatterns.sh
+
+# uv  (workflow: "Set up uv")
+blueprint-plugin/scripts/tests/test-check-manifest-schema.sh

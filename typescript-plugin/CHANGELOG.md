@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.10](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.8.9...typescript-plugin-v1.8.10) (2026-08-07)
+
+
+### Bug Fixes
+
+* **code-quality-plugin:** replace unrendered template conditionals with a detection step and lookup table ([#2289](https://github.com/laurigates/claude-plugins/issues/2289)) ([a743cff](https://github.com/laurigates/claude-plugins/commit/a743cff9fc9a1650218a5d357937e5f90149435f)), closes [#2265](https://github.com/laurigates/claude-plugins/issues/2265)
+
 ## [1.8.9](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.8.8...typescript-plugin-v1.8.9) (2026-07-29)
 
 

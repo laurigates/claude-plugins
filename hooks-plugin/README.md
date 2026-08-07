@@ -414,7 +414,12 @@ CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 claude
 PreToolUse `bash-antipatterns.sh`. Where the PreToolUse hook exits 2 to block
 the remaining soft-teach patterns (`cat`, `head`/`tail`), the teach hook lets
 the command run and prepends a corrective hint to the tool result the agent
-sees via `hookSpecificOutput.updatedToolOutput` (Claude Code 2.1.121+). The
+sees via `hookSpecificOutput.updatedToolOutput`. That field is validated against
+the **Bash tool's own output shape** — an object
+(`{interrupted, isImage, noOutputExpected, stderr, stdout}`) — so the hook
+merges the hint into `stdout` and emits the whole object back; a JSON string
+there is rejected and silently discarded, which made the hook a no-op until
+issue #2275. The shape is pinned by `hooks/test-bash-antipatterns-teach.sh`. The
 `find -name` (#1871), `grep`/`rg` (#1909), and `ls <glob>` (#2036) patterns
 have been fully demoted: the PreToolUse hook no longer blocks them at all, and
 their steers live only in this teach hook. The goal is to drop the measured

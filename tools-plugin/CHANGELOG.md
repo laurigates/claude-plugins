@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.4](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.9.3...tools-plugin-v2.9.4) (2026-08-07)
+
+
+### Bug Fixes
+
+* **code-quality-plugin:** replace unrendered template conditionals with a detection step and lookup table ([#2289](https://github.com/laurigates/claude-plugins/issues/2289)) ([a743cff](https://github.com/laurigates/claude-plugins/commit/a743cff9fc9a1650218a5d357937e5f90149435f)), closes [#2265](https://github.com/laurigates/claude-plugins/issues/2265)
+
 ## [2.9.3](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.9.2...tools-plugin-v2.9.3) (2026-08-03)
 
 
