@@ -47,6 +47,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import json
 import re
 import sys
 from pathlib import Path
@@ -57,8 +58,24 @@ PUBLISHER_DEFAULT = "laurigates"
 # The shared modal-kit consumed by the modal (frontend/backend) variants. The
 # gesture variant does NOT depend on it. Bump in lockstep with the kit's
 # published major/minor when its exported API changes.
+#
+# THIS PIN IS NOT RENOVATE-MANAGED. It lives in a .py generator, and this repo's
+# customManagers only see `*/skills/**/*.md` and `scripts/install_pkgs.sh` (see
+# `.claude/rules/version-pinning.md`); `check-version-pin-coverage.sh` scans the
+# same markdown-only set, so nothing flags it when it rots. It sat at `^0.2.0`
+# — four minors behind the published kit — until issue #2186, so every pack
+# scaffolded in between started stale and needed a manual bump before it could
+# use current kit APIs. Extending Renovate to template/generator paths is
+# tracked in #2222; until then refresh it by hand:
+#
+#     npm view @laurigates/comfy-modal-kit version
+#
+# `test-finishing-pass.sh` prints a NOTE when the published latest falls outside
+# this caret range (advisory, never a hard CI failure on an unrelated PR).
+# A caret range on a 0.x version is minor-locked (`^0.10.0` == `>=0.10.0
+# <0.11.0`), so a kit minor is a deliberate bump here, not a silent float.
 MODAL_KIT_PKG = "@laurigates/comfy-modal-kit"
-MODAL_KIT_VERSION = "^0.2.0"
+MODAL_KIT_VERSION = "^0.10.0"
 
 # Pinned tool versions — kept in ONE place so the biome pin can never drift
 # between biome.json, the pre-commit hook, CI, and the justfile. The previous
@@ -2010,6 +2027,32 @@ jobs:
       log-level: ${{ inputs.logLevel || 'info' }}
 """
 
+# The `uv.lock` extra-file is load-bearing, not decoration. release-please's
+# `python` release-type bumps `pyproject.toml` but has no native uv.lock support
+# (googleapis/release-please#2561), and uv records the project's OWN version in
+# its `[[package]]` entry with no setting to omit it — so without this updater
+# the lock's self-version silently trails `pyproject.toml` on EVERY release
+# (observed on comfyui-filename-prefix at v0.1.1 and v0.1.2; issue #2187).
+#
+# The jsonpath shape is the one documented in `comfy-registry-lifecycle` and
+# already deployed across the fleet — keep it identical, a second form here
+# would make every new pack drift from the packs the skill describes.
+#
+# Two wrong-looking-but-plausible variants, both verified against the real
+# comfyui-filename-prefix lock with release-please 17.11.1's GenericToml:
+#   `$.version`                            -> THROWS ("path not found in
+#      object: version"). uv.lock's top-level `version = 1` is the LOCKFILE
+#      FORMAT revision, not the package version — never target it.
+#   `$.package[?(@.name=="<pack>")].version` -> SILENT no-op ("No entries
+#      modified"): release-please's TaggedTOMLParser wraps every scalar as
+#      {start,end,value}, so `@.name` is an object, never a string. Hence
+#      `.name.value`.
+# The working form rewrites exactly one line by byte offset (replaceTomlValue),
+# so comments and formatting elsewhere in the lock stay byte-identical.
+#
+# A missing uv.lock is safe: release-please logs "file … did not exist" and
+# skips the update (github.ts buildChangeSet), so a pack that has not run
+# `uv sync` yet still releases cleanly.
 RP_CONFIG = """\
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
@@ -2019,7 +2062,14 @@ RP_CONFIG = """\
       "package-name": "@@NAME@@",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": true
+      "bump-patch-for-minor-pre-major": true,
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "uv.lock",
+          "jsonpath": "$.package[?(@.name.value=='@@NAME@@')].version"
+        }
+      ]
     }
   },
   "pull-request-title-pattern": "chore: release ${version}",
@@ -3049,6 +3099,51 @@ def _display_assets(target: Path) -> dict[str, str]:
     return found
 
 
+def _uvlock_updater_finding(target: Path) -> tuple[str, str, str, str]:
+    """Is release-please wired to keep uv.lock's self-version in step?
+
+    See the RP_CONFIG comment for why `$.version` and a bare `@.name` filter are
+    both wrong; this grades the *presence and shape* of the updater, which is
+    the part a pack can silently lose.
+    """
+    key = "RELEASE_PLEASE_UVLOCK"
+    cfg = target / "release-please-config.json"
+    if not cfg.exists():
+        return ("WARN", key, "no-config", "release-please-config.json is absent")
+    try:
+        data = json.loads(cfg.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        return ("WARN", key, "unparseable", f"release-please-config.json: {exc}")
+
+    entries = [
+        entry
+        for pkg in data.get("packages", {}).values()
+        if isinstance(pkg, dict)
+        for entry in pkg.get("extra-files", [])
+        if isinstance(entry, dict) and entry.get("path") == "uv.lock"
+    ]
+    if not entries:
+        return (
+            "WARN",
+            key,
+            "unwired",
+            "release-please has no uv.lock extra-files updater — the lock's "
+            "self-version will trail pyproject.toml on every release (#2187)",
+        )
+    # `$.version` is uv.lock's FORMAT revision, and a `@.name==` filter never
+    # matches release-please's tagged TOML AST — both leave the lock stale while
+    # *looking* configured, which is worse than an absent updater.
+    if not all("package[?(" in str(entry.get("jsonpath", "")) for entry in entries):
+        return (
+            "WARN",
+            key,
+            "mistargeted",
+            "the uv.lock updater's jsonpath does not select a [[package]] "
+            "entry — use $.package[?(@.name.value=='<pack>')].version (#2187)",
+        )
+    return ("OK", key, "wired", "release-please keeps uv.lock's version in step")
+
+
 def finishing_pass_findings(target: Path) -> list[tuple[str, str, str, str]]:
     """Grade a pack's registry-ready / fleet-consistent finishing pass.
 
@@ -3142,6 +3237,14 @@ def finishing_pass_findings(target: Path) -> list[tuple[str, str, str, str]]:
         )
     else:
         findings.append(("OK", "REGISTRY_WORKFLOWS", "ok", "both present"))
+
+    # 3b. release-please's uv.lock updater (issue #2187). WARN, matching the
+    #     fleet-consistency tier above: a stale lock does not break the publish,
+    #     it just drifts from pyproject on every release until someone re-runs
+    #     `uv lock` by hand. Graded here rather than left to a sweep because
+    #     "sweeps miss packs" is exactly how comfyui-filename-prefix drifted
+    #     twice (comfy-registry-lifecycle section 1).
+    findings.append(_uvlock_updater_finding(target))
 
     # 4. Screenshots + README prose. WARN — genuinely pack-specific and the one
     #    thing a pack may reasonably publish without.
