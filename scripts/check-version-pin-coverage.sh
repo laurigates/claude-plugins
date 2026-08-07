@@ -179,13 +179,42 @@ flush_pending_uses() {
 # `just export-opencode` overwrites it. A stale local dist/ otherwise hard-ERRORs
 # every local commit while CI (which never sees dist/) stays green. The sibling
 # scripts/lint-context-commands.sh already excludes it via --exclude-dir='dist'.
+#
+# Discovery runs from INSIDE proj_dir against RELATIVE paths (#2219). With an
+# absolute base, the bare `*/.claude/worktrees/*` prune fires on the whole tree
+# whenever proj_dir is ITSELF an agent worktree — its own path contains
+# `/.claude/worktrees/`, so every descendant matches, the scan root is pruned
+# entirely, and this guard reports FILES_SCANNED=0 / STATUS=OK having scanned
+# nothing: a false green for exactly the worktree-isolated subagents that do most
+# plugin work here. Relative paths make the root `.`, so its absolute prefix cannot
+# match while copies nested anywhere below it still prune correctly. Same fix, and
+# same reasoning, as scripts/check-subagent-types.sh.
+cd "$proj_dir" || { echo "check-version-pin-coverage.sh: cannot cd to $proj_dir" >&2; exit 2; }
+
 declare -a scan_files=()
 while IFS= read -r -d '' file; do
   scan_files+=("$file")
-done < <(find "$proj_dir" -path '*/.claude/worktrees/*' -prune -o \
+done < <(find . -path '*/.claude/worktrees/*' -prune -o \
            -path '*/dist/*' -prune -o \
            -path '*/skills/*' -name '*.md' -type f -print0 2>/dev/null)
 files_scanned=${#scan_files[@]}
+
+# Zero files scanned is two different states and they must be distinguishable.
+# Plugin directories present but no skill markdown discovered means the scan
+# misfired (a prune that swallowed the root); no plugin directories at all means
+# there is genuinely nothing to audit.
+plugin_dir_count=$(find . -maxdepth 1 -type d -name '*-plugin' -not -name '.claude-plugin' 2>/dev/null | wc -l | tr -d ' ')
+if [ "$files_scanned" -eq 0 ] && [ "$plugin_dir_count" -gt 0 ]; then
+  echo "=== VERSION PIN COVERAGE ==="
+  echo "FILES_SCANNED=0"
+  echo "PLUGIN_DIRS=$plugin_dir_count"
+  echo "STATUS=ERROR"
+  echo "ISSUE_COUNT=1"
+  echo "ISSUES:"
+  echo "  - SEVERITY=ERROR TYPE=nothing_scanned MSG=$plugin_dir_count plugin dirs but zero skill markdown discovered; scan misfired (see #2219)"
+  echo "=== END VERSION PIN COVERAGE ==="
+  exit 1
+fi
 
 # Fence-awareness comes from a real markdown parse (tree-sitter via the shared
 # scripts/lib/extract-md-elements.py helper), replacing the hand-rolled ``` /

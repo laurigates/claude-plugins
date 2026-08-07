@@ -67,21 +67,51 @@ fi
 # worktree copies are full repo checkouts created by concurrently-running
 # isolated agents, so descending into them would re-scan and mis-report sibling
 # agents' checkouts (#1492 class).
+#
+# Discovery runs from INSIDE proj_dir against RELATIVE paths (#2219). With an
+# absolute base, the bare `*/.claude/worktrees/*` prune fires on the whole tree
+# whenever proj_dir is ITSELF an agent worktree — its own path contains
+# `/.claude/worktrees/`, so every descendant matches, the scan root is pruned
+# entirely, and the guard reports "No agent files found" + exit 0 having checked
+# nothing. Since worktree-isolated subagents are this repo's normal way of doing
+# plugin work, that made an agent's own local verification structurally incapable
+# of failing. Relative paths make the root `.`, so its absolute prefix cannot
+# match while worktree copies nested ANYWHERE below it still prune correctly.
+# Same fix, and same reasoning, as scripts/check-subagent-types.sh.
 agent_files=()
+plugin_dirs=()
 if [ ${#explicit_files[@]} -gt 0 ]; then
   agent_files=("${explicit_files[@]}")
 else
-  while IFS= read -r -d '' agent_file; do
-    agent_files+=("$agent_file")
-  done < <(
-    find "$proj_dir" -maxdepth 1 -type d -name '*-plugin' -not -name '.claude-plugin' -print0 \
-      | xargs -0 -I {} find {} -path '*/.claude/worktrees/*' -prune -o \
-          -path '*/agents/*.md' -type f -print0
-  )
+  cd "$proj_dir" || { echo "check-agent-model.sh: cannot cd to $proj_dir" >&2; exit 2; }
+
+  while IFS= read -r -d '' plugin_dir; do
+    plugin_dirs+=("$plugin_dir")
+  done < <(find . -maxdepth 1 -type d -name '*-plugin' -not -name '.claude-plugin' -print0)
+
+  if [ ${#plugin_dirs[@]} -gt 0 ]; then
+    while IFS= read -r -d '' agent_file; do
+      agent_files+=("$agent_file")
+    done < <(
+      find "${plugin_dirs[@]}" -path '*/.claude/worktrees/*' -prune -o \
+        -path '*/agents/*.md' -type f -print0
+    )
+  fi
 fi
 
 if [ ${#agent_files[@]} -eq 0 ]; then
-  echo "No agent files found"
+  # Distinguish "nothing to check" from "the scan misfired" (#2219). A guard
+  # that did not run and a guard that found nothing look identical otherwise.
+  if [ ${#plugin_dirs[@]} -gt 0 ] && [ ${#explicit_files[@]} -eq 0 ]; then
+    echo "AGENT_FILES_SCANNED=0" >&2
+    echo "⚠️  Found ${#plugin_dirs[@]} plugin director(ies) under $proj_dir but ZERO agent files." >&2
+    echo "    This is a discovery misfire, not a clean tree — the guard checked nothing." >&2
+    echo "    Likely cause: a find prune matching the scan root itself (#2219)." >&2
+    exit 1
+  fi
+  echo "AGENT_FILES_SCANNED=0"
+  echo "SCANNED_EMPTY=true"
+  echo "No agent files found (no plugin directories under $proj_dir — nothing to check)"
   exit 0
 fi
 
@@ -129,5 +159,6 @@ if [ $errors -gt 0 ]; then
   exit 1
 fi
 
+echo "AGENT_FILES_SCANNED=$checked"
 echo "All $checked agent files run on opus. ✅"
 exit 0
