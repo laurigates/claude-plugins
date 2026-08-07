@@ -136,7 +136,9 @@ jobs:
       #
       # ~4 minutes cold on a 4-vCPU runner (C++ plus the Rust taskchampion
       # crate), which is why it is cached on the version tag; a warm run restores
-      # a single ~2 MB binary. The tag is the only integrity anchor — upstream
+      # one binary in ~1s (56 MB unstripped, 17 MB in the cache — `strip` only
+      # takes it to 39 MB, so it is not worth a step). The tag is the only
+      # integrity anchor — upstream
       # publishes no checksum file — and Renovate keeps it fresh via the
       # workflow-env customManager in renovate.json.
       - name: Restore cached taskwarrior
