@@ -4,8 +4,8 @@ args: <package> [--dev] [--exact]
 allowed-tools: Bash, Read
 argument-hint: package-name [--dev] [--exact]
 created: 2025-12-20
-modified: 2026-07-28
-reviewed: 2025-12-20
+modified: 2026-08-07
+reviewed: 2026-08-07
 name: bun-add
 ---
 
@@ -26,15 +26,25 @@ Add a package to dependencies using Bun.
 
 ## Parameters
 
-- `package` (required): Package name, optionally with version (e.g., `lodash`, `react@18`)
-- `--dev`: Add to devDependencies
-- `--exact`: Pin exact version (no ^ range)
+Parse `$ARGUMENTS`. These are supplied by the **caller**; nothing substitutes
+them for you.
+
+| Token in `$ARGUMENTS` | Binds | Default when absent |
+|---|---|---|
+| First non-flag token (required) | `PACKAGE` — name, optionally with a version (`lodash`, `react@18`) | none — ask for it rather than guessing |
+| `--dev` | add to `devDependencies` | added to `dependencies` |
+| `--exact` | pin the exact version (no `^` range) | caret range |
 
 ## Execution
 
-```bash
-bun add {{ if DEV }}--dev {{ endif }}{{ if EXACT }}--exact {{ endif }}$PACKAGE
-```
+Pick the row matching the flags the caller passed, substitute `PACKAGE`, and run it:
+
+| Flags in `$ARGUMENTS` | Command |
+|---|---|
+| (none) | `bun add PACKAGE` |
+| `--dev` | `bun add --dev PACKAGE` |
+| `--exact` | `bun add --exact PACKAGE` |
+| `--dev --exact` | `bun add --dev --exact PACKAGE` |
 
 ## Examples
 
