@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.3](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.2...comfyui-plugin-v1.13.3) (2026-08-07)
+
+
+### Code Refactoring
+
+* **comfyui-plugin:** split comfyui-node-scaffold across references/ ([#2293](https://github.com/laurigates/claude-plugins/issues/2293)) ([0dca17d](https://github.com/laurigates/claude-plugins/commit/0dca17dc1cde5514d8f0f007e7884ca931c2f97d)), closes [#2143](https://github.com/laurigates/claude-plugins/issues/2143)
+
 ## [1.13.2](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.1...comfyui-plugin-v1.13.2) (2026-08-07)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.4](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.13.3...taskwarrior-plugin-v1.13.4) (2026-08-07)
+
+
+### Bug Fixes
+
+* **ci:** build Taskwarrior 3.x on the runner so the UUID-capture gate runs ([#2294](https://github.com/laurigates/claude-plugins/issues/2294)) ([4010568](https://github.com/laurigates/claude-plugins/commit/401056898bf6af8b6b7e6ffbb21d86e8bce7ad79))
+
 ## [1.13.3](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.13.2...taskwarrior-plugin-v1.13.3) (2026-07-31)
 
 
