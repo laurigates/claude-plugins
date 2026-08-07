@@ -107,25 +107,62 @@ helper="$script_self_dir/lib/extract-md-elements.py"
 # files); otherwise discover under proj_dir. Both `.claude/worktrees/` (agent
 # worktree clones are full repo copies — #1492 / #1548) and `dist/` (the gitignored
 # rulesync export — #2214) are pruned; scanning either re-counts the same skills.
+#
+# Discovery runs from INSIDE proj_dir against RELATIVE paths (#2219). With an
+# absolute base, the bare `*/.claude/worktrees/*` prune fires on the whole tree
+# whenever proj_dir is ITSELF an agent worktree — its own path contains
+# `/.claude/worktrees/`, so every descendant matches, the scan root is pruned
+# entirely, and this guard reports SKILLS_SCANNED=0 / ISSUE_COUNT=0 / STATUS=OK
+# having checked nothing. That reading also VACUOUSLY satisfies the "expect
+# ISSUE_COUNT=0" gate for flipping this lint to --strict (#2255), which is why the
+# prune fix had to land first. Relative paths make the root `.`, so its absolute
+# prefix cannot match while copies nested anywhere below it still prune correctly.
+# Same fix, and same reasoning, as scripts/check-subagent-types.sh.
+#
+# `helper` above is resolved from BASH_SOURCE before this cd, so it is unaffected.
 skill_files=()
+plugin_dirs=()
 if [ ${#explicit_files[@]} -gt 0 ]; then
   skill_files=("${explicit_files[@]}")
 else
-  while IFS= read -r -d '' f; do
-    skill_files+=("$f")
-  done < <(
-    find "$proj_dir" -maxdepth 1 -type d -name '*-plugin' -not -name '.claude-plugin' -print0 2>/dev/null \
-      | xargs -0 -I {} find {} -path '*/.claude/worktrees/*' -prune -o -path '*/dist/*' -prune -o \
-          -path '*/skills/*' \( -name 'SKILL.md' -o -name 'skill.md' \) -type f -print0 2>/dev/null
-  )
+  cd "$proj_dir" || { echo "check-unused-bash-grant.sh: cannot cd to $proj_dir" >&2; exit 2; }
+
+  while IFS= read -r -d '' d; do
+    plugin_dirs+=("$d")
+  done < <(find . -maxdepth 1 -type d -name '*-plugin' -not -name '.claude-plugin' -print0 2>/dev/null)
+
+  if [ ${#plugin_dirs[@]} -gt 0 ]; then
+    while IFS= read -r -d '' f; do
+      skill_files+=("$f")
+    done < <(
+      find "${plugin_dirs[@]}" -path '*/.claude/worktrees/*' -prune -o -path '*/dist/*' -prune -o \
+        -path '*/skills/*' \( -name 'SKILL.md' -o -name 'skill.md' \) -type f -print0 2>/dev/null
+    )
+  fi
 fi
 
 echo "=== UNUSED BASH GRANT ==="
 
 if [ ${#skill_files[@]} -eq 0 ]; then
-  # A checker that errors on an empty corpus gets disabled. Report and succeed.
+  # Zero files is two very different states, and they must not look alike (#2219).
+  # Plugin dirs present but no skills discovered = the scan misfired (a prune that
+  # matched the scan root); no plugin dirs at all = genuinely nothing to check.
+  if [ ${#plugin_dirs[@]} -gt 0 ] && [ ${#explicit_files[@]} -eq 0 ]; then
+    echo "SKILLS_SCANNED=0"
+    echo "BASH_GRANTEES=0"
+    echo "PLUGIN_DIRS=${#plugin_dirs[@]}"
+    echo "STATUS=ERROR"
+    echo "ISSUE_COUNT=1"
+    echo "ISSUES:"
+    echo "  - SEVERITY=ERROR TYPE=nothing_scanned MSG=${#plugin_dirs[@]} plugin dirs but zero skills discovered; scan misfired (see #2219)"
+    echo "=== END UNUSED BASH GRANT ==="
+    exit 1
+  fi
+  # A checker that errors on a genuinely empty corpus gets disabled. Report and succeed.
   echo "SKILLS_SCANNED=0"
   echo "BASH_GRANTEES=0"
+  echo "PLUGIN_DIRS=0"
+  echo "SCANNED_EMPTY=true"
   echo "STATUS=OK"
   echo "ISSUE_COUNT=0"
   echo "=== END UNUSED BASH GRANT ==="

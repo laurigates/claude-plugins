@@ -177,13 +177,22 @@ add_exemption() { exemptions+=("  - $1"); exempted_calls=$((exempted_calls + 1))
 # once per live worktree (#1492 turned 499 real files into 12,768; #1548 hung a
 # session outright). dist/ is the gitignored rulesync build output.
 # ---------------------------------------------------------------------------
+#
+# The walk runs from INSIDE ROOT_DIR against RELATIVE paths, then re-absolutises
+# (#2219). With an absolute base, the bare `*/.claude/worktrees/*` prune fires on
+# the whole tree whenever ROOT_DIR is ITSELF an agent worktree — its own path
+# contains `/.claude/worktrees/`, so every descendant matches and the scan root is
+# pruned entirely. This corpus is legitimately empty TODAY (zero bundled .js),
+# which is exactly why the defect was invisible here — and exactly why the
+# emptiness is now reported explicitly as SCANNED_EMPTY= rather than left to be
+# inferred from FILES_SCANNED=0, which cannot distinguish the two.
 js_files=()
 while IFS= read -r f; do
-    [ -n "$f" ] && js_files+=("$f")
+    [ -n "$f" ] && js_files+=("$ROOT_DIR/${f#./}")
 done < <(
-    find "$ROOT_DIR" \
+    cd "$ROOT_DIR" && find . \
         \( -path '*/.claude/worktrees/*' -o -path '*/node_modules/*' \
-           -o -path "$ROOT_DIR/dist/*" -o -path '*/.git/*' \) -prune \
+           -o -path './dist/*' -o -path '*/.git/*' \) -prune \
         -o -path '*/skills/*/workflows/*.js' -print 2>/dev/null | sort
 )
 
@@ -489,6 +498,13 @@ status="OK"
 
 echo "=== WORKFLOW JS MODEL/EFFORT ==="
 echo "FILES_SCANNED=$files_scanned"
+# This guard's corpus is legitimately empty today (zero bundled workflow .js), so
+# an empty scan is CORRECT here and must stay exit 0. But "checked nothing" and
+# "checked everything and it was clean" are not the same claim, and FILES_SCANNED=0
+# alone does not say which (#2219). SCANNED_EMPTY makes it explicit and greppable,
+# so a reader — or an orchestrating skill rolling up STATUS= lines — can tell a
+# vacuous OK from a real one without re-deriving it.
+echo "SCANNED_EMPTY=$([ "$files_scanned" -eq 0 ] && echo true || echo false)"
 echo "AGENT_CALLS=$agent_calls"
 echo "PYTHON3_AVAILABLE=$([ "$python_ok" -eq 1 ] && echo true || echo false)"
 echo "STATUS=$status"

@@ -47,6 +47,32 @@ Why each Return Contract field exists — the observed failure mode it catches.
 | Budget overrun | `status: partial` + explicit deferred list beats a truncated claim of success |
 | Pre-commit hook stall at commit time | `worktree: dirty: <files>` + `status: failed` with `Orchestrator action needed` naming the hook that blocked |
 | Concurrent rate-limit cascade | `status: partial` + recovery-dispatch follow-up agent on the unfinished slice |
+## The Return Contract as workflow primitives
+
+`SKILL.md` § Return Contract carries the mapping table; this is what to weigh
+before turning it into a harness.
+
+- **A schema-bound agent has no partial result.** An `agent()` bound to a
+  `StructuredOutput` schema that is cut off *before* it emits — a rate-limit
+  storm, a context exhaustion — is reported to the caller as a hard parse
+  failure, not as partial output, even when substantial work was done inside its
+  context window (issue
+  [#1463](https://github.com/laurigates/claude-plugins/issues/1463)). The prose
+  contract degrades more gracefully: a worktree still holds the work, and the
+  empty-vs-dirty discrimination in
+  [failure-recovery.md](failure-recovery.md) recovers it. Cap schema-bound waves
+  and stagger their launches —
+  `workflow-orchestration-plugin:workflow-wave-dispatch` § Schema-Constrained
+  Agents Under Rate-Limit Storms owns those numbers.
+- **`parallel()` is a barrier, not a speedup.** Its value here is that no stage
+  may begin before every branch of the previous one returned. If the "barrier"
+  is really a summary the last agent could have written inline, the harness
+  bought nothing.
+- **The cost gate.** A harness costs **one opus agent per fan-out unit, per
+  invocation** — `.claude/rules/workflow-vs-skill.md` is the gate, and it
+  rejects a harness for *this* skill: it is reference doctrine with no execution
+  body of its own, so there is no N to enumerate and no stage to barrier.
+
 ## Skill-less agentType — evidence
 
 `SKILL.md` § "Skill-less agentType for Read-Only Fan-Out" carries the routing
