@@ -1,7 +1,7 @@
 ---
 created: 2026-02-14
-modified: 2026-07-29
-reviewed: 2026-07-29
+modified: 2026-08-07
+reviewed: 2026-08-07
 ---
 
 # Conventional Commits Standards
@@ -32,21 +32,31 @@ Subjects are imperative, lowercase after the colon, no trailing period.
 A `!` before the colon (`feat(api)!: redesign endpoints`) or a
 `BREAKING CHANGE:` footer forces a **major** bump regardless of type.
 
-## Scope is the package name (monorepo)
+## Scope is a label; the files touched decide what releases
 
-release-please decides **which package to release** from the scope, so here the
-scope must be the plugin directory name:
+Three inputs, routinely conflated:
 
-```
-feat(blueprint-plugin): add new command syntax
-fix(git-plugin): handle merge conflicts
-```
+| Input | Decides |
+|-------|---------|
+| Commit **type** (`feat`, `fix`, …) | the bump **size** |
+| **Files touched** | **which packages** bump |
+| **Scope** | the changelog label — nothing else |
 
-`release-please-config.json` declares 44 plugin components and **no root (`.`)
-package**, so a scope that matches no package — including an unscoped bare
-`feat:` — produces no release at all. That is the usual reason a merged `feat`
-never cut a version, and it is also used deliberately (see the `blueprint`
-scope in `CLAUDE.md`, which exists precisely because it matches nothing).
+`release-please-config.json` is a 44-package manifest keyed by plugin
+directory, so a commit is routed to **every package whose directory it
+touches**. A scope matching no package does *not* suppress the release:
+
+| Commit | Released |
+|--------|----------|
+| `fix(testing-plugin): …` (#2196) | code-quality-plugin, documentation-plugin, testing-plugin — patch |
+| `feat(scripts): …` (#2254) | comfyui-plugin, migration-patterns-plugin, testing-plugin — minor |
+| `feat(repo): …` (#1971) | all five plugin dirs it touched — minor |
+
+Still write the scope as the plugin directory name: it is what readers see, and
+a wrong one mislabels every package the commit touched (`code-quality-plugin`
+1.22.1 carries `**testing-plugin:**`). But do not rely on it to *contain* a
+release. To keep a plugin unpublished, change no files under its directory, or
+use a type that does not bump.
 
 ## Issue references
 
