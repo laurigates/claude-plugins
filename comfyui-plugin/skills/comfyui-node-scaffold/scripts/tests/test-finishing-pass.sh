@@ -34,7 +34,22 @@
 #       ERROR, so a pack with Icon and no Banner was "ready" per CI and
 #       "broken" per the audit (comfyui-image-browser sat in that gap).
 #
-# Requires python3 and git; SKIPs cleanly when python3 is unavailable.
+# Blocks 14-16 pin the two scaffold back-ports from issues #2186 / #2187 — the
+# generator-level half of defects that had only ever been fixed on deployed
+# packs (~/.claude/rules/scaffold-fix-backport.md):
+#   14. the @laurigates/comfy-modal-kit pin. It sat at `^0.2.0` while the kit
+#       published 0.10.0, and it is NOT Renovate-managed (a .py generator is
+#       outside every customManager here, #2222), so nothing flagged the rot.
+#   15. the banner tagline fits the canvas. Interpolating the full --desc at
+#       font-size 44 ran off a 1344px banner, invisible until someone
+#       rasterized the PNG. Fixed earlier but never pinned.
+#   16. release-please keeps uv.lock's self-version in step (#2187), including
+#       the two plausible-but-wrong jsonpath forms that leave it stale while
+#       looking configured.
+#
+# Requires python3 and git; SKIPs cleanly when python3 is unavailable. Block 16's
+# semantic half additionally needs `uv` and SKIPs without it; block 14's
+# freshness NOTE is advisory and suppressed by SCAFFOLD_OFFLINE=1.
 
 set -uo pipefail
 
@@ -341,6 +356,219 @@ for tok in '#1f1f2a' '#12121a' '#2a2a36' '#f5f5f7'; do
         "$(grep -o "$tok" "$PACK/banner.svg" | wc -l | tr -d ' ')" \
         "$(grep -o "$tok" "$IPACK/banner.svg" | wc -l | tr -d ' ')"
 done
+
+# 14. comfy-modal-kit pin (issue #2186). The template pinned `^0.2.0` — four
+#     minors behind the published kit — so every pack scaffolded in between was
+#     born stale and needed a manual bump before it could use current kit APIs.
+#     The pin is NOT Renovate-managed (it lives in a .py generator; this repo's
+#     customManagers see only skill markdown + install_pkgs.sh), so nothing
+#     flagged the rot. Pin the two mechanical invariants here and print an
+#     advisory freshness NOTE.
+KIT_CONST="$(python3 - "$SCAFFOLD" <<'PY'
+import re, sys
+src = open(sys.argv[1], encoding="utf-8").read()
+m = re.search(r'^MODAL_KIT_VERSION = "([^"]+)"', src, re.M)
+print(m.group(1) if m else "")
+PY
+)"
+check "MODAL_KIT_VERSION constant is readable" "yes" \
+    "$([ -n "$KIT_CONST" ] && echo yes || echo no)"
+# The exact stale value the issue was filed about — a literal regression pin.
+check "modal-kit pin is no longer the stale ^0.2.0" "moved" \
+    "$([ "$KIT_CONST" = "^0.2.0" ] && echo stale || echo moved)"
+# The emitted package.json must carry the constant verbatim, or the constant
+# and the template can drift and the bump above buys nothing.
+KIT_EMITTED="$(python3 - "$PACK/package.json" <<'PY'
+import json, sys
+deps = json.load(open(sys.argv[1], encoding="utf-8")).get("dependencies", {})
+print(deps.get("@laurigates/comfy-modal-kit", ""))
+PY
+)"
+check "modal variant emits the modal-kit pin from the constant" "$KIT_CONST" "$KIT_EMITTED"
+# Guard integrity: the gesture variant has no modal to hook, so it must NOT
+# declare the kit — without this, the assertion above could pass against a
+# template that pins the kit everywhere.
+GESTURE_KIT="$(python3 - "$GPACK/package.json" <<'PY'
+import json, sys
+deps = json.load(open(sys.argv[1], encoding="utf-8")).get("dependencies", {})
+print(deps.get("@laurigates/comfy-modal-kit", "absent"))
+PY
+)"
+check "gesture variant declares no modal-kit dependency" "absent" "$GESTURE_KIT"
+
+# Advisory only — never a check(). A hard failure here would turn an unrelated
+# PR red the day the kit publishes a minor (the "gate red on arrival" hazard in
+# .claude/rules/generated-fleet-drift.md). Bounded fetch so CI cannot hang.
+if command -v npm >/dev/null 2>&1 && [ -z "${SCAFFOLD_OFFLINE:-}" ]; then
+    KIT_LATEST="$(npm view @laurigates/comfy-modal-kit version \
+        --fetch-timeout=5000 --fetch-retries=0 2>/dev/null | tail -1)"
+    if [ -n "$KIT_LATEST" ]; then
+        python3 - "$KIT_CONST" "$KIT_LATEST" <<'PY'
+import sys
+pin, latest = sys.argv[1], sys.argv[2]
+base = pin.lstrip("^~")
+pin_parts = base.split(".")
+latest_parts = latest.split(".")
+# Caret on a 0.x version is minor-locked: ^0.10.0 == >=0.10.0 <0.11.0.
+covered = (
+    pin_parts[:2] == latest_parts[:2]
+    if pin.startswith("^") and pin_parts[0] == "0"
+    else pin_parts[0] == latest_parts[0]
+)
+if not covered:
+    print(
+        f"NOTE: MODAL_KIT_VERSION={pin} does not cover the published latest "
+        f"({latest}). This pin is not Renovate-managed (#2222) — bump it in "
+        f"scaffold.py so new packs are not born stale (#2186).",
+        file=sys.stderr,
+    )
+PY
+    fi
+fi
+
+# 15. Banner tagline fit (issue #2186). The banner draws its subtitle at
+#     font-size 44 from x=340 on a 1344px canvas; interpolating the full --desc
+#     ran the text off the right edge, invisible until someone rasterized the
+#     PNG and looked at it. Measured on a 1344x576 render: the derived 44-char
+#     tagline ends at x=1210 (133px margin); the same banner carrying the full
+#     166-char --desc reaches x=1343 — clipped at the edge.
+MAX_TAGLINE="$(python3 - "$SCAFFOLD" <<'PY'
+import re, sys
+src = open(sys.argv[1], encoding="utf-8").read()
+m = re.search(r"^MAX_TAGLINE_CHARS = (\d+)", src, re.M)
+print(m.group(1) if m else "")
+PY
+)"
+check "MAX_TAGLINE_CHARS constant is readable" "yes" \
+    "$([ -n "$MAX_TAGLINE" ] && echo yes || echo no)"
+
+read_tagline() { # read_tagline <pack> — the font-size 44 <text> body
+    python3 - "$1/banner.svg" <<'PY'
+import re, sys
+svg = open(sys.argv[1], encoding="utf-8").read()
+m = re.search(r'font-size="44"[^>]*>([^<]*)</text>', svg)
+print(m.group(1) if m else "")
+PY
+}
+
+LONG_DESC="Drag one output onto another to take over its downstream links, reroute a connection's source, and keep the graph tidy without rewiring every downstream node by hand."
+python3 "$SCAFFOLD" --name comfyui-fp-longdesc --display "FP LongDesc" \
+    --desc "$LONG_DESC" --variant gesture --dir "$WORK" >/dev/null 2>&1
+LD="$WORK/comfyui-fp-longdesc"
+LD_TAGLINE="$(read_tagline "$LD")"
+check "long --desc yields a tagline within the canvas budget" "yes" \
+    "$([ -n "$LD_TAGLINE" ] && [ "${#LD_TAGLINE}" -le "$MAX_TAGLINE" ] && echo yes || echo no)"
+# The specific defect: the whole description reaching the SVG.
+check "the full --desc never reaches banner.svg" "yes" \
+    "$(grep -qF "$LONG_DESC" "$LD/banner.svg" && echo no || echo yes)"
+
+# Guard integrity: a short --desc must survive VERBATIM. Without this, a
+# template that emitted an empty (or always-truncated) tagline would satisfy
+# both assertions above while destroying the subtitle.
+python3 "$SCAFFOLD" --name comfyui-fp-shortdesc --display "FP ShortDesc" \
+    --desc "Reroute a connection's source" --variant gesture --dir "$WORK" >/dev/null 2>&1
+check "a short --desc passes through verbatim" "Reroute a connection's source" \
+    "$(read_tagline "$WORK/comfyui-fp-shortdesc")"
+
+# An author-supplied --tagline is honoured as given, not re-derived.
+python3 "$SCAFFOLD" --name comfyui-fp-tagline --display "FP Tagline" \
+    --desc "$LONG_DESC" --tagline "Move a link's source in one drag" \
+    --variant gesture --dir "$WORK" >/dev/null 2>&1
+check "--tagline overrides the derived subtitle" "Move a link's source in one drag" \
+    "$(read_tagline "$WORK/comfyui-fp-tagline")"
+
+# 16. release-please keeps uv.lock in step (issue #2187). release-please bumps
+#     pyproject.toml but has no native uv.lock support
+#     (googleapis/release-please#2561), so the lock's self-version trailed
+#     pyproject on EVERY release (comfyui-filename-prefix at v0.1.1 and v0.1.2).
+UVLOCK_JSONPATH="$(python3 - "$PACK/release-please-config.json" <<'PY'
+import json, sys
+cfg = json.load(open(sys.argv[1], encoding="utf-8"))
+paths = [
+    e.get("jsonpath", "")
+    for pkg in cfg.get("packages", {}).values()
+    for e in pkg.get("extra-files", [])
+    if e.get("path") == "uv.lock" and e.get("type") == "toml"
+]
+print(paths[0] if len(paths) == 1 else "")
+PY
+)"
+check "emitted config wires a toml updater for uv.lock" "yes" \
+    "$([ -n "$UVLOCK_JSONPATH" ] && echo yes || echo no)"
+# Both wrong forms look configured while leaving the lock stale, which is worse
+# than an absent updater — verified against a real lock with release-please
+# 17.11.1: `$.version` THROWS (it is the lockfile FORMAT revision, not the
+# package version) and a bare `@.name==` filter is a SILENT no-op (the tagged
+# TOML AST wraps scalars as {start,end,value}, so `@.name` is an object).
+check "  ...that targets a [[package]] entry, not the lockfile format version" "yes" \
+    "$(grep -q 'package\[?(' <<<"$UVLOCK_JSONPATH" && echo yes || echo no)"
+check "  ...and reads through the tagged AST (.name.value)" "yes" \
+    "$(grep -q '@\.name\.value' <<<"$UVLOCK_JSONPATH" && echo yes || echo no)"
+check "  ...naming this pack" "yes" \
+    "$(grep -q "comfyui-fp-demo" <<<"$UVLOCK_JSONPATH" && echo yes || echo no)"
+
+# The audit grades it, so an existing pack that never got the updater is
+# reported rather than silently drifting ("sweeps miss packs").
+VERIFY_OUT="$(python3 "$SCAFFOLD" --verify "$PACK" 2>&1)"
+check "--verify reports RELEASE_PLEASE_UVLOCK=wired on a fresh pack" "yes" \
+    "$(grep -qx 'RELEASE_PLEASE_UVLOCK=wired' <<<"$VERIFY_OUT" && echo yes || echo no)"
+# Guard integrity: strip the updater and the grade must move. Without this a
+# finding hardwired to "wired" would satisfy the assertion above.
+UW="$WORK/comfyui-fp-unwired"
+python3 "$SCAFFOLD" --name comfyui-fp-unwired --display "FP Unwired" \
+    --desc "u" --variant gesture --dir "$WORK" >/dev/null 2>&1
+python3 - "$UW" <<'PY'
+import json, pathlib, sys
+cfg = pathlib.Path(sys.argv[1]) / "release-please-config.json"
+data = json.loads(cfg.read_text(encoding="utf-8"))
+for pkg in data.get("packages", {}).values():
+    pkg.pop("extra-files", None)
+cfg.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+PY
+VERIFY_OUT="$(python3 "$SCAFFOLD" --verify "$UW" 2>&1)"
+check "--verify reports RELEASE_PLEASE_UVLOCK=unwired once stripped" "yes" \
+    "$(grep -qx 'RELEASE_PLEASE_UVLOCK=unwired' <<<"$VERIFY_OUT" && echo yes || echo no)"
+
+# Semantic half: the configured selector must actually pick the pack's own
+# entry out of a lockfile uv really produced. Catches a uv format change or a
+# wrong package-name substitution, neither of which the string checks can see.
+if ! command -v uv >/dev/null 2>&1; then
+    echo "SKIP: uv unavailable — uv.lock selector check skipped" >&2
+else
+    (
+        cd "$PACK" || exit 1
+        # Offline first so a network-less runner still gets a lock from cache;
+        # fall back to a normal resolve when the cache is cold.
+        uv lock --offline >/dev/null 2>&1 || uv lock >/dev/null 2>&1
+    )
+    if [ ! -f "$PACK/uv.lock" ]; then
+        echo "SKIP: uv lock produced no lockfile (offline?) — selector check skipped" >&2
+    else
+        SELECTED="$(python3 - "$PACK/uv.lock" "$UVLOCK_JSONPATH" <<'PY'
+import re, sys
+try:
+    import tomllib
+except ModuleNotFoundError:  # python < 3.11
+    print("SKIP")
+    sys.exit(0)
+name = re.search(r"@\.name\.value\s*==\s*'([^']+)'", sys.argv[2])
+if not name:
+    print("UNPARSEABLE")
+    sys.exit(0)
+lock = tomllib.load(open(sys.argv[1], "rb"))
+hits = [p for p in lock.get("package", []) if p.get("name") == name.group(1)]
+print(f"{len(hits)}:{hits[0].get('version') if hits else ''}")
+PY
+)"
+        PKG_VERSION="$(grep -m1 '^version = ' "$PACK/pyproject.toml" | cut -d'"' -f2)"
+        case "$SELECTED" in
+            SKIP*) echo "SKIP: tomllib unavailable — selector check skipped" >&2 ;;
+            *)
+                check "jsonpath selects exactly one [[package]] entry in a real uv.lock" \
+                    "1:$PKG_VERSION" "$SELECTED" ;;
+        esac
+    fi
+fi
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
