@@ -143,6 +143,7 @@ Dispatch contract for any workflow that spawns more than one agent in parallel �
 - Authoring agent prompts that need file/read/output budgets
 - Defining the mandatory Return Contract every parallel agent must emit on exit
 - Recovering from silent agent exits or worktree collisions
+- Mapping the Return Contract onto workflow primitives (a JSON Schema on the `agent()` call; `parallel()` as the barrier) before reaching for a harness
 
 #### `multi-model-delegation`
 Protocol for consulting *other* models (kimi, glm, gemini, gpt via the PAL MCP gateway) on design and judgment work — the complement of `parallel-agent-dispatch`, which delegates *work* to Claude subagents.
@@ -198,7 +199,8 @@ Verify an implementation meets its acceptance criteria by running the suite firs
 
 **Features:**
 - Execute-first: runs suite + typecheck + lint before any verdict
-- Per-criterion ledger grounding each requirement in execution evidence (PASS/FAIL/PARTIAL/UNVERIFIED)
+- `LEDGER` schema binding the verifier's output: one row per criterion, `verdict` enum (PASS/FAIL/PARTIAL/UNVERIFIED) grounded in execution evidence
+- Required `sequenceMatchesProduction` enum on every row — makes "I did not check the production call sequence" unrepresentable
 - Intent-starved isolated opus verifier — grades behaviour, not the author's rationale
 - Over-correction triage guarding both "pass broken code" and "fail correct code"
 

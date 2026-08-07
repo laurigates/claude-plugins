@@ -5,8 +5,8 @@ args: "[mode]"
 argument-hint: mode — diagnose | bench | full | report (default full)
 allowed-tools: Bash(bash *), Bash(uname *), Bash(sudo bash *), Read, Grep, Glob
 created: 2026-07-03
-modified: 2026-07-03
-reviewed: 2026-07-03
+modified: 2026-08-07
+reviewed: 2026-08-07
 ---
 
 # macOS Performance Benchmark (Apple Silicon)
@@ -106,6 +106,16 @@ each score as this machine's baseline (best-seen), stored in
 The degrade bands are env-overridable (`MACOS_PERF_BENCH_WARN_DEGRADE`,
 `MACOS_PERF_BENCH_FAIL_DEGRADE`). Inspect or clear the baseline with the
 `baseline-show` / `baseline-reset` modes.
+
+**Multi-core scaling efficiency is reported, never scored.** The ratio
+(multi-core throughput ÷ *n* × single-core) assumes every core is equivalent —
+which is false on Apple Silicon's P+E topology, where a healthy 10P+4E machine
+measures **24–27%** simply because 4 of its 14 cores run at a fraction of P-core
+throughput. No single floor is meaningful across symmetric and asymmetric
+machines, so the number is emitted as an info line (with the P:E core split when
+`hw.perflevel*` is available) and never contributes a PASS/WARN/FAIL. The
+*absolute* multi-core throughput is still scored, against this machine's own
+self-calibrating baseline.
 
 **Diagnostics keep absolute thresholds** — disk-free %, RAM, memory pressure,
 launch-item counts are health/hygiene checks, not performance scores, so they

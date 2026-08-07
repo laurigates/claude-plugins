@@ -14,6 +14,11 @@
 #      `version:` input is absent or floating is flagged ERROR, while the same
 #      step with an explicit tag is not — the pin must cover the BINARY, not
 #      just the wrapper
+#   I. path gap (#2222): a plugin scaffold template's pin is flagged when NO
+#      manager file pattern matches its path, while the template's own
+#      .github/workflows/ subtree and package.json — already reached by the
+#      built-in '(^|/)'-prefixed patterns — are not; and the finding clears when
+#      renovate.json is widened, proving the guard reads the config
 #   H. the gitignored dist/ rulesync build output is pruned, not scanned
 #      (#2214) — with a guard-integrity half proving the same defective pin at
 #      a real path is still reported
@@ -266,6 +271,110 @@ assert "FILES_SCANNED grew by exactly 1 (only the real source file)" \
   "$([ "$(field "$guard_out" FILES_SCANNED)" -eq "$((before_scanned_h + 1))" ] && echo true || echo false)"
 assert "still no issue references a dist/ path" \
   "$([ "$(contains "$guard_out" 'dist/')" = "false" ] && echo true || echo false)"
+
+echo "=== TEST I: plugin scaffold template pins are path-checked (#2222) ==="
+# A scaffold template ships REAL files a generated repo inherits verbatim, so the
+# failure mode is the pin's PATH, not its shape: `uses: x@v6` is a perfectly good
+# tag-form pin that silently never updates when no manager's file pattern matches
+# the file it sits in. Renovate's built-in patterns are '(^|/)'-prefixed, so a
+# template's own .github/workflows/ subtree and package.json are ALREADY covered
+# — only a flat layout (blueprint-plugin/templates/*.workflow.yml) is not. The
+# assertions below weight that distinction hardest, because a guard that flagged
+# every pin under templates/ would be wrong in the common case.
+tpl="$(mktemp -d)" || exit 1
+[ -n "$tpl" ] || exit 1
+trap 'rm -rf "$fixture" "$tpl"' EXIT
+
+# renovate.json WITHOUT any templates pattern — the pre-fix state.
+cat > "$tpl/renovate.json" <<'EOF'
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"]
+}
+EOF
+
+# (a) the defect: a flat workflow template, matched by no manager pattern.
+mkdir -p "$tpl/demo-plugin/templates"
+cat > "$tpl/demo-plugin/templates/scaffold.workflow.yml" <<'EOF'
+name: Scaffolded
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+EOF
+
+# (b) the same template tree's OWN .github/workflows/ subtree — already covered
+#     by the built-in github-actions patterns, so it must NOT be flagged.
+mkdir -p "$tpl/demo-plugin/templates/demo-module/.github/workflows"
+cat > "$tpl/demo-plugin/templates/demo-module/.github/workflows/ci.yml" <<'EOF'
+name: CI
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+EOF
+
+# (c) a template package.json — covered by the built-in npm pattern.
+cat > "$tpl/demo-plugin/templates/demo-module/package.json" <<'EOF'
+{
+  "name": "{{ project-name }}",
+  "devDependencies": { "typescript": "^5.7.0" }
+}
+EOF
+
+# (d) a template whose only ref is floating — not a pin, so not a finding.
+cat > "$tpl/demo-plugin/templates/floating.workflow.yml" <<'EOF'
+name: Floating
+jobs:
+  call:
+    uses: owner/repo/.github/workflows/reusable.yml@main
+EOF
+
+pre_out="$(bash "$checker" --project-dir "$tpl")"
+pre_rc=0
+bash "$checker" --project-dir "$tpl" --strict >/dev/null || pre_rc=$?
+
+assert "flat scaffold.workflow.yml is flagged template_pin_unmanaged" \
+  "$(contains "$pre_out" 'template_pin_unmanaged.*scaffold.workflow.yml')"
+assert "--strict exits 1 on an unmanaged template pin" \
+  "$([ "$pre_rc" -eq 1 ] && echo true || echo false)"
+# Guard integrity: without these three, the assertion above would also pass
+# against a check that simply errored on everything under a templates/ tree.
+assert "the template's own .github/workflows/ci.yml is NOT flagged (built-in pattern)" \
+  "$([ "$(contains "$pre_out" 'ci.yml')" = "false" ] && echo true || echo false)"
+assert "the template's package.json is NOT flagged (built-in npm pattern)" \
+  "$([ "$(contains "$pre_out" 'package.json')" = "false" ] && echo true || echo false)"
+assert "a floating-only template is NOT flagged (no pin to manage)" \
+  "$([ "$(contains "$pre_out" 'floating.workflow.yml')" = "false" ] && echo true || echo false)"
+# Non-vacuity: the scan must have actually seen the covered files.
+assert "TEMPLATE_FILES_SCANNED counts all 3 pin-bearing template files" \
+  "$([ "$(field "$pre_out" TEMPLATE_FILES_SCANNED)" -eq 3 ] && echo true || echo false)"
+assert "TEMPLATE_PINS_COVERED is non-zero (covered pins were counted, not skipped)" \
+  "$([ "$(field "$pre_out" TEMPLATE_PINS_COVERED)" -gt 0 ] && echo true || echo false)"
+
+# Adding the pattern to renovate.json clears the finding — proving the guard
+# reads the CONFIG rather than carrying a hardcoded verdict about the path.
+cat > "$tpl/renovate.json" <<'EOF'
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "github-actions": {
+    "managerFilePatterns": ["/(^|/)[^/]+-plugin/templates/.+\\.ya?ml$/"]
+  }
+}
+EOF
+post_out="$(bash "$checker" --project-dir "$tpl")"
+post_rc=0
+bash "$checker" --project-dir "$tpl" --strict >/dev/null || post_rc=$?
+assert "the finding clears once renovate.json covers the path" \
+  "$([ "$(contains "$post_out" 'template_pin_unmanaged')" = "false" ] && echo true || echo false)"
+assert "--strict exits 0 once the path is covered" \
+  "$([ "$post_rc" -eq 0 ] && echo true || echo false)"
+assert "the newly-covered pin is counted, not merely un-flagged" \
+  "$([ "$(field "$post_out" TEMPLATE_PINS_COVERED)" -gt "$(field "$pre_out" TEMPLATE_PINS_COVERED)" ] && echo true || echo false)"
 
 echo ""
 echo "=== SUMMARY ==="

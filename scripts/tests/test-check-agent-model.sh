@@ -66,7 +66,7 @@ assert "real repo exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
 # --- TEST B: all-opus fixture tree -------------------------------------------
 echo "=== TEST B: all-opus fixture exits 0 ==="
 fx_b="$(mktemp -d)"
-trap 'rm -rf "$fx_b" "${fx_c:-}" "${fx_d:-}" "${fx_e:-}" "${fx_f:-}"' EXIT
+trap 'rm -rf "$fx_b" "${fx_c:-}" "${fx_d:-}" "${fx_e:-}" "${fx_f:-}" "${fx_g:-}"' EXIT
 make_agent "$fx_b/demo-plugin/agents/good.md" opus
 make_agent "$fx_b/other-plugin/agents/also-good.md" opus
 run "$fx_b"
@@ -115,6 +115,43 @@ run "$fx_f"
 assert "worktree fixture exits 0 (copies pruned)" "$([ "$RC" -eq 0 ] && echo true || echo false)"
 assert "worktree fixture reports only the 1 real agent" "$(contains "$OUT" 'All 1 agent files run on opus')"
 assert "no .claude/worktrees/ path leaks into output" "$([ "$(contains "$OUT" '.claude/worktrees/')" = "false" ] && echo true || echo false)"
+
+# --- TEST G: the scan ROOT is itself a worktree (#2219) ----------------------
+# TEST F pins that SIBLING worktrees are pruned. The inverse — proj_dir IS an
+# agent worktree — is the #2219 defect: every descendant path then contains
+# `/.claude/worktrees/`, so a bare `*/.claude/worktrees/*` prune matches the whole
+# scan root and the guard scans ZERO files while still exiting 0. Since
+# worktree-isolated subagents are this repo's normal way of doing plugin work, that
+# made an agent's own local verification structurally incapable of failing.
+echo "=== TEST G: a worktree-shaped scan root still scans its own files (#2219) ==="
+fx_g="$(mktemp -d)"
+[ -n "$fx_g" ] || { echo "mktemp failed" >&2; exit 1; }
+# Build a root whose PATH contains .claude/worktrees/, mirroring a real agent worktree.
+wt_root="$fx_g/repo/.claude/worktrees/agent-abc123"
+make_agent "$wt_root/demo-plugin/agents/good.md" opus
+make_agent "$wt_root/other-plugin/agents/also-good.md" opus
+run "$wt_root"
+assert "worktree-shaped root exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+# The load-bearing assertion: a NON-ZERO scan count. Pre-fix this reported
+# "No agent files found" — indistinguishable from a clean tree.
+assert "worktree-shaped root scans both agents (not zero)" "$(contains "$OUT" 'AGENT_FILES_SCANNED=2')"
+assert "worktree-shaped root does not report an empty scan" "$([ "$(contains "$OUT" 'No agent files found')" = "false" ] && echo true || echo false)"
+
+# Guard integrity: a defect planted inside that worktree-shaped root must still be
+# CAUGHT. Without this, the assertions above would also pass against a guard that
+# discovered the files but stopped checking them.
+make_agent "$wt_root/demo-plugin/agents/bad.md" sonnet
+run "$wt_root"
+assert "defect inside a worktree-shaped root is caught" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "defect inside a worktree-shaped root is named" "$(contains "$OUT" 'agents/bad.md')"
+
+# And a worktree nested INSIDE the worktree-shaped root must still be pruned, so
+# the anchored prune did not simply disable sibling pruning altogether.
+rm -f "$wt_root/demo-plugin/agents/bad.md"
+make_agent "$wt_root/.claude/worktrees/agent-nested/demo-plugin/agents/leaked.md" haiku
+run "$wt_root"
+assert "sibling worktree nested under a worktree root is still pruned" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+assert "nested worktree copy is not counted" "$(contains "$OUT" 'AGENT_FILES_SCANNED=2')"
 
 # --- Summary -----------------------------------------------------------------
 echo ""

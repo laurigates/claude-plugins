@@ -26,6 +26,11 @@ Core Bevy development expertise including:
 
 **Use when**: Building games with Bevy, working with entities/components/systems, implementing game features, or when the user mentions Bevy, game development in Rust, or 2D/3D games.
 
+`SKILL.md` carries the ECS core, app structure, and the command set; the detail
+is split across `references/` so a run loads only the material its path needs
+(`input.md`, `assets-and-states.md`, `events.md`, `project-architecture.md`).
+The pointer table in `SKILL.md` names each one.
+
 ### bevy-ecs-patterns
 
 Advanced ECS patterns and techniques:

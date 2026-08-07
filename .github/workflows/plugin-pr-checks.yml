@@ -132,11 +132,34 @@ jobs:
         # finding count swings hardest (unlabeled fences, known-command matching).
         run: bash scripts/tests/test-check-unused-bash-grant.sh
 
-      - name: Check for unused Bash grants (advisory)
-        # ADVISORY on landing: reports findings without failing. The corpus was
-        # triaged to zero in the PR that added this, and the allowlist is empty,
-        # so the flip to `--strict` is a one-word change tracked separately.
-        run: bash scripts/check-unused-bash-grant.sh
+      - name: Check for unused Bash grants
+        # BLOCKING as of #2255. Gate held at the flip: SKILLS_SCANNED=408,
+        # BASH_GRANTEES=186, ISSUE_COUNT=0, allowlist still EMPTY — so the ratchet
+        # locks in a genuinely clean state rather than a suppressed one.
+        #
+        # The #2219 prune fix is a PREREQUISITE for that gate being meaningful:
+        # run from inside an agent worktree the guard previously reported
+        # SKILLS_SCANNED=0 / ISSUE_COUNT=0 / STATUS=OK, which satisfies "expect
+        # ISSUE_COUNT=0" vacuously. Flipping to --strict on that reading would have
+        # ratcheted against a corpus of nothing.
+        run: bash scripts/check-unused-bash-grant.sh --strict
+
+      - name: Self-test the workflow script-trigger guard (#2219)
+        # Guards the `paths:`-filter invariant this file's own header argues for:
+        # a workflow that RUNS scripts/check-*.sh must be triggerable by a change
+        # to those scripts. The filter here was removed by #2258; this keeps a
+        # future re-add from silently re-orphaning the guards.
+        run: bash scripts/tests/test-check-workflow-script-triggers.sh
+
+      - name: Check workflow-run scripts are reachable from their path triggers
+        run: bash scripts/check-workflow-script-triggers.sh --strict
+
+      - name: Self-test guard discovery from a worktree-shaped root (#2219)
+        # Worktree-isolated subagents are how most plugin work happens here, so
+        # "an agent verifies its own change locally" is the common path. A bare
+        # `*/.claude/worktrees/*` prune against an absolute base made that path
+        # scan ZERO files while still exiting 0 — a green that proved nothing.
+        run: bash scripts/tests/test-guard-worktree-root-discovery.sh
 
       - name: Self-test the workflow-model guard
         # Whole-repo invariant (every Claude workflow must pin opus + explicit
