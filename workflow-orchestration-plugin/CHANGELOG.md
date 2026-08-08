@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.9.3...workflow-orchestration-plugin-v1.10.0) (2026-08-08)
+
+
+### Features
+
+* **workflow-orchestration-plugin:** ship the verify-before-filing workflow harness template ([#2313](https://github.com/laurigates/claude-plugins/issues/2313)) ([0ea94ee](https://github.com/laurigates/claude-plugins/commit/0ea94ee4128612a7442a6f259fdd9485a2428f64)), closes [#2167](https://github.com/laurigates/claude-plugins/issues/2167)
+
 ## [1.9.3](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.9.2...workflow-orchestration-plugin-v1.9.3) (2026-08-07)
 
 

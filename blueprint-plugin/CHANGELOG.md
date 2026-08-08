@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.44.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.43.1...blueprint-plugin-v3.44.0) (2026-08-08)
+
+
+### Features
+
+* **blueprint-plugin:** ship the story-audit discovery fan-out harness template ([#2311](https://github.com/laurigates/claude-plugins/issues/2311)) ([a5aea97](https://github.com/laurigates/claude-plugins/commit/a5aea979f96b6605fe8aa9b8c6499a0d4b7ca27c)), closes [#2171](https://github.com/laurigates/claude-plugins/issues/2171)
+
 ## [3.43.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.43.0...blueprint-plugin-v3.43.1) (2026-08-07)
 
 
