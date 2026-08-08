@@ -4,8 +4,8 @@ args: "<results-path> [--type <test-type>] [--focus <area>]"
 argument-hint: "Path to test results (e.g., ./test-results/), optional --type and --focus filters"
 allowed-tools: Task, Read, Glob, Grep, TodoWrite
 created: 2025-12-16
-modified: 2026-08-07
-reviewed: 2026-08-07
+modified: 2026-08-08
+reviewed: 2026-08-08
 name: test-analyze
 agent: general-purpose
 context: fork
@@ -88,6 +88,8 @@ Analyzes test results from any testing framework, uses Zen planner to create a s
 
 **This table is the single source of truth for delegation.** Every `subagent_type` this skill dispatches is listed here; no other section restates it. The values are plugin-qualified `plugin:agent` IDs — the form the `Task`/`Agent` tool resolves for plugin-provided agents (a bare name only resolves for user- or project-level agents in `~/.claude/agents/` or `.claude/agents/`).
 
+It is also the contract the workflow harness's `category` enum and `AGENT_FOR` map encode — **edit them together.** `scripts/check-subagent-types.sh` fails CI if any value here stops resolving to a real `agents-plugin/agents/*.md`.
+
 | Issue category | Triggers | Dispatch | Focus to pass |
 |---|---|---|---|
 | Accessibility violations | WCAG, ARIA, colour contrast, keyboard nav | `subagent_type: agents-plugin:review` | WCAG 2.1 compliance, semantic HTML, ARIA best practices |
@@ -98,6 +100,43 @@ Analyzes test results from any testing framework, uses Zen planner to create a s
 | Integration failures | Failing behaviour needing root-cause diagnosis | `subagent_type: agents-plugin:debug` | Root cause, minimal fix, verification |
 | Build / CI failures | Pipeline errors, dependency issues | `subagent_type: agents-plugin:ci` | GitHub Actions, dependency management, caching |
 | Documentation gaps | Missing docs, outdated examples | `subagent_type: agents-plugin:docs` | API docs, test documentation, migration guides |
+
+## Workflow harness (template)
+
+`workflows/test-analyze.workflow.js` ships beside this skill. **It is a TEMPLATE to adapt,
+not a script to run verbatim.** Read it, then rewrite it for the work in front of you.
+
+**Adapt freely:** the agent prompts, the severity vocabulary, the result-file globs and
+format hints for your test framework, the `--focus` weighting, and the verification
+command each plan agent is told to emit.
+
+**Preserve across any adaptation:** (a) the fan-out width comes from the `AGENT_FOR`
+table above — one agent per *agent type*, never a prose "for each failure", which is what
+caps the harness at 8 concurrent agents; (b) the `category` and `severity` enums in
+`RoutedFailuresSchema`, which force every failure either onto a route or into
+`unroutable[]` with a stated reason instead of the nearest-looking row; (c) the
+`parallel()` barrier before Synthesize — group agents emit `depends_on` edges pointing at
+failures in *other* groups, so the ordering only exists once every group has returned.
+
+**Skip the harness when:** there are fewer than 5 routable failures — the script returns
+`{mode:'inline'}` at that floor, because below it one opus agent per category costs more
+than the linear pass. That floor is a hard bound, not a tunable knob. The steps below
+remain the authoritative description of *what* each stage must produce; the harness only
+fixes *how* the work is split.
+
+Two consequences worth stating inline:
+
+- **The harness surrenders `mcp__pal__planner`.** A workflow script cannot reach MCP
+  tools, so the dependency edges in the merged plan are *inferred by the group agents*,
+  not planned. A run that genuinely needs PAL planning (Step 2 below) should stay inline.
+- **`context: fork` stays, and it is not what justifies the harness.** The pin lives in
+  `scripts/plugin-compliance-check.sh` (the `context: fork` guard list, currently around
+  lines 898–914) and is unchanged by this template. Per
+  `.claude/rules/workflow-vs-skill.md` § "The `context: fork` corollary", fork already
+  bought context isolation for free — so this harness has to earn its tokens by
+  **splitting** the planning work across agent types behind a real barrier, which it does.
+  The `parallel()` width is capped at the fixed agent-type set (8) precisely so it does
+  not become the wide fan-out `.claude/rules/skill-fork-context.md` warns about.
 
 ## Output
 
