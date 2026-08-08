@@ -167,6 +167,18 @@ repos:
         language: script
         files: '^scripts/(check-workflow-script-triggers\.sh|tests/test-check-workflow-script-triggers\.sh)$'
         pass_filenames: false
+      - id: check-taskcompleted-verification
+        name: TaskCompleted agent prompt keeps its verification behaviours (#2301)
+        entry: ./scripts/check-taskcompleted-verification.sh --strict
+        language: script
+        files: '^(hooks-plugin/\.claude-plugin/plugin\.json|scripts/check-taskcompleted-verification\.sh)$'
+        pass_filenames: false
+      - id: test-check-taskcompleted-verification
+        name: TaskCompleted verification guard regression
+        entry: ./scripts/tests/test-check-taskcompleted-verification.sh
+        language: script
+        files: '^scripts/(check-taskcompleted-verification\.sh|tests/test-check-taskcompleted-verification\.sh)$'
+        pass_filenames: false
       - id: test-guard-worktree-root-discovery
         name: guards still scan from a worktree-shaped root (#2219)
         entry: ./scripts/tests/test-guard-worktree-root-discovery.sh
@@ -245,7 +257,14 @@ repos:
         name: skill version pins are a Renovate-managed shape (version-pinning.md)
         entry: bash ./scripts/check-version-pin-coverage.sh --strict
         language: system
-        files: '/skills/.*\.md$'
+        # The guard scans THREE surfaces, so the trigger must too (#2285):
+        # skill markdown, plugin scaffold templates (*-plugin/templates/**,
+        # whose pins are judged by PATH against renovate.json's manager
+        # patterns), and renovate.json itself (narrowing a pattern there can
+        # un-cover a template pin with no other file changing). Matched with
+        # `re.search` against repo-relative paths, so `^renovate\.json` pins
+        # the root config and leaves a nested one alone.
+        files: '(/skills/.*\.md|-plugin/templates/.*|^renovate\.json)$'
         pass_filenames: false
       - id: check-enabled-plugins-drift
         name: enabledPlugins matches the marketplace (plugin-enablement-drift)
@@ -370,7 +389,11 @@ repos:
         name: version-pin coverage guard regression
         entry: bash ./scripts/tests/test-check-version-pin-coverage.sh
         language: system
-        files: '^scripts/(check-version-pin-coverage\.sh|lib/extract-md-elements\.py|tests/test-check-version-pin-coverage\.sh)$'
+        # TEST J asserts on the guard's two TRIGGERS, which live in this file
+        # and in plugin-pr-checks.yml — neither a `scripts/` path. Both must be
+        # named here or editing a trigger never re-runs the test guarding it
+        # (the allowlist-drift shape in .claude/rules/regression-testing.md).
+        files: '^(scripts/(check-version-pin-coverage\.sh|lib/extract-md-elements\.py|tests/test-check-version-pin-coverage\.sh)|\.pre-commit-config\.yaml|\.github/workflows/plugin-pr-checks\.yml)$'
         pass_filenames: false
       - id: test-rewrite-skill-name-to-dir
         name: opencode skill-name rewrite regression

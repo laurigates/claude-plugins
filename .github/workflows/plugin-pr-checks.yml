@@ -42,8 +42,12 @@ jobs:
 
       - name: Get changed plugin files
         id: changed
+        env:
+          # Bind the run-context ref to an env var rather than interpolating
+          # `${{ }}` into the shell (github-actions-security.md, item 2).
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- '*-plugin/**' '.claude-plugin/marketplace.json' '**/skills/**' | head -50)
+          FILES=$(git diff --name-only "origin/$BASE_REF...HEAD" -- '*-plugin/**' '.claude-plugin/marketplace.json' '**/skills/**' | head -50)
           {
             echo "files<<EOF"
             echo "$FILES"
@@ -64,13 +68,23 @@ jobs:
           SKILL_FILES=$(echo "$FILES" | grep -c 'skills/' || true)
           echo "skill_count=$SKILL_FILES" >> "$GITHUB_OUTPUT"
 
+          # Version-pin coverage scans plugin scaffold templates and reads its
+          # manager patterns out of renovate.json, so a PR touching ONLY a
+          # template (or only renovate.json) must still run that guard (#2285).
+          # renovate.json is deliberately absent from $FILES above — that value
+          # is the plugin-scoped file list the Claude review step consumes — so
+          # this path class is counted with its own diff.
+          TEMPLATE_FILES=$(git diff --name-only "origin/$BASE_REF...HEAD" \
+            -- '*-plugin/templates/**' 'renovate.json' | grep -c . || true)
+          echo "template_count=$TEMPLATE_FILES" >> "$GITHUB_OUTPUT"
+
           # Detect whether this PR modifies this workflow file itself.
           # When it does, claude-code-action's OIDC token exchange is
           # blocked by GitHub (the workflow must match the default branch
           # to prevent privilege escalation), so the Claude Skill Quality
           # Review step is skipped to avoid a benign-but-red failure
           # (see issues #1472, #1495, #1508).
-          if git diff --name-only "origin/${{ github.base_ref }}...HEAD" \
+          if git diff --name-only "origin/$BASE_REF...HEAD" \
             -- .github/workflows/plugin-pr-checks.yml | grep -q .; then
             echo "workflow_changed=true" >> "$GITHUB_OUTPUT"
           else
@@ -153,6 +167,17 @@ jobs:
 
       - name: Check workflow-run scripts are reachable from their path triggers
         run: bash scripts/check-workflow-script-triggers.sh --strict
+
+      - name: Self-test the TaskCompleted verification guard (#2301)
+        # The artefact is a prompt STRING inside hooks-plugin's plugin.json, so
+        # plugin-compliance-check.sh cannot reach it. Self-test first: the guard
+        # as first written pinned the wrong invariant (it rejected the corrected
+        # prompt and passed the defective one), so proving the guard before it
+        # gates the tree is the whole point.
+        run: bash scripts/tests/test-check-taskcompleted-verification.sh
+
+      - name: Check the TaskCompleted agent prompt keeps its verification behaviours
+        run: bash scripts/check-taskcompleted-verification.sh --strict
 
       - name: Self-test guard discovery from a worktree-shaped root (#2219)
         # Worktree-isolated subagents are how most plugin work happens here, so
@@ -307,7 +332,11 @@ jobs:
         run: actionlint -color
 
       - name: Check version-pin coverage (version-pinning.md)
-        if: steps.changed.outputs.skill_count != '0'
+        # The guard is whole-repo, but the trigger must reach every surface it
+        # scans: skill markdown AND plugin scaffold templates / renovate.json.
+        # A PR adding a pin to a scaffold template and nothing else is exactly
+        # the shape the template scan exists for (#2285, same class as #2164).
+        if: steps.changed.outputs.skill_count != '0' || steps.changed.outputs.template_count != '0'
         run: bash scripts/check-version-pin-coverage.sh --strict
 
       - name: Check docs-index drift (README/PLUGIN-MAP/diagram counts)

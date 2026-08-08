@@ -4,16 +4,18 @@ description: Verify accumulated bug claims at upstream HEAD and dedup against tr
 allowed-tools: Agent, Read, Write, Edit, Bash(bash *), Bash(glab *), Bash(gh *), TodoWrite
 model: opus
 created: 2026-06-11
-modified: 2026-07-29
-reviewed: 2026-07-29
+modified: 2026-08-08
+reviewed: 2026-08-08
 ---
 
 # Verify Before Filing
 
-> Operational scaffolding — the complete Workflow script skeleton (agent
-> prompts, schemas, gate logic), the pacing rationale, and the data flow — lives
-> in [REFERENCE.md](REFERENCE.md). The paced filing loop itself is executable:
-> [`scripts/file-wave.sh`](scripts/file-wave.sh). This file is the decision layer.
+> Operational scaffolding ships beside this file, not inside it: Phases 1–2 as
+> [`workflows/verify-before-filing.workflow.js`](workflows/verify-before-filing.workflow.js)
+> (agent prompts, schemas, gate logic), Phase 3 as the executable
+> [`scripts/file-wave.sh`](scripts/file-wave.sh). The rationale for both — why each
+> constant is what it is — plus the worked example is in [REFERENCE.md](REFERENCE.md).
+> This file is the decision layer.
 
 A backlog of upstream bug candidates — audit docs, "file this later" notes,
 workaround commits — is a list of **hypotheses dated to when they were
@@ -39,6 +41,9 @@ own earlier report's by-catch. Half the backlog would have been noise.
 | You've filed on this upstream before (self-dup risk) | |
 
 ## The Pipeline
+
+Phases 1–2 also ship as a bundled harness — see
+[Workflow harness (template)](#workflow-harness-template) below.
 
 ### Phase 0 — Consolidate a candidate manifest
 
@@ -79,24 +84,10 @@ moved, versions drifted, framing corrections). Hard rule: **agents are
 read-only upstream** — GET requests only; nothing writes until the filing
 phase. State that rule verbatim in every agent prompt.
 
-Verify-agent prompt essentials (condensed):
-
-```
-You verify a candidate upstream bug against <forge>. READ-ONLY — GET only;
-never create/edit/comment upstream.
-Tooling: GITLAB_HOST=<instance> glab api "projects/<id>" (.default_branch),
-".../repository/files/<URL-ENCODED-PATH>/raw?ref=<ref>", ".../repository/tags",
-".../packages" for chart/package versions.
-Baseline: observed at <version, date>. Determine whether the flaw is STILL
-PRESENT at default-branch HEAD and the latest tag. Quote exact current
-content. Superseded version line => obsolete-version. Claim wrong on
-inspection => claim-invalid. Output is raw data for a machine (schema above).
-```
-
-Search-agent prompt adds: issue+MR search (state=all, several phrasings
-including exact error strings), group-wide search fallback, and "fetch the
-full bodies of our prior reports <list> and judge overlap including their
-by-catch findings".
+Both prompts, with the forge-tooling block and the schemas, are the
+`VERIFY_PROMPT` / `SEARCH_PROMPT` constants in
+[`workflows/verify-before-filing.workflow.js`](workflows/verify-before-filing.workflow.js) —
+adapt those rather than retyping them.
 
 **Gate precedence**: any duplicate kills the filing regardless of verdict;
 `could-not-verify` never files (record a human follow-up task instead).
@@ -173,6 +164,45 @@ issues afterwards (also paced). Created GitLab issues may surface as
   a follow-up task.
 - Post the disposition table to your tracking issue; close it if nothing
   known remains unfiled.
+
+## Workflow harness (template)
+
+`workflows/verify-before-filing.workflow.js` ships beside this skill. **It is a TEMPLATE to
+adapt, not a script to run verbatim.** Read it, then rewrite it for the work in front of you.
+It covers Phases 1–2 only; Phase 3 is [`scripts/file-wave.sh`](scripts/file-wave.sh), whose
+input contract is the harness's return value.
+
+**Adapt freely:** the agent prompts and their forge-tooling block (the shipped one is GitLab),
+the wave width, the house draft template, the effort tiers, and the search phrasings.
+
+**Preserve across any adaptation:** (a) the loop bound comes from the candidate manifest passed
+in as `args`, never from a prose "for each" — including the ≤5 read wave, which paces reads the
+way `file-wave.sh` paces writes; (b) the closed verdict vocabulary and the gate
+`['still-present','partially-fixed'].includes(verdict) && duplicateFound === 'no'`, **in that
+precedence** — a duplicate kills the filing regardless of verdict, and `could-not-verify` never
+files; (c) two barriers — the intra-candidate `parallel([verify, search])`, because the gate
+reads *both*, and the batch-dedup pass, which compares survivors to **each other** rather than
+only to the tracker. Also structural: the cold-read agent is **never** the drafter (that
+independence is the gate), exactly one revise round, and `DRAFT_SCHEMA` carries the issue
+**body** — a workflow script has no filesystem, so dedup cannot merge on a path.
+
+**Skip the harness when:** the manifest holds one or two candidates — that is a linear pass and
+the harness is pure overhead (the template aborts below three). A 24-candidate run is roughly
+100–140 agents. The steps above remain the authoritative description of *what* each stage must
+produce; the harness only fixes *how* the work is split.
+
+Two clauses this template carries. The second is unconditional here — this skill's entire
+output is a forge mutation:
+
+> Never `Workflow({resumeFromRunId})` to retry a few failed worktree agents — a resume re-runs
+> agents that already succeeded and opens duplicate PRs (#1868). Re-dispatch the failed units
+> fresh and sequentially after checking
+> `gh pr list --head <branch> --state all --json number,state`.
+
+> Push, PR creation, and GitHub mutations happen **only** in the single sequential finalise
+> stage, never inside a fanned-out agent. Here that stage is Phase 3
+> (`scripts/file-wave.sh`): every agent in the harness is read-only upstream, and the harness
+> returns data for the script to file.
 
 ## Verdict Vocabulary Notes
 

@@ -18,6 +18,11 @@
 #   - Author cannot be determined (network, an unresolvable `$var` selector in a
 #     loop, a bad PR number) → denied. "Can't verify" is not "safe".
 #   - Any command that is not a merge → allowed, immediately.
+#   - A command that merely MENTIONS `gh pr merge` — in prose, in a quoted
+#     argument, in a heredoc body — is not a merge. Detection is positional:
+#     the phrase must begin a command (issue #2307). The guard once denied
+#     `gh pr create` because the PR body quoted the phrase, and the agent
+#     retitled the user-visible PR to get past it.
 #
 # Deliberately does NOT defer to permission mode "auto" (unlike
 # branch-protection.sh). Auto mode's classifier models destructive-git and
@@ -74,45 +79,332 @@ case "$TOOL_NAME" in
     [ -z "$COMMAND" ] && exit 0
 
     # Fast bail-out: the overwhelming majority of Bash calls are not merges.
-    # Allow leading `VAR=value` assignments so an inline-bypass attempt is still
-    # recognised as a merge rather than slipping past this filter.
+    # This is a cheap SUPERSET prefilter only — it says "the phrase appears
+    # somewhere in the text", which is NOT the same as "this command merges".
+    # DETECT below is what actually decides. Anything the structural pass can
+    # match must also match here, or it would never be reached.
     if ! printf '%s' "$COMMAND" | grep -Eq 'gh[[:space:]]+pr[[:space:]]+merge|pulls/[^/[:space:]]+/merge'; then
       exit 0
     fi
 
-    # `gh api ... repos/O/R/pulls/N/merge` (any method; PUT is the merge verb,
-    # but a bare `gh api <path>` on that route also merges via POST-less PUT
-    # default in some wrappers, so don't gate on the method).
-    API_PATH=$(printf '%s' "$COMMAND" | grep -oE 'repos/[^/[:space:]]+/[^/[:space:]]+/pulls/[0-9]+/merge' | head -1 || true)
-    if [ -n "$API_PATH" ]; then
-      PR_REPO=$(printf '%s' "$API_PATH" | awk -F/ '{print $2"/"$3}')
-      PR_SELECTOR=$(printf '%s' "$API_PATH" | awk -F/ '{print $5}')
-    else
-      # Isolate the `gh pr merge` invocation: take everything after the literal
-      # `merge`, stopping at the first shell operator so a trailing `&& echo ok`
-      # cannot be mistaken for the PR selector.
-      SEGMENT=$(printf '%s' "$COMMAND" \
-        | sed -n 's/.*gh[[:space:]]\{1,\}pr[[:space:]]\{1,\}merge[[:space:]]*//p' \
-        | sed 's/[;&|].*//' || true)
+    # -----------------------------------------------------------------------
+    # Structural pass (issue #2307). The old code grepped the raw command text,
+    # so ANY mention of the phrase read as a merge: `echo "docs: … gh pr merge"`
+    # was denied, and a real `gh pr create` was blocked because its --body
+    # heredoc quoted the phrase (the agent then RETITLED the user-visible PR to
+    # get past the guard — the guard distorting product content is the bug).
+    #
+    # The awk below walks the command once and produces a length-preserving
+    # MASKED copy in which heredoc bodies and quoted argument values are
+    # replaced by `X`. Because masking is character-for-character, byte offsets
+    # in the mask and in the original agree exactly, so structure is decided on
+    # the mask while values are still read from the original.
+    #
+    # It then splits the mask into statements at unquoted `;`, `&`, `|`, `(`,
+    # `)`, backticks and newlines, strips leading `VAR=value` assignments,
+    # shell keywords (`do`, `then`, …), redirections and command wrappers from
+    # each, and reports the FIRST statement whose command word is a merge —
+    # never the last, so a real merge followed by prose still yields the real
+    # merge's selector.
+    #
+    # A quoted string OR a heredoc body is scanned as nested command text (not
+    # masked) when the statement's effective command word is a shell invoker
+    # (`bash -c '…'`, `eval "…"`, `bash <<EOF … EOF`), so feeding a merge to a
+    # shell as script text does not evade the guard. "Effective" means the
+    # wrapper prefix is skipped first, so `sudo -u ci bash -c '…'` is a shell
+    # invoker too.
+    #
+    # Why awk and not `ast-grep --lang bash` (used by bash-antipatterns.sh):
+    # that hook is a STYLE nudge and is designed to fail OPEN where ast-grep is
+    # absent. This hook is a security guard — a second, weaker code path for
+    # "ast-grep missing" is exactly the path an agent would end up on, and
+    # failing open there would hand back the hole this hook exists to close.
+    # awk is POSIX-guaranteed, so there is one path and it is always structural.
+    # -----------------------------------------------------------------------
+    DETECT=$(printf '%s' "$COMMAND" | awk '
+      { buf = (NR > 1 ? buf "\n" $0 : $0) }
+      END {
+        SQ = sprintf("%c", 39); DQ = "\""; BT = sprintf("%c", 96)
+        split("eval bash sh zsh ksh dash nix-shell", sl, " "); for (k in sl) shcmd[sl[k]] = 1
 
-      # First positional token, skipping flags AND the values of the flags that
-      # take one. Without the skip list, `gh pr merge --subject "feat: x" 5`
-      # would read `feat:` as the PR selector and check the wrong (or no) PR.
-      PR_SELECTOR=$(printf '%s\n' "$SEGMENT" | awk '
-        BEGIN { split("-b --body -F --body-file -m --match-head-commit -R --repo -s --subject --author-email -t --title", v, " ")
-                for (i in v) valued[v[i]] = 1 }
-        { for (i = 1; i <= NF; i++) {
-            if (skip)              { skip = 0; continue }
-            if ($i ~ /^-/)         { if ($i in valued) skip = 1; continue }
-            print $i; exit
-        } }')
-      # --repo/-R may appear either as a separate token or as --repo=OWNER/REPO.
-      PR_REPO=$(printf '%s\n' "$SEGMENT" | awk '
-        { for (i = 1; i <= NF; i++) {
-            if (($i == "-R" || $i == "--repo") && (i + 1) <= NF) { print $(i+1); exit }
-            if ($i ~ /^--repo=/) { sub(/^--repo=/, "", $i); print $i; exit }
-        } }')
-    fi
+        merge_re  = "^gh[ \t]+pr[ \t]+merge"
+        # Unanchored twin, used only once a wrapper has been stripped: after
+        # `sudo -u ci` / `find … -exec` the command word is no longer at the
+        # head of the statement, and a wrapper runs whatever follows it.
+        wmerge_re = "[ \t]gh[ \t]+pr[ \t]+merge"
+        api_re    = "repos/[^/ \t]+/[^/ \t]+/pulls/[0-9]+/merge"
+        qcls      = "[" DQ SQ "]"
+        api_req   = "repos/[^/ \t" DQ SQ "]+/[^/ \t" DQ SQ "]+/pulls/[0-9]+/merge"
+        asg_re    = "^[A-Za-z_][A-Za-z0-9_]*=[^ \t]*"
+        kw_re     = "^(do|then|else|elif|if|while|until|time|!|[{])"
+        kww_re    = "^(do|then|else|elif|if|while|until|time|!|[{])$"
+        # A redirection is not a command word and not a PR selector: bash strips
+        # it from the argv gh receives, so `gh pr merge 2>/dev/null 2231` really
+        # merges 2231 and `xargs -n1 gh pr merge < prs.txt` really merges.
+        red_body  = "([0-9]*(>>|>|<|<>|>&|<&)|&>>|&>)"
+        red_re    = "^" red_body
+        # Wrappers that RUN another command, so the merge is theirs to execute.
+        wnames    = "command|builtin|exec|nohup|env|stdbuf|nice|ionice|setsid|caffeinate|sudo|doas|timeout|xargs|find|parallel|watch|script|flock|chronic|uv|uvx|npx|bunx"
+        wrap_re   = "^(" wnames ")"
+        wrapw_re  = "^(" wnames ")$"
+        warg_re   = "^(-[^ \t]*|[0-9]+[smhd]?)"
+        # Only these command words can reach the REST-API merge route. Without
+        # the gate, `rg repos/o/r/pulls/2231/merge docs/` — a search for the
+        # route, not a call to it — was denied (issue #2307 all over again).
+        anames    = "gh|curl|wget|http|https|xh|hurl"
+        apicmd_re = "^(" anames ")[ \t]"
+        wapicmd_re= "[ \t](" anames ")[ \t]"
+
+        n = length(buf); m = ""; q = 0; nomask = 0
+        in_hd = 0; hd_delim = ""; hd_strip = 0; hd_nomask = 0; curline = ""; pn = 0
+        ns = 1; st[1] = 1; cw = ""; cw_done = 0; nest = 0; wrapm = 0
+        i = 1
+        while (i <= n) {
+          c = substr(buf, i, 1)
+          if (in_hd) {                                   # inside a heredoc body
+            if (c == "\n") {
+              t = curline; if (hd_strip) sub(/^\t+/, "", t)
+              m = m "\n"; curline = ""
+              if (hd_nomask) { st[++ns] = i + 1; cw = ""; cw_done = 0; wrapm = 0 }
+              if (t == hd_delim) {
+                if (pn > 0) { hd_delim = hdq[1]; hd_strip = hds[1]; hd_nomask = hdn[1]
+                              for (k = 1; k < pn; k++) { hdq[k] = hdq[k+1]; hds[k] = hds[k+1]; hdn[k] = hdn[k+1] }
+                              pn-- }
+                else { in_hd = 0; hd_nomask = 0 }
+              }
+            } else { m = m (hd_nomask ? c : "X"); curline = curline c }
+            i++; continue
+          }
+          if (q != 1 && c == "\\") {                     # escape / line continuation
+            nx = substr(buf, i + 1, 1)
+            if (nx == "\n") m = m "  "
+            else if (q == 0) m = m "\\" nx
+            else m = m "\\" (nomask ? nx : "X")
+            i += 2; continue
+          }
+          if (q != 0) {                                  # inside a quoted value
+            if ((q == 1 && c == SQ) || (q == 2 && c == DQ)) {
+              q = 0; m = m c
+              if (nomask) { st[++ns] = i + 1; nomask = 0 }
+            } else if (nomask && (c == ";" || c == "&" || c == "|" || c == "(" || c == ")" || c == BT || c == "\n")) {
+              # Nested command TEXT, so its operators separate statements too:
+              # `bash -c "echo hi; gh pr merge 5"` is two commands, not one.
+              m = m c; st[++ns] = i + 1; cw = ""; cw_done = 0; wrapm = 0
+            } else m = m (nomask ? c : "X")
+            i++; continue
+          }
+          if (c == SQ || c == DQ) {
+            q = (c == SQ ? 1 : 2); m = m c; nomask = nest
+            if (nomask) st[++ns] = i + 1
+            if (cw != "") cw_done = 1
+            i++; continue
+          }
+          # `` ` `` splits like `(` does — legacy command substitution starts a
+          # new command, so `X=`gh pr merge 5`` is a merge, not an assignment.
+          if (c == ";" || c == "&" || c == "|" || c == "(" || c == ")" || c == BT || c == "\n") {
+            m = m c; st[++ns] = i + 1; cw = ""; cw_done = 0; nest = 0; wrapm = 0
+            if (c == "\n" && pn > 0) {                   # queued heredoc starts here
+              hd_delim = hdq[1]; hd_strip = hds[1]; hd_nomask = hdn[1]
+              for (k = 1; k < pn; k++) { hdq[k] = hdq[k+1]; hds[k] = hds[k+1]; hdn[k] = hdn[k+1] }
+              pn--; in_hd = 1; curline = ""
+            }
+            i++; continue
+          }
+          if (c == " " || c == "\t") {
+            m = m c
+            # Work out the EFFECTIVE command word of this statement, so nest
+            # (does a shell interpret the quoted string / heredoc body?)
+            # survives an assignment, a keyword, or a wrapper in front of it.
+            if (!cw_done && cw != "") {
+              if (cw ~ /^[A-Za-z_][A-Za-z0-9_]*=/) cw = ""    # leading assignment
+              else if (cw in shcmd) { cw_done = 1; nest = 1 }
+              else if (cw ~ kww_re) cw = ""                   # shell keyword
+              else if (cw ~ wrapw_re) { cw = ""; wrapm = 1 }   # `sudo`, `env`, …
+              else if (wrapm) cw = ""                         # args of a wrapper
+              else cw_done = 1
+            }
+            i++; continue
+          }
+          if (c == "<" && substr(buf, i + 1, 1) == "<" && substr(buf, i + 2, 1) != "<") {
+            j = i + 2; strip = 0
+            if (substr(buf, j, 1) == "-") { strip = 1; j++ }
+            while (substr(buf, j, 1) == " " || substr(buf, j, 1) == "\t") j++
+            qc = substr(buf, j, 1); delim = ""
+            if (qc == SQ || qc == DQ) {
+              j++
+              while (j <= n && substr(buf, j, 1) != qc) { delim = delim substr(buf, j, 1); j++ }
+              j++
+            } else {
+              while (j <= n && substr(buf, j, 1) ~ /[A-Za-z0-9_]/) { delim = delim substr(buf, j, 1); j++ }
+            }
+            # hdn: is this body script text? `bash <<EOF … EOF` feeds a shell,
+            # so its body is scanned exactly as `bash -c "…"` already is;
+            # `cat <<EOF` / `gh pr create --body-file - <<EOF` feed prose.
+            if (delim != "") { pn++; hdq[pn] = delim; hds[pn] = strip; hdn[pn] = nest
+                               m = m substr(buf, i, j - i); i = j; continue }
+          }
+          m = m c
+          if (!cw_done) cw = cw c
+          i++
+        }
+        st[ns + 1] = n + 2
+
+        for (s = 1; s <= ns; s++) {
+          a = st[s]; b = st[s + 1] - 2
+          if (b > n) b = n
+          if (b < a) continue
+          sm = substr(m, a, b - a + 1); so = substr(buf, a, b - a + 1)
+          off = 0; wrapped = 0
+          while (1) {
+            while (substr(sm, off + 1, 1) == " " || substr(sm, off + 1, 1) == "\t") off++
+            rest = substr(sm, off + 1)
+            if (match(rest, asg_re)) {
+              nxt = substr(rest, RLENGTH + 1, 1)
+              if (nxt == "" || nxt == " " || nxt == "\t") { off += RLENGTH; continue }
+            }
+            if (match(rest, kw_re)) {
+              nxt = substr(rest, RLENGTH + 1, 1)
+              if (nxt == "" || nxt == " " || nxt == "\t") { off += RLENGTH; continue }
+            }
+            if (match(rest, red_re)) {                   # leading redirection
+              tok = rest; sub(/[ \t].*$/, "", tok); off += length(tok)
+              if (tok ~ ("^" red_body "$")) {             # bare operator: skip its target
+                while (substr(sm, off + 1, 1) == " " || substr(sm, off + 1, 1) == "\t") off++
+                t2 = substr(sm, off + 1); sub(/[ \t].*$/, "", t2); off += length(t2)
+              }
+              continue
+            }
+            if (match(rest, wrap_re)) {
+              nxt = substr(rest, RLENGTH + 1, 1)
+              if (nxt == " " || nxt == "\t") { off += RLENGTH; wrapped = 1; continue }
+            }
+            if (wrapped && match(rest, warg_re)) {
+              nxt = substr(rest, RLENGTH + 1, 1)
+              if (nxt == "" || nxt == " " || nxt == "\t") { off += RLENGTH; continue }
+            }
+            break
+          }
+          cm = substr(sm, off + 1); co = substr(so, off + 1)
+          # Anchored at the command word. Once a wrapper has been seen the
+          # command word may sit behind arguments the stripper cannot classify
+          # (`sudo -u ci gh pr merge 5`, `find . -name x -exec gh pr merge 5 ;`),
+          # and a wrapper EXECUTES what follows it — so scan the rest of the
+          # statement. The scan runs on the MASK, so a quoted phrase behind a
+          # wrapper (`timeout 60 echo "gh pr merge 5"`) is still prose.
+          hit = 0
+          if (match(cm, merge_re)) hit = 1
+          else if (wrapped && match(cm, wmerge_re)) hit = 1
+          if (hit) {
+            e = RSTART + RLENGTH
+            nxt = substr(cm, e, 1)
+            if (nxt == "" || nxt == " " || nxt == "\t") {
+              segm = substr(cm, e); sego = substr(co, e)
+              gsub(/\n/, " ", segm); gsub(/\n/, " ", sego)
+              print "KIND=merge"; print "SEG=" sego; print "MSEG=" segm
+              exit
+            }
+          }
+          # `gh api ... repos/O/R/pulls/N/merge` (any method; PUT is the merge
+          # verb, but a bare `gh api <path>` on that route also merges), and the
+          # same route reached by curl. Gated on the command word: only a client
+          # that can CALL the route counts, so `rg .../pulls/5/merge docs/` and
+          # `echo .../pulls/5/merge` are searches and prose, not merges.
+          # Matched on the MASK, so the path must be a real argument — a route
+          # quoted inside prose does not count, unless the quoted argument IS
+          # exactly the route.
+          isapi = 0
+          if (match(cm, apicmd_re)) isapi = 1
+          else if (wrapped && match(cm, wapicmd_re)) isapi = 1
+          if (isapi) {
+            if (match(cm, api_re)) { print "KIND=api"; print "APIPATH=" substr(co, RSTART, RLENGTH); exit }
+            if (match(co, qcls api_req qcls)) { print "KIND=api"; print "APIPATH=" substr(co, RSTART + 1, RLENGTH - 2); exit }
+          }
+        }
+      }' || true)
+
+    # No statement in the command actually merges → not our business. This is
+    # the fix for #2307: a mention is not an invocation.
+    [ -z "$DETECT" ] && exit 0
+
+    case "$(printf '%s\n' "$DETECT" | sed -n 's/^KIND=//p')" in
+      api)
+        API_PATH=$(printf '%s\n' "$DETECT" | sed -n 's/^APIPATH=//p')
+        PR_REPO=$(printf '%s' "$API_PATH" | awk -F/ '{print $2"/"$3}')
+        PR_SELECTOR=$(printf '%s' "$API_PATH" | awk -F/ '{print $5}')
+        ;;
+      merge)
+        # First positional token of the merge invocation, skipping flags AND the
+        # values of the flags that take one. Without the skip list,
+        # `gh pr merge --subject "feat: x" 5` would read `feat:` as the PR
+        # selector and check the wrong (or no) PR. Tokens are cut from the
+        # MASKED segment (so a space inside a quoted value does not split a
+        # token) and read back from the original at the same offsets.
+        MERGE_SEG=$(printf '%s\n' "$DETECT" | sed -n 's/^SEG=//p')
+        MERGE_MSEG=$(printf '%s\n' "$DETECT" | sed -n 's/^MSEG=//p')
+        # Passed via the environment, not `awk -v`: -v applies backslash escape
+        # processing to the value, which would mangle a command containing one.
+        PARSED=$(SEG="$MERGE_SEG" MSEG="$MERGE_MSEG" awk '
+          function unq(s,   a, b) {
+            if (length(s) >= 2) {
+              a = substr(s, 1, 1); b = substr(s, length(s), 1)
+              if ((a == SQ || a == DQ) && a == b) return substr(s, 2, length(s) - 2)
+            }
+            return s
+          }
+          BEGIN {
+            SQ = sprintf("%c", 39); DQ = "\""
+            seg = ENVIRON["SEG"]; mseg = ENVIRON["MSEG"]
+            split("-b --body -F --body-file -m --match-head-commit -R --repo -s --subject --author-email -t --title", v, " ")
+            for (i in v) valued[v[i]] = 1
+            n = length(mseg); k = 0; i = 1
+            while (i <= n) {
+              c = substr(mseg, i, 1)
+              if (c == " " || c == "\t") { i++; continue }
+              s = i
+              while (i <= n) { c = substr(mseg, i, 1); if (c == " " || c == "\t") break; i++ }
+              k++; tm[k] = substr(mseg, s, i - s); to[k] = substr(seg, s, i - s)
+            }
+            # A redirection is not an argument: bash removes it before gh sees
+            # argv, so `gh pr merge 2>/dev/null 2231` merges 2231 and
+            # `gh pr merge < prs.txt` merges the current branch PR. Reading the
+            # redirection as the selector would name a PR that does not exist.
+            red = "([0-9]*(>>|>|<|<>|>&|<&)|&>>|&>)"
+            sel = ""; skip = 0
+            for (j = 1; j <= k; j++) {
+              if (skip)             { skip = 0; continue }
+              if (tm[j] ~ ("^" red "$")) { skip = 1; continue }   # operator, target next
+              if (tm[j] ~ ("^" red))     { continue }             # target attached
+              if (tm[j] ~ /^-/)     { if (tm[j] in valued) skip = 1; continue }
+              sel = unq(to[j]); break
+            }
+            rep = ""
+            # --repo/-R may appear either as a separate token or as --repo=OWNER/REPO.
+            for (j = 1; j <= k; j++) {
+              if ((tm[j] == "-R" || tm[j] == "--repo") && j < k) { rep = unq(to[j + 1]); break }
+              if (tm[j] ~ /^--repo=/) { rep = unq(substr(to[j], 8)); break }
+            }
+            print "SELECTOR=" sel
+            print "REPO=" rep
+          }' || true)
+        PR_SELECTOR=$(printf '%s\n' "$PARSED" | sed -n 's/^SELECTOR=//p')
+        PR_REPO=$(printf '%s\n' "$PARSED" | sed -n 's/^REPO=//p')
+
+        # NOTE: no selector-SHAPE gate here, deliberately. An earlier revision
+        # allowed a merge whose selector token did not look like a number, URL
+        # or branch name, reasoning that such a token meant a spurious match.
+        # It did not: the command word `gh pr merge` is already established
+        # structurally by this point, so the statement IS a merge whatever its
+        # argument looks like — and the shape whitelist was narrower than a
+        # legal git ref (`_wip`, `feat/a,b`, `feat/100%-done` all failed it),
+        # so an external contributor could pick a branch name that turned the
+        # guard off. Whether the selector resolves is the author check's
+        # business below, which denies when it cannot be read: "cannot verify"
+        # is not "safe".
+        ;;
+      *)
+        exit 0
+        ;;
+    esac
     ;;
   *)
     exit 0

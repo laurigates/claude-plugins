@@ -7,132 +7,44 @@ Complete operational scaffolding from the run that motivated the skill
 ## Data flow
 
 ```
-wave2-candidates.json ──► Workflow script (per candidate):
-                            parallel[ verify-agent, search-agent ]
-                            └─ gate ─► draft-agent ─► coldread(haiku) ─► revise
-                          ◄── result JSON: {id, disposition, draftPath, ...}
-result JSON ──► file-wave.sh (paced) ──► filed-urls.txt
+wave2-candidates.json ──► workflows/verify-before-filing.workflow.js
+                            per wave of ≤5 candidates:
+                              parallel[ verify-agent, search-agent ]
+                              └─ gate ─► draft-agent ─► coldread(haiku) ─► revise
+                            then ONE batch-dedup agent over all survivors
+                          ◄── {results:[{id, disposition, draftPath, title,
+                                         targetProject}], merged, dispositions}
+result JSON ──► scripts/file-wave.sh (paced) ──► filed-urls.txt
 filed-urls.txt + dispositions ──► source-doc annotations, tracking-issue
                                   comment, follow-up tasks
 ```
 
-## Phase 1+2 — Workflow script skeleton
+## Phase 1+2 — the harness: why the shape is what it is
 
-Run with the `Workflow` tool. Candidates embedded or parsed from args
-(`const CANDIDATES = (typeof args === 'string') ? JSON.parse(args) : args` —
-args can arrive stringified).
+The script itself is **not** here. It ships as
+[`workflows/verify-before-filing.workflow.js`](workflows/verify-before-filing.workflow.js) and
+is framed by SKILL.md § "Workflow harness (template)", which names what an adapter may rewrite.
+Same split as Phase 3 below: the structure lives in the file, the *rationale* stays here
+(`.claude/rules/workflow-vs-skill.md`, `.claude/rules/offload-to-deterministic-substrate.md`).
+A skeleton kept in both places drifts — this one already had, predating the wave cap, the
+body-carrying draft schema, and the batch-dedup barrier.
 
-```javascript
-export const meta = {
-  name: 'verify-before-filing',
-  description: 'Verify candidates at upstream HEAD, dedup, draft + cold-read gate',
-  phases: [
-    { title: 'Verify' }, { title: 'Search' }, { title: 'Draft' },
-    { title: 'ColdRead', model: 'haiku' }, { title: 'Revise' },
-  ],
-}
+Read the file for the prompts, the schemas, and the control flow. What a future run has to
+re-decide is below.
 
-const DIR = '/abs/path/to/drafts'
+| Decision | Value | Why |
+|---|---|---|
+| read wave | ≤5 candidates in flight | The forge's issue endpoints are aggressively rate-limited (Phase 3 paces *writes* at 70 s for that reason), and the reads hit the same instance. Unbounded, a 24-candidate manifest fires 48 concurrent read agents. Raise only with evidence. |
+| harness floor | <3 candidates → abort | Two candidates is a linear pass; the harness would spend agent preambles to save nothing. |
+| gate precedence | duplicate **before** verdict | A duplicate kills the filing however present the bug is. `could-not-verify` never files — it becomes a human follow-up task. |
+| revise rounds | exactly 1 | A fixed gate, not a loop-until-clear: a second cold reader is not a better judge of the same text, and an unbounded critique loop has no independent stop condition (`.claude/rules/loop-integrity.md`). |
+| cold reader | `model:'haiku'`, never the drafter | The reader is the *measurement instrument* — "can a low-context reader act on this text alone?". A stronger model answers an easier question, and the drafter judging its own draft optimises for done. |
+| `DRAFT_SCHEMA` carries `body` | required, alongside `path` | Batch dedup and the cold read run inside the workflow, which has **no filesystem** and cannot open a path. `path` stays required because Phase 3 reads the draft off disk. |
+| batch dedup | one agent, after all waves | The per-candidate search compared each draft to the *tracker*. Nothing had compared the drafts to *each other* — and two audit docs routinely describe one upstream defect. |
+| return shape | `{results:[…], merged, dispositions}` | `results` is exactly what `scripts/file-wave.sh` normalises and files; `dispositions` is the Phase 4 deliverable. |
 
-const GLAB = `Tooling (READ-ONLY — GET requests only, never create/edit/comment upstream):
-- GITLAB_HOST=<instance> glab api "projects/<id-or-urlencoded-path>" (.default_branch)
-- ... "projects/<id>/repository/files/<URL-ENCODED-PATH>/raw?ref=<ref>" (slashes as %2F)
-- ... "projects/<id>/repository/tags?per_page=20"
-- ... "groups/<urlencoded-group>/search?scope=issues&search=<term>"
-- ... "projects/<id>/packages?per_page=100&sort=desc" (chart/package versions)
-Known project IDs: <paste your map>. When a candidate says "locate project",
-resolve via groups/<g>/projects?include_subgroups=true&search=<name>.`
-
-const VERIFY_SCHEMA = { type: 'object', properties: {
-  verdict: { type: 'string', enum: ['still-present', 'partially-fixed',
-    'fixed-upstream', 'obsolete-version', 'claim-invalid', 'could-not-verify'] },
-  targetProject: { type: 'string' },
-  evidence: { type: 'string', description: 'quoted current content with paths + refs' },
-  checkedRefs: { type: 'string' }, notes: { type: 'string' } },
-  required: ['verdict', 'targetProject', 'evidence', 'checkedRefs', 'notes'] }
-
-const SEARCH_SCHEMA = { type: 'object', properties: {
-  duplicateFound: { type: 'string', enum: ['yes', 'possibly', 'no'] },
-  hits: { type: 'array', items: { type: 'object', properties: {
-    url: { type: 'string' }, title: { type: 'string' },
-    state: { type: 'string' }, relevance: { type: 'string' } },
-    required: ['url', 'title', 'state', 'relevance'] } },
-  wave1Overlap: { type: 'string', description: 'overlap with OUR prior reports incl. by-catches, or "none"' },
-  searchedTerms: { type: 'string' } },
-  required: ['duplicateFound', 'hits', 'wave1Overlap', 'searchedTerms'] }
-
-const PRIOR = `Our prior filed reports (fetch bodies via glab api
-"projects/<id>/issues/<iid>" and check overlap INCLUDING by-catch findings):
-- <project> issues <iids> (<one-line topic each>)`
-
-const results = await pipeline(CANDIDATES, async (item) => {
-  const [verify, search] = await parallel([
-    () => agent(
-      `You verify a candidate upstream bug. ${GLAB}\n\nBaseline: observed at
-"${item.observed_version}". Is the flaw STILL PRESENT at default-branch HEAD
-and the latest tag? Quote exact current content. Superseded line =>
-obsolete-version. Claim wrong on inspection => claim-invalid.\n\n## ${item.id}
-(${item.slug})\nTargets: ${item.targets.join(' ; ')}\n\n${item.claim}\n\nRaw
-data for a machine.`,
-      { label: `verify:${item.id}`, phase: 'Verify', schema: VERIFY_SCHEMA }),
-    () => agent(
-      `You check whether a bug was ALREADY reported. ${GLAB}\n\n${PRIOR}\n\n
-Search target project(s) + group-wide (issues+MRs, state=all, several
-phrasings incl. exact error strings), then judge overlap with our prior
-reports.\n\n## ${item.id}\nBug: ${item.claim}\n\nRaw data for a machine.`,
-      { label: `search:${item.id}`, phase: 'Search', schema: SEARCH_SCHEMA }),
-  ])
-  if (!verify || !search) return { id: item.id, disposition: 'agent-error' }
-
-  // Gate precedence: duplicate kills regardless of verdict; could-not-verify never files.
-  const passes = ['still-present', 'partially-fixed'].includes(verify.verdict)
-    && search.duplicateFound === 'no'
-  if (!passes) {
-    const why = search.duplicateFound !== 'no'
-      ? `duplicate: ${search.wave1Overlap}` : verify.verdict
-    log(`${item.id} gated out: ${why}`)
-    return { id: item.id, slug: item.slug, disposition: why, verify, search }
-  }
-
-  const draft = await agent(
-    `Draft an upstream issue per the house template (read 1-2 prior examples
-in ${DIR}). Target: ${verify.targetProject}. Claim: ${item.claim}\nVerified
-evidence (pin blob links to these refs):\n${verify.evidence}\nChecked:
-${verify.checkedRefs}\nNotes: ${verify.notes}\nMine real error output from
-PRs ${JSON.stringify(item.evidence_prs)} via gh pr view <n> --json body.
-Write to ${DIR}/${item.id}-${item.slug}.md.`,
-    { label: `draft:${item.id}`, phase: 'Draft',
-      schema: { type: 'object', properties: { path: { type: 'string' },
-        title: { type: 'string' }, targetProject: { type: 'string' } },
-        required: ['path', 'title', 'targetProject'] } })
-  if (!draft) return { id: item.id, disposition: 'draft-failed', verify, search }
-
-  // Cold-read gate (see agent-patterns-plugin:cold-read-gate)
-  let cold = await agent(
-    `You are an upstream maintainer triaging a newly filed issue. NO context
-beyond the text. Read ONLY ${draft.path}. QUESTIONS / HESITATIONS / verdict.
-Ignore the top HTML comments (stripped before filing); the issue is filed on
-the target project's own tracker.`,
-    { label: `coldread:${item.id}`, phase: 'ColdRead', model: 'haiku',
-      schema: { type: 'object', properties: {
-        verdict: { type: 'string', enum: ['clear', 'needs-revision'] },
-        critique: { type: 'string' } }, required: ['verdict', 'critique'] } })
-  if (cold?.verdict === 'needs-revision') {
-    await agent(
-      `Revise ${draft.path} in place per this critique. Apply only GENUINE
-gaps (links, jargon, evidence, single-fix); ignore test artifacts (HTML
-comments, implicit repo).\n\n${cold.critique}`,
-      { label: `revise:${item.id}`, phase: 'Revise',
-        schema: { type: 'object', properties: { summaryOfChanges:
-          { type: 'string' } }, required: ['summaryOfChanges'] } })
-    cold = await agent(/* one re-read, same coldread prompt */)
-  }
-  return { id: item.id, slug: item.slug, disposition: 'file',
-    draftPath: draft.path, title: draft.title,
-    targetProject: draft.targetProject, verify, search }
-})
-return results.filter(Boolean)
-```
+The forge-tooling and prior-reports prompt blocks (the GitLab worked example) are constants at
+the top of the `.js` — `FORGE_TOOLING` and `PRIOR_REPORTS`. Swap them wholesale for `gh`.
 
 ## Phase 3 — Paced filing: why the numbers are what they are
 
