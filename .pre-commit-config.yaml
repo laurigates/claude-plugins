@@ -253,6 +253,20 @@ repos:
         language: script
         files: '(SKILL\.md|skill\.md|REFERENCE\.md)$'
         pass_filenames: false
+      - id: check-dead-api-endpoints
+        name: skills and scripts call no retired REST endpoint (#2321)
+        entry: ./scripts/check-dead-api-endpoints.sh --strict
+        language: script
+        # .sh included on purpose — the defect this guards lived in a script,
+        # not a doc, where a 410 was swallowed and misreported as a scope error.
+        files: '(\.md|\.sh)$'
+        pass_filenames: false
+      - id: check-dead-api-endpoints-selftest
+        name: dead-endpoint guard regression
+        entry: ./scripts/tests/test-check-dead-api-endpoints.sh
+        language: script
+        files: '^scripts/(check-dead-api-endpoints\.sh|tests/test-check-dead-api-endpoints\.sh)$'
+        pass_filenames: false
       - id: check-version-pin-coverage
         name: skill version pins are a Renovate-managed shape (version-pinning.md)
         entry: bash ./scripts/check-version-pin-coverage.sh --strict
