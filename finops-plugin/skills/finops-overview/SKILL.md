@@ -65,7 +65,7 @@ Workflows missing concurrency: 2
 
 | Context | Command |
 |---------|---------|
-| Org billing (JSON) | `gh api "/orgs/{org}/settings/billing/actions" --jq '.'` |
+| Org billing (JSON) | `gh api "/orgs/{org}/settings/billing/usage" --jq '.usageItems'` |
 | Repo cache summary | `gh api "/repos/{owner}/{repo}/actions/caches" --jq '{total: .total_count}'` |
 | Workflow list | `gh workflow list --json name,state` |
 | Recent runs (compact) | `gh run list --limit 20 --json status,conclusion,name` |

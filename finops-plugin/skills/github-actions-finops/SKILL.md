@@ -52,8 +52,9 @@ bash "${CLAUDE_SKILL_DIR}/scripts/github-actions-finops.sh" --home-dir "$HOME" -
 Pass `--repo $OWNER/$REPO` (and `--org $GITHUB_ORG`) when the script can't infer
 the target from the current checkout. Parse `STATUS=` and `ISSUES:` from the
 output — `STATUS=WARN` plus the `SEVERITY=WARN TYPE=...` rows are the flagged
-waste patterns with their suggested fixes. `BILLING_AVAILABLE=false` means org
-admin access was unavailable (not an error).
+waste patterns with their suggested fixes. `BILLING_AVAILABLE=false` means the
+usage endpoint returned nothing — either the `admin:org` scope is missing or the
+org has no Actions usage in the returned window (not an error either way).
 
 ### Step 3: Analyze workflow files
 
@@ -68,7 +69,7 @@ Read each workflow file from `.github/workflows/` and check for:
 Synthesize a summary from the script output (Step 2) and the workflow-file
 findings (Step 3):
 
-1. **Billing summary** (if `BILLING_AVAILABLE=true`): minutes used, paid minutes
+1. **Billing summary** (if `BILLING_AVAILABLE=true`): `BILLING_MINUTES`, plus `BILLING_NET_USD` (what is actually billed) and `BILLING_GROSS_USD` (exposure before the public-repo discount). Quote **net** as the spend — a public repo can show a large gross and cost nothing
 2. **Workflow run counts**: from the `WORKFLOW_RUNS=` / `WORKFLOW_DURATION_SECONDS=` lines
 3. **Waste indicators**: the `SEVERITY=WARN TYPE=...` rows (skipped ratio, bot triggers, high-frequency) plus the workflow-file gaps from Step 3 (missing concurrency / path filters / bot guards)
 4. **Recommendations**: the script's per-pattern fix suggestions, plus the workflow-YAML fixes you identified by reading the files
@@ -77,9 +78,7 @@ findings (Step 3):
 
 | Endpoint | Purpose | Admin Required |
 |----------|---------|----------------|
-| `/orgs/{org}/settings/billing/actions` | Minutes usage | Yes |
-| `/orgs/{org}/settings/billing/packages` | Package bandwidth | Yes |
-| `/orgs/{org}/settings/billing/shared-storage` | Storage billing | Yes |
+| `/orgs/{org}/settings/billing/usage` | Actions minutes, packages, storage — all products, as per-repo line items | Yes |
 | `/orgs/{org}/actions/cache/usage` | Org cache stats | No |
 | `/repos/{owner}/{repo}/actions/runs` | Workflow runs | No |
 | `/repos/{owner}/{repo}/actions/workflows` | Workflow definitions | No |
@@ -88,7 +87,7 @@ findings (Step 3):
 
 | Context | Command |
 |---------|---------|
-| Org billing | `gh api /orgs/$ORG/settings/billing/actions --jq '{included_minutes, total_minutes_used}'` |
+| Org billing | `gh api "/orgs/$ORG/settings/billing/usage" --jq '[.usageItems[] \| select(.product == "actions")] \| {minutes: ([.[].quantity] \| add), net: ([.[].netAmount] \| add)}'` |
 | List repos | `gh repo list $ORG --json nameWithOwner --limit 100` |
 | Workflow runs | `gh api "/repos/$O/$R/actions/runs?per_page=100" --jq '.workflow_runs' --jq 'length'` |
 | Skipped count | `gh api "..." --jq '[.workflow_runs[] | select(.conclusion == "skipped")] | length'` |

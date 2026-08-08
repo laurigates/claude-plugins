@@ -128,10 +128,19 @@ else
 
   # Org billing fetch (deterministic projection). Admin-gated; absence is not
   # an error — note it and continue.
+  #
+  # /settings/billing/actions returns HTTP 410 ("This endpoint has been moved")
+  # and has done for some time; /settings/billing/usage replaces it. The old
+  # flat {included_minutes, total_minutes_used} summary is gone — usage returns
+  # one line item per repo x month x SKU, so the totals are summed here.
+  #
+  # NOTE: the default response is WINDOWED and nothing in the payload says so,
+  # so these totals cover whatever slice GitHub returns rather than the year.
+  # Pass explicit ?year=&month= when a specific period is needed.
   : "${finops_org:=${finops_repo%%/*}}"
   echo "ORG=${finops_org}"
-  billing_json=$(gh api "/orgs/${finops_org}/settings/billing/actions" \
-    --jq '{included_minutes, total_minutes_used, total_paid_minutes_used}' \
+  billing_json=$(gh api "/orgs/${finops_org}/settings/billing/usage" \
+    --jq '{usageItems: [.usageItems[] | select(.product == "actions" and .unitType == "Minutes")]}' \
     2>/dev/null) || billing_json=""
 
   runs_json=$(gh api "/repos/${finops_repo}/actions/runs?per_page=100" \
@@ -144,11 +153,26 @@ else
 fi
 
 # --- Billing projection -----------------------------------------------------
+# netAmount, not grossAmount, is the spend: public-repo minutes are free, so
+# those rows carry grossAmount == discountAmount and netAmount == 0. Both are
+# emitted — gross for exposure (what a runner-tier change would start costing),
+# net for what is actually billed today.
+#
+# The product/unitType filter is applied HERE rather than relying on the fetch's
+# --jq, because the fixture path feeds `.billing` through unfiltered. Filtering
+# only at the fetch made the live and fixture paths disagree, and a packages row
+# summed into an Actions-minutes total.
+billing_actions='[(.usageItems // [])[] | select(.product == "actions" and .unitType == "Minutes")]'
 if [ -n "$billing_json" ] && [ "$billing_json" != "null" ]; then
-  echo "BILLING_AVAILABLE=true"
-  echo "BILLING_INCLUDED_MINUTES=$(echo "$billing_json" | jq -r '.included_minutes // 0')"
-  echo "BILLING_TOTAL_MINUTES_USED=$(echo "$billing_json" | jq -r '.total_minutes_used // 0')"
-  echo "BILLING_TOTAL_PAID_MINUTES_USED=$(echo "$billing_json" | jq -r '.total_paid_minutes_used // 0')"
+  item_count=$(echo "$billing_json" | jq -r "${billing_actions} | length")
+  if [ "${item_count:-0}" -gt 0 ]; then
+    echo "BILLING_AVAILABLE=true"
+    echo "BILLING_MINUTES=$(echo "$billing_json" | jq -r "${billing_actions} | [.[].quantity] | add // 0 | floor")"
+    echo "BILLING_GROSS_USD=$(echo "$billing_json" | jq -r "${billing_actions} | [.[].grossAmount] | add // 0 | .*100 | round / 100")"
+    echo "BILLING_NET_USD=$(echo "$billing_json" | jq -r "${billing_actions} | [.[].netAmount] | add // 0 | .*100 | round / 100")"
+  else
+    echo "BILLING_AVAILABLE=false"
+  fi
 else
   echo "BILLING_AVAILABLE=false"
 fi

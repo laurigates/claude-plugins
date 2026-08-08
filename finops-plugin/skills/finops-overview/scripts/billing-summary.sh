@@ -14,9 +14,18 @@ ORG="${1:-$(gh repo view --json owner --jq '.owner.login')}"
 REPO="${2:-$(gh repo view --json nameWithOwner --jq '.nameWithOwner')}"
 
 echo "=== Org Billing: $ORG ==="
-gh api "/orgs/$ORG/settings/billing/actions" \
-  --jq '"Minutes: \(.total_minutes_used)/\(.included_minutes) included, \(.total_paid_minutes_used) paid"' \
-  2>/dev/null || echo "  (requires org admin access)"
+# /settings/billing/actions returns HTTP 410 ("This endpoint has been moved").
+# The old failure text blamed missing admin scope, which sent readers off to
+# request a permission that would not have helped. /settings/billing/usage
+# replaces it and returns per-repo line items rather than a flat summary.
+#
+# netAmount is the spend; grossAmount ignores the public-repo discount, so a
+# repo can show a large gross and cost nothing. The response is also windowed
+# by default with no marker saying so — add ?year=&month= for a fixed period.
+gh api "/orgs/$ORG/settings/billing/usage" \
+  --jq '[.usageItems[] | select(.product == "actions" and .unitType == "Minutes")]
+        | "Minutes: \([.[].quantity] | add // 0 | floor)  net $\([.[].netAmount] | add // 0 | .*100 | round / 100)  gross $\([.[].grossAmount] | add // 0 | .*100 | round / 100)"' \
+  2>/dev/null || echo "  (no billing data — needs the admin:org scope, or this org has no usage in the returned window)"
 
 echo ""
 echo "=== Org Cache Usage ==="

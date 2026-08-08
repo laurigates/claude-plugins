@@ -168,6 +168,16 @@ jobs:
       - name: Check workflow-run scripts are reachable from their path triggers
         run: bash scripts/check-workflow-script-triggers.sh --strict
 
+      - name: Self-test the dead-endpoint guard (#2321)
+        # Repo-root scripts/tests/ is outside run-skill-script-tests.sh's
+        # discovery globs, so this step is the guard's only CI signal — without
+        # it the guard would run in pre-commit alone and have no protection
+        # against its own regressions (#2219's class).
+        run: bash scripts/tests/test-check-dead-api-endpoints.sh
+
+      - name: Check skills and scripts call no retired REST endpoint
+        run: bash scripts/check-dead-api-endpoints.sh --strict
+
       - name: Self-test the TaskCompleted verification guard (#2301)
         # The artefact is a prompt STRING inside hooks-plugin's plugin.json, so
         # plugin-compliance-check.sh cannot reach it. Self-test first: the guard

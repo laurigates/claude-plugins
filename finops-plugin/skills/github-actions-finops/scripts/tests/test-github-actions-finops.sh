@@ -56,7 +56,18 @@ run_script() {
 planted="${fixtures_dir}/planted.json"
 {
   echo '{'
-  echo '  "billing": {"included_minutes": 2000, "total_minutes_used": 1500, "total_paid_minutes_used": 0},'
+  # /settings/billing/usage line-item shape (the flat {included_minutes,
+  # total_minutes_used} object this fixture used to carry belonged to
+  # /settings/billing/actions, which now returns HTTP 410).
+  #
+  # Deliberately mixes a paid private-repo row with a fully-discounted
+  # public-repo row, so gross (12.00) and net (6.00) differ: an implementation
+  # that sums the wrong field passes on a single-row fixture and fails here.
+  echo '  "billing": {"usageItems": ['
+  echo '    {"product": "actions", "unitType": "Minutes", "quantity": 1000.0, "grossAmount": 6.0, "discountAmount": 0.0, "netAmount": 6.0, "repositoryName": "private-repo"},'
+  echo '    {"product": "actions", "unitType": "Minutes", "quantity": 500.0,  "grossAmount": 6.0, "discountAmount": 6.0, "netAmount": 0.0, "repositoryName": "public-repo"},'
+  echo '    {"product": "packages", "unitType": "GigabyteHours", "quantity": 99.0, "grossAmount": 9.0, "discountAmount": 0.0, "netAmount": 9.0, "repositoryName": "private-repo"}'
+  echo '  ]},'
   echo '  "workflow_runs": ['
   # 51 runs on noisy.yml (high-frequency); 6 of them skipped → 6/52 = 11% (>10%)
   for i in $(seq 1 51); do
@@ -93,8 +104,17 @@ echo "$out1" | grep -q "^ISSUE_COUNT=3$" \
   || fail "expected ISSUE_COUNT=3, got:\n$out1"
 echo "$out1" | grep -q "^BILLING_AVAILABLE=true$" \
   || fail "expected BILLING_AVAILABLE=true from fixture billing, got:\n$out1"
-echo "$out1" | grep -q "^BILLING_TOTAL_MINUTES_USED=1500$" \
-  || fail "expected BILLING_TOTAL_MINUTES_USED=1500, got:\n$out1"
+echo "$out1" | grep -q "^BILLING_MINUTES=1500$" \
+  || fail "expected BILLING_MINUTES=1500 (1000+500 actions rows, packages row excluded), got:\n$out1"
+# net != gross is the load-bearing pair: summing grossAmount into the spend
+# figure is the exact mistake that makes a free public repo look expensive.
+echo "$out1" | grep -q "^BILLING_NET_USD=6$" \
+  || fail "expected BILLING_NET_USD=6 (public-repo row is fully discounted), got:\n$out1"
+echo "$out1" | grep -q "^BILLING_GROSS_USD=12$" \
+  || fail "expected BILLING_GROSS_USD=12 (exposure before discount), got:\n$out1"
+# The packages row must not leak into an Actions-minutes total.
+echo "$out1" | grep -q "^BILLING_MINUTES=1599$" \
+  && fail "packages row leaked into BILLING_MINUTES, got:\n$out1"
 # duration: noisy.yml has 51×300s = 15300s, dominates calm.yml (120s)
 echo "$out1" | grep -q "^WORKFLOW_DURATION_SECONDS=noisy.yml|15300$" \
   || fail "expected noisy.yml duration 15300s, got:\n$out1"
