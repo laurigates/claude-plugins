@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.38.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.37.5...agent-patterns-plugin-v2.38.0) (2026-08-08)
+
+
+### Features
+
+* **agent-patterns-plugin:** cover the stale cached git MCP source ([#2326](https://github.com/laurigates/claude-plugins/issues/2326)) ([83f6b74](https://github.com/laurigates/claude-plugins/commit/83f6b74d30ec9128a22f108ecdfd399d7f8e1eca))
+
 ## [2.37.5](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.37.4...agent-patterns-plugin-v2.37.5) (2026-08-07)
 
 
