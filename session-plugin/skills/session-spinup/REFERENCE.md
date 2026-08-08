@@ -36,8 +36,34 @@ queue:
 |---|---|---|---|
 | `project` | The detected (or `--project`) slug owns the count. Subprojects count too — `project:bluepad32` covers `bluepad32.own`, exactly as taskwarrior's own hierarchy match does | `high` | `nothing pending under project:<name>` is licensed |
 | `remote-name` | The basename matched nothing; the git remote's repo name did (`PROJECT_RESOLVED=`) | `low` | Name the **resolved** slug, not the directory |
+| `ancestor-name` | The basename matched nothing, but an **ancestor directory's** repo slug did — that slug is adopted and reported as `PROJECT_RESOLVED=` (`DETECTION=cwd-repo-basename-ancestor`) | `low` | Name the **adopted ancestor** slug, not the directory |
 | `all-projects-fallback` | No slug matched while tasks exist elsewhere; `RECENT_TASK_*` rows list tasks touched within `--recent-days`, `TASKS_ALL_PROJECTS` is the denominator | `low` | `taskwarrior: project scope unresolved (N tasks across all projects)` — never a clean queue |
 | `unknown` / `none` | `jq` or `task` unavailable, so no scoping was possible | `low` | `taskwarrior: not queried` |
+
+`DETECTION=` names *how* the slug was chosen, independently of `TASK_SCOPE`:
+
+| `DETECTION` | Source of the slug |
+|---|---|
+| `override` | The caller passed `--project` — user-asserted, so it keeps `high` confidence even at zero |
+| `declared` | A `.claude/session.json` `.project` string found at the cwd or the repo root. Repo content, so it is validated as a plain single-line string; any other shape is rejected rather than flattened |
+| `cwd-repo-basename` | The repo directory basename (the guess) |
+| `cwd-repo-basename-ancestor` | An ancestor repo's slug, adopted because the basename matched nothing (`TASK_SCOPE=ancestor-name`) |
+| `ambiguous` | No repo context at all |
+
+### `PROJECT_AMBIGUOUS` — a zero that is not clean
+
+When the detected slug owns **no** tasks but an ancestor slug does, and the
+detected slug may not be adopted away (it was *asserted* via `--project` or a
+`.claude/session.json` declaration), the collector emits:
+
+| Key | Meaning |
+|---|---|
+| `PROJECT_AMBIGUOUS` | The ancestor slug that actually holds the work |
+| `PROJECT_AMBIGUOUS_TASKS` | How many open tasks sit under it |
+
+Both are **omitted entirely** when there is no ambiguity. Present this as
+`0 here, N under <slug>` — never as a clean queue. This is the one case where a
+`high`-confidence zero is still not licensed as "nothing pending".
 
 A `RECENT_TASK_*` row is a **pointer**, not a task: it carries the UUID,
 project, description, and age, but no `ghid`, no annotations, and no
