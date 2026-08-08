@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.16.0...health-plugin-v1.17.0) (2026-08-08)
+
+
+### Features
+
+* **health-plugin:** add config-drift probe for rules/skills corpus hygiene ([#2318](https://github.com/laurigates/claude-plugins/issues/2318)) ([ae812d0](https://github.com/laurigates/claude-plugins/commit/ae812d0081c32399f8f8a0da88d3c33140b57343))
+
 ## [1.16.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.15.0...health-plugin-v1.16.0) (2026-06-18)
 
 
