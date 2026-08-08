@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-07-09
 reviewed: 2026-07-09
 name: mcp-management
-description: Install and configure MCP servers for Claude Code. Use when adding/enabling servers, updating .mcp.json, managing OAuth remote servers, or troubleshooting connections.
+description: Install, configure and troubleshoot MCP servers. Use when adding/enabling servers, editing .mcp.json, fixing OAuth, or when a server runs stale code after an upstream fix.
 user-invocable: false
 allowed-tools: Bash(jq *), Bash(find *), Read, Write, Edit, Grep, Glob, AskUserQuestion
 ---
@@ -91,6 +91,49 @@ Quick OAuth triage:
 | Step-up auth loop | Scope mismatch | Revoke and re-authorize |
 | Discovery fails | Server down or URL wrong | Verify server URL and connectivity |
 | Cache stale | Server changed OAuth config | Disable/enable server to refresh |
+
+## Stale cached git source
+
+A server registered from a **git URL** rather than a published package serves a
+**cached commit**, so an upstream fix never arrives:
+
+```jsonc
+"pal": {
+  "command": "uvx",
+  "args": ["--from", "git+https://github.com/owner/repo.git", "pal-mcp-server"]
+}
+```
+
+`uvx` resolves the ref to a commit **once**, builds it, and caches by that
+commit. Later spawns reuse the build and do **not** re-fetch the branch head. So
+after a fix merges to the server's `main`, every client keeps running the old
+code — and the symptom is misattributed: you restart the client, the bug
+persists, and you suspect the fix, the registration, or the environment.
+
+**Confirm** by comparing the cached checkout's commit against upstream:
+
+```sh
+fd -H '<a-file-from-the-repo>' "$(uv cache dir)/git-v0/checkouts"   # .../<hash>/<commit>/...
+git ls-remote https://github.com/<owner>/<repo>.git refs/heads/main
+```
+
+A cached `<commit>` that is not the current head is the confirmation.
+
+**Fix** — refresh, then restart the client so it re-spawns from the new build:
+
+```sh
+uvx --refresh --from git+https://github.com/<owner>/<repo>.git <pkg> </dev/null
+```
+
+`</dev/null` feeds EOF so a **stdio** server exits after building instead of
+hanging for requests; the rebuild happens during resolve, so the cache is warm
+even if the process is then killed.
+
+**Durable fix — publish and pin.** This footgun exists *only* for an unpinned
+git source. Once the server is on PyPI, register it as `uvx <pkg>` (or
+`uvx <pkg>@<version>`): a version bump re-resolves cleanly and there is no
+cached-head-went-stale failure at all. Prefer the `git+` form only as an interim
+before the first publish.
 
 ## Configuration Patterns
 
