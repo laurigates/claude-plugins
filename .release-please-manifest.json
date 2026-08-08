@@ -23,7 +23,7 @@
   "github-actions-plugin": "1.9.1",
   "health-plugin": "1.16.0",
   "home-assistant-plugin": "1.4.0",
-  "hooks-plugin": "2.8.1",
+  "hooks-plugin": "2.8.2",
   "kubernetes-plugin": "1.8.0",
   "langchain-plugin": "1.5.7",
   "macos-plugin": "1.7.2",
@@ -40,7 +40,7 @@
   "testing-plugin": "3.18.2",
   "tools-plugin": "2.9.4",
   "typescript-plugin": "1.8.10",
-  "session-plugin": "1.9.3",
+  "session-plugin": "1.9.4",
   "software-design-plugin": "1.1.0",
   "workflow-orchestration-plugin": "1.9.3"
 }
