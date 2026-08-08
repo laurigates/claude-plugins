@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.34.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.33.5...configure-plugin-v1.34.0) (2026-08-08)
+
+
+### Features
+
+* **configure-plugin:** ship the configure-all parallel check harness template ([#2310](https://github.com/laurigates/claude-plugins/issues/2310)) ([5b20833](https://github.com/laurigates/claude-plugins/commit/5b208332383c4624e7c55337b7d37cccaa627ab9)), closes [#2168](https://github.com/laurigates/claude-plugins/issues/2168)
+
 ## [1.33.5](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.33.4...configure-plugin-v1.33.5) (2026-07-28)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.19.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.18.2...testing-plugin-v3.19.0) (2026-08-08)
+
+
+### Features
+
+* **testing-plugin:** ship the test-analyze classify-and-act harness template ([#2309](https://github.com/laurigates/claude-plugins/issues/2309)) ([a41c402](https://github.com/laurigates/claude-plugins/commit/a41c402f05b60c79cb2b5523c89f7191b7b5320b)), closes [#2170](https://github.com/laurigates/claude-plugins/issues/2170)
+
 ## [3.18.2](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.18.1...testing-plugin-v3.18.2) (2026-08-07)
 
 

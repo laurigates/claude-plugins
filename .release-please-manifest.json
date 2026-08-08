@@ -5,13 +5,13 @@
   "api-plugin": "2.0.0",
   "bevy-plugin": "1.4.1",
   "blog-plugin": "1.3.4",
-  "blueprint-plugin": "3.43.1",
+  "blueprint-plugin": "3.44.0",
   "codebase-attributes-plugin": "1.3.1",
   "code-quality-plugin": "1.22.3",
   "comfyui-plugin": "1.13.3",
   "communication-plugin": "1.2.4",
   "component-patterns-plugin": "1.5.0",
-  "configure-plugin": "1.33.5",
+  "configure-plugin": "1.34.0",
   "container-plugin": "2.9.1",
   "css-plugin": "1.2.3",
   "documentation-plugin": "1.10.1",
@@ -37,10 +37,10 @@
   "rust-plugin": "1.7.0",
   "taskwarrior-plugin": "1.13.4",
   "terraform-plugin": "1.7.6",
-  "testing-plugin": "3.18.2",
+  "testing-plugin": "3.19.0",
   "tools-plugin": "2.9.4",
   "typescript-plugin": "1.8.10",
   "session-plugin": "1.9.4",
   "software-design-plugin": "1.1.0",
-  "workflow-orchestration-plugin": "1.9.3"
+  "workflow-orchestration-plugin": "1.10.0"
 }
