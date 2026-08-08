@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.1](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.17.0...health-plugin-v1.17.1) (2026-08-08)
+
+
+### Bug Fixes
+
+* **health-plugin:** resolve a stub's target by its invoke phrase, not the first backtick ([#2328](https://github.com/laurigates/claude-plugins/issues/2328)) ([f5a9c80](https://github.com/laurigates/claude-plugins/commit/f5a9c80f4214479afc1c9c19597525aaf81a7129))
+
 ## [1.17.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.16.0...health-plugin-v1.17.0) (2026-08-08)
 
 
