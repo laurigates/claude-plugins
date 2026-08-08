@@ -249,14 +249,40 @@ def waived(waivers, a: dict, b: dict) -> bool:
 
 
 # --------------------------------------------------------------------- checks
+def _stub_target(head: str, known: set[str]) -> str | None:
+    """Resolve which skill a pointer stub delegates to.
+
+    "First backticked token" was wrong: a stub's own title routinely contains an
+    incidental backticked term, and that word won it. A real stub reading
+    "# Git-Based `uvx` MCP Servers ... invoke `agent-patterns-plugin:mcp-management`"
+    resolved to the skill `uvx`, which does not exist — a false ERROR on a
+    perfectly good stub, which is the failure mode most likely to get an
+    integrity check switched off.
+
+    Three passes, most specific first:
+      1. the token following `invoke` — the house phrasing every stub uses
+      2. any backticked token that names a real skill
+      3. the first backticked token, so a genuinely broken stub still reports
+         a name rather than "(none named)"
+    """
+    m = re.search(r"invoke\s+`([a-z0-9:_-]+)`", head)
+    if m:
+        return m.group(1).split(":")[-1]
+
+    refs = [t.split(":")[-1] for t in re.findall(r"`([a-z0-9:_-]+)`", head)]
+    for ref in refs:
+        if ref in known:
+            return ref
+    return refs[0] if refs else None
+
+
 def check_stub_integrity(rules, skills) -> list[dict]:
     known = {s["name"] for s in skills}
     out = []
     for r in rules:
         if not r["stub"]:
             continue
-        refs = re.findall(r"`([a-z0-9:-]+)`", r["body"][:700])
-        target = refs[0].split(":")[-1] if refs else None
+        target = _stub_target(r["body"][:700], known)
         if target not in known:
             out.append(
                 {
