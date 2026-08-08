@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.8.1...hooks-plugin-v2.8.2) (2026-08-08)
+
+
+### Bug Fixes
+
+* **repo:** correct five misfiring guards across hooks, session and CI ([#2308](https://github.com/laurigates/claude-plugins/issues/2308)) ([22612fd](https://github.com/laurigates/claude-plugins/commit/22612fdfd74d76fd6698e970763948a9714e9d2a)), closes [#2307](https://github.com/laurigates/claude-plugins/issues/2307) [#2306](https://github.com/laurigates/claude-plugins/issues/2306) [#2301](https://github.com/laurigates/claude-plugins/issues/2301) [#2304](https://github.com/laurigates/claude-plugins/issues/2304) [#2285](https://github.com/laurigates/claude-plugins/issues/2285)
+
 ## [2.8.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.8.0...hooks-plugin-v2.8.1) (2026-08-07)
 
 
