@@ -57,8 +57,17 @@ A SessionStart hook that writes two session-scoped baselines used by other hooks
 
 | Baseline | Path | Used by |
 |----------|------|---------|
-| Pre-existing stash hashes | `/tmp/claude-stash-baselines/<session_id>` | `git-stash-reminder.sh` |
+| Pre-existing stash hashes | `<baseline-dir>/<session_id>.d/<sha256-of-git-common-dir>` | `git-stash-reminder.sh` |
+| Session start time | `<baseline-dir>/<session_id>.d/.session-start` (mtime) | `git-stash-reminder.sh` |
 | HEAD commit at session start | `/tmp/claude-test-baselines/<session_id>` | `test-verification.sh` |
+
+`<baseline-dir>` defaults to `/tmp/claude-stash-baselines` and is overridable with
+`CLAUDE_STASH_BASELINE_DIR`. The stash baseline is keyed on the **git common
+dir**, not the repo root, because `refs/stash` lives in the common dir and is
+therefore shared by every linked worktree — one stash namespace, one baseline.
+Both writes are **write-once per session**: a SessionStart re-fire on
+resume/compact/clear deliberately leaves them alone, so it cannot retroactively
+un-report a stash the Stop hook already flagged.
 
 ### git-stash-reminder.sh
 
@@ -68,6 +77,14 @@ A Stop hook that checks for git stashes **created during the current session**. 
 |-----------|--------|
 | Session stashes exist | Recommend `git stash pop` |
 | Only pre-existing stashes | Silent exit (no block) |
+| Repo first seen mid-session | Baseline captured for that namespace, then the age filter still applies — a genuine session stash is reported |
+
+A repo the session enters later (a moved cwd, a linked worktree, a repo that was
+stash-free at SessionStart) gets its baseline captured on first observation, but
+only stashes **older than the session start** are absorbed into it — so a stash
+the session actually created is reported on that Stop and every Stop after.
+
+**Tests:** `bash hooks-plugin/hooks/test-git-stash-reminder.sh` (hermetic — sandboxed via `CLAUDE_STASH_BASELINE_DIR`).
 | No stashes at all | Silent exit |
 
 ### session-end-issue-hook.sh
@@ -136,10 +153,31 @@ A public repo attracts drive-by PRs, and merge tooling is built for bulk-merging
 | The authenticated user (`gh api user`) | Allowed silently |
 | A bot — `is_bot`, an `app/<name>` login, or a `<name>[bot]` login | Allowed silently |
 | Anyone else | **Denied**, naming the author, their `author_association`, and which touched paths execute |
-| Not determinable (no network, unresolvable `$var` selector, bad PR number) | **Denied** — "cannot verify" is not "safe" |
+| Not determinable (no network, unresolvable `$var` selector, bad PR number, an argument that is not selector-shaped) | **Denied** — "cannot verify" is not "safe" |
 | Any non-merge command | Allowed, immediately |
 
-Covers every merge route: `gh pr merge` (in any flag order, inside a compound command, with or without `--repo`), `gh api ... /pulls/N/merge`, and the GitHub MCP `merge_pull_request` tool. `--admin` does not bypass it.
+Covers every merge route: `gh pr merge` (in any flag order, inside a compound
+command, with or without `--repo`), `gh api ... /pulls/N/merge`, and the GitHub
+MCP `merge_pull_request` tool. `--admin` does not bypass it.
+
+The command word is resolved **structurally**, so a merge stays a merge when it
+is reached through:
+
+| Position | Example |
+|----------|---------|
+| A wrapper that runs the wrapped command — including flags taking a separate value | `sudo -u ci`, `env -C dir`, `timeout`, `xargs`, `find -exec`, `parallel`, `watch`, `script`, `uv run` |
+| A shell invoker, including heredocs fed to a shell | `bash -c "…"`, `nix-shell --run`, `bash <<EOF`, `bash -s <<'EOF'` |
+| Command substitution | `` X=`gh pr merge 2231` ``, `$(gh pr merge 2231)` |
+| Redirections, which bash strips before `gh` sees argv | `gh pr merge 2>/dev/null 2231`, `xargs -n1 gh pr merge < prs.txt` |
+
+The counterpart narrowing: a **mention** of the phrase, or of the
+`pulls/N/merge` route, is not an invocation. Prose, a quoted `--body` value, a
+`$(cat <<EOF)` body, a non-shell heredoc, and an `rg`/`grep`/`echo` of the API
+route are all allowed — the api route now requires a command word that can
+actually call it (`gh`/`curl`/`wget`/`http`/`xh`/`hurl`). One narrow false
+positive is accepted deliberately: unquoted prose directly behind a wrapper
+(`sudo echo gh pr merge 5`) denies, which is fail-closed; the quoted form is
+unaffected.
 
 **Does not defer to auto mode**, unlike `branch-protection.sh`. Auto mode's classifier models destructive-git and protected-branch risk; it has no notion of PR *authorship trust*, so deferring would leave the gap open rather than avoid a double-gate.
 
@@ -267,7 +305,16 @@ A `type: "agent"` hook that verifies task implementation quality when a team tas
 |--------|--------|
 | Type | `agent` (multi-turn with tool access) |
 | Timeout | 60s |
-| Checks | TODO/FIXME comments, debug artifacts, test presence |
+| Evidence | Commits the branch adds over its base **and** working-tree changes — a clean tree on a branch carrying commits is the success shape, not the failure shape (#2301) |
+| Base ref | The repository's **default** branch — `git symbolic-ref --short refs/remotes/origin/HEAD`, else a `git rev-parse --verify --quiet` probe of `origin/main`/`origin/master`/`main`/`master` — then `BASE=$(git merge-base HEAD <default-branch>)`. Never `@{u}`: on a pushed branch that resolves to `origin/<this-branch>`, so `BASE..HEAD` is empty and committed work vanishes |
+| Checks | TODO/FIXME comments, debug artifacts, test presence — judged against the change set only |
+| Scope | The branch diff plus the files this task touched, not raw `git status`; pre-existing and concurrent files are not scope violations |
+| Still blocks | No supporting change anywhere, or nothing in the change set corresponding to the task in Context (branch commits are *candidate* evidence — a branch can carry an earlier task's work) |
+
+**Guard:** `bash scripts/check-taskcompleted-verification.sh --strict` pins these
+behaviours as a semantic gate over the prompt (the artefact is a string inside
+`plugin.json`, so `plugin-compliance-check.sh` cannot reach it). Regression test:
+`bash scripts/tests/test-check-taskcompleted-verification.sh`.
 
 ## Installation
 

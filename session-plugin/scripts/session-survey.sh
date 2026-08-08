@@ -125,21 +125,69 @@ if have "$git_bin" && "$git_bin" -C "$project_dir" rev-parse --is-inside-work-tr
 fi
 
 # ---------------------------------------------------------------------------
-# Project detection — mechanical layer only. --project wins; else the git
-# repo-root basename; else ambiguous (the LLM applies its naming map / falls
-# back to +ACTIVE or the git remote per the precedence table in the skill).
+# Project detection — mechanical layer only. --project wins; else a slug the
+# repo DECLARES in .claude/session.json; else the git repo-root basename; else
+# ambiguous (the LLM applies its naming map / falls back to +ACTIVE or the git
+# remote per the precedence table in the skill).
 #
 # The basename is a GUESS (#2271): a chezmoi source dir, a worktree, a monorepo
 # subdir, or a repo cloned under another name all yield a slug that matches no
 # task. TASK_SCOPE / PROJECT_CONFIDENCE below make that uncertainty visible
 # instead of letting a wrong slug report a confident OPEN_TASKS=0.
 # ---------------------------------------------------------------------------
+
+# A repo-declared slug (#2304). Explicit beats guessing, so this outranks every
+# derived signal and — like --project — earns a confident zero. No jq means no
+# safe parse, so the derived signals take over rather than a hand-rolled one.
+#
+# UNTRUSTED INPUT. Unlike --project (supplied by the invoking skill), this file
+# is REPO CONTENT: it arrives with a clone, so a hostile or merely broken repo
+# controls it. The value is emitted as `PROJECT=` in a KEY=VALUE digest
+# (structured-script-output.md), and consumers read that digest line-wise —
+# `session-spinup-nudge.sh` does `grep -m1 "^KEY="` — so a value carrying a
+# NEWLINE would inject whole fabricated rows (`{"project":"x\nOPEN_TASKS=999"}`
+# makes the nudge read 999 open tasks from a line the collector never counted),
+# and a non-string `.project` (array/object/number) renders multi-line too.
+#
+# So: `.project` must be a plain single-line STRING, or the declaration is
+# REJECTED — never flattened. Rejecting degrades to the derived signals along
+# exactly the path malformed JSON already takes, which keeps the failure mode
+# (and its test) singular; flattening would instead emit a garbage slug that
+# matches no task and earns a CONFIDENT zero, the very thing #2304 exists to
+# stop.
+declared_project_of() {  # $1 = directory that may hold .claude/session.json
+  local f="$1/.claude/session.json" v
+  [ -f "$f" ] || return 1
+  have jq || return 1
+  v=$(jq -r 'if type == "object" and (.project | type) == "string"
+             then (.project // empty) else empty end' "$f" 2>/dev/null) || return 1
+  [ -n "$v" ] || return 1
+  # Any control character (newline, CR, tab, US, …) can break a row or a
+  # column; a taskwarrior project slug never contains one.
+  case "$v" in *[[:cntrl:]]*) return 1 ;; esac
+  printf '%s' "$v"
+}
+
 detection="ambiguous"
+repo_root=""
+if [ "$in_git" = true ]; then
+  repo_root=$("$git_bin" -C "$project_dir" rev-parse --show-toplevel 2>/dev/null || echo "")
+fi
+
 if [ -n "$project" ]; then
   detection="override"
-elif [ "$in_git" = true ]; then
-  repo_root=$("$git_bin" -C "$project_dir" rev-parse --show-toplevel 2>/dev/null || echo "")
-  if [ -n "$repo_root" ]; then
+else
+  # Most specific declaration first: a monorepo subdir may name its own slug.
+  declared_project=""
+  for decl_dir in "$project_dir" "$repo_root"; do
+    [ -n "$decl_dir" ] || continue
+    declared_project=$(declared_project_of "$decl_dir") && break
+    declared_project=""
+  done
+  if [ -n "$declared_project" ]; then
+    project="$declared_project"
+    detection="declared"
+  elif [ -n "$repo_root" ]; then
     project=$(basename "$repo_root")
     detection="cwd-repo-basename"
   fi
@@ -301,12 +349,66 @@ in_project_scope() {  # $1 = a task's project, $2 = the scope project
   [ "${1#"$2".}" != "$1" ]
 }
 
+# Ancestor repo basenames, NEAREST FIRST (#2304). In a portfolio where a nested
+# repo's work is filed under the PARENT workspace's slug (the house rule is one
+# short slug per long-running area, reused consistently — so eleven sibling
+# packs share one backlog), the nested basename matches no task and the survey
+# reports an EMPTY answer, which is exactly what "nothing to do here" looks
+# like. Walking up finds the slug that actually holds the work.
+#
+# The walk is bounded three ways so it cannot run away: it never leaves
+# $home_dir (or, when that is unset, stops at the filesystem root), every step
+# is a strict parent via `dirname`, and a hard iteration cap backstops both.
+ancestor_repo_slugs() {  # $1 = dir to walk up from, $2 = boundary ("" = root)
+  local start="$1" boundary="$2" dir root next steps=0
+  [ -n "$start" ] || return 0
+  have "$git_bin" || return 0
+  dir=$(dirname "$start")
+  while [ "$steps" -lt 32 ]; do
+    steps=$((steps + 1))
+    case "$dir" in ""|"."|"/") break ;; esac
+    if [ -n "$boundary" ]; then
+      # Strictly BELOW the boundary: $HOME itself is not a project workspace,
+      # and a dotfiles repo checked out there must not swallow every slug.
+      case "$dir" in "$boundary"/*) : ;; *) break ;; esac
+    fi
+    root=$("$git_bin" -C "$dir" rev-parse --show-toplevel 2>/dev/null || echo "")
+    if [ -n "$root" ] && [ "$root" != "$start" ]; then
+      # git's own discovery walks upward, so re-apply the boundary to what it
+      # found — the walk must not escape $HOME by proxy.
+      if [ -n "$boundary" ]; then
+        case "$root" in "$boundary"/*) : ;; *) break ;; esac
+      fi
+      basename "$root"
+      next=$(dirname "$root")
+    else
+      next=$(dirname "$dir")
+    fi
+    [ "$next" != "$dir" ] || break
+    dir="$next"
+  done
+  return 0
+}
+
+# Physical paths on both sides, so the boundary test is a plain prefix compare
+# even when $TMPDIR / $HOME reach the tree through a symlink.
+walk_start="${repo_root:-$project_dir}"
+walk_start=$(cd "$walk_start" 2>/dev/null && pwd -P) || walk_start="${repo_root:-$project_dir}"
+[ -n "$walk_start" ] || walk_start="${repo_root:-$project_dir}"
+home_boundary=""
+if [ -n "$home_dir" ]; then
+  home_boundary=$(cd "$home_dir" 2>/dev/null && pwd -P) || home_boundary="$home_dir"
+  [ -n "$home_boundary" ] || home_boundary="$home_dir"
+fi
+
 tasks_all=0
 project_tasks_json="[]"
 active_all_json="[]"
 task_scope="project"
 project_confidence="high"
 project_resolved=""
+project_ambiguous=""
+project_ambiguous_tasks=0
 
 if [ "$task_available" = false ]; then
   task_scope="none"
@@ -326,29 +428,78 @@ else
   [ -n "$open_tasks" ] || open_tasks=0
 
   # The scoped query matched nothing while tasks exist elsewhere: the detected
-  # slug is suspect. An explicit --project is user-asserted, so it keeps its
-  # confident zero.
-  if [ "${open_tasks:-0}" -eq 0 ] && [ "${tasks_all:-0}" -gt 0 ] && [ "$detection" != "override" ]; then
+  # slug is suspect. An explicit --project — or a slug the repo DECLARED — is
+  # user-asserted, so it keeps its confident zero and is never rewritten. It
+  # still gets the ancestor probe, because a zero that hides a real backlog is
+  # the failure this whole ladder exists to prevent (#2304).
+  if [ "${open_tasks:-0}" -eq 0 ] && [ "${tasks_all:-0}" -gt 0 ]; then
+    asserted=false
+    case "$detection" in override|declared) asserted=true ;; esac
+
     alt_json="[]"
     alt_n=0
-    if [ -n "$project_remote_name" ] && [ "$project_remote_name" != "$project" ]; then
+    if [ "$asserted" = false ] && [ -n "$project_remote_name" ] \
+       && [ "$project_remote_name" != "$project" ]; then
       alt_json=$(scope_of "$project_remote_name")
       [ -n "$alt_json" ] || alt_json="[]"
       alt_n=$(printf '%s' "$alt_json" | jq 'length' 2>/dev/null || echo 0)
       [ -n "$alt_n" ] || alt_n=0
     fi
+
     if [ "${alt_n:-0}" -gt 0 ]; then
       # (1) #2271: the git remote's repo name resolved it.
       task_scope="remote-name"
       project_resolved="$project_remote_name"
       project_tasks_json="$alt_json"
       open_tasks="$alt_n"
+      project_confidence="low"
     else
-      # (2) #2232: no single slug wins (portfolio checkout, renamed dir, …).
-      # Widen, and make the widening visible rather than reporting a clean 0.
-      task_scope="all-projects-fallback"
+      # (2) #2304: the nearest ANCESTOR repo whose slug holds tasks — the
+      # nested-pack-under-a-workspace shape. Probed even for a user-asserted
+      # slug: the adoption is suppressed there, the ambiguity signal is not.
+      anc_slug=""
+      anc_json="[]"
+      anc_n=0
+      while IFS= read -r anc_cand; do
+        [ -n "$anc_cand" ] || continue
+        [ "$anc_cand" != "$project" ] || continue
+        cand_json=$(scope_of "$anc_cand")
+        [ -n "$cand_json" ] || cand_json="[]"
+        cand_n=$(printf '%s' "$cand_json" | jq 'length' 2>/dev/null || echo 0)
+        [ -n "$cand_n" ] || cand_n=0
+        if [ "$cand_n" -gt 0 ] 2>/dev/null; then
+          anc_slug="$anc_cand"
+          anc_json="$cand_json"
+          anc_n="$cand_n"
+          break
+        fi
+      done < <(ancestor_repo_slugs "$walk_start" "$home_boundary")
+
+      if [ "${anc_n:-0}" -gt 0 ] && [ "$detection" = "cwd-repo-basename" ]; then
+        detection="cwd-repo-basename-ancestor"
+        task_scope="ancestor-name"
+        project="$anc_slug"
+        project_resolved="$anc_slug"
+        project_tasks_json="$anc_json"
+        open_tasks="$anc_n"
+        project_confidence="low"
+      elif [ "${anc_n:-0}" -gt 0 ]; then
+        # (3) A zero we are not allowed to adopt away must never look
+        # authoritative: name the ancestor slug that does hold the work, so
+        # session-end can say "0 here, N under <slug>" instead of skipping.
+        project_ambiguous="$anc_slug"
+        project_ambiguous_tasks="$anc_n"
+        if [ "$asserted" = false ]; then
+          task_scope="all-projects-fallback"
+          project_confidence="low"
+        fi
+      elif [ "$asserted" = false ]; then
+        # (4) #2232: no single slug wins (portfolio checkout, renamed dir, …).
+        # Widen, and make the widening visible rather than reporting a clean 0.
+        task_scope="all-projects-fallback"
+        project_confidence="low"
+      fi
     fi
-    project_confidence="low"
   fi
 
   active_all_json=$(printf '%s' "$all_tasks_json" \
@@ -552,6 +703,8 @@ if [ "$summary_mode" = true ]; then
   echo "TASK_SCOPE=${task_scope}"
   echo "PROJECT_CONFIDENCE=${project_confidence}"
   [ -n "$project_resolved" ] && echo "PROJECT_RESOLVED=${project_resolved}"
+  [ -n "$project_ambiguous" ] && echo "PROJECT_AMBIGUOUS=${project_ambiguous}"
+  [ -n "$project_ambiguous" ] && echo "PROJECT_AMBIGUOUS_TASKS=${project_ambiguous_tasks}"
   echo "DIRTY=${dirty}"
   echo "UNPUSHED=${unpushed}"
   echo "OPEN_TASKS=${open_tasks}"
@@ -598,6 +751,9 @@ echo "PROJECT_CONFIDENCE=${project_confidence}"
 echo "TASKS_ALL_PROJECTS=${tasks_all}"
 [ -n "$project_remote_name" ] && echo "PROJECT_REMOTE_NAME=${project_remote_name}"
 [ -n "$project_resolved" ] && echo "PROJECT_RESOLVED=${project_resolved}"
+# The honest zero's escape hatch: 0 here, but N under this ancestor slug.
+[ -n "$project_ambiguous" ] && echo "PROJECT_AMBIGUOUS=${project_ambiguous}"
+[ -n "$project_ambiguous" ] && echo "PROJECT_AMBIGUOUS_TASKS=${project_ambiguous_tasks}"
 echo "RECENT_TASK_COUNT=${recent_task_count}"
 echo "RECENT_DAYS=${recent_days}"
 [ -n "$recent_days_invalid" ] && echo "RECENT_DAYS_INVALID=${recent_days_invalid}"

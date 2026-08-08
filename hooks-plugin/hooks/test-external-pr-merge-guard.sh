@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016  # file-level: fixture commands are single-quoted ON PURPOSE — they must reach the hook as the literal text `gh pr merge`, $(gh pr merge), $T. Expanding them would destroy the test.
 # Regression tests for external-pr-merge-guard.sh
 #
 # Verifies the hook denies merges of PRs authored by anyone other than the
@@ -39,6 +40,11 @@ mkdir -p "$TMPDIR/bin"
 cat > "$TMPDIR/bin/gh" <<'STUB'
 #!/usr/bin/env bash
 args="$*"
+# When STUB_LOG is set, record every invocation. Tests that must prove WHICH PR
+# the hook looked up (the greedy-match case) assert on this log — the verdict
+# alone cannot distinguish "checked PR 2231" from "checked PR 999", since the
+# stub answers for any selector.
+if [ -n "${STUB_LOG:-}" ]; then printf '%s\n' "$args" >> "$STUB_LOG"; fi
 case "$args" in
   "api user --jq .login")
       [ -n "${STUB_NO_ME:-}" ] && exit 1
@@ -92,6 +98,24 @@ ck_reason() { # ck_reason <desc> <substring>
         *) printf '  FAIL %s — reason lacked %s\n' "$1" "$2"; FAIL=$((FAIL + 1)) ;;
     esac
 }
+# ck_lookup <desc> <command> <selector the hook must have resolved>
+# Asserts DENY *and* that the hook looked the PR up by the selector the command
+# actually merges. The verdict alone is a weak assertion for these cases: the
+# stub answers for any selector, so a change that stopped understanding a whole
+# selector SHAPE (branch name, URL) would flip to ALLOW silently while every
+# numeric-selector assertion stayed green. The log pins the semantics.
+ck_lookup() {
+    local desc="$1" cmd="$2" want="$3" log="$TMPDIR/lookup.log"
+    : > "$log"
+    STUB_LOG="$log" run "$(bash_json "$cmd")" >/dev/null
+    unset STUB_LOG
+    ck "$desc" DENY "$LAST_VERDICT"
+    if grep -qF "pr view $want " "$log"; then
+        printf '  ok   %s — resolved to %s\n' "$desc" "$want"; PASS=$((PASS + 1))
+    else
+        printf '  FAIL %s — the hook never looked up %s\n' "$desc" "$want"; FAIL=$((FAIL + 1))
+    fi
+}
 
 echo "== non-merge commands are untouched =="
 ck "git status"            ALLOW "$(run "$(bash_json 'git status')")"
@@ -125,6 +149,169 @@ echo "== a flag VALUE is not mistaken for the PR selector =="
 # selector, checking the wrong PR (or none) and letting the merge through.
 ck "--subject with a value"  DENY "$(run "$(bash_json 'gh pr merge --squash --subject "feat: x" 2231')")"
 ck "-b with a value"         DENY "$(run "$(bash_json 'gh pr merge --squash -b "body text" 2231')")"
+
+echo "== a MENTION of the phrase is not an invocation (#2307) =="
+# The guard used to grep the RAW command text, so any command whose text merely
+# contained "gh pr merge" was treated as a merge: a bare `echo`, and a real
+# `gh pr create` whose --body heredoc quoted the phrase (the agent then retitled
+# the user-visible PR to get past the guard).
+#
+# STUB_AUTHOR is still the external author here, so ANY detection yields a
+# denial — ALLOW is therefore proof that the text was not read as a merge
+# command, not an artefact of a trusted author.
+HEREDOC_CMD=$(cat <<'CMD'
+gh pr create --title "Fix the merge guard" --body "$(cat <<'EOF'
+This PR narrows the guard.
+Before it, `gh pr merge` anywhere in the text was denied.
+EOF
+)"
+CMD
+)
+BARE_HEREDOC_CMD=$(cat <<'CMD'
+gh pr create --body-file - <<'EOF'
+Reviewers: do not gh pr merge 5 until CI is green.
+EOF
+CMD
+)
+ck "echo, phrase unquoted in prose" ALLOW \
+   "$(run "$(bash_json 'echo docs: this sentence mentions gh pr merge')")"
+ck "echo, phrase double-quoted"     ALLOW \
+   "$(run "$(bash_json 'echo "docs: this sentence mentions gh pr merge"')")"
+ck "echo, phrase single-quoted"     ALLOW \
+   "$(run "$(bash_json "echo 'see gh pr merge 999 for details'")")"
+ck "phrase in a --body value"       ALLOW \
+   "$(run "$(bash_json 'gh pr create --title x --body "run gh pr merge 5 once CI is green"')")"
+ck "phrase in a \$(cat <<EOF) body" ALLOW "$(run "$(bash_json "$HEREDOC_CMD")")"
+ck "phrase in a bare heredoc"       ALLOW "$(run "$(bash_json "$BARE_HEREDOC_CMD")")"
+ck "api route quoted inside prose"  ALLOW \
+   "$(run "$(bash_json 'gh pr comment 1 --body "never run gh api repos/o/r/pulls/9/merge"')")"
+# The api-route half of the prefilter is the issue's own headline complaint: a
+# SEARCH for the route, or an echo of it, is not a call to it. Only a command
+# word that can actually reach the REST API (gh, curl, wget, …) counts.
+ck "rg searching for the route"     ALLOW \
+   "$(run "$(bash_json 'rg repos/laurigates/claude-plugins/pulls/2231/merge docs/')")"
+ck "echo of the route, bare"        ALLOW \
+   "$(run "$(bash_json 'echo repos/laurigates/claude-plugins/pulls/2231/merge')")"
+ck "echo of the route, quoted"      ALLOW \
+   "$(run "$(bash_json 'echo "repos/laurigates/claude-plugins/pulls/2231/merge"')")"
+ck "grep -c over a log of routes"   ALLOW \
+   "$(run "$(bash_json 'grep -c repos/o/r/pulls/9/merge audit.log')")"
+
+echo "== a real merge is still detected in every command position =="
+ck "after &&"                       DENY \
+   "$(run "$(bash_json 'echo "note: gh pr merge is gated" && gh pr merge 2231 --squash')")"
+ck "after a newline"                DENY "$(run "$(bash_json 'echo hi
+gh pr merge 2231 --squash')")"
+ck "after a ; sequence"             DENY "$(run "$(bash_json 'echo hi; gh pr merge 2231 --squash')")"
+ck "inside a subshell"              DENY "$(run "$(bash_json '(gh pr merge 2231 --squash)')")"
+ck "wrapped in bash -c"             DENY "$(run "$(bash_json "bash -c 'gh pr merge 2231 --squash'")")"
+ck "wrapped in eval"                DENY "$(run "$(bash_json 'eval "gh pr merge 2231 --squash"')")"
+# Command wrappers still run the merge, so command position must see past them.
+ck "behind timeout <duration>"      DENY "$(run "$(bash_json 'timeout 60 gh pr merge 2231 --squash')")"
+ck "behind timeout with flags"      DENY "$(run "$(bash_json 'timeout -k 5s 60 gh pr merge 2231')")"
+ck "behind env with an assignment"  DENY "$(run "$(bash_json 'env GH_TOKEN=x gh pr merge 2231')")"
+ck "backgrounded with &"            DENY "$(run "$(bash_json 'nohup gh pr merge 2231 --squash &')")"
+# ...but a wrapper NAMED in prose is still prose.
+ck "wrapper named inside an echo"   ALLOW "$(run "$(bash_json 'echo timeout 60 gh pr merge 2231')")"
+ck "wrapper around a prose echo"    ALLOW "$(run "$(bash_json 'timeout 60 echo "gh pr merge 2231"')")"
+ck "quoted PR number"               DENY "$(run "$(bash_json 'gh pr merge "2231" --repo "laurigates/claude-plugins"')")"
+ck "api route as a quoted argument" DENY \
+   "$(run "$(bash_json 'gh api -X PUT "repos/laurigates/claude-plugins/pulls/2231/merge"')")"
+# Fail-closed survives: a plausible selector whose author cannot be read is
+# still denied. This is the property the narrowing must not have weakened.
+ck "plausible selector, author unreadable" DENY \
+   "$(STUB_VIEW_FAIL=1 run "$(bash_json 'gh pr merge 123 --squash')")"
+# The command word is established structurally by the time the selector is read,
+# so an argument that does not look like a selector does not un-make the merge.
+# Allowing it would be a fail-OPEN on a real `gh pr merge` invocation.
+ck "argument that is not selector-shaped" DENY \
+   "$(run "$(bash_json 'gh pr merge --unknown-flag "not: a selector"')")"
+# Bash strips redirections before gh sees argv, so these really do merge — the
+# tokeniser must not read `2>/dev/null` or `<` as the PR selector and give up.
+ck "redirection before the selector"  DENY "$(run "$(bash_json 'gh pr merge 2>/dev/null 2231 --squash')")"
+ck "output redirect before selector"  DENY "$(run "$(bash_json 'gh pr merge >merge.log 2231 --squash')")"
+ck "bulk merge fed by stdin"          DENY "$(run "$(bash_json 'xargs -n1 gh pr merge < prs.txt')")"
+# Legacy command substitution is a command position too. Its $( ) twin was only
+# ever caught because `(` happens to split statements.
+ck "inside backticks, assigned"       DENY "$(run "$(bash_json 'X=`gh pr merge 2231`')")"
+ck "inside backticks, as an argument" DENY "$(run "$(bash_json 'echo `gh pr merge 2231`')")"
+ck "inside \$( ) substitution"        DENY "$(run "$(bash_json 'result=$(gh pr merge 2231)')")"
+
+echo "== a wrapper that RUNS the merge does not hide it =="
+# Wrapper flags that take a SEPARATE value push the command word past the point
+# a flags-only stripper reaches; a wrapper executes whatever follows it.
+ck "sudo -u <user>"                DENY "$(run "$(bash_json 'sudo -u ci gh pr merge 2231 --squash')")"
+ck "sudo -H -u <user>"             DENY "$(run "$(bash_json 'sudo -H -u ci gh pr merge 2231')")"
+ck "env -C <dir>"                  DENY "$(run "$(bash_json 'env -C /tmp gh pr merge 2231 --squash')")"
+ck "env -u <var>"                  DENY "$(run "$(bash_json 'env -u GH_TOKEN gh pr merge 2231')")"
+ck "find -exec"                    DENY "$(run "$(bash_json 'find . -name "*.txt" -exec gh pr merge 2231 --squash \;')")"
+ck "parallel"                      DENY "$(run "$(bash_json 'parallel gh pr merge ::: 2231')")"
+ck "watch -n5"                     DENY "$(run "$(bash_json 'watch -n5 gh pr merge 2231')")"
+ck "script -q /dev/null"           DENY "$(run "$(bash_json 'script -q /dev/null gh pr merge 2231')")"
+ck "uv run --with"                 DENY "$(run "$(bash_json 'uv run --with x gh pr merge 2231')")"
+# A wrapper in front of a shell invoker must not lose the "this string is script
+# text" property — the effective command word is `bash`, not `sudo`.
+ck "sudo in front of bash -c"      DENY "$(run "$(bash_json 'sudo -u ci bash -c "gh pr merge 2231"')")"
+ck "nix-shell --run"               DENY "$(run "$(bash_json 'nix-shell -p gh --run "gh pr merge 2231"')")"
+# Operators INSIDE nested script text separate statements there too.
+ck "second statement inside bash -c" DENY "$(run "$(bash_json "bash -c 'echo hi; gh pr merge 2231'")")"
+# A heredoc fed to a shell is script text, exactly like `bash -c "…"`.
+ck "heredoc fed to bash"           DENY "$(run "$(bash_json 'bash <<EOF
+gh pr merge 2231 --squash
+EOF')")"
+ck "heredoc fed to bash -s"        DENY "$(run "$(bash_json "bash -s <<'EOF'
+gh pr merge 2231 --squash
+EOF")")"
+# ...but a wrapper in front of a prose-producing command is still prose, and a
+# heredoc fed to something that is NOT a shell is still a document.
+ck "wrapper in front of an echo"   ALLOW "$(run "$(bash_json 'sudo -u ci echo "gh pr merge 2231"')")"
+ck "heredoc fed to cat"            ALLOW "$(run "$(bash_json 'cat <<EOF
+remember to gh pr merge 2231 once CI is green
+EOF')")"
+
+echo "== every SELECTOR SHAPE gh accepts is still checked =="
+# gh pr merge takes a number, a URL, or a head-branch name. The branch name is
+# chosen by the external contributor — the very party this guard defends
+# against — so a shape whitelist narrower than a legal git ref would let them
+# turn the guard off by naming their branch `_wip`.
+ck_lookup "numeric selector"        'gh pr merge 2231 --squash'          '2231'
+ck_lookup "branch selector"         'gh pr merge feat/my-branch --squash' 'feat/my-branch'
+ck_lookup "branch, leading _"       'gh pr merge _wip --squash'           '_wip'
+ck_lookup "branch with a comma"     'gh pr merge feat/a,b --squash'       'feat/a,b'
+ck_lookup "branch with a percent"   'gh pr merge feat/100%-done --squash' 'feat/100%-done'
+ck_lookup "URL selector"            'gh pr merge https://github.com/laurigates/claude-plugins/pull/2231 --squash' \
+                                    'https://github.com/laurigates/claude-plugins/pull/2231'
+
+echo "== the api merge route is checked however it is called =="
+# gh api and curl reach the same PUT .../pulls/N/merge endpoint. curl had no
+# assertion at all, so scoping the route check to `gh` would have gone unnoticed.
+ck_lookup "gh api -X PUT"    'gh api -X PUT repos/laurigates/claude-plugins/pulls/2231/merge' '2231'
+ck_lookup "curl -X PUT"      'curl -X PUT https://api.github.com/repos/laurigates/claude-plugins/pulls/2231/merge' '2231'
+ck_lookup "curl with a token header" \
+   'curl -H "Authorization: bearer $T" -X PUT https://api.github.com/repos/laurigates/claude-plugins/pulls/2231/merge' '2231'
+ck_lookup "wrapped curl"     'sudo -u ci curl -X PUT https://api.github.com/repos/laurigates/claude-plugins/pulls/2231/merge' '2231'
+
+echo "== the FIRST merge wins, not the LAST mention =="
+# The selector used to be taken after a GREEDY `.*`, so it anchored on the last
+# occurrence of the phrase: trailing prose hijacked the selector and the hook
+# checked (and reported on) the wrong PR. The verdict alone cannot catch this —
+# the stub answers for any selector — so assert on which PR was looked up.
+GREEDY_LOG="$TMPDIR/greedy.log"
+: > "$GREEDY_LOG"
+STUB_LOG="$GREEDY_LOG" run \
+  "$(bash_json 'gh pr merge 2231 --squash && echo "note: gh pr merge 999 was the earlier plan"')" >/dev/null
+unset STUB_LOG
+ck "still denied" DENY "$LAST_VERDICT"
+if grep -q 'pr view 2231 ' "$GREEDY_LOG"; then
+    printf '  ok   the real merge selector (2231) was checked\n'; PASS=$((PASS + 1))
+else
+    printf '  FAIL the real merge selector (2231) was never checked\n'; FAIL=$((FAIL + 1))
+fi
+if grep -q '999' "$GREEDY_LOG"; then
+    printf '  FAIL the trailing prose selector (999) was checked instead\n'; FAIL=$((FAIL + 1))
+else
+    printf '  ok   the trailing prose selector (999) was not checked\n'; PASS=$((PASS + 1))
+fi
 
 echo "== the denial carries what a reviewer needs =="
 run "$(bash_json 'gh pr merge 2231 --squash')" >/dev/null

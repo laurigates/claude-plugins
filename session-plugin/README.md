@@ -145,9 +145,26 @@ reporting a confident `OPEN_TASKS=0`:
 |---|---|---|
 | `project` | The detected (or `--project`) slug owns the count. Scoping is a **hierarchy** match, exactly like `task project:<p>`: `bluepad32` covers `bluepad32.own` but not `bluepad32-extra` | `high` |
 | `remote-name` | The slug matched nothing; the **git remote's** repo name did (`PROJECT_RESOLVED=`) | `low` |
+| `ancestor-name` | The slug matched nothing; an **ancestor directory's** repo slug did, and was adopted (`PROJECT_RESOLVED=`, `DETECTION=cwd-repo-basename-ancestor`) | `low` |
 | `all-projects-fallback` | No slug matched; `RECENT_TASK_*` rows list tasks touched within `--recent-days` across all projects | `low` |
 | `unknown` | `jq` unavailable, so no scoping was possible | `low` |
 | `none` | `task` unavailable | `low` |
+
+`DETECTION=` reports how the slug was chosen, independently of `TASK_SCOPE`:
+
+| `DETECTION` | Source |
+|---|---|
+| `override` | `--project` (caller-supplied, user-asserted) |
+| `declared` | A `.claude/session.json` `.project` string at the cwd or repo root. That file is repo content, so the value must be a plain single-line string — any other shape is rejected, never flattened into a slug that would match nothing and earn a confident zero |
+| `cwd-repo-basename` | The directory basename (the guess) |
+| `cwd-repo-basename-ancestor` | An adopted ancestor repo slug |
+| `ambiguous` | No repo context |
+
+When the detected slug owns zero tasks but an ancestor slug owns some — and the
+detected slug is *asserted*, so it may not be adopted away — the collector emits
+`PROJECT_AMBIGUOUS=<slug>` and `PROJECT_AMBIGUOUS_TASKS=N` (both omitted when
+there is no ambiguity). Consumers render this as `0 here, N under <slug>`; it is
+the one case where even a `high`-confidence zero is not a clean queue.
 
 `OPEN_TASKS` stays an integer in every branch (consumers do arithmetic on
 it); the uncertainty lives in `TASK_SCOPE` / `PROJECT_CONFIDENCE`.

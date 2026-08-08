@@ -250,17 +250,31 @@ A SessionStart hook that records the current git stash baseline for session-scop
 
 1. Receives JSON input with `cwd` and `session_id`
 2. Lists all current stash commit hashes with `git stash list --format='%H'`
-3. Writes hashes to `/tmp/claude-stash-baselines/{session_id}`
-4. The Stop hook uses this baseline to ignore pre-existing stashes
+3. Writes them to `<baseline-dir>/{session_id}.d/<sha256-of-git-common-dir>`, and
+   stamps `<baseline-dir>/{session_id}.d/.session-start` whose **mtime** is the
+   session start
+4. The Stop hook uses both: the baseline to ignore pre-existing stashes, and the
+   marker as the age bound for "created during this session"
+
+`<baseline-dir>` defaults to `/tmp/claude-stash-baselines`; override with
+`CLAUDE_STASH_BASELINE_DIR`. The key is the **git common dir**
+(`git rev-parse --git-common-dir`, realpath'd), *not* the repo root — `refs/stash`
+lives in the common dir and is shared by every linked worktree, so one stash
+namespace maps to exactly one baseline.
 
 ### Behavior
 
 | Event | Action |
 |-------|--------|
-| Session startup | Records all stash commit hashes as baseline |
-| Session resume | Re-records baseline (stashes at resume time are pre-existing) |
+| Session startup | Records all stash commit hashes as baseline and stamps `.session-start` |
+| Session resume / compact / clear | **Leaves both alone** — each write is once-per-session, so a re-fire cannot move the age bound and retroactively un-report an already-flagged stash |
 | Not a git repo | Silent exit |
-| No stashes | Creates empty baseline file |
+| No stashes | Writes a baseline containing only its `# <namespace>` header |
+
+Baselines are **never empty**: every one carries a `# <namespace>` header line,
+and that non-emptiness is what distinguishes a legitimately stash-free repo from
+a capture that failed. A 0-byte baseline is read as UNKNOWN, and the reminder
+stays silent rather than guessing.
 
 ### Configuration
 
@@ -361,5 +375,9 @@ echo '{"cwd": "/tmp/test-stash", "session_id": "no-baseline"}' | \
 
 # Cleanup
 rm -rf /tmp/test-stash
-rm -f /tmp/claude-stash-baselines/test-123
+rm -rf /tmp/claude-stash-baselines/test-123.d
 ```
+
+The baseline is a per-session **directory** (`<session_id>.d/`), so `rm -f` on the
+flat path removes nothing the hooks write — that path only ever matches a
+pre-#2306 legacy baseline.
