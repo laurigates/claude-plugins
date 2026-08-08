@@ -27,6 +27,10 @@
 #      much harder, that the carve-out stays NARROW: it needs the declaring
 #      label AND the literal 'haiku', it never spreads to a sibling call in the
 #      same file, and it is counted rather than silent.
+#   M. The framing literal `not a script to run verbatim` (issue #2164) — the
+#      passing case, the failing case, that the assertion is SECTION-scoped
+#      (a mention elsewhere in the file does not satisfy it), and that an
+#      already-unreachable orphan is not double-reported.
 
 set -uo pipefail
 
@@ -63,7 +67,8 @@ mk_root() {
 }
 
 # mk_skill <root> <plugin> <skill> — creates the skill dir + a SKILL.md whose
-# framing section is complete (harness heading, filename, both worktree clauses).
+# framing section is complete (harness heading, filename, the TEMPLATE framing
+# literal, both worktree clauses).
 # Callers mutate the SKILL.md afterwards to build the negative cases.
 mk_skill() {
     local root="$1" plugin="$2" skill="$3"
@@ -77,7 +82,8 @@ description: Fixture. Use when testing the bundled-workflow guard.
 
 ## Workflow harness (template)
 
-`workflows/audit.workflow.js` ships beside this skill. It is a TEMPLATE to adapt.
+`workflows/audit.workflow.js` ships beside this skill. **It is a TEMPLATE to adapt,
+not a script to run verbatim.** Read it, then rewrite it for the work in front of you.
 
 > Never `Workflow({resumeFromRunId})` to retry a few failed worktree agents (#1868).
 
@@ -241,13 +247,15 @@ export default async function ({ agent }) {
 JS
 # Guard integrity: with the clauses present it must be clean.
 check "J: worktree clauses present → OK" "OK" "$(field "$(out "$root")" STATUS)"
-# Now strip both clauses. The backticks are literal markdown in the fixture, not
-# a command substitution — single quotes are deliberate.
+# Now strip both clauses, keeping the rest of the framing intact so the only
+# variable is the clauses. The backticks are literal markdown in the fixture,
+# not a command substitution — single quotes are deliberate.
 # shellcheck disable=SC2016
-printf -- '---\nname: x\ndescription: y. Use when z.\n---\n\n## Workflow harness (template)\n\n`workflows/audit.workflow.js` ships beside this skill.\n' > "$d/SKILL.md"
+printf -- '---\nname: x\ndescription: y. Use when z.\n---\n\n## Workflow harness (template)\n\n`workflows/audit.workflow.js` ships beside this skill. It is a TEMPLATE to adapt,\nnot a script to run verbatim.\n' > "$d/SKILL.md"
 o=$(out "$root")
 check "J: missing worktree clauses typed" "2" "$(printf '%s\n' "$o" | grep -c 'TYPE=missing_worktree_clause')"
 check "J: missing worktree clauses exit 1" "1" "$(run "$root" --strict)"
+check "J: framing literal kept → no framing finding" "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=missing_template_framing')"
 
 # ---------------------------------------------------------------------------
 # K (part 2). GUARD INTEGRITY — agent() text inside a comment or a template
@@ -366,6 +374,68 @@ o=$(out "$root")
 check "L6: exempted call still tiers effort" "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=invalid_effort')"
 check "L6: exempted call has no model error" "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=non_opus_model')"
 check "L6: still exempted"                   "1" "$(field "$o" EXEMPTED_CALLS)"
+
+# ---------------------------------------------------------------------------
+# M. The framing literal `not a script to run verbatim` (issue #2164).
+#
+# `.claude/rules/workflow-vs-skill.md` § "The framing snippet (copy verbatim)"
+# makes that sentence what turns a `## Workflow harness (template)` heading into
+# a TEMPLATE framing. A section that merely names the file reads as "here is the
+# script for this skill" — the exact thing the rule exists to prevent.
+# ---------------------------------------------------------------------------
+
+# M1. PASSING — the framing snippet carries the literal (mk_skill's fixture is
+# the rule's copy-verbatim shape). Guard integrity: the file must actually have
+# been scanned, or "no finding" is vacuous.
+root=$(mk_root M1)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_js "$d" audit.workflow.js opus low
+o=$(out "$root")
+check "M1: framing literal present → no finding" "0"  "$(printf '%s\n' "$o" | grep -c 'TYPE=missing_template_framing')"
+check "M1: framing literal present STATUS=OK"    "OK" "$(field "$o" STATUS)"
+check "M1: framing literal present exit 0"       "0"  "$(run "$root" --strict)"
+check "M1: fixture really was scanned"           "1"  "$(field "$o" FILES_SCANNED)"
+
+# M2. FAILING — a reachable harness (section present, file named) whose framing
+# omits the literal. This is the case nothing asserted before #2164.
+root=$(mk_root M2)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_js "$d" audit.workflow.js opus low
+# shellcheck disable=SC2016  # literal markdown backticks, not a substitution
+printf -- '---\nname: x\ndescription: y. Use when z.\n---\n\n## Workflow harness (template)\n\n`workflows/audit.workflow.js` ships beside this skill. Run it to audit the thing.\n\n> Never `Workflow({resumeFromRunId})` to retry failed worktree agents (#1868).\n\n> Push, PR creation, and GitHub mutations happen only in the single sequential\n> finalise stage, never inside a fanned-out agent.\n' > "$d/SKILL.md"
+o=$(out "$root")
+check "M2: missing framing literal typed"     "1"     "$(printf '%s\n' "$o" | grep -c 'TYPE=missing_template_framing')"
+check "M2: missing framing literal STATUS"    "ERROR" "$(field "$o" STATUS)"
+check "M2: missing framing literal exit 1"    "1"     "$(run "$root" --strict)"
+check "M2: missing framing literal plain 0"   "0"     "$(run "$root")"
+# The message must be actionable: it names the exact literal to add.
+check "M2: message names the literal"         "1"     "$(printf '%s\n' "$o" | grep -c "not a script to run verbatim")"
+# It is a finding about the FRAMING, not about reachability — the harness is
+# reachable here, so the orphan finding must not also fire.
+check "M2: reachable → no unreachable finding" "0"    "$(printf '%s\n' "$o" | grep -c 'TYPE=unreachable_workflow')"
+
+# M3. SECTION-SCOPED — the literal appearing somewhere else in the SKILL.md
+# does not satisfy the assertion. Without this the check degrades to a
+# whole-file grep that any passing mention of the rule would defeat.
+root=$(mk_root M3)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_js "$d" audit.workflow.js opus low
+# shellcheck disable=SC2016  # literal markdown backticks, not a substitution
+printf -- '---\nname: x\ndescription: y. Use when z.\n---\n\n## Workflow harness (template)\n\n`workflows/audit.workflow.js` ships beside this skill. Run it to audit the thing.\n\n> Never `Workflow({resumeFromRunId})` to retry failed worktree agents (#1868).\n\n> Push, PR creation, and GitHub mutations happen only in the single sequential\n> finalise stage, never inside a fanned-out agent.\n\n## Notes\n\nSee workflow-vs-skill.md: a harness is not a script to run verbatim.\n' > "$d/SKILL.md"
+o=$(out "$root")
+check "M3: literal outside the section still ERRORs" "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=missing_template_framing')"
+check "M3: literal outside the section exit 1"       "1" "$(run "$root" --strict)"
+
+# M4. NO DOUBLE-REPORT — an orphan .js already raises unreachable_workflow; the
+# framing assertion must stay silent so the actionable finding is not buried.
+# (Case G's fixture, re-checked for the new type.)
+root=$(mk_root M4)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_js "$d" audit.workflow.js opus low
+printf -- '---\nname: x\ndescription: y. Use when z.\n---\n\nNo harness section here.\n' > "$d/SKILL.md"
+o=$(out "$root")
+check "M4: orphan raises unreachable_workflow" "2" "$(printf '%s\n' "$o" | grep -c 'TYPE=unreachable_workflow')"
+check "M4: orphan not double-reported"         "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=missing_template_framing')"
 
 printf '\n%s: %d passed, %d failed\n' "$(basename "$0")" "$pass" "$fail"
 [ "$fail" -eq 0 ]

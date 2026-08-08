@@ -40,11 +40,40 @@
 #                                 `## Workflow harness (template)` section, or
 #                                 that SKILL.md never names this file
 #                                 ("An orphan `.js` is dead weight")
+#     ERROR missing_template_framing  the harness IS reachable, but the framing
+#                                 section omits the literal
+#                                 `not a script to run verbatim` — the one
+#                                 phrase that makes the section a TEMPLATE
+#                                 framing rather than an invitation to run the
+#                                 file as shipped (see "THE FRAMING LITERAL")
 #     ERROR missing_worktree_clause  the script dispatches `isolation:'worktree'`
 #                                 agents but its SKILL.md framing omits the two
 #                                 clauses the rule says every such template must
 #                                 also carry (#1868 resume hazard; push/PR only
 #                                 in the sequential finalise stage)
+#
+# THE FRAMING LITERAL — `not a script to run verbatim` (issue #2164)
+# `.claude/rules/workflow-vs-skill.md` § "The framing snippet (copy verbatim)"
+# makes that sentence the load-bearing clause of the whole section:
+#
+#   "`workflows/<name>.workflow.js` ships beside this skill. **It is a TEMPLATE
+#    to adapt, not a script to run verbatim.** Read it, then rewrite it for the
+#    work in front of you."
+#
+# Without it a `## Workflow harness (template)` heading that merely *names* the
+# file reads as "here is the script for this skill" — the exact "script to run
+# verbatim" the source guidance warns against (§ Landing discipline). The
+# heading alone is not the framing; the sentence is.
+#
+# Scoped two ways so it stays a real assertion rather than a whole-file grep:
+#
+#   1. It is checked INSIDE the framing section (heading → next `## `), so a
+#      SKILL.md that happens to quote the phrase in unrelated prose cannot
+#      satisfy it vacuously.
+#   2. It only fires when the harness is otherwise REACHABLE (the section
+#      exists AND names the file). An orphan `.js` already raises
+#      unreachable_workflow above; adding a second finding for the same root
+#      cause would double-report and bury the actionable one.
 #
 # THE MODEL-OMISSION QUESTION (deliberate, documented)
 # `.claude/rules/workflow-model-effort.md` is path-scoped to `.github/workflows/**`
@@ -127,7 +156,8 @@ Usage: check-workflow-js-model.sh [--strict] [--project-dir DIR]
 
 Guards bundled dynamic-workflow harnesses (*/skills/*/workflows/*.workflow.js):
 every agent() call pins an opus (or inherited) model and an explicit valid
-effort, and every harness is reachable from its sibling SKILL.md.
+effort, and every harness is reachable from a sibling SKILL.md whose framing
+section carries the literal "not a script to run verbatim".
 
 One exemption: a call whose opts.label starts with coldread/recoldread AND whose
 opts.model is 'haiku' is the sanctioned measurement instrument, not a delegate.
@@ -168,6 +198,18 @@ declare -a exemptions=()
 add_error() { issues+=("  - SEVERITY=ERROR $1"); error_count=$((error_count + 1)); }
 add_warn()  { issues+=("  - SEVERITY=WARN $1");  warn_count=$((warn_count + 1)); }
 add_exemption() { exemptions+=("  - $1"); exempted_calls=$((exempted_calls + 1)); }
+
+# framing_section <skill-md> — the BODY of the `## Workflow harness (template)`
+# section (heading exclusive, up to the next `## ` heading or EOF). Empty when
+# the section is absent. Used to scope the framing-literal assertion (#2164) so
+# a mention of the phrase elsewhere in the file cannot satisfy it.
+framing_section() {
+    awk '
+        /^## Workflow harness \(template\)/ { inside = 1; next }
+        inside && /^## /                    { inside = 0 }
+        inside                              { print }
+    ' "$1"
+}
 
 # ---------------------------------------------------------------------------
 # Discovery.
@@ -425,11 +467,28 @@ for js in "${js_files[@]+"${js_files[@]}"}"; do
     if [ ! -f "$skill_md" ]; then
         add_error "TYPE=missing_sibling_skill FILE=$rel MSG=workflows/ has no sibling SKILL.md"
     else
+        has_framing=1
+        names_file=1
         if ! grep -qF '## Workflow harness (template)' "$skill_md"; then
+            has_framing=0
             add_error "TYPE=unreachable_workflow FILE=$rel MSG=sibling SKILL.md has no '## Workflow harness (template)' section"
         fi
         if ! grep -qF "$base" "$skill_md"; then
+            names_file=0
             add_error "TYPE=unreachable_workflow FILE=$rel MSG=sibling SKILL.md never names $base (an orphan .js is dead weight)"
+        fi
+        # The framing literal (#2164). Only for a REACHABLE harness — an orphan
+        # already errored above and must not be double-reported — and read from
+        # the framing section itself, not the whole file, so an unrelated
+        # mention elsewhere cannot satisfy it.
+        if [ "$has_framing" -eq 1 ] && [ "$names_file" -eq 1 ]; then
+            # Here-string, not `framing_section … | grep -qF`: under `pipefail` a
+            # `grep -q` that matches and closes the pipe early can SIGPIPE the
+            # producer, so the pipeline reports non-zero and the `if !` inverts
+            # into a phantom finding (.claude/rules/shell-scripting.md; #1744).
+            if ! grep -qF 'not a script to run verbatim' <<<"$(framing_section "$skill_md")"; then
+                add_error "TYPE=missing_template_framing FILE=$rel MSG=the '## Workflow harness (template)' section must contain the literal string 'not a script to run verbatim' — copy the framing snippet from .claude/rules/workflow-vs-skill.md (a section that only names the file reads as a script to run, not a template to adapt)"
+            fi
         fi
         # Worktree-dispatching templates carry two extra clauses (the rule's
         # copy-verbatim block). Only checked when the harness actually dispatches
