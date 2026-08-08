@@ -342,6 +342,106 @@ assert_not_contains "$(grep 'FILE=' <<<"$out_l" || true)" ".claude/worktrees/" \
 rm -rf "$fx_k"
 
 # ---------------------------------------------------------------------------
+echo "TEST J: a release-please-generated changelog is skipped"
+# ---------------------------------------------------------------------------
+# The verbatim entry release-please generated for PR #2281 — the fix that
+# created this guard. It NAMES the fix ("route branch containment to the
+# authority ladder, not branch-audit"); it does not GIVE guidance, so both
+# findings it produced were false positives. It is also unfixable by hand
+# (`.claude/rules/release-please-protection.md`), so with it in scope the guard
+# hard-blocked every commit in the repo and three agents bypassed pre-commit.
+fx_m="$(mktemp -d)"
+[ -n "$fx_m" ] || { echo "mktemp failed"; exit 1; }
+mkdir -p "$fx_m/git-plugin/agents"
+cat > "$fx_m/git-plugin/CHANGELOG.md" <<'EOF'
+# Changelog
+
+## [2.50.5](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.4...git-plugin-v2.50.5) (2026-08-07)
+
+
+### Bug Fixes
+
+* **git-plugin:** route branch containment to the authority ladder, not branch-audit ([#2281](https://github.com/laurigates/claude-plugins/issues/2281)) ([76f13e1](https://github.com/laurigates/claude-plugins/commit/76f13e1b20d1c5322c5b2036dd010fda238e6490)), closes [#2268](https://github.com/laurigates/claude-plugins/issues/2268)
+EOF
+# A compliant real guidance file beside it, so "STATUS=OK" cannot be satisfied
+# by a guard that simply stopped scanning git-plugin altogether.
+cat > "$fx_m/git-plugin/agents/git-ops.md" <<'EOF'
+---
+name: git-ops
+---
+
+Classify each branch with the authority ladder:
+
+```bash
+gh pr list --state all --head <branch> --json state,mergedAt
+```
+
+`just -g branch-audit` is a convenience only: its REVIEW bucket measured ~90%
+false on two repos (issue #2268).
+EOF
+out_m="$(run_guard "$fx_m")"
+exit_m=$?
+assert_contains "$out_m" "STATUS=OK" "J1 generated changelog does not trip the guard"
+assert_eq "$exit_m" "0" "J2 exits 0"
+assert_not_contains "$out_m" "git-plugin/CHANGELOG.md" "J3 the changelog is named in no finding"
+assert_eq "$(grep -m1 '^GIT_PLUGIN_GENERATED_CHANGELOGS_EXCLUDED=' <<<"$out_m" | cut -d= -f2)" "1" \
+  "J4 the exclusion is REPORTED, so 'scanned nothing' stays distinguishable from 'found nothing'"
+# Guard integrity: the exclusion must be surgical. If the whole walk had been
+# narrowed instead, J1 would pass while the guard silently judged nothing.
+assert_eq "$(grep -m1 '^GIT_PLUGIN_FILES_SCANNED=' <<<"$out_m" | cut -d= -f2)" "1" \
+  "J5 the sibling guidance file was still scanned"
+assert_not_contains "$out_m" "TYPE=nothing_scanned" "J6 an excluded file is still DISCOVERED — no misfire is masked"
+rm -rf "$fx_m"
+
+# ---------------------------------------------------------------------------
+echo "TEST K: hand-written files carrying the same text are still caught"
+# ---------------------------------------------------------------------------
+# The non-vacuity half of TEST J. Without it, excluding `*.md` outright — or
+# every file named CHANGELOG.md — would pass J and assert nothing.
+fx_n="$(mktemp -d)"
+[ -n "$fx_n" ] || { echo "mktemp failed"; exit 1; }
+mkdir -p "$fx_n/git-plugin/skills/notes"
+cat > "$fx_n/git-plugin/skills/notes/SKILL.md" <<'EOF'
+---
+name: notes
+---
+
+Route branch containment to the authority ladder, not branch-audit: run
+`just -g branch-audit` and read its MERGED vs REVIEW buckets.
+EOF
+out_n="$(run_guard "$fx_n")"
+exit_n=$?
+assert_contains "$out_n" "TYPE=ladder_missing" "K1 the SAME sentence in a hand-written skill is still flagged"
+assert_contains "$out_n" "TYPE=branch_audit_uncaveated" "K2 the uncaveated mention is still flagged"
+assert_eq "$exit_n" "1" "K3 exits 1"
+rm -rf "$fx_n"
+
+# A HAND-AUTHORED CHANGELOG.md — Keep-a-Changelog form (`## [1.0.0] - date`:
+# dash-separated date, no parenthesised date, no compare link) — is not
+# release-please output and must stay in scope.
+fx_o="$(mktemp -d)"
+[ -n "$fx_o" ] || { echo "mktemp failed"; exit 1; }
+mkdir -p "$fx_o/git-plugin"
+cat > "$fx_o/git-plugin/CHANGELOG.md" <<'EOF'
+# Changelog
+
+All notable changes are recorded here by hand.
+
+## [1.0.0] - 2026-01-15
+
+### Added
+
+- Branch cleanup guidance: prefer `just -g branch-audit` to classify branches.
+EOF
+out_o="$(run_guard "$fx_o")"
+exit_o=$?
+assert_contains "$out_o" "TYPE=branch_audit_uncaveated" "K4 a hand-authored CHANGELOG.md is NOT excluded"
+assert_eq "$(grep -m1 '^GIT_PLUGIN_GENERATED_CHANGELOGS_EXCLUDED=' <<<"$out_o" | cut -d= -f2)" "0" \
+  "K5 nothing was excluded for it"
+assert_eq "$exit_o" "1" "K6 exits 1"
+rm -rf "$fx_o"
+
+# ---------------------------------------------------------------------------
 echo ""
 echo "Passed: $pass   Failed: $fail"
 [ "$fail" -eq 0 ] || exit 1
