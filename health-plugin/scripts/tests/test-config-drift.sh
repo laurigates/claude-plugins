@@ -144,6 +144,32 @@ python3 "$ANALYZER" --root "$FIXROOT/proj" --no-embed --fast --gate --format=sta
 assert_eq "--gate exits 2 on a broken stub" "$?" "2"
 rm "$FIXROOT/home/.claude/rules/ghost-stuff.md"
 
+# The false positive this check actually produced in use: the stub's TITLE
+# carries an incidental backticked term, and "first backticked token" picked
+# that instead of the delegation target. Verbatim shape of the real stub.
+cat > "$FIXROOT/home/.claude/rules/titled-stuff.md" <<'RULE'
+# Git-Based `uvx` Widget Servers Serve a Stale Cached Commit
+
+Promoted to a skill: invoke `some-plugin:widget-wrangling` when a widget
+server appears to run stale code — it carries the whole recipe.
+RULE
+out=$(run)
+assert_eq "a backticked term in the title does not win over the invoke target" \
+    "$(count_kind "$out" broken_pointer_stub)" "0"
+
+# Guard integrity: the fix must not resolve EVERYTHING to something valid.
+# Same title shape, but the invoke target is genuinely missing.
+cat > "$FIXROOT/home/.claude/rules/titled-broken.md" <<'RULE'
+# Git-Based `uvx` Widget Servers Serve a Stale Cached Commit
+
+Promoted to a skill: invoke `some-plugin:no-such-skill-at-all` when a widget
+server appears to run stale code — it carries the whole recipe.
+RULE
+out=$(run)
+assert_eq "a broken invoke target is still caught despite a resolvable title term" \
+    "$(count_kind "$out" broken_pointer_stub)" "1"
+rm "$FIXROOT/home/.claude/rules/titled-stuff.md" "$FIXROOT/home/.claude/rules/titled-broken.md"
+
 echo "TEST 5: path-scoped rules are not counted as always-loaded"
 # The bug this pins: `paths:` parses to an EMPTY string value (its globs are on
 # following lines), so a truthiness test silently counts every scoped rule as
