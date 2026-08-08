@@ -131,7 +131,11 @@ for entry in "${denylist[@]}"; do
 
         count=$((count + 1))
         issues="${issues}  - SEVERITY=ERROR TYPE=dead_endpoint FILE=${file}:${lineno} ENDPOINT=${pattern} USE=${replacement} WHY=${reference}\n"
-    done < <(cd "$PROJ_DIR" && grep -rn -F "$pattern" "${files[@]}" 2>/dev/null)
+    # -H is load-bearing, not decoration: with a SINGLE file argument GNU grep
+    # omits the filename prefix while BSD grep keeps it, so the FILE:LINE:TEXT
+    # parse below silently shifts by one field on Linux and reads the line
+    # number as the filename. Passed locally on macOS, failed in CI.
+    done < <(cd "$PROJ_DIR" && grep -rHn -F "$pattern" "${files[@]}" 2>/dev/null)
 done
 
 echo "ISSUE_COUNT=${count}"
