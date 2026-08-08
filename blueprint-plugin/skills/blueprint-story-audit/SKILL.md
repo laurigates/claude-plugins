@@ -1,6 +1,6 @@
 ---
 created: 2026-04-25
-modified: 2026-07-04
+modified: 2026-08-08
 reviewed: 2026-04-25
 description: Audit user stories against codebase and tests for tier-ranked coverage gaps. Use when running story audit, PRD reconciliation, or surfacing PRD-code drift.
 args: "[--scope <area>] [--prd <path>] [--no-write] [--report-only]"
@@ -46,6 +46,44 @@ Parse `$ARGUMENTS`:
 - `--prd <path>`: Override PRD auto-detection. Repeatable — pass multiple `--prd` flags for multi-PRD projects. Default: every `*.md` directly under `docs/prds/`.
 - `--no-write`: Print the audit to the conversation only; don't write to `docs/blueprint/audits/`.
 - `--report-only`: Skip the Step 8 "What next?" prompt. Useful when running this skill from another orchestrator.
+
+## Workflow harness (template)
+
+`workflows/blueprint-story-audit.workflow.js` ships beside this skill. **It is a TEMPLATE to adapt,
+not a script to run verbatim.** Read it, then rewrite it for the work in front of you.
+
+**Adapt freely:** the agent prompts, the per-PRD and per-test-root fan-out width, the discovery
+globs that enumerate `args.prds` / `args.testRoots`, the tier-cutoff heuristic wording, and the
+project-specific commands in the Agentic Optimizations table below.
+
+**Preserve across any adaptation:** (a) the fan-out width comes from `args.prds` and
+`args.testRoots` — the `## Context` block's `find` output, or the `--prd` flags — never from a
+prose "for each PRD"; (b) the `DRIFT_STATUS`, `CONFIDENCE`, and `TIER` enums in the schemas, which
+force a determinate verdict per row instead of a paragraph that reads like one, and the
+`tierCutoff` field that makes Step 4's documented cutoff non-optional; (c) the `parallel()` at
+Step 1 is a real barrier — every downstream join is a *cross-lane* fact (a capability with no
+story; a story with no test), so no lane's output is usable until all three have landed.
+
+**Skip the harness when:** the repo has one PRD and one test directory — the modal case, which
+collapses to three agents total (capability + story + test) and is a linear pass where the harness
+is pure overhead. The steps below remain the authoritative description of *what* each stage must
+produce; the harness only fixes *how* the work is split.
+
+Two constraints the template encodes because they are structure, not style:
+
+- **The capability lane is always ONE agent.** You cannot partition work by a partition the work
+  itself discovers — Agent 1's brief is literally "group by area", so the areas do not exist until
+  it has run. Only the per-PRD and per-test-root splits are enumerable up front.
+- **Steps 2 and 4 stay agent stages, never JS.** Step 2 mandates "verify with a quick file-level
+  read where ambiguous" and a workflow script has no filesystem; Step 4's core/non-core cutoff is
+  explicitly heuristic.
+
+The template also carries this skill's own row caps unchanged — `ROW_LIMIT = 200` from Step 1's
+Agent 1 brief and `AREA_ROW_LIMIT = 15` from the artifact template in
+[REFERENCE.md](REFERENCE.md). They are **not** divided across lanes: the capability lane is a
+single agent, so there is nothing to divide, and the PRD and test lanes are exhaustive extractions
+("Don't infer — only extract", "List every test file") where a derived per-lane budget would
+silently drop the stories and tests the audit exists to surface.
 
 ## Execution
 
@@ -154,7 +192,7 @@ mkdir -p docs/blueprint/audits
 # Write artifact via Write tool to the path computed in Step 6.
 ```
 
-Update the task registry in `docs/blueprint/manifest.json`:
+Update the task registry in `docs/blueprint/manifest.json`. When the workflow harness ran, `AUDIT_RESULT`, `STORY_COUNT`, and `TIER1_GAP_COUNT` come from the composition agent's structured return (`auditResult`, `storyCount`, `tier1GapCount`) — do not recount them by hand:
 
 ```bash
 jq --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
@@ -175,6 +213,8 @@ Where `AUDIT_RESULT` is `"success"`, `"{N} drift entries"`, or `"failed: {reason
 ### Step 8: Offer next actions
 
 Skip this step if `--report-only` is set.
+
+This step **stays in the skill** — a workflow cannot `AskUserQuestion`, so it has no orchestrated form. `--report-only` is the path an orchestrator (or the harness) takes.
 
 Use AskUserQuestion to offer the three downstream paths the audit unlocks:
 
