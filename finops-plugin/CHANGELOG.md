@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.4.0...finops-plugin-v1.4.1) (2026-08-08)
+
+
+### Bug Fixes
+
+* **finops-plugin:** stop calling a retired billing endpoint that 410s ([#2322](https://github.com/laurigates/claude-plugins/issues/2322)) ([49f12d8](https://github.com/laurigates/claude-plugins/commit/49f12d81f0e4650c859070e20d36990e37aaa8c7)), closes [#2321](https://github.com/laurigates/claude-plugins/issues/2321)
+
 ## [1.4.0](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.3.7...finops-plugin-v1.4.0) (2026-06-18)
 
 
