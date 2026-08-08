@@ -45,6 +45,9 @@
 #       discovered, i.e. the walk misfired (#2219). A tree with no plugin dirs
 #       at all stays green — a checker that errors on a legitimately empty
 #       corpus gets disabled, which would make the loud case worthless.
+#       Discovery, not judgement, is what this counts: a file skipped as a
+#       generated changelog was still FOUND, so an exclusion can never mask a
+#       misfired walk.
 #   (5) paginated_containment    — a `gh pr list` line that combines a bare
 #       `--limit N` / `-L N` with a merged-state determination (`state` or
 #       `mergedAt` in `--json`) and NO `--head` is the #2268 defect #2.
@@ -62,6 +65,16 @@
 #   - Blockquote lines (`>`) and lines marked as anti-examples (`# Wrong`,
 #     `# Don't`, `# Never`, `# Anti-pattern`, on the line or the one above) are
 #     skipped everywhere, so a gotcha callout can still show the broken form.
+#   - RELEASE-PLEASE-GENERATED CHANGELOGS are skipped everywhere. A changelog
+#     entry NAMES a fix ("route branch containment to the authority ladder, not
+#     branch-audit") — it does not GIVE branch-containment guidance, so every
+#     finding on one is a false positive. It is also unfixable: `CLAUDE.md` and
+#     `.claude/rules/release-please-protection.md` forbid hand-editing these
+#     files, and the next release would revert any edit anyway. Left in scope,
+#     the guard blocked EVERY commit in the repo from the moment PR #2281's own
+#     changelog entry was generated (three agents bypassed pre-commit with
+#     `--no-verify` before this was fixed), and a guard everyone routinely
+#     bypasses protects nothing.
 #
 # Usage:
 #   bash scripts/check-branch-containment-guidance.sh
@@ -109,6 +122,36 @@ MERGE_TREE_CAVEAT="positive-containment"
 
 issues=()
 files_scanned=0
+git_plugin_discovered=0
+git_plugin_excluded=0
+
+# is_generated_changelog <file> — true for a release-please-generated changelog.
+#
+# STRUCTURAL, not a hardcoded path list. A filename allowlist is the maintenance
+# trap `.claude/rules/documentation-authoring.md` warns about: it goes stale the
+# moment a plugin is added, and nothing flags the drift. Release-please instead
+# has a recognisable heading SHAPE, and every generated changelog carries it:
+#
+#   ## [2.50.5](https://github.com/owner/repo/compare/a...b) (2026-08-07)
+#   ## 1.0.0 (2026-01-15)                    ← an unlinked first release
+#
+# i.e. a semver heading, optionally linked to a `compare` diff, followed by a
+# PARENTHESISED ISO date. A hand-written Keep-a-Changelog file writes
+# `## [1.0.0] - 2026-01-15` (dash-separated date, no parens) and is therefore
+# NOT matched — a hand-authored CHANGELOG.md stays in scope and is still judged.
+#
+# The `CHANGELOG.md` basename is a second, deliberately conservative condition —
+# a general shape (any changelog, in any plugin, now or later), not a list. It
+# keeps a hand-written doc that happens to QUOTE a release heading in scope,
+# which is exactly where real guidance lives.
+is_generated_changelog() {
+  local file="$1"
+  case "$(basename "$file")" in
+    CHANGELOG.md) ;;
+    *) return 1 ;;
+  esac
+  grep -qE '^## \[?[0-9]+\.[0-9]+\.[0-9]+\]?(\(https?://[^)]*\))? \([0-9]{4}-[0-9]{2}-[0-9]{2}\)' "$file"
+}
 
 # collect_md <subdir-relative-to-ROOT_DIR> — emit markdown paths RELATIVE to
 # ROOT_DIR, pruning agent worktree clones (#1492/#1548) and the gitignored
@@ -185,6 +228,11 @@ AUTHORITATIVE_RE='gh pr list[^`]*--head'
 while IFS= read -r rel; do
   file="$ROOT_DIR/$rel"
   [ -f "$file" ] || continue
+  git_plugin_discovered=$((git_plugin_discovered + 1))
+  if is_generated_changelog "$file"; then
+    git_plugin_excluded=$((git_plugin_excluded + 1))
+    continue
+  fi
   files_scanned=$((files_scanned + 1))
 
   auth_line="$(first_line_matching "$file" "$AUTHORITATIVE_RE")"
@@ -228,9 +276,16 @@ done < <(collect_md "git-plugin")
 # Rule 5 — paginated containment determination, any plugin
 # ---------------------------------------------------------------------------
 plugin_md_scanned=0
+plugin_md_discovered=0
+plugin_md_excluded=0
 while IFS= read -r rel; do
   file="$ROOT_DIR/$rel"
   [ -f "$file" ] || continue
+  plugin_md_discovered=$((plugin_md_discovered + 1))
+  if is_generated_changelog "$file"; then
+    plugin_md_excluded=$((plugin_md_excluded + 1))
+    continue
+  fi
   plugin_md_scanned=$((plugin_md_scanned + 1))
 
   while IFS=: read -r lineno text; do
@@ -261,6 +316,10 @@ done < <(
 #   no plugin dirs at all                       = genuinely nothing to check
 # The second must stay green: a checker that errors on a legitimately empty
 # corpus gets disabled, and that would make the loud case worthless.
+#
+# This keys on DISCOVERY, never on how many files survived the generated-
+# changelog exclusion. A skipped changelog was still found by the walk, so an
+# exclusion can never turn a misfired walk into a quiet OK.
 plugin_dir_count=0
 for plugin_dir in "$ROOT_DIR"/*-plugin; do
   [ -d "$plugin_dir" ] || continue
@@ -268,9 +327,9 @@ for plugin_dir in "$ROOT_DIR"/*-plugin; do
   plugin_dir_count=$((plugin_dir_count + 1))
 done
 
-if [ "$plugin_dir_count" -gt 0 ] && [ "$plugin_md_scanned" -eq 0 ]; then
+if [ "$plugin_dir_count" -gt 0 ] && [ "$plugin_md_discovered" -eq 0 ]; then
   issues+=("SEVERITY=ERROR TYPE=nothing_scanned MSG=$plugin_dir_count plugin dirs but zero markdown discovered; scan misfired (see #2219)")
-elif [ -d "$ROOT_DIR/git-plugin" ] && [ "$files_scanned" -eq 0 ]; then
+elif [ -d "$ROOT_DIR/git-plugin" ] && [ "$git_plugin_discovered" -eq 0 ]; then
   issues+=("SEVERITY=ERROR TYPE=nothing_scanned MSG=git-plugin/ exists but zero markdown discovered; scan misfired (see #2219)")
 fi
 
@@ -280,9 +339,11 @@ fi
 echo "=== BRANCH CONTAINMENT GUIDANCE ==="
 echo "ROOT=$ROOT_DIR"
 echo "GIT_PLUGIN_FILES_SCANNED=$files_scanned"
+echo "GIT_PLUGIN_GENERATED_CHANGELOGS_EXCLUDED=$git_plugin_excluded"
 echo "PLUGIN_MD_SCANNED=$plugin_md_scanned"
+echo "PLUGIN_MD_GENERATED_CHANGELOGS_EXCLUDED=$plugin_md_excluded"
 echo "PLUGIN_DIRS=$plugin_dir_count"
-echo "SCANNED_EMPTY=$([ "$plugin_md_scanned" -eq 0 ] && echo true || echo false)"
+echo "SCANNED_EMPTY=$([ "$plugin_md_discovered" -eq 0 ] && echo true || echo false)"
 echo "ISSUE_COUNT=${#issues[@]}"
 if [ ${#issues[@]} -gt 0 ]; then
   echo "STATUS=ERROR"
