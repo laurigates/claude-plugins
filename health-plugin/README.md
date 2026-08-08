@@ -35,6 +35,44 @@ These internal skills are auto-discoverable but not user-invocable — use `/hea
 | Script | Description |
 |--------|-------------|
 | `prune-claude-config.py` | Remove orphaned projects and cached data from `~/.claude.json` |
+| `config-drift.py` | Audit the rules/skills corpus itself for duplication, broken pointer stubs, review staleness, and always-loaded budget |
+
+### `config-drift.py`
+
+Answers a question the other health checks do not: **is the configuration
+corpus self-consistent?** It compares rules against each other and against the
+skill corpus, rather than validating any one file in isolation.
+
+| Check | Severity | Catches |
+|---|---|---|
+| `broken_pointer_stub` | ERROR | A "Promoted to a skill: invoke `x`" rule whose target no longer exists |
+| `duplicate_rule_lexical` | WARN | Byte-identical or near-identical rules across scopes |
+| `semantic_overlap_*` | WARN | Differently-worded rules or skills covering one topic |
+| `rule_covered_by_skill` | INFO | A resident rule whose content a skill already carries |
+| `always_loaded_budget` | WARN | The every-turn surface creeping past its ceiling |
+| `review_staleness` | WARN | An artifact changed after its declared `reviewed:` date |
+
+Two cost tiers, because a SessionStart probe cannot pay for a model:
+
+```
+config-drift.py --fast --no-embed --format=json    # 0.05s, pure stdlib, no git spawn
+config-drift.py --format=report                    # + embeddings, scheduled use
+```
+
+`--fast` reads cached last-change dates only; the cache is keyed by **content
+hash**, never mtime, so it cannot go stale and cannot be invalidated by a
+checkout that rewrites timestamps.
+
+**Waivers.** Deliberate duplication is suppressed via
+`~/.claude/config-drift-waivers.json`, keyed by both sides' content hashes — so
+a waiver expires the moment either file is edited. Without that, a recurring
+report re-lists its known-accepted findings until you stop reading it.
+
+**Semantic threshold.** The embedding pass is calibrated to cosine ≥ 0.91 with
+same-name and structural pairs excluded. This is not a default worth changing
+casually: at 0.86 on a real 884-document corpus it emitted 491 findings, of
+which 290 were same-name pairs the cheap tier already owns. Everything here is
+one genre of document, so baseline similarity is high.
 
 ## Use Cases
 

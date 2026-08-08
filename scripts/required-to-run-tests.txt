@@ -38,3 +38,12 @@ blueprint-plugin/scripts/tests/test-check-manifest-schema.sh
 # silent skip returns it to exactly the state it was written to escape.
 taskwarrior-plugin/skills/task-add/scripts/tests/test-uuid-capture.sh
 taskwarrior-plugin/scripts/tests/test-task-id-stability.sh
+
+# python3  (no install step needed — plugin-compliance-check.sh already
+# depends on it, so the runner always has it)
+#
+# config-drift's ONLY skip condition is a missing python3. On this runner that
+# can't legitimately happen, so a SKIP here never means "optional dependency
+# absent by design" — it means the suite stopped executing, and the probe it
+# backs would go on reporting a clean corpus without having opened one.
+health-plugin/scripts/tests/test-config-drift.sh
