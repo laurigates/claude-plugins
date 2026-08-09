@@ -203,6 +203,24 @@ repos:
         language: script
         files: '^(blueprint-plugin/templates/blueprint-(autorun|wo-execute)\.workflow\.yml|scripts/check-blueprint-level3-templates\.sh)$'
         pass_filenames: false
+      - id: test-check-generated-rules-registration
+        name: blueprint generated-rules registration contract regression (#2331)
+        entry: bash ./blueprint-plugin/scripts/tests/test-check-generated-rules-registration.sh
+        language: system
+        files: '^blueprint-plugin/(skills/blueprint-(init|generate-rules|sync|promote)/SKILL\.md|hooks/blueprint-drift-probe\.sh|scripts/(check-generated-rules-registration\.sh|register-generated-rules\.sh|tests/test-check-generated-rules-registration\.sh))$'
+        pass_filenames: false
+      - id: test-register-generated-rules
+        name: blueprint generated-rules writer regression (#2331)
+        entry: bash ./blueprint-plugin/scripts/tests/test-register-generated-rules.sh
+        language: system
+        files: '^blueprint-plugin/scripts/(register-generated-rules\.sh|tests/test-register-generated-rules\.sh)$'
+        pass_filenames: false
+      - id: check-generated-rules-registration
+        name: blueprint-init registers what it writes; one key form across producers and consumers (#2331)
+        entry: ./blueprint-plugin/scripts/check-generated-rules-registration.sh
+        language: script
+        files: '^blueprint-plugin/(skills/blueprint-(init|generate-rules|sync|promote)/SKILL\.md|hooks/blueprint-drift-probe\.sh|scripts/(check-generated-rules-registration\.sh|register-generated-rules\.sh))$'
+        pass_filenames: false
       - id: test-check-workflow-js-model
         name: bundled workflow .js model/effort guard regression (#2210)
         entry: bash ./scripts/tests/test-check-workflow-js-model.sh

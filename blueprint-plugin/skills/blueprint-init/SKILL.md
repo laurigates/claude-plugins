@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-06-21
-reviewed: 2026-06-21
+modified: 2026-08-09
+reviewed: 2026-08-09
 description: Initialize Blueprint Development structure. Use when bootstrapping docs/blueprint/ with manifest, PRD/ADR/PRP directories, and feature tracking for the first time.
 allowed-tools: Bash, Write, Read, AskUserQuestion, Glob
 name: blueprint-init
@@ -419,6 +419,39 @@ Initialize Blueprint Development in this project.
    - `$RULES_DIR/development.md`: TDD workflow, commit conventions
    - `$RULES_DIR/testing.md`: Test requirements, coverage expectations
    - `$RULES_DIR/document-management.md`: Document organization rules (if decision detection enabled)
+
+8a. **Register the rules just written in `generated.rules`** — this step is not
+   optional. `/blueprint:sync` and the SessionStart drift probe detect staleness
+   by comparing a **registered** record's `content_hash` against the file on
+   disk, so a rule written here but never registered is invisible to both: a
+   local edit is undetectable, a revised template never propagates, and sync
+   reports clean over a set it cannot see. Nothing surfaces as an error
+   (issue #2331).
+
+   Register every rule Step 8 actually wrote — pass only the filenames that
+   exist (`document-management.md` only when decision detection was enabled in
+   Step 5):
+
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/register-generated-rules.sh" \
+     --source "blueprint-init" \
+     --plugin-version "3.4.0" \
+     development.md testing.md document-management.md
+   ```
+
+   The script is the same one `/blueprint:generate-rules` Step 5 uses, so the
+   two producers of `$RULES_DIR` cannot drift apart on the record shape or on
+   how the hash is computed. It resolves `$RULES_DIR` from
+   `structure.generated_rules_path` itself and writes, per rule, a
+   `generatedRecord` (`source`, `generated_at`, `plugin_version`,
+   `content_hash`, `status`) into the `generated.rules` **object map** defined by
+   `blueprint-plugin/schemas/manifest.schema.json`.
+
+   **Key form** — the manifest key is the rule's **bare filename relative to
+   `$RULES_DIR`, including the `.md` extension** (`development.md`, never
+   `development` and never `.claude/rules/development.md`). A consumer resolves
+   a rule as `"$RULES_DIR/$key"` and must **not** append `.md`. Check
+   `REGISTERED=` and `STATUS=OK` in the script's output before continuing.
 
 9. **Handle `.gitignore`**:
    - Always commit `CLAUDE.md` and `.claude/rules/` (shared project instructions)

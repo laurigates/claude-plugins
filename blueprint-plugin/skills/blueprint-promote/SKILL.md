@@ -1,7 +1,7 @@
 ---
 created: 2025-12-22
-modified: 2026-05-09
-reviewed: 2026-05-04
+modified: 2026-08-09
+reviewed: 2026-08-09
 description: "Move generated artifact to custom layer to preserve manual edits. Use when promoting a generated rule, preserving .claude/rules/ changes, or stopping sync warnings."
 args: "[skill-name|command-name]"
 allowed-tools: Read, Write, Bash, AskUserQuestion
@@ -36,9 +36,22 @@ Copy a generated rule to the custom rules layer for preservation.
    - If no name provided, list available generated rules and ask user to choose
 
 2. **Locate the rule**:
+
+   Resolve the rules directory from the manifest — never hardcode
+   `.claude/rules/` (issues #1043, #1675, #2331):
+
    ```bash
-   # Check if it's a generated rule
-   test -f .claude/rules/{name}.md
+   RULES_DIR=$(jq -r '.structure.generated_rules_path // ".claude/rules/"' docs/blueprint/manifest.json)
+   RULES_DIR="${RULES_DIR%/}"
+   ```
+
+   `generated.rules` keys are **bare filenames including the `.md` extension**,
+   so normalise a bare `{name}` argument to `{name}.md` once and resolve it as
+   `"$RULES_DIR/{key}"` — do **not** append `.md` to a manifest key:
+
+   ```bash
+   KEY="{name}"; case "$KEY" in *.md) ;; *) KEY="$KEY.md" ;; esac
+   test -f "$RULES_DIR/$KEY"
    ```
 
    If not found:
