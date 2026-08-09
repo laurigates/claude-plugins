@@ -186,6 +186,88 @@ assert_silent "plain YAML config (not openapi)" \
 BSC_BASH_PAYLOAD='{"tool_name":"Bash","session_id":"quiet-6","tool_input":{"command":"export FOO=1"},"tool_response":{"stdout":"ok","stderr":"","interrupted":false,"isImage":false,"noOutputExpected":false}}'
 assert_silent "non-Edit/Write tool is ignored" "$BSC_BASH_PAYLOAD"
 
+# --- #2336: code-shaped signals (2-6) are gated on a source extension ---
+#
+# Pre-fix, signals 2-6 grepped the payload of ANY file, so English prose
+# containing "export " fired the public-API cue. `file_ext` was computed at the
+# top of the hook and referenced nowhere — the dropped guard this pins.
+#
+# These are SEMANTIC, not a grep for the string `is_code_file`: each feeds the
+# hook a payload that is byte-for-byte code-shaped and asserts the VERDICT turns
+# on the file's extension alone. The paired "still fires" controls below keep the
+# gate from being satisfied by a hook that simply went silent everywhere.
+echo ""
+echo "prose does not trip the code-shaped signals (#2336):"
+
+# The verbatim repro from the issue: a Markdown table cell reading
+# "…the same consumer-contract test before the export can be called correct".
+assert_silent "prose containing 'export ' in a .md file (issue #2336 repro)" \
+    "$(bsc_payload Write notes.md '' 'needs a test before the export can be called correct' ext-1)"
+assert_silent "a Markdown list item starting with the word 'pub'" \
+    "$(bsc_payload Edit docs/glossary.md 'pub means published here, not Rust visibility' '' ext-2)"
+assert_silent "'module.exports' discussed in prose" \
+    "$(bsc_payload Edit README.md 'the legacy module.exports form still works' '' ext-3)"
+assert_silent "an Express route shown as a Markdown code sample" \
+    "$(bsc_payload Edit docs/guide.md 'app.get("/health", handler);' '' ext-4)"
+assert_silent "a TypeScript exported interface quoted in prose" \
+    "$(bsc_payload Edit CHANGELOG.md 'renamed export interface MyConfig to Settings' '' ext-5)"
+assert_silent "a Go exported struct quoted in a .txt scratch note" \
+    "$(bsc_payload Write notes.txt '' 'type Server struct { addr string }' ext-6)"
+assert_silent "export-shaped content in a plain .json data file (not a manifest)" \
+    "$(bsc_payload Write data/fixture.json '' '{"note": "export default thing"}' ext-7)"
+assert_silent "export-shaped content in a .yaml config (not openapi)" \
+    "$(bsc_payload Edit config/app.yaml 'comment: export default is unrelated here' '' ext-8)"
+assert_silent "a path with no extension at all" \
+    "$(bsc_payload Write Makefile '' 'export PATH := /usr/bin' ext-9)"
+
+echo ""
+echo "genuine source edits still fire (the gate is not a blanket mute):"
+# The issue's control, verbatim. Same payload as ext-5/ext-7 in substance —
+# only the extension differs, which is exactly the invariant.
+assert_fires "the same 'export interface' payload in a .ts file (issue #2336 control)" \
+    "$(bsc_payload Write x.ts '' 'export interface Foo { a: string }' ext-ctl-1)"
+assert_fires "the same 'app.get(' payload in a .js file" \
+    "$(bsc_payload Edit src/routes.js 'app.get("/health", handler);' '' ext-ctl-2)"
+assert_fires "the same 'type Server struct' payload in a .go file" \
+    "$(bsc_payload Write pkg/server.go '' 'type Server struct { addr string }' ext-ctl-3)"
+assert_fires "a pub struct in a .rs file" \
+    "$(bsc_payload Edit src/lib.rs 'pub struct Config { pub host: String }' '' ext-ctl-4)"
+assert_fires "def __all__ in a .py file" \
+    "$(bsc_payload Write pkg/__init__.py '' 'def __all__(): pass' ext-ctl-5)"
+assert_fires ".mjs is a source extension" \
+    "$(bsc_payload Write src/mod.mjs '' 'export default function () {}' ext-ctl-6)"
+assert_fires ".tsx is a source extension" \
+    "$(bsc_payload Write src/App.tsx '' 'export type Props = { a: string };' ext-ctl-7)"
+
+echo ""
+echo "path/basename signals (1, 7) stay extension-free (#2336):"
+# These identify themselves by path, so the extension gate must NOT reach them —
+# .json / .yaml / .proto are all outside the source-extension list.
+assert_fires "plugin.json manifest still fires though .json is not a code ext" \
+    "$(bsc_payload Edit foo-plugin/.claude-plugin/plugin.json 'x' '' ext-path-1)"
+assert_fires "marketplace.json still fires" \
+    "$(bsc_payload Edit .claude-plugin/marketplace.json 'x' '' ext-path-2)"
+assert_fires "openapi.yaml still fires though .yaml is not a code ext" \
+    "$(bsc_payload Write docs/openapi.yaml '' 'openapi: 3.0.0' ext-path-3)"
+assert_fires ".proto still fires though .proto is not a code ext" \
+    "$(bsc_payload Write proto/service.proto '' 'syntax = "proto3";' ext-path-4)"
+assert_fires "schema.prisma still fires" \
+    "$(bsc_payload Write prisma/schema.prisma '' 'model User { id Int }' ext-path-5)"
+
+echo ""
+echo "session scratchpad is inert (#2336):"
+# /blueprint:derive-plans can never be actionable for a file in the harness's
+# per-session scratch tree — it belongs to no repo.
+assert_silent "a .ts export under /private/tmp/claude-<uid>/…/scratchpad/" \
+    "$(bsc_payload Write /private/tmp/claude-502/-Users-x-repo/abc-123/scratchpad/gen.ts '' 'export interface Foo { a: string }' scratch-1)"
+assert_silent "a plugin.json under /tmp/claude-<uid>/…" \
+    "$(bsc_payload Write /tmp/claude-502/sess/scratchpad/plugin.json '' '{}' scratch-2)"
+assert_silent "a .ts export under /var/folders/…/claude-<uid>/…" \
+    "$(bsc_payload Write /var/folders/ab/xy/T/claude-502/sess/scratchpad/gen.ts '' 'export default 1;' scratch-3)"
+# Narrowness control: the carve-out is the harness scratchpad, NOT all of /tmp.
+assert_fires "a plain /tmp source file is NOT swept up by the scratchpad exit" \
+    "$(bsc_payload Write /tmp/x.ts '' 'export interface Foo { a: string }' scratch-ctl-1)"
+
 echo ""
 echo "dedup, bypass, and edge cases:"
 BSC_DUP_PAYLOAD="$(bsc_payload Edit a/plugin.json 'x' '' dup-session)"

@@ -45,12 +45,38 @@ esac
 
 [ -z "$file_path" ] && exit 0
 
+# Session scratchpad (#2336): the harness's per-session scratch tree lives under
+# a temp-rooted claude-<uid>/… directory and belongs to no repo, so
+# /blueprint:derive-plans can never be actionable for a file written there. Same
+# carve-out family as bash-antipatterns' scratch-path exemptions (#1592, #2052).
+# Deliberately narrow: plain /tmp/foo.ts still gets the cue — only the harness's
+# own scratchpad tree is inert.
+case "$file_path" in
+    /tmp/claude-*/*|/private/tmp/claude-*/*|/var/folders/*/claude-*/*) exit 0 ;;
+esac
+
 # --- Detection (ADR-0017: start narrow, widen on evidence) ---
 base_name="${file_path##*/}"
 file_ext="${file_path##*.}"
 payload="${new_string}
 ${content}"
 is_structural=0
+
+# File-type guard for the CODE-shaped signals (2-6) — issue #2336.
+#
+# Signals 2-6 grep source-code patterns out of the edit payload. Applied to any
+# file they fire on prose: an English sentence containing "export " (observed in
+# a Markdown table cell: "…before the export can be called correct") tripped the
+# public-API cue, and `^[+[:space:]]*pub ` matches a list item starting with the
+# word "pub". file_ext was computed here and never referenced — the guard this
+# restores is the one that went missing when detection widened in #1616.
+#
+# Signals 1 and 7 (manifests, .proto/.graphql/.prisma, openapi.*) stay
+# extension-free: they identify themselves by path or basename already.
+is_code_file=0
+case "$file_ext" in
+    js|jsx|mjs|cjs|ts|tsx|mts|cts|rs|py|pyi|go) is_code_file=1 ;;
+esac
 
 # Signal 1: plugin/marketplace manifest.
 case "$file_path" in
@@ -61,31 +87,31 @@ if [ "$base_name" = "plugin.json" ]; then
 fi
 
 # Signal 2: a public-API / export line in the edit payload (JS/TS/Rust/Python).
-if [ "$is_structural" -eq 0 ] && \
+if [ "$is_code_file" -eq 1 ] && [ "$is_structural" -eq 0 ] && \
     printf '%s' "$payload" | grep -Eq '(export |export default|module\.exports|^[+[:space:]]*pub |def __all__)'; then
     is_structural=1
 fi
 
 # Signal 3: TypeScript exported interface or type declaration.
-if [ "$is_structural" -eq 0 ] && \
+if [ "$is_code_file" -eq 1 ] && [ "$is_structural" -eq 0 ] && \
     printf '%s' "$payload" | grep -Eq 'export (interface|type) [A-Z]'; then
     is_structural=1
 fi
 
 # Signal 4: Go exported struct / interface declaration.
-if [ "$is_structural" -eq 0 ] && \
+if [ "$is_code_file" -eq 1 ] && [ "$is_structural" -eq 0 ] && \
     printf '%s' "$payload" | grep -Eq 'type [A-Z][A-Za-z0-9_]* (struct|interface) \{'; then
     is_structural=1
 fi
 
 # Signal 5: Rust public struct / enum / trait declaration.
-if [ "$is_structural" -eq 0 ] && \
+if [ "$is_code_file" -eq 1 ] && [ "$is_structural" -eq 0 ] && \
     printf '%s' "$payload" | grep -Eq '^[+[:space:]]*(pub|pub\(crate\)) (struct|enum|trait) [A-Z]'; then
     is_structural=1
 fi
 
 # Signal 6: route / handler registration (web framework public API).
-if [ "$is_structural" -eq 0 ] && \
+if [ "$is_code_file" -eq 1 ] && [ "$is_structural" -eq 0 ] && \
     printf '%s' "$payload" | grep -Eq '(app\.(get|post|put|patch|delete|use)\(|router\.(get|post|put|patch|delete|use)\(|@app\.route\(|addRoute\()'; then
     is_structural=1
 fi
