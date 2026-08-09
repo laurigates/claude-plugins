@@ -27,6 +27,16 @@
 # raw `git status`, and the guard STILL blocks a task with no supporting change
 # anywhere.
 #
+# ONE PROMPT, NEVER A UNION (issue #2335)
+# The rule set is evaluated against the VERIFIER prompt alone. Joining every
+# TaskCompleted agent prompt into one blob before grepping (the pre-#2335 shape)
+# let a token carried by ANY sibling hook satisfy a rule for ALL of them, so a
+# fully-reverted verifier passed as long as some neighbour mentioned the words.
+# The verifier is IDENTIFIED, never inferred: with one agent hook it is that
+# hook; with several it is the one whose `statusMessage` matches
+# VERIFIER_MARKER. Zero or several matches is itself a finding — the guard never
+# guesses which prompt it is supposed to be pinning.
+#
 # Output: structured KEY=VALUE per .claude/rules/structured-script-output.md.
 #   --plugin-json PATH  file to inspect (default: hooks-plugin's plugin.json)
 #   --strict            exit 1 when ISSUE_COUNT > 0 (for pre-commit / CI)
@@ -38,6 +48,13 @@ set -uo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PLUGIN_JSON="$ROOT_DIR/hooks-plugin/.claude-plugin/plugin.json"
 STRICT=0
+
+# The explicit verifier marker: a TaskCompleted agent hook whose `statusMessage`
+# matches this (case-insensitively) declares itself the implementation verifier.
+# `statusMessage` is a real, harness-honoured agent-hook field (see
+# .claude/rules/prompt-agent-hooks.md), so this is a declaration the config
+# already carries rather than a synthetic key invented for the guard.
+VERIFIER_MARKER='verif'
 
 usage() {
     cat <<'EOF'
@@ -71,9 +88,15 @@ done
 issue_count=0
 declare -a issues=()
 
+# Identity of the prompt currently under evaluation. Every finding names it, so
+# "which prompt failed" is answered in the report rather than inferred (#2335).
+VERIFIER_ID="none"
+VERIFIER_SOURCE="none"
+AGENT_PROMPT_COUNT=0
+
 add_issue() {
     issue_count=$((issue_count + 1))
-    issues+=("  - SEVERITY=ERROR RULE=$1 MSG=$2")
+    issues+=("  - SEVERITY=ERROR PROMPT=$VERIFIER_ID RULE=$1 MSG=$2")
 }
 
 emit() {
@@ -81,6 +104,9 @@ emit() {
     [ "$issue_count" -gt 0 ] && status="ERROR"
     echo "=== TASKCOMPLETED VERIFICATION ==="
     echo "PLUGIN_JSON=${PLUGIN_JSON#"$ROOT_DIR"/}"
+    echo "AGENT_PROMPT_COUNT=$AGENT_PROMPT_COUNT"
+    echo "VERIFIER_ID=$VERIFIER_ID"
+    echo "VERIFIER_SOURCE=$VERIFIER_SOURCE"
     echo "PROMPT_FOUND=${1:-false}"
     echo "PROMPT_CHARS=${2:-0}"
     echo "RULES_CHECKED=${3:-0}"
@@ -105,42 +131,101 @@ if [ ! -f "$PLUGIN_JSON" ]; then
     emit false 0 0
 fi
 
-prompt_file="$(mktemp)"
-if [ -z "${prompt_file:-}" ] || [ ! -f "$prompt_file" ]; then
-    echo "check-taskcompleted-verification.sh: mktemp failed" >&2
+work_dir="$(mktemp -d)"
+if [ -z "${work_dir:-}" ] || [ ! -d "$work_dir" ]; then
+    echo "check-taskcompleted-verification.sh: mktemp -d failed" >&2
     exit 1
 fi
-trap 'rm -f "$prompt_file"' EXIT
+trap 'rm -rf "$work_dir"' EXIT
 
-# Extract the TaskCompleted type:"agent" prompt. A missing/duplicated/renamed
-# hook is itself a finding, reported through the exit code below.
+# Extract EACH TaskCompleted type:"agent" prompt to its OWN file, plus an index
+# of `<i><TAB><statusMessage>` rows. Writing them separately is what makes the
+# per-prompt evaluation possible: there is no point at which the prompts are
+# concatenated, so no sibling hook's vocabulary can satisfy a rule for the
+# verifier (#2335 defect 2). A missing/duplicated/renamed hook is itself a
+# finding, reported through the exit code below.
 extract_rc=0
-python3 - "$PLUGIN_JSON" >"$prompt_file" 2>/dev/null <<'PY' || extract_rc=$?
-import json, sys
+python3 - "$PLUGIN_JSON" "$work_dir" 2>/dev/null <<'PY' || extract_rc=$?
+import json, os, sys
 
 try:
     data = json.load(open(sys.argv[1]))
 except Exception:
     sys.exit(3)  # unparseable JSON
 
-prompts = []
+out_dir = sys.argv[2]
+rows = []
 for block in (data.get("hooks") or {}).get("TaskCompleted") or []:
     for handler in block.get("hooks") or []:
         if handler.get("type") == "agent" and handler.get("prompt"):
-            prompts.append(handler["prompt"])
+            idx = len(rows)
+            with open(os.path.join(out_dir, "prompt-%d.txt" % idx), "w") as fh:
+                fh.write(handler["prompt"])
+            status_message = handler.get("statusMessage") or ""
+            # Keep the index one row per prompt: a statusMessage carrying a tab
+            # or a newline would otherwise shift or split the row.
+            for ch in ("\t", "\r", "\n"):
+                status_message = status_message.replace(ch, " ")
+            rows.append("%d\t%s" % (idx, status_message))
 
-if not prompts:
+if not rows:
     sys.exit(4)  # no agent hook on TaskCompleted
-sys.stdout.write("\n".join(prompts))
+with open(os.path.join(out_dir, "index.tsv"), "w") as fh:
+    fh.write("\n".join(rows) + "\n")
 PY
 
 case "$extract_rc" in
     0) ;;
     3) add_issue "plugin_json_unparseable" "plugin.json is not valid JSON"; emit false 0 0 ;;
     4) add_issue "agent_hook_missing" "TaskCompleted has no type:\"agent\" hook carrying a prompt"; emit false 0 0 ;;
-    *) add_issue "extraction_failed" "could not extract the TaskCompleted agent prompt (rc=$extract_rc)"; emit false 0 0 ;;
+    *) add_issue "extraction_failed" "could not extract the TaskCompleted agent prompts (rc=$extract_rc)"; emit false 0 0 ;;
 esac
 
+# --- Identify the verifier prompt: never inferred, never a union -------------
+declare -a idx_list=() msg_list=()
+while IFS=$'\t' read -r idx msg; do
+    [ -n "${idx:-}" ] || continue
+    idx_list+=("$idx")
+    msg_list+=("${msg:-}")
+done <"$work_dir/index.tsv"
+AGENT_PROMPT_COUNT=${#idx_list[@]}
+
+verifier_idx=""
+if [ "$AGENT_PROMPT_COUNT" -eq 1 ]; then
+    # Unambiguous: the only agent hook on the event IS the verifier.
+    verifier_idx=0
+    VERIFIER_SOURCE="sole-agent-hook"
+    VERIFIER_ID="agent[0]"
+else
+    declare -a marked=()
+    for i in "${!idx_list[@]}"; do
+        if printf '%s' "${msg_list[$i]}" | grep -Eqi -- "$VERIFIER_MARKER"; then
+            marked+=("$i")
+        fi
+    done
+    case "${#marked[@]}" in
+        1)
+            verifier_idx="${marked[0]}"
+            VERIFIER_SOURCE="statusMessage"
+            VERIFIER_ID="agent[$verifier_idx]"
+            ;;
+        0)
+            VERIFIER_ID="unidentified"
+            add_issue "verifier_unidentified" \
+                "TaskCompleted carries $AGENT_PROMPT_COUNT type:\"agent\" hooks and none declares itself the verifier; give the verifier a statusMessage matching /$VERIFIER_MARKER/i"
+            emit true 0 0
+            ;;
+        *)
+            VERIFIER_ID="ambiguous"
+            add_issue "verifier_ambiguous" \
+                "${#marked[@]} TaskCompleted type:\"agent\" hooks carry a statusMessage matching /$VERIFIER_MARKER/i; exactly one must"
+            emit true 0 0
+            ;;
+    esac
+fi
+
+# From here on EVERY rule reads this one file — the verifier's prompt alone.
+prompt_file="$work_dir/prompt-$verifier_idx.txt"
 prompt_chars=$(wc -c <"$prompt_file" | tr -d ' ')
 rules_checked=0
 
@@ -205,11 +290,16 @@ require_any "base_ref_merge_base" \
     'fork-point' \
     'divergence point'
 
+# `no upstream` was dropped as an accepted spelling (#2335 audit): it describes a
+# DIFFERENT condition — the branch having no `@{u}`, which this prompt forbids
+# using as the base at all — so a reword of the `@{u}` anti-pattern sentence
+# ("if there is no upstream…") would satisfy this rule while the actual
+# unresolved-base handling had been deleted. The surviving spellings all name
+# the base ref itself.
 require_any "base_ref_unresolved_path" \
     "prompt no longer says what to do when no base ref resolves" \
     'neither resolve' \
     'no base ref' \
-    'no upstream' \
     '(cannot|can not|could not|does not|doesn.t) (be )?resolve'
 
 # Only an UNCONDITIONAL base is forbidden: a bare `<branch>..HEAD` range, or a
@@ -245,10 +335,19 @@ require_any "worktree_fallback_preserved" \
     'nothing ahead' \
     '(fall|falls|falling) back to the working tree'
 
+# Anchored on the INSTRUCTION, not the vocabulary (issue #2335 defect 1). The
+# pre-#2335 spellings were the bare tokens `git status` and `working tree`, both
+# of which occur throughout the prompt in prose that is not the inspection step
+# — including inside a NEGATION ("not raw git status") — so deleting the only
+# real inspection step still passed. An accepted spelling must now be either a
+# working-tree-scoped `git status` invocation (a porcelain/short flag: the
+# machine-readable forms an instruction uses, which prose about the tree does
+# not carry), or an imperative inspection verb bound to a `git status`/`git diff`
+# call with no sentence boundary between them.
 require_any "worktree_still_inspected" \
-    "prompt no longer inspects the working tree at all" \
-    'git status' \
-    'working tree'
+    "prompt no longer issues a working-tree inspection command (e.g. git status --porcelain / git diff --stat of the uncommitted state)" \
+    'git status +(--porcelain|--short|-s|-uall|--untracked)' \
+    '(inspect|inspects|examine|examines|review|reviews|read|reads|run|runs|check|checks|look at|looks at)[^.;]*\bgit (status|diff)\b'
 
 # --- Concept 5: scope is compared against the branch's own diff ------------
 require_any "scope_against_branch_diff" \

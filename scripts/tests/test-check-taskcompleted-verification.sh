@@ -16,6 +16,12 @@
 #     incidental phrase.
 #   * TESTS D-H mutate one behaviour at a time out of the fixed prompt and
 #     require exactly the matching rule to fire.
+#   * TESTS K-N cover issue #2335 — the two holes that let a FULLY REVERTED
+#     verifier report STATUS=OK. K replays the vacuous-rule mutation (delete the
+#     only working-tree inspection step, keeping every word the old rule
+#     accepted); L replays the union mutation (revert the verifier AND give it a
+#     sibling agent hook carrying the tokens); M pins verifier identification;
+#     N is K's reword-tolerance half.
 #
 # Run: bash scripts/tests/test-check-taskcompleted-verification.sh
 # Exit 0 = all tests pass, Exit 1 = failures
@@ -49,6 +55,43 @@ for block in data["hooks"]["TaskCompleted"]:
     for handler in block["hooks"]:
         if handler.get("type") == "agent":
             handler["prompt"] = prompt
+json.dump(data, open(os.environ["FIXTURE_OUT"], "w"), indent=2)
+PY
+    echo "$out"
+}
+
+# make_multi_fixture NAME [STATUS_MESSAGE PROMPT_FILE]... -> plugin.json with the
+# TaskCompleted agent hook REPLACED by N agent hooks, in the given order. Used by
+# the #2335 union cases: the pre-fix extractor joined every agent prompt into one
+# blob, so a token in ANY of them satisfied a rule for ALL of them.
+make_multi_fixture() {
+    local name="$1" out="$WORK/$1.json"
+    shift
+    local spec="$WORK/$name.spec"
+    : > "$spec"
+    while [ $# -gt 0 ]; do
+        printf '%s\t%s\n' "$1" "$2" >> "$spec"
+        shift 2
+    done
+    FIXTURE_SPEC="$spec" FIXTURE_OUT="$out" FIXTURE_SRC="$REAL_JSON" \
+    python3 - <<'PY'
+import json, os
+
+data = json.load(open(os.environ["FIXTURE_SRC"]))
+handlers = []
+for line in open(os.environ["FIXTURE_SPEC"]):
+    line = line.rstrip("\n")
+    if not line:
+        continue
+    status_message, prompt_path = line.split("\t", 1)
+    handler = {"type": "agent", "prompt": open(prompt_path).read(), "timeout": 60}
+    if status_message:
+        handler["statusMessage"] = status_message
+    handlers.append(handler)
+
+for block in data["hooks"]["TaskCompleted"]:
+    kept = [h for h in block["hooks"] if h.get("type") != "agent"]
+    block["hooks"] = kept + handlers
 json.dump(data, open(os.environ["FIXTURE_OUT"], "w"), indent=2)
 PY
     echo "$out"
@@ -275,6 +318,139 @@ assert_contains "J4: a missing file is reported" "RULE=plugin_json_missing" "$ou
 
 assert_exit "J5: an unknown argument exits 2 rather than being swallowed" 2 \
     bash "$GUARD" --strictt
+
+# ---------------------------------------------------------------------------
+echo "TEST K: #2335 defect 1 — deleting the only inspection step is caught"
+# ---------------------------------------------------------------------------
+# The pre-#2335 rule accepted the bare tokens `git status` and `working tree`.
+# Both survive this mutation in PROSE (the scope paragraph says "not raw git
+# status"; four other lines say "working tree"), which is exactly why deleting
+# the one real inspection step used to report STATUS=OK.
+k_json=$(mutate noworktreeinspect '/^3\. Inspect the working tree/d')
+out=$(run_guard "$k_json")
+assert_contains "K1: deleting the inspection step fires worktree_still_inspected" \
+    "RULE=worktree_still_inspected" "$out"
+assert_exit "K2: the mutant exits 1 under --strict" 1 \
+    bash "$GUARD" --plugin-json "$k_json" --strict
+# Surgical: no other behaviour was touched, so nothing else may fire.
+assert_contains "K3: exactly one rule fires (the mutation is surgical)" \
+    "ISSUE_COUNT=1" "$out"
+# FIXTURE VALIDITY — without these two the test would pass merely because the
+# vocabulary vanished, proving nothing about the rule being anchored.
+assert_contains "K4: the mutant still contains the phrase 'working tree'" \
+    "working tree" "$(cat "$WORK/noworktreeinspect.txt")"
+assert_contains "K5: the mutant still contains the token 'git status'" \
+    "git status" "$(cat "$WORK/noworktreeinspect.txt")"
+
+# ---------------------------------------------------------------------------
+echo "TEST L: #2335 defect 2 — a sibling agent hook cannot cover for the verifier"
+# ---------------------------------------------------------------------------
+# The pre-#2335 extractor joined every type:"agent" prompt with "\n" before any
+# rule ran, so ONE hook mentioning the words satisfied the rules for ALL of them.
+cat > "$WORK/reverted.txt" <<'EOF'
+You are verifying that a completed task meets quality standards before accepting it. Context: $ARGUMENTS
+
+Judge whether the task is complete by inspecting the working tree only. Run git status and git diff --stat. If the tree is clean, no work was done.
+
+Respond with {"ok": true} if the implementation looks complete and clean, or {"ok": false, "reason": "specific issues found"} if problems remain.
+EOF
+# The sibling is an unrelated agent hook that happens to carry the shipped text.
+{ echo "Unrelated changelog sanity agent."; echo; cat "$WORK/shipped.txt"; } > "$WORK/sibling.txt"
+
+l_json=$(make_multi_fixture unioncover \
+    "Verifying task implementation quality..." "$WORK/reverted.txt" \
+    "Checking the changelog..." "$WORK/sibling.txt")
+out=$(run_guard "$l_json")
+assert_contains "L1: a reverted verifier with a token-carrying sibling is ERROR" \
+    "STATUS=ERROR" "$out"
+assert_contains "L2: both agent prompts were seen" "AGENT_PROMPT_COUNT=2" "$out"
+assert_contains "L3: the verifier is identified by its statusMessage" \
+    "VERIFIER_SOURCE=statusMessage" "$out"
+assert_contains "L4: findings name WHICH prompt failed" "PROMPT=agent[0]" "$out"
+assert_contains "L5: the reverted verifier loses committed_work_is_evidence" \
+    "RULE=committed_work_is_evidence" "$out"
+assert_contains "L6: the reverted verifier loses branch_log_inspection" \
+    "RULE=branch_log_inspection" "$out"
+assert_contains "L7: the reverted verifier loses clean_tree_is_success" \
+    "RULE=clean_tree_is_success" "$out"
+assert_exit "L8: the union mutant exits 1 under --strict" 1 \
+    bash "$GUARD" --plugin-json "$l_json" --strict
+# FIXTURE VALIDITY: the sibling must genuinely carry the tokens, else the union
+# case is vacuous — it would fail for want of the words anywhere at all.
+assert_contains "L9: the sibling prompt really does carry the evidence token" \
+    "may live in COMMITS" "$(cat "$WORK/sibling.txt")"
+# GUARD INTEGRITY: the same two-hook shape with an INTACT verifier must pass, so
+# L1 is attributable to the reverted verifier and not to having two hooks.
+l_ok_json=$(make_multi_fixture unionclean \
+    "Verifying task implementation quality..." "$WORK/shipped.txt" \
+    "Checking the changelog..." "$WORK/sibling.txt")
+out=$(run_guard "$l_ok_json")
+assert_contains "L10: two hooks with an intact verifier still pass" "STATUS=OK" "$out"
+
+# ---------------------------------------------------------------------------
+echo "TEST M: the verifier is identified, never inferred"
+# ---------------------------------------------------------------------------
+# M1: several agent hooks and none declares itself -> a finding, not a guess.
+m1_json=$(make_multi_fixture unmarked \
+    "" "$WORK/shipped.txt" \
+    "" "$WORK/sibling.txt")
+out=$(run_guard "$m1_json")
+assert_contains "M1: no declared verifier among several is reported" \
+    "RULE=verifier_unidentified" "$out"
+assert_exit "M2: an unidentified verifier exits 1 under --strict" 1 \
+    bash "$GUARD" --plugin-json "$m1_json" --strict
+
+# M3: two hooks both claiming to be the verifier is equally unresolvable.
+m3_json=$(make_multi_fixture doublemarked \
+    "Verifying task implementation quality..." "$WORK/shipped.txt" \
+    "Verifying something else..." "$WORK/sibling.txt")
+out=$(run_guard "$m3_json")
+assert_contains "M3: two declared verifiers are reported as ambiguous" \
+    "RULE=verifier_ambiguous" "$out"
+
+# M4 guard integrity: selection is by MARKER, not by position. Here the intact
+# verifier is SECOND and a reverted prompt is first — a guard that just took
+# index 0 (or unioned) would report ERROR.
+m4_json=$(make_multi_fixture markedsecond \
+    "Checking the changelog..." "$WORK/reverted.txt" \
+    "Verifying task implementation quality..." "$WORK/shipped.txt")
+out=$(run_guard "$m4_json")
+assert_contains "M4: the marked hook is selected even when it is not first" \
+    "VERIFIER_ID=agent[1]" "$out"
+assert_contains "M5: selecting the marked hook yields STATUS=OK" "STATUS=OK" "$out"
+
+# M6 guard integrity: a SOLE agent hook needs no marker — dropping the
+# statusMessage must not turn the guard into a false alarm.
+m6_json=$(make_multi_fixture solenomarker "" "$WORK/shipped.txt")
+out=$(run_guard "$m6_json")
+assert_contains "M6: a sole unmarked agent hook still resolves" \
+    "VERIFIER_SOURCE=sole-agent-hook" "$out"
+assert_contains "M7: a sole unmarked agent hook passes" "STATUS=OK" "$out"
+
+# ---------------------------------------------------------------------------
+echo "TEST N: the anchored inspection rule still tolerates a genuine reword"
+# ---------------------------------------------------------------------------
+# N1: a different flag spelling for the same instruction.
+n1_json=$(mutate reworkinspect1 \
+    's|^3\. Inspect the working tree: git status --porcelain and git diff --stat\.|3. Now survey the uncommitted state — git status --short, then git diff --stat.|')
+out=$(run_guard "$n1_json")
+assert_contains "N1: 'git status --short' satisfies the inspection rule" "STATUS=OK" "$out"
+
+# N2: no machine-readable flag at all — an imperative verb bound to the call.
+n2_json=$(mutate reworkinspect2 \
+    's|^3\. Inspect the working tree: git status --porcelain and git diff --stat\.|3. Read git status and git diff to see what is still uncommitted.|')
+out=$(run_guard "$n2_json")
+assert_contains "N2: an imperative 'read git status' satisfies the inspection rule" \
+    "STATUS=OK" "$out"
+
+# N3 is the discrimination proof: prose ABOUT the working tree, in the same
+# position, must NOT satisfy the rule. Without it N1/N2 would pass against a
+# rule that had simply been relaxed back to the old vocabulary match.
+n3_json=$(mutate reworkinspect3 \
+    's|^3\. Inspect the working tree: git status --porcelain and git diff --stat\.|3. Remember that the working tree may also carry changes; git status output is not authoritative here.|')
+out=$(run_guard "$n3_json")
+assert_contains "N3: prose about the working tree does NOT satisfy the rule" \
+    "RULE=worktree_still_inspected" "$out"
 
 echo ""
 echo "PASSED=$PASS FAILED=$FAIL"
