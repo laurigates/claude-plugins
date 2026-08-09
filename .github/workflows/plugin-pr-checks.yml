@@ -169,10 +169,13 @@ jobs:
         run: bash scripts/check-workflow-script-triggers.sh --strict
 
       - name: Self-test the dead-endpoint guard (#2321)
-        # Repo-root scripts/tests/ is outside run-skill-script-tests.sh's
-        # discovery globs, so this step is the guard's only CI signal — without
-        # it the guard would run in pre-commit alone and have no protection
-        # against its own regressions (#2219's class).
+        # Repo-root scripts/tests/ IS discovered by run-skill-script-tests.sh
+        # as of #2333, so this step is no longer the guard's only CI signal —
+        # but it is still the only ALWAYS-ON one: this workflow carries no
+        # `paths:` filter (compliance is a required check), while the runner's
+        # workflow is path-filtered. Kept deliberately, paired with the
+        # `--strict` run below. Same reasoning for every sibling self-test step
+        # in this job; see the header of scripts/run-skill-script-tests.sh.
         run: bash scripts/tests/test-check-dead-api-endpoints.sh
 
       - name: Check skills and scripts call no retired REST endpoint

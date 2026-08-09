@@ -379,6 +379,78 @@ check "case 10: an unresolvable --root exits 2" "2" "$rc"
 check_contains "case 10: the bad root is named" "no-such-tree" "$out"
 check_absent "case 10: it is not reported as an empty scan" "SCANNED_EMPTY=true" "$out"
 
+# ---------------------------------------------------------------------------
+# CASE 11 — repo-root `scripts/tests/test-*.sh` is discovered (#2333)
+#
+# The three original globs (`*/skills/*/scripts/tests/`, `*-plugin/scripts/tests/`,
+# `*/hooks/`) all missed repo-root `scripts/tests/`, where the self-tests of the
+# whole-repo `check-*.sh` guards live. A guard there therefore had no CI signal
+# unless somebody hand-wired a step into plugin-pr-checks.yml — which is how the
+# same class shipped three times (#2219, #2221, #2333).
+#
+# The glob is ANCHORED (`./scripts/tests/…`), not `*/scripts/tests/…`: discovery
+# runs from inside the root against `.`-relative paths (#2219), so `./scripts`
+# names this tree's scripts dir and nothing else. Both halves are asserted —
+# discovery AND the anchor — because a `*/`-spelled fix would pass the first
+# assertion while quietly swallowing every nested `scripts/tests/` in the tree.
+# ---------------------------------------------------------------------------
+ROOTSCRIPTS="${WORK}/rootscripts"
+
+# The target: a repo-root guard self-test.
+write_test "${ROOTSCRIPTS}/scripts/tests/test-check-widget.sh" \
+    'echo "PASSED=3"' 'exit 0'
+# A repo-root test that skips must classify as a SKIP here too, not a PASS.
+write_test "${ROOTSCRIPTS}/scripts/tests/test-check-gadget.sh" \
+    'echo "SKIP: gadget CLI not available"' 'exit 0'
+# Anchor guard: a `scripts/tests/` nested somewhere else in the tree is NOT the
+# repo-root one and must stay undiscovered. `tools/` is deliberately not a
+# `*-plugin` dir, so no other glob can claim it either.
+write_test "${ROOTSCRIPTS}/tools/scripts/tests/test-nested-widget.sh" \
+    'echo "PASSED=1"' 'exit 0'
+# Guard integrity: the pre-existing globs must keep working alongside the new
+# one, so a discovery count is attributable rather than a coincidence.
+write_test "${ROOTSCRIPTS}/demo-plugin/skills/alpha/scripts/tests/test-skill-local.sh" \
+    'echo "PASSED=1"' 'exit 0'
+
+out="$(bash "$RUNNER" --root "$ROOTSCRIPTS" 2>&1)"
+rc=$?
+
+check_contains "case 11: a repo-root guard self-test is discovered and run" \
+    "PASS=./scripts/tests/test-check-widget.sh" "$out"
+check_contains "case 11: a repo-root test that skips is classified SKIP" \
+    "SKIP=./scripts/tests/test-check-gadget.sh" "$out"
+check_absent "case 11: the skipping repo-root test is NOT reported as PASS=" \
+    "PASS=./scripts/tests/test-check-gadget.sh" "$out"
+check_absent "case 11: the glob is anchored — a nested scripts/tests/ is not swallowed" \
+    "test-nested-widget.sh" "$out"
+# The denominator: 2 repo-root + 1 skill-local, and NOT the nested decoy. An
+# exact TOTAL is safe here because this fixture tree is planted by this test.
+check "case 11: TOTAL counts the repo-root tests and excludes the nested decoy" "TOTAL=3" \
+    "$(printf '%s\n' "$out" | grep -m1 '^TOTAL=')"
+check "case 11: the pre-existing globs still discover their own tests" "PASSED=2" \
+    "$(printf '%s\n' "$out" | grep -m1 '^PASSED=')"
+check "case 11: run is otherwise clean (a skip warns, it does not fail)" "0" "$rc"
+
+# A repo-root test is manifest-eligible like any other discovered test — the
+# entry is matched on the same repo-relative form the runner reports.
+REQ_ROOT="${WORK}/required-root.txt"
+echo "scripts/tests/test-check-gadget.sh" > "$REQ_ROOT"
+out="$(bash "$RUNNER" --root "$ROOTSCRIPTS" --required-file "$REQ_ROOT" 2>&1)"
+rc=$?
+check "case 11: a required repo-root test that skips fails the run" "1" "$rc"
+check_contains "case 11: the violation names the repo-root path" \
+    "TYPE=required_test_skipped TEST=scripts/tests/test-check-gadget.sh" "$out"
+
+# Composes with #2219: a worktree-shaped root must find its OWN scripts/tests/.
+# Absolute-path spellings of the new glob break here, quietly.
+WTSCRIPTS="${WORK}/host2/.claude/worktrees/agent-beefcafe"
+write_test "${WTSCRIPTS}/scripts/tests/test-check-widget.sh" 'echo "PASSED=1"' 'exit 0'
+out="$(bash "$RUNNER" --root "$WTSCRIPTS" 2>&1)"
+check "case 11: worktree-shaped root still discovers its repo-root tests" "TOTAL=1" \
+    "$(printf '%s\n' "$out" | grep -m1 '^TOTAL=')"
+check_contains "case 11: and actually runs them" \
+    "PASS=./scripts/tests/test-check-widget.sh" "$out"
+
 echo "=== SUMMARY ==="
 echo "PASS_COUNT=${pass}"
 echo "FAIL_COUNT=${fail}"
