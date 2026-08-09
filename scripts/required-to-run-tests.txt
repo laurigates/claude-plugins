@@ -6,6 +6,12 @@
 # skips anyway the install is broken and the gate is decorative — which is
 # invisible unless the runner is told the test was expected to run (#2221).
 #
+# Eligible paths are whatever the runner DISCOVERS, which since #2333 includes
+# repo-root `scripts/tests/test-*.sh` alongside the skill-local and hook suites.
+# (An earlier version of this header recorded that repo-root gap as a standing
+# limitation; it no longer exists, so a repo-root guard self-test that needs a
+# dependency belongs here like any other.)
+#
 # A test NOT listed here may skip freely (it just reports SKIP= and WARN) —
 # lizard and similar optional dependencies are absent on the runner by design,
 # and a blanket fail-on-any-skip would be red on arrival and get disabled.
