@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.44.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.44.0...blueprint-plugin-v3.44.1) (2026-08-09)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** gate structural-cue code signals on file extension ([#2337](https://github.com/laurigates/claude-plugins/issues/2337)) ([d2fdaaf](https://github.com/laurigates/claude-plugins/commit/d2fdaaf0cf54b3da15006fa8593f6cc238c1f2de)), closes [#2336](https://github.com/laurigates/claude-plugins/issues/2336)
+
 ## [3.44.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.43.1...blueprint-plugin-v3.44.0) (2026-08-08)
 
 
