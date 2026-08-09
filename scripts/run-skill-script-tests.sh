@@ -10,6 +10,25 @@
 #   - `*/hooks/test-*.sh` — plugin hook regression suites (bash-antipatterns,
 #     branch-protection, pr-metadata, session-end-nudge, …). Before this glob
 #     was added the hook suites only ran when invoked by hand.
+#   - `./scripts/tests/test-*.sh` — the self-tests of the repo-root `check-*.sh`
+#     guards. Anchored at the scan root on purpose: the walk runs from INSIDE
+#     the root against `.`-relative paths (see the `find` below), so `./scripts`
+#     means "this tree's scripts dir" and nothing else. A `*/scripts/tests/…`
+#     spelling would also swallow unrelated nested trees, and an ABSOLUTE
+#     spelling would reintroduce the #2219 prune collapse. Before this glob, a
+#     guard at `scripts/check-*.sh` had a self-test the runner never picked up,
+#     so it got no CI signal unless someone hand-wired a step into
+#     plugin-pr-checks.yml — three guards shipped that way (#2219, #2221, #2333).
+#
+# Deliberate overlap, not an oversight: 27 of the 44 repo-root tests ALSO run as
+# their own hand-wired step in `plugin-pr-checks.yml` (paired with the matching
+# `check-*.sh --strict` run). That workflow carries NO `paths:` filter because
+# `compliance` is a required check, so those steps are the only ALWAYS-ON signal
+# for those guards; this runner is path-filtered. Both are kept on purpose — the
+# steps stay locality-paired with the guard they validate, and the runner is the
+# blanket net that catches the 17 tests no workflow step names at all. If you
+# prune the duplicated steps later, note that you are moving them behind a path
+# filter and off the required check.
 #
 # Used by the `just test-skill-scripts` recipe and the `Test: Skill scripts`
 # CI workflow so local and CI run the identical discovery (local↔CI parity).
@@ -198,7 +217,7 @@ while IFS= read -r -d '' test_file; do
   rm -f "$log_file"
 done < <(cd "$root_abs" && find . \
   -path '*/.claude/worktrees/*' -prune -o \
-  \( -path '*/skills/*/scripts/tests/test-*.sh' -o -path '*-plugin/scripts/tests/test-*.sh' -o -path '*/hooks/test-*.sh' \) \
+  \( -path '*/skills/*/scripts/tests/test-*.sh' -o -path '*-plugin/scripts/tests/test-*.sh' -o -path '*/hooks/test-*.sh' -o -path './scripts/tests/test-*.sh' \) \
   -type f -print0 | sort -z)
 
 # A manifest entry that matched no discovered test is drift — the guard would
