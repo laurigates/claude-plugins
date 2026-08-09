@@ -409,6 +409,12 @@ project_confidence="high"
 project_resolved=""
 project_ambiguous=""
 project_ambiguous_tasks=0
+# The prefix-sibling split (#2323). Integers so consumers can do arithmetic on
+# them unconditionally, exactly like OPEN_TASKS — the "was this even queried"
+# question is answered by TASK_SCOPE (`none`/`unknown`), not by a sentinel here.
+project_exact_tasks=0
+prefix_siblings=""
+prefix_sibling_tasks=0
 
 if [ "$task_available" = false ]; then
   task_scope="none"
@@ -508,6 +514,62 @@ else
   active_tasks=$(printf '%s' "$project_tasks_json" \
     | jq '[.[] | select((.tags // []) | index("ACTIVE"))] | length' 2>/dev/null || echo 0)
   [ -n "$active_tasks" ] || active_tasks=0
+
+  # -------------------------------------------------------------------------
+  # Prefix-sibling split (#2323).
+  #
+  # `scope_of` is a HIERARCHY match — the slug itself plus its `.`-separated
+  # children — which is NARROWER than the taskwarrior CLI's `project:<p>`
+  # filter. That one is a PREFIX match, so `task project:comfyui list` also
+  # returns every `comfyui-nodes` task. Verifying a slug that way confirms
+  # nothing: the wrong slug reports a full backlog, and follow-ups then land in
+  # a near-empty sibling nobody reads. PROJECT_CONFIDENCE alone cannot see this
+  # — it answers "is the DETECTED slug trustworthy?", not "do these tasks
+  # actually carry it?" — and a prefix hit makes the two look like one question.
+  #
+  # Three numbers keep the split legible instead of collapsing it:
+  #   OPEN_TASKS                   this scope: the slug + its `.` subprojects
+  #   PROJECT_EXACT_TASKS          the slug ALONE, `.project == <slug>`
+  #   PROJECT_PREFIX_SIBLING_TASKS what a CLI prefix filter would ALSO sweep in
+  #   PROJECT_PREFIX_SIBLINGS      and the slugs it would sweep in from
+  #
+  # Computed against the slug OPEN_TASKS was actually counted under — the
+  # remote-name / ancestor-name rungs above may have resolved away from the
+  # detected basename.
+  scope_slug="${project_resolved:-$project}"
+  if [ -n "$scope_slug" ]; then
+    project_exact_tasks=$(printf '%s' "$all_tasks_json" \
+      | jq --arg p "$scope_slug" '[.[] | select((.project // "") == $p)] | length' \
+        2>/dev/null || echo 0)
+    [ -n "$project_exact_tasks" ] || project_exact_tasks=0
+
+    # A slug that STARTS WITH the scope slug but is neither it nor one of its
+    # `.` children: precisely the set the CLI prefix filter over-collects.
+    # Slugs are store content, so they get the same row/column sanitiser every
+    # other projected field gets; the list is capped so one pathological store
+    # cannot produce an unbounded KEY=VALUE line.
+    sibling_row=$(printf '%s' "$all_tasks_json" | jq -r --arg p "$scope_slug" --arg us "$US" '
+      [ .[] | (.project // "")
+        | select(. != "" and startswith($p) and . != $p and (startswith($p + ".") | not)) ]
+      | [ (length | tostring),
+          ( unique | .[0:8] | map(gsub("[\t\r\n,]";" ")) | join(",") )
+        ] | join($us)' 2>/dev/null || echo "")
+    if [ -n "$sibling_row" ]; then
+      IFS="$US" read -r prefix_sibling_tasks prefix_siblings <<< "$sibling_row"
+    fi
+    case "${prefix_sibling_tasks:-}" in ''|*[!0-9]*) prefix_sibling_tasks=0 ;; esac
+
+    # The sibling set holds MORE tasks than the detected scope: the prefix hit,
+    # not the slug, is what the backlog is under. Say so rather than letting a
+    # misfiled backlog read as a verified one. Deliberately applies to an
+    # asserted slug too (--project / a repo declaration): assertion fixes the
+    # slug's IDENTITY, it cannot assert what the store holds — and the reported
+    # case was a slug asserted in CLAUDE.md on exactly this evidence. Nothing is
+    # adopted or rewritten here; only the flag drops and the siblings are named.
+    if [ "$prefix_sibling_tasks" -gt "${open_tasks:-0}" ] 2>/dev/null; then
+      project_confidence="low"
+    fi
+  fi
 fi
 
 # Recent-task fallback — only in all-projects-fallback, so the normal path
@@ -705,9 +767,12 @@ if [ "$summary_mode" = true ]; then
   [ -n "$project_resolved" ] && echo "PROJECT_RESOLVED=${project_resolved}"
   [ -n "$project_ambiguous" ] && echo "PROJECT_AMBIGUOUS=${project_ambiguous}"
   [ -n "$project_ambiguous" ] && echo "PROJECT_AMBIGUOUS_TASKS=${project_ambiguous_tasks}"
+  [ -n "$prefix_siblings" ] && echo "PROJECT_PREFIX_SIBLINGS=${prefix_siblings}"
+  [ -n "$prefix_siblings" ] && echo "PROJECT_PREFIX_SIBLING_TASKS=${prefix_sibling_tasks}"
   echo "DIRTY=${dirty}"
   echo "UNPUSHED=${unpushed}"
   echo "OPEN_TASKS=${open_tasks}"
+  echo "PROJECT_EXACT_TASKS=${project_exact_tasks}"
   echo "RECENT_TASK_COUNT=${recent_task_count}"
   [ -n "$recent_days_invalid" ] && echo "RECENT_DAYS_INVALID=${recent_days_invalid}"
   [ -n "$gh_budget_invalid" ] && echo "GH_BUDGET_INVALID=${gh_budget_invalid}"
@@ -745,6 +810,8 @@ echo "=== END GIT ==="
 echo "=== TASKWARRIOR ==="
 echo "TASK_AVAILABLE=${task_available}"
 echo "OPEN_TASKS=${open_tasks}"
+# The slug ALONE, without its `.` subprojects — OPEN_TASKS' exact-equality half.
+echo "PROJECT_EXACT_TASKS=${project_exact_tasks}"
 echo "ACTIVE_TASKS=${active_tasks}"
 echo "TASK_SCOPE=${task_scope}"
 echo "PROJECT_CONFIDENCE=${project_confidence}"
@@ -754,6 +821,11 @@ echo "TASKS_ALL_PROJECTS=${tasks_all}"
 # The honest zero's escape hatch: 0 here, but N under this ancestor slug.
 [ -n "$project_ambiguous" ] && echo "PROJECT_AMBIGUOUS=${project_ambiguous}"
 [ -n "$project_ambiguous" ] && echo "PROJECT_AMBIGUOUS_TASKS=${project_ambiguous_tasks}"
+# The CLI-prefix over-collection (#2323): slugs a `task project:<slug>` filter
+# would ALSO have swept in, and how many tasks they hold. Present only when the
+# store actually has such siblings.
+[ -n "$prefix_siblings" ] && echo "PROJECT_PREFIX_SIBLINGS=${prefix_siblings}"
+[ -n "$prefix_siblings" ] && echo "PROJECT_PREFIX_SIBLING_TASKS=${prefix_sibling_tasks}"
 echo "RECENT_TASK_COUNT=${recent_task_count}"
 echo "RECENT_DAYS=${recent_days}"
 [ -n "$recent_days_invalid" ] && echo "RECENT_DAYS_INVALID=${recent_days_invalid}"

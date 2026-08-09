@@ -3,7 +3,7 @@ name: session-end
 description: End-of-session orchestrator. Previews which of wrap/distill/feedback/taskwarrior-sync qualify, single confirm, then sequence. Use when winding down a session.
 allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Skill, AskUserQuestion, TodoWrite
 created: 2026-06-10
-modified: 2026-08-06
+modified: 2026-08-09
 compatibility: claude-code
 reviewed: 2026-06-24
 ---
@@ -51,7 +51,12 @@ trusted — the detected project is a directory-basename guess and can be
 wrong (chezmoi source dirs, worktrees, portfolio checkouts, renamed
 clones). A third pair, `PROJECT_AMBIGUOUS` / `PROJECT_AMBIGUOUS_TASKS`,
 appears only when the detected slug owns zero tasks while a named
-ancestor slug owns some:
+ancestor slug owns some. A fourth, `PROJECT_PREFIX_SIBLINGS` /
+`PROJECT_PREFIX_SIBLING_TASKS`, appears only when other slugs share the
+detected slug's **prefix** — the split taskwarrior's own CLI filter
+(`task project:<slug>`) hides, which is how a wrong slug gets "verified"
+and follow-ups land in a near-empty sibling. `PROJECT_EXACT_TASKS` is
+always present: the slug alone, without its `.` subprojects.
 
 ```sh
 bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits --with-blueprint
@@ -83,7 +88,7 @@ failure mode.
 | Wrap | ≥1 genuine loose thread per session-wrap's LOG IT filter |
 | Distill | A durable, generalizable learning emerged AND the repo has a distillable surface (`.claude/rules/` or a justfile). Corroborate the mechanical half with the distill collector's `--summary` (below): `RECIPE_CANDIDATE_COUNT` / `HOT_FILE_COUNT` / `PROCESS_SIGNAL` > 0 means recipes/hot-files/process are worth a pass even if no conceptual rule emerged |
 | Feedback | A plugin/skill behaved notably well or badly — bug, enhancement, or positive worth filing |
-| Taskwarrior sync | `TASK_AVAILABLE=true` AND (`OPEN_TASKS` ≥ 1 OR `RECENT_TASK_COUNT` ≥ 1 OR `PROJECT_AMBIGUOUS_TASKS` ≥ 1) in the Step 1 digest. When `PROJECT_CONFIDENCE=low`, name the scope actually used (`TASK_SCOPE`, plus `PROJECT_RESOLVED` when set) in the Step 3 preview and offer `--project <slug>` — a low-confidence zero is an unqueried project, never a clean queue. When `PROJECT_AMBIGUOUS` is set, render the preview as `0 here, N under <slug>` and offer `--project <slug>`; this fires **even at `PROJECT_CONFIDENCE=high`**, because a user-asserted `--project` and a repo declaration both deliberately keep `high` — so the `low`-confidence escape below does not cover it |
+| Taskwarrior sync | `TASK_AVAILABLE=true` AND (`OPEN_TASKS` ≥ 1 OR `RECENT_TASK_COUNT` ≥ 1 OR `PROJECT_AMBIGUOUS_TASKS` ≥ 1) in the Step 1 digest. When `PROJECT_CONFIDENCE=low`, name the scope actually used (`TASK_SCOPE`, plus `PROJECT_RESOLVED` when set) in the Step 3 preview and offer `--project <slug>` — a low-confidence zero is an unqueried project, never a clean queue. When `PROJECT_AMBIGUOUS` is set, render the preview as `0 here, N under <slug>` and offer `--project <slug>`; this fires **even at `PROJECT_CONFIDENCE=high`**, because a user-asserted `--project` and a repo declaration both deliberately keep `high` — so the `low`-confidence escape below does not cover it. When `PROJECT_PREFIX_SIBLINGS` is present, name it in the preview as `N under <slugs>` and confirm the slug **before filing anything**: those slugs are what a `task project:<slug>` CLI check would have swept in, so a slug verified that way can be the wrong one and the follow-ups land in a sibling nobody reads |
 | Blueprint tracker-sync | `UNDRAINED_COUNT` ≥ 1 in the Step 1 digest's `BLUEPRINT` section. Non-blueprint / tracker-missing repos auto-disqualify (count is 0) → silent skip. If `blueprint-plugin` isn't installed, note it and skip (as with Feedback) |
 
 **Blueprint auto-drain (ADR-0020 level 1):** when the qualifying repo's
