@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.4](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.10.3...feedback-plugin-v1.10.4) (2026-08-10)
+
+
+### Bug Fixes
+
+* **feedback-plugin:** raise friction parser evidence budget past the hook-message tail ([#2345](https://github.com/laurigates/claude-plugins/issues/2345)) ([3bebebc](https://github.com/laurigates/claude-plugins/commit/3bebebcc878b8da61293d30621a012c8931c6554))
+
 ## [1.10.3](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.10.2...feedback-plugin-v1.10.3) (2026-08-07)
 
 
