@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.44.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.44.1...blueprint-plugin-v3.44.2) (2026-08-10)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** register init-written rules in the manifest ([#2340](https://github.com/laurigates/claude-plugins/issues/2340)) ([5bcec6c](https://github.com/laurigates/claude-plugins/commit/5bcec6ca93affd23a1855c667cb29bb3b6d88738)), closes [#2331](https://github.com/laurigates/claude-plugins/issues/2331)
+
 ## [3.44.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.44.0...blueprint-plugin-v3.44.1) (2026-08-09)
 
 
