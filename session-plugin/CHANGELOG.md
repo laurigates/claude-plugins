@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.5](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.9.4...session-plugin-v1.9.5) (2026-08-10)
+
+
+### Bug Fixes
+
+* **session-plugin:** distinguish exact-project task counts from prefix matches ([#2339](https://github.com/laurigates/claude-plugins/issues/2339)) ([a7cdf62](https://github.com/laurigates/claude-plugins/commit/a7cdf624914d69fa30506a4dc833042f4a295e38)), closes [#2323](https://github.com/laurigates/claude-plugins/issues/2323)
+
 ## [1.9.4](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.9.3...session-plugin-v1.9.4) (2026-08-08)
 
 
