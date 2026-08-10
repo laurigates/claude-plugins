@@ -71,7 +71,7 @@ right response is "here is your output + the right tool to use next time."
 | Writes to `/dev/sd*`, `/dev/nvme*`, … | Destroys filesystem |
 | Fork bombs | Resource exhaustion |
 | `git add -A` / `git add .` | Stages secrets / unintended files |
-| `git X && git Y` (index-modifying) | `.git/index.lock` race |
+| `git X && git Y` (**both** index-modifying) | `.git/index.lock` race |
 | `git push -u origin <other-branch>` on `main`/`master` | Wrong upstream |
 | `cat > /tmp/commit_msg.txt` heredoc pattern | Wrong workflow shape |
 | Reading `*.output` task files with cat/tail | Should use TaskOutput tool |

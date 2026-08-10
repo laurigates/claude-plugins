@@ -291,6 +291,32 @@ assert_exit_complex \
     "git chain with single-quoted commit message is still blocked" 2 \
     "git add . && git commit -m 'fix: thing'"
 
+# ── git-chain scope narrowing (2026-W33 friction analysis) ────────────────────
+# The detector's comment always said index.lock races need an index-modifying
+# command on BOTH sides, but the regex's second element was `git\s+\S+` — ANY
+# git subcommand. 88.6% of its firings (39/44 events) were the benign
+# stage-then-verify idiom `git add <paths> && git status --short`, which cannot
+# race: git status takes no lock git add has not already released. The condition
+# now requires (add|commit|rm|mv|reset) on both sides of the &&.
+echo ""
+echo "git-chain fires only when BOTH chained commands modify the index:"
+
+assert_exit \
+    "git add && git status --short (stage-then-verify) is allowed" 0 \
+    "git add src/a.ts && git status --short"
+
+assert_exit \
+    "git fetch && git switch && git add (one index writer) is allowed" 0 \
+    "git fetch -q && git switch -c f origin/main && git add R.md"
+
+assert_exit \
+    "GUARD: git add && git status && git commit (two index writers) still blocks" 2 \
+    "git add a.ts && git status --short && git commit -q -F -"
+
+assert_exit \
+    "GUARD: git reset && git add (two index writers, neither is commit) still blocks" 2 \
+    "git reset HEAD~1 && git add a.ts"
+
 # ── heredoc-write-then-feed-CLI regression (issue #1584, #1587) ───────────────
 # Regression: `cat > /tmp/body.md <<EOF ... EOF; gh pr create --body-file ...`
 # was blocked with the git-commit heredoc reminder even though the command runs
