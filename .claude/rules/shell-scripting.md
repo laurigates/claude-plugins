@@ -1,7 +1,7 @@
 ---
 created: 2026-01-18
-modified: 2026-03-02
-reviewed: 2026-03-02
+modified: 2026-08-08
+reviewed: 2026-08-08
 requires: bash 5+
 paths:
   - "**/*.sh"
@@ -399,6 +399,34 @@ Even with bash 5+, some CLI tools differ between macOS (BSD) and Linux (GNU). Us
 | `date` | `date -j -f "%Y-%m-%d %H:%M:%S" "$d 00:00:00"` | `date -d "$d 00:00:00"` | Pin the time component (see below) |
 | `sed -i` | `sed -i ''` | `sed -i` | Use `sed -i.bak` + `rm` |
 | `grep -P` | Not available | PCRE support | Use `grep -E` (extended regex) |
+| `grep -r <one file>` | Prints `file:line:text` | Prints `line:text` | Always pass `-H` (see below) |
+
+#### `grep -r` on a *single* file omits the filename on GNU, keeps it on BSD
+
+A guard that greps a **file list** and parses `FILE:LINE:TEXT` works on macOS and
+silently mis-parses on Linux **whenever the list happens to hold one entry**:
+GNU grep drops the filename prefix for a single file argument, BSD keeps it. The
+parse then shifts by one field and reads the line number as the filename.
+
+```sh
+# Wrong — correct on BSD, off-by-one-field on GNU when "${files[@]}" has one element
+grep -rn -F "$pattern" "${files[@]}"       # GNU single-file: "2:gh api ..."
+
+# Right — -H forces the prefix on both
+grep -rHn -F "$pattern" "${files[@]}"      # always: "./path/run.sh:2:gh api ..."
+```
+
+The failure is **invisible locally and only reproduces in CI**, which is the
+whole hazard: `scripts/check-dead-api-endpoints.sh` was 17/17 green on macOS and
+failed one assertion on the first Linux run, reporting `FILE=2`. Nothing short
+of running on both platforms catches it — a fixture cannot, because the fixture
+runs on whichever grep the author has.
+
+Same shape as the `date` traps below: a default that differs by implementation,
+where the portable form costs one flag. **Pass `-H` in any `grep` whose output
+you parse by field**, regardless of how many files you expect — "expect" is
+doing load-bearing work in that sentence, and a fixture with one file is exactly
+the case that triggers it.
 
 #### BSD `date` fills unspecified time fields with the *current* time
 
