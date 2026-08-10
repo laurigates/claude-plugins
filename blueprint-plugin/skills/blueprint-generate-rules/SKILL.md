@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
-reviewed: 2026-05-03
+modified: 2026-08-09
+reviewed: 2026-08-09
 description: Generate project-specific rules from PRDs with path-scoped frontmatter. Use when auto-creating architecture, testing, or quality rules from docs/prds/.
 allowed-tools: Read, Write, Glob, Bash, AskUserQuestion
 name: blueprint-generate-rules
@@ -132,7 +132,31 @@ Rules are generated to the directory configured in `structure.generated_rules_pa
 
 5. **Update manifest with generation tracking**:
 
-   Store filenames **relative** to `$RULES_DIR` so the registry remains stable when `generated_rules_path` changes. The path itself lives in `structure.generated_rules_path`; the keys here are bare filenames (without directory).
+   Register the rules through the shared helper rather than hand-writing the
+   jq — `/blueprint:init` Step 8a calls the same script, so the two producers of
+   `$RULES_DIR` cannot drift apart on the record shape or on how the hash is
+   computed (issue #2331):
+
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/register-generated-rules.sh" \
+     --source "docs/prds/*" \
+     --source-hash "$PRD_AGGREGATE_SHA256" \
+     --plugin-version "3.4.0" \
+     architecture-patterns.md testing-strategies.md implementation-guides.md quality-standards.md
+   ```
+
+   `--source-hash` is the bare hex sha256 over the aggregated PRD content; it is
+   what Step 2 (and `/blueprint:sync` Step 2d) compares against to decide
+   whether a rule has gone stale.
+
+   **Key form** — keys are filenames **relative** to `$RULES_DIR`, **including
+   the `.md` extension**, so the registry stays stable when
+   `generated_rules_path` changes (the path itself lives in
+   `structure.generated_rules_path`, exactly once). Consumers resolve a rule as
+   `"$RULES_DIR/$key"` and must **not** append `.md`.
+
+   The resulting `generated.rules` **object map** (per
+   `blueprint-plugin/schemas/manifest.schema.json`):
 
    ```json
    {
@@ -140,10 +164,10 @@ Rules are generated to the directory configured in `structure.generated_rules_pa
        "rules": {
          "architecture-patterns.md": {
            "source": "docs/prds/*",
-           "source_hash": "sha256:...",
+           "source_hash": "e3b0c44298fc1c149afbf4c8996fb924...",
            "generated_at": "[ISO timestamp]",
-           "plugin_version": "3.0.0",
-           "content_hash": "sha256:...",
+           "plugin_version": "3.4.0",
+           "content_hash": "a3f5b1c9d2e4867011223344556677889...",
            "status": "current"
          },
          "testing-strategies.md": { ... },
@@ -153,6 +177,13 @@ Rules are generated to the directory configured in `structure.generated_rules_pa
      }
    }
    ```
+
+   **Hash form** — `content_hash` and `source_hash` are **bare lowercase hex**
+   sha256 digests with no `sha256:` prefix. Both readers (`/blueprint:sync`
+   Step 2b and `blueprint-plugin/hooks/blueprint-drift-probe.sh`) compare the
+   raw output of `sha256sum` / `shasum -a 256` against these fields, so a
+   prefixed value can never match and every rule would read as perpetually
+   modified.
 
 6. **Update task registry**:
 

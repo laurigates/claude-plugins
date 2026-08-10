@@ -3,7 +3,7 @@
 #
 # Checks (when docs/blueprint/manifest.json is present):
 #   1. manifest.format_version vs the plugin's current format version (3.4.0)
-#   2. generated.rules[].content_hash vs current hash of the file on disk
+#   2. generated.rules{filename}.content_hash vs current hash of the file on disk
 #   3. docs/blueprint/feature_tracker.json `last_updated` vs TODO.md mtime
 #
 # Emits findings to the shared drift-signal directory via drift-protocol.sh.
@@ -52,14 +52,28 @@ if [ -n "$manifest_version" ] && [ "$manifest_version" != "$CURRENT_FORMAT_VERSI
 fi
 
 # ---- check 2: generated rule content_hash drift ----
-# generated.rules is an array of {path, content_hash, source_hash, ...}. If the
-# file on disk doesn't hash to content_hash anymore, someone hand-edited it.
+# generated.rules is an OBJECT map, filename -> generatedRecord, per
+# blueprint-plugin/schemas/manifest.schema.json — NOT an array. Iterating it as
+# an array (`(.generated.rules // [])[]`) yields nothing on every real manifest,
+# so this check silently passed over every registered rule (issue #2331).
+#
+# The key is a bare filename relative to structure.generated_rules_path,
+# INCLUDING the .md extension, so the file is "$RULES_DIR/$key" — never
+# "$RULES_DIR/$key.md". A record may also carry an explicit `path` (relative to
+# the repo root) from an older migration; prefer it when present.
 if command -v shasum >/dev/null 2>&1; then
+    rules_dir=$(jq -r '.structure.generated_rules_path // ".claude/rules/"' "$MANIFEST" 2>/dev/null)
+    [ -n "$rules_dir" ] && [ "$rules_dir" != "null" ] || rules_dir=".claude/rules/"
+    rules_dir="${rules_dir%/}"
+
     drifted_count=0
     while IFS=$'\t' read -r rule_path rule_hash; do
         [ -z "$rule_path" ] && continue
         [ -z "$rule_hash" ] && continue
-        full="${DRIFT_CWD}/${rule_path}"
+        case "$rule_path" in
+            /*) full="$rule_path" ;;
+            *)  full="${DRIFT_CWD}/${rule_path}" ;;
+        esac
         [ -f "$full" ] || continue
         current=$(shasum -a 256 "$full" 2>/dev/null | awk '{print $1}')
         [ -z "$current" ] && continue
@@ -67,10 +81,11 @@ if command -v shasum >/dev/null 2>&1; then
             drifted_count=$((drifted_count + 1))
         fi
     done < <(
-        jq -r '
-            (.generated.rules // [])[]
-            | select((.content_hash // "") != "")
-            | [.path, .content_hash]
+        jq -r --arg dir "$rules_dir" '
+            (.generated.rules // {})
+            | to_entries[]
+            | select((.value.content_hash // "") != "")
+            | [(.value.path // ($dir + "/" + .key)), .value.content_hash]
             | @tsv
         ' "$MANIFEST" 2>/dev/null
     )

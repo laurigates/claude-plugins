@@ -367,6 +367,38 @@ The check is a diagnostic, never a gate: no manifest, a `format_version` older
 than the schema's (`WARN` → run `/blueprint:upgrade`), or a missing
 `uv`/`jsonschema` all exit 0 without claiming the manifest is clean.
 
+## Generated-Rules Registry
+
+Two skills write into the generated-rules directory: `/blueprint:init` (Step 8 —
+`development.md`, `testing.md`, `document-management.md`) and
+`/blueprint:generate-rules` (Step 5 — the four PRD-derived domain rules).
+`/blueprint:sync` and the SessionStart drift probe detect staleness by comparing
+a **registered** record's `content_hash` against the file on disk, so a rule
+written but never registered is invisible to both — the failure is silent, and
+sync reports clean over a set it cannot see (issue #2331).
+
+Both producers therefore call one writer:
+
+```bash
+bash <plugin-root>/scripts/register-generated-rules.sh \
+  --source blueprint-init --plugin-version 3.4.0 development.md testing.md
+```
+
+The contract every site must agree on:
+
+| Aspect | Value | Why |
+|---|---|---|
+| Shape | `generated.rules` is an **object map**, filename → `generatedRecord` | `schemas/manifest.schema.json`; consumers iterate `to_entries[]`, never `[]` |
+| Key | bare filename relative to `structure.generated_rules_path`, **including `.md`** (`development.md`) | relative survives a `generated_rules_path` change; the extension is the form `generate-rules` already shipped, so no manifest needs migrating |
+| Resolution | `"$RULES_DIR/$key"` | appending `.md` yields `development.md.md`, so every registered rule reads as missing |
+| Hash | bare lowercase hex sha256, **no `sha256:` prefix** | both readers compare raw `sha256sum` / `shasum -a 256` output |
+
+`scripts/check-generated-rules-registration.sh` pins the contract across
+`blueprint-init`, `blueprint-generate-rules`, `blueprint-sync`,
+`blueprint-promote` and `hooks/blueprint-drift-probe.sh`. Because the defect it
+guards is a *missing write*, each rule is a concept with several accepted
+spellings: removing the registration substep fails, re-wording it does not.
+
 ## Feature Tracking (Optional)
 
 Track implementation progress against requirements documents using hierarchical FR codes.

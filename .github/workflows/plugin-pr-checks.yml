@@ -228,6 +228,20 @@ jobs:
       - name: Check blueprint level-3 workflow templates
         run: bash scripts/check-blueprint-level3-templates.sh
 
+      - name: Self-test the blueprint generated-rules registration guard (#2331)
+        # blueprint-init WROTE three rules and registered none, so /blueprint:sync
+        # — which detects drift by comparing a REGISTERED content_hash against the
+        # file — was structurally blind to them. The defect is a MISSING WRITE, so
+        # the guard encodes concepts with several accepted spellings; the self-test
+        # proves both halves (removal fails, reword passes) before it gates.
+        run: bash blueprint-plugin/scripts/tests/test-check-generated-rules-registration.sh
+
+      - name: Self-test the blueprint generated-rules writer (#2331)
+        run: bash blueprint-plugin/scripts/tests/test-register-generated-rules.sh
+
+      - name: Check the blueprint generated-rules registration contract
+        run: bash blueprint-plugin/scripts/check-generated-rules-registration.sh --strict
+
       - name: Self-test the bundled workflow .js model/effort guard (#2210)
         # Bundled dynamic-workflow harnesses live at */skills/*/workflows/*.js —
         # outside every existing gate's discovery scope (check-agent-model.sh
