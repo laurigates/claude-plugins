@@ -18,7 +18,7 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 | `timeout cmd` | Remove timeout (Bash tool has its own, human approval time exceeds it anyway); append a `# allow-timeout` comment to bound a genuinely-never-exiting process (REPL, stdio server) — #2041 |
 | `cat/tail ...tasks/*.output` (whole command only — #2148) | Use **Read** tool on the output path (or pipe an extraction for large files) |
 | `git add -A` / `git add .` | Stage specific files by name instead of broad staging |
-| `git X && git Y` | Run git commands as separate Bash calls (avoids index.lock race condition) |
+| `git X && git Y` where **both** X and Y modify the index (`add`, `commit`, `rm`, `mv`, `reset`) | Run the two git commands as separate Bash calls (avoids index.lock race condition). Chaining one index writer to a read-only git command — `git add f && git status --short` — is allowed |
 | `git reset --hard` | Use safer alternatives; if truly needed, ask user to run manually |
 
 ### Structural classification (ast-grep) and fail-open (#2008)

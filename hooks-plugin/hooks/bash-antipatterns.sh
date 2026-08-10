@@ -550,10 +550,14 @@ Or review what would be staged first:
   git status --porcelain"
 fi
 
-# Check for chained git commands that involve index-modifying operations (git X && git Y)
-# index.lock race conditions only occur when one command writes to the git index.
+# Check for chained git commands where BOTH sides modify the index (git X && git Y)
+# index.lock contention needs two writers: a single index-modifying command chained
+# to a read-only one (git add file && git status) cannot race, because git status
+# takes no lock that git add has not already released.
 # Index-modifying commands: add, commit, rm, mv, reset (not read-only commands like status/diff/log).
-# The fix is to run git commands as separate Bash calls, not chained.
+# So the detector requires an index-modifying subcommand on BOTH sides of the &&;
+# `git add … && git status --short` (the stage-then-verify idiom) is not a target.
+# The fix is to run the two index-modifying git commands as separate Bash calls.
 #
 # Uses COMMAND_NO_STRINGS (heredoc body AND quoted-string literals stripped) so
 # that example shell snippets inside a `gh` body/title do not trigger a false
@@ -564,8 +568,7 @@ fi
 # This is a reminder about index.lock races, not a security control, so stripping
 # quoted strings cannot create a dangerous bypass.
 INDEX_MODIFYING='(add|commit|rm|mv|reset)'
-if echo "$COMMAND_NO_STRINGS" | grep -Eq "git\\s+${INDEX_MODIFYING}\\b.*&&.*git\\s+\\S+" || \
-   echo "$COMMAND_NO_STRINGS" | grep -Eq "git\\s+\\S+.*&&.*git\\s+${INDEX_MODIFYING}\\b"; then
+if echo "$COMMAND_NO_STRINGS" | grep -Eq "git\\s+${INDEX_MODIFYING}\\b.*&&.*git\\s+${INDEX_MODIFYING}\\b"; then
     block "REMINDER: Chaining git commands with '&&' can cause index.lock race conditions.
 The lock file from an index-modifying command (add, commit, rm, mv, reset) may not be
 released before the next command tries to acquire it.
@@ -573,7 +576,10 @@ Instead of: git add . && git commit -m 'msg'
 Run git commands as separate Bash tool calls:
 1. git add src/file.ts
 2. git commit -m 'msg'
-This avoids race conditions and is more reliable."
+This avoids race conditions and is more reliable.
+This fires only when BOTH chained commands modify the index (add, commit, rm, mv,
+reset). Chaining one of those to a read-only git command — 'git add f && git
+status --short', 'git fetch && git switch -c b && git add f' — is allowed."
 fi
 
 # Check for git reset --hard (destructive operation, usually unnecessary)
