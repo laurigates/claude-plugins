@@ -5,7 +5,7 @@ Reads JSONL files under ~/.claude/projects/*/ (or paths given on argv) and emits
 one friction event per line on stdout (or to --out). A friction event looks like:
 
     {"session": "...", "ts": "...", "kind": "hook_block", "signature": "...",
-     "tool": "Bash", "evidence": "first 400 chars of the offending content"}
+     "tool": "Bash", "evidence": "first EVIDENCE_MAX_CHARS of the offending content"}
 
 Kinds:
   hook_block         PreToolUse exit-2 or explicit "blocked by a hook" in content
@@ -29,6 +29,21 @@ from typing import Iterator
 
 HOME = Path(os.path.expanduser("~"))
 DEFAULT_ROOT = HOME / ".claude" / "projects"
+
+# How much of an event's content survives into `evidence`.
+#
+# This is a MEASUREMENT budget, not a display budget: the marker that
+# distinguishes one hook-message variant from another routinely sits in the
+# message TAIL, past the harness's own
+# "PreToolUse:Bash hook error: [bash <abs-path>/<hook>.sh]: " wrapper (~85-150
+# chars before the hook's first word). At the former 400 the post-#2148
+# head/tail block message was cut mid-way through "This fires only when the
+# read is the WHOLE command", so a reader classifying events off parser output
+# could not tell the current message from its pre-#2148 ancestor. In the W33
+# window that manufactured 12 phantom "legacy" hook blocks out of 27 (a naive
+# read gave 15 post-fix / 12 legacy; recovering the same events from the raw
+# transcripts corrected it to 27 / 0).
+EVIDENCE_MAX_CHARS = 1200
 
 # A hook block is identified by the harness's own wrapper prose, never by a
 # bare "exit code 2": that phrase appears verbatim in ordinary tool output
@@ -323,7 +338,7 @@ def extract_frictions(path: Path) -> Iterator[dict]:
                     "kind": "user_interrupt",
                     "tool": "-",
                     "signature": "interrupt:user",
-                    "evidence": redact(text[:400]),
+                    "evidence": redact(text[:EVIDENCE_MAX_CHARS]),
                 }
                 continue
             # Tool results embedded in user messages carry is_error
@@ -341,7 +356,7 @@ def extract_frictions(path: Path) -> Iterator[dict]:
             )
             if is_error:
                 tool = lookup_tool_name(rec, tool_index)
-                body = text or json.dumps(tur)[:400]
+                body = text or json.dumps(tur)[:EVIDENCE_MAX_CHARS]
                 if HOOK_BLOCK_RE.search(body):
                     kind = "hook_block"
                 elif USER_REJECT_RE.search(body):
@@ -360,7 +375,7 @@ def extract_frictions(path: Path) -> Iterator[dict]:
                     "kind": kind,
                     "tool": tool,
                     "signature": canonical_signature(kind, tool, body),
-                    "evidence": redact(body[:400]),
+                    "evidence": redact(body[:EVIDENCE_MAX_CHARS]),
                 }
 
         elif rtype == "assistant":
@@ -382,7 +397,7 @@ def extract_frictions(path: Path) -> Iterator[dict]:
                                 "signature": canonical_signature(
                                     kind, "ExitPlanMode", plan
                                 ),
-                                "evidence": redact(str(plan)[:400]),
+                                "evidence": redact(str(plan)[:EVIDENCE_MAX_CHARS]),
                             }
 
 
