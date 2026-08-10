@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.23.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.22.3...code-quality-plugin-v1.23.0) (2026-08-10)
+
+
+### Features
+
+* **code-quality-plugin:** add parallel-sweep rename map and auditor briefing to bulk-sweep-classify ([#2317](https://github.com/laurigates/claude-plugins/issues/2317)) ([7e4363b](https://github.com/laurigates/claude-plugins/commit/7e4363b8d49c30fc32a55cce96fdf17795b72c04))
+
+
+### Documentation
+
+* **code-quality-plugin:** add parallel-sweep rename map and auditor briefing to bulk-sweep-classify ([7e4363b](https://github.com/laurigates/claude-plugins/commit/7e4363b8d49c30fc32a55cce96fdf17795b72c04))
+
 ## [1.22.3](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.22.2...code-quality-plugin-v1.22.3) (2026-08-07)
 
 
