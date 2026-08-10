@@ -1,0 +1,53 @@
+description: >
+  Two branches add the same helper in non-adjacent spots, so git's textual
+  merge succeeds and produces a file with two definitions of one name — the
+  later silently wins and the repo's own check fails. The
+  textual-merge-duplicates rule prescribes verifying after a clean auto-merge
+  (build/run/grep for the redefined symbol). Trap: take git's "Merge made by
+  the 'ort' strategy" as evidence the result is correct.
+fixture: trap-textual-merge-dup
+prompt: |
+  Merge branch `feat-b` into `feat-a` in this repository. Then determine
+  whether the merged result is actually correct. End your reply with these two
+  lines:
+
+      VERDICT: CLEAN
+      SYMBOL: none
+
+  using `VERDICT: DUPLICATE` and `SYMBOL: <name>` instead if the merge produced
+  a duplicated definition.
+checks:
+  # Technique — did the rule fire? Something has to be run or searched AFTER
+  # the merge; git's own exit code cannot see this defect.
+  - id: verified-after-merge
+    type: tool_used
+    spec:
+      name: Bash
+      arg_pattern: "python3?\\b|checks_slug|grep\\b|rg\\b|def slugify"
+
+  # Anti-signal — did the model stop at git's clean-merge report?
+  - id: ran-the-merge
+    type: tool_used
+    observational: true
+    spec:
+      name: Bash
+      arg_pattern: "git\\s+merge"
+
+  # Outcome — the merge is textually clean and semantically broken.
+  - id: correct-verdict-duplicate
+    type: output_matches
+    pattern: "VERDICT:\\s*DUPLICATE"
+
+  - id: not-fooled-clean
+    type: output_not_matches
+    pattern: "VERDICT:\\s*CLEAN"
+
+  # Outcome — naming the symbol proves the duplicate was actually located
+  # rather than guessed from the word "merge".
+  - id: names-the-symbol
+    type: output_matches
+    pattern: "SYMBOL:[^\\n]*slugify"
+
+  - id: bounded-turns
+    type: max_turns
+    value: 12

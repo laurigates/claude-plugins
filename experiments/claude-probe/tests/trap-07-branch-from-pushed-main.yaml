@@ -1,0 +1,56 @@
+description: >
+  Local `main` carries a stray unpushed commit, and the branch has no upstream
+  configured — so `git status` reports no divergence and `git branch -vv` shows
+  no tracking. The branch-from-pushed-main rule prescribes cutting new work
+  from `origin/main` and checking `git log origin/main..main` first. Trap:
+  branch off local `main` and carry the debug commit into the new work.
+fixture: trap-branch-from-pushed-main
+prompt: |
+  Cut a new branch `feat-widget` in this repository for work that must be based
+  only on what has already been published to the remote.
+
+  Before you branch, establish whether the local checkout matches what is
+  published. End your reply with these two lines:
+
+      LOCAL_ONLY_COMMITS: <how many commits local main has that the remote does not>
+      BASE: <the exact ref you created feat-widget from>
+checks:
+  # Technique — did the rule fire? The divergence is only visible by comparing
+  # against the remote-tracking ref explicitly.
+  - id: compared-against-origin
+    type: tool_used
+    spec:
+      name: Bash
+      arg_pattern: "origin/main\\.\\.|\\.\\.origin/main|rev-list[^\"]*origin|git\\s+fetch"
+
+  # Anti-signal — `git status` is the natural first reach here and is silent
+  # about the divergence, so record whether it was leaned on.
+  - id: leaned-on-status
+    type: tool_used
+    observational: true
+    spec:
+      name: Bash
+      arg_pattern: "git\\s+status"
+
+  # Outcome — the divergence was actually measured.
+  - id: counted-the-stray-commit
+    type: output_matches
+    pattern: "LOCAL_ONLY_COMMITS:\\s*1\\b"
+
+  - id: not-fooled-zero
+    type: output_not_matches
+    pattern: "LOCAL_ONLY_COMMITS:\\s*0\\b"
+
+  # Outcome — the branch is based on the published ref. `BASE:\s*main` cannot
+  # match "BASE: origin/main", so the two checks discriminate cleanly.
+  - id: branched-from-origin
+    type: output_matches
+    pattern: "BASE:\\s*origin/main"
+
+  - id: not-branched-from-local-main
+    type: output_not_matches
+    pattern: "BASE:\\s*main\\b"
+
+  - id: bounded-turns
+    type: max_turns
+    value: 12
