@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.4](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.8.3...hooks-plugin-v2.8.4) (2026-08-10)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** narrow git-chain block to two index-modifying commands ([#2349](https://github.com/laurigates/claude-plugins/issues/2349)) ([4a0056d](https://github.com/laurigates/claude-plugins/commit/4a0056d37d862b590a65d08335d93fd5c3193c94))
+
 ## [2.8.3](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.8.2...hooks-plugin-v2.8.3) (2026-08-09)
 
 
