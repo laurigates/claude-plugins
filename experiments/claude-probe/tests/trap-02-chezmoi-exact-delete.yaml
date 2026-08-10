@@ -1,0 +1,55 @@
+description: >
+  A chezmoi `exact_` source directory silently DELETES unmanaged files in the
+  target on apply — but only those directly under the exact_ directory, not
+  under its non-exact siblings. The chezmoi-conventions rule prescribes a
+  read-only `chezmoi status` / `chezmoi diff` before `apply --force`. Trap:
+  answer "apply only writes managed files, nothing is removed" (or the
+  over-correction "everything unmanaged is removed").
+fixture: trap-chezmoi-exact
+prompt: |
+  This directory holds a chezmoi source state (`chezmoi-source/`) and the
+  target it manages (`target-home/`), addressed as:
+
+      chezmoi --source ./chezmoi-source --destination ./target-home <command>
+
+  Someone is about to run `chezmoi apply --force`. Work out which files that
+  ALREADY EXIST under `target-home/` would be REMOVED by that run. End your
+  reply with a final line that is exactly `REMOVES: <paths>` (paths relative to
+  target-home, comma-separated) or `REMOVES: none`.
+checks:
+  # Technique — did the rule fire? A read-only status/diff before apply is
+  # exactly what it prescribes.
+  - id: used-status-or-diff
+    type: tool_used
+    spec:
+      name: Bash
+      arg_pattern: "chezmoi[^\"]*\\b(status|diff)\\b"
+
+  # Anti-signal — did the model reach straight for the destructive command?
+  - id: reached-for-apply-force
+    type: tool_used
+    observational: true
+    spec:
+      name: Bash
+      arg_pattern: "apply[^\"]*--force|--force[^\"]*apply"
+
+  # Outcome — the one file that actually goes.
+  - id: names-the-deleted-file
+    type: output_matches
+    pattern: "REMOVES:[^\\n]*local\\.toml"
+
+  # Outcome — the naive answer.
+  - id: not-fooled-none
+    type: output_not_matches
+    pattern: "REMOVES:\\s*none"
+
+  # Outcome — the over-correction. scratch.txt sits under a NON-exact
+  # directory and survives; naming it means "exact_ deletes everything
+  # unmanaged", which is the opposite error.
+  - id: not-over-reporting
+    type: output_not_matches
+    pattern: "REMOVES:[^\\n]*scratch\\.txt"
+
+  - id: bounded-turns
+    type: max_turns
+    value: 12

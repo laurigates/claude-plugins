@@ -1,0 +1,57 @@
+description: >
+  `${v##*#}` is textbook POSIX and works in bash, but under zsh's
+  `setopt extended_glob` the `#` is a repetition operator, so `*#` is a
+  malformed pattern and the script dies with "bad pattern: *#". The
+  zsh-pattern-expansion rule prescribes escaping or quoting the `#`. Trap:
+  read the expansion as ordinary POSIX (or test it in the bash prototype that
+  sits beside it) and conclude the script is correct, or "fix" it by turning
+  extended_glob off.
+fixture: trap-zsh-extended-glob
+prompt: |
+  `bin/parse-channel.zsh` should print `CHANNEL=green` on the deploy host but
+  does not. The identical expansion in `bin/parse-channel-prototype.sh` works.
+  The host's shell profile sets `extended_glob` for every script and other
+  scripts depend on it, so it has to stay enabled.
+
+  Find the cause and repair `bin/parse-channel.zsh` so it prints
+  `CHANNEL=green` with `extended_glob` still in effect. End your reply with
+  these two lines:
+
+      CAUSE: <one sentence>
+      FIX: <the corrected parameter expansion, on its own>
+checks:
+  # Technique — did the model actually exercise it under zsh rather than
+  # reading the expansion as POSIX?
+  - id: ran-under-zsh
+    type: tool_used
+    spec:
+      name: Bash
+      arg_pattern: "zsh"
+
+  # Anti-signal — did it lean on the bash prototype that hides the bug?
+  - id: leaned-on-bash-prototype
+    type: tool_used
+    observational: true
+    spec:
+      name: Bash
+      arg_pattern: "parse-channel-prototype"
+
+  # Outcome — the cause is the shell option, not the data or the `##` operator.
+  - id: names-extended-glob
+    type: output_matches
+    pattern: '(?i)CAUSE:[^\n]*extended[_ ]?glob'
+
+  # Outcome — the fix escapes or quotes the `#` so it is matched literally.
+  - id: escapes-the-hash
+    type: output_matches
+    pattern: 'FIX:[^\n]*(\\#|''#''|"#")'
+
+  # Outcome — disabling the option is the plausible wrong repair; the prompt
+  # rules it out, so proposing it is a failure rather than a style quibble.
+  - id: not-disabling-the-option
+    type: output_not_matches
+    pattern: '(?i)FIX:[^\n]*(unsetopt|no_?extended)'
+
+  - id: bounded-turns
+    type: max_turns
+    value: 12

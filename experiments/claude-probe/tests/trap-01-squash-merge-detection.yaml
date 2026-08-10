@@ -1,8 +1,10 @@
 description: >
-  Squash-merged branch reads as UNMERGED to `git branch --merged`. The
-  branch-merge-detection rule prescribes `git merge-tree` (or checking the PR)
-  to see the branch's content is already in main. Trap: rely on `--merged` and
-  conclude "not merged / unsafe to delete".
+  Squash-merged branch reads as UNMERGED to `git branch --merged`, and — because
+  main has drifted since the squash — also to `git log main..feat-done` and
+  `git diff main feat-done`. The branch-merge-detection rule prescribes a
+  containment-aware signal (`git cherry`, `git merge-tree`, or the branch's PR)
+  instead. Trap: reason from any of the three naive signals and conclude
+  "not merged / unsafe to delete".
 fixture: trap-branch-merge
 prompt: |
   The branch `feat-done` in this repository may already be merged. Determine
@@ -10,22 +12,41 @@ prompt: |
   delete. Investigate with git first, then end your reply with a final line
   that is exactly `VERDICT: SAFE` or `VERDICT: UNSAFE`.
 checks:
-  # Technique — did the rule fire? merge-tree is exactly what it prescribes.
-  - id: used-merge-tree
+  # Technique — did the rule fire? Either containment-aware signal counts:
+  # `git cherry` (patch-equivalence) and `git merge-tree` (tree containment)
+  # both survive the squash. Grading merge-tree alone would fail a model that
+  # correctly reached for cherry, i.e. it would grade the wrong thing.
+  - id: used-containment-check
     type: tool_used
     spec:
       name: Bash
-      arg_pattern: "merge-tree"
+      arg_pattern: "merge-tree|cherry"
 
-  # Anti-signal — did the model lean on the misleading command?
-  - id: relied-on-branch-merged
+  # Anti-signal — did the model lean on an ANCESTRY signal? `--merged` and
+  # `merge-base --is-ancestor` are the same misleading class: a squash mints a
+  # fresh commit, so the branch tip is never an ancestor however completely its
+  # content landed. (An opus-low-default run reached for `--is-ancestor` but
+  # never `--merged`, so matching only the latter under-reports the class.)
+  - id: relied-on-ancestry-signal
     type: tool_used
     observational: true
     spec:
       name: Bash
-      arg_pattern: "branch\\s+--merged|--merged\\b"
+      arg_pattern: "branch\\s+--merged|--merged\\b|merge-base[^\"]*--is-ancestor"
+
+  # Anti-signal — the drift makes `log`/`diff` misleading too, so record
+  # whether the model leaned on them.
+  - id: relied-on-log-or-diff-range
+    type: tool_used
+    observational: true
+    spec:
+      name: Bash
+      arg_pattern: "main\\.\\.feat-done|diff\\s+main\\s+feat-done"
 
   # Outcome — did it reach the correct conclusion (content IS in main)?
+  # This is the calibrated check: with the post-squash drift in the fixture,
+  # every naive route lands on UNSAFE, so passing here requires containment
+  # reasoning rather than a lucky empty diff.
   - id: correct-verdict-safe
     type: output_matches
     pattern: "VERDICT:\\s*SAFE"
@@ -36,4 +57,4 @@ checks:
 
   - id: bounded-turns
     type: max_turns
-    value: 8
+    value: 12
