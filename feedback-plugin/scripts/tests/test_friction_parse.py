@@ -14,6 +14,43 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 PARSER = HERE.parent / "friction_parse.py"
 FIXTURES = HERE / "fixtures"
+REPO_ROOT = HERE.parent.parent.parent
+HOOK_SCRIPT = REPO_ROOT / "hooks-plugin" / "hooks" / "bash-antipatterns.sh"
+
+
+def deployed_head_tail_block_message() -> str:
+    """Extract the head/tail block message from the DEPLOYED hook source.
+
+    A retyped copy of the message is not the message: its byte length is what
+    decides whether the tail survives truncation, so the fixture must be built
+    from the shipped text, not from an approximation of it.
+    """
+    raw = subprocess.run(
+        [
+            "sed",
+            "-n",
+            '/if ast_matched "head-tail-read"; then/,/^    fi$/p',
+            str(HOOK_SCRIPT),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    start = raw.index('block "') + len('block "')
+    end = raw.rindex('"')
+    return raw[start:end].replace('\\"', '"')
+
+
+def fixture_evidence_source(fixture_dir: Path) -> str:
+    """The untruncated tool_result content the fixture feeds the parser."""
+    for line in (fixture_dir / "t.jsonl").read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        rec = json.loads(line)
+        for item in rec.get("message", {}).get("content", []) or []:
+            if isinstance(item, dict) and item.get("type") == "tool_result":
+                return item["content"]
+    raise AssertionError(f"no tool_result in {fixture_dir}")
 
 
 def run_parser(fixture_dir: Path) -> list[dict]:
@@ -166,6 +203,50 @@ def test_exit_code_2_is_not_a_hook_block():
         f"a real PreToolUse hook error must still classify as hook_block: {hook}"
     )
     assert hook["signature"] == "hook:bash-antipatterns:cat-head-tail", hook
+
+
+def test_evidence_budget_reaches_hook_message_tail():
+    """Regression: `evidence` must survive far enough to carry the marker that
+    distinguishes the post-#2148 head/tail block message from its ancestor.
+
+    The harness wraps a hook block as
+    "PreToolUse:Bash hook error: [bash <abs-path>/bash-antipatterns.sh]: ...",
+    so the hook's own prose starts ~150 chars in. At the former 400-char
+    truncation the message was cut before "This fires only when the read is the
+    WHOLE command", making the current message indistinguishable from the
+    pre-#2148 one in parser output. In the W33 window that manufactured 12
+    phantom "legacy" hook blocks: a naive read of parser output gave 15
+    post-fix / 12 legacy, while recovering the same events from the raw
+    transcripts gave 27 / 0.
+    See ~/.claude/friction-reports/2026-W33-frictions.md.
+    """
+    fixture = FIXTURES / "evidence_budget"
+    marker = "WHOLE command"
+
+    # Fixture validity: the marker must genuinely sit past the old boundary,
+    # or this test would pass against the unpatched constant.
+    source = fixture_evidence_source(fixture)
+    offset = source.index(marker)
+    assert offset > 400, (
+        f"fixture does not exercise the truncation: marker at char {offset}"
+    )
+
+    # The fixture must carry the message the hook actually ships, byte for byte.
+    deployed = deployed_head_tail_block_message()
+    assert deployed in source, (
+        "fixture drifted from hooks-plugin/hooks/bash-antipatterns.sh; "
+        "regenerate it from the deployed block message"
+    )
+
+    events = run_parser(fixture)
+    hook_blocks = [e for e in events if e["kind"] == "hook_block"]
+    assert len(hook_blocks) == 1, f"expected 1 hook_block event, got {events}"
+
+    evidence = hook_blocks[0]["evidence"]
+    assert marker in evidence, (
+        f"evidence truncated before the message tail (len={len(evidence)}, "
+        f"marker at {offset} in the source): {evidence!r}"
+    )
 
 
 def main() -> int:
