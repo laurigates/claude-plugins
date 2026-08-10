@@ -65,6 +65,30 @@ Both are **omitted entirely** when there is no ambiguity. Present this as
 `0 here, N under <slug>` — never as a clean queue. This is the one case where a
 `high`-confidence zero is still not licensed as "nothing pending".
 
+### `PROJECT_PREFIX_SIBLINGS` — a count that is not the whole picture
+
+taskwarrior's **CLI** `project:<p>` filter is a *prefix* match: `task
+project:comfyui list` also returns every `comfyui-nodes` task. The collector's
+own scoping is narrower (exact slug + `.`-separated children), so its counts are
+right — but a slug "confirmed" at the CLI that way can still be the wrong one,
+and its count then reads as a verified backlog while the real one sits under a
+sibling:
+
+| Key | Meaning |
+|---|---|
+| `OPEN_TASKS` | This scope: the slug **plus** its `.` subprojects |
+| `PROJECT_EXACT_TASKS` | The slug **alone** — always emitted, always an integer |
+| `PROJECT_PREFIX_SIBLINGS` | Slugs a CLI prefix filter would **also** have swept in (up to 8) |
+| `PROJECT_PREFIX_SIBLING_TASKS` | How many open tasks they hold |
+
+The last two are **omitted entirely** when the store has no such siblings. When
+present, say `N under <slugs>` alongside the count and offer `--project <slug>`.
+`PROJECT_CONFIDENCE` drops to `low` when the siblings hold strictly *more* tasks
+than the scope — strict dominance, so a one-task `dotfiles-archive` beside
+`dotfiles` is named without costing confidence. That downgrade applies to an
+asserted slug too (`--project` / a declaration): assertion fixes the slug's
+identity, not what the store holds. Nothing is adopted or rewritten.
+
 A `RECENT_TASK_*` row is a **pointer**, not a task: it carries the UUID,
 project, description, and age, but no `ghid`, no annotations, and no
 `+ACTIVE` flag. Resolve the slug (re-run with `--project <name>`) before

@@ -171,6 +171,33 @@ it); the uncertainty lives in `TASK_SCOPE` / `PROJECT_CONFIDENCE`.
 `TASKS_ALL_PROJECTS` gives the denominator. An explicit `--project` is
 user-asserted, so it keeps a confident zero.
 
+#### The prefix-sibling split
+
+taskwarrior's **CLI** `project:<p>` filter is a *prefix* match, so
+`task project:comfyui list` also returns every `comfyui-nodes` task. The
+collector's own scoping is narrower (exact slug + `.`-separated children),
+so it never miscounts — but a slug "confirmed" at the CLI that way can
+still be the wrong one, and its `high`-confidence count then reads as a
+verified backlog while the real one sits in a sibling. Three keys make
+the split legible:
+
+| Key | Meaning |
+|---|---|
+| `OPEN_TASKS` | This scope: the slug **plus** its `.`-separated subprojects |
+| `PROJECT_EXACT_TASKS` | The slug **alone** (`.project == <slug>`) — always emitted, always an integer |
+| `PROJECT_PREFIX_SIBLING_TASKS` / `PROJECT_PREFIX_SIBLINGS` | What a CLI *prefix* filter would **also** have swept in, and the (up to 8) slugs it would have come from. Both omitted when the store has no such siblings |
+
+All three are computed against the slug `OPEN_TASKS` was actually counted
+under — `PROJECT_RESOLVED` when a rung above resolved one, else `PROJECT`.
+
+`PROJECT_CONFIDENCE` drops to `low` when
+`PROJECT_PREFIX_SIBLING_TASKS > OPEN_TASKS` — strict dominance, not "a
+sibling exists", so a `dotfiles` beside a one-task `dotfiles-archive`
+stays `high` while still naming the sibling. This downgrade applies to an
+*asserted* slug too (`--project`, or a repo declaration): assertion fixes
+the slug's identity, it cannot assert what the store holds. Nothing is
+adopted or rewritten — the scope and the count stay the caller's.
+
 Regression test: `scripts/tests/test-session-survey.sh` (run directly
 with bash).
 
