@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.3](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.8.2...hooks-plugin-v2.8.3) (2026-08-09)
+
+
+### Bug Fixes
+
+* **scripts:** discover repo-root scripts/tests in the skill-script runner ([#2341](https://github.com/laurigates/claude-plugins/issues/2341)) ([be70c98](https://github.com/laurigates/claude-plugins/commit/be70c987d7e7eb343168421023130339dfeaa5f0))
+
 ## [2.8.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.8.1...hooks-plugin-v2.8.2) (2026-08-08)
 
 

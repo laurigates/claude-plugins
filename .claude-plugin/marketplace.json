@@ -98,7 +98,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking",
-      "version": "3.44.0",
+      "version": "3.44.1",
       "keywords": [
         "blueprint",
         "prd",
@@ -117,7 +117,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, dependency auditing, dead code detection, test quality, complexity metrics, and static analysis",
-      "version": "1.22.3",
+      "version": "1.23.0",
       "keywords": [
         "code-review",
         "refactoring",
@@ -390,7 +390,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.8.2",
+      "version": "2.8.3",
       "keywords": [
         "hooks",
         "automation",

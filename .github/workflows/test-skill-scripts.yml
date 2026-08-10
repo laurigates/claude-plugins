@@ -1,9 +1,10 @@
 name: "Test: Skill scripts"
 
 # Runs the skill-local regression tests that ship next to a skill's extracted
-# scripts (**/skills/**/scripts/tests/test-*.sh) AND the plugin hook regression
-# suites (*/hooks/test-*.sh — bash-antipatterns, branch-protection, …), matching
-# what scripts/run-skill-script-tests.sh discovers. Mirrors the per-path-trigger
+# scripts (**/skills/**/scripts/tests/test-*.sh), the plugin hook regression
+# suites (*/hooks/test-*.sh — bash-antipatterns, branch-protection, …), AND the
+# repo-root guard self-tests (scripts/tests/test-*.sh, #2333), matching what
+# scripts/run-skill-script-tests.sh discovers. Mirrors the per-path-trigger
 # shape of plugin-enablement-drift.yml so it fires only when skill scripts, hook
 # scripts, generator templates, or the runner itself change — independent of
 # plugin-pr-checks.yml, which gates the SKILL.md / compliance surface.
@@ -26,18 +27,13 @@ on:
       # the parity gate exists to catch — matched no trigger (#2221). Kept
       # generic: other plugins will grow template directories too.
       - '*-plugin/templates/**'
-      - 'scripts/run-skill-script-tests.sh'
-      - 'scripts/required-to-run-tests.txt'
-      - 'scripts/configure-opencode.sh'
-      - 'scripts/install-opencode-ocx.sh'
-      - 'scripts/install-opencode.sh'
-      - 'scripts/export-opencode.sh'
-      - 'scripts/rewrite-skill-name-to-dir.py'
-      - 'scripts/generate-opencode-hook-plugins.py'
-      - 'scripts/tests/test-configure-opencode.sh'
-      - 'scripts/tests/test-rewrite-skill-name-to-dir.sh'
-      - 'scripts/tests/test-export-opencode-hooks.sh'
-      - 'scripts/tests/test-run-skill-script-tests.sh'
+      # `scripts/**`, not the former per-file list: the runner now discovers
+      # repo-root `scripts/tests/test-*.sh` too (#2333), so a PR changing only
+      # `scripts/check-foo.sh` + its self-test must fire this workflow or the
+      # newly-discovered guard still gets no CI signal — the exact gap the
+      # discovery fix exists to close. Subsumes every `scripts/...` entry that
+      # used to be enumerated here.
+      - 'scripts/**'
       - '*-plugin/hooks.json'
       - 'justfile'
       - '.github/workflows/test-skill-scripts.yml'
@@ -49,9 +45,7 @@ on:
       - '*-plugin/schemas/**'
       - '*-plugin/hooks/**'
       - '*-plugin/templates/**'
-      - 'scripts/run-skill-script-tests.sh'
-      - 'scripts/required-to-run-tests.txt'
-      - 'scripts/configure-opencode.sh'
+      - 'scripts/**'
 
 concurrency:
   group: test-skill-scripts-${{ github.event.pull_request.number || github.ref }}

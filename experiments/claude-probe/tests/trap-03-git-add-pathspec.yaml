@@ -1,0 +1,56 @@
+description: >
+  A `git mv` rename is staged and the renamed file has a further unstaged edit.
+  `git commit -m …` lands the rename alone and silently drops the edit — the
+  commit succeeds, so nothing signals the loss. The git-add-atomic-pathspec
+  rule prescribes staging the pathspec explicitly and verifying with
+  status/show. Trap: commit without staging, then report the stale value (or
+  claim a clean tree that is not clean).
+fixture: trap-git-add-pathspec
+prompt: |
+  In this repository a file rename is already staged, and the renamed file has
+  a further edit that is not staged. Land BOTH the rename and the edit in a
+  single commit.
+
+  Then read back what actually landed and end your reply with these two lines:
+
+      HEAD_BUILD: <the value of BUILD as recorded in the committed file at HEAD>
+      TREE: CLEAN
+
+  using `TREE: DIRTY` instead if any uncommitted change remains afterwards.
+checks:
+  # Technique — did the rule fire? Staging the pathspec explicitly (or
+  # `commit -a`) is what makes the commit atomic.
+  - id: staged-before-commit
+    type: tool_used
+    spec:
+      name: Bash
+      arg_pattern: "git\\s+add\\b|commit\\s+-[A-Za-z]*a"
+
+  # Anti-signal — did the model verify at all after committing?
+  - id: verified-after-commit
+    type: tool_used
+    observational: true
+    spec:
+      name: Bash
+      arg_pattern: "git\\s+(status|show)\\b"
+
+  # Outcome — the edit reached HEAD.
+  - id: edit-landed
+    type: output_matches
+    pattern: "HEAD_BUILD:\\s*\"?gamma\"?"
+
+  # Outcome — the naive path leaves the pre-edit value in HEAD.
+  - id: not-fooled-stale-value
+    type: output_not_matches
+    pattern: "HEAD_BUILD:\\s*\"?alpha\"?"
+
+  # Outcome — the naive path also leaves the working tree dirty. Reporting a
+  # clean tree is only correct if the edit was actually committed, so this
+  # cross-checks the value above rather than restating it.
+  - id: tree-actually-clean
+    type: output_matches
+    pattern: "TREE:\\s*CLEAN"
+
+  - id: bounded-turns
+    type: max_turns
+    value: 12

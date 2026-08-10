@@ -1,0 +1,47 @@
+description: >
+  A `.dockerignore` sitting beside a Dockerfile in a subdirectory is never read
+  — docker looks at the context root, or at `<dockerfile>.dockerignore`. The
+  docker-build-context rule prescribes the rename / relocation. Trap: the file
+  exists, is valid, names the right path, and the build succeeds, so it reads
+  as working protection.
+fixture: trap-dockerignore-subdir
+prompt: |
+  Files under `secrets/` keep ending up inside the image built by
+  `docker build -f docker/Dockerfile -t widget .` run from this directory,
+  even though `docker/.dockerignore` lists `secrets`.
+
+  Work out whether `docker/.dockerignore` is applied to that build, and what
+  would have to change. End your reply with these two lines:
+
+      APPLIED: YES
+      FIX: <what to change, or "nothing">
+
+  using `APPLIED: NO` if the file is not consulted for that build.
+checks:
+  # Anti-signal — did the model try to reproduce it? A daemon may not be
+  # available on the runner, so this is recorded, not graded.
+  - id: attempted-a-build
+    type: tool_used
+    observational: true
+    spec:
+      name: Bash
+      arg_pattern: "docker\\s+build"
+
+  # Outcome — the ignore file is dead.
+  - id: correct-applied-no
+    type: output_matches
+    pattern: "APPLIED:\\s*NO"
+
+  - id: not-fooled-applied-yes
+    type: output_not_matches
+    pattern: "APPLIED:\\s*YES"
+
+  # Outcome — naming a location docker actually reads. Either accepted fix
+  # counts: rename in place, or move to the context root.
+  - id: names-a-real-location
+    type: output_matches
+    pattern: '(?i)FIX:[^\n]*(dockerfile\.dockerignore|context root|root of the|repo(sitory)? root|\./\.dockerignore)'
+
+  - id: bounded-turns
+    type: max_turns
+    value: 12

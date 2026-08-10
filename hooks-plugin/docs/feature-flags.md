@@ -70,6 +70,12 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 | `CLAUDE_TASKWARRIOR_NO_MARKER_UPKEEP` | Session-marker upkeep in the native `on-exit` hook | `skills/install-native-hooks/templates/on-exit-taskwarrior-plugin` |
 | `CLAUDE_TASKWARRIOR_NO_CLAIM_EXPIRY` | Claim-expiry handling in the native `on-modify` hook | `skills/install-native-hooks/templates/on-modify-taskwarrior-plugin` |
 
+### health-plugin
+
+| Flag | Disables | Source |
+|---|---|---|
+| `CLAUDE_HOOKS_DISABLE_CONFIG_DRIFT` | The rules/skills config-drift SessionStart probe alone (`CLAUDE_HOOKS_DISABLE_DRIFT_NUDGE` also silences it, via the aggregator) | `health-plugin/hooks/config-drift-probe.sh` |
+
 ## Tunables (a value, not on/off)
 
 | Flag | Default | Controls | Source |

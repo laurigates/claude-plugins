@@ -644,8 +644,9 @@ jq -n --arg m "$(tw_stamp 30)" \
   '[range(20000) | {uuid:("u"+(.|tostring)), project:"p",
                     description:("t"+(.|tostring)), modified:$m}]' > "$SANDBOX/huge-out.json"
 time_scan() {  # $1 = fixture; min of two runs, to damp scheduler noise
-  local f="$1" best="" t0 t1 d i
-  for i in 1 2; do
+  local f="$1" best="" t0 t1 d
+  # `_` (not `i`): the counter is deliberately unused — two iterations, min wins.
+  for _ in 1 2; do
     t0=$(now_ms)
     TASK_ALL_FIXTURE="$f" run_at "$PORTFOLIO" --summary >/dev/null 2>&1
     t1=$(now_ms)
@@ -1153,6 +1154,160 @@ check_line "AJ2: a permitting boundary reaches the same repo via git" \
   "$out" "DETECTION=cwd-repo-basename-ancestor"
 check_line "AJ2: and adopts its slug" "$out" "PROJECT=dotfiles-home"
 check_line "AJ2: and its tasks" "$out" "OPEN_TASKS=2"
+
+# ============================================================================
+# TEST AK: the prefix-sibling split (#2323)
+#
+# taskwarrior's CLI `project:<p>` filter is a PREFIX match, so
+# `task project:comfyui list` returns every `comfyui-nodes` task too. A slug
+# "verified" that way looks confirmed while its own backlog is near-empty, and
+# follow-ups then land in a sibling nobody reads. The collector scopes in jq
+# (hierarchy match), so it never miscounts — but a `high`-confidence
+# `OPEN_TASKS=1` beside 60 sibling tasks is still a misfiled backlog reading as
+# a verified one. These tests pin the split being SURFACED, and pin equally
+# hard that a store with no siblings is left alone.
+# ============================================================================
+
+# The issue's own store: 1 task under `comfyui`, 60 under `comfyui-nodes`.
+jq -n --arg m "$(tw_stamp 1)" '
+  [{uuid:"cf-1", project:"comfyui", description:"the near-empty sibling", modified:$m}]
+  + [range(60) | {uuid:("cn"+(.|tostring)), project:"comfyui-nodes",
+                  description:("pack task "+(.|tostring)), modified:$m}]' \
+  > "$SANDBOX/comfyui-split.json"
+
+CFY="$SANDBOX/comfyui"
+CFN="$SANDBOX/comfyui-nodes"
+mkrepo "$CFY"
+mkrepo "$CFN"
+export TASK_ALL_FIXTURE="$SANDBOX/comfyui-split.json"
+
+# --- AK1: the decisive case — the wrong slug must not report the sibling's 60
+out=$(run_at "$CFY")
+check_line "AK1: the slug's own backlog is counted, not the prefix hit's" \
+  "$out" "OPEN_TASKS=1"
+check_line "AK1: the exact-value count is emitted alongside it" \
+  "$out" "PROJECT_EXACT_TASKS=1"
+check_line "AK1: the swept-in siblings are named" \
+  "$out" "PROJECT_PREFIX_SIBLINGS=comfyui-nodes"
+check_line "AK1: and counted" "$out" "PROJECT_PREFIX_SIBLING_TASKS=60"
+check_line "AK1: a dominated slug is no longer confident" \
+  "$out" "PROJECT_CONFIDENCE=low"
+check_absent "AK1: the sibling's tasks are never scoped in" "$out" "TASK_1_UUID=cn0"
+check_count_line "AK1: exactly one exact-count key" "$out" '^PROJECT_EXACT_TASKS=' 1
+
+# --- AK2 (known-good control): the same store, from the slug that owns it ----
+# Without this the fix could be "always report low" and AK1 would still pass.
+out=$(run_at "$CFN")
+check_line "AK2: the owning slug counts all 60" "$out" "OPEN_TASKS=60"
+check_line "AK2: exact count agrees when there are no subprojects" \
+  "$out" "PROJECT_EXACT_TASKS=60"
+check_line "AK2: the owning slug keeps the project scope" "$out" "TASK_SCOPE=project"
+check_line "AK2: and stays confident" "$out" "PROJECT_CONFIDENCE=high"
+check_absent "AK2: no siblings, so no sibling keys" "$out" "PROJECT_PREFIX_SIBLINGS="
+check_absent "AK2: nor a sibling count" "$out" "PROJECT_PREFIX_SIBLING_TASKS="
+
+# --- AK3 (guard integrity): a SMALLER sibling is surfaced, never a downgrade --
+# The downgrade is strict dominance, not "a sibling exists" — otherwise every
+# `dotfiles` beside a `dotfiles-archive` would read as unresolved forever.
+jq -n --arg m "$(tw_stamp 1)" '
+  [range(60) | {uuid:("co"+(.|tostring)), project:"comfyui",
+                description:("owned "+(.|tostring)), modified:$m}]
+  + [{uuid:"cn-x", project:"comfyui-nodes", description:"one stray", modified:$m}]' \
+  > "$SANDBOX/comfyui-minor-sibling.json"
+export TASK_ALL_FIXTURE="$SANDBOX/comfyui-minor-sibling.json"
+out=$(run_at "$CFY")
+check_line "AK3: the owning slug counts its own 60" "$out" "OPEN_TASKS=60"
+check_line "AK3: a minority sibling does not cost confidence" \
+  "$out" "PROJECT_CONFIDENCE=high"
+check_line "AK3: but the split is still surfaced, not silenced" \
+  "$out" "PROJECT_PREFIX_SIBLINGS=comfyui-nodes"
+check_line "AK3: with its own count" "$out" "PROJECT_PREFIX_SIBLING_TASKS=1"
+
+# --- AK4: a `.` subproject is IN scope and is NOT a prefix sibling -----------
+# The two counts differ only here, which is what makes the exact one worth
+# emitting: OPEN_TASKS is the hierarchy match, PROJECT_EXACT_TASKS the slug.
+jq -n --arg m "$(tw_stamp 1)" '
+  [{uuid:"cx-1", project:"comfyui", description:"the slug itself", modified:$m},
+   {uuid:"cx-2", project:"comfyui.web", description:"a real subproject", modified:$m},
+   {uuid:"cx-3", project:"comfyui.web", description:"another", modified:$m},
+   {uuid:"cx-4", project:"comfyui-nodes", description:"a prefix sibling", modified:$m}]' \
+  > "$SANDBOX/comfyui-hierarchy.json"
+export TASK_ALL_FIXTURE="$SANDBOX/comfyui-hierarchy.json"
+out=$(run_at "$CFY")
+check_line "AK4: subprojects count inside the scope" "$out" "OPEN_TASKS=3"
+check_line "AK4: the exact count excludes them" "$out" "PROJECT_EXACT_TASKS=1"
+check_line 'AK4: a dot-separated child is never reported as a prefix sibling' \
+  "$out" "PROJECT_PREFIX_SIBLINGS=comfyui-nodes"
+check_line "AK4: nor counted as one" "$out" "PROJECT_PREFIX_SIBLING_TASKS=1"
+check_line "AK4: a dominant hierarchy scope stays confident" \
+  "$out" "PROJECT_CONFIDENCE=high"
+
+# --- AK5: an ASSERTED slug is downgraded too, and named ---------------------
+# The reported case was a slug asserted in CLAUDE.md on the strength of a prefix
+# hit. Assertion fixes the slug's identity; it cannot assert what the store
+# holds — so unlike the adoption rungs, this signal is not suppressed for
+# --project. Nothing is rewritten: the scope and the count stay the caller's.
+export TASK_ALL_FIXTURE="$SANDBOX/comfyui-split.json"
+out=$(bash "$COLLECTOR" --project-dir "$REPO" --project comfyui)
+check_line "AK5: an asserted slug keeps its own scope" "$out" "TASK_SCOPE=project"
+check_line "AK5: and its own count" "$out" "OPEN_TASKS=1"
+check_line "AK5: but not a confident one when siblings dominate" \
+  "$out" "PROJECT_CONFIDENCE=low"
+check_line "AK5: the sibling holding the backlog is named" \
+  "$out" "PROJECT_PREFIX_SIBLINGS=comfyui-nodes"
+check_line "AK5: the slug is never rewritten to the sibling" "$out" "PROJECT=comfyui"
+
+# --- AK6: the hook's summary carries the split too --------------------------
+out=$(run_at "$CFY" --summary)
+check_line "AK6: summary carries the exact count" "$out" "PROJECT_EXACT_TASKS=1"
+check_line "AK6: summary names the siblings" \
+  "$out" "PROJECT_PREFIX_SIBLINGS=comfyui-nodes"
+check_line "AK6: summary carries the sibling count" \
+  "$out" "PROJECT_PREFIX_SIBLING_TASKS=60"
+check_line "AK6: summary carries the downgrade" "$out" "PROJECT_CONFIDENCE=low"
+check_line "AK6: the summary is still parse-stable" \
+  "$out" "=== END SESSION SURVEY SUMMARY ==="
+out=$(run_at "$CFN" --summary)
+check_absent "AK6 (control): no sibling keys in a clean summary" \
+  "$out" "PROJECT_PREFIX_SIBLINGS="
+
+# --- AK7: the split reuses the ONE snapshot; no `project:` filter appears ----
+export TASK_ARGV_LOG="$SANDBOX/task-argv-2323.log"
+: > "$TASK_ARGV_LOG"
+export TASK_ALL_FIXTURE="$SANDBOX/comfyui-split.json"
+out=$(run_at "$CFY")
+exports=$(grep -c 'export' "$TASK_ARGV_LOG" || true)
+check_eq "AK7: still exactly one export call" "$exports" "1"
+check_absent "AK7: the prefix split never shells out a project: filter" \
+  "$(cat "$TASK_ARGV_LOG")" "project:"
+unset TASK_ARGV_LOG
+
+# --- AK8: degradation — a missing binary never fabricates a confident number -
+export TASK_ALL_FIXTURE="$SANDBOX/comfyui-split.json"
+out=$(PATH="$NOJQ" bash "$COLLECTOR" --project-dir "$CFY" 2>&1)
+check_line "AK8: no jq means no scoping, so no confidence" \
+  "$out" "PROJECT_CONFIDENCE=low"
+check_line "AK8: and the unqueried state is named" "$out" "TASK_SCOPE=unknown"
+check_line "AK8: the exact count stays an integer, never a sentinel" \
+  "$out" "PROJECT_EXACT_TASKS=0"
+check_absent "AK8: no siblings are claimed from an unqueried store" \
+  "$out" "PROJECT_PREFIX_SIBLINGS="
+check_line "AK8: the digest is still parse-stable" "$out" "=== END TASKWARRIOR ==="
+# No `task` binary at all.
+out=$(SESSION_SURVEY_TASK_BIN="$SANDBOX/does-not-exist" \
+  bash "$COLLECTOR" --project-dir "$CFY" 2>/dev/null)
+check_line "AK9: a missing task binary is named" "$out" "TASK_AVAILABLE=false"
+check_line "AK9: and never confident" "$out" "PROJECT_CONFIDENCE=low"
+check_line "AK9: exact count is a parse-stable zero" "$out" "PROJECT_EXACT_TASKS=0"
+check_absent "AK9: no siblings from a store that was never opened" \
+  "$out" "PROJECT_PREFIX_SIBLINGS="
+# An empty store: nothing to split, and nothing to downgrade.
+export TASK_ALL_FIXTURE=/dev/null
+out=$(run_at "$CFY")
+check_line "AK9: an empty store is still a confident zero" \
+  "$out" "PROJECT_CONFIDENCE=high"
+check_line "AK9: with a zero exact count" "$out" "PROJECT_EXACT_TASKS=0"
+check_absent "AK9: and no sibling keys" "$out" "PROJECT_PREFIX_SIBLINGS="
 
 echo "---"
 echo "PASS=$pass FAIL=$fail"

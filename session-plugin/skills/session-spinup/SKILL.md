@@ -3,7 +3,7 @@ name: session-spinup
 description: Read-only session-start briefing of open tasks, git state, journal todos. Use when user says spin up, what was I doing, or pick up where I left off.
 allowed-tools: Bash(bash *), Read, TodoWrite
 created: 2026-05-13
-modified: 2026-07-18
+modified: 2026-08-09
 compatibility: claude-code
 reviewed: 2026-06-24
 ---
@@ -127,6 +127,14 @@ under `project:<name>`". Otherwise:
 `DETECTION=` names how the slug was chosen: `override` (`--project`), `declared`
 (a `.claude/session.json` `.project` string), `cwd-repo-basename` (the guess),
 `cwd-repo-basename-ancestor` (an adopted ancestor), or `ambiguous`.
+
+Also independently of `TASK_SCOPE`: when `PROJECT_PREFIX_SIBLINGS=<slugs>`
+and `PROJECT_PREFIX_SIBLING_TASKS=N` are present, other slugs share the
+detected slug's **prefix** — which taskwarrior's own CLI filter
+(`task project:<slug>`) would have swept in, making a wrong slug look
+verified. Say `N under <slugs>` alongside the count and offer
+`--project <slug>`; never present the scoped count as the whole picture.
+`PROJECT_EXACT_TASKS=` is the slug alone, without its `.` subprojects.
 
 Independently of `TASK_SCOPE`, when `PROJECT_AMBIGUOUS=<slug>` and
 `PROJECT_AMBIGUOUS_TASKS=N` are present the detected slug owns **zero** tasks
