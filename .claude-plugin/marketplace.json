@@ -606,7 +606,7 @@
       "name": "software-design-plugin",
       "source": "./software-design-plugin",
       "description": "Software design methodology - deep modules, design by contract, GoF pattern selection, legacy code seams, and design by pseudocode",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "keywords": [
         "software-design",
         "deep-modules",

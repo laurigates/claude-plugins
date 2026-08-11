@@ -41,6 +41,6 @@
   "tools-plugin": "2.9.4",
   "typescript-plugin": "1.8.10",
   "session-plugin": "1.9.7",
-  "software-design-plugin": "1.1.0",
+  "software-design-plugin": "1.2.0",
   "workflow-orchestration-plugin": "1.10.0"
 }
