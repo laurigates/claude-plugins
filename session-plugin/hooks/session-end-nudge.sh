@@ -62,22 +62,41 @@ user_turns=${user_turns:-0}
 [ "$user_turns" -lt 6 ] && exit 0
 
 # Something to capture into: taskwarrior (wrap destination) or a distillable
-# surface in the repo (distill target). Resolve the repo root via git so
-# worktrees match their parent repo's surface. SESSION_NUDGE_TASK_BIN is a
-# test seam — point it at a nonexistent path to simulate "no taskwarrior".
+# surface in the repo (distill target). SESSION_NUDGE_TASK_BIN is a test
+# seam — point it at a nonexistent path to simulate "no taskwarrior".
+#
+# Taskwarrior availability delegates open-task detection to the shared
+# collector's --summary mode (scripts/session-survey.sh) — the same
+# project-scope ladder session-spinup-nudge.sh already uses (exact slug →
+# git-remote-resolved project → ancestor slug → all-projects fallback, with
+# confidence and prefix-sibling guards). A raw `task project:$(basename $cwd)`
+# query both under-counts (never fires when basename≠slug) and over-counts
+# (taskwarrior's own CLI `project:` filter is a PREFIX match, so
+# `project:comfyui` also sweeps in `comfyui-nodes` tasks) — the collector's
+# hierarchy-aware jq scoping avoids both (#2359).
 task_bin="${SESSION_NUDGE_TASK_BIN:-task}"
 has_surface=0
 has_open_tasks=0
 if command -v "$task_bin" >/dev/null 2>&1; then
     has_surface=1
-    # Read-only query for open/active tasks in the current project.
-    # Uses 'export' (not 'list') so it exits 0 on empty — parallel-safe.
-    if [ -n "$cwd" ]; then
-        repo_root_tw=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null || echo "$cwd")
-        proj=$(basename "$repo_root_tw")
-        task_count=$("$task_bin" project:"$proj" '(status:pending or +ACTIVE)' export 2>/dev/null \
-            | jq 'length' 2>/dev/null || echo 0)
-        [ "${task_count:-0}" -gt 0 ] && has_open_tasks=1
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    collector="$script_dir/../scripts/session-survey.sh"
+    if [ -f "$collector" ]; then
+        summary=$(SESSION_SURVEY_TASK_BIN="$task_bin" \
+                  bash "$collector" --summary --project-dir "$cwd" 2>/dev/null || echo "")
+        get() { printf '%s\n' "$summary" | grep -m1 "^$1=" | cut -d= -f2- || echo ""; }
+        open_tasks=$(get OPEN_TASKS)
+        recent_tasks=$(get RECENT_TASK_COUNT)
+        task_scope=$(get TASK_SCOPE)
+        project_confidence=$(get PROJECT_CONFIDENCE)
+        if [ "${open_tasks:-0}" -gt 0 ] 2>/dev/null || [ "${recent_tasks:-0}" -gt 0 ] 2>/dev/null; then
+            has_open_tasks=1
+        elif [ "$task_scope" != "none" ] && [ "$project_confidence" = "low" ]; then
+            # A low-confidence zero is an unqueried project, never a clean
+            # queue (session-end/SKILL.md, session-spinup/SKILL.md Step 1c) —
+            # suppress the CONCLUSION that nothing's open, not the cue.
+            has_open_tasks=1
+        fi
     fi
 elif [ -n "$cwd" ] && [ -d "$cwd" ]; then
     repo_root=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null || echo "$cwd")
@@ -100,7 +119,7 @@ touch "$state_file"
 
 task_cue=""
 if [ "$has_open_tasks" = 1 ]; then
-    task_cue=" Also mention a taskwarrior state-sync pass: check which tasks are still open or active (task project:<name> '(status:pending or +ACTIVE)' export | jq '.[]'), offer to mark done / update statuses / add follow-up tasks — use stable UUIDs from 'task +LATEST uuids' when referencing specific tasks."
+    task_cue=" Also mention that a taskwarrior state-sync pass looks worth offering."
 fi
 
 reason="The user is winding down the session. Briefly offer to run the session-plugin:session-end orchestrator — it surveys the session once, previews which end-of-session passes qualify (session-wrap loose-thread capture, session-distill durable learnings, /feedback:session plugin feedback) and runs only what the user confirms in a single prompt.${task_cue} Offer only — never run it without explicit user confirmation. If nothing follow-up-worthy surfaced this session, acknowledge the wind-down and end."

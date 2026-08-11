@@ -440,6 +440,37 @@ check_skill_body() {
       done
     fi
 
+    # Regression: session-end's blueprint auto-drain gate (the jq check that
+    # auto-confirms the feature-tracker-sync pass) must require ALL THREE of
+    # autonomy_level >= 1, task_registry[...].enabled == true, AND
+    # task_registry[...].auto_run == true — not just the first and third. A
+    # manifest task the owner disabled (`enabled: false`) must never auto-run
+    # unattended just because `auto_run: true` and `autonomy_level >= 1`
+    # (issue #2358). The check pins the LITERAL jq gate command line (matched
+    # by "jq -r" + "autonomy_level" together, which is unique to the fenced
+    # gate — "autonomy_level" also appears once in surrounding prose but never
+    # on a "jq -r" line) rather than a bare substring search anywhere in the
+    # body, so prose that merely *mentions* "enabled" without wiring it into
+    # the actual filter still fails. This is also the negative guard against
+    # the old two-field form (autonomy_level + auto_run, no enabled check)
+    # silently reappearing via a bulk edit.
+    if [ "$skill_name" = "session-end" ]; then
+      gate_line=$(grep -E "jq -r .*autonomy_level" "$skill_file" || true)
+      if [ -z "$gate_line" ]; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain the blueprint auto-drain jq gate line (autonomy_level/enabled/auto_run check, issue #2358)")
+        has_errors=true
+      else
+        if ! grep -q '\.enabled == true' <<<"$gate_line"; then
+          issues+=("❌ ${plugin}/${skill_name}: the blueprint auto-drain jq gate must pin task_registry[...].enabled == true (not just autonomy_level + auto_run) — a manifest that omits 'enabled' must read as disabled (issue #2358)")
+          has_errors=true
+        fi
+        if ! grep -q 'auto_run == true' <<<"$gate_line"; then
+          issues+=("❌ ${plugin}/${skill_name}: the blueprint auto-drain jq gate must pin task_registry[...].auto_run == true (issue #2358)")
+          has_errors=true
+        fi
+      fi
+    fi
+
     # Regression: the upstream issue/PR candidate pass detects candidates at
     # the session boundary and ROUTES each one — it never files blind. The
     # two load-bearing invariants: (1) the track-for-later path survives
