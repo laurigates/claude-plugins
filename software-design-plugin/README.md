@@ -18,6 +18,7 @@ selection, getting legacy code under test, and routine-level decomposition.
 | [`design-patterns`](skills/design-patterns/SKILL.md) | A structure resists change and you need the right Gang-of-Four pattern (selected by symptom) |
 | [`design-legacy-seams`](skills/design-legacy-seams/SKILL.md) | Changing untested legacy code — find a seam, write characterization tests first |
 | [`design-pseudocode`](skills/design-pseudocode/SKILL.md) | Designing a complex routine by stepwise refinement before coding |
+| [`design-diy-vs-dependency`](skills/design-diy-vs-dependency/SKILL.md) | About to depend on a heavy single-purpose tool — GUI wrapper, bundled runtime, unaudited or non-cross-platform binary |
 
 Each skill takes an optional `[target]` (file, module, diff, or free-text
 description) and applies its lens to that target; with no argument it operates on
@@ -32,6 +33,7 @@ the current change.
 | `design-patterns` — select a pattern from a symptom | `dry-consolidation` / `code-refactor` — execute the change |
 | `design-legacy-seams` — get code under test first | `code-test-quality` — judge the resulting tests |
 | `design-pseudocode` — design a routine before coding | `code-review` — review it after |
+| `design-diy-vs-dependency` — whether to *take* a dependency | `code-dep-audit` — audit the dependencies you already have |
 
 Cross-plugin references use `plugin:skill` names so they resolve regardless of
 which plugins are installed.
