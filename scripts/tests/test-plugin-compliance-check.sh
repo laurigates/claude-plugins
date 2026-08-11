@@ -212,6 +212,61 @@ assert_contains "heading without a table is still detected" \
   "$out_heading" "is not followed by a markdown table within 10 lines"
 assert_absent "heading without a table does NOT emit a ❌ issue" "$out_heading" "❌"
 
+# --------------------------------------------------------------------------
+# Regression test for the session-end blueprint auto-drain gate (issue #2358).
+#
+# The jq gate that auto-confirms the Blueprint tracker-sync pass must require
+# ALL THREE of autonomy_level >= 1, task_registry[...].enabled == true, and
+# task_registry[...].auto_run == true — not just the first and third. A task
+# the owner disabled (`enabled: false`) must never auto-run unattended just
+# because `auto_run: true` and `autonomy_level >= 1`.
+#
+# THE SEMANTIC INVARIANT UNDER TEST: the two-field form (autonomy_level +
+# auto_run, missing the enabled check) must be REJECTED (❌, exit 1), and the
+# three-field form must PASS clean. A syntactic pin on "the string 'enabled'
+# appears somewhere in the body" would be insufficient — prose that merely
+# mentions "enabled" without wiring it into the actual jq filter must still
+# fail, so the fixture below carries prose naming "enabled" beside a gate line
+# that omits the check from the filter itself.
+make_session_end_skill() {
+  local gate_line="$1"
+  local dir="$root/$PLUGIN/skills/session-end"
+  mkdir -p "$dir"
+  {
+    printf -- '---\n'
+    printf 'name: session-end\n'
+    printf 'description: Fixture session-end. Use when exercising the compliance self-test.\n'
+    printf 'allowed-tools: Read\n'
+    printf 'created: 2026-08-11\n'
+    printf 'modified: 2026-08-11\n'
+    printf 'reviewed: 2026-08-11\n'
+    printf -- '---\n\n'
+    printf '# session-end\n\n'
+    printf 'Blueprint tracker-sync qualifies when UNDRAINED_COUNT >= 1 and delegates\n'
+    printf 'via --drain-wave. The gate checks the manifest'"'"'s enabled field.\n\n'
+    printf 'Upstream candidates always route through workflow-verify-before-filing.\n\n'
+    printf '```sh\n%s\n```\n' "$gate_line"
+  } > "$dir/SKILL.md"
+}
+
+# --- The regression: old two-field form (no enabled check) must FAIL --------
+rm -rf "${root:?}/$PLUGIN/skills/headingonly"
+make_session_end_skill 'jq -r '"'"'if ((.automation.autonomy_level // 0) >= 1) and (.task_registry["feature-tracker-sync"].auto_run == true) then "auto" else "ask" end'"'"' docs/blueprint/manifest.json 2>/dev/null'
+run_check; out_twofield="$OUT"; rc_twofield="$RC"
+
+assert_eq "old two-field gate (no enabled check) exits 1" "$rc_twofield" "1"
+assert_contains "old two-field gate is flagged by name" \
+  "$out_twofield" "session-end: the blueprint auto-drain jq gate must pin task_registry[...].enabled == true"
+
+# --- Guard integrity: the correct three-field form must PASS clean ---------
+rm -rf "${root:?}/$PLUGIN/skills/session-end"
+make_session_end_skill 'jq -r '"'"'if ((.automation.autonomy_level // 0) >= 1) and (.task_registry["feature-tracker-sync"].enabled == true) and (.task_registry["feature-tracker-sync"].auto_run == true) then "auto" else "ask" end'"'"' docs/blueprint/manifest.json 2>/dev/null'
+run_check; out_threefield="$OUT"; rc_threefield="$RC"
+
+assert_eq "three-field gate exits 0" "$rc_threefield" "0"
+assert_absent "three-field gate raises no auto-drain gate issue" \
+  "$out_threefield" "blueprint auto-drain jq gate"
+
 echo "---"
 echo "passed: $pass, failed: $fail"
 [ "$fail" -eq 0 ]
