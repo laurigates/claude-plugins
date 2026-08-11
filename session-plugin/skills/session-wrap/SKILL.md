@@ -106,14 +106,20 @@ emitting each task with its **stable UUID** so Steps 2/4 never operate on
 a volatile numeric ID:
 
 ```sh
-bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits
+bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits --with-dedup
 ```
 
 Pass `--project <name>` when the config naming map maps the cwd to a
 project other than the repo basename; when detection is ambiguous
 (`DETECTION=ambiguous`) and unclear, list `task _projects` and ask once.
-Then read the conversation itself — what was kicked off but not finished,
-discussed but not done.
+`--with-dedup` populates `GITHUB_DRIFT`, which the "Don't duplicate an
+existing tracker" section below reads — without it the section is always
+empty and the check silently passes against nothing. That section's
+`GH_READY` matters too: `false` means `PRS`/`GITHUB_DRIFT` are present but
+**unqueried** (no `gh` CLI or unauthenticated), not "nothing open" — never
+treat an empty section under `GH_READY=false` as license to add a task
+that duplicates an untracked PR/issue. Then read the conversation itself —
+what was kicked off but not finished, discussed but not done.
 
 ### Step 2: Categorise
 
@@ -195,7 +201,7 @@ running. Pre-silence for a session:
 
 | Context | Command |
 |---|---|
-| Survey (detection + git + PRs + tasks-with-UUIDs + commits) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits` |
+| Survey (detection + git + PRs + tasks-with-UUIDs + commits + GitHub-drift dedup) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits --with-dedup` |
 | Batch close by UUID | `task rc.confirmation:no <uuid> done` |
 | Add a task | `task rc.confirmation:no add project:<name> +<tag> '<desc>'` |
 | Known projects | `task _projects` |

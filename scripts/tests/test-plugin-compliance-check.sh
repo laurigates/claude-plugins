@@ -212,6 +212,90 @@ assert_contains "heading without a table is still detected" \
   "$out_heading" "is not followed by a markdown table within 10 lines"
 assert_absent "heading without a table does NOT emit a ❌ issue" "$out_heading" "❌"
 
+# ============================================================================
+# session-end / session-wrap: GITHUB_DRIFT requires --with-dedup (issue #2357)
+#
+# session-survey.sh only populates its GITHUB_DRIFT section when invoked with
+# --with-dedup — omitted, the section is always empty and any dedup guard that
+# reads it (redundant-tracker test, taskwarrior-sync) silently runs against
+# nothing. The regression guard must be SEMANTIC: it asserts --with-dedup is on
+# the actual session-survey.sh invocation LINE, not merely that the substring
+# "--with-dedup" appears anywhere in the file (which a body could satisfy with
+# explanatory prose while the real command stays broken).
+#
+# The fixture is named literally "session-wrap" because check_skill_body()
+# keys this rule off the skill directory's basename. It also carries the other
+# session-wrap-scoped tokens (+upstream / workflow-verify-before-filing / "is
+# its own tracker" / "annotate the existing task") so those UNRELATED checks
+# stay green and every ❌ assertion below is attributable to this rule alone.
+# ============================================================================
+
+make_session_wrap_fixture() {
+  # make_session_wrap_fixture <survey-invocation-line> <extra-body-line>
+  local invocation="$1"
+  local extra="${2:-}"
+  local dir="$root/$PLUGIN/skills/session-wrap"
+  rm -rf "$dir"
+  mkdir -p "$dir"
+  {
+    printf -- '---\n'
+    printf 'name: session-wrap\n'
+    printf 'description: Fixture session-wrap. Use when exercising the compliance self-test.\n'
+    printf 'allowed-tools: Read\n'
+    printf 'created: 2026-08-11\n'
+    printf 'modified: 2026-08-11\n'
+    printf 'reviewed: 2026-08-11\n'
+    printf -- '---\n\n'
+    printf '# Fixture session-wrap\n\n'
+    printf '## When to Use This Skill\n\n'
+    printf '| Use this skill when... | Use another skill when... |\n'
+    printf '|---|---|\n'
+    printf '| Exercising the fixture | Doing anything real |\n\n'
+    printf '## Execution\n\n'
+    printf 'Run the shared collector:\n\n'
+    printf '```sh\n%s\n```\n\n' "$invocation"
+    printf 'The GITHUB_DRIFT section is what the redundant-tracker test\n'
+    printf 'below reads: an open PR or assigned issue is its own tracker,\n'
+    printf 'so annotate the existing task instead of adding a duplicate.\n'
+    printf 'Track an upstream candidate with +upstream, or route it through\n'
+    printf 'workflow-verify-before-filing before filing anything.\n\n'
+    if [ -n "$extra" ]; then
+      printf '%s\n' "$extra"
+    fi
+  } > "$dir/SKILL.md"
+}
+
+# --- The regression: GITHUB_DRIFT referenced, invocation missing --with-dedup
+make_session_wrap_fixture \
+  'bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits'
+run_check; out_missing="$OUT"; rc_missing="$RC"
+
+assert_contains "missing --with-dedup on the invocation line is flagged ❌" \
+  "$out_missing" "SKILL.md references GITHUB_DRIFT but at least one session-survey.sh invocation line is missing --with-dedup"
+assert_contains "missing --with-dedup names the issue (#2357)" "$out_missing" "#2357"
+
+# --- Guard integrity: the string alone (prose, not on the command line) must
+# NOT satisfy the check — proves this is a semantic pairing, not a bare grep.
+make_session_wrap_fixture \
+  'bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits' \
+  'Note: pass --with-dedup to populate GITHUB_DRIFT.'
+run_check; out_prose_only="$OUT"; rc_prose_only="$RC"
+
+assert_contains "--with-dedup) in prose alone still flags the invocation line" \
+  "$out_prose_only" "SKILL.md references GITHUB_DRIFT but at least one session-survey.sh invocation line is missing --with-dedup"
+
+# --- The fix: --with-dedup on the actual invocation line clears the finding
+make_session_wrap_fixture \
+  'bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits --with-dedup'
+run_check; out_fixed="$OUT"; rc_fixed="$RC"
+
+assert_absent "with --with-dedup on the invocation line, no #2357 finding" \
+  "$out_fixed" "missing --with-dedup"
+assert_eq "with --with-dedup, session-wrap fixture exits 0" "$rc_fixed" "0"
+
+rm -rf "${root:?}/$PLUGIN/skills/session-wrap"
+
+
 # --------------------------------------------------------------------------
 # Regression test for the session-end blueprint auto-drain gate (issue #2358).
 #
