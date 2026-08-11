@@ -197,13 +197,18 @@ run_hook_with_task_bin() {
           bash "$HOOK" 2>/dev/null || true
 }
 
-# Create a mock task binary that returns a non-empty task list when queried.
+# Positive control: a genuine wind-down in a repo whose taskwarrior project
+# slug matches the cwd basename exactly (TASK_SCOPE=project,
+# PROJECT_CONFIDENCE=high) with a real open task. Every regression case below
+# is paired against this control.
 MOCK_TASK_DIR=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
-cat > "$MOCK_TASK_DIR/task" <<'MOCK'
+REPO_WITH_RULES_BASENAME=$(basename "$REPO_WITH_RULES")
+cat > "$MOCK_TASK_DIR/task" <<MOCK
 #!/bin/sh
-# Minimal task stub: 'export' returns one pending task; all other calls are no-ops.
-case "$*" in
-  *export*) printf '[{"id":1,"description":"open task","status":"pending","uuid":"00000000-0000-0000-0000-000000000001"}]\n' ;;
+# Minimal task stub: 'export' returns one pending task scoped to the repo's
+# own basename (a confident direct match); all other calls are no-ops.
+case "\$*" in
+  *export*) printf '[{"id":1,"description":"open task","status":"pending","uuid":"00000000-0000-0000-0000-000000000001","project":"$REPO_WITH_RULES_BASENAME"}]\n' ;;
   *) exit 0 ;;
 esac
 MOCK
@@ -211,10 +216,9 @@ chmod +x "$MOCK_TASK_DIR/task"
 
 TRANSCRIPT=$(make_transcript 10 "im done for now")
 output=$(run_hook_with_task_bin "$MOCK_TASK_DIR/task" "sess-tw-tasks" "$REPO_WITH_RULES" "$TRANSCRIPT")
-assert_contains "open tasks → reason mentions taskwarrior sync cue" 'taskwarrior' "$output"
-assert_contains "open tasks → reason still references session-plugin:session-end" 'session-plugin:session-end' "$output"
-assert_contains "open tasks → reason still instructs offer-only" 'never run it without explicit user confirmation' "$output"
-assert_contains "open tasks → reason mentions stable UUID pattern" 'task +LATEST uuids' "$output"
+assert_contains "positive control: open tasks → reason mentions taskwarrior sync cue" 'taskwarrior' "$output"
+assert_contains "positive control: reason still references session-plugin:session-end" 'session-plugin:session-end' "$output"
+assert_contains "positive control: reason still instructs offer-only" 'never run it without explicit user confirmation' "$output"
 
 # When the task stub returns an empty list, the sync cue must NOT appear.
 MOCK_TASK_EMPTY_DIR=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
@@ -232,14 +236,120 @@ chmod +x "$MOCK_TASK_EMPTY_DIR/task"
 output=$(run_hook_with_task_bin "$MOCK_TASK_EMPTY_DIR/task" "sess-tw-empty" "$REPO_WITH_RULES" "$TRANSCRIPT")
 # Hook must still fire (tasks stub means taskwarrior is "present" → has_surface=1)
 assert_contains "empty task list → hook still fires" '"decision":"block"' "$output"
-# But the taskwarrior sync cue text must not appear in the reason
-if echo "$output" | grep -q 'task +LATEST uuids'; then
-    printf "  FAIL: empty task list should NOT include UUID sync cue\n"; FAIL=$((FAIL + 1))
+# A confidently-empty store (TASK_SCOPE=project, PROJECT_CONFIDENCE=high, no
+# tasks anywhere) must not include the taskwarrior sync cue at all — the
+# counter-control proving the low-confidence handling below doesn't fire
+# unconditionally.
+if echo "$output" | grep -q 'taskwarrior'; then
+    printf "  FAIL: confidently-empty store should NOT include the taskwarrior sync cue\n"; FAIL=$((FAIL + 1))
 else
-    printf "  PASS: empty task list does NOT include UUID sync cue\n"; PASS=$((PASS + 1))
+    printf "  PASS: confidently-empty store does NOT include the taskwarrior sync cue\n"; PASS=$((PASS + 1))
 fi
 
 rm -rf "$MOCK_TASK_DIR" "$MOCK_TASK_EMPTY_DIR"
+rm -f "$TRANSCRIPT"
+
+# ── #2359: scope-ladder delegation regression tests ─────────────────────────
+#
+# session-end-nudge.sh used to decide the taskwarrior-sync cue with its own
+# raw `task project:$(basename $cwd) ... export` query — bypassing the
+# project-scope ladder session-survey.sh (and session-spinup-nudge.sh) already
+# implement correctly. That caused silent under-counting (nudge never fires
+# when basename≠slug) and over-counting (a taskwarrior CLI `project:` prefix
+# filter sweeps in a sibling project's tasks, e.g. `comfyui` matching
+# `comfyui-nodes` tasks too). These three cases pin the fix; each is paired
+# against the positive control above (a correctly-slugged repo with real open
+# tasks still fires the cue).
+echo ""
+echo "scope-ladder delegation (#2359):"
+
+EXTRA_REPOS_DIR=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
+trap 'rm -rf "$TEST_HOME" "$REPO_WITH_RULES" "$REPO_PLAIN" "$MOCK_TASK_DIR" "$MOCK_TASK_EMPTY_DIR" "$EXTRA_REPOS_DIR"' EXIT
+
+# Case 1: basename differs from the taskwarrior project slug (remote-resolved).
+# Mirrors session-spinup-nudge.sh's chezmoi-src fixture (#2271).
+REPO_CHEZMOI="$EXTRA_REPOS_DIR/chezmoi-src"
+git init -q "$REPO_CHEZMOI"
+git -C "$REPO_CHEZMOI" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+git -C "$REPO_CHEZMOI" remote add origin https://github.com/u/dotfiles.git
+CHEZMOI_TASK_DIR=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
+# Simulates real taskwarrior: a `project:<slug>` filter for the WRONG
+# (basename-derived) slug matches nothing, while the correct slug or an
+# unfiltered export sees the task — pins the under-counting hazard.
+cat > "$CHEZMOI_TASK_DIR/task" <<'MOCK'
+#!/bin/sh
+case "$*" in
+  *'project:chezmoi-src'*) printf '[]\n' ;;
+  *'project:dotfiles'*) printf '[{"id":1,"description":"chezmoi apply drift","status":"pending","uuid":"00000000-0000-0000-0000-000000000002","project":"dotfiles"}]\n' ;;
+  *export*) printf '[{"id":1,"description":"chezmoi apply drift","status":"pending","uuid":"00000000-0000-0000-0000-000000000002","project":"dotfiles"}]\n' ;;
+  *) exit 0 ;;
+esac
+MOCK
+chmod +x "$CHEZMOI_TASK_DIR/task"
+TRANSCRIPT=$(make_transcript 10 "im done for now")
+output=$(run_hook_with_task_bin "$CHEZMOI_TASK_DIR/task" "sess-chezmoi" "$REPO_CHEZMOI" "$TRANSCRIPT")
+assert_contains "basename≠slug (remote-resolved) still fires the task cue" 'taskwarrior' "$output"
+rm -f "$TRANSCRIPT"
+
+# Case 2: the slug has a prefix sibling (comfyui vs comfyui-nodes) — the hook
+# must never rely on a `project:` filter, which taskwarrior's own CLI treats
+# as a PREFIX match and would sweep the sibling's tasks in.
+REPO_COMFYUI="$EXTRA_REPOS_DIR/comfyui"
+git init -q "$REPO_COMFYUI"
+git -C "$REPO_COMFYUI" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+COMFYUI_TASK_DIR=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
+COMFYUI_TASK_LOG="$COMFYUI_TASK_DIR/invocations.log"
+: > "$COMFYUI_TASK_LOG"
+cat > "$COMFYUI_TASK_DIR/task" <<MOCK
+#!/bin/sh
+echo "\$*" >> "$COMFYUI_TASK_LOG"
+case "\$*" in
+  *'project:'*) printf '[{"id":1,"description":"sibling task","status":"pending","uuid":"00000000-0000-0000-0000-000000000003","project":"comfyui-nodes"}]\n' ;;
+  *export*) printf '[{"id":1,"description":"sibling task 1","status":"pending","uuid":"00000000-0000-0000-0000-000000000003","project":"comfyui-nodes"},{"id":2,"description":"sibling task 2","status":"pending","uuid":"00000000-0000-0000-0000-000000000004","project":"comfyui-nodes"}]\n' ;;
+  *) exit 0 ;;
+esac
+MOCK
+chmod +x "$COMFYUI_TASK_DIR/task"
+TRANSCRIPT=$(make_transcript 10 "im done for now")
+output=$(run_hook_with_task_bin "$COMFYUI_TASK_DIR/task" "sess-comfyui" "$REPO_COMFYUI" "$TRANSCRIPT")
+if grep -q 'project:' "$COMFYUI_TASK_LOG"; then
+    printf "  FAIL: prefix-sibling repo — hook must never pass a project: filter to task\n"; FAIL=$((FAIL + 1))
+else
+    printf "  PASS: prefix-sibling repo — no project: filter passed (avoids the sibling-sweep hazard)\n"; PASS=$((PASS + 1))
+fi
+if [ -s "$COMFYUI_TASK_LOG" ]; then
+    printf "  PASS: prefix-sibling repo — task binary was actually invoked\n"; PASS=$((PASS + 1))
+else
+    printf "  FAIL: prefix-sibling repo — task binary was never invoked (test is vacuous)\n"; FAIL=$((FAIL + 1))
+fi
+rm -f "$TRANSCRIPT"
+
+# Case 3: PROJECT_CONFIDENCE=low does not silence the cue — a low-confidence
+# zero is an unqueried project, never a clean queue (the suppress-don't-
+# conclude convention session-end/SKILL.md and session-spinup/SKILL.md
+# already apply). Repo slug matches nothing; tasks exist only under an
+# unrelated project (no remote/ancestor resolution possible), forcing
+# TASK_SCOPE=all-projects-fallback / PROJECT_CONFIDENCE=low with
+# OPEN_TASKS=0.
+REPO_UNRELATED="$EXTRA_REPOS_DIR/widget-service"
+git init -q "$REPO_UNRELATED"
+git -C "$REPO_UNRELATED" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+UNRELATED_TASK_DIR=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
+# Same realism as the chezmoi stub: a `project:<slug>` filter for the
+# (unmatched) basename-derived slug returns nothing.
+cat > "$UNRELATED_TASK_DIR/task" <<'MOCK'
+#!/bin/sh
+case "$*" in
+  *'project:widget-service'*) printf '[]\n' ;;
+  *'project:totally-unrelated-project'*) printf '[{"id":1,"description":"unrelated task","status":"pending","uuid":"00000000-0000-0000-0000-000000000005","project":"totally-unrelated-project"}]\n' ;;
+  *export*) printf '[{"id":1,"description":"unrelated task","status":"pending","uuid":"00000000-0000-0000-0000-000000000005","project":"totally-unrelated-project"}]\n' ;;
+  *) exit 0 ;;
+esac
+MOCK
+chmod +x "$UNRELATED_TASK_DIR/task"
+TRANSCRIPT=$(make_transcript 10 "im done for now")
+output=$(run_hook_with_task_bin "$UNRELATED_TASK_DIR/task" "sess-unrelated" "$REPO_UNRELATED" "$TRANSCRIPT")
+assert_contains "PROJECT_CONFIDENCE=low (unqueried project) still fires the task cue" 'taskwarrior' "$output"
 rm -f "$TRANSCRIPT"
 
 echo ""
