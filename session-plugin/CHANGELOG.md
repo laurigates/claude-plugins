@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.7](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.9.6...session-plugin-v1.9.7) (2026-08-11)
+
+
+### Bug Fixes
+
+* **session-plugin:** session-end and session-wrap request GITHUB_DRIFT via --with-dedup ([#2365](https://github.com/laurigates/claude-plugins/issues/2365)) ([e0eb470](https://github.com/laurigates/claude-plugins/commit/e0eb470fd02e19211d37ca1aeef2e42b51482d54)), closes [#2357](https://github.com/laurigates/claude-plugins/issues/2357)
+
 ## [1.9.6](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.9.5...session-plugin-v1.9.6) (2026-08-11)
 
 
