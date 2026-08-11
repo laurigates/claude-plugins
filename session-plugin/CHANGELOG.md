@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.6](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.9.5...session-plugin-v1.9.6) (2026-08-11)
+
+
+### Bug Fixes
+
+* **session-plugin:** blueprint auto-drain gate honors task_registry .enabled ([#2364](https://github.com/laurigates/claude-plugins/issues/2364)) ([d3f863a](https://github.com/laurigates/claude-plugins/commit/d3f863a0faea997c9c98b89861dce9a78b8946d6)), closes [#2358](https://github.com/laurigates/claude-plugins/issues/2358)
+* **session-plugin:** session-end-nudge uses the collector's scope ladder ([#2363](https://github.com/laurigates/claude-plugins/issues/2363)) ([174b6c1](https://github.com/laurigates/claude-plugins/commit/174b6c124f50baa75eda5d795ffcf8d419375f7c)), closes [#2359](https://github.com/laurigates/claude-plugins/issues/2359)
+
 ## [1.9.5](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.9.4...session-plugin-v1.9.5) (2026-08-10)
 
 
