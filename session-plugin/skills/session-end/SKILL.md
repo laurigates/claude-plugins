@@ -59,11 +59,18 @@ and follow-ups land in a near-empty sibling. `PROJECT_EXACT_TASKS` is
 always present: the slug alone, without its `.` subprojects.
 
 ```sh
-bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits --with-blueprint
+bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits --with-blueprint --with-dedup
 ```
 
 Pass `--project <name>` to override the detected project. Hand the digest
-to the confirmed passes in Step 4 so they don't re-survey. Plus the
+to the confirmed passes in Step 4 so they don't re-survey. `--with-dedup`
+is what populates the `GITHUB_DRIFT` section that Step 4's taskwarrior-sync
+redundancy test reads — without it the section is always empty and the
+guard silently runs against nothing. That section also carries `GH_READY`:
+`false` means it is present but **unqueried** (no `gh` CLI or
+unauthenticated), the same "not clean, just not asked" signal as
+`PROJECT_CONFIDENCE=low` above — don't treat an empty `GITHUB_DRIFT` under
+`GH_READY=false` as evidence there's nothing to dedup against. Plus the
 conversation: what finished, what's hanging, what was learned, what
 plugin/skill friction or wins occurred.
 
@@ -189,7 +196,7 @@ already in the transcript. Pre-silence:
 
 | Context | Command |
 |---|---|
-| One-pass survey (detection + git + PRs + tasks-with-UUIDs + commits + blueprint tracker state) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits --with-blueprint` |
+| One-pass survey (detection + git + PRs + tasks-with-UUIDs + commits + blueprint tracker state + GitHub-drift dedup) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits --with-blueprint --with-dedup` |
 | Trust the task count? | `TASK_SCOPE=` + `PROJECT_CONFIDENCE=` in the `TASKWARRIOR` section (`low` ⇒ re-run with `--project <slug>` before treating 0 as clean) |
 | Distill qualify signal (recipe/hot-file/process counts) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/distill-survey.sh" --session-id "${CLAUDE_SESSION_ID}" --summary` |
 | Re-derive the drain wave before delegating | `task bpid.any: status:completed export \| jq …` intersected with tracker `tasks.pending` (Step 4.3) |

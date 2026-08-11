@@ -488,6 +488,29 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: session-end and session-wrap both read the collector's
+    # GITHUB_DRIFT section as a dedup guard (redundant-tracker test / Step 4
+    # taskwarrior-sync), but session-survey.sh only populates GITHUB_DRIFT when
+    # invoked with --with-dedup — without the flag the section is always empty
+    # and the guard silently runs against nothing (issue #2357). Semantic
+    # pairing check, not a bare string search: a body referencing GITHUB_DRIFT
+    # must carry --with-dedup on EVERY session-survey.sh invocation LINE, so a
+    # skill that merely mentions --with-dedup in explanatory prose (without
+    # putting it on the actual command) still fails.
+    if [ "$skill_name" = "session-end" ] || [ "$skill_name" = "session-wrap" ]; then
+      if grep -q "GITHUB_DRIFT" "$skill_file"; then
+        local invocation_lines missing_dedup_lines
+        invocation_lines=$(grep -v '^[[:space:]]*>' "$skill_file" | grep "session-survey\.sh" || true)
+        if [ -n "$invocation_lines" ]; then
+          missing_dedup_lines=$(printf '%s\n' "$invocation_lines" | grep -v -- '--with-dedup' || true)
+          if [ -n "$missing_dedup_lines" ]; then
+            issues+=("❌ ${plugin}/${skill_name}: SKILL.md references GITHUB_DRIFT but at least one session-survey.sh invocation line is missing --with-dedup (issue #2357)")
+            has_errors=true
+          fi
+        fi
+      fi
+    fi
+
     # Regression: session-distill's mechanical substrate is distill-survey.sh —
     # the read-only collector that mines the session transcript for recipe
     # candidates / hot files / process groupings so the skill judges instead of
