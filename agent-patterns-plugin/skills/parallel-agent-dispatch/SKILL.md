@@ -111,6 +111,33 @@ brief the agent to do so as its *first* step. See
 [references/worktree-hazards.md → Nested-repo isolation](references/worktree-hazards.md#nested-repo-worktree-isolation-1838)
 for detection script and rules.
 
+**Concurrent agents default to the *same* scratchpad path — assign distinct ones.**
+The session scratchpad directory is shared across sibling subagents, so two
+agents told to "make your own clone" independently pick the identical path and
+end up operating **one working tree**. Nothing errors: one agent's `git switch`
+moves `HEAD` under the other, so its edits land on the peer's branch and both
+PRs can carry each other's hunks. A per-file `git diff` cannot separate
+interleaved hunks in a co-modified file, so the extracted patch looks correct
+while carrying someone else's work.
+
+Give every concurrent agent an **explicit, distinct** working path in its
+prompt — `<scratchpad>/<agent-name>` — rather than letting each choose. This
+applies whenever agents work outside worktree isolation, which the nested-repo
+case above forces them into.
+
+Recovery, if it already happened: rebuild in a fresh clone and **re-apply your
+changes by hand**. Do not copy files out of the shared tree — co-modified files
+carry the peer's hunks with them. Leave the shared tree dirty rather than
+reverting it; a revert destroys the peer's uncommitted work. Verify with
+`git log --oneline origin/main..HEAD` plus `--stat` that the branch holds only
+your commits and only your paths.
+
+> Observed 2026-08: two agents fixing different defects in the same MCP server
+> collided this way. Each caught a real error in the other's cleanup — one
+> nearly shipped a merge warning that would have broken the build if acted on,
+> the other a verification `grep` that would have cried wolf. Neither shipped
+> contaminated, but only because they were talking to each other.
+
 ### 2. Scope Budget (per-agent prompt rules)
 
 Every agent prompt must declare:
