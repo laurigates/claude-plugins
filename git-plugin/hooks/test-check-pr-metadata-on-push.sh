@@ -292,6 +292,72 @@ PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
 
 git -C "$TMPDIR" checkout feature -q
 
+# ── Branch deletions carry no metadata to reconcile (issue #2351) ─────────
+# Regression test: `git push origin --delete <branch>` (and its `-d` and
+# colon-refspec equivalents) pushes no commits, so none of the hook's three
+# checks (title accuracy, description currency, issue references) have
+# anything to act on. The hook must exit 0 before touching gh.
+#
+# Each case uses a PR whose updatedAt is OLDER than the branch's latest
+# commit — i.e. the exact state that blocks a normal push — so a passing
+# test proves the deletion detection fired, not the retry-aware bypass.
+echo ""
+echo "branch deletion pushes exit early (#2351):"
+
+MOCK_PR_JSON=$(jq -n --arg t "$PR_PAST" \
+    '{number:42,title:"feat: x",body:"body",url:"https://example/42",updatedAt:$t,state:"OPEN"}')
+
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "git push origin --delete <branch> is allowed (#2351)" 0 \
+    "$(make_json "git push origin --delete feature")"
+
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "git push origin -d <branch> is allowed (#2351)" 0 \
+    "$(make_json "git push origin -d feature")"
+
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "git push origin :<branch> is allowed (#2351)" 0 \
+    "$(make_json "git push origin :feature")"
+
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "git push origin :refs/heads/<branch> is allowed (#2351)" 0 \
+    "$(make_json "git push origin :refs/heads/feature")"
+
+# Counter-tests: the deletion detection must not swallow real commit pushes.
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "normal push still blocks (deletion detection not over-broad)" 2 \
+    "$(make_json "git push origin feature")"
+
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "--dry-run push still blocks (not mistaken for -d)" 2 \
+    "$(make_json "git push --dry-run origin feature")"
+
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "HEAD:<branch> refspec still blocks (colon is not leading)" 2 \
+    "$(make_json "git push origin HEAD:feature")"
+
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "-d in a chained non-push command still blocks" 2 \
+    "$(make_json "git push origin feature && rmdir -d /tmp/nope")"
+
+# ── Merged PRs are a historical record (issue #2351) ──────────────────────
+# A merged PR's metadata is finished; prompting to edit it invites rewriting
+# the description of something already reviewed and landed.
+echo ""
+echo "merged PR metadata is not reconciled (#2351):"
+
+MOCK_PR_JSON=$(jq -n --arg t "$PR_PAST" \
+    '{number:42,title:"feat: x",body:"body",url:"https://example/42",updatedAt:$t,state:"MERGED"}')
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "push to a branch whose PR is MERGED is allowed (#2351)" 0 \
+    "$(make_json "git push origin feature")"
+
+MOCK_PR_JSON=$(jq -n --arg t "$PR_PAST" \
+    '{number:42,title:"feat: x",body:"body",url:"https://example/42",updatedAt:$t,state:"OPEN"}')
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "push to a branch whose PR is OPEN still blocks" 2 \
+    "$(make_json "git push origin feature")"
+
 rm -rf "$MOCK_BIN"
 
 # ── Summary ────────────────────────────────────────────────────────────────
