@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.38.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.38.0...agent-patterns-plugin-v2.38.1) (2026-08-12)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** assign concurrent agents distinct scratchpad paths ([#2370](https://github.com/laurigates/claude-plugins/issues/2370)) ([871c64b](https://github.com/laurigates/claude-plugins/commit/871c64b270e166fa8f89400b2514706ca8389a90))
+
 ## [2.38.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.37.5...agent-patterns-plugin-v2.38.0) (2026-08-08)
 
 
