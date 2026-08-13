@@ -76,7 +76,7 @@ is not proof of its option source" for the overlap gate.
 |---------|----------|-------|-----------|
 | `frontend` (default) | No Python needed — pure widget UX (seed/numeric keypad, prompt editor, tooltips, enum recipes). | Empty `NODE_CLASS_MAPPINGS`; widget-intercept modal in `src/index.ts`. Like sampler-info / touch-numeric. | **imports** the kit |
 | `backend` | Needs to read disk / serve thumbnails / add a node (model thumbnails, file listings). | Adds `<module>.py` (node + aiohttp endpoints, ComfyUI-bundled libs only) + a `tests/conftest.py` that stubs aiohttp/server so pytest is green. Like gallery-loader. | **imports** the kit |
-| `gesture` | The UX is a **canvas interaction**, not a widget — pinch/drag/long-press on nodes or groups (resize, move, region-box). | Empty `NODE_CLASS_MAPPINGS`; a canvas pointer layer in `src/index.ts` with exported pure geometry helpers. Like touch-resize. | **no kit** |
+| `gesture` | The UX is a **canvas interaction**, not a widget — drag/long-press on nodes or groups (resize, move, region-box). Must be recognizable on the **first** `pointerdown` — see the contract in variants.md. | Empty `NODE_CLASS_MAPPINGS`; a canvas pointer layer in `src/index.ts` with exported pure geometry helpers. Like touch-resize's corner grab-handles. | **no kit** |
 | `shim` | The pack's whole job is **injecting scoped CSS / registering commands** to paper over upstream frontend bugs — no modal, no widget hook. | Empty `NODE_CLASS_MAPPINGS`; a `SHIMS` registry in `src/index.ts` with `applyCssShim`/`removeCssShim`, one managed `<style>` per shim driven by a boolean setting, + a jsdom lifecycle smoke test. Like comfyui-touch-shim. | **no kit** |
 
 **Decision rule:** `frontend`/`backend` **with** `--widgets` for a per-widget
@@ -132,8 +132,12 @@ Then implement, and wire up infra:
    "@laurigates/comfy-modal-kit"` for search, `openModalShell` for the dialog).
    For the `backend` variant, fill in `<module>.py`'s node + endpoints; widen
    `ALLOWED_EXTENSIONS` explicitly for any new file type read off disk. For the
-   `gesture` variant, tune the pinch layer
-   (`selectedNodes`/`nodeScreenRect`/`scaledSize`). For the `shim` variant,
+   `gesture` variant, tune the pointer layer
+   (`selectedNodes`/`nodeScreenRect`/`scaledSize`) — and read the
+   first-`pointerdown` contract in
+   [references/variants.md](references/variants.md) before keeping the emitted
+   skeleton's two-finger pinch, which touch-resize removed as unfixable. For the
+   `shim` variant,
    replace the placeholder `SHIMS` entry — link the upstream issue, point the
    selector at a stable `data-testid`, keep each shim fail-soft.
 2. **Add the repo to `gitops/repositories.tf`** with `comfy_registry = true`
