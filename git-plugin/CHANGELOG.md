@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.50.6](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.5...git-plugin-v2.50.6) (2026-08-13)
+
+
+### Bug Fixes
+
+* **git-plugin:** cut branches from origin/main in git-issue, not local main ([#2376](https://github.com/laurigates/claude-plugins/issues/2376)) ([4768eda](https://github.com/laurigates/claude-plugins/commit/4768edaf5bbbffcbc523ab087cc4b08b90fd6508)), closes [#2375](https://github.com/laurigates/claude-plugins/issues/2375)
+* **git-plugin:** exit early on branch-deletion pushes in pr-metadata hook ([#2373](https://github.com/laurigates/claude-plugins/issues/2373)) ([975635d](https://github.com/laurigates/claude-plugins/commit/975635d8c8707c08848d209dbc14fea0e690e071)), closes [#2351](https://github.com/laurigates/claude-plugins/issues/2351)
+
 ## [2.50.5](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.4...git-plugin-v2.50.5) (2026-08-07)
 
 
