@@ -1,6 +1,6 @@
 ---
 created: 2026-07-07
-modified: 2026-08-07
+modified: 2026-08-13
 reviewed: 2026-07-07
 name: comfy-registry-lifecycle
 description: >-
@@ -286,10 +286,18 @@ Comfy-Org/ComfyUI-Manager#2927):
     trimmed — allowlist it in the hygiene test with a justification and
     cite it in the appeal.
 - **Appeal via Discord first — it's processed faster.** Post the
-  re-review request as a message in the Comfy Org Discord
-  `SUPPORT/#security-review-council` channel (no markdown tables, keep
-  under the 2,000-char message limit); use a GitHub issue on
-  `Comfy-Org/registry-backend` as the durable record and link the two.
+  re-review request in a **persistent per-publisher thread** (e.g.
+  `Publisher <name> — re-review`) in the Comfy Org Discord
+  `SUPPORT/#security-review-council` channel, not as a loose channel
+  message: the channel is a firehose of automated flagged-release
+  notifications, so a bare message is unfindable within hours and a
+  multi-round appeal (a reply days later, the next release re-flagged)
+  loses its history. Reuse the same thread for every appeal. Keep the
+  message under the 2,000-char limit with no markdown tables — fitting a
+  multi-pack appeal usually costs several trim passes, so put the
+  version-ID table and per-finding detail in a GitHub issue on
+  `Comfy-Org/registry-backend` as the durable record and have the
+  Discord message link to it rather than duplicate it.
 - **Then verify by publishing**: a republish re-runs the scan, so the
   definitive test of any fix is the next release's verdict via
   `api.comfy.org/nodes/<id>/versions?include_status_reason=true`.
