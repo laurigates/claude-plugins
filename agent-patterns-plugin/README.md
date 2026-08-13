@@ -72,6 +72,20 @@ Audit always-loaded context (`CLAUDE.md` and `.claude/rules/`) for material that
 - Per-candidate `AskUserQuestion` confirmation, largest-impact first — no bundled approvals
 - Inverse of `session-distill` (creates rules), orthogonal to `meta-promote` (moves between scopes)
 
+#### `meta-local-notes`
+Audit a machine-local notes file (`CLAUDE.local.md`) — verify every claim against the live environment, correct drifted facts, and delete findings that duplicate versioned docs.
+
+**When to use:**
+- Local notes have grown stale, bloated, or contradict the ADRs/roadmap
+- Before appending a session finding to a machine-local file
+
+**Features:**
+- The keep test: environment facts (host, paths, toolkit versions, local gotchas) stay; project findings (measurements, root causes, blocker status) move to the versioned docs
+- Live-probe checklist per claim shape — including the perf-commit check that catches a still-plausible claim the project already fixed
+- holds / drifted / superseded / gone verdicts, with correct-don't-delete for drifted environment facts
+- Reports the verdict table, supplying the review a git-ignored file never gets
+- Complements `meta-context-diet`: that skill audits a file's load cost, this one audits its truth
+
 #### `custom-agent-definitions`
 Define and configure custom agents and teammate templates with context forking and tool restrictions.
 
