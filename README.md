@@ -100,7 +100,7 @@ the rules, skills, and hooks that embody it.
 | Plugin | Skills | Description |
 |--------|--------|-------------|
 | **code-quality-plugin** | 15 | Code review, refactoring, linting, static analysis, debugging methodology |
-| **software-design-plugin** | 5 | Software design methodology - deep modules, design by contract, GoF pattern selection, legacy seams, pseudocode |
+| **software-design-plugin** | 6 | Software design methodology - deep modules, design by contract, GoF pattern selection, legacy seams, pseudocode |
 | **evaluate-plugin** | 7 + 3 agents | Skill evaluation and benchmarking - test effectiveness, grade results |
 | **codebase-attributes-plugin** | 3 | Structured codebase health attributes with severity-based agent routing |
 | **feedback-plugin** | 1 | Session feedback analysis - capture skill bugs and enhancements as issues |
