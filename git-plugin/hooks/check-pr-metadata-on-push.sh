@@ -28,6 +28,30 @@ CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
 if [ -z "$COMMAND" ]; then exit 0; fi
 if ! echo "$COMMAND" | grep -qE '(^|\s|&&\s*|;\s*)git\s+push\b'; then exit 0; fi
 
+# Guard: branch deletions carry nothing to reconcile (issue #2351).
+# `git push origin --delete <b>`, `git push origin -d <b>`, and the
+# colon-prefix refspec `git push origin :<b>` all push zero commits, so
+# none of the three checks below (title accuracy, description currency,
+# issue references) has anything to act on. Deleting a merged branch is
+# routine post-merge cleanup, and blocking it only leaves stale branches
+# behind — the opposite of this hook's intent.
+#
+# Scoped to the `git push` segment (the last one, matching the branch
+# detection below) so a `-d` or a leading `:` elsewhere in a chained
+# command — `git push origin feat && rmdir -d /tmp/x` — cannot exempt a
+# real commit push.
+PUSH_SEGMENT=$(printf '%s' "$COMMAND" | perl -ne '
+    next unless /.*(git\s+push\b.*)$/;
+    my $seg = $1;
+    # Trim anything after the push at the next shell separator
+    $seg =~ s/\s*(?:&&|\|\||;|\|).*$//;
+    print $seg;
+' 2>/dev/null || true)
+if [ -n "$PUSH_SEGMENT" ] && printf '%s' "$PUSH_SEGMENT" \
+    | grep -qE '(^|[[:space:]])(--delete|-d|\+?:[^[:space:]]+)([[:space:]]|$)'; then
+    exit 0
+fi
+
 # Guard: skip if not in a git repo
 if [ -z "$CWD" ] || ! git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1; then exit 0; fi
 
@@ -70,7 +94,7 @@ fi
 if [ -z "$PUSH_BRANCH" ]; then exit 0; fi
 
 # Check for an existing open PR on this branch
-PR_JSON=$(gh pr view "$PUSH_BRANCH" --repo "$(git -C "$CWD" remote get-url origin 2>/dev/null || true)" --json title,body,number,url,updatedAt 2>/dev/null || true)
+PR_JSON=$(gh pr view "$PUSH_BRANCH" --repo "$(git -C "$CWD" remote get-url origin 2>/dev/null || true)" --json title,body,number,url,updatedAt,state 2>/dev/null || true)
 
 # Guard: no open PR for this branch
 if [ -z "$PR_JSON" ] || [ "$PR_JSON" = "null" ]; then exit 0; fi
@@ -80,9 +104,16 @@ PR_TITLE=$(echo "$PR_JSON" | jq -r '.title // empty')
 PR_BODY=$(echo "$PR_JSON" | jq -r '.body // empty')
 PR_URL=$(echo "$PR_JSON" | jq -r '.url // empty')
 PR_UPDATED_AT=$(echo "$PR_JSON" | jq -r '.updatedAt // empty')
+PR_STATE=$(echo "$PR_JSON" | jq -r '.state // empty')
 
 # Guard: couldn't parse PR data
 if [ -z "$PR_NUMBER" ] || [ -z "$PR_TITLE" ]; then exit 0; fi
+
+# Guard: a merged PR's metadata is a historical record (issue #2351).
+# Prompting to reconcile it invites rewriting the description of something
+# already reviewed and landed. Read the `state` enum, never a `merged`
+# boolean — there is no such field (.claude/rules/gh-json-fields.md).
+if [ "$PR_STATE" = "MERGED" ]; then exit 0; fi
 
 # Resolve the ref to inspect for commits and bypass-timestamp comparison.
 # When the push command names a branch other than the running shell's
