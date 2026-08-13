@@ -75,7 +75,12 @@ PUBLISHER_DEFAULT = "laurigates"
 # A caret range on a 0.x version is minor-locked (`^0.10.0` == `>=0.10.0
 # <0.11.0`), so a kit minor is a deliberate bump here, not a silent float.
 MODAL_KIT_PKG = "@laurigates/comfy-modal-kit"
-MODAL_KIT_VERSION = "^0.10.0"
+# 0.12.0, not 0.10.x: the standalone-modal template registers with the Touch
+# Tools hub (`makeHubEntry` / `installHubButton` / `registerHubEntry`), which
+# landed in 0.11.0. Because the caret is minor-locked on 0.x, `^0.10.0` could
+# not resolve the hub AT ALL — a pack scaffolded against it fails to typecheck
+# on those imports.
+MODAL_KIT_VERSION = "^0.12.0"
 
 # Pinned tool versions — kept in ONE place so the biome pin can never drift
 # between biome.json, the pre-commit hook, CI, and the justfile. The previous
@@ -486,30 +491,32 @@ INDEX_TS_STANDALONE = """\
 //
 // TypeScript source in `src/`, built to ESM via `bun build` and emitted to
 // `web/dist/` (served at /extensions/@@NAME@@/index.js — the pack directory
-// name IS the URL segment). Do not rename the pack dir without syncing
-// EXT_NAME below (used for log prefixes and any /@@PY_MODULE@@/ fetches).
-// See ADR-0001.
+// name IS the URL segment). Renaming the pack dir also changes any
+// /@@PY_MODULE@@/ fetch path you add below. See ADR-0001.
 //
 // Pattern ("the standalone-modal vein"): instead of intercepting a per-node
-// widget, this pack opens a STANDALONE modal from the app chrome — an action-bar
-// button plus a command (palette/hotkey-bindable) and a menu entry. There are
-// NO target widgets to hook (a manager, dashboard, or gallery-actions panel),
-// so there is no TARGET_WIDGETS / onPointerDown wrapping. Additive + mobile-first.
+// widget, this pack opens a STANDALONE modal from the app chrome — a command
+// (palette/hotkey-bindable), a menu entry under Extensions > Touch Tools, and a
+// row in the shared Touch Tools chooser. There are NO target widgets to hook (a
+// manager, dashboard, or gallery-actions panel), so there is no TARGET_WIDGETS /
+// onPointerDown wrapping. Additive + mobile-first.
 //
 // The shared modal primitives come from @@MODAL_KIT_PKG@@. They are NOT copied
 // into this pack — `bun build` INLINES the imported code into web/dist. To add
 // fuzzy search to the modal, import the matcher from the same package:
 //   import { fuzzyRank, highlightMatches } from "@@MODAL_KIT_PKG@@";
 //   fuzzyRank(query, [primaryField, ...otherFields]) -> { score, primaryMatches } | null
-import { openModalShell } from "@@MODAL_KIT_PKG@@";
+import {
+  installHubButton,
+  makeHubEntry,
+  openModalShell,
+  registerHubEntry,
+} from "@@MODAL_KIT_PKG@@";
 // ComfyUI serves its frontend API at runtime from `/scripts/app.js`. The
 // emitted import string stays `/scripts/app.js` (bun's `--external '/scripts/*'`
 // keeps it unbundled); the type is supplied via a `paths` mapping in
 // tsconfig.json that points the import at `src/comfyui-shims.d.ts`. See ADR-0001.
 import { app } from "/scripts/app.js";
-
-const EXT_NAME = "@@NAME@@";
-const OPEN_COMMAND_ID = "@@SHORT@@.open";
 
 // ============================================================
 // Modal
@@ -541,45 +548,49 @@ export function openShell(): ReturnType<typeof openModalShell> {
   return modal;
 }
 
-function openShellSafe(): void {
-  try {
-    openShell();
-  } catch (e) {
-    console.warn(`[${EXT_NAME}] open failed`, e);
-  }
-}
-
 // ============================================================
 // Wiring — launch the modal from the app chrome, not a node widget
 // ============================================================
 
+// The family's chrome entry point, built by the kit rather than hand-written.
+// makeHubEntry bakes in the conventions ADR-0002 fixed after three packs each
+// hand-rolled these fields three different ways: the shared submenu
+// (Extensions > Touch Tools), kebab `<short-name>.<action>` command ids,
+// PrimeIcons — the ONLY icon format guaranteed to render for a runtime-loaded
+// extension — and one safe-open boundary so a throwing opener becomes a
+// copyable error toast instead of an exception inside ComfyUI's dispatch.
+//
+// Pick an icon from https://primeng.org/icons (`pi pi-*`). Do NOT use an
+// iconify/lucide class here: nothing in the family does, and it will not render.
+const entry = makeHubEntry({
+  id: "@@SHORT@@.open",
+  label: "@@DISPLAY@@",
+  icon: "pi pi-th-large",
+  tooltip: "Open @@DISPLAY@@",
+  description: "@@DESC@@",
+  failSummary: "@@DISPLAY@@ failed to open",
+  open: openShell,
+});
+
 app.registerExtension({
   name: "comfy.@@SHORT@@",
-  // An action-bar button in the top bar. `icon` is required — swap the lucide
-  // class for one that fits the pack (see comfyui-frontend-types for the set).
-  actionBarButtons: [
-    {
-      icon: "icon-[lucide--layout-dashboard]",
-      label: "@@DISPLAY@@",
-      tooltip: "Open @@DISPLAY@@",
-      onClick: openShellSafe,
-    },
-  ],
-  // A command (command palette / hotkey-bindable) that opens the same modal.
-  commands: [
-    {
-      id: OPEN_COMMAND_ID,
-      label: "Open @@DISPLAY@@",
-      function: openShellSafe,
-    },
-  ],
-  // A menu-bar entry pointing at the command above.
-  menuCommands: [
-    {
-      path: ["Extensions", "@@DISPLAY@@"],
-      commands: [OPEN_COMMAND_ID],
-    },
-  ],
+  // TWO SIBLING SPREADS, and their key-disjointness is the guarantee — do NOT
+  // hand-merge the arrays. makeHubEntry returns only `commands` / `menuCommands`
+  // (plus the inert `hubEntry` field); installHubButton returns only
+  // `actionBarButtons`, or `{}` once another inlined kit copy has already
+  // claimed the single family button. The family owns exactly ONE action-bar
+  // button — the Touch Tools hub — so adding a per-pack button here would be a
+  // second one competing for the same scarce corner on a phone.
+  ...entry,
+  ...installHubButton(),
+  setup() {
+    // Registered HERE, not at module evaluation. Every extension file is
+    // imported regardless of the disable list (extensionService.ts:55-67) while
+    // invokeExtensionsAsync only iterates `enabledExtensions` (:214) — so
+    // registering at module scope would list this pack in the chooser even when
+    // the user has disabled it.
+    registerHubEntry(entry.hubEntry);
+  },
 });
 """
 
@@ -2878,14 +2889,16 @@ def build_file_map(
         )
     elif standalone:
         ctx["DEP_FLOOR_NOTE"] = (
-            "Floor tied to the registerExtension action-bar/command API."
+            "Floor tied to the Touch Tools hub API (`makeHubEntry` / "
+            "`installHubButton` / `registerHubEntry`), added in kit 0.11.0."
         )
         ctx["WHAT_DESC"] = "the modal it opens and how the user launches it"
         ctx["VEIN"] = (
             "A mobile-first ComfyUI usability pack in the *standalone-modal* vein: "
             "instead of intercepting a per-node widget, a frontend extension opens "
-            "a STANDALONE modal from the app chrome — an action-bar button plus a "
-            "command (palette/hotkey-bindable) and a menu entry. There are **no "
+            "a STANDALONE modal from the app chrome — a command "
+            "(palette/hotkey-bindable), a menu entry under Extensions > Touch "
+            "Tools, and a row in the shared Touch Tools chooser. There are **no "
             "target widgets to hook** (a manager, dashboard, or gallery-actions "
             "panel), so there is no `TARGET_WIDGETS` / `onPointerDown` wrapping. "
             "The modal is **touch-first** (16px inputs to avoid iOS zoom, big tap "
@@ -2895,13 +2908,18 @@ def build_file_map(
             "exported so the jsdom mount test can prove the modal body renders."
         )
         ctx["EXT_ROW_DESC"] = (
-            "The extension: action-bar/command launcher + modal (consumes the kit)."
+            "The extension: Touch Tools hub entry + modal (consumes the kit)."
         )
         ctx["HOOK_RULE"] = (
-            "**Launcher API is version-sensitive.** The modal opens from "
-            "`registerExtension`'s `actionBarButtons` / `commands` / `menuCommands`. "
-            "If a future frontend renames or drops one, keep at least one launcher "
-            "(button OR command) wired so the modal stays reachable."
+            "**Launcher fields come from the kit, not by hand.** `makeHubEntry` "
+            "builds `commands` / `menuCommands`; `installHubButton` builds the "
+            "family's single `actionBarButtons` entry. The two results are "
+            "KEY-DISJOINT and must be spread as siblings, never hand-merged — a "
+            "second spread carrying `commands` would orphan this pack's command "
+            "(the menu row vanishes, and a user keybinding on the orphaned id is "
+            "re-added at boot with no isRegistered gate, squatting its combo and "
+            "throwing on press). Do not add a per-pack action-bar button: the "
+            "family owns exactly one, the Touch Tools hub."
         )
         ctx["FAMILY_BLURB"] = (
             "> touch-friendly HTML modals launched from the toolbar/command palette\n"

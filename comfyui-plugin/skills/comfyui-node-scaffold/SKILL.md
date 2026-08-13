@@ -1,6 +1,6 @@
 ---
 created: 2026-06-04
-modified: 2026-08-07
+modified: 2026-08-13
 reviewed: 2026-07-29
 name: comfyui-node-scaffold
 description: >-
@@ -81,7 +81,9 @@ is not proof of its option source" for the overlap gate.
 
 **Decision rule:** `frontend`/`backend` **with** `--widgets` for a per-widget
 modal; `frontend`/`backend` **without** `--widgets` for a standalone modal opened
-from the toolbar/command palette; `gesture` when the interaction is on the
+from the shared **Touch Tools** hub (the family's one action-bar button — a
+scaffolded pack contributes a chooser row, never a button of its own); `gesture`
+when the interaction is on the
 canvas/node frame itself (no widget to hook); `shim` when the pack only injects
 scoped CSS / registers commands to paper over an upstream frontend bug (no modal,
 no widget). Add `backend` only when the feature
@@ -130,6 +132,10 @@ Then implement, and wire up infra:
 1. **Implement the modal** in `src/index.ts` — tune `TARGET_WIDGETS` and replace
    the `openPicker` stub with the real modal body (`import { fuzzyRank } from
    "@laurigates/comfy-modal-kit"` for search, `openModalShell` for the dialog).
+   For the standalone-modal shape, keep the Touch Tools hub wiring intact and
+   swap the placeholder `pi pi-th-large` icon for a fitting PrimeIcon — see
+   [references/variants.md](references/variants.md) § "The Touch Tools hub
+   contract".
    For the `backend` variant, fill in `<module>.py`'s node + endpoints; widen
    `ALLOWED_EXTENSIONS` explicitly for any new file type read off disk. For the
    `gesture` variant, tune the pinch layer
