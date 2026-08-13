@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.13.4](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.3...comfyui-plugin-v1.13.4) (2026-08-13)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** scaffold standalone packs onto the Touch Tools hub ([#2381](https://github.com/laurigates/claude-plugins/issues/2381)) ([428f87d](https://github.com/laurigates/claude-plugins/commit/428f87d4acb0e0683caff6063c14e424c81e5f02))
+
+
+### Documentation
+
+* **comfyui-plugin:** record persistent per-publisher Discord thread convention ([#2378](https://github.com/laurigates/claude-plugins/issues/2378)) ([daa598f](https://github.com/laurigates/claude-plugins/commit/daa598f008d1a4aea4db917409c2d64887b03ffc)), closes [#2348](https://github.com/laurigates/claude-plugins/issues/2348)
+
 ## [1.13.3](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.2...comfyui-plugin-v1.13.3) (2026-08-07)
 
 
