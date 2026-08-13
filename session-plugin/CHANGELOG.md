@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.8](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.9.7...session-plugin-v1.9.8) (2026-08-13)
+
+
+### Bug Fixes
+
+* **session-plugin:** catch separator-variant project slugs in session-survey ([#2377](https://github.com/laurigates/claude-plugins/issues/2377)) ([0ba4ef3](https://github.com/laurigates/claude-plugins/commit/0ba4ef3af0f6845b7d6b18c15c9031aed01b8b5a)), closes [#2355](https://github.com/laurigates/claude-plugins/issues/2355)
+
 ## [1.9.7](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.9.6...session-plugin-v1.9.7) (2026-08-11)
 
 

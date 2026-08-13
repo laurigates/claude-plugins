@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.39.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.38.1...agent-patterns-plugin-v2.39.0) (2026-08-13)
+
+
+### Features
+
+* **agent-patterns:** meta-local-notes — verify a CLAUDE.local.md before trimming it ([#2380](https://github.com/laurigates/claude-plugins/issues/2380)) ([1bd9efe](https://github.com/laurigates/claude-plugins/commit/1bd9efea908d2fe81a589bfcab599302ed86eefe))
+
 ## [2.38.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.38.0...agent-patterns-plugin-v2.38.1) (2026-08-12)
 
 
