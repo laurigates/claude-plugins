@@ -1,8 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-06-15
-reviewed: 2026-06-15
-allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(git stash *), Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(gh label *), Bash(gh api *), Bash(pre-commit *), Read, Edit, Write, Grep, Glob, TodoWrite, AskUserQuestion, Task, mcp__github__create_pull_request, mcp__github__issue_read, mcp__github__list_issues
+modified: 2026-08-13
+reviewed: 2026-08-13
+allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git fetch *), Bash(git pull *), Bash(git stash *), Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(gh label *), Bash(gh api *), Bash(pre-commit *), Read, Edit, Write, Grep, Glob, TodoWrite, AskUserQuestion, Task, mcp__github__create_pull_request, mcp__github__issue_read, mcp__github__list_issues
 description: "Process GitHub issues end-to-end with TDD and parallel work. Use when asked to work on an issue, fix issue #N, pick issues to tackle, or batch-process several."
 args: "[issues... (number | #N | URL)] [--auto] [--filter <label>] [--limit <n>] [--parallel] [--labels <l1,l2>]"
 argument-hint: "[issues... (number | #N | URL)] [--auto] [--filter <label>] [--limit <n>] [--parallel] [--labels <l1,l2>]"
@@ -41,7 +41,7 @@ Parse these parameters from the command:
 
 ## Your Task
 
-Process GitHub issues using a TDD workflow with the **main-branch development pattern**.
+Process GitHub issues using a TDD workflow, cutting each issue's branch **from `origin/main`**.
 
 ---
 
@@ -223,7 +223,7 @@ Recommended: Run Groups 1, 2, 3 in parallel (3 agents)
 ### Step 1: Prepare Working Directory
 
 1. **Ensure clean working directory** (commit or stash if needed)
-2. **Switch to main and pull latest**: `git switch main && git pull`
+2. **Fetch the remote**: `git fetch origin` — never rely on local `main` being current
 
 ### Step 2: For Each Issue (or Parallel Group)
 
@@ -233,6 +233,11 @@ Recommended: Run Groups 1, 2, 3 in parallel (3 agents)
 2. **Capture issue labels** for later PR creation
 3. **Identify requirements** and acceptance criteria
 4. **Plan the implementation** approach
+5. **Cut the branch from `origin/main`**: `git switch -c fix/issue-$N origin/main`
+
+Base the branch on `origin/main`, never on local `main` — local `main` may carry
+unpushed commits that would ride into this issue's PR (see
+`git-branch-pr-workflow` § "Branch Comparison: Always Use origin/main").
 
 #### TDD Workflow
 
@@ -253,7 +258,7 @@ Recommended: Run Groups 1, 2, 3 in parallel (3 agents)
 
 1. **Stage changes**: `git add -u` and `git add <new-files>`
 2. **Run pre-commit** if configured
-3. **Commit on main** with message format:
+3. **Commit on the issue branch** with message format:
 
 ```
 <type>: <description>
@@ -263,7 +268,8 @@ Recommended: Run Groups 1, 2, 3 in parallel (3 agents)
 Fixes #N
 ```
 
-4. **Push to remote issue branch**: `git push origin main:fix/issue-$N`
+4. **Verify the branch carries only this issue's commits**: `git log --oneline origin/main..HEAD`
+5. **Push the issue branch**: `git push -u origin fix/issue-$N`
 
 #### Create PR
 
@@ -286,7 +292,8 @@ When `--parallel` is specified:
 2. For each parallel group, spawn a Task agent:
 
 ```
-Agent tool with subagent_type: "general-purpose", prompt: "Process issue #N with TDD workflow..."
+Agent tool with subagent_type: "general-purpose", prompt: "Process issue #N with TDD workflow.
+Cut the branch with `git fetch origin && git switch -c fix/issue-N origin/main` — never from local main..."
 ```
 
 3. Wait for all agents to complete
@@ -320,19 +327,29 @@ Fixes #125
 
 ---
 
-## Main-Branch Development Pattern
+## Branch-From-Remote Pattern
+
+Cut every issue branch from `origin/main`, never from local `main`:
 
 ```bash
-# All work stays on main
-git switch main && git pull
+git fetch origin
+git switch -c fix/issue-$N origin/main
 
-# ... make changes, commit on main ...
+# ... make changes, commit on the branch ...
 
-git push origin main:fix/issue-$N    # Push to remote feature branch
+git log --oneline origin/main..HEAD    # verify: only your commit(s)
+git push -u origin fix/issue-$N
 
 # Create PR: head=fix/issue-$N, base=main
-# Continue on main for next issue
+# Next issue: git fetch origin && git switch -c fix/issue-$M origin/main
 ```
+
+**Why not commit on local `main`:** unpushed commits on local `main` ride into
+the next branch cut from it and land in an unrelated PR — visible only in the
+file list once squashed. Basing on `origin/main` makes the local `main` state
+irrelevant. This matches `git-branch-pr-workflow` § "Branch Comparison: Always
+Use origin/main" (rule 3: *base PRs on `origin/main` when creating branches*)
+and `~/.claude/rules/git-hazards.md` #2.
 
 ---
 
