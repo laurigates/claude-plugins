@@ -409,6 +409,10 @@ project_confidence="high"
 project_resolved=""
 project_ambiguous=""
 project_ambiguous_tasks=0
+# Which rung named it: `ancestor` (#2304) or `separator-variant` (#2355). The
+# consumer's phrasing differs — "the workspace above holds N" vs "a slug spelled
+# with other separators holds N" — so the slug alone is not enough.
+project_ambiguous_reason=""
 # The prefix-sibling split (#2323). Integers so consumers can do arithmetic on
 # them unconditionally, exactly like OPEN_TASKS — the "was this even queried"
 # question is answered by TASK_SCOPE (`none`/`unknown`), not by a sentinel here.
@@ -489,21 +493,66 @@ else
         project_tasks_json="$anc_json"
         open_tasks="$anc_n"
         project_confidence="low"
-      elif [ "${anc_n:-0}" -gt 0 ]; then
-        # (3) A zero we are not allowed to adopt away must never look
-        # authoritative: name the ancestor slug that does hold the work, so
-        # session-end can say "0 here, N under <slug>" instead of skipping.
-        project_ambiguous="$anc_slug"
-        project_ambiguous_tasks="$anc_n"
+      else
+        if [ "${anc_n:-0}" -gt 0 ]; then
+          # (3) A zero we are not allowed to adopt away must never look
+          # authoritative: name the ancestor slug that does hold the work, so
+          # session-end can say "0 here, N under <slug>" instead of skipping.
+          project_ambiguous="$anc_slug"
+          project_ambiguous_tasks="$anc_n"
+          project_ambiguous_reason="ancestor"
+        else
+          # (3b) #2355: a REAL slug differing from the detected one only by
+          # SEPARATOR CHARACTER (or case). The reported shape: the repo is
+          # `fvh-cost-attribution` (basename AND git remote name agree) while
+          # the taskwarrior project holding the backlog is
+          # `fvh.cost-attribution`. It is no ancestor of the cwd, so (3) cannot
+          # see it, and it is not a prefix of the detected slug, so the
+          # prefix-sibling split below cannot either — yet the two names differ
+          # by one character class, which is enough to say so.
+          #
+          # The fold REPLACES each separator with one canonical character
+          # rather than deleting it, so `ab` and `a-b` stay distinct. Ranked
+          # only behind the ancestor: a containing workspace is a stronger
+          # claim than a name collision. Candidates come from the ONE snapshot
+          # already in hand — no second `task ... export`
+          # (parallel-safe-queries.md).
+          sep_slug=""
+          sep_n=0
+          if [ -n "$project" ]; then
+            while IFS= read -r sep_cand; do
+              [ -n "$sep_cand" ] || continue
+              # A slug is store content; a control character in one would break
+              # a KEY=VALUE row. Real taskwarrior slugs never contain one.
+              case "$sep_cand" in *[[:cntrl:]]*) continue ;; esac
+              cand_json=$(scope_of "$sep_cand")
+              [ -n "$cand_json" ] || cand_json="[]"
+              cand_n=$(printf '%s' "$cand_json" | jq 'length' 2>/dev/null || echo 0)
+              [ -n "$cand_n" ] || cand_n=0
+              if [ "$cand_n" -gt 0 ] 2>/dev/null; then
+                sep_slug="$sep_cand"
+                sep_n="$cand_n"
+                break
+              fi
+            done < <(printf '%s' "$all_tasks_json" | jq -r --arg p "$project" '
+              def norm: ascii_downcase | gsub("[._-]"; "-");
+              ($p | norm) as $np
+              | [ .[] | (.project // "")
+                  | select(. != "" and . != $p and (norm == $np)) ]
+              | unique | .[]' 2>/dev/null)
+          fi
+          if [ "${sep_n:-0}" -gt 0 ]; then
+            project_ambiguous="$sep_slug"
+            project_ambiguous_tasks="$sep_n"
+            project_ambiguous_reason="separator-variant"
+          fi
+        fi
         if [ "$asserted" = false ]; then
+          # (4) #2232: no single slug wins (portfolio checkout, renamed dir, …).
+          # Widen, and make the widening visible rather than reporting a clean 0.
           task_scope="all-projects-fallback"
           project_confidence="low"
         fi
-      elif [ "$asserted" = false ]; then
-        # (4) #2232: no single slug wins (portfolio checkout, renamed dir, …).
-        # Widen, and make the widening visible rather than reporting a clean 0.
-        task_scope="all-projects-fallback"
-        project_confidence="low"
       fi
     fi
   fi
@@ -767,6 +816,7 @@ if [ "$summary_mode" = true ]; then
   [ -n "$project_resolved" ] && echo "PROJECT_RESOLVED=${project_resolved}"
   [ -n "$project_ambiguous" ] && echo "PROJECT_AMBIGUOUS=${project_ambiguous}"
   [ -n "$project_ambiguous" ] && echo "PROJECT_AMBIGUOUS_TASKS=${project_ambiguous_tasks}"
+  [ -n "$project_ambiguous" ] && echo "PROJECT_AMBIGUOUS_REASON=${project_ambiguous_reason}"
   [ -n "$prefix_siblings" ] && echo "PROJECT_PREFIX_SIBLINGS=${prefix_siblings}"
   [ -n "$prefix_siblings" ] && echo "PROJECT_PREFIX_SIBLING_TASKS=${prefix_sibling_tasks}"
   echo "DIRTY=${dirty}"
@@ -818,9 +868,12 @@ echo "PROJECT_CONFIDENCE=${project_confidence}"
 echo "TASKS_ALL_PROJECTS=${tasks_all}"
 [ -n "$project_remote_name" ] && echo "PROJECT_REMOTE_NAME=${project_remote_name}"
 [ -n "$project_resolved" ] && echo "PROJECT_RESOLVED=${project_resolved}"
-# The honest zero's escape hatch: 0 here, but N under this ancestor slug.
+# The honest zero's escape hatch: 0 here, but N under this other slug — an
+# ancestor workspace (#2304) or a separator/case variant of the detected name
+# (#2355). PROJECT_AMBIGUOUS_REASON says which, so the consumer can phrase it.
 [ -n "$project_ambiguous" ] && echo "PROJECT_AMBIGUOUS=${project_ambiguous}"
 [ -n "$project_ambiguous" ] && echo "PROJECT_AMBIGUOUS_TASKS=${project_ambiguous_tasks}"
+[ -n "$project_ambiguous" ] && echo "PROJECT_AMBIGUOUS_REASON=${project_ambiguous_reason}"
 # The CLI-prefix over-collection (#2323): slugs a `task project:<slug>` filter
 # would ALSO have swept in, and how many tasks they hold. Present only when the
 # store actually has such siblings.
