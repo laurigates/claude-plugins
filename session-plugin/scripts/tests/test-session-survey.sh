@@ -1309,6 +1309,163 @@ check_line "AK9: an empty store is still a confident zero" \
 check_line "AK9: with a zero exact count" "$out" "PROJECT_EXACT_TASKS=0"
 check_absent "AK9: and no sibling keys" "$out" "PROJECT_PREFIX_SIBLINGS="
 
+# ============================================================================
+# TEST AL: separator-variant project slugs (#2355)
+#
+# The repo is `fvh-cost-attribution` (dash) — the directory basename AND the
+# git remote name agree — while the taskwarrior project holding 10 pending
+# tasks is `fvh.cost-attribution` (dot). It is not an ANCESTOR of the cwd, so
+# #2304 cannot see it; it is not a PREFIX of the detected slug, so #2323
+# cannot either. The survey therefore reported a widened, low-confidence zero
+# and the recovery cost a hand-rolled `group_by(.project)` sweep over 40+
+# slugs — even though the two names differ by one character class.
+#
+# These tests pin the variant being NAMED, and pin equally hard that a store
+# with no colliding slug is left alone: a fold that DELETED separators (rather
+# than replacing each with one canonical character) would collide `ab` with
+# `a-b`, so AL3 carries that case explicitly.
+# ============================================================================
+
+SEPREPO="$SANDBOX/fvh-cost-attribution"
+mkrepo "$SEPREPO"
+
+jq -n --arg m "$(tw_stamp 1)" '
+  [range(10) | {uuid:("fv"+(.|tostring)), project:"fvh.cost-attribution",
+                description:("cost attribution task "+(.|tostring)), modified:$m}]' \
+  > "$SANDBOX/sep-variant.json"
+export TASK_ALL_FIXTURE="$SANDBOX/sep-variant.json"
+
+# --- AL1: the decisive case — "0 here" becomes "0 here, 10 under <slug>" -----
+out=$(run_at "$SEPREPO")
+check_line "AL1: the detected slug's zero is still reported honestly" \
+  "$out" "OPEN_TASKS=0"
+check_line "AL1: the detected slug is never rewritten to the variant" \
+  "$out" "PROJECT=fvh-cost-attribution"
+check_line "AL1: the separator variant holding the work is named" \
+  "$out" "PROJECT_AMBIGUOUS=fvh.cost-attribution"
+check_line "AL1: with the count that makes it actionable" \
+  "$out" "PROJECT_AMBIGUOUS_TASKS=10"
+check_line "AL1: and the reason it was surfaced" \
+  "$out" "PROJECT_AMBIGUOUS_REASON=separator-variant"
+check_line "AL1: the zero stays visibly widened" "$out" "TASK_SCOPE=all-projects-fallback"
+check_line "AL1: and never confident" "$out" "PROJECT_CONFIDENCE=low"
+check_count_line "AL1: exactly one ambiguity row" "$out" '^PROJECT_AMBIGUOUS=' 1
+check_count_line "AL1: exactly one reason row" "$out" '^PROJECT_AMBIGUOUS_REASON=' 1
+# The variant's tasks are never scoped in — this names, it does not adopt.
+check_absent "AL1: the variant's tasks are not counted as the slug's own" \
+  "$out" "TASK_1_UUID=fv0"
+
+# --- AL2 (guard integrity): a slug that DOES match raises nothing ------------
+# Without this, "always name the nearest slug" would satisfy AL1 while
+# destroying every correct per-repo scope in the corpus.
+jq -n --arg m "$(tw_stamp 1)" '
+  [range(4) | {uuid:("fh"+(.|tostring)), project:"fvh-cost-attribution",
+               description:("own task "+(.|tostring)), modified:$m}]' \
+  > "$SANDBOX/sep-own.json"
+export TASK_ALL_FIXTURE="$SANDBOX/sep-own.json"
+out=$(run_at "$SEPREPO")
+check_line "AL2: a matching slug counts its own tasks" "$out" "OPEN_TASKS=4"
+check_line "AL2: and keeps the project scope" "$out" "TASK_SCOPE=project"
+check_line "AL2: and stays confident" "$out" "PROJECT_CONFIDENCE=high"
+check_absent "AL2: no ambiguity is invented" "$out" "PROJECT_AMBIGUOUS="
+check_absent "AL2: and no reason either" "$out" "PROJECT_AMBIGUOUS_REASON="
+
+# --- AL3 (no false positives): only a SEPARATOR difference collides ----------
+# `fvhcostattribution` differs by separator REMOVAL, not substitution — it must
+# not match, or the fold is a deletion and `ab` collides with `a-b`.
+jq -n --arg m "$(tw_stamp 1)" '
+  [{uuid:"nf1", project:"fvhcostattribution", description:"separators removed", modified:$m},
+   {uuid:"nf2", project:"fvh-cost-attribution-legacy", description:"a longer name", modified:$m},
+   {uuid:"nf3", project:"zeta", description:"unrelated", modified:$m}]' \
+  > "$SANDBOX/sep-near-miss.json"
+export TASK_ALL_FIXTURE="$SANDBOX/sep-near-miss.json"
+out=$(run_at "$SEPREPO")
+check_line "AL3: the honest zero survives" "$out" "OPEN_TASKS=0"
+check_absent "AL3: a separator-DELETED slug is not a separator variant" \
+  "$out" "PROJECT_AMBIGUOUS="
+check_absent "AL3: nor is a longer name that merely shares a prefix" \
+  "$out" "PROJECT_AMBIGUOUS_REASON="
+check_line "AL3: the existing widening still applies" \
+  "$out" "TASK_SCOPE=all-projects-fallback"
+
+# --- AL4: case and `_` fold too ---------------------------------------------
+jq -n --arg m "$(tw_stamp 1)" '
+  [{uuid:"cs1", project:"FVH.Cost_Attribution", description:"same name, other shape", modified:$m},
+   {uuid:"cs2", project:"FVH.Cost_Attribution", description:"and another", modified:$m}]' \
+  > "$SANDBOX/sep-case.json"
+export TASK_ALL_FIXTURE="$SANDBOX/sep-case.json"
+out=$(run_at "$SEPREPO")
+check_line "AL4: case and underscore differences still collide" \
+  "$out" "PROJECT_AMBIGUOUS=FVH.Cost_Attribution"
+check_line "AL4: with its count" "$out" "PROJECT_AMBIGUOUS_TASKS=2"
+check_line "AL4: and the same reason" "$out" "PROJECT_AMBIGUOUS_REASON=separator-variant"
+
+# --- AL5: the #2304 ancestor keeps precedence, and now says so ---------------
+# An ancestor slug is a stronger signal than a name collision, so when both
+# exist the ancestor is the one named — and the reason distinguishes them.
+jq -n --arg m "$(tw_stamp 1)" '
+  [{uuid:"ac1", project:"comfyui-nodes", description:"the workspace backlog", modified:$m},
+   {uuid:"ac2", project:"comfyui-nodes", description:"and another", modified:$m},
+   {uuid:"sv1", project:"comfyui.gallery.loader", description:"a separator variant", modified:$m},
+   {uuid:"sv2", project:"comfyui.gallery.loader", description:"and another", modified:$m},
+   {uuid:"sv3", project:"comfyui.gallery.loader", description:"and a third", modified:$m}]' \
+  > "$SANDBOX/anc-and-sep.json"
+export TASK_ALL_FIXTURE="$SANDBOX/anc-and-sep.json"
+out=$(run_nested --project comfyui-gallery-loader)
+check_line "AL5: the ancestor still wins the ambiguity slot" \
+  "$out" "PROJECT_AMBIGUOUS=comfyui-nodes"
+check_line "AL5: with the ancestor's count" "$out" "PROJECT_AMBIGUOUS_TASKS=2"
+check_line "AL5: and the ancestor reason" "$out" "PROJECT_AMBIGUOUS_REASON=ancestor"
+check_count_line "AL5: still exactly one ambiguity row" "$out" '^PROJECT_AMBIGUOUS=' 1
+
+# --- AL6: an ASSERTED slug is named, and nothing else about it changes -------
+# Assertion fixes the slug's identity; it cannot assert what the store holds.
+# The scope, the count and the confidence stay the caller's (the #2304 shape).
+export TASK_ALL_FIXTURE="$SANDBOX/sep-variant.json"
+out=$(bash "$COLLECTOR" --project-dir "$REPO" --project fvh-cost-attribution)
+check_line "AL6: an asserted slug keeps its own scope" "$out" "TASK_SCOPE=project"
+check_line "AL6: and its confident zero" "$out" "PROJECT_CONFIDENCE=high"
+check_line "AL6: and is never rewritten" "$out" "PROJECT=fvh-cost-attribution"
+check_line "AL6: but the variant is still named" \
+  "$out" "PROJECT_AMBIGUOUS=fvh.cost-attribution"
+check_line "AL6: with its reason" "$out" "PROJECT_AMBIGUOUS_REASON=separator-variant"
+
+# --- AL7: the signal reaches the hook's summary ------------------------------
+out=$(run_at "$SEPREPO" --summary)
+check_line "AL7: the summary names the variant" \
+  "$out" "PROJECT_AMBIGUOUS=fvh.cost-attribution"
+check_line "AL7: with its count" "$out" "PROJECT_AMBIGUOUS_TASKS=10"
+check_line "AL7: and its reason" "$out" "PROJECT_AMBIGUOUS_REASON=separator-variant"
+check_line "AL7: the summary is still parse-stable" \
+  "$out" "=== END SESSION SURVEY SUMMARY ==="
+
+# --- AL8: the lookup reuses the ONE snapshot ---------------------------------
+export TASK_ARGV_LOG="$SANDBOX/task-argv-2355.log"
+: > "$TASK_ARGV_LOG"
+out=$(run_at "$SEPREPO")
+sep_exports=$(grep -c 'export' "$TASK_ARGV_LOG" || true)
+check_eq "AL8: still exactly one export call" "$sep_exports" "1"
+check_absent "AL8: the variant lookup never shells out a project: filter" \
+  "$(cat "$TASK_ARGV_LOG")" "project:"
+unset TASK_ARGV_LOG
+
+# --- AL9: degradation — nothing is claimed from a store that was not read ----
+export TASK_ALL_FIXTURE=/dev/null
+out=$(run_at "$SEPREPO")
+check_line "AL9: an empty store is still a confident zero" \
+  "$out" "PROJECT_CONFIDENCE=high"
+check_absent "AL9: and raises no variant" "$out" "PROJECT_AMBIGUOUS="
+export TASK_ALL_FIXTURE="$SANDBOX/sep-variant.json"
+out=$(PATH="$NOJQ" bash "$COLLECTOR" --project-dir "$SEPREPO" 2>&1)
+check_line "AL9: no jq means no scoping, so no confidence" \
+  "$out" "PROJECT_CONFIDENCE=low"
+check_absent "AL9: and no variant claimed without a parse" \
+  "$out" "PROJECT_AMBIGUOUS="
+out=$(SESSION_SURVEY_TASK_BIN="$SANDBOX/does-not-exist" \
+  bash "$COLLECTOR" --project-dir "$SEPREPO" 2>/dev/null)
+check_line "AL9: a missing task binary is named" "$out" "TASK_AVAILABLE=false"
+check_absent "AL9: and claims no variant" "$out" "PROJECT_AMBIGUOUS="
+
 echo "---"
 echo "PASS=$pass FAIL=$fail"
 [ "$fail" -eq 0 ]
