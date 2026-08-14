@@ -38,6 +38,7 @@ Claude: Research radar
 PR: Auto-resolve conflicts
 PR: Enforce conventional commits
 Plugin: Enablement drift
+Plugin: Golden-set evaluation
 Plugin: Lint skills
 Plugin: Obsidian CLI changelog review
 Plugin: PR checks
