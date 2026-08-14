@@ -139,8 +139,8 @@ be worth not eyeballing.
 | `model-matrix.json` schema | done — documented; example fixture renders |
 | `/evaluate:matrix` orchestration skill | done — runs the matrix, grades deterministic-first, renders the executability flag |
 | Golden set definition (`golden-set.json`) | done — 16 canaries across 6 patterns |
-| Fixture / scaffolding layer (`evals[].fixture`, `apply_fixture.sh`) | done — opt-in, isolated temp workdir, golden-set scope |
-| Cron / model-release trigger | follow-up |
+| Fixture / scaffolding layer (`evals[].fixture`, `apply_fixture.sh`) | done — opt-in, isolated temp workdir, golden-set scope; dir-copy + teardown demonstrated in `scripts/tests/test_apply_fixture.sh` |
+| Cron / model-release trigger | done — `.github/workflows/golden-set-evaluation.yml` (monthly cron + `workflow_dispatch` for the on-model-release run) |
 
 ## Related
 
