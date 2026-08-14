@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.5](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.4...comfyui-plugin-v1.13.5) (2026-08-14)
+
+
+### Documentation
+
+* **comfyui-plugin:** surface include_status_reason in an agentic-optimization row ([#2387](https://github.com/laurigates/claude-plugins/issues/2387)) ([1306040](https://github.com/laurigates/claude-plugins/commit/1306040b6a971810d0f76259f68dcb9312b1c0a9)), closes [#2346](https://github.com/laurigates/claude-plugins/issues/2346)
+
 ## [1.13.4](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.3...comfyui-plugin-v1.13.4) (2026-08-13)
 
 
