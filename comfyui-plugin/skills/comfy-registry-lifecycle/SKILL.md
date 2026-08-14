@@ -1,6 +1,6 @@
 ---
 created: 2026-07-07
-modified: 2026-08-13
+modified: 2026-08-14
 reviewed: 2026-07-07
 name: comfy-registry-lifecycle
 description: >-
@@ -477,6 +477,12 @@ curl -sI https://raw.githubusercontent.com/<owner>/<repo>/main/icon.png   # 200 
 gh run list -R <owner>/<repo> --workflow=publish.yml -L1                  # release/success
 curl -s https://api.comfy.org/nodes/<id>/versions                        # new version present
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---|---|
+| Read scan verdicts | `curl -s "https://api.comfy.org/nodes/<id>/versions?include_status_reason=true" \| jq -c '.[] \| select(.status == "NodeVersionStatusFlagged") \| {version, status_reason}'` |
 
 ## Verify
 
