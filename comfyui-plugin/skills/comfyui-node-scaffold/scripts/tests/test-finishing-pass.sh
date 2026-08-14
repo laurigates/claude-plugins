@@ -570,5 +570,115 @@ PY
     fi
 fi
 
+# 17. the gesture skeleton is recognizable on the FIRST pointerdown (issue
+#     #2383). The emitted skeleton demonstrated a two-finger pinch, which
+#     comfyui-touch-resize shipped and then removed as unfixable AS DESIGNED
+#     (touch-resize#58): a pinch is not recognizable until the SECOND finger
+#     lands, by which point the first finger's pointerdown has already reached
+#     LiteGraph and opened a node-drag or canvas-pan transaction. Everything
+#     else in that module existed only to unwind the half-open transaction —
+#     including the `if (lock) e.stopImmediatePropagation()` hedge. Every
+#     gesture pack scaffolded from it inherited a defect class the family had
+#     already root-caused and abandoned.
+GS="$WORK/comfyui-fp-gesture-shape"
+python3 "$SCAFFOLD" --name comfyui-fp-gesture-shape --display "FP Gesture Shape" \
+    --desc "Drag a selected node's corner handle to resize it" \
+    --variant gesture --dir "$WORK" >/dev/null 2>&1
+GS_SRC="$GS/src/index.ts"
+GS_TEST="$GS/tests/js/index.test.js"
+
+# Guard integrity first: without a non-empty, helper-exporting source every
+# "does not contain X" assertion below passes against a generator that emits
+# nothing at all.
+check "gesture variant emits src/index.ts" "yes" \
+    "$([ -s "$GS_SRC" ] && echo yes || echo no)"
+check "gesture variant emits tests/js/index.test.js" "yes" \
+    "$([ -s "$GS_TEST" ] && echo yes || echo no)"
+check "  ...exporting pure geometry helpers" "yes" \
+    "$(grep -qE '^export function ' "$GS_SRC" && echo yes || echo no)"
+
+# The defect lives in CODE, not in prose: the skeleton is expected to keep
+# NAMING the removed pinch so the next author learns why it went (the same
+# instruction-vs-explanation split check-agent-tool-selection.sh makes), so
+# every negative below runs against a comment-stripped view of the file.
+code_only() { # code_only <file> — source with // and /* */ comments removed
+    python3 - "$1" <<'PY'
+import re, sys
+src = open(sys.argv[1], encoding="utf-8").read()
+src = re.sub(r"/\*.*?\*/", "", src, flags=re.S)
+sys.stdout.write("".join(re.sub(r"//.*$", "", ln) + "\n" for ln in src.splitlines()))
+PY
+}
+for f in "$GS_SRC" "$GS_TEST"; do
+    CODE="$(code_only "$f")"
+    check "no pinch* symbol in $(basename "$f")" "yes" \
+        "$(grep -qi 'pinch' <<<"$CODE" && echo no || echo yes)"
+    check "no stopImmediatePropagation hedge in $(basename "$f")" "yes" \
+        "$(grep -q 'stopImmediatePropagation' <<<"$CODE" && echo no || echo yes)"
+done
+# Guard integrity for code_only(): the rationale must SURVIVE in the comments,
+# or the negatives above are satisfied by a skeleton that simply deleted the
+# explanation along with the code.
+check "the skeleton still records why the pinch went" "yes" \
+    "$(grep -q 'touch-resize#58' "$GS_SRC" && echo yes || echo no)"
+
+# The contract the replacement must satisfy (references/variants.md § "A
+# gesture must be recognizable on the FIRST pointerdown"). Each of these is a
+# real invariant, not a spelling: a skeleton that dropped `pinch` but kept
+# recognizing the gesture off a move stream would pass the negatives above.
+check "the gesture is recognized on pointerdown" "yes" \
+    "$(grep -q '"pointerdown"' "$GS_SRC" && echo yes || echo no)"
+# A capture listener on an ANCESTOR precedes listeners bound on the canvas
+# element whatever order they registered in; a same-element capture listener
+# added at setup() fires AFTER LiteGraph's, too late to suppress anything.
+GS_CODE="$(code_only "$GS_SRC")"
+check "  ...at window capture, ahead of LiteGraph's own canvas listener" "yes" \
+    "$(grep -q 'window.addEventListener(' <<<"$GS_CODE" && echo yes || echo no)"
+check "  ...and not on the canvas element, where it would register too late" "yes" \
+    "$(grep -q 'el.addEventListener(' <<<"$GS_CODE" && echo no || echo yes)"
+check "  ...by hit-testing that first event" "yes" \
+    "$(grep -q 'hitHandle' <<<"$GS_CODE" && echo yes || echo no)"
+# touch-action would unbalance Comfy.SimpleTouchSupport's module-global
+# touchCount — the "recovers only by switching apps" symptom.
+check "  ...pointer-events only, never setting touch-action" "yes" \
+    "$(grep -qi 'touchAction\|touch-action' <<<"$GS_CODE" && echo no || echo yes)"
+check "  ...and never intercepting touchstart/touchend" "yes" \
+    "$(grep -q 'touchstart\|touchend' <<<"$GS_CODE" && echo no || echo yes)"
+# In-place writes bypass LGraphNode's pos/size setters and the Vue layout
+# store they feed (useLayoutMutations.moveNode/.resizeNode).
+check "  ...assigning geometry, never mutating in place" "yes" \
+    "$(grep -qE '\.(size|pos) = ' <<<"$GS_CODE" && echo yes || echo no)"
+check "  ...and never writing size[0]/pos[0] in place" "yes" \
+    "$(grep -qE '\.(size|pos)\[[01]\] =' <<<"$GS_CODE" && echo no || echo yes)"
+# The whole layer stays a no-op when the canvas is absent, so the native
+# corner-handle resize always survives.
+check "  ...no-op when app.canvas is absent" "yes" \
+    "$(grep -q 'gesture layer not installed' "$GS_SRC" && echo yes || echo no)"
+# The hit radius is capped and the ceiling is recorded, per the measurement in
+# variants.md (body-corner handles land ~17px from the first slots).
+check "  ...with a capped hit radius in CONFIG" "yes" \
+    "$(grep -q 'handleHitRadius' "$GS_SRC" && echo yes || echo no)"
+
+# The emitted vitest suite must exercise the new helpers, or the pack ships a
+# green suite that tests nothing the skeleton still contains.
+check "the emitted suite tests hitHandle" "yes" \
+    "$(grep -q 'hitHandle' "$GS_TEST" && echo yes || echo no)"
+check "the emitted suite tests resizedGeometry" "yes" \
+    "$(grep -q 'resizedGeometry' "$GS_TEST" && echo yes || echo no)"
+# Every symbol the suite imports must actually be exported by the source —
+# an import of a deleted helper is a red suite in every generated pack.
+GS_MISSING="$(python3 - "$GS_SRC" "$GS_TEST" <<'PY'
+import re, sys
+src = open(sys.argv[1], encoding="utf-8").read()
+test = open(sys.argv[2], encoding="utf-8").read()
+exported = set(re.findall(r"^export function (\w+)", src, re.M))
+imported = set()
+for block in re.findall(r"import \{([^}]*)\} from \"\.\./\.\./src/index\.ts\"", test):
+    imported |= {s.strip() for s in block.split(",") if s.strip()}
+print(",".join(sorted(imported - exported)))
+PY
+)"
+check "every helper the suite imports is exported by src/index.ts" "" "$GS_MISSING"
+
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

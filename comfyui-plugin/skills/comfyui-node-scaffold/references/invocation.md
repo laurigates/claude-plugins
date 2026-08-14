@@ -22,7 +22,7 @@ python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name comfyui-touch-manager --display "
 Canvas-gesture pack (resize/move/region — no widget, no modal, no kit):
 
 ```sh
-python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name comfyui-touch-resize --display "Touch Resize" --desc "Selection-gated pinch-to-resize for ComfyUI nodes and groups on touch devices." --variant gesture
+python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name comfyui-touch-resize --display "Touch Resize" --desc "Selection-gated corner grab-handle resize for ComfyUI nodes and groups on touch." --variant gesture
 ```
 
 CSS/shim pack (scoped `<style>` injection + commands — no modal, no widget, no kit):
