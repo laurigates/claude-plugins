@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.12.0...evaluate-plugin-v1.13.0) (2026-08-14)
+
+
+### Features
+
+* **evaluate-plugin:** trigger the Tier-2 golden-set sweep on a cadence ([#2390](https://github.com/laurigates/claude-plugins/issues/2390)) ([d451409](https://github.com/laurigates/claude-plugins/commit/d45140985ab38b626a3385a338c5852f3c207f73)), closes [#2182](https://github.com/laurigates/claude-plugins/issues/2182)
+
 ## [1.12.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.11.0...evaluate-plugin-v1.12.0) (2026-07-27)
 
 
