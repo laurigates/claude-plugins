@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.6](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.5...comfyui-plugin-v1.13.6) (2026-08-14)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** rewrite the gesture skeleton onto a first-pointerdown hit test ([#2388](https://github.com/laurigates/claude-plugins/issues/2388)) ([82e42b5](https://github.com/laurigates/claude-plugins/commit/82e42b55423d7840a394813534cc52b1d8f2918d)), closes [#2383](https://github.com/laurigates/claude-plugins/issues/2383)
+
 ## [1.13.5](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.4...comfyui-plugin-v1.13.5) (2026-08-14)
 
 
