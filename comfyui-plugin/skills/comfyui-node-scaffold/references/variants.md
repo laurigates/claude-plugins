@@ -43,24 +43,26 @@ value stays stored.
 
 ## The gesture variant
 
-The `gesture` variant intercepts the **canvas pointer stream** (capture-phase
-`pointerdown`/`move`/`up` on `app.canvas.canvas`), hit-tests against selected
-nodes/groups in screen space (via `ds.scale`/`ds.offset`), and acts only when
-the gesture lands on a selected target. It is a no-op when `app.canvas` is
-absent, so the native control always survives. Pure math (distance, hit-test,
-scale-clamp) lives in exported, unit-tested helpers; DOM/canvas wiring stays
-below them. It has **no** `@laurigates/comfy-modal-kit` dependency.
+The `gesture` variant intercepts the **canvas pointer stream** (window-capture
+`pointerdown`/`move`/`up`), hit-tests against selected nodes/groups in screen
+space (via `ds.scale`/`ds.offset`), and acts only when the **first**
+`pointerdown` lands on a grab target of a selected node. It is a no-op when
+`app.canvas` is absent, so the native control always survives. Pure math
+(handle placement, hit-test, clamped resize) lives in exported, unit-tested
+helpers; DOM/canvas wiring stays below them. It has **no**
+`@laurigates/comfy-modal-kit` dependency.
 
 ### A gesture must be recognizable on the FIRST `pointerdown`
 
 **This is the design constraint for the whole variant, and the emitted skeleton
-does not yet satisfy it.** The skeleton still demonstrates a two-finger pinch;
-`comfyui-touch-resize` shipped exactly that, then removed it as unfixable in
-`feat!: replace the pinch gesture with corner grab-handles` (touch-resize #58).
-Treat the skeleton's pinch as a worked example to *replace*, not a pattern to
-extend — rewriting it is tracked upstream.
+satisfies it**: `hitHandle()` classifies the very first `pointerdown` against
+the corner grab-handles of each selected node, and a hit is suppressed at
+window capture (`stopPropagation` + `preventDefault`) before the event can
+reach LiteGraph. `comfyui-touch-resize` reached the same shape the hard way —
+it shipped a two-finger pinch first and removed it in `feat!: replace the pinch
+gesture with corner grab-handles` (touch-resize #58).
 
-The root cause is structural, not a bug that can be patched:
+The root cause of that removal is structural, not a bug that can be patched:
 
 > A pinch is not recognizable until the **second** finger lands, by which point
 > the first finger's `pointerdown` has already reached LiteGraph and opened a
@@ -73,7 +75,8 @@ transaction — move-stream suppression, a wheel interceptor,
 hit-tested on the **first** `pointerdown` is suppressed before LiteGraph opens
 any transaction, so there is no half-open state to recover.
 
-Two further traps that a pinch design walks into, both real:
+Two further traps, both real, and both things the emitted skeleton already
+avoids — keep them avoided as you extend it:
 
 - **`Comfy.SimpleTouchSupport` keeps a module-global `touchCount`** (`+=` on
   `touchstart`, `-=` on `touchend`) and patches `LGraphCanvas.processMouseDown`
@@ -92,7 +95,10 @@ Place hit targets by **measurement, not guess**: body-corner handles land ~17px
 from the first input/output slots — inside the hit radius — so tapping a slot on
 a selected node grabs a handle instead of starting a link drag. Tracing the full
 outline instead puts them ~21px from the collapse toggle and ~45px from the
-slots. Cap the hit radius accordingly and record the ceiling in `CONFIG`.
+slots. Cap the hit radius accordingly and record the ceiling in `CONFIG` — the
+skeleton emits `CONFIG.handleHitRadius` for exactly that, seeded at 18px from
+touch-resize's measurements. Those constants are that pack's tuning; re-measure
+against your own handle placement rather than inheriting the number.
 
 ## The shim variant
 

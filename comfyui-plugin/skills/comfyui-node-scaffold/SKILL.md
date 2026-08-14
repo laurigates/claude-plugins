@@ -139,10 +139,10 @@ Then implement, and wire up infra:
    For the `backend` variant, fill in `<module>.py`'s node + endpoints; widen
    `ALLOWED_EXTENSIONS` explicitly for any new file type read off disk. For the
    `gesture` variant, tune the pointer layer
-   (`selectedNodes`/`nodeScreenRect`/`scaledSize`) — and read the
-   first-`pointerdown` contract in
-   [references/variants.md](references/variants.md) before keeping the emitted
-   skeleton's two-finger pinch, which touch-resize removed as unfixable. For the
+   (`selectedNodes`/`nodeScreenRect`/`hitHandle`/`resizedGeometry`) and
+   re-measure `CONFIG.handleHitRadius` against this pack's handle placement,
+   keeping the gesture recognizable on the first `pointerdown` per the contract
+   in [references/variants.md](references/variants.md). For the
    `shim` variant,
    replace the placeholder `SHIMS` entry — link the upstream issue, point the
    selector at a stable `data-testid`, keep each shim fail-soft.

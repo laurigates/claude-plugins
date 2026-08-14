@@ -39,7 +39,7 @@ Canvas-gesture pack (touch-resize shape — no widget, no modal, no kit):
     python3 scaffold.py \
         --name comfyui-touch-resize \
         --display "Touch Resize" \
-        --desc "Selection-gated pinch-to-resize for ComfyUI nodes and groups on touch devices." \
+        --desc "Selection-gated corner grab-handle resize for ComfyUI nodes and groups on touch." \
         --variant gesture
 """
 
@@ -606,12 +606,22 @@ INDEX_TS_GESTURE = """\
 // EXT_NAME below. See ADR-0001.
 //
 // Pattern ("the gesture vein"): instead of intercepting a single widget,
-// this pack adds a CANVAS-LEVEL pointer layer. A two-finger pinch whose
-// centroid lands inside a *selected* node (single tap selects it) resizes
-// that node and suppresses the native canvas zoom for the gesture's
-// duration. Additive + mobile-first: if app.canvas or the pointer model is
+// this pack adds a CANVAS-LEVEL pointer layer. A *selected* node (single tap
+// selects it) grows corner grab-handles; a drag that starts on one resizes
+// the node. Additive + mobile-first: if app.canvas or the pointer model is
 // absent it does nothing and native corner-handle resize still works.
-// Resize only writes node.size (already serialized) so no workflow breaks.
+// Resize writes node.pos/node.size (already serialized) so no workflow breaks.
+//
+// THE DESIGN CONSTRAINT: the gesture must be recognizable on the FIRST
+// pointerdown. Anything that needs a second finger or a move stream to
+// classify — a pinch, a swipe, a two-finger rotate — is unrecognizable until
+// after the first pointerdown has already reached LiteGraph and opened a
+// node-drag or canvas-pan transaction, leaving a half-open state that cannot
+// be unwound cleanly. comfyui-touch-resize shipped a pinch, root-caused this,
+// and replaced it with these grab-handles (touch-resize#58). A target
+// hit-tested on the first pointerdown is suppressed BEFORE LiteGraph sees the
+// event, so there is no transaction to recover from and none of the
+// move-stream / wheel / touch-action hedges that recovery needs.
 //
 // This variant has NO @@MODAL_KIT_PKG@@ dependency — there is no widget to
 // hook and no modal to open. Pure geometry helpers are exported and
@@ -630,6 +640,17 @@ const EXT_NAME = "@@NAME@@";
 // LiteGraph.NODE_TITLE_HEIGHT = 30 (confirm against the frontend sourcemap).
 const DEFAULT_TITLE_HEIGHT = 30;
 
+// Tuning. Measure, do not guess: on touch-resize, handles placed at the BODY
+// corners land ~17px from the first input/output slots, so a radius above that
+// steals slot taps (link drags) on a selected node; tracing the full node
+// outline instead puts them ~21px from the collapse toggle and ~45px from the
+// slots. Re-measure for this pack's handle placement and keep the ceiling here
+// rather than in the hit-test call site.
+const CONFIG = {
+  /** Screen-space grab radius around each corner handle, in px. */
+  handleHitRadius: 18,
+};
+
 // ============================================================
 // Types
 // ============================================================
@@ -645,6 +666,9 @@ interface Rect {
 /** A 2-tuple of [x, y] / [w, h] used throughout the geometry. */
 type Vec2 = [number, number];
 
+/** Which corner a grab-handle sits on. */
+export type Corner = "nw" | "ne" | "sw" | "se";
+
 /** The narrow node surface this pack reaches into. */
 interface GestureNode {
   pos: Vec2;
@@ -656,19 +680,6 @@ interface GestureNode {
 // ============================================================
 // Pure helpers (unit-tested in tests/js)
 // ============================================================
-
-/** Euclidean distance between two {x, y} pointers. */
-export function pinchDistance(a: { x: number; y: number }, b: { x: number; y: number }): number {
-  return Math.hypot(a.x - b.x, a.y - b.y);
-}
-
-/** Midpoint between two {x, y} pointers. */
-export function centroid(
-  a: { x: number; y: number },
-  b: { x: number; y: number },
-): { x: number; y: number } {
-  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-}
 
 /** Is screen point (x, y) inside rect {x, y, w, h}? */
 export function pointInRect(x: number, y: number, rect: Rect): boolean {
@@ -692,12 +703,60 @@ export function nodeScreenRect(
   };
 }
 
+/** The four corner grab-handle centres of a screen-space rect. */
+export function cornerHandles(rect: Rect): { corner: Corner; x: number; y: number }[] {
+  return [
+    { corner: "nw", x: rect.x, y: rect.y },
+    { corner: "ne", x: rect.x + rect.w, y: rect.y },
+    { corner: "sw", x: rect.x, y: rect.y + rect.h },
+    { corner: "se", x: rect.x + rect.w, y: rect.y + rect.h },
+  ];
+}
+
 /**
- * New [w, h] after a uniform pinch scale, clamped to a minimum.
- * ratio = currentPinchDistance / startPinchDistance; minSize = [minW, minH].
+ * Which corner handle of `rect` the screen point (x, y) grabs, or null.
+ * This is the whole recognizer: it runs on the FIRST pointerdown, so the
+ * gesture is classified before LiteGraph can open a competing transaction.
+ * Nearest handle wins, so overlapping radii on a small node stay predictable.
  */
-export function scaledSize(startSize: Vec2, ratio: number, minSize: Vec2 = [0, 0]): Vec2 {
-  return [Math.max(minSize[0], startSize[0] * ratio), Math.max(minSize[1], startSize[1] * ratio)];
+export function hitHandle(x: number, y: number, rect: Rect, radius: number): Corner | null {
+  let best: Corner | null = null;
+  let bestDist = radius;
+  for (const h of cornerHandles(rect)) {
+    const d = Math.hypot(x - h.x, y - h.y);
+    if (d <= bestDist) {
+      bestDist = d;
+      best = h.corner;
+    }
+  }
+  return best;
+}
+
+/**
+ * New {pos, size} after dragging `corner` by (dx, dy) CANVAS units, clamped to
+ * a minimum. Dragging a west/north corner moves the opposite edge, so `pos`
+ * shifts by exactly the size delta — clamping both together keeps the anchored
+ * corner still once the minimum is reached.
+ */
+export function resizedGeometry(
+  startPos: Vec2,
+  startSize: Vec2,
+  corner: Corner,
+  dx: number,
+  dy: number,
+  minSize: Vec2 = [0, 0],
+): { pos: Vec2; size: Vec2 } {
+  const west = corner === "nw" || corner === "sw";
+  const north = corner === "nw" || corner === "ne";
+  const w = Math.max(minSize[0], west ? startSize[0] - dx : startSize[0] + dx);
+  const h = Math.max(minSize[1], north ? startSize[1] - dy : startSize[1] + dy);
+  return {
+    pos: [
+      west ? startPos[0] + (startSize[0] - w) : startPos[0],
+      north ? startPos[1] + (startSize[1] - h) : startPos[1],
+    ],
+    size: [w, h],
+  };
 }
 
 /** Selected nodes as an array, defensively across LiteGraph variants. */
@@ -721,11 +780,16 @@ export function selectedNodes(canvas: unknown): GestureNode[] {
 // Wiring (DOM + canvas; browser-matrix tested)
 // ============================================================
 
-interface PinchLock {
+interface DragLock {
+  pointerId: number;
   node: GestureNode;
-  startDist: number;
+  corner: Corner;
+  startX: number;
+  startY: number;
+  startPos: Vec2;
   startSize: Vec2;
   minSize: Vec2;
+  scale: number;
 }
 
 function installGestureLayer(): void {
@@ -744,85 +808,109 @@ function installGestureLayer(): void {
     return;
   }
 
-  const pointers = new Map<number, { x: number; y: number }>();
-  let lock: PinchLock | null = null;
+  let drag: DragLock | null = null;
 
   const localPoint = (e: PointerEvent): { x: number; y: number } => {
     const r = el.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   };
 
-  function tryStartPinch(): void {
-    if (pointers.size !== 2 || lock) return;
-    const [p1, p2] = [...pointers.values()] as [{ x: number; y: number }, { x: number; y: number }];
-    const c = centroid(p1, p2);
-    const scale = canvas?.ds?.scale ?? 1;
-    const offset = canvas?.ds?.offset ?? ([0, 0] as Vec2);
-    for (const node of selectedNodes(canvas)) {
-      if (pointInRect(c.x, c.y, nodeScreenRect(node, scale, offset))) {
-        const minSize: Vec2 = typeof node.computeSize === "function" ? node.computeSize() : [0, 0];
-        lock = {
-          node,
-          startDist: pinchDistance(p1, p2) || 1,
-          startSize: [node.size[0], node.size[1]],
-          minSize,
-        };
-        return;
-      }
-    }
-  }
-
-  el.addEventListener(
+  // Listen at WINDOW CAPTURE, not on the canvas element. Capture descends from
+  // the root, so this runs before ANY listener bound on the canvas whatever
+  // order they registered in — a capture listener added to the canvas itself
+  // during setup() would fire after LiteGraph's, far too late to suppress it.
+  // Pointer events only: never set `touch-action`, and never swallow
+  // touchstart/touchend. Comfy.SimpleTouchSupport keeps a module-global
+  // touchCount (+= on touchstart, -= on touchend) and short-circuits
+  // LGraphCanvas.processMouseDown while it is truthy; swallowing one side
+  // drives it NEGATIVE — also truthy — and the canvas stops responding to taps
+  // until resetTouchState fires on visibilitychange ("recovers only by
+  // switching apps"). A pointer-only layer keeps it balanced by construction.
+  window.addEventListener(
     "pointerdown",
     (e) => {
-      pointers.set(e.pointerId, localPoint(e));
-      tryStartPinch();
-      if (lock) e.stopImmediatePropagation(); // suppress native pinch-zoom
+      if (drag || e.target !== el) return;
+      const p = localPoint(e);
+      const scale = canvas?.ds?.scale ?? 1;
+      const offset = canvas?.ds?.offset ?? ([0, 0] as Vec2);
+      for (const node of selectedNodes(canvas)) {
+        const corner = hitHandle(
+          p.x,
+          p.y,
+          nodeScreenRect(node, scale, offset),
+          CONFIG.handleHitRadius,
+        );
+        if (!corner) continue;
+        drag = {
+          pointerId: e.pointerId,
+          node,
+          corner,
+          startX: p.x,
+          startY: p.y,
+          startPos: [node.pos[0], node.pos[1]],
+          startSize: [node.size[0], node.size[1]],
+          minSize: typeof node.computeSize === "function" ? node.computeSize() : [0, 0],
+          scale,
+        };
+        // Claimed here, on the first pointerdown, before the event reaches the
+        // canvas — so LiteGraph never opens a node-drag or canvas-pan
+        // transaction and there is nothing to unwind on pointerup.
+        e.stopPropagation();
+        e.preventDefault();
+        return;
+      }
     },
     true,
   );
 
-  el.addEventListener(
+  // No suppression on move/up: the pointerdown never reached LiteGraph, so it
+  // has no transaction in flight and its own move handling is already inert.
+  window.addEventListener(
     "pointermove",
     (e) => {
-      if (!pointers.has(e.pointerId)) return;
-      pointers.set(e.pointerId, localPoint(e));
-      if (!lock || pointers.size < 2) return;
-      const [p1, p2] = [...pointers.values()] as [
-        { x: number; y: number },
-        { x: number; y: number },
-      ];
-      const ratio = pinchDistance(p1, p2) / lock.startDist;
-      const [w, h] = scaledSize(lock.startSize, ratio, lock.minSize);
-      lock.node.size[0] = w;
-      lock.node.size[1] = h;
-      lock.node.onResize?.(lock.node.size);
+      if (!drag || e.pointerId !== drag.pointerId) return;
+      const p = localPoint(e);
+      const dx = (p.x - drag.startX) / (drag.scale || 1);
+      const dy = (p.y - drag.startY) / (drag.scale || 1);
+      const next = resizedGeometry(
+        drag.startPos,
+        drag.startSize,
+        drag.corner,
+        dx,
+        dy,
+        drag.minSize,
+      );
+      // ASSIGN, never mutate in place. `node.size[0] = w` bypasses LGraphNode's
+      // pos/size setters and therefore the Vue layout store they feed
+      // (useLayoutMutations.moveNode / .resizeNode), so the canvas and the
+      // store silently disagree.
+      drag.node.pos = next.pos;
+      drag.node.size = next.size;
+      drag.node.onResize?.(next.size);
       canvas?.setDirty?.(true, true);
-      e.stopImmediatePropagation();
     },
     true,
   );
 
-  const endPointer = (e: PointerEvent): void => {
-    pointers.delete(e.pointerId);
-    if (pointers.size < 2) lock = null;
+  const endDrag = (e: PointerEvent): void => {
+    if (drag && e.pointerId === drag.pointerId) drag = null;
   };
-  el.addEventListener("pointerup", endPointer, true);
-  el.addEventListener("pointercancel", endPointer, true);
+  window.addEventListener("pointerup", endDrag, true);
+  window.addEventListener("pointercancel", endDrag, true);
 
-  console.log(`[${EXT_NAME}] gesture layer installed — pinch a selected node to resize`);
+  console.log(`[${EXT_NAME}] gesture layer installed — drag a selected node's corner to resize`);
 }
 
 app.registerExtension({
   name: "comfy.@@SHORT@@",
   async setup() {
     installGestureLayer();
+    // TODO: measure this pack's handle placement against the node's real slot
+    //   geometry and re-tune CONFIG.handleHitRadius (see the note above it).
     // TODO: groups — extend selectedNodes()/nodeScreenRect() to graph._groups
-    //   (group.pos/group.size; no title bar) so a pinch resizes groups too.
-    // TODO: discoverability — draw a faint corner affordance on selected nodes
-    //   (canvas onDrawForeground) so the pinch gesture is learnable.
-    // TODO: optional anisotropic mode — decompose the two-finger vector into
-    //   independent W/H instead of uniform scale (behind a config flag).
+    //   (group.pos/group.size; no title bar) so a drag resizes groups too.
+    // TODO: discoverability — draw the corner handles on selected nodes
+    //   (canvas onDrawForeground) so the grab targets are visible, not guessed.
   },
 });
 """
@@ -1351,25 +1439,45 @@ import { describe, expect, it } from "vitest";
 // Vitest transpiles TypeScript, so the test imports the `.ts` source directly
 // (no build step). Importing the module also confirms the registerExtension
 // wiring loads cleanly against tests/js/__mocks__/app.js.
-import { pinchDistance, pointInRect, scaledSize } from "../../src/index.ts";
+import { hitHandle, pointInRect, resizedGeometry } from "../../src/index.ts";
 
 // Smoke tests so `bun run test` is green from the first commit. Exercise the
-// pure gesture helpers. Add a jsdom test for installGestureLayer's pointer
-// handling as the real resize logic lands.
+// pure gesture helpers — the recognizer (hitHandle) and the geometry it feeds.
+// Add a jsdom test for installGestureLayer's pointerdown handling as the real
+// gesture lands; the invariant worth asserting there is that a pointerdown
+// which grabs a handle is suppressed before it can reach the canvas.
 describe("@@NAME@@ gesture helpers", () => {
-  it("measures pinch distance", () => {
-    expect(pinchDistance({ x: 0, y: 0 }, { x: 3, y: 4 })).toBe(5);
-  });
+  const rect = { x: 10, y: 10, w: 100, h: 50 };
 
   it("hit-tests a screen point against a rect", () => {
-    const rect = { x: 10, y: 10, w: 100, h: 50 };
     expect(pointInRect(50, 30, rect)).toBe(true);
     expect(pointInRect(5, 30, rect)).toBe(false);
   });
 
-  it("uniform-scales and clamps to a minimum size", () => {
-    expect(scaledSize([200, 100], 1.5)).toEqual([300, 150]);
-    expect(scaledSize([200, 100], 0.1, [120, 60])).toEqual([120, 60]);
+  it("recognises a corner grab on the first pointerdown", () => {
+    expect(hitHandle(12, 12, rect, 18)).toBe("nw");
+    expect(hitHandle(108, 58, rect, 18)).toBe("se");
+    // A press in the node body is NOT a handle grab — it must fall through to
+    // LiteGraph so tapping/dragging a selected node still works.
+    expect(hitHandle(60, 35, rect, 18)).toBeNull();
+  });
+
+  it("resizes from a south-east drag without moving the anchor", () => {
+    const { pos, size } = resizedGeometry([0, 0], [200, 100], "se", 40, 20);
+    expect(pos).toEqual([0, 0]);
+    expect(size).toEqual([240, 120]);
+  });
+
+  it("moves pos when a north-west corner is dragged, and clamps together", () => {
+    expect(resizedGeometry([100, 100], [200, 100], "nw", 50, 25)).toEqual({
+      pos: [150, 125],
+      size: [150, 75],
+    });
+    // Past the minimum both stop: size clamps and pos stops following.
+    expect(resizedGeometry([100, 100], [200, 100], "nw", 500, 500, [120, 60])).toEqual({
+      pos: [180, 140],
+      size: [120, 60],
+    });
   });
 });
 """
@@ -2860,24 +2968,28 @@ def build_file_map(
         ctx["VEIN"] = (
             "A mobile-first ComfyUI usability pack in the *gesture* vein: instead "
             "of intercepting a single widget, a frontend extension adds a "
-            "CANVAS-LEVEL pointer layer. A two-finger pinch whose centroid lands "
-            "inside a **selected** node (single tap selects it) resizes that node "
-            "and suppresses the native canvas zoom for the gesture's duration. The "
-            "enhancement is **additive** (no-op fallback if `app.canvas` or the "
-            "pointer model is absent — native corner-handle resize still works), "
-            "**touch-first**, and never breaks serialized workflows (it only writes "
-            "`node.size`, which is already serialized). Pure geometry helpers are "
-            "exported from `src/index.ts` and unit-tested; DOM/canvas wiring stays "
-            "below them."
+            "CANVAS-LEVEL pointer layer. A **selected** node (single tap selects "
+            "it) grows corner grab-handles; a drag starting on one resizes the "
+            "node. The gesture is recognized on the **first** `pointerdown` and "
+            "suppressed there, so LiteGraph never opens a competing node-drag or "
+            "canvas-pan transaction. The enhancement is **additive** (no-op "
+            "fallback if `app.canvas` or the pointer model is absent — native "
+            "corner-handle resize still works), **touch-first**, and never breaks "
+            "serialized workflows (it only writes `node.pos` / `node.size`, both "
+            "already serialized). Pure geometry helpers are exported from "
+            "`src/index.ts` and unit-tested; DOM/canvas wiring stays below them."
         )
         ctx["EXT_ROW_DESC"] = (
             "The extension: canvas pointer layer + exported pure geometry helpers."
         )
         ctx["HOOK_RULE"] = (
-            "**Canvas pointer model is version-sensitive.** The pinch layer reads "
-            "`app.canvas` / `ds.scale` / `ds.offset` and the pointer-event stream. "
-            "Keep the no-op fallback (do nothing when they are absent) so native "
-            "corner-handle resize always works."
+            "**A gesture must be recognizable on the first `pointerdown`.** The "
+            "layer reads `app.canvas` / `ds.scale` / `ds.offset`, hit-tests that "
+            "first event, and suppresses it at window capture — no move-stream "
+            "classification, and never a `touch-action` override (that unbalances "
+            "`Comfy.SimpleTouchSupport`'s `touchCount`). Write geometry by "
+            "assignment (`node.size = [w, h]`), never in place. Keep the no-op "
+            "fallback so native corner-handle resize always works."
         )
         ctx["FAMILY_BLURB"] = (
             "> touch-friendly gestures and HTML modals that replace clunky native\n"
@@ -3513,8 +3625,10 @@ def main() -> int:
         "  just check                              # typecheck + build + lint + test should pass green\n"
         "\nThen:\n"
         + (
-            "  - tune the pinch layer in src/index.ts "
-            "(selectedNodes/nodeScreenRect/scaledSize; groups + affordance TODOs)\n"
+            "  - tune the pointer layer in src/index.ts (selectedNodes/"
+            "nodeScreenRect/hitHandle/resizedGeometry; keep the gesture "
+            "recognizable on the FIRST pointerdown; re-measure "
+            "CONFIG.handleHitRadius; groups + affordance TODOs)\n"
             if args.variant == "gesture"
             else "  - implement the CSS shims in src/index.ts (replace the placeholder "
             "SHIMS entry; link the upstream issue, keep each shim fail-soft — no "
