@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.3](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.9.2...github-actions-plugin-v1.9.3) (2026-08-15)
+
+
+### Bug Fixes
+
+* **github-actions-plugin:** drop the eval-task trigram from the inspection description ([#2405](https://github.com/laurigates/claude-plugins/issues/2405)) ([20706c5](https://github.com/laurigates/claude-plugins/commit/20706c53bcea6bbb5cc8dc757124dbce3cdba9c8)), closes [#2244](https://github.com/laurigates/claude-plugins/issues/2244)
+
 ## [1.9.2](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.9.1...github-actions-plugin-v1.9.2) (2026-08-15)
 
 
