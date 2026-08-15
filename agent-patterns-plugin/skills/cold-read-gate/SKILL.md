@@ -4,7 +4,7 @@ description: Gate outward-bound text (upstream issues, docs, PR bodies) through 
 allowed-tools: Agent, Read, Write, Edit, TodoWrite
 model: opus
 created: 2026-06-11
-modified: 2026-07-18
+modified: 2026-08-15
 compatibility: claude-code
 reviewed: 2026-06-11
 ---
@@ -72,12 +72,14 @@ prompt: |
   <absolute path>
 
   Produce:
-  1. QUESTIONS — anything unclear, ambiguous, undefined (jargon, acronyms,
+  1. THE ASK — state in ONE sentence what this text wants you to DO. If you
+     cannot state it, say so plainly: that is the most important finding.
+  2. QUESTIONS — anything unclear, ambiguous, undefined (jargon, acronyms,
      unexplained references), or missing that you'd have to ask the author
      before acting. Quote the exact phrase that confused you.
-  2. HESITATIONS — claims you can't verify from the text alone, confusing
+  3. HESITATIONS — claims you can't verify from the text alone, confusing
      structure, anything that would make you deprioritize it.
-  3. Verdict: exactly one of `clear` | `needs-revision`.
+  4. Verdict: exactly one of `clear` | `needs-revision`.
 
   Ignore: <known artifacts of the test — see Step 3. Example:
   "Ignore the HTML comments at the top (they are stripped by the filing
@@ -86,25 +88,45 @@ prompt: |
   Concise bullets. Your final message is the deliverable.
 ```
 
+Item 1 is load-bearing: QUESTIONS and HESITATIONS surface *local* defects, but
+an artifact can be locally clear and still ask for something incoherent. A
+reader that cannot state the ask has found a structural flaw the author cannot
+see, because each half of the argument is individually true.
+
 | Audience | Persona |
 |---|---|
 | Upstream bug report | "an open-source maintainer triaging a newly filed issue" |
 | Team documentation | "a new team member reading this doc with no project context" |
 | PR description | "a reviewer seeing this change for the first time" |
 
-### Step 3: Triage the critique — genuine gaps vs test artifacts
+**When one artifact serves two channels, give each reader its real audience.**
+An issue-triage persona and a busy-chat-skimmer persona on the same argument
+returned non-overlapping findings — coherence and exception-shopping from the
+first, skimmability and cross-section consistency from the second. Two personas
+cover two axes; the same persona twice covers one.
+
+### Step 3: Triage the critique — gaps, measurements, test artifacts
 
 The cold reader cannot know the publishing context, so some complaints are
-artifacts of the test, not defects. Triage before revising:
+artifacts of the test, not defects. A third class is neither: an objection the
+text cannot settle but a **command** can. Triage into three buckets before
+revising:
 
-| Genuine gap — fix it | Test artifact — ignore it |
-|---|---|
-| Bare file paths instead of clickable links pinned to a ref | "Which repo is this?" when the artifact is filed *on* that repo's tracker |
-| Unexplained acronym/jargon on first use | Complaints about metadata the publish step strips (HTML comments, frontmatter) |
-| Symptom asserted without the actual error output | Demands for repro environments beyond what quoted source code shows |
-| Three suggested fixes with no preference | Critique of pre-existing scope the current change didn't touch |
-| Internal references (PR #s, ticket IDs) leaking into external text | Requests to restructure a document section you didn't write |
-| Internal arithmetic that doesn't add up ("12 across two waves" — which 12?) | |
+| Genuine gap — fix it | Answerable with evidence — measure it | Test artifact — ignore it |
+|---|---|---|
+| Bare file paths instead of clickable links pinned to a ref | "Impact is environment-specific" — a result quoted on one machine/config only | "Which repo is this?" when the artifact is filed *on* that repo's tracker |
+| Unexplained acronym/jargon on first use | "I can't verify this claim" about something a single run would settle | Complaints about metadata the publish step strips (HTML comments, frontmatter) |
+| Symptom asserted without the actual error output | A benchmark with no baseline, or a ratio with no absolute numbers | Demands for repro environments beyond what quoted source code shows |
+| Three suggested fixes with no preference | | Critique of pre-existing scope the current change didn't touch |
+| Internal references (PR #s, ticket IDs) leaking into external text | | Requests to restructure a document section you didn't write |
+| Internal arithmetic that doesn't add up ("12 across two waves" — which 12?) | | |
+
+**Test the objection before softening the sentence.** A hedge ("results may
+vary") answers nothing; the measurement often *inverts* the objection. Capping
+`RAYON_NUM_THREADS` at 1/2/4/8/24 to answer "the 8.7x is on 24 cores, which is
+uncommon" cost one command and showed the win saturates near 4 threads — an
+ordinary laptop gets nearly all of it (tracel-ai/burn#5332). Route here, not to
+a rewrite, whenever a bounded run can produce the number.
 
 ### Step 4: Revise once, re-read only on failure
 
@@ -150,6 +172,13 @@ Boot, a fix section offering three options with no recommendation, and two
 drafts judged "not actionable as written" that were revised before filing.
 All 12 issues filed after the gate drew zero clarification round-trips.
 
+Later run (registry-maintainer appeal, 2026-08): two independent readers each
+failed to state the ask — the text argued a finding was unfixable by
+publishers, then asked publishers to approve individual versions. Four rounds
+of author revision had not surfaced it, because each half was individually
+true. The same run caught an arithmetic contradiction and an exception-shopping
+ask that would have jeopardised the other twelve packages.
+
 ## Common Mistakes
 
 | Mistake | Correct approach |
@@ -160,6 +189,8 @@ All 12 issues filed after the gate drew zero clarification round-trips.
 | Pasting the artifact into the prompt | Give a path; pasted text tempts context smuggling |
 | Letting the reader explore the repo | "Read ONLY this file" — exploration restores the context the test removes |
 | Acting on every complaint | Triage first (Step 3); artifacts of the test produce busywork |
+| Softening a claim the reader couldn't verify | Run the measurement when one exists — it often inverts the objection |
+| Running the same persona twice on a two-channel artifact | One reader per channel; each gets its real audience |
 | Looping until the reader is silent | One revise round; persistent confusion = structural problem |
 | Gating drafts but not the docs that reference them | Anything a cold audience lands on qualifies |
 
