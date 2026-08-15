@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-08-15
 reviewed: 2026-04-25
 name: github-actions-inspection
-description: "Inspect GitHub Actions runs, analyze logs, debug failures. Use when investigating CI/CD failures, checking workflow status, or debugging GitHub Actions issues."
+description: "Read a finished GitHub Actions run's logs — failing step, stack trace, test output, rerun failed jobs. Use when a CI run already failed and you need the error out of the log."
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob, mcp__github
 ---
@@ -16,7 +16,7 @@ allowed-tools: Bash, Read, Grep, Glob, mcp__github
 |---|---|
 | Pulling status, logs, and conclusions from `gh run` for a failing workflow | Authoring or modifying a workflow YAML file — see claude-code-github-workflows |
 | Diagnosing flaky tests, timeouts, or auth-permission errors in a CI run | Searching upstream OSS issues for a library bug — see github-issue-search |
-| Rerunning failed jobs, watching in-progress runs, or extracting error lines | Building a workflow that auto-fixes CI failures — see github-workflow-auto-fix |
+| Rerunning failed jobs or extracting error lines from a completed run | Use `git-plugin:gh-workflow-monitoring` to block until an in-progress run finishes, or `git-plugin:git-fix-pr` to patch and push the fix |
 
 Expert knowledge for inspecting, debugging, and troubleshooting GitHub Actions workflow runs using gh CLI and GitHub API.
 

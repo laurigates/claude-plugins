@@ -1,9 +1,9 @@
 ---
 created: 2026-01-09
-modified: 2026-05-09
+modified: 2026-08-15
 reviewed: 2026-04-25
 name: release-please-pr-workflow
-description: Manage release-please PR merging for monorepos — batch merging, conflict resolution via PR closure/recreation, iterative processing. Use when merging release PRs, handling PR conflicts, or managing release automation in monorepos.
+description: "Merging release-please release PRs — batch merge, conflict resolution by closing and recreating the PR. Use when release PRs pile up or a release PR conflicts."
 user-invocable: false
 allowed-tools: Bash, Read, TodoWrite
 ---

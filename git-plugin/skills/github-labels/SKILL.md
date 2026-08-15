@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-08-15
 reviewed: 2026-04-01
 name: github-labels
-description: "Discover and apply GitHub labels via gh CLI. Use when asked to label a PR/issue, list available labels, or create new labels for a repository."
+description: "GitHub labels via gh CLI — list, apply, create. Use when labeling a PR or issue, checking which labels a repo has, or creating a new label."
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---

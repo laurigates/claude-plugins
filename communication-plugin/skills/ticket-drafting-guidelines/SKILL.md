@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-08-15
 reviewed: 2026-04-25
 name: ticket-drafting-guidelines
-description: Guidelines for drafting GitHub issues using What/Why/How format. Use when creating issues, drafting tickets, or writing bug reports with concise and positive framing.
+description: "What/Why/How prose structure and neutral, positive register for issues, PR descriptions, and tickets. Use when wording a ticket body, tightening prose, or applying house tone."
 user-invocable: false
 allowed-tools: Read, Grep, WebFetch
 ---
@@ -19,6 +19,7 @@ Expert guidance for drafting clear, concise, and well-structured tickets for Git
 | Drafting a GitHub issue, bug report, or feature request with What/Why/How structure | Posting a status update or announcement to a Google Chat channel |
 | Writing a PR description or technical ticket with reference links | Converting Markdown headers and bold to Google Chat's single-asterisk syntax |
 | Structuring a refactoring task or migration plan with concrete steps | Reformatting meeting notes or release notes for chat consumption |
+| Wording the body text — What/Why/How sections, tone, reference links | Use `git-plugin:github-issue-writing` for the GitHub issue artifact itself: `[Type] Component:` title format, bug/feature templates, `gh issue create` |
 
 ## Core Expertise
 

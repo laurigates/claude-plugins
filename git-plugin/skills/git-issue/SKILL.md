@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-08-13
+modified: 2026-08-15
 reviewed: 2026-08-13
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git fetch *), Bash(git pull *), Bash(git stash *), Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(gh label *), Bash(gh api *), Bash(pre-commit *), Read, Edit, Write, Grep, Glob, TodoWrite, AskUserQuestion, Task, mcp__github__create_pull_request, mcp__github__issue_read, mcp__github__list_issues
-description: "Process GitHub issues end-to-end with TDD and parallel work. Use when asked to work on an issue, fix issue #N, pick issues to tackle, or batch-process several."
+description: "GitHub issue to PR end-to-end — branch, TDD implementation, PR — one issue or several in parallel. Use when asked to work on an issue, fix issue #N, or batch-process several."
 args: "[issues... (number | #N | URL)] [--auto] [--filter <label>] [--limit <n>] [--parallel] [--labels <l1,l2>]"
 argument-hint: "[issues... (number | #N | URL)] [--auto] [--filter <label>] [--limit <n>] [--parallel] [--labels <l1,l2>]"
 disable-model-invocation: true

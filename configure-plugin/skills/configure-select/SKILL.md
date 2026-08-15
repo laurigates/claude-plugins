@@ -1,8 +1,8 @@
 ---
 created: 2025-12-22
-modified: 2026-07-05
+modified: 2026-08-15
 reviewed: 2026-07-05
-description: "Interactive selector for infrastructure standards. Use when setting up specific components or building infrastructure incrementally instead of running /configure:all."
+description: "Pick-a-component menu for infrastructure standards — configures only the selected ones. Use when setting up one or a few named components (linting, CI, containers, tests)."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, SlashCommand
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"
