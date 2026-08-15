@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-04
+modified: 2026-08-15
 reviewed: 2025-12-16
 name: yq-yaml-processing
 description: "yq YAML processing: query, filter, transform YAML. Use when parsing configs, modifying Kubernetes manifests or GitHub Actions workflows, or transforming YAML."
@@ -15,12 +15,12 @@ Expert knowledge for processing, querying, and transforming YAML data using yq v
 
 ## When to Use This Skill
 
-| Use this skill when... | Use another tool instead when... |
+| Use this skill when... | Use another skill instead when... |
 |------------------------|----------------------------------|
-| Querying or modifying YAML files | Processing JSON only (use jq) |
-| Updating Kubernetes manifests | Full Kubernetes management (use kubectl) |
-| Processing GitHub Actions workflows | XML processing (use xmlstarlet) |
-| Merging YAML configurations | Complex data transformations (use scripting) |
+| Querying or modifying YAML files | The input is JSON only — use `jq-json-processing` |
+| Editing YAML in place while preserving comments and key order | Multi-step transforms spanning YAML, JSON, CSV, TOML — use `nushell-data-processing` |
+| Targeted updates to a Kubernetes manifest or Actions workflow | Full Kubernetes management (use kubectl); XML (use xmlstarlet) |
+| Merging YAML configurations | Aggregating or grouping across many files — use `nushell-data-processing` |
 
 ## Core Expertise
 
@@ -129,17 +129,15 @@ yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' base.yaml override
 yq eval-all '. as $item ireduce ({}; . *+ $item)' base.yaml override.yaml
 ```
 
-## Agentic Optimizations
+### JSON Output (for piping)
 
-| Context | Command |
-|---------|---------|
-| Read field | `yq '.field' file.yaml` |
-| Update in-place | `yq -i '.field = "value"' file.yaml` |
-| YAML to JSON | `yq -o=json '.' file.yaml` |
-| Compact JSON | `yq -o=json -I=0 '.' file.yaml` |
-| Filter documents | `yq 'select(.kind == "Deployment")' file.yaml` |
-| Merge configs | `yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' base.yaml override.yaml` |
-| Validate YAML | `yq '.' file.yaml` |
+```bash
+# YAML to JSON
+yq -o=json '.' file.yaml
+
+# Compact single-line JSON — the form to pipe into jq or a tool that reads stdin
+yq -o=json -I=0 '.' file.yaml
+```
 
 ## Quick Reference
 

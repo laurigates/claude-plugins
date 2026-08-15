@@ -4,7 +4,7 @@ description: "CLI smoke recipes: expose pure-function modules via subcommands wi
 allowed-tools: Read, Grep, Glob, TodoWrite
 model: sonnet
 created: 2026-04-24
-modified: 2026-05-09
+modified: 2026-08-15
 reviewed: 2026-04-24
 ---
 
@@ -18,7 +18,7 @@ Every pure-function module that transforms data should be reachable from the she
 |---------------------|------------|
 | Designing a new module with a clear input → output contract | Internal helper with no stable interface |
 | Adding CLI exposure to an existing library | Code whose only consumer is another in-process module |
-| Authoring justfile recipes for bulk verification | One-off scripts |
+| Authoring justfile recipes for bulk verification | One-off scripts, or recipe syntax generally — use `justfile-expert` |
 | Deciding if a feature is complete | Implementation is purely experimental |
 
 ## The Pattern

@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Bash(d2 *), Read, Write, Grep, Glob, TodoWrite
 model: sonnet
 created: 2025-12-26
-modified: 2026-07-18
+modified: 2026-08-15
 reviewed: 2026-07-18
 ---
 
@@ -15,8 +15,8 @@ Expert in generating diagrams from declarative text definitions using D2 - a mod
 
 ## When to Use This Skill
 
-| Use this skill when... | Use Mermaid instead when... |
-|------------------------|-----------------------------|
+| Use this skill when... | Use `mermaid-diagrams` instead when... |
+|------------------------|----------------------------------------|
 | Rich styling with classes and themes | Embedding diagrams in GitHub Markdown |
 | Complex nested container layouts | Simple flowcharts with minimal styling |
 | Architecture diagrams with icons | Diagrams that render natively in docs platforms |
@@ -59,6 +59,9 @@ d2 diagram.d2 diagram.svg
 
 # Convert to PNG
 d2 diagram.d2 diagram.png
+
+# Convert to PNG at 2x resolution
+d2 --scale 2 diagram.d2 diagram.png
 
 # Convert to PDF
 d2 diagram.d2 diagram.pdf
@@ -414,18 +417,6 @@ commit -> done
 ```
 
 For additional patterns (Database ERD, Kubernetes Deployment), special shapes (sql_table, class, code blocks), layers, theme categories, and a full D2 vs Mermaid comparison, see [REFERENCE.md](REFERENCE.md).
-
-## Agentic Optimizations
-
-| Context | Command |
-|---------|---------|
-| Quick SVG | `d2 diagram.d2 diagram.svg` |
-| Live preview | `d2 --watch --browser diagram.d2` |
-| Dark theme | `d2 --dark-theme 200 diagram.d2 output.svg` |
-| Sketch style | `d2 --sketch diagram.d2 output.svg` |
-| ELK layout | `d2 -l elk diagram.d2 output.svg` |
-| List themes | `d2 themes` |
-| PNG export | `d2 --scale 2 diagram.d2 output.png` |
 
 ## Quick Reference
 
