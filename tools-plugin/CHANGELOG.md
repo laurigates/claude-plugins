@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.5](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.9.4...tools-plugin-v2.9.5) (2026-08-15)
+
+
+### Code Refactoring
+
+* **tools-plugin:** apply the demoted body-section mandates ([#2397](https://github.com/laurigates/claude-plugins/issues/2397)) ([04ffb23](https://github.com/laurigates/claude-plugins/commit/04ffb2378533a52544deb64615edb3560d456a1d)), closes [#2141](https://github.com/laurigates/claude-plugins/issues/2141)
+
 ## [2.9.4](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.9.3...tools-plugin-v2.9.4) (2026-08-07)
 
 
