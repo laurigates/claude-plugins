@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.40.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.39.0...agent-patterns-plugin-v2.40.0) (2026-08-15)
+
+
+### Features
+
+* **agent-patterns-plugin:** verify the consolidate destination is current ([#2393](https://github.com/laurigates/claude-plugins/issues/2393)) ([f29be69](https://github.com/laurigates/claude-plugins/commit/f29be6911115c77f9e784500368e989b8538b198)), closes [#2176](https://github.com/laurigates/claude-plugins/issues/2176)
+
 ## [2.39.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.38.1...agent-patterns-plugin-v2.39.0) (2026-08-13)
 
 
