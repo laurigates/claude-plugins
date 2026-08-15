@@ -24,7 +24,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.40.0",
+      "version": "2.41.0",
       "keywords": [
         "agents",
         "configuration",
@@ -669,7 +669,7 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.9.4",
+      "version": "2.9.5",
       "keywords": [
         "tools",
         "utilities",
