@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Bash, Read, Write, Grep, Glob, TodoWrite
 model: sonnet
 created: 2025-12-26
-modified: 2026-05-09
+modified: 2026-08-15
 reviewed: 2026-04-25
 ---
 
@@ -81,6 +81,13 @@ mmdc -i diagram.mmd -o diagram.png -w 1920 -H 1080
 
 # Scale factor
 mmdc -i diagram.mmd -o diagram.png -s 2
+```
+
+### Batch Rendering
+
+```bash
+# Render every .mmd in the directory to a sibling .svg
+for f in *.mmd; do mmdc -i "$f" -o "${f%.mmd}.svg"; done
 ```
 
 ## Diagram Types
@@ -222,17 +229,6 @@ docker run --rm -v "$(pwd)":/data minlag/mermaid-cli -i /data/diagram.mmd -o /da
 # With UID for correct permissions
 docker run -u $UID --rm -v "$(pwd)":/data minlag/mermaid-cli -i /data/diagram.mmd
 ```
-
-## Agentic Optimizations
-
-| Context | Command |
-|---------|---------|
-| Quick SVG | `mmdc -i diagram.mmd -o diagram.svg` |
-| PNG with transparency | `mmdc -i diagram.mmd -o diagram.png -b transparent` |
-| High-res PNG | `mmdc -i diagram.mmd -o diagram.png -s 2` |
-| Dark theme | `mmdc -i diagram.mmd -o diagram.svg -t dark` |
-| Batch process | `for f in *.mmd; do mmdc -i "$f" -o "${f%.mmd}.svg"; done` |
-| Stdin pipe | `echo 'graph TD; A-->B' \| mmdc --input - -o out.svg` |
 
 ## Quick Reference
 

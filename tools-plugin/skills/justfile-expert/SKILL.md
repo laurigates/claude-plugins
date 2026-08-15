@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-08-15
 reviewed: 2026-02-06
 name: justfile-expert
 description: Just command runner expertise — Justfile syntax, recipes, parameters, modules, shebang recipes. Use when authoring justfiles, project commands, or task automation.
@@ -20,9 +20,9 @@ Expert knowledge for Just command runner, recipe development, and task automatio
 | Creating/editing justfiles for task automation | Need build system with incremental compilation → Make |
 | Writing cross-platform project commands | Need tool version management bundled → mise tasks |
 | Adding shebang recipes (Python, Node, Ruby, etc.) | Already using mise for all project tooling |
-| Configuring dotenv loading and settings | Simple one-off shell scripts → Bash directly |
+| Configuring dotenv loading and settings | Authoring the shell itself (pipes, traps, arg parsing) → `shell-expert` |
 | Setting up CI/CD with just recipes | Project already has extensive Makefile |
-| Standardizing recipes across projects | Need Docker-specific workflows → docker-compose |
+| Standardizing recipes across projects | Exposing a module for bulk smoke-testing → `cli-smoke-recipes` |
 
 ## Core Expertise
 

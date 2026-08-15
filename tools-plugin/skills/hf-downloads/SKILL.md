@@ -3,7 +3,7 @@ name: hf-downloads
 description: "Hugging Face model downloads without filling root disk — HF_HOME/xet cache redirection, token/gated-repo auth, staging pattern. Use when downloading HF models, hf download errors, ENOSPC during downloads, or GatedRepoError/401s."
 allowed-tools: Bash, Read
 created: 2026-07-05
-modified: 2026-07-05
+modified: 2026-08-15
 reviewed: 2026-07-05
 ---
 
@@ -11,14 +11,7 @@ reviewed: 2026-07-05
 
 Download Hugging Face models to a big disk without filling root, authenticate against gated repos, and verify transfers — the failure modes that make multi-GB `hf download` runs abort or 401.
 
-## When to Use This Skill
-
-| Use this skill when... | Skip it when... |
-|------------------------|-----------------|
-| Downloading multi-GB HF models (`*.safetensors`, GGUF) to a specific disk | A tiny file where cache size is irrelevant |
-| `hf download` fails with `No space left on device` (ENOSPC) mid-transfer | Disk-full recovery in general (use `macos-plugin:macos-disk-usage`) |
-| A gated download 401s with `GatedRepoError` even though `hf auth whoami` works | Non-HF downloads (`curl`, `wget`, git-lfs from elsewhere) |
-| Deciding where to stage a large download so it doesn't fill root | The tool is not `huggingface_hub` / `hf` |
+Scoped to `huggingface_hub` / `hf`. For disk-full recovery in general — reclaiming space, hunting what filled the disk — use `macos-plugin:macos-disk-usage` instead.
 
 ## The Core Trap: `--local-dir` Does Not Cover Transfer State
 
