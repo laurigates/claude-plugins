@@ -70,6 +70,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/gitattributes.md` | `.gitattributes` conventions — `merge=union` only for one-line-per-entry append-only files, `linguist-generated` for build output (always safe), LF normalization; the `configure-gitattributes` skill + `resolve-additive-conflicts.py` pre-pass |
 | `.claude/rules/task-id-stability.md` | Taskwarrior numeric IDs renumber after every close — resolve the immutable UUID once and mutate by UUID, including *within* a single skill's own multi-step lifecycle, not just across bulk loops |
 | `.claude/rules/generated-fleet-drift.md` | Auditing a generated fleet — divergence is not automatically drift: it is bidirectional (never auto-apply template → instance), an identically-diverging cohort signals intent, and undeclared intent is unauditable |
+| `.claude/rules/plugin-usage-telemetry.md` | `~/.claude.json`'s `pluginUsage.usageCount` counts **hook fires**, so it ranks trigger cadence rather than plugin value — nothing in this repo reads it (incl. `health-check --scope=usage`, which mines transcripts); the delivery signal is the **lowercase-first** `attributionPlugin`/`attributionSkill`/`attributionAgent` |
 
 ## Authoring Skills and Plugins
 
