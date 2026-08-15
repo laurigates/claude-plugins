@@ -1044,6 +1044,22 @@ check_skill_body() {
           has_errors=true
         fi
       done
+      # Regression: the three findings the gate produced that its generic
+      # prompts did NOT. (a) A reader asked only for QUESTIONS / HESITATIONS
+      # reports local defects and passes an artifact whose ASK is incoherent —
+      # two independent readers caught exactly that only once the template
+      # demanded a one-sentence statement of what the text wants them to DO.
+      # (b) A hesitation of the form "I can't verify this claim" is often a
+      # testable hypothesis, not a prose defect; softening the sentence throws
+      # away the measurement that would have inverted the objection. (c) One
+      # artifact adapted for two channels needs one reader per channel — same
+      # persona twice covers one axis. Evidence: issue #2347, tracel-ai/burn#5332.
+      for token in 'THE ASK' 'Answerable with evidence' 'give each reader its real audience'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain critique-quality token '${token}' (ask-coherence prompt / evidence-answerable triage bucket / persona-diverse readers — issue #2347)")
+          has_errors=true
+        fi
+      done
     fi
 
     # Regression: claude-security-settings must warn that flag-scoped deny rules
