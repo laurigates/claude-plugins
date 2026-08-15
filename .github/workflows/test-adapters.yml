@@ -1,13 +1,13 @@
 name: "Test: Adapters"
 
 # Type-checks, lints, and tests the harness-agnostic skill-discovery core +
-# eval harness in adapters/ (ADR-0022, #2089). pi/tiers.yaml is in the paths
-# filter so the #2093 tier-removal PR runs this suite and fails loudly instead
-# of silently orphaning the eval's baseline arm (the eval degrades to
-# BASELINE_ARM=ABSENT + skipped calibration when the file is absent). The
-# weekly cron surfaces corpus drift (skill-description edits, tier moves
-# outside adapters/**) on main with correct attribution rather than on the
-# next unrelated adapters PR.
+# eval harness in adapters/ (ADR-0022, #2089). The `pi/tiers.yaml` paths entry
+# was removed with the tier system in #2093; the eval's pi baseline arm now
+# degrades permanently to BASELINE_ARM=ABSENT (derivePiBaseline returns null,
+# calibration meta-test skips), which is the designed post-cutover state. The
+# weekly cron surfaces corpus drift (skill-description edits outside
+# adapters/**) on main with correct attribution rather than on the next
+# unrelated adapters PR.
 #
 # The smoke eval asserts the eval MACHINERY only (=== GATE === STATUS=PASS):
 # retrieval/token metrics are informational in CI, and the cutover thresholds
@@ -18,13 +18,11 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - 'adapters/**'
-      - 'pi/tiers.yaml'
       - '.github/workflows/test-adapters.yml'
   push:
     branches: [main]
     paths:
       - 'adapters/**'
-      - 'pi/tiers.yaml'
       - '.github/workflows/test-adapters.yml'
   schedule:
     - cron: '23 5 * * 1'  # weekly corpus-drift check on main

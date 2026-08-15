@@ -137,11 +137,10 @@ Run this marketplace's skills inside local-model coding agents. Two targets, two
 
 | Target | Source of truth | Doc | Recipes |
 |--------|-----------------|-----|---------|
-| **pi** (pi.dev) — tier installer | `pi/tiers.yaml` (tier classification, enforced by `scripts/check-pi-tiers.sh`) | [`docs/pi-export.md`](docs/pi-export.md) | `just check-pi-tiers`, `pi-tiers`, `install-pi`, `install-pi-domain <cat>`, `serve-pi-model`, `setup-pi` (group `pi`) |
-| **pi** (pi.dev) — adapter (ADR-0022, successor) | `adapters/pi/` binding | [`adapters/README.md`](adapters/README.md) § pi | `just pi-adapter-check`, `pi-adapter`, `pi-adapter-register`, `pi-adapter-unregister` (group `adapters`) |
+| **pi** (pi.dev) — adapter (ADR-0022) | `adapters/pi/` binding | [`adapters/README.md`](adapters/README.md) § pi, [`docs/pi-export.md`](docs/pi-export.md) | `just pi-adapter-check`, `pi-adapter`, `pi-adapter-register`, `pi-adapter-unregister` (group `adapters`); `serve-pi-model`, `setup-pi` (group `pi`) |
 | **OpenCode** | rulesync export | [`docs/opencode-export.md`](docs/opencode-export.md) | `just export-opencode`, `install-opencode`, `setup-opencode` (group `opencode`) |
 
-pi loads Claude Code `SKILL.md` unmodified but does **not** budget the skill listing (~111 tok/skill, uncapped). The **tier installer** curates which skills install where via `pi/tiers.yaml` (`general` → `~/.pi/agent/skills/`, a `domain` category → `.pi/skills/`, `exclude` → never); see `docs/pi-export.md`. The **adapter** (ADR-0022) is the successor: a `search_skills` pull tool + per-turn ranked top-k push injection reaching all ~400 skills at ~600 standing tokens vs the tier's ~9,900 — `just pi-adapter`, see `adapters/README.md`. The tier system stays operational until #2093 retires it (gate frozen 2026-07-22).
+pi loads Claude Code `SKILL.md` unmodified but does **not** budget the skill listing (~111 tok/skill, uncapped). The **adapter** (ADR-0022) closes that gap: a `search_skills` pull tool + per-turn ranked top-k push injection reaching all ~400 skills at ~600 standing tokens — `just pi-adapter`, see `adapters/README.md`. It superseded a curated tier installer (`pi/tiers.yaml` + `scripts/install-pi.sh`, ~9,900 standing tokens over ~95 skills), removed in #2093 once the retrieval eval gate was frozen at `main_hit_at_k_min = 0.57` on 2026-07-22 (`adapters/CUTOVER.md`).
 
 ## Blueprint (constrained dogfooding)
 

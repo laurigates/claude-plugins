@@ -305,21 +305,6 @@ jobs:
       - name: Check configure-plugin taxonomy matches components.yaml
         run: bash scripts/check-configure-components.sh --strict
 
-      - name: Self-test the pi-tiers drift guard
-        # Whole-repo invariant: pi/tiers.yaml classifies every marketplace
-        # plugin exactly once and its cherry-picked skill refs resolve. The
-        # self-test proves the guard before it gates the tree.
-        run: bash scripts/tests/test-check-pi-tiers.sh
-
-      - name: Check pi/tiers.yaml matches marketplace
-        run: bash scripts/check-pi-tiers.sh --strict
-
-      - name: Self-test the pi tier-driven installer
-        # The installer resolves tiers to skill dirs (general->global,
-        # domain->project, exclude->never). Hermetic fixture test; runs
-        # unconditionally so the installer contract stays verified.
-        run: bash scripts/tests/test-install-pi.sh
-
       - name: Self-test the ruff-version-sync guard
         # Proves the guard before it gates the tree: the ruff version pinned
         # here and the ruff-pre-commit rev must agree, or CI rejects formatting
