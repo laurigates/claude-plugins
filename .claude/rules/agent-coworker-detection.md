@@ -185,6 +185,24 @@ already gone) over enumerating-and-force-removing live ones. When unsure who own
 a worktree, leave it — a stale worktree costs disk; a force-removed one can cost a
 coworker their afternoon.
 
+**Correct scoping is not sufficient — "all PRs merged" is not the completion
+signal.** Observed 2026-08-15: a cleanup obeying every rule above (scoped to the
+session's own six agent IDs by name, plain `git worktree remove`, no `--force`)
+still killed two live peers' shells. Non-force removal *did* hold the data line —
+it refuses on a dirty tree, so all six were provably clean and nothing was lost —
+but an agent whose PR has merged is not necessarily **done**: one was mid-rebase,
+another was messaging a peer, and a third (skipped only because its worktree was
+`locked`) ran on for two more hours. `SendMessage` to a removed worktree also
+fails permanently (*"cannot be resumed: its worktree no longer exists"*), so the
+peer cannot even be warned.
+
+- **Gate removal on the agent-completion notification, never on PR state.** The
+  harness reports each agent's completion; merged PRs say nothing about whether
+  the agent has more to do.
+- **Announce before removing shared state**, or simply don't — worktree cleanup
+  is never urgent, and deferring it to the next session costs only disk.
+- A `locked` worktree is a live-work signal. Leave it.
+
 ## Integration Points
 
 | Where | How |
