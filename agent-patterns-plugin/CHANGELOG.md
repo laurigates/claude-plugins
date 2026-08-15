@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.41.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.40.0...agent-patterns-plugin-v2.41.0) (2026-08-15)
+
+
+### Features
+
+* **agent-patterns-plugin:** promote the three critique-quality findings into cold-read-gate ([#2399](https://github.com/laurigates/claude-plugins/issues/2399)) ([0f72751](https://github.com/laurigates/claude-plugins/commit/0f727518ecdf7963ce117983138058d82b0d2459)), closes [#2347](https://github.com/laurigates/claude-plugins/issues/2347)
+
+
+### Bug Fixes
+
+* **agent-patterns-plugin:** clear the parallel-agent-dispatch size ERROR and document the deleted-worktree hazard ([e3519b8](https://github.com/laurigates/claude-plugins/commit/e3519b81b51462b19f29c773ebb25ba2e3f407d0)), closes [#2143](https://github.com/laurigates/claude-plugins/issues/2143) [#2372](https://github.com/laurigates/claude-plugins/issues/2372)
+* **agent-patterns-plugin:** relocate parallel-agent-dispatch material into references/ and document the deleted-worktree hazard ([#2395](https://github.com/laurigates/claude-plugins/issues/2395)) ([e3519b8](https://github.com/laurigates/claude-plugins/commit/e3519b81b51462b19f29c773ebb25ba2e3f407d0))
+
 ## [2.40.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.39.0...agent-patterns-plugin-v2.40.0) (2026-08-15)
 
 

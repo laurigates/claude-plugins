@@ -1,6 +1,6 @@
 {
   "accessibility-plugin": "2.3.5",
-  "agent-patterns-plugin": "2.40.0",
+  "agent-patterns-plugin": "2.41.0",
   "agents-plugin": "1.14.0",
   "api-plugin": "2.0.0",
   "bevy-plugin": "1.4.1",
@@ -38,7 +38,7 @@
   "taskwarrior-plugin": "1.13.4",
   "terraform-plugin": "1.7.6",
   "testing-plugin": "3.19.0",
-  "tools-plugin": "2.9.4",
+  "tools-plugin": "2.9.5",
   "typescript-plugin": "1.8.10",
   "session-plugin": "1.9.8",
   "software-design-plugin": "1.2.0",
