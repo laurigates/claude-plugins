@@ -138,9 +138,9 @@ export function computeCutoverStatus(
  * own `stratum:` tags.
  *
  * Takes no repoRoot **by construction**: the partition must not depend on
- * `pi/tiers.yaml`, which #2093 deletes. A tiers-derived partition would make
- * the frozen threshold evaluate FAIL forever at exactly the moment the gate
- * is meant to authorize that deletion.
+ * `pi/tiers.yaml`, which #2093 deleted. A tiers-derived partition would have
+ * made the frozen threshold evaluate FAIL forever at exactly the moment the
+ * gate was meant to authorize that deletion.
  */
 export function partitionByStratum(scores: TaskScore[]): {
   main: TaskScore[];

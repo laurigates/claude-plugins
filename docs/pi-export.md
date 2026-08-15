@@ -1,96 +1,92 @@
-# pi (pi.dev) export & local-model orchestration
+# pi (pi.dev) skill discovery & local-model orchestration
 
 Run this marketplace's skills inside **pi** ([pi.dev](https://pi.dev),
 `@earendil-works/pi-coding-agent`) against a **local model** (mlx_lm.server /
 ollama). The sibling of [`opencode-export.md`](opencode-export.md) — same goal
 (local-model testing of our skills), a much thinner pipeline.
 
-> **Successor path (ADR-0022):** the curated **tier installer** documented here
-> (`install-pi` / `setup-pi`, the `## …skill listing` gap below) is being
-> replaced by the **skill-discovery adapter** — a `search_skills` pull tool plus
-> a per-turn ranked top-k push injection that reaches all ~400 skills at ~600
-> standing tokens instead of the 95-skill tier's ~9,900. To try that instead of
-> the tier install, run `just pi-adapter` and see
-> [`../adapters/README.md`](../adapters/README.md) § pi. The tier system here
-> stays fully operational until #2093 retires it (gate frozen + PASS 2026-07-22).
+> **The tier installer is gone (#2093).** Skill discovery is now the
+> **ADR-0022 adapter**'s job: `pi/tiers.yaml`, `scripts/install-pi.sh`,
+> `scripts/check-pi-tiers.sh` and the `install-pi` / `install-pi-domain` /
+> `pi-tiers` / `check-pi-tiers` recipes were removed after the adapter's
+> retrieval eval gate was measured and frozen on 2026-07-22
+> ([`../adapters/CUTOVER.md`](../adapters/CUTOVER.md)). Nothing needs to be
+> copied into `~/.pi/agent/skills/` any more.
 
 ## Why pi needs almost no pipeline
 
-pi loads Claude Code `SKILL.md` files **unmodified**. Validated this session
-(pi 0.80.6): pi is *strictly more lenient* than OpenCode/rulesync — it accepts
-display-name `name:` values (`UnoCSS`), unprefixed names (`ground-response`),
-comma-string `allowed-tools`, and extra frontmatter, all of which the OpenCode
-export's `rewrite-skill-name-to-dir.py` / `normalize-skill-allowed-tools.py`
-layer had to rewrite. **None of that normalization is needed for pi.** pi also
-reads `CLAUDE.md` natively and does the same progressive disclosure as Claude
-Code (only `name`+`description` surfaced up front; the body loads on demand via
-`read` / `/skill:name`), so there is no separate search tool to build.
+pi loads Claude Code `SKILL.md` files **unmodified**. Validated on pi 0.80.6:
+pi is *strictly more lenient* than OpenCode/rulesync — it accepts display-name
+`name:` values (`UnoCSS`), unprefixed names (`ground-response`), comma-string
+`allowed-tools`, and extra frontmatter, all of which the OpenCode export's
+`rewrite-skill-name-to-dir.py` / `normalize-skill-allowed-tools.py` layer had to
+rewrite. **None of that normalization is needed for pi.** pi also reads
+`CLAUDE.md` natively and does the same progressive disclosure as Claude Code
+(only `name`+`description` surfaced up front; the body loads on demand via
+`read` / `/skill:name`).
 
-So the only thing worth building is a **curated installer**, not an export
-pipeline.
+So the only thing worth building was a way to keep the *listing* affordable.
 
 ## The one real gap: pi doesn't budget the skill listing
 
 Claude Code caps the up-front skill-description listing at
 `skillListingBudgetFraction × context`. **pi has no such budget** — every
-installed skill costs ~111 tokens of standing per-turn context (measured, pi
+skill it discovers costs ~111 tokens of standing per-turn context (measured, pi
 0.80.6), dead linear and uncapped:
 
-| Installed skills | Standing cost/turn | On a 128K local context |
+| Skills in the listing | Standing cost/turn | On a 128K local context |
 |------------------|--------------------|-------------------------|
 | ~20 | ~2.2K | negligible |
-| 94 (Tier-1 general) | ~10.4K | ~8% — fine |
+| 94 | ~10.4K | ~8% — fine |
 | ~200 | ~22K | tight |
 | all ~400 | ~45K | fatal (401 skills hangs the turn >2min; ≤200 fine) |
 
-On the user's 1M-context Claude at `skillListingBudgetFraction 0.1` this is
-invisible; on a small local quant it wedges the agent. **Conclusion: don't dump
-all skills into pi.** Curate by *tier* using pi's two native scopes.
+On a 1M-context Claude at `skillListingBudgetFraction 0.1` this is invisible; on
+a small local quant it wedges the agent.
 
-## Tiers → pi's two native scopes
+Two answers were built for this. The **tier installer** (retired) curated a
+~95-skill subset into pi's native scopes and paid ~9,900 standing tokens for it,
+at the cost of a hand-maintained manifest that restated facts already in the
+marketplace. The **adapter** (current) replaces the native listing outright.
 
-pi discovers skills from `~/.pi/agent/skills/` (global) **and** `.pi/skills/`
-(per-project) and merges them. That maps cleanly onto a tier model:
+## The adapter (ADR-0022)
 
-| Tier | pi scope | Meaning |
-|------|----------|---------|
-| `general` | `~/.pi/agent/skills/` | Always-on, every project. Keep lean (94 skills ≈ 10.4K tok/turn). |
-| `domain` | `.pi/skills/` | Installed only in a matching project type, by `category`. |
-| `exclude` | never installed | Claude-Code-authoring meta (hooks, blueprint, agent orchestration): pure budget waste in pi. |
+`adapters/pi/` is a pi extension that strips the native `<available_skills>`
+block and injects, in its place, a small set of pins plus a per-turn **ranked
+top-k** slice — while exposing a `search_skills` **pull tool** for everything
+else. All ~400 skills stay reachable at **~600 standing tokens/turn** instead of
+the tier's ~9,900, and there is no curation manifest to drift.
 
-The classification is the single source of truth in
-[`../pi/tiers.yaml`](../pi/tiers.yaml) — **read it there**, don't restate the
-assignments here. Its header block documents the schema (`tier`, optional
-`skills:` cherry-pick, `category`, `reason`). Large general plugins (e.g.
-git-plugin) cherry-pick a core subset via the `skills:` list rather than
-installing every skill.
+Full documentation — configuration keys, the Trust caveat, the ranker, and the
+eval harness — is [`../adapters/README.md`](../adapters/README.md) § pi. Read it
+there rather than restating it here.
 
-The manifest is enforced by `scripts/check-pi-tiers.sh` (wired into
-`.pre-commit-config.yaml` and the `Plugin: PR checks` workflow): every
-marketplace plugin is classified exactly once, and every cherry-picked skill
-name resolves to a real `SKILL.md`.
+```
+just pi-adapter-check        # prereqs: pi, bun deps, ollama embed model
+just pi-adapter              # trial it, ZERO config changes (pi -e <path>)
+just pi-adapter-register     # persist into ~/.pi/agent/settings.json extensions[]
+just pi-adapter-unregister   # reverse the above
+```
+
+`just pi-adapter-register` is idempotent and non-clobbering. Note pi loads local
+extensions from `extensions`, **not** the `packages` array `pi install` / `pi
+list` manage — so `pi list` will not show it; that is expected, not a failure.
 
 ## Pipeline
 
 ```
-pi/tiers.yaml ──▶ install-pi.sh ──▶ ~/.pi/agent/skills/   (general → global)
-                              └────▶ <project>/.pi/skills/ (a domain → project)
-                     mlx_lm.server ──▶ models.json ──▶ pi --model mlx-local/<id>
+adapters/pi/index.ts ──▶ ~/.pi/agent/settings.json extensions[]  (just pi-adapter-register)
+                         (search_skills pull + ranked top-k push, ~600 tok/turn)
+
+mlx_lm.server ──▶ models.json ──▶ pi --model mlx-local/<id>
 ```
 
-### 1. Install the curated skills
+### 1. Wire up skill discovery
 
 ```
-just pi-tiers                    # print the install plan (no writes)
-just install-pi                  # general tier → ~/.pi/agent/skills/
-just install-pi-domain infra     # an infra project's domain tier → .pi/skills/
+just pi-adapter-check            # verify prereqs first
+just pi-adapter-register         # persistent; or `just pi-adapter` to trial it
 ```
-
-`install-pi.sh` copies additively (existing skills under the target are
-preserved) and drops a `.claude-plugins-pi-receipt`. Flags: `--scope
-global|project`, `--category <cat>`, `--dry-run`, `--list`. Env overrides
-`PI_HOME` (default `~/.pi/agent`) and `PI_PROJECT_DIR` (default `$PWD`) exist for
-tests / non-standard layouts.
 
 ### 2. Serve the model
 
@@ -139,8 +135,9 @@ don't understand the `developer` role reasoning-capable models use
 (`supportsDeveloperRole: false` sends the system prompt as a plain system
 message), nor `reasoning_effort` (`supportsReasoningEffort: false`).
 
-`just setup-pi` runs `install-pi` then prints this block (with your `pi_model` /
-`pi_port` interpolated) plus the run command.
+`just setup-pi` runs the adapter prereq check, registers the adapter, then
+prints this block (with your `pi_model` / `pi_port` interpolated) plus the run
+command.
 
 ### 4. Run pi against the local model
 
@@ -152,24 +149,20 @@ pi --model mlx-local/mlx-community/Qwen3.6-35B-A3B-4bit
 The end-to-end question this answers: does a **small local model actually
 invoke** a skill (not merely list it)? That is the real fidelity test — listing
 is cheap; a weak quant choosing and reading the right `SKILL.md` on intent is
-what makes this useful for local-model testing.
+what makes this useful for local-model testing. The adapter's retrieval quality
+on exactly that question is what the eval harness measures
+([`../adapters/README.md`](../adapters/README.md) § eval).
 
 ## Out of scope (deferred)
 
-- **A `skill-search` pi extension** (a `search_skills` tool + suppressed default
-  injection). ~~Only worth building if the trimmed Tier-1 general set still feels
-  tight on the smallest local quant. The tier manifest is the cheaper,
-  deterministic answer — defer the extension.~~ **Un-deferred by
-  [ADR-0022](adrs/0022-adapter-over-export-for-foreign-harnesses.md)**: the
-  extension (now a binding over a harness-agnostic discovery core, #2090) is
-  slated to *supersede* the tier system entirely; the tier pipeline documented
-  here is removed once the adapter passes its eval gate (#2093).
 - **Agent / prompt / hook porting.** Hooks especially are selective: only the
   *safety* hooks would earn a pi `pi.on` port; the style nudges are noise on a
   different harness.
 
 ## Related
 
-- [`../pi/tiers.yaml`](../pi/tiers.yaml) — the tier classification (source of truth)
+- [`../adapters/README.md`](../adapters/README.md) § pi — the adapter (source of truth for skill discovery)
+- [`../adapters/CUTOVER.md`](../adapters/CUTOVER.md) — the eval gate that authorized retiring the tier installer
+- [`adrs/0022-adapter-over-export-for-foreign-harnesses.md`](adrs/0022-adapter-over-export-for-foreign-harnesses.md) — adapter-over-export decision
 - [`opencode-export.md`](opencode-export.md) — the sibling local-model export (heavier rulesync pipeline)
 - [pi custom-provider docs](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/custom-provider.md) — upstream `models.json` schema

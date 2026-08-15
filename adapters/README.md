@@ -20,7 +20,7 @@ OpenCode binding (`opencode/`) in
 |------|------|
 | `core/` | Indexer (marketplace scan + DIY frontmatter parse + compatibility filter), BM25 (Lucene IDF, k1=1.2, b=0.75), ollama `/api/embed` client (`search_document:`/`search_query:` prefixes, BM25 fallback), RRF fusion (k=60), L2-normalized Float32Array vector index, XDG content-hash embedding cache, shared render templates |
 | `CUTOVER.md` | The #2093/#2094 gate: measurement procedure, the frozen threshold + provenance, the hybrid-integrity guards, and the refuted gate constructions |
-| `eval/` | `tasks.json` (committed golden task set, k=5), `run-eval.ts` runner, ranker seam (`hybrid \| bm25Only \| embeddingOnly \| random(seed) \| oracle \| nameSubstring \| descriptionSubstring`), baseline derivation (`pi/tiers.yaml` + the export-opencode glob, computed offline), `results/` (gitignored per-run output) |
+| `eval/` | `tasks.json` (committed golden task set, k=5), `run-eval.ts` runner, ranker seam (`hybrid \| bm25Only \| embeddingOnly \| random(seed) \| oracle \| nameSubstring \| descriptionSubstring`), baseline derivation (the export-opencode glob, computed offline; the pi arm reports `BASELINE_ARM=ABSENT` since #2093 removed `pi/tiers.yaml`), `results/` (gitignored per-run output) |
 | `pi/` | pi binding (#2090) — default-exported extension factory: `search_skills` pull tool + `before_agent_start` push injection, `skill-discovery.json` config |
 | `opencode/` | OpenCode binding (#2091) — named `SkillDiscoveryPlugin` plugin: `search_skills` tool (pull), `experimental.chat.system.transform` push injection + defensive listing strip, `experimental.chat.messages.transform` ranking-input capture, `[path, options]` tuple config |
 | `tests/` | `bun test` suites: frontmatter diff vs `Bun.YAML`, BM25 goldens + committed `rank_bm25` fixture, indexer over the mini-marketplace fixture, cache, fusion, embeddings fallback matrix, eval meta-tests |
@@ -101,10 +101,11 @@ the Trust caveat below — global is preferred). Equivalent by hand:
   bundled copy and the pi types are `import type`-only. Skipping it surfaces as
   an explicit "run `bun install` in `<checkout>/adapters`" error, not a bare
   resolution stack.
-- You do **not** need to uninstall the native tier skills first — the binding
-  strips `<available_skills>` and injects in its place, so the token saving
-  lands whether or not `~/.pi/agent/skills/` is populated. (Removing the tier
-  system is separate work, gated behind #2093.)
+- Any skills already sitting in `~/.pi/agent/skills/` are harmless — the
+  binding strips `<available_skills>` and injects in its place, so the token
+  saving lands whether or not that directory is populated. (The repo's tier
+  installer that used to populate it was removed in #2093; leftovers from a
+  pre-#2093 `just install-pi` run can be deleted at leisure.)
 
 - Registers a `search_skills` tool (pull) and injects pins + ranked top-k
   into the system prompt per turn via `before_agent_start` (push), replacing
@@ -253,8 +254,8 @@ fresh corpus snapshot): `uv run tests/gen-bm25-reference.py`.
   release-please package — `feat(adapters)` commits bump nothing).
 - Not published to npm (`"private": true`); harnesses load the `.ts` source
   from this checkout.
-- Not a replacement for the still-operational `pi/tiers.yaml` +
-  `scripts/install-pi.sh` and rulesync export pipelines — those stay
-  authoritative until #2093/#2094 execute their documented cutover steps.
-  The eval gate now passes (frozen 2026-07-22), so those issues are
-  unblocked, but nothing in this package removes the incumbents.
+- Not a replacement for the rulesync/OpenCode export pipeline — that stays
+  authoritative until #2094 executes its documented cutover steps, which the
+  2026-07-22 freeze does **not** supply (its `BASELINE_OC_TOKENS_ESTIMATED`
+  proxy is uncalibrated; see [`CUTOVER.md`](CUTOVER.md) §8). The pi tier
+  installer it *did* replace was removed in #2093.
