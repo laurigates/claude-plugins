@@ -3,8 +3,9 @@
 The individually-rare, collectively-expensive ways `isolation: "worktree"`
 fails to isolate what you meant: a cwd reset writing to the main checkout, an
 exported `GIT_DIR` hijacking every sibling worktree, a nested repo the harness
-never worktreed, and a fixed target branch another session already holds.
-Entry point: [`../SKILL.md`](../SKILL.md) § Worktree Preflight.
+never worktreed, two agents colliding in one shared scratchpad clone, a worktree
+deleted out from under a live agent, and a fixed target branch another session
+already holds. Entry point: [`../SKILL.md`](../SKILL.md) § Worktree Preflight.
 
 ## Worktree cwd-reset guardrail (#1480)
 
@@ -112,6 +113,81 @@ target_root=$(git -C "<target-dir>" rev-parse --show-toplevel)
 | When the target's enclosing repo ≠ the session repo, do not assume `isolation: "worktree"` isolated the target. | The harness worktrees the session repo; the nested repo is absent from it. |
 | (a) Create the **nested repo's** worktree explicitly off its own `origin/main` and point the agent at that path; **or** (b) brief the agent to `git -C <nested-repo> fetch && git -C <nested-repo> worktree add <path> origin/main` as its first step. | Both give the agent a real isolated checkout of the repo it edits, instead of the blocked shared checkout. |
 | Have the agent operate inside that nested-repo worktree (prefix `git -C "$WORKTREE"`, per the #1480 cwd-reset rule) and open its PR from there. | Keeps the work isolated and avoids the shared-checkout collisions `shared-checkout-branch-isolation.md` guards against. |
+
+## Shared scratchpad collisions (#2370)
+
+The session scratchpad directory is shared across sibling subagents, so two
+agents told to "make your own clone" independently pick the identical path and
+end up operating **one working tree**. Nothing errors: one agent's `git switch`
+moves `HEAD` under the other, so its edits land on the peer's branch and both
+PRs can carry each other's hunks. A per-file `git diff` cannot separate
+interleaved hunks in a co-modified file, so the extracted patch looks correct
+while carrying someone else's work.
+
+Give every concurrent agent an **explicit, distinct** working path in its
+prompt — `<scratchpad>/<agent-name>` — rather than letting each choose. This
+applies whenever agents work outside worktree isolation, which the nested-repo
+case above forces them into.
+
+Recovery, if it already happened: rebuild in a fresh clone and **re-apply your
+changes by hand**. Do not copy files out of the shared tree — co-modified files
+carry the peer's hunks with them. Leave the shared tree dirty rather than
+reverting it; a revert destroys the peer's uncommitted work. Verify with
+`git log --oneline origin/main..HEAD` plus `--stat` that the branch holds only
+your commits and only your paths.
+
+> Observed 2026-08: two agents fixing different defects in the same MCP server
+> collided this way. Each caught a real error in the other's cleanup — one
+> nearly shipped a merge warning that would have broken the build if acted on,
+> the other a verification `grep` that would have cried wolf. Neither shipped
+> contaminated, but only because they were talking to each other.
+
+## Deleted worktree kills the shell, not the agent (#2372)
+
+An isolation worktree removed **while its agent is still running** takes the
+agent's shell with it. The trigger for the reported occurrence is unknown — this
+section records the observed behaviour and its consequences only, not a cause.
+
+### The failure signature is a total Bash refusal, not a permission denial
+
+Once the worktree directory is gone, **every** Bash call fails, including a bare
+`echo` — the agent's cwd no longer exists, so nothing can be executed from it.
+The refusal reads like an ordinary permission-style denial, which is what makes
+it easy to misread: the natural response to one denied command is to reword it
+and try again, and every reword is denied identically. A bare `echo` is the
+cheapest probe that separates the two readings — if that fails too, the failure
+is environmental (the shell has no working directory) rather than specific to
+the command that was refused.
+
+The agent's other faculties are unaffected. It can still reason, read its own
+context, and send messages — so it can keep producing confident, specific
+conclusions it has no remaining way to verify. In the reported occurrence one
+agent in that state emitted a precise merge-order warning ("PR B needs three
+lines hand-edited or it won't compile") that was wrong, and the orchestrator had
+to disprove it empirically by performing the merge in a throwaway clone; acting
+on the warning would have caused the breakage it claimed to prevent.
+
+### A spawned subagent inherits the same dead cwd
+
+Delegation is **not** a workaround. An agent that tries to route around the dead
+working directory by spawning a child gets a child with the same dead cwd, and
+the child can execute nothing either. In the reported occurrence that attempt
+burned ~137k tokens and performed zero work. Nothing warns about this in
+advance, so an agent in this state can spend a large share of its remaining
+budget rediscovering it.
+
+The corollary for dispatch: **uncommitted work in a worktree is only as safe as
+the worktree.** Both agents in the reported occurrence had already pushed before
+the deletion, so nothing was lost — the same failure minutes earlier would have
+stranded uncommitted work in a directory that no longer exists. This is the same
+asymmetry the WIP-checkpoint instruction in
+[`../SKILL.md`](../SKILL.md) § Handling a Missing Return already trades on:
+committed work survives, uncommitted work does not.
+
+Related but distinct: `../SKILL.md` § "Resuming agents: SendMessage loses
+worktree isolation" (#1546) and the `resumeFromRunId` re-run hazard (#1868) both
+concern *resume* semantics. This is the worktree disappearing under a live agent.
+
 ## Target-branch preflight (#1969)
 
 `isolation: "worktree"` names the fresh worktree's branch **automatically** (an
