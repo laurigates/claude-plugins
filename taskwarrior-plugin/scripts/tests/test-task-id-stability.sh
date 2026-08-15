@@ -162,9 +162,18 @@ fi
 repo_root="$(cd "${PLUGIN_DIR}/.." && pwd)"
 self_path="${SCRIPT_DIR}/$(basename "${BASH_SOURCE[0]}")"
 regression_log="${repo_root}/.claude/rules/regression-testing.md"
+# Prune generated/cloned COPIES of the repo, not just .git/ — otherwise this
+# walk re-finds the two deliberately-excluded files under every copy of them.
+# Both exclusions below are by ABSOLUTE path, so a copy at a different path
+# defeats them: `.claude/worktrees/<agent>/` (a full clone per agent worktree,
+# incl. OTHER concurrent sessions') and `dist/` (gitignored rulesync export)
+# each carry their own regression-testing.md and their own copy of this test.
+# Invisible in CI, which checks out neither — the #1492 / #1548 / #2214 / #2290
+# class, local-developer-only by construction.
 stale_hits="$(grep -rl "taskwarrior-bulk-operations" "$repo_root" \
-    --include='*.md' --include='*.sh' 2>/dev/null \
-    | grep -v '/\.git/' | grep -vF "$self_path" | grep -vF "$regression_log" || true)"
+    --include='*.md' --include='*.sh' \
+    --exclude-dir='.git' --exclude-dir='worktrees' --exclude-dir='dist' 2>/dev/null \
+    | grep -vF "$self_path" | grep -vF "$regression_log" || true)"
 if [ -z "$stale_hits" ]; then
     check "no stale 'taskwarrior-bulk-operations.md' citations remain" "absent" "absent"
 else
