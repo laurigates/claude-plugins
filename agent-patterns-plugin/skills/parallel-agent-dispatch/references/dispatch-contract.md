@@ -49,8 +49,15 @@ Why each Return Contract field exists — the observed failure mode it catches.
 | Concurrent rate-limit cascade | `status: partial` + recovery-dispatch follow-up agent on the unfinished slice |
 ## The Return Contract as workflow primitives
 
-`SKILL.md` § Return Contract carries the mapping table; this is what to weigh
-before turning it into a harness.
+A harness does not replace this contract; it turns what prose can only *request*
+into what a runtime *enforces*:
+
+| Here (prose) | Workflow primitive |
+|---|---|
+| The `## Result` schema pasted into each brief | a **JSON Schema** on the `agent()` call — validated, so a one-word surrender cannot parse |
+| "every returned summary parsed" (Orchestrator Checklist) | `parallel()` — the barrier that line already assumes |
+
+What to weigh before turning that mapping into a harness:
 
 - **A schema-bound agent has no partial result.** An `agent()` bound to a
   `StructuredOutput` schema that is cut off *before* it emits — a rate-limit

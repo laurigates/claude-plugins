@@ -49,3 +49,19 @@ just lint-context-engineering          # Channel M card
 The C5 ratchet (`--strict`) is the one part that gates CI: it errors when the
 always-loaded surface exceeds its declared budget, so the every-session cost
 cannot grow silently. Everything else is report-only.
+
+## Quote-gate drift since the snapshot
+
+The 150 quotes were verified against the tree as it stood at the benchmark run.
+Judged files keep changing afterwards, so `quote_check.py` is a **drift log**,
+not a build gate — a failed quote means the file moved on, not that the judgment
+was fabricated. Record each drift here as it is caused, so a later reader can
+tell an ordinary edit from a broken audit trail.
+
+| Date | Change | Effect on the gate |
+|---|---|---|
+| 2026-08-15 | **#2143** relocation: the #2283 workflow-primitives table → `references/dispatch-contract.md`, the #2370 scratchpad-collision block → `references/worktree-hazards.md`, plus pointer-shortening on the #1480/#1692/#1838/#1969 Pillar-1 hazards in `parallel-agent-dispatch/SKILL.md` (26,491 → 24,998 chars, clearing the `plugin-compliance-check.sh` size ERROR). | **None.** 138 verified / 12 failed before and after, same 12 — no relocated line was a verified quote. Both judges' C1/C2/C4/C6 evidence sits outside the moved blocks. |
+
+The 12 pre-existing failures predate this table and are ordinary drift on
+`CLAUDE.md`, `comfy-node`, `test-tier-selection`, and one
+`parallel-agent-dispatch` C1 quote (reworded by the #2207 `references/` split).

@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-08-07
+modified: 2026-08-15
 compatibility: claude-code
 reviewed: 2026-07-05
 ---
@@ -60,15 +60,14 @@ If any check fails, **refuse to dispatch** and report the blocker. Do not
 "clean up" uncommitted user work — surface it and ask.
 
 **Target-branch preflight (#1969).** `isolation: "worktree"` auto-names the
-branch; renaming onto a **fixed** conventional target name another session's
-worktree already holds is refused only at the end-of-task rename, deep into
-the run (real case: two sessions both reached PR-open → duplicate-PR
-reconcile). Before dispatching — or as the agent's *first* step — check the
-name is free (`git branch -a --list "$target"`, `git worktree list`,
-`git ls-remote --heads origin "$target"`); any hit ⇒ another session may own
-this task — **stop and reconcile**, not race to a duplicate PR
-(`.claude/rules/concurrent-session-pr-check.md`). **Mitigation:** push via
-explicit refspec (`git push origin HEAD:$target`) instead of renaming. See
+branch; renaming onto a **fixed** conventional name another session's worktree
+already holds is refused only at the end-of-task rename, deep into the run (real
+case: two sessions both reached PR-open → duplicate-PR reconcile). Check the name
+is free first (`git branch -a --list "$target"`, `git worktree list`,
+`git ls-remote --heads origin "$target"`); any hit ⇒ **stop and reconcile**, not
+race to a duplicate PR (`.claude/rules/concurrent-session-pr-check.md`).
+**Mitigation:** push via explicit refspec (`git push origin HEAD:$target`)
+instead of renaming. See
 [references/worktree-hazards.md → Target-branch preflight](references/worktree-hazards.md#target-branch-preflight-1969).
 
 **Transient worktree leaks (#1319).** While a wave runs, a file a child wrote
@@ -90,53 +89,34 @@ guardrail](references/worktree-hazards.md#worktree-cwd-reset-guardrail-1480)) �
 a changed branch or new dirty state is silent main-repo mutation.
 
 **`GIT_DIR`/`GIT_WORK_TREE` export leak (#1692 sibling).** A worktree reporting
-`core.bare = true` (`fatal: this operation must be run in a work tree`) is
-shared-checkout corruption — **STOP and report it**; never "work around" it by
-exporting `GIT_DIR`/`GIT_WORK_TREE`, which **override `git -C`** so every later
-git call (and any git-shelling test/hook subprocess) targets the shared common
-config, breaking **all** sibling worktrees at once. A subprocess that must run
-git in a sandbox neutralizes inherited env first:
+`core.bare = true` is shared-checkout corruption — **STOP and report it**; never
+"work around" it by exporting `GIT_DIR`/`GIT_WORK_TREE`, which **override
+`git -C`** so every later git call targets the shared common config, breaking
+**all** sibling worktrees at once. A subprocess that must run git in a sandbox
+neutralizes inherited env first:
 `env -u GIT_DIR -u GIT_WORK_TREE git -C "$dir" …`. See
 [references/worktree-hazards.md → GIT_DIR-export leak](references/worktree-hazards.md#worktree-git_dir-export-leak-1692).
 
 **Nested-repo workspaces — `isolation: "worktree"` isolates the *outer* repo (#1838).**
 The harness worktrees the **session's** repo, not the repo the agent was told to
-edit. In a nested-repo / portfolio layout the target files live in an independent
-nested repo that is **absent** from that worktree, so the agent's only path to
-them is the shared checkout — which the Edit-tool isolation guard correctly
-blocks. Detect it before dispatch: `git -C <target-dir> rev-parse --show-toplevel`
-≠ `git rev-parse --show-toplevel`. When they differ, either create the **nested**
-repo's worktree explicitly off its own `origin/main` and point the agent there, or
-brief the agent to do so as its *first* step. See
+edit, so in a portfolio layout the target files are **absent** from the worktree
+and the agent's only path to them is the shared checkout — which the Edit-tool
+isolation guard correctly blocks. Detect it before dispatch:
+`git -C <target-dir> rev-parse --show-toplevel` ≠ `git rev-parse --show-toplevel`;
+when they differ, isolate the **nested** repo explicitly. See
 [references/worktree-hazards.md → Nested-repo isolation](references/worktree-hazards.md#nested-repo-worktree-isolation-1838)
-for detection script and rules.
+for the detection script and rules.
 
-**Concurrent agents default to the *same* scratchpad path — assign distinct ones.**
-The session scratchpad directory is shared across sibling subagents, so two
-agents told to "make your own clone" independently pick the identical path and
-end up operating **one working tree**. Nothing errors: one agent's `git switch`
-moves `HEAD` under the other, so its edits land on the peer's branch and both
-PRs can carry each other's hunks. A per-file `git diff` cannot separate
-interleaved hunks in a co-modified file, so the extracted patch looks correct
-while carrying someone else's work.
+**Concurrent agents default to the *same* scratchpad path (#2370).** Sibling
+subagents share the session scratchpad, so two agents each told to "make your own
+clone" pick the identical path and silently operate **one working tree**. Give
+each an explicit, distinct path (`<scratchpad>/<agent-name>`) whenever they work
+outside worktree isolation — which the nested-repo case above forces. See
+[references/worktree-hazards.md → Shared scratchpad collisions](references/worktree-hazards.md#shared-scratchpad-collisions-2370).
 
-Give every concurrent agent an **explicit, distinct** working path in its
-prompt — `<scratchpad>/<agent-name>` — rather than letting each choose. This
-applies whenever agents work outside worktree isolation, which the nested-repo
-case above forces them into.
-
-Recovery, if it already happened: rebuild in a fresh clone and **re-apply your
-changes by hand**. Do not copy files out of the shared tree — co-modified files
-carry the peer's hunks with them. Leave the shared tree dirty rather than
-reverting it; a revert destroys the peer's uncommitted work. Verify with
-`git log --oneline origin/main..HEAD` plus `--stat` that the branch holds only
-your commits and only your paths.
-
-> Observed 2026-08: two agents fixing different defects in the same MCP server
-> collided this way. Each caught a real error in the other's cleanup — one
-> nearly shipped a merge warning that would have broken the build if acted on,
-> the other a verification `grep` that would have cried wolf. Neither shipped
-> contaminated, but only because they were talking to each other.
+**A deleted worktree kills the agent's shell, not its reasoning (#2372).** Every
+Bash call then fails, and a spawned subagent inherits the same dead cwd. See
+[references/worktree-hazards.md → Deleted worktree](references/worktree-hazards.md#deleted-worktree-kills-the-shell-not-the-agent-2372).
 
 ### 2. Scope Budget (per-agent prompt rules)
 
@@ -215,17 +195,9 @@ blocker, push what you have, open a draft PR, and tell me exactly what stopped
 you."** Optional enforcement: a `SubagentStop` hook that flags sub-~20-char or
 bare-surrender final messages (see `hooks-plugin`).
 
-#### The same contract, expressed as workflow primitives
-
-A harness does not replace this contract; it turns what prose can only *request*
-into what a runtime *enforces*:
-
-| Here (prose) | Workflow primitive |
-|---|---|
-| The `## Result` schema pasted into each brief | a **JSON Schema** on the `agent()` call — validated, so a one-word surrender cannot parse |
-| "every returned summary parsed" (Orchestrator Checklist) | `parallel()` — the barrier that line already assumes |
-
-Cautions and the cost gate before reaching for one:
+A workflow harness does not replace this contract; it turns what prose can only
+*request* into what a runtime *enforces*. The prose→primitive mapping, its two
+cautions, and the cost gate before reaching for one:
 [references/dispatch-contract.md → Workflow primitives](references/dispatch-contract.md#the-return-contract-as-workflow-primitives).
 
 ### 4. Agent self-verification in bulk-edit briefs
