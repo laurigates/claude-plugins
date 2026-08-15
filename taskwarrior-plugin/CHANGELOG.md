@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.5](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.13.4...taskwarrior-plugin-v1.13.5) (2026-08-15)
+
+
+### Bug Fixes
+
+* **taskwarrior-plugin:** prune repo copies from the citation-drift walk ([#2407](https://github.com/laurigates/claude-plugins/issues/2407)) ([616776d](https://github.com/laurigates/claude-plugins/commit/616776da9ec577efde1928c69127cf1dbf60155e))
+
 ## [1.13.4](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.13.3...taskwarrior-plugin-v1.13.4) (2026-08-07)
 
 
