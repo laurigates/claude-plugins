@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.50.7](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.6...git-plugin-v2.50.7) (2026-08-15)
+
+
+### Code Refactoring
+
+* **skills:** disambiguate cluster-6 skill descriptions ([#2401](https://github.com/laurigates/claude-plugins/issues/2401)) ([08aee60](https://github.com/laurigates/claude-plugins/commit/08aee609a6308f4e53692229ea1177f69800c5ea)), closes [#2244](https://github.com/laurigates/claude-plugins/issues/2244)
+
 ## [2.50.6](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.5...git-plugin-v2.50.6) (2026-08-13)
 
 

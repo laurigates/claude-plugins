@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.34.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.34.0...configure-plugin-v1.34.1) (2026-08-15)
+
+
+### Code Refactoring
+
+* **skills:** disambiguate cluster-6 skill descriptions ([#2401](https://github.com/laurigates/claude-plugins/issues/2401)) ([08aee60](https://github.com/laurigates/claude-plugins/commit/08aee609a6308f4e53692229ea1177f69800c5ea)), closes [#2244](https://github.com/laurigates/claude-plugins/issues/2244)
+
 ## [1.34.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.33.5...configure-plugin-v1.34.0) (2026-08-08)
 
 
