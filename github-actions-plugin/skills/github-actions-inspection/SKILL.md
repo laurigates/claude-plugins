@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-08-15
 reviewed: 2026-04-25
 name: github-actions-inspection
-description: "Read a finished GitHub Actions run's logs — failing step, stack trace, test output, rerun failed jobs. Use when a CI run already failed and you need the error out of the log."
+description: "Failing step, stack trace, and test output from a completed GitHub Actions run; rerun failed jobs. Use when a CI check finished red and you need the error extracted from its log."
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob, mcp__github
 ---
