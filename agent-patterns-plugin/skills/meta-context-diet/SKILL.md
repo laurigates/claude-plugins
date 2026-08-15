@@ -1,6 +1,6 @@
 ---
 created: 2026-06-16
-modified: 2026-07-18
+modified: 2026-08-15
 compatibility: claude-code
 reviewed: 2026-07-08
 allowed-tools: Glob, Read, Edit, Write, Bash(git status *), Bash(git diff *), Bash(wc *), Bash(ls *), AskUserQuestion, TodoWrite
@@ -67,7 +67,7 @@ For each rule file or `CLAUDE.md` section, assign exactly one disposition. The d
 | **Keep but lean** | A hard invariant wrapped in explanation, examples, or tables that belong in a linked doc/REFERENCE | The invariant is one sentence; the file is 200 lines |
 | **Path-scope** | Always-true *only when working on a specific file shape* (a language, a config format, a directory) | Advice keyed to "when editing X"; currently unscoped so it loads on every turn | 
 | **Promote to skill** | A **procedure/workflow triggered by intent** — steps you run *when* doing a task, not a constraint you hold *while* doing anything | Reads as "to do X: step 1…step N"; has a clear trigger ("when releasing", "when the build fails"); rarely relevant per-turn but heavy when present |
-| **Consolidate** | Duplicates another rule, a loaded plugin skill, or upstream `~/.claude/rules` | The same guidance exists elsewhere already paid for |
+| **Consolidate** | Duplicates another rule, a loaded plugin skill, or upstream `~/.claude/rules` | The same guidance exists elsewhere already paid for — **and that copy is current**, not a stale twin of the text being cut |
 | **Drop** | Stale, obsoleted, or superseded | References removed tooling / closed migrations |
 
 The dominant find is usually **Promote to skill**: a rule that began life as "write down this procedure so I don't forget it" but is really an intent-triggered workflow. The litmus test — *if the user never raises this topic, does the guidance still need to be in context?* If no, it is a skill.
@@ -115,8 +115,10 @@ For a **small audit** (fewer than ~15 candidates) the per-item loop is cheap —
 | Keep but lean | `Edit` the rule to the invariant + a link; move examples/tables to a co-located doc or the rule's own `REFERENCE`-style sidecar. Do not change the invariant's wording. |
 | Path-scope | `Edit` the rule's frontmatter to add a `paths:` glob so it loads only on matching turns. Verify the glob matches the directory shape the rule actually targets. |
 | Promote to skill | Scaffold `<plugin>/skills/<name>/SKILL.md` with the drafted frontmatter + imperative body; move reference material into the new skill's `REFERENCE.md`; trim the source rule to a one-line pointer (or delete it if nothing remains and nothing references it). Then update the plugin metadata per the **Plugin Lifecycle** in `CLAUDE.md` (README skills table; no `marketplace.json`/release-config edits — those are plugin-scoped, not skill-scoped, per `skill-consolidation.md`). Run `/reload-skills` so the new skill is invocable immediately. |
-| Consolidate | `Edit` the source to a pointer at the canonical owner **by `plugin:skill` name** (never a cross-plugin file path — see `skill-consolidation.md`); or delete the redundant rule if a loaded plugin skill already covers it. |
+| Consolidate | **First read the destination and confirm it is current** — drift runs both ways, so where the always-loaded copy is the *fresher* one, fix the destination (or consolidate in the other direction) before pointing at it. Then `Edit` the source to a pointer at the canonical owner **by `plugin:skill` name** (never a cross-plugin file path — see `skill-consolidation.md`); or delete the redundant rule if a loaded plugin skill already covers it. |
 | Drop | Delete the stale file. |
+
+Evidence for the Consolidate check: in [`laurigates/loractl` #167](https://github.com/laurigates/loractl/pull/167) the pointer target still described a landed feature as a pending follow-up while the `CLAUDE.md` section being cut was correct, so consolidating without reading the destination first would have replaced the accurate copy with a pointer at the stale one.
 
 After every write, run `git status` so the user sees exactly what changed before any commit. **Do not commit** — leave a clean tree the user can review and split. When promoting *out of* a `CLAUDE.md` or rule that lives in a chezmoi-managed tree (`~/.claude/`), surface that the source is chezmoi-managed so the edit lands in the source, not the target.
 
