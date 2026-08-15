@@ -19,7 +19,17 @@ This rule is **path-scoped on purpose.** It is authoring guidance, not an
 every-turn invariant, so it loads only when you are editing a skill, a rule, or
 `CLAUDE.md` — which is the rule it is asking you to follow.
 
-## What the measurement found
+## What the measurement found (2026-07 snapshot)
+
+> **These are the figures as measured in 2026-07 — they are a dated record, not
+> current state, and several have since moved.** Re-measured 2026-08-15:
+> **412** tracked plugin skills (not 242), **3** `references/` directories (not
+> zero), and the C5 always-loaded surface at **~89,000 chars / ~22,262 tokens**
+> (not ~24,600). Cite the re-measurement, not this table, when scoping work —
+> issues #2140/#2141/#2143 all carry figures derived from the snapshot below.
+> Note also that three scanners give three legitimate skill counts
+> (`check-context-engineering.py` includes repo-internal `.claude/skills/`), so
+> any count must name the scanner that produced it.
 
 | Dim | Shift | Judged mean | Verdict |
 |---|---|---|---|
@@ -59,10 +69,12 @@ means a `plugin:skill` name reference, never a shared `REFERENCE.md`
 file owns, link instead — and note that `git-commit` scored C4 = 2 for restating
 a table it *already linked to*.
 
-**Split long skills across files, not into one sidecar.** The corpus has 129
-single `REFERENCE.md` files and zero `references/` directories; the post asks to
+**Split long skills across files, not into one sidecar.** The post asks to
 "divide it into many files and split them out". Split by the path that needs the
-detail, so a scoped run loads only its own material.
+detail, so a scoped run loads only its own material. As of 2026-08-15 the corpus
+has **130** single `REFERENCE.md` files and **3** `references/` directories — the
+shape exists now (`agent-patterns-plugin:parallel-agent-dispatch` is the
+reference implementation, #2143), so copy it rather than inventing a layout.
 
 **Spend constraint tokens where violation is expensive.** The measured pattern
 in text that earned its tokens: it names a non-obvious, costly failure **and says
