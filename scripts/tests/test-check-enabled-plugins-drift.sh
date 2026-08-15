@@ -17,8 +17,15 @@ ok() { echo "PASS: $1"; pass=$((pass + 1)); }
 ko() { echo "FAIL: $1"; fail=$((fail + 1)); }
 
 # assert_has <desc> <text> <needle>  — text contains needle
+#
+# Here-string, NOT `printf … | grep -q`: under `set -o pipefail` (line 8) a
+# `grep -q` that matches closes the pipe while printf is still writing, printf
+# takes SIGPIPE, and pipefail reports the pipeline as 141 — so a MATCHING
+# assertion reports FAIL. It is size-dependent (small inputs fit the 64 KiB pipe
+# buffer and pass), which is why this was green locally and red in CI on exactly
+# the two assertions with the largest text. See ~/.claude/rules/shell-pipefail-grep-q.md.
 assert_has() {
-  if printf '%s' "$2" | grep -q -- "$3"; then ok "$1"; else ko "$1"; fi
+  if grep -q -- "$3" <<<"$2"; then ok "$1"; else ko "$1"; fi
 }
 
 # assert_lacks <desc> <text>  — text is empty
