@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.2](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.17.1...health-plugin-v1.17.2) (2026-08-15)
+
+
+### Documentation
+
+* **health-plugin:** record that pluginUsage.usageCount counts hook fires ([#2396](https://github.com/laurigates/claude-plugins/issues/2396)) ([2422407](https://github.com/laurigates/claude-plugins/commit/2422407fcc28ff075c455092ca93c793dd75a0e8)), closes [#2245](https://github.com/laurigates/claude-plugins/issues/2245)
+
 ## [1.17.1](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.17.0...health-plugin-v1.17.1) (2026-08-08)
 
 
