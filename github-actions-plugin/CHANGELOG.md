@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.2](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.9.1...github-actions-plugin-v1.9.2) (2026-08-15)
+
+
+### Code Refactoring
+
+* **skills:** disambiguate cluster-6 skill descriptions ([#2401](https://github.com/laurigates/claude-plugins/issues/2401)) ([08aee60](https://github.com/laurigates/claude-plugins/commit/08aee609a6308f4e53692229ea1177f69800c5ea)), closes [#2244](https://github.com/laurigates/claude-plugins/issues/2244)
+
 ## [1.9.1](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.9.0...github-actions-plugin-v1.9.1) (2026-07-03)
 
 
