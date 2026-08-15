@@ -1,10 +1,10 @@
 ---
-description: Resume development from current project state. Use when the user asks to continue work, pick up where we left off, find the next task, or resume a TDD cycle after a break.
+description: "Next task from the feature tracker and PRDs, then implement it. Use when resuming coding in a blueprint project, picking the next tracker task, or resuming a TDD cycle after a break."
 args: "[--task <id>] [--skip-status]"
 argument-hint: "--task to resume specific task, --skip-status to skip state analysis"
 allowed-tools: Read, Bash(git status *), Bash(git log *), Bash(git branch *), Grep, Glob, Edit, Write
 created: 2025-12-16
-modified: 2026-06-05
+modified: 2026-08-15
 reviewed: 2026-06-05
 name: project-continue
 ---
@@ -16,6 +16,7 @@ name: project-continue
 | Use this skill when... | Use project-discovery instead when... |
 |---|---|
 | Resuming work on a known project with PRDs and feature-tracker state | Entering an unfamiliar codebase needing orientation on tooling/structure |
+| Reading tracker state and then implementing the next task in this repo | Use `session-plugin:session-spinup` instead for a read-only briefing of open tasks, PRs, and journal todos that edits nothing |
 | Picking the next task off the feature tracker after a break | Use project-test-loop instead when the next step is iterating on failing tests |
 | Asking "what's next" in a project with established blueprint state | Use project-init instead when no project structure exists yet |
 | Resuming a TDD session and beginning implementation yourself | Use `/blueprint:execute` instead when you want blueprint to pick and run the next logical blueprint action (derive/sync/work-order) rather than continue coding |

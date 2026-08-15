@@ -1,8 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-07-05
+modified: 2026-08-15
 reviewed: 2026-06-24
-description: "release-please workflow setup and auditing. Use when configuring release-please, upgrading release-please-action, or adding a package to a monorepo config."
+description: "release-please workflow file, manifest, and config for a single-package repo — setup and compliance audit. Use when adding release-please or upgrading release-please-action."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"

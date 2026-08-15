@@ -1,12 +1,9 @@
 ---
 created: 2026-01-30
-modified: 2026-04-29
+modified: 2026-08-15
 reviewed: 2026-04-29
 name: github-issue-writing
-description: |
-  Create well-structured GitHub issues with clear titles, descriptions, and
-  acceptance criteria. Use when filing bugs, requesting features, or structuring
-  issue content.
+description: "GitHub issue body and `[Type] Component:` title — bug/feature templates, repro steps, acceptance criteria. Use when filing a bug or feature request with gh."
 user-invocable: false
 allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh repo *), Read, Grep, Glob, TodoWrite
 ---
@@ -23,6 +20,7 @@ Create well-structured, actionable GitHub issues.
 | Structuring an issue body with reproduction steps, scope, and definition of done | Use `github-issue-autodetect` to link existing issues from staged diffs |
 | Choosing the `[Type] Component: Description` title format | Use `github-pr-title` to author the conventional title for the PR that fixes it |
 | Designing a feature-request issue before implementation begins | Use `git-issue-manage` for transfer/pin/lock/develop-branch admin operations |
+| Assembling the GitHub issue itself — title format, templates, `gh issue create` | Use `communication-plugin:ticket-drafting-guidelines` for the What/Why/How prose structure and house tone of the body text |
 
 ## Issue Title Format
 

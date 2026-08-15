@@ -1,12 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
+modified: 2026-08-15
 reviewed: 2026-04-25
 allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh run view *), Bash(gh run list *), Bash(gh repo view *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Read, Edit, Grep, Glob, TodoWrite, mcp__github__pull_request_read
 args: "[pr-number] [--auto-fix] [--push]"
 argument-hint: "[pr-number] [--auto-fix] [--push]"
 disable-model-invocation: true
-description: "Analyze and fix failing PR checks. Use when asked to fix a PR, resolve red CI checks, auto-fix lint/test failures, or reproduce CI errors locally before pushing."
+description: "Failing PR checks — reproduce locally, patch the code, push the fix. Use when asked to fix a PR, resolve red CI, or auto-fix lint/test failures."
 name: git-fix-pr
 ---
 
