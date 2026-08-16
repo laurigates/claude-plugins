@@ -66,6 +66,17 @@ reason = "Strict TS compiler settings. Divergence means one pack typechecks unde
 policy = "managed"
 reason = "Dependency-update policy. Divergence silently changes which pins Renovate manages."
 
+# `.github/workflows/renovate.yml` deliberately has NO entry, and must not get
+# one back. Each pack ran TWO Renovate runners — the gitops-managed autodiscover
+# App (`app/laurigates-renovate`) and this repo-local workflow calling
+# reusable-renovate.yml as `app/github-actions` — so every pack carried two open
+# "Dependency Dashboard" issues. The workflow was deleted fleet-wide on
+# 2026-08-16 and the scaffold no longer emits it; renovate.json above is what
+# configures the surviving App. The manifest cannot express "must be absent"
+# (VALID_POLICIES is managed/seed/shared/block), and an entry for a path the
+# generator no longer emits is only a STALE_POLICY_ENTRY warning, so absence
+# from this table is the whole mechanism.
+
 [files."tests/test_publish_hygiene.py"]
 policy = "managed"
 reason = "The registry publish gate. Intended to be byte-identical fleet-wide and had NO gate at all before this checker — the motivating case."
@@ -77,10 +88,6 @@ reason = "Ambient type shims for the ComfyUI frontend. Divergence means one pack
 [files.".github/workflows/registry-health.yml"]
 policy = "managed"
 reason = "Scheduled registry-listing health probe. Identical by construction across packs."
-
-[files.".github/workflows/renovate.yml"]
-policy = "managed"
-reason = "Renovate runner. Divergence changes update cadence for one pack only."
 
 [files."knip.json"]
 policy = "managed"

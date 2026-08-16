@@ -2102,50 +2102,6 @@ RENOVATE_JSON = """\
 }
 """
 
-RENOVATE_YML = """\
-name: Renovate
-
-on:
-  schedule:
-    - cron: '17 */2 * * *'
-  workflow_dispatch:
-    inputs:
-      dryRun:
-        description: 'Dry run mode'
-        required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'full'
-          - 'lookup'
-      logLevel:
-        description: 'Log level'
-        required: false
-        default: 'info'
-        type: choice
-        options:
-          - info
-          - debug
-          - warn
-
-# Explicit grant so the run works even when the repo's default workflow
-# permissions are read-only (the reusable workflow needs write to open
-# dependency PRs and the Dependency Dashboard issue).
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-  packages: read
-
-jobs:
-  renovate:
-    uses: laurigates/.github/.github/workflows/reusable-renovate.yml@main
-    with:
-      dry-run: ${{ inputs.dryRun || 'false' }}
-      log-level: ${{ inputs.logLevel || 'info' }}
-"""
-
 # The `uv.lock` extra-file is load-bearing, not decoration. release-please's
 # `python` release-type bumps `pyproject.toml` but has no native uv.lock support
 # (googleapis/release-please#2561), and uv records the project's OWN version in
@@ -2629,19 +2585,36 @@ BANNER_SVG = """\
 # Registry health monitor — flags a pack whose Active registry version has been
 # Flagged (falls back to the previous Active version on install). Mirrors the
 # sibling packs' registry-health.yml.
+#
+# The Pending guard before the `gh issue close` block is load-bearing: the
+# registry scan is async, so a run triggered right after Publish sees
+# NodeVersionStatusPending, and `problem` is deliberately empty inside the 6h
+# grace window. Without the early `exit 0` the close path ran on that empty
+# `problem` and closed the tracking issue with "is **Active**" while the
+# registry still said Pending (observed 2026-08-16: comfyui-gallery-loader
+# 0.1.29 closed issue #106 at 16:39:39Z against a Pending API response).
 REGISTRY_HEALTH_YML = r"""name: Registry health
 
 # Feedback loop for Comfy Registry publishing. Checks that the version this
 # repo currently declares (pyproject.toml) is actually Active in the registry.
-# Fails (red X + notification) and opens/updates a tracking issue when that
-# version is Flagged, stuck Pending, or missing — and warns when a phantom
-# higher version sits ahead of it in the registry. Closes the issue once the
-# release is healthy.
+#
+# Two visible outputs:
+#   1. A commit status "Comfy Registry / scan" on the release commit — the
+#      registry verdict shows up as a check (green Active / red Flagged /
+#      yellow pending) next to CI in the Actions + commit UI.
+#   2. A tracking issue (label registry-health) opened/updated when the version
+#      is Flagged, stuck Pending, or missing, and closed once it goes Active.
+#
+# The registry security scan is async: a freshly published version is Pending
+# for a while before it flips to Active or Flagged. So a run triggered right
+# after Publish polls for a bounded window until the version leaves Pending,
+# instead of reporting a premature "pending, fine". Schedule/dispatch runs
+# evaluate once and defer to the pending grace window.
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 7 * * *" # daily 07:17 UTC
+    - cron: "17 7 * * *" # daily 07:17 UTC (backstop for scans slower than the poll window)
   workflow_run:
     workflows: ["Publish to Comfy Registry"]
     types: [completed]
@@ -2649,6 +2622,7 @@ on:
 permissions:
   contents: read
   issues: write
+  statuses: write # emit the "Comfy Registry / scan" commit status
 
 jobs:
   check:
@@ -2662,26 +2636,62 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PENDING_GRACE_HOURS: "6" # scan normally completes well under this
           ISSUE_LABEL: "registry-health"
+          # Commit the status to the release commit that triggered Publish;
+          # otherwise (schedule/dispatch) to the checked-out HEAD.
+          STATUS_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          STATUS_CONTEXT: "Comfy Registry / scan"
+          # Bounded post-publish poll (workflow_run only): wait for the async
+          # scan to leave Pending. 20 x 90s ≈ 30 min; slower scans defer to the
+          # daily schedule. A stuck Pending is still caught by the grace check.
+          POLL_ATTEMPTS: "20"
+          POLL_INTERVAL_SECS: "90"
         run: |
           set -euo pipefail
 
           node_id=$(grep -m1 -E '^name'    pyproject.toml | sed -E 's/.*"([^"]+)".*/\1/')
           ver=$(grep    -m1 -E '^version' pyproject.toml | sed -E 's/.*"([^"]+)".*/\1/')
           [ -n "$node_id" ] && [ -n "$ver" ] || { echo "::error::cannot read name/version from pyproject.toml"; exit 1; }
-          echo "Node: $node_id  declared version: $ver"
+          echo "Node: $node_id  declared version: $ver  status-sha: ${STATUS_SHA}"
+
+          dash="https://registry.comfy.org/nodes/${node_id}"
+
+          # Publish a commit status so the registry verdict is a visible check.
+          # <state> in {pending,success,failure}, <description> short free text.
+          set_status() {
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${STATUS_SHA}" \
+              -f state="$1" \
+              -f context="${STATUS_CONTEXT}" \
+              -f description="$2" \
+              -f target_url="$dash" >/dev/null 2>&1 \
+              || echo "::warning::could not set commit status ($1: $2)"
+          }
 
           # include_status_reason=true returns the security-scan findings JSON
           # (issue_type/file_path/description) — the closed feedback loop for
           # Flagged versions (scanner notifications otherwise land only in the
           # Comfy Org Discord #security-review-council channel).
-          curl -fsS "https://api.comfy.org/nodes/${node_id}/versions?include_status_reason=true" -o versions.json
+          fetch() {
+            curl -fsS "https://api.comfy.org/nodes/${node_id}/versions?include_status_reason=true" -o versions.json
+          }
 
-          status=$(jq -r --arg v "$ver" '.[] | select(.version==$v) | .status' versions.json)
-          created=$(jq -r --arg v "$ver" '.[] | select(.version==$v) | .createdAt' versions.json)
+          # Poll only right after a publish; wait until the version appears AND
+          # leaves Pending, or the window expires. Other triggers evaluate once.
+          status=""; created=""
+          for i in $(seq 1 "${POLL_ATTEMPTS}"); do
+            fetch
+            status=$(jq  -r --arg v "$ver" '.[] | select(.version==$v) | .status'    versions.json)
+            created=$(jq -r --arg v "$ver" '.[] | select(.version==$v) | .createdAt' versions.json)
+            if [ -n "$status" ] && [ "$status" != "NodeVersionStatusPending" ]; then break; fi
+            [ "${GITHUB_EVENT_NAME}" = "workflow_run" ] || break
+            if [ "$i" -lt "${POLL_ATTEMPTS}" ]; then
+              echo "attempt ${i}/${POLL_ATTEMPTS}: status=${status:-missing} — waiting ${POLL_INTERVAL_SECS}s"
+              set_status pending "Registry scan running (${status:-uploading})…"
+              sleep "${POLL_INTERVAL_SECS}"
+            fi
+          done
+
           highest=$(jq -r '.[].version' versions.json | sort -V | tail -1)
-
           body=$(mktemp); problem=""
-          dash="https://registry.comfy.org/nodes/${node_id}"
 
           if [ -z "$status" ]; then
             problem="missing"
@@ -2725,6 +2735,15 @@ jobs:
             [ -n "$problem" ] || problem="phantom-ahead"
           fi
 
+          # Map the verdict onto the visible commit status.
+          if [ -n "$problem" ]; then
+            set_status failure "${problem}: v${ver}"
+          elif [ "$status" = "NodeVersionStatusPending" ]; then
+            set_status pending "Scan still running (v${ver}) — awaiting next check"
+          else
+            set_status success "Active in registry (v${ver})"
+          fi
+
           gh label create "$ISSUE_LABEL" --color FBCA04 --description "Comfy Registry publish health" --force >/dev/null 2>&1 || true
           existing=$(gh issue list --label "$ISSUE_LABEL" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
 
@@ -2734,6 +2753,11 @@ jobs:
             else gh issue create --title "Registry: release ${ver} not healthy (${problem})" --label "$ISSUE_LABEL" --body-file "$body"; fi
             echo "::error::release ${ver} is ${problem}"
             exit 1
+          fi
+
+          if [ "$status" = "NodeVersionStatusPending" ]; then
+            echo "::notice::${ver} still Pending after poll window — deferring to the next scheduled run"
+            exit 0
           fi
 
           if [ -n "$existing" ]; then
@@ -3137,7 +3161,6 @@ def build_file_map(
         ".github/workflows/ci.yml": CI_YML,
         ".github/workflows/publish.yml": PUBLISH_YML,
         ".github/workflows/release-please.yml": RELEASE_PLEASE_YML,
-        ".github/workflows/renovate.yml": RENOVATE_YML,
         ".github/workflows/registry-health.yml": REGISTRY_HEALTH_YML,
         ".github/workflows/clear-autorelease-labels.yml": CLEAR_AUTORELEASE_YML,
         "docs/blueprint/adrs/0001-adopt-typescript-bun-build.md": ADR_0001,
