@@ -11,7 +11,7 @@
 #   2. pyproject [tool.comfy] Icon/Banner point at the raw-GitHub PNG URLs
 #      (never the old empty `Icon = ""`)
 #   3. registry-health.yml + clear-autorelease-labels.yml workflows emitted
-#   4. renovate.json emitted; NO dependabot.yml anywhere
+#   4. renovate.json emitted; NO dependabot.yml and NO renovate.yml anywhere
 #   5. justfile carries a `just assets` recipe (svg -> png rasterize)
 #   6. README '## What it does' is no longer a bare TODO stub
 #   7. the finishing-pass audit prints (icon/banner emitted + screenshot follow-up)
@@ -132,6 +132,14 @@ if [ -f "$PACK/.github/dependabot.yml" ]; then
     check "no dependabot.yml emitted" "absent" "present"
 else
     check "no dependabot.yml emitted" "absent" "absent"
+fi
+# A repo-local renovate.yml is a SECOND runner beside the gitops-managed
+# autodiscover App, so every pack carried two open "Dependency Dashboard"
+# issues. Deleted fleet-wide 2026-08-16; this pins the generator to match.
+if [ -f "$PACK/.github/workflows/renovate.yml" ]; then
+    check "no renovate.yml workflow emitted" "absent" "present"
+else
+    check "no renovate.yml workflow emitted" "absent" "absent"
 fi
 
 # 5. `just assets` rasterize recipe.

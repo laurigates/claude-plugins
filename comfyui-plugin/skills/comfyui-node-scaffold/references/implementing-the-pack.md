@@ -11,8 +11,11 @@ A repo where `just check` (typecheck + build + lint + test) passes from the
 first commit: `pyproject.toml` (`[tool.comfy]` metadata with `includes =
 ["web/dist"]` and `Icon`/`Banner` wired to the raw-GitHub PNG URLs, ruff config,
 dev deps), `.github/workflows/` (`ci.yml`, `publish.yml`, `release-please.yml`,
-`renovate.yml`, `registry-health.yml`, `clear-autorelease-labels.yml`),
-`renovate.json` (Renovate, **not** dependabot), strict `tsconfig.json`,
+`registry-health.yml`, `clear-autorelease-labels.yml`),
+`renovate.json` (Renovate, **not** dependabot — configuring the gitops-managed
+autodiscover App; there is deliberately no repo-local `renovate.yml`, which
+would be a second runner opening its own Dependency Dashboard issue), strict
+`tsconfig.json`,
 `biome.json`, `knip.json`, `.pre-commit-config.yaml`,
 `release-please-config.json` (carrying the `uv.lock` `toml` updater) + manifest,
 `vitest.config.js`, `package.json`
