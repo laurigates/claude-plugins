@@ -3,7 +3,7 @@ name: hf-downloads
 description: "Hugging Face model downloads without filling root disk — HF_HOME/xet cache redirection, token/gated-repo auth, staging pattern. Use when downloading HF models, hf download errors, ENOSPC during downloads, or GatedRepoError/401s."
 allowed-tools: Bash, Read
 created: 2026-07-05
-modified: 2026-08-15
+modified: 2026-08-16
 reviewed: 2026-07-05
 ---
 
@@ -21,11 +21,27 @@ Scoped to `huggingface_hub` / `hf`. For disk-full recovery in general — reclai
 hf download <repo> <file> --local-dir /big/disk/staging
 ```
 
+The `<file>` argument is **required in practice**, not optional: `hf download <repo>` with no file downloads the **entire repo**, including any `demo/`, `examples/`, or `obsolete/` directories it carries — there is no listing or confirmation step first. To see what's in a repo before downloading, use the listing recipe below rather than dropping the file argument.
+
 The final file lands on `/big/disk/`, but the xet chunks stage under `~/.cache/huggingface/xet/`. Xet is HF's newer transfer protocol: it stages compressed blocks under `~/.cache` while reconstructing the file, and those staged blocks are **roughly file-sized**. On a small root disk the symptom is:
 
 ```
 OSError: I/O error: IO Error: No space left on device (os error 28)
 ```
+
+## Listing a Repo's Files Before Downloading
+
+Reaching for a bare `hf download <repo>` to see what a repo contains fetches the whole thing instead — there is no listing subcommand. Use one of these instead:
+
+```sh
+# List files without downloading anything
+python3 -c "from huggingface_hub import HfApi; print('\n'.join(HfApi().list_repo_files('<repo>')))"
+
+# Download only a subset by glob, skipping demo/examples/obsolete directories
+hf download <repo> --include 'model.safetensors' --include '*.json' --local-dir /big/disk/staging
+```
+
+`--include` / `--exclude` accept glob patterns and compose (`--exclude 'demo/*' --exclude 'obsolete/*'` to keep everything else). Prefer naming the files you want over excluding the ones you don't — the file argument stays load-bearing either way.
 
 ## Fix: `HF_HOME` Is the Umbrella
 
