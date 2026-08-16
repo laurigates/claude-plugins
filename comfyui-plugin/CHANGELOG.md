@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.7](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.6...comfyui-plugin-v1.13.7) (2026-08-16)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** back-port the registry-health Pending guard, stop emitting renovate.yml ([#2416](https://github.com/laurigates/claude-plugins/issues/2416)) ([f137df6](https://github.com/laurigates/claude-plugins/commit/f137df6209f0f51f82c5fc266b5b30878e99fa1a))
+
 ## [1.13.6](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.5...comfyui-plugin-v1.13.6) (2026-08-14)
 
 
