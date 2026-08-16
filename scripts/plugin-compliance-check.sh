@@ -843,6 +843,23 @@ check_skill_body() {
       done
     fi
 
+    # Regression (#2409): hf-downloads must document that the FILENAMES
+    # argument is load-bearing — a bare `hf download <repo>` with no file
+    # silently fetches the whole repo (demo/, examples/, obsolete/ included,
+    # no confirmation), which is exactly the surprise-disk-write mistake the
+    # skill exists to prevent. It must also offer a listing recipe so
+    # dropping the file argument is never the natural move for "what's in
+    # this repo?". A bulk edit that trims the warning or the listing recipe
+    # would silently restore the trap, so assert both survive.
+    if [ "$skill_name" = "hf-downloads" ]; then
+      for token in "required in practice" "list_repo_files"; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain token '${token}' (bare 'hf download <repo>' fetches the whole repo — see #2409)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: github-actions-auth-security must document the GitHub Actions
     # script-injection mitigation (distinct from Claude *prompt* injection):
     # untrusted run-context values bound to an intermediate `env:` variable and
