@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.6](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.9.5...tools-plugin-v2.9.6) (2026-08-16)
+
+
+### Documentation
+
+* **tools-plugin:** warn that bare hf download fetches the whole repo ([#2414](https://github.com/laurigates/claude-plugins/issues/2414)) ([4b01453](https://github.com/laurigates/claude-plugins/commit/4b014534f27f0fe8ce607a09c201123894256b40)), closes [#2409](https://github.com/laurigates/claude-plugins/issues/2409)
+
 ## [2.9.5](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.9.4...tools-plugin-v2.9.5) (2026-08-15)
 
 
