@@ -130,5 +130,57 @@ grep -q 'Auto-closed with unlanded work' <<<"$body" && pass "issue body has auto
 grep -q "Pushed but never PR'd"          <<<"$body" && pass "issue body has never-PR'd section" || fail "missing never-PR'd section"
 grep -q 'cannot be reopened'             <<<"$body" && pass "issue body states PR cannot be reopened" || fail "missing reopen warning"
 
+# 10. Regression for #2411: a PR opened from a DIFFERENTLY-NAMED head ref must
+#     still classify as landed, not stranded_no_pr. classify() alone can't
+#     exercise this — the fix lives in collect()'s gh lookups — so this stubs
+#     `gh`/`git` on PATH and runs the real script end-to-end, reproducing the
+#     exact #2124 case from the issue (an emoji-named head ref whose tip SHA
+#     equals claude/pr-2124-merge-midrgh's tip, but whose name never matches).
+stub_dir="$tmp/stubs"
+mkdir -p "$stub_dir"
+
+cat > "$stub_dir/gh" <<'STUB'
+#!/usr/bin/env bash
+case "$*" in
+  "repo view o/r --json defaultBranchRef --jq .defaultBranchRef.name")
+    echo "main" ;;
+  "api repos/o/r/branches --paginate --jq .[].name")
+    echo "claude/pr-2124-merge-midrgh" ;;
+  "api repos/o/r/branches/claude/pr-2124-merge-midrgh --jq .commit.sha")
+    echo "4d2504df566ba7ceff95acb3401c16adfdec21c4" ;;
+  "api repos/o/r/commits/4d2504df566ba7ceff95acb3401c16adfdec21c4 --jq .commit.committer.date[0:10]")
+    echo "2026-07-27" ;;
+  "api repos/o/r/compare/main...claude/pr-2124-merge-midrgh --jq .ahead_by")
+    echo "3" ;;
+  "pr list -R o/r --head claude/pr-2124-merge-midrgh --state all --limit 1 --json number,state,mergedAt,baseRefName")
+    echo "[]" ;;
+  "pr list -R o/r --state all --limit 100 --search 4d2504df566ba7ceff95acb3401c16adfdec21c4 --json number,state,mergedAt,headRefOid")
+    echo '[{"number":2124,"state":"MERGED","mergedAt":"2026-07-27T11:14:41Z","headRefOid":"4d2504df566ba7ceff95acb3401c16adfdec21c4"}]' ;;
+  *)
+    echo "STUB: unhandled gh call: $*" >&2
+    exit 1 ;;
+esac
+STUB
+chmod +x "$stub_dir/gh"
+
+cat > "$stub_dir/git" <<'STUB'
+#!/usr/bin/env bash
+# Force collect() into the gh-api ahead-count fallback (branch not fetched
+# locally), so the fixture doesn't need a real git object for the fake SHA.
+exit 1
+STUB
+chmod +x "$stub_dir/git"
+
+sha_out="$(PATH="$stub_dir:$PATH" "$check" --repo o/r 2>&1)"
+
+if grep -q 'VERDICT=stranded_no_pr' <<<"$sha_out"; then
+  fail "PR opened from a differently-named head ref (#2124 shape) was WRONGLY reported as stranded_no_pr"
+else
+  pass "PR opened from a differently-named head ref is matched by tip SHA and not reported as stranded"
+fi
+
+grep -q '^LANDED=1$' <<<"$sha_out" && pass "SHA-matched merged PR counted as LANDED" || fail "SHA-matched merged PR not counted as LANDED (got: $(grep '^LANDED=' <<<"$sha_out"))"
+grep -q '^STRANDED_NO_PR=0$' <<<"$sha_out" && pass "STRANDED_NO_PR=0 after SHA fallback match" || fail "STRANDED_NO_PR nonzero after SHA fallback match (got: $(grep '^STRANDED_NO_PR=' <<<"$sha_out"))"
+
 [ "$fail" -eq 0 ] && echo "ALL TESTS PASSED" || echo "SOME TESTS FAILED"
 exit "$fail"

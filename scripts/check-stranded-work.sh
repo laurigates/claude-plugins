@@ -97,6 +97,24 @@ collect() {
       base="$(jq -r '.[0].baseRefName' <<<"$pr_json")"
       # A 404 on the base ref is the auto-close fingerprint.
       gh api "repos/$repo/branches/$base" >/dev/null 2>&1 || base_exists=false
+    else
+      # No PR matches this branch by NAME. Before concluding no PR was ever
+      # opened, check whether the branch's tip SHA matches a MERGED PR's
+      # headRefOid — the PR may have been opened from a differently-named head
+      # ref (claude-plugins #2411: a squash-merged PR opened from an
+      # emoji-named branch whose tip SHA equals this branch's tip, but whose
+      # name never matches). git-side signals (git cherry, ancestry) also read
+      # "unmerged" for a squash-merge, so the SHA match is the only thing that
+      # can disambiguate here.
+      sha_pr_json="$(gh pr list -R "$repo" --state all --limit 100 --search "$sha" \
+        --json number,state,mergedAt,headRefOid 2>/dev/null || echo '[]')"
+      sha_match="$(jq -r --arg sha "$sha" \
+        '([.[] | select(.headRefOid == $sha and .state == "MERGED")])[0].number // ""' \
+        <<<"$sha_pr_json")"
+      if [ -n "$sha_match" ]; then
+        pr_number="$sha_match"
+        pr_merged=true
+      fi
     fi
 
     jq -nc --arg repo "$repo" --arg branch "$branch" --arg sha "$sha" \
