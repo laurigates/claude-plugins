@@ -23,7 +23,7 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 |---------|----------|
 | `cat file` | Use **Read** tool instead |
 | `head`/`tail file` | Use **Read** tool with offset/limit |
-| `sed -i` (repo files; `/tmp`/scratch targets exempt, #2052) | Use **Edit** tool instead |
+| `sed -i` (repo files; `/tmp`/scratch targets exempt, #2052 — reachable via a literal path, a `cd` target, or a variable value, W34 §Signal C) | Use **Edit** tool instead |
 | `echo > file` | Use **Write** tool instead |
 | `cat > file` | Use **Write** tool instead |
 | `timeout cmd` | Remove timeout (human approval time exceeds it); append `# allow-timeout` for genuinely-unbounded processes (#2041) |
