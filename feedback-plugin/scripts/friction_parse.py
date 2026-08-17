@@ -181,6 +181,56 @@ def canonical_signature(kind: str, tool: str, evidence: str) -> str:
     if kind == "user_interrupt":
         return "interrupt:user"
     if kind == "tool_error":
+        # The Claude Code harness's own worktree-isolation guard, split out
+        # ahead of the generic error:<tool> fallback. It is emitted by the
+        # binary (verified present in 2.1.231-2.1.233), not by any hook here,
+        # so it never carries the PreToolUse wrapper HOOK_BLOCK_RE keys on and
+        # lands in tool_error. In the W34 window it was 176 events: 52.0% of
+        # the error:bash bucket and 31.8% of ALL friction, which made
+        # error:bash appear to escalate on both of W33's pre-registered axes
+        # (85.1% prevalence / 64.9% repeat) while the residual was flat
+        # (64.9% / 52.7% vs W33's 65.6% / 52.5%). Left merged, it hides every
+        # other cause in the bucket.
+        # See ~/.claude/friction-reports/2026-W34-frictions.md (§Signal A,
+        # §Signal E, PR-READY 2).
+        #
+        # The signature stays tool-keyed rather than hardcoding `bash`: the
+        # guard also fires on Monitor's shell argument (9 of the 176), and
+        # flattening those into an error:bash:* key would misattribute them.
+        #
+        # The variants are separated because they have DIFFERENT OWNERS, and
+        # the sub-counts are the whole reason to split: only the first class is
+        # an upstream false positive.
+        if "isolated in the worktree" in ev:
+            # Order matters: the worktree-gone message also says "shared
+            # checkout" (naming the parent as the recovery target), so it has
+            # to be tested before the cross-repo needle.
+            if "no longer exists" in ev:
+                # The worktree was removed while its agent was still live.
+                # Owner: worktree-cleanup gating (.claude/rules/
+                # agent-coworker-detection.md "never force-remove worktrees
+                # you don't own").
+                variant = "worktree-gone"
+            elif "shared checkout" in ev:
+                # The command demonstrably targeted another checkout -- `cd`
+                # into a sibling repo, `git -C <parent>`, or a cwd that had
+                # already escaped. Owner: agent dispatch/briefing (issue
+                # #2371's shape).
+                variant = "cross-repo"
+            elif "verify" in ev or "verified" in ev:
+                # The harness could not PROVE the command stays inside the
+                # worktree, so it refused a command that was usually fine:
+                # "too complex to verify" (128), plus the eval / COMPLETE /
+                # env / xargs-stdin phrasings (5). 71.0% of these contain no
+                # `git` at all and 84.7% no git write, so shell complexity is
+                # standing in for git targeting. Owner: upstream Claude Code.
+                variant = "unverifiable"
+            else:
+                # Forward-compatible: a phrasing this table does not know
+                # stays visible instead of being absorbed into a sibling
+                # variant, mirroring hook:bash-antipatterns:other above.
+                variant = "other"
+            return f"error:{tool.lower()}:worktree-isolation:{variant}"
         # "not found" is anchored to the shell/PATH forms only. A bare
         # \bnot found\b matched any payload that merely reported something
         # absent (kubectl `pods "x" not found`, Blender `enum "X" not found`),
