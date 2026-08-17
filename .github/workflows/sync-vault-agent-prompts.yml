@@ -10,11 +10,15 @@ name: "Sync: vault-agent prompts"
 # sources live) and pushed to the standalone repo whenever an upstream skill
 # changes.
 #
-# Cross-repo push needs a token with contents + pull-requests write on
-# laurigates/vault-agent, stored as the VAULT_AGENT_SYNC_TOKEN secret
-# (a fine-scoped PAT or a GitHub App token). Until that secret is provisioned
-# this runs on manual dispatch only; uncomment the `push:` trigger below to make
-# it event-driven once the secret exists.
+# Cross-repo push authenticates as the laurigates-prompt-sync GitHub App, whose
+# credentials gitops pushes here (PROMPT_SYNC_CLIENT_ID variable +
+# PROMPT_SYNC_PRIVATE_KEY secret; gitops repositories.tf `prompt_sync = true`).
+# The App is installed on git-repo-agent and vault-agent ONLY — never on this
+# repo — and the token below is scoped by `repositories:` to vault-agent alone,
+# so it can neither write here nor reach git-repo-agent.
+#
+# Until an observed dispatch run proves the token works end to end this stays on
+# manual dispatch only; uncomment the `push:` trigger below afterwards.
 
 on:
   workflow_dispatch:
@@ -56,12 +60,32 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
+      # Minted only when there is something to push, so a no-op run never
+      # requests a token. `repositories:` narrows the installation token to the
+      # single target repo.
+      #
+      # app-id, not client-id: v3 marks `app-id` deprecated in favour of
+      # `client-id`, but actionlint v1.7.12 (the latest release, pinned in
+      # .pre-commit-config.yaml and plugin-pr-checks.yml) has stale metadata for
+      # this action and rejects `client-id` as an undefined input. A numeric App
+      # ID is a valid JWT issuer, so this works; gitops pushes
+      # PROMPT_SYNC_CLIENT_ID alongside for the coordinated swap (gitops#206).
+      - name: Mint a prompt-sync App token for vault-agent
+        id: app-token
+        if: steps.diff.outputs.changed == 'true'
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.PROMPT_SYNC_APP_ID }}
+          private-key: ${{ secrets.PROMPT_SYNC_PRIVATE_KEY }}
+          owner: laurigates
+          repositories: vault-agent
+
       - name: Checkout vault-agent
         if: steps.diff.outputs.changed == 'true'
         uses: actions/checkout@v6
         with:
           repository: laurigates/vault-agent
-          token: ${{ secrets.VAULT_AGENT_SYNC_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           path: _standalone
 
       - name: Copy regenerated prompts into the standalone checkout
@@ -76,7 +100,7 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           path: _standalone
-          token: ${{ secrets.VAULT_AGENT_SYNC_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           branch: sync/generated-prompts
           delete-branch: true
           commit-message: "chore: sync compiled prompts from claude-plugins"
