@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.19.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.19.0...testing-plugin-v3.19.1) (2026-08-18)
+
+
+### Documentation
+
+* **testing-plugin:** hand-rolled mutation harnesses can report the wrong check ([#2423](https://github.com/laurigates/claude-plugins/issues/2423)) ([303ed8d](https://github.com/laurigates/claude-plugins/commit/303ed8dbe63bc778636191276afdc4c3b6a1cf17))
+
 ## [3.19.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.18.2...testing-plugin-v3.19.0) (2026-08-08)
 
 
