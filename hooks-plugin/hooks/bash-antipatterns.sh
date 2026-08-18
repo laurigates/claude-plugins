@@ -344,7 +344,35 @@ See .claude/rules/bash-tool-replacements.md for the full table."
         block "REMINDER: Use the Write tool instead of 'echo/printf > file' to create files. The Write tool properly handles file creation and provides better error handling."
     fi
 
-    if ast_matched "sed-inplace"; then
+    # SCRATCH-CONTEXT EXEMPTION (issue: W34 friction §Signal C).
+    #
+    # The `sed-inplace` AST rule's own scratch exemption requires the scratch path
+    # to be a literal `word` node INSIDE the sed command. In practice agents `cd`
+    # into the scratchpad first (or bind it to a variable), so sed's target is a
+    # bare relative filename and the exemption never fires — the block message has
+    # been promising "(In-place edits of scratch files under /tmp are allowed.)"
+    # while blocking exactly that. W34 measured 6 events / 6 sessions, of which
+    # 4 (67%) targeted /private/tmp scratchpaths the message declares exempt.
+    #
+    # So honour the documented exemption at the consumption site by also accepting
+    # a scratch path established as a `cd` TARGET or as a variable VALUE. The AST
+    # rule is correct as written and is deliberately left alone; widening it would
+    # mean teaching the parser about shell state it cannot see.
+    #
+    # Deliberately NOT a blanket "the command mentions /tmp somewhere" test: that
+    # would exempt `cd ~/repos/x && sed -i '' 's/a/b/' f.py 2>/tmp/log`, a repo
+    # edit whose only /tmp is a log redirect, which must keep blocking.
+    #
+    # Scanned view is COMMAND_SHELL_ONLY (heredoc bodies and trailing `#` comments
+    # already stripped), matching the other regex detectors below: a `cd /tmp/...`
+    # that appears only inside a heredoc body or an explanatory comment is data,
+    # not shell state, and must not grant the exemption (#2106's class).
+    scratch_ctx() {
+        echo "$COMMAND_SHELL_ONLY" | grep -Eq '(^|[;&|])[[:space:]]*cd[[:space:]]+"?((/private)?/tmp/|/var/folders/)' || \
+        echo "$COMMAND_SHELL_ONLY" | grep -Eq '(^|[[:space:];&|])[A-Za-z_][A-Za-z0-9_]*="?((/private)?/tmp/|/var/folders/)'
+    }
+
+    if ast_matched "sed-inplace" && ! scratch_ctx; then
         block "REMINDER: Use the Edit tool instead of 'sed -i' to modify files. The Edit tool provides safer, more precise string replacements with proper error handling. (In-place edits of scratch files under /tmp are allowed.)"
     fi
 fi
