@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.50.8](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.7...git-plugin-v2.50.8) (2026-08-18)
+
+
+### Documentation
+
+* **git-plugin:** scope the branch-audit warning to pre-repair copies ([#2429](https://github.com/laurigates/claude-plugins/issues/2429)) ([90bfa84](https://github.com/laurigates/claude-plugins/commit/90bfa846e9ffa84f2cb10b6d3256d1051c793d5d)), closes [#2268](https://github.com/laurigates/claude-plugins/issues/2268)
+
 ## [2.50.7](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.6...git-plugin-v2.50.7) (2026-08-15)
 
 
