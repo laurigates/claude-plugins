@@ -203,16 +203,24 @@ git remote prune origin
 ```
 
 **On `just -g branch-audit`** (the encoded dotfiles recipe): it is a convenience for
-producing a paste-ready delete list, **not** the classification authority — and older
-copies of it are actively wrong. Measured 2026-08-04 (issue #2268), its REVIEW bucket was
-**~90% false** on two real repos: 191 REVIEW rows of which 174 had actually landed on
-`laurigates/claude-plugins` (91%), and 245 of which 216 had landed on
-`ForumViriumHelsinki/infrastructure` (88%). Both defects were the two named above — it
+producing a paste-ready delete list, **not** the classification authority — and **copies
+predating 2026-08-04 are actively wrong**. Measured that day (issue #2268), the pre-repair
+recipe's REVIEW bucket was **~90% false** on two real repos: 191 REVIEW rows of which 174
+had actually landed on `laurigates/claude-plugins` (91%), and 245 of which 216 had landed
+on `ForumViriumHelsinki/infrastructure` (88%). Both defects were the two named above — it
 used `merge-tree` as the *primary* signal, and paged `gh pr list --limit 500` against
-repos holding 1881 and 1684 PRs. **Verify anything it puts in REVIEW against the ladder
-before acting on it**, and treat its MERGED bucket as a starting point, not a verdict.
-The recipe lives in a private dotfiles repo, so this marketplace can neither version nor
-regression-test it.
+repos holding 1881 and 1684 PRs.
+
+**The recipe was repaired the same day** and now walks the same ladder in the same order:
+a MERGED PR first (authoritative, with the PR window raised past the repo's PR count),
+then `git cherry` (patch-equivalence, requiring rc 0 before an empty `+` set counts as
+landed), then `merge-tree` as **positive-containment** proof only — a match proves
+containment, a non-match proves nothing. Nothing in the output distinguishes a repaired
+copy from a pre-repair one, so **confirm the local recipe reads PR state before any
+git-side test** before trusting its REVIEW bucket, and treat its MERGED bucket as a
+starting point, not a verdict. The recipe lives in a private dotfiles repo, so this
+marketplace can neither version nor regression-test it; the repaired ladder above is
+reported from the recipe's own comments.
 
 Related: `~/.claude/rules/pr-merge-hazards.md` #1 (why `--merged` misses squash-merges,
 and why tree-containment is a one-way signal); `.claude/rules/gh-json-fields.md` (the
