@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.5](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.10.4...feedback-plugin-v1.10.5) (2026-08-18)
+
+
+### Bug Fixes
+
+* **feedback-plugin:** split the worktree-isolation refusal out of error:bash ([#2421](https://github.com/laurigates/claude-plugins/issues/2421)) ([733d365](https://github.com/laurigates/claude-plugins/commit/733d36588dc080584997296fb164a2580223a03f)), closes [#2344](https://github.com/laurigates/claude-plugins/issues/2344)
+
 ## [1.10.4](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.10.3...feedback-plugin-v1.10.4) (2026-08-10)
 
 
