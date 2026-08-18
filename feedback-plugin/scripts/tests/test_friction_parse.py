@@ -249,6 +249,71 @@ def test_evidence_budget_reaches_hook_message_tail():
     )
 
 
+def test_worktree_isolation_splits_out_of_generic_error_bash():
+    """Regression: the harness's worktree-isolation refusal must carry its own
+    signature instead of falling into the generic `error:bash` bucket.
+
+    The guard is emitted by the Claude Code binary (2.1.231-2.1.233), not by a
+    hook, so it never carries the PreToolUse wrapper `HOOK_BLOCK_RE` keys on
+    and lands in `tool_error`. In the W34 window it was 176 events: 52.0% of
+    the `error:bash` bucket and 31.8% of ALL friction. Merged into the bucket
+    it made `error:bash` clear both of W33's pre-registered escalation axes
+    (85.1% prevalence / 64.9% repeat) while the residual was flat against W33
+    (64.9% / 52.7% vs 65.6% / 52.5%) -- i.e. the gate fired on a confound.
+    See ~/.claude/friction-reports/2026-W34-frictions.md (PR-READY 2).
+    """
+    events = run_parser(FIXTURES / "worktree_isolation")
+    by_sig = {e["signature"]: e for e in events}
+
+    # No guard refusal may remain in the generic bucket...
+    guard = [e for e in events if "isolated in the worktree" in e["evidence"]]
+    assert len(guard) == 4, f"expected 4 guard events, got {len(guard)}: {events}"
+    for ev in guard:
+        assert ":worktree-isolation:" in ev["signature"], (
+            f"guard refusal left in the generic bucket: {ev}"
+        )
+
+    # ...and the variants split by OWNER, which is the point of the split.
+    assert "error:bash:worktree-isolation:unverifiable" in by_sig, (
+        f"missing the upstream-false-positive variant: {sorted(by_sig)}"
+    )
+    assert "error:bash:worktree-isolation:cross-repo" in by_sig, (
+        f"missing the dispatch-defect variant: {sorted(by_sig)}"
+    )
+    assert "error:bash:worktree-isolation:worktree-gone" in by_sig, (
+        f"missing the cleanup-defect variant: {sorted(by_sig)}"
+    )
+
+    # Ordering trap: the worktree-gone message also names the "shared
+    # checkout" (as the recovery target), so a cross-repo test placed first
+    # would swallow it.
+    gone = by_sig["error:bash:worktree-isolation:worktree-gone"]
+    assert "shared checkout" in gone["evidence"], (
+        "fixture no longer exercises the ordering trap; regenerate it from a "
+        "real working-directory-gone refusal"
+    )
+
+    # The guard also fires on Monitor's shell argument (9 of the W34 176), so
+    # the signature stays tool-keyed rather than hardcoding `bash`.
+    assert "error:monitor:worktree-isolation:unverifiable" in by_sig, (
+        f"Monitor-tool guard events must not be flattened into bash: {sorted(by_sig)}"
+    )
+
+
+def test_plain_bash_error_still_classifies_as_error_bash():
+    """Control: an ordinary Bash failure keeps the generic `error:bash` key.
+
+    The split must move only the guard refusals; a zero-delta on every other
+    signature is what makes W35's `error:bash` reading comparable to W33's.
+    """
+    events = run_parser(FIXTURES / "worktree_isolation")
+    plain = [e for e in events if "isolated in the worktree" not in e["evidence"]]
+    assert len(plain) == 1, f"expected 1 non-guard event, got {plain}"
+    assert plain[0]["signature"] == "error:bash", (
+        f"a plain bash error must stay in the generic bucket: {plain[0]}"
+    )
+
+
 def main() -> int:
     tests = [
         fn
