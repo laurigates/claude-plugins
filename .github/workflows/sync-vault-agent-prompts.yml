@@ -17,17 +17,25 @@ name: "Sync: vault-agent prompts"
 # repo — and the token below is scoped by `repositories:` to vault-agent alone,
 # so it can neither write here nor reach git-repo-agent.
 #
-# Until an observed dispatch run proves the token works end to end this stays on
-# manual dispatch only; uncomment the `push:` trigger below afterwards.
+# The `push:` trigger below is live. Verify with the `force` dispatch input
+# rather than a plain dispatch: vault-agent's artifacts are often already
+# current, and a no-drift run skips every step and exits green — which is
+# indistinguishable from a broken token. `force` mints the token and checks
+# out the target regardless, so the credential path is actually exercised.
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches: [main]
-  #   paths:
-  #     - 'obsidian-plugin/skills/*/SKILL.md'
-  #     - 'vault-agent/scripts/compile_prompts.py'
-  #     - 'vault-agent/src/vault_agent/prompts/compiler.py'
+    inputs:
+      force:
+        description: "Mint the token and check out the target even if the compiled prompts are unchanged (verifies the App token path)."
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - 'obsidian-plugin/skills/*/SKILL.md'
+      - 'vault-agent/scripts/compile_prompts.py'
+      - 'vault-agent/src/vault_agent/prompts/compiler.py'
 
 permissions:
   contents: read
@@ -53,8 +61,13 @@ jobs:
         # git status --porcelain, not git diff --quiet: a NEW skill added to
         # SUBAGENT_SKILLS emits a new UNTRACKED per-skill fragment, which
         # `git diff` cannot see — the sync would silently skip it.
+        env:
+          FORCE: ${{ inputs.force }}
         run: |
-          if [ -z "$(git status --porcelain -- vault-agent/src/vault_agent/prompts/generated/)" ]; then
+          if [ "$FORCE" = "true" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo 'Forced: exercising the token path regardless of drift.' >> "$GITHUB_STEP_SUMMARY"
+          elif [ -z "$(git status --porcelain -- vault-agent/src/vault_agent/prompts/generated/)" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
