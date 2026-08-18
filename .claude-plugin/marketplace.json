@@ -263,7 +263,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.10.4",
+      "version": "1.10.5",
       "keywords": [
         "feedback",
         "session-analysis",
@@ -390,7 +390,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.8.4",
+      "version": "2.8.5",
       "keywords": [
         "hooks",
         "automation",

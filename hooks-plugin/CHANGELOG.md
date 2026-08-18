@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.5](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.8.4...hooks-plugin-v2.8.5) (2026-08-18)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** make the sed -i scratch-path exemption reachable ([#2422](https://github.com/laurigates/claude-plugins/issues/2422)) ([96e8fd7](https://github.com/laurigates/claude-plugins/commit/96e8fd723ed9610ade2bf432c7eacf62b59884f3))
+
 ## [2.8.4](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.8.3...hooks-plugin-v2.8.4) (2026-08-10)
 
 
