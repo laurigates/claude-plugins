@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.45.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.44.2...blueprint-plugin-v3.45.0) (2026-08-19)
+
+
+### Features
+
+* **blueprint-plugin:** make the JSON Schemas the single source of truth for document structure ([#2440](https://github.com/laurigates/claude-plugins/issues/2440)) ([98abdb1](https://github.com/laurigates/claude-plugins/commit/98abdb1856d6aacec827148a9ff42d7fd4554bb9)), closes [#2136](https://github.com/laurigates/claude-plugins/issues/2136)
+
 ## [3.44.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.44.1...blueprint-plugin-v3.44.2) (2026-08-10)
 
 
