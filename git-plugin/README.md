@@ -29,7 +29,9 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of how the skills fit together.
 | `/git:derive-docs` | Analyze git history to derive undocumented rules, PRDs, ADRs, and PRPs |
 | `/git:upstream-pr` | Submit clean PRs to upstream repositories from fork work |
 | `/git:upstream-pr-diverged` | Heavy-divergence fork-to-upstream PR workflow — patch-id eligibility, re-derive fallback, commit-message scrubbing, pre-flight regression check |
+| `/git:upstream-fix-check` | Check whether a bug in vendored, tarball-installed, or forked code is already fixed upstream before patching it — `gh api contents` lookups, stale-repo read, and when to skip the check |
 | `/git:coworker-check` | Detect another agent working in the same repo clone before destructive git ops |
+| `/git:repo-delete-check` | Verify a repo's work survives deletion — remote, unpushed commits, stashes — then offer a push or tar backup |
 | `/git:pr-sync-check` | Check whether the current PR branch is still live and in sync (merged / behind / changes-requested) before building on it |
 | `/git:pr-watch` | Subscribe to a PR's activity and react to review comments and CI as they arrive (delegates reactions to `/git:pr-feedback` / `/git:fix-pr`) |
 
@@ -64,8 +66,10 @@ Three composable skills that can be invoked individually or combined based on us
 | `git-commit-trailers` | Commit trailer conventions — release-please trailers (BREAKING CHANGE, Release-As), attribution (Co-authored-by, Signed-off-by), git interpret-trailers |
 | `git-branch-pr-workflow` | Git branching and PR workflow patterns |
 | `git-rebase-patterns` | Advanced rebase techniques (--reapply-cherry-picks, --update-refs, --onto, stacked PRs) |
+| `git-merge-hazards` | Traps in GitHub's merge machinery — squash-merge detection authority order, stacked-base auto-close, push-by-SHA races, merging over red CI, negated closing keywords |
 | `git-repo-detection` | Detect GitHub repository name and owner from git remotes |
 | `git-security-checks` | Security checks before staging files |
+| `git-issue-scoping` | Read an issue's full comment thread and re-verify its cited `file:line` evidence at HEAD before scoping a PR or plan |
 | `github-issue-autodetect` | Auto-detect issues that changes may fix/close for proper commit linkage |
 | `github-issue-writing` | Create well-structured GitHub issues with clear titles and acceptance criteria |
 | `github-labels` | Discover and apply labels to GitHub PRs and issues |
