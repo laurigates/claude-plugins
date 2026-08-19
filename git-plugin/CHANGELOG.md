@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.50.9](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.8...git-plugin-v2.50.9) (2026-08-19)
+
+
+### Bug Fixes
+
+* **git-plugin:** let git-conflicts and git-fix-pr auto-invoke ([bac2030](https://github.com/laurigates/claude-plugins/commit/bac2030190b37070fa8f6536606f825def759a89)), closes [#1843](https://github.com/laurigates/claude-plugins/issues/1843)
+* **git-plugin:** stop hiding reactive skills from the model catalog ([#2434](https://github.com/laurigates/claude-plugins/issues/2434)) ([bac2030](https://github.com/laurigates/claude-plugins/commit/bac2030190b37070fa8f6536606f825def759a89))
+
 ## [2.50.8](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.7...git-plugin-v2.50.8) (2026-08-18)
 
 
