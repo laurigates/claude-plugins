@@ -337,6 +337,49 @@ export BLUEPRINT_AUTORUN_DISABLE=1
 export BLUEPRINT_AUTORUN_TTL=7200
 ```
 
+## Document Schemas
+
+ADR, PRD and PRP structure is described **once**, in `schemas/<kind>.schema.json`.
+Before the reconciliation each type had two descriptions — a schema in
+`schemas/`, and a hand-rolled field list in a bash hook — and they had drifted:
+the ADR schema spelled the back-reference `superseded_by` while the hook read
+`superseded-by`, so the "Superseded needs a replacement" check never fired once.
+
+| Schema | Required frontmatter | Required sections |
+|---|---|---|
+| [`adr.schema.json`](schemas/adr.schema.json) | `id` (`ADR-NNNN`), `status`, `created`, `modified` | Context, Decision, Consequences, Options Considered, Related ADRs |
+| [`prd.schema.json`](schemas/prd.schema.json) | `id` (`PRD-NNN`), `status`, `created`, `modified` | none — the template governs structure |
+| [`prp.schema.json`](schemas/prp.schema.json) | `id` (`PRP-NNN`), `status`, `created`, `modified`, `reviewed`, `confidence`, `domain` | Context Framing, AI Documentation, Implementation Blueprint, Test Strategy, Validation Gates, Success Criteria |
+
+`scripts/check-schema.py` is the one engine. It projects a markdown document
+into `{frontmatter, sections}` so *section* requirements live in the schema too,
+rather than in a grep loop, and validates plain JSON (the feature tracker) with
+`--json-file`. The three `validate-*-frontmatter.sh` hooks are thin wrappers
+over `validate-frontmatter.sh` and declare no field list;
+`scripts/tests/test-check-schema.sh` fails the build if one reappears.
+
+**Frontmatter must start at line 1.** The pre-reconciliation extraction accepted
+a `---` block anywhere in the file, and every ADR in this repo put its metadata
+below the H1 — where no standard YAML parser looks.
+
+**Severity is declared in the schema**, not in the hook. A subschema carrying
+`"x-blueprint-severity": "warning"` downgrades its failures to a non-blocking
+finding, and its `title` becomes the message. Used for the things that should
+nudge rather than block (`.claude/rules/hook-block-vs-nudge.md`):
+
+| Finding | Severity | Why |
+|---|---|---|
+| Unknown `status`, bad `id` pattern, missing required field, no line-1 frontmatter | ERROR (blocks) | The document is malformed or unparseable |
+| Missing `## ` section | WARN | Only 2 of this repo's 22 ADRs carry all five; blocking an edit until someone back-writes an "Options Considered" they never had is hostile |
+| `Superseded` with no `superseded-by` | WARN | A decision can be marked superseded before its replacement is numbered |
+| Deprecated spelling (`superseded_by`, `status: completed`) | WARN | Named so it can be migrated, accepted so downstream documents keep validating |
+| `reviewed` older than `x-blueprint-staleness-days` | WARN | Staleness is a fact about time, not a defect in the document |
+
+`Edit` is validated too: the payload carries `old_string`/`new_string` rather
+than `content`, so the validator reconstructs the resulting document from the
+file on disk. The old hooks read `.tool_input.content` unconditionally, so every
+Edit to a PRD/ADR/PRP skipped validation entirely while exiting 0.
+
 ## Manifest Validation
 
 `docs/blueprint/manifest.json` is the control surface every skill reads, and

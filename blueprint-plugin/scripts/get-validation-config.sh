@@ -107,7 +107,20 @@ DEF_DOC_GLOBS=$'docs/prds/*.md\tdocs/prps/*.md\tdocs/adrs/*.md'
 DEF_ADR_DIRS=$'docs/adrs\tdocs/adr'
 
 # The feature-tracker.schema.json enum. Constant — see the BOUNDARY note above.
+#
+# READ FROM THE SCHEMA, not re-declared here. This was a hand-copy of
+# schemas/feature-tracker.schema.json's `definitions.status.enum`, kept in sync
+# by nothing; the literal below is now only a fallback for when jq or the schema
+# file is unavailable, so the script keeps its degradation contract.
 CANONICAL_FEATURE_STATUSES=$'not_started\tin_progress\tpartial\tcomplete\tblocked'
+
+_tracker_schema="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../schemas/feature-tracker.schema.json"
+if command -v jq >/dev/null 2>&1 && [ -f "$_tracker_schema" ]; then
+    _from_schema="$(jq -r '(.definitions.status.enum // []) | join("\t")' "$_tracker_schema" 2>/dev/null || true)"
+    if [ -n "${_from_schema:-}" ]; then
+        CANONICAL_FEATURE_STATUSES="$_from_schema"
+    fi
+fi
 
 project_dir="."
 while [ $# -gt 0 ]; do
@@ -182,7 +195,10 @@ fi
 resolve() {
     local r_var="$1" r_path="$2" r_val
     jq -e "($r_path | type) == \"array\"" "$manifest" >/dev/null 2>&1 || return 0
-    r_val="$(jq -r "[ $r_path[] | select(type == \"string\") | select(test(\"[\\t\\n\\r]\") | not) ] | join(\"\\t\")" "$manifest" 2>/dev/null)" || return 0
+    # ${r_path}[] not $r_path[]: identical to the shell, but the unbraced form
+    # reads as a bash array expansion to shellcheck (SC1087). This is a jq
+    # expression interpolated into a jq program.
+    r_val="$(jq -r "[ ${r_path}[] | select(type == \"string\") | select(test(\"[\\t\\n\\r]\") | not) ] | join(\"\\t\")" "$manifest" 2>/dev/null)" || return 0
     declare -g "$r_var=$r_val"
     CONFIGURED_KEYS="${CONFIGURED_KEYS}${CONFIGURED_KEYS:+$'\t'}${r_var}"
     return 0

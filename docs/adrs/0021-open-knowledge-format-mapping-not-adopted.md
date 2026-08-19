@@ -1,6 +1,5 @@
-# ADR-0021: Do Not Adopt the Open Knowledge Format (OKF) for Skills; Record Substrate Convergence
-
 ---
+id: ADR-0021
 date: 2026-07-12
 created: 2026-07-12
 modified: 2026-07-12
@@ -13,6 +12,8 @@ relates-to:
   - ADR-0016  # deterministic script extraction (skills are executable, not declarative knowledge)
   - ADR-0019  # reject shared-library/@-imports/templating for skill DRY (sibling "keep current model" decision)
 ---
+
+# ADR-0021: Do Not Adopt the Open Knowledge Format (OKF) for Skills; Record Substrate Convergence
 
 ## Context
 

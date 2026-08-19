@@ -1,6 +1,5 @@
-# ADR-0015: Adopt Agent Teams and Deprecate Manual Orchestration
-
 ---
+id: ADR-0015
 date: 2026-02-07
 created: 2026-02-07
 modified: 2026-02-07
@@ -11,6 +10,8 @@ relates-to:
   - ADR-0009
 github-issues: []
 ---
+
+# ADR-0015: Adopt Agent Teams and Deprecate Manual Orchestration
 
 ## Context
 

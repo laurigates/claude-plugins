@@ -1,3 +1,10 @@
+---
+id: ADR-0002
+status: Accepted
+created: 2026-01-09
+modified: 2026-01-09
+---
+
 # ADR-0002: Domain-Driven Plugin Organization
 
 ## Status

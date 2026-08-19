@@ -1,3 +1,10 @@
+---
+id: ADR-0006
+status: Accepted
+created: 2026-01-21
+modified: 2026-01-21
+---
+
 # ADR-0006: Project Standards Enforcement
 
 ## Status

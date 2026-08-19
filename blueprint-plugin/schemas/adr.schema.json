@@ -1,79 +1,190 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "blueprint-plugin/adr.schema.json",
-  "title": "Architecture Decision Record Frontmatter",
-  "description": "Schema for validating ADR frontmatter with relationship and domain fields",
+  "title": "Architecture Decision Record",
+  "description": "The single source of truth for ADR structure. hooks/validate-adr-frontmatter.sh is a thin caller of scripts/check-schema.py against this file and declares no field list of its own; scripts/tests/test-schema-field-parity.sh fails if it grows one. The validated object is built by check-schema.py: `frontmatter` is the parsed line-1 YAML block, `sections` maps each `## ` heading text to its ordinal.",
+  "x-blueprint-doc-kind": "adr",
+  "x-blueprint-path-glob": "docs/adrs/**",
   "type": "object",
-  "required": ["date", "status"],
+  "required": [
+    "frontmatter",
+    "sections"
+  ],
+  "additionalProperties": false,
   "properties": {
-    "date": {
-      "type": "string",
-      "format": "date",
-      "description": "Date the decision was made (YYYY-MM-DD)"
-    },
-    "status": {
-      "type": "string",
-      "enum": ["Proposed", "Accepted", "Deprecated", "Superseded"],
-      "description": "Current status of the ADR"
-    },
-    "deciders": {
-      "type": "string",
-      "description": "Who made the decision"
-    },
-    "domain": {
-      "type": "string",
-      "pattern": "^[a-z][a-z0-9-]*$",
-      "description": "Domain/category for scoping conflict detection (e.g., state-management, data-layer)",
-      "examples": [
-        "state-management",
-        "data-layer",
-        "api-design",
-        "authentication",
-        "testing",
-        "deployment",
-        "frontend-framework",
-        "styling",
-        "build-tooling"
+    "frontmatter": {
+      "type": "object",
+      "description": "Line-1 YAML frontmatter. additionalProperties stays open: this is a user-authored document in downstream repos, and blocking a Write over an unrecognised field would be hostile. The closed-block typo defence that manifest.schema.json uses is right for a plugin-controlled control surface, not for someone else's ADR.",
+      "additionalProperties": true,
+      "required": [
+        "id",
+        "status",
+        "created",
+        "modified"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^ADR-[0-9]{4,}$",
+          "description": "Document ID (ADR-NNNN). Assigned by /blueprint:sync-ids when missing."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Draft",
+            "Proposed",
+            "Accepted",
+            "Rejected",
+            "Withdrawn",
+            "Superseded",
+            "Deprecated"
+          ],
+          "description": "Lifecycle state. Capitalised, unlike PRP status — ADRs have used this casing since ADR-0001."
+        },
+        "created": {
+          "type": "string",
+          "format": "date",
+          "description": "YYYY-MM-DD the ADR was first written"
+        },
+        "modified": {
+          "type": "string",
+          "format": "date",
+          "description": "YYYY-MM-DD of the last substantive edit"
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "Legacy alias for `created`, kept because templates/adr-readme.md reads it when building the index. New ADRs should set `created`."
+        },
+        "reviewed": {
+          "type": "string",
+          "format": "date",
+          "description": "YYYY-MM-DD the decision was last re-examined"
+        },
+        "deciders": {
+          "type": "string",
+          "description": "Who made the decision"
+        },
+        "domain": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "description": "Category scoping conflict detection between ADRs (see skills/adr-relationships)",
+          "examples": [
+            "architecture",
+            "automation",
+            "ci-cd",
+            "state-management",
+            "data-layer",
+            "api-design",
+            "testing",
+            "deployment"
+          ]
+        },
+        "title": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "supersedes": {
+          "type": "string",
+          "pattern": "^ADR-[0-9]{4,}$",
+          "description": "ADR this decision replaces. The target must carry the reciprocal `superseded-by`."
+        },
+        "superseded-by": {
+          "type": "string",
+          "pattern": "^ADR-[0-9]{4,}$",
+          "description": "ADR that replaced this decision. Hyphenated to match relates-to / github-issues, which auto-sync-id-registry.sh already parses. The underscore spelling `superseded_by` was the schema's form until the SSOT reconciliation and is rejected below."
+        },
+        "superseded_by": {
+          "not": {},
+          "x-blueprint-severity": "warning",
+          "title": "`superseded_by` (underscore) is the pre-reconciliation spelling — rename it to `superseded-by`. The hyphen form is what hooks and skills read; the underscore form is silently ignored."
+        },
+        "extends": {
+          "type": "string",
+          "pattern": "^ADR-[0-9]{4,}$",
+          "description": "ADR this decision builds upon without replacing"
+        },
+        "relates-to": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(ADR|PRD|PRP|WO)-[0-9]{3,}$"
+          },
+          "uniqueItems": true,
+          "description": "Non-hierarchical cross-document references"
+        },
+        "github-issues": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "uniqueItems": true,
+          "description": "Linked GitHub issue numbers"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "Superseded"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "superseded-by"
+            ],
+            "x-blueprint-severity": "warning",
+            "title": "status is `Superseded` but no `superseded-by` names the replacement — /blueprint:adr-validate can set both ends. Warning, not an error: a decision can be marked superseded before its replacement is numbered."
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "date"
+            ],
+            "not": {
+              "required": [
+                "created"
+              ]
+            }
+          },
+          "then": {
+            "required": [
+              "created"
+            ],
+            "x-blueprint-severity": "warning",
+            "title": "`date` is set but `created` is not. `date` is a legacy alias; set `created` (and `modified`) so the ID registry and staleness checks see the document."
+          }
+        }
       ]
     },
-    "supersedes": {
-      "type": "string",
-      "pattern": "^ADR-\\d{4}$",
-      "description": "ADR number this decision supersedes (e.g., ADR-0003)"
-    },
-    "superseded_by": {
-      "type": "string",
-      "pattern": "^ADR-\\d{4}$",
-      "description": "ADR number that superseded this decision (set automatically)"
-    },
-    "extends": {
-      "type": "string",
-      "pattern": "^ADR-\\d{4}$",
-      "description": "ADR number this decision extends/builds upon"
-    },
-    "related": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "pattern": "^ADR-\\d{4}$"
+    "sections": {
+      "type": "object",
+      "description": "Map of `## ` heading text to its 0-based ordinal. Missing sections WARN rather than block: only 2 of this repo's 22 ADRs carry all five, and a PreToolUse block would refuse an edit to a 2026-01 ADR until someone back-wrote an Options Considered section it never had. /blueprint:adr-validate is the gate that can insist. See .claude/rules/hook-block-vs-nudge.md.",
+      "required": [
+        "Context",
+        "Decision",
+        "Consequences",
+        "Options Considered",
+        "Related ADRs"
+      ],
+      "additionalProperties": {
+        "type": "integer"
       },
-      "uniqueItems": true,
-      "description": "Related ADR numbers (non-hierarchical relationships)"
+      "x-blueprint-severity": "warning",
+      "title": "required `## ` section missing — the ADR/PRP template declares it; add it or run the matching validate skill"
     }
-  },
-  "allOf": [
-    {
-      "if": {
-        "properties": {
-          "status": { "const": "Superseded" }
-        },
-        "required": ["status"]
-      },
-      "then": {
-        "required": ["superseded_by"],
-        "errorMessage": "Superseded ADRs must specify which ADR superseded them"
-      }
-    }
-  ],
-  "additionalProperties": true
+  }
 }

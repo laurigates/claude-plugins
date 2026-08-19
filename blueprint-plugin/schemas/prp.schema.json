@@ -1,0 +1,163 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "blueprint-plugin/prp.schema.json",
+  "title": "Product Requirement Prompt",
+  "description": "The single source of truth for PRP structure. hooks/validate-prp-frontmatter.sh is a thin caller of scripts/check-schema.py against this file. The validated object is built by check-schema.py: `frontmatter` is the parsed line-1 YAML block, `sections` maps each `## ` heading text to its ordinal.",
+  "x-blueprint-doc-kind": "prp",
+  "x-blueprint-path-glob": "docs/prps/**",
+  "type": "object",
+  "required": [
+    "frontmatter",
+    "sections"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "frontmatter": {
+      "type": "object",
+      "description": "Line-1 YAML frontmatter. Open to extra fields — see the same note in adr.schema.json.",
+      "additionalProperties": true,
+      "required": [
+        "id",
+        "status",
+        "created",
+        "modified",
+        "reviewed",
+        "confidence",
+        "domain"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^PRP-[0-9]{3,}$",
+          "description": "Document ID (PRP-NNN). Assigned by /blueprint:sync-ids when missing."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "ready",
+            "in-progress",
+            "complete",
+            "completed"
+          ],
+          "description": "Lifecycle state, lowercase (unlike ADR/PRD). `complete` is canonical and matches the feature-tracker vocabulary; `completed` is the pre-reconciliation spelling, accepted so downstream PRPs keep validating, and warned about below."
+        },
+        "created": {
+          "type": "string",
+          "format": "date"
+        },
+        "modified": {
+          "type": "string",
+          "format": "date"
+        },
+        "reviewed": {
+          "type": "string",
+          "format": "date",
+          "description": "YYYY-MM-DD the PRP was last refreshed against the codebase.",
+          "x-blueprint-staleness-days": 30
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10
+            },
+            {
+              "type": "string",
+              "pattern": "^([1-9]|10)(\\s*/\\s*10)?$"
+            }
+          ],
+          "description": "Readiness score 1-10, written either as an integer or as `N/10`. See skills/confidence-scoring."
+        },
+        "domain": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "title": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "implements": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^PRD-[0-9]{3,}$"
+          },
+          "uniqueItems": true,
+          "description": "Source PRDs this PRP implements"
+        },
+        "feature-codes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^FR[0-9]+(\\.[0-9]+)*$"
+          },
+          "uniqueItems": true
+        },
+        "relates-to": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(ADR|PRD|PRP|WO)-[0-9]{3,}$"
+          },
+          "uniqueItems": true
+        },
+        "github-issues": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "completed"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "status": {
+                "const": "complete"
+              }
+            },
+            "x-blueprint-severity": "warning",
+            "title": "`status: completed` is the pre-reconciliation spelling — use `complete`, which matches feature-tracker.schema.json's canonical vocabulary."
+          }
+        }
+      ]
+    },
+    "sections": {
+      "type": "object",
+      "description": "Map of `## ` heading text to its 0-based ordinal. Missing sections WARN rather than block, so a PRP can be drafted top-down and saved mid-write. hooks/check-prp-readiness.sh is the gate: it blocks Skill(prp-execute) on the same sections, which is where completeness actually matters. See .claude/rules/hook-block-vs-nudge.md.",
+      "required": [
+        "Context Framing",
+        "AI Documentation",
+        "Implementation Blueprint",
+        "Test Strategy",
+        "Validation Gates",
+        "Success Criteria"
+      ],
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "x-blueprint-severity": "warning",
+      "title": "required `## ` section missing — the ADR/PRP template declares it; add it or run the matching validate skill"
+    }
+  }
+}

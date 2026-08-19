@@ -1,3 +1,11 @@
+---
+id: PRD-001
+status: Draft
+created: 2026-01-09
+modified: 2026-01-09
+reviewed: 2026-01-09
+---
+
 # Automatic Document Management - Product Requirements Document
 
 **Created**: 2026-01-09

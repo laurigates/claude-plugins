@@ -1,18 +1,5 @@
-# ADR-0017: Hook-Based Behavioral Cues for Multi-Plugin Utilization
-
-> **Amended in part (2026-08-06, issue #2275):** every claim below about
-> `hookSpecificOutput.updatedToolOutput` as a general point-of-performance cue
-> channel is **wrong as written** — notably the Channel bullet of the worked
-> example (§ "Worked example (first MVP)"), which instructed the blueprint cue to
-> use it. That field is validated against the **tool's own output schema** and
-> must be an object of that shape; `Write`/`Edit` has no free-text field, so the
-> cue was silently discarded and the hook shipped as a no-op. The decision to use
-> hooks as the cue substrate, the token-budget contract, and the worked example's
-> trigger/dedup/test design all stand — only the channel changes. Affected
-> passages are marked *(amended — see [Amendment](#amendment-2026-08-06--updatedtooloutput-is-schema-bound-not-a-general-cue-channel))*;
-> the corrected contract is in that section.
-
 ---
+id: ADR-0017
 date: 2026-06-13
 created: 2026-06-13
 modified: 2026-08-06
@@ -27,6 +14,21 @@ github-issues:
   - 1599  # Behavioral forcing functions and point-of-performance hooks
   - 2275  # updatedToolOutput schema rejection — see Amendment (2026-08-06)
 ---
+
+# ADR-0017: Hook-Based Behavioral Cues for Multi-Plugin Utilization
+
+> **Amended in part (2026-08-06, issue #2275):** every claim below about
+> `hookSpecificOutput.updatedToolOutput` as a general point-of-performance cue
+> channel is **wrong as written** — notably the Channel bullet of the worked
+> example (§ "Worked example (first MVP)"), which instructed the blueprint cue to
+> use it. That field is validated against the **tool's own output schema** and
+> must be an object of that shape; `Write`/`Edit` has no free-text field, so the
+> cue was silently discarded and the hook shipped as a no-op. The decision to use
+> hooks as the cue substrate, the token-budget contract, and the worked example's
+> trigger/dedup/test design all stand — only the channel changes. Affected
+> passages are marked *(amended — see [Amendment](#amendment-2026-08-06--updatedtooloutput-is-schema-bound-not-a-general-cue-channel))*;
+> the corrected contract is in that section.
+
 
 ## Context
 

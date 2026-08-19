@@ -1,3 +1,10 @@
+---
+id: ADR-0004
+status: Accepted
+created: 2026-01-09
+modified: 2026-02-05
+---
+
 # ADR-0004: Marketplace Registry Model
 
 ## Status

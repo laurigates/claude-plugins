@@ -1,3 +1,12 @@
+---
+id: ADR-0012
+status: Accepted
+deciders: Plugin Maintainers
+date: 2026-01-10
+created: 2026-01-10
+modified: 2026-01-10
+---
+
 # ADR-0012: Blog Plugin for Project Documentation
 
 **Date**: 2026-01-10

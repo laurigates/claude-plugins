@@ -94,6 +94,27 @@ Display the current blueprint configuration status with three-layer architecture
    | `STATUS=WARN` + `format_version_below_schema` | The manifest predates the schema's format version; recommend `/blueprint:upgrade` rather than reporting schema findings |
    | `SOURCE=…:no_validator` | Neither `uv` nor an installed `jsonschema` is available — the check is skipped, not failed. Say so instead of claiming the manifest is clean |
 
+2b. **Validate the feature tracker against its schema** (if one exists):
+
+   `schemas/feature-tracker.schema.json` describes the tracker's shape, but
+   until the schema reconciliation nothing applied it — the file was consulted
+   by humans and by `get-validation-config.sh`'s enum read, and no run ever
+   validated a tracker against it. The same engine as Step 2a does both:
+
+   ```bash
+   uv run --quiet --script "${CLAUDE_SKILL_DIR}/../../scripts/check-schema.py" --schema "${CLAUDE_SKILL_DIR}/../../schemas/feature-tracker.schema.json" --json-file docs/blueprint/feature-tracker.json
+   ```
+
+   Same output contract as Step 2a. A missing tracker is `STATUS=OK` — most
+   repos have none, and a check that errors on an absent optional file gets
+   turned off.
+
+   This covers the tracker's **shape**. `blueprint-tracker-check.sh` (run by
+   `/blueprint:feature-tracker-sync` and `-status`) covers what a schema cannot
+   express: the `statistics` block agreeing with the features collection it
+   caches, `tasks.*[]` membership, and FR ids cited in `docs/**` but never
+   minted. Run both; neither subsumes the other.
+
 3. **Check for upgrade availability**:
    - Compare `format_version` in manifest with current plugin version
    - Current format version: **3.4.0**
@@ -251,7 +272,7 @@ Display the current blueprint configuration status with three-layer architecture
    - Warn if ADRs have potential issues:
      - Multiple "Accepted" ADRs in same domain (potential conflict)
      - ADRs without domain tags (harder to detect conflicts)
-     - Missing bidirectional links (e.g., supersedes without corresponding superseded_by)
+     - Missing bidirectional links (e.g., supersedes without corresponding superseded-by)
    - **Traceability checks**:
      - Warn if documents exist without IDs (run `/blueprint:sync-ids`)
      - Warn if orphan documents exist (docs without GitHub issues)

@@ -1,3 +1,12 @@
+---
+id: ADR-0010
+status: Proposed
+deciders: Blueprint Plugin Maintainers
+date: 2026-01-09
+created: 2026-01-09
+modified: 2026-01-09
+---
+
 # ADR-0010: Proactive Document Detection
 
 **Date**: 2026-01-09

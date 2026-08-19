@@ -46,13 +46,13 @@ Execute complete ADR validation and remediation workflow:
 1. Check for ADR directory at `docs/adrs/`
 2. If missing → Error: "No ADRs found in docs/adrs/"
 3. Parse all ADR files: `ls docs/adrs/*.md`
-4. Extract frontmatter for each ADR: number, date, status, domain, supersedes, superseded_by, extends, related
+4. Extract frontmatter for each ADR: number, id, created, modified, status, domain, supersedes, superseded-by, extends, relates-to
 
 ### Step 2: Validate reference integrity
 
 For each ADR, validate:
 
-1. **supersedes references**: Verify target exists, target status = "Superseded", target has reciprocal superseded_by
+1. **supersedes references**: Verify target exists, target status = "Superseded", target has reciprocal superseded-by
 2. **extends references**: Verify target exists, warn if target is "Superseded"
 3. **related references**: Verify all targets exist, warn if one-way links
 4. **self-references**: Flag if ADR references itself

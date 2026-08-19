@@ -1,3 +1,15 @@
+---
+id: PRP-001
+implements:
+  - PRD-001
+status: draft
+created: 2026-01-09
+modified: 2026-01-09
+reviewed: 2026-01-09
+confidence: 7/10
+domain: documentation
+---
+
 # PRP: Automatic Document Management
 
 **Created**: 2026-01-09

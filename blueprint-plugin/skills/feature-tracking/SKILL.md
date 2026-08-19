@@ -125,11 +125,21 @@ Key schema features:
 - PRD naming pattern: `^PRD_[A-Z_]+$`
 
 ### Validate tracker
+
+`scripts/check-schema.py` is the bundled validator — the same engine the
+ADR/PRD/PRP hooks use. It needs no globally-installed `ajv`, resolves its own
+dependencies through `uv`, and emits the `STATUS=`/`ISSUE_COUNT=` contract from
+`.claude/rules/structured-script-output.md`:
+
 ```bash
-# Using ajv-cli or similar JSON schema validator
-ajv validate -s schemas/feature-tracker.schema.json \
-             -d docs/blueprint/feature-tracker.json
+uv run --quiet --script "${CLAUDE_PLUGIN_ROOT}/scripts/check-schema.py" --schema "${CLAUDE_PLUGIN_ROOT}/schemas/feature-tracker.schema.json" --json-file docs/blueprint/feature-tracker.json
 ```
+
+Exit 0 on OK/WARN, 1 on ERROR. A missing tracker is `STATUS=OK` — most repos
+have none, and a validator that errors on an absent optional file gets
+disabled. `blueprint-tracker-check.sh` covers the invariants a schema cannot
+express (the `statistics` cache agreeing with the features collection,
+`tasks.*[]` membership, FR ids cited in docs but never minted).
 
 ## Integration Points
 

@@ -4,7 +4,14 @@
   "title": "Feature Tracker",
   "description": "Schema for tracking feature implementation status aligned with requirements documents",
   "type": "object",
-  "required": ["version", "last_updated", "project", "source_document", "phases", "features"],
+  "required": [
+    "version",
+    "last_updated",
+    "project",
+    "source_document",
+    "phases",
+    "features"
+  ],
   "properties": {
     "$schema": {
       "type": "string",
@@ -45,14 +52,26 @@
       }
     },
     "features": {
-      "type": "object",
-      "description": "Top-level feature requirements (FR1, FR2, etc.)",
-      "patternProperties": {
-        "^FR\\d+$": {
-          "$ref": "#/definitions/featureCategory"
+      "description": "Feature requirements. Two shapes exist in the wild and both are accepted: an OBJECT keyed FR1/FR2 (the canonical form this schema originally declared), and an ARRAY of the same records (used by reporting repos). blueprint-tracker-check.sh handles both and reports which it found as FEATURES_SHAPE=. The schema has to describe what the system accepts, or the tolerance lives only in a script comment.",
+      "anyOf": [
+        {
+          "type": "object",
+          "title": "keyed by FR code",
+          "patternProperties": {
+            "^FR\\d+$": {
+              "$ref": "#/definitions/featureCategory"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "array",
+          "title": "array of feature records",
+          "items": {
+            "$ref": "#/definitions/featureCategory"
+          }
         }
-      },
-      "additionalProperties": false
+      ]
     },
     "prds": {
       "type": "object",
@@ -78,7 +97,13 @@
   "definitions": {
     "status": {
       "type": "string",
-      "enum": ["not_started", "in_progress", "partial", "complete", "blocked"],
+      "enum": [
+        "not_started",
+        "in_progress",
+        "partial",
+        "complete",
+        "blocked"
+      ],
       "description": "Implementation status"
     },
     "tasks": {
@@ -87,24 +112,33 @@
       "properties": {
         "in_progress": {
           "type": "array",
-          "items": { "$ref": "#/definitions/task" },
+          "items": {
+            "$ref": "#/definitions/task"
+          },
           "description": "Tasks currently being worked on"
         },
         "pending": {
           "type": "array",
-          "items": { "$ref": "#/definitions/task" },
+          "items": {
+            "$ref": "#/definitions/task"
+          },
           "description": "Tasks queued for future work"
         },
         "completed": {
           "type": "array",
-          "items": { "$ref": "#/definitions/task" },
+          "items": {
+            "$ref": "#/definitions/task"
+          },
           "description": "Recently completed tasks (last 10)"
         }
       }
     },
     "task": {
       "type": "object",
-      "required": ["id", "description"],
+      "required": [
+        "id",
+        "description"
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -132,7 +166,11 @@
     },
     "phase": {
       "type": "object",
-      "required": ["id", "name", "status"],
+      "required": [
+        "id",
+        "name",
+        "status"
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -150,7 +188,10 @@
     },
     "featureCategory": {
       "type": "object",
-      "required": ["name", "features"],
+      "required": [
+        "name",
+        "features"
+      ],
       "properties": {
         "name": {
           "type": "string",
@@ -170,7 +211,11 @@
     },
     "feature": {
       "type": "object",
-      "required": ["name", "status", "phase"],
+      "required": [
+        "name",
+        "status",
+        "phase"
+      ],
       "properties": {
         "name": {
           "type": "string",
@@ -189,13 +234,20 @@
           "description": "Reference to implementation phase"
         },
         "prd": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "description": "Associated PRD document name (null if none)"
         },
         "implementation": {
           "oneOf": [
-            { "type": "null" },
-            { "$ref": "#/definitions/implementation" }
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/definitions/implementation"
+            }
           ],
           "description": "Implementation details (null if not started)"
         },
@@ -220,7 +272,10 @@
     },
     "implementedByRef": {
       "type": "object",
-      "required": ["workspace", "ref"],
+      "required": [
+        "workspace",
+        "ref"
+      ],
       "properties": {
         "workspace": {
           "type": "string",
@@ -250,7 +305,10 @@
           "maximum": 100
         },
         "current_phase": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "description": "Child workspace's currently active phase"
         },
         "last_synced_at": {
@@ -265,7 +323,9 @@
       "properties": {
         "files": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "Source files involved in implementation"
         },
         "notes": {
@@ -274,19 +334,27 @@
         },
         "tests": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "Test files or test function names"
         },
         "commits": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "Related commit hashes"
         }
       }
     },
     "prd": {
       "type": "object",
-      "required": ["name", "status", "features_implemented"],
+      "required": [
+        "name",
+        "status",
+        "features_implemented"
+      ],
       "properties": {
         "name": {
           "type": "string",
@@ -297,7 +365,9 @@
         },
         "features_implemented": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "List of FR codes or feature descriptions implemented"
         },
         "tests_passing": {
@@ -307,7 +377,9 @@
         },
         "work_orders": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "Associated work order IDs"
         }
       }

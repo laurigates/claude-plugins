@@ -1,3 +1,10 @@
+---
+id: ADR-0003
+status: Accepted
+created: 2026-01-09
+modified: 2026-02-18
+---
+
 # ADR-0003: Auto-Discovery Component Pattern
 
 ## Status
