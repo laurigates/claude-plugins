@@ -1,12 +1,12 @@
 ---
 name: task-add
-description: Add a taskwarrior task with blueprint linkage and optional GitHub issue. Use when adding coordination tasks, linking a blueprint WO, or mirroring a GitHub issue locally.
+description: File a taskwarrior task with a verified project slug and blueprint/GitHub linkage. Use when logging cross-session follow-ups, confirming a project slug, or mirroring a GitHub issue.
 args: "[description] [project:<name>] [--no-project] [due:<date>] [scheduled:<date>] [wait:<date>] [recur:<freq>] [until:<date>]"
-allowed-tools: Bash(task *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh issue *), Bash(gh api *), Bash(bash *), Read, TodoWrite
+allowed-tools: Bash(task *), Bash(jq *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh issue *), Bash(gh api *), Bash(bash *), Read, TodoWrite
 argument-hint: short task description
 created: 2026-04-24
-modified: 2026-06-20
-reviewed: 2026-06-20
+modified: 2026-08-19
+reviewed: 2026-08-19
 ---
 
 # /taskwarrior:task-add
@@ -43,7 +43,7 @@ Parse `$ARGUMENTS`:
 - Optional `--no-project` to file the task without any project (cross-cutting work).
 - Optional inline `bpid:WO-012` / `bpdoc:docs/wo/012.md` / `bpms:M6` / `ghid:145` / `ghpr:99` fields.
 - Optional native scheduling fields (prefer these over manual `+blocked*` bookkeeping):
-  - `due:<date>` — deadline. Feeds urgency and surfaces the task as `+DUE` / `+OVERDUE` in `task-coordinate` / `task-status`.
+  - `due:<date>` — deadline. Feeds urgency and surfaces the task as `+DUE` / `+OVERDUE` in `task-coordinate` / `task-status`. Set it only for real deadlines — the queue is a queue, not a calendar.
   - `scheduled:<date>` — earliest start. The task only becomes `+READY` once this date passes, so future work stays out of dispatch candidates.
   - `wait:<date>` — hide the task entirely until the date. Use for "blocked on merge until X" instead of a hand-managed `+blocked_on_merge` tag — taskwarrior auto-unhides it.
   - `recur:<freq>` (e.g. `weekly`, `monthly`) with a `due:` — repeating maintenance chores. Requires `due:`.
@@ -78,6 +78,34 @@ Cross-check the resolved name against `Known projects` and reuse the
 exact spelling when it matches (case-insensitive) — taskwarrior treats
 `MyRepo` and `myrepo` as different projects.
 
+#### `project:` is a PREFIX match — a populated result does not prove the slug
+
+`task project:comfyui list` returns every task in `comfyui-nodes`,
+`comfyui-touch-connect`, and any other project starting with that string.
+Nothing in the output says so. A slug you just invented therefore *looks*
+verified the moment a sibling shares its prefix, which is the whole trap:
+the confirming evidence and a false positive are byte-identical.
+
+> Observed twice (2026-08-08, comfyui-nodes). A commit titled "point the
+> backlog at `project:comfyui`, **the slug that exists**" moved the documented
+> slug to the one project that was nearly empty — 60 tasks sat under
+> `comfyui-nodes`, 1 under `comfyui` — because `task project:comfyui list`
+> showed all 60. A later session read that doc, filed four follow-ups into the
+> near-empty sibling, and only caught it when a survey script printed the
+> per-project counts side by side.
+
+**To check a slug is real, read the exact value — never a filter that matches
+its own prefix:**
+
+```sh
+task export | jq -r '[.[].project] | group_by(.) | map({p:.[0], n:length}) | sort_by(-.n)[]'
+```
+
+Corollaries: prefer `task <uuid> modify project:<slug>` when consolidating
+(numeric ids shift); and a *new* project slug is silently created on first
+`add`, so a typo never errors — it just starts a parallel backlog that the
+prefix match then hides.
+
 ## Execution
 
 Execute this workflow:
@@ -102,6 +130,15 @@ bash "${CLAUDE_SKILL_DIR}/../../scripts/ensure-udas.sh"
 Identity UDAs are not set by `task-add` itself — `/taskwarrior:task-claim`
 stamps them when an agent picks the task up. The same script backs the
 SessionStart drift-probe, so the install logic is single-sourced.
+
+#### Bootstrap — no rc file
+
+If `task` errors with "Cannot proceed without rc file":
+
+```sh
+mkdir -p ~/.local/share/task
+echo "data.location=~/.local/share/task" > ~/.taskrc
+```
 
 ### Step 2: Detect GitHub mode
 

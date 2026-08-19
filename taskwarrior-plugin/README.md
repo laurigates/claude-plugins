@@ -21,7 +21,7 @@ Both systems stay in sync via UDAs (`ghid`, `ghpr`) and tags (`+gh`, `+pr_ready`
 
 | Skill | Purpose |
 |-------|---------|
-| `/taskwarrior:task-add` | File a task with bpid / bpdoc / bpms fields; auto-tags `project:` from the current repo; offers GitHub issue linkage when a remote is detected |
+| `/taskwarrior:task-add` | File a task with bpid / bpdoc / bpms fields; auto-tags `project:` from the current repo and verifies the slug really exists (`project:` is a **prefix** match, so a non-empty `task project:<slug> list` never proves it); offers GitHub issue linkage when a remote is detected |
 | `/taskwarrior:task-claim` | Claim a pending task as in-flight: marks it `+ACTIVE` (`task start`), stamps identity UDAs (`agent` / `pid` / `host` / `branch` / `worktree`), and writes a `/git:coworker-check` session marker so destructive git ops in the clone are guarded |
 | `/taskwarrior:task-release` | Release an active claim without closing: stops the `+ACTIVE` clock, annotates the handoff state, drains `pid`, and drops the coworker-check marker. Pairs with `task-claim` for pause / handoff |
 | `/taskwarrior:task-done` | Close a task, annotate with commit hash, drain the linked feature-tracker entry; auto-stops the `+ACTIVE` claim and offers to close the linked GitHub issue |

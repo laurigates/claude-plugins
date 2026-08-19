@@ -5,8 +5,8 @@ args: "<task-id> [--no-coworker-marker] [--force]"
 allowed-tools: Bash(task *), Bash(git rev-parse *), Bash(git branch *), Bash(git config *), Bash(hostname *), Bash(jq *), Bash(bash *), Read, TodoWrite
 argument-hint: task id (required)
 created: 2026-05-09
-modified: 2026-05-22
-reviewed: 2026-05-22
+modified: 2026-08-19
+reviewed: 2026-08-19
 ---
 
 # /taskwarrior:task-claim
@@ -85,6 +85,12 @@ Read the JSON. Decide:
 | `start` is set and `--force` not passed | Abort. Report current `agent` / `pid` / `host` / `branch` so the user can either `--force` or pick another task. |
 | `start` is set and `--force` passed | Annotate with takeover notice (Step 6) and proceed. |
 | `start` is unset | Proceed cleanly. |
+
+#### Read a task's annotations before working it
+
+`task list` truncates them, hiding what past sessions established:
+`task <uuid> export | jq -r '.[0].annotations[].description'`. 2026-08: a
+session re-derived and announced a finding task 48517b52 already held.
 
 ### Step 3: Coworker-check claim (default on)
 
