@@ -4,7 +4,6 @@ description: "Resolve merge conflicts file-by-file. Use when a merge/rebase has 
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git merge *), Bash(git checkout *), Bash(git rebase *), Bash(git restore *), Bash(git config *), Bash(git rerere *), Bash(gh pr *), Read, Edit, Grep, Glob, TodoWrite
 args: "[file-or-pr] [--ours] [--theirs] [--push]"
 argument-hint: file path, PR number, --ours, --theirs, or --push
-disable-model-invocation: true
 created: 2026-03-01
 modified: 2026-06-18
 reviewed: 2026-05-23
