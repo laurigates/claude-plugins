@@ -142,6 +142,47 @@ A PreToolUse hook that blocks write operations on protected branches (main, mast
 
 **Toggle:** `export CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1` in your shell environment (e.g. in a personal repo, dotfiles, or main-branch-dev workflow). This is a **human-operator** opt-in — inline prefixes like `CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 git commit ...` on a Bash command are intentionally not honored, so that agents cannot self-serve the bypass. When blocked on a protected branch, an agent should follow `.claude/rules/handling-blocked-hooks.md` and delegate to the user instead.
 
+### repo-deletion-safety.sh
+
+A PreToolUse hook that blocks `rm -rf` on a git repository whose history exists nowhere else — no remote, or a remote that has never been pushed to. Such a delete destroys committed history, the working tree, every stash and every unpushed branch with a strictly empty recovery path, which is why it is a hard block rather than a nudge. The advisory counterpart is the `git-plugin:git-repo-delete-check` skill (`/git:repo-delete-check`).
+
+| Target of `rm -r`/`-rf`/`--recursive` | Behavior |
+|---------------------------------------|----------|
+| Repo root with no remote (tier 1a) | **Blocked** (exit 2) |
+| Repo root whose remote has never been pushed to (tier 1b) | **Blocked** (exit 2) |
+| A plain directory holding such repos (scanned to depth 3, capped at 20) | **Blocked** per offending repo |
+| Remote-backed repo with uncommitted / unpushed / stashed work (tier 2) | `ask` — **opt-in**, off by default |
+| A path *inside* a repo, a linked worktree, a submodule, a symlink | Allowed — the operand must be a repo **root** |
+| Repos under `/tmp`, `/private/tmp`, `/var/folders`, `$TMPDIR` | Allowed by default |
+| A repo with an existing `<basename>-*.tar.*` in the backup dir | Allowed — this is what makes the block self-extinguishing |
+
+The block message names three remediations (push, tar to `$CLAUDE_REPO_BACKUP_DIR`, or delegate to the user); performing either of the first two changes the world state the hook reads, so the retried `rm -rf` succeeds with no override. Fails **open** on unresolvable operands (`$VAR`, `$(…)`, globs, `{}`) and on remote-exec commands; sibling verbs (`git clean -xdff`, `trash`, `mv`, `rmdir`, `shred`, `find … -delete`) are out of scope. Full enumerated gap list in [`hooks/README.md`](hooks/README.md#repo-deletion-safetysh).
+
+**Toggle:** `export CLAUDE_HOOKS_DISABLE_REPO_DELETION_SAFETY=1` in your shell environment. Like branch protection, a **human-operator** opt-in — an inline `VAR=1 rm -rf …` prefix is intentionally not honored (the statement parser strips leading assignments), so agents cannot self-serve the bypass. Tuning: `CLAUDE_REPO_BACKUP_DIR` (default `$HOME/Backups`), `CLAUDE_HOOKS_REPO_DELETION_TMP_EXEMPT` (default `1`), `CLAUDE_HOOKS_REPO_DELETION_WARN_DIRTY` (default `0`).
+
+**Tests:** `bash hooks-plugin/hooks/test-repo-deletion-safety.sh` (hermetic — all fixtures under `mktemp -d`).
+
+### branch-base-guard.sh
+
+A PreToolUse hook that nudges before cutting a new branch from a local default branch that is **ahead of its remote** — `git-hazards.md` trap #2: unpushed commits on local `main` ride into the new branch, get bundled into its PR under an unrelated title, and a squash-merge hides them everywhere except the file list.
+
+| Aspect | Detail |
+|--------|--------|
+| Tier | **Nudge** (`permissionDecision: "ask"`), never a deny — nothing here is irreversible. Same tier as `git-plugin`'s `check-branch-sync-on-push.sh` |
+| Fires on | `git switch -c/-C/--create/--force-create`, `git checkout -b/-B`, `git worktree add … -b/-B` |
+| Only when | HEAD *is* the resolved default branch, **and** no explicit start-point was given, **and** local `<default>` is ≥1 commit ahead of `origin/<default>` |
+| Exempt | An explicit start-point (`git switch -c feat/x origin/main` — the hook's own suggested fix), `--track`/`-t`, feature-branch bases, in-sync defaults, no `origin`, detached HEAD, all `git branch` forms, quoted mentions, remote-exec |
+| Default branch | **Resolved** (`refs/remotes/origin/HEAD`, then a probed `main`/`master`), never hardcoded |
+| Dedup | At most one nudge per session+repo+default per TTL; silent when the ahead-count is 0 |
+| Network | None by default — a stale `origin/<default>` can only *overstate* the count |
+| Auto mode | Does **not** defer: auto mode's classifier has no notion of which base a branch is cut from |
+
+Known gaps: bare `git branch <name>` is deliberately out of scope (listing/deleting/`-vv` dominate its use, so disambiguating creation costs more false positives than the coverage buys); a never-fetched `origin/<default>` can overstate the count; cutting from an equally-ahead feature branch is uncovered.
+
+**Toggle:** `export CLAUDE_HOOKS_DISABLE_BRANCH_BASE_GUARD=1` in your shell environment — the documented answer for a repo that legitimately develops on its default branch (dotfiles, personal repos). Human-operator opt-in; an inline prefix is intentionally ignored. Tuning: `CLAUDE_HOOKS_BRANCH_BASE_TTL` (default `300` seconds), `CLAUDE_HOOKS_BRANCH_BASE_FETCH` (default `0`).
+
+**Tests:** `bash hooks-plugin/hooks/test-branch-base-guard.sh` (hermetic — fixture repos under `mktemp -d`).
+
 ### external-pr-merge-guard.sh
 
 A PreToolUse hook that refuses to let an agent merge a pull request authored by anyone other than the authenticated user or a bot.
@@ -440,6 +481,8 @@ Every hook can be individually enabled or disabled via environment variables. Se
 |------|-----------------|---------|
 | secret-protection.sh | `CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1` | Enabled |
 | branch-protection.sh | `CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1` | Enabled |
+| repo-deletion-safety.sh | `CLAUDE_HOOKS_DISABLE_REPO_DELETION_SAFETY=1` | Enabled |
+| branch-base-guard.sh | `CLAUDE_HOOKS_DISABLE_BRANCH_BASE_GUARD=1` | Enabled |
 | external-pr-merge-guard.sh | `CLAUDE_HOOKS_DISABLE_EXTERNAL_PR_MERGE=1` | Enabled |
 | auto-checkpoint.sh | `CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT=1` | Enabled |
 | permission-auto-approve.sh | `CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO=1` | Enabled |

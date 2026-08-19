@@ -29,7 +29,9 @@
     "branch-protection",
     "event-logger",
     "permissions",
-    "checkpoint"
+    "checkpoint",
+    "repo-deletion-safety",
+    "branch-base"
   ],
   "hooks": {
     "SessionStart": [
@@ -61,6 +63,16 @@
           {
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/branch-protection.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/repo-deletion-safety.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/branch-base-guard.sh",
             "timeout": 5000
           },
           {

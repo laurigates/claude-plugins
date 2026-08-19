@@ -2,8 +2,8 @@
 
 A single index of the **environment variables that toggle or tune plugin
 behavior** across this marketplace. Without it, the flags are discoverable only
-by grepping the hook sources — exactly the drift `documentation-authoring.md`
-warns against.
+by grepping the hook sources — exactly the drift
+`documentation-plugin:docs-single-source` warns against.
 
 Each row points at its **source file**, which is the authoritative definition
 (default value + logic). This catalog is a signpost, not a second copy of the
@@ -42,6 +42,8 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 |---|---|---|
 | `CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION` | Blocking access to secret files / env-var exposure | `hooks/secret-protection.sh` |
 | `CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION` | Blocking writes on `main`/`master` (**human-operator only** — inline prefixes are ignored so agents can't self-serve) | `hooks/branch-protection.sh` |
+| `CLAUDE_HOOKS_DISABLE_REPO_DELETION_SAFETY` | Blocking `rm -rf` of a git repo with no remote / an unpushed remote (**human-operator only** — inline prefixes are ignored so agents can't self-serve) | `hooks/repo-deletion-safety.sh` |
+| `CLAUDE_HOOKS_DISABLE_BRANCH_BASE_GUARD` | The `ask` nudge before cutting a branch from a local default branch that is ahead of its remote (**human-operator only**; the documented answer for a repo that legitimately develops on its default branch) | `hooks/branch-base-guard.sh` |
 | `CLAUDE_HOOKS_DISABLE_EXTERNAL_PR_MERGE` | Blocking merges of PRs authored by someone other than you or a bot (**human-operator only** — inline prefixes are ignored so agents can't self-serve) | `hooks/external-pr-merge-guard.sh` |
 | `CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT` | Auto-stash checkpoint before destructive git/`rm -rf` ops | `hooks/auto-checkpoint.sh` |
 | `CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO` | Auto-approve/deny of safe/dangerous ops at PermissionRequest | `hooks/permission-auto-approve.sh` |
@@ -84,6 +86,11 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 | `CLAUDE_HOOKS_EVENT_LOGGER_VERBOSE` | off | Log full JSON input (vs one-line summary) | `hooks/event-logger.sh` |
 | `CLAUDE_HOOKS_TEST_TIMEOUT` | `45` (s) | Test-verification timeout | `hooks/test-verification.sh` |
 | `CLAUDE_HOOKS_BRANCH_SYNC_TTL` | `300` (s) | Per-session+branch sync-check cache TTL | `git-plugin/hooks/check-branch-sync-on-push.sh` |
+| `CLAUDE_HOOKS_BRANCH_BASE_TTL` | `300` (s) | Per-session+repo+default branch-base nudge dedup window | `hooks/branch-base-guard.sh` |
+| `CLAUDE_HOOKS_BRANCH_BASE_FETCH` | `0` | `1` runs `git fetch --quiet origin <default>` on a cache miss for a fresher ahead-count | `hooks/branch-base-guard.sh` |
+| `CLAUDE_HOOKS_REPO_DELETION_TMP_EXEMPT` | `1` | `0` also guards repos under `/tmp`, `/private/tmp`, `/var/folders`, `$TMPDIR` | `hooks/repo-deletion-safety.sh` |
+| `CLAUDE_HOOKS_REPO_DELETION_WARN_DIRTY` | `0` | `1` enables the tier-2 `ask` on a remote-backed repo carrying uncommitted/unpushed/stashed work | `hooks/repo-deletion-safety.sh` |
+| `CLAUDE_REPO_BACKUP_DIR` | `$HOME/Backups` | Where an existing `<basename>-*.tar.*` clears the repo-deletion block; also the dir named in the block message | `hooks/repo-deletion-safety.sh` |
 | `CLAUDE_TASKWARRIOR_DRIFT_STALE_TTL` | `14400` (s) | Age before a `+ACTIVE` claim counts as stale | `hooks/taskwarrior-drift-probe.sh` |
 | `CLAUDE_TASKWARRIOR_DRIFT_STALE_LIMIT` | `50` | Max stale claims reported | `hooks/taskwarrior-drift-probe.sh` |
 | `CLAUDE_TASKWARRIOR_DRIFT_CACHE_DIR` | `$TMPDIR/claude-taskwarrior-drift` | Drift-probe cache location | `scripts/drain-ghsync-queue.sh` |
