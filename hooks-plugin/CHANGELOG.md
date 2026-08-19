@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.6](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.8.5...hooks-plugin-v2.8.6) (2026-08-19)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** scan heredoc-stripped view in ^-anchored blocks ([#2432](https://github.com/laurigates/claude-plugins/issues/2432)) ([8feb21c](https://github.com/laurigates/claude-plugins/commit/8feb21c86c349a866f19902df3b6e47078c9e2d5)), closes [#2431](https://github.com/laurigates/claude-plugins/issues/2431)
+
 ## [2.8.5](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.8.4...hooks-plugin-v2.8.5) (2026-08-18)
 
 

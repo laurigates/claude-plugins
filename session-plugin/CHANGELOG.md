@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.9.9...session-plugin-v1.10.0) (2026-08-19)
+
+
+### Features
+
+* **session-plugin:** give GH_READY=false a reason code and an 8s budget ([#2433](https://github.com/laurigates/claude-plugins/issues/2433)) ([b52f695](https://github.com/laurigates/claude-plugins/commit/b52f69592e765c8af28d53c1e7cecf36631e25fb)), closes [#2425](https://github.com/laurigates/claude-plugins/issues/2425)
+
 ## [1.9.9](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.9.8...session-plugin-v1.9.9) (2026-08-15)
 
 
