@@ -399,3 +399,205 @@ rm -rf /tmp/claude-stash-baselines/test-123.d
 The baseline is a per-session **directory** (`<session_id>.d/`), so `rm -f` on the
 flat path removes nothing the hooks write — that path only ever matches a
 pre-#2306 legacy baseline.
+
+---
+
+## repo-deletion-safety.sh
+
+A PreToolUse hook that blocks `rm -rf` on a git repository whose history exists
+nowhere else — no remote, or a remote that has never been pushed to.
+
+### Why This Hook Exists
+
+`rm -rf` on such a checkout destroys committed history, the working tree, every
+stash and every unpushed branch in one stroke. There is no reflog, no
+`git fsck --lost-found`, no PR and no coworker's clone to recover from. This is
+the one deletion shape with a strictly empty recovery path, which is why it is a
+hard block (exit 2) rather than a nudge — see
+[`.claude/rules/hook-block-vs-nudge.md`](../../.claude/rules/hook-block-vs-nudge.md)
+and the source skill `git-plugin:git-repo-delete-check`.
+
+The block is **self-extinguishing**: it names three remediations (push, tar to
+`$CLAUDE_REPO_BACKUP_DIR`, or delegate to the user), and performing either of the
+first two changes the world state the hook reads, so the retried `rm -rf`
+succeeds on the next attempt with no override. That property is what keeps the
+same-session repeat-block rate near zero.
+
+### Commands Blocked
+
+| Condition | Behavior |
+|-----------|----------|
+| `rm -r`/`-rf`/`-fr`/`--recursive` on a repo **root** with no remote (tier 1a) | **Blocked** (exit 2) |
+| Same, on a repo whose remote has never been pushed to — no `refs/remotes` (tier 1b) | **Blocked** (exit 2) |
+| Same, on a plain directory that *holds* repos (scanned to depth 3, capped at 20 hits) | **Blocked** per offending repo |
+| A remote-backed repo carrying uncommitted / unpushed / stashed work (tier 2) | `permissionDecision: "ask"` — **opt-in**, off by default |
+
+The operand must be a repo **root**: the hook compares
+`git rev-parse --absolute-git-dir` against `<dir>/.git` (or `<dir>` for a bare
+repo). That single predicate excludes subdirectories, linked worktrees and
+submodules, whose `.git` resolves elsewhere. Leading `VAR=value` assignments and
+`sudo`/`command`/`env`/`nice` wrappers are stripped before classification, so an
+inline bypass attempt is still classified as the `rm` it is. Safety blocks
+deliberately fire inside compound commands and pipelines — only the
+context-budget read-blocks were narrowed to whole-command scope (#2148).
+
+### Safe Commands (Not Blocked)
+
+- `rm -rf node_modules` / `dist` / any path **inside** a repo — not a repo root.
+- A linked worktree or a submodule directory — `--absolute-git-dir` points into the parent.
+- A symlink to a repo — `rm -rf link` removes the link, not the target.
+- `rm -f <file>` and any `rm` with no recursion flag.
+- Repos under `/tmp`, `/private/tmp`, `/var/folders`, `$TMPDIR` (default; see Configuration).
+- A repo for which a dated `<basename>-*.tar.*` already exists in `$CLAUDE_REPO_BACKUP_DIR`.
+- The command text appearing inside a quoted string (`git commit -m "rm -rf old"`).
+- Remote-exec first tokens: `ssh`, `scp`, `rsync`, `docker`, `podman`, `kubectl`, `nerdctl` (#1900).
+
+### Known Gaps
+
+The hook **fails open** by design; a reader must not over-trust it. Uncovered, in
+full:
+
+| Gap | Why |
+|-----|-----|
+| Unresolvable operands — `$VAR`, `$(…)`, backticks, `{}` from `find -exec` | The hook cannot know the target, so it declines to guess |
+| Globs — `rm -rf repo/*` | Without `dotglob`, `*` does not match `.git`, so history survives; but `rm -rf repo/.[!.]*` therefore **slips through**. Accepted |
+| Symlinks | `rm` removes the link, not the repo |
+| Remote-exec commands | The deletion targets a filesystem this hook cannot inspect |
+| Temp dirs, by default | This repo's own fixtures create remote-less repos under `mktemp -d` and clean them up with `rm -rf` |
+| A remote whose URL is itself a local path | Counts as "has a remote" and clears the block — not decidable inside a hook |
+| Sibling deletion verbs | `git clean -xdff`, `trash`, `mv repo /tmp`, `rmdir`, `shred`, `find … -delete` are **out of scope** |
+
+### Configuration
+
+| Variable | Default | Effect |
+|----------|---------|--------|
+| `CLAUDE_HOOKS_DISABLE_REPO_DELETION_SAFETY` | unset | `1` disables the hook. Honored **only** from the operator's exported shell environment — an inline `VAR=1 rm -rf …` prefix is not honored (the parser strips leading assignments), so do not self-serve it |
+| `CLAUDE_REPO_BACKUP_DIR` | `$HOME/Backups` | Where an existing `<basename>-*.tar.*` clears the block; also the directory named in the block message |
+| `CLAUDE_HOOKS_REPO_DELETION_TMP_EXEMPT` | `1` | `0` also guards repos under `/tmp`, `/private/tmp`, `/var/folders`, `$TMPDIR` |
+| `CLAUDE_HOOKS_REPO_DELETION_WARN_DIRTY` | `0` | `1` enables the tier-2 `ask` on a remote-backed repo carrying uncommitted / unpushed / stashed work |
+
+### Testing
+
+```bash
+# Blocks (exit 2). The fixture lives under mktemp -d, which the hook exempts by
+# DEFAULT — CLAUDE_HOOKS_REPO_DELETION_TMP_EXEMPT=0 is what makes it a real test.
+T=$(mktemp -d) && git init -q "$T/lonely" && git -C "$T/lonely" commit -q --allow-empty -m init
+echo "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"rm -rf $T/lonely\"},\"cwd\":\"$T\"}" \
+  | CLAUDE_HOOKS_REPO_DELETION_TMP_EXEMPT=0 bash hooks-plugin/hooks/repo-deletion-safety.sh; echo $?   # 2
+
+# Same command with the default tmp exemption: allowed.
+echo "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"rm -rf $T/lonely\"},\"cwd\":\"$T\"}" \
+  | bash hooks-plugin/hooks/repo-deletion-safety.sh; echo $?                                          # 0
+rm -rf "$T"
+
+# A path inside a repo is never a repo root: allowed.
+echo '{"tool_name":"Bash","tool_input":{"command":"rm -rf node_modules"},"cwd":"'"$PWD"'"}' \
+  | bash hooks-plugin/hooks/repo-deletion-safety.sh; echo $?                                          # 0
+
+bash hooks-plugin/hooks/test-repo-deletion-safety.sh   # 57 passed, 0 failed
+```
+
+### Exit Codes
+
+- **0**: Command allowed — or the opt-in tier-2 `ask` envelope was printed on stdout.
+- **2**: Tier-1 block via the standard `block()` convention; the message is shown to Claude.
+
+Tier 2 deliberately does **not** use `block()`: it prints a `PreToolUse`
+`permissionDecision: "ask"` JSON envelope and exits 0.
+
+---
+
+## branch-base-guard.sh
+
+A PreToolUse hook that nudges before cutting a new branch from a local default
+branch that is **ahead of its remote** — `git-hazards.md` trap #2: unpushed
+commits on local `main` ride into the new branch, get bundled into that branch's
+PR under an unrelated title, and a squash-merge hides them everywhere except the
+file list.
+
+### Why This Hook Exists
+
+Nothing here is irreversible — the worst case is a PR whose file list is wider
+than its title, fixable with a single `git rebase --onto`. So this is a **nudge**
+(`permissionDecision: "ask"`), never a deny, matching the tier of its sibling
+`git-plugin/hooks/check-branch-sync-on-push.sh`. It fires at most once per
+session+repo+default per TTL, stays completely silent when the ahead-count is 0,
+and self-extinguishes once `main` is pushed or the branch is cut from
+`origin/<default>`.
+
+The default branch is **resolved** (`refs/remotes/origin/HEAD`, then a probed
+`main`/`master` fallback), never hardcoded — `origin/HEAD` is unset in most agent
+worktrees, `--single-branch` clones and CI checkouts, so the fallback is the
+usual path rather than the exception.
+
+Unlike `branch-protection.sh`, this hook does **not** defer under permission mode
+`"auto"`: auto mode's classifier reasons about protected-branch writes and
+force-pushes and has no notion of which base a branch is cut from, so deferring
+would leave the hazard ungated rather than avoid a double-gate.
+
+### When It Nudges
+
+`git switch -c/-C/--create/--force-create <b>`, `git checkout -b/-B <b>`, and
+`git worktree add … -b/-B <b>` — when **all** of:
+
+1. HEAD is the resolved default branch,
+2. no explicit start-point was given, and
+3. local `<default>` is ≥1 commit ahead of `origin/<default>`.
+
+### Safe Commands (Not Nudged)
+
+- Any create with an explicit start-point — `git switch -c feat/x origin/main`. This is the hook's own suggested fix and is exempt **by design**; getting it wrong would make the corrected command re-trigger the nudge.
+- `--track` / `-t <upstream>` forms.
+- Creating from a feature branch (stacking is deliberate).
+- A default branch already in sync; repos with no `origin`; detached HEAD.
+- `git switch <b>` / `git checkout <b>` with no create flag; **all** `git branch` forms.
+- The command appearing inside a quoted string (`git commit -m "git switch -c x"`) — quoted segments are scrubbed before matching.
+- `ssh` / `docker` / `podman` / `kubectl` / `nerdctl` remote-exec.
+
+### Known Gaps
+
+- **Bare `git branch <name>` is deliberately out of scope.** Listing, deleting and `-vv` dominate its real-world use, so disambiguating creation costs more false positives than the coverage buys.
+- A **stale** `refs/remotes/origin/<default>` that was never fetched can **overstate** — never understate — the ahead-count. Opt into a fetch with `CLAUDE_HOOKS_BRANCH_BASE_FETCH=1`.
+- Cutting from an equally-ahead **feature** branch is not covered.
+
+### Configuration
+
+| Variable | Default | Effect |
+|----------|---------|--------|
+| `CLAUDE_HOOKS_DISABLE_BRANCH_BASE_GUARD` | unset | `1` disables the hook entirely. The documented answer for a repo that legitimately develops on its default branch (dotfiles, personal repos). Honored only from the operator's exported shell environment — an inline `VAR=1 git switch -c …` prefix is intentionally ignored |
+| `CLAUDE_HOOKS_BRANCH_BASE_TTL` | `300` | Dedup window (seconds) per session+repo+default |
+| `CLAUDE_HOOKS_BRANCH_BASE_FETCH` | `0` | `1` runs `git fetch --quiet origin <default>` on a cache miss before measuring — a network round-trip for a fresher ahead-count |
+
+### Testing
+
+The nudge needs a local default branch that is ahead of its remote, so the
+fixture below builds one. Running the snippets against an arbitrary checkout
+usually prints nothing — a feature branch, or a `main` in sync, is exempt.
+
+```bash
+T=$(mktemp -d) && git init -q --bare "$T/origin.git" && git init -q -b main "$T/repo" \
+  && git -C "$T/repo" -c user.email=t@t -c user.name=T commit -q --allow-empty -m init \
+  && git -C "$T/repo" remote add origin "$T/origin.git" && git -C "$T/repo" push -q -u origin main \
+  && git -C "$T/repo" -c user.email=t@t -c user.name=T commit -q --allow-empty -m "stray commit on main"
+
+# Nudges (prints the `ask` envelope) — local main is ahead of origin/main:
+echo "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git switch -c feat/x\"},\"cwd\":\"$T/repo\",\"session_id\":\"t1\"}" \
+  | bash hooks-plugin/hooks/branch-base-guard.sh; echo $?   # envelope on stdout, exit 0
+
+# Silent — the suggested fix must never re-trigger the nudge:
+echo "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git switch -c feat/x origin/main\"},\"cwd\":\"$T/repo\",\"session_id\":\"t2\"}" \
+  | bash hooks-plugin/hooks/branch-base-guard.sh; echo $?   # no output, exit 0
+rm -rf "$T"
+
+bash hooks-plugin/hooks/test-branch-base-guard.sh   # 59 passed, 0 failed
+```
+
+Use a distinct `session_id` per invocation, or the TTL dedup silences the second
+call regardless of its content.
+
+### Exit Codes
+
+Always **0**. The nudge is signalled by a `PreToolUse`
+`permissionDecision: "ask"` JSON envelope on stdout; absence of output means
+"allow silently". This hook deliberately does not use the `block()` / exit-2
+convention.
