@@ -4,7 +4,8 @@
 #
 # The catalog is a hand-maintained index, so a newly-added CLAUDE_HOOKS_* /
 # CLAUDE_TASKWARRIOR_* flag can silently land in a hook without a catalog entry —
-# exactly the drift documentation-authoring.md warns about. This makes the check
+# exactly the drift `documentation-plugin:docs-single-source` warns about. This
+# makes the check
 # deterministic instead of relying on someone re-running the regeneration grep.
 #
 # The check: every flag READ in a plugin source must appear in the catalog. A

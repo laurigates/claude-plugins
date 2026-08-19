@@ -34,7 +34,7 @@ The development loop: plan, code, commit, ship.
 | Plugin | Skills | Purpose |
 |--------|--------|---------|
 | blueprint-plugin | 35 | PRD/ADR/PRP/TRP methodology, `/blueprint:execute` auto-pilot, ambient autonomy levels (`/blueprint:autopilot`, `/blueprint:autonomy-level3`), monorepo portfolio tracking, story-audit/reconcile |
-| git-plugin | 38 + 1 agent | Commits, branches, PRs, issues, forks, worktrees, release-please |
+| git-plugin | 42 + 1 agent | Commits, branches, PRs, issues, forks, worktrees, release-please, merge hazards, issue scoping, upstream-fix and repo-deletion checks |
 | project-plugin | 7 | Project init, modernization, maintenance |
 | session-plugin | 4 | Session bookends: spinup briefing, wrap capture, end orchestrator, distill |
 | agents-plugin | 1 + 12 agents | Task delegation to specialized agents |
@@ -46,9 +46,9 @@ Automated quality enforcement.
 | Plugin | Skills | Purpose |
 |--------|--------|---------|
 | testing-plugin | 17 | Test execution, TDD, Vitest, Playwright, Playwright CLI, mutation testing |
-| code-quality-plugin | 15 | Review, refactoring, linting, ast-grep, debugging, silent degradation, dead code, dep audit, test quality, complexity, bulk-sweep classification |
+| code-quality-plugin | 16 | Review, refactoring, linting, ast-grep, debugging, silent degradation, dead code, dep audit, test quality, complexity, bulk-sweep classification, scaffold back-port |
 | software-design-plugin | 6 | Deep modules, design by contract, GoF pattern selection, legacy seams, design by pseudocode |
-| documentation-plugin | 5 | API docs, README generation, knowledge graphs |
+| documentation-plugin | 8 | API docs, README generation, LaTeX PDFs, single-source linking, machine-fact verification, WebFetch fallbacks |
 | evaluate-plugin | 7 + 3 agents | Skill evaluation, benchmarking, quality improvement |
 
 ### Tier 3+ - Pick What Applies
@@ -171,9 +171,9 @@ Install based on your project's tech stack and domain.
 | Plugin | Install when... |
 |--------|-----------------|
 | codebase-attributes-plugin | You want structured health attributes, severity-based agent routing, or a health dashboard |
-| code-quality-plugin | You want code review, refactoring, linting, dead code detection, dependency auditing, test quality analysis, or complexity metrics |
+| code-quality-plugin | You want code review, refactoring, linting, dead code detection, dependency auditing, test quality analysis, complexity metrics, or scaffold back-porting |
 | software-design-plugin | You're designing a module/API, placing contracts, selecting a design pattern, taming legacy code, or refining a routine before coding |
-| documentation-plugin | You need generated docs, knowledge graphs |
+| documentation-plugin | You need generated docs, LaTeX PDFs, or guardrails that keep published docs from drifting |
 | typescript-plugin | Project uses TypeScript or JavaScript |
 | python-plugin | Project uses Python |
 | rust-plugin | Project uses Rust |

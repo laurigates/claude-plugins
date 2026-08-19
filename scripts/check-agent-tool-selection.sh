@@ -41,7 +41,7 @@
 # `just -g branch-audit` recipe is a convenience, not the authority — its REVIEW
 # bucket measured ~90% false on two real repos (issue #2268). The routing/caveat
 # side of that is guarded by scripts/check-branch-containment-guidance.sh.
-# See `~/.claude/rules/pr-merge-hazards.md` #1.
+# See `git-plugin:git-merge-hazards` (the detection authority order).
 #
 # Detection is a per-line shape denylist (the accepted form for this repo's
 # denylist lints — see issue #2009, which deliberately did NOT migrate them to
@@ -162,7 +162,7 @@ for agent_file in "${agent_files[@]}"; do
     echo "   \`git merge-tree\` is a positive-containment shortcut only, never primary;" >&2
     echo "   \`just -g branch-audit\` is a convenience whose REVIEW bucket measured ~90%" >&2
     echo "   false on two repos (issue #2268) — verify its REVIEW rows against the ladder." >&2
-    echo "   See ~/.claude/rules/pr-merge-hazards.md #1." >&2
+    echo "   See the git-plugin:git-merge-hazards skill for the full ladder." >&2
     errors=$((errors + 1))
     continue
   fi
