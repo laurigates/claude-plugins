@@ -157,10 +157,10 @@ Every one of those was caught by a probe, and none by reading.
 - `meta-context-diet` — a different axis: moving always-loaded content to
   on-demand skills. That is about a file's **load cost**; this is about its
   **truth**.
-- `verify-machine-facts-before-publishing` (user rules) — the inverse direction:
+- `documentation-plugin:docs-verify-machine-facts` — the inverse direction:
   keep host-specific readings *out* of org docs. Here: keep org-doc findings out
   of host-specific notes.
-- `documentation-authoring` (user rules) — link, don't duplicate. The local file
+- `documentation-plugin:docs-single-source` — link, don't duplicate. The local file
   should point at the ADR, never restate it.
 - `diagnose-at-the-failure-point` (user rules) — probe the thing; don't reason
   about whether it is still true.

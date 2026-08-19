@@ -89,6 +89,27 @@ The audit script in this repo is the canonical example — it pairs a human repo
 
 ## Known Regressions (Documented Bugs)
 
+> **Rows are dated records — quotes are preserved as written.** Several rows
+> quote user-global rules that `laurigates/dotfiles` #353 later promoted into
+> marketplace skills; the rule files survive as pointer stubs at the same
+> paths, so every citation still resolves, but the quoted prose now lives in
+> the skill. Current homes: `pr-merge-hazards.md` →
+> `git-plugin:git-merge-hazards`, `documentation-authoring.md` →
+> `documentation-plugin:docs-single-source`, `taskwarrior-tracking.md` →
+> `taskwarrior-plugin:task-add` + `session-plugin:session-wrap`,
+> `scaffold-fix-backport.md` → `code-quality-plugin:code-scaffold-backport`,
+> `repo-deletion-safety.md` → `git-plugin:git-repo-delete-check`,
+> `verify-upstream-before-patching.md` → `git-plugin:git-upstream-fix-check`,
+> `read-issue-thread-before-contributing.md` → `git-plugin:git-issue-scoping`,
+> `verify-machine-facts-before-publishing.md` →
+> `documentation-plugin:docs-verify-machine-facts`. One live-scope caveat: the
+> `#2268` row states that `check-branch-containment-guidance.sh` rules 1–4
+> scan `git-plugin/**/*.md` only "so … `pr-merge-hazards.md` stay[s] free to
+> quote the broken forms while TEACHING them". That still holds for the
+> **stub**, but `git-plugin/skills/git-merge-hazards/SKILL.md` now teaches the
+> same traps from *inside* the scanned corpus and is deliberately **not**
+> exempted — it complies instead (see that script's header comment).
+
 | Issue | Root Cause | Check Added | Fixed In |
 |-------|-----------|-------------|----------|
 | `gh repo view` in context command fails with TLS/x509 error | Uses GitHub GraphQL API; fails in proxy/offline/cert-error environments | `lint-context-commands.sh` rule `gh-api-in-context` | PR #799 |

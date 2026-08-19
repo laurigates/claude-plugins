@@ -94,11 +94,11 @@ wall-clock deadline.** Observed 2026-07-30: two such loops burned a 6m40s and a
 ### Gating on an expected check *count* is brittle
 
 The companion advice "wait for nothing-pending **and** at least N checks" (see
-`~/.claude/rules/pr-merge-hazards.md`) guards a real race — zero-pending is
-trivially true before jobs register. But a hardcoded `N` breaks on
-**path-filtered** workflows: the same repo yields 7 checks for a PR touching
-`*-plugin/**` and 5 for one touching only `.claude/rules/**`, so `-ge 6` waits
-forever on a perfectly green PR.
+`git-plugin:git-merge-hazards`, which carries the CI check-*registration*
+race) guards a real race — zero-pending is trivially true before jobs
+register. But a hardcoded `N` breaks on **path-filtered** workflows: the same
+repo yields 7 checks for a PR touching `*-plugin/**` and 5 for one touching
+only `.claude/rules/**`, so `-ge 6` waits forever on a perfectly green PR.
 
 Derive the expectation instead of hardcoding it — poll until the check count is
 **stable across two consecutive reads** with nothing pending, and bound the

@@ -15,7 +15,7 @@ eventually audits the gap. The failure this rule prevents is the audit's *first
 move*: reading "differs from the template" as "wrong". It usually isn't, and
 acting on that reading is how an audit becomes a regression.
 
-Sibling of `~/.claude/rules/scaffold-fix-backport.md` (fix the class, not the
+Sibling of `code-quality-plugin:code-scaffold-backport` (fix the class, not the
 instance). This is its inverse: **don't push the class over an instance whose
 divergence was deliberate.**
 
@@ -99,7 +99,7 @@ sceptically; the script is the easy part.**
 
 ## Related
 
-- `~/.claude/rules/scaffold-fix-backport.md` — the inverse (fix the generator, not just the instance)
+- `code-quality-plugin:code-scaffold-backport` — the inverse (fix the generator, not just the instance)
 - `.claude/rules/drift-detection-triggering.md` — *triggering* a sweep; this rule is about classifying what it finds
 - `.claude/rules/offload-to-deterministic-substrate.md` — why the sweep is a script and the classification is not
 - `comfyui-plugin/skills/comfyui-node-scaffold/fleet-policy.toml` — the reference policy, with per-entry rationale

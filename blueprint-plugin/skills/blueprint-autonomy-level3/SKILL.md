@@ -78,7 +78,7 @@ done
 
 Report the table and stop. `DRIFT`/`ABSENT` → advise re-running without
 `--check` to re-sync (the templates are the source of truth; per
-`scaffold-fix-backport`, a fix to the plugin template re-lands here on re-run).
+`code-quality-plugin:code-scaffold-backport`, a fix to the plugin template re-lands here on re-run).
 
 ### Step 3 (install mode): copy templates + scripts
 

@@ -239,7 +239,8 @@ agents that had already succeeded**, opening a **duplicate PR** (#1858 dup of
 worktree agents. Recover them with a **fresh, sequential dispatch** (one Opus
 agent doing the remainder one-at-a-time, or a small re-run waved ≤3) — which also
 dodges the burst rate-limit that caused the original failures
-(`~/.claude/rules/tool-use-patterns.md`). Before any recovery dispatch, check
+(`agent-patterns-plugin:parallel-agent-dispatch` § Concurrent Rate-Limit Risk).
+Before any recovery dispatch, check
 `gh pr list --search "issue-<N>"` so you don't open a duplicate.
 
 ## Limitations

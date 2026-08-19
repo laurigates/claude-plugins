@@ -40,7 +40,7 @@ single source of truth instead of restating it. A runnable artifact (a skill, a
 recipe, a script) *is* its own documentation — link to it rather than maintaining
 a parallel prose copy by hand.
 
-**Embodied by:** `documentation-authoring`, `docs-currency` →
+**Embodied by:** `documentation-plugin:docs-single-source`, `docs-currency` →
 `blueprint-docs-currency` (code and its docs land in the same commit), the
 "reference the source, don't transcribe the list" convention across rules. This
 doc itself follows the rule: the README links here rather than embedding a copy.
@@ -67,8 +67,8 @@ result compiles." A WebFetch summary is not the issue thread. Check the ground
 truth — `origin/main`, the IaC, the full comment thread, the upstream HEAD —
 before patching, branching, or publishing.
 
-**Embodied by:** `verify-upstream-before-patching`,
-`read-issue-thread-before-contributing`, `concurrent-session-pr-check`,
+**Embodied by:** `git-plugin:git-upstream-fix-check`,
+`git-plugin:git-issue-scoping`, `concurrent-session-pr-check`,
 `shared-checkout-branch-isolation`, `squash-merge-orphans-post-merge-commits`,
 `textual-merge-duplicates-identical-additions`, `tool-migration-cutover` (verify
 the replacement is *operational*, not merely configured).

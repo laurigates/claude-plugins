@@ -13,7 +13,8 @@
 #   ForumViriumHelsinki/infrastructure 245 REVIEW rows, 216 had landed (88%)
 # Two silent defects caused it, and both are what this guard pins:
 #   1. `git merge-tree` used as the PRIMARY signal. Per
-#      `~/.claude/rules/pr-merge-hazards.md` #1 tree-containment is one-way:
+#      `git-plugin:git-merge-hazards` (and the surviving
+#      `~/.claude/rules/pr-merge-hazards.md` stub) tree-containment is one-way:
 #      once the base drifts over the same files the trees differ for work that
 #      fully landed, so a non-match proves NOTHING. 132 branches lost this way.
 #   2. `gh pr list --limit 500` against repos holding 1881 and 1684 PRs. Any
@@ -54,10 +55,20 @@
 #
 # Deliberately NARROW so the check does not become noise that gets disabled:
 #   - Rules 1-4 scan `git-plugin/**/*.md` only. That is where the routing an
-#     agent acts on lives. `.claude/rules/gh-json-fields.md` and
-#     `~/.claude/rules/pr-merge-hazards.md` TEACH these traps and must be free
-#     to quote the broken forms verbatim — the same instruction-vs-explanation
-#     discrimination `check-agent-tool-selection.sh` already makes.
+#     agent acts on lives. `.claude/rules/gh-json-fields.md` and the
+#     `~/.claude/rules/pr-merge-hazards.md` stub sit OUTSIDE that corpus and so
+#     are free to quote the broken forms verbatim while TEACHING them — the
+#     same instruction-vs-explanation discrimination
+#     `check-agent-tool-selection.sh` already makes.
+#     `git-plugin/skills/git-merge-hazards/SKILL.md` (the skill that rule was
+#     promoted into, dotfiles #353) teaches the same traps but lives INSIDE the
+#     scanned corpus, and is deliberately NOT exempted: it is now the most-read
+#     containment guidance this plugin ships, so it must satisfy the same
+#     ladder-ordering and caveat-token rules as the agents. It passes today
+#     (verified: STATUS=OK over 53 git-plugin files) because it leads with the
+#     authoritative `gh pr list ... --head` line and carries the
+#     `positive-containment`, `REVIEW bucket` and `#2268` tokens. Exempting it
+#     would blind the guard to the very file most likely to be edited.
 #   - Rule 5 scans `*-plugin/**/*.md` (any plugin can hand out a `gh pr list`),
 #     but fires only when the line ALSO asks for `state`/`mergedAt`, i.e. is a
 #     containment/merged-state determination. A scope-discovery listing such as
@@ -128,7 +139,7 @@ git_plugin_excluded=0
 # is_generated_changelog <file> — true for a release-please-generated changelog.
 #
 # STRUCTURAL, not a hardcoded path list. A filename allowlist is the maintenance
-# trap `.claude/rules/documentation-authoring.md` warns about: it goes stale the
+# trap `documentation-plugin:docs-single-source` warns about: it goes stale the
 # moment a plugin is added, and nothing flags the drift. Release-please instead
 # has a recognisable heading SHAPE, and every generated changelog carries it:
 #

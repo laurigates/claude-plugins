@@ -193,8 +193,8 @@ branch whose merged PR falls outside reads as "no PR" and is silently misclassif
 **`git merge-tree` is step 3, and it proves containment only in the positive direction.**
 Once `main` drifts over the same files, merging an already-landed branch back would
 re-introduce its older versions, so the trees differ and merge-tree reports "not
-contained" for work that fully landed (`~/.claude/rules/pr-merge-hazards.md` #1). A match
-proves containment; a non-match proves nothing.
+contained" for work that fully landed (`git-plugin:git-merge-hazards`, which carries the
+detection authority order). A match proves containment; a non-match proves nothing.
 
 `git remote prune origin` is unaffected by all of this and always safe:
 
@@ -222,9 +222,9 @@ starting point, not a verdict. The recipe lives in a private dotfiles repo, so t
 marketplace can neither version nor regression-test it; the repaired ladder above is
 reported from the recipe's own comments.
 
-Related: `~/.claude/rules/pr-merge-hazards.md` #1 (why `--merged` misses squash-merges,
-and why tree-containment is a one-way signal); `.claude/rules/gh-json-fields.md` (the
-`--limit` default-cap trap and the `state` / `mergedAt` fields).
+Related: `git-plugin:git-merge-hazards` (why `--merged` misses squash-merges, and why
+tree-containment is a one-way signal); `.claude/rules/gh-json-fields.md` (the `--limit`
+default-cap trap and the `state` / `mergedAt` fields).
 
 ## Conflict Resolution Strategy
 

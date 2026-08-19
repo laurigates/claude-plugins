@@ -169,7 +169,7 @@ two equal-weight options (no default lean):
 - *Track for later* → `task add project:<name> +upstream '<desc — name
   the upstream repo + what/why>'`. No outward action; the `+upstream`
   tag is where "file this upstream" work surfaces later
-  (`taskwarrior-tracking.md`).
+  (`taskwarrior-plugin:task-add`).
 - *File now* → hand off, in order:
   1. `workflow-orchestration-plugin:workflow-verify-before-filing` —
      verify the bug still exists at upstream HEAD **and** dedup against
@@ -179,8 +179,7 @@ two equal-weight options (no default lean):
      (`public-export-sanitization.md`).
   3. File the issue (`git-plugin:github-issue-writing`) or open the
      local-fix backport. When commenting on an **existing** issue, read
-     the full thread first
-     (`~/.claude/rules/read-issue-thread-before-contributing.md`).
+     the full thread first (`git-plugin:git-issue-scoping`).
 
   **Graceful degradation**: if `workflow-orchestration-plugin` is not
   installed (mirrors the `feedback-plugin` / `blueprint-plugin`

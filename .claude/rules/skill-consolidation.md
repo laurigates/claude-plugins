@@ -114,5 +114,5 @@ description carries the traceability instead.
 - `skill-development.md` — creating skills, granularity decision
 - `skill-quality.md` — size limits, description length band (≤200)
 - `skill-naming.md` — `plugin:skill` namespacing (the cross-plugin reference form)
-- `verify-upstream-before-patching` (user rule) / repo debugging discipline — the "verify the premise before acting" principle this rule applies to refactors
+- `git-plugin:git-upstream-fix-check` / repo debugging discipline — the "verify the premise before acting" principle this rule applies to refactors
 - `/plugin-authoring` § Plugin Lifecycle — the **plugin**-level add/delete checklist (distinct from skill-level)

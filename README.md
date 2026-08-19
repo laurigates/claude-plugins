@@ -99,7 +99,7 @@ the rules, skills, and hooks that embody it.
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **code-quality-plugin** | 15 | Code review, refactoring, linting, static analysis, debugging methodology |
+| **code-quality-plugin** | 16 | Code review, refactoring, linting, static analysis, debugging methodology, scaffold back-porting |
 | **software-design-plugin** | 6 | Software design methodology - deep modules, design by contract, GoF pattern selection, legacy seams, pseudocode |
 | **evaluate-plugin** | 7 + 3 agents | Skill evaluation and benchmarking - test effectiveness, grade results |
 | **codebase-attributes-plugin** | 3 | Structured codebase health attributes with severity-based agent routing |
@@ -110,7 +110,7 @@ the rules, skills, and hooks that embody it.
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **git-plugin** | 38 + 1 agent | Git workflows - commits, branches, PRs, worktrees, release-please |
+| **git-plugin** | 42 + 1 agent | Git workflows - commits, branches, PRs, worktrees, release-please, merge/deletion hazards, issue scoping |
 
 ### CI/CD
 
@@ -136,7 +136,7 @@ the rules, skills, and hooks that embody it.
 |--------|--------|-------------|
 | **blog-plugin** | 2 | Blog post creation - project logs, technical write-ups |
 | **communication-plugin** | 2 | Communication formatting - Google Chat, ticket drafting |
-| **documentation-plugin** | 5 | Documentation generation - API docs, README, knowledge graphs |
+| **documentation-plugin** | 8 | Documentation generation - API docs, README, LaTeX PDFs, single-source linking, machine-fact verification, fetch fallbacks |
 | **prose-plugin** | 2 | Prose transformation - synthesis, distillation, tone, clarity |
 
 ### UX & Components

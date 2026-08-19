@@ -30,7 +30,7 @@ execution — this repo dogfoods at level 1 and cannot exercise it.
 | `.github/blueprint/get-automation-config.sh` | `scripts/get-automation-config.sh` | Manifest automation-block reader |
 
 The scripts are the source of truth in the plugin; a re-run of the skill
-re-syncs any drift (`--check` reports it). Per `scaffold-fix-backport`, fix a
+re-syncs any drift (`--check` reports it). Per `code-quality-plugin:code-scaffold-backport`, fix a
 bug in the plugin script/template, not in a consumer's copy.
 
 ## The manifest gate + budgets

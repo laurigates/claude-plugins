@@ -374,8 +374,8 @@ abc123def:refs/heads/x        # correct
 ```
 
 This lands squarely on the **push-by-explicit-SHA** discipline that
-`~/.claude/rules/git-hazards.md` and `pr-merge-hazards.md` mandate for shared
-checkouts — the one command shape most likely to carry `<sha>:refs/heads/...`:
+`~/.claude/rules/git-hazards.md` and `git-plugin:git-merge-hazards` mandate for
+shared checkouts — the one command shape most likely to carry `<sha>:refs/heads/...`:
 
 ```
 # Wrong under zsh — git rejects it with a confusing "src refspec ... does not match any"
