@@ -76,6 +76,34 @@ Three composable skills that can be invoked individually or combined based on us
 | `release-please-pr-workflow` | Batch merge release-please PRs with conflict handling |
 | `git-fork-workflow` | Fork management, upstream sync, divergence detection, cross-fork PRs |
 
+## Invocation
+
+Most skills here are catalog-present: Claude can offer them when the situation
+matches their `description`. A few carry `disable-model-invocation: true`, which
+removes the skill from the catalog entirely — it is then reachable only when the
+user types `/git-plugin:<name>`.
+
+The rule this plugin applies:
+
+- **Keep the flag** when the skill performs a chained or irreversible mutation
+  the user should consciously trigger, or takes a required argument the model
+  would otherwise have to invent.
+- **Drop the flag** when the skill is reactive to a repo state the model can
+  observe for itself, and a user would reasonably expect it offered without
+  knowing its name.
+
+| Skill | `disable-model-invocation` | Why |
+|-------|---------------------------|-----|
+| `git-api-pr` | keep | Requires `<file...>` and a `--title` the model would have to invent; creates a remote branch and PR with no local commit to review first |
+| `git-commit-push-pr` | keep | Chained mutation — commit, push, and PR creation in one non-interactive pass |
+| `git-conflicts` | **removed** | Reactive to a conflicted tree the model already observes; user phrasings ("fix the merge conflicts") match its description almost verbatim |
+| `git-derive-docs` | keep | Bulk generative writer over `.claude/rules/` and `docs/`; needs an explicit `--rules`/`--prd`/`--adr`/`--prp` mode |
+| `git-fix-pr` | **removed** | Reactive to a red PR check the model already observes when it reads CI status |
+| `git-issue` | keep | Takes a required issue reference, then branches, implements, and opens a PR; `--parallel` fans out subagents. Invoked by hand as `/git-plugin:git-issue <number>` |
+| `git-maintain` | keep | Destructive maintenance — `gc`, repack, branch pruning, stash deletion, `git rm` |
+| `git-pr-feedback` | keep | Posts replies and resolves threads on reviewers' PRs by default, and can open follow-up issues; `--all` fans out worktree subagents that push |
+| `git-upstream-pr` | keep | Cherry-picks, resets, and pushes to a fork, then opens a PR against a third-party upstream |
+
 ## Agent
 
 | Agent | Description |
