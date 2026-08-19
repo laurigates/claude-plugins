@@ -1,6 +1,6 @@
 ---
 name: docs-verify-machine-facts
-description: Verify machine-read values (scutil, route, ifconfig, local config) against the authoritative IaC before publishing. Use when org or outward-facing docs quote DNS names, IPs, endpoints, or versions read off your own host.
+description: Verify machine-read values (scutil, route, ifconfig, local config) against the authoritative IaC before publishing. Use when org docs quote DNS names, IPs, endpoints, or versions read off this host.
 allowed-tools: Read, Grep, Glob, Edit, TodoWrite
 created: 2026-08-19
 modified: 2026-08-19
