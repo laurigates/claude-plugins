@@ -169,7 +169,11 @@ gracefully rather than omitting:
   only on a genuinely untracked assigned issue.
 - **`GH_READY=false`** — GitHub was never queried; fall back to the
   GitHub MCP tools (SKILL.md Step 1b) or say `github: not queried (gh
-  unavailable)` — never present the zeros as a clean state.
+  unavailable)` — never present the zeros as a clean state. The
+  accompanying `GH_FAIL_REASON=` picks the response: re-run for
+  `timeout` / `api-error` / `unknown` (quoting `GH_FAIL_DETAIL=` if it
+  persists), go straight to MCP for `auth` / `no-cli`, and report nothing
+  at all for `no-remote` — there is genuinely nothing to query there.
 - **No tasks for the project** — `OPEN_TASKS=0` **with
   `PROJECT_CONFIDENCE=high`**; say `nothing pending under
   project:<name>` explicitly rather than an empty-looking section.

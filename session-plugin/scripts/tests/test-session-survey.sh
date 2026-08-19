@@ -811,7 +811,7 @@ check_absent "AD: a valid --recent-days raises no invalid key" "$out" "RECENT_DA
 export TASK_ALL_FIXTURE=/dev/null
 export GH_STUB_SLEEP=1
 out=$(SESSION_SURVEY_GH_TIMEOUT=abc run --with-dedup)
-check "AD: a non-numeric gh budget falls back to the default" "$out" "GH_BUDGET=4"
+check "AD: a non-numeric gh budget falls back to the default" "$out" "GH_BUDGET=8"
 check "AD: the rejected budget is reported" "$out" "GH_BUDGET_INVALID=abc"
 check "AD: a slow gh still completes under the fallback budget" "$out" "ASSIGNED_ISSUES=2"
 # Guard integrity: a genuinely tiny budget must still cut the call off.
@@ -1465,6 +1465,158 @@ out=$(SESSION_SURVEY_TASK_BIN="$SANDBOX/does-not-exist" \
   bash "$COLLECTOR" --project-dir "$SEPREPO" 2>/dev/null)
 check_line "AL9: a missing task binary is named" "$out" "TASK_AVAILABLE=false"
 check_absent "AL9: and claims no variant" "$out" "PROJECT_AMBIGUOUS="
+
+# ============================================================================
+# #2425 — GH_READY=false carries a reason code, and the budget is not 4s
+# ============================================================================
+#
+# A bare `GH_READY=false` is undiagnosable: a transient 5xx wants a re-run, an
+# expired token wants `gh auth login`, a remote-less repo wants nothing at all,
+# and a budget kill wants a bigger budget. Every case below EXECUTES the
+# collector against a stub that reproduces the real `gh` stderr for that cause.
+
+# Fail-mode stubs. Each writes the message real `gh` writes, then exits 1 —
+# the exact pair (rc + stderr) the classifier has to work from.
+cat > "$STUB/gh-auth-fail" <<'GHAUTH'
+#!/usr/bin/env bash
+echo "gh: To use GitHub CLI in a GitHub Actions workflow, set the GH_TOKEN environment variable." >&2
+exit 1
+GHAUTH
+chmod +x "$STUB/gh-auth-fail"
+
+# The discriminator fixture: gh's remote-less message ALSO says `gh auth login`,
+# so a classifier that tests auth first calls every remote-less repo an auth
+# failure and sends the user to a login that cannot help.
+cat > "$STUB/gh-no-remote" <<'GHNOREMOTE'
+#!/usr/bin/env bash
+echo "none of the git remotes configured for this repository point to a known GitHub host. To tell gh about a new GitHub host, please use \`gh auth login\`" >&2
+exit 1
+GHNOREMOTE
+chmod +x "$STUB/gh-no-remote"
+
+cat > "$STUB/gh-503" <<'GH503'
+#!/usr/bin/env bash
+echo "HTTP 503: Service Unavailable (https://api.github.com/graphql)" >&2
+echo "a second stderr line that must not reach the digest" >&2
+exit 1
+GH503
+chmod +x "$STUB/gh-503"
+
+export TASK_ALL_FIXTURE=/dev/null
+prs_of() { printf '%s' "$1" | sed -n '/=== PRS ===/,/=== END PRS ===/p'; }
+drift_of() { printf '%s' "$1" | sed -n '/=== GITHUB_DRIFT ===/,/=== END GITHUB_DRIFT ===/p'; }
+
+# --- AM1: guard integrity — a HEALTHY gh claims no failure -------------------
+# Weighted first on purpose: if the key were emitted unconditionally, every
+# assertion below would pass while the signal meant nothing.
+out=$(run --with-dedup)
+check_line "AM1: a healthy gh is ready" "$out" "GH_READY=true"
+check_absent "AM1: and raises no reason code" "$out" "GH_FAIL_REASON="
+check_absent "AM1: and no detail" "$out" "GH_FAIL_DETAIL="
+out=$(run --summary)
+check_absent "AM1: the summary likewise stays quiet when ready" "$out" "GH_FAIL_REASON="
+
+# --- AM2: an expired / absent token is named as auth -------------------------
+# Re-running is futile here, which is precisely what the reason code buys.
+out=$(SESSION_SURVEY_GH_BIN="$STUB/gh-auth-fail" run --with-dedup)
+check_line "AM2: an auth failure is still not a clean zero" "$out" "GH_READY=false"
+check_line "AM2: and is classified as auth" "$(prs_of "$out")" "GH_FAIL_REASON=auth"
+check_absent "AM2: an actionable reason needs no stderr snippet" "$out" "GH_FAIL_DETAIL="
+
+# --- AM3: a remote-less repo is no-remote, NOT auth --------------------------
+# The message contains `gh auth login`; classifying on that substring first is
+# the natural implementation and the wrong one.
+out=$(SESSION_SURVEY_GH_BIN="$STUB/gh-no-remote" run --with-dedup)
+check_line "AM3: a remote-less repo is named no-remote" \
+  "$(prs_of "$out")" "GH_FAIL_REASON=no-remote"
+check_absent "AM3: and is never misreported as auth" "$out" "GH_FAIL_REASON=auth"
+
+# --- AM4: a transient 5xx is api-error, and quotes the first stderr line -----
+out=$(SESSION_SURVEY_GH_BIN="$STUB/gh-503" run --with-dedup)
+check_line "AM4: a 503 is classified as api-error" \
+  "$(prs_of "$out")" "GH_FAIL_REASON=api-error"
+check "AM4: the stderr snippet is carried" "$out" "GH_FAIL_DETAIL=HTTP 503: Service Unavailable"
+check_absent "AM4: only the FIRST stderr line reaches the digest" \
+  "$out" "a second stderr line"
+check_count_line "AM4: exactly one detail row in the PRS section" \
+  "$(prs_of "$out")" '^GH_FAIL_DETAIL=' 1
+
+# --- AM5: an opaque failure is unknown, with nothing invented ----------------
+out=$(SESSION_SURVEY_GH_BIN="$STUB/gh-noauth" run --with-dedup)
+check_line "AM5: a silent non-zero exit is unknown" \
+  "$(prs_of "$out")" "GH_FAIL_REASON=unknown"
+check_absent "AM5: no detail is fabricated from empty stderr" "$out" "GH_FAIL_DETAIL="
+
+# --- AM6: an absent gh CLI is its own cause ---------------------------------
+# `gh auth login` cannot help and neither can a re-run; the remedy is install.
+out=$(SESSION_SURVEY_GH_BIN=/nonexistent/gh run --with-dedup)
+check_line "AM6: an absent gh binary is named no-cli" \
+  "$(prs_of "$out")" "GH_FAIL_REASON=no-cli"
+
+# --- AM7: a budget kill is timeout, distinct from every other cause ----------
+export GH_STUB_SLEEP=10
+out=$(SESSION_SURVEY_GH_TIMEOUT=1 run --with-dedup)
+unset GH_STUB_SLEEP
+check_line "AM7: a killed call is named timeout" \
+  "$(prs_of "$out")" "GH_FAIL_REASON=timeout"
+check "AM7: the existing GH_TIMEOUT diagnostic still fires" "$out" "GH_TIMEOUT=true"
+check_absent "AM7: a timeout is never misread as an api-error" \
+  "$out" "GH_FAIL_REASON=api-error"
+
+# --- AM8: the reason reaches every surface that carries GH_READY -------------
+# A consumer reading only GITHUB_DRIFT or only the hook summary must see it too.
+out=$(SESSION_SURVEY_GH_BIN="$STUB/gh-auth-fail" run --with-dedup)
+check_line "AM8: GITHUB_DRIFT carries the reason" \
+  "$(drift_of "$out")" "GH_FAIL_REASON=auth"
+check_line "AM8: GITHUB_DRIFT still reports the unqueried state" \
+  "$(drift_of "$out")" "GH_READY=false"
+out=$(SESSION_SURVEY_GH_BIN="$STUB/gh-auth-fail" run --with-dedup --summary)
+check_line "AM8: the hook summary carries the reason" "$out" "GH_FAIL_REASON=auth"
+check_line "AM8: the summary is still parse-stable" \
+  "$out" "=== END SESSION SURVEY SUMMARY ==="
+
+# --- AM9: the snippet obeys the KEY=VALUE contract --------------------------
+# stderr is foreign text: a control character would break a row and a long line
+# would swamp the digest (structured-script-output.md).
+cat > "$STUB/gh-noisy" <<'GHNOISY'
+#!/usr/bin/env bash
+printf 'HTTP 502 \001\002bad\037bytes %s\n' "$(printf 'x%.0s' $(seq 1 400))" >&2
+exit 1
+GHNOISY
+chmod +x "$STUB/gh-noisy"
+out=$(SESSION_SURVEY_GH_BIN="$STUB/gh-noisy" run --with-dedup)
+detail=$(printf '%s\n' "$out" | grep -m1 '^GH_FAIL_DETAIL=' || true)
+check "AM9: the noisy failure still classifies" "$out" "GH_FAIL_REASON=api-error"
+check_eq "AM9: control bytes are stripped from the snippet" \
+  "$(printf '%s' "$detail" | tr -d '\000-\010\013-\037' | wc -c | tr -d ' ')" \
+  "$(printf '%s' "$detail" | wc -c | tr -d ' ')"
+check_le "AM9: the snippet is capped" "$(printf '%s' "$detail" | wc -c | tr -d ' ')" 240
+check_count_line "AM9: exactly one detail row survives" \
+  "$(prs_of "$out")" '^GH_FAIL_DETAIL=' 1
+# Every emitted line is still either a section marker or a KEY=VALUE row.
+malformed=$(printf '%s\n' "$out" | grep -cvE '^(=== .* ===|[A-Z][A-Z0-9_]*=)' || true)
+check_eq "AM9: no malformed row leaked into the digest" "$malformed" "0"
+
+# --- AM10: the per-call budget defaults to 8s, not 4s -----------------------
+# 4s covers a `@me` handle resolution plus the query — tight enough that a
+# healthy environment silently lost the dedup guard on a slow link.
+out=$(run --with-dedup)
+check_line "AM10: the default per-call budget is 8s" "$out" "GH_BUDGET=8"
+check_absent "AM10: the default is not reported as invalid" "$out" "GH_BUDGET_INVALID="
+out=$(SESSION_SURVEY_GH_TIMEOUT=3 run --with-dedup)
+check_line "AM10: an explicit budget still overrides the default" "$out" "GH_BUDGET=3"
+
+# --- AM11: the consumer documents the remediation --------------------------
+# The reason code is only worth emitting if the skill that reads it says what
+# to do with each value — the gap the issue actually reported.
+END_SKILL="$SCRIPT_DIR/../../skills/session-end/SKILL.md"
+end_docs=$(cat "$END_SKILL" 2>/dev/null)
+check "AM11: session-end names GH_FAIL_REASON" "$end_docs" "GH_FAIL_REASON"
+for reason in timeout auth no-remote api-error no-cli unknown; do
+  check "AM11: session-end maps the '$reason' reason" "$end_docs" "\`$reason\`"
+done
+check "AM11: the auth remedy is named" "$end_docs" "gh auth login"
+check "AM11: the timeout remedy names the knob" "$end_docs" "SESSION_SURVEY_GH_TIMEOUT"
 
 echo "---"
 echo "PASS=$pass FAIL=$fail"

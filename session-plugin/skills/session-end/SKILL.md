@@ -3,7 +3,7 @@ name: session-end
 description: End-of-session orchestrator. Previews which of wrap/distill/feedback/taskwarrior-sync qualify, single confirm, then sequence. Use when winding down a session.
 allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Skill, AskUserQuestion, TodoWrite
 created: 2026-06-10
-modified: 2026-08-09
+modified: 2026-08-19
 compatibility: claude-code
 reviewed: 2026-06-24
 ---
@@ -67,12 +67,31 @@ to the confirmed passes in Step 4 so they don't re-survey. `--with-dedup`
 is what populates the `GITHUB_DRIFT` section that Step 4's taskwarrior-sync
 redundancy test reads — without it the section is always empty and the
 guard silently runs against nothing. That section also carries `GH_READY`:
-`false` means it is present but **unqueried** (no `gh` CLI or
-unauthenticated), the same "not clean, just not asked" signal as
-`PROJECT_CONFIDENCE=low` above — don't treat an empty `GITHUB_DRIFT` under
-`GH_READY=false` as evidence there's nothing to dedup against. Plus the
-conversation: what finished, what's hanging, what was learned, what
-plugin/skill friction or wins occurred.
+`false` means it is present but **unqueried**, the same "not clean, just
+not asked" signal as `PROJECT_CONFIDENCE=low` above — don't treat an empty
+`GITHUB_DRIFT` under `GH_READY=false` as evidence there's nothing to dedup
+against. Plus the conversation: what finished, what's hanging, what was
+learned, what plugin/skill friction or wins occurred.
+
+**Remediating `GH_READY=false`.** It always ships with `GH_FAIL_REASON=`,
+which says *why* GitHub went unqueried — the four causes want four
+different responses, so act on the reason rather than treating every
+`false` alike:
+
+| `GH_FAIL_REASON` | What happened | Do this |
+|---|---|---|
+| `timeout` | The per-call watchdog killed the query (also `GH_TIMEOUT=true`) | Re-run the collector with a bigger `SESSION_SURVEY_GH_TIMEOUT` (default 8s) |
+| `api-error` | GitHub answered with a 5xx / network failure — see `GH_FAIL_DETAIL` | Re-run once; it usually clears. If it persists, proceed and say GitHub was unreachable |
+| `unknown` | `gh` failed with nothing quotable — `GH_FAIL_DETAIL` carries the first stderr line when there is one | Re-run once, then treat as `api-error` |
+| `auth` | The token is missing, expired, or lacks a scope | Tell the user to run `gh auth login`; re-running is futile. Fall back to the GitHub MCP tools if available |
+| `no-cli` | No `gh` on PATH (Claude Code on the web) | Fall back to the GitHub MCP tools, or state GitHub was not queried. Re-running is futile |
+| `no-remote` | The repo has no GitHub remote | Nothing to do — there is genuinely nothing to query. Skip the GitHub half silently |
+
+Never re-run for `auth`, `no-cli`, or `no-remote`: the first two need a
+human action and the third has nothing to fetch. In every case the
+GitHub-derived counts stay **unqueried**, not zero — so the taskwarrior-sync
+redundancy test in Step 4 must not use them as evidence a follow-up is
+untracked.
 
 For the **Distill** qualify gate (Step 2), also run the distill collector's
 coarse summary — the mechanical half of the Distill signal (recipe candidates,
