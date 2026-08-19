@@ -77,9 +77,16 @@ git_bin="${SESSION_SURVEY_GIT_BIN:-git}"
 gh_bin="${SESSION_SURVEY_GH_BIN:-gh}"
 # Per-call network budget in seconds. One hung `gh` must not eat the whole
 # SessionStart hook timeout (#2276).
-gh_budget="${SESSION_SURVEY_GH_TIMEOUT:-4}"
+#
+# 8s, not 4s (#2425). A `gh pr list --author @me` resolves the `@me` handle
+# before it can run the query, so the budget covers TWO round-trips; 4s was
+# tight enough on a slow link or a degraded API that a healthy environment
+# silently lost the dedup guard. The calls are backgrounded and parallel, so
+# a higher ceiling costs wall-clock time only when something is actually slow,
+# and the SessionStart hook's own timeout (15s) still bounds the whole run.
+gh_budget="${SESSION_SURVEY_GH_TIMEOUT:-8}"
 case "$gh_budget" in
-  ''|*[!0-9]*) gh_budget_invalid="$gh_budget"; gh_budget=4 ;;
+  ''|*[!0-9]*) gh_budget_invalid="$gh_budget"; gh_budget=8 ;;
 esac
 
 have() { command -v "$1" >/dev/null 2>&1; }
@@ -243,9 +250,18 @@ fi
 # GH_READY is derived from the first real call's exit status instead, which
 # preserves the "not queried" vs "genuine zero" distinction the probe existed
 # for (drift-detection-triggering.md: never act on uncertainty).
+#
+# A bare `GH_READY=false` is undiagnosable, though — a transient 5xx, an expired
+# token, a repo with no GitHub remote, and a budget kill all want DIFFERENT
+# responses (#2425). Each call's rc and stderr are therefore kept and collapsed
+# into one `GH_FAIL_REASON=` alongside the `false`.
 # ---------------------------------------------------------------------------
 gh_dir=""
 gh_pids=()
+# Job names actually launched. A job that was never launched has no rc and no
+# stderr, so it must not be classified as a failure (#2425) — summary mode, for
+# instance, deliberately skips the PR calls.
+gh_launched=()
 if have "$gh_bin"; then
   gh_dir="$(mktemp -d 2>/dev/null)" || gh_dir=""
   # Guard the sandbox dir: an empty value would make every path below resolve
@@ -260,11 +276,17 @@ fi
 # Launch one gh call in the background under its OWN watchdog, so a single hang
 # cannot consume the whole budget. `timeout(1)` is deliberately not used: it is
 # GNU coreutils and absent from stock macOS (shell-scripting.md).
+#
+# Stderr is CAPTURED, not discarded (#2425): it is the only thing that tells a
+# transient 5xx apart from an expired token or a repo with no GitHub remote,
+# and `GH_READY=false` alone left the consumer unable to pick a remedy.
 gh_job() {
   local job_name="$1"; shift
   [ -n "$gh_dir" ] || return 0
+  gh_launched+=("$job_name")
   (
-    ( cd "$project_dir" && "$gh_bin" "$@" ) >"$gh_dir/$job_name.json" 2>/dev/null &
+    ( cd "$project_dir" && "$gh_bin" "$@" ) \
+      >"$gh_dir/$job_name.json" 2>"$gh_dir/$job_name.err" &
     gh_inner=$!
     ( sleep "$gh_budget"; kill "$gh_inner" 2>/dev/null ) >/dev/null 2>&1 &
     gh_watch=$!
@@ -279,6 +301,55 @@ gh_rc_of() {
   [ -n "$gh_dir" ] || { printf '%s' "missing"; return 0; }
   [ -f "$gh_dir/$1.rc" ] || { printf '%s' "missing"; return 0; }
   cat "$gh_dir/$1.rc" 2>/dev/null || printf '%s' "missing"
+}
+
+# First stderr line of a failed job, sanitised for the KEY=VALUE contract: a
+# control character would break the row (structured-script-output.md), and an
+# unbounded value would swamp the digest.
+gh_err_head() {
+  local f
+  [ -n "$gh_dir" ] || return 0
+  f="$gh_dir/$1.err"
+  [ -s "$f" ] || return 0
+  head -1 "$f" 2>/dev/null | tr -d '\000-\010\013-\037' | cut -c1-200
+}
+
+# Classify ONE failed gh invocation into an actionable reason. Order matters:
+# gh's "no GitHub remote" message ALSO says `gh auth login`, so the remote test
+# must run before the auth test or every remote-less repo reads as `auth`.
+# Matching uses a here-string, never a pipe — a `grep -q` that closes the pipe
+# early makes `pipefail` report the pipeline non-zero (the #1744 SIGPIPE race).
+gh_classify() {
+  local job="$1" rc err
+  rc="$(gh_rc_of "$job")"
+  case "$rc" in
+    missing) printf '%s' "no-cli"; return 0 ;;
+    # 128+SIGTERM / 128+SIGKILL — the watchdog cut the call off.
+    137|143) printf '%s' "timeout"; return 0 ;;
+  esac
+  err="$(gh_err_head "$job")"
+  if grep -Eqi 'none of the git remotes|no git remotes|not a git repository|no remotes? (found|configured)' <<<"$err"; then
+    printf '%s' "no-remote"
+  elif grep -Eqi 'not logged in|auth login|authentication token|missing required scopes|bad credentials|HTTP 40[13]|GH_TOKEN|GITHUB_TOKEN' <<<"$err"; then
+    printf '%s' "auth"
+  elif grep -Eqi 'HTTP [45][0-9][0-9]|GraphQL|error connecting|connection refused|could not resolve host|dial tcp|timeout|TLS|certificate' <<<"$err"; then
+    printf '%s' "api-error"
+  else
+    printf '%s' "unknown"
+  fi
+}
+
+# Precedence when several jobs failed differently: the reason whose remedy is
+# most specific wins. `auth` first because re-running is futile; `unknown` last.
+gh_reason_rank() {
+  case "$1" in
+    auth) printf '%s' 1 ;;
+    no-remote) printf '%s' 2 ;;
+    no-cli) printf '%s' 3 ;;
+    timeout) printf '%s' 4 ;;
+    api-error) printf '%s' 5 ;;
+    *) printf '%s' 6 ;;
+  esac
 }
 
 # Emits the job's JSON when it succeeded; empty otherwise. Return status is the
@@ -733,6 +804,32 @@ reap_github() {
     esac
   done
 
+  # Reason code (#2425). Emitted only alongside GH_READY=false — a partial
+  # failure that still yielded data is not an unqueried GitHub. With no job
+  # launched at all the cause is the gh CLI itself, not any one call.
+  if [ "$gh_ready" = false ]; then
+    if [ "${#gh_launched[@]}" -eq 0 ]; then
+      gh_fail_reason="no-cli"
+    else
+      local reason rank best_rank=99
+      for job in "${gh_launched[@]}"; do
+        reason="$(gh_classify "$job")"
+        rank="$(gh_reason_rank "$reason")"
+        if [ "$rank" -lt "$best_rank" ] 2>/dev/null; then
+          best_rank="$rank"
+          gh_fail_reason="$reason"
+          # The snippet is what makes an opaque classification actionable, so
+          # it rides along only where the reason alone says nothing useful.
+          case "$reason" in
+            api-error|unknown) gh_fail_detail="$(gh_err_head "$job")" ;;
+            *) gh_fail_detail="" ;;
+          esac
+        fi
+      done
+    fi
+    [ -n "$gh_fail_reason" ] || gh_fail_reason="unknown"
+  fi
+
   # Open PRs to surface as loose threads. Base this on the repo's actual open
   # PRs (--author @me), NOT the locally-checked-out branch: refspec pushes
   # (git push origin HEAD:refs/heads/<branch>) from parallel worktree agents
@@ -786,6 +883,11 @@ reap_github() {
 
 gh_ready=false
 gh_timeout=false
+# Why GitHub was not queried (#2425): timeout | auth | no-remote | api-error |
+# no-cli | unknown. Present only when GH_READY=false. GH_FAIL_DETAIL carries the
+# first stderr line for the two classifications the reason alone cannot act on.
+gh_fail_reason=""
+gh_fail_detail=""
 prs_json="[]"
 drift_json="[]"
 
@@ -830,6 +932,8 @@ if [ "$summary_mode" = true ]; then
   reap_github
   compute_threads
   echo "GH_READY=${gh_ready}"
+  [ -n "$gh_fail_reason" ] && echo "GH_FAIL_REASON=${gh_fail_reason}"
+  [ -n "$gh_fail_detail" ] && echo "GH_FAIL_DETAIL=${gh_fail_detail}"
   echo "ASSIGNED_ISSUES=${assigned_issues}"
   echo "THREADS=${threads}"
   echo "STATUS=OK"
@@ -1043,6 +1147,8 @@ reap_github
 
 echo "=== PRS ==="
 echo "GH_READY=${gh_ready}"
+[ -n "$gh_fail_reason" ] && echo "GH_FAIL_REASON=${gh_fail_reason}"
+[ -n "$gh_fail_detail" ] && echo "GH_FAIL_DETAIL=${gh_fail_detail}"
 [ "$gh_timeout" = true ] && echo "GH_TIMEOUT=true"
 echo "GH_BUDGET=${gh_budget}"
 [ -n "$gh_budget_invalid" ] && echo "GH_BUDGET_INVALID=${gh_budget_invalid}"
@@ -1065,6 +1171,8 @@ echo "=== END PRS ==="
 if [ "$with_dedup" = true ]; then
   echo "=== GITHUB_DRIFT ==="
   echo "GH_READY=${gh_ready}"
+  [ -n "$gh_fail_reason" ] && echo "GH_FAIL_REASON=${gh_fail_reason}"
+  [ -n "$gh_fail_detail" ] && echo "GH_FAIL_DETAIL=${gh_fail_detail}"
   echo "ASSIGNED_ISSUES=${assigned_issues}"
   echo "DRIFT_COUNT=${drift_issues}"
   if have jq && [ "$drift_issues" -gt 0 ] 2>/dev/null; then

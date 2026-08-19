@@ -116,9 +116,14 @@ project other than the repo basename; when detection is ambiguous
 existing tracker" section below reads — without it the section is always
 empty and the check silently passes against nothing. That section's
 `GH_READY` matters too: `false` means `PRS`/`GITHUB_DRIFT` are present but
-**unqueried** (no `gh` CLI or unauthenticated), not "nothing open" — never
-treat an empty section under `GH_READY=false` as license to add a task
-that duplicates an untracked PR/issue. Then read the conversation itself —
+**unqueried**, not "nothing open" — never treat an empty section under
+`GH_READY=false` as license to add a task that duplicates an untracked
+PR/issue. The `GH_FAIL_REASON=` beside it says whether that is worth
+fixing before you file: re-run once for `timeout` / `api-error` /
+`unknown`; for `auth` / `no-cli` the dedup set is simply unavailable this
+session, so keep the bar for adding a task high; for `no-remote` there is
+no PR/issue to duplicate and the caveat does not apply. Then read the
+conversation itself —
 what was kicked off but not finished, discussed but not done.
 
 ### Step 2: Categorise

@@ -99,7 +99,7 @@ All writes and judgment stay in the invoking skill.
 
 | Env seam | Purpose |
 |---|---|
-| `SESSION_SURVEY_GH_TIMEOUT` | per-`gh`-call budget in seconds (default 4) |
+| `SESSION_SURVEY_GH_TIMEOUT` | per-`gh`-call budget in seconds (default 8) |
 | `SESSION_SURVEY_RECENT_DAYS` | default for `--recent-days` |
 | `SESSION_SURVEY_TASK_BIN` / `_GIT_BIN` / `_GH_BIN` | binary overrides (tests) |
 
@@ -126,7 +126,20 @@ kill mid-`gh` truncates that block too. There is deliberately no
 whether to make network round-trips. `GH_READY` is derived from whether a
 real query returned 0, so an unauthenticated, absent, or timed-out `gh`
 still reads as "not queried" (`GH_READY=false`, plus `GH_TIMEOUT=true` as
-a diagnostic) and never as a clean zero. Each mode makes exactly the
+a diagnostic) and never as a clean zero.
+
+A bare `GH_READY=false` is undiagnosable, though, so it always ships with
+`GH_FAIL_REASON=` — `timeout` (raise the budget), `auth` (`gh auth
+login`; re-running is futile), `no-cli` (no `gh` on PATH — fall back to
+the GitHub MCP tools), `no-remote` (nothing to query), `api-error` (a 5xx
+or network failure — re-run), or `unknown`. The last two also carry
+`GH_FAIL_DETAIL=`, the first line of `gh`'s stderr, sanitised to one
+`KEY=VALUE` row. The budget is 8s rather than 4s because a
+`pr list --author @me` resolves the `@me` handle *before* it can run the
+query — 4s covered two round-trips only on a fast link, and every overrun
+silently disabled the dedup guard. The calls are backgrounded, so the
+higher ceiling costs wall-clock time only when something is actually
+slow. Each mode makes exactly the
 calls whose output it prints: the summary prints `GH_READY` and
 `ASSIGNED_ISSUES`, so it issues the assigned-issue query even without
 `--with-dedup`.

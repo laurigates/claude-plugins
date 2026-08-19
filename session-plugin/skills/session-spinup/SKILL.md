@@ -3,7 +3,7 @@ name: session-spinup
 description: Read-only session-start briefing of open tasks, git state, journal todos — reports, never edits code. Use when user says spin up, what was I doing, or pick up where I left off.
 allowed-tools: Bash(bash *), Read, TodoWrite
 created: 2026-05-13
-modified: 2026-08-15
+modified: 2026-08-19
 compatibility: claude-code
 reviewed: 2026-06-24
 ---
@@ -107,6 +107,14 @@ Do not present them as a clean state. Instead:
    or annotations. Treat what survives as the `GITHUB_DRIFT` set.
 2. If no GitHub path exists at all, the briefing's github line must say
    `github: not queried (gh unavailable)` — never omit it silently.
+
+`GH_FAIL_REASON=` says which of these you are in, so retry only where
+retrying can work: re-run the collector once for `timeout` (raising
+`SESSION_SURVEY_GH_TIMEOUT`), `api-error`, or `unknown`, quoting
+`GH_FAIL_DETAIL=` (gh's first stderr line) if it fails again; go straight
+to MCP for `auth` (`gh auth login` fixes the CLI path) and `no-cli`; and
+for `no-remote` there is nothing to query at all, so say that rather than
+reporting a gap. Full remediation table: `session-plugin:session-end`.
 
 ### Step 1c: If `PROJECT_CONFIDENCE=low`, do not claim a clean queue
 
