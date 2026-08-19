@@ -4,7 +4,7 @@ Documentation generation, synchronization, and knowledge management for Claude C
 
 ## Overview
 
-Comprehensive documentation tooling for generating API references, maintaining README files, synchronizing docs with codebase, creating decommission plans, and building knowledge graphs from technical documentation.
+Comprehensive documentation tooling for generating API references, maintaining README files, synchronizing docs with codebase, creating decommission plans, converting Markdown to LaTeX PDFs, and keeping published docs honest — link to the single source of truth, verify machine-read facts, and recover failed doc fetches.
 
 ## Skills
 
@@ -13,9 +13,11 @@ Comprehensive documentation tooling for generating API references, maintaining R
 | `/docs:sync` | Synchronize documentation with actual skills, commands, and agents in codebase |
 | `/docs:generate` | Update project documentation from code annotations |
 | `/docs:decommission` | Generate comprehensive service decommission documentation |
-| `/docs:knowledge-graph` | Build knowledge graph from Obsidian vault documentation |
 | `/docs:latex` | Convert Markdown documents to professional LaTeX with TikZ visualizations and compile to PDF |
+| `/docs:fetch-fallbacks` | Recover a failed WebFetch: strip the query, `raw.githubusercontent`, `gh api`, context7/WebSearch |
 | `claude-blog-sources` | Access Claude Blog for latest features, patterns, and best practices |
+| `docs-single-source` | Link docs to the single source of truth instead of restating it |
+| `docs-verify-machine-facts` | Verify machine-read values (`scutil`, `route`, `ifconfig`, local config) against the authoritative IaC before publishing |
 
 ## Agents
 
@@ -98,15 +100,22 @@ Produces professional documents with:
 - Professional tables with booktabs
 - Hyperlinked table of contents
 
-### Build Knowledge Graph
+### Recover a Failed Doc Fetch
 
-Create a searchable knowledge graph from technical documentation:
+When a `WebFetch` returns 404/403 or times out, walk the fallback ladder instead of retrying the same URL:
 
 ```bash
-/docs:knowledge-graph
+/docs:fetch-fallbacks
 ```
 
-Processes Obsidian vault documentation and builds a comprehensive knowledge graph for semantic search and pattern recognition.
+Reads the failure signature and applies the matching fallback — strip the query string, rewrite to `raw.githubusercontent.com`, fall back to `gh api repos/<owner>/<repo>/contents/<path>`, then context7 or `WebSearch`. Stops at two attempts.
+
+### Keep Published Docs Honest
+
+Two reference skills load automatically while you write:
+
+- `docs-single-source` — link to the single source of truth rather than restating it, so the copy cannot drift
+- `docs-verify-machine-facts` — check values read off your own host (`ifconfig`, `scutil --dns`, `route get`, local config) against the authoritative IaC before they reach shared docs
 
 ## Workflow Integration
 
@@ -116,6 +125,7 @@ Processes Obsidian vault documentation and builds a comprehensive knowledge grap
 2. Use `/docs:generate` to extract API docs from code
 3. Keep docs in sync with `/docs:sync` after changes
 4. Research patterns with `claude-blog-sources` skill
+5. Link rather than duplicate (`docs-single-source`) and verify host-read facts (`docs-verify-machine-facts`) before publishing
 
 ### Service Lifecycle
 
