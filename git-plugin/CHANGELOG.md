@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.50.10](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.9...git-plugin-v2.50.10) (2026-08-19)
+
+
+### Documentation
+
+* **git-plugin:** record the disable-model-invocation audit ([#2439](https://github.com/laurigates/claude-plugins/issues/2439)) ([0117fdd](https://github.com/laurigates/claude-plugins/commit/0117fdd1e60015ec5df051c7a05828c7eb49738a))
+
 ## [2.50.9](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.8...git-plugin-v2.50.9) (2026-08-19)
 
 
