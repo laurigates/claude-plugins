@@ -1,6 +1,5 @@
-# ADR-0016: Extract Deterministic Skill Procedure into Structured-Output Scripts
-
 ---
+id: ADR-0016
 date: 2026-06-09
 created: 2026-06-09
 modified: 2026-06-29
@@ -19,6 +18,8 @@ github-issues:
   - 1557  # perf(macos-plugin): extract macos-incident-postmortem
   - 1558  # perf(workflow-orchestration-plugin): extract workflow-preflight
 ---
+
+# ADR-0016: Extract Deterministic Skill Procedure into Structured-Output Scripts
 
 ## Context
 

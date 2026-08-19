@@ -1,6 +1,5 @@
-# ADR-0022: Adapter over Export — Runtime Skill Discovery for Foreign Harnesses
-
 ---
+id: ADR-0022
 date: 2026-07-17
 created: 2026-07-17
 modified: 2026-07-17
@@ -12,6 +11,8 @@ relates-to:
   - ADR-0004  # marketplace registry model (marketplace.json is the adapter's discovery root)
   - ADR-0021  # OKF substrate convergence (the Agent Skills convergence this ADR builds on)
 ---
+
+# ADR-0022: Adapter over Export — Runtime Skill Discovery for Foreign Harnesses
 
 ## Context
 

@@ -1,3 +1,13 @@
+---
+id: PRP-005
+status: in-progress
+created: 2026-02-07
+modified: 2026-02-07
+reviewed: 2026-02-07
+confidence: 7/10
+domain: architecture
+---
+
 # PRP: Agent Teams Migration
 
 **Created**: 2026-02-07

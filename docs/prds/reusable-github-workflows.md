@@ -1,5 +1,3 @@
-# Reusable GitHub Action Workflows - Product Requirements Document
-
 ---
 id: PRD-002
 created: 2026-01-25
@@ -10,6 +8,8 @@ relates-to:
   - ADR-0014
 github-issues: []
 ---
+
+# Reusable GitHub Action Workflows - Product Requirements Document
 
 ## Executive Summary
 

@@ -1,3 +1,10 @@
+---
+id: ADR-0005
+status: Accepted
+created: 2026-01-09
+modified: 2026-04-08
+---
+
 # ADR-0005: Blueprint Development Methodology
 
 ## Status

@@ -1,6 +1,5 @@
-# ADR-0018: Usage-Telemetry Scope for `health-plugin`
-
 ---
+id: ADR-0018
 date: 2026-06-16
 created: 2026-06-16
 modified: 2026-06-16
@@ -11,6 +10,8 @@ relates-to:
   - ADR-0016
 github-issues: []
 ---
+
+# ADR-0018: Usage-Telemetry Scope for `health-plugin`
 
 ## Context
 

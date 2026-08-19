@@ -1,3 +1,10 @@
+---
+id: ADR-0007
+status: Accepted
+created: 2026-01-09
+modified: 2026-04-08
+---
+
 # ADR-0007: Namespace-Based Command Organization
 
 ## Status

@@ -1,8 +1,5 @@
-# ADR-0014: Reusable GitHub Workflows in Plugin Repository
-
-> **Superseded**: This decision has been reversed. Reusable workflows have been migrated to [`laurigates/.github`](https://github.com/laurigates/.github) and are now referenced as `laurigates/.github/.github/workflows/reusable-<name>.yml@main`. The `configure-reusable-workflows` skill and consumer documentation have been updated accordingly.
-
 ---
+id: ADR-0014
 date: 2026-01-25
 created: 2026-01-25
 modified: 2026-03-09
@@ -13,6 +10,11 @@ relates-to:
   - PRD-002
 github-issues: []
 ---
+
+# ADR-0014: Reusable GitHub Workflows in Plugin Repository
+
+> **Superseded**: This decision has been reversed. Reusable workflows have been migrated to [`laurigates/.github`](https://github.com/laurigates/.github) and are now referenced as `laurigates/.github/.github/workflows/reusable-<name>.yml@main`. The `configure-reusable-workflows` skill and consumer documentation have been updated accordingly.
+
 
 ## Context
 

@@ -1,6 +1,5 @@
-# ADR-0019: Reject a Shared-Library Plugin / @-Imports / Build-Time Templating for Skill DRY
-
 ---
+id: ADR-0019
 date: 2026-06-28
 created: 2026-06-28
 modified: 2026-06-28
@@ -11,6 +10,8 @@ relates-to:
   - ADR-0001  # plugin-based architecture (independent install units)
   - ADR-0016  # deterministic script extraction (the real token lever)
 ---
+
+# ADR-0019: Reject a Shared-Library Plugin / @-Imports / Build-Time Templating for Skill DRY
 
 ## Context
 

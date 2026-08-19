@@ -1,3 +1,12 @@
+---
+id: ADR-0011
+status: Accepted
+deciders: Blueprint Plugin Maintainers
+date: 2026-01-09
+created: 2026-01-09
+modified: 2026-04-10
+---
+
 # ADR-0011: Blueprint State in docs/ Directory
 
 **Date**: 2026-01-09

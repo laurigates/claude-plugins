@@ -1,5 +1,3 @@
-# ADR-0020: Blueprint Autonomy Levels — Ambient Operations via a Manifest-Gated Level Model
-
 ---
 id: ADR-0020
 date: 2026-07-05
@@ -14,6 +12,8 @@ relates-to:
   - ADR-0016
   - ADR-0017
 ---
+
+# ADR-0020: Blueprint Autonomy Levels — Ambient Operations via a Manifest-Gated Level Model
 
 ## Context
 
