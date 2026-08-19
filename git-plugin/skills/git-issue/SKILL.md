@@ -229,7 +229,12 @@ Recommended: Run Groups 1, 2, 3 in parallel (3 agents)
 
 #### Standard Flow (Sequential or Single Issue)
 
-1. **Fetch issue details**: `gh issue view $N --json title,body,state,assignees,labels`
+1. **Fetch issue details AND the comment thread**:
+   `gh issue view $N --json title,body,state,assignees,labels,comments`
+   The `comments` field is not optional — the body is the opening position, not the
+   decision. Scope from `git-plugin:git-issue-scoping`, which carries the full protocol
+   (re-verify cited evidence at HEAD; a later comment may have narrowed, reversed, or
+   already resolved the ask).
 2. **Capture issue labels** for later PR creation
 3. **Identify requirements** and acceptance criteria
 4. **Plan the implementation** approach
