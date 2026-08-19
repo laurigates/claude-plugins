@@ -5,7 +5,7 @@
 ### Supersedes Validation
 - Target file must exist
 - Target status must be "Superseded"
-- Target must have `superseded_by: ADR-{this}`
+- Target must have `superseded-by: ADR-{this}`
 - Create error if any check fails
 
 ### Extends Validation
@@ -88,7 +88,7 @@ Untagged ADRs (consider adding domain):
 
 ### Fix All Automatically
 For each error:
-1. If supersession mismatch → Update target status to "Superseded", add `superseded_by`
+1. If supersession mismatch → Update target status to "Superseded", add `superseded-by`
 2. If one-way link → Add reciprocal `related:` entry to target
 
 ### Review Each Issue

@@ -51,7 +51,7 @@ date: 2026-01-15
 status: Accepted | Superseded | Deprecated | Proposed
 domain: state-management
 supersedes: ADR-0003
-superseded_by: ADR-0012    # Set when superseded
+superseded-by: ADR-0012    # Set when superseded
 extends: ADR-0005
 related:
   - ADR-0002
@@ -114,7 +114,7 @@ Map discussion topics to domains:
 | Check | Validation |
 |-------|------------|
 | `supersedes` target exists | ADR file must exist |
-| `supersedes` target status | Must be "Superseded" with `superseded_by` set |
+| `supersedes` target status | Must be "Superseded" with `superseded-by` set |
 | `extends` target exists | ADR file must exist |
 | `extends` target not superseded | Warning if extending outdated decision |
 | `related` targets exist | All referenced ADRs must exist |
@@ -125,7 +125,7 @@ Map discussion topics to domains:
 
 When ADR-A supersedes ADR-B:
 - ADR-A: `supersedes: ADR-B`
-- ADR-B: `superseded_by: ADR-A`, `status: Superseded`
+- ADR-B: `superseded-by: ADR-A`, `status: Superseded`
 
 ## Commands
 

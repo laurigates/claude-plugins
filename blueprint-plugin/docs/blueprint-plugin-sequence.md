@@ -390,7 +390,7 @@ sequenceDiagram
 
         Note over CMD,ADRs: Bidirectional Update
         CMD->>ADRs: Update ADR-0003
-        Note right of ADRs: status: Superseded<br/>superseded_by: ADR-0012
+        Note right of ADRs: status: Superseded<br/>superseded-by: ADR-0012
         CMD->>ADRs: Create ADR-0012
         Note right of ADRs: domain: state-management<br/>supersedes: ADR-0003
 
