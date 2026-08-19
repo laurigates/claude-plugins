@@ -240,3 +240,66 @@ follow-up cleanly closed the gap left by a rate-limited cascade agent.
 | Wave returns with one or two `Rate limited` agents | Recovery-dispatch the missed slice; do not retry the whole wave |
 | Same agent rate-limits twice in a row | Smaller scope or staggered dispatch — the wave size is still too high |
 | Burst killed agents at **startup** (worktree fan-out died before committing) | `git worktree prune` + delete the empty leftover branches before the reduced-concurrency retry — else each agent's `git switch -c <branch>` collides with the orphaned ref |
+
+### Burst limit vs session usage limit
+
+The table above covers the **server burst limit** — many agents dispatched at
+once, refused by the API. A **session usage limit** kills a wave the same way
+but for a different reason, and the two want different first moves: the burst
+limit wants lower concurrency on an immediate retry, the usage limit wants a
+wait. The wreckage they leave is identical, so the audit step below applies to
+either.
+
+The burst-limit signature:
+
+Spawning many agents simultaneously — a `Workflow` `parallel()`/`pipeline()`
+of N agents, or N `Agent` calls in one message — can trip a **server-side
+burst rate limit** (`API Error: Server is temporarily limiting requests (not
+your usage limit) · Rate limited`), distinct from your usage quota. When it
+fires, the agents die after their retries and `parallel()` returns them as
+`null` — **every agent's startup tokens wasted** (observed: 7 Opus auditors,
+628 k tokens, all killed at 18 s).
+
+Mitigations for this class already live above and in
+[`../SKILL.md`](../SKILL.md) § Concurrent Rate-Limit Risk — safe starting
+concurrency by agent profile, sequential waves over one big fan-out,
+backoff-and-retry rather than task failure, and `git worktree prune` before a
+reduced-concurrency retry after a startup kill. They are not restated here. The
+one mitigation that is not a dispatch tactic — for deterministic, mechanical
+work (parsing, counting, audits, frontmatter scans), prefer a single inline
+`python3`/`rg` pass over an agent fan-out — belongs to
+`.claude/rules/offload-to-deterministic-substrate.md`, not to this skill.
+
+### Session usage limit — audit remote, then recover
+
+The **session usage limit** ("You've hit your session limit · resets <time>")
+kills in-flight subagents the same way the burst limit does: each agent dies
+on a terminal API error at whatever stage it had reached — some after pushing
+a branch and opening a PR, some mid-edit, some before starting. A `Workflow`
+run reports them under `failures`; completed siblings' results survive in the
+run's journal.
+
+Recovery protocol (observed 2026-07: a 14-agent PR sweep lost 7 agents to the
+limit and recovered fully):
+
+1. **Wait out the reset** — the limit message names the reset time; nothing
+   recovers before it.
+2. **Audit remote state before resuming** — dead agents may have half-landed
+   their work: `gh pr list --state open` plus `git ls-remote --heads origin`
+   show which branches/PRs already exist. A re-run agent that pushes an
+   already-pushed branch hits a non-fast-forward reject, and one that
+   re-creates an existing PR duplicates it — brief agents to check first, or
+   verify the remote is clean yourself.
+3. **Resume only what actually caches.** `Workflow({scriptPath,
+   resumeFromRunId})` replays completed **ordinary** agents from cache (cache
+   key: unchanged prompt + opts) at zero cost, so re-dispatching those from
+   scratch re-pays their tokens. It does **not** hold for `isolation:
+   "worktree"` agents: one that already succeeded is **re-executed** on resume
+   and re-fires its side effects — an agent that opened a PR opens a duplicate
+   (PR #1858 dup of #1857; issue
+   [#1868](https://github.com/laurigates/claude-plugins/issues/1868)). Recover
+   those with a fresh **sequential** re-dispatch of only the dead agents, after
+   the step-2 audit confirms no PR is already open. See
+   [`../SKILL.md`](../SKILL.md) § "Resuming a workflow: `resumeFromRunId`
+   re-runs succeeded worktree agents" and
+   `.claude/rules/agent-coworker-detection.md`.
