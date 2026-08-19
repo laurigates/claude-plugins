@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "blueprint-plugin/prd.schema.json",
+  "title": "Product Requirements Document",
+  "description": "The single source of truth for PRD structure. hooks/validate-prd-frontmatter.sh is a thin caller of scripts/check-schema.py against this file. The validated object is built by check-schema.py: `frontmatter` is the parsed line-1 YAML block, `sections` maps each `## ` heading text to its ordinal.",
+  "x-blueprint-doc-kind": "prd",
+  "x-blueprint-path-glob": "docs/prds/**",
+  "type": "object",
+  "required": ["frontmatter", "sections"],
+  "additionalProperties": false,
+  "properties": {
+    "frontmatter": {
+      "type": "object",
+      "description": "Line-1 YAML frontmatter. Open to extra fields — see the same note in adr.schema.json.",
+      "additionalProperties": true,
+      "required": ["id", "status", "created", "modified"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^PRD-[0-9]{3,}$",
+          "description": "Document ID (PRD-NNN). Assigned by /blueprint:sync-ids when missing."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Draft", "Proposed", "Active", "Completed", "Deprecated"],
+          "description": "Lifecycle state, capitalised to match ADR status casing."
+        },
+        "created": { "type": "string", "format": "date" },
+        "modified": { "type": "string", "format": "date" },
+        "reviewed": { "type": "string", "format": "date" },
+        "title": {
+          "type": "string",
+          "description": "Human title. Recommended: auto-sync-id-registry.sh falls back to the first `# ` heading when absent."
+        },
+        "domain": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "tags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "relates-to": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^(ADR|PRD|PRP|WO)-[0-9]{3,}$" },
+          "uniqueItems": true
+        },
+        "github-issues": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 },
+          "uniqueItems": true
+        },
+        "feature-codes": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^FR[0-9]+(\\.[0-9]+)*$" },
+          "uniqueItems": true,
+          "description": "Hierarchical feature codes this PRD defines (FR1, FR1.1, ...)"
+        }
+      },
+      "allOf": [
+        {
+          "if": { "not": { "required": ["title"] } },
+          "then": {
+            "required": ["title"],
+            "x-blueprint-severity": "warning",
+            "title": "No `title` in frontmatter — the manifest ID registry falls back to the first `# ` heading, which drifts when the heading is reworded."
+          }
+        }
+      ]
+    },
+    "sections": {
+      "type": "object",
+      "description": "Map of `## ` heading text to its 0-based ordinal. PRDs declare no required sections; structure is governed by the PRD template, not this schema.",
+      "additionalProperties": { "type": "integer" }
+    }
+  }
+}
