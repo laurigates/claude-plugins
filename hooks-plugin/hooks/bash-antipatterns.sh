@@ -80,14 +80,30 @@ strip_trailing_comments() {
 # whole command string don't false-positive on literal text inside a heredoc
 # body. The main offender is `gh pr create --body "$(cat <<'EOF' ... EOF)"` whose
 # body may contain example shell commands (e.g. a log-stream pipeline) that are
-# documentation, not executable code. (Now consumed only by the log-stream and
-# grep-chain regex detectors — the read/write detectors moved to the AST path,
-# which understands heredoc-body nodes natively.)
+# documentation, not executable code. (Consumed by the log-stream and grep-chain
+# regex detectors, and by the four `^`-anchored safety blocks — the read/write
+# detectors moved to the AST path, which understands heredoc-body nodes natively.)
+#
+# `^`-ANCHORED DETECTORS MUST SCAN THIS VIEW (issue #2431).
+#
+# `^` in grep anchors to the start of every LINE, not the start of the command.
+# In a multi-line command a heredoc BODY line that happens to begin with a
+# watched word is therefore matched as if it were the command itself. The
+# reported break: a `git commit -F - <<EOF` whose message described a
+# *connection timeout* was blocked with "REMINDER: The 'timeout' command is
+# usually unnecessary — remove the timeout wrapper". There was no wrapper; the
+# word was prose in the commit message. Same shape for `git add -A` /
+# `git reset --hard` / `git push -u …` documented inside an issue or PR body.
+#
+# The per-line anchoring itself is correct and is preserved: a genuine command on
+# line 2 of a multi-line Bash call IS the start of a command and must still be
+# caught. Only heredoc-body lines are removed from the scanned view.
 #
 # The awk program walks the command line-by-line. When it sees `<<DELIM` it
 # enters heredoc mode and suppresses subsequent lines until it sees a line
-# matching DELIM. The heredoc-opening line itself is still printed.
-COMMAND_SHELL_ONLY=$(echo "$COMMAND" | awk '
+# matching DELIM. The heredoc-opening line itself is still printed, so a real
+# command sharing that line (and every line after the terminator) still matches.
+COMMAND_NO_HEREDOC=$(echo "$COMMAND" | awk '
     BEGIN { ih = 0 }
     ih == 0 {
         if (match($0, /<<-?[[:space:]]*[^[:space:]]*[A-Za-z_][A-Za-z_0-9]*/)) {
@@ -113,7 +129,12 @@ COMMAND_SHELL_ONLY=$(echo "$COMMAND" | awk '
 # COMMAND_NO_DEVNULL derive from COMMAND_SHELL_ONLY, every idiom detector keyed
 # off those views (head/tail, sed -i, echo/printf → file, cat > file,
 # task-output, git chains) becomes comment-immune in one place.
-COMMAND_SHELL_ONLY=$(strip_trailing_comments "$COMMAND_SHELL_ONLY")
+#
+# COMMAND_NO_HEREDOC (heredoc-stripped, comments INTACT) is kept as a separate
+# view because the `# allow-timeout` escape hatch (#2041) is itself a comment —
+# reading it off COMMAND_SHELL_ONLY would find nothing and the escape would
+# silently stop working.
+COMMAND_SHELL_ONLY=$(strip_trailing_comments "$COMMAND_NO_HEREDOC")
 
 # A further-stripped view with quoted-string literals removed (on top of the
 # heredoc stripping above). The git index-lock chain detector and the
@@ -427,8 +448,14 @@ fi
 # error state, whereas `timeout N cmd` produces a clean exit 124 with the
 # captured output — a strictly better signal. The comment is a deliberate,
 # visible opt-in the agent must type per-command, so the default steer stays.
-if echo "$COMMAND" | grep -Eq '^\s*timeout\s+' && \
-   ! echo "$COMMAND" | grep -Eq '#[[:space:]]*allow-timeout\b'; then
+#
+# Detection scans COMMAND_SHELL_ONLY so a heredoc-body line beginning with the
+# word `timeout` — a commit message about a *connection timeout*, an issue body
+# quoting a `timeout N cmd` example — is not read as a wrapper (issue #2431).
+# The escape hatch reads COMMAND_NO_HEREDOC (comments intact) because
+# COMMAND_SHELL_ONLY has already had `# allow-timeout` stripped.
+if echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*timeout\s+' && \
+   ! echo "$COMMAND_NO_HEREDOC" | grep -Eq '#[[:space:]]*allow-timeout\b'; then
     block "REMINDER: The 'timeout' command is usually unnecessary - the Bash tool has its own timeout parameter. Human approval time typically exceeds any timeout value anyway. Remove the timeout wrapper and use the command directly.
 
 If the wrapped process genuinely never exits on its own (a REPL, a stdio
@@ -567,7 +594,12 @@ fi
 # Check for broad git staging commands (git add -A, git add --all, git add .)
 # These can accidentally include sensitive files (.env, credentials) or large binaries.
 # Pattern handles git global flags like -C <path> before the subcommand.
-if echo "$COMMAND" | grep -Eq '^\s*git\s+(.+\s+)?add\s+(-A|--all|\.(\s|$))'; then
+#
+# Scans COMMAND_SHELL_ONLY (issue #2431): `^` matches the start of every LINE, so
+# a heredoc-body line reading "git add -A is discouraged because…" — prose in a
+# commit message or issue body — was blocked as if it staged anything. A genuine
+# `git add -A` on its own line of a multi-line command is still caught.
+if echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*git\s+(.+\s+)?add\s+(-A|--all|\.(\s|$))'; then
     block "REMINDER: Avoid broad staging commands like 'git add -A', 'git add --all', or 'git add .'.
 These can accidentally include sensitive files (.env, credentials) or large binaries.
 
@@ -614,7 +646,13 @@ fi
 # After pushing commits to a PR branch, agents sometimes think they need to reset main.
 # However, once the PR is merged, git pull will cleanly resolve the situation.
 # Exclude heredocs (<<) so commit messages mentioning "git reset" don't trigger this.
-if echo "$COMMAND" | grep -Eq '^\s*git\s+reset\s+--hard' && \
+#
+# The positive match scans COMMAND_SHELL_ONLY (issue #2431) so a heredoc-body
+# line beginning with `git reset --hard` is not read as the command. The blunt
+# "any `<<` anywhere exempts" clause is kept as-is on the raw command: it is the
+# pre-existing (looser) behaviour and narrowing it here would silently widen the
+# block, which is out of scope for a false-positive fix.
+if echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*git\s+reset\s+--hard' && \
    ! echo "$COMMAND" | grep -Eq '<<'; then
     block "REMINDER: 'git reset --hard' is destructive and usually unnecessary.
 
@@ -647,10 +685,18 @@ fi
 # it pushes the local feat/x ref and sets feat/x's upstream, never touching the
 # current branch — the old detector wrongly blocked it on a false "sets main's
 # tracking" premise, the same legitimate pattern as issue #1600.
-if echo "$COMMAND" | grep -Eq '^\s*git\s+push\b' && \
-   echo "$COMMAND" | grep -Eq '(\s-[a-zA-Z]*u[a-zA-Z]*\b|--set-upstream\b)' && \
-   echo "$COMMAND" | grep -Eq '\sorigin\s+[a-zA-Z0-9._/@-]+:[a-zA-Z0-9._/-]+'; then
-    PUSH_REFSPEC=$(echo "$COMMAND" | grep -oE 'origin\s+[a-zA-Z0-9._/@-]+:[a-zA-Z0-9._/-]+' | awk '{print $2}')
+#
+# All four reads use COMMAND_SHELL_ONLY (issue #2431) so a heredoc-body line
+# documenting the footgun — an issue body whose repro section literally reads
+# `git push -u origin main:feat/x` — is not mistaken for the executed push. The
+# guard conditions and the refspec extraction must share ONE view: under
+# `set -e`, a `PUSH_REFSPEC=$(… grep -oE …)` that finds nothing exits non-zero
+# and aborts the hook, so a guard matching a view the extraction doesn't would
+# turn a false positive into a hook crash.
+if echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*git\s+push\b' && \
+   echo "$COMMAND_SHELL_ONLY" | grep -Eq '(\s-[a-zA-Z]*u[a-zA-Z]*\b|--set-upstream\b)' && \
+   echo "$COMMAND_SHELL_ONLY" | grep -Eq '\sorigin\s+[a-zA-Z0-9._/@-]+:[a-zA-Z0-9._/-]+'; then
+    PUSH_REFSPEC=$(echo "$COMMAND_SHELL_ONLY" | grep -oE 'origin\s+[a-zA-Z0-9._/@-]+:[a-zA-Z0-9._/-]+' | awk '{print $2}')
     PUSH_SRC=${PUSH_REFSPEC%%:*}
     PUSH_DST=${PUSH_REFSPEC#*:}
     CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "")

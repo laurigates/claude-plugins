@@ -57,6 +57,24 @@ pure-regex and fire in **every** context. Set
 `CLAUDE_HOOKS_BASH_ANTIPATTERNS_NO_ASTGREP=1` to force the no-op path (used by
 the regression suite to exercise fail-open).
 
+### Line-anchored safety blocks skip heredoc bodies (#2431)
+
+Four blocks stay pure-regex and are anchored with `^`: `timeout`, `git add -A`,
+`git reset --hard`, and the `git push -u <src>:<dst>` footgun. `^` in `grep`
+matches the start of **every line**, not the start of the command, so in a
+multi-line command a heredoc *body* line beginning with a watched word was read
+as if it were the command. The reported break: a `git commit -F - <<EOF` whose
+message described a *connection timeout* was blocked with "REMINDER: The
+'timeout' command is usually unnecessary — remove the timeout wrapper". There
+was no wrapper; the word was prose.
+
+All four now scan `COMMAND_SHELL_ONLY` (heredoc bodies and trailing `#` comments
+removed) instead of the raw command. The per-line anchoring is **kept** — a
+genuine command on line 2 of a multi-line Bash call is still the start of a
+command and still blocks; only heredoc-body lines are exempt. The `timeout`
+escape hatch reads a separate `COMMAND_NO_HEREDOC` view (comments intact),
+because `# allow-timeout` is itself a comment.
+
 ### Demoted to opt-in teach nudges (not blocked)
 
 `find` (→ **Glob**, #1871), `grep`/`rg` (→ **Grep**, #1909), `ls <glob>`
