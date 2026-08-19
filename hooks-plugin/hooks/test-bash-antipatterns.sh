@@ -796,6 +796,24 @@ assert_push_exit \
     "git push origin main:feat/x without -u is allowed" 0 \
     "git push origin main:feat/x"
 
+# ── issue #2431: a heredoc body documenting the footgun is not the footgun ────
+# `^` in grep anchors to the start of every LINE, so a heredoc body line reading
+# "git push -u origin main:feat/x" (an issue body describing the hazard) matched
+# the line-anchored push detector as if it were the executed command.
+push_heredoc_body=$(cat <<'OUTER'
+gh issue create --title "push -u footgun" --body-file - <<'EOF'
+Repro:
+
+git push -u origin main:feat/x
+
+sets main's upstream to origin/feat/x, which is wrong.
+EOF
+OUTER
+)
+assert_push_exit \
+    "heredoc body documenting 'git push -u origin main:x' is allowed (#2431)" 0 \
+    "$push_heredoc_body"
+
 rm -rf "$PUSH_REPO"
 
 # ── stdout echo/printf headers are not blocked (issue #1701) ──────────────────
@@ -1436,6 +1454,111 @@ assert_exit_complex \
 assert_exit \
     "GUARD: sed -i on a repo file inside a compound command still blocks (#2148)" 2 \
     "cd /repo && sed -i 's/a/b/' src/main.py"
+
+# ── `^`-anchored blocks must not match heredoc-body lines (issue #2431) ──────
+# Regression: `^` in grep anchors to the start of every LINE, not the start of
+# the command. In a multi-line command a heredoc BODY line that happens to begin
+# with a watched word was treated as the command itself. The reported break was a
+# `git commit -F - <<EOF` whose message described a *connection timeout* — prose,
+# no wrapper — blocked with "REMINDER: The 'timeout' command is usually
+# unnecessary". The four line-anchored blocks (timeout, git add -A,
+# git reset --hard, git push -u) now scan the heredoc-stripped view.
+#
+# The anchoring itself is correct and must survive: a genuine command on line 2
+# of a multi-line Bash call is still the start of a command and must still block.
+echo ""
+echo "'^'-anchored blocks ignore heredoc-body lines, still fire per-line on real commands (#2431):"
+
+commit_timeout_prose=$(cat <<'OUTER'
+git commit -F - <<'EOF'
+fix(net): retry on connection timeout
+
+timeout handling in the client was wrong: it never retried after the
+upstream closed the socket mid-request.
+
+Fixes #123
+EOF
+OUTER
+)
+assert_exit_complex \
+    "commit message whose body line starts with 'timeout' is allowed (#2431 exact repro)" 0 \
+    "$commit_timeout_prose"
+
+commit_gitadd_prose=$(cat <<'OUTER'
+git commit -F - <<'EOF'
+docs(hooks): explain the broad-staging rule
+
+git add -A is discouraged because it sweeps in .env files.
+EOF
+OUTER
+)
+assert_exit_complex \
+    "commit message whose body line starts with 'git add -A' is allowed (#2431)" 0 \
+    "$commit_gitadd_prose"
+
+commit_reset_prose=$(cat <<'OUTER'
+gh issue comment 42 --body-file - <<'EOF'
+The recovery step people reach for is:
+
+git reset --hard origin/main
+
+which discards uncommitted work.
+EOF
+OUTER
+)
+assert_exit_complex \
+    "issue body whose line starts with 'git reset --hard' is allowed (#2431)" 0 \
+    "$commit_reset_prose"
+
+# GUARD INTEGRITY: the heredoc-stripped view must not weaken the four blocks.
+assert_exit \
+    "GUARD: bare timeout wrapper still blocks (#2431)" 2 \
+    "timeout 30 some-server --serve"
+
+assert_exit \
+    "GUARD: '# allow-timeout' escape hatch still passes (#2431 keeps #2041)" 0 \
+    "timeout 30 srv --stdio # allow-timeout"
+
+assert_exit \
+    "GUARD: bare git add -A still blocks (#2431)" 2 \
+    "git add -A"
+
+assert_exit \
+    "GUARD: bare git reset --hard still blocks (#2431)" 2 \
+    "git reset --hard HEAD"
+
+# GUARD INTEGRITY: `^` per-LINE anchoring is the intended behaviour for real
+# commands — a genuine command on a later line of a multi-line Bash call must
+# still be caught. Only heredoc-body lines are exempt.
+multiline_timeout_cmd=$(cat <<'OUTER'
+cd /repo
+timeout 30 some-server --serve
+OUTER
+)
+assert_exit_complex \
+    "GUARD: genuine 'timeout …' on line 2 of a multi-line command still blocks (#2431)" 2 \
+    "$multiline_timeout_cmd"
+
+multiline_gitadd_cmd=$(cat <<'OUTER'
+cd /repo
+git add -A
+OUTER
+)
+assert_exit_complex \
+    "GUARD: genuine 'git add -A' on line 2 of a multi-line command still blocks (#2431)" 2 \
+    "$multiline_gitadd_cmd"
+
+# A real command AFTER a closed heredoc is executable again and must still block.
+after_heredoc_cmd=$(cat <<'OUTER'
+gh issue create --title x --body-file - <<'EOF'
+Some prose about staging.
+EOF
+git add -A
+OUTER
+)
+assert_exit_complex \
+    "GUARD: 'git add -A' after the heredoc terminator still blocks (#2431)" 2 \
+    "$after_heredoc_cmd"
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
