@@ -119,6 +119,27 @@ The parser emits one friction event per line:
 {"session": "…", "ts": "…", "kind": "hook_block|tool_error|user_reject|user_interrupt|plan_mode|push_to_pr_branch", "signature": "…", "tool": "…", "evidence": "…"}
 ```
 
+### Step 1b: Pull skill usage, to target the analysis (optional)
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/skill_usage_report.py" \
+  --since 30d --include-transcripts --json > /tmp/skill-usage.json
+```
+
+Reads `~/.claude/skill-usage.jsonl` (written by the opt-in `skill-usage-log.sh`
+hook) and backfills from the expiring transcripts. Use it to **decide which
+skills are worth analysing**, not as a friction source of its own:
+
+| Report bucket | What it means for this run |
+|---|---|
+| `active` with friction clusters | Prioritise — a skill in daily use whose guidance is costing round-trips |
+| `active`, no clusters | Working; leave alone |
+| `dormant` | Deprioritise a fix here; a rule change lands on nobody |
+| `never` | **Not** evidence the skill is bad — read `coverage_since` first, then treat it as a *description/triggering* question (does it say when to invoke it?), which is `evaluate-plugin:evaluate-legibility`'s job, not this agent's |
+
+`STATUS=NO_DATA` means the hook is not enabled and no transcripts were read —
+that is not "no skills were used". Skip this step rather than reporting zeros.
+
 ### Step 2: Cluster by signature
 
 ```bash
@@ -304,3 +325,6 @@ Clusters found: 7 (3 actionable)
 - Modify settings.json hooks (proposes them; user applies)
 - Send webhook notifications
 - Rewrite existing rules (only adds a new dated rule file; humans consolidate later)
+- Judge a skill's *value* from its usage count — the report ranks recency and
+  reach so the analysis can be targeted; a never-invoked skill raises a
+  description/triggering question, not a delete recommendation

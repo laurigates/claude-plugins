@@ -28,6 +28,7 @@ Three shapes:
 | `CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH` | PostToolUse "teach" hook — augments tool output with a non-blocking nudge instead of blocking (carries the `find→Glob` and other soft nudges) | hooks · `hooks/bash-antipatterns-teach.sh` |
 | `CLAUDE_HOOKS_ENABLE_CALENDAR_ESTIMATES` | Stop hook nudging the agent to restate estimates in tokens / effort tiers instead of calendar time | hooks · `hooks/no-calendar-estimates.sh` |
 | `CLAUDE_HOOKS_ENABLE_EVENT_LOGGER` | Dev/debug hook logging every hook event to a file | hooks · `hooks/event-logger.sh` |
+| `CLAUDE_HOOKS_ENABLE_SKILL_USAGE_LOG` | Appends one JSONL record per skill invocation to `~/.claude/skill-usage.jsonl` (`PreToolUse: Skill\|SlashCommand` + `UserPromptSubmit`), so usage outlives transcript retention. Read by `feedback-plugin/scripts/skill_usage_report.py` | feedback · `hooks/skill-usage-log.sh` |
 | `CLAUDE_HOOKS_BASH_ANTIPATTERNS_NO_ASTGREP` | Forces the bash-antipatterns read/write detectors' no-op (ast-grep-absent) path even when ast-grep is installed — the structural cat/head/tail-read, echo/printf/cat-write, sed -i, and task-output detectors are skipped; safety/regex blocks still fire. Used by the regression suite to exercise fail-open (#2008) | hooks · `hooks/bash-antipatterns.sh` |
 
 **Non-env opt-in:** the taskwarrior **native hooks** (`on-modify`, `on-exit`
@@ -84,6 +85,7 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 |---|---|---|---|
 | `CLAUDE_HOOKS_EVENT_LOG` | `~/.claude/hook-events.log` | Event-logger output path | `hooks/event-logger.sh` |
 | `CLAUDE_HOOKS_EVENT_LOGGER_VERBOSE` | off | Log full JSON input (vs one-line summary) | `hooks/event-logger.sh` |
+| `CLAUDE_SKILL_USAGE_LOG` | `~/.claude/skill-usage.jsonl` | Skill-usage log path (rotates to `<path>.1` at 16 MB) | `feedback-plugin/hooks/skill-usage-log.sh` |
 | `CLAUDE_HOOKS_TEST_TIMEOUT` | `45` (s) | Test-verification timeout | `hooks/test-verification.sh` |
 | `CLAUDE_HOOKS_BRANCH_SYNC_TTL` | `300` (s) | Per-session+branch sync-check cache TTL | `git-plugin/hooks/check-branch-sync-on-push.sh` |
 | `CLAUDE_HOOKS_BRANCH_BASE_TTL` | `300` (s) | Per-session+repo+default branch-base nudge dedup window | `hooks/branch-base-guard.sh` |

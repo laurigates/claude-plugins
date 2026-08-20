@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runner shim for the friction_* Python regression suites.
+# Runner shim for this plugin's Python regression suites.
 #
 # The suites themselves are Python (`test_friction_*.py`), but
 # scripts/run-skill-script-tests.sh (and the `Test: Skill scripts` CI workflow)
@@ -21,7 +21,10 @@ fi
 failed=0
 total=0
 
-for suite in "$TESTS_DIR"/test_friction_*.py; do
+# Glob is test_*.py, not test_friction_*.py: skill_usage_report's suite lives
+# here too, and a name-scoped glob is exactly the allowlist drift this shim
+# exists to prevent (a suite that matches no glob runs nowhere).
+for suite in "$TESTS_DIR"/test_*.py; do
   [ -f "$suite" ] || continue
   total=$((total + 1))
   echo "=== $(basename "$suite") ==="
