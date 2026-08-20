@@ -66,6 +66,13 @@ deny() {
 # ---------------------------------------------------------------------------
 PR_SELECTOR=""
 PR_REPO=""
+# Set to a backtick when the structural scan detects that a bare backtick
+# command substitution mid-argument truncated the merge statement (see the
+# TRUNCATED marker below) — folded into the shell-variable/backtick case
+# switch below alongside PR_SELECTOR and PR_REPO so a truncated value denies
+# for the same reason an unresolved `$var` does, instead of resolving (and
+# possibly ALLOWing) against the wrong PR or repo.
+TRUNC_MARK=""
 
 case "$TOOL_NAME" in
   mcp__github__merge_pull_request)
@@ -300,7 +307,27 @@ case "$TOOL_NAME" in
             if (nxt == "" || nxt == " " || nxt == "\t") {
               segm = substr(cm, e); sego = substr(co, e)
               gsub(/\n/, " ", segm); gsub(/\n/, " ", sego)
+              # Was this statement cut short by a BARE backtick used as a VALUE
+              # among the merge arguments themselves (gh pr merge 5 -R "cmd"
+              # with backticks instead of quotes around cmd), rather than one
+              # that legitimately WRAPS the whole invocation (backticks around
+              # the entire "gh pr merge 5", already handled: selector/repo
+              # come through clean there because the backtick delimits the
+              # statement, not a mid-argument value)? A wrapping backtick
+              # immediately PRECEDES this statement (buf[a-1] == BT); a
+              # value-truncating one does not. Losing the distinction silently
+              # drops everything after the backtick, including a --repo/-R
+              # value or the selector itself, so gh pr view ends up resolving
+              # the WRONG PR or repo and can come back trusted while the real,
+              # substituted target is not.
+              trunc = 0
+              if (b < n) {
+                delimc = substr(buf, b + 1, 1)
+                prevc = (a > 1) ? substr(buf, a - 1, 1) : ""
+                if (delimc == BT && prevc != BT) trunc = 1
+              }
               print "KIND=merge"; print "SEG=" sego; print "MSEG=" segm
+              if (trunc) print "TRUNCATED=1"
               exit
             }
           }
@@ -341,6 +368,11 @@ case "$TOOL_NAME" in
         # token) and read back from the original at the same offsets.
         MERGE_SEG=$(printf '%s\n' "$DETECT" | sed -n 's/^SEG=//p')
         MERGE_MSEG=$(printf '%s\n' "$DETECT" | sed -n 's/^MSEG=//p')
+        # A bare backtick truncated the statement mid-argument (see the awk
+        # comment above the TRUNCATED marker) — mark it so PR_SELECTOR/PR_REPO,
+        # however they parse out below, are treated as unresolved rather than
+        # as clean values that happen to be short.
+        if printf '%s\n' "$DETECT" | grep -q '^TRUNCATED=1$'; then TRUNC_MARK='`'; fi
         # Passed via the environment, not `awk -v`: -v applies backslash escape
         # processing to the value, which would mangle a command containing one.
         PARSED=$(SEG="$MERGE_SEG" MSEG="$MERGE_MSEG" awk '
@@ -411,6 +443,19 @@ case "$TOOL_NAME" in
     ;;
 esac
 
+# A bare backtick truncated the merge statement mid-argument (see the
+# TRUNCATED marker in the structural pass above). Deny BEFORE attempting any
+# `gh pr view` lookup below: PR_SELECTOR/PR_REPO at this point may be a clean,
+# resolvable value that is simply the WRONG one (e.g. empty, meaning "current
+# branch's PR" — not the PR the substituted value actually names), so letting
+# the lookup proceed could resolve successfully against the wrong PR/repo and
+# come back trusted while the real, substituted target is not.
+if [ -n "$TRUNC_MARK" ]; then
+  WHAT="${PR_REPO:+$PR_REPO}${PR_SELECTOR:+#$PR_SELECTOR}"
+  [ -z "$WHAT" ] && WHAT="the current branch's PR"
+  deny "Refusing to merge ${WHAT}: a backtick command substitution in the PR selector or --repo/-R value cut off part of this merge command before this hook could read it, so this hook cannot tell whose PR it is (and cannot even be sure it would be checking the right PR or repo). Merges of PRs authored by anyone other than the repo owner or a bot are not permitted from an agent. Resolve the command substitution to its literal value first, then merge with literal values one at a time — each will be checked individually."
+fi
+
 # ---------------------------------------------------------------------------
 # Resolve the author and classify.
 # ---------------------------------------------------------------------------
@@ -437,9 +482,17 @@ WHAT="${PR_REPO:+$PR_REPO}${PR_SELECTOR:+#$PR_SELECTOR}"
 [ -z "$WHAT" ] && WHAT="the current branch's PR"
 
 if [ -z "$META" ]; then
-  case "$PR_SELECTOR" in
+  # Test BOTH the selector and the repo for an unresolved shell variable or
+  # command substitution — either one, alone, makes `gh pr view` unable to
+  # resolve who authored the PR. Checking $PR_SELECTOR alone missed the case
+  # where the selector is a literal PR number but --repo/-R carries a shell
+  # variable (`gh pr merge 464 -R $R`): that used to fall through to the
+  # generic branch below and get blamed on "bad PR number, wrong repo, or no
+  # network" — plausible-sounding but wrong, and its retry hint echoed the
+  # unexpanded $R right back at the caller (issue #2449).
+  case "${PR_SELECTOR}${PR_REPO}" in
     *'$'*|*'`'*)
-      deny "Refusing to merge ${WHAT}: the PR selector is a shell variable, so this hook cannot tell whose PR it is. Merges of PRs authored by anyone other than the repo owner or a bot are not permitted from an agent. Resolve the PR numbers first (gh pr list --json number,author) and merge them one literal number at a time — each will be checked individually." ;;
+      deny "Refusing to merge ${WHAT}: the PR selector or repo is a shell variable, so this hook cannot tell whose PR it is. Merges of PRs authored by anyone other than the repo owner or a bot are not permitted from an agent. Resolve shell variables to their literal values first (gh pr list --json number,author to find PR numbers; check which repo you mean if --repo/-R was a variable), then merge with literal values one at a time — each will be checked individually." ;;
     *)
       deny "Refusing to merge ${WHAT}: could not read the PR's author (gh pr view returned nothing — bad PR number, wrong repo, or no network). 'Cannot verify' is not 'safe', so this is denied rather than allowed. Check the PR exists and is reachable (gh pr view ${PR_SELECTOR:-} ${PR_REPO:+--repo $PR_REPO}), then retry." ;;
   esac
