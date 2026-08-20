@@ -14,6 +14,53 @@ Session feedback analysis — capture per-session skill bugs as GitHub issues, a
 |-------|-------------|
 | `friction-learner` | The **slow loop**: read open `session-feedback` issues as pre-registered signal, parse last week of transcripts, cluster interruptions/hook-blocks/rejections, corroborate/escalate clusters against the fast-loop issues, propose rule/skill/hook fixes, reproduce-and-verify each fix where safe, open one PR per target repo cross-linking the fast-loop issues |
 
+## Hooks
+
+| Hook | Event | Default |
+|------|-------|---------|
+| `check-open-pr.sh` | `PreToolUse: Bash` | Enabled |
+| `skill-usage-log.sh` | `PreToolUse: Skill\|SlashCommand` + `UserPromptSubmit` | **Opt-in** |
+
+### Skill-usage log (opt-in)
+
+```bash
+export CLAUDE_HOOKS_ENABLE_SKILL_USAGE_LOG=1
+```
+
+Appends one JSONL record per skill invocation to `~/.claude/skill-usage.jsonl`,
+so usage history outlives transcript retention. Opt-in because every turn pays a
+`UserPromptSubmit` fire and the log is only useful to someone who intends to
+analyse it later; custom path via `CLAUDE_SKILL_USAGE_LOG`.
+
+It fires on **two** events, because skills arrive by two different paths:
+
+| Event | Path | Record `src` |
+|-------|------|--------------|
+| `PreToolUse` (`Skill`, `SlashCommand`) | The model invokes a skill | `tool` |
+| `UserPromptSubmit` | The user types `/plugin:skill` | `slash` |
+
+A user-typed slash command never reaches a tool — the client expands it into the
+prompt itself — so a `PreToolUse` hook alone misses every one of them. In a
+1,134-session transcript sweep, 11 of the 57 used skills appeared *only* by that
+path.
+
+Each record carries `ts`, `src`, `skill`, `plugin`, `args` (+ untruncated
+`args_len`), `session`, `cwd`, `repo`, `branch`, `permission_mode`, `effort`.
+The hook never writes to stdout — a `UserPromptSubmit` hook's stdout is injected
+into the model's context — and rotates at 16 MB.
+
+### Skill usage report
+
+```bash
+python3 feedback-plugin/scripts/skill_usage_report.py --since 30d --include-transcripts
+```
+
+Merges the durable log with the (expiring) transcripts and buckets the installed
+catalog into `active` / `dormant` / `never`, emitting the `KEY=VALUE` diagnostic
+convention plus `--json` for an agent. `friction-learner` Step 1b reads it to
+decide **which** skills are worth analysing — see the caveats there; `never` is a
+floor bounded by `COVERAGE_SINCE`, not a verdict.
+
 ### Friction learner
 
 Spawn via the Agent tool or wire to a weekly cron:

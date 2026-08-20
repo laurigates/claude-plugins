@@ -1,10 +1,11 @@
 ---
 created: 2026-08-15
-modified: 2026-08-15
-reviewed: 2026-08-15
+modified: 2026-08-20
+reviewed: 2026-08-20
 paths:
   - "health-plugin/**"
   - "evaluate-plugin/**"
+  - "feedback-plugin/**"
 ---
 # `pluginUsage.usageCount` Counts Hook Fires, Not Plugin Value
 
@@ -95,8 +96,41 @@ control matters (`~/.claude/rules/never-fabricate-test-identifiers.md`).
 reads agent dispatch from `Agent`/`Task` `subagent_type` events; this field is
 the per-call complement, not a gap.
 
+## Transcripts expire — the durable signal is `~/.claude/skill-usage.jsonl`
+
+Transcript mining is correct but **bounded by retention**. Measured 2026-08-20:
+1,134 files under `~/.claude/projects` reached back only to 2026-07-22, and a
+full sweep of them found 57 distinct skills used out of 420 in the marketplace.
+That 363-skill remainder is a *floor*, not a verdict — anything used before the
+window is indistinguishable from never used.
+
+`feedback-plugin/hooks/skill-usage-log.sh` (`PreToolUse(Skill|SlashCommand)` +
+`UserPromptSubmit`, **opt-in** via `CLAUDE_HOOKS_ENABLE_SKILL_USAGE_LOG=1`)
+appends one JSONL record per invocation to `~/.claude/skill-usage.jsonl`, which
+no retention policy trims. `feedback-plugin/scripts/skill_usage_report.py` reads
+it — merging the expiring transcripts on `--include-transcripts` — and
+`friction-learner` Step 1b consumes that to target which skills the weekly slow
+loop analyses. It lives in `feedback-plugin` rather than `hooks-plugin` because
+the log has one consumer and that consumer is the feedback loop; a telemetry
+file nothing reads is the failure this rule already documents.
+
+Two traps it exists to avoid re-deriving:
+
+- **Filesystem `atime` is not a usage signal on macOS.** Reading a file does not
+  update `atime` on this APFS volume (verified: write, sleep 2s, `cat`, `atime`
+  unchanged), and all 2,038 `SKILL.md` files under `~/.claude/plugins` have
+  `atime == mtime` — install time, not use time. Zero files anywhere have
+  `atime > mtime`.
+- **A `PreToolUse` hook alone under-counts.** A user-typed `/plugin:skill` never
+  reaches a tool; the client expands it into the prompt, so only
+  `UserPromptSubmit` sees it. In the sweep above, 11 of the 57 used skills
+  appeared *only* by that path — `session-end`, `git-issue`, `project-refocus`
+  and `health-check` among them.
+
 ## Related
 
+- `feedback-plugin/hooks/skill-usage-log.sh` — the durable per-invocation log described above
+- `feedback-plugin/scripts/skill_usage_report.py` — its consumer; `friction-learner` Step 1b
 - `health-plugin:health-check` — `--scope=usage` (transcript mining) and `--scope=runtime` (`~/.claude.json` bloat); neither touches the counter
 - `.claude/rules/skill-evaluation.md` — how skill *effectiveness* is actually measured (with-skill vs baseline delta), the question the counter looks like it answers
 - `.claude/rules/context-engineering.md` — the catalog-cost question a delivery signal would inform
