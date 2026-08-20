@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.2](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.10.1...session-plugin-v1.10.2) (2026-08-20)
+
+
+### Bug Fixes
+
+* **session-plugin:** stop piping into grep -q in test-session-survey's check() to avoid SIGPIPE-induced false failures ([c91ecca](https://github.com/laurigates/claude-plugins/commit/c91ecca432dbcb7e2ca90f787b849dcd4e52affc)), closes [#2452](https://github.com/laurigates/claude-plugins/issues/2452)
+
 ## [1.10.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.10.0...session-plugin-v1.10.1) (2026-08-20)
 
 
