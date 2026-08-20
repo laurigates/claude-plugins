@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.51.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.10...git-plugin-v2.51.0) (2026-08-20)
+
+
+### Features
+
+* **git-plugin:** add four skills promoted from always-loaded user rules ([9110111](https://github.com/laurigates/claude-plugins/commit/91101113fea94259d49c54f1ef118e955b36fac2)), closes [#353](https://github.com/laurigates/claude-plugins/issues/353)
+
+
+### Bug Fixes
+
+* **git-plugin:** fetch the issue comment thread in git-issue ([98eb9aa](https://github.com/laurigates/claude-plugins/commit/98eb9aa88b50e0f52b0713c07de1540adc33329b)), closes [#353](https://github.com/laurigates/claude-plugins/issues/353)
+
+
+### Documentation
+
+* repoint promoted-rule references and refresh catalog counts ([e9ad977](https://github.com/laurigates/claude-plugins/commit/e9ad97793e86fd81ba3670ba23d4f9b42ee9ed68)), closes [#353](https://github.com/laurigates/claude-plugins/issues/353)
+
 ## [2.50.10](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.9...git-plugin-v2.50.10) (2026-08-19)
 
 

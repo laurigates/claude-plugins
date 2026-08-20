@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.42.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.41.0...agent-patterns-plugin-v2.42.0) (2026-08-20)
+
+
+### Features
+
+* **agent-patterns-plugin:** fold fan-out burst-limit and usage-limit recovery into parallel-agent-dispatch ([f9b51ae](https://github.com/laurigates/claude-plugins/commit/f9b51aeec41e46872372210278afe441029ff66f)), closes [#353](https://github.com/laurigates/claude-plugins/issues/353)
+
+
+### Documentation
+
+* repoint promoted-rule references and refresh catalog counts ([e9ad977](https://github.com/laurigates/claude-plugins/commit/e9ad97793e86fd81ba3670ba23d4f9b42ee9ed68)), closes [#353](https://github.com/laurigates/claude-plugins/issues/353)
+
 ## [2.41.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.40.0...agent-patterns-plugin-v2.41.0) (2026-08-15)
 
 

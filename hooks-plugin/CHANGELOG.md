@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.8.6...hooks-plugin-v2.9.0) (2026-08-20)
+
+
+### Features
+
+* **hooks-plugin:** add repo-deletion-safety and branch-base-guard PreToolUse hooks ([c5f79b7](https://github.com/laurigates/claude-plugins/commit/c5f79b726a483291809787a58ce8cc480fe458b9)), closes [#353](https://github.com/laurigates/claude-plugins/issues/353)
+
 ## [2.8.6](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.8.5...hooks-plugin-v2.8.6) (2026-08-19)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.10.0...session-plugin-v1.10.1) (2026-08-20)
+
+
+### Documentation
+
+* repoint promoted-rule references and refresh catalog counts ([e9ad977](https://github.com/laurigates/claude-plugins/commit/e9ad97793e86fd81ba3670ba23d4f9b42ee9ed68)), closes [#353](https://github.com/laurigates/claude-plugins/issues/353)
+
 ## [1.10.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.9.9...session-plugin-v1.10.0) (2026-08-19)
 
 

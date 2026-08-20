@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.23.0...code-quality-plugin-v1.24.0) (2026-08-20)
+
+
+### Features
+
+* **code-quality-plugin:** add code-scaffold-backport promoted from a user rule ([722eae0](https://github.com/laurigates/claude-plugins/commit/722eae00e904f7e99c8756f3d3fb36423a764c5f)), closes [#353](https://github.com/laurigates/claude-plugins/issues/353)
+
 ## [1.23.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.22.3...code-quality-plugin-v1.23.0) (2026-08-10)
 
 

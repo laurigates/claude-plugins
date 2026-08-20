@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.45.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.45.0...blueprint-plugin-v3.45.1) (2026-08-20)
+
+
+### Documentation
+
+* repoint promoted-rule references and refresh catalog counts ([e9ad977](https://github.com/laurigates/claude-plugins/commit/e9ad97793e86fd81ba3670ba23d4f9b42ee9ed68)), closes [#353](https://github.com/laurigates/claude-plugins/issues/353)
+
 ## [3.45.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.44.2...blueprint-plugin-v3.45.0) (2026-08-19)
 
 
