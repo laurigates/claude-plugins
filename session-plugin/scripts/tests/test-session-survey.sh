@@ -14,7 +14,16 @@ pass=0
 fail=0
 check() {
   local label="$1" haystack="$2" needle="$3"
-  if printf '%s' "$haystack" | grep -qF "$needle"; then
+  # Plain substring test — no subprocess, no pipe. Do NOT rewrite this as
+  # `printf '%s' "$haystack" | grep -qF "$needle"`: grep -q closes its read
+  # end the instant it matches, and on a haystack large enough to exceed the
+  # pipe buffer with the needle positioned so grep can decide quickly (e.g.
+  # near a newline early in the string), `printf` can still be writing when
+  # that happens and takes SIGPIPE (exit 141). Under `pipefail` the pipeline
+  # then reports non-zero EVEN THOUGH the needle was found, so a successful
+  # assertion is reported as a FAIL — flaky, since which assertion loses is a
+  # scheduling race. See TEST AN and issue #2452.
+  if [[ "$haystack" == *"$needle"* ]]; then
     pass=$((pass + 1))
   else
     fail=$((fail + 1))
@@ -1617,6 +1626,51 @@ for reason in timeout auth no-remote api-error no-cli unknown; do
 done
 check "AM11: the auth remedy is named" "$end_docs" "gh auth login"
 check "AM11: the timeout remedy names the knob" "$end_docs" "SESSION_SURVEY_GH_TIMEOUT"
+
+# ============================================================================
+# TEST AN: check()'s own harness must not race on SIGPIPE (#2452)
+#
+# `check()` used to pipe the haystack into `grep -qF`:
+#   printf '%s' "$haystack" | grep -qF "$needle"
+# Under `set -uo pipefail`, `grep -q` closes its read end the instant it
+# matches. Fed a haystack large enough to exceed the pipe buffer, with the
+# needle positioned so grep can decide quickly, `printf` can still be
+# writing when that happens and takes SIGPIPE (exit 141) — `pipefail` then
+# reports the pipeline non-zero EVEN THOUGH the needle was found, so a
+# successful assertion is reported as a FAIL. Which assertion loses is a
+# scheduling race, so this reproduced as a 100/100 FAIL against the old
+# piped implementation locally (a haystack shaped like real digest output —
+# many KEY=VALUE lines, needle in the first line — ~300KB total) and must
+# reliably PASS 100/100 against the fixed plain `[[ ... == *...* ]]` test.
+# ============================================================================
+
+an_build_haystack() {
+  local out="AN_NEEDLE_AT_FRONT=yes"$'\n'
+  local i
+  for i in $(seq 1 4000); do
+    out+="AN_FILLER_LINE_${i}=some-value-that-is-reasonably-long-to-pad-things-out"$'\n'
+  done
+  printf '%s' "$out"
+}
+AN_HAYSTACK=$(an_build_haystack)
+check_le "AN: fixture — the haystack exceeds a 64KB pipe buffer" \
+  65536 "${#AN_HAYSTACK}"
+
+an_pass_before=$pass
+an_fail_before=$fail
+for _ in $(seq 1 100); do
+  check "AN: a large multi-line haystack with the needle up front" \
+    "$AN_HAYSTACK" "AN_NEEDLE_AT_FRONT=yes"
+done
+# Capture the post-loop counters BEFORE issuing further checks — check_eq
+# itself increments $pass on success, so reading the live counter across two
+# sequential check_eq calls would count the first assertion's own increment.
+an_pass_after=$pass
+an_fail_after=$fail
+check_eq "AN: 100 repeated checks against the large haystack never fail" \
+  "$an_fail_after" "$an_fail_before"
+check_eq "AN: 100 repeated checks against the large haystack all pass" \
+  "$an_pass_after" "$((an_pass_before + 100))"
 
 echo "---"
 echo "PASS=$pass FAIL=$fail"
