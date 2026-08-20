@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.9.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.9.0...hooks-plugin-v2.9.1) (2026-08-20)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** diagnose a shell-variable --repo, not just a shell-variable PR selector, in external-pr-merge-guard ([11966b4](https://github.com/laurigates/claude-plugins/commit/11966b435b8b2af3e2bb91e3d4b4dfc1ef55134e)), closes [#2449](https://github.com/laurigates/claude-plugins/issues/2449)
+* **hooks-plugin:** verify sg is ast-grep before accepting it as the parser probe ([a276542](https://github.com/laurigates/claude-plugins/commit/a27654210342fd98aeaa2ee5155fe56b9893cdc4)), closes [#2451](https://github.com/laurigates/claude-plugins/issues/2451)
+
 ## [2.9.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.8.6...hooks-plugin-v2.9.0) (2026-08-20)
 
 
