@@ -167,11 +167,21 @@ block() {
 # unavailable costs nothing irreversible, and the SAFETY blocks further down are
 # pure-regex and fire in every context. Set
 # CLAUDE_HOOKS_BASH_ANTIPATTERNS_NO_ASTGREP=1 to force the no-op path (tests).
+#
+# `sg` is ast-grep's short binary name, but it collides with shadow-utils'
+# sg(1) ("execute command as different group ID"), which ships at /usr/bin/sg
+# on essentially every Debian/Ubuntu system. A bare `command -v sg` finds THAT
+# binary on any box that has shadow-utils but not the real ast-grep — which is
+# most boxes, since ast-grep is an opt-in dev tool — and every structural rule
+# below silently no-ops against it (issue #2451). Verify the resolved `sg`
+# actually IS ast-grep before adopting it: `ast-grep --version` prints
+# `ast-grep x.y.z`; shadow-utils' `sg --version` prints a usage line and exits
+# non-zero, so this rejects it cleanly.
 ASTGREP=""
 if [ "${CLAUDE_HOOKS_BASH_ANTIPATTERNS_NO_ASTGREP:-}" != "1" ]; then
     if command -v ast-grep >/dev/null 2>&1; then
         ASTGREP="ast-grep"
-    elif command -v sg >/dev/null 2>&1; then
+    elif command -v sg >/dev/null 2>&1 && sg --version 2>/dev/null | grep -qi '^ast-grep'; then
         ASTGREP="sg"
     fi
 fi
