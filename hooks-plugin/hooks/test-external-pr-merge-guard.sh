@@ -126,6 +126,10 @@ ck "unrelated tool"        ALLOW "$(run '{"tool_name":"Read","tool_input":{"file
 
 echo "== trusted authors merge freely =="
 ck "own PR"  ALLOW "$(STUB_AUTHOR=laurigates run "$(bash_json 'gh pr merge 42 --squash')")"
+# Case C (issue #2449): fully literal selector AND literal --repo must still
+# be permitted silently — the fix must not regress the non-denial path.
+ck "own PR, literal --repo (case C)" ALLOW \
+   "$(STUB_AUTHOR=laurigates run "$(bash_json 'gh pr merge 123 --repo laurigates/claude-plugins --squash')")"
 export STUB_AUTHOR='app/laurigates-release-please' STUB_ISBOT=true
 ck "bot, gh-pr-view rendering (app/, is_bot true)" ALLOW "$(run "$(bash_json 'gh pr merge 42 --squash')")"
 export STUB_AUTHOR='dependabot[bot]' STUB_ISBOT=false
@@ -237,6 +241,40 @@ ck "inside backticks, assigned"       DENY "$(run "$(bash_json 'X=`gh pr merge 2
 ck "inside backticks, as an argument" DENY "$(run "$(bash_json 'echo `gh pr merge 2231`')")"
 ck "inside \$( ) substitution"        DENY "$(run "$(bash_json 'result=$(gh pr merge 2231)')")"
 
+echo "== a bare backtick VALUE truncates the statement, unlike a WRAPPING one (issue #2449) =="
+# A backtick used to compute a --repo/-R value (or the selector itself) is NOT
+# the same as backticks wrapping the WHOLE invocation (denied above via clean
+# selector extraction, since the wrapping backtick delimits the statement
+# boundary, not a mid-argument value). Before this fix, a value-position
+# backtick silently truncated the statement and dropped everything after it —
+# so the hook went on to query `gh pr view` for the WRONG PR/repo (empty
+# selector reads as "current branch", empty repo reads as "cwd"), which could
+# resolve successfully and ALLOW while the real, substituted target was never
+# checked. The regression assertion is therefore not just DENY but that
+# `gh pr view` was never even called — a bare DENY here could still hide a
+# wrong-target lookup underneath it.
+BT_LOG="$TMPDIR/backtick.log"
+: > "$BT_LOG"
+STUB_LOG="$BT_LOG" run "$(bash_json 'gh pr merge 464 -R `echo owner/repo` --squash')" >/dev/null
+unset STUB_LOG
+ck "backtick VALUE in --repo/-R"      DENY "$LAST_VERDICT"
+ck_reason "explains the truncation"   "backtick"
+if grep -q '^pr view' "$BT_LOG"; then
+    printf '  FAIL backtick-in-repo truncation still queried gh pr view (wrong-target lookup)\n'; FAIL=$((FAIL + 1))
+else
+    printf '  ok   backtick-in-repo truncation denied before any gh pr view lookup\n'; PASS=$((PASS + 1))
+fi
+
+: > "$BT_LOG"
+STUB_LOG="$BT_LOG" run "$(bash_json 'gh pr merge `echo 464` --repo owner/repo --squash')" >/dev/null
+unset STUB_LOG
+ck "backtick VALUE as the selector"   DENY "$LAST_VERDICT"
+if grep -q '^pr view' "$BT_LOG"; then
+    printf '  FAIL backtick-selector truncation still queried gh pr view (wrong-target lookup)\n'; FAIL=$((FAIL + 1))
+else
+    printf '  ok   backtick-selector truncation denied before any gh pr view lookup\n'; PASS=$((PASS + 1))
+fi
+
 echo "== a wrapper that RUNS the merge does not hide it =="
 # Wrapper flags that take a SEPARATE value push the command word past the point
 # a flags-only stripper reaches; a wrapper executes whatever follows it.
@@ -341,6 +379,33 @@ ck "gh api user fails"     DENY "$(STUB_NO_ME=1 run "$(bash_json 'gh pr merge 22
 run "$(bash_json 'for n in 1 2; do gh pr merge $n --squash; done')" >/dev/null
 ck "shell-variable selector"         DENY "$LAST_VERDICT"
 ck_reason "explains the loop case"   "shell variable"
+# Case A (issue #2449): a LITERAL PR number but a shell-variable --repo/-R.
+# `gh pr view` can't resolve `-R $R` either, but the old code switched only on
+# $PR_SELECTOR (literal "464" here) and fell into the generic "bad PR number,
+# wrong repo, or no network" branch — plausible-sounding but wrong, and its
+# retry hint echoed the unexpanded `$R` straight back at the caller.
+# shellcheck disable=SC2016  # the literal $R must reach the hook unexpanded
+run "$(bash_json 'gh pr merge 464 -R $R --squash --delete-branch')" >/dev/null
+ck "shell-variable --repo (case A)"        DENY "$LAST_VERDICT"
+ck_reason "explains the repo case"         "shell variable"
+case "$LAST_REASON" in
+    *'bad PR number, wrong repo, or no network'*)
+        printf '  FAIL case A got the generic "bad PR number" message, not the shell-variable one\n'
+        FAIL=$((FAIL + 1)) ;;
+    *) printf '  ok   case A did not get the generic message\n'; PASS=$((PASS + 1)) ;;
+esac
+# The old generic branch's retry hint was a literal copy-pasteable command —
+# `gh pr view ${PR_SELECTOR:-} ${PR_REPO:+--repo $PR_REPO}` — which, given a
+# variable --repo, rendered as `gh pr view 464 --repo $R`: a command that, run
+# literally, still references an unexpanded (and out-of-scope) $R. The WHAT
+# header ("Refusing to merge $R#464: ...") legitimately echoes the caller's
+# text for identification — only a *suggested command* containing the raw
+# variable is the bug this checks for.
+case "$LAST_REASON" in
+    *'--repo $R'*|*'gh pr view'*'$R'*)
+        printf '  FAIL case A retry hint echoes the unexpanded $R as a runnable command\n'; FAIL=$((FAIL + 1)) ;;
+    *) printf '  ok   case A retry hint does not echo unexpanded $R as a runnable command\n'; PASS=$((PASS + 1)) ;;
+esac
 unset STUB_AUTHOR STUB_NUM STUB_TITLE
 
 echo "== operator escape hatch =="
