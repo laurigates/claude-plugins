@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.13.5...taskwarrior-plugin-v1.14.0) (2026-08-20)
+
+
+### Features
+
+* **taskwarrior-plugin:** fold the project-slug prefix-match trap into task-add ([d26be4b](https://github.com/laurigates/claude-plugins/commit/d26be4bca6990b8b148d43ffe548d0adae8babf2)), closes [#353](https://github.com/laurigates/claude-plugins/issues/353)
+
 ## [1.13.5](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.13.4...taskwarrior-plugin-v1.13.5) (2026-08-15)
 
 

@@ -24,7 +24,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.41.0",
+      "version": "2.42.0",
       "keywords": [
         "agents",
         "configuration",
@@ -98,7 +98,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking",
-      "version": "3.45.0",
+      "version": "3.45.1",
       "keywords": [
         "blueprint",
         "prd",
@@ -117,7 +117,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, dependency auditing, dead code detection, test quality, complexity metrics, and static analysis",
-      "version": "1.23.0",
+      "version": "1.24.0",
       "keywords": [
         "code-review",
         "refactoring",
@@ -236,7 +236,7 @@
       "name": "documentation-plugin",
       "source": "./documentation-plugin",
       "description": "Documentation generation - API docs, README, knowledge graphs, LaTeX PDF conversion",
-      "version": "1.10.1",
+      "version": "1.11.0",
       "keywords": [
         "documentation",
         "docs",
@@ -310,7 +310,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.50.10",
+      "version": "2.51.0",
       "keywords": [
         "git",
         "github",
@@ -390,7 +390,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.8.6",
+      "version": "2.9.0",
       "keywords": [
         "hooks",
         "automation",
@@ -589,7 +589,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation",
-      "version": "1.10.0",
+      "version": "1.10.1",
       "keywords": [
         "session",
         "spinup",
@@ -623,7 +623,7 @@
       "name": "taskwarrior-plugin",
       "source": "./taskwarrior-plugin",
       "description": "Coordination layer for multi-agent work using taskwarrior - parallel-safe queries, urgency scoring, and optional GitHub linkage via ghid/ghpr UDAs",
-      "version": "1.13.5",
+      "version": "1.14.0",
       "keywords": [
         "taskwarrior",
         "coordination",

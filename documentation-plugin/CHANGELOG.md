@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.11.0](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.10.1...documentation-plugin-v1.11.0) (2026-08-20)
+
+
+### Features
+
+* **documentation-plugin:** add three skills promoted from always-loaded user rules ([7d03a70](https://github.com/laurigates/claude-plugins/commit/7d03a707715d0e65336a3cbb0224569de1801590)), closes [#353](https://github.com/laurigates/claude-plugins/issues/353)
+
+
+### Documentation
+
+* **documentation-plugin:** trim docs-verify-machine-facts description under the 200-char band ([71d7a9c](https://github.com/laurigates/claude-plugins/commit/71d7a9c65999ae6f21d5c9b84d2003d39448c3ed))
+
 ## [1.10.1](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.10.0...documentation-plugin-v1.10.1) (2026-07-28)
 
 
