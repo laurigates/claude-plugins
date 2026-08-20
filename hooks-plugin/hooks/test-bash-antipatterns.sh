@@ -25,16 +25,168 @@ HOOK="$(dirname "$0")/bash-antipatterns.sh"
 PASS=0
 FAIL=0
 
+# ── shadow-utils `sg(1)` must not be mistaken for ast-grep (issue #2451) ─────
+# `sg` is ast-grep's short binary name, but it collides with shadow-utils'
+# sg(1) ("execute command as different group ID"), which ships at /usr/bin/sg
+# on essentially every Debian/Ubuntu system. A bare `command -v sg` finds
+# THAT binary on any box that has shadow-utils but not the real ast-grep —
+# which is most boxes, since ast-grep is an opt-in dev tool. The hook then
+# tries to "parse" with a binary that doesn't understand `scan
+# --inline-rules --stdin --json=compact`, produces no usable output, and
+# because the structural rules fail open on a parser error, EVERY structural
+# block (cat-read, head/tail-read, cat-write, echo/printf-write, sed -i,
+# task-output-read) silently no-ops. No error, hook exits 0, reports success
+# — the bug is invisible until someone notices `cat secrets.env` sailed
+# through unblocked.
+#
+# The probe must verify the resolved `sg` binary IS ast-grep (`sg --version`
+# prints `ast-grep x.y.z`) before adopting it — shadow-utils' `sg --version`
+# prints a usage line and exits non-zero, so a correct probe rejects it.
+#
+# This is tested by shadowing PATH with a fake `sg` that behaves exactly like
+# shadow-utils' (prints `Usage: sg group [[-c] command]`, exits non-zero on
+# any args including --version) so the assertion holds regardless of whether
+# the ambient box has the real /usr/bin/sg, and regardless of whether CI's
+# `npm i -g @ast-grep/cli` has put a real `ast-grep` binary on PATH — every
+# directory that carries one is filtered out first.
+echo ""
+echo "shadow-utils sg(1) is not mistaken for ast-grep; hook fails open instead of using it (#2451):"
+
+FAKE_SG_DIR=$(mktemp -d) || { echo "FATAL: mktemp -d failed" >&2; exit 1; }
+[ -n "$FAKE_SG_DIR" ] && [ -d "$FAKE_SG_DIR" ] || { echo "FATAL: invalid sandbox dir '$FAKE_SG_DIR'" >&2; exit 1; }
+FAKESG_INVOKED_MARKER="$FAKE_SG_DIR/.sg-invoked-as-parser"
+
+# Stand-in for shadow-utils' sg(1): `--version` prints the usage line and
+# exits non-zero (the real shadow-utils behaviour this probe must detect).
+# Any OTHER invocation — e.g. `sg scan --inline-rules ... --stdin
+# --json=compact`, the exact call bash-antipatterns.sh makes once it has
+# (wrongly, pre-fix) adopted `sg` as the parser — touches a marker file
+# first. That marker is the load-bearing assertion below: it distinguishes
+# "the hook correctly rejected sg and never invoked it as a scanner" from
+# "the hook invoked sg, got garbage, and coincidentally fell through the
+# pre-existing parse-error fallback" — both currently exit 0 for a plain
+# `cat file.txt`, so exit code alone cannot tell the fix apart from the bug.
+cat > "$FAKE_SG_DIR/sg" <<FAKESG
+#!/usr/bin/env bash
+if [ "\$1" = "--version" ]; then
+    echo "Usage: sg group [[-c] command]" >&2
+    exit 1
+fi
+touch "$FAKESG_INVOKED_MARKER"
+echo "sg: group '\$1' does not exist" >&2
+exit 1
+FAKESG
+chmod +x "$FAKE_SG_DIR/sg"
+
+# Build a PATH that has NO real `ast-grep` binary on it (so the hook cannot
+# accidentally pick up a genuine one from a directory earlier in PATH — e.g.
+# CI's npm-global bin) but keeps every other directory, then shadow `sg` by
+# prepending FAKE_SG_DIR.
+PATH_NO_ASTGREP="$FAKE_SG_DIR"
+OLD_IFS="$IFS"
+IFS=:
+for dir in $PATH; do
+    [ -n "$dir" ] || continue
+    if [ -x "$dir/ast-grep" ]; then
+        continue
+    fi
+    PATH_NO_ASTGREP="$PATH_NO_ASTGREP:$dir"
+done
+IFS="$OLD_IFS"
+
+assert_exit_fakesg() {
+    local desc="$1" expected="$2" cmd="$3"
+    local json exit_code=0
+    json=$(jq -nc --arg cmd "$cmd" '{tool_name:"Bash",tool_input:{command:$cmd}}')
+    printf '%s' "$json" | env PATH="$PATH_NO_ASTGREP" bash "$HOOK" >/dev/null 2>&1 || exit_code=$?
+    if [ "$exit_code" -eq "$expected" ]; then
+        printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (expected exit %d, got %d)\n" "$desc" "$expected" "$exit_code"; FAIL=$((FAIL + 1))
+    fi
+}
+
+# Sanity check on the fake binary itself: it must reproduce the real
+# shadow-utils failure shape (usage line, non-zero exit on --version) or this
+# whole test proves nothing.
+FAKESG_VERSION_EXIT=0
+"$FAKE_SG_DIR/sg" --version >/dev/null 2>&1 || FAKESG_VERSION_EXIT=$?
+if [ "$FAKESG_VERSION_EXIT" -ne 0 ]; then
+    printf "  PASS: %s\n" "fake sg --version exits non-zero like shadow-utils (sanity)"
+    PASS=$((PASS + 1))
+else
+    printf "  FAIL: %s (expected non-zero exit, got 0)\n" "fake sg --version exits non-zero like shadow-utils (sanity)"
+    FAIL=$((FAIL + 1))
+fi
+
+# THE core regression assertion: the hook must never actually INVOKE the
+# fake sg as a scanner (that would touch the marker). It must reject it
+# during the `sg --version` probe, before ever running `sg scan …`.
+rm -f "$FAKESG_INVOKED_MARKER"
+json=$(jq -nc --arg cmd "cat file.txt" '{tool_name:"Bash",tool_input:{command:$cmd}}')
+printf '%s' "$json" | env PATH="$PATH_NO_ASTGREP" bash "$HOOK" >/dev/null 2>&1 || true
+if [ -e "$FAKESG_INVOKED_MARKER" ]; then
+    printf "  FAIL: %s (marker file present — hook invoked shadow-utils-shaped sg as the ast-grep parser)\n" \
+        "hook does NOT adopt shadow-utils-shaped sg as ast-grep (#2451)"
+    FAIL=$((FAIL + 1))
+else
+    printf "  PASS: %s\n" "hook does NOT adopt shadow-utils-shaped sg as ast-grep (#2451)"
+    PASS=$((PASS + 1))
+fi
+
+# The structural read block must NOT fire: a fake `sg` must never be adopted
+# as the parser, so the hook fails open (same as the ast-grep-absent path)
+# rather than crashing or falsely blocking/allowing based on garbage output.
+assert_exit_fakesg \
+    "cat file.txt is NOT blocked when only shadow-utils-shaped sg is on PATH (#2451)" 0 \
+    "cat file.txt"
+
+assert_exit_fakesg \
+    "head -50 file.md is NOT blocked when only shadow-utils-shaped sg is on PATH (#2451)" 0 \
+    "head -50 file.md"
+
+assert_exit_fakesg \
+    "echo hi > realfile.txt is NOT blocked when only shadow-utils-shaped sg is on PATH (#2451)" 0 \
+    "echo hi > realfile.txt"
+
+# GUARD INTEGRITY: fail-open must be scoped to the structural (ast-grep-only)
+# rules — the pure-regex SAFETY blocks must still fire even with the fake sg
+# on PATH, proving the hook didn't crash and safety enforcement is intact.
+assert_exit_fakesg \
+    "GUARD: chmod 777 still blocks with fake sg on PATH (#2451)" 2 \
+    "chmod 777 x"
+
+assert_exit_fakesg \
+    "GUARD: git add -A still blocks with fake sg on PATH (#2451)" 2 \
+    "git add -A"
+
+rm -rf "$FAKE_SG_DIR"
+
 # The scoping-sensitive read/write detectors (cat/head/tail reads, echo/printf/cat
 # writes, sed -i, task-output reads) are classified structurally via ast-grep, so
-# their block assertions require ast-grep on PATH. When it is absent these are
-# STYLE nudges that fail open (verified in the "fail-open" section below, which
-# forces the no-op path via CLAUDE_HOOKS_BASH_ANTIPATTERNS_NO_ASTGREP=1). Mirror
-# code-quality's rule-project suites: SKIP the whole suite rather than report the
-# read/write blocks as failures where the parser is unavailable. CI installs
-# ast-grep (npm i -g @ast-grep/cli), so full coverage always runs there.
-if ! command -v ast-grep >/dev/null 2>&1 && ! command -v sg >/dev/null 2>&1; then
-    echo "SKIP: ast-grep not installed; structural read/write assertions require it."
+# their block assertions require a WORKING ast-grep parser on PATH. When it is
+# absent these are STYLE nudges that fail open (verified in the "fail-open"
+# section below, which forces the no-op path via
+# CLAUDE_HOOKS_BASH_ANTIPATTERNS_NO_ASTGREP=1). Mirror code-quality's
+# rule-project suites: SKIP the whole suite rather than report the read/write
+# blocks as failures where the parser is unavailable. CI installs ast-grep
+# (npm i -g @ast-grep/cli), so full coverage always runs there.
+#
+# A bare `command -v sg` is NOT sufficient (issue #2451): shadow-utils ships an
+# unrelated sg(1) ("execute command as different group ID") at /usr/bin/sg on
+# essentially every Debian/Ubuntu system, so `sg` is present on most boxes that
+# do NOT have the real ast-grep. Mirror the hook's own probe — `sg --version`
+# must print `ast-grep …` — or this guard fails to skip on exactly the box the
+# bug report was filed from, turning a correct fail-open into 40+ false FAILs.
+HAVE_WORKING_ASTGREP=false
+if command -v ast-grep >/dev/null 2>&1; then
+    HAVE_WORKING_ASTGREP=true
+elif command -v sg >/dev/null 2>&1 && sg --version 2>/dev/null | grep -qi '^ast-grep'; then
+    HAVE_WORKING_ASTGREP=true
+fi
+if [ "$HAVE_WORKING_ASTGREP" = false ]; then
+    echo "SKIP: no working ast-grep parser on PATH; structural read/write assertions require it."
+    echo "      (a plain 'sg' on PATH is not enough — see issue #2451 — it must be the real ast-grep)"
     echo "      Install: npm install -g @ast-grep/cli   (CI pins @ast-grep/cli@0.43.0)"
     exit 0
 fi
@@ -1309,6 +1461,7 @@ assert_exit_noast "SAFETY: git add -A still blocks without ast-grep"  2 "git add
 assert_exit_noast "SAFETY: git reset --hard still blocks without ast-grep" 2 "git reset --hard HEAD"
 assert_exit_noast "REGEX: grep-chain over .output still blocks without ast-grep" 2 \
     "cat run.output | grep Error | grep -v warn | sed s/a/b/"
+
 # ── tool idioms inside `#` comments are ignored (issue #2106) ─────────────────
 # Regression: the detectors scan the command string, so a tool idiom appearing
 # only inside a trailing `# comment` — documentation prose, an explanatory aside
