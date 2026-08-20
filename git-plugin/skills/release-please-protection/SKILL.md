@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-08-20
 reviewed: 2026-04-25
 name: release-please-protection
-description: "Block manual edits to release-please files (CHANGELOG, version fields). Use when editing changelogs, bumping versions, or releasing to avoid conflicting with automation."
+description: "Block manual edits to release-please files (CHANGELOG, version fields), and stop committed generated artifacts from deriving from them. Use when editing changelogs, bumping versions, releasing, or wiring a version file into a generated doc/PDF/header."
 user-invocable: false
 allowed-tools: Read, Grep, Glob
 ---
@@ -232,6 +232,68 @@ chore(scope): brief description
 Maintenance work that doesn't affect functionality.
 Examples: dependency updates, refactoring, docs.
 ```
+
+## The Inverse Direction: Never Generate a Committed Artifact From a Managed File
+
+Everything above protects release-please's files **from** you. This protects your
+files **from** them, and it is the direction nobody guards.
+
+A version file is written by the release pipeline on a cadence you do not
+control. So when a **committed, generated artifact** derives from one — a
+rendered PDF, a generated header, a badge, a docs page baked at build time — a
+release bump silently invalidates it. Path-filtered CI makes it worse: the
+freshness check almost certainly does not list the version file among its
+trigger paths, so it never runs and never reports the staleness.
+
+Then the loop closes. Regenerating the artifact is itself a commit; if its type
+is releasable (or the repo releases on any change to that package), release-please
+turns the fix into the **next** release, which invalidates the artifact again:
+
+| Step | What happens |
+|---|---|
+| 1 | Release bumps the version file |
+| 2 | The committed artifact now renders the *previous* version |
+| 3 | Regenerating it is a commit release-please can release |
+| 4 | → step 1 |
+
+The tell is a repo where someone periodically lands a "resync the generated
+docs" commit and nobody can say why it keeps coming back.
+
+### Do not fix it by widening the trigger paths
+
+The obvious fix — add the version file to the freshness check's `on: paths:` —
+is wrong. The guard would then run on **every release PR and fail it**, because
+that PR's committed artifact genuinely predates the version it introduces. An
+automated release becomes a hand-held one: regenerate, push, then merge.
+
+### The fix
+
+Prefer, in order:
+
+1. **Remove the version from the artifact.** Usually the artifact's real payload
+   (wiring, API surface, instructions) has nothing to do with the release
+   number. Cheapest, and it deletes the failure mode instead of managing it.
+2. **Regenerate inside the release commit** — release-please `extra-files` or a
+   post-bump hook — so the artifact and the bump land atomically. Keeps the
+   version; most moving parts.
+
+Reading the version at *compile* time does **not** fix it on its own: the
+committed artifact still embeds the old string.
+
+### The test
+
+Before letting any input feed a generated, committed artifact, ask: **who writes
+this file — a human, or the release pipeline?** If the pipeline owns it, it does
+not belong among the inputs. Apply the same question to a scaffold or generator
+template, or the next generated artifact reintroduces the coupling.
+
+> Evidence: `laurigates/mcu-tinkering-lab#439`. A Typst build guide printed a
+> version generated from `version.txt`. The drift guard's trigger paths covered
+> the C header and the generated `.typ` but not `version.txt`, so five separate
+> hand-resyncs landed over three weeks and each one minted the release that
+> staled the guide again. Fixed in `laurigates/mcu-tinkering-lab#470` by dropping
+> the version from the generated file, verified by bumping the version and
+> confirming both the generated file and the PDF came out byte-identical.
 
 ## Integration with Other Skills
 
