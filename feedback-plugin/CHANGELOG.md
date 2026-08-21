@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.10.5...feedback-plugin-v1.11.0) (2026-08-21)
+
+
+### Features
+
+* **feedback-plugin:** log skill invocations for the slow loop to target ([bfd17da](https://github.com/laurigates/claude-plugins/commit/bfd17da5a9625405e67df7150299830992a283a2))
+
 ## [1.10.5](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.10.4...feedback-plugin-v1.10.5) (2026-08-18)
 
 
