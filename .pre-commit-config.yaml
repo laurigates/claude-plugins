@@ -439,6 +439,30 @@ repos:
         language: system
         files: '^scripts/(check-ruff-version-sync\.sh|tests/test-check-ruff-version-sync\.sh)$'
         pass_filenames: false
+      - id: check-actionlint-version-sync
+        name: actionlint pins agree between pre-commit and CI
+        entry: bash ./scripts/check-actionlint-version-sync.sh --strict
+        language: system
+        files: '^(\.pre-commit-config\.yaml|\.github/workflows/.*\.ya?ml)$'
+        pass_filenames: false
+      - id: test-check-actionlint-version-sync
+        name: actionlint-version-sync guard regression
+        entry: bash ./scripts/tests/test-check-actionlint-version-sync.sh
+        language: system
+        files: '^scripts/(check-actionlint-version-sync\.sh|tests/test-check-actionlint-version-sync\.sh)$'
+        pass_filenames: false
+      - id: check-workflow-labels
+        name: every attached GitHub label is provisioned in-workflow
+        entry: bash ./scripts/check-workflow-labels.sh
+        language: system
+        files: '^\.github/workflows/.*\.ya?ml$'
+        pass_filenames: false
+      - id: test-check-workflow-labels
+        name: workflow-label guard regression
+        entry: bash ./scripts/tests/test-check-workflow-labels.sh
+        language: system
+        files: '^scripts/(check-workflow-labels\.sh|tests/test-check-workflow-labels\.sh)$'
+        pass_filenames: false
       - id: test-check-git-sandbox-guards
         name: git-sandbox-guard linter regression
         entry: bash ./scripts/tests/test-check-git-sandbox-guards.sh
