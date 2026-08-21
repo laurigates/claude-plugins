@@ -86,6 +86,12 @@ assert_contains "duplicate modified: key is flagged as a parse error" "$out" \
   "duplicated mapping key: 'modified'"
 assert_absent "clean skill (one of each key) is not flagged" "$out" \
   "dupkey-plugin/clean: SKILL.md frontmatter PARSE_ERROR"
+# The heredoc feeding python3 above is opened inside a command substitution. If
+# the closing `)` is placed on the heredoc's OPENING line, bash parses the
+# substitution as complete before the body and warns on every single run. The
+# check still behaves correctly, so only stderr betrays it. (#2448)
+assert_absent "no unterminated here-document warning on stderr" "$out" \
+  "unterminated here-document"
 
 echo "---"
 echo "passed: $pass, failed: $fail"
