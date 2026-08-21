@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.51.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.51.1...git-plugin-v2.51.2) (2026-08-21)
+
+
+### Documentation
+
+* **git-plugin:** cover the inverse direction in release-please-protection ([#2461](https://github.com/laurigates/claude-plugins/issues/2461)) ([0db2dad](https://github.com/laurigates/claude-plugins/commit/0db2dad8b68ed88652fd413005a2ee25ff5e081f))
+
 ## [2.51.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.51.0...git-plugin-v2.51.1) (2026-08-21)
 
 
