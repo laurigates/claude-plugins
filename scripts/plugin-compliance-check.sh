@@ -196,7 +196,10 @@ check_skill_frontmatter() {
     # below cannot catch it — a SafeLoader subclass that rejects duplicates is
     # required to match rulesync's (js-yaml) strictness. (just export-opencode)
     local yaml_err
-    yaml_err=$(python3 - "$skill_file" <<'PY' 2>&1 || true)
+    # The closing `)` MUST sit AFTER the `PY` terminator, not on this line:
+    # with `... <<'PY' 2>&1 || true)` bash treats the substitution as complete
+    # before the heredoc body, warning "unterminated here-document" on every run.
+    yaml_err=$(python3 - "$skill_file" 2>&1 <<'PY' || true
 import sys, yaml
 path = sys.argv[1]
 with open(path) as fh:
@@ -232,6 +235,7 @@ for field in ('args', 'argument-hint'):
     if field in fm and not isinstance(fm[field], str):
         print(f"WRONG_TYPE: {field} parses as {type(fm[field]).__name__}, not str — quote the value")
 PY
+)
     if [ -n "$yaml_err" ]; then
       while IFS= read -r line; do
         [ -z "$line" ] && continue
