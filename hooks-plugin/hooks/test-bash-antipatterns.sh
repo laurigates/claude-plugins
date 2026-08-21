@@ -542,9 +542,17 @@ assert_exit_complex \
     "echo to a real double-quoted-content file still blocks" 2 \
     'echo "content" > realfile.txt'
 
-# True positive preserved: a heredoc commit message to /tmp passed to git commit -F
-# still earns the reminder, because the command actually composes a git commit.
-gitcommit_cmd=$(cat <<'OUTER'
+# ── `git commit -F <file>` is an accepted destination (issue #2462) ──────────
+# The check fired as designed here — `cat > /tmp/commit_msg.txt` matches, there
+# is a real `git commit`, and the message carries a conventional-commit prefix —
+# but `-F <file>` is git's exact analogue of `gh --body-file`, which this same
+# check was TAUGHT TO ALLOW in #1584/#1587. The file-based body pattern was
+# therefore recommended for one command and redirected away from for its direct
+# counterpart. `-F` / `--file` (on `git commit` and `git tag`) is now exempt.
+#
+# The reminder keeps its original target — a temp file created and then NOT
+# consumed by `-F`, i.e. `-m "$(cat file)"` — which the guards below pin.
+gitcommit_dashF_cmd=$(cat <<'OUTER'
 cat > /tmp/commit_msg.txt <<'EOF'
 feat(auth): add OAuth2 support
 EOF
@@ -553,8 +561,102 @@ OUTER
 )
 
 assert_exit_complex \
-    "heredoc commit message to /tmp fed to git commit -F is still blocked" 2 \
-    "$gitcommit_cmd"
+    "heredoc commit message to /tmp fed to git commit -F is allowed (#2462)" 0 \
+    "$gitcommit_dashF_cmd"
+
+gitcommit_longfile_cmd=$(cat <<'OUTER'
+cat > /tmp/commit_msg.txt <<'EOF'
+fix(auth): tighten token refresh
+EOF
+git commit --file=/tmp/commit_msg.txt
+OUTER
+)
+
+assert_exit_complex \
+    "heredoc commit message fed to git commit --file=<path> is allowed (#2462)" 0 \
+    "$gitcommit_longfile_cmd"
+
+gittag_dashF_cmd=$(cat <<'OUTER'
+cat > /tmp/commit-tag.txt <<'EOF'
+chore(release): v1.2.3
+EOF
+git tag -a v1.2.3 -F /tmp/commit-tag.txt
+OUTER
+)
+
+assert_exit_complex \
+    "heredoc tag message fed to git tag -F is allowed (#2462)" 0 \
+    "$gittag_dashF_cmd"
+
+# GUARD: the roundabout path the reminder was written for — a temp file created
+# and then slurped back through `-m "$(cat …)"` rather than passed by path.
+gitcommit_slurp_cmd=$(cat <<'OUTER'
+cat > /tmp/commit_msg.txt <<'EOF'
+feat(auth): add OAuth2 support
+EOF
+git commit -m "$(cat /tmp/commit_msg.txt)"
+OUTER
+)
+
+assert_exit_complex \
+    "GUARD: temp commit file slurped via -m \"\$(cat …)\" still blocks (#2462)" 2 \
+    "$gitcommit_slurp_cmd"
+
+# GUARD: a `git commit -F <path>` that appears only INSIDE the heredoc body
+# (prose quoting an earlier command in the commit message) must not grant the
+# exemption. The body line has to be a line that WOULD exempt if the check
+# scanned raw `$COMMAND` — a bare `-F` in prose does not, because the exemption
+# regex requires `git commit`/`git tag` before the flag on the same line and
+# grep is line-based, so a prose-only assertion passes no matter which view is
+# scanned and proves nothing. Mutating the implementation to read `$COMMAND`
+# instead of the heredoc-stripped view must make THIS assertion fail.
+gitcommit_fake_dashF_cmd=$(cat <<'OUTER'
+cat > /tmp/commit_msg.txt <<'EOF'
+fix(hooks): stop treating -F as a redirect
+
+Reverts the earlier workaround:
+git commit -F /tmp/previous-msg.txt
+EOF
+git commit -m "$(cat /tmp/commit_msg.txt)"
+OUTER
+)
+
+assert_exit_complex \
+    "GUARD: 'git commit -F' only inside the heredoc body does not exempt (#2462)" 2 \
+    "$gitcommit_fake_dashF_cmd"
+
+# GUARD: the exemption must belong to the git commit itself, not to an unrelated
+# command SUBSTITUTION on the same line. `[^;&|]*` spanned right through `$(…)`,
+# so any `-F` anywhere after `git commit` on that line — `$(rg -F x)`, a
+# `$(grep -F …)` — silently exempted the slurp-back pattern the reminder exists
+# for. The span now also excludes `(` and a backtick; masking quoted content
+# first is what keeps that safe for a legitimate `-m "feat(x): y" -F <path>`.
+gitcommit_foreign_dashF_cmd=$(cat <<'OUTER'
+cat > /tmp/commit_msg.txt <<'EOF'
+feat(auth): add OAuth2 support
+EOF
+git commit -m "$(cat /tmp/commit_msg.txt)" $(rg -F x)
+OUTER
+)
+
+assert_exit_complex \
+    "GUARD: a '-F' inside an unrelated \$( ) does not exempt (#2462)" 2 \
+    "$gitcommit_foreign_dashF_cmd"
+
+# The mask is what makes excluding `(` from that span safe: a conventional-commit
+# subject carries parentheses, and they live inside quotes where the mask blanks
+# them, so a real `-m "feat(x): y" -F <path>` keeps the exemption.
+gitcommit_paren_subject_cmd=$(cat <<'OUTER'
+cat > /tmp/commit_msg.txt <<'EOF'
+feat(auth): add OAuth2 support
+EOF
+git commit -m "feat(auth): add OAuth2 support" -F /tmp/commit_msg.txt
+OUTER
+)
+
+assert_exit_complex \
+    "a quoted 'feat(x)' subject alongside -F <path> still exempts (#2462)" 0 \
+    "$gitcommit_paren_subject_cmd"
 
 # Plain `cat > file` with no heredoc is still nudged toward the Write tool.
 assert_exit \
@@ -898,6 +1000,196 @@ assert_exit_complex \
 assert_exit_complex \
     "awk redirecting to a literal (non-variable) path is allowed (condition 2 unchanged)" 0 \
     "$awk_literal_target_cmd"
+
+# ── a `>` INSIDE the quoted awk program is not a redirect (issue #2463) ──────
+# Regression: `awk 'NR>1{print $1}'` — the standard header-skipping idiom — put a
+# `>` inside the single-quoted awk PROGRAM, which condition 1 read as a shell
+# redirect. Condition 2 was then satisfied by a redirect belonging to a DIFFERENT
+# command on a later line, so a read-only listing pipeline was blocked with
+# "use the Edit tool instead of awk". Neither `>` was a redirect performed by awk.
+#
+# Case B is the load-bearing control: the SAME command with `{print $1}` instead
+# of `NR>1{print $1}` was already allowed pre-fix, isolating the comparison
+# operator as the sole trigger. Case C pins that the true positive still blocks —
+# any narrowing that also drops C has over-corrected.
+echo ""
+echo "a '>' inside the quoted awk program is a comparison, not a redirect (#2463):"
+
+awk_comparison_cmd=$(cat <<'OUTER'
+"$BIN" list 2>/dev/null | awk 'NR>1{print $1}'
+"$S/run.sh" --model foo > "$S/out.log" 2>&1
+OUTER
+)
+awk_comparison_control_cmd=$(cat <<'OUTER'
+"$BIN" list 2>/dev/null | awk '{print $1}'
+"$S/run.sh" --model foo > "$S/out.log" 2>&1
+OUTER
+)
+awk_comparison_dq_cmd=$(cat <<'OUTER'
+cat access.log | awk "NR>1 && \$3 > 500 {print \$1}"
+tail -f "$LOG" > "$S/out.log" 2>&1
+OUTER
+)
+awk_ge_redirect_cmd=$(cat <<'OUTER'
+awk 'NR>1{print $1}' data.txt > "$OUT/f.txt"
+OUTER
+)
+
+assert_exit_complex \
+    "awk 'NR>1{…}' beside another command's redirect is allowed (#2463 exact repro)" 0 \
+    "$awk_comparison_cmd"
+
+assert_exit_complex \
+    "CONTROL: same command without the '>' in the awk program is allowed (#2463)" 0 \
+    "$awk_comparison_control_cmd"
+
+assert_exit_complex \
+    "double-quoted awk program containing '>' is allowed (#2463)" 0 \
+    "$awk_comparison_dq_cmd"
+
+assert_exit_complex \
+    "GUARD: awk with an NR>1 program that ALSO owns a var redirect still blocks (#2463)" 2 \
+    "$awk_ge_redirect_cmd"
+
+# ── the masked view must stay quote-STATE-aware, not quote-naive ─────────────
+# The first attempt at #2463 pre-stripped with `sed "s/'[^']*'/''/g"`. That is a
+# pairwise match, not a scanner: an ODD apostrophe earlier on the line pairs with
+# the awk program's OPENING quote, so everything from `it's` to that quote —
+# including the real `>` redirect — is replaced with `''` and a genuine awk file
+# write sails through. Same for the `'\''` re-quoting idiom. Both of these are
+# FAIL-OPEN on a rule this file's header puts in the tier that must fire in every
+# context, so they are asserted as blocks, not as allows.
+awk_odd_apostrophe_cmd=$(cat <<'OUTER'
+printf "it's done\n"; awk '{print $2}' f > "$OUT"
+OUTER
+)
+awk_requote_idiom_cmd=$(cat <<'OUTER'
+echo 'don'\''t' && awk '{print $2}' f > "$OUT"
+OUTER
+)
+
+assert_exit_complex \
+    "GUARD: an odd apostrophe earlier on the line does not disarm the awk block (#2463)" 2 \
+    "$awk_odd_apostrophe_cmd"
+
+assert_exit_complex \
+    "GUARD: the '\\'' re-quoting idiom does not disarm the awk block (#2463)" 2 \
+    "$awk_requote_idiom_cmd"
+
+# A `|` that lives INSIDE the awk program (`-F'|'`, `BEGIN{FS="|"}`) is text, not
+# a pipe — but it is also not a segment barrier, so masking it away must not turn
+# somebody else's redirect into awk's. The `;` barrier is what keeps this allowed.
+awk_quoted_pipe_cmd=$(cat <<'OUTER'
+awk 'BEGIN{FS="|"}{print $1}' data.txt; cat other > "$LOG"
+OUTER
+)
+
+assert_exit_complex \
+    "read-only awk with a quoted '|', beside another command's redirect, is allowed (#2463)" 0 \
+    "$awk_quoted_pipe_cmd"
+
+# The same shape #2463 reported, joined on ONE line with `&&` / `;` instead of a
+# newline. grep is line-based, so the newline form was already segment-separated;
+# these two only pass once the span barrier covers `;` and `&` as well as `|`.
+awk_sameline_and_cmd=$(cat <<'OUTER'
+"$BIN" list | awk 'NR>1{print $1}' && "$S/run.sh" > "$S/out.log"
+OUTER
+)
+awk_sameline_semi_cmd=$(cat <<'OUTER'
+"$BIN" list | awk 'NR>1{print $1}'; "$S/run.sh" > "$S/out.log"
+OUTER
+)
+
+assert_exit_complex \
+    "read-only awk && another command's redirect on one line is allowed (#2463)" 0 \
+    "$awk_sameline_and_cmd"
+
+assert_exit_complex \
+    "read-only awk ; another command's redirect on one line is allowed (#2463)" 0 \
+    "$awk_sameline_semi_cmd"
+
+# GUARD: the `;`/`&` barrier must not swallow awk's OWN redirect when the awk
+# call is simply the second statement on the line.
+awk_second_statement_cmd=$(cat <<'OUTER'
+mkdir -p out; awk '{print $1}' data.txt > "$OUT/f.txt"
+OUTER
+)
+
+assert_exit_complex \
+    "GUARD: awk owning a var redirect after a ';' still blocks (#2463)" 2 \
+    "$awk_second_statement_cmd"
+
+# GUARD: the mask runs BEFORE the segment barrier is applied, so a `&&` or `;`
+# that lives inside the awk PROGRAM is blanked and cannot fake a barrier that
+# separates awk from its own redirect.
+awk_quoted_and_cmd=$(cat <<'OUTER'
+awk 'NR>1 && $3>500 {print $1}' data.txt > "$OUT/f.txt"
+OUTER
+)
+
+assert_exit_complex \
+    "GUARD: a quoted '&&' in the awk program does not fake a segment barrier (#2463)" 2 \
+    "$awk_quoted_and_cmd"
+
+# Masking also CLOSES a pre-existing false negative: `-F'|'` put a literal pipe
+# between `awk` and its own redirect, and #2131's raw-text `[^|]*` barrier read
+# it as a pipeline boundary, so a genuine awk file write went unblocked. The
+# quoted `|` is now masked, the barrier sees no pipe, and the write blocks.
+awk_field_sep_pipe_cmd=$(cat <<'OUTER'
+awk -F'|' '{print $2}' data.txt > "$OUT/f.txt"
+OUTER
+)
+
+assert_exit_complex \
+    "awk -F'|' owning a var redirect blocks (quoted pipe is not a barrier, #2463)" 2 \
+    "$awk_field_sep_pipe_cmd"
+
+# The mask preserves OFFSETS (one FILL char per masked char), and this is the
+# assertion that pins it. Condition 2 has always keyed on a `$` sitting
+# IMMEDIATELY after the redirect's opening quote — a name-templated target like
+# `"logs_$RUN.txt"` is not a bare variable and was never blocked. A mask that
+# deleted content instead of filling it would collapse that to `"$"` and invent
+# a false positive.
+awk_templated_target_cmd=$(cat <<'OUTER'
+awk '{print $1}' data.txt > "logs_$RUN.txt"
+OUTER
+)
+
+assert_exit_complex \
+    "awk redirecting to a name-templated (non-bare-var) path is allowed (#2463)" 0 \
+    "$awk_templated_target_cmd"
+
+# #2463 also reported that the rule blocked WORK ON ITSELF: writing the issue up
+# was blocked, because a heredoc body quoting the offending shape was scanned as
+# if it were an executed command. The rule now reads COMMAND_SHELL_ONLY, so a
+# heredoc body is prose — matching the `^`-anchored blocks (#2431).
+awk_in_heredoc_body_cmd=$(cat <<'OUTER'
+gh issue create --title "feedback(hooks): awk rule" --body "$(cat <<'EOF'
+The blocked command was:
+
+awk '{print $1}' data.txt > "$OUT/f.txt"
+EOF
+)"
+OUTER
+)
+
+assert_exit_complex \
+    "an awk file-write quoted inside a heredoc body is allowed (#2463)" 0 \
+    "$awk_in_heredoc_body_cmd"
+
+# GUARD: a genuine awk file-write AFTER the heredoc terminator is a real command
+# and must still block — the same asymmetry #2431 pins for git add -A.
+awk_after_heredoc_cmd=$(cat <<'OUTER'
+cat > /tmp/notes.txt <<'EOF'
+some notes
+EOF
+awk '{print $1}' data.txt > "$OUT/f.txt"
+OUTER
+)
+
+assert_exit_complex \
+    "GUARD: an awk file-write after the heredoc terminator still blocks (#2463)" 2 \
+    "$awk_after_heredoc_cmd"
 
 # ── git push -u colon-refspec footgun, no-colon form allowed (issue #1600) ────
 # Regression: the push -u detector blocked the legitimate no-colon form
@@ -1712,6 +2004,27 @@ OUTER
 assert_exit_complex \
     "GUARD: 'git add -A' after the heredoc terminator still blocks (#2431)" 2 \
     "$after_heredoc_cmd"
+
+# ── SIGPIPE fail-open on long commands (#2463 repair) ───────────────────────
+# The quote-state-aware masker is a char-by-char awk loop. Piping it into
+# `grep -q` under `set -o pipefail` made the masker take SIGPIPE the moment
+# grep exited on its first match, turning the pipeline into 141 — so the awk
+# safety block silently STOPPED FIRING from roughly 6 KB of command text
+# upward. That is the same fail-open class the first draft of this fix was
+# rejected for, reintroduced by a different mechanism, so it gets a pin at
+# three sizes that straddle the observed threshold rather than one.
+#
+# Sensitivity: with the pipe form restored, the 200- and 800-line cases return 0.
+for _fill_lines in 40 200 800; do
+    _long_awk_cmd="awk '{print \$2}' f > \"\$OUT/x.txt\""
+    for _i in $(seq 1 "$_fill_lines"); do
+        _long_awk_cmd="${_long_awk_cmd}
+echo filler-line-${_i}-padding-padding-padding-padding"
+    done
+    assert_exit_complex \
+        "GUARD: awk file-write still blocks in a ${_fill_lines}-line command (SIGPIPE fail-open, #2463)" 2 \
+        "$_long_awk_cmd"
+done
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
