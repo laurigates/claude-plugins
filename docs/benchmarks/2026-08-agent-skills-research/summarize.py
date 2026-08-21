@@ -197,7 +197,9 @@ def main() -> int:
 
     # --- Per-pattern view ---------------------------------------------------
     print("=== PER_PATTERN ===")
-    print("# skill archetypes from golden-set.json; per-dimension means within archetype")
+    print(
+        "# skill archetypes from golden-set.json; per-dimension means within archetype"
+    )
     by_pattern = defaultdict(lambda: defaultdict(list))
     for slug, judges in by_skill.items():
         pattern = ""
