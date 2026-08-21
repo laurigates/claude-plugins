@@ -87,9 +87,80 @@ assert_exit \
     "cat ~/.ssh/id_rsa is blocked" 2 \
     "cat ~/.ssh/id_rsa"
 
-# Note: the Read/Edit/Write file_path check exempts .env.example/.sample/
-# .template; the Bash-command .env matcher is intentionally broad and is out of
-# scope for #1580, so reading a template via `cat` is not asserted here.
+# ── Bash-path template exemption + separator bridging (issue #2444) ───────────
+echo ""
+echo ".env templates are allowed on the Bash path; real .env reads still blocked:"
+
+assert_exit \
+    "cat .env.example (template) is allowed" 0 \
+    "cat .env.example"
+
+assert_exit \
+    "head .env.sample / tail .env.template (templates) are allowed" 0 \
+    "head -20 .env.sample"
+
+assert_exit \
+    "tail .env.template (template) is allowed" 0 \
+    "tail -5 .env.template"
+
+assert_exit \
+    "cat '.env.example' (quoted template) is allowed" 0 \
+    "cat '.env.example'"
+
+# True-positive controls: the exemption must not weaken real secret protection.
+assert_exit \
+    "cat .env (no exemption suffix) is still blocked" 2 \
+    "cat .env"
+
+assert_exit \
+    "cat .env.local (real secret file) is still blocked" 2 \
+    "cat .env.local"
+
+assert_exit \
+    "cat .env.example.bak (not a template suffix) is still blocked" 2 \
+    "cat .env.example.bak"
+
+# A real .env must not be able to hide behind a template in the same statement,
+# in either argument order.
+assert_exit \
+    "cat .env .env.example (real secret first) is still blocked" 2 \
+    "cat .env .env.example"
+
+assert_exit \
+    "cat .env.example .env (real secret last) is still blocked" 2 \
+    "cat .env.example .env"
+
+echo ""
+echo "reader verbs do not bridge ';' / '&&' / '||' to an unrelated .env mention:"
+
+assert_exit \
+    "git ls-files .env.example | head -2; echo 'note: cat .env.example' is allowed" 0 \
+    "git ls-files --error-unmatch .env.example 2>&1 | head -2; echo 'note: cat .env.example'"
+
+assert_exit \
+    "head -1) ; grep -nE '\\.env|PATTERN' \"\$f\" (grep pattern, not a read) is allowed" 0 \
+    "f=\$(ls \"\$R/hooks/secret-protection.sh\" || find \"\$R\" -name secret-protection.sh | head -1); grep -nE '\\.env|PATTERN' \"\$f\""
+
+assert_exit \
+    "head README.md && grep -c FOO .env.local (grep is not a reader verb) is allowed" 0 \
+    "head -5 README.md && grep -c FOO .env.local"
+
+# True-positive controls: a genuine chained/piped read must still be blocked.
+assert_exit \
+    "ls -la; cat .env (real read after a separator) is still blocked" 2 \
+    "ls -la; cat .env"
+
+assert_exit \
+    "cd /app && cat .env (real read after &&) is still blocked" 2 \
+    "cd /app && cat .env"
+
+assert_exit \
+    "cat .env | grep DATABASE (real read piped onward) is still blocked" 2 \
+    "cat .env | grep DATABASE"
+
+assert_exit \
+    "head README.md; cat ~/.ssh/id_ed25519 (real key read after ';') is still blocked" 2 \
+    "head -5 README.md; cat ~/.ssh/id_ed25519"
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
