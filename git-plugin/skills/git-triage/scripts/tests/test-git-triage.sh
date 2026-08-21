@@ -144,6 +144,61 @@ echo "$iout" | grep -q "^ISSUE_42_REFS=#99$" \
 pass "issue referenced-PR extraction finds #99"
 
 # -----------------------------------------------------------------------------
+# Enhancement #2480: the issue half must emit a title, so the collector's own
+# output is readable without a second `gh issue list` pass purely to recover a
+# field the first call already fetched.
+#
+# The same fixture exercises the empty-field column shift the title column would
+# otherwise land in: `read` with a tab IFS collapses consecutive tabs, so before
+# the `none` guard an issue with no `#N` references reported the comment count
+# as its REFS and an empty COMMENTS (and would have reported garbage as TITLE).
+# Issue #77 below has no references, two comments, and a title carrying a tab,
+# an `=`, a backtick and a `#`-ref-lookalike inside a code span.
+# -----------------------------------------------------------------------------
+titles_fixture="${work_dir}/issues-2480.json"
+cat > "$titles_fixture" <<'JSON'
+[
+  {"number":77,"title":"fix(x):\tKEY=VALUE `--flag` breaks","body":"plain text, no refs","labels":[],
+   "createdAt":"2026-06-01T00:00:00Z","updatedAt":"2026-06-05T00:00:00Z",
+   "comments":[{"id":1},{"id":2}],"assignees":[],"author":{"login":"x"}},
+  {"number":78,"title":"refactor collector","body":"supersedes #99","labels":[],
+   "createdAt":"2026-06-01T00:00:00Z","updatedAt":"2026-06-05T00:00:00Z",
+   "comments":[],"assignees":[],"author":{"login":"y"}}
+]
+JSON
+
+export GIT_TRIAGE_ISSUES_FIXTURE="$titles_fixture"
+tout="$(bash "$triage_script" --type issues --days-stale-issue 90)"
+
+echo "$tout" | grep -q "^ISSUE_78_TITLE=refactor collector$" \
+  || fail "#2480: issue #78 expected TITLE=refactor collector, got:\n$(echo "$tout" | grep '^ISSUE_78_TITLE')"
+pass "#2480: issue title emitted as ISSUE_<n>_TITLE"
+
+# Tab sanitized to a space; the rest of the title survives verbatim on one line.
+echo "$tout" | grep -q '^ISSUE_77_TITLE=fix(x): KEY=VALUE `--flag` breaks$' \
+  || fail "#2480: issue #77 title expected tab-sanitized and intact, got:\n$(echo "$tout" | grep '^ISSUE_77_TITLE')"
+pass "#2480: tabs in a title are sanitized, KEY=VALUE line stays single-line"
+
+# Every emitted title key must be on its own line — one TITLE per fetched issue.
+title_lines=$(echo "$tout" | grep -c "^ISSUE_[0-9]*_TITLE=")
+[ "$title_lines" -eq 2 ] \
+  || fail "#2480: expected 2 ISSUE_<n>_TITLE lines, got ${title_lines}"
+pass "#2480: one TITLE line per fetched issue"
+
+# Column-shift guard: an issue with no references reports REFS=none and its
+# real comment count, not the count-as-refs / empty-comments shift.
+echo "$tout" | grep -q "^ISSUE_77_REFS=none$" \
+  || fail "#2480: issue #77 (no refs) expected REFS=none, got:\n$(echo "$tout" | grep '^ISSUE_77_REFS')"
+echo "$tout" | grep -q "^ISSUE_77_COMMENTS=2$" \
+  || fail "#2480: issue #77 expected COMMENTS=2 (empty refs must not shift columns), got:\n$(echo "$tout" | grep '^ISSUE_77_COMMENTS')"
+pass "#2480: empty refs field does not shift the COMMENTS/TITLE columns"
+
+# Refs extraction still works alongside the new column.
+echo "$tout" | grep -q "^ISSUE_78_REFS=#99$" \
+  || fail "#2480: issue #78 expected REFS=#99, got:\n$(echo "$tout" | grep '^ISSUE_78_REFS')"
+pass "#2480: referenced-PR extraction unaffected by the title column"
+
+# -----------------------------------------------------------------------------
 # Regression for #1627: a bot PR with a large multi-line body (embedded tabs +
 # newlines) and an empty-string reviewDecision. Before the fix, the body was
 # packed into the categorization @tsv row as the 8th field; embedded tabs slid
