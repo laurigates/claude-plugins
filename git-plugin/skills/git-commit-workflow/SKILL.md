@@ -194,7 +194,7 @@ If the loop aborts mid-way (a pre-commit hook fails on plugin K of N), the commi
 
 Do **not** re-stage paths that already committed cleanly; `git status` is the source of truth for what's left.
 
-**ALWAYS use HEREDOC directly in git commit.**
+**Compose a multi-line message with a HEREDOC, not by slurping a temp file.**
 
 ```bash
 git commit -m "$(cat <<'EOF'
@@ -206,6 +206,18 @@ Fixes #123
 EOF
 )"
 ```
+
+Passing the message **by path** is equally accepted — `git commit -F <file>` /
+`--file=<file>` is git's analogue of `gh --body-file`, and the
+`bash-antipatterns` hook exempts it (#2462):
+
+```bash
+git commit -F /tmp/commit-msg.txt
+```
+
+What the hook still nudges away from is the roundabout middle ground: writing a
+temp file and then slurping it back through `-m "$(cat /tmp/commit-msg.txt)"`.
+Either compose inline with a heredoc, or pass the file by path.
 
 ## Communication Style
 
