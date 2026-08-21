@@ -1,4 +1,4 @@
-name: "Maintenance: clear autorelease labels"
+name: "Release: Clear autorelease labels"
 
 # Thin caller for the org reusable workflow. See
 # laurigates/.github/.github/workflows/reusable-clear-autorelease-labels.yml

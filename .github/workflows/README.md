@@ -20,7 +20,7 @@ When adding a workflow, pick the existing domain that fits or extend the table b
 |--------|----------|
 | `Claude:` | Claude Code-driven workflows (PR reviews, @-mentions, scheduled reviews) |
 | `Plugin:` | Plugin infrastructure — PR checks, config validation, skill operations, scheduled audits |
-| `Release:` | release-please ecosystem — version bumps, changelog, release-PR doc audit, conflict repair |
+| `Release:` | release-please ecosystem — version bumps, changelog, release-PR doc audit, conflict repair, stuck-label cleanup |
 | `PR:` | Cross-cutting PR governance — conflict resolution, conventional-commit enforcement |
 | `Auto-fix:` | Autonomous CI failure remediation triggered by `workflow_run` |
 | `Test:` | Repo test suites — skill-local regression tests, the adapters (skill-discovery core) suite |
@@ -38,6 +38,7 @@ Claude: Research radar
 PR: Auto-resolve conflicts
 PR: Enforce conventional commits
 Plugin: Enablement drift
+Plugin: Fleet drift audit
 Plugin: Golden-set evaluation
 Plugin: Lint skills
 Plugin: Obsidian CLI changelog review
@@ -47,6 +48,7 @@ Plugin: Skill splitter
 Plugin: Stranded-work audit
 Plugin: Validate configs
 Plugin: Workflow model audit
+Release: Clear autorelease labels
 Release: Fix release-please conflicts
 Release: PR documentation audit
 Release: release-please

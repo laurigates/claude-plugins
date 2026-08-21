@@ -18,6 +18,11 @@ permissions:
   contents: read
   issues: write
   id-token: write
+  # Required to read workflow run health: both the pre-compute step's
+  # `gh run list` and Claude's own run sampling hit the Actions API, which is
+  # not covered by `contents: read`. Also the scope `additional_permissions`
+  # below requests for Claude's token.
+  actions: read
 
 # This workflow creates an issue, so a bare group serialises overlapping cron and
 # dispatch runs (the check-then-create-issue race is otherwise unlocked), and
@@ -103,24 +108,40 @@ jobs:
           # This workflow makes recommendations (judgment over run health and
           # output samples), so it runs at medium effort - and it must itself
           # satisfy scripts/check-workflow-model.sh.
-          claude_args: "--model opus --effort medium --max-turns 25"
           # Read-only gh access so Claude can sample each workflow's actual
           # output (issues/PRs/comments it produced), not just its run status.
           # Plus issue-create so Claude opens the audit issue itself
           # (research-radar.yml pattern): the claude-code-action step exposes no
           # `result` output, so the old downstream gh-create step never fired (#1774).
+          #
+          # That boundary belongs in `--allowedTools`. It used to sit in
+          # `additional_permissions:`, but that input takes a GitHub permissions
+          # MAP ("actions: read") — a Claude tool list there applied no boundary
+          # at all while every tool call was denied anyway. This workflow has
+          # never had a green run (0/6): 16-20 denied tool calls burned the whole
+          # --max-turns 25 budget. Hence the raised turn budget here too; the
+          # audit needed more than 25 turns even before counting the denials.
+          # Deltas from the inert list:
+          #   - Every tool carried over verbatim.
+          #   - Bash(date *) + Bash(cat *) ADDED: the final `gh issue create`
+          #     snippet in the prompt uses `date +%Y-%m` and a `cat` heredoc body.
+          #   - TodoWrite ADDED: a per-workflow sweep across ~10 workflows.
+          #   - mcp__github_ci ADDED so the `actions: read` grant below is live.
+          #   - No write tool and no Bash(git *): "Do NOT edit any files or
+          #     workflows" is now enforced, not just asserted.
+          #
+          # One flag per line: scripts/check-workflow-model.sh matches
+          # `--model`/`--effort` anchored at line start in a folded scalar.
+          claude_args: >-
+            --model opus
+            --effort medium
+            --max-turns 40
+            --allowedTools "Read,Grep,Glob,TodoWrite,Bash(gh run list *),Bash(gh run view *),Bash(gh issue list *),Bash(gh issue view *),Bash(gh issue create *),Bash(gh pr list *),Bash(gh pr view *),Bash(gh api *),Bash(date *),Bash(cat *),mcp__github_ci"
+          # Claude reads Actions run health, so its token needs the Actions
+          # scope as a real permissions map (paired with `actions: read` in the
+          # job permissions block above).
           additional_permissions: |
-            Read
-            Grep
-            Glob
-            Bash(gh run list *)
-            Bash(gh run view *)
-            Bash(gh issue list *)
-            Bash(gh issue view *)
-            Bash(gh issue create *)
-            Bash(gh pr list *)
-            Bash(gh pr view *)
-            Bash(gh api *)
+            actions: read
           prompt: |
             You are auditing whether each Claude-invoking GitHub workflow in this
             repository uses the right --model/--effort for its job. Read
@@ -161,10 +182,18 @@ jobs:
             side effect — do not edit any repo files). Compute the month with
             `date +%Y-%m` and reproduce this title/labels exactly:
 
+            Run these as TWO separate Bash calls. The second must BEGIN with
+            `gh issue create`: the allowlist grants `Bash(gh issue create *)`,
+            which is a PREFIX match, so a line starting with a `VAR=$(...)`
+            assignment matches no grant and is denied.
+
             ```bash
-            MONTH=$(date +%Y-%m)
+            date -u +%Y-%m    # note the value, e.g. 2026-08
+            ```
+
+            ```bash
             gh issue create \
-              --title "Workflow model/effort audit: $MONTH" \
+              --title "Workflow model/effort audit: <the value from above>" \
               --label "workflow-model-audit,maintenance" \
               --assignee laurigates \
               --body "$(cat <<'EOF'
