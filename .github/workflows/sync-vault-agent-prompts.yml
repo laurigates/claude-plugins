@@ -40,10 +40,20 @@ on:
 permissions:
   contents: read
 
+# Bare group, no ref suffix: this workflow force-pushes the fixed
+# `sync/generated-prompts` branch on the target repo with `delete-branch: true`,
+# so overlapping push+dispatch runs would race the same branch. Never cancelled
+# mid-write. Distinct from the git-repo-agent sync's group — the two target
+# different repos and must not serialise against each other.
+concurrency:
+  group: sync-vault-agent-prompts
+  cancel-in-progress: false
+
 jobs:
   sync:
     # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     steps:
       - name: Checkout claude-plugins
         uses: actions/checkout@v6

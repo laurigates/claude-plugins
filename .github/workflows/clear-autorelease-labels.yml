@@ -17,6 +17,20 @@ on:
         type: boolean
         default: false
 
+# Explicit top-level least-privilege grant. Without one, a second job added here
+# would silently inherit the repo-default token scope instead of this set.
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+# Bare group, no ref suffix: this strips labels off closed PRs, so two
+# concurrent dispatch runs would fight over the same set. Never cancelled
+# mid-write.
+concurrency:
+  group: clear-autorelease-labels
+  cancel-in-progress: false
+
 jobs:
   clear-labels:
     uses: laurigates/.github/.github/workflows/reusable-clear-autorelease-labels.yml@main

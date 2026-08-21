@@ -26,6 +26,9 @@ on:
       - '.github/workflows/test-adapters.yml'
   schedule:
     - cron: '23 5 * * 1'  # weekly corpus-drift check on main
+  # So the weekly corpus-drift check can be re-run on demand instead of only
+  # on the cron or an adapters/** change.
+  workflow_dispatch:
 
 concurrency:
   group: test-adapters-${{ github.event.pull_request.number || github.ref }}
@@ -37,6 +40,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: adapters

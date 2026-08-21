@@ -32,6 +32,7 @@ jobs:
   drift:
     # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -40,6 +41,7 @@ jobs:
         run: bash scripts/tests/test-check-enabled-plugins-drift.sh
 
       - name: Check plugin enablement drift
-        run: |
-          bash scripts/check-enabled-plugins-drift.sh
-          bash scripts/check-enabled-plugins-drift.sh --strict
+        # One invocation, not two: `--strict` only changes the exit code (it
+        # gates a single `exit "$exit_severity"`), so the plain run printed a
+        # byte-identical report and the pair just doubled the log.
+        run: bash scripts/check-enabled-plugins-drift.sh --strict

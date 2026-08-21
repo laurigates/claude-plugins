@@ -11,8 +11,9 @@ name: "Claude: Changelog review"
 
 on:
   schedule:
-    # Run weekly on Mondays at 9:00 UTC
-    - cron: '0 9 * * 1'
+    # Mondays 09:13 UTC. Off-the-hour: :00 is the scheduler surge, and this was
+    # the last cron in the repo still sitting on it.
+    - cron: '13 9 * * 1'
   workflow_dispatch:
     inputs:
       force_full_review:
@@ -26,6 +27,13 @@ permissions:
   issues: write
   pull-requests: write
   id-token: write
+
+# Bare group, no ref suffix: this pipeline creates the changelog tracking issue,
+# so a cron run overlapping a dispatch run would race the check-then-create step
+# and file a duplicate. Never cancelled mid-write.
+concurrency:
+  group: changelog-review
+  cancel-in-progress: false
 
 jobs:
   changelog-review:

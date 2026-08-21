@@ -33,9 +33,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: lint-context-commands-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
 
