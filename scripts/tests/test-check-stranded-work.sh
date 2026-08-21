@@ -182,5 +182,27 @@ fi
 grep -q '^LANDED=1$' <<<"$sha_out" && pass "SHA-matched merged PR counted as LANDED" || fail "SHA-matched merged PR not counted as LANDED (got: $(grep '^LANDED=' <<<"$sha_out"))"
 grep -q '^STRANDED_NO_PR=0$' <<<"$sha_out" && pass "STRANDED_NO_PR=0 after SHA fallback match" || fail "STRANDED_NO_PR nonzero after SHA fallback match (got: $(grep '^STRANDED_NO_PR=' <<<"$sha_out"))"
 
+# 11. Regression for #2478: every push-by-SHA in the rendered Recovery recipe
+#     must spell the destination `refs/heads/<branch>`. `<sha>:<branch>` is
+#     only accepted when the branch ALREADY exists on the remote — a bare
+#     commit object on the left gives git no ref namespace to infer from — and
+#     this recipe is pasted verbatim by whoever refiles the strand. The block
+#     used to disagree with itself: the force-push line carried the short form
+#     while the delete-recovery line two rows down carried the full one.
+#     Counted, not grepped for a literal, so the pair cannot drift apart again.
+body="$("$check" --fixture "$tmp/fixture.json" --issue-body)"
+all_pushes="$(grep -cE 'git push[^`]*origin +"?(\$\{sha\}|<sha>):' <<<"$body" || true)"
+full_pushes="$(grep -cE 'git push[^`]*origin +"?(\$\{sha\}|<sha>):refs/heads/' <<<"$body" || true)"
+if [ "$all_pushes" -ge 1 ]; then
+  pass "issue body still prescribes push-by-SHA ($all_pushes lines; assertion non-vacuous)"
+else
+  fail "no push-by-SHA line in --issue-body — the #2478 assertion would be vacuous"
+fi
+if [ "$all_pushes" = "$full_pushes" ]; then
+  pass "every push-by-SHA in the recovery recipe names refs/heads/<branch>"
+else
+  fail "recovery recipe has $((all_pushes - full_pushes)) push-by-SHA line(s) without refs/heads/ (#2478): $(grep -E 'git push[^`]*origin +"?(\$\{sha\}|<sha>):' <<<"$body" | grep -v 'refs/heads/' || true)"
+fi
+
 [ "$fail" -eq 0 ] && echo "ALL TESTS PASSED" || echo "SOME TESTS FAILED"
 exit "$fail"

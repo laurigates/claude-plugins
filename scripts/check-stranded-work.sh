@@ -193,7 +193,10 @@ main() {
     echo '```'
     echo 'git rebase --onto origin/main <already-merged-sha> <branch>'
     echo 'git log --oneline origin/main..<branch>   # expect ONLY the unlanded commits'
-    echo 'git push --force-with-lease origin <sha>:<branch>'
+    # Full refname, not <sha>:<branch> — a bare commit object on the left gives
+    # git no ref namespace to infer from, so the short form cannot create a
+    # branch the remote does not already have (#2478). Matches line below.
+    echo 'git push --force-with-lease origin <sha>:refs/heads/<branch>'
     echo 'gh pr create --base main --head <branch>'
     echo '```'
     echo
