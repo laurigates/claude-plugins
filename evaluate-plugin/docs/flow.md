@@ -3,7 +3,7 @@
 ```mermaid
 flowchart TD
     U[User] -->|/evaluate:skill<br/>plugin/skill| ES["/evaluate:skill<br/>(single-skill pipeline)"]
-    U -->|/evaluate:plugin<br/>plugin-name| EB["/evaluate:plugin<br/>(batch router)"]
+    U -->|/evaluate:plugin-batch<br/>plugin-name| EB["/evaluate:plugin-batch<br/>(batch router)"]
 
     %% Single-skill pipeline
     ES --> RUN[Run eval cases<br/>against SKILL.md<br/>capture transcripts]
@@ -44,7 +44,7 @@ flowchart TD
 
 | Node style | Meaning |
 |------------|---------|
-| Blue | Router / orchestrator skill (`/evaluate:skill`, `/evaluate:plugin`) |
+| Blue | Router / orchestrator skill (`/evaluate:skill`, `/evaluate:plugin-batch`) |
 | Green | Read-only run, grading, analysis, or reporting step |
 | Orange | Mutating step (applies edits to `SKILL.md`) |
 
@@ -55,4 +55,4 @@ flowchart TD
 | Evaluate | `/evaluate:skill` (`evaluate-skill/`) | `eval-grader` (grade), `eval-comparator` (blind with-skill vs. baseline) |
 | Improve | `/evaluate:improve` (`evaluate-improve/`) | `eval-analyzer` (diagnose + propose edits) |
 | Report | `/evaluate:report` (`evaluate-report/`) | — |
-| Batch | `/evaluate:plugin` (`evaluate-plugin-batch/`) | fans out to `/evaluate:skill` per skill, then `aggregate_benchmark.sh` merges results into a single report |
+| Batch | `/evaluate:plugin-batch` (`evaluate-plugin-batch/`) | fans out to `/evaluate:skill` per skill, then `aggregate_benchmark.sh` merges results into a single report |

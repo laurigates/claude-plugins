@@ -235,7 +235,7 @@
     {
       "name": "documentation-plugin",
       "source": "./documentation-plugin",
-      "description": "Documentation generation - API docs, README, knowledge graphs, LaTeX PDF conversion",
+      "description": "Documentation generation - API docs, README, LaTeX PDF conversion",
       "version": "1.11.0",
       "keywords": [
         "documentation",
