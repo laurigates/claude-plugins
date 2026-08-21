@@ -264,6 +264,16 @@ jobs:
       - name: Check looping skills keep an independent stop condition
         run: bash scripts/check-loop-integrity.sh --strict
 
+      - name: Self-test the delegation-reachability guard
+        # A catalog-present skill telling the agent to act via a
+        # `disable-model-invocation` sibling fails SILENTLY (the delegation is
+        # prose, so there is no tool call to refuse — issue #2442). The guard
+        # is the only signal; the self-test proves the guard first.
+        run: bash scripts/tests/test-check-delegation-reachability.sh
+
+      - name: Check delegations resolve to reachable skills
+        run: bash scripts/check-delegation-reachability.sh
+
       - name: Self-test the shell-script lint guard
         # Whole-repo invariant (every shell script follows shell-scripting.md:
         # #!/usr/bin/env bash shebang, set flags, block()). Runs unconditionally

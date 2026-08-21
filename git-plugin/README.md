@@ -33,7 +33,7 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of how the skills fit together.
 | `/git:coworker-check` | Detect another agent working in the same repo clone before destructive git ops |
 | `/git:repo-delete-check` | Verify a repo's work survives deletion — remote, unpushed commits, stashes — then offer a push or tar backup |
 | `/git:pr-sync-check` | Check whether the current PR branch is still live and in sync (merged / behind / changes-requested) before building on it |
-| `/git:pr-watch` | Subscribe to a PR's activity and react to review comments and CI as they arrive (delegates reactions to `/git:pr-feedback` / `/git:fix-pr`) |
+| `/git:pr-watch` | Subscribe to a PR's activity and react to review comments and CI as they arrive (fixes CI via `/git:fix-pr`; surfaces review threads for the user to run `/git:pr-feedback`) |
 
 ## Layered Skills (Composable Git Workflows)
 
@@ -105,7 +105,7 @@ The rule this plugin applies:
 | `git-fix-pr` | **removed** | Reactive to a red PR check the model already observes when it reads CI status |
 | `git-issue` | keep | Takes a required issue reference, then branches, implements, and opens a PR; `--parallel` fans out subagents. Invoked by hand as `/git-plugin:git-issue <number>` |
 | `git-maintain` | keep | Destructive maintenance — `gc`, repack, branch pruning, stash deletion, `git rm` |
-| `git-pr-feedback` | keep | Posts replies and resolves threads on reviewers' PRs by default, and can open follow-up issues; `--all` fans out worktree subagents that push |
+| `git-pr-feedback` | keep | Posts replies and resolves threads on reviewers' PRs by default, and can open follow-up issues; `--all` fans out worktree subagents that push. Catalog-present skills must therefore **recommend** it rather than delegate to it — enforced for `git-plugin` by `scripts/check-delegation-reachability.sh`; the marketplace-wide sweep is issue #2483 |
 | `git-upstream-pr` | keep | Cherry-picks, resets, and pushes to a fork, then opens a PR against a third-party upstream |
 
 ## Agent

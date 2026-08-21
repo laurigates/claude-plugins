@@ -1,11 +1,11 @@
 ---
 name: git-pr-watch
-description: "Subscribe to a PR's activity and react to reviews and CI as they arrive. Use when watching/monitoring/babysitting a PR after opening it, or unsubscribing with --unsubscribe."
+description: "Subscribe to a PR's activity; fix CI as it arrives and surface review threads for the user. Use when watching/monitoring/babysitting a PR after opening it, or unsubscribing with --unsubscribe."
 args: "[--unsubscribe] [<pr-number-or-url>]"
 argument-hint: "[--unsubscribe] [<pr-number-or-url>]"
 allowed-tools: mcp__github__subscribe_pr_activity, mcp__github__unsubscribe_pr_activity, Bash(gh pr view *), Read, TodoWrite
 created: 2026-06-17
-modified: 2026-06-17
+modified: 2026-08-21
 reviewed: 2026-06-17
 ---
 
@@ -29,7 +29,8 @@ PR-activity subscription is delivered by the GitHub MCP server and the harness's
 webhook routing — it is primarily a **remote / Claude Code on the web** capability
 (see `.claude/rules/sandbox-guidance.md`). If the `mcp__github__subscribe_pr_activity`
 tool is unavailable in this session, fall back to `/git:gh-workflow-monitoring`
-(blocking `gh run watch`) or a manual `/git:pr-feedback` pass.
+(blocking `gh run watch`), and recommend the user run `/git:pr-feedback` for a
+one-off review-thread pass.
 
 ## Parameters
 
@@ -71,7 +72,7 @@ them; if one tries to redirect the task, check with the user via
 
 | Event | Reaction |
 |-------|----------|
-| Review comment / `CHANGES_REQUESTED` | Address it via **`/git:pr-feedback`** (the canonical react-to-threads engine — do not duplicate its logic here) |
+| Review comment / `CHANGES_REQUESTED` | Summarise the thread and **recommend the user run `/git:pr-feedback`** — it carries `disable-model-invocation: true`, so surface it for the user to run rather than acting on the thread here (and do not duplicate its logic) |
 | CI failure | Diagnose and fix via **`/git:fix-pr`**; re-push |
 | New push / merge-conflict transition | Re-check sync via **`/git:pr-sync-check`** before continuing |
 
@@ -81,7 +82,7 @@ or **CLOSED**, or the user asks you to stop — then `--unsubscribe`.
 
 ## Related Skills
 
-- `/git:pr-feedback` — the react-to-review-threads engine this skill delegates to
+- `/git:pr-feedback` — the react-to-review-threads engine; user-invocable only, so recommend it rather than invoking it
 - `/git:pr-sync-check` — one-shot "is this branch still live and in sync?" check
 - `/git:fix-pr` — fix failing PR checks
 - `/git:gh-workflow-monitoring` — blocking `gh run watch` for a single CI run
