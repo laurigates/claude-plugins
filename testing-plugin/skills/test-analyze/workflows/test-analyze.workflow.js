@@ -20,7 +20,7 @@
  * enum is something the parse agent can do while it already holds the failures.
  * A separate classifier agent would be pure overhead.
  *
- * `mcp__pal__planner` is NOT available inside a workflow. The dependency edges
+ * `mcp__pal-mcp-server__planner` is NOT available inside a workflow. The dependency edges
  * below are *inferred* by the group agents, not planned. A run that genuinely
  * needs PAL planning belongs on the inline path in SKILL.md.
  */
@@ -205,7 +205,7 @@ phase('Synthesize');
 return await agent(
   `Merge these per-agent-type plans into ONE ordered fix plan. Topologically
    sequence the depends_on edges the group agents emitted; those edges are
-   INFERRED by the group agents, not planned (mcp__pal__planner is not available
+   INFERRED by the group agents, not planned (mcp__pal-mcp-server__planner is not available
    here), so state any cycle or unresolvable edge rather than guessing an order.
    Carry unroutable failures through untouched so they stay visible.
    ${droppedGroups.length ? `These agent types returned nothing and their failures are NOT covered: ${droppedGroups.join(', ')}. List them in dropped_groups.` : ''}

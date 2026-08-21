@@ -200,12 +200,12 @@ const plans = await parallel(groups.map(g => () => agent(
 
 phase('Synthesize');
 return await agent(`Merge into ONE ordered fix plan; topologically sequence the depends_on edges the
-  group agents emitted (mcp__pal__planner is NOT available here — the edges are inferred, not planned).
+  group agents emitted (mcp__pal-mcp-server__planner is NOT available here — the edges are inferred, not planned).
   Unroutable: ${JSON.stringify(parsed.unroutable)}\n${JSON.stringify(plans.filter(Boolean))}`,
   { label:'synthesize', schema: FixPlanSchema, model:'opus' });
 ```
 
-**SKILL.md delta.** Fix the stale agent-type names in the body first — that is a bug independent of any workflow. Collapse the routing table's two copies into one under `## Subagent Selection Logic`, annotated *"this table is the contract the workflow's category enum and `AGENT_FOR` map encode — edit them together."* Add to the new workflow section: *"the harness surrenders `mcp__pal__planner`; a run that needs PAL planning should stay inline"* and *"`context: fork` is pinned at `plugin-compliance-check.sh:826` and stays; the `parallel()` width is capped at the fixed agent-type set precisely so it does not become the wide fan-out `skill-fork-context.md` warns about."*
+**SKILL.md delta.** Fix the stale agent-type names in the body first — that is a bug independent of any workflow. Collapse the routing table's two copies into one under `## Subagent Selection Logic`, annotated *"this table is the contract the workflow's category enum and `AGENT_FOR` map encode — edit them together."* Add to the new workflow section: *"the harness surrenders `mcp__pal-mcp-server__planner`; a run that needs PAL planning should stay inline"* and *"`context: fork` is pinned at `plugin-compliance-check.sh:826` and stays; the `parallel()` width is capped at the fixed agent-type set precisely so it does not become the wide fan-out `skill-fork-context.md` warns about."*
 
 ### 5. `blueprint-story-audit`
 
