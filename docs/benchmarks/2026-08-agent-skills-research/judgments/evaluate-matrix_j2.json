@@ -1,0 +1,71 @@
+{
+  "unit": "evaluate-plugin/skills/evaluate-matrix/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "weak-model-gate",
+  "judge_id": "j2",
+  "dimensions": {
+    "D1": {
+      "score": 4,
+      "rationale": "The spine is an imperative five-step sequence opened by an explicit execution directive, each step carrying a concrete command or dispatch and a decision point (absent evals.json stops the run; JUDGE_PENDING gates the judge). It falls short of 5 because two declarative tables (Parameters and Quick Reference) restate the same three flags, so some always-loaded material feeds no step that the other table did not already feed.",
+      "evidence": [
+        {"quote": "Execute this cross-model matrix:"},
+        {"quote": "Only if it reports `JUDGE_PENDING > 0`, dispatch the `eval-grader` agent"}
+      ]
+    },
+    "D2": {
+      "score": 4,
+      "rationale": "Two failure modes are attached to the exact steps they threaten and each names the symptom and what it costs: skipping the fixture yields a haiku failure that is a false negative poisoning the gate, and parallel dispatch triggers cascading rate limits on [1m] models. It is not a 5 because the grading, aggregation and rendering steps carry no comparable outcome annotation, so the coverage is partial rather than systematic.",
+      "evidence": [
+        {"quote": "without one a context-needing skill fails on haiku purely for lack"},
+        {"quote": "a false negative that poisons this gate"},
+        {"quote": "`[1m]` models hit cascading rate limits with concurrent subagents"}
+      ]
+    },
+    "D3": {
+      "score": 5,
+      "rationale": "Every step gives an exact invocation with real flags (prepare_run.sh, apply_fixture.sh, grade_deterministic.py, render_matrix_report.py), names the exact output token to parse and the lifecycle obligation around it (WORKDIR, teardown), pins concrete model ids, and states the numeric thresholds the report emits. The unmet-precondition case is explicit: a missing evals.json is detected, reported, redirected, and the run stops.",
+      "evidence": [
+        {"quote": "Parse `WORKDIR=`; the subagent operates there."},
+        {"quote": "Only if it reports `JUDGE_PENDING > 0`, dispatch the `eval-grader` agent"}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "A four-row table names conditions under which this skill is the wrong tool and routes each to a specific alternative, and Step 1 provides a real exit when the entry condition is unmet. It stops short of 5 because it never addresses the case where the procedure itself is wrong for the situation at hand (for example a skill whose evals exist but cannot be executed honestly), offering no judgement latitude beyond the enumerated redirects.",
+      "evidence": [
+        {"quote": "Checking whether the SKILL.md *reads* clearly -> `/evaluate:legibility`"}
+      ]
+    },
+    "D5": {
+      "score": 5,
+      "rationale": "The body is 6876 characters, roughly 1.7k estimated tokens, close to the ecosystem median for a skill that must carry five executable steps. Detail that would have inflated it is genuinely deferred to on-demand files: the evals.json schema and the full cross-model design are linked, not restated, and the skill explicitly reuses shared scripts rather than duplicating them.",
+      "evidence": [
+        {"quote": "([`references/schemas.md`](../../references/schemas.md))."}
+      ]
+    },
+    "D6": {
+      "score": 5,
+      "rationale": "The description names the distinguishing condition rather than the topic: cross-model, real execution, weak model, and an explicit contrast with mere comprehension. Against the obvious near siblings (a legibility gate, a single-model effectiveness run) the choice is decidable from the description alone without opening either body.",
+      "evidence": [
+        {"quote": "Use when checking whether a weak model can actually do a skill, not just comprehend it."}
+      ]
+    },
+    "D7": {
+      "score": 4,
+      "rationale": "One procedure with one entry condition dominates: resolve evals, run the matrix, grade, aggregate, render. The Minimal Provable Increment section is adjacent secondary material addressed to whoever is bringing the harness up rather than to an invoker running the gate, so a fraction of every invocation pays for bootstrapping guidance it will not use.",
+      "evidence": [
+        {"quote": "Run the matrix for **`git-plugin/git-commit` only**"}
+      ]
+    },
+    "D8": {
+      "score": 5,
+      "rationale": "The instructions decompose into discrete conditions an observer could check in a transcript: dispatches serialized rather than batched, the subagent model field set to the loop model, the deterministic grader run before any judge, the judge dispatched only on a nonzero JUDGE_PENDING, the artifact written to a named path, and the executability flag explicitly called out in the printed report. Each would be visibly satisfied or violated.",
+      "evidence": [
+        {"quote": "Only if it reports `JUDGE_PENDING > 0`, dispatch the `eval-grader` agent"},
+        {"quote": "Parse `WORKDIR=`; the subagent operates there."}
+      ]
+    }
+  },
+  "body_chars": 6876,
+  "sidecars": []
+}

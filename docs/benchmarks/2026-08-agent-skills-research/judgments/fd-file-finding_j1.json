@@ -1,0 +1,62 @@
+{
+  "unit": "tools-plugin/skills/fd-file-finding/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "cli-wrapper",
+  "judge_id": "j1",
+  "dimensions": {
+    "D1": {
+      "score": 2,
+      "rationale": "The body is a flag-and-example catalogue organised by feature area (Basic Usage, Advanced Filtering, Execution, Quick Reference) with no ordered steps, no decision points inside the work, and no committed sequence of actions; a reader finishes knowing what fd can do rather than what to do first. It is lifted just above anchor 1 because every catalogue entry is a concrete executable command and the opening routing tables act as a single up-front decision point. Adding an ordered 'narrow, then filter, then execute' spine consuming these commands would move it to 4-5.",
+      "evidence": [
+        {"quote": "Fast parallel execution (written in Rust)"},
+        {"quote": "| Use this skill when... | Use rg-code-search instead when... |"}
+      ]
+    },
+    "D2": {
+      "score": 1,
+      "rationale": "Nothing in the body records a failure: there is no gotchas section, no symptom, no cost, and no indication that any listed path was ever tried and found wanting. The one 'Note' is a bare preference assertion with an unquantified rationale rather than an observed consequence, and the closing line is pure endorsement. Attaching even one named failure (e.g. what -x does on filenames with spaces, or what gitignore-awareness silently hides) to the step it threatens would move this up.",
+      "evidence": [
+        {"quote": "**Note:** Use `--format '{//}'` instead of piping to xargs - it's faster and simpler."},
+        {"quote": "This makes fd the preferred tool for fast, intuitive file finding in development workflows."}
+      ]
+    },
+    "D3": {
+      "score": 3,
+      "rationale": "Commands are exact, copy-pasteable, and correctly flagged for the main path, and the --format placeholder table specifies the shape of one output mode. But no expected output is shown for any invocation, and there are no environment or lifecycle preconditions at all (no availability check, no note on how fd is named or invoked in different environments, no way to tell a precondition is unmet). That is precisely the anchor-3 profile: concrete for the main path, edge conditions and setup left to the reader.",
+      "evidence": []
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "The skill states its non-application conditions unusually well for a CLI wrapper: two opening tables route away to named sibling skills for content search and JSON processing, and a dedicated section names four conditions under which a different tool entirely is correct. It stops short of 5 because it never addresses the case where its own guidance is wrong for the situation at hand and offers no exit from itself once the reader is inside the procedure.",
+      "evidence": [
+        {"quote": "**When to Use find Instead**"},
+        {"quote": "POSIX compatibility required"},
+        {"quote": "| Use this skill when... | Use jq-json-processing instead when... |"}
+      ]
+    },
+    "D5": {
+      "score": 3,
+      "rationale": "The body is 9,117 characters, roughly 2,280 tokens, about 1.5x the ~1.5k ecosystem median, with no sidecar files at all so nothing is deferred. It is not many multiples of the median and every section is coherent to the one tool, which is the anchor-3 case. Working against it: the closing 'Common Command Patterns' section largely restates examples given earlier, and one invocation is repeated four times, so a slice of the always-loaded cost is duplicated material.",
+      "evidence": []
+    },
+    "D6": {
+      "score": 4,
+      "rationale": "The description front-loads the concrete tool name and then names the discriminating axis (searching for files by name, extension, or pattern), which is exactly what separates it from a content-search sibling without opening either body. It falls short of 5 because 'searching for files ... across directories' still overlaps substantially with any plausible generic file-discovery or glob sibling; the tool name, not the stated condition, does most of the disambiguation work there.",
+      "evidence": [
+        {"quote": "fd fast file finding: smart defaults, gitignore-aware, parallel. Use when searching for files by name, extension, or pattern across directories."}
+      ]
+    },
+    "D7": {
+      "score": 3,
+      "rationale": "One tool and one broad topic, but the body carries adjacent material that could plausibly stand alone as its own entry condition: batch command execution over results, destructive cleanup operations, output reformatting, and integration with a second search tool. Most invocations will want the find-and-filter half and pay for the execute-and-delete half, which is the anchor-3 shape of one dominant subject with detachable secondary material.",
+      "evidence": []
+    },
+    "D8": {
+      "score": 3,
+      "rationale": "A minority of statements decompose into checkable conditions an observer could verify in a transcript (whether --format was used instead of an xargs pipe, whether -t f was passed, whether -j 1 was used). The majority of the body is illustrative example commands from which no obligation can be extracted at all, and the remaining directives are hedged or unobservable. That mix is the anchor-3 case.",
+      "evidence": []
+    }
+  },
+  "body_chars": 9117,
+  "sidecars": []
+}

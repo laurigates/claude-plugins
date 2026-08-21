@@ -1,0 +1,69 @@
+{
+  "unit": "blueprint-plugin/skills/blueprint-prp-create/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "multi-step-orchestrator",
+  "judge_id": "j1",
+  "dimensions": {
+    "D1": {
+      "score": 4,
+      "rationale": "The spine is an ordered, imperatively-opened eight-step procedure with a real decision point that loops back on a numeric gate, and the bulk reference material (PRP structure, task categorization, checklists) is deferred to REFERENCE.md. It falls short of 5 because Steps 2-3 are enumerations of what to gather rather than committed actions, and the framing block plus the When-to-Use table sit before the procedure without feeding any step.",
+      "evidence": [
+        {"quote": "Execute the complete PRP creation workflow:"},
+        {"quote": "### Step 6: Score confidence across dimensions"},
+        {"quote": "If score < 7 → Return to Steps 2-3 to fill gaps."}
+      ]
+    },
+    "D2": {
+      "score": 3,
+      "rationale": "There is a genuine outcome signal wired into a step - the confidence gate labels the low-score path as risky and prescribes a remediation loop - but it is asserted as a threshold rather than recorded from an observed failure, and no step names a symptom or a cost of getting it wrong. The 'Known Gotchas' material the skill demands is a requirement placed on the artifact being authored, not a failure record for this procedure.",
+      "evidence": []
+    },
+    "D3": {
+      "score": 4,
+      "rationale": "Preconditions are stated with the exact detection command and the exact failure response, output paths and ID format are literal, and the Agentic Optimizations table gives copy-pasteable invocations. It is not a 5 because the exact shape of the produced artifact and of the Step 8 report are described only as bulleted content lists, with the concrete structure pushed into the sidecar.",
+      "evidence": [
+        {"quote": "- Blueprint initialized: !`find . -path '*/docs/blueprint/*' -maxdepth 3 -name 'manifest.json' -type f`"},
+        {"quote": "1. If Blueprint not initialized → Error: \"Run `/blueprint:init` first\""},
+        {"quote": "- Next ID = last_prp + 1 (format: `PRP-NNN`)"}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "A When-to-Use table names four out-of-scope conditions and, for the nearest sibling, routes explicitly to the alternative skill; the sub-threshold branch additionally offers an explicit escape from the procedure's own gate. It stops short of 5 because two of the four out-of-scope rows say only that the skill does not apply without naming what to do instead, and nothing covers the case where the procedure itself is wrong for the situation.",
+      "evidence": [
+        {"quote": "| Creating new feature implementation packet | Executing an existing PRP (use `/blueprint:prp-execute`) |"}
+      ]
+    },
+    "D5": {
+      "score": 5,
+      "rationale": "7,358 characters is roughly 1.8k tokens - close to the ~1.5k ecosystem median - and the material that would have blown that budget (full PRP document template, task-categorization rules, review checklist, curated-rule authoring) is explicitly deferred to a single on-demand REFERENCE.md, referenced by anchor from the steps that consume it.",
+      "evidence": [
+        {"quote": "For PRP document structure, task categorization, review checklists, and curated-rule creation guidance, see [REFERENCE.md](REFERENCE.md)."}
+      ]
+    },
+    "D6": {
+      "score": 4,
+      "rationale": "The description leads with the creation verb and the artifact acronym and names distinguishing conditions (subagent execution, TDD, confidence scoring), so choosing between it and its obvious sibling is decidable without opening either body. It is not a 5 because the trigger vocabulary ('research, context, validation gates', 'planning a feature packet') would overlap heavily with a sibling planning-document skill in the same family, where only the acronym separates them.",
+      "evidence": [
+        {"quote": "Create a PRP (Product Requirement Prompt) with research, context, and validation gates. Use when planning a feature packet for subagent execution with TDD and confidence scoring."}
+      ]
+    },
+    "D7": {
+      "score": 5,
+      "rationale": "One entry condition (a named feature to be packaged) drives one procedure end to end: research, draft, score, review, report. Nothing present stands alone as an independent procedure - even the scoring and the closing hand-off exist to gate and route the single artifact this skill produces.",
+      "evidence": [
+        {"quote": "Execute the complete PRP creation workflow:"}
+      ]
+    },
+    "D8": {
+      "score": 4,
+      "rationale": "Most instructions decompose into transcript-visible conditions: a file written at a literal path, an ID computed as last_prp + 1, a manifest registry updated, a numeric score compared against an explicit threshold, and a loop-back taken when it fails. It is not a 5 because the inputs to that threshold are subjective 1-10 ratings and two review-checklist items ('Is pseudocode clear enough', 'Confidence score is honest') have no observable correlate.",
+      "evidence": [
+        {"quote": "Calculate overall score as average of dimensions. Target: 7+ for execution, 9+ for subagent delegation."},
+        {"quote": "- Next ID = last_prp + 1 (format: `PRP-NNN`)"}
+      ]
+    }
+  },
+  "body_chars": 7358,
+  "sidecars": ["REFERENCE.md"]
+}

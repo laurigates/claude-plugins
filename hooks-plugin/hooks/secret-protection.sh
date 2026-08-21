@@ -92,12 +92,41 @@ Use 'printenv VAR_NAME' for specific non-sensitive variables instead.
 Set CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 to override."
   fi
 
-  # Check for cat/read/access of sensitive files in bash commands
+  # Check for cat/read/access of sensitive files in bash commands.
+  #
+  # The gap between the reader verb and the file pattern is `[^|;&]*` — NOT
+  # `[^|]*` — so a match cannot bridge a command separator (`;`, `&&`, `||`) or
+  # a pipe. The wider form let a verb in one statement bind to an unrelated
+  # `.env` mention in a *later* statement, false-blocking commands that read no
+  # secret at all, e.g. `... | head -1); grep -nE '\.env|PATTERN' "$f"`, where
+  # the only `.env` is inside a grep pattern (issue #2444). Same greediness
+  # class as the `.*` → `[A-Za-z0-9_]*` narrowing documented above (#1580).
+  reader_verbs='(cat|head|tail|less|more|nano|vim|vi|code|read)'
   for pattern in '\.env\b' '\.ssh/' '\.aws/credentials' '\.kube/config' '\.docker/config\.json' 'credentials\.json' 'secrets\.json'; do
-    if echo "$COMMAND" | grep -Eq "(cat|head|tail|less|more|nano|vim|vi|code|read)\s+[^|]*${pattern}"; then
-      block "BLOCKED: Command accesses a sensitive file matching '${pattern}'.
-Set CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 to override."
+    # Capture the matched substring (verb + path) rather than a bare boolean, so
+    # the block message can name what tripped it and the exemption below can
+    # inspect the actual path argument.
+    match=$(echo "$COMMAND" | grep -oE "${reader_verbs}[[:space:]]+[^|;&]*${pattern}[^[:space:]|;&'\"]*" | head -1 || true)
+    [ -z "$match" ] && continue
+
+    # .env.example / .env.sample / .env.template are templates committed by
+    # convention, not secrets. check_sensitive_path() already exempts them on
+    # the Read/Edit/Write path; without the same exemption here, `cat
+    # .env.example` was blocked while `Read`ing the identical file was allowed
+    # (issue #2444). Scoped to the .env pattern to mirror check_sensitive_path()
+    # exactly — the other patterns keep no exemption.
+    #
+    # The exemption requires *every* .env token in the matched region to be a
+    # template. Inspecting only the last one would let a real secret hide behind
+    # a template in the same statement (`cat .env .env.example`).
+    if [ "$pattern" = '\.env\b' ]; then
+      env_tokens=$(echo "$match" | grep -oE "${pattern}[^[:space:]|;&'\"]*" || true)
+      non_template=$(echo "$env_tokens" | grep -vE '\.(example|sample|template)$' || true)
+      [ -n "$env_tokens" ] && [ -z "$non_template" ] && continue
     fi
+
+    block "BLOCKED: Command accesses a sensitive file matching '${pattern}' (matched: '${match}').
+Set CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 to override."
   done
 fi
 

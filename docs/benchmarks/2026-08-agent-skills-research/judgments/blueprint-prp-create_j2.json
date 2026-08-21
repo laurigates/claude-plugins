@@ -1,0 +1,76 @@
+{
+  "unit": "blueprint-plugin/skills/blueprint-prp-create/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "multi-step-orchestrator",
+  "judge_id": "j2",
+  "dimensions": {
+    "D1": {
+      "score": 5,
+      "rationale": "The body's spine is eight numbered, verb-led steps under an imperative opener, each consuming its declarative material in place, with a real control-flow decision point that loops back on a failed threshold. The only non-step material is a short definition block, a sibling-disambiguation table, and a command table; the bulk of reference detail (PRP structure, task categorization, checklists) is deferred to a sidecar. Turning the steps into descriptions of phases, or inlining the PRP template, would have dropped this.",
+      "evidence": [
+        {"quote": "Execute the complete PRP creation workflow:"},
+        {"quote": "### Step 1: Verify prerequisites and understand requirements"},
+        {"quote": "If score < 7 → Return to Steps 2-3 to fill gaps."}
+      ]
+    },
+    "D2": {
+      "score": 2,
+      "rationale": "Almost every instruction is an unlabelled assertion: nothing records a path that was tried and failed, a symptom to recognise, or what a failure cost. Two faint traces of outcome exist — one branch is annotated as risky, and one checklist item cites a concrete bad artifact ('somewhere in...') — but neither is tied to an observed consequence, and the only 'gotchas' language concerns content the produced PRP should contain rather than failure modes of this procedure. Attaching an observed symptom and cost to the steps that threaten them (e.g. what a low-confidence PRP actually does to a subagent run) would move this up.",
+      "evidence": [
+        {"quote": "- Execute anyway (risky) → Proceed with warning"},
+        {"quote": "- [ ] All file paths are explicit (not \"somewhere in...\")"}
+      ]
+    },
+    "D3": {
+      "score": 4,
+      "rationale": "Environment preconditions are concrete and detectable: the Context block runs real discovery commands, and Step 1 states the unmet-precondition branch with the exact remedy command. Output location, ID format, and the compact command table are all literal. It stops short of 5 because the exact expected output shape of the produced document (frontmatter, section list) lives in the sidecar rather than being pinned inline, and the commands' expected outputs are not shown.",
+      "evidence": [
+        {"quote": "- Blueprint initialized: !`find . -path '*/docs/blueprint/*' -maxdepth 3 -name 'manifest.json' -type f`"},
+        {"quote": "1. If Blueprint not initialized → Error: \"Run `/blueprint:init` first\""},
+        {"quote": "- Next ID = last_prp + 1 (format: `PRP-NNN`)"}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "A two-column table names four conditions under which the skill should not be applied, and the sharpest one routes to a named sibling skill instead; the low-confidence branch also gives four explicit exits, including abandoning and saving incomplete. It falls short of 5 because two of the 'use alternative when' rows state only the condition without naming what to do instead, and nothing addresses the case where the procedure itself is wrong for the situation.",
+      "evidence": [
+        {"quote": "| Creating new feature implementation packet | Executing an existing PRP (use `/blueprint:prp-execute`) |"},
+        {"quote": "| Want comprehensive research and documentation | Quick prototyping without formal requirements |"}
+      ]
+    },
+    "D5": {
+      "score": 5,
+      "rationale": "The body is 6,871 characters (~1,718 tokens), essentially at the ~1.5k ecosystem median, and the heavy material — full PRP template, task categorization rules, review checklist, confidence rubric detail, curated-rule authoring — is pushed to a single on-demand REFERENCE.md that the body links by name at four separate step sites plus a closing pointer. Every invocation pays only for the procedure.",
+      "evidence": [
+        {"quote": "For PRP document structure, task categorization, review checklists, and curated-rule creation guidance, see [REFERENCE.md](REFERENCE.md)."},
+        {"quote": "Create `docs/prps/[feature-name].md` with frontmatter and sections"}
+      ]
+    },
+    "D6": {
+      "score": 4,
+      "rationale": "The description front-loads the artifact type with its expansion, the creation verb, and three distinguishing attributes (validation gates, TDD, confidence scoring), which makes it decidable against the obvious near siblings — an execute counterpart and a PRD/ADR authoring skill — without opening either body. It is not a 5 because 'planning a feature packet for subagent execution' shares real vocabulary with a work-order-style sibling, so that one boundary still needs the body.",
+      "evidence": [
+        {"quote": "description: Create a PRP (Product Requirement Prompt) with research, context, and validation gates. Use when planning a feature packet for subagent execution with TDD and confidence scoring."}
+      ]
+    },
+    "D7": {
+      "score": 5,
+      "rationale": "One procedure with one entry condition: produce a PRP document for a named feature. Research, ID allocation, drafting, scoring, validation and reporting are all stages of that single artifact's production, not independently invocable procedures, and the one adjacent capability (creating curated rule entries) is conditional and delegated to a named sibling skill rather than bundled.",
+      "evidence": [
+        {"quote": "Execute the complete PRP creation workflow:"},
+        {"quote": "Create `docs/prps/[feature-name].md` with frontmatter and sections"}
+      ]
+    },
+    "D8": {
+      "score": 4,
+      "rationale": "Most instructions decompose into conditions an observer could confirm from a transcript: the file was created at the stated path, the ID was derived as last_prp+1, the manifest registry was updated, four dimensions were scored, and the sub-7 branch was actually taken. A minority are dispositional with no observable correlate — notably whether the score is 'honest' and whether pseudocode is 'clear enough' — which keeps it off 5.",
+      "evidence": [
+        {"quote": "If score < 7 → Return to Steps 2-3 to fill gaps."},
+        {"quote": "- Next ID = last_prp + 1 (format: `PRP-NNN`)"},
+        {"quote": "- [ ] Confidence score is honest"}
+      ]
+    }
+  },
+  "body_chars": 6871,
+  "sidecars": ["REFERENCE.md"]
+}

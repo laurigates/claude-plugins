@@ -1,0 +1,65 @@
+{
+  "unit": "code-quality-plugin/skills/code-review/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "convention-enforcer",
+  "judge_id": "j1",
+  "dimensions": {
+    "D1": {
+      "score": 4,
+      "rationale": "The spine is an explicit ordered procedure: a single imperative delegation directive, a file-discovery step, then nine numbered steps that end in a verification gate, a scoring step and a report step. It falls short of 5 because steps 1-5 are category checklists of analysis topics rather than actions with decision points, and the trailing Agent Teams and Related Configure Skills sections are declarative material no step consumes.",
+      "evidence": [
+        {"quote": "**Delegate this task to the `agents-plugin:review` agent.**"},
+        {"quote": "7. **Re-verify each candidate finding** (false-positive gate — run BEFORE reporting):"}
+      ]
+    },
+    "D2": {
+      "score": 4,
+      "rationale": "Two failure modes are attached to the steps that threaten them rather than parked in a generic gotchas section: the false-positive gate names why an unverified claim decays, and the confidence scale names the cost of shipping ungrounded findings. It stops short of 5 because the consequences are asserted rather than recorded as observed symptoms with a measured cost, so a reader cannot recognise the failure by its signature.",
+      "evidence": [
+        {"quote": "still says what the finding claims (line numbers drift; assumptions decay)."},
+        {"quote": "guess, and guesses erode trust in the review."}
+      ]
+    },
+    "D3": {
+      "score": 3,
+      "rationale": "The main path is concrete: explicit glob patterns for discovery, a named subagent type, fixed severity and confidence enums, and a stated reporting threshold. But there are no exact invocations, no literal report template or schema, and no environment or lifecycle preconditions (nor any way to tell one is unmet); it also names the Agent tool while the frontmatter grants Task, an execution-layer detail left for the reader to reconcile.",
+      "evidence": []
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "The opening table does more than state a boundary: every out-of-scope case is paired with the named skill to use instead, and the Agent Teams section supplies an explicit escape from its own elaboration. It is not a 5 because nothing addresses the case where this procedure itself is the wrong instrument for the situation at hand — every row assumes some review skill applies.",
+      "evidence": [
+        {"quote": "| Running an end-to-end review across quality, security, perf, and tests | Walking a manual security/correctness checklist → `code-review-checklist` |"},
+        {"quote": "This is optional — the skill works without agent teams for standard reviews."}
+      ]
+    },
+    "D5": {
+      "score": 4,
+      "rationale": "The body measures 6,238 characters, roughly 1,560 estimated tokens, which sits essentially on the ~1.5k ecosystem median, and everything present is coherent to the one review procedure. It is not a 5 because there is no on-demand deferral layer at all: the only sidecar is scripts/tests (a regression harness), so the severity rubric, confidence scale and re-verification detail are all paid for on every invocation rather than being loadable on demand.",
+      "evidence": [
+        {"quote": "## Confidence Scale"}
+      ]
+    },
+    "D6": {
+      "score": 3,
+      "rationale": "The name and description are topically unambiguous and front-load real trigger vocabulary (reviewing code, OWASP, SOLID, perf bottlenecks, test gaps), but they share substantial surface with siblings the skill itself names — a checklist variant, an antipattern scanner and a test-quality auditor. The distinguishing condition (delegated end-to-end review producing one consolidated report, versus a manual checklist walk) appears only in the body, so choosing between them from descriptions alone is not decidable.",
+      "evidence": []
+    },
+    "D7": {
+      "score": 3,
+      "rationale": "One dominant procedure with one entry condition, and the five analysis domains all feed a single report rather than standing alone. It is held at 3 by adjacent secondary material: an apply-fixes step that is a mutation procedure rather than a review one (and which the skill's own table routes to a separate refactor skill), plus an optional parallel-teammate mode and a trailing configure-skill referral list.",
+      "evidence": []
+    },
+    "D8": {
+      "score": 4,
+      "rationale": "A large share of the guidance decomposes into transcript-observable conditions: every reported finding must carry a verified file:line plus a severity and confidence, low-confidence items must not appear as findings, and the report must be ranked most-severe first — an observer can check each against the output. It is not a 5 because several instructions remain dispositional with no observable correlate, notably the analysis categories and the fix-application step.",
+      "evidence": [
+        {"quote": "carry a verified `file:line`, a severity, and a confidence."},
+        {"quote": "The reporting threshold is **Medium**: report High and Medium findings; do not"},
+        {"quote": "6. **Apply fixes** where appropriate and safe"}
+      ]
+    }
+  },
+  "body_chars": 6238,
+  "sidecars": ["scripts/tests/test-code-review-rubric-depth.sh"]
+}

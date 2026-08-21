@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.10.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.10.0...hooks-plugin-v2.10.1) (2026-08-21)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** exempt symlink-resolved macOS temp paths from repo-deletion block ([64c9933](https://github.com/laurigates/claude-plugins/commit/64c9933bb10651e9f40869e172f0e6db35bc2dec)), closes [#2465](https://github.com/laurigates/claude-plugins/issues/2465)
+* **hooks-plugin:** stop secret-protection Bash path blocking .env templates and bridging separators ([ad33f86](https://github.com/laurigates/claude-plugins/commit/ad33f868a0b9f6e708e97cd440bfda1b74866c26)), closes [#2444](https://github.com/laurigates/claude-plugins/issues/2444)
+
 ## [2.10.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.9.1...hooks-plugin-v2.10.0) (2026-08-21)
 
 

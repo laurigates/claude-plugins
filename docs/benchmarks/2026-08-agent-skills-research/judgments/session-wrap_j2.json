@@ -1,0 +1,71 @@
+{
+  "unit": "session-plugin/skills/session-wrap/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "ask-user-question",
+  "judge_id": "j2",
+  "dimensions": {
+    "D1": {
+      "score": 4,
+      "rationale": "The spine is an explicit imperative five-step sequence (Survey, Categorise, Preview and confirm, Apply, Report) with concrete decision points, and the declarative blocks that precede it (Destinations, the signal filter, the tracker-dedup table) are each consumed by a named step. It falls short of 5 because a substantial fraction of the body is read as standing knowledge before any step begins, and the closing Auto-surfacing section describes hook behaviour that feeds no step.",
+      "evidence": [
+        {"quote": "Execute this wrap workflow:"},
+        {"quote": "### Step 1: Survey"}
+      ]
+    },
+    "D2": {
+      "score": 5,
+      "rationale": "Failure modes are attached to the steps they threaten and carry observed symptoms and consequences: the confirmation step names a real production incident and the mechanism that caused it, and Step 1 explains what silently goes wrong when a flag is omitted or a precondition is unmet. The opening paragraph also names the cost of not doing the procedure at all.",
+      "evidence": [
+        {"quote": "(this raced the old nudge hook in production). AskUserQuestion keeps the turn open — no Stop event, no race."},
+        {"quote": "without it the section is always"}
+      ]
+    },
+    "D3": {
+      "score": 5,
+      "rationale": "It gives the exact collector invocation with flags, exact taskwarrior command forms including the non-interactive variants, and names the exact digest keys and section headers it expects back (PRS, GITHUB_DRIFT, GH_READY, DETECTION=ambiguous). Crucially it tells the reader how to distinguish an unmet precondition from a clean result, enumerating each failure reason and the different response each warrants.",
+      "evidence": [
+        {"quote": "bash \"${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh\" --with-commits --with-dedup"},
+        {"quote": "| Batch close by UUID | `task rc.confirmation:no <uuid> done` |"}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "It opens by routing three neighbouring intents elsewhere, scopes the journal destination out when the session does not match, and supplies an explicit degradation path when a depended-on plugin is absent (including refusing to proceed unverified). It stops short of 5 because it does not contemplate the case where its own signal filter is the wrong lens for the session — the escape offered is ambiguity handling and an 'Adjust first' option rather than guidance for abandoning the procedure.",
+      "evidence": [
+        {"quote": "| User says \"wrap up\", \"session wrap\", \"done for now\" | Full end-of-session pass incl. distill/feedback → `session-plugin:session-end` |"},
+        {"quote": "unclear — better than spamming it. Ask once if genuinely ambiguous."},
+        {"quote": "never file unverified"}
+      ]
+    },
+    "D5": {
+      "score": 4,
+      "rationale": "The body is ~10,335 characters (~2,580 tokens), roughly 1.7x the ~1.5k ecosystem median, but the material is coherent to one procedure and deferral is real and repeated: the config schema, the worked filter examples, and the journal append mechanics are all pushed into a single on-demand REFERENCE.md rather than carried inline. Not a 5 only because the always-loaded body still sits well above the median despite that deferral.",
+      "evidence": [
+        {"quote": "mechanics in [REFERENCE.md](REFERENCE.md). GitHub: one issue per"}
+      ]
+    },
+    "D6": {
+      "score": 3,
+      "rationale": "The description is topically clear and front-loads concrete destinations plus literal trigger phrases, but 'End-of-session capture' shares almost all of its vocabulary with the plausible sibling it explicitly defers to; choosing between a wrap and a full end-of-session pass is decided by the body's first table, not by the description.",
+      "evidence": []
+    },
+    "D7": {
+      "score": 4,
+      "rationale": "One procedure with one entry condition — everything from the destinations table through the filter to the five steps feeds the same wrap pass, and the upstream-candidate handling is a branch inside Step 4 rather than an independent procedure. It is not a 5 because the Auto-surfacing section documents a Stop hook's behaviour that no step consumes, and the upstream file-now hand-off chain is a self-contained sub-workflow most invocations will never reach.",
+      "evidence": [
+        {"quote": "| Upstream candidate (third-party repo) | Per-candidate routing in Step 4 (track for later **or** verify-then-file) |"}
+      ]
+    },
+    "D8": {
+      "score": 4,
+      "rationale": "Most instructions decompose into transcript-observable conditions: confirm via AskUserQuestion rather than ending the turn, annotate before closing, address tasks by resolved UUID, check a candidate against the digest sections before adding, one issue per follow-up. The central signal filter is irreducibly judgemental ('log only what the user would miss tomorrow'), but even that is given an observable proxy in the item-count bound, which is why this is 4 rather than 3.",
+      "evidence": [
+        {"quote": "Resolve numeric task IDs to UUIDs at read time (`task _get <id>.uuid`)"},
+        {"quote": "Then confirm with **AskUserQuestion** — options like \"Apply\", \"Apply"},
+        {"quote": "3-6 items per wrap is the right shape; 10+ means the filter is too loose."}
+      ]
+    }
+  },
+  "body_chars": 10335,
+  "sidecars": ["REFERENCE.md"]
+}

@@ -1,0 +1,71 @@
+{
+  "unit": "evaluate-plugin/skills/evaluate-legibility/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "weak-model-gate",
+  "judge_id": "j2",
+  "dimensions": {
+    "D1": {
+      "score": 5,
+      "rationale": "The spine is an imperative four-step procedure opened by an explicit execution directive, with concrete branch points (STATUS=ERROR -> stop; genuine gap vs test artifact). The declarative material that remains (the triage table, the verdict-field table) is consumed by the step it sits in or by the reporting step, and the dispatch rationale is explicitly not restated. Mixing in background prose that fed no step would have moved this down.",
+      "evidence": [
+        {"quote": "Execute this legibility gate:"},
+        {"quote": "If `STATUS=ERROR`, report the `ERROR=` line and stop (bad argument or missing SKILL.md)."}
+      ]
+    },
+    "D2": {
+      "score": 4,
+      "rationale": "Failure modes are attached to the steps they threaten rather than parked in a generic gotchas section: Step 3 carries a two-column table of observed false-positive symptoms from the reader ('What is plugin X?' when X is in frontmatter, REFERENCE.md absent) so the reader can recognise the artifact in progress, and the advisory caveat names haiku non-determinism as the cause. What holds it below 5 is that no failure is costed from observed practice - the symptoms are named, but not what a mis-triage actually cost.",
+      "evidence": [
+        {"quote": "artifacts of reading a skill in isolation. Triage before recommending changes:"},
+        {"quote": "The verdict is **advisory, not a CI gate**: haiku is non-deterministic, so a `needs-revision` is a prompt to look, never a merge block."}
+      ]
+    },
+    "D3": {
+      "score": 4,
+      "rationale": "It gives the exact script invocation, the exact delimiters the output is bracketed by, the exact dispatch block (subagent_type plus model), an exact return schema, and an explicit unmet-precondition test via STATUS=ERROR - well past leaving edge conditions to the reader. It stops short of 5 on a real wiring drift: Step 1 asserts the Context block ran emit-legibility-prompt.sh, but the declared Context command is a find over SKILL.md files, so the PROMPT block Step 1 tells the agent to read is not actually produced by the section it points at.",
+      "evidence": [
+        {"quote": "| Resolve path + emit prompt | `bash evaluate-plugin/skills/evaluate-legibility/scripts/emit-legibility-prompt.sh --plugin-skill <plugin/skill>` |"},
+        {"quote": "`verdict` of `clear` or `needs-revision`."}
+      ]
+    },
+    "D4": {
+      "score": 5,
+      "rationale": "The When to Use table pairs every applicability boundary with a named destination instead of just declaring scope - executability goes to /evaluate:matrix, structural lint to the compliance script, outward human artifacts to cold-read-gate, effectiveness to /evaluate:skill. It also supplies an escape from its own output: the verdict is declared advisory rather than binding, and Step 3 instructs the reader to discard the instrument's own complaints when they are artifacts of isolation.",
+      "evidence": [
+        {"quote": "| Checking a SKILL.md reads clearly to a fresh agent | Testing whether the skill *executes* correctly -> `/evaluate:matrix` |"},
+        {"quote": "The verdict is **advisory, not a CI gate**: haiku is non-deterministic, so a `needs-revision` is a prompt to look, never a merge block."}
+      ]
+    },
+    "D5": {
+      "score": 5,
+      "rationale": "The always-loaded body is 5164 characters, about 1291 tokens - at the ~1.5k ecosystem median - and the bulk of the detail is genuinely deferred: the reader prompt itself lives in the sibling emit-legibility-prompt.sh rather than inline, and the dispatch rationale is pointed at another skill by name with an explicit refusal to restate it. Nothing in the body is paid for by a run that never uses it.",
+      "evidence": [
+        {"quote": "See that skill for the dispatch rationale; this skill does not restate it."}
+      ]
+    },
+    "D6": {
+      "score": 4,
+      "rationale": "The description names the discriminating mechanism (a zero-context agent reader) and the discriminating question (does the skill say when to invoke it and how to start), which separates it cleanly from executability and effectiveness siblings on a description read alone. It shares the cold-read vocabulary with a plausible near sibling that gates outward artifacts for a human reader; 'a SKILL.md' narrows it, but that one contrast leans on knowing the sibling's own wording rather than being stated here.",
+      "evidence": [
+        {"quote": "Cold-read a SKILL.md with a zero-context agent reader to check its intent is legible. Use when validating whether a skill says clearly when to invoke it and how to start."}
+      ]
+    },
+    "D7": {
+      "score": 5,
+      "rationale": "One procedure with one entry condition: a single plugin/skill-name target, dispatched to one reader, triaged, reported. Every section serves that one path - Parameters declares the single argument, the two Agentic Optimizations rows are the emit script and its test, and the Quick Reference defines exactly the four fields Step 4 prints. No second procedure is bundled in.",
+      "evidence": [
+        {"quote": "Dispatch an isolated, zero-context **agent reader** at a single `SKILL.md` and ask it the only two questions that matter for reuse:"}
+      ]
+    },
+    "D8": {
+      "score": 5,
+      "rationale": "Nearly every instruction decomposes into a condition an observer could check in a transcript: exactly one Task subagent on haiku, no added context and no repo exploration by the reader, the three named fields captured, the advisory framing stated in the report, one quoted blocking phrase and one recommendation per gap, and an explicit prohibition on editing the target. The only dispositional element is the triage judgement itself, and even that is backed by an enumerated row list.",
+      "evidence": [
+        {"quote": "Do not add context, do not let it explore the repo. Capture its final message:"},
+        {"quote": "Do **not** edit the skill"}
+      ]
+    }
+  },
+  "body_chars": 5164,
+  "sidecars": ["scripts/emit-legibility-prompt.sh"]
+}

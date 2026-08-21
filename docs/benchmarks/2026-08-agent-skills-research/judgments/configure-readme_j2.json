@@ -1,0 +1,66 @@
+{
+  "unit": "configure-plugin/skills/configure-readme/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "file-generator",
+  "judge_id": "j2",
+  "dimensions": {
+    "D1": {
+      "score": 4,
+      "rationale": "The spine is an explicit ten-step imperative sequence under an execution directive, with real decision points (early exit on --check-only, conditional apply on --fix, conditional logo handling), and bulk reference material is pushed to REFERENCE.md. It falls short of 5 because some declarative blocks (the When-to-Use table, the Output restatement, the Agentic Optimizations command catalogue) do not feed any step; folding or deferring those would move it up.",
+      "evidence": [
+        {"quote": "Execute this README configuration workflow:"},
+        {"quote": "If `--check-only` is set, stop here."}
+      ]
+    },
+    "D2": {
+      "score": 2,
+      "rationale": "There is no gotchas/warnings section and no step carries a failure identity: nothing says which approach was tried, what breaks, what the symptom looks like, or what it costs. The single outcome-shaped signal is a contingency branch for absent package files, which anticipates a condition without naming an observed failure or its consequence. Naming, per step, what goes wrong (e.g. a tree binary that is absent, a badge URL that renders broken, a logo path that 404s) would raise this.",
+      "evidence": [
+        {"quote": "**Fallback detection** when no package file matches:"}
+      ]
+    },
+    "D3": {
+      "score": 4,
+      "rationale": "Commands are exact and copy-pasteable rather than paraphrased (the tree invocation with its ignore list, the per-package-manager command table, the literal .project-standards.yaml block), and the Context block auto-detects environment state before execution. It is not a 5 because setup preconditions are unstated - nothing says tree must be installed or how to tell when it is not - and the exact output shapes for the compliance and results reports live only in the sidecar.",
+      "evidence": [
+        {"quote": "tree -L 2 -I 'node_modules|target|__pycache__|.git|dist|build' --dirsfirst"},
+        {"quote": "- README exists: !`find . -maxdepth 1 -name 'README.md'`"}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "The opening table is a genuine two-column applicability boundary: five rows each name a condition where this skill is the wrong tool and name the alternative to use instead, and flags like --no-logo and --check-only give in-procedure latitude. It stops short of 5 because there is no escape once the procedure is underway - nothing tells the reader what to do if the generated standard-style README is simply wrong for this project.",
+      "evidence": [
+        {"quote": "Writing detailed API documentation — use `/configure:docs`"}
+      ]
+    },
+    "D5": {
+      "score": 4,
+      "rationale": "The always-loaded body is 7609 characters (~1900 tokens), moderately above the ~1.5k ecosystem median, and deferral is real and repeated - templates, badge URL patterns, package-file examples, and both report formats are all pointed at a single on-demand REFERENCE.md rather than inlined. It is not a 5 because the Style Levels table is duplicated in both body and sidecar and the Output/Agentic Optimizations sections restate material already covered by the steps.",
+      "evidence": [
+        {"quote": "For the full README template and badge URL patterns, see [REFERENCE.md](REFERENCE.md)."}
+      ]
+    },
+    "D6": {
+      "score": 4,
+      "rationale": "The description names a concrete artifact (README.md) plus distinctive contents (logo, badges, tech stack, shields.io) and three concrete triggers, so it is decidable against plausible siblings like a docs-generation or a docs-hosting skill without opening either body. It is not a 5 because the distinguishing condition is implied by the artifact name rather than stated - the description never says what it is not for, so a sibling that also touches README content would need the body to separate.",
+      "evidence": [
+        {"quote": "README.md with logo, badges, features, tech stack sections. Use when creating a README, auditing missing sections, or adding shields.io badges."}
+      ]
+    },
+    "D7": {
+      "score": 4,
+      "rationale": "One artifact, one procedure: every step from metadata detection through validation and reporting serves generating or auditing a single README, and the audit path is an early exit from that same procedure rather than a second bundled workflow. It is short of 5 because standards-tracking is an adjacent concern serving an external orchestrator that could plausibly stand alone.",
+      "evidence": [
+        {"quote": "### Step 8: Update standards tracking"}
+      ]
+    },
+    "D8": {
+      "score": 3,
+      "rationale": "Much of the procedure decomposes into observable conditions - a twelve-item section checklist, an exact tree invocation, a literal YAML block to write, a hard stop on --check-only - so a transcript would show whether they happened. Against that, several instructions are dispositional (suggest a placeholder logo, suggest tools, offer suggestions for improvement, include content quality checks) with no observable correlate, which is exactly the mixed picture the anchor describes.",
+      "evidence": []
+    }
+  },
+  "body_chars": 7609,
+  "sidecars": ["REFERENCE.md"]
+}

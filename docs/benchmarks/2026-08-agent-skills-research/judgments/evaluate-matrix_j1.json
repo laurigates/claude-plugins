@@ -1,0 +1,72 @@
+{
+  "unit": "evaluate-plugin/skills/evaluate-matrix/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "weak-model-gate",
+  "judge_id": "j1",
+  "dimensions": {
+    "D1": {
+      "score": 4,
+      "rationale": "The spine is an imperative five-step procedure opened by a direct execution directive, with real decision points inside steps (stop if no evals.json; judge only on deferral; skip the baseline under a flag). It falls short of 5 because two late tables carry declarative material no step consumes: Quick Reference restates the Parameters table almost verbatim, and Agentic Optimizations lists a command (inspect_eval.sh) the procedure never calls. Folding those into the steps or the sidecar would make it a 5.",
+      "evidence": [
+        {"quote": "Execute this cross-model matrix:"},
+        {"quote": "### Step 2: Run the matrix (serialized)"}
+      ]
+    },
+    "D2": {
+      "score": 4,
+      "rationale": "Two failure modes are attached to the exact steps they threaten and each names both the observed symptom and its cost: the missing-fixture case names the wrong verdict it produces, and the parallel-dispatch case names the rate-limit cascade. It is not a 5 because Steps 1, 4 and 5 carry no such annotation - nothing says what a mis-aggregated matrix or a mis-fired executability flag looks like in progress.",
+      "evidence": [
+        {"quote": "a false negative that poisons this gate"},
+        {"quote": "`[1m]` models hit cascading rate limits with concurrent subagents"}
+      ]
+    },
+    "D3": {
+      "score": 5,
+      "rationale": "Every stage is an exact invocation with real flags, the environment is pinned (CLAUDE_PLUGIN_ROOT, exact model ids, run-dir scaffold and teardown), and the machine-readable handoffs are named by key rather than described (WORKDIR=, JUDGE_PENDING > 0), with numeric verdict thresholds for the two flags. The unmet-precondition case is explicit and terminal, and the full schema is deferred to a sidecar rather than paraphrased.",
+      "evidence": [
+        {"quote": "Parse `WORKDIR=`; the subagent operates there."},
+        {"quote": "Pinned model ids: `opus`=`claude-opus-4-8`, `sonnet`=`claude-sonnet-4-6`,"},
+        {"quote": "Only if it reports `JUDGE_PENDING > 0`, dispatch the `eval-grader` agent"}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "A four-row table names conditions under which this is the wrong skill and routes each to a specific named alternative, and Step 1 gives a hard stop with a redirect when the entry condition is unmet. It stops short of 5 because there is no escape from the procedure once running - nothing tells the reader what to do if the matrix verdict itself looks wrong for the situation (e.g. a haiku failure the reader believes is an artifact rather than a real executability gap).",
+      "evidence": [
+        {"quote": "Checking whether the SKILL.md *reads* clearly -> `/evaluate:legibility`"},
+        {"quote": "point at `/evaluate:skill --create-evals`"}
+      ]
+    },
+    "D5": {
+      "score": 5,
+      "rationale": "The body is 6,876 characters, about 1,719 estimated tokens - essentially at the ecosystem median - while the expensive material is genuinely deferred: the eval schema to a references file, the design rationale to a docs file, and all mechanics to scripts the steps invoke rather than inline. Nothing large is paid for on invocations that do not need it.",
+      "evidence": [
+        {"quote": "([`references/schemas.md`](../../references/schemas.md))"}
+      ]
+    },
+    "D6": {
+      "score": 5,
+      "rationale": "The description names the discriminating condition rather than the topic: 'executability' versus comprehension, cross-model with real execution, weak-model focus. Against the plausible siblings in the same family (a legibility gate, a single-model effectiveness check, an improver) the choice is decidable from the description alone - the phrase 'not just comprehend it' rules out the nearest neighbour explicitly.",
+      "evidence": [
+        {"quote": "Use when checking whether a weak model can actually do a skill, not just comprehend it."}
+      ]
+    },
+    "D7": {
+      "score": 5,
+      "rationale": "One procedure with one entry condition (a target skill that has an evals.json), and every section feeds it: parameters bind the loop, the five steps run and grade and render it, and the Minimal Provable Increment is a narrowed instance of the same run rather than a second procedure. Nothing bundled here could stand alone as separate work.",
+      "evidence": [
+        {"quote": "Run the matrix for **`git-plugin/git-commit` only**"}
+      ]
+    },
+    "D8": {
+      "score": 5,
+      "rationale": "Nearly every instruction decomposes into a condition an observer could check in a transcript: which commands ran with which flags, whether dispatches were sequential or batched, whether the judge fired only on a named deferral count, whether the aggregate file carries the named fields, and whether the flag was called out. There is no dispositional filler - no 'consider', no 'be careful' - to leave unverifiable.",
+      "evidence": [
+        {"quote": "**Serialize** the dispatches — one at a time, never a parallel batch."},
+        {"quote": "Only if it reports `JUDGE_PENDING > 0`, dispatch the `eval-grader` agent"}
+      ]
+    }
+  },
+  "body_chars": 6876,
+  "sidecars": []
+}
