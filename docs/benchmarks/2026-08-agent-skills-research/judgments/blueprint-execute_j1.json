@@ -1,0 +1,72 @@
+{
+  "unit": "blueprint-plugin/skills/blueprint-execute/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "multi-step-orchestrator",
+  "judge_id": "j1",
+  "dimensions": {
+    "D1": {
+      "score": 4,
+      "rationale": "The spine is an ordered, first-match-wins ladder of ten numbered state checks, each with a concrete condition and a committed action plus an explicit Exit, preceded by a parallel context-gathering phase. It falls short of 5 only because a declarative tail (Idempotency Guarantees, Integration with Existing Commands, the closing Note) sits in the always-loaded body without feeding any step; moving those to the sidecar would have made it exemplary.",
+      "evidence": [
+        {"quote": "Run through these checks in order, executing the first matching action:"},
+        {"quote": "**If NOT initialized**: Run `/blueprint:init`, then **Exit**."}
+      ]
+    },
+    "D2": {
+      "score": 2,
+      "rationale": "Nothing records a path that was tried and failed, a symptom to recognise, or a cost. The one guardrail-shaped sentence is a constraint on quiet mode, and the Idempotency table asserts safety properties rather than reporting observed consequences; there is no guidance for a malformed manifest, a stale hash, or an action that half-completes. Attaching even one observed failure to the step it threatens would move this to 3.",
+      "evidence": [
+        {"quote": "Quiet mode never skips confirmation gates that guard writes"},
+        {"quote": "| State detection is read-only | Only reads files until action is chosen |"}
+      ]
+    },
+    "D3": {
+      "score": 4,
+      "rationale": "Most steps carry exact invocations rather than descriptions: literal jq filters against a named manifest path, an explicit current format version, explicit schedule semantics (daily = >24h), a bundled config script resolved via CLAUDE_SKILL_DIR, and a full read-modify-write for the registry entry. It is not a 5 because expected output shapes are never stated, tool preconditions (jq present, manifest parseable) are unstated with no way to tell one is unmet, and Step 4 is the one check given no command at all.",
+      "evidence": [
+        {"quote": "jq -r '.task_registry | to_entries[] | select(.value.enabled == true) | select(.value.auto_run == true) | .key' docs/blueprint/manifest.json"},
+        {"quote": "Check each generated rule hash against manifest:"}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "The opening table names four situations where this skill is the wrong choice and routes each to a specific named alternative, the body reaffirms that direct commands remain available, and Step 10 gives the procedure a graceful exit when no action is detectable. It stops short of 5 because there is no guidance for the case where the detection ladder itself is wrong for the repository, only for the case where the user already knows which command they want.",
+      "evidence": [
+        {"quote": "Use blueprint-upgrade instead when you know you need to migrate"},
+        {"quote": "This meta command **delegates** to existing blueprint commands rather than replacing them."}
+      ]
+    },
+    "D5": {
+      "score": 4,
+      "rationale": "Body is 8,768 characters (~2,192 tokens), roughly 1.5x the ~1.5k ecosystem median, but the material is coherent to one procedure and the genuinely bulky parts (all AskUserQuestion prompt templates, four worked examples, common workflows, sync details) are deferred to a linked REFERENCE.md that is never loaded unless needed. Trimming the non-consuming declarative tail would put the body at the median and earn a 5.",
+      "evidence": [
+        {"quote": "For detailed AskUserQuestion templates, examples, and common workflows, see [REFERENCE.md](REFERENCE.md)."}
+      ]
+    },
+    "D6": {
+      "score": 5,
+      "rationale": "The description names the distinguishing condition rather than just the topic: it is the entry point invoked with no subcommand, and it quotes the literal utterances that select it. Against the obvious near siblings in a blueprint family (a status viewer, an initialiser, an upgrader) the choice is decidable from the description alone, without opening any body.",
+      "evidence": [
+        {"quote": "Blueprint meta command: determine and execute the next logical action."},
+        {"quote": "Use when asked 'what's next?', 'continue blueprint', or 'run blueprint' without a subcommand."}
+      ]
+    },
+    "D7": {
+      "score": 5,
+      "rationale": "One entry condition (invoked without a subcommand) and one procedure (detect state, execute exactly one action, exit). Everything else present serves it: the interaction-mode resolution governs the prompts inside the ladder, the registry update is the post-action bookkeeping for whichever branch fired, and the optimization table is a list of shortcuts into the same flow. No section reads as a second procedure that could stand alone.",
+      "evidence": [
+        {"quote": "Executes ONE action per run, then exits"}
+      ]
+    },
+    "D8": {
+      "score": 4,
+      "rationale": "Most instructions decompose into transcript-observable conditions: a named command was run, a specific slash command was invoked, exactly one action executed before exit, the registry entry was updated with the given jq. It misses 5 because several steps are dispositional with no observable correlate, notably the consolidation of Phase 0 findings and 'Report results briefly', and the stale-hash comparison in Step 4 defines no checkable operation.",
+      "evidence": [
+        {"quote": "Consolidate findings into unified context: git quality, documentation coverage, blueprint health, actionable items."},
+        {"quote": "**If NOT initialized**: Run `/blueprint:init`, then **Exit**."}
+      ]
+    }
+  },
+  "body_chars": 8768,
+  "sidecars": ["REFERENCE.md"]
+}

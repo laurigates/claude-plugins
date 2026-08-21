@@ -1,0 +1,60 @@
+{
+  "unit": "tools-plugin/skills/fd-file-finding/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "cli-wrapper",
+  "judge_id": "j2",
+  "dimensions": {
+    "D1": {
+      "score": 1,
+      "rationale": "The body is a topically-grouped option catalogue: advantages list, flag sections (type, depth, hidden, size, mtime), a placeholder table, a flags quick-reference, and a closing pitch. There is no ordered sequence of steps and no decision point that commits the reader to an action; a reader finishes knowing about fd's surface area, not what to do first. Numbering the invocation path (detect scope, choose filter, verify result count, then act) with named decision points would move this up.",
+      "evidence": [
+        {"quote": "- Fast parallel execution (written in Rust)"},
+        {"quote": "This makes fd the preferred tool for fast, intuitive file finding in development workflows."}
+      ]
+    },
+    "D2": {
+      "score": 1,
+      "rationale": "No failure mode is recorded anywhere: no symptom, no cost, no path that was tried and abandoned. The one comparative claim is an unlabelled preference assertion with no observed consequence attached, and the destructive examples (fd -e pyc -x rm, fd node_modules -t d -x rm -rf) carry no warning about what a mis-scoped pattern deletes. Attaching an observed symptom to even one or two steps would raise this.",
+      "evidence": [
+        {"quote": "**Note:** Use `--format '{//}'` instead of piping to xargs - it's faster and simpler."}
+      ]
+    },
+    "D3": {
+      "score": 3,
+      "rationale": "Invocations are exact and copy-pasteable throughout, and the placeholder table ({}, {/}, {//}, {.}) does specify output shape for the --format path. But nothing states environment or lifecycle preconditions (is fd installed, which version, what the gitignore/hidden defaults silently exclude), the expected output shape of a plain search is never shown, and there is no way to tell an unmet precondition from an empty result set.",
+      "evidence": []
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "The skill states where it does not apply and names the replacement in three places: two When-to-Use tables routing content search to rg-code-search and JSON work to jq-json-processing, a Best Practices block naming four conditions that belong to find instead, and an inline note on when xargs is the right tool after all. It stops short of 5 only because it never addresses the case where its own guidance is wrong for the situation at hand.",
+      "evidence": [
+        {"quote": "**When to Use find Instead**"},
+        {"quote": "# When xargs IS useful: complex pipelines or non-fd inputs"}
+      ]
+    },
+    "D5": {
+      "score": 3,
+      "rationale": "Body is 9,119 chars, roughly 2,280 estimated tokens, so about 1.5x the ~1.5k SKILL.md median but within the <2.5k total-token median given there are no sidecars. The material is coherent to one topic, which is what the anchor asks for at 3. Working against it: nothing is deferred (no REFERENCE.md exists) and several commands are repeated verbatim across the Path-Based, Best Practices, and Common Command Patterns sections, so a share of the always-loaded cost is duplication.",
+      "evidence": []
+    },
+    "D6": {
+      "score": 4,
+      "rationale": "The description front-loads the tool name and then names the distinguishing condition explicitly (files by name, extension, or pattern), which is what separates it from a content-search sibling without opening either body. It falls short of 5 because a plausible sibling covering glob/path matching would share nearly all of that vocabulary; the discriminator is really the tool name rather than the stated condition.",
+      "evidence": [
+        {"quote": "fd fast file finding: smart defaults, gitignore-aware, parallel. Use when searching for files by name, extension, or pattern across directories."}
+      ]
+    },
+    "D7": {
+      "score": 3,
+      "rationale": "One dominant subject (locating files with fd) with adjacent secondary material that could plausibly stand alone: the -x/-X batch-execution section, the cleanup/deletion recipes, the output-format placeholder reference, and the fd-plus-rg integration block are each a separate downstream activity from finding. Nothing here is off-topic, but a run that just needs an extension search pays for the execution and cleanup material too.",
+      "evidence": []
+    },
+    "D8": {
+      "score": 3,
+      "rationale": "Some instructions decompose into observable conditions: whether --format '{//}' was used instead of an xargs pipe, or whether -t f narrowed the type, would both be visible in a transcript. Others are dispositional with no observable correlate: 'when possible', 'if order matters', and 'leverage gitignore' cannot be scored from a trajectory, and the bulk of the body is catalogue rather than instruction, so there is little to extract as a constraint in the first place.",
+      "evidence": []
+    }
+  },
+  "body_chars": 9119,
+  "sidecars": []
+}

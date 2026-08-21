@@ -1,0 +1,66 @@
+{
+  "unit": "agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "multi-step-orchestrator",
+  "judge_id": "j1",
+  "dimensions": {
+    "D1": {
+      "score": 4,
+      "rationale": "The spine is the dispatch lifecycle in order (preflight -> scope budget -> return contract -> self-verification -> reviewer verification), each pillar opening with an imperative and a concrete decision point, and closing with an Orchestrator Checklist. It falls short of 5 because a substantial minority of the body is declarative hazard narrative (the nested-repo, GIT_DIR-export, scratchpad-collision, and resume sections) that reads as knowledge about the harness rather than as a step, even though most of it terminates in an instruction.",
+      "evidence": [
+        {"quote": "Before spawning, the orchestrator must verify:"},
+        {"quote": "Every agent prompt must declare:"}
+      ]
+    },
+    "D2": {
+      "score": 5,
+      "rationale": "Nearly every instruction is anchored to an observed failure with its symptom and its cost, attached to the step it threatens: the loud-failure contract names the exact one-word final messages seen and what the harness then does with the worktree; the cwd-reset guardrail names the post-run signal that reveals silent main-repo mutation; the batch-manifest rule cites a batch that completed ~5 of ~23 items invisibly. A reader can recognise each failure while it is happening.",
+      "evidence": [
+        {"quote": "so the harness reads \"no changes\", cleans up the worktree, and the work is lost."},
+        {"quote": "a changed branch or new dirty state is silent main-repo mutation."}
+      ]
+    },
+    "D3": {
+      "score": 5,
+      "rationale": "Preconditions are stated with the exact command that tests them and the exact reading that means 'unmet' (clean-tree check, branch-name availability across local/worktree/remote, session-repo vs target-repo toplevel comparison, empty-vs-dirty worktree discrimination), and environment/lifecycle constraints are explicit (tool surface absent in a sub-agent sandbox, CLAUDE_CODE_REMOTE push delegation, the skill_listing injection tax per agentType). The verbatim return schema itself is deferred to a sidecar, but its fields and the heading it must appear under are named inline.",
+      "evidence": [
+        {"quote": "git -C <worktree> log --oneline origin/main..HEAD"},
+        {"quote": "| SKILL.md description rewrites | `python3 scripts/audit-skill-descriptions.py --strict-all` |"}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "It opens with a four-row table naming the conditions under which a sibling skill applies instead, and several sections give a do-this-instead branch rather than a single mandate (lead-pushes exceptions, agentType selection where paying the catalog tax is correct, SendMessage-resume vs fresh re-dispatch, rate-limit signal treated as backoff rather than failure). It stops short of 5 because there is no escape for the case where this guidance itself is the wrong frame for the situation.",
+      "evidence": [
+        {"quote": "| Use this skill when... | Use `agent-teams` instead when... |"}
+      ]
+    },
+    "D5": {
+      "score": 3,
+      "rationale": "The body is 24,604 characters, roughly 6.2k estimated tokens, about four times the ecosystem median, but the material is one coherent dispatch procedure and the detail is genuinely deferred: a thin REFERENCE.md index routes to four references/*.md files (~43KB) split by the path a run is on, so an invocation loads only the recovery or hazard material it needs. That is squarely the 'larger than median but partially deferred' anchor rather than an undeferred bundle.",
+      "evidence": []
+    },
+    "D6": {
+      "score": 4,
+      "rationale": "The description names the artifact type (dispatch contract), the trigger conditions (fanning out concurrent agents, authoring a lead prompt), and three specific hazards it owns, which discriminates it from a generic multi-agent skill. It is not a 5 because a plausible sibling about agent teams or wave dispatch shares most of its vocabulary, and the body itself carries a When-to-Use table to do that disambiguation, implying the description alone does not fully decide it.",
+      "evidence": [
+        {"quote": "description: Dispatch contract for spawning parallel agents covering worktree collisions, scope overflow, and silent exits. Use when fanning out concurrent agents or authoring a lead prompt."}
+      ]
+    },
+    "D7": {
+      "score": 3,
+      "rationale": "One dominant procedure with a single entry condition (more than one agent running in parallel), and the five pillars plus the recovery sections are contingent branches of that same lifecycle. Adjacent material could plausibly stand alone, though: reviewer-agent verification, the read-only agentType selection with its context-budget economics, and the concurrency/rate-limit sizing table are each their own concern, and most invocations pay for all of them while using one.",
+      "evidence": []
+    },
+    "D8": {
+      "score": 5,
+      "rationale": "Instructions decompose into discrete, transcript-observable conditions, and the skill closes with a checklist that is literally that decomposition (clean tree, unique branch per agent, budgets present in each prompt, schema included verbatim, every return parsed). Even the softer sizing guidance carries numbers (2-3 heavy agents, up to 5 light), so an observer could check compliance rather than judge disposition.",
+      "evidence": [
+        {"quote": "- [ ] Each prompt includes the Return Contract schema verbatim"},
+        {"quote": "- [ ] Working tree clean; no conflicting worktrees"}
+      ]
+    }
+  },
+  "body_chars": 24604,
+  "sidecars": ["REFERENCE.md", "references/dispatch-contract.md", "references/brief-templates.md", "references/failure-recovery.md", "references/worktree-hazards.md"]
+}

@@ -1,0 +1,66 @@
+{
+  "unit": "configure-plugin/skills/configure-readme/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "file-generator",
+  "judge_id": "j1",
+  "dimensions": {
+    "D1": {
+      "score": 4,
+      "rationale": "The spine is an explicit imperative workflow: an 'Execute this...' opener followed by ten numbered, verb-led steps (Detect, Analyze, Generate, Apply, Handle, Detect, Generate, Update, Validate, Report), with a real decision point that halts the run under --check-only. Declarative material (package-manager command table, style levels) sits inside the step that consumes it, and templates/report formats are pushed to REFERENCE.md. It falls short of 5 because several steps state an outcome rather than an action ('Print a section-by-section compliance report', 'Include content quality checks') and the Output/Agentic sections restate the procedure declaratively.",
+      "evidence": [
+        {"quote": "Execute this README configuration workflow:"},
+        {"quote": "If `--check-only` is set, stop here."}
+      ]
+    },
+    "D2": {
+      "score": 2,
+      "rationale": "Almost every instruction is an unlabelled assertion: nothing records which approaches were tried, what a failure looks like in progress, or what a mistake costs. The only outcome-shaped material is a fallback branch for missing package metadata and a 'warn only' link check, neither of which names an observed symptom or consequence. It is above a 1 because those two branches at least acknowledge a failure condition, but there is no gotchas section and no failure is attached to the step it threatens.",
+      "evidence": [
+        {"quote": "**Fallback detection** when no package file matches:"}
+      ]
+    },
+    "D3": {
+      "score": 3,
+      "rationale": "The main path is concrete: the Context block runs real shell probes, Step 6 tabulates exact install/run/test/build commands per package manager, Step 7 gives a full tree invocation with exclusions, and Step 8 gives the literal YAML keys to write. What is missing is the 5-level material: the exact shape of the compliance report and results report is deferred rather than stated, and no precondition is made testable at execution time (nothing says how to tell that `tree` is absent, or what to do then), so edge conditions and setup checks are left to the reader.",
+      "evidence": []
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "The opening table is a two-column applicability boundary: each 'use this skill when' row is paired with a concrete out-of-scope case AND the named alternative to use instead (/configure:docs, /configure:github-pages, direct file editing, release-please). Flags such as --check-only and --no-logo give further escapes from parts of the procedure. It is not a 5 because there is no provision for the case where the skill's own guidance is wrong for the project at hand - e.g. a repo whose README is deliberately non-standard - only for cases that belong to a sibling skill.",
+      "evidence": [
+        {"quote": "Writing detailed API documentation — use `/configure:docs`"}
+      ]
+    },
+    "D5": {
+      "score": 4,
+      "rationale": "Body is 7,610 characters, roughly 1,900 tokens - above the ~1.5k ecosystem median but the same order of magnitude, and the excess is genuinely bounded by four explicit hand-offs to a single REFERENCE.md sidecar (~10k chars) holding the templates, badge URL patterns, package-file examples and report formats that most runs never need. It is not a 5 because material that no step consumes still rides in the always-loaded body: the Style Levels expansion is duplicated in the sidecar, and the Output plus Agentic Optimizations sections largely restate the procedure.",
+      "evidence": [
+        {"quote": "For the full README template and badge URL patterns, see [REFERENCE.md](REFERENCE.md)."}
+      ]
+    },
+    "D6": {
+      "score": 4,
+      "rationale": "The name and description are anchored on a single named artifact and a named service - README.md and shields.io - plus three concrete triggers (creating, auditing missing sections, adding badges). Against the plausible siblings this skill itself names, a reader can decide from the description alone: API documentation and a docs site do not read as 'README.md ... shields.io badges'. It stops short of 5 because it does not state its own boundary (nothing signals that detailed API docs or a docs site belong elsewhere); that disambiguation lives in the body's first table, not in the trigger surface.",
+      "evidence": [
+        {"quote": "README.md with logo, badges, features, tech stack sections. Use when creating a README, auditing missing sections, or adding shields.io badges."}
+      ]
+    },
+    "D7": {
+      "score": 4,
+      "rationale": "One procedure with one entry condition - produce or audit a README for the current project - and the audit path is a prefix of the generate path rather than a second bundled workflow. Detection, section analysis, command discovery, tree generation and validation all feed the single artifact. It is short of 5 because two steps serve a concern outside README production: writing the shared .project-standards.yaml component record, and the asset-creation branch that makes directories and recommends third-party logo tooling.",
+      "evidence": [
+        {"quote": "Update `.project-standards.yaml`:"}
+      ]
+    },
+    "D8": {
+      "score": 4,
+      "rationale": "Most instructions decompose into conditions an observer could check in a transcript: the flag-conditioned halt, the twelve-item section checklist, a fixed tree invocation, the literal YAML keys written to .project-standards.yaml, and four named validations in Step 9. The deduction from 5 is a residue of dispositional guidance with no observable correlate - Step 5's 'suggest' clauses and Step 10's 'recommended next steps' - plus Step 3's unspecified 'content quality checks', which cannot be scored pass or fail from a trajectory.",
+      "evidence": [
+        {"quote": "If `--check-only` is set, stop here."},
+        {"quote": "Suggest creating a simple text-based placeholder or using emoji heading"}
+      ]
+    }
+  },
+  "body_chars": 7610,
+  "sidecars": ["REFERENCE.md"]
+}

@@ -1,0 +1,70 @@
+{
+  "unit": "session-plugin/skills/session-wrap/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "ask-user-question",
+  "judge_id": "j1",
+  "dimensions": {
+    "D1": {
+      "score": 4,
+      "rationale": "The spine is a five-step imperative procedure (Survey, Categorise, Preview and confirm, Apply, Report) opened with an explicit execution directive, and worked examples are pushed to REFERENCE.md. It falls short of 5 because roughly half the body is policy prose that precedes the procedure (Configuration, Destinations, the signal filter, the tracker-dedup section); that material is consumed by Step 2/Step 4, but a reader meets it as declarative doctrine before any step exists. Interleaving the policy into the steps that use it, or deferring more of it, would move this to 5.",
+      "evidence": [
+        {"quote": "Execute this wrap workflow:"},
+        {"quote": "### Step 1: Survey"}
+      ]
+    },
+    "D2": {
+      "score": 5,
+      "rationale": "Failure modes are bound to the specific steps they threaten and carry observed symptoms and costs: Step 3 names the Stop-hook race with the consequence and the fact that it was observed in production, and Step 1 names what a missing flag silently does to the dedup check. The skill also opens by naming the failure it exists to prevent, so a reader can recognise each failure while it is happening rather than after.",
+      "evidence": [
+        {"quote": "Never end the turn on a freeform \"Apply? (y/n)\" text question: ending the turn fires Stop hooks, which can inject content and split the confirmation (this raced the old nudge hook in production)."},
+        {"quote": "without it the section is always empty and the check silently passes against nothing."}
+      ]
+    },
+    "D3": {
+      "score": 5,
+      "rationale": "Invocations are exact and copyable (the survey collector with its flags, task done/annotate/add forms, rc.confirmation:no variants), the digest's expected field names are named (PRS, GITHUB_DRIFT, PR_n_STALE_DAYS, DETECTION=ambiguous), and the environment preconditions are explicit including how to tell one is unmet and what each unmet value implies. The GH_READY/GH_FAIL_REASON passage is the strongest instance: it distinguishes 'unqueried' from 'nothing open' and routes each failure reason to a different action.",
+      "evidence": [
+        {"quote": "bash \"${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh\" --with-commits --with-dedup"},
+        {"quote": "`false` means `PRS`/`GITHUB_DRIFT` are present but **unqueried**, not \"nothing open\""}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "It names three conditions under which a different skill should run, states that out-of-scope sessions get only the taskwarrior pass, tells the agent to skip the journal by default when scope is unclear and to ask once when genuinely ambiguous, and supplies a fallback path when a dependency plugin is absent. It stops short of 5 because every escape is about the situation or a missing dependency; there is no exit for the case where the procedure's own guidance is wrong for the session at hand.",
+      "evidence": [
+        {"quote": "Capturing reusable *learnings* (rules/recipes)"},
+        {"quote": "**Graceful degradation**: if `workflow-orchestration-plugin` is not installed"},
+        {"quote": "Ask once if genuinely ambiguous."}
+      ]
+    },
+    "D5": {
+      "score": 3,
+      "rationale": "The body is 10,337 characters, about 2,584 estimated tokens, roughly 1.7x the ~1.5k ecosystem median, with one REFERENCE.md sidecar (~7.4KB) carrying the config schema, journal mechanics, signal-filter examples and edge cases, linked from three points in the body. That is above median but coherent to a single procedure and genuinely partially deferred, which is the anchor-3 description almost verbatim; it is not near the median, so it does not reach 5.",
+      "evidence": []
+    },
+    "D6": {
+      "score": 3,
+      "rationale": "The description front-loads concrete destinations (taskwarrior, journal, GitHub issues) and literal trigger phrases, which is topically clear. But it shares heavy vocabulary with the siblings the body itself names, session-end and session-distill, and 'done for now' would plausibly retrieve either; the distinguishing condition (this is capture only, not the full pass including distill/feedback) appears in the body's When-to-Use table rather than in the description, so choosing between them needs the body.",
+      "evidence": []
+    },
+    "D7": {
+      "score": 4,
+      "rationale": "One entry condition (the user winds down) and one procedure; the four destinations are branches of a single categorisation table rather than independent procedures, and the upstream-candidate path is delegated to other skills by name rather than inlined. It is not a 5 because a short Auto-surfacing section documents the Stop hook and its opt-out, which serves discovery and configuration rather than the wrap procedure a reader invoked the skill to run.",
+      "evidence": [
+        {"quote": "Execute this wrap workflow:"},
+        {"quote": "## Auto-surfacing"}
+      ]
+    },
+    "D8": {
+      "score": 5,
+      "rationale": "Nearly every instruction decomposes into a condition an observer could check in a transcript: ordering constraints, exclusivity constraints, a prohibition on a specific turn-ending question shape, a required pre-add lookup against named digest sections, and even a numeric shape check on the output. The one judgment-heavy part, the signal filter, is given a two-clause litmus plus that count bound rather than left dispositional.",
+      "evidence": [
+        {"quote": "Annotate **before** closing."},
+        {"quote": "New taskwarrior task **or** journal todo (not both)"},
+        {"quote": "3-6 items per wrap is the right shape; 10+ means the filter is too loose."}
+      ]
+    }
+  },
+  "body_chars": 10337,
+  "sidecars": ["REFERENCE.md"]
+}

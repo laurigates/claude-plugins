@@ -1,0 +1,66 @@
+{
+  "unit": "tools-plugin/skills/jq-json-processing/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "cli-wrapper",
+  "judge_id": "j1",
+  "dimensions": {
+    "D1": {
+      "score": 1,
+      "rationale": "The body is a flat option catalogue: an expertise blurb, then ten command-listing sections and a Quick Reference of operators and functions. There is no ordered sequence of actions anywhere - a reader finishes knowing what jq can do, with no committed procedure to execute. Even one imperative spine (detect input shape, build filter, verify output) with the catalogue deferred would have moved this up sharply.",
+      "evidence": [
+        {"quote": "Expert knowledge for processing, querying, and transforming JSON data using jq, the lightweight and flexible command-line JSON processor."},
+        {"quote": "## Core Expertise"},
+        {"quote": "### Operators"}
+      ]
+    },
+    "D2": {
+      "score": 3,
+      "rationale": "A Troubleshooting section names recognisable failure states (Invalid JSON, Empty Results, Type Errors, Performance Issues) and gives a debugging command for each, which is a real outcome signal. But it sits detached at the end rather than attached to the guidance it threatens, and nothing records what was actually tried, what failed, or what the failure cost.",
+      "evidence": []
+    },
+    "D3": {
+      "score": 4,
+      "rationale": "Every example is a complete, runnable invocation with concrete flags rather than a paraphrase, and the skill states its environment precondition explicitly (install per platform, then verify) plus a checkable validity probe on the input. It falls short of 5 because expected output shapes are described in comments rather than shown, so a reader cannot compare a real result against a stated shape.",
+      "evidence": [
+        {"quote": "jq empty file.json  # Returns exit code 0 if valid"},
+        {"quote": "## Installation"}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "Two explicit tables open the skill naming the conditions under which it does not apply and the named alternative to reach for instead (yq-yaml-processing for YAML/comment-preserving edits, nushell-data-processing for multi-format or aggregation work). It stops short of 5 only because there is no escape for the case where jq is right but this guidance is wrong for the situation.",
+      "evidence": [
+        {"quote": "| Use this skill when... | Use yq-yaml-processing instead when... |"},
+        {"quote": "| Parsing `gh`, `curl`, or `kubectl -o json` responses | Editing YAML in place while preserving comments |"}
+      ]
+    },
+    "D5": {
+      "score": 2,
+      "rationale": "The body is ~10,790 characters (~2,700 tokens), roughly 1.8x the ~1.5k ecosystem median, and the directory holds no sidecar at all - so every invocation pays in full for material most runs never touch, including platform install commands and an external links section. It is not many multiples of the median, which keeps it off a 1, but deferral here is zero rather than partial.",
+      "evidence": [
+        {"quote": "## Installation"},
+        {"quote": "## Resources"}
+      ]
+    },
+    "D6": {
+      "score": 3,
+      "rationale": "The name and the front-loaded 'jq JSON processing' make the tool unmistakable, but the trigger clause that follows is generic JSON work (parsing files, filtering arrays/objects, transforming structures, extracting fields) that a sibling JSON-capable data skill would match just as well. The skill itself concedes this by spending its first two tables disambiguating against two named siblings - work the description does not do.",
+      "evidence": []
+    },
+    "D7": {
+      "score": 2,
+      "rationale": "Everything shares the tool, but the sections are independent use cases rather than one procedure: log analysis, CSV/JSON conversion, config-file editing, cross-tool piping, troubleshooting, and installation each stand alone and each is paid for on every load. There is no single entry condition and no dominant procedure the rest of the material serves.",
+      "evidence": [
+        {"quote": "## Integration with Other Tools"},
+        {"quote": "### Log Analysis"}
+      ]
+    },
+    "D8": {
+      "score": 3,
+      "rationale": "The command examples decompose cleanly into observable constraints - whether -r or -c was passed, whether jq empty was run - so an observer could check them from a transcript. The Best Practices section that carries the actual guidance is the other half: several entries are dispositional preferences with no observable correlate, so a trajectory could satisfy or violate them invisibly.",
+      "evidence": []
+    }
+  },
+  "body_chars": 10790,
+  "sidecars": []
+}

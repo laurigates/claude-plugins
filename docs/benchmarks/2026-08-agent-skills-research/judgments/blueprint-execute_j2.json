@@ -1,0 +1,70 @@
+{
+  "unit": "blueprint-plugin/skills/blueprint-execute/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "multi-step-orchestrator",
+  "judge_id": "j2",
+  "dimensions": {
+    "D1": {
+      "score": 4,
+      "rationale": "The spine is an explicit ordered dispatch: ten numbered state checks, each with a command and an if/then action terminating in Exit, introduced by an imperative first-match directive. It falls short of 5 because roughly a quarter of the body (Idempotency Guarantees, Integration with Existing Commands, Agentic Optimizations, the closing Note) is declarative framing that no step consumes and that is not deferred to the sidecar.",
+      "evidence": [
+        {"quote": "Run through these checks in order, executing the first matching action:"},
+        {"quote": "**If NOT initialized**: Run `/blueprint:init`, then **Exit**."}
+      ]
+    },
+    "D2": {
+      "score": 2,
+      "rationale": "No failure mode is named anywhere: no step says what a wrong or absent result looks like, what happens when jq/manifest parsing fails, or what a mis-detected state costs. The only outcome-adjacent material is a boundary statement in Interaction Mode and a guarantees table, both asserted rather than observed, so this sits just above the pure-unlabelled-assertion anchor. Naming even one observed misfire per step (e.g. what a stale-hash false positive did) would move it up.",
+      "evidence": [
+        {"quote": "Quiet mode never skips confirmation gates that guard writes"},
+        {"quote": "**Concept**: Run this command anytime to automatically determine what should happen next in your blueprint workflow. Safe to run repeatedly - it's idempotent and will always figure out the right action."}
+      ]
+    },
+    "D3": {
+      "score": 4,
+      "rationale": "Most steps carry an exact runnable invocation with real paths and full jq expressions, and the initialization/upgrade preconditions are stated as literal detection commands plus a pinned version constant, so a reader can tell mechanically when a precondition is unmet. It is not a 5 because no expected output shape is given for any command and Step 4 (stale/modified hash comparison) is prose only, with no invocation at all.",
+      "evidence": [
+        {"quote": "test -f docs/blueprint/manifest.json"},
+        {"quote": "jq -r '.task_registry | to_entries[] | select(.value.enabled == true) | select(.value.auto_run == true) | .key' docs/blueprint/manifest.json"}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "The opening table pairs every applicability row with a named alternative skill, and the closing section plus the optimizations table explicitly tell the reader to bypass this orchestrator and invoke the specific command directly. It stops short of 5 because it never addresses the case where the auto-detection itself picks wrongly for the situation; the only in-flow fallback is Step 10 deferring to status.",
+      "evidence": [
+        {"quote": "| Use this skill when... | Use blueprint-status instead when... |"},
+        {"quote": "Users can still run specific commands directly when they know what they want."}
+      ]
+    },
+    "D5": {
+      "score": 3,
+      "rationale": "Body is 8,769 chars (~2,192 tokens), roughly 1.5x the ~1.5k ecosystem median, but the material is coherent to the single dispatch procedure and there is real, signposted deferral: a 7,845-char REFERENCE.md holds all ten AskUserQuestion templates, four worked examples, workflows, and the sync/schedule detail. The residue that keeps it off 5 is the non-procedural tail that could equally have been deferred.",
+      "evidence": []
+    },
+    "D6": {
+      "score": 5,
+      "rationale": "The description names the exact distinguishing condition against its own siblings - invocation without a subcommand - alongside the literal trigger phrases, so a reader choosing between this and blueprint-status/blueprint-init/blueprint-upgrade can decide from the description alone. The 'meta command' framing further separates it from every concrete blueprint-* sibling without opening any body.",
+      "evidence": [
+        {"quote": "Use when asked 'what's next?', 'continue blueprint', or 'run blueprint' without a subcommand."}
+      ]
+    },
+    "D7": {
+      "score": 4,
+      "rationale": "One procedure with one entry condition - detect state, execute exactly one action, exit - and the ten steps plus the post-action registry write all serve it. It is not a 5 because the Interaction Mode block is a cross-cutting automation policy (resolving a shared config script, citing an ADR) that reads as adjacent material capable of standing alone rather than as a step of this dispatch.",
+      "evidence": [
+        {"quote": "| Single action execution | Executes ONE action per run, then exits |"},
+        {"quote": "Before any closing `AskUserQuestion` menu, resolve the automation config:"}
+      ]
+    },
+    "D8": {
+      "score": 4,
+      "rationale": "Most instructions decompose into discrete conditions an observer could confirm from a transcript: a specific command run, a version threshold compared, a named slash command delegated to, and a single-action-then-exit invariant. A handful remain dispositional or unobservable - 'Report results briefly', 'Consolidate findings into unified context', and the uninstrumented hash comparison in Step 4 - which keeps it off 5.",
+      "evidence": [
+        {"quote": "**If manifest version < 3.0.0**: Run `/blueprint:upgrade`, then **Exit**."},
+        {"quote": "| Single action execution | Executes ONE action per run, then exits |"}
+      ]
+    }
+  },
+  "body_chars": 8769,
+  "sidecars": ["REFERENCE.md"]
+}

@@ -1,0 +1,73 @@
+{
+  "unit": "git-plugin/skills/git-commit/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "convention-enforcer",
+  "judge_id": "j2",
+  "dimensions": {
+    "D1": {
+      "score": 4,
+      "rationale": "The spine is an ordered five-step workflow (Assess State, Stage Changes, Run Pre-commit Hooks, Detect Related Issues, Create Commit), each carrying concrete commands and at least one real decision point. It falls short of 5 because a meaningful tail of the body is declarative and feeds no step: a numbered Best Practices list, a Composability section about other skills, and two separate 'when to use' blocks. Folding those into the steps or deferring them would move it to 5.",
+      "evidence": [
+        {"quote": "If `.pre-commit-config.yaml` exists:"},
+        {"quote": "1. **One logical change per commit** - Easier to review and revert"}
+      ]
+    },
+    "D2": {
+      "score": 4,
+      "rationale": "One failure mode is annotated exactly as the finding prescribes: the heredoc escaping note is attached to the step it threatens, names the observable symptom (a literal backslash visible in git log) and its cost (an --amend to clean up). The rest is weaker: the Error Handling section lists symptoms without the consequence or the observed cost, and the 're-stage after formatters' hazard states the fix without naming what going wrong looks like.",
+      "evidence": [
+        {"quote": "produces a literal backslash in the commit message that survives into `git log` and needs an `--amend` to clean up."},
+        {"quote": "# If hooks modify files (formatters), re-stage:"}
+      ]
+    },
+    "D3": {
+      "score": 4,
+      "rationale": "Commands are exact and flag-complete rather than paraphrased, the commit invocation is given as a literal quoted heredoc, and an Output section fixes the expected report shape. It stops short of 5 because environment preconditions are only partly covered: the pre-commit config check is explicit, but there is no test for gh availability/auth or for a missing remote before Step 4 runs, and no expected output shape is given for the diagnostic commands themselves.",
+      "evidence": [
+        {"quote": "git status --porcelain=v2 --branch"},
+        {"quote": "gh issue list --state open --json number,title,labels --limit 30"}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "The skill states its scope limit and, unusually, says what to do instead in each case: a table routes four adjacent intents to named alternative skills, and a pre-commit gate names verdicts under which the procedure must stop and reconcile rather than proceed. It is not a 5 because there is no general escape for the case where the procedure itself is wrong for the situation - every exit named is a pre-enumerated one.",
+      "evidence": [
+        {"quote": "Use `git-commit-push-pr` to chain commit + push + PR creation in one step"},
+        {"quote": "`pr_merged` or `behind` — stop and reconcile"}
+      ]
+    },
+    "D5": {
+      "score": 5,
+      "rationale": "The body measures 5311 characters, about 1330 tokens - below the ~1.5k ecosystem median - and there is no sidecar bloat (the only other file is evals.json, not disclosure material). Detail that would have inflated it is pushed out by name: trailer conventions to a sibling skill, issue-detection patterns to another, and the full conventional-commit reference to an external rules file. Nothing here is paid for by runs that do not use it.",
+      "evidence": [
+        {"quote": "For trailer conventions (Co-authored-by, Signed-off-by, BREAKING CHANGE, Release-As), see **git-commit-trailers** skill."}
+      ]
+    },
+    "D6": {
+      "score": 4,
+      "rationale": "The description front-loads concrete trigger phrases and then names the distinguishing condition against its most confusable sibling - local-only versus remote - which makes the git-push choice decidable without opening either body. It is not a 5 because the same description does not separate it from a broader staging/message-convention sibling that the body itself acknowledges; that call still needs the body.",
+      "evidence": [
+        {"quote": "Local commits only — see git-push for remote."},
+        {"quote": "Use `git-commit-workflow` for the broader staging + message convention guidance"}
+      ]
+    },
+    "D7": {
+      "score": 4,
+      "rationale": "One entry condition ('commit') and one procedure, with the scope boundary stated explicitly so push and PR creation stay out. The secondary material - a composability map of other skills' chains and a general Best Practices list - is adjacent rather than integral and could stand alone, which is what keeps it off 5, but it is small and does not constitute a second bundled procedure.",
+      "evidence": [
+        {"quote": "This skill creates **local commits only**. For remote operations:"}
+      ]
+    },
+    "D8": {
+      "score": 4,
+      "rationale": "Most instructions decompose into discretely observable conditions: use a heredoc for the message, do not backslash-escape inside a quoted heredoc, keep the subject under 72 chars, run the exact listed commands, re-stage after formatter hooks. A minority are dispositional or judgement-bound - 'one logical change per commit' and the high/medium confidence issue-matching tiers - which an observer could not adjudicate from a transcript.",
+      "evidence": [
+        {"quote": "**IMPORTANT:** Use HEREDOC directly in the git commit command."},
+        {"quote": "4. **Keep subject under 72 chars** - Better display in git log"},
+        {"quote": "- Directory/component matches (medium confidence)"}
+      ]
+    }
+  },
+  "body_chars": 5311,
+  "sidecars": ["evals.json"]
+}

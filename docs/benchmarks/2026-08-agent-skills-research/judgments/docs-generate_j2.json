@@ -1,0 +1,67 @@
+{
+  "unit": "documentation-plugin/skills/docs-generate/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "file-generator",
+  "judge_id": "j2",
+  "dimensions": {
+    "D1": {
+      "score": 3,
+      "rationale": "There is an identifiable ordered procedure (delegate, then four numbered stages with real branch points on --api/--readme/--changelog), but it is mixed with substantial declarative material that feeds no step: an expertise list for the delegated agent, a dispositional 'documentation standards' stage, and an optional Agent Teams table. Moving the declarative blocks out and making each stage a concrete action the invoker performs would raise it; losing the numbered ordering would drop it.",
+      "evidence": []
+    },
+    "D2": {
+      "score": 1,
+      "rationale": "Every instruction is an unlabelled assertion. Nothing in the body names a failure mode, a symptom, a path that was tried and abandoned, or what a bad outcome looks like - not even for obvious hazards like a repo with no conventional commits or no docstrings. A single 'if X, you will see Y' attached to a step would have lifted this off the floor.",
+      "evidence": [
+        {"quote": "**Delegate this task to the `agents-plugin:docs` agent.**"},
+        {"quote": "3. **Follow documentation standards**:"}
+      ]
+    },
+    "D3": {
+      "score": 2,
+      "rationale": "The Context block carries real executable find invocations, which keeps this off the floor, but the actual work of the skill is entirely at description level: no generator command, no expected output shape, no file paths, and no way to tell whether a precondition is met. It even asks the caller to pass a 'detected documentation framework' without specifying how detection happens.",
+      "evidence": [
+        {"quote": "- Ensure badges are current"},
+        {"quote": "- Detected documentation framework (if any)"}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "The opening table does more than state a boundary - it names four out-of-scope situations and routes each to a specific alternative skill (docs-sync, docs-decommission, docs-latex), and the Agent Teams section explicitly marks itself optional with the default case named. It stops short of 5 because there is no escape from the procedure itself: no guidance for the case where delegation to the docs agent is the wrong move, or where the generated output should not be trusted.",
+      "evidence": [
+        {"quote": "| Producing a CHANGELOG from conventional-commit history | Preparing a service teardown checklist (use docs-decommission) |"},
+        {"quote": "This is optional — the skill works with a single agent for most projects."}
+      ]
+    },
+    "D5": {
+      "score": 4,
+      "rationale": "The body is 3,423 characters (~855 tokens), comfortably under the ~1.5k ecosystem median, and the expensive work is pushed onto a delegated agent rather than carried inline. No sidecar files exist, but at this size none is needed. It is not a 5 because part of the smallness comes from vagueness (see D3) rather than from a deliberate deferral structure.",
+      "evidence": [
+        {"quote": "**Delegate this task to the `agents-plugin:docs` agent.**"}
+      ]
+    },
+    "D6": {
+      "score": 4,
+      "rationale": "The description names both the inputs (code annotations, docstrings, git history) and the three concrete artifacts, which makes it decidable against most plausible siblings without opening the body. It falls short of 5 because the lead phrase 'Generate or update docs' overlaps heavily with any docs-sync/docs-refresh sibling, so the disambiguation rests on the second half of the sentence surviving a read.",
+      "evidence": [
+        {"quote": "description: Generate or update docs from code annotations, docstrings, and git history. Use when wanting API reference, README from code, or CHANGELOG from conventional commits."}
+      ]
+    },
+    "D7": {
+      "score": 2,
+      "rationale": "Three coequal deliverables are bundled behind one entry point - API reference from docstrings, README from code analysis, and CHANGELOG from git history - with different inputs, different outputs, and no dominant procedure among them. A --changelog invocation pays for the API and README branches it will never use. The shared analyze/summarise spine and the small per-branch cost keep it off the floor.",
+      "evidence": [
+        {"quote": "- `--api`: Generate API reference documentation"},
+        {"quote": "- `--changelog`: Update CHANGELOG.md from git history"},
+        {"quote": "If no flags: Generate all documentation"}
+      ]
+    },
+    "D8": {
+      "score": 3,
+      "rationale": "The delegation instruction and the flag branches are checkable in a transcript - an observer can see whether the docs agent was dispatched and whether the named files were produced. But a whole stage is dispositional with no observable correlate, and the summary stage asks for 'suggested improvements' with no criterion. Replacing the standards stage with checkable conditions would raise this.",
+      "evidence": []
+    }
+  },
+  "body_chars": 3423,
+  "sidecars": []
+}

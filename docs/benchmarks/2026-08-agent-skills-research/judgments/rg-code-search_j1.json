@@ -1,0 +1,66 @@
+{
+  "unit": "tools-plugin/skills/rg-code-search/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "cli-wrapper",
+  "judge_id": "j1",
+  "dimensions": {
+    "D1": {
+      "score": 1,
+      "rationale": "The body is an option catalogue organised by feature area (Basic Usage, Advanced Patterns, Advanced Filtering, Output Formatting, Quick Reference) with no ordered steps, no numbered sequence, and no decision points that commit the reader to an action. It opens with a bullet list of tool properties rather than anything to execute. A single ordered procedure with concrete branch points - even a three-step 'narrow scope, then search, then refine' spine - would have moved this to 3.",
+      "evidence": [
+        {"quote": "**ripgrep Advantages**"},
+        {"quote": "- Extremely fast (written in Rust)"},
+        {"quote": "### Essential Options"}
+      ]
+    },
+    "D2": {
+      "score": 1,
+      "rationale": "Every line is an unlabelled assertion or a bare command with a trailing comment; there is no warnings section, no gotcha, no named failure symptom, and nothing indicating which invocations were tried and abandoned. The closest thing to a caution is a generic tips list that asserts preferences without any observed consequence attached. Attaching even one concrete failure ('-U with .* backtracks and hangs on large files', 'rg skips .gitignore'd paths so your match silently disappears') to the step it threatens would have earned a 3.",
+      "evidence": [
+        {"quote": "- Prefer rg over grep for speed and smart defaults"},
+        {"quote": "- Escape regex special characters in patterns"}
+      ]
+    },
+    "D3": {
+      "score": 3,
+      "rationale": "Invocations are exact and copy-pasteable across the main path, and output-shaping flags (--vimgrep, --json, --heading, -c) are named, which is real execution-layer content. But no expected output is ever shown, no installation or version precondition is stated, and there is no way to tell that a precondition is unmet - the reader learns the flags, not what a successful or failed run looks like.",
+      "evidence": []
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "The skill states its scope boundary twice at the top against two named siblings and again at the bottom against grep, and in each case it says what to reach for instead rather than only where it stops. It falls short of 5 because it offers no escape from itself: there is no guidance for the case where the rg-shaped approach is simply wrong for the situation at hand (structural/AST matching, binary-safe scanning, a search too large to eyeball) beyond the two sibling redirects.",
+      "evidence": [
+        {"quote": "**When to Use grep Instead**"},
+        {"quote": "- POSIX compatibility required"},
+        {"quote": "- Piped input (stdin)"},
+        {"quote": "| Searching source code or text-encoded files | Extracting strings from compiled binaries or firmware |"}
+      ]
+    },
+    "D5": {
+      "score": 2,
+      "rationale": "The body is 9,928 characters (~2,482 tokens), roughly 1.7x the ~1.5k ecosystem median, and the directory contains no sidecar of any kind, so every invocation pays the full cost. A substantial share of that is material a typical search run never touches - memory-map tuning, thread counts, occurrence histograms, and a scripted vim search-and-replace pipeline - all of which are exactly what an on-demand REFERENCE.md exists to hold. It is not many multiples of the median, so not a 1; a thinned body with the tuning and analysis blocks deferred would be a 5.",
+      "evidence": [
+        {"quote": "## Performance Optimization"},
+        {"quote": "### Stats and Analysis"},
+        {"quote": "rg pattern --mmap"}
+      ]
+    },
+    "D6": {
+      "score": 3,
+      "rationale": "The description front-loads the concrete tool name ('ripgrep (rg)') which is a genuine discriminator, and the skill name matches. But the trigger clause - searching for text patterns, code snippets, multi-file analysis - is vocabulary any plausible sibling code-search skill would claim, and the actual distinguishing condition (content search by line-oriented regex, as against filename search or AST-structural matching) appears only in the body's decision tables, not in the description. Choosing between this and a near sibling from descriptions alone would require the tool name to already be in the user's request.",
+      "evidence": []
+    },
+    "D7": {
+      "score": 3,
+      "rationale": "Content search is clearly the dominant procedure and most sections serve it. Three blocks are adjacent secondary material that could each stand alone: a mutation workflow driving sed -i and scripted vim, a match-frequency analysis block, and a performance-tuning block - none of which is content search, and the first has a different risk profile entirely. It is not a 1 because these do not fragment the skill into independent equals; a body confined to search with the mutation and tuning material elsewhere would be a 5.",
+      "evidence": []
+    },
+    "D8": {
+      "score": 3,
+      "rationale": "A handful of instructions decompose into observable conditions a transcript would show - escape regex metacharacters, pass -u for ignored files, exclude vendor directories by glob, prefer rg over grep - and each would be visibly satisfied or violated. The bulk of the body, however, is a menu of options rather than instructions at all, so there is nothing for an observer to check compliance against; and the Best Practices lists are dispositional groupings ('code analysis and auditing') with no observable correlate.",
+      "evidence": []
+    }
+  },
+  "body_chars": 9928,
+  "sidecars": []
+}

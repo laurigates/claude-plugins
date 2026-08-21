@@ -1,0 +1,79 @@
+{
+  "unit": "evaluate-plugin/skills/evaluate-legibility/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "weak-model-gate",
+  "judge_id": "j1",
+  "dimensions": {
+    "D1": {
+      "score": 5,
+      "rationale": "The spine is a four-step imperative procedure (resolve prompt -> dispatch reader -> triage -> report) opened by an explicit execution directive, with a concrete decision point at Step 1 and a decision table consumed by Step 3. The declarative material is small and either feeds a step (the verdict vocabulary, the triage table) or is explicitly deferred elsewhere, including the dispatch rationale and the prompt text itself.",
+      "evidence": [
+        {"quote": "Execute this legibility gate:"},
+        {"quote": "### Step 1: Resolve the prompt"},
+        {"quote": "See that skill for the dispatch rationale; this skill does"}
+      ]
+    },
+    "D2": {
+      "score": 4,
+      "rationale": "Failure modes are attached to the steps they threaten: Step 2 names the way the dispatch is spoiled (enriching the reader's context destroys the measurement) and Step 3 carries a table of concrete false-positive symptoms a reader can recognise mid-run. What is missing for a 5 is any recorded consequence or cost of an observed failure - the guidance says which paths are wrong but never what going wrong actually cost.",
+      "evidence": [
+        {"quote": "it is the measurement instrument, not a delegate"},
+        {"quote": "Do not add context, do not let it"},
+        {"quote": "The cold reader cannot know the invocation context, so some complaints are"},
+        {"quote": "Test artifact — ignore it"}
+      ]
+    },
+    "D3": {
+      "score": 5,
+      "rationale": "It gives the exact script invocation, the exact dispatch shape (subagent_type, model, prompt source), the exact delimiters the prompt arrives between, and the exact fields the reader must return. It also states how to detect an unmet precondition and what to do then, rather than assuming the resolve step succeeded.",
+      "evidence": [
+        {"quote": "Task subagent_type: general-purpose"},
+        {"quote": "report the `ERROR=` line and stop"},
+        {"quote": "| Resolve path + emit prompt | `bash evaluate-plugin/skills/evaluate-legibility/scripts/emit-legibility-prompt.sh --plugin-skill <plugin/skill>` |"}
+      ]
+    },
+    "D4": {
+      "score": 5,
+      "rationale": "The When-to-Use table pairs each out-of-scope condition with a named alternative (executability, structural lint, outward-artifact gating, effectiveness benchmarking), and the skill additionally provides an escape from its own output: the verdict is declared advisory because the instrument is non-deterministic, and Step 3 instructs the operator to discard the tool's own findings when they are artifacts of isolation.",
+      "evidence": [
+        {"quote": "The verdict is **advisory, not a CI gate**: haiku is non-deterministic, so a"},
+        {"quote": "| Checking a SKILL.md reads clearly to a fresh agent | Testing whether the skill *executes* correctly -> `/evaluate:matrix` |"},
+        {"quote": "Test artifact — ignore it"}
+      ]
+    },
+    "D5": {
+      "score": 5,
+      "rationale": "The body is 5,165 characters (~1.3k tokens), at or just under the ecosystem median, and the bulk of the material a run would otherwise carry - the reader persona and the full dispatch prompt - is deferred to a single sidecar script that the Context block invokes. The dispatch rationale is deferred by name reference to a sibling skill rather than restated.",
+      "evidence": [
+        {"quote": "The Context block above ran `emit-legibility-prompt.sh`, which resolved the"},
+        {"quote": "See that skill for the dispatch rationale; this skill does"}
+      ]
+    },
+    "D6": {
+      "score": 4,
+      "rationale": "The description names the artifact (a SKILL.md), the instrument (a zero-context agent reader), and the two questions it answers (when to invoke, how to start), which separates it cleanly from an executability or effectiveness sibling. It falls short of 5 only because it shares its distinctive 'cold-read' framing with a near sibling, so telling this apart from a generic cold-read gate rests on the reader noticing the SKILL.md/agent-reader qualifier rather than on an explicitly stated contrast.",
+      "evidence": [
+        {"quote": "Cold-read a SKILL.md with a zero-context agent reader to check its intent is legible."}
+      ]
+    },
+    "D7": {
+      "score": 5,
+      "rationale": "One entry condition - a single named plugin/skill target - and one procedure: dispatch a cold reader at that file, triage its complaints, report. The parameters, triage table, quick reference and optimisation rows all serve that single flow; nothing else is bundled in.",
+      "evidence": [
+        {"quote": "Dispatch an isolated, zero-context **agent reader** at a single `SKILL.md` and"},
+        {"quote": "| `<plugin/skill-name>` | required | Target skill as `plugin-name/skill-name` |"}
+      ]
+    },
+    "D8": {
+      "score": 5,
+      "rationale": "Nearly every instruction decomposes into a transcript-observable condition: exactly one subagent dispatched at the named model, no added context, the three named fields captured, the verdict printed with each blocking question and its quoted phrase, the advisory caveat stated, and no edit made to the target file. A reviewer with only the trajectory could mark each of these satisfied or violated.",
+      "evidence": [
+        {"quote": "Do **not** edit the skill"},
+        {"quote": "Do not add context, do not let it"},
+        {"quote": "Task subagent_type: general-purpose"}
+      ]
+    }
+  },
+  "body_chars": 5165,
+  "sidecars": ["scripts/emit-legibility-prompt.sh"]
+}

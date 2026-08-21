@@ -11,6 +11,10 @@ design — see the binding constraints at the top of [`rubric.md`](rubric.md).
 |---|---|
 | [`appraisal.md`](appraisal.md) | Critical evaluation of arXiv:2608.14036 and the two adjacent papers — what holds, what to discount, and why |
 | [`rubric.md`](rubric.md) | 8 provisional quality dimensions, each traced to a finding and graded for evidence strength |
+| [`results.md`](results.md) | The 16 golden-set canaries scored against the rubric — reliability, per-dimension profiles, and two findings |
+| [`judgments/`](judgments/) | 32 raw judge records (2 per canary) with scores, rationales, and verbatim evidence |
+| `quote_check.py` | Falsifier: resolves every evidence quote against its source file |
+| `summarize.py` | Rolls judgments into per-dimension profiles; deliberately computes no per-skill total |
 | `README.md` | This file — the convergence check |
 
 ## Source set
@@ -32,14 +36,20 @@ quality→outcome relationships. Detail in [`appraisal.md`](appraisal.md) §3.7.
 
 ## Convergence check: did we independently arrive at the same conclusions?
 
-Broadly **yes** — 6 of 8 dimensions converged, several of them predating the
+Broadly **yes** — 5 of 8 dimensions converged, several of them predating the
 paper by months. One divergence is defensible on a cost model the papers do not
-model. One is a genuine gap.
+model, and two are genuine gaps.
+
+> **Revised 2026-08-21 after measurement.** This section was first written from
+> a reading of our rules. Scoring the 16 golden-set canaries
+> ([`results.md`](results.md)) contradicted the D2 row and put a caveat on D4.
+> The pre-measurement claims are preserved in the table so the correction is
+> visible rather than silently rewritten.
 
 | Dim | Our position | Verdict |
 |---|---|---|
 | **D1** Procedural anchoring | `skill-execution-structure.md` (2026-03-02) — "when a skill reads like a specification document, the model summarizes what it could do instead of doing it. **This is the most common skill authoring mistake.**" Prescribes `Phase N:` → `Step N: <verb>`, imperative openers, reference data moved out. | **Converged, 5 months early.** We independently named procedure-vs-description as *the* primary failure. The paper quantifies it (65.7% vs 4.5%); we identified it and built the fix. |
-| **D2** Outcome annotation | Not a stated rule, but pervasive practice. Rules carry dated failure provenance with observed cost — `loop-integrity.md`, `agent-coworker-detection.md` ("force-removed ~24 peer worktrees"), `gh-json-fields.md` § "The `merged` mistake". | **Converged in practice, unstated as principle.** Our provenance discipline is *richer* than the paper's synthetic skills. But `skill-quality.md` § Writing Style pushes toward positive framing, creating an unresolved tension (rubric D2 note). |
+| **D2** Outcome annotation | Dated failure provenance with observed cost is pervasive in `.claude/rules/` — `loop-integrity.md`, `agent-coworker-detection.md` ("force-removed ~24 peer worktrees"), `gh-json-fields.md` § "The `merged` mistake" — but **not** in skill bodies. | **Corrected 2026-08-21 by measurement — see [`results.md`](results.md) Finding 4.** This row originally claimed convergence. Scoring the canaries put D2 at the corpus's **lowest mean (3.09)**, with `file-generator` at 1.5 and `cli-wrapper` at 2.0. The provenance lives in the *rules*, not the *skills* — i.e. in the layer that is absent when the procedure actually fires. Against a grade-B ablated finding (0.7462 → 0.4000), this is the corpus's genuine weak axis. |
 | **D3** Execution-layer specificity | `agentic-optimization.md`, `structured-script-output.md`, and exact-command discipline throughout — `task-id-stability.md`'s `task +LATEST uuids` vs the silently-empty `_get uuid` is precisely this dimension. | **Converged strongly.** A repo strength. The paper's largest measured win (env failures 5.3%→0.2%) is the thing our rules obsess over. |
 | **D4** Adaptation latitude | `hook-block-vs-nudge.md` — block for safety, nudge for style; a hard block "dead-ends subagents lacking the tool." `bash-tool-replacements.md` demoted `find`/`grep`/`ls` from blocks to nudges. | **Converged — and we are ahead.** The paper measures skill-caused failures at 10.0% vs <1%. We independently found the same pathology *and* built a local empirical metric for it: **same-session repeat-block rate**, which drove the #1871/#1909/#2036 demotions and caught #2148's regression (46.3% break from a 6.3–20.0% band). The literature has no equivalent. |
 | **D5** Budget discipline | `skill-quality.md`: target ≤10,000 chars (~2,500 tok), ERROR at 26,000 chars (~6,500 tok). | **Divergent, defensibly.** Our ceiling is **~4.3× the SkillsBench ecosystem median** (~1.5k tokens) and our target ~1.7×. But `context-engineering.md` makes the point the papers miss entirely: a `SKILL.md` body is paid *only when the skill fires*, whereas unscoped rules are paid **every turn** — so ranking cuts by `always-loaded cost × frequency` is a strictly better cost model than raw size. We are less strict on the axis the papers measure and stricter on an axis they ignore. |
@@ -51,9 +61,17 @@ model. One is a genuine gap.
 
 | | Count |
 |---|---|
-| Converged (some ahead of the literature) | 6 — D1, D2, D3, D4, D6, D7 |
+| Converged (some ahead of the literature) | 5 — D1, D3, D4, D6, D7 |
 | Divergent but defensible | 1 — D5 |
-| Genuine gap | 1 — D8 |
+| Genuine gaps | 2 — D2 (corrected by measurement), D8 |
+
+> **This scorecard was revised after measurement.** D2 was originally counted as
+> converged on the strength of `.claude/rules/` examples; scoring the 16 canaries
+> showed skill bodies do not carry that provenance. See
+> [`results.md`](results.md) Finding 4. D4 also now carries a caveat: it scored
+> 4–5 across every canary with zero inter-judge disagreement, so it currently
+> discriminates nothing and cannot be counted as evidence of convergence
+> either way (Finding 2).
 
 ---
 
