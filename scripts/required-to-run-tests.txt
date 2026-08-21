@@ -53,3 +53,11 @@ taskwarrior-plugin/scripts/tests/test-task-id-stability.sh
 # absent by design" — it means the suite stopped executing, and the probe it
 # backs would go on reporting a clean corpus without having opened one.
 health-plugin/scripts/tests/test-config-drift.sh
+
+# git  (no install step needed — the runner checks out the repo with git, so
+# this test's only dependency is always present)
+#
+# It EXECUTES git to pin why `<sha>:<branch>` cannot create a remote branch
+# (#2478). A skip would silently demote it to the grep-for-`refs/heads/` gate
+# it was written to replace.
+git-plugin/skills/git-merge-hazards/scripts/tests/test-push-refspec.sh
