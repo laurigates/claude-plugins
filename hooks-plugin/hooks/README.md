@@ -417,11 +417,26 @@ hard block (exit 2) rather than a nudge — see
 [`.claude/rules/hook-block-vs-nudge.md`](../../.claude/rules/hook-block-vs-nudge.md)
 and the source skill `git-plugin:git-repo-delete-check`.
 
-The block is **self-extinguishing**: it names three remediations (push, tar to
-`$CLAUDE_REPO_BACKUP_DIR`, or delegate to the user), and performing either of the
-first two changes the world state the hook reads, so the retried `rm -rf`
-succeeds on the next attempt with no override. That property is what keeps the
-same-session repeat-block rate near zero.
+The block message reports what the preflight **found** in that repo (commits,
+uncommitted changes, stashes, local branches) and points at
+`git-plugin:git-repo-delete-check` for the remediation options — that skill is
+their single authority, and the message deliberately does not restate them
+(#2454).
+
+The one option it keeps verbatim is the tar backup to `$CLAUDE_REPO_BACKUP_DIR`,
+because that command is what makes the block **self-extinguishing**: writing the
+tarball (like pushing) changes the world state the hook reads, so the retried
+`rm -rf` succeeds on the next attempt with no override. That property is what
+keeps the same-session repeat-block rate near zero, and it is why the one
+surviving overlap with the skill has a mechanical reason to be there.
+
+Every findings probe is **capped** (`FINDINGS_CAP`, 500). `emit_block` runs on
+the blocking path and this hook fails **open** on timeout, so an unbounded
+`git rev-list --all --count` would turn an already-decided hard block into a
+deletion on a large repo — measured at 1281 ms over a 200,000-commit graph
+against 21 ms with `--max-count=500`. A capped value renders as `500+`. A repo
+with **no commits** gets a different headline and an explicit note, so an
+all-zero findings report never reads as an argument against its own block.
 
 ### Commands Blocked
 
@@ -494,7 +509,7 @@ rm -rf "$T"
 echo '{"tool_name":"Bash","tool_input":{"command":"rm -rf node_modules"},"cwd":"'"$PWD"'"}' \
   | bash hooks-plugin/hooks/repo-deletion-safety.sh; echo $?                                          # 0
 
-bash hooks-plugin/hooks/test-repo-deletion-safety.sh   # 57 passed, 0 failed
+bash hooks-plugin/hooks/test-repo-deletion-safety.sh   # 83 passed, 0 failed
 ```
 
 ### Exit Codes

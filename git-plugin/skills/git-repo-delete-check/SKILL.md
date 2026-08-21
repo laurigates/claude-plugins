@@ -3,7 +3,7 @@ name: git-repo-delete-check
 description: "Verify a repo's work survives deletion — remote, unpushed commits, stashes — then offer a push or tar backup. Use when asked to rm -rf, delete, or prune a git checkout."
 allowed-tools: Bash(git -C *), Bash(git remote *), Bash(git status *), Bash(git log *), Bash(git stash *), Bash(git branch *), Bash(du *), Bash(tar *), Bash(mkdir *), Read, Glob, AskUserQuestion, TodoWrite
 created: 2026-08-19
-modified: 2026-08-19
+modified: 2026-08-21
 reviewed: 2026-08-19
 ---
 
@@ -77,6 +77,13 @@ silent permanent data loss, with no way to recover.
 
 ## Related
 
+- `hooks-plugin` `repo-deletion-safety.sh` — the deterministic enforcement half.
+  Its block message reports the preflight findings and points **here** for the
+  options above; the only thing it restates is option 2's tar command, because
+  writing that tarball is what clears the block. Change option 2's archive name
+  or its backup directory and that hook has to change with it, or the command it
+  prints stops clearing its own block (`hooks-plugin/hooks/test-repo-deletion-safety.sh`
+  runs the printed command end to end).
 - `git-plugin:git-coworker-check` — is another agent writing here? (different
   question, same safety-diagnostic shape)
 - `git-plugin:git-maintain` — maintenance *inside* a surviving repo
