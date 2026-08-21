@@ -2,8 +2,10 @@ name: "Claude: Research radar"
 
 on:
   schedule:
-    # Weekly on Wednesdays at 09:00 UTC
-    - cron: '0 9 * * 3'
+    # Weekly on Wednesdays at 09:13 UTC. Offset from the top of the hour to
+    # reduce GitHub Actions scheduling congestion — seven of this repo's eleven
+    # schedules would otherwise fire together at 09:00.
+    - cron: '13 9 * * 3'
   workflow_dispatch:
     inputs:
       since_days:
@@ -22,10 +24,18 @@ permissions:
   issues: write
   id-token: write
 
+# This workflow opens issues. A bare group serialises an overlapping cron and
+# workflow_dispatch run so they cannot race the one-issue-per-week guard, and
+# cancel-in-progress stays false so a run is never killed mid-write.
+concurrency:
+  group: research-radar
+  cancel-in-progress: false
+
 jobs:
   gather:
     # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     outputs:
       candidate_count: ${{ steps.fetch.outputs.candidate_count }}
       should_skip: ${{ steps.existing.outputs.should_skip }}
@@ -97,18 +107,22 @@ jobs:
             echo "should_skip=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          # --state all, matching the ID collector above: closing the week's
+          # issue is the normal triage outcome, and --state open would re-arm
+          # the guard so a re-run duplicates it. jq --arg keeps $WEEK out of the
+          # jq program text.
           ISSUE=$(gh issue list \
             --repo "$GITHUB_REPOSITORY" \
             --label research-radar \
-            --state open \
+            --state all \
             --json number,title \
-            --jq ".[] | select(.title | test(\"$WEEK\")) | .number" \
+            | jq -r --arg week "$WEEK" '.[] | select(.title | test($week)) | .number' \
             | head -1)
           if [ -n "$ISSUE" ]; then
-            echo "Open research-radar issue #$ISSUE already covers $WEEK — skipping"
+            echo "research-radar issue #$ISSUE already covers $WEEK — skipping"
             echo "should_skip=true" >> "$GITHUB_OUTPUT"
           else
-            echo "No open research-radar issue for $WEEK — assessment will run"
+            echo "No research-radar issue for $WEEK — assessment will run"
             echo "should_skip=false" >> "$GITHUB_OUTPUT"
           fi
 
@@ -124,6 +138,7 @@ jobs:
     needs: gather
     if: needs.gather.outputs.candidate_count != '0' && needs.gather.outputs.should_skip != 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
 

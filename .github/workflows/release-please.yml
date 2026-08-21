@@ -21,8 +21,10 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     outputs:
-      releases_created: ${{ steps.release.outputs.releases_created }}
+      # `releases_created` was exposed here but consumed by nothing — job outputs
+      # are file-local and no job in this workflow referenced it. Dropped.
       prs_created: ${{ steps.release.outputs.prs_created }}
     steps:
       - name: Generate GitHub App Token
@@ -32,9 +34,13 @@ jobs:
           app-id: ${{ vars.RELEASE_PLEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_PLEASE_PRIVATE_KEY }}
 
+      # Behaviour change (deliberate): `continue-on-error: true` was removed from
+      # this step. It sat on the CORE release-please action, so any failure left
+      # the job GREEN with an empty `prs_created`, and the downstream
+      # sync-release-pr / enable-auto-merge jobs silently skipped — the whole
+      # release pipeline no-opped with a checkmark. A broken release must be red.
       - uses: googleapis/release-please-action@v4
         id: release
-        continue-on-error: true
         with:
           token: ${{ steps.app-token.outputs.token }}
 
@@ -46,6 +52,7 @@ jobs:
           # Apply labels via gh CLI as fallback for API eventual consistency
           gh pr list --repo "${{ github.repository }}" \
             --state open \
+            --limit 200 \
             --json number,headRefName \
             --jq '.[] | select(.headRefName | startswith("release-please--")) | .number' | \
           while read -r pr_number; do
@@ -57,6 +64,7 @@ jobs:
 
   enable-auto-merge:
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     needs: [release-please, sync-release-pr]
     if: ${{ needs.release-please.outputs.prs_created == 'true' }}
     steps:
@@ -74,6 +82,7 @@ jobs:
           # Get open release-please PRs by branch name pattern
           gh pr list --repo ${{ github.repository }} \
             --state open \
+            --limit 200 \
             --json number,headRefName \
             --jq '.[] | select(.headRefName | startswith("release-please--")) | .number' | \
           while read -r pr_number; do
@@ -89,6 +98,7 @@ jobs:
     needs: release-please
     if: needs.release-please.outputs.prs_created == 'true'
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     steps:
       - name: Generate GitHub App Token
         id: app-token
@@ -105,6 +115,7 @@ jobs:
           # Get the most recent release-please PR
           PR_DATA=$(gh pr list --repo ${{ github.repository }} \
             --state open \
+            --limit 200 \
             --json number,headRefName \
             --jq '.[] | select(.headRefName | startswith("release-please--")) | {number, branch: .headRefName}' \
             | head -1)
@@ -150,8 +161,21 @@ jobs:
           git add -A
           git commit -m "chore: sync marketplace.json versions"
 
+          # PUSHED sentinel: under `bash -e` a failing `&&` list does NOT abort
+          # the script, and the loop's last command is `sleep` (exit 0), so
+          # exhausting all three attempts used to fall through GREEN.
+          PUSHED=false
           for attempt in 1 2 3; do
-            git pull --rebase origin "${{ steps.get-pr.outputs.pr_branch }}" && git push && break
+            if git pull --rebase origin "${{ steps.get-pr.outputs.pr_branch }}" && git push; then
+              PUSHED=true
+              echo "::notice::Synced marketplace.json versions and pushed to the release PR"
+              break
+            fi
             echo "Push attempt $attempt failed, retrying..."
             sleep $((attempt * 2))
           done
+
+          if [ "$PUSHED" != true ]; then
+            echo "::error::Marketplace sync committed locally but all 3 push attempts to the release PR failed."
+            exit 1
+          fi

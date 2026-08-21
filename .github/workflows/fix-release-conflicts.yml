@@ -18,6 +18,13 @@ permissions:
   pull-requests: write
   actions: write
 
+# Bare group, no ref suffix: this fires twice hourly AND on every push to main,
+# so two runs can rewrite the same release-please branch at once — conflict
+# repair manufacturing the conflicts it exists to fix. Never cancelled mid-write.
+concurrency:
+  group: fix-release-conflicts
+  cancel-in-progress: false
+
 jobs:
   fix-conflicts:
     uses: laurigates/.github/.github/workflows/reusable-fix-release-conflicts.yml@main

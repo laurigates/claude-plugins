@@ -2,7 +2,7 @@ name: "Plugin: Scheduled audits"
 
 on:
   schedule:
-    - cron: '0 9 1 * *'  # Monthly on the 1st at 09:00 UTC
+    - cron: '19 9 1 * *'  # Monthly on the 1st at 09:19 UTC (off-the-hour minute avoids the :00 scheduler surge)
   workflow_dispatch:
 
 permissions:
@@ -10,13 +10,36 @@ permissions:
   issues: write
   id-token: write
 
+# This workflow creates issues, so a bare group serialises overlapping cron and
+# dispatch runs (the check-then-create-issue race is otherwise unlocked), and
+# cancel-in-progress: false keeps a mutating run from being killed mid-write.
+concurrency:
+  group: scheduled-audits
+  cancel-in-progress: false
+
 jobs:
   blueprint-health:
     # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Ensure the blueprint-health label exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # `gh issue create --label` HARD-FAILS on an unknown label, on the last
+          # line of the job, after all the analysis has already succeeded. That is
+          # why this audit ran red for months. `--force` creates-or-updates and
+          # exits 0, so this is idempotent -- but a real auth failure still
+          # surfaces here rather than being swallowed.
+          gh label create blueprint-health \
+            --repo "$GITHUB_REPOSITORY" \
+            --color 0e8a16 \
+            --description "Monthly blueprint health audit" \
+            --force
 
       - name: Check for existing open issue
         id: check_issue
@@ -53,9 +76,25 @@ jobs:
   infra-compliance:
     # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Ensure the infra-compliance label exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # `gh issue create --label` HARD-FAILS on an unknown label, on the last
+          # line of the job, after all the analysis has already succeeded. That is
+          # why this audit ran red for months. `--force` creates-or-updates and
+          # exits 0, so this is idempotent -- but a real auth failure still
+          # surfaces here rather than being swallowed.
+          gh label create infra-compliance \
+            --repo "$GITHUB_REPOSITORY" \
+            --color 1d76db \
+            --description "Monthly infrastructure compliance dashboard" \
+            --force
 
       - name: Check for existing open issue
         id: check_issue
@@ -91,11 +130,27 @@ jobs:
 
   agentic-audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+
+      - name: Ensure the agentic-audit label exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # `gh issue create --label` HARD-FAILS on an unknown label, on the last
+          # line of the job, after all the analysis has already succeeded. That is
+          # why this audit ran red for months. `--force` creates-or-updates and
+          # exits 0, so this is idempotent -- but a real auth failure still
+          # surfaces here rather than being swallowed.
+          gh label create agentic-audit \
+            --repo "$GITHUB_REPOSITORY" \
+            --color d93f0b \
+            --description "Monthly agentic quality audit" \
+            --force
 
       - name: Check for existing open issue
         id: check_issue
@@ -172,7 +227,6 @@ jobs:
 
       - name: Claude Agentic Quality Audit
         if: steps.check_issue.outputs.exists == 'false'
-        id: audit
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -245,9 +299,25 @@ jobs:
   docs-index:
     # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Ensure the docs-index label exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # `gh issue create --label` HARD-FAILS on an unknown label, on the last
+          # line of the job, after all the analysis has already succeeded. That is
+          # why this audit ran red for months. `--force` creates-or-updates and
+          # exits 0, so this is idempotent -- but a real auth failure still
+          # surfaces here rather than being swallowed.
+          gh label create docs-index \
+            --repo "$GITHUB_REPOSITORY" \
+            --color 5319e7 \
+            --description "Top-level docs drift (Layer 1) audit" \
+            --force
 
       - name: Check for existing open issue
         id: check_issue

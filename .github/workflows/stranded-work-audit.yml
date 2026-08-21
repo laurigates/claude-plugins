@@ -15,7 +15,7 @@ name: "Plugin: Stranded-work audit"
 
 on:
   schedule:
-    - cron: '0 8 * * 1'  # Mondays 08:00 UTC
+    - cron: '07 8 * * 1'  # Mondays 08:07 UTC (off-the-hour: :00 is the scheduler surge)
   workflow_dispatch:
     inputs:
       min_age_days:
@@ -27,10 +27,18 @@ permissions:
   contents: read
   issues: write
 
+# Bare group, no ref suffix: serialises an overlapping cron + workflow_dispatch so
+# the check-then-create-issue window below cannot race. Never cancel a run that
+# may be mid-write.
+concurrency:
+  group: stranded-work-audit
+  cancel-in-progress: false
+
 jobs:
   stranded-work:
     # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6

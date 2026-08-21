@@ -9,10 +9,26 @@ permissions:
   pull-requests: write
   id-token: write
 
+# release-please force-pushes its PR branch on every re-run, and each push would
+# otherwise start a fresh opus audit that posts a duplicate comment; superseding
+# the in-flight run keeps one comment per release PR.
+concurrency:
+  group: release-pr-doc-audit-${{ github.event.pull_request.number || github.ref }}
+  # Deliberately `true` even though this job mutates (it posts a PR comment).
+  # The tradeoff: queueing instead would let every force-push add another
+  # comment -- a guaranteed duplicate each time -- whereas superseding costs a
+  # restarted audit. The residual risk is starvation: this is a ~30-minute opus
+  # run, so force-pushes arriving faster than that could keep restarting it and
+  # it would never finish. That needs a sustained sub-30-minute release cadence
+  # to bite; if it ever does, the fix is `false` plus an idempotent
+  # `gh pr comment --edit-last --create-if-none`, not flipping this alone.
+  cancel-in-progress: true
+
 jobs:
   doc-audit:
     if: startsWith(github.head_ref, 'release-please--')
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6

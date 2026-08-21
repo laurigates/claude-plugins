@@ -9,7 +9,9 @@ name: "Plugin: Workflow model audit"
 
 on:
   schedule:
-    - cron: '0 9 8 * *'  # Monthly on the 8th at 09:00 UTC (offset from Scheduled audits)
+    # Monthly on the 8th at 09:29 UTC (offset from Scheduled audits, and off the
+    # hour so it misses GitHub's top-of-hour scheduler congestion)
+    - cron: '29 9 8 * *'
   workflow_dispatch:
 
 permissions:
@@ -17,12 +19,30 @@ permissions:
   issues: write
   id-token: write
 
+# This workflow creates an issue, so a bare group serialises overlapping cron and
+# dispatch runs (the check-then-create-issue race is otherwise unlocked), and
+# cancel-in-progress: false keeps a mutating run from being killed mid-write.
+concurrency:
+  group: workflow-model-audit
+  cancel-in-progress: false
+
 jobs:
   workflow-model-audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Ensure the workflow-model-audit label exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create workflow-model-audit \
+            --repo "$GITHUB_REPOSITORY" \
+            --color 0e8a16 \
+            --description "Monthly re-evaluation of each Claude workflow's model/effort choice" \
+            2>/dev/null || true
 
       - name: Check for existing open issue
         id: check_issue

@@ -2,8 +2,9 @@ name: "Plugin: Obsidian CLI changelog review"
 
 on:
   schedule:
-    # Weekly on Tuesdays at 09:00 UTC (offset from the Claude Code review)
-    - cron: '0 9 * * 2'
+    # Weekly on Tuesdays at 09:13 UTC (offset from the Claude Code review, and
+    # off the hour so it misses GitHub's top-of-hour scheduler congestion)
+    - cron: '13 9 * * 2'
   workflow_dispatch:
     inputs:
       force_full_review:
@@ -18,6 +19,14 @@ permissions:
   pull-requests: write
   id-token: write
 
+# This workflow pushes a branch whose name is derived deterministically from the
+# doc SHA, so overlapping cron and dispatch runs collide on that one branch
+# instead of forking cleanly; a bare group serialises them, and
+# cancel-in-progress: false keeps a run from being killed mid-commit/push.
+concurrency:
+  group: obsidian-cli-changelog
+  cancel-in-progress: false
+
 env:
   CLI_DOC_URL: https://publish-01.obsidian.md/access/f786db9fac45774fa4f0d8112e232d67/Extending%20Obsidian/Obsidian%20CLI.md
   RELEASES_URL: https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/desktop-releases.json
@@ -27,9 +36,11 @@ jobs:
   check-cli-doc:
     # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     outputs:
       has_updates: ${{ steps.compare.outputs.has_updates }}
       latest_sha: ${{ steps.fetch.outputs.latest_sha }}
+      latest_sha_short: ${{ steps.fetch.outputs.latest_sha_short }}
       previous_sha: ${{ steps.read_tracked.outputs.previous_sha }}
       latest_obsidian_version: ${{ steps.releases.outputs.latest_version }}
       previous_obsidian_version: ${{ steps.read_tracked.outputs.previous_version }}
@@ -48,6 +59,9 @@ jobs:
             exit 1
           fi
           echo "latest_sha=$SHA" >> "$GITHUB_OUTPUT"
+          # Branch-name suffix — pre-truncated here so the prompt interpolates a
+          # 12-char value instead of asking Claude to shorten a full SHA.
+          echo "latest_sha_short=${SHA:0:12}" >> "$GITHUB_OUTPUT"
           echo "Fetched CLI doc, sha256=$SHA"
 
       - name: Fetch latest Obsidian desktop version
@@ -100,6 +114,7 @@ jobs:
     needs: check-cli-doc
     if: needs.check-cli-doc.outputs.has_updates == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
         with:
@@ -195,7 +210,7 @@ jobs:
 
             ## Step 6: Branch, commit, PR
 
-            1. Create branch: `chore/obsidian-cli-review-${{ needs.check-cli-doc.outputs.latest_sha }}` (truncate to first 12 chars of the sha for the branch suffix).
+            1. Create branch: `chore/obsidian-cli-review-${{ needs.check-cli-doc.outputs.latest_sha_short }}`
             2. Stage modified files: `${{ env.TRACKING_FILE }}` plus every SKILL.md / README / plugin.json / marketplace.json you touched.
             3. Commit with a conventional message:
                - For doc-drift fixes only: `docs(obsidian-plugin): sync CLI skills with upstream doc <sha-prefix>`

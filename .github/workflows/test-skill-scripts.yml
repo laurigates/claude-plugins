@@ -63,6 +63,9 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # Test suite plus a cold taskwarrior source build (~4 min of cmake + the
+    # Rust taskchampion crate) when the cache misses.
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -174,11 +177,9 @@ jobs:
       - name: Run skill-local regression tests
         run: bash scripts/run-skill-script-tests.sh
 
-      - name: Smoke-test the OpenCode config generator
-        run: bash scripts/tests/test-configure-opencode.sh
-
-      - name: Regression-test the OpenCode skill-name rewrite
-        run: bash scripts/tests/test-rewrite-skill-name-to-dir.sh
-
-      - name: Regression-test the OpenCode hook-plugin export
-        run: bash scripts/tests/test-export-opencode-hooks.sh
+      # The three OpenCode suites that used to be named individually here
+      # (test-configure-opencode.sh, test-rewrite-skill-name-to-dir.sh,
+      # test-export-opencode-hooks.sh) all live under scripts/tests/ and so
+      # match the runner's `./scripts/tests/test-*.sh` discovery predicate
+      # (#2333) — the step above already runs them. Re-running them here only
+      # doubled the wall time and split the failure signal across two steps.

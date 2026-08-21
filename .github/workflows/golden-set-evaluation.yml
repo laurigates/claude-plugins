@@ -18,10 +18,11 @@ name: "Plugin: Golden-set evaluation"
 
 on:
   schedule:
-    # Monthly on the 15th at 09:00 UTC. Offset from `Plugin: Scheduled audits`
+    # Monthly on the 15th at 09:41 UTC. Offset from `Plugin: Scheduled audits`
     # (1st) and `Plugin: Workflow model audit` (8th) so the three monthly jobs
-    # do not land in one day.
-    - cron: '0 9 15 * *'
+    # do not land in one day; the off-the-hour minute avoids the :00 scheduler
+    # surge.
+    - cron: '41 9 15 * *'
   workflow_dispatch:
     inputs:
       models:
@@ -45,10 +46,19 @@ permissions:
   issues: write
   id-token: write
 
+# A bare group serialises an overlapping dispatch and cron run: without it the
+# two would duplicate a metered 60-turn opus sweep and race on the
+# check-then-create-issue step. cancel-in-progress: false so a run that is
+# already opening its issue is never killed mid-write.
+concurrency:
+  group: golden-set-evaluation
+  cancel-in-progress: false
+
 jobs:
   gather:
     # Orchestration only (jq + `gh`) — 1-CPU slim runner is 3x cheaper.
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     outputs:
       eval_ready_count: ${{ steps.canaries.outputs.eval_ready_count }}
       should_skip: ${{ steps.existing.outputs.should_skip }}
@@ -142,6 +152,13 @@ jobs:
             fi
           done < <(jq -r '.canaries[] | [.skill, .pattern] | @tsv' evaluate-plugin/golden-set.json)
 
+          # An empty enumeration would leave eval_ready_count=0, skip the sweep
+          # job and report green — a silent no-op that looks like a clean run.
+          if [ "$total_count" -eq 0 ]; then
+            echo "::error::Golden set enumerated zero canaries from evaluate-plugin/golden-set.json (missing, unreadable, or .canaries empty) — failing rather than reporting a no-op sweep as green."
+            exit 1
+          fi
+
           echo "Golden set: $ready_count of $total_count canaries carry an evals.json"
           {
             echo "eval_ready_count=$ready_count"
@@ -165,6 +182,7 @@ jobs:
     # step summary carries that signal instead.
     if: needs.gather.outputs.eval_ready_count != '0' && needs.gather.outputs.should_skip != 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
