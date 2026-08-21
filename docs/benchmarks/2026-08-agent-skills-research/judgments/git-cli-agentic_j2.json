@@ -1,0 +1,69 @@
+{
+  "unit": "git-plugin/skills/git-cli-agentic/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "cli-wrapper",
+  "judge_id": "j2",
+  "dimensions": {
+    "D1": {
+      "score": 2,
+      "rationale": "The spine is a topic-partitioned command catalogue (Status / Diff / Log / Branch / Remote / Staging / Commit / Push), each section a fenced list of alternative invocations with no ordering, no entry step, and no decision point that selects between them. Nothing commits the reader to a sequence; the closest thing to procedure is a five-item 'Best Practices' list of maxims. It rises above anchor 1 only because the declarative material is itself executable commands rather than background prose. An ordered 'detect state, then choose the parse mode, then emit' spine — or even a routing step in front of the catalogue — would move it up.",
+      "evidence": [
+        {"quote": "Optimized git commands for AI agent consumption using porcelain output and stable formats."},
+        {"quote": "## Commit Operations"}
+      ]
+    },
+    "D2": {
+      "score": 3,
+      "rationale": "Two places carry genuine outcome signal attached to the step they threaten: the heredoc block names the exact corruption a wrong escape produces, and the context-expression section names why the obvious alternative is unavailable. Everything else — roughly forty commands — is unlabelled assertion, with the one hazard flagged only dispositionally ('use carefully'). That mix lands squarely on the anchor-3 reading: some outcome signal, thin and unsystematic.",
+      "evidence": []
+    },
+    "D3": {
+      "score": 4,
+      "rationale": "This is the skill's strongest axis: exact invocations throughout, plus the expected output shape spelled out for the non-obvious ones (a literal porcelain-v2 record layout, a status-code table, the numstat and rev-list field orders, a format-placeholder table), and an explicit environment precondition stating that the working directory is the repo and naming the exact condition under which -C is required. It stops short of 5 because it never says how to tell a precondition is unmet, and it contradicts itself at the execution layer — Best Practice 4 mandates a 2>/dev/null fallback in context expressions while none of the three context examples directly above it carries one.",
+      "evidence": [
+        {"quote": "The `-C` flag is only needed when targeting a different repository from your current directory:"},
+        {"quote": "**Status Codes**:"}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "The opening table is a genuine four-row escape hatch: each row names a condition under which this skill is the wrong choice and names the specific alternative to use instead, which is most of what anchor 5 asks for. It falls short of 5 because there is no exit from the guidance when the guidance itself is wrong for the situation — no note on when porcelain parsing is the wrong tool, or what to do when a documented output shape does not match what the local git emits.",
+      "evidence": [
+        {"quote": "Use `gh-cli-agentic` for `gh` JSON queries against the GitHub API"},
+        {"quote": "Use `git-branch-pr-workflow` for the broader branch + PR design choices"}
+      ]
+    },
+    "D5": {
+      "score": 4,
+      "rationale": "Body is 6,742 characters, ~1,685 estimated tokens — essentially at the ~1.5k ecosystem median, and the directory holds no sidecars at all, so there is nothing an invocation pays for that it did not ask to load. It is not a 5 only on the anchor's second clause: with no on-demand file, the body has no deferral surface, so the two operation clusters that most runs will not use (staging/commit/push) are paid for on every invocation and any growth is paid in full.",
+      "evidence": [
+        {"quote": "## Agentic Optimizations"}
+      ]
+    },
+    "D6": {
+      "score": 4,
+      "rationale": "The description does real discriminating work by naming flag-level triggers rather than a topic: porcelain=v2, --numstat, custom --format placeholders. Against a plausible sibling those tokens decide the choice without opening either body. It is not a 5 because the leading clause ('Git commands ... for agent workflows') shares vocabulary with any git skill in a large pool, and the trigger list includes 'status/diff/log' which a general-purpose git skill would also claim; the distinguishing condition is present but arrives after the generic framing.",
+      "evidence": [
+        {"quote": "Use when scripting status/diff/log, porcelain=v2, --numstat counts, custom --format placeholders, or branch tracking info."}
+      ]
+    },
+    "D7": {
+      "score": 2,
+      "rationale": "The stated scope is machine-readable read operations, but the body also carries Staging, Commit, and Push sections — mutation workflows whose output is not parsed and which the skill's own routing table explicitly delegates elsewhere. That is not merely adjacent secondary material; it is material the skill tells you to get from another skill, and then supplies anyway, so an invocation aimed at porcelain parsing pays for a commit-message heredoc recipe. Deleting those three sections, or dropping the delegation row, would resolve the contradiction in either direction.",
+      "evidence": [
+        {"quote": "Use `git-commit-workflow` for staging conventions and commit message structure"},
+        {"quote": "## Commit Operations"}
+      ]
+    },
+    "D8": {
+      "score": 4,
+      "rationale": "Almost every instruction decomposes into an observable condition — a named flag either appears in the transcript's command or it does not, and the Agentic Optimizations table is a literal context-to-command mapping an observer can check row by row. A few residual dispositional items keep it off 5: 'use carefully' has no observable correlate, and the 'prefer switch/restore over checkout for clarity' maxim is checkable only if the transcript happens to contain the relevant operation.",
+      "evidence": [
+        {"quote": "1. **Use porcelain v2** for status when parsing programmatically"},
+        {"quote": "# Amend last commit (use carefully)"}
+      ]
+    }
+  },
+  "body_chars": 6742,
+  "sidecars": []
+}

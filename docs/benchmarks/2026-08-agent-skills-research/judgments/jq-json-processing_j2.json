@@ -1,0 +1,67 @@
+{
+  "unit": "tools-plugin/skills/jq-json-processing/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "cli-wrapper",
+  "judge_id": "j2",
+  "dimensions": {
+    "D1": {
+      "score": 1,
+      "rationale": "The body is a categorised command catalogue with no ordered procedure anywhere: no numbered steps, no imperative openers, no decision points that commit the reader to a next action. It opens by declaring itself knowledge rather than a procedure, and the closest thing to sequencing is a dispositional bullet ('Start simple, build complexity incrementally'). A reader finishes knowing about jq's operator surface with no committed sequence of actions; an ordered detect-shape then select-filter then verify spine would have moved this up.",
+      "evidence": [
+        {"quote": "Expert knowledge for processing, querying, and transforming JSON data using jq, the lightweight and flexible command-line JSON processor."},
+        {"quote": "## Core Expertise"},
+        {"quote": "- Query and filter JSON with path expressions"},
+        {"quote": "Start simple, build complexity incrementally"}
+      ]
+    },
+    "D2": {
+      "score": 3,
+      "rationale": "Outcome signal exists as a dedicated Troubleshooting section organised by symptom (Invalid JSON, Empty Results, Type Errors, Performance Issues) plus an Error Handling block under Best Practices, so failure is anticipated rather than ignored. But it is detached from any step it threatens, and no failure is annotated with an observed consequence or cost. That is consistent with the findings without exceeding them.",
+      "evidence": []
+    },
+    "D3": {
+      "score": 4,
+      "rationale": "Nearly every line is an exact, runnable invocation rather than a paraphrase, and the skill goes further than the main path: it states an environment precondition with a way to check it (install commands plus a version probe), names an external dependency for the in-place-edit path, and gives one exact machine-readable outcome (an exit code) for validation. It falls short of 5 because expected output shapes are never shown for any query, so the reader cannot tell a correct result from a silently-empty one except in the validation case.",
+      "evidence": [
+        {"quote": "# Verify installation"},
+        {"quote": "# In-place edit (use sponge from moreutils)"},
+        {"quote": "jq empty file.json  # Returns exit code 0 if valid"}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "Two explicit comparison tables sit at the top naming when NOT to use this skill and what to reach for instead (yq for YAML and comment-preserving edits, nushell for multi-format and group-by work), which is more than a bare scope statement. It stops short of 5 because there is no exit for the case where jq is the right tool but this guidance is wrong for the situation at hand.",
+      "evidence": [
+        {"quote": "| Use this skill when... | Use yq-yaml-processing instead when... |"},
+        {"quote": "| One-off pipeline transforms that fit in a single expression | Multi-step transforms that span JSON, YAML, CSV, and TOML |"}
+      ]
+    },
+    "D5": {
+      "score": 2,
+      "rationale": "The body is 10,788 characters, roughly 2,697 estimated tokens — about 1.8x the ~1.5k ecosystem median — and the directory contains SKILL.md alone, so there is zero deferral: every invocation pays for the installation instructions, external links, and CSV/log/config application sections that most runs never touch. It is not many multiples of the median, so not a 1, but neither anchor-3 escape applies: the material is a topic catalogue rather than one procedure, and nothing is deferred to a sidecar.",
+      "evidence": [
+        {"quote": "## Installation"},
+        {"quote": "- **jq Playground**: https://jqplay.org/"}
+      ]
+    },
+    "D6": {
+      "score": 4,
+      "rationale": "The name and description front-load the tool and the data format ('jq JSON processing'), which is the distinguishing condition against the most plausible near sibling, a YAML processor — that choice is decidable without opening either body. It is not a 5 because the trigger vocabulary ('parsing JSON files, filtering arrays/objects, transforming structures') is generic enough to also match a general data-processing sibling that handles JSON, and the body's own comparison table shows such a sibling exists; separating them needs the body.",
+      "evidence": [
+        {"quote": "description: \"jq JSON processing: query, filter, transform JSON. Use when parsing JSON files, filtering arrays/objects, transforming structures, or extracting fields from JSON.\""}
+      ]
+    },
+    "D7": {
+      "score": 3,
+      "rationale": "Everything present is one tool used one way — compose a filter and run it — so there is no genuinely independent second procedure bundled in. But a substantial tail of adjacent secondary material (installation, integration with other CLIs, and three application-domain sections for API responses, config files, and log analysis) could plausibly stand alone, which is exactly the anchor-3 shape.",
+      "evidence": []
+    },
+    "D8": {
+      "score": 3,
+      "rationale": "A meaningful share of instructions decompose into observable conditions — use -c for compact output, use -r for raw strings, use the ? operator for optional access, check existence with has() — each of which would be visibly present or absent in a transcript. An equally large share is dispositional with no observable correlate ('Start simple, build complexity incrementally', 'Consider jq -c for faster processing', 'Add comments in shell scripts'), which is the anchor-3 mix.",
+      "evidence": []
+    }
+  },
+  "body_chars": 10788,
+  "sidecars": []
+}

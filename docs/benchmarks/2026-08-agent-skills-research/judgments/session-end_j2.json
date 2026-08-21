@@ -1,0 +1,75 @@
+{
+  "unit": "session-plugin/skills/session-end/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "ask-user-question",
+  "judge_id": "j2",
+  "dimensions": {
+    "D1": {
+      "score": 5,
+      "rationale": "The spine is an ordered, imperative five-step procedure (survey, qualify, confirm, sequence, report) opened with an explicit execution directive, and Step 4 even numbers the delegated passes with ordering rationale. Declarative material (the qualify table, the GH_FAIL_REASON table, the distill/feedback seam) is consumed by a named step rather than sitting as background; only the short Auto-surfacing note is free-standing, which is not enough to pull it below exemplary.",
+      "evidence": [
+        {"quote": "Execute this orchestration. **Not fully automatic by design**"},
+        {"quote": "### Step 4: Sequence the confirmed passes"}
+      ]
+    },
+    "D2": {
+      "score": 5,
+      "rationale": "Failure modes are attached to the exact step they threaten and each names an observed symptom plus its cost: the freeform-confirmation race that motivated the orchestrator, the drown-in-signals effect of offering empty passes, and the false-clean-queue reading of a low-confidence zero. A reader can recognise each failure while it is happening rather than only after.",
+      "evidence": [
+        {"quote": "ending the turn fires Stop hooks mid-confirmation (the race that motivated this orchestrator)"},
+        {"quote": "offering an empty pass is the drown-in-signals failure mode"},
+        {"quote": "a low-confidence zero is an unqueried project, never a clean queue"}
+      ]
+    },
+    "D3": {
+      "score": 5,
+      "rationale": "It gives exact invocations with flags and path variables, names the exact digest keys to read (TASK_SCOPE, PROJECT_CONFIDENCE, GH_READY, UNDRAINED_COUNT), and supplies a literal jq one-liner for the auto-drain gate. Crucially it also says how to tell a precondition is unmet and what each unmet cause implies, via the six-row GH_FAIL_REASON remediation table. It stops just short of showing a literal sample digest, but the key-level contract is unambiguous.",
+      "evidence": [
+        {"quote": "bash \"${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh\" --with-commits --with-blueprint --with-dedup"},
+        {"quote": "| `auth` | The token is missing, expired, or lacks a scope | Tell the user to run `gh auth login`; re-running is futile."}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "It states three concrete out-of-scope conditions with the skill to use instead, defines a clean exit when nothing qualifies, and degrades gracefully when a collector or a cross-plugin dependency is unavailable. It falls short of 5 because there is no explicit provision for the case where the orchestration itself is the wrong shape for the moment - the only escape hatch inside the flow is the AskUserQuestion 'Other' option.",
+      "evidence": [
+        {"quote": "Only loose threads to capture → `session-plugin:session-wrap` directly"},
+        {"quote": "If **nothing** qualifies, say so in one line and end — no preview, no question."},
+        {"quote": "treat a SKIP as \"no mechanical signal, judge conceptually only\""}
+      ]
+    },
+    "D5": {
+      "score": 2,
+      "rationale": "The body is 14,448 chars (~3.6k tokens), roughly 2.4x the ~1.5k ecosystem median, and the directory contains no sidecar of any kind - deferral is zero. Much of the bulk is contingency detail most invocations never reach: a six-row GitHub-failure remediation table, prefix-sibling slug caveats, and a blueprint auto-drain gate with its own jq command. Any of these three blocks would defer cleanly to an on-demand file.",
+      "evidence": [
+        {"quote": "**Remediating `GH_READY=false`.** It always ships with `GH_FAIL_REASON=`,"},
+        {"quote": "`UNDRAINED_COUNT` ≥ 1 in the Step 1 digest's `BLUEPRINT` section"}
+      ]
+    },
+    "D6": {
+      "score": 5,
+      "rationale": "The description names its role (orchestrator), enumerates the exact sibling passes it coordinates, and states the distinguishing mechanic - preview, single confirm, then sequence - plus the trigger phrase. Choosing between this and session-wrap or session-distill is decidable from the description alone, without opening either body.",
+      "evidence": [
+        {"quote": "Previews which of wrap/distill/feedback/taskwarrior-sync qualify, single confirm, then sequence."}
+      ]
+    },
+    "D7": {
+      "score": 4,
+      "rationale": "There is one entry condition (winding down a session) and one dominant procedure, and the four delegated passes are invoked rather than restated. It is held off 5 because the taskwarrior-sync pass is spelled out inline as a complete per-task procedure of its own, which the skill itself concedes has a standalone sibling, and the blueprint auto-drain gate adds a second self-contained branch.",
+      "evidence": [
+        {"quote": "One survey, one preview, one confirmation"},
+        {"quote": "| Taskwarrior sync | (inline, no sub-skill) | Close done tasks, update statuses"}
+      ]
+    },
+    "D8": {
+      "score": 5,
+      "rationale": "Nearly every instruction decomposes into a transcript-observable condition: a specific collector invocation with specific flags, numeric qualify thresholds on named digest keys, exactly one AskUserQuestion in multiSelect form, a fixed execution order for the confirmed passes, and UUID-only task addressing. An observer could check each of these against a trajectory without interpretation.",
+      "evidence": [
+        {"quote": "Then **one AskUserQuestion** (multiSelect) listing the qualifying passes"},
+        {"quote": "`UNDRAINED_COUNT` ≥ 1 in the Step 1 digest's `BLUEPRINT` section"}
+      ]
+    }
+  },
+  "body_chars": 14448,
+  "sidecars": []
+}

@@ -1,0 +1,71 @@
+{
+  "unit": "git-plugin/skills/git-commit/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "convention-enforcer",
+  "judge_id": "j1",
+  "dimensions": {
+    "D1": {
+      "score": 4,
+      "rationale": "The spine is a five-step ordered Workflow (Assess State, Stage, Run Pre-commit Hooks, Detect Issues, Create Commit), each step carrying runnable commands and at least one decision point (hook config present, confidence tiers for issue matching). It falls short of 5 because a declarative tail (Composability, Best Practices, Issue References) sits after the procedure without any step consuming it and without deferral to a sidecar.",
+      "evidence": [
+        {"quote": "### 1. Assess State"},
+        {"quote": "## Composability"}
+      ]
+    },
+    "D2": {
+      "score": 4,
+      "rationale": "The heredoc warning is exemplary outcome annotation attached to the exact step it threatens: it names the observed symptom (a literal backslash in the message), where it shows up (git log), and the cost (an --amend to clean up). It stops short of 5 because the separate Error Handling section states failure states as bare templates with no observed consequence, and the remaining steps carry no failure identities.",
+      "evidence": [
+        {"quote": "produces a literal backslash in the commit message that survives into"}
+      ]
+    },
+    "D3": {
+      "score": 4,
+      "rationale": "Every step gives an exact invocation rather than a paraphrase, including machine-readable flags, and the skill specifies the exact shape of the report it must emit plus literal strings for the no-changes and merge-conflict states. Held at 4 because environment/lifecycle preconditions are thin: only the .pre-commit-config.yaml existence check is stated, with nothing on gh authentication, remote presence, or how to detect those preconditions unmet.",
+      "evidence": [
+        {"quote": "git status --porcelain=v2 --branch"},
+        {"quote": "gh issue list --state open --json number,title,labels --limit 30"}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "It names several conditions under which this procedure is not the right one and says what to run instead (push, chained commit+push+PR, the broader workflow skill), and it carries a genuine abort condition with a concrete alternative action when the branch state has changed underneath. It is not a 5 because there is no escape for the case where the convention itself is wrong for the repository (e.g. a project not using conventional commits or issue references).",
+      "evidence": [
+        {"quote": "| Staging and committing without pushing or opening a PR | Use `git-commit-push-pr` to chain commit + push + PR creation in one step |"},
+        {"quote": "stop and reconcile (branch off the updated default, or"}
+      ]
+    },
+    "D5": {
+      "score": 5,
+      "rationale": "The body measures 5,308 characters (~1,327 tokens), at or just under the ~1.5k ecosystem median, and the only sidecar in the directory is evals.json, so nothing heavy is loaded per invocation. Detail that would have bloated it is deferred by explicit pointer to on-demand material (trailer conventions to a sibling skill, the full conventional-commit reference to a linked rules file).",
+      "evidence": [
+        {"quote": "For trailer conventions (Co-authored-by, Signed-off-by, BREAKING CHANGE, Release-As), see **git-commit-trailers** skill."}
+      ]
+    },
+    "D6": {
+      "score": 4,
+      "rationale": "The description front-loads literal trigger phrases and then names an explicit distinguishing condition plus the sibling to use instead, which makes the commit-vs-push choice decidable without opening either body. It stops short of 5 because it does not separate itself from a plausible same-named sibling covering broader staging and message-convention guidance; that boundary is only stated inside the body.",
+      "evidence": [
+        {"quote": "Local commits only — see git-push for remote."}
+      ]
+    },
+    "D7": {
+      "score": 4,
+      "rationale": "One procedure with one entry condition: produce a local commit. Nothing independent is bundled, and the reference tables feed the message-composition step directly. Held at 4 because a Composability section plus a second trigger-phrase orientation block duplicate the framing already carried by the leading decision table and do not serve the procedure's execution.",
+      "evidence": [
+        {"quote": "## Composability"}
+      ]
+    },
+    "D8": {
+      "score": 4,
+      "rationale": "Most instructions decompose into transcript-observable conditions: the heredoc form is either used or not, the escape is either present or not, the subject is either under 72 characters or not, an issue trailer is either present or not. It is not a 5 because several remaining directives are dispositional with no observable correlate, notably the logical-change rule and the high/medium confidence tiers for matching staged changes to issues.",
+      "evidence": [
+        {"quote": "Use HEREDOC directly in the git commit command."},
+        {"quote": "4. **Keep subject under 72 chars** - Better display in git log"},
+        {"quote": "1. **One logical change per commit** - Easier to review and revert"}
+      ]
+    }
+  },
+  "body_chars": 5308,
+  "sidecars": ["evals.json"]
+}

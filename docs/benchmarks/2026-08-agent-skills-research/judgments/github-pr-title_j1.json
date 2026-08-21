@@ -1,0 +1,66 @@
+{
+  "unit": "git-plugin/skills/github-pr-title/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "convention-enforcer",
+  "judge_id": "j1",
+  "dimensions": {
+    "D1": {
+      "score": 2,
+      "rationale": "The body is a reference catalogue of the conventional-commits format — type table, scope examples, subject rules, breaking-change and revert forms, a template table — with no ordered sequence of steps a reader is committed to executing. The nearest thing to a procedure is a one-line decision tree and two discovery commands; a numbered 'detect the change type, derive the scope, compose, validate' flow would have moved this to 3 or above.",
+      "evidence": [
+        {"quote": "**Decision tree:** Feature → `feat` | Bug → `fix`"},
+        {"quote": "## Quick Reference"}
+      ]
+    },
+    "D2": {
+      "score": 3,
+      "rationale": "A Bad/Good example table records what malformed titles look like, and a 'Why This Matters' section asserts the consequences of the convention (release-please bumps, squash-merge commit messages). But no failure is attached to the step it threatens and none names an observed cost — this is outcome signal asserted rather than witnessed, which is exactly the middle anchor.",
+      "evidence": []
+    },
+    "D3": {
+      "score": 4,
+      "rationale": "The output format is pinned exactly, including its edge forms (breaking-change `!` placement, revert prefix), and the commands are literal and copy-runnable rather than paraphrased. It stops short of 5 because there are no environment or lifecycle preconditions at all — nothing about gh auth, a missing remote, or what the discovery pipeline prints when a repo has no scoped titles.",
+      "evidence": [
+        {"quote": "gh pr edit N --title \"new title\""},
+        {"quote": "feat(api)!: remove deprecated endpoints"}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "The opening table is a genuine two-column scope boundary: each row that says when to use this skill is paired with a named alternative for the adjacent case (full PR creation, commit messages, issue titles, repairing a local commit), so a reader who falls outside the scope is routed rather than stranded. It falls short of 5 because the convention itself is stated as unconditional ('PR titles MUST follow conventional commits') with no case in which this guidance is the wrong guidance.",
+      "evidence": [
+        {"quote": "Use `github-issue-writing` for issue titles (different `[Type] Component:` format)"}
+      ]
+    },
+    "D5": {
+      "score": 5,
+      "rationale": "The body is 4,206 characters (~1,051 tokens), below the ~1.5k ecosystem median, and it twice defers the exhaustive format guide to an on-demand rules file rather than inlining it. Every invocation pays only for the type table, the subject rules, and the templates — the material a title actually needs.",
+      "evidence": [
+        {"quote": "See [Conventional Commits Standards](../../.claude/rules/conventional-commits.md) for comprehensive format guide."}
+      ]
+    },
+    "D6": {
+      "score": 3,
+      "rationale": "The name and the description's opening clause name the artifact ('PR titles'), which is topically clear, but the trigger surface shares its whole vocabulary with a plausible commit-message sibling ('conventional commits format') and with a PR-creation sibling ('Use when creating PRs'). Choosing between this and either sibling on descriptions alone is not decidable; the body's When-to-Use table is what disambiguates.",
+      "evidence": []
+    },
+    "D7": {
+      "score": 5,
+      "rationale": "One artifact, one entry condition: everything present — format spec, type selection, scope discovery, subject rules, breaking/revert forms, templates, the edit command — serves producing or repairing a single PR title. Even the four rows of the applicability table are four situations for the same one job, and no independent second procedure is bundled in.",
+      "evidence": [
+        {"quote": "Craft clear PR titles using conventional commits format."},
+        {"quote": "Renaming an existing PR title to fix release-please version-bump detection"}
+      ]
+    },
+    "D8": {
+      "score": 5,
+      "rationale": "Almost every instruction is a discrete predicate over the produced title: matches `<type>(<scope>): <subject>`, imperative mood, lowercase after the colon, no terminal punctuation, under 50 characters, `!` before the colon for breaking changes. An observer with only the PR title in a transcript could mark each one satisfied or violated without interpretation, and the one soft phrase ('Keep concise') is bounded by a character count in the same line.",
+      "evidence": [
+        {"quote": "- **No period**: Don't end with punctuation"},
+        {"quote": "- **Under 50 chars**: Keep concise"}
+      ]
+    }
+  },
+  "body_chars": 4206,
+  "sidecars": []
+}

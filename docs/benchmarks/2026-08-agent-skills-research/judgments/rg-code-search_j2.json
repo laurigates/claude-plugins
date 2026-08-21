@@ -1,0 +1,64 @@
+{
+  "unit": "tools-plugin/skills/rg-code-search/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "cli-wrapper",
+  "judge_id": "j2",
+  "dimensions": {
+    "D1": {
+      "score": 1,
+      "rationale": "The body is a flag catalogue organised by feature area (Basic Usage, Advanced Patterns, Advanced Filtering, Output Formatting, Quick Reference) with no ordered steps, no decision points, and no committed sequence of actions anywhere. It opens with a bullet list of tool properties and closes with a marketing sentence rather than an outcome. An identifiable ordered procedure (even 'Step 1: narrow scope, Step 2: choose type filter, Step 3: widen if empty') would have moved it to 3.",
+      "evidence": [
+        {"quote": "## Core Expertise"},
+        {"quote": "- Extremely fast (written in Rust)"},
+        {"quote": "This makes rg the preferred tool for fast, powerful code search in development workflows."}
+      ]
+    },
+    "D2": {
+      "score": 1,
+      "rationale": "Every line is an unlabelled assertion of what a flag does. There is no warnings/gotchas section, no failure symptom, and no cost attached to any choice - nothing records that a search returned nothing because .gitignore hid the file, that -U multiline patterns blow up on large files, or that the xargs pipelines break on paths with spaces. The 'Tips' bullets are the closest thing and they still name no observed consequence. Any single named failure with its symptom would have moved it toward 3.",
+      "evidence": [
+        {"quote": "- Escape regex special characters in patterns"}
+      ]
+    },
+    "D3": {
+      "score": 3,
+      "rationale": "Commands are exact and copy-pasteable throughout, including output-format flags (--vimgrep, --json, --count-matches), which covers the main path well. But no expected output shape is ever shown, there are no environment preconditions (no install check, no way to tell rg is absent or too old for -U), and edge conditions are left to the reader. That is precisely the anchor-3 shape.",
+      "evidence": []
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "The skill opens with two explicit not-this-skill tables routing to fd-file-finding and binary-analysis, and later names four conditions under which to reach for grep instead - each stating what to use instead, not merely that the skill stops. What holds it below 5 is the absence of any escape for the case where the guidance itself is wrong for the situation (e.g. what to do when a documented flag is unavailable in the installed rg, or when the search legitimately needs a different tool entirely).",
+      "evidence": [
+        {"quote": "| Use this skill when... | Use fd-file-finding instead when... |"},
+        {"quote": "**When to Use grep Instead**"},
+        {"quote": "- POSIX compatibility required"}
+      ]
+    },
+    "D5": {
+      "score": 2,
+      "rationale": "Body is 9,929 chars (~2,482 tokens), about 1.65x the ~1.5k-token ecosystem median, with zero deferral: the directory contains only SKILL.md, no REFERENCE.md, references/ or scripts/. Some of that mass is pure internal duplication - the Quick Reference 'Essential Options' table restates -t, -g, -i, -s, -l, -c, -A, -B, -C, -U, -u and --replace, all of which already appeared with the same examples earlier in the body - so a portion of every invocation's budget buys the same content twice. Extracting the flag tables and the replace/stats/performance material to a sidecar would have moved it to 4-5.",
+      "evidence": [
+        {"quote": "### Essential Options"},
+        {"quote": "| `-t TYPE` | File type filter | `rg -t py pattern` |"},
+        {"quote": "rg pattern -t py            # Python files only"}
+      ]
+    },
+    "D6": {
+      "score": 3,
+      "rationale": "The description front-loads a genuinely distinctive token ('ripgrep (rg)') so it is topically unmistakable, but the trigger clause - 'searching for text patterns, code snippets, or doing multi-file analysis' - is vocabulary any content-search sibling would also claim, and 'multi-file analysis' is generic enough to overlap a structural-search or file-finding skill. The strongest evidence that the description does not decide it: the actual disambiguation against fd-file-finding and binary-analysis lives in the body's first two tables, which is where a reader has to go to choose.",
+      "evidence": []
+    },
+    "D7": {
+      "score": 3,
+      "rationale": "One dominant procedure (search code contents with rg) with adjacent secondary material that could plausibly stand alone: a search-and-replace section that hands off to sed and an interactive vim pipeline, a stats/analysis section built on sort|uniq|awk, and a performance-tuning section on threads and mmap. Most invocations will use the search half and pay for all of it, but every section still shares the one entry condition, so this is not a bundle of unrelated procedures.",
+      "evidence": []
+    },
+    "D8": {
+      "score": 3,
+      "rationale": "The few normative statements are checkable in a transcript - whether -u was used for hidden files, whether an exclusion glob was passed, whether rg was chosen over grep - and the command examples are concrete enough that following them is observable. But most of the body imposes no constraint at all (a catalogue has nothing to violate), and the 'When to Use rg' list ('Code analysis and auditing', 'Refactoring support') has no observable correlate whatsoever. That mix is the anchor-3 shape.",
+      "evidence": []
+    }
+  },
+  "body_chars": 9929,
+  "sidecars": []
+}

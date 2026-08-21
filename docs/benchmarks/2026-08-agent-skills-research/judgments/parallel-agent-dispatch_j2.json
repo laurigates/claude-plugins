@@ -1,0 +1,71 @@
+{
+  "unit": "agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "multi-step-orchestrator",
+  "judge_id": "j2",
+  "dimensions": {
+    "D1": {
+      "score": 4,
+      "rationale": "The spine is imperative and ordered: a preflight gate that can refuse to proceed, then per-prompt requirements, then a mandatory return contract, then verification passes, closing with a checkbox checklist that re-serialises the whole thing as actions. It falls short of 5 because several long hazard narratives (nested-repo isolation, GIT_DIR export leak, deleted worktree) read as background that no step directly consumes, even though a sidecar link sits beside each.",
+      "evidence": [
+        {"quote": "Before spawning, the orchestrator must verify:"},
+        {"quote": "If any check fails, **refuse to dispatch** and report the blocker."},
+        {"quote": "Every agent prompt must declare:"}
+      ]
+    },
+    "D2": {
+      "score": 5,
+      "rationale": "Nearly every instruction is welded to an observed failure with its symptom and its cost, and each is attached to the step it threatens rather than pooled in a gotchas appendix. A reader can recognise the failure while it is happening (a one-word final message, a batch that reports done at a fifth of its assignment) rather than only afterwards.",
+      "evidence": [
+        {"quote": "so the harness reads \"no changes\", cleans up the worktree, and the work is lost."},
+        {"quote": "invisible until `knip` was re-run"}
+      ]
+    },
+    "D3": {
+      "score": 5,
+      "rationale": "Preconditions are stated as runnable checks with the exact command and the exact condition that means unmet (empty porcelain output, a bare-repo report, a toplevel that differs from the session repo), and recovery gives the literal two-command discrimination between an empty and a dirty worktree. Environment and lifecycle are explicit: tool availability differing inside a sub-agent sandbox, inherited git env that overrides -C, concurrency ceilings by agent profile.",
+      "evidence": [
+        {"quote": "Main working tree is clean (`git status --porcelain` empty)"},
+        {"quote": "env -u GIT_DIR -u GIT_WORK_TREE git -C"},
+        {"quote": "git -C <worktree> status --porcelain"}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "It opens with an explicit boundary table that names the out-of-scope cases and routes each to a named alternative, and several sub-procedures carry their own conditional exits (dispatch from a sub-agent only under a stated condition; scale concurrency down rather than treating a rate limit as failure). It stops short of 5 because there is no escape for the case where the contract itself is the wrong frame for the situation — every exit routes to another named procedure.",
+      "evidence": [
+        {"quote": "Single-agent delegation or one-off subagent spawn"},
+        {"quote": "**Sub-agent orchestrator**: only when the team's outputs need not feed back"},
+        {"quote": "Prefer **sequential waves of small batches**"}
+      ]
+    },
+    "D5": {
+      "score": 3,
+      "rationale": "The body is 24,998 characters, roughly 6.2k tokens — about four times the ecosystem median — but the deferral machinery is real and well shaped: a thin REFERENCE.md index plus four references/ files split by the path that needs them, with the heavy material (schemas, salvage routines, per-hazard detail) sitting there rather than inline. What remains is coherent to the single dispatch procedure, which is exactly the anchor-3 condition; it is not near the median, so it is not a 5.",
+      "evidence": []
+    },
+    "D6": {
+      "score": 4,
+      "rationale": "The description names the distinguishing condition (fanning out concurrent agents, or authoring a lead prompt) and pins three concrete failure classes, so choosing it over a nearby teams/single-delegation skill is decidable without opening the body. It is a 4 rather than 5 because 'concurrent agents' vocabulary is shared with the sibling it explicitly defers to, so a reader weighing the two on descriptions alone still leans on the failure-class list to break the tie.",
+      "evidence": [
+        {"quote": "Dispatch contract for spawning parallel agents covering worktree collisions, scope overflow, and silent exits. Use when fanning out concurrent agents or authoring a lead prompt."}
+      ]
+    },
+    "D7": {
+      "score": 3,
+      "rationale": "One dominant procedure (pre-dispatch gate, brief contents, return contract) carries the file, but several adjacent blocks have their own entry conditions and could stand alone: recovering a missing return, deciding whether to kill a thrashing agent and salvage its worktree, and selecting an agentType on token-cost grounds. They are all downstream of dispatching, so this is not a topic bundle — just broader than one entry condition.",
+      "evidence": []
+    },
+    "D8": {
+      "score": 5,
+      "rationale": "Almost every instruction decomposes into a condition an observer could confirm from a transcript — was the tree clean before the spawn, does each prompt carry the schema verbatim, did every agent emit a Result block — and the closing checklist renders the whole procedure as discrete checkboxes. A handful of dispositional phrasings ('start conservative') are outnumbered by hard, binary requirements such as refusing to dispatch on a failed check.",
+      "evidence": [
+        {"quote": "- [ ] Working tree clean; no conflicting worktrees"},
+        {"quote": "- [ ] Each prompt includes the Return Contract schema verbatim"},
+        {"quote": "If any check fails, **refuse to dispatch** and report the blocker."}
+      ]
+    }
+  },
+  "body_chars": 24998,
+  "sidecars": ["REFERENCE.md", "references/brief-templates.md", "references/dispatch-contract.md", "references/failure-recovery.md", "references/worktree-hazards.md"]
+}

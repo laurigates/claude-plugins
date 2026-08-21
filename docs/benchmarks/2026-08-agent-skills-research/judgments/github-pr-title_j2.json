@@ -1,0 +1,86 @@
+{
+  "unit": "git-plugin/skills/github-pr-title/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "convention-enforcer",
+  "judge_id": "j2",
+  "dimensions": {
+    "D1": {
+      "score": 2,
+      "rationale": "The body is a reference document about conventional commits, not an executable procedure: format spec, a type/version-bump table, subject rules, a Bad/Good example table, breaking-change and revert syntax, a templates table, a rationale section, and a commands table. There are no ordered steps and no committed sequence of actions; the only procedural artifact is a single-line decision tree for picking a type. Numbered steps that consumed the tables (detect changed dirs -> pick type -> discover scope -> compose -> apply via gh pr edit) would have moved this up.",
+      "evidence": [
+        {
+          "quote": "**Decision tree:** Feature → `feat` | Bug → `fix`"
+        },
+        {
+          "quote": "## Why This Matters"
+        }
+      ]
+    },
+    "D2": {
+      "score": 3,
+      "rationale": "There is a real outcome signal: a Bad/Good example table showing what a rejected title looks like, and a CRITICAL note naming the consequence (release-please automation and squash-merge history). But the consequences are asserted rather than observed, no cost or symptom is given, and nothing records which alternatives were tried and failed. This is consistent with the anchor for a warnings section that is asserted without observed consequence.",
+      "evidence": []
+    },
+    "D3": {
+      "score": 4,
+      "rationale": "Execution detail is strong on the two axes that matter here: the output format is specified exactly (the `<type>(<scope>): <subject>` shape, the `!` breaking-change position, the revert form, the per-type version-bump result), and the commands are copy-pasteable full invocations rather than paraphrases. It falls short of 5 because no expected output shape is shown for any command and no environment preconditions are stated (gh auth, jq availability, an origin/main ref, whether the repo actually squash-merges), nor how to tell one is unmet.",
+      "evidence": [
+        {
+          "quote": "gh pr list --state merged -L 30 --json title | jq -r '.[].title' | grep -oE '\\([^)]+\\)' | sort | uniq -c | sort -rn"
+        },
+        {
+          "quote": "- **Under 50 chars**: Keep concise"
+        }
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "The When-to-Use table is a genuine four-row boundary statement: every row names a condition that falls outside this skill and the named alternative to use instead (git-pr, git-commit-workflow, github-issue-writing, git-commit). What is missing is an escape from its own core prescription: the format is stated as an unconditional MUST, with no guidance for a repository that does not use conventional commits or release-please, so a reader in that situation is given no exit.",
+      "evidence": [
+        {
+          "quote": "Use `github-issue-writing` for issue titles (different `[Type] Component:` format)"
+        },
+        {
+          "quote": "**CRITICAL:** PR titles must follow conventional commit format."
+        }
+      ]
+    },
+    "D5": {
+      "score": 5,
+      "rationale": "The body is 4,206 characters, roughly 1,050 estimated tokens, comfortably at or under the ~1.5k ecosystem median, and the directory holds no sidecars to add to that. Detail is explicitly deferred twice to an external conventional-commits reference rather than inlined, so an invocation pays only for the format, the type table and the commands.",
+      "evidence": [
+        {
+          "quote": "For detailed rules, patterns, and troubleshooting, see [Conventional Commits Standards](../../.claude/rules/conventional-commits.md)."
+        }
+      ]
+    },
+    "D6": {
+      "score": 3,
+      "rationale": "The name and the leading clause of the description name the artifact precisely (PR titles) and the mechanism (release-please), which separates it cleanly from a commit-message sibling. But the stated trigger, 'Use when creating PRs', is exactly what a full PR-creation sibling would also claim, and the body itself concedes such a sibling exists; deciding between them on the descriptions alone is not reliable. The vocabulary (conventional commits, consistent git history) is also shared with the commit-message sibling.",
+      "evidence": []
+    },
+    "D7": {
+      "score": 5,
+      "rationale": "Every section serves one entry condition: producing or repairing a conventional-commit PR title. Type selection, scope discovery, subject rules, breaking changes, reverts, templates and the command table are all sub-parts of that single act, and none could stand alone as a separate skill. The rationale section is the only non-operational material and it still argues for the same one procedure.",
+      "evidence": [
+        {
+          "quote": "Craft clear PR titles using conventional commits format."
+        }
+      ]
+    },
+    "D8": {
+      "score": 5,
+      "rationale": "The guidance is essentially a lint specification: prefix matches an enumerated type, optional parenthesised scope, colon-space, lowercase first letter, no trailing period, under fifty characters, `!` immediately before the colon for breaking changes. Each of these is a discrete condition an observer could mark satisfied or violated against the title in a transcript, and the Bad/Good table pins the one soft rule (imperative mood) to concrete token-level examples. Almost nothing is dispositional.",
+      "evidence": [
+        {
+          "quote": "- **No period**: Don't end with punctuation"
+        },
+        {
+          "quote": "- **Under 50 chars**: Keep concise"
+        }
+      ]
+    }
+  },
+  "body_chars": 4206,
+  "sidecars": []
+}

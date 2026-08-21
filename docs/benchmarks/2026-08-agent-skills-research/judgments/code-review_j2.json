@@ -1,0 +1,70 @@
+{
+  "unit": "code-quality-plugin/skills/code-review/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "convention-enforcer",
+  "judge_id": "j2",
+  "dimensions": {
+    "D1": {
+      "score": 4,
+      "rationale": "The spine is an imperative delegation directive followed by an ordered 9-step sequence with real decision points (a re-verification gate that runs BEFORE reporting, a confidence threshold that drops findings). Most declarative material is consumed by a step: the Severity Rubric feeds step 8, the Confidence Scale feeds step 8, the Re-verification Pass feeds step 7. It falls short of 5 because steps 1-5 are bare topic taxonomies rather than actions, and one block is pure background feeding no step.",
+      "evidence": [
+        {"quote": "Delegate this task to the `agents-plugin:review` agent."},
+        {"quote": "The agent has expertise in:"}
+      ]
+    },
+    "D2": {
+      "score": 4,
+      "rationale": "The false-positive failure mode is attached to the step that threatens it, with a named mechanism for how it arises and a named cost for shipping it. That is outcome-annotated guidance bound to a step rather than a detached gotchas section. It is not a 5 because the annotation covers one failure class only: steps 1-6 and the report step carry no failure signal, and no symptom is described from observation.",
+      "evidence": [
+        {"quote": "line numbers drift; assumptions decay"},
+        {"quote": "guesses erode trust in the review."}
+      ]
+    },
+    "D3": {
+      "score": 3,
+      "rationale": "Concrete for the main path: a named tool and subagent_type, literal glob patterns for discovery, and a report whose per-finding fields are named. But there are no exact invocations, no report schema or template, no environment or lifecycle preconditions, and nothing on how to tell a precondition is unmet (e.g. what to do if the named agent is unavailable). This sits squarely at the anchor-3 description.",
+      "evidence": []
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "The opening table names four conditions under which this skill is the wrong choice and routes each to a specific named alternative, and the optional agent-teams path is explicitly marked as skippable. It stops short of 5 because there is no escape from the procedure itself: nothing covers the case where the delegated-review approach is wrong for the situation, or what to do when the agent returns nothing usable.",
+      "evidence": [
+        {"quote": "Walking a manual security/correctness checklist → `code-review-checklist`"},
+        {"quote": "This is optional — the skill works without agent teams for standard reviews."}
+      ]
+    },
+    "D5": {
+      "score": 4,
+      "rationale": "Body is 6,239 chars, roughly 1,560 estimated tokens, which lands essentially on the ~1.5k ecosystem median, and the material is dense and coherent to the one procedure: rubrics are compressed into four- and three-row tables rather than prose. The only sidecar is a regression test script, so there is no on-demand content file, which is the one clause of the 5 anchor it does not meet, though at this size nothing obviously needs deferring.",
+      "evidence": [
+        {"quote": "| **Low** | Style, naming, minor readability, or a nit with no behavioral impact. Optional. |"}
+      ]
+    },
+    "D6": {
+      "score": 2,
+      "rationale": "The name is the most generic possible label for its domain, and the description enumerates dimensions (SOLID, test gaps, perf, security) that are exactly the vocabulary of its near siblings. The skill's own body concedes this: it needs a four-row table to separate itself from code-review-checklist, code-antipatterns, code-test-quality and code-refactor. The distinguishing condition (end-to-end delegated multi-dimension review versus a manual checklist or a single-concern scan) never reaches the description, so the choice is not decidable without opening the body.",
+      "evidence": [
+        {"quote": "description: Code review for quality, security, performance, and architecture. Use when reviewing code, auditing OWASP, checking SOLID, or finding perf bottlenecks and test gaps."},
+        {"quote": "Auditing test code quality on its own → `code-test-quality`"}
+      ]
+    },
+    "D7": {
+      "score": 4,
+      "rationale": "One procedure with one entry condition (a path to review); the five analysis dimensions are stages of a single review rather than independent procedures, and the rubric, confidence scale and re-verification sections all serve the same report. It is not a 5 because the agent-teams section is a second, parallel execution strategy that could plausibly stand alone, and the closing configure-skill pointers serve nothing in the procedure.",
+      "evidence": [
+        {"quote": "For comprehensive review of large codebases, spawn specialized review teammates in parallel:"}
+      ]
+    },
+    "D8": {
+      "score": 4,
+      "rationale": "Most instructions decompose into transcript-observable conditions: a per-finding output contract, an explicit reporting threshold, most-severe-first ordering, and a re-read of the cited location before a finding survives. An observer could check each against a trajectory. It is not a 5 because several steps remain dispositional with no observable correlate, notably the fix-application step and the closing recommendation item.",
+      "evidence": [
+        {"quote": "carry a verified `file:line`, a severity, and a confidence."},
+        {"quote": "The reporting threshold is **Medium**"},
+        {"quote": "where appropriate and safe"}
+      ]
+    }
+  },
+  "body_chars": 6239,
+  "sidecars": ["scripts/", "scripts/tests/test-code-review-rubric-depth.sh"]
+}

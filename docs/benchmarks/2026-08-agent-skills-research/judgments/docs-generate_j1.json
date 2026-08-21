@@ -1,0 +1,67 @@
+{
+  "unit": "documentation-plugin/skills/docs-generate/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "file-generator",
+  "judge_id": "j1",
+  "dimensions": {
+    "D1": {
+      "score": 3,
+      "rationale": "There is an identifiable ordered procedure: an imperative delegation opener followed by four numbered steps with flag-conditional branches. But it is mixed with substantial declarative material that feeds no step (the agent-expertise list, the optional Agent Teams table), and steps 3-4 are wish-lists rather than actions. Committing the standards and expertise material to concrete step outputs, or deferring it, would move this up.",
+      "evidence": []
+    },
+    "D2": {
+      "score": 1,
+      "rationale": "Nothing in the body records a failure, a symptom, or a cost. Every instruction is an unlabelled assertion of what good output looks like, with no indication of which approaches were tried, what breaks, or how a reader would recognise a failing run in progress. A single attached failure mode (e.g. what a docstring-less codebase produces, or what a non-conventional-commit history does to the changelog step) would lift it.",
+      "evidence": [
+        {"quote": "3. **Follow documentation standards**:"},
+        {"quote": "- Clear, concise language"}
+      ]
+    },
+    "D3": {
+      "score": 2,
+      "rationale": "Environment detection is genuinely concrete - real find invocations probe for manifests, existing docs, and source files - and the delegation names an exact tool and subagent identifier. But the main path, the actual documentation generation, is entirely paraphrased: no exact command, no expected output shape, no file paths written, and no statement of what an unmet precondition (no docstrings, no conventional commits, no docs framework) looks like. Naming the produced artifacts and their formats concretely would move it to 3 or above.",
+      "evidence": [
+        {"quote": "Project files: !`find . -maxdepth 1"},
+        {"quote": "- Create API reference from docstrings"}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "The opening table states the applicability boundary in both directions and, for each out-of-scope case, names the sibling to use instead (docs-sync, docs-decommission, docs-latex); the Agent Teams section additionally marks itself optional and tells the reader when a single agent suffices. It stops short of 5 because it never addresses the case where its own procedure is the wrong answer at all - a repository with no extractable docstrings or a non-conventional-commit history gets no exit.",
+      "evidence": [
+        {"quote": "| Producing a CHANGELOG from conventional-commit history | Preparing a service teardown checklist (use docs-decommission) |"},
+        {"quote": "This is optional — the skill works with a single agent for most projects."}
+      ]
+    },
+    "D5": {
+      "score": 4,
+      "rationale": "The body is 3422 characters, roughly 855 tokens - well under the ~1.5k ecosystem median - with no sidecar files, so nothing is loaded that a run cannot reach. It falls short of exemplary only because part of that small budget is spent on material no step consumes (the capability list and the optional teams table) rather than on the execution detail D3 finds missing.",
+      "evidence": [
+        {"quote": "- `--api`: Generate API reference documentation"},
+        {"quote": "The agent has expertise in:"}
+      ]
+    },
+    "D6": {
+      "score": 4,
+      "rationale": "The name plus description names the input sources (code annotations, docstrings, git history) and the three concrete output artifacts, which is a real discriminator against a sibling that reconciles or converts existing docs. It is not a 5 because the leading phrase is generic enough that a sibling named docs-sync or docs-update would overlap on a description read; the distinguishing condition is present but stated as source material rather than as an explicit contrast.",
+      "evidence": [
+        {"quote": "Generate or update docs from code annotations, docstrings, and git history. Use when wanting API reference, README from code, or CHANGELOG from conventional commits."}
+      ]
+    },
+    "D7": {
+      "score": 2,
+      "rationale": "Three largely independent procedures are bundled behind three flags: docstring extraction into an API reference, README rewriting from code analysis, and changelog synthesis from commit history. They share a topic and a preliminary codebase scan, but no dominant procedure exists and a --api invocation still carries the README and changelog branches. Splitting the changelog path, which shares almost nothing mechanically with docstring extraction, would raise this.",
+      "evidence": [
+        {"quote": "If `--changelog`:"},
+        {"quote": "If no flags: Generate all documentation"}
+      ]
+    },
+    "D8": {
+      "score": 3,
+      "rationale": "Some instructions decompose into observable constraints - the delegation target, the flag-to-branch mapping, and the required output summary would all be visible in a transcript. Others are purely dispositional with no observable correlate (clear, concise language; consistent formatting; accurate cross-references; suggested improvements), so an observer could not determine from a trajectory whether step 3 was followed at all.",
+      "evidence": []
+    }
+  },
+  "body_chars": 3422,
+  "sidecars": []
+}

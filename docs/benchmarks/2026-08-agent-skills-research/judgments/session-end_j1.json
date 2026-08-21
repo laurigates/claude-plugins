@@ -1,0 +1,72 @@
+{
+  "unit": "session-plugin/skills/session-end/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "ask-user-question",
+  "judge_id": "j1",
+  "dimensions": {
+    "D1": {
+      "score": 5,
+      "rationale": "The spine is an imperative five-step sequence (survey, qualify, confirm, sequence, report) opened by a direct execution directive, with concrete decision points at each step (qualify gates, a numbered run order, an early exit). The declarative material that is present (survey key semantics, the distill-vs-feedback seam) is consumed by a named later step rather than sitting as background; only the short auto-surfacing note is free-floating, which is not enough to pull it below the top anchor.",
+      "evidence": [
+        {"quote": "Execute this orchestration."},
+        {"quote": "### Step 2: Qualify each pass"}
+      ]
+    },
+    "D2": {
+      "score": 5,
+      "rationale": "Failure modes are attached to the steps they threaten and each names an observed symptom and its cost: omitting --with-dedup makes a guard run against nothing, a freeform y/n confirmation fires Stop hooks mid-confirmation, a low-confidence zero is an unqueried project rather than a clean queue, and a prefix-sibling slug sends follow-ups to a queue nobody reads. A reader can recognise each failure while it is happening.",
+      "evidence": [
+        {"quote": "without it the section is always empty and the guard silently runs against nothing"},
+        {"quote": "fires Stop hooks mid-confirmation (the race that motivated this orchestrator)"}
+      ]
+    },
+    "D3": {
+      "score": 5,
+      "rationale": "It gives exact invocations (full collector command with flags, a jq gate expression, the drain-wave re-derivation pipeline), names the exact output keys and their enumerated values (TASK_SCOPE, PROJECT_CONFIDENCE, GH_READY, UNDRAINED_COUNT), and states preconditions plus how to tell one is unmet, including a per-cause remediation table for an unqueried GitHub. Lifecycle gaps (plugin not installed, no transcript, no gh CLI) each get a stated fallback.",
+      "evidence": [
+        {"quote": "bash \"${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh\" --with-commits --with-blueprint --with-dedup"},
+        {"quote": "It always ships with `GH_FAIL_REASON=`, which says *why* GitHub went unqueried"}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "It states scope boundaries and routes each out-of-scope case to a named alternative (single pass to the individual skill, single-task close to task-done), provides a clean whole-skill exit when nothing qualifies, and degrades explicitly when a cross-plugin dependency is absent. It stops short of the top anchor because there is no provision for the case where the orchestration itself is the wrong frame; every escape routes to another prescribed skill or to silence.",
+      "evidence": [
+        {"quote": "If **nothing** qualifies, say so in one line and end"},
+        {"quote": "Cross-plugin: if `blueprint-plugin` isn't installed, note it and skip"}
+      ]
+    },
+    "D5": {
+      "score": 2,
+      "rationale": "The always-loaded body is 14,447 chars (~3.6k tokens), roughly 2.4x the ~1.5k ecosystem median, and there are no sidecars at all, so nothing is deferred. Much of the bulk is contingency detail most invocations never reach, notably a six-row remediation table for GitHub query failures and a long exposition of survey scoping keys; a references file would have carried these at zero cost to the common path.",
+      "evidence": [
+        {"quote": "| `no-remote` | The repo has no GitHub remote |"}
+      ]
+    },
+    "D6": {
+      "score": 4,
+      "rationale": "The description names the distinguishing condition directly, calling itself an orchestrator and enumerating the four passes it sequences, which separates it from its plausible siblings (session-wrap, session-distill, feedback-session) on a description read. It falls short of 5 because the trigger clause itself is generic and shared vocabulary with those siblings, so the disambiguation rests on the reader weighting the orchestrator framing over the trigger phrase.",
+      "evidence": [
+        {"quote": "End-of-session orchestrator. Previews which of wrap/distill/feedback/taskwarrior-sync qualify, single confirm, then sequence."}
+      ]
+    },
+    "D7": {
+      "score": 4,
+      "rationale": "There is one dominant procedure with one entry condition (winding down), and the multi-pass content is the point of an orchestrator rather than a bundle of unrelated topics. The adjacent material that could stand alone is the hook auto-surfacing section, which documents how the skill gets offered and how to silence it rather than any step of the procedure.",
+      "evidence": [
+        {"quote": "A Stop hook (`hooks/session-end-nudge.sh`) offers this skill at most once per session when the user's own messages carry a wind-down phrase."},
+        {"quote": "Pre-silence: `touch ~/.cache/claude-session-end-nudge/<session_id>`."}
+      ]
+    },
+    "D8": {
+      "score": 4,
+      "rationale": "Most instructions decompose into transcript-observable conditions: exactly one multiSelect question, a numbered execution order, addressing tasks by UUID, counted thresholds on named digest keys, and a one-line receipt for the auto-confirmed pass. It stops short of 5 because two qualify gates rest on unobservable judgement (a durable generalizable learning emerged, a plugin behaved notably well or badly) that only a mechanical corroborant partly grounds.",
+      "evidence": [
+        {"quote": "Then **one AskUserQuestion** (multiSelect) listing the qualifying passes"},
+        {"quote": "Never use volatile numeric IDs"}
+      ]
+    }
+  },
+  "body_chars": 14447,
+  "sidecars": []
+}

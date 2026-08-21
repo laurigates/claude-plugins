@@ -1,0 +1,71 @@
+{
+  "unit": "git-plugin/skills/git-cli-agentic/SKILL.md",
+  "unit_kind": "skill_body",
+  "pattern": "cli-wrapper",
+  "judge_id": "j1",
+  "dimensions": {
+    "D1": {
+      "score": 1,
+      "rationale": "The body is a command catalogue organised by git subcommand (Status/Diff/Log/Branch/Remote/Staging/Commit/Push), with lookup tables of status codes and format placeholders. There is no ordered sequence of steps and no decision point that commits the reader to an action; the closing 'Best Practices' list is five standalone maxims, not a procedure. Adding even a short ordered path (detect state, choose output mode, parse, act) would move this up.",
+      "evidence": [
+        {"quote": "Optimized git commands for AI agent consumption using porcelain output and stable formats."},
+        {"quote": "| Placeholder | Meaning |"}
+      ]
+    },
+    "D2": {
+      "score": 3,
+      "rationale": "Two guidance points carry real outcome information attached to the command they threaten: the heredoc note names the exact corruption ('the backslash survives into the commit message') and the context-expression note names the blocking mechanism. Everything else is unlabelled assertion, and one hazard is only gestured at ('use carefully'). That mix is what anchor 3 describes.",
+      "evidence": []
+    },
+    "D3": {
+      "score": 4,
+      "rationale": "Invocations are exact and copy-pasteable, and three of them publish their exact output shape (porcelain v2 record grammar, numstat field order, rev-list column order), plus a status-code and placeholder table for parsing. It also states the environment assumption up front (cwd is the repo) and when the -C flag is actually needed. It stops short of 5 because no precondition failure is made detectable: nothing says how the branch-tracking or remote commands behave when there is no upstream or no remote configured.",
+      "evidence": [
+        {"quote": "**Numstat Format**: `<added>\\t<deleted>\\t<filename>`"},
+        {"quote": "# Output: <behind>\\t<ahead>"}
+      ]
+    },
+    "D4": {
+      "score": 4,
+      "rationale": "The opening table is a genuine routing surface: each row names a condition under which this skill does not apply and names the specific sibling to use instead, across four adjacent skills. It falls short of 5 only because there is no escape from the skill itself - no guidance for the case where the porcelain approach is the wrong tool or the documented output shape does not match what the reader sees.",
+      "evidence": [
+        {"quote": "| Writing scriptable `git status/diff/log` calls in porcelain or `--format` mode | Use `gh-cli-agentic` for `gh` JSON queries against the GitHub API |"}
+      ]
+    },
+    "D5": {
+      "score": 4,
+      "rationale": "The always-loaded body is 6,743 characters (~1.69k tokens), essentially at the ~1.5k ecosystem median and well under the ~2.5k total median, with no sidecar files at all. It is not a 5 because there is zero progressive disclosure: a run that only needs porcelain status parsing still loads the remote, staging, commit and push sections. At this size that cost is small, which is why it does not drag the score lower.",
+      "evidence": [
+        {"quote": "## Push Operations"},
+        {"quote": "## Remote Operations"}
+      ]
+    },
+    "D6": {
+      "score": 4,
+      "rationale": "The description front-loads distinguishing tokens a sibling would not carry - porcelain=v2, --numstat, custom --format placeholders - so the machine-parsing purpose is decidable without opening the body, and it separates cleanly from a commit-workflow or gh-JSON sibling. Not a 5 because 'status/diff/log' and 'branch tracking info' are generic enough that a sibling git-log or git-diff skill would still contest part of the trigger surface.",
+      "evidence": [
+        {"quote": "Git commands with porcelain and machine-readable output for agent workflows. Use when scripting status/diff/log, porcelain=v2, --numstat counts, custom --format placeholders, or branch tracking info."}
+      ]
+    },
+    "D7": {
+      "score": 2,
+      "rationale": "The dominant material is one coherent thing - machine-readable read output - but the file also carries staging, commit-message authoring, push refspecs, gh-CLI combination and context-expression error handling, each usable independently of the porcelain thesis. The scope leak is self-evident: the skill's own routing table sends staging and commit-message structure to a different skill, and then ships Staging and Commit sections anyway.",
+      "evidence": [
+        {"quote": "| Needing `--porcelain=v2` status, `--numstat` diff counts, or custom `--format` log placeholders | Use `git-commit-workflow` for staging conventions and commit message structure |"},
+        {"quote": "## Staging Operations"},
+        {"quote": "## Commit Operations"}
+      ]
+    },
+    "D8": {
+      "score": 4,
+      "rationale": "Almost every instruction reduces to a literal command form an observer could look for in a transcript - which flag was passed, which of two commands was chosen, whether a suppressor was appended - so violations are visible rather than inferred. It is not a 5 because one hazard is purely dispositional and one constraint is ambiguous against the skill's own examples (the always-add rule is not honoured by the context block shown two sections earlier).",
+      "evidence": [
+        {"quote": "**Prefer git switch/restore** over checkout for clarity"},
+        {"quote": "4. **Always add 2>/dev/null fallback** in context expressions"},
+        {"quote": "# Amend last commit (use carefully)"}
+      ]
+    }
+  },
+  "body_chars": 6743,
+  "sidecars": []
+}
