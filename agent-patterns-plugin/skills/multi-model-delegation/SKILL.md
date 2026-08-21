@@ -2,11 +2,11 @@
 name: multi-model-delegation
 description: Multi-model design consults via PAL (kimi, glm, gemini, gpt). Use when asking other models to brainstorm a design or reconciling their split answers.
 user-invocable: false
-allowed-tools: Read, Glob, Grep, TodoWrite, mcp__pal__listmodels, mcp__pal__chat, mcp__pal__consensus, mcp__pal__thinkdeep
+allowed-tools: Read, Glob, Grep, TodoWrite, mcp__pal-mcp-server__listmodels, mcp__pal-mcp-server__chat, mcp__pal-mcp-server__consensus, mcp__pal-mcp-server__thinkdeep
 model: opus
 created: 2026-07-17
-modified: 2026-07-28
-reviewed: 2026-07-28
+modified: 2026-08-21
+reviewed: 2026-08-21
 ---
 
 # Multi-Model Delegation
@@ -32,6 +32,43 @@ You — the orchestrating Claude session — run the whole consult: you dispatch
 the PAL MCP calls, collect the replies, and do the judgment steps (diff,
 adjudicate, synthesize) yourself in the main loop.
 
+## The Tool Prefix Is Derived, Not Fixed
+
+PAL's tools are reachable as **`mcp__<server-name>__<tool>`**, where
+`<server-name>` is the key the server is **registered under** — not the product
+name, and not the binary. That key can live in any registration scope: a
+project `.mcp.json`, a **user**-scope entry in `~/.claude.json`
+(`claude mcp add -s user …`, which has no `.mcp.json` at all), or a local one.
+So read the registration rather than a file — `claude mcp list` is
+authoritative in every scope, and `claude mcp get` names the scope that owns it:
+
+```bash
+claude mcp list                 # "pal-mcp-server: pal-mcp-server  - ✔ Connected"
+claude mcp get pal-mcp-server   # Scope: Project config (shared via .mcp.json)
+```
+
+With the common registration `pal-mcp-server`, `chat` is
+`mcp__pal-mcp-server__chat`; a repo that registers the same binary under a
+different key gets that key in the prefix instead. Every
+`mcp__pal-mcp-server__*` name below assumes that registration — substitute the
+key `claude mcp list` reports.
+
+### `No matching deferred tools found` has two causes
+
+Do not read that message as proof the prefix is wrong — under the **correct**
+prefix it means something else entirely, and the two want different responses:
+
+| What you observe | Cause | Do this |
+|---|---|---|
+| The prefix you tried is not the key `claude mcp list` reports | Wrong prefix | Retry with the reported key |
+| The **correct** prefix also finds nothing, PAL's tools never appear in any deferred-tool reminder, yet `claude mcp list` says Connected | The server's tools were never registered *in this session* — likely it connected after session start | Restart the session, or drive the server directly over stdio JSON-RPC (issue #2437) |
+
+One trap in that direct-stdio workaround, worth stating because its symptom
+misleads: **keep stdin open until the response arrives.**
+`subprocess.run(..., input=...)` closes stdin after writing, so the server shuts
+down mid-call and returns an empty result that looks exactly like a hung or
+non-responding model rather than a transport error.
+
 ## When to Use This Skill
 
 | Use this skill when... | Use alternative when... |
@@ -46,15 +83,16 @@ Execute a multi-model consult in these steps:
 
 ### Step 1: Resolve model IDs first
 
-Run `mcp__pal__listmodels` once at the start of the consult whenever a model
-is named loosely ("kimi2.7", "glm5.2") — registry IDs (`kimi-k2.7-code`,
+Run `mcp__pal-mcp-server__listmodels` once at the start of the consult
+whenever a model is named loosely ("kimi2.7", "glm5.2") — registry IDs (`kimi-k2.7-code`,
 `glm-5.2`) and their aliases (`kimi`, `glm`) rarely match what anyone types
 from memory.
 
 ### Step 2: Brief every model with the same prompt
 
-Send the identical brief, verbatim, to each model — one `mcp__pal__chat`
-call per model — and collect every reply before judging any of them.
+Send the identical brief, verbatim, to each model — one
+`mcp__pal-mcp-server__chat` call per model — and collect every reply before
+judging any of them.
 Different prompts produce divergences that are artifacts of the framing, not
 of the problem — and afterward you cannot tell a real design tension from a
 wording accident. Pass code via the `absolute_file_paths` parameter rather
@@ -184,11 +222,11 @@ briefs. Build one file and attach *it* to every model:
 
 | Context | Command |
 |---|---|
-| Resolve registry IDs and aliases | `mcp__pal__listmodels` |
-| Independent round-one draw (repeat per model, same prompt) | `mcp__pal__chat` with `model` + `absolute_file_paths`; omit `temperature` for kimi |
+| Resolve registry IDs and aliases | `mcp__pal-mcp-server__listmodels` |
+| Independent round-one draw (repeat per model, same prompt) | `mcp__pal-mcp-server__chat` with `model` + `absolute_file_paths`; omit `temperature` for kimi |
 | Attachment set exceeds the smallest model's budget | One `<repo>/tmp/<consult>/context-excerpts.md` bundle, attached to every model |
-| Structured multi-model verdict with per-model stances | `mcp__pal__consensus` |
-| Deep single-model dig after the split is found | `mcp__pal__thinkdeep` |
+| Structured multi-model verdict with per-model stances | `mcp__pal-mcp-server__consensus` |
+| Deep single-model dig after the split is found | `mcp__pal-mcp-server__thinkdeep` |
 
 ## Related
 
