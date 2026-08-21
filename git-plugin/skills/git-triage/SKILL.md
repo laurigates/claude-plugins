@@ -56,14 +56,17 @@ Execute this triage workflow:
 Run the data-gathering script. It fetches issue/PR batches, computes age in days
 per item, categorizes each PR via the pure first-match table (over `isDraft`,
 `mergeable`, `mergeStateStatus`, `reviewDecision`, and `statusCheckRollup[].conclusion`),
-flags stale-candidate issues, and extracts each PR's closing keywords:
+flags stale-candidate issues, carries each issue's title through so the output
+is readable without a second `gh issue list` pass, and extracts each PR's
+closing keywords:
 
 ```bash
 bash "${CLAUDE_SKILL_DIR}/scripts/git-triage.sh" --home-dir "$HOME" --project-dir "$(pwd)" --type "$TYPE" --batch "$BATCH" --days-stale-issue "$STALE_ISSUE" --days-stale-pr "$STALE_PR"
 ```
 
 Parse `STATUS=` and `ISSUES:` from the output. Per item it emits
-`ISSUE_<n>_AGE_DAYS` / `ISSUE_<n>_REFS` / `ISSUE_<n>_STALE_CANDIDATE` and
+`ISSUE_<n>_TITLE` / `ISSUE_<n>_AGE_DAYS` / `ISSUE_<n>_REFS` /
+`ISSUE_<n>_COMMENTS` / `ISSUE_<n>_STALE_CANDIDATE` and
 `PR_<n>_CATEGORY` / `PR_<n>_AGE_DAYS` / `PR_<n>_CLOSES` (plus the underlying
 enum fields). It also rolls up `SYSTEMATIC_FAILURE_*` groups (see Step 4).
 If `--repo` was provided, pass it through; the script reads the

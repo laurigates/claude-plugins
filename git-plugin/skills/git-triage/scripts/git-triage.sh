@@ -162,14 +162,30 @@ if [ "$triage_type" != "prs" ]; then
   issue_total=$(echo "$issues_json" | jq 'length')
   echo "ISSUES_FETCHED=${issue_total}"
 
-  # Per-issue: number, age, referenced PR numbers (closing-keyword candidates).
+  # Per-issue: number, age, referenced PR numbers (closing-keyword candidates),
+  # comment count, and the title (issue #2480). The title comes free from the
+  # `gh issue list --json` call above, and without it the collector's own output
+  # is unreadable — an issue number plus an age does not say what the issue *is*,
+  # so triage had to make a second full pass just to recover titles.
+  #
+  # The title is sanitized (tabs/CRs/newlines → spaces) so it can never break the
+  # TSV row or the line-oriented KEY=VALUE contract, and is emitted last so it is
+  # the `read` remainder field. Format mirrors session-survey.sh's ISSUE_<n>_TITLE.
+  #
+  # Empty fields are emitted as the literal `none` for the same reason the PR
+  # section does it: `read` with a tab IFS collapses consecutive tabs (tab is
+  # IFS-whitespace), so an empty refs field silently shifted every later column
+  # — before this guard, an issue with no `#N` references reported the comment
+  # count as its REFS and an empty COMMENTS.
   echo "$issues_json" | jq -r '.[] | [
     (.number|tostring),
     .updatedAt,
-    ((.title + " " + (.body // "")) | [scan("#[0-9]+")] | unique | join(",")),
-    (.comments | length | tostring)
-  ] | @tsv' 2>/dev/null | while IFS=$'\t' read -r issue_num issue_updated issue_refs issue_comments; do
+    ((((.title // "") + " " + (.body // "")) | [scan("#[0-9]+")] | unique | join(",")) | if . == "" then "none" else . end),
+    (.comments | length | tostring),
+    (((.title // "") | gsub("[\t\r\n]"; " ")) | if . == "" then "none" else . end)
+  ] | @tsv' 2>/dev/null | while IFS=$'\t' read -r issue_num issue_updated issue_refs issue_comments issue_title; do
     issue_age=$(age_days "$issue_updated")
+    echo "ISSUE_${issue_num}_TITLE=${issue_title:-none}"
     echo "ISSUE_${issue_num}_AGE_DAYS=${issue_age}"
     echo "ISSUE_${issue_num}_REFS=${issue_refs:-none}"
     echo "ISSUE_${issue_num}_COMMENTS=${issue_comments}"
