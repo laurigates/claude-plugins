@@ -5,7 +5,7 @@ args: "[--type issues|prs|both] [--batch N] [--repo owner/name] [--days-stale-is
 argument-hint: "--type both --batch 10 (defaults: days-stale-issue=90, days-stale-pr=30, current repo)"
 allowed-tools: Bash(bash *), Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git log *), Bash(rg *), Read, Grep, Glob, AskUserQuestion, TodoWrite
 created: 2026-04-22
-modified: 2026-08-15
+modified: 2026-08-21
 reviewed: 2026-06-14
 ---
 
@@ -206,9 +206,9 @@ After per-item actions, emit a structured summary:
 | Category | Recommended next skill |
 |----------|------------------------|
 | `needs-fix` | `/git:fix-pr <n>` |
-| `changes-requested` | `/git:pr-feedback <n>` |
+| `changes-requested` | recommend the user run `/git:pr-feedback <n>` (gated by `disable-model-invocation`, so surface it rather than invoking it) |
 | `needs-rebase` | `/git:conflicts <n>` or `gh pr merge --update-branch` |
-| `still-valid` (actionable) | `/git:issue <n>` |
+| `still-valid` (actionable) | recommend the user run `/git:issue <n>` (gated by `disable-model-invocation`, so surface it rather than invoking it) |
 | `still-valid` (admin only) | `/git:issue-manage` |
 | `implemented` (not auto-closed) | manual `gh issue close <n>` |
 

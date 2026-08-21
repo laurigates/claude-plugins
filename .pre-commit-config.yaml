@@ -472,6 +472,23 @@ repos:
         language: system
         files: '^scripts/(check-loop-integrity\.sh|tests/test-check-loop-integrity\.sh)$'
         pass_filenames: false
+      - id: check-delegation-reachability
+        name: catalog-present skills never delegate to a gated sibling (#2442)
+        entry: bash ./scripts/check-delegation-reachability.sh
+        language: system
+        # The guard is whole-scope (pass_filenames: false), so the trigger must
+        # reach EVERY file its verdict depends on: any git-plugin skill (a
+        # scoped skill's prose, or a sibling's disable-model-invocation flag)
+        # and the checker itself. A per-skill allowlist drifts from the scope
+        # it mirrors (the #2164 lesson).
+        files: '(git-plugin/skills/.*/SKILL\.md|check-delegation-reachability\.sh)$'
+        pass_filenames: false
+      - id: test-check-delegation-reachability
+        name: delegation-reachability guard regression
+        entry: bash ./scripts/tests/test-check-delegation-reachability.sh
+        language: system
+        files: '^scripts/(check-delegation-reachability\.sh|tests/test-check-delegation-reachability\.sh)$'
+        pass_filenames: false
       - id: test-check-driver-freshness
         name: driver-freshness equal-date invariant + epoch diagnostics (#1704)
         entry: bash ./scripts/tests/test-check-driver-freshness.sh

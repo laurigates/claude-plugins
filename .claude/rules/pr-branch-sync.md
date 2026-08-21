@@ -46,7 +46,7 @@ Opt out of the hook with `CLAUDE_HOOKS_DISABLE_BRANCH_SYNC=1`; tune its TTL with
 | `behind` | Reconcile (`git pull --rebase`) before adding commits |
 | `pr_merged` | Branch off the updated default; do **not** add commits to the merged branch |
 | `pr_closed` | Confirm the branch is still where the work belongs |
-| `changes_requested` | Address review via `/git:pr-feedback` first |
+| `changes_requested` | Summarise the outstanding threads and recommend the user run `/git:pr-feedback` (it is `disable-model-invocation`, so the model cannot reach it) before piling on unrelated work |
 | `no_pr` / `no_remote` | Nothing to guard against; proceed |
 
 ## Field-name discipline
@@ -60,9 +60,23 @@ and exit 0 on empty input so they stay parallel-safe
 ## Watching instead of polling
 
 To *react* to reviews/CI as they arrive (rather than checking before each build),
-`/git:pr-watch` wraps the native `subscribe_pr_activity` MCP tool and delegates
-reactions to `/git:pr-feedback` (threads) and `/git:fix-pr` (CI). Subscription is
-primarily a remote/web capability (`.claude/rules/sandbox-guidance.md`).
+`/git:pr-watch` wraps the native `subscribe_pr_activity` MCP tool. The two
+branches are **not** symmetric: CI failures are fixed via `/git:fix-pr`, which
+the model can invoke; review threads are summarised and handed to the user with
+a recommendation to run `/git:pr-feedback`, which carries
+`disable-model-invocation: true` and is therefore unreachable from the model
+(#2442). Subscription is primarily a remote/web capability
+(`.claude/rules/sandbox-guidance.md`).
+
+## Gated siblings are recommended, never delegated to
+
+Seven `git-plugin` skills carry `disable-model-invocation: true` (`git-api-pr`,
+`git-commit-push-pr`, `git-derive-docs`, `git-issue`, `git-maintain`,
+`git-pr-feedback`, `git-upstream-pr`). A catalog-present skill that tells the
+agent to "address it via `/git:pr-feedback`" fails **silently** — the delegation
+is prose, so there is no tool call to refuse. Write the recommendation form
+instead ("summarise the thread and recommend the user run `/git:pr-feedback`");
+`scripts/check-delegation-reachability.sh` is the guard.
 
 ## Related
 
