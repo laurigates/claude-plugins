@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Audit top-level documentation maps for mechanical drift (Layer 1 of #1460).
 #
-# Two zero-false-positive checks:
+# Seven zero-false-positive checks:
 #   1. RULES INDEX  — every .claude/rules/*.md appears in the CLAUDE.md Rules
 #      table, and every table entry exists on disk (bidirectional).
 #   2. PLUGIN MAPS  — the plugin set agrees across marketplace.json,
@@ -12,11 +12,39 @@
 #      the README intro AND the docs/PLUGIN-MAP.md header line ("N plugins and
 #      M+ skills").
 #   4. DIAGRAM      — node labels in docs/diagrams/plugin-relationships.d2 name a
-#      plugin that exists and state a count matching disk (the .svg is generated
-#      and not parsed). Guards the #1523 command-analytics / sync drift class.
+#      plugin that exists and state a count matching disk. Guards the #1523
+#      command-analytics / sync drift class. The rendered .svg is Check 6's job.
 #   5. RULE REVIEWED — every .claude/rules/*.md carries a `reviewed:` frontmatter
 #      field with a real YYYY-MM-DD value (not the `YYYY-MM-DD` placeholder), so
 #      the stale-reviewed-date currency check is measurable (#1851).
+#   6. DIAGRAM SVG  — the COMMITTED docs/diagrams/plugin-relationships.svg renders
+#      the same per-plugin labels the .d2 source states. Check 4 reads the .d2
+#      only, so a .d2 edit committed without re-rendering left the published
+#      diagram silently stale at STATUS=OK — exactly what happened after #2450
+#      (git 38→42, code-quality 15→16, documentation 5→8) (#2453). ERROR, not
+#      WARN: `--strict` is the always-on required gate in plugin-pr-checks.yml,
+#      and a staleness check that cannot turn it red is not a gate.
+#      KNOWN LIMIT: it compares rendered label TEXT only, so it needs no d2
+#      binary and ignores layout/styling churn — but it therefore cannot tell a
+#      correctly re-rendered .svg from one hand-patched to agree with the .d2.
+#      Re-render with `d2 <src> <out>`; do not hand-edit the .svg.
+#   7. README SKILL ROWS — a `/<ns>:<name>` invocation path used as the LEADING
+#      table cell of a plugin README row resolves to a skill directory. Guards
+#      the phantom-row class (#2453: git-plugin advertised
+#      `/git:resolve-conflicts`, which never existed). Resolution is EXACT
+#      (`<ns>-<name>/` or `<name>/`) — a shorthand that resolves to nothing is a
+#      finding, not a tolerated alias — and namespace-aware: the row is resolved
+#      against the plugins that own `<ns>` as well as the README's own plugin, so
+#      a legitimate cross-plugin row cannot false-positive.
+#      KNOWN LIMIT — coverage is PARTIAL and modest. The leading-cell regex
+#      matches ~60 rows across 9 of the 44 plugin READMEs; plugins that catalogue
+#      skills as headings instead (agent-patterns' `#### \`/meta:assimilate\``,
+#      blueprint, configure, testing, project) are outside it entirely. It is a
+#      cheap gate on the rows it does see, not a corpus-wide index audit.
+#      The REVERSE direction (a skill directory catalogued in no README row) is
+#      deliberately NOT gated: 71 directories corpus-wide are absent from their
+#      plugin README today, so an ERROR there would be red on arrival. Fixing
+#      that backlog is its own task.
 #
 # Emits the structured KEY=value / STATUS= convention
 # (.claude/rules/structured-script-output.md) so scheduled-audits can roll it up.
@@ -54,6 +82,7 @@ rp_config="$proj_dir/release-please-config.json"
 rp_manifest="$proj_dir/.release-please-manifest.json"
 plugin_map="$proj_dir/docs/PLUGIN-MAP.md"
 diagram_d2="$proj_dir/docs/diagrams/plugin-relationships.d2"
+diagram_svg="$proj_dir/docs/diagrams/plugin-relationships.svg"
 
 issue_count=0
 declare -a issues=()
@@ -211,8 +240,8 @@ fi
 # The diagram source states each plugin's count as `label: "<name>\n<N> skills"`
 # or `label: "<name>\n<N> skills + <M> agent(s)"`. A node naming a plugin that no
 # longer exists on disk is dead (the #1523 command-analytics / sync drift); a node
-# whose stated count diverges from disk is stale. The rendered .svg is generated
-# and intentionally not parsed — guard the .d2 source only. Zero-false-positive:
+# whose stated count diverges from disk is stale. The rendered .svg is compared
+# separately by Check 6 — this check guards the .d2 source. Zero-false-positive:
 # only `label:` lines whose text matches `<name>\n<int> skill` are compared; the
 # title and tier-label nodes (no `\nN skill`) are skipped.
 diagram_nodes=0
@@ -284,6 +313,114 @@ while IFS= read -r rule_file; do
   fi
 done < <(find "$rules_dir" -maxdepth 1 -name '*.md' -type f 2>/dev/null | sort)
 
+# --- Check 6: committed .svg matches the .d2 source ---------------------------
+# The .svg is GENERATED (`d2 <src> <out>`) and must never be hand-edited, but it
+# is also COMMITTED — so it is the artefact readers actually see, and a .d2 edit
+# landed without re-rendering leaves it stale with nothing to catch it (#2453).
+# Compares only the per-plugin node label text ("<N> skills[ + <M> agent(s)]")
+# that Check 4 already parses out of the .d2, so it needs no d2 binary and is
+# blind to layout/styling churn. ERROR severity so `--strict` — the always-on,
+# path-filter-free required step in plugin-pr-checks.yml — actually goes red:
+# the PR shape that produced #2453 (edit the .d2, skip the render) must not
+# merge green. Degrades silently when either file is absent (…SVG_NODES=0).
+diagram_svg_nodes=0
+if [ -f "$diagram_d2" ] && [ -f "$diagram_svg" ]; then
+  # One "<name>|<label>" row per rendered node, from the d2-emitted tspan pair.
+  svg_pairs="$(grep -o '>[a-z0-9-]*</tspan><tspan[^>]*>[0-9]* skill[^<]*</tspan>' "$diagram_svg" 2>/dev/null \
+    | sed -E 's#^>([a-z0-9-]*)</tspan><tspan[^>]*>(.*)</tspan>$#\1|\2#')"
+
+  while IFS='|' read -r dn_name dn_label; do
+    [ -n "$dn_name" ] || continue
+    diagram_svg_nodes=$((diagram_svg_nodes + 1))
+    svg_label="$(printf '%s\n' "$svg_pairs" | grep -m1 "^${dn_name}|" | cut -d'|' -f2-)"
+    if [ -z "$svg_label" ]; then
+      add_issue ERROR diagram_svg_node_missing \
+        "plugin-relationships.svg has no '$dn_name' node; re-render with: d2 docs/diagrams/plugin-relationships.d2 docs/diagrams/plugin-relationships.svg"
+    elif [ "$svg_label" != "$dn_label" ]; then
+      add_issue ERROR diagram_svg_stale \
+        "plugin-relationships.svg renders $dn_name as '$svg_label' but the .d2 states '$dn_label'; re-render with: d2 docs/diagrams/plugin-relationships.d2 docs/diagrams/plugin-relationships.svg"
+    fi
+  done <<< "$(awk '
+    match($0, /label: "[a-z0-9-]+\\n[0-9]+ skill/) {
+      seg = substr($0, RSTART + 8)            # drop label: "
+      q = index(seg, "\\n"); name = substr(seg, 1, q - 1)
+      rest = substr(seg, q + 2)               # after \n
+      e = index(rest, "\"")                   # up to the closing quote
+      if (e > 0) rest = substr(rest, 1, e - 1)
+      print name "|" rest
+    }
+  ' "$diagram_d2")"
+fi
+
+# --- Check 7: plugin README `/<ns>:<name>` rows resolve to a skill dir ---------
+# A leading-cell invocation path is a claim that the skill is invocable. Two
+# deliberate properties, both learned from review:
+#   * Resolution is EXACT — `<ns>-<name>/` or `<name>/`, no prefix tolerance. A
+#     row whose path resolves to nothing is reported even when a LONGER
+#     directory shares its prefix; that shape is the defect, not an alias.
+#     (`/evaluate:plugin` vs `evaluate-plugin-batch/` was exactly that, and is
+#     fixed in the README rather than tolerated here.)
+#   * Resolution is NAMESPACE-AWARE — a row's `<ns>` selects which plugins may
+#     satisfy it: the README's own plugin, the `<ns>-plugin` directory, and any
+#     plugin already owning skills prefixed `<ns>-`. A legitimate cross-plugin
+#     row (git-plugin's README citing `/taskwarrior:task-claim`) therefore
+#     resolves instead of hard-ERRORing on a required gate.
+# Coverage is partial by construction — see the KNOWN LIMIT in the header.
+readme_skill_rows=0
+readme_row_plugins=0
+
+# namespace -> owning plugin dirs, from `<ns>-<rest>` skill directory names.
+declare -A ns_owner=()
+while IFS= read -r p; do
+  [ -n "$p" ] || continue
+  [ -d "$proj_dir/$p/skills" ] || continue
+  while IFS= read -r d; do
+    [ -n "$d" ] || continue
+    ns="${d%%-*}"
+    case " ${ns_owner[$ns]:-} " in
+      *" $p "*) ;;
+      *) ns_owner[$ns]="${ns_owner[$ns]:-} $p" ;;
+    esac
+  done < <(find "$proj_dir/$p/skills" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sed 's#.*/##')
+done <<< "$disk_set"
+
+while IFS= read -r p; do
+  [ -n "$p" ] || continue
+  p_readme="$proj_dir/$p/README.md"
+  [ -f "$p_readme" ] && [ -d "$proj_dir/$p/skills" ] || continue
+
+  rows="$(grep -oE '^\| *`?/[a-z0-9-]+:[a-z0-9-]+`? *\|' "$p_readme" 2>/dev/null \
+    | sed -E 's#^\| *`?/([a-z0-9-]+):([a-z0-9-]+)`? *\|$#\1|\2#' | sort -u)"
+  [ -n "$rows" ] && readme_row_plugins=$((readme_row_plugins + 1))
+
+  while IFS='|' read -r row_ns row_name; do
+    [ -n "$row_name" ] || continue
+    readme_skill_rows=$((readme_skill_rows + 1))
+
+    # Candidate plugins for this row's namespace, own plugin first, deduped.
+    cand_plugins=""
+    for cp in "$p" "${row_ns}-plugin" ${ns_owner[$row_ns]:-}; do
+      [ -d "$proj_dir/$cp/skills" ] || continue
+      case " $cand_plugins " in *" $cp "*) continue ;; esac
+      cand_plugins="$cand_plugins $cp"
+    done
+
+    resolved=false
+    for cp in $cand_plugins; do
+      for cand in "${row_ns}-${row_name}" "$row_name"; do
+        if [ -d "$proj_dir/$cp/skills/$cand" ]; then
+          resolved=true
+          break 2
+        fi
+      done
+    done
+    if [ "$resolved" = false ]; then
+      add_issue ERROR readme_row_dangling \
+        "$p/README.md lists /$row_ns:$row_name but no matching skill directory exists (searched:$cand_plugins)"
+    fi
+  done <<< "$rows"
+done <<< "$disk_set"
+
 # --- Status -------------------------------------------------------------------
 overall_status="OK"
 exit_severity=0
@@ -322,6 +459,9 @@ else
   echo "TOTAL_SKILLS=$total_skills"
   echo "TOTAL_AGENTS=$total_agents"
   echo "DIAGRAM_NODES=$diagram_nodes"
+  echo "DIAGRAM_SVG_NODES=$diagram_svg_nodes"
+  echo "README_SKILL_ROWS=$readme_skill_rows"
+  echo "README_ROW_PLUGINS=$readme_row_plugins"
   echo "RULES_CHECKED=$rules_checked"
   echo "STATUS=$overall_status"
   echo "ISSUE_COUNT=$issue_count"

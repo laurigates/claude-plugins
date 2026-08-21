@@ -165,7 +165,13 @@ bash scripts/plugin-compliance-check.sh
 
 `check-docs-index.sh` cross-checks the plugin set and per-plugin skill/agent
 counts against disk across `README.md`, `docs/PLUGIN-MAP.md`, and the d2
-diagram — use `/docs-refresh` to repair count drift it reports.
+diagram — use `/docs-refresh` to repair count drift it reports. It also gates
+two name-level invariants at ERROR severity (`--strict` therefore fails CI):
+the **committed** `docs/diagrams/plugin-relationships.svg` must render the same
+per-plugin labels its `.d2` source states (re-render with
+`d2 docs/diagrams/plugin-relationships.d2 docs/diagrams/plugin-relationships.svg`
+— never hand-edit the `.svg`), and every leading-cell `/<ns>:<name>` row in a
+plugin README must resolve to a skill directory (#2453).
 
 ## Related
 
