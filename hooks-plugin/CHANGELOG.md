@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.10.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.9.1...hooks-plugin-v2.10.0) (2026-08-21)
+
+
+### Features
+
+* **feedback-plugin:** log skill invocations for the slow loop to target ([bfd17da](https://github.com/laurigates/claude-plugins/commit/bfd17da5a9625405e67df7150299830992a283a2))
+
 ## [2.9.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.9.0...hooks-plugin-v2.9.1) (2026-08-20)
 
 
