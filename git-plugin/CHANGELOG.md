@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.51.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.51.0...git-plugin-v2.51.1) (2026-08-21)
+
+
+### Documentation
+
+* **git-plugin:** extend merge-hazards with the zsh refspec trap and two closing-keyword forms ([#2468](https://github.com/laurigates/claude-plugins/issues/2468)) ([15783cf](https://github.com/laurigates/claude-plugins/commit/15783cfde43dccf73c56324af558f6dec6d11fc8))
+
 ## [2.51.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.10...git-plugin-v2.51.0) (2026-08-20)
 
 

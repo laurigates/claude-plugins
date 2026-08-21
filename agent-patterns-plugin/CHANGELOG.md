@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.43.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.42.0...agent-patterns-plugin-v2.43.0) (2026-08-21)
+
+
+### Features
+
+* **agent-patterns-plugin:** add tool-result-traps skill ([#2472](https://github.com/laurigates/claude-plugins/issues/2472)) ([627b0f6](https://github.com/laurigates/claude-plugins/commit/627b0f69b82fccdf182123aaca97bf8b3fc003bd))
+
 ## [2.42.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.41.0...agent-patterns-plugin-v2.42.0) (2026-08-20)
 
 

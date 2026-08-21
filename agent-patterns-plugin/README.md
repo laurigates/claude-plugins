@@ -188,6 +188,23 @@ Verify orchestrator premises (file counts, build state, artefact presence) befor
 - Cheapest-verifier table mapping premise shape to the right tool (`Glob`, `Grep`, read-only agent)
 - Anti-patterns catalog: name-equals-behaviour, stale-counter, symptom-not-cause
 
+#### `tool-result-traps`
+Tool results that mean something other than they look — an empty result, a green exit, and a well-formed line of output are each claims about mechanics, not content. Complements `verify-before-plan`: that one verifies a premise before a wave, this one distrusts the tool output a verdict is built on.
+
+**When to use:**
+- A zero-match or empty result is about to be reported as "clean", "complete", or "none found"
+- Deduping before filing an issue, or concluding nobody reported something
+- Declaring a bulk rename, migration, or sweep finished
+- A verification loop's input set is built from a relative path in a long-running session
+- An `rg` / `git grep` result contradicts something read directly
+
+**Features:**
+- The silent-rewrite and never-compiled-pattern cases: `rg -r` as `--replace`, `git grep -E` dropping `\b`
+- A rejected flag reading as "no results" — and its worse variants on a *write*, and on an accepted flag that takes a stdin marker literally
+- The persistent-cwd pair: the shell wedge `cd` cannot undo, and the vacuous path-scoped verification that shares its cause
+- `Workflow` `args` arriving JSON-encoded, so agents run against `undefined`
+- Control-testing every negative that gates an action; parallel-batch rule for siblings that can exit non-zero
+
 #### `adversarial-review`
 Adversarial second-pass review that tries to break code, designs, plans, or ADRs — a thin posture (isolation, inverted objective, triage gate, bounded loop) layered on top of the existing domain review skills.
 
