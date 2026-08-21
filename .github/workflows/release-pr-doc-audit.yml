@@ -9,10 +9,18 @@ permissions:
   pull-requests: write
   id-token: write
 
+# release-please force-pushes its PR branch on every re-run, and each push would
+# otherwise start a fresh opus audit that posts a duplicate comment; superseding
+# the in-flight run keeps one comment per release PR.
+concurrency:
+  group: release-pr-doc-audit-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   doc-audit:
     if: startsWith(github.head_ref, 'release-please--')
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6

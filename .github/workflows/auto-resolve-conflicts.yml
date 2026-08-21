@@ -25,6 +25,7 @@ jobs:
   find-conflicts:
     # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     outputs:
       matrix: ${{ steps.find.outputs.matrix }}
       has_conflicts: ${{ steps.find.outputs.has_conflicts }}
@@ -56,7 +57,7 @@ jobs:
             # regardless of how many PRs are open.
             DEADLINE=$(( $(date +%s) + POLL_DEADLINE_SECONDS ))
             while :; do
-              LIST=$(gh pr list --repo "$REPO" --state open --json number,mergeable)
+              LIST=$(gh pr list --repo "$REPO" --state open --limit 200 --json number,mergeable)
               UNKNOWN_COUNT=$(echo "$LIST" | jq '[.[] | select(.mergeable == "UNKNOWN")] | length')
               if [ "$UNKNOWN_COUNT" -eq 0 ] || [ "$(date +%s)" -ge "$DEADLINE" ]; then
                 break
@@ -84,17 +85,19 @@ jobs:
 
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
           COUNT=$(echo "$MATRIX" | jq '.include | length')
+          # Both branches above leave a non-empty matrix (the no-conflicts case
+          # already wrote has_conflicts=false and exited), so there is no
+          # zero-count arm to handle here.
           if [ "$COUNT" -gt 0 ]; then
             echo "has_conflicts=true" >> "$GITHUB_OUTPUT"
             echo "::notice::Found $COUNT PR(s) with merge conflicts"
-          else
-            echo "has_conflicts=false" >> "$GITHUB_OUTPUT"
           fi
 
   resolve:
     needs: find-conflicts
     if: needs.find-conflicts.outputs.has_conflicts == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       matrix: ${{ fromJson(needs.find-conflicts.outputs.matrix) }}
       max-parallel: 1

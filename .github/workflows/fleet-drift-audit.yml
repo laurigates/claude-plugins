@@ -16,7 +16,8 @@ name: "Plugin: Fleet drift audit"
 
 on:
   schedule:
-    - cron: '0 9 * * 1'  # Mondays 09:00 UTC, an hour after the stranded-work sweep
+    - cron: '37 9 * * 1'  # Mondays 09:37 UTC, an hour after the stranded-work sweep.
+                          # Off-the-hour: '0 9 * * 1' collided exactly with changelog-review.
   workflow_dispatch:
     inputs:
       pack_owner:
@@ -28,11 +29,19 @@ permissions:
   contents: read
   issues: write
 
+# Bare group, no ref suffix: serialises an overlapping cron + workflow_dispatch so
+# the check-then-create-issue window below cannot race. Never cancel a run that
+# may be mid-write.
+concurrency:
+  group: fleet-drift-audit
+  cancel-in-progress: false
+
 jobs:
   fleet-drift:
     # Orchestration only (git clone + a stdlib python script) — 1-CPU slim
     # runner is 3x cheaper.
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -64,25 +73,61 @@ jobs:
           gh repo list "$PACK_OWNER" --limit 200 --no-archived \
             --json name --jq '.[].name | select(startswith("comfyui-"))' \
             > "${RUNNER_TEMP}/packs.txt"
+          # An empty pack list is a broken discovery step (bad owner, token scope,
+          # API failure) — NOT a drift-free fleet. The audit reports PACK_COUNT=0 /
+          # STATUS=OK / exit 0 on an empty root, so failing here is the only thing
+          # standing between a broken sweep and a silent green.
+          PACK_COUNT=$(grep -c . "${RUNNER_TEMP}/packs.txt" || true)
+          if [ "$PACK_COUNT" -eq 0 ]; then
+            echo "::error::no comfyui-* repos discovered under ${PACK_OWNER} — refusing to audit an empty fleet"
+            exit 1
+          fi
+          CLONE_FAILURES=0
           while IFS= read -r pack; do
             [ -n "$pack" ] || continue
-            git clone --depth 1 --quiet \
+            if git clone --depth 1 --quiet \
               "https://github.com/${PACK_OWNER}/${pack}.git" \
-              "${RUNNER_TEMP}/fleet/${pack}" || echo "skip: ${pack} (clone failed)"
+              "${RUNNER_TEMP}/fleet/${pack}"; then
+              continue
+            fi
+            # Counted, not swallowed: a pack that fails to clone is absent from the
+            # comparison and would otherwise read as "no drift" for that pack.
+            echo "::warning::clone failed for ${pack} — excluded from this audit"
+            CLONE_FAILURES=$((CLONE_FAILURES + 1))
           done < "${RUNNER_TEMP}/packs.txt"
-          echo "cloned $(find "${RUNNER_TEMP}/fleet" -maxdepth 1 -mindepth 1 -type d | wc -l) packs"
+          CLONED=$(find "${RUNNER_TEMP}/fleet" -maxdepth 1 -mindepth 1 -type d | wc -l)
+          echo "cloned ${CLONED}/${PACK_COUNT} packs (${CLONE_FAILURES} clone failures)"
+          if [ "$CLONED" -eq 0 ]; then
+            echo "::error::every clone failed — refusing to audit an empty fleet"
+            exit 1
+          fi
 
       - name: Run fleet-drift audit
         if: steps.check_issue.outputs.exists == 'false'
         id: audit
         run: |
-          # Full KEY=VALUE report into the job log for debugging. It exits 1 on
-          # ERROR, which must not abort the step — the verdict travels in the
-          # issue body, not the exit code (.claude/rules/shell-scripting.md).
+          # ONE audit run. It used to run twice — once discarded to the job log,
+          # once captured — and a crash in the second produced an empty RESULT,
+          # no issue, and a green sweep. Now the single run is captured to a file
+          # and echoed to the log (the tee), so there is one source of truth.
+          #
+          # In --issue-body mode the script returns 0 on EVERY classified outcome
+          # (including STATUS=ERROR — the verdict travels in the issue body, not
+          # the exit code, per .claude/rules/shell-scripting.md). So a non-zero
+          # exit here can only be a crash, and must fail the step rather than
+          # become a third silent-green path.
+          AUDIT_RC=0
           python3 comfyui-plugin/skills/comfyui-node-scaffold/scripts/check-fleet-drift.py \
-            --fleet-root "${RUNNER_TEMP}/fleet" || true
-          RESULT=$(python3 comfyui-plugin/skills/comfyui-node-scaffold/scripts/check-fleet-drift.py \
-            --fleet-root "${RUNNER_TEMP}/fleet" --issue-body)
+            --fleet-root "${RUNNER_TEMP}/fleet" --issue-body \
+            > "${RUNNER_TEMP}/audit-body.md" 2> "${RUNNER_TEMP}/audit.err" || AUDIT_RC=$?
+          cat "${RUNNER_TEMP}/audit.err" >&2 || true
+          if [ "$AUDIT_RC" -ne 0 ]; then
+            echo "::error::check-fleet-drift.py exited ${AUDIT_RC} in --issue-body mode (only a crash can do that)"
+            exit 1
+          fi
+          echo "--- issue body (empty means a clean fleet) ---"
+          cat "${RUNNER_TEMP}/audit-body.md"
+          RESULT=$(cat "${RUNNER_TEMP}/audit-body.md")
           {
             echo "result<<FLEET_DRIFT_EOF"
             echo "$RESULT"

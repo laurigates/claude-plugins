@@ -2,7 +2,7 @@ name: "Plugin: Scheduled audits"
 
 on:
   schedule:
-    - cron: '0 9 1 * *'  # Monthly on the 1st at 09:00 UTC
+    - cron: '19 9 1 * *'  # Monthly on the 1st at 09:19 UTC (off-the-hour minute avoids the :00 scheduler surge)
   workflow_dispatch:
 
 permissions:
@@ -10,10 +10,18 @@ permissions:
   issues: write
   id-token: write
 
+# This workflow creates issues, so a bare group serialises overlapping cron and
+# dispatch runs (the check-then-create-issue race is otherwise unlocked), and
+# cancel-in-progress: false keeps a mutating run from being killed mid-write.
+concurrency:
+  group: scheduled-audits
+  cancel-in-progress: false
+
 jobs:
   blueprint-health:
     # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -53,6 +61,7 @@ jobs:
   infra-compliance:
     # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -91,6 +100,7 @@ jobs:
 
   agentic-audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -172,7 +182,6 @@ jobs:
 
       - name: Claude Agentic Quality Audit
         if: steps.check_issue.outputs.exists == 'false'
-        id: audit
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -245,6 +254,7 @@ jobs:
   docs-index:
     # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6

@@ -14,6 +14,12 @@ on:
 permissions:
   pull-requests: write
 
+# Fires on `edited`, so every title tweak would otherwise queue another full run
+# against the same PR. Supersede the in-flight one.
+concurrency:
+  group: enforce-conventional-commits-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   conventional-commits:
     uses: laurigates/.github/.github/workflows/reusable-enforce-conventional-commits.yml@main
@@ -104,9 +110,22 @@ jobs:
   #
   # `gate` is defined in this file, so its context is `gate` no matter what the
   # reusable calls its jobs. Require THIS, not the composite name.
+  #
+  # It must carry `if: always()` AND assert the dependency's result: a bare
+  # `needs:` SKIPS this job when the reusable fails, and branch protection reads
+  # a skipped required check as PASSING — making the gate unachievable.
   gate:
     needs: conventional-commits
+    if: always()
+    permissions: {}
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     steps:
       - name: Conventional-commit check passed
-        run: echo "conventional-commits passed"
+        run: |
+          result="${{ needs.conventional-commits.result }}"
+          if [ "$result" != "success" ]; then
+            echo "::error::conventional-commits job concluded '$result'"
+            exit 1
+          fi
+          echo "conventional-commits passed"

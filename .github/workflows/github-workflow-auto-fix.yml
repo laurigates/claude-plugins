@@ -23,15 +23,18 @@ permissions:
 jobs:
   auto-fix:
     # Only run on failures, skip main branch, allow Claude bot, skip auto-fix commits (loop prevention)
+    # Matches on the message body, not a `fix(auto):` prefix: the prompt emits
+    # `fix(<scope>): resolve CI failure in ...`, so a prefix test never fired.
     if: >-
       github.event.workflow_run.conclusion == 'failure' &&
-      !startsWith(github.event.workflow_run.head_commit.message, 'fix(auto):') &&
+      !contains(github.event.workflow_run.head_commit.message, 'resolve CI failure') &&
       (github.event.workflow_run.actor.type != 'Bot' ||
        github.event.workflow_run.actor.login == 'claude[bot]' ||
        github.event.workflow_run.actor.login == 'claude') &&
       github.event.workflow_run.head_branch != 'main' &&
       github.event.workflow_run.head_branch != 'master'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout failed branch
         uses: actions/checkout@v6
@@ -69,33 +72,21 @@ jobs:
             > "${CI_CONTEXT_DIR}/failed-jobs.txt" 2>/dev/null || echo "Could not retrieve job details" > "${CI_CONTEXT_DIR}/failed-jobs.txt"
 
           # Find associated PR number
-          PR_NUMBER=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number' 2>/dev/null || echo "")
+          PR_NUMBER=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number // empty' 2>/dev/null || echo "")
           echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
 
           # Check if we already have a recent auto-fix commit on this branch
-          RECENT_FIX=$(git log --oneline -5 --format='%s' | grep -c 'fix:.*resolve CI failure' || true)
+          # Tolerates an optional conventional-commit scope: `fix:` and `fix(<scope>):` both match.
+          RECENT_FIX=$(git log --oneline -5 --format='%s' | grep -cE '^fix(\([^)]*\))?: resolve CI failure' || true)
           echo "recent_fix_count=$RECENT_FIX" >> "$GITHUB_OUTPUT"
 
-      - name: Check for PR flood guard
-        id: dedup
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Skip if >2 open auto-fix PRs already exist to prevent flooding
-          EXISTING_PRS=$(gh pr list \
-            --search "auto-fix in:title head:auto-fix/" \
-            --state open \
-            --json number \
-            -q 'length')
-
-          if [ "${EXISTING_PRS}" -gt "2" ]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "::warning::Skipping auto-fix: ${EXISTING_PRS} auto-fix PRs already open"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Skip if already attempted fix
+      # Removed the "Check for PR flood guard" step: it could never fire. `head:` is an
+      # exact-match search qualifier, so `head:auto-fix/` matched only a branch literally
+      # named `auto-fix/` — and this workflow never creates `auto-fix/*` branches anyway,
+      # it pushes to the existing head branch. Its `[ "" -gt "2" ]` also errored and, sitting
+      # in an AND-OR list, was `-e`-exempt, so it failed open. The recent_fix_count guard
+      # below is the real loop brake.
+      - name: Report existing auto-fix commit (gates the next step)
         if: steps.context.outputs.recent_fix_count != '0'
         run: |
           echo "::notice::Skipping auto-fix - a recent fix commit already exists on this branch. Manual intervention may be needed."
@@ -103,7 +94,7 @@ jobs:
           git log --oneline -5
 
       - name: Analyze and fix with Claude
-        if: steps.context.outputs.recent_fix_count == '0' && steps.dedup.outputs.skip != 'true'
+        if: steps.context.outputs.recent_fix_count == '0'
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -119,7 +110,7 @@ jobs:
             - **Branch:** ${{ steps.context.outputs.branch }}
             - **Run ID:** ${{ steps.context.outputs.run_id }}
             - **Commit:** ${{ github.event.workflow_run.head_sha }}
-            - **Associated PR:** ${{ steps.context.outputs.pr_number }}
+            - **Associated PR:** ${{ steps.context.outputs.pr_number != '' && format('#{0}', steps.context.outputs.pr_number) || 'none' }}
 
             ## Step 1: Read the failure logs
 
@@ -158,9 +149,9 @@ jobs:
                git commit -m "fix(<scope>): resolve CI failure in ${{ steps.context.outputs.workflow_name }}"
                ```
             4. Push to the branch: `git push origin ${{ steps.context.outputs.branch }}`
-            5. If PR ${{ steps.context.outputs.pr_number }} exists, comment on it:
+            5. If "Associated PR" above is a number (skip this step entirely if it is `none`), comment on it, substituting that number for `<PR>`:
                ```
-               gh pr comment ${{ steps.context.outputs.pr_number }} --body "Auto-fix applied for CI failure in **${{ steps.context.outputs.workflow_name }}**. The workflow should re-run automatically."
+               gh pr comment <PR> --body "Auto-fix applied for CI failure in **${{ steps.context.outputs.workflow_name }}**. The workflow should re-run automatically."
                ```
 
             ### If NOT auto-fixable:
@@ -172,7 +163,7 @@ jobs:
                  --label "bug,ci-failure"
                ```
                Note: If the labels don't exist, omit the --label flag and mention the suggested labels in the body.
-            2. If PR ${{ steps.context.outputs.pr_number }} exists, comment on it linking to the created issue.
+            2. If "Associated PR" above is a number (skip if it is `none`), comment on it linking to the created issue.
 
             ## Important rules
             - Read the project rules in `.claude/rules/` for commit format and code standards
