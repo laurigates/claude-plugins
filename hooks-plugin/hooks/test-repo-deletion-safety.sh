@@ -17,8 +17,16 @@
 #     unresolvable $VAR / $(…) / {} operands, remote-exec (#1900), and the
 #     command text appearing inside a quoted string
 #   - Tier 2 (opt-in `ask` on a remote-backed but dirty repo), default-off
-#   - The self-extinguishing backup escape, and silent degradation when git
-#     is unavailable or the tool is not Bash
+#   - The block message's post-#2454 shape: preflight findings (REAL counts, not
+#     a fixed template) + the single in-band tar escape + a pointer to
+#     git-plugin:git-repo-delete-check, with ABSENCE assertions so the skill's
+#     option list cannot be re-inlined here, and a commit-less repo whose
+#     headline must not claim to be the only copy of a history that has no
+#     commits
+#   - The self-extinguishing backup escape — including the round trip that runs
+#     the message's own tar command and re-runs the hook, so "the blocked user
+#     can act on the message alone" is exercised rather than asserted by literal
+#   - Silent degradation when git is unavailable or the tool is not Bash
 #   - The macOS symlink-resolved temp path (#2465): operands are resolved with
 #     `pwd -P`, so /var/folders/… (where /var is a symlink to /private/var)
 #     arrives as /private/var/folders/… and must still be exempt
@@ -84,6 +92,15 @@ git init -q --bare "$WORK/bare.git"
 # parent/inner: a remote-less repo one level below a plain directory.
 mkdir -p "$WORK/parent/inner"; new_repo "$WORK/parent/inner"
 
+# no-commits: `git init` and nothing else — the shape whose findings report is
+# all zeros, so the block message must not claim to be the only copy of a
+# history that does not exist (#2454).
+mkdir -p "$WORK/no-commits"
+git -C "$WORK/no-commits" init -q
+git -C "$WORK/no-commits" config commit.gpgsign false
+git -C "$WORK/no-commits" config user.email "test@test.com"
+git -C "$WORK/no-commits" config user.name "Test"
+
 # link: a symlink to a remote-less repo.
 ln -s "$WORK/lonely" "$WORK/link"
 
@@ -136,6 +153,20 @@ assert_stderr_contains() { # $1 desc, $2 needle, $3 json
     case "$err" in
         *"$needle"*) printf "  PASS: %s\n" "$d"; PASS=$((PASS + 1)) ;;
         *) printf "  FAIL: %s (stderr missing %s)\n" "$d" "$needle"; FAIL=$((FAIL + 1)) ;;
+    esac
+}
+
+# The ABSENCE half of the #2454 shed. Without it "the message no longer restates
+# the skill's option list" is an unenforced claim: a later edit could re-inline
+# the push option or a numbered list and every positive assertion above would
+# still pass.
+assert_stderr_lacks() { # $1 desc, $2 needle, $3 json
+    local d="$1" needle="$2" json="$3"
+    local err
+    err=$(env "${HOOK_ENV[@]}" bash "$HOOK" 2>&1 >/dev/null <<<"$json" || true)
+    case "$err" in
+        *"$needle"*) printf "  FAIL: %s (stderr still carries %s)\n" "$d" "$needle"; FAIL=$((FAIL + 1)) ;;
+        *) printf "  PASS: %s\n" "$d"; PASS=$((PASS + 1)) ;;
     esac
 }
 
@@ -216,13 +247,99 @@ assert_exit "parent dir holding a remote-less repo blocks" 2 "$(make_json "rm -r
 assert_exit "multi-operand: second operand still fires" 2 "$(make_json "rm -rf $WORK/plain $WORK/lonely")"
 
 # ── Block message content ─────────────────────────────────────────────────────
+# Shape after #2454: findings + the ONE in-band escape + a pointer to the skill
+# that owns the option list. The absence assertions are the regression gate —
+# re-inlining any of the skill's other options is exactly the drift this shed
+# removed, and it must fail here rather than go unnoticed.
 echo ""
-echo "block message carries the three-option remediation:"
+echo "block message reports findings and points at the skill (not a second copy of it):"
 assert_stderr_contains "names the blocked path" "$WORK/lonely" "$(make_json "rm -rf $WORK/lonely")"
-assert_stderr_contains "option 1 — push to a remote" "push -u origin --all" "$(make_json "rm -rf $WORK/lonely")"
-assert_stderr_contains "option 2 — tar to a labelled backup" "$WORK/backups/lonely-" "$(make_json "rm -rf $WORK/lonely")"
-assert_stderr_contains "option 3 — delegate per handling-blocked-hooks" "handling-blocked-hooks.md" "$(make_json "rm -rf $WORK/lonely")"
+assert_stderr_contains "reports the preflight findings" "git rev-list --all --count" "$(make_json "rm -rf $WORK/lonely")"
+assert_stderr_contains "counts the repo's local branches" "git for-each-ref refs/heads" "$(make_json "rm -rf $WORK/lonely")"
+assert_stderr_contains "keeps the tar escape verbatim" "$WORK/backups/lonely-" "$(make_json "rm -rf $WORK/lonely")"
+assert_stderr_contains "names the skill as the option-list authority" "git-repo-delete-check" "$(make_json "rm -rf $WORK/lonely")"
 assert_stderr_contains "warns against self-serving the opt-out" "Do not self-serve" "$(make_json "rm -rf $WORK/lonely")"
+assert_stderr_lacks "does not restate the skill's push option" "push -u origin --all" "$(make_json "rm -rf $WORK/lonely")"
+assert_stderr_lacks "does not re-enumerate a numbered option list" "  2. " "$(make_json "rm -rf $WORK/lonely")"
+assert_stderr_lacks "does not restate the skill's delete-with-no-backup option" "handling-blocked-hooks.md" "$(make_json "rm -rf $WORK/lonely")"
+
+# The findings are REAL counts, not a fixed template. Without this the four rows
+# could all print 0 and every assertion above would still pass. Parsed by field
+# rather than by literal spacing so a column re-align is not a spurious failure.
+assert_finding() { # $1 desc, $2 row-label, $3 want, $4 json
+    local d="$1" label="$2" want="$3" json="$4"
+    local err got
+    err=$(env "${HOOK_ENV[@]}" bash "$HOOK" 2>&1 >/dev/null <<<"$json" || true)
+    got=$(printf '%s\n' "$err" | awk -v l="$label" '$0 ~ l {print $NF; exit}')
+    if [ "$got" = "$want" ]; then
+        printf "  PASS: %s\n" "$d"; PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (expected %s, got '%s')\n" "$d" "$want" "$got"; FAIL=$((FAIL + 1))
+    fi
+}
+assert_finding "reports the repo's real commit count" "rev-list --all --count" 2 \
+    "$(make_json "rm -rf $WORK/lonely")"
+assert_finding "reports the repo's real branch count" "for-each-ref refs/heads" 1 \
+    "$(make_json "rm -rf $WORK/lonely")"
+
+# ── Block message on a commit-less repo (#2454 problem 6) ─────────────────────
+# A findings block of all zeros beside "the ONLY copy of its history" argues
+# against its own block. The headline must adapt instead.
+echo ""
+echo "block message on a repo with no commits does not contradict itself:"
+assert_exit "a commit-less remote-less repo still blocks" 2 "$(make_json "rm -rf $WORK/no-commits")"
+assert_stderr_lacks "drops the ONLY-copy-of-its-history claim" "ONLY copy of its history" \
+    "$(make_json "rm -rf $WORK/no-commits")"
+assert_stderr_contains "says the repo has no commits yet" "no commits yet" \
+    "$(make_json "rm -rf $WORK/no-commits")"
+assert_stderr_contains "explains why an empty findings report still blocks" "found nothing at all" \
+    "$(make_json "rm -rf $WORK/no-commits")"
+# Guard integrity: the populated repo must NOT take the empty-repo branch, or the
+# two assertions above would hold against a hook that always says "no commits".
+assert_stderr_contains "a populated repo keeps the ONLY-copy headline" "ONLY copy of its history" \
+    "$(make_json "rm -rf $WORK/lonely")"
+assert_stderr_lacks "a populated repo omits the found-nothing note" "found nothing at all" \
+    "$(make_json "rm -rf $WORK/lonely")"
+
+# ── Findings probes stay bounded (#2454 problem 7) ────────────────────────────
+# emit_block runs on the BLOCKING path, and this hook fails OPEN on timeout — an
+# unbounded probe would convert an already-decided hard block into a deletion.
+# Measured on a 200,000-commit graph: `git rev-list --all --count` takes 1281 ms
+# (26% of the 5000 ms PreToolUse budget, from one probe, scaling with repo size)
+# against 21 ms with --max-count=500.
+#
+# No behavioural assertion can see this: a fixture repo is small, so a capped and
+# an uncapped probe print the same number. The bound is therefore pinned
+# STRUCTURALLY, over emit_block's body only — classify()'s tier-2 probes sit on
+# the opt-in, non-blocking `ask` path and are deliberately not covered.
+echo ""
+echo "every findings probe on the blocking path is bounded:"
+EMIT_BLOCK_BODY=$(awk '/^emit_block\(\) \{/{f=1} f{print} f && /^\}/{exit}' "$HOOK")
+case "$EMIT_BLOCK_BODY" in
+    *"block \"BLOCKED:"*) ;;
+    *) echo "FATAL: could not extract emit_block() from $HOOK" >&2; exit 1 ;;
+esac
+
+assert_bounded() { # $1 desc, $2 probe substring, $3 required bound substring
+    local d="$1" probe="$2" bound="$3" line
+    # Only real invocations: `git -C "$abs" …`. The rendered message quotes the
+    # same command names as row labels, and matching those would let a stripped
+    # flag hide behind its own documentation.
+    line=$(printf '%s\n' "$EMIT_BLOCK_BODY" | grep -F 'git -C "$abs"' | grep -F -- "$probe" | head -1)
+    if [ -z "$line" ]; then
+        printf "  FAIL: %s (emit_block no longer runs '%s')\n" "$d" "$probe"; FAIL=$((FAIL + 1))
+        return 0
+    fi
+    case "$line" in
+        *"$bound"*) printf "  PASS: %s\n" "$d"; PASS=$((PASS + 1)) ;;
+        *) printf "  FAIL: %s (unbounded: %s)\n" "$d" "$line"; FAIL=$((FAIL + 1)) ;;
+    esac
+}
+
+assert_bounded "the object-graph walk is capped" "rev-list --all --count" "--max-count="
+assert_bounded "the refs/heads scan is capped" "for-each-ref" "--count="
+assert_bounded "the stash reflog read is capped" "stash list" "--max-count="
+assert_bounded "the working-tree scan is capped" "status --porcelain" "| head -"
 
 # ── False positives: the half that matters ────────────────────────────────────
 echo ""
@@ -331,8 +448,26 @@ else
 fi
 
 # ── Self-extinguishing backup escape (run last: it clears the block) ──────────
+# The round trip first: extract the tar command the block message actually
+# PRINTED, RUN it, and re-run the hook. That is the acceptance property of #2454
+# — after trimming the option list, the blocked user must still be able to act on
+# the message alone — and a literal grep would not catch a command that no longer
+# produces a name the escape glob matches.
 echo ""
 echo "self-extinguishing backup escape (allow, exit 0):"
+MSG=$(env "${HOOK_ENV[@]}" bash "$HOOK" 2>&1 >/dev/null <<<"$(make_json "rm -rf $WORK/lonely")" || true)
+# `head -1` matters: without it a second `tar -c` line would make TAR_CMD
+# multi-line and `eval` would run both.
+TAR_CMD=$(printf '%s\n' "$MSG" | grep -F 'tar -c' | head -1 | sed 's/^[[:space:]]*//' || true)
+if [ -n "$TAR_CMD" ]; then
+    printf "  PASS: %s\n" "the block message carries a runnable backup command"; PASS=$((PASS + 1))
+else
+    printf "  FAIL: %s\n" "the block message carries a runnable backup command"; FAIL=$((FAIL + 1))
+fi
+( eval "$TAR_CMD" ) >/dev/null 2>&1 || true
+assert_exit "running the message's own tar command clears the block" 0 "$(make_json "rm -rf $WORK/lonely")"
+
+rm -f "$WORK"/backups/lonely-*.tar.*
 touch "$WORK/backups/lonely-2026-08-19.tar.gz"
 assert_exit "an existing dated backup tarball clears the block" 0 "$(make_json "rm -rf $WORK/lonely")"
 
