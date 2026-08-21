@@ -19,6 +19,9 @@
 #   - Tier 2 (opt-in `ask` on a remote-backed but dirty repo), default-off
 #   - The self-extinguishing backup escape, and silent degradation when git
 #     is unavailable or the tool is not Bash
+#   - The macOS symlink-resolved temp path (#2465): operands are resolved with
+#     `pwd -P`, so /var/folders/… (where /var is a symlink to /private/var)
+#     arrives as /private/var/folders/… and must still be exempt
 set -uo pipefail
 
 HOOK="$(cd "$(dirname "$0")" && pwd)/repo-deletion-safety.sh"
@@ -27,7 +30,8 @@ FAIL=0
 
 WORK=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 NOGIT_BIN=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
-trap 'rm -rf "$WORK" "$NOGIT_BIN"' EXIT
+SIM=""
+trap 'rm -rf "$WORK" "$NOGIT_BIN" ${SIM:+"$SIM"}' EXIT
 
 mkdir -p "$WORK/home" "$WORK/backups" "$WORK/plain"
 
@@ -135,6 +139,35 @@ assert_stderr_contains() { # $1 desc, $2 needle, $3 json
     esac
 }
 
+# The temp-dir exemption is a `case` inside check_path(). Extract it verbatim
+# and evaluate it against literal paths: on Linux `/private/var/folders/…`
+# cannot be created, so this is the only way to actually EXERCISE that prefix
+# rather than grep for its text — the syntactic-guard lesson of #1417.
+EXEMPT_CASE=$(awk '/case "\$abs" in/{f=1} f{print} f && /esac/{exit}' "$HOOK")
+case "$EXEMPT_CASE" in
+    *esac*) ;;
+    *) echo "FATAL: could not extract the temp-dir exemption case from $HOOK" >&2; exit 1 ;;
+esac
+
+path_is_exempt() { # $1 resolved path, $2 TMPROOT, $3 TMPROOT_REAL
+    # shellcheck disable=SC2034  # all three are read by the eval'd case below
+    local abs="$1" TMPROOT="$2" TMPROOT_REAL="$3"
+    eval "$EXEMPT_CASE"
+    return 1
+}
+
+assert_exempt() { # $1 desc, $2 want (yes|no), $3 path, $4 TMPROOT, $5 TMPROOT_REAL
+    local d="$1" want="$2"
+    shift 2
+    local got=no
+    path_is_exempt "$@" && got=yes
+    if [ "$got" = "$want" ]; then
+        printf "  PASS: %s\n" "$d"; PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (expected exempt=%s, got %s)\n" "$d" "$want" "$got"; FAIL=$((FAIL + 1))
+    fi
+}
+
 echo "=== repo-deletion-safety hook tests ==="
 
 # ── Tier 1a: remote-less repo → block ─────────────────────────────────────────
@@ -218,6 +251,49 @@ assert_exit "a separator inside a quoted string does not split" 0 \
     "$(make_json "git commit -m \"cleanup; rm -rf $WORK/lonely\"")"
 assert_exit "temp-dir exemption (default on) allows a remote-less repo" 0 \
     "$(make_json "rm -rf $WORK/lonely")" CLAUDE_HOOKS_REPO_DELETION_TMP_EXEMPT=1
+
+# ── macOS symlink-resolved temp paths (#2465) ─────────────────────────────────
+# Operands reach the exemption already resolved by `pwd -P`. On macOS /var is a
+# symlink to /private/var, so a real `mktemp -d` under $TMPDIR arrives as
+# /private/var/folders/… — matching NONE of the unresolved prefixes. The
+# exemption then never fired for the actual macOS temp path.
+echo ""
+echo "temp-dir prefixes, evaluated against symlink-resolved paths (#2465):"
+assert_exempt "resolved macOS temp path (/private/var/folders/…) is exempt" yes \
+    "/private/var/folders/qz/9k1_/T/lonely" "/tmp" "/tmp"
+assert_exempt "unresolved /var/folders/… stays exempt" yes \
+    "/var/folders/qz/9k1_/T/lonely" "/tmp" "/tmp"
+assert_exempt "resolved /private/tmp stays exempt" yes "/private/tmp/lonely" "/tmp" "/tmp"
+assert_exempt "plain /tmp stays exempt" yes "/tmp/lonely" "/tmp" "/tmp"
+assert_exempt "a symlink-resolved \$TMPDIR outside /var/folders is exempt" yes \
+    "/private/scratch/T/lonely" "/scratch/T" "/private/scratch/T"
+assert_exempt "an ordinary checkout is NOT exempt" no \
+    "/Users/dev/repos/lonely" "/var/folders/qz/9k1_/T" "/private/var/folders/qz/9k1_/T"
+
+# End-to-end: a tree shaped like macOS's (`var` → `private/var`) with $TMPDIR
+# pointing through the symlink. The base must sit OUTSIDE every hardcoded temp
+# prefix, or /tmp/* would exempt the fixture on Linux and the assertion would
+# pass for the wrong reason.
+for sim_cand in "${HOME:-}" "$(cd "$(dirname "$HOOK")/../.." && pwd -P)"; do
+    if [ -z "$sim_cand" ] || [ ! -d "$sim_cand" ] || [ ! -w "$sim_cand" ]; then continue; fi
+    sim_real=$(cd "$sim_cand" 2>/dev/null && pwd -P) || continue
+    case "$sim_real" in /tmp|/tmp/*|/private/tmp/*|/var/folders/*|/private/var/folders/*) continue ;; esac
+    SIM=$(mktemp -d "$sim_real/.repo-del-sim-XXXXXX" 2>/dev/null) || SIM=""
+    [ -n "$SIM" ] && break
+done
+
+if [ -n "$SIM" ]; then
+    mkdir -p "$SIM/private/var/folders/qz/T/lonely"
+    ln -s "private/var" "$SIM/var"
+    new_repo "$SIM/private/var/folders/qz/T/lonely"
+    assert_exit "repo under a symlinked \$TMPDIR is exempt (macOS shape)" 0 \
+        "$(make_json "rm -rf $SIM/var/folders/qz/T/lonely")" \
+        CLAUDE_HOOKS_REPO_DELETION_TMP_EXEMPT=1 TMPDIR="$SIM/var/folders/qz/T"
+    assert_exit "the same repo still blocks with the exemption off" 2 \
+        "$(make_json "rm -rf $SIM/var/folders/qz/T/lonely")" TMPDIR="$SIM/var/folders/qz/T"
+else
+    printf "  SKIP: no writable non-temp base for the symlinked-\$TMPDIR fixture\n"
+fi
 
 # ── Tier 2: opt-in ask on a dirty but remote-backed repo ──────────────────────
 echo ""
