@@ -51,6 +51,21 @@ jobs:
         with:
           python-version: '3.12'  # tomllib needs >= 3.11
 
+      - name: Ensure the fleet-drift label exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # `gh issue create --label` HARD-FAILS on an unknown label, on the last
+          # line of the job, after all the analysis has already succeeded. That is
+          # why this audit ran red for months. `--force` creates-or-updates and
+          # exits 0, so this is idempotent -- but a real auth failure still
+          # surfaces here rather than being swallowed.
+          gh label create fleet-drift \
+            --repo "$GITHUB_REPOSITORY" \
+            --color b60205 \
+            --description "Drift between the ComfyUI pack fleet and its scaffold" \
+            --force
+
       - name: Check for existing open issue
         id: check_issue
         env:

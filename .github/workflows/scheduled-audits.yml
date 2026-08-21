@@ -26,6 +26,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Ensure the blueprint-health label exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # `gh issue create --label` HARD-FAILS on an unknown label, on the last
+          # line of the job, after all the analysis has already succeeded. That is
+          # why this audit ran red for months. `--force` creates-or-updates and
+          # exits 0, so this is idempotent -- but a real auth failure still
+          # surfaces here rather than being swallowed.
+          gh label create blueprint-health \
+            --repo "$GITHUB_REPOSITORY" \
+            --color 0e8a16 \
+            --description "Monthly blueprint health audit" \
+            --force
+
       - name: Check for existing open issue
         id: check_issue
         env:
@@ -65,6 +80,21 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Ensure the infra-compliance label exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # `gh issue create --label` HARD-FAILS on an unknown label, on the last
+          # line of the job, after all the analysis has already succeeded. That is
+          # why this audit ran red for months. `--force` creates-or-updates and
+          # exits 0, so this is idempotent -- but a real auth failure still
+          # surfaces here rather than being swallowed.
+          gh label create infra-compliance \
+            --repo "$GITHUB_REPOSITORY" \
+            --color 1d76db \
+            --description "Monthly infrastructure compliance dashboard" \
+            --force
 
       - name: Check for existing open issue
         id: check_issue
@@ -106,6 +136,21 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+
+      - name: Ensure the agentic-audit label exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # `gh issue create --label` HARD-FAILS on an unknown label, on the last
+          # line of the job, after all the analysis has already succeeded. That is
+          # why this audit ran red for months. `--force` creates-or-updates and
+          # exits 0, so this is idempotent -- but a real auth failure still
+          # surfaces here rather than being swallowed.
+          gh label create agentic-audit \
+            --repo "$GITHUB_REPOSITORY" \
+            --color d93f0b \
+            --description "Monthly agentic quality audit" \
+            --force
 
       - name: Check for existing open issue
         id: check_issue
@@ -258,6 +303,21 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Ensure the docs-index label exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # `gh issue create --label` HARD-FAILS on an unknown label, on the last
+          # line of the job, after all the analysis has already succeeded. That is
+          # why this audit ran red for months. `--force` creates-or-updates and
+          # exits 0, so this is idempotent -- but a real auth failure still
+          # surfaces here rather than being swallowed.
+          gh label create docs-index \
+            --repo "$GITHUB_REPOSITORY" \
+            --color 5319e7 \
+            --description "Top-level docs drift (Layer 1) audit" \
+            --force
 
       - name: Check for existing open issue
         id: check_issue
