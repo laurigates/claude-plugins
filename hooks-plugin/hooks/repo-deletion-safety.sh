@@ -61,7 +61,8 @@
 #       existing `<basename>-*.tar.*` clears the block, and the directory named
 #       in the block message.
 #   CLAUDE_HOOKS_REPO_DELETION_TMP_EXEMPT  (default 1) — 0 also guards repos
-#       under /tmp, /private/tmp, /var/folders and $TMPDIR.
+#       under /tmp, /private/tmp, /var/folders, /private/var/folders and
+#       $TMPDIR (both as spelled and as `pwd -P` resolves it).
 #   CLAUDE_HOOKS_REPO_DELETION_WARN_DIRTY  (default 0) — 1 enables the tier-2
 #       `ask` on a remote-backed repo carrying uncommitted/unpushed/stashed work.
 #
@@ -126,6 +127,14 @@ TMP_EXEMPT="${CLAUDE_HOOKS_REPO_DELETION_TMP_EXEMPT:-1}"
 WARN_DIRTY="${CLAUDE_HOOKS_REPO_DELETION_WARN_DIRTY:-0}"
 TMPROOT="${TMPDIR:-/tmp}"
 TMPROOT="${TMPROOT%/}"
+[ -n "$TMPROOT" ] || TMPROOT="/tmp"
+# Operands are compared AFTER `pwd -P` resolves them, so $TMPDIR needs the same
+# resolution or its prefix can never match: on macOS $TMPDIR is /var/folders/…
+# and /var is a symlink to /private/var, so every real `mktemp -d` path resolves
+# to /private/var/folders/… (#2465). Both spellings stay in the case below — the
+# unresolved one still matches when the path holds no symlinks.
+TMPROOT_REAL=$(cd "$TMPROOT" 2>/dev/null && pwd -P) || TMPROOT_REAL=""
+[ -n "$TMPROOT_REAL" ] || TMPROOT_REAL="$TMPROOT"
 
 # ── Command parsing ───────────────────────────────────────────────────────────
 
@@ -348,7 +357,8 @@ check_path() {
 
     if [ "$TMP_EXEMPT" = "1" ]; then
         case "$abs" in
-            /tmp/*|/private/tmp/*|/var/folders/*|"$TMPROOT"/*) return 0 ;;
+            /tmp/*|/private/tmp/*|/var/folders/*|/private/var/folders/*) return 0 ;;
+            "$TMPROOT"/*|"$TMPROOT_REAL"/*) return 0 ;;
         esac
     fi
 
