@@ -3,7 +3,7 @@ name: bulk-sweep-classify
 description: "Classify every regex match before a bulk find-replace/syntax-modernization sweep — four match categories, scoped transform, allowlist-aware verification. Use when bulk-renaming commands/tools/paths or migrating syntax across many files."
 allowed-tools: Bash, Read, Grep, Edit
 created: 2026-07-05
-modified: 2026-08-08
+modified: 2026-08-22
 reviewed: 2026-07-06
 ---
 
@@ -88,6 +88,44 @@ git grep -nhoE '/[a-z][a-z0-9-]*:[a-z][a-z0-9-]*' -- <scope> | sort -u
 Adjust the pattern to your migration. The point is a complete, deduped inventory
 in hand *before* any edit.
 
+#### Derive the term set from what the mechanism *claims*, not just what it is *named*
+
+The enumeration is only as good as the terms you feed it. Removing a mechanism
+means removing its **assertions** as well as its **identifiers**, and those two
+families share no tokens — so a sweep built only from identifiers reports clean
+while the claim survives.
+
+After listing the identifier terms, ask:
+**what did this mechanism promise, and in whose words?**
+Add those phrasings to the term set. For a removal, terms usually come in two
+families:
+
+| Family | Example terms | Where they live |
+|---|---|---|
+| Identifiers | function, file, script, env var, config key | code, config, workflows |
+| Claims | "baked in", "injected at build time", "automatically", "the published package …" | comments, README, docstrings, error and warning strings |
+
+**The claim family is where user-facing damage concentrates.** An identifier
+left behind is dead code, but
+a claim left behind is documentation that is now false.
+
+Concrete case (`ForumViriumHelsinki/podio-mcp`, PRs #160 / #163 — issue #2479):
+a build-time credential injector was removed. The sweep terms were the
+identifiers — `BUILD_DEFAULTS`, `inject-build-defaults`, `postbuild` — which
+correctly found the script, the npm hook, the constants module and the workflow
+passthrough, and the PR shipped. It missed this, in a file the sweep had already
+edited:
+
+```
+src/index.ts:134
+ * - PODIO_CLIENT_ID: Your Podio app's client ID (baked into published package)
+```
+
+The comment asserts exactly what the mechanism was supposed to do and contains
+none of the three identifiers. It survived, typedoc renders it into the API
+reference, and so the claim outlived the thing that made it true — caught only
+incidentally, one PR later.
+
 ### Step 2: Tighten the pattern to drop false positives at the source
 
 Drive the false-positive exclusion into the **pattern** wherever you can, so the
@@ -136,6 +174,18 @@ that demands literal zero will either fail spuriously or — worse — pressure 
 into corrupting a category-3 design or rewriting a category-4 record just to force
 the count to zero. Enumerate the preserved buckets up front, then verify the grep
 returns *only* those.
+
+The adjacent trap sits one level up, in the scope the verification runs over:
+**every exclusion in a verification scope is a claim about the world, and needs
+the same treatment as a negative result.** "Generated, so it doesn't count"
+assumes the generator runs — check that it does. Cheap test: for each excluded
+path, state why in one line, then verify that line. In the same sweep (#2479)
+the final pass excluded `docs/api/` — committed typedoc output — reasoning that
+CI regenerates and publishes it. Both halves were false: GitHub Pages was never
+enabled on the repo (`/repos/.../pages` → 404) and the deploy workflow had failed
+every run for ten days, so the excluded directory was the *only* rendered copy
+and still carried the stale claim. The report said "no matches remain," which was
+true of what it searched and false of the repo.
 
 ## Parallelizing a Sweep — Resolve the Rename Map Before Dispatch
 
