@@ -1118,6 +1118,38 @@ check_skill_body() {
       done
     fi
 
+    # Regression: bulk-sweep-classify must cover the two failures that sit
+    # OUTSIDE its "you have a pattern — classify its matches" frame (issue #2479).
+    #   (a) The term set is derived from what a mechanism CLAIMS, not only from
+    #       what it is NAMED. Identifiers and assertions share no tokens, so a
+    #       sweep built from identifiers alone reports clean while the claim
+    #       survives — observed in ForumViriumHelsinki/podio-mcp PRs #160/#163,
+    #       where a removed build-time credential injector left behind a comment
+    #       ("baked into published package") that typedoc renders into the API
+    #       reference. An identifier left behind is dead code; a claim left
+    #       behind is documentation that is now false, which is why the claim
+    #       family carries the user-facing damage.
+    #   (b) An exclusion in the VERIFICATION SCOPE is itself a claim about the
+    #       world and needs verifying — the same sweep excluded committed typedoc
+    #       output reasoning "CI regenerates and publishes it", and both halves
+    #       were false (Pages never enabled, deploy failing for ten days), so the
+    #       clean result was clean over the wrong tree.
+    # Anchor on one load-bearing phrase per addition: the derivation question,
+    # the identifiers-vs-claims consequence, and the exclusion rule. A bulk edit
+    # "tightening" the prose would drop these and silently revert the skill to
+    # identifier-only sweeps with unjustified scope exclusions.
+    if [ "$skill_name" = "bulk-sweep-classify" ] && [ "$plugin" = "code-quality-plugin" ]; then
+      for token in \
+        'what did this mechanism promise, and in whose words?' \
+        'a claim left behind is documentation that is now false' \
+        'every exclusion in a verification scope is a claim about the world'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain term-derivation/exclusion-justification token '${token}' (derive terms from claims, not only identifiers; verify every scope exclusion — issue #2479)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: comfyui-node-scaffold must emit a TypeScript + bun-build pack
     # consuming @laurigates/comfy-modal-kit (NOT a vanilla-JS pack with copied-in
     # modal primitives), and its biome pin must be consistent across biome.json,
