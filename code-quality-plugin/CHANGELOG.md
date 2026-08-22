@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.1](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.24.0...code-quality-plugin-v1.24.1) (2026-08-22)
+
+
+### Documentation
+
+* fix catalog drift after [#2450](https://github.com/laurigates/claude-plugins/issues/2450) and gate it in check-docs-index ([f5e000c](https://github.com/laurigates/claude-plugins/commit/f5e000c8e8532edc0ec0456b594bae753a9e447c)), closes [#2453](https://github.com/laurigates/claude-plugins/issues/2453)
+
 ## [1.24.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.23.0...code-quality-plugin-v1.24.0) (2026-08-20)
 
 

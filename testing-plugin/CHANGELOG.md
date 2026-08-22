@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.19.2](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.19.1...testing-plugin-v3.19.2) (2026-08-22)
+
+
+### Bug Fixes
+
+* **agent-patterns-plugin:** derive PAL's MCP tool prefix instead of hardcoding it ([3f57aca](https://github.com/laurigates/claude-plugins/commit/3f57acab6c7b35ab396a3a7b3a59caec56839b36)), closes [#2437](https://github.com/laurigates/claude-plugins/issues/2437)
+
 ## [3.19.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.19.0...testing-plugin-v3.19.1) (2026-08-18)
 
 

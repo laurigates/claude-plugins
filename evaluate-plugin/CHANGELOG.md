@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.1](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.13.0...evaluate-plugin-v1.13.1) (2026-08-22)
+
+
+### Documentation
+
+* fix catalog drift after [#2450](https://github.com/laurigates/claude-plugins/issues/2450) and gate it in check-docs-index ([f5e000c](https://github.com/laurigates/claude-plugins/commit/f5e000c8e8532edc0ec0456b594bae753a9e447c)), closes [#2453](https://github.com/laurigates/claude-plugins/issues/2453)
+
 ## [1.13.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.12.0...evaluate-plugin-v1.13.0) (2026-08-14)
 
 
