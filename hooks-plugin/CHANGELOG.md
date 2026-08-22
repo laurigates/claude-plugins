@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.10.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.10.1...hooks-plugin-v2.10.2) (2026-08-22)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** make the awk and commit-file rules quote-state-aware ([2fa92bd](https://github.com/laurigates/claude-plugins/commit/2fa92bd7bbd607ced917417e00f0fb6ee1f5c64f)), closes [#2463](https://github.com/laurigates/claude-plugins/issues/2463) [#2462](https://github.com/laurigates/claude-plugins/issues/2462)
+
+
+### Code Refactoring
+
+* **hooks-plugin:** report preflight findings instead of restating git-repo-delete-check's options ([dae0ca2](https://github.com/laurigates/claude-plugins/commit/dae0ca278add7f3578aab5901ef08448f69c1427)), closes [#2454](https://github.com/laurigates/claude-plugins/issues/2454)
+
 ## [2.10.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.10.0...hooks-plugin-v2.10.1) (2026-08-21)
 
 
