@@ -197,20 +197,28 @@ jobs:
           # effort per .claude/rules/workflow-model-effort.md. The sweep
           # orchestrates several serialized subagent runs, hence the turn
           # budget.
-          claude_args: "--model opus --effort medium --max-turns 60"
-          additional_permissions: |
-            Read
-            Grep
-            Glob
-            Write
-            Edit
-            Task
-            TodoWrite
-            Bash(bash *)
-            Bash(python3 *)
-            Bash(git *)
-            Bash(jq *)
-            Bash(gh issue create *)
+          #
+          # The tool boundary belongs in `--allowedTools`. It used to sit in
+          # `additional_permissions:`, but that input takes a GitHub permissions
+          # MAP ("actions: read") — a Claude tool list there declared a sandbox
+          # that was never applied. Deltas from that inert list:
+          #   - `Bash(git *)` DROPPED: Step 3 says "do not edit, commit, or push
+          #     any repository file", so the contract is now enforced, not just
+          #     asserted. Write/Edit stay — the sweep writes throwaway run dirs
+          #     and model-matrix.json.
+          #   - SlashCommand/Skill ADDED: Step 1 invokes `/evaluate:matrix`.
+          #   - Bash(find *) ADDED: evaluate-matrix's own `Context` block shells
+          #     out to `find` when the skill loads.
+          #   - Bash(date *)/Bash(cat *) ADDED: the Step 3 `gh issue create`
+          #     snippet uses `date -u +%Y-%m` and a `cat` heredoc body.
+          #
+          # One flag per line: scripts/check-workflow-model.sh matches
+          # `--model`/`--effort` anchored at line start in a folded scalar.
+          claude_args: >-
+            --model opus
+            --effort medium
+            --max-turns 60
+            --allowedTools "Read,Grep,Glob,Write,Edit,Task,TodoWrite,SlashCommand,Skill,Bash(bash *),Bash(python3 *),Bash(jq *),Bash(find *),Bash(date *),Bash(cat *),Bash(gh issue create *)"
           plugin_marketplaces: |
             https://github.com/laurigates/claude-plugins.git
           plugins: |
@@ -256,10 +264,18 @@ jobs:
             run directories and `model-matrix.json` this sweep writes are
             throwaway CI state.
 
+            Run these as TWO separate Bash calls. The second must BEGIN with
+            `gh issue create`: the allowlist grants `Bash(gh issue create *)`,
+            which is a PREFIX match, so a line starting with a `VAR=$(...)`
+            assignment matches no grant and is denied.
+
             ```bash
-            MONTH=$(date -u +%Y-%m)
+            date -u +%Y-%m    # note the value, e.g. 2026-08
+            ```
+
+            ```bash
             gh issue create \
-              --title "Golden-set cross-model sweep: $MONTH" \
+              --title "Golden-set cross-model sweep: <the value from above>" \
               --label "golden-set-eval,maintenance" \
               --assignee laurigates \
               --body "$(cat <<'EOF'

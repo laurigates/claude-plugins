@@ -27,7 +27,22 @@ on:
         type: boolean
 
 concurrency:
-  group: validate-plugin-configs-${{ github.event.pull_request.head.ref || github.ref }}
+  # Keyed on the PR NUMBER, not `head.ref`. Two PRs from different forks can
+  # share a head branch name (`main`, `feat/x`); a shared group lets one cancel
+  # the other, and a cancelled run reports `cancelled` — not `success` — on a
+  # REQUIRED check, wedging that PR's merge with no bypass.
+  #
+  # `cancel-in-progress: true` is deliberate despite the autofix step below
+  # committing and pushing. The house rule "a mutating job must not be
+  # cancelled mid-write" does not bite here: everything before the push is
+  # local to an ephemeral runner, and the push itself is a single atomic ref
+  # update. A cancellation therefore loses no work — it skips a regeneration
+  # the superseding run redoes against newer content. Queuing instead
+  # (`cancel-in-progress: false`) is strictly worse on this workflow: queued
+  # runs stall a required check, and a queued run that finally lands would push
+  # a STALE regeneration onto a head that has moved — the same force-push race
+  # the by-SHA checkout below already exists to avoid.
+  group: validate-plugin-configs-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
