@@ -214,6 +214,27 @@ require_marker "$dispatch_skill" "Idle without report" "the idle-without-report 
 require_marker "$dispatch_skill" "idle_notification" "the idle-notification signal name (issue #2039)"
 require_marker "$dispatch_skill" "#2039" "the issue reference"
 
+# Regression #2447: a dispatch made with isolation:"remote" can resolve to an
+# ordinary LOCAL git worktree, and nothing in the tool result says which mode was
+# in effect. Two agents were then written off as unrecoverable because the
+# recovery audit checked only the remote (gh pr list / git ls-remote, both empty)
+# while a complete, unpushed commit sat on a local worktree branch. Three
+# semantic halves, each pinned against the file that OWNS it:
+#   1) SKILL.md carries the pointer + the #2447 reference + the worktreePath tell.
+#   2) references/worktree-hazards.md carries the mode-detection section (the
+#      "may resolve to a LOCAL worktree" statement) and the draft-PR-early
+#      mitigation that keeps the remote a live mirror of the work.
+#   3) references/failure-recovery.md carries the recovery-audit extension —
+#      audit local worktrees ALONGSIDE the remote before concluding work is lost.
+require_marker "$dispatch_skill" "#2447" "the remote-isolation reference (issue #2447)"
+require_marker "$dispatch_skill" "worktreePath" "the completion-notification tell (issue #2447)"
+require_marker "$worktree_hazards_md" "may resolve to a LOCAL worktree" \
+  "the remote-may-be-local statement (issue #2447)"
+require_marker "$worktree_hazards_md" "draft PR before the bulk of the work" \
+  "the draft-PR-early mitigation (issue #2447)"
+require_marker "$failure_recovery_md" "Audit local worktrees alongside the remote" \
+  "the local-worktree recovery-audit section (issue #2447)"
+
 if [ "$errors" -ne 0 ]; then
   echo
   echo "The loud-failure contract (issue #1422) and the hook-thrashing heuristic"
