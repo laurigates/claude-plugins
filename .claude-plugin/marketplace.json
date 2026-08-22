@@ -24,7 +24,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.43.0",
+      "version": "2.43.1",
       "keywords": [
         "agents",
         "configuration",
@@ -117,7 +117,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, dependency auditing, dead code detection, test quality, complexity metrics, and static analysis",
-      "version": "1.24.0",
+      "version": "1.24.1",
       "keywords": [
         "code-review",
         "refactoring",
@@ -235,8 +235,8 @@
     {
       "name": "documentation-plugin",
       "source": "./documentation-plugin",
-      "description": "Documentation generation - API docs, README, knowledge graphs, LaTeX PDF conversion",
-      "version": "1.11.0",
+      "description": "Documentation generation - API docs, README, LaTeX PDF conversion",
+      "version": "1.11.1",
       "keywords": [
         "documentation",
         "docs",
@@ -249,7 +249,7 @@
       "name": "evaluate-plugin",
       "source": "./evaluate-plugin",
       "description": "Skill evaluation and benchmarking - test skill effectiveness with behavioral eval cases, grade results, and track quality improvements",
-      "version": "1.13.0",
+      "version": "1.13.1",
       "keywords": [
         "evaluation",
         "benchmarking",
@@ -310,7 +310,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.51.1",
+      "version": "2.52.0",
       "keywords": [
         "git",
         "github",
@@ -390,7 +390,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.10.1",
+      "version": "2.10.2",
       "keywords": [
         "hooks",
         "automation",
@@ -652,7 +652,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.19.1",
+      "version": "3.19.2",
       "keywords": [
         "testing",
         "tdd",

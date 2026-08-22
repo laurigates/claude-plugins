@@ -5,7 +5,7 @@ args: "[--type issues|prs|both] [--batch N] [--repo owner/name] [--days-stale-is
 argument-hint: "--type both --batch 10 (defaults: days-stale-issue=90, days-stale-pr=30, current repo)"
 allowed-tools: Bash(bash *), Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git log *), Bash(rg *), Read, Grep, Glob, AskUserQuestion, TodoWrite
 created: 2026-04-22
-modified: 2026-08-15
+modified: 2026-08-21
 reviewed: 2026-06-14
 ---
 
@@ -56,14 +56,17 @@ Execute this triage workflow:
 Run the data-gathering script. It fetches issue/PR batches, computes age in days
 per item, categorizes each PR via the pure first-match table (over `isDraft`,
 `mergeable`, `mergeStateStatus`, `reviewDecision`, and `statusCheckRollup[].conclusion`),
-flags stale-candidate issues, and extracts each PR's closing keywords:
+flags stale-candidate issues, carries each issue's title through so the output
+is readable without a second `gh issue list` pass, and extracts each PR's
+closing keywords:
 
 ```bash
 bash "${CLAUDE_SKILL_DIR}/scripts/git-triage.sh" --home-dir "$HOME" --project-dir "$(pwd)" --type "$TYPE" --batch "$BATCH" --days-stale-issue "$STALE_ISSUE" --days-stale-pr "$STALE_PR"
 ```
 
 Parse `STATUS=` and `ISSUES:` from the output. Per item it emits
-`ISSUE_<n>_AGE_DAYS` / `ISSUE_<n>_REFS` / `ISSUE_<n>_STALE_CANDIDATE` and
+`ISSUE_<n>_TITLE` / `ISSUE_<n>_AGE_DAYS` / `ISSUE_<n>_REFS` /
+`ISSUE_<n>_COMMENTS` / `ISSUE_<n>_STALE_CANDIDATE` and
 `PR_<n>_CATEGORY` / `PR_<n>_AGE_DAYS` / `PR_<n>_CLOSES` (plus the underlying
 enum fields). It also rolls up `SYSTEMATIC_FAILURE_*` groups (see Step 4).
 If `--repo` was provided, pass it through; the script reads the
@@ -203,9 +206,9 @@ After per-item actions, emit a structured summary:
 | Category | Recommended next skill |
 |----------|------------------------|
 | `needs-fix` | `/git:fix-pr <n>` |
-| `changes-requested` | `/git:pr-feedback <n>` |
+| `changes-requested` | recommend the user run `/git:pr-feedback <n>` (gated by `disable-model-invocation`, so surface it rather than invoking it) |
 | `needs-rebase` | `/git:conflicts <n>` or `gh pr merge --update-branch` |
-| `still-valid` (actionable) | `/git:issue <n>` |
+| `still-valid` (actionable) | recommend the user run `/git:issue <n>` (gated by `disable-model-invocation`, so surface it rather than invoking it) |
 | `still-valid` (admin only) | `/git:issue-manage` |
 | `implemented` (not auto-closed) | manual `gh issue close <n>` |
 

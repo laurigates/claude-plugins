@@ -76,6 +76,64 @@ strip_trailing_comments() {
     }'
 }
 
+# Blank the CONTENT of every quoted span, keeping the quote characters, the span
+# length, and any `$` inside it. Same per-line `in_s`/`in_d` scanner as
+# strip_trailing_comments above — generalised here into a second consumer so the
+# regex detectors that must tell "a shell operator" from "a character inside a
+# quoted argument" get a quote-STATE-aware view instead of another naive
+# pre-stripping pass. A `sed "s/'[^']*'/''/g"` cannot do this job: an odd
+# apostrophe earlier on the line (`printf "it's done"`) or the `'\''` re-quoting
+# idiom desynchronises it and it swallows the rest of the line, silently
+# disarming whatever detector reads the view. The file header (#1701, #1721,
+# #1722, #1848, #1900, #2052, #2058) is a list of exactly that mistake.
+#
+# What survives, and why:
+#   - the quote characters themselves — the redirect STRUCTURE
+#     (`awk '...' f > "$o"` becomes `awk '____' f > "$_"`) has to stay readable
+#   - one FILL char per masked char — offsets stay aligned, so a regex that
+#     cares about what sits immediately after `>` still sees the same position
+#   - `$` — the "is the redirect target a variable?" test keys on a `$` right
+#     after the opening quote, and masking it would silently change that test
+# Everything else inside quotes — `>`, `|`, `;`, `&`, `(`, flag-looking words —
+# becomes FILL, because inside quotes it is text, not shell syntax.
+#
+# Backslash handling matches the shell: outside quotes and inside double quotes a
+# backslash escapes the next character (so `\'` and `\"` do not toggle state);
+# inside single quotes it is literal. Quote state is tracked per line, so an
+# unbalanced quote on one line cannot swallow the next.
+mask_quoted_content() {
+    printf '%s\n' "$1" | awk -v SQ="'" -v FILL="_" '
+    {
+        line = $0
+        n = length(line)
+        in_s = 0   # inside single quotes
+        in_d = 0   # inside double quotes
+        out = ""
+        for (i = 1; i <= n; i++) {
+            c = substr(line, i, 1)
+            if (in_s == 1) {
+                if (c == SQ) { in_s = 0; out = out c }
+                else if (c == "$") { out = out c }
+                else { out = out FILL }
+            } else if (in_d == 1) {
+                if (c == "\\" && i < n) { out = out FILL FILL; i++ }
+                else if (c == "\"") { in_d = 0; out = out c }
+                else if (c == "$") { out = out c }
+                else { out = out FILL }
+            } else if (c == "\\" && i < n) {
+                out = out c substr(line, i + 1, 1); i++
+            } else if (c == SQ) {
+                in_s = 1; out = out c
+            } else if (c == "\"") {
+                in_d = 1; out = out c
+            } else {
+                out = out c
+            }
+        }
+        print out
+    }'
+}
+
 # Strip heredoc body content up front so the regex detectors below that scan the
 # whole command string don't false-positive on literal text inside a heredoc
 # body. The main offender is `gh pr create --body "$(cat <<'EOF' ... EOF)"` whose
@@ -416,9 +474,66 @@ fi
 # `… | awk -F/ '{print $1}' | sort -u > "$f"`, where `sort` does the writing —
 # was blocked as if awk were rewriting the file (issue #2131). The trailing
 # `[^|]+` only ever constrained the chars AFTER `>`, never the span before it.
-# `awk\s+[^|]*>` still matches the true positive `awk '…' data.txt > "$f"`.
-if echo "$COMMAND" | grep -Eq "awk\s+[^|]*>\s*['\"]?[^|]+" && \
-   echo "$COMMAND" | grep -Eq "(>|>>)\s*['\"]?\\\$"; then
+# That segment-confinement is retained below (widened to `[^|;&]*`); everything
+# else about the rule changed in #2463.
+#
+# Condition 1 must also ignore a `>` that lives INSIDE the quoted awk PROGRAM.
+# `awk 'NR>1{print $1}'` — the standard header-skipping idiom — is a comparison
+# operator in awk's own language, not a shell redirect, but against raw command
+# text the two are indistinguishable. Paired with condition 2 matching a redirect
+# owned by a DIFFERENT command elsewhere in the same call (`"$S/run.sh" … >
+# "$S/out.log"` on a later line), that blocked a read-only listing pipeline with
+# advice — "use the Edit tool instead of awk" — that made no sense for it
+# (issue #2463). Note the control: the identical command with `{print $1}` in
+# place of `NR>1{print $1}` was already allowed, so the comparison operator was
+# the sole trigger.
+#
+# Two changes, both folded into ONE regex over the quote-masked view
+# (mask_quoted_content above), replacing the old pair of independent greps:
+#
+#  1. A `>` inside quotes is TEXT. The masked view blanks quoted content while
+#     preserving the quote chars, the offsets, and `$` — so `awk 'NR>1{…}'`
+#     becomes `awk '___________$__'` (no `>` left to mistake for a redirect)
+#     while the true positive `awk '…' data.txt > "$out"` keeps its redirect
+#     structure intact and still blocks. Same class as the echo/printf
+#     quoted-`>` false positives (#1701/#1721/#1722), fixed the same way. This
+#     deliberately does NOT use a `sed "s/'[^']*'/''/g"` pre-pass: that
+#     desynchronises on an odd apostrophe (`printf "it's done"`) or on the
+#     `'\''` re-quoting idiom and swallows the rest of the line, turning a
+#     safety block into a silent no-op.
+#
+#  2. The two conditions become ONE regex, so "awk owns a redirect" and "the
+#     target is a variable" must now hold in the SAME command segment.
+#     Previously they were separate `grep` calls that could match on entirely
+#     different lines — the actual mechanism of #2463, where condition 2 was
+#     satisfied by `"$S/run.sh" … > "$S/out.log"` on a later line. The span is
+#     confined by `[^|;&]*`: `|` was already there from #2131, and `;`/`&`
+#     extend the same idea to `;`, `&&`, `||` and background `&`, which also
+#     fixes the same-line shape (`… | awk 'NR>1{…}' && other > "$log"`) of the
+#     class #2463 reported.
+#
+# This stays a pure-regex check rather than moving to the ast-grep classifier:
+# the block belongs to the safety/correctness tier that must fire in EVERY
+# context (sandboxes, subagents), and a structural rule fails open where the
+# parser is absent. See the tier note in this file's header.
+#
+# Scanned view is COMMAND_SHELL_ONLY (heredoc bodies and trailing `#` comments
+# already stripped), matching the `^`-anchored blocks (#2431) and the commit-file
+# reminder below. #2463 reported this directly: diagnosing the rule and then
+# DRAFTING THE ISSUE were both blocked, because a heredoc body quoting the
+# offending shape was scanned as if it were an executed command. Prose is data.
+#
+# KNOWN GAP (pre-existing, not closed here): the segment barrier is characters,
+# not structure, so a redirect living inside a `$( … )` between `awk` and a
+# later `>` can still be read as awk's own, and a `\`-continued redirect on the
+# next physical line is missed because grep is line-based.
+# Capture, do not pipe: `grep -q` exits at the first match, and under
+# `set -o pipefail` the still-writing masker takes SIGPIPE and turns the
+# whole pipeline into 141 — so this safety block silently stopped firing
+# from ~6 KB of command text upward. Fail-open in the tier that must fire
+# in every context.
+MASKED_SHELL_ONLY="$(mask_quoted_content "$COMMAND_SHELL_ONLY")"
+if grep -Eq "awk\s+[^|;&]*>\s*['\"]?\\\$" <<<"$MASKED_SHELL_ONLY"; then
     block "REMINDER: Use the Edit tool instead of 'awk' for file modifications. The Edit tool is safer and more precise."
 fi
 
@@ -431,8 +546,41 @@ fi
 # triggered this git-commit-specific reminder, which is irrelevant to the blocked
 # command (issue #1584, #1587). The reminder only makes sense when the command
 # is in fact composing a git commit/tag message.
+#
+# A message file passed BY PATH — `git commit -F <file>` / `--file=<file>`, and
+# the same flags on `git tag` — is an ACCEPTED destination, not something to
+# redirect away from (issue #2462). `-F` is git's exact analogue of `gh`'s
+# `--body-file`, which this same check was taught to allow in #1584/#1587, and
+# which the tool-use guidance actively recommends for multi-line bodies. Leaving
+# the two asymmetric meant the recommended file-based body pattern was blocked
+# for one command and recommended for its direct counterpart.
+#
+# The reminder keeps its original target: a temp file created and then NOT
+# consumed by `-F` — most commonly `git commit -m "$(cat /tmp/msg.txt)"`, which
+# is genuinely the roundabout path the heredoc replaces.
+#
+# Scanned view is COMMAND_SHELL_ONLY (heredoc bodies and trailing `#` comments
+# already stripped) run through mask_quoted_content, so a `-F` appearing only
+# inside a commit message body, an explanatory comment, or a quoted argument
+# cannot grant the exemption (#2106's class, #2431's).
+#
+# The span between `git commit` and the flag excludes `(` and a backtick as well
+# as `;&|`: without that, a `-F` belonging to an unrelated command SUBSTITUTION
+# on the same line — `git commit -m "$(cat /tmp/msg.txt)" $(rg -F x)` — granted
+# the exemption and the slurp-back pattern the reminder exists for went unseen.
+# Masking first is what makes excluding `(` safe: a legitimate
+# `git commit -m "feat(x): y" -F f` has its parenthesis inside quotes, where the
+# mask has already blanked it.
+commit_message_file_flag() {
+    # Same SIGPIPE hazard as the awk site above; capture instead of piping.
+    local masked
+    masked="$(mask_quoted_content "$COMMAND_SHELL_ONLY")"
+    grep -Eq 'git[[:space:]]+(commit|tag)[^;&|()`]*[[:space:]](-F|--file)([[:space:]=]|$)' <<<"$masked"
+}
+
 if echo "$COMMAND" | grep -Eq 'git\s+(commit|tag)\b' && \
    echo "$COMMAND" | grep -Eq '(feat|fix|docs|refactor|test|chore|perf|ci)(\(.+\))?[!:]' && \
+   ! commit_message_file_flag && \
    { echo "$COMMAND" | grep -Eq 'cat\s*>\s*[^|]*commit' || \
      echo "$COMMAND" | grep -Eq "(cat|echo|printf)\s*>\s*/tmp/.*<<.*EOF"; }; then
     block "REMINDER: Use HEREDOC directly in git commit:
@@ -444,7 +592,10 @@ Body text here.
 
 Fixes #123
 EOF
-)\""
+)\"
+
+Writing the message to a file and passing it by path — git commit -F <file>
+(git's analogue of gh --body-file) — is also accepted."
 fi
 
 # Check for timeout command

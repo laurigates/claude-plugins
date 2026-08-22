@@ -41,7 +41,7 @@ Determine if `$ARGUMENTS` refers to a skill or plugin:
 - Contains `/`: treat as `plugin-name/skill-name`, look for `<plugin>/skills/<skill>/eval-results/benchmark.json`
 - No `/`: treat as `plugin-name`, look for `<plugin>/eval-results/plugin-benchmark.json`
 
-If the target file does not exist, report that no evaluation results are available and suggest running `/evaluate:skill` or `/evaluate:plugin`.
+If the target file does not exist, report that no evaluation results are available and suggest running `/evaluate:skill` or `/evaluate:plugin-batch`.
 
 ### Step 2: Load results
 

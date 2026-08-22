@@ -303,19 +303,13 @@ Analyzes test results from any testing framework, uses Zen planner to create a s
    - Identify patterns and root causes
 
 2. **Plan Fixes with PAL Planner**
-   - Use `mcp__pal__planner` for systematic planning
+   - Use `mcp__pal-mcp-server__planner` for systematic planning
    - Break down complex fixes into actionable steps
    - Identify dependencies between fixes
    - Estimate effort and priority
 
 3. **Delegate to Subagents**
-   - **Accessibility issues** → `code-review` agent (WCAG compliance)
-   - **Security vulnerabilities** → `security-audit` agent
-   - **Performance problems** → `system-debugging` agent
-   - **Code quality issues** → `code-refactoring` agent
-   - **Test infrastructure** → `test-architecture` agent
-   - **Integration failures** → `system-debugging` agent
-   - **Documentation gaps** → `documentation` agent
+   - Route each issue category through the [Subagent Routing](#subagent-routing) table below — it is the single source of truth for every `subagent_type` this skill dispatches.
 
 4. **Execute Plan**
    - Sequential execution based on dependencies
@@ -323,27 +317,60 @@ Analyzes test results from any testing framework, uses Zen planner to create a s
    - Re-run tests to confirm resolution
 
 
-## Subagent Selection Logic
+## Subagent Routing
 
-The command uses this decision tree to delegate:
+**This table is the single source of truth for delegation.** Every `subagent_type` this skill dispatches is listed here; no other section restates it. The values are plugin-qualified `plugin:agent` IDs — the form the `Task`/`Agent` tool resolves for plugin-provided agents (a bare name only resolves for user- or project-level agents in `~/.claude/agents/` or `.claude/agents/`).
 
-- **Accessibility violations** (WCAG, ARIA, contrast)
-  → `code-review` agent with accessibility focus
+It is also the contract the workflow harness's `category` enum and `AGENT_FOR` map encode — **edit them together.** `scripts/check-subagent-types.sh` fails CI if any value here stops resolving to a real `agents-plugin/agents/*.md`.
 
-- **Security issues** (XSS, SQLi, auth bypass)
-  → `security-audit` agent with OWASP analysis
+| Issue category | Triggers | Dispatch | Focus to pass |
+|---|---|---|---|
+| Accessibility violations | WCAG, ARIA, colour contrast, keyboard nav | `subagent_type: agents-plugin:review` | WCAG 2.1 compliance, semantic HTML, ARIA best practices |
+| Security vulnerabilities | XSS, SQLi, CSRF, auth bypass | `subagent_type: agents-plugin:security-audit` | OWASP Top 10, input validation, authentication |
+| Performance issues | Slow tests/queries, memory leaks, timeouts | `subagent_type: agents-plugin:performance` | Profiling, bottleneck identification, optimization |
+| Code quality / smells | Duplication, complexity, coupling, maintainability | `subagent_type: agents-plugin:refactor` | SOLID principles, DRY, behaviour-preserving restructure |
+| Flaky tests / test infrastructure | Race conditions, timing, shared state, isolation | `subagent_type: agents-plugin:test` | Test stability, isolation, determinism |
+| Integration failures | Failing behaviour needing root-cause diagnosis | `subagent_type: agents-plugin:debug` | Root cause, minimal fix, verification |
+| Build / CI failures | Pipeline errors, dependency issues | `subagent_type: agents-plugin:ci` | GitHub Actions, dependency management, caching |
+| Documentation gaps | Missing docs, outdated examples | `subagent_type: agents-plugin:docs` | API docs, test documentation, migration guides |
 
-- **Performance bottlenecks** (slow queries, memory leaks)
-  → `system-debugging` agent with profiling
 
-- **Code smells** (duplicates, complexity, coupling)
-  → `code-refactoring` agent with SOLID principles
+## Workflow harness (template)
 
-- **Flaky tests** (race conditions, timing issues)
-  → `test-architecture` agent with stability analysis
+`workflows/test-analyze.workflow.js` ships beside this skill. **It is a TEMPLATE to adapt,
+not a script to run verbatim.** Read it, then rewrite it for the work in front of you.
 
-- **Build/CI failures** (pipeline errors, dependency issues)
-  → `cicd-pipelines` agent with workflow optimization
+**Adapt freely:** the agent prompts, the severity vocabulary, the result-file globs and
+format hints for your test framework, the `--focus` weighting, and the verification
+command each plan agent is told to emit.
+
+**Preserve across any adaptation:** (a) the fan-out width comes from the `AGENT_FOR`
+table above — one agent per *agent type*, never a prose "for each failure", which is what
+caps the harness at 8 concurrent agents; (b) the `category` and `severity` enums in
+`RoutedFailuresSchema`, which force every failure either onto a route or into
+`unroutable[]` with a stated reason instead of the nearest-looking row; (c) the
+`parallel()` barrier before Synthesize — group agents emit `depends_on` edges pointing at
+failures in *other* groups, so the ordering only exists once every group has returned.
+
+**Skip the harness when:** there are fewer than 5 routable failures — the script returns
+`{mode:'inline'}` at that floor, because below it one opus agent per category costs more
+than the linear pass. That floor is a hard bound, not a tunable knob. The steps below
+remain the authoritative description of *what* each stage must produce; the harness only
+fixes *how* the work is split.
+
+Two consequences worth stating inline:
+
+- **The harness surrenders `mcp__pal-mcp-server__planner`.** A workflow script cannot reach MCP
+  tools, so the dependency edges in the merged plan are *inferred by the group agents*,
+  not planned. A run that genuinely needs PAL planning (Step 2 below) should stay inline.
+- **`context: fork` stays, and it is not what justifies the harness.** The pin lives in
+  `scripts/plugin-compliance-check.sh` (the `context: fork` guard list, currently around
+  lines 898–914) and is unchanged by this template. Per
+  `.claude/rules/workflow-vs-skill.md` § "The `context: fork` corollary", fork already
+  bought context isolation for free — so this harness has to earn its tokens by
+  **splitting** the planning work across agent types behind a real barrier, which it does.
+  The `parallel()` width is capped at the fixed agent-type set (8) precisely so it does
+  not become the wide fan-out `.claude/rules/skill-fork-context.md` warns about.
 
 
 ## Output
@@ -391,21 +418,20 @@ The command produces:
 
 **Prompt:**
 
-Analyze test results from {{ARG1}} and create a systematic fix plan.
+Analyze test results from `<results-path>` and create a systematic fix plan.
 
-{{#if ARG2}}
-Test type: {{ARG2}}
-{{else}}
-Auto-detect test type from file formats and content.
-{{/if}}
+Bind the three values from `$ARGUMENTS` first (see [Parameters](#parameters)) —
+they come from the **caller**, and nothing substitutes them for you:
 
-{{#if ARG3}}
-Focus area: {{ARG3}}
-{{/if}}
+| Value | Source | When absent |
+|---|---|---|
+| `<results-path>` | first non-flag token (required) | ask for it; do not guess a path |
+| `<test-type>` | `--type <test-type>` | auto-detect from the result files' formats and content |
+| `<focus-area>` | `--focus <area>` | analyze all areas with no prioritization bias |
 
 **Step 1: Analyze Test Results**
 
-Read the test result files from {{ARG1}} and extract:
+Read the test result files from `<results-path>` and extract:
 - Failed tests with error messages
 - Warnings and deprecations
 - Performance metrics (if available)
@@ -414,7 +440,7 @@ Read the test result files from {{ARG1}} and extract:
 
 **Step 2: Use PAL Planner**
 
-Call `mcp__pal__planner` with model "gemini-2.5-pro" to create a systematic fix plan:
+Call `mcp__pal-mcp-server__planner` with model "gemini-2.5-pro" to create a systematic fix plan:
 - Step 1: Summarize findings and identify root causes
 - Step 2: Prioritize issues (impact × effort matrix)
 - Step 3: Break down fixes into actionable tasks
@@ -424,35 +450,7 @@ Call `mcp__pal__planner` with model "gemini-2.5-pro" to create a systematic fix 
 
 **Step 3: Subagent Delegation Strategy**
 
-Based on the issue categories, delegate to:
-
-- **Accessibility violations** (WCAG, ARIA, color contrast, keyboard nav)
-  → Use `Task` tool with `subagent_type: code-review`
-  → Focus: WCAG 2.1 compliance, semantic HTML, ARIA best practices
-
-- **Security vulnerabilities** (XSS, SQLi, CSRF, auth issues)
-  → Use `Task` tool with `subagent_type: security-audit`
-  → Focus: OWASP Top 10, input validation, authentication
-
-- **Performance issues** (slow tests, memory leaks, timeouts)
-  → Use `Task` tool with `subagent_type: system-debugging`
-  → Focus: Profiling, bottleneck identification, optimization
-
-- **Code quality** (duplicates, complexity, maintainability)
-  → Use `Task` tool with `subagent_type: code-refactoring`
-  → Focus: SOLID principles, DRY, code smells
-
-- **Flaky/unreliable tests** (race conditions, timing, dependencies)
-  → Use `Task` tool with `subagent_type: test-architecture`
-  → Focus: Test stability, isolation, determinism
-
-- **CI/CD failures** (build errors, pipeline issues)
-  → Use `Task` tool with `subagent_type: cicd-pipelines`
-  → Focus: GitHub Actions, dependency management, caching
-
-- **Documentation gaps** (missing docs, outdated examples)
-  → Use `Task` tool with `subagent_type: documentation`
-  → Focus: API docs, test documentation, migration guides
+For each issue category found, look it up in the **Subagent Routing** table above and dispatch a `Task` with that row's `subagent_type` (a plugin-qualified `plugin:agent` ID) and that row's focus. Do not invent a `subagent_type` that is absent from the table — an unlisted value does not resolve and the dispatch fails.
 
 **Step 4: Create Execution Plan**
 
@@ -472,9 +470,9 @@ Provide:
 - ✅ **Next Steps**: Concrete actions to take
 - 🔍 **Verification**: How to confirm fixes worked
 
-{{#if ARG3}}
-**Additional focus on {{ARG3}}**: Prioritize issues related to this area and provide extra context for relevant subagents.
-{{/if}}
+When a `<focus-area>` was bound: prioritize issues related to that area and give
+the relevant subagents extra context about it. When none was passed, skip this —
+do not invent a focus.
 
 **Documentation-First Reminder**: Before implementing fixes, research relevant documentation using context7 to verify:
 - Test framework best practices

@@ -5,7 +5,7 @@ args: "[--project-dir <path>]"
 argument-hint: "[--project-dir <path>]"
 allowed-tools: Bash(bash *), Bash(git fetch *), Bash(git rev-list *), Bash(git status *), Bash(git branch *), Bash(gh pr view *), Read, TodoWrite
 created: 2026-06-17
-modified: 2026-06-17
+modified: 2026-08-21
 reviewed: 2026-06-17
 ---
 
@@ -68,7 +68,7 @@ Parse the `VERDICT=` line and act:
 | `behind` | Local tip is behind `origin/<branch>` | **Reconcile first** — `git pull --rebase` (or resolve the divergence) so you build on the current tip and avoid a rejected push / needless conflict, then continue |
 | `pr_merged` | The branch's PR is **MERGED** (`PR_STATE=MERGED`, `MERGED_AT` set) | **Stop adding commits here.** The merged branch is a dead end; create a fresh branch off the updated default (`git fetch && git switch -c <new> origin/<default>`) and put the new work there |
 | `pr_closed` | The PR is CLOSED unmerged | Confirm this branch is still where the work belongs before adding commits; if the PR was abandoned, branch off the default instead |
-| `changes_requested` | The PR has `CHANGES_REQUESTED` reviews | Address the review via `/git:pr-feedback` **before** piling on unrelated work |
+| `changes_requested` | The PR has `CHANGES_REQUESTED` reviews | Summarise the outstanding threads and **recommend the user run `/git:pr-feedback`** before piling on unrelated work — it is `disable-model-invocation`, so surface it rather than invoking it |
 | `no_pr` | On the default branch, or no PR for this branch | No PR-branch staleness to worry about — proceed |
 | `no_remote` | Not a git repo, or no `origin` remote | Nothing to check; proceed |
 

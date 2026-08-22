@@ -32,11 +32,16 @@
 #      (whose `.git` is a gitfile pointing into the parent). An operand that is
 #      a *parent* of repos is scanned to depth 3, capped at 20 hits.
 #   6. Tier 1 (exit 2): the repo has no remote (1a), or a remote that has never
-#      been pushed to (1b). The message carries the source skill's three-option
-#      remediation and is SELF-EXTINGUISHING — pushing, or writing the backup
-#      tarball, changes the world state this hook reads, so the retried
-#      `rm -rf` succeeds on the next attempt with no override. That property is
-#      what keeps the same-session repeat-block rate near zero.
+#      been pushed to (1b). The message reports what the preflight FOUND
+#      (commits / uncommitted / stashes / local branches, every probe CAPPED —
+#      see FINDINGS_CAP) and points at `git-plugin:git-repo-delete-check` for the
+#      remediation options; that skill is their single authority and the message
+#      does not restate them (#2454). The one option it keeps verbatim is the tar
+#      backup, because that command is what makes the block SELF-EXTINGUISHING:
+#      writing the tarball (like pushing) changes the world state this hook
+#      reads, so the retried `rm -rf` succeeds on the next attempt with no
+#      override. That property is what keeps the same-session repeat-block rate
+#      near zero.
 #   7. Tier 2 (opt-in, `ask`): a remote-backed repo that still carries
 #      uncommitted / unpushed / stashed work. Off by default — agents delete
 #      dirty clones and worktrees constantly and no *history* is at risk there,
@@ -241,7 +246,7 @@ classify() {
     base=$(basename "$d")
 
     # ESCAPE — a dated backup tarball for this repo already exists. This is what
-    # makes option 2 of the block message self-extinguishing.
+    # makes the block message's tar command self-extinguishing.
     ls "$BACKUP_DIR/$base"-*.tar.* >/dev/null 2>&1 && return 0
 
     # TIER 1a — no remote at all.
@@ -267,26 +272,76 @@ classify() {
     return 0
 }
 
+# Every finding probe is CAPPED. emit_block runs on the blocking path, and this
+# hook fails OPEN on timeout — an unbounded `rev-list --all --count` over a large
+# object graph would turn an already-decided hard block into a deletion. Each
+# probe below stops at FINDINGS_CAP, so the cost is bounded by the cap rather
+# than by repo size, and a capped value is rendered as "<cap>+".
+FINDINGS_CAP=500
+
+# Echo a bounded count for a capped probe: the raw number, or "<cap>+" at the cap.
+capped() { # $1 raw
+    local n="$1"
+    case "$n" in ''|*[!0-9]*) echo 0; return 0 ;; esac
+    if [ "$n" -ge "$FINDINGS_CAP" ]; then echo "${FINDINGS_CAP}+"; else echo "$n"; fi
+}
+
 emit_block() {
     local abs="$1" verdict="$2" base cause
+    local commits dirty stashes branches headline empty_note=""
     base=$(basename "$abs")
     case "$verdict" in
         no_remote) cause="no remote configured" ;;
         remote_never_pushed) cause="a remote that has never been pushed to" ;;
         *) cause="no off-machine copy of its history" ;;
     esac
-    block "BLOCKED: '$abs' is a git repository with $cause.
-This checkout is the ONLY copy of its history — \`rm -rf\` here is permanent and unrecoverable.
 
-Preserve the work first, then re-run the delete (this block clears itself once either succeeds):
-  1. Push to a remote:  git -C '$abs' remote add origin <url> && git -C '$abs' push -u origin --all
-  2. Tar to a labelled backup (the default when the user just says \"go\"):
-     mkdir -p '$BACKUP_DIR' && tar -czf '$BACKUP_DIR/$base-\$(date -I).tar.gz' '$abs'
-  3. Delete with no backup — confirm with the user that the work, including any
-     uncommitted files, branches and stashes, is genuinely disposable, then ask them
-     to run the command themselves per .claude/rules/handling-blocked-hooks.md.
-Invoke \`git-plugin:git-repo-delete-check\` to walk the full preflight (unpushed
-commits, stashes, upstream-less branches) before choosing between them.
+    # Findings, not a procedure (#2454). The remediation OPTIONS are the source
+    # skill's to define; restating them here made two copies of one procedure
+    # that nothing kept in sync. What this message owns is (a) what the preflight
+    # actually found in THIS repo and (b) the one command that makes the block
+    # self-extinguishing. Everything else is a pointer.
+    #
+    # `--max-count` caps the object-graph walk; `--count` caps the ref scan;
+    # `head` closes the pipe on the working-tree scan, which SIGPIPEs git.
+    commits=$(git -C "$abs" rev-list --all --count --max-count="$FINDINGS_CAP" 2>/dev/null || echo 0)
+    dirty=$(git -C "$abs" status --porcelain 2>/dev/null | head -n "$FINDINGS_CAP" | wc -l | tr -d '[:space:]')
+    stashes=$(git -C "$abs" stash list --max-count="$FINDINGS_CAP" 2>/dev/null | wc -l | tr -d '[:space:]')
+    branches=$(git -C "$abs" for-each-ref --count="$FINDINGS_CAP" --format='.' refs/heads 2>/dev/null | wc -l | tr -d '[:space:]')
+    case "$commits" in ''|*[!0-9]*) commits=0 ;; esac
+    case "$dirty" in ''|*[!0-9]*) dirty=0 ;; esac
+    case "$stashes" in ''|*[!0-9]*) stashes=0 ;; esac
+    case "$branches" in ''|*[!0-9]*) branches=0 ;; esac
+
+    # A repo with no commits has no history to be the only copy OF, so the
+    # headline adapts rather than contradicting an all-zero findings block.
+    if [ "$commits" -gt 0 ]; then
+        headline="This checkout is the ONLY copy of its history — \`rm -rf\` here is permanent and unrecoverable."
+    else
+        headline="This checkout has no commits yet, so nothing in it is recoverable from git — \`rm -rf\` here is permanent."
+    fi
+    if [ "$commits" -eq 0 ] && [ "$dirty" -eq 0 ] && [ "$stashes" -eq 0 ] && [ "$branches" -eq 0 ]; then
+        empty_note="
+The preflight found nothing at all. The block still stands because this hook only
+sees what git tracks — confirm with the user before deleting."
+    fi
+
+    block "BLOCKED: '$abs' is a git repository with $cause.
+$headline
+
+Preflight found ($cause), none of it reachable from anywhere else:
+  commits (git rev-list --all --count):         $(capped "$commits")
+  uncommitted changes (git status --porcelain): $(capped "$dirty")
+  stashes (git stash list):                     $(capped "$stashes")
+  local branches (git for-each-ref refs/heads): $(capped "$branches")$empty_note
+
+In-band escape — tar to a labelled backup, then re-run the delete (this block
+clears itself as soon as that tarball exists):
+  mkdir -p '$BACKUP_DIR' && tar -czf '$BACKUP_DIR/$base-\$(date -I).tar.gz' '$abs'
+
+Invoke \`git-plugin:git-repo-delete-check\` before choosing anything else — that
+skill is the single authority on the remediation options and when each applies,
+so this message deliberately does not restate them.
 Do not self-serve CLAUDE_HOOKS_DISABLE_REPO_DELETION_SAFETY — it is honored only from the operator's shell environment."
 }
 

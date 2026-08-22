@@ -75,6 +75,77 @@ command and still blocks; only heredoc-body lines are exempt. The `timeout`
 escape hatch reads a separate `COMMAND_NO_HEREDOC` view (comments intact),
 because `# allow-timeout` is itself a comment.
 
+### A `>` inside the quoted `awk` program is not a redirect (#2463)
+
+The `awk`-writes-a-file block used to pair two independent `grep`s: `awk` owns a
+redirect, and the redirect target is a variable. Read against raw command text,
+the `>` in `awk 'NR>1{print $1}'` — the standard header-skipping idiom —
+satisfied the first as if it were a shell redirect, while the second was
+satisfied by a redirect belonging to a **different command** elsewhere in the
+same call. A read-only listing pipeline was blocked with "use the Edit tool
+instead of awk".
+
+The two conditions are now **one** regex over a **quote-masked** view:
+
+```
+awk\s+[^|;&]*>\s*['"]?\$   # over mask_quoted_content "$COMMAND_SHELL_ONLY"
+```
+
+`mask_quoted_content` is a per-line `in_s`/`in_d` scanner (the same one
+`strip_trailing_comments` uses) that blanks the *content* of every quoted span
+while keeping the quote characters, the character offsets, and any `$`. So
+`awk 'NR>1{print $1}' data.txt > "$o"` becomes
+`awk '___________$__' data.txt > "$_"` — the `>` inside the program is gone, the
+redirect structure survives, and the true positive still blocks. Same class as
+the `echo`/`printf` quoted-`>` false positives (#1701/#1721/#1722).
+
+A quote-**naive** `sed "s/'[^']*'/''/g"` pre-strip cannot do this job and was
+rejected: an odd apostrophe earlier on the line (`printf "it's done"`) or the
+`'\''` re-quoting idiom pairs with the awk program's opening quote, deletes the
+rest of the line including the real redirect, and turns the block into a silent
+no-op. That is the mistake the list in the script header (#1701, #1721, #1722,
+#1848, #1900, #2052, #2058) records; the fix is a scanner, not a fourth pass.
+
+Folding the two conditions into one regex also means both halves must hold in
+the **same command segment**. The span barrier `[^|;&]*` extends #2131's `|` to
+`;`, `&&`, `||` and background `&`, so the same shape joined on one line —
+`… | awk 'NR>1{…}' && other > "$log"` — is allowed too, not just the
+newline-separated form the issue reported. Known gap: the barrier is characters,
+not structure, so a redirect inside a `$( … )` between `awk` and a later `>` can
+still be read as awk's own, and a `\`-continued redirect on the next physical
+line is missed (grep is line-based).
+
+The scanned view is `COMMAND_SHELL_ONLY` (heredoc bodies and trailing `#`
+comments removed), matching the `^`-anchored blocks (#2431). #2463 reported this
+half directly: diagnosing the rule *and drafting the issue* were both blocked,
+because a heredoc body quoting the offending shape was read as an executed
+command. Prose is data; a real `awk … > "$f"` after the heredoc terminator still
+blocks.
+
+The block stays pure-regex rather than moving to the ast-grep classifier: it
+belongs to the tier that must fire in every context, and a structural rule fails
+open where the parser is absent.
+
+### `git commit -F <file>` is an accepted message destination (#2462)
+
+The commit-message-to-temp-file reminder now exempts an explicit
+`git commit -F <file>` / `--file=<file>` (and the same flags on `git tag`).
+`-F` is git's exact analogue of `gh`'s `--body-file`, which this same check was
+taught to allow in #1584/#1587 — leaving the two asymmetric meant the
+file-based body pattern was recommended for one command and redirected away
+from for its direct counterpart. The reminder keeps its original target: a temp
+file created and then **not** consumed by `-F`, most commonly
+`git commit -m "$(cat /tmp/msg.txt)"`.
+
+The exemption reads `mask_quoted_content "$COMMAND_SHELL_ONLY"`, so a `-F` that
+appears only inside a heredoc body, a trailing comment, or a quoted argument
+cannot grant it. The span between `git commit`/`git tag` and the flag excludes
+`(` and a backtick as well as `;&|`, so a `-F` belonging to an unrelated command
+substitution on the same line — `git commit -m "$(cat /tmp/msg.txt)" $(rg -F x)`
+— does not exempt either. Masking first is what makes excluding `(` safe: a
+conventional-commit subject's parentheses live inside quotes, where the mask has
+already blanked them.
+
 ### Demoted to opt-in teach nudges (not blocked)
 
 `find` (→ **Glob**, #1871), `grep`/`rg` (→ **Grep**, #1909), `ls <glob>`
@@ -417,11 +488,26 @@ hard block (exit 2) rather than a nudge — see
 [`.claude/rules/hook-block-vs-nudge.md`](../../.claude/rules/hook-block-vs-nudge.md)
 and the source skill `git-plugin:git-repo-delete-check`.
 
-The block is **self-extinguishing**: it names three remediations (push, tar to
-`$CLAUDE_REPO_BACKUP_DIR`, or delegate to the user), and performing either of the
-first two changes the world state the hook reads, so the retried `rm -rf`
-succeeds on the next attempt with no override. That property is what keeps the
-same-session repeat-block rate near zero.
+The block message reports what the preflight **found** in that repo (commits,
+uncommitted changes, stashes, local branches) and points at
+`git-plugin:git-repo-delete-check` for the remediation options — that skill is
+their single authority, and the message deliberately does not restate them
+(#2454).
+
+The one option it keeps verbatim is the tar backup to `$CLAUDE_REPO_BACKUP_DIR`,
+because that command is what makes the block **self-extinguishing**: writing the
+tarball (like pushing) changes the world state the hook reads, so the retried
+`rm -rf` succeeds on the next attempt with no override. That property is what
+keeps the same-session repeat-block rate near zero, and it is why the one
+surviving overlap with the skill has a mechanical reason to be there.
+
+Every findings probe is **capped** (`FINDINGS_CAP`, 500). `emit_block` runs on
+the blocking path and this hook fails **open** on timeout, so an unbounded
+`git rev-list --all --count` would turn an already-decided hard block into a
+deletion on a large repo — measured at 1281 ms over a 200,000-commit graph
+against 21 ms with `--max-count=500`. A capped value renders as `500+`. A repo
+with **no commits** gets a different headline and an explicit note, so an
+all-zero findings report never reads as an argument against its own block.
 
 ### Commands Blocked
 
@@ -494,7 +580,7 @@ rm -rf "$T"
 echo '{"tool_name":"Bash","tool_input":{"command":"rm -rf node_modules"},"cwd":"'"$PWD"'"}' \
   | bash hooks-plugin/hooks/repo-deletion-safety.sh; echo $?                                          # 0
 
-bash hooks-plugin/hooks/test-repo-deletion-safety.sh   # 57 passed, 0 failed
+bash hooks-plugin/hooks/test-repo-deletion-safety.sh   # 83 passed, 0 failed
 ```
 
 ### Exit Codes

@@ -3,8 +3,8 @@ name: git-merge-hazards
 description: Traps in GitHub's merge machinery. Use when merging a PR, merging a stacked PR chain, auditing whether a branch really landed, or merging over red CI.
 allowed-tools: Read, Grep, Glob, Bash(gh pr *), Bash(gh issue *), Bash(gh api *), Bash(git cherry *), Bash(git merge-tree *), Bash(git rev-parse *), Bash(git log *), Bash(git reflog *), Bash(git rebase *), Bash(git push *), Bash(git fetch *), Bash(just *), Bash(bash *), TodoWrite
 created: 2026-08-19
-modified: 2026-08-19
-reviewed: 2026-08-19
+modified: 2026-08-21
+reviewed: 2026-08-21
 ---
 
 # Git Merge Hazards
@@ -96,7 +96,7 @@ claude-plugins #1979→#1987):
   next call HEAD was `main`'s tip, so `git push --force-with-lease origin
   HEAD:<child-branch>` overwrote the branch with main. Resolve the tip to an
   **explicit SHA in the same command that creates it** and push
-  `git push --force-with-lease origin <sha>:<branch>`.
+  `git push --force-with-lease origin <sha>:refs/heads/<branch>`.
 - **Brace that variable — `"$sha:<branch>"` is a zsh word-modifier expansion.**
   Stock zsh (reproduces under `zsh -f`) eats the character after the colon as a
   history modifier whenever it happens to be one, silently rewriting the
@@ -113,10 +113,21 @@ claude-plugins #1979→#1987):
 
   Half the conventional-commit prefixes break and half don't, which is why it
   reads as a baffling one-off instead of a rule. Always
-  `git push --force-with-lease origin "${sha}:<branch>"`. Observed 2026-08
-  pushing `feat/justfile-pr-triage`: `src refspec <sha>efs/heads/… does not
-  match any` — the error names a ref you never typed, so it looks like a stale
-  SHA rather than a quoting bug.
+  `git push --force-with-lease origin "${sha}:refs/heads/<branch>"`. Observed
+  2026-08 pushing `feat/justfile-pr-triage`: `src refspec <sha>efs/heads/… does
+  not match any` — the error names a ref you never typed, so it looks like a
+  stale SHA rather than a quoting bug.
+- **Spell the destination `refs/heads/<branch>`, always.** A `<sha>:<branch>`
+  refspec works only when `<branch>` **already exists on the remote**: git has a
+  bare commit object on the left, so there is no ref namespace to infer the
+  destination from, and it refuses rather than guessing — `error: The
+  destination you provided is not a full refname (i.e., starting with
+  "refs/")`. git wraps that message right after `(i.e.,`, so triage by grepping
+  the `not a full refname` fragment, not the whole sentence. The full refname
+  is accepted whether or not the branch exists, so there is no branch state to
+  reason about. It compounds with the brace rule immediately above rather than
+  replacing it: `"$sha:refs/heads/x"` is the `:r` word-modifier row in that
+  table — unbraced, zsh silently sends `<sha>efs/heads/x`.
 - **An empty-diff force-push auto-closes the PR — and a closed PR whose *head*
   moved after closing cannot be reopened.** Sibling of #2's
   base-branch-deleted variant. GitHub saw the branch == main, closed the PR,
@@ -136,8 +147,10 @@ claude-plugins #1979→#1987):
 - **Check** before every force-push: `git log --oneline origin/main..<sha>` —
   expect *exactly* the child's commits, nothing more, never empty.
 - **Recovery** when auto-closed: the rebased commits survive in local objects
-  (`git reflog`) — `git push --force-with-lease origin <sha>:<branch>`, open a
-  fresh PR from the branch, comment "Superseded by #new" on the closed one.
+  (`git reflog`) — `git push --force-with-lease origin "${sha}:refs/heads/<branch>"`,
+  open a fresh PR from the branch, comment "Superseded by #new" on the closed
+  one. The full refname matters most here: the branch may not exist on the
+  remote yet, and the short form cannot create it.
 
 ## 4. A red PR may still be mergeable — `UNSTABLE` is not `BLOCKED`
 

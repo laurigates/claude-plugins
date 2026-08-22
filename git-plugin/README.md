@@ -23,7 +23,6 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of how the skills fit together.
 | `/git:fix-pr` | Reproduce a PR's failing checks locally, patch the code, and push the fix |
 | `/git:pr-feedback` | Review PR workflow results and comments, address substantive feedback from reviewers |
 | `/git:conflicts` | Resolve merge conflicts with zdiff3, rerere, and modern git tooling |
-| `/git:resolve-conflicts` | Resolve merge conflicts in PRs automatically |
 | `/git:maintain` | Repository maintenance and cleanup (incremental repack, gc, prune, verify, branches, stash) |
 | `/git:deadbranch` | Survey and clean up stale branches via the deadbranch CLI — dry-run preview, TUI or non-interactive delete, recoverable backups |
 | `/git:derive-docs` | Analyze git history to derive undocumented rules, PRDs, ADRs, and PRPs |
@@ -33,7 +32,7 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of how the skills fit together.
 | `/git:coworker-check` | Detect another agent working in the same repo clone before destructive git ops |
 | `/git:repo-delete-check` | Verify a repo's work survives deletion — remote, unpushed commits, stashes — then offer a push or tar backup |
 | `/git:pr-sync-check` | Check whether the current PR branch is still live and in sync (merged / behind / changes-requested) before building on it |
-| `/git:pr-watch` | Subscribe to a PR's activity and react to review comments and CI as they arrive (delegates reactions to `/git:pr-feedback` / `/git:fix-pr`) |
+| `/git:pr-watch` | Subscribe to a PR's activity and react to review comments and CI as they arrive (fixes CI via `/git:fix-pr`; surfaces review threads for the user to run `/git:pr-feedback`) |
 
 ## Layered Skills (Composable Git Workflows)
 
@@ -66,7 +65,7 @@ Three composable skills that can be invoked individually or combined based on us
 | `git-commit-trailers` | Commit trailer conventions — release-please trailers (BREAKING CHANGE, Release-As), attribution (Co-authored-by, Signed-off-by), git interpret-trailers |
 | `git-branch-pr-workflow` | Git branching and PR workflow patterns |
 | `git-rebase-patterns` | Advanced rebase techniques (--reapply-cherry-picks, --update-refs, --onto, stacked PRs) |
-| `git-merge-hazards` | Traps in GitHub's merge machinery — squash-merge detection authority order, stacked-base auto-close, push-by-SHA races, merging over red CI, negated closing keywords |
+| `git-merge-hazards` | Traps in GitHub's merge machinery — squash-merge detection authority order, stacked-base auto-close, push-by-SHA races and the `refs/heads/` refspec form, merging over red CI, negated closing keywords |
 | `git-repo-detection` | Detect GitHub repository name and owner from git remotes |
 | `git-security-checks` | Security checks before staging files |
 | `git-issue-scoping` | Read an issue's full comment thread and re-verify its cited `file:line` evidence at HEAD before scoping a PR or plan |
@@ -105,7 +104,7 @@ The rule this plugin applies:
 | `git-fix-pr` | **removed** | Reactive to a red PR check the model already observes when it reads CI status |
 | `git-issue` | keep | Takes a required issue reference, then branches, implements, and opens a PR; `--parallel` fans out subagents. Invoked by hand as `/git-plugin:git-issue <number>` |
 | `git-maintain` | keep | Destructive maintenance — `gc`, repack, branch pruning, stash deletion, `git rm` |
-| `git-pr-feedback` | keep | Posts replies and resolves threads on reviewers' PRs by default, and can open follow-up issues; `--all` fans out worktree subagents that push |
+| `git-pr-feedback` | keep | Posts replies and resolves threads on reviewers' PRs by default, and can open follow-up issues; `--all` fans out worktree subagents that push. Catalog-present skills must therefore **recommend** it rather than delegate to it — enforced for `git-plugin` by `scripts/check-delegation-reachability.sh`; the marketplace-wide sweep is issue #2483 |
 | `git-upstream-pr` | keep | Cherry-picks, resets, and pushes to a fork, then opens a PR against a third-party upstream |
 
 ## Agent

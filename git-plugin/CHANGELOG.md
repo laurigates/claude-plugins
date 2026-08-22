@@ -1,5 +1,36 @@
 # Changelog
 
+## [2.52.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.51.2...git-plugin-v2.52.0) (2026-08-22)
+
+
+### Features
+
+* **git-plugin:** emit issue titles from git-triage collector ([1dcaf96](https://github.com/laurigates/claude-plugins/commit/1dcaf96c48c046eae4f837052f3c2dcb95cdda08)), closes [#2480](https://github.com/laurigates/claude-plugins/issues/2480)
+
+
+### Bug Fixes
+
+* **git-plugin:** recommend gated siblings to the user instead of delegating to them ([4ee9206](https://github.com/laurigates/claude-plugins/commit/4ee9206e8e141a25f5c809ff1cca9871e2139be2)), closes [#2442](https://github.com/laurigates/claude-plugins/issues/2442)
+* **git-plugin:** use the full refs/heads/ refname in every push-by-SHA prescription ([9d0c960](https://github.com/laurigates/claude-plugins/commit/9d0c9600a2f81d67b866c76dfd31a24a9328d3bf)), closes [#2478](https://github.com/laurigates/claude-plugins/issues/2478)
+
+
+### Code Refactoring
+
+* **hooks-plugin:** report preflight findings instead of restating git-repo-delete-check's options ([dae0ca2](https://github.com/laurigates/claude-plugins/commit/dae0ca278add7f3578aab5901ef08448f69c1427)), closes [#2454](https://github.com/laurigates/claude-plugins/issues/2454)
+
+
+### Documentation
+
+* fix catalog drift after [#2450](https://github.com/laurigates/claude-plugins/issues/2450) and gate it in check-docs-index ([f5e000c](https://github.com/laurigates/claude-plugins/commit/f5e000c8e8532edc0ec0456b594bae753a9e447c)), closes [#2453](https://github.com/laurigates/claude-plugins/issues/2453)
+* **git-plugin:** note that git commit -F is an accepted message path ([38f2584](https://github.com/laurigates/claude-plugins/commit/38f2584a41fc7ef7d8d6b1ba5d7c14b69779acf2)), closes [#2462](https://github.com/laurigates/claude-plugins/issues/2462)
+
+## [2.51.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.51.1...git-plugin-v2.51.2) (2026-08-21)
+
+
+### Documentation
+
+* **git-plugin:** cover the inverse direction in release-please-protection ([#2461](https://github.com/laurigates/claude-plugins/issues/2461)) ([0db2dad](https://github.com/laurigates/claude-plugins/commit/0db2dad8b68ed88652fd413005a2ee25ff5e081f))
+
 ## [2.51.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.51.0...git-plugin-v2.51.1) (2026-08-21)
 
 

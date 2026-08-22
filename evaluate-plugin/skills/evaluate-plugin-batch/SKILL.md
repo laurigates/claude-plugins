@@ -11,7 +11,7 @@ compatibility: claude-code
 reviewed: 2026-03-04
 ---
 
-# /evaluate:plugin
+# /evaluate:plugin-batch
 
 Batch evaluate all skills in a plugin. Runs `/evaluate:skill` for each skill, then produces a plugin-level quality report.
 

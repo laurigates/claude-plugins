@@ -68,9 +68,13 @@ if [ -n "$PR_JSON" ] && [ "$PR_JSON" != "null" ]; then
             "${BRANCH}'s PR #${pr_num} is merged — branch off the default before new work" \
             "/git:pr-sync-check"
     elif [ "$pr_review" = "CHANGES_REQUESTED" ]; then
+        # The suggested action must be a skill the MODEL can invoke.
+        # /git:pr-feedback carries disable-model-invocation: true, so naming it
+        # here would be a silently-unreachable nudge (#2442) — recommend it to
+        # the user in the message, and point the action at the reachable skill.
         drift_add_finding warn changes_requested \
-            "PR #${pr_num} on ${BRANCH} has changes requested — address review before new work" \
-            "/git:pr-feedback"
+            "PR #${pr_num} on ${BRANCH} has changes requested — surface the threads and recommend the user run /git:pr-feedback before new work" \
+            "/git:pr-sync-check"
     fi
 fi
 
