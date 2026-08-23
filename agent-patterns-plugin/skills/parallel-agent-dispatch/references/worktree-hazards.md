@@ -4,8 +4,9 @@ The individually-rare, collectively-expensive ways `isolation: "worktree"`
 fails to isolate what you meant: a cwd reset writing to the main checkout, an
 exported `GIT_DIR` hijacking every sibling worktree, a nested repo the harness
 never worktreed, two agents colliding in one shared scratchpad clone, a worktree
-deleted out from under a live agent, and a fixed target branch another session
-already holds. Entry point: [`../SKILL.md`](../SKILL.md) § Worktree Preflight.
+deleted out from under a live agent, a fixed target branch another session
+already holds, and an `isolation: "remote"` dispatch that quietly ran in a local
+worktree. Entry point: [`../SKILL.md`](../SKILL.md) § Worktree Preflight.
 
 ## Worktree cwd-reset guardrail (#1480)
 
@@ -229,3 +230,44 @@ Any hit ⇒ another session may already own this exact task. **Stop and reconcil
 | A hit is a **stop/merge decision**, not a rename-with-suffix workaround. | Two sessions on the same conventional name are almost always doing the same task; a `-wip` fallback just produces the duplicate PR. |
 | Prefer pushing under the target name via **explicit refspec** (`git push origin HEAD:$target`) over renaming the worktree branch. | A refspec push never touches the local branch, so it sidesteps the "already checked out in another worktree" refusal entirely; a genuine peer collision then still surfaces — cheaply — as a non-fast-forward reject at push time. |
 | Acute in shared multi-session portfolios (one clone, concurrent Claude Code sessions). | A conventional per-issue/milestone name is exactly what two independent sessions pick identically. |
+
+## `isolation: "remote"` may resolve to a LOCAL worktree (#2447)
+
+`isolation: "remote"` is a *request*, not a guarantee. The dispatch may resolve
+to an ordinary **local** git worktree in the shared checkout
+(`.claude/worktrees/agent-*`), and **nothing in the dispatch tool result says
+which mode was in effect** — so an orchestrator that assumes "remote" reasons
+about the wrong place for the rest of the run.
+
+Observed 2026-08: three agents dispatched with `isolation: "remote"` all ran in
+local worktrees. Two were killed by a 600 s stall watchdog. The recovery audit
+followed the remote protocol — `gh pr list` and `git ls-remote --heads origin`,
+both empty for one agent — and its work was reported to the user as
+unrecoverable, twice. `git worktree list` showed the branch holding a
+**complete** commit (both intended edits plus a 28-line documentation table)
+that had simply never been pushed. The remote audit was accurate; the conclusion
+drawn from it was wrong.
+
+### The two tells
+
+| Tell | How to read it |
+|------|----------------|
+| `git worktree list` | A `.claude/worktrees/agent-*` entry for the dispatched agent means the dispatch resolved **locally**, whatever mode was requested. |
+| The completion notification's `worktreePath` field | Present and pointing at a local path ⇒ local worktree. It is carried in the notification, but only if you think to look. |
+
+Read one of them **right after dispatch**, while the answer is still cheap —
+not during recovery, when the wrong assumption has already been acted on.
+
+### Rules
+
+| Rule | Why |
+|------|-----|
+| Establish the mode from `git worktree list` / the notification's `worktreePath`; never infer it from the `isolation` argument you passed. | The requested mode and the resolved mode can differ silently, and the tool result does not distinguish them. |
+| Audit **local worktrees alongside the remote** before concluding an agent's work is lost — see [`failure-recovery.md` → Audit local worktrees alongside the remote](failure-recovery.md#audit-local-worktrees-alongside-the-remote-2447). | An empty remote is evidence about the push, not about the work. |
+| Brief every dispatched agent to commit, push, and open a **draft PR before the bulk of the work**, then push after each commit. | It makes the remote a live mirror of the work instead of a single end-of-run event, so a mid-run death costs one push rather than everything. The retry agent survived having its own branch merged and deleted mid-task on this basis; recovery was one cherry-pick. |
+
+Related but distinct — all three concern `worktree`, none concerns `remote`:
+[nested-repo isolation (#1838)](#nested-repo-worktree-isolation-1838) (the
+harness worktreed the *outer* repo), `../SKILL.md` § "Resuming agents:
+SendMessage loses worktree isolation" (#1546), and
+[deleted worktree (#2372)](#deleted-worktree-kills-the-shell-not-the-agent-2372).
