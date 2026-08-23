@@ -24,7 +24,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.43.1",
+      "version": "2.43.2",
       "keywords": [
         "agents",
         "configuration",
@@ -236,7 +236,7 @@
       "name": "documentation-plugin",
       "source": "./documentation-plugin",
       "description": "Documentation generation - API docs, README, LaTeX PDF conversion",
-      "version": "1.11.1",
+      "version": "1.11.2",
       "keywords": [
         "documentation",
         "docs",
