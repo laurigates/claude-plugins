@@ -3,7 +3,7 @@ name: bulk-sweep-classify
 description: "Classify every regex match before a bulk find-replace/syntax-modernization sweep — four match categories, scoped transform, allowlist-aware verification. Use when bulk-renaming commands/tools/paths or migrating syntax across many files."
 allowed-tools: Bash, Read, Grep, Edit
 created: 2026-07-05
-modified: 2026-08-08
+modified: 2026-08-22
 reviewed: 2026-07-06
 ---
 
@@ -88,6 +88,44 @@ git grep -nhoE '/[a-z][a-z0-9-]*:[a-z][a-z0-9-]*' -- <scope> | sort -u
 Adjust the pattern to your migration. The point is a complete, deduped inventory
 in hand *before* any edit.
 
+#### Derive the term set from what the mechanism *claims*, not just what it is *named*
+
+The enumeration is only as good as the terms you feed it. Removing a mechanism
+means removing its **assertions** as well as its **identifiers**, and those two
+families share no tokens — so a sweep built only from identifiers reports clean
+while the claim survives.
+
+After listing the identifier terms, ask:
+**what did this mechanism promise, and in whose words?**
+Add those phrasings to the term set. For a removal, terms usually come in two
+families:
+
+| Family | Example terms | Where they live |
+|---|---|---|
+| Identifiers | function, file, script, env var, config key | code, config, workflows |
+| Claims | "baked in", "injected at build time", "automatically", "the published package …" | comments, README, docstrings, error and warning strings |
+
+**The claim family is where user-facing damage concentrates.** An identifier
+left behind is dead code, but
+a claim left behind is documentation that is now false.
+
+Concrete case (`ForumViriumHelsinki/podio-mcp`, PRs #160 / #163 — issue #2479):
+a build-time credential injector was removed. The sweep terms were the
+identifiers — `BUILD_DEFAULTS`, `inject-build-defaults`, `postbuild` — which
+correctly found the script, the npm hook, the constants module and the workflow
+passthrough, and the PR shipped. It missed this, in a file the sweep had already
+edited:
+
+```
+src/index.ts:134
+ * - PODIO_CLIENT_ID: Your Podio app's client ID (baked into published package)
+```
+
+The comment asserts exactly what the mechanism was supposed to do and contains
+none of the three identifiers. It survived, typedoc renders it into the API
+reference, and so the claim outlived the thing that made it true — caught only
+incidentally, one PR later.
+
 ### Step 2: Tighten the pattern to drop false positives at the source
 
 Drive the false-positive exclusion into the **pattern** wherever you can, so the
@@ -137,66 +175,17 @@ into corrupting a category-3 design or rewriting a category-4 record just to for
 the count to zero. Enumerate the preserved buckets up front, then verify the grep
 returns *only* those.
 
-## Parallelizing a Sweep — Resolve the Rename Map Before Dispatch
-
-When a sweep is large enough to fan out across parallel agents, a second failure
-mode appears on top of the four categories: **the agents disagree with each
-other.** Each one classifies its own borderline matches, each one is locally
-defensible, and the result is a codebase that is internally inconsistent — every
-file compiles on its own, the whole does not.
-
-Fix it by resolving every cross-file naming decision **before** dispatch, into a
-single explicit **rename map**: old → new, plus an explicit **do-NOT-rename**
-list (the category 2–4 tokens from Step 3). Brief that map **verbatim** into
-every agent's prompt — not paraphrased, not summarized per agent.
-
-| Property you need | What guarantees it |
-|---|---|
-| Every agent renames the same tokens the same way | The map, resolved centrally once and copied verbatim |
-| No two agents edit the same file | File grouping — **disjointness only** |
-
-That split is the point. Agreement is hard to extract from independent agents
-and trivial to get from a shared artifact, so move it out of the agents
-entirely; grouping then only has to guarantee disjointness, a much weaker and
-easier property than consensus.
-
-The do-NOT-rename list is not padding — it is the contract's teeth. An agent
-that "helpfully" extends the rename to a look-alike commits exactly the
-category-2/3 corruption this skill exists to prevent, and a parallel agent
-commits it out of your sight.
-
-**The success signal is an agent *refusing* a rename.** In a 112-file
-`Trends → Foresight` sweep (ForumViriumHelsinki/thelma PR #1263, which also
-renamed a Postgres enum `TrendType → ForesightType`), agents correctly left
-`LinkableEntityType` alone — it contains the target word but was not in the map.
-A run where no agent declines anything usually means the map was never actually
-constraining them.
-
-Dispatch mechanics (worktree collisions, scope overflow, silent exits) belong to
-`agent-patterns-plugin:parallel-agent-dispatch`; the rename map is the
-sweep-specific payload you hand it.
-
-## Brief Adversarial Auditors With the Artifact's Purpose, Not Just the Transform
-
-When adversarial or verification agents audit a sweep, a prompt containing only
-the transform contract — "rename X to Y across these files" — gives them no way
-to tell a deliberate change from scope creep. So they flag the change's own
-reason for existing.
-
-Every auditor prompt needs **both**:
-
-| Brief the auditor with | Because without it |
-|---|---|
-| The transform contract (rename map + do-NOT-rename list) | It cannot check the sweep did what was agreed |
-| What the artifact is **for**, and what is deliberately in scope | It reports the PR's central purpose as unjustified scope creep |
-
-In the thelma sweep above, all three auditors flagged the PR's central purpose
-that way, and **10 of 25 findings were false positives** traceable to that one
-omission — expensive to triage precisely because each read as a legitimate
-concern.
-
-See `agent-patterns-plugin:adversarial-review` for the review pass itself; this
-is the sweep-specific brief to attach to it.
+The adjacent trap sits one level up, in the scope the verification runs over:
+**every exclusion in a verification scope is a claim about the world, and needs
+the same treatment as a negative result.** "Generated, so it doesn't count"
+assumes the generator runs — check that it does. Cheap test: for each excluded
+path, state why in one line, then verify that line. In the same sweep (#2479)
+the final pass excluded `docs/api/` — committed typedoc output — reasoning that
+CI regenerates and publishes it. Both halves were false: GitHub Pages was never
+enabled on the repo (`/repos/.../pages` → 404) and the deploy workflow had failed
+every run for ten days, so the excluded directory was the *only* rendered copy
+and still carried the stale claim. The report said "no matches remain," which was
+true of what it searched and false of the repo.
 
 ## Agentic Optimizations
 
@@ -215,3 +204,5 @@ is the sweep-specific brief to attach to it.
 - `code-quality-plugin:ast-grep-search` — structural search/replace when the pattern depends on AST shape rather than text
 - `agent-patterns-plugin:parallel-agent-dispatch` — the dispatch contract a fanned-out sweep rides on; the rename map is the payload you brief into it
 - `agent-patterns-plugin:adversarial-review` — the audit pass; brief it with the artifact's purpose, not only the transform contract
+
+For parallelizing a sweep across agents (the pre-dispatch rename map and do-NOT-rename list) and for briefing adversarial auditors, see [REFERENCE.md](REFERENCE.md).
