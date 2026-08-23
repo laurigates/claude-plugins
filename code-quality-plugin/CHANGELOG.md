@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.25.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.24.1...code-quality-plugin-v1.25.0) (2026-08-23)
+
+
+### Features
+
+* **code-quality-plugin:** cover term-set derivation and exclusion justification in bulk-sweep-classify ([#2486](https://github.com/laurigates/claude-plugins/issues/2486)) ([7d7e569](https://github.com/laurigates/claude-plugins/commit/7d7e569dfdcdfa9029300b413c542cf121fbe44d))
+
 ## [1.24.1](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.24.0...code-quality-plugin-v1.24.1) (2026-08-22)
 
 
