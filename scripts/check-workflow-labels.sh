@@ -113,6 +113,7 @@ allowlist = {s.strip() for s in sys.argv[3].splitlines() if s.strip()}
 explicit = [a for a in sys.argv[4:] if a]
 
 workflow_dir = os.path.join(root_dir, ".github", "workflows")
+action_dir = os.path.join(root_dir, ".github", "actions")
 
 if explicit:
     files = [f if os.path.isabs(f) else os.path.join(root_dir, f) for f in explicit]
@@ -123,6 +124,17 @@ else:
         for name in sorted(os.listdir(workflow_dir)):
             if name.endswith((".yml", ".yaml")):
                 files.append(os.path.join(workflow_dir, name))
+    # Composite actions attach labels too. When the shared skeleton moved into
+    # .github/actions/script-to-issue, five of ten attach sites left this
+    # guard's field of view -- it kept reporting OK while no longer watching
+    # the call sites it was written for. A guard that silently narrows is worse
+    # than no guard, because the green is now unearned.
+    if os.path.isdir(action_dir):
+        for name in sorted(os.listdir(action_dir)):
+            for leaf in ("action.yml", "action.yaml"):
+                cand = os.path.join(action_dir, name, leaf)
+                if os.path.isfile(cand):
+                    files.append(cand)
 
 # Labels are ATTACHED via `--label <value>` on `gh issue create` / `gh pr create`.
 # We scan raw text rather than parsed YAML on purpose: one real call site lives
@@ -156,8 +168,10 @@ def split_labels(value):
 
 findings = []       # (file, label) attached but never provisioned
 unresolved = []     # (file, raw) value we could not evaluate statically
+composite = []      # (file, job, label) caller must provision: composite won't
 scanned = 0
 attach_sites = 0
+internal = 0        # parameterised attach inside a self-provisioning action
 
 for path in files:
     try:
@@ -171,6 +185,11 @@ for path in files:
     rel = os.path.relpath(path, root_dir)
 
     provisioned = {unquote(m.group(1)) for m in PROVISION_RE.finditer(text)}
+    is_action = os.path.basename(path) in ("action.yml", "action.yaml")
+    # Does this file provision a label whose name is itself a variable?
+    provisions_parameterised = any(
+        ("$" in p or "{{" in p) for p in provisioned
+    )
 
     # A `gh issue create` is routinely spread over many lines with backslash
     # continuations, with `--label` several lines below the command itself.
@@ -186,13 +205,68 @@ for path in files:
             attach_sites += 1
             # A value built from a shell/Actions expression cannot be resolved here.
             if "$" in raw or "{{" in raw:
-                unresolved.append((rel, raw))
+                # ...unless this is a composite action, where a parameterised
+                # label is the POINT: the action provisions and attaches the
+                # same input. Self-consistency is checkable even when the value
+                # is not, so assert that rather than reporting it unresolvable.
+                if is_action and provisions_parameterised:
+                    internal += 1
+                else:
+                    unresolved.append((rel, raw))
                 continue
             for label in split_labels(raw):
                 if label in provisioned or label in allowlist:
                     continue
                 if (rel, label) not in findings:
                     findings.append((rel, label))
+
+# --- Composite-call rule -----------------------------------------------------
+# A workflow can attach a label WITHOUT any `gh issue create` of its own, by
+# delegating to a composite action. The composite provisions the label itself --
+# unless the caller opts out (`force: 'false'`), which moves the duty back to the
+# caller. That opted-out call is invisible to the text scan above (there is no
+# `--label` in the workflow at all), so it gets its own pass.
+try:
+    import yaml as _yaml
+except ImportError:
+    _yaml = None
+
+if _yaml is not None:
+    for path in files:
+        if os.path.basename(path) in ("action.yml", "action.yaml"):
+            continue
+        rel = os.path.relpath(path, root_dir)
+        try:
+            doc = _yaml.safe_load(open(path, encoding="utf-8"))
+        except Exception:
+            continue
+        if not isinstance(doc, dict):
+            continue
+        text = open(path, encoding="utf-8").read()
+        provisioned = {unquote(m.group(1)) for m in PROVISION_RE.finditer(text)}
+        for jid, job in (doc.get("jobs") or {}).items():
+            if not isinstance(job, dict):
+                continue
+            for st in (job.get("steps") or []):
+                if not isinstance(st, dict):
+                    continue
+                uses = str(st.get("uses") or "")
+                if "/.github/actions/" not in uses and not uses.startswith("./.github/actions/"):
+                    continue
+                with_ = st.get("with") or {}
+                if not isinstance(with_, dict):
+                    continue
+                label = str(with_.get("label") or "").strip()
+                if not label or "$" in label or "{{" in label:
+                    continue
+                attach_sites += 1
+                # The composite provisions unless the caller opted out.
+                force = str(with_.get("force", "true")).strip().strip("'\"").lower()
+                if force != "false":
+                    continue
+                if label in provisioned or label in allowlist:
+                    continue
+                composite.append((rel, jid, label))
 
 print("=== WORKFLOW LABEL PROVISIONING ===")
 print("WORKFLOWS_SCANNED=%d" % scanned)
@@ -201,6 +275,8 @@ print("ATTACH_SITES=%d" % attach_sites)
 print("ALLOWLIST_SIZE=%d" % len(allowlist))
 print("UNPROVISIONED_COUNT=%d" % len(findings))
 print("UNRESOLVED_COUNT=%d" % len(unresolved))
+print("COMPOSITE_CALLS_INTERNAL=%d" % internal)
+print("COMPOSITE_OPTOUT_UNPROVISIONED=%d" % len(composite))
 
 if findings:
     print("")
@@ -214,7 +290,13 @@ if unresolved:
     for rel, raw in unresolved:
         print("UNRESOLVED=%s\tVALUE=%s" % (rel, raw))
 
-failed = bool(findings) or (strict and bool(unresolved))
+if composite:
+    print("")
+    print("=== COMPOSITE OPT-OUT WITHOUT CALLER PROVISIONING ===")
+    for rel, jid, label in composite:
+        print("UNPROVISIONED=%s\tJOB=%s\tLABEL=%s" % (rel, jid, label))
+
+failed = bool(findings) or bool(composite) or (strict and bool(unresolved))
 
 if failed:
     print("")

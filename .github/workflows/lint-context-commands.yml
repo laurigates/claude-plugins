@@ -2,7 +2,9 @@ name: "Plugin: Lint skills"
 
 on:
   pull_request:
-    paths:
+    # Anchored here and aliased by the `push` filter below: the two lists
+    # are intentionally identical, so they are declared once.
+    paths: &lint_paths
       - '**/skills/**/SKILL.md'
       - '**/skills/**/skill.md'
       - '**/skills/**/REFERENCE.md'
@@ -14,21 +16,11 @@ on:
       - 'scripts/audit-skill-descriptions.py'
       - 'scripts/lint-taskwarrior-tags.sh'
       - 'scripts/lint-package-references.sh'
+      - '.github/workflows/lint-context-commands.yml'
   push:
     branches:
       - main
-    paths:
-      - '**/skills/**/SKILL.md'
-      - '**/skills/**/skill.md'
-      - '**/skills/**/REFERENCE.md'
-      - 'taskwarrior-plugin/**/*.md'
-      - 'scripts/lint-context-commands.sh'
-      - 'scripts/tests/test-lint-context-commands.sh'
-      - 'scripts/check-context-command-execution.sh'
-      - 'scripts/lib/extract-md-elements.py'
-      - 'scripts/audit-skill-descriptions.py'
-      - 'scripts/lint-taskwarrior-tags.sh'
-      - 'scripts/lint-package-references.sh'
+    paths: *lint_paths
 
 permissions:
   contents: read

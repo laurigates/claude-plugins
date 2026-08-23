@@ -464,7 +464,9 @@ repos:
         name: every attached GitHub label is provisioned in-workflow
         entry: bash ./scripts/check-workflow-labels.sh
         language: system
-        files: '^\.github/workflows/.*\.ya?ml$'
+        # Composite actions attach labels too -- a change to the composite alone
+        # must run the guard, or provisioning can move out of its view unnoticed.
+        files: '^\.github/(workflows/.*|actions/.*/action)\.ya?ml$'
         pass_filenames: false
       - id: test-check-workflow-labels
         name: workflow-label guard regression

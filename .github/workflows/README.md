@@ -53,8 +53,7 @@ Release: Fix release-please conflicts
 Release: PR documentation audit
 Release: release-please
 Renovate
-Sync: git-repo-agent prompts
-Sync: vault-agent prompts
+Sync: agent prompts
 Test: Adapters
 Test: Skill scripts
 ```
