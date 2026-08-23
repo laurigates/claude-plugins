@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.43.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.43.1...agent-patterns-plugin-v2.43.2) (2026-08-23)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** document isolation: "remote" dispatch and local-worktree recovery ([#2485](https://github.com/laurigates/claude-plugins/issues/2485)) ([9ec83af](https://github.com/laurigates/claude-plugins/commit/9ec83af34ecc87c5dbdec87f9754bada40d060d5))
+
 ## [2.43.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.43.0...agent-patterns-plugin-v2.43.1) (2026-08-22)
 
 
