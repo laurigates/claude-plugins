@@ -13,6 +13,13 @@
 # Skills" pointer, or a recommendation for the USER to run it), so the negative
 # controls carry as much weight as the positive ones.
 
+# File-level, and it must precede the first command (`.claude/rules/
+# shell-scripting.md` § "Suppressing shellcheck findings"). SC2016 fires on
+# every fixture string carrying a literal `/demo:feedback` in backticks inside
+# single quotes — which is the point: the fixture text must reach the checker
+# unexpanded. Pre-existing on `main`; suppressed here rather than churning
+# ~20 deliberate assertions into escaped double quotes.
+# shellcheck disable=SC2016
 set -uo pipefail
 
 # Neutralize inherited git context so sandbox git ops cannot reach the real
@@ -109,6 +116,52 @@ run_checker() {
   local root="$1"
   CHECK_DELEGATION_SCOPE="demo-plugin/skills/demo-watch/SKILL.md" \
     bash "$checker" --project-dir "$root" 2>&1
+}
+
+# ---------------------------------------------------------------------------
+# Free-form builders for the #2483 exemption classes, where the SHAPE of the
+# scanned file (preamble vs section, self-reference vs sibling) is the variable
+# under test rather than one substituted table row.
+#
+#   mk_sibling  <root> <skill-dir-name> <gated|open>
+#   mk_watch    <root> <gated|open>   # body on stdin, appended after the ---
+# ---------------------------------------------------------------------------
+mk_sibling() {
+  local root="$1" nm="$2" gated="$3"
+  local d="$root/demo-plugin/skills/$nm"
+  mkdir -p "$d"
+  {
+    printf -- '---\n'
+    printf 'name: %s\n' "$nm"
+    if [ "$gated" = "gated" ]; then
+      printf 'disable-model-invocation: true\n'
+    fi
+    printf 'description: "Do a thing. Use when doing the thing."\n'
+    printf -- '---\n\n'
+    printf '# /demo:%s\n\n## Execution\n\nBody.\n' "${nm#demo-}"
+  } > "$d/SKILL.md"
+}
+
+mk_watch() {
+  local root="$1" gated="$2"
+  local d="$root/demo-plugin/skills/demo-watch"
+  mkdir -p "$d"
+  {
+    printf -- '---\n'
+    printf 'name: demo-watch\n'
+    if [ "$gated" = "gated" ]; then
+      printf 'disable-model-invocation: true\n'
+    fi
+    printf 'description: "Watch a PR. Use when monitoring a PR."\n'
+    printf -- '---\n\n'
+    cat
+  } > "$d/SKILL.md"
+}
+
+# Whole-line KEY=VALUE read: an unanchored substring match on `SCANNED=1` is
+# satisfied by any sibling `*_SCANNED=1` key (#2219 follow-up).
+key_of() {
+  printf '%s\n' "$1" | grep -m1 "^$2=" || true
 }
 
 IMPERATIVE='| Review comment | Address it via **`/demo:feedback`** (the canonical engine) |'
@@ -279,6 +332,178 @@ out="$(run_checker "$fx")"; rc=$?
 assert_contains "$out" "STATUS=ERROR" "J3 a sibling row's hedge does NOT exempt the next row"
 assert_contains "$out" "ISSUE_COUNT=1" "J3b exactly the unhedged row fires"
 assert_eq "$rc" "1" "J3c exit 1"
+
+echo "TEST K: a skill's reference to ITSELF is never a delegation (issue #2483)"
+# Class A, 30 of the 47 full-corpus findings. `git-api-pr` is gated AND writes
+# `/git:api-pr` in its own Quick Reference table, so the guard reported the
+# skill for documenting its own invocation.
+fx="$tmp_root/k-self"; mk_sibling "$fx" demo-feedback gated
+# No H1 title line here: the H1 is itself a self-reference sitting in the
+# preamble, and keeping K1d/K2d free of it makes those counter assertions
+# guard integrity for Class A alone rather than for Class B as well.
+mk_watch "$fx" gated <<'EOF'
+## Agentic Optimizations
+
+| Task | Command |
+|------|---------|
+| Single file fix | `/demo:watch file.ts --title "fix: typo"` |
+| Multi-file fix  | `/demo:watch a.ts b.ts --title "fix: update configs"` |
+EOF
+out="$(run_checker "$fx")"; rc=$?
+assert_contains "$out" "STATUS=OK" "K1 self-reference is clean"
+assert_eq "$rc" "0" "K1b exit 0"
+assert_eq "$(key_of "$out" FILES_SCANNED)" "FILES_SCANNED=1" "K1c self-reference fixture actually scanned"
+assert_eq "$(key_of "$out" SELF_REFS_SKIPPED)" "SELF_REFS_SKIPPED=2" "K1d both self-references counted"
+
+# Guard integrity: the exemption is SELF-reference, not "any reference in a
+# Quick Reference table". The identical shape aimed at a DIFFERENT gated
+# sibling must still fire, or K1 could pass against a checker that stopped
+# judging Agentic Optimizations sections.
+fx="$tmp_root/k-sibling"; mk_sibling "$fx" demo-feedback gated
+mk_watch "$fx" gated <<'EOF'
+## Agentic Optimizations
+
+| Task | Command |
+|------|---------|
+| Single file fix | `/demo:feedback file.ts --title "fix: typo"` |
+EOF
+out="$(run_checker "$fx")"; rc=$?
+assert_contains "$out" "STATUS=ERROR" "K2 the same row aimed at a sibling still ERRORs"
+assert_eq "$rc" "1" "K2b exit 1"
+assert_contains "$out" "REF=/demo:feedback" "K2c names the sibling reference"
+assert_eq "$(key_of "$out" SELF_REFS_SKIPPED)" "SELF_REFS_SKIPPED=0" "K2d counter is attributable, not always-on"
+
+echo "TEST L: the preamble before the first '## ' heading is not an action section"
+# Class B. `section` is only set on H2, so frontmatter, the `# /ns:command` H1
+# this repo puts at the top, and any lead paragraph were all judged with
+# `section=""` — which `is_navigational_section` does not exempt.
+fx="$tmp_root/l-preamble"; mk_sibling "$fx" demo-feedback gated
+mk_watch "$fx" open <<'EOF'
+# /demo:watch
+
+Submit a PR. The simpler `/demo:feedback` covers the aligned case; this skill
+handles the diverged one.
+
+## Execution
+
+Run the plan.
+EOF
+out="$(run_checker "$fx")"; rc=$?
+assert_contains "$out" "STATUS=OK" "L1 preamble reference is clean"
+assert_eq "$rc" "0" "L1b exit 0"
+assert_eq "$(key_of "$out" FILES_SCANNED)" "FILES_SCANNED=1" "L1c preamble fixture actually scanned"
+
+# Guard integrity: the exemption ENDS at the first H2. The identical sentence
+# moved under `## Execution` must still fire, or L1 would be satisfied by a
+# checker that had stopped reading files at all.
+fx="$tmp_root/l-execution"; mk_sibling "$fx" demo-feedback gated
+mk_watch "$fx" open <<'EOF'
+# /demo:watch
+
+## Execution
+
+Submit a PR. The simpler `/demo:feedback` covers the aligned case; this skill
+handles the diverged one.
+EOF
+out="$(run_checker "$fx")"; rc=$?
+assert_contains "$out" "STATUS=ERROR" "L2 the same text under '## Execution' still ERRORs"
+assert_eq "$rc" "1" "L2b exit 1"
+assert_contains "$out" "SECTION=Execution" "L2c names the section"
+
+echo "TEST M: teaching the invariant is not delegating (issue #2483)"
+# Class C — the most important exemption. The unit below states the guard's OWN
+# rule correctly AND forbids the invocation; flagging it makes the guard red on
+# correct content, which is how a guard gets disabled. Text is the verbatim
+# `blueprint-autopilot` shape, wrapped exactly as it ships.
+fx="$tmp_root/m-teach"; mk_sibling "$fx" demo-feedback gated
+mk_watch "$fx" open <<'EOF'
+# /demo:watch
+
+## Execution
+
+Skip this step entirely unless the Context config shows `WO_AUTO_DRAFT=true`.
+Work-order **creation stays human-only** (`/demo:feedback` keeps
+`disable-model-invocation: true` — never invoke it from autopilot). Autopilot
+may only file *proposals*.
+EOF
+out="$(run_checker "$fx")"; rc=$?
+assert_contains "$out" "STATUS=OK" "M1 teaching the invariant is clean"
+assert_eq "$rc" "0" "M1b exit 0"
+assert_eq "$(key_of "$out" GATED_STATEMENT_EXEMPTIONS)" "GATED_STATEMENT_EXEMPTIONS=1" "M1c exemption is reported, not silent"
+assert_eq "$(key_of "$out" FILES_SCANNED)" "FILES_SCANNED=1" "M1d teaching fixture actually scanned"
+
+# One marker per form — no sentence below carries two — so dropping a single
+# alternative from GATED_STATEMENT_RE turns exactly one row red instead of
+# being masked by a neighbouring marker in the same sentence.
+m=0
+for teach in \
+  'Never invoke `/demo:feedback` from this skill.' \
+  'Work-order creation stays human-only, so route around `/demo:feedback`.' \
+  '`/demo:feedback` keeps `disable-model-invocation: true`, so route around it.' \
+  'The model cannot reach `/demo:feedback` from here.'; do
+  m=$((m + 1))
+  fx="$tmp_root/m-form-$m"; mk_sibling "$fx" demo-feedback gated
+  mk_watch "$fx" open <<EOF
+# /demo:watch
+
+## Execution
+
+$teach
+EOF
+  out="$(run_checker "$fx")"; rc=$?
+  assert_contains "$out" "STATUS=OK" "M2-$m gated-statement form #$m stays clean"
+  assert_eq "$rc" "0" "M2-${m}b gated-statement form #$m exit 0"
+done
+
+# Guard integrity: a bare imperative on a comparable line must still ERROR, and
+# the exemption counter must stay 0 — without this, a regex that matched
+# everything would satisfy every assertion above.
+fx="$tmp_root/m-imperative"; mk_sibling "$fx" demo-feedback gated
+mk_watch "$fx" open <<'EOF'
+# /demo:watch
+
+## Execution
+
+Address it via `/demo:feedback` (the canonical engine).
+EOF
+out="$(run_checker "$fx")"; rc=$?
+assert_contains "$out" "STATUS=ERROR" "M3 a bare imperative still ERRORs"
+assert_eq "$rc" "1" "M3b exit 1"
+assert_eq "$(key_of "$out" GATED_STATEMENT_EXEMPTIONS)" "GATED_STATEMENT_EXEMPTIONS=0" "M3c counter is attributable, not always-on"
+
+# The weak hedges of TEST I must not have become gated statements by accident.
+fx="$tmp_root/m-weak"; mk_sibling "$fx" demo-feedback gated
+mk_watch "$fx" open <<'EOF'
+# /demo:watch
+
+## Execution
+
+Address it via `/demo:feedback` (user-invocable) — a manual pass.
+EOF
+out="$(run_checker "$fx")"; rc=$?
+assert_contains "$out" "STATUS=ERROR" "M4 'user-invocable'/'manual' is not a gated statement"
+assert_eq "$rc" "1" "M4b exit 1"
+
+echo "TEST N: memoized sibling resolution matches both spellings"
+# The index registers each sibling under its own `name` AND under the name with
+# the plugin prefix stripped, reproducing the pre-memoization match rule. A
+# broken index would silently resolve nothing, which reads as STATUS=OK.
+fx="$tmp_root/n-plain"; mkdir -p "$fx/demo-plugin/skills/plain-feedback"
+{
+  printf -- '---\nname: plain-feedback\ndisable-model-invocation: true\n'
+  printf 'description: "A thing. Use when doing it."\n---\n\n# /demo:plain-feedback\n'
+} > "$fx/demo-plugin/skills/plain-feedback/SKILL.md"
+mk_watch "$fx" open <<'EOF'
+# /demo:watch
+
+## Execution
+
+Address it via `/demo:plain-feedback` (the canonical engine).
+EOF
+out="$(run_checker "$fx")"; rc=$?
+assert_contains "$out" "STATUS=ERROR" "N1 unprefixed sibling name still resolves"
+assert_contains "$out" "TARGET=demo-plugin/skills/plain-feedback/SKILL.md" "N1b resolves to the right file"
+assert_eq "$rc" "1" "N1c exit 1"
 
 echo
 echo "PASSED=$pass_count"
