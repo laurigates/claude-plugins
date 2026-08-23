@@ -26,52 +26,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Ensure the blueprint-health label exists
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # `gh issue create --label` HARD-FAILS on an unknown label, on the last
-          # line of the job, after all the analysis has already succeeded. That is
-          # why this audit ran red for months. `--force` creates-or-updates and
-          # exits 0, so this is idempotent -- but a real auth failure still
-          # surfaces here rather than being swallowed.
-          gh label create blueprint-health \
-            --repo "$GITHUB_REPOSITORY" \
-            --color 0e8a16 \
-            --description "Monthly blueprint health audit" \
-            --force
-
-      - name: Check for existing open issue
-        id: check_issue
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          EXISTING=$(gh issue list --label "blueprint-health" --state open --json number --jq 'length')
-          echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-
-      - name: Run blueprint health check
-        if: steps.check_issue.outputs.exists == 'false'
-        id: health
-        run: |
-          RESULT=$(bash scripts/blueprint-health-check.sh)
-          {
-            echo "result<<EOF"
-            echo "$RESULT"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Create health check issue
-        if: steps.check_issue.outputs.exists == 'false' && steps.health.outputs.result
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISSUE_BODY: ${{ steps.health.outputs.result }}
-        run: |
-          DATE=$(date +%Y-%m-%d)
-          printf '%s' "$ISSUE_BODY" > /tmp/issue-body.md
-          gh issue create \
-            --title "Monthly Blueprint Health: $DATE" \
-            --label "blueprint-health,maintenance" \
-            --body-file /tmp/issue-body.md
+      # Label provisioning, the duplicate-issue guard, the script run and the
+      # issue creation all live in the composite action. The script emits
+      # nothing when clean, so a clean sweep files no issue.
+      - name: Blueprint health audit
+        uses: ./.github/actions/script-to-issue
+        with:
+          label: blueprint-health
+          color: 0e8a16
+          description: Monthly blueprint health audit
+          script: bash scripts/blueprint-health-check.sh
+          title: 'Monthly Blueprint Health: {date}'
 
   infra-compliance:
     # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
@@ -81,52 +46,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Ensure the infra-compliance label exists
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # `gh issue create --label` HARD-FAILS on an unknown label, on the last
-          # line of the job, after all the analysis has already succeeded. That is
-          # why this audit ran red for months. `--force` creates-or-updates and
-          # exits 0, so this is idempotent -- but a real auth failure still
-          # surfaces here rather than being swallowed.
-          gh label create infra-compliance \
-            --repo "$GITHUB_REPOSITORY" \
-            --color 1d76db \
-            --description "Monthly infrastructure compliance dashboard" \
-            --force
-
-      - name: Check for existing open issue
-        id: check_issue
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          EXISTING=$(gh issue list --label "infra-compliance" --state open --json number --jq 'length')
-          echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-
-      - name: Run infra compliance check
-        if: steps.check_issue.outputs.exists == 'false'
-        id: compliance
-        run: |
-          RESULT=$(bash scripts/infra-compliance-check.sh)
-          {
-            echo "result<<EOF"
-            echo "$RESULT"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Create compliance dashboard issue
-        if: steps.check_issue.outputs.exists == 'false' && steps.compliance.outputs.result
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISSUE_BODY: ${{ steps.compliance.outputs.result }}
-        run: |
-          MONTH=$(date +%Y-%m)
-          printf '%s' "$ISSUE_BODY" > /tmp/issue-body.md
-          gh issue create \
-            --title "Infrastructure Compliance Dashboard: $MONTH" \
-            --label "infra-compliance,maintenance" \
-            --body-file /tmp/issue-body.md
+      - name: Infra compliance audit
+        uses: ./.github/actions/script-to-issue
+        with:
+          label: infra-compliance
+          color: 1d76db
+          description: Monthly infrastructure compliance dashboard
+          script: bash scripts/infra-compliance-check.sh
+          title: 'Infrastructure Compliance Dashboard: {month}'
 
   agentic-audit:
     runs-on: ubuntu-latest
@@ -137,6 +64,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Provisioning stays in THIS file because the attach site does: Claude runs
+      # `gh issue create --label "agentic-audit,maintenance"` from the prompt
+      # below. `scripts/check-workflow-labels.sh` verifies that pairing per file,
+      # so moving this into the composite would leave the prompt's attach site
+      # unprovisioned as far as the guard can see.
       - name: Ensure the agentic-audit label exists
         env:
           GH_TOKEN: ${{ github.token }}
@@ -152,13 +84,15 @@ jobs:
             --description "Monthly agentic quality audit" \
             --force
 
+      # Guard-only: Claude opens the issue itself further down, so the composite
+      # only reports whether one is already open. `force: 'false'` because the
+      # step above already provisioned the label.
       - name: Check for existing open issue
         id: check_issue
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          EXISTING=$(gh issue list --label "agentic-audit" --state open --json number --jq 'length')
-          echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+        uses: ./.github/actions/script-to-issue
+        with:
+          label: agentic-audit
+          force: 'false'
 
       - name: Pre-compute deterministic data
         if: steps.check_issue.outputs.exists == 'false'
@@ -216,13 +150,17 @@ jobs:
             echo -e "$STALE_REVIEWS"
             echo "## Skills with missing required sections/frontmatter:"
             echo -e "$MISSING_SECTIONS"
-          } > /tmp/precomputed.md
+          } > "${RUNNER_TEMP}/precomputed.md"
 
-          RESULT=$(cat /tmp/precomputed.md)
+          # Sentinel: GITHUB_OUTPUT_EOF, the one delimiter used repo-wide for a
+          # multi-line GITHUB_OUTPUT capture. A bare `EOF` collides with any
+          # skill file that happens to contain that line, and this body is
+          # scraped from third-party-authored skill files.
+          RESULT=$(cat "${RUNNER_TEMP}/precomputed.md")
           {
-            echo "result<<EOF"
+            echo "result<<GITHUB_OUTPUT_EOF"
             echo "$RESULT"
-            echo "EOF"
+            echo "GITHUB_OUTPUT_EOF"
           } >> "$GITHUB_OUTPUT"
 
       - name: Claude Agentic Quality Audit
@@ -325,49 +263,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Ensure the docs-index label exists
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # `gh issue create --label` HARD-FAILS on an unknown label, on the last
-          # line of the job, after all the analysis has already succeeded. That is
-          # why this audit ran red for months. `--force` creates-or-updates and
-          # exits 0, so this is idempotent -- but a real auth failure still
-          # surfaces here rather than being swallowed.
-          gh label create docs-index \
-            --repo "$GITHUB_REPOSITORY" \
-            --color 5319e7 \
-            --description "Top-level docs drift (Layer 1) audit" \
-            --force
-
-      - name: Check for existing open issue
-        id: check_issue
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          EXISTING=$(gh issue list --label "docs-index" --state open --json number --jq 'length')
-          echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-
-      - name: Run docs-index drift check
-        if: steps.check_issue.outputs.exists == 'false'
-        id: docs
-        run: |
-          RESULT=$(bash scripts/check-docs-index.sh --issue-body)
-          {
-            echo "result<<EOF"
-            echo "$RESULT"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Create docs-index drift issue
-        if: steps.check_issue.outputs.exists == 'false' && steps.docs.outputs.result
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISSUE_BODY: ${{ steps.docs.outputs.result }}
-        run: |
-          MONTH=$(date +%Y-%m)
-          printf '%s' "$ISSUE_BODY" > /tmp/issue-body.md
-          gh issue create \
-            --title "Top-level docs drift (Layer 1): $MONTH" \
-            --label "docs-index,maintenance" \
-            --body-file /tmp/issue-body.md
+      # `--issue-body` emits nothing when the docs index is in sync, so a clean
+      # sweep files no issue.
+      - name: Docs-index drift audit
+        uses: ./.github/actions/script-to-issue
+        with:
+          label: docs-index
+          color: 5319e7
+          description: Top-level docs drift (Layer 1) audit
+          script: bash scripts/check-docs-index.sh --issue-body
+          title: 'Top-level docs drift (Layer 1): {month}'

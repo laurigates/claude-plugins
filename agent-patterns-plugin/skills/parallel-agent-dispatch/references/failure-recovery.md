@@ -121,6 +121,37 @@ A checkpoint commit converts the dirty-worktree case into the
 committed-branch case (row 2 above) — the cleanest salvage, a plain
 `git push` with no commit-on-behalf step.
 
+## Audit local worktrees alongside the remote (#2447)
+
+The remote audit below (`gh pr list --state open`, `git ls-remote --heads
+origin`) answers one question well and a different question not at all:
+
+> **An empty remote is evidence about the PUSH, not about the WORK** — and the
+> two come apart exactly when an agent dies between committing and pushing,
+> which is the likeliest single place to die, since the push is last.
+
+So a remote audit that returns nothing is **not** a finding of "no work". Before
+reporting an agent's work unrecoverable, run the local probes over its worktree
+in the same pass:
+
+```bash
+git worktree list                                        # is there a local worktree at all?
+git -C <worktree> log --oneline origin/main..HEAD        # commits never pushed?
+git -C <worktree> status --porcelain                     # uncommitted work?
+```
+
+Only "remote empty **and** no local worktree **and** no unpushed commits **and**
+a clean tree" supports the conclusion that nothing landed. Anything else routes
+to the salvage routine above (§ WIP salvage before re-dispatch) — push the
+branch, or commit on the agent's behalf and then push.
+
+This bites hardest on a dispatch made with `isolation: "remote"`, which can
+resolve to a local worktree with nothing in the tool result saying so — see
+[`worktree-hazards.md` → `isolation: "remote"` may resolve to a LOCAL
+worktree](worktree-hazards.md#isolation-remote-may-resolve-to-a-local-worktree-2447)
+for the two tells and the draft-PR-early mitigation that keeps the remote a live
+mirror of the work.
+
 ## Idle without report (#2039)
 
 A distinct missing-return variant: the agent **completed its work fully** —
@@ -289,7 +320,9 @@ limit and recovered fully):
    show which branches/PRs already exist. A re-run agent that pushes an
    already-pushed branch hits a non-fast-forward reject, and one that
    re-creates an existing PR duplicates it — brief agents to check first, or
-   verify the remote is clean yourself.
+   verify the remote is clean yourself. A clean remote is **not** proof the work
+   is gone: pair this with the local-worktree probes above (§ Audit local
+   worktrees alongside the remote, #2447) before writing an agent off.
 3. **Resume only what actually caches.** `Workflow({scriptPath,
    resumeFromRunId})` replays completed **ordinary** agents from cache (cache
    key: unchanged prompt + opts) at zero cost, so re-dispatching those from

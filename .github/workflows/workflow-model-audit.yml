@@ -39,23 +39,35 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      # Provisioning stays in THIS file because the attach site does: Claude runs
+      # `gh issue create --label "workflow-model-audit,maintenance"` from the
+      # prompt below. `scripts/check-workflow-labels.sh` verifies that pairing
+      # per file, so moving this into the composite would leave the prompt's
+      # attach site unprovisioned as far as the guard can see.
       - name: Ensure the workflow-model-audit label exists
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Was `2>/dev/null || true`, which swallows genuine auth failures and
+          # so let a broken label step stay invisible until `gh issue create
+          # --label` hard-failed on the last line of the job. `--force` is
+          # create-or-update and exits 0, so it is just as idempotent, but a real
+          # failure surfaces here instead.
           gh label create workflow-model-audit \
             --repo "$GITHUB_REPOSITORY" \
             --color 0e8a16 \
             --description "Monthly re-evaluation of each Claude workflow's model/effort choice" \
-            2>/dev/null || true
+            --force
 
+      # Guard-only: Claude opens the issue itself further down, so the composite
+      # only reports whether one is already open. `force: 'false'` because the
+      # step above already provisioned the label.
       - name: Check for existing open issue
         id: check_issue
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          EXISTING=$(gh issue list --label "workflow-model-audit" --state open --json number --jq 'length')
-          echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+        uses: ./.github/actions/script-to-issue
+        with:
+          label: workflow-model-audit
+          force: 'false'
 
       - name: Pre-compute deterministic data
         if: steps.check_issue.outputs.exists == 'false'
@@ -89,13 +101,15 @@ jobs:
                 echo "- $base: $rollup"
               fi
             done
-          } > /tmp/precomputed.md
+          } > "${RUNNER_TEMP}/precomputed.md"
 
-          RESULT=$(cat /tmp/precomputed.md)
+          # Sentinel: GITHUB_OUTPUT_EOF, the one delimiter used repo-wide for a
+          # multi-line GITHUB_OUTPUT capture.
+          RESULT=$(cat "${RUNNER_TEMP}/precomputed.md")
           {
-            echo "result<<PRECOMPUTE_EOF"
+            echo "result<<GITHUB_OUTPUT_EOF"
             echo "$RESULT"
-            echo "PRECOMPUTE_EOF"
+            echo "GITHUB_OUTPUT_EOF"
           } >> "$GITHUB_OUTPUT"
 
       - name: Claude workflow-model audit

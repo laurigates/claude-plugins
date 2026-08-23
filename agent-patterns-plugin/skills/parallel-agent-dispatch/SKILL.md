@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-08-15
+modified: 2026-08-22
 compatibility: claude-code
 reviewed: 2026-07-05
 ---
@@ -117,6 +117,14 @@ outside worktree isolation — which the nested-repo case above forces. See
 **A deleted worktree kills the agent's shell, not its reasoning (#2372).** Every
 Bash call then fails, and a spawned subagent inherits the same dead cwd. See
 [references/worktree-hazards.md → Deleted worktree](references/worktree-hazards.md#deleted-worktree-kills-the-shell-not-the-agent-2372).
+
+**`isolation: "remote"` may resolve to a LOCAL worktree (#2447).** The tool
+result never says which mode ran; `git worktree list` and the notification's
+`worktreePath` are the tells. An empty remote is evidence about the **push**,
+not the **work** — audit local worktrees alongside `gh pr list` / `git
+ls-remote` before calling work lost, and brief agents to open a **draft PR
+early**, pushing after each commit. See
+[references/worktree-hazards.md → isolation: "remote"](references/worktree-hazards.md#isolation-remote-may-resolve-to-a-local-worktree-2447).
 
 ### 2. Scope Budget (per-agent prompt rules)
 

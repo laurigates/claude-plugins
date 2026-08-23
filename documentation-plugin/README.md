@@ -14,7 +14,7 @@ Comprehensive documentation tooling for generating API references, maintaining R
 | `/docs:generate` | Update project documentation from code annotations |
 | `/docs:decommission` | Generate comprehensive service decommission documentation |
 | `/docs:latex` | Convert Markdown documents to professional LaTeX with TikZ visualizations and compile to PDF |
-| `/docs:fetch-fallbacks` | Recover a failed WebFetch: strip the query, `raw.githubusercontent`, `gh api`, context7/WebSearch |
+| `/docs:fetch-fallbacks` | Recover a failed or empty WebFetch: strip the query, `raw.githubusercontent`, `gh api`, docs source at a pinned tag, context7/WebSearch |
 | `claude-blog-sources` | Access Claude Blog for latest features, patterns, and best practices |
 | `docs-single-source` | Link docs to the single source of truth instead of restating it |
 | `docs-verify-machine-facts` | Verify machine-read values (`scutil`, `route`, `ifconfig`, local config) against the authoritative IaC before publishing |

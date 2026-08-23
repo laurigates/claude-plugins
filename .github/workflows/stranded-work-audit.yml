@@ -39,46 +39,29 @@ jobs:
     # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
     runs-on: ubuntu-slim
     timeout-minutes: 10
+    # Job-level so the value is in the runner environment the composite action's
+    # steps inherit; the `script` input below expands it in its own shell.
+    env:
+      MIN_AGE_DAYS: ${{ inputs.min_age_days || '7' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           fetch-depth: 0  # `git cherry` needs full history to detect patch-equivalence
 
-      - name: Check for existing open issue
-        id: check_issue
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          EXISTING=$(gh issue list --label "stranded-work" --state open --json number --jq 'length')
-          echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-
-      - name: Run stranded-work audit
-        if: steps.check_issue.outputs.exists == 'false'
-        id: audit
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MIN_AGE_DAYS: ${{ inputs.min_age_days || '7' }}
-        run: |
-          RESULT=$(bash scripts/check-stranded-work.sh --issue-body --min-age-days "$MIN_AGE_DAYS")
-          {
-            echo "result<<STRANDED_EOF"
-            echo "$RESULT"
-            echo "STRANDED_EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      # The script emits nothing when clean, so this step is skipped on a clean sweep
-      # and no issue is created.
-      - name: Create stranded-work issue
-        if: steps.check_issue.outputs.exists == 'false' && steps.audit.outputs.result
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISSUE_BODY: ${{ steps.audit.outputs.result }}
-        run: |
-          DATE=$(date +%Y-%m-%d)
-          printf '%s' "$ISSUE_BODY" > /tmp/issue-body.md
-          gh issue create \
-            --title "Stranded work: branches that never reached main ($DATE)" \
-            --label "stranded-work,maintenance" \
-            --assignee laurigates \
-            --body-file /tmp/issue-body.md
+      # The script emits nothing when clean, so a clean sweep files no issue.
+      #
+      # This job previously had NO label-provisioning step, unlike every other
+      # audit — `stranded-work` was the one label a `gh issue create --label`
+      # could still hard-fail on. Routing through the composite provisions it
+      # with `gh label create --force` (idempotent, and a real auth failure
+      # still fails the step).
+      - name: Stranded-work audit
+        uses: ./.github/actions/script-to-issue
+        with:
+          label: stranded-work
+          color: fbca04
+          description: Commits stranded on a branch that never reached the default branch
+          script: bash scripts/check-stranded-work.sh --issue-body --min-age-days "$MIN_AGE_DAYS"
+          title: 'Stranded work: branches that never reached main ({date})'
+          assignee: laurigates

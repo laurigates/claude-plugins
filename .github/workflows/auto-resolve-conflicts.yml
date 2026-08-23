@@ -57,7 +57,8 @@ jobs:
             # regardless of how many PRs are open.
             DEADLINE=$(( $(date +%s) + POLL_DEADLINE_SECONDS ))
             while :; do
-              LIST=$(gh pr list --repo "$REPO" --state open --limit 200 --json number,mergeable)
+              LIST=$(gh pr list --repo "$REPO" --state open --limit 200 \
+                --json number,mergeable,isCrossRepository,headRefName)
               UNKNOWN_COUNT=$(echo "$LIST" | jq '[.[] | select(.mergeable == "UNKNOWN")] | length')
               if [ "$UNKNOWN_COUNT" -eq 0 ] || [ "$(date +%s)" -ge "$DEADLINE" ]; then
                 break
@@ -71,7 +72,26 @@ jobs:
               echo "::warning::$STILL_UNKNOWN PR(s) still UNKNOWN after ${POLL_DEADLINE_SECONDS}s; they may be missed this run"
             fi
 
-            PRS=$(echo "$LIST" | jq -c '[.[] | select(.mergeable == "CONFLICTING") | {"pr_number": (.number | tostring)}]')
+            # Two exclusions, both otherwise permanent red noise on the matrix
+            # (`fail-fast: false` keeps every failing leg around):
+            #   - Fork PRs (`isCrossRepository`): the head branch does not exist
+            #     in this repo, so the `actions/checkout` of that ref fails on
+            #     every leg. Excluding them also removes the largest
+            #     untrusted-input surface from this workflow — a fork PR's
+            #     branch name, title and diff are controlled by someone with no
+            #     write access, while this job holds contents:write and the
+            #     release PAT (.claude/rules/github-actions-security.md).
+            #   - `release-please--*`: force-pushed constantly, and its conflicts
+            #     are already owned by the `Release: Fix release-please
+            #     conflicts` workflow, which closes the conflicted PR, deletes
+            #     the branch and retriggers release-please.
+            PRS=$(echo "$LIST" | jq -c '[
+              .[]
+              | select(.mergeable == "CONFLICTING")
+              | select(.isCrossRepository | not)
+              | select(.headRefName | startswith("release-please--") | not)
+              | {"pr_number": (.number | tostring)}
+            ]')
 
             if [ -z "$PRS" ] || [ "$PRS" = "[]" ]; then
               echo "has_conflicts=false" >> "$GITHUB_OUTPUT"
