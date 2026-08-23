@@ -1,10 +1,10 @@
 ---
 name: docs-fetch-fallbacks
-description: "WebFetch 404/403/timeout fallback ladder: strip query, raw.githubusercontent, `gh api`, context7/WebSearch. Use when a doc or GitHub URL fetch fails."
+description: "WebFetch 404/403/timeout/empty-SPA fallback ladder: strip query, raw.githubusercontent, `gh api`, docs-source-at-a-pinned-tag, context7/WebSearch. Use when a doc or GitHub URL fetch fails or returns a page with no content."
 allowed-tools: WebFetch, WebSearch, Bash(gh api *), Read
 created: 2026-08-19
-modified: 2026-08-19
-reviewed: 2026-08-19
+modified: 2026-08-21
+reviewed: 2026-08-21
 ---
 
 # /docs:fetch-fallbacks
@@ -30,6 +30,7 @@ different things depending on where it lands:
 | `403` with an empty body on a public docs page | Bot/UA gating, not authorization |
 | `403` on a `github.com` URL | The resource needs authentication |
 | A timeout with no status at all | Host slow or unreachable — needs a different source, not a retry |
+| **No status at all**, and the answer says the page had no content ("I don't have access to the content", "you've only provided the heading") | The fetch **succeeded**. The page is client-rendered and the served HTML is an empty shell — see Step 4 |
 
 ### Step 2: Apply the matching fallback
 
@@ -41,6 +42,7 @@ different things depending on where it lands:
 | 403 on a public docs page | Try once with a different UA or a search engine |
 | 403 on a GitHub URL | Use `gh api` (authenticated) |
 | Timeout | One retry, then fall back to context7 / WebSearch |
+| 200 with an empty shell (SPA) | Fetch the docs **source** from the project's repo at a pinned tag (Step 4) |
 
 If two attempts both fail, surface the failure in the response — do
 not loop.
@@ -74,7 +76,43 @@ For the full URL → `gh` command mapping (pulls, issues, commits, contents at a
 given ref), see `git-plugin:gh-cli-agentic` § GitHub URL Resolution — it owns
 that table. This skill covers only the recovery path after a fetch has failed.
 
-### Step 4: Surface the failure
+### Step 4: The SPA case — a 200 that carries no content
+
+Every signature above is an *error*. This one is not: the request succeeds, the
+status is 200, and the HTML is a shell that a browser would fill in with
+JavaScript. Nothing in the result says "empty page" — instead the answer says it
+cannot see the content and asks you to paste it. That reads as a broken *fetcher*
+and invites a retry, which returns the identical shell.
+
+**The tell is the answer's shape, not a status code**: it reports receiving only
+a heading or a title, and asks for the documentation to be provided. Two of those
+in a row on the same host means the host is client-rendered — stop fetching it.
+
+**The fallback is the docs' source, not the docs' URL.** Most such sites render
+markdown that lives in a public repo, so fetch that file instead — and pin the
+ref to the version you actually depend on, which is strictly better than the
+"latest" the site would have shown you.
+
+| Rendered site | Source to fetch instead |
+|---|---|
+| `registry.terraform.io/providers/<org>/<name>/<version>/docs/resources/<r>` | `raw.githubusercontent.com/<org>/terraform-provider-<name>/v<version>/website/docs/r/<r>.html.markdown` |
+| A docs site with an "Edit this page" link | Follow that link — it points at the source file |
+| A project site backed by `docs/` in its repo | `raw.githubusercontent.com/<org>/<repo>/<tag>/docs/<path>.md` |
+
+Worked example — verifying a Terraform resource's arguments and import ID format:
+
+```bash
+curl -fsSL "https://raw.githubusercontent.com/integrations/terraform-provider-github/v6.12.0/website/docs/r/team_members.html.markdown"
+```
+
+The tag matches the constraint in `versions.tf`, so the arguments read are the
+arguments that version accepts — a correctness gain over the registry page, not
+merely a workaround for it.
+
+When no repo backs the site, context7 is the fallback source for a named library
+(Step 5), and it handles JS-rendered docs that a raw fetch cannot.
+
+### Step 5: Surface the failure
 
 If the fallback also fails, say so in the response: name the URL, the status,
 and the fallback already tried. A third attempt with a cosmetically different

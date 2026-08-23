@@ -1,0 +1,163 @@
+name: "Sync: agent prompts"
+
+# Regenerates the extracted agent CLIs' pre-compiled subagent prompts from this
+# repo's plugin skills and opens a PR on each standalone repo
+# (git-repo-agent: issue #1017; vault-agent: issue #1973).
+#
+# Both agents were extracted into their own repos, but their compilers read
+# plugin SKILL.md files from this monorepo (git-repo-agent ADR-009; vault-agent
+# ADR-0005/ADR-0006). The pre-compiled artifacts under
+# <agent>/src/<module>/prompts/generated/ are shipped in the wheel, so they must
+# be refreshed here (where the plugin sources live) and pushed to the standalone
+# repo whenever an upstream skill changes.
+#
+# Cross-repo push authenticates as the laurigates-prompt-sync GitHub App, whose
+# credentials gitops pushes here (PROMPT_SYNC_CLIENT_ID variable +
+# PROMPT_SYNC_PRIVATE_KEY secret; gitops repositories.tf `prompt_sync = true`).
+# The App is installed on git-repo-agent and vault-agent ONLY — never on this
+# repo — and the token below is scoped by `repositories:` to the single target
+# repo of ITS OWN matrix row, so a row can neither write here nor reach the
+# other agent. That per-row scoping is load-bearing: it is the only thing
+# keeping the two syncs credentially isolated now that they share one workflow.
+#
+# Verified operational 2026-08-18: a dispatch run minted a token and opened
+# laurigates/git-repo-agent#4, so the `push:` trigger below is live. Use the
+# `force` dispatch input to re-exercise the token path when there is no drift —
+# without it a no-drift run skips every step and exits green, which is
+# indistinguishable from a broken token. That matters more after this merge: the
+# union `*/skills/*/SKILL.md` filter is wider than the vault-agent sync's former
+# obsidian-plugin-only glob, so vault-agent now sees more no-drift runs and a
+# broken token is correspondingly less obvious.
+
+on:
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Mint the token and check out the target even if the compiled prompts are unchanged (verifies the App token path)."
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    # Union of the two pre-merge filters. `*` does not match `/` in an Actions
+    # path filter, so `*/skills/*/SKILL.md` matches exactly one leading path
+    # segment and therefore subsumes the vault-agent sync's former
+    # `obsidian-plugin/skills/*/SKILL.md` glob.
+    paths:
+      - '*/skills/*/SKILL.md'
+      - 'git-repo-agent/scripts/compile_prompts.py'
+      - 'git-repo-agent/src/git_repo_agent/prompts/compiler.py'
+      - 'vault-agent/scripts/compile_prompts.py'
+      - 'vault-agent/src/vault_agent/prompts/compiler.py'
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    strategy:
+      # Required: one agent's sync failing must not cancel the other's.
+      fail-fast: false
+      matrix:
+        include:
+          - agent: git-repo-agent
+            module: git_repo_agent
+          - agent: vault-agent
+            module: vault_agent
+    # Bare group per matrix row, no ref suffix: each row force-pushes the fixed
+    # `sync/generated-prompts` branch on ITS target repo with
+    # `delete-branch: true`, so overlapping push+dispatch runs would race that
+    # branch. Never cancelled mid-write. The `matrix.agent` suffix keeps the two
+    # targets in separate groups — they target different repos and must not
+    # serialise against each other, exactly as the two pre-merge workflows'
+    # distinct groups guaranteed.
+    concurrency:
+      group: sync-agent-prompts-${{ matrix.agent }}
+      cancel-in-progress: false
+    steps:
+      - name: Checkout claude-plugins
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Regenerate compiled prompts
+        env:
+          AGENT: ${{ matrix.agent }}
+        run: uv run --project "$AGENT" python "$AGENT/scripts/compile_prompts.py"
+
+      - name: Detect changes
+        id: diff
+        # git status --porcelain, not git diff --quiet: a NEW skill added to the
+        # compiler's bundle map emits a new UNTRACKED per-skill fragment, which
+        # `git diff` cannot see — the sync would silently skip it.
+        env:
+          FORCE: ${{ inputs.force }}
+          GENERATED_DIR: ${{ matrix.agent }}/src/${{ matrix.module }}/prompts/generated/
+        run: |
+          if [ "$FORCE" = "true" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Forced: exercising the token path for $GENERATED_DIR regardless of drift." >> "$GITHUB_STEP_SUMMARY"
+          elif [ -z "$(git status --porcelain -- "$GENERATED_DIR")" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Minted only when there is something to push, so a no-op run never
+      # requests a token. `repositories:` narrows the installation token to the
+      # single target repo of this matrix row.
+      #
+      # app-id, not client-id: v3 marks `app-id` deprecated in favour of
+      # `client-id`, but actionlint v1.7.12 (the latest release, pinned in
+      # .pre-commit-config.yaml and plugin-pr-checks.yml) has stale metadata for
+      # this action and rejects `client-id` as an undefined input. A numeric App
+      # ID is a valid JWT issuer, so this works; gitops pushes
+      # PROMPT_SYNC_CLIENT_ID alongside for the coordinated swap (gitops#206).
+      - name: Mint a prompt-sync App token for the target agent
+        id: app-token
+        if: steps.diff.outputs.changed == 'true'
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.PROMPT_SYNC_APP_ID }}
+          private-key: ${{ secrets.PROMPT_SYNC_PRIVATE_KEY }}
+          owner: laurigates
+          repositories: ${{ matrix.agent }}
+
+      - name: Checkout the standalone agent repo
+        if: steps.diff.outputs.changed == 'true'
+        uses: actions/checkout@v6
+        with:
+          repository: laurigates/${{ matrix.agent }}
+          token: ${{ steps.app-token.outputs.token }}
+          path: _standalone
+
+      - name: Copy regenerated prompts into the standalone checkout
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GENERATED_DIR: ${{ matrix.agent }}/src/${{ matrix.module }}/prompts/generated/
+          MODULE: ${{ matrix.module }}
+        run: |
+          rsync -a --delete \
+            "$GENERATED_DIR" \
+            "_standalone/src/$MODULE/prompts/generated/"
+
+      - name: Open sync PR on the standalone agent repo
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          path: _standalone
+          token: ${{ steps.app-token.outputs.token }}
+          branch: sync/generated-prompts
+          delete-branch: true
+          commit-message: "chore: sync compiled prompts from claude-plugins"
+          title: "chore: sync compiled prompts from claude-plugins"
+          body: |
+            Regenerated `src/${{ matrix.module }}/prompts/generated/` from the
+            upstream plugin skills in laurigates/claude-plugins.
+
+            Automated by `.github/workflows/sync-agent-prompts.yml`.

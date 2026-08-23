@@ -24,6 +24,11 @@
 #   K. references/failure-recovery.md missing the #1424 "9:1" threshold → exit 1
 #   L. references/worktree-hazards.md missing "Nested-repo worktree isolation" → exit 1
 #   M. REFERENCE.md index no longer links references/failure-recovery.md → exit 1
+#   N. references/worktree-hazards.md missing "may resolve to a LOCAL worktree" → exit 1
+#   O. references/failure-recovery.md missing the local-worktree audit section → exit 1
+#   P. parallel-agent-dispatch SKILL.md missing "#2447" → exit 1
+#   Q. references/worktree-hazards.md missing the draft-PR-early mitigation → exit 1
+#   R. parallel-agent-dispatch SKILL.md missing the "worktreePath" tell → exit 1
 #
 # Issue #1868: Workflow({resumeFromRunId}) re-runs an already-succeeded
 # isolation:"worktree" agent instead of returning its cached result, re-firing
@@ -42,6 +47,14 @@
 # that silently stopped asserting them would still exit 0 without these), and
 # guard M proves the index is required to keep linking them — a reference file
 # nothing links to is unreachable from the skill even though it still exists.
+#
+# Issue #2447: a dispatch made with isolation:"remote" can resolve to a LOCAL
+# git worktree with nothing in the tool result saying so, and a recovery audit
+# that checks only the remote then reports intact-but-unpushed work as lost.
+# Guards N–R keep each half of the fix pinned to the file that owns it: the
+# mode-detection statement and the draft-PR-early mitigation in
+# references/worktree-hazards.md, the local-worktree recovery audit in
+# references/failure-recovery.md, and the pointer + tells in SKILL.md.
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -212,5 +225,52 @@ assert "M: REFERENCE.md index dropping a references/ link fails (exit 1)" \
   "$([ "$(run_fixture "$fx_m")" -eq 1 ] && echo true || echo false)"
 rm -rf "$fx_m"
 
-echo "check-agent-failure-contract (#1601/#1868/#2039/#2143): ${pass_count} passed, ${fail_count} failed"
+# --- Guard N: worktree-hazards.md missing the remote-may-be-local statement ---
+# Issue #2447: isolation:"remote" can resolve to an ordinary local worktree and
+# the tool result never says so. Strip the statement and confirm the checker
+# fails, so a bulk edit can't silently drop the mode-detection guidance.
+fx_n="$(mktemp -d)"
+build_fixture "$fx_n"
+strip_marker "$fx_n/agent-patterns-plugin/skills/parallel-agent-dispatch/references/worktree-hazards.md" "may resolve to a LOCAL worktree"
+assert "N: worktree-hazards.md missing the remote-may-be-local statement fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_n")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_n"
+
+# --- Guard O: failure-recovery.md missing the local-worktree audit section ---
+# The recovery half: an empty remote is evidence about the PUSH, not the WORK.
+# Without this section the documented protocol is remote-only again.
+fx_o="$(mktemp -d)"
+build_fixture "$fx_o"
+strip_marker "$fx_o/agent-patterns-plugin/skills/parallel-agent-dispatch/references/failure-recovery.md" "Audit local worktrees alongside the remote"
+assert "O: failure-recovery.md missing the local-worktree audit section fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_o")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_o"
+
+# --- Guard P: SKILL.md missing the #2447 issue reference ---
+fx_p="$(mktemp -d)"
+build_fixture "$fx_p"
+strip_marker "$fx_p/agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md" "#2447"
+assert "P: dispatch SKILL.md missing #2447 fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_p")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_p"
+
+# --- Guard Q: worktree-hazards.md missing the draft-PR-early mitigation ---
+# The mitigation that actually worked: commit/push/open a draft PR BEFORE the
+# bulk of the work, then push after each commit, so the remote mirrors the work.
+fx_q="$(mktemp -d)"
+build_fixture "$fx_q"
+strip_marker "$fx_q/agent-patterns-plugin/skills/parallel-agent-dispatch/references/worktree-hazards.md" "draft PR before the bulk of the work"
+assert "Q: worktree-hazards.md missing the draft-PR-early mitigation fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_q")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_q"
+
+# --- Guard R: SKILL.md missing the worktreePath tell ---
+fx_r="$(mktemp -d)"
+build_fixture "$fx_r"
+strip_marker "$fx_r/agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md" "worktreePath"
+assert "R: dispatch SKILL.md missing the worktreePath tell fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_r")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_r"
+
+echo "check-agent-failure-contract (#1601/#1868/#2039/#2143/#2447): ${pass_count} passed, ${fail_count} failed"
 [ "$fail_count" -eq 0 ]

@@ -51,28 +51,17 @@ jobs:
         with:
           python-version: '3.12'  # tomllib needs >= 3.11
 
-      - name: Ensure the fleet-drift label exists
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # `gh issue create --label` HARD-FAILS on an unknown label, on the last
-          # line of the job, after all the analysis has already succeeded. That is
-          # why this audit ran red for months. `--force` creates-or-updates and
-          # exits 0, so this is idempotent -- but a real auth failure still
-          # surfaces here rather than being swallowed.
-          gh label create fleet-drift \
-            --repo "$GITHUB_REPOSITORY" \
-            --color b60205 \
-            --description "Drift between the ComfyUI pack fleet and its scaffold" \
-            --force
-
-      - name: Check for existing open issue
+      # Guard-only: this job has to clone the fleet and run its own bespoke audit
+      # step (below) between the guard and the issue creation, so the composite
+      # is invoked twice — here for the label + duplicate guard, and again at the
+      # end to file the issue.
+      - name: Ensure label and check for existing open issue
         id: check_issue
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          EXISTING=$(gh issue list --label "fleet-drift" --state open --json number --jq 'length')
-          echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+        uses: ./.github/actions/script-to-issue
+        with:
+          label: fleet-drift
+          color: b60205
+          description: Drift between the ComfyUI pack fleet and its scaffold
 
       - name: Clone the pack fleet
         if: steps.check_issue.outputs.exists == 'false'
@@ -142,25 +131,21 @@ jobs:
           fi
           echo "--- issue body (empty means a clean fleet) ---"
           cat "${RUNNER_TEMP}/audit-body.md"
-          RESULT=$(cat "${RUNNER_TEMP}/audit-body.md")
-          {
-            echo "result<<FLEET_DRIFT_EOF"
-            echo "$RESULT"
-            echo "FLEET_DRIFT_EOF"
-          } >> "$GITHUB_OUTPUT"
 
-      # `--issue-body` emits nothing when the fleet is clean, so this step is
-      # skipped on a clean sweep and no issue is created.
+      # `--issue-body` emits nothing when the fleet is clean, so the composite
+      # files no issue on a clean sweep. The body reaches it as the stdout of
+      # `cat` over the file the audit step above already wrote -- the audit runs
+      # exactly ONCE and stays in this workflow, because its crash detection
+      # (the AUDIT_RC check) and stderr passthrough are caller-specific error
+      # semantics that do not belong in shared code.
       - name: Create fleet-drift issue
-        if: steps.check_issue.outputs.exists == 'false' && steps.audit.outputs.result
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISSUE_BODY: ${{ steps.audit.outputs.result }}
-        run: |
-          DATE=$(date +%Y-%m-%d)
-          printf '%s' "$ISSUE_BODY" > "${RUNNER_TEMP}/issue-body.md"
-          gh issue create \
-            --title "Fleet drift: ComfyUI packs vs the scaffold template ($DATE)" \
-            --label "fleet-drift,comfyui-plugin,maintenance" \
-            --assignee laurigates \
-            --body-file "${RUNNER_TEMP}/issue-body.md"
+        if: steps.check_issue.outputs.exists == 'false'
+        uses: ./.github/actions/script-to-issue
+        with:
+          label: fleet-drift
+          color: b60205
+          description: Drift between the ComfyUI pack fleet and its scaffold
+          script: cat "${RUNNER_TEMP}/audit-body.md"
+          title: 'Fleet drift: ComfyUI packs vs the scaffold template ({date})'
+          extra-labels: comfyui-plugin,maintenance
+          assignee: laurigates

@@ -49,28 +49,49 @@ jobs:
           # Interactive @mention work — pin opus explicitly (effort is the cost
           # lever, see .claude/rules/workflow-model-effort.md). No --max-turns:
           # interactive conversations must stay open-ended.
-          claude_args: "--model opus --effort medium"
+          #
+          # NO --allowedTools, deliberately. This input previously held a
+          # Claude tool list in `additional_permissions:`, which takes a GitHub
+          # permissions MAP ("actions: read") -- so that sandbox was never
+          # applied and this job has always run unrestricted. The honest fix
+          # here is to drop the pretense, not to relocate it:
+          #
+          #   - The real trust boundary is upstream. claude-code-action runs
+          #     checkWritePermissions on the actor for every entity context
+          #     (prepare.ts) and throws otherwise, so only someone who already
+          #     holds repo write can trigger this at all. A tool list adds
+          #     little against an actor who could push directly.
+          #   - The `plugins:` block below loads 22 plugins. Their skills invoke
+          #     the whole toolchain -- uv, pytest, ruff, npm, bun, cargo,
+          #     pre-commit, ast-grep, rg, jq, kubectl, d2 and more. Granting
+          #     Skill/SlashCommand while denying those commands loads 22 plugins
+          #     and disarms every one of them: "@claude run the tests and fix
+          #     the failure" would deny its way through the 30-minute timeout,
+          #     since there is no --max-turns to fail fast against.
+          #   - Any list broad enough to keep them working is broad enough to be
+          #     meaningless -- a second decorative sandbox, which is the exact
+          #     defect this change set exists to remove.
+          #
+          # The residual risk is real but unchanged from today: a maintainer
+          # @mentioning Claude on issue text carrying injected instructions. A
+          # permissive allowlist would not stop that either; what would is
+          # narrowing the job `permissions:` block above, which is a separate
+          # decision with its own blast radius.
+          #
+          # Every OTHER Claude workflow in this repo has a fixed prompt and a
+          # real --allowedTools boundary. This one is the documented exception.
+          #
+          # One flag per line: scripts/check-workflow-model.sh matches
+          # `--model`/`--effort` anchored at line start in a folded scalar.
+          claude_args: >-
+            --model opus
+            --effort medium
+          # The job-level `actions: read` grant above never reached Claude's
+          # token while this input held a tool list; passed as a real map it
+          # becomes live. Kept rather than dropped because "@claude why did CI
+          # fail?" is a routine @mention on a PR.
           additional_permissions: |
-            Read
-            Write
-            Edit
-            Grep
-            Glob
-            Task
-            TodoWrite
-            Bash(git status *)
-            Bash(git diff *)
-            Bash(git log *)
-            Bash(git show *)
-            Bash(git add *)
-            Bash(git commit *)
-            Bash(git push *)
-            Bash(git checkout *)
-            Bash(git branch *)
-            Bash(gh pr *)
-            Bash(gh issue *)
-            Bash(gh api *)
-            WebFetch
+            actions: read
           plugin_marketplaces: |
             https://github.com/laurigates/claude-plugins.git
           plugins: |
