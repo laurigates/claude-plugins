@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.2](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.11.1...documentation-plugin-v1.11.2) (2026-08-23)
+
+
+### Documentation
+
+* **documentation-plugin:** add the empty-SPA case to docs-fetch-fallbacks ([#2481](https://github.com/laurigates/claude-plugins/issues/2481)) ([5cb22b6](https://github.com/laurigates/claude-plugins/commit/5cb22b649f374217178da43480c4de6d210462dc))
+
 ## [1.11.1](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.11.0...documentation-plugin-v1.11.1) (2026-08-22)
 
 
