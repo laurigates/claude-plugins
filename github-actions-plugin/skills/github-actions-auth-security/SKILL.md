@@ -340,11 +340,30 @@ guidance and the rest of the secure-use checklist.
 - [ ] Repo default `GITHUB_TOKEN` permission set to read-only
 - [ ] Untrusted run-context values pass through an `env:` var (no `${{ … }}` in `run:`)
 - [ ] Third-party actions SHA-pinned (Renovate-managed — see `version-pinning.md`)
-- [ ] `/.github/workflows/` listed in `.github/CODEOWNERS`
+- [ ] `/.github/workflows/` listed in `.github/CODEOWNERS` (ownership + auto-requested review; see the caveat below before making it a merge gate)
 - [ ] Actions blocked from creating/approving PRs unless a workflow needs it
 - [ ] Input validation implemented
 - [ ] Branch protection rules enabled
 - [ ] Security scanning enabled
+
+#### CODEOWNERS: ownership vs. enforcement
+
+`.github/CODEOWNERS` alone names an owner per path and makes GitHub
+auto-request their review — pure upside, enable it anywhere. Turning it into a
+merge **gate** is a separate branch-protection setting, "Require review from
+Code Owners", and that one needs a look at who the owners are first.
+
+**GitHub does not count a PR author's own approval toward the code-owner
+requirement.** So on a repo where the listed owner is also the author of nearly
+every PR touching those paths — a solo maintainer, or a path only one
+team member ever edits — enabling it means each of those PRs needs a second
+reviewer who does not exist, or an admin bypass on every merge. The setting
+stops being a review aid and becomes a merge block.
+
+Enable it when the owner list contains someone other than the usual author (a
+second maintainer, or a bot account that can approve); leave it off when it does
+not, and record that as a decision rather than an oversight. Either way the
+CODEOWNERS file keeps earning its place.
 
 ### Monitoring
 - [ ] Workflow logs reviewed regularly
