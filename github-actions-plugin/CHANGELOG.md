@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.4](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.9.3...github-actions-plugin-v1.9.4) (2026-08-23)
+
+
+### Documentation
+
+* **github-actions-plugin:** separate CODEOWNERS ownership from merge enforcement ([#2489](https://github.com/laurigates/claude-plugins/issues/2489)) ([827ec89](https://github.com/laurigates/claude-plugins/commit/827ec89f224ce3428527c8637917ebec1b518ace))
+
 ## [1.9.3](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.9.2...github-actions-plugin-v1.9.3) (2026-08-15)
 
 
