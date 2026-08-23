@@ -451,6 +451,335 @@ check "case 11: worktree-shaped root still discovers its repo-root tests" "TOTAL
 check_contains "case 11: and actually runs them" \
     "PASS=./scripts/tests/test-check-widget.sh" "$out"
 
+# ---------------------------------------------------------------------------
+# Fixture: a second tree with tests in DISTINGUISHABLE locations, so a scoped
+# run's subset is attributable. Kept separate from $ROOT on purpose — adding
+# files there would move CASE 1's TOTAL=6 denominator.
+# ---------------------------------------------------------------------------
+SCOPEROOT="${WORK}/scope-tree"
+
+write_test "${SCOPEROOT}/alpha-plugin/skills/one/scripts/tests/test-alpha.sh" \
+    'echo "PASSED=1"' 'exit 0'
+write_test "${SCOPEROOT}/beta-plugin/skills/two/scripts/tests/test-beta.sh" \
+    'echo "PASSED=1"' 'exit 0'
+write_test "${SCOPEROOT}/beta-plugin/hooks/test-beta-hook.sh" \
+    'echo "PASSED=1"' 'exit 0'
+write_test "${SCOPEROOT}/gamma-plugin/skills/three/scripts/tests/test-gamma-skips.sh" \
+    'echo "SKIP: heavy toolchain not installed"' 'exit 0'
+write_test "${SCOPEROOT}/scripts/tests/test-root-guard.sh" \
+    'echo "PASSED=1"' 'exit 0'
+
+# ---------------------------------------------------------------------------
+# CASE 12 — --only selects the expected subset, and is repeatable
+#
+# The negative half carries the weight: a scope filter that matched EVERYTHING
+# (a no-op) would satisfy every "the wanted test ran" assertion on its own.
+#
+# DISCOVERED= is asserted alongside TOTAL= in every scoped run below. Scoping
+# must FILTER what was discovered, never narrow discovery itself — a "fix" that
+# pushed the globs into the `find` would pass the subset assertions while
+# destroying the misfire-vs-collapse distinction CASE 13 depends on.
+# ---------------------------------------------------------------------------
+out="$(bash "$RUNNER" --root "$SCOPEROOT" --only 'alpha-plugin/*' 2>&1)"
+rc=$?
+
+check "case 12: a scoped run is otherwise clean" "0" "$rc"
+# A scoped run with no skips must be a clean OK. If deferred tests were folded
+# into SKIPPED=, this would read WARN while still exiting 0 — a mass-SKIP
+# wearing a passing exit code, which is exactly the shape #2219 burned on.
+check "case 12: a scoped run with nothing skipped is OK, not WARN" "STATUS=OK" \
+    "$(printf '%s\n' "$out" | grep -m1 '^STATUS=')"
+check "case 12: only the in-scope test ran" "TOTAL=1" \
+    "$(printf '%s\n' "$out" | grep -m1 '^TOTAL=')"
+check "case 12: discovery is unchanged by scoping" "DISCOVERED=5" \
+    "$(printf '%s\n' "$out" | grep -m1 '^DISCOVERED=')"
+check "case 12: the excluded tests are accounted for, not lost" "OUT_OF_SCOPE=4" \
+    "$(printf '%s\n' "$out" | grep -m1 '^OUT_OF_SCOPE=')"
+check "case 12: the run states that it was scoped" "SCOPED=true" \
+    "$(printf '%s\n' "$out" | grep -m1 '^SCOPED=')"
+check "case 12: the scope is echoed back" "SCOPE_PATTERN_1=alpha-plugin/*" \
+    "$(printf '%s\n' "$out" | grep -m1 '^SCOPE_PATTERN_1=')"
+check_contains "case 12: the in-scope test ran" \
+    "PASS=./alpha-plugin/skills/one/scripts/tests/test-alpha.sh" "$out"
+# The negative half — without these a no-op filter passes everything above.
+check_absent "case 12: an out-of-scope sibling did NOT run" \
+    "test-beta.sh" "$out"
+check_absent "case 12: an out-of-scope hook suite did NOT run" \
+    "test-beta-hook.sh" "$out"
+check_absent "case 12: an out-of-scope repo-root guard test did NOT run" \
+    "test-root-guard.sh" "$out"
+# An out-of-scope SKIPPING test must not land in SKIPPED= — deferred, not
+# skipped. Folding it in would make every scoped run look like a mass-SKIP.
+check "case 12: an out-of-scope skip is deferred, not counted as skipped" "SKIPPED=0" \
+    "$(printf '%s\n' "$out" | grep -m1 '^SKIPPED=')"
+check_absent "case 12: the deferred test is not reported as SKIP=" \
+    "test-gamma-skips.sh" "$out"
+
+# Repeatable: any glob matching wins.
+out="$(bash "$RUNNER" --root "$SCOPEROOT" --only 'alpha-plugin/*' --only '*/hooks/test-*.sh' 2>&1)"
+rc=$?
+
+check "case 12: two globs select the union" "TOTAL=2" \
+    "$(printf '%s\n' "$out" | grep -m1 '^TOTAL=')"
+check "case 12: both globs are reported" "SCOPE_PATTERN_COUNT=2" \
+    "$(printf '%s\n' "$out" | grep -m1 '^SCOPE_PATTERN_COUNT=')"
+check "case 12: the second glob is echoed back" "SCOPE_PATTERN_2=*/hooks/test-*.sh" \
+    "$(printf '%s\n' "$out" | grep -m1 '^SCOPE_PATTERN_2=')"
+check_contains "case 12: glob 1 selected its test" \
+    "PASS=./alpha-plugin/skills/one/scripts/tests/test-alpha.sh" "$out"
+check_contains "case 12: glob 2 selected its test" \
+    "PASS=./beta-plugin/hooks/test-beta-hook.sh" "$out"
+check_absent "case 12: a sibling of glob 2's plugin is still excluded" \
+    "test-beta.sh" "$out"
+check "case 12: the union run is clean" "0" "$rc"
+
+# `*` crosses `/` (plain `case` glob) — the documented semantics the
+# plugin-pr-checks consumer relies on to name a whole class of suite.
+out="$(bash "$RUNNER" --root "$SCOPEROOT" --only '*-plugin/hooks/test-*.sh' 2>&1)"
+check "case 12: a cross-directory glob selects the hook suites" "TOTAL=1" \
+    "$(printf '%s\n' "$out" | grep -m1 '^TOTAL=')"
+check_contains "case 12: and it is the hook suite" \
+    "PASS=./beta-plugin/hooks/test-beta-hook.sh" "$out"
+
+# ---------------------------------------------------------------------------
+# CASE 13 — a scope that matches NOTHING is loud, never a bare pass
+#
+# This is the anti-mass-SKIP guard. A scoped call that selects zero suites is a
+# caller misfire (a typo'd glob, a plugin that moved), which is a stronger
+# condition than the greenfield empty corpus of CASE 6 — the caller named the
+# scope explicitly. It must not be reachable as exit 0 by any reading.
+# ---------------------------------------------------------------------------
+out="$(bash "$RUNNER" --root "$SCOPEROOT" --only 'no-such-plugin/*' 2>&1)"
+rc=$?
+
+check "case 13: a scope matching nothing fails the run" "1" "$rc"
+check "case 13: scanning nothing is stated explicitly" "SCANNED_EMPTY=true" \
+    "$(printf '%s\n' "$out" | grep -m1 '^SCANNED_EMPTY=')"
+check "case 13: nothing ran" "TOTAL=0" \
+    "$(printf '%s\n' "$out" | grep -m1 '^TOTAL=')"
+check "case 13: it is an ERROR, not the greenfield WARN" "STATUS=ERROR" \
+    "$(printf '%s\n' "$out" | grep -m1 '^STATUS=')"
+check_contains "case 13: the misfire is named by type" \
+    "TYPE=scope_matched_nothing" "$out"
+check_absent "case 13: nothing is reported as having passed" "PASS=./" "$out"
+# The discriminator: a scope misfire and a discovery collapse both yield
+# TOTAL=0, and they need different fixes. DISCOVERED= tells them apart.
+check "case 13: discovery is reported, so a misfire is not a collapse" "DISCOVERED=5" \
+    "$(printf '%s\n' "$out" | grep -m1 '^DISCOVERED=')"
+check_contains "case 13: the issue row carries the discovery count" \
+    "TYPE=scope_matched_nothing DISCOVERED=5" "$out"
+
+# ---------------------------------------------------------------------------
+# CASE 13b — EVERY glob must match, not just one of them
+#
+# The aggregate "did anything match?" guard of CASE 13 is not sufficient. With
+# one live glob and one stale one, the stale glob was silently ignored and the
+# run reported STATUS=OK / exit 0. That is strictly WEAKER than the hand-written
+# `run: bash scripts/tests/test-foo.sh` steps this scoping replaced, which died
+# loudly (exit 127) the moment a test was renamed.
+#
+# The failure mode it enables is the worst one available to a REQUIRED check:
+# rename a test, and it silently stops running while the check stays green. So
+# the guard is per-pattern, and the load-bearing assertion is that a run with a
+# PASSING test alongside a stale glob still fails.
+# ---------------------------------------------------------------------------
+out="$(bash "$RUNNER" --root "$SCOPEROOT" \
+    --only '*/skills/one/scripts/tests/test-alpha.sh' \
+    --only 'scripts/tests/test-RENAMED-AWAY.sh' 2>&1)"
+rc=$?
+
+check "case 13b: one stale glob fails the run even though another matched" "1" "$rc"
+check "case 13b: it is an ERROR" "STATUS=ERROR" \
+    "$(printf '%s\n' "$out" | grep -m1 '^STATUS=')"
+check_contains "case 13b: the misfire is named per-pattern" \
+    "TYPE=scope_pattern_matched_nothing" "$out"
+check_contains "case 13b: the offending glob is named" \
+    "PATTERN=scripts/tests/test-RENAMED-AWAY.sh" "$out"
+# The live glob really did run: this is not "everything failed".
+check "case 13b: the matching test still ran" "TOTAL=1" \
+    "$(printf '%s\n' "$out" | grep -m1 '^TOTAL=')"
+check "case 13b: and it passed" "PASSED=1" \
+    "$(printf '%s\n' "$out" | grep -m1 '^PASSED=')"
+# Per-pattern accounting is visible, so a reader can see WHICH glob died.
+check "case 13b: the live glob reports its match count" "SCOPE_PATTERN_1_MATCHED=1" \
+    "$(printf '%s\n' "$out" | grep -m1 '^SCOPE_PATTERN_1_MATCHED=')"
+check "case 13b: the stale glob reports zero" "SCOPE_PATTERN_2_MATCHED=0" \
+    "$(printf '%s\n' "$out" | grep -m1 '^SCOPE_PATTERN_2_MATCHED=')"
+# It is NOT the aggregate misfire — that one only fires when TOTAL=0.
+check_absent "case 13b: it is not misreported as the aggregate misfire" \
+    "TYPE=scope_matched_nothing DISCOVERED" "$out"
+
+# Guard integrity: all-live globs must still pass, or the rule is just
+# "scoping always fails".
+out="$(bash "$RUNNER" --root "$SCOPEROOT" \
+    --only '*/skills/one/scripts/tests/test-alpha.sh' \
+    --only 'scripts/tests/test-root-guard.sh' 2>&1)"
+rc=$?
+check "case 13b: two live globs still pass" "0" "$rc"
+check "case 13b: and report OK" "STATUS=OK" \
+    "$(printf '%s\n' "$out" | grep -m1 '^STATUS=')"
+check "case 13b: both ran" "TOTAL=2" \
+    "$(printf '%s\n' "$out" | grep -m1 '^TOTAL=')"
+
+# A required-manifest entry must NOT count as a match. in_scope() is called over
+# the manifest too, so a naive counter would let a manifest declaration mark a
+# glob "hit" and mask exactly the stale glob this case exists to catch.
+printf '%s\n' 'scripts/tests/test-RENAMED-AWAY.sh' > "${SCOPEROOT}/scripts/required-to-run-tests.txt"
+out="$(bash "$RUNNER" --root "$SCOPEROOT" \
+    --only '*/skills/one/scripts/tests/test-alpha.sh' \
+    --only 'scripts/tests/test-RENAMED-AWAY.sh' 2>&1)"
+rc=$?
+check "case 13b: a manifest entry does not mask a stale glob" "1" "$rc"
+check_contains "case 13b: still named per-pattern with the manifest present" \
+    "TYPE=scope_pattern_matched_nothing" "$out"
+rm -f "${SCOPEROOT}/scripts/required-to-run-tests.txt"
+
+# Guard integrity, the other direction: the ERROR belongs to the SCOPED caller.
+# An UNSCOPED empty corpus keeps its greenfield-safe WARN / exit 0 (CASE 6's
+# contract), so the new rule cannot have been implemented as "TOTAL=0 is fatal".
+out="$(bash "$RUNNER" --root "$EMPTY" 2>&1)"
+rc=$?
+check "case 13: an unscoped empty corpus is still greenfield-safe" "0" "$rc"
+check "case 13: and still WARNs rather than ERRORing" "STATUS=WARN" \
+    "$(printf '%s\n' "$out" | grep -m1 '^STATUS=')"
+
+# ...while a scoped run against that same empty tree is a misfire.
+out="$(bash "$RUNNER" --root "$EMPTY" --only 'anything/*' 2>&1)"
+rc=$?
+check "case 13: a scoped run over an empty tree is a misfire" "1" "$rc"
+check "case 13: with discovery reported as genuinely empty" "DISCOVERED=0" \
+    "$(printf '%s\n' "$out" | grep -m1 '^DISCOVERED=')"
+
+# ---------------------------------------------------------------------------
+# CASE 14 — required-test accounting under a scope
+#
+# The documented contract: a required test OUTSIDE the scope is DEFERRED — not
+# run, not counted as skipped, no violation — and the output says so via
+# REQUIRED_IN_SCOPE= / REQUIRED_OUT_OF_SCOPE=. INSIDE the scope the ratchet
+# keeps its full teeth.
+#
+# Both halves are asserted. Without the teeth half, a "fix" that simply
+# disabled required accounting whenever --only was passed would pass the
+# deferral half and silently drop the ratchet.
+# ---------------------------------------------------------------------------
+REQ_SCOPE="${WORK}/required-scope.txt"
+{
+    echo "alpha-plugin/skills/one/scripts/tests/test-alpha.sh"
+    echo "gamma-plugin/skills/three/scripts/tests/test-gamma-skips.sh"
+} > "$REQ_SCOPE"
+
+# (a) The required test that SKIPs is OUT of scope → deferred, not a violation.
+out="$(bash "$RUNNER" --root "$SCOPEROOT" --required-file "$REQ_SCOPE" --only 'alpha-plugin/*' 2>&1)"
+rc=$?
+
+check "case 14a: an out-of-scope required test does not fail the run" "0" "$rc"
+check "case 14a: no violation is raised for it" "REQUIRED_VIOLATIONS=0" \
+    "$(printf '%s\n' "$out" | grep -m1 '^REQUIRED_VIOLATIONS=')"
+check_absent "case 14a: it is not reported as skipped" "required_test_skipped" "$out"
+check_absent "case 14a: nor as missing" "required_test_missing" "$out"
+check "case 14a: the full manifest size is still reported" "REQUIRED_DECLARED=2" \
+    "$(printf '%s\n' "$out" | grep -m1 '^REQUIRED_DECLARED=')"
+check "case 14a: the output states how much of it was in scope" "REQUIRED_IN_SCOPE=1" \
+    "$(printf '%s\n' "$out" | grep -m1 '^REQUIRED_IN_SCOPE=')"
+check "case 14a: and how much was deferred" "REQUIRED_OUT_OF_SCOPE=1" \
+    "$(printf '%s\n' "$out" | grep -m1 '^REQUIRED_OUT_OF_SCOPE=')"
+
+# (b) TEETH: the same required test, now IN scope, still fails the run.
+out="$(bash "$RUNNER" --root "$SCOPEROOT" --required-file "$REQ_SCOPE" --only 'gamma-plugin/*' 2>&1)"
+rc=$?
+
+check "case 14b: an in-scope required test that skips still fails" "1" "$rc"
+check "case 14b: STATUS still escalates to ERROR" "STATUS=ERROR" \
+    "$(printf '%s\n' "$out" | grep -m1 '^STATUS=')"
+check "case 14b: the violation is counted" "REQUIRED_VIOLATIONS=1" \
+    "$(printf '%s\n' "$out" | grep -m1 '^REQUIRED_VIOLATIONS=')"
+check_contains "case 14b: and names the test" \
+    "TYPE=required_test_skipped TEST=gamma-plugin/skills/three/scripts/tests/test-gamma-skips.sh" "$out"
+check "case 14b: the deferred sibling is still accounted for" "REQUIRED_OUT_OF_SCOPE=1" \
+    "$(printf '%s\n' "$out" | grep -m1 '^REQUIRED_OUT_OF_SCOPE=')"
+
+# (c) TEETH: manifest drift INSIDE the scope is still drift.
+REQ_SCOPE_DRIFT="${WORK}/required-scope-drift.txt"
+echo "alpha-plugin/skills/one/scripts/tests/test-renamed-away.sh" > "$REQ_SCOPE_DRIFT"
+
+out="$(bash "$RUNNER" --root "$SCOPEROOT" --required-file "$REQ_SCOPE_DRIFT" --only 'alpha-plugin/*' 2>&1)"
+rc=$?
+check "case 14c: an in-scope stale manifest entry still fails" "1" "$rc"
+check_contains "case 14c: reported as drift" \
+    "TYPE=required_test_missing TEST=alpha-plugin/skills/one/scripts/tests/test-renamed-away.sh" "$out"
+check "case 14c: it counted as in scope" "REQUIRED_IN_SCOPE=1" \
+    "$(printf '%s\n' "$out" | grep -m1 '^REQUIRED_IN_SCOPE=')"
+
+# (d) The same stale entry OUTSIDE the scope is deferred, not drift — otherwise
+#     every scoped run would be a false ERROR over paths it never looked at.
+out="$(bash "$RUNNER" --root "$SCOPEROOT" --required-file "$REQ_SCOPE_DRIFT" --only 'beta-plugin/*' 2>&1)"
+rc=$?
+check "case 14d: an out-of-scope stale entry does not fail the run" "0" "$rc"
+check_absent "case 14d: and is not reported as drift" "required_test_missing" "$out"
+check "case 14d: it is accounted for as deferred" "REQUIRED_OUT_OF_SCOPE=1" \
+    "$(printf '%s\n' "$out" | grep -m1 '^REQUIRED_OUT_OF_SCOPE=')"
+check "case 14d: with nothing claimed as in scope" "REQUIRED_IN_SCOPE=0" \
+    "$(printf '%s\n' "$out" | grep -m1 '^REQUIRED_IN_SCOPE=')"
+
+# (e) Guard integrity: unscoped, the whole manifest is enforced exactly as before.
+out="$(bash "$RUNNER" --root "$SCOPEROOT" --required-file "$REQ_SCOPE" 2>&1)"
+rc=$?
+check "case 14e: unscoped, the skipping required test still fails the run" "1" "$rc"
+check "case 14e: the whole manifest is in scope" "REQUIRED_IN_SCOPE=2" \
+    "$(printf '%s\n' "$out" | grep -m1 '^REQUIRED_IN_SCOPE=')"
+check "case 14e: nothing is deferred" "REQUIRED_OUT_OF_SCOPE=0" \
+    "$(printf '%s\n' "$out" | grep -m1 '^REQUIRED_OUT_OF_SCOPE=')"
+
+# ---------------------------------------------------------------------------
+# CASE 15 — malformed scope arguments are rejected, never swallowed (#2057)
+# ---------------------------------------------------------------------------
+out="$(bash "$RUNNER" --root "$SCOPEROOT" --onlyy 'alpha-plugin/*' 2>&1)"
+rc=$?
+check "case 15: a misspelled --only exits 2" "2" "$rc"
+check_contains "case 15: the misspelled flag is named" "--onlyy" "$out"
+check_absent "case 15: nothing was scanned" "TOTAL=" "$out"
+
+out="$(bash "$RUNNER" --root "$SCOPEROOT" --only 2>&1)"
+rc=$?
+check "case 15: --only with no value exits 2" "2" "$rc"
+check_contains "case 15: the missing value is named" "--only needs a value" "$out"
+check_absent "case 15: nothing was scanned for a valueless --only" "TOTAL=" "$out"
+
+# An empty glob matches nothing, which would masquerade as a scope misfire
+# rather than the argument error it is. It must be rejected at parse time.
+out="$(bash "$RUNNER" --root "$SCOPEROOT" --only '' 2>&1)"
+rc=$?
+check "case 15: an empty --only glob exits 2" "2" "$rc"
+check_contains "case 15: and says the glob must be non-empty" "non-empty glob" "$out"
+check_absent "case 15: an empty glob is not reported as a scope misfire" \
+    "scope_matched_nothing" "$out"
+
+# ---------------------------------------------------------------------------
+# CASE 16 — the UNSCOPED default is unchanged
+#
+# Every assertion in CASES 1-11 already runs unscoped, so the behavioural
+# contract is covered. What is pinned here is that the new keys report the
+# no-scope state honestly rather than being emitted only when --only is passed
+# (a consumer branching on SCOPED= must be able to read it from every run).
+# ---------------------------------------------------------------------------
+out="$(bash "$RUNNER" --root "$SCOPEROOT" --required-file "$REQ_SCOPE" 2>&1)"
+
+check "case 16: every discovered test runs" "TOTAL=5" \
+    "$(printf '%s\n' "$out" | grep -m1 '^TOTAL=')"
+check "case 16: TOTAL equals DISCOVERED when unscoped" "DISCOVERED=5" \
+    "$(printf '%s\n' "$out" | grep -m1 '^DISCOVERED=')"
+check "case 16: the run states it was not scoped" "SCOPED=false" \
+    "$(printf '%s\n' "$out" | grep -m1 '^SCOPED=')"
+check "case 16: no globs are reported" "SCOPE_PATTERN_COUNT=0" \
+    "$(printf '%s\n' "$out" | grep -m1 '^SCOPE_PATTERN_COUNT=')"
+check_absent "case 16: and none are echoed back" "SCOPE_PATTERN_1=" "$out"
+check "case 16: nothing is excluded" "OUT_OF_SCOPE=0" \
+    "$(printf '%s\n' "$out" | grep -m1 '^OUT_OF_SCOPE=')"
+check "case 16: the skipping test is still classified as a skip" "SKIPPED=1" \
+    "$(printf '%s\n' "$out" | grep -m1 '^SKIPPED=')"
+check "case 16: and the passing ones still pass" "PASSED=4" \
+    "$(printf '%s\n' "$out" | grep -m1 '^PASSED=')"
+
 echo "=== SUMMARY ==="
 echo "PASS_COUNT=${pass}"
 echo "FAIL_COUNT=${fail}"

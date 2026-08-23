@@ -1,0 +1,181 @@
+name: "Script to issue"
+description: >-
+  Provision an audit label, guard against a duplicate open issue, optionally run
+  an audit script, and file one issue from its stdout. Extracted from the seven
+  copies of this skeleton across the scheduled-audit workflows.
+
+# ---------------------------------------------------------------------------
+# Two invocation modes:
+#
+#   Guard-only  — pass `label` (plus `color`/`description`). The action
+#                 provisions the label and sets the `exists` output. Callers
+#                 that interleave their own steps (a Claude audit, a fleet
+#                 clone) gate those steps on `steps.<id>.outputs.exists`.
+#
+#   Full        — additionally pass `script` and `title`. The action runs the
+#                 script when no open issue exists and files one issue from its
+#                 stdout. An empty stdout files nothing: every audit script here
+#                 signals "clean" by emitting nothing, and that contract is what
+#                 keeps a clean sweep from opening an empty issue.
+#
+# A caller may invoke the action twice (guard-only, then full) when it needs its
+# own steps in between. The second call re-runs the duplicate guard, which is
+# harmless and narrows the check-then-create window rather than widening it.
+# ---------------------------------------------------------------------------
+
+inputs:
+  label:
+    description: >-
+      The audit's own label. Doubles as the duplicate-issue key: the guard looks
+      for an open issue carrying exactly this label.
+    required: true
+  color:
+    description: "Hex colour (no leading #) for `gh label create`."
+    required: false
+    default: ''
+  description:
+    description: "Description for `gh label create`."
+    required: false
+    default: ''
+  force:
+    description: >-
+      'true' (default): force the label into existence with
+      `gh label create --force` before anything else. `--force` is
+      create-or-update and exits 0, so provisioning is idempotent while a real
+      auth failure still fails the step.
+
+      'false': skip provisioning entirely, because the CALLER provisions this
+      label itself. Provisioning belongs next to the attach site: when Claude
+      runs `gh issue create --label` from inside a workflow's prompt, the attach
+      site is in the workflow file, so the `gh label create` must be there too —
+      that is the pairing `scripts/check-workflow-labels.sh` verifies per file.
+      Never set 'false' without a `gh label create <label> --force` step in the
+      calling workflow.
+    required: false
+    default: 'true'
+  script:
+    description: >-
+      Shell command whose stdout becomes the issue body. Empty means guard-only
+      mode. Run with `bash -eo pipefail -c`, in the workflow workspace, so it
+      sees the same shell options and environment as an inline `run:` step.
+    required: false
+    default: ''
+  title:
+    description: >-
+      Issue title. Two placeholders are substituted: `{date}` -> UTC %Y-%m-%d,
+      `{month}` -> UTC %Y-%m. Required whenever `script` is set.
+    required: false
+    default: ''
+  extra-labels:
+    description: >-
+      Comma-separated labels appended after `label` on the created issue.
+      Provision these elsewhere — only `label` is created by this action.
+    required: false
+    default: 'maintenance'
+  assignee:
+    description: "Optional `--assignee` for the created issue."
+    required: false
+    default: ''
+
+outputs:
+  exists:
+    description: >-
+      'true' when an open issue already carries `label`. Guard-only callers gate
+      their own steps on this.
+    value: ${{ steps.guard.outputs.exists }}
+
+runs:
+  using: composite
+  steps:
+    # `gh issue create --label` HARD-FAILS on an unknown label, on the last line
+    # of the job, after all the analysis has already succeeded. That is why three
+    # of these audits ran red for five months. `--force` creates-or-updates and
+    # exits 0, so this is idempotent -- but a real auth failure still surfaces
+    # here rather than being swallowed. Do NOT regress this to the older
+    # `2>/dev/null || true` form: that swallows auth failures too, which is
+    # exactly how the breakage stayed invisible.
+    - name: Ensure the audit label exists
+      if: inputs.force != 'false'
+      shell: bash
+      env:
+        # `github.token` is the same installation token as `secrets.GITHUB_TOKEN`;
+        # a composite action has no `secrets` context, so it is referenced here.
+        GH_TOKEN: ${{ github.token }}
+        # Inputs reach the shell as data, never interpolated into the script
+        # body (.claude/rules/github-actions-security.md).
+        LABEL: ${{ inputs.label }}
+        COLOR: ${{ inputs.color }}
+        DESCRIPTION: ${{ inputs.description }}
+      run: |
+        ARGS=()
+        if [ -n "$COLOR" ]; then ARGS+=(--color "$COLOR"); fi
+        if [ -n "$DESCRIPTION" ]; then ARGS+=(--description "$DESCRIPTION"); fi
+        gh label create "$LABEL" --repo "$GITHUB_REPOSITORY" "${ARGS[@]}" --force
+
+    - name: Check for existing open issue
+      id: guard
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        LABEL: ${{ inputs.label }}
+      run: |
+        EXISTING=$(gh issue list --label "$LABEL" --state open --json number --jq 'length')
+        echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+    # The body is transported as a FILE under $RUNNER_TEMP, not through
+    # GITHUB_OUTPUT. A heredoc-delimited GITHUB_OUTPUT value breaks whenever the
+    # captured text happens to contain the delimiter line, and these bodies are
+    # assembled from third-party-authored repo content. A file has no delimiter
+    # to collide with, so the defensive-sentinel question does not arise here.
+    - name: Run the audit script
+      id: run
+      if: inputs.script != '' && steps.guard.outputs.exists == 'false'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        SCRIPT: ${{ inputs.script }}
+      run: |
+        BODY_FILE="${RUNNER_TEMP}/script-to-issue-body.md"
+        bash -eo pipefail -c "$SCRIPT" > "$BODY_FILE"
+        if [ -s "$BODY_FILE" ]; then
+          echo "has_body=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "has_body=false" >> "$GITHUB_OUTPUT"
+          echo "audit script emitted nothing — clean sweep, no issue filed"
+        fi
+
+    - name: Create the issue
+      if: >-
+        inputs.script != '' && steps.guard.outputs.exists == 'false'
+        && steps.run.outputs.has_body == 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        LABEL: ${{ inputs.label }}
+        EXTRA_LABELS: ${{ inputs.extra-labels }}
+        ASSIGNEE: ${{ inputs.assignee }}
+        TITLE_TEMPLATE: ${{ inputs.title }}
+      run: |
+        if [ -z "$TITLE_TEMPLATE" ]; then
+          echo '::error::script-to-issue: script was set but title was empty'
+          exit 1
+        fi
+        TITLE="${TITLE_TEMPLATE//\{date\}/$(date -u +%Y-%m-%d)}"
+        TITLE="${TITLE//\{month\}/$(date -u +%Y-%m)}"
+
+        LABELS="$LABEL"
+        if [ -n "$EXTRA_LABELS" ]; then LABELS="${LABEL},${EXTRA_LABELS}"; fi
+
+        ARGS=()
+        if [ -n "$ASSIGNEE" ]; then ARGS+=(--assignee "$ASSIGNEE"); fi
+
+        # This invocation MUST begin with the literal `gh issue create`.
+        # `Bash(gh issue create *)` is a PREFIX grant, so a command that starts
+        # with a `VAR=$(...)` assignment matches no grant and is denied. Every
+        # variable above is therefore computed on its own earlier line.
+        gh issue create \
+          --repo "$GITHUB_REPOSITORY" \
+          --title "$TITLE" \
+          --label "$LABELS" \
+          --body-file "${RUNNER_TEMP}/script-to-issue-body.md" \
+          "${ARGS[@]}"
