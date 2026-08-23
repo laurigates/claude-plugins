@@ -1,12 +1,23 @@
 # Code owners for CI-integrity surfaces.
 #
-# Required by `.claude/rules/github-actions-security.md` checklist item 7:
-# workflow edits should require review from a designated owner, because a
+# Rationale (`.claude/rules/github-actions-security.md` checklist item 7): a
 # workflow change can grant itself permissions, exfiltrate secrets, or disable
-# the very gates that would catch it.
+# the very gates that would catch it, so those paths want a named owner.
 #
-# NOTE: this file only has teeth once branch protection on `main` enables
-# "Require review from Code Owners". Adding the file alone changes nothing.
+# WHAT THIS FILE DOES HERE: it assigns ownership and makes GitHub auto-request
+# review from @laurigates on a PR touching these paths. That is the whole
+# effect, and it is the intended one.
+#
+# "Require review from Code Owners" on `main` is deliberately OFF, and should
+# stay off while this repo has a single maintainer. GitHub does not let a PR
+# author's own approval satisfy the code-owner requirement, and @laurigates is
+# both the sole owner here and the author of nearly every PR -- so enabling it
+# would mean every PR needs a second reviewer who does not exist, or an admin
+# bypass on each merge. That converts a review aid into a merge block without
+# adding a reviewer.
+#
+# Revisit when a second maintainer (or a bot account that can approve) is added
+# to the owner list: at that point the setting starts gating something real.
 
 # Everything, as the backstop.
 *                           @laurigates

@@ -208,30 +208,6 @@ permissions:
   pull-requests: write   # Comments only, no commits
 ```
 
-### Commit Security
-
-**Automatic Commit Signing**:
-```yaml
-# Commits are automatically signed by Claude Code
-permissions:
-  contents: write  # Enables signed commits
-
-# Verify commit signature
-- run: git verify-commit HEAD
-```
-
-**Commit Verification**:
-```bash
-# Check commit signature
-git log --show-signature
-
-# Verify specific commit
-git verify-commit <commit-sha>
-
-# Check author
-git log --format='%an <%ae>' HEAD^..HEAD
-```
-
 ### Script Injection (Untrusted Workflow Input)
 
 Distinct from *prompt* injection below. Any run-context value an external user
@@ -332,94 +308,6 @@ jobs:
 See `.claude/rules/github-actions-security.md` for the full `pull_request_target`
 guidance and the rest of the secure-use checklist.
 
-## Security Checklist
-
-### Pre-Deployment
-- [ ] All credentials use GitHub secrets
-- [ ] Explicit `permissions:` block, read-only default + per-job escalation
-- [ ] Repo default `GITHUB_TOKEN` permission set to read-only
-- [ ] Untrusted run-context values pass through an `env:` var (no `${{ … }}` in `run:`)
-- [ ] Third-party actions SHA-pinned (Renovate-managed — see `version-pinning.md`)
-- [ ] `/.github/workflows/` listed in `.github/CODEOWNERS`
-- [ ] Actions blocked from creating/approving PRs unless a workflow needs it
-- [ ] Input validation implemented
-- [ ] Branch protection rules enabled
-- [ ] Security scanning enabled
-
-### Monitoring
-- [ ] Workflow logs reviewed regularly
-- [ ] Unusual activity monitored
-- [ ] API usage tracked
-- [ ] Failed authentication attempts logged
-- [ ] Commit signatures verified
-
-### Incident Response
-- [ ] Secret rotation procedure documented
-- [ ] Access revocation process defined
-- [ ] Audit trail maintained
-- [ ] Security contact established
-- [ ] Recovery plan documented
-
-## Troubleshooting
-
-### Authentication Failures
-```bash
-# Verify secret exists
-# Settings → Secrets and variables → Actions
-
-# Check secret name matches workflow
-anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-
-# Validate API key format
-# Should start with: sk-ant-api03-
-
-# Test API key locally
-curl https://api.anthropic.com/v1/messages \
-  -H "x-api-key: $ANTHROPIC_API_KEY" \
-  -H "anthropic-version: 2023-06-01" \
-  -d '{"model":"claude-3-5-sonnet-20241022","max_tokens":10,"messages":[{"role":"user","content":"test"}]}'
-```
-
-### Permission Denied Errors
-```yaml
-# Ensure proper permissions
-permissions:
-  contents: write       # For code changes
-  pull-requests: write  # For PR operations
-  issues: write         # For issue operations
-  actions: read         # For CI/CD access
-
-# Check branch protection rules
-# Settings → Branches → Branch protection rules
-
-# Verify GitHub App installation
-# Settings → Installations → Claude
-```
-
-### AWS Bedrock Issues
-```bash
-# Verify IAM role
-aws sts get-caller-identity
-
-# Check Bedrock access
-aws bedrock list-foundation-models --region us-east-1
-
-# Test OIDC configuration
-# Ensure trust policy includes GitHub OIDC provider
-```
-
-### Vertex AI Issues
-```bash
-# Verify service account
-gcloud auth list
-
-# Check Vertex AI permissions
-gcloud projects get-iam-policy $GCP_PROJECT_ID
-
-# Test Vertex AI access
-gcloud ai models list --region=us-central1
-```
-
 ## Quick Reference
 
 ### Authentication Setup Commands
@@ -459,5 +347,7 @@ git verify-commit HEAD
 | Anthropic API | `ANTHROPIC_API_KEY` | - |
 | AWS Bedrock | `AWS_ROLE_ARN` | `AWS_REGION` |
 | Vertex AI | `GCP_CREDENTIALS`, `GCP_PROJECT_ID` | `VERTEX_REGION` |
+
+For commit-signature verification, the full security checklist (including CODEOWNERS guidance), and per-provider troubleshooting, see [REFERENCE.md](REFERENCE.md).
 
 For workflow design patterns, see the claude-code-github-workflows skill. For MCP server configuration, see the github-actions-mcp-config skill.
