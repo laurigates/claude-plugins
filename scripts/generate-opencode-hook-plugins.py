@@ -2,10 +2,11 @@
 """Generate OpenCode JS plugins from Claude Code plugin hooks.json manifests.
 
 Part of the OpenCode export pipeline (scripts/export-opencode.sh, issue #1605).
-rulesync cannot export marketplace plugin hooks — it reads the consumer
-.claude/settings.json surface, passes ${CLAUDE_PLUGIN_ROOT} through literally,
-and never copies the referenced scripts (dyoshikawa/rulesync#1317) — so this
-generator projects them directly:
+OpenCode has no Claude Code hook surface, so hooks have to be projected into its
+plugin API. A converter was never an option: rulesync (retired in #2094) read
+the consumer .claude/settings.json surface rather than plugin manifests, passed
+${CLAUDE_PLUGIN_ROOT} through literally, and never copied the referenced scripts
+(dyoshikawa/rulesync#1317). This generator projects them directly:
 
   <plugin>/hooks.json  ->  <out>/plugins/<plugin>-hooks.js
   <plugin>/hooks/*.sh  ->  <out>/hook-scripts/<plugin>/hooks/*.sh  (referenced scripts only)
@@ -25,7 +26,8 @@ Skipped, loudly (reported on stdout and in the generated JS header):
   - command strings not shaped `bash ${CLAUDE_PLUGIN_ROOT}/hooks/<script>.sh`.
 
 A missing script at runtime FAILS OPEN (console.error + allow) — deliberately
-NOT the rulesync skeleton's throw-ENOENT-on-every-matched-call failure mode.
+NOT the throw-ENOENT-on-every-matched-call failure mode a path-only projection
+produces (what rulesync's output did, per the note above).
 
 Usage: generate-opencode-hook-plugins.py <repo_root> <out_dir>
 """

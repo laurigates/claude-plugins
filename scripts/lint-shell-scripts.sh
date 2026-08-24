@@ -44,7 +44,7 @@ info() {
 }
 
 # Find all .sh files. Prune (don't descend into) .git, node_modules, vendor,
-# the gitignored dist/ rulesync build output, and .claude/worktrees/ agent
+# the gitignored dist/ OpenCode export build output, and .claude/worktrees/ agent
 # clones — scanning those re-lints generated output and sibling checkouts
 # (the #1492/#1548 worktrees-prune lesson) and bloats a repo-wide gate. The
 # dist/worktrees prunes are anchored to "$ROOT_DIR/…" (not a bare glob) so the

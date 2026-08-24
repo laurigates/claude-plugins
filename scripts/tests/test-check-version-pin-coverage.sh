@@ -19,7 +19,7 @@
 #      .github/workflows/ subtree and package.json — already reached by the
 #      built-in '(^|/)'-prefixed patterns — are not; and the finding clears when
 #      renovate.json is widened, proving the guard reads the config
-#   H. the gitignored dist/ rulesync build output is pruned, not scanned
+#   H. the gitignored dist/ OpenCode export build output is pruned, not scanned
 #      (#2214) — with a guard-integrity half proving the same defective pin at
 #      a real path is still reported
 #   J. trigger gap (#2285): the guard body is whole-repo, so the invariant that
@@ -237,7 +237,7 @@ assert "--strict should exit 0 when both pins are present" \
   "$([ "$good_rc" -eq 0 ] && echo true || echo false)"
 
 echo "=== TEST H: dist/ build output is pruned, not scanned (#2214) ==="
-# dist/ is the GITIGNORED rulesync export — a generated copy of the same skill
+# dist/ is the GITIGNORED OpenCode export — a generated copy of the same skill
 # tree. A finding there is unactionable by construction (the fix site is always
 # the source skill, and the next `just export-opencode` overwrites it), and a
 # stale local dist/ hard-ERRORs every local commit while CI — which never has a

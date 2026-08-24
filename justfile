@@ -221,7 +221,7 @@ pi-adapter-unregister:
     echo "  $ext"
 
 ####################
-# OpenCode export
+# OpenCode (adapter + agents/hooks export)
 ####################
 
 # Defaults are overridable via environment or `just opencode_model=… <recipe>`.
@@ -234,18 +234,20 @@ opencode_provider := "mlx-local"
 # Full verified menu (incl. opt-in + OCX plugins) in docs/opencode-export.md.
 opencode_plugins := env_var_or_default("OPENCODE_PLUGINS", "@openspoon/subtask2 opencode-pty @tarquinen/opencode-dcp")
 
-# Project skills + subagents to OpenCode format via rulesync (output: dist/opencode)
+# Skills are NOT exported — they reach OpenCode via the adapter (ADR-0022, #2094).
+# Project subagents + hooks to OpenCode format (output: dist/opencode)
 [group: "opencode"]
 export-opencode *args:
     ./scripts/export-opencode.sh {{args}}
 
-# Install exported agents + skills additively into an OpenCode config dir
-# (default: global ~/.config/opencode; pass `.opencode` for a project install)
+# Additive: the user's own agents/plugins under <target> are preserved.
+# Install exported agents + hook plugins into an OpenCode config dir (default: global)
 [group: "opencode"]
 install-opencode target=opencode_config:
     ./scripts/install-opencode.sh "{{target}}"
 
-# Generate opencode.json + agents/orchestrator.md (non-destructive to existing config)
+# Non-destructive: an existing opencode.json is kept and a .opencode-sample written.
+# Generate opencode.json (provider + skill adapter) + agents/orchestrator.md
 [group: "opencode"]
 configure-opencode target=opencode_config:
     ./scripts/configure-opencode.sh "{{target}}" \
@@ -274,6 +276,92 @@ serve-opencode-model:
 [group: "opencode"]
 install-opencode-ocx target=opencode_config:
     ./scripts/install-opencode-ocx.sh "{{target}}"
+
+# Verify the OpenCode adapter's prerequisites (deterministic, no model call, no cost)
+[group: "adapters"]
+oc-adapter-check target=opencode_config:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ext="{{justfile_directory()}}/adapters/opencode/index.ts"
+    target="{{target}}"
+    target="${target/#\~/$HOME}"
+    echo "=== OPENCODE ADAPTER PREREQS ==="
+    command -v opencode >/dev/null && echo "OPENCODE=$(opencode --version 2>&1 | head -1)" || echo "OPENCODE=MISSING (mise use -g npm:opencode-ai)"
+    [ -f "$ext" ] && echo "PLUGIN=$ext" || echo "PLUGIN=MISSING"
+    [ -d "{{justfile_directory()}}/adapters/node_modules" ] && echo "NODE_MODULES=present" || echo "NODE_MODULES=MISSING (cd adapters && bun install)"
+    cfg="$target/opencode.json"
+    if [ -f "$cfg" ]; then
+        jq -e --arg ext "$ext" '[.plugin // [] | .[] | select(type == "array") | .[0]] | index($ext) != null' "$cfg" >/dev/null \
+            && echo "REGISTERED=true" || echo "REGISTERED=false (just oc-adapter-register)"
+        # Without this the native uncapped <available_skills> block is still
+        # injected and the model sees two competing skill surfaces.
+        [ "$(jq -r '.permission.skill // "unset"' "$cfg")" = "deny" ] \
+            && echo "NATIVE_LISTING=suppressed" || echo "NATIVE_LISTING=ACTIVE (needs permission.skill=deny)"
+    else
+        echo "CONFIG=MISSING ($cfg — just configure-opencode)"
+    fi
+    endpoint="${OLLAMA_ENDPOINT:-http://localhost:11434}"
+    if models="$(curl -s --max-time 3 "$endpoint/api/tags" 2>/dev/null)"; then
+        if grep -q '"name":"nomic-embed-text' <<<"$models"; then
+            echo "EMBED_MODEL=nomic-embed-text (hybrid ranker available)"
+        else
+            echo "EMBED_MODEL=MISSING — ranker degrades to BM25-only (ollama pull nomic-embed-text)"
+        fi
+    else
+        echo "OLLAMA=unreachable at $endpoint — ranker degrades to BM25-only"
+    fi
+
+# `just configure-opencode` already wires the adapter into a config it generates;
+# this is the path for a hand-tuned config the generator refuses to clobber.
+# Register the OpenCode adapter into an existing opencode.json (idempotent, reversible)
+[group: "adapters"]
+oc-adapter-register target=opencode_config:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ext="{{justfile_directory()}}/adapters/opencode/index.ts"
+    target="{{target}}"
+    target="${target/#\~/$HOME}"
+    cfg="$target/opencode.json"
+    mkdir -p "$target"
+    [ -f "$cfg" ] || echo '{}' > "$cfg"
+    if jq -e --arg ext "$ext" '[.plugin // [] | .[] | select(type == "array") | .[0]] | index($ext) != null' "$cfg" >/dev/null; then
+        echo "already registered in $cfg:"
+        echo "  $ext"
+        exit 0
+    fi
+    tmp="$(mktemp "$target/opencode.XXXXXX")"
+    # Both halves land together: the plugin entry serves skills, the deny stops
+    # OpenCode also injecting its own uncapped listing beside it.
+    jq --arg ext "$ext" \
+        '.plugin = ((.plugin // []) + [[$ext, {k: 5, pins: []}]]) | .permission = ((.permission // {}) + {skill: "deny"})' \
+        "$cfg" > "$tmp"
+    mv "$tmp" "$cfg"
+    echo "registered in $cfg:"
+    echo "  $ext"
+    echo "Undo with \`just oc-adapter-unregister\`."
+
+# No-op if it was never registered.
+# Unregister the OpenCode adapter (reverses oc-adapter-register)
+[group: "adapters"]
+oc-adapter-unregister target=opencode_config:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ext="{{justfile_directory()}}/adapters/opencode/index.ts"
+    target="{{target}}"
+    target="${target/#\~/$HOME}"
+    cfg="$target/opencode.json"
+    if [ ! -f "$cfg" ] || ! jq -e --arg ext "$ext" '[.plugin // [] | .[] | select(type == "array") | .[0]] | index($ext) != null' "$cfg" >/dev/null; then
+        echo "not registered in ${cfg} — nothing to do"
+        exit 0
+    fi
+    tmp="$(mktemp "$target/opencode.XXXXXX")"
+    # Drop the deny too, or the model is left with no skill surface at all.
+    jq --arg ext "$ext" \
+        '.plugin = ((.plugin // []) | map(select((type == "array" and .[0] == $ext) | not))) | del(.permission.skill)' \
+        "$cfg" > "$tmp"
+    mv "$tmp" "$cfg"
+    echo "unregistered from $cfg:"
+    echo "  $ext"
 
 ####################
 # pi (pi.dev) export

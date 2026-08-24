@@ -217,7 +217,7 @@ framing_section() {
 # `-path '*/.claude/worktrees/*' -prune` is load-bearing: each agent worktree is
 # a FULL clone of this repo, so an unpruned walk re-scans every bundled harness
 # once per live worktree (#1492 turned 499 real files into 12,768; #1548 hung a
-# session outright). dist/ is the gitignored rulesync build output.
+# session outright). dist/ is the gitignored OpenCode export build output.
 # ---------------------------------------------------------------------------
 #
 # The walk runs from INSIDE ROOT_DIR against RELATIVE paths, then re-absolutises

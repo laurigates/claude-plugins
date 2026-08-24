@@ -16,11 +16,12 @@ ollama). The sibling of [`opencode-export.md`](opencode-export.md) — same goal
 ## Why pi needs almost no pipeline
 
 pi loads Claude Code `SKILL.md` files **unmodified**. Validated on pi 0.80.6:
-pi is *strictly more lenient* than OpenCode/rulesync — it accepts display-name
-`name:` values (`UnoCSS`), unprefixed names (`ground-response`), comma-string
-`allowed-tools`, and extra frontmatter, all of which the OpenCode export's
-`rewrite-skill-name-to-dir.py` / `normalize-skill-allowed-tools.py` layer had to
-rewrite. **None of that normalization is needed for pi.** pi also reads
+pi is *strictly more lenient* than the retired rulesync converter was — it
+accepts display-name `name:` values (`UnoCSS`), unprefixed names
+(`ground-response`), comma-string `allowed-tools`, and extra frontmatter, all of
+which that converter's normalization layer had to rewrite. **None of it was ever
+needed for pi**, and since #2094 none of it runs for OpenCode either — both
+harnesses now read `SKILL.md` in place through the adapter. pi also reads
 `CLAUDE.md` natively and does the same progressive disclosure as Claude Code
 (only `name`+`description` surfaced up front; the body loads on demand via
 `read` / `/skill:name`).
@@ -164,5 +165,5 @@ on exactly that question is what the eval harness measures
 - [`../adapters/README.md`](../adapters/README.md) § pi — the adapter (source of truth for skill discovery)
 - [`../adapters/CUTOVER.md`](../adapters/CUTOVER.md) — the eval gate that authorized retiring the tier installer
 - [`adrs/0022-adapter-over-export-for-foreign-harnesses.md`](adrs/0022-adapter-over-export-for-foreign-harnesses.md) — adapter-over-export decision
-- [`opencode-export.md`](opencode-export.md) — the sibling local-model export (heavier rulesync pipeline)
+- [`opencode-export.md`](opencode-export.md) — the sibling harness: same adapter for skills, plus an agent/hook export pi does not need
 - [pi custom-provider docs](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/custom-provider.md) — upstream `models.json` schema

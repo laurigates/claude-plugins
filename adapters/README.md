@@ -223,8 +223,9 @@ oracle-passes, substring-ranker separation, per-skill token calibration
 111±20%, trigram leakage lint, schema checks, hybrid-integrity guards).
 The #2093/#2094 cutover threshold is frozen only by the local procedure in
 [`CUTOVER.md`](CUTOVER.md), never by CI. `BASELINE_OC_TOKENS_ESTIMATED` is a
-pi-template proxy, uncalibrated — a real OpenCode measurement session is a
-#2094 prerequisite.
+chars/4 proxy over the pi entry template; it was calibrated against OpenCode's
+own listing on 2026-08-24 and reads **+1.4%** high (90.5 proxy vs 89.3
+measured, inside the ±20% band) — see [`CUTOVER.md`](CUTOVER.md) §8.
 
 ## Freezing the cutover threshold
 
@@ -254,8 +255,9 @@ fresh corpus snapshot): `uv run tests/gen-bm25-reference.py`.
   release-please package — `feat(adapters)` commits bump nothing).
 - Not published to npm (`"private": true`); harnesses load the `.ts` source
   from this checkout.
-- Not a replacement for the rulesync/OpenCode export pipeline — that stays
-  authoritative until #2094 executes its documented cutover steps, which the
-  2026-07-22 freeze does **not** supply (its `BASELINE_OC_TOKENS_ESTIMATED`
-  proxy is uncalibrated; see [`CUTOVER.md`](CUTOVER.md) §8). The pi tier
-  installer it *did* replace was removed in #2093.
+- Not a replacement for the OpenCode **agent and hook** export — OpenCode does
+  not auto-load `~/.claude/agents/` and has no hook surface, so
+  `just export-opencode` still projects both. It *is* the replacement for the
+  skill half: the rulesync export was retired in #2094 once the OpenCode token
+  calibration landed ([`CUTOVER.md`](CUTOVER.md) §8), as the pi tier installer
+  was in #2093.

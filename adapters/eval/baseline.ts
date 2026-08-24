@@ -6,11 +6,13 @@
  *
  * - pi baseline: `pi/tiers.yaml` general tier + cherry-picks. Degrades
  *   gracefully (returns null) when the file is absent (post-#2093).
- * - OpenCode baseline: the same `*-plugin/skills/<skill>/SKILL.md` glob
- *   `scripts/export-opencode.sh` uses, computed offline from the checkout —
- *   no rulesync run, no network, no `dist/`. Its membership is trivially
- *   ~100% (whole-corpus, uncurated), which is why the OC comparison is
- *   reachability-at-cost, not reachability-delta.
+ * - OpenCode baseline: the whole-corpus `*-plugin/skills/<skill>/SKILL.md`
+ *   glob the retired rulesync export used, computed offline from the checkout
+ *   — no network, no `dist/`. It is a COUNTERFACTUAL cost baseline, not a
+ *   description of current behaviour: since #2094 nothing copies skills into
+ *   OpenCode. Its membership is trivially ~100% (whole-corpus, uncurated),
+ *   which is why the OC comparison is reachability-at-cost, not
+ *   reachability-delta.
  */
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -85,8 +87,10 @@ export function derivePiBaseline(repoRoot: string): BaselineSet | null {
 }
 
 /**
- * The OpenCode export set: `<repoRoot>/*-plugin/skills/<skill>/SKILL.md`,
- * the glob scripts/export-opencode.sh iterates.
+ * The counterfactual OpenCode flat-install set:
+ * `<repoRoot>/*-plugin/skills/<skill>/SKILL.md`. Retained after #2094 as the
+ * denominator for "what the native listing would have cost", not as a
+ * description of anything the export still produces.
  */
 export function deriveOcBaseline(repoRoot: string): BaselineSet {
   const skills: BaselineSkill[] = [];
@@ -100,28 +104,6 @@ export function deriveOcBaseline(repoRoot: string): BaselineSet {
     }
   }
   return { ids: new Set(skills.map((s) => s.id)), skills };
-}
-
-/**
- * Count the SKILL.md files the export actually produced under
- * dist/opencode/skills — the same accounting export-opencode.sh emits as
- * OUTPUT_SKILLS (`find "$out/skills" -name SKILL.md | wc -l`). Used by the
- * schema meta-test to cross-check the derived OC set. Returns null when
- * dist/ has not been built locally.
- */
-export function countExportedOcSkills(repoRoot: string): number | null {
-  const distSkills = join(repoRoot, "dist", "opencode", "skills");
-  if (!existsSync(distSkills)) return null;
-  let count = 0;
-  const walk = (dir: string) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      const full = join(dir, entry.name);
-      if (entry.isDirectory()) walk(full);
-      else if (entry.name === "SKILL.md") count++;
-    }
-  };
-  walk(distSkills);
-  return count;
 }
 
 /**

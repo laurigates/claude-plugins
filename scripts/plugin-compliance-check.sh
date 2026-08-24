@@ -190,11 +190,12 @@ check_skill_frontmatter() {
     # (16 skills affected before this fix). A single unquoted `[foo]` parses
     # but yields a list instead of a string, also wrong.
     # Regression: a duplicated top-level frontmatter key (e.g. two `modified:`
-    # lines from a date-stamping script that appends instead of replacing)
-    # aborts the OpenCode/rulesync export with "duplicated mapping key".
-    # PyYAML's safe_load silently keeps the last value, so the parse check
-    # below cannot catch it — a SafeLoader subclass that rejects duplicates is
-    # required to match rulesync's (js-yaml) strictness. (just export-opencode)
+    # lines from a date-stamping script that appends instead of replacing).
+    # PyYAML's safe_load silently keeps the LAST value, so the parse check below
+    # cannot catch it — a SafeLoader subclass that rejects duplicates can.
+    # Originally motivated by the rulesync (js-yaml) export aborting on it
+    # (#2094 retired that export); the check stands on its own, because a
+    # silently-dropped frontmatter value is a defect under any parser.
     local yaml_err
     # The closing `)` MUST sit AFTER the `PY` terminator, not on this line:
     # with `... <<'PY' 2>&1 || true)` bash treats the substitution as complete

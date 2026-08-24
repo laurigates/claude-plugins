@@ -132,12 +132,19 @@ while [ $i -lt ${#denylist[@]} ]; do
       printf "  Fix:   %s\n\n" "$fix"
       errors=$((errors + 1))
     done < <(grep -nF "$tool" "$file" || true)
+  # dist/ is the gitignored OpenCode export build output. Since #2094 it no
+  # longer contains skills at all, so any SKILL.md still sitting there is a
+  # stale copy of a source already fixed — an unactionable finding whose fix
+  # site does not exist, and one nothing will ever overwrite. Local-only by
+  # construction (dist/ is never committed, so CI is green either way), the
+  # same shape as #2214. Worktree clones are pruned for the sibling reason.
   done < <(find . -type f \
               \( -name 'SKILL.md' -o -name 'skill.md' -o -name 'REFERENCE.md' \
                  -o -name '*.workflow.js' \
                  -o \( -path './git-repo-agent/src/git_repo_agent/prompts/generated/*' \
                        -name '*.md' \) \) \
               -not -path './.claude/worktrees/*' \
+              -not -path './dist/*' \
               -not -path '*/node_modules/*' \
               -print0)
 

@@ -233,7 +233,7 @@ done < <(find .github/workflows -maxdepth 1 -name '*.yml' -print0 2>/dev/null | 
 # while never incrementing `security_pass`, so the Security Posture score fell as the
 # corpus grew more compliant. Its `find . -path '*/skills/*'` also had no
 # `.claude/worktrees/` or `dist/` prune, so it re-walked every agent worktree clone
-# and the rulesync build output (the #1492 / #1548 / #2214 class) — the >120s runtime
+# and the OpenCode export build output (the #1492 / #1548 / #2214 class) — the >120s runtime
 # and a double count.
 #
 # The real defect worth linting is the opposite one: a `Bash` grant in a skill that
