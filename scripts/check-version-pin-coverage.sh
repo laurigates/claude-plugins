@@ -191,7 +191,7 @@ flush_pending_uses() {
 # with their paths (#1492). The guard only ever audits the real tree.
 #
 # Prune dist/ for the same reason in generated form (#2214): it is the
-# gitignored rulesync build output, so a finding there is unactionable by
+# gitignored OpenCode export build output, so a finding there is unactionable by
 # construction — the fix site is always the source skill, and the next
 # `just export-opencode` overwrites it. A stale local dist/ otherwise hard-ERRORs
 # every local commit while CI (which never sees dist/) stays green. The sibling

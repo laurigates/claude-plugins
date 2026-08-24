@@ -15,12 +15,7 @@ import type { SkillIndex } from "../core/search.ts";
 import { buildIndex } from "../core/search.ts";
 import type { Ranker } from "../core/types.ts";
 import { DEFAULT_K } from "../core/types.ts";
-import {
-  countExportedOcSkills,
-  deriveOcBaseline,
-  derivePiBaseline,
-  listingTokens,
-} from "../eval/baseline.ts";
+import { deriveOcBaseline, derivePiBaseline, listingTokens } from "../eval/baseline.ts";
 import {
   bm25OnlyRanker,
   descriptionSubstringRanker,
@@ -117,22 +112,6 @@ describe("5. schema checks", () => {
       }
     }
     expect(derived).toBe(live);
-  });
-
-  test("dist/ OUTPUT_SKILLS cross-check (informational — dist is a point-in-time artifact, absent in CI)", () => {
-    const exported = countExportedOcSkills(REPO_ROOT);
-    if (exported === null) {
-      console.warn(
-        "dist/opencode absent — OC export cross-check skipped (runs only after `just export-opencode`; CI always skips)",
-      );
-      return;
-    }
-    const derived = deriveOcBaseline(REPO_ROOT).ids.size;
-    if (exported !== derived) {
-      console.warn(
-        `dist/opencode is stale: exported ${exported} vs derived ${derived} — rerun \`just export-opencode\` (informational, not a failure)`,
-      );
-    }
   });
 });
 

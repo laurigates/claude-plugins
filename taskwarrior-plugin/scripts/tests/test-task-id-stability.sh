@@ -166,7 +166,7 @@ regression_log="${repo_root}/.claude/rules/regression-testing.md"
 # walk re-finds the two deliberately-excluded files under every copy of them.
 # Both exclusions below are by ABSOLUTE path, so a copy at a different path
 # defeats them: `.claude/worktrees/<agent>/` (a full clone per agent worktree,
-# incl. OTHER concurrent sessions') and `dist/` (gitignored rulesync export)
+# incl. OTHER concurrent sessions') and `dist/` (gitignored OpenCode export)
 # each carry their own regression-testing.md and their own copy of this test.
 # Invisible in CI, which checks out neither — the #1492 / #1548 / #2214 / #2290
 # class, local-developer-only by construction.

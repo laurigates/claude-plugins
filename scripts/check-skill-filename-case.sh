@@ -5,8 +5,10 @@
 # so a skill stored as lowercase `skill.md` silently fails to load on any
 # case-sensitive filesystem (Linux, CI, contributors on ext4/btrfs). On macOS's
 # case-insensitive APFS the bug is invisible — `SKILL.md` resolves to `skill.md`.
-# 45 skills shipped with the lowercase name before this guard (issue #1606); the
-# same bug also broke the OpenCode export (rulesync matches case-sensitively too).
+# 45 skills shipped with the lowercase name before this guard (issue #1606). It
+# also broke the then-current rulesync OpenCode export, which matched
+# case-sensitively too; that export was retired in #2094, but OpenCode reads
+# SKILL.md natively now — so a lowercase name still fails to load there.
 #
 # Detection uses `git ls-files` rather than `find`, so the result does not depend
 # on the running filesystem's case sensitivity — git reports its stored name.

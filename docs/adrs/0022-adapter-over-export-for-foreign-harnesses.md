@@ -182,7 +182,7 @@ shared discovery core, and the export pipelines are superseded.
 | [#2091](https://github.com/laurigates/claude-plugins/issues/2091) | OpenCode binding (pull-first) | eval vs rulesync baseline |
 | [#2092](https://github.com/laurigates/claude-plugins/issues/2092) | `compatibility` frontmatter sweep | precedes cutovers |
 | [#2093](https://github.com/laurigates/claude-plugins/issues/2093) | Remove pi tier system | gate frozen + PASS (2026-07-22) |
-| [#2094](https://github.com/laurigates/claude-plugins/issues/2094) | Retire rulesync export | gate frozen + PASS; OC token calibration still outstanding |
+| [#2094](https://github.com/laurigates/claude-plugins/issues/2094) | Retire rulesync export | **done** — gate frozen + PASS 2026-07-22; OC token calibration 2026-08-24 (89.3 measured vs 90.5 proxy, +1.4%) |
 
 ## Amendment (2026-07-22) — the cutover gate is tag-pinned and frozen
 
@@ -222,7 +222,7 @@ existed only in an ephemeral scratchpad while shipped source cited them as
   refuted constructions
 - `docs/pi-export.md` — the measured listing-cost data and the original
   "skill-search extension" deferral this ADR supersedes
-- `docs/opencode-export.md` — the rulesync pipeline being retired
+- `docs/opencode-export.md` — the OpenCode surface after the retirement (adapter for skills; agents + hooks still exported)
 - [pi extensions API](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md),
   [pi skills](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/skills.md)
 - [OpenCode plugins](https://opencode.ai/docs/plugins/),

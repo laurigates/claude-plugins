@@ -106,7 +106,7 @@ helper="$script_self_dir/lib/extract-md-elements.py"
 # Collect candidate SKILL.md files. Explicit args win (pre-commit passes changed
 # files); otherwise discover under proj_dir. Both `.claude/worktrees/` (agent
 # worktree clones are full repo copies — #1492 / #1548) and `dist/` (the gitignored
-# rulesync export — #2214) are pruned; scanning either re-counts the same skills.
+# OpenCode export — #2214) are pruned; scanning either re-counts the same skills.
 #
 # Discovery runs from INSIDE proj_dir against RELATIVE paths (#2219). With an
 # absolute base, the bare `*/.claude/worktrees/*` prune fires on the whole tree

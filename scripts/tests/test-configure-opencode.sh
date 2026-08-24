@@ -128,17 +128,69 @@ PY
 )"
 rm -rf "$agentfix"
 
-echo "=== TEST E: empty plugin list → valid empty array ==="
+echo "=== TEST E: empty plugin list → valid array ==="
 emptyfix="$(mktemp -d)"
-bash "$configure" "$emptyfix" --plugins "" >/dev/null
-assert "--plugins '' yields a valid empty plugin array" \
+[ -n "$emptyfix" ] || { echo "mktemp failed" >&2; exit 1; }
+# --no-adapter is what makes the array genuinely empty; without it the adapter
+# entry is always present (that is the #2094 cutover — TEST G pins it).
+bash "$configure" "$emptyfix" --plugins "" --no-adapter >/dev/null
+assert "--plugins '' --no-adapter yields a valid empty plugin array" \
   "$(python3 - "$emptyfix/opencode.json" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
 print("true" if d.get("plugin") == [] else "false")
 PY
 )"
+assert "--no-adapter omits the skill permission deny" \
+  "$(python3 - "$emptyfix/opencode.json" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+print("true" if "skill" not in (d.get("permission") or {}) else "false")
+PY
+)"
 rm -rf "$emptyfix"
+
+echo ""
+echo "=== TEST G: skill-discovery adapter is registered (#2094) ==="
+adapterfix="$(mktemp -d)"
+[ -n "$adapterfix" ] || { echo "mktemp failed" >&2; exit 1; }
+bash "$configure" "$adapterfix" --plugins "" >/dev/null
+# The adapter REPLACES the flattened skill export, so both halves must land:
+# the [path, config] plugin entry AND the native-listing suppression. Either
+# alone is a broken cutover — the entry without the deny double-lists skills,
+# the deny without the entry leaves the model with no skill surface at all.
+assert "adapter entry is a [path, config] tuple pointing at adapters/opencode/index.ts" \
+  "$(python3 - "$adapterfix/opencode.json" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+tuples = [p for p in d.get("plugin", []) if isinstance(p, list)]
+ok = (
+    len(tuples) == 1
+    and tuples[0][0].endswith("/adapters/opencode/index.ts")
+    and isinstance(tuples[0][1], dict)
+    and isinstance(tuples[0][1].get("k"), int)
+    and tuples[0][1].get("pins") == []
+)
+print("true" if ok else "false")
+PY
+)"
+assert "native skill listing is suppressed via permission.skill=deny" \
+  "$(python3 - "$adapterfix/opencode.json" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+print("true" if (d.get("permission") or {}).get("skill") == "deny" else "false")
+PY
+)"
+bash "$configure" "$adapterfix/k" --plugins "" --adapter-k 9 >/dev/null
+assert "--adapter-k overrides the injection budget" \
+  "$(python3 - "$adapterfix/k/opencode.json" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+tuples = [p for p in d.get("plugin", []) if isinstance(p, list)]
+print("true" if tuples and tuples[0][1].get("k") == 9 else "false")
+PY
+)"
+rm -rf "$adapterfix"
 
 echo ""
 echo "=== SUMMARY ==="

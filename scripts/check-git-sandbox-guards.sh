@@ -42,7 +42,7 @@ issue_count=0
 declare -a issues=()
 
 # Collect candidate shell scripts (skip vendored / .git / nested agent worktree
-# clones / the gitignored dist/ rulesync build output — the worktrees + dist
+# clones / the gitignored dist/ OpenCode export build output — the worktrees + dist
 # prune mirrors #1492/#1548 so we scan only the real tree, not N copies of it
 # nor generated exports). The worktrees/dist prunes are anchored to "$ROOT_DIR/…"
 # rather than a bare `*/.claude/worktrees/*`: when the linter itself runs from

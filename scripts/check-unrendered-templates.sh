@@ -91,7 +91,7 @@ while IFS= read -r -d '' plugin_dir; do
 done < <(find . -maxdepth 1 -type d -name '*-plugin' -not -name '.claude-plugin' -print0)
 
 # `.claude/worktrees/` copies are full repo checkouts made by concurrently
-# running isolated agents; `dist/` is gitignored rulesync build output
+# running isolated agents; `dist/` is gitignored OpenCode export build output
 # (#1492 / #1548 / #2214 class).
 skill_files=()
 if [ ${#plugin_dirs[@]} -gt 0 ]; then

@@ -19,6 +19,11 @@ that the eval machinery ran; it never evaluates the cutover threshold.
 hybrid ranker over the 55-task main stratum (commit `8fa66076`). Both cutovers
 are unblocked by a green gate; executing them is separate work.
 
+#2094 carried one further prerequisite — an OpenCode-specific token
+calibration, since `BASELINE_OC_TOKENS_ESTIMATED` was a pi-template proxy.
+**Measured 2026-08-24**: 89.3 tok/skill against a 90.5 proxy (+1.4%), inside
+the ±20% band. See §8.
+
 ## 1. The measurement
 
 ```
@@ -153,10 +158,63 @@ Recorded, not silently deleted (`validate-adversarial-constructions`).
   deferred until the push channel actually has one. (The 2026-07-22 hybrid run
   reproduces the overlap: neg P50 0.0010 vs pos P50 0.0010.)
 
-## 8. Still open for #2094
+## 8. OpenCode token calibration (#2094) — measured 2026-08-24
 
-The `BASELINE_OC_TOKENS_ESTIMATED` figure is a pi-template proxy,
-**uncalibrated** — OpenCode embeds its listing in a different template. A real
-OpenCode measurement session (mirroring the pi 111 tok/skill measurement, with
-its own ±20% calibration assertion) remains a #2094 prerequisite. This freeze
-does not supply it.
+The 2026-07-22 freeze did not supply this; it was the outstanding #2094
+prerequisite. `BASELINE_OC_TOKENS_ESTIMATED` was a pi-template proxy, and
+OpenCode embeds its listing in a different template, so the proxy could have
+been arbitrarily wrong in either direction.
+
+**Result: the proxy is calibrated.** Measured **89.3 tok/skill** against a
+proxy of **90.5**, i.e. the proxy reads **+1.4%** high — inside the ±20% band
+the pi calibration meta-test uses.
+
+### What was measured
+
+OpenCode 1.17.16 injects its skill listing into the **system prompt** as an
+`<available_skills>` block of `<skill><name>/<description>/<location></skill>`
+entries — the same three fields the adapter's `renderSkillEntry` emits, but
+multi-line and indented rather than one line per entry. So the two templates
+are genuinely different and the comparison is not circular.
+
+Method (no model required, and no quant — the earlier assumption that this
+needed a local model was wrong):
+
+1. A mock OpenAI-compatible endpoint records the exact request body OpenCode
+   sends. Skills are a **standing** cost, so the measurement is the request
+   itself, not anything the model does with it.
+2. Three arms in an isolated `HOME`, differing only in how many `SKILL.md`
+   directories are installed: **0**, **100**, **382** (the full
+   `dist/opencode/skills` set).
+3. Per-skill cost is the **delta** between arms, so the ~15.8k-token base
+   prompt and the one built-in skill cancel out.
+4. Tokenized with the real tokenizer of the model the shipping
+   `opencode.json` targets (`mlx-community/Qwen3.6-35B-A3B-4bit`), not a
+   chars/4 estimate.
+
+### Numbers
+
+`<location>` is an absolute path, so the raw mean moves with checkout-path
+length. Normalizing to the same canonical 45-char prefix the pi calibration
+meta-test uses:
+
+| Arm | tok/skill (canonical prefix) | tok/skill (`~/.config/opencode`) |
+|---|---|---|
+| +100 skills | 90.33 | 89.33 |
+| +382 skills | 89.27 | 88.27 |
+
+The two arms agree to 1.2%, which is the internal consistency check — a
+per-skill cost derived from one arm could be a base-prompt artifact.
+
+Adapter chars/4 proxy over the same 419-skill OC baseline, same canonical
+prefix: **90.54 tok/skill** (`PROXY_TOTAL_NORM=37936`).
+
+Standing cost of the whole listing at a real global install:
+**33,856 tokens** for 382 skills. The adapter's ~600 standing tokens is the
+figure that replaces it.
+
+### What this does not settle
+
+The calibration answers whether the **cost model** is trustworthy. It says
+nothing about retrieval quality — that is §1's frozen gate, which passed on
+2026-07-22 and is what actually authorizes the cutover. Both are now green.

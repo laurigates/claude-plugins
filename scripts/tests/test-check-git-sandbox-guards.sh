@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2015  # file-level: `[ -n ] && [ -d ] || die` is a guard, not if-then-else (must precede the first command)
 # Regression tests for scripts/check-git-sandbox-guards.sh (issue #1692).
 #
 # Run: bash scripts/tests/test-check-git-sandbox-guards.sh
@@ -100,7 +101,7 @@ git init -q --bare "$ORIGIN"
 EOF
 assert_count "unguarded mktemp -d + git init --bare is flagged" 1 "$d7"
 
-# 8. Unguarded `mktemp -d` + git op inside the gitignored dist/ rulesync build
+# 8. Unguarded `mktemp -d` + git op inside the gitignored dist/ OpenCode export build
 #    output → NOT flagged (pruned, mirroring the #1492/#1548 worktrees prune). A
 #    control copy OUTSIDE dist/ in the same root IS flagged, proving the prune is
 #    scoped (count == 1, not 0 or 2).

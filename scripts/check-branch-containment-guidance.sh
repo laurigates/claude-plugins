@@ -166,7 +166,7 @@ is_generated_changelog() {
 
 # collect_md <subdir-relative-to-ROOT_DIR> — emit markdown paths RELATIVE to
 # ROOT_DIR, pruning agent worktree clones (#1492/#1548) and the gitignored
-# rulesync build output (#2214); both are copies of the repo and would
+# OpenCode export build output (#2214); both are copies of the repo and would
 # double-count.
 #
 # The walk runs from a `cd "$ROOT_DIR"` with a relative start on purpose. An

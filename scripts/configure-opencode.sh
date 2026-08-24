@@ -4,10 +4,18 @@
 # exported subagents.
 #
 # Generates two artifacts into <target>:
-#   - opencode.json       (provider + model + default_agent + build-agent
-#                          bash allowlist so test/status commands skip the
-#                          permission prompt during fan-out)
+#   - opencode.json       (provider + model + default_agent + the skill-discovery
+#                          adapter + build-agent bash allowlist so test/status
+#                          commands skip the permission prompt during fan-out)
 #   - agents/orchestrator.md  (read-only primary agent that delegates via `task`)
+#
+# The adapter (ADR-0022, #2094) is how this marketplace's ~400 skills reach
+# OpenCode: a `search_skills` pull tool plus ranked top-k push injection at
+# ~600 standing tokens, instead of a flattened copy costing ~34,000 (measured,
+# adapters/CUTOVER.md §8). It is registered as a [path, config] entry in the
+# `plugin` array, paired with `"permission": { "skill": "deny" }` — the stable
+# config surface that suppresses OpenCode's own uncapped <available_skills>
+# listing (adapters/opencode/index.ts documents both halves).
 #
 # Non-destructive: if <target>/opencode.json already exists it writes
 # opencode.json.opencode-sample instead and prints a merge instruction, so an
@@ -18,8 +26,11 @@
 # NOT the common-but-wrong shape (`providers`/`api_base`/`tools:` list). See
 # docs/opencode-export.md "Gotchas".
 #
-# Usage: ./scripts/configure-opencode.sh <target> [--provider P] [--model M] [--port N] [--plugins "a b c"]
+# Usage: ./scripts/configure-opencode.sh <target> [--provider P] [--model M] [--port N] [--plugins "a b c"] [--no-adapter]
 set -euo pipefail
+
+config_script_dir="$(cd "$(dirname "$0")" && pwd)"
+config_repo_root="$(cd "$config_script_dir/.." && pwd)"
 
 config_target="${1:?usage: configure-opencode.sh <target> [--provider P] [--model M] [--port N] [--plugins LIST]}"
 shift || true
@@ -30,6 +41,8 @@ config_port="8080"
 # Default ecosystem plugins (verified npm packages, no API key, self-host-friendly).
 # See docs/opencode-export.md "Recommended ecosystem plugins".
 config_plugins="@openspoon/subtask2 opencode-pty @tarquinen/opencode-dcp"
+config_adapter=1
+config_adapter_k=5
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -37,6 +50,8 @@ while [ $# -gt 0 ]; do
         --model)    config_model="$2";    shift 2 ;;
         --port)     config_port="$2";     shift 2 ;;
         --plugins)  config_plugins="$2";  shift 2 ;;
+        --no-adapter) config_adapter=0;   shift 1 ;;
+        --adapter-k)  config_adapter_k="$2"; shift 2 ;;
         *) echo "unknown argument: $1" >&2; exit 2 ;;
     esac
 done
@@ -66,6 +81,31 @@ echo "MODEL=$config_model"
 echo "BASEURL=$config_baseurl"
 echo "PLUGINS=$config_plugins"
 
+# --- skill-discovery adapter -------------------------------------------------
+config_adapter_entry="$config_repo_root/adapters/opencode/index.ts"
+config_skill_permission=""
+if [ "$config_adapter" -eq 1 ]; then
+    if [ -z "$config_plugins_json" ]; then
+        config_plugins_json="[\"$config_adapter_entry\", { \"k\": $config_adapter_k, \"pins\": [] }]"
+    else
+        config_plugins_json="$config_plugins_json, [\"$config_adapter_entry\", { \"k\": $config_adapter_k, \"pins\": [] }]"
+    fi
+    # Suppresses OpenCode's own uncapped <available_skills> block AND the native
+    # `skill` tool, so the adapter is the single skill surface. Note this also
+    # hides any personal ~/.claude/skills — pass --no-adapter to keep them.
+    config_skill_permission='
+  "permission": { "skill": "deny" },'
+    echo "ADAPTER=$config_adapter_entry"
+    echo "ADAPTER_K=$config_adapter_k"
+    if [ -d "$config_repo_root/adapters/node_modules" ]; then
+        echo "ADAPTER_NODE_MODULES=present"
+    else
+        echo "ADAPTER_NODE_MODULES=MISSING (cd adapters && bun install)"
+    fi
+else
+    echo "ADAPTER=disabled (--no-adapter)"
+fi
+
 mkdir -p "$config_target/agents"
 
 # --- opencode.json (non-destructive) -----------------------------------------
@@ -89,7 +129,7 @@ cat > "$config_json" <<JSON
       "models": { "$config_model": { "name": "$config_model" } }
     }
   },
-  "plugin": [$config_plugins_json],
+  "plugin": [$config_plugins_json],$config_skill_permission
   "model": "$config_provider/$config_model",
   "default_agent": "orchestrator",
   "lsp": true,

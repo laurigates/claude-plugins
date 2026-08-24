@@ -83,7 +83,7 @@ fi
 # collapses to zero — the same false-clean this comment is about.
 #
 # The prunes replace what rg previously got for free from .gitignore
-# (`.claude/worktrees/` agent clones, `dist/` rulesync build output — #1492,
+# (`.claude/worktrees/` agent clones, `dist/` OpenCode export build output — #1492,
 # #2214) plus its explicit `!**/tests/**` glob: test fixtures construct FAKE
 # flags to prove the gate fires, which would read as undocumented.
 #

@@ -369,6 +369,52 @@ else
   bad "multi-model-delegation SKILL.md exists" "$skill not found"
 fi
 
+# ---------------------------------------------------------------------------
+# CASE: dist/ is the gitignored build output — pruned, not scanned (#2094).
+#
+# Since the rulesync export was retired, a SKILL.md under dist/opencode/skills
+# is a stale copy of a source already fixed, and NOTHING will ever regenerate
+# or overwrite it. Scanning it produced an ERROR whose fix site does not exist,
+# failing every local pre-commit in any checkout that had ever run the old
+# export, while CI stayed green (dist/ is never committed). Same shape as #2214.
+# ---------------------------------------------------------------------------
+fx="$(make_fixture)"
+mkdir -p "$fx/dist/opencode/skills/multi-model-delegation"
+# The SAME defect at both paths: the dist/ copy must be invisible while the
+# real one is still caught, so "not flagged" cannot pass against a linter that
+# stopped scanning (or one that swallowed the finding entirely).
+cat >"$fx/dist/opencode/skills/multi-model-delegation/SKILL.md" <<'EOF'
+---
+name: demo
+---
+Run `mcp__pal__listmodels` once at the start of the consult.
+EOF
+cp "$fx/dist/opencode/skills/multi-model-delegation/SKILL.md" \
+   "$fx/demo-plugin/skills/multi-model-delegation/SKILL.md"
+run_fixture "$fx"
+out="$FIXTURE_OUT"
+if printf '%s' "$out" | grep -q 'dist/'; then
+  bad "a dist/ copy is not scanned" "$out"
+else
+  ok "a dist/ copy is not scanned"
+fi
+if [ "$FIXTURE_EXIT" -eq 1 ] && printf '%s' "$out" | grep -q 'demo-plugin/skills/multi-model-delegation/SKILL.md'; then
+  ok "the real-path copy of the same defect is still flagged"
+else
+  bad "the real-path copy of the same defect is still flagged" "exit=$FIXTURE_EXIT
+$out"
+fi
+# Exactly once: a prune that merely deduplicated findings would still leak the
+# dist/ path into the count.
+dist_case_count="$(printf '%s\n' "$out" | grep -c 'ERROR \[unavailable-mcp-tool\]' || true)"
+if [ "$dist_case_count" -eq 1 ]; then
+  ok "the defect is reported exactly once, not once per copy"
+else
+  bad "the defect is reported exactly once, not once per copy" "count=$dist_case_count
+$out"
+fi
+rm -rf "$fx"
+
 printf '\nPASSED=%d FAILED=%d\n' "$pass" "$fail"
 [ "$fail" -eq 0 ] || exit 1
 exit 0
