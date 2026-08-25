@@ -107,13 +107,49 @@ if [ "$precommit_config" = "true" ]; then
 fi
 echo "PRE_COMMIT_FORMAT=${precommit_format}"
 
+# Commands that run the formatter. `biome check` is Biome 2.x's combined
+# command (formatter + linter + import sorting) and `biome ci` its CI-oriented
+# variant, so both cover formatting; `biome lint` is lint-only and is
+# deliberately absent from this pattern (issue #2497).
+fmt_cmd_re='biome check|biome ci|biome format|ruff format|cargo fmt|prettier'
+
+# Body of a package.json script, or empty when unavailable. Degrades silently
+# when package.json is absent/unparseable, has no `scripts` key, or jq is not
+# installed — the direct-match scan above still works in every such case.
+pkg_script_body() {
+  local script_name="$1"
+  [ "$pkg_json" = "true" ] || return 0
+  command -v jq >/dev/null 2>&1 || return 0
+  jq -r --arg n "$script_name" '(.scripts[$n] // "") | tostring' \
+    "${project_dir}/package.json" 2>/dev/null
+}
+
 ci_format=false
 workflows_dir="${project_dir}/.github/workflows"
 if [ -d "$workflows_dir" ]; then
   for wf in "$workflows_dir"/*.yml "$workflows_dir"/*.yaml; do
     [ -f "$wf" ] || continue
-    if grep -qE "biome format|ruff format|cargo fmt|prettier" "$wf" 2>/dev/null; then
+    # Direct invocation in the workflow.
+    if grep -qE "$fmt_cmd_re" "$wf" 2>/dev/null; then
       ci_format=true
+      break
+    fi
+    # ONE level of package-script indirection: a workflow step running
+    # `bun run lint` / `npm run format:check` / `yarn fmt` carries the real
+    # command in package.json's `scripts`. Resolved exactly one level deep —
+    # a script that calls another script is out of scope.
+    while IFS= read -r script_name; do
+      [ -n "$script_name" ] || continue
+      script_body="$(pkg_script_body "$script_name")"
+      [ -n "$script_body" ] || continue
+      if grep -qE "$fmt_cmd_re" <<<"$script_body"; then
+        ci_format=true
+        break
+      fi
+    done < <(grep -Eo \
+      '(bun|npm|pnpm|yarn)[[:space:]]+run[[:space:]]+[A-Za-z0-9_:.@/-]+|yarn[[:space:]]+[A-Za-z0-9_:.@/-]+' \
+      "$wf" 2>/dev/null | awk '{print $NF}')
+    if [ "$ci_format" = "true" ]; then
       break
     fi
   done
