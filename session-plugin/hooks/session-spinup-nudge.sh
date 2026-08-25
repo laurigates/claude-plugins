@@ -50,6 +50,7 @@ get() { printf '%s\n' "$summary" | grep -m1 "^$1=" | cut -d= -f2- || echo ""; }
 project=$(get PROJECT)
 dirty=$(get DIRTY)
 unpushed=$(get UNPUSHED)
+behind=$(get BEHIND)
 open_tasks=$(get OPEN_TASKS)
 assigned_issues=$(get ASSIGNED_ISSUES)
 # Scoping signals (#2271/#2232): the detected slug is a guess, so name the
@@ -61,6 +62,10 @@ recent_tasks=$(get RECENT_TASK_COUNT)
 threads=""
 [ "$dirty" = "true" ] && threads="${threads}uncommitted changes; "
 [ "${unpushed:-0}" -gt 0 ] 2>/dev/null && threads="${threads}unpushed commits; "
+# The other direction (#2500): a checkout behind upstream reads as settled
+# unless the digest says so. `BEHIND=0` is also what no-upstream and detached
+# HEAD report, so this stays silent there — same posture as UNPUSHED.
+[ "${behind:-0}" -gt 0 ] 2>/dev/null && threads="${threads}${behind} commit(s) behind upstream — this checkout is stale; "
 if [ "${open_tasks:-0}" -gt 0 ] 2>/dev/null; then
     if [ "$task_scope" = "remote-name" ] && [ -n "$project_resolved" ]; then
         threads="${threads}${open_tasks} open taskwarrior task(s) under project:${project_resolved} (resolved from the git remote; the cwd basename is ${project}); "
