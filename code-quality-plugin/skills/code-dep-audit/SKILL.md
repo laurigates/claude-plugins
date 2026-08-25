@@ -5,7 +5,7 @@ args: "[--type <security|outdated|licenses|all>] [--fix]"
 argument-hint: --type security to check vulnerabilities, --type outdated for updates
 allowed-tools: Bash(bash *), Bash(npm audit *), Bash(npx *), Bash(pip-audit *), Bash(cargo audit *), Bash(pip *), Bash(uv *), Bash(cargo *), Read, Grep, Glob, TodoWrite
 created: 2026-04-10
-modified: 2026-06-10
+modified: 2026-08-25
 reviewed: 2026-06-10
 ---
 
@@ -24,7 +24,7 @@ Audit project dependencies for vulnerabilities and freshness.
 
 ## Context
 
-- Package files: !`find . -maxdepth 1 \( -name "package.json" -o -name "package-lock.json" -o -name "yarn.lock" -o -name "bun.lockb" -o -name "pyproject.toml" -o -name "requirements.txt" -o -name "Cargo.toml" -o -name "Cargo.lock" -o -name "go.mod" -o -name "go.sum" \) -type f`
+- Package files: !`find . -maxdepth 1 \( -name "package.json" -o -name "package-lock.json" -o -name "yarn.lock" -o -name "bun.lock" -o -name "bun.lockb" -o -name "pyproject.toml" -o -name "requirements.txt" -o -name "Cargo.toml" -o -name "Cargo.lock" -o -name "go.mod" -o -name "go.sum" \) -type f`
 
 ## Parameters
 

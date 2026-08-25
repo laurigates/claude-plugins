@@ -59,6 +59,7 @@ audit_tool="none"
 if [ -f "${project_dir}/package.json" ] \
   || [ -f "${project_dir}/package-lock.json" ] \
   || [ -f "${project_dir}/yarn.lock" ] \
+  || [ -f "${project_dir}/bun.lock" ] \
   || [ -f "${project_dir}/bun.lockb" ]; then
   detected_ecosystem="js"
   audit_tool="npm audit --json"

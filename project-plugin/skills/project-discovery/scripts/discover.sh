@@ -71,7 +71,9 @@ echo ""
 echo "=== PHASE 2: PROJECT TYPE ==="
 
 echo "MANIFESTS:"
-for manifest in package.json Cargo.toml pyproject.toml go.mod Gemfile pom.xml build.gradle composer.json mix.exs deno.json bun.lockb; do
+# bun.lock (current text lockfile) and bun.lockb (legacy binary) both signal a
+# bun project — probing only for bun.lockb misses every current bun repo (#2496).
+for manifest in package.json Cargo.toml pyproject.toml go.mod Gemfile pom.xml build.gradle composer.json mix.exs deno.json bun.lock bun.lockb; do
   [ -f "$manifest" ] && echo "  - $manifest"
 done
 

@@ -58,7 +58,14 @@ echo "JQ_AVAILABLE=true"
 # -----------------------------------------------------------------------------
 pkg_json=$(exists_file "${project_dir}/package.json")
 echo "PACKAGE_JSON=${pkg_json}"
-[ -f "${project_dir}/bun.lockb" ] && echo "BUN_LOCKFILE=true" || echo "BUN_LOCKFILE=false"
+# Accept BOTH bun lockfile names (#2496): `bun.lock` is Bun's current default
+# text lockfile; `bun.lockb` is the legacy binary form, still present in older
+# repos and wherever `saveTextLockfile: false` is set.
+if [ -f "${project_dir}/bun.lock" ] || [ -f "${project_dir}/bun.lockb" ]; then
+  echo "BUN_LOCKFILE=true"
+else
+  echo "BUN_LOCKFILE=false"
+fi
 
 # -----------------------------------------------------------------------------
 # Playwright config glob
