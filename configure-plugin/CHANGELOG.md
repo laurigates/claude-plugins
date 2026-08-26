@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.34.3](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.34.2...configure-plugin-v1.34.3) (2026-08-26)
+
+
+### Bug Fixes
+
+* **configure-plugin:** treat Renovate as satisfying the dependency layer ([#2510](https://github.com/laurigates/claude-plugins/issues/2510)) ([9d97471](https://github.com/laurigates/claude-plugins/commit/9d9747184df73214930c37a2ae4973049db7edcf)), closes [#2495](https://github.com/laurigates/claude-plugins/issues/2495)
+
 ## [1.34.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.34.1...configure-plugin-v1.34.2) (2026-08-26)
 
 
