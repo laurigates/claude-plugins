@@ -197,9 +197,13 @@ Tool results that mean something other than they look — an empty result, a gre
 - Declaring a bulk rename, migration, or sweep finished
 - A verification loop's input set is built from a relative path in a long-running session
 - An `rg` / `git grep` result contradicts something read directly
+- Concluding a skill, command, recipe, or binary "does not exist"
+- A `-g` / `--glob` filter is narrowing the search and the name you want is a directory
 
 **Features:**
 - The silent-rewrite and never-compiled-pattern cases: `rg -r` as `--replace`, `git grep -E` dropping `\b`
+- Why `-g '*name*'` cannot match a *directory* — a no-slash glob tests the basename, and it returns plausible sibling files rather than zero
+- One search tier is not the search universe: user-global, plugin, and project (`<repo>/.claude/`) resolve independently
 - A rejected flag reading as "no results" — and its worse variants on a *write*, and on an accepted flag that takes a stdin marker literally
 - The persistent-cwd pair: the shell wedge `cd` cannot undo, and the vacuous path-scoped verification that shares its cause
 - `Workflow` `args` arriving JSON-encoded, so agents run against `undefined`
