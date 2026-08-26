@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
+modified: 2026-08-25
 reviewed: 2026-06-10
 description: "UX testing: Playwright E2E, axe-core a11y, visual regression. Use when setting up E2E testing, screenshot assertions, browser automation, or a11y CI workflows."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -25,7 +25,7 @@ Check and configure UX testing infrastructure with Playwright as the primary too
 
 ## Context
 
-- Package manager: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'bun.lockb' \)`
+- Package manager: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'bun.lock' -o -name 'bun.lockb' \)`
 - Playwright config: !`find . -maxdepth 1 -name 'playwright.config.*'`
 - Playwright installed: !`find . -maxdepth 1 -name 'package.json' -exec grep -l '@playwright/test' {} +`
 - Axe-core installed: !`find . -maxdepth 1 -name 'package.json' -exec grep -l '@axe-core/playwright' {} +`

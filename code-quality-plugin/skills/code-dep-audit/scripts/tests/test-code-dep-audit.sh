@@ -216,4 +216,28 @@ echo "$out7" | grep -q "^STATUS=ERROR$" \
 pass "malformed JSON seam input fails loudly (STATUS=ERROR, exit 1)"
 rm -rf "$proj7"
 
+# -----------------------------------------------------------------------------
+# Case 8 (#2496): a bun lockfile alone identifies the js ecosystem, under BOTH
+# the current text `bun.lock` and the legacy binary `bun.lockb`.
+#
+# Guard integrity: Case 5 above already pins that a project with NO manifest
+# reports ECOSYSTEM=none, so these assertions cannot pass against a detector
+# hardwired to js.
+# -----------------------------------------------------------------------------
+for bun_lockfile in bun.lock bun.lockb; do
+  proj8="$(mktemp -d)"
+  [ -n "$proj8" ] || fail "mktemp -d failed for bun lockfile case"
+  printf '# fixture lockfile\n' > "${proj8}/${bun_lockfile}"
+  set +e
+  out8="$(CODE_DEP_AUDIT_FIXTURE="${fixtures}/clean.json" \
+    bash "$audit_script" --home-dir "$home_dir" --project-dir "$proj8")"
+  rc8=$?
+  set -e
+  [ "$rc8" -eq 0 ] || fail "${bun_lockfile}-only project must exit 0, got $rc8:\n$out8"
+  echo "$out8" | grep -q "^ECOSYSTEM=js$" \
+    || fail "expected ECOSYSTEM=js from ${bun_lockfile}, got:\n$out8"
+  pass "${bun_lockfile} alone detects ECOSYSTEM=js"
+  rm -rf "$proj8"
+done
+
 echo "ALL TESTS PASSED"
