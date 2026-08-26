@@ -41,7 +41,7 @@ claude plugin install laurigates-claude-plugins/testing-plugin
 Use the included justfile for quick MCP server configuration:
 
 ```bash
-# Set up all MCP servers and cclsp
+# Set up all MCP servers
 just claude-setup
 
 # Or install individual servers

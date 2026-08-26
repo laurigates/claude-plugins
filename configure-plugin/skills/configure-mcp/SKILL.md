@@ -75,7 +75,7 @@ Based on the flags:
 
 - **`--core`**: Select `context7` and `sequential-thinking`.
 - **`--server <name>`**: Select the named server(s). Validate against the available servers in [REFERENCE.md](REFERENCE.md).
-- **No flags (interactive)**: Show the user what's installed vs available. Use AskUserQuestion to ask which servers to add. Suggest servers based on project context (e.g., suggest `playwright` if `playwright.config.*` exists, suggest `cclsp` if large TS/Python/Rust codebase).
+- **No flags (interactive)**: Show the user what's installed vs available. Use AskUserQuestion to ask which servers to add. Suggest servers based on project context (e.g., suggest `playwright` if `playwright.config.*` exists).
 
 If all requested servers are already installed, report "All servers already configured" and stop.
 
@@ -87,8 +87,6 @@ For each selected server:
 2. If `.mcp.json` doesn't exist, create it with `{"mcpServers": {}}`.
 3. Merge the server config into the existing `mcpServers` object. Preserve existing servers.
 4. Write the updated `.mcp.json` with proper JSON formatting.
-
-If `cclsp` is selected, also set up `cclsp.json` (see [REFERENCE.md](REFERENCE.md) for language detection and setup details).
 
 Handle git tracking:
 - Check if `.mcp.json` is in `.gitignore`.
