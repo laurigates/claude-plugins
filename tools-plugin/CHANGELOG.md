@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.10.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.9.6...tools-plugin-v2.10.0) (2026-08-26)
+
+
+### Features
+
+* **agent-patterns-plugin:** catalogue the two search negatives that produced a false "does not exist" ([#2508](https://github.com/laurigates/claude-plugins/issues/2508)) ([cca7f59](https://github.com/laurigates/claude-plugins/commit/cca7f59ee3c3b2d21f6371bfa2d19e6663fa9cd6))
+
 ## [2.9.6](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.9.5...tools-plugin-v2.9.6) (2026-08-16)
 
 
