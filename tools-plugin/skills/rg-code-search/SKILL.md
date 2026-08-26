@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-04
+modified: 2026-08-26
 reviewed: 2026-04-25
 name: rg-code-search
 description: "ripgrep (rg) fast code search: smart defaults, regex, file filtering. Use when searching for text patterns, code snippets, or doing multi-file analysis."
@@ -138,6 +138,21 @@ rg pattern -g '!{dist,build,node_modules}/'  # Exclude multiple
 # Full path matching
 rg pattern -g '**/test/**'  # Only test directories
 ```
+
+**A glob with no `/` matches the *basename* only.** So `-g '*name*'` can never
+match a **directory** called `name` — it tests `SKILL.md`, not
+`skills/name/SKILL.md`. Add a `/` and the glob anchors to the full path from the
+search root instead, where `*` does not cross `/`; only `**` spans depth.
+
+```bash
+rg --files -g '*sentry-triage*'      # nothing — basename is SKILL.md
+rg --files -g '*sentry-triage*/**'   # nothing — now anchored at the root
+rg --files -g '**/sentry-triage/**'  # skills/sentry-triage/SKILL.md ← the only form that works
+```
+
+It fails *quietly*: `-g '*name*'` still matches sibling files like
+`name-notes.md`, so a partial hit reads as a working search. When hunting a name
+rather than content, prefer `rg -l <pattern>` or `find -type d -name <name>`.
 
 ### Content Filtering
 ```bash
