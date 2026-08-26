@@ -183,8 +183,16 @@ gracefully rather than omitting:
   slug, or surface the `RECENT_TASK_*` rows with `TASKS_ALL_PROJECTS` as
   the denominator and offer `--project <name>`). Same shape as
   `GH_READY=false`.
-- **Clean tree, no PRs** — `DIRTY=false`, `PR_COUNT=0`; one line: `git
-  state: clean`.
+- **Clean tree, no PRs** — `DIRTY=false`, `PR_COUNT=0`, `BEHIND=0`; one
+  line: `git state: clean`.
+- **`BEHIND` ≥ 1** — the checkout trails its upstream by that many
+  commits. A **caveat**, not an error (`STATUS` stays `OK`, exactly as it
+  does for `PROJECT_CONFIDENCE=low`): say `N commit(s) behind
+  origin/<branch>` and note that anything read from this tree was read
+  against a stale basis. `BEHIND=0` is also what a branch with **no
+  upstream** and a **detached HEAD** report — the same degradation
+  `UNPUSHED` takes — so it is never evidence that the tree is current,
+  only that nothing said otherwise.
 - **All sources empty** — say so briefly, then step out of the way.
 - **Plan mode / interactive UI** — present the briefing only; spinup
   never mutates anything.

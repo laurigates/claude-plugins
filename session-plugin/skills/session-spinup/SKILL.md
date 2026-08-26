@@ -3,7 +3,7 @@ name: session-spinup
 description: Read-only session-start briefing of open tasks, git state, journal todos — reports, never edits code. Use when user says spin up, what was I doing, or pick up where I left off.
 allowed-tools: Bash(bash *), Read, TodoWrite
 created: 2026-05-13
-modified: 2026-08-19
+modified: 2026-08-25
 compatibility: claude-code
 reviewed: 2026-06-24
 ---
@@ -46,7 +46,9 @@ would otherwise miss — 3-6 item target, 10+ means trim.
 
 **SURFACE**: open PR from a recent branch (especially review/CI-stale) ·
 `+ACTIVE` task (work was mid-flight) · unchecked journal todo ·
-real uncommitted edits · unpushed commits · task whose annotation reads
+real uncommitted edits · unpushed commits · a checkout behind upstream
+(`BEHIND` ≥ 1 — a caveat on the briefing's basis, not a task) · task
+whose annotation reads
 "blocked on X" where X may now be unblocked · GitHub drift issue (the
 `GITHUB_DRIFT` section — assigned, open, untracked locally) · blueprint
 tracker state when a tracker exists (ready/blocked counts, in-flight WOs)
