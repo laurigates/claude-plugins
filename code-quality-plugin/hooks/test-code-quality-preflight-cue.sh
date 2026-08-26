@@ -132,6 +132,21 @@ else
   cq_fail "(d) lockfile edit should be silent; got: $CQ_OUT_D3"
 fi
 
+# Bun's CURRENT default lockfile is the text-based `bun.lock`; `bun.lockb` is
+# the legacy binary form. Silencing only `bun.lockb` cues a lint pre-flight on
+# every `bun install` in a current bun repo (#2496).
+for cq_bun_lockfile in bun.lock bun.lockb; do
+  echo "--- Test (d): ${cq_bun_lockfile} is silent (#2496) ---"
+  CQ_SID_D4="test-sid-d4-${cq_bun_lockfile}-$(date +%s%N)"
+  CQ_PAYLOAD_D4="$(cq_payload Edit "/repo/${cq_bun_lockfile}" 'export function doThing() { return 1; }' '' "$CQ_SID_D4")"
+  CQ_OUT_D4="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_D4")"
+  if [ -z "$CQ_OUT_D4" ]; then
+    cq_pass "(d) ${cq_bun_lockfile} edit is silent"
+  else
+    cq_fail "(d) ${cq_bun_lockfile} edit should be silent; got: $CQ_OUT_D4"
+  fi
+done
+
 # --- (i) diagram/binary files are silent even for large payloads (issue #1730) ---
 echo "--- Test (i): 60-line .d2 diagram edit is silent ---"
 CQ_SID_I1="test-sid-i1-$(date +%s%N)"

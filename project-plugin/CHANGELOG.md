@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.4](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.21.3...project-plugin-v1.21.4) (2026-08-26)
+
+
+### Bug Fixes
+
+* **configure-plugin:** accept bun.lock alongside legacy bun.lockb ([#2501](https://github.com/laurigates/claude-plugins/issues/2501)) ([0496a7e](https://github.com/laurigates/claude-plugins/commit/0496a7eff6a4a3c39d698bd1af6fbad1efd77bcc)), closes [#2496](https://github.com/laurigates/claude-plugins/issues/2496)
+
 ## [1.21.3](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.21.2...project-plugin-v1.21.3) (2026-08-15)
 
 

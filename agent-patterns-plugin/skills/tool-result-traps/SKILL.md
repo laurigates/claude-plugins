@@ -1,10 +1,10 @@
 ---
 name: tool-result-traps
-description: Tool results that mean something other than they look — a rewritten match, a zero-hit sweep from a pattern that never compiled, a rejected flag reading as "no results", a verification that checked nothing. Use when an empty result is about to gate an action or be reported as done.
+description: Tool results that mean something other than they look — a pattern that never compiled, a glob that cannot match a directory, one tier searched but reported absent, a rejected flag reading as "no results". Use when an empty result is about to gate an action, land in a doc, or be reported as done.
 allowed-tools: Read, Glob, Grep, Bash(rg *), Bash(git grep *), Bash(git log *), Bash(git status *), Bash(git worktree *), Bash(gh api *), Bash(gh pr view *), Bash(python3 *), TodoWrite
 model: opus
 created: 2026-08-21
-modified: 2026-08-21
+modified: 2026-08-26
 compatibility: claude-code
 reviewed: 2026-08-21
 ---
@@ -38,6 +38,8 @@ non-finding.
 | Batching parallel tool calls whose siblings may exit non-zero | A single call, or a batch of confirmed-present paths |
 | A `Workflow` script's agents report thin or generic findings on rich material | Agents are returning specific, grounded detail |
 | An `rg`/`git grep` result contradicts something you read directly | Output matches an independent read of the same file |
+| Concluding a skill, command, recipe, or binary "does not exist" | You enumerated every tier it could be defined in |
+| A `-g`/`--glob` filter is doing the narrowing, and the name you want is a directory | The glob is `**/<name>/**`, or the search is on content not names |
 
 ## The traps
 
@@ -97,6 +99,78 @@ that `never-fabricate-test-identifiers.md` requires.
   shape against a term you know is present. If the control is also empty, the
   pattern is broken, not the tree clean.
 - Piping (`| wc -l`) masks the exit code entirely, so even the rc=1 tell is gone.
+
+## A `-g '*name*'` glob cannot match a **directory** name
+
+Two composing rules decide what a glob matches, and neither is visible in the
+output:
+
+1. **A glob containing no `/` is matched against the *basename* only** — at any
+   depth. This is why `-g '*.md'` works recursively.
+2. **A glob containing any `/` is anchored to the full path from the search
+   root**, and `*` does not cross `/`. Only `**` spans depth.
+
+So a name you are hunting that is a **directory** — a skill dir, a package dir,
+a fixture dir — is unreachable by the glob everyone reaches for first:
+
+```
+tree:  skills/sentry-triage/SKILL.md
+
+rg -uu --files -g '*.md'                  -> skills/sentry-triage/SKILL.md   ← basename
+rg -uu --files -g '*sentry-triage*'       -> (nothing)   ← basename is SKILL.md
+rg -uu --files -g '*sentry-triage*/**'    -> (nothing)   ← has '/', now anchored at root
+rg -uu --files -g '*/SKILL.md'            -> (nothing)   ← '*' can't cross the 2nd '/'
+rg -uu --files -g '**/sentry-triage/**'   -> skills/sentry-triage/SKILL.md   ← works
+```
+
+**The failure is worse than an empty result.** `-g '*name*'` still matches
+*sibling files* whose basename contains the string, so a real tree returns
+`sentry-triage-notes.md` — one plausible hit. An empty result at least invites
+suspicion; a partial one reads as "the search ran fine, the file isn't there,"
+and it is the sibling that sells it.
+
+> Observed 2026-08 (`repos-claude-config#32`): confirming whether a
+> `/sentry-triage` command existed. `rg --files -g '*sentry-triage*'` over
+> `~/repos ~/.claude` returned only a stray `.md`, which was written into a
+> published doc and a PR body as "no command by that name exists". It existed —
+> `ForumViriumHelsinki/infrastructure/.claude/skills/sentry-triage/SKILL.md`.
+> Caught only by a known-good control (`repo-activity`, a skill known to be on
+> disk) returning zero through the identical glob.
+
+- **Matching a directory name → `-g '**/<name>/**'`.** Nothing shorter works.
+- **Prefer `rg -l <pattern>` or `find -type d -name` when hunting a *name*** —
+  a content search has no basename rule to trip over.
+- **Control-test with a name you know is present**, through the byte-identical
+  glob. The control is what separates "not there" from "unmatchable".
+
+## One search tier is not the search universe
+
+A Claude Code skill or command resolves from **three independent tiers**, and
+finding nothing in one says nothing whatsoever about the others:
+
+| Tier | Location |
+|---|---|
+| User-global | `~/.claude/skills/`, `~/.claude/commands/` |
+| Plugin | `~/.claude/plugins/cache/<marketplace>/<plugin>/skills/` |
+| **Project** | **`<repo>/.claude/skills/`, `<repo>/.claude/commands/`** |
+
+The project tier is the one that gets missed, because it is not under
+`~/.claude/` at all — it ships inside whatever repo happens to be the checkout,
+so the *same* command exists or doesn't depending on where a session is rooted.
+That is a live precondition for a scheduled task or a cloud routine: a
+project-scoped command resolves only when its repo is the clone.
+
+The same shape recurs wherever definitions are tiered — shell functions vs.
+`$PATH` binaries, `just -g` recipes vs. a local `justfile`, global vs. project
+MCP servers, user vs. repo git config.
+
+- **Enumerate all three before concluding a command does not exist.** In this
+  portfolio, `rg -uu --files -g '**/<name>/**' ~/.claude ~/repos` covers the
+  user and project tiers in one pass (note the glob form — see the trap above).
+- **A marketplace search is not a project search.** `gh api search/code` over
+  the plugin repo answers the plugin tier only.
+- **State the tier you searched** when reporting a negative. "Not in
+  `~/.claude/`" is a fact; "does not exist" is a claim about all three.
 
 ## A rejected flag looks exactly like "no results"
 

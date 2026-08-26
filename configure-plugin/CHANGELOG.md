@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.34.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.34.1...configure-plugin-v1.34.2) (2026-08-26)
+
+
+### Bug Fixes
+
+* **configure-plugin:** accept bun.lock alongside legacy bun.lockb ([#2501](https://github.com/laurigates/claude-plugins/issues/2501)) ([0496a7e](https://github.com/laurigates/claude-plugins/commit/0496a7eff6a4a3c39d698bd1af6fbad1efd77bcc)), closes [#2496](https://github.com/laurigates/claude-plugins/issues/2496)
+* **configure-plugin:** detect biome check and one level of script indirection for CI_FORMAT ([#2503](https://github.com/laurigates/claude-plugins/issues/2503)) ([b93f041](https://github.com/laurigates/claude-plugins/commit/b93f041dffe6c3019c740452097f3208a4a06c01))
+* **configure-plugin:** detect biome check/ci and one hop of script indirection ([b93f041](https://github.com/laurigates/claude-plugins/commit/b93f041dffe6c3019c740452097f3208a4a06c01)), closes [#2497](https://github.com/laurigates/claude-plugins/issues/2497)
+
 ## [1.34.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.34.0...configure-plugin-v1.34.1) (2026-08-15)
 
 
