@@ -67,4 +67,40 @@ echo "$out2" | grep -q "^STATUS=WARN$" || fail "expected STATUS=WARN for bare pr
 pass "bare project detects no UX testing infrastructure and reports STATUS=WARN"
 rm -rf "$bare"
 
+# -----------------------------------------------------------------------------
+# Case 3 (#2496): bun lockfile detection accepts BOTH the current text-based
+# `bun.lock` and the legacy binary `bun.lockb`.
+#
+# Bun switched its default lockfile to the text-based `bun.lock`, so a probe
+# testing only for `bun.lockb` reports BUN_LOCKFILE=false on a current all-bun
+# project. `bun.lockb` still exists in older repos and wherever
+# `saveTextLockfile: false` is set, so both names must be accepted.
+#
+# Guard integrity: the `neither` case must still report false, otherwise a probe
+# hardwired to `true` would satisfy every positive assertion below.
+# -----------------------------------------------------------------------------
+bun_lockfile_case() {
+  # $1 = human label, $2 = expected value, $3.. = lockfile basenames to plant
+  local blf_label="$1" blf_expect="$2"; shift 2
+  local blf_dir blf_out blf_name
+  blf_dir="$(mktemp -d)"
+  [ -n "$blf_dir" ] || fail "mktemp -d failed for bun lockfile case: $blf_label"
+  for blf_name in "$@"; do
+    printf '# fixture lockfile\n' > "${blf_dir}/${blf_name}"
+  done
+  blf_out="$(MCP_CONFIG_PATH="${blf_dir}/.mcp.json" bash "$check_script" --home-dir "$HOME" --project-dir "$blf_dir")"
+  echo "$blf_out" | grep -q "^BUN_LOCKFILE=${blf_expect}\$" \
+    || fail "expected BUN_LOCKFILE=${blf_expect} for ${blf_label}:\n$blf_out"
+  # The KEY=VALUE contract requires exactly one BUN_LOCKFILE row.
+  [ "$(echo "$blf_out" | grep -c '^BUN_LOCKFILE=')" -eq 1 ] \
+    || fail "expected exactly one BUN_LOCKFILE row for ${blf_label}:\n$blf_out"
+  rm -rf "$blf_dir"
+  pass "bun lockfile detection: ${blf_label} → BUN_LOCKFILE=${blf_expect}"
+}
+
+bun_lockfile_case "only bun.lock (current text format)" true bun.lock
+bun_lockfile_case "only bun.lockb (legacy binary format)" true bun.lockb
+bun_lockfile_case "both bun.lock and bun.lockb" true bun.lock bun.lockb
+bun_lockfile_case "neither lockfile present" false
+
 echo "ALL TESTS PASSED"

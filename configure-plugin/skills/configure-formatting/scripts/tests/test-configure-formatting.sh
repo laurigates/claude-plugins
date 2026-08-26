@@ -53,4 +53,143 @@ echo "$out3" | grep -q "^RECOMMENDATION=migrate$" || fail "expected RECOMMENDATI
 pass "legacy prettier-only project recommends migrate"
 rm -rf "$legacy"
 
+# -----------------------------------------------------------------------------
+# CI_FORMAT detection (issue #2497)
+#
+# These cases EXECUTE the probe rather than grepping the script. A naive grep
+# for `biome format` also matches inside `biome format --write`, so a
+# grep-based gate passes against the unfixed script; only running it can tell
+# the two apart.
+# -----------------------------------------------------------------------------
+
+# Build a project fixture: $1 = workflow body, $2 = package.json body ("" = none)
+make_ci_fixture() {
+  local wf_body="$1" pkg_body="${2-}" dir
+  dir="$(mktemp -d)"
+  mkdir -p "${dir}/.github/workflows"
+  printf '%s\n' "$wf_body" > "${dir}/.github/workflows/lint.yml"
+  if [ -n "$pkg_body" ]; then
+    printf '%s\n' "$pkg_body" > "${dir}/package.json"
+  fi
+  printf '%s' "$dir"
+}
+
+# stderr of each probe run lands here (assigned outside the command
+# substitution so the value survives the subshell).
+probe_err="$(mktemp)"
+trap 'rm -f "$probe_err"' EXIT
+run_probe() { # $1 = project dir; stdout returned, stderr captured to $probe_err
+  : > "$probe_err"
+  bash "$check_script" --home-dir "$HOME" --project-dir "$1" 2>"$probe_err"
+}
+
+assert_ci_format() { # $1 = expected true|false, $2 = output, $3 = label
+  printf '%s\n' "$2" | grep -q "^CI_FORMAT=$1$" \
+    || fail "expected CI_FORMAT=$1 for $3:\n$2"
+  pass "CI_FORMAT=$1 — $3"
+}
+
+# --- Case 4: `biome check` / `biome ci` named directly in the workflow --------
+for cmd in "biome check ." "biome ci ." "bunx --bun @biomejs/biome check ."; do
+  proj="$(make_ci_fixture "jobs:
+  lint:
+    steps:
+      - run: ${cmd}")"
+  out="$(run_probe "$proj")"
+  assert_ci_format true "$out" "workflow runs '${cmd}'"
+  rm -rf "$proj"
+done
+
+# --- Case 5: one level of package-script indirection --------------------------
+# bun/npm/pnpm run <script> and yarn <script> resolved via package.json scripts.
+while IFS='|' read -r runner script_key script_val; do
+  [ -n "$runner" ] || continue
+  proj="$(make_ci_fixture "jobs:
+  lint:
+    steps:
+      - run: ${runner}" "{\"scripts\":{\"${script_key}\":\"${script_val}\"}}")"
+  out="$(run_probe "$proj")"
+  assert_ci_format true "$out" "workflow runs '${runner}' → scripts.${script_key}='${script_val}'"
+  rm -rf "$proj"
+done <<'INDIRECTION'
+bun run lint|lint|biome check .
+npm run format:check|format:check|prettier --check .
+pnpm run ci|ci|biome ci .
+yarn fmt|fmt|biome format --write .
+npm run style|style|ruff format --check .
+INDIRECTION
+
+# --- Case 6: lint-only must NOT set CI_FORMAT (no false positives) ------------
+proj="$(make_ci_fixture "jobs:
+  lint:
+    steps:
+      - run: biome lint .")"
+out="$(run_probe "$proj")"
+assert_ci_format false "$out" "workflow runs 'biome lint' (lint-only)"
+rm -rf "$proj"
+
+proj="$(make_ci_fixture "jobs:
+  lint:
+    steps:
+      - run: bun run lint" '{"scripts":{"lint":"biome lint ."}}')"
+out="$(run_probe "$proj")"
+assert_ci_format false "$out" "indirect script is 'biome lint' (lint-only)"
+rm -rf "$proj"
+
+# --- Case 7: exactly ONE level of indirection is resolved ---------------------
+proj="$(make_ci_fixture "jobs:
+  lint:
+    steps:
+      - run: bun run lint" '{"scripts":{"lint":"bun run fmt","fmt":"biome format ."}}')"
+out="$(run_probe "$proj")"
+assert_ci_format false "$out" "script calling another script (depth 2) is not resolved"
+rm -rf "$proj"
+
+# --- Case 8: degrades cleanly when package.json is absent/broken/script-less --
+while IFS='|' read -r label pkg; do
+  [ -n "$label" ] || continue
+  [ "$pkg" = "NONE" ] && pkg=""
+  proj="$(make_ci_fixture "jobs:
+  lint:
+    steps:
+      - run: bun run lint" "$pkg")"
+  out="$(run_probe "$proj")"
+  status=$?
+  assert_ci_format false "$out" "$label"
+  [ "$status" -eq 0 ] || fail "expected exit 0 for $label (got $status)"
+  [ -s "$probe_err" ] && fail "expected empty stderr for $label:\n$(cat "$probe_err")"
+  printf '%s\n' "$out" | grep -q "^=== END CONFIGURE FORMATTING ===$" \
+    || fail "expected complete structured output for $label:\n$out"
+  pass "clean degradation — $label"
+  rm -rf "$proj"
+done <<'DEGRADE'
+no package.json|NONE
+unparseable package.json|{ not json at all
+package.json with no scripts key|{"name":"x"}
+package.json with empty scripts|{"scripts":{}}
+DEGRADE
+
+# --- Case 9: existing direct-match behaviour still works (no regression) ------
+while IFS= read -r cmd; do
+  [ -n "$cmd" ] || continue
+  proj="$(make_ci_fixture "jobs:
+  fmt:
+    steps:
+      - run: ${cmd}")"
+  out="$(run_probe "$proj")"
+  assert_ci_format true "$out" "direct match preserved: '${cmd}'"
+  rm -rf "$proj"
+done <<'DIRECT'
+biome format --write .
+ruff format --check .
+cargo fmt --check
+npx prettier --check .
+DIRECT
+
+# --- Case 10: no workflows at all → CI_FORMAT=false ---------------------------
+bare_ci="$(mktemp -d)"
+out="$(run_probe "$bare_ci")"
+assert_ci_format false "$out" "project with no .github/workflows"
+rm -rf "$bare_ci"
+
 echo "ALL TESTS PASSED"

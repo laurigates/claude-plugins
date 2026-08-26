@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
-reviewed: 2026-06-10
+modified: 2026-08-25
+reviewed: 2026-08-25
 description: "Biome formatter for JS/TS/JSON/CSS — the modern Prettier/ESLint replacement. Also Ruff (Python) and rustfmt. Use when setting up formatting, replacing Prettier, or wiring CI format checks."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--formatter <biome|ruff|rustfmt>]"
@@ -72,6 +72,22 @@ report formatter detection (`BIOME`, `PRETTIER`, `RUFF_FORMAT`, `BLACK`,
 `PRE_COMMIT_FORMAT`, `CI_FORMAT`), and a `RECOMMENDATION` of `configured`
 (a modern formatter is set up), `migrate` (a legacy formatter wants migration to
 Biome/Ruff), or `setup` (no formatter detected).
+
+**How `CI_FORMAT` is decided.** The probe scans `.github/workflows/*.yml|yaml`
+for a command that runs the formatter, then resolves **one** level of
+package-script indirection:
+
+| Signal | `CI_FORMAT` | Why |
+|--------|-------------|-----|
+| Workflow runs `biome check` / `biome ci` | `true` | In Biome 2.x `check` is the combined command (formatter + linter + import sorting); `ci` is its CI-oriented variant |
+| Workflow runs `biome format`, `ruff format`, `cargo fmt`, `prettier` | `true` | Format-only commands, named directly |
+| Workflow runs `biome lint` | `false` | Lint-only — it does not format |
+| Workflow runs `bun run <s>` / `npm run <s>` / `pnpm run <s>` / `yarn <s>` and `package.json`'s `scripts.<s>` contains any command above | `true` | The idiomatic setup keeps the real command in `package.json` |
+| That script calls *another* script (depth 2+) | `false` | Exactly one level is resolved; deeper chains are out of scope |
+
+Indirection needs `jq` and a readable `package.json`. When `package.json` is
+absent, unparseable, or has no `scripts` key — or `jq` is unavailable — the
+lookup degrades silently to the direct-command scan (no stderr, exit 0).
 
 **Modern formatting preferences:**
 - **JavaScript/TypeScript**: Biome (replaces Prettier + ESLint). On `RECOMMENDATION=migrate` with Prettier present, offer migration to Biome — do not configure Prettier as the target formatter.
