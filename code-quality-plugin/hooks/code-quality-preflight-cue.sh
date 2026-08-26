@@ -79,7 +79,7 @@ esac
 
 # Lockfiles — always silent.
 case "$cq_base_name" in
-    package-lock.json|yarn.lock|pnpm-lock.yaml|bun.lockb|Cargo.lock|uv.lock|poetry.lock) exit 0 ;;
+    package-lock.json|yarn.lock|pnpm-lock.yaml|bun.lock|bun.lockb|Cargo.lock|uv.lock|poetry.lock) exit 0 ;;
 esac
 
 # Docs/ADR/PRD paths — covered by blueprint hooks.
