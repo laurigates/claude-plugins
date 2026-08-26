@@ -1628,6 +1628,128 @@ check "AM11: the auth remedy is named" "$end_docs" "gh auth login"
 check "AM11: the timeout remedy names the knob" "$end_docs" "SESSION_SURVEY_GH_TIMEOUT"
 
 # ============================================================================
+# TEST AO: the GIT section reports how far HEAD trails upstream (#2500)
+#
+# The GIT block reported IN_GIT / BRANCH / DIRTY / UNPUSHED — every direction
+# EXCEPT behind. A checkout three commits behind its upstream therefore read
+# as settled, and every finding measured against it was measured against a
+# stale basis with nothing in the digest saying so.
+#
+# BEHIND is a CAVEAT, not an error: it must never flip STATUS=OK, exactly as
+# PROJECT_CONFIDENCE=low does not.
+# ============================================================================
+
+export TASK_ALL_FIXTURE=/dev/null
+export TASK_BPID_FIXTURE=/dev/null
+
+# Bare "origin" plus two clones: one that stays put, one that advances it.
+AO_REMOTE="$SANDBOX/behind-origin.git"
+git init -q --bare "$AO_REMOTE"
+AO_WORK="$SANDBOX/behind-work"
+mkrepo "$AO_WORK"
+AO_BRANCH=$(git -C "$AO_WORK" branch --show-current)
+git -C "$AO_WORK" remote add origin "$AO_REMOTE"
+git -C "$AO_WORK" push -q -u origin "$AO_BRANCH"
+git -C "$AO_REMOTE" symbolic-ref HEAD "refs/heads/$AO_BRANCH"
+
+# Fixture validity: an upstream must genuinely be configured, or "BEHIND=0"
+# below would be the no-upstream path wearing the in-sync path's clothes.
+check_eq "AO: fixture — the work clone has an upstream" \
+  "$(git -C "$AO_WORK" rev-parse --abbrev-ref '@{upstream}' 2>/dev/null)" \
+  "origin/$AO_BRANCH"
+
+# --- AO1: guard integrity — an in-sync branch WITH an upstream reads 0 ------
+# Without this, every "BEHIND=0" assertion below is satisfied by a collector
+# that hardcodes zero, and AO2's count is the only real signal.
+out=$(run_at "$AO_WORK")
+check_line "AO1: an in-sync branch reports BEHIND=0" "$out" "BEHIND=0"
+check_line "AO1: an in-sync branch is still STATUS=OK" "$out" "STATUS=OK"
+
+# --- AO2: a branch that genuinely trails upstream reports the real count ----
+AO_UP="$SANDBOX/behind-upstream"
+git clone -q "$AO_REMOTE" "$AO_UP"
+git -C "$AO_UP" config user.email test@example.com
+git -C "$AO_UP" config user.name test
+for n in 1 2 3; do
+  git -C "$AO_UP" commit -q --allow-empty -m "upstream commit $n"
+done
+git -C "$AO_UP" push -q origin "$AO_BRANCH"
+git -C "$AO_WORK" fetch -q origin
+# Fixture validity: git itself must agree the work clone is 3 behind.
+check_eq "AO2: fixture — git reports the work clone 3 behind" \
+  "$(git -C "$AO_WORK" rev-list --count "HEAD..@{upstream}" 2>/dev/null)" "3"
+out=$(run_at "$AO_WORK")
+check_line "AO2: the digest reports the real behind count" "$out" "BEHIND=3"
+check_count_line "AO2: exactly one BEHIND key" "$out" '^BEHIND=' 1
+
+# --- AO3: BEHIND>0 is a caveat, never an error ------------------------------
+git_of() { printf '%s' "$1" | sed -n '/=== GIT ===/,/=== END GIT ===/p'; }
+git_block=$(git_of "$out")
+check_line "AO3: the GIT section still reports STATUS=OK" "$git_block" "STATUS=OK"
+check_absent "AO3: staleness never raises an ERROR status" "$git_block" "STATUS=ERROR"
+check_absent "AO3: staleness never raises a WARN status" "$git_block" "STATUS=WARN"
+# BEHIND lives inside the GIT block, adjacent to UNPUSHED.
+check_line "AO3: BEHIND is emitted inside the GIT section" "$git_block" "BEHIND=3"
+ao_unpushed_ln=$(printf '%s\n' "$git_block" | grep -n '^UNPUSHED=' | head -1 | cut -d: -f1)
+ao_behind_ln=$(printf '%s\n' "$git_block" | grep -n '^BEHIND=' | head -1 | cut -d: -f1)
+check_eq "AO3: BEHIND sits directly after UNPUSHED" \
+  "$ao_behind_ln" "$((ao_unpushed_ln + 1))"
+
+# --- AO4: no upstream degrades to 0, silently, exit 0 -----------------------
+# The modal session-start state: a freshly created local branch. Mirrors
+# UNPUSHED's own degradation (#2286) — never a non-zero exit, never stderr.
+AO_NOUP="$SANDBOX/behind-no-upstream"
+mkrepo "$AO_NOUP"
+check_eq "AO4: fixture — the repo genuinely has no upstream" \
+  "$(git -C "$AO_NOUP" rev-parse --abbrev-ref '@{upstream}' 2>/dev/null || echo none)" "none"
+ao_err="$SANDBOX/ao-noup.err"
+out=$(run_at "$AO_NOUP" 2>"$ao_err")
+ao_rc=$?
+check_eq "AO4: the collector still exits 0" "$ao_rc" "0"
+check_line "AO4: no upstream degrades to BEHIND=0" "$out" "BEHIND=0"
+check_eq "AO4: no stderr noise" "$(wc -c < "$ao_err" | tr -d ' ')" "0"
+check_count_line "AO4: still exactly one BEHIND key" "$out" '^BEHIND=' 1
+# The bare-integer guard from TEST V, applied to the new key: a `|| echo 0`
+# fallback after a command that both prints and fails emits a two-line value.
+check_count_line "AO4: no bare integer line leaked into the digest" "$out" '^0$' 0
+
+# --- AO5: detached HEAD degrades the same way -------------------------------
+git -C "$AO_WORK" checkout -q --detach
+check_eq "AO5: fixture — HEAD is genuinely detached" \
+  "$(git -C "$AO_WORK" symbolic-ref -q HEAD >/dev/null 2>&1 && echo attached || echo detached)" \
+  "detached"
+ao_err2="$SANDBOX/ao-detached.err"
+out=$(run_at "$AO_WORK" 2>"$ao_err2")
+ao_rc2=$?
+check_eq "AO5: the collector still exits 0 on a detached HEAD" "$ao_rc2" "0"
+check_line "AO5: detached HEAD degrades to BEHIND=0" "$out" "BEHIND=0"
+check_eq "AO5: no stderr noise on a detached HEAD" \
+  "$(wc -c < "$ao_err2" | tr -d ' ')" "0"
+git -C "$AO_WORK" checkout -q "$AO_BRANCH"
+
+# --- AO6: BEHIND is parse-stable outside a git repo -------------------------
+# Every other GIT key is emitted unconditionally there; a conditional BEHIND
+# would make the section shape depend on the repo state.
+AO_NOGIT="$SANDBOX/behind-no-git"
+mkdir -p "$AO_NOGIT"
+out=$(run_at "$AO_NOGIT")
+check_line "AO6: a non-repo still reports IN_GIT=false" "$out" "IN_GIT=false"
+check_line "AO6: a non-repo still emits BEHIND=0" "$out" "BEHIND=0"
+
+# --- AO7: the consumers surface BEHIND wherever they surface UNPUSHED -------
+# The summary block is what the SessionStart nudge parses; the spinup/end
+# skills are what turn the key into a briefing line.
+out=$(run_at "$AO_WORK" --summary)
+check_line "AO7: summary mode carries BEHIND" "$out" "BEHIND=3"
+SPINUP_SKILL="$SCRIPT_DIR/../../skills/session-spinup/SKILL.md"
+spinup_docs=$(cat "$SPINUP_SKILL" 2>/dev/null)
+check "AO7: session-spinup names BEHIND" "$spinup_docs" "BEHIND"
+README_DOC=$(cat "$SCRIPT_DIR/../../README.md" 2>/dev/null)
+check "AO7: the collector README documents BEHIND" "$README_DOC" "BEHIND"
+
+export TASK_ALL_FIXTURE="$SANDBOX/proj.json"
+
+# ============================================================================
 # TEST AN: check()'s own harness must not race on SIGPIPE (#2452)
 #
 # `check()` used to pipe the haystack into `grep -qF`:
