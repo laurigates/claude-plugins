@@ -36,13 +36,6 @@ Use these JSON configurations when adding servers to `.mcp.json`:
   "sequential-thinking": {
     "command": "npx",
     "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
-  },
-  "cclsp": {
-    "command": "npx",
-    "args": ["-y", "cclsp@latest"],
-    "env": {
-      "CCLSP_CONFIG_PATH": "./cclsp.json"
-    }
   }
 }
 ```
@@ -78,36 +71,16 @@ Use `${VAR_NAME}` references in `.mcp.json` — never hardcode tokens.
 - `argocd-mcp` - ArgoCD GitOps deployment management (requires `ARGOCD_SERVER`, `ARGOCD_AUTH_TOKEN`)
 - `sentry` - Sentry error tracking and monitoring (requires `SENTRY_AUTH_TOKEN`)
 
-**Code Intelligence (optional):**
-- `cclsp` - LSP navigation (find-references, go-to-definition, rename) for TS/Python/Rust projects
+**Code intelligence** is no longer an MCP concern. Claude Code has a native LSP
+client; language servers come from the official `*-lsp` plugins (`rust-analyzer-lsp`,
+`typescript-lsp`, `pyright-lsp`, `gopls-lsp`, `clangd-lsp`, ...), enabled per user
+rather than per project. Do not add an LSP bridge to `.mcp.json`.
 
-## cclsp Setup Details
-
-When installing `cclsp`, create `cclsp.json` in the project root with language servers based on detected project files:
-
-| Files Present | Language Server Entry |
-|---------------|----------------------|
-| `*.ts`, `*.tsx`, `*.js`, `*.jsx` | `{"extensions": ["js", "ts", "jsx", "tsx", "mjs", "cjs"], "command": ["typescript-language-server", "--stdio"], "rootDir": "."}` |
-| `*.py` | `{"extensions": ["py", "pyi"], "command": ["pylsp"], "rootDir": "."}` |
-| `*.go` | `{"extensions": ["go"], "command": ["gopls", "serve"], "rootDir": "."}` |
-| `*.rs` | `{"extensions": ["rs"], "command": ["rust-analyzer"], "rootDir": "."}` |
-
-Write `cclsp.json` with detected servers:
-```json
-{
-  "servers": [
-    // entries based on detected languages
-  ]
-}
-```
-
-Add `cclsp.json` to `.gitignore` (machine-specific language server paths).
-
-Required language server installations:
-- TypeScript: `npm i -g typescript-language-server`
-- Python: `pip install python-lsp-server`
-- Go: `go install golang.org/x/tools/gopls@latest`
-- Rust: Install via `rustup component add rust-analyzer`
+Known trap: those plugins declare `lspServers` only in the marketplace's
+`marketplace.json`, while the runtime reads it from the installed plugin's
+`.claude-plugin/plugin.json` — so they install inert, with
+`getAllLspServers returned 0 server(s)` and no warning. Upstream:
+anthropics/claude-code#15148.
 
 ## Report Templates
 

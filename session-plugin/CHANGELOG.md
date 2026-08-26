@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.3](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.10.2...session-plugin-v1.10.3) (2026-08-26)
+
+
+### Bug Fixes
+
+* **session-plugin:** report how far HEAD trails upstream in the GIT section ([bf9bc0d](https://github.com/laurigates/claude-plugins/commit/bf9bc0d29ccfeec4799943975cd1094a5fdfadef)), closes [#2500](https://github.com/laurigates/claude-plugins/issues/2500)
+* **session-plugin:** report how far HEAD trails upstream via a BEHIND key ([#2502](https://github.com/laurigates/claude-plugins/issues/2502)) ([bf9bc0d](https://github.com/laurigates/claude-plugins/commit/bf9bc0d29ccfeec4799943975cd1094a5fdfadef))
+
 ## [1.10.2](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.10.1...session-plugin-v1.10.2) (2026-08-20)
 
 

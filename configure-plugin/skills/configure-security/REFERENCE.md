@@ -12,7 +12,9 @@ components:
   security_sast: true
   security_secret_detection: true
   security_policy: true
-  security_dependabot: true
+  # Record whichever dependency-update bot the repo actually runs. Renovate and
+  # Dependabot are alternatives, never both (#2495) — set one, not the pair.
+  security_dependabot: true    # or: security_renovate: true
 ```
 
 ## Compliance Report Format
@@ -23,9 +25,9 @@ Security Scanning Compliance Report
 Project: [name]
 Languages: [TypeScript, Python]
 
-Dependency Auditing:
+Dependency Automation:
+  Update bot              Renovate                   [RENOVATE | DEPENDABOT | NONE]
   npm audit               configured                 [CONFIGURED | MISSING]
-  Dependabot              enabled                    [ENABLED | DISABLED]
   Dependency review       .github/workflows/         [CONFIGURED | MISSING]
   Audit scripts           package.json               [CONFIGURED | MISSING]
   Auto-merge              configured                 [OPTIONAL | MISSING]
@@ -50,13 +52,20 @@ Security Policies:
 Overall: [X issues found]
 
 Recommendations:
-  - Enable Dependabot for automated dependency updates
+  - Enable a dependency-update bot (Renovate or Dependabot) — omit this line when one already runs
   - Add CodeQL workflow for SAST scanning
   - Scan git history for leaked secrets
   - Create SECURITY.md for responsible disclosure
 ```
 
-## Dependency Auditing Templates
+## Dependency Automation Templates
+
+> **Apply the update-bot template only when the repo has neither bot** — i.e.
+> when the detection script reports `DEPENDENCY_AUTOMATION=false`. Renovate and
+> Dependabot both open update PRs and both rewrite lockfiles, so installing the
+> second one on top of an incumbent makes them race each other (#2495). When
+> `RENOVATE=true`, configure the audit scripts and dependency-review workflow
+> below and leave the update bot as it is.
 
 ### npm Audit Scripts (package.json)
 
@@ -71,6 +80,9 @@ Recommendations:
 ```
 
 ### Dependabot Config (`.github/dependabot.yml`)
+
+Use this **only** when the repo runs no update bot yet. A repo already on
+Renovate needs no change here.
 
 ```yaml
 version: 2
@@ -434,7 +446,7 @@ We take the security of our project seriously. If you believe you've found a sec
 
 This project uses:
 
-- **Dependabot**: Automated dependency updates
+- **Renovate** *or* **Dependabot**: Automated dependency updates (name the one this repo runs)
 - **CodeQL**: Static application security testing
 - **Gitleaks**: Pre-commit secret scanning
 - **TruffleHog**: Git history secret scanning
@@ -524,9 +536,9 @@ jobs:
 Security Scanning Configuration Complete
 =========================================
 
-Dependency Auditing:
+Dependency Automation:
   npm audit scripts configured
-  Dependabot enabled
+  Update bot: Renovate (already configured — left unchanged)
   Dependency review workflow added
   Auto-grouping configured
 
@@ -552,7 +564,7 @@ CI/CD Integration:
   All scans integrated
 
 Next Steps:
-  1. Review and approve Dependabot PRs:
+  1. Review and approve dependency-update PRs (Renovate or Dependabot):
      GitHub > Pull Requests > Filter by "dependencies"
 
   2. Review CodeQL findings:
