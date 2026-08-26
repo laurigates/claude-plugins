@@ -144,6 +144,27 @@ calls whose output it prints: the summary prints `GH_READY` and
 `ASSIGNED_ISSUES`, so it issues the assigned-issue query even without
 `--with-dedup`.
 
+### Git state reports both directions
+
+The `GIT` section carries `IN_GIT`, `BRANCH`, `DIRTY`, `UNPUSHED`, and
+`BEHIND` — the last two are the two directions a checkout can diverge:
+
+| Key | Meaning | On no upstream / detached HEAD |
+|---|---|---|
+| `UNPUSHED` | Commits HEAD holds that upstream does not (`@{u}..HEAD`) | `0` |
+| `BEHIND` | Commits upstream holds that HEAD does not (`HEAD..@{upstream}`) | `0` |
+
+`BEHIND` reads `@{upstream}` rather than a hardcoded `origin/main`, so it
+resolves per branch and degrades to `0` — silently, exit 0 — wherever there
+is no upstream to compare against. That means `BEHIND=0` is *never* evidence
+the tree is current, only that nothing said otherwise.
+
+`BEHIND` ≥ 1 is a **caveat, not an error**: `STATUS` stays `OK`, exactly as
+it does for `PROJECT_CONFIDENCE=low`. It says everything read from this tree
+was read against a stale basis — the failure it exists to prevent is a
+confident, specific finding about a bug that was already fixed upstream, with
+nothing in the digest hinting the checkout had fallen behind.
+
 ### Task scoping is honest about its guess
 
 The taskwarrior project slug is detected from the repo **directory

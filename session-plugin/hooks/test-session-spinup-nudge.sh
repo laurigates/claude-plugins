@@ -170,6 +170,35 @@ else
 fi
 assert_contains "local dirty-tree thread survives a hung gh" 'uncommitted changes' "$output"
 
+# --- W3: a checkout behind upstream is an open thread (#2500) ---------------
+# Pre-fix the digest reported every direction except behind, so a stale but
+# otherwise clean checkout stayed silent and read as settled.
+echo ""
+echo "a checkout behind its upstream surfaces (#2500):"
+W3_REMOTE="$GH_STUB_DIR/behind-origin.git"
+git init -q --bare "$W3_REMOTE"
+REPO_BEHIND="$GH_STUB_DIR/behind-work"
+git -C "$GH_STUB_DIR" init -q "behind-work"
+git -C "$REPO_BEHIND" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+W3_BRANCH=$(git -C "$REPO_BEHIND" branch --show-current)
+git -C "$REPO_BEHIND" remote add origin "$W3_REMOTE"
+git -C "$REPO_BEHIND" push -q -u origin "$W3_BRANCH"
+git -C "$W3_REMOTE" symbolic-ref HEAD "refs/heads/$W3_BRANCH"
+# Guard integrity: an in-sync clone with an upstream must stay SILENT, or the
+# assertion below would pass against a hook that nudges on every repo.
+output=$(run_hook_output "sp-in-sync" "$REPO_BEHIND" "startup")
+assert_silent "an in-sync clone with an upstream stays silent" "$output"
+W3_UP="$GH_STUB_DIR/behind-upstream"
+git clone -q "$W3_REMOTE" "$W3_UP"
+for n in 1 2; do
+    git -C "$W3_UP" -c user.email=t@t -c user.name=t commit -q --allow-empty -m "upstream $n"
+done
+git -C "$W3_UP" push -q origin "$W3_BRANCH"
+git -C "$REPO_BEHIND" fetch -q origin
+output=$(run_hook_output "sp-behind" "$REPO_BEHIND" "startup")
+assert_contains "a stale checkout fires the nudge" 'additionalContext' "$output"
+assert_contains "the nudge names the behind count" '2 commit(s) behind upstream' "$output"
+
 echo ""
 echo "=== Results: ${PASS} passed, ${FAIL} failed ==="
 [ "$FAIL" -gt 0 ] && exit 1

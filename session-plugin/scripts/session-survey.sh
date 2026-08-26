@@ -205,6 +205,7 @@ fi
 # ---------------------------------------------------------------------------
 dirty=false
 unpushed=0
+behind=0
 open_tasks=0
 active_tasks=0
 assigned_issues=0
@@ -224,6 +225,18 @@ if [ "$in_git" = true ]; then
   # contract and making the -gt test below an unconditional false.
   unpushed=$("$git_bin" -C "$project_dir" log '@{u}..HEAD' --oneline 2>/dev/null | awk 'END{print NR+0}')
   [ -n "$unpushed" ] || unpushed=0
+  # How far HEAD TRAILS upstream (#2500). Without it the digest reported every
+  # direction except behind, so a checkout three commits stale read as settled
+  # and every finding measured against it was measured against a stale basis.
+  # `@{upstream}` rather than a hardcoded origin/main: it resolves per branch
+  # and simply fails (exit non-zero, nothing on stdout, stderr suppressed) on a
+  # branch with no upstream or a detached HEAD — the same posture UNPUSHED
+  # takes. Piped into awk for the same reason UNPUSHED is, NOT `|| echo 0`: a
+  # fallback after a command that can both print and fail yields a TWO-LINE
+  # value and breaks the KEY=VALUE contract (the #2286 trap).
+  behind=$("$git_bin" -C "$project_dir" rev-list --count 'HEAD..@{upstream}' 2>/dev/null \
+    | awk '{n=$1} END{print n+0}')
+  [ -n "$behind" ] || behind=0
 fi
 
 # The git remote's repo name — a second, cheap (local, no network) candidate
@@ -923,6 +936,7 @@ if [ "$summary_mode" = true ]; then
   [ -n "$prefix_siblings" ] && echo "PROJECT_PREFIX_SIBLING_TASKS=${prefix_sibling_tasks}"
   echo "DIRTY=${dirty}"
   echo "UNPUSHED=${unpushed}"
+  echo "BEHIND=${behind}"
   echo "OPEN_TASKS=${open_tasks}"
   echo "PROJECT_EXACT_TASKS=${project_exact_tasks}"
   echo "RECENT_TASK_COUNT=${recent_task_count}"
@@ -958,6 +972,11 @@ echo "IN_GIT=${in_git}"
 echo "BRANCH=${git_branch}"
 echo "DIRTY=${dirty}"
 echo "UNPUSHED=${unpushed}"
+# A CAVEAT, not an error (#2500): BEHIND>0 says "anything measured here was
+# measured against a stale basis", the way PROJECT_CONFIDENCE=low does — it
+# never flips STATUS, and it is emitted unconditionally so the section shape
+# does not depend on the repo state.
+echo "BEHIND=${behind}"
 echo "STATUS=OK"
 echo "=== END GIT ==="
 
