@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.25.1](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.25.0...code-quality-plugin-v1.25.1) (2026-08-26)
+
+
+### Bug Fixes
+
+* **configure-plugin:** accept bun.lock alongside legacy bun.lockb ([#2501](https://github.com/laurigates/claude-plugins/issues/2501)) ([0496a7e](https://github.com/laurigates/claude-plugins/commit/0496a7eff6a4a3c39d698bd1af6fbad1efd77bcc)), closes [#2496](https://github.com/laurigates/claude-plugins/issues/2496)
+
 ## [1.25.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.24.1...code-quality-plugin-v1.25.0) (2026-08-23)
 
 
