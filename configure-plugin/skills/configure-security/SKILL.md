@@ -1,8 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-07-04
-reviewed: 2026-07-04
-description: "Security scanning: dependency audits, SAST, secrets detection. Use when setting up Dependabot, CodeQL, or TruffleHog in CI, or creating a SECURITY.md policy."
+modified: 2026-08-26
+reviewed: 2026-08-26
+description: "Security scanning: dependency automation, SAST, secrets detection. Use when setting up Renovate/Dependabot, CodeQL, or TruffleHog in CI, or creating a SECURITY.md policy."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--type <dependencies|sast|secrets|all>]"
 argument-hint: "[--check-only] [--fix] [--type <dependencies|sast|secrets|all>]"
@@ -19,7 +19,7 @@ Check and configure security scanning tools for dependency audits, SAST, and sec
 |------------------------|------------------------------|
 | Setting up dependency auditing, SAST, or secret detection for a project | Running a one-off security scan (use `gitleaks detect` or `npm audit` directly) |
 | Checking project compliance with security scanning standards | Reviewing code for application-level vulnerabilities (use security-audit agent) |
-| Configuring Dependabot, CodeQL, or TruffleHog in CI/CD | Managing GitHub repository security settings via the web UI |
+| Configuring Renovate/Dependabot, CodeQL, or TruffleHog in CI/CD | Managing GitHub repository security settings via the web UI |
 | Creating or updating a SECURITY.md policy | Writing security documentation beyond the policy template |
 | Auditing which security tools are missing from a project | Investigating a specific CVE or vulnerability |
 
@@ -30,11 +30,12 @@ Check and configure security scanning tools for dependency audits, SAST, and sec
 - Pre-commit config: !`find . -maxdepth 1 -name '.pre-commit-config.yaml'`
 - Workflows dir: !`find . -maxdepth 2 -type d -path '*/.github/workflows'`
 - Dependabot config: !`find . -maxdepth 2 -path '*/.github/dependabot.yml'`
+- Renovate config: !`find . -maxdepth 2 \( -name 'renovate.json' -o -name 'renovate.json5' -o -name '.renovaterc' -o -name '.renovaterc.json' -o -name '.renovaterc.json5' \)`
 - CodeQL workflow: !`find . -maxdepth 3 -path '*/.github/workflows/codeql*'`
 - Security policy: !`find . -maxdepth 1 -name 'SECURITY.md'`
 
 **Security scanning layers:**
-1. **Dependency auditing** - Check for known vulnerabilities in dependencies
+1. **Dependency automation** - Keep dependencies patched via Renovate *or* Dependabot (they are alternatives — see Step 4)
 2. **SAST (Static Application Security Testing)** - Analyze code for security issues
 3. **Secret detection** - Prevent committing secrets to version control
 
@@ -75,8 +76,14 @@ bash "${CLAUDE_SKILL_DIR}/scripts/configure-security.sh" --home-dir "$HOME" --pr
 
 Parse `STATUS=` and the `ISSUES:` block from the output. The `KEY=VALUE` lines
 report language detection (`LANG_JS`, `LANG_PYTHON`, `LANG_RUST`, `LANG_GO`) and
-the presence matrix (`DEPENDABOT`, `CODEQL`, `GITLEAKS_CONFIG`, `SECURITY_POLICY`,
-`TRUFFLEHOG`, `DEPENDENCY_REVIEW`, `SECURITY_LAYERS_PRESENT`).
+the presence matrix (`DEPENDABOT`, `RENOVATE`, `DEPENDENCY_AUTOMATION`, `CODEQL`,
+`GITLEAKS_CONFIG`, `SECURITY_POLICY`, `TRUFFLEHOG`, `DEPENDENCY_REVIEW`,
+`SECURITY_LAYERS_PRESENT`).
+
+`DEPENDENCY_AUTOMATION` is the layer verdict — true when **either** `RENOVATE` or
+`DEPENDABOT` is true. Read that key, not `DEPENDABOT` alone, when deciding
+whether the dependency layer needs work; the `missing_dependency_automation`
+warning is raised only when neither tool is configured.
 
 ### Step 3: Generate compliance report
 
@@ -86,13 +93,20 @@ If `--check-only` is set, stop here.
 
 For the compliance report format, see [REFERENCE.md](REFERENCE.md).
 
-### Step 4: Configure dependency auditing (if --fix or user confirms)
+### Step 4: Configure dependency automation (if --fix or user confirms)
+
+**First, check the incumbent.** If `DEPENDENCY_AUTOMATION=true`, a dependency
+bot already runs here — leave it alone and skip to the audit-script and
+dependency-review items below. Renovate and Dependabot both open update PRs and
+both rewrite lockfiles, so adding the second one makes them race each other on
+every update; never configure Dependabot on a repo where `RENOVATE=true` (or the
+reverse). Only when `DEPENDENCY_AUTOMATION=false` do you pick one and install it.
 
 Based on detected language:
 
 **JavaScript/TypeScript (npm/bun):**
 1. Add audit scripts to `package.json`
-2. Create Dependabot config `.github/dependabot.yml`
+2. If no bot is configured yet, create one — Dependabot config `.github/dependabot.yml`, or a Renovate config (`renovate.json`)
 3. Create dependency review workflow `.github/workflows/dependency-review.yml`
 
 **Python (pip-audit):**
@@ -147,7 +161,7 @@ exact block, see [REFERENCE.md](REFERENCE.md).
 
 ### Step 10: Report configuration results
 
-Print a summary of all changes made across dependency auditing, SAST scanning, secret detection, security policy, and CI/CD integration. Include next steps for reviewing Dependabot PRs, CodeQL findings, and enabling private vulnerability reporting.
+Print a summary of all changes made across dependency automation, SAST scanning, secret detection, security policy, and CI/CD integration. Include next steps for reviewing dependency-update PRs (Renovate or Dependabot, whichever this repo runs), CodeQL findings, and enabling private vulnerability reporting.
 
 For the results report format, see [REFERENCE.md](REFERENCE.md).
 
