@@ -4,7 +4,7 @@ description: Tool results that mean something other than they look — a rewritt
 allowed-tools: Read, Glob, Grep, Bash(rg *), Bash(git grep *), Bash(git log *), Bash(git status *), Bash(git worktree *), Bash(gh api *), Bash(gh pr view *), Bash(python3 *), TodoWrite
 model: opus
 created: 2026-08-21
-modified: 2026-08-21
+modified: 2026-08-26
 compatibility: claude-code
 reviewed: 2026-08-21
 ---
@@ -19,7 +19,8 @@ line of output are each claims about *mechanics*, not about *content*.** Every
 trap here produces output that is indistinguishable from a correct answer —
 no error, no warning, nothing on stderr — and the damage lands when that
 output is used as a verdict: "no duplicate exists", "the rename is complete",
-"nothing was lost", "the agent got its input".
+"nothing was lost", "the agent got its input". In one case the diagnostic *was*
+written — and the caller's own `2>/dev/null` is what made it disappear.
 
 The recurring fix is equally uniform: **control-test any negative that gates an
 action.** Re-run the same command shape against something you *know* is
@@ -38,6 +39,7 @@ non-finding.
 | Batching parallel tool calls whose siblings may exit non-zero | A single call, or a batch of confirmed-present paths |
 | A `Workflow` script's agents report thin or generic findings on rich material | Agents are returning specific, grounded detail |
 | An `rg`/`git grep` result contradicts something you read directly | Output matches an independent read of the same file |
+| The command that produced the empty result had its stderr redirected away | You read the command's stderr, or have seen it fail before |
 
 ## The traps
 
@@ -153,6 +155,47 @@ shape against a term you know is present; if the control also returns nothing,
 the tool is broken, not the result empty. One control run caught all six above.
 This is `never-fabricate-test-identifiers.md`'s known-good control, applied to
 search.
+
+## Your own `2>/dev/null` turns a loud rejection into a clean negative
+
+The section above is about a tool that stayed quiet. This one is its mirror, and
+the difference is the whole point: **the tool did its job.** It rejected the
+command, printed a diagnostic, and exited non-zero — and the caller's own
+redirect threw all three away. No tool-side improvement reaches this: the
+message was written and then discarded downstream of the tool.
+
+```
+# Wrong — gh pr diff takes no pathspec, and the rejection goes to /dev/null
+gh pr diff 36 -- .env.example 2>/dev/null | grep -E "^[+-]"
+      ← empty stdout, reads as "this PR does not touch that file"
+
+# The same command with the redirect dropped
+gh pr diff 36 -- .env.example
+accepts at most 1 arg(s), received 2      ← rc=1, and it said so all along
+```
+
+Observed 2026-08 reviewing a PR that claimed `Closes #29`: the empty result was
+one step from being reported as "the change was never made". The file was
+`+34/-5`. The exit code was lost as well — a pipeline reports the status of its
+**last** command, so `grep`'s status is what survived, not `gh`'s.
+
+**The control test does not catch this class.** Re-running the same shape
+against a file the PR definitely touches comes back empty too — the shape is
+broken for every input, so the control agrees with the false negative and
+confirms it. What breaks it open is dropping the redirect, not changing the
+input.
+
+- **Suppress stderr only on a command whose failure mode you have already seen.**
+  `2>/dev/null` is a claim that you know what would have been printed. On a
+  first-time shape — a new flag, a new subcommand, a line copied from
+  elsewhere — it mutes the one channel that would say the command never ran.
+- **Re-run without the redirect before believing a negative that gates an
+  action.** One run, and the diagnostic is either there or it is not. Prefer
+  keeping stderr and reading it (`2>&1`) over muting it while you are still
+  learning a command's shape.
+- **Correct forms for the case above**: `gh pr diff <N>` and filter the unified
+  diff yourself, or `gh pr view <N> --json files` for per-file additions and
+  deletions.
 
 ## A worktree-isolated shell can wedge — and `cd` cannot unwedge it
 

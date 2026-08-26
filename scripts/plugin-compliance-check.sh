@@ -1084,6 +1084,31 @@ check_skill_body() {
       done
     fi
 
+    # Regression: tool-result-traps must cover the stderr-suppression variant of
+    # the "rejected flag looks like no results" family (issue #2504). The
+    # distinguishing property is that the TOOL DID ITS JOB: `gh pr diff <N> --
+    # <path>` takes no pathspec, so it exits non-zero and writes "accepts at
+    # most 1 arg(s), received 2" to stderr — and the caller's own `2>/dev/null`
+    # discarded it, leaving an empty stdout indistinguishable from "the PR does
+    # not touch that file" (the pipeline also reported grep's exit status, not
+    # gh's). A PR claiming `Closes #29` was one step from being reported as
+    # never having made the change; the file was +34/-5. Two load-bearing ideas,
+    # one literal token each, both on a single line (grep -qF is line-scoped):
+    #   (a) the habit that catches it — suppress stderr only on a command whose
+    #       failure mode you have already seen;
+    #   (b) the control-test DEFEAT — a shape broken for every input fails the
+    #       skill's prescribed same-shape control identically, so the control
+    #       confirms the false negative instead of exposing it. This is the
+    #       subtlest half and the one a prose "tightening" pass would drop.
+    if [ "$skill_name" = "tool-result-traps" ] && [ "$plugin" = "agent-patterns-plugin" ]; then
+      for token in 'failure mode you have already seen' 'the control agrees with the false negative'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain stderr-suppression token '${token}' (a caller's own 2>/dev/null turns a loud rejection into a clean negative, and the same-shape control test cannot catch it — issue #2504)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: claude-security-settings must warn that flag-scoped deny rules
     # belong in the space form ("Bash(git push --force *)"), never the colon form
     # ("Bash(git push --force:*)"). The colon form was observed prefix-matching
