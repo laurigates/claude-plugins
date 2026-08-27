@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/laurigates/claude-plugins/compare/prose-plugin-v1.3.4...prose-plugin-v1.4.0) (2026-08-27)
+
+
+### Features
+
+* **prose:** add prose-check, a self-evaluation gate against the house rubric ([#2520](https://github.com/laurigates/claude-plugins/issues/2520)) ([a5fbbf0](https://github.com/laurigates/claude-plugins/commit/a5fbbf0a881f009c3a7b5fa68183545123388419))
+
 ## [1.3.4](https://github.com/laurigates/claude-plugins/compare/prose-plugin-v1.3.3...prose-plugin-v1.3.4) (2026-05-14)
 
 
