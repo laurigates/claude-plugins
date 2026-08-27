@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.10.2...hooks-plugin-v2.11.0) (2026-08-27)
+
+
+### Features
+
+* **prose:** add prose-check, a self-evaluation gate against the house rubric ([#2520](https://github.com/laurigates/claude-plugins/issues/2520)) ([a5fbbf0](https://github.com/laurigates/claude-plugins/commit/a5fbbf0a881f009c3a7b5fa68183545123388419))
+
 ## [2.10.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.10.1...hooks-plugin-v2.10.2) (2026-08-22)
 
 
