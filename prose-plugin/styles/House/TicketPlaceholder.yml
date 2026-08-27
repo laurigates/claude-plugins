@@ -1,0 +1,32 @@
+# Unfilled template scaffolding left in an issue or PR body.
+#
+# Source: git-plugin:github-issue-writing — the bug/feature templates ship
+# angle-bracket and bracket placeholders under "Steps to Reproduce" and
+# "Acceptance Criteria". A body filed with them still in place reads as a real
+# ticket and gets triaged as one.
+#
+# TWO MECHANICS THIS RULE HAD TO WORK AROUND
+#
+# 1. `raw` entries are CONCATENATED into a single pattern, not OR'd the way
+#    `tokens` entries are. Five list items became one impossible regex that
+#    matched nothing — and a rule that matches nothing is indistinguishable from
+#    a rule with nothing to find. Hence one entry with explicit alternation.
+# 2. `tokens` is unusable here regardless: it wraps each entry in \b word
+#    boundaries, and `[` is not a word character, so the bracket form could
+#    never match.
+#
+# Angle-bracket placeholders (`<describe the steps>`) are deliberately absent:
+# vale's markdown parser treats them as HTML and strips them before any rule
+# sees the text. The bracket and bare-word forms below cover what survives.
+#
+# `XXX` and `TODO` are left to proselint.Annotations, which is enabled at error
+# level in .vale.ini and already covers them.
+extends: existence
+message: "Unfilled placeholder '%s' — fill it in or delete the section."
+link: https://github.com/laurigates/claude-plugins/blob/main/git-plugin/skills/github-issue-writing/SKILL.md
+level: error
+scope: sentence
+ignorecase: true
+nonword: true
+raw:
+  - '(\[(?:describe|paste|your|insert|add|e\.g\.)[^\]\n]*\]|\bTBD\b|\blorem ipsum\b|\bFIXME\b)'

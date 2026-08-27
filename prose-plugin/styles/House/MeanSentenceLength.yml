@@ -1,0 +1,20 @@
+# Mean sentence length over the whole file. Shape follows the upstream
+# Readability/FleschKincaid.yml metric rule (formula + condition, no scope).
+#
+# Threshold basis: ~/.claude/rules/communication.md — the rubric this package
+# encodes — measures 44 sentences / 14.6 mean words once hard line wraps are
+# joined. 25 leaves generous headroom over that and still catches a document
+# whose sentences have drifted long.
+#
+# Vale counts sentences with a punkt-grade segmenter, which scored 27/48 on the
+# English Golden Rules Set in this repo's benchmark; prose-check's
+# positional-tics.py uses pysbd (47/48) for the counts it reports. Expect the two
+# numbers to disagree on abbreviation-heavy text. This rule is the cheap
+# whole-file signal, not the authority.
+extends: metric
+message: "Mean sentence length is %s words — long sentences bury the fact."
+link: https://github.com/laurigates/dotfiles/blob/main/exact_dot_claude/rules/communication.md
+level: suggestion
+formula: |
+  words / sentences
+condition: "> 25"

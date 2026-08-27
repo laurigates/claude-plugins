@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "hooks-plugin",
-  "version": "2.10.2",
+  "version": "2.11.0",
   "description": "Claude Code hooks for enforcing best practices and workflow automation",
   "author": {
     "name": "Lauri Gates"
@@ -31,7 +31,8 @@
     "permissions",
     "checkpoint",
     "repo-deletion-safety",
-    "branch-base"
+    "branch-base",
+    "prose-style"
   ],
   "hooks": {
     "SessionStart": [
@@ -148,6 +149,16 @@
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/bash-antipatterns-teach.sh",
             "timeout": 5000
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/prose-house-style-nudge.sh",
+            "timeout": 15000
           }
         ]
       }

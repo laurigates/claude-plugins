@@ -1,0 +1,4 @@
+# Downloaded by `vale sync` from the `Packages =` line in .vale.ini.
+# Third-party styles are fetched, never vendored.
+write-good/
+proselint/

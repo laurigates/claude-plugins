@@ -1,0 +1,16 @@
+# Filler words — level 2 of prose-distill's Hierarchy of Cuts.
+# The list is reused verbatim from that skill; it is not re-derived here.
+extends: existence
+message: "Filler word '%s' — cut it."
+link: https://github.com/laurigates/claude-plugins/blob/main/prose-plugin/skills/prose-distill/SKILL.md
+level: suggestion
+scope: sentence
+ignorecase: true
+tokens:
+  - actually
+  - basically
+  - essentially
+  - really
+  - very
+  - quite
+  - rather

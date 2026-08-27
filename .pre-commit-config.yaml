@@ -498,6 +498,22 @@ repos:
         language: system
         files: '^scripts/(check-loop-integrity\.sh|tests/test-check-loop-integrity\.sh)$'
         pass_filenames: false
+      - id: check-prose-house-style
+        name: House vale rules stay a faithful encoding of communication.md
+        entry: bash ./scripts/check-prose-house-style.sh --strict
+        language: system
+        # Whole-scope guard (pass_filenames: false), so the trigger must reach
+        # every file its verdict depends on: the derived encodings, the
+        # prose-distill lists they are checked against, the hook and its
+        # registration, and the checker itself.
+        files: '(prose-plugin/styles/.*|prose-plugin/skills/prose-(check|distill)/.*|prose-house-style-nudge\.sh|hooks-plugin/\.claude-plugin/plugin\.json|check-prose-house-style\.sh)$'
+        pass_filenames: false
+      - id: test-check-prose-house-style
+        name: prose house-style guard regression
+        entry: bash ./scripts/tests/test-check-prose-house-style.sh
+        language: system
+        files: '^scripts/(check-prose-house-style\.sh|tests/test-check-prose-house-style\.sh)$'
+        pass_filenames: false
       - id: check-delegation-reachability
         name: catalog-present skills never delegate to a gated sibling (#2442)
         entry: bash ./scripts/check-delegation-reachability.sh
