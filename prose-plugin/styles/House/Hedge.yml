@@ -1,0 +1,18 @@
+# Hedge words — level 3 of prose-distill's Hierarchy of Cuts.
+#
+# communication.md is explicit that this is NOT a licence to strip qualification:
+# "hedges that carry real uncertainty ... stated caveats, and explicit noise
+# floors all stay — they are information." A hit here is a candidate for
+# judgment, never a defect. "arguably" attached to a real uncertainty survives;
+# "arguably" as padding does not.
+extends: existence
+message: "Hedge '%s' — keep it only if it carries real uncertainty."
+link: https://github.com/laurigates/claude-plugins/blob/main/prose-plugin/skills/prose-distill/SKILL.md
+level: suggestion
+scope: sentence
+ignorecase: true
+tokens:
+  - somewhat
+  - arguably
+  - it could be said that
+  - in a sense

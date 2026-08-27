@@ -31,7 +31,8 @@
     "permissions",
     "checkpoint",
     "repo-deletion-safety",
-    "branch-base"
+    "branch-base",
+    "prose-style"
   ],
   "hooks": {
     "SessionStart": [
@@ -148,6 +149,16 @@
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/bash-antipatterns-teach.sh",
             "timeout": 5000
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/prose-house-style-nudge.sh",
+            "timeout": 15000
           }
         ]
       }

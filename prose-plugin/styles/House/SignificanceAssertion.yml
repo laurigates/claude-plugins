@@ -1,0 +1,23 @@
+# Significance-assertion — one of the three tics communication.md says to cut on
+# sight. The sentence stops reporting the fact and starts telling the reader how
+# to feel about it ("...which is the control that makes the rest of the table
+# worth reading").
+#
+# This encodes the SHAPE half of the tell only. communication.md defines the tell
+# as "position plus shape" — the position half (paragraph-final) is not
+# expressible in Vale, whose scopes select by markup type, not ordinal position.
+# scripts/positional-tics.py in prose-plugin:prose-check covers position.
+#
+# Tokens are taken verbatim from communication.md's own list of portentous nouns.
+# Do not invent new ones here — extend the rule file, then the tokens.
+extends: existence
+message: "Significance-assertion '%s' — state the mechanism or the number and stop."
+link: https://github.com/laurigates/dotfiles/blob/main/exact_dot_claude/rules/communication.md
+level: suggestion
+scope: sentence
+ignorecase: true
+tokens:
+  - which is the
+  - what makes
+  - the thing that
+  - precisely why

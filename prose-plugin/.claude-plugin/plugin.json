@@ -26,6 +26,11 @@
     "clarity",
     "consistency",
     "verbal-economy",
-    "editing"
+    "editing",
+    "prose-check",
+    "vale",
+    "harper",
+    "house-style",
+    "linting"
   ]
 }

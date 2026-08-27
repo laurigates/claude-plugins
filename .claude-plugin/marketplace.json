@@ -398,7 +398,8 @@
         "workflow",
         "anti-patterns",
         "session-start",
-        "web"
+        "web",
+        "prose-style"
       ],
       "category": "automation"
     },
@@ -554,7 +555,12 @@
         "tone",
         "voice",
         "clarity",
-        "editing"
+        "editing",
+        "prose-check",
+        "vale",
+        "harper",
+        "house-style",
+        "linting"
       ],
       "category": "communication"
     },
