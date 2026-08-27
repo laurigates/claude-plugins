@@ -70,6 +70,38 @@ if [ ${#FILES[@]} -eq 0 ]; then
     exit 2
 fi
 
+# resolve_tool NAME -- print an invocable path for NAME, or nothing.
+#
+# PATH alone is not enough here. mise installs vale and harper-ls behind shims
+# that are only on PATH in a mise-ACTIVATED shell, and a hook shell is not one:
+# in a bare environment `command -v vale` finds nothing while
+# ~/.local/share/mise/shims/vale runs fine (verified: `vale version 3.18.0` from
+# an empty env). Without this fallback the hook would report VALE_AVAILABLE=false
+# on a machine where vale is installed and working -- a visibly degraded run
+# rather than a wrong one, but degraded for no reason.
+#
+# PATH still wins, so an explicitly-chosen binary is never overridden.
+resolve_tool() {
+    local name="$1" candidate
+    if command -v "$name" >/dev/null 2>&1; then
+        command -v "$name"
+        return
+    fi
+    for candidate in \
+        "${MISE_DATA_DIR:-$HOME/.local/share/mise}/shims/$name" \
+        "$HOME/.local/share/mise/shims/$name" \
+        /opt/homebrew/bin/"$name" \
+        /usr/local/bin/"$name"; do
+        if [ -x "$candidate" ]; then
+            printf '%s\n' "$candidate"
+            return
+        fi
+    done
+}
+
+VALE_BIN="$(resolve_tool vale)"
+HARPER_BIN="$(resolve_tool harper-cli)"
+
 for f in "${FILES[@]}"; do
     if [ ! -f "$f" ]; then
         echo "=== PROSE CHECK ==="
@@ -94,19 +126,20 @@ total_issues=0
 # encodes the actual rubric, so an offline run still checks the thing that
 # matters.
 echo "=== VALE ==="
-if ! command -v vale >/dev/null 2>&1; then
+if [ -z "$VALE_BIN" ]; then
     echo "VALE_AVAILABLE=false"
-    echo "MSG=vale not on PATH; install via mise (aqua backend). Skipped."
+    echo "MSG=vale not found on PATH or in the mise shim dir; install via mise (aqua backend). Skipped."
     echo "STATUS=OK"
     echo "ISSUE_COUNT=0"
 else
     echo "VALE_AVAILABLE=true"
-    echo "VALE_VERSION=$(vale --version 2>/dev/null | head -1 | tr -d '\n')"
+    echo "VALE_BIN=$VALE_BIN"
+    echo "VALE_VERSION=$("$VALE_BIN" --version 2>/dev/null | head -1 | tr -d '\n')"
 
     if [ -z "$VALE_CONFIG" ]; then
         VALE_CONFIG="$STYLES_DIR/.vale.ini"
         if [ ! -d "$STYLES_DIR/write-good" ] || [ ! -d "$STYLES_DIR/proselint" ]; then
-            if ! vale --config "$VALE_CONFIG" sync >/dev/null 2>&1; then
+            if ! "$VALE_BIN" --config "$VALE_CONFIG" sync >/dev/null 2>&1; then
                 VALE_CONFIG="$STYLES_DIR/house-only.vale.ini"
             fi
         fi
@@ -116,7 +149,7 @@ else
 
     # --no-exit keeps an error-level alert from ending the run; severity is
     # carried by STATUS= and the issue rows, not by vale's exit code.
-    vale_out=$(vale --config "$VALE_CONFIG" --output=line --no-exit "${FILES[@]}" 2>/dev/null)
+    vale_out=$("$VALE_BIN" --config "$VALE_CONFIG" --output=line --no-exit "${FILES[@]}" 2>/dev/null)
     vale_count=$(printf '%s' "$vale_out" | grep -c . )
     echo "STATUS=$([ "$vale_count" -gt 0 ] && echo WARN || echo OK)"
     echo "ISSUE_COUNT=$vale_count"
@@ -139,14 +172,15 @@ echo "=== END VALE ==="
 # title-case is not a house convention, and ExplainLikeImFive fires on the
 # literal string "ELI5" -- which the rubric mandates.
 echo "=== HARPER ==="
-if ! command -v harper-cli >/dev/null 2>&1; then
+if [ -z "$HARPER_BIN" ]; then
     echo "HARPER_AVAILABLE=false"
-    echo "MSG=harper-cli not on PATH (brew install harper). Skipped."
+    echo "MSG=harper-cli not found on PATH or in the usual prefixes (brew install harper). Skipped."
     echo "STATUS=OK"
     echo "ISSUE_COUNT=0"
 else
     echo "HARPER_AVAILABLE=true"
-    harper_out=$(harper-cli lint --format compact --no-color --quiet \
+    echo "HARPER_BIN=$HARPER_BIN"
+    harper_out=$("$HARPER_BIN" lint --format compact --no-color --quiet \
         --ignore SpellCheck \
         --ignore DisjointPrefixes \
         --ignore SplitWords \

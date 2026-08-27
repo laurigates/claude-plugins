@@ -106,6 +106,13 @@ Each layer exists because of a measured limit in the one above it.
 All three tool layers are **optional**. A missing `vale`, `harper-cli`, or `uv`
 is reported as `AVAILABLE=false` and the remaining layers still run.
 
+`PATH` alone does not find them. mise puts `vale` behind a shim that is only on
+`PATH` in a mise-**activated** shell, and a hook shell is not one — so the
+orchestrator probes the mise shim dir and the usual prefixes before giving up,
+and reports the binary it settled on as `VALE_BIN=` / `HARPER_BIN=`. Without
+that, a hook run on a machine with vale installed would silently drop the layer
+that encodes the rubric.
+
 ## Three Mechanics That Bite
 
 **A vale rule can fire on nothing and look exactly like a clean document.**
