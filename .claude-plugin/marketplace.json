@@ -4,7 +4,7 @@
   "owner": {
     "name": "Lauri Gates"
   },
-  "description": "A curated collection of 44 Claude Code plugins providing 380+ skills and 21 agents for development workflows — git, testing, CI/CD, configuration, infrastructure, and language ecosystems.",
+  "description": "A curated collection of 44 Claude Code plugins providing 380+ skills and 21 agents for development workflows \u2014 git, testing, CI/CD, configuration, infrastructure, and language ecosystems.",
   "plugins": [
     {
       "name": "accessibility-plugin",
@@ -390,7 +390,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.11.0",
+      "version": "2.10.2",
       "keywords": [
         "hooks",
         "automation",
@@ -527,7 +527,7 @@
     {
       "name": "prompt-engineering-plugin",
       "source": "./prompt-engineering-plugin",
-      "description": "Prompt engineering techniques for accurate, grounded Claude responses — anti-hallucination workflow with citation-backed analysis",
+      "description": "Prompt engineering techniques for accurate, grounded Claude responses \u2014 anti-hallucination workflow with citation-backed analysis",
       "version": "1.1.3",
       "keywords": [
         "prompt-engineering",
@@ -542,7 +542,7 @@
       "name": "prose-plugin",
       "source": "./prose-plugin",
       "description": "Prose transformation and style control - synthesis, distillation, tone, voice, clarity, and consistency for written text",
-      "version": "1.4.0",
+      "version": "1.3.4",
       "keywords": [
         "prose",
         "writing",
