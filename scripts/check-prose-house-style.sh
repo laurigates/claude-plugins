@@ -140,8 +140,26 @@ require "$HOUSE/MeanSentenceLength.yml" "words / sentences" "mean-sentence-lengt
 require "$TICS" "join(s.strip() for s in buf)" "hard-wrap joining removed; sentence counts will silently go wrong"
 require "$TICS" "pysbd" "segmenter swapped away from pysbd (47/48 on the Golden Rules Set)"
 
-# --- 7. candidates-not-verdicts framing survives ---------------------------
-require "$SKILL_DIR/SKILL.md" "candidates" "skill body no longer frames findings as candidates rather than defects"
+# --- 7. candidates-not-verdicts framing + the mechanics survive ------------
+#
+# Checked across the skill's prose as a WHOLE, not against SKILL.md alone. The
+# repo's `split` CI job auto-extracts reference sections into REFERENCE.md when
+# a SKILL.md grows -- it did exactly that to this skill -- so pinning a token to
+# one filename makes the guard fail on a relocation that lost nothing. What has
+# to survive is the claim, wherever the split puts it.
+require_in_skill() {
+    local token="$1" msg="$2" f
+    for f in "$SKILL_DIR/SKILL.md" "$SKILL_DIR/REFERENCE.md"; do
+        if [ -f "$f" ] && grep -qiF -- "$token" "$f"; then
+            return
+        fi
+    done
+    fail "SEVERITY=ERROR FILE=prose-plugin/skills/prose-check/{SKILL,REFERENCE}.md TOKEN=\"$token\" MSG=$msg"
+}
+
+require_in_skill "candidates" "skill prose no longer frames findings as candidates rather than defects"
+require_in_skill "raw" "skill prose dropped the vale raw:-concatenation trap, the defect that shipped a rule matching nothing"
+require_in_skill "hard wrap" "skill prose dropped the load-bearing unwrapping step"
 require "$ORCH" "FINDINGS_ARE=candidates_for_judgment_not_defects" "orchestrator rollup dropped the candidates-not-verdicts marker"
 
 # --- 8. the hook nudges, never blocks --------------------------------------
