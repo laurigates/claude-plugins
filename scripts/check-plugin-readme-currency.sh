@@ -20,6 +20,13 @@
 #
 # Test seam: set PLUGIN_README_CURRENCY_STAGED to a newline-separated list of
 # staged paths to bypass `git diff --cached` (used by the regression test).
+# The seam is gated on set-vs-unset (`${VAR+set}`), not on emptiness, so an
+# explicitly-EMPTY value means "no staged files" and an UNSET variable keeps the
+# read-the-index behaviour. Gating on `-n "$VAR"` (issue #2521) made the empty
+# staged set inexpressible: the no-op case fell through to the real git index, so
+# the test asserted the developer's working state instead of its fixture — it
+# could not fail in CI (nothing is staged there) and could not reliably pass
+# locally.
 #
 # Emits the structured KEY=VALUE / STATUS= convention
 # (.claude/rules/structured-script-output.md). STATUS=WARN signals nudges; the
@@ -45,7 +52,10 @@ if [ "${CLAUDE_HOOKS_DISABLE_README_CURRENCY:-}" = "1" ]; then
   exit 0
 fi
 
-if [ -n "${PLUGIN_README_CURRENCY_STAGED:-}" ]; then
+# Set-vs-unset, NOT emptiness: `${VAR+set}` expands to "set" whenever the
+# variable is set — including when it is the empty string — so an explicitly
+# empty seam expresses "no staged files" (issue #2521).
+if [ -n "${PLUGIN_README_CURRENCY_STAGED+set}" ]; then
   staged_raw="$PLUGIN_README_CURRENCY_STAGED"
 else
   staged_raw="$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)"
