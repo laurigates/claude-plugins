@@ -52,6 +52,99 @@ if [ -z "$COMMAND" ]; then
     exit 0
 fi
 
+# ── COMMAND_SHELL_ONLY: the executable view of the command (issue #2518) ──────
+#
+# Every nudge below used to scan the RAW command, which made two kinds of prose
+# look like shell:
+#
+#   1. Heredoc bodies. `^` in grep anchors to the start of every LINE, not the
+#      start of the command, so a heredoc-body line that merely BEGINS with a
+#      watched word (`find . -name …` in a repro section, `tail -20 build.log`
+#      in a commit message) was matched as if it were the executed command.
+#   2. Trailing `#` comments. The shell discards them before executing; the
+#      detectors care about what would EXECUTE.
+#
+# The reported break was the long-pipeline segmenter, which splits on statement
+# separators after stripping quoted spans. A heredoc body is neither quoted nor a
+# statement, so each markdown table row survived as its own "pipeline": a row like
+# `| \`echo/printf > file\` -> Write | 18 | 16 | 15.2% | 12.5% |` carries 6 pipe
+# characters and satisfies the discouraged-head test because the cell text
+# literally contains a `printf ` token. The detector matched a table cell
+# DESCRIBING another detector. The same table text arriving as a quoted argument
+# was already silent — the hook had the "this is data" concept, it just did not
+# extend it to heredocs.
+#
+# This is the same projection bash-antipatterns.sh computes for its own
+# `^`-anchored detectors (issue #2431, #2106); it is LIFTED here rather than
+# extracted into a shared helper on purpose. That hook is the SAFETY tier: its
+# detectors are pure-regex by design and must fire in every context, so
+# refactoring it to share code with a style-nudge hook would risk changing
+# safety behaviour for no benefit to this fix. The two copies are small, and
+# each is pinned by its own test suite.
+#
+# The awk program walks the command line-by-line. On `<<DELIM` it enters heredoc
+# mode and suppresses subsequent lines until a line matching DELIM. The
+# heredoc-OPENING line is still printed, so a real command sharing that line (and
+# every line after the terminator) still matches — including the `<<` and
+# `cat >` tokens the cat nudge's own exemptions key on.
+COMMAND_NO_HEREDOC=$(echo "$COMMAND" | awk '
+    BEGIN { ih = 0 }
+    ih == 0 {
+        if (match($0, /<<-?[[:space:]]*[^[:space:]]*[A-Za-z_][A-Za-z_0-9]*/)) {
+            s = substr($0, RSTART)
+            gsub(/<<-?[[:space:]]*/, "", s)
+            gsub(/^[^A-Za-z_]+/, "", s)
+            gsub(/[^A-Za-z_0-9].*/, "", s)
+            if (s != "") { delim = s; ih = 1 }
+            print; next
+        }
+        print; next
+    }
+    ih == 1 {
+        t = $0; gsub(/^[[:space:]]+/, "", t); gsub(/[[:space:]]+$/, "", t)
+        if (t == delim) { ih = 0 }
+    }
+')
+
+# Strip trailing shell comments from the heredoc-stripped view. A `#` starts a
+# comment ONLY when it is at the start of the line OR immediately preceded by
+# whitespace or a shell metacharacter (`;`, `|`, `&`, `(`), AND is not inside
+# single or double quotes — so `http://x#frag` and `echo "# literal"` survive.
+# Quote state is tracked per line (a shell comment is a per-line construct), so
+# an unbalanced quote on one line cannot swallow the next. The single-quote
+# character is passed in via -v SQ so the awk program stays single-quoted for the
+# shell. Done AFTER heredoc stripping so comment removal only ever touches the
+# executable text that survives it, never a heredoc body line.
+strip_trailing_comments() {
+    printf '%s\n' "$1" | awk -v SQ="'" '
+    {
+        line = $0
+        n = length(line)
+        in_s = 0   # inside single quotes
+        in_d = 0   # inside double quotes
+        cut = 0
+        for (i = 1; i <= n; i++) {
+            c = substr(line, i, 1)
+            if (in_s == 1) {
+                if (c == SQ) in_s = 0
+            } else if (in_d == 1) {
+                if (c == "\"") in_d = 0
+            } else if (c == SQ) {
+                in_s = 1
+            } else if (c == "\"") {
+                in_d = 1
+            } else if (c == "#") {
+                if (i == 1) { cut = i; break }
+                p = substr(line, i - 1, 1)
+                if (p == " " || p == "\t" || p == ";" || p == "|" || p == "&" || p == "(") { cut = i; break }
+            }
+        }
+        if (cut > 0) print substr(line, 1, cut - 1); else print line
+    }'
+}
+
+COMMAND_SHELL_ONLY=$(strip_trailing_comments "$COMMAND_NO_HEREDOC")
+
 # Compose the hint based on which soft-teach pattern (if any) the command matched.
 # A command can match at most one hint - we pick the most specific. hint_key is a
 # stable identifier for the matched pattern, used below for session-scoped dedup.
@@ -60,17 +153,17 @@ hint_key=""
 
 # cat file (not in pipeline, not heredoc)
 if [ -z "$hint" ] && \
-   echo "$COMMAND" | grep -Eq '^\s*cat\s+[^|><]' && \
-   ! echo "$COMMAND" | grep -Eq '<<|cat\s*>' && \
-   ! echo "$COMMAND" | grep -q '|'; then
+   echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*cat\s+[^|><]' && \
+   ! echo "$COMMAND_SHELL_ONLY" | grep -Eq '<<|cat\s*>' && \
+   ! echo "$COMMAND_SHELL_ONLY" | grep -q '|'; then
     hint="Use the Read tool instead of 'cat' to read files. Read returns line-numbered content and respects token budgets."
     hint_key="read-cat"
 fi
 
 # head/tail file (not in pipeline)
 if [ -z "$hint" ] && \
-   echo "$COMMAND" | grep -Eq '^\s*(head|tail)\s+(-[0-9n]+\s+)?[^|]' && \
-   ! echo "$COMMAND" | grep -q '|'; then
+   echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*(head|tail)\s+(-[0-9n]+\s+)?[^|]' && \
+   ! echo "$COMMAND_SHELL_ONLY" | grep -q '|'; then
     hint="Use the Read tool with offset/limit parameters instead of 'head' or 'tail'. Example: Read with offset=100, limit=50."
     hint_key="read-headtail"
 fi
@@ -80,8 +173,8 @@ fi
 # delete, so the Glob hint is useless for a delete action (issue #1671). -exec/-ok
 # are intentionally not exempt (arbitrary command execution).
 if [ -z "$hint" ] && \
-   echo "$COMMAND" | grep -Eq '^\s*find\s+' && \
-   ! echo "$COMMAND" | grep -Eq 'find\s+.*(-maxdepth|-mindepth|-type\s|-print0|-delete\b)'; then
+   echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*find\s+' && \
+   ! echo "$COMMAND_SHELL_ONLY" | grep -Eq 'find\s+.*(-maxdepth|-mindepth|-type\s|-print0|-delete\b)'; then
     hint="Use the Glob tool for filename matching. Example: Glob(pattern=\"**/*.ts\") instead of 'find . -name \"*.ts\"'. Keep 'find' only when you need -maxdepth/-type d/-print0, or a -delete action."
     hint_key="glob-find"
 fi
@@ -90,17 +183,17 @@ fi
 # Mirrors bash-antipatterns.sh: file-list/count modes (-l, -c, -L) are filters,
 # not codebase searches the Grep tool replaces (issue #1592).
 if [ -z "$hint" ] && \
-   echo "$COMMAND" | grep -Eq '^\s*(grep|rg)\s+' && \
-   ! echo "$COMMAND" | grep -q '|' && \
-   ! echo "$COMMAND" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*q[a-zA-Z]*(\s|$)|--quiet(\s|$))' && \
-   ! echo "$COMMAND" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*[lcL][a-zA-Z]*(\s|$)|--count(\s|$)|--files-with-matches(\s|$)|--files-without-match(\s|$))'; then
+   echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*(grep|rg)\s+' && \
+   ! echo "$COMMAND_SHELL_ONLY" | grep -q '|' && \
+   ! echo "$COMMAND_SHELL_ONLY" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*q[a-zA-Z]*(\s|$)|--quiet(\s|$))' && \
+   ! echo "$COMMAND_SHELL_ONLY" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*[lcL][a-zA-Z]*(\s|$)|--count(\s|$)|--files-with-matches(\s|$)|--files-without-match(\s|$))'; then
     hint="Use the Grep tool for codebase searches. Example: Grep(pattern=\"foo\", path=\"src\", -n=true). Keep grep/rg for pipelines, boolean -q checks, or -l/-c filter modes."
     hint_key="grep"
 fi
 
 # ls with a glob
 if [ -z "$hint" ] && \
-   echo "$COMMAND" | grep -Eq '^\s*ls\s+.*\*'; then
+   echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*ls\s+.*\*'; then
     hint="Use the Glob tool for pattern-based file listing - it returns paths sorted by modification time and handles large directories better."
     hint_key="glob-ls"
 fi
@@ -136,7 +229,7 @@ if [ -z "$hint" ]; then
         if [ "$seg_head" = true ] && [ "$seg_pipes" -gt "$PIPE_MAX" ]; then
             PIPE_MAX=$seg_pipes
         fi
-    done < <(echo "$COMMAND" \
+    done < <(echo "$COMMAND_SHELL_ONLY" \
         | sed "s/'[^']*'//g; s/\"[^\"]*\"//g" \
         | awk '{ gsub(/\|\|/, "\n"); gsub(/&&/, "\n"); gsub(/;/, "\n"); print }')
     if [ "$PIPE_MAX" -ge 5 ]; then
