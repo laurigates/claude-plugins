@@ -84,16 +84,128 @@ def jaccard(a: set, b: set) -> float:
     return len(a & b) / len(a | b) if a and b else 0.0
 
 
+FM_KEY = re.compile(r"^([A-Za-z_][A-Za-z0-9_-]*):[ \t]*(.*)$")
+# A block-scalar indicator is `|` or `>` optionally carrying a chomping sign
+# and/or an explicit indentation digit, optionally followed by a comment:
+# `|`, `|-`, `>+`, `|2`, `|2-`, `| # notes`. Exact-set membership captured
+# every suffixed form as a VALUE -- `description: |2` yielded the string `|2`,
+# truthy junk with the same shape as the original empty-block bug.
+FM_BLOCK = re.compile(r"^[|>][-+]?\d?[-+]?[ \t]*(#.*)?$")
+FM_FENCE = re.compile(r"^---[ \t]*$")
+
+
+def _unquote(raw: str) -> str:
+    """Remove ONE matched surrounding quote pair, and only a matched pair.
+
+    `raw.strip("\"'")` strips a character CLASS from both ends independently, so
+    a value that merely ends in a quote character loses it:
+    `path|PR|file|plan description; optional 'focus on X'` -> the trailing `'`,
+    and `'<files...> --title "type(scope): description"'` -> both the outer `'`
+    and the `"` newly exposed beneath it.
+    """
+    if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in "\"'":
+        return raw[1:-1]
+    return raw
+
+
 def frontmatter(body: str) -> dict[str, str]:
+    """Read the top-level scalar keys out of a document's YAML frontmatter.
+
+    Deliberately a line scanner rather than a YAML parser -- consumers need
+    top-level keys and nothing else, and four properties are load-bearing:
+
+    * The frontmatter ends at the first closing fence LINE, never at the first
+      `---` SUBSTRING. A `---` thematic break inside a description (118 files
+      here have one) or an inline `--- separator` truncated the block and
+      dropped every key after it, including `paths:` -- which silently billed a
+      path-scoped rule to the always-loaded budget.
+    * A key is only recognised at column 0. That is what stops a list item, or
+      a `key: value` line inside a block-scalar body, from shadowing a real
+      key.
+    * A bare-empty value stays the empty string. `paths:` carries its globs on
+      the following lines, and consumers test it for KEY PRESENCE, never
+      truthiness -- so a path-scoped rule must add nothing to the always-loaded
+      budget. Only an explicit block-scalar indicator slurps what follows;
+      indented list items are never absorbed as a continuation.
+    * A block scalar's body, and a plain scalar's indented continuation lines,
+      are joined with single spaces. The value feeds an embedding text and a
+      description field, not a YAML round-trip.
+    * The block must OPEN like frontmatter, not merely be delimited like it.
+      The closing-fence scan runs to the end of the document, so a file with no
+      frontmatter that opens with a `---` thematic break and carries another one
+      later had its prose read as the block -- and prose says `Note:` and
+      `Rationale:` at column 0. Requiring the FIRST non-blank line to be a key
+      confines the scan to real frontmatter. It has to be the first line rather
+      than the first non-comment one, because a markdown `# Heading` and a YAML
+      `# comment` are the same string: skipping comments walks straight past the
+      heading and back into the prose. The cost is that frontmatter opening with
+      a YAML comment parses to {}; 0 of the 757 fenced documents in this corpus
+      do that, and the failure it buys off is silent (prose supplying a `paths:`
+      drops a rule out of the always-loaded budget).
+    """
     if not body.startswith("---"):
         return {}
-    parts = body.split("---", 2)
-    if len(parts) < 3:
+    all_lines = body.splitlines()
+    close = next(
+        (i for i in range(1, len(all_lines)) if FM_FENCE.match(all_lines[i])), None
+    )
+    if close is None:
         return {}
-    return {
-        k: v.strip().strip("\"'")
-        for k, v in re.findall(r"^([a-z_]+):[ \t]*(.*)$", parts[1], re.M)
-    }
+
+    fm: dict[str, str] = {}
+    lines = all_lines[1:close]
+    opener = next((x for x in lines if x.strip()), None)
+    if opener is None or not FM_KEY.match(opener):
+        return {}
+    i = 0
+    while i < len(lines):
+        m = FM_KEY.match(lines[i])
+        i += 1
+        if not m:
+            continue
+        key, raw = m.group(1), m.group(2).strip()
+        if not FM_BLOCK.match(raw):
+            # Plain scalar: absorb indented continuation lines, which YAML folds
+            # into the same value. Without this a value wrapped over two lines
+            # was captured truncated -- worse than being missed, because the
+            # fragment looks like a complete value.
+            cont: list[str] = []
+            while i < len(lines):
+                nxt = lines[i]
+                if not nxt.strip() or not nxt[:1].isspace():
+                    break
+                stripped = nxt.strip()
+                # A comment line is never scalar content -- not in YAML and not
+                # here. Skip it without ending the value: absorbing it appended
+                # the comment to `reviewed:`, which then failed its
+                # \d{4}-\d{2}-\d{2} gate and dropped the file out of the
+                # staleness check while still counting as reviewed.
+                if stripped.startswith("#"):
+                    i += 1
+                    continue
+                # A `- ` item belongs to a list (`paths:`) and an indented
+                # `key:` opens a nested mapping -- but both are only possible
+                # under a key whose INLINE value is empty. Once a value sits on
+                # the key's own line YAML permits neither, so every indented
+                # line there is continuation, and breaking on one truncated the
+                # value (a wrapped URL, a dash-led clause) exactly as the
+                # missing-continuation bug did.
+                if not raw and (stripped.startswith("- ") or FM_KEY.match(stripped)):
+                    break
+                cont.append(stripped)
+                i += 1
+            joined = " ".join([raw, *cont]).strip() if cont else raw
+            fm[key] = _unquote(joined)
+            continue
+        block: list[str] = []
+        while i < len(lines):
+            nxt = lines[i]
+            if nxt.strip() and not nxt[:1].isspace():
+                break
+            block.append(nxt.strip())
+            i += 1
+        fm[key] = " ".join(w for w in block if w).strip()
+    return fm
 
 
 def git_last_change(path: Path) -> str | None:
@@ -470,15 +582,37 @@ def check_semantic_dupes(items, waivers, cache_path: Path) -> list[dict]:
         except (OSError, json.JSONDecodeError):
             cache = {}
 
-    need = [it for it in items if it["hash"] not in cache]
+    # The cache is keyed on a hash of the EMBED TEXT, not on it["hash"] (the raw
+    # file bytes). A change to title/desc/body must self-invalidate: parsing a
+    # `description:` that the bytes already contained changes the embedded text
+    # without changing the file, so a bytes-keyed cache serves a vector computed
+    # from the old text and the findings become cache-state dependent -- a cold
+    # cache and a warm cache disagree on the same commit.
+    #
+    # it["hash"] is deliberately left alone: it keys the gitdates cache
+    # (f"{path}:{hash}") and expires waivers (a_hash/b_hash), both of which mean
+    # "the file's bytes", so folding desc into it would spuriously expire every
+    # waiver and every cached git date.
+    #
+    # Entries keyed on a superseded embed text are never read again and become
+    # dead weight in the cache file; the file is a cache, so pruning it is
+    # deleting it.
+    #
+    # EMBED_MODEL is part of the key for the same reason the text is: it is an
+    # input to the vector. Keyed on text alone, swapping the model served the
+    # previous model's vectors and every cosine was then computed across two
+    # embedding spaces -- the same defect one level up, and silent.
+    embed_texts = [
+        f"{it['title']}\n{it.get('desc', '')}\n{it['body'][:EMBED_CHARS]}"
+        for it in items
+    ]
+    keys = [sha(f"{EMBED_MODEL}\n{t}") for t in embed_texts]
+    need: dict[str, str] = {k: t for k, t in zip(keys, embed_texts) if k not in cache}
     if need:
         model = TextEmbedding(model_name=EMBED_MODEL)
-        texts = [
-            f"{it['title']}\n{it.get('desc', '')}\n{it['body'][:EMBED_CHARS]}"
-            for it in need
-        ]
-        for it, vec in zip(need, model.embed(texts)):
-            cache[it["hash"]] = [round(float(x), 6) for x in vec]
+        need_keys = list(need)
+        for k, vec in zip(need_keys, model.embed([need[k] for k in need_keys])):
+            cache[k] = [round(float(x), 6) for x in vec]
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         cache_path.write_text(json.dumps(cache))
 
@@ -500,7 +634,7 @@ def check_semantic_dupes(items, waivers, cache_path: Path) -> list[dict]:
                 return True
         return False
 
-    vecs = np.array([cache[it["hash"]] for it in items], dtype="float32")
+    vecs = np.array([cache[k] for k in keys], dtype="float32")
     vecs /= np.linalg.norm(vecs, axis=1, keepdims=True) + 1e-9
     sim = vecs @ vecs.T
     out = []
