@@ -72,6 +72,8 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/generated-fleet-drift.md` | Auditing a generated fleet — divergence is not automatically drift: it is bidirectional (never auto-apply template → instance), an identically-diverging cohort signals intent, and undeclared intent is unauditable |
 | `.claude/rules/plugin-usage-telemetry.md` | `~/.claude.json`'s `pluginUsage.usageCount` counts **hook fires**, so it ranks trigger cadence rather than plugin value — nothing in this repo reads it (incl. `health-check --scope=usage`, which mines transcripts); the delivery signal is the **lowercase-first** `attributionPlugin`/`attributionSkill`/`attributionAgent` |
 
+**Auditing these docs:** [`docs/audits/README.md`](docs/audits/README.md) records the Layer 1 (automated, monthly) / Layer 2 (quarterly + milestone-triggered) cadence and holds past findings artifacts.
+
 ## Authoring Skills and Plugins
 
 Invoke `/plugin-authoring` — it carries the create-a-skill and create-a-user-invocable-skill frontmatter shapes, the seven metadata files a plugin add/delete must touch, and the development workflow. All four are procedures with a clear trigger, so they live in a skill rather than here (#2140).
