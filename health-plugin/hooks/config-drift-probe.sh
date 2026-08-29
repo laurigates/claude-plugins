@@ -12,11 +12,17 @@
 # file deliberately contains no analysis of its own -- it shells out and
 # forwards findings.
 #
-# Cost: runs `--fast --no-embed`, which is pure stdlib, spawns no git, and
-# measured 0.05s over 342 rules + 549 skills. That needs no TTL debounce -- the
-# debounce guidance in drift-detection-triggering.md is about NETWORK
-# round-trips, and this probe makes none. The expensive semantic pass (an
-# embedding model) is scheduled-only and never runs here.
+# Cost: runs `--fast --no-embed`, which is pure stdlib and spawns no git.
+# Measured 2026-08-29 at this repo's root -- 0.33s wall (best of 5) over a
+# corpus of 98 rules + 422 skills + 21 agents + 3 CLAUDE.md. The former figure
+# here, 0.05s over "342 rules + 549 skills", named a corpus this root does not
+# have and was an order of magnitude off (#2530).
+#
+# The no-debounce conclusion is UNCHANGED and the argument for it survives the
+# correction: the debounce guidance in drift-detection-triggering.md is about
+# NETWORK round-trips, and this probe makes none -- it reads local files and
+# a local cache. The expensive semantic pass (an embedding model) is
+# scheduled-only and never runs here.
 #
 # Opt-out: CLAUDE_HOOKS_DISABLE_DRIFT_NUDGE=1 (honoured by the aggregator too),
 # or CLAUDE_HOOKS_DISABLE_CONFIG_DRIFT=1 for this probe alone.
@@ -179,6 +185,39 @@ fi
 # `/health:check`, which is where a reader of either goes anyway — the point is
 # that the routing is a decision on the page rather than a default nobody chose.
 #
+# A ROW IS ONLY CORRECT IF THE TARGET CAN SEE THE FINDING'S CORPUS. The two
+# widened duplicate kinds were first routed to `/agent-patterns:meta-promote` by
+# copying the `duplicate_rule_lexical` row, which reads as safe and is not.
+# meta-promote builds its inventory from `<scope>/.claude/{rules,skills,commands,
+# agents}/` and `<scope>/*/.claude/{...}/` (SKILL.md § "Build the scope
+# inventory", Target/Sources/Upstream table). A repo-root CLAUDE.md is in
+# NEITHER layer, and a plugin agent at `*-plugin/agents/*.md` is not under
+# `.claude/agents/` either -- so both rows named a skill that structurally cannot
+# open the files the finding is about. The rule row IS correct, which is exactly
+# why copying it looked safe.
+#
+# Re-routed against each target's own inventory logic, not its description:
+#
+# * `duplicate_agent_lexical` -> `/agents:analyze`. Its Step 3 gap analysis
+#   carries "Consolidation opportunities: Multiple agents that could be merged"
+#   -- the literal action a near-identical agent pair calls for -- and its
+#   inventory is agent FILES rather than `.claude/agents/`. Caveat worth naming:
+#   its Context block globs `agents-plugin/agents/*` specifically, which is 12 of
+#   this marketplace's 21 agents, so the finding's own `paths` do the locating
+#   for the other 9. Widening that glob to `*/agents/*.md` belongs in
+#   agents-plugin, not here.
+# * `duplicate_claude_md_lexical` -> `/agent-patterns:meta-context-diet`. Its
+#   Context block is `find . -maxdepth 3 -name 'CLAUDE.md'` and its Step 1 globs
+#   CLAUDE.md during execution -- it is the only skill in the catalog whose
+#   inventory is CLAUDE.md files -- and its per-item dispositions include
+#   consolidate. Same caveat, from the other direction: `-maxdepth 3` does not
+#   reach every CLAUDE.md at a portfolio root, so deep pairs rely on the paths in
+#   the finding.
+#
+# `agent_discovery_misfire` routes to `/health:check` with the rest of the
+# "the probe itself is broken" family (`coverage_metric_broken`,
+# `corpus_unreadable`): its fix site is this analyzer, not the corpus.
+#
 # `semantic_overlap_skill_rule` is ABSENT ON PURPOSE and is not a gap. The
 # f-string `semantic_overlap_{a[kind]}_{b[kind]}` in `check_semantic_dupes` is
 # fed `rules + skills` (rules first) and iterates `np.triu_indices(k=1)`, so `a`
@@ -192,10 +231,13 @@ while IFS=$'\t' read -r severity kind summary remediation; do
 done < <(printf '%s' "$OUT" | jq -r '
   def rank: {"error":0,"warn":1,"info":2}[.severity] // 3;
   def fix:
-    {"broken_pointer_stub":          "/agent-patterns:meta-promote",
+    {"agent_discovery_misfire":      "/health:check",
+     "broken_pointer_stub":          "/agent-patterns:meta-promote",
      "coverage_metric_broken":       "/health:check",
      "corpus_unreadable":            "/health:check",
      "duplicate_rule_lexical":       "/agent-patterns:meta-promote",
+     "duplicate_agent_lexical":      "/agents:analyze",
+     "duplicate_claude_md_lexical":  "/agent-patterns:meta-context-diet",
      "semantic_overlap_rule_rule":   "/agent-patterns:meta-promote",
      "semantic_overlap_rule_skill":  "/health:skill-audit",
      "semantic_overlap_skill_skill": "/health:skill-audit",
