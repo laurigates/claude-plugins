@@ -100,7 +100,50 @@ that `never-fabricate-test-identifiers.md` requires.
 - **A zero-match sweep verdict must be control-tested** — re-run the same pattern
   shape against a term you know is present. If the control is also empty, the
   pattern is broken, not the tree clean.
-- Piping (`| wc -l`) masks the exit code entirely, so even the rc=1 tell is gone.
+- Piping (`| wc -l`) masks the exit code entirely, so even the rc=1 tell is gone —
+  see *A pipe discards the command's exit code* below for the general case.
+
+## A wrapped string defeats a source grep — the code is unchanged, the grep says fixed
+
+A string literal split across source lines for line-length reasons exists
+nowhere contiguously in the file, so grepping the *rendered* message finds
+nothing — and that zero reads as "the text is gone, someone fixed it."
+
+> Observed 2026-08 (loractl). Checking whether an error still blamed f16 range
+> overflow unconditionally, `git grep -c 'exceeded f16'` returned nothing and was
+> recorded as "reworded — task closable." The message was fully intact; the
+> source wraps it as `"...an activation exceeded \` + `f16's range; try f32..."`,
+> so the phrase spans two lines. A second claim was mis-cleared the same way in
+> the same pass, and both were recovered only by the control test.
+
+- **Grep a fragment that cannot straddle a wrap** — one distinctive word, or the
+  symbol that owns the message (`check_step_loss`), never the whole sentence.
+- **Then read the hit.** The search locates the text; the verdict comes from
+  reading it.
+- The control test in the section above catches this class. Run it on any
+  negative that closes a task or reports something already fixed.
+
+## A pipe discards the command's exit code — `| tail` reports success for a failed run
+
+A shell pipeline exits with the status of its **last** command, so `<cmd> | tail`,
+`| head`, `| grep`, `| wc -l` all throw away the status of the thing you ran. The
+result is not merely lossy, it is confidently wrong: a failing build reports
+success. This is the general case of the `| wc -l` note in the grep section above.
+
+> Observed 2026-08 (loractl). `just test 2>&1 | tail -25` returned exit 0 and was
+> written up as "suite green" — the 0 was `tail`'s. The 25-line window also showed
+> only the trailing `cargo test --examples` invocation (four targets, 0 tests
+> each) while the real results had scrolled past, so both halves of the report
+> were wrong. It nearly gated a commit on an unverified suite. Re-run with a
+> redirect: 384 passed across 79 targets, status from `just` itself.
+
+- **Redirect, don't pipe**, whenever the status matters:
+  `cmd > out.log 2>&1; echo "EXIT=$?"` — then read the file.
+- `set -o pipefail` fixes the status but **not** the truncation, and it does not
+  apply to a command the harness runs on your behalf.
+- **A CI watch has the same shape**: `gh pr checks <n> --watch | tail` reports the
+  watcher's status, not the checks'. Read the states back explicitly
+  (`--json name,state`) before calling a PR green.
 
 ## A `-g '*name*'` glob cannot match a **directory** name
 
