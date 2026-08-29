@@ -84,6 +84,16 @@ SEMANTIC_KINDS = ("rule", "skill")
 # `check_lexical_dupes` for why the comparison is partitioned rather than pooled.
 LEXICAL_KINDS = ("rule", "agent", "claude_md")
 
+# The kinds the PROMOTION pass compares. Exactly the SCOPED kinds: a rule and a
+# CLAUDE.md both live at a point in a directory ladder, so "the same thing is
+# said at two levels, keep the higher one" names a real operation on them.
+# Skills and agents are namespaced by their plugin and carry `SCOPE_PLUGIN`,
+# whose `scope_rank` is None -- there is no parent scope to promote into, so
+# they are excluded by the sentinel rather than by this tuple alone (the pass
+# re-checks the rank, because a kind list is a policy and a None rank is a
+# fact).
+PROMOTION_KINDS = ("rule", "claude_md")
+
 # A file whose presence DECLARES that the tree it heads is a generator template
 # rather than live configuration. See `_is_generator_template`.
 #
@@ -127,6 +137,50 @@ CREATE_PKG = re.compile(r"^create-.")
 # distribution was 0.94:2 0.92:9 0.90:32 0.88:70 0.86:88, i.e. the actionable
 # signal sits above ~0.91 and the tail below it is unusable.
 T_SEMANTIC = 0.91  # cosine over title+head
+
+# PROMOTION threshold. Measured 2026-08-29 with `--calibrate`, not guessed.
+#
+# Two corpora, both including `~/.claude/rules` (HOME_RULES is unconditional).
+# Calibrated at `~/repos` (505 promotable docs / 141 scopes / 76,120 cross-scope
+# pairs); SHIPS to run at `claude-plugins` (101 docs / 4 scopes / 2,642 pairs),
+# where the whole above-band set is n=1. Cumulative counts, cross-scope only:
+#
+#   claude-plugins  RAW    0.94:0  0.92:0  0.90:0  0.88:2   0.86:3
+#   claude-plugins  NOVEL  0.94:0  0.92:0  0.90:0  0.88:1   0.86:2
+#   repos           RAW    0.94:27 0.92:39 0.90:61 0.88:101 0.86:170
+#   repos           NOVEL  0.94:6  0.92:7  0.90:7  0.88:19  0.86:28
+#
+# 0.88 sits inside the separating interval (0.8721, 0.8990] measured at the ship
+# root, with a 0.027 margin to the nearest adjudicated non-candidate. The band
+# is BELOW T_SEMANTIC for a measured reason rather than a severity argument: at
+# 0.91 -- and still at 0.90 -- `claude-plugins` yields ZERO promotion findings,
+# so shipping this at T_SEMANTIC ships it inert at the only root it runs at. The
+# one genuine candidate there (`user-global::claude-code-auto-mode` <-
+# `portfolio::auto-mode`, 0.8990, different names, no cross-reference in either
+# direction) is the highest promotion signal in that corpus. Going lower is
+# worse, not merely noisier: 0.87 admits `agent-and-tool-selection` <-
+# `workflow-model-effort`, adjudicated as two different documents sharing a
+# topic, and 0.86 adds nothing at either root.
+#
+# THE THRESHOLD IS NOT CARRYING THE PRECISION -- the discriminators are, and
+# the measurement says so twice. The nearest pair to the genuine candidate is
+# `offload-to-deterministic-substrate` against itself one scope up at 0.8994,
+# i.e. 0.0004 ABOVE it: no threshold can separate those two, and only
+# `structural_pair` does. Rank-strict admits 69 pairs at `~/repos`/0.88, of
+# which 47 are unrelated cross-repo siblings; the ancestor constraint cuts that
+# to 22 and removes zero adjudicated candidates, and MIN_PROMOTABLE_CHARS cuts
+# 22 -> 12 by dropping near-empty `@AGENTS.md` redirect stubs in a vendored
+# clone. See `check_promotion_candidates` for both.
+T_PROMOTE = 0.88  # cosine over title+head, cross-scope, promotable kinds only
+
+# A document too short to have a topic. Cosine between two near-empty documents
+# is meaningless and runs HIGH: 10 of the 22 ancestor-constrained survivors at
+# `~/repos`/0.88 were 11-128 byte `@AGENTS.md` redirect stubs in a vendored
+# upstream clone, scoring 0.879-0.975 against each other. The floor costs
+# nothing measurable -- the smallest genuine candidate is 662 chars, and only 5
+# of 101 docs at `claude-plugins` (27 of 505 at `~/repos`) fall below it.
+MIN_PROMOTABLE_CHARS = 500
+
 T_LEXICAL = 0.45  # 3-gram Jaccard over full body
 T_COVERAGE = 0.55  # rule topic already covered by a skill
 BUDGET_TOKENS = 55_000  # always-loaded ceiling before it is a finding
@@ -1112,7 +1166,226 @@ def check_rule_covered_by_skill(rules, skills, waivers) -> list[Finding]:
     return sorted(out, key=lambda x: (not x.get("always_loaded"), -x.get("score", 0)))
 
 
-def check_semantic_dupes(items, waivers, cache_path: Path) -> list[Finding]:
+def structural_pair(a: dict, b: dict) -> bool:
+    """Relationships that are correct by design, not drift.
+
+    Two shapes dominate the high-cosine band and neither is a defect:
+    a pointer stub scores ~0.92 against the very skill it delegates to, and
+    deliberately cross-referenced sibling rules ("Sibling: pr-merge-hazards.md")
+    score ~0.93. Flagging either trains the reader to ignore the report.
+
+    Hoisted to module scope from inside `check_semantic_dupes` so
+    `check_promotion_candidates` can CALL it. It answers ONE question -- "is
+    this similarity by design?" -- pairwise and statelessly, and it is the ONLY
+    suppressor on both axes. A promotion-specific prose discriminator was built
+    on top of it and then removed: measured over both corpora it changed no
+    emitted finding at either root, and its scope-level binders over-suppressed
+    (see `check_promotion_candidates` for the measurement and the residual gap).
+    Anything added here widens BOTH axes at once, so a widening motivated by one
+    has to be calibrated against the other.
+
+    Known mechanical limits on the promotion axis, measured and stated rather
+    than assumed away:
+
+    * It reads only the two documents in the pair, so a hierarchy declared in a
+      THIRD file is invisible to it. At `~/repos` that is the entire six-pair
+      `ForumViriumHelsinki` family, whose "generated from the `.github` repo
+      source" declaration lives in the workspace CLAUDE.md rather than in
+      either copy.
+    * For a `claude_md`, `Path(y["path"]).name` is always the literal
+      `"CLAUDE.md"` -- a string that appears in nearly every document ABOUT
+      Claude configuration. 14 of 27 ancestor cross-scope pairs >=0.86
+      involving a claude_md at `~/repos` are suppressed by that literal alone.
+      The `` `{name}` `` arm cannot compensate, because a claude_md's `name` is
+      a relative path (`laurigates/comfyui-nodes/comfyui-touch-shim`) and never
+      the basename a rule would backtick. The arm is simultaneously over-broad
+      and inert on that kind.
+
+    Left as-is deliberately: narrowing it here changes what the SEMANTIC pass
+    suppresses, which is a separate calibration with its own corpus.
+    """
+    for x, y in ((a, b), (b, a)):
+        if x.get("stub") and y["kind"] == "skill" and y["name"] in x["body"][:700]:
+            return True
+        if Path(y["path"]).name in x["body"] or f"`{y['name']}`" in x["body"][:1500]:
+            return True
+    return False
+
+
+def check_promotion_candidates(items, sim, waivers) -> tuple[list[Finding], int, int]:
+    """Same thing said at two scope levels — a candidate for promotion upward.
+
+    Returns `(findings, pairs_considered, hierarchies_declared)`.
+
+    A candidate is a pair (child, parent) where ALL of these hold:
+
+      1. both kinds are in `PROMOTION_KINDS`
+      2. `scope_rank(child) > scope_rank(parent)` STRICTLY
+      3. neither carries `SCOPE_PLUGIN` (i.e. neither rank is None)
+      4. the parent's scope is an ANCESTOR of the child's
+      5. both documents are at least `MIN_PROMOTABLE_CHARS` long
+      6. `sim(child, parent) >= T_PROMOTE`
+      7. NOT `structural_pair(child, parent)`
+      8. NOT waived
+
+    SAME-NAME PAIRS ARE DELIBERATELY NOT SKIPPED, and this is the one place
+    where this check and `check_semantic_dupes` must differ. That function skips
+    `a["name"] == b["name"]` because for the DRIFT question a same-name pair is
+    already owned by the cheap tier. For the PROMOTION question the same-name
+    pair is the CANONICAL SHAPE — one rule copied down the ladder is exactly
+    what "promote this" means. Do not "fix" this by copying the drift skip over:
+    measured, keeping same-name pairs adds 41 findings at `~/repos`/0.88 and
+    exactly ONE at `claude-plugins`, and that one is
+    `offload-to-deterministic-substrate`, which `structural_pair` already
+    removes. The cost is bounded; the shape it buys is the whole point.
+
+    STRICT rank, condition 2: a tie is SKIPPED rather than reported. Two rules
+    at the same depth have no parent between them, so "promote to the parent"
+    names no operation and the finding's recommendation would be undefined. The
+    pair is still counted in `pairs_considered` — a skip that also vanishes from
+    the denominator is indistinguishable from a check that never opened it.
+
+    The tie skip is NOT redundant with condition 4, and a test that pins it has
+    to be built so that it isn't. For two scopes at equal depth under a project
+    root, `_ancestor_scope` is already false, so removing the tie skip changes
+    nothing there — a mutation dropping `if ra == rb: continue` survives such a
+    case. It only bites when the parent side is `user-global` or `portfolio`,
+    which `_ancestor_scope` accepts unconditionally: two `user-global` rules
+    both rank 0, and without the tie skip one is reported as promotable into its
+    own scope. That is the shape `test-config-drift.sh` case 22h pins.
+
+    Condition 4 exists because `scope_rank` IS DEPTH, NOT ANCESTRY. Any deeper
+    scope outranks any shallower one, including an unrelated repo's. Measured at
+    `~/repos`/0.88: rank-strict alone yields 69 pairs, 47 of them cross-repo
+    siblings (`FVH/podio-mcp::document-management` "promoted into"
+    `laurigates/comfyui-nodes/...::document-management` at 0.96 — two unrelated
+    trees, no ladder between them). The constraint cuts 69 -> 22 and removes
+    zero adjudicated candidates. `user-global` and `portfolio` are ancestors of
+    everything by construction; every other scope must be a path prefix.
+
+    Condition 5 is the degenerate-document floor — see MIN_PROMOTABLE_CHARS.
+
+    SEVERITY IS `info`, on three grounds and not one. It is a SUGGESTION to a
+    human, never a defect — the corpus is working as intended either way.
+    `--gate` returns 2 only on `error`, so a style suggestion cannot fail CI.
+    And the probe hook forwards `.[:4]` after `sort_by(.rank, .kind)`, so `info`
+    ranks last and this cannot crowd a real `error` out of the nudge's budget.
+    Precedent in this same file: `rule_covered_by_skill`.
+
+    `sim` is a CALLABLE, not a matrix, and that is a test-seam decision rather
+    than a style one. `test-config-drift.sh` is listed in
+    `scripts/required-to-run-tests.txt`, where a SKIP is an ERROR, and neither
+    numpy nor fastembed is installed for the system `python3` both real callers
+    invoke. A test needing the real model would force that required gate to skip
+    on every runner. With the similarity injected (`--sim-fixture`), the
+    discriminator, the tie skip, scope ordering, the finding shape and the
+    `--gate` interaction are all exercisable in the stdlib tier.
+
+    KNOWN LIMITATION, recorded rather than closed: `structural_pair` reads only
+    the two documents in the pair, so a hierarchy DECLARED IN A THIRD DOCUMENT
+    leaks through as a candidate. At `~/repos` that is the six
+    `ForumViriumHelsinki/.github` <- `ForumViriumHelsinki` pairs
+    (`application-structure`, `deploy-values`, `local-development`,
+    `ci-cd-workflows`, `dependency-automation`, `github-metadata-hygiene`,
+    0.94-0.97): the declaration lives in `ForumViriumHelsinki/CLAUDE.md` --
+    "Workspace rules in `.claude/rules/` are generated from the .github repo
+    source -- edit the source, not the generated files" -- which is neither end
+    of any of those pairs.
+
+    Closing it needs a THIRD-DOCUMENT declaration signal (a scope's own
+    CLAUDE.md vouching for a whole rules directory), and that is its own
+    calibration with its own false-positive surface -- not a widening of
+    `structural_pair`. A pairwise prose discriminator was tried instead and
+    measured over both corpora: it suppressed 42 pairs at `claude-plugins` and
+    60 at `~/repos`, NONE of them above T_PROMOTE, i.e. it changed no emitted
+    finding at either root -- while binding to a SCOPE rather than a document,
+    so one sentence in one child exempted it from every rule in the parent
+    scope. It was cut. Do not re-add a variant of it without a measurement
+    showing it moves an emitted finding.
+
+    The gap does not bite at the ship root: 4 scopes, the whole above-band set
+    is n=1, and that one pair is genuine.
+    """
+    docs = [d for d in items if d["kind"] in PROMOTION_KINDS]
+
+    out: list[Finding] = []
+    considered = 0
+    declared = 0
+    for a, b in combinations(docs, 2):
+        ra, rb = a["scope_rank"], b["scope_rank"]
+        if ra is None or rb is None:
+            continue  # SCOPE_PLUGIN: no ladder, so not a considered pair at all
+        considered += 1
+        if ra == rb:
+            continue
+        parent, child = (a, b) if ra < rb else (b, a)
+        if not _ancestor_scope(parent, child):
+            continue
+        if min(child["chars"], parent["chars"]) < MIN_PROMOTABLE_CHARS:
+            continue
+        s = sim(child, parent)
+        if s < T_PROMOTE:
+            continue
+        if structural_pair(child, parent):
+            declared += 1
+            continue
+        if waivers.waived(child, parent):
+            continue
+        out.append(
+            Finding(
+                "info",
+                "promotion_candidate",
+                # THE SUMMARY STATES THE OBSERVATION, NOT THE ACTION. What was
+                # measured is two documents covering the same topic at two rungs
+                # of the ladder with no declared relationship between them;
+                # whether the lower one should MOVE depends on why it exists,
+                # which this check cannot see. `proposed_parent` carries the
+                # suggestion, and a reader who wants it reads it there.
+                (
+                    f"{child['scope']}:{child['name']} is {s:.0%} similar to "
+                    f"{parent['scope']}:{parent['name']} one scope up, and "
+                    f"neither declares the other -- review whether the lower "
+                    f"copy still earns its own scope"
+                ),
+                score=round(s, 3),
+                # CHILD FIRST. `render_report` prints only `paths[:2]` and the
+                # probe hook forwards the summary, so the order is the only
+                # thing telling a reader which end moves.
+                paths=[child["path"], parent["path"]],
+                # Index-aligned with `paths`, so a consumer can label the two
+                # ends without re-deriving a scope from a path.
+                scopes=[child["scope"], parent["scope"]],
+                proposed_parent=parent["scope"],
+            )
+        )
+    return sorted(out, key=lambda x: -x["score"]), considered, declared
+
+
+def _ancestor_scope(parent: dict, child: dict) -> bool:
+    """True when `parent`'s scope sits ABOVE `child`'s on the same ladder.
+
+    `user-global` and `portfolio` are above every scope by construction — they
+    are the two rungs every project scope hangs off. Anything else has to be a
+    literal path prefix; sibling repos at equal or differing depth share no
+    ladder, so no promotion between them is possible.
+    """
+    ps, cs = parent["scope"], child["scope"]
+    if ps in ("user-global", "portfolio"):
+        return True
+    return cs.startswith(ps + "/")
+
+
+def _embed_matrix(items, cache_path: Path):
+    """Normalized embedding vectors for `items`, warmed through the disk cache.
+
+    Hoisted out of `check_semantic_dupes` so the promotion pass can share both
+    the cache file and the keying rules rather than re-implementing them. The
+    cache is content-keyed, so two calls over overlapping item sets (rules are
+    in both) cost one embedding each.
+
+    numpy and fastembed are imported FUNCTION-LOCALLY, exactly as before:
+    nothing in the cheap tier may pull them in.
+    """
     import numpy as np
     from fastembed import TextEmbedding
 
@@ -1157,26 +1430,63 @@ def check_semantic_dupes(items, waivers, cache_path: Path) -> list[Finding]:
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         cache_path.write_text(json.dumps(cache))
 
-    def structural_pair(a: dict, b: dict) -> bool:
-        """Relationships that are correct by design, not drift.
-
-        Two shapes dominate the high-cosine band and neither is a defect:
-        a pointer stub scores ~0.92 against the very skill it delegates to, and
-        deliberately cross-referenced sibling rules ("Sibling: pr-merge-hazards.md")
-        score ~0.93. Flagging either trains the reader to ignore the report.
-        """
-        for x, y in ((a, b), (b, a)):
-            if x.get("stub") and y["kind"] == "skill" and y["name"] in x["body"][:700]:
-                return True
-            if (
-                Path(y["path"]).name in x["body"]
-                or f"`{y['name']}`" in x["body"][:1500]
-            ):
-                return True
-        return False
-
     vecs = np.array([cache[k] for k in keys], dtype="float32")
     vecs /= np.linalg.norm(vecs, axis=1, keepdims=True) + 1e-9
+    return vecs
+
+
+def cosine_sim_fn(items, cache_path: Path):
+    """A `sim(a, b) -> float` callable over `items`, backed by the embed cache.
+
+    The promotion pass filters on rank, ancestry and length BEFORE it needs a
+    score, so a lazy per-pair dot product is both cheaper and smaller than the
+    full N x N matrix `check_semantic_dupes` builds for its own exhaustive
+    sweep. Rows are keyed by `id()` rather than by content hash: two documents
+    in this corpus can be byte-identical (that is precisely the promotion shape
+    being looked for), so a content hash is not a unique row key here.
+    """
+    vecs = _embed_matrix(items, cache_path)
+    row = {id(it): i for i, it in enumerate(items)}
+
+    def sim(a: dict, b: dict) -> float:
+        return float(vecs[row[id(a)]] @ vecs[row[id(b)]])
+
+    return sim
+
+
+def fixture_sim_fn(fixture_path: Path):
+    """A `sim(a, b)` callable reading precomputed scores from a JSON fixture.
+
+    THE TEST SEAM, and the reason `check_promotion_candidates` takes a callable
+    at all. `health-plugin/scripts/tests/test-config-drift.sh` is listed in
+    `scripts/required-to-run-tests.txt`, where a SKIP is an ERROR; numpy and
+    fastembed are absent from the system `python3` that both real callers
+    invoke. Injecting the scores is what keeps the whole verdict -- the
+    discriminator, the tie skip, scope ordering, the finding shape, the
+    `--gate` interaction -- inside the stdlib tier instead of behind a model
+    download.
+
+    Format: `{"<hash-a>|<hash-b>": 0.93}`, where each hash is the document's
+    `hash` field (`sha(body)`, 16 hex chars) and the two are sorted, so the
+    caller need not know which side the scan will call parent. A missing pair
+    scores 0.0 -- below every threshold, so an incomplete fixture under-reports
+    rather than inventing a finding.
+
+    Stdlib `json` only, and no module-scope import is added for it.
+    """
+    raw = json.loads(fixture_path.read_text())
+    table = {k: float(v) for k, v in raw.items()}
+
+    def sim(a: dict, b: dict) -> float:
+        return table.get("|".join(sorted((a["hash"], b["hash"]))), 0.0)
+
+    return sim
+
+
+def check_semantic_dupes(items, waivers, cache_path: Path) -> list[Finding]:
+    import numpy as np
+
+    vecs = _embed_matrix(items, cache_path)
     sim = vecs @ vecs.T
     out = []
     for i, j in zip(*np.triu_indices(len(items), k=1)):
@@ -1200,6 +1510,88 @@ def check_semantic_dupes(items, waivers, cache_path: Path) -> list[Finding]:
                 )
             )
     return sorted(out, key=lambda x: -x["score"])
+
+
+# ----------------------------------------------------------------- calibration
+CALIBRATION_BANDS = (0.94, 0.92, 0.90, 0.88, 0.86)
+
+
+def _band_histogram(scores) -> str:
+    """The cumulative histogram spelling used by the T_SEMANTIC/T_PROMOTE comments.
+
+    Cumulative, not per-bucket: `0.90:32` means "32 pairs at or above 0.90", so
+    a reader picking a threshold reads the yield of that threshold directly off
+    the row instead of summing buckets.
+    """
+    return " ".join(
+        f"{b}:{sum(1 for s in scores if s >= b)}" for b in CALIBRATION_BANDS
+    )
+
+
+def emit_calibration(corpus, cache_path: Path, root: Path) -> None:
+    """Dev-only: measure the promotion-band distribution over this root.
+
+    Not wired into any caller and not part of any tier -- it is how T_PROMOTE
+    was set, kept in the shipped file so the next person can re-derive the
+    number instead of trusting the comment above it. Imports numpy/fastembed
+    only through `_embed_matrix`, i.e. function-locally, exactly like
+    `check_semantic_dupes`.
+
+    Three bands per kind-pair, each one a strictly narrower predicate, so the
+    contribution of every discriminator is visible rather than asserted:
+
+    * RAW     -- every cross-scope, rank-strict pair of promotable kinds.
+    * NOVEL   -- RAW minus same-name minus `structural_pair`. The same
+                 definition the T_SEMANTIC comment uses, so the two constants'
+                 calibrations are comparable.
+    * SHIPPED -- what `check_promotion_candidates` actually emits: same-name
+                 KEPT, `structural_pair` suppressed, ancestor-constrained,
+                 `MIN_PROMOTABLE_CHARS`-floored.
+
+    NOVEL is reported despite the shipped check not using it because it is the
+    contrast that shows what keeping same-name pairs costs -- at this repo's
+    root that difference is a single pair, and it is one `structural_pair`
+    removes anyway.
+    """
+    docs = [d for k in PROMOTION_KINDS for d in corpus[k]]
+    sim = cosine_sim_fn(docs, cache_path)
+
+    raw: dict[str, list[float]] = {}
+    novel: dict[str, list[float]] = {}
+    shipped: dict[str, list[float]] = {}
+    for a, b in combinations(docs, 2):
+        ra, rb = a["scope_rank"], b["scope_rank"]
+        if ra is None or rb is None or ra == rb:
+            continue
+        parent, child = (a, b) if ra < rb else (b, a)
+        key = "_".join(sorted((a["kind"], b["kind"])))
+        s = sim(child, parent)
+        raw.setdefault(key, []).append(s)
+        if a["name"] != b["name"] and not structural_pair(a, b):
+            novel.setdefault(key, []).append(s)
+        if (
+            _ancestor_scope(parent, child)
+            and min(child["chars"], parent["chars"]) >= MIN_PROMOTABLE_CHARS
+            and not structural_pair(child, parent)
+        ):
+            shipped.setdefault(key, []).append(s)
+
+    print("=== CONFIG DRIFT CALIBRATION ===")
+    print(f"ROOT={root}")
+    print(f"BANDS={' '.join(str(b) for b in CALIBRATION_BANDS)}")
+    for kind in PROMOTION_KINDS:
+        print(f"DOCS_{kind.upper()}={len(corpus[kind])}")
+    print(f"PROMOTABLE_DOCS={len(docs)}")
+    print(f"SCOPES={len({d['scope'] for d in docs})}")
+    print(f"CROSS_SCOPE_PAIRS={sum(len(v) for v in raw.values())}")
+    for label, table in (("RAW", raw), ("NOVEL", novel), ("SHIPPED", shipped)):
+        for key in sorted(set(raw) | set(novel) | set(shipped)):
+            scores = table.get(key, [])
+            print(f"{label}_{key.upper()}={_band_histogram(scores)} n={len(scores)}")
+        allscores = [s for v in table.values() for s in v]
+        print(f"{label}_ALL={_band_histogram(allscores)} n={len(allscores)}")
+    print(f"T_PROMOTE={T_PROMOTE}")
+    print("=== END CONFIG DRIFT CALIBRATION ===")
 
 
 # ---------------------------------------------------------------------- output
@@ -1274,6 +1666,13 @@ def main() -> int:
         action="store_true",
         help="probe mode: never spawn git; read cached dates only. Sub-second.",
     )
+    ap.add_argument(
+        "--calibrate",
+        action="store_true",
+        help="dev-only: print the promotion-band distribution and exit. Needs the model.",
+    )
+    # Hidden: a TEST SEAM, not an operator flag. See `fixture_sim_fn`.
+    ap.add_argument("--sim-fixture", help=argparse.SUPPRESS)
     args = ap.parse_args()
 
     root = Path(args.root).expanduser().resolve()
@@ -1282,6 +1681,9 @@ def main() -> int:
         return 3
 
     corpus, unreadable, templates_excluded, agent_dirs = collect(root)
+    if args.calibrate:
+        emit_calibration(corpus, Path(args.cache).expanduser(), root)
+        return 0
     rules = corpus["rule"]
     skills = corpus["skill"]
     agents = corpus["agent"]
@@ -1321,6 +1723,28 @@ def main() -> int:
         datecache_path.parent.mkdir(parents=True, exist_ok=True)
         datecache_path.write_text(json.dumps(datecache))
 
+    # The two promotion counters are emitted ONLY when the promotion pass ran.
+    # `even at 0` means "ran and found none"; ABSENT means "did not run", and
+    # the cheap tier must keep saying the second. A `PROMOTION_PAIRS_CONSIDERED=0`
+    # printed by `--fast --no-embed` would read as a clean promotable corpus
+    # scanned, which is the false all-clear the counter exists to prevent -- the
+    # same distinction `SEMANTIC_PASS=off` already draws for its own tier.
+    promotion_counts: dict[str, int] = {}
+    promotable = [d for k in PROMOTION_KINDS for d in corpus[k]]
+
+    if args.sim_fixture:
+        # Test seam. The similarity is injected, so the promotion verdict runs
+        # in the stdlib tier with no model; `check_semantic_dupes` is untouched
+        # and still obeys --no-embed.
+        promo, considered, declared = check_promotion_candidates(
+            promotable, fixture_sim_fn(Path(args.sim_fixture).expanduser()), waivers
+        )
+        findings += promo
+        promotion_counts = {
+            "promotion_pairs_considered": considered,
+            "hierarchies_declared": declared,
+        }
+
     if not args.no_embed:
         try:
             # SEMANTIC_KINDS, not `rules + skills` spelled out: the exclusion of
@@ -1332,6 +1756,22 @@ def main() -> int:
                 waivers,
                 Path(args.cache).expanduser(),
             )
+            # PROMOTION_KINDS is a DIFFERENT set from SEMANTIC_KINDS, so this is
+            # a second embedding pass rather than a filter over the first. It is
+            # not a second embedding COST: the cache is keyed on the embed text,
+            # so every rule is already warm from the call above and only the
+            # CLAUDE.md vectors are new.
+            if not args.sim_fixture:
+                promo, considered, declared = check_promotion_candidates(
+                    promotable,
+                    cosine_sim_fn(promotable, Path(args.cache).expanduser()),
+                    waivers,
+                )
+                findings += promo
+                promotion_counts = {
+                    "promotion_pairs_considered": considered,
+                    "hierarchies_declared": declared,
+                }
         except Exception as exc:  # noqa: BLE001 - degrade loudly, never silently
             findings.append(
                 Finding(
@@ -1407,6 +1847,18 @@ def main() -> int:
         "lexical_pairs": lexical_pairs,
         "waivers_active": len(waivers),
         "semantic_pass": "off" if args.no_embed else "on",
+        # Present only when the promotion pass ran -- see the comment above
+        # `promotion_counts`. PROMOTION_PAIRS_CONSIDERED is the pair UNIVERSE
+        # (both kinds promotable, neither rank None), counted BEFORE the tie
+        # skip and every suppression, so a suppression test's "0 findings" has
+        # a denominator that proves the check opened a corpus.
+        # HIERARCHIES_DECLARED counts pairs that cleared T_PROMOTE and were then
+        # suppressed by `structural_pair` -- i.e. findings that were withheld,
+        # not pairs that were merely looked at. It is exactly that one
+        # suppressor's yield: a hierarchy declared in a THIRD document is
+        # invisible to it and is NOT counted here (see
+        # `check_promotion_candidates`, KNOWN LIMITATION).
+        **promotion_counts,
     }
 
     {

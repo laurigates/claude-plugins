@@ -93,6 +93,7 @@ one document shape, and each check names the kinds it applies to explicitly:
 | `agent_discovery_misfire` | ERROR | agent | `*-plugin/agents` directories present but zero agent files — discovery is broken, not the tree clean |
 | `semantic_overlap_*` | WARN | rule, skill | Differently-worded rules or skills covering one topic |
 | `rule_covered_by_skill` | INFO | rule | A resident rule whose content a skill already carries |
+| `promotion_candidate` | INFO | rule, claude_md | The same guidance at two scopes with no declared parent — a candidate for `/agent-patterns:meta-promote`. **Semantic tier only** |
 | `always_loaded_budget` | WARN | rule, claude_md | The every-turn surface creeping past its ceiling |
 | `review_staleness` | WARN | all four | An artifact changed after its declared `reviewed:` date |
 | `frontmatter_coverage` | INFO | rule | Rules with no `reviewed:` date, so staleness cannot be tracked |
@@ -102,6 +103,24 @@ is very often duplication that is *correct* — a vendored clone and its upstrea
 or one package copied into two places — and the analyzer cannot tell that from a
 divergence. Two `.claude/rules/` scopes, and two `*-plugin/agents/*.md` in one
 marketplace, are both live and both loaded, so duplication there really is drift.
+
+**`promotion_candidate` and the threshold that cannot do the job alone.**
+`T_PROMOTE = 0.88` sits below `T_SEMANTIC = 0.91` because at 0.91 this root
+yields zero findings — shipping at the drift threshold would ship the verdict
+inert. But the score is not what makes it precise: the declared hierarchy
+(`offload-to-deterministic-substrate` at two scopes, 0.8994) outscores the
+genuine candidate (`auto-mode` ← `claude-code-auto-mode`, 0.8990) by 0.0004. No
+cut separates them; `structural_pair` does. Two further constraints carry more
+weight than the number — an **ancestor** test, because `scope_rank` is depth and
+would otherwise pair unrelated repos (69 → 22 pairs at `~/repos`), and a
+**500-char floor**, because near-empty redirect stubs score 0.88–0.98 against
+each other (22 → 12).
+
+Known limitation: a hierarchy declared in a **third** document is invisible —
+`structural_pair` reads only the two documents in the pair. The six
+`ForumViriumHelsinki/.github` pairs are exactly this shape, declared in that
+workspace's own `CLAUDE.md`. Closing it needs a third-document signal with its
+own calibration. Run the expensive tier with `just config-drift-semantic`.
 
 Agents are discovered through the same **recursive pruned walk** as every other
 kind (`*-plugin/agents`), not a depth-anchored glob: the SessionStart probe scans

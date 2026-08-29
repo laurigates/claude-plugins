@@ -214,6 +214,15 @@ fi
 #   reach every CLAUDE.md at a portfolio root, so deep pairs rely on the paths in
 #   the finding.
 #
+# `promotion_candidate` -> `/agent-patterns:meta-promote`, checked against that
+# skill's inventory rather than its title. meta-promote's Target/Sources table
+# is `<scope>/.claude/{rules,skills,commands,agents}/` and `<scope>/*/.claude/{...}/`
+# -- which is exactly the two scoped kinds this finding can name, since
+# PROMOTION_KINDS excludes the plugin-namespaced ones. The CLAUDE.md caveat that
+# re-routed `duplicate_claude_md_lexical` away from this skill applies to the
+# claude_md half here too, and the finding's own `paths` (child first) do that
+# locating. Promoting a rule up a scope ladder IS this skill's stated operation.
+#
 # `agent_discovery_misfire` routes to `/health:check` with the rest of the
 # "the probe itself is broken" family (`coverage_metric_broken`,
 # `corpus_unreadable`): its fix site is this analyzer, not the corpus.
@@ -241,6 +250,7 @@ done < <(printf '%s' "$OUT" | jq -r '
      "semantic_overlap_rule_rule":   "/agent-patterns:meta-promote",
      "semantic_overlap_rule_skill":  "/health:skill-audit",
      "semantic_overlap_skill_skill": "/health:skill-audit",
+     "promotion_candidate":          "/agent-patterns:meta-promote",
      "rule_covered_by_skill":        "/agent-patterns:meta-context-diet",
      "always_loaded_budget":         "/agent-patterns:meta-context-diet",
      "review_staleness":             "/health:skill-audit",
