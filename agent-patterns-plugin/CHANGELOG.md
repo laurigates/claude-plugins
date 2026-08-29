@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.45.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.45.0...agent-patterns-plugin-v2.45.1) (2026-08-29)
+
+
+### Documentation
+
+* **agent-patterns:** two result traps — pipes eat exit codes, wraps defeat greps ([#2519](https://github.com/laurigates/claude-plugins/issues/2519)) ([3a07ecb](https://github.com/laurigates/claude-plugins/commit/3a07ecb84faaf476a30ee9e85c49676012493b54))
+
 ## [2.45.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.44.0...agent-patterns-plugin-v2.45.0) (2026-08-27)
 
 
