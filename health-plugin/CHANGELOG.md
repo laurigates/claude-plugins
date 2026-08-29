@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.4](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.17.3...health-plugin-v1.17.4) (2026-08-29)
+
+
+### Code Refactoring
+
+* **health-plugin:** extract the finding/waiver/delta contract into lib/probe.py ([#2536](https://github.com/laurigates/claude-plugins/issues/2536)) ([c55f62c](https://github.com/laurigates/claude-plugins/commit/c55f62c2b7f4140fb9eae1376277ca04df05adca))
+
 ## [1.17.3](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.17.2...health-plugin-v1.17.3) (2026-08-29)
 
 
