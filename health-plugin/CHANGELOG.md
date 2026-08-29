@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.3](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.17.2...health-plugin-v1.17.3) (2026-08-29)
+
+
+### Bug Fixes
+
+* **health-plugin:** parse block scalars, widened keys and the closing fence in frontmatter() ([#2531](https://github.com/laurigates/claude-plugins/issues/2531)) ([1e05852](https://github.com/laurigates/claude-plugins/commit/1e0585293bd676c9454c9a9b12855736ef943e3d))
+
 ## [1.17.2](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.17.1...health-plugin-v1.17.2) (2026-08-15)
 
 
