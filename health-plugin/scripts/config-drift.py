@@ -20,6 +20,14 @@ Design notes (why it is shaped this way):
   editing either side revives the finding. This is what keeps a recurring report
   from decaying into noise you learn to skip.
 
+* The finding/waiver/delta/render contract lives in `lib/probe.py`, not here.
+  This file owns the CHECKS (what counts as drift); the module owns the SHAPE
+  (what a finding is, when a waiver holds, how a report renders, what each exit
+  code means), so a second probe can reuse it. Import it as
+  `from lib.probe import ...` -- `sys.path[0]` is this script's directory, so
+  `lib` resolves as a PEP 420 namespace package and the flat `import probe`
+  does not resolve at all.
+
 Exit codes: 0 clean, 1 warnings, 2 errors (CI gate), 3 internal failure.
 """
 
@@ -35,6 +43,16 @@ import subprocess
 import sys
 from itertools import combinations
 from pathlib import Path
+
+from lib.probe import (
+    EXIT_INTERNAL,
+    FORMATS,
+    exit_code,
+    finding,
+    load_waivers,
+    render,
+    waived,
+)
 
 HOME_RULES = Path.home() / ".claude" / "rules"
 SKIP_PARTS = {"node_modules", "dist", "worktrees", ".git", "__pycache__", "tmp"}
@@ -209,45 +227,6 @@ def collect(root: Path) -> tuple[list[dict], list[dict]]:
     return rules, skills
 
 
-# -------------------------------------------------------------------- waivers
-def _canon(p: str) -> str:
-    """Canonicalise a path for waiver matching.
-
-    Waiver files are hand-written, so a side may be spelled `~/repos/...` or
-    `/var/...` while the scan resolves it to `/private/var/...` (macOS symlinks
-    every temp and `/var` path). Comparing raw strings silently fails to match
-    and the waiver looks ignored, which is indistinguishable from a bug.
-    """
-    return os.path.realpath(os.path.expanduser(p))
-
-
-def load_waivers(path: Path) -> dict[tuple[str, str], dict]:
-    if not path.is_file():
-        return {}
-    try:
-        raw = json.loads(path.read_text())
-    except (OSError, json.JSONDecodeError):
-        return {}
-    return {(_canon(w["a"]), _canon(w["b"])): w for w in raw.get("waivers", [])}
-
-
-def waived(waivers, a: dict, b: dict) -> bool:
-    """A waiver holds only while BOTH sides are byte-identical to when it was filed."""
-    pa, pb = _canon(a["path"]), _canon(b["path"])
-    for key in ((pa, pb), (pb, pa)):
-        w = waivers.get(key)
-        if not w:
-            continue
-        ha, hb = (
-            (w.get("a_hash"), w.get("b_hash"))
-            if key[0] == pa
-            else (w.get("b_hash"), w.get("a_hash"))
-        )
-        if ha == a["hash"] and hb == b["hash"]:
-            return True
-    return False
-
-
 # --------------------------------------------------------------------- checks
 def _stub_target(head: str, known: set[str]) -> str | None:
     """Resolve which skill a pointer stub delegates to.
@@ -285,12 +264,12 @@ def check_stub_integrity(rules, skills) -> list[dict]:
         target = _stub_target(r["body"][:700], known)
         if target not in known:
             out.append(
-                {
-                    "severity": "error",
-                    "kind": "broken_pointer_stub",
-                    "summary": f"{r['name']} points at skill '{target or '(none named)'}' which does not exist",
-                    "path": r["path"],
-                }
+                finding(
+                    "error",
+                    "broken_pointer_stub",
+                    f"{r['name']} points at skill '{target or '(none named)'}' which does not exist",
+                    path=r["path"],
+                )
             )
     return out
 
@@ -326,13 +305,13 @@ def check_review_staleness(items, cache: dict, allow_spawn: bool) -> list[dict]:
             continue
         if gap > STALE_DAYS:
             out.append(
-                {
-                    "severity": "warn",
-                    "kind": "review_staleness",
-                    "summary": f"{it['name']} changed {gap}d after its declared reviewed:{rv}",
-                    "path": it["path"],
-                    "gap_days": gap,
-                }
+                finding(
+                    "warn",
+                    "review_staleness",
+                    f"{it['name']} changed {gap}d after its declared reviewed:{rv}",
+                    path=it["path"],
+                    gap_days=gap,
+                )
             )
     return sorted(out, key=lambda x: -x["gap_days"])
 
@@ -349,18 +328,18 @@ def check_budget(rules) -> list[dict]:
         return []
     worst = sorted(always, key=lambda r: -r["chars"])[:3]
     return [
-        {
-            "severity": "warn",
-            "kind": "always_loaded_budget",
-            "summary": (
+        finding(
+            "warn",
+            "always_loaded_budget",
+            (
                 f"{len(always)} always-loaded rules cost ~{tokens:,} tok/turn "
                 f"(budget {BUDGET_TOKENS:,}); heaviest: "
                 + ", ".join(
                     f"{r['name']}(~{r['chars'] // 4 // 100 * 100:,})" for r in worst
                 )
             ),
-            "tokens": tokens,
-        }
+            tokens=tokens,
+        )
     ]
 
 
@@ -369,11 +348,11 @@ def check_frontmatter(rules) -> list[dict]:
     if not missing:
         return []
     return [
-        {
-            "severity": "info",
-            "kind": "frontmatter_coverage",
-            "summary": f"{len(missing)}/{len(rules)} rules carry no reviewed: date, so staleness cannot be tracked for them",
-        }
+        finding(
+            "info",
+            "frontmatter_coverage",
+            f"{len(missing)}/{len(rules)} rules carry no reviewed: date, so staleness cannot be tracked for them",
+        )
     ]
 
 
@@ -385,13 +364,13 @@ def check_lexical_dupes(rules, waivers) -> list[dict]:
         s = jaccard(a["_sh"], b["_sh"])
         if s >= T_LEXICAL and not waived(waivers, a, b):
             out.append(
-                {
-                    "severity": "warn",
-                    "kind": "duplicate_rule_lexical",
-                    "summary": f"{a['scope']}:{a['name']} and {b['scope']}:{b['name']} are {s:.0%} lexically identical",
-                    "score": round(s, 3),
-                    "paths": [a["path"], b["path"]],
-                }
+                finding(
+                    "warn",
+                    "duplicate_rule_lexical",
+                    f"{a['scope']}:{a['name']} and {b['scope']}:{b['name']} are {s:.0%} lexically identical",
+                    score=round(s, 3),
+                    paths=[a["path"], b["path"]],
+                )
             )
     return sorted(out, key=lambda x: -x["score"])
 
@@ -431,30 +410,30 @@ def check_rule_covered_by_skill(rules, skills, waivers) -> list[dict]:
             continue
         if score >= T_COVERAGE and skill and not waived(waivers, r, skill):
             out.append(
-                {
-                    "severity": "info",
-                    "kind": "rule_covered_by_skill",
-                    "summary": (
+                finding(
+                    "info",
+                    "rule_covered_by_skill",
+                    (
                         f"{r['scope']}:{r['name']} is {score:.0%} covered by skill "
                         f"{skill['name']} -- candidate for a pointer stub"
                     ),
-                    "score": round(score, 3),
-                    "paths": [r["path"], skill["path"]],
-                    "always_loaded": r["always_loaded"],
-                }
+                    score=round(score, 3),
+                    paths=[r["path"], skill["path"]],
+                    always_loaded=r["always_loaded"],
+                )
             )
     # Control gate: if the known-good stubs do not surface, the metric is broken
     # and its output must not be trusted (never-fabricate-test-identifiers).
     if control_total and control_hits < max(1, int(0.7 * control_total)):
         out = [
-            {
-                "severity": "error",
-                "kind": "coverage_metric_broken",
-                "summary": (
+            finding(
+                "error",
+                "coverage_metric_broken",
+                (
                     f"containment metric failed its control: only {control_hits}/{control_total} "
                     "known pointer stubs detected -- coverage findings suppressed"
                 ),
-            }
+            )
         ]
     return sorted(out, key=lambda x: (not x.get("always_loaded"), -x.get("score", 0)))
 
@@ -513,95 +492,18 @@ def check_semantic_dupes(items, waivers, cache_path: Path) -> list[dict]:
             continue
         if s >= T_SEMANTIC and not waived(waivers, a, b):
             out.append(
-                {
-                    "severity": "warn",
-                    "kind": f"semantic_overlap_{a['kind']}_{b['kind']}",
-                    "summary": (
+                finding(
+                    "warn",
+                    f"semantic_overlap_{a['kind']}_{b['kind']}",
+                    (
                         f"{a['kind']} {a['name']} and {b['kind']} {b['name']} "
                         f"are {s:.0%} semantically similar"
                     ),
-                    "score": round(s, 3),
-                    "paths": [a["path"], b["path"]],
-                }
+                    score=round(s, 3),
+                    paths=[a["path"], b["path"]],
+                )
             )
     return sorted(out, key=lambda x: -x["score"])
-
-
-# ---------------------------------------------------------------------- output
-def emit_status(findings, counts):
-    print("=== CONFIG DRIFT ===")
-    for k, v in counts.items():
-        print(f"{k.upper()}={v}")
-    by_kind: dict[str, int] = {}
-    for f in findings:
-        by_kind[f["kind"]] = by_kind.get(f["kind"], 0) + 1
-    for k, v in sorted(by_kind.items()):
-        print(f"FINDING_{k.upper()}={v}")
-    errs = sum(1 for f in findings if f["severity"] == "error")
-    warns = sum(1 for f in findings if f["severity"] == "warn")
-    print(f"ERRORS={errs}\nWARNINGS={warns}")
-    # OK / WARN / ERROR per .claude/rules/structured-script-output.md, not
-    # PASS/FAIL -- orchestrating skills grep for the house vocabulary.
-    print("STATUS=" + ("ERROR" if errs else "WARN" if warns else "OK"))
-
-
-def emit_probe(findings):
-    """drift-protocol shape: severity/kind/summary/remediation_skill."""
-    remediation = {
-        "broken_pointer_stub": "/agent-patterns:meta-promote",
-        "duplicate_rule_lexical": "/agent-patterns:meta-promote",
-        "semantic_overlap_rule_rule": "/agent-patterns:meta-promote",
-        "semantic_overlap_skill_skill": "/health:skill-audit",
-        "rule_covered_by_skill": "/agent-patterns:meta-context-diet",
-        "always_loaded_budget": "/agent-patterns:meta-context-diet",
-        "review_staleness": "/health:skill-audit",
-        "frontmatter_coverage": "/agent-patterns:meta-context-diet",
-    }
-    ranked = sorted(
-        findings, key=lambda f: {"error": 0, "warn": 1, "info": 2}[f["severity"]]
-    )
-    print(
-        json.dumps(
-            {
-                "plugin": "config-drift",
-                "checked_at": dt.datetime.now(dt.timezone.utc).isoformat(
-                    timespec="seconds"
-                ),
-                "findings": [
-                    {
-                        "severity": f["severity"],
-                        "kind": f["kind"],
-                        "summary": f["summary"],
-                        "remediation_skill": remediation.get(
-                            f["kind"], "/health:check"
-                        ),
-                    }
-                    for f in ranked[:5]
-                ],
-            },
-            indent=1,
-        )
-    )
-
-
-def emit_report(findings, counts):
-    print("# Claude config drift report\n")
-    print(f"_{dt.datetime.now().isoformat(timespec='seconds')}_\n")
-    print("| Metric | Value |\n|---|---|")
-    for k, v in counts.items():
-        print(f"| {k.replace('_', ' ')} | {v} |")
-    print()
-    for sev in ("error", "warn", "info"):
-        group = [f for f in findings if f["severity"] == sev]
-        if not group:
-            continue
-        print(f"\n## {sev.upper()} ({len(group)})\n")
-        for f in group[:40]:
-            print(f"- **{f['kind']}** — {f['summary']}")
-            for p in f.get("paths", [])[:2]:
-                print(f"  - `{p}`")
-        if len(group) > 40:
-            print(f"\n_…{len(group) - 40} more suppressed._")
 
 
 # ------------------------------------------------------------------------ main
@@ -615,9 +517,7 @@ def main() -> int:
     # ~/.claude/rules are always scanned regardless of --root, because they load
     # in every session no matter which project is open.
     ap.add_argument("--root", default=".")
-    ap.add_argument(
-        "--format", choices=["status", "probe", "report", "json"], default="status"
-    )
+    ap.add_argument("--format", choices=list(FORMATS), default="status")
     ap.add_argument(
         "--no-embed",
         action="store_true",
@@ -650,7 +550,7 @@ def main() -> int:
     root = Path(args.root).expanduser().resolve()
     if not root.is_dir():
         print(f"root not found: {root}", file=sys.stderr)
-        return 3
+        return EXIT_INTERNAL
 
     rules, skills = collect(root)
     waivers = load_waivers(Path(args.waivers).expanduser())
@@ -684,11 +584,11 @@ def main() -> int:
             )
         except Exception as exc:  # noqa: BLE001 - degrade loudly, never silently
             findings.append(
-                {
-                    "severity": "info",
-                    "kind": "semantic_pass_unavailable",
-                    "summary": f"semantic pass skipped: {type(exc).__name__}: {exc}",
-                }
+                finding(
+                    "info",
+                    "semantic_pass_unavailable",
+                    f"semantic pass skipped: {type(exc).__name__}: {exc}",
+                )
             )
 
     if args.since:
@@ -711,17 +611,9 @@ def main() -> int:
         "semantic_pass": "off" if args.no_embed else "on",
     }
 
-    {
-        "status": emit_status,
-        "probe": lambda f, c: emit_probe(f),
-        "report": emit_report,
-        "json": lambda f, c: print(json.dumps({"counts": c, "findings": f}, indent=1)),
-    }[args.format](findings, counts)
+    render(args.format, findings, counts)
 
-    errs = sum(1 for f in findings if f["severity"] == "error")
-    if args.gate and errs:
-        return 2
-    return 1 if any(f["severity"] in ("error", "warn") for f in findings) else 0
+    return exit_code(findings, gate=args.gate)
 
 
 if __name__ == "__main__":

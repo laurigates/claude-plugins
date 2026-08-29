@@ -36,6 +36,7 @@ These internal skills are auto-discoverable but not user-invocable — use `/hea
 |--------|-------------|
 | `prune-claude-config.py` | Remove orphaned projects and cached data from `~/.claude.json` |
 | `config-drift.py` | Audit the rules/skills corpus itself for duplication, broken pointer stubs, review staleness, and always-loaded budget |
+| `lib/probe.py` | The finding / waiver / delta / render contract the drift probes share |
 
 ### `config-drift.py`
 
@@ -73,6 +74,40 @@ same-name and structural pairs excluded. This is not a default worth changing
 casually: at 0.86 on a real 884-document corpus it emitted 491 findings, of
 which 290 were same-name pairs the cheap tier already owns. Everything here is
 one genre of document, so baseline similarity is high.
+
+### `lib/probe.py`
+
+`config-drift.py` owns the **checks** (what counts as drift); `lib/probe.py`
+owns the **shape**, so a second probe does not re-derive it:
+
+| Piece | What it covers |
+|---|---|
+| `finding(severity, kind, summary, **extra)` | The one constructor for every finding, validating the shape and pinning key order |
+| `load_waivers()` / `waived()` | Path-parameterised waiver lookup, both orientations, expiring when either side's content hash changes |
+| `fingerprint()` / `fingerprints()` / `delta()` | A finding's stable identity — `kind` + sorted paths — and a previous-run set comparison ([#2319](https://github.com/laurigates/claude-plugins/issues/2319)) |
+| `emit_status` / `emit_probe` / `emit_report` / `emit_json`, `render()` | The three renderers plus the JSON dump, behind one `--format` dispatch |
+| `EXIT_CLEAN` / `EXIT_WARN` / `EXIT_ERROR` / `EXIT_INTERNAL`, `exit_code()` | `0 clean, 1 warn, 2 error (--gate), 3 internal` |
+
+`fingerprint()` is deliberately **not** wired into `config-drift.py`'s output
+yet — it exists so [#2319](https://github.com/laurigates/claude-plugins/issues/2319)
+has something to build on.
+
+Two constraints on the module, both load-bearing:
+
+- **Import it as `from lib.probe import …`, never `import probe`.**
+  `sys.path[0]` is the *script's* directory, not `lib/`, so the flat form
+  raises `ModuleNotFoundError`. What resolves it is a PEP 420 implicit
+  namespace package — hence **no `__init__.py`**. Verified under both bare
+  `python3` and `uv run --script`, from an unrelated cwd.
+- **Stdlib only, and no PEP-723 dependency block.** Both real callers
+  (`hooks/config-drift-probe.sh`, `scripts/tests/test-config-drift.sh`) invoke
+  bare `python3`, bypassing the `uv run --script` shebang — so a dependency
+  block would resolve only on the path nobody takes.
+
+Getting either wrong fails *silently*: `config-drift-probe.sh` reads empty
+analyzer output as "no findings", so an `ImportError` traceback is
+indistinguishable from a clean corpus. `tests/test-config-drift.sh` executes
+the import path from an unrelated cwd for exactly that reason.
 
 ## Use Cases
 
