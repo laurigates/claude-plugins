@@ -508,26 +508,329 @@ assert_eq "CONTROL: without --no-embed the embed path IS reached" \
 rm -f "$EMBED_IMPORT_MARKER"
 unset EMBED_IMPORT_MARKER
 
-echo "TEST j: current bugs pinned deliberately (inverted by the follow-up PR)"
-# j1. `--since <ref>` keeps `not f.get("paths")` as its escape hatch, and a
-# singular-`path` finding has no `paths` key -- so a broken_pointer_stub whose
-# file was NOT touched survives the filter while a paths-carrying duplicate is
-# correctly dropped. The follow-up PR normalises path -> paths, which INVERTS
-# this assertion; when it does, this case is the record of what changed.
+echo "TEST j: the two singular-path bugs are FIXED (assertions inverted in place)"
+# #2536 pinned these two as PINNED BUG assertions because its claim was that no
+# output changed. #2527b normalises the two singular `path=` construction sites
+# to `paths=[...]`, and both bugs fall out AS A CONSEQUENCE rather than as
+# separate edits. The assertions are inverted IN PLACE, so the behaviour change
+# reads as two flipped lines rather than a deleted case and an unrelated new one.
+kinds() { printf '%s' "$1" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(sum(1 for f in d["findings"] if f["kind"]==sys.argv[1]))' "$2" 2>/dev/null || echo ERR; }
+stub_paths() { printf '%s' "$1" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(" ".join(p for f in d["findings"] if f["kind"]=="broken_pointer_stub" for p in f.get("paths",[])))' 2>/dev/null || echo ERR; }
+
+# j1. `--since <ref>` filters on `not f.get("paths") or any(p in touched ...)`.
+# A singular-`path` finding has no `paths` key, so `not f.get("paths")` was True
+# and it was NEVER filtered -- it rode through every delta-only report as though
+# its file had been touched. Both halves are asserted, because "always filtered"
+# passes the drop half on its own and destroys the feature.
+#
+# The RETAIN half needs a REAL git repo: `changed_since` resolves touched paths
+# with `git diff --name-only <ref>`, so a non-repo fixture yields an empty
+# touched-set and every path-carrying finding drops for the wrong reason. An
+# inherited absolute GIT_DIR/GIT_WORK_TREE overrides `git -C`, so neutralise the
+# whole family first (#1745) -- this block runs before the D2/D3 fixtures that
+# do the same.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
+      GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX
+SINCE_ROOT="$FIXROOT/since/proj"
+SINCE_HOME="$FIXROOT/since/home"
+mkdir -p "$SINCE_ROOT/.claude/rules" "$SINCE_HOME/.claude/rules"
+# Names chosen so neither is a SUBSTRING of the other: `touched`/`untouched`
+# would make every `assert_contains "...touched-stub.md"` match both.
+cat > "$SINCE_ROOT/.claude/rules/edited-stub.md" <<'RULE'
+# Edited Stub
+
+Promoted to a skill: invoke `no-such-skill-edited` before doing the thing —
+it carries the whole procedure.
+RULE
+cat > "$SINCE_ROOT/.claude/rules/pristine-stub.md" <<'RULE'
+# Pristine Stub
+
+Promoted to a skill: invoke `no-such-skill-pristine` before doing the thing —
+it carries the whole procedure.
+RULE
+git -C "$SINCE_ROOT" init -q >/dev/null 2>&1
+git -C "$SINCE_ROOT" -c user.email=t@t -c user.name=t add -A >/dev/null 2>&1
+git -C "$SINCE_ROOT" -c user.email=t@t -c user.name=t \
+    -c commit.gpgsign=false -c core.hooksPath=/dev/null \
+    commit -q -m baseline >/dev/null 2>&1
+printf '\nAn edit that changes the file but not its broken target.\n' \
+    >> "$SINCE_ROOT/.claude/rules/edited-stub.md"
+
+out=$(HOME="$SINCE_HOME" python3 "$ANALYZER" --root "$SINCE_ROOT" --no-embed --fast \
+    --format=json 2>/dev/null)
+# FIXTURE VALIDITY: without --since both stubs must fire, or the filtered count
+# below is 1 because only one finding ever existed.
+assert_eq "FIXTURE: both broken stubs are found with no --since" \
+    "$(kinds "$out" broken_pointer_stub)" "2"
+
+out=$(HOME="$SINCE_HOME" python3 "$ANALYZER" --root "$SINCE_ROOT" --no-embed --fast \
+    --format=json --since HEAD 2>/dev/null)
+assert_eq "--since now FILTERS a singular-path stub whose file was NOT touched" \
+    "$(kinds "$out" broken_pointer_stub)" "1"
+assert_contains "--since RETAINS the stub whose file WAS touched" \
+    "$(stub_paths "$out")" "edited-stub.md"
+assert_absent "the untouched stub's path is gone from the report" \
+    "$(stub_paths "$out")" "pristine-stub.md"
+
+# The original CONTROL stays: a paths-carrying finding in a NON-repo corpus has
+# an empty touched-set, so it is still correctly dropped.
 out=$(python3 "$ANALYZER" --root "$FIXROOT/proj" --no-embed --fast --format=json \
     --since HEAD 2>/dev/null)
-kinds() { printf '%s' "$1" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(sum(1 for f in d["findings"] if f["kind"]==sys.argv[1]))' "$2" 2>/dev/null || echo ERR; }
-assert_eq "PINNED BUG: --since retains an untouched singular-path stub finding" \
-    "$(kinds "$out" broken_pointer_stub)" "1"
-assert_eq "CONTROL: --since correctly drops an untouched paths-carrying finding" \
+assert_eq "CONTROL: --since still drops an untouched paths-carrying finding" \
     "$(kinds "$out" duplicate_rule_lexical)" "0"
+assert_eq "the untouched singular-path stub is dropped here too" \
+    "$(kinds "$out" broken_pointer_stub)" "0"
 
-# j2. emit_report prints `f.get("paths", [])[:2]` only, so a singular-`path`
-# finding's file is never shown -- the reader is told a stub is broken and not
-# which one. Also inverted by the follow-up PR.
+# TEST N6: --since is STRUCTURALLY BLIND to ~/.claude/rules. Pinned, not fixed.
+# HOME_RULES is scanned regardless of --root, but changed_since() walks only
+# root.rglob(".git") plus root -- so a home-rule path is outside every repo it
+# asks and can never enter `touched`. Pre-normalisation the two singular-`path`
+# kinds escaped through the `not f.get("paths")` arm by accident; now they are
+# filtered like everything else. See the reasoning at the filter in
+# config-drift.py: this is a recorded decision, and a change to it should fail
+# here rather than pass silently.
+cat > "$SINCE_HOME/.claude/rules/home-stub.md" <<'RULE'
+# Home Stub
+
+Promoted to a skill: invoke `no-such-skill-home` before doing the thing —
+it carries the whole procedure.
+RULE
+out=$(HOME="$SINCE_HOME" python3 "$ANALYZER" --root "$SINCE_ROOT" --no-embed --fast \
+    --format=json 2>/dev/null)
+# FIXTURE VALIDITY: the home rule must be in the corpus at all. Without this the
+# --since assertion below passes against an analyzer that never read HOME_RULES.
+assert_eq "FIXTURE: the home-rule stub fires with no --since (3 stubs now)" \
+    "$(kinds "$out" broken_pointer_stub)" "3"
+assert_contains "FIXTURE: the home-rule stub's path is in the unfiltered report" \
+    "$(stub_paths "$out")" "home-stub.md"
+# Without this the case does not pin HOME-ness at all. Move the fixture into
+# $SINCE_ROOT and every assertion below still passes -- an UNTRACKED file inside
+# the repo is dropped by the same filter for a different reason, because
+# `changed_since` uses `git diff --name-only HEAD`, which never lists untracked
+# paths. The drop assertion's own wording ("no repo contains its path") would
+# then be satisfied by a case where one does.
+assert_eq "FIXTURE: the home-rule stub's path is OUTSIDE the sandbox repo" \
+    "$(printf '%s' "$(stub_paths "$out")" | tr ' ' '\n' | grep -c "^$SINCE_HOME/")" "1"
+
+out=$(HOME="$SINCE_HOME" python3 "$ANALYZER" --root "$SINCE_ROOT" --no-embed --fast \
+    --format=json --since HEAD 2>/dev/null)
+assert_absent "--since drops the home-rule finding (no repo contains its path)" \
+    "$(stub_paths "$out")" "home-stub.md"
+# CONTROL: the same filtered run must still RETAIN the in-repo touched stub, or
+# "drops the home rule" is satisfied by a filter that drops everything.
+assert_contains "CONTROL: the touched in-repo stub survives the same filter" \
+    "$(stub_paths "$out")" "edited-stub.md"
+
+# j2. `render_report` prints `f.get("paths", [])[:2]`, so a singular-`path`
+# finding's file was never shown -- the reader was told a stub is broken and not
+# which one. Inverted with N1: the path is now printed.
 rep=$(python3 "$ANALYZER" --root "$FIXROOT/proj" --no-embed --fast --format=report 2>/dev/null)
 assert_contains "the report does list the broken stub finding" "$rep" "broken_pointer_stub"
-assert_absent "PINNED BUG: --format=report never prints that stub's path" "$rep" "$STUB_PATH"
+assert_contains "--format=report now prints that stub's path" "$rep" "$STUB_PATH"
+
+# The LARGER half of the same change: `review_staleness` also carried a singular
+# `path` pre-N1, and it is the bulk of a real report (60 of 66 findings on this
+# portfolio; the path lines in `render_report` went 10 -> 50). Asserting only
+# the stub case leaves that half unpinned.
+#
+# It needs a REAL git repo and NO --fast: check_review_staleness reads a git
+# commit date, and in fast mode a cache miss is SKIPPED rather than spawned, so
+# the finding would never fire. SINCE_ROOT is already an initialised sandbox
+# repo, and the git-env family was neutralised above (#1745).
+cat > "$SINCE_ROOT/.claude/rules/stale-review.md" <<'RULE'
+---
+reviewed: 2000-01-01
+---
+# Stale Review
+
+Provisioning the kiln requires the glaze schedule before any bisque firing is
+scheduled on the studio calendar.
+RULE
+git -C "$SINCE_ROOT" -c user.email=t@t -c user.name=t add -A >/dev/null 2>&1
+git -C "$SINCE_ROOT" -c user.email=t@t -c user.name=t \
+    -c commit.gpgsign=false -c core.hooksPath=/dev/null \
+    commit -q -m stale >/dev/null 2>&1
+srep=$(HOME="$SINCE_HOME" python3 "$ANALYZER" --root "$SINCE_ROOT" --no-embed \
+    --format=report 2>/dev/null)
+# FIXTURE VALIDITY: the finding has to exist before its path line can be
+# asserted -- a report missing the whole section passes an absence check.
+assert_contains "FIXTURE: the review_staleness finding fires without --fast" \
+    "$srep" "review_staleness"
+assert_contains "--format=report prints the review_staleness path too" \
+    "$srep" "stale-review.md"
+# CONTROL: it is the INDENTED backticked path line render_report emits for
+# `paths`, not an incidental mention of the filename in the summary (the summary
+# names the rule as `stale-review`, with no extension). The absolute prefix is
+# not asserted: --root is `.resolve()`d, so macOS reports /private/var/... where
+# the fixture was created at /var/....
+# shellcheck disable=SC2016  # the single quotes are deliberate: this is a
+# literal ERE (backticks, `\.`) that must reach grep unexpanded.
+assert_eq "the path is rendered as a paths line, not just named in prose" \
+    "$(printf '%s\n' "$srep" | grep -cE '^  - `.*/\.claude/rules/stale-review\.md`$')" "1"
+
+echo "TEST k: --format=status is the conformant structured-script-output block"
+st=$(python3 "$ANALYZER" --root "$FIXROOT/proj" --no-embed --fast --format=status 2>/dev/null)
+# No `|| echo ERR` tail: the analyzer exits 1 whenever it has findings, and
+# under `pipefail` that fails the whole pipeline, so the fallback would append
+# ERR to a perfectly good count.
+json_n=$(python3 "$ANALYZER" --root "$FIXROOT/proj" --no-embed --fast --format=json 2>/dev/null \
+    | python3 -c 'import json,sys; print(len(json.load(sys.stdin)["findings"]))' 2>/dev/null)
+assert_contains "status carries the opening delimiter"   "$st" "=== CONFIG DRIFT ==="
+assert_contains "status now carries the ISSUE_COUNT roll-up" "$st" "ISSUE_COUNT=$json_n"
+assert_contains "status now carries the closing delimiter"   "$st" "=== END CONFIG DRIFT ==="
+assert_eq "STATUS is drawn from OK|WARN|ERROR and nothing else" \
+    "$(printf '%s\n' "$st" | grep -cE '^STATUS=(OK|WARN|ERROR)$')" "1"
+# The two quirks that are NOT bugs, pinned so the shared renderer cannot quietly
+# normalise them away. (1) the header block keeps the CALLER's order -- a sorted
+# one would put ALWAYS_LOADED_RULES first, not RULES.
+assert_eq "the counts header keeps the caller's order, unsorted" \
+    "$(printf '%s\n' "$st" | sed -n '2p' | cut -d= -f1)" "RULES"
+# (2) the derived FINDING_* counters ARE sorted, so the block does not depend on
+# which finding happened to fire first.
+assert_eq "FIXTURE: more than one FINDING_* line exists to be ordered" \
+    "$([ "$(printf '%s\n' "$st" | grep -c '^FINDING_')" -ge 2 ] && echo yes || echo no)" "yes"
+assert_eq "FINDING_* lines are sorted by kind" \
+    "$(printf '%s\n' "$st" | grep '^FINDING_' | LC_ALL=C sort -c >/dev/null 2>&1 && echo sorted || echo unsorted)" "sorted"
+# This caller renders EVERY finding, not a delta subset, so the severity
+# counters keep their bare names -- probe-delta's NEW_* prefix answers a
+# different question and a rollup grepping '^ERRORS=' must not get both.
+assert_eq "the full-set counters stay ERRORS=/WARNINGS=" \
+    "$(printf '%s\n' "$st" | grep -cE '^(ERRORS|WARNINGS)=')" "2"
+assert_eq "no NEW_ERRORS=/NEW_WARNINGS= line appears here" \
+    "$(printf '%s\n' "$st" | grep -cE '^NEW_(ERRORS|WARNINGS)=')" "0"
+# The optional per-finding block is suppressed: a real corpus run reports 60+.
+assert_absent "the corpus-sized ISSUES: block is not emitted" "$st" "ISSUES:"
+# The status/report key transforms differ and both are deliberate.
+assert_contains "status upper-cases count keys"        "$st"  "ALWAYS_LOADED_RULES="
+assert_contains "the report humanises the same keys"   "$rep" "| always loaded rules |"
+assert_absent  "the report does not emit KEY=VALUE"    "$rep" "ALWAYS_LOADED_RULES="
+
+echo "TEST l: --format=probe is gone, and the three survivors still work"
+err=$(python3 "$ANALYZER" --root "$FIXROOT/proj" --no-embed --fast --format=probe 2>&1)
+rc=$?
+assert_eq "--format=probe is rejected (argparse exit 2)" "$rc" "2"
+assert_contains "the rejection names the removed choice" "$err" "invalid choice: 'probe'"
+assert_absent "no probe document is emitted alongside the rejection" "$err" "remediation_skill"
+for fmt in status report json; do
+    python3 "$ANALYZER" --root "$FIXROOT/proj" --no-embed --fast --format="$fmt" >/dev/null 2>&1
+    frc=$?
+    assert_eq "CONTROL: --format=$fmt still runs (exit 0/1)" \
+        "$([ "$frc" -le 1 ] && echo yes || echo "no (rc=$frc)")" "yes"
+done
+
+echo "TEST m: normalising path -> paths is FINGERPRINT-NEUTRAL"
+# This is the property that decides whether N1 was safe to ship at all: every
+# baseline in existence was recorded from findings carrying a singular `path`.
+# #2536's fingerprint() folds the singular into the path set precisely so this
+# normalisation cannot invalidate them.
+cat > "$FIXROOT/fpneutral.py" <<'PY'
+from lib.probe import Finding, fingerprint
+
+a = Finding("error", "broken_pointer_stub", "s", path="/x")
+b = Finding("error", "broken_pointer_stub", "s", paths=["/x"])
+print("STUB_EQUAL %s" % (fingerprint(a) == fingerprint(b)))
+# CONTROL: a fingerprint that ignored paths entirely would also report EQUAL.
+c = Finding("error", "broken_pointer_stub", "s", paths=["/y"])
+print("STUB_DIFFERS %s" % (fingerprint(a) != fingerprint(c)))
+# review_staleness carries a trailing gap_days that must not enter the identity:
+# the same file drifting further must stay the SAME standing finding.
+d = Finding("warn", "review_staleness", "s", path="/x", gap_days=9)
+e = Finding("warn", "review_staleness", "s", paths=["/x"], gap_days=400)
+print("STALENESS_EQUAL %s" % (fingerprint(d) == fingerprint(e)))
+PY
+out=$(py "$FIXROOT/fpneutral.py")
+assert_contains "path='/x' and paths=['/x'] fingerprint identically" "$out" "STUB_EQUAL True"
+assert_contains "CONTROL: a different path still fingerprints differently" "$out" "STUB_DIFFERS True"
+assert_contains "the same fold holds for the review_staleness shape" "$out" "STALENESS_EQUAL True"
+
+# ...and end to end, which is the claim that actually matters: a baseline
+# recorded from the PRE-N1 document must see nothing new and nothing resolved
+# when compared against the POST-N1 analyzer over the same corpus.
+AFT="$FIXROOT/fp-after.json"
+BEF="$FIXROOT/fp-before.json"
+python3 "$ANALYZER" --root "$FIXROOT/proj" --no-embed --fast --format=json > "$AFT" 2>/dev/null
+# The pre-N1 document is RECONSTRUCTED rather than produced by `git show`-ing the
+# old analyzer: a ref-dependent case in a DISCOVERED test goes vacuous the moment
+# this PR merges (origin/main would then BE the post-N1 analyzer and the
+# comparison would assert nothing) -- the silent-identity trap
+# compare-ref-output.sh documents. The reconstruction is a pure DOCUMENT
+# transform of the shipped output, its fidelity is asserted below as fixture
+# validity, and where the genuine pre-N1 analyzer is still reachable it is
+# byte-compared against this reconstruction.
+python3 - "$AFT" "$BEF" <<'PY'
+import json, sys
+
+doc = json.load(open(sys.argv[1]))
+for f in doc["findings"]:
+    p = f.get("paths")
+    if f["kind"] in ("broken_pointer_stub", "review_staleness") and isinstance(p, list) and len(p) == 1:
+        # Rebuild the key IN PLACE, not appended: the pre-N1 sites emitted
+        # severity, kind, summary, path[, gap_days] in that order, and
+        # Finding.to_dict() takes its order from the kwargs.
+        rebuilt = {("path" if k == "paths" else k): (p[0] if k == "paths" else v) for k, v in f.items()}
+        f.clear()
+        f.update(rebuilt)
+# The trailing newline is part of the shape: the analyzer's document reaches a
+# file through `print(render_json(...))`, and `json.dump` alone would leave the
+# byte comparison below failing on nothing but a missing final "\n".
+open(sys.argv[2], "w").write(json.dumps(doc, indent=1) + "\n")
+PY
+singular_of() { python3 -c 'import json,sys; print(sum(1 for f in json.load(open(sys.argv[1]))["findings"] if "path" in f))' "$1" 2>/dev/null || echo ERR; }
+assert_eq "FIXTURE: the reconstructed pre-N1 document carries singular path keys" \
+    "$([ "$(singular_of "$BEF")" -ge 1 ] && echo yes || echo "no ($(singular_of "$BEF"))")" "yes"
+assert_eq "FIXTURE: the current document carries none" "$(singular_of "$AFT")" "0"
+
+# Where the genuine pre-N1 analyzer is still reachable, prove the reconstruction
+# IS that analyzer's output rather than a plausible model of it.
+GENUINE="$FIXROOT/genuine"
+CHECKOUT="$(cd "${SCRIPTS_DIR}/../.." && pwd)"
+mkdir -p "$GENUINE/lib"
+if git -C "$CHECKOUT" show "origin/main:health-plugin/scripts/config-drift.py" \
+        > "$GENUINE/config-drift.py" 2>/dev/null \
+   && git -C "$CHECKOUT" show "origin/main:health-plugin/scripts/lib/probe.py" \
+        > "$GENUINE/lib/probe.py" 2>/dev/null \
+   && grep -q 'path=r\["path"\]' "$GENUINE/config-drift.py"; then
+    python3 "$GENUINE/config-drift.py" --root "$FIXROOT/proj" --no-embed --fast \
+        --format=json > "$FIXROOT/fp-genuine.json" 2>/dev/null
+    assert_eq "the reconstruction is byte-identical to the genuine pre-N1 output" \
+        "$(cmp -s "$FIXROOT/fp-genuine.json" "$BEF" && echo identical || echo differs)" "identical"
+else
+    echo "  note  genuine pre-N1 analyzer unreachable at origin/main — reconstruction stands on its fixture-validity assertions"
+fi
+
+BL="$FIXROOT/fp-baseline.json"
+rm -f "$BL"
+out=$(python3 "$DELTA" --findings "$BEF" --baseline "$BL" --probe config-drift \
+    --root "$FIXROOT/proj" 2>&1)
+assert_contains "the pre-N1 document records a baseline" "$out" "FIRST_RUN=true"
+out=$(python3 "$DELTA" --findings "$AFT" --baseline "$BL" --probe config-drift \
+    --root "$FIXROOT/proj" 2>&1)
+assert_contains "a PRE-N1 baseline sees ZERO new findings post-N1" "$out" "NEW=0"
+assert_contains "...and ZERO resolved"                             "$out" "RESOLVED=0"
+assert_contains "so the normalisation invalidated no baseline"     "$out" "STATUS=OK"
+assert_eq "every finding is CARRIED, not silently dropped" \
+    "$([ "$(printf '%s\n' "$out" | grep -m1 '^CARRIED=' | cut -d= -f2)" -ge 1 ] && echo yes || echo no)" "yes"
+
+# GUARD INTEGRITY: a delta that never reports anything would pass all four of
+# those. Move ONE path in the pre-N1 document and the delta must notice.
+BEF2="$FIXROOT/fp-before-moved.json"
+python3 - "$BEF" "$BEF2" <<'PY'
+import json, sys
+
+doc = json.load(open(sys.argv[1]))
+for f in doc["findings"]:
+    if f["kind"] == "broken_pointer_stub":
+        f["path"] = f["path"] + ".moved"
+open(sys.argv[2], "w").write(json.dumps(doc, indent=1) + "\n")
+PY
+BL2="$FIXROOT/fp-baseline-moved.json"
+rm -f "$BL2"
+python3 "$DELTA" --findings "$BEF2" --baseline "$BL2" --probe config-drift \
+    --root "$FIXROOT/proj" >/dev/null 2>&1
+out=$(python3 "$DELTA" --findings "$AFT" --baseline "$BL2" --probe config-drift \
+    --root "$FIXROOT/proj" 2>&1)
+assert_contains "GUARD INTEGRITY: a genuinely moved path IS reported new" "$out" "NEW=1"
+assert_contains "GUARD INTEGRITY: ...and the stale record resolves"       "$out" "RESOLVED=1"
 
 # =====================================================================
 # Round-2 repair regressions (D1-D5). Every case EXECUTES the failing
@@ -866,6 +1169,143 @@ assert_eq "CONTROL fixture is non-vacuous: the clean corpus was actually read" \
     "$(printf '%s' "$clean_out" | jq -r '.counts.rules' 2>/dev/null)" "1"
 assert_eq "CONTROL: a corpus with no unreadable file emits no corpus_unreadable" \
     "$(printf '%s' "$clean_out" | jq -r '[.findings[] | select(.kind=="corpus_unreadable")] | length' 2>/dev/null)" "0"
+
+echo "TEST N2: ISSUE_COUNT= collides across probes BY DESIGN, and the delimiter resolves it"
+# `.claude/rules/structured-script-output.md` mandates the literal
+# `ISSUE_COUNT=` in every conformant block, so two conformant blocks in one
+# combined log necessarily both emit it. `severity_prefix` exists because
+# `ERRORS=` COULD be split per probe; `ISSUE_COUNT=` cannot be, without leaving
+# the block non-conformant. Pinned here so the collision reads as a deliberate
+# consequence of conformance rather than an accident nobody measured.
+N2ROOT="$FIXROOT/proj"
+cd_status=$(python3 "$ANALYZER" --root "$N2ROOT" --no-embed --fast --format=status 2>/dev/null)
+N2JSON="$FIXROOT/n2-findings.json"
+N2BL="$FIXROOT/n2-baseline.json"
+rm -f "$N2BL"
+python3 "$ANALYZER" --root "$N2ROOT" --no-embed --fast --format=json > "$N2JSON" 2>/dev/null
+# Run the delta TWICE: the first records the baseline, so the second reports a
+# NEW count of 0 while config-drift reports the FULL corpus count. That gap is
+# what a naive grep gets wrong.
+python3 "$DELTA" --findings "$N2JSON" --baseline "$N2BL" --probe config-drift \
+    --root "$N2ROOT" >/dev/null 2>&1
+delta_status=$(python3 "$DELTA" --findings "$N2JSON" --baseline "$N2BL" --probe config-drift \
+    --root "$N2ROOT" 2>&1)
+COMBINED="$FIXROOT/n2-combined.log"
+printf '%s\n%s\n' "$delta_status" "$cd_status" > "$COMBINED"
+
+assert_eq "BOTH conformant blocks emit an ISSUE_COUNT= line" \
+    "$(grep -c '^ISSUE_COUNT=' "$COMBINED")" "2"
+cd_n=$(printf '%s\n' "$cd_status" | grep -m1 '^ISSUE_COUNT=' | cut -d= -f2)
+dl_n=$(printf '%s\n' "$delta_status" | grep -m1 '^ISSUE_COUNT=' | cut -d= -f2)
+# FIXTURE VALIDITY: a corpus where the two counts coincide asserts nothing about
+# a collision.
+assert_eq "FIXTURE: the two counts genuinely differ (full set vs delta)" \
+    "$([ "$cd_n" != "$dl_n" ] && echo yes || echo "no (both $cd_n)")" "yes"
+assert_eq "a naive grep -m1 over a combined log returns whichever printed FIRST" \
+    "$(grep -m1 '^ISSUE_COUNT=' "$COMBINED" | cut -d= -f2)" "$dl_n"
+# The resolution: both blocks now carry `=== END <section> ===`, so a parser can
+# bracket a section and read the key inside it. config-drift's block carried no
+# closing delimiter (and no ISSUE_COUNT= at all) before render_status became its
+# only renderer, so section-aware parsing is possible for the first time.
+assert_eq "each section is bracketed by its own closing delimiter" \
+    "$(grep -c '^=== END ' "$COMBINED")" "2"
+assert_eq "section-aware parsing reads the ANALYZER's own ISSUE_COUNT" \
+    "$(awk '/^=== CONFIG DRIFT ===$/{f=1} f&&/^ISSUE_COUNT=/{print;exit}' "$COMBINED" | cut -d= -f2)" \
+    "$cd_n"
+assert_eq "section-aware parsing reads the DELTA's own ISSUE_COUNT" \
+    "$(awk '/^=== CONFIG-DRIFT DELTA ===$/{f=1} f&&/^ISSUE_COUNT=/{print;exit}' "$COMBINED" | cut -d= -f2)" \
+    "$dl_n"
+
+echo "TEST N3: the hook's jq fix map covers every kind the analyzer can emit"
+# The map in hooks/config-drift-probe.sh is the SINGLE SOURCE for
+# kind -> remediation-skill since --format=probe was deleted, and a kind with no
+# row falls to the "/health:check" fallback SILENTLY. Both sides are read out of
+# the shipped files -- the kind set from config-drift.py's own `Finding(...)`
+# call sites via the AST, the map keys out of the hook's own text -- so neither
+# is a retyped copy (never-fabricate-test-identifiers.md § extract the code).
+cat > "$FIXROOT/mapcover.py" <<'MAPCOVER'
+import ast
+import itertools
+import re
+import sys
+
+src = open(sys.argv[1]).read()
+hook = open(sys.argv[2]).read()
+tree = ast.parse(src)
+
+# The two values `Finding(... f"semantic_overlap_{a['kind']}_{b['kind']}" ...)`
+# can interpolate, read off collect()'s own dict literals rather than assumed.
+item_kinds = set()
+for node in ast.walk(tree):
+    if isinstance(node, ast.Dict):
+        for k, v in zip(node.keys, node.values):
+            if (
+                isinstance(k, ast.Constant)
+                and k.value == "kind"
+                and isinstance(v, ast.Constant)
+                and isinstance(v.value, str)
+            ):
+                item_kinds.add(v.value)
+
+kinds = set()
+for node in ast.walk(tree):
+    if not (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "Finding"
+        and len(node.args) >= 2
+    ):
+        continue
+    arg = node.args[1]
+    if isinstance(arg, ast.Constant):
+        kinds.add(arg.value)
+    elif isinstance(arg, ast.JoinedStr):
+        tmpl = "".join(
+            p.value if isinstance(p, ast.Constant) else "{}" for p in arg.values
+        )
+        for combo in itertools.product(sorted(item_kinds), repeat=tmpl.count("{}")):
+            kinds.add(tmpl.format(*combo))
+    else:
+        kinds.add("UNPARSEABLE_KIND_ARG")
+
+m = re.search(r"def fix:\s*\{(.*?)\}\[\.kind\]", hook, re.S)
+mapped = set(re.findall(r'"([a-z0-9_]+)"\s*:', m.group(1))) if m else set()
+
+# UNREACHABLE, and deliberately unmapped: check_semantic_dupes is fed
+# `rules + skills` and iterates np.triu_indices(k=1), so `a` is always the lower
+# index -- a cross-kind pair is always (rule, skill), never (skill, rule).
+unreachable = {"semantic_overlap_skill_rule"}
+reachable = kinds - unreachable
+
+print("ITEM_KINDS %s" % ",".join(sorted(item_kinds)))
+print("DERIVED_N %d" % len(kinds))
+print("REACHABLE_N %d" % len(reachable))
+print("MAPPED_N %d" % len(mapped))
+print("MISSING %s" % (",".join(sorted(reachable - mapped)) or "NONE"))
+print("UNEMITTABLE_ROWS %s" % (",".join(sorted(mapped - kinds)) or "NONE"))
+print("UNREACHABLE_ABSENT %s" % (not (unreachable & mapped)))
+# CONTROL: the membership test must be able to FAIL. A kind that does not exist
+# must not be reported as mapped.
+print("CONTROL_FABRICATED_MAPPED %s" % ("no_such_kind_at_all" in mapped))
+MAPCOVER
+out=$(python3 "$FIXROOT/mapcover.py" "$ANALYZER" "$HOOK_SRC" 2>&1)
+# FIXTURE VALIDITY first: an AST walk that matched nothing satisfies "no missing
+# kinds" trivially, and a regex that matched no map keys satisfies "no unmapped
+# rows" the same way.
+assert_contains "the item kinds are derived, not assumed" "$out" "ITEM_KINDS rule,skill"
+assert_contains "FIXTURE: the derivation found every construction site" "$out" "DERIVED_N 13"
+assert_contains "FIXTURE: 12 of those kinds are reachable" "$out" "REACHABLE_N 12"
+assert_contains "FIXTURE: the map's keys were actually parsed out of the hook" "$out" "MAPPED_N 12"
+assert_absent "every Finding( kind argument was parseable" "$out" "UNPARSEABLE_KIND_ARG"
+assert_contains "CONTROL: a fabricated kind is not reported as mapped" \
+    "$out" "CONTROL_FABRICATED_MAPPED False"
+# The claim itself.
+assert_contains "every emittable kind has an EXPLICIT row (none falls to the fallback)" \
+    "$out" "MISSING NONE"
+assert_contains "the map carries no row for a kind the analyzer cannot emit" \
+    "$out" "UNEMITTABLE_ROWS NONE"
+assert_contains "semantic_overlap_skill_rule stays unmapped (triu makes it unreachable)" \
+    "$out" "UNREACHABLE_ABSENT True"
 
 echo
 echo "=== PROBE LIB TESTS ==="

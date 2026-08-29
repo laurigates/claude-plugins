@@ -50,10 +50,14 @@ them would be adopting a bug rather than a contract.
 
 Two properties are load-bearing and easy to break:
 
-- **`fingerprint` folds a singular `path` into the path set.** Read as "`paths`
-  only", every finding carrying `path` collapses to one fingerprint per kind, so
-  the second broken pointer stub in a corpus is invisible in every delta report
-  forever.
+- **`fingerprint` folds a singular `path` into the path set.** `config-drift.py`
+  no longer emits `path` — every construction site passes `paths=[...]` — but
+  `probe-delta.py` builds `Finding`s from an arbitrary JSON document, so the
+  singular spelling still arrives from outside this repo: a saved report, a
+  baseline recorded before the normalisation, an older installed plugin. Read as
+  "`paths` only", every such finding collapses to one fingerprint per kind and
+  the second of them is invisible in every delta report forever. Folding both
+  spellings is also what made the normalisation itself baseline-neutral.
 - **`Baseline` records the root it was taken at.** Fingerprints are built from
   absolute paths, so a baseline recorded at one root and compared at another
   yields a disjoint set — every finding new *and* every old one resolved. A root

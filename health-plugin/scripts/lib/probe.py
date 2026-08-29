@@ -24,13 +24,14 @@ What is contract, and why:
   either side may be spelled first; a probe that only tried one orientation
   would silently ignore half the file.
 * `Baseline` / `Delta` — remembering what was already reported.
-* `render_status` / `render_json` / `exit_code` — the output contract an
-  orchestrating skill greps. `render_status` emits the shape
+* `render_status` / `render_report` / `render_json` / `exit_code` — the output
+  contract an orchestrating skill greps. `render_status` emits the shape
   `.claude/rules/structured-script-output.md` mandates: `=== SECTION ===` /
   `=== END SECTION ===` delimiters, uppercase `KEY=VALUE` lines, an
   `ISSUE_COUNT=` roll-up, and a `STATUS=` drawn from `OK|WARN|ERROR` and no
   other word — a rollup matches that alternation, so a fourth verdict is
-  invisible rather than distinct.
+  invisible rather than distinct. `render_report` is the human-facing markdown
+  view of the same finding list.
 
 Stdlib only, and deliberately NO PEP-723 dependency block: both real callers
 (`hooks/config-drift-probe.sh` and the test suite) invoke a bare `python3`,
@@ -91,6 +92,12 @@ class Finding:
             raise ValueError(f"kind must match {_KIND_RE.pattern}, got {kind!r}")
         if not summary:
             raise ValueError("summary must be non-empty")
+        # Still live after config-drift normalised its two singular sites to
+        # `paths=[...]`: `probe-delta.py:_parse` builds Findings from an
+        # arbitrary JSON document (a saved report, an older installed plugin's
+        # output), so `path=` can still arrive from outside this repo. The
+        # `fingerprint` fold below depends on exactly one spelling being
+        # present, so the guard has to outlive the call sites that motivated it.
         if "path" in extra and "paths" in extra:
             raise ValueError(
                 "a finding carries `path` OR `paths`, never both — "
@@ -343,12 +350,22 @@ def render_json(findings, counts, indent: int = 1) -> str:
     )
 
 
-def render_status(section: str, findings, counts) -> str:
+def render_status(
+    section: str,
+    findings,
+    counts,
+    *,
+    severity_prefix: str = "NEW_",
+    list_issues: bool = True,
+) -> str:
     """A conformant `structured-script-output.md` block.
 
     Conformant means it carries the closing `=== END <section> ===` delimiter
-    and an `ISSUE_COUNT=` roll-up, which config-drift's own `emit_status` does
-    not — that one predates the convention and is kept byte-identical for now.
+    and an `ISSUE_COUNT=` roll-up. This is now the ONLY status renderer:
+    `config-drift.py`'s own `emit_status` lacked both of those lines and was
+    retired into this function, which is why the two keyword-only parameters
+    below exist — they are the difference between the two callers, and nothing
+    else about the block differs.
 
     `STATUS` is `OK` / `WARN` / `ERROR` and nothing else. That vocabulary is
     fixed by `.claude/rules/structured-script-output.md`, and a rollup greps
@@ -359,16 +376,48 @@ def render_status(section: str, findings, counts) -> str:
     wants to say more says it in `counts` (`FIRST_RUN=true`, `NEW=0`), where a
     new key adds information instead of breaking an existing match.
 
-    The severity counters are `NEW_ERRORS=` / `NEW_WARNINGS=`, not
-    `ERRORS=` / `WARNINGS=`, because `findings` here is the SUBSET the caller
-    chose to render while its `counts` carries the full total —
-    `config-drift.py`'s `emit_status` already writes `ERRORS=`/`WARNINGS=` over
-    the whole set, so reusing those names would give a combined-log rollup two
-    contradictory answers to one `grep '^ERRORS='`.
+    `severity_prefix` answers "is `findings` the whole set, or a subset?", and
+    that is the only question the key name encodes. `probe-delta.py` renders
+    the NEW findings while its `counts` carries the total, so it keeps the
+    default `NEW_ERRORS=`/`NEW_WARNINGS=`; `config-drift.py --format=status`
+    renders every finding it produced, so it passes `severity_prefix=""` and
+    writes the bare `ERRORS=`/`WARNINGS=` it has always written. Sharing one
+    name across both would give a combined-log rollup two contradictory answers
+    to one `grep '^ERRORS='` — which is the reason the prefix exists at all,
+    not an argument for forcing every caller onto the prefixed form.
+
+    `ISSUE_COUNT=` is the one key that CANNOT be split that way, and the
+    collision is deliberate. `.claude/rules/structured-script-output.md` mandates
+    the literal `ISSUE_COUNT=` in every conformant block, so two conformant
+    blocks in one combined log necessarily both emit it and a naive
+    `grep -m1 '^ISSUE_COUNT='` returns whichever section printed first —
+    config-drift's FULL count where it used to return probe-delta's NEW count,
+    because config-drift's block carried no `ISSUE_COUNT=` at all before this
+    renderer became its only one. Renaming the key would fix the grep and break
+    conformance, which is the wrong trade: the rollup that matters reads
+    `ISSUE_COUNT=` per section.
+
+    The resolution is the `=== END <section> ===` delimiter this renderer also
+    emits, and which config-drift's retired `emit_status` did not. With both
+    delimiters present a parser can bracket a section and read the keys inside
+    it, so section-aware parsing is possible for the first time and a correct
+    parser is strictly better off than before. Only a parser that greps the
+    whole log for a bare key regresses, and that parser was already unable to
+    tell two sections apart.
+
+    `list_issues` selects whether the optional `ISSUES:` block is emitted.
+    `structured-script-output.md` marks that block optional, and a probe whose
+    finding list is corpus-sized (config-drift routinely reports 60+ review
+    staleness entries) turns a two-line roll-up into a scrolling wall — the
+    machine-readable answer to "what exactly?" is `--format=json`.
     """
     lines = [f"=== {section} ==="]
     for key, value in counts.items():
         lines.append(f"{key.upper()}={value}")
+    # `sorted` for the kind counters but the caller's own order for `counts`:
+    # `counts` is a hand-ordered summary (rules, skills, scopes, ...) whose
+    # sequence is meaningful to a reader, while `by_kind` is derived and needs a
+    # deterministic order that does not depend on which finding fired first.
     by_kind: dict[str, int] = {}
     for f in findings:
         by_kind[f["kind"]] = by_kind.get(f["kind"], 0) + 1
@@ -376,11 +425,11 @@ def render_status(section: str, findings, counts) -> str:
         lines.append(f"FINDING_{kind.upper()}={n}")
     errs = sum(1 for f in findings if f["severity"] == "error")
     warns = sum(1 for f in findings if f["severity"] == "warn")
-    lines.append(f"NEW_ERRORS={errs}")
-    lines.append(f"NEW_WARNINGS={warns}")
+    lines.append(f"{severity_prefix}ERRORS={errs}")
+    lines.append(f"{severity_prefix}WARNINGS={warns}")
     lines.append("STATUS=" + ("ERROR" if errs else "WARN" if warns else "OK"))
     lines.append(f"ISSUE_COUNT={len(findings)}")
-    if findings:
+    if findings and list_issues:
         lines.append("ISSUES:")
         for f in findings:
             lines.append(
@@ -388,3 +437,42 @@ def render_status(section: str, findings, counts) -> str:
             )
     lines.append(f"=== END {section} ===")
     return "\n".join(lines)
+
+
+def render_report(findings, counts, now: str) -> str:
+    """The human-facing markdown report for a finding list.
+
+    `now` is passed IN rather than read here: nothing else in this module calls
+    a clock, and a renderer that does cannot be compared against itself across
+    two runs (`compare-ref-output.sh` excludes this format for exactly that
+    reason). The caller owns the timestamp.
+
+    Three details are load-bearing rather than incidental:
+
+    * `paths[:2]` — a finding may carry many paths (`corpus_unreadable` carries
+      every unreadable file); two locate it, the rest are noise in a report a
+      human reads top to bottom.
+    * the `[:40]` per-severity cap plus its `_…N more suppressed._` line — the
+      count is what stops a truncated section reading as a complete one.
+    * the em-dash (U+2014) between kind and summary. It is the visual break
+      that makes a long summary scannable; a hyphen collides with the markdown
+      list bullets nested underneath.
+    """
+    parts = [
+        "# Claude config drift report\n",
+        f"_{now}_\n",
+        "| Metric | Value |\n|---|---|",
+    ]
+    parts += [f"| {k.replace('_', ' ')} | {v} |" for k, v in counts.items()]
+    parts.append("")
+    for sev in ("error", "warn", "info"):
+        group = [f for f in findings if f["severity"] == sev]
+        if not group:
+            continue
+        parts.append(f"\n## {sev.upper()} ({len(group)})\n")
+        for f in group[:40]:
+            parts.append(f"- **{f['kind']}** — {f['summary']}")
+            parts += [f"  - `{p}`" for p in f.get("paths", [])[:2]]
+        if len(group) > 40:
+            parts.append(f"\n_…{len(group) - 40} more suppressed._")
+    return "\n".join(parts)
