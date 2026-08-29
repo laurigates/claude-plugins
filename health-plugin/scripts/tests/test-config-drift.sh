@@ -381,9 +381,18 @@ echo "TEST 10: widened key pattern -- executed directly, see note"
 fm_get() {
     python3 - "$ANALYZER" "$1" "$2" <<'PYFM'
 import importlib.util
+import os
 import sys
 
-spec = importlib.util.spec_from_file_location("config_drift", sys.argv[1])
+# config-drift.py does `from lib.probe import ...`, which PEP 420 resolves via
+# the SCRIPT's own directory (sys.path[0] when run as a script).
+# spec_from_file_location does NOT establish that, so a direct-call harness has
+# to add it or every import fails with ModuleNotFoundError -- which surfaces
+# here as every assertion in the block failing at once.
+analyzer = sys.argv[1]
+sys.path.insert(0, os.path.dirname(os.path.abspath(analyzer)))
+
+spec = importlib.util.spec_from_file_location("config_drift", analyzer)
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 print(mod.frontmatter(sys.argv[2]).get(sys.argv[3], "<absent>"))
@@ -689,6 +698,7 @@ import hashlib
 import importlib.util
 import json
 import math
+import os
 import pathlib
 import sys
 import types
@@ -761,6 +771,10 @@ class TextEmbedding:
 fastembed = types.ModuleType("fastembed")
 fastembed.TextEmbedding = TextEmbedding
 sys.modules["fastembed"] = fastembed
+
+# See the note in fm_get: the analyzer's own directory must be on sys.path for
+# its `from lib.probe import ...` to resolve under spec_from_file_location.
+sys.path.insert(0, os.path.dirname(os.path.abspath(analyzer)))
 
 spec = importlib.util.spec_from_file_location("config_drift", analyzer)
 mod = importlib.util.module_from_spec(spec)
