@@ -1,0 +1,150 @@
+name: "PR: Auto-label"
+
+# Applies the repo's routing labels to every PR, whoever opened it: the
+# per-plugin `<name>-plugin` label from the directories touched, plus a
+# conventional-commit type label derived from the PR title.
+#
+# Why a workflow rather than an instruction: the label conventions live in
+# `repos/.claude/rules/github-metadata-hygiene.md` and
+# `repos/laurigates/.claude/rules/github-metadata-hygiene.md` — ANCESTOR
+# directories of this repo. An interactive session run from inside
+# ~/repos/laurigates/claude-plugins loads both; a scheduled cloud routine gets
+# a bare checkout where neither path exists, so its PRs arrived unlabelled
+# (work-on-claude-plugins-issues, 2026-08). Deriving the labels from the diff
+# means no agent — routine, subagent, Renovate, or human — has to remember.
+#
+# `pull_request_target` (not `pull_request`) so a fork PR still gets a token
+# with `pull-requests: write`. Safe here ONLY because this job never checks out
+# or executes PR code — it reads the changed-file list over the API and calls
+# `gh pr edit`. Do not add an `actions/checkout` step to this workflow.
+# See `.claude/rules/github-actions-security.md`.
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+
+# Explicit top-level least-privilege grant. Without one, a second job added
+# here would silently inherit the repo-default token scope instead of this set.
+permissions:
+  contents: read
+  pull-requests: write
+
+# Per-PR group: a rapid push sequence should settle on the final diff rather
+# than race. Cancellation is safe because labelling is additive and idempotent
+# — a cancelled run loses nothing the next one won't redo.
+concurrency:
+  group: pr-auto-label-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  label:
+    name: Derive and apply labels
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          # Untrusted input bound to an env var, never interpolated into the
+          # script body — a PR title is attacker-controlled on a fork PR.
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -euo pipefail
+
+          files=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/files" --paginate --jq '.[].filename')
+          if [ -z "$files" ]; then
+            echo "No changed files reported; nothing to label."
+            exit 0
+          fi
+
+          wanted=""
+          add() {
+            case " ${wanted} " in
+              *" $1 "*) ;;
+              *) wanted="${wanted:+${wanted} }$1" ;;
+            esac
+          }
+
+          # Path-derived labels. The per-plugin label is the top-level
+          # directory name verbatim, which is the routing convention in
+          # `laurigates/.claude/rules/github-metadata-hygiene.md`.
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            top="${f%%/*}"
+            case "$top" in
+              # `.claude-plugin/` is the hidden marketplace-metadata directory,
+              # not a plugin — the same exclusion `.claude/rules/shell-scripting.md`
+              # § Plugin Directory Discovery applies to every `*-plugin` glob.
+              # Caught by a control run over real PRs, which minted a
+              # `.claude-plugin` label before this guard existed.
+              .*) ;;
+              *-plugin)
+                # Require an actual path separator so a stray top-level file
+                # named `x-plugin` cannot mint a label.
+                [ "$top" != "$f" ] && add "$top"
+                ;;
+            esac
+            case "$f" in
+              .github/workflows/*|.github/actions/*) add "github-actions" ;;
+              .claude/rules/*|.claude-plugin/*|scripts/*|justfile) add "plugin-infrastructure" ;;
+              docs/*) add "docs" ;;
+            esac
+          done <<<"$files"
+
+          # Type label from the conventional-commit prefix. The PR title is the
+          # commit message on squash-merge, so it is already required to be
+          # conventional (`.claude/rules/conventional-commits.md`).
+          commit_type="${PR_TITLE%%:*}"   # "feat(scope)!: x" -> "feat(scope)!"
+          commit_type="${commit_type%%(*}" # -> "feat"
+          commit_type="${commit_type%!}"   # "feat!" -> "feat"
+          case "$commit_type" in
+            feat|perf) add "enhancement" ;;
+            fix)       add "bug" ;;
+            docs)      add "docs" ;;
+            refactor)  add "refactor" ;;
+            chore|build|ci|test) add "chore" ;;
+            *) echo "::notice::PR title carries no recognised conventional-commit type; no type label applied." ;;
+          esac
+
+          if [ -z "$wanted" ]; then
+            echo "No labels derived for this diff."
+            exit 0
+          fi
+
+          # `gh pr edit --add-label "a,b"` hard-fails if ANY name is unknown to
+          # the repo, and the failure lands after all the real work. Resolve
+          # existence first. Per-plugin labels are created ad-hoc on demand
+          # (they are deliberately NOT in gitops/labels.tf); anything else that
+          # is missing is dropped with a warning rather than invented here.
+          # --limit well above the current label count: the default is 30, and
+          # a truncated page makes an existing label read as missing
+          # (`.claude/rules/gh-json-fields.md` § Default list cap).
+          existing=$(gh label list -R "$REPO" --limit 500 --json name --jq '.[].name')
+
+          apply=""
+          for l in $wanted; do
+            if grep -qxF "$l" <<<"$existing"; then
+              apply="${apply:+${apply},}$l"
+              continue
+            fi
+            case "$l" in
+              *-plugin)
+                gh label create "$l" -R "$REPO" \
+                  --color "BFD4F2" \
+                  --description "${l%-plugin} plugin related"
+                apply="${apply:+${apply},}$l"
+                ;;
+              *)
+                echo "::warning::Label '$l' does not exist in ${REPO}; skipping it."
+                ;;
+            esac
+          done
+
+          if [ -z "$apply" ]; then
+            echo "No applicable labels survived resolution."
+            exit 0
+          fi
+
+          echo "Applying: ${apply}"
+          gh pr edit "$PR_NUMBER" -R "$REPO" --add-label "$apply"
