@@ -95,6 +95,50 @@ out_h="$(run '')"
 assert_has "H: empty staged set is OK" "$out_h" "STATUS=OK"
 assert_has "H: empty staged set counts nothing" "$out_h" "PLUGINS_CHANGED=0"
 
+# --- TEST I: the seam wins over a NON-EMPTY real index (#2521) ----------------
+# TEST H above cannot fail in CI: a CI checkout has nothing staged, so even a
+# script that ignored the seam entirely would read an empty `git diff --cached`
+# and pass for the wrong reason. This case supplies the missing half — a
+# throwaway repo with a plugin skill genuinely STAGED — so the explicitly-empty
+# seam has something to win against. Pre-fix (`-n "$PLUGIN_README_CURRENCY_STAGED"`)
+# the empty value fell through to the index and this reports STATUS=WARN /
+# PLUGINS_CHANGED=1.
+#
+# Neutralize any inherited git context before the sandbox ops: GIT_DIR & friends
+# OVERRIDE `git -C`, so a leaked absolute value would point these commands at the
+# real shared checkout (issue #1745).
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX
+
+sandbox="$(mktemp -d)" || { echo "FAIL: I: mktemp -d failed" >&2; exit 1; }
+[ -n "$sandbox" ] && [ -d "$sandbox" ] || { echo "FAIL: I: bad sandbox dir" >&2; exit 1; }
+
+git -C "$sandbox" -c init.defaultBranch=main init -q >/dev/null 2>&1
+mkdir -p "$sandbox/git-plugin/skills/git-foo"
+printf '# probe\n' > "$sandbox/git-plugin/skills/git-foo/SKILL.md"
+git -C "$sandbox" add git-plugin/skills/git-foo/SKILL.md >/dev/null 2>&1
+
+# Fixture validity: without a genuinely non-empty index the two assertions below
+# would hold against the pre-fix script too, and this case would prove nothing.
+if [ -n "$(git -C "$sandbox" diff --cached --name-only --diff-filter=ACMR)" ]; then
+  ok "I: fixture-validity — sandbox index is non-empty"
+else
+  ko "I: fixture-validity — sandbox index is non-empty"
+fi
+
+out_i="$(cd "$sandbox" && PLUGIN_README_CURRENCY_STAGED='' bash "$check")"
+assert_has "I: explicitly-empty seam beats a non-empty index" "$out_i" "STATUS=OK"
+assert_has "I: explicitly-empty seam counts no plugins" "$out_i" "PLUGINS_CHANGED=0"
+
+# Guard integrity: with the seam UNSET the same sandbox must still read the real
+# index. Without this, a script that ignored `git diff --cached` unconditionally
+# would satisfy the two assertions above while destroying the check's only real
+# input.
+out_i2="$(cd "$sandbox" && env -u PLUGIN_README_CURRENCY_STAGED bash "$check")"
+assert_has "I: unset seam still reads the real index" "$out_i2" "PLUGINS_CHANGED=1"
+assert_has "I: unset seam nudges on the staged skill" "$out_i2" "STATUS=WARN"
+
+rm -rf "$sandbox"
+
 echo
 echo "=== check-plugin-readme-currency: $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]
