@@ -57,12 +57,102 @@ if [ ! -f "$ANALYZER" ] || ! command -v python3 >/dev/null 2>&1 || ! command -v 
     exit 0
 fi
 
+# The analyzer's stderr is CAPTURED, not discarded. Discarding it made a dead
+# analyzer indistinguishable from a clean corpus: on empty output this block
+# fell through to a bare `drift_emit`, whose empty `findings` array IS the
+# "checked, no drift" verdict per hooks-plugin/hooks/lib/drift-protocol.sh, and
+# the hook exited 0. The analyzer now imports `lib.probe`, so it CAN die before
+# printing anything (ModuleNotFoundError, a syntax error in the module) — a
+# failure class the import-free version could not have. This hook introduced the
+# consumer, so it owes the detection.
+ERRFILE=$(mktemp) || ERRFILE=""
+if [ -n "$ERRFILE" ]; then
+    trap 'rm -f "$ERRFILE"' EXIT
+fi
+
 # --fast: read cached git dates only, never spawn git. --no-embed: no model, no
 # download. Both keep this inside a SessionStart budget.
-OUT=$(python3 "$ANALYZER" --root "${DRIFT_CWD:-.}" --fast --no-embed --format=json 2>/dev/null)
+if [ -n "$ERRFILE" ]; then
+    OUT=$(python3 "$ANALYZER" --root "${DRIFT_CWD:-.}" --fast --no-embed --format=json 2>"$ERRFILE")
+else
+    OUT=$(python3 "$ANALYZER" --root "${DRIFT_CWD:-.}" --fast --no-embed --format=json 2>/dev/null)
+fi
+ANALYZER_RC=$?
+
 if [ -z "$OUT" ] || ! printf '%s' "$OUT" | jq empty >/dev/null 2>&1; then
-    # Emit nothing rather than a false all-clear (drift-detection-triggering.md:
-    # never act on uncertainty).
+    # THE OUTPUT IS THE DISCRIMINATOR, NOT THE EXIT CODE. `--format=json` prints
+    # its document unconditionally — an empty corpus still yields
+    # `{"findings": [], ...}` — so empty-or-unparseable stdout is by itself
+    # proof the analyzer did not complete. The exit code cannot narrow that:
+    # exit 1 is NORMAL (returned for any error/warn finding, alongside a full
+    # document, which never reaches this branch), and exit 0 with nothing on
+    # stdout is a truncated or 0-byte analyzer — an interrupted plugin install,
+    # a partial write. There is no benign exit-0-with-unparseable-output case.
+    #
+    # Gating on `[ "$ANALYZER_RC" -ne 0 ]` here therefore let exit-0 emptiness
+    # fall through to a bare `drift_emit`, whose empty `findings` array IS the
+    # "checked, no drift" verdict per hooks-plugin/hooks/lib/drift-protocol.sh —
+    # a false all-clear written by a dead analyzer. So: always report. The exit
+    # code and stderr only choose the wording and the severity.
+
+    # Prefer the last line that LOOKS like a Python exception over the last line
+    # outright. A traceback's exception line is not reliably last: `atexit`
+    # handlers, CPython's `Exception ignored in: <_io.TextIOWrapper ...>` at
+    # interpreter shutdown, and wrapping python3 shims (mise/asdf/uv) all write
+    # after it, and `tail -n 1` then names that noise and DISCARDS the real
+    # exception. `tail -n 1` stays as the fallback for a non-Python failure
+    # (a shim that cannot find an interpreter writes no exception at all).
+    DETAIL=""
+    if [ -n "$ERRFILE" ] && [ -s "$ERRFILE" ]; then
+        DETAIL=$(grep -E '^[A-Za-z_.]*(Error|Exception):' "$ERRFILE" 2>/dev/null | tail -n 1)
+        [ -n "$DETAIL" ] || DETAIL=$(tail -n 1 "$ERRFILE" 2>/dev/null)
+        DETAIL=$(printf '%s' "$DETAIL" | tr -d '\000' | cut -c1-300)
+    fi
+
+    SEVERITY="error"
+    KIND="analyzer_failed"
+    SUMMARY="config-drift analyzer failed: ${DETAIL:-analyzer exited $ANALYZER_RC with no parseable output}"
+
+    if [ "$ANALYZER_RC" = "3" ]; then
+        # Exit 3 is config-drift.py's ARGUMENT-VALIDATION return (`root not
+        # found`), not a failure — the analyzer is healthy and is refusing a bad
+        # --root. A `cwd` that is not a directory would otherwise raise a
+        # permanent `error`/`analyzer_failed` nudge claiming the analyzer is
+        # broken, and send the reader to `/health:check` to look for a bug that
+        # is not there.
+        SEVERITY="warn"
+        KIND="analyzer_bad_root"
+        SUMMARY="config-drift skipped: ${DETAIL:-root not found}"
+    else
+        case "$DETAIL" in
+            FileNotFoundError:* | NotADirectoryError:* | IsADirectoryError:* | \
+                PermissionError:* | UnicodeDecodeError:* | OSError:*)
+                # The analyzer is fine; a file in the CORPUS could not be read.
+                #
+                # This arm is a BACKSTOP, not the primary path. `collect()` no
+                # longer crashes on an unreadable corpus file: it skips the entry
+                # and the analyzer reports it itself as a `corpus_unreadable`
+                # finding, which is strictly better (the sweep still runs, and
+                # every unreadable path is named rather than just the first).
+                # What reaches here is an uncaught read from somewhere else in
+                # the analyzer. Do not delete it on the grounds that nothing
+                # currently reaches it — the cost is one `case` arm, and the
+                # failure it catches is otherwise reported as "the analyzer
+                # failed", which points the reader at the wrong artifact.
+                # "the analyzer failed" points the reader at the wrong artifact,
+                # and `error` pins this to slot 1 of the aggregator's 5 lines
+                # (drift-aggregator.sh sorts error first, across ALL plugins) on
+                # every SessionStart until a human finds the file. The exception
+                # text carries the offending path, which is what actually locates
+                # it.
+                SEVERITY="warn"
+                KIND="corpus_unreadable"
+                SUMMARY="config-drift could not read a file in the config corpus: $DETAIL"
+                ;;
+        esac
+    fi
+
+    drift_add_finding "$SEVERITY" "$KIND" "$SUMMARY" "/health:check"
     drift_emit
     exit 0
 fi

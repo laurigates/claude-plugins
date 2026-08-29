@@ -27,7 +27,6 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import hashlib
 import json
 import os
 import re
@@ -35,6 +34,14 @@ import subprocess
 import sys
 from itertools import combinations
 from pathlib import Path
+
+# The finding / waiver / delta CONTRACT lives in a stdlib-only sibling module so
+# a second probe can share it; the similarity computation and every threshold
+# below stay here, because they are this probe's opinion rather than a contract.
+# `lib.probe`, not `probe`: sys.path[0] is this script's directory, and PEP 420
+# implicit namespace packages resolve the dotted form from there. Do not add an
+# __init__.py and do not touch sys.path.
+from lib.probe import Finding, Waivers, render_json, sha
 
 HOME_RULES = Path.home() / ".claude" / "rules"
 SKIP_PARTS = {"node_modules", "dist", "worktrees", ".git", "__pycache__", "tmp"}
@@ -65,10 +72,6 @@ STOP = set(
 
 
 # --------------------------------------------------------------------- helpers
-def sha(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8", "replace")).hexdigest()[:16]
-
-
 def toks(text: str) -> list[str]:
     return [
         w for w in re.findall(r"[a-z][a-z0-9_-]{2,}", text.lower()) if w not in STOP
@@ -261,8 +264,55 @@ def walk(root: Path):
 
 
 # ------------------------------------------------------------------- inventory
-def collect(root: Path) -> tuple[list[dict], list[dict]]:
+def _read_corpus_file(p: Path, unreadable: list[str]) -> str | None:
+    """Read one corpus file, or None when it cannot be read.
+
+    `collect()` walks user-controlled trees, and a `.claude/rules/` directory is
+    routinely a symlink farm (chezmoi, stow). An unresolvable symlink makes
+    `read_text()` raise FileNotFoundError from inside the INVENTORY pass, which
+    aborts the whole run before a single finding is produced -- so one dangling
+    link costs the entire sweep, in every scope, until a human finds it. Skipping
+    the unreadable entry degrades the corpus by one file instead.
+
+    Skipping is NOT swallowing: the path is recorded in `unreadable`, and
+    `check_corpus_unreadable()` turns that into a finding. Degrading silently
+    would be the worse bug -- a corpus two thirds of which failed to open would
+    report a clean sweep, which is exactly the false all-clear this probe
+    exists to prevent, one layer down from the hook that guards against it.
+    """
+    try:
+        return p.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        unreadable.append(str(p))
+        return None
+
+
+def check_corpus_unreadable(unreadable) -> list[Finding]:
+    """Report corpus files the inventory pass could not open.
+
+    `warn`, not `error`: the sweep still ran and its other findings stand. The
+    aggregator sorts `error` first across every plugin and caps the nudge at
+    five lines, so an `error` here would pin a dangling symlink to slot 1 on
+    every session start. The paths are in the summary because they are what
+    locates the file -- a remediation skill cannot find it for you.
+    """
+    if not unreadable:
+        return []
+    shown = ", ".join(unreadable[:3])
+    more = f" (+{len(unreadable) - 3} more)" if len(unreadable) > 3 else ""
+    return [
+        Finding(
+            "warn",
+            "corpus_unreadable",
+            f"{len(unreadable)} corpus file(s) could not be read and were skipped: {shown}{more}",
+            paths=sorted(unreadable),
+        )
+    ]
+
+
+def collect(root: Path) -> tuple[list[dict], list[dict], list[str]]:
     rules, skills = [], []
+    unreadable: list[str] = []
 
     rule_paths = sorted(HOME_RULES.glob("*.md")) if HOME_RULES.is_dir() else []
     for dirpath, filenames in walk(root):
@@ -273,7 +323,9 @@ def collect(root: Path) -> tuple[list[dict], list[dict]]:
             and f"{os.sep}skills{os.sep}" in f"{dirpath}{os.sep}"
         ):
             p = dirpath / "SKILL.md"
-            body = p.read_text(encoding="utf-8", errors="replace")
+            body = _read_corpus_file(p, unreadable)
+            if body is None:
+                continue
             fm = frontmatter(body)
             skills.append(
                 {
@@ -290,7 +342,9 @@ def collect(root: Path) -> tuple[list[dict], list[dict]]:
             )
 
     for p in sorted(set(rule_paths)):
-        body = p.read_text(encoding="utf-8", errors="replace")
+        body = _read_corpus_file(p, unreadable)
+        if body is None:
+            continue
         fm = frontmatter(body)
         scope = (
             "user-global"
@@ -318,46 +372,7 @@ def collect(root: Path) -> tuple[list[dict], list[dict]]:
                 "stub": "romoted to a skill" in body[:700],
             }
         )
-    return rules, skills
-
-
-# -------------------------------------------------------------------- waivers
-def _canon(p: str) -> str:
-    """Canonicalise a path for waiver matching.
-
-    Waiver files are hand-written, so a side may be spelled `~/repos/...` or
-    `/var/...` while the scan resolves it to `/private/var/...` (macOS symlinks
-    every temp and `/var` path). Comparing raw strings silently fails to match
-    and the waiver looks ignored, which is indistinguishable from a bug.
-    """
-    return os.path.realpath(os.path.expanduser(p))
-
-
-def load_waivers(path: Path) -> dict[tuple[str, str], dict]:
-    if not path.is_file():
-        return {}
-    try:
-        raw = json.loads(path.read_text())
-    except (OSError, json.JSONDecodeError):
-        return {}
-    return {(_canon(w["a"]), _canon(w["b"])): w for w in raw.get("waivers", [])}
-
-
-def waived(waivers, a: dict, b: dict) -> bool:
-    """A waiver holds only while BOTH sides are byte-identical to when it was filed."""
-    pa, pb = _canon(a["path"]), _canon(b["path"])
-    for key in ((pa, pb), (pb, pa)):
-        w = waivers.get(key)
-        if not w:
-            continue
-        ha, hb = (
-            (w.get("a_hash"), w.get("b_hash"))
-            if key[0] == pa
-            else (w.get("b_hash"), w.get("a_hash"))
-        )
-        if ha == a["hash"] and hb == b["hash"]:
-            return True
-    return False
+    return rules, skills, unreadable
 
 
 # --------------------------------------------------------------------- checks
@@ -388,7 +403,7 @@ def _stub_target(head: str, known: set[str]) -> str | None:
     return refs[0] if refs else None
 
 
-def check_stub_integrity(rules, skills) -> list[dict]:
+def check_stub_integrity(rules, skills) -> list[Finding]:
     known = {s["name"] for s in skills}
     out = []
     for r in rules:
@@ -397,17 +412,17 @@ def check_stub_integrity(rules, skills) -> list[dict]:
         target = _stub_target(r["body"][:700], known)
         if target not in known:
             out.append(
-                {
-                    "severity": "error",
-                    "kind": "broken_pointer_stub",
-                    "summary": f"{r['name']} points at skill '{target or '(none named)'}' which does not exist",
-                    "path": r["path"],
-                }
+                Finding(
+                    "error",
+                    "broken_pointer_stub",
+                    f"{r['name']} points at skill '{target or '(none named)'}' which does not exist",
+                    path=r["path"],
+                )
             )
     return out
 
 
-def check_review_staleness(items, cache: dict, allow_spawn: bool) -> list[dict]:
+def check_review_staleness(items, cache: dict, allow_spawn: bool) -> list[Finding]:
     """Compare each item's declared `reviewed:` against its real last-change date.
 
     One `git log` per file is ~10ms and there are ~900 files, which is far too
@@ -438,18 +453,18 @@ def check_review_staleness(items, cache: dict, allow_spawn: bool) -> list[dict]:
             continue
         if gap > STALE_DAYS:
             out.append(
-                {
-                    "severity": "warn",
-                    "kind": "review_staleness",
-                    "summary": f"{it['name']} changed {gap}d after its declared reviewed:{rv}",
-                    "path": it["path"],
-                    "gap_days": gap,
-                }
+                Finding(
+                    "warn",
+                    "review_staleness",
+                    f"{it['name']} changed {gap}d after its declared reviewed:{rv}",
+                    path=it["path"],
+                    gap_days=gap,
+                )
             )
     return sorted(out, key=lambda x: -x["gap_days"])
 
 
-def check_budget(rules) -> list[dict]:
+def check_budget(rules) -> list[Finding]:
     # A rule in a user-global/portfolio scope is NOT unconditionally injected if
     # it carries `paths:` frontmatter -- it loads only when a matching file is
     # read. Counting those inflates the budget by ~24% on this portfolio (13 of
@@ -461,54 +476,54 @@ def check_budget(rules) -> list[dict]:
         return []
     worst = sorted(always, key=lambda r: -r["chars"])[:3]
     return [
-        {
-            "severity": "warn",
-            "kind": "always_loaded_budget",
-            "summary": (
+        Finding(
+            "warn",
+            "always_loaded_budget",
+            (
                 f"{len(always)} always-loaded rules cost ~{tokens:,} tok/turn "
                 f"(budget {BUDGET_TOKENS:,}); heaviest: "
                 + ", ".join(
                     f"{r['name']}(~{r['chars'] // 4 // 100 * 100:,})" for r in worst
                 )
             ),
-            "tokens": tokens,
-        }
+            tokens=tokens,
+        )
     ]
 
 
-def check_frontmatter(rules) -> list[dict]:
+def check_frontmatter(rules) -> list[Finding]:
     missing = [r for r in rules if not r["fm"].get("reviewed")]
     if not missing:
         return []
     return [
-        {
-            "severity": "info",
-            "kind": "frontmatter_coverage",
-            "summary": f"{len(missing)}/{len(rules)} rules carry no reviewed: date, so staleness cannot be tracked for them",
-        }
+        Finding(
+            "info",
+            "frontmatter_coverage",
+            f"{len(missing)}/{len(rules)} rules carry no reviewed: date, so staleness cannot be tracked for them",
+        )
     ]
 
 
-def check_lexical_dupes(rules, waivers) -> list[dict]:
+def check_lexical_dupes(rules, waivers) -> list[Finding]:
     for r in rules:
         r["_sh"] = shingles(r["body"])
     out = []
     for a, b in combinations(rules, 2):
         s = jaccard(a["_sh"], b["_sh"])
-        if s >= T_LEXICAL and not waived(waivers, a, b):
+        if s >= T_LEXICAL and not waivers.waived(a, b):
             out.append(
-                {
-                    "severity": "warn",
-                    "kind": "duplicate_rule_lexical",
-                    "summary": f"{a['scope']}:{a['name']} and {b['scope']}:{b['name']} are {s:.0%} lexically identical",
-                    "score": round(s, 3),
-                    "paths": [a["path"], b["path"]],
-                }
+                Finding(
+                    "warn",
+                    "duplicate_rule_lexical",
+                    f"{a['scope']}:{a['name']} and {b['scope']}:{b['name']} are {s:.0%} lexically identical",
+                    score=round(s, 3),
+                    paths=[a["path"], b["path"]],
+                )
             )
     return sorted(out, key=lambda x: -x["score"])
 
 
-def check_rule_covered_by_skill(rules, skills, waivers) -> list[dict]:
+def check_rule_covered_by_skill(rules, skills, waivers) -> list[Finding]:
     """Topic containment: how much of a rule's vocabulary a skill already carries.
 
     Full-body Jaccard is the wrong metric here and silently returns zero -- a
@@ -541,37 +556,37 @@ def check_rule_covered_by_skill(rules, skills, waivers) -> list[dict]:
             control_total += 1
             control_hits += score >= T_COVERAGE
             continue
-        if score >= T_COVERAGE and skill and not waived(waivers, r, skill):
+        if score >= T_COVERAGE and skill and not waivers.waived(r, skill):
             out.append(
-                {
-                    "severity": "info",
-                    "kind": "rule_covered_by_skill",
-                    "summary": (
+                Finding(
+                    "info",
+                    "rule_covered_by_skill",
+                    (
                         f"{r['scope']}:{r['name']} is {score:.0%} covered by skill "
                         f"{skill['name']} -- candidate for a pointer stub"
                     ),
-                    "score": round(score, 3),
-                    "paths": [r["path"], skill["path"]],
-                    "always_loaded": r["always_loaded"],
-                }
+                    score=round(score, 3),
+                    paths=[r["path"], skill["path"]],
+                    always_loaded=r["always_loaded"],
+                )
             )
     # Control gate: if the known-good stubs do not surface, the metric is broken
     # and its output must not be trusted (never-fabricate-test-identifiers).
     if control_total and control_hits < max(1, int(0.7 * control_total)):
         out = [
-            {
-                "severity": "error",
-                "kind": "coverage_metric_broken",
-                "summary": (
+            Finding(
+                "error",
+                "coverage_metric_broken",
+                (
                     f"containment metric failed its control: only {control_hits}/{control_total} "
                     "known pointer stubs detected -- coverage findings suppressed"
                 ),
-            }
+            )
         ]
     return sorted(out, key=lambda x: (not x.get("always_loaded"), -x.get("score", 0)))
 
 
-def check_semantic_dupes(items, waivers, cache_path: Path) -> list[dict]:
+def check_semantic_dupes(items, waivers, cache_path: Path) -> list[Finding]:
     import numpy as np
     from fastembed import TextEmbedding
 
@@ -645,23 +660,30 @@ def check_semantic_dupes(items, waivers, cache_path: Path) -> list[dict]:
         # re-reporting them here would double-count every generated rule.
         if a["name"] == b["name"] or structural_pair(a, b):
             continue
-        if s >= T_SEMANTIC and not waived(waivers, a, b):
+        if s >= T_SEMANTIC and not waivers.waived(a, b):
             out.append(
-                {
-                    "severity": "warn",
-                    "kind": f"semantic_overlap_{a['kind']}_{b['kind']}",
-                    "summary": (
+                Finding(
+                    "warn",
+                    f"semantic_overlap_{a['kind']}_{b['kind']}",
+                    (
                         f"{a['kind']} {a['name']} and {b['kind']} {b['name']} "
                         f"are {s:.0%} semantically similar"
                     ),
-                    "score": round(s, 3),
-                    "paths": [a["path"], b["path"]],
-                }
+                    score=round(s, 3),
+                    paths=[a["path"], b["path"]],
+                )
             )
     return sorted(out, key=lambda x: -x["score"])
 
 
 # ---------------------------------------------------------------------- output
+# DELIBERATE, not an oversight: `lib.probe.render_status` already emits the
+# conformant block (`ISSUE_COUNT=` plus the closing `=== END ... ===`) that the
+# renderer below lacks, and this PR keeps `emit_status` / `emit_report`
+# byte-identical so `--format=json` and `--format=status` can be `cmp`-verified
+# against the pre-extraction analyzer on the real corpus. Two status renderers
+# coexist for exactly one PR; the follow-up that normalises the shape switches
+# this call site over and deletes this one.
 def emit_status(findings, counts):
     print("=== CONFIG DRIFT ===")
     for k, v in counts.items():
@@ -679,6 +701,12 @@ def emit_status(findings, counts):
     print("STATUS=" + ("ERROR" if errs else "WARN" if warns else "OK"))
 
 
+# DEAD CODE, deliberately retained for THIS PR only. No caller invokes
+# `--format=probe`: hooks/config-drift-probe.sh consumes `--format=json` and
+# re-derives the remediation map in jq. It stays because this PR's whole claim
+# is that no output changed, and deleting a public `--format` choice would turn
+# a byte-identity refactor into a CLI-surface removal. #2527b deletes it and the
+# `"probe"` choice together, as an intentional change with its own rationale.
 def emit_probe(findings):
     """drift-protocol shape: severity/kind/summary/remediation_skill."""
     remediation = {
@@ -786,15 +814,16 @@ def main() -> int:
         print(f"root not found: {root}", file=sys.stderr)
         return 3
 
-    rules, skills = collect(root)
-    waivers = load_waivers(Path(args.waivers).expanduser())
+    rules, skills, unreadable = collect(root)
+    waivers = Waivers.load(Path(args.waivers).expanduser())
 
-    findings: list[dict] = []
+    findings: list[Finding] = []
     findings += check_stub_integrity(rules, skills)
     findings += check_budget(rules)
     findings += check_lexical_dupes(rules, waivers)
     findings += check_rule_covered_by_skill(rules, skills, waivers)
     findings += check_frontmatter(rules)
+    findings += check_corpus_unreadable(unreadable)
 
     datecache_path = Path(args.cache).expanduser().with_name("gitdates.json")
     datecache: dict = {}
@@ -818,11 +847,11 @@ def main() -> int:
             )
         except Exception as exc:  # noqa: BLE001 - degrade loudly, never silently
             findings.append(
-                {
-                    "severity": "info",
-                    "kind": "semantic_pass_unavailable",
-                    "summary": f"semantic pass skipped: {type(exc).__name__}: {exc}",
-                }
+                Finding(
+                    "info",
+                    "semantic_pass_unavailable",
+                    f"semantic pass skipped: {type(exc).__name__}: {exc}",
+                )
             )
 
     if args.since:
@@ -849,7 +878,7 @@ def main() -> int:
         "status": emit_status,
         "probe": lambda f, c: emit_probe(f),
         "report": emit_report,
-        "json": lambda f, c: print(json.dumps({"counts": c, "findings": f}, indent=1)),
+        "json": lambda f, c: print(render_json(f, c, indent=1)),
     }[args.format](findings, counts)
 
     errs = sum(1 for f in findings if f["severity"] == "error")

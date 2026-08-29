@@ -36,6 +36,39 @@ These internal skills are auto-discoverable but not user-invocable — use `/hea
 |--------|-------------|
 | `prune-claude-config.py` | Remove orphaned projects and cached data from `~/.claude.json` |
 | `config-drift.py` | Audit the rules/skills corpus itself for duplication, broken pointer stubs, review staleness, and always-loaded budget |
+| `probe-delta.py` | Report only what is NEW since a probe's last run — reads any probe's `--format=json` on stdin against a recorded baseline |
+| `lib/probe.py` | The finding / waiver / delta contract both of the above share. Stdlib only, imported as `from lib.probe import …` |
+
+### `lib/probe.py` — the shared contract
+
+What a probe must agree with other probes about, and nothing else: the
+`Finding` shape, `fingerprint` (identity across runs), `Waivers` (pair-keyed,
+self-expiring), `Baseline`/`Delta`, and the `STATUS=`/`ISSUE_COUNT=` renderers.
+Thresholds, the corpus walk and the `check_*` functions deliberately stay in
+`config-drift.py` — those are one probe's opinion, and a second probe adopting
+them would be adopting a bug rather than a contract.
+
+Two properties are load-bearing and easy to break:
+
+- **`fingerprint` folds a singular `path` into the path set.** Read as "`paths`
+  only", every finding carrying `path` collapses to one fingerprint per kind, so
+  the second broken pointer stub in a corpus is invisible in every delta report
+  forever.
+- **`Baseline` records the root it was taken at.** Fingerprints are built from
+  absolute paths, so a baseline recorded at one root and compared at another
+  yields a disjoint set — every finding new *and* every old one resolved. A root
+  or schema mismatch loads as `None`, so the caller records a fresh baseline and
+  stays silent.
+
+### `probe-delta.py`
+
+```
+config-drift.py --format=json | probe-delta.py --probe config-drift --root <abs> --record
+```
+
+First run records the baseline and says nothing. Later runs report only new
+findings; an empty or unparseable input is `STATUS=ERROR TYPE=analyzer_failed`,
+never a clean sweep.
 
 ### `config-drift.py`
 

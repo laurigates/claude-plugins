@@ -350,7 +350,15 @@ echo "TEST 10: widened key pattern -- executed directly, see note"
 fm_get() {
     python3 - "$ANALYZER" "$1" "$2" <<'PYFM'
 import importlib.util
+import os
 import sys
+
+# A real invocation (`python3 config-drift.py`) puts the ANALYZER's own
+# directory on sys.path as sys.path[0], which is how its stdlib-only
+# `from lib.probe import ...` resolves. Loading the module by file location out
+# of a `python3 -` script does not, so the harness has to reproduce that entry
+# itself -- otherwise this case dies on an ImportError no real caller can hit.
+sys.path.insert(0, os.path.dirname(os.path.abspath(sys.argv[1])))
 
 spec = importlib.util.spec_from_file_location("config_drift", sys.argv[1])
 mod = importlib.util.module_from_spec(spec)
@@ -731,6 +739,11 @@ fastembed = types.ModuleType("fastembed")
 fastembed.TextEmbedding = TextEmbedding
 sys.modules["fastembed"] = fastembed
 
+# Same reason as the fm_get loader above: a file-location import does not get
+# the analyzer's directory on sys.path, so `from lib.probe import ...` would
+# fail here for a reason no real invocation can produce.
+sys.path.insert(0, str(pathlib.Path(analyzer).resolve().parent))
+
 spec = importlib.util.spec_from_file_location("config_drift", analyzer)
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
@@ -763,7 +776,7 @@ items = [
 if len(sys.argv) > 5:
     mod.EMBED_MODEL = sys.argv[5]
 
-mod.check_semantic_dupes(items, {}, pathlib.Path(cache_path))
+mod.check_semantic_dupes(items, mod.Waivers({}), pathlib.Path(cache_path))
 print("CACHE_KEYS=%d" % len(json.loads(pathlib.Path(cache_path).read_text())))
 PYDRIVER
 
