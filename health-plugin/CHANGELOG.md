@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.18.0...health-plugin-v1.19.0) (2026-08-29)
+
+
+### Features
+
+* **health-plugin:** add the cross-scope promotion_candidate verdict ([#2543](https://github.com/laurigates/claude-plugins/issues/2543)) ([50cb2fa](https://github.com/laurigates/claude-plugins/commit/50cb2fa1f1920674f1e1e1416306b1e231cd81f4)), closes [#2528](https://github.com/laurigates/claude-plugins/issues/2528)
+
 ## [1.18.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.17.5...health-plugin-v1.18.0) (2026-08-29)
 
 
