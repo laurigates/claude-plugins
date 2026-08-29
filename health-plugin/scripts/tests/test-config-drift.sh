@@ -1615,6 +1615,446 @@ rm "$FIXROOT/proj/repo-b/.claude/rules/beta.md" \
    "$FIXROOT/proj/other-plugin/agents/torque-auditor-copy.md" \
    "$FIXROOT/proj/nest-b/CLAUDE.md"
 
+echo "TEST 22: promotion candidates -- the verdict, its discriminator, and its guards"
+# THE VERDICT: the same thing said at two levels of the scope ladder is a
+# candidate for promotion to the higher one. T_PROMOTE = 0.88, measured (see the
+# constant's comment). Every case below injects the similarity through the
+# hidden `--sim-fixture` seam, because `test-config-drift.sh` is listed in
+# `scripts/required-to-run-tests.txt` where a SKIP is an ERROR and neither numpy
+# nor fastembed is installed for the system python3 -- a case needing the real
+# model would force that required gate to skip on every runner.
+# `pwd -P` resolves the symlink macOS puts in front of every mktemp path
+# (/var -> /private/var). The analyzer resolves its --root, so the paths in a
+# finding come back canonicalised; without this the child-first assertion
+# below compares two spellings of the same file.
+PROOT=$(cd "$(mktemp -d)" && pwd -P)
+mkdir -p "$PROOT/home/.claude/rules" "$PROOT/tie-home/.claude/rules" \
+         "$PROOT/tie" "$PROOT/proj/.claude/rules" \
+         "$PROOT/proj/alpha-repo/.claude/rules" \
+         "$PROOT/proj/beta-repo/deep/.claude/rules"
+
+# The similarity table is keyed by CONTENT HASH, and every fixture edit below
+# changes a hash -- so the table is rewritten from the files themselves on every
+# case rather than carried forward. Retyping a hash would be exactly the
+# fabricated-identifier trap (`never-fabricate-test-identifiers.md`): a stale key
+# scores 0.0, which is indistinguishable from "correctly suppressed".
+write_sim() {  # write_sim <out.json> [<fileA> <fileB> <score>]...
+    python3 - "$@" <<'PYSIM'
+import hashlib, json, sys
+out, rest = sys.argv[1], sys.argv[2:]
+def h(p):
+    return hashlib.sha256(
+        open(p, encoding="utf-8", errors="replace").read().encode("utf-8", "replace")
+    ).hexdigest()[:16]
+table = {}
+for i in range(0, len(rest), 3):
+    a, b, s = rest[i], rest[i + 1], rest[i + 2]
+    table["|".join(sorted((h(a), h(b))))] = float(s)
+json.dump(table, open(out, "w"))
+PYSIM
+}
+SIM="$PROOT/sim.json"
+run_promo() {  # run_promo <root> [extra analyzer args...]
+    HOME="$PROOT/home" python3 "$ANALYZER" --root "$1" --no-embed --fast \
+        --format=json --sim-fixture "$SIM" "${@:2}" 2>/dev/null
+}
+promo_field() { finding_field "$1" promotion_candidate "$2"; }
+promo_parents() {
+    printf '%s' "$1" | python3 -c 'import json,sys
+d = json.load(sys.stdin)
+print(",".join(sorted({f["proposed_parent"] for f in d["findings"]
+                       if f["kind"] == "promotion_candidate"})))' 2>/dev/null || echo ERR
+}
+promo_paths_len() {
+    printf '%s' "$1" | python3 -c 'import json,sys
+d = json.load(sys.stdin)
+print(next((len(f["paths"]) for f in d["findings"] if f["kind"] == "promotion_candidate"), -1))' 2>/dev/null || echo ERR
+}
+
+# --- 22a. TRUE POSITIVE ------------------------------------------------------
+# Two rules, two scopes, DIFFERENT names, neither referencing the other. Bodies
+# are lexically dissimilar on purpose so `duplicate_rule_lexical` stays quiet and
+# the only thing that can produce a finding is the injected cosine.
+PARENT="$PROOT/home/.claude/rules/torque-baseline.md"
+CHILD="$PROOT/proj/alpha-repo/.claude/rules/spindle-notes.md"
+cat > "$PARENT" <<'RULE'
+---
+reviewed: 2026-08-01
+---
+# Torque Baseline
+
+Every assembly line records a torque baseline before the first shift of the
+week. The baseline is captured from the calibration jig, logged against the
+jig's serial number, and signed off by whoever ran the jig that morning.
+
+A baseline older than seven shifts is treated as absent: the jig drifts with
+ambient temperature, and a stale figure reads as authoritative while being
+wrong. Re-run the jig rather than extrapolating from the previous week.
+
+When two baselines disagree by more than four percent, neither is used. The
+discrepancy is escalated and the line runs on the manufacturer default until a
+third capture agrees with one of them.
+RULE
+cat > "$CHILD" <<'RULE'
+---
+reviewed: 2026-08-01
+---
+# Spindle Notes
+
+Before a shift opens, the spindle head is measured against the reference gauge
+and the reading is written into the shift log beside the gauge identifier and
+the operator initials.
+
+Readings more than a week old count as missing. Ambient conditions move the
+gauge, so an old number looks trustworthy while describing a machine that no
+longer exists. Take a fresh reading instead of projecting the last one forward.
+
+Two readings that differ by four percent or more cancel each other out. The
+head then runs at the vendor default until a further measurement corroborates
+one of the two.
+RULE
+write_sim "$SIM" "$CHILD" "$PARENT" 0.93
+out=$(run_promo "$PROOT/proj")
+assert_eq "a cross-scope pair above T_PROMOTE is one promotion_candidate" \
+    "$(count_kind "$out" promotion_candidate)" "1"
+assert_eq "...at severity info, so --gate cannot fail CI on it" \
+    "$(promo_field "$out" severity)" "info"
+assert_eq "...carrying exactly two paths" "$(promo_paths_len "$out")" "2"
+assert_eq "...CHILD first, because emit_report prints only paths[:2]" \
+    "$(printf '%s' "$out" | python3 -c 'import json,sys
+print(next(f["paths"][0] for f in json.load(sys.stdin)["findings"] if f["kind"] == "promotion_candidate"))')" \
+    "$CHILD"
+assert_eq "...naming the higher scope as proposed_parent" \
+    "$(promo_field "$out" proposed_parent)" "user-global"
+assert_eq "...with scopes index-aligned to paths" \
+    "$(printf '%s' "$out" | python3 -c 'import json,sys
+print(",".join(next(f["scopes"] for f in json.load(sys.stdin)["findings"] if f["kind"]=="promotion_candidate")))')" \
+    "alpha-repo,user-global"
+assert_ge "GUARD: pairs were actually considered" \
+    "$(count_key "$out" promotion_pairs_considered)" 1
+assert_eq "GUARD: nothing was suppressed as declared in the positive case" \
+    "$(count_key "$out" hierarchies_declared)" "0"
+
+# --- 22b. --gate does not fail on an info-only run ---------------------------
+# The whole reason the severity is `info`. A style suggestion that turns CI red
+# gets the check switched off, and `--gate` returning 2 here would do exactly
+# that on the first scheduled run that found a candidate.
+gate_out=$(run_promo "$PROOT/proj" --gate --format=status)
+gate_rc=0
+run_promo "$PROOT/proj" --gate >/dev/null 2>&1 || gate_rc=$?
+assert_contains "FIXTURE: the gate run really did produce the finding" \
+    "$gate_out" "FINDING_PROMOTION_CANDIDATE=1"
+assert_contains "FIXTURE: ...and produced no error-severity finding" "$gate_out" "ERRORS=0"
+assert_eq "a run whose only finding is promotion_candidate exits 0 under --gate" \
+    "$gate_rc" "0"
+
+# --- 22c. the declared-hierarchy control (the required control) --------------
+# The pair from 22a, unchanged except that the child now names the parent's
+# file, which is what `structural_pair` reads. It is the ONLY suppressor on this
+# axis and it is doing work the threshold cannot: the nearest real pair to the
+# genuine candidate in the calibration corpus
+# (`offload-to-deterministic-substrate` against itself one scope up, 0.8994)
+# sits 0.0004 ABOVE it, so no number separates them.
+#
+# A pairwise PROSE discriminator (a phrase like "the shared baseline lives one
+# level up", bound to the parent's scope) was built alongside this and then cut:
+# measured over both corpora it suppressed 42 pairs at `claude-plugins` and 60
+# at `~/repos` with NONE above T_PROMOTE, so it moved no emitted finding, while
+# binding to a scope rather than a document -- one sentence exempted its child
+# from every rule in the parent scope. There is deliberately no case here for a
+# declaration that names no file; that shape is now a KNOWN LIMITATION recorded
+# in `check_promotion_candidates`, not a behaviour.
+python3 - "$CHILD" <<'PY'
+import sys
+p = sys.argv[1]
+body = open(p, encoding="utf-8").read()
+open(p, "w", encoding="utf-8").write(
+    body.replace(
+        "# Spindle Notes\n",
+        "# Spindle Notes\n\nThe canonical statement lives at "
+        "`~/.claude/rules/torque-baseline.md`; this file holds the deltas.\n",
+    )
+)
+PY
+write_sim "$SIM" "$CHILD" "$PARENT" 0.93
+out=$(run_promo "$PROOT/proj")
+assert_eq "a child naming the parent's file is not a promotion candidate" \
+    "$(count_kind "$out" promotion_candidate)" "0"
+assert_eq "...and the suppression is counted, not silent" \
+    "$(count_key "$out" hierarchies_declared)" "1"
+assert_ge "GUARD: the pair was still considered" \
+    "$(count_key "$out" promotion_pairs_considered)" 1
+
+rm "$PARENT" "$CHILD"
+
+# --- 22e. the release-please shape: same basename, BELOW threshold ------------
+# Two scopes, one basename, genuinely different documents (a policy and a
+# package layout). Measured at 0.8114 in the calibration corpus, i.e. below any
+# candidate threshold. It must not fire -- and the second half proves the reason
+# is the SCORE and not the name, because the identical pair at 0.93 does fire.
+RP_PARENT="$PROOT/proj/.claude/rules/release-please.md"
+RP_CHILD="$PROOT/proj/beta-repo/deep/.claude/rules/release-please.md"
+cat > "$RP_PARENT" <<'RULE'
+---
+reviewed: 2026-08-01
+---
+# Release Automation Policy
+
+Generated release metadata is never hand-edited. The changelog, the version
+fields and the manifest are outputs; editing an output makes the next generated
+run conflict with a human decision nobody recorded.
+
+When a version needs to move for a reason the tool cannot infer, record the
+reason in a commit footer and let the tool re-derive the number. The commit
+footer survives; a hand-typed version does not.
+
+An override applied by hand is invisible to the next generated run, so the two
+disagree from that point on and the disagreement is discovered at release time
+rather than at review time. Prefer the footer even when it feels heavier.
+RULE
+cat > "$RP_CHILD" <<'RULE'
+---
+reviewed: 2026-08-01
+---
+# Package Layout In This Monorepo
+
+Forty-four package directories are keyed by plugin name. A commit is routed to
+every package whose directory it touches, so a scope string that matches no
+package suppresses nothing at all.
+
+To keep one package unpublished, change no file beneath its directory. The
+scope is a changelog label; the file list is what decides which packages move.
+
+A label naming a directory the commit never touched still renders in the
+changelog of whatever it did touch, so a mislabelled entry misdescribes every
+package it reached. Read the file list before choosing the label.
+RULE
+write_sim "$SIM" "$RP_CHILD" "$RP_PARENT" 0.81
+out=$(run_promo "$PROOT/proj")
+assert_eq "a same-basename pair BELOW threshold is not a candidate" \
+    "$(count_kind "$out" promotion_candidate)" "0"
+assert_ge "GUARD: it was considered, not skipped before scoring" \
+    "$(count_key "$out" promotion_pairs_considered)" 1
+assert_eq "GUARD: ...and it was the score, not a declared hierarchy" \
+    "$(count_key "$out" hierarchies_declared)" "0"
+write_sim "$SIM" "$RP_CHILD" "$RP_PARENT" 0.93
+out=$(run_promo "$PROOT/proj")
+assert_eq "the SAME pair above threshold fires -- same-name pairs are NOT skipped" \
+    "$(count_kind "$out" promotion_candidate)" "1"
+# Bracket T_PROMOTE tightly. The fixtures above only pin it to [0.82, 0.93]:
+# 0.81 must not fire and 0.93 must, so any constant in between passes the suite
+# and a -0.05 drift lands inside the gap undetected (mutation M7 survived on
+# exactly that). These two straddle the shipped 0.88 by one hundredth each, so
+# the band becomes (0.87, 0.89] and the constant is pinned to its own value
+# rather than to a range nobody chose.
+write_sim "$SIM" "$RP_CHILD" "$RP_PARENT" 0.87
+out=$(run_promo "$PROOT/proj")
+assert_eq "0.87 is BELOW the shipped threshold and does not fire" \
+    "$(count_kind "$out" promotion_candidate)" "0"
+assert_ge "GUARD: the 0.87 pair was scored, not skipped before scoring" \
+    "$(count_key "$out" promotion_pairs_considered)" 1
+write_sim "$SIM" "$RP_CHILD" "$RP_PARENT" 0.89
+out=$(run_promo "$PROOT/proj")
+assert_eq "0.89 is ABOVE it and does fire" \
+    "$(count_kind "$out" promotion_candidate)" "1"
+rm "$RP_PARENT" "$RP_CHILD"
+
+# --- 22f. scope ordering and the ancestor constraint --------------------------
+# One name at three scopes, ordered so the lowest RANK and the alphabetically
+# first DISAGREE: ranks are portfolio(1) < alpha-repo(2) < beta-repo/deep(3),
+# while alphabetically "alpha-repo" < "beta-repo/deep" < "portfolio". A check
+# that sorted scopes as strings would name `alpha-repo` as the parent.
+#
+# It also pins the ancestor constraint: three scopes give three rank-strict
+# pairs, but `alpha-repo` is not an ancestor of `beta-repo/deep` -- they are
+# siblings -- so that pair must not appear. Rank is DEPTH, not ancestry, and at
+# `~/repos`/0.88 rank alone admitted 47 unrelated cross-repo pairs out of 69.
+F_TOP="$PROOT/proj/.claude/rules/fleet-manifest.md"
+F_MID="$PROOT/proj/alpha-repo/.claude/rules/fleet-manifest.md"
+F_LOW="$PROOT/proj/beta-repo/deep/.claude/rules/fleet-manifest.md"
+cat > "$F_TOP" <<'RULE'
+---
+reviewed: 2026-08-01
+---
+# Fleet Manifest
+
+The manifest enumerates every chassis currently in service together with the
+depot that holds its paperwork. It is regenerated nightly from the depot
+returns and is authoritative for billing.
+
+A chassis missing from two consecutive regenerations is retired automatically,
+because a gap of that length means the depot stopped reporting rather than that
+the vehicle briefly left service.
+
+Retirement is reversible for thirty days, after which the paperwork is archived
+and a returning chassis is enrolled as new. Depots are notified on the day a
+retirement lands so a reporting outage can be corrected before that window shuts.
+RULE
+cat > "$F_MID" <<'RULE'
+---
+reviewed: 2026-08-01
+---
+# Fleet Manifest
+
+Trailers are tracked separately from tractors here. Each entry pairs a plate
+with the yard responsible for it, and the pairing is what the invoicing run
+reads at the end of the month.
+
+An entry absent from two runs in a row is closed out; a two-run absence
+indicates the yard has stopped filing, not a short trip away from base.
+
+A closed entry can be reopened within a month; past that the plate is released
+and a returning trailer is registered afresh. Yards receive a notice the day a
+closure lands so a filing gap can be repaired before the plate is released.
+RULE
+cat > "$F_LOW" <<'RULE'
+---
+reviewed: 2026-08-01
+---
+# Fleet Manifest
+
+Loading cranes carry their own register. A row binds a serial number to the
+site holding its inspection certificate, and that binding drives the quarterly
+charge raised against the site.
+
+A serial that fails to appear twice running is struck off, since two silent
+quarters mean the site has ceased filing rather than that the crane moved.
+
+A struck serial may be reinstated for one further quarter; beyond that the
+certificate lapses and the crane requires a fresh inspection. Sites are told the
+quarter a strike is recorded so a filing lapse can be repaired in time.
+RULE
+write_sim "$SIM" "$F_MID" "$F_TOP" 0.93 "$F_LOW" "$F_TOP" 0.93 "$F_LOW" "$F_MID" 0.93
+out=$(run_promo "$PROOT/proj")
+assert_eq "three scopes, but only ANCESTOR pairs are candidates" \
+    "$(count_kind "$out" promotion_candidate)" "2"
+assert_eq "...both naming the lowest-RANK scope, not the alphabetically first" \
+    "$(promo_parents "$out")" "portfolio"
+
+rm "$F_TOP" "$F_MID" "$F_LOW"
+
+# --- 22h. a scope_rank TIE is skipped, and still counted ---------------------
+# Two rules at the SAME scope have no parent between them, so "promote to the
+# parent" names no operation and the recommendation would be undefined.
+#
+# THE TIE HAS TO BE PINNED WHERE IT IS LOAD-BEARING. Two sibling scopes at equal
+# depth under a project root are ALREADY rejected by the ancestor constraint, so
+# a tie case built there passes whether or not the tie skip exists -- a mutation
+# deleting `if ra == rb: continue` survives it, which is exactly what an earlier
+# version of this case measured. The skip decides something only when the parent
+# side is `user-global` or `portfolio`, which `_ancestor_scope` accepts
+# unconditionally: without it, a `user-global` rule is reported as promotable
+# into `user-global`. So both rules live in a HOME rules dir -- same scope, both
+# rank 0 -- with the root left empty, which also makes the denominator exact:
+# the universe is one pair, so `considered == 1` with zero findings proves the
+# skip rather than an empty corpus. The injected score is 0.99, far above
+# threshold, so nothing but the tie can be doing the suppressing.
+TIE_A="$PROOT/tie-home/.claude/rules/one.md"
+TIE_B="$PROOT/tie-home/.claude/rules/two.md"
+cat > "$TIE_A" <<'RULE'
+---
+reviewed: 2026-08-01
+---
+# Coolant Schedule
+
+Coolant is drained on the first Monday of each quarter and the sump is wiped
+before refilling. The drained volume is logged so a slow leak shows up as a
+shortfall against the previous quarter rather than as a sudden failure.
+
+Refilling past the upper mark is treated as an error and reported, because the
+overflow path routes into the swarf tray and contaminates the filtrate.
+
+A quarter skipped for a shutdown is recorded as skipped rather than left blank,
+so the next drain is compared against the last actual reading instead of
+against a gap that reads like a missing log entry.
+RULE
+cat > "$TIE_B" <<'RULE'
+---
+reviewed: 2026-08-01
+---
+# Filter Rotation
+
+Filters rotate on a three-station cycle and each station is stamped with the
+date it entered service. Stamping at entry, not at removal, is what makes a
+skipped rotation visible in the record instead of merely absent from it.
+
+A station left in place beyond two cycles is pulled regardless of apparent
+condition; visual inspection does not detect the failure mode that matters.
+
+A cycle deferred for a shutdown is stamped as deferred rather than omitted, so
+the following rotation is measured from the last real entry instead of from a
+hole that looks like a lost stamp.
+RULE
+write_sim "$SIM" "$TIE_A" "$TIE_B" 0.99
+run_tie() {  # run_tie -- HOME is the tie corpus; the root is deliberately bare
+    HOME="$PROOT/tie-home" python3 "$ANALYZER" --root "$PROOT/tie" \
+        --no-embed --fast --format=json --sim-fixture "$SIM" 2>/dev/null
+}
+tie_out=$(run_tie)
+assert_eq "GUARD: the tie pair is the entire considered universe" \
+    "$(count_key "$tie_out" promotion_pairs_considered)" "1"
+assert_eq "a scope_rank tie is skipped rather than reported" \
+    "$(count_kind "$tie_out" promotion_candidate)" "0"
+assert_eq "GUARD: ...and not because it was called a declared hierarchy" \
+    "$(count_key "$tie_out" hierarchies_declared)" "0"
+# THE CONTROL: the same two documents, one of them moved one rung DOWN so the
+# ranks differ and nothing else changes. It fires -- which is what makes the
+# three rows above an assertion about the TIE rather than about this pair.
+mkdir -p "$PROOT/tie/repo-x/.claude/rules"
+mv "$TIE_B" "$PROOT/tie/repo-x/.claude/rules/two.md"
+TIE_B="$PROOT/tie/repo-x/.claude/rules/two.md"
+write_sim "$SIM" "$TIE_A" "$TIE_B" 0.99
+tie_out=$(run_tie)
+assert_eq "CONTROL: the same pair one rung apart IS a candidate" \
+    "$(count_kind "$tie_out" promotion_candidate)" "1"
+assert_eq "CONTROL: ...promoting toward the shallower scope" \
+    "$(promo_field "$tie_out" proposed_parent)" "user-global"
+rm -rf "$PROOT/tie" "$PROOT/tie-home/.claude/rules"
+
+# --- 22i. the degenerate-document floor --------------------------------------
+# Cosine between two near-empty documents is meaningless and runs HIGH: 10 of
+# the 22 ancestor-constrained survivors at `~/repos`/0.88 were 11-128 byte
+# `@AGENTS.md` redirect stubs scoring 0.879-0.975 against each other. Both
+# halves are asserted -- suppressed while short, reported once padded past
+# MIN_PROMOTABLE_CHARS -- so the floor cannot silently become "suppress
+# everything".
+SHORT_P="$PROOT/home/.claude/rules/pointer-a.md"
+SHORT_C="$PROOT/proj/alpha-repo/.claude/rules/pointer-b.md"
+printf -- '---\nreviewed: 2026-08-01\n---\n# Pointer A\n\n@AGENTS.md\n' > "$SHORT_P"
+printf -- '---\nreviewed: 2026-08-01\n---\n# Pointer B\n\n@AGENTS.md\n' > "$SHORT_C"
+write_sim "$SIM" "$SHORT_C" "$SHORT_P" 0.97
+out=$(run_promo "$PROOT/proj")
+assert_eq "a pair of degenerate short documents is not a candidate" \
+    "$(count_kind "$out" promotion_candidate)" "0"
+assert_ge "GUARD: it was considered" "$(count_key "$out" promotion_pairs_considered)" 1
+python3 - "$SHORT_P" "$SHORT_C" <<'PY'
+import sys
+# Pad each side past MIN_PROMOTABLE_CHARS with DIFFERENT filler, so the pair
+# clears the length floor without becoming a lexical duplicate.
+for path, word in zip(sys.argv[1:3], ("alpha", "bravo")):
+    with open(path, "a", encoding="utf-8") as fh:
+        fh.write("\n" + " ".join(f"{word}{i}" for i in range(140)) + "\n")
+PY
+write_sim "$SIM" "$SHORT_C" "$SHORT_P" 0.97
+out=$(run_promo "$PROOT/proj")
+assert_eq "the SAME pair padded past the floor IS a candidate" \
+    "$(count_kind "$out" promotion_candidate)" "1"
+rm "$SHORT_P" "$SHORT_C"
+
+# --- 22j. the counters are ABSENT when the pass did not run ------------------
+# `even at 0` means "ran and found none"; the cheap tier must keep saying
+# "did not run". A `PROMOTION_PAIRS_CONSIDERED=0` printed by --fast --no-embed
+# would read as a clean promotable corpus scanned -- the false all-clear the
+# counter exists to prevent.
+cheap=$(HOME="$PROOT/home" python3 "$ANALYZER" --root "$PROOT/proj" --no-embed \
+    --fast --format=json 2>/dev/null)
+assert_eq "the cheap tier emits no PROMOTION_PAIRS_CONSIDERED at all" \
+    "$(count_key "$cheap" promotion_pairs_considered)" "ERR"
+assert_eq "...nor HIERARCHIES_DECLARED" \
+    "$(count_key "$cheap" hierarchies_declared)" "ERR"
+
+rm -rf "$PROOT"
+
 echo
 echo "=== CONFIG DRIFT TESTS ==="
 echo "PASSED=$PASS"
