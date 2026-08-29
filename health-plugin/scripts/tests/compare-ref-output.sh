@@ -1,30 +1,52 @@
 #!/usr/bin/env bash
-# compare-ref-output.sh — byte-identity gate for the config-drift contract extraction.
+# compare-ref-output.sh — compare this analyzer's output against an arbitrary git ref.
+#
+# WHAT IT IS
+# A general differential harness: extract `config-drift.py` (and `lib/probe.py`)
+# AS THEY WERE at BASE_REF, run that copy and the working-tree copy BACK-TO-BACK
+# over the same corpora, and `cmp` the bytes. Refactors of this analyzer — nine
+# finding-construction sites, three renderers, two caches, a two-orientation
+# waiver lookup — have no cheap total oracle other than the output itself, so
+# this is how a no-op refactor is shown to be a no-op.
+#
+# WHAT A PASS MEANS, AND WHEN IT MEANS NOTHING
+# `STATUS=OK` is "the two copies agree", nothing more. It is evidence about a
+# refactor only when BASE_REF predates the change under test and no DELIBERATE
+# output change sits between them. Three states, all reachable and all correct:
+#
+#   1. BASE_REF is older AND an intentional output change landed in between
+#      -> STATUS=FAIL, exit 1. CORRECT. The output changed on purpose; the
+#      differences are the change. Read the diff, do not "fix" the script.
+#      (`origin/main` is in this state against any ref predating the finding-
+#      shape normalisation: `path=` became `paths=[...]`, so `--format=json`
+#      and `--format=status` both moved by design.)
+#   2. BASE_REF resolves to the working tree's own bytes — the default state
+#      once a PR merges, since BASE_REF defaults to origin/main
+#      -> STATUS=HARNESS_ERROR, exit 2. The gate would otherwise compare a file
+#      with itself and report green having compared nothing. Pass an older ref.
+#   3. BASE_REF is genuinely comparable — an older ref with no intended output
+#      change in between -> STATUS=OK, exit 0, and the refactor is a no-op.
+#
+# So there is no ref at which this script is expected to be green forever, and
+# a red run is not by itself a defect. Establish which of the three states you
+# are in before acting on the result.
 #
 # DELIBERATELY NOT NAMED test-*.sh. `scripts/run-skill-script-tests.sh` discovers
-# `*/scripts/tests/test-*.sh`, and this script is only meaningful while the base
-# ref it compares against is still resolvable. Once that ref ages out of the
-# clone (or the follow-up PR normalises the finding shape ON PURPOSE), a
-# discovered test would go red for a reason nobody can act on — a gate everyone
-# learns to bypass. Run it by hand, as the acceptance check for the extraction.
+# `*/scripts/tests/test-*.sh`. States 1 and 2 above are both normal and both
+# non-zero, so a discovered test would go red for a reason nobody can act on —
+# a gate everyone learns to bypass. Run it by hand, against a ref you chose.
 #
-# WHAT IT PROVES
-# Moving nine finding-construction sites, three renderers, two caches and a
-# two-orientation waiver lookup has no cheap total oracle other than the output
-# itself. So: check out the analyzer AS IT WAS at the base ref, run it and the
-# current one BACK-TO-BACK over the same corpus, and `cmp` the bytes.
-#
-#   --format=report and --format=probe are EXCLUDED: both embed
-#   `datetime.now()`, so two runs of the SAME file differ whenever the clock
-#   ticks between them and the comparison would assert nothing.
+#   --format=report is EXCLUDED: it embeds `datetime.now()`, so two runs of the
+#   SAME file differ whenever the clock ticks between them and the comparison
+#   would assert nothing.
 #
 # TWO CORPORA, because the real ones do not reach most of the code
 # ------------------------------------------------------------------
 # At this repo's root and the portfolio root, only four of the nine
 # construction sites ever fire: review_staleness, rule_covered_by_skill,
 # frontmatter_coverage and duplicate_rule_lexical. A comparison over those
-# alone leaves `broken_pointer_stub` (the ONLY site passing a singular `path=`,
-# i.e. exactly where "kwargs order == dict-literal order" could break),
+# alone leaves `broken_pointer_stub` (a single-element `paths=[...]`, and the
+# site whose kwargs order the finding-shape normalisation moved),
 # `always_loaded_budget` (the only `tokens=`) and `coverage_metric_broken`
 # unexercised — and with no `~/.claude/config-drift-waivers.json` on this
 # machine, the two-orientation waiver lookup and `_canon` are not exercised
@@ -70,11 +92,11 @@
 #
 # TWO WAYS THIS GATE STOPS MEANING ANYTHING, both HARNESS_ERROR:
 #   * the ref AGES OUT of the clone — loud, `git show` fails, already handled.
-#   * the ref becomes IDENTICAL to the working tree — SILENT, and it happens
-#     FIRST: BASE_REF defaults to origin/main, so the moment this PR merges,
-#     `cmp` compares the analyzer with itself and reports 7 green assertions
-#     having compared nothing. Identity is asserted against right after the
-#     extraction, below.
+#   * the ref becomes IDENTICAL to the working tree — SILENT, and it is the
+#     DEFAULT state between PRs: BASE_REF defaults to origin/main, so as soon
+#     as a branch merges, `cmp` compares the analyzer with itself and would
+#     report green assertions having compared nothing (state 2 above). Identity
+#     is asserted against right after the extraction, below.
 #
 # Usage: bash health-plugin/scripts/tests/compare-ref-output.sh [BASE_REF]
 #        BASE_REF defaults to $BASE_REF, then origin/main.

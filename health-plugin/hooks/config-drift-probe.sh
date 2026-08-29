@@ -161,6 +161,31 @@ fi
 # so a greedy probe crowds out its siblings. Findings are collapsed by kind:
 # 74 stale-review entries must read as one actionable nudge, not 74 identical
 # ones.
+#
+# The `fix` map below is now the SINGLE SOURCE for kind -> remediation-skill.
+# It used to be one of two copies: config-drift.py carried a `--format=probe`
+# renderer with its own map, which no caller ever invoked and which had already
+# drifted (it was missing `coverage_metric_broken` and
+# `semantic_overlap_rule_skill`, both of which this one has). That renderer and
+# its `--format` choice were deleted, so this map is load-bearing rather than a
+# duplicate: adding a `kind` to config-drift.py without adding a row here routes
+# it to the `/health:check` fallback silently.
+#
+# The map is therefore COMPLETE over every kind the analyzer can emit, and
+# `test-probe-lib.sh` TEST N3 pins that: it derives the kind set from
+# config-drift.py's own `Finding(...)` call sites and asserts each has an
+# explicit row here. `corpus_unreadable` and `semantic_pass_unavailable` were
+# the two that fell through to the fallback; both now route explicitly to
+# `/health:check`, which is where a reader of either goes anyway — the point is
+# that the routing is a decision on the page rather than a default nobody chose.
+#
+# `semantic_overlap_skill_rule` is ABSENT ON PURPOSE and is not a gap. The
+# f-string `semantic_overlap_{a[kind]}_{b[kind]}` in `check_semantic_dupes` is
+# fed `rules + skills` (rules first) and iterates `np.triu_indices(k=1)`, so `a`
+# is always the LOWER index: a cross-kind pair is always (rule, skill) and never
+# (skill, rule). Adding the row would look like completeness and would in fact
+# pin a kind that cannot be produced. If that call ever stops concatenating
+# rules-then-skills, the kind becomes reachable and TEST N3 fails.
 while IFS=$'\t' read -r severity kind summary remediation; do
     [ -n "$kind" ] || continue
     drift_add_finding "$severity" "$kind" "$summary" "$remediation"
@@ -169,6 +194,7 @@ done < <(printf '%s' "$OUT" | jq -r '
   def fix:
     {"broken_pointer_stub":          "/agent-patterns:meta-promote",
      "coverage_metric_broken":       "/health:check",
+     "corpus_unreadable":            "/health:check",
      "duplicate_rule_lexical":       "/agent-patterns:meta-promote",
      "semantic_overlap_rule_rule":   "/agent-patterns:meta-promote",
      "semantic_overlap_rule_skill":  "/health:skill-audit",
@@ -176,6 +202,7 @@ done < <(printf '%s' "$OUT" | jq -r '
      "rule_covered_by_skill":        "/agent-patterns:meta-context-diet",
      "always_loaded_budget":         "/agent-patterns:meta-context-diet",
      "review_staleness":             "/health:skill-audit",
+     "semantic_pass_unavailable":    "/health:check",
      "frontmatter_coverage":         "/agent-patterns:meta-context-diet"}[.kind] // "/health:check";
   [.findings[]]
   | group_by(.kind)

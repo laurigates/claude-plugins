@@ -41,7 +41,14 @@ from pathlib import Path
 # `lib.probe`, not `probe`: sys.path[0] is this script's directory, and PEP 420
 # implicit namespace packages resolve the dotted form from there. Do not add an
 # __init__.py and do not touch sys.path.
-from lib.probe import Finding, Waivers, render_json, sha
+from lib.probe import (
+    Finding,
+    Waivers,
+    render_json,
+    render_report,
+    render_status,
+    sha,
+)
 
 HOME_RULES = Path.home() / ".claude" / "rules"
 SKIP_PARTS = {"node_modules", "dist", "worktrees", ".git", "__pycache__", "tmp"}
@@ -416,7 +423,7 @@ def check_stub_integrity(rules, skills) -> list[Finding]:
                     "error",
                     "broken_pointer_stub",
                     f"{r['name']} points at skill '{target or '(none named)'}' which does not exist",
-                    path=r["path"],
+                    paths=[r["path"]],
                 )
             )
     return out
@@ -457,7 +464,7 @@ def check_review_staleness(items, cache: dict, allow_spawn: bool) -> list[Findin
                     "warn",
                     "review_staleness",
                     f"{it['name']} changed {gap}d after its declared reviewed:{rv}",
-                    path=it["path"],
+                    paths=[it["path"]],
                     gap_days=gap,
                 )
             )
@@ -677,93 +684,36 @@ def check_semantic_dupes(items, waivers, cache_path: Path) -> list[Finding]:
 
 
 # ---------------------------------------------------------------------- output
-# DELIBERATE, not an oversight: `lib.probe.render_status` already emits the
-# conformant block (`ISSUE_COUNT=` plus the closing `=== END ... ===`) that the
-# renderer below lacks, and this PR keeps `emit_status` / `emit_report`
-# byte-identical so `--format=json` and `--format=status` can be `cmp`-verified
-# against the pre-extraction analyzer on the real corpus. Two status renderers
-# coexist for exactly one PR; the follow-up that normalises the shape switches
-# this call site over and deletes this one.
+# Every renderer now lives in `lib.probe`. The local `emit_status` that used to
+# sit here emitted neither the `ISSUE_COUNT=` roll-up nor the closing
+# `=== END CONFIG DRIFT ===` delimiter that
+# `.claude/rules/structured-script-output.md` marks required, so a rollup could
+# not tell where this probe's block ended; `render_status` emits both, and its
+# two keyword-only parameters carry the only differences between this caller and
+# probe-delta's (see that function's docstring).
+#
+# `emit_probe` and the `--format=probe` choice were deleted here rather than
+# ported: no caller invoked them. `hooks/config-drift-probe.sh` consumes
+# `--format=json` and derives kind -> remediation-skill in jq, which is now the
+# single source for that mapping rather than one of two copies.
 def emit_status(findings, counts):
-    print("=== CONFIG DRIFT ===")
-    for k, v in counts.items():
-        print(f"{k.upper()}={v}")
-    by_kind: dict[str, int] = {}
-    for f in findings:
-        by_kind[f["kind"]] = by_kind.get(f["kind"], 0) + 1
-    for k, v in sorted(by_kind.items()):
-        print(f"FINDING_{k.upper()}={v}")
-    errs = sum(1 for f in findings if f["severity"] == "error")
-    warns = sum(1 for f in findings if f["severity"] == "warn")
-    print(f"ERRORS={errs}\nWARNINGS={warns}")
-    # OK / WARN / ERROR per .claude/rules/structured-script-output.md, not
-    # PASS/FAIL -- orchestrating skills grep for the house vocabulary.
-    print("STATUS=" + ("ERROR" if errs else "WARN" if warns else "OK"))
-
-
-# DEAD CODE, deliberately retained for THIS PR only. No caller invokes
-# `--format=probe`: hooks/config-drift-probe.sh consumes `--format=json` and
-# re-derives the remediation map in jq. It stays because this PR's whole claim
-# is that no output changed, and deleting a public `--format` choice would turn
-# a byte-identity refactor into a CLI-surface removal. #2527b deletes it and the
-# `"probe"` choice together, as an intentional change with its own rationale.
-def emit_probe(findings):
-    """drift-protocol shape: severity/kind/summary/remediation_skill."""
-    remediation = {
-        "broken_pointer_stub": "/agent-patterns:meta-promote",
-        "duplicate_rule_lexical": "/agent-patterns:meta-promote",
-        "semantic_overlap_rule_rule": "/agent-patterns:meta-promote",
-        "semantic_overlap_skill_skill": "/health:skill-audit",
-        "rule_covered_by_skill": "/agent-patterns:meta-context-diet",
-        "always_loaded_budget": "/agent-patterns:meta-context-diet",
-        "review_staleness": "/health:skill-audit",
-        "frontmatter_coverage": "/agent-patterns:meta-context-diet",
-    }
-    ranked = sorted(
-        findings, key=lambda f: {"error": 0, "warn": 1, "info": 2}[f["severity"]]
-    )
+    # severity_prefix="": `findings` here is EVERY finding this run produced,
+    # not a delta subset, so the counters keep the bare `ERRORS=`/`WARNINGS=`
+    # names a rollup already greps for.
+    # list_issues=False: the optional per-finding block would append one line
+    # per finding, and a real corpus run reports 60+ of them.
+    # What that costs the reader: `ISSUE_COUNT=` spans ALL THREE severities, so
+    # it exceeds `ERRORS + WARNINGS` by however many `info` findings fired
+    # (a real run: ERRORS=0 WARNINGS=60 ISSUE_COUNT=66 — one
+    # frontmatter_coverage and five rule_covered_by_skill). Read as "actionable
+    # issues" it over-counts, and with the ISSUES: block suppressed there is no
+    # in-block way to see the split. `--format=json` is the machine-readable
+    # answer to "which ones?".
     print(
-        json.dumps(
-            {
-                "plugin": "config-drift",
-                "checked_at": dt.datetime.now(dt.timezone.utc).isoformat(
-                    timespec="seconds"
-                ),
-                "findings": [
-                    {
-                        "severity": f["severity"],
-                        "kind": f["kind"],
-                        "summary": f["summary"],
-                        "remediation_skill": remediation.get(
-                            f["kind"], "/health:check"
-                        ),
-                    }
-                    for f in ranked[:5]
-                ],
-            },
-            indent=1,
+        render_status(
+            "CONFIG DRIFT", findings, counts, severity_prefix="", list_issues=False
         )
     )
-
-
-def emit_report(findings, counts):
-    print("# Claude config drift report\n")
-    print(f"_{dt.datetime.now().isoformat(timespec='seconds')}_\n")
-    print("| Metric | Value |\n|---|---|")
-    for k, v in counts.items():
-        print(f"| {k.replace('_', ' ')} | {v} |")
-    print()
-    for sev in ("error", "warn", "info"):
-        group = [f for f in findings if f["severity"] == sev]
-        if not group:
-            continue
-        print(f"\n## {sev.upper()} ({len(group)})\n")
-        for f in group[:40]:
-            print(f"- **{f['kind']}** — {f['summary']}")
-            for p in f.get("paths", [])[:2]:
-                print(f"  - `{p}`")
-        if len(group) > 40:
-            print(f"\n_…{len(group) - 40} more suppressed._")
 
 
 # ------------------------------------------------------------------------ main
@@ -777,9 +727,7 @@ def main() -> int:
     # ~/.claude/rules are always scanned regardless of --root, because they load
     # in every session no matter which project is open.
     ap.add_argument("--root", default=".")
-    ap.add_argument(
-        "--format", choices=["status", "probe", "report", "json"], default="status"
-    )
+    ap.add_argument("--format", choices=["status", "report", "json"], default="status")
     ap.add_argument(
         "--no-embed",
         action="store_true",
@@ -855,6 +803,28 @@ def main() -> int:
             )
 
     if args.since:
+        # KNOWN AND ACCEPTED: `--since` can never surface a finding about
+        # `~/.claude/rules`. `HOME_RULES` is scanned regardless of `--root`
+        # (those rules load in every session), but `changed_since` walks only
+        # `root.rglob(".git")` plus `root` — a home-rule path is outside every
+        # repo it asks, so it can never enter `touched`, and every home-rule
+        # finding is dropped here. Before the finding-shape normalisation the
+        # two singular-`path` kinds escaped through the `not f.get("paths")`
+        # arm by accident; now they are filtered like everything else, which is
+        # the CONSISTENT behaviour, not a new bug.
+        #
+        # Left as-is deliberately. `--since` means "findings whose files
+        # changed in this git range", and a home rule is not in the range — it
+        # is not in a repo at all. Making it an exception would mean either
+        # re-admitting pathless findings (which is the bug that was just fixed)
+        # or special-casing HOME_RULES to "always touched", which reports a
+        # standing condition as a change and defeats the flag. The cost is
+        # real and worth naming: the always-loaded home rules are the
+        # highest-value slice of the corpus (51 rules, ~39k tok/turn on this
+        # machine), and `--since` is structurally blind to them. No caller
+        # passes `--since` today; the flag is for a reviewer scoping a diff,
+        # who has the unfiltered run available. Pinned by `test-probe-lib.sh`
+        # TEST N6 so this is a recorded decision, not a drift.
         touched = changed_since(root, args.since)
         findings = [
             f
@@ -876,8 +846,12 @@ def main() -> int:
 
     {
         "status": emit_status,
-        "probe": lambda f, c: emit_probe(f),
-        "report": emit_report,
+        # The timestamp is computed HERE, not inside the renderer: nothing in
+        # lib.probe reads a clock, which is what lets a renderer be compared
+        # against itself across two runs.
+        "report": lambda f, c: print(
+            render_report(f, c, dt.datetime.now().isoformat(timespec="seconds"))
+        ),
         "json": lambda f, c: print(render_json(f, c, indent=1)),
     }[args.format](findings, counts)
 
