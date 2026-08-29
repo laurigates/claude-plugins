@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.17.5](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.17.4...health-plugin-v1.17.5) (2026-08-29)
+
+
+### Bug Fixes
+
+* **health-plugin:** normalize path to paths, ship the conformant status block, delete emit_probe ([#2538](https://github.com/laurigates/claude-plugins/issues/2538)) ([3fd3c90](https://github.com/laurigates/claude-plugins/commit/3fd3c90a20a9b491df437397f1347fe3a6b06a64)), closes [#2527](https://github.com/laurigates/claude-plugins/issues/2527) [#2319](https://github.com/laurigates/claude-plugins/issues/2319)
+
+## [1.17.4](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.17.3...health-plugin-v1.17.4) (2026-08-29)
+
+
+### Code Refactoring
+
+* **health-plugin:** extract the finding/waiver/delta contract into lib/probe.py ([#2536](https://github.com/laurigates/claude-plugins/issues/2536)) ([c55f62c](https://github.com/laurigates/claude-plugins/commit/c55f62c2b7f4140fb9eae1376277ca04df05adca))
+
+## [1.17.3](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.17.2...health-plugin-v1.17.3) (2026-08-29)
+
+
+### Bug Fixes
+
+* **health-plugin:** parse block scalars, widened keys and the closing fence in frontmatter() ([#2531](https://github.com/laurigates/claude-plugins/issues/2531)) ([1e05852](https://github.com/laurigates/claude-plugins/commit/1e0585293bd676c9454c9a9b12855736ef943e3d))
+
 ## [1.17.2](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.17.1...health-plugin-v1.17.2) (2026-08-15)
 
 

@@ -521,6 +521,25 @@ unless `CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1` is set. See
 [`docs/teach-mode-experiment.md`](docs/teach-mode-experiment.md) for the full
 hypothesis, rollout plan, and W21 evaluation criteria.
 
+### prose-house-style-nudge.sh
+
+A second opt-in PostToolUse nudge, sharing the `updatedToolOutput` mechanism
+described above. It runs the house prose rubric over a `.md` file the agent just
+wrote via `Write`/`Edit`, and over the `--body-file` of a `gh pr create` /
+`gh issue create`, then appends the candidate sentences it found to the tool
+result. An inline `--body` is already sent by the time PostToolUse fires and a
+heredoc body has no path, so only the `--body-file` form is checkable.
+
+It **never blocks**: style is a nudge, per
+[`.claude/rules/hook-block-vs-nudge.md`](../.claude/rules/hook-block-vs-nudge.md).
+Findings are candidates for judgment rather than defects — a hedge carrying real
+uncertainty is a true negative that still appears.
+
+The checking is delegated to the sibling `prose-plugin`
+(`skills/prose-check/scripts/prose-check.sh`), so the hook probes both the
+source-repo and installed-cache layouts for it and no-ops when neither resolves.
+Opt in with `CLAUDE_HOOKS_ENABLE_PROSE_CHECK=1`.
+
 ## Hook Performance
 
 Hooks run synchronously — a slow hook adds latency to every Claude action. Keep PreToolUse hooks fast since they fire most frequently.

@@ -1,0 +1,29 @@
+# Neutral register for tickets, PR bodies, and issue text.
+#
+# Source: communication-plugin:ticket-drafting-guidelines § Writing Style —
+# "State facts without exaggeration", with the rejected examples given there
+# ("amazing", "revolutionize", "dramatically", "incredibly", "super easy").
+# The remaining tokens are the same register: promotional adjectives that assert
+# significance the fact has not established.
+#
+# Sibling of SignificanceAssertion.yml: that rule catches telling the reader a
+# fact matters; this one catches inflating the fact itself.
+extends: existence
+message: "Hype word '%s' — state the capability, not a claim about it."
+link: https://github.com/laurigates/claude-plugins/blob/main/communication-plugin/skills/ticket-drafting-guidelines/SKILL.md
+level: warning
+scope: sentence
+ignorecase: true
+tokens:
+  - amazing
+  - revolutioni[sz]e[sd]?
+  - revolutionary
+  - dramatically
+  - incredibly
+  - game.?chang(?:er|ing)
+  - seamlessly
+  - effortlessly
+  - blazing(?:ly)? fast
+  - super easy
+  - cutting.?edge
+  - state.of.the.art

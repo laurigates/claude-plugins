@@ -53,6 +53,12 @@ taskwarrior-plugin/scripts/tests/test-task-id-stability.sh
 # absent by design" — it means the suite stopped executing, and the probe it
 # backs would go on reporting a clean corpus without having opened one.
 health-plugin/scripts/tests/test-config-drift.sh
+#
+# Same reasoning for the contract module the probe now imports: its ONLY
+# skip condition is a missing python3, and a broken `from lib.probe import ...`
+# fails SILENTLY (the hook reads empty analyzer output as "no findings"), so a
+# skip here would retire the one gate that can see it.
+health-plugin/scripts/tests/test-probe-lib.sh
 
 # git  (no install step needed — the runner checks out the repo with git, so
 # this test's only dependency is always present)

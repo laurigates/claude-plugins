@@ -27,7 +27,6 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import hashlib
 import json
 import os
 import re
@@ -35,6 +34,21 @@ import subprocess
 import sys
 from itertools import combinations
 from pathlib import Path
+
+# The finding / waiver / delta CONTRACT lives in a stdlib-only sibling module so
+# a second probe can share it; the similarity computation and every threshold
+# below stay here, because they are this probe's opinion rather than a contract.
+# `lib.probe`, not `probe`: sys.path[0] is this script's directory, and PEP 420
+# implicit namespace packages resolve the dotted form from there. Do not add an
+# __init__.py and do not touch sys.path.
+from lib.probe import (
+    Finding,
+    Waivers,
+    render_json,
+    render_report,
+    render_status,
+    sha,
+)
 
 HOME_RULES = Path.home() / ".claude" / "rules"
 SKIP_PARTS = {"node_modules", "dist", "worktrees", ".git", "__pycache__", "tmp"}
@@ -65,10 +79,6 @@ STOP = set(
 
 
 # --------------------------------------------------------------------- helpers
-def sha(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8", "replace")).hexdigest()[:16]
-
-
 def toks(text: str) -> list[str]:
     return [
         w for w in re.findall(r"[a-z][a-z0-9_-]{2,}", text.lower()) if w not in STOP
@@ -84,16 +94,128 @@ def jaccard(a: set, b: set) -> float:
     return len(a & b) / len(a | b) if a and b else 0.0
 
 
+FM_KEY = re.compile(r"^([A-Za-z_][A-Za-z0-9_-]*):[ \t]*(.*)$")
+# A block-scalar indicator is `|` or `>` optionally carrying a chomping sign
+# and/or an explicit indentation digit, optionally followed by a comment:
+# `|`, `|-`, `>+`, `|2`, `|2-`, `| # notes`. Exact-set membership captured
+# every suffixed form as a VALUE -- `description: |2` yielded the string `|2`,
+# truthy junk with the same shape as the original empty-block bug.
+FM_BLOCK = re.compile(r"^[|>][-+]?\d?[-+]?[ \t]*(#.*)?$")
+FM_FENCE = re.compile(r"^---[ \t]*$")
+
+
+def _unquote(raw: str) -> str:
+    """Remove ONE matched surrounding quote pair, and only a matched pair.
+
+    `raw.strip("\"'")` strips a character CLASS from both ends independently, so
+    a value that merely ends in a quote character loses it:
+    `path|PR|file|plan description; optional 'focus on X'` -> the trailing `'`,
+    and `'<files...> --title "type(scope): description"'` -> both the outer `'`
+    and the `"` newly exposed beneath it.
+    """
+    if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in "\"'":
+        return raw[1:-1]
+    return raw
+
+
 def frontmatter(body: str) -> dict[str, str]:
+    """Read the top-level scalar keys out of a document's YAML frontmatter.
+
+    Deliberately a line scanner rather than a YAML parser -- consumers need
+    top-level keys and nothing else, and four properties are load-bearing:
+
+    * The frontmatter ends at the first closing fence LINE, never at the first
+      `---` SUBSTRING. A `---` thematic break inside a description (118 files
+      here have one) or an inline `--- separator` truncated the block and
+      dropped every key after it, including `paths:` -- which silently billed a
+      path-scoped rule to the always-loaded budget.
+    * A key is only recognised at column 0. That is what stops a list item, or
+      a `key: value` line inside a block-scalar body, from shadowing a real
+      key.
+    * A bare-empty value stays the empty string. `paths:` carries its globs on
+      the following lines, and consumers test it for KEY PRESENCE, never
+      truthiness -- so a path-scoped rule must add nothing to the always-loaded
+      budget. Only an explicit block-scalar indicator slurps what follows;
+      indented list items are never absorbed as a continuation.
+    * A block scalar's body, and a plain scalar's indented continuation lines,
+      are joined with single spaces. The value feeds an embedding text and a
+      description field, not a YAML round-trip.
+    * The block must OPEN like frontmatter, not merely be delimited like it.
+      The closing-fence scan runs to the end of the document, so a file with no
+      frontmatter that opens with a `---` thematic break and carries another one
+      later had its prose read as the block -- and prose says `Note:` and
+      `Rationale:` at column 0. Requiring the FIRST non-blank line to be a key
+      confines the scan to real frontmatter. It has to be the first line rather
+      than the first non-comment one, because a markdown `# Heading` and a YAML
+      `# comment` are the same string: skipping comments walks straight past the
+      heading and back into the prose. The cost is that frontmatter opening with
+      a YAML comment parses to {}; 0 of the 757 fenced documents in this corpus
+      do that, and the failure it buys off is silent (prose supplying a `paths:`
+      drops a rule out of the always-loaded budget).
+    """
     if not body.startswith("---"):
         return {}
-    parts = body.split("---", 2)
-    if len(parts) < 3:
+    all_lines = body.splitlines()
+    close = next(
+        (i for i in range(1, len(all_lines)) if FM_FENCE.match(all_lines[i])), None
+    )
+    if close is None:
         return {}
-    return {
-        k: v.strip().strip("\"'")
-        for k, v in re.findall(r"^([a-z_]+):[ \t]*(.*)$", parts[1], re.M)
-    }
+
+    fm: dict[str, str] = {}
+    lines = all_lines[1:close]
+    opener = next((x for x in lines if x.strip()), None)
+    if opener is None or not FM_KEY.match(opener):
+        return {}
+    i = 0
+    while i < len(lines):
+        m = FM_KEY.match(lines[i])
+        i += 1
+        if not m:
+            continue
+        key, raw = m.group(1), m.group(2).strip()
+        if not FM_BLOCK.match(raw):
+            # Plain scalar: absorb indented continuation lines, which YAML folds
+            # into the same value. Without this a value wrapped over two lines
+            # was captured truncated -- worse than being missed, because the
+            # fragment looks like a complete value.
+            cont: list[str] = []
+            while i < len(lines):
+                nxt = lines[i]
+                if not nxt.strip() or not nxt[:1].isspace():
+                    break
+                stripped = nxt.strip()
+                # A comment line is never scalar content -- not in YAML and not
+                # here. Skip it without ending the value: absorbing it appended
+                # the comment to `reviewed:`, which then failed its
+                # \d{4}-\d{2}-\d{2} gate and dropped the file out of the
+                # staleness check while still counting as reviewed.
+                if stripped.startswith("#"):
+                    i += 1
+                    continue
+                # A `- ` item belongs to a list (`paths:`) and an indented
+                # `key:` opens a nested mapping -- but both are only possible
+                # under a key whose INLINE value is empty. Once a value sits on
+                # the key's own line YAML permits neither, so every indented
+                # line there is continuation, and breaking on one truncated the
+                # value (a wrapped URL, a dash-led clause) exactly as the
+                # missing-continuation bug did.
+                if not raw and (stripped.startswith("- ") or FM_KEY.match(stripped)):
+                    break
+                cont.append(stripped)
+                i += 1
+            joined = " ".join([raw, *cont]).strip() if cont else raw
+            fm[key] = _unquote(joined)
+            continue
+        block: list[str] = []
+        while i < len(lines):
+            nxt = lines[i]
+            if nxt.strip() and not nxt[:1].isspace():
+                break
+            block.append(nxt.strip())
+            i += 1
+        fm[key] = " ".join(w for w in block if w).strip()
+    return fm
 
 
 def git_last_change(path: Path) -> str | None:
@@ -149,8 +271,55 @@ def walk(root: Path):
 
 
 # ------------------------------------------------------------------- inventory
-def collect(root: Path) -> tuple[list[dict], list[dict]]:
+def _read_corpus_file(p: Path, unreadable: list[str]) -> str | None:
+    """Read one corpus file, or None when it cannot be read.
+
+    `collect()` walks user-controlled trees, and a `.claude/rules/` directory is
+    routinely a symlink farm (chezmoi, stow). An unresolvable symlink makes
+    `read_text()` raise FileNotFoundError from inside the INVENTORY pass, which
+    aborts the whole run before a single finding is produced -- so one dangling
+    link costs the entire sweep, in every scope, until a human finds it. Skipping
+    the unreadable entry degrades the corpus by one file instead.
+
+    Skipping is NOT swallowing: the path is recorded in `unreadable`, and
+    `check_corpus_unreadable()` turns that into a finding. Degrading silently
+    would be the worse bug -- a corpus two thirds of which failed to open would
+    report a clean sweep, which is exactly the false all-clear this probe
+    exists to prevent, one layer down from the hook that guards against it.
+    """
+    try:
+        return p.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        unreadable.append(str(p))
+        return None
+
+
+def check_corpus_unreadable(unreadable) -> list[Finding]:
+    """Report corpus files the inventory pass could not open.
+
+    `warn`, not `error`: the sweep still ran and its other findings stand. The
+    aggregator sorts `error` first across every plugin and caps the nudge at
+    five lines, so an `error` here would pin a dangling symlink to slot 1 on
+    every session start. The paths are in the summary because they are what
+    locates the file -- a remediation skill cannot find it for you.
+    """
+    if not unreadable:
+        return []
+    shown = ", ".join(unreadable[:3])
+    more = f" (+{len(unreadable) - 3} more)" if len(unreadable) > 3 else ""
+    return [
+        Finding(
+            "warn",
+            "corpus_unreadable",
+            f"{len(unreadable)} corpus file(s) could not be read and were skipped: {shown}{more}",
+            paths=sorted(unreadable),
+        )
+    ]
+
+
+def collect(root: Path) -> tuple[list[dict], list[dict], list[str]]:
     rules, skills = [], []
+    unreadable: list[str] = []
 
     rule_paths = sorted(HOME_RULES.glob("*.md")) if HOME_RULES.is_dir() else []
     for dirpath, filenames in walk(root):
@@ -161,7 +330,9 @@ def collect(root: Path) -> tuple[list[dict], list[dict]]:
             and f"{os.sep}skills{os.sep}" in f"{dirpath}{os.sep}"
         ):
             p = dirpath / "SKILL.md"
-            body = p.read_text(encoding="utf-8", errors="replace")
+            body = _read_corpus_file(p, unreadable)
+            if body is None:
+                continue
             fm = frontmatter(body)
             skills.append(
                 {
@@ -178,7 +349,9 @@ def collect(root: Path) -> tuple[list[dict], list[dict]]:
             )
 
     for p in sorted(set(rule_paths)):
-        body = p.read_text(encoding="utf-8", errors="replace")
+        body = _read_corpus_file(p, unreadable)
+        if body is None:
+            continue
         fm = frontmatter(body)
         scope = (
             "user-global"
@@ -206,46 +379,7 @@ def collect(root: Path) -> tuple[list[dict], list[dict]]:
                 "stub": "romoted to a skill" in body[:700],
             }
         )
-    return rules, skills
-
-
-# -------------------------------------------------------------------- waivers
-def _canon(p: str) -> str:
-    """Canonicalise a path for waiver matching.
-
-    Waiver files are hand-written, so a side may be spelled `~/repos/...` or
-    `/var/...` while the scan resolves it to `/private/var/...` (macOS symlinks
-    every temp and `/var` path). Comparing raw strings silently fails to match
-    and the waiver looks ignored, which is indistinguishable from a bug.
-    """
-    return os.path.realpath(os.path.expanduser(p))
-
-
-def load_waivers(path: Path) -> dict[tuple[str, str], dict]:
-    if not path.is_file():
-        return {}
-    try:
-        raw = json.loads(path.read_text())
-    except (OSError, json.JSONDecodeError):
-        return {}
-    return {(_canon(w["a"]), _canon(w["b"])): w for w in raw.get("waivers", [])}
-
-
-def waived(waivers, a: dict, b: dict) -> bool:
-    """A waiver holds only while BOTH sides are byte-identical to when it was filed."""
-    pa, pb = _canon(a["path"]), _canon(b["path"])
-    for key in ((pa, pb), (pb, pa)):
-        w = waivers.get(key)
-        if not w:
-            continue
-        ha, hb = (
-            (w.get("a_hash"), w.get("b_hash"))
-            if key[0] == pa
-            else (w.get("b_hash"), w.get("a_hash"))
-        )
-        if ha == a["hash"] and hb == b["hash"]:
-            return True
-    return False
+    return rules, skills, unreadable
 
 
 # --------------------------------------------------------------------- checks
@@ -276,7 +410,7 @@ def _stub_target(head: str, known: set[str]) -> str | None:
     return refs[0] if refs else None
 
 
-def check_stub_integrity(rules, skills) -> list[dict]:
+def check_stub_integrity(rules, skills) -> list[Finding]:
     known = {s["name"] for s in skills}
     out = []
     for r in rules:
@@ -285,17 +419,17 @@ def check_stub_integrity(rules, skills) -> list[dict]:
         target = _stub_target(r["body"][:700], known)
         if target not in known:
             out.append(
-                {
-                    "severity": "error",
-                    "kind": "broken_pointer_stub",
-                    "summary": f"{r['name']} points at skill '{target or '(none named)'}' which does not exist",
-                    "path": r["path"],
-                }
+                Finding(
+                    "error",
+                    "broken_pointer_stub",
+                    f"{r['name']} points at skill '{target or '(none named)'}' which does not exist",
+                    paths=[r["path"]],
+                )
             )
     return out
 
 
-def check_review_staleness(items, cache: dict, allow_spawn: bool) -> list[dict]:
+def check_review_staleness(items, cache: dict, allow_spawn: bool) -> list[Finding]:
     """Compare each item's declared `reviewed:` against its real last-change date.
 
     One `git log` per file is ~10ms and there are ~900 files, which is far too
@@ -326,18 +460,18 @@ def check_review_staleness(items, cache: dict, allow_spawn: bool) -> list[dict]:
             continue
         if gap > STALE_DAYS:
             out.append(
-                {
-                    "severity": "warn",
-                    "kind": "review_staleness",
-                    "summary": f"{it['name']} changed {gap}d after its declared reviewed:{rv}",
-                    "path": it["path"],
-                    "gap_days": gap,
-                }
+                Finding(
+                    "warn",
+                    "review_staleness",
+                    f"{it['name']} changed {gap}d after its declared reviewed:{rv}",
+                    paths=[it["path"]],
+                    gap_days=gap,
+                )
             )
     return sorted(out, key=lambda x: -x["gap_days"])
 
 
-def check_budget(rules) -> list[dict]:
+def check_budget(rules) -> list[Finding]:
     # A rule in a user-global/portfolio scope is NOT unconditionally injected if
     # it carries `paths:` frontmatter -- it loads only when a matching file is
     # read. Counting those inflates the budget by ~24% on this portfolio (13 of
@@ -349,54 +483,54 @@ def check_budget(rules) -> list[dict]:
         return []
     worst = sorted(always, key=lambda r: -r["chars"])[:3]
     return [
-        {
-            "severity": "warn",
-            "kind": "always_loaded_budget",
-            "summary": (
+        Finding(
+            "warn",
+            "always_loaded_budget",
+            (
                 f"{len(always)} always-loaded rules cost ~{tokens:,} tok/turn "
                 f"(budget {BUDGET_TOKENS:,}); heaviest: "
                 + ", ".join(
                     f"{r['name']}(~{r['chars'] // 4 // 100 * 100:,})" for r in worst
                 )
             ),
-            "tokens": tokens,
-        }
+            tokens=tokens,
+        )
     ]
 
 
-def check_frontmatter(rules) -> list[dict]:
+def check_frontmatter(rules) -> list[Finding]:
     missing = [r for r in rules if not r["fm"].get("reviewed")]
     if not missing:
         return []
     return [
-        {
-            "severity": "info",
-            "kind": "frontmatter_coverage",
-            "summary": f"{len(missing)}/{len(rules)} rules carry no reviewed: date, so staleness cannot be tracked for them",
-        }
+        Finding(
+            "info",
+            "frontmatter_coverage",
+            f"{len(missing)}/{len(rules)} rules carry no reviewed: date, so staleness cannot be tracked for them",
+        )
     ]
 
 
-def check_lexical_dupes(rules, waivers) -> list[dict]:
+def check_lexical_dupes(rules, waivers) -> list[Finding]:
     for r in rules:
         r["_sh"] = shingles(r["body"])
     out = []
     for a, b in combinations(rules, 2):
         s = jaccard(a["_sh"], b["_sh"])
-        if s >= T_LEXICAL and not waived(waivers, a, b):
+        if s >= T_LEXICAL and not waivers.waived(a, b):
             out.append(
-                {
-                    "severity": "warn",
-                    "kind": "duplicate_rule_lexical",
-                    "summary": f"{a['scope']}:{a['name']} and {b['scope']}:{b['name']} are {s:.0%} lexically identical",
-                    "score": round(s, 3),
-                    "paths": [a["path"], b["path"]],
-                }
+                Finding(
+                    "warn",
+                    "duplicate_rule_lexical",
+                    f"{a['scope']}:{a['name']} and {b['scope']}:{b['name']} are {s:.0%} lexically identical",
+                    score=round(s, 3),
+                    paths=[a["path"], b["path"]],
+                )
             )
     return sorted(out, key=lambda x: -x["score"])
 
 
-def check_rule_covered_by_skill(rules, skills, waivers) -> list[dict]:
+def check_rule_covered_by_skill(rules, skills, waivers) -> list[Finding]:
     """Topic containment: how much of a rule's vocabulary a skill already carries.
 
     Full-body Jaccard is the wrong metric here and silently returns zero -- a
@@ -429,37 +563,37 @@ def check_rule_covered_by_skill(rules, skills, waivers) -> list[dict]:
             control_total += 1
             control_hits += score >= T_COVERAGE
             continue
-        if score >= T_COVERAGE and skill and not waived(waivers, r, skill):
+        if score >= T_COVERAGE and skill and not waivers.waived(r, skill):
             out.append(
-                {
-                    "severity": "info",
-                    "kind": "rule_covered_by_skill",
-                    "summary": (
+                Finding(
+                    "info",
+                    "rule_covered_by_skill",
+                    (
                         f"{r['scope']}:{r['name']} is {score:.0%} covered by skill "
                         f"{skill['name']} -- candidate for a pointer stub"
                     ),
-                    "score": round(score, 3),
-                    "paths": [r["path"], skill["path"]],
-                    "always_loaded": r["always_loaded"],
-                }
+                    score=round(score, 3),
+                    paths=[r["path"], skill["path"]],
+                    always_loaded=r["always_loaded"],
+                )
             )
     # Control gate: if the known-good stubs do not surface, the metric is broken
     # and its output must not be trusted (never-fabricate-test-identifiers).
     if control_total and control_hits < max(1, int(0.7 * control_total)):
         out = [
-            {
-                "severity": "error",
-                "kind": "coverage_metric_broken",
-                "summary": (
+            Finding(
+                "error",
+                "coverage_metric_broken",
+                (
                     f"containment metric failed its control: only {control_hits}/{control_total} "
                     "known pointer stubs detected -- coverage findings suppressed"
                 ),
-            }
+            )
         ]
     return sorted(out, key=lambda x: (not x.get("always_loaded"), -x.get("score", 0)))
 
 
-def check_semantic_dupes(items, waivers, cache_path: Path) -> list[dict]:
+def check_semantic_dupes(items, waivers, cache_path: Path) -> list[Finding]:
     import numpy as np
     from fastembed import TextEmbedding
 
@@ -470,15 +604,37 @@ def check_semantic_dupes(items, waivers, cache_path: Path) -> list[dict]:
         except (OSError, json.JSONDecodeError):
             cache = {}
 
-    need = [it for it in items if it["hash"] not in cache]
+    # The cache is keyed on a hash of the EMBED TEXT, not on it["hash"] (the raw
+    # file bytes). A change to title/desc/body must self-invalidate: parsing a
+    # `description:` that the bytes already contained changes the embedded text
+    # without changing the file, so a bytes-keyed cache serves a vector computed
+    # from the old text and the findings become cache-state dependent -- a cold
+    # cache and a warm cache disagree on the same commit.
+    #
+    # it["hash"] is deliberately left alone: it keys the gitdates cache
+    # (f"{path}:{hash}") and expires waivers (a_hash/b_hash), both of which mean
+    # "the file's bytes", so folding desc into it would spuriously expire every
+    # waiver and every cached git date.
+    #
+    # Entries keyed on a superseded embed text are never read again and become
+    # dead weight in the cache file; the file is a cache, so pruning it is
+    # deleting it.
+    #
+    # EMBED_MODEL is part of the key for the same reason the text is: it is an
+    # input to the vector. Keyed on text alone, swapping the model served the
+    # previous model's vectors and every cosine was then computed across two
+    # embedding spaces -- the same defect one level up, and silent.
+    embed_texts = [
+        f"{it['title']}\n{it.get('desc', '')}\n{it['body'][:EMBED_CHARS]}"
+        for it in items
+    ]
+    keys = [sha(f"{EMBED_MODEL}\n{t}") for t in embed_texts]
+    need: dict[str, str] = {k: t for k, t in zip(keys, embed_texts) if k not in cache}
     if need:
         model = TextEmbedding(model_name=EMBED_MODEL)
-        texts = [
-            f"{it['title']}\n{it.get('desc', '')}\n{it['body'][:EMBED_CHARS]}"
-            for it in need
-        ]
-        for it, vec in zip(need, model.embed(texts)):
-            cache[it["hash"]] = [round(float(x), 6) for x in vec]
+        need_keys = list(need)
+        for k, vec in zip(need_keys, model.embed([need[k] for k in need_keys])):
+            cache[k] = [round(float(x), 6) for x in vec]
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         cache_path.write_text(json.dumps(cache))
 
@@ -500,7 +656,7 @@ def check_semantic_dupes(items, waivers, cache_path: Path) -> list[dict]:
                 return True
         return False
 
-    vecs = np.array([cache[it["hash"]] for it in items], dtype="float32")
+    vecs = np.array([cache[k] for k in keys], dtype="float32")
     vecs /= np.linalg.norm(vecs, axis=1, keepdims=True) + 1e-9
     sim = vecs @ vecs.T
     out = []
@@ -511,97 +667,53 @@ def check_semantic_dupes(items, waivers, cache_path: Path) -> list[dict]:
         # re-reporting them here would double-count every generated rule.
         if a["name"] == b["name"] or structural_pair(a, b):
             continue
-        if s >= T_SEMANTIC and not waived(waivers, a, b):
+        if s >= T_SEMANTIC and not waivers.waived(a, b):
             out.append(
-                {
-                    "severity": "warn",
-                    "kind": f"semantic_overlap_{a['kind']}_{b['kind']}",
-                    "summary": (
+                Finding(
+                    "warn",
+                    f"semantic_overlap_{a['kind']}_{b['kind']}",
+                    (
                         f"{a['kind']} {a['name']} and {b['kind']} {b['name']} "
                         f"are {s:.0%} semantically similar"
                     ),
-                    "score": round(s, 3),
-                    "paths": [a["path"], b["path"]],
-                }
+                    score=round(s, 3),
+                    paths=[a["path"], b["path"]],
+                )
             )
     return sorted(out, key=lambda x: -x["score"])
 
 
 # ---------------------------------------------------------------------- output
+# Every renderer now lives in `lib.probe`. The local `emit_status` that used to
+# sit here emitted neither the `ISSUE_COUNT=` roll-up nor the closing
+# `=== END CONFIG DRIFT ===` delimiter that
+# `.claude/rules/structured-script-output.md` marks required, so a rollup could
+# not tell where this probe's block ended; `render_status` emits both, and its
+# two keyword-only parameters carry the only differences between this caller and
+# probe-delta's (see that function's docstring).
+#
+# `emit_probe` and the `--format=probe` choice were deleted here rather than
+# ported: no caller invoked them. `hooks/config-drift-probe.sh` consumes
+# `--format=json` and derives kind -> remediation-skill in jq, which is now the
+# single source for that mapping rather than one of two copies.
 def emit_status(findings, counts):
-    print("=== CONFIG DRIFT ===")
-    for k, v in counts.items():
-        print(f"{k.upper()}={v}")
-    by_kind: dict[str, int] = {}
-    for f in findings:
-        by_kind[f["kind"]] = by_kind.get(f["kind"], 0) + 1
-    for k, v in sorted(by_kind.items()):
-        print(f"FINDING_{k.upper()}={v}")
-    errs = sum(1 for f in findings if f["severity"] == "error")
-    warns = sum(1 for f in findings if f["severity"] == "warn")
-    print(f"ERRORS={errs}\nWARNINGS={warns}")
-    # OK / WARN / ERROR per .claude/rules/structured-script-output.md, not
-    # PASS/FAIL -- orchestrating skills grep for the house vocabulary.
-    print("STATUS=" + ("ERROR" if errs else "WARN" if warns else "OK"))
-
-
-def emit_probe(findings):
-    """drift-protocol shape: severity/kind/summary/remediation_skill."""
-    remediation = {
-        "broken_pointer_stub": "/agent-patterns:meta-promote",
-        "duplicate_rule_lexical": "/agent-patterns:meta-promote",
-        "semantic_overlap_rule_rule": "/agent-patterns:meta-promote",
-        "semantic_overlap_skill_skill": "/health:skill-audit",
-        "rule_covered_by_skill": "/agent-patterns:meta-context-diet",
-        "always_loaded_budget": "/agent-patterns:meta-context-diet",
-        "review_staleness": "/health:skill-audit",
-        "frontmatter_coverage": "/agent-patterns:meta-context-diet",
-    }
-    ranked = sorted(
-        findings, key=lambda f: {"error": 0, "warn": 1, "info": 2}[f["severity"]]
-    )
+    # severity_prefix="": `findings` here is EVERY finding this run produced,
+    # not a delta subset, so the counters keep the bare `ERRORS=`/`WARNINGS=`
+    # names a rollup already greps for.
+    # list_issues=False: the optional per-finding block would append one line
+    # per finding, and a real corpus run reports 60+ of them.
+    # What that costs the reader: `ISSUE_COUNT=` spans ALL THREE severities, so
+    # it exceeds `ERRORS + WARNINGS` by however many `info` findings fired
+    # (a real run: ERRORS=0 WARNINGS=60 ISSUE_COUNT=66 — one
+    # frontmatter_coverage and five rule_covered_by_skill). Read as "actionable
+    # issues" it over-counts, and with the ISSUES: block suppressed there is no
+    # in-block way to see the split. `--format=json` is the machine-readable
+    # answer to "which ones?".
     print(
-        json.dumps(
-            {
-                "plugin": "config-drift",
-                "checked_at": dt.datetime.now(dt.timezone.utc).isoformat(
-                    timespec="seconds"
-                ),
-                "findings": [
-                    {
-                        "severity": f["severity"],
-                        "kind": f["kind"],
-                        "summary": f["summary"],
-                        "remediation_skill": remediation.get(
-                            f["kind"], "/health:check"
-                        ),
-                    }
-                    for f in ranked[:5]
-                ],
-            },
-            indent=1,
+        render_status(
+            "CONFIG DRIFT", findings, counts, severity_prefix="", list_issues=False
         )
     )
-
-
-def emit_report(findings, counts):
-    print("# Claude config drift report\n")
-    print(f"_{dt.datetime.now().isoformat(timespec='seconds')}_\n")
-    print("| Metric | Value |\n|---|---|")
-    for k, v in counts.items():
-        print(f"| {k.replace('_', ' ')} | {v} |")
-    print()
-    for sev in ("error", "warn", "info"):
-        group = [f for f in findings if f["severity"] == sev]
-        if not group:
-            continue
-        print(f"\n## {sev.upper()} ({len(group)})\n")
-        for f in group[:40]:
-            print(f"- **{f['kind']}** — {f['summary']}")
-            for p in f.get("paths", [])[:2]:
-                print(f"  - `{p}`")
-        if len(group) > 40:
-            print(f"\n_…{len(group) - 40} more suppressed._")
 
 
 # ------------------------------------------------------------------------ main
@@ -615,9 +727,7 @@ def main() -> int:
     # ~/.claude/rules are always scanned regardless of --root, because they load
     # in every session no matter which project is open.
     ap.add_argument("--root", default=".")
-    ap.add_argument(
-        "--format", choices=["status", "probe", "report", "json"], default="status"
-    )
+    ap.add_argument("--format", choices=["status", "report", "json"], default="status")
     ap.add_argument(
         "--no-embed",
         action="store_true",
@@ -652,15 +762,16 @@ def main() -> int:
         print(f"root not found: {root}", file=sys.stderr)
         return 3
 
-    rules, skills = collect(root)
-    waivers = load_waivers(Path(args.waivers).expanduser())
+    rules, skills, unreadable = collect(root)
+    waivers = Waivers.load(Path(args.waivers).expanduser())
 
-    findings: list[dict] = []
+    findings: list[Finding] = []
     findings += check_stub_integrity(rules, skills)
     findings += check_budget(rules)
     findings += check_lexical_dupes(rules, waivers)
     findings += check_rule_covered_by_skill(rules, skills, waivers)
     findings += check_frontmatter(rules)
+    findings += check_corpus_unreadable(unreadable)
 
     datecache_path = Path(args.cache).expanduser().with_name("gitdates.json")
     datecache: dict = {}
@@ -684,14 +795,36 @@ def main() -> int:
             )
         except Exception as exc:  # noqa: BLE001 - degrade loudly, never silently
             findings.append(
-                {
-                    "severity": "info",
-                    "kind": "semantic_pass_unavailable",
-                    "summary": f"semantic pass skipped: {type(exc).__name__}: {exc}",
-                }
+                Finding(
+                    "info",
+                    "semantic_pass_unavailable",
+                    f"semantic pass skipped: {type(exc).__name__}: {exc}",
+                )
             )
 
     if args.since:
+        # KNOWN AND ACCEPTED: `--since` can never surface a finding about
+        # `~/.claude/rules`. `HOME_RULES` is scanned regardless of `--root`
+        # (those rules load in every session), but `changed_since` walks only
+        # `root.rglob(".git")` plus `root` — a home-rule path is outside every
+        # repo it asks, so it can never enter `touched`, and every home-rule
+        # finding is dropped here. Before the finding-shape normalisation the
+        # two singular-`path` kinds escaped through the `not f.get("paths")`
+        # arm by accident; now they are filtered like everything else, which is
+        # the CONSISTENT behaviour, not a new bug.
+        #
+        # Left as-is deliberately. `--since` means "findings whose files
+        # changed in this git range", and a home rule is not in the range — it
+        # is not in a repo at all. Making it an exception would mean either
+        # re-admitting pathless findings (which is the bug that was just fixed)
+        # or special-casing HOME_RULES to "always touched", which reports a
+        # standing condition as a change and defeats the flag. The cost is
+        # real and worth naming: the always-loaded home rules are the
+        # highest-value slice of the corpus (51 rules, ~39k tok/turn on this
+        # machine), and `--since` is structurally blind to them. No caller
+        # passes `--since` today; the flag is for a reviewer scoping a diff,
+        # who has the unfiltered run available. Pinned by `test-probe-lib.sh`
+        # TEST N6 so this is a recorded decision, not a drift.
         touched = changed_since(root, args.since)
         findings = [
             f
@@ -713,9 +846,13 @@ def main() -> int:
 
     {
         "status": emit_status,
-        "probe": lambda f, c: emit_probe(f),
-        "report": emit_report,
-        "json": lambda f, c: print(json.dumps({"counts": c, "findings": f}, indent=1)),
+        # The timestamp is computed HERE, not inside the renderer: nothing in
+        # lib.probe reads a clock, which is what lets a renderer be compared
+        # against itself across two runs.
+        "report": lambda f, c: print(
+            render_report(f, c, dt.datetime.now().isoformat(timespec="seconds"))
+        ),
+        "json": lambda f, c: print(render_json(f, c, indent=1)),
     }[args.format](findings, counts)
 
     errs = sum(1 for f in findings if f["severity"] == "error")

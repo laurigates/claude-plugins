@@ -1,0 +1,14 @@
+# Throat-clearing — level 4 of prose-distill's Hierarchy of Cuts: opening
+# phrases that delay the point. Also the enforcement arm of communication.md
+# § Opening Responses ("Lead with the specific answer").
+extends: existence
+message: "Throat-clearing '%s' — lead with the fact instead."
+link: https://github.com/laurigates/claude-plugins/blob/main/prose-plugin/skills/prose-distill/SKILL.md
+level: warning
+scope: sentence
+ignorecase: true
+tokens:
+  - it is worth noting that
+  - it should be mentioned that
+  - it should be noted that
+  - it is important to note that

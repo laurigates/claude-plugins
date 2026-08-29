@@ -167,6 +167,7 @@ jobs:
             --only 'scripts/tests/test-check-dead-api-endpoints.sh' \
             --only 'scripts/tests/test-check-delegation-reachability.sh' \
             --only 'scripts/tests/test-check-loop-integrity.sh' \
+            --only 'scripts/tests/test-check-prose-house-style.sh' \
             --only 'scripts/tests/test-check-ruff-version-sync.sh' \
             --only 'scripts/tests/test-check-taskcompleted-verification.sh' \
             --only 'scripts/tests/test-check-unused-bash-grant.sh' \
@@ -279,6 +280,16 @@ jobs:
         # them with a passing parse. Runs unconditionally like the pairs above —
         # the self-test step above proves the guard before it gates the tree.
         run: bash scripts/check-loop-integrity.sh --strict
+
+      - name: Check House vale rules still encode communication.md
+        # The House style package and positional-tics.py are a DERIVED encoding
+        # of ~/.claude/rules/communication.md, which lives outside this repo and
+        # so cannot gate the copy itself. Every file stays YAML- and shell-valid
+        # while losing the token that makes it work, so the guard asserts the
+        # load-bearing tokens survive — including that write-good.E-Prime stays
+        # disabled (37 of 47 alerts on communication.md came from that one rule).
+        # The self-test step above proves the guard before it gates the tree.
+        run: bash scripts/check-prose-house-style.sh --strict
 
       - name: Check delegations resolve to reachable skills
         # A catalog-present skill telling the agent to act via a

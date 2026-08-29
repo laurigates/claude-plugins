@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.45.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.44.0...agent-patterns-plugin-v2.45.0) (2026-08-27)
+
+
+### Features
+
+* **agent-patterns-plugin:** name the stderr-suppression trap in tool-result-traps ([#2505](https://github.com/laurigates/claude-plugins/issues/2505)) ([7a62cce](https://github.com/laurigates/claude-plugins/commit/7a62cceab3fcd0b3fbf5835a83b3f2b9090a1461))
+
 ## [2.44.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.43.2...agent-patterns-plugin-v2.44.0) (2026-08-26)
 
 

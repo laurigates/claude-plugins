@@ -24,7 +24,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.44.0",
+      "version": "2.45.0",
       "keywords": [
         "agents",
         "configuration",
@@ -352,7 +352,7 @@
       "name": "health-plugin",
       "source": "./health-plugin",
       "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
-      "version": "1.17.2",
+      "version": "1.17.5",
       "keywords": [
         "health",
         "diagnostics",
@@ -390,7 +390,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.10.2",
+      "version": "2.11.0",
       "keywords": [
         "hooks",
         "automation",
@@ -398,7 +398,8 @@
         "workflow",
         "anti-patterns",
         "session-start",
-        "web"
+        "web",
+        "prose-style"
       ],
       "category": "automation"
     },
@@ -541,7 +542,7 @@
       "name": "prose-plugin",
       "source": "./prose-plugin",
       "description": "Prose transformation and style control - synthesis, distillation, tone, voice, clarity, and consistency for written text",
-      "version": "1.3.4",
+      "version": "1.4.0",
       "keywords": [
         "prose",
         "writing",
@@ -554,7 +555,12 @@
         "tone",
         "voice",
         "clarity",
-        "editing"
+        "editing",
+        "prose-check",
+        "vale",
+        "harper",
+        "house-style",
+        "linting"
       ],
       "category": "communication"
     },
