@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.5](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.17.4...health-plugin-v1.17.5) (2026-08-29)
+
+
+### Bug Fixes
+
+* **health-plugin:** normalize path to paths, ship the conformant status block, delete emit_probe ([#2538](https://github.com/laurigates/claude-plugins/issues/2538)) ([3fd3c90](https://github.com/laurigates/claude-plugins/commit/3fd3c90a20a9b491df437397f1347fe3a6b06a64)), closes [#2527](https://github.com/laurigates/claude-plugins/issues/2527) [#2319](https://github.com/laurigates/claude-plugins/issues/2319)
+
 ## [1.17.4](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.17.3...health-plugin-v1.17.4) (2026-08-29)
 
 
