@@ -3,7 +3,12 @@
 # requires-python = ">=3.11"
 # dependencies = ["fastembed>=0.4", "numpy>=1.26"]
 # ///
-"""config-drift — continuous hygiene check for Claude rules and skills.
+"""config-drift — continuous hygiene check for the Claude configuration corpus.
+
+The corpus is four document kinds: `.claude/rules/*.md` (plus `~/.claude/rules`),
+`*/skills/*/SKILL.md`, `*-plugin/agents/*.md`, and `CLAUDE.md`. All four share
+ONE document shape (`_doc`), and every check names the kinds it applies to
+explicitly — see the check x kind matrix assembled in `main()`.
 
 Design notes (why it is shaped this way):
 
@@ -54,6 +59,65 @@ HOME_RULES = Path.home() / ".claude" / "rules"
 SKIP_PARTS = {"node_modules", "dist", "worktrees", ".git", "__pycache__", "tmp"}
 EMBED_MODEL = "BAAI/bge-small-en-v1.5"
 EMBED_CHARS = 2000
+
+# Scope sentinel for the kinds that are NOT promotable. A skill and an agent are
+# namespaced by their plugin, not scoped to a directory tree, so "promote it to
+# the parent scope" names no operation for them -- there is no parent scope to
+# promote into. `scope_rank` is None for this sentinel rather than a number,
+# because the obvious falsy default (0) is `user-global`, i.e. the MOST promoted
+# rank there is: the exact wrong reading. #2528b consumes the rank; it is
+# computed here so the document shape is settled in one place.
+SCOPE_PLUGIN = "plugin"
+
+# The kinds the SEMANTIC pass compares. Agents and CLAUDE.md are deliberately
+# EXCLUDED in this PR. T_SEMANTIC below is 0.91 because it was calibrated
+# against rule/skill markdown -- the threshold comment there says outright that
+# baseline cosine is high *because every document is one genre*, so an agent
+# prompt (a second-person instruction sheet) and a CLAUDE.md (a repo overview)
+# are two further genres whose own baselines are unmeasured. Per-kind
+# calibration is #2528b. `test-probe-lib.sh` TEST N3 reads this tuple out of the
+# source to expand the `semantic_overlap_{a}_{b}` f-string, so widening it here
+# widens that coverage assertion rather than silently escaping it.
+SEMANTIC_KINDS = ("rule", "skill")
+
+# The kinds the LEXICAL pass compares -- each against ITSELF only. See
+# `check_lexical_dupes` for why the comparison is partitioned rather than pooled.
+LEXICAL_KINDS = ("rule", "agent", "claude_md")
+
+# A file whose presence DECLARES that the tree it heads is a generator template
+# rather than live configuration. See `_is_generator_template`.
+#
+# `cruft.json` is here because cruft-managed cookiecutter templates are the
+# common case and cruft does NOT ship a `cookiecutter.json` of its own -- so the
+# original four-entry list missed the majority shape of the very ecosystem it
+# was written for.
+GENERATOR_MANIFESTS = (
+    "cargo-generate.toml",
+    "cookiecutter.json",
+    "copier.yml",
+    "copier.yaml",
+    "cruft.json",
+)
+
+# A path COMPONENT still carrying a template placeholder. The docstring of
+# `_is_generator_template` declines an unrendered-marker scan over a document's
+# CONTENT -- a CLAUDE.md legitimately quotes `{{ }}` while documenting a
+# template rather than being one. A directory NAME carries no such ambiguity:
+# nothing renders it, nobody quotes prose in it, and `{{cookiecutter.x}}/` is
+# the literal on-disk name cookiecutter/copier/cruft ship.
+UNRENDERED_MARKERS = ("{{", "{%")
+
+# Directory names that are template payload BY CONVENTION -- plural for
+# cargo-generate/`templates/`, singular for npm's `create-*` packages and
+# copier's `_subdirectory: template`. Conventional, not declarative: a Flask or
+# Django `app/templates/` is a Jinja directory and its CLAUDE.md is live
+# configuration, so a bare match here is never sufficient on its own.
+TEMPLATE_DIR_NAMES = ("templates", "template")
+
+# npm's `create-*` convention: `packages/create-widget/template/` is the payload
+# `npm create widget` copies out. The parent's name is the corroboration a bare
+# `template/` component lacks.
+CREATE_PKG = re.compile(r"^create-.")
 
 # Thresholds. Deliberately conservative: this tool surfaces, a human decides.
 # Calibrated against the live corpus, not guessed. At 0.86 the semantic pass
@@ -271,6 +335,184 @@ def walk(root: Path):
 
 
 # ------------------------------------------------------------------- inventory
+def _scope_rank(scope: str) -> int | None:
+    """How far a scope is from the top of the tree; None when not promotable.
+
+    0 user-global, 1 portfolio, then 2 + one per path separator for a nested
+    scope, so a deeper rule always outranks a shallower one. `SCOPE_PLUGIN`
+    yields None -- see the sentinel's own comment for why a number would be a
+    lie rather than a default.
+    """
+    if scope == SCOPE_PLUGIN:
+        return None
+    if scope == "user-global":
+        return 0
+    if scope == "portfolio":
+        return 1
+    return 2 + scope.count("/")
+
+
+def _doc(
+    kind: str,
+    path: Path,
+    name: str,
+    title: str,
+    body: str,
+    fm: dict,
+    scope: str,
+    always_loaded: bool,
+    stub: bool = False,
+) -> dict:
+    """One document, in the shape EVERY kind uses.
+
+    Before this the two kinds carried different key sets -- 11 for a rule, 9 for
+    a skill -- so any check touching `scope` was rule-only BY ACCIDENT rather
+    than by design, and `structural_pair` already had to write `x.get("stub")`
+    to survive a skill. With four kinds that arrangement stops being survivable:
+    a missing key reads as falsy, and "this kind has no stubs" and "this kind
+    was never given the key" become indistinguishable at every call site. One
+    shape means a check that must not apply to a kind is guarded EXPLICITLY (see
+    the kind guards on `check_stub_integrity`, `check_frontmatter` and
+    `check_rule_covered_by_skill`), which is auditable; a shape mismatch is not.
+
+    `desc` is now populated for every kind from `description:`. No rule in this
+    corpus carries one today (0 of 98, measured), so this is embed-neutral now;
+    if a rule grows one it starts contributing to the embed text, which is
+    correct, and the embedding cache is keyed on the embed TEXT so it
+    self-invalidates rather than serving a vector computed from the old text.
+    """
+    return {
+        "kind": kind,
+        "path": str(path),
+        "name": name,
+        "title": title,
+        "body": body,
+        "fm": fm,
+        "desc": fm.get("description", ""),
+        "scope": scope,
+        "scope_rank": _scope_rank(scope),
+        "always_loaded": always_loaded,
+        "chars": len(body),
+        "hash": sha(body),
+        "stub": stub,
+    }
+
+
+def _heading_title(body: str, fallback: str) -> str:
+    """The document's first `# ` heading, or `fallback`."""
+    return next(
+        (line[2:].strip() for line in body.splitlines() if line.startswith("# ")),
+        fallback,
+    )
+
+
+def _is_generator_template(dirpath: Path, root: Path) -> bool:
+    """True when `dirpath` holds generator-template payload, not live config.
+
+    A template's CLAUDE.md is not configuration that loads anywhere -- it is
+    payload a generator copies into a repo that does not exist yet. Ingesting it
+    puts an unrendered document into the corpus, where it can only produce
+    findings whose fix site is a template nobody is editing.
+
+    The predicate this replaced was wrong in BOTH directions, and the
+    over-exclude half is the worse one because it silently drops live
+    configuration:
+
+    * It matched only the PLURAL `templates`, so `packages/create-widget/
+      template/CLAUDE.md` -- npm's `create-*` convention, and copier's
+      `_subdirectory: template` -- was ingested unrendered.
+    * `cruft.json` was not a manifest, so a cruft-managed cookiecutter tree
+      (the common case) declared nothing.
+    * A bare `templates` component fired at any depth with no corroboration, so
+      EVERY repo with a Flask/Django `app/templates/` lost its CLAUDE.md.
+    * The manifest walk ran before the `cur == root` termination, so a manifest
+      at the root excluded the root's OWN CLAUDE.md -- a template repo's own
+      root document is live config for whoever maintains the template.
+
+    The replacement separates signals that DECLARE from signals that merely
+    SUGGEST, and requires corroboration for the latter:
+
+    | | Signal | Sufficient alone? |
+    |---|---|---|
+    | 0 | `dirpath == root` | Never a template -- see below |
+    | A | a path COMPONENT carries `{{` / `{%` | yes, declarative |
+    | B | a manifest at a STRICT ANCESTOR of `dirpath` | yes, declarative |
+    | C | a manifest at `dirpath` ITSELF | no -- corroboration |
+    | D | a `template` / `templates` path component | no -- corroboration |
+    | E | a `create-*` parent of that component | no -- corroboration |
+
+    Rule 0: the tree you point `--root` at is the tree you are working in, and
+    its own CLAUDE.md loads on every turn there whatever the repo generates.
+
+    A and B are declarative because something in the tree SAYS "template": an
+    unrendered directory name is not a name anyone typed, and a manifest heading
+    an ancestor puts `dirpath` INSIDE a declared template tree.
+
+    C is deliberately NOT declarative on its own, and that is the fix for the
+    `my-copier-template/CLAUDE.md` case at any scope rather than only at the
+    root. A manifest sitting BESIDE a document heads that tree; the document is
+    the template repo's own front matter, not the payload. Flat layouts
+    (cargo-generate, copier without `_subdirectory`) do make the manifest's own
+    directory the payload -- which is why C excludes when corroborated by D, the
+    shape the real instance here has (`foundryvtt-plugin/templates/
+    foundryvtt-module/` carries `cargo-generate.toml` beside its CLAUDE.md).
+
+    D alone is the false positive that motivated the redesign. It excludes only
+    with C or E beside it.
+
+    A is a COMPONENT scan, not a CONTENT scan. The content scan stays declined
+    for the reason it always was -- `scripts/check-unrendered-templates.sh` owns
+    that signal for a different purpose, and a CLAUDE.md quoting `{{ }}` while
+    DOCUMENTING a template would be dropped with no way to tell. A directory
+    name carries no such ambiguity.
+
+    KNOWN RESIDUAL, stated rather than hidden: signal B's ancestor walk includes
+    `root`, so pointing `--root` at a template repo still excludes every
+    NON-root CLAUDE.md in it. That is correct for a whole-repo template (copier
+    with no `_subdirectory`, cookiecutter's payload directory) and conservative
+    for a `_subdirectory` one, and it is bounded to a repo whose own root
+    declares itself a template. Rule 0 protects the one document that certainly
+    still loads.
+
+    Note this is COLLECTOR-LOCAL and `templates` is deliberately NOT added to
+    SKIP_PARTS. Executed: a global skip drops
+    `obsidian-plugin/skills/templates/SKILL.md`, a genuine frontmattered skill,
+    which in turn silently breaks `check_stub_integrity` for any pointer stub
+    that delegates to it -- a broken-stub ERROR manufactured by the exclusion.
+    """
+    try:
+        parts = dirpath.relative_to(root).parts
+    except ValueError:
+        return False
+    # Rule 0. `relative_to` yields () only for the root itself.
+    if not parts:
+        return False
+
+    # Signal A.
+    if any(mark in part for part in parts for mark in UNRENDERED_MARKERS):
+        return True
+
+    # Signals B and C, from one walk. `root` is INCLUDED as an ancestor (see the
+    # known residual above); `dirpath` itself is recorded separately because it
+    # is corroboration, not a declaration.
+    manifest_here = any((dirpath / m).is_file() for m in GENERATOR_MANIFESTS)
+    cur = dirpath
+    while cur != root and cur.parent != cur:
+        cur = cur.parent
+        if any((cur / m).is_file() for m in GENERATOR_MANIFESTS):
+            return True  # Signal B
+
+    # Signals D and E -- conventional, so one of C/E has to stand beside D.
+    for i, part in enumerate(parts):
+        if part not in TEMPLATE_DIR_NAMES:
+            continue
+        if manifest_here:
+            return True  # C + D
+        if i > 0 and CREATE_PKG.match(parts[i - 1]):
+            return True  # D + E
+    return False
+
+
 def _read_corpus_file(p: Path, unreadable: list[str]) -> str | None:
     """Read one corpus file, or None when it cannot be read.
 
@@ -317,12 +559,110 @@ def check_corpus_unreadable(unreadable) -> list[Finding]:
     ]
 
 
-def collect(root: Path) -> tuple[list[dict], list[dict], list[str]]:
-    rules, skills = [], []
-    unreadable: list[str] = []
+def check_agent_discovery_misfire(agents, agent_dirs: int) -> list[Finding]:
+    """Agent DIRECTORIES present but ZERO agent FILES is a MISFIRE, not clean.
 
+    The discriminator this repo standardises on (#2219/#2290): a guard that did
+    not run and a guard that found nothing look identical unless one of them
+    says so. `scripts/check-agent-model.sh` implements it for this exact shape
+    and exits 1 on it; the vocabulary below is deliberately its vocabulary, so a
+    reader who has seen one recognises the other.
+
+    THE DENOMINATOR IS `*-plugin/agents` DIRECTORIES, NOT PLUGIN DIRECTORIES.
+    The first draft of this check counted plugin directories and was a false
+    positive on sight: 36 of this repo's 49 plugin directories define no agents
+    at all, and a single-plugin repo carrying only skills is entirely ordinary,
+    so "plugins > 0 and agents == 0" would raise a permanent ERROR on most
+    trees. It fired on this suite's own empty-corpus case, which is how it was
+    caught. `agents/` directories are the real denominator: a directory that
+    exists and yields nothing is a mismatch between how directories are found
+    and how files are found, and that mismatch IS the bug class.
+
+    It is not hypothetical. Until the depth-anchored `root.glob(
+    "*-plugin/agents/*.md")` was replaced (see `collect`), this analyzer
+    reported `AGENTS=0` at `~/repos` and `~/repos/laurigates` -- both roots the
+    SessionStart probe actually runs at, both holding 21 agents below 8
+    `*-plugin/agents` directories -- and nothing in the output distinguished
+    that from a tree with no agents in it. The directory count comes from the
+    pruned walk while the file count came from the glob, so this check would
+    have fired on it. Now that both come from the same walk it is a TRIPWIRE
+    rather than a live detector: it fires if file discovery is ever re-anchored
+    away from directory discovery again, which is the regression that shipped.
+
+    Known false positive, small and named: an `agents/` directory holding no
+    `.md` at all. That is itself an anomaly worth a line.
+
+    `error`, not `warn`, and the aggregator's slot-1 cost is the point rather
+    than a side effect. The sibling `coverage_metric_broken` is the precedent in
+    this same file: when a metric is broken its output must not be trusted, and
+    the finding that says so outranks the findings it invalidates. Unlike
+    `corpus_unreadable` (`warn`, because the sweep still ran and can keep
+    reporting a dangling symlink forever), this one clears itself the moment
+    discovery works again.
+    """
+    if agents or not agent_dirs:
+        return []
+    return [
+        Finding(
+            "error",
+            "agent_discovery_misfire",
+            (
+                f"Found {agent_dirs} plugin agent director(ies) below the root but "
+                "ZERO agent files. This is a discovery misfire, not a clean tree "
+                "— the agent kind checked nothing, so AGENTS=0 and every agent "
+                "finding is uninformative"
+            ),
+        )
+    ]
+
+
+def collect(root: Path) -> tuple[dict[str, list[dict]], list[str], int, int]:
+    """Inventory the four document kinds under `root` (plus `~/.claude/rules`).
+
+    Returns `(corpus, unreadable, templates_excluded, agent_dirs)` where
+    `corpus` is keyed by kind. A dict rather than a widening tuple: every check
+    below takes the kinds it applies to by name, which is what makes the
+    check x kind matrix readable at the call site in `main()`.
+    """
+    rules, skills, agents, claude_mds = [], [], [], []
+    unreadable: list[str] = []
+    templates_excluded = 0
+    agent_dirs = 0
+
+    agent_paths: list[Path] = []
     rule_paths = sorted(HOME_RULES.glob("*.md")) if HOME_RULES.is_dir() else []
+    claude_md_paths: list[Path] = []
     for dirpath, filenames in walk(root):
+        # Agents come from the SAME pruned walk every other kind uses, matched
+        # with `dirpath.match("*-plugin/agents")`.
+        #
+        # This was `root.glob("*-plugin/agents/*.md")` -- pinned to depth 2 while
+        # rules, skills and CLAUDE.md were all recursive. At `~/repos` and
+        # `~/repos/laurigates`, both documented Claude Code working roots and
+        # both roots where `hooks/config-drift-probe.sh` actually runs (it passes
+        # `--root "${DRIFT_CWD:-.}"`, the session cwd), the glob matched NOTHING:
+        # 247 rules / 561 skills / 0 agents at `laurigates`, 367 / 591 / 0 at
+        # `repos`, against 21 real agents below each. The entire agent widening
+        # was inert exactly where the probe fires, and reported a bare
+        # `AGENTS=0` indistinguishable from "this tree has no agents".
+        #
+        # The old comment defended the glob against a `dirpath.name == "agents"`
+        # walk, on the grounds that two of the ten such directories here are
+        # Python source packages (`git-repo-agent/src/git_repo_agent/agents`,
+        # `vault-agent/src/vault_agent/agents`) where a stray `README.md` would
+        # be silently ingested as an agent prompt. That argument is real and it
+        # is preserved -- but it buys the `*-plugin/` PREFIX, not the DEPTH
+        # ANCHOR. Measured with this predicate at `~/repos/laurigates`: exactly
+        # 21, both source packages excluded, depth-independent. It is also still
+        # the same definition of "an agent" that `scripts/check-agent-model.sh`
+        # and `scripts/check-agent-tool-selection.sh` use.
+        #
+        # `.claude-plugin` is excluded explicitly: `Path.match` is fnmatch-based,
+        # so `*` DOES match a leading dot, and the marketplace metadata directory
+        # would otherwise qualify as a plugin.
+        if dirpath.match("*-plugin/agents") and dirpath.parent.name != ".claude-plugin":
+            agent_dirs += 1
+            agent_paths += [dirpath / f for f in filenames if f.endswith(".md")]
         if dirpath.match("*/.claude/rules"):
             rule_paths += [dirpath / f for f in filenames if f.endswith(".md")]
         if (
@@ -333,26 +673,28 @@ def collect(root: Path) -> tuple[list[dict], list[dict], list[str]]:
             body = _read_corpus_file(p, unreadable)
             if body is None:
                 continue
-            fm = frontmatter(body)
             skills.append(
-                {
-                    "kind": "skill",
-                    "path": str(p),
-                    "name": p.parent.name,
-                    "title": p.parent.name,
-                    "body": body,
-                    "fm": fm,
-                    "desc": fm.get("description", ""),
-                    "chars": len(body),
-                    "hash": sha(body),
-                }
+                _doc(
+                    "skill",
+                    p,
+                    p.parent.name,
+                    p.parent.name,
+                    body,
+                    frontmatter(body),
+                    SCOPE_PLUGIN,
+                    always_loaded=False,
+                )
             )
+        if "CLAUDE.md" in filenames:
+            if _is_generator_template(dirpath, root):
+                templates_excluded += 1
+            else:
+                claude_md_paths.append(dirpath / "CLAUDE.md")
 
     for p in sorted(set(rule_paths)):
         body = _read_corpus_file(p, unreadable)
         if body is None:
             continue
-        fm = frontmatter(body)
         scope = (
             "user-global"
             if str(p).startswith(str(HOME_RULES))
@@ -360,26 +702,73 @@ def collect(root: Path) -> tuple[list[dict], list[dict], list[str]]:
             if p.parent.parent.parent == root
             else str(p).split("/.claude/rules/")[0].replace(str(root) + "/", "")
         )
-        title = next(
-            (line[2:].strip() for line in body.splitlines() if line.startswith("# ")),
-            p.stem,
-        )
         rules.append(
-            {
-                "kind": "rule",
-                "path": str(p),
-                "name": p.stem,
-                "title": title,
-                "body": body,
-                "fm": fm,
-                "scope": scope,
-                "always_loaded": scope in ("user-global", "portfolio"),
-                "chars": len(body),
-                "hash": sha(body),
-                "stub": "romoted to a skill" in body[:700],
-            }
+            _doc(
+                "rule",
+                p,
+                p.stem,
+                _heading_title(body, p.stem),
+                body,
+                frontmatter(body),
+                scope,
+                always_loaded=scope in ("user-global", "portfolio"),
+                stub="romoted to a skill" in body[:700],
+            )
         )
-    return rules, skills, unreadable
+
+    for p in sorted(set(agent_paths)):
+        body = _read_corpus_file(p, unreadable)
+        if body is None:
+            continue
+        agents.append(
+            _doc(
+                "agent",
+                p,
+                p.stem,
+                _heading_title(body, p.stem),
+                body,
+                frontmatter(body),
+                SCOPE_PLUGIN,
+                always_loaded=False,
+            )
+        )
+
+    for p in sorted(set(claude_md_paths)):
+        body = _read_corpus_file(p, unreadable)
+        if body is None:
+            continue
+        rel = p.parent.relative_to(root)
+        name = "." if rel == Path(".") else rel.as_posix()
+        # The `# ` heading fallback rules use is kept, and a path-derived label
+        # is needed on top of it: 2 of the 3 CLAUDE.md here carry no frontmatter
+        # at all and their H1 is literally `# CLAUDE.md`, which identifies
+        # nothing when three of them appear in one report.
+        title = _heading_title(body, "")
+        if title.lower() in ("", "claude.md", "claude"):
+            title = f"CLAUDE.md ({name})"
+        claude_mds.append(
+            _doc(
+                "claude_md",
+                p,
+                name,
+                title,
+                body,
+                frontmatter(body),
+                "portfolio" if p.parent == root else name,
+                # Only a CLAUDE.md at the root loads on every turn. A nested one
+                # (`experiments/*/CLAUDE.md`) loads when a session opens that
+                # directory, which is not the always-loaded budget's question.
+                always_loaded=p.parent == root,
+            )
+        )
+
+    corpus = {
+        "rule": rules,
+        "skill": skills,
+        "agent": agents,
+        "claude_md": claude_mds,
+    }
+    return corpus, unreadable, templates_excluded, agent_dirs
 
 
 # --------------------------------------------------------------------- checks
@@ -410,11 +799,21 @@ def _stub_target(head: str, known: set[str]) -> str | None:
     return refs[0] if refs else None
 
 
-def check_stub_integrity(rules, skills) -> list[Finding]:
+def check_stub_integrity(docs, skills) -> list[Finding]:
+    """Pointer stubs are a RULE convention; the guard is on the kind, not the flag.
+
+    Guarded on `kind == "rule"` rather than on `stub` alone even though only
+    rules are passed today. `stub` is the literal substring `"romoted to a
+    skill"` in the first 700 characters, and a CLAUDE.md or an agent prompt that
+    *quotes* that phrase -- describing the convention rather than following it,
+    which is exactly what a repo's own CLAUDE.md does -- would set the flag and
+    then fail resolution as a broken stub. The kind is the fact; the substring
+    is a heuristic for it.
+    """
     known = {s["name"] for s in skills}
     out = []
-    for r in rules:
-        if not r["stub"]:
+    for r in docs:
+        if r["kind"] != "rule" or not r["stub"]:
             continue
         target = _stub_target(r["body"][:700], known)
         if target not in known:
@@ -438,6 +837,24 @@ def check_review_staleness(items, cache: dict, allow_spawn: bool) -> list[Findin
     cache is correct by construction rather than by TTL. In fast mode (the probe)
     a cache miss is skipped rather than spawning git, so the probe stays sub-second
     and the scheduled run is what warms the cache.
+
+    THE SKIP IS SILENT, AND IT SCOPES EVERY CLAIM MADE ABOUT THIS CHECK IN
+    `--fast`. A cache miss under `allow_spawn=False` produces no finding and no
+    counter movement, so a kind with zero keys in the live gitdates cache is
+    invisible to the cheap tier while looking exactly like a kind that was
+    evaluated and found current.
+
+    That is not hypothetical for the kinds this PR added: the live cache carried
+    0 agent and 0 CLAUDE.md keys, so `--fast` skipped every one of them. The
+    "existing counters unchanged" acceptance result for the widening was taken in
+    `--fast` and is therefore a CHEAP-TIER result only. Re-measured non-fast
+    against a scratch cache at this repo's root, the scheduled tier gains exactly
+    one finding: `FINDING_REVIEW_STALENESS` 67 -> 68, `WARNINGS` 67 -> 68,
+    `ISSUE_COUNT` 73 -> 74. It is GENUINE -- `claude-plugins/CLAUDE.md` is 125
+    days past its declared `reviewed: 2026-04-21` -- and is not suppressed.
+
+    Not a coverage gap on the agent side: the same non-fast run warmed 21 agent
+    keys, so all 21 agents WERE evaluated and are genuinely inside STALE_DAYS.
     """
     out = []
     for it in items:
@@ -471,26 +888,39 @@ def check_review_staleness(items, cache: dict, allow_spawn: bool) -> list[Findin
     return sorted(out, key=lambda x: -x["gap_days"])
 
 
-def check_budget(rules) -> list[Finding]:
-    # A rule in a user-global/portfolio scope is NOT unconditionally injected if
-    # it carries `paths:` frontmatter -- it loads only when a matching file is
-    # read. Counting those inflates the budget by ~24% on this portfolio (13 of
-    # 67 rules, ~12,200 tok). Confirmed empirically: path-scoped rules are absent
-    # from the initial context injection and arrive later as reminders.
-    always = [r for r in rules if r["always_loaded"] and "paths" not in r["fm"]]
-    tokens = sum(r["chars"] for r in always) // 4
+def always_loaded_docs(docs) -> list[dict]:
+    """The documents that really are injected on every turn.
+
+    A rule in a user-global/portfolio scope is NOT unconditionally injected if
+    it carries `paths:` frontmatter -- it loads only when a matching file is
+    read. Counting those inflates the budget by ~24% on this portfolio (13 of
+    67 rules, ~12,200 tok). Confirmed empirically: path-scoped rules are absent
+    from the initial context injection and arrive later as reminders.
+
+    The root CLAUDE.md qualifies on the same terms and for the same reason: it
+    is injected on every turn, so leaving it out understates the standing cost
+    by its full size. `always_loaded` is set at collection time
+    (`p.parent == root`), so a nested `experiments/*/CLAUDE.md` never reaches
+    here.
+    """
+    return [d for d in docs if d["always_loaded"] and "paths" not in d["fm"]]
+
+
+def check_budget(docs) -> list[Finding]:
+    always = always_loaded_docs(docs)
+    tokens = sum(d["chars"] for d in always) // 4
     if tokens <= BUDGET_TOKENS:
         return []
-    worst = sorted(always, key=lambda r: -r["chars"])[:3]
+    worst = sorted(always, key=lambda d: -d["chars"])[:3]
     return [
         Finding(
             "warn",
             "always_loaded_budget",
             (
-                f"{len(always)} always-loaded rules cost ~{tokens:,} tok/turn "
+                f"{len(always)} always-loaded documents cost ~{tokens:,} tok/turn "
                 f"(budget {BUDGET_TOKENS:,}); heaviest: "
                 + ", ".join(
-                    f"{r['name']}(~{r['chars'] // 4 // 100 * 100:,})" for r in worst
+                    f"{d['name']}(~{d['chars'] // 4 // 100 * 100:,})" for d in worst
                 )
             ),
             tokens=tokens,
@@ -499,6 +929,17 @@ def check_budget(rules) -> list[Finding]:
 
 
 def check_frontmatter(rules) -> list[Finding]:
+    """RULE frontmatter coverage. Agents and CLAUDE.md are excluded on purpose.
+
+    Agents: 21 of 21 already carry `reviewed:`, so widening this reports `0/21`
+    -- a finding that can never fire is dead code that reads as coverage.
+    CLAUDE.md: 2 of the 3 here carry no frontmatter AT ALL, by convention, so
+    the finding would be permanent and unactionable.
+
+    The summary's denominator therefore stays `/N rules` and is NOT silently
+    widened to "documents": the number a reader acts on has to name the set it
+    was counted over.
+    """
     missing = [r for r in rules if not r["fm"].get("reviewed")]
     if not missing:
         return []
@@ -511,23 +952,93 @@ def check_frontmatter(rules) -> list[Finding]:
     ]
 
 
-def check_lexical_dupes(rules, waivers) -> list[Finding]:
-    for r in rules:
-        r["_sh"] = shingles(r["body"])
-    out = []
-    for a, b in combinations(rules, 2):
-        s = jaccard(a["_sh"], b["_sh"])
-        if s >= T_LEXICAL and not waivers.waived(a, b):
-            out.append(
-                Finding(
-                    "warn",
-                    "duplicate_rule_lexical",
-                    f"{a['scope']}:{a['name']} and {b['scope']}:{b['name']} are {s:.0%} lexically identical",
-                    score=round(s, 3),
-                    paths=[a["path"], b["path"]],
+def _lexical_finding(kind: str, summary: str, score: float, paths: list) -> Finding:
+    """The duplicate-<kind>-lexical finding, spelled out per kind.
+
+    Three near-identical branches rather than one `f"duplicate_{kind}_lexical"`,
+    deliberately. The kind strings have to be LITERALS at the construction site:
+    `test-probe-lib.sh` TEST N3 AST-walks this file for `Finding(...)` calls to
+    derive the set of kinds the analyzer can emit, and asserts every one has an
+    explicit row in the probe hook's remediation map -- an interpolated kind is
+    either unparseable there or expands over the wrong domain. It also means a
+    grep for a kind lands on the code that emits it.
+
+    SEVERITY IS NOT UNIFORM ACROSS THE THREE, and the split is about what the
+    duplication MEANS rather than about report real-estate:
+
+    * `rule` -> warn. Two `.claude/rules/` scopes are both live configuration
+      and both load, so an identical rule in each really is a promotion
+      candidate. Duplication here is drift by construction.
+    * `agent` -> warn. Two `*-plugin/agents/*.md` in one marketplace are both
+      live, both listed, and a near-identical pair is genuine redundancy a
+      reader has to disambiguate at dispatch time.
+    * `claude_md` -> INFO. A CLAUDE.md pair is very often duplication that is
+      CORRECT: a vendored clone and its upstream, or one package copied into two
+      places. Measured at `~/repos`, the top pair is a byte-identical CLAUDE.md
+      between the vendored `external/facedancer` clone and the user's own
+      `mcu-tinkering-lab` package -- expected, not drift. The analyzer cannot
+      tell a vendored copy from a divergence, and `warn` asserts the second.
+
+    What this does NOT buy, stated because the obvious reading is wrong: it does
+    not restore `rule_covered_by_skill` to the SessionStart nudge. The hook
+    forwards `.[:4]` after `sort_by(.rank, .kind)`, and with five kinds present
+    one is dropped whatever the severities are -- within `info`,
+    `frontmatter_coverage` beats `rule_covered_by_skill` on the alphabetical
+    tiebreak either way. Measured at `~/repos` and `~/repos/laurigates`, before
+    and after: the forwarded SET is unchanged. What changes is the ORDER, and
+    specifically slot 1, which stops being a vendored-clone artifact and becomes
+    real drift again. The cap and the sort are shared across every plugin and
+    are not this probe's to change.
+    """
+    if kind == "rule":
+        return Finding(
+            "warn", "duplicate_rule_lexical", summary, score=score, paths=paths
+        )
+    if kind == "agent":
+        return Finding(
+            "warn", "duplicate_agent_lexical", summary, score=score, paths=paths
+        )
+    return Finding(
+        "info", "duplicate_claude_md_lexical", summary, score=score, paths=paths
+    )
+
+
+def check_lexical_dupes(corpus, waivers) -> tuple[list[Finding], int]:
+    """Jaccard over 3-gram shingles, PARTITIONED by kind.
+
+    Two reasons, and the second is the one that matters. Cost, measured on this
+    corpus (best of 5, rules-only baseline 129.7ms): pooling rules + agents +
+    CLAUDE.md into one `combinations()` costs +62.3ms (7,381 pairs), against
+    +6.6ms partitioned (4,966 pairs) -- 9x, on the stage that already dominates
+    the cheap tier the SessionStart probe runs. Meaning: a high Jaccard between
+    an agent prompt and a rule is not a "duplicate rule", and the finding kind
+    has no sensible cross-kind spelling -- `duplicate_rule_agent_lexical` would
+    route to a remediation that does not exist.
+
+    Returns the findings AND the number of pairs compared, so the partition is
+    observable in the counts block (`LEXICAL_PAIRS=`) rather than being an
+    invisible implementation detail that a later pooling could undo silently.
+    """
+    out: list[Finding] = []
+    pairs = 0
+    for kind in LEXICAL_KINDS:
+        docs = corpus.get(kind, [])
+        for d in docs:
+            d["_sh"] = shingles(d["body"])
+        for a, b in combinations(docs, 2):
+            pairs += 1
+            s = jaccard(a["_sh"], b["_sh"])
+            if s >= T_LEXICAL and not waivers.waived(a, b):
+                out.append(
+                    _lexical_finding(
+                        kind,
+                        f"{a['scope']}:{a['name']} and {b['scope']}:{b['name']} "
+                        f"are {s:.0%} lexically identical",
+                        round(s, 3),
+                        [a["path"], b["path"]],
+                    )
                 )
-            )
-    return sorted(out, key=lambda x: -x["score"])
+    return sorted(out, key=lambda x: -x["score"]), pairs
 
 
 def check_rule_covered_by_skill(rules, skills, waivers) -> list[Finding]:
@@ -537,6 +1048,14 @@ def check_rule_covered_by_skill(rules, skills, waivers) -> list[Finding]:
     SKILL.md is 5-20x a rule's length, so the union swamps the intersection.
     Containment is asymmetric and correct. Control-tested: every already-promoted
     pointer stub must score above threshold against its own skill.
+
+    RULES ONLY -- do not widen this to agents or CLAUDE.md. The control gate at
+    the bottom counts pointer STUBS, and agents and CLAUDE.md have none by
+    construction, so including them leaves `control_hits` unchanged while
+    inflating nothing... except that any future stub-shaped text in them would
+    dilute `control_total` toward the 0.7 threshold. Tripping that gate emits
+    `coverage_metric_broken` and SUPPRESSES EVERY coverage finding: a one-line
+    widening here silently disables an existing check rather than extending it.
     """
 
     def tset(text):
@@ -762,16 +1281,24 @@ def main() -> int:
         print(f"root not found: {root}", file=sys.stderr)
         return 3
 
-    rules, skills, unreadable = collect(root)
+    corpus, unreadable, templates_excluded, agent_dirs = collect(root)
+    rules = corpus["rule"]
+    skills = corpus["skill"]
+    agents = corpus["agent"]
+    claude_mds = corpus["claude_md"]
     waivers = Waivers.load(Path(args.waivers).expanduser())
 
+    # The check x kind matrix, guarded explicitly at every call site. Each
+    # check's own docstring carries the reason it takes the kinds it takes.
     findings: list[Finding] = []
     findings += check_stub_integrity(rules, skills)
-    findings += check_budget(rules)
-    findings += check_lexical_dupes(rules, waivers)
+    findings += check_budget(rules + claude_mds)
+    lexical, lexical_pairs = check_lexical_dupes(corpus, waivers)
+    findings += lexical
     findings += check_rule_covered_by_skill(rules, skills, waivers)
     findings += check_frontmatter(rules)
     findings += check_corpus_unreadable(unreadable)
+    findings += check_agent_discovery_misfire(agents, agent_dirs)
 
     datecache_path = Path(args.cache).expanduser().with_name("gitdates.json")
     datecache: dict = {}
@@ -781,8 +1308,14 @@ def main() -> int:
         except (OSError, json.JSONDecodeError):
             datecache = {}
     before = len(datecache)
+    # Staleness applies to every kind unchanged. Agents earn it: 21 of 21 carry
+    # both `reviewed:` and `modified:`, and they are in-repo so `git_last_change`
+    # resolves. CLAUDE.md is included on the same terms even though it will
+    # almost never fire -- the check is a no-op for a document with no
+    # `reviewed:` date, so excluding it would buy nothing and would have to be
+    # revisited the moment one gained a date.
     findings += check_review_staleness(
-        rules + skills, datecache, allow_spawn=not args.fast
+        rules + skills + agents + claude_mds, datecache, allow_spawn=not args.fast
     )
     if len(datecache) != before:
         datecache_path.parent.mkdir(parents=True, exist_ok=True)
@@ -790,8 +1323,14 @@ def main() -> int:
 
     if not args.no_embed:
         try:
+            # SEMANTIC_KINDS, not `rules + skills` spelled out: the exclusion of
+            # agents and CLAUDE.md is a calibration decision (see the constant),
+            # and it has to be readable from the constant rather than inferred
+            # from which lists happen to be concatenated here.
             findings += check_semantic_dupes(
-                rules + skills, waivers, Path(args.cache).expanduser()
+                [d for k in SEMANTIC_KINDS for d in corpus[k]],
+                waivers,
+                Path(args.cache).expanduser(),
             )
         except Exception as exc:  # noqa: BLE001 - degrade loudly, never silently
             findings.append(
@@ -832,14 +1371,40 @@ def main() -> int:
             if not f.get("paths") or any(p in touched for p in f["paths"])
         ]
 
-    always = [r for r in rules if r["always_loaded"] and "paths" not in r["fm"]]
+    always = always_loaded_docs(rules + claude_mds)
     counts = {
         "rules": len(rules),
         "skills": len(skills),
+        "agents": len(agents),
+        # The DENOMINATOR for AGENTS, emitted EVEN AT 0 for the same reason the
+        # exclusion counter below is. `AGENTS=0` alone cannot distinguish "this
+        # tree has no agents" from "discovery misfired" -- which is exactly the
+        # state the depth-anchored glob left `~/repos` in. `AGENTS=0` beside
+        # `AGENT_DIRS=8` reads as a misfire on sight, `AGENTS=0` beside
+        # `AGENT_DIRS=0` reads as a clean tree, and
+        # `check_agent_discovery_misfire` turns the first pair into a finding.
+        # Plugin directories would be the WRONG denominator: most plugins define
+        # no agents, so most trees would read as a misfire.
+        "agent_dirs": agent_dirs,
+        "claude_mds": len(claude_mds),
+        # Emitted EVEN AT 0. An exclusion that reports nothing is
+        # indistinguishable from a collector that stopped finding anything to
+        # exclude -- and from one that stopped finding CLAUDE.md at all.
+        "claude_md_templates_excluded": templates_excluded,
+        # Rules only, deliberately: this is the scope LADDER's width, and skills
+        # and agents are namespaced by plugin rather than scoped.
         "scopes": len({r["scope"] for r in rules}),
-        "always_loaded_rules": len(always),
-        "always_loaded_tokens": sum(r["chars"] for r in always) // 4,
+        # Split by kind rather than merged, so the CLAUDE.md the budget newly
+        # includes is visible as its own line instead of an unexplained jump in
+        # ALWAYS_LOADED_TOKENS.
+        "always_loaded_rules": sum(1 for d in always if d["kind"] == "rule"),
+        "always_loaded_claude_md": sum(1 for d in always if d["kind"] == "claude_md"),
+        "always_loaded_tokens": sum(d["chars"] for d in always) // 4,
         "pointer_stubs": sum(1 for r in rules if r["stub"]),
+        # Makes the lexical partition assertable: pooled it would be
+        # N(N-1)/2 over every kind, partitioned it is the sum of each kind's own
+        # n(n-1)/2.
+        "lexical_pairs": lexical_pairs,
         "waivers_active": len(waivers),
         "semantic_pass": "off" if args.no_embed else "on",
     }

@@ -808,6 +808,813 @@ python3 "$EMBED_DRIVER" "$ANALYZER" "$EMBED_CACHE" "$EMBED_LOG" "new description
     "BAAI/bge-large-en-v1.5" >/dev/null 2>&1
 assert_eq "swapping the embedding model re-embeds every item" "$(log_lines)" "5"
 
+# --- helpers for the widened corpus -----------------------------------------
+finding_paths() {
+    printf '%s' "$1" | python3 -c 'import json,sys
+d = json.load(sys.stdin)
+print("\n".join(p for f in d["findings"] for p in f.get("paths", [])))' 2>/dev/null
+}
+count_worktree_paths() {
+    finding_paths "$1" | awk '/\/\.claude\/worktrees\//{n++} END{print n+0}'
+}
+fm_coverage_summary() {
+    printf '%s' "$1" | python3 -c 'import json,sys
+d = json.load(sys.stdin)
+print(next((f["summary"] for f in d["findings"] if f["kind"] == "frontmatter_coverage"), "<none>"))' 2>/dev/null
+}
+# Appends spaces until the file length is a multiple of 4. The budget is
+# `sum(chars) // 4`, and floor((S + c) / 4) == floor(S / 4) + c // 4 holds
+# EXACTLY when c is a multiple of 4 -- otherwise the delta depends on the rest
+# of the corpus and "raises it by exactly chars // 4" is not a testable claim.
+pad_to_multiple_of_4() {
+    local f="$1" n
+    n=$(wc -c < "$f" | tr -d ' ')
+    while [ $((n % 4)) -ne 0 ]; do printf ' ' >> "$f"; n=$((n + 1)); done
+}
+
+echo "TEST 13: agent-worktree copies are pruned, and the control proves discovery works"
+# The pin, not new logic: SKIP_PARTS already contains `worktrees`, and the agent
+# GLOB is anchored at depth 2 (`*-plugin/agents/*.md`) so a worktree copy is
+# three levels deeper than it can reach. Both are load-bearing for four kinds
+# now, and neither was asserted.
+out=$(run)
+wt_rules=$(count_key "$out" rules)
+wt_skills=$(count_key "$out" skills)
+wt_agents=$(count_key "$out" agents)
+wt_claude=$(count_key "$out" claude_mds)
+wt_pairs=$(count_key "$out" lexical_pairs)
+
+WT="$FIXROOT/proj/.claude/worktrees/agent-deadbeef"
+mkdir -p "$WT/repo-a/.claude/rules" "$WT/some-plugin/agents" \
+         "$WT/some-plugin/skills/widget-wrangling"
+cp "$FIXROOT/proj/repo-a/.claude/rules/alpha.md" "$WT/repo-a/.claude/rules/alpha.md"
+cp "$FIXROOT/proj/some-plugin/skills/widget-wrangling/SKILL.md" \
+   "$WT/some-plugin/skills/widget-wrangling/SKILL.md"
+cat > "$WT/some-plugin/agents/helper.md" <<'AGENT'
+---
+name: helper
+description: A helper agent inside an agent worktree.
+reviewed: 2026-01-01
+---
+# helper
+Calibrate widget torque against the fleet inventory manifest before adjusting
+any widget on the assembly line.
+AGENT
+cat > "$WT/CLAUDE.md" <<'CMD'
+# CLAUDE.md
+A CLAUDE.md inside an agent worktree clone. It must never enter the corpus.
+CMD
+
+out=$(run)
+assert_eq "a worktree rule copy is not counted"      "$(count_key "$out" rules)"      "$wt_rules"
+assert_eq "a worktree skill copy is not counted"     "$(count_key "$out" skills)"     "$wt_skills"
+assert_eq "a worktree agent copy is not counted"     "$(count_key "$out" agents)"     "$wt_agents"
+assert_eq "a worktree CLAUDE.md copy is not counted" "$(count_key "$out" claude_mds)" "$wt_claude"
+assert_eq "a worktree copy adds no lexical pairs"    "$(count_key "$out" lexical_pairs)" "$wt_pairs"
+assert_eq "no finding names a path inside .claude/worktrees/" "$(count_worktree_paths "$out")" "0"
+
+# CONTROL, weighted equally: the SAME files at non-worktree paths must move
+# every one of those counts. Without it "unchanged" also passes against a
+# collector that discovers nothing at all.
+mkdir -p "$FIXROOT/proj/repo-c/.claude/rules" "$FIXROOT/proj/other-plugin/agents" \
+         "$FIXROOT/proj/other-plugin/skills/gadget-gauging" "$FIXROOT/proj/nested-doc"
+cp "$WT/repo-a/.claude/rules/alpha.md" "$FIXROOT/proj/repo-c/.claude/rules/alpha.md"
+cp "$WT/some-plugin/skills/widget-wrangling/SKILL.md" \
+   "$FIXROOT/proj/other-plugin/skills/gadget-gauging/SKILL.md"
+cp "$WT/some-plugin/agents/helper.md" "$FIXROOT/proj/other-plugin/agents/helper.md"
+cp "$WT/CLAUDE.md" "$FIXROOT/proj/nested-doc/CLAUDE.md"
+out=$(run)
+assert_eq "CONTROL: the same rule outside a worktree IS counted"      "$(count_key "$out" rules)"      "$((wt_rules + 1))"
+assert_eq "CONTROL: the same skill outside a worktree IS counted"     "$(count_key "$out" skills)"     "$((wt_skills + 1))"
+assert_eq "CONTROL: the same agent outside a worktree IS counted"     "$(count_key "$out" agents)"     "$((wt_agents + 1))"
+assert_eq "CONTROL: the same CLAUDE.md outside a worktree IS counted" "$(count_key "$out" claude_mds)" "$((wt_claude + 1))"
+
+rm -rf "$WT" "$FIXROOT/proj/repo-c" "$FIXROOT/proj/other-plugin" "$FIXROOT/proj/nested-doc"
+out=$(run)
+assert_eq "cleanup restores the rule count" "$(count_key "$out" rules)" "$wt_rules"
+
+echo "TEST 14: agents -- three-rung lexical ladder, plus the partition proof"
+# A checker that reports a duplicate unconditionally, or never, passes exactly
+# one of the three rungs.
+mkdir -p "$FIXROOT/proj/some-plugin/agents" "$FIXROOT/proj/other-plugin/agents"
+cat > "$FIXROOT/proj/some-plugin/agents/torque-auditor.md" <<'AGENT'
+---
+name: torque-auditor
+description: Audit widget torque across the fleet.
+reviewed: 2026-01-01
+---
+# torque-auditor
+Audit the torque calibration of every widget against the fleet inventory
+manifest. Read the manifest first, then walk the assembly line and record the
+torque reading for each widget before proposing any adjustment.
+AGENT
+out=$(run)
+assert_eq "one agent, no duplicate reported" "$(count_kind "$out" duplicate_agent_lexical)" "0"
+assert_eq "the agent was discovered" "$(count_key "$out" agents)" "1"
+
+# W1, asserted directly: discovery is a depth-anchored GLOB, not a walk for a
+# directory NAMED `agents`. Two directories in the real corpus are Python source
+# packages (`*/src/*/agents/`); a walk predicate ingests any stray `.md` landing
+# in one as an agent prompt, silently.
+mkdir -p "$FIXROOT/proj/some-plugin/src/some_plugin/agents"
+cat > "$FIXROOT/proj/some-plugin/src/some_plugin/agents/README.md" <<'PKGDOC'
+# agents
+This is a Python source package, not an agent prompt directory.
+PKGDOC
+out=$(run)
+assert_eq "a .md in a source package named 'agents' is not an agent" \
+    "$(count_key "$out" agents)" "1"
+rm -rf "$FIXROOT/proj/some-plugin/src"
+
+sed 's/proposing any adjustment/proposing a single adjustment/' \
+    "$FIXROOT/proj/some-plugin/agents/torque-auditor.md" \
+    > "$FIXROOT/proj/other-plugin/agents/torque-auditor-copy.md"
+out=$(run)
+assert_eq "a near-identical agent in a second plugin is reported once" \
+    "$(count_kind "$out" duplicate_agent_lexical)" "1"
+assert_eq "an agent duplicate is not spelled as a rule duplicate" \
+    "$(count_kind "$out" duplicate_rule_lexical)" "0"
+
+rm "$FIXROOT/proj/other-plugin/agents/torque-auditor-copy.md"
+out=$(run)
+assert_eq "removing the copy clears the finding" "$(count_kind "$out" duplicate_agent_lexical)" "0"
+
+# PARTITION PROOF: an agent whose body is byte-identical to a RULE. Pooled into
+# one combinations() this pair scores 1.0 and fires; partitioned it is never
+# compared, and there is no cross-kind kind name it could be spelled with.
+cp "$FIXROOT/proj/repo-a/.claude/rules/alpha.md" \
+   "$FIXROOT/proj/other-plugin/agents/rule-clone.md"
+out=$(run)
+assert_eq "an agent byte-identical to a rule yields no duplicate_rule_lexical" \
+    "$(count_kind "$out" duplicate_rule_lexical)" "0"
+assert_eq "an agent byte-identical to a rule yields no duplicate_agent_lexical" \
+    "$(count_kind "$out" duplicate_agent_lexical)" "0"
+# Non-vacuity: the agent partition really did run over both agents (1 pair), so
+# the two zeros above are a partition result rather than a dead comparison.
+assert_eq "the agent partition compared its own pair" \
+    "$(count_key "$out" agents)" "2"
+rm "$FIXROOT/proj/other-plugin/agents/rule-clone.md"
+
+echo "TEST 15: CLAUDE.md -- three-rung lexical ladder, and the budget"
+mkdir -p "$FIXROOT/proj/nest-a" "$FIXROOT/proj/nest-b"
+cat > "$FIXROOT/proj/nest-a/CLAUDE.md" <<'CMD'
+# CLAUDE.md
+
+This directory holds the assembly-line simulation harness. Run the harness from
+the repository root, never from inside this directory, because the fixture
+paths are resolved relative to the root and the harness will silently produce
+an empty report otherwise.
+CMD
+out=$(run)
+assert_eq "one CLAUDE.md, no duplicate reported" "$(count_kind "$out" duplicate_claude_md_lexical)" "0"
+assert_eq "the nested CLAUDE.md was discovered" "$(count_key "$out" claude_mds)" "1"
+
+sed 's/an empty report otherwise/an empty report in that case/' \
+    "$FIXROOT/proj/nest-a/CLAUDE.md" > "$FIXROOT/proj/nest-b/CLAUDE.md"
+out=$(run)
+assert_eq "a near-identical CLAUDE.md is reported once" \
+    "$(count_kind "$out" duplicate_claude_md_lexical)" "1"
+
+rm "$FIXROOT/proj/nest-b/CLAUDE.md"
+out=$(run)
+assert_eq "removing the copy clears the finding" "$(count_kind "$out" duplicate_claude_md_lexical)" "0"
+
+# Budget: only a ROOT CLAUDE.md is always-loaded.
+out=$(run)
+base_tokens=$(count_key "$out" always_loaded_tokens)
+assert_eq "a NESTED CLAUDE.md is not always-loaded" "$(count_key "$out" always_loaded_claude_md)" "0"
+
+cat > "$FIXROOT/proj/CLAUDE.md" <<'CMD'
+---
+created: 2026-01-01
+modified: 2026-01-01
+reviewed: 2026-01-01
+---
+# Assembly Line
+
+The fleet inventory manifest is the source of truth for widget torque. Every
+adjustment is recorded against the manifest, and the manifest is regenerated
+nightly from the assembly-line telemetry feed.
+CMD
+pad_to_multiple_of_4 "$FIXROOT/proj/CLAUDE.md"
+root_chars=$(wc -c < "$FIXROOT/proj/CLAUDE.md" | tr -d ' ')
+# FIXTURE VALIDITY: the exact-delta claim below is only well-posed for a
+# multiple of 4 (see pad_to_multiple_of_4).
+assert_eq "FIXTURE: the root CLAUDE.md length is a multiple of 4" "$((root_chars % 4))" "0"
+out=$(run)
+assert_eq "a root CLAUDE.md sets ALWAYS_LOADED_CLAUDE_MD=1" "$(count_key "$out" always_loaded_claude_md)" "1"
+assert_eq "a root CLAUDE.md raises always_loaded_tokens by exactly chars // 4" \
+    "$(count_key "$out" always_loaded_tokens)" "$((base_tokens + root_chars / 4))"
+rm "$FIXROOT/proj/CLAUDE.md"
+out=$(run)
+assert_eq "removing the root CLAUDE.md restores the token budget" \
+    "$(count_key "$out" always_loaded_tokens)" "$base_tokens"
+assert_eq "a nested CLAUDE.md raises the budget by 0" "$(count_key "$out" always_loaded_tokens)" "$base_tokens"
+
+echo "TEST 16: generator-template exclusion, both polarities"
+out=$(run)
+base_claude=$(count_key "$out" claude_mds)
+base_skills=$(count_key "$out" skills)
+assert_eq "the exclusion counter is emitted even at 0" "$(count_key "$out" claude_md_templates_excluded)" "0"
+
+# Signal 1 + 2 together: a `templates` path component AND a manifest sibling.
+mkdir -p "$FIXROOT/proj/some-plugin/templates/thing"
+printf '[values]\nname = "x"\n' > "$FIXROOT/proj/some-plugin/templates/thing/cargo-generate.toml"
+cat > "$FIXROOT/proj/some-plugin/templates/thing/CLAUDE.md" <<'CMD'
+# CLAUDE.md
+Guidance for the generated module. Nothing here loads in any real session.
+CMD
+out=$(run)
+assert_eq "a templates/ CLAUDE.md with a manifest is excluded" "$(count_key "$out" claude_mds)" "$base_claude"
+assert_eq "the exclusion is reported" "$(count_key "$out" claude_md_templates_excluded)" "1"
+
+# Signal 2 ALONE: a manifest at an ancestor, no `templates` component anywhere.
+mkdir -p "$FIXROOT/proj/scaffold-x/inner"
+printf '{"project_name": "x"}\n' > "$FIXROOT/proj/scaffold-x/cookiecutter.json"
+cat > "$FIXROOT/proj/scaffold-x/inner/CLAUDE.md" <<'CMD'
+# CLAUDE.md
+Guidance for the generated project. A manifest at an ancestor declares this a
+template tree even though no directory is named templates.
+CMD
+out=$(run)
+assert_eq "a manifest at an ancestor alone excludes it" "$(count_key "$out" claude_mds)" "$base_claude"
+assert_eq "both exclusions are reported" "$(count_key "$out" claude_md_templates_excluded)" "2"
+
+# A `templates` component ALONE no longer excludes -- it is a CONVENTIONAL
+# signal and needs corroboration. This assertion is INVERTED from the version
+# that shipped with the widening, deliberately: the uncorroborated component
+# match fired at any depth and took out every repo with a Flask/Django
+# `app/templates/`, which is live configuration. TEST 20 carries that fixture and
+# the full both-polarity matrix; this row is here so the exclusion counter's
+# arithmetic below stays readable in one place.
+mkdir -p "$FIXROOT/proj/other-plugin/templates/bare"
+cat > "$FIXROOT/proj/other-plugin/templates/bare/CLAUDE.md" <<'CMD'
+# CLAUDE.md
+A template tree that ships no generator manifest at all.
+CMD
+out=$(run)
+assert_eq "a templates/ component ALONE is NOT excluded (needs corroboration)" \
+    "$(count_key "$out" claude_mds)" "$((base_claude + 1))"
+assert_eq "so the exclusion count stays at two" "$(count_key "$out" claude_md_templates_excluded)" "2"
+
+# THE ASSERTION THAT KILLS THE SKIP_PARTS IMPLEMENTATION: a real skill whose
+# directory is literally named `templates`. Reproduces the shape of the live
+# obsidian-plugin/skills/templates/SKILL.md. Adding `templates` to SKIP_PARTS
+# passes every exclusion assertion above and silently drops this skill -- which
+# also breaks check_stub_integrity for any stub that delegates to it.
+mkdir -p "$FIXROOT/proj/other-plugin/skills/templates"
+cat > "$FIXROOT/proj/other-plugin/skills/templates/SKILL.md" <<'SKILL'
+---
+name: templates
+description: Create and apply note templates. Use when scaffolding a vault note from a template.
+---
+# templates
+Scaffold a vault note from a stored template, filling the date and title fields
+from the current context.
+SKILL
+out=$(run)
+assert_eq "a skill directory named 'templates' is STILL discovered" \
+    "$(count_key "$out" skills)" "$((base_skills + 1))"
+
+# And a pointer stub delegating to it still resolves -- the second-order damage
+# a global skip would do.
+cat > "$FIXROOT/home/.claude/rules/templates-stub.md" <<'RULE'
+# Note Templates
+
+Promoted to a skill: invoke `other-plugin:templates` when scaffolding a vault
+note — it carries the field-filling procedure.
+RULE
+out=$(run)
+assert_eq "a stub delegating to the 'templates' skill still resolves" \
+    "$(count_kind "$out" broken_pointer_stub)" "0"
+rm "$FIXROOT/home/.claude/rules/templates-stub.md"
+
+# An ordinary CLAUDE.md -- no marker, no manifest -- IS discovered.
+mkdir -p "$FIXROOT/proj/plain-dir"
+cat > "$FIXROOT/proj/plain-dir/CLAUDE.md" <<'CMD'
+# CLAUDE.md
+An ordinary nested CLAUDE.md at a path with no template signal of any kind.
+CMD
+out=$(run)
+assert_eq "an ordinary CLAUDE.md IS discovered" "$(count_key "$out" claude_mds)" "$((base_claude + 2))"
+assert_eq "discovering it excludes nothing new" "$(count_key "$out" claude_md_templates_excluded)" "2"
+rm -rf "$FIXROOT/proj/some-plugin/templates" "$FIXROOT/proj/scaffold-x" \
+       "$FIXROOT/proj/other-plugin/templates" "$FIXROOT/proj/plain-dir"
+
+echo "TEST 17: the kind guards, as negative assertions"
+out=$(run)
+guard_missing=$(missing_reviewed "$out")
+guard_covered=$(count_kind "$out" rule_covered_by_skill)
+guard_stubs=$(count_kind "$out" broken_pointer_stub)
+
+# check_frontmatter is RULE-only. An agent with no reviewed: must not enter the
+# numerator, and the denominator must keep naming the set it counted.
+cat > "$FIXROOT/proj/other-plugin/agents/undated.md" <<'AGENT'
+---
+name: undated
+description: An agent carrying no reviewed: date at all.
+---
+# undated
+Walk the assembly line and record every torque reading.
+AGENT
+out=$(run)
+assert_eq "an agent with no reviewed: does not move frontmatter_coverage" \
+    "$(missing_reviewed "$out")" "$guard_missing"
+assert_contains "the frontmatter_coverage denominator still reads 'rules'" \
+    "$(fm_coverage_summary "$out")" " rules carry no reviewed:"
+
+# check_stub_integrity is guarded on the KIND, not on the `stub` substring. A
+# CLAUDE.md quoting the house phrasing is describing the convention, not
+# following it.
+mkdir -p "$FIXROOT/proj/quoting-dir"
+cat > "$FIXROOT/proj/quoting-dir/CLAUDE.md" <<'CMD'
+# CLAUDE.md
+
+House convention: a rule that has been promoted to a skill opens with
+"Promoted to a skill: invoke `some-skill-that-does-not-exist`" and nothing else.
+CMD
+out=$(run)
+assert_eq "a CLAUDE.md quoting the stub phrasing is not a broken stub" \
+    "$(count_kind "$out" broken_pointer_stub)" "$guard_stubs"
+
+# check_rule_covered_by_skill is RULE-only, and BOTH halves of that guard need
+# a fixture that would really fire if it were widened -- an agent the metric
+# simply scores low is not evidence about the guard.
+#
+# (i) a near-copy of the SKILL carrying NO stub phrasing. Widened, its
+#     containment is far above T_COVERAGE and it emits rule_covered_by_skill.
+cat > "$FIXROOT/proj/other-plugin/agents/widget-wrangling-clone.md" <<'AGENT'
+---
+name: widget-wrangling-clone
+description: Wrangle widgets across the fleet. Use when calibrating widget torque or auditing widget inventory.
+reviewed: 2026-01-01
+---
+# widget-wrangling-clone
+Calibrating widget torque requires the fleet inventory. Audit widget torque
+calibration across every widget in the inventory before adjusting any widget.
+AGENT
+# (ii) two stub-SHAPED agents naming nothing that exists and sharing no
+#     vocabulary with any skill. Widened by an implementation that also computed
+#     `stub` for every kind, they enter the CONTROL set and fail containment:
+#     control_hits/control_total falls to 1/3, under the 0.7 gate, which emits
+#     coverage_metric_broken and SUPPRESSES every coverage finding -- an
+#     existing check silently disabled by a one-line widening.
+for n in 1 2; do
+    cat > "$FIXROOT/proj/other-plugin/agents/stubby-$n.md" <<AGENT
+---
+name: stubby-$n
+description: Placeholder $n.
+reviewed: 2026-01-01
+---
+# stubby-$n
+
+Promoted to a skill: invoke \`no-such-skill-$n\` before harvesting the orchard,
+because the almanac tabulates rainfall by parish and the ledger reconciles
+tithes quarterly against the parish register.
+AGENT
+done
+out=$(run)
+assert_eq "an agent overlapping a skill yields no rule_covered_by_skill" \
+    "$(count_kind "$out" rule_covered_by_skill)" "$guard_covered"
+assert_eq "the coverage control gate is not tripped" \
+    "$(count_kind "$out" coverage_metric_broken)" "0"
+assert_eq "and no agent is reported as a broken stub either" \
+    "$(count_kind "$out" broken_pointer_stub)" "$guard_stubs"
+rm "$FIXROOT/proj/other-plugin/agents/undated.md" \
+   "$FIXROOT/proj/other-plugin/agents/widget-wrangling-clone.md" \
+   "$FIXROOT/proj/other-plugin/agents/stubby-1.md" \
+   "$FIXROOT/proj/other-plugin/agents/stubby-2.md"
+rm -rf "$FIXROOT/proj/quoting-dir"
+
+echo "TEST 18: the lexical partition, asserted structurally rather than by timing"
+# A fixture corpus is tiny, so a wall-clock bound would prove nothing. The
+# partition has an exact arithmetic signature instead: the sum of each kind's
+# own n(n-1)/2, which for any corpus with two non-empty lexical kinds is
+# strictly less than the pooled N(N-1)/2.
+mkdir -p "$FIXROOT/proj/repo-b/.claude/rules" "$FIXROOT/proj/nest-b"
+cat > "$FIXROOT/proj/repo-b/.claude/rules/gamma.md" <<'RULE'
+# Gamma
+The nightly telemetry feed regenerates the fleet inventory manifest, and a
+manual edit to the manifest is overwritten at the next run.
+RULE
+cat > "$FIXROOT/proj/other-plugin/agents/line-walker.md" <<'AGENT'
+---
+name: line-walker
+description: Walk the assembly line and report anomalies.
+reviewed: 2026-01-01
+---
+# line-walker
+Walk the assembly line end to end and report any station whose telemetry feed
+has stopped reporting.
+AGENT
+cat > "$FIXROOT/proj/nest-b/CLAUDE.md" <<'CMD'
+# CLAUDE.md
+A second nested CLAUDE.md, sharing no vocabulary with the first: this one
+documents the release checklist and the tag naming convention.
+CMD
+out=$(run)
+n_rules=$(count_key "$out" rules)
+n_agents=$(count_key "$out" agents)
+n_claude=$(count_key "$out" claude_mds)
+expected=$(( n_rules * (n_rules - 1) / 2 + n_agents * (n_agents - 1) / 2 + n_claude * (n_claude - 1) / 2 ))
+total=$(( n_rules + n_agents + n_claude ))
+pooled=$(( total * (total - 1) / 2 ))
+# FIXTURE VALIDITY: with fewer than two non-empty kinds the two formulas
+# coincide and the assertion below is vacuous.
+assert_eq "FIXTURE: all three lexical kinds are non-empty" \
+    "$([ "$n_rules" -gt 0 ] && [ "$n_agents" -gt 0 ] && [ "$n_claude" -gt 0 ] && echo yes || echo no)" "yes"
+if [ "$expected" -lt "$pooled" ]; then
+    ok "FIXTURE: the partitioned and pooled counts genuinely differ ($expected vs $pooled)"
+else
+    bad "FIXTURE: the partitioned and pooled counts genuinely differ" "expected < pooled" "$expected >= $pooled"
+fi
+assert_eq "LEXICAL_PAIRS equals the sum of each kind's own n(n-1)/2" \
+    "$(count_key "$out" lexical_pairs)" "$expected"
+if [ "$(count_key "$out" lexical_pairs)" != "$pooled" ]; then
+    ok "LEXICAL_PAIRS is NOT the pooled N(N-1)/2"
+else
+    bad "LEXICAL_PAIRS is NOT the pooled N(N-1)/2" "not $pooled" "$pooled"
+fi
+rm "$FIXROOT/proj/repo-b/.claude/rules/gamma.md" \
+   "$FIXROOT/proj/other-plugin/agents/line-walker.md" \
+   "$FIXROOT/proj/nest-b/CLAUDE.md"
+
+# --- helpers for the D1/D2/D4 cases ----------------------------------------
+finding_field() {
+    printf '%s' "$1" | python3 -c 'import json,sys
+d = json.load(sys.stdin)
+print(next((f[sys.argv[2]] for f in d["findings"] if f["kind"] == sys.argv[1]), "<none>"))' \
+        "$2" "$3" 2>/dev/null || echo ERR
+}
+# An isolated root gets an EMPTY home: $FIXROOT/home carries pointer stubs whose
+# target skill exists only in $FIXROOT/proj, so leaving HOME pointed there would
+# manufacture a broken_pointer_stub ERROR in every isolated root and make the
+# --gate assertions below exit 2 for the wrong reason.
+mkdir -p "$FIXROOT/empty-home/.claude/rules"
+run_root() { HOME="$FIXROOT/empty-home" python3 "$ANALYZER" --root "$1" --no-embed --fast --format=json 2>/dev/null; }
+
+echo "TEST 19: agent discovery is depth-INDEPENDENT, and a misfire is distinguishable"
+# THE DEFECT: discovery was `root.glob("*-plugin/agents/*.md")` -- pinned to
+# depth 2 while rules, skills and CLAUDE.md all came from the recursive pruned
+# walk. `hooks/config-drift-probe.sh` passes `--root "${DRIFT_CWD:-.}"`, the
+# session cwd, and `~/repos` / `~/repos/laurigates` are documented Claude Code
+# working roots one and two levels ABOVE where the plugins live. Measured
+# pre-fix: 247 rules / 561 skills / 0 agents at `laurigates`, 367 / 591 / 0 at
+# `repos`, against 21 real agents below each. The whole agent widening was inert
+# exactly where the probe fires.
+out=$(run)
+base_agents=$(count_key "$out" agents)
+base_agent_dirs=$(count_key "$out" agent_dirs)
+# FIXTURE VALIDITY: without an agent already in the corpus, "one more was found"
+# would also pass against a collector that found exactly one thing by luck.
+assert_ge "FIXTURE: the corpus already holds an agent" "$base_agents" 1
+assert_ge "FIXTURE: the corpus already holds an agents/ directory" "$base_agent_dirs" 1
+
+mkdir -p "$FIXROOT/proj/portfolio/nested-plugin/agents"
+cat > "$FIXROOT/proj/portfolio/nested-plugin/agents/deep-helper.md" <<'AGENT'
+---
+name: deep-helper
+description: An agent two levels below the scan root.
+reviewed: 2026-01-01
+---
+# deep-helper
+Read the fleet inventory manifest, then walk the assembly line and record the
+torque reading for every station before proposing an adjustment.
+AGENT
+out=$(run)
+assert_eq "an agent BELOW the root's immediate children IS discovered" \
+    "$(count_key "$out" agents)" "$((base_agents + 1))"
+assert_eq "and its agents/ directory is counted at that depth too" \
+    "$(count_key "$out" agent_dirs)" "$((base_agent_dirs + 1))"
+# The two CONTROLs below assert against whatever discovery just reported, NOT
+# against `base_agents + 1`: coupling them to the depth fix would make them fail
+# as a knock-on whenever the depth assertion fails, and a control that cannot
+# pass while the thing beside it fails is not a control.
+deep_agents=$(count_key "$out" agents)
+deep_agent_dirs=$(count_key "$out" agent_dirs)
+
+# CONTROL, weighted equally with the assertion above: the `*-plugin/` PREFIX is
+# what the old comment's source-package argument actually bought, and dropping
+# the depth anchor must not drop that too. Both shapes below are the real ones
+# (`git-repo-agent/src/git_repo_agent/agents`, `vault-agent/src/vault_agent/agents`)
+# -- a directory NAMED `agents` inside a Python source package, at a depth the
+# old glob could never have reached either.
+mkdir -p "$FIXROOT/proj/portfolio/nested-plugin/src/nested_plugin/agents"
+cat > "$FIXROOT/proj/portfolio/nested-plugin/src/nested_plugin/agents/README.md" <<'PKGDOC'
+# agents
+A Python source package. Its `.md` is documentation, not an agent prompt.
+PKGDOC
+mkdir -p "$FIXROOT/proj/portfolio/some-repo-agent/src/some_repo_agent/agents"
+cat > "$FIXROOT/proj/portfolio/some-repo-agent/src/some_repo_agent/agents/README.md" <<'PKGDOC'
+# agents
+A second Python source package, in a repo whose own name ends in `-agent`.
+PKGDOC
+out=$(run)
+assert_eq "CONTROL: a source package named 'agents' is still NOT an agent dir" \
+    "$(count_key "$out" agents)" "$deep_agents"
+
+# CONTROL: `Path.match` is fnmatch-based, so `*` DOES match a leading dot and
+# `.claude-plugin` would otherwise qualify as a plugin.
+mkdir -p "$FIXROOT/proj/.claude-plugin/agents"
+cat > "$FIXROOT/proj/.claude-plugin/agents/marketplace-helper.md" <<'AGENT'
+---
+name: marketplace-helper
+description: Marketplace metadata, not a plugin agent.
+---
+# marketplace-helper
+Nothing here is an agent prompt.
+AGENT
+out=$(run)
+assert_eq "CONTROL: .claude-plugin/agents is not an agent directory" \
+    "$(count_key "$out" agents)" "$deep_agents"
+assert_eq "CONTROL: .claude-plugin/agents is not counted as an agents/ directory" \
+    "$(count_key "$out" agent_dirs)" "$deep_agent_dirs"
+
+# THE MISFIRE DISCRIMINATOR (#2219/#2290, and `scripts/check-agent-model.sh`
+# implements it for this exact shape). `AGENTS=0` alone cannot tell "this tree
+# has no agents" from "discovery misfired" -- which is precisely the state the
+# depth-anchored glob left `~/repos` in, silently, for the whole life of the
+# widening. The denominator is `*-plugin/agents` DIRECTORIES, not plugin
+# directories: most plugins define no agents (36 of 49 here), so the plugin-dir
+# form is a false positive on almost every tree. It fired on TEST 1's own
+# empty-corpus fixture, which is how that draft was caught. Three rungs below,
+# so a check that reports the misfire unconditionally or never passes exactly
+# one of them.
+MISFIRE="$FIXROOT/misfire"
+mkdir -p "$MISFIRE/foo-plugin/agents" "$MISFIRE/bar-plugin/agents" \
+         "$MISFIRE/foo-plugin/skills/thing"
+cat > "$MISFIRE/foo-plugin/skills/thing/SKILL.md" <<'SKILL'
+---
+name: thing
+description: Do the thing. Use when the thing needs doing.
+---
+# thing
+Do the thing against the fleet inventory manifest.
+SKILL
+printf 'placeholder\n' > "$MISFIRE/foo-plugin/agents/.gitkeep"
+mout=$(run_root "$MISFIRE")
+assert_eq "agents/ directories present and ZERO agent files raises the misfire" \
+    "$(count_kind "$mout" agent_discovery_misfire)" "1"
+assert_eq "the misfire is an error, not a warn" \
+    "$(finding_field "$mout" agent_discovery_misfire severity)" "error"
+assert_contains "it speaks the house vocabulary" \
+    "$(finding_field "$mout" agent_discovery_misfire summary)" \
+    "discovery misfire, not a clean tree"
+assert_eq "AGENT_DIRS names the denominator that makes it a misfire" \
+    "$(count_key "$mout" agent_dirs)" "2"
+assert_eq "FIXTURE: the misfire root really did report zero agents" \
+    "$(count_key "$mout" agents)" "0"
+HOME="$FIXROOT/empty-home" python3 "$ANALYZER" --root "$MISFIRE" --no-embed --fast --gate --format=status >/dev/null 2>&1
+assert_eq "--gate exits 2 on a discovery misfire" "$?" "2"
+
+# Rung 2: an agent file clears it. Without this, an unconditional misfire
+# finding passes every assertion above.
+cat > "$MISFIRE/foo-plugin/agents/real.md" <<'AGENT'
+---
+name: real
+description: A real agent in the misfire root.
+---
+# real
+Walk the assembly line and record every torque reading.
+AGENT
+mout=$(run_root "$MISFIRE")
+assert_eq "an agent file below an agents/ directory clears the misfire" \
+    "$(count_kind "$mout" agent_discovery_misfire)" "0"
+assert_eq "and the agent is counted" "$(count_key "$mout" agents)" "1"
+
+# Rung 3, the OTHER polarity, and the one the first draft got wrong: a plugin
+# that simply defines no agents is NOT a misfire. 36 of this repo's 49 plugin
+# directories are in exactly that state, so a check keyed on plugin directories
+# would fire on almost every tree and be trained away within a week.
+NOAGENTS="$FIXROOT/noagents"
+mkdir -p "$NOAGENTS/solo-plugin/skills/thing"
+cat > "$NOAGENTS/solo-plugin/skills/thing/SKILL.md" <<'SKILL'
+---
+name: thing
+description: Do the thing. Use when the thing needs doing.
+---
+# thing
+Do the thing against the fleet inventory manifest.
+SKILL
+nout=$(run_root "$NOAGENTS")
+assert_eq "a plugin with skills but no agents/ directory raises no misfire" \
+    "$(count_kind "$nout" agent_discovery_misfire)" "0"
+assert_eq "and reports the denominator as 0, emitted even at 0" \
+    "$(count_key "$nout" agent_dirs)" "0"
+assert_eq "FIXTURE: that root really was scanned (its skill was found)" \
+    "$(count_key "$nout" skills)" "1"
+
+out=$(run)
+assert_eq "the main fixture -- agents/ dirs AND agents -- raises no misfire" \
+    "$(count_kind "$out" agent_discovery_misfire)" "0"
+
+rm -rf "$FIXROOT/proj/portfolio" "$FIXROOT/proj/.claude-plugin" "$MISFIRE" "$NOAGENTS"
+
+echo "TEST 20: the generator-template predicate, as a both-polarity MATRIX"
+# The predicate was wrong in BOTH directions and the over-exclude half is the
+# worse one -- it silently drops LIVE configuration. Each case below is its own
+# root, so the verdict is exact per fixture rather than inferred from a delta,
+# and every row asserts BOTH the kept count and the excluded count so a
+# predicate that excluded everything and one that excluded nothing each fail
+# roughly half the matrix.
+#
+#   root                                     kept  excluded  which half
+#   packages/create-widget/template/            0       1     under-excluded
+#   scaff/{{cookiecutter.project_slug}}/        0       1     under-excluded
+#   webapp/app/templates/                       1       0     OVER-excluded
+#   my-copier-template/ (nested)                1       0     OVER-excluded
+#   my-copier-template/ (as --root)             1       2     OVER-excluded
+#   flat cargo-generate template                0       1     must STILL exclude
+#   ordinary nested dir                         1       0     must STILL keep
+MROOT="$FIXROOT/tmplmatrix"
+
+# 20a. UNDER-EXCLUDED: singular `template/` under an npm `create-*` package.
+# The old predicate matched only the PLURAL `templates`, so this unrendered
+# document entered the corpus. Also copier's `_subdirectory: template` shape.
+mkdir -p "$MROOT/a/packages/create-widget/template"
+cat > "$MROOT/a/packages/create-widget/template/CLAUDE.md" <<'CMD'
+# CLAUDE.md
+Payload `npm create widget` copies into a repo that does not exist yet.
+CMD
+o=$(run_root "$MROOT/a")
+assert_eq "a singular template/ under a create-* package is excluded" "$(count_key "$o" claude_mds)" "0"
+assert_eq "...and the exclusion is reported" "$(count_key "$o" claude_md_templates_excluded)" "1"
+
+# 20b. UNDER-EXCLUDED: an unrendered path component, corroborated by cruft.json
+# -- which was not in the manifest list at all, though cruft-managed cookiecutter
+# templates are the common case.
+mkdir -p "$MROOT/b/scaff/{{cookiecutter.project_slug}}"
+printf '{"template": "https://example.invalid/t.git"}\n' > "$MROOT/b/scaff/cruft.json"
+cat > "$MROOT/b/scaff/{{cookiecutter.project_slug}}/CLAUDE.md" <<'CMD'
+# CLAUDE.md
+An UNRENDERED document whose own directory is literally a placeholder.
+CMD
+o=$(run_root "$MROOT/b")
+assert_eq "an unrendered path component is excluded" "$(count_key "$o" claude_mds)" "0"
+assert_eq "...and the exclusion is reported" "$(count_key "$o" claude_md_templates_excluded)" "1"
+# ...and cruft.json alone, at an ancestor, is now a declaration in its own right.
+mkdir -p "$MROOT/b2/scaff/inner"
+printf '{"template": "https://example.invalid/t.git"}\n' > "$MROOT/b2/scaff/cruft.json"
+cat > "$MROOT/b2/scaff/inner/CLAUDE.md" <<'CMD'
+# CLAUDE.md
+Below a cruft-managed template root, with no unrendered component anywhere.
+CMD
+o=$(run_root "$MROOT/b2")
+assert_eq "cruft.json at an ancestor excludes on its own" "$(count_key "$o" claude_mds)" "0"
+# ...and the unrendered-component signal ALONE, with no manifest anywhere. The
+# two fixtures above are each corroborated by cruft.json, so the ancestor-manifest
+# signal excludes the document before the unrendered one is ever consulted --
+# deleting the unrendered signal outright left both suites green (mutation M4).
+# An assertion that names one signal while measuring another pins nothing.
+mkdir -p "$MROOT/b3/scaff/{{cookiecutter.project_slug}}"
+cat > "$MROOT/b3/scaff/{{cookiecutter.project_slug}}/CLAUDE.md" <<'CMD'
+# CLAUDE.md
+Unrendered directory name, and deliberately NO generator manifest anywhere.
+CMD
+o=$(run_root "$MROOT/b3")
+assert_eq "an unrendered component excludes with NO manifest anywhere" \
+    "$(count_key "$o" claude_mds)" "0"
+assert_eq "...and that exclusion is reported" \
+    "$(count_key "$o" claude_md_templates_excluded)" "1"
+# Guard integrity: the same tree with a rendered directory name must be KEPT,
+# or the two assertions above pass against a predicate that excludes everything.
+mkdir -p "$MROOT/b4/scaff/my-project"
+cat > "$MROOT/b4/scaff/my-project/CLAUDE.md" <<'CMD'
+# CLAUDE.md
+Same shape, rendered directory name, no manifest. Ordinary live configuration.
+CMD
+o=$(run_root "$MROOT/b4")
+assert_eq "CONTROL: the same tree with a rendered name is KEPT" \
+    "$(count_key "$o" claude_mds)" "1"
+
+# 20c. OVER-EXCLUDED: a Flask/Django Jinja directory. The bare component match
+# fired at ANY depth with no corroborating manifest, so every repo with an
+# `app/templates/` silently lost its CLAUDE.md.
+mkdir -p "$MROOT/c/webapp/app/templates"
+cat > "$MROOT/c/webapp/app/templates/CLAUDE.md" <<'CMD'
+# CLAUDE.md
+A Jinja template directory in a live web app. This file is live configuration.
+CMD
+o=$(run_root "$MROOT/c")
+assert_eq "a Jinja app/templates/ CLAUDE.md is KEPT" "$(count_key "$o" claude_mds)" "1"
+assert_eq "...and nothing is reported as excluded" "$(count_key "$o" claude_md_templates_excluded)" "0"
+
+# 20d. OVER-EXCLUDED: a template repo's OWN root document is live config for
+# whoever maintains the template. Asserted at BOTH scopes, because fixing it
+# only at `dirpath == root` would leave the verdict depending on where you
+# happened to point --root -- the same depth-anchoring disease as TEST 19.
+mkdir -p "$MROOT/d/my-copier-template"
+printf '_subdirectory: template\n' > "$MROOT/d/my-copier-template/copier.yml"
+cat > "$MROOT/d/my-copier-template/CLAUDE.md" <<'CMD'
+# CLAUDE.md
+The template repo's own root document -- how to MAINTAIN this template.
+CMD
+o=$(run_root "$MROOT/d")
+assert_eq "a NESTED template repo's own root CLAUDE.md is KEPT" "$(count_key "$o" claude_mds)" "1"
+assert_eq "...and nothing is reported as excluded" "$(count_key "$o" claude_md_templates_excluded)" "0"
+
+mkdir -p "$MROOT/d/my-copier-template/template" "$MROOT/d/my-copier-template/docs"
+cat > "$MROOT/d/my-copier-template/template/CLAUDE.md" <<'CMD'
+# CLAUDE.md
+Payload, below the manifest that declares this tree a template.
+CMD
+cat > "$MROOT/d/my-copier-template/docs/CLAUDE.md" <<'CMD'
+# CLAUDE.md
+Also below the declaring manifest.
+CMD
+o=$(run_root "$MROOT/d/my-copier-template")
+assert_eq "with --root ON the template repo, its own CLAUDE.md is still KEPT" \
+    "$(count_key "$o" claude_mds)" "1"
+# KNOWN RESIDUAL, pinned as a recorded decision rather than left to be
+# rediscovered: a manifest at the root still excludes everything BELOW it. That
+# is correct for a whole-repo template and conservative for a `_subdirectory`
+# one; only the root's own document -- the one that certainly still loads in
+# that session -- is protected.
+assert_eq "RESIDUAL: documents below a declaring root manifest are still excluded" \
+    "$(count_key "$o" claude_md_templates_excluded)" "2"
+
+# 20e. GUARD INTEGRITY: the real shape in this repo must STILL be excluded.
+# `foundryvtt-plugin/templates/foundryvtt-module/` carries cargo-generate.toml
+# BESIDE its CLAUDE.md -- a flat layout where the manifest's own directory is the
+# payload. Manifest-beside-the-document is corroboration, not a declaration, so
+# it is the `templates` component that tips it.
+mkdir -p "$MROOT/e/some-plugin/templates/some-module"
+printf '[template]\ncargo_generate_version = ">=0.23.0"\n' \
+    > "$MROOT/e/some-plugin/templates/some-module/cargo-generate.toml"
+cat > "$MROOT/e/some-plugin/templates/some-module/CLAUDE.md" <<'CMD'
+# CLAUDE.md
+A flat cargo-generate template: the manifest's own directory is the payload.
+CMD
+o=$(run_root "$MROOT/e")
+assert_eq "the flat cargo-generate shape is STILL excluded" "$(count_key "$o" claude_mds)" "0"
+assert_eq "...and the exclusion is reported" "$(count_key "$o" claude_md_templates_excluded)" "1"
+
+# ...while the SAME manifest-beside-the-document, without the conventional
+# component, is kept. This is the pair that proves corroboration is really
+# required rather than the manifest being sufficient on its own.
+mkdir -p "$MROOT/e2/some-plugin/scaffolds/some-module"
+printf '[template]\ncargo_generate_version = ">=0.23.0"\n' \
+    > "$MROOT/e2/some-plugin/scaffolds/some-module/cargo-generate.toml"
+cat > "$MROOT/e2/some-plugin/scaffolds/some-module/CLAUDE.md" <<'CMD'
+# CLAUDE.md
+A manifest beside a document, with no conventional component to corroborate it.
+CMD
+o=$(run_root "$MROOT/e2")
+assert_eq "a manifest BESIDE a document, uncorroborated, KEEPS it" "$(count_key "$o" claude_mds)" "1"
+
+# 20f. GUARD INTEGRITY, the plain case: an ordinary nested CLAUDE.md with no
+# template signal of any kind. Without this row, every "KEPT" assertion above
+# would also pass against a predicate that excluded nothing at all -- and
+# without 20a/20b/20e, every "excluded" assertion would pass against one that
+# excluded everything.
+mkdir -p "$MROOT/f/plain/nested"
+cat > "$MROOT/f/plain/nested/CLAUDE.md" <<'CMD'
+# CLAUDE.md
+An ordinary nested CLAUDE.md at a path with no template signal of any kind.
+CMD
+o=$(run_root "$MROOT/f")
+assert_eq "an ordinary nested CLAUDE.md is KEPT" "$(count_key "$o" claude_mds)" "1"
+assert_eq "...and nothing is reported as excluded" "$(count_key "$o" claude_md_templates_excluded)" "0"
+
+rm -rf "$MROOT"
+
+echo "TEST 21: duplicate severity is per kind, and the split is asserted both ways"
+# `warn` asserts drift. For a CLAUDE.md pair that is very often wrong: a
+# vendored clone and its upstream are byte-identical BY DESIGN, and the analyzer
+# cannot tell that from a divergence. Measured at ~/repos, the top pair is
+# exactly that (a vendored `external/facedancer` clone against the user's own
+# `mcu-tinkering-lab` package). Two `.claude/rules/` scopes, and two
+# `*-plugin/agents/*.md` in one marketplace, are both live and both loaded --
+# duplication there IS drift.
+mkdir -p "$FIXROOT/proj/repo-b/.claude/rules" "$FIXROOT/proj/nest-b" \
+         "$FIXROOT/proj/other-plugin/agents"
+cp "$FIXROOT/proj/repo-a/.claude/rules/alpha.md" "$FIXROOT/proj/repo-b/.claude/rules/beta.md"
+sed 's/proposing any adjustment/proposing a single adjustment/' \
+    "$FIXROOT/proj/some-plugin/agents/torque-auditor.md" \
+    > "$FIXROOT/proj/other-plugin/agents/torque-auditor-copy.md"
+sed 's/an empty report otherwise/an empty report in that case/' \
+    "$FIXROOT/proj/nest-a/CLAUDE.md" > "$FIXROOT/proj/nest-b/CLAUDE.md"
+out=$(run)
+# FIXTURE VALIDITY first: all three findings must actually exist, or every
+# severity assertion below reads "<none>" and the case asserts nothing.
+assert_eq "FIXTURE: a rule duplicate fired" "$(count_kind "$out" duplicate_rule_lexical)" "1"
+assert_eq "FIXTURE: an agent duplicate fired" "$(count_kind "$out" duplicate_agent_lexical)" "1"
+assert_eq "FIXTURE: a CLAUDE.md duplicate fired" "$(count_kind "$out" duplicate_claude_md_lexical)" "1"
+assert_eq "a duplicate RULE is a warn" \
+    "$(finding_field "$out" duplicate_rule_lexical severity)" "warn"
+assert_eq "a duplicate AGENT is a warn" \
+    "$(finding_field "$out" duplicate_agent_lexical severity)" "warn"
+assert_eq "a duplicate CLAUDE.md is INFO, not warn" \
+    "$(finding_field "$out" duplicate_claude_md_lexical severity)" "info"
+# The severity split moves the roll-up, so pin the arithmetic rather than the
+# label alone: an implementation that emitted the right string on a finding the
+# renderer still counted as a warning would pass the three rows above.
+assert_contains "the CLAUDE.md duplicate is counted as an info, not a warning" \
+    "$(run_status)" "FINDING_DUPLICATE_CLAUDE_MD_LEXICAL=1"
+rm "$FIXROOT/proj/repo-b/.claude/rules/beta.md" \
+   "$FIXROOT/proj/other-plugin/agents/torque-auditor-copy.md" \
+   "$FIXROOT/proj/nest-b/CLAUDE.md"
+
 echo
 echo "=== CONFIG DRIFT TESTS ==="
 echo "PASSED=$PASS"
