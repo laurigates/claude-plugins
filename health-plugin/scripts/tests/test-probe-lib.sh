@@ -1234,18 +1234,26 @@ hook = open(sys.argv[2]).read()
 tree = ast.parse(src)
 
 # The two values `Finding(... f"semantic_overlap_{a['kind']}_{b['kind']}" ...)`
-# can interpolate, read off collect()'s own dict literals rather than assumed.
+# can interpolate, read off the analyzer's own SEMANTIC_KINDS assignment rather
+# than assumed. That tuple is what `main()` feeds `check_semantic_dupes`, so it
+# IS the interpolation domain -- and it is now the only honest source for it:
+# the corpus carries four kinds but only two reach the semantic pass, so the
+# former derivation (every `"kind": <const>` dict literal in the file) would
+# expand 4x4 and demand map rows for twelve kinds the analyzer cannot emit.
+# Since the shared `_doc()` constructor landed there are no such dict literals
+# left either, so that derivation would now yield the EMPTY set and expand to
+# nothing -- passing "no missing kinds" vacuously.
 item_kinds = set()
 for node in ast.walk(tree):
-    if isinstance(node, ast.Dict):
-        for k, v in zip(node.keys, node.values):
-            if (
-                isinstance(k, ast.Constant)
-                and k.value == "kind"
-                and isinstance(v, ast.Constant)
-                and isinstance(v.value, str)
-            ):
-                item_kinds.add(v.value)
+    if isinstance(node, ast.Assign) and any(
+        isinstance(t, ast.Name) and t.id == "SEMANTIC_KINDS" for t in node.targets
+    ):
+        if isinstance(node.value, (ast.Tuple, ast.List)):
+            item_kinds.update(
+                e.value
+                for e in node.value.elts
+                if isinstance(e, ast.Constant) and isinstance(e.value, str)
+            )
 
 kinds = set()
 for node in ast.walk(tree):
@@ -1292,10 +1300,10 @@ out=$(python3 "$FIXROOT/mapcover.py" "$ANALYZER" "$HOOK_SRC" 2>&1)
 # FIXTURE VALIDITY first: an AST walk that matched nothing satisfies "no missing
 # kinds" trivially, and a regex that matched no map keys satisfies "no unmapped
 # rows" the same way.
-assert_contains "the item kinds are derived, not assumed" "$out" "ITEM_KINDS rule,skill"
-assert_contains "FIXTURE: the derivation found every construction site" "$out" "DERIVED_N 13"
-assert_contains "FIXTURE: 12 of those kinds are reachable" "$out" "REACHABLE_N 12"
-assert_contains "FIXTURE: the map's keys were actually parsed out of the hook" "$out" "MAPPED_N 12"
+assert_contains "the semantic-pass kinds are derived from SEMANTIC_KINDS, not assumed" "$out" "ITEM_KINDS rule,skill"
+assert_contains "FIXTURE: the derivation found every construction site" "$out" "DERIVED_N 17"
+assert_contains "FIXTURE: 16 of those kinds are reachable" "$out" "REACHABLE_N 16"
+assert_contains "FIXTURE: the map's keys were actually parsed out of the hook" "$out" "MAPPED_N 16"
 assert_absent "every Finding( kind argument was parseable" "$out" "UNPARSEABLE_KIND_ARG"
 assert_contains "CONTROL: a fabricated kind is not reported as mapped" \
     "$out" "CONTROL_FABRICATED_MAPPED False"
@@ -1306,6 +1314,203 @@ assert_contains "the map carries no row for a kind the analyzer cannot emit" \
     "$out" "UNEMITTABLE_ROWS NONE"
 assert_contains "semantic_overlap_skill_rule stays unmapped (triu makes it unreachable)" \
     "$out" "UNREACHABLE_ABSENT True"
+
+echo "TEST N4: every remediation row names a skill that can SEE its finding's corpus"
+# The defect this pins: the two widened duplicate kinds were routed to
+# `/agent-patterns:meta-promote` by copying the `duplicate_rule_lexical` row.
+# meta-promote builds its inventory from `<scope>/.claude/{rules,skills,commands,
+# agents}/` and `<scope>/*/.claude/{...}/`. A repo-root CLAUDE.md is in NEITHER
+# layer, and a plugin agent at `*-plugin/agents/*.md` is not under
+# `.claude/agents/` either -- so both rows named a skill that structurally cannot
+# open the file the finding is about. The rule row IS correct, which is exactly
+# why copying it read as safe.
+#
+# SEMANTIC, not a spelling check: the map is parsed out of the SHIPPED hook, the
+# target is RESOLVED to a real SKILL.md on disk, and that skill's own inventory
+# text is what is asserted on. A grep for the string "meta-context-diet" would
+# pass against a row naming a skill that does not exist.
+MARKETPLACE_ROOT="$(cd "${SCRIPTS_DIR}/../.." && pwd)"
+cat > "$FIXROOT/routing.py" <<'ROUTING'
+import re
+import sys
+from pathlib import Path
+
+hook, marketplace = sys.argv[1], Path(sys.argv[2])
+m = re.search(r"def fix:\s*\{(.*?)\}\[\.kind\]", Path(hook).read_text(), re.S)
+rows = dict(re.findall(r'"([a-z0-9_]+)"\s*:\s*"([^"]+)"', m.group(1))) if m else {}
+
+# Inventory probes, spelled once. Each is a literal a skill's own Context block
+# or discovery step uses to NAME the corpus it opens -- not a description.
+AGENT_GLOBS = ("agents/*", "agents-plugin/agents", "-plugin/agents", "*/agents/")
+DOT_CLAUDE_INVENTORY = ".claude/{rules,skills,commands,agents}/"
+
+
+def sees_claude_md(body):
+    return "CLAUDE.md" in body
+
+
+def sees_plugin_agents(body):
+    return any(g in body for g in AGENT_GLOBS)
+
+
+def resolve(cmd):
+    """`/ns:name` -> the SKILL.md that serves it, or None.
+
+    The house spelling drops the plugin's leading segment (`health-check` is
+    `/health:check`), so both the bare name and the `ns-name` join are tried.
+    """
+    ns, _, name = cmd.lstrip("/").partition(":")
+    for candidate in (name, ns + "-" + name):
+        for skill in marketplace.glob("*-plugin/skills/" + candidate + "/SKILL.md"):
+            return skill
+    return None
+
+
+for kind in sorted(rows):
+    cmd = rows[kind]
+    skill = resolve(cmd)
+    state = "RESOLVED" if skill else "UNRESOLVED"
+    print("ROW %s %s %s" % (kind, cmd, state))
+    if skill is None:
+        continue
+    body = skill.read_text()
+    print("SEES_CLAUDE_MD %s %s" % (kind, sees_claude_md(body)))
+    print("SEES_PLUGIN_AGENTS %s %s" % (kind, sees_plugin_agents(body)))
+
+# FIXTURE VALIDITY for the claim that meta-promote was the WRONG target: read
+# its own inventory and show it names neither widened corpus.
+mp = resolve("/agent-patterns:meta-promote")
+mp_body = mp.read_text() if mp else ""
+print("META_PROMOTE_RESOLVED %s" % bool(mp))
+print("META_PROMOTE_SEES_PLUGIN_AGENTS %s" % sees_plugin_agents(mp_body))
+print("META_PROMOTE_INVENTORY_IS_DOT_CLAUDE %s" % (DOT_CLAUDE_INVENTORY in mp_body))
+ROUTING
+rout=$(python3 "$FIXROOT/routing.py" "$HOOK_SRC" "$MARKETPLACE_ROOT" 2>&1)
+
+# FIXTURE VALIDITY first: an unresolvable target makes every "SEES_" line absent,
+# which would satisfy an assert_absent trivially.
+assert_contains "the agent-duplicate row resolves to a real skill" \
+    "$rout" "ROW duplicate_agent_lexical /agents:analyze RESOLVED"
+assert_contains "the CLAUDE.md-duplicate row resolves to a real skill" \
+    "$rout" "ROW duplicate_claude_md_lexical /agent-patterns:meta-context-diet RESOLVED"
+# The claim: each target's own inventory names the corpus its finding is about.
+assert_contains "the CLAUDE.md-duplicate target inventories CLAUDE.md files" \
+    "$rout" "SEES_CLAUDE_MD duplicate_claude_md_lexical True"
+assert_contains "the agent-duplicate target inventories agent files" \
+    "$rout" "SEES_PLUGIN_AGENTS duplicate_agent_lexical True"
+# CONTROL, and the reason the original routing looked safe: the rule row is
+# still meta-promote, and meta-promote is still the right answer for it. Without
+# this, a map that routed everything to /health:check would pass the two rows
+# above by never naming meta-promote at all.
+assert_contains "CONTROL: the RULE duplicate still routes to meta-promote" \
+    "$rout" "ROW duplicate_rule_lexical /agent-patterns:meta-promote RESOLVED"
+# FIXTURE VALIDITY for the defect itself: meta-promote's inventory really is
+# `.claude/`-scoped and names neither widened corpus.
+assert_contains "FIXTURE: meta-promote resolves" "$rout" "META_PROMOTE_RESOLVED True"
+assert_contains "FIXTURE: meta-promote's inventory is the .claude/ tree" \
+    "$rout" "META_PROMOTE_INVENTORY_IS_DOT_CLAUDE True"
+assert_contains "FIXTURE: meta-promote never inventories plugin agents" \
+    "$rout" "META_PROMOTE_SEES_PLUGIN_AGENTS False"
+# Every row must at least resolve -- a remediation naming a skill that does not
+# exist is a dead pointer whichever corpus it could see.
+assert_absent "no remediation row names a skill that does not exist" "$rout" "UNRESOLVED"
+
+echo "TEST N5: the SessionStart nudge, through the hook's OWN jq pipeline"
+# `duplicate_claude_md_lexical` sorts alphabetically first among the warns, so at
+# both portfolio roots the widening put it in slot 1 and the displacing finding
+# was a byte-identical CLAUDE.md between a VENDORED clone and its source --
+# expected duplication, not drift. Demoting it to `info` is the fix for the
+# HEADLINE. It is NOT a fix for the displacement, and this case pins both halves
+# so the distinction stays a recorded decision rather than a hope.
+#
+# The pipeline is EXTRACTED from the shipped hook, never retyped: a retyped copy
+# is not the code under test (never-fabricate-test-identifiers.md).
+python3 - "$HOOK_SRC" > "$FIXROOT/forward.jq" <<'EXTRACT'
+import re
+import sys
+
+src = open(sys.argv[1]).read()
+m = re.search(r"(def rank:.*?\| \[\.severity, \.kind, \.summary, \.fix\] \| @tsv)", src, re.S)
+if not m:
+    sys.exit("could not extract the forwarding pipeline from the hook")
+print(m.group(1))
+EXTRACT
+if [ ! -s "$FIXROOT/forward.jq" ]; then
+    bad "FIXTURE: the forwarding pipeline was extracted from the hook" "non-empty jq" "empty"
+elif ! command -v jq >/dev/null 2>&1; then
+    ok "SKIP: jq not available for the forwarding-pipeline case"
+else
+    ok "FIXTURE: the forwarding pipeline was extracted from the hook"
+    # Reproduces the ~/repos kind histogram measured 2026-08-29 with --fast
+    # --no-embed: 7 duplicate_claude_md_lexical, 14 duplicate_rule_lexical,
+    # 71 review_staleness, 19 rule_covered_by_skill, 1 frontmatter_coverage.
+    # Severities are read from the ANALYZER rather than typed here, so a future
+    # severity change moves this fixture with it.
+    python3 - "$ANALYZER" > "$FIXROOT/histogram.json" <<'HIST'
+import importlib.util
+import json
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(sys.argv[1])))
+spec = importlib.util.spec_from_file_location("config_drift", sys.argv[1])
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+
+# The two duplicate kinds' severities come from the shipped constructor.
+dup = {
+    k: mod._lexical_finding(k, "s", 0.9, ["/a", "/b"])["severity"]
+    for k in ("rule", "agent", "claude_md")
+}
+counts = {
+    ("duplicate_claude_md_lexical", dup["claude_md"]): 7,
+    ("duplicate_rule_lexical", dup["rule"]): 14,
+    ("review_staleness", "warn"): 71,
+    ("rule_covered_by_skill", "info"): 19,
+    ("frontmatter_coverage", "info"): 1,
+}
+findings = [
+    {"severity": sev, "kind": kind, "summary": f"{kind} #{i}"}
+    for (kind, sev), n in counts.items()
+    for i in range(n)
+]
+json.dump({"findings": findings, "counts": {}}, sys.stdout)
+HIST
+    fwd=$(jq -r -f "$FIXROOT/forward.jq" < "$FIXROOT/histogram.json" 2>&1)
+    slot1=$(printf '%s\n' "$fwd" | sed -n '1p' | cut -f2)
+    forwarded=$(printf '%s\n' "$fwd" | cut -f2 | sort | tr '\n' ',')
+
+    assert_eq "FIXTURE: the cap forwards exactly 4 rows" \
+        "$(printf '%s\n' "$fwd" | grep -c .)" "4"
+    # The half the demotion DOES buy: slot 1 is real drift, not a vendored-clone
+    # artifact. Pre-demotion this was duplicate_claude_md_lexical at both roots.
+    assert_eq "slot 1 is the RULE duplicate, not the CLAUDE.md duplicate" \
+        "$slot1" "duplicate_rule_lexical"
+    assert_contains "the CLAUDE.md duplicate is still forwarded, below the warns" \
+        "$forwarded" "duplicate_claude_md_lexical"
+    # The half it does NOT buy, pinned so nobody claims otherwise: with five
+    # kinds and a cap of four, one is dropped whatever the severities are, and
+    # within `info` frontmatter_coverage beats rule_covered_by_skill on the
+    # alphabetical tiebreak either way. The cap and the sort are shared across
+    # every plugin and are not this probe's to change.
+    assert_absent "RECORDED: rule_covered_by_skill is still displaced by the cap" \
+        "$forwarded" "rule_covered_by_skill"
+    # Guard integrity: the two rows above are about ORDER, so a pipeline that
+    # forwarded nothing, or forwarded them in a fixed order regardless of
+    # severity, must fail something. Re-run with the CLAUDE.md duplicate forced
+    # back to `warn` and require slot 1 to move -- that is the pre-fix behaviour,
+    # reproduced rather than asserted.
+    warn_slot1=$(python3 -c '
+import json, sys
+d = json.load(open(sys.argv[1]))
+for f in d["findings"]:
+    if f["kind"] == "duplicate_claude_md_lexical":
+        f["severity"] = "warn"
+json.dump(d, sys.stdout)
+' "$FIXROOT/histogram.json" | jq -r -f "$FIXROOT/forward.jq" | sed -n '1p' | cut -f2)
+    assert_eq "CONTROL: at warn severity it takes slot 1 again (the pre-fix state)" \
+        "$warn_slot1" "duplicate_claude_md_lexical"
+fi
 
 echo
 echo "=== PROBE LIB TESTS ==="

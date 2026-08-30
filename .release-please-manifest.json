@@ -1,6 +1,6 @@
 {
   "accessibility-plugin": "2.3.5",
-  "agent-patterns-plugin": "2.45.0",
+  "agent-patterns-plugin": "2.45.1",
   "agents-plugin": "1.14.0",
   "api-plugin": "2.0.0",
   "bevy-plugin": "1.4.1",
@@ -21,7 +21,7 @@
   "foundryvtt-plugin": "1.3.1",
   "git-plugin": "2.52.0",
   "github-actions-plugin": "1.9.4",
-  "health-plugin": "1.17.5",
+  "health-plugin": "1.19.0",
   "home-assistant-plugin": "1.4.0",
   "hooks-plugin": "2.11.0",
   "kubernetes-plugin": "1.8.0",

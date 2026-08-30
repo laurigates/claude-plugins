@@ -77,22 +77,79 @@ never a clean sweep.
 ### `config-drift.py`
 
 Answers a question the other health checks do not: **is the configuration
-corpus self-consistent?** It compares rules against each other and against the
-skill corpus, rather than validating any one file in isolation.
+corpus self-consistent?** It compares documents against each other and against
+the skill corpus, rather than validating any one file in isolation.
 
-| Check | Severity | Catches |
-|---|---|---|
-| `broken_pointer_stub` | ERROR | A "Promoted to a skill: invoke `x`" rule whose target no longer exists |
-| `duplicate_rule_lexical` | WARN | Byte-identical or near-identical rules across scopes |
-| `semantic_overlap_*` | WARN | Differently-worded rules or skills covering one topic |
-| `rule_covered_by_skill` | INFO | A resident rule whose content a skill already carries |
-| `always_loaded_budget` | WARN | The every-turn surface creeping past its ceiling |
-| `review_staleness` | WARN | An artifact changed after its declared `reviewed:` date |
+The corpus is four kinds — `.claude/rules/*.md` (plus `~/.claude/rules`),
+`*/skills/*/SKILL.md`, `*-plugin/agents/*.md`, and `CLAUDE.md`. All four share
+one document shape, and each check names the kinds it applies to explicitly:
+
+| Check | Severity | Kinds | Catches |
+|---|---|---|---|
+| `broken_pointer_stub` | ERROR | rule | A "Promoted to a skill: invoke `x`" rule whose target no longer exists |
+| `duplicate_rule_lexical` | WARN | rule | Byte-identical or near-identical rules across scopes |
+| `duplicate_agent_lexical` | WARN | agent | Two agent prompts that have converged |
+| `duplicate_claude_md_lexical` | INFO | claude_md | Two CLAUDE.md carrying the same guidance |
+| `agent_discovery_misfire` | ERROR | agent | `*-plugin/agents` directories present but zero agent files — discovery is broken, not the tree clean |
+| `semantic_overlap_*` | WARN | rule, skill | Differently-worded rules or skills covering one topic |
+| `rule_covered_by_skill` | INFO | rule | A resident rule whose content a skill already carries |
+| `promotion_candidate` | INFO | rule, claude_md | The same guidance at two scopes with no declared parent — a candidate for `/agent-patterns:meta-promote`. **Semantic tier only** |
+| `always_loaded_budget` | WARN | rule, claude_md | The every-turn surface creeping past its ceiling |
+| `review_staleness` | WARN | all four | An artifact changed after its declared `reviewed:` date |
+| `frontmatter_coverage` | INFO | rule | Rules with no `reviewed:` date, so staleness cannot be tracked |
+
+`duplicate_claude_md_lexical` is INFO rather than WARN because a CLAUDE.md pair
+is very often duplication that is *correct* — a vendored clone and its upstream,
+or one package copied into two places — and the analyzer cannot tell that from a
+divergence. Two `.claude/rules/` scopes, and two `*-plugin/agents/*.md` in one
+marketplace, are both live and both loaded, so duplication there really is drift.
+
+**`promotion_candidate` and the threshold that cannot do the job alone.**
+`T_PROMOTE = 0.88` sits below `T_SEMANTIC = 0.91` because at 0.91 this root
+yields zero findings — shipping at the drift threshold would ship the verdict
+inert. But the score is not what makes it precise: the declared hierarchy
+(`offload-to-deterministic-substrate` at two scopes, 0.8994) outscores the
+genuine candidate (`auto-mode` ← `claude-code-auto-mode`, 0.8990) by 0.0004. No
+cut separates them; `structural_pair` does. Two further constraints carry more
+weight than the number — an **ancestor** test, because `scope_rank` is depth and
+would otherwise pair unrelated repos (69 → 22 pairs at `~/repos`), and a
+**500-char floor**, because near-empty redirect stubs score 0.88–0.98 against
+each other (22 → 12).
+
+Known limitation: a hierarchy declared in a **third** document is invisible —
+`structural_pair` reads only the two documents in the pair. The six
+`ForumViriumHelsinki/.github` pairs are exactly this shape, declared in that
+workspace's own `CLAUDE.md`. Closing it needs a third-document signal with its
+own calibration. Run the expensive tier with `just config-drift-semantic`.
+
+Agents are discovered through the same **recursive pruned walk** as every other
+kind (`*-plugin/agents`), not a depth-anchored glob: the SessionStart probe scans
+the session cwd, and a portfolio root sits one or two levels above where plugins
+live. `AGENT_DIRS=` is the denominator that makes `AGENTS=0` legible — beside a
+nonzero `AGENT_DIRS` it is a misfire, beside `AGENT_DIRS=0` it is a clean tree.
+
+The lexical comparison is **partitioned by kind** — each kind is compared only
+against itself. A high Jaccard between an agent prompt and a rule is not a
+duplicate rule, and pooling costs 9x the partitioned run on this corpus.
+`LEXICAL_PAIRS=` in the status block reports how many pairs were compared, so
+the partition is assertable rather than implicit.
+
+A `CLAUDE.md` holding **generator template** payload is excluded — it is content
+for a repo that does not exist yet, not configuration that loads anywhere. Two
+signals *declare* a template and are sufficient alone: an unrendered path
+component (`{{cookiecutter.project_slug}}/`), or a generator manifest
+(`cargo-generate.toml` / `cookiecutter.json` / `copier.y{a,}ml` / `cruft.json`)
+at a **strict ancestor**. Two more only *suggest* it and need each other: a
+`template`/`templates` path component, and either a manifest sitting beside the
+document or an npm `create-*` parent. A bare `templates/` component is never
+enough on its own — a Flask or Django `app/templates/` is a Jinja directory whose
+CLAUDE.md is live configuration. The root's own `CLAUDE.md` is never excluded.
+`CLAUDE_MD_TEMPLATES_EXCLUDED=` is emitted even at 0.
 
 Two cost tiers, because a SessionStart probe cannot pay for a model:
 
 ```
-config-drift.py --fast --no-embed --format=json    # 0.05s, pure stdlib, no git spawn
+config-drift.py --fast --no-embed --format=json    # 0.33s, pure stdlib, no git spawn
 config-drift.py --format=report                    # + embeddings, scheduled use
 ```
 

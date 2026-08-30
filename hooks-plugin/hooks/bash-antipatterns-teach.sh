@@ -52,98 +52,37 @@ if [ -z "$COMMAND" ]; then
     exit 0
 fi
 
-# ── COMMAND_SHELL_ONLY: the executable view of the command (issue #2518) ──────
+# Every detector below scans COMMAND_SHELL_ONLY — the command with heredoc bodies
+# and trailing `#` comments removed — never the raw $COMMAND (issue #2518).
 #
-# Every nudge below used to scan the RAW command, which made two kinds of prose
-# look like shell:
+# All six detectors are `^`-anchored, and `^` in grep anchors to the start of
+# every LINE, so before this projection a heredoc-BODY line that merely looked
+# like a watched command was nudged as if it were one. Observed live: a
+# `gh issue comment` whose body was a markdown table — zero shell pipes — drew
+# the long-pipeline nudge, because the table's cell separators were counted as
+# pipes and a cell containing the word `printf` was read as the discouraged head
+# stage. The detector matched a table cell *describing another detector*.
 #
-#   1. Heredoc bodies. `^` in grep anchors to the start of every LINE, not the
-#      start of the command, so a heredoc-body line that merely BEGINS with a
-#      watched word (`find . -name …` in a repro section, `tail -20 build.log`
-#      in a commit message) was matched as if it were the executed command.
-#   2. Trailing `#` comments. The shell discards them before executing; the
-#      detectors care about what would EXECUTE.
+# The exposure ran the other way too. The read/search detectors disqualify
+# themselves when the command contains a `|`, so a `|` anywhere in a heredoc body
+# silently suppressed a genuine hint on the real command beside it.
 #
-# The reported break was the long-pipeline segmenter, which splits on statement
-# separators after stripping quoted spans. A heredoc body is neither quoted nor a
-# statement, so each markdown table row survived as its own "pipeline": a row like
-# `| \`echo/printf > file\` -> Write | 18 | 16 | 15.2% | 12.5% |` carries 6 pipe
-# characters and satisfies the discouraged-head test because the cell text
-# literally contains a `printf ` token. The detector matched a table cell
-# DESCRIBING another detector. The same table text arriving as a quoted argument
-# was already silent — the hook had the "this is data" concept, it just did not
-# extend it to heredocs.
+# The sibling safety hook (bash-antipatterns.sh) already scans this projection
+# for its own `^`-anchored blocks (#2431). It is right for those blocks to be
+# pure-regex over raw text where they choose to be: a safety false positive is
+# the correct trade. This hook is a NON-BLOCKING style nudge with no such
+# justification — a false positive here spends the agent's attention on markdown.
 #
-# This is the same projection bash-antipatterns.sh computes for its own
-# `^`-anchored detectors (issue #2431, #2106); it is LIFTED here rather than
-# extracted into a shared helper on purpose. That hook is the SAFETY tier: its
-# detectors are pure-regex by design and must fire in every context, so
-# refactoring it to share code with a style-nudge hook would risk changing
-# safety behaviour for no benefit to this fix. The two copies are small, and
-# each is pinned by its own test suite.
-#
-# The awk program walks the command line-by-line. On `<<DELIM` it enters heredoc
-# mode and suppresses subsequent lines until a line matching DELIM. The
-# heredoc-OPENING line is still printed, so a real command sharing that line (and
-# every line after the terminator) still matches — including the `<<` and
-# `cat >` tokens the cat nudge's own exemptions key on.
-COMMAND_NO_HEREDOC=$(echo "$COMMAND" | awk '
-    BEGIN { ih = 0 }
-    ih == 0 {
-        if (match($0, /<<-?[[:space:]]*[^[:space:]]*[A-Za-z_][A-Za-z_0-9]*/)) {
-            s = substr($0, RSTART)
-            gsub(/<<-?[[:space:]]*/, "", s)
-            gsub(/^[^A-Za-z_]+/, "", s)
-            gsub(/[^A-Za-z_0-9].*/, "", s)
-            if (s != "") { delim = s; ih = 1 }
-            print; next
-        }
-        print; next
-    }
-    ih == 1 {
-        t = $0; gsub(/^[[:space:]]+/, "", t); gsub(/[[:space:]]+$/, "", t)
-        if (t == delim) { ih = 0 }
-    }
-')
+# Fails open: if the library is missing from a partial deployment, the hook exits
+# 0 rather than erroring, because a teach nudge is never worth a broken hook.
+# shellcheck source=hooks-plugin/hooks/lib/command-views.sh
+# shellcheck disable=SC1091  # path resolves at runtime, relative to this hook
+. "$(dirname "$0")/lib/command-views.sh" 2>/dev/null || exit 0
 
-# Strip trailing shell comments from the heredoc-stripped view. A `#` starts a
-# comment ONLY when it is at the start of the line OR immediately preceded by
-# whitespace or a shell metacharacter (`;`, `|`, `&`, `(`), AND is not inside
-# single or double quotes — so `http://x#frag` and `echo "# literal"` survive.
-# Quote state is tracked per line (a shell comment is a per-line construct), so
-# an unbalanced quote on one line cannot swallow the next. The single-quote
-# character is passed in via -v SQ so the awk program stays single-quoted for the
-# shell. Done AFTER heredoc stripping so comment removal only ever touches the
-# executable text that survives it, never a heredoc body line.
-strip_trailing_comments() {
-    printf '%s\n' "$1" | awk -v SQ="'" '
-    {
-        line = $0
-        n = length(line)
-        in_s = 0   # inside single quotes
-        in_d = 0   # inside double quotes
-        cut = 0
-        for (i = 1; i <= n; i++) {
-            c = substr(line, i, 1)
-            if (in_s == 1) {
-                if (c == SQ) in_s = 0
-            } else if (in_d == 1) {
-                if (c == "\"") in_d = 0
-            } else if (c == SQ) {
-                in_s = 1
-            } else if (c == "\"") {
-                in_d = 1
-            } else if (c == "#") {
-                if (i == 1) { cut = i; break }
-                p = substr(line, i - 1, 1)
-                if (p == " " || p == "\t" || p == ";" || p == "|" || p == "&" || p == "(") { cut = i; break }
-            }
-        }
-        if (cut > 0) print substr(line, 1, cut - 1); else print line
-    }'
-}
-
-COMMAND_SHELL_ONLY=$(strip_trailing_comments "$COMMAND_NO_HEREDOC")
+COMMAND_SHELL_ONLY=$(command_shell_only "$COMMAND")
+if [ -z "${COMMAND_SHELL_ONLY//[[:space:]]/}" ]; then
+    exit 0
+fi
 
 # Compose the hint based on which soft-teach pattern (if any) the command matched.
 # A command can match at most one hint - we pick the most specific. hint_key is a

@@ -64,6 +64,39 @@ lint-fleet-drift *args:
 lint-all: lint-context-commands lint-compliance lint-health lint-infra lint-taskwarrior-tags lint-shell lint-context-engineering
 
 ####################
+# Config drift
+####################
+
+# The EXPENSIVE tier of config-drift: semantic overlap + promotion candidates.
+#
+# Deliberately NOT in lint-all and NOT reachable from the SessionStart probe.
+# It runs the analyzer through `uv run --script` because the PEP-723 block at
+# the top of config-drift.py declares fastembed + numpy, and neither is
+# installed for the bare `python3` the probe hook and the test suite invoke —
+# so this is the only supported way to reach the embedding pass. First run
+# downloads the BAAI/bge-small-en-v1.5 model; later runs read
+# ~/.cache/config-drift/embeddings.json, which is content-keyed and warm.
+#
+# It existed only as a command line in a PR body before this recipe.
+#
+# Exits 1 whenever any warn-severity finding exists, which on a real corpus is
+# the normal state (review_staleness alone accounts for ~67). That is the
+# analyzer's standing contract, not a fault in this recipe — read the report,
+# and use `--gate` (exit 2 on error only) for a CI gate.
+# Semantic-tier config drift: embedding overlap and promotion candidates
+[group: "lint"]
+config-drift-semantic *args:
+    uv run --script ./health-plugin/scripts/config-drift.py --format=report {{args}}
+
+# Re-derive the T_PROMOTE distribution over a corpus (dev-only; see the
+# constant's comment for the numbers this produced on 2026-08-29). Point --root
+# at a wider tree to calibrate against it: `just config-drift-calibrate --root ~/repos`
+# Measure the promotion-band distribution used to set T_PROMOTE
+[group: "lint"]
+config-drift-calibrate *args:
+    uv run --script ./health-plugin/scripts/config-drift.py --calibrate {{args}}
+
+####################
 # Testing
 ####################
 

@@ -7,8 +7,10 @@ Run: python3 feedback-plugin/scripts/tests/test_friction_parse.py
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -53,14 +55,19 @@ def fixture_evidence_source(fixture_dir: Path) -> str:
     raise AssertionError(f"no tool_result in {fixture_dir}")
 
 
-def run_parser(fixture_dir: Path) -> list[dict]:
+def _run_parser_at(parser: Path, fixture_dir: Path) -> list[dict]:
+    """Run an arbitrary parser build over a fixture (used by the dual run)."""
     proc = subprocess.run(
-        [sys.executable, str(PARSER), "--root", str(fixture_dir), "--since", "3650d"],
+        [sys.executable, str(parser), "--root", str(fixture_dir), "--since", "3650d"],
         capture_output=True,
         text=True,
         check=True,
     )
     return [json.loads(line) for line in proc.stdout.splitlines() if line.strip()]
+
+
+def run_parser(fixture_dir: Path) -> list[dict]:
+    return _run_parser_at(PARSER, fixture_dir)
 
 
 def test_plan_mode_legitimate_is_not_emitted():
@@ -311,6 +318,244 @@ def test_plain_bash_error_still_classifies_as_error_bash():
     assert len(plain) == 1, f"expected 1 non-guard event, got {plain}"
     assert plain[0]["signature"] == "error:bash", (
         f"a plain bash error must stay in the generic bucket: {plain[0]}"
+    )
+
+
+# --------------------------------------------------------------------------
+# hook:bash-antipatterns:other -> eight detector signatures (issue #2420)
+# --------------------------------------------------------------------------
+
+DETECTOR_FIXTURE = FIXTURES / "hook_detector_split"
+
+# The eight REMINDER-format detectors the catch-all used to hide, with the
+# W35 per-detector reading that justified splitting them. Merged, the bucket
+# read 74 ev / 45 sess / 42.9% prevalence / 42.2% same-session repeat; every
+# detector individually teaches well (max 15.2% repeat besides `awk`, n=2
+# sessions), so the 42.2% was an aggregation artifact.
+DETECTOR_SIGNATURES = (
+    "hook:bash-antipatterns:echo-write",
+    "hook:bash-antipatterns:sed-inplace",
+    "hook:bash-antipatterns:timeout",
+    "hook:bash-antipatterns:git-add-broad",
+    "hook:bash-antipatterns:commit-heredoc",
+    "hook:bash-antipatterns:awk-edit",
+    "hook:bash-antipatterns:test-grep-chain",
+    "hook:bash-antipatterns:net-pipe-shell",
+)
+
+
+def _detector_generator():
+    """The fixture generator module, imported for its hook-source extractor.
+
+    One implementation of `block_messages` serves both the generator and this
+    drift guard, so the guard cannot pass against a parsing bug the generator
+    shares.
+    """
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "hook_detector_split_generate", DETECTOR_FIXTURE / "generate.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_hook_other_dissolves_into_eight_detector_signatures():
+    """Regression: each bash-antipatterns detector gets its own cluster key.
+
+    Before the split, eight distinct detectors shared
+    `hook:bash-antipatterns:other`. In the 2026-W35 window that made it the
+    second-largest cluster in the corpus (74 ev / 42.9% prevalence, up from
+    46 ev / 27.2% in W34) with a 42.2% same-session repeat rate that belonged
+    to no detector in it -- and, because they shared one signature, no
+    per-detector escalation gate could be written at all. See issue #2420.
+    """
+    events = run_parser(DETECTOR_FIXTURE)
+    by_sig: dict[str, int] = {}
+    for ev in events:
+        by_sig[ev["signature"]] = by_sig.get(ev["signature"], 0) + 1
+
+    for sig in DETECTOR_SIGNATURES:
+        assert by_sig.get(sig) == 1, (
+            f"detector {sig} did not populate -- an empty bucket and a broken "
+            f"needle look identical here: {by_sig}"
+        )
+
+    # `:other` survives as a fallback, holding only the two deliberate
+    # non-members: the cat-write near-miss and a wholly unknown message.
+    assert by_sig.get("hook:bash-antipatterns:other") == 2, (
+        f"`:other` must keep catching unmatched messages: {by_sig}"
+    )
+
+
+def test_detector_ordering_keeps_cat_write_out_of_echo_write():
+    """Ordering pin: a shared lead-in must not swallow a sibling detector.
+
+    `cat > file` and `echo/printf > file` both say "Use the Write tool
+    instead of ...", so a needle keyed on that phrase rather than the quoted
+    token would absorb every cat-write block into `echo-write` silently --
+    the shape PR #2421 hit, where a loose `cross-repo` test placed ahead of
+    `worktree-gone` swallowed all 29 of the latter.
+    """
+    events = run_parser(DETECTOR_FIXTURE)
+    cat_write = [e for e in events if "instead of 'cat > file'" in e["evidence"]]
+    assert len(cat_write) == 1, (
+        f"fixture no longer exercises the shared-lead-in trap: {cat_write}"
+    )
+    assert cat_write[0]["signature"] == "hook:bash-antipatterns:other", (
+        f"cat-write was swallowed by a sibling detector: {cat_write[0]}"
+    )
+
+    # Control for that negative: the detector whose lead-in it shares DID
+    # match, so the assertion above reflects ordering and not a dead needle.
+    echo_write = [
+        e for e in events if e["signature"] == "hook:bash-antipatterns:echo-write"
+    ]
+    assert len(echo_write) == 1, (
+        f"echo-write did not fire, so the cat-write assertion proves nothing: "
+        f"{[e['signature'] for e in events]}"
+    )
+
+
+def test_detector_fixture_matches_deployed_hook():
+    """The fixture must carry the messages the hook actually ships.
+
+    A retyped message reads identically in a diff while matching a needle the
+    real hook never emits, so a broken split and a clean one would produce the
+    same-looking fixture. Regenerate with
+    `python3 feedback-plugin/scripts/tests/fixtures/hook_detector_split/generate.py`.
+    """
+    gen = _detector_generator()
+    messages = gen.block_messages(HOOK_SCRIPT.read_text(encoding="utf-8"))
+
+    # Compare DECODED tool_result bodies, not the raw JSON: encoding choices
+    # (ensure_ascii, escaping) would otherwise masquerade as drift.
+    bodies = []
+    for line in (DETECTOR_FIXTURE / "t.jsonl").read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        for item in json.loads(line).get("message", {}).get("content", []) or []:
+            if isinstance(item, dict) and item.get("type") == "tool_result":
+                bodies.append(item["content"])
+    fixture_text = "\n".join(bodies)
+
+    for needle, _command, expected_sig in gen.DETECTORS:
+        deployed = gen.select(messages, needle)
+        assert deployed in fixture_text, (
+            f"fixture drifted from hooks-plugin/hooks/bash-antipatterns.sh for "
+            f"{expected_sig}; regenerate it from the deployed block message"
+        )
+        assert expected_sig in DETECTOR_SIGNATURES, (
+            f"generator and test disagree on the detector set: {expected_sig}"
+        )
+
+
+def test_dual_parser_only_other_events_change_bucket():
+    """The identical-input check: old and new parser over the SAME fixture.
+
+    The only permitted difference is `hook:bash-antipatterns:other` events
+    moving into one of the eight new keys. An event that changes bucket
+    elsewhere, disappears, or shifts a count in an unrelated signature is a
+    defect -- a re-signature pass that quietly re-buckets neighbouring
+    clusters breaks week-over-week comparability without failing anything.
+
+    Structurally the containment is guaranteed (the detector table is
+    appended after every pre-existing check, so nothing that matched before
+    can reach it), but the guarantee is only worth what a run of both
+    parsers over real event shapes says it is.
+    """
+    base_ref = os.environ.get("FRICTION_DUAL_PARSER_BASE", "origin/main")
+    show = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(REPO_ROOT),
+            "show",
+            f"{base_ref}:{PARSER.relative_to(REPO_ROOT)}",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if show.returncode != 0:
+        print(
+            f"  SKIP dual-parser check: `git show {base_ref}:...` failed "
+            f"({show.stderr.strip()[:120]})"
+        )
+        return
+
+    with tempfile.TemporaryDirectory() as tmp:
+        baseline = Path(tmp) / "friction_parse_base.py"
+        baseline.write_text(show.stdout, encoding="utf-8")
+        old = _run_parser_at(baseline, DETECTOR_FIXTURE)
+
+    new = run_parser(DETECTOR_FIXTURE)
+
+    # Non-vacuity: a baseline that emitted nothing would make every
+    # comparison below trivially true.
+    assert old, "baseline parser produced no events -- harness broken, not a clean run"
+    assert len(old) == len(new), (
+        f"event count changed under the split: {len(old)} -> {len(new)}"
+    )
+
+    detectors = set(DETECTOR_SIGNATURES)
+    catchall = "hook:bash-antipatterns:other"
+    moved = 0
+    for before, after in zip(old, new):
+        assert (before["session"], before["ts"]) == (after["session"], after["ts"]), (
+            f"event streams misaligned at {before['ts']}"
+        )
+        for field in ("kind", "tool", "evidence"):
+            assert before[field] == after[field], (
+                f"{field} drifted for {before['ts']}: "
+                f"{before[field]!r} -> {after[field]!r}"
+            )
+        if before["signature"] == after["signature"]:
+            continue
+        assert before["signature"] == catchall and after["signature"] in detectors, (
+            f"illegal bucket move at {before['ts']}: "
+            f"{before['signature']} -> {after['signature']}"
+        )
+        moved += 1
+
+    # Two regimes, because the baseline moves. Pre-merge, `origin/main` is the
+    # unsplit parser and every detector must migrate. Post-merge it already
+    # carries the split, `moved` is legitimately 0, and demanding 8 would turn
+    # this into a test that fails the day it lands. Which regime applies is
+    # read off the BASELINE's own output, not off a date or a branch name.
+    if any(ev["signature"] in detectors for ev in old):
+        assert moved == 0, (
+            f"baseline already carries the split, so no event may change "
+            f"bucket, yet {moved} did"
+        )
+    else:
+        assert moved == len(DETECTOR_SIGNATURES), (
+            f"expected all {len(DETECTOR_SIGNATURES)} detectors to move out of "
+            f"`{catchall}`, saw {moved}"
+        )
+
+    # Every signature outside the split must be byte-identical.
+    def counts(events: list[dict]) -> dict[str, int]:
+        out: dict[str, int] = {}
+        for ev in events:
+            out[ev["signature"]] = out.get(ev["signature"], 0) + 1
+        return out
+
+    before_counts, after_counts = counts(old), counts(new)
+    for sig in set(before_counts) | set(after_counts):
+        if sig == catchall or sig in detectors:
+            continue
+        assert before_counts.get(sig, 0) == after_counts.get(sig, 0), (
+            f"unrelated signature {sig} shifted: "
+            f"{before_counts.get(sig, 0)} -> {after_counts.get(sig, 0)}"
+        )
+
+    # ...and there must BE unrelated signatures, or the loop above asserted
+    # nothing. The fixture carries hook and tool_error controls for this.
+    unrelated = {s for s in before_counts if s != catchall and s not in detectors}
+    assert len(unrelated) >= 4, (
+        f"fixture lacks enough control signatures to make the no-drift "
+        f"assertion meaningful: {sorted(unrelated)}"
     )
 
 

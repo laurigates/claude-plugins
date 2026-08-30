@@ -1541,6 +1541,40 @@ assert_exit \
     "E: cd into a /var/folders temp dir is allowed" 0 \
     "cd /var/folders/ab/T/gen && sed -i '' 's/a/b/' gen.conf"
 
+# B2-B5 (W35 friction): the predicate above required a trailing SLASH after the
+# scratch prefix (`(/private)?/tmp/`), so a BARE `cd /tmp` — no subdirectory —
+# still blocked, and the exemption the block message advertises was unreachable
+# for that shape. Byte-identical across every deployed version 2.8.5 -> 2.10.2.
+# Fixed by replacing the trailing slash with a boundary class
+# `(/|"|$|[[:space:]]|[;&|])`, which is also what keeps B6 (`/tmpfoo`) blocking.
+assert_exit \
+    "B2: bare 'cd /tmp' (no subdir) is allowed (W35)" 0 \
+    "cd /tmp && sed -i '' 's/a/b/' f.py"
+
+assert_exit \
+    "B3: bare 'cd /private/tmp' (no subdir) is allowed (W35)" 0 \
+    "cd /private/tmp && sed -i '' 's/a/b/' f.py"
+
+assert_exit \
+    "B4: bare 'cd /tmp' separated by ';' is allowed (W35)" 0 \
+    "cd /tmp; sed -i '' 's/a/b/' f.py"
+
+assert_exit_complex \
+    "B5: quoted bare 'cd \"/tmp\"' is allowed (W35)" 0 \
+    'cd "/tmp" && sed -i "" "s/a/b/" f.py'
+
+assert_exit \
+    "GUARD INTEGRITY (B6): 'cd /tmpfoo' is NOT a scratch prefix, still blocked (W35)" 2 \
+    "cd /tmpfoo && sed -i '' 's/a/b/' f.py"
+
+assert_exit \
+    "GUARD INTEGRITY (B7): 'cd /private/tmpfoo' still blocked (W35)" 2 \
+    "cd /private/tmpfoo && sed -i '' 's/a/b/' f.py"
+
+assert_exit \
+    "GUARD INTEGRITY (B8): 'cd /var/foldersX/y' still blocked (W35)" 2 \
+    "cd /var/foldersX/y && sed -i '' 's/a/b/' f.py"
+
 assert_exit \
     "GUARD INTEGRITY (D): cd into a repo, relative sed target, still blocked" 2 \
     "cd ~/repos/x && sed -i '' 's/a/b/' src/f.py"

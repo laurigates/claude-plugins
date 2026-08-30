@@ -152,6 +152,48 @@ def canonical_signature(kind: str, tool: str, evidence: str) -> str:
                 return "hook:bash-antipatterns:long-pipeline"
             if "taskoutput tool" in ev:
                 return "hook:bash-antipatterns:taskoutput"
+            # REMINDER-format detectors. Every check above keys on the
+            # BLOCKED: substitution format or on prose unique to one older
+            # detector, so this table is appended rather than interleaved:
+            # an event that already matched above still matches above, and
+            # the ONLY events this table can capture are ones that used to
+            # fall through to `:other`. That containment is structural, and
+            # it is what the dual-parser identical-input check asserts.
+            #
+            # Why split at all (2026-W35): merged, `:other` was 74 events /
+            # 45 sessions / 42.9% prevalence / 42.2% same-session repeat --
+            # the second-largest cluster in the corpus and up from 46 ev /
+            # 27.2% in W34. Dissolved, no detector exceeds 15.2% repeat
+            # except `awk` (50.0%, but n=2 sessions). The 42.2% was an
+            # aggregation artifact, so citing it as a teaching-failure
+            # signal for any single detector would have been wrong -- and
+            # while the eight shared one key, no per-detector escalation
+            # gate could be written at all. See issue #2420.
+            #
+            # ORDERING. Each needle carries the detector's own quoted token
+            # rather than the shared lead-in, because three pairs share a
+            # phrase and a loose test placed first swallows its neighbour
+            # silently (the shape PR #2421 hit):
+            #   * "use the edit tool instead of"  -> 'sed -i' AND 'awk'
+            #   * "use the write tool instead of" -> 'echo/printf > file'
+            #     AND 'cat > file' (the cat-write detector, which is NOT in
+            #     this table and must keep falling through to `:other`)
+            # test_friction_parse.py pins both the split and the ordering.
+            for needle, detector in (
+                # Quoted-token needles first: the narrowest tests, and the
+                # ones whose shared lead-in would otherwise cross-match.
+                ("instead of 'echo/printf > file'", "echo-write"),
+                ("instead of 'sed -i'", "sed-inplace"),
+                ("instead of 'awk'", "awk-edit"),
+                # Unshared prose; order among these is not load-bearing.
+                ("'timeout' command is usually unnecessary", "timeout"),
+                ("avoid broad staging commands", "git-add-broad"),
+                ("use heredoc directly in git commit", "commit-heredoc"),
+                ("parsing test output with grep chains", "test-grep-chain"),
+                ("piping network content directly to a shell", "net-pipe-shell"),
+            ):
+                if needle in ev:
+                    return f"hook:bash-antipatterns:{detector}"
             return "hook:bash-antipatterns:other"
         # Other hook scripts produce identifiable script-name substrings
         # via the same "[bash .../<name>.sh]" wrapper. Match those first
