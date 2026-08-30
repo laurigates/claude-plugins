@@ -456,8 +456,18 @@ See .claude/rules/bash-tool-replacements.md for the full table."
     # already stripped), matching the other regex detectors below: a `cd /tmp/...`
     # that appears only inside a heredoc body or an explanatory comment is data,
     # not shell state, and must not grant the exemption (#2106's class).
+    #
+    # The `cd` branch ends in a BOUNDARY CLASS, not a trailing slash (W35
+    # friction, Refs #2422). Requiring `(/private)?/tmp/` meant a bare
+    # `cd /tmp && sed -i ...` — no subdirectory — never matched, so the
+    # exemption the block message advertises was unreachable for that shape in
+    # every deployed version 2.8.5 -> 2.10.2. `(/|"|$|[[:space:]]|[;&|])` accepts
+    # the bare form while still refusing `cd /tmpfoo`, which a bare prefix match
+    # would have wrongly exempted. The variable branch keeps its trailing slash:
+    # a variable value is consumed as `"$SP/f.py"`, so the slash is part of the
+    # shape it matches.
     scratch_ctx() {
-        echo "$COMMAND_SHELL_ONLY" | grep -Eq '(^|[;&|])[[:space:]]*cd[[:space:]]+"?((/private)?/tmp/|/var/folders/)' || \
+        echo "$COMMAND_SHELL_ONLY" | grep -Eq '(^|[;&|])[[:space:]]*cd[[:space:]]+"?((/private)?/tmp|/var/folders)(/|"|$|[[:space:]]|[;&|])' || \
         echo "$COMMAND_SHELL_ONLY" | grep -Eq '(^|[[:space:];&|])[A-Za-z_][A-Za-z0-9_]*="?((/private)?/tmp/|/var/folders/)'
     }
 
