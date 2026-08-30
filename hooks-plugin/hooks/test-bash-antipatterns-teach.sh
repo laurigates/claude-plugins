@@ -154,6 +154,78 @@ assert_silent "kubectl logs grep|grep 5-pipe diagnosis is silent (log stream, #1
     'kubectl logs -n ns pod | grep -iE "err|403" | grep -ivE "noise" | grep -v other | cut -f1 | tail -15'
 
 echo ""
+echo "heredoc bodies and trailing comments are DATA, not shell (#2518):"
+# The hook scans COMMAND_SHELL_ONLY (heredoc bodies + trailing `#` comments
+# stripped), the same projection bash-antipatterns.sh computes. Before that lift,
+# every nudge here scanned the raw command: `^` anchors to the start of each LINE,
+# so a heredoc-body line was read as if it were the executed command, and the
+# long-pipeline segmenter counted a markdown table row's `|` characters as pipes.
+#
+# Case A is the reported break: a markdown table documenting the OTHER detectors,
+# written to a file via a heredoc. Its `| ... |` cells carry 6 "pipes" and the row
+# text contains a `printf ` token, satisfying the discouraged-head test.
+TEACH_HEREDOC_TABLE="cat > /tmp/notes.md <<'EOF'
+| Pattern | Events | Sessions | Rate | Repeat |
+|---|---|---|---|---|
+| \`echo/printf > file\` -> Write | 18 | 16 | 15.2% | 12.5% |
+| \`find\` -> Glob | 29 | 25 | 17% | 12% |
+EOF"
+assert_silent "A: heredoc body that is a markdown table is silent" "$TEACH_HEREDOC_TABLE"
+
+# B is the load-bearing control: the identical table text arriving as a quoted
+# ARGUMENT was already handled correctly (the segmenter strips quoted spans), so
+# the hook already had the "this is data" concept — it just did not extend it to
+# heredocs. B passing both pre- and post-fix is what proves A was the gap.
+assert_silent "B: same table text as a single-quoted argument stays silent" \
+    "gh issue create --body '| \`echo/printf > file\` -> Write | 18 | 16 | 15.2% | 12.5% |'"
+
+# C/D are the must-still-fire / must-stay-silent controls. A permissive patch that
+# silences the genuine scrape fails here rather than passing quietly.
+assert_emits "C: genuine 5-pipe cat-headed scrape still fires" \
+    "cat f.log | grep a | grep -v b | awk '{print}' | sort | uniq -c" \
+    "pipes fed from a cat/echo/printf"
+assert_silent "D: echo hello stays silent" "echo hello"
+
+# The same per-line `^` exposure in the other four nudges: a heredoc body line
+# that BEGINS with the watched word is prose, not a command.
+assert_silent "heredoc body line beginning with 'find -name' is silent" \
+    "gh pr create --body \"\$(cat <<'EOF'
+Repro steps:
+find . -name '*.ts'
+EOF
+)\""
+assert_silent "heredoc body line beginning with 'tail -20 file' is silent" \
+    "git commit -F - <<'EOF'
+fix(x): stop truncating logs
+tail -20 build.log
+EOF"
+assert_silent "heredoc body line beginning with 'grep -rn' is silent" \
+    "git commit -F - <<'EOF'
+docs: record the search that found it
+grep -rn foo src/
+EOF"
+assert_silent "heredoc body line beginning with 'ls *.md' is silent" \
+    "git commit -F - <<'EOF'
+docs: note the listing idiom
+ls *.md
+EOF"
+
+# Trailing `#` comments are likewise excluded from the shell projection.
+assert_silent "trailing comment carrying a 5-pipe cat scrape is silent" \
+    'git log --oneline -5  # cat x | a | b | c | d | e'
+
+# Over-strip controls: neither projection may swallow real commands.
+assert_emits "a real command AFTER the heredoc terminator still fires" \
+    "cat > /tmp/x.md <<'EOF'
+hello
+EOF
+grep -rn foo src/" \
+    "Grep tool"
+assert_emits "a trailing comment does not exempt the command it annotates" \
+    "cat README.md  # skim the intro" \
+    "Read tool"
+
+echo ""
 echo "pipelines and unrelated commands stay silent:"
 assert_silent "cat file | head -10 (pipeline) is silent" "cat README.md | head -10"
 assert_silent "git status --porcelain is silent" "git status --porcelain"
