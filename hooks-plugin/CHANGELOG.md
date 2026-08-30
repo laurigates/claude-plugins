@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.11.0...hooks-plugin-v2.11.1) (2026-08-30)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** match a bare cd into a scratch prefix in scratch_ctx ([#2517](https://github.com/laurigates/claude-plugins/issues/2517)) ([a03bb6a](https://github.com/laurigates/claude-plugins/commit/a03bb6aa0cfb58e9895d2221af6ddaac3efad88f)), closes [#2422](https://github.com/laurigates/claude-plugins/issues/2422)
+
 ## [2.11.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.10.2...hooks-plugin-v2.11.0) (2026-08-27)
 
 
