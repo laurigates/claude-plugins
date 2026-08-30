@@ -160,6 +160,88 @@ assert_silent "git status --porcelain is silent" "git status --porcelain"
 assert_silent "echo hello is silent" "echo hello"
 
 echo ""
+echo "heredoc bodies and trailing comments are DATA, not shell (#2518):"
+# The teach hook scans the same COMMAND_SHELL_ONLY projection the safety hook
+# computes: heredoc bodies and trailing `#` comments removed. Every detector here
+# is `^`-anchored, and `^` matches the start of every LINE — so before the fix a
+# heredoc-body line that merely *looked* like a watched command was nudged as if
+# it were one. The live report: a `gh issue comment` whose body was a markdown
+# table (zero shell pipes) drew the long-pipeline nudge, because the table's cell
+# separators were counted as pipes and a cell containing the word `printf` was
+# read as the discouraged head stage.
+#
+# Case B below is the load-bearing control: the identical table text arriving as
+# a quoted argument was ALREADY handled correctly, so the hook had the
+# "this is data" concept and simply did not extend it to heredocs.
+HEREDOC_TABLE='gh issue comment 2420 --body-file - <<XEOF
+| Detector | ev | sess | prev | rpt |
+|---|---|---|---|---|
+| `echo/printf > file` -> Write | 18 | 16 | 15.2% | 12.5% |
+| `sed -i` -> Edit | 15 | 15 | 14.3% | 0.0% |
+XEOF'
+assert_silent "A: markdown table in a heredoc body draws no long-pipeline nudge" \
+    "$HEREDOC_TABLE"
+assert_silent "B: the same table as a quoted --body argument stays silent (control)" \
+    'gh issue comment 2420 --body '"'"'| Detector | ev | `echo/printf > file` -> Write | 18 | 16 |'"'"''
+assert_emits "C: a genuine 6-pipe cat-headed scrape still fires (control)" \
+    "cat f.log | grep a | grep -v b | awk '{print}' | sort | uniq -c | sort -rn" \
+    "pipes fed from a cat/echo/printf"
+assert_silent "D: echo hello stays silent (control)" "echo hello"
+
+# Every remaining detector, one heredoc-body case each. `cat` was already silent
+# by accident (its own `<<` exclusion), so it is pinned rather than fixed.
+assert_silent "heredoc body: 'cat README.md' draws no Read hint" \
+    'gh pr create --body-file - <<XEOF
+cat README.md
+XEOF'
+assert_silent "heredoc body: 'head -50 notes.md' draws no Read hint" \
+    'gh pr create --body-file - <<XEOF
+head -50 notes.md
+XEOF'
+assert_silent "heredoc body: 'tail -20 notes.md' draws no Read hint" \
+    'gh pr create --body-file - <<XEOF
+tail -20 notes.md
+XEOF'
+assert_silent "heredoc body: 'find . -name' draws no Glob hint" \
+    'gh pr create --body-file - <<XEOF
+find . -name "*.ts"
+XEOF'
+assert_silent "heredoc body: 'grep -rn foo src/' draws no Grep hint" \
+    'gh pr create --body-file - <<XEOF
+grep -rn foo src/
+XEOF'
+assert_silent "heredoc body: 'ls *.md' draws no Glob hint" \
+    'gh pr create --body-file - <<XEOF
+ls *.md
+XEOF'
+
+# GUARD INTEGRITY. Without these, a projection that simply blanked the whole
+# command would pass every assert_silent above while teaching nothing ever again.
+assert_emits "GUARD: a real grep sharing the heredoc-opening line still fires" \
+    'grep -rn foo src/ && gh pr create --body-file - <<XEOF
+| a | b |
+XEOF' \
+    "Grep tool"
+assert_emits "GUARD: a real grep AFTER the heredoc terminator still fires" \
+    'gh pr create --body-file - <<XEOF
+| a | b |
+XEOF
+grep -rn foo src/' \
+    "Grep tool"
+assert_emits "GUARD: a real grep on line 2 of a multi-line command still fires" \
+    'cd /tmp
+grep -rn foo src/' \
+    "Grep tool"
+
+# Trailing `#` comments are stripped too — the same projection, and the pipe
+# counter is the detector that a comment can actually push over its threshold.
+assert_silent "trailing comment pipes do not inflate the pipeline count" \
+    "cat f.log | grep a | grep -v b  # scraped from x | y | z | w | v | u"
+assert_emits "GUARD: a trailing comment does not disarm a genuine 6-pipe scrape" \
+    "cat f.log | grep a | grep -v b | awk '{print}' | sort | uniq -c | sort -rn  # scrape" \
+    "pipes fed from a cat/echo/printf"
+
+echo ""
 echo "env-var guard (disabled by default):"
 assert_disabled "cat README.md is silent when env var unset" "cat README.md"
 assert_disabled "grep -rn foo src/ is silent when env var unset" "grep -rn foo src/"

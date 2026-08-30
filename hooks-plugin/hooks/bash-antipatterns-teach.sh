@@ -52,6 +52,38 @@ if [ -z "$COMMAND" ]; then
     exit 0
 fi
 
+# Every detector below scans COMMAND_SHELL_ONLY — the command with heredoc bodies
+# and trailing `#` comments removed — never the raw $COMMAND (issue #2518).
+#
+# All six detectors are `^`-anchored, and `^` in grep anchors to the start of
+# every LINE, so before this projection a heredoc-BODY line that merely looked
+# like a watched command was nudged as if it were one. Observed live: a
+# `gh issue comment` whose body was a markdown table — zero shell pipes — drew
+# the long-pipeline nudge, because the table's cell separators were counted as
+# pipes and a cell containing the word `printf` was read as the discouraged head
+# stage. The detector matched a table cell *describing another detector*.
+#
+# The exposure ran the other way too. The read/search detectors disqualify
+# themselves when the command contains a `|`, so a `|` anywhere in a heredoc body
+# silently suppressed a genuine hint on the real command beside it.
+#
+# The sibling safety hook (bash-antipatterns.sh) already scans this projection
+# for its own `^`-anchored blocks (#2431). It is right for those blocks to be
+# pure-regex over raw text where they choose to be: a safety false positive is
+# the correct trade. This hook is a NON-BLOCKING style nudge with no such
+# justification — a false positive here spends the agent's attention on markdown.
+#
+# Fails open: if the library is missing from a partial deployment, the hook exits
+# 0 rather than erroring, because a teach nudge is never worth a broken hook.
+# shellcheck source=hooks-plugin/hooks/lib/command-views.sh
+# shellcheck disable=SC1091  # path resolves at runtime, relative to this hook
+. "$(dirname "$0")/lib/command-views.sh" 2>/dev/null || exit 0
+
+COMMAND_SHELL_ONLY=$(command_shell_only "$COMMAND")
+if [ -z "${COMMAND_SHELL_ONLY//[[:space:]]/}" ]; then
+    exit 0
+fi
+
 # Compose the hint based on which soft-teach pattern (if any) the command matched.
 # A command can match at most one hint - we pick the most specific. hint_key is a
 # stable identifier for the matched pattern, used below for session-scoped dedup.
@@ -60,17 +92,17 @@ hint_key=""
 
 # cat file (not in pipeline, not heredoc)
 if [ -z "$hint" ] && \
-   echo "$COMMAND" | grep -Eq '^\s*cat\s+[^|><]' && \
-   ! echo "$COMMAND" | grep -Eq '<<|cat\s*>' && \
-   ! echo "$COMMAND" | grep -q '|'; then
+   echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*cat\s+[^|><]' && \
+   ! echo "$COMMAND_SHELL_ONLY" | grep -Eq '<<|cat\s*>' && \
+   ! echo "$COMMAND_SHELL_ONLY" | grep -q '|'; then
     hint="Use the Read tool instead of 'cat' to read files. Read returns line-numbered content and respects token budgets."
     hint_key="read-cat"
 fi
 
 # head/tail file (not in pipeline)
 if [ -z "$hint" ] && \
-   echo "$COMMAND" | grep -Eq '^\s*(head|tail)\s+(-[0-9n]+\s+)?[^|]' && \
-   ! echo "$COMMAND" | grep -q '|'; then
+   echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*(head|tail)\s+(-[0-9n]+\s+)?[^|]' && \
+   ! echo "$COMMAND_SHELL_ONLY" | grep -q '|'; then
     hint="Use the Read tool with offset/limit parameters instead of 'head' or 'tail'. Example: Read with offset=100, limit=50."
     hint_key="read-headtail"
 fi
@@ -80,8 +112,8 @@ fi
 # delete, so the Glob hint is useless for a delete action (issue #1671). -exec/-ok
 # are intentionally not exempt (arbitrary command execution).
 if [ -z "$hint" ] && \
-   echo "$COMMAND" | grep -Eq '^\s*find\s+' && \
-   ! echo "$COMMAND" | grep -Eq 'find\s+.*(-maxdepth|-mindepth|-type\s|-print0|-delete\b)'; then
+   echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*find\s+' && \
+   ! echo "$COMMAND_SHELL_ONLY" | grep -Eq 'find\s+.*(-maxdepth|-mindepth|-type\s|-print0|-delete\b)'; then
     hint="Use the Glob tool for filename matching. Example: Glob(pattern=\"**/*.ts\") instead of 'find . -name \"*.ts\"'. Keep 'find' only when you need -maxdepth/-type d/-print0, or a -delete action."
     hint_key="glob-find"
 fi
@@ -90,17 +122,17 @@ fi
 # Mirrors bash-antipatterns.sh: file-list/count modes (-l, -c, -L) are filters,
 # not codebase searches the Grep tool replaces (issue #1592).
 if [ -z "$hint" ] && \
-   echo "$COMMAND" | grep -Eq '^\s*(grep|rg)\s+' && \
-   ! echo "$COMMAND" | grep -q '|' && \
-   ! echo "$COMMAND" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*q[a-zA-Z]*(\s|$)|--quiet(\s|$))' && \
-   ! echo "$COMMAND" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*[lcL][a-zA-Z]*(\s|$)|--count(\s|$)|--files-with-matches(\s|$)|--files-without-match(\s|$))'; then
+   echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*(grep|rg)\s+' && \
+   ! echo "$COMMAND_SHELL_ONLY" | grep -q '|' && \
+   ! echo "$COMMAND_SHELL_ONLY" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*q[a-zA-Z]*(\s|$)|--quiet(\s|$))' && \
+   ! echo "$COMMAND_SHELL_ONLY" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*[lcL][a-zA-Z]*(\s|$)|--count(\s|$)|--files-with-matches(\s|$)|--files-without-match(\s|$))'; then
     hint="Use the Grep tool for codebase searches. Example: Grep(pattern=\"foo\", path=\"src\", -n=true). Keep grep/rg for pipelines, boolean -q checks, or -l/-c filter modes."
     hint_key="grep"
 fi
 
 # ls with a glob
 if [ -z "$hint" ] && \
-   echo "$COMMAND" | grep -Eq '^\s*ls\s+.*\*'; then
+   echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*ls\s+.*\*'; then
     hint="Use the Glob tool for pattern-based file listing - it returns paths sorted by modification time and handles large directories better."
     hint_key="glob-ls"
 fi
@@ -136,7 +168,7 @@ if [ -z "$hint" ]; then
         if [ "$seg_head" = true ] && [ "$seg_pipes" -gt "$PIPE_MAX" ]; then
             PIPE_MAX=$seg_pipes
         fi
-    done < <(echo "$COMMAND" \
+    done < <(echo "$COMMAND_SHELL_ONLY" \
         | sed "s/'[^']*'//g; s/\"[^\"]*\"//g" \
         | awk '{ gsub(/\|\|/, "\n"); gsub(/&&/, "\n"); gsub(/;/, "\n"); print }')
     if [ "$PIPE_MAX" -ge 5 ]; then
