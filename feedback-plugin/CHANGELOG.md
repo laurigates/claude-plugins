@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.1](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.11.0...feedback-plugin-v1.11.1) (2026-08-30)
+
+
+### Bug Fixes
+
+* **feedback-plugin:** dissolve the hook:...:other catch-all into eight detector signatures ([#2516](https://github.com/laurigates/claude-plugins/issues/2516)) ([c60f99b](https://github.com/laurigates/claude-plugins/commit/c60f99bb9522228cd4d3e14f0a6323ab3059bafb)), closes [#2420](https://github.com/laurigates/claude-plugins/issues/2420)
+
 ## [1.11.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.10.5...feedback-plugin-v1.11.0) (2026-08-21)
 
 
