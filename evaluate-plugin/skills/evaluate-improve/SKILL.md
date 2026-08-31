@@ -5,7 +5,7 @@ args: <plugin/skill-name> [--apply] [--description-only] [--best-of N]
 allowed-tools: Task, Read, Write, Edit, Glob, Grep, Bash(bash *), Bash(python3 *), Bash(cat *), Bash(jq *), Bash(find *), Bash(diff *), AskUserQuestion, TodoWrite
 argument-hint: "git-plugin/git-commit [--apply] [--best-of 3]"
 created: 2026-03-04
-modified: 2026-07-18
+modified: 2026-08-31
 compatibility: claude-code
 reviewed: 2026-03-04
 ---
@@ -13,6 +13,10 @@ reviewed: 2026-03-04
 # /evaluate:improve
 
 Analyze evaluation results and suggest concrete improvements to a skill.
+
+The apply-path machinery is split into `references/` by the flag that needs
+it — the delta-verify gate and `--best-of` ranking are read only when you are
+actually applying an edit.
 
 ## When to Use This Skill
 
@@ -120,32 +124,18 @@ Current pass rate: 72%
 
 If `--apply` is NOT set, stop here.
 
-### Delta-verify gate (AEGIS source-cases — required before any apply)
+### Delta-verify gate (required before any apply)
 
-Before *any* edit is written to the live SKILL.md — both the plain `--apply`
-path (Step 5) and the `--best-of` path (Step 5a) — confirm the edit actually
-**shrinks the source-failure set** captured in Step 1, not merely that the
-overall golden-set pass rate is higher. Ranking by aggregate pass rate can
-reward a candidate that fixes unrelated cases while leaving the motivating
-failures broken; this gate closes that gap (HarnessX/AEGIS: re-run on the
-source cases, confirm the failure count shrinks before applying).
+**Never write an edit to the live SKILL.md until the drafted candidate has
+shrunk the source-failure set** captured in Step 1 — a higher aggregate pass
+rate is not sufficient, because a candidate can lift the golden set while
+leaving every motivating failure broken. Apply only when
+`delta = (source failures before) − (source failures after)` is `> 0`;
+`--force-apply` overrides and records the override.
 
-Run the gate against the **drafted candidate** (a candidate file under
-`eval-results/candidates/`, or for plain `--apply` a draft written there
-first), never the live SKILL.md:
-
-1. Re-run **only the source-failure cases** against the candidate — spawn one
-   Task subagent (`subagent_type: general-purpose`) per case with the candidate
-   content as the skill context (the same rollout machinery as Step 5a; use
-   `prepare_run.sh`), and grade each transcript with
-   `python3 evaluate-plugin/scripts/grade_deterministic.py`.
-2. Compute `delta = (source failures before) − (source failures after)`.
-3. **Gate:** apply only when `delta > 0` (the candidate fixes at least one
-   motivating failure and regresses none of the others). When `delta <= 0`, do
-   **not** write the edit — report which source cases still fail and suggest
-   revising the suggestions. `--force-apply` overrides the gate (records the
-   override in history). When the source-failure set is empty, the gate is a
-   no-op and the apply proceeds.
+Run the gate against the drafted candidate under `eval-results/candidates/`,
+never against the live SKILL.md. Full procedure:
+[references/delta-verify-gate.md](references/delta-verify-gate.md).
 
 ### Step 5: Apply changes (if --apply)
 
@@ -171,63 +161,12 @@ gate passes (or `--force-apply` is set). For each approved suggestion:
 
 ### Step 5a: Generate and rank candidates (if --best-of N > 1)
 
-Instead of drafting the approved edits once, generate N alternative drafts and
-let evaluation pick the winner.
-
-1. **Generate candidates.** Write N complete candidate revisions of the
-   SKILL.md to `<plugin>/skills/<skill>/eval-results/candidates/candidate-<i>.md`
-   (the `eval-results/` tree is gitignored). Each candidate implements the
-   approved suggestions with a genuinely different strategy — different
-   instruction placement, phrasing, or example choice — not paraphrases of one
-   draft.
-
-2. **Rank with real grading when evals exist.** If the skill has `evals.json`:
-   - For each candidate, run one pass per eval case: spawn a Task subagent
-     (`subagent_type: general-purpose`) that receives the **candidate**
-     content as the skill context and executes the eval prompt (mirrors
-     `/evaluate:skill` Step 4; use `prepare_run.sh` for the run directories).
-   - Grade each transcript with
-     `python3 evaluate-plugin/scripts/grade_deterministic.py` — typed checks
-     grade for zero judge tokens; defer fuzzy assertions to the `eval-grader`
-     agent.
-   - Rank candidates by **source-failure delta first** (how many of the Step 1
-     source-failure cases each candidate fixes — the Delta-verify gate signal),
-     then by mean golden-set pass rate, so a candidate that lifts the aggregate
-     while leaving the motivating failures broken never wins. Break remaining
-     ties with the `eval-comparator` agent: blind pairwise comparison of the
-     tied candidates' transcripts. Discard any candidate with `delta <= 0`
-     unless `--force-apply` is set.
-
-3. **Fall back to blind self-preference when no evals exist.** Without
-   `evals.json` there are no prompts to roll out. Rank via the
-   `eval-comparator` agent — pairwise, candidates presented as Output A/B,
-   the analyzer's weakness list passed as the assertions. Flag this in the
-   report as a weaker signal and suggest re-running `/evaluate:skill` with
-   `--create-evals` first.
-
-4. **Apply the winner** through the Step 5 apply flow, and record the ranking
-   in the history entry (Step 5b below): a `candidates` array with each
-   candidate's id, pass rate (or comparison score), and a `selected` flag.
-
-Token cost is bounded at N × eval cases × 1 run plus grading; treat `--best-of`
-without a number as N=3. Prefer this mode for skills that have `evals.json` —
-deterministic ranking of real rollouts is the point; text-only self-preference
-is the fallback.
-
-### Step 5b: Record history
-
-After applying changes, update (or create) the history file at:
-```
-<plugin-name>/skills/<skill-name>/eval-results/history.json
-```
-
-Add a new iteration entry recording:
-- Version number (increment from previous)
-- Timestamp
-- Pass rate from current benchmark
-- Summary of changes made
-- Delta-verify result: `source_failures_before`, `source_failures_after`, and the resulting `source_failure_delta` (and whether `--force-apply` overrode a non-positive delta)
-- Candidate ranking when `--best-of` was used: a `candidates` array of `{id, pass_rate, source_failure_delta, selected}` (use `comparison_score` instead of `pass_rate` for the no-evals fallback)
+Generate N alternative drafts and let evaluation pick the winner, ranking by
+**source-failure delta first** and mean golden-set pass rate second, so a
+candidate that lifts the aggregate while leaving the motivating failures
+broken never wins. Treat `--best-of` without a number as N=3. Candidate
+generation, the ranking and no-evals fallback, and the Step 5b history entry
+that records it: [references/best-of-ranking.md](references/best-of-ranking.md).
 
 ### Step 6: Suggest re-evaluation
 
