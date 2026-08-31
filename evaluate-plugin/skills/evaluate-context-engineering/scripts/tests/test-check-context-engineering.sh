@@ -224,5 +224,103 @@ assert "default project-dir finds the repo root from CWD" "$(value_of "$default_
 target_out="$("$scanner" --project-dir "$fixture" --target demo-plugin/skills/lean-skill 2>&1)"
 assert "--target scopes to one skill" "$(value_of "$target_out" SKILL_COUNT)" "1"
 
+# --- portfolio C5 budget (--also) --------------------------------------------
+# A per-repo budget cannot see what a session that loads several repos side by
+# side actually pays: each repo sits inside its own budget while the stacked
+# surface is several times either. Guards the aggregation, the gate, and the
+# two properties that make the number trustworthy — order-independence and
+# ERROR visibility.
+
+fixture2="$(mktemp -d)"
+[ -n "$fixture2" ] || { echo "FAIL: mktemp -d returned empty" >&2; exit 1; }
+trap 'rm -rf "$fixture" "$fixture2"' EXIT
+mkdir -p "$fixture2/.claude/rules"
+printf 'y%.0s' $(seq 1 300) >"$fixture2/CLAUDE.md"
+printf 'z%.0s' $(seq 1 200) >"$fixture2/.claude/rules/second-unscoped.md"
+# A scoped rule in the second repo must NOT count toward the portfolio total.
+cat >"$fixture2/.claude/rules/second-scoped.md" <<'RULE_EOF'
+---
+paths:
+  - "**/*.ts"
+---
+# Scoped — excluded from the always-loaded surface.
+RULE_EOF
+
+pf_out="$("$scanner" --project-dir "$fixture" --also "$fixture2" --max-issues 0 2>&1)"
+primary_c5="$(value_of "$out" C5_ALWAYS_LOADED_CHARS)"
+assert "portfolio counts both repos" "$(value_of "$pf_out" C5_PORTFOLIO_REPOS)" "2"
+assert "portfolio sums the two surfaces" \
+  "$(value_of "$pf_out" C5_PORTFOLIO_ALWAYS_LOADED_CHARS)" "$((primary_c5 + 500))"
+assert_true "portfolio emits a per-repo breakdown line for the --also repo" \
+  "$(printf '%s' "$pf_out" | grep -qE "^  - REPO=$(basename "$fixture2") CHARS=500 " && echo true || echo false)"
+
+# Order-independence: the determinism contract must survive --also being passed
+# in any order, or two CI runs of an unchanged tree disagree. Needs a THIRD repo
+# so there are two --also args to actually swap.
+fixture3="$(mktemp -d)"
+[ -n "$fixture3" ] || { echo "FAIL: mktemp -d returned empty" >&2; exit 1; }
+trap 'rm -rf "$fixture" "$fixture2" "$fixture3"' EXIT
+mkdir -p "$fixture3/.claude/rules"
+printf 'w%.0s' $(seq 1 100) >"$fixture3/CLAUDE.md"
+
+pf_hash_a="$("$scanner" --project-dir "$fixture" --also "$fixture2" --also "$fixture3" --json | sha256sum | cut -d' ' -f1)"
+pf_hash_b="$("$scanner" --project-dir "$fixture" --also "$fixture3" --also "$fixture2" --json | sha256sum | cut -d' ' -f1)"
+assert "portfolio JSON is identical when --also order is swapped" "$pf_hash_a" "$pf_hash_b"
+pf_hash_c="$("$scanner" --project-dir "$fixture" --also "$fixture2" --also "$fixture3" --json | sha256sum | cut -d' ' -f1)"
+assert "portfolio JSON is stable across runs" "$pf_hash_a" "$pf_hash_c"
+
+# Two --also roots sharing a basename must still sort deterministically: a
+# stable sort keyed on the name alone would fall back to argument order, which
+# is exactly the non-determinism this scanner exists to rule out.
+dup_a="$(mktemp -d)/config"; dup_b="$(mktemp -d)/config"
+mkdir -p "$dup_a/.claude/rules" "$dup_b/.claude/rules"
+printf 'a%.0s' $(seq 1 100) >"$dup_a/CLAUDE.md"
+printf 'b%.0s' $(seq 1 900) >"$dup_b/CLAUDE.md"
+dup_hash_a="$("$scanner" --project-dir "$fixture" --also "$dup_a" --also "$dup_b" --json | sha256sum | cut -d' ' -f1)"
+dup_hash_b="$("$scanner" --project-dir "$fixture" --also "$dup_b" --also "$dup_a" --json | sha256sum | cut -d' ' -f1)"
+assert "same-basename roots sort deterministically" "$dup_hash_a" "$dup_hash_b"
+rm -rf "$dup_a" "$dup_b"
+
+# The breakdown is sorted by repo name, so the emitted order is independent of
+# the order the roots were supplied in.
+sorted_repos="$("$scanner" --project-dir "$fixture" --also "$fixture3" --also "$fixture2" 2>&1 \
+  | grep -oE '^  - REPO=[^ ]+' | sed 's/^  - REPO=//')"
+assert "breakdown is emitted in repo-name order" \
+  "$sorted_repos" "$(printf '%s\n' "$sorted_repos" | sort)"
+
+# The gate itself.
+"$scanner" --project-dir "$fixture" --also "$fixture2" --portfolio-budget 10 --strict >/dev/null 2>&1
+assert "--strict exits 1 over the portfolio budget" "$?" "1"
+"$scanner" --project-dir "$fixture" --also "$fixture2" --portfolio-budget 999999 --strict >/dev/null 2>&1
+assert "--strict exits 0 under the portfolio budget" "$?" "0"
+
+# A repo inside its OWN budget can still bust the portfolio budget — the whole
+# reason this mode exists. Primary budget generous, portfolio budget tight.
+split_out="$("$scanner" --project-dir "$fixture" --also "$fixture2" \
+  --always-loaded-budget 999999 --portfolio-budget 10 --max-issues 0 2>&1)"
+assert "per-repo pass + portfolio fail yields ERROR" "$(value_of "$split_out" STATUS)" "ERROR"
+assert_true "portfolio ERROR names the offending repos" \
+  "$(printf '%s' "$split_out" | grep -qE 'TYPE=portfolio_always_loaded_over_budget.*'"$(basename "$fixture2")"'=500' && echo true || echo false)"
+
+# ERROR must outrank WARNs in the listing: --max-issues could otherwise truncate
+# away the only line explaining why STATUS=ERROR.
+trunc_out="$("$scanner" --project-dir "$fixture" --also "$fixture2" --portfolio-budget 10 --max-issues 1 2>&1)"
+assert_true "ERROR is listed first, never truncated by --max-issues" \
+  "$(printf '%s' "$trunc_out" | grep -A1 '^ISSUES:' | grep -qE 'SEVERITY=ERROR.*portfolio_always_loaded_over_budget' && echo true || echo false)"
+
+# --also and --target are mutually exclusive: --target drops rules and CLAUDE.md,
+# which is the entire C5 surface, so the portfolio total would silently be wrong.
+"$scanner" --project-dir "$fixture" --also "$fixture2" --target demo-plugin/skills/lean-skill >/dev/null 2>&1
+assert "--also with --target is rejected" "$?" "2"
+
+# A non-existent --also root must fail loudly, not silently contribute 0.
+"$scanner" --project-dir "$fixture" --also "$fixture/definitely-not-here" >/dev/null 2>&1
+assert "--also on a missing path exits 1" "$?" "1"
+
+# Without --also the portfolio keys must be absent entirely (no behaviour change
+# for every existing caller).
+assert_true "no --also means no portfolio keys" \
+  "$(printf '%s' "$out" | grep -qE '^C5_PORTFOLIO' && echo false || echo true)"
+
 echo "PASS=$pass_count FAIL=$fail_count"
 [ "$fail_count" -eq 0 ]
