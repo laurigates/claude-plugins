@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.11.1...hooks-plugin-v2.11.2) (2026-08-31)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** exclude heredoc bodies from the teach hook's pipeline count ([#2525](https://github.com/laurigates/claude-plugins/issues/2525)) ([d9323a5](https://github.com/laurigates/claude-plugins/commit/d9323a5d283dca8273bf9b84fd8b43f675958a5e))
+
 ## [2.11.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.11.0...hooks-plugin-v2.11.1) (2026-08-30)
 
 

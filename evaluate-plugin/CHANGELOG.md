@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.13.1...evaluate-plugin-v1.14.0) (2026-08-31)
+
+
+### Features
+
+* **evaluate-plugin:** sum the always-loaded surface across repos (--also) ([#2550](https://github.com/laurigates/claude-plugins/issues/2550)) ([149b132](https://github.com/laurigates/claude-plugins/commit/149b1322545ee69ad925cffc601511a22459b8bc))
+
 ## [1.13.1](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.13.0...evaluate-plugin-v1.13.1) (2026-08-22)
 
 

@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.12.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.11.1...feedback-plugin-v1.12.0) (2026-08-31)
+
+
+### Features
+
+* **feedback-plugin:** log skill invocations for the slow loop to target ([bfd17da](https://github.com/laurigates/claude-plugins/commit/bfd17da5a9625405e67df7150299830992a283a2))
+
+
+### Bug Fixes
+
+* **feedback-plugin:** dissolve the hook:...:other catch-all into eight detector signatures ([#2516](https://github.com/laurigates/claude-plugins/issues/2516)) ([c60f99b](https://github.com/laurigates/claude-plugins/commit/c60f99bb9522228cd4d3e14f0a6323ab3059bafb)), closes [#2420](https://github.com/laurigates/claude-plugins/issues/2420)
+* **feedback-plugin:** raise friction parser evidence budget past the hook-message tail ([#2345](https://github.com/laurigates/claude-plugins/issues/2345)) ([3bebebc](https://github.com/laurigates/claude-plugins/commit/3bebebcc878b8da61293d30621a012c8931c6554))
+* **feedback-plugin:** split the worktree-isolation refusal out of error:bash ([#2421](https://github.com/laurigates/claude-plugins/issues/2421)) ([733d365](https://github.com/laurigates/claude-plugins/commit/733d36588dc080584997296fb164a2580223a03f)), closes [#2344](https://github.com/laurigates/claude-plugins/issues/2344)
+* **feedback-plugin:** stop friction parser over-matching not-found and exit-2 ([#2288](https://github.com/laurigates/claude-plugins/issues/2288)) ([9b64821](https://github.com/laurigates/claude-plugins/commit/9b64821efc58db1d7f927eca189f272f78022c28))
+
+
+### Code Refactoring
+
+* **feedback-plugin:** drop inert memory: user from friction-learner ([#2125](https://github.com/laurigates/claude-plugins/issues/2125)) ([4339a9e](https://github.com/laurigates/claude-plugins/commit/4339a9e7374f68baa8413e1cb392665a6eea902a))
+
+
+### Documentation
+
+* archive completed/superseded planning docs under docs/archive/ ([#1940](https://github.com/laurigates/claude-plugins/issues/1940)) ([fe24f13](https://github.com/laurigates/claude-plugins/commit/fe24f1342e5f9370ed75729a86707bc5b66b7052)), closes [#1850](https://github.com/laurigates/claude-plugins/issues/1850) [#1460](https://github.com/laurigates/claude-plugins/issues/1460)
+
 ## [1.11.1](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.11.0...feedback-plugin-v1.11.1) (2026-08-30)
 
 
