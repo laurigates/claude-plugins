@@ -109,11 +109,27 @@ PR_STATE=$(echo "$PR_JSON" | jq -r '.state // empty')
 # Guard: couldn't parse PR data
 if [ -z "$PR_NUMBER" ] || [ -z "$PR_TITLE" ]; then exit 0; fi
 
-# Guard: a merged PR's metadata is a historical record (issue #2351).
-# Prompting to reconcile it invites rewriting the description of something
-# already reviewed and landed. Read the `state` enum, never a `merged`
-# boolean — there is no such field (.claude/rules/gh-json-fields.md).
-if [ "$PR_STATE" = "MERGED" ]; then exit 0; fi
+# Guard: only an OPEN PR has metadata worth reconciling (issues #2351, #2545).
+#
+# `gh pr view <branch>` returns the most recent PR associated with the branch
+# *regardless of state*, so both finished states reach here:
+#
+#   MERGED (#2351) — the metadata is a historical record. Prompting to
+#     reconcile it invites rewriting the description of something already
+#     reviewed and landed.
+#   CLOSED (#2545) — a branch reused after its PR was closed is permanently
+#     tripped by that dead PR. Worse, the remedy this hook prescribes ("edit
+#     the PR title or body, THEN push") forces editing a closed PR's metadata
+#     purely to bump `updatedAt` past the new commit — the only escape, and
+#     one that vandalises a closed PR's record to unblock unrelated work.
+#
+# Enumerate the finished states rather than testing `!= OPEN`, so a response
+# with no `state` (an older gh, or a mocked/partial payload) keeps the legacy
+# blocking behaviour instead of failing open into a blanket allow.
+#
+# Read the `state` enum, never a `merged` boolean — there is no such field
+# (.claude/rules/gh-json-fields.md).
+if [ "$PR_STATE" = "MERGED" ] || [ "$PR_STATE" = "CLOSED" ]; then exit 0; fi
 
 # Resolve the ref to inspect for commits and bypass-timestamp comparison.
 # When the push command names a branch other than the running shell's

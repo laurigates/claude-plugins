@@ -118,7 +118,7 @@ The rule this plugin applies:
 | Hook | Event | Purpose |
 |------|-------|---------|
 | `validate-pr-issue-links.sh` | PreToolUse (Bash) | Enforce issue-closing links on PR creation |
-| `check-pr-metadata-on-push.sh` | PreToolUse (Bash) | Remind to align PR title/body with commits before push |
+| `check-pr-metadata-on-push.sh` | PreToolUse (Bash) | Remind to align PR title/body with commits before push. Fires only for an **`OPEN`** PR — a branch whose PR is `MERGED` or `CLOSED` pushes through, since finished metadata is a historical record |
 | `check-branch-sync-on-push.sh` | PreToolUse (Bash) | Nudge (`ask`) before `commit`/`push` when the branch is behind origin or its PR is merged/closed. Cached per session+branch; opt out with `CLAUDE_HOOKS_DISABLE_BRANCH_SYNC=1`, tune TTL with `CLAUDE_HOOKS_BRANCH_SYNC_TTL` |
 | `git-drift-probe.sh` | SessionStart | Surface `pr_merged` / `branch_behind` / `changes_requested` drift on the current branch via the consolidated drift nudge |
 
