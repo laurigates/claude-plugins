@@ -79,8 +79,16 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/check-context-engineering.py" --top 10
 Add `--target <plugin-or-skill-path>` when the user scoped the run, and
 `--always-loaded-budget <N>` when they passed `--budget`.
 
-Read the `KEY=VALUE` block. `STATUS=ERROR` means only one thing: the
-always-loaded surface is over budget. Every other finding is a `WARN` candidate,
+When the user asks about the cost of a **session that loads several repos**
+(a portfolio checkout, sibling repos open together), add one `--also <repo>`
+per extra root plus `--portfolio-budget <N>`. Only the C5 surface is summed;
+C1–C4 and C6 stay scoped to `--project-dir`, since they measure authoring
+quality inside one marketplace. `--also` and `--target` are mutually exclusive.
+
+Read the `KEY=VALUE` block. `STATUS=ERROR` means only one thing: an
+always-loaded surface is over budget — the primary repo's, or the portfolio's
+(`C5_PORTFOLIO_*`, with a per-repo `C5_PORTFOLIO_BREAKDOWN`). ERRORs are always
+listed first, so `--max-issues` never hides the reason. Every other finding is a `WARN` candidate,
 not a verdict.
 
 ### Step 2: Report the C1–C6 card
@@ -137,6 +145,7 @@ files. This skill measures and recommends; it does not rewrite.
 | One plugin | `... --target git-plugin` |
 | Machine-readable | `... --json` |
 | CI ratchet (exit 1 over budget) | `... --strict` |
+| Portfolio budget across repos | `... --also ../dotfiles --also ../repos-claude-config --portfolio-budget 155000` |
 | Full issue list | `... --max-issues 0` |
 | Determinism check | `... --json \| sha256sum` (must be stable across runs) |
 

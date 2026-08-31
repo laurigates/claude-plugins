@@ -35,6 +35,20 @@ Output: structured KEY=VALUE per .claude/rules/structured-script-output.md.
   --always-loaded-budget N   chars; ERROR above it (default 100000). The ratchet
                              that stops the every-session surface growing.
   --project-dir PATH         repo root (default: this script's parent)
+  --also PATH                extra repo root whose always-loaded (C5) surface
+                             counts toward one shared budget. Repeatable.
+  --portfolio-budget N       chars; ERROR when the summed C5 surface across
+                             --project-dir + every --also exceeds it.
+
+WHY --also EXISTS
+A per-repo C5 budget cannot see the cost a *session* actually pays. When one
+session loads several repos side by side, each repo can sit well inside its own
+budget while the stacked always-loaded surface is several times either. --also
+sums the surfaces so the portfolio total is gated by something.
+
+Only the C5 surface is summed. Skill-level dimensions (C1-C4, C6) stay scoped
+to --project-dir: they measure authoring quality inside one marketplace, which
+does not aggregate meaningfully across unrelated repos.
 """
 
 from __future__ import annotations
@@ -321,6 +335,39 @@ def analyse_rule(root: str, rel: str) -> dict:
     }
 
 
+def always_loaded_surface(root: str) -> dict:
+    """C5 surface for one repo root: CLAUDE.md + every rule with no `paths:`.
+
+    Deliberately does NOT call discover(): that walks the whole tree for
+    SKILL.md files, and an --also root may contain large unrelated checkouts
+    (vendored clones, archives). Only .claude/rules/ and CLAUDE.md are read.
+
+    Repo identity is the basename, never the absolute path — the determinism
+    contract forbids absolute paths in output.
+    """
+    rules_dir = os.path.join(root, ".claude", "rules")
+    rel_rules = sorted(
+        os.path.relpath(os.path.join(rules_dir, f), root)
+        for f in (os.listdir(rules_dir) if os.path.isdir(rules_dir) else [])
+        if f.endswith(".md")
+    )
+    rules = [analyse_rule(root, p) for p in rel_rules]
+    unscoped = [r for r in rules if not r["path_scoped"]]
+    claude_md = os.path.join(root, "CLAUDE.md")
+    claude_md_chars = len(read_text(claude_md)) if os.path.isfile(claude_md) else 0
+    unscoped_chars = sum(r["chars"] for r in unscoped)
+    total = claude_md_chars + unscoped_chars
+    return {
+        "repo": os.path.basename(os.path.normpath(root)),
+        "claude_md_chars": claude_md_chars,
+        "rules_total": len(rules),
+        "unscoped_rules": len(unscoped),
+        "unscoped_rule_chars": unscoped_chars,
+        "always_loaded_chars": total,
+        "always_loaded_est_tokens": total // 4,
+    }
+
+
 # ------------------------------------------------------- C4 shingle overlap
 
 
@@ -383,6 +430,28 @@ def overlap_pairs(units: dict[str, set[int]]) -> tuple[list[dict], int]:
 
 
 # ------------------------------------------------------------------- reporting
+
+
+def portfolio_issues(portfolio: dict | None) -> list[dict]:
+    """ERROR when the stacked C5 surface exceeds the portfolio budget."""
+    if not portfolio or portfolio["always_loaded_chars"] <= portfolio["budget"]:
+        return []
+    repos = ", ".join(
+        f"{r['repo']}={r['always_loaded_chars']}" for r in portfolio["repos"]
+    )
+    return [
+        {
+            "severity": "ERROR",
+            "dim": "C5",
+            "type": "portfolio_always_loaded_over_budget",
+            "unit": "portfolio",
+            "msg": (
+                f"stacked always-loaded surface {portfolio['always_loaded_chars']} chars "
+                f"across {len(portfolio['repos'])} repos exceeds budget "
+                f"{portfolio['budget']} ({repos})"
+            ),
+        }
+    ]
 
 
 def build_issues(
@@ -543,6 +612,21 @@ def emit_text(data: dict, n_top: int, max_issues: int) -> None:
     out(f"C5_ALWAYS_LOADED_EST_TOKENS={t['c5_always_loaded_est_tokens']}\n")
     out(f"C5_ALWAYS_LOADED_BUDGET={t['c5_always_loaded_budget']}\n")
 
+    pf = data.get("portfolio")
+    if pf:
+        out(f"C5_PORTFOLIO_REPOS={len(pf['repos'])}\n")
+        out(f"C5_PORTFOLIO_ALWAYS_LOADED_CHARS={pf['always_loaded_chars']}\n")
+        out(f"C5_PORTFOLIO_ALWAYS_LOADED_EST_TOKENS={pf['always_loaded_est_tokens']}\n")
+        out(f"C5_PORTFOLIO_BUDGET={pf['budget']}\n")
+        out("C5_PORTFOLIO_BREAKDOWN:\n")
+        for r in pf["repos"]:
+            out(
+                f"  - REPO={r['repo']} CHARS={r['always_loaded_chars']}"
+                f" EST_TOKENS={r['always_loaded_est_tokens']}"
+                f" CLAUDE_MD_CHARS={r['claude_md_chars']}"
+                f" UNSCOPED_RULES={r['unscoped_rules']}/{r['rules_total']}\n"
+            )
+
     out(f"C6_SKILLS_WITH_SCRIPTS={t['c6_skills_with_scripts']}\n")
     out(f"C6_PROSE_PROCEDURE_NO_SCRIPT={t['c6_prose_procedure_no_script']}\n")
 
@@ -614,7 +698,27 @@ def main() -> int:
     ap.add_argument("--top", type=int, default=10)
     ap.add_argument("--max-issues", type=int, default=40, help="0 = no cap")
     ap.add_argument("--always-loaded-budget", type=int, default=100_000)
+    ap.add_argument(
+        "--also",
+        action="append",
+        default=[],
+        metavar="PATH",
+        help="extra repo root whose C5 surface counts toward the portfolio budget",
+    )
+    ap.add_argument(
+        "--portfolio-budget",
+        type=int,
+        default=None,
+        help="chars; default n_repos * --always-loaded-budget. A real ratchet "
+        "passes an explicit value measured just above current.",
+    )
     args = ap.parse_args()
+
+    if args.also and args.target:
+        ap.error(
+            "--also and --target are mutually exclusive: --target drops "
+            "rules and CLAUDE.md, which is the whole C5 surface"
+        )
 
     root = os.path.abspath(args.project_dir)
     skill_paths, rule_paths, claude_md = discover(root, args.target)
@@ -652,7 +756,48 @@ def main() -> int:
             "pct": round(100 * chars / total_body, 1) if total_body else 0.0,
         }
 
+    portfolio = None
+    if args.also:
+        also_roots = []
+        for path in args.also:
+            ap_root = os.path.abspath(path)
+            if not os.path.isdir(ap_root):
+                sys.exit(f"--also: not a directory: {path}")
+            also_roots.append(ap_root)
+        # Sorted so two runs over an unchanged set are byte-identical regardless
+        # of the order --also was passed in. Basename alone is not a safe key:
+        # two checkouts can share one (~/a/config and ~/b/config), and a stable
+        # sort would then fall back to argument order. Tie-breaking on every
+        # emitted field means entries that still tie are byte-identical, so the
+        # output cannot depend on argument order either way.
+        repos = sorted(
+            [always_loaded_surface(r) for r in [root, *also_roots]],
+            key=lambda r: (
+                r["repo"],
+                r["always_loaded_chars"],
+                r["claude_md_chars"],
+                r["rules_total"],
+                r["unscoped_rules"],
+                r["unscoped_rule_chars"],
+            ),
+        )
+        chars = sum(r["always_loaded_chars"] for r in repos)
+        portfolio = {
+            "repos": repos,
+            "always_loaded_chars": chars,
+            "always_loaded_est_tokens": chars // 4,
+            "budget": (
+                args.portfolio_budget
+                if args.portfolio_budget is not None
+                else len(repos) * args.always_loaded_budget
+            ),
+        }
+
     issues = build_issues(skills, rules, always_loaded, args.always_loaded_budget)
+    issues += portfolio_issues(portfolio)
+    # ERRORs first so --max-issues can never truncate the reason STATUS is ERROR.
+    # Stable, so within-severity order (and the determinism contract) is intact.
+    issues.sort(key=lambda i: i["severity"] != "ERROR")
     status = (
         "ERROR"
         if any(i["severity"] == "ERROR" for i in issues)
@@ -662,6 +807,7 @@ def main() -> int:
     data = {
         "schema_version": SCHEMA_VERSION,
         "status": status,
+        "portfolio": portfolio,
         "totals": {
             "skill_count": len(skills),
             # Published marketplace skills, excluding repo-local `.claude/skills/*`.
