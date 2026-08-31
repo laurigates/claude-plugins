@@ -249,7 +249,7 @@
       "name": "evaluate-plugin",
       "source": "./evaluate-plugin",
       "description": "Skill evaluation and benchmarking - test skill effectiveness with behavioral eval cases, grade results, and track quality improvements",
-      "version": "1.13.1",
+      "version": "1.14.0",
       "keywords": [
         "evaluation",
         "benchmarking",
@@ -263,7 +263,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.11.1",
+      "version": "1.12.0",
       "keywords": [
         "feedback",
         "session-analysis",
@@ -390,7 +390,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.11.1",
+      "version": "2.11.2",
       "keywords": [
         "hooks",
         "automation",
