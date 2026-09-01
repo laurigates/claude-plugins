@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.1](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.14.0...evaluate-plugin-v1.14.1) (2026-09-01)
+
+
+### Code Refactoring
+
+* **evaluate-plugin:** split evaluate-improve's apply machinery into references/ ([#2552](https://github.com/laurigates/claude-plugins/issues/2552)) ([e9491c0](https://github.com/laurigates/claude-plugins/commit/e9491c0d4d2e4a2d3f33e39ea2e10c7dc951731c))
+
 ## [1.14.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.13.1...evaluate-plugin-v1.14.0) (2026-08-31)
 
 
