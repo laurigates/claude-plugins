@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.52.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.52.0...git-plugin-v2.52.1) (2026-09-01)
+
+
+### Bug Fixes
+
+* **git-plugin:** skip PR metadata check when the branch's only PR is closed ([#2549](https://github.com/laurigates/claude-plugins/issues/2549)) ([42c4d70](https://github.com/laurigates/claude-plugins/commit/42c4d70b859d9cd7590302683ed7490cc5e8ee68)), closes [#2545](https://github.com/laurigates/claude-plugins/issues/2545)
+
 ## [2.52.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.51.2...git-plugin-v2.52.0) (2026-08-22)
 
 
