@@ -358,6 +358,48 @@ PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
     assert_exit "push to a branch whose PR is OPEN still blocks" 2 \
     "$(make_json "git push origin feature")"
 
+# ── Closed-unmerged PRs are equally finished (issue #2545) ────────────────
+# `gh pr view <branch>` returns the most recent PR on the branch regardless
+# of state, so a long-closed PR permanently trips the check on a branch that
+# is reused for later work. The remedy the block message prescribes — "edit
+# the PR title or body" — then forces editing a CLOSED PR's metadata purely
+# to bump its updatedAt, which is what the reporter had to do to unblock.
+#
+# The bypass is deliberately not what saves these: PR_PAST is older than the
+# branch's latest commit, i.e. the exact state that blocks a normal push, so
+# a passing test proves the state guard fired.
+echo ""
+echo "closed-unmerged PR metadata is not reconciled (#2545):"
+
+MOCK_PR_JSON=$(jq -n --arg t "$PR_PAST" \
+    '{number:364,title:"Release 2.3.0",body:"body",url:"https://example/364",updatedAt:$t,state:"CLOSED"}')
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "push to a branch whose only PR is CLOSED is allowed (#2545)" 0 \
+    "$(make_json "git push origin feature")"
+
+# A branch reused after its PR closed: the colon-refspec deletion form the
+# reporter was blocked on must also pass (belt and braces with #2351).
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "deleting a branch whose only PR is CLOSED is allowed (#2545)" 0 \
+    "$(make_json "git push origin :refs/heads/feature")"
+
+# Counter-test: an unrecognised state must not silently disable the hook.
+# Only MERGED/CLOSED are known-finished; anything else keeps blocking so a
+# future gh state enum cannot turn the guard into a blanket allow.
+MOCK_PR_JSON=$(jq -n --arg t "$PR_PAST" \
+    '{number:42,title:"feat: x",body:"body",url:"https://example/42",updatedAt:$t,state:"OPEN"}')
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "OPEN PR still blocks after the CLOSED guard (#2545)" 2 \
+    "$(make_json "git push origin feature")"
+
+# Counter-test: a response with no state field at all keeps legacy blocking
+# behaviour rather than failing open.
+MOCK_PR_JSON=$(jq -n --arg t "$PR_PAST" \
+    '{number:42,title:"feat: x",body:"body",url:"https://example/42",updatedAt:$t}')
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "absent state field still blocks (no fail-open) (#2545)" 2 \
+    "$(make_json "git push origin feature")"
+
 rm -rf "$MOCK_BIN"
 
 # ── Summary ────────────────────────────────────────────────────────────────
