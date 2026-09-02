@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.2](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.14.1...evaluate-plugin-v1.14.2) (2026-09-02)
+
+
+### Bug Fixes
+
+* **evaluate-plugin:** guard the duplicate-basename test's mktemp sandboxes ([30fb6e7](https://github.com/laurigates/claude-plugins/commit/30fb6e78a7465a5b88c69797cec320909a73347a)), closes [#2550](https://github.com/laurigates/claude-plugins/issues/2550)
+
 ## [1.14.1](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.14.0...evaluate-plugin-v1.14.1) (2026-09-01)
 
 
