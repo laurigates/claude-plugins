@@ -500,7 +500,6 @@ async def run_onboard(
             "Glob",
             "Grep",
             "Task",
-            "TodoWrite",
         ]
 
         # Build orchestrator options
@@ -742,7 +741,6 @@ async def run_maintain(
             "Glob",
             "Grep",
             "Task",
-            "TodoWrite",
         ]
         if not interactive and non_interactive is None:
             allowed_tools.append("AskUserQuestion")
@@ -937,7 +935,6 @@ async def run_diagnose(
         "Grep",
         "Task",
         "AskUserQuestion",
-        "TodoWrite",
         "mcp__github__issue_write",
         "mcp__github__issue_read",
         "mcp__github__list_issues",

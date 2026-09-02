@@ -144,6 +144,11 @@ Create the file if it doesn't exist. Append to the `snapshots` array if it does.
 
 Output a maintenance report:
 
+List an item under **Issues Fixed** only if a tool call in this session made
+the change and its commit succeeded (the PR title is generated from this
+list). Anything attempted but not verified, or skipped, goes under
+**Remaining Issues** with the reason.
+
 ```markdown
 ## Maintenance Report
 

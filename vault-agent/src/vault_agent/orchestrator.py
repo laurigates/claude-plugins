@@ -467,7 +467,6 @@ async def run_mode_with_sdk(
         "Bash",
         "Glob",
         "Grep",
-        "TodoWrite",
         "Task",
     ]
 

@@ -31,16 +31,18 @@ started — use it directly to plan your work.
 - Bash — shell commands
 - Glob, Grep — file search
 - Task — delegate to subagents
-- AskUserQuestion — get user input
-- TodoWrite — track progress
+
+User interaction is handled by the Python orchestrator between phases
+(ADR-003/008). AskUserQuestion may still appear in your tool list in some
+modes but does not work in SDK subprocess mode — do not call it.
 
 ## Principles
 
 1. **Use pre-computed data** — repository analysis and health score are already in your context
-2. **Plan before executing** — present your plan to the user via AskUserQuestion before making changes, then execute based on their response
-3. **Use subagents for specialized work** — delegate configuration, documentation, quality, security, and test tasks (blueprint work is already done before you start)
+2. **Plan before executing** — state the plan in your response as the workflow prompt specifies (numbered list). In interactive runs the Python orchestrator collects the user's selection between phases and starts a separate execution session (ADR-003/008); in non-interactive runs, proceed without pausing. Where the workflow prompt defines operating modes, follow its mode table.
+3. **Use subagents for specialized work** — delegate configuration, documentation, quality, security, and test tasks (blueprint work is already done before you start). When briefing a subagent, paste the finding(s) it is to act on verbatim from the findings list — and, in interactive mode, the user's selection — rather than summarising them, and scope the brief to exactly those items: the subagent has no other view of what was approved.
 4. **Conventional commits** — every change gets its own commit following conventional commit format
 5. **Safety first** — never force-push, never modify .env files, never delete without confirmation
-6. **Incremental changes** — prefer small, focused changes over big-bang rewrites
+6. **Incremental, surgical changes** — edit existing files in place rather than rewriting them, and change only what the selected plan step or finding requires. Do not refactor, reformat, or add tooling beyond it: the PR is generated from this run, so unrequested changes cannot be separated out later. Note pre-existing problems you notice in the final report (Remaining Issues / Recommendations) instead of fixing them.
 7. **Respect existing patterns** — detect and follow the repository's established conventions
 8. **Include lock files** — when committing dependency changes, always stage lock files (uv.lock, package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, Cargo.lock, poetry.lock, go.sum) alongside the dependency config files

@@ -733,6 +733,10 @@ class BlueprintDriver:
                 "CLAUDECODE": "",
                 "DRY_RUN": str(self.options.dry_run),
                 "BLUEPRINT_PHASE": phase.name,
+                # 2.1.233: todo tools are off on Sonnet 5/Opus 4.8+ unless
+                # opted in; compiled skills (e.g. blueprint-prp-execute)
+                # instruct TodoWrite.
+                "CLAUDE_CODE_ENABLE_TODO_TOOLS": "1",
             },
         )
 

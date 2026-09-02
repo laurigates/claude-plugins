@@ -9,8 +9,10 @@ from vault_agent.prompts.compiler import get_compiled_prompt
 _PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
 
 # Tools every subagent needs. Writes go to files via Edit/Write; reads via
-# Read/Grep/Glob; commits via Bash. TodoWrite helps the subagent plan its
-# fix batches.
+# Read/Grep/Glob; commits via Bash. Todo tools are unavailable on
+# Opus 4.8+/Sonnet 5/Fable (Claude Code 2.1.233) without
+# CLAUDE_CODE_ENABLE_TODO_TOOLS=1; the mode prompts batch fixes by rule
+# group in prose instead.
 _BASE_TOOLS: tuple[str, ...] = (
     "Read",
     "Edit",
@@ -18,7 +20,6 @@ _BASE_TOOLS: tuple[str, ...] = (
     "Bash",
     "Grep",
     "Glob",
-    "TodoWrite",
 )
 
 
