@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.45.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.45.1...blueprint-plugin-v3.45.2) (2026-09-02)
+
+
+### Bug Fixes
+
+* **plugins:** adapt rules, skills, agents, and guards for Claude Fable 5.1 ([#2561](https://github.com/laurigates/claude-plugins/issues/2561)) ([b9e1101](https://github.com/laurigates/claude-plugins/commit/b9e11016b20c42b0ff95c5fef57e98584a4e7c07))
+
 ## [3.45.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.45.0...blueprint-plugin-v3.45.1) (2026-08-20)
 
 

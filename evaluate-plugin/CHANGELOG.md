@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.3](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.14.2...evaluate-plugin-v1.14.3) (2026-09-02)
+
+
+### Bug Fixes
+
+* **plugins:** adapt rules, skills, agents, and guards for Claude Fable 5.1 ([#2561](https://github.com/laurigates/claude-plugins/issues/2561)) ([b9e1101](https://github.com/laurigates/claude-plugins/commit/b9e11016b20c42b0ff95c5fef57e98584a4e7c07))
+
 ## [1.14.2](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.14.1...evaluate-plugin-v1.14.2) (2026-09-02)
 
 
