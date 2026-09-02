@@ -1,7 +1,7 @@
 ---
 created: 2026-03-02
-modified: 2026-03-02
-reviewed: 2026-03-02
+modified: 2026-09-02
+reviewed: 2026-09-02
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -85,6 +85,9 @@ Read `.config.json` and check if it exists:
 | `## Parameters` | Defines argument parsing | "Parse `$ARGUMENTS` for flags:" |
 | `## Execution` or `## Your task` | The action section | "Execute this X workflow:" |
 | Numbered steps with verbs | Actionable instructions | "1. Read the config file", "2. Validate the JSON" |
+| Goal + constraints + verification | For judgment work (review, triage, planning) | "Produce X. Constraints: … Done when: …" |
+
+Numbered steps belong to *fragile, order-sensitive* operations (git surgery, migrations, exact CLI sequences). For judgment tasks, state the goal, the constraints, and how to verify, then let the model choose the order — step ladders written for older models are often too prescriptive for Fable 5.1 and reduce output quality (Fable 5.1 migration guide). The imperative opener stays in both shapes; it is what prevents narration.
 
 ### Context section with runtime detection
 

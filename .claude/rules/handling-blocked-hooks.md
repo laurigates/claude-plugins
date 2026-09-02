@@ -1,7 +1,7 @@
 ---
 created: 2026-01-01
-modified: 2026-04-17
-reviewed: 2026-04-17
+modified: 2026-09-02
+reviewed: 2026-09-02
 ---
 
 # Handling Blocked Hooks
@@ -92,3 +92,5 @@ Do **not** attempt to prefix commands with `CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTI
 - Hooks protect against common mistakes - the suggested alternative is usually correct
 - For edge cases, delegate to the user with the exact command
 - Explain what you tried and why the command is needed
+- A block is on the *hazard*, not the spelling. Take the hook's suggested alternative if it offers one; otherwise do not re-issue the same operation in a different form (split into pieces, reordered flags, quoting, `$(…)` or `bash -c` wrapping, a wrapper script) to get past it — treat a second block on a variant as confirmation to delegate.
+- Never restate authorization the user did not literally give. Quoting or paraphrasing "the user approved this" to a hook, classifier, or subagent when the transcript does not contain it is fabrication; auto mode blocks it regardless.

@@ -1,7 +1,7 @@
 ---
 created: 2026-06-22
-modified: 2026-06-24
-reviewed: 2026-07-04
+modified: 2026-09-02
+reviewed: 2026-09-02
 paths:
   - ".github/workflows/**"
 ---
@@ -28,10 +28,14 @@ downstream. **That argument does not apply here** — a workflow is a *top-level
 Claude invocation, not a subagent feeding a parent loop. The justification for
 workflows is purely **cost-economics**, which still holds:
 
-- Opus 4.8 at *low* effort beats Sonnet 4.6 at *high* effort on both quality and
-  token efficiency. The per-token premium (Opus output ≈ 1.7× Sonnet) is
-  outweighed by token *volume*: opus-low spends far fewer thinking + output
-  tokens than sonnet-high. So `effort`, not `model`, is the cost lever.
+- Measured on the Opus 4.8 / Sonnet 4.6 generation: Opus at *low* effort beat
+  Sonnet at *high* effort on both quality and token efficiency, because the
+  per-token premium (Opus output ≈ 1.7× Sonnet) was outweighed by token
+  *volume*. So `effort`, not `model`, is the cost lever. The `opus` alias
+  resolves to Opus 5 (2.1.255+) and effort names do not carry across
+  generations — the economics and their re-verification live in
+  skill-development.md § Model Selection; the monthly audit below is what
+  checks the picks still hold.
 - **Haiku supports no `--effort` at all** — it cannot access the cost lever.
   `haiku → opus --effort low` is the natural replacement, not a downgrade.
 
@@ -56,8 +60,11 @@ Valid levels: `low`, `medium`, `high`, `xhigh`, `max`. **Opus defaults to
 | Open-ended reasoning (diagnose-and-fix, merge-intent reconciliation) | `medium` | `github-workflow-auto-fix`, `auto-resolve-conflicts` |
 | Interactive / human-facing | `medium` (never `low`; no `--max-turns` cap) | `claude` (@mentions) |
 
-`--max-turns` bounds tool-call I/O, not reasoning depth — leave it unchanged when
-migrating; effort is the depth/cost lever.
+`--max-turns` bounds tool-call I/O, not reasoning depth — effort is the depth/cost lever. Re-check the cap when moving a workflow to Fable 5.1: it runs longer agentic turns, so a cap tuned on Opus 4.x can truncate a job that was completing; when a run exits on `max_turns`, use `ai-review-max-turns` (the `is_error` discriminator) before treating it as a task failure.
+
+## Unattended prompts
+
+Every non-interactive workflow prompt (all rows except `claude.yml` @mentions) runs with nobody to answer a question, so it carries one autonomy sentence, because Fable 5.1 occasionally announces a step ("I'll now run the tests") and ends the turn without the call: "This run is unattended: continue until the task is complete or blocked by something you cannot resolve; if you say you will run something, run it; do not end the turn with a question."
 
 ## Per-workflow table (canonical)
 

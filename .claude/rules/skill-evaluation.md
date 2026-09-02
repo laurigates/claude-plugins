@@ -1,7 +1,7 @@
 ---
 created: 2026-05-30
-modified: 2026-06-24
-reviewed: 2026-07-04
+modified: 2026-09-02
+reviewed: 2026-09-02
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -26,7 +26,7 @@ tiers always; reserve the expensive tier for a small golden set.
 |------|------|-------|---------|---------|
 | 0 — static | free | all skills | every PR | `scripts/plugin-compliance-check.sh`, the lints |
 | 1 — deterministic evals | ~free (no judge) | skills with an `evals.json` | CI on changed skill | `evaluate-plugin/scripts/grade_deterministic.py` |
-| 2 — cross-model matrix | budgeted | **golden set only**, opus/sonnet/haiku | monthly + on model release | `/evaluate:matrix`, `render_matrix_report.py` |
+| 2 — cross-model matrix | budgeted | **golden set only**, opus/sonnet/haiku/fable | monthly + on model release | `/evaluate:matrix`, `render_matrix_report.py` |
 
 Tier 0 catches structural rot for free. Tier 2 is the only thing that costs
 tokens, and it is bounded to the canary set.
@@ -74,8 +74,10 @@ Tier 0/1.
 
 ## Principle 4 — reproducibility and cadence
 
-- **Pin model IDs** in the result file (`claude-opus-4-8`, `claude-sonnet-4-6`,
-  `claude-haiku-4-5`), single-turn prompts, version-controlled `evals.json`.
+- **Pin full model ids (never aliases)** in the result file, single-turn
+  prompts, version-controlled `evals.json`. Pin the **effort level** beside the
+  model id too: level names do not map across generations, so `opus/low` on
+  one model generation and `fable/low` on another are not the same treatment.
 - **Cache the baseline per model-version** — baseline only changes when the
   model changes, so a skill edit re-runs only the with-skill side.
 - **Trigger on cadence, not per-PR** — monthly cron plus a manual run whenever a

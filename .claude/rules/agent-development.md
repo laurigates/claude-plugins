@@ -1,7 +1,7 @@
 ---
 created: 2026-02-25
-modified: 2026-07-21
-reviewed: 2026-07-21
+modified: 2026-09-02
+reviewed: 2026-09-02
 paths:
   - "**/agents/**"
   - "**/git_repo_agent/**"
@@ -42,12 +42,14 @@ Agents live in `<plugin-name>/agents/<agent-name>.md`.
 name: agent-name
 description: What this agent does and when to use it.
 model: opus
-tools: Glob, Grep, LS, Read, Edit, Write, Bash(npm *), TodoWrite
+tools: Glob, Grep, LS, Read, Edit, Write, Bash(npm *)
 created: YYYY-MM-DD
 modified: YYYY-MM-DD
 reviewed: YYYY-MM-DD
 ---
 ```
+
+> **Todo/task tools (2.1.233+)**: on current models a subagent has `TaskCreate`/`TaskUpdate`/`TaskList`/`TodoWrite` only when the parent session opted in; listing them in `tools:` does not opt in. An agent body that *depends* on the task list must say what to do without it. Mechanics: `.claude/rules/agentic-permissions.md` § Task-tool availability.
 
 ### Optional Frontmatter Fields
 
@@ -59,6 +61,7 @@ context: fork          # Context isolation: 'fork' creates independent context c
 isolation: worktree    # Filesystem isolation: give agent its own git worktree
 permissionMode: default  # Permission mode: default, acceptEdits, dontAsk, bypassPermissions, plan
 maxTurns: 20           # Maximum agentic turns before agent stops
+effort: low            # Per-agent effort override (2.1.251+); default inherits session
 background: false      # Set true to always run as a background task
 memory: user           # Persistent memory scope: user, project, or local
 skills:                # Preload skill content into agent context at startup
@@ -84,7 +87,8 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
 |-------|------|----------|-------------|
 | `name` | string | Yes | Agent identifier (kebab-case) |
 | `description` | string | Yes | Purpose and use cases for agent selection |
-| `model` | string | Yes | `opus`, `sonnet`, `haiku`, `inherit`, or full model ID (e.g., `claude-opus-4-7`) — full IDs fixed in 2.1.74 |
+| `model` | string | Yes | `opus`, `sonnet`, `haiku`, `fable` (2.1.255+), `inherit`, or a full model ID (e.g. `claude-fable-5-1`). Aliases resolve to the current generation (`opus` → Opus 5, `sonnet` → Sonnet 5, `haiku` → Haiku 4.5, `fable` → Fable 5.1). Full IDs honoured since 2.1.74 |
+| `effort` | string | No | `low`, `medium`, `high`, `xhigh`, or `max` (2.1.251+) — overrides the session effort while this agent runs; default inherits. This is the per-agent cost lever the Model Selection section refers to |
 | `tools` | comma-list | Yes | Tools the agent can use; use `Agent(name)` to restrict spawnable subagents |
 | `context` | string | No | `fork` for isolated context (default: shared) |
 | `isolation` | string | No | `worktree` to run agent in an isolated git worktree |
@@ -97,6 +101,7 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
 | `mcpServers` | list | No | MCP server names or inline configs available to this agent |
 | `hooks` | object | No | Agent-scoped hooks (same schema as settings.json hooks) |
 | `disallowedTools` | comma-list | No | Tools to deny even if in the inherited list |
+| `experimental.cacheTtl` | string | No | `5m` or `1h` (2.1.248+), written as a nested map (`experimental:` → `cacheTtl: 1h`) — prompt-cache TTL for the agent's own requests when no subagent TTL setting is configured; ignored on usage credits. Cache reads on Fable 5.1 are $0.25/MTok, so `1h` is cheap for agents re-spawned across a session |
 | `created` | date | Recommended | Initial creation date |
 | `modified` | date | Recommended | Last substantive change |
 | `reviewed` | date | Recommended | Last verified against current docs |
@@ -148,14 +153,19 @@ Sub-agents can spawn their own sub-agents, **up to 5 levels deep** (2.1.172). As
 
 ## Model Selection for Agents
 
-**Default to `model: opus` for every plugin agent.** A subagent's output feeds back into the main loop as a tool result, so a weaker delegate quietly degrades everything downstream. Opus 4.8 at *low* effort beats Sonnet 4.6 at *high* effort on both quality and token efficiency, so **`effort`, not `model`, is the cost lever** for delegated work — dial effort down for mechanical agents, keep the model on Opus. This matches the user-global standard in `~/.claude/rules/agent-and-tool-selection.md` ("Always Use Opus for Subagents").
+**Default to `model: opus` for every plugin agent.** A subagent's output feeds back into the main loop as a tool result, so a weaker delegate quietly degrades everything downstream. Measured on the Opus 4.8 / Sonnet 4.6 generation, Opus at *low* effort beat Sonnet at *high* effort on both quality and token efficiency, so **`effort`, not `model`, is the cost lever** for delegated work. The `opus` / `sonnet` aliases resolve to Opus 5 / Sonnet 5, and effort level names do not map across model generations — re-run the `skill-evaluation.md` Tier 2 sweep before changing an agent's effort on the strength of the old figure. This matches the user-global standard in `~/.claude/rules/agent-and-tool-selection.md` ("Opus Is the Floor for Subagents and Agent Teams").
 
 | Model | Use For |
 |-------|---------|
 | `opus` | **Default for all subagents** — reasoning, review, debugging, refactoring, *and* mechanical/high-volume work (dial `effort` down for the latter rather than downgrading the model) |
+| `fable` | Sanctioned for the hardest delegated reasoning (long-horizon, multi-file, adversarial verification). Accepted by `scripts/check-agent-model.sh`. Not the default: no plan defaults to Fable and it costs 2x Opus per token |
 | `sonnet` / `haiku` | Avoid for subagents. The one sanctioned exception is the `agent-patterns-plugin:cold-read-gate` haiku reader, where a low-capability model is the *measurement instrument*, not a delegate. |
 
-> **Note (2.1.142 / 2.1.160)**: Fast mode now uses Opus 4.7 by default (previously Opus 4.6). The legacy fast-mode override env var was deprecated in 2.1.154 and is a **no-op as of 2.1.160** — remove any such override from agent launch scripts. To keep fast mode on Opus 4.6, switch with `/model claude-opus-4-6[1m]` then `/fast on`; omit it to get the default Opus 4.7 fast mode.
+`model: opus` remains the committed floor for plugin agents (portable: every plan has Opus; Fable is no plan's default and costs 2x per token). `model: fable` is sanctioned for agents whose job is the hardest delegated reasoning (long-horizon, multi-file, adversarial verification), and the guard accepts it. `inherit` is not used for plugin agents because it would also inherit Sonnet/Haiku sessions below the floor. `effort:` frontmatter (`low|medium|high|xhigh|max`, default inherits) is the cost lever; use `effort: low` for mechanical/high-volume agents.
+
+**Resolution order (2.1.251+):** per-spawn `Agent(model: …)` > agent frontmatter `model:` > `CLAUDE_CODE_SUBAGENT_MODEL` > the main session model. `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` (2.1.257) overrides all of these, so a frontmatter `model: opus` is a default, not a guarantee, when a user or CI environment sets the force variable; `scripts/check-agent-model.sh` checks the frontmatter only. The model actually used is reported in the `SubagentStart` hook's `subagent_model` field (`.claude/rules/hooks-reference.md`).
+
+> **Note (fast mode)**: Fast mode is available only on Opus 5 and Opus 4.8; Fable 5.1 has no fast mode. The legacy fast-mode override env var has been a no-op since 2.1.160 — delete it from agent launch scripts.
 
 ## Context Isolation
 
@@ -169,7 +179,7 @@ name: research-agent
 description: Research without polluting main context
 model: opus
 context: fork
-tools: Glob, Grep, LS, Read, WebFetch, WebSearch, TodoWrite
+tools: Glob, Grep, LS, Read, WebFetch, WebSearch
 ---
 ```
 
@@ -178,6 +188,10 @@ tools: Glob, Grep, LS, Read, WebFetch, WebSearch, TodoWrite
 - Parallel investigations with potentially conflicting approaches
 - Isolated experiments or background tasks
 - Agents that generate verbose output that would fill the main context
+
+### Runtime fork vs named agent (2.1.232+)
+
+The `Agent` tool's `subagent_type: "fork"` (available by default since 2.1.232) inherits the parent's full conversation and its prompt cache — no re-briefing, and cache reads on Fable 5.1 cost $0.25/MTok. A named plugin agent without `context: fork` starts cold with only its brief. Use a fork for "continue this work in isolation"; use a named agent when the tool boundary (`tools:`), model, or preloaded `skills:` is the point. A fork has read the user's request verbatim; a briefed agent only has the parent's paraphrase, and Fable 5.1 has a slightly higher propensity to distort user intent when briefing subagents (system card §6.2.1) — so a named-agent brief quotes the user's request rather than paraphrasing it.
 
 ### Worktree Isolation
 
@@ -246,27 +260,23 @@ Agents do **not** inherit skills from the parent session — they must be listed
 
 ## Background Execution
 
-Agents can run in the background using the Agent tool's `run_in_background` parameter (previously `Task tool`):
+Non-teammate spawns run in the background by default (2.1.232+); pass `run_in_background: false` to block on the result. The Agent tool's `run_in_background` parameter (previously `Task tool`) controls this explicitly:
 
 ```
 Agent tool with run_in_background: true
 ```
 
-**Background execution behavior:**
-- Returns immediately without waiting for the agent to finish
-- The main session receives a notification when the agent completes
-- Use `TaskOutput` tool to check on background agent status
-- Use `TaskStop` tool to stop a background agent
+**Background execution behavior (2.1.232+: background is the default for non-teammate spawns):**
+- The spawn returns immediately; the agent's result is delivered to the main session as a notification when it finishes — the main session does not poll.
+- To block on a specific result before proceeding, wait for it at the point the result is needed: `TaskOutput` (deprecated in favour of reading the task's output file path, which the spawn result names) still blocks until completion.
+- Use `TaskStop` to stop a background agent.
 
 **When to use background execution:**
 - Independent work that doesn't need to block the main session
 - Long-running tasks where you want to continue other work
 - Parallel agent pipelines where results are collected later
 
-**When NOT to use background execution:**
-- When you need the agent's output before proceeding
-- When the agent's work must complete before the next step
-- Research agents whose findings inform your next steps
+**When to run in the foreground instead:** only when the very next action consumes the result and nothing else can proceed meanwhile (a single blocking lookup). Otherwise spawn in the background and wait for the result at the step that needs it — a research agent's findings can be awaited when you reach that step rather than blocking the session from the moment of spawn. Asynchronous delegation outperforms synchronous delegation on Fable 5.1 (system card §8.13).
 
 ### Background Session Behavior (2.1.141+ / 2.1.142+ / 2.1.143+ / 2.1.154+)
 
@@ -394,12 +404,13 @@ Lead Agent (orchestrator)
             └── Use SendMessage — report back to lead
 ```
 
+> The `TaskList`/`TaskUpdate` legs exist only when the lead's session has the task tools (opt-in on Opus 4.8, Sonnet 5, Fable 5/5.1 and newer since 2.1.233 — `.claude/rules/agentic-permissions.md` § Task-tool availability). Opt in alongside `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, or coordinate through `SendMessage` and a plan file instead.
+
 ### Native Team Tools
 
 | Tool | Purpose |
 |------|---------|
 | `SendMessage` | Send messages between agents (DM, broadcast, shutdown); address by agent ID or name |
-| `TaskOutput` | Get output from background agent |
 | `TaskStop` | Stop a running background agent |
 
 > **Security (2.1.166)**: Cross-session messaging is hardened — messages relayed via `SendMessage` **no longer carry user authority**, and auto mode blocks them. A teammate cannot use a relayed message to escalate privileges or auto-approve actions that the receiving session's own permission mode would otherwise gate.
@@ -460,7 +471,7 @@ disallowedTools: Write, Edit, NotebookEdit
 | Read-only research | `tools: Read, Grep, Glob, WebSearch` | Analysis without side effects |
 | Safe code executor | `tools: Bash, Read` + `disallowedTools: Write, Edit` | Run but not modify |
 | Documentation writer | `tools: Read, Write, Edit, Grep, Glob` + `disallowedTools: Bash` | Write docs safely |
-| Full-power developer | `tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite` | Complete implementation |
+| Full-power developer | `tools: Bash, Read, Write, Edit, Grep, Glob` | Complete implementation |
 
 ## Agent Directory Layout
 
@@ -632,8 +643,8 @@ The dashboard's "new session" launcher accepts the same flags as the top-level `
 | `--mcp-config <file>` | Load an MCP server config file |
 | `--plugin-dir <path>` | Add a plugin directory (in addition to discovered ones) |
 | `--permission-mode <mode>` | Start in `default`, `acceptEdits`, `dontAsk`, `bypassPermissions`, or `plan` |
-| `--model <model>` | Pick the model (`opus`, `sonnet`, `haiku`, or full ID) |
-| `--effort <level>` | Set effort (`low`, `medium`, `high`, `max`) |
+| `--model <model>` | Pick the model (`opus`, `sonnet`, `haiku`, `fable`, `best`, or a full ID such as `claude-fable-5-1`) |
+| `--effort <level>` | Set effort (`low`, `medium`, `high`, `xhigh`, `max`) |
 | `--dangerously-skip-permissions` | Skip permission prompts — use only in trusted sandboxes |
 
 Pair `--cwd` with the launch flags to spin up isolated, per-directory background sessions without leaving the dashboard.

@@ -1,14 +1,14 @@
 ---
 created: 2026-02-26
-modified: 2026-06-23
-reviewed: 2026-07-04
+modified: 2026-09-02
+reviewed: 2026-09-02
 paths:
   - ".claude/hooks/**"
   - "**/.claude-plugin/plugin.json"
   - ".claude/settings*.json"
 ---
 
-# Hook System Reference (Claude Code 2.1.152+)
+# Hook System Reference (Claude Code 2.1.251+)
 
 Comprehensive reference for Claude Code hook events, schemas, and patterns. This supplements `.claude/rules/handling-blocked-hooks.md` with full event coverage. For guidance on when to use `type: "prompt"`, `type: "agent"`, and `type: "http"` hooks instead of `type: "command"`, see `.claude/rules/prompt-agent-hooks.md`.
 
@@ -57,7 +57,7 @@ Comprehensive reference for Claude Code hook events, schemas, and patterns. This
 | Event | When It Fires | Matcher Support |
 |-------|--------------|-----------------|
 | `TeammateIdle` | A teammate in an agent team goes idle | teammate name |
-| `TaskCompleted` | A task in the shared task list is marked complete | task list name |
+| `TaskCompleted` | A task in the shared task list is marked complete — driven by `TaskUpdate status=completed`; those task tools are unavailable on Opus 4.8, Sonnet 5, Fable 5/5.1, Mythos 5 and newer unless `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` (2.1.233), so the event does not fire on those models by default | task list name |
 
 ### MCP Events (2.1.76+)
 
@@ -73,6 +73,8 @@ Comprehensive reference for Claude Code hook events, schemas, and patterns. This
 | `Notification` | Claude sends a desktop/system notification | none |
 | `ConfigChange` | Claude Code settings change at runtime (2.1.50+) | config key (regex) |
 | `MessageDisplay` | An assistant message is about to be displayed (2.1.152+) | none |
+| `PreModelSwitch` | Before the session's model is switched — block, confirm, or annotate a model switch (2.1.251+) | none |
+| `PostModelSwitch` | After a model switch takes effect — block, confirm, or annotate a model switch (2.1.251+) | none |
 
 ---
 
@@ -621,6 +623,7 @@ conditionality**, not invisibility:
 | Pure observability (logging, metrics) | Write to disk, exit 0 — never emit to the model (`event-logger.sh`) |
 | A correction the model needs once | Emit once, then **dedup per session** so repeats don't accumulate (`bash-antipatterns-teach.sh` keys a per-session seen-list under `${TMPDIR:-/tmp}/claude-bash-teach-seen/<session_id>`) |
 | A blocking gate | Keep the message short; fire only on a real finding; make it self-extinguishing so it stops replaying once resolved |
+| A safety block (`deny` / exit 2) | Make it hold under re-spelling — `command git push`, `\git push`, `git  push`, `env … git push`, a `bash -c` / `xargs` wrapper — because Fable 5.1 has been observed rewriting a routine command so a misfiring regex hook would not recognise it (system card §6.1.2). Resolve the command structurally the way `external-pr-merge-guard.sh` does (wrapper stripping, `bash -c`/heredoc body scan; `ast-grep --lang bash` where a parse helps) and fail **closed with a clear reason** on input the guard cannot parse — a hook that misfires silently is what invites the workaround, so a wrong block should say why it fired, not just refuse. (Style nudges may fail open, as `bash-antipatterns.sh`'s read-blocks do; safety blocks must not.) Auto mode is the second layer and blocks the workaround itself; the hook is the layer that works where auto mode is off. |
 | High-frequency per-call feedback | Reconsider — this is the most expensive shape; cap, dedup, or move the check to `Stop` |
 
 ---
@@ -1134,4 +1137,6 @@ MCP tools use the naming pattern `mcp__<server>__<tool>`. Match them with regex 
 | `Notification` | Misc | |
 | `ConfigChange` | Misc | 2.1.50 |
 | `MessageDisplay` | Misc | 2.1.152 |
+| `PreModelSwitch` | Misc | 2.1.251 |
+| `PostModelSwitch` | Misc | 2.1.251 |
 

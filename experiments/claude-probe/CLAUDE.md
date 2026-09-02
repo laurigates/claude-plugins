@@ -30,7 +30,7 @@ The repo-root justfile registers this as a module (`mod claude-probe 'experiment
 
 Every run is a real Opus invocation; a full sweep is 192 of them. Cost is managed two ways:
 
-- **Effort, not model, is the cost lever.** The model is fixed to `claude-opus-4-8` (Opus-low beats Sonnet on cost *and* quality, per `~/.claude/rules/agent-and-tool-selection.md`). The `run` (opus-low) → `run-full` (all efforts) → `run-max` (opt-in) progression maps to subsets of `conditions.yaml`.
+- **Effort, not model, is the cost lever.** The model is pinned to `claude-opus-4-8` so results stay comparable with the runs recorded in `docs/iteration-log.md` (the pin was chosen when Opus-low beat Sonnet on cost and quality — `~/.claude/rules/agent-and-tool-selection.md`). Effort level names do not map across models, so a different model needs its own condition set and fresh baselines, not a reuse of the `opus-*` ids. The `run` (opus-low) → `run-full` (all efforts) → `run-max` (opt-in) progression maps to subsets of `conditions.yaml`.
 - **Iterate narrow, confirm wide.** Use `just run-one` while editing `prompts/probe.md`; promote to `just run` (opus-low) until a probe version looks stable; only then `just run-full`. Prefer filtering to the affected test.
 
 ## Architecture — the scoring pipeline
