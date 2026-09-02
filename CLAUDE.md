@@ -60,11 +60,9 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/bash-tool-replacements.md` | `find`/`grep`/`rg`/`cat`/`head`/`tail` → dedicated tools; when the Bash form is genuinely fine |
 | `.claude/rules/gh-json-fields.md` | Correct `gh --json` field names (PR `state`/`mergedAt`, not `merged`); `--limit` and `head:` truncation traps |
 | `.claude/rules/structured-script-output.md` | `=== HEADER ===` / `KEY=VALUE` / `STATUS=` convention for diagnostic shell scripts |
-| `.claude/rules/typer-cli-completion.md` | Bypass `shellingham` in Python/Typer CLIs by adding an explicit `completion <shell>` subcommand using Click's `get_completion_class` |
 | `.claude/rules/terminology.md` | Glossary of development terms with strong intent (scoping, review, parallelism, work state, code ops, requirements) — positive definitions with *Use when* disambiguation |
 | `.claude/rules/parallel-safe-queries.md` | Query commands that exit non-zero on empty results silently cancel sibling parallel tool calls — use the machine-readable variant (`--json`/`export` + `jq`) |
 | `.claude/rules/docs-currency.md` | Code and the docs describing it land in the **same commit** (stub → `blueprint:blueprint-docs-currency`) |
-| `.claude/rules/agent-cli-worktree-safety.md` | Data-loss-prevention conventions for Python/Typer agent CLIs. Both implementations were extracted to their own repos (#1017, #1973), so the glob matches nothing here today — it re-arms if a sibling CLI is added |
 | `.claude/rules/version-pinning.md` | Version pins in skill examples (`uses:`/`FROM`/`image:`/`rev:`) are a Renovate-managed surface — SHA+comment convention, the coverage guard, and what's illustrative vs. managed |
 | `.claude/rules/loop-integrity.md` | Long-running/self-continuing loops need an **independent** stop condition (a fresh verifier judges "done", not the worker) and a **compact state packet** each iteration (objective/ref/files/verifier-result/changed-since/exit-condition) — else they optimize for completion over correctness or automate context drift |
 | `.claude/rules/gitattributes.md` | `.gitattributes` conventions — `merge=union` only for one-line-per-entry append-only files, `linguist-generated` for build output (always safe), LF normalization; the `configure-gitattributes` skill + `resolve-additive-conflicts.py` pre-pass |

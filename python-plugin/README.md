@@ -47,6 +47,7 @@ Comprehensive Python development support with modern Astral tooling: uv for pack
 | `python-development` | Python development patterns and best practices |
 | `python-code-quality` | Code quality tools and patterns |
 | `python-packaging` | Package creation and distribution |
+| `typer-cli-completion` | Ship shell completion from a Typer/Click CLI that works outside an interactive shell |
 | `vulture-dead-code` | Detect dead Python code |
 
 ## Agent

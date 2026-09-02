@@ -69,7 +69,7 @@ the rules, skills, and hooks that embody it.
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **agent-patterns-plugin** | 21 | Multi-agent coordination and orchestration patterns |
+| **agent-patterns-plugin** | 22 | Multi-agent coordination and orchestration patterns |
 | **agents-plugin** | 1 + 12 agents | Task-focused agents for test, review, debug, docs, and CI workflows |
 | **langchain-plugin** | 4 | LangChain JS/TS development - agents, chains, LangGraph, Deep Agents |
 | **prompt-engineering-plugin** | 1 | Prompt engineering for accurate, grounded responses - anti-hallucination workflow |
@@ -91,7 +91,7 @@ the rules, skills, and hooks that embody it.
 | Plugin | Skills | Description |
 |--------|--------|-------------|
 | **css-plugin** | 2 | CSS tooling - Lightning CSS transpilation, UnoCSS atomic utilities |
-| **python-plugin** | 16 | Python ecosystem - uv, ruff, pytest, basedpyright, packaging |
+| **python-plugin** | 17 | Python ecosystem - uv, ruff, pytest, basedpyright, packaging |
 | **rust-plugin** | 8 | Rust development - cargo, clippy, nextest, scaffolding, memory safety |
 | **typescript-plugin** | 17 | TypeScript development - Bun, Biome, ESLint, strict types |
 
