@@ -63,4 +63,4 @@ Attributes flowing between stages carry:
 - **Severity** — `critical` · `high` · `medium` · `low` · `info` (drives routing priority and dashboard colouring)
 - **Actions** — array of `{agent, command, rationale}` entries; the router uses `agent` as its dispatch key
 
-Integration: the `git-repo-agent` Python tool emits the same JSON schema, so it can substitute for `/attributes:collect` without changing downstream stages.
+Integration: the [`git-repo-agent`](https://github.com/laurigates/git-repo-agent) Python tool emits the same JSON schema, so it can substitute for `/attributes:collect` without changing downstream stages.

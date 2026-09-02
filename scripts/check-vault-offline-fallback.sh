@@ -5,7 +5,8 @@
 #
 # Background: the read-only vault audit skills (vault-orphans, vault-wikilinks,
 # vault-mocs, vault-tags, vault-stubs) describe a sound detection methodology,
-# but several leaned on the `obsidian` CLI / vault-agent analyzers, which need
+# but several leaned on the `obsidian` CLI / vault-agent analyzers (vault-agent
+# now lives at laurigates/vault-agent, #1973), which need
 # the Obsidian app running. With the app closed the CLI errors and the whole
 # audit family is unusable for batch / headless work. The fix documents the
 # direct `.md`-parsing fallback (frontmatter + [[wikilink]] resolution) the

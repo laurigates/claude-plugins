@@ -3,17 +3,8 @@
 # Enforced by the `ruff` / `ruff-format` hooks in .pre-commit-config.yaml and by
 # the "Ruff lint" / "Ruff format" steps in .github/workflows/plugin-pr-checks.yml.
 # Both surfaces pin the same ruff version — keep them in sync when bumping.
-#
-# Neither vault-agent/pyproject.toml nor git-repo-agent/pyproject.toml carries a
-# [tool.ruff] section, so this file governs every Python file in the repo.
 
 # Deliberately-vulnerable sample code used as input by the security-review
 # skills. Linting or reformatting it would defeat its purpose (and shift the
 # line numbers the fixtures are cited by).
 exclude = ["test-fixtures"]
-
-[lint.per-file-ignores]
-# The SDK transport monkeypatch must be installed before the modules that
-# construct a transport are imported, so these module-level imports are
-# intentionally below it (the patch import itself already carries `# noqa: E402`).
-"git-repo-agent/src/git_repo_agent/orchestrator.py" = ["E402"]

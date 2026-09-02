@@ -106,25 +106,6 @@ test-skill-scripts:
     ./scripts/run-skill-script-tests.sh
 
 ####################
-# Git Repo Agent
-####################
-
-# Install git-repo-agent as editable uv tool
-[group: "git-repo-agent"]
-install-agent:
-    uv tool install -e ./git-repo-agent
-
-# Compile plugin skills into subagent prompt files
-[group: "git-repo-agent"]
-compile-prompts:
-    python git-repo-agent/scripts/compile_prompts.py
-
-# Check if compiled prompts are up-to-date
-[group: "git-repo-agent"]
-check-prompts:
-    python git-repo-agent/scripts/compile_prompts.py --check
-
-####################
 # GitHub
 ####################
 

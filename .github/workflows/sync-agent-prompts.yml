@@ -4,12 +4,20 @@ name: "Sync: agent prompts"
 # repo's plugin skills and opens a PR on each standalone repo
 # (git-repo-agent: issue #1017; vault-agent: issue #1973).
 #
-# Both agents were extracted into their own repos, but their compilers read
-# plugin SKILL.md files from this monorepo (git-repo-agent ADR-009; vault-agent
+# Both agents now live in their own repos, but their compilers read plugin
+# SKILL.md files from this monorepo (git-repo-agent ADR-009; vault-agent
 # ADR-0005/ADR-0006). The pre-compiled artifacts under
-# <agent>/src/<module>/prompts/generated/ are shipped in the wheel, so they must
-# be refreshed here (where the plugin sources live) and pushed to the standalone
+# src/<module>/prompts/generated/ are shipped in the wheel, so they must be
+# refreshed here (where the plugin sources live) and pushed to the standalone
 # repo whenever an upstream skill changes.
+#
+# LAYOUT (load-bearing): both compilers resolve the plugin sources as
+# `Path(__file__).../<repo root>/..` — i.e. the plugins checkout must be the
+# PARENT of the agent checkout. That constraint is directory-name agnostic: it
+# needs *some* direct child, not one named after the agent. This workflow
+# satisfies it by leaving claude-plugins at $GITHUB_WORKSPACE and checking the
+# agent out at $GITHUB_WORKSPACE/_standalone. Do not add a `path:` to the first
+# checkout, and keep the second one a direct child of the workspace root.
 #
 # Cross-repo push authenticates as the laurigates-prompt-sync GitHub App, whose
 # credentials gitops pushes here (PROMPT_SYNC_CLIENT_ID variable +
@@ -20,34 +28,34 @@ name: "Sync: agent prompts"
 # other agent. That per-row scoping is load-bearing: it is the only thing
 # keeping the two syncs credentially isolated now that they share one workflow.
 #
-# Verified operational 2026-08-18: a dispatch run minted a token and opened
-# laurigates/git-repo-agent#4, so the `push:` trigger below is live. Use the
-# `force` dispatch input to re-exercise the token path when there is no drift —
-# without it a no-drift run skips every step and exits green, which is
-# indistinguishable from a broken token. That matters more after this merge: the
-# union `*/skills/*/SKILL.md` filter is wider than the vault-agent sync's former
-# obsidian-plugin-only glob, so vault-agent now sees more no-drift runs and a
-# broken token is correspondingly less obvious.
+# The App token is minted only when there is drift to push. Both agent repos are
+# public, so the read-only checkout below runs on the default GITHUB_TOKEN and a
+# no-op run never requests App credentials. Use the `force` dispatch input to
+# re-exercise the token path when there is no drift — without it a no-drift run
+# skips every push step and exits green, which is indistinguishable from a broken
+# token. That matters because the `*/skills/*/SKILL.md` filter is repo-wide:
+# most triggering pushes touch a skill neither compiler bundles, so no-drift runs
+# are the common case and a broken token is correspondingly less obvious.
 
 on:
   workflow_dispatch:
     inputs:
       force:
-        description: "Mint the token and check out the target even if the compiled prompts are unchanged (verifies the App token path)."
+        description: "Open the sync PR even if the compiled prompts are unchanged (verifies the App token path)."
         type: boolean
         default: false
   push:
     branches: [main]
-    # Union of the two pre-merge filters. `*` does not match `/` in an Actions
-    # path filter, so `*/skills/*/SKILL.md` matches exactly one leading path
-    # segment and therefore subsumes the vault-agent sync's former
-    # `obsidian-plugin/skills/*/SKILL.md` glob.
+    # `*` does not match `/` in an Actions path filter, so `*/skills/*/SKILL.md`
+    # matches exactly one leading path segment — every plugin's skills, and
+    # nothing deeper. Both agents' bundles are subsets of that.
+    #
+    # The compilers themselves used to be listed here too. They moved into the
+    # standalone repos with the rest of the CLIs (#1017, #1973), so a compiler
+    # change is now the standalone repo's own CI concern; re-run this workflow by
+    # dispatch after one lands if the output shape changed.
     paths:
       - '*/skills/*/SKILL.md'
-      - 'git-repo-agent/scripts/compile_prompts.py'
-      - 'git-repo-agent/src/git_repo_agent/prompts/compiler.py'
-      - 'vault-agent/scripts/compile_prompts.py'
-      - 'vault-agent/src/vault_agent/prompts/compiler.py'
 
 permissions:
   contents: read
@@ -77,18 +85,32 @@ jobs:
       group: sync-agent-prompts-${{ matrix.agent }}
       cancel-in-progress: false
     steps:
+      # No `path:` — the compilers require this checkout to be the PARENT of the
+      # agent checkout below. See the LAYOUT note in the header.
       - name: Checkout claude-plugins
         uses: actions/checkout@v6
+
+      # Read-only, on the default GITHUB_TOKEN: both agent repos are public, so
+      # a no-drift run never mints App credentials. `persist-credentials: false`
+      # keeps this token out of the local git config, so the push below uses the
+      # App token and nothing else.
+      - name: Checkout the standalone agent repo
+        uses: actions/checkout@v6
+        with:
+          repository: laurigates/${{ matrix.agent }}
+          path: _standalone
+          persist-credentials: false
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
 
+      # Runs the STANDALONE repo's compiler against this repo's skills, writing
+      # into the standalone checkout. Its own PLUGINS_ROOT = <repo>/.. resolves
+      # to $GITHUB_WORKSPACE, where claude-plugins sits.
       - name: Regenerate compiled prompts
-        env:
-          AGENT: ${{ matrix.agent }}
-        run: uv run --project "$AGENT" python "$AGENT/scripts/compile_prompts.py"
+        run: uv run --project _standalone python _standalone/scripts/compile_prompts.py
 
       - name: Detect changes
         id: diff
@@ -97,12 +119,12 @@ jobs:
         # `git diff` cannot see — the sync would silently skip it.
         env:
           FORCE: ${{ inputs.force }}
-          GENERATED_DIR: ${{ matrix.agent }}/src/${{ matrix.module }}/prompts/generated/
+          GENERATED_DIR: src/${{ matrix.module }}/prompts/generated/
         run: |
           if [ "$FORCE" = "true" ]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
             echo "Forced: exercising the token path for $GENERATED_DIR regardless of drift." >> "$GITHUB_STEP_SUMMARY"
-          elif [ -z "$(git status --porcelain -- "$GENERATED_DIR")" ]; then
+          elif [ -z "$(git -C _standalone status --porcelain -- "$GENERATED_DIR")" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -127,24 +149,6 @@ jobs:
           private-key: ${{ secrets.PROMPT_SYNC_PRIVATE_KEY }}
           owner: laurigates
           repositories: ${{ matrix.agent }}
-
-      - name: Checkout the standalone agent repo
-        if: steps.diff.outputs.changed == 'true'
-        uses: actions/checkout@v6
-        with:
-          repository: laurigates/${{ matrix.agent }}
-          token: ${{ steps.app-token.outputs.token }}
-          path: _standalone
-
-      - name: Copy regenerated prompts into the standalone checkout
-        if: steps.diff.outputs.changed == 'true'
-        env:
-          GENERATED_DIR: ${{ matrix.agent }}/src/${{ matrix.module }}/prompts/generated/
-          MODULE: ${{ matrix.module }}
-        run: |
-          rsync -a --delete \
-            "$GENERATED_DIR" \
-            "_standalone/src/$MODULE/prompts/generated/"
 
       - name: Open sync PR on the standalone agent repo
         if: steps.diff.outputs.changed == 'true'

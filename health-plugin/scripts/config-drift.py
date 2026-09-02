@@ -701,10 +701,13 @@ def collect(root: Path) -> tuple[dict[str, list[dict]], list[str], int, int]:
         # `AGENTS=0` indistinguishable from "this tree has no agents".
         #
         # The old comment defended the glob against a `dirpath.name == "agents"`
-        # walk, on the grounds that two of the ten such directories here are
+        # walk, on the grounds that two of the ten such directories here were
         # Python source packages (`git-repo-agent/src/git_repo_agent/agents`,
         # `vault-agent/src/vault_agent/agents`) where a stray `README.md` would
-        # be silently ingested as an agent prompt. That argument is real and it
+        # be silently ingested as an agent prompt. Those two CLIs have since been
+        # extracted to their own repos (#1017, #1973) — but the probe also runs
+        # over `~/repos/laurigates` and `~/repos`, where they still appear as
+        # sibling checkouts, so the argument still holds. It is real and it
         # is preserved -- but it buys the `*-plugin/` PREFIX, not the DEPTH
         # ANCHOR. Measured with this predicate at `~/repos/laurigates`: exactly
         # 21, both source packages excluded, depth-independent. It is also still

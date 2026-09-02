@@ -266,7 +266,7 @@ repos:
         # Must cover every path the walk reads (see the script's COVERAGE
         # header) plus the script itself — a trigger narrower than the scan is
         # the allowlist-drift shape #2164 named.
-        files: '(SKILL\.md|skill\.md|REFERENCE\.md|\.workflow\.js|^git-repo-agent/src/git_repo_agent/prompts/generated/.*\.md|^scripts/lint-mcp-tool-references\.sh)$'
+        files: '(SKILL\.md|skill\.md|REFERENCE\.md|\.workflow\.js|^scripts/lint-mcp-tool-references\.sh)$'
         pass_filenames: false
       - id: test-lint-mcp-tool-references
         name: MCP tool-reference denylist detects, stays narrow, and scans from any cwd (#2437)

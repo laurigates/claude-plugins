@@ -21,5 +21,4 @@ paths = [
 
   # Virtual environments
   '''\.venv/.*''',
-  '''git-repo-agent/\.venv/.*''',
 ]

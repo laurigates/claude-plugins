@@ -138,8 +138,8 @@ rather than an inconvenience.
 
 `renovate.json` customManagers and the guard cover **this repository's skill
 markdown and its plugin scaffold templates**. Extending the convention to
-sibling repos (`git-repo-agent`, `vault-agent`) is a follow-up, not a
-precondition.
+sibling repos ([`git-repo-agent`](https://github.com/laurigates/git-repo-agent), [`vault-agent`](https://github.com/laurigates/vault-agent)) is a follow-up
+for those repos' own Renovate configs, not a precondition here.
 
 ## Related
 

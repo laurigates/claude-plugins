@@ -39,4 +39,4 @@ Each attribute contains:
 
 ## Integration
 
-Works with the `git-repo-agent` Python tool (which produces the same JSON schema) and the `agents-plugin` router agents.
+Works with the [`git-repo-agent`](https://github.com/laurigates/git-repo-agent) Python tool (which produces the same JSON schema) and the `agents-plugin` router agents.
