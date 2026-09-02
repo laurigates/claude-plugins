@@ -238,9 +238,28 @@ section() {
   awk -v s="$1" -v e="$2" '$0 ~ s {on=1; next} $0 ~ e {on=0} on' "$out"
 }
 agentic_section="$(section '^## Skills missing Agentic Optimizations table:$' '^## Skills with stale reviews')"
-stale_section="$(section '^## Skills with stale reviews \(>90 days\):$' '^## Stale-review date distribution$')"
+# Literal parens as bracket expressions, NOT `\(` `\)`: a backslash-escaped
+# paren is undefined in POSIX awk, and older mawk (the GitHub runner default)
+# warns "escape sequence `\(' treated as plain `('" and then reads the parens
+# as a GROUP — so the heading never matches, this section slices empty, and the
+# stale-list assertion below fails on CI while passing under newer mawk/gawk.
+stale_section="$(section '^## Skills with stale reviews [(]>90 days[)]:$' '^## Stale-review date distribution$')"
 cohort_section="$(section '^## Stale-review date distribution$' '^## Skills with missing required')"
 sections_section="$(section '^## Skills with missing required sections/frontmatter:$' '^__NEVER_MATCHES__$')"
+
+# A boundary regex that fails to match slices the section EMPTY, which silently
+# satisfies every "must NOT contain" assertion below. That is how the `\(`
+# mawk-portability bug above reached CI green locally. Fail loudly instead.
+for _s in agentic stale cohort sections; do
+  eval "_body=\$${_s}_section"
+  if [ -z "$_body" ]; then
+    echo "FAIL: ${_s}_section sliced empty — a boundary heading did not match." >&2
+    echo "      Assertions over it would pass vacuously. Report follows:" >&2
+    sed 's/^/    /' "$out" >&2
+    exit 1
+  fi
+done
+unset _s _body
 
 ##########
 # GUARD INTEGRITY — the corpus was really walked
