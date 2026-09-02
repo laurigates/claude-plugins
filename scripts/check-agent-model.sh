@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# Verify every plugin agent .md file declares `model: opus`.
+# Verify every plugin agent .md file declares `model: opus` (or `model: fable`
+# for the hardest delegated reasoning — see the policy note below).
 #
 # Background: a subagent's output feeds back into the main loop as a tool
-# result, so a weaker delegate quietly degrades everything downstream. Opus 4.8
-# at *low* effort beats Sonnet 4.6 at *high* effort on both quality and token
-# efficiency, so `effort` (a session setting), not `model`, is the cost lever
-# for delegated work. This matches the user-global standard in
+# result, so a weaker delegate quietly degrades everything downstream. `effort` —
+# settable per agent via the `effort:` frontmatter field, or per session — not
+# `model`, is the cost lever for delegated work; the measured basis (re-checked
+# per model generation) lives in `.claude/rules/agent-development.md`
+# (§ "Model Selection for Agents"). This matches the user-global standard in
 # `~/.claude/rules/agent-and-tool-selection.md` ("Always Use Opus for
-# Subagents") and the project rule `.claude/rules/agent-development.md`
-# (§ "Model Selection for Agents").
+# Subagents").
 #
 # The sole sanctioned non-Opus subagent is the `agent-patterns-plugin`
 # cold-read-gate haiku reader — the measurement instrument, not a delegate
@@ -25,6 +26,18 @@
 # unit is a whole agent FILE, so a file-granular allowlist is the right shape
 # here; a call-granular label key is the right shape there.
 #
+# Model floor policy: `opus` is the committed floor for every plugin agent —
+# it is the portable choice (every plan carries Opus; `fable` is no plan's
+# default and costs roughly 2x per token, and has no documented fallback for a
+# consumer without Fable access). `fable` is additionally sanctioned for
+# agents whose job is the hardest delegated reasoning (long-horizon,
+# multi-file, adversarial verification) — this guard accepts it alongside
+# `opus`. `inherit` is not accepted for plugin agents: it would also inherit
+# whatever session model is active, including Sonnet/Haiku sessions below the
+# floor. `effort:` frontmatter (low|medium|high|xhigh|max, default inherits)
+# is the per-agent cost lever — dial it down for mechanical/high-volume agents
+# instead of reaching for a weaker model.
+#
 # Usage:
 #   bash scripts/check-agent-model.sh [--project-dir <path>] [agent.md ...]
 #
@@ -33,8 +46,8 @@
 #                   discovery is skipped and only these files are checked.
 #
 # Exit codes:
-#   0 - all agents run on opus
-#   1 - one or more agents declare a non-opus model
+#   0 - all agents run on opus or fable, and every effort: value (if present) is valid
+#   1 - one or more agents declare a disallowed model or an invalid effort: value
 
 set -euo pipefail
 
@@ -143,22 +156,36 @@ for agent_file in "${agent_files[@]}"; do
 
   agent_model=$(head -20 "$agent_file" | grep -m1 '^model:' | sed 's/^model:[[:space:]]*//' | tr -d '\r' || true)
 
-  if [ "$agent_model" != "opus" ]; then
-    echo "❌ $agent_file: model: ${agent_model:-<missing>} (must be opus; effort is the cost lever — see .claude/rules/agent-development.md)" >&2
+  if [ "$agent_model" != "opus" ] && [ "$agent_model" != "fable" ]; then
+    echo "❌ $agent_file: model: ${agent_model:-<missing>} (must be opus, or fable for the hardest delegated reasoning; effort is the cost lever — see .claude/rules/agent-development.md)" >&2
     errors=$((errors + 1))
+  fi
+
+  # effort: is optional (absent means the agent inherits the session's
+  # effort), but when present it must be one of the five valid tiers.
+  agent_effort=$(head -20 "$agent_file" | grep -m1 '^effort:' | sed 's/^effort:[[:space:]]*//' | tr -d '\r' || true)
+  if [ -n "$agent_effort" ]; then
+    case "$agent_effort" in
+      low | medium | high | xhigh | max) ;;
+      *)
+        echo "❌ $agent_file: effort: $agent_effort (must be one of low|medium|high|xhigh|max, or omitted to inherit the session's effort)" >&2
+        errors=$((errors + 1))
+        ;;
+    esac
   fi
 done
 
 if [ $errors -gt 0 ]; then
   echo "" >&2
-  echo "Found $errors agent file(s) not on opus (out of $checked checked)." >&2
-  echo "Set 'model: opus' on every plugin agent. A subagent's output re-enters the" >&2
-  echo "main loop as a tool result, so a weaker delegate degrades everything" >&2
-  echo "downstream. Dial 'effort' down for mechanical agents instead of the model." >&2
+  echo "Found $errors problem(s) across agent file(s) (out of $checked checked)." >&2
+  echo "Set 'model: opus' (or 'model: fable' for the hardest delegated reasoning)" >&2
+  echo "on every plugin agent. A subagent's output re-enters the main loop as a" >&2
+  echo "tool result, so a weaker delegate degrades everything downstream. Dial" >&2
+  echo "'effort:' down for mechanical agents instead of reaching for a weaker model." >&2
   echo "See .claude/rules/agent-development.md § 'Model Selection for Agents'." >&2
   exit 1
 fi
 
 echo "AGENT_FILES_SCANNED=$checked"
-echo "All $checked agent files run on opus. ✅"
+echo "All $checked agent files run on opus or fable, with valid effort values. ✅"
 exit 0

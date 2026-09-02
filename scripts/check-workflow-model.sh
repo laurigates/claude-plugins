@@ -5,8 +5,10 @@
 # Background: workflows are TOP-LEVEL Claude invocations, not subagents, so the
 # "a weak delegate's output re-enters the main loop" argument (the agent-model
 # guard's rationale) does not apply here. The justification is cost-economics:
-# Opus 4.8 at low effort beats Sonnet 4.6 at high effort on both quality and
-# token efficiency, so `effort`, not `model`, is the cost lever. Haiku supports
+# an Opus-class model at low effort beat a Sonnet-class model at high effort on
+# both quality and token efficiency when measured (Opus 4.8 vs Sonnet 4.6; the
+# `opus`/`sonnet` aliases resolve to Opus 5 / Sonnet 5, so re-measure the exact
+# spread), so `effort`, not `model`, is the cost lever. Haiku supports
 # no effort at all, so it cannot access that lever — haiku → opus --effort low
 # is the natural replacement. Opus defaults to `--effort high`, so effort MUST
 # be explicit or the savings are forfeited. See
