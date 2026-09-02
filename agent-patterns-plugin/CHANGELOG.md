@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.45.3](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.45.2...agent-patterns-plugin-v2.45.3) (2026-09-02)
+
+
+### Code Refactoring
+
+* promote the two orphaned agent-CLI rules to plugin skills ([#2566](https://github.com/laurigates/claude-plugins/issues/2566)) ([faa979a](https://github.com/laurigates/claude-plugins/commit/faa979ad87aaeb539265c2f07fa98f036570bf44))
+
 ## [2.45.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.45.1...agent-patterns-plugin-v2.45.2) (2026-09-02)
 
 
