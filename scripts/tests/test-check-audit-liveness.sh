@@ -95,6 +95,35 @@ assert "F names the flag" "$(contains "$out" 'unknown argument')"
 out="$(bash "$checker" --fixture "$fx/current.json" --max-silent abc 2>&1)"; rc=$?
 assert "F rejects a non-integer threshold" "$(is_true "$([ $rc -eq 2 ] && echo true)")"
 
+# --- TEST G: the second watched workflow, also from real history -------------
+# changelog-review.yml has the identical signature and was found the moment the
+# check was pointed at it: 22 successful runs, last tracking issue 2026-06-21.
+# It is here because one example reads as an anecdote -- a second independent
+# instance is what makes the check worth running.
+echo "=== TEST G: changelog-review's real history is reported ==="
+out="$(bash "$checker" --fixture "$fx/changelog-review.json" 2>&1)"; rc=$?
+assert "G exits 1" "$(is_true "$([ $rc -eq 1 ] && echo true)")"
+assert "G counts 13 silent runs" "$(contains "$out" 'SILENT_STREAK=13')"
+assert "G names changelog-review" "$(contains "$out" 'SILENT=changelog-review.yml')"
+# Non-vacuity: the fixture must carry the issues it DID file, or a streak of 13
+# would just mean "no issues anywhere" and prove nothing about the correlation.
+assert "G saw the issues it did file" "$(contains "$out" 'ISSUES=8')"
+assert "G examined every successful run" "$(contains "$out" 'RUNS=22')"
+
+# --- TEST H: both workflows in one sweep -------------------------------------
+# The production WATCHED list has two entries, so the multi-workflow path is the
+# one that actually runs. A single-entry check would never exercise it.
+echo "=== TEST H: a sweep reports per workflow, not in aggregate ==="
+cat "$fx/current.json" "$fx/changelog-review.json" > "$fx/../../../.tmp-both.json" 2>/dev/null || true
+both="$(mktemp)"; cat "$fx/current.json" "$fx/changelog-review.json" > "$both"
+out="$(bash "$checker" --fixture "$both" 2>&1)"; rc=$?
+rm -f "$both" "$fx/../../../.tmp-both.json"
+assert "H exits 1 when one of two is silent" "$(is_true "$([ $rc -eq 1 ] && echo true)")"
+assert "H watches both" "$(contains "$out" 'WORKFLOWS_WATCHED=2')"
+assert "H reports exactly one finding" "$(contains "$out" 'ISSUE_COUNT=1')"
+# The healthy one must NOT be dragged down by its silent neighbour.
+assert "H clears the healthy workflow" "$(contains "$out" 'WORKFLOW=research-radar.yml	RUNS=14	ISSUES=5	SILENT_STREAK=0	OVER=false')"
+
 echo ""
 echo "=== RESULTS ==="
 echo "PASSED=$pass_count"

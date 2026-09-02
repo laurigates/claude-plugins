@@ -134,9 +134,20 @@ When you have designed a fixed set of domain agents (frontend, database, securit
 
 The failure this prevents: an orchestrator that "used to respect my agents" starts inventing its own the moment the roster lives only in prose. If the model is spawning agents you didn't intend, the fix is to move the roster from instruction into the `Agent(...)` allowlist.
 
-### Subagent Nesting Depth (2.1.172+ / 2.1.181+)
+### Subagent Nesting Depth (2.1.219+)
 
-Sub-agents can spawn their own sub-agents, **up to 5 levels deep** (2.1.172). As of 2.1.181, foreground subagents respect the same 5-level depth limit as background subagents (previously only background subagents were capped). Design deep delegation chains with this ceiling in mind — a spawn beyond five levels is refused.
+Sub-agents can spawn their own sub-agents **up to 3 levels deep by default**, governed by `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`. Set it to `1` to disable nesting entirely, or higher to allow deeper chains. Design delegation chains against 3, not against the old 5 — a chain built for five levels is refused at four, and the refusal surfaces as a failed spawn partway through a wave rather than as a configuration error.
+
+The ceiling moved twice in quick succession, so a rule or skill citing 5 is reading a superseded changelog:
+
+| Version | Default nesting depth |
+|---------|----------------------|
+| 2.1.172 | 5 (background subagents) |
+| 2.1.181 | 5 (extended to foreground subagents) |
+| 2.1.217 | **none** — nesting off by default, `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` introduced to re-enable |
+| 2.1.219 | **3** (current, verified against the changelog through 2.1.258) |
+
+> **Why this went stale:** 2.1.217 and 2.1.219 fall inside 2.1.186–2.1.231, a band that no changelog review ever covered. The automated review filed its last issue on 2026-06-21 (#1733, 2.1.138 → 2.1.185) and then ran green for 13 weeks filing nothing, while `.claude-code-version-check.json` was advanced by hand to 2.1.257. `scripts/check-audit-liveness.sh` now watches for the silent-green half of that.
 
 > **Note (2.1.178)**: Under auto mode, subagent spawns are now evaluated by the classifier **before launch** — an `Agent(...)` call that auto mode would not permit is blocked up front rather than after the subagent starts. Pair with the `Agent(model:opus)`-style parameter rules in `.claude/rules/agentic-permissions.md` to constrain which subagents may be spawned.
 

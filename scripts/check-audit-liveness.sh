@@ -25,6 +25,19 @@
 # there is the designed boundary working. A denials>0 gate would be red on a good
 # week and get switched off.
 #
+# The same shape, found on the second workflow the moment this check was pointed
+# at it: `changelog-review.yml` ran 22 times green and filed its last tracking
+# issue on 2026-06-21 (#1733, covering 2.1.138 -> 2.1.185) -- 13 consecutive
+# silent runs, and the 2026-08-31 run spent ~$4.77 over 22 turns with
+# permission_denials_count=15. Two independent workflows with the same silent
+# failure is what makes this a class rather than an anecdote.
+#
+# The cost is not just the wasted runs. `.claude-code-version-check.json`
+# advanced `lastCheckedVersion` to 2.1.257 by hand while the last REVIEWED
+# version was 2.1.185, so 2.1.186-2.1.231 was skipped by both the automation and
+# the ledger. The stale 5-level subagent nesting ceiling in
+# `.claude/rules/agent-development.md` sits in exactly that band.
+#
 # Why a STREAK and not a single run: one quiet week is legitimate and common. A
 # run of them is not. Replayed against the real history, the default threshold
 # first fires after the 2026-07-22 run -- the fourth silent week -- recovering 5
@@ -51,10 +64,14 @@ ISSUE_BODY=false
 FIXTURE=""
 MAX_SILENT=3
 
-# Workflows whose ONLY output is an issue. A workflow that also pushes commits or
-# opens PRs has other evidence it ran, so it does not belong here.
+# Workflows whose output is an issue. The bar is whether a silent run is
+# INDISTINGUISHABLE from a working one, not whether the workflow can in
+# principle do something else: changelog-review also opens a follow-up PR, but
+# only after its tracking issue exists, so when it goes quiet there is no
+# artifact of any kind.
 #   <workflow file>|<issue label>
-WATCHED='research-radar.yml|research-radar'
+WATCHED='research-radar.yml|research-radar
+changelog-review.yml|changelog-review'
 
 while [ $# -gt 0 ]; do
   case "$1" in
