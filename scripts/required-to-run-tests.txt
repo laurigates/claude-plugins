@@ -67,3 +67,8 @@ health-plugin/scripts/tests/test-probe-lib.sh
 # (#2478). A skip would silently demote it to the grep-for-`refs/heads/` gate
 # it was written to replace.
 git-plugin/skills/git-merge-hazards/scripts/tests/test-push-refspec.sh
+
+# Runs entirely off committed fixtures -- no gh, no network, no task binary --
+# so there is no environment in which skipping it is legitimate. A skip would
+# mean the fixtures or the checker moved, which is exactly the regression.
+scripts/tests/test-check-audit-liveness.sh

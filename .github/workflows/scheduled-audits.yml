@@ -209,6 +209,28 @@ jobs:
             )"
             ```
 
+  audit-liveness:
+    # Watches the workflows whose only output is an issue, for the case where
+    # they go green while filing nothing. Orchestration only — slim runner.
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # `--issue-body` emits nothing while the watched workflows are filing, so
+      # a healthy month opens no issue.
+      - name: Audit-liveness sweep
+        uses: ./.github/actions/script-to-issue
+        with:
+          label: audit-liveness
+          # Quoted, like every colour here: unquoted, a `<digits>e<digits>`
+          # value resolves as a YAML float and `gh label create` 422s.
+          color: "b60205"
+          description: A scheduled audit has gone green while filing nothing
+          script: bash scripts/check-audit-liveness.sh --issue-body
+          title: 'Scheduled audit filing nothing: {month}'
+
   docs-index:
     # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
     runs-on: ubuntu-slim

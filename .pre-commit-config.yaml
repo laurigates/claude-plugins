@@ -506,6 +506,14 @@ repos:
         entry: bash ./scripts/tests/test-check-workflow-labels.sh
         language: system
         files: '^scripts/(check-workflow-labels\.sh|tests/test-check-workflow-labels\.sh)$'
+      # Only the self-test is wired here: check-audit-liveness.sh itself queries
+      # `gh run list` / `gh issue list`, so it belongs in the scheduled sweep,
+      # not in a pre-commit hook that must work offline.
+      - id: test-check-audit-liveness
+        name: audit-liveness guard regression
+        entry: bash ./scripts/tests/test-check-audit-liveness.sh
+        language: system
+        files: '^scripts/(check-audit-liveness\.sh|tests/(test-check-audit-liveness\.sh|fixtures/audit-liveness/.*\.json))$'
         pass_filenames: false
       - id: test-check-git-sandbox-guards
         name: git-sandbox-guard linter regression
