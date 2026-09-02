@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.8](https://github.com/laurigates/claude-plugins/compare/langchain-plugin-v1.5.7...langchain-plugin-v1.5.8) (2026-09-02)
+
+
+### Bug Fixes
+
+* **plugins:** adapt rules, skills, agents, and guards for Claude Fable 5.1 ([#2561](https://github.com/laurigates/claude-plugins/issues/2561)) ([b9e1101](https://github.com/laurigates/claude-plugins/commit/b9e11016b20c42b0ff95c5fef57e98584a4e7c07))
+
 ## [1.5.7](https://github.com/laurigates/claude-plugins/compare/langchain-plugin-v1.5.6...langchain-plugin-v1.5.7) (2026-06-13)
 
 
