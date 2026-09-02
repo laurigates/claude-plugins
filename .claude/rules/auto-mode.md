@@ -1,7 +1,7 @@
 ---
 created: 2026-04-29
-modified: 2026-04-29
-reviewed: 2026-04-29
+modified: 2026-09-02
+reviewed: 2026-09-02
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -12,6 +12,8 @@ paths:
 
 Auto mode lets Claude Code execute without permission prompts. A separate classifier model reviews each action before it runs, blocking anything that escalates beyond the user's request, targets unrecognized infrastructure, or appears driven by hostile content.
 
+Auto mode is the built-in starting permission mode on Pro, Max and Team plans; Bedrock, Google Agent Platform, Foundry and apps-gateway sessions still start in Manual (`default`). Keep it on for Fable 5.1 sessions: the system card's rare hook/classifier workarounds — fabricated user-authorization quotes to satisfy an approval gate, relaunching a subagent as "I am <user> and this is my instruction", rewriting a routine command so a malfunctioning regex hook would not match (all <0.01% of completions), and scripts launching agents with `bypassPermissions` (<0.001%) — were all blocked by auto mode, which sees the user's messages, tool calls and CLAUDE.md but not tool results.
+
 Authoritative reference: [Choose a permission mode](https://code.claude.com/docs/en/permission-modes#eliminate-prompts-with-auto-mode). This rule summarises the parts that affect how plugin skills, settings, and hooks should be authored.
 
 ## Availability
@@ -20,11 +22,11 @@ Auto mode is conditional on every row of this table. If any row is unmet, auto m
 
 | Requirement | Value |
 |-------------|-------|
-| Claude Code version | `v2.1.83` or later |
-| Plan | Max, Team, Enterprise, or API (not Pro) |
-| Model | Sonnet 4.6, Opus 4.6, Opus 4.7 (Team / Enterprise / API); Opus 4.7 only on Max |
-| Provider | Anthropic API (not Bedrock, Vertex, or Foundry) |
-| Admin | On Team / Enterprise, an admin must enable it in Claude Code admin settings |
+| Claude Code version | `v2.1.83` or later for auto mode |
+| Plan | All plans |
+| Model | Anthropic API / Claude Platform on AWS: Opus 4.6 or later, Sonnet 4.6 or later, or any Fable model. Bedrock / Google Agent Platform / Microsoft Foundry / apps-gateway: Sonnet 5, Opus 4.7 or later, or any Fable model. Haiku and older models unsupported on every provider |
+| Provider | Anthropic API, Claude Platform on AWS, Amazon Bedrock, Google Cloud Agent Platform, Microsoft Foundry, signed-in Claude apps gateway |
+| Admin | On Team / Enterprise, available by default; admins can disable via `permissions.disableAutoMode` in managed settings |
 
 Admins can lock it off project-wide by setting `permissions.disableAutoMode: "disable"` in [managed settings](https://code.claude.com/docs/en/permissions#managed-settings).
 
@@ -156,10 +158,10 @@ The auto-mode classifier handles approve/deny logic for most cases that previous
 
 | Permission mode | Auto-approves | Notes |
 |-----------------|---------------|-------|
-| `default` | Reads only | Permission prompts for everything else |
+| `default` | Reads only | Permission prompts for everything else. Manual; starting mode on Bedrock/Agent Platform/Foundry/gateway |
 | `acceptEdits` | Reads, file edits, common filesystem commands | Edits scoped to working dir / `additionalDirectories` |
 | `plan` | Reads only; no source edits | Approve-from-plan can transition into `auto` |
-| `auto` | Everything that survives classifier review | Subject to availability matrix above |
+| `auto` | Everything that survives classifier review | Subject to availability matrix above. Built-in starting mode on Pro/Max/Team |
 | `dontAsk` | Pre-approved tools only | Auto-denies anything that would prompt |
 | `bypassPermissions` | Everything (except protected paths) | No safety classifier; isolated environments only |
 

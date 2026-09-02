@@ -147,10 +147,10 @@ Generate professional deployment handoff documentation for resources and service
 **Usage:**
 ```bash
 # Basic handoff for current project
-claude chat --file ~/.claude/skills/deploy-handoff/SKILL.md
+/container:deploy-handoff
 
 # Specific service handoff
-claude chat --file ~/.claude/skills/deploy-handoff/SKILL.md "User API" "web-service"
+/container:deploy-handoff "User API" "web-service"
 ```
 
 **Output includes:**
@@ -213,7 +213,7 @@ Skills can be invoked using the Claude chat interface:
 claude chat --file ~/.claude/skills/deploy-release/SKILL.md 1.0.0
 
 # Deployment handoff
-claude chat --file ~/.claude/skills/deploy-handoff/SKILL.md "My Service" "api"
+/container:deploy-handoff "My Service" "api"
 ```
 
 ## Security Philosophy

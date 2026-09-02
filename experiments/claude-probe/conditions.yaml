@@ -4,9 +4,11 @@
 # `system_prompt: default` = no override (baseline Claude Code).
 # `system_prompt: probe`   = --system-prompt "$(cat prompts/probe.md)".
 #
-# Model is fixed to claude-opus-4-8 — Opus 4.8 on *low* effort beats Sonnet
-# on both cost and quality (see ~/.claude/rules/agent-and-tool-selection.md),
-# so the cost lever is now *effort*, not model tier.
+# Model is pinned to claude-opus-4-8 so results stay comparable with prior
+# runs (the pin was chosen when Opus 4.8 on *low* effort beat Sonnet on both
+# cost and quality — see ~/.claude/rules/agent-and-tool-selection.md); effort
+# level names do not map across models, so a different model needs its own
+# condition set rather than reusing these effort ids.
 #
 # Efforts under automated test: low, medium, high, xhigh (4 × 2 prompts = 8).
 # `max` is opt-in only — add an `opus-max-*` pair manually / via `just run-max`

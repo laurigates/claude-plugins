@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-08-15
-reviewed: 2026-08-13
+modified: 2026-09-02
+reviewed: 2026-09-02
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git fetch *), Bash(git pull *), Bash(git stash *), Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(gh label *), Bash(gh api *), Bash(pre-commit *), Read, Edit, Write, Grep, Glob, TodoWrite, AskUserQuestion, Task, mcp__github__create_pull_request, mcp__github__issue_read, mcp__github__list_issues
 description: "GitHub issue to PR end-to-end — branch, TDD implementation, PR — one issue or several in parallel. Use when asked to work on an issue, fix issue #N, or batch-process several."
 args: "[issues... (number | #N | URL)] [--auto] [--filter <label>] [--limit <n>] [--parallel] [--labels <l1,l2>]"
@@ -300,6 +300,13 @@ When `--parallel` is specified:
 Agent tool with subagent_type: "general-purpose", prompt: "Process issue #N with TDD workflow.
 Cut the branch with `git fetch origin && git switch -c fix/issue-N origin/main` — never from local main..."
 ```
+
+Give the subagent the issue's title and body verbatim (quoted, not summarised)
+and the labels to apply, and instruct it to read the full comment thread itself
+— `gh issue view N --json title,body,comments` — before planning, scoping from
+the latest deciding comment rather than from your description of it. Do not
+restate the scope in your own words: the subagent implements what the thread
+decided, not what you paraphrased.
 
 3. Wait for all agents to complete
 4. Consolidate results

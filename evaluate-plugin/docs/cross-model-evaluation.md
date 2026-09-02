@@ -80,8 +80,13 @@ model now does it unaided (redundant) or now does it worse (needs adjusting).
 
 ### 4. Reproducibility = pin everything, run on a trigger not per-PR
 
-- Pinned model IDs (`claude-opus-4-8`, `claude-sonnet-4-6`, `claude-haiku-4-5`),
-  recorded in `model-matrix.json metadata.models`.
+- Pinned model IDs recorded as **full ids** in `model-matrix.json
+  metadata.models` (never aliases — `opus` now resolves to `claude-opus-5`, not
+  `claude-opus-4-8`, and will move again). Current set: `claude-opus-5`,
+  `claude-sonnet-5`, `claude-haiku-4-5`; add `claude-fable-5-1` for the "new
+  model dropped" re-sweep of the golden set. Record the effort level alongside
+  each id; level names are not comparable across models, so a new model gets
+  its own effort sweep before its delta column is read.
 - Single-turn prompts, version-controlled fixtures (`evals.json`).
 - **Baseline cached per model-version** — baseline only changes when the model
   changes, so a skill edit re-runs only the with-skill side.
@@ -102,7 +107,8 @@ transcript, runs `grade_deterministic.py` first, and only dispatches the
 `eval-grader` agent for the `DEFERRED` assertions.
 
 Mind `.claude/rules/skill-fork-context.md`: do **not** add `context: fork`, and
-serialize subagent dispatch to avoid the `[1m]` concurrent-rate-limit trap.
+serialize subagent dispatch to avoid the concurrent-rate-limit trap that hits
+1M-context sessions (every Fable 5.1 session, or Opus with the `[1m]` suffix).
 
 ## Golden set criteria
 

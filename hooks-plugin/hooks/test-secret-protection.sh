@@ -162,6 +162,39 @@ assert_exit \
     "head README.md; cat ~/.ssh/id_ed25519 (real key read after ';') is still blocked" 2 \
     "head -5 README.md; cat ~/.ssh/id_ed25519"
 
+# ── block-message framing: operator-only, not a self-serve bypass ────────────
+# Regression: every block message used to end "Set
+# CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 to override" — phrasing that reads
+# to an agent as a bypass it can perform inline, even though the toggle is
+# only honored from the hook's own process environment. Every block message
+# must now point to handling-blocked-hooks.md and must not say "to override".
+echo ""
+echo "block messages point to handling-blocked-hooks.md, not a self-serve override:"
+
+assert_message_framing() {
+    local desc="$1" cmd="$2"
+    local json out
+    json=$(jq -nc --arg cmd "$cmd" '{tool_name:"Bash",tool_input:{command:$cmd}}')
+    out=$(printf '%s' "$json" | bash "$HOOK" 2>&1 >/dev/null || true)
+    if echo "$out" | grep -q 'handling-blocked-hooks.md' && ! echo "$out" | grep -q 'to override'; then
+        printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s\n        got: %s\n" "$desc" "${out:-<empty>}"; FAIL=$((FAIL + 1))
+    fi
+}
+
+assert_message_framing \
+    "cat .env block message points to handling-blocked-hooks.md" \
+    "cat .env"
+
+assert_message_framing \
+    "cat ~/.ssh/id_rsa block message points to handling-blocked-hooks.md" \
+    "cat ~/.ssh/id_rsa"
+
+assert_message_framing \
+    "bare 'env' block message points to handling-blocked-hooks.md" \
+    "env"
+
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

@@ -6,9 +6,9 @@ argument-hint: "path|PR|file|plan description; optional 'focus on X'"
 allowed-tools: Agent, Read, Glob, Grep, Bash(git diff *), Bash(git log *), Bash(gh pr view *), TodoWrite
 model: opus
 created: 2026-06-21
-modified: 2026-07-28
+modified: 2026-09-02
 compatibility: claude-code
-reviewed: 2026-06-21
+reviewed: 2026-09-02
 ---
 
 # Adversarial Review
@@ -96,13 +96,18 @@ checklist rather than restating it**:
 
 ### Step 3: Dispatch the isolated reviewer
 
-One `Agent` per lens. Keep `model: opus`. Dispatch lenses in parallel only
-when there are several and the session is not on a `[1m]` model (the
-parallel-subagent rate-limit caveat in `skill-fork-context.md`). Template:
+One `Agent` per lens. `model: opus` is the floor — see `.claude/rules/agent-development.md`
+§ "Model Selection for Agents" — and `model: fable` is sanctioned here too:
+adversarial review is exactly the hardest delegated-reasoning work that guard
+accepts, so the reviewer must not be weaker than the author it is attacking.
+Dispatch lenses in parallel only when there are several and the session is not
+on a 1M-context model (every Fable 5.1 session, or Opus with the `[1m]`
+suffix) — the parallel-subagent rate-limit caveat in `skill-fork-context.md`.
+Template:
 
 ```
 subagent_type: general-purpose
-model: opus
+model: opus   # floor; fable also sanctioned — see agent-development.md
 prompt: |
   You are an adversarial reviewer. Your ONLY objective is to find ways this
   is WRONG, fragile, or unsafe — do not confirm that it works, do not

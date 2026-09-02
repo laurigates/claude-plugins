@@ -6,9 +6,9 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, TodoWrite
 argument-hint: "--no-verify to skip gh auth verification"
 disable-model-invocation: true
 created: 2026-02-27
-modified: 2026-07-18
+modified: 2026-09-02
 compatibility: claude-code
-reviewed: 2026-03-30
+reviewed: 2026-09-02
 ---
 
 # /hooks:session-end-issue-hook
@@ -46,6 +46,8 @@ Detect current state:
 Verify that `jq` is installed — the hook requires it to parse the session transcript. Report if missing.
 
 Unless `--no-verify` is passed: verify `gh` is installed and authenticated (`gh auth status`). Report the auth state so the user knows whether GitHub issue creation will work when the hook fires.
+
+Check that the todo tools are enabled for the sessions this hook will run in: the hook reads `TodoWrite` calls from the transcript, and TodoWrite/Task* are disabled on Opus 4.8, Sonnet 5, Fable 5/5.1 and newer (Claude Code 2.1.233+) unless `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` is set in the session environment. If it is not set, say so and offer to add it (for example under `env` in `.claude/settings.json`) — without it the hook never fires, and that silence is not "all todos completed".
 
 ### Step 2: Locate hook script
 
@@ -131,3 +133,4 @@ Claude then has the opportunity to create the issues or ask the user what to do 
 | Trigger condition | Pending or in-progress todos in last TodoWrite call |
 | Silent when | All todos completed or no TodoWrite calls in transcript |
 | Issue label | `claude-deferred` (suggested in output, not auto-applied) |
+| Requires | `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` on Opus 4.8+/Sonnet 5/Fable (todo tools are off by default there) |

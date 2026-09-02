@@ -459,7 +459,7 @@ jobs:
             1. **"When to Use" table**: Does it have a decision table helping Claude choose this skill?
             2. **Agentic Optimizations**: Does it have a compact commands table? (required for CLI/tool skills)
             3. **Description quality**: Does the description match user intents, not just tool jargon?
-            4. **Model selection**: Default is `opus` with `effort` as the cost lever; flag any `model: haiku` (banned) or unjustified `model: sonnet`. See `.claude/rules/skill-development.md`.
+            4. **Model and effort**: read both fields. `model` is normally unset (inherits the session) or `opus`; `fable` and `inherit` are valid values (see `.claude/rules/skill-development.md` for when `fable` is warranted). `effort` (`low|medium|high|xhigh|max`, inherits when unset) is the per-skill cost lever — flag values outside that set and obvious mismatches with the skill's job shape. Flag any `model: haiku` (banned: Haiku 4.5 does not reliably format AskUserQuestion) or `model: sonnet` without a stated reason.
             5. **Supporting file links**: If REFERENCE.md exists, is it linked with `[REFERENCE.md](REFERENCE.md)`?
 
             For each issue found, leave a specific, actionable review comment on the relevant file.

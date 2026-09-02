@@ -13,28 +13,6 @@ The API Plugin provides tools for:
 
 ## Components
 
-### Agents
-
-#### `api-integration`
-Specialized agent for exploring and integrating with REST APIs, especially when documentation is limited or unavailable.
-
-**Use cases:**
-- Discovering undocumented API endpoints
-- Inferring schemas from API responses
-- Detecting authentication methods
-- Generating OpenAPI specifications
-- Creating typed API clients
-
-**Model**: Claude Opus 4.7
-
-**Workflow:**
-1. Probe for existing OpenAPI/Swagger specs
-2. Discover API structure using httpie
-3. Analyze responses with jq to infer schemas
-4. Generate OpenAPI specification
-5. Create typed client code with Orval or openapi-generator
-6. Validate generated client against live API
-
 ### Skills
 
 #### `api-testing`
@@ -72,20 +50,6 @@ cd /path/to/api-plugin
 ```
 
 ## Usage
-
-### Using the API Integration Agent
-
-Invoke the agent when you need to explore or integrate with an API:
-
-```
-I need to integrate with the GitHub API. Can you help me discover the endpoints and generate a client?
-```
-
-The `api-integration` agent will:
-1. Check for existing OpenAPI documentation
-2. Discover available endpoints
-3. Infer response schemas
-4. Generate typed client code
 
 ### Using the API Testing Skill
 

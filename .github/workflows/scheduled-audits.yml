@@ -208,8 +208,8 @@ jobs:
             - Suggest compact/agentic-optimized flags where applicable
 
             ### 2. Model Appropriateness
-            - Read `model` field from frontmatter of flagged skills
-            - Default to `opus`; `effort` (not `model`) is the cost lever. Never `haiku` (it can't format AskUserQuestion and supports no effort). See `.claude/rules/skill-development.md`.
+            - Read both `model` and `effort` from frontmatter of flagged skills
+            - `model` is normally unset (inherits) or `opus`; `fable` and `inherit` are valid values — judge `fable` against `.claude/rules/skill-development.md`. `effort` (`low|medium|high|xhigh|max`, inherits when unset) is the cost lever — flag values outside that set and mismatches with the skill's job shape (mechanical skill at `xhigh`, judgment-heavy skill at `low`). Never `haiku` (it can't format AskUserQuestion and supports no effort).
             - Flag any skill pinned to `haiku`, or to `sonnet` without a clear reason
 
             ### 3. Description Quality

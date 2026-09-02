@@ -1,7 +1,7 @@
 ---
 created: 2026-01-16
-modified: 2026-06-08
-reviewed: 2026-06-08
+modified: 2026-09-02
+reviewed: 2026-09-02
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -215,6 +215,31 @@ Commands should run the same way every time. This means:
 - No ad-hoc piping that requires additional approval
 
 ## Standard Permission Sets
+
+### Task-tool availability (2.1.233+)
+
+On Opus 4.8, Sonnet 5, Fable 5/5.1, Mythos 5 and newer, Claude Code leaves
+out `TodoWrite`, `TaskCreate`, `TaskGet`, `TaskUpdate` and `TaskList` unless
+the session opts in — those models track multi-step work without a written
+checklist, and the tool definitions cost context. Three opt-ins restore them,
+each session-wide: `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` exported before launch,
+naming any one of the tools in `--allowedTools` (e.g. `--allowedTools
+TaskCreate`), or listing them in `--tools`. Background sessions and Claude
+Code on the web have them on every model. A subagent (and an in-process
+teammate) has them only when the parent session does, whatever the subagent's
+own model. Independently, `TodoWrite` is off in favour of the four Task tools;
+`CLAUDE_CODE_ENABLE_TASKS=0` swaps back to the legacy `TodoWrite`.
+
+Consequences for authors:
+
+- A `--allowedTools … TodoWrite …` grant in a workflow **is the opt-in**, not
+  dead weight — do not strip it on the theory that the tool is inert.
+- An agent's `tools:` line or a skill's `allowed-tools:` line does not opt the
+  session in. A body that *depends* on the task list must say so ("track
+  progress in the task list when the session has the task tools; otherwise
+  carry the checklist in your working notes") rather than assume the tool.
+- Everywhere outside this section, link here instead of restating the
+  mechanics.
 
 ### Git Read-Only
 

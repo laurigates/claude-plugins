@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # PreToolUse hook — blocks access to sensitive files and credential exposure
 #
-# Toggle: set CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 to skip this hook
+# Toggle: a human operator can export CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1
+# in their shell environment to skip this hook. The toggle is only honored
+# when set in the process environment — an inline prefix on the command line
+# is intentionally NOT honored so that an agent cannot self-serve the bypass
+# (see .claude/rules/handling-blocked-hooks.md).
 #
 # Matches: Read, Edit, Write, Bash
 # Detects: .env files, SSH keys, cloud credentials, private keys, token files
@@ -17,6 +21,13 @@ TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
 
+# Every block message ends with this note. It deliberately does NOT read
+# "set CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 to override" — that phrasing
+# reads to an agent as a bypass it can perform, but the toggle is only read
+# from the hook's own process environment, so an inline prefix on the
+# retried command does nothing (see .claude/rules/handling-blocked-hooks.md).
+OVERRIDE_NOTE="If this is a false positive, delegate to the user per .claude/rules/handling-blocked-hooks.md — ask them to export CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 in their own shell (only honored there, not inline on a command). Do not attempt to self-serve this bypass."
+
 block() {
   echo "$1" >&2
   exit 2
@@ -31,31 +42,31 @@ check_sensitive_path() {
   if echo "$target" | grep -Eq '(^|/)\.env($|\.[^(example|sample|template)])' && \
      ! echo "$target" | grep -Eq '\.(example|sample|template)$'; then
     block "BLOCKED: Access to .env file '$target' denied. These files contain secrets.
-Use .env.example for templates. Set CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 to override."
+Use .env.example for templates. ${OVERRIDE_NOTE}"
   fi
 
   # SSH private keys
   if echo "$target" | grep -Eq '(^|/)(\.ssh/(id_|config|known_hosts|authorized_keys)|.*\.pem$|.*_rsa$|.*_ed25519$|.*_ecdsa$)'; then
     block "BLOCKED: Access to SSH key/config '$target' denied. These are sensitive credentials.
-Set CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 to override."
+${OVERRIDE_NOTE}"
   fi
 
   # Cloud credential files
   if echo "$target" | grep -Eq '(^|/)(\.aws/credentials|\.config/gcloud/|\.kube/config|\.docker/config\.json)'; then
     block "BLOCKED: Access to cloud credentials '$target' denied.
-Set CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 to override."
+${OVERRIDE_NOTE}"
   fi
 
   # Generic credential/secret files
   if echo "$target" | grep -Eq '(^|/)(credentials\.json|secrets\.json|service[_-]account.*\.json|.*\.keystore|.*\.jks|.*\.p12|.*\.pfx)$'; then
     block "BLOCKED: Access to credential file '$target' denied.
-Set CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 to override."
+${OVERRIDE_NOTE}"
   fi
 
   # Private key files
   if echo "$target" | grep -Eq '\.(key|privkey)$'; then
     block "BLOCKED: Access to private key file '$target' denied.
-Set CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 to override."
+${OVERRIDE_NOTE}"
   fi
 
   return 0
@@ -82,14 +93,14 @@ if [ "$TOOL_NAME" = "Bash" ] && [ -n "$COMMAND" ]; then
   if echo "$COMMAND" | grep -Eq '(echo|printf|cat|env|printenv|export)[^|]*\$\{?[A-Za-z0-9_]*_(KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTH)[Ss]?\b'; then
     block "BLOCKED: Command may expose secret environment variables.
 Use the application's configuration system instead of echoing secrets.
-Set CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 to override."
+${OVERRIDE_NOTE}"
   fi
 
   # Block printenv/env for full environment dump
   if echo "$COMMAND" | grep -Eq '^\s*(printenv|env)\s*$'; then
     block "BLOCKED: Dumping the full environment may expose secrets.
 Use 'printenv VAR_NAME' for specific non-sensitive variables instead.
-Set CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 to override."
+${OVERRIDE_NOTE}"
   fi
 
   # Check for cat/read/access of sensitive files in bash commands.
@@ -126,7 +137,7 @@ Set CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 to override."
     fi
 
     block "BLOCKED: Command accesses a sensitive file matching '${pattern}' (matched: '${match}').
-Set CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 to override."
+${OVERRIDE_NOTE}"
   done
 fi
 

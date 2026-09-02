@@ -4,8 +4,8 @@ args: "<results-path> [--type <test-type>] [--focus <area>]"
 argument-hint: "Path to test results (e.g., ./test-results/), optional --type and --focus filters"
 allowed-tools: Task, Read, Glob, Grep, TodoWrite
 created: 2025-12-16
-modified: 2026-08-21
-reviewed: 2026-08-21
+modified: 2026-09-02
+reviewed: 2026-09-02
 name: test-analyze
 agent: general-purpose
 context: fork
@@ -249,4 +249,6 @@ do not invent a focus.
 3. Refactor for quality
 4. Re-run tests to confirm
 
-Do you want me to proceed with the analysis and planning, or would you like to review the plan first?
+Proceed with the analysis and planning now — this skill runs `context: fork`
+and cannot wait for a reply. Present the completed Step 5 summary as the
+deliverable; the caller reviews the plan after the fact, not before it.

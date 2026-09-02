@@ -4,8 +4,8 @@ args: "[test-pattern] [--max-cycles <N>]"
 argument-hint: "Optional test pattern to focus on; --max-cycles <N> to cap iterations (default 10)"
 allowed-tools: Read, Edit, Bash, Bash(bash *)
 created: 2025-12-16
-modified: 2026-07-04
-reviewed: 2026-07-04
+modified: 2026-09-02
+reviewed: 2026-09-02
 name: project-test-loop
 ---
 
@@ -86,7 +86,13 @@ Then repeat Step 1. The driver increments the cycle counter and re-checks.
 
 With the suite passing, look for improvements — duplicated code, magic numbers,
 long functions, unclear names, complex conditionals — and refactor **without
-changing behavior**. Re-run Step 1 after each refactoring to confirm the suite
+changing behavior**. Scope the refactor to the code this loop touched — do not
+restructure unrelated files, add abstractions the passing tests do not
+require, or fix pre-existing issues you notice elsewhere; list those as
+follow-ups in the Step 4 report instead. The bound is deliberate: at high
+effort a refactor pass tends to widen past the tests that justify it, and
+unrequested tidying is the most common way a green loop ends with a diff
+nobody asked for. Re-run Step 1 after each refactoring to confirm the suite
 stays green. When no improvement remains, report success and stop.
 
 ### Step 4: Report

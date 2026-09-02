@@ -66,6 +66,16 @@ on:
         required: false
         type: string
         default: 'fix(auto)'
+      model:
+        description: 'Claude model alias (opus/sonnet/fable/best) or full id'
+        required: false
+        type: string
+        default: 'opus'
+      effort:
+        description: 'Effort level: low | medium | high | xhigh | max'
+        required: false
+        type: string
+        default: 'medium'
       max_turns:
         description: 'Maximum Claude turns'
         required: false
@@ -341,6 +351,8 @@ jobs:
             - If in doubt about whether a fix is correct, prefer opening an issue
 
           claude_args: |
+            --model ${{ inputs.model }}
+            --effort ${{ inputs.effort }}
             --allowedTools "Edit,MultiEdit,Write,Read,Glob,Grep,Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git branch:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git switch:*),Bash(git checkout -b:*),Bash(gh issue create:*),Bash(gh issue list:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(gh pr comment:*),Bash(gh pr view:*),Bash(gh run view:*),Bash(gh run list:*),Bash(gh api:*),Bash(ls:*),Bash(find:*),Bash(grep:*),Bash(cat:*)"
             --max-turns ${{ inputs.max_turns }}
 ```
@@ -587,6 +599,8 @@ The source repository must have the reusable workflow's visibility set to allow 
 | `not_auto_fixable_criteria` | string | _(see defaults)_ | What requires human intervention |
 | `verification_commands` | string | `''` | Commands to verify fixes |
 | `commit_prefix` | string | `'fix(auto)'` | Prefix for auto-fix commits |
+| `model` | string | `'opus'` | Claude model alias (opus/sonnet/fable/best) or full id |
+| `effort` | string | `'medium'` | Effort level: low \| medium \| high \| xhigh \| max |
 | `max_turns` | number | `50` | Maximum Claude analysis turns |
 | `max_open_autofix_prs` | number | `3` | Cap on open auto-fix PRs |
 | `additional_claude_permissions` | string | `actions: read` | Extra Claude tool permissions |

@@ -139,7 +139,10 @@ jobs:
           #   - Every tool carried over verbatim.
           #   - Bash(date *) + Bash(cat *) ADDED: the final `gh issue create`
           #     snippet in the prompt uses `date +%Y-%m` and a `cat` heredoc body.
-          #   - TodoWrite ADDED: a per-workflow sweep across ~10 workflows.
+          #   - TodoWrite ADDED: opts the session into the task-list tools
+          #     (TaskCreate/TaskUpdate/TaskList) on Opus 4.8+/Sonnet 5/Fable
+          #     (2.1.233+, see .claude/rules/agentic-permissions.md); needed
+          #     to track a per-workflow sweep across ~10 workflows.
           #   - mcp__github_ci ADDED so the `actions: read` grant below is live.
           #   - No write tool and no Bash(git *): "Do NOT edit any files or
           #     workflows" is now enforced, not just asserted.

@@ -1,9 +1,9 @@
 ---
 created: 2026-01-08
-modified: 2026-06-18
-reviewed: 2026-04-25
+modified: 2026-09-02
+reviewed: 2026-09-02
 description: "Analyze docs quality across PRDs, ADRs, PRPs, CLAUDE.md, .claude/rules/. Use when auditing documentation, checking for stale ADRs/PRDs, or validating rule frontmatter structure."
-allowed-tools: Read, Glob, Grep, Bash(markdownlint *), Bash(vale *), TodoWrite, Task
+allowed-tools: Read, Glob, Grep, Bash(markdownlint *), Bash(vale *), Task
 args: "[PATH]"
 argument-hint: "[PATH]"
 name: code-docs-quality
@@ -41,9 +41,11 @@ Analyze and validate documentation quality for a codebase, ensuring PRDs, ADRs, 
 
 Perform a comprehensive documentation quality analysis using the following methodology:
 
-## Phase 1: Create Todo List
+## Phase 1: Plan the analysis
 
-Create a structured todo list for tracking the analysis:
+Track the analysis against this checklist (via `TodoWrite` when the session
+has the task tools — see `.claude/rules/agentic-permissions.md` § Task-tool
+availability — otherwise carry it as a checklist in your response):
 
 ```
 - Analyze CLAUDE.md structure and quality

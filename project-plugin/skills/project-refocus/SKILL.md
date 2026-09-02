@@ -5,8 +5,8 @@ args: "[focus directive (optional free text)]"
 argument-hint: "[optional: what to focus on, e.g. 'the API layer, ignore docs work']"
 allowed-tools: Read, Grep, Glob, Bash(git status *), Bash(git log *), Bash(git diff *), TodoWrite, ExitPlanMode
 created: 2026-06-08
-modified: 2026-06-15
-reviewed: 2026-06-15
+modified: 2026-09-02
+reviewed: 2026-09-02
 ---
 
 # /project:refocus
@@ -106,7 +106,7 @@ If the session is not already in plan mode, present the plan as your response an
 
 ### Step 5: Hand off to a cleared context
 
-When the user opts to clear context and continue in auto mode, the plan from Step 3 is all that survives — which is exactly why it was written standalone. After the clear, seed a fresh TodoWrite list from the "Remaining steps" and proceed.
+When the user opts to clear context and continue in auto mode, the plan from Step 3 is all that survives — which is exactly why it was written standalone. After the clear, the plan's "Remaining steps" section is the working checklist — work it top to bottom and report each step against its Verification line. Seed the todo tools from it only when they are enabled in the session (see `.claude/rules/agentic-permissions.md` § "Task-tool availability").
 
 Under auto mode, keep the narrow `Bash(<command> *)` permissions this skill already declares — they carry over and skip the classifier round-trip (see `.claude/rules/auto-mode.md`).
 
@@ -129,4 +129,4 @@ Before calling `ExitPlanMode`, confirm the plan:
 | What landed on disk | `git log --format='%h %s' --max-count=8` |
 | Uncommitted surface | `git status --porcelain=v2 --branch` |
 | Confirm a "done" claim | `git diff --stat` against the named files |
-| Seed remaining work | Rebuild TodoWrite from the plan's "Remaining steps" |
+| Seed remaining work | Work the plan's "Remaining steps" top to bottom (Step 5); todo tools only if enabled in the session |

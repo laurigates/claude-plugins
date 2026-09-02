@@ -1,13 +1,11 @@
 ---
 created: 2026-02-27
-modified: 2026-06-15
-reviewed: 2026-07-04
+modified: 2026-09-02
+reviewed: 2026-09-02
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
   - "**/agents/**"
-reviewed: 2026-07-04
-modified: 2026-07-04
 ---
 
 # Skill Fork Context
@@ -22,7 +20,7 @@ When to set `context: fork` and `agent:` in skill frontmatter.
 
 2. **The `[1m]` rate-limit concern is narrower than first feared** ([#33154](https://github.com/anthropics/claude-code/issues/33154) **CLOSED — not planned / stale**, [#27053](https://github.com/anthropics/claude-code/issues/27053) stale-closed) — #33154 was a **Claude Cowork (Desktop) product** regression (`area:cowork`), never a CLI-specific tracker, and it was abandoned as stale rather than fixed. The underlying hazard — a `[1m]`-context session spawning **many concurrent** subagents and hitting cascading rate limits — is real but bites **parallel fan-out**, not a single fork. One `context: fork` spawns **one** subagent, which is not the cascade scenario.
 
-**Guidance:** `context: fork` is appropriate for a **single-subagent, verbose-output** skill. Keep avoiding it on skills that fan out **parallel** subagents while on a `[1m]` model (see the `skill-argument-handling.md` sweep caveat). The blocking gate in #980 ("revisit when both #16803 and #33154 resolved") expired — #33154 will never resolve cleanly — so the rollout was **empirical**: a canary was verified live, then the remaining single-subagent skills followed.
+**Guidance:** `context: fork` is appropriate for a **single-subagent, verbose-output** skill. Keep avoiding it on skills that fan out **parallel** subagents on a 1M-context session — which is every Fable 5.1 session (1M is its default and only window) as well as any other model opened with the `[1m]` suffix (see the `skill-argument-handling.md` sweep caveat). The cascade was measured on `[1m]` sessions of earlier models; re-verify on Fable before relaxing it. The blocking gate in #980 ("revisit when both #16803 and #33154 resolved") expired — #33154 will never resolve cleanly — so the rollout was **empirical**: a canary was verified live, then the remaining single-subagent skills followed.
 
 > **Canary passed → rolled out**: `code-quality-plugin/skills/code-review` carried `context: fork` as the first restoration (canary PR #1666, merged 2026-06-15). It ran live and un-reverted for ~3 weeks with no rate-limit regression reported — treated as PASSED on that evidence (a true `[1m]`-session verification can't be run from inside a subagent, so "no rollback over weeks of live use" is the standing signal, not a one-off `[1m]` test). Under #1667 the restoration then rolled out to the remaining **single-subagent** skills: `agents-plugin:agents-analyze`, `testing-plugin:test-analyze`, `testing-plugin:test-full`, `documentation-plugin:claude-blog-sources`, `documentation-plugin:docs-generate`, `evaluate-plugin:evaluate-skill`, `code-quality-plugin:dry-consolidation`.
 >
@@ -45,12 +43,12 @@ name: my-skill
 model: opus
 agent: general-purpose
 context: fork
-allowed-tools: Task, Read, Glob, Grep, TodoWrite
+allowed-tools: Agent, Read, Glob, Grep
 description: ...
 ---
 ```
 
-For a skill that fans out **parallel** subagents while a `[1m]` model is active, keep `agent: general-purpose` and **omit** `context: fork` — the rate-limit cascade hazard applies to concurrent subagents, not to the single fork.
+For a skill that fans out **parallel** subagents on a 1M-context session (every Fable 5.1 session, or any other model opened with `[1m]`), keep `agent: general-purpose` and **omit** `context: fork` — the rate-limit cascade hazard applies to concurrent subagents, not to the single fork.
 
 ## Model Constraint
 
@@ -72,7 +70,7 @@ Is the final output a self-contained artifact (report, analysis, generated files
   YES ↓
 
 Does the skill fan out PARALLEL subagents (batch/per-PR/per-file waves)?
-  YES → ADD agent: general-purpose; OMIT context: fork ([1m] cascade hazard)
+  YES → ADD agent: general-purpose; OMIT context: fork (1M-context cascade hazard — every Fable 5.1 session, or any [1m] session)
   NO  → ADD agent: general-purpose AND context: fork (verbose output stays isolated)
 ```
 
@@ -81,7 +79,7 @@ Does the skill fan out PARALLEL subagents (batch/per-PR/per-file waves)?
 - [ ] Does the skill use `AskUserQuestion`? If yes, **omit** `agent:` (runs inline).
 - [ ] Does the skill use `Task`, multi-file reads, or web research? If yes, **add** `agent: general-purpose`.
 - [ ] Does the skill produce a self-contained verbose artifact **without** parallel fan-out? If yes, **add** `context: fork` (now works for plugins per #16803).
-- [ ] Does the skill fan out **parallel** subagents? If yes, **omit** `context: fork` — the `[1m]` concurrent-subagent rate-limit cascade still applies.
+- [ ] Does the skill fan out **parallel** subagents? If yes, **omit** `context: fork` — the concurrent-subagent rate-limit cascade still applies on a 1M-context session (every Fable 5.1 session, or any `[1m]` session).
 - [ ] Set `model:` only at the extremes (`opus` for deep reasoning, `sonnet` for mechanical work). Never `haiku`.
 - [ ] Update `modified:` date when adding these fields.
 

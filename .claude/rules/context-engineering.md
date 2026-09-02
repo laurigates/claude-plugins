@@ -1,7 +1,7 @@
 ---
 created: 2026-07-26
-modified: 2026-08-31
-reviewed: 2026-08-31
+modified: 2026-09-02
+reviewed: 2026-09-02
 paths:
   - "**/SKILL.md"
   - "**/skills/**"
@@ -98,6 +98,8 @@ reference implementation, #2143), so copy it rather than inventing a layout.
 in text that earned its tokens: it names a non-obvious, costly failure **and says
 why**, so the model generalises past the enumerated case. Text that restates a
 model default does not.
+
+**State the goal, the constraints, and how to verify — not the steps.** Skills and rules written as `STEP 1..N` choreography for judgment tasks are often too prescriptive for Fable 5.1 and *reduce* output quality (migration guide). Write what done looks like and what must not change; enumerate exact commands only where the operation is fragile (a release, a destructive git op, a hook contract) or the command shape is the payload (CLI wrappers). Keep the verification instruction — "run the suite and report the result" — it is the one prescriptive line that still pays. State an instruction once: it persists across the turn, so per-step reminder re-insertion is usually cost without effect (keep only redundancy shown to be load-bearing, per the prompt-audit keep list). Give the reason next to any hard constraint; an unexplained MUST/NEVER is weaker steering than a one-clause because. This does not relax `skill-execution-structure.md` — a user-invocable skill still opens imperatively; imperative framing is not step choreography.
 
 ## Supersedes
 

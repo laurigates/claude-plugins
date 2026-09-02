@@ -2,12 +2,12 @@
 name: dry-consolidation
 description: Find and extract duplicated code into shared abstractions. Use when seeing repeated utilities, copy-pasted components, duplicated hooks, or boilerplate repeated across files.
 args: "[PATH] [--scope <utilities|components|hooks|all>] [--dry-run]"
-allowed-tools: Read, Write, Edit, MultiEdit, Grep, Glob, Bash(npx tsc *), Bash(npm run *), Bash(npx *), Bash(bun *), Bash(pnpm *), Bash(yarn *), Bash(pytest *), Bash(cargo *), Bash(ast-grep *), Bash(sg *), TodoWrite, Task
+allowed-tools: Read, Write, Edit, MultiEdit, Grep, Glob, Bash(npx tsc *), Bash(npm run *), Bash(npx *), Bash(bun *), Bash(pnpm *), Bash(yarn *), Bash(pytest *), Bash(cargo *), Bash(ast-grep *), Bash(sg *), Task
 model: opus
 argument-hint: path or directory to scan for duplication
 created: 2026-02-06
-modified: 2026-07-06
-reviewed: 2026-02-06
+modified: 2026-09-02
+reviewed: 2026-09-02
 agent: general-purpose
 context: fork
 ---
@@ -43,7 +43,7 @@ Systematic extraction of duplicated code into shared, tested abstractions.
 
 ## Execution
 
-Execute this 7-step consolidation workflow. Use TodoWrite to track each extraction as a separate task.
+Execute this 7-step consolidation workflow. Track each extraction as a separate task with `TodoWrite` when the session has the task tools (see `.claude/rules/agentic-permissions.md` § Task-tool availability), otherwise as a checklist in your response.
 
 ### Step 1: Discover duplicate clusters (deterministic clone detection)
 
@@ -155,7 +155,7 @@ Execute each planned extraction:
 
 **Extraction order:** Start with utilities (no dependencies), then components, then hooks (may depend on utilities/components).
 
-Mark each extraction as completed in the todo list before moving to the next.
+Mark each extraction as completed in the tracker before moving to the next.
 
 ### Step 5: Write tests
 
