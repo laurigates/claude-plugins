@@ -148,7 +148,7 @@ echo "block reason carries positive guidance:"
 t="$TMPDIR/transcript-reason.jsonl"
 make_transcript "Would take about 3 hours" "$t"
 out=$(run_hook_output "$t")
-for token in "tokens" "context-window" "effort tier" "tool-call count"; do
+for token in "tokens" "effort tier" "xhigh" "tool-call count"; do
     if echo "$out" | grep -q "$token"; then
         printf "  PASS: reason mentions '%s'\n" "$token"
         PASS=$((PASS + 1))
@@ -157,6 +157,18 @@ for token in "tokens" "context-window" "effort tier" "tool-call count"; do
         FAIL=$((FAIL + 1))
     fi
 done
+
+# Regression: the reason must NOT ask the model to compute or state a
+# remaining-context figure — that is exactly the countdown signal that
+# invites context anxiety (see hooks-plugin/README.md's "Behavior Fit"
+# section for this hook).
+if echo "$out" | grep -q "context-window"; then
+    printf "  FAIL: reason still asks for a remaining-context figure\n"
+    FAIL=$((FAIL + 1))
+else
+    printf "  PASS: reason does not ask for a remaining-context figure\n"
+    PASS=$((PASS + 1))
+fi
 
 # ── summary ───────────────────────────────────────────────────────────────────
 echo ""

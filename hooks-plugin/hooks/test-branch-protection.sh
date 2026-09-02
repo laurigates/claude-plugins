@@ -382,6 +382,48 @@ assert_allow \
   "git log --oneline"
 
 # ── auto mode: the hook defers to auto mode's own classifier ────────────────
+# ── compound/prefixed-command bypass regression ──────────────────────────────
+# Regression: a `^`-anchored git-invocation detector let a compound or
+# prefixed form slip past the whole hook undetected. All four forms below
+# must now be denied on main, exactly like a plain `git commit -m x`.
+echo ""
+echo "compound/prefixed git invocations are no longer a bypass:"
+
+assert_deny \
+  "cd . && git commit -m x is denied (compound command bypass)" \
+  "cd . && git commit -m x"
+
+assert_deny \
+  "command git commit -m x is denied (prefix-word bypass)" \
+  "command git commit -m x"
+
+assert_deny \
+  "true; git commit -m x is denied (semicolon bypass)" \
+  "true; git commit -m x"
+
+assert_deny \
+  "/usr/bin/git commit -m x is denied (path-prefixed bypass)" \
+  "/usr/bin/git commit -m x"
+
+# A git-looking phrase inside a quoted string must not be treated as its own
+# invocation, and must not exempt the real (outer) invocation either.
+assert_deny \
+  'git commit -m "see: cd x && git commit" is denied (quoted mention neither exempts nor re-classifies)' \
+  'git commit -m "see: cd x && git commit"'
+
+assert_deny \
+  'git commit -m "fix git log parsing" is denied (quoted git-looking word no longer confuses subcommand extraction)' \
+  'git commit -m "fix git log parsing"'
+
+assert_deny \
+  "git status && git commit -m x is denied (a later write clause is no longer masked by an earlier read-only one)" \
+  "git status && git commit -m x"
+
+# Guard integrity: a command with only read-only clauses stays allowed.
+assert_allow \
+  "git status; git log is allowed (no write clause present)" \
+  "git status; git log"
+
 echo ""
 echo "auto mode defers to the classifier (no double-gating):"
 
