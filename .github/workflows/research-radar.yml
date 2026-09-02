@@ -215,8 +215,16 @@ jobs:
 
             - Plan briefly in the task list (`TaskCreate`) at the start.
             - Read `research-candidates.json` once. You may `jq` it to pre-filter by keyword.
-            - Do not read plugin source files — you are mapping ideas to plugin *names*, not
-              editing them. Follow-up application is human/`@claude`-driven work.
+            - Ground every surfaced suggestion. For each paper that clears the bar, run at most ONE
+              `Grep` against the named target for the concrete surface the suggestion asserts exists —
+              the technique name, rule heading, or frontmatter key the suggestion would amend — not
+              merely a `Glob` proving the plugin has files. A path that exists is not evidence the
+              referenced content exists.
+            - If the grep returns no hit, either re-target the suggestion at a surface that does exist,
+              or drop the paper. Do not suggest amending content you could not find.
+            - State the exact file(s) and pattern grepped in the issue body for each surfaced paper.
+            - Cap: one probe per surfaced paper (typically 0-5), never a full source read of a plugin.
+              The `--max-turns 20` budget must still hold.
 
             ## Step 1: Read and triage the candidates
 

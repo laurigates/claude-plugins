@@ -4,9 +4,42 @@ set -euo pipefail
 
 # Infrastructure Compliance Check Script
 # Performs registry sync, workflow health, version consistency, skill coverage, and security checks
-# Usage: ./scripts/infra-compliance-check.sh
+#
+# Usage:
+#   ./scripts/infra-compliance-check.sh [--project-dir DIR]
+#
+#   --project-dir   repo root to scan (default: this script's repo). Exists so the
+#                   workflow/security classifiers can be aimed at hermetic fixtures
+#                   (scripts/tests/test-infra-compliance-check.sh).
+#
+# Exit codes:
+#   0 - always, having emitted a complete report (see the terminal `exit 0` below)
+#   2 - unknown argument
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+usage() {
+  echo "Usage: infra-compliance-check.sh [--project-dir DIR]" >&2
+}
+
+# An unknown argument is REJECTED, never swallowed (#2057): a silently-ignored
+# flag turns a targeted run into a full-repo run that still exits 0.
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --project-dir)
+      if [ -z "${2:-}" ] || [ ! -d "${2:-}" ]; then
+        echo "infra-compliance-check.sh: --project-dir requires a directory" >&2
+        exit 2
+      fi
+      REPO_ROOT="$(cd "$2" && pwd)"; shift 2 ;;
+    -h|--help) usage; exit 0 ;;
+    *)
+      echo "infra-compliance-check.sh: unknown argument: $1" >&2
+      usage
+      exit 2 ;;
+  esac
+done
+
 cd "$REPO_ROOT"
 
 CURRENT_MONTH=$(date "+%Y-%m")
@@ -119,13 +152,98 @@ while IFS= read -r -d '' wf; do
     perms_ok="⚠️"
   fi
 
-  filters_ok="✅"
-  if grep -q 'pull_request:' "$wf" 2>/dev/null; then
-    if ! grep -q 'paths:' "$wf" 2>/dev/null; then
+  # Trigger-aware path-filter check (#2555).
+  #
+  # This used to `grep -q 'pull_request:'` / `grep -q 'paths:'` over the WHOLE
+  # file, comments included, and so failed in BOTH directions:
+  #   - stranded-work-audit.yml (cron + workflow_dispatch only) was flagged ⚠️
+  #     because a prose comment mentions `pull_request: closed`;
+  #   - plugin-pr-checks.yml falsely PASSED because comments containing the
+  #     string `paths:` satisfied the check while ARGUING it deliberately has
+  #     no path filter.
+  #
+  # Now: read the trigger structurally with `yq` when available, else from a
+  # comment-stripped view. A workflow that deliberately carries no `paths:`
+  # (a REQUIRED status check — a path-filtered workflow never REPORTS its
+  # context and wedges the merge permanently, #2258) declares that with an
+  # `infra-compliance: paths-exempt` marker comment rather than being flagged.
+  # The comment-stripped view is captured ONCE into a variable and matched with
+  # here-strings, never `grep -v … | grep -q …`: under `set -o pipefail` a
+  # `grep -q` that matches closes the pipe while the producer is still writing,
+  # the producer takes SIGPIPE, and the pipeline reports 141 — so a real match
+  # reads as "no match", nondeterministically, by file size (#1744, #2462).
+  #
+  # TWO invariants this block exists to hold, both of which a naive version
+  # silently breaks:
+  #
+  #   1. A PRESENT-BUT-UNUSABLE `yq` must NOT read as "no pull_request
+  #      trigger". `command -v yq` only proves a binary is on PATH — the
+  #      mikefarah Go binary and the python-yq jq wrapper take different
+  #      flags, and either can fail on a malformed workflow. Swallowing that
+  #      failure with `2>/dev/null` and treating the empty result as `false`
+  #      turns every PR workflow into Filters=N/A — the exact false negative
+  #      this check exists to eliminate. So the probe is CAPTURED and only a
+  #      literal `true`/`false` answer is trusted; anything else (non-zero
+  #      exit, empty, an error string) falls through to the grep fallback.
+  #
+  #   2. The `paths:` lookup must be scoped to the pull_request trigger
+  #      ITSELF. A grep-anywhere match is satisfied by a `paths:` belonging to
+  #      a different trigger (a `push:` filter is the common shape) or sitting
+  #      inside a `run: |` block, so a PR workflow with no path filter reads
+  #      ✅. The yq branch asks the pull_request node directly; the fallback
+  #      slices the indented block under `pull_request:` with awk first.
+  wf_code="$(grep -vE '^[[:space:]]*#' "$wf" 2>/dev/null || true)"
+
+  filters_ok="N/A"
+  has_pr=false
+  pr_has_paths=false
+  trigger_resolved=false
+  if command -v yq >/dev/null 2>&1; then
+    # One probe answers both questions, so a broken yq is distinguishable from
+    # a genuine "no pull_request trigger" answer.
+    yq_probe="$(yq -r '
+      ((.on // .true) // {}) as $on
+      | (($on | type) == "object") as $ok
+      | (if $ok then ($on | has("pull_request")) else false end) as $pr
+      | (if $pr
+         then (($on["pull_request"] // {})
+               | ((type == "object") and (has("paths") or has("paths-ignore"))))
+         else false end) as $p
+      | "\($pr) \($p)"' "$wf" 2>/dev/null || true)"
+    case "$yq_probe" in
+      "true true")  trigger_resolved=true; has_pr=true;  pr_has_paths=true ;;
+      "true false") trigger_resolved=true; has_pr=true;  pr_has_paths=false ;;
+      "false false") trigger_resolved=true; has_pr=false; pr_has_paths=false ;;
+      *) : ;;  # unusable yq — fall through to the comment-stripped grep
+    esac
+  fi
+  if [ "$trigger_resolved" != true ]; then
+    if grep -q '^[[:space:]]*pull_request:' <<<"$wf_code"; then
+      has_pr=true
+      # Slice the block indented UNDER `pull_request:` — a `paths:` anywhere
+      # else in the file belongs to another trigger or to a `run:` body.
+      pr_block="$(awk '
+        { if (inblk) {
+            if ($0 ~ /^[[:space:]]*$/) next
+            match($0, /^[[:space:]]*/)
+            if (RLENGTH > base) { print; next }
+            inblk = 0
+          }
+          if ($0 ~ /^[[:space:]]*pull_request:/) {
+            match($0, /^[[:space:]]*/); base = RLENGTH; inblk = 1
+          }
+        }' <<<"$wf_code")"
+      grep -qE '^[[:space:]]*(paths|paths-ignore):' <<<"$pr_block" && pr_has_paths=true || true
+    fi
+  fi
+  if [ "$has_pr" = true ]; then
+    if grep -q 'infra-compliance: paths-exempt' "$wf" 2>/dev/null; then
+      filters_ok="N/A"
+    elif [ "$pr_has_paths" = true ]; then
+      filters_ok="✅"
+    else
       filters_ok="⚠️"
     fi
-  else
-    filters_ok="N/A"
   fi
 
   # Count checks
@@ -207,7 +325,12 @@ while IFS= read -r -d '' wf; do
   wf_name=$(basename "$wf")
   security_total=$((security_total+1))
 
-  if grep -qiE '(ghp_|gho_|github_pat_|sk-|Bearer [A-Za-z0-9])' "$wf" 2>/dev/null; then
+  # Length-anchored token patterns (#2555). The bare `sk-` alternative matched the
+  # literal `task-` (taskwarrior-plugin paths, `test-task-id-stability.sh`,
+  # `task-3.4.2.tar.gz`, `task-list tools`) — 4 false positives across two
+  # workflows that reference no secret at all. No `\b`: GNU-only, breaks BSD grep
+  # (.claude/rules/shell-scripting.md).
+  if grep -qiE '(ghp_|gho_|github_pat_|sk-[A-Za-z0-9_-]{20,}|Bearer [A-Za-z0-9_.-]{20,})' "$wf" 2>/dev/null; then
     security_rows+=("🔴 | $wf_name | Token pattern detected")
   elif grep -qiE '(token|key|secret|password)[[:space:]]*[:=][[:space:]]*["'"'"'][A-Za-z0-9+/=]{20,}' "$wf" 2>/dev/null; then
     security_rows+=("🔴 | $wf_name | Potential hardcoded secret")

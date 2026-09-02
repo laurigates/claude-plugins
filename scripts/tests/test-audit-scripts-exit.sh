@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Smoke test for the scheduled-audits scripts (scripts/blueprint-health-check.sh
-# and scripts/infra-compliance-check.sh).
+# Smoke test for the scheduled-audits scripts (scripts/blueprint-health-check.sh,
+# scripts/infra-compliance-check.sh and scripts/agentic-audit-precompute.sh).
 #
 # Guards the class of bug that froze the monthly scheduled-audits.yml jobs:
 # under `set -euo pipefail`, both scripts must run to completion and exit 0.
@@ -119,6 +119,13 @@ assert_finds_bounded() {
 
 assert_finds_bounded "blueprint-health-check.sh" "$repo_root/scripts/blueprint-health-check.sh"
 assert_finds_bounded "infra-compliance-check.sh" "$repo_root/scripts/infra-compliance-check.sh"
+# agentic-audit-precompute.sh is deliberately NOT run through run_audit: its first
+# line is `Pre-computed data for N skills:`, prompt DATA rather than a dashboard
+# header, so it has no stable needle of the shape run_audit asserts on. Its
+# behaviour is covered by scripts/tests/test-agentic-audit-precompute.sh; what it
+# needs from THIS file is the #2214 find-boundedness guard and the wall-clock
+# backstop, because it walks the same skill tree four times.
+assert_finds_bounded "agentic-audit-precompute.sh" "$repo_root/scripts/agentic-audit-precompute.sh"
 
 # Wall-clock backstop. Generous on purpose: it is a catastrophe detector, not a
 # performance budget. Post-fix the script runs ~5s on a clean tree and the
@@ -132,7 +139,7 @@ now_ms() {
     echo $(( $(date +%s) * 1000 ))
   fi
 }
-for audit_script in blueprint-health-check.sh infra-compliance-check.sh; do
+for audit_script in blueprint-health-check.sh infra-compliance-check.sh agentic-audit-precompute.sh; do
   t0=$(now_ms)
   bash "$repo_root/scripts/$audit_script" >/dev/null 2>&1 || true
   t1=$(now_ms)

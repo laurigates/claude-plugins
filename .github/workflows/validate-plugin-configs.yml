@@ -2,6 +2,8 @@ name: "Plugin: Validate configs"
 
 on:
   pull_request:
+    # infra-compliance: paths-exempt (required check, #2258)
+    #
     # NO `paths:` filter — deliberately. `validate` is a REQUIRED status check,
     # and a path-filtered workflow never RUNS on a non-matching PR, so the
     # context is never reported and the merge blocks permanently with no bypass.

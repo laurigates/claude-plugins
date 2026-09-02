@@ -3,6 +3,8 @@ name: "Plugin: PR checks"
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    # infra-compliance: paths-exempt (required check, #2258 — a path-filtered workflow never reports its context)
+    #
     # NO `paths:` filter — deliberately.
     #
     # `compliance` is a REQUIRED status check. A path-filtered workflow does not
@@ -158,6 +160,8 @@ jobs:
             --only 'blueprint-plugin/scripts/tests/test-check-generated-rules-registration.sh' \
             --only 'blueprint-plugin/scripts/tests/test-register-generated-rules.sh' \
             --only 'evaluate-plugin/skills/evaluate-context-engineering/scripts/tests/test-check-context-engineering.sh' \
+            --only 'scripts/tests/test-agentic-audit-precompute.sh' \
+            --only 'scripts/tests/test-blueprint-health-report.sh' \
             --only 'scripts/tests/test-check-agent-failure-contract.sh' \
             --only 'scripts/tests/test-check-agent-model.sh' \
             --only 'scripts/tests/test-check-auto-resolve-mergeability-poll.sh' \
@@ -168,6 +172,7 @@ jobs:
             --only 'scripts/tests/test-check-delegation-reachability.sh' \
             --only 'scripts/tests/test-check-loop-integrity.sh' \
             --only 'scripts/tests/test-check-prose-house-style.sh' \
+            --only 'scripts/tests/test-check-research-radar-grounding.sh' \
             --only 'scripts/tests/test-check-ruff-version-sync.sh' \
             --only 'scripts/tests/test-check-taskcompleted-verification.sh' \
             --only 'scripts/tests/test-check-unused-bash-grant.sh' \
@@ -177,6 +182,7 @@ jobs:
             --only 'scripts/tests/test-check-workflow-script-triggers.sh' \
             --only 'scripts/tests/test-extract-md-elements.sh' \
             --only 'scripts/tests/test-guard-worktree-root-discovery.sh' \
+            --only 'scripts/tests/test-infra-compliance-check.sh' \
             --only 'scripts/tests/test-lint-shell-scripts.sh' \
             --only 'scripts/tests/test-plugin-compliance-check.sh'
 
@@ -290,6 +296,17 @@ jobs:
         # disabled (37 of 47 alerts on communication.md came from that one rule).
         # The self-test step above proves the guard before it gates the tree.
         run: bash scripts/check-prose-house-style.sh --strict
+
+      - name: Check the research-radar prompt stays grounded
+        # The radar's Efficiency rules once said "Do not read plugin source
+        # files", while `--allowedTools` already granted Read/Grep/Glob — so the
+        # generator invented a plugin surface that does not exist (#2507). The
+        # replacement is a token-level grounding rule living only as prose in a
+        # YAML block scalar, which stays valid YAML while losing the clause, so
+        # this guard asserts the load-bearing tokens survive AND that the old
+        # blanket clause has not returned. The self-test step above proves the
+        # guard before it gates the tree.
+        run: bash scripts/check-research-radar-grounding.sh --strict
 
       - name: Check delegations resolve to reachable skills
         # A catalog-present skill telling the agent to act via a
