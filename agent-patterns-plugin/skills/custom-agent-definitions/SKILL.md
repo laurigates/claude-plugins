@@ -4,9 +4,9 @@ description: Write and configure custom agent definitions in Claude Code agents/
 user-invocable: false
 allowed-tools: Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-07-28
+modified: 2026-09-02
 compatibility: claude-code
-reviewed: 2026-06-14
+reviewed: 2026-09-02
 ---
 
 # Custom Agent Definitions
@@ -84,7 +84,8 @@ agent: security-auditor
 |-------|------|-------------|
 | `name` | string | Agent identifier |
 | `description` | string | What the agent does |
-| `model` | string | Model to use (sonnet, opus) |
+| `model` | string | `opus`, `sonnet`, `haiku`, `fable`, `inherit`, or a full model ID |
+| `effort` | string | `low`, `medium`, `high`, `xhigh`, `max` — overrides the session effort while this agent runs; default inherits. The cost lever for mechanical delegates |
 | `context` | string | Context mode: `fork` or default |
 | `permissionMode` | string | `default`, `acceptEdits`, `dontAsk`, `bypassPermissions`, or `plan` |
 | `maxTurns` | number | Maximum agentic turns before agent stops |
@@ -102,9 +103,15 @@ agent: security-auditor
 2. **Use `context: fork` for isolation** — exploratory work shouldn't pollute main context.
 3. **Combine allowed + disallowed** — explicit whitelist with a safety blacklist.
 4. **Clear descriptions** — describe what the agent does and its boundaries.
-5. **Model selection** — `sonnet` for development workflows, `opus` for deep
-   reasoning/analysis. (See `.claude/rules/agent-and-tool-selection.md` for the
-   repo's Opus-for-subagents guidance.)
+5. **Model and effort** — `model: opus` is the floor for any agent whose output
+   re-enters the main loop (a weaker delegate degrades everything downstream;
+   `scripts/check-agent-model.sh` enforces it for plugin agents). `fable` is
+   sanctioned for the hardest delegated reasoning. Tune cost with `effort:`
+   (`low` for mechanical work), not by downgrading the model. The one
+   exception is the `cold-read-gate` haiku reader, which is a measurement
+   instrument, not a delegate. See `.claude/rules/agent-development.md` §
+   "Model Selection for Agents" (repo) and
+   `~/.claude/rules/agent-and-tool-selection.md` (user-global).
 6. **Report failures loudly** — a dispatched agent that hits a wall must say so
    in its final message, never a one-word summary like `Terminal.` / `Done.` /
    `Stopped.` On a blocker it should commit and push its in-progress work, open a

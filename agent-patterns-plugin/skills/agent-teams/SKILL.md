@@ -5,9 +5,9 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-03-03
-modified: 2026-07-28
+modified: 2026-09-02
 compatibility: claude-code
-reviewed: 2026-06-23
+reviewed: 2026-09-02
 ---
 
 # Agent Teams
@@ -15,6 +15,8 @@ reviewed: 2026-06-23
 > **Experimental**: Agent teams require `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` and may change between Claude Code versions.
 
 > **BREAKING (Claude Code 2.1.178)**: The explicit `TeamCreate` / `TeamDelete` tools were **removed**. Every session now has **one implicit team** when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is set — there is nothing to create or tear down. The `team_name` parameter is still **accepted but ignored** on the tools that took it (e.g. `Agent`), so older invocations don't error; omit it in new code. Coordination is otherwise unchanged: spawn teammates with the `Agent` tool, coordinate with `SendMessage`, and track work with `TaskCreate`/`TaskList`/`TaskUpdate`.
+
+> **Task tools are opt-in on current models (Claude Code 2.1.233+).** `TaskCreate` / `TaskGet` / `TaskUpdate` / `TaskList` / `TodoWrite` are not exposed on Opus 4.8, Sonnet 5, Fable 5 / 5.1, Mythos 5 or newer unless the session opted in — see `.claude/rules/agentic-permissions.md` § "Standard Permission Sets" → "Task-tool availability" for the three opt-ins and the full semantics. On a session without one, a lead cannot create or assign shared tasks: set the variable, or coordinate via `SendMessage` alone and carry the task list in the lead's own message to each teammate. Check `TaskList` is callable before spawning teammates.
 
 For the worked setup examples, communication snippets, shutdown procedures, the
 worktree path-resolution recovery routine, and common dispatch patterns, see
@@ -150,6 +152,7 @@ In web sessions (`CLAUDE_CODE_REMOTE=true`):
 ### Workflow Checklist
 
 - [ ] `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` set (the implicit team exists; no create step)
+- [ ] Task tools opted in when the lead runs on Opus 4.8+/Sonnet 5/Fable 5.x/Mythos 5 (`.claude/rules/agentic-permissions.md` § "Task-tool availability"); verify `TaskList` is callable before the first `TaskCreate`
 - [ ] `TaskCreate` for each work unit
 - [ ] Spawn teammates via the `Agent` tool with a `name` (no `team_name` needed)
 - [ ] `TaskUpdate` to assign tasks (or let teammates self-assign)

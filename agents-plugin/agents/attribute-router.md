@@ -7,8 +7,8 @@ tools: Read, Glob, Grep, Agent(security-audit, test, refactor, debug, performanc
 context: fork
 maxTurns: 30
 created: 2026-03-15
-modified: 2026-06-18
-reviewed: 2026-06-18
+modified: 2026-09-02
+reviewed: 2026-09-02
 ---
 
 # Attribute Router Agent
@@ -35,7 +35,7 @@ The harness blocks several common bash idioms — use the dedicated tool instead
 - **Input**: Attribute JSON (from `.claude/attributes.json` or inline in prompt)
 - **Output**: Delegated agent results with summary of addressed findings
 - **Steps**: 5-15, depends on number of findings
-- **Model**: Sonnet (routing judgment, not deep analysis)
+- **Model**: opus (the subagent floor — see `.claude/rules/agent-development.md` § "Model Selection for Agents"; routing is mechanical, so cost is tuned via `effort`, not by downgrading the model)
 
 ## Workflow
 

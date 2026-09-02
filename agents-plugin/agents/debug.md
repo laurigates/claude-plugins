@@ -6,8 +6,8 @@ description: Diagnose and fix bugs. Finds root cause, implements fix, verifies s
 tools: Glob, Grep, LS, Read, Edit, Write, Bash(npm *), Bash(yarn *), Bash(bun *), Bash(pytest *), Bash(python *), Bash(node *), Bash(cargo *), Bash(go *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git add *), Bash(git commit *), TaskOutput, TodoWrite
 maxTurns: 20
 created: 2025-12-27
-modified: 2026-05-26
-reviewed: 2026-05-26
+modified: 2026-09-02
+reviewed: 2026-09-02
 ---
 
 # Debug Agent
@@ -140,4 +140,8 @@ Debugging works in both modes. As a subagent, it handles a single focused bug fi
 If the bug reveals:
 - Security vulnerability → note for review agent
 - Architectural flaw → note for human decision
-- Missing tests → can write them as part of verification
+- Missing tests → add one regression test that reproduces the reported bug.
+  Reproduction scripts, print-debugging, and exploratory tests written to
+  diagnose are not deliverables: they may ride in a WIP checkpoint, but remove
+  them before the final commit and before returning. Bugs you notice but were
+  not asked to fix go under `### Related`, not into the diff.

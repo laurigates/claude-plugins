@@ -5,8 +5,8 @@ argument-hint: "Name of PRP to execute (e.g., feature-auth-oauth2)"
 disable-model-invocation: true
 allowed-tools: Read, Write, Edit, Glob, Bash, Task, AskUserQuestion
 created: 2025-12-16
-modified: 2026-06-18
-reviewed: 2026-02-14
+modified: 2026-09-02
+reviewed: 2026-09-02
 name: blueprint-prp-execute
 ---
 
@@ -60,7 +60,7 @@ Execute the complete PRP implementation workflow:
    - If delegation to multiple subagents chosen → Create focused work-orders per module from Implementation Blueprint and exit
 5. Continue to Step 2 if executing now OR confidence 7-8
 6. Load all referenced curated rule entries (`.claude/rules/`) for context
-7. Parse Implementation Blueprint and create TodoWrite entries ordered by dependencies
+7. Parse the Implementation Blueprint into an ordered task checklist (dependencies first); track it with `TodoWrite` when the session has the task tools, otherwise carry it as a checklist in the response (see `.claude/rules/agentic-permissions.md` § Task-tool availability)
 
 ### Step 2: Establish baseline with validation gates
 
@@ -92,10 +92,15 @@ For each task in Implementation Blueprint:
    - Extract common patterns
    - Improve naming, add type hints
    - Follow project conventions
+   - Stay inside the task's files and the PRP task list. A pre-existing bug or
+     unrelated cleanup you notice is not part of this change — record it as a
+     deferred item in Step 5 (a GitHub issue if it is Blocked or Phase 2,
+     otherwise Nice-to-Have). Do not commit scratch or exploratory tests.
    - Run tests → Confirm PASS
    - Run validation gates frequently (not just at end)
 
-4. **Mark progress**: Update TodoWrite: `✅ Task N: [Description]`
+4. **Mark progress**: once the task's tests pass, tick `Task N` in the checklist
+   from Step 1 (via `TodoWrite` when the task tools are present).
 
 ### Step 4: Run comprehensive final validation
 

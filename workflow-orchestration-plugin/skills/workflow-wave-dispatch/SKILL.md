@@ -4,8 +4,8 @@ description: Sequential-wave dispatch for multi-agent work with cross-task depen
 user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 created: 2026-04-24
-modified: 2026-08-07
-reviewed: 2026-06-23
+modified: 2026-09-02
+reviewed: 2026-09-02
 ---
 
 # Workflow Wave Dispatch
@@ -90,7 +90,7 @@ call where the worktree holds the work.
 
 | Heuristic | Guidance |
 |-----------|----------|
-| Wave size | Cap schema-bound waves at **≤ 5 concurrent agents** (same cap as `parallel-agent-dispatch` for Opus 4.7 parents) |
+| Wave size | Cap schema-bound waves at **≤ 5 concurrent agents** — the same ceiling `parallel-agent-dispatch` § Concurrent Rate-Limit Risk sets for `[1m]`-context parents (measured on Opus 4.7; schema-bound agents need it most because a cut-off leaves no partial result, #1463). Fable 5.1 parents run 1M context by default, so the hazard applies; not re-measured on Fable 5.1 — keep the cap until a run shows the storm no longer occurs, then raise with evidence |
 | Stagger | Add **~30 s between launches** in the same wave to spread the token-request window |
 | Wave splits | If the fan-out genuinely needs >5 schema-bound calls, dispatch in sequential sub-waves of ≤ 5 — gate each sub-wave before launching the next |
 | Retry shape | On a rate-limit partial failure, recovery-dispatch only the failed agents (not the whole wave) — the successful siblings' outputs are valid |

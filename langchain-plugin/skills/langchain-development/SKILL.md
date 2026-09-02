@@ -4,8 +4,8 @@ description: LangChain JS/TS framework for building LLM-powered apps. Use when w
 user-invocable: false
 allowed-tools: Bash(python *), Bash(uv *), BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-08
-modified: 2026-04-25
-reviewed: 2026-04-25
+modified: 2026-09-02
+reviewed: 2026-09-02
 ---
 
 # LangChain Development
@@ -81,9 +81,10 @@ const openai = new ChatOpenAI({
 });
 
 // Anthropic
+// Use a real, current model id (never an unversioned alias like "claude-haiku"),
+// and omit sampling params — Fable-generation models reject temperature/top_p/top_k.
 const anthropic = new ChatAnthropic({
-  model: "claude-haiku",
-  temperature: 0,
+  model: "claude-haiku-4-5",
 });
 
 // Invoke with messages

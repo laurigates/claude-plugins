@@ -1,8 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-07-18
+modified: 2026-09-02
 compatibility: claude-code
-reviewed: 2026-04-25
+reviewed: 2026-09-02
 allowed-tools: Glob, Read, TodoWrite
 model: opus
 description: Audit Claude subagent configs for completeness, security, and best practices. Use when reviewing agents/ for missing frontmatter, overprivileged tools, or bad model choices.
@@ -39,7 +39,8 @@ name: meta-audit
 For each agent, verify required fields are present:
 
 - ✅ **name**: Agent identifier (must match filename)
-- ✅ **model**: Claude model to use (e.g., "claude-opus-4-7")
+- ✅ **model**: an alias (`opus`, `fable`, `sonnet`, `haiku`, `inherit`) or a current full ID (e.g. `claude-fable-5-1`); a dated ID from a superseded generation (`claude-opus-4-7`, `claude-sonnet-4-6`) is a finding — recommend the alias unless the pin is deliberate
+- ℹ️ **effort**: optional `low`…`max` (overrides the session effort while the agent runs; default inherits); recommend `low` where the body describes mechanical work
 - ✅ **color**: Hex color code for UI (e.g., "#E53E3E")
 - ✅ **description**: Clear usage guidance with "Use proactively when..."
 - ✅ **tools**: Tool list or "All" for full access
@@ -226,4 +227,4 @@ If `--verbose` flag is provided:
 - This is a **read-only audit** - modifications require explicit user request
 - Focus on configuration correctness and security implications
 - Provide actionable recommendations with specific file locations
-- Use TodoWrite to track audit progress if checking multiple agents
+- Keep the per-agent status table (§7) as your running record while checking multiple agents; the task/todo tools (TodoWrite, TaskCreate…) are unavailable on Opus 4.8+/Sonnet 5/Fable unless opted in — see `.claude/rules/agentic-permissions.md` § "Task-tool availability"

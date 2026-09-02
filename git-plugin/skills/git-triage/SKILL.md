@@ -3,10 +3,10 @@ name: git-triage
 description: "Backlog sweep over open issues and PRs — staleness, cross-links, close/merge recommendations, no code changes. Use when grooming the backlog, deciding what to close, or pre-release cleanup."
 args: "[--type issues|prs|both] [--batch N] [--repo owner/name] [--days-stale-issue N] [--days-stale-pr N] [--auto-close] [--auto-merge] [--oldest-first]"
 argument-hint: "--type both --batch 10 (defaults: days-stale-issue=90, days-stale-pr=30, current repo)"
-allowed-tools: Bash(bash *), Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git log *), Bash(rg *), Read, Grep, Glob, AskUserQuestion, TodoWrite
+allowed-tools: Bash(bash *), Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git log *), Bash(rg *), Read, Grep, Glob, AskUserQuestion
 created: 2026-04-22
-modified: 2026-08-21
-reviewed: 2026-06-14
+modified: 2026-09-02
+reviewed: 2026-09-02
 ---
 
 # /git:triage
@@ -71,7 +71,9 @@ Parse `STATUS=` and `ISSUES:` from the output. Per item it emits
 enum fields). It also rolls up `SYSTEMATIC_FAILURE_*` groups (see Step 4).
 If `--repo` was provided, pass it through; the script reads the
 current repo from `origin` otherwise. Sort each set by age (oldest first if
-`--oldest-first`) and build a TodoWrite list with one entry per item.
+`--oldest-first`) and track one entry per item — via `TodoWrite` when the
+session has the task tools (see `.claude/rules/agentic-permissions.md` §
+Task-tool availability), otherwise as a checklist you keep in the response.
 
 ### Step 2: Investigate each issue (skip if `--type prs`)
 

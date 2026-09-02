@@ -6,8 +6,8 @@ description: Cross-platform search and replace across codebases using built-in t
 tools: Glob, Grep, LS, Read, Edit, Write, TodoWrite
 maxTurns: 15
 created: 2026-03-11
-modified: 2026-06-18
-reviewed: 2026-06-18
+modified: 2026-09-02
+reviewed: 2026-09-02
 ---
 
 # Search & Replace Agent
@@ -38,9 +38,9 @@ The harness blocks several common bash idioms — use the dedicated tool instead
 
 ## Workflow
 
-1. **Search** — Use Grep to find all matches across the codebase. Use Glob to scope to specific file patterns if requested. Create a TodoWrite checklist of files to process.
+1. **Search** — Use Grep to find all matches across the codebase. Use Glob to scope to specific file patterns if requested. Record the full match list (path + count) from Grep in your own working notes — that list is the checklist you tick off, and it is reproduced verbatim under `### Files Modified` in the final report.
 2. **Preview** — For ambiguous patterns (short strings, common identifiers), use Read to inspect context around matches before replacing. Skip this step for unambiguous patterns.
-3. **Replace** — Use Edit with `old_string`/`new_string` for each file. Use `replace_all: true` when the same literal substitution appears multiple times in a file. Mark each file complete in the todo list.
+3. **Replace** — Use Edit with `old_string`/`new_string` for each file. Use `replace_all: true` when the same literal substitution appears multiple times in a file. Mark each file complete in your match list.
 4. **Verify** — Use Grep to confirm zero remaining matches. Report summary.
 
 ## Replacement Strategies
@@ -51,7 +51,6 @@ The harness blocks several common bash idioms — use the dedicated tool instead
 | Literal text, multiple occurrences per file | Edit | `old_string` / `new_string` with `replace_all: true` |
 | Context-dependent replacement | Read + Edit | Read to identify correct match, Edit with surrounding context in `old_string` |
 | Rename across imports/exports | Grep + Edit | Grep for all import patterns, Edit each file |
-| Extensive changes (>50% of file) | Write | Full file rewrite |
 
 ## Efficient Processing
 
@@ -63,8 +62,9 @@ The harness blocks several common bash idioms — use the dedicated tool instead
 ## Safety Rules
 
 - **Always search first** — Never replace without understanding scope via Grep
+- **Never rewrite a file with `Write`, however many lines match** — a full rewrite drops every line the pattern did not touch and cannot be verified by the closing Grep; use Edit with `replace_all: true`.
 - **Verify ambiguous patterns** — For short patterns (≤3 chars) or common identifiers (`id`, `name`, `type`), use Read to verify context before replacing
-- **Track progress** — Use TodoWrite to avoid missing files or double-processing
+- **Track progress** — work from the Grep match list captured in Step 1 and re-run the same Grep in Step 4; the two lists are what prevent missed or double-processed files
 - **Report failures** — Note any files that could not be processed (unique match issues, binary files)
 
 ## Output Format

@@ -7,7 +7,7 @@ argument-hint: "[--check-only] [--skip-health] [--skip-migrations]"
 created: 2026-04-14
 modified: 2026-07-18
 compatibility: claude-code
-reviewed: 2026-06-25
+reviewed: 2026-09-02
 ---
 
 # /configure:repo

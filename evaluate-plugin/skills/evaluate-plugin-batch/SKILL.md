@@ -2,13 +2,13 @@
 name: evaluate-plugin-batch
 description: Batch evaluate every skill in a plugin and produce a plugin-level report. Use when auditing an entire plugin's quality or validating before a release.
 args: <plugin-name> [--create-missing-evals] [--parallel N]
-allowed-tools: Task, Read, Write, Glob, Grep, Bash(bash *), SlashCommand, TodoWrite
+allowed-tools: Task, Read, Write, Glob, Grep, Bash(bash *), SlashCommand
 argument-hint: "git-plugin [--create-missing-evals]"
 agent: general-purpose
 created: 2026-03-04
-modified: 2026-07-18
+modified: 2026-09-02
 compatibility: claude-code
-reviewed: 2026-03-04
+reviewed: 2026-09-02
 ---
 
 # /evaluate:plugin-batch
@@ -72,7 +72,11 @@ SlashCommand: /evaluate:skill <plugin-name>/<skill-name> [--create-evals]
 
 If `--parallel N` is set and N > 1, batch evaluations into groups of N. Otherwise, run sequentially.
 
-Track progress with TodoWrite — mark each skill as it completes.
+Report progress from the results themselves: after each `/evaluate:skill`
+returns, state which skill finished and its pass rate from `benchmark.json`.
+(Todo/task tools are not available on Opus 4.8+/Sonnet 5/Fable-generation
+models unless `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` is set; do not depend on them
+— see `.claude/rules/agentic-permissions.md` § Task-tool availability.)
 
 ### Step 4: Aggregate plugin report
 

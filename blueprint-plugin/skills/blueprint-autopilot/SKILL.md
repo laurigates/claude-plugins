@@ -3,8 +3,8 @@ name: blueprint-autopilot
 description: Run due blueprint maintenance ambiently at autonomy level 2+. Use when a drift nudge reports blueprint tasks due or suggests /blueprint:autopilot.
 allowed-tools: Read, Glob, Grep, Bash, Task
 created: 2026-07-05
-modified: 2026-07-05
-reviewed: 2026-07-05
+modified: 2026-09-02
+reviewed: 2026-09-02
 ---
 
 # blueprint-autopilot
@@ -56,8 +56,10 @@ brief:
 - any other task → run its skill's `--report-only`/dry-run form; never its
   mutating form
 
-Each task's brief MUST state: work quietly, never `AskUserQuestion` (autopilot
-runs unattended), and return a one-line result. Tasks whose skills would
+Each task's brief MUST state: the run is unattended, so never `AskUserQuestion`
+and never stop at "I'll now run X" — make the call and carry the task through
+to its report; and return a one-line result stating what the tool calls
+actually returned (counts, paths, exit status). Tasks whose skills would
 require interactive confirmation for writes stay report-only here — autopilot
 never bypasses a write gate.
 

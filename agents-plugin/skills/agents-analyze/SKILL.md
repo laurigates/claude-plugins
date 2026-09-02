@@ -5,9 +5,9 @@ allowed-tools: Glob, Grep, Read, Bash(ls *), Bash(wc *), TodoWrite
 model: opus
 argument-hint: "analyze all plugins or --focus <plugin-name>"
 created: 2026-01-24
-modified: 2026-07-18
+modified: 2026-09-02
 compatibility: claude-code
-reviewed: 2026-06-18
+reviewed: 2026-09-02
 name: agents-analyze
 agent: general-purpose
 context: fork
@@ -90,13 +90,14 @@ Operations that should be limited to specific tools:
 
 #### Model: Always Opus
 
-Every plugin agent runs on `model: opus`. A subagent's output re-enters the main loop as a tool result, so a weaker delegate quietly degrades everything downstream — and Opus-low beats Sonnet-high on both quality and tokens. So **`effort` (a session setting), not `model`, is the cost lever**: a mechanical agent stays on Opus and dials `effort` down rather than downgrading the model.
+Every plugin agent runs on `model: opus`. A subagent's output re-enters the main loop as a tool result, so a weaker delegate quietly degrades everything downstream — and Opus-low beats Sonnet-high on both quality and tokens. So **`effort` (the agent's `effort:` frontmatter, falling back to the session effort), not `model`, is the cost lever**: a mechanical agent stays on Opus and dials `effort` down rather than downgrading the model.
 
 | Audit finding | Recommendation |
 |---------------|----------------|
 | Agent file declares `model: opus` | OK — no change |
 | Agent file declares `sonnet` / `haiku` / any non-opus | Flag it — recommend `model: opus`, and note that mechanical agents tune `effort` down instead |
 | Agent file omits `model:` | Flag it — agents require an explicit `model: opus` |
+| Agent file's Scope describes mechanical/high-volume work but sets no `effort:` | Recommend `effort: low` (advisory — not lint-enforced) |
 
 The sole sanctioned non-Opus subagent is the `agent-patterns-plugin:cold-read-gate` haiku reader, which is a **skill-inline** `Agent(model: haiku)` dispatch (the measurement instrument), **not** an agent file — so no `*/agents/*.md` is exempt. The `scripts/check-agent-model.sh` lint enforces this; see `.claude/rules/agent-development.md` § "Model Selection for Agents".
 

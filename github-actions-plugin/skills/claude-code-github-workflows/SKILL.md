@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-07-02
-reviewed: 2026-06-15
+modified: 2026-09-02
+reviewed: 2026-09-02
 name: claude-code-github-workflows
 description: "Claude Code GitHub Actions workflow patterns — PR reviews, issue triage, CI/CD integration. Use when creating or modifying workflows that integrate Claude Code."
 user-invocable: false
@@ -321,6 +321,21 @@ mid-flight when exhausted — they bound waste but don't prevent doomed runs on
 oversized diffs; pre-gate on diff size for that. Turn-budget exhaustion is
 recognizable by `error_max_turns` in the `execution_file` and by a *rotating*
 set of failing AI jobs across re-runs of the same commit.
+
+`--model` and `--effort` are the cost levers, not `--max-turns`. `--model`
+takes an alias (`opus`, `sonnet`, `fable`, `best`) or a full id; aliases move
+with each model generation, so record the alias you chose next to the effort.
+`--effort low|medium|high|xhigh|max` overrides the harness default (`high`);
+effort names do not map across model generations, so re-check the level when
+the alias's target changes. `haiku` supports no `--effort` at all, so `opus
+--effort low` is the cheap tier, not haiku. Every template above should carry
+both, e.g.
+
+```yaml
+claude_args: |
+  --model opus
+  --effort medium
+```
 
 ## Performance Optimization
 

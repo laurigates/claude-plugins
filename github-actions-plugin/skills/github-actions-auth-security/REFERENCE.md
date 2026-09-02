@@ -87,10 +87,13 @@ anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 # Should start with: sk-ant-api03-
 
 # Test API key locally
+# Any current model ID works here (cheapest: claude-haiku-4-5); a retired ID
+# returns not_found and looks like a bad key
 curl https://api.anthropic.com/v1/messages \
   -H "x-api-key: $ANTHROPIC_API_KEY" \
   -H "anthropic-version: 2023-06-01" \
-  -d '{"model":"claude-3-5-sonnet-20241022","max_tokens":10,"messages":[{"role":"user","content":"test"}]}'
+  -H "content-type: application/json" \
+  -d '{"model":"claude-haiku-4-5","max_tokens":10,"messages":[{"role":"user","content":"test"}]}'
 ```
 
 ### Permission Denied Errors

@@ -5,8 +5,8 @@ allowed-tools: Bash(git *), Bash(gh *), Bash(fd *), Bash(rg *), Bash(diff *), Ba
 args: <mode> [options]
 argument-hint: "extract [repo]|diff <file-pattern>|apply <file-pattern> [--from repo] [--to repos|--all]"
 created: 2026-02-21
-modified: 2026-05-30
-reviewed: 2026-04-16
+modified: 2026-09-02
+reviewed: 2026-09-02
 ---
 
 # /configure:config-sync
@@ -300,7 +300,7 @@ git checkout -b config-sync/claude-yml
 git add <file>
 git commit -m "chore: sync claude.yml from canonical
 
-Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
+Co-Authored-By: Claude <noreply@anthropic.com>"
 git push -u origin config-sync/claude-yml
 gh pr create --title "chore: sync claude.yml" --body "$(cat <<'EOF'
 ## Summary

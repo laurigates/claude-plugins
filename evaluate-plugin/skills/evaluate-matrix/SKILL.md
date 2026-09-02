@@ -7,9 +7,9 @@ argument-hint: "git-plugin/git-commit --models opus,haiku --with-skill-only"
 model: opus
 agent: general-purpose
 created: 2026-06-13
-modified: 2026-07-18
+modified: 2026-09-02
 compatibility: claude-code
-reviewed: 2026-06-13
+reviewed: 2026-09-02
 ---
 
 # /evaluate:matrix
@@ -49,9 +49,11 @@ calls a follow-up. It reuses, without duplicating: `prepare_run.sh`,
 | `--with-skill-only` | false | Skip the cached baseline side (with-skill runs only) |
 | `--runs N` | 1 | Runs per (model × eval × config) |
 
-Pinned model ids: `opus`=`claude-opus-4-8`, `sonnet`=`claude-sonnet-4-6`,
-`haiku`=`claude-haiku-4-5`. Record the exact ids in `model-matrix.json` for
-reproducibility (`.claude/rules/skill-evaluation.md`).
+Aliases float across model generations, so `--models` accepts either an alias
+or a full id; pass the **full id** when the run must be reproducible (the
+`model` field on the dispatch accepts one) and record the id that actually
+ran — never the alias — in `model-matrix.json metadata.models[].model_id`
+(`.claude/rules/skill-evaluation.md`).
 
 ## Execution
 
@@ -95,7 +97,11 @@ combination:
    ```
    **Serialize** the dispatches — one at a time, never a parallel batch.
    `[1m]` models hit cascading rate limits with concurrent subagents
-   (`.claude/rules/skill-fork-context.md`).
+   (`.claude/rules/skill-fork-context.md`). Spawns run in the background by
+   default (Claude Code ≥ 2.1.232), so dispatch order alone no longer
+   serializes them: pass `run_in_background: false` on each dispatch, or wait
+   for that agent's result to arrive before issuing the next one —
+   serialization is the wait, not the dispatch order.
 3. Write the subagent's produced artifact to `$RUN_DIR/transcript.md`.
 
 ### Step 3: Grade — deterministic first, judge only on deferral

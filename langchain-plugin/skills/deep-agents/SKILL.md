@@ -4,8 +4,8 @@ description: Build hierarchical AI agents with the deepagents npm package. Use w
 user-invocable: false
 allowed-tools: Bash(python *), Bash(uv *), BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-08
-modified: 2026-06-04
-reviewed: 2026-06-04
+modified: 2026-09-02
+reviewed: 2026-09-02
 ---
 
 # Deep Agents
@@ -374,7 +374,7 @@ for await (const [message, metadata] of stream) {
 
 | Feature | Deep Agents | Claude Code |
 |---------|-------------|-------------|
-| Planning | `write_todos` | `TodoWrite` |
+| Planning | `write_todos` | `TodoWrite` (off by default on Opus 4.8+/Sonnet 5/Fable; enable with `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`) |
 | Subagents | `task` | `Task` |
 | File ops | `read/write/edit_file` | `Read/Write/Edit` |
 | Memory | LangGraph Store | Conversation context |

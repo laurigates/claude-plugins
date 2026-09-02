@@ -25,6 +25,12 @@ Lead Agent (orchestrator)        [implicit team — CLAUDE_CODE_EXPERIMENTAL_AGE
 
 ## Team setup workflow
 
+> **Task tools are opt-in on current models (Claude Code 2.1.233+).** See
+> `.claude/rules/agentic-permissions.md` § "Standard Permission Sets" →
+> "Task-tool availability" for the three opt-ins. Without one, on Opus 4.8 /
+> Sonnet 5 / Fable 5.x / Mythos 5 or newer, skip steps 1 and 3 below and hand
+> each teammate its work item in the spawn prompt (step 2).
+
 ### 1. Create initial tasks
 
 The team is implicit — start by creating work, not a team:

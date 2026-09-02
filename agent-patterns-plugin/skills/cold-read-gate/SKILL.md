@@ -4,9 +4,9 @@ description: Gate outward-bound text (upstream issues, docs, PR bodies) through 
 allowed-tools: Agent, Read, Write, Edit, TodoWrite
 model: opus
 created: 2026-06-11
-modified: 2026-08-15
+modified: 2026-09-02
 compatibility: claude-code
-reviewed: 2026-06-11
+reviewed: 2026-09-02
 ---
 
 # Cold-Read Gate
@@ -49,9 +49,10 @@ invites the orchestrator to "helpfully" add context, which defeats the test.
 ### Step 2: Dispatch the cold reader — synchronously
 
 One `Agent` per artifact, all in a single message when batching. Run each
-reader **synchronously** (`run_in_background: false`, the default) — the
-reader's entire job is a one-shot critique, and a synchronous run returns
-that critique directly as the `Agent` tool result. There is nothing to
+reader **synchronously** (`run_in_background: false` — set it explicitly; as
+of Claude Code 2.1.232 non-teammate spawns run in the background by default)
+— the reader's entire job is a one-shot critique, and a synchronous run
+returns that critique directly as the `Agent` tool result. There is nothing to
 gain from backgrounding it.
 
 If a reader *was* spawned with `run_in_background: true`, read its critique
