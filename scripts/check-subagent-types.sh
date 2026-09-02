@@ -20,7 +20,9 @@
 #                       that a plugin *does* provide is reported as a WARN
 #                       (works today only by luck of name resolution); a bare
 #                       name nothing provides is an ERROR.
-#   - built-ins       — `general-purpose`, `Explore` (BUILTIN_SUBAGENT_TYPES).
+#   - built-ins       — `general-purpose`, `Explore`, `fork` (BUILTIN_SUBAGENT_TYPES).
+#                       `fork` inherits the parent conversation (on by default
+#                       since Claude Code 2.1.232).
 #
 # Usage:
 #   bash scripts/check-subagent-types.sh [--project-dir <path>] [--strict]
@@ -35,7 +37,7 @@
 set -uo pipefail
 
 # Agent types the harness provides itself — never backed by an agents/*.md file.
-BUILTIN_SUBAGENT_TYPES=(general-purpose Explore)
+BUILTIN_SUBAGENT_TYPES=(general-purpose Explore fork)
 
 # Illustrative occurrences that are deliberately NOT Claude Code dispatches.
 # Format: <path-suffix>|<value>. Keep this list tiny and justified — an entry

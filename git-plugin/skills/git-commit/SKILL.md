@@ -1,7 +1,7 @@
 ---
 created: 2026-01-21
-modified: 2026-05-30
-reviewed: 2026-04-25
+modified: 2026-09-02
+reviewed: 2026-09-02
 name: git-commit
 description: Create commits with conventional messages and issue references. Use when user says "commit", "save changes", or "stage and commit". Local commits only — see git-push for remote.
 user-invocable: false
@@ -100,10 +100,13 @@ Optional body explaining the change.
 Fixes #123
 Refs #456
 
-Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
+Co-Authored-By: Claude <model name> <noreply@anthropic.com>
 EOF
 )"
 ```
+
+Use the exact `Co-Authored-By` line the harness provides for the current
+session — do not copy a model name from this example.
 
 **Inside a quoted heredoc (`<<'EOF'`), backticks, `$`, and `\` are already literal — never backslash-escape them.** A reflexive `\`` produces a literal backslash in the commit message that survives into `git log` and needs an `--amend` to clean up.
 

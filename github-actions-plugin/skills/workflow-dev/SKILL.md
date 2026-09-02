@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
-reviewed: 2025-12-16
+modified: 2026-09-02
+reviewed: 2026-09-02
 allowed-tools: Read, Write, Edit, MultiEdit, Bash(git *), Bash(pytest *), Bash(npm test *), Bash(cargo test *), Bash(go test *), mcp__github__list_issues, mcp__github__create_issue, mcp__github__create_pull_request, mcp__github__get_issue, TodoWrite
 args: "[--max-cycles <n>] [--focus <bug|feature|test>]"
 argument-hint: "[--max-cycles <n>] [--focus <bug|feature|test>]"
@@ -110,11 +110,11 @@ git switch -c fix/issue-{number}-{brief-description}
 
 **6. Gather implementation context**
 
-- **ALWAYS use Context7 MCP** to fetch current documentation for relevant libraries/frameworks before implementation
+- **Fetch current documentation for relevant libraries/frameworks before implementation** — remembered API shapes and flags drift across versions. Use Context7 MCP when it is available; otherwise `WebFetch` the library's own docs or fall back to the project's pinned documentation.
 - Use `context7:resolve-library-id` followed by `context7:get-library-docs` for any tools mentioned
 - Read issue description and any linked documentation
 - Review related issues and PRs for context
-- **For package managers (uv, npm, bun, etc.)**: Always fetch current best practices via Context7 before suggesting commands
+- **Package managers (uv, npm, bun, etc.)**: fetch the current best-practice docs before suggesting commands (Context7 when available, otherwise the project's pinned docs or `WebFetch`) — remembered flag syntax drifts across major versions.
 
 **7. Implement solution using TDD**
 
@@ -261,7 +261,7 @@ Provide final summary:
 **Required tools:**
 
 - GitHub MCP for all GitHub operations
-- **Context7 MCP for documentation lookup (REQUIRED before any tool usage)**
+- **Context7 MCP for documentation lookup when available** (fetch library/framework docs before implementation; fall back to `WebFetch` or the project's pinned docs when Context7 isn't in the session)
 - Git command line access
 - Project-specific testing tools
 - Modern package managers: uv (Python), npm/bun (JavaScript), cargo (Rust)

@@ -5,6 +5,11 @@
 #
 # Install via /hooks:session-end-issue-hook or manually add to .claude/settings.json:
 #   "Stop": [{"matcher":"*","hooks":[{"type":"command","command":"bash <path>/session-end-issue-hook.sh","timeout":15}]}]
+#
+# PREREQUISITE: reads TodoWrite tool_use blocks. TodoWrite/Task* are gated behind
+# CLAUDE_CODE_ENABLE_TODO_TOOLS=1 on Opus 4.8+/Sonnet 5/Fable (Claude Code 2.1.233) —
+# see /hooks:session-end-issue-hook Step 1. Without the flag this hook is silent on
+# every response, which is NOT "all todos completed".
 set -euo pipefail
 
 # Read JSON input from stdin

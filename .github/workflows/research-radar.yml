@@ -213,7 +213,7 @@ jobs:
 
             ## Efficiency rules
 
-            - `TodoWrite` once at the start to plan, then minimal narration.
+            - Plan briefly in the task list (`TaskCreate`) at the start.
             - Read `research-candidates.json` once. You may `jq` it to pre-filter by keyword.
             - Do not read plugin source files — you are mapping ideas to plugin *names*, not
               editing them. Follow-up application is human/`@claude`-driven work.

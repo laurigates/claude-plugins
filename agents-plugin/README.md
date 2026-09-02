@@ -51,7 +51,7 @@ Each agent includes a `## Team Configuration` section documenting when to use it
 
 ## Model Selection
 
-Every agent runs on **opus**. A subagent's output re-enters the main loop as a tool result, so a weaker delegate quietly degrades everything downstream — and Opus-low beats Sonnet-high on both quality and tokens. So **`effort` (a session setting), not `model`, is the cost lever**: dial effort down for mechanical agents instead of downgrading the model. The lint `scripts/check-agent-model.sh` enforces this. The sole sanctioned non-Opus subagent is the `agent-patterns-plugin:cold-read-gate` haiku reader, which is a skill-inline dispatch rather than an agent file. See `.claude/rules/agent-development.md` § "Model Selection for Agents".
+Every agent runs on **opus**. A subagent's output re-enters the main loop as a tool result, so a weaker delegate quietly degrades everything downstream — and Opus-low beats Sonnet-high on both quality and tokens. So **`effort` (the agent's `effort:` frontmatter, falling back to the session effort), not `model`, is the cost lever**: dial effort down for mechanical agents instead of downgrading the model. The lint `scripts/check-agent-model.sh` enforces this. The sole sanctioned non-Opus subagent is the `agent-patterns-plugin:cold-read-gate` haiku reader, which is a skill-inline dispatch rather than an agent file. See `.claude/rules/agent-development.md` § "Model Selection for Agents".
 
 ## Usage
 

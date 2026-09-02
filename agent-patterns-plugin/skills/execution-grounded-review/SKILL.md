@@ -6,9 +6,9 @@ argument-hint: "diff|PR|files to verify; optional --criteria <file> of acceptanc
 allowed-tools: Agent, Read, Glob, Grep, Bash(git diff *), Bash(git log *), Bash(gh pr view *), Bash(npm *), Bash(npx *), Bash(uv run *), Bash(pytest *), Bash(cargo *), Bash(go test *), TodoWrite
 model: opus
 created: 2026-06-22
-modified: 2026-08-07
+modified: 2026-09-02
 compatibility: claude-code
-reviewed: 2026-07-05
+reviewed: 2026-09-02
 ---
 
 # Execution-Grounded Review
@@ -180,9 +180,10 @@ prompt: |
 > cost compounds rather than adds (`.claude/rules/workflow-vs-skill.md`).
 
 For several independent targets, dispatch one verifier per target in a
-single-message parallel `Agent` batch — except on a `[1m]` model, where the
-concurrent-subagent rate-limit caveat applies (`skill-fork-context.md`); run
-those sequentially. Do **not** set `context: fork` — the caller needs the ledger
+single-message parallel `Agent` batch — except on a 1M-context model (every
+Fable 5.1 session, or Opus with the `[1m]` suffix), where the concurrent-
+subagent rate-limit caveat applies (`skill-fork-context.md`); run those
+sequentially. Do **not** set `context: fork` — the caller needs the ledger
 in the main context to act on it.
 
 ### Step 3a: Match the test's operation sequence to production

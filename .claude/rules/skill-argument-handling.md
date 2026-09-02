@@ -1,7 +1,7 @@
 ---
 created: 2026-06-15
-modified: 2026-06-24
-reviewed: 2026-07-04
+modified: 2026-09-02
+reviewed: 2026-09-02
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -80,10 +80,7 @@ caveat in `skill-fork-context.md` applies; do **not** use `context: fork`.
 | **haiku** | `Agent(subagent_type: general-purpose, model: haiku)` | The busy-maintainer proxy / measurement instrument. The `model: haiku` ban is on skill *frontmatter* (AskUserQuestion formatting) — a haiku **reader subagent** with no AskUserQuestion is the documented cold-read-gate exception, not a violation. |
 | **opus** | `Agent(subagent_type: general-purpose, model: opus)` | The conservative second opinion — better at declared-vs-parsed nuance and at distinguishing a real defect from a wishlist. |
 
-> **Effort is not per-dispatch expressible.** The `Agent` tool exposes `model`
-> but not effort; "opus low effort" can't be set on a subagent (effort is a
-> session/harness setting — see `skill-development.md`). Opus readers run at the
-> parent's inherited effort. Record this when reporting the delta.
+> **Effort is expressible per agent definition, not per `general-purpose` dispatch.** The `Agent` tool call takes `model` but not effort; to run an opus reader at *low* effort, dispatch a named agent definition whose frontmatter sets `effort: low` (subagent frontmatter now carries `effort: low|medium|high|xhigh|max`, default inherits the session). A `general-purpose` reader inherits the parent's effort — record which shape was used when reporting the delta.
 
 ## haiku-vs-opus delta (pilot, 8 skills, 2026-06-15)
 

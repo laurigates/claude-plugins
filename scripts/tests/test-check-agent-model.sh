@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Regression test for scripts/check-agent-model.sh
 # (.claude/rules/agent-development.md § "Model Selection for Agents" — the
-#  always-Opus standard for plugin agents).
+#  opus-floor, fable-sanctioned standard for plugin agents).
 #
 # Guards:
 #   A. the real repo stays clean — every agent is on opus, so the check exits 0
@@ -11,6 +11,9 @@
 #   E. an allowlisted file is honored (via the CHECK_AGENT_MODEL_ALLOWLIST seam)
 #   F. agent worktree copies under .claude/worktrees/ are pruned, not scanned
 #      (#1492 parity)
+#   H. a `model: fable` agent exits 0 (sanctioned for the hardest delegated work)
+#   I. `effort: low` exits 0; `effort: ultra` exits 1 and names the bad value;
+#      an agent with no `effort:` line exits 0 (the field is optional)
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -51,6 +54,27 @@ Fixture body.
 EOF
 }
 
+# make_agent_effort <path> <model> <effort-line-or-empty> — like make_agent but
+# optionally adds an `effort:` frontmatter line (pass "" to omit it).
+make_agent_effort() {
+  local agent_name
+  agent_name="$(basename "$1" .md)"
+  mkdir -p "$(dirname "$1")"
+  {
+    echo "---"
+    echo "name: $agent_name"
+    echo "model: $2"
+    [ -n "$3" ] && echo "effort: $3"
+    echo "description: Fixture agent for the model lint test."
+    echo "tools: Read"
+    echo "created: 2026-06-18"
+    echo "modified: 2026-06-18"
+    echo "reviewed: 2026-06-18"
+    echo "---"
+    echo "Fixture body."
+  } > "$1"
+}
+
 # run <project-dir> [env-assignment] — invoke the checker, capture combined
 # output + exit code into globals OUT / RC.
 run() {
@@ -66,7 +90,7 @@ assert "real repo exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
 # --- TEST B: all-opus fixture tree -------------------------------------------
 echo "=== TEST B: all-opus fixture exits 0 ==="
 fx_b="$(mktemp -d)"
-trap 'rm -rf "$fx_b" "${fx_c:-}" "${fx_d:-}" "${fx_e:-}" "${fx_f:-}" "${fx_g:-}"' EXIT
+trap 'rm -rf "$fx_b" "${fx_c:-}" "${fx_d:-}" "${fx_e:-}" "${fx_f:-}" "${fx_g:-}" "${fx_h:-}" "${fx_i:-}"' EXIT
 make_agent "$fx_b/demo-plugin/agents/good.md" opus
 make_agent "$fx_b/other-plugin/agents/also-good.md" opus
 run "$fx_b"
@@ -152,6 +176,32 @@ make_agent "$wt_root/.claude/worktrees/agent-nested/demo-plugin/agents/leaked.md
 run "$wt_root"
 assert "sibling worktree nested under a worktree root is still pruned" "$([ "$RC" -eq 0 ] && echo true || echo false)"
 assert "nested worktree copy is not counted" "$(contains "$OUT" 'AGENT_FILES_SCANNED=2')"
+
+# --- TEST H: a model: fable agent is sanctioned --------------------------
+echo "=== TEST H: model: fable agent exits 0 (sanctioned for hardest delegated work) ==="
+fx_h="$(mktemp -d)"
+make_agent "$fx_h/demo-plugin/agents/hardest.md" fable
+run "$fx_h"
+assert "fable fixture exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+
+# --- TEST I: effort: validation -----------------------------------------------
+echo "=== TEST I: effort: low passes; effort: ultra fails and is named; absent effort passes ==="
+fx_i="$(mktemp -d)"
+make_agent_effort "$fx_i/demo-plugin/agents/low-effort.md" opus low
+run "$fx_i"
+assert "effort: low exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+
+rm -f "$fx_i/demo-plugin/agents/low-effort.md"
+make_agent_effort "$fx_i/demo-plugin/agents/bad-effort.md" opus ultra
+run "$fx_i"
+assert "effort: ultra exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "effort: ultra names the offending file" "$(contains "$OUT" 'agents/bad-effort.md')"
+assert "effort: ultra names the bad value" "$(contains "$OUT" 'effort: ultra')"
+
+rm -f "$fx_i/demo-plugin/agents/bad-effort.md"
+make_agent_effort "$fx_i/demo-plugin/agents/no-effort.md" opus ""
+run "$fx_i"
+assert "no effort: line exits 0 (field is optional)" "$([ "$RC" -eq 0 ] && echo true || echo false)"
 
 # --- Summary -----------------------------------------------------------------
 echo ""

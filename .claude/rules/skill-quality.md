@@ -1,7 +1,7 @@
 ---
 created: 2026-03-02
-modified: 2026-07-29
-reviewed: 2026-07-29
+modified: 2026-09-02
+reviewed: 2026-09-02
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -174,10 +174,11 @@ Set `disable-model-invocation: true` when the skill body is a complete, self-con
 
 Skills inherit the user's active model by default. Set `model:` only at the **extremes** — see `.claude/rules/skill-development.md` for the full rationale.
 
-| Model | Use For |
+| Frontmatter | Use For |
 |-------|---------|
 | `opus` | Deep reasoning, architecture decisions, debugging methodology, security analysis, complex code review, long agentic orchestration |
-| `sonnet` | Mechanical / high-volume tasks where Opus is overkill — CLI tool wrappers, formatters, status checks, single-file lookups |
+| `effort: low` (model unset) | Mechanical / high-volume tasks — CLI tool wrappers, formatters, status checks, single-file lookups. Inherits the user's model at low effort; Fable 5.1 at low effort often matches prior models' `xhigh` (SKILL.md `effort:` field) |
+| `sonnet` | Only when measured: Sonnet at low effort has been shown to suffice for this skill (`skill-evaluation.md` Tier 2) |
 | _(unset)_ | Everything in the middle — let the user's active model decide |
 
 **Sonnet is the floor.** `model: haiku` is disallowed: Haiku 4.5 does not reliably format `AskUserQuestion` tool calls and the cost savings vs Sonnet are modest for the quality risk. The lint check in `plugin-compliance-check.sh` errors on `model: haiku`.
@@ -254,7 +255,7 @@ When reviewing skill/command changes:
 - [ ] Has "Agentic Optimizations" table (optional; keep where the commands are the payload)
 - [ ] Description matches user intents (not just tool jargon)
 - [ ] Description ≤ 150 chars with trigger keywords in the first ~120 chars (see "Description Length and the Listing Budget")
-- [ ] Model selection follows extremes-only rule (`opus` for deep reasoning, `sonnet` for mechanical tasks, unset otherwise; never `haiku`)
+- [ ] Model/effort selection follows the extremes-only rule (`opus` for deep reasoning, `effort: low` for mechanical tasks, both unset otherwise; never `haiku`)
 - [ ] Reference material extracted to REFERENCE.md if needed
 - [ ] Supporting files referenced with markdown links
 - [ ] No duplicate content with sibling skills

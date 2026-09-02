@@ -899,6 +899,33 @@ check_skill_body() {
       done
     fi
 
+    # Regression: github-workflow-auto-fix's inline template must use the
+    # `claude_args` + `prompt:` shape, not the deprecated `direct_prompt`
+    # (which the sibling claude-code-github-workflows skill documents as
+    # "may be silently ignored — a workflow using direct_prompt can run with
+    # no prompt at all"), and must pin `--effort` explicitly (the cost lever)
+    # and keep the tool boundary in `--allowedTools`, not `additional_permissions`
+    # (a GitHub-permissions map, not a tool list). The REFERENCE.md
+    # `workflow_call` template must carry the matching `--effort ${{ inputs.effort }}`
+    # pass-through so a caller can actually set it.
+    if [ "$plugin" = "github-actions-plugin" ] && [ "$skill_name" = "github-workflow-auto-fix" ]; then
+      for token in 'prompt: |' '--effort' '--allowedTools'; do
+        if ! grep -qF -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain token '${token}' (claude_args shape, not direct_prompt)")
+          has_errors=true
+        fi
+      done
+      if grep -vE '^\s*>' "$skill_file" | grep -qF -- 'direct_prompt'; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must not use 'direct_prompt' outside a blockquote (deprecated — see claude-code-github-workflows)")
+        has_errors=true
+      fi
+      local ref_file="${plugin}/skills/${skill_name}/REFERENCE.md"
+      if [ -f "$ref_file" ] && ! grep -qF -- '--effort ${{ inputs.effort }}' "$ref_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: REFERENCE.md must retain '--effort \${{ inputs.effort }}' in the reusable workflow_call template")
+        has_errors=true
+      fi
+    fi
+
     # Regression: git-pr-watch wraps the native PR-activity subscription. Its body
     # must name `subscribe_pr_activity` (the MCP tool that makes the watch real);
     # dropping it would leave a skill that documents watching without the call.
@@ -1334,6 +1361,22 @@ check_skill_body() {
           has_errors=true
         fi
       done
+    fi
+
+    # Regression: hooks-session-end-issue-hook's own Stop hook depends entirely
+    # on `TodoWrite` tool_use blocks in the transcript. Since Claude Code
+    # 2.1.233, TodoWrite/Task* are disabled by default on Opus 4.8, Sonnet 5,
+    # Fable 5/5.1 and newer unless CLAUDE_CODE_ENABLE_TODO_TOOLS=1 — without the
+    # skill's Step 1 checking and surfacing that precondition, the hook it
+    # configures is silently dead on every current model and that silence is
+    # indistinguishable from "all todos completed". The semantic invariant is
+    # that Step 1 names the env var so a bulk edit can't silently drop the
+    # prerequisite check.
+    if [ "$plugin" = "hooks-plugin" ] && [ "$skill_name" = "hooks-session-end-issue-hook" ]; then
+      if ! grep -q "CLAUDE_CODE_ENABLE_TODO_TOOLS" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md Step 1 must check for CLAUDE_CODE_ENABLE_TODO_TOOLS (todo tools are off by default on Opus 4.8+/Sonnet 5/Fable, Claude Code 2.1.233+)")
+        has_errors=true
+      fi
     fi
   done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
 

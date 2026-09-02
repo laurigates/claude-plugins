@@ -1,8 +1,8 @@
 ---
 created: 2026-01-23
-modified: 2026-06-18
+modified: 2026-09-02
 compatibility: claude-code
-reviewed: 2026-06-10
+reviewed: 2026-09-02
 description: "Claude plugins marketplace setup: .claude/settings.json, GitHub Actions, plugin pinning. Use when onboarding to claude-plugins, setting up claude.yml, pinning plugins, or overriding global plugins."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), Bash(test *), Bash(ls *), Bash(git remote *), Bash(gh api *), Bash(jq *), AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--exhaustive] [--plugins <plugin1,plugin2,...>] [--workflows] [--no-workflows]"
@@ -279,6 +279,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: "--model opus --effort high"
           plugin_marketplaces: |
             https://github.com/laurigates/claude-plugins.git
           plugins: |
@@ -287,6 +288,8 @@ jobs:
 ```
 
 Replace `PLUGINS_LIST` with the selected plugins in the format `plugin-name@laurigates-claude-plugins`, one per line. The suffix is the marketplace `name` field from `laurigates/claude-plugins/.claude-plugin/marketplace.json` — distinct from the `@claude-plugins` suffix used in `.claude/settings.json` (Step 3).
+
+Pin `--model` (an alias — `opus` is the current Opus, `fable` the current Fable) and `--effort` explicitly: the harness default effort is `high` for every model, and effort level names do not map across model generations, so an explicit pin is what makes the cost visible.
 
 ### Step 5: Configure .github/workflows/claude-code-review.yml
 
@@ -325,7 +328,7 @@ jobs:
             - Potential bugs or security issues
             - Test coverage gaps
             - Documentation needs
-          claude_args: "--max-turns 5"
+          claude_args: "--model opus --effort medium --max-turns 5"
           plugin_marketplaces: |
             https://github.com/laurigates/claude-plugins.git
           plugins: |

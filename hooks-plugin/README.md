@@ -89,7 +89,7 @@ the session actually created is reported on that Stop and every Stop after.
 
 ### session-end-issue-hook.sh
 
-A Stop hook that fires when the main agent finishes a response. If the session transcript contains any `TodoWrite` todos with `status: "pending"` or `status: "in_progress"`, it blocks and surfaces the list to Claude with suggested `gh issue create` commands. Silent when all todos are completed.
+A Stop hook that fires when the main agent finishes a response. If the session transcript contains any `TodoWrite` todos with `status: "pending"` or `status: "in_progress"`, it blocks and surfaces the list to Claude with suggested `gh issue create` commands. Silent when all todos are completed. Depends on the `TodoWrite` tool, which is off by default on Opus 4.8, Sonnet 5, Fable 5/5.1 and newer unless `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` is set — without it the hook is silent on every response, which is not the same as "all todos completed" (see `/hooks:session-end-issue-hook` Step 1).
 
 | Condition | Behaviour |
 |-----------|-----------|
@@ -121,13 +121,13 @@ A PreToolUse hook that blocks access to sensitive files and prevents credential 
 | Env var exposure | Commands that echo `$API_KEY`, `$SECRET`, `$TOKEN`, `$PASSWORD` |
 | Full env dump | Bare `printenv` or `env` commands |
 
-**Toggle:** `CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1`
+**Toggle:** `CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1`, honored only when a human operator exports it in their own shell environment — an inline prefix on the blocked command is intentionally not honored, so an agent cannot self-serve the bypass (see `.claude/rules/handling-blocked-hooks.md`).
 
 ### branch-protection.sh
 
 A PreToolUse hook that blocks write operations on protected branches (main, master).
 
-**Defers to auto mode.** Under permission mode `"auto"`, Claude Code routes the actual tool call through its own classifier with full environment context, which already covers force-push and protected-branch pushes. This hook would only double-gate that (and re-introduce blunt false positives), so it exits early when `permission_mode == "auto"`. It still enforces in `default`/`plan`/`acceptEdits` and — crucially — in web/remote/CI and non-Opus sessions where auto mode is unavailable.
+**Defers to auto mode.** Under permission mode `"auto"`, Claude Code routes the actual tool call through its own classifier with full environment context, which already covers force-push and protected-branch pushes. This hook would only double-gate that (and re-introduce blunt false positives), so it exits early when `permission_mode == "auto"`. It still enforces in `default`/`plan`/`acceptEdits` and in surfaces where auto mode is unavailable (web/remote/CI, or a plan/model that does not offer it). Auto mode is the default permission mode in current Claude Code, so in an ordinary local session this hook is normally silent and the classifier owns the protected-branch decision.
 
 | Operation | Behavior |
 |-----------|----------|
@@ -286,7 +286,7 @@ Documentation files (`*.md`, `*.mdx`, `*.rst`, `*.txt`) and vendor/generated pat
 
 ### no-calendar-estimates.sh
 
-A Stop hook that nudges the agent to restate work in tokens, context-window share, or effort tier (low/medium/high/max) rather than human calendar time (hours, days, weeks, months). AI work doesn't map to human time units; quoting calendar estimates is consistently misleading.
+A Stop hook that nudges the agent to restate work in tokens, effort tier (low/medium/high/xhigh/max), tool-call count, or files/lines to touch rather than human calendar time (hours, days, weeks, months). AI work doesn't map to human time units; quoting calendar estimates is consistently misleading. It deliberately does not ask for a remaining-context figure — the model cannot measure it, and prompting it to think about its remaining budget invites context anxiety.
 
 | Aspect | Detail |
 |--------|--------|
@@ -460,7 +460,7 @@ This configures a `Stop` hook in `.claude/settings.json` that:
 - Reads the session transcript after each Claude response
 - Finds any todos with `status: "pending"` or `status: "in_progress"` from the last `TodoWrite` call
 - If any exist: blocks with the list and suggested `gh issue create` commands so Claude can defer them
-- If all completed: exits silently
+- If all completed — or if the todo tools are disabled (`CLAUDE_CODE_ENABLE_TODO_TOOLS`, see above): exits silently
 
 Options:
 - `--no-verify`: Skip `gh` authentication check

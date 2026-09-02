@@ -433,17 +433,19 @@ jobs:
 
             If PR failure, comment on PR #${{ steps.context.outputs.pr_number }} with issue link.
 
-            ### Important Rules
+            ### Constraints (this run is unattended — nobody can answer a question, so act on these rather than asking)
 
-            - Do NOT force push or rewrite history
-            - Do NOT modify workflow files (.github/workflows/)
-            - Do NOT add new dependencies without strong justification
-            - Do NOT make unrelated changes
-            - If in doubt, prefer opening an issue
-            - Use the project conventions from CLAUDE.md
+            - No force-push or history rewrite: the branch may already be checked out by a reviewer, and a rewrite destroys their view of what failed.
+            - Leave `.github/workflows/` alone: the token this job runs with cannot push workflow-file changes, and those files need a human change anyway.
+            - No new dependencies unless the failure is literally a missing one: a dependency added by a bot lands unreviewed in the lockfile.
+            - Fix only what the failing job reported. Note any unrelated bug you notice in the PR body as a follow-up instead of changing it.
+            - Follow the project conventions in CLAUDE.md.
+            - When you are unsure the fix is right, open the issue (Step 3B) and stop.
 
+          # opus is an alias for the current Opus generation; set --effort explicitly — it is the cost lever and the harness default is high.
           claude_args: |
-            --model claude-sonnet-4-6
+            --model opus
+            --effort medium
             --allowedTools "Edit,MultiEdit,Write,Read,Glob,Grep,Bash(npm:*),Bash(npx:*),Bash(yarn:*),Bash(pnpm:*),Bash(bun:*),Bash(bunx:*),Bash(pip:*),Bash(python:*),Bash(cargo:*),Bash(go:*),Bash(make:*),Bash(just:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git branch:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git switch:*),Bash(git checkout -b:*),Bash(gh issue create:*),Bash(gh issue list:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(gh pr comment:*),Bash(gh pr view:*),Bash(gh run view:*),Bash(gh run list:*),Bash(ls:*),Bash(find:*),Bash(grep:*),Bash(cat:*)"
             --max-turns 50
 ```

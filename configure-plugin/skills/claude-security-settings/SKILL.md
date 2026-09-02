@@ -4,9 +4,9 @@ description: "Claude Code security settings: permission wildcards, shell operato
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-07-18
+modified: 2026-09-02
 compatibility: claude-code
-reviewed: 2026-07-17
+reviewed: 2026-09-02
 ---
 
 # Claude Code Security Settings
@@ -157,6 +157,20 @@ When a command contains shell operators:
 1. Permission wildcards won't match
 2. User sees explicit approval prompt
 3. Warning explains the blocked operator
+
+### Auto mode (the default permission mode)
+
+In auto mode there is no approval prompt for most actions. A command matching
+a narrow `allow` rule (`Bash(git status *)`) runs immediately; `deny` rules and
+`:ask` suffixes still resolve first in every mode. Anything else — including
+shell-operator compounds that no wildcard matches — goes to the safety
+classifier, which allows or blocks it; on a block Claude receives the reason
+and tries an alternative (3 consecutive or 20 total blocks pause auto mode and
+resume prompting). Broad rules (`Bash(*)`, `Bash(python*)`, `Agent`) are
+**dropped** on entering auto mode, so they buy nothing. Audit for: broad allow
+rules (dead weight), and destructive commands that rely on a prompt rather
+than a `deny` — under auto mode a prompt is not guaranteed. See
+`.claude/rules/auto-mode.md`.
 
 ### Safe Compound Commands
 

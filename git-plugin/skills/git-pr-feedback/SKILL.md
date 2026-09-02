@@ -1,8 +1,8 @@
 ---
 created: 2026-01-30
-modified: 2026-06-21
-reviewed: 2026-06-21
-allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh run view *), Bash(gh run list *), Bash(gh api *), Bash(gh repo view *), Bash(gh issue create *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(git fetch *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Bash(bash *), Read, Edit, Write, Grep, Glob, TodoWrite, Task, mcp__github__pull_request_read, mcp__github__add_reply_to_pull_request_comment, mcp__github__pull_request_review_write, mcp__github__issue_write
+modified: 2026-09-02
+reviewed: 2026-09-02
+allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh run view *), Bash(gh run list *), Bash(gh api *), Bash(gh repo view *), Bash(gh issue create *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(git fetch *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Bash(bash *), Read, Edit, Write, Grep, Glob, Task, mcp__github__pull_request_read, mcp__github__add_reply_to_pull_request_comment, mcp__github__pull_request_review_write, mcp__github__issue_write
 args: "[pr-number] [--commit] [--push] [--all] [--dry-run] [--limit N] [--include-automation]"
 argument-hint: "[pr-number | --all] [--commit] [--push] [--dry-run] [--limit N] [--include-automation]"
 disable-model-invocation: true
@@ -28,7 +28,7 @@ Parse these parameters from the command (all optional):
 | `--push` | Push changes after committing (implies `--commit`). |
 | `--all` | Address feedback on every actionable open PR. Dispatches one subagent per PR in an isolated worktree; the orchestrator pushes, replies, and resolves. Implies `--commit --push` unless `--dry-run` is set. Mutually exclusive with `$1`. |
 | `--dry-run` | With `--all`, print the dispatch plan and stop — no subagents spawned, no commits, no pushes. Ignored without `--all`. |
-| `--limit N` | Maximum concurrent subagents under `--all` (default `3`). Use a small number to stay under GitHub rate limits and avoid `[1m]`-model concurrency cascades (see [`skill-fork-context.md`](../../../.claude/rules/skill-fork-context.md)). |
+| `--limit N` | Maximum concurrent subagents under `--all` (default `3`). Use a small number to stay under GitHub rate limits and avoid API rate-limit cascades from many concurrent subagents — the hazard bites 1M-context sessions, which on Fable is every session, since 1M is its default window (see [`skill-fork-context.md`](../../../.claude/rules/skill-fork-context.md)). |
 | `--include-automation` | With `--all`, also surface automation-authored PRs (release-please, dependabot, renovate, `*[bot]`, `*-bot`). Excluded by default because they carry no human review feedback and their CI failures are resolved by automation re-running, not hand edits. |
 
 **Mode selection**:
@@ -167,7 +167,7 @@ Categorize all comments from the GraphQL response (see [REFERENCE.md](REFERENCE.
 1. Skip any thread where `isResolved: true` or `isOutdated: true` — already handled.
 2. Categorize each remaining comment as Blocking, Substantive, Suggestion, Question, or Nitpick.
 3. For each actionable comment, capture: thread `id`, top-level comment `databaseId`, file, line, scope, and whether the body contains a ` ```suggestion ` block.
-4. Create a todo list using TodoWrite with one item per actionable thread, including the thread `id` and `databaseId` so Steps 3–5 can reply and resolve.
+4. Track one item per actionable thread, including the thread `id` and `databaseId` so Steps 3–5 can reply and resolve — via `TodoWrite` when the session has the task tools (see `.claude/rules/agentic-permissions.md` § Task-tool availability), otherwise as a checklist you keep in the response.
 
 ---
 
@@ -188,7 +188,7 @@ Work through actionable items systematically. For each thread, decide using the 
 | Failed CI check | Identify failure type (lint/type/test/build), fix locally, run to verify |
 | Out-of-scope feedback | Do not implement in this PR. Open a follow-up issue (see Step 3a) and reference its number in the reply. |
 
-Mark each todo `in_progress` while working it and `completed` once the file change (if any) lands locally. Do **not** resolve threads yet — replies and resolution happen after the commit so reviewers see the linked SHA.
+Mark each item in progress while working it and done once the file change (if any) lands locally. Do **not** resolve threads yet — replies and resolution happen after the commit so reviewers see the linked SHA.
 
 ### Step 3a: File follow-up issues for out-of-scope feedback
 

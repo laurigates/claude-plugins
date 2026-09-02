@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
-reviewed: 2026-04-25
+modified: 2026-09-02
+reviewed: 2026-09-02
 allowed-tools: Read, Bash(git *), mcp__github__get_pull_request, mcp__github__list_issues, TodoWrite
 args: "[resource-name] [deployment-type]"
 argument-hint: "[resource-name] [deployment-type]"
@@ -164,13 +164,14 @@ template_style: professional # professional, technical, brief
 
 ```bash
 # Basic handoff for current project
-claude chat --file ~/.claude/skills/deploy-handoff/SKILL.md
+/container:deploy-handoff
 
 # Specific service handoff
-claude chat --file ~/.claude/skills/deploy-handoff/SKILL.md "User API" "web-service"
+/container:deploy-handoff "User API" "web-service"
 
-# Comprehensive handoff with full details
-claude chat --file ~/.claude/skills/deploy-handoff/SKILL.md "Payment System" "microservice" --detail-level comprehensive
+# Comprehensive handoff — request the detail level in prose
+/container:deploy-handoff "Payment System" "microservice"
+# then: use comprehensive detail level
 ```
 
 ## Sample Output Format

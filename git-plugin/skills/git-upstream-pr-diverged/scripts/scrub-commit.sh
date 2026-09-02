@@ -37,7 +37,7 @@ fi
 msg=$(git log -1 --format='%B')
 
 issue_refs=$(grep -nE '^[[:space:]]*(Closes|Fixes|Refs|Addresses)[[:space:]]*:?[[:space:]]*#[0-9]+' <<<"$msg" || true)
-claude_trailers=$(grep -niE 'Claude (Code|Opus|Sonnet|Haiku)|Co-[Aa]uthored-[Bb]y:[[:space:]]*Claude|Generated with \[?Claude' <<<"$msg" || true)
+claude_trailers=$(grep -niE 'Claude (Code|Opus|Sonnet|Haiku|Fable|Mythos)|Co-[Aa]uthored-[Bb]y:[[:space:]]*Claude|Generated with \[?Claude|^Claude-Session:' <<<"$msg" || true)
 fork_tooling=$(grep -niE '\b(bandit|vulture|ty)\b' <<<"$msg" || true)
 
 indent_lines() {

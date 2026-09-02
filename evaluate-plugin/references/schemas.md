@@ -322,7 +322,7 @@ report and stored history are the durable artifacts). See
     "generated_at": "string — ISO-8601",
     "previous_run": "string | null — ISO-8601 of the last sweep, for Δ vs prev",
     "models": [
-      { "alias": "string — opus | sonnet | haiku", "model_id": "string — pinned id, e.g. claude-opus-4-8" }
+      { "alias": "string — opus | sonnet | haiku | fable", "model_id": "string — full pinned id that ran, e.g. claude-fable-5-1 (never the alias)", "effort": "string | null — low | medium | high | xhigh | max as run; null for models with no effort lever (haiku)" }
     ]
   },
   "evals": [

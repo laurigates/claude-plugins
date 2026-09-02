@@ -79,7 +79,7 @@ PATTERN_FUTURE="(will|would|should|could|may|might|'ll|going to|gonna)[^.!?]*(ta
 PATTERN_MARKER="(ETA|estimate|estimated|estimating|expect|expects|expected|approximately|roughly|around)[^.!?]*([0-9]+|a few|several|many|couple)[^.!?]*(minute|hour|day|week|month|year)s?"
 
 if echo "$LAST_RESPONSE" | grep -qiE "$PATTERN_FUTURE|$PATTERN_MARKER"; then
-    REASON="Avoid quoting AI work in calendar time (hours, days, weeks, months). The honest units for agent work are: tokens consumed, context-window share remaining, effort tier (low / medium / high / max), tool-call count, or files / lines to touch. Restate the estimate in one of those units."
+    REASON="Avoid quoting AI work in calendar time (hours, days, weeks, months) — it does not map to agent effort and consistently misleads. Restate the estimate as tokens consumed, effort tier (low / medium / high / xhigh / max), tool-call count, or files / lines to touch."
     # shellcheck disable=SC2016  # jq expression, not shell expansion
     jq -n --arg reason "$REASON" '{"decision": "block", "reason": $reason}'
     exit 0

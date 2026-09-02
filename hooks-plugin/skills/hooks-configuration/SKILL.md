@@ -4,9 +4,9 @@ description: Claude Code hooks configuration and development. Use when the user 
 user-invocable: false
 allowed-tools: Bash(bash *), Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2025-12-16
-modified: 2026-07-18
+modified: 2026-09-02
 compatibility: claude-code
-reviewed: 2026-04-10
+reviewed: 2026-09-02
 ---
 
 # Claude Code Hooks Configuration
@@ -58,6 +58,8 @@ Hooks are user-defined shell commands that execute at specific points in Claude 
 | **PreCompact**         | Before context compaction                  | Transcript backup                          |
 | **Notification**       | Claude sends notification                  | Custom alerts                              |
 | **ConfigChange**       | Claude Code settings change at runtime     | Audit config changes, validation           |
+| **PreModelSwitch**     | Before the session model changes (`/model`, `fallbackModel`, safety-classifier fallback) | Audit or record the outgoing model |
+| **PostModelSwitch**    | After the session model has changed        | Re-apply per-model settings, log the new model |
 
 > **Stop vs SubagentStop**: `Stop` fires at the session level when the main agent finishes a response turn. `SubagentStop` fires when an individual subagent (spawned via the Task tool) completes. Use `Stop` for session-level notifications; use `SubagentStop` for per-task quality gates.
 

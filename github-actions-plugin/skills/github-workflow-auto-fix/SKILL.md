@@ -6,8 +6,8 @@ args: "[--setup] [--reusable] [--caller] [--workflows <names>] [--dry-run]"
 argument-hint: --setup for single-repo inline, --reusable for a workflow_call template
 disable-model-invocation: true
 created: 2026-02-18
-modified: 2026-06-18
-reviewed: 2026-05-29
+modified: 2026-09-02
+reviewed: 2026-09-02
 ---
 
 # GitHub Workflow Auto-Fix
@@ -140,16 +140,19 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          direct_prompt: |
+          # One flag per line: scripts/check-workflow-model.sh matches
+          # `--model`/`--effort` anchored at line start in a folded scalar.
+          # The tool boundary belongs in `--allowedTools` here — `additional_permissions`
+          # takes a GitHub permissions MAP, so a tool list passed there is inert.
+          claude_args: >-
+            --model opus
+            --effort medium
+            --max-turns 30
+            --allowedTools "Read,Write,Edit,Grep,Glob,Bash(git *),Bash(gh *)"
+          prompt: |
             <analysis-and-fix-prompt>
           additional_permissions: |
-            Read
-            Write
-            Edit
-            Grep
-            Glob
-            Bash(git *)
-            Bash(gh *)
+            actions: read
 ```
 
 ### Step 4: Validate and report

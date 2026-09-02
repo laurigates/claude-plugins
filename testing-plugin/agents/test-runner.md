@@ -8,8 +8,8 @@ description: |
 tools: Glob, Grep, Read, Bash(npm test *), Bash(npm run test *), Bash(npx vitest *), Bash(npx jest *), Bash(yarn test *), Bash(bun test *), Bash(pytest *), Bash(python -m pytest *), Bash(cargo test *), Bash(go test *), Bash(just *), TodoWrite
 maxTurns: 12
 created: 2026-02-12
-modified: 2026-06-18
-reviewed: 2026-06-18
+modified: 2026-09-02
+reviewed: 2026-09-02
 ---
 
 # Test Runner Agent
@@ -110,10 +110,11 @@ Append the test pattern to filter:
 Return this structured summary to the orchestrator:
 
 ```
-## Test Results: [PASSED|FAILED]
+## Test Results: [PASSED|FAILED|NOT RUN]
 
 **Framework**: [detected framework]
 **Summary**: X passed, Y failed, Z skipped | Duration: Xs
+**Runner output**: [the runner's own summary line, quoted verbatim]
 
 ### Failures (if any)
 1. test_name - Brief error description (file:line)
@@ -126,6 +127,11 @@ Overall: XX% | Uncovered: file.py:10-25, file.py:40-42
 - [Specific fix recommendation for each failure]
 - [Coverage gap areas if relevant]
 ```
+
+Copy `X/Y/Z` and the duration from the runner's own summary line and quote
+that line under `**Runner output**:`. If the command exited before running
+tests, or no framework was detected, report `## Test Results: NOT RUN` with
+the exit code and stderr — never a zero-failure summary.
 
 ## What This Agent Does
 

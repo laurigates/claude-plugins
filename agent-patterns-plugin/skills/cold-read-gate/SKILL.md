@@ -4,9 +4,9 @@ description: Gate outward-bound text (upstream issues, docs, PR bodies) through 
 allowed-tools: Agent, Read, Write, Edit, TodoWrite
 model: opus
 created: 2026-06-11
-modified: 2026-08-15
+modified: 2026-09-02
 compatibility: claude-code
-reviewed: 2026-06-11
+reviewed: 2026-09-02
 ---
 
 # Cold-Read Gate
@@ -49,9 +49,10 @@ invites the orchestrator to "helpfully" add context, which defeats the test.
 ### Step 2: Dispatch the cold reader — synchronously
 
 One `Agent` per artifact, all in a single message when batching. Run each
-reader **synchronously** (`run_in_background: false`, the default) — the
-reader's entire job is a one-shot critique, and a synchronous run returns
-that critique directly as the `Agent` tool result. There is nothing to
+reader **synchronously** (`run_in_background: false` — set it explicitly; as
+of Claude Code 2.1.232 non-teammate spawns run in the background by default)
+— the reader's entire job is a one-shot critique, and a synchronous run
+returns that critique directly as the `Agent` tool result. There is nothing to
 gain from backgrounding it.
 
 If a reader *was* spawned with `run_in_background: true`, read its critique
@@ -81,10 +82,14 @@ prompt: |
      structure, anything that would make you deprioritize it.
   4. Verdict: exactly one of `clear` | `needs-revision`.
 
-  Ignore: <known artifacts of the test — see Step 3. Example:
+  Ignore: <known artifacts of the test — see Step 3. Plus anything the
+  surrounding UI renders for the real reader — see "The reader is
+  context-free; your audience may not be" below. Example:
   "Ignore the HTML comments at the top (they are stripped by the filing
   script before publishing) and do not ask which repository this is —
-  the issue is filed on the target project's own tracker.">
+  the issue is filed on the target project's own tracker. The reader can
+  see the merge box, the check names, the review state and both branch
+  names; do not ask about those.">
   Concise bullets. Your final message is the deliverable.
 ```
 
@@ -98,6 +103,39 @@ see, because each half of the argument is individually true.
 | Upstream bug report | "an open-source maintainer triaging a newly filed issue" |
 | Team documentation | "a new team member reading this doc with no project context" |
 | PR description | "a reviewer seeing this change for the first time" |
+
+### The reader is context-free; your audience may not be
+
+The gate removes context on purpose, and for a bug report filed into an empty
+tracker that matches the real reader well. It matches badly whenever the
+artifact is published *into a surface that renders state around it* — a PR or
+issue comment, a review thread, a dashboard card, a chat message under a link
+preview. There the real reader sees the page; the cold reader sees a bare file.
+The gate then asks for explanations the surface already supplies, and acting on
+them inflates the artifact with duplication.
+
+> Observed 2026-09-02 (`Comfy-Org/ComfyUI_frontend#13280`): round-one readers
+> asked what the fork-PR approval gate was and whether the four named workflows
+> were the whole set. Answering both produced a closing paragraph that restated
+> the merge box sitting directly below the comment — "17 workflows awaiting
+> approval / This workflow requires approval from a maintainer", GitHub's own
+> explainer link, and the required checks by name. The comment lost 58% of its
+> words when a human asked whether that paragraph needed to exist.
+
+- **Name the rendered context in the `Ignore:` list**, concretely enough that
+  the reader stops asking: the merge box, check names and states, review
+  status, branch names, labels, diff size.
+- **A verdict scores sentences, never whether a paragraph should exist.** Both
+  this gate and a prose linter judge what is on the page. Neither asks what
+  should be cut, so a `needs-revision` acted on literally makes an artifact
+  longer — check the word count across rounds, and treat growth as a signal to
+  re-read rather than a sign of progress.
+- **Disclosed limitations are not defects.** A reader will often restate a
+  caveat the author volunteered as a reason to hesitate. Tell it to judge
+  clarity, not merge-readiness, or it converts your honesty into a `needs-revision`.
+
+For the GitHub-specific inventory of what the page renders, see
+`repos-claude-config` `.claude/rules/pr-comment-vs-ui-affordances.md`.
 
 **When one artifact serves two channels, give each reader its real audience.**
 An issue-triage persona and a busy-chat-skimmer persona on the same argument

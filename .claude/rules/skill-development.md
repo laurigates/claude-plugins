@@ -1,7 +1,7 @@
 ---
 created: 2025-12-20
-modified: 2026-06-08
-reviewed: 2026-06-08
+modified: 2026-09-02
+reviewed: 2026-09-02
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -103,6 +103,10 @@ language: <python|typescript|go|rust|etc>  # Specify primary language (optional)
 agent: <agent-name>                         # Specify custom agent to execute skill (optional)
 disallowed-tools: <Comma-separated list>    # Remove tools while skill is active (optional, 2.1.152+)
 disable-model-invocation: true              # Skill content is the complete prompt (optional)
+effort: low                                  # Override session effort while skill is active (optional): low|medium|high|xhigh|max, default inherits
+when_to_use: <short trigger guidance>        # Optional: additional triggering guidance beyond description
+paths:                                       # Optional: glob-scoped auto-activation
+  - "**/some/path/**"
 hooks:                                       # Skill-scoped hooks (optional)
   PreToolUse:
     - matcher: "Bash"
@@ -117,6 +121,9 @@ hooks:                                       # Skill-scoped hooks (optional)
 - **`agent`**: Specify a custom agent for executing this skill. Overrides default model selection.
 - **`disallowed-tools`** (2.1.152+): Comma-separated list of tools to remove from the model while this skill is active. Complements `allowed-tools` (which grants tools) by subtracting tools — useful for keeping a focused skill from reaching for capabilities it shouldn't use. Also supported on slash commands.
 - **`disable-model-invocation`**: When `true`, the skill content is used as the complete prompt without additional model reasoning. The skill body is passed directly to the model as instructions.
+- **`effort`**: Overrides the session effort level (`low|medium|high|xhigh|max`) while this skill is active; default inherits the session. Set it `low` only on genuinely mechanical wrappers — see Model Selection below.
+- **`when_to_use`**: Additional triggering guidance beyond `description`, for a skill whose activation conditions need more than one or two sentences to disambiguate from siblings.
+- **`paths`**: Glob-scoped auto-activation — the skill's guidance is treated as relevant only when a matching file is in scope (see `.claude/rules/context-engineering.md`).
 - **`hooks`**: Define hooks that are only active when this skill is loaded. Uses the same schema as settings.json hooks. Agent `Stop` hooks are converted to `SubagentStop` when the agent runs as a subagent.
 
 > **Note**: The `description` field must be a string type. Multi-line YAML strings using `|` or `>` are supported. Non-string values cause a crash (fixed in 2.1.51).
@@ -132,7 +139,7 @@ Skills support these dynamic variables in content:
 | `$N` | Shorthand for `$ARGUMENTS[N]` (e.g., `$0` first, `$1` second) |
 | `${CLAUDE_SESSION_ID}` | Current session ID — useful for logging and session-specific files |
 | `${CLAUDE_SKILL_DIR}` | Directory containing the skill's `SKILL.md` file — use for bundled scripts |
-| `${CLAUDE_EFFORT}` | Current effort level (`low`, `medium`, `high`, `max`) — use for effort-aware behavior |
+| `${CLAUDE_EFFORT}` | Current effort level (`low`, `medium`, `high`, `xhigh`, `max`; `/effort ultracode` reports as `xhigh`) — use for effort-aware behavior |
 | `${CLAUDE_PLUGIN_ROOT}` | Root of the loaded plugin (hooks only) |
 
 **Examples:**
@@ -161,9 +168,11 @@ Skills inherit the user's active model by default. Tag a skill with `model:` onl
 | `model: sonnet` | Mechanical / high-volume work that **Sonnet at low effort** can genuinely complete | CLI tool wrappers (fd, rg, jq), formatters, status checks, single-file lookups |
 | _(unset)_ | Everything in the middle | Default — inherits the user's active model |
 
+`model:` also accepts `fable` and `inherit` (Claude Code 2.1.255+). `inherit` is identical to leaving the field unset; `fable` is a turn-scoped override worth tagging only on a skill whose work is genuinely long-horizon or verification-heavy — otherwise the session model decides.
+
 **Why both extremes?** A user defaulting to Opus saves cost when a *genuinely* mechanical skill self-selects Sonnet. A user defaulting to Sonnet (or Haiku) gets reliable results when a complex skill self-selects Opus.
 
-**Opus is often the cheaper default — `effort`, not `model`, is the main cost lever.** The per-token premium (Opus 4.8 output ≈ 1.7× Sonnet 4.6) is frequently outweighed by token *volume*: Opus at low effort tends to spend far fewer thinking + output tokens than Sonnet at high effort, so for reasoning-shaped work Opus-low can be both better *and* cheaper. The catch for this repo: that win rides on `effort`, which is a session/harness setting (e.g. Claude Code's default), **not** something a skill can express in frontmatter. So the practical translation is narrow — **don't reflexively reach for `model: sonnet`.** Tag it only when Sonnet at low effort genuinely suffices; when the task leans on reasoning, leave `model:` unset (or tag `opus`) and let the user's effort setting do the cost tuning. Treat the "Opus-low beats Sonnet-high" heuristic as workload-dependent, not dogma — confirm per-skill with the cross-model delta harness in [`.claude/rules/skill-evaluation.md`](skill-evaluation.md).
+**Opus is often the cheaper default — `effort`, not `model`, is the main cost lever.** Opus at low effort tends to spend far fewer thinking + output tokens than Sonnet at high effort, so for reasoning-shaped work Opus-low can be both better *and* cheaper. That win rides on `effort`, which a skill **can** now pin in frontmatter (`effort: low|medium|high|xhigh|max`; overrides the session effort while the skill is active, default inherits; available levels depend on the model). So the practical translation is: for a genuinely mechanical skill, prefer `effort: low` with `model:` unset over reaching for `model: sonnet`; keep `model: sonnet` for the narrow case where Sonnet at low effort is demonstrably enough. The ≈1.7× premium and the Opus-low-beats-Sonnet-high result were measured on the Opus 4.8 / Sonnet 4.6 generation; `opus`/`sonnet` now resolve to Opus 5 / Sonnet 5 and effort names do not map across generations — treat the heuristic as workload-dependent and confirm per-skill with the cross-model delta harness in [`.claude/rules/skill-evaluation.md`](skill-evaluation.md).
 
 **Hard constraints:**
 
@@ -185,9 +194,11 @@ Skills inherit the user's active model by default. Tag a skill with `model:` onl
 
 | Skill Type | Typical Tools |
 |------------|---------------|
-| CLI tool | `Bash, Read, Grep, Glob, TodoWrite` |
-| Development | `Bash, BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite` |
+| CLI tool | `Bash, Read, Grep, Glob` |
+| Development | `Bash, BashOutput, Read, Write, Edit, Grep, Glob` |
 | Research | `Read, WebFetch, WebSearch, Grep, Glob` |
+
+Task tools (`TodoWrite`, `TaskCreate`/`TaskUpdate`/`TaskList`): see `.claude/rules/agentic-permissions.md` § Standard Permission Sets for availability and grant guidance.
 
 The bare `Bash` above is deliberate and is the ratified standard for a skill whose payload is shell; `.claude/rules/agentic-permissions.md` owns that distinction (and names the one case that *is* a defect — a `Bash` grant in a skill that runs no shell).
 

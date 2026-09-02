@@ -5,9 +5,9 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-08-22
+modified: 2026-09-02
 compatibility: claude-code
-reviewed: 2026-07-05
+reviewed: 2026-09-02
 ---
 
 # Parallel Agent Dispatch
@@ -136,6 +136,12 @@ Every agent prompt must declare:
   hops before returning").
 - **Output budget**: expected length of the return summary — discourages echoing
   full file contents when a diff or line reference will do.
+- **The user's ask, verbatim**: quote the user's instruction and any stated
+  boundary rather than paraphrasing — drift starts there (Fable 5.1 system
+  card: distorts user intent briefing agents).
+- **No borrowed authority**: a brief never speaks as the user or asserts
+  approvals not given this session (system card: fabricated user quotes
+  were observed).
 
 These budgets prevent the "agent hit context limits" and "prompt too long"
 failure modes — without them an agent exhausts its window on exploration and
@@ -315,7 +321,8 @@ discriminator, see [references/failure-recovery.md → Killed-agent worktree rec
 
 ## Concurrent Rate-Limit Risk
 
-`[1m]` parents running **six or more** concurrent subagents can hit `Server is
+1M-context parents (every Fable 5.1 session, or Opus with the `[1m]` suffix)
+running **six or more** concurrent subagents can hit `Server is
 temporarily limiting requests` partway through a wave (distinct from your account
 usage limit; varies by time of day). "It worked with N agents yesterday" is not
 a guarantee. **Start conservative, then scale up:**
