@@ -1,6 +1,6 @@
 ---
 created: 2026-01-15
-modified: 2026-05-09
+modified: 2026-09-02
 reviewed: 2026-01-15
 name: python-containers
 description: "Python container optimization — slim images (not Alpine), virtualenv, multi-stage, pip/poetry/uv, musl gotchas (1GB to ~120MB). Use when working with Python containers or optimizing image sizes."
@@ -50,8 +50,11 @@ Use `slim` instead of Alpine for Python containers. Alpine uses musl libc which 
 The recommended pattern achieves ~80-120MB images:
 
 ```dockerfile
+# Both stages MUST share this interpreter version — see below.
+ARG PYTHON_VERSION=3.11
+
 # Build stage
-FROM python:3.11-slim AS builder
+FROM python:${PYTHON_VERSION}-slim AS builder
 WORKDIR /app
 
 RUN pip install --no-cache-dir uv
@@ -65,7 +68,7 @@ RUN uv sync --frozen --no-dev
 COPY . .
 
 # Runtime stage
-FROM python:3.11-slim
+FROM python:${PYTHON_VERSION}-slim
 WORKDIR /app
 
 # Install only runtime dependencies (if needed)
@@ -94,6 +97,77 @@ HEALTHCHECK --interval=30s CMD python -c "import requests; requests.get('http://
 
 CMD ["python", "-m", "app"]
 ```
+
+## Interpreter Coupling — Both Stages, One Version
+
+The pattern above copies a virtualenv across a stage boundary:
+
+```dockerfile
+COPY --from=builder /app/.venv /app/.venv
+```
+
+That venv is **not** portable across Python minor versions. Its packages live in
+`/app/.venv/lib/python<X.Y>/site-packages`, and any compiled extension inside it
+carries that version's ABI tag. Run it on a different minor version and the
+interpreter looks in a directory that does not exist, so the venv is dropped from
+`sys.path` **entirely** — not one missing package, all of them:
+
+```
+runtime python : 3.14.7
+venv libdirs   : python3.12
+sys.path       : ['', '/usr/local/lib/python314.zip',
+                  '/usr/local/lib/python3.14',
+                  '/usr/local/lib/python3.14/lib-dynload']
+```
+
+The symptom is `ModuleNotFoundError` on the **first non-stdlib import** the
+entrypoint reaches, which reliably sends people hunting for a missing dependency
+rather than a mismatched interpreter.
+
+Drive both `FROM` lines from **one** `ARG`, as the example does. Renovate expands
+`ARG` defaults used in `FROM`, so the version stays updatable while the halves
+cannot drift apart.
+
+### Why a bot can split the stages
+
+Renovate matches images by name. When both stages name the same image it updates
+them together; when they name *different* images — a builder like
+`ghcr.io/astral-sh/uv:python3.12-alpine` next to a runtime of
+`python:3.12-alpine` — its python rule matches only the second and moves that one
+alone. Nothing in the diff shows a coupling was broken.
+
+If you need uv in the builder, copy the binary in rather than switching base
+images, so both stages stay on the same `python:` base:
+
+```dockerfile
+ARG PYTHON_VERSION=3.12
+FROM ghcr.io/astral-sh/uv:0.12.7 AS uv
+
+FROM python:${PYTHON_VERSION}-slim AS build
+COPY --from=uv /uv /uvx /bin/
+
+FROM python:${PYTHON_VERSION}-slim AS runtime
+COPY --from=build /app/.venv /app/.venv
+```
+
+### Verify it, and give the check teeth
+
+A `docker build` that succeeds proves the layers assembled, not that anything can
+start. Run the image before publishing it, and assert the venv is on the path
+rather than just importing something:
+
+```sh
+docker run --rm -i "$IMAGE" /app/.venv/bin/python - <<'EOF'
+import sys
+assert [p for p in sys.path if "/app/.venv/" in p], sys.path
+print("ok", sys.version.split()[0])
+EOF
+```
+
+`-i` is load-bearing. Without it docker does not forward stdin, `python -` reads
+an **empty script**, and the check exits **0 having asserted nothing** — it then
+passes on every image, including a broken one. Confirm any such gate by running
+it against a deliberately mismatched build and requiring it to fail.
 
 ## Package Manager Summary
 
