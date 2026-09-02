@@ -238,7 +238,13 @@ section() {
   awk -v s="$1" -v e="$2" '$0 ~ s {on=1; next} $0 ~ e {on=0} on' "$out"
 }
 agentic_section="$(section '^## Skills missing Agentic Optimizations table:$' '^## Skills with stale reviews')"
-stale_section="$(section '^## Skills with stale reviews \(>90 days\):$' '^## Stale-review date distribution$')"
+# NOTE: the parens are bracketed, not backslash-escaped. `$0 ~ s` compiles s as a
+# DYNAMIC regex, and GNU awk treats `\(` as a plain `(` (warning: "escape sequence
+# `\(' treated as plain `('"), i.e. a group metacharacter — so `\(>90 days\)` would
+# match a line with NO parens and the slice would come back empty on Linux. BSD awk
+# treats it as a literal paren, so the bug is invisible on macOS. `[(]` is literal
+# under both.
+stale_section="$(section '^## Skills with stale reviews [(]>90 days[)]:$' '^## Stale-review date distribution$')"
 cohort_section="$(section '^## Stale-review date distribution$' '^## Skills with missing required')"
 sections_section="$(section '^## Skills with missing required sections/frontmatter:$' '^__NEVER_MATCHES__$')"
 
