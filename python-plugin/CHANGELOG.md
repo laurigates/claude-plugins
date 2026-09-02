@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.7](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.5.6...python-plugin-v1.5.7) (2026-09-02)
+
+
+### Code Refactoring
+
+* promote the two orphaned agent-CLI rules to plugin skills ([#2566](https://github.com/laurigates/claude-plugins/issues/2566)) ([faa979a](https://github.com/laurigates/claude-plugins/commit/faa979ad87aaeb539265c2f07fa98f036570bf44))
+
 ## [1.5.6](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.5.5...python-plugin-v1.5.6) (2026-05-29)
 
 

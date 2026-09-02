@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.3](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.9.2...container-plugin-v2.9.3) (2026-09-02)
+
+
+### Documentation
+
+* **container-plugin:** pin both stages to one interpreter in python-containers ([#2571](https://github.com/laurigates/claude-plugins/issues/2571)) ([aa11105](https://github.com/laurigates/claude-plugins/commit/aa11105145c7ccfd4ea6a7698f40cecfddec5493))
+
 ## [2.9.2](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.9.1...container-plugin-v2.9.2) (2026-09-02)
 
 
