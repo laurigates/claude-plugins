@@ -32,6 +32,7 @@
 # Exit codes:
 #   0 - all invoking workflows pin opus + an explicit valid effort
 #   1 - one or more workflows violate the standard
+#   2 - unknown argument, or --project-dir without a directory
 
 set -euo pipefail
 
@@ -46,11 +47,32 @@ WORKFLOW_MODEL_ALLOWLIST+=(${CHECK_WORKFLOW_MODEL_ALLOWLIST:-})
 
 VALID_EFFORTS="low medium high xhigh max"
 
+usage() {
+  echo "Usage: check-workflow-model.sh [--project-dir DIR] [workflow.yml ...]" >&2
+}
+
 proj_dir=""
 explicit_files=()
+# An unknown dash-argument is REJECTED, never swallowed (#2057): a
+# silently-ignored flag lands in explicit_files, every entry then fails the
+# `[ -f "$wf" ]` test, and the gate reports WORKFLOWS_SCANNED=0 / STATUS=OK /
+# exit 0 — a vacuous pass. There is deliberately no `--strict`: the script
+# already exits 1 on any violation, so accepting one would advertise a
+# tightening mode that does not exist.
 while [ $# -gt 0 ]; do
   case "$1" in
-    --project-dir) proj_dir="$2"; shift 2 ;;
+    --project-dir)
+      if [ -z "${2:-}" ] || [ ! -d "${2:-}" ]; then
+        echo "check-workflow-model.sh: --project-dir requires a directory" >&2
+        usage
+        exit 2
+      fi
+      proj_dir="$2"; shift 2 ;;
+    -h|--help) usage; exit 0 ;;
+    -*)
+      echo "check-workflow-model.sh: unknown argument: $1" >&2
+      usage
+      exit 2 ;;
     *) explicit_files+=("$1"); shift ;;
   esac
 done

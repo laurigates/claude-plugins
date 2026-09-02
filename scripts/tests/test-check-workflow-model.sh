@@ -18,6 +18,9 @@
 #   K. an allowlisted file is honored (via the CHECK_WORKFLOW_MODEL_ALLOWLIST seam)
 #   L. a prompt: block that DOCUMENTS `--model`/`--effort` in prose does not
 #      false-positive (extraction is scoped to claude_args + CLI flag lines)
+#   M. an unknown dash-argument (e.g. `--strict`) exits 2 and scans NOTHING,
+#      instead of being swallowed into the explicit-files list and reporting a
+#      vacuous WORKFLOWS_SCANNED=0 / STATUS=OK / exit 0 (#2057)
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -244,6 +247,45 @@ run "$fx_l"
 assert "prose-mentioning fixture exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
 assert "prose-mentioning fixture STATUS=OK" "$(contains "$OUT" 'STATUS=OK')"
 assert "prose-mentioning fixture counts 1 invoking" "$(contains "$OUT" 'INVOKING_WORKFLOWS=1')"
+
+# --- TEST M: an unknown dash-argument is rejected, never swallowed ------------
+# Before the fix, `--strict` fell through the parser's catch-all into
+# explicit_files, so discovery was skipped, `[ -f "--strict" ]` skipped the one
+# "file", and the gate printed WORKFLOWS_SCANNED=0 / STATUS=OK / exit 0. Both
+# halves are asserted: the exit code AND that nothing was scanned, so a fix that
+# merely accepts `--strict` as a no-op does not satisfy this case.
+echo "=== TEST M: unknown dash-argument exits 2 and scans nothing ==="
+m_out="$(bash "$checker" --strict 2>&1)"
+m_rc=$?
+assert "unknown --strict exits 2" "$([ "$m_rc" -eq 2 ] && echo true || echo false)"
+assert "unknown --strict names the argument" "$(contains "$m_out" 'unknown argument: --strict')"
+assert "unknown --strict prints usage" "$(contains "$m_out" 'Usage: check-workflow-model.sh')"
+assert "unknown --strict emits no report" "$([ "$(contains "$m_out" 'WORKFLOWS_SCANNED=')" = "false" ] && echo true || echo false)"
+assert "unknown --strict does not claim a pass" "$([ "$(contains "$m_out" 'STATUS=OK')" = "false" ] && echo true || echo false)"
+
+# --project-dir without a directory is the same class (the value would shift).
+m2_out="$(bash "$checker" --project-dir 2>&1)"
+m2_rc=$?
+assert "--project-dir with no value exits 2" "$([ "$m2_rc" -eq 2 ] && echo true || echo false)"
+assert "--project-dir with no value names the flag" "$(contains "$m2_out" 'requires a directory')"
+m3_out="$(bash "$checker" --project-dir "$repo_root/definitely-not-a-dir" 2>&1)"
+m3_rc=$?
+assert "--project-dir with a missing dir exits 2" "$([ "$m3_rc" -eq 2 ] && echo true || echo false)"
+assert "--project-dir error names the flag" "$(contains "$m3_out" 'requires a directory')"
+
+# GUARD INTEGRITY: rejecting dash-arguments must not break the pre-commit-style
+# positional file form, nor `--help`. Without these, a checker that exited 2 on
+# every invocation would satisfy every assertion above.
+fx_m="$(mktemp -d)"
+make_action_workflow "$fx_m/.github/workflows/good.yml" "--model opus --effort low"
+m4_out="$(bash "$checker" "$fx_m/.github/workflows/good.yml" 2>&1)"
+m4_rc=$?
+assert "explicit positional file still exits 0" "$([ "$m4_rc" -eq 0 ] && echo true || echo false)"
+assert "explicit positional file is still scanned" "$(contains "$m4_out" 'WORKFLOWS_SCANNED=1')"
+assert "explicit positional file is still classified" "$(contains "$m4_out" 'INVOKING_WORKFLOWS=1')"
+bash "$checker" --help >/dev/null 2>&1
+m5_rc=$?
+assert "--help exits 0" "$([ "$m5_rc" -eq 0 ] && echo true || echo false)"
 
 # --- Summary -----------------------------------------------------------------
 echo ""

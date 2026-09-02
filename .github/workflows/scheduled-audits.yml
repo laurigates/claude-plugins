@@ -98,59 +98,7 @@ jobs:
         if: steps.check_issue.outputs.exists == 'false'
         id: precompute
         run: |
-          TODAY=$(date +%s)
-
-          # Find skills missing Agentic Optimizations table
-          MISSING_AGENTIC=""
-          while IFS= read -r -d '' skill; do
-            if ! grep -qi "agentic optimization" "$skill" 2>/dev/null; then
-              has_bash=$(head -50 "$skill" | grep -m1 "^allowed-tools:" | grep -c "Bash" || true)
-              rel_path="${skill#./}"
-              MISSING_AGENTIC+="- $rel_path (Bash in allowed-tools: $([ "$has_bash" -gt 0 ] && echo yes || echo no))\n"
-            fi
-          done < <(find . -path '*/skills/*' \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
-
-          # Find stale reviews (>90 days)
-          STALE_REVIEWS=""
-          while IFS= read -r -d '' skill; do
-            reviewed=$(head -50 "$skill" | grep -m1 "^reviewed:" | sed 's/^[^:]*:[[:space:]]*//' | tr -d '\r')
-            if [ -n "$reviewed" ]; then
-              rev_ts=$(date -d "$reviewed" +%s 2>/dev/null || date -j -f "%Y-%m-%d" "$reviewed" +%s 2>/dev/null || echo "")
-              if [ -n "$rev_ts" ]; then
-                days=$(( (TODAY - rev_ts) / 86400 ))
-                if [ "$days" -gt 90 ]; then
-                  STALE_REVIEWS+="- ${skill#./}: reviewed $reviewed ($days days ago)\n"
-                fi
-              fi
-            fi
-          done < <(find . -path '*/skills/*' \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
-
-          # Find skills missing required sections
-          MISSING_SECTIONS=""
-          while IFS= read -r -d '' skill; do
-            missing=""
-            grep -qi "when to use" "$skill" 2>/dev/null || missing+="When-to-Use, "
-            head -50 "$skill" | grep -qm1 "^name:" 2>/dev/null || missing+="name, "
-            head -50 "$skill" | grep -qm1 "^description:" 2>/dev/null || missing+="description, "
-            head -50 "$skill" | grep -qm1 "^allowed-tools:" 2>/dev/null || missing+="allowed-tools, "
-            if [ -n "$missing" ]; then
-              MISSING_SECTIONS+="- ${skill#./}: ${missing%, }\n"
-            fi
-          done < <(find . -path '*/skills/*' \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
-
-          TOTAL_SKILLS=$(find . -path '*/skills/*' \( -iname "SKILL.md" -o -iname "skill.md" \) 2>/dev/null | wc -l | tr -d ' ')
-
-          # Build summary
-          {
-            echo "Pre-computed data for $TOTAL_SKILLS skills:"
-            echo ""
-            echo "## Skills missing Agentic Optimizations table:"
-            echo -e "$MISSING_AGENTIC"
-            echo "## Skills with stale reviews (>90 days):"
-            echo -e "$STALE_REVIEWS"
-            echo "## Skills with missing required sections/frontmatter:"
-            echo -e "$MISSING_SECTIONS"
-          } > "${RUNNER_TEMP}/precomputed.md"
+          bash scripts/agentic-audit-precompute.sh > "${RUNNER_TEMP}/precomputed.md"
 
           # Sentinel: GITHUB_OUTPUT_EOF, the one delimiter used repo-wide for a
           # multi-line GITHUB_OUTPUT capture. A bare `EOF` collides with any
@@ -217,6 +165,11 @@ jobs:
             - Good: describes user intent, includes "Use when..." scenarios
             - Flag descriptions that could be improved
 
+            Note in the report when a single `reviewed:` date dominates the stale
+            cohort; report it as one cohort observation rather than N independent
+            findings. Keep the raw stale count as the headline metric — the
+            `Distinct stale review dates` row sits beside it, it does not replace it.
+
             Then create the issue yourself with `gh issue create` (your only
             side effect — do not edit any repo files). Compute the month with
             `date +%Y-%m` and reproduce this title/labels exactly:
@@ -244,6 +197,7 @@ jobs:
             | Total skills audited | N |
             | Missing Agentic Optimizations | N |
             | Stale reviews (>90d) | N |
+            | Distinct stale review dates | N |
             | Model concerns | N |
             | Description concerns | N |
 

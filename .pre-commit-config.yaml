@@ -376,7 +376,40 @@ repos:
         name: scheduled-audits scripts exit 0 under set -euo pipefail (scheduled-audits)
         entry: bash ./scripts/tests/test-audit-scripts-exit.sh
         language: system
-        files: '^scripts/(blueprint-health-check\.sh|infra-compliance-check\.sh|tests/test-audit-scripts-exit\.sh)$'
+        # agentic-audit-precompute.sh joined the corpus this suite guards (it is
+        # registered for exit-0/no-stderr/bounded-find/wall-clock), so the
+        # trigger has to reach it too or the guard silently stops guarding.
+        files: '^scripts/(blueprint-health-check\.sh|infra-compliance-check\.sh|agentic-audit-precompute\.sh|tests/test-audit-scripts-exit\.sh)$'
+        pass_filenames: false
+      - id: test-agentic-audit-precompute
+        name: agentic-audit precompute keeps its predicates + stale-date cohorts (#2557)
+        entry: bash ./scripts/tests/test-agentic-audit-precompute.sh
+        language: system
+        files: '^scripts/(agentic-audit-precompute\.sh|tests/test-agentic-audit-precompute\.sh)$'
+        pass_filenames: false
+      - id: test-blueprint-health-report
+        name: blueprint-health rolls a bulk `modified:` bump up as one cohort (#2556)
+        entry: bash ./scripts/tests/test-blueprint-health-report.sh
+        language: system
+        files: '^scripts/(blueprint-health-check\.sh|tests/test-blueprint-health-report\.sh)$'
+        pass_filenames: false
+      - id: test-infra-compliance-check
+        name: infra-compliance token regex + trigger-aware paths filter (#2555)
+        entry: bash ./scripts/tests/test-infra-compliance-check.sh
+        language: system
+        files: '^scripts/(infra-compliance-check\.sh|tests/test-infra-compliance-check\.sh)$'
+        pass_filenames: false
+      - id: check-research-radar-grounding
+        name: research-radar prompt keeps its token-level grounding rule (#2507)
+        entry: bash ./scripts/check-research-radar-grounding.sh --strict
+        language: system
+        files: '(research-radar\.yml|check-research-radar-grounding\.sh)$'
+        pass_filenames: false
+      - id: test-check-research-radar-grounding
+        name: research-radar grounding guard regression
+        entry: bash ./scripts/tests/test-check-research-radar-grounding.sh
+        language: system
+        files: '^scripts/(check-research-radar-grounding\.sh|tests/test-check-research-radar-grounding\.sh)$'
         pass_filenames: false
       - id: test-run-skill-script-tests
         name: skill-script runner reports SKIP separately from PASS (#2221)
