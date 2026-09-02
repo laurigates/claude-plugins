@@ -224,6 +224,34 @@ consumer repo: [`dotfiles/docs/justfile-architecture.md`](https://github.com/lau
 Justfile authoring/auditing for both repos is governed by this marketplace's
 `tools-plugin:justfile-expert` and `configure-plugin:configure-justfile`.
 
+### Extracted agent CLIs
+
+Two Claude Agent SDK command-line tools were developed in this repo and now live
+in their own repositories, installable without a `claude-plugins` checkout:
+
+| Tool | Repo | What it does |
+|------|------|--------------|
+| `git-repo-agent` | [`laurigates/git-repo-agent`](https://github.com/laurigates/git-repo-agent) | Onboards and maintains git repos using this marketplace's blueprint, configure, and quality skills (#1017) |
+| `vault-agent` | [`laurigates/vault-agent`](https://github.com/laurigates/vault-agent) | Obsidian vault maintenance — tag consolidation, broken-link repair, stub classification, MOC curation (#1973) |
+
+Both compile their subagent prompts from this marketplace's `SKILL.md` files and
+ship the results pre-compiled in their wheels, so a standalone install needs no
+checkout of this repo. `.github/workflows/sync-agent-prompts.yml` regenerates
+those artifacts here whenever a bundled skill changes and opens a PR on the
+target repo.
+
+## Questions and Ideas
+
+[Discussions](https://github.com/laurigates/claude-plugins/discussions) is the place to ask things in the open:
+
+| Category | For |
+|----------|-----|
+| [Q&A](https://github.com/laurigates/claude-plugins/discussions/categories/q-a) | How do I do X, why does a skill behave this way, is Z supported |
+| [Ideas](https://github.com/laurigates/claude-plugins/discussions/categories/ideas) | A plugin or skill you would like to exist, before it is a concrete request |
+| [Show and tell](https://github.com/laurigates/claude-plugins/discussions/categories/show-and-tell) | What you built with these plugins |
+
+Use [issues](https://github.com/laurigates/claude-plugins/issues) for a defect or a concrete feature request, and please do not open a pull request just to ask a question.
+
 ## Development
 
 Plugins use [release-please](https://github.com/googleapis/release-please) for automated versioning. Use conventional commits to trigger releases:

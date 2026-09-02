@@ -4,7 +4,6 @@ modified: 2026-09-02
 reviewed: 2026-09-02
 paths:
   - "**/agents/**"
-  - "**/git_repo_agent/**"
 ---
 
 # Agent Development (Claude Code 2.1.76+)
@@ -576,7 +575,7 @@ async def _stream_interactive(prompt, options, completion_msg):
 - Agent prompt must instruct the model to output findings and **stop** — not continue or ask questions
 - Phase 2 prompt must tell the model exactly what to do with the user's selections
 
-See `git-repo-agent/docs/adr/003` for full context and alternatives considered.
+See [git-repo-agent ADR-003](https://github.com/laurigates/git-repo-agent/blob/main/docs/adr/003-switch-to-claude-sdk-client-for-interactive-workflows.md) for full context and alternatives considered.
 
 ### Worktree Isolation Is Not Supported by `ClaudeAgentOptions`
 
@@ -621,7 +620,7 @@ result = subprocess.run(
 has_changes = bool(result.stdout.strip())
 ```
 
-See `git-repo-agent/docs/adr/004` for full context.
+See [git-repo-agent ADR-004](https://github.com/laurigates/git-repo-agent/blob/main/docs/adr/004-worktree-isolation-for-agent-changes.md) for full context.
 
 ## `claude agents` CLI (2.1.139+, Research Preview)
 

@@ -272,7 +272,13 @@ assert "portfolio JSON is stable across runs" "$pf_hash_a" "$pf_hash_c"
 # Two --also roots sharing a basename must still sort deterministically: a
 # stable sort keyed on the name alone would fall back to argument order, which
 # is exactly the non-determinism this scanner exists to rule out.
-dup_a="$(mktemp -d)/config"; dup_b="$(mktemp -d)/config"
+dup_root_a="$(mktemp -d)" || { echo 'FATAL: mktemp failed' >&2; exit 1; }
+[ -n "$dup_root_a" ] || { echo 'FATAL: empty mktemp dir' >&2; exit 1; }
+[ -d "$dup_root_a" ] || { echo 'FATAL: mktemp dir missing' >&2; exit 1; }
+dup_root_b="$(mktemp -d)" || { echo 'FATAL: mktemp failed' >&2; exit 1; }
+[ -n "$dup_root_b" ] || { echo 'FATAL: empty mktemp dir' >&2; exit 1; }
+[ -d "$dup_root_b" ] || { echo 'FATAL: mktemp dir missing' >&2; exit 1; }
+dup_a="$dup_root_a/config"; dup_b="$dup_root_b/config"
 mkdir -p "$dup_a/.claude/rules" "$dup_b/.claude/rules"
 printf 'a%.0s' $(seq 1 100) >"$dup_a/CLAUDE.md"
 printf 'b%.0s' $(seq 1 900) >"$dup_b/CLAUDE.md"

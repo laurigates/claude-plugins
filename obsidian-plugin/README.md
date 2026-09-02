@@ -233,7 +233,7 @@ Run on demand with: **Actions → Plugin: Obsidian CLI changelog review → Run 
 
 ## Vault Maintenance Skills (offline, file-level)
 
-The skills above wrap the Obsidian CLI and require a running Obsidian instance. The following operate directly on markdown files — useful for bulk maintenance passes and scheduled jobs. They power [`vault-agent`](../vault-agent/).
+The skills above wrap the Obsidian CLI and require a running Obsidian instance. The following operate directly on markdown files — useful for bulk maintenance passes and scheduled jobs. They power [`vault-agent`](https://github.com/laurigates/vault-agent), which compiles them into its subagent prompts.
 
 The five **audit** skills (`vault-wikilinks`, `vault-orphans`, `vault-mocs`, `vault-tags`, `vault-stubs`) each carry an **Offline Fallback (App Closed)** section: the detection methodology is unchanged, but when Obsidian (and its `obsidian` CLI / live link index) is closed they parse the `.md` corpus directly — frontmatter (`tags`/`aliases`/`context`) plus `[[wikilink]]` resolution (basename + relpath + alias, case-insensitive; `![[embed]]` against attachments). The CLI / `vault-agent` analyzers are the live-index path; direct parsing is the deterministic headless default for bulk audits.
 

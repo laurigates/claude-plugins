@@ -1,5 +1,12 @@
 # Git Repo Agent — Design Plan
 
+> **Historical.** `git-repo-agent` was built here and then extracted to
+> [`laurigates/git-repo-agent`](https://github.com/laurigates/git-repo-agent) (#1017); the code no longer lives in this
+> repo. This document is the original design plan, kept for the rationale behind
+> the shipped architecture. For current behaviour, commands, and install
+> instructions read the standalone repo's README — the command examples below
+> reflect the plan, not necessarily the shipped CLI.
+
 A Claude Agent SDK application that onboards and maintains git repositories using the claude-plugins ecosystem.
 
 ## Problem Statement

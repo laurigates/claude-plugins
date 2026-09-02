@@ -3,13 +3,18 @@ created: 2026-04-22
 modified: 2026-04-22
 reviewed: 2026-07-04
 paths:
-  - "git-repo-agent/**"
-  - "vault-agent/**"
+  - "**/*_agent/**"
 ---
 
 # Agent-CLI Worktree Safety
 
-Data-loss prevention patterns for Python SDK agent CLIs (`git-repo-agent`, `vault-agent`, and any future sibling project built on `claude-agent-sdk` + Typer + git worktrees).
+Data-loss prevention patterns for Python SDK agent CLIs — any project built on `claude-agent-sdk` + Typer + git worktrees.
+
+> The two implementations these patterns were extracted from now live in their
+> own repos: [`laurigates/git-repo-agent`](https://github.com/laurigates/git-repo-agent) (#1017) and
+> [`laurigates/vault-agent`](https://github.com/laurigates/vault-agent) (#1973). Nothing in this repo matches the
+> `paths:` glob today, so the rule costs no context — it re-arms if a sibling
+> agent CLI is ever added here.
 
 ## The Core Failure Mode
 
@@ -121,7 +126,7 @@ When `ClaudeAgentOptions` runs the CLI as an SDK subprocess, stdin/stdout carry 
 - Use the two-phase interaction pattern (ADR-003): agent outputs findings and stops → Python collects input via `console.input()` → second `client.query()` executes the selection.
 - Remove `AskUserQuestion` from `allowed_tools` for paths that don't want silent failure.
 
-See [`git-repo-agent/docs/adr/003`](../../git-repo-agent/docs/) for the canonical write-up.
+See [git-repo-agent ADR-003](https://github.com/laurigates/git-repo-agent/blob/main/docs/adr/003-switch-to-claude-sdk-client-for-interactive-workflows.md) for the canonical write-up.
 
 ## Required Tests
 
@@ -136,7 +141,7 @@ Every agent CLI must have regression tests for:
 | `test_cli_rejects_empty_git_repo` | Unborn-HEAD detection |
 | `test_cli_rejects_non_domain_target` (vault-agent: not a vault; git-repo-agent: N/A, domain is git) | Catches "pointed at the wrong directory" |
 
-Mirror the layouts in `git-repo-agent/tests/test_worktree_changes.py` and `vault-agent/tests/test_worktree.py::TestWorktreeCollisionSafety`.
+Mirror the layouts in [`git-repo-agent/tests/test_worktree_changes.py`](https://github.com/laurigates/git-repo-agent/blob/main/tests/test_worktree_changes.py) and [`vault-agent/tests/test_worktree.py`](https://github.com/laurigates/vault-agent/blob/main/tests/test_worktree.py) (`TestWorktreeCollisionSafety`).
 
 ## Checklist When Adding a New Agent CLI
 
