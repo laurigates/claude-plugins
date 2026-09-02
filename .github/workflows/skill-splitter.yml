@@ -86,11 +86,20 @@ jobs:
           SKILLS=""
 
           if [ "$EVENT_NAME" = "pull_request" ]; then
-            # PR: process all changed SKILL.md files on this branch
-            # `|| true` absorbs the SIGPIPE exit (141) git takes when head -30
-            # truncates — under pipefail that would otherwise abort the step.
+            # PR: process the changed SKILL.md files on this branch, largest
+            # first, capped at 10. The Claude step runs with --max-turns 60 and
+            # a split costs ~6 turns (read, assess, write REFERENCE.md, edit
+            # SKILL.md, add, commit), so ~10 skills is what one run can finish;
+            # a broader PR (a 30-skill sweep hit error_max_turns on #2561) gets
+            # its largest candidates here and the rest from the
+            # workflow_dispatch `all` scope. Deleted files drop out of the
+            # `wc -l` step. `|| true` absorbs the SIGPIPE exit (141) git takes
+            # when head truncates — under pipefail that would otherwise abort
+            # the step.
             SKILLS=$(git diff --name-only "origin/$BASE_REF...HEAD" \
-              -- '**/skills/**/SKILL.md' '**/skills/**/skill.md' | head -30 || true)
+              -- '**/skills/**/SKILL.md' '**/skills/**/skill.md' \
+              | xargs -r wc -l 2>/dev/null | grep -v ' total$' \
+              | sort -rn | awk '{print $2}' | head -10 || true)
 
           elif [ "$INPUT_SCOPE" = "skill" ]; then
             # Specific skill: resolve to SKILL.md path
