@@ -266,6 +266,19 @@ Expose a live-adjustable control instead of guessing a magic constant for a para
 - Anti-pattern catalog: silent precision theater, unreachable knobs, knob sprawl
 - Worked example from a live face-swap app's mouth-mask tuning
 
+#### `agent-cli-worktree-safety`
+Data-loss invariants for a CLI that runs an agent SDK inside a git worktree and force-removes it afterwards.
+
+**When to use:**
+- Building or reviewing a CLI that creates a worktree, runs an agent in it, then cleans up
+- An agent run wrote files but reported "No changes were made" — the diagnostic tell for the whole class
+- Deciding whether a "has changes" check is safe to gate a destructive cleanup on
+
+**Features:**
+- Four invariants: dirty-tree detection (`--porcelain`, not `git diff`), safety-net commit, pre-validation incl. unborn HEAD, collision refusal
+- Why an interactive tool call fails silently in SDK subprocess mode, and the two-phase pattern that replaces it
+- Six-row required-test table and a new-CLI checklist
+
 ## Migration from Orchestration Patterns
 
 The following skills have been removed in favor of native agent teams:
