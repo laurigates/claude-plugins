@@ -223,7 +223,9 @@ jobs:
         uses: ./.github/actions/script-to-issue
         with:
           label: docs-index
-          color: 5319e7
+          # Quoted: unquoted, YAML reads 5319e7 as a float (-> 53190000000) and
+          # `gh label create` 422s, skipping every step behind it.
+          color: "5319e7"
           description: Top-level docs drift (Layer 1) audit
           script: bash scripts/check-docs-index.sh --issue-body
           title: 'Top-level docs drift (Layer 1): {month}'
