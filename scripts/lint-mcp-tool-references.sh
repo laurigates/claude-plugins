@@ -16,10 +16,11 @@
 #   * `SKILL.md` / `skill.md` / `REFERENCE.md` anywhere in the repo
 #   * `*.workflow.js` — the workflow scripts bundled beside a skill, which
 #     carry the same tool names in their comments and agent prompts
-#   * `git-repo-agent/src/git_repo_agent/prompts/generated/**/*.md` — the
-#     COMPILED subagent prompts. They are derived from the SKILL.md files
-#     above and ship in the git-repo-agent wheel, so a source fix that was
-#     never recompiled (`just compile-prompts`) is caught here too.
+# Formerly also covered the compiled git-repo-agent subagent prompts under
+# `git-repo-agent/src/git_repo_agent/prompts/generated/`. That CLI was extracted
+# to laurigates/git-repo-agent (#1017), so those artifacts no longer live here;
+# the standalone repo scans its own copy. The SKILL.md sources they compile from
+# are still covered above, which is where a stale tool name originates.
 # Deliberately OUT of scope: narrative documentation — `.claude/rules/*.md`,
 # `docs/**`, and the release-please-generated `CHANGELOG.md` files — because
 # those cite known-broken tool names on purpose (that is what a
@@ -140,9 +141,7 @@ while [ $i -lt ${#denylist[@]} ]; do
   # same shape as #2214. Worktree clones are pruned for the sibling reason.
   done < <(find . -type f \
               \( -name 'SKILL.md' -o -name 'skill.md' -o -name 'REFERENCE.md' \
-                 -o -name '*.workflow.js' \
-                 -o \( -path './git-repo-agent/src/git_repo_agent/prompts/generated/*' \
-                       -name '*.md' \) \) \
+                 -o -name '*.workflow.js' \) \
               -not -path './.claude/worktrees/*' \
               -not -path './dist/*' \
               -not -path '*/node_modules/*' \

@@ -3,8 +3,7 @@ created: 2026-05-19
 modified: 2026-06-24
 reviewed: 2026-07-04
 paths:
-  - "git-repo-agent/**"
-  - "vault-agent/**"
+  - "**/*_agent/**"
 ---
 # Typer/Click CLI Completion: Bypass shellingham
 
@@ -157,17 +156,18 @@ maintainers have repeatedly punted on this issue because shellingham
 
 ## Canonical implementation
 
-- `git-repo-agent/src/git_repo_agent/main.py` (`completion` command)
-- `git-repo-agent/tests/test_completion.py` (4 regression tests)
+- [`git-repo-agent/src/git_repo_agent/main.py`](https://github.com/laurigates/git-repo-agent/blob/main/src/git_repo_agent/main.py) (`completion` command)
+- [`git-repo-agent/tests/test_completion.py`](https://github.com/laurigates/git-repo-agent/blob/main/tests/test_completion.py) (4 regression tests)
 
 Mirror that layout when adding the pattern to a new CLI.
 
 ## Scope
 
-Applies to every Python/Typer CLI in the laurigates portfolio —
-currently `git-repo-agent` and `vault-agent`, plus any future sibling
-built on `claude-agent-sdk` + Typer. Same scope as
-`agent-cli-worktree-safety.md`.
+Applies to every Python/Typer CLI in the laurigates portfolio — currently
+[`git-repo-agent`](https://github.com/laurigates/git-repo-agent) and [`vault-agent`](https://github.com/laurigates/vault-agent), which live in their own
+repos since #1017/#1973, plus any future sibling built on `claude-agent-sdk` +
+Typer. Same scope as `agent-cli-worktree-safety.md`, and the same note applies:
+nothing here matches the glob today, so the rule re-arms rather than loads.
 
 ## Related rules
 

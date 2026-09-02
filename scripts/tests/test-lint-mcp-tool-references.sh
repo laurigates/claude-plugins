@@ -24,7 +24,7 @@
 #
 #   COVERAGE — the linter's walk is not repo-wide (see its header). The files it
 #   DOES claim to read (skill files, bundled `*.workflow.js`, the compiled
-#   git-repo-agent prompts) must actually be opened.
+#   bundled *.workflow.js files) must actually be opened.
 #
 # Exit codes: 0 all assertions pass, 1 otherwise.
 
@@ -267,27 +267,6 @@ fi
 rm -rf "$fx"
 
 # ---------------------------------------------------------------------------
-# CASE 8 (COVERAGE): the COMPILED git-repo-agent prompts are derived from the
-# SKILL.md files above and ship in a wheel, so a source fix that was never
-# recompiled (`just compile-prompts`) must still be caught.
-# ---------------------------------------------------------------------------
-fx="$(make_fixture)"
-printf -- '---\nname: demo\n---\nclean body\n' \
-  >"$fx/demo-plugin/skills/multi-model-delegation/SKILL.md"
-mkdir -p "$fx/git-repo-agent/src/git_repo_agent/prompts/generated"
-printf 'Call `mcp__pal__planner` with model "gemini-2.5-pro".\n' \
-  >"$fx/git-repo-agent/src/git_repo_agent/prompts/generated/test_runner_skills.md"
-run_fixture "$fx"
-out="$FIXTURE_OUT"
-if [ "$FIXTURE_EXIT" -eq 1 ] && printf '%s' "$out" | grep -q 'prompts/generated/test_runner_skills.md'; then
-  ok "compiled git-repo-agent prompts are scanned"
-else
-  bad "compiled git-repo-agent prompts are scanned" "exit=$FIXTURE_EXIT
-$out"
-fi
-rm -rf "$fx"
-
-# ---------------------------------------------------------------------------
 # GUARD INTEGRITY 2: the pre-existing #1429 entry still fires, WITH its fix
 # text, and from a path OUTSIDE the pal entry's scope (its own scope is `*`).
 # Adding a third field to each denylist entry shifts every index; if the triple
@@ -310,7 +289,7 @@ $out"
 fi
 
 # ---------------------------------------------------------------------------
-# CASE 9 (cwd): the same fixture, run from an unrelated working directory,
+# CASE 8 (cwd): the same fixture, run from an unrelated working directory,
 # must produce the identical verdict. Discovery once ran in a subshell that
 # entered the scan root while the grep did not, so an invocation from anywhere
 # else opened no file and still exited 0.
@@ -326,7 +305,7 @@ fi
 rm -rf "$fx"
 
 # ---------------------------------------------------------------------------
-# CASE 10: the fixed skill itself. The linter proves the broken form is gone;
+# CASE 9: the fixed skill itself. The linter proves the broken form is gone;
 # this asserts the POSITIVE half — the skill explains where the prefix comes
 # from, names the authoritative command, and does NOT tell a reader that a
 # "No matching deferred tools found" result proves the prefix was wrong.
