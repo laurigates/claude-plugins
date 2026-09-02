@@ -238,11 +238,15 @@ section() {
   awk -v s="$1" -v e="$2" '$0 ~ s {on=1; next} $0 ~ e {on=0} on' "$out"
 }
 agentic_section="$(section '^## Skills missing Agentic Optimizations table:$' '^## Skills with stale reviews')"
-# Literal parens as bracket expressions, NOT `\(` `\)`: a backslash-escaped
-# paren is undefined in POSIX awk, and older mawk (the GitHub runner default)
-# warns "escape sequence `\(' treated as plain `('" and then reads the parens
-# as a GROUP — so the heading never matches, this section slices empty, and the
-# stale-list assertion below fails on CI while passing under newer mawk/gawk.
+# Literal parens as bracket expressions, NOT `\(` `\)`. `$0 ~ s` compiles s as a
+# DYNAMIC regex, and a backslash-escaped paren is undefined in POSIX awk, so awks
+# disagree: the GitHub runner's awk warns "escape sequence `\(' treated as plain
+# `('" and then reads the parens as a GROUP, so `\(>90 days\)` matches a heading
+# with NO parens, this section slices empty, and the stale-list assertion below
+# fails there while passing on a build that reads the escape as a literal paren
+# (measured: mawk 1.3.4 20240123 tolerates it, the runner's older mawk does not --
+# both Linux, so this is a build difference, not a platform one). `[(]` carries no
+# escape at all and is literal under every awk.
 stale_section="$(section '^## Skills with stale reviews [(]>90 days[)]:$' '^## Stale-review date distribution$')"
 cohort_section="$(section '^## Stale-review date distribution$' '^## Skills with missing required')"
 sections_section="$(section '^## Skills with missing required sections/frontmatter:$' '^__NEVER_MATCHES__$')"
