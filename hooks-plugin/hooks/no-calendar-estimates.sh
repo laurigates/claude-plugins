@@ -7,7 +7,13 @@
 # first detection; the agent revises; the stop_hook_active guard accepts the
 # revised response silently. The reason text carries the positive guidance
 # inline so it ships self-contained with the plugin — consumers don't need a
-# separate .claude/rules/ file.
+# separate .claude/rules/ file. That guidance has two branches: agent *effort*
+# restates in tokens / effort tier / tool calls; external machine work the agent
+# *measured* (a CI run, build, model download, render, long test suite) really
+# is wall-clock and restates as rate x quantity with the measurement named
+# (#2574). The matcher stays deliberately broad — it still fires on a measured
+# rate, and the message tells the reader how to phrase it honestly rather than
+# offering only units that cannot express it.
 #
 # Opt-in: set CLAUDE_HOOKS_ENABLE_CALENDAR_ESTIMATES=1 to enable.
 set -uo pipefail
@@ -79,7 +85,7 @@ PATTERN_FUTURE="(will|would|should|could|may|might|'ll|going to|gonna)[^.!?]*(ta
 PATTERN_MARKER="(ETA|estimate|estimated|estimating|expect|expects|expected|approximately|roughly|around)[^.!?]*([0-9]+|a few|several|many|couple)[^.!?]*(minute|hour|day|week|month|year)s?"
 
 if echo "$LAST_RESPONSE" | grep -qiE "$PATTERN_FUTURE|$PATTERN_MARKER"; then
-    REASON="Avoid quoting AI work in calendar time (hours, days, weeks, months) — it does not map to agent effort and consistently misleads. Restate the estimate as tokens consumed, effort tier (low / medium / high / xhigh / max), tool-call count, or files / lines to touch."
+    REASON="Avoid quoting AI work in calendar time (hours, days, weeks, months) — it does not map to agent effort and consistently misleads. Restate the estimate as tokens consumed, effort tier (low / medium / high / xhigh / max), tool-call count, or files / lines to touch. Exception: external machine work you measured rather than paced yourself (a CI run, a build, a model download, a render, a long test suite) genuinely is wall-clock — state it as rate × quantity with the measurement named, e.g. \"3870 frames at a measured 1.0 s/frame, so about 65 minutes\"."
     # shellcheck disable=SC2016  # jq expression, not shell expansion
     jq -n --arg reason "$REASON" '{"decision": "block", "reason": $reason}'
     exit 0
