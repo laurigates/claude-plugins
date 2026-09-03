@@ -1,5 +1,7 @@
 {
   "_note": "The cross-model (Tier-2) canary set. ~15-25 representative, high-traffic, or high-risk skills covering distinct patterns. /evaluate:matrix runs the full sweep against these; the long tail stays on Tier 0/1. See .claude/rules/skill-evaluation.md (Principle 3) and docs/cross-model-evaluation.md. Only golden-set skills should carry fixture blocks (references/schemas.md).",
+  "evalCoverageFloor": 1,
+  "_evalCoverageFloorNote": "Minimum canaries carrying an evals.json before the sweep is allowed to report green. A RATCHET, not a target: raise it as evals land, never lower it. Set to 1 on 2026-09-03, the coverage measured that day (1 of 16). The sweep's gate is `eval_ready_count != 0`, so before this floor existed a 1-of-16 sweep ran and reported green with the ratio visible only in an ephemeral step summary.",
   "patterns": [
     "cli-wrapper",
     "multi-step-orchestrator",
@@ -9,21 +11,69 @@
     "weak-model-gate"
   ],
   "canaries": [
-    { "skill": "tools-plugin/rg-code-search", "pattern": "cli-wrapper" },
-    { "skill": "tools-plugin/jq-json-processing", "pattern": "cli-wrapper" },
-    { "skill": "tools-plugin/fd-file-finding", "pattern": "cli-wrapper" },
-    { "skill": "git-plugin/git-cli-agentic", "pattern": "cli-wrapper" },
-    { "skill": "blueprint-plugin/blueprint-execute", "pattern": "multi-step-orchestrator" },
-    { "skill": "blueprint-plugin/blueprint-prp-create", "pattern": "multi-step-orchestrator" },
-    { "skill": "agent-patterns-plugin/parallel-agent-dispatch", "pattern": "multi-step-orchestrator" },
-    { "skill": "session-plugin/session-wrap", "pattern": "ask-user-question" },
-    { "skill": "session-plugin/session-end", "pattern": "ask-user-question" },
-    { "skill": "configure-plugin/configure-readme", "pattern": "file-generator" },
-    { "skill": "documentation-plugin/docs-generate", "pattern": "file-generator" },
-    { "skill": "git-plugin/git-commit", "pattern": "convention-enforcer" },
-    { "skill": "git-plugin/github-pr-title", "pattern": "convention-enforcer" },
-    { "skill": "code-quality-plugin/code-review", "pattern": "convention-enforcer" },
-    { "skill": "evaluate-plugin/evaluate-legibility", "pattern": "weak-model-gate" },
-    { "skill": "evaluate-plugin/evaluate-matrix", "pattern": "weak-model-gate" }
+    {
+      "skill": "tools-plugin/rg-code-search",
+      "pattern": "cli-wrapper"
+    },
+    {
+      "skill": "tools-plugin/jq-json-processing",
+      "pattern": "cli-wrapper"
+    },
+    {
+      "skill": "tools-plugin/fd-file-finding",
+      "pattern": "cli-wrapper"
+    },
+    {
+      "skill": "git-plugin/git-cli-agentic",
+      "pattern": "cli-wrapper"
+    },
+    {
+      "skill": "blueprint-plugin/blueprint-execute",
+      "pattern": "multi-step-orchestrator"
+    },
+    {
+      "skill": "blueprint-plugin/blueprint-prp-create",
+      "pattern": "multi-step-orchestrator"
+    },
+    {
+      "skill": "agent-patterns-plugin/parallel-agent-dispatch",
+      "pattern": "multi-step-orchestrator"
+    },
+    {
+      "skill": "session-plugin/session-wrap",
+      "pattern": "ask-user-question"
+    },
+    {
+      "skill": "session-plugin/session-end",
+      "pattern": "ask-user-question"
+    },
+    {
+      "skill": "configure-plugin/configure-readme",
+      "pattern": "file-generator"
+    },
+    {
+      "skill": "documentation-plugin/docs-generate",
+      "pattern": "file-generator"
+    },
+    {
+      "skill": "git-plugin/git-commit",
+      "pattern": "convention-enforcer"
+    },
+    {
+      "skill": "git-plugin/github-pr-title",
+      "pattern": "convention-enforcer"
+    },
+    {
+      "skill": "code-quality-plugin/code-review",
+      "pattern": "convention-enforcer"
+    },
+    {
+      "skill": "evaluate-plugin/evaluate-legibility",
+      "pattern": "weak-model-gate"
+    },
+    {
+      "skill": "evaluate-plugin/evaluate-matrix",
+      "pattern": "weak-model-gate"
+    }
   ]
 }

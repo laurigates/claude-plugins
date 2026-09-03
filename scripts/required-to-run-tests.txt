@@ -82,3 +82,9 @@ scripts/tests/test-fetch-arxiv-window.sh
 # negative cases are load-bearing: the corpus legitimately DISCUSSES the retired
 # names, so a skip would hide a guard that had started flagging documentation.
 scripts/tests/test-check-dead-tool-grants.sh
+
+# Its case A is load-bearing in an unusual direction: the real repo, at 1 of 16
+# canaries, must be GREEN. A skip would hide a guard that had started failing on
+# the standing gap -- which is exactly the shape that gets a monthly audit
+# switched off.
+scripts/tests/test-check-golden-set-coverage.sh
