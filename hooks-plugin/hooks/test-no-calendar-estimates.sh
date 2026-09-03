@@ -126,6 +126,17 @@ assert_blocks "approximately 5 hours"               "Approximately 5 hours of en
 assert_blocks "expect this in 2 weeks"              "Expect this work in 2 weeks if priorities hold."
 assert_blocks "roughly 4 hours"                     "Roughly 4 hours to finish the migration."
 
+# ── control: the matcher is deliberately NOT narrowed (issue #2574) ───────────
+# The reporter's exact blocked text. #2574 asked for the *message* to name the
+# external-machine-work case (option 1), explicitly NOT for the matcher to stop
+# firing near a measured rate (option 2 — a re-scoping decision with its own
+# evidence bar, see .claude/rules/hook-block-vs-nudge.md). This control goes red
+# if a future change silently narrows PATTERN_FUTURE / PATTERN_MARKER.
+echo ""
+echo "matcher stays unnarrowed (#2574 control):"
+assert_blocks "measured render extrapolation still blocks" \
+    "Roughly 70–80 minutes for 3870 frames at a measured 1.0 s/frame."
+
 # ── past-tense and observational mentions SHOULD pass ─────────────────────────
 echo ""
 echo "past-tense and observational mentions pass:"
@@ -168,6 +179,32 @@ if echo "$out" | grep -q "context-window"; then
 else
     printf "  PASS: reason does not ask for a remaining-context figure\n"
     PASS=$((PASS + 1))
+fi
+
+# Regression (#2574): the offered units could not express external machine work
+# the agent *measured* rather than *paced* — a render, CI run, build, model
+# download, or long test suite. The reason must name that case and say how to
+# phrase it (rate x quantity, measurement named), or the block is a dead end.
+echo ""
+echo "block reason names the external-machine-work case (#2574):"
+for token in "external" "measured" "rate" "render" "CI run"; do
+    if echo "$out" | grep -q "$token"; then
+        printf "  PASS: reason mentions '%s'\n" "$token"
+        PASS=$((PASS + 1))
+    else
+        printf "  FAIL: reason missing '%s' (output: %s)\n" "$token" "$out"
+        FAIL=$((FAIL + 1))
+    fi
+done
+
+# The emitted block must stay valid JSON even though the reason carries an
+# em-dash, parentheses, quotes and a multiplication sign.
+if echo "$out" | jq -e '.decision == "block" and (.reason | length > 0)' >/dev/null 2>&1; then
+    printf "  PASS: emitted block parses as valid JSON\n"
+    PASS=$((PASS + 1))
+else
+    printf "  FAIL: emitted block is not valid JSON (output: %s)\n" "$out"
+    FAIL=$((FAIL + 1))
 fi
 
 # ── summary ───────────────────────────────────────────────────────────────────

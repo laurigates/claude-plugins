@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.8](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.5.7...python-plugin-v1.5.8) (2026-09-03)
+
+
+### Bug Fixes
+
+* **ci:** restore four scheduled-audit signals that were reporting nothing, or nonsense ([#2576](https://github.com/laurigates/claude-plugins/issues/2576)) ([de4337c](https://github.com/laurigates/claude-plugins/commit/de4337c7776ba7531cbe923fe016df78ef9b7e8c))
+
 ## [1.5.7](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.5.6...python-plugin-v1.5.7) (2026-09-02)
 
 
