@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.19.5](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.19.4...testing-plugin-v3.19.5) (2026-09-03)
+
+
+### Documentation
+
+* **testing-plugin:** document the false-MISSED harness staging failure ([#2578](https://github.com/laurigates/claude-plugins/issues/2578)) ([a046775](https://github.com/laurigates/claude-plugins/commit/a046775d580dd31005d78f35607bdf1afbb85935)), closes [#2559](https://github.com/laurigates/claude-plugins/issues/2559)
+
 ## [3.19.4](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.19.3...testing-plugin-v3.19.4) (2026-09-03)
 
 
