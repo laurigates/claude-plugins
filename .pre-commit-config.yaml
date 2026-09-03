@@ -125,9 +125,14 @@ repos:
         language: script
         files: '^scripts/(check-unused-bash-grant\.sh|tests/test-check-unused-bash-grant\.sh)$'
         pass_filenames: false
+      # --strict since the corpus reached UNQUALIFIED=0 (see the ratchet note in
+      # .claude/rules/regression-testing.md). Without it the WARN tier reached
+      # nobody: the hook ran unflagged and non-verbose, and the guard appeared in
+      # no workflow at all, so 6 bare names resolved only by plugin-name fallback
+      # -- "luck of name resolution", in the script's own header.
       - id: check-subagent-types
         name: every subagent_type in a skill body resolves to a real agent
-        entry: ./scripts/check-subagent-types.sh
+        entry: ./scripts/check-subagent-types.sh --strict
         language: script
         files: '^([^/]+-plugin/(skills/.*\.md|agents/.*\.md)|scripts/check-subagent-types\.sh)$'
         pass_filenames: false

@@ -192,6 +192,15 @@ jobs:
         # above proves the guard before it gates the tree.
         run: bash scripts/check-agent-failure-contract.sh
 
+      - name: Check every subagent_type resolves to a real agent
+        # The guard existed but reached nobody: pre-commit invoked it without
+        # --strict and non-verbose, and it appeared in NO workflow, so its WARN
+        # tier was invisible. Six bare names resolved only by plugin-name
+        # fallback -- "luck of name resolution" in the script's own header.
+        # Flipped to --strict at UNQUALIFIED=0 so the ratchet locks a clean
+        # state rather than a suppressed one.
+        run: bash scripts/check-subagent-types.sh --strict
+
       - name: Check every plugin agent runs on opus
         # Whole-repo invariant (every plugin agent must run on opus). Runs
         # unconditionally like the docs-index check below — the lint is cheap
