@@ -3,7 +3,7 @@ name: refactor
 model: opus
 color: "#7B1FA2"
 description: Code refactoring specialist. Restructures code for improved readability, maintainability, and SOLID adherence while preserving behavior. Use when code needs structural improvement without changing functionality.
-tools: Glob, Grep, LS, Read, Edit, Write, Bash(npm test *), Bash(npm run *), Bash(yarn test *), Bash(bun test *), Bash(pytest *), Bash(vitest *), Bash(cargo test *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(find *), Bash(ls *), Bash(wc *), Bash(rg *), Bash(python3 scripts/audit-skill-descriptions.py *), TodoWrite
+tools: Glob, Grep, Read, Edit, Write, Bash(npm test *), Bash(npm run *), Bash(yarn test *), Bash(bun test *), Bash(pytest *), Bash(vitest *), Bash(cargo test *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(find *), Bash(ls *), Bash(wc *), Bash(rg *), Bash(python3 scripts/audit-skill-descriptions.py *), TodoWrite
 maxTurns: 20
 created: 2026-01-24
 modified: 2026-06-28

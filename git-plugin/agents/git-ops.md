@@ -6,7 +6,7 @@ description: |
   Specialized agent for complex git write operations. Handles merge conflicts, rebases, cherry-picks,
   bisect, and multi-step git workflows. Use when git operations are verbose or multi-step (conflict
   resolution, rebase with conflicts, bisect) to keep that output isolated from the main context.
-tools: Glob, Grep, LS, Read, Edit, Write, Bash, TodoWrite
+tools: Glob, Grep, Read, Edit, Write, Bash, TodoWrite
 skills:
   - git-cli-agentic
   - git-commit

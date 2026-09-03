@@ -2,7 +2,7 @@
 name: deep-agents
 description: Build hierarchical AI agents with the deepagents npm package. Use when creating orchestrators that plan multi-step tasks, delegate to child agents, or maintain persistent memory.
 user-invocable: false
-allowed-tools: Bash(python *), Bash(uv *), BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
+allowed-tools: Bash(python *), Bash(uv *), Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-08
 modified: 2026-09-02
 reviewed: 2026-09-02

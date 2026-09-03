@@ -2,7 +2,7 @@
 name: langgraph-agents
 description: LangGraph stateful AI agents with graph-based workflows. Use when creating state-machine agents with checkpoints, human-in-the-loop, streaming execution, or subgraph composition.
 user-invocable: false
-allowed-tools: Bash(python *), Bash(uv *), BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
+allowed-tools: Bash(python *), Bash(uv *), Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-08
 modified: 2026-05-09
 reviewed: 2026-04-25

@@ -5,7 +5,7 @@ reviewed: 2025-12-16
 name: knip-dead-code
 description: "Knip dead-code detector for JS/TS: unused files, deps, exports, types. Use when cleaning up codebases, finding dead exports, or enforcing dependency hygiene in CI."
 user-invocable: false
-allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch, BashOutput, KillShell
+allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch
 ---
 
 # Knip Dead Code Detection

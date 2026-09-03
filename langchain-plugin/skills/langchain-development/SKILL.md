@@ -2,7 +2,7 @@
 name: langchain-development
 description: LangChain JS/TS framework for building LLM-powered apps. Use when working with chat models, prompt templates, LCEL chains, tool binding, or RAG pipelines.
 user-invocable: false
-allowed-tools: Bash(python *), Bash(uv *), BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
+allowed-tools: Bash(python *), Bash(uv *), Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-08
 modified: 2026-09-02
 reviewed: 2026-09-02

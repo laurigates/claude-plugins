@@ -192,6 +192,13 @@ jobs:
         # above proves the guard before it gates the tree.
         run: bash scripts/check-agent-failure-contract.sh
 
+      - name: Check no retired tool name is granted
+        # Four removed names (LS, BashOutput, KillShell, MultiEdit) had spread to
+        # 40 files because two ALWAYS-LOADED authoring rules were minting them.
+        # A denylist, not an allowlist of live tools: an allowlist would rot the
+        # day a tool is added, which is the disease the checkout gate had.
+        run: bash scripts/check-dead-tool-grants.sh
+
       - name: Check every subagent_type resolves to a real agent
         # The guard existed but reached nobody: pre-commit invoked it without
         # --strict and non-verbose, and it appeared in NO workflow, so its WARN

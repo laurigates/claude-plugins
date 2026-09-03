@@ -3,7 +3,7 @@ name: research
 model: opus
 color: "#00897B"
 description: Technical research and documentation lookup. Investigates APIs, frameworks, libraries, and best practices from web sources and documentation. Use when needing external knowledge to inform decisions.
-tools: Glob, Grep, LS, Read, WebFetch, WebSearch, TodoWrite
+tools: Glob, Grep, Read, WebFetch, WebSearch, TodoWrite
 context: fork
 maxTurns: 20
 created: 2026-01-24

@@ -41,7 +41,7 @@ Agents live in `<plugin-name>/agents/<agent-name>.md`.
 name: agent-name
 description: What this agent does and when to use it.
 model: opus
-tools: Glob, Grep, LS, Read, Edit, Write, Bash(npm *)
+tools: Glob, Grep, Read, Edit, Write, Bash(npm *)
 created: YYYY-MM-DD
 modified: YYYY-MM-DD
 reviewed: YYYY-MM-DD
@@ -189,7 +189,7 @@ name: research-agent
 description: Research without polluting main context
 model: opus
 context: fork
-tools: Glob, Grep, LS, Read, WebFetch, WebSearch
+tools: Glob, Grep, Read, WebFetch, WebSearch
 ---
 ```
 

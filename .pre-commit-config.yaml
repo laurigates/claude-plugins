@@ -130,6 +130,18 @@ repos:
       # nobody: the hook ran unflagged and non-verbose, and the guard appeared in
       # no workflow at all, so 6 bare names resolved only by plugin-name fallback
       # -- "luck of name resolution", in the script's own header.
+      - id: check-dead-tool-grants
+        name: no retired tool name is granted in allowed-tools/tools
+        entry: bash ./scripts/check-dead-tool-grants.sh
+        language: system
+        files: '\.md$'
+        pass_filenames: false
+      - id: test-check-dead-tool-grants
+        name: dead-tool-grant guard regression
+        entry: bash ./scripts/tests/test-check-dead-tool-grants.sh
+        language: system
+        files: '^scripts/(check-dead-tool-grants\.sh|tests/test-check-dead-tool-grants\.sh)$'
+        pass_filenames: false
       - id: check-subagent-types
         name: every subagent_type in a skill body resolves to a real agent
         entry: ./scripts/check-subagent-types.sh --strict
