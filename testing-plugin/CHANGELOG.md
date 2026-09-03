@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.19.4](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.19.3...testing-plugin-v3.19.4) (2026-09-03)
+
+
+### Bug Fixes
+
+* **ci:** restore four scheduled-audit signals that were reporting nothing, or nonsense ([#2576](https://github.com/laurigates/claude-plugins/issues/2576)) ([de4337c](https://github.com/laurigates/claude-plugins/commit/de4337c7776ba7531cbe923fe016df78ef9b7e8c))
+
 ## [3.19.3](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.19.2...testing-plugin-v3.19.3) (2026-09-02)
 
 
