@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.5](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.14.4...evaluate-plugin-v1.14.5) (2026-09-03)
+
+
+### Bug Fixes
+
+* **evaluate-plugin:** make context-engineering ordering test deterministic ([#2577](https://github.com/laurigates/claude-plugins/issues/2577)) ([478bd01](https://github.com/laurigates/claude-plugins/commit/478bd01638eb4cd5aedf04ceea25768cdc31473f)), closes [#2563](https://github.com/laurigates/claude-plugins/issues/2563)
+
 ## [1.14.4](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.14.3...evaluate-plugin-v1.14.4) (2026-09-03)
 
 
