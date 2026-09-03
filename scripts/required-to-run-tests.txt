@@ -72,3 +72,8 @@ git-plugin/skills/git-merge-hazards/scripts/tests/test-push-refspec.sh
 # so there is no environment in which skipping it is legitimate. A skip would
 # mean the fixtures or the checker moved, which is exactly the regression.
 scripts/tests/test-check-audit-liveness.sh
+
+# Stubs curl on PATH and asserts on the requested URLs -- no network, no
+# credentials, so a skip is never legitimate. The defect it guards lives in the
+# REQUEST, which the emitted counts cannot see.
+scripts/tests/test-fetch-arxiv-window.sh

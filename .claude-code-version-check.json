@@ -1,6 +1,21 @@
 {
-  "lastCheckedVersion": "2.1.257",
-  "lastCheckedDate": "2026-09-02",
+  "lastCheckedVersion": "2.1.185",
+  "lastCheckedDate": "2026-06-22",
+  "rewindNote": "Rewound from 2.1.257 to 2.1.185 on 2026-09-03. The excerpt is sliced from lastCheckedVersion forward, so the pointer must name the last version a review actually covered. 2.1.257 was written by the Fable 5.1 adaptation sweep (docs/audits/fable-5.1-adaptation-2026-09-02.md), whose declared window was 2.1.232-2.1.257 -- it advanced the pointer past 46 versions it never read. The automated changelog review had already gone silent after 2.1.185: 22 successful runs, 13 consecutive filing nothing, last tracking issue #1733 (2026-06-21). Confirmed casualty of the resulting blind spot: the subagent nesting ceiling in .claude/rules/agent-development.md still instructed 5 levels after 2.1.217 disabled nesting by default and 2.1.219 set it to 3.",
+  "knownUnreviewedRanges": [
+    {
+      "range": "2.1.186-2.1.231",
+      "versions": 46,
+      "cause": "pointer advanced by hand to 2.1.257 while the automation was silent",
+      "status": "recovered by this rewind - the next review starts at 2.1.186"
+    },
+    {
+      "range": "2.1.77-2.1.137",
+      "versions": 61,
+      "cause": "reviewedChanges jumps 2.1.76 -> 2.1.138; no entry covers the gap",
+      "status": "NOT recovered - rewinding this far would put ~180 versions in one excerpt. Recorded so the gap is visible rather than implied by an absent entry."
+    }
+  ],
   "changelogUrl": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
   "reviewedChanges": [
     {

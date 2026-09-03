@@ -509,6 +509,13 @@ repos:
       # Only the self-test is wired here: check-audit-liveness.sh itself queries
       # `gh run list` / `gh issue list`, so it belongs in the scheduled sweep,
       # not in a pre-commit hook that must work offline.
+      # Stubs curl and asserts on the URLs requested, so it needs no network.
+      - id: test-fetch-arxiv-window
+        name: arXiv fetch honours --since-days (window + pagination)
+        entry: bash ./scripts/tests/test-fetch-arxiv-window.sh
+        language: system
+        files: '^scripts/(fetch-research-papers\.sh|tests/test-fetch-arxiv-window\.sh)$'
+        pass_filenames: false
       - id: test-check-audit-liveness
         name: audit-liveness guard regression
         entry: bash ./scripts/tests/test-check-audit-liveness.sh
