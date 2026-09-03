@@ -582,3 +582,75 @@ repos:
         language: system
         files: '^hooks-plugin/hooks/(test-bash-antipatterns\.sh|test-bash-antipatterns-git-env-isolation\.sh)$'
         pass_filenames: false
+      # The remaining hooks-plugin suites below. All 13 `hooks-plugin/hooks/test-*.sh`
+      # files are ALREADY run in CI — `scripts/run-skill-script-tests.sh` discovers them
+      # via its `*/hooks/test-*.sh` glob, and `.github/workflows/test-skill-scripts.yml`
+      # fires on `*-plugin/hooks/**`. What they lacked was a LOCAL pre-commit trigger, so
+      # editing a hook gave no feedback until CI. These entries close that gap, matching
+      # the two bash-antipatterns entries above. A repo-wide grep for a suite's filename
+      # finds nothing (discovery is glob-based, not by name), which is why they read as
+      # entirely unwired.
+      - id: test-bash-antipatterns-teach
+        name: bash-antipatterns teach-nudge hook regression
+        entry: bash ./hooks-plugin/hooks/test-bash-antipatterns-teach.sh
+        language: system
+        # lib/command-views.sh is sourced by the hook under test (#2518).
+        files: '^hooks-plugin/hooks/(bash-antipatterns-teach\.sh|test-bash-antipatterns-teach\.sh|lib/command-views\.sh)$'
+        pass_filenames: false
+      - id: test-branch-base-guard
+        name: branch-base-guard hook regression
+        entry: bash ./hooks-plugin/hooks/test-branch-base-guard.sh
+        language: system
+        files: '^hooks-plugin/hooks/(branch-base-guard\.sh|test-branch-base-guard\.sh)$'
+        pass_filenames: false
+      - id: test-branch-protection
+        name: branch-protection hook regression
+        entry: bash ./hooks-plugin/hooks/test-branch-protection.sh
+        language: system
+        files: '^hooks-plugin/hooks/(branch-protection\.sh|test-branch-protection\.sh)$'
+        pass_filenames: false
+      - id: test-external-pr-merge-guard
+        name: external-pr-merge-guard hook regression (#2307)
+        entry: bash ./hooks-plugin/hooks/test-external-pr-merge-guard.sh
+        language: system
+        files: '^hooks-plugin/hooks/(external-pr-merge-guard\.sh|test-external-pr-merge-guard\.sh)$'
+        pass_filenames: false
+      - id: test-git-stash-reminder
+        name: git-stash-reminder namespace/age/write-once invariants (#2306)
+        entry: bash ./hooks-plugin/hooks/test-git-stash-reminder.sh
+        language: system
+        # Covers both halves of the pair: the Stop hook and its SessionStart initializer.
+        files: '^hooks-plugin/hooks/(git-stash-reminder\.sh|git-stash-session-init\.sh|test-git-stash-reminder\.sh)$'
+        pass_filenames: false
+      - id: test-no-calendar-estimates
+        name: no-calendar-estimates hook detection regression (#2574)
+        entry: bash ./hooks-plugin/hooks/test-no-calendar-estimates.sh
+        language: system
+        files: '^hooks-plugin/hooks/(no-calendar-estimates\.sh|test-no-calendar-estimates\.sh)$'
+        pass_filenames: false
+      - id: test-repo-deletion-safety
+        name: repo-deletion-safety hook regression (#2454)
+        entry: bash ./hooks-plugin/hooks/test-repo-deletion-safety.sh
+        language: system
+        files: '^hooks-plugin/hooks/(repo-deletion-safety\.sh|test-repo-deletion-safety\.sh)$'
+        pass_filenames: false
+      - id: test-secret-protection
+        name: secret-protection hook regression
+        entry: bash ./hooks-plugin/hooks/test-secret-protection.sh
+        language: system
+        files: '^hooks-plugin/hooks/(secret-protection\.sh|test-secret-protection\.sh)$'
+        pass_filenames: false
+      - id: test-task-completeness
+        name: task-completeness hook regression
+        entry: bash ./hooks-plugin/hooks/test-task-completeness.sh
+        language: system
+        files: '^hooks-plugin/hooks/(task-completeness\.sh|test-task-completeness\.sh)$'
+        pass_filenames: false
+      - id: test-test-verification
+        name: test-verification hook regression
+        entry: bash ./hooks-plugin/hooks/test-test-verification.sh
+        language: system
+        # The hook under test is itself named test-verification.sh; its suite is
+        # test-test-verification.sh. Both are matched here, neither is the other's typo.
+        files: '^hooks-plugin/hooks/(test-verification\.sh|test-test-verification\.sh)$'
+        pass_filenames: false
