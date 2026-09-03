@@ -1,7 +1,7 @@
 ---
 description: "Bun debugger via --inspect. Use when the user wants to debug a TS/JS file interactively, break at first line, wait for attach, or debug tests with --inspect-brk."
 args: <file> [--brk] [--wait] [--port=<port>]
-allowed-tools: Bash, BashOutput, Read
+allowed-tools: Bash, Read
 argument-hint: <script.ts> [--brk] [--wait] [--port=9229]
 created: 2026-01-22
 modified: 2026-05-09

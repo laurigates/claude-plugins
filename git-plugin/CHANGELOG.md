@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.52.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.52.2...git-plugin-v2.52.3) (2026-09-03)
+
+
+### Bug Fixes
+
+* **ci:** restore four scheduled-audit signals that were reporting nothing, or nonsense ([#2576](https://github.com/laurigates/claude-plugins/issues/2576)) ([de4337c](https://github.com/laurigates/claude-plugins/commit/de4337c7776ba7531cbe923fe016df78ef9b7e8c))
+
 ## [2.52.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.52.1...git-plugin-v2.52.2) (2026-09-02)
 
 

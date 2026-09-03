@@ -61,6 +61,8 @@ jobs:
     timeout-minutes: 10
     outputs:
       eval_ready_count: ${{ steps.canaries.outputs.eval_ready_count }}
+      # The denominator is the point: "1" reads as fine, "1 of 16" does not.
+      eval_total_count: ${{ steps.canaries.outputs.eval_total_count }}
       should_skip: ${{ steps.existing.outputs.should_skip }}
       canary_report: ${{ steps.canaries.outputs.canary_report }}
       models: ${{ steps.params.outputs.models }}
@@ -160,8 +162,25 @@ jobs:
           fi
 
           echo "Golden set: $ready_count of $total_count canaries carry an evals.json"
+
+          # A RATCHET, not a target. The sweep gate is `eval_ready_count != 0`,
+          # so 1 of 16 ran and reported green -- the ratio existed only in the
+          # step summary, which nothing persists. Failing on the gap itself
+          # would be red on arrival and get switched off, so: fail only if
+          # coverage REGRESSES below the declared floor, and warn (visibly, on
+          # the run) for as long as it is partial.
+          floor="$(jq -r '.evalCoverageFloor // 0' evaluate-plugin/golden-set.json)"
+          if [ "$ready_count" -lt "$floor" ]; then
+            echo "::error::Golden-set eval coverage regressed: $ready_count of $total_count canaries carry an evals.json, below the declared floor of $floor. Restore the missing evals.json, or lower evalCoverageFloor deliberately."
+            exit 1
+          fi
+          if [ "$ready_count" -lt "$total_count" ]; then
+            echo "::warning::Golden-set sweep covers $ready_count of $total_count canaries — the other $(( total_count - ready_count )) have no evals.json and are not exercised. A green sweep does not mean the golden set passed."
+          fi
+
           {
             echo "eval_ready_count=$ready_count"
+            echo "eval_total_count=$total_count"
             echo "canary_report<<CANARY_EOF"
             cat "$report_file"
             echo "CANARY_EOF"
@@ -234,7 +253,10 @@ jobs:
 
             - Month: ${{ needs.gather.outputs.month }}
             - Models to sweep: ${{ needs.gather.outputs.models }}
-            - Eval-ready canaries: ${{ needs.gather.outputs.eval_ready_count }}
+            - Eval-ready canaries: ${{ needs.gather.outputs.eval_ready_count }} of ${{ needs.gather.outputs.eval_total_count }}
+              (canaries without an evals.json are NOT exercised by this sweep —
+              say so plainly in the issue, so a green sweep is not read as "the
+              golden set passed")
 
             ${{ needs.gather.outputs.canary_report }}
 

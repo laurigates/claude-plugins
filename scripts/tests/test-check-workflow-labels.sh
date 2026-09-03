@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016
+# SC2016 is the point, not a slip: the workflow fixtures below are single-quoted
+# so `$VAR` and `$GITHUB_REPOSITORY` reach the guard as LITERAL text. TEST H
+# asserts exactly that a `--label "$VAR"` stays UNRESOLVED, which double quotes
+# would expand away. File-level and ahead of the first command per
+# .claude/rules/shell-scripting.md -- placed lower it degrades to a
+# next-statement directive.
 # Regression test for scripts/check-workflow-labels.sh.
 #
 # The bug this guards: `gh issue create --label "<unknown>"` exits 1 with
@@ -12,6 +19,15 @@
 # with the backslash continuations every real call site actually uses. Without
 # those two, every "clean" assertion here would also pass against a guard that
 # parses nothing.
+#
+# Cases K-M cover the second way a label step kills a job: it EXISTS but 422s.
+# `color: 5319e7` unquoted resolves as a YAML 1.2 float (-> 53190000000), so
+# `gh label create` rejects it and -- because the label step runs FIRST -- every
+# later step is skipped and the audit never runs (observed 2026-09-01 on
+# scheduled-audits.yml's docs-index job). L is the load-bearing counter-case:
+# the SAME token inside a `run:` block is correct, because a block scalar is
+# never number-resolved, and flagging it would report the working call site in
+# golden-set-evaluation.yml as a defect.
 #
 # Cases D and E pin the read/create distinction that an earlier revision got
 # wrong: `gh issue list --label <unknown>` returns empty and exits 0 (harmless),
@@ -61,6 +77,11 @@ assert "real repo scanned a non-zero number of workflows" \
 assert "real repo is not marked SCANNED_EMPTY" "$(contains "$out" 'SCANNED_EMPTY=false')"
 assert "real repo found real attach sites" \
   "$([ "$(contains "$out" 'ATTACH_SITES=0')" = false ] && echo true || echo false)"
+assert "real repo INVALID_COLOR_COUNT=0" "$(contains "$out" 'INVALID_COLOR_COUNT=0')"
+# Without this, every "colour is fine" assertion below would also hold for a
+# checker that never looked at a colour.
+assert "real repo inspected real colour sites" \
+  "$([ "$(contains "$out" 'COLOR_SITES=0')" = false ] && echo true || echo false)"
 
 # --- TEST B: an unprovisioned label is flagged (the real failure) --------------
 echo "=== TEST B: create with an unprovisioned label FAILS ==="
@@ -185,6 +206,85 @@ jobs:
 out="$(bash "$checker" --project-dir "$d" -- "$d/.github/workflows/w.yml" 2>&1)"; rc=$?
 assert "J exits 1 on the named file" "$(is_true "$([ $rc -eq 1 ] && echo true)")"
 assert "J scanned exactly one workflow" "$(contains "$out" 'WORKFLOWS_SCANNED=1')"
+
+# --- TEST K: an unquoted colour that YAML resolves as a number is flagged -----
+# The verbatim shape that broke scheduled-audits.yml on 2026-09-01.
+echo "=== TEST K: unquoted color: 5319e7 in a with: block FAILS ==="
+d="$(mkwf k 'on: push
+jobs:
+  j:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/script-to-issue
+        with:
+          label: docs-index
+          color: 5319e7')"
+out="$(bash "$checker" --project-dir "$d" 2>&1)"; rc=$?
+assert "K exits 1" "$(is_true "$([ $rc -eq 1 ] && echo true)")"
+assert "K reports one invalid colour" "$(contains "$out" 'INVALID_COLOR_COUNT=1')"
+assert "K names the file and line" "$(contains "$out" 'INVALID_COLOR=.github/workflows/w.yml:9')"
+# The rendered number is the evidence: it is what GitHub answered 422 to, and it
+# is the half a reader cannot reconstruct from the source text alone.
+assert "K reports what gh would actually receive" "$(contains "$out" 'SENT=53190000000')"
+assert "K reports the source spelling" "$(contains "$out" 'SOURCE=5319e7')"
+
+# --- TEST L: the SAME token inside a run: block is correct -------------------
+# Counter-case. A block scalar is opaque to the resolver, so gh receives the
+# literal text. This is golden-set-evaluation.yml's shape and it works.
+echo "=== TEST L: --color 5319e7 inside a run: block is NOT flagged ==="
+d="$(mkwf l 'on: push
+jobs:
+  j:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure the label exists
+        run: |
+          gh label create golden-set-eval \
+            --repo "$GITHUB_REPOSITORY" \
+            --color 5319e7 \
+            --description "tier-2 sweep"
+      - run: gh issue create --title x --label "golden-set-eval"')"
+out="$(bash "$checker" --project-dir "$d" 2>&1)"; rc=$?
+assert "L exits 0" "$(is_true "$([ $rc -eq 0 ] && echo true)")"
+assert "L flags no colour" "$(contains "$out" 'INVALID_COLOR_COUNT=0')"
+# Non-vacuity: L must actually have inspected that colour, not skipped the file.
+assert "L still counted the colour site" "$(contains "$out" 'COLOR_SITES=1')"
+
+# --- TEST M: the resolver's edges, both polarities ---------------------------
+# Each row is one scalar shape. The invalid ones are the coercion classes; the
+# valid ones stop the fix degrading into "flag every colour".
+echo "=== TEST M: colour resolution edges ==="
+m_case() { # m_case <label> <raw> <expect-flagged> [expected-sent]
+  local d out rc
+  d="$(mkwf "m_$1" "on: push
+jobs:
+  j:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/script-to-issue
+        with:
+          label: x
+          color: $2")"
+  out="$(bash "$checker" --project-dir "$d" 2>&1)"; rc=$?
+  if [ "$3" = "flagged" ]; then
+    assert "M $1 ($2) is flagged" "$(is_true "$([ $rc -eq 1 ] && echo true)")"
+    [ -n "${4:-}" ] && assert "M $1 sends $4" "$(contains "$out" "SENT=$4")"
+  else
+    assert "M $1 ($2) is not flagged" "$(is_true "$([ $rc -eq 0 ] && echo true)")"
+    assert "M $1 was still inspected" "$(contains "$out" 'COLOR_SITES=1')"
+  fi
+}
+# Quoting is the remedy, so the quoted form must be accepted.
+m_case quoted '"5319e7"' clean
+# Leading zeros collapse under the integer rule: 000000 (black) -> 0.
+m_case black '000000' flagged '0'
+m_case leadzero '002200' flagged '2200'
+# A hex letter outside [0-9e] makes the scalar unresolvable -> stays a string.
+m_case letters '0e8a16' clean
+# Resolves to an int but restringifies identically, so gh gets a valid colour.
+# Flagging this would be a false positive on a config that works.
+m_case alldigits '123456' clean
+m_case garbage 'zzzzzz' flagged
 
 echo ""
 echo "=== RESULTS ==="

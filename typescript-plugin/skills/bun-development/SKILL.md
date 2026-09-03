@@ -2,7 +2,7 @@
 name: bun-development
 description: Bun runtime workflows for running scripts, testing, building, and initializing projects with agent-optimized flags. Use when running a TS file, watch/hot reload, configuring `bun test`, bundling/compiling, or scaffolding a Bun project.
 user-invocable: false
-allowed-tools: Bash, BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
+allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2025-12-20
 modified: 2026-05-09
 reviewed: 2025-12-20

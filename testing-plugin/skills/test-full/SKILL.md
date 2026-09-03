@@ -37,7 +37,7 @@ context: fork
 
 **Delegate this task to the `test-runner` agent.**
 
-Use the Agent tool with `subagent_type: test-runner` to run the complete test suite. Pass all the context gathered above and specify **All Tiers** execution.
+Use the Agent tool with `subagent_type: testing-plugin:test-runner` to run the complete test suite. Pass all the context gathered above and specify **All Tiers** execution.
 
 The test-runner agent should:
 

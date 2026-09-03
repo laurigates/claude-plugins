@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.6](https://github.com/laurigates/claude-plugins/compare/accessibility-plugin-v2.3.5...accessibility-plugin-v2.3.6) (2026-09-03)
+
+
+### Bug Fixes
+
+* **ci:** restore four scheduled-audit signals that were reporting nothing, or nonsense ([#2576](https://github.com/laurigates/claude-plugins/issues/2576)) ([de4337c](https://github.com/laurigates/claude-plugins/commit/de4337c7776ba7531cbe923fe016df78ef9b7e8c))
+
 ## [2.3.5](https://github.com/laurigates/claude-plugins/compare/accessibility-plugin-v2.3.4...accessibility-plugin-v2.3.5) (2026-05-14)
 
 

@@ -288,6 +288,8 @@ Documentation files (`*.md`, `*.mdx`, `*.rst`, `*.txt`) and vendor/generated pat
 
 A Stop hook that nudges the agent to restate work in tokens, effort tier (low/medium/high/xhigh/max), tool-call count, or files/lines to touch rather than human calendar time (hours, days, weeks, months). AI work doesn't map to human time units; quoting calendar estimates is consistently misleading. It deliberately does not ask for a remaining-context figure — the model cannot measure it, and prompting it to think about its remaining budget invites context anxiety.
 
+The message carries a second branch for **external machine work the agent measured rather than paced** — a CI run, a build, a model download, a render, a long test suite. That quantity is wall-clock by nature (a property of the hardware, not of the agent), and none of the effort units can express it, so the nudge asks for rate × quantity with the measurement named (`3870 frames at a measured 1.0 s/frame, so about 65 minutes`) instead of a unit swap. The matcher is deliberately **not** narrowed to skip measured rates — it still fires there, and the message says how to phrase it honestly (#2574).
+
 | Aspect | Detail |
 |--------|--------|
 | Type | `command` (deterministic regex on the last assistant message) |
@@ -296,7 +298,7 @@ A Stop hook that nudges the agent to restate work in tokens, effort tier (low/me
 | Detection | Future-modal + estimation verb + number + time unit (`will/would/should/'ll … take/require/need … N minutes/hours/…`); explicit markers (`ETA`, `estimated`, `approximately`, `roughly`, `expect … N minutes/hours/…`) |
 | Skips | Past-tense observations (`took 2 hours`), frequency (`every 3 hours`), config values (`30-second timeout`), unit-less numbers |
 | Shape | One nudge per response — the `stop_hook_active` guard accepts the agent's revised response silently |
-| Reason | Carries positive guidance inline so the rule ships self-contained with the plugin (no `.claude/rules/` dependency in consuming repos) |
+| Reason | Carries positive guidance inline so the rule ships self-contained with the plugin (no `.claude/rules/` dependency in consuming repos) — both branches: effort units, and rate × quantity for measured external jobs |
 
 ### test-verification.sh
 

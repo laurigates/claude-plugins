@@ -30,6 +30,24 @@
 # golden-set-evaluation.yml:97 and research-radar.yml:44: that form also swallows
 # genuine auth failures, deferring the error to a much more expensive step.
 #
+# A provisioning step that EXISTS but 422s is the same failure wearing a
+# different hat, and it lands harder: the label step runs FIRST, so every later
+# step is skipped and the audit never runs at all. Observed 2026-09-01 on
+# scheduled-audits.yml's docs-index job --
+#
+#   LABEL: docs-index / COLOR: 53190000000
+#   HTTP 422: Validation Failed / Label.color is invalid
+#
+# -- because the workflow wrote an unquoted `color: 5319e7`, and YAML reads that
+# as a float in scientific notation (5319e7 -> 53190000000). The three sibling
+# colours survived only because each happens to contain a hex letter outside
+# [0-9e] (`0e8a16`, `1d76db`, `d93f0b`), which makes the scalar unparseable as a
+# number. So the hazard is invisible on review and fires on one colour in ~250.
+#
+# This guard therefore also validates the colour a label create will actually
+# SEND. It does that by re-parsing the YAML rather than pattern-matching the
+# source text, so it reproduces the coercion instead of guessing at it.
+#
 # Usage:
 #   bash scripts/check-workflow-labels.sh [--strict] [--project-dir <path>] [workflow.yml ...]
 #
@@ -154,6 +172,40 @@ LABEL_VALUE_RE = re.compile(r"--label[=\s]+(\"[^\"]*\"|'[^']*'|[^\s\\]+)")
 # next line with a backslash.
 PROVISION_RE = re.compile(r"gh\s+label\s+create\s+(\"[^\"]*\"|'[^']*'|[^\s\\]+)")
 
+# A colour is only ever wrong in one way that matters: `gh label create` rejects
+# anything that is not six hex digits, and the whole job dies on the spot.
+COLOR_FLAG_RE = re.compile(r"--color[=\s]+(\"[^\"]*\"|'[^']*'|[^\s\\]+)")
+COLOR_KEY_RE = re.compile(r"^\s*color:\s*(\S.*?)\s*(?:#.*)?$")
+BLOCK_SCALAR_RE = re.compile(r"^(\s*)[A-Za-z_-]+:\s*[|>][-+0-9]*\s*$")
+HEX6_RE = re.compile(r"^#?[0-9a-fA-F]{6}$")
+
+# YAML 1.2 core schema, which is what the Actions runner resolves `with:` values
+# with. PyYAML is NOT usable here: it implements the 1.1 resolver, whose float
+# rule demands both a `.` and a signed exponent, so it reads `5319e7` as the
+# STRING "5319e7" -- the one value this check exists to catch. A guard built on
+# yaml.safe_load reports OK on the exact input that 422s in CI.
+YAML12_INT_RE = re.compile(r"^[-+]?[0-9]+$")
+YAML12_FLOAT_RE = re.compile(
+    r"^[-+]?(?:\.[0-9]+|[0-9]+(?:\.[0-9]*)?)(?:[eE][-+]?[0-9]+)?$"
+)
+
+
+def actions_sends(raw):
+    """The string an unquoted YAML scalar reaches `gh` as.
+
+    Quoting settles it: a quoted scalar is never resolved as a number, which is
+    why the remedy is "quote the colour" rather than "pick a different one".
+    """
+    if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in "\"'":
+        return raw[1:-1], True
+    if YAML12_INT_RE.match(raw):
+        # `000000` -> 0, `002200` -> 2200: every leading-zero colour collapses.
+        return str(int(raw)), False
+    if YAML12_FLOAT_RE.match(raw):
+        f = float(raw)
+        return (("%d" % f) if f.is_integer() else repr(f)), False
+    return raw, False
+
 
 def unquote(tok):
     if len(tok) >= 2 and tok[0] == tok[-1] and tok[0] in "\"'":
@@ -169,6 +221,8 @@ def split_labels(value):
 findings = []       # (file, label) attached but never provisioned
 unresolved = []     # (file, raw) value we could not evaluate statically
 composite = []      # (file, job, label) caller must provision: composite won't
+bad_colors = []     # (file, line, sent, raw, quoted) colour `gh` will reject
+color_sites = 0
 scanned = 0
 attach_sites = 0
 internal = 0        # parameterised attach inside a self-provisioning action
@@ -187,9 +241,55 @@ for path in files:
     provisioned = {unquote(m.group(1)) for m in PROVISION_RE.finditer(text)}
     is_action = os.path.basename(path) in ("action.yml", "action.yaml")
     # Does this file provision a label whose name is itself a variable?
-    provisions_parameterised = any(
-        ("$" in p or "{{" in p) for p in provisioned
-    )
+    provisions_parameterised = any(("$" in p or "{{" in p) for p in provisioned)
+
+    # Colour validity, scanned from RAW SOURCE TEXT on purpose: the defect is
+    # the source spelling, and any parse has already destroyed the evidence.
+    # Reported as file:line -- that is where the fix goes.
+    #
+    # The two forms are NOT equivalent and must not share a rule:
+    #
+    #   with: { color: 5319e7 }   a YAML mapping value -> RESOLVED as a number
+    #   run: |
+    #     gh label create --color 5319e7   inside a block scalar -> literal text
+    #
+    # A block scalar is opaque to the resolver, so the second form reaches `gh`
+    # verbatim and is correct. Coercing both would report the working call site
+    # in golden-set-evaluation.yml as a defect.
+    block_indent = None
+    for lineno, srcline in enumerate(text.splitlines(), 1):
+        stripped = srcline.strip()
+        indent = len(srcline) - len(srcline.lstrip())
+
+        if block_indent is not None and stripped and indent <= block_indent:
+            block_indent = None
+        bm = BLOCK_SCALAR_RE.match(srcline)
+        if bm:
+            block_indent = len(bm.group(1))
+            continue
+        in_block = block_indent is not None
+
+        raw = None
+        coerced = False
+        km = COLOR_KEY_RE.match(srcline)
+        if km and not in_block:
+            raw, coerced = km.group(1), True
+        else:
+            fm = COLOR_FLAG_RE.search(srcline)
+            if fm:
+                raw = fm.group(1)
+        if not raw or "$" in raw or "{{" in raw:
+            continue
+
+        if coerced:
+            sent, quoted = actions_sends(raw)
+        else:
+            sent, quoted = unquote(raw), raw[:1] in "\"'"
+        if sent == "":
+            continue  # empty default: gh picks a colour, never an error
+        color_sites += 1
+        if not HEX6_RE.match(sent):
+            bad_colors.append((rel, lineno, sent, raw, quoted))
 
     # A `gh issue create` is routinely spread over many lines with backslash
     # continuations, with `--label` several lines below the command itself.
@@ -257,6 +357,7 @@ if _yaml is not None:
                 if not isinstance(with_, dict):
                     continue
                 label = str(with_.get("label") or "").strip()
+
                 if not label or "$" in label or "{{" in label:
                     continue
                 attach_sites += 1
@@ -277,6 +378,11 @@ print("UNPROVISIONED_COUNT=%d" % len(findings))
 print("UNRESOLVED_COUNT=%d" % len(unresolved))
 print("COMPOSITE_CALLS_INTERNAL=%d" % internal)
 print("COMPOSITE_OPTOUT_UNPROVISIONED=%d" % len(composite))
+print("COLOR_SITES=%d" % color_sites)
+print("INVALID_COLOR_COUNT=%d" % len(bad_colors))
+# The composite opt-out rule needs a YAML parse; the colour and provisioning
+# rules do not. Report it rather than letting that one rule degrade silently.
+print("YAML_AVAILABLE=%s" % ("true" if _yaml is not None else "false"))
 
 if findings:
     print("")
@@ -296,9 +402,35 @@ if composite:
     for rel, jid, label in composite:
         print("UNPROVISIONED=%s\tJOB=%s\tLABEL=%s" % (rel, jid, label))
 
-failed = bool(findings) or bool(composite) or (strict and bool(unresolved))
+if bad_colors:
+    print("")
+    print("=== INVALID LABEL COLOURS ===")
+    for rel, lineno, sent, raw, quoted in bad_colors:
+        print(
+            "INVALID_COLOR=%s:%d\tSOURCE=%s\tSENT=%s\tQUOTED=%s"
+            % (rel, lineno, raw, sent, "true" if quoted else "false")
+        )
 
-if failed:
+failed = (
+    bool(findings)
+    or bool(composite)
+    or bool(bad_colors)
+    or (strict and bool(unresolved))
+)
+
+if bad_colors:
+    print("")
+    print("=== REMEDY: INVALID LABEL COLOUR ===")
+    print("`gh label create` requires exactly six hex digits; anything else is")
+    print("HTTP 422 and the step exits 1, skipping every step behind it.")
+    print("")
+    print("QUOTE the colour in YAML. Unquoted, a value matching <digits>e<digits>")
+    print("parses as a float (5319e7 -> 53190000000) and a leading zero can be")
+    print("read as octal -- both reach `gh` as a number, not your colour:")
+    print("")
+    print("      color: \"5319e7\"        # not: color: 5319e7")
+
+if findings or composite or (strict and unresolved):
     print("")
     print("=== REMEDY ===")
     print("Add an idempotent provisioning step ahead of the create call:")

@@ -415,6 +415,94 @@ assert "a default run still emits the dashboard header" \
   "$(printf '%s\n' "$default_out" | grep -q 'Infrastructure Compliance Dashboard' && echo true || echo false)"
 
 ##########
+# Checkout pin drift (the gate was inverted and half-blind)
+##########
+#
+# It hardcoded `v4` as the good value. Every ref in this repo is `@v6`, so all
+# 28 warned permanently, the report advised "update workflow action versions"
+# on actions already at the newest major, and an actual DOWNGRADE to `@v4`
+# scored a tick. `grep -m1` also read only the FIRST ref per file, so a stale
+# pin in any later step was invisible.
+#
+# The replacement asks whether the repo's pins AGREE. The cases below pin both
+# polarities, because "flag nothing" and "flag everything" both satisfy a
+# one-sided test.
+
+mk_ck() { # mk_ck <dir> <file> <ref>...
+  local d="$1" f="$2"; shift 2
+  mkdir -p "$d/.github/workflows"
+  {
+    printf 'name: t\non:\n  push:\njobs:\n  j:\n    runs-on: ubuntu-latest\n    steps:\n'
+    for r in "$@"; do printf '      - uses: actions/checkout@%s\n' "$r"; done
+  } > "$d/.github/workflows/$f"
+}
+
+# Row for a workflow in the rendered table: "| <file> | <checkout> | ... |"
+ck_row() { printf '%s\n' "$1" | grep -E "^\| $2 \|" | head -1; }
+
+# --- A uniform repo agrees with itself, whatever the version ----------------
+# This is the case that proves the gate cannot rot: an all-v4 repo is as clean
+# as an all-v6 one, because agreement is the property being measured.
+ck_uni="$TMP_ROOT/ck-uniform"
+mk_ck "$ck_uni" "a.yml" v4
+mk_ck "$ck_uni" "b.yml" v4
+out="$(bash "$CHECK" --project-dir "$ck_uni" 2>/dev/null)"
+assert "a uniformly-v4 repo raises no checkout warning" \
+  "$(printf '%s' "$(ck_row "$out" a.yml)" | grep -q '⚠️' && echo false || echo true)"
+# Guard integrity: without this, the assertion above also holds for a run that
+# rendered no table at all.
+assert "the uniform fixture reached the workflow table" \
+  "$([ -n "$(ck_row "$out" a.yml)" ] && echo true || echo false)"
+
+ck_uni6="$TMP_ROOT/ck-uniform6"
+mk_ck "$ck_uni6" "a.yml" v6
+mk_ck "$ck_uni6" "b.yml" v6
+out="$(bash "$CHECK" --project-dir "$ck_uni6" 2>/dev/null)"
+assert "a uniformly-v6 repo raises no checkout warning" \
+  "$(printf '%s' "$(ck_row "$out" a.yml)" | grep -q '⚠️' && echo false || echo true)"
+
+# --- A laggard among agreeing siblings IS flagged ---------------------------
+# The pre-fix gate scored this file ✅, since v4 was its hardcoded good value.
+ck_lag="$TMP_ROOT/ck-laggard"
+mk_ck "$ck_lag" "a.yml" v6
+mk_ck "$ck_lag" "b.yml" v6
+mk_ck "$ck_lag" "c.yml" v6
+mk_ck "$ck_lag" "old.yml" v4
+out="$(bash "$CHECK" --project-dir "$ck_lag" 2>/dev/null)"
+assert "a lone v4 among v6 siblings IS flagged" \
+  "$(printf '%s' "$(ck_row "$out" old.yml)" | grep -q '⚠️' && echo true || echo false)"
+assert "its agreeing siblings are NOT flagged" \
+  "$(printf '%s' "$(ck_row "$out" a.yml)" | grep -q '⚠️' && echo false || echo true)"
+
+# --- Every ref is read, not just the first ----------------------------------
+# `grep -m1` reported v6 and a tick while a v3 sat two lines below.
+ck_mix="$TMP_ROOT/ck-mixed"
+mk_ck "$ck_mix" "a.yml" v6
+mk_ck "$ck_mix" "b.yml" v6
+mk_ck "$ck_mix" "d-mixed.yml" v6 v3
+out="$(bash "$CHECK" --project-dir "$ck_mix" 2>/dev/null)"
+assert "a file pinning two different versions IS flagged" \
+  "$(printf '%s' "$(ck_row "$out" d-mixed.yml)" | grep -q '⚠️' && echo true || echo false)"
+assert "the later ref is reported, not swallowed by the first" \
+  "$(printf '%s' "$(ck_row "$out" d-mixed.yml)" | grep -q 'v3' && echo true || echo false)"
+
+# --- No checkout at all is N/A, not a finding -------------------------------
+ck_none="$TMP_ROOT/ck-none"
+mkdir -p "$ck_none/.github/workflows"
+printf 'name: t\non:\n  push:\njobs:\n  j:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n' \
+  > "$ck_none/.github/workflows/a.yml"
+out="$(bash "$CHECK" --project-dir "$ck_none" 2>/dev/null)"; rc=$?
+assert_eq "a repo with no checkout still exits 0" "0" "$rc"
+assert "a workflow with no checkout reports N/A" \
+  "$(printf '%s' "$(ck_row "$out" a.yml)" | grep -q 'N/A' && echo true || echo false)"
+assert "a workflow with no checkout is not flagged" \
+  "$(printf '%s' "$(ck_row "$out" a.yml)" | grep -q '⚠️' && echo false || echo true)"
+
+# --- The real repo is uniform, so the column is clean -----------------------
+assert "the real repo raises no checkout warning" \
+  "$(printf '%s' "$default_out" | grep -E '^\| [a-z-]+\.yml \|' | awk -F'|' '{print $3}' | grep -q '⚠️' && echo false || echo true)"
+
+##########
 # Summary
 ##########
 

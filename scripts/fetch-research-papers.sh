@@ -15,8 +15,26 @@
 #
 # Usage:
 #   fetch-research-papers.sh [--since-days N] [--seen-file PATH] [--out PATH]
+#                            [--arxiv-max N]
 #
-#   --since-days N   Only keep items published within the last N days (default 8)
+#   --since-days N   Fetch and keep items published within the last N days
+#                    (default 8). This bounds the arXiv REQUEST, not just the
+#                    post-filter: the query used to be a bare
+#                    `max_results=80&sortBy=submittedDate`, with no date
+#                    qualifier and no pagination, so the newest 80 submissions
+#                    were all that could ever arrive. Across cs.AI/CL/LG/SE/HC
+#                    that is roughly THREE HOURS of arXiv, against a promised 8
+#                    days -- and the downstream filter is discard-only, so
+#                    raising this flag widened the HuggingFace and blog arms
+#                    while the largest source did not move at all (measured:
+#                    ARXIV_COUNT=75 identical at 8, 30 and 90 days).
+#   --arxiv-max N    Hard ceiling on arXiv entries fetched (default 400, in
+#                    pages of 100). A real 8-day window across five categories
+#                    runs to thousands, and every candidate is read by an Opus
+#                    step downstream, so the window is honoured up to a bound
+#                    rather than without one. When the bound bites, the summary
+#                    says so (ARXIV_TRUNCATED=true) instead of quietly
+#                    returning a narrower window than the flag asked for.
 #   --seen-file P    Newline-delimited paper IDs already surfaced in prior
 #                    issues; matching items are dropped. Default: none.
 #   --out P          Write the JSON candidate array here (default /tmp/research-candidates.json)
@@ -28,10 +46,13 @@ set -uo pipefail
 since_days=8
 seen_file=""
 out_file="/tmp/research-candidates.json"
+arxiv_max=400
+arxiv_page=100
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --since-days) since_days="$2"; shift 2 ;;
+    --arxiv-max) arxiv_max="$2"; shift 2 ;;
     --seen-file) seen_file="$2"; shift 2 ;;
     --out) out_file="$2"; shift 2 ;;
     *) shift ;;
@@ -62,9 +83,55 @@ else
     "https://huggingface.co/api/daily_papers" \
     -o "$work_dir/hf.json" 2>/dev/null || true
 
-  curl -fsSL --max-time 45 \
-    "http://export.arxiv.org/api/query?search_query=${arxiv_cats}&sortBy=submittedDate&sortOrder=descending&max_results=80" \
-    -o "$work_dir/arxiv.xml" 2>/dev/null || true
+  # arXiv: a DATE-BOUNDED, paginated query. `submittedDate:[FROM TO TO]` is what
+  # makes --since-days reach the request; sortBy=submittedDate descending then
+  # means a truncated run keeps the NEWEST papers in the window rather than an
+  # arbitrary slice. https, not http (the old query was plain http).
+  #
+  # Dates are UTC yyyymmddHHMM. `date -u -d` is GNU, `date -u -v` is BSD; try
+  # GNU first and fall back, per .claude/rules/shell-scripting.md.
+  arxiv_from="$(date -u -d "${since_days} days ago" +%Y%m%d0000 2>/dev/null \
+             || date -u -v-"${since_days}"d +%Y%m%d0000 2>/dev/null || echo "")"
+  arxiv_to="$(date -u +%Y%m%d2359)"
+
+  if [ -n "$arxiv_from" ]; then
+    arxiv_window="+AND+submittedDate:[${arxiv_from}+TO+${arxiv_to}]"
+  else
+    # No usable date arithmetic: fall back to an undated query rather than
+    # sending a malformed range, and say so in the summary.
+    arxiv_window=""
+    echo "arxiv: date arithmetic unavailable, falling back to an undated query" >&2
+  fi
+
+  arxiv_fetched=0
+  arxiv_start=0
+  while [ "$arxiv_start" -lt "$arxiv_max" ]; do
+    page_size=$(( arxiv_max - arxiv_start ))
+    [ "$page_size" -gt "$arxiv_page" ] && page_size="$arxiv_page"
+
+    page_file="$work_dir/arxiv-$(printf '%03d' "$arxiv_start").xml"
+    curl -fsSL --max-time 45 \
+      "https://export.arxiv.org/api/query?search_query=${arxiv_cats}${arxiv_window}&sortBy=submittedDate&sortOrder=descending&start=${arxiv_start}&max_results=${page_size}" \
+      -o "$page_file" 2>/dev/null || break
+
+    # Entries in THIS page. A short page means the window is exhausted, which is
+    # the only clean signal to stop -- arXiv keeps returning 200 past the end.
+    got=$(grep -c '<entry>' "$page_file" 2>/dev/null || true)
+    [ -z "$got" ] && got=0
+    arxiv_fetched=$(( arxiv_fetched + got ))
+    [ "$got" -lt "$page_size" ] && break
+
+    arxiv_start=$(( arxiv_start + page_size ))
+    # arXiv asks for ~3s between requests. Only paid when there IS a next page.
+    [ "$arxiv_start" -lt "$arxiv_max" ] && sleep 3
+  done
+
+  # Truncated means "the window held more than the ceiling allowed", which the
+  # operator needs to see: it is the difference between "8 quiet days" and "8
+  # days, of which you read the newest 400".
+  if [ "$arxiv_fetched" -ge "$arxiv_max" ]; then
+    echo "ARXIV_TRUNCATED=true" > "$work_dir/arxiv-truncated"
+  fi
 
   blog_idx=0
   for feed in "${blog_feeds[@]}"; do
@@ -158,8 +225,10 @@ if os.path.isfile(hf_path):
         print(f"hf parse skipped: {exc}", file=sys.stderr)
 
 # --- arXiv (Atom XML) ---
-arxiv_path = os.path.join(work_dir, "arxiv.xml")
-if os.path.isfile(arxiv_path):
+# glob, not a single path: the live fetch writes one file per page
+# (arxiv-000.xml, arxiv-100.xml, ...), while RR_FIXTURE_DIR stages a plain
+# arxiv.xml. `arxiv*.xml` covers both, so the offline seam is unaffected.
+for arxiv_path in sorted(glob.glob(os.path.join(work_dir, "arxiv*.xml"))):
     try:
         ns = {"a": "http://www.w3.org/2005/Atom"}
         root = ET.parse(arxiv_path).getroot()
@@ -270,11 +339,18 @@ fi
 radar_status="OK"
 [ "$total" -eq 0 ] && radar_status="WARN"
 
+# Emitted ALWAYS, both values: a key that only appears when true is
+# indistinguishable from a key nobody remembered to emit.
+arxiv_truncated="false"
+[ -f "$work_dir/arxiv-truncated" ] && arxiv_truncated="true"
+
 echo "=== RESEARCH RADAR ==="
 echo "SINCE_DAYS=$since_days"
 echo "OUT_FILE=$out_file"
 echo "HF_COUNT=$hf"
 echo "ARXIV_COUNT=$arxiv"
+echo "ARXIV_MAX=$arxiv_max"
+echo "ARXIV_TRUNCATED=$arxiv_truncated"
 echo "BLOG_COUNT=$blog"
 echo "CANDIDATE_COUNT=$total"
 echo "STATUS=$radar_status"

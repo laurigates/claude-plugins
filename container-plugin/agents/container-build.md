@@ -3,7 +3,7 @@ name: container-build
 model: opus
 color: "#2496ED"
 description: Container build and debugging. Builds Docker images, analyzes build failures, inspects layers, and troubleshoots container issues. Use for Docker/container operations.
-tools: Glob, Grep, LS, Read, Edit, Write, Bash(docker *), Bash(podman *), Bash(buildah *), Bash(dive *), Bash(git status *), Bash(git diff *), TodoWrite
+tools: Glob, Grep, Read, Edit, Write, Bash(docker *), Bash(podman *), Bash(buildah *), Bash(dive *), Bash(git status *), Bash(git diff *), TodoWrite
 skills:
   - docker-development
   - dockerfile-optimization

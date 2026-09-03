@@ -73,7 +73,7 @@ the gate to verify — skip it and proceed.
 Delegate analysis to the `eval-analyzer` agent via Task:
 
 ```
-Task subagent_type: eval-analyzer
+Task subagent_type: evaluate-plugin:eval-analyzer
 Prompt: Analyze these evaluation results and identify improvement opportunities.
   Skill: <path to SKILL.md>
   Benchmark: <benchmark.json contents>

@@ -3,7 +3,7 @@ name: k8s-diagnostics
 model: opus
 color: "#326CE5"
 description: Kubernetes cluster diagnostics. Investigates pod failures, analyzes logs, checks resource status, and troubleshoots deployments. Use when debugging Kubernetes issues.
-tools: Glob, Grep, LS, Read, Bash(kubectl *), Bash(helm *), Bash(kustomize *), Bash(git status *), Bash(git diff *), TodoWrite
+tools: Glob, Grep, Read, Bash(kubectl *), Bash(helm *), Bash(kustomize *), Bash(git status *), Bash(git diff *), TodoWrite
 skills:
   - kubernetes-operations
   - kubernetes-debugging

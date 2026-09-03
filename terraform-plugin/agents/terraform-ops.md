@@ -3,7 +3,7 @@ name: terraform-ops
 model: opus
 color: "#5C4EE5"
 description: Terraform infrastructure operations. Runs plan/apply, analyzes drift, validates configurations, and summarizes verbose infrastructure changes. Use when working with Terraform/OpenTofu.
-tools: Glob, Grep, LS, Read, Edit, Write, Bash(terraform *), Bash(tofu *), Bash(tflint *), Bash(git status *), Bash(git diff *), TodoWrite
+tools: Glob, Grep, Read, Edit, Write, Bash(terraform *), Bash(tofu *), Bash(tflint *), Bash(git status *), Bash(git diff *), TodoWrite
 skills:
   - terraform-workflow
   - terraform-state-management

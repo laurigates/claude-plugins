@@ -10,7 +10,7 @@
       "name": "accessibility-plugin",
       "source": "./accessibility-plugin",
       "description": "Accessibility and UX implementation - WCAG, ARIA, design tokens",
-      "version": "2.3.5",
+      "version": "2.3.6",
       "keywords": [
         "accessibility",
         "wcag",
@@ -24,7 +24,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.45.3",
+      "version": "2.45.4",
       "keywords": [
         "agents",
         "configuration",
@@ -39,7 +39,7 @@
       "name": "agents-plugin",
       "source": "./agents-plugin",
       "description": "Task-focused agents with teammate and subagent role guidance for test, review, debug, docs, CI, security, refactoring, research, and performance",
-      "version": "1.14.1",
+      "version": "1.14.2",
       "keywords": [
         "agents",
         "teammates",
@@ -69,7 +69,7 @@
       "name": "bevy-plugin",
       "source": "./bevy-plugin",
       "description": "Bevy game engine development - ECS, rendering, game architecture",
-      "version": "1.4.1",
+      "version": "1.4.2",
       "keywords": [
         "bevy",
         "game-engine",
@@ -117,7 +117,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, dependency auditing, dead code detection, test quality, complexity metrics, and static analysis",
-      "version": "1.25.2",
+      "version": "1.25.3",
       "keywords": [
         "code-review",
         "refactoring",
@@ -207,7 +207,7 @@
       "name": "container-plugin",
       "source": "./container-plugin",
       "description": "Container development and deployment - Docker, registry, Skaffold",
-      "version": "2.9.3",
+      "version": "2.9.4",
       "keywords": [
         "container",
         "docker",
@@ -249,7 +249,7 @@
       "name": "evaluate-plugin",
       "source": "./evaluate-plugin",
       "description": "Skill evaluation and benchmarking - test skill effectiveness with behavioral eval cases, grade results, and track quality improvements",
-      "version": "1.14.3",
+      "version": "1.14.4",
       "keywords": [
         "evaluation",
         "benchmarking",
@@ -310,7 +310,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.52.2",
+      "version": "2.52.3",
       "keywords": [
         "git",
         "github",
@@ -337,7 +337,7 @@
       "name": "github-actions-plugin",
       "source": "./github-actions-plugin",
       "description": "GitHub Actions CI/CD - workflows, authentication, inspection, auto-fix",
-      "version": "1.9.5",
+      "version": "1.9.6",
       "keywords": [
         "github-actions",
         "ci-cd",
@@ -407,7 +407,7 @@
       "name": "kubernetes-plugin",
       "source": "./kubernetes-plugin",
       "description": "Kubernetes and Helm operations - deployments, charts, releases",
-      "version": "1.8.0",
+      "version": "1.8.1",
       "keywords": [
         "kubernetes",
         "helm",
@@ -420,7 +420,7 @@
       "name": "langchain-plugin",
       "source": "./langchain-plugin",
       "description": "LangChain JS/TS development - agents, chains, LangGraph workflows, and Deep Agents patterns",
-      "version": "1.5.8",
+      "version": "1.5.9",
       "keywords": [
         "langchain",
         "langgraph",
@@ -568,7 +568,7 @@
       "name": "python-plugin",
       "source": "./python-plugin",
       "description": "Python development ecosystem - uv, ruff, pytest, packaging",
-      "version": "1.5.7",
+      "version": "1.5.8",
       "keywords": [
         "python",
         "uv",
@@ -582,7 +582,7 @@
       "name": "rust-plugin",
       "source": "./rust-plugin",
       "description": "Rust development - cargo, clippy, testing, memory safety",
-      "version": "1.7.0",
+      "version": "1.7.1",
       "keywords": [
         "rust",
         "cargo",
@@ -645,7 +645,7 @@
       "name": "terraform-plugin",
       "source": "./terraform-plugin",
       "description": "Terraform and Terraform Cloud - infrastructure as code",
-      "version": "1.7.6",
+      "version": "1.7.7",
       "keywords": [
         "terraform",
         "infrastructure",
@@ -658,7 +658,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.19.3",
+      "version": "3.19.4",
       "keywords": [
         "testing",
         "tdd",
@@ -675,7 +675,7 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.10.0",
+      "version": "2.10.1",
       "keywords": [
         "tools",
         "utilities",
@@ -690,7 +690,7 @@
       "name": "typescript-plugin",
       "source": "./typescript-plugin",
       "description": "TypeScript development - strict types, ESLint, Biome",
-      "version": "1.8.10",
+      "version": "1.8.11",
       "keywords": [
         "typescript",
         "eslint",

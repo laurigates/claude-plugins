@@ -1,7 +1,7 @@
 ---
 description: "Bun test runner with compact agent-friendly output. Use when running bun tests, targeting a pattern, collecting --coverage, watching, or emitting JUnit XML for CI."
 args: "[pattern] [--coverage] [--bail] [--watch]"
-allowed-tools: Bash, BashOutput, Read
+allowed-tools: Bash, Read
 argument-hint: "[test-pattern] [--coverage] [--bail] [--watch]"
 created: 2025-12-20
 modified: 2026-07-28
