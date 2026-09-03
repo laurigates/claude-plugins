@@ -3,7 +3,7 @@ name: performance
 model: opus
 color: "#E65100"
 description: Performance analysis and profiling. Identifies bottlenecks, analyzes profiler output, benchmarks code, and recommends optimizations. Use when investigating slow code or system performance issues.
-tools: Glob, Grep, LS, Read, Bash(hyperfine *), Bash(py-spy *), Bash(perf *), Bash(time *), Bash(npm run *), Bash(cargo bench *), Bash(go test -bench *), Bash(git status *), Bash(git diff *), TodoWrite
+tools: Glob, Grep, Read, Bash(hyperfine *), Bash(py-spy *), Bash(perf *), Bash(time *), Bash(npm run *), Bash(cargo bench *), Bash(go test -bench *), Bash(git status *), Bash(git diff *), TodoWrite
 context: fork
 maxTurns: 25
 created: 2026-01-24

@@ -3,7 +3,7 @@ name: search-replace
 model: opus
 color: "#F59E0B"
 description: Cross-platform search and replace across codebases using built-in tools. No sed, no shell commands, no permission prompts. Use when replacing text patterns across multiple files.
-tools: Glob, Grep, LS, Read, Edit, Write, TodoWrite
+tools: Glob, Grep, Read, Edit, Write, TodoWrite
 maxTurns: 15
 created: 2026-03-11
 modified: 2026-09-02

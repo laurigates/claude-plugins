@@ -116,7 +116,7 @@ For each run, grade the produced output:
 2. Only if it reports `JUDGE_PENDING > 0`, dispatch the `eval-grader` agent for
    the deferred fuzzy expectations:
    ```
-   Task subagent_type: eval-grader
+   Task subagent_type: evaluate-plugin:eval-grader
    Prompt: Grade ONLY the deferred (judge) expectations for <eval-id> ...
    ```
    Most expectations grade deterministically — the judge fires on a fraction.

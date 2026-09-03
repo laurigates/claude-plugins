@@ -125,9 +125,38 @@ repos:
         language: script
         files: '^scripts/(check-unused-bash-grant\.sh|tests/test-check-unused-bash-grant\.sh)$'
         pass_filenames: false
+      # --strict since the corpus reached UNQUALIFIED=0 (see the ratchet note in
+      # .claude/rules/regression-testing.md). Without it the WARN tier reached
+      # nobody: the hook ran unflagged and non-verbose, and the guard appeared in
+      # no workflow at all, so 6 bare names resolved only by plugin-name fallback
+      # -- "luck of name resolution", in the script's own header.
+      - id: check-golden-set-coverage
+        name: golden-set sweep cannot report green on a fraction silently
+        entry: bash ./scripts/check-golden-set-coverage.sh
+        language: system
+        files: '^(evaluate-plugin/golden-set\.json|\.github/workflows/golden-set-evaluation\.yml|scripts/check-golden-set-coverage\.sh|.*/evals\.json)$'
+        pass_filenames: false
+      - id: test-check-golden-set-coverage
+        name: golden-set coverage guard regression
+        entry: bash ./scripts/tests/test-check-golden-set-coverage.sh
+        language: system
+        files: '^scripts/(check-golden-set-coverage\.sh|tests/test-check-golden-set-coverage\.sh)$'
+        pass_filenames: false
+      - id: check-dead-tool-grants
+        name: no retired tool name is granted in allowed-tools/tools
+        entry: bash ./scripts/check-dead-tool-grants.sh
+        language: system
+        files: '\.md$'
+        pass_filenames: false
+      - id: test-check-dead-tool-grants
+        name: dead-tool-grant guard regression
+        entry: bash ./scripts/tests/test-check-dead-tool-grants.sh
+        language: system
+        files: '^scripts/(check-dead-tool-grants\.sh|tests/test-check-dead-tool-grants\.sh)$'
+        pass_filenames: false
       - id: check-subagent-types
         name: every subagent_type in a skill body resolves to a real agent
-        entry: ./scripts/check-subagent-types.sh
+        entry: ./scripts/check-subagent-types.sh --strict
         language: script
         files: '^([^/]+-plugin/(skills/.*\.md|agents/.*\.md)|scripts/check-subagent-types\.sh)$'
         pass_filenames: false
@@ -506,6 +535,21 @@ repos:
         entry: bash ./scripts/tests/test-check-workflow-labels.sh
         language: system
         files: '^scripts/(check-workflow-labels\.sh|tests/test-check-workflow-labels\.sh)$'
+      # Only the self-test is wired here: check-audit-liveness.sh itself queries
+      # `gh run list` / `gh issue list`, so it belongs in the scheduled sweep,
+      # not in a pre-commit hook that must work offline.
+      # Stubs curl and asserts on the URLs requested, so it needs no network.
+      - id: test-fetch-arxiv-window
+        name: arXiv fetch honours --since-days (window + pagination)
+        entry: bash ./scripts/tests/test-fetch-arxiv-window.sh
+        language: system
+        files: '^scripts/(fetch-research-papers\.sh|tests/test-fetch-arxiv-window\.sh)$'
+        pass_filenames: false
+      - id: test-check-audit-liveness
+        name: audit-liveness guard regression
+        entry: bash ./scripts/tests/test-check-audit-liveness.sh
+        language: system
+        files: '^scripts/(check-audit-liveness\.sh|tests/(test-check-audit-liveness\.sh|fixtures/audit-liveness/.*\.json))$'
         pass_filenames: false
       - id: test-check-git-sandbox-guards
         name: git-sandbox-guard linter regression

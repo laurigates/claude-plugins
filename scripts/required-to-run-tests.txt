@@ -67,3 +67,24 @@ health-plugin/scripts/tests/test-probe-lib.sh
 # (#2478). A skip would silently demote it to the grep-for-`refs/heads/` gate
 # it was written to replace.
 git-plugin/skills/git-merge-hazards/scripts/tests/test-push-refspec.sh
+
+# Runs entirely off committed fixtures -- no gh, no network, no task binary --
+# so there is no environment in which skipping it is legitimate. A skip would
+# mean the fixtures or the checker moved, which is exactly the regression.
+scripts/tests/test-check-audit-liveness.sh
+
+# Stubs curl on PATH and asserts on the requested URLs -- no network, no
+# credentials, so a skip is never legitimate. The defect it guards lives in the
+# REQUEST, which the emitted counts cannot see.
+scripts/tests/test-fetch-arxiv-window.sh
+
+# Pure filesystem fixtures -- no network, no binaries beyond grep/find. Its
+# negative cases are load-bearing: the corpus legitimately DISCUSSES the retired
+# names, so a skip would hide a guard that had started flagging documentation.
+scripts/tests/test-check-dead-tool-grants.sh
+
+# Its case A is load-bearing in an unusual direction: the real repo, at 1 of 16
+# canaries, must be GREEN. A skip would hide a guard that had started failing on
+# the standing gap -- which is exactly the shape that gets a monthly audit
+# switched off.
+scripts/tests/test-check-golden-set-coverage.sh
