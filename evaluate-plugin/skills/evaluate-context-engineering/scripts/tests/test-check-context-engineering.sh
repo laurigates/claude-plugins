@@ -59,10 +59,26 @@ value_of() {
 # target the real shared .git instead of the throwaway dir.
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX
 
-fixture="$(mktemp -d)"
+# One throwaway parent; every sandbox repo below it carries a DETERMINISTIC,
+# legible basename. The scanner sorts the portfolio breakdown by repo name, so
+# random `mktemp -d` basenames made both the ordering assertion's outcome and
+# its failure message depend on three random suffixes (#2563). The parent stays
+# unique so concurrent runs cannot collide.
+sandbox="$(mktemp -d)"
 # Guard the empty-mktemp vector (#1692): `git -C ""` falls back to the CWD.
-[ -n "$fixture" ] || { echo "FAIL: mktemp -d returned empty" >&2; exit 1; }
-trap 'rm -rf "$fixture"' EXIT
+[ -n "$sandbox" ] || { echo "FAIL: mktemp -d returned empty" >&2; exit 1; }
+[ -d "$sandbox" ] || { echo "FAIL: mktemp -d dir missing" >&2; exit 1; }
+trap 'rm -rf "$sandbox"' EXIT
+
+# The three portfolio roots straddle the ASCII case boundary ON PURPOSE:
+# byte order is 'B' (0x42) < 'a' (0x61) < 'g' (0x67), while a case-insensitive
+# collation orders them alpha < Beta < gamma. Any comparison that is not byte
+# order therefore yields a different sequence on EVERY run, rather than only
+# when three random suffixes happen to straddle.
+fixture="$sandbox/alpha-primary"
+fixture2="$sandbox/Beta-secondary"
+fixture3="$sandbox/gamma-tertiary"
+mkdir -p "$fixture"
 
 # --- fixture: two skills and two rules with deliberately known properties ----
 
@@ -231,9 +247,6 @@ assert "--target scopes to one skill" "$(value_of "$target_out" SKILL_COUNT)" "1
 # two properties that make the number trustworthy — order-independence and
 # ERROR visibility.
 
-fixture2="$(mktemp -d)"
-[ -n "$fixture2" ] || { echo "FAIL: mktemp -d returned empty" >&2; exit 1; }
-trap 'rm -rf "$fixture" "$fixture2"' EXIT
 mkdir -p "$fixture2/.claude/rules"
 printf 'y%.0s' $(seq 1 300) >"$fixture2/CLAUDE.md"
 printf 'z%.0s' $(seq 1 200) >"$fixture2/.claude/rules/second-unscoped.md"
@@ -257,9 +270,6 @@ assert_true "portfolio emits a per-repo breakdown line for the --also repo" \
 # Order-independence: the determinism contract must survive --also being passed
 # in any order, or two CI runs of an unchanged tree disagree. Needs a THIRD repo
 # so there are two --also args to actually swap.
-fixture3="$(mktemp -d)"
-[ -n "$fixture3" ] || { echo "FAIL: mktemp -d returned empty" >&2; exit 1; }
-trap 'rm -rf "$fixture" "$fixture2" "$fixture3"' EXIT
 mkdir -p "$fixture3/.claude/rules"
 printf 'w%.0s' $(seq 1 100) >"$fixture3/CLAUDE.md"
 
@@ -272,13 +282,7 @@ assert "portfolio JSON is stable across runs" "$pf_hash_a" "$pf_hash_c"
 # Two --also roots sharing a basename must still sort deterministically: a
 # stable sort keyed on the name alone would fall back to argument order, which
 # is exactly the non-determinism this scanner exists to rule out.
-dup_root_a="$(mktemp -d)" || { echo 'FATAL: mktemp failed' >&2; exit 1; }
-[ -n "$dup_root_a" ] || { echo 'FATAL: empty mktemp dir' >&2; exit 1; }
-[ -d "$dup_root_a" ] || { echo 'FATAL: mktemp dir missing' >&2; exit 1; }
-dup_root_b="$(mktemp -d)" || { echo 'FATAL: mktemp failed' >&2; exit 1; }
-[ -n "$dup_root_b" ] || { echo 'FATAL: empty mktemp dir' >&2; exit 1; }
-[ -d "$dup_root_b" ] || { echo 'FATAL: mktemp dir missing' >&2; exit 1; }
-dup_a="$dup_root_a/config"; dup_b="$dup_root_b/config"
+dup_a="$sandbox/dup-parent-a/config"; dup_b="$sandbox/dup-parent-b/config"
 mkdir -p "$dup_a/.claude/rules" "$dup_b/.claude/rules"
 printf 'a%.0s' $(seq 1 100) >"$dup_a/CLAUDE.md"
 printf 'b%.0s' $(seq 1 900) >"$dup_b/CLAUDE.md"
@@ -288,11 +292,21 @@ assert "same-basename roots sort deterministically" "$dup_hash_a" "$dup_hash_b"
 rm -rf "$dup_a" "$dup_b"
 
 # The breakdown is sorted by repo name, so the emitted order is independent of
-# the order the roots were supplied in.
+# the order the roots were supplied in. The roots are passed here in a THIRD
+# order (primary, gamma, Beta) that matches neither the expected sequence nor
+# its reverse, so a scanner that dropped the sort and fell back to argument
+# order fails this.
+#
+# The expectation is the literal byte-ordered sequence, not `printf … | sort`
+# (#2563): the scanner compares Python strings, i.e. by code point, while the
+# shell's `sort` collates per the ambient locale — case-insensitively under
+# en_US.UTF-8 / macOS. The two disagree on exactly the case-straddling names
+# above ('B' 0x42 < 'a' 0x61), so the old self-referential expectation failed
+# roughly half of all runs, depending only on the random `mktemp` suffixes.
 sorted_repos="$("$scanner" --project-dir "$fixture" --also "$fixture3" --also "$fixture2" 2>&1 \
   | grep -oE '^  - REPO=[^ ]+' | sed 's/^  - REPO=//')"
 assert "breakdown is emitted in repo-name order" \
-  "$sorted_repos" "$(printf '%s\n' "$sorted_repos" | sort)"
+  "$sorted_repos" "$(printf '%s\n' "$(basename "$fixture2")" "$(basename "$fixture")" "$(basename "$fixture3")")"
 
 # The gate itself.
 "$scanner" --project-dir "$fixture" --also "$fixture2" --portfolio-budget 10 --strict >/dev/null 2>&1

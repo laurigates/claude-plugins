@@ -3,7 +3,7 @@ name: ci
 model: opus
 color: "#20BF6B"
 description: Scaffold a complete CI/CD setup for a repo — multiple GitHub Actions workflows (test, build, release, deploy) in one isolated pass. Use when delegating a full from-scratch pipeline buildout; edit single workflows inline instead.
-tools: Glob, Grep, LS, Read, Edit, Write, Bash(gh pr *), Bash(gh run *), Bash(gh workflow *), Bash(npm *), Bash(yarn *), Bash(bun *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), TodoWrite
+tools: Glob, Grep, Read, Edit, Write, Bash(gh pr *), Bash(gh run *), Bash(gh workflow *), Bash(npm *), Bash(yarn *), Bash(bun *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), TodoWrite
 maxTurns: 15
 created: 2025-12-27
 modified: 2026-06-17

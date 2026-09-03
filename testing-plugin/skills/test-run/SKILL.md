@@ -35,7 +35,7 @@ name: test-run
 
 **Delegate this task to the `test-runner` agent.**
 
-Use the Agent tool with `subagent_type: test-runner` to run tests with the appropriate framework. Pass all the context gathered above and the parsed parameters to the agent.
+Use the Agent tool with `subagent_type: testing-plugin:test-runner` to run tests with the appropriate framework. Pass all the context gathered above and the parsed parameters to the agent.
 
 The test-runner agent should:
 

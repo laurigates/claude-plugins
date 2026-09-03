@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-09-02
 compatibility: claude-code
 reviewed: 2026-09-02
-allowed-tools: Read, Write, Edit, MultiEdit, Glob, Grep, TodoWrite
+allowed-tools: Read, Write, Edit, Glob, Grep, TodoWrite
 model: opus
 args: <project-path>
 argument-hint: <project-path>

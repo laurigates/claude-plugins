@@ -126,16 +126,71 @@ fi
 # 2. Workflow Health
 ##########
 
+# The checkout column asks whether the repo's pins AGREE, not whether they match
+# a version named here. It used to hardcode `v4` as the good value, which
+# inverted the moment the repo moved on: all 28 refs are `@v6`, so every row
+# warned permanently, the report told the reader to "update workflow action
+# versions" on actions already at the newest major, and an actual DOWNGRADE to
+# `@v4` scored a tick. A currency check written as a literal in an audit script
+# is guaranteed to rot -- the same disease as the version ledger and the
+# subagent-depth ceiling. Currency belongs to Renovate, which manages this
+# surface (`.claude/rules/version-pinning.md`); drift is what a repo audit can
+# actually see.
+#
+# The dominant major is computed from the repo, so a Renovate bump that lands
+# everywhere keeps every row green, while a PARTIAL bump flags the laggards --
+# which is the state worth reporting.
+# Computed in ONE awk pass: under `set -euo pipefail` a `grep` that matches
+# nothing exits 1 and a mid-pipeline `head` can SIGPIPE its upstream (141),
+# either of which would abort the whole audit -- the trap #1744/#2462 record.
+# awk always exits 0 and prints exactly one line.
+# One grep + one awk, and nothing else: this runs under `set -euo pipefail`,
+# where a `grep` that matches nothing exits 1 and a mid-pipeline `head` can
+# SIGPIPE its upstream (141) -- either aborts the whole audit (#1744, #2462).
+# The trailing `|| true` absorbs the empty-repo case; awk always exits 0 and
+# prints exactly one line. Deliberately no `find`/`xargs`: the audit's own test
+# harness runs it under a restricted PATH shim carrying neither.
+checkout_mode="$(
+  { grep -rhoE 'actions/checkout@[^ "]+' .github/workflows 2>/dev/null || true; } \
+    | awk '
+        { v = substr($0, 18); n[v]++ }
+        END {
+          best = "N/A"; max = 0
+          for (k in n) if (n[k] > max || (n[k] == max && k < best)) { max = n[k]; best = k }
+          print best
+        }'
+)"
+if [ -z "$checkout_mode" ]; then checkout_mode="N/A"; fi
+
 while IFS= read -r -d '' wf; do
   wf_name=$(basename "$wf")
 
-  checkout_ver="N/A"
-  if grep -q 'actions/checkout@' "$wf" 2>/dev/null; then
-    checkout_ver=$(grep -m1 -oE 'actions/checkout@[^ "]+' "$wf" | sed 's/actions\/checkout@//')
-  fi
+  # Every ref, not just the first: five workflows here carry more than one, and
+  # `grep -m1` made a stale pin in any later step invisible.
+  # Every ref, not just the first: five workflows here carry more than one, and
+  # `grep -m1` made a stale pin in any later step invisible. One awk pass again,
+  # for the same exit-code reason as the tally above.
+  checkout_ver="$(awk '
+      match($0, /actions\/checkout@[^ "]+/) {
+        v = substr($0, RSTART + 17, RLENGTH - 17)
+        if (!(v in seen)) { seen[v] = 1; out = (out == "" ? v : out "," v) }
+      }
+      END { print (out == "" ? "N/A" : out) }' "$wf" 2>/dev/null)"
+  if [ -z "$checkout_ver" ]; then checkout_ver="N/A"; fi
   checkout_ok="✅"
-  if [ "$checkout_ver" != "N/A" ] && [ "$checkout_ver" != "v4" ]; then
-    checkout_ok="⚠️"
+  if [ "$checkout_ver" != "N/A" ]; then
+    case "$checkout_ver" in
+      # Two distinct pins in one file is drift on its face.
+      *,*) checkout_ok="⚠️" ;;
+      # One pin that disagrees with the rest of the repo is a laggard.
+      # Written as an `if`, not a `&&` chain: under `set -e` a false test as the
+      # last command of a case branch aborts the run.
+      *)
+        if [ "$checkout_mode" != "N/A" ] && [ "$checkout_ver" != "$checkout_mode" ]; then
+          checkout_ok="⚠️"
+        fi
+        ;;
+    esac
   fi
 
   claude_ver="N/A"

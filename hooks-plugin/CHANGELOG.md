@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.4](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.11.3...hooks-plugin-v2.11.4) (2026-09-03)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** name the external-job case in the calendar-estimate nudge ([#2579](https://github.com/laurigates/claude-plugins/issues/2579)) ([f1728f1](https://github.com/laurigates/claude-plugins/commit/f1728f1662a539a2162aa07323dc33ec49204887)), closes [#2574](https://github.com/laurigates/claude-plugins/issues/2574)
+
 ## [2.11.3](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.11.2...hooks-plugin-v2.11.3) (2026-09-02)
 
 

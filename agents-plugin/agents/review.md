@@ -3,7 +3,7 @@ name: review
 model: opus
 color: "#E53E3E"
 description: Comprehensive code review including quality, security, performance, and commit/PR analysis. Provides actionable findings with specific recommendations.
-tools: Glob, Grep, LS, Read, Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(gh pr *), Bash(npm test *), Bash(yarn test *), Bash(bun test *), TodoWrite
+tools: Glob, Grep, Read, Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(gh pr *), Bash(npm test *), Bash(yarn test *), Bash(bun test *), TodoWrite
 context: fork
 maxTurns: 25
 created: 2025-12-27

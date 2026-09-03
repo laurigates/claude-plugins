@@ -2,7 +2,7 @@
 name: dry-consolidation
 description: Find and extract duplicated code into shared abstractions. Use when seeing repeated utilities, copy-pasted components, duplicated hooks, or boilerplate repeated across files.
 args: "[PATH] [--scope <utilities|components|hooks|all>] [--dry-run]"
-allowed-tools: Read, Write, Edit, MultiEdit, Grep, Glob, Bash(npx tsc *), Bash(npm run *), Bash(npx *), Bash(bun *), Bash(pnpm *), Bash(yarn *), Bash(pytest *), Bash(cargo *), Bash(ast-grep *), Bash(sg *), Task
+allowed-tools: Read, Write, Edit, Grep, Glob, Bash(npx tsc *), Bash(npm run *), Bash(npx *), Bash(bun *), Bash(pnpm *), Bash(yarn *), Bash(pytest *), Bash(cargo *), Bash(ast-grep *), Bash(sg *), Task
 model: opus
 argument-hint: path or directory to scan for duplication
 created: 2026-02-06

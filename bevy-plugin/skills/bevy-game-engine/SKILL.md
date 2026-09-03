@@ -5,7 +5,7 @@ reviewed: 2025-12-16
 name: bevy-game-engine
 description: "Bevy game engine: ECS, rendering, input, and asset management. Use when building Bevy games, working with entities/components/systems, or mentioning Rust gamedev or 2D/3D games."
 user-invocable: false
-allowed-tools: Glob, Grep, Read, Bash(cargo *), Edit, Write, TodoWrite, WebFetch, WebSearch, BashOutput, KillShell
+allowed-tools: Glob, Grep, Read, Bash(cargo *), Edit, Write, TodoWrite, WebFetch, WebSearch
 ---
 
 # Bevy Game Engine

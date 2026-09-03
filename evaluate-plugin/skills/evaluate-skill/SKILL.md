@@ -122,7 +122,7 @@ Use the same eval prompts and record results in the `baseline/` subdirectory.
 For each run, delegate grading to the `eval-grader` agent via Task:
 
 ```
-Task subagent_type: eval-grader
+Task subagent_type: evaluate-plugin:eval-grader
 Prompt: Grade this eval run against the assertions.
   Eval case: <eval case from evals.json>
   Transcript: <path to transcript.md>

@@ -1,0 +1,68 @@
+{
+  "workflow": "research-radar.yml",
+  "label": "research-radar",
+  "runs": [
+    {
+      "databaseId": 32237997742,
+      "createdAt": "2026-08-19T09:30:57Z"
+    },
+    {
+      "databaseId": 31585491907,
+      "createdAt": "2026-08-12T10:00:35Z"
+    },
+    {
+      "databaseId": 31000981395,
+      "createdAt": "2026-08-05T11:19:17Z"
+    },
+    {
+      "databaseId": 30447435898,
+      "createdAt": "2026-07-29T11:24:21Z"
+    },
+    {
+      "databaseId": 29914515407,
+      "createdAt": "2026-07-22T11:07:30Z"
+    },
+    {
+      "databaseId": 29409341646,
+      "createdAt": "2026-07-15T10:47:20Z"
+    },
+    {
+      "databaseId": 28937667556,
+      "createdAt": "2026-07-08T11:02:28Z"
+    },
+    {
+      "databaseId": 28516214839,
+      "createdAt": "2026-07-01T12:05:33Z"
+    },
+    {
+      "databaseId": 28096033625,
+      "createdAt": "2026-06-24T11:43:50Z"
+    },
+    {
+      "databaseId": 27909580095,
+      "createdAt": "2026-06-21T15:53:17Z"
+    },
+    {
+      "databaseId": 27690234966,
+      "createdAt": "2026-06-17T12:51:07Z"
+    },
+    {
+      "databaseId": 27536121273,
+      "createdAt": "2026-06-15T09:13:55Z"
+    }
+  ],
+  "issues": [
+    {
+      "number": 1797,
+      "createdAt": "2026-06-24T11:45:49Z"
+    },
+    {
+      "number": 1734,
+      "createdAt": "2026-06-21T15:57:17Z"
+    },
+    {
+      "number": 1662,
+      "createdAt": "2026-06-15T09:16:56Z"
+    }
+  ]
+}

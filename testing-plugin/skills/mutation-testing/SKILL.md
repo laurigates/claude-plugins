@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-08-17
+modified: 2026-09-03
 reviewed: 2025-12-16
 name: mutation-testing
 description: "Mutation testing with Stryker (TS/JS) and mutmut (Python). Use when finding weak tests that pass on mutated code, or improving test quality through mutation analysis."
@@ -135,7 +135,8 @@ That loop is worth writing. But it drops the one piece of bookkeeping the
 frameworks give you for free: **Stryker and mutmut tell you *which test* killed
 each mutant.** A hand-rolled harness usually reports only *that something*
 failed, and "something failed" is indistinguishable from "the check I am testing
-failed". Three ways that goes wrong, all observed in one session:
+failed". Four ways that goes wrong — the first three observed in one session,
+the fourth in another:
 
 ### 1. An earlier check masks the one under test
 
@@ -186,6 +187,79 @@ mod._SEG_OF = {b: n for n, ids, _ in mod.SEGMENTS for b in ids}   # REQUIRED
 **Rebuild every derived structure you can find, or reload the module.** Grep for
 comprehensions over the table you mutated.
 
+### 4. The mutated file was never imported
+
+The mirror of the three above. Those are all **false CAUGHT** — a mutation
+reported killed by an assertion other than the intended one. This one is
+**false MISSED**: the harness edits a file the run never loads, and reports a
+coverage hole that does not exist.
+
+A 25-row harness over a builder + loader pair staged six named files into a temp
+directory, wrote the mutated copy over one of them, and put the real source
+directory on `PYTHONPATH` so the remaining imports would resolve. First run:
+`25 mutations, 15 mismatches`. Twelve of the fifteen were every row mutating
+*one* of the two files, each `expect=CAUGHT got=MISSED 0 red`. The natural
+reading — "those twelve assertions are vacuous, go strengthen the tests" — is
+wrong. They were running the pristine source.
+
+**The tell is the control row.** A `META reject-all` mutation inserts a
+hard-wired `err.add()` at the top of the function under test, and it reported
+`MISSED` with `0 red`. A suite that does not go red against a hard-wired failure
+is not a weak suite — it is proof the harness is not running the file it edited.
+
+The mechanism was an ordinary, otherwise harmless idiom in a *sibling* module,
+staged from the real directory:
+
+```python
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+```
+
+`__file__` there is the **real** directory, so importing that sibling re-inserts
+the real directory at `sys.path[0]`, ahead of the temp directory. The builder
+imports the sibling before it imports the loader, so the loader — the mutated
+file — resolved to the unmutated copy for every later import. Printing resolved
+paths inside the run confirms it:
+
+```
+PATH0: ['/tmp/tmp.GcJ4RTwCg7', '/tmp/tmp.GcJ4RTwCg7', '/mnt/.../lab/scripts', ...]
+B: /tmp/tmp.GcJ4RTwCg7/build_...py        <- staged copy, mutated rows worked
+C-in-modules: /mnt/.../lab/scripts/dataputki_content.py   <- REAL file
+```
+
+The four rows mutating the *other* file worked correctly, because that file was
+staged and imported directly. That mix is what made the report look plausible
+rather than broken.
+
+**Stage the whole directory and pass no search path at all.** With no second
+copy anywhere on the path there is nothing for an import to bind to:
+
+```python
+shutil.copytree(SRC, td, dirs_exist_ok=True,
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc", ".pytest_cache"))
+env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+```
+
+After that change: 25 mutations, 0 mismatches, every row caught by its intended
+test and the CONTROL correctly missed. A per-file copy list also encodes an
+import graph that nothing checks — it stops being correct the moment someone
+adds an import.
+
+**This is not Python-specific.** Any runtime that resolves by search path has
+the same shape — a second copy of the unmutated code reachable ahead of the one
+you edited:
+
+| Runtime | The second copy binds via |
+|---|---|
+| Python | `PYTHONPATH`, or a `sys.path.insert` inside any imported module |
+| Node | `NODE_PATH`, or `node_modules` resolution walking up from the real file |
+| Go | `GOPATH` |
+| Ruby | `RUBYLIB` |
+| Perl | `PERL5LIB` |
+| A binary under test | `PATH` — a stub shadowed by a real command of the same name |
+
+The `PATH` row is issue #2451 in this repo: the `bash-antipatterns` probe for
+`sg` matched shadow-utils' `sg` instead of ast-grep.
+
 ### The consequence for a green table
 
 A harness that prints CAUGHT for every mutation is often quoted as proof the
@@ -199,7 +273,13 @@ Two cheap additions close most of the gap:
 
 - **A deliberate no-op mutation** the harness *should* miss. A table where
   everything is CAUGHT is indistinguishable from a broken harness; one expected
-  MISS tells them apart.
+  MISS tells them apart. The symmetry holds and the control does not cover it:
+  an **all**-MISSED table is equally indistinguishable from a broken harness,
+  and a no-op reporting MISSED as designed looks identical beside real mutations
+  reporting MISSED because nothing loaded them. **Read the META/accept-all row
+  first** — a hard-wired `raise` or accept-all that fails to turn the suite red
+  is not a weak assertion, it is proof the harness is not running the file it
+  edited (§4).
 - **Assert on the message, not just the exception.** Match the mutation to an
   expected substring of the failure, so a masked result is a harness failure
   rather than a silent pass.
@@ -232,6 +312,7 @@ For detailed examples, advanced patterns, and best practices, see [REFERENCE.md]
 - `python-testing` - Python pytest testing
 - `test-quality-analysis` - Detecting test smells
 - `api-testing` - HTTP API testing
+- `agent-patterns-plugin:tool-result-traps` - Control-testing any negative that gates an action (§4's hard-wired `raise` is exactly that control)
 
 ## References
 

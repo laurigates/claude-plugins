@@ -5,7 +5,7 @@ reviewed: 2026-04-25
 name: rust-development
 description: Rust development — cargo, clippy, rustfmt, async, Tokio, Serde, memory safety. Use when mentioning Rust, cargo, ownership, lifetimes, fearless concurrency, or async programming.
 user-invocable: false
-allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch, BashOutput, KillShell
+allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch
 ---
 
 # Rust Development

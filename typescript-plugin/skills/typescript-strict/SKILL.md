@@ -5,7 +5,7 @@ reviewed: 2025-12-16
 name: typescript-strict
 description: "TypeScript strict mode: tsconfig.json, strict flags, Bundler/NodeNext moduleResolution, verbatimModuleSyntax. Use when setting up TS or migrating to stricter type safety."
 user-invocable: false
-allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch, BashOutput, KillShell
+allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch
 ---
 
 # TypeScript Strict Mode

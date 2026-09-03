@@ -195,7 +195,7 @@ Skills inherit the user's active model by default. Tag a skill with `model:` onl
 | Skill Type | Typical Tools |
 |------------|---------------|
 | CLI tool | `Bash, Read, Grep, Glob` |
-| Development | `Bash, BashOutput, Read, Write, Edit, Grep, Glob` |
+| Development | `Bash, Read, Write, Edit, Grep, Glob` |
 | Research | `Read, WebFetch, WebSearch, Grep, Glob` |
 
 Task tools (`TodoWrite`, `TaskCreate`/`TaskUpdate`/`TaskList`): see `.claude/rules/agentic-permissions.md` § Standard Permission Sets for availability and grant guidance.

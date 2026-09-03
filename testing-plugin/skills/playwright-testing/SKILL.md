@@ -5,7 +5,7 @@ reviewed: 2025-12-16
 name: playwright-testing
 description: "Playwright E2E testing — cross-browser, visual regression, API testing, mobile emulation. Use when writing E2E tests or setting up automated UI testing for web apps."
 user-invocable: false
-allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch, BashOutput, KillShell
+allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch
 ---
 
 # Playwright Testing
