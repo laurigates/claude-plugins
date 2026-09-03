@@ -249,7 +249,7 @@
       "name": "evaluate-plugin",
       "source": "./evaluate-plugin",
       "description": "Skill evaluation and benchmarking - test skill effectiveness with behavioral eval cases, grade results, and track quality improvements",
-      "version": "1.14.4",
+      "version": "1.14.5",
       "keywords": [
         "evaluation",
         "benchmarking",
@@ -390,7 +390,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.11.3",
+      "version": "2.11.4",
       "keywords": [
         "hooks",
         "automation",
@@ -658,7 +658,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.19.4",
+      "version": "3.19.5",
       "keywords": [
         "testing",
         "tdd",
