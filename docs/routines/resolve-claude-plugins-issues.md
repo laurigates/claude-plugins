@@ -112,7 +112,7 @@ For each labelled issue, fetch all comments
 - **later** = every comment after the anchor. Since none of them carry your
   footer, they are the owner's.
 
-Then, per NEEDS-DECISION issue, exactly one of three branches:
+Then, per NEEDS-DECISION issue, exactly one of four branches:
 
 **(a) Not yet labelled** — add the label and post ONE comment. The comment must
 contain, in this order:
@@ -169,9 +169,22 @@ makes a later run read an unconsumed reply as already handled.
 anchor is missing, so (b) and (c) are both undecidable and the thread has
 silently stopped being a queue. Do not fall through to (b). Treat the newest
 comment that reads as one of your question comments (an @-mention of the owner
-plus numbered options) as the anchor, `--edit-last`-style repair it to carry the
-marker and footer if you can, and then re-evaluate (b)/(c) against it. Report
-every issue that hit this branch in the run summary by number.
+plus numbered options) as the anchor, repair it to carry the marker and footer
+if you can, and then re-evaluate (b)/(c) against it.
+
+Repair that comment **by its id**, not with `--edit-last`. `gh issue comment
+--edit-last` has no per-id flag: it edits whichever comment is newest by the
+calling identity, and per step 3.0 that identity is also the owner's — so on the
+exact thread state this branch fires on, "last" is likely the owner's reply
+rather than the question comment you just identified, and editing it would
+destroy their answer and set a false anchor. Take the id from the
+`gh issue view <n> --json comments` fetch above and edit that comment directly:
+
+```
+gh api /repos/{owner}/{repo}/issues/comments/<id> -X PATCH -f body="$(cat <path>)"
+```
+
+Report every issue that hit this branch in the run summary by number.
 
 Cap this step at **5 new decision comments per run** — branch (a) comments only;
 branch (c) replies and branch (d) repairs are never capped, because they are

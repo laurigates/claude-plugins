@@ -173,6 +173,7 @@ jobs:
             --only 'scripts/tests/test-check-loop-integrity.sh' \
             --only 'scripts/tests/test-check-prose-house-style.sh' \
             --only 'scripts/tests/test-check-research-radar-grounding.sh' \
+            --only 'scripts/tests/test-check-routine-prompt.sh' \
             --only 'scripts/tests/test-check-ruff-version-sync.sh' \
             --only 'scripts/tests/test-check-taskcompleted-verification.sh' \
             --only 'scripts/tests/test-check-unused-bash-grant.sh' \
@@ -323,6 +324,17 @@ jobs:
         # blanket clause has not returned. The self-test step above proves the
         # guard before it gates the tree.
         run: bash scripts/check-research-radar-grounding.sh --strict
+
+      - name: Check the checked-in Routine prompt keeps its anchor/no-silence invariants
+        # The Routine itself is stored server-side; this repo holds the prompt
+        # so it has a diff, a review and a gate. Its failure mode is SILENCE —
+        # an undecidable thread falls through to "do nothing at all", so a
+        # dropped reply is indistinguishable from correct operation — which
+        # means a trimmed prompt breaks nothing visible. pre-commit alone is
+        # not a signal (a checkout without hooks installed, or --no-verify,
+        # skips it), so this is the always-on surface. The self-test step above
+        # proves the guard before it gates the tree.
+        run: bash scripts/check-routine-prompt.sh --strict
 
       - name: Check delegations resolve to reachable skills
         # A catalog-present skill telling the agent to act via a

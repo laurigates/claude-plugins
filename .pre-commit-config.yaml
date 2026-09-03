@@ -579,7 +579,10 @@ repos:
         name: checked-in Routine prompts keep their anchor/marker/no-silence invariants (docs/routines)
         entry: bash ./scripts/check-routine-prompt.sh --strict
         language: system
-        files: '^(docs/routines/.*\.md|scripts/check-routine-prompt\.sh)$'
+        # Whole-scope guard (pass_filenames: false), so the trigger must reach
+        # every file its verdict depends on — including the self-test, whose
+        # own coverage assertion is what fails when a new routine lands.
+        files: '^(docs/routines/.*\.md|scripts/check-routine-prompt\.sh|scripts/tests/test-check-routine-prompt\.sh)$'
         pass_filenames: false
       - id: check-prose-house-style
         name: House vale rules stay a faithful encoding of communication.md
