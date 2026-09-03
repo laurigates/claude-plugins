@@ -29,9 +29,17 @@ own questions and the owner's replies — carries the same `user.login` and
 `author_association: OWNER`. Authorship cannot distinguish them. Three
 consequences, all observed:
 
-1. **The marker is the only anchor.** Step 3 branches on *"has the owner
-   commented after your marker comment"*. Without the marker there is no anchor,
-   so the branch is undecidable.
+1. **The marker is the only anchor, and it does not survive the trip.** Step 3
+   branches on *"has the owner commented after your marker comment"*. Without the
+   marker there is no anchor, so the branch is undecidable — and the marker is
+   an HTML comment, which has been observed reaching GitHub three different ways
+   depending on the posting path: preserved (#2119, 2026-08-14), entity-escaped
+   so it renders as visible text and fails a literal match, and **silently
+   stripped**, leaving an orphan blank first line (#2141 2026-08-11, #2569
+   2026-09-03, and a comment posted from this session with a marker that was
+   verifiably sent). No error is raised on any of these paths. A signal that
+   survives only some of the paths that post it cannot anchor a state machine,
+   so v2 makes the marker visible markdown and the footer authoritative.
 2. **The undecidable case defaults to silence.** The fall-through branch is
    *"do nothing at all. Silence here is the feature."* A dropped reply is
    therefore indistinguishable from correct operation. #2141 sat answered and
