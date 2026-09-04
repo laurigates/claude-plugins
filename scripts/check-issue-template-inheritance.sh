@@ -22,6 +22,15 @@
 #   3. that config re-declares the org-wide Security contact link
 #   4. that config still carries the Q&A diversion the directory exists for
 #
+# Templates are identified by CONTENT, never by extension. Counting every
+# `*.yml`/`*.yaml`/`*.md` in the directory made any unrelated file satisfy
+# invariant 1 — a `README.md` explaining the sync obligation these files
+# document, or a half-written `draft: true` stub, let both real templates be
+# deleted while the guard stayed green and GitHub rendered zero forms. What
+# GitHub actually renders is the discriminator: an issue FORM needs top-level
+# `name:` and `body:` keys, and a legacy markdown template needs YAML
+# frontmatter opening line 1 with a `name:` key.
+#
 # Links are matched against the config with whole-line comments stripped, so a
 # URL surviving only in prose cannot stand in for a live contact link.
 #
@@ -88,6 +97,7 @@ if [ ! -d "$TEMPLATE_DIR" ]; then
   # No local directory: the org-wide default applies in full.
   echo "LOCAL_DIR=absent"
   echo "TEMPLATE_COUNT=0"
+  echo "NON_TEMPLATE_COUNT=0"
   echo "CONFIG_PRESENT=false"
   echo "SECURITY_LINK=n/a"
   echo "QA_LINK=n/a"
@@ -97,16 +107,54 @@ if [ ! -d "$TEMPLATE_DIR" ]; then
   exit 0
 fi
 
-# Every template file in the directory EXCEPT the configuration. GitHub counts
-# a directory holding only config.yml as "defines issue template configuration",
-# which is enough to suppress the inherited directory.
+# Does this file parse as something GitHub will RENDER in the chooser?
+#
+# Issue form (.yml/.yaml): GitHub requires top-level `name:` and `body:` keys.
+# Top level means column 0, so the `name:` entries nested inside the `body:`
+# list cannot satisfy this on their own.
+#
+# Legacy markdown template (.md): YAML frontmatter opening on line 1, carrying a
+# `name:` key. A prose README in the same directory has no frontmatter at all.
+is_template() { # path
+  local file="$1"
+  case "$file" in
+    *.md)
+      awk '
+        NR == 1 && $0 !~ /^---[[:space:]]*$/ { bad = 1; exit }
+        NR > 1 && /^---[[:space:]]*$/ { exit }
+        NR > 1 && /^name:[[:space:]]*[^[:space:]]/ { found = 1; exit }
+        END { exit ((found && !bad) ? 0 : 1) }
+      ' "$file"
+      ;;
+    *)
+      awk '
+        /^name:[[:space:]]*[^[:space:]]/ { has_name = 1 }
+        /^body:/ { has_body = 1 }
+        END { exit ((has_name && has_body) ? 0 : 1) }
+      ' "$file"
+      ;;
+  esac
+}
+
+# Every RENDERABLE template in the directory EXCEPT the configuration. GitHub
+# counts a directory holding only config.yml as "defines issue template
+# configuration", which is enough to suppress the inherited directory.
+#
+# NON_TEMPLATE_COUNT is emitted even at 0: a directory holding files that none
+# of them render has to be distinguishable from an empty one, or the same
+# TEMPLATE_COUNT=0 covers two different repairs.
 template_count=0
+non_template_count=0
 while IFS= read -r entry; do
   base="$(basename "$entry")"
   case "$base" in
     config.yml|config.yaml) continue ;;
   esac
-  template_count=$((template_count + 1))
+  if is_template "$entry"; then
+    template_count=$((template_count + 1))
+  else
+    non_template_count=$((non_template_count + 1))
+  fi
 done < <(find "$TEMPLATE_DIR" -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' -o -name '*.md' \) 2>/dev/null)
 
 config_present=false
@@ -129,7 +177,7 @@ fi
 
 if [ "$template_count" -eq 0 ]; then
   add_issue "templates_suppressed" \
-    ".github/ISSUE_TEMPLATE exists but holds no template — the inherited Bug Report and Feature Request templates are suppressed; copy them in beside config.yml"
+    ".github/ISSUE_TEMPLATE exists but holds no renderable template ($non_template_count non-template file(s) present) — the inherited Bug Report and Feature Request templates are suppressed; copy them in beside config.yml"
 fi
 
 # Templates alone are enough to suppress the inherited directory, and that
@@ -152,6 +200,7 @@ fi
 
 echo "LOCAL_DIR=present"
 echo "TEMPLATE_COUNT=$template_count"
+echo "NON_TEMPLATE_COUNT=$non_template_count"
 echo "CONFIG_PRESENT=$config_present"
 echo "SECURITY_LINK=$security_link"
 echo "QA_LINK=$qa_link"

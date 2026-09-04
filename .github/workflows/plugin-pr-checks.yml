@@ -170,6 +170,7 @@ jobs:
             --only 'scripts/tests/test-check-context-command-execution.sh' \
             --only 'scripts/tests/test-check-dead-api-endpoints.sh' \
             --only 'scripts/tests/test-check-delegation-reachability.sh' \
+            --only 'scripts/tests/test-check-issue-template-inheritance.sh' \
             --only 'scripts/tests/test-check-loop-integrity.sh' \
             --only 'scripts/tests/test-check-prose-house-style.sh' \
             --only 'scripts/tests/test-check-research-radar-grounding.sh' \
@@ -208,6 +209,17 @@ jobs:
         # Flipped to --strict at UNQUALIFIED=0 so the ratchet locks a clean
         # state rather than a suppressed one.
         run: bash scripts/check-subagent-types.sh --strict
+
+      - name: Check the local issue-template directory still carries what it suppresses
+        # ALWAYS-ON, and that is the whole point. A repo-local
+        # .github/ISSUE_TEMPLATE directory suppresses the ENTIRE inherited
+        # directory from laurigates/.github, so deleting a template here removes
+        # it from the chooser with nothing in the diff, no CI signal, and a
+        # chooser page that cannot be rendered unauthenticated (#2568). This job
+        # carries no `paths:` filter (see the header), so a PR whose only change
+        # is `git rm .github/ISSUE_TEMPLATE/1-bug-report.yml` still runs it —
+        # which the path-filtered `Test: Skill scripts` alone could not promise.
+        run: bash scripts/check-issue-template-inheritance.sh
 
       - name: Check every plugin agent runs on opus
         # Whole-repo invariant (every plugin agent must run on opus). Runs
