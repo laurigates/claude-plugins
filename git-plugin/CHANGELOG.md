@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.53.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.52.3...git-plugin-v2.53.0) (2026-09-04)
+
+
+### Features
+
+* **git-plugin:** add git-stacked-prs skill for GitHub native stacks ([#2585](https://github.com/laurigates/claude-plugins/issues/2585)) ([28ac661](https://github.com/laurigates/claude-plugins/commit/28ac66133817be239db4b4b5e9e9540fef7ee8f9))
+
 ## [2.52.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.52.2...git-plugin-v2.52.3) (2026-09-03)
 
 
