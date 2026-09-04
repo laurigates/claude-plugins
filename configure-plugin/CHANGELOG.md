@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.34.5](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.34.4...configure-plugin-v1.34.5) (2026-09-04)
+
+
+### Bug Fixes
+
+* **configure-plugin:** gate the missing-CodeQL warning on whether CodeQL can run ([#2593](https://github.com/laurigates/claude-plugins/issues/2593)) ([0e55c25](https://github.com/laurigates/claude-plugins/commit/0e55c25cce399fc2df725098f94658ea3a473d76)), closes [#2498](https://github.com/laurigates/claude-plugins/issues/2498)
+
 ## [1.34.4](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.34.3...configure-plugin-v1.34.4) (2026-09-02)
 
 
