@@ -20,6 +20,10 @@ Three notes that are *not* part of that body:
   read *while* the decision is being made. Edit both copies together.
 - §1 overlaps `git-plugin:deadbranch` Step 1.5 ("Reclassify squash-merged
   branches"), which carries the same three signals scoped to branch cleanup.
+- §2 and §3 describe **ad-hoc** chains — PRs whose base is another PR's branch.
+  A stack **registered with GitHub** (`gh stack`) retargets its upper PRs
+  itself on merge, so the auto-close hazard and the manual retarget/rebase
+  ordering do not apply there. See `git-plugin:git-stacked-prs`.
 - The two encoded recipes cited in §1 and §2 below are the author's own (a
   `just -g` recipe in `laurigates/dotfiles`, and a sweep script in
   `laurigates/claude-plugins`), not commands a plugin consumer already has.
