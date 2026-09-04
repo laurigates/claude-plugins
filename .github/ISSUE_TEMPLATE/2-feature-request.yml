@@ -1,0 +1,41 @@
+# Copy of laurigates/.github/.github/ISSUE_TEMPLATE/2-feature-request.yml. This
+# repo has its own config.yml, which suppresses the whole inherited
+# ISSUE_TEMPLATE directory, so the template has to live here too (#2568). Keep
+# it in step with the org copy; everything below this comment block is verbatim.
+name: Feature Request
+description: Suggest a new feature or improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion! Please describe what you'd like to see.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or motivation
+      description: What problem does this solve? What's the use case?
+      placeholder: I'm trying to do X but currently...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the feature you'd like
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you've considered or tried
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, mockups, or links to related work
