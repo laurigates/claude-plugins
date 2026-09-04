@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.54.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.53.0...git-plugin-v2.54.0) (2026-09-04)
+
+
+### Features
+
+* **scripts:** audit every marketplace skill for unreachable delegation ([#2591](https://github.com/laurigates/claude-plugins/issues/2591)) ([40d4f13](https://github.com/laurigates/claude-plugins/commit/40d4f13068d25b3c87469cfd6b7208a465c0899e)), closes [#2483](https://github.com/laurigates/claude-plugins/issues/2483)
+
 ## [2.53.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.52.3...git-plugin-v2.53.0) (2026-09-04)
 
 

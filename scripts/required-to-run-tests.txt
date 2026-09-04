@@ -88,3 +88,15 @@ scripts/tests/test-check-dead-tool-grants.sh
 # the standing gap -- which is exactly the shape that gets a monthly audit
 # switched off.
 scripts/tests/test-check-golden-set-coverage.sh
+
+# Runs entirely off synthesized JSONL transcripts -- no network, no gh, no task
+# binary -- and the suite carries no skip branch at all, so a SKIP here can only
+# mean the file stopped being discovered. The suite ALREADY EXECUTES in CI: the
+# runner's `*/hooks/test-*.sh` glob has discovered it since before #2584 added
+# its pre-commit entry. What this entry buys is the denominator guard above --
+# a rename, a move, or a discovery-glob collapse raises `required_test_missing`
+# and exits 1 instead of silently running one fewer suite. An assertion block at
+# :129-138 is the #2574 control pinning PATTERN_MARKER's breadth against silent
+# narrowing -- a measured-rate extrapolation must still block; PATTERN_FUTURE is
+# pinned separately by the future-tense cases at :113-118 (#2580).
+hooks-plugin/hooks/test-no-calendar-estimates.sh
