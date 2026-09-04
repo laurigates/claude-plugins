@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.5](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.11.4...hooks-plugin-v2.11.5) (2026-09-04)
+
+
+### Bug Fixes
+
+* **terraform-plugin:** decide apply command position with ast-grep ([#2590](https://github.com/laurigates/claude-plugins/issues/2590)) ([6efa442](https://github.com/laurigates/claude-plugins/commit/6efa4420b9aa0553281d96da61156b2ab1f6961a))
+
 ## [2.11.4](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.11.3...hooks-plugin-v2.11.4) (2026-09-03)
 
 

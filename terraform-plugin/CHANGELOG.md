@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.8](https://github.com/laurigates/claude-plugins/compare/terraform-plugin-v1.7.7...terraform-plugin-v1.7.8) (2026-09-04)
+
+
+### Bug Fixes
+
+* **terraform-plugin:** decide apply command position with ast-grep ([#2590](https://github.com/laurigates/claude-plugins/issues/2590)) ([6efa442](https://github.com/laurigates/claude-plugins/commit/6efa4420b9aa0553281d96da61156b2ab1f6961a))
+
 ## [1.7.7](https://github.com/laurigates/claude-plugins/compare/terraform-plugin-v1.7.6...terraform-plugin-v1.7.7) (2026-09-03)
 
 
