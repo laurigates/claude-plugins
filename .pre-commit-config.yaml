@@ -65,6 +65,49 @@ repos:
         language: system
         files: '^scripts/(check-plugin-readme-currency\.sh|tests/test-check-plugin-readme-currency\.sh)$'
         pass_filenames: false
+      - id: check-docs-index
+        name: per-plugin skill/agent counts in README/PLUGIN-MAP/diagram match disk
+        entry: bash ./scripts/check-docs-index.sh --strict
+        language: system
+        # `verbose: true` is load-bearing, not decoration. `doc_count_drift` —
+        # the finding this entry exists for — is WARN severity, and --strict
+        # exits 0 on a WARN (only ERROR sets a non-zero exit). A silent
+        # exit-0 hook prints nothing, so without verbose the drift would be
+        # detected locally and still never reach the committer. --strict is
+        # kept so this entry matches the CI step's severity contract
+        # (plugin-pr-checks.yml "Check docs-index drift"): when the hook fires,
+        # the six ERROR-severity findings — rule_table_dangling,
+        # plugin_map_drift, diagram_node_dangling, diagram_svg_node_missing,
+        # diagram_svg_stale, readme_row_dangling — block the commit.
+        #
+        # Whole-scope guard (pass_filenames: false). The trigger decides
+        # WHETHER this entry runs — never WHAT it can report. Once it fires,
+        # scripts/check-docs-index.sh walks the whole repo, so an ERROR
+        # anywhere in that walk blocks the commit, including one rooted in a
+        # path the trigger does not name: a plugin's own README.md,
+        # .claude/rules/*.md, CLAUDE.md, the marketplace and release-please
+        # manifests. Measured, not inferred — a dangling row planted in
+        # feedback-plugin/README.md makes
+        #   pre-commit run check-docs-index --files git-plugin/skills/git-commit/SKILL.md
+        # fail with SEVERITY=ERROR TYPE=readme_row_dangling, exit 1, on a
+        # commit that staged neither that README nor that defect. Committers
+        # should expect that; it matches the CI step, which reads the same
+        # whole surface.
+        #
+        # What the trigger buys is firing frequency, not a narrower verdict.
+        # It names the common count-moving paths — a plugin's skills/, agents/
+        # or .claude-plugin/ (mirroring the nudge-plugin-readme-currency entry
+        # above), the three documents that state those counts, and the checker
+        # itself — so the ~5 s whole-repo walk is not paid on every commit. It
+        # is not exhaustive: the repo-root .claude-plugin/marketplace.json
+        # feeds the "README.md headline states N plugins but marketplace lists
+        # M" comparison and is NOT matched by ^[^/]+-plugin/.claude-plugin/, so
+        # a commit editing only that file gets no local signal and relies on
+        # CI. This narrows the count-drift feedback loop; it is not a local
+        # replacement for the CI step, which is ungated and fires on every PR.
+        files: '(^[^/]+-plugin/(skills|agents|\.claude-plugin)/|^README\.md$|^docs/PLUGIN-MAP\.md$|^docs/diagrams/plugin-relationships\.(d2|svg)$|^scripts/check-docs-index\.sh$)'
+        pass_filenames: false
+        verbose: true
       - id: audit-skill-descriptions
         name: audit skill descriptions for auto-invocation
         entry: python3 ./scripts/audit-skill-descriptions.py --strict-all
@@ -718,4 +761,11 @@ repos:
         # The hook under test is itself named test-verification.sh; its suite is
         # test-test-verification.sh. Both are matched here, neither is the other's typo.
         files: '^hooks-plugin/hooks/(test-verification\.sh|test-test-verification\.sh)$'
+        pass_filenames: false
+      # terraform-plugin ships its own PreToolUse hook, outside hooks-plugin.
+      - id: test-validate-terraform-apply
+        name: terraform apply gate — command position + reachable remedy (#2506)
+        entry: bash ./terraform-plugin/hooks/test-validate-terraform-apply.sh
+        language: system
+        files: '^terraform-plugin/hooks/(validate-terraform-apply\.sh|test-validate-terraform-apply\.sh)$'
         pass_filenames: false

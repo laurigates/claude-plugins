@@ -390,7 +390,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.11.4",
+      "version": "2.11.5",
       "keywords": [
         "hooks",
         "automation",
@@ -645,7 +645,7 @@
       "name": "terraform-plugin",
       "source": "./terraform-plugin",
       "description": "Terraform and Terraform Cloud - infrastructure as code",
-      "version": "1.7.7",
+      "version": "1.7.8",
       "keywords": [
         "terraform",
         "infrastructure",
@@ -658,7 +658,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.19.5",
+      "version": "3.19.6",
       "keywords": [
         "testing",
         "tdd",
