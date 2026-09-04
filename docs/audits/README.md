@@ -33,8 +33,9 @@ places:
 - **`.github/workflows/plugin-pr-checks.yml`** — `--strict`, ungated, on every
   PR, so **ERROR-severity** drift cannot merge. `--strict` exits non-zero only
   on ERROR (`exit_severity` is set in the `SEVERITY=ERROR` branch alone), so
-  this step passes on the WARN tier — `doc_count_drift`, `rule_not_indexed`,
-  `diagram_count_drift`, `rule_reviewed_*`.
+  this step passes on the WARN tier — all six of `doc_count_drift`,
+  `rule_not_indexed`, `plugin_map_missing`, `diagram_count_drift`,
+  `rule_reviewed_missing`, `rule_reviewed_placeholder`.
 - **`.pre-commit-config.yaml`** (`check-docs-index`) — `--strict` plus
   `verbose: true`, triggered by the paths that can move a stated count, so
   `doc_count_drift` reaches the committer before a push instead of after

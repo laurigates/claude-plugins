@@ -95,13 +95,16 @@ repos:
         # whole surface.
         #
         # What the trigger buys is firing frequency, not a narrower verdict.
-        # It names the paths whose change can move a STATED count — a plugin's
-        # skills/, agents/ or .claude-plugin/ (mirroring the
-        # nudge-plugin-readme-currency entry above), the three documents that
-        # state those counts, and the checker itself — so the ~5 s whole-repo
-        # walk is not paid on every commit. This narrows the count-drift
-        # feedback loop; it is not a local replacement for the CI step, which
-        # is ungated and fires on every PR.
+        # It names the common count-moving paths — a plugin's skills/, agents/
+        # or .claude-plugin/ (mirroring the nudge-plugin-readme-currency entry
+        # above), the three documents that state those counts, and the checker
+        # itself — so the ~5 s whole-repo walk is not paid on every commit. It
+        # is not exhaustive: the repo-root .claude-plugin/marketplace.json
+        # feeds the "README.md headline states N plugins but marketplace lists
+        # M" comparison and is NOT matched by ^[^/]+-plugin/.claude-plugin/, so
+        # a commit editing only that file gets no local signal and relies on
+        # CI. This narrows the count-drift feedback loop; it is not a local
+        # replacement for the CI step, which is ungated and fires on every PR.
         files: '(^[^/]+-plugin/(skills|agents|\.claude-plugin)/|^README\.md$|^docs/PLUGIN-MAP\.md$|^docs/diagrams/plugin-relationships\.(d2|svg)$|^scripts/check-docs-index\.sh$)'
         pass_filenames: false
         verbose: true
