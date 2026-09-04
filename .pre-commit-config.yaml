@@ -239,6 +239,18 @@ repos:
         language: script
         files: '^scripts/(check-workflow-script-triggers\.sh|tests/test-check-workflow-script-triggers\.sh)$'
         pass_filenames: false
+      - id: check-issue-template-inheritance
+        name: local ISSUE_TEMPLATE keeps what the org directory provided (#2568)
+        entry: ./scripts/check-issue-template-inheritance.sh
+        language: script
+        files: '^(\.github/ISSUE_TEMPLATE/.*|scripts/check-issue-template-inheritance\.sh)$'
+        pass_filenames: false
+      - id: test-check-issue-template-inheritance
+        name: issue-template inheritance guard regression
+        entry: ./scripts/tests/test-check-issue-template-inheritance.sh
+        language: script
+        files: '^scripts/(check-issue-template-inheritance\.sh|tests/test-check-issue-template-inheritance\.sh)$'
+        pass_filenames: false
       - id: check-taskcompleted-verification
         name: TaskCompleted agent prompt keeps its verification behaviours (#2301)
         entry: ./scripts/check-taskcompleted-verification.sh --strict
