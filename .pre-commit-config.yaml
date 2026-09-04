@@ -65,6 +65,34 @@ repos:
         language: system
         files: '^scripts/(check-plugin-readme-currency\.sh|tests/test-check-plugin-readme-currency\.sh)$'
         pass_filenames: false
+      - id: check-docs-index
+        name: per-plugin skill/agent counts in README/PLUGIN-MAP/diagram match disk
+        entry: bash ./scripts/check-docs-index.sh --strict
+        language: system
+        # `verbose: true` is load-bearing, not decoration. `doc_count_drift` —
+        # the finding this entry exists for — is WARN severity, and --strict
+        # exits 0 on a WARN (only ERROR sets a non-zero exit). A silent
+        # exit-0 hook prints nothing, so without verbose the drift would be
+        # detected locally and still never reach the committer. --strict is
+        # kept so this entry matches the CI step's severity contract
+        # (plugin-pr-checks.yml "Check docs-index drift"): when the hook fires,
+        # the six ERROR-severity findings — rule_table_dangling,
+        # plugin_map_drift, diagram_node_dangling, diagram_svg_node_missing,
+        # diagram_svg_stale, readme_row_dangling — block the commit.
+        #
+        # Whole-scope guard (pass_filenames: false). The trigger names the
+        # paths whose change can move a STATED count: a plugin's skills/,
+        # agents/ or .claude-plugin/ (mirroring the nudge-plugin-readme-currency
+        # entry above), the three documents that state those counts, and the
+        # checker itself. It deliberately does NOT reach every file the verdict
+        # depends on — a plugin's own README.md, .claude/rules/*.md, CLAUDE.md,
+        # the marketplace and release-please manifests are all outside it, so
+        # the ERROR findings rooted in those inputs cannot fire here. This entry
+        # narrows the count-drift feedback loop; it is not a local replacement
+        # for the CI step, which is ungated and reads the whole surface.
+        files: '(^[^/]+-plugin/(skills|agents|\.claude-plugin)/|^README\.md$|^docs/PLUGIN-MAP\.md$|^docs/diagrams/plugin-relationships\.(d2|svg)$|^scripts/check-docs-index\.sh$)'
+        pass_filenames: false
+        verbose: true
       - id: audit-skill-descriptions
         name: audit skill descriptions for auto-invocation
         entry: python3 ./scripts/audit-skill-descriptions.py --strict-all
