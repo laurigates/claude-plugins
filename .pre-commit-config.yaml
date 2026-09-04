@@ -80,16 +80,28 @@ repos:
         # plugin_map_drift, diagram_node_dangling, diagram_svg_node_missing,
         # diagram_svg_stale, readme_row_dangling — block the commit.
         #
-        # Whole-scope guard (pass_filenames: false). The trigger names the
-        # paths whose change can move a STATED count: a plugin's skills/,
-        # agents/ or .claude-plugin/ (mirroring the nudge-plugin-readme-currency
-        # entry above), the three documents that state those counts, and the
-        # checker itself. It deliberately does NOT reach every file the verdict
-        # depends on — a plugin's own README.md, .claude/rules/*.md, CLAUDE.md,
-        # the marketplace and release-please manifests are all outside it, so
-        # the ERROR findings rooted in those inputs cannot fire here. This entry
-        # narrows the count-drift feedback loop; it is not a local replacement
-        # for the CI step, which is ungated and reads the whole surface.
+        # Whole-scope guard (pass_filenames: false). The trigger decides
+        # WHETHER this entry runs — never WHAT it can report. Once it fires,
+        # scripts/check-docs-index.sh walks the whole repo, so an ERROR
+        # anywhere in that walk blocks the commit, including one rooted in a
+        # path the trigger does not name: a plugin's own README.md,
+        # .claude/rules/*.md, CLAUDE.md, the marketplace and release-please
+        # manifests. Measured, not inferred — a dangling row planted in
+        # feedback-plugin/README.md makes
+        #   pre-commit run check-docs-index --files git-plugin/skills/git-commit/SKILL.md
+        # fail with SEVERITY=ERROR TYPE=readme_row_dangling, exit 1, on a
+        # commit that staged neither that README nor that defect. Committers
+        # should expect that; it matches the CI step, which reads the same
+        # whole surface.
+        #
+        # What the trigger buys is firing frequency, not a narrower verdict.
+        # It names the paths whose change can move a STATED count — a plugin's
+        # skills/, agents/ or .claude-plugin/ (mirroring the
+        # nudge-plugin-readme-currency entry above), the three documents that
+        # state those counts, and the checker itself — so the ~5 s whole-repo
+        # walk is not paid on every commit. This narrows the count-drift
+        # feedback loop; it is not a local replacement for the CI step, which
+        # is ungated and fires on every PR.
         files: '(^[^/]+-plugin/(skills|agents|\.claude-plugin)/|^README\.md$|^docs/PLUGIN-MAP\.md$|^docs/diagrams/plugin-relationships\.(d2|svg)$|^scripts/check-docs-index\.sh$)'
         pass_filenames: false
         verbose: true
