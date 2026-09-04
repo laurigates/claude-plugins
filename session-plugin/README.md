@@ -165,6 +165,37 @@ was read against a stale basis — the failure it exists to prevent is a
 confident, specific finding about a bug that was already fixed upstream, with
 nothing in the digest hinting the checkout had fallen behind.
 
+#### Whose repository is this?
+
+`GIT` and `PRS` read the repo at `--project-dir` — `GIT` directly, `PRS`
+because every `gh` call is launched with that cwd, so `gh` resolves the repo
+from the same checkout's remote. When the cwd lands inside a **nested**
+checkout (an untracked upstream fork living inside the workspace repo), both
+sections describe a different repository's branch, dirt and PRs. The same
+vocabulary as the taskwarrior ladder says so:
+
+| `GIT_SCOPE` | Meaning | `GIT_CONFIDENCE` |
+|---|---|---|
+| `repo` | The checkout is the outermost repo here | `high` |
+| `nested-repo` | A **different** repo contains this one; `GIT_NESTED_IN=` names its directory | `low` |
+| `project-ancestor` | No outer repo, but the project slug resolved to an ancestor workspace (`PROJECT_RESOLVED=` / `PROJECT_AMBIGUOUS=`), so the slug and this checkout name different things | `low` |
+| `none` | Not in a git repo at all | `low` |
+
+A containment the outer repo **ignores via a `.gitignore`** (a portfolio
+root's `/*/*`) or **tracks** (a submodule, a committed subtree) is a declared
+layout, not a misdetection, and is never flagged — otherwise every repo in a
+portfolio checkout would read `low` and the caveat would be noise. The ignore
+*source* decides: `.gitignore` is repo content, while `.git/info/exclude` and
+a global `core.excludesFile` are private to one checkout, and the usual reason
+a line lands there is to stop an accidental nested clone showing up in `git
+status` — the very state this signal reports. A linked worktree is not nested
+either: it shares its main checkout's git common dir.
+
+`PRS_SCOPE` / `PRS_CONFIDENCE` mirror the git verdict, plus one rung of their
+own: `PRS_SCOPE=none` when `GH_READY=false`, because an unqueried zero is not
+a zero. Both are **caveats** — `STATUS` stays `OK` on every rung, and nothing
+is re-resolved: `GIT` keeps reporting the repo it is standing in.
+
 ### Task scoping is honest about its guess
 
 The taskwarrior project slug is detected from the repo **directory

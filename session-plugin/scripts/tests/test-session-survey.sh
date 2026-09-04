@@ -1747,6 +1747,196 @@ check "AO7: session-spinup names BEHIND" "$spinup_docs" "BEHIND"
 README_DOC=$(cat "$SCRIPT_DIR/../../README.md" 2>/dev/null)
 check "AO7: the collector README documents BEHIND" "$README_DOC" "BEHIND"
 
+# ============================================================================
+# TEST AP: GIT and PRS carry the same confidence ladder as TASKWARRIOR (#2441)
+#
+# Reported shape: a workspace repo containing an UNTRACKED nested checkout of
+# an upstream fork on a different branch. A session whose last `cd` landed
+# inside the fork got `BRANCH=master` / `DIRTY=true` from the FORK and 30 of
+# the FORK's PRs, while `PROJECT_CONFIDENCE=low` correctly flagged only the
+# taskwarrior half. The GIT and PRS sections carried no signal at all, so an
+# orchestrator reading the digest would wrap against the wrong repo.
+#
+# Every case below runs the collector against a real nested-repo fixture. The
+# guard-integrity halves are weighted equally: a collector that reported `low`
+# unconditionally would satisfy AP1 while destroying the signal, so AP2/AP3/
+# AP4/AP5 pin the cases that must stay `high`.
+# ============================================================================
+
+export TASK_ALL_FIXTURE=/dev/null
+export TASK_BPID_FIXTURE=/dev/null
+export GH_ISSUE_FIXTURE=/dev/null GH_PR_FIXTURE=/dev/null
+unset GH_PR_AUTHOR_FIXTURE GH_PR_HEAD_FIXTURE 2>/dev/null || true
+
+run_ap() { local d="$1"; shift; bash "$COLLECTOR" --project-dir "$d" --home-dir "$SANDBOX" "$@"; }
+
+# The reported shape: an untracked nested checkout inside a workspace repo.
+AP_WS="$SANDBOX/ap-ws"
+AP_NESTED="$AP_WS/ComfyUI"
+mkrepo "$AP_WS"
+mkrepo "$AP_NESTED"
+# Fixture validity: the nested repo must really be untracked in the outer one,
+# or the `outer_repo_declares` filter (AP4/AP5) is what is under test instead.
+check_eq "AP: fixture — the nested repo is untracked in the workspace" \
+  "$(git -C "$AP_WS" status --porcelain -- ComfyUI | head -1 | cut -c1-2)" "??"
+
+# --- AP1: the decisive case — the nested checkout is flagged ----------------
+out=$(run_ap "$AP_NESTED")
+check_line "AP1: a nested checkout reports GIT_SCOPE=nested-repo" "$out" "GIT_SCOPE=nested-repo"
+check_line "AP1: and drops GIT_CONFIDENCE" "$out" "GIT_CONFIDENCE=low"
+check_line "AP1: and names the outer repo" "$out" "GIT_NESTED_IN=ap-ws"
+check_line "AP1: PRS inherits the same scope" "$out" "PRS_SCOPE=nested-repo"
+check_line "AP1: PRS inherits the same confidence" "$out" "PRS_CONFIDENCE=low"
+# A caveat, never an error — the same posture BEHIND and PROJECT_CONFIDENCE take.
+ap_git_block=$(printf '%s' "$out" | sed -n '/=== GIT ===/,/=== END GIT ===/p')
+check_line "AP1: the GIT section still reports STATUS=OK" "$ap_git_block" "STATUS=OK"
+check_absent "AP1: the caveat never raises an ERROR status" "$ap_git_block" "STATUS=ERROR"
+check_absent "AP1: the caveat never raises a WARN status" "$ap_git_block" "STATUS=WARN"
+# The branch really is the nested repo's — the digest reports it, it just says so.
+check_line "AP1: the nested repo's own state is still reported" "$ap_git_block" "IN_GIT=true"
+
+# --- AP2 (guard integrity): the workspace root itself stays confident -------
+# Without this, "always report low" satisfies AP1 and the signal is worthless.
+out=$(run_ap "$AP_WS")
+check_line "AP2: the outermost repo reports GIT_SCOPE=repo" "$out" "GIT_SCOPE=repo"
+check_line "AP2: and keeps GIT_CONFIDENCE=high" "$out" "GIT_CONFIDENCE=high"
+check_absent "AP2: and names no outer repo" "$out" "GIT_NESTED_IN="
+check_line "AP2: PRS is confident too" "$out" "PRS_CONFIDENCE=high"
+
+# --- AP3 (guard integrity): a linked worktree is NOT a nested repo ----------
+# A worktree lives inside its own main checkout and shares its git common dir.
+# Flagging it would fire on every worktree-isolated agent in this repo.
+git -C "$AP_WS" worktree add -q "$AP_WS/wt" -b ap-worktree 2>/dev/null
+# Same resolution the collector performs: --git-common-dir may answer relative
+# to the queried directory, so resolve before comparing.
+ap_common_of() {
+  local d rel
+  d="$1"
+  rel=$(git -C "$d" rev-parse --git-common-dir 2>/dev/null) || return 1
+  case "$rel" in /*) : ;; *) rel="$d/$rel" ;; esac
+  ( cd "$rel" 2>/dev/null && pwd -P )
+}
+check_eq "AP3: fixture — the worktree shares the main checkout's common dir" \
+  "$(ap_common_of "$AP_WS/wt")" "$(ap_common_of "$AP_WS")"
+out=$(run_ap "$AP_WS/wt")
+check_line "AP3: a linked worktree is not nested" "$out" "GIT_SCOPE=repo"
+check_line "AP3: and keeps its confidence" "$out" "GIT_CONFIDENCE=high"
+
+# --- AP4 (guard integrity): an IGNORED containment is a declared layout -----
+# A portfolio root ignoring `/*/*` contains every project repo; flagging those
+# would make the caveat permanent noise.
+AP_IG="$SANDBOX/ap-ignored"
+AP_IG_CHILD="$AP_IG/child"
+mkrepo "$AP_IG"
+printf '/child/\n' > "$AP_IG/.gitignore"
+git -C "$AP_IG" add .gitignore
+git -C "$AP_IG" commit -q -m "ignore child"
+mkrepo "$AP_IG_CHILD"
+check_eq "AP4: fixture — the outer repo genuinely ignores the child" \
+  "$(git -C "$AP_IG" check-ignore -q -- "$AP_IG_CHILD" && echo ignored || echo not-ignored)" \
+  "ignored"
+out=$(run_ap "$AP_IG_CHILD")
+check_line "AP4: an ignored containment is not flagged" "$out" "GIT_SCOPE=repo"
+check_line "AP4: and keeps its confidence" "$out" "GIT_CONFIDENCE=high"
+
+# --- AP4b: a PRIVATE exclude is silencing, not a declaration ----------------
+# `.git/info/exclude` is not repo content: the usual reason a line lands there
+# is to stop an accidental nested clone showing up in `git status` — the exact
+# state this signal exists to report. Honouring it would let silencing the
+# symptom silence the caveat too. The fixture differs from AP1 ONLY by the
+# exclude entry, so the verdict is attributable to the ignore source.
+AP_EX="$SANDBOX/ap-excluded"
+AP_EX_CHILD="$AP_EX/fork"
+mkrepo "$AP_EX"
+mkrepo "$AP_EX_CHILD"
+mkdir -p "$AP_EX/.git/info"
+printf 'fork/\n' > "$AP_EX/.git/info/exclude"
+check_eq "AP4b: fixture — the private exclude really does ignore the child" \
+  "$(git -C "$AP_EX" check-ignore -q -- "$AP_EX_CHILD" && echo ignored || echo not-ignored)" \
+  "ignored"
+check_eq "AP4b: fixture — and the source really is .git/info/exclude" \
+  "$(git -C "$AP_EX" check-ignore -v -- "$AP_EX_CHILD" | cut -d: -f1)" \
+  ".git/info/exclude"
+out=$(run_ap "$AP_EX_CHILD")
+check_line "AP4b: a privately-excluded nesting is still flagged" "$out" "GIT_SCOPE=nested-repo"
+check_line "AP4b: and still drops confidence" "$out" "GIT_CONFIDENCE=low"
+check_line "AP4b: and still names the outer repo" "$out" "GIT_NESTED_IN=ap-excluded"
+
+# --- AP5 (guard integrity): a TRACKED containment is a declared layout ------
+AP_TR="$SANDBOX/ap-tracked"
+AP_TR_SUB="$AP_TR/sub"
+mkrepo "$AP_TR"
+mkdir -p "$AP_TR_SUB"
+printf 'x\n' > "$AP_TR_SUB/f.txt"
+git -C "$AP_TR" add sub/f.txt
+git -C "$AP_TR" commit -q -m "track sub"
+mkrepo "$AP_TR_SUB"
+check_eq "AP5: fixture — the outer repo genuinely tracks the path" \
+  "$(git -C "$AP_TR" ls-files --error-unmatch -- "$AP_TR_SUB" >/dev/null 2>&1 && echo tracked || echo untracked)" \
+  "tracked"
+out=$(run_ap "$AP_TR_SUB")
+check_line "AP5: a tracked containment is not flagged" "$out" "GIT_SCOPE=repo"
+check_line "AP5: and keeps its confidence" "$out" "GIT_CONFIDENCE=high"
+
+# --- AP6: no git repo at all is its own rung -------------------------------
+AP_NOGIT="$SANDBOX/ap-nogit"
+mkdir -p "$AP_NOGIT"
+out=$(run_ap "$AP_NOGIT")
+check_line "AP6: a non-repo reports GIT_SCOPE=none" "$out" "GIT_SCOPE=none"
+check_line "AP6: and is never confident about it" "$out" "GIT_CONFIDENCE=low"
+
+# --- AP7: an unqueried PR list is its own rung, independent of git ----------
+# GH_READY=false must reach PRS_SCOPE even when the checkout itself is fine —
+# an unqueried zero is not a zero (the same rule TASK_SCOPE=none encodes).
+out=$(SESSION_SURVEY_GH_BIN="$SANDBOX/no-such-gh" bash "$COLLECTOR" \
+  --project-dir "$AP_WS" --home-dir "$SANDBOX")
+check_line "AP7: gh unavailable still reports GH_READY=false" "$out" "GH_READY=false"
+check_line "AP7: and PRS_SCOPE=none" "$out" "PRS_SCOPE=none"
+check_line "AP7: and PRS_CONFIDENCE=low" "$out" "PRS_CONFIDENCE=low"
+check_line "AP7: while the git verdict is unaffected" "$out" "GIT_CONFIDENCE=high"
+
+# --- AP8: the project-ancestor rung ----------------------------------------
+# Same fixture as AP4 — the outer repo declares the containment, so nested-repo
+# cannot fire — but the taskwarrior ladder adopts the ancestor's slug, so the
+# slug and this checkout name different repositories. The ONLY difference from
+# AP4 is the task store, so the verdict is attributable to the ladder.
+cat > "$SANDBOX/ap-ancestor.json" <<'EOF'
+[{"uuid":"p1","project":"ap-ignored","description":"workspace backlog","modified":"20260601T101010Z"},
+ {"uuid":"p2","project":"ap-ignored","description":"and another","modified":"20260601T101010Z"}]
+EOF
+out=$(TASK_ALL_FIXTURE="$SANDBOX/ap-ancestor.json" run_ap "$AP_IG_CHILD")
+check_line "AP8: fixture — the ladder really adopted the ancestor" \
+  "$out" "DETECTION=cwd-repo-basename-ancestor"
+check_line "AP8: the git section says the slug names another repo" "$out" "GIT_SCOPE=project-ancestor"
+check_line "AP8: and drops its confidence" "$out" "GIT_CONFIDENCE=low"
+check_absent "AP8: with no outer repo to name" "$out" "GIT_NESTED_IN="
+
+# --- AP9: the hook's summary carries the git verdict too --------------------
+out=$(run_ap "$AP_NESTED" --summary)
+check_line "AP9: summary mode carries GIT_SCOPE" "$out" "GIT_SCOPE=nested-repo"
+check_line "AP9: summary mode carries GIT_CONFIDENCE" "$out" "GIT_CONFIDENCE=low"
+check_line "AP9: summary mode names the outer repo" "$out" "GIT_NESTED_IN=ap-ws"
+
+# --- AP10: the KEY=VALUE contract holds ------------------------------------
+out=$(run_ap "$AP_NESTED")
+check_count_line "AP10: exactly one GIT_SCOPE row" "$out" '^GIT_SCOPE=' 1
+check_count_line "AP10: exactly one GIT_CONFIDENCE row" "$out" '^GIT_CONFIDENCE=' 1
+check_count_line "AP10: exactly one GIT_NESTED_IN row" "$out" '^GIT_NESTED_IN=' 1
+check_count_line "AP10: exactly one PRS_SCOPE row" "$out" '^PRS_SCOPE=' 1
+check_count_line "AP10: exactly one PRS_CONFIDENCE row" "$out" '^PRS_CONFIDENCE=' 1
+
+# --- AP11: the consumers document the new signals --------------------------
+# The collector's honesty is only worth something if its consumers act on it —
+# the same invariant TEST AE pins for the taskwarrior ladder.
+README_DOC=$(cat "$SCRIPT_DIR/../../README.md" 2>/dev/null)
+check "AP11: the collector README documents GIT_SCOPE" "$README_DOC" "GIT_SCOPE"
+check "AP11: the collector README documents PRS_CONFIDENCE" "$README_DOC" "PRS_CONFIDENCE"
+spinup_ref=$(cat "$SCRIPT_DIR/../../skills/session-spinup/REFERENCE.md" 2>/dev/null)
+check "AP11: session-spinup names GIT_CONFIDENCE" "$spinup_ref" "GIT_CONFIDENCE"
+check "AP11: session-spinup names the nested-repo rung" "$spinup_ref" "nested-repo"
+end_skill=$(cat "$SCRIPT_DIR/../../skills/session-end/SKILL.md" 2>/dev/null)
+check "AP11: session-end names GIT_CONFIDENCE" "$end_skill" "GIT_CONFIDENCE"
+
 export TASK_ALL_FIXTURE="$SANDBOX/proj.json"
 
 # ============================================================================

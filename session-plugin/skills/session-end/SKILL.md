@@ -223,6 +223,7 @@ already in the transcript. Pre-silence:
 |---|---|
 | One-pass survey (detection + git + PRs + tasks-with-UUIDs + commits + blueprint tracker state + GitHub-drift dedup) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits --with-blueprint --with-dedup` |
 | Trust the task count? | `TASK_SCOPE=` + `PROJECT_CONFIDENCE=` in the `TASKWARRIOR` section (`low` ⇒ re-run with `--project <slug>` before treating 0 as clean) |
+| Trust the branch, dirt and PR rows? | `GIT_SCOPE=` + `GIT_CONFIDENCE=` in the `GIT` section, and `PRS_SCOPE=` + `PRS_CONFIDENCE=` in `PRS` (`low` ⇒ they may describe a nested or unrelated repo — name `GIT_NESTED_IN=` and re-run from the workspace root before wrapping against them) |
 | Distill qualify signal (recipe/hot-file/process counts) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/distill-survey.sh" --session-id "${CLAUDE_SESSION_ID}" --summary` |
 | Re-derive the drain wave before delegating | `task bpid.any: status:completed export \| jq …` intersected with tracker `tasks.pending` (Step 4.3) |
 | Stable UUID for latest task | `task +LATEST uuids` |
