@@ -174,24 +174,33 @@ assert_eq "$rc" "0" "A2 real repo exit 0"
 # Guard integrity: STATUS=OK over zero files is what a collapsed scan reports
 # (issue #2219), so the clean verdict must be attributable to a real read.
 assert_contains "$out" "SCANNED_EMPTY=false" "A4 real repo scan not empty"
-# The default scope must cover EVERY git-plugin skill that references a gated
-# sibling from an action section. A one-file default reported STATUS=OK over a
-# tree holding three live instances (#2442 review), so the scope is asserted by
-# name rather than by count alone.
-scanned_line="$(printf '%s\n' "$out" | grep -m1 '^FILES_SCANNED=' || true)"
-scope_line="$(printf '%s\n' "$out" | grep -m1 '^SCOPE=' || true)"
-assert_eq "$scanned_line" "FILES_SCANNED=${scanned_line#FILES_SCANNED=}" "A3 real repo reports a scan count"
-if [ "${scanned_line#FILES_SCANNED=}" -ge 3 ] 2>/dev/null; then
-  ok "A3b real repo scanned >= 3 skills (got ${scanned_line#FILES_SCANNED=})"
+# Since #2483 the default scope is the WHOLE marketplace, discovered at run
+# time. A one-file default once reported STATUS=OK over a tree holding three
+# live instances (#2442 review), so coverage is asserted against an independent
+# count of the corpus rather than against the checker's own claim.
+scanned_line="$(key_of "$out" FILES_SCANNED)"
+scope_line="$(key_of "$out" SCOPE)"
+corpus_count="$(find "$repo_root" \
+  -path "$repo_root/.claude/worktrees/*" -prune -o \
+  -path "$repo_root/dist/*" -prune -o \
+  -path '*-plugin/skills/*/SKILL.md' -print | grep -c . || true)"
+if [ "${corpus_count:-0}" -ge 100 ] 2>/dev/null; then
+  ok "A3 the marketplace corpus is non-trivial (got $corpus_count skills)"
 else
-  bad "A3b real repo scanned >= 3 skills (got '$scanned_line')"
+  bad "A3 the marketplace corpus is non-trivial (got '$corpus_count')"
 fi
-assert_eq "$scope_line" "SCOPE=${scanned_line#FILES_SCANNED=}" "A3c every scoped path resolved to a file"
-for scoped in git-pr-watch git-pr-sync-check git-triage; do
-  assert_contains "$out" "git-plugin/skills/$scoped/SKILL.md" "A5 AUDITED names $scoped"
-done
-# STATUS=OK must never read as "the marketplace is clean".
-assert_contains "$out" "SCOPE_IS_REPO_WIDE=false" "A6 audit set declared as scoped"
+assert_eq "$scanned_line" "FILES_SCANNED=$corpus_count" "A3b every marketplace skill was scanned"
+assert_eq "$scope_line" "SCOPE=$corpus_count" "A3c every scoped path resolved to a file"
+# STATUS=OK now DOES mean the marketplace is clean — of anything not declared.
+assert_contains "$out" "SCOPE_IS_REPO_WIDE=true" "A5 audit set declared as repo-wide"
+# A suppressed finding must never be indistinguishable from no finding, so the
+# counter is emitted even at 0 and the declared set is itemised (#2219/#2255).
+allow_line="$(key_of "$out" ALLOWLISTED)"
+assert_eq "$allow_line" "ALLOWLISTED=${allow_line#ALLOWLISTED=}" "A6 real repo reports an allowlist count"
+if [ "${allow_line#ALLOWLISTED=}" -gt 0 ] 2>/dev/null; then
+  assert_contains "$out" "ALLOWLISTED_DELEGATIONS:" "A6b declared residuals are itemised"
+  assert_contains "$out" "OWNER=#2483" "A6c each residual names its owning issue"
+fi
 
 echo "TEST B: imperative delegation to a GATED sibling is an ERROR"
 fx="$tmp_root/b"; build_fixture "$fx" gated "Execution" "$IMPERATIVE"
@@ -504,6 +513,189 @@ out="$(run_checker "$fx")"; rc=$?
 assert_contains "$out" "STATUS=ERROR" "N1 unprefixed sibling name still resolves"
 assert_contains "$out" "TARGET=demo-plugin/skills/plain-feedback/SKILL.md" "N1b resolves to the right file"
 assert_eq "$rc" "1" "N1c exit 1"
+
+echo "TEST O: Class D — a heading is a label, not an instruction (#2483)"
+# `document-linking` line 402 is the literal H3 `### /blueprint:work-order`,
+# flagged for titling the section that documents that command.
+fx="$tmp_root/o-heading"; mk_sibling "$fx" demo-feedback gated
+mk_watch "$fx" open <<'EOF'
+# /demo:watch
+
+## Execution
+
+### `/demo:feedback`
+
+After the review lands, the thread is resolved.
+EOF
+out="$(run_checker "$fx")"; rc=$?
+assert_contains "$out" "STATUS=OK" "O1 an H3 naming a gated sibling is clean"
+assert_eq "$rc" "0" "O1b exit 0"
+assert_eq "$(key_of "$out" FILES_SCANNED)" "FILES_SCANNED=1" "O1c the file was actually read"
+
+# Guard integrity, and the half that matters: a heading exemption must not leak
+# into the body underneath it. Without this, skipping the whole file would pass.
+fx="$tmp_root/o-body"; mk_sibling "$fx" demo-feedback gated
+mk_watch "$fx" open <<'EOF'
+# /demo:watch
+
+## Execution
+
+### Handling review threads
+
+Address it via `/demo:feedback` (the canonical engine).
+EOF
+out="$(run_checker "$fx")"; rc=$?
+assert_contains "$out" "STATUS=ERROR" "O2 body under a heading is still judged"
+assert_eq "$rc" "1" "O2b exit 1"
+
+# `#` also opens a shell comment. A heading exemption blind to fenced blocks
+# would let a real delegation escape a guard that judged it before Class D
+# existed — verified against origin/main, which reports ERROR on this fixture.
+fx="$tmp_root/o-fence"; mk_sibling "$fx" demo-feedback gated
+mk_watch "$fx" open <<'EOF'
+# /demo:watch
+
+## Execution
+
+```bash
+# Address it via `/demo:feedback` (the canonical engine)
+run_thing
+```
+EOF
+out="$(run_checker "$fx")"; rc=$?
+assert_contains "$out" "STATUS=ERROR" 'O3 a shell comment inside a fence is still judged'
+assert_eq "$rc" "1" "O3b exit 1"
+
+# ...and the fence must CLOSE, or every heading after a code block would be
+# judged as a comment and Class D would be dead below the first fence.
+fx="$tmp_root/o-postfence"; mk_sibling "$fx" demo-feedback gated
+mk_watch "$fx" open <<'EOF'
+# /demo:watch
+
+## Execution
+
+```bash
+run_thing
+```
+
+### `/demo:feedback`
+
+Documented above.
+EOF
+out="$(run_checker "$fx")"; rc=$?
+assert_contains "$out" "STATUS=OK" "O4 a heading AFTER a closed fence is still exempt"
+assert_eq "$rc" "0" "O4b exit 0"
+
+echo "TEST P: the #2483 residual allowlist suppresses, counts, and expires"
+# A declared residual is exempt, itemised, and counted — never silent.
+fx="$tmp_root/p-allow"; mk_sibling "$fx" demo-feedback gated
+mk_watch "$fx" open <<'EOF'
+# /demo:watch
+
+## Execution
+
+Address it via `/demo:feedback` (the canonical engine).
+EOF
+allow_key='demo-plugin/skills/demo-watch/SKILL.md|/demo:feedback'
+out="$(CHECK_DELEGATION_SCOPE="demo-plugin/skills/demo-watch/SKILL.md" \
+  CHECK_DELEGATION_ALLOWLIST="$allow_key" bash "$checker" --project-dir "$fx" 2>&1)"; rc=$?
+assert_contains "$out" "STATUS=OK" "P1 a declared residual is suppressed"
+assert_eq "$rc" "0" "P1b exit 0"
+assert_eq "$(key_of "$out" ALLOWLISTED)" "ALLOWLISTED=1" "P1c the suppression is counted"
+assert_contains "$out" "TYPE=allowlisted_delegation" "P1d the suppression is itemised"
+assert_lacks "$out" "TYPE=unreachable_delegation" "P1e no finding is double-reported"
+
+# Guard integrity: the SAME file with the allowlist withheld must ERROR, or P1
+# proves only that the checker stopped judging.
+out="$(run_checker "$fx")"; rc=$?
+assert_contains "$out" "STATUS=ERROR" "P2 the same reference ERRORs undeclared"
+assert_eq "$rc" "1" "P2b exit 1"
+assert_eq "$(key_of "$out" ALLOWLISTED)" "ALLOWLISTED=0" "P2c counter is attributable, not always-on"
+
+# The key is `<file>|<ref>`, so a DIFFERENT gated sibling in an already-declared
+# file is still caught — the coarseness is bounded to the declared reference.
+fx="$tmp_root/p-other"; mk_sibling "$fx" demo-feedback gated
+mk_sibling "$fx" demo-issue gated
+mk_watch "$fx" open <<'EOF'
+# /demo:watch
+
+## Execution
+
+Address it via `/demo:issue` (the canonical engine).
+EOF
+out="$(CHECK_DELEGATION_SCOPE="demo-plugin/skills/demo-watch/SKILL.md" \
+  CHECK_DELEGATION_ALLOWLIST="$allow_key" bash "$checker" --project-dir "$fx" 2>&1)"; rc=$?
+assert_contains "$out" "STATUS=ERROR" "P3 an undeclared ref in a declared file still ERRORs"
+assert_contains "$out" "REF=/demo:issue" "P3b names the undeclared reference"
+assert_eq "$rc" "1" "P3c exit 1"
+
+# The ratchet: a key matching nothing in scope is itself an ERROR, so the list
+# can only shrink. Without this an entry would silently outlive its finding and
+# suppress a future one.
+fx="$tmp_root/p-stale"; mk_sibling "$fx" demo-feedback gated
+mk_watch "$fx" open <<'EOF'
+# /demo:watch
+
+## Execution
+
+Nothing to see here.
+EOF
+out="$(CHECK_DELEGATION_SCOPE="demo-plugin/skills/demo-watch/SKILL.md" \
+  CHECK_DELEGATION_ALLOWLIST="$allow_key" bash "$checker" --project-dir "$fx" 2>&1)"; rc=$?
+assert_contains "$out" "STATUS=ERROR" "P4 a stale allowlist entry is an ERROR"
+assert_contains "$out" "TYPE=stale_allowlist_entry" "P4b names the finding type"
+assert_contains "$out" "KEY=$allow_key" "P4c names the stale key"
+assert_eq "$rc" "1" "P4d exit 1"
+
+# ...but only for files IN scope. A narrowing seam puts the rest out of view,
+# not out of date; without this every fixture run above would drown in stale
+# findings for the real repo's declared residuals.
+out="$(CHECK_DELEGATION_SCOPE="demo-plugin/skills/demo-watch/SKILL.md" \
+  CHECK_DELEGATION_ALLOWLIST="other-plugin/skills/x/SKILL.md|/demo:feedback" \
+  bash "$checker" --project-dir "$fx" 2>&1)"; rc=$?
+assert_contains "$out" "STATUS=OK" "P5 an out-of-scope key is not judged stale"
+assert_eq "$rc" "0" "P5b exit 0"
+
+# The allowlist seam uses `${VAR-default}`, not `${VAR:-default}`, so an
+# explicitly EMPTY value means "no declared residuals" and is distinct from an
+# unset one (the #2521 lesson). That is the documented way to see the raw
+# residual set, so both halves are pinned on ONE fixture — a fixture at a path
+# the SHIPPED default declares, since anywhere else the two operators agree and
+# the case would pin nothing.
+fx="$tmp_root/p-seam"
+declared_file="blueprint-plugin/skills/confidence-scoring/SKILL.md"
+mkdir -p "$fx/blueprint-plugin/skills/confidence-scoring" \
+         "$fx/blueprint-plugin/skills/blueprint-work-order"
+{
+  printf -- '---\nname: blueprint-work-order\ndisable-model-invocation: true\n'
+  printf 'description: "Create a work-order. Use when delegating a task."\n---\n\n'
+  printf '# /blueprint:work-order\n'
+} > "$fx/blueprint-plugin/skills/blueprint-work-order/SKILL.md"
+{
+  printf -- '---\nname: confidence-scoring\n'
+  printf 'description: "Score a PRP. Use when assessing readiness."\n---\n\n'
+  printf '# /blueprint:confidence-scoring\n\n## Execution\n\n'
+  printf 'Address it via `/blueprint:work-order` (the canonical engine).\n'
+} > "$fx/$declared_file"
+
+# Unset seam: the shipped default is in force, so the declared residual is
+# suppressed. This half also proves DELEGATION_ALLOWLIST_DEFAULT is loaded at
+# all — without it the empty-seam half below would hold for a default that was
+# never read.
+out="$(CHECK_DELEGATION_SCOPE="$declared_file" bash "$checker" --project-dir "$fx" 2>&1)"; rc=$?
+assert_contains "$out" "STATUS=OK" "P6 the shipped default suppresses its declared residual"
+assert_eq "$(key_of "$out" ALLOWLISTED)" "ALLOWLISTED=1" "P6b the shipped default is loaded"
+assert_eq "$rc" "0" "P6c exit 0"
+
+# Empty seam: set-but-empty means "declare nothing", so the SAME reference
+# ERRORs. Under `${VAR:-default}` this case would be indistinguishable from the
+# unset one and would silently pin nothing.
+out="$(CHECK_DELEGATION_SCOPE="$declared_file" \
+  CHECK_DELEGATION_ALLOWLIST='' bash "$checker" --project-dir "$fx" 2>&1)"; rc=$?
+assert_contains "$out" "STATUS=ERROR" "P7 an empty seam declares nothing"
+assert_eq "$(key_of "$out" ALLOWLISTED)" "ALLOWLISTED=0" "P7b nothing is suppressed"
+assert_lacks "$out" "TYPE=stale_allowlist_entry" "P7c an empty list has no stale keys"
+assert_eq "$rc" "1" "P7d exit 1"
 
 echo
 echo "PASSED=$pass_count"
