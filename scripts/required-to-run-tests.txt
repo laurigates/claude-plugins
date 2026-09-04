@@ -89,6 +89,12 @@ scripts/tests/test-fetch-arxiv-window.sh
 # names, so a skip would hide a guard that had started flagging documentation.
 scripts/tests/test-check-dead-tool-grants.sh
 
+# Pure filesystem fixtures -- no network, and nothing beyond POSIX grep/find/awk
+# -- so a skip is never legitimate. Its CASE H reads this repo's own
+# ISSUE_TEMPLATE directory, and the defect it guards is invisible from the repo
+# side: no job renders the chooser (#2568).
+scripts/tests/test-check-issue-template-inheritance.sh
+
 # Its case A is load-bearing in an unusual direction: the real repo, at 1 of 16
 # canaries, must be GREEN. A skip would hide a guard that had started failing on
 # the standing gap -- which is exactly the shape that gets a monthly audit
