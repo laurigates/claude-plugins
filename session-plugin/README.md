@@ -206,9 +206,12 @@ repo, so the reading is not certain.
 the same resolved cwd), plus one rung of their own: `PRS_SCOPE=none` when
 `GH_READY=false`, because an unqueried zero is not a zero.
 
-`PROJECT`, `TASKWARRIOR` and `COMMITS` are unaffected: `PROJECT_DIR` reports
-where the session stands, the taskwarrior ladder keeps its own slug resolution,
-and `COMMITS` still lists the log of the checkout at `PROJECT_DIR`.
+**Scope.** Only `GIT` and `PRS` re-resolve. `PROJECT_DIR` still reports where
+the session stands and the taskwarrior ladder keeps its own slug resolution; and
+the two `--with-*` sections still read the checkout at `PROJECT_DIR` — `COMMITS`
+lists that checkout's log, `BLUEPRINT` reads its `docs/blueprint/`. So on the
+`workspace-root` rung those two describe the nested checkout while `GIT` and
+`PRS` describe the outer repo. Both sites carry a comment saying so.
 
 ### Task scoping is honest about its guess
 

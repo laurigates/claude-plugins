@@ -292,8 +292,16 @@ git_common_dir_of() {  # $1 = a directory inside a repo
 # exists to report. Honouring those would let silencing the symptom silence
 # the resolution too. `check-ignore -v` names the source; a path under `.git/`,
 # or an absolute/`~` path (a global or system excludes file), is not a
-# declaration. A source path containing `:` splits wrong and reads as
-# undeclared, which errs toward re-resolving.
+# declaration.
+#
+# `check-ignore -v` prints `<source>:<line>:<pattern>\t<path>`, so a source path
+# containing `:` splits short. Verified both ways: a RELATIVE source under a
+# colon-bearing directory (`x:/.gitignore` → `x`) falls through to the declared
+# branch, so the checkout is left where it is — the conservative direction now
+# that the verdict re-resolves rather than merely flags; an ABSOLUTE one
+# (`/home/u:x/.gitignore` → `/home/u`) still matches `/*` and reads undeclared,
+# which is the correct verdict for a global excludes file. Untested against a
+# real repo; a `:` in a gitignore path is pathological either way.
 outer_repo_declares() {  # $1 = outer repo root, $2 = inner repo root
   local why src
   why=$("$git_bin" -C "$1" check-ignore -v -- "$2" 2>/dev/null) || why=""
@@ -1264,6 +1272,10 @@ fi
 # the repo isn't blueprint-enabled) instead of a conditionally-absent one.
 if [ "$with_blueprint" = true ]; then
   echo "=== BLUEPRINT ==="
+  # Reads $project_dir, not $git_state_dir — same scoping as COMMITS above, and
+  # the same consequence on the `workspace-root` rung: the tracker read is the
+  # nested checkout's while GIT describes the outer repo (#2441 was scoped to
+  # GIT and PRS). Tracked, not fixed here.
   bp_manifest="$project_dir/docs/blueprint/manifest.json"
   bp_tracker="$project_dir/docs/blueprint/feature-tracker.json"
   bp_manifest_present=false
