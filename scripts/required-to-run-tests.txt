@@ -88,3 +88,10 @@ scripts/tests/test-check-dead-tool-grants.sh
 # the standing gap -- which is exactly the shape that gets a monthly audit
 # switched off.
 scripts/tests/test-check-golden-set-coverage.sh
+
+# Runs entirely off synthesized JSONL transcripts -- no network, no gh, no task
+# binary -- and the suite carries no skip branch at all, so a SKIP here can only
+# mean the file stopped being discovered. Its last assertion block is the #2574
+# control pinning PATTERN_FUTURE / PATTERN_MARKER against silent narrowing, and a
+# control that does not provably execute is not a control (#2580).
+hooks-plugin/hooks/test-no-calendar-estimates.sh
