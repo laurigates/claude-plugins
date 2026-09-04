@@ -210,15 +210,16 @@ jobs:
         # state rather than a suppressed one.
         run: bash scripts/check-subagent-types.sh --strict
 
-      - name: Check the local issue-template directory still carries what it suppresses
+      - name: Check the local issue-template directory still offers a template and both links
         # ALWAYS-ON, and that is the whole point. A repo-local
         # .github/ISSUE_TEMPLATE directory suppresses the ENTIRE inherited
-        # directory from laurigates/.github, so deleting a template here removes
-        # it from the chooser with nothing in the diff, no CI signal, and a
-        # chooser page that cannot be rendered unauthenticated (#2568). This job
-        # carries no `paths:` filter (see the header), so a PR whose only change
-        # is `git rm .github/ISSUE_TEMPLATE/1-bug-report.yml` still runs it —
-        # which the path-filtered `Test: Skill scripts` alone could not promise.
+        # directory from laurigates/.github, and nothing else here can see the
+        # result: no job renders the chooser, and /issues/new/choose 302s to
+        # /login so it cannot be fetched (#2568). The DELETION is visible in the
+        # diff; what it costs is not. This job carries no `paths:` filter (see
+        # the header), so a PR whose only change is
+        # `git rm .github/ISSUE_TEMPLATE/*.yml` still runs this step — which the
+        # path-filtered `Test: Skill scripts` alone could not promise.
         run: bash scripts/check-issue-template-inheritance.sh
 
       - name: Check every plugin agent runs on opus

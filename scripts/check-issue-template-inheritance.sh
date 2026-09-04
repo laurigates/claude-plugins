@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Verify a repo-local .github/ISSUE_TEMPLATE directory carries everything the
-# inherited org-wide directory used to provide.
+# Verify a repo-local .github/ISSUE_TEMPLATE directory still offers a template,
+# a config, and the two contact links the inherited org-wide directory provided.
 #
 # Background: GitHub's default community health files are per-FILE for most
 # types, but issue templates are inherited as a DIRECTORY. From
@@ -31,8 +31,14 @@
 # `name:` and `body:` keys, and a legacy markdown template needs YAML
 # frontmatter opening line 1 with a `name:` key.
 #
-# Links are matched against the config with whole-line comments stripped, so a
-# URL surviving only in prose cannot stand in for a live contact link.
+# Links are matched as the exact value of a `url:` key, so a URL surviving only
+# in prose — a comment, a trailing annotation, an unrelated key — cannot stand
+# in for a live contact link.
+#
+# What this guard does NOT assert: that the local copies still MATCH the org
+# ones, or that every org template is present. It is a presence-and-shape check
+# on one directory, and it needs no network. Parity with laurigates/.github is
+# the separate cross-repo drift check the issue calls option B.
 #
 # A repo with NO local directory is fully inherited and reports OK — there is
 # nothing to suppress, so a guard that errored there would be red on arrival in
@@ -162,14 +168,27 @@ security_link=missing
 qa_link=missing
 if [ -f "$CONFIG" ]; then
   config_present=true
-  # Whole-line comments are stripped first: a URL surviving only in a comment
-  # is documentation, not a contact link, and matching it would let a config
-  # whose contact_links were deleted pass while the chooser offers nothing.
+  # A link is the VALUE OF A `url:` KEY, not the URL appearing anywhere in the
+  # file. Matching it as a free substring passed a config whose `contact_links`
+  # block had been deleted but which still named the URL — in a comment, in a
+  # trailing `# …` annotation, or as the value of an unrelated key — while
+  # GitHub rendered no contact link at all. So: drop whole-line and trailing
+  # comments, collect the `url:` values, and compare each EXACTLY. Surrounding
+  # quotes are stripped so `url: "https://…"` reads the same as the bare form;
+  # a URL never contains a quote or a space, so neither strip can eat one.
+  config_urls="$(awk '
+    { sub(/^[[:space:]]*#.*$/, ""); sub(/[[:space:]]#.*$/, "") }
+    /^[[:space:]]*url:[[:space:]]*[^[:space:]]/ {
+      sub(/^[[:space:]]*url:[[:space:]]*/, "")
+      sub(/[[:space:]]+$/, "")
+      gsub("[\"\047]", "")
+      if ($0 != "") print
+    }
+  ' "$CONFIG" 2>/dev/null)"
   # A here-string, never a pipe into `grep -q` — an early-closing reader trips
   # SIGPIPE under `pipefail` (#1744).
-  config_body="$(grep -v '^[[:space:]]*#' "$CONFIG" 2>/dev/null)"
-  grep -qF "$SECURITY_URL" <<<"$config_body" && security_link=present
-  grep -qF "$QA_URL" <<<"$config_body" && qa_link=present
+  grep -qxF "$SECURITY_URL" <<<"$config_urls" && security_link=present
+  grep -qxF "$QA_URL" <<<"$config_urls" && qa_link=present
 else
   security_link=n/a
   qa_link=n/a

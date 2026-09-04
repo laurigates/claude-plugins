@@ -258,6 +258,44 @@ assert_line "$out_n" "TEMPLATE_COUNT=2" "N: both real templates still counted"
 assert_line "$out_n" "NON_TEMPLATE_COUNT=1" "N: only the README is dismissed"
 assert_lacks "$out_n" "templates_suppressed" "N: no suppression finding"
 
+# --- CASE O: a URL outside a `url:` key is not a contact link ----------------
+# Stripping whole-line comments was not enough. The match was still a substring
+# over everything that survived, so a config whose contact_links block had been
+# deleted still read `present` if it named the URL as the value of an unrelated
+# key, or in a trailing `# …` annotation on a line that is not a comment.
+O="$TMP_ROOT/o"; mkdir -p "$O/.github/ISSUE_TEMPLATE"
+{
+  echo "blank_issues_enabled: false"
+  echo "note: see $SECURITY_URL for private reporting"
+  echo "placeholder: nothing  # questions go to $QA_URL"
+} > "$O/.github/ISSUE_TEMPLATE/config.yml"
+write_template "$O/.github/ISSUE_TEMPLATE/1-bug-report.yml" "Bug Report"
+out_o="$(bash "$CHECKER" --project-dir "$O" 2>&1)"; rc_o=$?
+assert_eq "$rc_o" "1" "O: URLs outside a url: key exit 1"
+assert_line "$out_o" "SECURITY_LINK=missing" "O: an unrelated key is not a contact link"
+assert_line "$out_o" "QA_LINK=missing" "O: a trailing annotation is not a contact link"
+assert_contains "$out_o" "security_link_dropped" "O: security finding raised"
+assert_contains "$out_o" "qa_link_dropped" "O: Q&A finding raised"
+# Guard integrity: the tightening must not degrade into never matching. A
+# quoted url: value is the same link, and the shipped unquoted form is already
+# covered by CASE A and CASE K.
+P="$TMP_ROOT/p"; mkdir -p "$P/.github/ISSUE_TEMPLATE"
+{
+  echo "blank_issues_enabled: false"
+  echo "contact_links:"
+  echo "  - name: Security Vulnerability"
+  echo "    url: \"$SECURITY_URL\""
+  echo "    about: private reporting"
+  echo "  - name: Question or Discussion"
+  echo "    url: '$QA_URL'"
+  echo "    about: ask here"
+} > "$P/.github/ISSUE_TEMPLATE/config.yml"
+write_template "$P/.github/ISSUE_TEMPLATE/1-bug-report.yml" "Bug Report"
+out_p="$(bash "$CHECKER" --project-dir "$P" 2>&1)"; rc_p=$?
+assert_eq "$rc_p" "0" "P: quoted url: values exit 0"
+assert_line "$out_p" "SECURITY_LINK=present" "P: a double-quoted url: still matches"
+assert_line "$out_p" "QA_LINK=present" "P: a single-quoted url: still matches"
+
 # --- CASE G: unknown argument is rejected, not swallowed (#2057) -------------
 out_g="$(bash "$CHECKER" --projekt-dir "$A" 2>&1)"; rc_g=$?
 assert_eq "$rc_g" "2" "G: unknown argument exits 2"
