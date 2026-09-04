@@ -193,17 +193,21 @@ gracefully rather than omitting:
   upstream** and a **detached HEAD** report — the same degradation
   `UNPUSHED` takes — so it is never evidence that the tree is current,
   only that nothing said otherwise.
-- **`GIT_CONFIDENCE=low`** — the `GIT` and `PRS` sections may describe a
-  **different repository** than the session's. `GIT_SCOPE` says which
-  rung: `nested-repo` (a different repo contains this checkout, named by
-  `GIT_NESTED_IN=`), `project-ancestor` (the project slug resolved to an
-  ancestor workspace, named by `PROJECT_RESOLVED=` / `PROJECT_AMBIGUOUS=`),
-  or `none` (not in a repo at all). Same posture as
-  `PROJECT_CONFIDENCE=low`: the branch, dirt and PR rows are real, they
-  are just not certainly this session's — name the outer repo and offer
-  a re-run from the workspace root rather than reporting them flat.
+- **`GIT_SCOPE=workspace-root`** — an undeclared outer repo contains the
+  checkout at `PROJECT_DIR`, so the collector read the git and PR rows
+  from that **outer** repo instead: `GIT_ROOT=` names the repo the rows
+  describe and `GIT_NESTED_REPO=` names the nested checkout it stepped
+  out of. Say which repo the state belongs to ("`main`, clean — in
+  `<GIT_ROOT>`; the cwd sits inside the nested `<GIT_NESTED_REPO>`
+  checkout") rather than reporting the branch flat. `GIT_CONFIDENCE=low`
+  rides with it: the rows describe a real repository, but a session
+  genuinely working *in* the nested checkout is served the outer one.
+  Never suggest re-running from the workspace root — that is what the
+  collector already did.
+- **`GIT_CONFIDENCE=low` with `GIT_SCOPE=none`** — not in a git repo at
+  all; there is no branch, dirt or PR state to report.
   `PRS_SCOPE` / `PRS_CONFIDENCE` mirror the git verdict, because every
-  `gh` call runs with the same checkout as its cwd; `PRS_SCOPE=none`
+  `gh` call runs with the same resolved cwd; `PRS_SCOPE=none`
   additionally means the call never landed (see `GH_READY=false`).
 - **All sources empty** — say so briefly, then step out of the way.
 - **Plan mode / interactive UI** — present the briefing only; spinup

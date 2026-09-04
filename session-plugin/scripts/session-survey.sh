@@ -201,6 +201,221 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Ancestor repo ROOTS, NEAREST FIRST (#2304). In a portfolio where a nested
+# repo's work is filed under the PARENT workspace's slug (the house rule is one
+# short slug per long-running area, reused consistently — so eleven sibling
+# packs share one backlog), the nested basename matches no task and the survey
+# reports an EMPTY answer, which is exactly what "nothing to do here" looks
+# like. Walking up finds the slug that actually holds the work.
+#
+# The walk is bounded three ways so it cannot run away: it never leaves
+# $home_dir (or, when that is unset, stops at the filesystem root), every step
+# is a strict parent via `dirname`, and a hard iteration cap backstops both.
+#
+# Emits PATHS rather than basenames because two consumers need it: the
+# taskwarrior ladder wants the slug (`ancestor_repo_slugs` below), and the GIT
+# workspace-root resolution (#2441) wants the root itself — both to ask git
+# whether that outer repo is a DIFFERENT repository and to read state from it.
+#
+# Defined here rather than beside the taskwarrior ladder because the #2441
+# resolution below must run BEFORE the git state read and before the `gh` calls
+# are launched, and both of those come first in this file.
+# ---------------------------------------------------------------------------
+ancestor_repo_roots() {  # $1 = dir to walk up from, $2 = boundary ("" = root)
+  local start="$1" boundary="$2" dir root next steps=0
+  [ -n "$start" ] || return 0
+  have "$git_bin" || return 0
+  dir=$(dirname "$start")
+  while [ "$steps" -lt 32 ]; do
+    steps=$((steps + 1))
+    case "$dir" in ""|"."|"/") break ;; esac
+    if [ -n "$boundary" ]; then
+      # Strictly BELOW the boundary: $HOME itself is not a project workspace,
+      # and a dotfiles repo checked out there must not swallow every slug.
+      case "$dir" in "$boundary"/*) : ;; *) break ;; esac
+    fi
+    root=$("$git_bin" -C "$dir" rev-parse --show-toplevel 2>/dev/null || echo "")
+    if [ -n "$root" ] && [ "$root" != "$start" ]; then
+      # git's own discovery walks upward, so re-apply the boundary to what it
+      # found — the walk must not escape $HOME by proxy.
+      if [ -n "$boundary" ]; then
+        case "$root" in "$boundary"/*) : ;; *) break ;; esac
+      fi
+      printf '%s\n' "$root"
+      next=$(dirname "$root")
+    else
+      next=$(dirname "$dir")
+    fi
+    [ "$next" != "$dir" ] || break
+    dir="$next"
+  done
+  return 0
+}
+
+# The taskwarrior ladder's view of the same walk: one candidate SLUG per line.
+ancestor_repo_slugs() {  # $1 = dir to walk up from, $2 = boundary ("" = root)
+  local r
+  while IFS= read -r r; do
+    [ -n "$r" ] || continue
+    basename "$r"
+  done < <(ancestor_repo_roots "$1" "$2")
+  return 0
+}
+
+# A repo's ABSOLUTE common git dir — the discriminator between "a different
+# repository contains this one" and "this is a linked worktree of the very repo
+# above it" (#2441). Every worktree of one repo shares a common dir; a nested
+# clone or a submodule does not. `--git-common-dir` may answer relative to the
+# queried directory, so it is resolved before comparing.
+git_common_dir_of() {  # $1 = a directory inside a repo
+  local d
+  have "$git_bin" || return 1
+  d=$("$git_bin" -C "$1" rev-parse --git-common-dir 2>/dev/null) || return 1
+  [ -n "$d" ] || return 1
+  case "$d" in /*) : ;; *) d="$1/$d" ;; esac
+  ( cd "$d" 2>/dev/null && pwd -P ) || printf '%s\n' "$d"
+}
+
+# Does the OUTER repo know about the inner one? (#2441) A containment the outer
+# repo IGNORES via a `.gitignore` (`/*/*` in a portfolio root) or TRACKS (a
+# submodule, a committed subtree) is a DECLARED layout: the inner checkout is
+# where the work belongs and its git state is the session's, so re-resolving
+# out of it would report the wrong repo for every pack in a portfolio. The
+# reported case is neither: the nested fork was plain untracked content
+# (`?? ComfyUI/`) inside the workspace repo.
+#
+# The ignore SOURCE decides, not the mere fact of being ignored. `.gitignore`
+# is repo content — a layout the repo asserts to everyone who clones it.
+# `.git/info/exclude` and a global `core.excludesFile` are private to one
+# checkout, and the usual reason a line lands there is to stop an accidental
+# nested clone showing up in `git status` — exactly the state this signal
+# exists to report. Honouring those would let silencing the symptom silence
+# the resolution too. `check-ignore -v` names the source; a path under `.git/`,
+# or an absolute/`~` path (a global or system excludes file), is not a
+# declaration. A source path containing `:` splits wrong and reads as
+# undeclared, which errs toward re-resolving.
+outer_repo_declares() {  # $1 = outer repo root, $2 = inner repo root
+  local why src
+  why=$("$git_bin" -C "$1" check-ignore -v -- "$2" 2>/dev/null) || why=""
+  if [ -n "$why" ]; then
+    src="${why%%:*}"
+    case "$src" in
+      .git/*|/*|"~"*) : ;;
+      *) return 0 ;;
+    esac
+  fi
+  "$git_bin" -C "$1" ls-files --error-unmatch -- "$2" >/dev/null 2>&1 && return 0
+  return 1
+}
+
+# A directory name is filesystem content, so it is sanitised before it becomes
+# a KEY=VALUE row. Stricter than the gh-stderr snippet's class (which keeps
+# TAB/LF because a following `head -1` bounds it): here every control byte goes
+# — DEL included — since nothing downstream re-bounds the value.
+sanitize_name() {  # $1 = a directory path; prints its bounded basename
+  basename "$1" | tr -d '\000-\037\177' | cut -c1-200
+}
+
+# Physical paths on both sides, so the boundary test is a plain prefix compare
+# even when $TMPDIR / $HOME reach the tree through a symlink.
+walk_start="${repo_root:-$project_dir}"
+walk_start=$(cd "$walk_start" 2>/dev/null && pwd -P) || walk_start="${repo_root:-$project_dir}"
+[ -n "$walk_start" ] || walk_start="${repo_root:-$project_dir}"
+home_boundary=""
+if [ -n "$home_dir" ]; then
+  home_boundary=$(cd "$home_dir" 2>/dev/null && pwd -P) || home_boundary="$home_dir"
+  [ -n "$home_boundary" ] || home_boundary="$home_dir"
+fi
+
+# ---------------------------------------------------------------------------
+# Which repository do GIT and PRS describe? (#2441)
+#
+# Both sections read the repo at $project_dir — GIT directly, PRS because every
+# `gh` call is launched with that cwd, so `gh` resolves the repo from the same
+# checkout's remote. When the cwd lands inside a NESTED checkout (the reported
+# shape: an untracked upstream fork living inside the workspace repo), those two
+# sections describe a DIFFERENT repository's branch, dirt and PRs, and the
+# digest said nothing.
+#
+# So GIT and PRS are RESOLVED FROM THE WORKSPACE ROOT rather than merely
+# flagged: the issue's own preferred remedy, and the one that keeps the digest's
+# sections describing one repository instead of asking the consumer to reconcile
+# them. The walk is the #2304 ancestor walk, reused rather than duplicated.
+#
+# Two containments are deliberately NOT re-resolved, because in both the
+# checkout at the cwd IS the session's repo and stepping out of it would report
+# the wrong one:
+#
+#   - a linked worktree, which lives inside its own main checkout and shares its
+#     common dir (every worktree-isolated agent is this shape);
+#   - a declared containment — the outer repo ignores it via `.gitignore` or
+#     tracks it — which is how a portfolio root holds its packs.
+#
+#   none            not in a git repo at all (IN_GIT=false / GH_READY=false)
+#   repo            the checkout at PROJECT_DIR is the repo described
+#   workspace-root  an undeclared outer repo contains this checkout, so GIT and
+#                   PRS describe THAT repo (GIT_ROOT=), not the nested one
+#                   (GIT_NESTED_REPO=)
+#
+# The taskwarrior half is untouched: PROJECT / TASK_SCOPE / PROJECT_CONFIDENCE
+# keep their own ladder and their own vocabulary.
+# ---------------------------------------------------------------------------
+git_scope="repo"
+git_confidence="high"
+git_nested_repo=""
+git_root=""
+# The directory GIT reads and `gh` runs in. Defaults to the cwd's checkout.
+git_state_dir="$project_dir"
+
+if [ "$in_git" != true ]; then
+  git_scope="none"
+  git_confidence="low"
+else
+  # The taskwarrior walk stops at $HOME because a dotfiles repo checked out
+  # THERE must not swallow every slug. That reasoning is about slug adoption,
+  # not about nesting: a workspace living outside $HOME (the reported case was
+  # /mnt/sabrent/comfyui-workspace) is nested exactly as much as one inside it,
+  # and the boundary would silently make the check a no-op there. So the bound
+  # applies only where it means something — when the checkout is under $HOME.
+  # The walk stops at the FIRST outer repo either way, and the 32-step cap
+  # still backstops it.
+  git_walk_boundary="$home_boundary"
+  if [ -n "$home_boundary" ]; then
+    case "$walk_start" in "$home_boundary"/*) : ;; *) git_walk_boundary="" ;; esac
+  fi
+
+  git_outer_root=""
+  own_common=$(git_common_dir_of "$walk_start" 2>/dev/null) || own_common=""
+  while IFS= read -r outer_root; do
+    [ -n "$outer_root" ] || continue
+    outer_common=$(git_common_dir_of "$outer_root" 2>/dev/null) || outer_common=""
+    [ -n "$outer_common" ] || continue
+    # A linked worktree lives inside its own main checkout and shares its
+    # common dir. That is not a nested repository, and re-resolving would make
+    # every worktree-isolated agent report its main checkout's state.
+    [ "$outer_common" != "$own_common" ] || continue
+    # A declared containment (ignored or tracked) is a layout choice, not a
+    # misdetection — keep walking rather than re-resolving out of it.
+    outer_repo_declares "$outer_root" "$walk_start" && continue
+    git_outer_root="$outer_root"
+    break
+  done < <(ancestor_repo_roots "$walk_start" "$git_walk_boundary")
+
+  if [ -n "$git_outer_root" ]; then
+    git_scope="workspace-root"
+    # `low`, not `high`: re-resolving is a judgement that the session's work
+    # belongs to the workspace rather than the nested checkout. It is the right
+    # default — the reported session had been working under ComfyUI/output and
+    # wanted the workspace's state — but a session genuinely working IN the
+    # nested fork is served the outer repo, so the rows stay a caveat.
+    git_confidence="low"
+    git_nested_repo=$(sanitize_name "$walk_start")
+    git_root=$(sanitize_name "$git_outer_root")
+    git_state_dir="$git_outer_root"
+  fi
+fi
+
+# ---------------------------------------------------------------------------
 # Counts (filled below; surfaced in both summary and full mode).
 # ---------------------------------------------------------------------------
 dirty=false
@@ -214,16 +429,18 @@ journal_todos=0
 pr_count=0
 recent_task_count=0
 
-# Git state
+# Git state. Read from $git_state_dir, which is $project_dir except on the
+# `workspace-root` rung, where an undeclared outer repo contains this checkout
+# and the digest describes THAT repo instead (#2441).
 git_branch=""
 if [ "$in_git" = true ]; then
-  git_branch=$("$git_bin" -C "$project_dir" branch --show-current 2>/dev/null || echo "")
-  [ -n "$("$git_bin" -C "$project_dir" status --porcelain 2>/dev/null | head -1)" ] && dirty=true
+  git_branch=$("$git_bin" -C "$git_state_dir" branch --show-current 2>/dev/null || echo "")
+  [ -n "$("$git_bin" -C "$git_state_dir" status --porcelain 2>/dev/null | head -1)" ] && dirty=true
   # awk, not `grep -c '' || echo 0`: on a branch with no upstream `git log`
   # fails, grep -c prints 0 AND exits 1, so the `|| echo 0` ALSO ran and
   # UNPUSHED became the two-line value "0\n0" — breaking the KEY=VALUE
   # contract and making the -gt test below an unconditional false.
-  unpushed=$("$git_bin" -C "$project_dir" log '@{u}..HEAD' --oneline 2>/dev/null | awk 'END{print NR+0}')
+  unpushed=$("$git_bin" -C "$git_state_dir" log '@{u}..HEAD' --oneline 2>/dev/null | awk 'END{print NR+0}')
   [ -n "$unpushed" ] || unpushed=0
   # How far HEAD TRAILS upstream (#2500). Without it the digest reported every
   # direction except behind, so a checkout three commits stale read as settled
@@ -234,14 +451,17 @@ if [ "$in_git" = true ]; then
   # takes. Piped into awk for the same reason UNPUSHED is, NOT `|| echo 0`: a
   # fallback after a command that can both print and fail yields a TWO-LINE
   # value and breaks the KEY=VALUE contract (the #2286 trap).
-  behind=$("$git_bin" -C "$project_dir" rev-list --count 'HEAD..@{upstream}' 2>/dev/null \
+  behind=$("$git_bin" -C "$git_state_dir" rev-list --count 'HEAD..@{upstream}' 2>/dev/null \
     | awk '{n=$1} END{print n+0}')
   [ -n "$behind" ] || behind=0
 fi
 
 # The git remote's repo name — a second, cheap (local, no network) candidate
 # for the taskwarrior project slug, consulted only when the basename matches
-# nothing (#2271).
+# nothing (#2271). Read from $project_dir, NOT $git_state_dir: this is an
+# alternate spelling of the DETECTED slug, which the taskwarrior ladder derives
+# from the cwd's own checkout, so the #2441 workspace-root resolution must not
+# reach it.
 project_remote_name=""
 if [ "$in_git" = true ]; then
   remote_url=$("$git_bin" -C "$project_dir" remote get-url origin 2>/dev/null \
@@ -298,7 +518,7 @@ gh_job() {
   [ -n "$gh_dir" ] || return 0
   gh_launched+=("$job_name")
   (
-    ( cd "$project_dir" && "$gh_bin" "$@" ) \
+    ( cd "$git_state_dir" && "$gh_bin" "$@" ) \
       >"$gh_dir/$job_name.json" 2>"$gh_dir/$job_name.err" &
     gh_inner=$!
     ( sleep "$gh_budget"; kill "$gh_inner" 2>/dev/null ) >/dev/null 2>&1 &
@@ -432,119 +652,6 @@ in_project_scope() {  # $1 = a task's project, $2 = the scope project
   [ "$1" = "$2" ] && return 0
   [ "${1#"$2".}" != "$1" ]
 }
-
-# Ancestor repo ROOTS, NEAREST FIRST (#2304). In a portfolio where a nested
-# repo's work is filed under the PARENT workspace's slug (the house rule is one
-# short slug per long-running area, reused consistently — so eleven sibling
-# packs share one backlog), the nested basename matches no task and the survey
-# reports an EMPTY answer, which is exactly what "nothing to do here" looks
-# like. Walking up finds the slug that actually holds the work.
-#
-# The walk is bounded three ways so it cannot run away: it never leaves
-# $home_dir (or, when that is unset, stops at the filesystem root), every step
-# is a strict parent via `dirname`, and a hard iteration cap backstops both.
-#
-# Emits PATHS rather than basenames because two consumers need it: the
-# taskwarrior ladder wants the slug (`ancestor_repo_slugs` below), and the GIT
-# nesting check (#2441) wants the root itself, to ask git whether that outer
-# repo is a DIFFERENT repository or just this worktree's own main checkout.
-ancestor_repo_roots() {  # $1 = dir to walk up from, $2 = boundary ("" = root)
-  local start="$1" boundary="$2" dir root next steps=0
-  [ -n "$start" ] || return 0
-  have "$git_bin" || return 0
-  dir=$(dirname "$start")
-  while [ "$steps" -lt 32 ]; do
-    steps=$((steps + 1))
-    case "$dir" in ""|"."|"/") break ;; esac
-    if [ -n "$boundary" ]; then
-      # Strictly BELOW the boundary: $HOME itself is not a project workspace,
-      # and a dotfiles repo checked out there must not swallow every slug.
-      case "$dir" in "$boundary"/*) : ;; *) break ;; esac
-    fi
-    root=$("$git_bin" -C "$dir" rev-parse --show-toplevel 2>/dev/null || echo "")
-    if [ -n "$root" ] && [ "$root" != "$start" ]; then
-      # git's own discovery walks upward, so re-apply the boundary to what it
-      # found — the walk must not escape $HOME by proxy.
-      if [ -n "$boundary" ]; then
-        case "$root" in "$boundary"/*) : ;; *) break ;; esac
-      fi
-      printf '%s\n' "$root"
-      next=$(dirname "$root")
-    else
-      next=$(dirname "$dir")
-    fi
-    [ "$next" != "$dir" ] || break
-    dir="$next"
-  done
-  return 0
-}
-
-# The taskwarrior ladder's view of the same walk: one candidate SLUG per line.
-ancestor_repo_slugs() {  # $1 = dir to walk up from, $2 = boundary ("" = root)
-  local r
-  while IFS= read -r r; do
-    [ -n "$r" ] || continue
-    basename "$r"
-  done < <(ancestor_repo_roots "$1" "$2")
-  return 0
-}
-
-# A repo's ABSOLUTE common git dir — the discriminator between "a different
-# repository contains this one" and "this is a linked worktree of the very repo
-# above it" (#2441). Every worktree of one repo shares a common dir; a nested
-# clone or a submodule does not. `--git-common-dir` may answer relative to the
-# queried directory, so it is resolved before comparing.
-git_common_dir_of() {  # $1 = a directory inside a repo
-  local d
-  have "$git_bin" || return 1
-  d=$("$git_bin" -C "$1" rev-parse --git-common-dir 2>/dev/null) || return 1
-  [ -n "$d" ] || return 1
-  case "$d" in /*) : ;; *) d="$1/$d" ;; esac
-  ( cd "$d" 2>/dev/null && pwd -P ) || printf '%s\n' "$d"
-}
-
-# Does the OUTER repo know about the inner one? (#2441) A containment the outer
-# repo IGNORES via a `.gitignore` (`/*/*` in a portfolio root) or TRACKS (a
-# submodule, a committed subtree) is a declared layout, not the accident this
-# signal exists to catch — and left unfiltered it fires on every repo in a
-# portfolio checkout, which turns the caveat into noise. The reported case is
-# neither: the nested fork was plain untracked content (`?? ComfyUI/`) inside
-# the workspace repo.
-#
-# The ignore SOURCE decides, not the mere fact of being ignored. `.gitignore`
-# is repo content — a layout the repo asserts to everyone who clones it.
-# `.git/info/exclude` and a global `core.excludesFile` are private to one
-# checkout, and the usual reason a line lands there is to stop an accidental
-# nested clone showing up in `git status` — exactly the state this signal
-# exists to report. Honouring those would let silencing the symptom silence
-# the caveat too. `check-ignore -v` names the source; a path under `.git/`, or
-# an absolute/`~` path (a global or system excludes file), is not a
-# declaration. A source path containing `:` splits wrong and reads as
-# undeclared, which errs toward reporting the caveat.
-outer_repo_declares() {  # $1 = outer repo root, $2 = inner repo root
-  local why src
-  why=$("$git_bin" -C "$1" check-ignore -v -- "$2" 2>/dev/null) || why=""
-  if [ -n "$why" ]; then
-    src="${why%%:*}"
-    case "$src" in
-      .git/*|/*|"~"*) : ;;
-      *) return 0 ;;
-    esac
-  fi
-  "$git_bin" -C "$1" ls-files --error-unmatch -- "$2" >/dev/null 2>&1 && return 0
-  return 1
-}
-
-# Physical paths on both sides, so the boundary test is a plain prefix compare
-# even when $TMPDIR / $HOME reach the tree through a symlink.
-walk_start="${repo_root:-$project_dir}"
-walk_start=$(cd "$walk_start" 2>/dev/null && pwd -P) || walk_start="${repo_root:-$project_dir}"
-[ -n "$walk_start" ] || walk_start="${repo_root:-$project_dir}"
-home_boundary=""
-if [ -n "$home_dir" ]; then
-  home_boundary=$(cd "$home_dir" 2>/dev/null && pwd -P) || home_boundary="$home_dir"
-  [ -n "$home_boundary" ] || home_boundary="$home_dir"
-fi
 
 tasks_all=0
 project_tasks_json="[]"
@@ -763,84 +870,6 @@ else
     if [ "$prefix_sibling_tasks" -gt "${open_tasks:-0}" ] 2>/dev/null; then
       project_confidence="low"
     fi
-  fi
-fi
-
-# ---------------------------------------------------------------------------
-# The same ladder for GIT and PRS (#2441).
-#
-# Both sections read the repo at $project_dir — GIT directly, PRS because every
-# `gh` call is launched with that cwd, so `gh` resolves the repo from the same
-# checkout's remote. When the cwd lands inside a NESTED checkout (the reported
-# shape: an untracked upstream fork living inside the workspace repo), those
-# two sections describe a DIFFERENT repository's branch, dirt and PRs, and the
-# digest said nothing — while TASK_SCOPE / PROJECT_CONFIDENCE said exactly this
-# about the taskwarrior half. The consumer rule is the taskwarrior one, applied
-# to git: at `low`, the state is a state, just not necessarily this session's.
-#
-# Nothing is re-resolved. GIT keeps reporting the repo it is standing in; only
-# the caveat is added — the same posture BEHIND takes (#2500), and the reason
-# STATUS stays OK on every rung.
-#
-#   none            not in a git repo at all (IN_GIT=false / GH_READY=false)
-#   repo            the checkout is the outermost repo here
-#   nested-repo     a DIFFERENT repo contains this one (GIT_NESTED_IN=)
-#   project-ancestor  the project slug resolved to an ancestor workspace, so
-#                   the repo reported here is not the one the slug names
-# ---------------------------------------------------------------------------
-git_scope="repo"
-git_confidence="high"
-git_nested_in=""
-
-if [ "$in_git" != true ]; then
-  git_scope="none"
-  git_confidence="low"
-else
-  # The taskwarrior walk stops at $HOME because a dotfiles repo checked out
-  # THERE must not swallow every slug. That reasoning is about slug adoption,
-  # not about nesting: a workspace living outside $HOME (the reported case was
-  # /mnt/sabrent/comfyui-workspace) is nested exactly as much as one inside it,
-  # and the boundary would silently make the check a no-op there. So the bound
-  # applies only where it means something — when the checkout is under $HOME.
-  # The walk stops at the FIRST outer repo either way, and the 32-step cap
-  # still backstops it.
-  git_walk_boundary="$home_boundary"
-  if [ -n "$home_boundary" ]; then
-    case "$walk_start" in "$home_boundary"/*) : ;; *) git_walk_boundary="" ;; esac
-  fi
-
-  git_outer_root=""
-  own_common=$(git_common_dir_of "$walk_start" 2>/dev/null) || own_common=""
-  while IFS= read -r outer_root; do
-    [ -n "$outer_root" ] || continue
-    outer_common=$(git_common_dir_of "$outer_root" 2>/dev/null) || outer_common=""
-    [ -n "$outer_common" ] || continue
-    # A linked worktree lives inside its own main checkout and shares its
-    # common dir. That is not a nested repository, and flagging it would make
-    # the signal fire on every worktree-isolated agent.
-    [ "$outer_common" != "$own_common" ] || continue
-    # A declared containment (ignored or tracked) is a layout choice, not a
-    # misdetection — keep walking rather than flagging it.
-    outer_repo_declares "$outer_root" "$walk_start" && continue
-    git_outer_root="$outer_root"
-    break
-  done < <(ancestor_repo_roots "$walk_start" "$git_walk_boundary")
-
-  if [ -n "$git_outer_root" ]; then
-    git_scope="nested-repo"
-    git_confidence="low"
-    # A directory name is filesystem content, so it is sanitised before it
-    # becomes a KEY=VALUE row. Stricter than the gh-stderr snippet's class
-    # (which keeps TAB/LF because a following `head -1` bounds it): here every
-    # control byte goes, since nothing downstream re-bounds the value.
-    git_nested_in=$(basename "$git_outer_root" | tr -d '\000-\037' | cut -c1-200)
-  elif [ "$detection" = "cwd-repo-basename-ancestor" ] \
-    || [ "$project_ambiguous_reason" = "ancestor" ]; then
-    # No outer repo on disk, but the taskwarrior ladder still resolved the work
-    # to an ancestor workspace — so the slug and this checkout name different
-    # things. PROJECT_RESOLVED / PROJECT_AMBIGUOUS already carry which.
-    git_scope="project-ancestor"
-    git_confidence="low"
   fi
 fi
 
@@ -1078,7 +1107,8 @@ if [ "$summary_mode" = true ]; then
   echo "BEHIND=${behind}"
   echo "GIT_SCOPE=${git_scope}"
   echo "GIT_CONFIDENCE=${git_confidence}"
-  [ -n "$git_nested_in" ] && echo "GIT_NESTED_IN=${git_nested_in}"
+  [ -n "$git_root" ] && echo "GIT_ROOT=${git_root}"
+  [ -n "$git_nested_repo" ] && echo "GIT_NESTED_REPO=${git_nested_repo}"
   echo "OPEN_TASKS=${open_tasks}"
   echo "PROJECT_EXACT_TASKS=${project_exact_tasks}"
   echo "RECENT_TASK_COUNT=${recent_task_count}"
@@ -1119,13 +1149,17 @@ echo "UNPUSHED=${unpushed}"
 # never flips STATUS, and it is emitted unconditionally so the section shape
 # does not depend on the repo state.
 echo "BEHIND=${behind}"
-# Whose repository is this, really (#2441)? Same vocabulary as TASK_SCOPE /
-# PROJECT_CONFIDENCE, and the same consumer rule: at `low` the branch, dirt and
-# divergence above are real, they are just not certainly this session's repo.
+# WHICH repository the rows above describe (#2441). `repo` is the checkout at
+# PROJECT_DIR. `workspace-root` means an undeclared outer repo contains that
+# checkout, so the rows describe the OUTER repo — GIT_ROOT= names it and
+# GIT_NESTED_REPO= names the nested checkout that was stepped out of. A caveat,
+# not an error: STATUS stays OK, exactly as it does for BEHIND (#2500) and
+# PROJECT_CONFIDENCE=low.
 echo "GIT_SCOPE=${git_scope}"
 echo "GIT_CONFIDENCE=${git_confidence}"
-# The outer repo's directory name, present only on the `nested-repo` rung.
-[ -n "$git_nested_in" ] && echo "GIT_NESTED_IN=${git_nested_in}"
+# Both present only on the `workspace-root` rung.
+[ -n "$git_root" ] && echo "GIT_ROOT=${git_root}"
+[ -n "$git_nested_repo" ] && echo "GIT_NESTED_REPO=${git_nested_repo}"
 echo "STATUS=OK"
 echo "=== END GIT ==="
 
@@ -1208,6 +1242,9 @@ fi
 
 if [ "$with_commits" = true ]; then
   echo "=== COMMITS ==="
+  # Reads $project_dir, not $git_state_dir: the #2441 workspace-root resolution
+  # was scoped to GIT and PRS, so on that rung COMMITS still lists the nested
+  # checkout's log while GIT describes the outer repo. Tracked, not fixed here.
   c_count=0
   if [ "$in_git" = true ]; then
     while IFS= read -r line; do
@@ -1320,10 +1357,11 @@ echo "GH_READY=${gh_ready}"
 [ "$gh_timeout" = true ] && echo "GH_TIMEOUT=true"
 echo "GH_BUDGET=${gh_budget}"
 [ -n "$gh_budget_invalid" ] && echo "GH_BUDGET_INVALID=${gh_budget_invalid}"
-# `gh` runs with $project_dir as its cwd, so it resolves the repo from the same
-# checkout the GIT section describes — the PR rows inherit that section's
-# uncertainty exactly (#2441). A call that never landed is its own `none` rung,
-# for the same reason TASK_SCOPE=none exists: an unqueried zero is not a zero.
+# `gh` runs with $git_state_dir as its cwd — the same directory the GIT section
+# reads — so it resolves the repo from that checkout's remote and the PR rows
+# describe the same repository GIT_SCOPE names (#2441). A call that never landed
+# is its own `none` rung, for the same reason TASK_SCOPE=none exists: an
+# unqueried zero is not a zero.
 if [ "$gh_ready" != true ]; then
   prs_scope="none"
   prs_confidence="low"

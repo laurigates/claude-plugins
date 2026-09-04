@@ -165,36 +165,50 @@ was read against a stale basis — the failure it exists to prevent is a
 confident, specific finding about a bug that was already fixed upstream, with
 nothing in the digest hinting the checkout had fallen behind.
 
-#### Whose repository is this?
+#### Which repository do `GIT` and `PRS` describe?
 
-`GIT` and `PRS` read the repo at `--project-dir` — `GIT` directly, `PRS`
-because every `gh` call is launched with that cwd, so `gh` resolves the repo
-from the same checkout's remote. When the cwd lands inside a **nested**
+`GIT` and `PRS` normally read the repo at `--project-dir` — `GIT` directly,
+`PRS` because every `gh` call is launched with that cwd, so `gh` resolves the
+repo from the same checkout's remote. When the cwd lands inside a **nested**
 checkout (an untracked upstream fork living inside the workspace repo), both
-sections describe a different repository's branch, dirt and PRs. The same
-vocabulary as the taskwarrior ladder says so:
+sections would describe a different repository's branch, dirt and PRs, so the
+collector **resolves them from the workspace root instead** and says it has:
 
-| `GIT_SCOPE` | Meaning | `GIT_CONFIDENCE` |
+| `GIT_SCOPE` | Which repo the rows describe | `GIT_CONFIDENCE` |
 |---|---|---|
-| `repo` | The checkout is the outermost repo here | `high` |
-| `nested-repo` | A **different** repo contains this one; `GIT_NESTED_IN=` names its directory | `low` |
-| `project-ancestor` | No outer repo, but the project slug resolved to an ancestor workspace (`PROJECT_RESOLVED=` / `PROJECT_AMBIGUOUS=`), so the slug and this checkout name different things | `low` |
+| `repo` | The checkout at `PROJECT_DIR` | `high` |
+| `workspace-root` | An **undeclared outer repo** containing that checkout — `GIT_ROOT=` names it, `GIT_NESTED_REPO=` names the nested checkout stepped out of | `low` |
 | `none` | Not in a git repo at all | `low` |
 
-A containment the outer repo **ignores via a `.gitignore`** (a portfolio
-root's `/*/*`) or **tracks** (a submodule, a committed subtree) is a declared
-layout, not a misdetection, and is never flagged — otherwise every repo in a
-portfolio checkout would read `low` and the caveat would be noise. The ignore
-*source* decides: `.gitignore` is repo content, while `.git/info/exclude` and
-a global `core.excludesFile` are private to one checkout, and the usual reason
-a line lands there is to stop an accidental nested clone showing up in `git
-status` — the very state this signal reports. A linked worktree is not nested
-either: it shares its main checkout's git common dir.
+Two containments are **never** re-resolved, because in both the checkout at
+the cwd is the session's own repo and stepping out of it would report the
+wrong one:
 
-`PRS_SCOPE` / `PRS_CONFIDENCE` mirror the git verdict, plus one rung of their
-own: `PRS_SCOPE=none` when `GH_READY=false`, because an unqueried zero is not
-a zero. Both are **caveats** — `STATUS` stays `OK` on every rung, and nothing
-is re-resolved: `GIT` keeps reporting the repo it is standing in.
+- a **linked worktree**, which shares its main checkout's git common dir —
+  otherwise every worktree-isolated agent would report its main checkout;
+- a **declared containment**, where the outer repo ignores the child via a
+  `.gitignore` (a portfolio root's `/*/*`) or tracks it (a submodule, a
+  committed subtree) — otherwise every pack in a portfolio would report the
+  portfolio's branch and PRs.
+
+The ignore *source* decides: `.gitignore` is repo content, while
+`.git/info/exclude` and a global `core.excludesFile` are private to one
+checkout, and the usual reason a line lands there is to stop an accidental
+nested clone showing up in `git status` — the very state this resolution
+exists to correct.
+
+`GIT_CONFIDENCE=low` on `workspace-root` is a **caveat, not an error**:
+`STATUS` stays `OK`. The rows describe a real repository — the workspace one —
+but a session genuinely working *in* the nested checkout is served the outer
+repo, so the reading is not certain.
+
+`PRS_SCOPE` / `PRS_CONFIDENCE` mirror the git verdict (the `gh` calls run with
+the same resolved cwd), plus one rung of their own: `PRS_SCOPE=none` when
+`GH_READY=false`, because an unqueried zero is not a zero.
+
+`PROJECT`, `TASKWARRIOR` and `COMMITS` are unaffected: `PROJECT_DIR` reports
+where the session stands, the taskwarrior ladder keeps its own slug resolution,
+and `COMMITS` still lists the log of the checkout at `PROJECT_DIR`.
 
 ### Task scoping is honest about its guess
 
