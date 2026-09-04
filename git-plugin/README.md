@@ -105,7 +105,7 @@ The rule this plugin applies:
 | `git-fix-pr` | **removed** | Reactive to a red PR check the model already observes when it reads CI status |
 | `git-issue` | keep | Takes a required issue reference, then branches, implements, and opens a PR; `--parallel` fans out subagents. Invoked by hand as `/git-plugin:git-issue <number>` |
 | `git-maintain` | keep | Destructive maintenance — `gc`, repack, branch pruning, stash deletion, `git rm` |
-| `git-pr-feedback` | keep | Posts replies and resolves threads on reviewers' PRs by default, and can open follow-up issues; `--all` fans out worktree subagents that push. Catalog-present skills must therefore **recommend** it rather than delegate to it — enforced for `git-plugin` by `scripts/check-delegation-reachability.sh`; the marketplace-wide sweep is issue #2483 |
+| `git-pr-feedback` | keep | Posts replies and resolves threads on reviewers' PRs by default, and can open follow-up issues; `--all` fans out worktree subagents that push. Catalog-present skills must therefore **recommend** it rather than delegate to it — enforced marketplace-wide by `scripts/check-delegation-reachability.sh` since #2483 |
 | `git-upstream-pr` | keep | Cherry-picks, resets, and pushes to a fork, then opens a PR against a third-party upstream |
 
 ## Agent

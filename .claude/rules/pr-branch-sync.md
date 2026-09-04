@@ -76,7 +76,8 @@ Seven `git-plugin` skills carry `disable-model-invocation: true` (`git-api-pr`,
 agent to "address it via `/git:pr-feedback`" fails **silently** — the delegation
 is prose, so there is no tool call to refuse. Write the recommendation form
 instead ("summarise the thread and recommend the user run `/git:pr-feedback`");
-`scripts/check-delegation-reachability.sh` is the guard.
+`scripts/check-delegation-reachability.sh` is the guard, and since #2483 it
+audits every marketplace skill rather than only `git-plugin`.
 
 ## Related
 

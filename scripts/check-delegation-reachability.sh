@@ -20,8 +20,8 @@
 # sections ("When to Use This Skill", "Related Skills", "See Also") are exempt —
 # a pointer there is not an instruction to act.
 #
-# Three further shapes are NOT delegations and are exempt structurally
-# (issue #2483, measured over the full 419-skill corpus):
+# Four further shapes are NOT delegations and are exempt structurally
+# (issue #2483, measured over the full-marketplace corpus):
 #
 #   A. SELF-REFERENCE. A skill naming its OWN slash command is documenting its
 #      invocation, not delegating anywhere. `git-api-pr` writing `/git:api-pr`
@@ -38,6 +38,11 @@
 #      ("Work-order **creation stays human-only** (`/blueprint:work-order`
 #      keeps `disable-model-invocation: true` — never invoke it from
 #      autopilot)") is the canonical case. See GATED_STATEMENT_RE.
+#   D. A HEADING LINE. An ATX heading (`#`-prefixed) names a section; it is a
+#      label, not an instruction to act. `document-linking` line 402 is the
+#      literal H3 `### /blueprint:work-order`, flagged for titling the section
+#      that documents that command. Same reasoning as class B, which already
+#      exempts the `# /ns:command` H1 this repo puts above the first `## `.
 #
 # This is the same instruction-vs-explanation discrimination
 # `scripts/check-agent-tool-selection.sh` and
@@ -47,41 +52,72 @@
 # hardcoded list, so re-flagging (or unflagging) a skill re-decides every
 # reference to it automatically.
 #
-# Scope: the audited skills, listed in DELEGATION_SCOPE_DEFAULT below. The audit
-# set is NAMED in the output (`SCOPE=` / `AUDITED=`) so `STATUS=OK` can never be
-# read as "the whole repo is clean" — it means "every file in AUDITED is clean"
-# (#2219's zero-scan lesson, applied to a scoped guard).
+# Scope: every `*-plugin/skills/*/SKILL.md` in the marketplace, discovered at
+# run time rather than listed (a hand-maintained list drifts from the corpus it
+# mirrors — the #2164 lesson). The audit set is COUNTED in the output (`SCOPE=`
+# / `AUDITED=` / `SCOPE_IS_REPO_WIDE=`) so `STATUS=OK` can never be read as more
+# than "every file in the audit set is clean" (#2219's zero-scan lesson).
 #
-# Why the scope is still git-plugin (issue #2483, measured 2026-08-23)
-# --------------------------------------------------------------------
-# A full-corpus run (all 419 `*-plugin/skills/*/SKILL.md`, via the
-# CHECK_DELEGATION_SCOPE seam) was taken before and after the three exemptions
-# above plus the sibling-resolution memoization:
+# The widening, and the declared residuals (issue #2483, measured 2026-09-04)
+# --------------------------------------------------------------------------
+# Full-corpus runs, via the CHECK_DELEGATION_SCOPE seam, on the corpus as it
+# stood at each date:
 #
-#   before   FILES_SCANNED=419  ISSUE_COUNT=47  STATUS=ERROR  wall clock 247.3 s
-#   after    FILES_SCANNED=419  ISSUE_COUNT=13  STATUS=ERROR  wall clock  15.4 s
-#            SELF_REFS_SKIPPED=258  GATED_STATEMENT_EXEMPTIONS=3
+#   2026-08-23 before  FILES_SCANNED=419  ISSUE_COUNT=47  wall clock 247.3 s
+#   2026-08-23 after   FILES_SCANNED=419  ISSUE_COUNT=13  wall clock  15.3 s
+#   2026-09-04 re-run  FILES_SCANNED=423  ISSUE_COUNT=13  wall clock  26.6 s
+#                      SELF_REFS_SKIPPED=261  GATED_STATEMENT_EXEMPTIONS=3
+#   2026-09-04 widened FILES_SCANNED=423  ISSUE_COUNT=0   wall clock   2.7 s
+#                      SELF_REFS_SKIPPED=258  GATED_STATEMENT_EXEMPTIONS=3
+#                      ALLOWLISTED=12  SCOPE_IS_REPO_WIDE=true
 #
-# The 34 findings removed were all false positives (30 self-reference,
-# 1 preamble, 3 teaching-the-invariant). PERFORMANCE IS NO LONGER THE BLOCKER:
-# 15.4 s is inside a pre-commit budget, and 94% of the original 247 s was one
-# `printf | grep -oE` per scanned LINE, not the sibling re-globbing.
+# The 34 findings #2487 removed were all false positives (30 self-reference,
+# 1 preamble, 3 teaching-the-invariant). Performance stopped being a
+# consideration at all: the re-run's 26.6 s was ~4,600 line-level marker
+# matches, two `grep` forks each, on lines that mostly resolve to a non-gated
+# sibling. Deferring both matches until a reference is KNOWN to be a gated
+# cross-skill delegation drops that to ~30 and the sweep to 2.7 s, with the
+# same regexes over the same unit — so pre-commit pays ~3 s on a skill edit
+# rather than half a minute. `resolve_sibling` returns through a global for the
+# same reason: a command substitution forks a subshell per reference.
 #
-# THE RESIDUAL FINDINGS ARE THE BLOCKER. All 13 are in `blueprint-plugin`, and
-# each is a JUDGEMENT call — whether the reference should be rewritten into the
-# recommendation form, or the sibling un-gated instead — reserved for the repo
-# owner. Widening the default scope now would make this guard red on `main`
-# over content nobody has adjudicated, and a guard that is red on `main` gets
-# bypassed. So the scope stays git-plugin (where the #2442 defect lived) and
-# `SCOPE_IS_REPO_WIDE=false` stays accurate; the residual list is recorded on
-# issue #2483. Re-run the sweep with the seam above once those 13 are settled.
+# What DID block widening is that the 13 residuals — all in `blueprint-plugin`,
+# all toward `/blueprint:work-order` or `/blueprint:prp-execute` — are each a
+# judgement call (reword into the recommendation form, or un-gate the sibling)
+# reserved for the repo owner. Widening with them unresolved would put the
+# guard red on `main` over unadjudicated content, and a guard that is red on
+# `main` gets bypassed.
+#
+# So they are DECLARED rather than hidden. Class D clears one of the 13; the
+# rest are listed in DELEGATION_ALLOWLIST below, keyed on `<file>|<ref>` and
+# owned by issue #2483. Consequences, all deliberate:
+#
+#   * Every skill in the marketplace is audited, and any NEW unreachable
+#     delegation anywhere is blocking from this commit on.
+#   * `ALLOWLISTED=` is emitted even at 0, so a suppressed finding is never
+#     indistinguishable from no finding at all.
+#   * An allowlist entry that matches nothing in the audited scope is itself an
+#     ERROR (`stale_allowlist_entry`), so the list can only shrink. Deleting the
+#     last entry needs no code change — the ratchet ends when #2483 is settled.
+#   * The key is `<file>|<ref>`, not `<file>:<line>:<ref>`: a line number drifts
+#     on every edit above it, and an allowlist that goes stale on unrelated
+#     edits is noise. The cost is coarseness — a NEW bad reference to the same
+#     gated sibling in an already-declared file is not caught. Same coarseness
+#     as `check-agent-tool-selection.sh`'s directory-prefix allowlist.
 #
 # Usage:
 #   bash scripts/check-delegation-reachability.sh [--project-dir <path>]
 #
-# Test seam: CHECK_DELEGATION_SCOPE (whitespace-separated repo-relative paths)
-# REPLACES the default scope so the regression test can exercise the checker
-# against fixtures.
+# Test seams, each REPLACING the corresponding default so the regression test
+# can exercise the checker against fixtures:
+#   CHECK_DELEGATION_SCOPE      whitespace-separated repo-relative paths
+#   CHECK_DELEGATION_ALLOWLIST  whitespace-separated `<file>|<ref>` keys
+#
+# They differ deliberately on the empty string. A scope must name at least one
+# file to mean anything, so an empty CHECK_DELEGATION_SCOPE falls back to
+# discovery; an empty CHECK_DELEGATION_ALLOWLIST is a meaningful value — "no
+# declared residuals" — and is the documented way to see the raw residual set,
+# so it is honoured rather than treated as unset (the #2521 lesson).
 #
 # Exit codes:
 #   0 - no unreachable delegation found (STATUS=OK)
@@ -90,13 +126,20 @@
 
 set -uo pipefail
 
-# Skills audited for this defect. Repo-relative paths.
-# Every git-plugin skill that references a gated sibling from an action section.
-DELEGATION_SCOPE_DEFAULT="git-plugin/skills/git-pr-watch/SKILL.md
-git-plugin/skills/git-pr-sync-check/SKILL.md
-git-plugin/skills/git-triage/SKILL.md
-git-plugin/skills/git-coworker-check/SKILL.md
-git-plugin/skills/deadbranch/SKILL.md"
+# Residuals declared by issue #2483, keyed `<file>|<ref>`. Each is a reference a
+# maintainer must adjudicate (reword into the recommendation form, or un-gate
+# the sibling); until then it is suppressed EXPLICITLY rather than by narrowing
+# the scope, and reported through ALLOWLISTED=. Remove an entry the moment its
+# reference is settled — a key matching nothing is an ERROR, not a no-op.
+DELEGATION_ALLOWLIST_DEFAULT="blueprint-plugin/skills/blueprint-autopilot/SKILL.md|/blueprint:work-order
+blueprint-plugin/skills/blueprint-development/SKILL.md|/blueprint:work-order
+blueprint-plugin/skills/blueprint-execute/SKILL.md|/blueprint:prp-execute
+blueprint-plugin/skills/blueprint-prp-create/SKILL.md|/blueprint:prp-execute
+blueprint-plugin/skills/blueprint-prp-create/SKILL.md|/blueprint:work-order
+blueprint-plugin/skills/blueprint-prp-execute/SKILL.md|/blueprint:work-order
+blueprint-plugin/skills/blueprint-story-reconcile/SKILL.md|/blueprint:work-order
+blueprint-plugin/skills/confidence-scoring/SKILL.md|/blueprint:work-order
+blueprint-plugin/skills/document-detection/SKILL.md|/blueprint:prp-execute"
 
 proj_dir=""
 while [ $# -gt 0 ]; do
@@ -125,7 +168,34 @@ cd "$proj_dir" 2>/dev/null || {
   exit 2
 }
 
-scope="${CHECK_DELEGATION_SCOPE:-$DELEGATION_SCOPE_DEFAULT}"
+# The default corpus is DISCOVERED, never listed. `.claude/worktrees/` holds
+# full clones of this repo and `dist/` holds generated copies; both would be
+# double-counted (issues #1492 / #2214). The walk starts at `.` because the cd
+# above already put us inside the root (#2219 / #2290).
+discover_scope() {
+  find . \
+    -path './.claude/worktrees/*' -prune -o \
+    -path './dist/*' -prune -o \
+    -path '*-plugin/skills/*/SKILL.md' -print |
+    sed 's|^\./||' |
+    sort
+}
+
+scope_is_repo_wide=true
+if [ -n "${CHECK_DELEGATION_SCOPE:-}" ]; then
+  scope="$CHECK_DELEGATION_SCOPE"
+  scope_is_repo_wide=false
+else
+  scope="$(discover_scope)"
+fi
+
+allowlist="${CHECK_DELEGATION_ALLOWLIST-$DELEGATION_ALLOWLIST_DEFAULT}"
+declare -A ALLOWLIST_HIT=()
+declare -A ALLOWLIST_KEYS=()
+for entry in $allowlist; do
+  ALLOWLIST_KEYS[$entry]=1
+  ALLOWLIST_HIT[$entry]=0
+done
 
 # Frontmatter read, in PURE BASH rather than the `head | grep | sed | tr`
 # pipeline `.claude/rules/shell-scripting.md` documents. The pipeline is the
@@ -214,13 +284,15 @@ index_plugin() {
   done
 }
 
-# Resolve `/<ns>:<token>` to a sibling SKILL.md inside the same plugin.
+# Resolve `/<ns>:<token>` to a sibling SKILL.md inside the same plugin. The hit
+# lands in RESOLVED_SIBLING rather than on stdout: a command substitution forks
+# a subshell per reference, and this runs thousands of times per sweep.
+RESOLVED_SIBLING=""
 resolve_sibling() {
   local plugin_dir="$1" token="$2"
   index_plugin "$plugin_dir"
-  local hit="${SIBLING_INDEX[$plugin_dir|$token]:-}"
-  [ -n "$hit" ] || return 1
-  printf '%s\n' "$hit"
+  RESOLVED_SIBLING="${SIBLING_INDEX[$plugin_dir|$token]:-}"
+  [ -n "$RESOLVED_SIBLING" ] || return 1
   return 0
 }
 
@@ -261,14 +333,18 @@ audited=""
 issue_count=0
 self_refs_skipped=0
 gated_statement_exemptions=0
+allowlisted=0
 issues=()
+allowlist_rows=()
 
 # Paths are normalized to the repo-relative form the sibling glob produces, so
 # the Class A self-reference comparison below is a plain string equality
 # regardless of how the caller spelled the scope entry.
+declare -A SCOPE_SET=()
 for skill_path in $scope; do
   skill_path="${skill_path#./}"
   scope_size=$((scope_size + 1))
+  SCOPE_SET[$skill_path]=1
   audited="${audited:+$audited,}$skill_path"
 done
 
@@ -288,6 +364,7 @@ for skill_path in $scope; do
   # action section. `section` is only set on H2, so that whole region used to be
   # judged with `section=""`, which `is_navigational_section` does not exempt.
   seen_h2=0
+  in_fence=0
 
   # Buffer the file: the referral marker is matched over the reference's
   # LOGICAL UNIT, not its raw line (#2442 review). This repo wraps prose at ~80
@@ -304,6 +381,13 @@ for skill_path in $scope; do
     line="${file_lines[$idx]}"
     line_no=$((idx + 1))
 
+    # Fence state, tracked only so Class D below can tell a heading from a shell
+    # comment. Everything else is deliberately unchanged: content inside a fence
+    # was judged before this class existed and still is.
+    case "$line" in
+      '```'*|'~~~'*) in_fence=$((1 - in_fence)) ;;
+    esac
+
     case "$line" in
       "## "*)
         section="${line#\#\# }"
@@ -311,6 +395,21 @@ for skill_path in $scope; do
         continue
         ;;
     esac
+
+    # Class D (issue #2483): an ATX heading of any level names a section.
+    # `### /blueprint:work-order` titles the block documenting that command; it
+    # instructs nothing. Only H2 carries a section name, so the other levels are
+    # simply skipped rather than recorded.
+    #
+    # Gated on NOT being inside a fenced block, because `#` also opens a shell
+    # comment: an exemption blind to the fence would let a real delegation
+    # written as `# Address it via /ns:gated-thing` inside a ```bash block
+    # escape a guard that judged it before this class existed.
+    if [ "$in_fence" -eq 0 ]; then
+      case "$line" in
+        "#"*) continue ;;
+      esac
+    fi
 
     # Class B: nothing before the first H2 is an instruction to act.
     [ "$seen_h2" -eq 1 ] || continue
@@ -366,25 +465,20 @@ for skill_path in $scope; do
         ;;
     esac
 
-    # Matched with a HERE-STRING, never a pipe: under `pipefail` a `grep -q`
-    # that matches and closes the pipe early can SIGPIPE the writer, so the
-    # `if` flips nondeterministically on a long unit (#1744, #2462).
+    # The two marker matches are the only forks left on this path, and they run
+    # once per LINE carrying a `/ns:token`, most of which resolve to a
+    # non-gated sibling or to the file itself. So they are computed LAZILY —
+    # only once a reference is known to be a gated cross-skill delegation, the
+    # rare case. Same regexes, same unit, same verdict; ~4,600 line-level
+    # matches on a full-corpus sweep become ~30 (issue #2483).
+    markers_ready=0
     hedged=0
-    if grep -qiE "$USER_REFERRAL_RE" <<<"$unit"; then
-      hedged=1
-    fi
-
-    # Class C: the unit teaches that the sibling is gated / human-only / must
-    # not be invoked. Counted separately from the user-referral hedge so the
-    # exemption is visible in the report rather than silently folded in.
     gated_statement=0
-    if grep -qiE "$GATED_STATEMENT_RE" <<<"$unit"; then
-      gated_statement=1
-    fi
 
     for ref in $refs; do
       token="${ref#*:}"
-      target="$(resolve_sibling "$plugin_dir" "$token")" || continue
+      resolve_sibling "$plugin_dir" "$token" || continue
+      target="$RESOLVED_SIBLING"
       # Class A: a reference resolving to the scanned file ITSELF documents this
       # skill's own invocation. There is no delegation and no other skill.
       if [ "$target" = "$skill_path" ]; then
@@ -392,9 +486,37 @@ for skill_path in $scope; do
         continue
       fi
       is_gated "$target" || continue
+
+      if [ "$markers_ready" -eq 0 ]; then
+        markers_ready=1
+        # Matched with a HERE-STRING, never a pipe: under `pipefail` a `grep -q`
+        # that matches and closes the pipe early can SIGPIPE the writer, so the
+        # `if` flips nondeterministically on a long unit (#1744, #2462).
+        if grep -qiE "$USER_REFERRAL_RE" <<<"$unit"; then
+          hedged=1
+        fi
+        # Class C: the unit teaches that the sibling is gated / human-only /
+        # must not be invoked. Counted separately from the user-referral hedge
+        # so the exemption is visible in the report rather than folded in.
+        if grep -qiE "$GATED_STATEMENT_RE" <<<"$unit"; then
+          gated_statement=1
+        fi
+      fi
+
       [ "$hedged" -eq 0 ] || continue
       if [ "$gated_statement" -eq 1 ]; then
         gated_statement_exemptions=$((gated_statement_exemptions + 1))
+        continue
+      fi
+
+      # Declared residual (issue #2483): suppressed, counted, and named — never
+      # silent. Applied LAST so a reference the classes above already exempt
+      # never marks an allowlist key hit, which would hide the key going stale.
+      allow_key="$skill_path|$ref"
+      if [ -n "${ALLOWLIST_KEYS[$allow_key]+set}" ]; then
+        ALLOWLIST_HIT[$allow_key]=1
+        allowlisted=$((allowlisted + 1))
+        allowlist_rows+=("  - TYPE=allowlisted_delegation FILE=$skill_path LINE=$line_no REF=$ref TARGET=$target SECTION=${section:-<none>} OWNER=#2483")
         continue
       fi
 
@@ -404,12 +526,41 @@ for skill_path in $scope; do
   done
 done
 
+# Zero discovered skills while plugin directories exist is a misfired walk, not
+# a clean marketplace, and the two must never report the same thing (#2219 /
+# #2290). A tree with no plugin directories at all stays OK — a guard that
+# errors on a legitimately empty corpus gets disabled.
+if [ "$scope_is_repo_wide" = "true" ] && [ "$scope_size" -eq 0 ]; then
+  if compgen -G '*-plugin/skills' >/dev/null 2>&1; then
+    issues+=("  - SEVERITY=ERROR TYPE=nothing_scanned MSG=plugin skill directories exist but discovery found no SKILL.md; the walk misfired")
+    issue_count=$((issue_count + 1))
+  fi
+fi
+
+# An allowlist key that matched nothing is stale — the reference it declared is
+# gone, renamed, or already fixed — so it must be REMOVED, not left to suppress
+# a future finding silently. Only keys whose file is in the audited scope are
+# judged: under a narrowing seam the rest are simply out of view, not stale.
+for allow_key in "${!ALLOWLIST_KEYS[@]}"; do
+  [ "${ALLOWLIST_HIT[$allow_key]}" -eq 0 ] || continue
+  allow_file="${allow_key%%|*}"
+  [ -n "${SCOPE_SET[$allow_file]+set}" ] || continue
+  issues+=("  - SEVERITY=ERROR TYPE=stale_allowlist_entry KEY=$allow_key MSG=allowlisted delegation no longer found; remove the entry from DELEGATION_ALLOWLIST_DEFAULT")
+  issue_count=$((issue_count + 1))
+done
+
 echo "=== DELEGATION REACHABILITY ==="
-# SCOPE / AUDITED name the audit set, so a consumer cannot read STATUS=OK as
-# "the repo is clean" — it means "every file in AUDITED is clean" (#2442 review).
+# SCOPE / AUDITED / SCOPE_IS_REPO_WIDE name the audit set, so a consumer cannot
+# read STATUS=OK as more than "every file in the audit set is clean" (#2442
+# review). The repo-wide default names the DISCOVERY RULE rather than listing
+# 400+ paths, which would bury every other line of the report.
 echo "SCOPE=$scope_size"
-echo "AUDITED=$audited"
-echo "SCOPE_IS_REPO_WIDE=false"
+if [ "$scope_is_repo_wide" = "true" ]; then
+  echo "AUDITED=<discovered> *-plugin/skills/*/SKILL.md"
+else
+  echo "AUDITED=$audited"
+fi
+echo "SCOPE_IS_REPO_WIDE=$scope_is_repo_wide"
 echo "FILES_SCANNED=$files_scanned"
 if [ "$files_scanned" -eq 0 ]; then
   echo "SCANNED_EMPTY=true"
@@ -420,6 +571,13 @@ fi
 # from a checker that stopped judging anything (#2219 / #2255).
 echo "SELF_REFS_SKIPPED=$self_refs_skipped"
 echo "GATED_STATEMENT_EXEMPTIONS=$gated_statement_exemptions"
+echo "ALLOWLISTED=$allowlisted"
+if [ "$allowlisted" -gt 0 ]; then
+  echo "ALLOWLISTED_DELEGATIONS:"
+  for entry in "${allowlist_rows[@]}"; do
+    echo "$entry"
+  done
+fi
 echo "ISSUE_COUNT=$issue_count"
 if [ "$issue_count" -gt 0 ]; then
   echo "STATUS=ERROR"

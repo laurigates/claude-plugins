@@ -605,11 +605,11 @@ repos:
         entry: bash ./scripts/check-delegation-reachability.sh
         language: system
         # The guard is whole-scope (pass_filenames: false), so the trigger must
-        # reach EVERY file its verdict depends on: any git-plugin skill (a
-        # scoped skill's prose, or a sibling's disable-model-invocation flag)
-        # and the checker itself. A per-skill allowlist drifts from the scope
-        # it mirrors (the #2164 lesson).
-        files: '(git-plugin/skills/.*/SKILL\.md|check-delegation-reachability\.sh)$'
+        # reach EVERY file its verdict depends on. Since #2483 that is every
+        # marketplace skill — a scoped skill's prose, or a sibling's
+        # disable-model-invocation flag — plus the checker itself. A per-skill
+        # allowlist drifts from the scope it mirrors (the #2164 lesson).
+        files: '([^/]*-plugin/skills/.*/SKILL\.md|check-delegation-reachability\.sh)$'
         pass_filenames: false
       - id: test-check-delegation-reachability
         name: delegation-reachability guard regression
