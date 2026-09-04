@@ -24,13 +24,33 @@ still broken.
 
 `scripts/check-docs-index.sh` runs seven zero-false-positive checks (rules index,
 plugin-map agreement, per-plugin counts, d2 diagram nodes, `reviewed:`
-frontmatter, rendered diagram SVG, README skill rows). It is wired in twice:
+frontmatter, rendered diagram SVG, README skill rows). It is wired in three
+places:
 
 - **`docs-index` job in `.github/workflows/scheduled-audits.yml`** — scheduled
   monthly (`cron: '19 9 1 * *'`), auto-opening a `docs-index`-labelled issue when
   drift is found and filing nothing when clean.
 - **`.github/workflows/plugin-pr-checks.yml`** — `--strict`, ungated, on every
-  PR, so drift cannot merge.
+  PR, so **ERROR-severity** drift cannot merge. `--strict` exits non-zero only
+  on ERROR (`exit_severity` is set in the `SEVERITY=ERROR` branch alone), so
+  this step passes on the WARN tier — all six of `doc_count_drift`,
+  `rule_not_indexed`, `plugin_map_missing`, `diagram_count_drift`,
+  `rule_reviewed_missing`, `rule_reviewed_placeholder`.
+- **`.pre-commit-config.yaml`** (`check-docs-index`) — `--strict` plus
+  `verbose: true`, triggered by the paths that can move a stated count, so
+  `doc_count_drift` reaches the committer before a push instead of after
+  (#2522). `verbose: true` is what surfaces it, for the reason above: a silent
+  exit-0 hook prints nothing. Its trigger is narrower than the guard's verdict
+  surface, so it narrows the count-drift feedback loop rather than replacing
+  the CI step.
+
+What catches the WARN tier is `scripts/tests/test-check-docs-index.sh` TEST A,
+which asserts `STATUS=OK` on the real repo. That suite runs only in
+`Test: Skill scripts`, whose `paths:` do not include `*-plugin/skills/**`, and
+it is absent from the always-on `compliance` job's `--only` list — so a PR that
+adds or removes a skill and touches nothing under `scripts/` can still merge
+with a stated count out of date. That gap is what the pre-commit entry above
+mitigates locally; closing it in CI is a separate decision.
 
 Nothing here needs scheduling by hand. (The 2026-06-28 cadence decision described
 this job as weekly; the workflow's schedule has since been consolidated to
