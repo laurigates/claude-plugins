@@ -1989,7 +1989,6 @@ mkrepo "$AP_3L"
 git -C "$AP_3L" branch -M ap-3l-outer
 mkdir -p "$AP_3L_SUB"
 printf 'x\n' > "$AP_3L_SUB/f.txt"
-git -C "$AP_3L_MID" init -q 2>/dev/null || true
 mkrepo "$AP_3L_MID"
 git -C "$AP_3L_MID" branch -M ap-3l-mid
 git -C "$AP_3L_MID" add sub/f.txt
