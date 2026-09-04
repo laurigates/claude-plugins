@@ -34,6 +34,12 @@ on:
       # discovery fix exists to close. Subsumes every `scripts/...` entry that
       # used to be enumerated here.
       - 'scripts/**'
+      # The issue-template guard's self-test runs the checker against the REAL
+      # repository (its CASE H), so a PR deleting a template must fire this
+      # workflow or that case never re-evaluates. The always-on step in
+      # plugin-pr-checks.yml is the primary signal; this makes the self-test
+      # re-run on the same change rather than only when the guard is edited.
+      - '.github/ISSUE_TEMPLATE/**'
       - '*-plugin/hooks.json'
       - 'justfile'
       - '.github/workflows/test-skill-scripts.yml'
@@ -46,6 +52,7 @@ on:
       - '*-plugin/hooks/**'
       - '*-plugin/templates/**'
       - 'scripts/**'
+      - '.github/ISSUE_TEMPLATE/**'
 
 concurrency:
   group: test-skill-scripts-${{ github.event.pull_request.number || github.ref }}

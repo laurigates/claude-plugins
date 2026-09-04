@@ -196,6 +196,18 @@ repos:
         language: script
         files: '^scripts/(check-workflow-script-triggers\.sh|tests/test-check-workflow-script-triggers\.sh)$'
         pass_filenames: false
+      - id: check-issue-template-inheritance
+        name: local ISSUE_TEMPLATE keeps what the org directory provided (#2568)
+        entry: ./scripts/check-issue-template-inheritance.sh
+        language: script
+        files: '^(\.github/ISSUE_TEMPLATE/.*|scripts/check-issue-template-inheritance\.sh)$'
+        pass_filenames: false
+      - id: test-check-issue-template-inheritance
+        name: issue-template inheritance guard regression
+        entry: ./scripts/tests/test-check-issue-template-inheritance.sh
+        language: script
+        files: '^scripts/(check-issue-template-inheritance\.sh|tests/test-check-issue-template-inheritance\.sh)$'
+        pass_filenames: false
       - id: check-taskcompleted-verification
         name: TaskCompleted agent prompt keeps its verification behaviours (#2301)
         entry: ./scripts/check-taskcompleted-verification.sh --strict
@@ -605,11 +617,11 @@ repos:
         entry: bash ./scripts/check-delegation-reachability.sh
         language: system
         # The guard is whole-scope (pass_filenames: false), so the trigger must
-        # reach EVERY file its verdict depends on: any git-plugin skill (a
-        # scoped skill's prose, or a sibling's disable-model-invocation flag)
-        # and the checker itself. A per-skill allowlist drifts from the scope
-        # it mirrors (the #2164 lesson).
-        files: '(git-plugin/skills/.*/SKILL\.md|check-delegation-reachability\.sh)$'
+        # reach EVERY file its verdict depends on. Since #2483 that is every
+        # marketplace skill — a scoped skill's prose, or a sibling's
+        # disable-model-invocation flag — plus the checker itself. A per-skill
+        # allowlist drifts from the scope it mirrors (the #2164 lesson).
+        files: '([^/]*-plugin/skills/.*/SKILL\.md|check-delegation-reachability\.sh)$'
         pass_filenames: false
       - id: test-check-delegation-reachability
         name: delegation-reachability guard regression

@@ -1,0 +1,13 @@
+blank_issues_enabled: false
+contact_links:
+  # A repo-local .github/ISSUE_TEMPLATE directory suppresses the ENTIRE default
+  # directory inherited from laurigates/.github -- templates and config alike --
+  # so this file re-declares the org-wide Security link. Dropping it removes the
+  # private-reporting route from this repo's chooser without touching that repo.
+  # See scripts/check-issue-template-inheritance.sh (#2568).
+  - name: Security Vulnerability
+    url: https://github.com/laurigates/.github/blob/main/SECURITY.md
+    about: Report security issues privately — do not use public issues
+  - name: Question or Discussion
+    url: https://github.com/laurigates/claude-plugins/discussions/categories/q-a
+    about: Ask how something works or how to use a skill — issues are the work backlog

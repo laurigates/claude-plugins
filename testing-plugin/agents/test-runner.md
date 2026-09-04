@@ -5,7 +5,7 @@ color: "#4CAF50"
 description: |
   Run tests and report results. Detects the project's test framework, executes tests with
   agentic-optimized flags, and returns a concise summary to the orchestrator.
-tools: Glob, Grep, Read, Bash(npm test *), Bash(npm run test *), Bash(npx vitest *), Bash(npx jest *), Bash(yarn test *), Bash(bun test *), Bash(pytest *), Bash(python -m pytest *), Bash(cargo test *), Bash(go test *), Bash(just *), TodoWrite
+tools: Glob, Grep, Read, Bash(npm test *), Bash(npm run test *), Bash(npx vitest *), Bash(npx jest *), Bash(yarn test *), Bash(bun test *), Bash(bun run test *), Bash(pytest *), Bash(python -m pytest *), Bash(cargo test *), Bash(go test *), Bash(just *), TodoWrite
 maxTurns: 12
 created: 2026-02-12
 modified: 2026-09-02
@@ -69,6 +69,15 @@ Check these files to determine the test framework:
 | `go.mod` | go test | Go |
 | `justfile` with `test` recipe | just test | Any |
 
+**A `test` script in `package.json` outranks the runner you infer from the
+lockfile.** Read it before choosing a command: `"test": "vitest run"` means the
+project's tests are vitest's, whatever package manager installs them. Run it
+through the manager (`bun run test`, `npm test`) rather than invoking a runner
+directly.
+
+This bites hardest with bun, because `bun test` and `bun run test` are **two
+different test runners** — see the warning under Agentic-Optimized Commands.
+
 ## Agentic-Optimized Commands
 
 Use compact output flags to minimize context usage:
@@ -78,10 +87,25 @@ Use compact output flags to minimize context usage:
 | pytest | `pytest -x -q --tb=short` | Fail fast, quiet, short tracebacks |
 | vitest | `npx vitest run --reporter=dot --bail=1` | Dot output, stop on first failure |
 | jest | `npx jest --bail --silent` | Stop on failure, silent output |
-| bun test | `bun test --bail=1` | Stop on first failure |
+| bun (project script) | `bun run test` | Runs `package.json`'s `test` script — the project's own runner |
+| bun (native runner) | `bun test --bail=1` | Only when there is no `test` script; stop on first failure |
 | cargo test | `cargo test -- --format=terse` | Terse output |
 | go test | `go test -count=1 -short -failfast ./...` | No caching, short mode, fail fast |
 | unittest | `python -m unittest discover -q` | Quiet discovery mode |
+
+> **`bun test` is not `bun run test`.** `bun run test` executes the `test`
+> script in `package.json`. `bun test` ignores that script and runs **bun's own
+> built-in test runner**, which uses its own file-discovery globs — so it
+> collects a different set of files and reports a different result.
+>
+> The failure is loud but misattributed: you get a wall of real-looking
+> failures and conclude the suite is broken. Measured 2026-09-04 on a bun +
+> vitest repo at one commit — `bun test` reported 428 tests across 37 files
+> with 27 failures and 5 errors; `bun run test` (the `vitest run` the project
+> actually defines) reported 520 tests across 28 files, all passing.
+>
+> When `package.json` defines a `test` script, always go through `bun run test`.
+> Reach for `bun test` only when there is no such script.
 
 ### With Coverage
 

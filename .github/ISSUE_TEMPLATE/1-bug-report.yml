@@ -1,0 +1,65 @@
+# Copy of laurigates/.github/.github/ISSUE_TEMPLATE/1-bug-report.yml. This repo
+# has its own config.yml, which suppresses the whole inherited ISSUE_TEMPLATE
+# directory, so the template has to live here too (#2568). Keep it in step with
+# the org copy; everything below this comment block is verbatim.
+name: Bug Report
+description: Report something that isn't working correctly
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill in as much detail as you can.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear description of the bug
+      placeholder: What went wrong?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce this?
+      placeholder: |
+        1. Go to ...
+        2. Click on ...
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened? Include error messages, logs, or screenshots.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Relevant environment details (OS, browser, version, etc.)
+      placeholder: |
+        - OS: Ubuntu 22.04
+        - Browser: Chrome 120
+        - Version: 1.2.3
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Any other relevant information
