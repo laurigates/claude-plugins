@@ -96,6 +96,7 @@ scripts/tests/test-check-golden-set-coverage.sh
 # its pre-commit entry. What this entry buys is the denominator guard above --
 # a rename, a move, or a discovery-glob collapse raises `required_test_missing`
 # and exits 1 instead of silently running one fewer suite. An assertion block at
-# :129-138 is the #2574 control pinning PATTERN_FUTURE / PATTERN_MARKER against
-# silent narrowing (#2580).
+# :129-138 is the #2574 control pinning PATTERN_MARKER's breadth against silent
+# narrowing -- a measured-rate extrapolation must still block; PATTERN_FUTURE is
+# pinned separately by the future-tense cases at :113-118 (#2580).
 hooks-plugin/hooks/test-no-calendar-estimates.sh
