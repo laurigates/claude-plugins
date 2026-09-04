@@ -719,3 +719,10 @@ repos:
         # test-test-verification.sh. Both are matched here, neither is the other's typo.
         files: '^hooks-plugin/hooks/(test-verification\.sh|test-test-verification\.sh)$'
         pass_filenames: false
+      # terraform-plugin ships its own PreToolUse hook, outside hooks-plugin.
+      - id: test-validate-terraform-apply
+        name: terraform apply gate — command position + reachable remedy (#2506)
+        entry: bash ./terraform-plugin/hooks/test-validate-terraform-apply.sh
+        language: system
+        files: '^terraform-plugin/hooks/(validate-terraform-apply\.sh|test-validate-terraform-apply\.sh)$'
+        pass_filenames: false
