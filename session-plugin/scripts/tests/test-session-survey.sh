@@ -2019,6 +2019,10 @@ check_absent "AP8b: and names no outer repo" "$out" "GIT_ROOT="
 # silence was a missed caveat, which is why it is worth pinning now and was not
 # before. The stub rejects exactly that one subcommand and delegates the rest,
 # so the probe is the only variable.
+#
+# It rejects the probe for EVERY repo, so it only reaches the UNIFORM-failure
+# case — the one where skipping a rung and ending the walk happen to agree.
+# AP8d and AP8e cover the per-repo failure, where they do not.
 AP_STUBGIT="$SANDBOX/stub-git-nocommondir"
 cat > "$AP_STUBGIT" <<'STUBEOF'
 #!/usr/bin/env bash
@@ -2043,6 +2047,99 @@ check_absent "AP8c: never the main checkout's branch" "$out" "BRANCH=ap-workspac
 # direction once the discriminator is gone, so a real nesting is also left put.
 out=$(SESSION_SURVEY_GIT_BIN="$AP_STUBGIT" run_ap "$AP_NESTED")
 check_line "AP8c: and a real nesting degrades to leaving the checkout alone" "$out" "GIT_SCOPE=repo"
+
+# --- AP8d/AP8e: the probe fails PER REPO, not per binary --------------------
+# AP8c's stub rejects `--git-common-dir` for EVERY repo, so it exercises only
+# the uniform-failure case. The real failure is per-repo — dubious ownership or
+# an unreadable `.git` on ONE rung — and one git then answers for `outer` and
+# `sub` while refusing for `mid`. This stub rejects the probe for exactly one
+# named repo and delegates the rest, so which rung is unanswerable is the only
+# variable. Paths are compared physically because the walk resolves them that
+# way and $TMPDIR reaches the tree through a symlink on macOS.
+# shellcheck disable=SC2016  # the single quotes are the point: these printfs
+# write the STUB's source, so `$@`/`$target`/`$tp` must reach the file unexpanded
+# and be evaluated when the stub runs, not when this function writes it.
+mk_nocommon_stub() {  # $1 = stub path, $2 = the repo whose probe must fail
+  local target_phys
+  target_phys=$( (cd "$2" && pwd -P) ) || target_phys="$2"
+  {
+    printf '#!/usr/bin/env bash\n'
+    printf 'want_common=false; target=""; prev=""\n'
+    printf 'for a in "$@"; do\n'
+    printf '  [ "$a" = "--git-common-dir" ] && want_common=true\n'
+    printf '  [ "$prev" = "-C" ] && target="$a"\n'
+    printf '  prev="$a"\n'
+    printf 'done\n'
+    printf 'if [ "$want_common" = true ] && [ -n "$target" ]; then\n'
+    printf '  tp=$( (cd "$target" 2>/dev/null && pwd -P) ) || tp="$target"\n'
+    printf '  [ "$tp" = %s ] && exit 129\n' "'$target_phys'"
+    printf 'fi\n'
+    printf 'exec git "$@"\n'
+  } > "$1"
+  chmod +x "$1"
+}
+probe_verdict() {  # $1 = git binary, $2 = repo — "answered" or "rejected"
+  "$1" -C "$2" rev-parse --git-common-dir >/dev/null 2>&1 && echo answered || echo rejected
+}
+
+# AP8d — an unanswerable rung must END the walk, not be stepped over. On
+# `outer/mid/sub` with NOTHING declared anywhere, a git that refuses only for
+# `mid` used to hand the digest `outer`'s branch for a session sitting two
+# levels in, with `GIT_NESTED_REPO=sub` naming `sub` and concealing that `mid`
+# was skipped. Same shape as AP8b's defect, reached by a different route.
+AP_3U="$SANDBOX/ap-3undeclared"
+AP_3U_MID="$AP_3U/mid"
+AP_3U_SUB="$AP_3U_MID/sub"
+mkrepo "$AP_3U"
+git -C "$AP_3U" branch -M ap-3u-outer
+mkrepo "$AP_3U_MID"
+git -C "$AP_3U_MID" branch -M ap-3u-mid
+mkrepo "$AP_3U_SUB"
+git -C "$AP_3U_SUB" branch -M ap-3u-sub
+# Fixture validity: nothing is declared at either rung, so the walk's declared-
+# containment filter cannot be what stops it — the probe is the only variable.
+check_eq "AP8d: fixture — the OUTERMOST repo declares nothing" \
+  "$(git -C "$AP_3U" ls-files --error-unmatch -- "$AP_3U_MID" >/dev/null 2>&1 && echo tracked || echo untracked)" \
+  "untracked"
+check_eq "AP8d: fixture — and the MIDDLE repo declares nothing" \
+  "$(git -C "$AP_3U_MID" ls-files --error-unmatch -- "$AP_3U_SUB" >/dev/null 2>&1 && echo tracked || echo untracked)" \
+  "untracked"
+# Baseline with real git: the NEAREST outer repo is the target. Without this
+# the post-stub verdict is unattributable — `GIT_SCOPE=repo` would also be what
+# a fixture that never nested anything produces.
+out=$(run_ap "$AP_3U_SUB")
+check_line "AP8d: baseline — the nearest outer repo is resolved to" "$out" "GIT_ROOT=mid"
+check_line "AP8d: baseline — and its branch is what the digest carries" "$out" "BRANCH=ap-3u-mid"
+AP_STUB_MID="$SANDBOX/stub-git-nocommondir-mid"
+mk_nocommon_stub "$AP_STUB_MID" "$AP_3U_MID"
+check_eq "AP8d: fixture — the stub rejects the probe for MID" \
+  "$(probe_verdict "$AP_STUB_MID" "$AP_3U_MID")" "rejected"
+check_eq "AP8d: fixture — and answers it for OUTER" \
+  "$(probe_verdict "$AP_STUB_MID" "$AP_3U")" "answered"
+check_eq "AP8d: fixture — and answers it for SUB" \
+  "$(probe_verdict "$AP_STUB_MID" "$AP_3U_SUB")" "answered"
+out=$(SESSION_SURVEY_GIT_BIN="$AP_STUB_MID" run_ap "$AP_3U_SUB")
+check_line "AP8d: an unclassifiable rung ends the walk" "$out" "GIT_SCOPE=repo"
+check_line "AP8d: and the checkout keeps its own branch" "$out" "BRANCH=ap-3u-sub"
+check_absent "AP8d: never a further-out repo's branch" "$out" "BRANCH=ap-3u-outer"
+check_absent "AP8d: and no outer repo is named" "$out" "GIT_ROOT="
+
+# AP8e — the same per-repo failure aimed at the CHECKOUT ITSELF. An empty
+# `own_common` can never equal a real outer common dir, so the linked-worktree
+# guard passes for every rung and the worktree is re-resolved onto its own main
+# checkout. A draft omitted the `own_common` guard on the reasoning that a git
+# failing here fails for the outer repo too; this pins that it does not.
+AP_STUB_WT="$SANDBOX/stub-git-nocommondir-wt"
+mk_nocommon_stub "$AP_STUB_WT" "$AP_WS/wt"
+check_eq "AP8e: fixture — the stub rejects the probe for the WORKTREE" \
+  "$(probe_verdict "$AP_STUB_WT" "$AP_WS/wt")" "rejected"
+check_eq "AP8e: fixture — and answers it for the MAIN checkout" \
+  "$(probe_verdict "$AP_STUB_WT" "$AP_WS")" "answered"
+out=$(SESSION_SURVEY_GIT_BIN="$AP_STUB_WT" run_ap "$AP_WS/wt")
+check_line "AP8e: the worktree stays put" "$out" "GIT_SCOPE=repo"
+check_line "AP8e: and keeps its own branch" "$out" "BRANCH=ap-worktree"
+check_absent "AP8e: never the main checkout's branch" "$out" "BRANCH=ap-workspace-branch"
+check_absent "AP8e: and no outer repo is named" "$out" "GIT_ROOT="
 
 # --- AP9: the hook's summary carries the git verdict too --------------------
 out=$(run_ap "$AP_NESTED" --summary)

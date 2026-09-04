@@ -394,17 +394,39 @@ else
 
   git_outer_root=""
   own_common=$(git_common_dir_of "$walk_start" 2>/dev/null) || own_common=""
+  # No common dir for THIS checkout means no linked-worktree discriminator for
+  # any candidate: an empty `own_common` can never equal a real outer common
+  # dir, so the guard below would pass for every rung and a linked worktree
+  # would be re-resolved onto its OWN main checkout. Reproduced against a git
+  # that rejects `--git-common-dir` for the worktree alone — BRANCH went from
+  # `wt-branch` to `main-branch`, GIT_SCOPE from `repo` to `workspace-root`.
+  # A draft of this fix omitted this guard on the reasoning that a git failing
+  # here fails for the outer repo too, which is false: the failure is per-repo.
+  # End the walk, leave the checkout where it is. Pinned by AP8e.
   while IFS= read -r outer_root; do
+    [ -n "$own_common" ] || break
     [ -n "$outer_root" ] || continue
     outer_common=$(git_common_dir_of "$outer_root" 2>/dev/null) || outer_common=""
-    # Cannot ask, so do not move the answer. `--git-common-dir` predates git 2.5
-    # and a damaged repo can fail it; both probes run the same binary, so a git
-    # that cannot answer for the outer repo cannot answer for this checkout
-    # either and every candidate is skipped — no re-resolution, the checkout is
-    # left where it is. That degradation is conservative now that the verdict
-    # RE-RESOLVES rather than merely flags; under the earlier flag-only design
-    # the same silence was a missed caveat. Pinned by AP8c.
-    [ -n "$outer_common" ] || continue
+    # Cannot ask, so do not move the answer. `--git-common-dir` predates git 2.5,
+    # and a repo git refuses to answer for — dubious ownership, an unreadable
+    # `.git` — fails it too. That failure is per-REPO, not per-binary: one git
+    # can answer for `outer` and `sub` and refuse for `mid`.
+    #
+    # So END the walk rather than skip a rung. Without the discriminator this
+    # rung cannot be classified — linked worktree or nested repo, unknown — and
+    # `continue` would step over it in silence and let a FURTHER-OUT repo become
+    # the target. Reproduced on `outer/mid/sub` against a git that rejects
+    # `--git-common-dir` for `mid` alone: the digest carried `outer`'s branch
+    # for a session sitting two levels in, with `GIT_NESTED_REPO=sub` naming
+    # `sub` and concealing that `mid` was stepped over — the same shape as the
+    # declared-containment defect below, aimed outward.
+    #
+    # Breaking leaves `git_outer_root` empty, so the checkout is left where it
+    # is. That degradation is conservative now that the verdict RE-RESOLVES
+    # rather than merely flags; under the earlier flag-only design the same
+    # silence was a missed caveat. AP8c pins the uniform-failure case, AP8d the
+    # per-repo one.
+    [ -n "$outer_common" ] || break
     # A linked worktree lives inside its own main checkout and shares its
     # common dir. That is not a nested repository, and re-resolving would make
     # every worktree-isolated agent report its main checkout's state. `continue`
