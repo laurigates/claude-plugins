@@ -397,6 +397,13 @@ else
   while IFS= read -r outer_root; do
     [ -n "$outer_root" ] || continue
     outer_common=$(git_common_dir_of "$outer_root" 2>/dev/null) || outer_common=""
+    # Cannot ask, so do not move the answer. `--git-common-dir` predates git 2.5
+    # and a damaged repo can fail it; both probes run the same binary, so a git
+    # that cannot answer for the outer repo cannot answer for this checkout
+    # either and every candidate is skipped — no re-resolution, the checkout is
+    # left where it is. That degradation is conservative now that the verdict
+    # RE-RESOLVES rather than merely flags; under the earlier flag-only design
+    # the same silence was a missed caveat. Pinned by AP8c.
     [ -n "$outer_common" ] || continue
     # A linked worktree lives inside its own main checkout and shares its
     # common dir. That is not a nested repository, and re-resolving would make

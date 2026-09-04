@@ -2009,6 +2009,41 @@ check_line "AP8b: and reports the checkout's own branch" "$out" "BRANCH=ap-3l-su
 check_absent "AP8b: never the outermost repo's branch" "$out" "BRANCH=ap-3l-outer"
 check_absent "AP8b: and names no outer repo" "$out" "GIT_ROOT="
 
+# --- AP8c: an unanswerable common-dir probe never moves the answer ----------
+# A CHARACTERIZATION test, not a guard pin — no single line is solely
+# responsible, and it is deliberately mutation-neutral. `--git-common-dir`
+# predates git 2.5 and a damaged repo can fail it; the contract is that a git
+# which cannot answer leaves the checkout where it is rather than re-resolving
+# on a discriminator it never got. That degradation is conservative only because
+# the verdict now RE-RESOLVES — under the earlier flag-only design the same
+# silence was a missed caveat, which is why it is worth pinning now and was not
+# before. The stub rejects exactly that one subcommand and delegates the rest,
+# so the probe is the only variable.
+AP_STUBGIT="$SANDBOX/stub-git-nocommondir"
+cat > "$AP_STUBGIT" <<'STUBEOF'
+#!/usr/bin/env bash
+for a in "$@"; do
+  [ "$a" = "--git-common-dir" ] && exit 129
+done
+exec git "$@"
+STUBEOF
+chmod +x "$AP_STUBGIT"
+# Fixture validity: the stub really does reject the probe and really does pass
+# everything else through — otherwise a silent verdict proves nothing.
+check_eq "AP8c: fixture — the stub rejects --git-common-dir" \
+  "$("$AP_STUBGIT" -C "$AP_WS" rev-parse --git-common-dir >/dev/null 2>&1 && echo answered || echo rejected)" \
+  "rejected"
+check_eq "AP8c: fixture — and delegates every other subcommand" \
+  "$("$AP_STUBGIT" -C "$AP_WS/wt" branch --show-current 2>/dev/null)" "ap-worktree"
+out=$(SESSION_SURVEY_GIT_BIN="$AP_STUBGIT" run_ap "$AP_WS/wt")
+check_line "AP8c: a worktree stays put when the probe cannot answer" "$out" "GIT_SCOPE=repo"
+check_line "AP8c: and keeps the worktree's own branch" "$out" "BRANCH=ap-worktree"
+check_absent "AP8c: never the main checkout's branch" "$out" "BRANCH=ap-workspace-branch"
+# The nested case degrades the same way — not re-resolving is the conservative
+# direction once the discriminator is gone, so a real nesting is also left put.
+out=$(SESSION_SURVEY_GIT_BIN="$AP_STUBGIT" run_ap "$AP_NESTED")
+check_line "AP8c: and a real nesting degrades to leaving the checkout alone" "$out" "GIT_SCOPE=repo"
+
 # --- AP9: the hook's summary carries the git verdict too --------------------
 out=$(run_ap "$AP_NESTED" --summary)
 check_line "AP9: summary mode carries GIT_SCOPE" "$out" "GIT_SCOPE=workspace-root"
