@@ -186,6 +186,76 @@ assert_allowed 'bash -c "echo hi"' 'shell invoker running something unrelated'
 assert_allowed 'echo "$(date)"' 'command substitution running something unrelated'
 assert_allowed 'terraform apply "tfplan"' 'a quoted plan file is still an operand'
 
+echo "=== the six bypasses the awk projection had (wave-1 review) ==="
+
+# Each of these executed a real, unreviewed apply while the awk tokenizer
+# reported exit 0. They are pinned individually so the parse cannot regress into
+# any one of them; a stub terraform confirmed the shell delivers `[apply]
+# [-auto-approve]` for the quoted spellings.
+
+# 1. A quoted argument collapsed to the `__Q__` placeholder was counted as a
+#    saved plan file, so quoting the flag disabled the -auto-approve branch.
+assert_blocked 'terraform apply "-auto-approve"' 'double-quoted -auto-approve'
+assert_blocked "terraform apply '-auto-approve'" 'single-quoted -auto-approve'
+
+# 2. The same rule made ANY quoted argument look like a reviewed plan.
+assert_blocked 'terraform apply "-refresh=false"' \
+    'a quoted flag is not a plan file'
+assert_blocked "terraform apply '-refresh=false'" \
+    'a single-quoted flag is not a plan file'
+
+# 3. `<`/`>` were plain separators, so a redirection left its fd digit behind as
+#    a positional operand that read as a plan file.
+assert_blocked 'terraform apply 2>&1 | tee /tmp/tf.log' \
+    'a redirection fd digit is not a plan file'
+assert_blocked 'terraform apply 2> /dev/null' \
+    'a redirection target is not a plan file'
+assert_blocked 'terraform apply > /tmp/tf.log' \
+    'stdout redirection leaves a bare apply'
+
+# 4. Splitting at `;` left `do`/`then` as the first token and the walker broke
+#    on the unknown word rather than skipping it.
+assert_blocked 'for d in a b; do terraform apply -auto-approve; done' \
+    'apply inside a for loop body'
+assert_blocked 'if [ -f x ]; then terraform apply -auto-approve; fi' \
+    'apply inside an if body'
+assert_blocked 'while read -r d; do terraform apply; done < envs.txt' \
+    'apply inside a while loop body'
+
+# 5. The wrapper allowlist was a closed seven-name set, so any other leading
+#    word made the whole statement invisible.
+assert_blocked 'timeout 300 terraform apply -auto-approve' 'apply behind timeout'
+assert_blocked 'nice terraform apply -auto-approve' 'apply behind nice'
+assert_blocked 'stdbuf -oL terraform apply -auto-approve' 'apply behind stdbuf'
+assert_blocked 'echo x | xargs terraform apply -auto-approve' 'apply behind xargs'
+assert_blocked 'uv run terraform apply -auto-approve' 'apply behind uv run'
+assert_blocked 'eval terraform apply' 'apply behind an unquoted eval'
+
+# 6. After a wrapper, a bare short flag unconditionally consumed the next token,
+#    which was the program itself.
+assert_blocked 'env -i terraform apply' "env -i must not swallow the program"
+assert_blocked 'time -p terraform apply' "time -p must not swallow the program"
+assert_blocked 'sudo -u ci terraform apply' "sudo -u's value must not swallow it"
+
+# The nit from the same review: a shell invoker behind a wrapper.
+assert_blocked 'sudo -u tf bash -c "terraform apply"' \
+    'shell invoker reached through a wrapper'
+
+# Controls for this section. Each new mechanism above could be satisfied by
+# blocking everything, so each one is paired with a shape that must still pass.
+assert_allowed 'timeout 300 terraform plan -out=tfplan' \
+    'a wrapper around a non-apply subcommand'
+assert_allowed 'timeout 300 terraform apply tfplan' \
+    'a wrapper around an apply naming a plan file'
+assert_allowed 'for d in a b; do terraform plan -out=tfplan; done' \
+    'a loop body running plan'
+assert_allowed 'echo "then run terraform apply -auto-approve" > /tmp/tf-note.txt' \
+    'the phrase quoted in a redirected echo'
+assert_allowed 'terraform apply "tfplan" 2> /dev/null' \
+    'a redirection alongside a real plan file'
+assert_allowed 'gh pr comment 1 --body "for d in envs; do terraform apply; done"' \
+    'a loop quoted inside a PR comment body'
+
 echo "=== unrelated commands are untouched ==="
 
 assert_allowed 'terraform plan -out=tfplan' 'plan only (control)'
@@ -195,6 +265,43 @@ assert_allowed 'ansible-playbook apply.yml' 'a different program named ...apply'
 
 run_hook ''
 if [ "$RC" -eq 0 ]; then pass; else fail "empty command — expected exit 0, got $RC"; fi
+
+echo "=== the parser is really the classifier (fail-open, and it is present) ==="
+
+# Two halves of one claim. Without the first, every green row above could come
+# from a hook that no-ops; without the second, the fail-open path is prose.
+FAILOPEN_JSON=$(jq -n --arg c 'terraform apply -auto-approve' '{tool_input: {command: $c}}')
+if printf '%s' "$FAILOPEN_JSON" \
+    | CLAUDE_HOOKS_TERRAFORM_APPLY_NO_ASTGREP=1 bash "$HOOK" >/dev/null 2>&1; then
+    pass
+else
+    fail "with the parser suppressed the hook must fail open (exit 0)"
+fi
+
+run_hook 'terraform apply -auto-approve'
+if [ "$RC" -eq 2 ]; then
+    pass
+else
+    fail "the same command blocks only when the parser is available — it was not, so every assertion above is vacuous"
+fi
+
+# `"${arr[@]}"` on an EMPTY array is a fatal unbound-variable error under
+# `set -u` before bash 4.4, and `#!/usr/bin/env bash` finds bash 3.2 on a stock
+# macOS. The symptom is exit 1 on every command the hook means to ALLOW, so it
+# never shows up in a blocked-case assertion. `BASH_COMPAT` does not restore the
+# old behaviour, so the only way to pin it is to run the real interpreter: this
+# is a live pin wherever /bin/bash is 3.x (every un-Homebrewed macOS) and a
+# second pass under an equivalent shell on Linux, where /bin/bash is 5.x.
+SYSTEM_BASH_VERSION=$(/bin/bash -c 'echo "${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]}"' 2>/dev/null || echo unknown)
+echo "system /bin/bash: $SYSTEM_BASH_VERSION"
+for legacy_case in 'echo hello' 'terraform apply tfplan' 'terraform plan -out=tfplan'; do
+    LEGACY_JSON=$(jq -n --arg c "$legacy_case" '{tool_input: {command: $c}}')
+    if printf '%s' "$LEGACY_JSON" | /bin/bash "$HOOK" >/dev/null 2>&1; then
+        pass
+    else
+        fail "under /bin/bash $SYSTEM_BASH_VERSION an allowed command must exit 0: $legacy_case"
+    fi
+done
 
 echo
 echo "Passed: $PASS, Failed: $FAIL"

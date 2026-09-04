@@ -33,6 +33,12 @@ foundryvtt-plugin/skills/foundryvtt-module-scaffold/scripts/tests/test-template-
 code-quality-plugin/skills/code-antipatterns/scripts/tests/test-rules-project.sh
 code-quality-plugin/skills/code-hidden-failures/scripts/tests/test-rules-project.sh
 hooks-plugin/hooks/test-bash-antipatterns.sh
+# The terraform apply gate decides command position with ast-grep and fails
+# open without it, so this suite asserts BOTH halves: with the parser
+# suppressed an -auto-approve apply must exit 0, and with it available the same
+# command must exit 2. Without the second assertion a run on a box lacking
+# ast-grep would report every row green over a hook that no-ops.
+terraform-plugin/hooks/test-validate-terraform-apply.sh
 
 # uv  (workflow: "Set up uv")
 blueprint-plugin/scripts/tests/test-check-manifest-schema.sh
@@ -88,8 +94,3 @@ scripts/tests/test-check-dead-tool-grants.sh
 # the standing gap -- which is exactly the shape that gets a monthly audit
 # switched off.
 scripts/tests/test-check-golden-set-coverage.sh
-
-# Pipes JSON into the shipped hook -- no network, no git, no binary beyond jq
-# (which the hook itself requires), so the suite has no skip branch at all. A
-# SKIP here therefore means discovery moved, not that a dependency is absent.
-terraform-plugin/hooks/test-validate-terraform-apply.sh

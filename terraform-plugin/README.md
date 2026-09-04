@@ -24,23 +24,40 @@ an unreviewed apply.
 | Command | Verdict |
 |---------|---------|
 | `terraform apply` | Blocked — nothing was reviewed |
-| `terraform apply -auto-approve` (any form, plan file or not) | Blocked |
+| `terraform apply -auto-approve`, including the quoted spellings and alongside a plan file | Blocked |
+| `terraform apply -refresh=false`, `terraform apply 2>&1 \| tee log` | Blocked — no plan file anywhere in the command |
+| `timeout 300 terraform apply`, `env -i terraform apply`, `for d in …; do terraform apply; done` | Blocked — the wrapper and the loop keyword do not hide the program |
 | `terraform apply tfplan` | Allowed — applies exactly the saved plan |
 | A quoted argument, heredoc body, or comment carrying the phrase | Allowed |
 | `bash -c "terraform apply"`, `echo "$(terraform apply)"` | Blocked — that text is shell, not data |
 
-The hook matches in **command position**: it drops heredoc bodies and trailing
-comments, collapses quoted spans to a placeholder, splits the command into
-statements, and fires only where the invoked program resolves to `terraform`. A
-PR body or search query quoting `terraform apply` executes nothing and is not
-gated (#2506). Two spans inside quotes are still parsed as shell, because the
-shell runs them: a `$(…)`/backtick substitution, and the script argument of
-`bash -c` / `eval`.
+The hook decides command position with **`ast-grep --lang bash`**
+(tree-sitter-bash), the classifier `hooks-plugin/hooks/bash-antipatterns.sh`
+adopted in #2008. Each `command` node of the Bash call is examined on its own,
+so a heredoc body is never a command, a redirection's fd digit is never an
+argument, a `do`/`then` keyword is never glued to the program name, and any
+wrapper — `sudo`, `timeout`, `nice`, `stdbuf`, `xargs`, `uv run` — is just the
+front of the same node. A PR body or search query quoting `terraform apply`
+executes nothing and is not gated (#2506). The one thing tree-sitter cannot see
+into is a shell invoker's script argument, so `bash -c "…"`, `sh -c '…'` and
+`eval "…"` have their quoted arguments re-parsed as shell.
 
-A plan file is a positional operand carrying no `=` and not consumed as a
-preceding bare flag's value, so `-var foo=bar` and `-target aws_x.y` do not
-count as one. Name it **literally**: a `$VAR` or command substitution cannot be
-resolved here — it could expand to `-auto-approve` — so it is treated as an
+A program name assembled from an expansion — `A='terraform apply
+-auto-approve'; $A` — carries no `terraform` token and is not caught. Neither
+the pre-#2506 regex nor any later version caught it; the gate stops the
+unreviewed apply written by habit, not one written to evade it.
+
+**Where `ast-grep` is not installed the hook does not fire at all.** It fails
+open, exactly as `bash-antipatterns.sh` does, because a PreToolUse hook that
+hard-fails without its parser breaks every Bash call. Install `ast-grep` (`brew
+install ast-grep`, `cargo install ast-grep`) for the gate to be in effect.
+
+Quotes are removed rather than masked, because the shell removes them: `terraform
+apply "-auto-approve"` really delivers `-auto-approve` to the process, and is
+blocked. A plan file is a positional operand carrying no `=`, not consumed as a
+preceding bare flag's value (so `-var foo=bar` and `-target aws_x.y` do not
+count as one), and named **literally** — a `$VAR`, `$(…)` or backtick operand
+cannot be resolved here, could expand to `-auto-approve`, and is treated as an
 unreviewed apply.
 
 ## Prerequisites
