@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.19.6](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.19.5...testing-plugin-v3.19.6) (2026-09-04)
+
+
+### Bug Fixes
+
+* **testing:** distinguish bun's native runner from the project's test script ([#2596](https://github.com/laurigates/claude-plugins/issues/2596)) ([b10799d](https://github.com/laurigates/claude-plugins/commit/b10799dac95096387bac1de78e39d6e7ceda97f4))
+
 ## [3.19.5](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.19.4...testing-plugin-v3.19.5) (2026-09-03)
 
 

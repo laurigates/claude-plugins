@@ -658,7 +658,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.19.5",
+      "version": "3.19.6",
       "keywords": [
         "testing",
         "tdd",
