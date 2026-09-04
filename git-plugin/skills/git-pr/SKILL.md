@@ -247,6 +247,12 @@ gh pr create --head feat/feature-name --base main --title "..." --body-file /tmp
 
 ## Stacked PRs
 
+> This section covers **ad-hoc** chains — a PR opened with `--base` pointing at
+> another PR's branch. A stack **registered with GitHub** (`gh stack`, public
+> preview) auto-retargets its upper PRs on merge and runs CI on all of them, so
+> none of the manual work below applies to it — see
+> `git-plugin:git-stacked-prs`.
+
 When merging a PR whose head branch is the **base** of one or more open
 downstream PRs, deleting the head branch on merge will close every dependent
 PR. `gh pr merge --delete-branch` and the matching UI checkbox both delete
@@ -308,11 +314,13 @@ the `--onto` form. If the dependent and the parent edited the same lines, expect
 a conflict here: resolve it once and let `git rerere` replay it across this and
 any sibling dependent (see the git-conflicts skill).
 
-### Stacked PRs get no CI until retargeted
+### Ad-hoc stacked PRs get no CI until retargeted
 
 CI configured with `on: pull_request: branches: [main]` only runs for PRs
 **targeting `main`**. A dependent PR based on a feature branch therefore shows
-**no checks at all** until it is re-targeted — its pre-merge verification falls
+**no checks at all** until it is re-targeted — unless the chain is a
+GitHub-registered stack, where those workflows run for every PR in the stack
+(`git-plugin:git-stacked-prs`) — its pre-merge verification falls
 to a local build/test run in the meantime. Retarget early (or verify locally);
 don't wait on a green check that will never appear while the PR's base is a
 feature branch.

@@ -65,6 +65,7 @@ Three composable skills that can be invoked individually or combined based on us
 | `git-commit-trailers` | Commit trailer conventions — release-please trailers (BREAKING CHANGE, Release-As), attribution (Co-authored-by, Signed-off-by), git interpret-trailers |
 | `git-branch-pr-workflow` | Git branching and PR workflow patterns |
 | `git-rebase-patterns` | Advanced rebase techniques (--reapply-cherry-picks, --update-refs, --onto, stacked PRs) |
+| `git-stacked-prs` | GitHub native stacked PRs via the `gh stack` extension — lifecycle, sync/rebase cascade, exit codes, and how a registered stack differs from an ad-hoc PR chain |
 | `git-merge-hazards` | Traps in GitHub's merge machinery — squash-merge detection authority order, stacked-base auto-close, push-by-SHA races and the `refs/heads/` refspec form, merging over red CI, negated closing keywords |
 | `git-repo-detection` | Detect GitHub repository name and owner from git remotes |
 | `git-security-checks` | Security checks before staging files |

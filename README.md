@@ -110,7 +110,7 @@ the rules, skills, and hooks that embody it.
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **git-plugin** | 42 + 1 agent | Git workflows - commits, branches, PRs, worktrees, release-please, merge/deletion hazards, issue scoping |
+| **git-plugin** | 43 + 1 agent | Git workflows - commits, branches, PRs, worktrees, release-please, merge/deletion hazards, issue scoping |
 
 ### CI/CD
 

@@ -119,6 +119,11 @@ git rebase --reapply-cherry-picks origin/main
 
 **Solution:** `--update-refs` automatically updates all branches in the chain when you rebase. Combined with interactive rebase, you can reorganize commits across your entire PR stack in one operation.
 
+> `--update-refs` is local-only: it moves the branches but leaves the PRs, their
+> bases, and the force-pushes to you. For a stack registered with GitHub,
+> `gh stack rebase` / `gh stack sync` do the cascade *and* the push and PR
+> update — see `git-plugin:git-stacked-prs`.
+
 ```bash
 # Scenario: Stacked PRs
 # main <- feat/auth-base <- feat/auth-oauth <- feat/auth-refresh
