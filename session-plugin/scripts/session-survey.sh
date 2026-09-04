@@ -400,11 +400,24 @@ else
     [ -n "$outer_common" ] || continue
     # A linked worktree lives inside its own main checkout and shares its
     # common dir. That is not a nested repository, and re-resolving would make
-    # every worktree-isolated agent report its main checkout's state.
+    # every worktree-isolated agent report its main checkout's state. `continue`
+    # rather than `break`: the main checkout is the SAME repo, so a container of
+    # IT is still a container of this session's repo and is worth finding.
     [ "$outer_common" != "$own_common" ] || continue
-    # A declared containment (ignored or tracked) is a layout choice, not a
-    # misdetection — keep walking rather than re-resolving out of it.
-    outer_repo_declares "$outer_root" "$walk_start" && continue
+    # A declared containment (ignored or tracked) SETTLES it: the outer repo
+    # asserts this checkout is a legitimate member of its layout, so the
+    # checkout is the session's repo and there is nothing to resolve.
+    #
+    # End the walk rather than skipping a rung. `continue` here would let a
+    # FURTHER-OUT repo that happens not to declare the checkout become the
+    # target — reported live on `outer/mid/sub` where `mid` tracks `sub/`:
+    # `mid` declared it, the walk continued, and `outer` (which declares
+    # nothing) was resolved to, so the digest carried `outer`'s branch for a
+    # session sitting two levels in. That is #2441's own failure aimed outward.
+    if outer_repo_declares "$outer_root" "$walk_start"; then
+      git_outer_root=""
+      break
+    fi
     git_outer_root="$outer_root"
     break
   done < <(ancestor_repo_roots "$walk_start" "$git_walk_boundary")

@@ -1969,6 +1969,47 @@ check_line "AP8: and report the pack's own branch" "$out" "BRANCH=ap-pack-branch
 check_absent "AP8: no rung is invented for an adopted slug" "$out" "GIT_SCOPE=project-ancestor"
 check_line "AP8: PRS stays confident too" "$out" "PRS_CONFIDENCE=high"
 
+# --- AP8b: a declaration ENDS the walk, it does not skip a rung -------------
+# Found by the external adversarial review and reproduced before fixing. The
+# filter used `continue`, so a FURTHER-OUT repo that happens not to declare the
+# checkout became the target: on `outer/mid/sub` where `mid` TRACKS `sub/`,
+# `mid` declared it, the walk continued, and `outer` was resolved to — the
+# digest carried `outer`'s branch for a session sitting two levels in, which is
+# #2441's own failure aimed outward. `GIT_NESTED_REPO=sub` compounded it by
+# naming `sub` while silently skipping `mid`.
+#
+# Tracked rather than ignored on purpose: git reads intermediate `.gitignore`
+# files even across a nested-repo boundary, so an IGNORED middle declaration is
+# also visible to the outer repo and the bug does not reproduce that way. The
+# index is per-repo, so only tracking isolates the middle rung.
+AP_3L="$SANDBOX/ap-3level"
+AP_3L_MID="$AP_3L/mid"
+AP_3L_SUB="$AP_3L_MID/sub"
+mkrepo "$AP_3L"
+git -C "$AP_3L" branch -M ap-3l-outer
+mkdir -p "$AP_3L_SUB"
+printf 'x\n' > "$AP_3L_SUB/f.txt"
+git -C "$AP_3L_MID" init -q 2>/dev/null || true
+mkrepo "$AP_3L_MID"
+git -C "$AP_3L_MID" branch -M ap-3l-mid
+git -C "$AP_3L_MID" add sub/f.txt
+git -C "$AP_3L_MID" commit -q -m "track sub"
+mkrepo "$AP_3L_SUB"
+git -C "$AP_3L_SUB" branch -M ap-3l-sub
+# Fixture validity, both halves — without these the pass is unattributable.
+check_eq "AP8b: fixture — the MIDDLE repo declares the checkout" \
+  "$(git -C "$AP_3L_MID" ls-files --error-unmatch -- "$AP_3L_SUB" >/dev/null 2>&1 && echo tracked || echo untracked)" \
+  "tracked"
+check_eq "AP8b: fixture — the OUTERMOST repo does not" \
+  "$(git -C "$AP_3L" ls-files --error-unmatch -- "$AP_3L_SUB" >/dev/null 2>&1 && echo tracked || echo untracked)" \
+  "untracked"
+out=$(run_ap "$AP_3L_SUB")
+check_line "AP8b: a declaration ends the walk" "$out" "GIT_SCOPE=repo"
+check_line "AP8b: and keeps its confidence" "$out" "GIT_CONFIDENCE=high"
+check_line "AP8b: and reports the checkout's own branch" "$out" "BRANCH=ap-3l-sub"
+check_absent "AP8b: never the outermost repo's branch" "$out" "BRANCH=ap-3l-outer"
+check_absent "AP8b: and names no outer repo" "$out" "GIT_ROOT="
+
 # --- AP9: the hook's summary carries the git verdict too --------------------
 out=$(run_ap "$AP_NESTED" --summary)
 check_line "AP9: summary mode carries GIT_SCOPE" "$out" "GIT_SCOPE=workspace-root"

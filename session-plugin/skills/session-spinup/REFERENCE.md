@@ -207,8 +207,10 @@ gracefully rather than omitting:
 - **`GIT_CONFIDENCE=low` with `GIT_SCOPE=none`** — not in a git repo at
   all; there is no branch, dirt or PR state to report.
   `PRS_SCOPE` / `PRS_CONFIDENCE` mirror the git verdict, because every
-  `gh` call runs with the same resolved cwd; `PRS_SCOPE=none`
-  additionally means the call never landed (see `GH_READY=false`).
+  `gh` call runs with the same resolved cwd. `PRS_SCOPE=none` means there
+  is no scoped PR answer — either the call never landed
+  (`GH_READY=false`, so `PR_COUNT=0` is fabricated) or there was no repo
+  to scope it to (`GIT_SCOPE=none`). Read `GH_READY` to tell them apart.
 - **All sources empty** — say so briefly, then step out of the way.
 - **Plan mode / interactive UI** — present the briefing only; spinup
   never mutates anything.

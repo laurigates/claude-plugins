@@ -202,9 +202,12 @@ exists to correct.
 but a session genuinely working *in* the nested checkout is served the outer
 repo, so the reading is not certain.
 
-`PRS_SCOPE` / `PRS_CONFIDENCE` mirror the git verdict (the `gh` calls run with
-the same resolved cwd), plus one rung of their own: `PRS_SCOPE=none` when
-`GH_READY=false`, because an unqueried zero is not a zero.
+`PRS_SCOPE` / `PRS_CONFIDENCE` mirror the git verdict — the `gh` calls run with
+the same resolved cwd. `PRS_SCOPE=none` means **there is no scoped PR answer**,
+which arises two ways: `GH_READY=false`, so the call never landed (an unqueried
+zero is not a zero); or `GIT_SCOPE=none`, so there is no repo to scope it to.
+`GH_READY` distinguishes them, and only the first makes `PR_COUNT` a fabricated
+zero.
 
 **Scope.** Only `GIT` and `PRS` re-resolve. `PROJECT_DIR` still reports where
 the session stands and the taskwarrior ladder keeps its own slug resolution; and

@@ -6,7 +6,7 @@ GitHub half of the survey digest, and the Blueprint auto-drain gate.
 ## Remediating `GH_READY=false`
 
 `GH_READY=false` always ships with `GH_FAIL_REASON=`, which says *why* GitHub
-went unqueried — the four causes want four different responses, so act on the
+went unqueried — the six causes below want different responses, so act on the
 reason rather than treating every `false` alike:
 
 | `GH_FAIL_REASON` | What happened | Do this |
