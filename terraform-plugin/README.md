@@ -16,6 +16,33 @@ This plugin provides comprehensive Terraform Cloud API automation for monitoring
 | `tfc-run-status` | Quick status check for TFC runs with resource changes and actions |
 | `tfc-plan-json` | Download and analyze structured Terraform plan JSON output |
 
+## Hooks
+
+`validate-terraform-apply.sh` is a PreToolUse hook on the Bash tool that gates
+an unreviewed apply.
+
+| Command | Verdict |
+|---------|---------|
+| `terraform apply` | Blocked — nothing was reviewed |
+| `terraform apply -auto-approve` (any form, plan file or not) | Blocked |
+| `terraform apply tfplan` | Allowed — applies exactly the saved plan |
+| A quoted argument, heredoc body, or comment carrying the phrase | Allowed |
+| `bash -c "terraform apply"`, `echo "$(terraform apply)"` | Blocked — that text is shell, not data |
+
+The hook matches in **command position**: it drops heredoc bodies and trailing
+comments, collapses quoted spans to a placeholder, splits the command into
+statements, and fires only where the invoked program resolves to `terraform`. A
+PR body or search query quoting `terraform apply` executes nothing and is not
+gated (#2506). Two spans inside quotes are still parsed as shell, because the
+shell runs them: a `$(…)`/backtick substitution, and the script argument of
+`bash -c` / `eval`.
+
+A plan file is a positional operand carrying no `=` and not consumed as a
+preceding bare flag's value, so `-var foo=bar` and `-target aws_x.y` do not
+count as one. Name it **literally**: a `$VAR` or command substitution cannot be
+resolved here — it could expand to `-auto-approve` — so it is treated as an
+unreviewed apply.
+
 ## Prerequisites
 
 All skills require a Terraform Cloud API token:

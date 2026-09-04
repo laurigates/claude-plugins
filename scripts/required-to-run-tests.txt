@@ -88,3 +88,8 @@ scripts/tests/test-check-dead-tool-grants.sh
 # the standing gap -- which is exactly the shape that gets a monthly audit
 # switched off.
 scripts/tests/test-check-golden-set-coverage.sh
+
+# Pipes JSON into the shipped hook -- no network, no git, no binary beyond jq
+# (which the hook itself requires), so the suite has no skip branch at all. A
+# SKIP here therefore means discovery moved, not that a dependency is absent.
+terraform-plugin/hooks/test-validate-terraform-apply.sh
