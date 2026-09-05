@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite, mcp__pal-mcp-server__listmodels, mcp__pal-mcp-server__chat, mcp__pal-mcp-server__consensus, mcp__pal-mcp-server__thinkdeep
 model: opus
 created: 2026-07-17
-modified: 2026-08-21
+modified: 2026-09-05
 reviewed: 2026-08-21
 ---
 
@@ -53,21 +53,8 @@ different key gets that key in the prefix instead. Every
 `mcp__pal-mcp-server__*` name below assumes that registration — substitute the
 key `claude mcp list` reports.
 
-### `No matching deferred tools found` has two causes
-
-Do not read that message as proof the prefix is wrong — under the **correct**
-prefix it means something else entirely, and the two want different responses:
-
-| What you observe | Cause | Do this |
-|---|---|---|
-| The prefix you tried is not the key `claude mcp list` reports | Wrong prefix | Retry with the reported key |
-| The **correct** prefix also finds nothing, PAL's tools never appear in any deferred-tool reminder, yet `claude mcp list` says Connected | The server's tools were never registered *in this session* — likely it connected after session start | Restart the session, or drive the server directly over stdio JSON-RPC (issue #2437) |
-
-One trap in that direct-stdio workaround, worth stating because its symptom
-misleads: **keep stdin open until the response arrives.**
-`subprocess.run(..., input=...)` closes stdin after writing, so the server shuts
-down mid-call and returns an empty result that looks exactly like a hung or
-non-responding model rather than a transport error.
+If a lookup under the correct prefix still finds nothing, see
+[REFERENCE.md](REFERENCE.md) — that message has a second cause.
 
 ## When to Use This Skill
 
@@ -193,10 +180,9 @@ exactly the tests an outside reviewer's wrong guess will find for you.
 | `model_used` is **untrustworthy under concurrency** | Three *concurrent* `chat` calls returned `model_used` values rotated across each other while `provider_used` stayed request-consistent | Verify independence via `provider_used`, and pick models on **different providers** — a silently same-model pair breaks the disagreement-is-the-payload logic. [pal#68](https://github.com/laurigates/pal-mcp-server/issues/68) |
 | Registry models get retired upstream mid-consult | A `listmodels`-listed id 404s ("no longer available") | Pick a same-provider fallback *before* dispatching, and re-send the **identical** brief — a reworded one breaks the invariant |
 
-**Isolate a model failure with controlled probes before believing your first
-theory.** The intuitive suspects (big prompt, file attachments) were innocent
-twice — a bug filed on either would have sent the maintainer down the wrong
-path. A two-word prompt plus the one suspect parameter settles it in one call.
+When PAL's MCP server is not connected, the same models are reachable directly
+over the OpenCode Go gateway — see [REFERENCE.md](REFERENCE.md) for that route's
+three failure modes.
 
 ## The Curated Excerpt Bundle
 
@@ -238,3 +224,7 @@ briefs. Build one file and attach *it* to every model:
   artifact, by an isolated Claude reviewer
 - `verify-before-plan` — the same adjudicate-against-reality instinct,
   applied to orchestrator premises before a dispatch
+
+For the second cause of an empty deferred-tool lookup and the direct OpenCode Go
+gateway route (model enumeration, streaming, reasoning-budget exhaustion), see
+[REFERENCE.md](REFERENCE.md).
