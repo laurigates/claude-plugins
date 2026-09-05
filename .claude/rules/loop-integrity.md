@@ -1,6 +1,6 @@
 ---
 created: 2026-06-22
-modified: 2026-06-23
+modified: 2026-09-05
 reviewed: 2026-07-04
 ---
 
@@ -34,6 +34,19 @@ that shares the worker's context inherits the worker's motivation to be done.
 | Who decides "done"? | The worker | A fresh `Agent` / sub-agent that did not do the work |
 | What it reads | Its own reasoning trace | Acceptance criteria + the artefact only |
 | Bias | Toward declaring completion | Toward the criterion as written |
+
+> Measured 2026-09-04 (`claude-plugins`, seven issue→PR pipelines). Each
+> implementer ran an external model over its **own** diff before opening its PR,
+> with an adversarial brief and instructions to verify each finding. Across all
+> seven that pass accepted **zero** findings. A second pass by a fresh agent that
+> had not done the work — same model, different brief, and re-running the
+> implementer's own gates rather than reading its report — held four of the seven
+> PRs. It found six reproduced bypasses in a hook whose 45-assertion suite was
+> fully green, a PR whose every gate number predated a bot push to its branch,
+> and a guard that counted any `*.md` file as a template. The variable was not
+> the model or the prompt; it was whether the reviewer had a stake in the work
+> being done.
+
 
 Cheap mechanical exit conditions (a green test suite, a clean `tsc`, exit code
 0) are *already* independent — a failing test does not care how hard you worked.

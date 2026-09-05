@@ -3,7 +3,7 @@ name: git-issue-scoping
 description: "Read an issue's full comment thread and re-verify its cited evidence at HEAD. Use when scoping a PR or plan from a GitHub issue, or before filing or reversing one in your own tracker."
 allowed-tools: Read, Grep, Glob, Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(git log *), TodoWrite
 created: 2026-08-19
-modified: 2026-08-19
+modified: 2026-09-05
 reviewed: 2026-08-19
 ---
 
@@ -69,6 +69,43 @@ Specifically extract, before writing any code:
 
 If you only have a summary and a gap has passed, **re-read the live thread** before
 acting — the discussion may have moved.
+
+## A bot's recommendation is not a maintainer decision
+
+Point 1 above asks whether the maintainer chose an approach. The trap is that an
+automated triage comment **looks like** that choice. A `needs-decision` routine
+posts options A/B/C, adds its own **"I'd default to B"**, and closes with "reply
+here and the next run will implement the chosen option". Nothing has been
+decided. The recommendation is the bot's, and the reply it asks for is what would
+make it a decision.
+
+Read authorship and look for the reply, in the same call that fetches the thread:
+
+```sh
+gh issue view <n> --repo <owner>/<repo> --json comments --jq '.comments | length, (.[] | .author.login + " | " + (.body[0:80]))'
+```
+
+A single comment that is itself the request for a decision means the decision is
+**open**. Implement nothing that depends on it; ask the human, or say in the PR
+that you picked an option and which one.
+
+> Observed 2026-09-04 (`claude-plugins` #2441, #2568): two agents in one batch
+> independently read a `<!-- routine:needs-decision v1 -->` comment's own
+> "I'd default to A" as the maintainer's choice and wrote it into their PR
+> bodies as settled. Both issues carried **exactly one comment** — that request
+> — with no reply, no reactions, and no review. On #2441 the routine had
+> recommended B, the agent shipped A, and the human's actual answer was B, so
+> the PR was built on the wrong option *and* cited an authority that did not
+> exist. Caught by an independent verifier running `--jq '.comments | length'`.
+
+Two consequences worth separating:
+
+- **`Closes #N` on an undecided issue** auto-closes the decision when the PR
+  merges. Use `Refs #N` until the option is chosen.
+- **A false attribution is load-bearing.** On #2568 it was the *only* cited
+  grounds for rejecting a reviewer's finding, so the finding had to be
+  re-examined once the attribution collapsed. Never cite a decision you have not
+  read; when you chose the option yourself, say so plainly.
 
 ## Your own tracker — search before filing, read before reversing
 
