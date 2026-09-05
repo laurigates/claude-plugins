@@ -222,6 +222,9 @@ jobs:
       - name: Redact the Claude execution transcript
         id: redact
         if: always() && steps.audit.outputs.execution_file != ''
+        # A redaction failure leaves the path output unset, so the upload below
+        # is skipped; the audit's own result stays what the Claude step made it.
+        continue-on-error: true
         env:
           TRANSCRIPT: ${{ steps.audit.outputs.execution_file }}
           REDACTED: ${{ runner.temp }}/claude-execution-redacted.json
@@ -235,16 +238,21 @@ jobs:
               value = os.environ.get(key, "")
               if len(value) >= 8:
                   text = text.replace(value, "[REDACTED_" + key + "]")
+          # The same classes as the action's redactSecrets() (sanitizer.ts at v1).
+          # Python's re has no variable-width lookbehind, so the AWS rule keeps
+          # the preceding boundary as a capture instead: start of line, a JSON
+          # escape, an ANSI colour code, or any non-alphanumeric character.
           patterns = [
               (r"gh[pousr]_[A-Za-z0-9]{36,255}", "[REDACTED_GITHUB_TOKEN]"),
-              (r"github_pat_[A-Za-z0-9_]{22,255}", "[REDACTED_GITHUB_TOKEN]"),
+              (r"github_pat_[A-Za-z0-9_]{11,221}\b", "[REDACTED_GITHUB_TOKEN]"),
               (r"sk-ant-[A-Za-z0-9_-]{20,}", "[REDACTED_ANTHROPIC_KEY]"),
-              (r"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b", "[REDACTED_AWS_KEY_ID]"),
               (r"xox[abpsr]-[A-Za-z0-9-]{10,}", "[REDACTED_SLACK_TOKEN]"),
               (r"eyJ[A-Za-z0-9_-]{10,2000}\.eyJ[A-Za-z0-9_-]{10,4000}\.[A-Za-z0-9_-]{10,2000}\b", "[REDACTED_JWT]"),
           ]
           for pattern, label in patterns:
               text = re.sub(pattern, label, text)
+          aws = r"(^|\\[nrtbf\"\\/]|\\u[0-9a-fA-F]{4}|\[[0-9;]*m|[^A-Za-z0-9])((?:AKIA|ASIA)[A-Z0-9]{16})\b"
+          text = re.sub(aws, lambda m: m.group(1) + "[REDACTED_AWS_KEY_ID]", text, flags=re.M)
           open(os.environ["REDACTED"], "w", encoding="utf-8").write(text)
           PY
           echo "path=${REDACTED}" >> "$GITHUB_OUTPUT"
