@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.4](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.10.3...session-plugin-v1.10.4) (2026-09-05)
+
+
+### Bug Fixes
+
+* **session-plugin:** resolve GIT and PRS from the workspace root ([#2594](https://github.com/laurigates/claude-plugins/issues/2594)) ([67cf1a8](https://github.com/laurigates/claude-plugins/commit/67cf1a8dcd81590af0a25323c90066f62d0e505a))
+
 ## [1.10.3](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.10.2...session-plugin-v1.10.3) (2026-08-26)
 
 

@@ -40,7 +40,7 @@
   "testing-plugin": "3.19.6",
   "tools-plugin": "2.10.1",
   "typescript-plugin": "1.8.11",
-  "session-plugin": "1.10.3",
+  "session-plugin": "1.10.4",
   "software-design-plugin": "1.2.0",
   "workflow-orchestration-plugin": "1.10.1"
 }
