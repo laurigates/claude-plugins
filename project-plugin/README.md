@@ -43,7 +43,7 @@ Analyze project state and continue development where you left off.
 **Note:** Generic skill. For blueprint-driven projects, `/blueprint:execute` can pick and run the next logical action; `/project:continue` resumes hands-on TDD coding.
 
 ### `/project:test-loop`
-Run automated TDD cycle: test → fix → refactor.
+Test-fix-refactor loop that edits code between runs until the suite is green, bounded by `--max-cycles` (test → fix → refactor).
 
 **Features:**
 - Detects test command from project structure

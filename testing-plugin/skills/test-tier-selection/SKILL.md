@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-07-31
+modified: 2026-09-05
 reviewed: 2026-04-25
 name: test-tier-selection
-description: "Auto-select test tiers based on change scope — unit for small, full suite for large. Use when running tests, discussing testing strategy, or after code modifications."
+description: "Decide which test tier a change needs — unit, integration, or E2E — from its scope; runs nothing itself. Use when deciding how much of the suite to run after a change."
 user-invocable: false
 allowed-tools: Read, Glob, Grep
 ---

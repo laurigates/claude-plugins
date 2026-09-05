@@ -1,10 +1,10 @@
 ---
-description: Automated TDD test-fix-refactor cycle until tests pass. Use when looping on failing tests, running a TDD cycle, or driving RED/GREEN/REFACTOR until green.
+description: "Test-fix-refactor loop that edits code between runs until the suite is green, bounded by --max-cycles. Use when asked to make failing tests pass or drive a TDD RED/GREEN/REFACTOR cycle."
 args: "[test-pattern] [--max-cycles <N>]"
 argument-hint: "Optional test pattern to focus on; --max-cycles <N> to cap iterations (default 10)"
 allowed-tools: Read, Edit, Bash, Bash(bash *)
 created: 2025-12-16
-modified: 2026-09-02
+modified: 2026-09-05
 reviewed: 2026-09-02
 name: project-test-loop
 ---

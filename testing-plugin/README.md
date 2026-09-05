@@ -10,15 +10,15 @@ This plugin provides comprehensive testing support including test runners, TDD w
 
 | Skill | Description |
 |-------|-------------|
-| `test-run` | Universal test runner - auto-detects and runs appropriate testing framework |
-| `test-quick` | Fast unit tests only (skip slow/integration/E2E) |
-| `test-focus` | Run single test file with fail-fast mode for rapid iteration |
-| `test-full` | Complete test suite including integration and E2E tests |
+| `test-run` | Run the project's tests — whole suite or a name pattern, framework auto-detected |
+| `test-quick` | Unit tier only — skips slow, integration, and E2E tests for sub-30s feedback |
+| `test-focus` | One test file, fail-fast — headed/debug and serial single-worker modes |
+| `test-full` | Every tier in pyramid order — unit, integration, E2E; coverage optional |
 | `test-setup` | Configure testing infrastructure with CI/CD integration |
 | `test-consult` | Consult test-architecture agent for testing strategy |
-| `test-report` | Show test status from last run (without re-executing) |
+| `test-report` | Cached results from the last run — pass/fail, coverage, history, flaky tests — no re-run |
 | `test-analyze` | Analyze test results for patterns and improvements |
-| `test-tier-selection` | Determine appropriate test tier (unit, integration, e2e) |
+| `test-tier-selection` | Decide which tier a change needs (unit / integration / E2E); runs nothing itself |
 | `test-quality-analysis` | Analyze and improve test quality |
 | `test-strategy-review` | Audit whether a green suite actually tests what you aim for (adversarial + tests-hidden cold read, verified) |
 | `property-based-testing` | Property-based testing with fast-check (TS/JS) and Hypothesis (Python) |

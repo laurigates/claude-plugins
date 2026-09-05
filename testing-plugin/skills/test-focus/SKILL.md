@@ -1,11 +1,11 @@
 ---
 created: 2026-01-19
-modified: 2026-05-09
+modified: 2026-09-05
 reviewed: 2026-04-25
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
 args: "<file-path> [--serial] [--debug]"
 argument-hint: "<file-path> [--serial] [--debug]"
-description: "Run one test file fail-fast for rapid TDD — Playwright, Vitest, Jest, pytest, cargo, go test. Use when iterating on a failing spec, headed/debug mode, or serial WebGL tests."
+description: "One test file, fail-fast — Playwright, Vitest, Jest, pytest, cargo, go test. Use when running a single spec file, headed/debug mode, or serial single-worker WebGL tests."
 name: test-focus
 ---
 
