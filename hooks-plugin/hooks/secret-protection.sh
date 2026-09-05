@@ -120,9 +120,8 @@ ${OVERRIDE_NOTE}"
   # commit-message heredoc describing config precedence — was blocked as a
   # sensitive-file read (issue #2597).
   #
-  # The anchor's shape is measured, not stylistic. The hook may run under BSD
-  # grep 2.6.0 (macOS), GNU grep (CI) or ugrep, and they disagree on the
-  # shorter forms: `(^|[^A-Za-z])VERB` is a compile error in ugrep ("empty
+  # The hook may run under BSD grep 2.6.0 (macOS), GNU grep (CI) or ugrep, and
+  # they disagree on the shorter anchor forms: `(^|[^A-Za-z])VERB` is a compile error in ugrep ("empty
   # expression") that the trailing `|| true` swallows, leaving `$match` empty
   # and every reader-verb block failing open; `\b`/`\<` compile everywhere, but
   # ugrep's `-o` then returns `cat .env` for `cat .env.example`, so the template
@@ -134,7 +133,9 @@ ${OVERRIDE_NOTE}"
   # The anchor also stops binaries whose name merely ends in a verb from
   # matching by accident (`nvim`, `gcat`, `zless`, …); the common ones are
   # listed explicitly so the fix does not narrow what was blocked before.
-  reader_verbs='(cat|gcat|zcat|head|ghead|tail|gtail|less|zless|more|nano|vim|nvim|gvim|vi|code|read)'
+  # Anything else whose name merely ends in a verb (`multitail`, `lolcat`) is
+  # not matched any more.
+  reader_verbs='(cat|gcat|zcat|bzcat|xzcat|head|ghead|tail|gtail|less|zless|more|nano|vim|nvim|gvim|mvim|vi|code|read)'
   for pattern in '\.env\b' '\.ssh/' '\.aws/credentials' '\.kube/config' '\.docker/config\.json' 'credentials\.json' 'secrets\.json'; do
     # Capture the matched substring (verb + path) rather than a bare boolean, so
     # the block message can name what tripped it and the exemption below can
