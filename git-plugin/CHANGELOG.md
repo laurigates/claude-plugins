@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.54.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.54.0...git-plugin-v2.54.1) (2026-09-05)
+
+
+### Documentation
+
+* **git-plugin:** name the bot-recommendation-as-decision trap, and measure self-review ([#2613](https://github.com/laurigates/claude-plugins/issues/2613)) ([cb79af7](https://github.com/laurigates/claude-plugins/commit/cb79af78d467c6897e2dc6d61445eea38a86ab8f))
+
 ## [2.54.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.53.0...git-plugin-v2.54.0) (2026-09-04)
 
 
