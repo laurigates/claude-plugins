@@ -210,22 +210,61 @@ jobs:
             )"
             ```
 
+      # The transcript is the raw SDK message stream. The action redacts it only
+      # on the way into the step summary (format-turns.ts:185/:437 and run.ts:141
+      # at v1), not in the file it writes. None of the tools granted above is
+      # path-scoped — `Bash(cat *)` can read /proc/self/environ, where the CLI's
+      # children inherit the OAuth token — so before the file leaves the runner
+      # the job's own tokens are scrubbed by literal value and the token shapes
+      # the action's redactSecrets() knows are scrubbed by pattern. Public-repo
+      # artifacts are readable by any signed-in GitHub user, and log masking
+      # does not reach them.
+      - name: Redact the Claude execution transcript
+        id: redact
+        if: always() && steps.audit.outputs.execution_file != ''
+        env:
+          TRANSCRIPT: ${{ steps.audit.outputs.execution_file }}
+          REDACTED: ${{ runner.temp }}/claude-execution-redacted.json
+          SECRET_1: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          SECRET_2: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import os, re
+          text = open(os.environ["TRANSCRIPT"], encoding="utf-8").read()
+          for key in ("SECRET_1", "SECRET_2"):
+              value = os.environ.get(key, "")
+              if len(value) >= 8:
+                  text = text.replace(value, "[REDACTED_" + key + "]")
+          patterns = [
+              (r"gh[pousr]_[A-Za-z0-9]{36,255}", "[REDACTED_GITHUB_TOKEN]"),
+              (r"github_pat_[A-Za-z0-9_]{22,255}", "[REDACTED_GITHUB_TOKEN]"),
+              (r"sk-ant-[A-Za-z0-9_-]{20,}", "[REDACTED_ANTHROPIC_KEY]"),
+              (r"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b", "[REDACTED_AWS_KEY_ID]"),
+              (r"xox[abpsr]-[A-Za-z0-9-]{10,}", "[REDACTED_SLACK_TOKEN]"),
+              (r"eyJ[A-Za-z0-9_-]{10,2000}\.eyJ[A-Za-z0-9_-]{10,4000}\.[A-Za-z0-9_-]{10,2000}\b", "[REDACTED_JWT]"),
+          ]
+          for pattern, label in patterns:
+              text = re.sub(pattern, label, text)
+          open(os.environ["REDACTED"], "w", encoding="utf-8").write(text)
+          PY
+          echo "path=${REDACTED}" >> "$GITHUB_OUTPUT"
+
       # The action's per-call transcript — its `execution_file` output,
       # $RUNNER_TEMP/claude-execution-output.json. Run 33517717893 (2026-09-01)
       # closed with permission_denials_count: 6 and uploaded nothing, so the six
       # denied calls could not be identified afterwards (#2493). `always()`
-      # keeps the upload when the Claude step fails; the output guard skips it
+      # keeps the upload when the Claude step fails; the redacted-path guard skips it
       # when that step was skipped or died before the file existed — the action
       # sets the output only if the file exists, and upload-artifact fails
       # outright on an empty `path`. run_attempt in the name keeps a re-run
       # from colliding with the first attempt's artifact (v4 artifacts are
       # immutable).
       - name: Upload Claude execution transcript
-        if: always() && steps.audit.outputs.execution_file != ''
+        if: always() && steps.redact.outputs.path != ''
         uses: actions/upload-artifact@v4
         with:
           name: claude-execution-agentic-audit-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ steps.audit.outputs.execution_file }}
+          path: ${{ steps.redact.outputs.path }}
           retention-days: 14
           if-no-files-found: warn
 
