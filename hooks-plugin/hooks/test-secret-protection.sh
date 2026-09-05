@@ -14,6 +14,8 @@
 #   - Reader verbs are anchored at a word start: `less` inside `regardless`,
 #     `read` inside `thread`, `code` inside `encode` no longer supply the verb,
 #     so prose mentioning a `.env.<x>` token is NOT blocked (issue #2597).
+#     Binaries that used to match only because their name ends in a verb
+#     (`nvim`, `gcat`, `zless`) are listed explicitly and stay blocked.
 set -euo pipefail
 
 HOOK="$(cd "$(dirname "$0")" && pwd)/secret-protection.sh"
@@ -224,12 +226,46 @@ assert_exit \
     "read < ${env_token}"
 
 assert_exit \
-    "ls -la; less .env (verb after ';' — the anchor's one-char alternative) is still blocked" 2 \
+    "ls -la; less .env (verb after ';') is still blocked" 2 \
     "ls -la; less ${env_token}"
 
 assert_exit \
-    "less .env (start-of-line verb — the anchor's ^ alternative) is still blocked" 2 \
+    "less .env (start-of-line verb) is still blocked" 2 \
     "less ${env_token}"
+
+# Before the anchor these matched by accident (`vim` inside `nvim`, `cat`
+# inside `gcat`, `less` inside `zless`); they are now listed verbs, so the
+# anchor must not have narrowed what was blocked.
+assert_exit \
+    "nvim .env (listed verb, previously a sub-word match) is still blocked" 2 \
+    "nvim ${env_token}"
+
+assert_exit \
+    "gcat .env (coreutils prefix, previously a sub-word match) is still blocked" 2 \
+    "gcat ${env_token}"
+
+assert_exit \
+    "zless .env.local (previously a sub-word match) is still blocked" 2 \
+    "zless ${env_token}.local"
+
+# The block message names what tripped it. The anchor's second alternative
+# captures one boundary character ahead of the verb; the hook trims it, so the
+# quoted match must start at the verb and not at the separator before it.
+assert_matched_text() {
+    local desc="$1" expected="$2" cmd="$3"
+    local json out
+    json=$(jq -nc --arg cmd "$cmd" '{tool_name:"Bash",tool_input:{command:$cmd}}')
+    out=$(printf '%s' "$json" | bash "$HOOK" 2>&1 || true)
+    if echo "$out" | grep -qF "matched: '${expected}'"; then
+        printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (message was: %s)\n" "$desc" "$(echo "$out" | head -1)"; FAIL=$((FAIL + 1))
+    fi
+}
+
+assert_matched_text \
+    "ls -la; less .env reports the match from the verb, not the separator" "less ${env_token}" \
+    "ls -la; less ${env_token}"
 
 # ── block-message framing: operator-only, not a self-serve bypass ────────────
 # Regression: every block message used to end "Set

@@ -113,26 +113,37 @@ ${OVERRIDE_NOTE}"
   # the only `.env` is inside a grep pattern (issue #2444). Same greediness
   # class as the `.*` → `[A-Za-z0-9_]*` narrowing documented above (#1580).
   #
-  # The verb group is anchored at a word start with `(^|[^A-Za-z])`, so a verb
-  # cannot match inside an ordinary English word. Without it `regardless`,
-  # `unless`, `thread`, `encode` and `furthermore` each supplied a verb, and
-  # prose that went on to mention `.env.integration` — a commit-message heredoc
-  # describing config precedence — was blocked as a sensitive-file read (issue
-  # #2597). `\b` / `\<` would be shorter but are GNU extensions; this hook may
-  # run under BSD grep (macOS), GNU grep (CI) or ugrep, and `(^|[^A-Za-z])` is
-  # POSIX ERE that all three accept. The alternative captures one leading
-  # non-letter character, which is trimmed from `$match` below before the block
-  # message; the template exemption re-greps from `${pattern}` and never sees it.
-  reader_verbs='(cat|head|tail|less|more|nano|vim|vi|code|read)'
+  # The verb group is anchored at a word start — `(^VERB|[^A-Za-z]VERB)` — so
+  # a verb cannot match inside an ordinary English word. Without it
+  # `regardless`, `unless`, `thread`, `encode` and `furthermore` each supplied a
+  # verb, and prose that went on to mention `.env.integration` — a
+  # commit-message heredoc describing config precedence — was blocked as a
+  # sensitive-file read (issue #2597).
+  #
+  # The anchor's shape is measured, not stylistic. The hook may run under BSD
+  # grep 2.6.0 (macOS), GNU grep (CI) or ugrep, and they disagree on the
+  # shorter forms: `(^|[^A-Za-z])VERB` is a compile error in ugrep ("empty
+  # expression") that the trailing `|| true` swallows, leaving `$match` empty
+  # and every reader-verb block failing open; `\b`/`\<` compile everywhere, but
+  # ugrep's `-o` then returns `cat .env` for `cat .env.example`, so the template
+  # exemption below never sees the suffix and a template read is blocked. The
+  # explicit alternation behaves the same on all three. Its second branch
+  # captures one boundary character, trimmed from `$match` before the block
+  # message; the exemption re-greps from `${pattern}` and never sees it.
+  #
+  # The anchor also stops binaries whose name merely ends in a verb from
+  # matching by accident (`nvim`, `gcat`, `zless`, …); the common ones are
+  # listed explicitly so the fix does not narrow what was blocked before.
+  reader_verbs='(cat|gcat|zcat|head|ghead|tail|gtail|less|zless|more|nano|vim|nvim|gvim|vi|code|read)'
   for pattern in '\.env\b' '\.ssh/' '\.aws/credentials' '\.kube/config' '\.docker/config\.json' 'credentials\.json' 'secrets\.json'; do
     # Capture the matched substring (verb + path) rather than a bare boolean, so
     # the block message can name what tripped it and the exemption below can
     # inspect the actual path argument.
-    match=$(echo "$COMMAND" | grep -oE "(^|[^A-Za-z])${reader_verbs}[[:space:]]+[^|;&]*${pattern}[^[:space:]|;&'\"]*" | head -1 || true)
+    match=$(echo "$COMMAND" | grep -oE "(^${reader_verbs}|[^A-Za-z]${reader_verbs})[[:space:]]+[^|;&]*${pattern}[^[:space:]|;&'\"]*" | head -1 || true)
     [ -z "$match" ] && continue
-    # Drop the single boundary character the `(^|[^A-Za-z])` alternative
-    # captured (a space, `;`, `(`, quote, …); at start-of-line it captured
-    # nothing and the match already begins with the verb.
+    # Drop the single boundary character the second alternative captured (a
+    # space, `;`, `(`, quote, …); a start-of-line match begins with the verb
+    # and is left alone.
     match="${match#[!A-Za-z]}"
 
     # .env.example / .env.sample / .env.template are templates committed by
