@@ -113,6 +113,7 @@ jobs:
 
       - name: Claude Agentic Quality Audit
         if: steps.check_issue.outputs.exists == 'false'
+        id: audit
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -208,6 +209,25 @@ jobs:
             EOF
             )"
             ```
+
+      # The action's per-call transcript — its `execution_file` output,
+      # $RUNNER_TEMP/claude-execution-output.json. Run 33517717893 (2026-09-01)
+      # closed with permission_denials_count: 6 and uploaded nothing, so the six
+      # denied calls could not be identified afterwards (#2493). `always()`
+      # keeps the upload when the Claude step fails; the output guard skips it
+      # when that step was skipped or died before the file existed — the action
+      # sets the output only if the file exists, and upload-artifact fails
+      # outright on an empty `path`. run_attempt in the name keeps a re-run
+      # from colliding with the first attempt's artifact (v4 artifacts are
+      # immutable).
+      - name: Upload Claude execution transcript
+        if: always() && steps.audit.outputs.execution_file != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: claude-execution-agentic-audit-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.audit.outputs.execution_file }}
+          retention-days: 14
+          if-no-files-found: warn
 
   audit-liveness:
     # Watches the workflows whose only output is an issue, for the case where

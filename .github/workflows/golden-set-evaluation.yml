@@ -207,6 +207,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Run the Tier-2 cross-model sweep
+        id: sweep
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -324,3 +325,20 @@ jobs:
             Confirm exactly one issue was created and that every swept skill
             appears in the results table. If the sweep could not run at all,
             say so plainly in one line and open no issue.
+
+      # The action's per-call transcript — its `execution_file` output,
+      # $RUNNER_TEMP/claude-execution-output.json — so a run's denied tool
+      # calls can be read after the fact (#2493; the shape is the same as the
+      # agentic-audit upload in scheduled-audits.yml). `always()` keeps the
+      # upload when the Claude step fails; the output guard skips it when that
+      # step died before the file existed, because upload-artifact fails
+      # outright on an empty `path`. run_attempt in the name keeps a re-run
+      # from colliding with the first attempt's artifact.
+      - name: Upload Claude execution transcript
+        if: always() && steps.sweep.outputs.execution_file != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: claude-execution-sweep-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.sweep.outputs.execution_file }}
+          retention-days: 14
+          if-no-files-found: warn

@@ -220,3 +220,20 @@ jobs:
             EOF
             )"
             ```
+
+      # The action's per-call transcript — its `execution_file` output,
+      # $RUNNER_TEMP/claude-execution-output.json — so a run's denied tool
+      # calls can be read after the fact (#2493; the shape is the same as the
+      # agentic-audit upload in scheduled-audits.yml). `always()` keeps the
+      # upload when the Claude step fails; the output guard skips it when that
+      # step was skipped or died before the file existed, because
+      # upload-artifact fails outright on an empty `path`. run_attempt in the
+      # name keeps a re-run from colliding with the first attempt's artifact.
+      - name: Upload Claude execution transcript
+        if: always() && steps.audit.outputs.execution_file != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: claude-execution-workflow-model-audit-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.audit.outputs.execution_file }}
+          retention-days: 14
+          if-no-files-found: warn
