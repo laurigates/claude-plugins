@@ -231,7 +231,7 @@ jobs:
       # name keeps a re-run from colliding with the first attempt's artifact.
       - name: Upload Claude execution transcript
         if: always() && steps.audit.outputs.execution_file != ''
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@v4
         with:
           name: claude-execution-workflow-model-audit-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ steps.audit.outputs.execution_file }}
