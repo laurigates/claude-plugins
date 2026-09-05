@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.45.5](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.45.4...agent-patterns-plugin-v2.45.5) (2026-09-05)
+
+
+### Documentation
+
+* **multi-model-delegation:** add the direct OpenCode Go gateway mechanics ([#2601](https://github.com/laurigates/claude-plugins/issues/2601)) ([e6ec35f](https://github.com/laurigates/claude-plugins/commit/e6ec35f62d5010b3890ca8219d0c783517e69c7d))
+
 ## [2.45.4](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.45.3...agent-patterns-plugin-v2.45.4) (2026-09-03)
 
 

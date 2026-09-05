@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.6](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.21.5...project-plugin-v1.21.6) (2026-09-05)
+
+
+### Code Refactoring
+
+* **testing-plugin:** disambiguate the test-runner skill descriptions (cluster 1) ([#2607](https://github.com/laurigates/claude-plugins/issues/2607)) ([746e349](https://github.com/laurigates/claude-plugins/commit/746e34930840804cbac0ed7b91d1d914898269af))
+
 ## [1.21.5](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.21.4...project-plugin-v1.21.5) (2026-09-02)
 
 

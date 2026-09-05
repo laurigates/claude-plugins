@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.6](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.11.5...hooks-plugin-v2.11.6) (2026-09-05)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** anchor secret-protection reader verbs at a word boundary ([#2606](https://github.com/laurigates/claude-plugins/issues/2606)) ([1b4e923](https://github.com/laurigates/claude-plugins/commit/1b4e9239cc1399c76027cc50b08a169a3b793374))
+
 ## [2.11.5](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.11.4...hooks-plugin-v2.11.5) (2026-09-04)
 
 
