@@ -3,7 +3,7 @@ name: session-end
 description: End-of-session orchestrator. Previews which of wrap/distill/feedback/taskwarrior-sync qualify, single confirm, then sequence. Use when winding down a session.
 allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Skill, AskUserQuestion, TodoWrite
 created: 2026-06-10
-modified: 2026-08-19
+modified: 2026-09-05
 compatibility: claude-code
 reviewed: 2026-06-24
 ---
@@ -110,8 +110,15 @@ failure mode.
 into auto-running at autonomy level ≥ 1, that pass is **auto-confirmed** —
 leave it out of the Step 3 question, run it in Step 4 order, and report a
 one-line receipt in Step 5. All other passes still go through the Step 3
-confirmation. For the three-part gate, its safe defaults, and the `jq` check,
-see [REFERENCE.md](REFERENCE.md).
+confirmation. The gate requires all three fields (issue #2358) — run it as
+written, `auto` ⇒ auto-confirm, anything else ⇒ ask:
+
+```sh
+jq -r 'if ((.automation.autonomy_level // 0) >= 1) and (.task_registry["feature-tracker-sync"].enabled == true) and (.task_registry["feature-tracker-sync"].auto_run == true) then "auto" else "ask" end' docs/blueprint/manifest.json 2>/dev/null
+```
+
+For why all three are required and the safe default for a missing `enabled`
+key, see [REFERENCE.md](REFERENCE.md).
 
 If **nothing** qualifies, say so in one line and end — no preview, no
 question.
