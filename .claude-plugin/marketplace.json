@@ -24,7 +24,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.45.4",
+      "version": "2.45.5",
       "keywords": [
         "agents",
         "configuration",
@@ -390,7 +390,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.11.5",
+      "version": "2.11.6",
       "keywords": [
         "hooks",
         "automation",
@@ -512,7 +512,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, changelog review, and continuous development workflows",
-      "version": "1.21.5",
+      "version": "1.21.6",
       "keywords": [
         "project",
         "initialization",
@@ -658,7 +658,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.19.6",
+      "version": "3.19.7",
       "keywords": [
         "testing",
         "tdd",
