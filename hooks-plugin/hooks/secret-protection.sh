@@ -112,13 +112,40 @@ ${OVERRIDE_NOTE}"
   # secret at all, e.g. `... | head -1); grep -nE '\.env|PATTERN' "$f"`, where
   # the only `.env` is inside a grep pattern (issue #2444). Same greediness
   # class as the `.*` → `[A-Za-z0-9_]*` narrowing documented above (#1580).
-  reader_verbs='(cat|head|tail|less|more|nano|vim|vi|code|read)'
+  #
+  # The verb group is anchored at a word start — `(^VERB|[^A-Za-z]VERB)` — so
+  # a verb cannot match inside an ordinary English word. Without it
+  # `regardless`, `unless`, `thread`, `encode` and `furthermore` each supplied a
+  # verb, and prose that went on to mention `.env.integration` — a
+  # commit-message heredoc describing config precedence — was blocked as a
+  # sensitive-file read (issue #2597).
+  #
+  # The hook may run under BSD grep 2.6.0 (macOS), GNU grep (CI) or ugrep, and
+  # they disagree on the shorter anchor forms. `(^|[^A-Za-z])VERB` is a compile
+  # error in ugrep 6.0.0 ("empty expression") that the trailing `|| true`
+  # swallows, leaving `$match` empty and every reader-verb block failing open.
+  # `\b`/`\<` compile everywhere, but ugrep's `-o` (6.0.0 and 7.8.4) then
+  # returns `cat .env` for `cat .env.example`, so the template exemption below
+  # never sees the suffix and a template read is blocked. The explicit
+  # alternation behaves the same on all three. Its second branch captures one
+  # boundary character, trimmed from `$match` before the block message; the
+  # exemption re-greps from `${pattern}` and never sees it.
+  #
+  # The anchor also stops binaries whose name merely ends in a verb from
+  # matching by accident. The common ones (`nvim`, `gcat`, `zless`, …) are
+  # listed explicitly so those reads stay blocked; anything else whose name
+  # merely ends in a verb (`multitail`, `lolcat`) is not matched any more.
+  reader_verbs='(cat|gcat|zcat|bzcat|xzcat|head|ghead|tail|gtail|less|zless|more|nano|vim|nvim|gvim|mvim|vi|code|read)'
   for pattern in '\.env\b' '\.ssh/' '\.aws/credentials' '\.kube/config' '\.docker/config\.json' 'credentials\.json' 'secrets\.json'; do
     # Capture the matched substring (verb + path) rather than a bare boolean, so
     # the block message can name what tripped it and the exemption below can
     # inspect the actual path argument.
-    match=$(echo "$COMMAND" | grep -oE "${reader_verbs}[[:space:]]+[^|;&]*${pattern}[^[:space:]|;&'\"]*" | head -1 || true)
+    match=$(echo "$COMMAND" | grep -oE "(^${reader_verbs}|[^A-Za-z]${reader_verbs})[[:space:]]+[^|;&]*${pattern}[^[:space:]|;&'\"]*" | head -1 || true)
     [ -z "$match" ] && continue
+    # Drop the single boundary character the second alternative captured (a
+    # space, `;`, `(`, quote, …); a start-of-line match begins with the verb
+    # and is left alone.
+    match="${match#[!A-Za-z]}"
 
     # .env.example / .env.sample / .env.template are templates committed by
     # convention, not secrets. check_sensitive_path() already exempts them on

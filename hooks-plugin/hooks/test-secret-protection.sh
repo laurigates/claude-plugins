@@ -11,6 +11,12 @@
 #     `.*` greediness that bridged `$(date)` to a distant `FE_KEYCLOAK_URL` is
 #     fixed (issue #1580).
 #   - Sensitive file reads (.env, .ssh, credentials) are still blocked.
+#   - Reader verbs are anchored at a word start: `less` inside `regardless`,
+#     `read` inside `thread`, `code` inside `encode` no longer supply the verb,
+#     so prose mentioning a `.env.<x>` token is NOT blocked (issue #2597).
+#     Binaries that used to match only because their name ends in a verb
+#     (`nvim`, `gcat`, `zless`, `bzcat`, `xzcat`, `mvim`) are listed explicitly
+#     and stay blocked.
 set -euo pipefail
 
 HOOK="$(cd "$(dirname "$0")" && pwd)/secret-protection.sh"
@@ -161,6 +167,118 @@ assert_exit \
 assert_exit \
     "head README.md; cat ~/.ssh/id_ed25519 (real key read after ';') is still blocked" 2 \
     "head -5 README.md; cat ~/.ssh/id_ed25519"
+
+# ── reader verbs are anchored at a word start (issue #2597) ──────────────────
+# `regardless`, `nevertheless`, `unless` end in `less`; `thread` in `read`;
+# `encode` in `code`; `furthermore` in `more`. With no word-start anchor each
+# supplied a reader verb, and any later `.env.<x>` token in the same statement
+# (a commit-message heredoc, for instance) was blocked as a sensitive-file read.
+# The `.env` token is assembled at runtime so the commands below never carry
+# the literal as a whole; the hook still receives the fully assembled string.
+echo ""
+echo "reader verbs do not match inside English words; real reads still blocked:"
+
+env_token="$(printf '.%s' env)"
+
+assert_exit \
+    "'regardless of the .env.integration value' (prose, no read) is allowed" 0 \
+    "regardless of the ${env_token}.integration value"
+
+assert_exit \
+    "'nevertheless the .env.local pin holds' (prose, no read) is allowed" 0 \
+    "nevertheless the ${env_token}.local pin holds"
+
+assert_exit \
+    "'unless the .env file is present' (prose, no read) is allowed" 0 \
+    "unless the ${env_token} file is present"
+
+assert_exit \
+    "'the thread that writes .env.ci' (prose, no read) is allowed" 0 \
+    "the thread that writes ${env_token}.ci"
+
+assert_exit \
+    "'we encode the .env.prod secret name' (prose, no read) is allowed" 0 \
+    "we encode the ${env_token}.prod secret name"
+
+assert_exit \
+    "'furthermore the .env.test override' (prose, no read) is allowed" 0 \
+    "furthermore the ${env_token}.test override"
+
+# True-positive controls: the anchor must not let a genuine read through, at
+# start-of-line, after a separator, or with a redirect instead of an argument.
+assert_exit \
+    "cat .env (start-of-line verb) is still blocked" 2 \
+    "cat ${env_token}"
+
+assert_exit \
+    "head -5 .env.production is still blocked" 2 \
+    "head -5 ${env_token}.production"
+
+assert_exit \
+    "less .env.local is still blocked" 2 \
+    "less ${env_token}.local"
+
+assert_exit \
+    "tail -f .env.prod is still blocked" 2 \
+    "tail -f ${env_token}.prod"
+
+assert_exit \
+    "read < .env (redirect, not an argument) is still blocked" 2 \
+    "read < ${env_token}"
+
+assert_exit \
+    "ls -la; less .env (verb after ';') is still blocked" 2 \
+    "ls -la; less ${env_token}"
+
+assert_exit \
+    "less .env (start-of-line verb) is still blocked" 2 \
+    "less ${env_token}"
+
+# Before the anchor these matched by accident (`vim` inside `nvim`, `cat`
+# inside `gcat`, `less` inside `zless`); they are now listed verbs, so the
+# anchor must not have narrowed what was blocked.
+assert_exit \
+    "nvim .env (listed verb, previously a sub-word match) is still blocked" 2 \
+    "nvim ${env_token}"
+
+assert_exit \
+    "gcat .env (coreutils prefix, previously a sub-word match) is still blocked" 2 \
+    "gcat ${env_token}"
+
+assert_exit \
+    "zless .env.local (previously a sub-word match) is still blocked" 2 \
+    "zless ${env_token}.local"
+
+assert_exit \
+    "bzcat .env (previously a sub-word match) is still blocked" 2 \
+    "bzcat ${env_token}"
+
+assert_exit \
+    "mvim .env (previously a sub-word match) is still blocked" 2 \
+    "mvim ${env_token}"
+
+assert_exit \
+    "xzcat .env.prod (previously a sub-word match) is still blocked" 2 \
+    "xzcat ${env_token}.prod"
+
+# The block message names what tripped it. The anchor's second alternative
+# captures one boundary character ahead of the verb; the hook trims it, so the
+# quoted match must start at the verb and not at the separator before it.
+assert_matched_text() {
+    local desc="$1" expected="$2" cmd="$3"
+    local json out
+    json=$(jq -nc --arg cmd "$cmd" '{tool_name:"Bash",tool_input:{command:$cmd}}')
+    out=$(printf '%s' "$json" | bash "$HOOK" 2>&1 || true)
+    if echo "$out" | grep -qF "matched: '${expected}'"; then
+        printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (message was: %s)\n" "$desc" "$(echo "$out" | head -1)"; FAIL=$((FAIL + 1))
+    fi
+}
+
+assert_matched_text \
+    "ls -la; less .env reports the match from the verb, not the separator" "less ${env_token}" \
+    "ls -la; less ${env_token}"
 
 # ── block-message framing: operator-only, not a self-serve bypass ────────────
 # Regression: every block message used to end "Set
