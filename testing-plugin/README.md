@@ -10,10 +10,10 @@ This plugin provides comprehensive testing support including test runners, TDD w
 
 | Skill | Description |
 |-------|-------------|
-| `test-run` | Run the project's tests once — whole suite or a name pattern, framework auto-detected |
+| `test-run` | Run the project's tests — whole suite or a name pattern, framework auto-detected |
 | `test-quick` | Unit tier only — skips slow, integration, and E2E tests for sub-30s feedback |
 | `test-focus` | One test file, fail-fast — headed/debug and serial single-worker modes |
-| `test-full` | Every tier in pyramid order — unit, integration, E2E — with coverage |
+| `test-full` | Every tier in pyramid order — unit, integration, E2E; coverage optional |
 | `test-setup` | Configure testing infrastructure with CI/CD integration |
 | `test-consult` | Consult test-architecture agent for testing strategy |
 | `test-report` | Cached results from the last run — pass/fail, coverage, history, flaky tests — no re-run |

@@ -5,7 +5,7 @@ reviewed: 2026-04-25
 allowed-tools: Task, TodoWrite
 args: "[test-pattern] [--coverage] [--watch]"
 argument-hint: "[test-pattern] [--coverage] [--watch]"
-description: "Run the project's tests once — auto-detects pytest, vitest, jest, cargo, go test; whole suite or a name pattern. Use when asked to run the tests and no tier, single file, or fix cycle is named."
+description: "Run the project's tests — auto-detects pytest, vitest, jest, cargo, go test; whole suite or a name pattern. Use when asked to run the tests and no tier, single file, or fix cycle is named."
 name: test-run
 ---
 

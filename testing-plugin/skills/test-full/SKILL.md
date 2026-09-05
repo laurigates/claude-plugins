@@ -5,7 +5,7 @@ reviewed: 2026-04-25
 allowed-tools: Task, TodoWrite
 args: "[--coverage] [--parallel] [--report]"
 argument-hint: "[--coverage] [--parallel] [--report]"
-description: "Every tier in pyramid order — unit, then integration, then E2E — with coverage. Use when running all tests before a PR or commit, or generating a coverage report."
+description: "Every tier in pyramid order — unit, then integration, then E2E. Use when running all tests before a PR or commit, or generating a coverage report."
 name: test-full
 agent: general-purpose
 context: fork
