@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-09-05
 reviewed: 2026-04-25
 allowed-tools: Read, Glob, Bash(git *)
 args: "[--history] [--coverage] [--flaky]"
 argument-hint: "[--history] [--coverage] [--flaky]"
-description: "Show cached test status without re-running. Use when checking test health, standup status, coverage summary, history, or identifying flaky tests from recent runs."
+description: "Cached results from the last test run, no re-run — pass/fail counts, existing coverage report, history, flaky tests. Use when asked for current test status or standup health."
 name: test-report
 ---
 
