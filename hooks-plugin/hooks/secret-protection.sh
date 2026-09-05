@@ -121,20 +121,20 @@ ${OVERRIDE_NOTE}"
   # sensitive-file read (issue #2597).
   #
   # The hook may run under BSD grep 2.6.0 (macOS), GNU grep (CI) or ugrep, and
-  # they disagree on the shorter anchor forms: `(^|[^A-Za-z])VERB` is a compile error in ugrep ("empty
-  # expression") that the trailing `|| true` swallows, leaving `$match` empty
-  # and every reader-verb block failing open; `\b`/`\<` compile everywhere, but
-  # ugrep's `-o` then returns `cat .env` for `cat .env.example`, so the template
-  # exemption below never sees the suffix and a template read is blocked. The
-  # explicit alternation behaves the same on all three. Its second branch
-  # captures one boundary character, trimmed from `$match` before the block
-  # message; the exemption re-greps from `${pattern}` and never sees it.
+  # they disagree on the shorter anchor forms. `(^|[^A-Za-z])VERB` is a compile
+  # error in ugrep 6.0.0 ("empty expression") that the trailing `|| true`
+  # swallows, leaving `$match` empty and every reader-verb block failing open.
+  # `\b`/`\<` compile everywhere, but ugrep's `-o` (6.0.0 and 7.8.4) then
+  # returns `cat .env` for `cat .env.example`, so the template exemption below
+  # never sees the suffix and a template read is blocked. The explicit
+  # alternation behaves the same on all three. Its second branch captures one
+  # boundary character, trimmed from `$match` before the block message; the
+  # exemption re-greps from `${pattern}` and never sees it.
   #
   # The anchor also stops binaries whose name merely ends in a verb from
-  # matching by accident (`nvim`, `gcat`, `zless`, …); the common ones are
-  # listed explicitly so the fix does not narrow what was blocked before.
-  # Anything else whose name merely ends in a verb (`multitail`, `lolcat`) is
-  # not matched any more.
+  # matching by accident. The common ones (`nvim`, `gcat`, `zless`, …) are
+  # listed explicitly so those reads stay blocked; anything else whose name
+  # merely ends in a verb (`multitail`, `lolcat`) is not matched any more.
   reader_verbs='(cat|gcat|zcat|bzcat|xzcat|head|ghead|tail|gtail|less|zless|more|nano|vim|nvim|gvim|mvim|vi|code|read)'
   for pattern in '\.env\b' '\.ssh/' '\.aws/credentials' '\.kube/config' '\.docker/config\.json' 'credentials\.json' 'secrets\.json'; do
     # Capture the matched substring (verb + path) rather than a bare boolean, so

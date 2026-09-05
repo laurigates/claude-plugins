@@ -15,7 +15,8 @@
 #     `read` inside `thread`, `code` inside `encode` no longer supply the verb,
 #     so prose mentioning a `.env.<x>` token is NOT blocked (issue #2597).
 #     Binaries that used to match only because their name ends in a verb
-#     (`nvim`, `gcat`, `zless`, `bzcat`, `mvim`) are listed explicitly and stay blocked.
+#     (`nvim`, `gcat`, `zless`, `bzcat`, `xzcat`, `mvim`) are listed explicitly
+#     and stay blocked.
 set -euo pipefail
 
 HOOK="$(cd "$(dirname "$0")" && pwd)/secret-protection.sh"
@@ -255,6 +256,10 @@ assert_exit \
 assert_exit \
     "mvim .env (previously a sub-word match) is still blocked" 2 \
     "mvim ${env_token}"
+
+assert_exit \
+    "xzcat .env.prod (previously a sub-word match) is still blocked" 2 \
+    "xzcat ${env_token}.prod"
 
 # The block message names what tripped it. The anchor's second alternative
 # captures one boundary character ahead of the verb; the hook trims it, so the
