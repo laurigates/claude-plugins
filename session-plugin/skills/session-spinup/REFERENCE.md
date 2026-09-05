@@ -193,6 +193,24 @@ gracefully rather than omitting:
   upstream** and a **detached HEAD** report — the same degradation
   `UNPUSHED` takes — so it is never evidence that the tree is current,
   only that nothing said otherwise.
+- **`GIT_SCOPE=workspace-root`** — an undeclared outer repo contains the
+  checkout at `PROJECT_DIR`, so the collector read the git and PR rows
+  from that **outer** repo instead: `GIT_ROOT=` names the repo the rows
+  describe and `GIT_NESTED_REPO=` names the nested checkout it stepped
+  out of. Say which repo the state belongs to ("`main`, clean — in
+  `<GIT_ROOT>`; the cwd sits inside the nested `<GIT_NESTED_REPO>`
+  checkout") rather than reporting the branch flat. `GIT_CONFIDENCE=low`
+  rides with it: the rows describe a real repository, but a session
+  genuinely working *in* the nested checkout is served the outer one.
+  Never suggest re-running from the workspace root — that is what the
+  collector already did.
+- **`GIT_CONFIDENCE=low` with `GIT_SCOPE=none`** — not in a git repo at
+  all; there is no branch, dirt or PR state to report.
+  `PRS_SCOPE` / `PRS_CONFIDENCE` mirror the git verdict, because every
+  `gh` call runs with the same resolved cwd. `PRS_SCOPE=none` means there
+  is no scoped PR answer — either the call never landed
+  (`GH_READY=false`, so `PR_COUNT=0` is fabricated) or there was no repo
+  to scope it to (`GIT_SCOPE=none`). Read `GH_READY` to tell them apart.
 - **All sources empty** — say so briefly, then step out of the way.
 - **Plan mode / interactive UI** — present the briefing only; spinup
   never mutates anything.

@@ -3,7 +3,7 @@ name: session-end
 description: End-of-session orchestrator. Previews which of wrap/distill/feedback/taskwarrior-sync qualify, single confirm, then sequence. Use when winding down a session.
 allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Skill, AskUserQuestion, TodoWrite
 created: 2026-06-10
-modified: 2026-08-19
+modified: 2026-09-05
 compatibility: claude-code
 reviewed: 2026-06-24
 ---
@@ -74,24 +74,12 @@ against. Plus the conversation: what finished, what's hanging, what was
 learned, what plugin/skill friction or wins occurred.
 
 **Remediating `GH_READY=false`.** It always ships with `GH_FAIL_REASON=`,
-which says *why* GitHub went unqueried — the four causes want four
-different responses, so act on the reason rather than treating every
-`false` alike:
-
-| `GH_FAIL_REASON` | What happened | Do this |
-|---|---|---|
-| `timeout` | The per-call watchdog killed the query (also `GH_TIMEOUT=true`) | Re-run the collector with a bigger `SESSION_SURVEY_GH_TIMEOUT` (default 8s) |
-| `api-error` | GitHub answered with a 5xx / network failure — see `GH_FAIL_DETAIL` | Re-run once; it usually clears. If it persists, proceed and say GitHub was unreachable |
-| `unknown` | `gh` failed with nothing quotable — `GH_FAIL_DETAIL` carries the first stderr line when there is one | Re-run once, then treat as `api-error` |
-| `auth` | The token is missing, expired, or lacks a scope | Tell the user to run `gh auth login`; re-running is futile. Fall back to the GitHub MCP tools if available |
-| `no-cli` | No `gh` on PATH (Claude Code on the web) | Fall back to the GitHub MCP tools, or state GitHub was not queried. Re-running is futile |
-| `no-remote` | The repo has no GitHub remote | Nothing to do — there is genuinely nothing to query. Skip the GitHub half silently |
-
-Never re-run for `auth`, `no-cli`, or `no-remote`: the first two need a
-human action and the third has nothing to fetch. In every case the
+which says *why* GitHub went unqueried — the six causes want different
+responses, so act on the reason rather than treating every `false` alike.
+Never re-run for `auth`, `no-cli`, or `no-remote`. In every case the
 GitHub-derived counts stay **unqueried**, not zero — so the taskwarrior-sync
 redundancy test in Step 4 must not use them as evidence a follow-up is
-untracked.
+untracked. See [REFERENCE.md](REFERENCE.md) for the per-reason table.
 
 For the **Distill** qualify gate (Step 2), also run the distill collector's
 coarse summary — the mechanical half of the Distill signal (recipe candidates,
@@ -118,22 +106,19 @@ failure mode.
 | Blueprint tracker-sync | `UNDRAINED_COUNT` ≥ 1 in the Step 1 digest's `BLUEPRINT` section. Non-blueprint / tracker-missing repos auto-disqualify (count is 0) → silent skip. If `blueprint-plugin` isn't installed, note it and skip (as with Feedback) |
 
 **Blueprint auto-drain (ADR-0020 level 1):** when the qualifying repo's
-`docs/blueprint/manifest.json` has `automation.autonomy_level` ≥ 1 **and**
-`task_registry["feature-tracker-sync"].enabled == true` **and**
-`task_registry["feature-tracker-sync"].auto_run == true`, the Blueprint
-tracker-sync pass is **auto-confirmed**: leave it out of the Step 3 question,
-run it in Step 4 order without asking, and report a one-line receipt in Step 5
-(`Blueprint tracker-sync: drained N WO(s) automatically (auto_run)`). All other
-passes still go through the Step 3 confirmation. The gate requires all three —
-a task the owner disabled (`enabled: false`) must never auto-run unattended
-even when `auto_run: true` and `autonomy_level >= 1` (issue #2358). The
-`enabled` check uses `== true`, not `!= false`: a manifest that omits the
-`enabled` key entirely reads as disabled (the safe default), consistent with
-how `// 0` already defaults a missing `autonomy_level`. Check the gate with:
+`docs/blueprint/manifest.json` enables and opts the feature-tracker-sync task
+into auto-running at autonomy level ≥ 1, that pass is **auto-confirmed** —
+leave it out of the Step 3 question, run it in Step 4 order, and report a
+one-line receipt in Step 5. All other passes still go through the Step 3
+confirmation. The gate requires all three fields (issue #2358) — run it as
+written, `auto` ⇒ auto-confirm, anything else ⇒ ask:
 
 ```sh
 jq -r 'if ((.automation.autonomy_level // 0) >= 1) and (.task_registry["feature-tracker-sync"].enabled == true) and (.task_registry["feature-tracker-sync"].auto_run == true) then "auto" else "ask" end' docs/blueprint/manifest.json 2>/dev/null
 ```
+
+For why all three are required and the safe default for a missing `enabled`
+key, see [REFERENCE.md](REFERENCE.md).
 
 If **nothing** qualifies, say so in one line and end — no preview, no
 question.
@@ -223,8 +208,12 @@ already in the transcript. Pre-silence:
 |---|---|
 | One-pass survey (detection + git + PRs + tasks-with-UUIDs + commits + blueprint tracker state + GitHub-drift dedup) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits --with-blueprint --with-dedup` |
 | Trust the task count? | `TASK_SCOPE=` + `PROJECT_CONFIDENCE=` in the `TASKWARRIOR` section (`low` ⇒ re-run with `--project <slug>` before treating 0 as clean) |
+| Which repo do the branch, dirt and PR rows describe? | `GIT_SCOPE=` + `GIT_CONFIDENCE=` in the `GIT` section (`PRS_SCOPE=` / `PRS_CONFIDENCE=` mirror them). `repo` ⇒ the checkout at `PROJECT_DIR`. `workspace-root` ⇒ an undeclared outer repo contains that checkout and the rows describe **it** — name `GIT_ROOT=` when reporting them, and say the cwd sits inside `GIT_NESTED_REPO=`. Never re-run from the workspace root: the collector already did |
 | Distill qualify signal (recipe/hot-file/process counts) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/distill-survey.sh" --session-id "${CLAUDE_SESSION_ID}" --summary` |
 | Re-derive the drain wave before delegating | `task bpid.any: status:completed export \| jq …` intersected with tracker `tasks.pending` (Step 4.3) |
 | Stable UUID for latest task | `task +LATEST uuids` |
 | Mark task done by UUID | `task <uuid> done` |
 | Distillable surface check | `find . -maxdepth 2 -path '*/.claude/rules' -o -maxdepth 1 -name 'justfile' -o -maxdepth 1 -name 'Justfile'` |
+
+For the `GH_FAIL_REASON` remediation table and the Blueprint auto-drain gate
+details, see [REFERENCE.md](REFERENCE.md).

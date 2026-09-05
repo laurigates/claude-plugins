@@ -165,6 +165,57 @@ was read against a stale basis — the failure it exists to prevent is a
 confident, specific finding about a bug that was already fixed upstream, with
 nothing in the digest hinting the checkout had fallen behind.
 
+#### Which repository do `GIT` and `PRS` describe?
+
+`GIT` and `PRS` normally read the repo at `--project-dir` — `GIT` directly,
+`PRS` because every `gh` call is launched with that cwd, so `gh` resolves the
+repo from the same checkout's remote. When the cwd lands inside a **nested**
+checkout (an untracked upstream fork living inside the workspace repo), both
+sections would describe a different repository's branch, dirt and PRs, so the
+collector **resolves them from the workspace root instead** and says it has:
+
+| `GIT_SCOPE` | Which repo the rows describe | `GIT_CONFIDENCE` |
+|---|---|---|
+| `repo` | The checkout at `PROJECT_DIR` | `high` |
+| `workspace-root` | An **undeclared outer repo** containing that checkout — `GIT_ROOT=` names it, `GIT_NESTED_REPO=` names the nested checkout stepped out of | `low` |
+| `none` | Not in a git repo at all | `low` |
+
+Two containments are **never** re-resolved, because in both the checkout at
+the cwd is the session's own repo and stepping out of it would report the
+wrong one:
+
+- a **linked worktree**, which shares its main checkout's git common dir —
+  otherwise every worktree-isolated agent would report its main checkout;
+- a **declared containment**, where the outer repo ignores the child via a
+  `.gitignore` (a portfolio root's `/*/*`) or tracks it (a submodule, a
+  committed subtree) — otherwise every pack in a portfolio would report the
+  portfolio's branch and PRs.
+
+The ignore *source* decides: `.gitignore` is repo content, while
+`.git/info/exclude` and a global `core.excludesFile` are private to one
+checkout, and the usual reason a line lands there is to stop an accidental
+nested clone showing up in `git status` — the very state this resolution
+exists to correct.
+
+`GIT_CONFIDENCE=low` on `workspace-root` is a **caveat, not an error**:
+`STATUS` stays `OK`. The rows describe a real repository — the workspace one —
+but a session genuinely working *in* the nested checkout is served the outer
+repo, so the reading is not certain.
+
+`PRS_SCOPE` / `PRS_CONFIDENCE` mirror the git verdict — the `gh` calls run with
+the same resolved cwd. `PRS_SCOPE=none` means **there is no scoped PR answer**,
+which arises two ways: `GH_READY=false`, so the call never landed (an unqueried
+zero is not a zero); or `GIT_SCOPE=none`, so there is no repo to scope it to.
+`GH_READY` distinguishes them, and only the first makes `PR_COUNT` a fabricated
+zero.
+
+**Scope.** Only `GIT` and `PRS` re-resolve. `PROJECT_DIR` still reports where
+the session stands and the taskwarrior ladder keeps its own slug resolution; and
+the two `--with-*` sections still read the checkout at `PROJECT_DIR` — `COMMITS`
+lists that checkout's log, `BLUEPRINT` reads its `docs/blueprint/`. So on the
+`workspace-root` rung those two describe the nested checkout while `GIT` and
+`PRS` describe the outer repo. Both sites carry a comment saying so.
+
 ### Task scoping is honest about its guess
 
 The taskwarrior project slug is detected from the repo **directory
