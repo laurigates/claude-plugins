@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.34.6](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.34.5...configure-plugin-v1.34.6) (2026-09-06)
+
+
+### Bug Fixes
+
+* **configure-plugin:** audit what `just --list` renders, not whether a comment exists ([#2617](https://github.com/laurigates/claude-plugins/issues/2617)) ([b6edb62](https://github.com/laurigates/claude-plugins/commit/b6edb62d129f5d6b4f6d3643af268e1e64b61ae1))
+
 ## [1.34.5](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.34.4...configure-plugin-v1.34.5) (2026-09-04)
 
 
