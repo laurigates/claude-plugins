@@ -257,7 +257,10 @@ set allow-duplicate-recipes
 # Allow duplicate variables (last wins)
 set allow-duplicate-variables
 
-# Fail on first error in recipe
+# Search PARENT directories for a recipe this justfile does not define.
+# NOT error handling and nothing to do with failing fast: a child justfile
+# with this set resolves `just parent-recipe` from its parent's justfile.
+# MODULES DO NOT INHERIT IT -- `just sub::parent-recipe` still fails.
 set fallback
 
 # Use working directory for imports
