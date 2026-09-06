@@ -205,6 +205,41 @@ assert "H: and the refusal exits 3" \
 assert "H: no partial flag list is printed alongside the refusal" \
   "$(printf '%s' "$dyn_out" | grep -q -- '--readable' && echo false || echo true)"
 
+# ------------- J: an indirect help= is resolved or named, but never dropped
+# `help=SOME_CONSTANT` used to print the flag bare, indistinguishable from a
+# flag with no help at all — the same under-report the tool refuses elsewhere,
+# which slipped through because `unresolved` counts unreadable flag NAMES and
+# the name is fine here. Two-sided: asserting only that the resolvable case
+# resolves would pass against an implementation that still drops the other.
+mkdir -p "$tmp/indirect/scripts"
+cat >"$tmp/indirect/justfile" <<'JUSTFILE'
+# Wrap a script whose help text is held in a constant.
+run *ARGS:
+    @python3 scripts/indirect.py {{ARGS}}
+JUSTFILE
+cat >"$tmp/indirect/scripts/indirect.py" <<'PYEOF'
+"""Holds its help text in a local, the usual way."""
+import argparse
+
+
+def main():
+    blurb = "the text that must survive"
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--resolvable", help=blurb)
+    ap.add_argument("--opaque", help="x".join(["a", "b"]))
+    return ap.parse_args()
+PYEOF
+ind_out="$(cd "$tmp/indirect" && python3 "$helper" run 2>&1)"
+ind_rc=$?
+assert "J: a constant help= is resolved to its text" \
+  "$(contains "$ind_out" "the text that must survive")"
+assert "J: an unresolvable help= is NAMED, not dropped" \
+  "$(contains "$ind_out" "not a literal")"
+assert "J: an indirect help= is not an unreadable flag NAME, so no refusal" \
+  "$([ "$ind_rc" = "0" ] && echo true || echo false)"
+assert "J: and it did not silently become a refusal either" \
+  "$(printf '%s' "$ind_out" | grep -q 'REFUSING' && echo false || echo true)"
+
 # ------------------------- I: a flagless subcommand is still listed by name
 wrapped_out="$(cd "$tmp/good" && python3 "$helper" wrapped 2>&1)"
 assert "I: a subcommand WITH flags is listed" \

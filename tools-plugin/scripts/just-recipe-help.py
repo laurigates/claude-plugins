@@ -321,6 +321,21 @@ def scan_arguments(path):
     list that looks complete.
     """
     tree = ast.parse(path.read_text(errors="replace"))
+
+    # String constants, so a `help=SOME_NAME` resolves to its text rather
+    # than being dropped. Every scope, not just module level: the constant
+    # is usually a local of the function that builds the parser.
+    constants: dict = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+            continue
+        target = node.targets[0]
+        if (
+            isinstance(target, ast.Name)
+            and isinstance(node.value, ast.Constant)
+            and isinstance(node.value.value, str)
+        ):
+            constants.setdefault(target.id, node.value.value)
     groups: dict = {}
     unresolved = 0
     # The sub-parser most recently assigned; None means the main parser. A
@@ -381,10 +396,10 @@ def scan_arguments(path):
                     visit(inner)
 
     visit(tree.body)
-    return groups, unresolved
+    return groups, unresolved, constants
 
 
-def render_argument(flags, kw, lit):
+def render_argument(flags, kw, lit, constants=None):
     """One argument as a signature line plus its indented help text."""
     action = kw.get("action", "")
     if not flags[0].startswith("-"):
@@ -410,11 +425,34 @@ def render_argument(flags, kw, lit):
 
     out = [f"  {sig:<32}{'  '.join(notes)}".rstrip()]
     helptext = kw.get("help")
-    if isinstance(helptext, str) and lit.get("help"):
-        for para in helptext.split("\n"):
+    if helptext is None:
+        return out
+    if lit.get("help"):
+        for para in str(helptext).split("\n"):
             para = para.strip()
             if para:
                 out.append(f"      {para}")
+        return out
+
+    # A NON-LITERAL help=, e.g. `help=_rung_help`. Resolved from the
+    # module's own constants where possible; NAMED where not.
+    #
+    # It used to be dropped in silence, which is the exact under-report
+    # this tool refuses everywhere else: the flag printed bare, and was
+    # indistinguishable from one that genuinely has no help. It slipped
+    # past `unresolved` because that counts unreadable flag NAMES, and
+    # the name here is fine -- so nothing refused either.
+    resolved = constants.get(helptext) if constants else None
+    if resolved is not None:
+        for para in resolved.split("\n"):
+            para = para.strip()
+            if para:
+                out.append(f"      {para}")
+    else:
+        out.append(
+            f"      (help is `{helptext}`, which is not a literal and not a "
+            f"module constant -- read the source)"
+        )
     return out
 
 
@@ -424,7 +462,7 @@ def print_flags(path, label):
         print(f"FLAGS  not scanned: {label} is a shell script, not argparse.")
         return 0
     try:
-        groups, unresolved = scan_arguments(path)
+        groups, unresolved, constants = scan_arguments(path)
     except SyntaxError as e:
         print(f"FLAGS  CANNOT READ: {label} does not parse ({e}).", file=sys.stderr)
         return 3
@@ -450,7 +488,7 @@ def print_flags(path, label):
         else:
             print(f"SUBCOMMAND  {name}" + (f"  -- {g['help']}" if g["help"] else ""))
         for flags, kw, lit in g["args"]:
-            for line in render_argument(flags, kw, lit):
+            for line in render_argument(flags, kw, lit, constants):
                 print(line)
         if not g["args"] and name is not None:
             print("  (no flags of its own)")
