@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.10.1...tools-plugin-v2.11.0) (2026-09-06)
+
+
+### Features
+
+* **tools-plugin:** document what `just --list` renders, and a tool that reads it ([#2616](https://github.com/laurigates/claude-plugins/issues/2616)) ([936c2c8](https://github.com/laurigates/claude-plugins/commit/936c2c82c55873661b83aa32b33d45e3c7c21c39))
+
 ## [2.10.1](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.10.0...tools-plugin-v2.10.1) (2026-09-03)
 
 
