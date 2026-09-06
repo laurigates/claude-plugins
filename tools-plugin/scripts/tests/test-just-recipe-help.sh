@@ -89,6 +89,8 @@ cat >"$tmp/good/scripts/tool.py" <<'PYEOF'
 """A tool with subcommands, one of which takes no flags."""
 import argparse
 
+WHAT = "the cached scores"
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -97,6 +99,9 @@ def main():
     p.add_argument("--jobs", type=int, default=4, help="worker count")
     p = sub.add_parser("status", help="report only")
     p.set_defaults(fn=None)
+    # UNASSIGNED, the idiomatic spelling when a subcommand takes no flags --
+    # reading only ast.Assign made these vanish entirely.
+    sub.add_parser("bare", help=f"reads {WHAT}")
     return ap.parse_args()
 PYEOF
 
@@ -264,6 +269,10 @@ assert "I: a subcommand with NO flags is still listed" \
   "$(contains "$wrapped_out" "SUBCOMMAND  status")"
 assert "I: and is marked as having none, not silently empty" \
   "$(contains "$wrapped_out" "no flags of its own")"
+assert "I: an UNASSIGNED add_parser is listed, not silently dropped" \
+  "$(contains "$wrapped_out" "SUBCOMMAND  bare")"
+assert "I: and its f-string help is rendered, same as a flag's" \
+  "$(contains "$wrapped_out" "reads {WHAT}")"
 assert "I: the {{SCRIPTS}} interpolation resolved to a real path" \
   "$(contains "$wrapped_out" "worker count")"
 

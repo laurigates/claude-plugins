@@ -380,29 +380,45 @@ def scan_arguments(path):
     def visit(stmts):
         nonlocal unresolved
         for st in stmts:
+            # An add_parser is detected whether or not its result is bound.
+            # `sub.add_parser("status", help="...")` with no assignment is the
+            # idiomatic spelling for a subcommand that takes no flags -- and
+            # reading only ast.Assign made exactly those vanish from the help,
+            # which is the same disappearance the flagless-subcommand handling
+            # exists to prevent.
+            call = None
             if isinstance(st, ast.Assign) and isinstance(st.value, ast.Call):
-                f = st.value.func
+                call = st.value
+            elif isinstance(st, ast.Expr) and isinstance(st.value, ast.Call):
+                call = st.value
+            if call is not None:
+                f = call.func
                 fname = f.attr if isinstance(f, ast.Attribute) else getattr(f, "id", "")
                 if (
                     fname == "add_parser"
-                    and st.value.args
-                    and isinstance(st.value.args[0], ast.Constant)
+                    and call.args
+                    and isinstance(call.args[0], ast.Constant)
                 ):
-                    current[0] = st.value.args[0].value
+                    current[0] = call.args[0].value
                     g = group(current[0])
-                    for k in st.value.keywords:
-                        if k.arg == "help" and isinstance(k.value, ast.Constant):
-                            g["help"] = k.value.value
+                    for k in call.keywords:
+                        # Same treatment as add_argument's help= below.
+                        # Requiring a Constant here left the class closed on one
+                        # keyword site and open on its twin: an f-string
+                        # subcommand help printed NO description, and a
+                        # subcommand's one line is the only thing describing it.
+                        if k.arg == "help":
+                            shown = _help_display(k.value)
+                            if shown is not None:
+                                g["help"] = shown
                     continue
                 if fname == "ArgumentParser":
                     current[0] = None
                     continue
 
-            call = (
-                st.value
-                if isinstance(st, ast.Expr) and isinstance(st.value, ast.Call)
-                else None
-            )
+            # An add_argument is only ever a bare expression statement.
+            if isinstance(st, ast.Assign):
+                call = None
             if (
                 call is not None
                 and isinstance(call.func, ast.Attribute)
