@@ -209,6 +209,12 @@ repos:
         language: system
         files: '^scripts/(check-subagent-types\.sh|tests/test-check-subagent-types\.sh)$'
         pass_filenames: false
+      - id: test-just-recipe-help
+        name: just recipe-help / --list description regression
+        entry: bash ./tools-plugin/scripts/tests/test-just-recipe-help.sh
+        language: system
+        files: '^tools-plugin/scripts/(just-recipe-help\.py|tests/test-just-recipe-help\.sh)$'
+        pass_filenames: false
       - id: check-unrendered-templates
         name: no unrendered {{ if }} template conditionals in skill bodies (#2265)
         entry: ./scripts/check-unrendered-templates.sh

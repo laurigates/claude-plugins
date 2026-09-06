@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-08-15
+modified: 2026-09-06
 reviewed: 2026-02-06
 name: justfile-expert
 description: Just command runner expertise — Justfile syntax, recipes, parameters, modules, shebang recipes. Use when authoring justfiles, project commands, or task automation.
@@ -107,19 +107,26 @@ clean-all: clean
 - **`set quiet`**: Suppress command echoing
 
 **Recipe Attributes**
-- **`[private]`**: Hide from `--list` output
+- **`[doc("text")]`**: The `--list` description. Overrides the comment above the
+  recipe; bare **`[doc]`** suppresses it. See "What `--list` Shows" below —
+  without this attribute only the comment block's LAST line is used
+- **`[private]`**: Hide from `--list` and `--summary` output
 - **`[no-cd]`**: Don't change directory
 - **`[no-exit-message]`**: Suppress exit messages
 - **`[unix]`** / **`[windows]`** / **`[linux]`** / **`[macos]`**: Platform-specific recipes
 - **`[positional-arguments]`**: Per-recipe positional args
 - **`[confirm]`** / **`[confirm("message")]`**: Require confirmation before running
-- **`[group: "name"]`**: Group recipes in `--list` output
+- **`[group: "name"]`** / **`[group("name")]`**: Section recipes in `--list`; both
+  spellings work, and `--groups` lists the group names
 - **`[working-directory: "path"]`**: Run in specific directory
 
 **Module System**
 - **`mod name`**: Declare submodule
 - **`mod name 'path'`**: Custom module path
 - **Invocation**: `just module::recipe` or `just module recipe`
+- **`set fallback` is NOT inherited by a module.** The parent may fall through to
+  *its* parent, but `just sub::parent-recipe` fails with `justfile does not
+  contain recipe`. A module's recipes resolve only within that module
 
 ## Essential Syntax
 
@@ -174,6 +181,54 @@ caption DIR SUBJECT="" *ARGS:
 that is what lets several trailing flags expand as separate words — and accept
 its corollary: an individual passthrough flag's value must not contain spaces.
 When one might, promote it to a named parameter too.
+
+**What `--list` Shows Is ONE Line, and It Is Not Your Comment Block**
+
+`just --list` renders a single description per recipe. With no `[doc]`
+attribute it takes the **last line** of the comment block immediately above the
+recipe — not the first line, and not the block:
+
+| Above the recipe | `--list` shows |
+|---|---|
+| `[doc("Build the release bundle.")]` | that text |
+| a comment block, no attribute | **only its last line** |
+| bare `[doc]` | nothing |
+| nothing | nothing |
+
+So "add a comment before each recipe" is **not** the same as documenting it. A
+block that ends in an example or a caveat — the normal way to write one — lists
+as that fragment:
+
+```just
+# Pitch-correct the singing in an MP4. Video is stream-copied.
+#   just autotune take.mp4 out.mp4 --key C:minor
+autotune IN OUT *FLAGS:
+```
+```
+$ just --list
+    autotune IN OUT *FLAGS   # just autotune take.mp4 out.mp4 --key C:minor
+```
+
+**Add `[doc("one line")]` as soon as a recipe's comment block exceeds one
+line.** The block stays where it is and keeps carrying the detail; the
+attribute is the only thing `--list` reads.
+
+**The block binds by ADJACENCY, and reassignment is silent.** A blank line ends
+a block, so inserting a recipe between a block and the recipe it describes
+hands the block to the newcomer — the original then lists blank, and nothing
+warns. Re-read `just --list` after inserting a recipe into an existing file.
+
+**A recipe with a required positional has no `--help` form.** `recipe *ARGS:`
+forwards `--help` to the underlying tool, but just refuses the call before the
+tool runs once a positional is required:
+
+```
+$ just autotune --help
+error: recipe `autotune` got 1 positional argument but takes at least 2
+```
+
+There is no bare-help spelling for such a recipe. Put the flags in its `[doc]`
+or comment block, or add a `help` recipe that prints them.
 
 **Recipe Dependencies**
 ```just
@@ -448,9 +503,11 @@ cargo install just-mcp
 
 **Recipe Development Workflow**
 1. **Name clearly**: Use descriptive, verb-based names (`build`, `test`, `deploy`)
-2. **Document always**: Add comment before each recipe
+2. **Document what `--list` reads**: a one-line comment is enough; anything
+   longer needs `[doc("...")]`, or the listing shows only the block's last line
 3. **Use defaults**: Provide sensible default parameter values
-4. **Group logically**: Organize with section comments
+4. **Group logically**: section comments for the file, `[group("name")]` for the
+   listing — a flat `--list` stops being scannable somewhere around 20 recipes
 5. **Hide internals**: Mark helper recipes as `[private]`
 6. **Test portability**: Verify on all target platforms
 
@@ -460,6 +517,10 @@ cargo install just-mcp
 - Use shebang recipes for multi-line logic
 - Prefer `set dotenv-load` for configuration
 - Use modules for large projects (>20 recipes)
+- Give a recipe a `[doc("...")]` when its comment block's last line would not
+  read as a description on its own — `--list` shows only that line (see "What
+  `--list` Shows" above). To find them:
+  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/just-recipe-help.py" --audit`
 - Include variadic `*args` for passthrough flexibility
 - Quote all variables in shell commands — `{{...}}` interpolates **unquoted**,
   so wrap any parameter that can contain spaces in `quote()` (see
