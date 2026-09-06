@@ -221,20 +221,36 @@ cat >"$tmp/indirect/scripts/indirect.py" <<'PYEOF'
 """Holds its help text in a local, the usual way."""
 import argparse
 
+LIMIT = 5
+
 
 def main():
     blurb = "the text that must survive"
     ap = argparse.ArgumentParser()
     ap.add_argument("--resolvable", help=blurb)
-    ap.add_argument("--opaque", help="x".join(["a", "b"]))
+    ap.add_argument("--fstring", help=f"cap at {LIMIT} items")
+    ap.add_argument("--concat", help="scales: " + ", ".join(["a"]))
+    ap.add_argument("--opaque", help=some_call())
     return ap.parse_args()
 PYEOF
 ind_out="$(cd "$tmp/indirect" && python3 "$helper" run 2>&1)"
 ind_rc=$?
 assert "J: a constant help= is resolved to its text" \
   "$(contains "$ind_out" "the text that must survive")"
-assert "J: an unresolvable help= is NAMED, not dropped" \
-  "$(contains "$ind_out" "not a literal")"
+# NOT `contains "cap at {LIMIT} items"` — that is VACUOUS. When the rendering
+# is broken the marker prints the f-string's SOURCE, which contains the very
+# same substring, so the assertion passes either way. (Caught by mutating
+# `shown = _help_display(...)` to `None` and watching the suite stay green.)
+# Exactly ONE flag here is genuinely opaque, so the marker must appear once.
+marker_count="$(printf '%s' "$ind_out" | grep -c 'not a literal')"
+assert "J: only the opaque flag falls back to the marker (got $marker_count)" \
+  "$([ "$marker_count" = "1" ] && echo true || echo false)"
+assert "J: the f-string's text is rendered, not its source expression" \
+  "$(printf '%s' "$ind_out" | grep -q "f'cap at" && echo false || echo true)"
+assert "J: with the interpolation left as a visible placeholder" \
+  "$(contains "$ind_out" "cap at {LIMIT} items")"
+assert "J: a concatenation keeps its literal half" \
+  "$(contains "$ind_out" "scales: ")"
 assert "J: an indirect help= is not an unreadable flag NAME, so no refusal" \
   "$([ "$ind_rc" = "0" ] && echo true || echo false)"
 assert "J: and it did not silently become a refusal either" \

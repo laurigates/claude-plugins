@@ -303,6 +303,38 @@ def _keyword(node) -> "tuple[object, bool]":
         return "<unparseable>", False
 
 
+def _help_display(node):
+    """A help= node as displayable text, or None.
+
+    An f-string's literal parts ARE the help text -- in the tree this was built
+    against, 13 of 15 non-literal `help=` are f-strings, and dumping their
+    source with a "read the source" marker hides text that is right there.
+    Each interpolation renders as `{expr}`, visibly unresolved rather than
+    silently wrong: argparse substitutes a runtime value and this cannot.
+    """
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.JoinedStr):
+        parts = []
+        for v in node.values:
+            if isinstance(v, ast.Constant):
+                parts.append(str(v.value))
+            elif isinstance(v, ast.FormattedValue):
+                parts.append("{" + ast.unparse(v.value) + "}")
+            else:  # pragma: no cover
+                parts.append("{...}")
+        return "".join(parts)
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        # `'...Scales: ' + ', '.join(sorted(SCALES))` -- keep the literal half
+        # and placeholder the computed one, same convention as an f-string.
+        sides = []
+        for side in (node.left, node.right):
+            shown = _help_display(side)
+            sides.append(shown if shown is not None else "{" + ast.unparse(side) + "}")
+        return "".join(sides)
+    return None
+
+
 def scan_arguments(path):
     """Every add_argument in a script, grouped by subcommand, in source order.
 
@@ -384,6 +416,14 @@ def scan_arguments(path):
                 lit: dict = {}
                 for k in call.keywords:
                     if k.arg:
+                        if k.arg == "help":
+                            # An f-string or a concatenation carries
+                            # its own text; take it rather than the
+                            # source expression.
+                            shown = _help_display(k.value)
+                            if shown is not None:
+                                kw["help"], lit["help"] = shown, True
+                                continue
                         kw[k.arg], lit[k.arg] = _keyword(k.value)
                 group(current[0])["args"].append((flags, kw, lit))
                 continue
