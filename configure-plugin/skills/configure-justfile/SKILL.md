@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
+modified: 2026-09-06
 reviewed: 2025-12-16
 description: Check and configure Justfiles with standard recipes. Use when setting up a Justfile, auditing for missing recipes, or migrating from Makefile to Justfile.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
@@ -91,7 +91,29 @@ Validate Justfile settings:
 | Dotenv loading | `set dotenv-load` present | INFO |
 | Help recipe | Lists all recipes | FAIL if missing |
 | Language-specific | Commands match project type | FAIL if mismatched |
-| Recipe comments | Recipes have descriptions | INFO |
+| Recipe descriptions | What `just --list` actually renders is usable | WARN if any are fragments |
+
+**Check what `--list` RENDERS, not whether a comment exists.** `just` shows one
+line per recipe, and with no `[doc("...")]` attribute that line is the **last
+line** of the comment block above the recipe. A block that ends in an example
+or a wrapped clause — the normal way to write one — therefore lists as a
+fragment, while the recipe looks fully documented in the file.
+
+Prefer the deterministic check over eyeballing it. It reports only recipes
+whose rendered line is a fragment, so a justfile using one-line comments
+correctly comes back clean:
+
+```bash
+python3 "$TOOLS_PLUGIN/scripts/just-recipe-help.py" --audit
+```
+
+That script ships with a **different plugin** — `tools-plugin`, whose
+`justfile-expert` skill documents the `--list` contract behind it — so there is
+no path from here that is guaranteed to resolve. Locate it with
+`find ~/.claude/plugins -name just-recipe-help.py`, or fall back to the manual
+check: for each recipe whose comment block is more than one line, read its
+**last** line alone and add a `[doc("one line")]` wherever that line is an
+example, an indented sub-item, or a clause continuing the line above.
 
 ### Step 4: Generate compliance report
 
@@ -118,6 +140,11 @@ Recipe Status:
 Settings Status:
   dotenv-load         ✅ PASS
   positional-arguments ℹ️  INFO (not set)
+
+Descriptions (what `just --list` renders):
+  4 recipes list a fragment rather than a description
+    caption-audit   last line continues a sentence from the line above
+    comfy-matrix    last line is a command example
 
 Missing Recipes: none
 Issues: 0 found
@@ -325,6 +352,8 @@ If a Makefile exists but no Justfile:
 | List existing recipes | `just --list` |
 | Verify specific recipe exists | `just --summary` |
 | Check Justfile syntax | `just --evaluate 2>&1` |
+| Audit what `--list` renders | `just-recipe-help.py --audit` (ships with `tools-plugin`) |
+| Read one recipe's notes + flags | `just-recipe-help.py <recipe>` |
 
 ## Flags
 
