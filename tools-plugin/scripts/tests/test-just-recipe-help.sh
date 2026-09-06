@@ -89,6 +89,8 @@ cat >"$tmp/good/scripts/tool.py" <<'PYEOF'
 """A tool with subcommands, one of which takes no flags."""
 import argparse
 
+WHAT = "the cached scores"
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -97,6 +99,9 @@ def main():
     p.add_argument("--jobs", type=int, default=4, help="worker count")
     p = sub.add_parser("status", help="report only")
     p.set_defaults(fn=None)
+    # UNASSIGNED, the idiomatic spelling when a subcommand takes no flags --
+    # reading only ast.Assign made these vanish entirely.
+    sub.add_parser("bare", help=f"reads {WHAT}")
     return ap.parse_args()
 PYEOF
 
@@ -205,6 +210,128 @@ assert "H: and the refusal exits 3" \
 assert "H: no partial flag list is printed alongside the refusal" \
   "$(printf '%s' "$dyn_out" | grep -q -- '--readable' && echo false || echo true)"
 
+# ------------- J: an indirect help= is resolved or named, but never dropped
+# `help=SOME_CONSTANT` used to print the flag bare, indistinguishable from a
+# flag with no help at all — the same under-report the tool refuses elsewhere,
+# which slipped through because `unresolved` counts unreadable flag NAMES and
+# the name is fine here. Two-sided: asserting only that the resolvable case
+# resolves would pass against an implementation that still drops the other.
+mkdir -p "$tmp/indirect/scripts"
+cat >"$tmp/indirect/justfile" <<'JUSTFILE'
+# Wrap a script whose help text is held in a constant.
+run *ARGS:
+    @python3 scripts/indirect.py {{ARGS}}
+JUSTFILE
+cat >"$tmp/indirect/scripts/indirect.py" <<'PYEOF'
+"""Holds its help text in a local, the usual way."""
+import argparse
+
+LIMIT = 5
+
+
+def main():
+    blurb = "the text that must survive"
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--resolvable", help=blurb)
+    ap.add_argument("--fstring", help=f"cap at {LIMIT} items")
+    ap.add_argument("--concat", help="scales: " + ", ".join(["a"]))
+    ap.add_argument("--opaque", help=some_call())
+    return ap.parse_args()
+PYEOF
+ind_out="$(cd "$tmp/indirect" && python3 "$helper" run 2>&1)"
+ind_rc=$?
+assert "J: a constant help= is resolved to its text" \
+  "$(contains "$ind_out" "the text that must survive")"
+# NOT `contains "cap at {LIMIT} items"` — that is VACUOUS. When the rendering
+# is broken the marker prints the f-string's SOURCE, which contains the very
+# same substring, so the assertion passes either way. (Caught by mutating
+# `shown = _help_display(...)` to `None` and watching the suite stay green.)
+# Exactly ONE flag here is genuinely opaque, so the marker must appear once.
+marker_count="$(printf '%s' "$ind_out" | grep -c 'not a literal')"
+assert "J: only the opaque flag falls back to the marker (got $marker_count)" \
+  "$([ "$marker_count" = "1" ] && echo true || echo false)"
+assert "J: the f-string's text is rendered, not its source expression" \
+  "$(printf '%s' "$ind_out" | grep -q "f'cap at" && echo false || echo true)"
+assert "J: with the interpolation left as a visible placeholder" \
+  "$(contains "$ind_out" "cap at {LIMIT} items")"
+assert "J: a concatenation keeps its literal half" \
+  "$(contains "$ind_out" "scales: ")"
+assert "J: an indirect help= is not an unreadable flag NAME, so no refusal" \
+  "$([ "$ind_rc" = "0" ] && echo true || echo false)"
+assert "J: and it did not silently become a refusal either" \
+  "$(printf '%s' "$ind_out" | grep -q 'REFUSING' && echo false || echo true)"
+
+# ---- K: a flag is filed under the parser it was CALLED on, not the last one
+# Source order files `--x` under whichever parser was declared most recently;
+# only the receiver says `run`. A flag printed beneath a subcommand that does
+# not accept it is worse than an omission — it looks authoritative, and a
+# reader who copies the signature gets a command that fails.
+mkdir -p "$tmp/recv/scripts"
+cat >"$tmp/recv/justfile" <<'JUSTFILE'
+# Wrap a script that declares its parsers before populating them.
+run *ARGS:
+    @python3 scripts/recv.py {{ARGS}}
+JUSTFILE
+cat >"$tmp/recv/scripts/recv.py" <<'PYEOF'
+"""Declares subcommands first, then adds their flags."""
+import argparse
+
+LAST_DESC = "declared after run's flags exist"
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    sub = ap.add_subparsers()
+    p_run = sub.add_parser("run", help="the first one")
+    sub.add_parser("status", help="flagless, declared in between")
+    p_last = sub.add_parser("last", help=LAST_DESC)
+    p_run.add_argument("--x", help="belongs to run")
+    p_last.add_argument("--y", help="belongs to last")
+    try:
+        import fancy
+    except ImportError:
+        ap.add_argument("--fallback", help="only without fancy")
+    match "x":
+        case "x":
+            ap.add_argument("--from-match", help="ast.Match keeps arms in cases")
+    return ap.parse_args()
+
+
+def other():
+    # Rebinds the SAME local name main() used for the "run" sub-parser, from a
+    # call this scan does not recognise. A stale mapping would file --stale
+    # under "run"; the name must be forgotten so it falls back to the cursor,
+    # which the ArgumentParser line above just reset to the main parser.
+    ap2 = argparse.ArgumentParser()
+    p_run = build_somehow(ap2)
+    p_run.add_argument("--stale")
+PYEOF
+recv_out="$(cd "$tmp/recv" && python3 "$helper" run 2>&1)"
+# awk, not `sed -n '/a/,/b/p'` — a sed range INCLUDES its terminator, so the
+# status block ran on into `last` and picked up its --y. The assertion failed
+# on correct output, which is the wrong way round for a test.
+block() { printf '%s' "$recv_out" | awk -v s="SUBCOMMAND  $1" '
+  index($0, s) == 1 { f = 1; next } /^SUBCOMMAND/ { f = 0 } /^FLAGS/ { f = 0 } f'; }
+assert "K: --x is filed under run, not under the last-declared parser" \
+  "$(contains "$(block run)" "\-\-x")"
+assert "K: --y is filed under last" "$(contains "$(block last)" "\-\-y")"
+assert "K: the flagless subcommand in between accepts nothing" \
+  "$(printf '%s' "$(block status)" | grep -q -- '--' && echo false || echo true)"
+assert "K: and says so rather than printing an empty section" \
+  "$(contains "$(block status)" "no flags of its own")"
+assert "K: an add_argument inside an except handler is seen at all" \
+  "$(contains "$recv_out" "\-\-fallback")"
+# A subcommand help bound to a NAME. add_argument's help resolves through the
+# constants map; add_parser's did not, so the subcommand printed as a bare name.
+assert "K: a subcommand help bound to a name resolves through the constants" \
+  "$(contains "$recv_out" "declared after run's flags exist")"
+assert "K: an add_argument inside a match arm is seen (ast.Match uses cases)" \
+  "$(contains "$recv_out" "ast.Match keeps arms in cases")"
+# A stale `parsers` entry OUTRANKS the cursor, so a name rebound by a call this
+# scan does not recognise must forget its old parser rather than keep it.
+assert "K: a rebound name does not file its flags under the old subcommand" \
+  "$(printf '%s' "$(block run)" | grep -q -- '\-\-stale' && echo false || echo true)"
+
 # ------------------------- I: a flagless subcommand is still listed by name
 wrapped_out="$(cd "$tmp/good" && python3 "$helper" wrapped 2>&1)"
 assert "I: a subcommand WITH flags is listed" \
@@ -213,8 +340,34 @@ assert "I: a subcommand with NO flags is still listed" \
   "$(contains "$wrapped_out" "SUBCOMMAND  status")"
 assert "I: and is marked as having none, not silently empty" \
   "$(contains "$wrapped_out" "no flags of its own")"
+assert "I: an UNASSIGNED add_parser is listed, not silently dropped" \
+  "$(contains "$wrapped_out" "SUBCOMMAND  bare")"
+assert "I: and its f-string help is rendered, same as a flag's" \
+  "$(contains "$wrapped_out" "reads {WHAT}")"
 assert "I: the {{SCRIPTS}} interpolation resolved to a real path" \
   "$(contains "$wrapped_out" "worker count")"
+
+# --- L: show_script reads a .py's docstring and does not parse a .sh as one
+# TWO-SIDED on purpose. Asserting only the .sh arm proves nothing is
+# OVER-parsed and never that anything is parsed: dropping the suffix check
+# silently removes the module docstring from every Python script — the headline
+# half of what this command prints — while the .sh assertions still hold.
+cp "$tmp/good/scripts/tool.py" "$tmp/good/scripts/doc_example.py"
+cat >"$tmp/good/scripts/plain.sh" <<'SHEOF'
+#!/usr/bin/env bash
+set -euo pipefail
+echo hi
+SHEOF
+sh_out="$(cd "$tmp/good" && python3 "$helper" plain.sh 2>&1)"
+py_out="$(cd "$tmp/good" && python3 "$helper" doc_example.py 2>&1)"
+assert "L: a shell script is not reported as broken Python" \
+  "$(printf '%s' "$sh_out" | grep -q 'does not parse' && echo false || echo true)"
+assert "L: and says what it actually is" \
+  "$(contains "$sh_out" "is a shell script, not argparse")"
+assert "L: a Python script still gets its NOTES section" \
+  "$(contains "$py_out" "NOTES")"
+assert "L: with the module docstring in it" \
+  "$(contains "$py_out" "A tool with subcommands")"
 
 # ---------------------------------------------------------------- summary
 echo "PASSED=$pass_count FAILED=$fail_count"

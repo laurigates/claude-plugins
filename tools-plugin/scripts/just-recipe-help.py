@@ -303,10 +303,43 @@ def _keyword(node) -> "tuple[object, bool]":
         return "<unparseable>", False
 
 
+def _help_display(node):
+    """A help= node as displayable text, or None.
+
+    An f-string's literal parts ARE the help text -- in the tree this was built
+    against, 13 of 15 non-literal `help=` are f-strings, and dumping their
+    source with a "read the source" marker hides text that is right there.
+    Each interpolation renders as `{expr}`, visibly unresolved rather than
+    silently wrong: argparse substitutes a runtime value and this cannot.
+    """
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.JoinedStr):
+        parts = []
+        for v in node.values:
+            if isinstance(v, ast.Constant):
+                parts.append(str(v.value))
+            elif isinstance(v, ast.FormattedValue):
+                parts.append("{" + ast.unparse(v.value) + "}")
+            else:  # pragma: no cover
+                parts.append("{...}")
+        return "".join(parts)
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        # `'...Scales: ' + ', '.join(sorted(SCALES))` -- keep the literal half
+        # and placeholder the computed one, same convention as an f-string.
+        sides = []
+        for side in (node.left, node.right):
+            shown = _help_display(side)
+            sides.append(shown if shown is not None else "{" + ast.unparse(side) + "}")
+        return "".join(sides)
+    return None
+
+
 def scan_arguments(path):
     """Every add_argument in a script, grouped by subcommand, in source order.
 
-    Returns (groups, unresolved). `groups` maps a subcommand name (or None for
+    Returns (groups, unresolved, constants). `groups` maps a subcommand name
+    (or None for
     the main parser) to {"help": str, "args": [...]}.
 
     Every add_parser is registered up front, EVEN IF IT TAKES NO ARGUMENTS: a
@@ -321,10 +354,31 @@ def scan_arguments(path):
     list that looks complete.
     """
     tree = ast.parse(path.read_text(errors="replace"))
+
+    # String constants, so a `help=SOME_NAME` resolves to its text rather
+    # than being dropped. Every scope, not just module level: the constant
+    # is usually a local of the function that builds the parser.
+    constants: dict = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+            continue
+        target = node.targets[0]
+        if (
+            isinstance(target, ast.Name)
+            and isinstance(node.value, ast.Constant)
+            and isinstance(node.value.value, str)
+        ):
+            constants.setdefault(target.id, node.value.value)
     groups: dict = {}
     unresolved = 0
     # The sub-parser most recently assigned; None means the main parser. A
     # one-element list so the nested visit() can rebind it without `nonlocal`.
+    # Which parser each VARIABLE refers to: name -> subcommand, or None for
+    # the main parser. Dispatching on the receiver rather than on source
+    # order is what makes an add_argument land on the parser it was
+    # actually called on. `current` survives only as the fallback for a
+    # receiver nothing assigned in this scan.
+    parsers: dict = {}
     current: list = [None]
 
     def group(name):
@@ -333,29 +387,77 @@ def scan_arguments(path):
     def visit(stmts):
         nonlocal unresolved
         for st in stmts:
+            # An add_parser is detected whether or not its result is bound.
+            # `sub.add_parser("status", help="...")` with no assignment is the
+            # idiomatic spelling for a subcommand that takes no flags -- and
+            # reading only ast.Assign made exactly those vanish from the help,
+            # which is the same disappearance the flagless-subcommand handling
+            # exists to prevent.
+            call = None
+            bound = None
             if isinstance(st, ast.Assign) and isinstance(st.value, ast.Call):
-                f = st.value.func
+                call = st.value
+                if len(st.targets) == 1 and isinstance(st.targets[0], ast.Name):
+                    bound = st.targets[0].id
+            elif isinstance(st, ast.Expr) and isinstance(st.value, ast.Call):
+                call = st.value
+            if call is not None:
+                f = call.func
                 fname = f.attr if isinstance(f, ast.Attribute) else getattr(f, "id", "")
                 if (
                     fname == "add_parser"
-                    and st.value.args
-                    and isinstance(st.value.args[0], ast.Constant)
+                    and call.args
+                    and isinstance(call.args[0], ast.Constant)
                 ):
-                    current[0] = st.value.args[0].value
-                    g = group(current[0])
-                    for k in st.value.keywords:
-                        if k.arg == "help" and isinstance(k.value, ast.Constant):
-                            g["help"] = k.value.value
+                    sub_name = call.args[0].value
+                    g = group(sub_name)
+                    if bound is not None:
+                        parsers[bound] = sub_name
+                        # Only a BOUND declaration moves the fallback
+                        # cursor, so a flagless add_parser written between
+                        # a parser and its flags cannot steal them.
+                        #
+                        # This IS observable, contrary to a note that
+                        # stood here: an untracked receiver falls back to
+                        # the cursor, and then an unbound add_parser in
+                        # between changes the answer.
+                        current[0] = sub_name
+                    for k in call.keywords:
+                        # Same treatment as add_argument's help= below.
+                        # Requiring a Constant here left the class closed on one
+                        # keyword site and open on its twin: an f-string
+                        # subcommand help printed NO description, and a
+                        # subcommand's one line is the only thing describing it.
+                        if k.arg == "help":
+                            shown = _help_display(k.value)
+                            if shown is None and isinstance(k.value, ast.Name):
+                                # The same constants map add_argument's
+                                # help gets, so a bare name resolves here
+                                # too rather than leaving the subcommand
+                                # with no line at all.
+                                shown = constants.get(k.value.id)
+                            if shown is not None:
+                                g["help"] = shown
                     continue
                 if fname == "ArgumentParser":
+                    if bound is not None:
+                        parsers[bound] = None
                     current[0] = None
                     continue
+                # Any OTHER call rebinding a tracked name invalidates it.
+                # `p = _build(ap)` is not a construction this scan knows,
+                # and a stale entry OUTRANKS the cursor -- so a second
+                # function reusing the local name filed its flags under a
+                # subcommand of a different parser. The map is flat and
+                # module-wide, so forgetting is the safe move: the
+                # fallback is a guess, a stale entry is a confident wrong
+                # answer.
+                if bound is not None:
+                    parsers.pop(bound, None)
 
-            call = (
-                st.value
-                if isinstance(st, ast.Expr) and isinstance(st.value, ast.Call)
-                else None
-            )
+            # An add_argument is only ever a bare expression statement.
+            if isinstance(st, ast.Assign):
+                call = None
             if (
                 call is not None
                 and isinstance(call.func, ast.Attribute)
@@ -369,22 +471,46 @@ def scan_arguments(path):
                 lit: dict = {}
                 for k in call.keywords:
                     if k.arg:
+                        if k.arg == "help":
+                            # An f-string or a concatenation carries
+                            # its own text; take it rather than the
+                            # source expression.
+                            shown = _help_display(k.value)
+                            if shown is not None:
+                                kw["help"], lit["help"] = shown, True
+                                continue
                         kw[k.arg], lit[k.arg] = _keyword(k.value)
-                group(current[0])["args"].append((flags, kw, lit))
+                # Dispatch on the RECEIVER (`p.add_argument` -> whatever `p`
+                # was last assigned), falling back to the source-order
+                # cursor only for a receiver this scan never saw assigned.
+                recv = call.func.value
+                owner = (
+                    parsers.get(recv.id, current[0])
+                    if isinstance(recv, ast.Name)
+                    else current[0]
+                )
+                group(owner)["args"].append((flags, kw, lit))
                 continue
 
             # Recurse into compound statements so an add_argument inside a
             # function, an `if`, or a loop is still seen, in source order.
-            for field in ("body", "orelse", "finalbody"):
+            # `handlers` matters: an add_argument under `except ...:` was
+            # neither reported nor counted, so it vanished. Position
+            # matters too -- a Try is written body / handlers / orelse /
+            # finalbody, and this scan promises source order.
+            # `cases` is ast.Match's arm list -- the same under-report one
+            # node type over. A Match has none of the other fields, so its
+            # position here does not matter.
+            for field in ("body", "handlers", "orelse", "finalbody", "cases"):
                 inner = getattr(st, field, None)
                 if isinstance(inner, list):
                     visit(inner)
 
     visit(tree.body)
-    return groups, unresolved
+    return groups, unresolved, constants
 
 
-def render_argument(flags, kw, lit):
+def render_argument(flags, kw, lit, constants=None):
     """One argument as a signature line plus its indented help text."""
     action = kw.get("action", "")
     if not flags[0].startswith("-"):
@@ -410,11 +536,34 @@ def render_argument(flags, kw, lit):
 
     out = [f"  {sig:<32}{'  '.join(notes)}".rstrip()]
     helptext = kw.get("help")
-    if isinstance(helptext, str) and lit.get("help"):
-        for para in helptext.split("\n"):
+    if helptext is None:
+        return out
+    if lit.get("help"):
+        for para in str(helptext).split("\n"):
             para = para.strip()
             if para:
                 out.append(f"      {para}")
+        return out
+
+    # A NON-LITERAL help=, e.g. `help=_rung_help`. Resolved from the
+    # module's own constants where possible; NAMED where not.
+    #
+    # It used to be dropped in silence, which is the exact under-report
+    # this tool refuses everywhere else: the flag printed bare, and was
+    # indistinguishable from one that genuinely has no help. It slipped
+    # past `unresolved` because that counts unreadable flag NAMES, and
+    # the name here is fine -- so nothing refused either.
+    resolved = constants.get(helptext) if constants else None
+    if resolved is not None:
+        for para in resolved.split("\n"):
+            para = para.strip()
+            if para:
+                out.append(f"      {para}")
+    else:
+        out.append(
+            f"      (help is `{helptext}`, which is not a literal and not a "
+            f"resolvable name -- read the source)"
+        )
     return out
 
 
@@ -424,7 +573,7 @@ def print_flags(path, label):
         print(f"FLAGS  not scanned: {label} is a shell script, not argparse.")
         return 0
     try:
-        groups, unresolved = scan_arguments(path)
+        groups, unresolved, constants = scan_arguments(path)
     except SyntaxError as e:
         print(f"FLAGS  CANNOT READ: {label} does not parse ({e}).", file=sys.stderr)
         return 3
@@ -450,7 +599,7 @@ def print_flags(path, label):
         else:
             print(f"SUBCOMMAND  {name}" + (f"  -- {g['help']}" if g["help"] else ""))
         for flags, kw, lit in g["args"]:
-            for line in render_argument(flags, kw, lit):
+            for line in render_argument(flags, kw, lit, constants):
                 print(line)
         if not g["args"] and name is not None:
             print("  (no flags of its own)")
