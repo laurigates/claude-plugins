@@ -338,7 +338,8 @@ def _help_display(node):
 def scan_arguments(path):
     """Every add_argument in a script, grouped by subcommand, in source order.
 
-    Returns (groups, unresolved). `groups` maps a subcommand name (or None for
+    Returns (groups, unresolved, constants). `groups` maps a subcommand name
+    (or None for
     the main parser) to {"help": str, "args": [...]}.
 
     Every add_parser is registered up front, EVEN IF IT TAKES NO ARGUMENTS: a
@@ -414,11 +415,12 @@ def scan_arguments(path):
                         parsers[bound] = sub_name
                         # Only a BOUND declaration moves the fallback
                         # cursor, so a flagless add_parser written between
-                        # a parser and its flags cannot steal them. No
-                        # mutation row pins this line: receiver dispatch
-                        # below already answers correctly for every
-                        # receiver the scan can see, so removing it
-                        # changes nothing observable.
+                        # a parser and its flags cannot steal them.
+                        #
+                        # This IS observable, contrary to a note that
+                        # stood here: an untracked receiver falls back to
+                        # the cursor, and then an unbound add_parser in
+                        # between changes the answer.
                         current[0] = sub_name
                     for k in call.keywords:
                         # Same treatment as add_argument's help= below.
@@ -442,6 +444,16 @@ def scan_arguments(path):
                         parsers[bound] = None
                     current[0] = None
                     continue
+                # Any OTHER call rebinding a tracked name invalidates it.
+                # `p = _build(ap)` is not a construction this scan knows,
+                # and a stale entry OUTRANKS the cursor -- so a second
+                # function reusing the local name filed its flags under a
+                # subcommand of a different parser. The map is flat and
+                # module-wide, so forgetting is the safe move: the
+                # fallback is a guess, a stale entry is a confident wrong
+                # answer.
+                if bound is not None:
+                    parsers.pop(bound, None)
 
             # An add_argument is only ever a bare expression statement.
             if isinstance(st, ast.Assign):
@@ -486,7 +498,10 @@ def scan_arguments(path):
             # neither reported nor counted, so it vanished. Position
             # matters too -- a Try is written body / handlers / orelse /
             # finalbody, and this scan promises source order.
-            for field in ("body", "handlers", "orelse", "finalbody"):
+            # `cases` is ast.Match's arm list -- the same under-report one
+            # node type over. A Match has none of the other fields, so its
+            # position here does not matter.
+            for field in ("body", "handlers", "orelse", "finalbody", "cases"):
                 inner = getattr(st, field, None)
                 if isinstance(inner, list):
                     visit(inner)
@@ -547,7 +562,7 @@ def render_argument(flags, kw, lit, constants=None):
     else:
         out.append(
             f"      (help is `{helptext}`, which is not a literal and not a "
-            f"module constant -- read the source)"
+            f"resolvable name -- read the source)"
         )
     return out
 

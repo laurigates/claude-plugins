@@ -291,7 +291,20 @@ def main():
         import fancy
     except ImportError:
         ap.add_argument("--fallback", help="only without fancy")
+    match "x":
+        case "x":
+            ap.add_argument("--from-match", help="ast.Match keeps arms in cases")
     return ap.parse_args()
+
+
+def other():
+    # Rebinds the SAME local name main() used for the "run" sub-parser, from a
+    # call this scan does not recognise. A stale mapping would file --stale
+    # under "run"; the name must be forgotten so it falls back to the cursor,
+    # which the ArgumentParser line above just reset to the main parser.
+    ap2 = argparse.ArgumentParser()
+    p_run = build_somehow(ap2)
+    p_run.add_argument("--stale")
 PYEOF
 recv_out="$(cd "$tmp/recv" && python3 "$helper" run 2>&1)"
 # awk, not `sed -n '/a/,/b/p'` — a sed range INCLUDES its terminator, so the
@@ -312,6 +325,12 @@ assert "K: an add_argument inside an except handler is seen at all" \
 # constants map; add_parser's did not, so the subcommand printed as a bare name.
 assert "K: a subcommand help bound to a name resolves through the constants" \
   "$(contains "$recv_out" "declared after run's flags exist")"
+assert "K: an add_argument inside a match arm is seen (ast.Match uses cases)" \
+  "$(contains "$recv_out" "ast.Match keeps arms in cases")"
+# A stale `parsers` entry OUTRANKS the cursor, so a name rebound by a call this
+# scan does not recognise must forget its old parser rather than keep it.
+assert "K: a rebound name does not file its flags under the old subcommand" \
+  "$(printf '%s' "$(block run)" | grep -q -- '\-\-stale' && echo false || echo true)"
 
 # ------------------------- I: a flagless subcommand is still listed by name
 wrapped_out="$(cd "$tmp/good" && python3 "$helper" wrapped 2>&1)"
