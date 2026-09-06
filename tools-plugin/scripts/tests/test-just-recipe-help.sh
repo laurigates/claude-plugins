@@ -261,6 +261,58 @@ assert "J: an indirect help= is not an unreadable flag NAME, so no refusal" \
 assert "J: and it did not silently become a refusal either" \
   "$(printf '%s' "$ind_out" | grep -q 'REFUSING' && echo false || echo true)"
 
+# ---- K: a flag is filed under the parser it was CALLED on, not the last one
+# Source order files `--x` under whichever parser was declared most recently;
+# only the receiver says `run`. A flag printed beneath a subcommand that does
+# not accept it is worse than an omission — it looks authoritative, and a
+# reader who copies the signature gets a command that fails.
+mkdir -p "$tmp/recv/scripts"
+cat >"$tmp/recv/justfile" <<'JUSTFILE'
+# Wrap a script that declares its parsers before populating them.
+run *ARGS:
+    @python3 scripts/recv.py {{ARGS}}
+JUSTFILE
+cat >"$tmp/recv/scripts/recv.py" <<'PYEOF'
+"""Declares subcommands first, then adds their flags."""
+import argparse
+
+LAST_DESC = "declared after run's flags exist"
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    sub = ap.add_subparsers()
+    p_run = sub.add_parser("run", help="the first one")
+    sub.add_parser("status", help="flagless, declared in between")
+    p_last = sub.add_parser("last", help=LAST_DESC)
+    p_run.add_argument("--x", help="belongs to run")
+    p_last.add_argument("--y", help="belongs to last")
+    try:
+        import fancy
+    except ImportError:
+        ap.add_argument("--fallback", help="only without fancy")
+    return ap.parse_args()
+PYEOF
+recv_out="$(cd "$tmp/recv" && python3 "$helper" run 2>&1)"
+# awk, not `sed -n '/a/,/b/p'` — a sed range INCLUDES its terminator, so the
+# status block ran on into `last` and picked up its --y. The assertion failed
+# on correct output, which is the wrong way round for a test.
+block() { printf '%s' "$recv_out" | awk -v s="SUBCOMMAND  $1" '
+  index($0, s) == 1 { f = 1; next } /^SUBCOMMAND/ { f = 0 } /^FLAGS/ { f = 0 } f'; }
+assert "K: --x is filed under run, not under the last-declared parser" \
+  "$(contains "$(block run)" "\-\-x")"
+assert "K: --y is filed under last" "$(contains "$(block last)" "\-\-y")"
+assert "K: the flagless subcommand in between accepts nothing" \
+  "$(printf '%s' "$(block status)" | grep -q -- '--' && echo false || echo true)"
+assert "K: and says so rather than printing an empty section" \
+  "$(contains "$(block status)" "no flags of its own")"
+assert "K: an add_argument inside an except handler is seen at all" \
+  "$(contains "$recv_out" "\-\-fallback")"
+# A subcommand help bound to a NAME. add_argument's help resolves through the
+# constants map; add_parser's did not, so the subcommand printed as a bare name.
+assert "K: a subcommand help bound to a name resolves through the constants" \
+  "$(contains "$recv_out" "declared after run's flags exist")"
+
 # ------------------------- I: a flagless subcommand is still listed by name
 wrapped_out="$(cd "$tmp/good" && python3 "$helper" wrapped 2>&1)"
 assert "I: a subcommand WITH flags is listed" \

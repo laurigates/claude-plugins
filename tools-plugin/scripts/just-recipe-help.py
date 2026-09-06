@@ -372,6 +372,12 @@ def scan_arguments(path):
     unresolved = 0
     # The sub-parser most recently assigned; None means the main parser. A
     # one-element list so the nested visit() can rebind it without `nonlocal`.
+    # Which parser each VARIABLE refers to: name -> subcommand, or None for
+    # the main parser. Dispatching on the receiver rather than on source
+    # order is what makes an add_argument land on the parser it was
+    # actually called on. `current` survives only as the fallback for a
+    # receiver nothing assigned in this scan.
+    parsers: dict = {}
     current: list = [None]
 
     def group(name):
@@ -387,8 +393,11 @@ def scan_arguments(path):
             # which is the same disappearance the flagless-subcommand handling
             # exists to prevent.
             call = None
+            bound = None
             if isinstance(st, ast.Assign) and isinstance(st.value, ast.Call):
                 call = st.value
+                if len(st.targets) == 1 and isinstance(st.targets[0], ast.Name):
+                    bound = st.targets[0].id
             elif isinstance(st, ast.Expr) and isinstance(st.value, ast.Call):
                 call = st.value
             if call is not None:
@@ -399,8 +408,18 @@ def scan_arguments(path):
                     and call.args
                     and isinstance(call.args[0], ast.Constant)
                 ):
-                    current[0] = call.args[0].value
-                    g = group(current[0])
+                    sub_name = call.args[0].value
+                    g = group(sub_name)
+                    if bound is not None:
+                        parsers[bound] = sub_name
+                        # Only a BOUND declaration moves the fallback
+                        # cursor, so a flagless add_parser written between
+                        # a parser and its flags cannot steal them. No
+                        # mutation row pins this line: receiver dispatch
+                        # below already answers correctly for every
+                        # receiver the scan can see, so removing it
+                        # changes nothing observable.
+                        current[0] = sub_name
                     for k in call.keywords:
                         # Same treatment as add_argument's help= below.
                         # Requiring a Constant here left the class closed on one
@@ -409,10 +428,18 @@ def scan_arguments(path):
                         # subcommand's one line is the only thing describing it.
                         if k.arg == "help":
                             shown = _help_display(k.value)
+                            if shown is None and isinstance(k.value, ast.Name):
+                                # The same constants map add_argument's
+                                # help gets, so a bare name resolves here
+                                # too rather than leaving the subcommand
+                                # with no line at all.
+                                shown = constants.get(k.value.id)
                             if shown is not None:
                                 g["help"] = shown
                     continue
                 if fname == "ArgumentParser":
+                    if bound is not None:
+                        parsers[bound] = None
                     current[0] = None
                     continue
 
@@ -441,12 +468,25 @@ def scan_arguments(path):
                                 kw["help"], lit["help"] = shown, True
                                 continue
                         kw[k.arg], lit[k.arg] = _keyword(k.value)
-                group(current[0])["args"].append((flags, kw, lit))
+                # Dispatch on the RECEIVER (`p.add_argument` -> whatever `p`
+                # was last assigned), falling back to the source-order
+                # cursor only for a receiver this scan never saw assigned.
+                recv = call.func.value
+                owner = (
+                    parsers.get(recv.id, current[0])
+                    if isinstance(recv, ast.Name)
+                    else current[0]
+                )
+                group(owner)["args"].append((flags, kw, lit))
                 continue
 
             # Recurse into compound statements so an add_argument inside a
             # function, an `if`, or a loop is still seen, in source order.
-            for field in ("body", "orelse", "finalbody"):
+            # `handlers` matters: an add_argument under `except ...:` was
+            # neither reported nor counted, so it vanished. Position
+            # matters too -- a Try is written body / handlers / orelse /
+            # finalbody, and this scan promises source order.
+            for field in ("body", "handlers", "orelse", "finalbody"):
                 inner = getattr(st, field, None)
                 if isinstance(inner, list):
                     visit(inner)
