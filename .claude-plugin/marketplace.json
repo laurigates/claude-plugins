@@ -675,7 +675,7 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.11.0",
+      "version": "2.11.1",
       "keywords": [
         "tools",
         "utilities",
