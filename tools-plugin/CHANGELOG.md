@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.1](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.11.0...tools-plugin-v2.11.1) (2026-09-06)
+
+
+### Bug Fixes
+
+* **tools-plugin:** resolve or name a non-literal `help=` instead of dropping it ([#2620](https://github.com/laurigates/claude-plugins/issues/2620)) ([d6d2607](https://github.com/laurigates/claude-plugins/commit/d6d2607281da794e5fae91e0d9ea18ca30aa507c))
+
 ## [2.11.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.10.1...tools-plugin-v2.11.0) (2026-09-06)
 
 
