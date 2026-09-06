@@ -347,6 +347,28 @@ assert "I: and its f-string help is rendered, same as a flag's" \
 assert "I: the {{SCRIPTS}} interpolation resolved to a real path" \
   "$(contains "$wrapped_out" "worker count")"
 
+# --- L: show_script reads a .py's docstring and does not parse a .sh as one
+# TWO-SIDED on purpose. Asserting only the .sh arm proves nothing is
+# OVER-parsed and never that anything is parsed: dropping the suffix check
+# silently removes the module docstring from every Python script — the headline
+# half of what this command prints — while the .sh assertions still hold.
+cp "$tmp/good/scripts/tool.py" "$tmp/good/scripts/doc_example.py"
+cat >"$tmp/good/scripts/plain.sh" <<'SHEOF'
+#!/usr/bin/env bash
+set -euo pipefail
+echo hi
+SHEOF
+sh_out="$(cd "$tmp/good" && python3 "$helper" plain.sh 2>&1)"
+py_out="$(cd "$tmp/good" && python3 "$helper" doc_example.py 2>&1)"
+assert "L: a shell script is not reported as broken Python" \
+  "$(printf '%s' "$sh_out" | grep -q 'does not parse' && echo false || echo true)"
+assert "L: and says what it actually is" \
+  "$(contains "$sh_out" "is a shell script, not argparse")"
+assert "L: a Python script still gets its NOTES section" \
+  "$(contains "$py_out" "NOTES")"
+assert "L: with the module docstring in it" \
+  "$(contains "$py_out" "A tool with subcommands")"
+
 # ---------------------------------------------------------------- summary
 echo "PASSED=$pass_count FAILED=$fail_count"
 [ "$fail_count" -eq 0 ] || exit 1
