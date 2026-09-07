@@ -21,6 +21,40 @@ Session feedback analysis — capture per-session skill bugs as GitHub issues, a
 | `check-open-pr.sh` | `PreToolUse: Bash` | Enabled |
 | `skill-usage-log.sh` | `PreToolUse: Skill\|SlashCommand` + `UserPromptSubmit` | **Opt-in** |
 
+### Open-PR force-push guard
+
+Fires only on an **unconditional** force push — `--force`, a short bundle
+containing `f` (`-f`, `-fu`), or a leading `+` on a refspec — to a branch that
+has an open PR. Everything else passes silently:
+
+| Command shape | Outcome |
+|---|---|
+| `git push origin feature/x` (fast-forward) | silent — adding commits is what a PR is for |
+| `git push --force-with-lease …` / `--force-if-includes …` | silent — the lease *is* the check |
+| `git push --force …`, no open PR on the target branch | silent |
+| `git push --force …`, open PR, `[force-push-ok]` in the last commit message | silent |
+| `git push --force …`, open PR | **`deny`** → the model is told to re-run with `--force-with-lease` |
+
+Two deliberate choices:
+
+**`deny`, not `ask`.** `permissionDecision: "ask"` renders a confirmation prompt
+for the *human*; the model never sees `permissionDecisionReason`, and a "No"
+reaches the agent as a bare permission denial that ends its turn — in a workflow
+subagent that means a stalled run needing a manual nudge. `deny` returns the
+reason to the model as tool feedback, so it reads the remedy and retries itself.
+The remedy here is one flag, so the decision belongs to the agent.
+
+**`--force-with-lease` is exempt.** The lease performs exactly the check the old
+version asked a human to perform: git refuses the push if the remote ref moved
+since the last fetch, so it cannot silently discard a reviewer suggestion, a CI
+auto-fix, or a coworker agent's commit. Gating it added a prompt and no safety.
+
+The `[force-push-ok]` escape hatch is keyed on the commit message rather than
+the command, so the model cannot self-serve it
+(`.claude/rules/handling-blocked-hooks.md`).
+
+Regression suite: `feedback-plugin/hooks/test-check-open-pr.sh`.
+
 ### Skill-usage log (opt-in)
 
 ```bash
@@ -108,7 +142,7 @@ architecture.
 
 | Hook | Event | Purpose |
 |------|-------|---------|
-| `check-open-pr.sh` | `PreToolUse` (Bash) | Prompt before `git push` to a branch that already has an open PR. Include `[force-push-ok]` in the last commit message to bypass. |
+| `check-open-pr.sh` | `PreToolUse` (Bash) | Deny an *unconditional* force push (`--force` / `-f` / `+refspec`) to a branch with an open PR, steering the model to `--force-with-lease`. Include `[force-push-ok]` in the last commit message to bypass. |
 
 ## Usage
 

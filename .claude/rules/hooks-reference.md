@@ -1,6 +1,6 @@
 ---
 created: 2026-02-26
-modified: 2026-09-02
+modified: 2026-09-07
 reviewed: 2026-09-02
 paths:
   - ".claude/hooks/**"
@@ -377,6 +377,30 @@ PreToolUse hooks wrap their JSON response in a `hookSpecificOutput` envelope:
   }
 }
 ```
+
+#### Who reads `permissionDecisionReason`
+
+The three decisions differ in **audience**, which decides whether the agent can
+recover on its own:
+
+| Decision | Tool runs? | Reason is read by | Agent can self-correct? |
+|---|---|---|---|
+| `allow` | yes, no prompt | nobody | n/a |
+| `deny` | no | **the model** — returned as tool feedback | yes: it reads the remedy and retries |
+| `ask` | pending the user's answer | **the human** — it is prompt text | no: the model never sees the string |
+
+There is no agent-facing variant of `ask`. A "No" reaches the agent as a bare
+permission denial with no explanation, which it correctly reads as a stop signal
+— so an `ask` inside a workflow subagent stalls the run until a human re-prompts
+it. Write the reason for whichever audience the decision actually reaches: a
+question for `ask`, an instruction naming the alternative for `deny`.
+
+Reserve `ask` for a decision that genuinely needs a human — an irreversible
+mutation with no mechanical remedy. When the remedy *is* mechanical (a safer
+flag, a different command), `deny` hands the decision to the agent and costs no
+interruption. See `.claude/rules/hook-block-vs-nudge.md` for whether to gate at
+all, and `feedback-plugin/hooks/check-open-pr.sh` for a worked example of the
+`ask` → `deny` reclassification.
 
 > **Security Note (2.1.72)**: Prior to 2.1.72, returning `"allow"` from a PreToolUse hook could bypass `deny` rules (including enterprise managed settings). This is now fixed — `deny` rules always take precedence.
 
