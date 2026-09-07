@@ -311,6 +311,14 @@ rm -rf "$fx"
 # "No matching deferred tools found" result proves the prefix was wrong.
 # ---------------------------------------------------------------------------
 skill="$repo_root/agent-patterns-plugin/skills/multi-model-delegation/SKILL.md"
+# The skill may carry its detail in a REFERENCE.md sidecar rather than inline —
+# #2601 moved the two ToolSearch-miss sections there and left a pointer behind.
+# Assertions about that detail search both files; assertions about the skill's
+# own framing stay on SKILL.md. -H per `.claude/rules/shell-scripting.md`: GNU
+# grep drops the filename prefix on a single-file argument, which is exactly the
+# shape here when the sidecar is absent.
+skill_docs=("$skill")
+[ -f "${skill%/SKILL.md}/REFERENCE.md" ] && skill_docs+=("${skill%/SKILL.md}/REFERENCE.md")
 if [ -f "$skill" ]; then
   if grep -q 'registered under' "$skill"; then
     ok "multi-model-delegation documents the prefix as derived from the registration"
@@ -332,13 +340,13 @@ if [ -f "$skill" ]; then
       "expected the ~/.claude.json user-scope path to be named"
   fi
   # Problem 4: the issue's own evidence is that the CORRECT prefix also missed.
-  if grep -q 'has two causes' "$skill"; then
+  if grep -qH 'has two causes' "${skill_docs[@]}"; then
     ok "multi-model-delegation splits the two causes of a ToolSearch miss"
   else
     bad "multi-model-delegation splits the two causes of a ToolSearch miss" \
       "expected the correct-prefix-also-misses case to be documented"
   fi
-  if grep -q 'stdin open until the response arrives' "$skill"; then
+  if grep -qH 'stdin open until the response arrives' "${skill_docs[@]}"; then
     ok "multi-model-delegation records the reporter's stdio workaround caveat"
   else
     bad "multi-model-delegation records the reporter's stdio workaround caveat" \
