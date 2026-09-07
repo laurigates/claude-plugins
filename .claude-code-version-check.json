@@ -1,13 +1,19 @@
 {
-  "lastCheckedVersion": "2.1.185",
-  "lastCheckedDate": "2026-06-22",
+  "lastCheckedVersion": "2.1.215",
+  "lastCheckedDate": "2026-09-07",
   "rewindNote": "Rewound from 2.1.257 to 2.1.185 on 2026-09-03. The excerpt is sliced from lastCheckedVersion forward, so the pointer must name the last version a review actually covered. 2.1.257 was written by the Fable 5.1 adaptation sweep (docs/audits/fable-5.1-adaptation-2026-09-02.md), whose declared window was 2.1.232-2.1.257 -- it advanced the pointer past 46 versions it never read. The automated changelog review had already gone silent after 2.1.185: 22 successful runs, 13 consecutive filing nothing, last tracking issue #1733 (2026-06-21). Confirmed casualty of the resulting blind spot: the subagent nesting ceiling in .claude/rules/agent-development.md still instructed 5 levels after 2.1.217 disabled nesting by default and 2.1.219 set it to 3.",
   "knownUnreviewedRanges": [
     {
-      "range": "2.1.186-2.1.231",
-      "versions": 46,
+      "range": "2.1.186-2.1.215",
+      "versions": 30,
       "cause": "pointer advanced by hand to 2.1.257 while the automation was silent",
-      "status": "recovered by this rewind - the next review starts at 2.1.186"
+      "status": "RECOVERED 2026-09-07 - reviewed in the windowed catch-up run, tracking issue #2623"
+    },
+    {
+      "range": "2.1.216-2.1.263",
+      "versions": 48,
+      "cause": "remainder of the rewind backlog; the 2026-09-07 run was windowed and deliberately ratcheted only to 2.1.215",
+      "status": "NOT recovered - the next scheduled run starts at 2.1.216. Note the 2.1.257 entry below was written by the Fable 5.1 adaptation sweep and covers 2.1.232-2.1.257 from a docs-adaptation angle only; it is not a substitute for a changelog review of this range."
     },
     {
       "range": "2.1.77-2.1.137",
@@ -18,6 +24,49 @@
   ],
   "changelogUrl": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
   "reviewedChanges": [
+    {
+      "version": "2.1.215",
+      "date": "2026-09-07",
+      "windowed": true,
+      "coveredRange": "2.1.186-2.1.215",
+      "relevantChanges": [
+        "HIGH/DEPRECATION: Task/Agent tool `mode` parameter deprecated and now ignored; subagents inherit the parent session's permission mode (2.1.212)",
+        "HIGH/BREAKING: single-segment `dir/**` allow rules like Edit(src/**) no longer auto-approve nested `dir/` anywhere in the tree - they match only <cwd>/dir. Hook `if:` conditions changed the same way; write `**/dir/**` for any-depth. `deny`/`ask` permission rules KEEP their any-depth match, so the two surfaces now differ (2.1.214)",
+        "HIGH/DEPRECATION: Write(path), NotebookEdit(path) and Glob(path) permission rules now emit a startup warning - use Edit(path) or Read(path) (2.1.210)",
+        "HIGH/BREAKING: plugin hooks/monitors/headersHelper reject `${user_config.*}` in shell-form commands (shell-injection fix); use exec form (`args` array) or $CLAUDE_PLUGIN_OPTION_<KEY> (2.1.207)",
+        "HIGH: plugin option values (pluginConfigs) no longer read from project-level .claude/settings.json; only user, --settings and managed settings (2.1.207)",
+        "HIGH: autoMode no longer read from repo-resident .claude/settings.local.json; use ~/.claude/settings.json (2.1.207)",
+        "HIGH: hook matchers with hyphenated identifiers (code-reviewer, mcp__brave-search) now exact-match instead of substring-matching; use mcp__brave-search__.* (2.1.195)",
+        "HIGH/REMOVAL: the /agents wizard was removed; edit .claude/agents/ directly (2.1.198)",
+        "HIGH: subagents now run in the background by default (2.1.198); per-session subagent spawn cap default 200 via CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION, and a WebSearch cap via CLAUDE_CODE_MAX_WEB_SEARCHES_PER_SESSION (2.1.212)",
+        "HIGH: the \"default\" permission mode was renamed \"Manual\" across CLI/--help/VS Code/JetBrains; --permission-mode manual and \"defaultMode\": \"manual\" accepted alongside default (2.1.200)",
+        "HIGH: OTel `claude_code.assistant_response` logs response text and, when OTEL_LOG_ASSISTANT_RESPONSES is unset, follows OTEL_LOG_USER_PROMPTS - deployments already logging prompts start receiving response content on upgrade (2.1.193)",
+        "Claude no longer auto-invokes the /verify and /code-review skills; they must be typed (2.1.215)",
+        "SessionStart hooks report source \"fork\" when a session begins as a fork instead of \"resume\" (2.1.214)",
+        "Hook exit code 2 now blocks as documented even when the hook's stdout JSON fails schema validation (2.1.214); SessionStart/Setup/SubagentStart no longer hide stderr on exit 2 (2.1.199); comma-separated matchers (\"Bash,PowerShell\") silently never fired - fixed (2.1.191)",
+        "A PreToolUse hook's `ask` decision now floors auto mode at a prompt (2.1.211); a `continue:false` halt is no longer dropped mid-stream (2.1.212); hook callback timeouts no longer misreported as user rejections (2.1.210)",
+        "Notification hook fires for background agents with sources agent_needs_input / agent_completed (2.1.198)",
+        "Bash permission-check hardening: fail-closed FD redirects, >10,000-char commands always prompt, zsh subscripts in [[ ]] prompt, some help/man forms no longer auto-approved, PowerShell 5.1 bypass fixed; docker daemon-redirect flags and `file -m/-f` now prompt (2.1.214)",
+        "Auto mode available without CLAUDE_CODE_ENABLE_AUTO_MODE on Bedrock/Vertex/Foundry (disable via disableAutoMode) (2.1.207); autoMode.classifyAllShell routes all shell through the classifier (2.1.193); classifier defaults to Sonnet 5 for external sessions (2.1.210)",
+        "Plan mode no longer auto-runs file-modifying Bash without a prompt or SDK canUseTool callback (2.1.212)",
+        "\"Always allow\" rules now save at the repository root so worktree approvals persist (2.1.211)",
+        "Agent(type) deny rules and Agent(x,y) allowed-types restrictions were not enforced for named subagent spawns - fixed (2.1.186)",
+        "isolation: 'worktree' subagents could run git-mutating/shell commands against the parent checkout - fixed (2.1.210, 2.1.203); EnterWorktree confirms outside .claude/worktrees/ (2.1.206)",
+        "Subagent depth: resumed subagents restore original spawn depth and forked subagents count toward the cap (2.1.187) - the 5-level claim in agent-development.md needs re-checking",
+        "Explore agent inherits the session model capped at opus instead of haiku; subagents and compaction inherit extended-thinking config (2.1.198)",
+        "/fork now copies the conversation into a background session; the in-session subagent is now /subtask (2.1.212)",
+        "Stacked slash-skill invocations load all leading skills up to 5 (2.1.199); skill frontmatter accepts kebab/snake/camelCase for display-name, default-enabled, fallback, metadata.* (2.1.186); unmatched $1/$2 preserved verbatim (2.1.210)",
+        "sandbox.credentials setting blocks sandboxed commands from reading credential files and secret env vars (2.1.187); CLAUDE_CODE_PROCESS_WRAPPER routes self-spawns through a corporate wrapper (2.1.208)",
+        "MCP: claude mcp login/logout (2.1.186); >2min tool calls auto-background via CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS (2.1.212); CLAUDE_CODE_MCP_TOOL_IDLE_TIMEOUT (2.1.187); working dirs in roots/list (2.1.203); mcp list/get no longer spawn self-approved .mcp.json servers (2.1.196)",
+        "Workflows: \"Dynamic workflow size\" /config setting (advisory, not a cap) and workflow.run_id / workflow.name OTel attributes (2.1.202); ultracode keyword opt-in no longer fires on webhook payloads or relayed PR comments (2.1.210)",
+        "CLAUDE_CODE_MAX_RETRIES capped at 15 - use CLAUDE_CODE_RETRY_WATCHDOG for unattended sessions (2.1.186, 2.1.199)"
+      ],
+      "actionsRequired": [
+        "See issue #2623 for the rule update plan (no rule files were edited by this triage run)",
+        "Issue #2623 groups the bullets by candidate file: hooks-reference.md, agentic-permissions.md, agent-development.md, skill-development.md, plugin-structure.md, sandbox-guidance.md, prompt-agent-hooks.md, CLAUDE.md / workflow-model-effort.md, plus MCP-facing and instrumentation skills",
+        "Labels changelog-review/maintenance and the laurigates assignee could not be applied to #2623 by this run (token lacked replaceActorsForAssignable and label edits were not permitted) - set them by hand"
+      ]
+    },
     {
       "version": "2.1.257",
       "date": "2026-09-02",
