@@ -311,6 +311,25 @@ rm -rf "$fx"
 # "No matching deferred tools found" result proves the prefix was wrong.
 # ---------------------------------------------------------------------------
 skill="$repo_root/agent-patterns-plugin/skills/multi-model-delegation/SKILL.md"
+skill_ref="$repo_root/agent-patterns-plugin/skills/multi-model-delegation/REFERENCE.md"
+
+# Two assertions below search SKILL.md *and* REFERENCE.md. #2601 moved the
+# ToolSearch-miss cause table and the stdio caveat into REFERENCE.md, leaving a
+# pointer behind ("that message has a second cause"), but the assertions kept
+# looking only at SKILL.md — so CASE 9 had been red on main ever since, and a
+# permanently-red case teaches the suite to be ignored.
+#
+# What CASE 9 is for is that the GUIDANCE exists somewhere a reader following
+# the skill will reach; REFERENCE.md is part of the skill, and which of the two
+# files carries a given detail is an editorial call this test should not pin.
+# The three entry-point assertions above stay SKILL.md-only on purpose: the
+# prefix derivation, `claude mcp list`, and the user-scope path must be on the
+# page the reader lands on, not one hop away.
+in_skill_docs() {
+  grep -q "$1" "$skill" && return 0
+  [ -f "$skill_ref" ] && grep -q "$1" "$skill_ref"
+}
+
 if [ -f "$skill" ]; then
   if grep -q 'registered under' "$skill"; then
     ok "multi-model-delegation documents the prefix as derived from the registration"
@@ -332,13 +351,13 @@ if [ -f "$skill" ]; then
       "expected the ~/.claude.json user-scope path to be named"
   fi
   # Problem 4: the issue's own evidence is that the CORRECT prefix also missed.
-  if grep -q 'has two causes' "$skill"; then
+  if in_skill_docs 'has two causes'; then
     ok "multi-model-delegation splits the two causes of a ToolSearch miss"
   else
     bad "multi-model-delegation splits the two causes of a ToolSearch miss" \
       "expected the correct-prefix-also-misses case to be documented"
   fi
-  if grep -q 'stdin open until the response arrives' "$skill"; then
+  if in_skill_docs 'stdin open until the response arrives'; then
     ok "multi-model-delegation records the reporter's stdio workaround caveat"
   else
     bad "multi-model-delegation records the reporter's stdio workaround caveat" \
