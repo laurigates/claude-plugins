@@ -16,6 +16,13 @@ on:
       - 'scripts/audit-skill-descriptions.py'
       - 'scripts/lint-taskwarrior-tags.sh'
       - 'scripts/lint-package-references.sh'
+      # Ground-truth sources for check-skill-references.sh, not just its
+      # citation sites: a skill rename breaks live citations without editing
+      # any citing file, so agents/ and .claude/rules/ must trigger the job.
+      - '**/agents/*.md'
+      - '.claude/rules/*.md'
+      - 'scripts/check-skill-references.sh'
+      - 'scripts/tests/test-check-skill-references.sh'
       - '.github/workflows/lint-context-commands.yml'
   push:
     branches:
@@ -74,3 +81,9 @@ jobs:
 
       - name: Lint skill files for nonexistent package references (npm/PyPI/crates/etc.)
         run: ./scripts/lint-package-references.sh
+
+      - name: Skill-reference resolver self-test
+        run: ./scripts/tests/test-check-skill-references.sh
+
+      - name: Resolve every plugin:skill / plugin:agent citation against disk
+        run: ./scripts/check-skill-references.sh

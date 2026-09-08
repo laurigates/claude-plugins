@@ -159,7 +159,7 @@ from the authoritative PR description.
 
 - `configure-plugin:config-sync` — mechanical propagation that this rule gates
 - `agent-patterns-plugin:parallel-agent-dispatch` — Return Contract's "Orchestrator action needed" field carries cross-repo diffs
-- `agent-patterns-plugin:agent-coworker-detection` — concurrent-writer detection in shared checkouts
+- `git-plugin:git-coworker-check` — concurrent-writer detection in shared checkouts
 - `.claude/rules/docs-currency.md` — same-commit discipline (applies to each repo individually)
 
 > Evidence: multi-repo sessions where downstream propagation was auto-committed

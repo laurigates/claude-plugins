@@ -364,6 +364,23 @@ repos:
         language: system
         files: '^(scripts/(lint-mcp-tool-references\.sh|tests/test-lint-mcp-tool-references\.sh)|agent-patterns-plugin/skills/multi-model-delegation/SKILL\.md)$'
         pass_filenames: false
+      - id: check-skill-references
+        name: every plugin:skill / plugin:agent citation resolves to an artifact on disk
+        entry: ./scripts/check-skill-references.sh
+        language: script
+        # Must cover every path the walk reads (see the script's COVERAGE
+        # header) plus the ground-truth sources, because a RENAME changes what
+        # resolves without touching any citing file: a trigger listing only
+        # citation sites would stay silent on exactly the commit that breaks
+        # them. `agents/` and `.claude/rules/` are here for that reason.
+        files: '(SKILL\.md|skill\.md|REFERENCE\.md|\.workflow\.js|^[a-z-]+-plugin/agents/.*\.md|^\.claude/rules/.*\.md|^scripts/check-skill-references\.sh)$'
+        pass_filenames: false
+      - id: test-check-skill-references
+        name: skill-reference resolver detects, stays narrow, and fails loudly on an empty tree
+        entry: bash ./scripts/tests/test-check-skill-references.sh
+        language: system
+        files: '^scripts/(check-skill-references\.sh|tests/test-check-skill-references\.sh)$'
+        pass_filenames: false
       - id: lint-package-references
         name: lint skill files for references to nonexistent packages (npm/PyPI/crates/etc.)
         entry: ./scripts/lint-package-references.sh

@@ -19,7 +19,7 @@ it at scale and the haiku-vs-opus delta that calibrates the sweep.
 Companion to `skill-development.md` (the `$ARGUMENTS` / `$N` substitution
 table), `skill-execution-structure.md` (the `## Parameters` section), and
 `skill-quality.md` (description length). The canonical fixes that motivated this
-rule are `git-plugin:git-issue` (issue URLs/`#N`) and `project-plugin:refocus`
+rule are `git-plugin:git-issue` (issue URLs/`#N`) and `project-plugin:project-refocus`
 (optional focus directive).
 
 ## The 9-axis rubric
