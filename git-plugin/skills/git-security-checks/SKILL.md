@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-09-08
 reviewed: 2026-04-25
 name: git-security-checks
 description: "Pre-commit security validation and secret detection via gitleaks. Use when scanning for secrets, setting up gitleaks, or configuring .gitleaks.toml pre-commit security."
@@ -202,6 +202,48 @@ pre-commit run --all-files --show-diff-on-failure
 # Install hooks to run automatically on commit
 pre-commit install
 ```
+
+### `--files` does not scope the gitleaks hook — stage first
+
+`pre-commit run gitleaks --files <path>` looks like a scoped scan and is not
+one. Upstream declares the hook `pass_filenames: false`, so the paths never
+reach it, and its entry scans `--staged`:
+
+```yaml
+# gitleaks/.pre-commit-hooks.yaml, v8.30.0
+- id: gitleaks
+  entry: gitleaks git --pre-commit --redact --staged --verbose
+  pass_filenames: false
+```
+
+In a clean worktree nothing is staged, so the command scans **zero bytes** and
+prints `Passed`. Measured on one file containing a real JWT, same command both
+times:
+
+| State of the file | Result |
+|---|---|
+| worktree only (`??`) | `Detect hardcoded secrets … Passed` — `0 commits scanned` |
+| `git add`-ed | `RuleID: jwt … leaks found: 1` |
+
+The failure direction is what makes this worth knowing: a `--files` invocation
+quoted as proof of a clean scan is a **false all-clear**, and it looks exactly
+like a real one. Always:
+
+```bash
+git add <paths>
+pre-commit run gitleaks
+```
+
+Two habits that generalise past gitleaks:
+
+- **Before trusting a hook's green, read its `pass_filenames` in the upstream
+  `.pre-commit-hooks.yaml` at the pinned `rev`.** A hook that ignores filenames
+  ignores your scoping flag too.
+- **Control-test the hook.** Put a known-bad value in a scratch file, stage it,
+  and confirm the hook goes red before believing that it went green. Choose the
+  bad value carefully — gitleaks does not flag AWS's own documented example key
+  (`wJalrXUtnFEMI…EXAMPLEKEY`), so a probe built from one passes and proves
+  nothing. A JWT or another high-entropy token works.
 
 ## Common Secret Patterns
 
