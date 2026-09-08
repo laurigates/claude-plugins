@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.35.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.34.6...configure-plugin-v1.35.0) (2026-09-08)
+
+
+### Features
+
+* **scripts:** resolve every plugin:skill citation against disk ([#2627](https://github.com/laurigates/claude-plugins/issues/2627)) ([3d2747f](https://github.com/laurigates/claude-plugins/commit/3d2747f563c2465d20dd62e2cd92a44d3e6c253a))
+
 ## [1.34.6](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.34.5...configure-plugin-v1.34.6) (2026-09-06)
 
 
