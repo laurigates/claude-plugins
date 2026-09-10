@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.11.7](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.11.6...hooks-plugin-v2.11.7) (2026-09-10)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** inspect all reader matches for secret protection ([#2611](https://github.com/laurigates/claude-plugins/issues/2611)) ([#2638](https://github.com/laurigates/claude-plugins/issues/2638)) ([f74ce08](https://github.com/laurigates/claude-plugins/commit/f74ce08cebc7aad0ca19791fcfcbfa3053f320c0))
+* **hooks-plugin:** use non-destructive stash create in auto-checkpoint ([#2610](https://github.com/laurigates/claude-plugins/issues/2610)) ([#2641](https://github.com/laurigates/claude-plugins/issues/2641)) ([834c2ad](https://github.com/laurigates/claude-plugins/commit/834c2adf59c87f56a7979c742863dfbf3403a683))
+
 ## [2.11.6](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.11.5...hooks-plugin-v2.11.6) (2026-09-05)
 
 

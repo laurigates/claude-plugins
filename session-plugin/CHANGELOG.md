@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.5](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.10.4...session-plugin-v1.10.5) (2026-09-10)
+
+
+### Bug Fixes
+
+* **session-plugin:** resolve pack worktree to pack scope and correct comments ([#2602](https://github.com/laurigates/claude-plugins/issues/2602), [#2604](https://github.com/laurigates/claude-plugins/issues/2604)) ([#2640](https://github.com/laurigates/claude-plugins/issues/2640)) ([c881671](https://github.com/laurigates/claude-plugins/commit/c881671433d6b63010798abd0244baab2b06836f))
+
 ## [1.10.4](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.10.3...session-plugin-v1.10.4) (2026-09-05)
 
 
