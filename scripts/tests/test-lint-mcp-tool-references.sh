@@ -311,7 +311,7 @@ rm -rf "$fx"
 # "No matching deferred tools found" result proves the prefix was wrong.
 # ---------------------------------------------------------------------------
 skill="$repo_root/agent-patterns-plugin/skills/multi-model-delegation/SKILL.md"
-skill_ref="$repo_root/agent-patterns-plugin/skills/multi-model-delegation/REFERENCE.md"
+skill_ref="${skill%/SKILL.md}/REFERENCE.md"
 
 # Two assertions below search SKILL.md *and* REFERENCE.md. #2601 moved the
 # ToolSearch-miss cause table and the stdio caveat into REFERENCE.md, leaving a
