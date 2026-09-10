@@ -138,10 +138,15 @@ export async function buildTurnSystemPrompt(
 ): Promise<{ systemPrompt: string; warnings: string[] }> {
   const { resolved: pins, warnings } = resolvePins(ctx.config.pins, ctx.index.entries);
   const filters = pins.length > 0 ? { excludeIds: pins.map((pin) => pin.id) } : undefined;
-  const ranked = await ctx.index.search(userPrompt, ctx.config.k, filters);
+  const ranked =
+    userPrompt.trim().length === 0 ? [] : await ctx.index.search(userPrompt, ctx.config.k, filters);
+  const stripped = stripAvailableSkillsBlock(systemPrompt);
+  if (pins.length + ranked.length === 0) {
+    return { systemPrompt: stripped, warnings };
+  }
   const block = renderInjectedBlock(pins, ranked, ctx.config.k);
   return {
-    systemPrompt: injectSkillsBlock(stripAvailableSkillsBlock(systemPrompt), block),
+    systemPrompt: injectSkillsBlock(stripped, block),
     warnings,
   };
 }

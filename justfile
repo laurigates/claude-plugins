@@ -200,7 +200,7 @@ pi-adapter-register:
     ext="{{justfile_directory()}}/adapters/pi/index.ts"
     settings="${PI_SETTINGS:-$HOME/.pi/agent/settings.json}"
     mkdir -p "$(dirname "$settings")"
-    [ -f "$settings" ] || echo '{}' > "$settings"
+    [ -s "$settings" ] || echo '{}' > "$settings"
     if jq -e --arg ext "$ext" '(.extensions // []) | index($ext) != null' "$settings" >/dev/null; then
         echo "already registered in $settings:"
         echo "  $ext"

@@ -359,6 +359,50 @@ describe("buildTurnSystemPrompt / handleBeforeAgentStart", () => {
     expect(event.systemPrompt).toBe(PROMPT_WITH_BLOCK); // input untouched
     expect(systemPromptOptions).toEqual({ cwd: "/work/dir" });
   });
+
+  test("empty or whitespace prompt does not query the index (#2632)", async () => {
+    const index = stubIndex();
+    await buildTurnSystemPrompt(PROMPT_WITH_BLOCK, "   ", { index, config });
+    expect(index.calls).toHaveLength(0);
+
+    await buildTurnSystemPrompt(PROMPT_WITH_BLOCK, "", { index, config });
+    expect(index.calls).toHaveLength(0);
+  });
+
+  test("no pins and empty/whitespace prompt injects nothing (#2632)", async () => {
+    const index = stubIndex();
+    const { systemPrompt } = await buildTurnSystemPrompt(PROMPT_WITH_BLOCK, "  \t\n ", {
+      index,
+      config: { ...config, pins: [] },
+    });
+    expect(index.calls).toHaveLength(0);
+    expect(systemPrompt).not.toContain(AVAILABLE_SKILLS_OPEN);
+    expect(systemPrompt).not.toContain(INJECTED_BLOCK_TRAILER);
+  });
+
+  test("no pins and no search matches injects nothing (#2632)", async () => {
+    const emptyIndex: SkillSearchIndex = {
+      entries: [],
+      search: async () => [],
+    };
+    const { systemPrompt } = await buildTurnSystemPrompt(PROMPT_WITH_BLOCK, "some prompt", {
+      index: emptyIndex,
+      config: { ...config, pins: [] },
+    });
+    expect(systemPrompt).not.toContain(AVAILABLE_SKILLS_OPEN);
+    expect(systemPrompt).not.toContain(INJECTED_BLOCK_TRAILER);
+  });
+
+  test("pins present with empty prompt injects pins only without querying index (#2632)", async () => {
+    const index = stubIndex();
+    const { systemPrompt } = await buildTurnSystemPrompt(PROMPT_WITH_BLOCK, "", {
+      index,
+      config,
+    });
+    expect(index.calls).toHaveLength(0);
+    expect(systemPrompt).toContain(AVAILABLE_SKILLS_OPEN);
+    expect(systemPrompt).toContain("c:two");
+  });
 });
 
 // --- session warning emission ---------------------------------------------

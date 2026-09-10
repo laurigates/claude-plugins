@@ -24,8 +24,8 @@ export const QUERY_PREFIX = "search_query: ";
  */
 export const PREFIX_SCHEME = `${DOCUMENT_PREFIX}/${QUERY_PREFIX}`;
 
-/** 3 s on the initial probe (embed one short string at build). */
-export const PROBE_TIMEOUT_MS = 3_000;
+/** 15 s on the initial probe (embed one short string at build; handles Ollama cold-load). */
+export const PROBE_TIMEOUT_MS = 15_000;
 /** 30 s on the batch call. */
 export const BATCH_TIMEOUT_MS = 30_000;
 
