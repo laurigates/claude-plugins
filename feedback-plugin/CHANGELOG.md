@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.1](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.12.0...feedback-plugin-v1.12.1) (2026-09-10)
+
+
+### Bug Fixes
+
+* **feedback-plugin:** deny bare force pushes instead of prompting on every push ([#2622](https://github.com/laurigates/claude-plugins/issues/2622)) ([197a135](https://github.com/laurigates/claude-plugins/commit/197a135d31d391c4fd0e744e993d106db93b478e))
+
 ## [1.12.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.11.1...feedback-plugin-v1.12.0) (2026-08-31)
 
 

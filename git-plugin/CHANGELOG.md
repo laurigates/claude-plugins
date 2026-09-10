@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.54.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.54.1...git-plugin-v2.54.2) (2026-09-10)
+
+
+### Documentation
+
+* **git-plugin:** gitleaks ignores --files, so an unstaged scan passes empty ([#2625](https://github.com/laurigates/claude-plugins/issues/2625)) ([32c9335](https://github.com/laurigates/claude-plugins/commit/32c9335e99551382e748867ad3827240d4a9f7e4))
+
 ## [2.54.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.54.0...git-plugin-v2.54.1) (2026-09-05)
 
 

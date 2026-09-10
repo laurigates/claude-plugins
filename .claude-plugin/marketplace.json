@@ -263,7 +263,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.12.0",
+      "version": "1.12.1",
       "keywords": [
         "feedback",
         "session-analysis",
@@ -310,7 +310,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.54.1",
+      "version": "2.54.2",
       "keywords": [
         "git",
         "github",
@@ -703,7 +703,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - parallel agents, CI pipelines, preflight checks, checkpoint refactoring",
-      "version": "1.10.1",
+      "version": "1.11.0",
       "keywords": [
         "workflow",
         "orchestration",
