@@ -17,6 +17,9 @@
 #     Binaries that used to match only because their name ends in a verb
 #     (`nvim`, `gcat`, `zless`, `bzcat`, `xzcat`, `mvim`) are listed explicitly
 #     and stay blocked.
+#   - All reader matches across a command are inspected: taking only `head -1`
+#     let a real secret read pass undetected if preceded by an exempted template
+#     in a chained command (`cat .env.example; cat .env`) (issue #2611).
 set -euo pipefail
 
 HOOK="$(cd "$(dirname "$0")" && pwd)/secret-protection.sh"
@@ -279,6 +282,29 @@ assert_matched_text() {
 assert_matched_text \
     "ls -la; less .env reports the match from the verb, not the separator" "less ${env_token}" \
     "ls -la; less ${env_token}"
+
+# ── all reader matches inspected: template exemption cannot mask secrets (#2611)
+# Taking only `head -1` let a real secret read pass undetected if preceded by
+# an exempted template in a chained command (`cat .env.example; cat .env`).
+# Every reader match across the command must be evaluated.
+echo ""
+echo "all reader matches inspected; template exemption does not mask secrets:"
+
+assert_exit \
+    "cat .env.example; cat .env is blocked" 2 \
+    "cat ${env_token}.example; cat ${env_token}"
+
+assert_exit \
+    "cat .env.example && cat .env is blocked" 2 \
+    "cat ${env_token}.example && cat ${env_token}"
+
+assert_exit \
+    "cat .env.sample; cat .env.local is blocked" 2 \
+    "cat ${env_token}.sample; cat ${env_token}.local"
+
+assert_exit \
+    "cat .env.example; echo done is allowed" 0 \
+    "cat ${env_token}.example; echo done"
 
 # ── block-message framing: operator-only, not a self-serve bypass ────────────
 # Regression: every block message used to end "Set
