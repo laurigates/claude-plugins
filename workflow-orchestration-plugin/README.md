@@ -14,6 +14,7 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of the preflight → checkpoint
 | workflow-parallel-issues | `/workflow:parallel-issues` | Process multiple GitHub issues in parallel with worktree isolation |
 | workflow-ci-fix-pipeline | `/workflow:ci-fix` | Autonomous CI failure diagnosis and fix across PRs |
 | workflow-checkpoint-refactor | `/workflow:checkpoint-refactor` | Multi-phase refactoring with persistent state across sessions |
+| workflow-interrupted-run-recovery | — | Recover a `Workflow` run killed mid-flight: salvage killed agents' worktrees, resume without duplicating PRs the completed agents opened |
 
 ## Usage
 
