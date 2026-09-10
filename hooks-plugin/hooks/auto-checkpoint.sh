@@ -32,11 +32,13 @@ has_changes() {
 create_checkpoint() {
   local reason="$1"
   if has_changes; then
-    TIMESTAMP=$(date '+%Y%m%d-%H%M%S' 2>/dev/null || date '+%s')
-    if git stash push -m "auto-checkpoint before ${reason} (${TIMESTAMP})" --include-untracked >/dev/null 2>&1; then
-      # Immediately pop the stash so changes are still present, but the checkpoint exists in reflog
-      git stash pop >/dev/null 2>&1
-      echo "Created checkpoint stash before ${reason}. Recover with: git stash list" >&2
+    local timestamp commit
+    timestamp=$(date '+%Y%m%d-%H%M%S' 2>/dev/null || date '+%s')
+    commit=$(git stash create --include-untracked 2>/dev/null || true)
+    if [ -n "$commit" ]; then
+      if git stash store -m "auto-checkpoint before ${reason} (${timestamp})" "$commit" 2>/dev/null; then
+        echo "Created checkpoint stash before ${reason}. Recover with: git stash list" >&2
+      fi
     fi
   fi
 }

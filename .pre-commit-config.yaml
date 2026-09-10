@@ -721,6 +721,12 @@ repos:
       # the two bash-antipatterns entries above. A repo-wide grep for a suite's filename
       # finds nothing (discovery is glob-based, not by name), which is why they read as
       # entirely unwired.
+      - id: test-auto-checkpoint
+        name: auto-checkpoint hook regression (#2610)
+        entry: bash ./hooks-plugin/hooks/test-auto-checkpoint.sh
+        language: system
+        files: '^hooks-plugin/hooks/(auto-checkpoint\.sh|test-auto-checkpoint\.sh)$'
+        pass_filenames: false
       - id: test-bash-antipatterns-teach
         name: bash-antipatterns teach-nudge hook regression
         entry: bash ./hooks-plugin/hooks/test-bash-antipatterns-teach.sh
