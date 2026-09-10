@@ -14,6 +14,7 @@ import {
   embedBatch,
   embedDocuments,
   embedQuery,
+  PROBE_TIMEOUT_MS,
   probeEndpoint,
 } from "../core/embeddings.ts";
 import { buildIndex } from "../core/search.ts";
@@ -151,6 +152,24 @@ describe("fallback matrix", () => {
     });
     expect(index.mode).toBe("bm25-only");
     expect(state.receivedInputs).toEqual([]);
+  });
+
+  test("PROBE_TIMEOUT_MS is 15_000 ms to accommodate cold Ollama model load (#2632)", () => {
+    expect(PROBE_TIMEOUT_MS).toBe(15_000);
+  });
+
+  test("invalid or missing repoRoot yields bm25-only empty index without throwing ENOENT (#2632)", async () => {
+    const index = await buildIndex({
+      repoRoot: join(fixtureRoot, "nonexistent-dir-for-test"),
+      embed: { endpoint, model: "mock-embed", dimensions: DIMS },
+      cacheDir,
+    });
+    expect(index.mode).toBe("bm25-only");
+    expect(index.entries).toEqual([]);
+    expect(index.warnings).toHaveLength(1);
+    expect(index.warnings[0]).toContain("scan failed");
+    const results = await index.search("anything", 3);
+    expect(results).toEqual([]);
   });
 });
 

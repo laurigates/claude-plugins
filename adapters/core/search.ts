@@ -190,8 +190,6 @@ export class SkillIndex {
  */
 export async function buildIndex(opts: IndexOptions): Promise<SkillIndex> {
   const target = opts.target ?? "foreign";
-  const { entries, warnings } = scanSkills(opts.repoRoot, target);
-
   const embedOpts: EmbedOptions = {
     endpoint: opts.embed?.endpoint ?? DEFAULT_ENDPOINT,
     model: opts.embed?.model ?? DEFAULT_MODEL,
@@ -199,15 +197,22 @@ export async function buildIndex(opts: IndexOptions): Promise<SkillIndex> {
   };
   const dims = opts.embed?.dimensions ?? DEFAULT_DIMENSIONS;
 
-  if (opts.embed?.disabled) {
-    return new SkillIndex(entries, warnings, "bm25-only", null, null, dims);
-  }
-
-  if (!(await probeEndpoint(embedOpts))) {
-    return new SkillIndex(entries, warnings, "bm25-only", null, null, dims);
-  }
+  let entries: SkillEntry[] = [];
+  let warnings: string[] = [];
 
   try {
+    const scanned = scanSkills(opts.repoRoot, target);
+    entries = scanned.entries;
+    warnings = scanned.warnings;
+
+    if (opts.embed?.disabled) {
+      return new SkillIndex(entries, warnings, "bm25-only", null, null, dims);
+    }
+
+    if (entries.length === 0 || !(await probeEndpoint(embedOpts))) {
+      return new SkillIndex(entries, warnings, "bm25-only", null, null, dims);
+    }
+
     const filePath = cacheFilePath(opts.repoRoot, opts.cacheDir);
     const cached = loadCache(filePath);
     const cacheValid = cached !== null && cached.model === embedOpts.model && cached.dims === dims;
@@ -253,8 +258,10 @@ export async function buildIndex(opts: IndexOptions): Promise<SkillIndex> {
 
     const matrix = toNormalizedMatrix(rows as number[][], dims);
     return new SkillIndex(entries, warnings, "hybrid", embedOpts, matrix, dims);
-  } catch {
-    // Batch-embed or cache failure after a successful probe: degrade.
-    return new SkillIndex(entries, warnings, "bm25-only", null, null, dims);
+  } catch (error) {
+    // Scan failure, batch-embed, or cache failure: degrade gracefully.
+    const message = error instanceof Error ? error.message : String(error);
+    const allWarnings = entries.length === 0 ? [`scan failed: ${message}`, ...warnings] : warnings;
+    return new SkillIndex(entries, allWarnings, "bm25-only", null, null, dims);
   }
 }
