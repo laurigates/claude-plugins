@@ -403,14 +403,17 @@ else
   # A draft of this fix omitted this guard on the reasoning that a git failing
   # here fails for the outer repo too, which is false: the failure is per-repo.
   # End the walk, leave the checkout where it is. Pinned by AP8e.
+  decl_target="$walk_start"
   while IFS= read -r outer_root; do
     [ -n "$own_common" ] || break
     [ -n "$outer_root" ] || continue
     outer_common=$(git_common_dir_of "$outer_root" 2>/dev/null) || outer_common=""
-    # Cannot ask, so do not move the answer. `--git-common-dir` predates git 2.5,
-    # and a repo git refuses to answer for — dubious ownership, an unreadable
-    # `.git` — fails it too. That failure is per-REPO, not per-binary: one git
-    # can answer for `outer` and `sub` and refuse for `mid`.
+    # Cannot ask, so do not move the answer. Git older than 2.5 lacks
+    # `--git-common-dir` (arrived in git 2.5, commit c7b3a3d2fe), so the probe
+    # fails; a git that refuses the probe for one repo while answering for
+    # others (reproduced with a stub) fails it too. That failure is per-REPO,
+    # not per-binary: one git can answer for `outer` and `sub` and refuse
+    # for `mid`.
     #
     # So END the walk rather than skip a rung. Without the discriminator this
     # rung cannot be classified — linked worktree or nested repo, unknown — and
@@ -432,7 +435,12 @@ else
     # every worktree-isolated agent report its main checkout's state. `continue`
     # rather than `break`: the main checkout is the SAME repo, so a container of
     # IT is still a container of this session's repo and is worth finding.
-    [ "$outer_common" != "$own_common" ] || continue
+    # Update the declaration target so any outer container is asked about the
+    # main checkout, not the worktree (#2602).
+    if [ "$outer_common" = "$own_common" ]; then
+      decl_target="$outer_root"
+      continue
+    fi
     # A declared containment (ignored or tracked) SETTLES it: the outer repo
     # asserts this checkout is a legitimate member of its layout, so the
     # checkout is the session's repo and there is nothing to resolve.
@@ -443,7 +451,7 @@ else
     # `mid` declared it, the walk continued, and `outer` (which declares
     # nothing) was resolved to, so the digest carried `outer`'s branch for a
     # session sitting two levels in. That is #2441's own failure aimed outward.
-    if outer_repo_declares "$outer_root" "$walk_start"; then
+    if outer_repo_declares "$outer_root" "$decl_target"; then
       git_outer_root=""
       break
     fi
@@ -459,7 +467,7 @@ else
     # wanted the workspace's state — but a session genuinely working IN the
     # nested fork is served the outer repo, so the rows stay a caveat.
     git_confidence="low"
-    git_nested_repo=$(sanitize_name "$walk_start")
+    git_nested_repo=$(sanitize_name "$decl_target")
     git_root=$(sanitize_name "$git_outer_root")
     git_state_dir="$git_outer_root"
   fi
