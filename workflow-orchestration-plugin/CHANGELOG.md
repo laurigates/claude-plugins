@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.10.1...workflow-orchestration-plugin-v1.11.0) (2026-09-10)
+
+
+### Features
+
+* **workflow-orchestration-plugin:** recover an interrupted Workflow run ([#2626](https://github.com/laurigates/claude-plugins/issues/2626)) ([df1857f](https://github.com/laurigates/claude-plugins/commit/df1857f08f8f3b314c8771db83a548f1cc6de995))
+
 ## [1.10.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.10.0...workflow-orchestration-plugin-v1.10.1) (2026-09-02)
 
 
