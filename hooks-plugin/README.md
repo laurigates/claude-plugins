@@ -244,6 +244,8 @@ Skips checkpointing for build artifact removal (node_modules, dist, build, .next
 
 **Toggle:** `CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT=1`
 
+**Tests:** `bash hooks-plugin/hooks/test-auto-checkpoint.sh` (hermetic — fixture repos under `mktemp -d`).
+
 ### event-logger.sh
 
 A development hook that logs all hook events to `~/.claude/hook-events.log`.
