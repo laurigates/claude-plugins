@@ -1927,6 +1927,47 @@ check_line "AP5: a tracked containment is not re-resolved" "$out" "GIT_SCOPE=rep
 check_line "AP5: and keeps its confidence" "$out" "GIT_CONFIDENCE=high"
 check_line "AP5: and reports the inner repo's own branch" "$out" "BRANCH=ap-tracked-sub"
 
+# --- AP5b: a linked worktree inside a declared pack resolves to pack scope (#2602)
+# When an outer portfolio repo tracks or declares a pack, but does not declare
+# the pack's linked worktree, walking up from the worktree must ask whether the
+# outer repo declares the pack's main checkout, not the worktree path. Without
+# this, the worktree continue skips the main checkout but tests the worktree
+# path against the portfolio, fails the declaration test, and re-resolves to
+# the portfolio root instead of the pack.
+AP_PWT="$SANDBOX/ap-pack-worktree"
+AP_PWT_PACK="$AP_PWT/pack"
+AP_PWT_WT="$AP_PWT_PACK/wt-fix"
+mkrepo "$AP_PWT"
+git -C "$AP_PWT" branch -M ap-portfolio-branch
+mkdir -p "$AP_PWT_PACK"
+printf 'x\n' > "$AP_PWT_PACK/f.txt"
+git -C "$AP_PWT" add pack/f.txt
+git -C "$AP_PWT" commit -q -m "track pack"
+mkrepo "$AP_PWT_PACK"
+git -C "$AP_PWT_PACK" branch -M ap-pack-branch
+git -C "$AP_PWT_PACK" worktree add -q "$AP_PWT_WT" -b ap-pack-wt-branch 2>/dev/null
+# Fixture validity: the portfolio tracks the pack, but not the worktree.
+check_eq "AP5b: fixture — the outer repo tracks the pack" \
+  "$(git -C "$AP_PWT" ls-files --error-unmatch -- "$AP_PWT_PACK" >/dev/null 2>&1 && echo tracked || echo untracked)" \
+  "tracked"
+check_eq "AP5b: fixture — the outer repo does not track the worktree" \
+  "$(git -C "$AP_PWT" ls-files --error-unmatch -- "$AP_PWT_WT" >/dev/null 2>&1 && echo tracked || echo untracked)" \
+  "untracked"
+# Baseline: the pack's main checkout reports pack scope.
+out=$(run_ap "$AP_PWT_PACK")
+check_line "AP5b: baseline — pack main checkout reports GIT_SCOPE=repo" "$out" "GIT_SCOPE=repo"
+check_line "AP5b: baseline — pack main checkout reports its own branch" "$out" "BRANCH=ap-pack-branch"
+# The decisive case: running from the pack's linked worktree resolves to the
+# pack scope (GIT_SCOPE=repo), matching the main checkout, with its own branch.
+out=$(run_ap "$AP_PWT_WT")
+check_line "AP5b: pack worktree reports GIT_SCOPE=repo" "$out" "GIT_SCOPE=repo"
+check_line "AP5b: and keeps its confidence" "$out" "GIT_CONFIDENCE=high"
+check_line "AP5b: and reports the worktree's own branch" "$out" "BRANCH=ap-pack-wt-branch"
+check_absent "AP5b: never the portfolio root's branch" "$out" "BRANCH=ap-portfolio-branch"
+check_absent "AP5b: never the pack main checkout's branch" "$out" "BRANCH=ap-pack-branch"
+check_absent "AP5b: and names no outer repo" "$out" "GIT_ROOT="
+check_absent "AP5b: and names no nested checkout" "$out" "GIT_NESTED_REPO="
+
 # --- AP6: no git repo at all is its own rung -------------------------------
 AP_NOGIT="$SANDBOX/ap-nogit"
 mkdir -p "$AP_NOGIT"
@@ -2011,9 +2052,10 @@ check_absent "AP8b: and names no outer repo" "$out" "GIT_ROOT="
 
 # --- AP8c: an unanswerable common-dir probe never moves the answer ----------
 # A CHARACTERIZATION test, not a guard pin — no single line is solely
-# responsible, and it is deliberately mutation-neutral. `--git-common-dir`
-# predates git 2.5 and a damaged repo can fail it; the contract is that a git
-# which cannot answer leaves the checkout where it is rather than re-resolving
+# responsible, and it is deliberately mutation-neutral. Git older than 2.5 lacks
+# `--git-common-dir` (arrived in git 2.5, commit c7b3a3d2fe), so the probe
+# fails; the contract is that a git which cannot answer leaves the checkout
+# where it is rather than re-resolving
 # on a discriminator it never got. That degradation is conservative only because
 # the verdict now RE-RESOLVES — under the earlier flag-only design the same
 # silence was a missed caveat, which is why it is worth pinning now and was not
@@ -2050,8 +2092,9 @@ check_line "AP8c: and a real nesting degrades to leaving the checkout alone" "$o
 
 # --- AP8d/AP8e: the probe fails PER REPO, not per binary --------------------
 # AP8c's stub rejects `--git-common-dir` for EVERY repo, so it exercises only
-# the uniform-failure case. The real failure is per-repo — dubious ownership or
-# an unreadable `.git` on ONE rung — and one git then answers for `outer` and
+# the uniform-failure case. That failure can also be per-repo — git <2.5, plus
+# a git that refuses the probe for one repo while answering for others
+# (reproduced with a stub) — and one git then answers for `outer` and
 # `sub` while refusing for `mid`. This stub rejects the probe for exactly one
 # named repo and delegates the rest, so which rung is unanswerable is the only
 # variable. Paths are compared physically because the walk resolves them that
