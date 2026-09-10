@@ -137,34 +137,41 @@ ${OVERRIDE_NOTE}"
   # merely ends in a verb (`multitail`, `lolcat`) is not matched any more.
   reader_verbs='(cat|gcat|zcat|bzcat|xzcat|head|ghead|tail|gtail|less|zless|more|nano|vim|nvim|gvim|mvim|vi|code|read)'
   for pattern in '\.env\b' '\.ssh/' '\.aws/credentials' '\.kube/config' '\.docker/config\.json' 'credentials\.json' 'secrets\.json'; do
-    # Capture the matched substring (verb + path) rather than a bare boolean, so
-    # the block message can name what tripped it and the exemption below can
-    # inspect the actual path argument.
-    match=$(echo "$COMMAND" | grep -oE "(^${reader_verbs}|[^A-Za-z]${reader_verbs})[[:space:]]+[^|;&]*${pattern}[^[:space:]|;&'\"]*" | head -1 || true)
-    [ -z "$match" ] && continue
-    # Drop the single boundary character the second alternative captured (a
-    # space, `;`, `(`, quote, …); a start-of-line match begins with the verb
-    # and is left alone.
-    match="${match#[!A-Za-z]}"
+    # Capture the matched substrings (verb + path) rather than a bare boolean,
+    # so the block message can name what tripped it and the exemption below can
+    # inspect the actual path argument. Inspect every match across the command
+    # rather than just the first: taking only `head -1` let a real secret read
+    # slip past if preceded by an exempted template in a chained command, e.g.
+    # `cat .env.example; cat .env` (issue #2611).
+    matches=$(echo "$COMMAND" | grep -oE "(^${reader_verbs}|[^A-Za-z]${reader_verbs})[[:space:]]+[^|;&]*${pattern}[^[:space:]|;&'\"]*" || true)
+    [ -z "$matches" ] && continue
 
-    # .env.example / .env.sample / .env.template are templates committed by
-    # convention, not secrets. check_sensitive_path() already exempts them on
-    # the Read/Edit/Write path; without the same exemption here, `cat
-    # .env.example` was blocked while `Read`ing the identical file was allowed
-    # (issue #2444). Scoped to the .env pattern to mirror check_sensitive_path()
-    # exactly — the other patterns keep no exemption.
-    #
-    # The exemption requires *every* .env token in the matched region to be a
-    # template. Inspecting only the last one would let a real secret hide behind
-    # a template in the same statement (`cat .env .env.example`).
-    if [ "$pattern" = '\.env\b' ]; then
-      env_tokens=$(echo "$match" | grep -oE "${pattern}[^[:space:]|;&'\"]*" || true)
-      non_template=$(echo "$env_tokens" | grep -vE '\.(example|sample|template)$' || true)
-      [ -n "$env_tokens" ] && [ -z "$non_template" ] && continue
-    fi
+    while IFS= read -r match; do
+      [ -z "$match" ] && continue
+      # Drop the single boundary character the second alternative captured (a
+      # space, `;`, `(`, quote, …); a start-of-line match begins with the verb
+      # and is left alone.
+      match="${match#[!A-Za-z]}"
 
-    block "BLOCKED: Command accesses a sensitive file matching '${pattern}' (matched: '${match}').
+      # .env.example / .env.sample / .env.template are templates committed by
+      # convention, not secrets. check_sensitive_path() already exempts them on
+      # the Read/Edit/Write path; without the same exemption here, `cat
+      # .env.example` was blocked while `Read`ing the identical file was allowed
+      # (issue #2444). Scoped to the .env pattern to mirror check_sensitive_path()
+      # exactly — the other patterns keep no exemption.
+      #
+      # The exemption requires *every* .env token in the matched region to be a
+      # template. Inspecting only the last one would let a real secret hide behind
+      # a template in the same statement (`cat .env .env.example`).
+      if [ "$pattern" = '\.env\b' ]; then
+        env_tokens=$(echo "$match" | grep -oE "${pattern}[^[:space:]|;&'\"]*" || true)
+        non_template=$(echo "$env_tokens" | grep -vE '\.(example|sample|template)$' || true)
+        [ -n "$env_tokens" ] && [ -z "$non_template" ] && continue
+      fi
+
+      block "BLOCKED: Command accesses a sensitive file matching '${pattern}' (matched: '${match}').
 ${OVERRIDE_NOTE}"
+    done <<< "$matches"
   done
 fi
 
