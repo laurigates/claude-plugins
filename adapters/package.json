@@ -2,7 +2,15 @@
   "name": "@laurigates/claude-plugins-adapters",
   "private": true,
   "type": "module",
-  "description": "Harness-agnostic skill-discovery core + eval harness for ADR-0022 (pi/OpenCode bindings land in #2090/#2091)",
+  "description": "Harness-agnostic skill-discovery core, eval harness, and runtime bindings for pi and OpenCode (ADR-0022)",
+  "keywords": [
+    "pi-package"
+  ],
+  "pi": {
+    "extensions": [
+      "./pi/index.ts"
+    ]
+  },
   "scripts": {
     "check": "bunx tsc --noEmit && bunx biome ci .",
     "eval": "bun eval/run-eval.ts",

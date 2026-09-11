@@ -5,6 +5,15 @@ Run this marketplace's skills inside **pi** ([pi.dev](https://pi.dev),
 ollama). The sibling of [`opencode-export.md`](opencode-export.md) — same goal
 (local-model testing of our skills), a much thinner pipeline.
 
+> **Why the `-export.md` suffix, when pi exports nothing here?** The name mirrors
+> the OpenCode sibling so the pair stays findable together — but for **skills**
+> pi has no static export step at all. It reads `SKILL.md` in place through the
+> runtime adapter ([`../adapters/pi/`](../adapters/pi/), ADR-0022), and nothing
+> is copied into `~/.pi/agent/skills/`. So this file is the pi **adapter** doc
+> that happens to carry the sibling's name. (OpenCode's export is real: it
+> projects **subagents and hooks**, because OpenCode reads neither
+> `.claude/agents/` nor `hooks.json` — skills reach it through the same adapter.)
+
 > **The tier installer is gone (#2093).** Skill discovery is now the
 > **ADR-0022 adapter**'s job: `pi/tiers.yaml`, `scripts/install-pi.sh`,
 > `scripts/check-pi-tiers.sh` and the `install-pi` / `install-pi-domain` /
@@ -79,6 +88,9 @@ list` manage — so `pi list` will not show it; that is expected, not a failure.
 adapters/pi/index.ts ──▶ ~/.pi/agent/settings.json extensions[]  (just pi-adapter-register)
                          (search_skills pull + ranked top-k push, ~600 tok/turn)
 
+.claude/agents/*.md   ──▶ dist/pi/agents ──▶ ~/.pi/agent/agents/    (just export-pi-agents)
+                         (21 subagents; pi does not read .claude/agents/)
+
 mlx_lm.server ──▶ models.json ──▶ pi --model mlx-local/<id>
 ```
 
@@ -136,9 +148,9 @@ don't understand the `developer` role reasoning-capable models use
 (`supportsDeveloperRole: false` sends the system prompt as a plain system
 message), nor `reasoning_effort` (`supportsReasoningEffort: false`).
 
-`just setup-pi` runs the adapter prereq check, registers the adapter, then
-prints this block (with your `pi_model` / `pi_port` interpolated) plus the run
-command.
+`just setup-pi` runs the adapter prereq check, registers the adapter, installs
+the subagents (§ Subagents), then prints this block (with your `pi_model` /
+`pi_port` interpolated) plus the run command.
 
 ### 4. Run pi against the local model
 
@@ -154,16 +166,73 @@ what makes this useful for local-model testing. The adapter's retrieval quality
 on exactly that question is what the eval harness measures
 ([`../adapters/README.md`](../adapters/README.md) § eval).
 
+## Subagents (`just export-pi-agents`)
+
+Subagents are the one surface pi **cannot** read in place: it never looks at
+`.claude/agents/`, so all 21 marketplace agents stay invisible until they are
+projected into pi-subagents' frontmatter (#2633). `just setup-pi` does this;
+the recipes are standalone too:
+
+```
+just export-pi-agents              # -> dist/pi/agents/*.md (source read-only, output reproducible)
+just install-pi-agents             # -> ~/.pi/agent/agents/   (additive, global scope)
+just install-pi-agents .pi/agents  # -> project scope, which overrides global
+```
+
+`install-pi-agents` self-skips with a hint when `@tintinweb/pi-subagents` is not
+installed — pi ignores `.pi/agents/` entirely without it, so installing anyway
+would look like it worked and change nothing. Re-running is safe: the copy is
+additive (your own agent files are never removed) and it takes its input from a
+fresh export in a temp dir.
+
+### What survives, and the two edges that do not
+
+pi's agent schema is close to Claude Code's, so most of the projection is a
+rename (`maxTurns` → `max_turns`) rather than a loss:
+
+| Claude Code | pi | Note |
+|---|---|---|
+| `Read`, `Write`, `Edit` | `read`, `write`, `edit` | |
+| `Glob` | `find` | pi's file-pattern search |
+| `Grep` | `grep` | |
+| `Bash(cmd *)` | `bash` | **scope dropped** — see below |
+| `Agent(a, b)` | `allowed_subagents: a, b` | nesting; default-off and separate from `tools:` |
+| `skills: [a, b]` | `skills: a, b` | both preload; pi's list form also drops the inherited rest |
+| `model`, `color`, `thinking`, `maxTurns` | same, `max_turns` | `model: opus` resolves fuzzily in pi; a provider without it reports `(unavailable, fallback: inherit)` |
+| `TodoWrite`, `TaskOutput`, `WebFetch`, `WebSearch` | *dropped* | no pi built-in exists |
+| `context: fork` | *dropped* | a pi subagent is **always** its own session — fork-isolation is pi's default, and `inherit_context:` is the opposite direction, so no mapping is asserted |
+
+The exporter reports rather than silently adjusts. On the corpus today it prints
+`WIDENED_BASH=142` (every scoped `Bash(git diff *)` grant becomes an unscoped
+`bash`, because pi's `tools:` is a name-only allowlist — that is a **privilege
+widening**, and a property of the target schema, not something this repo can
+narrow), `MODEL_PINS=21`, `AGENTS_WITH_NESTING=1`, and `DROPPED_TOOLS=` /
+`DROPPED_KEYS=` naming each loss per agent.
+
+`WebFetch`/`WebSearch` *can* be reached as `ext:pi-web-search/web_search`, but a
+single `ext:` entry flips pi's extension tools into explicit-allowlist mode — the
+agent would silently lose everything else the adapter exposes, `search_skills`
+among it — so it is left to a human as an opt-in rather than applied here.
+
+### Verifying it landed
+
+`/agents` in a pi session lists every agent type it loaded, project and global.
+`scripts/tests/test-export-pi-agents.sh` is the offline half: it executes the
+exporter against a fixture and pins the mapping, the widening/drop reports, the
+skip-on-missing-description path, and the emitted tool names against pi's seven
+built-ins (an unknown `tools:` entry is a hard `tools-error:` in pi).
+
 ## Out of scope (deferred)
 
-- **Agent / prompt / hook porting.** Hooks especially are selective: only the
-  *safety* hooks would earn a pi `pi.on` port; the style nudges are noise on a
-  different harness.
+- **Hook porting (#2634).** Selective: only the *safety* hooks would earn a pi
+  `pi.on` port; the style nudges are noise on a different harness. pi never
+  evaluates a Claude Code `hooks.json`, so those guards are inert there today.
+- **Prompt templates.** Nothing in the marketplace uses that surface yet.
 
 ## Related
 
 - [`../adapters/README.md`](../adapters/README.md) § pi — the adapter (source of truth for skill discovery)
 - [`../adapters/CUTOVER.md`](../adapters/CUTOVER.md) — the eval gate that authorized retiring the tier installer
 - [`adrs/0022-adapter-over-export-for-foreign-harnesses.md`](adrs/0022-adapter-over-export-for-foreign-harnesses.md) — adapter-over-export decision
-- [`opencode-export.md`](opencode-export.md) — the sibling harness: same adapter for skills, plus an agent/hook export pi does not need
+- [`opencode-export.md`](opencode-export.md) — the sibling harness: same adapter for skills, plus its own subagent/hook export
 - [pi custom-provider docs](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/custom-provider.md) — upstream `models.json` schema
