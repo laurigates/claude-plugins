@@ -384,18 +384,67 @@ oc-adapter-unregister target=opencode_config:
 # Local-model defaults (overridable via environment or `just pi_model=… <recipe>`).
 pi_model := env_var_or_default("PI_MODEL", "mlx-community/Qwen3.6-35B-A3B-4bit")
 pi_port := env_var_or_default("PI_PORT", "8080")
+# Where `install-pi-agents` writes projected subagents. Global by default; a
+# project that keeps its own agents in .pi/agents/ overrides the global ones
+# (pi resolves project > workspace > global).
+pi_agents_dir := env_var_or_default("PI_AGENTS_DIR", "~/.pi/agent/agents")
 
 # Serve the local model via mlx-lm (OpenAI-compatible /v1 on the configured port)
 [group: "pi"]
 serve-pi-model:
     mlx_lm.server --model {{pi_model}} --port {{pi_port}}
 
+# Subagents are the one surface pi cannot read in place: it does not look at
+# `.claude/agents/`, so all 21 marketplace agents stay invisible until projected
+# into pi-subagents' frontmatter (#2633). Skills are NOT exported — the adapter
+# serves those (ADR-0022). See docs/pi-export.md § Subagents.
+# Project marketplace subagents into pi-subagents' agent format (output: dist/pi)
+[group: "pi"]
+export-pi-agents out="dist/pi":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    out="{{out}}"
+    case "$out" in /*) ;; *) out="{{justfile_directory()}}/$out" ;; esac
+    python3 "{{justfile_directory()}}/scripts/export-pi-agents.py" "{{justfile_directory()}}" "$out"
+
+# Additive: agents you wrote yourself under <target> are preserved — never an
+# rm -rf of a shared directory. No-op with a hint when @tintinweb/pi-subagents is
+# absent, because pi ignores .pi/agents/ entirely without it: installing anyway
+# would look like it worked and change nothing.
+# Install exported subagents into a pi agents dir (default: global)
+[group: "pi"]
+install-pi-agents target=pi_agents_dir:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    target="{{target}}"
+    if [ "${target#\~}" != "$target" ]; then
+        target="$HOME${target#\~}"
+    fi
+    agent_home="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
+    if ! grep -q 'pi-subagents' "$agent_home/settings.json" 2>/dev/null \
+        && [ ! -d "$agent_home/npm/node_modules/@tintinweb/pi-subagents" ]; then
+        echo "SKIP: @tintinweb/pi-subagents is not installed — pi ignores $target without it"
+        echo "      install it with: pi install npm:@tintinweb/pi-subagents"
+        exit 0
+    fi
+    tmp="$(mktemp -d)"
+    trap 'rm -rf "$tmp"' EXIT
+    python3 "{{justfile_directory()}}/scripts/export-pi-agents.py" \
+        "{{justfile_directory()}}" "$tmp" >/dev/null
+    mkdir -p "$target"
+    cp "$tmp"/agents/*.md "$target/"
+    echo "installed $(find "$target" -maxdepth 1 -name '*.md' | wc -l | tr -d ' ') subagent file(s) in $target"
+    echo "(project scope .pi/agents/ overrides this; add one with: just install-pi-agents .pi/agents)"
+
 # Registers the ADR-0022 skill-discovery adapter (prereq-checked first), then
 # prints the local-provider models.json block + run next steps. Skill discovery
 # is the adapter's job — the tier installer it replaced was removed in #2093.
-# Wire pi up end to end: register the adapter, then print the model next steps
+# `install-pi-agents` self-skips (with a hint) when @tintinweb/pi-subagents is
+# absent, so wiring it in needs no conditional here; the adapter is prereq-checked
+# first.
+# Wire pi up end to end: register the adapter, project the subagents, print next steps
 [group: "pi"]
-setup-pi: pi-adapter-check pi-adapter-register
+setup-pi: pi-adapter-check pi-adapter-register install-pi-agents
     @echo ""
     @echo "Next steps:"
     @echo "  1. Install the server:  uv tool install mlx-lm"
@@ -407,3 +456,4 @@ setup-pi: pi-adapter-check pi-adapter-register
     @echo "  4. Run pi:              cd <project> && pi --model mlx-local/{{pi_model}}"
     @echo "     (the adapter is registered, so no -e flag is needed)"
     @echo "  5. Undo the wiring:     just pi-adapter-unregister"
+    @echo "     (subagents: just install-pi-agents — needs @tintinweb/pi-subagents)"

@@ -564,6 +564,16 @@ repos:
         language: system
         files: '^scripts/(export-opencode-agents\.py|export-opencode\.sh|install-opencode\.sh|tests/test-export-opencode-agents\.sh)$'
         pass_filenames: false
+      - id: test-export-pi-agents
+        name: pi subagent export regression (#2633)
+        entry: bash ./scripts/tests/test-export-pi-agents.sh
+        language: system
+        # The justfile is in scope because the suite asserts the recipes exist,
+        # are additive, and that setup-pi wires them in — a change to any of
+        # those three is what breaks the install path, not a change to the
+        # script alone.
+        files: '^(scripts/(export-pi-agents\.py|tests/test-export-pi-agents\.sh)|justfile)$'
+        pass_filenames: false
       - id: test-export-opencode-hooks
         name: opencode hook-plugin export regression (#1605)
         entry: bash ./scripts/tests/test-export-opencode-hooks.sh
