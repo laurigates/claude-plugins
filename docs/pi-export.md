@@ -5,6 +5,15 @@ Run this marketplace's skills inside **pi** ([pi.dev](https://pi.dev),
 ollama). The sibling of [`opencode-export.md`](opencode-export.md) — same goal
 (local-model testing of our skills), a much thinner pipeline.
 
+> **Why the `-export.md` suffix, when pi exports nothing here?** The name mirrors
+> the OpenCode sibling so the pair stays findable together — but for **skills**
+> pi has no static export step at all. It reads `SKILL.md` in place through the
+> runtime adapter ([`../adapters/pi/`](../adapters/pi/), ADR-0022), and nothing
+> is copied into `~/.pi/agent/skills/`. So this file is the pi **adapter** doc
+> that happens to carry the sibling's name. (OpenCode's export is real: it
+> projects **subagents and hooks**, because OpenCode reads neither
+> `.claude/agents/` nor `hooks.json` — skills reach it through the same adapter.)
+
 > **The tier installer is gone (#2093).** Skill discovery is now the
 > **ADR-0022 adapter**'s job: `pi/tiers.yaml`, `scripts/install-pi.sh`,
 > `scripts/check-pi-tiers.sh` and the `install-pi` / `install-pi-domain` /
