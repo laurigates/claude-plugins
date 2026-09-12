@@ -11,6 +11,12 @@ Migration patterns for safe, zero-downtime transitions — both data migrations 
 | `dual-write` | Dual write (double write) pattern for keeping two data stores in sync during migration |
 | `shadow-mode` | Shadow mode (dark launching) pattern for validating new systems under production traffic |
 
+### Migration Discipline
+
+| Skill | Description |
+|-------|-------------|
+| `tool-migration-cutover` | Gate removal of the incumbent tool on a positive operational signal from the replacement — and spot the mirror failure, a leftover still wired and fighting the new tool |
+
 ### Automated Tooling Migrations
 
 | Skill | Invocation | Description |
@@ -69,6 +75,14 @@ Replaces `pycqa/flake8` and `PyCQA/isort` hooks with a single `ruff` hook. Migra
 ### ESLint → Biome
 
 Replaces `.eslintrc*` and Prettier configs with `biome.json`. Updates pre-commit hooks and `package.json` scripts. Flags plugins without Biome equivalents (e.g., `eslint-plugin-jsx-a11y`) for manual review.
+
+## Migration Discipline
+
+### tool-migration-cutover
+
+"Config exists" and "config works" are different claims, and the gap between them is where coverage silently drops to zero. This skill gates removal of the incumbent on a positive operational signal from the replacement (a successful runner execution, a side effect on the target repo, a token actually minted *and used*), and stages the deprecation as a draft until that signal lands. It also covers the mirror failure — the old tool left wired, reformatting correct code on every commit.
+
+**Use when:** Removing Dependabot after adopting Renovate, retiring a PAT for a GitHub App, replacing a linter/formatter/CI runner, or when a 3-line edit produces a 400-line diff.
 
 ## Integration with /configure:repo
 
