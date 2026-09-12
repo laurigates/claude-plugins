@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/laurigates/claude-plugins/compare/migration-patterns-plugin-v1.5.0...migration-patterns-plugin-v1.6.0) (2026-09-12)
+
+
+### Features
+
+* **git-plugin:** adopt five portfolio skills into the marketplace ([#2651](https://github.com/laurigates/claude-plugins/issues/2651)) ([3401005](https://github.com/laurigates/claude-plugins/commit/34010056c02cbd2e302c5cab4908807389068183))
+
 ## [1.5.0](https://github.com/laurigates/claude-plugins/compare/migration-patterns-plugin-v1.4.2...migration-patterns-plugin-v1.5.0) (2026-07-31)
 
 
