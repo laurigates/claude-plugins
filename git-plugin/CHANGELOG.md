@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.55.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.54.2...git-plugin-v2.55.0) (2026-09-12)
+
+
+### Features
+
+* **git-plugin:** adopt five portfolio skills into the marketplace ([#2651](https://github.com/laurigates/claude-plugins/issues/2651)) ([3401005](https://github.com/laurigates/claude-plugins/commit/34010056c02cbd2e302c5cab4908807389068183))
+
 ## [2.54.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.54.1...git-plugin-v2.54.2) (2026-09-10)
 
 
