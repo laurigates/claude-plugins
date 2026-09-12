@@ -77,6 +77,20 @@ All skills are located in the `skills/` directory:
   - Multiple design templates
   - Post-generation optimization
 
+#### CI Diagnosis Skills
+
+- **multirepo-ci-cd** - Diagnosing and rolling out CI across many repos
+  - Fetch-first before diagnosing a failure (a stale checkout hides the workflow CI is running)
+  - Read through the API, not local clones — a portfolio-wide grep answers a question about what each clone last fetched
+  - IaC feature flags as the source of truth for a repo class
+  - Why a re-run replays the stale `@main` reusable workflow, and how to force a fresh event instead
+
+- **ai-review-max-turns** - Triaging a red Claude-powered review check
+  - Three causes with opposite responses: budget exhaustion, turn-ceiling overrun, an unpublishable real finding
+  - `is_error` then the finding count as the discriminator — never the red X
+  - The rotating-failure-set tell for budget exhaustion
+  - Why a check skipped by its `file-patterns` filter reports `pass` and is not a control
+
 ### Agent
 
 Located in `agents/`:

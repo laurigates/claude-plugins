@@ -110,14 +110,14 @@ the rules, skills, and hooks that embody it.
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **git-plugin** | 43 + 1 agent | Git workflows - commits, branches, PRs, worktrees, release-please, merge/deletion hazards, issue scoping |
+| **git-plugin** | 45 + 1 agent | Git workflows - commits, branches, PRs, worktrees, release-please, merge/deletion hazards, issue scoping |
 
 ### CI/CD
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
 | **finops-plugin** | 7 | GitHub Actions FinOps - billing, cache usage, workflow efficiency |
-| **github-actions-plugin** | 8 | GitHub Actions CI/CD - workflows, authentication, inspection |
+| **github-actions-plugin** | 10 | GitHub Actions CI/CD - workflows, authentication, inspection |
 
 ### Infrastructure
 
@@ -126,7 +126,7 @@ the rules, skills, and hooks that embody it.
 | **configure-plugin** | 48 | Project infrastructure standards - pre-commit, CI/CD, Docker, testing |
 | **container-plugin** | 9 + 1 agent | Container development - Docker, registry, Skaffold, OrbStack |
 | **kubernetes-plugin** | 8 + 1 agent | Kubernetes and Helm - deployments, charts, releases, ArgoCD |
-| **migration-patterns-plugin** | 6 | Safe database and system migration - dual write, shadow mode |
+| **migration-patterns-plugin** | 7 | Safe database and system migration - dual write, shadow mode |
 | **networking-plugin** | 7 | Network diagnostics, discovery, monitoring, HTTP load testing |
 | **terraform-plugin** | 6 + 1 agent | Terraform and Terraform Cloud - infrastructure as code |
 
