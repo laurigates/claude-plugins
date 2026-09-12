@@ -192,7 +192,8 @@ so it pulls a reviewer into chasing a non-existent defect and erodes trust in
 the AI-review signal. But the inverse error is worse still — treating every
 AI-review red as flakiness waves through the findings that are real and merely
 unpublishable. One `grep` for `is_error` and the finding count separates all
-three. Same instinct as `multirepo-ci-cd`: diagnose against what CI actually
+three. Same instinct as
+`github-actions-plugin:multirepo-ci-cd`: diagnose against what CI actually
 did (read the run), not against the surface red.
 
 ## Related
@@ -204,4 +205,4 @@ did (read the run), not against the surface red.
   by filter); this skill covers the *red* modes
 - `~/.claude/rules/diagnose-at-the-failure-point.md` — measure at the failure
   point rather than accepting the framing the error hands you
-- `multirepo-ci-cd` — portfolio-wide CI diagnosis discipline
+- `github-actions-plugin:multirepo-ci-cd` — portfolio-wide CI diagnosis discipline
