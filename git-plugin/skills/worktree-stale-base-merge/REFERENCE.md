@@ -1,7 +1,21 @@
 # Worktree Stale Base Merge - Reference
 
-Background for the stale-base check: the superseded diagnostic this rule
-replaced, the two opposite readings of `git merge-tree`, and how the rule
+First, the question this file is *not* about. **Containment — "has this
+branch's work already landed?" — has its own authority order**, and it starts
+with the PR, then patch-equivalence:
+
+```sh
+gh pr list --state all --head <branch> --json state,mergedAt   # MERGED = authoritative
+git cherry main <branch>                                       # '-' = patch already upstream
+```
+
+`git-plugin:git-merge-hazards` owns that ladder in full. Within it,
+`git merge-tree` is only a **positive-containment** shortcut: a match proves
+the work landed, a non-match proves nothing once the base has drifted over the
+same files.
+
+Everything below is about the *other* direction — what tree the merge
+produces — plus the superseded diagnostic this rule replaced and how it
 relates to GitHub's strict required-status-checks setting.
 
 ## What this rule used to say, and why it was wrong
