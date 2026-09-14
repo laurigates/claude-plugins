@@ -1,6 +1,6 @@
 {
-  "lastCheckedVersion": "2.1.215",
-  "lastCheckedDate": "2026-09-07",
+  "lastCheckedVersion": "2.1.241",
+  "lastCheckedDate": "2026-09-14",
   "rewindNote": "Rewound from 2.1.257 to 2.1.185 on 2026-09-03. The excerpt is sliced from lastCheckedVersion forward, so the pointer must name the last version a review actually covered. 2.1.257 was written by the Fable 5.1 adaptation sweep (docs/audits/fable-5.1-adaptation-2026-09-02.md), whose declared window was 2.1.232-2.1.257 -- it advanced the pointer past 46 versions it never read. The automated changelog review had already gone silent after 2.1.185: 22 successful runs, 13 consecutive filing nothing, last tracking issue #1733 (2026-06-21). Confirmed casualty of the resulting blind spot: the subagent nesting ceiling in .claude/rules/agent-development.md still instructed 5 levels after 2.1.217 disabled nesting by default and 2.1.219 set it to 3.",
   "knownUnreviewedRanges": [
     {
@@ -10,10 +10,16 @@
       "status": "RECOVERED 2026-09-07 - reviewed in the windowed catch-up run, tracking issue #2623"
     },
     {
-      "range": "2.1.216-2.1.263",
-      "versions": 48,
+      "range": "2.1.216-2.1.241",
+      "versions": 26,
       "cause": "remainder of the rewind backlog; the 2026-09-07 run was windowed and deliberately ratcheted only to 2.1.215",
-      "status": "NOT recovered - the next scheduled run starts at 2.1.216. Note the 2.1.257 entry below was written by the Fable 5.1 adaptation sweep and covers 2.1.232-2.1.257 from a docs-adaptation angle only; it is not a substitute for a changelog review of this range."
+      "status": "RECOVERED 2026-09-14 - reviewed in the windowed catch-up run, tracking issue #2657"
+    },
+    {
+      "range": "2.1.242-2.1.270",
+      "versions": 29,
+      "cause": "remainder of the rewind backlog; the 2026-09-14 run was windowed and deliberately ratcheted only to 2.1.241",
+      "status": "NOT recovered - the next scheduled run starts at 2.1.242. Note the 2.1.257 entry below was written by the Fable 5.1 adaptation sweep and covers 2.1.232-2.1.257 from a docs-adaptation angle only; it is not a substitute for a changelog review of this range."
     },
     {
       "range": "2.1.77-2.1.137",
@@ -24,6 +30,44 @@
   ],
   "changelogUrl": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
   "reviewedChanges": [
+    {
+      "version": "2.1.241",
+      "date": "2026-09-14",
+      "windowed": true,
+      "coveredRange": "2.1.216-2.1.241",
+      "relevantChanges": [
+        "HIGH: subagent nesting settled - 2.1.217 disabled nested subagent spawning by default, then 2.1.219 set the default depth to 3 (CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1 disables). This is the confirmed casualty named in rewindNote; agent-development.md still claims 5 levels",
+        "HIGH: new cap on concurrently-running subagents, default 20, override CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS (2.1.217); --max-budget-usd now denies new spawns and halts running background subagents (2.1.217)",
+        "HIGH/REMOVAL: the 200-subagent-per-session spawn cap was removed (2.1.224), superseding the CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION note from the 2.1.212 triage",
+        "HIGH: subagent forking on by default - subagent_type 'fork' inherits the full conversation and prompt cache; non-teammate spawns in interactive sessions run in the background by default (2.1.232)",
+        "HIGH/REMOVAL: TodoWrite/TaskCreate/TaskGet/TaskUpdate/TaskList left out by default on Opus 4.8, Sonnet 5, Fable 5, Mythos 5 and newer; CLAUDE_CODE_ENABLE_TODO_TOOLS=1 restores them (2.1.233)",
+        "HIGH: new DirectoryAdded hook event, fires after /add-dir or the SDK register_repo_root control request registers a working directory mid-session (2.1.219)",
+        "HIGH: PreToolUse auto-allow hooks were bypassing tool restrictions in background agent tasks (summaries, compaction, renames) - fixed (2.1.222); agent frontmatter hooks now require the agent file's own folder to have accepted workspace trust (2.1.218)",
+        "HIGH: Bash permission bypasses fixed - a crafted command could hide parts of itself from permission checks, and tab/invisible-Unicode padding could hide part of a command from the approval dialog (2.1.223); zsh [[ ]] regex conditionals (2.1.221); PowerShell $PSDefaultParameterValues overwrite and Git Bash Cygwin-symlink bypass (2.1.232)",
+        "HIGH: an agent definition's bypassPermissions mode ignored the org bypass-permissions disable policy - fixed (2.1.223)",
+        "HIGH/REVERT: 2.1.232 made Bash input redirections (< file) permission-checked on all platforms and tightened Cygwin-style symlinks; 2.1.233 REVERTED both, a narrower version returns later - document the current state, not the 2.1.232 state",
+        "HIGH: skills with context: fork now run in the background by default; opt out per skill with background: false (2.1.218). Skill/plugin frontmatter booleans accept yes/no/on/off/1/0 (2.1.218)",
+        "HIGH: new plugin sources - 'archive' (zip over HTTPS, optional SHA-256 pinning, 2.1.224) and marketplace 'command' sources re-resolved each session with mode: 'link' (2.1.229); headersHelper on url marketplaces and catalog entries mints HTTP headers, gated behind [y/N] and folder trust, run without inherited credential env vars (2.1.238)",
+        "HIGH: new sandbox settings - sandbox.filesystem.disabled (2.1.216), sandbox.network.strictAllowlist (2.1.219), credential file mode: 'mask' on Linux/WSL (2.1.221), and extract/onExtractNoMatch/decode:jwt+maskClaims/awsPairs/sigv4 masking requiring network.tlsTerminate (2.1.224). sandbox.ripgrep is now honored only from user/managed/--settings (2.1.232)",
+        "HIGH: Claude Opus 5 (claude-opus-5) added and is now the default Opus model - 1M context, fast mode at $10/$50 per Mtok; Opus 4.7 dropped from fast mode (2.1.219)",
+        "HIGH: workflowSizeGuideline settings key added and dynamic workflows default to a medium guideline (aim for fewer than 15 agents) (2.1.219); workflow scripts could escape the sandbox via dynamic import() - fixed (2.1.223)",
+        "HIGH/REMOVAL: ultraplan removed (2.1.222); the 'Default teammate model' /config setting removed, teammates now use the leader's model unless the spawn names one (2.1.234); /review is now an alias of /code-review, which reuses the last level typed (2.1.223)",
+        "Cross-session SendMessage added across your machines with ListAgents discovery, plus crossSessionInbound and dialogExpiry settings (2.1.224); Windows support added (2.1.239); @-mention a session by name and unique per-machine session names (2.1.232); notify_when_idle option (2.1.236); ListAgents now reports the session's own name and lists live teammates (2.1.239)",
+        "Worktree-isolation hardening: isolated subagents could redirect git into the shared checkout via git -C, --git-dir, GIT_DIR/GIT_WORK_TREE (2.1.216) and run destructive git against the main checkout (2.1.222); /fork sessions now create their own worktree (2.1.221)",
+        "Auto mode: dangerous-rm/background-&/suspicious-Windows-path checks moved to the classifier (2.1.218); Monitor allow rules set aside while auto mode is active (2.1.236); same classifier defaults on Bedrock/Vertex/Foundry and with telemetry disabled (2.1.236); the git-status check can no longer be fooled by status.showUntrackedFiles=no (2.1.236)",
+        "Skills: SKILL.md paths: frontmatter brace expansion is now budget-bounded after OOM/stall reports (2.1.217); argument substitution no longer re-expands values as template markers (2.1.233); a UTF-8 BOM silently disabled agents/skills/commands - fixed (2.1.239); claude.ai-synced skills hardened against shadowing and ! / @ expansion (2.1.228)",
+        "Marketplaces: additionalMarketplaces/allowedMarketplaces aliases and GitLab URL support (2.1.232); owner/* wildcards in strictKnownMarketplaces/blockedMarketplaces (2.1.223); metadata.pluginRoot finally works (2.1.239); plugins accept '.' as a skills path (2.1.221); claude plugin validate checks a bare .claude/skills dir (2.1.233)",
+        "/commit-push-pr no longer auto-approves git/gh commands with dangerous flags (--force, --amend, --no-verify) (2.1.229); GitLab MR support in --worktree, the agents view, and the footer badge (2.1.233, 2.1.234)",
+        "MCP: disabled servers shown as Disabled instead of health-checked (2.1.238); server/discover before initialize fixed (2.1.238); mcp_server_errors in the headless init event plus HTTP status on connect failure (2.1.219); diagnostics no longer print resolved secrets (2.1.234); OAuth fixes for pre-registered clients and strict authorization servers (2.1.231, 2.1.229)",
+        "Workflow fan-outs stagger same-prefix sibling agents for prompt-cache reuse, CLAUDE_CODE_WORKFLOW_PREFIX_STAGGER_MS=0 disables (2.1.229); ANTHROPIC_DEFAULT_MODEL env var (2.1.236); the bundled claude-api skill dropped from ~200k+ to ~25k tokens by loading references on demand (2.1.234)"
+      ],
+      "actionsRequired": [
+        "See issue #2657 for the rule update plan (no rule files were edited by this triage run)",
+        "Issue #2657 groups the bullets by candidate file: agent-development.md, hooks-reference.md, prompt-agent-hooks.md, agentic-permissions.md, auto-mode.md, skill-development.md, plugin-structure.md, sandbox-guidance.md, CLAUDE.md / workflow-model-effort.md / context-engineering.md, plus git-plugin and MCP-facing skills",
+        "Windowed run: 45 versions were outstanding and upstream is at 2.1.270; this run deliberately ratcheted only to 2.1.241, leaving 2.1.242-2.1.270 for the next scheduled run",
+        "The laurigates assignee could not be applied to #2657 by this run (token lacked replaceActorsForAssignable) - set it by hand. Labels changelog-review/maintenance were applied successfully"
+      ]
+    },
     {
       "version": "2.1.215",
       "date": "2026-09-07",
