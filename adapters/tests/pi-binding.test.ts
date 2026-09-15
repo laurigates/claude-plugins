@@ -4,6 +4,8 @@
  * behavior (jiti loading, trust gating, prompt emission) is out of scope.
  */
 
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: the claude-env fixtures are literal shell commands containing ${CLAUDE_SKILL_DIR}
+
 import { describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -18,6 +20,13 @@ import {
   DEFAULT_MODEL,
   INJECTED_BLOCK_TRAILER,
 } from "../core/index.ts";
+import {
+  deriveSessionId,
+  extractSkillDirPaths,
+  extractSkillLocations,
+  resolveSkillDir,
+  withClaudeEnv,
+} from "../pi/claude-env.ts";
 import {
   CONFIG_FILE_NAME,
   defaultConfig,
@@ -452,6 +461,171 @@ describe("wrapModuleResolutionError", () => {
   });
 });
 
+// --- Claude Code variables (claude-env.ts) --------------------------------
+
+/**
+ * A throwaway marketplace-shaped tree: two plugins, each with skills whose
+ * scripts sit at the plugin level (`../../scripts/`) or inside the skill
+ * (`scripts/run.sh`, present in two skills to force index-tier ambiguity).
+ */
+function claudeEnvFixture() {
+  const root = mkdtempSync(join(tmpdir(), "pi-claude-env-"));
+  const touch = (rel: string) => {
+    const path = join(root, rel);
+    mkdirSync(join(path, ".."), { recursive: true });
+    writeFileSync(path, "x");
+  };
+  touch("session-plugin/scripts/session-survey.sh");
+  touch("session-plugin/skills/session-end/SKILL.md");
+  touch("session-plugin/skills/session-wrap/SKILL.md");
+  touch("session-plugin/skills/session-wrap/scripts/wrap-only.sh");
+  touch("alpha-plugin/skills/one/SKILL.md");
+  touch("alpha-plugin/skills/one/scripts/run.sh");
+  touch("beta-plugin/skills/two/SKILL.md");
+  touch("beta-plugin/skills/two/scripts/run.sh");
+  const dir = (rel: string) => join(root, rel);
+  return {
+    root,
+    sessionEnd: dir("session-plugin/skills/session-end"),
+    sessionWrap: dir("session-plugin/skills/session-wrap"),
+    one: dir("alpha-plugin/skills/one"),
+    two: dir("beta-plugin/skills/two"),
+  };
+}
+
+const NONE = { read: [], expanded: [], indexed: [] };
+
+describe("claude-env helpers", () => {
+  test("extractSkillDirPaths reads braced and bare forms, stopping at quotes", () => {
+    expect(
+      extractSkillDirPaths(
+        'bash "${CLAUDE_SKILL_DIR}/../../scripts/a.sh" --x && $CLAUDE_SKILL_DIR/scripts/b.sh; cat ${CLAUDE_SKILL_DIR}/*.md',
+      ),
+    ).toEqual(["../../scripts/a.sh", "scripts/b.sh"]);
+  });
+
+  test("resolves by read history, most recent first", () => {
+    const f = claudeEnvFixture();
+    const command = 'bash "${CLAUDE_SKILL_DIR}/scripts/run.sh"';
+    const result = resolveSkillDir(
+      command,
+      { ...NONE, read: [f.two, f.one], indexed: [f.one, f.two] },
+      existsSync,
+    );
+    expect(result).toEqual({ dir: f.two });
+  });
+
+  test("resolves by /skill: expansion when nothing matching was read", () => {
+    const f = claudeEnvFixture();
+    const prompt = `<skill name="one" location="${f.one}/SKILL.md">\nReferences are relative to ${f.one}.\n\nbody\n</skill>`;
+    const expanded = extractSkillLocations(prompt).map((location) => join(location, ".."));
+    expect(expanded).toEqual([f.one]);
+    const result = resolveSkillDir(
+      'bash "${CLAUDE_SKILL_DIR}/scripts/run.sh"',
+      { ...NONE, read: [f.sessionWrap], expanded, indexed: [f.one, f.two] },
+      existsSync,
+    );
+    expect(result).toEqual({ dir: f.one });
+  });
+
+  test("falls back to the index when the session tiers have no match", () => {
+    const f = claudeEnvFixture();
+    const result = resolveSkillDir(
+      'bash "${CLAUDE_SKILL_DIR}/scripts/wrap-only.sh"',
+      { ...NONE, indexed: [f.sessionEnd, f.one, f.sessionWrap] },
+      existsSync,
+    );
+    expect(result).toEqual({ dir: f.sessionWrap });
+  });
+
+  test("nested skill: session-end's ../../scripts reference resolves after reading session-wrap's SKILL.md", () => {
+    const f = claudeEnvFixture();
+    // The model read session-wrap, then follows session-end's command. Both
+    // skills reach the same plugin-level script, so the read directory works.
+    const result = resolveSkillDir(
+      'bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits',
+      { ...NONE, read: [f.sessionWrap], indexed: [f.sessionEnd, f.sessionWrap] },
+      existsSync,
+    );
+    expect(result).toEqual({ dir: f.sessionWrap });
+  });
+
+  test("index siblings reaching the same real file are not ambiguous", () => {
+    const f = claudeEnvFixture();
+    const result = resolveSkillDir(
+      'bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh"',
+      { ...NONE, indexed: [f.sessionEnd, f.sessionWrap] },
+      existsSync,
+    );
+    expect(result).toEqual({ dir: f.sessionEnd });
+  });
+
+  test("index matches resolving to different real files are ambiguous", () => {
+    const f = claudeEnvFixture();
+    const result = resolveSkillDir(
+      'bash "${CLAUDE_SKILL_DIR}/scripts/run.sh"',
+      { ...NONE, indexed: [f.one, f.two] },
+      existsSync,
+    );
+    expect(result).toEqual({ ambiguous: [f.one, f.two] });
+  });
+
+  test("a reference no candidate satisfies is unresolved", () => {
+    const f = claudeEnvFixture();
+    const result = resolveSkillDir(
+      'bash "${CLAUDE_SKILL_DIR}/scripts/absent.sh"',
+      { read: [f.one], expanded: [f.two], indexed: [f.one, f.two, f.sessionEnd] },
+      existsSync,
+    );
+    expect(result).toEqual({ unresolved: true });
+  });
+
+  test("withClaudeEnv is a no-op on commands without the variables", () => {
+    const values = { skillDir: "/s", sessionId: "id", sessionFile: "/f.jsonl" };
+    for (const command of ["git status", "echo $CLAUDE_SKILL_DIRECTORY", "echo ${HOME}"]) {
+      expect(withClaudeEnv(command, values)).toBe(command);
+    }
+  });
+
+  test("withClaudeEnv prepends one export line and single-quote-escapes paths", () => {
+    const command = "set -e\ncat <<'EOF'\n${CLAUDE_SKILL_DIR}\nEOF";
+    const result = withClaudeEnv(command, {
+      skillDir: "/tmp/it's here",
+      sessionId: "abc",
+      sessionFile: "/s/o'k.jsonl",
+    });
+    expect(result).toBe(
+      `export CLAUDE_SKILL_DIR='/tmp/it'\\''s here' CLAUDE_SESSION_ID='abc' PI_SESSION_FILE='/s/o'\\''k.jsonl'\n${command}`,
+    );
+    const run = Bun.spawnSync([
+      "bash",
+      "-c",
+      `${withClaudeEnv('printf %s "$CLAUDE_SKILL_DIR"', { skillDir: "/tmp/it's here" })}`,
+    ]);
+    expect(run.stdout.toString()).toBe("/tmp/it's here");
+  });
+
+  test("withClaudeEnv exports only the session values when only CLAUDE_SESSION_ID is referenced", () => {
+    const command = 'agent="claude-${CLAUDE_SESSION_ID:0:8}"';
+    expect(withClaudeEnv(command, { sessionId: "abc", sessionFile: undefined })).toBe(
+      `export CLAUDE_SESSION_ID='abc'\n${command}`,
+    );
+  });
+
+  test("deriveSessionId: same-second UUIDv7 ids get different 8-char prefixes", () => {
+    const first = "01a08aa2-cd0e-7a31-9f4c-1b2d3e4f5a6b";
+    const second = "01a08aa2-cd36-7c52-8e7d-6c5b4a392817";
+    expect(first.slice(0, 8)).toBe(second.slice(0, 8)); // the raw ids collide
+    const a = deriveSessionId(first);
+    const b = deriveSessionId(second);
+    expect(a.slice(0, 8)).not.toBe(b.slice(0, 8));
+    expect(a).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    expect(deriveSessionId(first)).toBe(a); // deterministic
+    expect(a).not.toBe(first); // never the raw pi id
+    expect(deriveSessionId("not-a-uuid")).toMatch(/^[0-9a-f]{8}-/);
+  });
+});
+
 // --- factory over a minimal typed ExtensionAPI stub -----------------------
 
 describe("extension factory", () => {
@@ -490,9 +664,71 @@ describe("extension factory", () => {
     expect(parameters.properties?.query?.type).toBe("string");
     expect(parameters.properties?.k?.type).toBe("number");
 
-    for (const eventName of ["session_start", "session_shutdown", "before_agent_start"]) {
+    for (const eventName of [
+      "session_start",
+      "session_shutdown",
+      "before_agent_start",
+      "tool_call",
+    ]) {
       expect(handlers.has(eventName)).toBe(true);
     }
+  });
+
+  const PI_SESSION = "01a08aa2-cd0e-7a31-9f4c-1b2d3e4f5a6b";
+  const toolCtx = {
+    cwd: DEFAULT_REPO_ROOT,
+    sessionManager: {
+      getSessionId: () => PI_SESSION,
+      getSessionFile: () => "/sessions/s.jsonl",
+    },
+  };
+
+  async function dispatchToolCall(
+    handlers: Map<string, (event: unknown, ctx: unknown) => unknown>,
+    event: { toolName: string; input: Record<string, unknown> },
+  ) {
+    const handler = handlers.get("tool_call");
+    expect(handler).toBeDefined();
+    return await (handler as (event: unknown, ctx: unknown) => unknown)(
+      { type: "tool_call", toolCallId: "t1", ...event },
+      toolCtx,
+    );
+  }
+
+  test("tool_call: bash after reading a SKILL.md gets CLAUDE_SKILL_DIR exported", async () => {
+    const { pi, handlers } = createMockPi();
+    await skillDiscovery(pi);
+    const skillDir = join(DEFAULT_REPO_ROOT, "taskwarrior-plugin", "skills", "task-add");
+    await dispatchToolCall(handlers, {
+      toolName: "read",
+      input: { path: "taskwarrior-plugin/skills/task-add/SKILL.md" },
+    });
+    const command = 'bash "${CLAUDE_SKILL_DIR}/../../scripts/ensure-udas.sh" --check';
+    const bash = { toolName: "bash", input: { command } };
+    const result = await dispatchToolCall(handlers, bash);
+    expect(result).toBeUndefined();
+    expect(bash.input.command).toBe(
+      `export CLAUDE_SKILL_DIR='${skillDir}' CLAUDE_SESSION_ID='${deriveSessionId(PI_SESSION)}' PI_SESSION_FILE='/sessions/s.jsonl'\n${command}`,
+    );
+  });
+
+  test("tool_call: an unresolvable CLAUDE_SKILL_DIR blocks with a reason", async () => {
+    const { pi, handlers } = createMockPi();
+    await skillDiscovery(pi);
+    const command = 'bash "${CLAUDE_SKILL_DIR}/scripts/definitely-absent-7f3a.sh"';
+    const bash = { toolName: "bash", input: { command } };
+    const result = (await dispatchToolCall(handlers, bash)) as { block: boolean; reason: string };
+    expect(result.block).toBe(true);
+    expect(result.reason).toContain("absolute directory of the SKILL.md");
+    expect(bash.input.command).toBe(command); // not rewritten
+  });
+
+  test("tool_call: commands without the variables pass through untouched", async () => {
+    const { pi, handlers } = createMockPi();
+    await skillDiscovery(pi);
+    const bash = { toolName: "bash", input: { command: "git status" } };
+    expect(await dispatchToolCall(handlers, bash)).toBeUndefined();
+    expect(bash.input.command).toBe("git status");
   });
 
   test("zero-config repoRoot default points at the marketplace checkout", () => {
