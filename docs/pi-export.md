@@ -82,6 +82,37 @@ just pi-adapter-unregister   # reverse the above
 extensions from `extensions`, **not** the `packages` array `pi install` / `pi
 list` manage — so `pi list` will not show it; that is expected, not a failure.
 
+## Claude Code variables in pi
+
+Claude Code substitutes `${CLAUDE_SKILL_DIR}` and `${CLAUDE_SESSION_ID}` into a
+skill's text before the model sees it. pi does neither: it performs no variable
+substitution, and its `bash` tool exports no such variables. Without the adapter,
+a command such as `task-add`'s `bash "${CLAUDE_SKILL_DIR}/../../scripts/ensure-udas.sh" --check`
+runs as `bash "/../../scripts/ensure-udas.sh" --check`. Around 50 skills that pi
+loads are affected.
+
+The adapter's `tool_call` handler rewrites the `bash` input before it runs.
+Skill text is untouched, so Claude Code's behaviour does not change.
+
+| Step | Behaviour |
+|---|---|
+| Record | A `read` of a `*/SKILL.md` records that directory; a `/skill:` expansion (`<skill … location="…">` in the prompt) records its directory too |
+| Resolve | Every `${CLAUDE_SKILL_DIR}/<rel>` (or `$CLAUDE_SKILL_DIR/<rel>`) in the command must exist under the chosen directory. Read history is tried first (most recent first), then `/skill:` expansions, then every indexed skill |
+| Rewrite | One line, `export CLAUDE_SKILL_DIR='…' CLAUDE_SESSION_ID='…' PI_SESSION_FILE='…'`, is prepended, single-quote-escaped. Heredocs, `set -e`, and a leading `cd` behave as before. Commands that reference neither variable pass through unchanged |
+| Block | No candidate matches, or several indexed skills match different real files (two skills each shipping `scripts/run.sh`): the call is blocked and the reason tells the model to replace `${CLAUDE_SKILL_DIR}` with the absolute directory of the SKILL.md it is following |
+
+pi clones tool arguments before `tool_call` runs, so the prepended line reaches
+execution but not the transcript or the model's context.
+
+`CLAUDE_SESSION_ID` is never pi's raw session id. pi mints UUIDv7 ids whose
+first eight hex characters are timestamp bits, and four skills
+(`task-claim`, `task-status`, `task-release`, `git-coworker-check`) build an
+agent identity as `claude-${CLAUDE_SESSION_ID:0:8}`. Two sessions started within
+about a minute would share it. The adapter exports a permutation of the pi id
+with the random bits first. A command that references only `CLAUDE_SESSION_ID`
+is never blocked. `PI_SESSION_FILE` carries pi's session transcript path for
+scripts that need it.
+
 ## Pipeline
 
 ```

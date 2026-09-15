@@ -113,6 +113,18 @@ the Trust caveat below — global is preferred). Equivalent by hand:
   `Current working directory:` line). The binding never contributes paths
   via `resources_discover` — that would refeed the uncapped native listing
   it exists to replace.
+- Makes Claude Code's skill variables work in pi's `bash` tool via a
+  `tool_call` handler (pure helpers in `pi/claude-env.ts`). A command
+  referencing `${CLAUDE_SKILL_DIR}` gets one `export CLAUDE_SKILL_DIR=…
+  CLAUDE_SESSION_ID=… PI_SESSION_FILE=…` line prepended. The skill directory is
+  the first candidate under which every `${CLAUDE_SKILL_DIR}/<rel>` in the
+  command exists, checked in order: SKILL.md files read this session, then
+  `/skill:` expansions, then the index. If no candidate matches, or several
+  indexed skills match different files, the call is blocked with a reason
+  telling the model to substitute the SKILL.md's absolute directory.
+  `CLAUDE_SESSION_ID` is derived from pi's UUIDv7 session id with the random
+  bits first, so `claude-${CLAUDE_SESSION_ID:0:8}` differs between sessions.
+  See [`docs/pi-export.md`](../docs/pi-export.md) § Claude Code variables in pi.
 - **Trust caveat**: project-scope extensions load only **post-trust**; in
   `-p`/json/rpc modes with `defaultProjectTrust: ask` (the default) the
   extension is **silently skipped** — prefer global registration
