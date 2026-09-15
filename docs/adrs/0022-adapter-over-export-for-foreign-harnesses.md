@@ -96,7 +96,12 @@ shared discovery core, and the export pipelines are superseded.
      other harness) is a property of the skill, so it moves into the
      skill's own **`compatibility` frontmatter** — an Agent Skills spec
      field both harnesses already recognize. One sweep marks the ~exclude
-     set. (#2092)
+     set. (#2092) The marker records what a skill needs from its harness,
+     not a permanent classification: a skill may drop it once a harness
+     emulates the Claude Code variables and inputs the skill depends on
+     (`${CLAUDE_SKILL_DIR}`, the session transcript). session-plugin's four
+     skills dropped it when the pi adapter began resolving
+     `${CLAUDE_SKILL_DIR}` and exporting `PI_SESSION_FILE`.
    - Per-project scoping (the old domain tier) is subsumed by relevance
      ranking plus per-project adapter config (`.pi/settings.json` /
      `opencode.json`) — the same interface shape as Claude Code's
@@ -154,6 +159,9 @@ shared discovery core, and the export pipelines are superseded.
   discovery.
 - Claude Code ignores `compatibility` frontmatter; the sweep is inert on
   the home harness.
+- The marker is revisable. Emulating a Claude Code variable in a harness
+  binding can make a marked skill runnable there, at which point the marker
+  is removed rather than kept as a stale exclusion.
 
 ## Alternatives considered
 
@@ -180,7 +188,7 @@ shared discovery core, and the export pipelines are superseded.
 | [#2089](https://github.com/laurigates/claude-plugins/issues/2089) | Discovery core + eval harness | — |
 | [#2090](https://github.com/laurigates/claude-plugins/issues/2090) | pi binding (hybrid push+pull) | eval vs tier baseline |
 | [#2091](https://github.com/laurigates/claude-plugins/issues/2091) | OpenCode binding (pull-first) | eval vs rulesync baseline |
-| [#2092](https://github.com/laurigates/claude-plugins/issues/2092) | `compatibility` frontmatter sweep | precedes cutovers |
+| [#2092](https://github.com/laurigates/claude-plugins/issues/2092) | `compatibility` frontmatter sweep (a marker may be dropped once a harness emulates what the skill needs) | precedes cutovers |
 | [#2093](https://github.com/laurigates/claude-plugins/issues/2093) | Remove pi tier system | gate frozen + PASS (2026-07-22) |
 | [#2094](https://github.com/laurigates/claude-plugins/issues/2094) | Retire rulesync export | **done** — gate frozen + PASS 2026-07-22; OC token calibration 2026-08-24 (89.3 measured vs 90.5 proxy, +1.4%) |
 

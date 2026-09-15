@@ -3,8 +3,7 @@ name: session-spinup
 description: Read-only session-start briefing of open tasks, git state, journal todos — reports, never edits code. Use when user says spin up, what was I doing, or pick up where I left off.
 allowed-tools: Bash(bash *), Read, TodoWrite
 created: 2026-05-13
-modified: 2026-08-25
-compatibility: claude-code
+modified: 2026-09-15
 reviewed: 2026-06-24
 ---
 
@@ -67,6 +66,9 @@ a scope hijack) · the `BLUEPRINT` section when `MANIFEST=false` or
 ## Context
 
 - Project config: !`find . -maxdepth 2 -path '*/.claude/session-plugin.local.md'`
+
+Harnesses that don't execute `` !`…` `` context commands show the line above
+as text; in that case run the `find` yourself before Step 1.
 
 ## Execution
 

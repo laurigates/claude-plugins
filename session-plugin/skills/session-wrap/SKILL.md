@@ -3,8 +3,7 @@ name: session-wrap
 description: End-of-session capture to taskwarrior, optional journal, GitHub issues. Use when user says wrap up, session wrap, or done for now.
 allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Write, Edit, AskUserQuestion, TodoWrite
 created: 2026-05-12
-modified: 2026-07-30
-compatibility: claude-code
+modified: 2026-09-15
 reviewed: 2026-06-24
 ---
 
@@ -153,7 +152,8 @@ without journal", "Adjust first". Never end the turn on a freeform
 "Apply? (y/n)" text question: ending the turn fires Stop hooks, which can
 inject content and split the confirmation (this raced the old nudge hook
 in production). AskUserQuestion keeps the turn open — no Stop event, no
-race.
+race. Where `AskUserQuestion` is unavailable (a harness without the tool),
+ask in plain text and end the turn.
 
 ### Step 4: Apply
 
