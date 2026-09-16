@@ -1,7 +1,7 @@
 ---
 created: 2026-02-27
-modified: 2026-09-02
-reviewed: 2026-09-02
+modified: 2026-09-16
+reviewed: 2026-09-16
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -30,7 +30,7 @@ When to set `context: fork` and `agent:` in skill frontmatter.
 
 | Field | Value | Effect |
 |-------|-------|--------|
-| `context: fork` | `fork` | Runs the skill in an isolated forked context — its verbose output never reaches the main window. Works for plugin skills again (#16803 fixed). Safe for single-subagent skills; avoid pairing with parallel fan-out on `[1m]`. |
+| `context: fork` | `fork` | Runs the skill in an isolated forked context — its verbose output never reaches the main window. Works for plugin skills again (#16803 fixed). Safe for single-subagent skills; avoid pairing with parallel fan-out on `[1m]`. **Runs as a background task by default (2.1.218)** — the invoking session is not blocked; pass `background: false` in the skill's own frontmatter to force synchronous execution. |
 | `agent` | subagent type name | Which subagent type to launch. Use `general-purpose` for most skills. Works with or without `context: fork`. |
 
 ## Recommended Pattern
@@ -49,6 +49,8 @@ description: ...
 ```
 
 For a skill that fans out **parallel** subagents on a 1M-context session (every Fable 5.1 session, or any other model opened with `[1m]`), keep `agent: general-purpose` and **omit** `context: fork` — the rate-limit cascade hazard applies to concurrent subagents, not to the single fork.
+
+By default a forked skill now runs in the background (2.1.218) — the caller gets a completion notification rather than a blocking result. Add `background: false` to the frontmatter block above when the skill's result is needed synchronously (e.g. the caller's next step consumes its output immediately). This is a **skill-frontmatter** default, distinct from the `Agent`-tool-level background-by-default behavior for non-teammate spawns (`.claude/rules/agent-development.md` § Background Execution) — don't conflate the two: a `context: fork` skill backgrounds itself regardless of how the `Agent` tool it uses internally would otherwise default.
 
 ## Model Constraint
 
@@ -78,7 +80,7 @@ Does the skill fan out PARALLEL subagents (batch/per-PR/per-file waves)?
 
 - [ ] Does the skill use `AskUserQuestion`? If yes, **omit** `agent:` (runs inline).
 - [ ] Does the skill use `Task`, multi-file reads, or web research? If yes, **add** `agent: general-purpose`.
-- [ ] Does the skill produce a self-contained verbose artifact **without** parallel fan-out? If yes, **add** `context: fork` (now works for plugins per #16803).
+- [ ] Does the skill produce a self-contained verbose artifact **without** parallel fan-out? If yes, **add** `context: fork` (now works for plugins per #16803). Remember it now runs in the background by default (2.1.218) — add `background: false` if the caller needs the result synchronously.
 - [ ] Does the skill fan out **parallel** subagents? If yes, **omit** `context: fork` — the concurrent-subagent rate-limit cascade still applies on a 1M-context session (every Fable 5.1 session, or any `[1m]` session).
 - [ ] Set `model:` only at the extremes (`opus` for deep reasoning, `sonnet` for mechanical work). Never `haiku`.
 - [ ] Update `modified:` date when adding these fields.
