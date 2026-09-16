@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.8](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.11.7...hooks-plugin-v2.11.8) (2026-09-16)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** allow echo/printf writes to /tmp scratch files ([#2660](https://github.com/laurigates/claude-plugins/issues/2660)) ([75b2b51](https://github.com/laurigates/claude-plugins/commit/75b2b51b607eddd6f99dd323b9d3d77e519251a5))
+
 ## [2.11.7](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.11.6...hooks-plugin-v2.11.7) (2026-09-10)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.2](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.12.1...feedback-plugin-v1.12.2) (2026-09-16)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** allow echo/printf writes to /tmp scratch files ([#2660](https://github.com/laurigates/claude-plugins/issues/2660)) ([75b2b51](https://github.com/laurigates/claude-plugins/commit/75b2b51b607eddd6f99dd323b9d3d77e519251a5))
+
 ## [1.12.1](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.12.0...feedback-plugin-v1.12.1) (2026-09-10)
 
 
