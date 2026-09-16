@@ -1,7 +1,7 @@
 ---
 created: 2026-02-27
-modified: 2026-06-23
-reviewed: 2026-07-04
+modified: 2026-09-16
+reviewed: 2026-09-16
 paths:
   - ".claude/hooks/**"
   - "**/.claude-plugin/plugin.json"
@@ -20,6 +20,9 @@ When to use LLM-powered hooks (`type: "prompt"` and `type: "agent"`), HTTP hooks
 | `type: "http"` | Logic is deterministic but handled by a **remote service** | Centralized policy enforcement, external audit logging, webhook integrations |
 | `type: "prompt"` | Decision requires **judgment** and the hook input data is sufficient | Task completeness evaluation, prompt classification, output quality |
 | `type: "agent"` | Decision requires judgment **and** inspecting files or running commands | Test verification, code review, implementation quality checks |
+| `type: "mcp_tool"` (2.1.118+) | The check needs to call an MCP tool directly, without prompt/agent overhead | MCP-server-backed lookups or validations |
+
+> **Note (2.1.118)**: Hooks can invoke MCP tools directly via `type: "mcp_tool"`. The changelog names the capability but not its config schema (which server/tool fields it takes) or which events accept it — confirm against code.claude.com/docs before authoring one. Not yet folded into the decision tree below.
 
 ### Quick Decision Tree
 
@@ -71,6 +74,7 @@ Not all events support prompt/agent hooks.
 | `WorktreeRemove` | Cleanup is mechanical |
 | `ConfigChange` | Audit logging is mechanical |
 | `Notification` | Notification routing is mechanical |
+| `DirectoryAdded` (2.1.219+) | Directory registration is mechanical, similar to WorktreeCreate/Remove — placed here by analogy; the changelog does not state its supported hook types explicitly, confirm against code.claude.com/docs |
 
 > **Note (2.1.142)**: Attempting to register a prompt- or agent-type hook for `SessionStart`, `Setup`, or `SubagentStart` now fails fast with a clear "use a command-type hook instead" error. Previously these registrations were silently dropped, making misconfiguration hard to diagnose. If you need LLM judgment at session start, run a command hook that shells out to `claude --print` or another deterministic invocation.
 
@@ -125,6 +129,10 @@ Multi-turn subagent with tool access (Read, Grep, Glob, Bash). 60-second default
 | `model` | No | Fast model (Haiku) | Model for the agent |
 | `timeout` | No | 60s | Seconds before canceling |
 | `statusMessage` | No | — | Custom spinner message while running |
+
+### MCP Tool Hook (2.1.118+)
+
+Hooks can invoke an MCP tool directly via `type: "mcp_tool"` instead of running a shell command or an LLM evaluation. The changelog entry names the capability but not its field-level config shape (e.g. which fields identify the target server and tool, or how arguments are supplied) — confirm the exact schema against code.claude.com/docs before authoring one.
 
 ## Response Schema
 
@@ -283,6 +291,8 @@ The command hook runs first (fast structural validation). If it passes, the agen
 - [ ] Agent hooks describe what files to read or commands to run
 - [ ] Model is appropriate (Haiku for simple judgment, Sonnet for complex)
 - [ ] High-frequency events prefer `command` or `prompt` over `agent`
+
+> **Note (2.1.229)**: Self-hosted runner sessions can also receive **server-supplied hooks** — hooks injected by the runner infrastructure itself, matching how managed environments already deliver hooks. See `.claude/rules/hooks-reference.md` § Self-Hosted Runner Lifecycle.
 
 ## Related Rules
 

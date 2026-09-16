@@ -1,7 +1,7 @@
 ---
 created: 2026-02-26
-modified: 2026-09-07
-reviewed: 2026-09-02
+modified: 2026-09-16
+reviewed: 2026-09-16
 paths:
   - ".claude/hooks/**"
   - "**/.claude-plugin/plugin.json"
@@ -14,17 +14,21 @@ Comprehensive reference for Claude Code hook events, schemas, and patterns. This
 
 > **Note (2.1.142)**: `SessionStart`, `Setup`, and `SubagentStart` accept only `type: "command"` hooks. Configuring a prompt- or agent-type hook for these events now surfaces a clear "use a command-type hook instead" error at load time, rather than silently ignoring the handler. See `.claude/rules/prompt-agent-hooks.md` for the events that do support prompt and agent hooks.
 
+> **Note (2.1.199)**: `SessionStart`, `Setup`, and `SubagentStart` hooks no longer hide stderr when exiting with code 2 — the error text now shows in the transcript, matching other command hooks.
+
 ## Hook Events
 
 ### Core Session Events
 
 | Event | When It Fires | Matcher Support |
 |-------|--------------|-----------------|
-| `SessionStart` | Session begins, resumes, or after `/clear` | matcher: `"startup"`, `"resume"`, `"clear"`, `"compact"`, `""` (all) |
+| `SessionStart` | Session begins, resumes, or after `/clear` | matcher: `"startup"`, `"resume"`, `"clear"`, `"compact"`, `"fork"`, `""` (all) |
 | `SessionEnd` | Session terminates | none |
 | `UserPromptSubmit` | User submits a prompt | none |
 | `PreCompact` | Before context compaction | none |
 | `PostCompact` | After context compaction completes (2.1.76+) | matcher: `"manual"`, `"auto"`, `""` (all) |
+
+> **Note (2.1.214)**: A session that begins as a fork now reports source `"fork"` — previously it reported `"resume"`. A `SessionStart` hook matched only on `"resume"` no longer fires for forked sessions; add a `"fork"` matcher (or `""`) if it should.
 
 ### Tool Execution Events
 
@@ -40,6 +44,7 @@ Comprehensive reference for Claude Code hook events, schemas, and patterns. This
 | Event | When It Fires | Matcher Support |
 |-------|--------------|-----------------|
 | `Stop` | **Main agent** finishes responding | none |
+| `StopFailure` | The turn ends due to an API error (rate limit, auth failure, etc.) (2.1.78+) | none |
 | `SubagentStart` | A subagent (Task tool) is about to start | subagent type |
 | `SubagentStop` | A **subagent** finishes | none |
 
@@ -57,6 +62,7 @@ Comprehensive reference for Claude Code hook events, schemas, and patterns. This
 | Event | When It Fires | Matcher Support |
 |-------|--------------|-----------------|
 | `TeammateIdle` | A teammate in an agent team goes idle | teammate name |
+| `TaskCreated` | A task is created via `TaskCreate` (2.1.84+) | not stated upstream — likely task list name by analogy to `TaskCompleted`, unconfirmed |
 | `TaskCompleted` | A task in the shared task list is marked complete — driven by `TaskUpdate status=completed`; those task tools are unavailable on Opus 4.8, Sonnet 5, Fable 5/5.1, Mythos 5 and newer unless `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` (2.1.233), so the event does not fire on those models by default | task list name |
 
 ### MCP Events (2.1.76+)
@@ -75,6 +81,16 @@ Comprehensive reference for Claude Code hook events, schemas, and patterns. This
 | `MessageDisplay` | An assistant message is about to be displayed (2.1.152+) | none |
 | `PreModelSwitch` | Before the session's model is switched — block, confirm, or annotate a model switch (2.1.251+) | none |
 | `PostModelSwitch` | After a model switch takes effect — block, confirm, or annotate a model switch (2.1.251+) | none |
+| `CwdChanged` | The working directory changes (2.1.83+) | not stated upstream — confirm against code.claude.com/docs |
+| `FileChanged` | A watched file changes on disk (2.1.83+) | not stated upstream — confirm against code.claude.com/docs |
+
+> **Note (2.1.83)**: `CwdChanged` and `FileChanged` were added for reactive environment management (e.g. `direnv`). The changelog does not detail their input schema or matcher support beyond the trigger itself.
+
+### Directory Events (2.1.219+)
+
+| Event | When It Fires | Matcher Support |
+|-------|--------------|-----------------|
+| `DirectoryAdded` | A new working directory is registered mid-session, via `/add-dir` or the SDK `register_repo_root` control request | not stated upstream — confirm against code.claude.com/docs before relying on it |
 
 ---
 
@@ -121,7 +137,7 @@ The command hook default was increased from 60 seconds in Claude Code 2.1.50.
 | Hook Type | Recommended Timeout | Notes |
 |-----------|---------------------|-------|
 | `SessionStart` | 300–600s | Dependency installs can be slow |
-| `SessionEnd` | 60–120s | Configurable via `CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS` (fixed in 2.1.74; was hard-capped at 1.5s) |
+| `SessionEnd` | 60–120s | Configurable via `CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS` (fixed in 2.1.74 for hooks with an explicit per-hook `timeout`; hooks with no per-hook `timeout` were still capped at 1.5s until 2.1.268) |
 | `PreToolUse` | 10–30s | Keep fast to avoid blocking tool execution |
 | `PostToolUse` | 30–120s | Formatting, linting, logging |
 | `Stop` / `SubagentStop` | 30–60s | Notifications, git checks |
@@ -130,6 +146,8 @@ The command hook default was increased from 60 seconds in Claude Code 2.1.50.
 | `WorktreeRemove` | 30–60s | Cleanup operations |
 | `TeammateIdle` | 10–30s | Should assign work quickly |
 | `TaskCompleted` | 30–60s | Validation before acceptance |
+
+> **Note (2.1.239)**: Remote/web sessions now send keep-alives while a long `SessionStart`/`Setup` hook runs, so the container is no longer idle-reaped mid-hook — relevant to the 300–600s recommendation above.
 
 Set timeout explicitly even though the default is now 10 minutes — explicit timeouts document intent:
 
@@ -189,6 +207,10 @@ The exec form (`args: string[]`) spawns the command directly without a shell, so
   "effort": {"level": "high"}
 }
 ```
+
+### SessionStart (resume) — Input (2.1.251+)
+
+As of 2.1.251, a `SessionStart` hook firing with matcher `"resume"` receives additional input describing the session's staleness and the estimated cost of re-warming the prompt cache. The changelog names these two signals but not their exact field names or shape — confirm against code.claude.com/docs before parsing them in a script.
 
 ### PreToolUse / PostToolUse / PostToolUseFailure
 
@@ -260,6 +282,16 @@ The exec form (`args: string[]`) spawns the command directly without a shell, so
 }
 ```
 
+### DirectoryAdded (2.1.219+)
+
+```json
+{
+  "directory": "/path/to/newly-added/dir"
+}
+```
+
+Fires after `/add-dir` or the SDK `register_repo_root` control request registers a new working directory mid-session. The field name shown is a best-effort reading of the changelog entry, not a confirmed schema — verify against code.claude.com/docs before relying on it.
+
 ### TeammateIdle (2.1.50+)
 
 ```json
@@ -293,6 +325,14 @@ The exec form (`args: string[]`) spawns the command directly without a shell, so
   "new_value": ["Bash(git *)", "Bash(npm *)"],
   "source_file": ".claude/settings.json"
 }
+```
+
+### PreCompact (2.1.105+)
+
+`PreCompact` uses only the Common Fields — no event-specific input. Since 2.1.105 a `PreCompact` hook can **block** compaction, either by exiting with code 2 (see Exit Codes) or by returning:
+
+```json
+{"decision": "block"}
 ```
 
 ### PostCompact (2.1.76+)
@@ -340,6 +380,17 @@ The exec form (`args: string[]`) spawns the command directly without a shell, so
 
 Output can override `action`/`content`. Exit code 2 changes action to `decline`.
 
+### Notification (2.1.198+)
+
+```json
+{
+  "message": "...",
+  "source": "agent_needs_input"
+}
+```
+
+`source` is `"agent_needs_input"` or `"agent_completed"` for background-agent notifications (`claude agents`), alongside the pre-existing desktop/system-notification cases. As of 2.1.233, `Notification` hooks also correctly fire for permission prompts under Claude Desktop and VS Code — previously silently skipped there.
+
 ---
 
 ## Output Schemas
@@ -377,6 +428,8 @@ PreToolUse hooks wrap their JSON response in a `hookSpecificOutput` envelope:
   }
 }
 ```
+
+> **Note (2.1.89)**: A fourth `permissionDecision` value, `"defer"`, lets a headless (`-p`) session pause at the tool call instead of resolving it; resuming with `-p --resume` re-invokes the hook to re-evaluate the deferred call.
 
 #### Who reads `permissionDecisionReason`
 
@@ -417,6 +470,8 @@ Optionally modify the tool input before execution:
   }
 }
 ```
+
+> **Note (2.1.85)**: The same `updatedInput` + `permissionDecision: "allow"` shape can satisfy an `AskUserQuestion` call — a headless integration collects the answer through its own UI and hands it back as `updatedInput`, instead of the question reaching a terminal.
 
 ### PostToolUse -- Replace Tool Output (2.1.121+)
 
@@ -614,6 +669,8 @@ subsequent turn.** A one-line hint that fires on a high-frequency tool
 call isn't a one-time ~30-token cost — it's ~30 tokens × every remaining
 turn in the session. Hook authors should design for "never bloats the
 replayed transcript" as deliberately as "never reaches a diff."
+
+> **Note (2.1.89)**: Hook output over 50K characters is no longer injected into context directly — it's saved to disk and the model sees a file path + preview instead. This caps the worst case of an unbounded hook output blowing up the transcript, but design for the smaller output regardless (see Design guidance below).
 
 ### Which output the model sees (and replays)
 
@@ -896,6 +953,8 @@ Use async hooks for non-blocking side effects like logging, metrics, and notific
 
 > **Note (2.1.75)**: Async hook completion messages are suppressed by default. Use `--verbose` or transcript mode to see them.
 
+> **Note (2.1.239)**: If the session's working directory is deleted mid-session, hooks no longer fail with `posix_spawn ENOENT` — they now run from the project root or the user's home directory instead.
+
 ---
 
 ## Hook Handler Fields
@@ -938,6 +997,8 @@ hooks:
 
 ### Agent Frontmatter Hooks
 
+> **Note (2.1.218)**: Agent frontmatter hooks only run when the agent file's own folder has accepted workspace trust. An agent shipped in an untrusted directory has its frontmatter hooks silently skipped.
+
 Agent hooks defined with `Stop` are automatically converted to `SubagentStop` when the agent runs as a subagent, since agents execute in subagent context.
 
 ```yaml
@@ -956,6 +1017,10 @@ hooks:
 ---
 
 ## Environment Variables
+
+### `CLAUDE_EFFORT` (2.1.133+)
+
+Hooks receive the active effort level via the `effort.level` field in the Common Fields JSON input (see Input Schemas above) and via the `$CLAUDE_EFFORT` environment variable exported to hook processes. Bash tool commands can also read `$CLAUDE_EFFORT`. This is distinct from `${CLAUDE_EFFORT}` skill-content substitution — see `.claude/rules/skill-development.md`.
 
 ### `CLAUDE_ENV_FILE`
 
@@ -1010,6 +1075,8 @@ Self-hosted runners gained a `post-session` lifecycle hook that runs **after the
 
 This is a runner lifecycle hook (configured in the runner's lifecycle config), distinct from the in-session `SessionEnd` hook event above: `post-session` fires in the runner harness around the whole session, whereas `SessionEnd` fires inside the session.
 
+> **Note (2.1.229)**: Self-hosted runner sessions can also receive **server-supplied hooks** — hooks injected by the runner infrastructure itself, matching how managed environments already deliver hooks.
+
 ---
 
 ## Matcher Patterns
@@ -1037,6 +1104,12 @@ MCP tools use the naming pattern `mcp__<server>__<tool>`. Match them with regex 
 
 > **Note (2.1.176)**: Fixed hook `if` conditions for Read/Edit/Write tool **paths**. Patterns like `Edit(src/**)`, `Read(~/.ssh/**)`, and `Read(.env)` now match correctly — previously these path-scoped conditions silently failed to fire.
 
+> **Note (2.1.191)**: Fixed hooks with comma-separated matchers (e.g. `"Bash,PowerShell"`) silently never firing — they now match either tool.
+
+> **Note (2.1.195)**: A matcher naming a hyphenated identifier (e.g. `code-reviewer`, `mcp__brave-search`) now **exact-matches** rather than substring-matches. `mcp__brave-search` no longer matches `mcp__brave-search__search`; use `mcp__brave-search__.*` to match all of a hyphenated MCP server's tools.
+
+> **BREAKING (2.1.214)**: `if:` glob conditions now match depth-strictly — a single-segment `dir/**` matches only `<cwd>/dir`, not `dir` at any depth. Write `**/dir/**` for any-depth matching. This differs from `deny`/`ask` **permission** rules (`.claude/rules/agentic-permissions.md`), which keep their any-depth match — the two surfaces now diverge.
+
 ---
 
 ## Exit Codes
@@ -1048,6 +1121,8 @@ MCP tools use the naming pattern `mcp__<server>__<tool>`. Match them with regex 
 | Other | Non-blocking error | Logged in verbose mode, operation continues |
 
 > **Note**: `WorktreeCreate` and `WorktreeRemove` treat any non-zero exit code as a failure (not just exit code 2).
+
+> **Note (2.1.214)**: Exit code 2 blocks the operation as documented even when the hook's stdout JSON fails schema validation — malformed JSON no longer silently downgrades a block to a pass-through.
 
 ---
 
@@ -1150,11 +1225,13 @@ MCP tools use the naming pattern `mcp__<server>__<tool>`. Match them with regex 
 | `PostToolUseFailure` | Tool | |
 | `PermissionRequest` | Tool | 2.1.50 |
 | `Stop` | Agent | |
+| `StopFailure` | Agent | 2.1.78 |
 | `SubagentStart` | Agent | |
 | `SubagentStop` | Agent | |
 | `WorktreeCreate` | Worktree | 2.1.50 |
 | `WorktreeRemove` | Worktree | 2.1.50 |
 | `TeammateIdle` | Teams | 2.1.50 |
+| `TaskCreated` | Teams | 2.1.84 |
 | `TaskCompleted` | Teams | 2.1.50 |
 | `Elicitation` | MCP | 2.1.76 |
 | `ElicitationResult` | MCP | 2.1.76 |
@@ -1163,4 +1240,7 @@ MCP tools use the naming pattern `mcp__<server>__<tool>`. Match them with regex 
 | `MessageDisplay` | Misc | 2.1.152 |
 | `PreModelSwitch` | Misc | 2.1.251 |
 | `PostModelSwitch` | Misc | 2.1.251 |
+| `CwdChanged` | Misc | 2.1.83 |
+| `FileChanged` | Misc | 2.1.83 |
+| `DirectoryAdded` | Directory | 2.1.219 |
 
