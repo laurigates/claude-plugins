@@ -32,7 +32,8 @@
     "checkpoint",
     "repo-deletion-safety",
     "branch-base",
-    "prose-style"
+    "prose-style",
+    "workflow-scale"
   ],
   "hooks": {
     "SessionStart": [
@@ -85,6 +86,16 @@
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/external-pr-merge-guard.sh",
             "timeout": 15000
+          }
+        ]
+      },
+      {
+        "matcher": "Workflow",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/workflow-scale-guard.sh",
+            "timeout": 5000
           }
         ]
       },
