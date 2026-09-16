@@ -162,6 +162,31 @@ The block message reports what the preflight **found** in that repo (commits, un
 
 **Tests:** `bash hooks-plugin/hooks/test-repo-deletion-safety.sh` (hermetic — all fixtures under `mktemp -d`).
 
+### workflow-scale-guard.sh
+
+A PreToolUse hook on the **Workflow** tool that asks the user to confirm before a multi-agent workflow spawns more agents than the configured limit. A workflow's cost is set almost entirely by its agent count, and that number is a property of the script's shape rather than of the prompt that asked for it.
+
+Two shipped mechanisms look like they cover this and do not. `workflowSizeGuideline` is advisory system-prompt text that ends *"This is a guideline, not a hard limit — follow it unless the user's prompt calls for a different scale"*, and a sweep-shaped prompt reads exactly like a call for a different scale. `skipWorkflowUsageWarning` is a **one-time** acceptance of the multi-agent usage warning; once set, auto mode stops prompting before every workflow, at every scale, permanently. Observed 2026-09-15: five workflow runs in one session spawned 496 subagents against a `medium` guideline of 10 and cost $528 in an afternoon — 67% of the day's spend and roughly 8x the entire GitHub Actions bill — with no prompt, because the acceptance flag had been set long before.
+
+| Script shape | Estimate | Behavior |
+|---|---|---|
+| Bounded fan-out (literal array, `.slice(0, N)`, `Array.from({length: N})`) within the limit | exact | Silent |
+| One `agent()` per runtime-length list (`files.map(f => agent(...))`) | 1 x width | Silent at defaults |
+| Two or more `agent()` sites inside one runtime-length fan-out | n x width | **`ask`** |
+| A runtime-length fan-out nested inside another | width squared and up | **`ask`** |
+| Bounded fan-out whose product exceeds the limit | exact | **`ask`** |
+| Resume (`resumeFromRunId`), saved workflow by `name`, unparsable script, no `agent()` | — | Silent (fails open) |
+
+A fan-out whose length is only knowable at runtime is neither waved through nor hard-blocked: it is costed at `CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH` items (default 8) so the limit governs it like any other shape. That single mechanism replaces a tier ladder and puts the split where the cost actually is — agents *per item* and nesting depth, not fan-out presence.
+
+**`ask`, not a block, on purpose.** The failure is not "this workflow is forbidden", it is "nobody was asked". A hard block would make the agent judge whether the scale is justified, which is the judgment that already went wrong; `ask` puts the number in front of the person paying and lets them approve in one keystroke. The message names the two cheap remedies — cap the fan-out where its length is decided (`.slice(0, 6)`, which the estimator reads as the bound, so the prompt clears on a one-token edit), or reduce agents per item by reusing one agent across stages.
+
+Estimation runs in [`hooks/workflow-scale-estimate.py`](hooks/workflow-scale-estimate.py), which blanks comment and string/template bodies before counting so an `agent(` discussed in a prompt is not read as a call. Known gaps, all fail-open: `agent()` inside a `${...}` interpolation, fan-out through a helper function, and arrays built by `push` in a loop.
+
+**Toggle:** `export CLAUDE_HOOKS_DISABLE_WORKFLOW_SCALE_GUARD=1`. Tuning: `CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS` (default 10, matching the `medium` guideline), `CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH` (default 8). A hook runs as its own process with the session environment, so there is no inline prefix an agent can use to reach these — raising the limit is an operator action.
+
+**Tests:** `bash hooks-plugin/hooks/test-workflow-scale-guard.sh` (15 cases; the negatives carry the contract — a guard that asks on ordinary workflows gets disabled within a day).
+
 ### branch-base-guard.sh
 
 A PreToolUse hook that nudges before cutting a new branch from a local default branch that is **ahead of its remote** — `git-hazards.md` trap #2: unpushed commits on local `main` ride into the new branch, get bundled into its PR under an unrelated title, and a squash-merge hides them everywhere except the file list.

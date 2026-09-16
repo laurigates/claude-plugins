@@ -781,6 +781,12 @@ repos:
         language: system
         files: '^hooks-plugin/hooks/(repo-deletion-safety\.sh|test-repo-deletion-safety\.sh)$'
         pass_filenames: false
+      - id: test-workflow-scale-guard
+        name: workflow-scale-guard hook regression
+        entry: bash ./hooks-plugin/hooks/test-workflow-scale-guard.sh
+        language: system
+        files: '^hooks-plugin/hooks/(workflow-scale-guard\.sh|workflow-scale-estimate\.py|test-workflow-scale-guard\.sh)$'
+        pass_filenames: false
       - id: test-secret-protection
         name: secret-protection hook regression
         entry: bash ./hooks-plugin/hooks/test-secret-protection.sh
