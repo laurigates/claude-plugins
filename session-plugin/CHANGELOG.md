@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.10.5...session-plugin-v1.11.0) (2026-09-16)
+
+
+### Features
+
+* **session-plugin:** expose session skills to pi and read pi transcripts ([#2664](https://github.com/laurigates/claude-plugins/issues/2664)) ([1bf0762](https://github.com/laurigates/claude-plugins/commit/1bf07627c506a15a902b50fa5122845e5e0c4a75)), closes [#2661](https://github.com/laurigates/claude-plugins/issues/2661) [#2662](https://github.com/laurigates/claude-plugins/issues/2662)
+
 ## [1.10.5](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.10.4...session-plugin-v1.10.5) (2026-09-10)
 
 
