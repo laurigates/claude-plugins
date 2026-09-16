@@ -1,7 +1,7 @@
 ---
 created: 2026-06-22
-modified: 2026-09-02
-reviewed: 2026-09-02
+modified: 2026-09-16
+reviewed: 2026-09-16
 paths:
   - ".github/workflows/**"
 ---
@@ -32,7 +32,7 @@ workflows is purely **cost-economics**, which still holds:
   Sonnet at *high* effort on both quality and token efficiency, because the
   per-token premium (Opus output ≈ 1.7× Sonnet) was outweighed by token
   *volume*. So `effort`, not `model`, is the cost lever. The `opus` alias
-  resolves to Opus 5 (2.1.255+) and effort names do not carry across
+  resolves to Opus 5 (2.1.219+) and effort names do not carry across
   generations — the economics and their re-verification live in
   skill-development.md § Model Selection; the monthly audit below is what
   checks the picks still hold.
@@ -50,6 +50,14 @@ contaminate a main loop.
 Valid levels: `low`, `medium`, `high`, `xhigh`, `max`. **Opus defaults to
 `high`** — so effort must be set *explicitly* or the cost savings are forfeited
 (this is what the guard's `missing_effort` check enforces).
+
+An org-level `maxEffortLevel` setting (2.1.267+, top-level or per model under
+`modelSettings`) can cap the effective effort on every provider including
+Bedrock, Vertex and Foundry — a workflow requesting `--effort xhigh` can
+silently run at a lower capped level. `check-workflow-model.sh` only validates
+the requested flag, not the effective post-cap level, so factor this in when
+the monthly workflow-model audit finds a workflow's real-world cost or output
+quality looks off from its declared effort.
 
 ## Effort by job shape
 

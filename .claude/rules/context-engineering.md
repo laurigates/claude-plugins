@@ -1,7 +1,7 @@
 ---
 created: 2026-07-26
-modified: 2026-09-02
-reviewed: 2026-09-02
+modified: 2026-09-16
+reviewed: 2026-09-16
 paths:
   - "**/SKILL.md"
   - "**/skills/**"
@@ -55,6 +55,14 @@ The post's ">80% removed, no measurable loss" figure is about an always-loaded
 system prompt. A 20,000-char skill body is a smaller problem than a 5,000-char
 unscoped rule.
 
+A 1M-context model is not always a 1M-context budget in practice:
+`CLAUDE_CODE_DISABLE_1M_CONTEXT` (2.1.223+) forces every model with a native
+1M window — not just a hardcoded list — down to 200K via auto-compaction. If
+that variable is set session-wide, the always-loaded C5 surface competes
+against a 200K budget even on a 1M-context session;
+`CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1` restores the previous
+per-model-ID behavior.
+
 ## Authoring rules
 
 **Every new `.claude/rules/*.md` carries a `paths:` glob** unless its violation
@@ -93,6 +101,10 @@ detail, so a scoped run loads only its own material. As of 2026-08-15 the corpus
 has **130** single `REFERENCE.md` files and **3** `references/` directories — the
 shape exists now (`agent-patterns-plugin:parallel-agent-dispatch` is the
 reference implementation, #2143), so copy it rather than inventing a layout.
+Anthropic's own built-in `claude-api` skill cut its context cost from ~200k+ to
+~25k tokens (2.1.234+) by loading reference docs on demand instead of shipping
+them inline — the same move this rule asks skill authors to make, at platform
+scale.
 
 **Spend constraint tokens where violation is expensive.** The measured pattern
 in text that earned its tokens: it names a non-obvious, costly failure **and says

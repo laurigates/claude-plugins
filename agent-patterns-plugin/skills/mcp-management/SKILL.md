@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-07-09
-reviewed: 2026-07-09
+modified: 2026-09-16
+reviewed: 2026-09-16
 name: mcp-management
 description: Install, configure and troubleshoot MCP servers. Use when adding/enabling servers, editing .mcp.json, fixing OAuth, or when a server runs stale code after an upstream fix.
 user-invocable: false
@@ -60,6 +60,10 @@ jq -r '.mcpServers | keys[]' .mcp.json   # List configured servers
 jq '.mcpServers.context7' .mcp.json      # Verify a server's config
 ```
 
+As of 2.1.238, `claude mcp list` / `claude mcp get` report a disabled server as
+`⊘ Disabled` immediately, without attempting to connect to it for a health
+check — a disabled server no longer costs a connection attempt to inspect.
+
 ## OAuth Remote Servers (2.1.50+)
 
 Remote HTTP+SSE servers use OAuth 2.1: Claude Code discovers metadata from
@@ -68,6 +72,13 @@ in-browser once, and **step-up auth** re-prompts when a tool needs elevated
 scope. To refresh stale OAuth config, `/mcp disable` then `/mcp enable` the
 server. Full flow, step-up detail, and caching behavior in
 [REFERENCE.md → OAuth support](REFERENCE.md#oauth-support-for-remote-mcp-servers).
+
+### CLI Authentication (2.1.186+)
+
+`claude mcp login <server>` / `claude mcp logout <server>` authenticate or
+de-authenticate a server from the command line, without opening the
+interactive `/mcp` menu. Pass `--no-browser` to complete the OAuth flow over
+SSH or another environment with no local browser.
 
 ## Dynamic Tool Discovery (`list_changed`)
 
@@ -89,8 +100,15 @@ Quick OAuth triage:
 |---------|-------------|--------|
 | Authorization prompt repeats | Token not persisted | Check token storage permissions |
 | Step-up auth loop | Scope mismatch | Revoke and re-authorize |
-| Discovery fails | Server down or URL wrong | Verify server URL and connectivity |
+| Discovery fails | Server down or URL wrong | Verify server URL and connectivity — `claude mcp list` / `/mcp` show the HTTP status and error text for a failed connection (2.1.219+), and warn when a config value has hidden leading or trailing whitespace; check both before assuming the URL itself is wrong. In headless/`-p` runs, `mcp_server_errors` in the stream-json init event lists any `--mcp-config` entries skipped by validation |
 | Cache stale | Server changed OAuth config | Disable/enable server to refresh |
+| Tool call hangs | Long-running MCP tool call | A call running longer than 2 minutes now moves to the background automatically so the session stays usable (2.1.212+); tune or disable with `CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS` |
+| Remote tool call never returns | Server stopped responding mid-call | A remote MCP tool call with no response for 5 minutes now aborts with an error instead of blocking indefinitely (2.1.187+); override with `CLAUDE_CODE_MCP_TOOL_IDLE_TIMEOUT` |
+
+MCP diagnostic output never prints resolved secrets (2.1.234+): a scope-conflict
+warning shows the configured `${VAR}` placeholder, and a connection-failure
+message shows only the server origin — safe to paste into an issue or share
+with a teammate.
 
 ## Stale cached git source
 
