@@ -5,8 +5,7 @@ allowed-tools: Bash(bash *), Bash(mkdir *), Bash(mktemp *), Bash(git diff *), Ba
 argument-hint: "--rules | --skills | --recipes | --process | --all | --dry-run"
 args: "[--rules] [--skills] [--recipes] [--process] [--all] [--dry-run]"
 created: 2026-02-11
-modified: 2026-07-27
-compatibility: claude-code
+modified: 2026-09-15
 reviewed: 2026-07-14
 ---
 
@@ -39,6 +38,9 @@ Before proposing any artifact, evaluate: Does it update an existing one? Does an
 - Git repo detected: !`find . -maxdepth 1 -name '.git' -type d`
 - Justfile: !`find . -maxdepth 1 \( -name 'justfile' -o -name 'Justfile' \) -print -quit`
 - Rules directory: !`find . -path '*/.claude/rules/*' -name '*.md' -type f -not -path '*/.claude/worktrees/*'`
+
+Harnesses that don't execute `` !`…` `` context commands show these lines as
+text; in that case run the three `find` commands yourself before Step 1.
 
 ## Parameters
 
@@ -84,6 +86,11 @@ Consume the digest:
   (sequence-naming is judgment); it hands you completed-work intervals.
 - `RULE_HINTS_FROM_TOOLING` — repeated permission/auth denials, the **only**
   mechanical rule signal.
+
+Under pi, the collector falls back to the transcript named by `PI_SESSION_FILE`
+and reports `TRANSCRIPT_FORMAT=pi`. pi records no permission denials, so its
+`RULE_HINTS_FROM_TOOLING` carries `RULE_HINTS_RECORDED=false`: a zero there
+means "not recorded", not "none".
 
 When `TRANSCRIPT_AVAILABLE=false` / `STATUS=SKIP` (fresh clone, remote sandbox,
 mid-conversation flush, or no `--session-id`), fall back to reading the
@@ -134,7 +141,7 @@ If `--dry-run`: skip this step.
 
 **In auto mode**: apply proposals directly without per-category `AskUserQuestion`. All targets are reversible via `git restore` — rule files, skill files, and justfile recipes are tracked in git, so a wrong edit can be undone with one command. This matches auto mode's "prefer action over planning" directive. **Retain `AskUserQuestion` for destructive operations** (`[REDUNDANT]` proposals that remove a rule or recipe).
 
-**In manual / interactive mode**: use `AskUserQuestion` to confirm each category before applying. The user can multi-select which `[UPDATE]` / `[NEW]` proposals to accept.
+**In manual / interactive mode**: use `AskUserQuestion` to confirm each category before applying. The user can multi-select which `[UPDATE]` / `[NEW]` proposals to accept. AskUserQuestion keeps the turn open, so no Stop hook fires between the question and the answer. Where `AskUserQuestion` is unavailable (a harness without the tool), ask in plain text and end the turn.
 
 **In plan mode**: neither default applies — the harness disallows non-readonly tool calls (including `AskUserQuestion`-then-apply) except writes to the active plan file. Write the proposal set to the active plan file as a single coherent block (Context + per-category `[UPDATE]` / `[NEW]` / `[REDUNDANT]` sections + a brief verification section), then call `ExitPlanMode` to surface for user approval. Do not apply directly. After the user approves the plan, fall back to the auto-mode or manual-mode flow above depending on which is active.
 

@@ -3,8 +3,7 @@ name: session-end
 description: End-of-session orchestrator. Previews which of wrap/distill/feedback/taskwarrior-sync qualify, single confirm, then sequence. Use when winding down a session.
 allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Skill, AskUserQuestion, TodoWrite
 created: 2026-06-10
-modified: 2026-09-05
-compatibility: claude-code
+modified: 2026-09-15
 reviewed: 2026-06-24
 ---
 
@@ -136,11 +135,14 @@ any subset; "Other" covers adjustments.
 
 Never end the turn on a freeform "y/n" text question — ending the turn
 fires Stop hooks mid-confirmation (the race that motivated this
-orchestrator). AskUserQuestion keeps the turn open.
+orchestrator). AskUserQuestion keeps the turn open. Where `AskUserQuestion`
+is unavailable (a harness without the tool), ask in plain text and end the
+turn.
 
 ### Step 4: Sequence the confirmed passes
 
-Run in this order, each via the Skill tool (or inline for taskwarrior
+Run in this order, each via the Skill tool, or — where there is no Skill
+tool — read that skill's SKILL.md and follow it (inline for taskwarrior
 sync), passing along the Step 1 survey so they don't re-do it:
 
 1. **Taskwarrior sync** (if confirmed) — run inline before Wrap so Wrap

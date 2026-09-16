@@ -24,6 +24,17 @@ plugin-feedback pass) and `blueprint-plugin:blueprint-feature-tracker-sync`
 WO-linked tasks undrained from the feature tracker) by name only; if the
 referenced plugin isn't installed the pass is skipped.
 
+## Harness compatibility
+
+The four skills carry no `compatibility: claude-code` marker, so harness
+adapters that honour that marker list them.
+
+| Harness | Status |
+|---|---|
+| Claude Code | Full: skills, both hooks, `${CLAUDE_SKILL_DIR}`, the session transcript |
+| pi, with the claude-plugins adapter | Skills work. The adapter resolves `${CLAUDE_SKILL_DIR}` and exports `PI_SESSION_FILE`, which `distill-survey.sh` reads as a second transcript format. Where `AskUserQuestion` or the Skill tool is absent, the skills ask in plain text and read sibling `SKILL.md` files directly. The nudge hooks do not run ([#2661](https://github.com/laurigates/claude-plugins/issues/2661)) |
+| OpenCode | Degraded: no skill-directory resolution, so the collector scripts are not found, and no transcript hint, so distill falls back to re-reading the conversation ([#2662](https://github.com/laurigates/claude-plugins/issues/2662)). The nudge hooks do not run ([#2661](https://github.com/laurigates/claude-plugins/issues/2661)) |
+
 ## Configuration (`session-plugin.local.md`)
 
 The skills are journal-agnostic by default (taskwarrior + GitHub only).
@@ -320,7 +331,24 @@ mechanical rule signal). Degrades to `TRANSCRIPT_AVAILABLE=false` +
 `STATUS=SKIP` when no transcript is reachable, and `session-distill` falls
 back to its LLM-re-read behaviour.
 
-Test seams: `DISTILL_SURVEY_PROJECTS_DIR`, `DISTILL_SURVEY_JUST_BIN`.
+### Transcript sources
+
+| `TRANSCRIPT_FORMAT` | Source | Used when |
+|---|---|---|
+| `claude-code` | `<home>/.claude/projects/<slug>/<session-id>.jsonl` | Always tried first |
+| `pi` | The file named by `PI_SESSION_FILE` (`~/.pi/agent/sessions/--<cwd-slug>--/<ts>_<id>.jsonl`), whose line 1 is a `{"type":"session",…}` header | The Claude lookup found nothing |
+
+The pi window is the sibling `*.jsonl` files in that directory, excluding any
+whose header carries `parentSession`: subagent, fork and `/new` sessions share
+the directory but are not separate sessions. Commands come from `bash` tool
+calls; hot files from `edit`/`write` calls whose tool result has
+`isError: false`, since pi records failed edits too. pi records no permission
+denials, so the pi digest adds `RULE_HINTS_RECORDED=false` and emits no
+per-kind `DENIAL_*` rows. A pi-format file found under the Claude projects
+directory is rejected rather than parsed as Claude, and without `--session-id`
+the pi header's `id` is used.
+
+Test seams: `DISTILL_SURVEY_PROJECTS_DIR`, `DISTILL_SURVEY_JUST_BIN`, `PI_SESSION_FILE`.
 Regression test: `scripts/tests/test-distill-survey.sh` (run directly with
 bash).
 

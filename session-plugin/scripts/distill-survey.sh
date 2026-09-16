@@ -71,6 +71,20 @@ have() { command -v "$1" >/dev/null 2>&1; }
 
 file_mtime() { stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null || echo 0; }
 
+# pi transcript support (second format). pi writes
+# ~/.pi/agent/sessions/--<cwd-slug>--/<ts>_<id>.jsonl whose line 1 is a
+# {"type":"session",…} header. The pi harness exports PI_SESSION_FILE into bash
+# calls; the Claude Code lookup below stays authoritative and pi is only a
+# fallback when it finds nothing.
+transcript_format="claude-code"
+pi_header() {   # $1 = file; true when line 1 is a pi session header
+  have jq || return 1
+  head -n 1 -- "$1" 2>/dev/null | jq -e 'type == "object" and .type == "session"' >/dev/null 2>&1
+}
+pi_is_child() { # $1 = file; true when the header names a parentSession (subagent / fork / /new)
+  head -n 1 -- "$1" 2>/dev/null | jq -e '.parentSession != null' >/dev/null 2>&1
+}
+
 # ---------------------------------------------------------------------------
 # Project name (mechanical): git repo-root basename, else project_dir basename.
 # ---------------------------------------------------------------------------
@@ -93,6 +107,8 @@ if [ -n "$session_id" ] && [ -d "$projects_dir" ] && have jq; then
   done < <(find "$projects_dir" -path '*/.claude/worktrees/*' -prune -o \
              -type f -name "${session_id}.jsonl" -print 2>/dev/null)
 fi
+# A pi-format file sitting under the Claude projects dir is not a Claude transcript.
+if [ -n "$session_file" ] && pi_header "$session_file"; then session_file=""; fi
 
 session_dir=""
 [ -n "$session_file" ] && session_dir=$(dirname "$session_file")
@@ -132,6 +148,93 @@ if [ -n "$session_dir" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# pi fallback: engages only when the Claude lookup found nothing (session_dir is
+# still empty, so the Claude window block above was skipped). Window = sibling
+# *.jsonl in the pi session's directory, excluding files whose header carries
+# parentSession — subagent, fork and /new sessions share that directory and are
+# not separate sessions. Each file is translated into the Claude-shaped lines the
+# extraction below already reads, so no Claude jq program changes:
+#   bash toolCall                      -> assistant tool_use Bash .input.command
+#   edit/write toolCall whose toolResult has isError:false
+#                                      -> toolUseResult {filePath, type}
+# pi records failed edits too, hence the join on toolCallId. pi has no
+# permission-denial record, so nothing maps to toolDenialKind.
+# ---------------------------------------------------------------------------
+# shellcheck disable=SC2016  # a jq program: $entries/$ok are jq variables, not shell
+PI_TRANSLATE_JQ='
+  [inputs | fromjson? | select(type == "object")] as $entries
+  | ([$entries[]
+      | select(.type == "message" and .message.role == "toolResult" and .message.isError == false)
+      | .message.toolCallId | select(type == "string") | {(.): true}] | add // {}) as $ok
+  | $entries[]
+  | select(.type == "message" and .message.role == "assistant")
+  | .message.content[]?
+  | select(type == "object" and .type == "toolCall")
+  | if .name == "bash" then
+      {type: "assistant", message: {content: [{type: "tool_use", name: "Bash",
+        input: {command: (.arguments.command | if type == "string" then . else "" end)}}]}}
+    elif (.name == "edit" or .name == "write")
+         and ($ok[(.id // "") | tostring] == true)
+         and ((.arguments.path | type) == "string") then
+      {toolUseResult: {filePath: .arguments.path,
+        type: (if .name == "edit" then "update" else "create" end)}}
+    else empty end
+'
+pi_tmp=""
+if [ -z "$session_file" ] && [ -n "${PI_SESSION_FILE:-}" ] && [ -f "$PI_SESSION_FILE" ] \
+   && [ -r "$PI_SESSION_FILE" ] && pi_header "$PI_SESSION_FILE"; then
+  transcript_format="pi"
+  pi_session="$PI_SESSION_FILE"
+  [ -n "$session_id" ] || session_id=$(head -n 1 -- "$pi_session" | jq -r '.id // ""' 2>/dev/null)
+  pi_dir=$(dirname "$pi_session")
+  declare -a pi_all=()
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    pi_header "$f" || continue
+    pi_is_child "$f" && continue
+    pi_all+=("$f")
+  done < <(find "$pi_dir" -maxdepth 1 -type f -name '*.jsonl' -print 2>/dev/null)
+  sessions_scanned=${#pi_all[@]}
+  declare -a pi_sorted=()
+  while IFS= read -r f; do
+    [ -n "$f" ] && pi_sorted+=("$f")
+  done < <(
+    for f in "${pi_all[@]:-}"; do [ -n "$f" ] && printf '%s\t%s\n' "$(file_mtime "$f")" "$f"; done | sort -rn | cut -f2-
+  )
+  declare -a pi_window=()
+  if [ -n "$window_days" ]; then
+    cutoff=$(( $(date +%s) - window_days * 86400 ))
+    for f in "${pi_sorted[@]:-}"; do
+      [ -n "$f" ] && [ "$(file_mtime "$f")" -ge "$cutoff" ] 2>/dev/null && pi_window+=("$f")
+    done
+  else
+    n=0
+    for f in "${pi_sorted[@]:-}"; do
+      [ -n "$f" ] || continue
+      pi_window+=("$f"); n=$((n + 1))
+      [ "$n" -ge "$window_sessions" ] && break
+    done
+  fi
+  found=false
+  for f in "${pi_window[@]:-}"; do [ "$f" = "$pi_session" ] && found=true; done
+  [ "$found" = false ] && pi_window+=("$pi_session")
+
+  pi_tmp=$(mktemp -d 2>/dev/null || echo "")
+  if [ -n "$pi_tmp" ] && [ -d "$pi_tmp" ]; then
+    trap 'rm -rf "$pi_tmp"' EXIT
+    WINDOW_FILES=()
+    i=0
+    for f in "${pi_window[@]}"; do
+      i=$((i + 1))
+      out="$pi_tmp/$i.jsonl"
+      jq -c -R -n "$PI_TRANSLATE_JQ" "$f" > "$out" 2>/dev/null || : > "$out"
+      WINDOW_FILES+=("$out")
+      [ "$f" = "$pi_session" ] && session_file="$out"
+    done
+  fi
+fi
+
+# ---------------------------------------------------------------------------
 # Availability gate.
 # ---------------------------------------------------------------------------
 available=true
@@ -142,6 +245,15 @@ if [ ! -d "$projects_dir" ]; then available=false; skip_reason="projects dir abs
 if [ -z "$session_file" ]; then available=false; skip_reason="this session's transcript not found under ${projects_dir}"; fi
 if [ "$available" = true ] && [ "$sessions_scanned" -lt "$min_sessions" ]; then
   available=false; skip_reason="fewer than ${min_sessions} transcripts in the project dir"
+fi
+# pi: the Claude-specific gates above (projects dir, --session-id) do not apply.
+if [ "$transcript_format" = pi ]; then
+  available=true; skip_reason=""
+  if [ -z "$session_file" ]; then
+    available=false; skip_reason="could not stage the pi transcript (mktemp failed)"
+  elif [ "$sessions_scanned" -lt "$min_sessions" ]; then
+    available=false; skip_reason="fewer than ${min_sessions} transcripts in the pi session dir"
+  fi
 fi
 
 window_desc="sessions=${window_sessions}"
@@ -425,6 +537,7 @@ if [ "$summary_mode" = true ]; then
   echo "PROJECT=${project}"
   echo "SESSION_ID=${session_id}"
   echo "TRANSCRIPT_AVAILABLE=true"
+  echo "TRANSCRIPT_FORMAT=${transcript_format}"
   echo "RECIPE_CANDIDATE_COUNT=${#cand_lines[@]}"
   echo "HOT_FILE_COUNT=${hot_count}"
   echo "PROCESS_SIGNAL=${process_signal}"
@@ -441,6 +554,7 @@ echo "=== SESSION_META ==="
 echo "PROJECT=${project}"
 echo "SESSION_ID=${session_id}"
 echo "TRANSCRIPT_AVAILABLE=true"
+echo "TRANSCRIPT_FORMAT=${transcript_format}"
 echo "SESSIONS_SCANNED=${sessions_scanned}"
 echo "WINDOW=${window_desc}"
 echo "JUST_AVAILABLE=${just_available}"
@@ -550,6 +664,8 @@ if [ "$max_denial" -ge 2 ]; then
 else
   echo "RULES_SIGNAL=none_mechanical"
 fi
+# pi records no permission denials, so a zero here means "not recorded", not "none".
+[ "$transcript_format" = pi ] && echo "RULE_HINTS_RECORDED=false"
 echo "DENIAL_TOTAL=${total_denials}"
 for kind in "${denial_order[@]:-}"; do
   [ -n "$kind" ] || continue
