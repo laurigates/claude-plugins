@@ -253,6 +253,8 @@ if [ -n "$ASTGREP" ]; then
     #  - echo-printf-write: an echo/printf file_redirect to a real (non-/dev)
     #    target; fd redirects like `2>/dev/null` carry a /dev destination and a
     #    redirect inside a sibling `$(…)` binds to that inner command, not the echo.
+    #    Scratch destinations (/tmp, /private/tmp, /var/folders) are exempt: those
+    #    writes usually capture `$!`/`$?`, which a Write call cannot (W38 friction).
     #  - sed-inplace: `sed -i`/`--in-place` whose operands do NOT include a
     #    scratch path (/tmp, /private/tmp, /var/folders) — scratch edits are fine.
     #  - task-output-read: cat/head/tail of a `.output`/`/tasks/` path, whole-command.
@@ -357,6 +359,7 @@ rule:
   all:
     - has: { field: destination, kind: word }
     - not: { has: { field: destination, regex: '^/dev/' } }
+    - not: { has: { field: destination, regex: '^((/private)?/tmp/|/var/folders/)' } }
     - inside:
         kind: redirected_statement
         has:
@@ -430,7 +433,7 @@ See .claude/rules/bash-tool-replacements.md for the full table."
     fi
 
     if ast_matched "echo-printf-write"; then
-        block "REMINDER: Use the Write tool instead of 'echo/printf > file' to create files. The Write tool properly handles file creation and provides better error handling."
+        block "REMINDER: Use the Write tool instead of 'echo/printf > file' to create files. The Write tool properly handles file creation and provides better error handling. (Writes to scratch files under /tmp are allowed.)"
     fi
 
     # SCRATCH-CONTEXT EXEMPTION (issue: W34 friction §Signal C).

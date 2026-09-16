@@ -361,6 +361,18 @@ assert_exit \
     "printf hello > file.txt"
 
 assert_exit \
+    "echo runtime value > /tmp scratch file is allowed" 0 \
+    "echo \$! > /tmp/preview.pid"
+
+assert_exit \
+    "echo >> /tmp scratch log is allowed" 0 \
+    "echo exit=\$? >> /tmp/build.log"
+
+assert_exit \
+    "echo > ./tmp/ repo-relative path is still blocked" 2 \
+    "echo hi > ./tmp/notes.md"
+
+assert_exit \
     "echo separator followed by unrelated 2>/dev/null is allowed" 0 \
     "git log --oneline | head -20; echo '---'; git log --oneline 2>/dev/null | head -20"
 
