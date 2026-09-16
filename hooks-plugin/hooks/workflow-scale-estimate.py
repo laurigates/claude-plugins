@@ -165,11 +165,42 @@ def top_level_items(inner: str) -> int:
     return items
 
 
+def unwrap_tail(expr: str):
+    """If expr ends in a balanced call .methodName(...), return (receiver, method, args)."""
+    expr = expr.strip()
+    if not expr.endswith(")"):
+        return None
+    depth = 0
+    open_idx = -1
+    for i in range(len(expr) - 1, -1, -1):
+        if expr[i] == ")":
+            depth += 1
+        elif expr[i] == "(":
+            depth -= 1
+            if depth == 0:
+                open_idx = i
+                break
+    if open_idx <= 0:
+        return None
+    prefix = expr[:open_idx].rstrip()
+    dot_idx = prefix.rfind(".")
+    if dot_idx <= 0:
+        return None
+    method = prefix[dot_idx + 1 :].strip()
+    receiver = prefix[:dot_idx].strip()
+    args = expr[open_idx + 1 : -1].strip()
+    return receiver, method, args
+
+
 def bound_of(expr: str, text: str, seen=None):
     """Upper bound on the length of `expr`, or None when it cannot be bounded.
 
-    Operations that can only shrink a list (`filter`, `slice` with no numeric
-    argument, `flat`) keep the base's bound: an upper bound survives them.
+    Operations that can only shrink a list (`filter`, `slice`, `flat`) or
+    preserve its length (`map`, `reverse`, `sort`) keep the base's bound: an
+    upper bound survives them. An explicit numeric slice `.slice(0, N)` or
+    `.slice(start, end)` bounds an otherwise unbounded receiver. Single-arg
+    `.slice(start)` does NOT bound an unbounded list (it drops `start` items and
+    keeps the rest; `.slice(0)` is a shallow copy).
     """
     if seen is None:
         seen = set()
@@ -178,12 +209,19 @@ def bound_of(expr: str, text: str, seen=None):
         return None
     seen.add(expr)
 
-    # `.slice(0, N)` / `.slice(N)` -- an explicit cap is the remedy this guard
-    # asks for, so recognizing it is what makes the block self-extinguishing.
-    m = re.search(r"\.slice\(\s*(\d+)\s*(?:,\s*(\d+)\s*)?\)$", expr)
-    if m:
-        a, b = m.group(1), m.group(2)
-        return int(b) - int(a) if b is not None else int(a)
+    # Method calls on a receiver:
+    tail = unwrap_tail(expr)
+    if tail is not None:
+        receiver, method, args = tail
+        if method == "slice":
+            # Explicit cap: .slice(0, N) or .slice(start, end)
+            m = re.match(r"^(\d+)\s*,\s*(\d+)$", args)
+            if m:
+                return max(0, int(m.group(2)) - int(m.group(1)))
+            # Single-argument slice: drops items, bounded only if receiver is bounded
+            return bound_of(receiver, text, seen)
+        if method in ("filter", "flat", "map", "reverse", "sort"):
+            return bound_of(receiver, text, seen)
 
     # Array.from({length: N})
     m = re.search(r"Array\.from\(\s*\{\s*length\s*:\s*(\d+)", expr)
@@ -196,17 +234,11 @@ def bound_of(expr: str, text: str, seen=None):
         if close == len(expr):
             return top_level_items(expr[1:-1])
 
-    # Shrink-only tails: bound by the base expression.
-    m = re.search(r"^(.*)\.(?:filter|flat|reverse|sort|slice)\([^()]*\)$", expr, re.S)
-    if m and m.group(1).strip():
-        return bound_of(m.group(1), text, seen)
-
     # Bare identifier: resolve a const/let/var array literal declaration.
     if re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", expr):
         d = re.search(r"\b(?:const|let|var)\s+" + re.escape(expr) + r"\s*=\s*", text)
         if d:
             rest = text[d.end() :].lstrip()
-            pad = len(text[d.end() :]) - len(rest)
             if rest.startswith("["):
                 close = match_forward(rest, 0)
                 if close > 0:
@@ -216,7 +248,6 @@ def bound_of(expr: str, text: str, seen=None):
             cand = rest[: stop if stop > 0 else len(rest)].rstrip().rstrip(";")
             if cand and cand != expr:
                 return bound_of(cand, text, seen)
-            del pad
     return None
 
 
@@ -263,20 +294,25 @@ def short(expr: str, width: int = 60) -> str:
     return flat if len(flat) <= width else flat[: width - 1] + "\u2026"
 
 
-def is_wrapper(source: str) -> bool:
-    """True when a fan-out's source is itself a fan-out call.
+def is_wrapper(kind: str, source: str) -> bool:
+    """True when a fan-out's source is itself a fan-out call that drives it.
 
     `parallel(xs.map(f))` produces a record for `parallel` whose source is
     `xs.map(f)` AND a record for `.map` whose source is `xs`. Both records
     enclose the same agent() site, so counting both multiplies the estimate by
     a phantom factor -- the bug that costed one real script at 4104 agents
-    instead of 64. The outer record is the pass-through and is dropped.
+    instead of 64. The outer `parallel` is the pass-through and is dropped.
+    A `pipeline(xs.map(f), stage1, ...)` is NOT a wrapper: pipeline's stages
+    lie outside its first argument, so dropping pipeline would leave stage
+    agent() calls with no enclosing fan-out.
     """
+    if kind != "parallel":
+        return False
     src = source.strip()
     if not src:
         return False
-    # `parallel(...)` / `pipeline(...)` spanning the whole expression.
-    m = re.match(r"(parallel|pipeline)\s*\(", src)
+    # `parallel(...)` spanning the whole expression.
+    m = re.match(r"parallel\s*\(", src)
     if m and match_forward(src, m.end() - 1) == len(src):
         return True
     # A trailing `.map(...)` / `.flatMap(...)` call.
@@ -307,7 +343,7 @@ def analyze(src: str, limit: int, assumed: int = 8) -> dict:
             "DETAIL": "no agent() call sites found",
         }
 
-    fos = [f for f in fanouts(text) if not is_wrapper(f[1])]
+    fos = [f for f in fanouts(text) if not is_wrapper(f[0], f[1])]
 
     estimate = 0
     unknown_sources = []
@@ -331,6 +367,9 @@ def analyze(src: str, limit: int, assumed: int = 8) -> dict:
         "ESTIMATE": estimate,
         "LIMIT": limit,
     }
+    name_match = re.search(r"\bname:\s*['\"]([^'\"]+)['\"]", src)
+    if name_match:
+        result["NAME"] = name_match.group(1)
     if unknown_sources:
         result["ASSUMED"] = assumed
         result["SOURCE"] = ", ".join(unknown_sources[:2])
@@ -358,15 +397,24 @@ def main() -> int:
             pass
     try:
         src = sys.stdin.read()
-    except Exception:
+    except Exception:  # noqa: BLE001 - fail open
         return 0
     try:
         result = analyze(src, limit, assumed)
-    except Exception as exc:  # fail open: an unparsable script is not a block
+    except Exception as exc:  # noqa: BLE001 - fail open: an unparsable script is not a block
         print("VERDICT=ERROR")
         print(f"DETAIL=analyzer error: {type(exc).__name__}")
         return 0
-    for key in ("VERDICT", "SITES", "ESTIMATE", "LIMIT", "ASSUMED", "SOURCE", "DETAIL"):
+    for key in (
+        "VERDICT",
+        "NAME",
+        "SITES",
+        "ESTIMATE",
+        "LIMIT",
+        "ASSUMED",
+        "SOURCE",
+        "DETAIL",
+    ):
         if key in result:
             print(f"{key}={result[key]}")
     return 0

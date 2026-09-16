@@ -106,6 +106,7 @@ ESTIMATE=$(field ESTIMATE)
 SITES=$(field SITES)
 SOURCE=$(field SOURCE)
 NAME=$(printf '%s' "$INPUT" | jq -r '.tool_input.name // empty' 2>/dev/null)
+[ -n "$NAME" ] || NAME=$(field NAME)
 [ -n "$NAME" ] || NAME=$(printf '%s' "$SCRIPT_TEXT" | grep -o "name:[[:space:]]*'[^']*'" | head -1 | cut -d"'" -f2)
 [ -n "$NAME" ] || NAME="(unnamed)"
 

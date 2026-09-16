@@ -101,6 +101,18 @@ await pipeline(gaps,
   review => parallel(review.findings.map(f => () => agent("verify", { label: "v" }))))
 '
 
+assert_asks "slice(0) array copy over a runtime list still asks" '
+await pipeline(args.units.slice(0),
+  u => agent("edit", { label: "edit" }),
+  e => agent("review", { label: "review" }))
+'
+
+assert_asks "pipeline over mapped runtime list asks" '
+await pipeline(args.units.map(u => ({id: u.id})),
+  u => agent("edit", { label: "edit" }),
+  e => agent("review", { label: "review" }))
+'
+
 echo
 echo "== within the limit: must stay silent =="
 
@@ -112,6 +124,12 @@ const c = await agent("three", { label: "3" })
 
 assert_silent "explicit .slice(0, 5) cap — the remedy the message names" '
 await parallel(args.units.slice(0, 5).map(u => () => agent("go", { label: "u" })))
+'
+
+assert_silent "pipeline over capped .slice(0, 3).map list stays silent" '
+await pipeline(args.units.slice(0, 3).map(u => ({id: u.id})),
+  u => agent("edit", { label: "edit" }),
+  e => agent("review", { label: "review" }))
 '
 
 assert_silent "one agent per runtime item (the common legitimate shape)" '
@@ -161,11 +179,13 @@ assert_silent_payload "limit raised above the estimate" \
 
 echo
 echo "== the ask payload is well-formed =="
-OUT=$(run_hook "$(payload_for 'await pipeline(args.units, a => agent(1), b => agent(2), c => agent(3), d => agent(4))')")
+OUT=$(run_hook "$(payload_for 'export const meta = { name: "named-check" }
+await pipeline(args.units, a => agent(1), b => agent(2), c => agent(3), d => agent(4))')")
 if printf '%s' "$OUT" | jq -e '.hookSpecificOutput.hookEventName == "PreToolUse"' >/dev/null 2>&1 \
+   && printf '%s' "$OUT" | jq -e '.hookSpecificOutput.permissionDecisionReason | test("workflow:[[:space:]]+named-check")' >/dev/null 2>&1 \
    && printf '%s' "$OUT" | jq -e '.hookSpecificOutput.permissionDecisionReason | test("~32 agents")' >/dev/null 2>&1; then
     PASS=$((PASS + 1))
-    printf '  PASS  reason names the estimate and the event\n'
+    printf '  PASS  reason names the estimate, workflow name, and the event\n'
 else
     FAIL=$((FAIL + 1))
     printf '  FAIL  malformed ask payload: %s\n' "$OUT"
