@@ -1,7 +1,7 @@
 ---
 created: 2026-02-25
-modified: 2026-09-02
-reviewed: 2026-09-02
+modified: 2026-09-16
+reviewed: 2026-09-16
 paths:
   - "**/agents/**"
 ---
@@ -33,6 +33,8 @@ Patterns and standards for creating and configuring custom agents in Claude Code
 ## Agent File Structure
 
 Agents live in `<plugin-name>/agents/<agent-name>.md`.
+
+> **Note (2.1.198)**: The interactive `/agents` wizard was removed. Create or edit agents by writing `<plugin>/agents/<name>.md` directly (below) — there is no guided flow.
 
 ### Required Frontmatter
 
@@ -80,11 +82,13 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
 
 > **Note**: Agent hooks defined with `Stop` are automatically converted to `SubagentStop` when the agent runs as a subagent, since subagents fire `SubagentStop` instead of `Stop`.
 
+> **Note (2.1.218)**: Agent-frontmatter `hooks:` fire only once the agent file's own containing folder has accepted the workspace-trust dialog.
+
 ### Complete Field Reference
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `name` | string | Yes | Agent identifier (kebab-case) |
+| `name` | string | Yes | Agent identifier (kebab-case); `:` is rejected (2.1.218) — reserved for plugin namespacing (`plugin:agent-name`) |
 | `description` | string | Yes | Purpose and use cases for agent selection |
 | `model` | string | Yes | `opus`, `sonnet`, `haiku`, `fable` (2.1.255+), `inherit`, or a full model ID (e.g. `claude-fable-5-1`). Aliases resolve to the current generation (`opus` → Opus 5, `sonnet` → Sonnet 5, `haiku` → Haiku 4.5, `fable` → Fable 5.1). Full IDs honoured since 2.1.74 |
 | `effort` | string | No | `low`, `medium`, `high`, `xhigh`, or `max` (2.1.251+) — overrides the session effort while this agent runs; default inherits. This is the per-agent cost lever the Model Selection section refers to |
@@ -101,6 +105,7 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
 | `hooks` | object | No | Agent-scoped hooks (same schema as settings.json hooks) |
 | `disallowedTools` | comma-list | No | Tools to deny even if in the inherited list |
 | `experimental.cacheTtl` | string | No | `5m` or `1h` (2.1.248+), written as a nested map (`experimental:` → `cacheTtl: 1h`) — prompt-cache TTL for the agent's own requests when no subagent TTL setting is configured; ignored on usage credits. Cache reads on Fable 5.1 are $0.25/MTok, so `1h` is cheap for agents re-spawned across a session |
+| `omitClaudeMd` | bool | No | Run the subagent without user/project/local CLAUDE.md files (2.1.271+); managed policy files still load |
 | `created` | date | Recommended | Initial creation date |
 | `modified` | date | Recommended | Last substantive change |
 | `reviewed` | date | Recommended | Last verified against current docs |
@@ -153,6 +158,10 @@ The ceiling moved twice in quick succession, so a rule or skill citing 5 is read
 
 > **Note (2.1.116+)**: Agent frontmatter `hooks:` and `mcpServers:` are active when the agent runs as a main-thread session via `claude --agent`, not just as subagents.
 
+### Concurrency Cap (2.1.217+)
+
+Distinct from nesting depth above, Claude Code also caps how many subagents may run **concurrently** in one session — default **20**, override with `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`. A `Workflow`/parallel fan-out beyond 20 waves queues rather than fails, but design large fan-outs (`agent-patterns-plugin:parallel-agent-dispatch`) with this ceiling in mind. `--max-budget-usd`, once hit, halts running background subagents and denies further spawns (2.1.217) — a budget-capped session's fan-out can die mid-wave for a reason unrelated to depth or concurrency.
+
 ### MCP Servers in Agent Definitions (2.1.147 / 2.1.153)
 
 | Version | Fix |
@@ -174,6 +183,8 @@ The ceiling moved twice in quick succession, so a rule or skill citing 5 is read
 `model: opus` remains the committed floor for plugin agents (portable: every plan has Opus; Fable is no plan's default and costs 2x per token). `model: fable` is sanctioned for agents whose job is the hardest delegated reasoning (long-horizon, multi-file, adversarial verification), and the guard accepts it. `inherit` is not used for plugin agents because it would also inherit Sonnet/Haiku sessions below the floor. `effort:` frontmatter (`low|medium|high|xhigh|max`, default inherits) is the cost lever; use `effort: low` for mechanical/high-volume agents.
 
 **Resolution order (2.1.251+):** per-spawn `Agent(model: …)` > agent frontmatter `model:` > `CLAUDE_CODE_SUBAGENT_MODEL` > the main session model. `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` (2.1.257) overrides all of these, so a frontmatter `model: opus` is a default, not a guarantee, when a user or CI environment sets the force variable; `scripts/check-agent-model.sh` checks the frontmatter only. The model actually used is reported in the `SubagentStart` hook's `subagent_model` field (`.claude/rules/hooks-reference.md`).
+
+On an org account that restricts model choice, an agent's `model: opus` frontmatter steps down to the newest org-allowed model in the Opus family rather than falling back to the parent session's model (2.1.222); a hard-restricted request instead warns and runs the parent's model (2.1.223).
 
 > **Note (fast mode)**: Fast mode is available only on Opus 5 and Opus 4.8; Fable 5.1 has no fast mode. The legacy fast-mode override env var has been a no-op since 2.1.160 — delete it from agent launch scripts.
 
@@ -209,6 +220,8 @@ For filesystem-level isolation, give agents their own git worktree so they work 
 
 > **Note (2.1.157)**: Claude-managed worktrees are left **unlocked** when the agent finishes, so `git worktree remove` / `git worktree prune` can clean them up directly (previously the lock blocked manual cleanup). `EnterWorktree` can also now switch between Claude-managed worktrees mid-session, rather than being a one-way entry.
 
+> **Note (2.1.203–2.1.222, isolation hardening)**: Several releases closed escape vectors where an `isolation: worktree` subagent could still touch the parent checkout: shell commands running in the parent checkout instead of the isolated worktree (2.1.203), git-mutating commands against the main repo checkout (2.1.210), and `git -C` / `--git-dir` / `GIT_DIR` / `GIT_WORK_TREE` redirection out of the isolated worktree (2.1.216). As of 2.1.222, isolation applies to both file edits and Bash in every session type, and isolated sessions can no longer run destructive git commands against the main checkout. Treat isolation as materially more trustworthy on 2.1.222+ than on older installs — see `.claude/rules/agent-coworker-detection.md` § Bare flip for how this narrows that hazard.
+
 **Two ways to enable worktree isolation:**
 
 1. **Agent frontmatter** — baked into the agent definition:
@@ -223,6 +236,8 @@ For filesystem-level isolation, give agents their own git worktree so they work 
    ```
    Task tool with isolation: "worktree"
    ```
+
+> **Note (2.1.212, deprecated)**: A call-site `mode:` parameter on `Agent`/`Task` is deprecated and silently ignored — a spawned subagent always inherits the parent session's permission mode. Use the agent-frontmatter `permissionMode:` field (Complete Field Reference, above) to set a fixed mode for a *named* agent; there is no way to override the mode for an ad-hoc/inline spawn.
 
 **Use worktree isolation when:**
 - Agent will make commits on a separate branch
@@ -422,8 +437,13 @@ Lead Agent (orchestrator)
 |------|---------|
 | `SendMessage` | Send messages between agents (DM, broadcast, shutdown); address by agent ID or name |
 | `TaskStop` | Stop a running background agent |
+| `ListAgents` | Discover other sessions and teammates reachable via `SendMessage`; reports the session's own name and lists live teammates (2.1.239) |
 
 > **Security (2.1.166)**: Cross-session messaging is hardened — messages relayed via `SendMessage` **no longer carry user authority**, and auto mode blocks them. A teammate cannot use a relayed message to escalate privileges or auto-approve actions that the receiving session's own permission mode would otherwise gate.
+
+> **Note (2.1.224+)**: `SendMessage` can also reach **other Claude Code sessions on your machines** (not just in-team teammates), discovered via `ListAgents` — gated by the `crossSessionInbound` / `dialogExpiry` settings (2.1.224). Windows support landed 2.1.239 (previously macOS/Linux only). `@`-mention a session by its unique per-machine name (2.1.232); `notify_when_idle` asks a session for a one-shot idle notice (2.1.236). Relevant to `agent-coworker-detection.md`'s marker-file signal — see that file's `ListAgents` row.
+
+> **Note (2.1.98)**: Teammates inherit the leader's permission mode, including `--dangerously-skip-permissions` — a bug where teammates did not pick this up was fixed in 2.1.98. Don't assume a teammate needs its own explicit permission grant.
 
 ### When to Use Teams
 
@@ -457,6 +477,8 @@ Each agent's `## Team Configuration` section should document its optimal team ro
 | **Lead** | Orchestrates team, assigns tasks, receives results | Coordinates complex workflows |
 | **Teammate** | Works in parallel, communicates via messaging | Full context window, can message peers |
 | **Subagent** | Focused isolated execution, returns single result | Simple, bounded tasks |
+
+> **Note (2.1.234)**: The "Default teammate model" `/config` setting was removed. Teammates now use the lead session's model unless the spawn names one explicitly.
 
 ## Tool Restrictions
 
