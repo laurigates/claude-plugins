@@ -1,7 +1,7 @@
 ---
 created: 2026-04-29
-modified: 2026-09-02
-reviewed: 2026-09-02
+modified: 2026-09-16
+reviewed: 2026-09-16
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -32,16 +32,41 @@ Admins can lock it off project-wide by setting `permissions.disableAutoMode: "di
 
 A "Auto mode unavailable" message means a requirement above is unmet — it is not a transient outage. A "cannot determine the safety of an action" message is a separate transient classifier outage.
 
+As of 2.1.236, Bedrock, Vertex AI, and Foundry sessions — and any session with
+telemetry disabled — use the same classifier defaults as the Claude API,
+including severity-scored classification; behaviour is no longer degraded on
+those providers. Where the classifier itself *runs* is a separate question:
+for now, auto mode on Bedrock, Vertex, and Foundry uses the **local**
+classifier by default (2.1.273); set `CLAUDE_CODE_AUTO_MODE_SERVER=1` to use
+the platform's server-side classifier instead.
+
 ## How the Classifier Decides
 
 Each tool call walks a fixed decision order. The first matching step wins:
 
-1. Actions matching the user's `allow` or `deny` rules resolve immediately
-2. Read-only actions and file edits inside the working directory are auto-approved (except writes to [protected paths](https://code.claude.com/docs/en/permission-modes#protected-paths))
+1. Actions matching the user's `allow` or `deny` rules resolve immediately. A `PreToolUse` hook that returns `ask` floors the decision at a manual prompt (2.1.211) — auto mode cannot silently approve past a hook's explicit `ask`, even though it can generally auto-approve actions a hook did not gate.
+2. Read-only actions and file edits inside the working directory are auto-approved (except writes to [protected paths](https://code.claude.com/docs/en/permission-modes#protected-paths)), and, as of 2.1.257, a file read outside the working directories gets a one-time prompt instead of silent approval — see `permissions.blockReadsOutsideWorkingDirectories` below
 3. Everything else goes to the classifier
 4. If the classifier blocks, Claude receives the reason and tries an alternative
 
 The classifier sees user messages, tool calls, and `CLAUDE.md` content. Tool results are stripped, so hostile content in a fetched page or read file cannot manipulate the classifier directly. A separate server-side probe scans incoming tool results for suspicious content before Claude reads them.
+
+**A skill's or slash command's inline `!` context commands are the one
+exception to this decision order (2.1.271).** They follow **default-mode**
+permission rules instead of the classifier: a command a rule allows or denies
+resolves as that rule says, and a command no rule decides runs as a reviewed
+tool call rather than going to the classifier. A narrow `Bash(<cmd> *)` allow
+rule now matters for context commands too — see
+`.claude/rules/agentic-permissions.md` § Context Section Patterns.
+
+**Reading outside the working directory (2.1.257).** The first file read
+outside the session's working directories gets a one-time prompt in auto mode;
+`permissions.blockReadsOutsideWorkingDirectories` can hard-block such reads
+instead of prompting. The guard is best-effort, not airtight — several
+directory-tracking bypasses in this same class were fixed as late as 2.1.271
+and 2.1.273 (multi-`cd` chains, a subshell, a `cd`+`git` chain, and commands
+the permission checker cannot fully analyze), so do not rely on it as a hard
+boundary against adversarial input in a security-sensitive skill.
 
 ## What the Classifier Blocks by Default
 
@@ -55,8 +80,14 @@ The classifier sees user messages, tool calls, and `CLAUDE.md` content. Tool res
 | Modifying shared infrastructure | |
 | Irreversibly destroying files that existed before the session | |
 | Force push, or pushing directly to `main` | |
+| Cloud metadata-credential fetches, egress evasion, cross-tenant reach (Containment Escape rule, 2.1.257) | |
+| Tampering with session transcript files (2.1.205) | |
+| `rm -rf` on a variable the classifier can't resolve from context (2.1.205) — asks rather than silently running | |
+| Catastrophic removals wrapped in `$(...)`/backticks/`<(...)` (2.1.208) — prompts even under `--dangerously-skip-permissions` and in auto mode | |
 
-Sandbox network access requests are routed through the classifier rather than allowed by default. Run `claude auto-mode defaults` to see the live rule lists. Administrators can extend the trust set for specific repos, buckets, and services via the `autoMode.environment` setting — see [Configure auto mode](https://code.claude.com/docs/en/auto-mode-config).
+Sandbox network access requests are routed through the classifier rather than allowed by default. Run `claude auto-mode defaults` to see the live rule lists. Administrators can extend the trust set for specific repos, buckets, and services via the `autoMode.environment` setting — see [Configure auto mode](https://code.claude.com/docs/en/auto-mode-config). Custom `autoMode.allow`/`soft_deny`/`environment` entries **replace** the built-in rule list unless they include the literal string `"$defaults"` (2.1.118), which is the difference between extending the trust set and silently dropping the built-in denials above.
+
+`autoMode.classifyAllShell` routes *every* Bash/PowerShell command through the classifier, not just patterns that look like arbitrary code execution — use it for a stricter posture than the defaults above. Denial reasons are now surfaced in the transcript, a toast, and `/permissions` (2.1.193).
 
 ## What Happens to Allow Rules on Entering Auto Mode
 
@@ -68,6 +99,7 @@ Auto mode **drops broad allow rules** that would otherwise grant arbitrary code 
 | Wildcarded interpreters: `Bash(python*)`, `Bash(node*)`, etc. | Dropped |
 | Package-manager run wildcards (e.g. broad `Bash(npm *)` ish patterns granting arbitrary scripts) | Dropped |
 | `Agent` allow rules | Dropped |
+| `Monitor` allow rules | Set aside (2.1.236) — Monitor commands get the same classifier review as Bash while auto mode is active |
 | **Narrow rules**: `Bash(npm test)`, `Bash(git status *)`, `Bash(gh pr *)` | **Carried over** — skip the classifier round-trip |
 
 **Implication for skill authors**: granular `Bash(<command> *)` patterns in skill `allowed-tools` and project `settings.json` are *more* valuable under auto mode, not less — they bypass the classifier and avoid latency. Broad `Bash(*)` is not a shortcut; it is dropped at runtime.
@@ -80,11 +112,28 @@ Boundaries are read from the transcript on each check, so context compaction can
 
 ## Protected Paths
 
-Writes to protected paths are never auto-approved in any mode. Under auto mode they route to the classifier rather than being silently allowed.
+Writes to protected paths are never auto-approved under `default`, `acceptEdits`, or `auto`. Under auto mode they route to the classifier rather than being silently allowed.
 
 Protected directories: `.git`, `.vscode`, `.idea`, `.husky`, `.claude` (except `.claude/commands`, `.claude/agents`, `.claude/skills`, `.claude/worktrees`).
 
 Protected files: `.gitconfig`, `.gitmodules`, `.bashrc`, `.bash_profile`, `.zshrc`, `.zprofile`, `.profile`, `.ripgreprc`, `.mcp.json`, `.claude.json`.
+
+**`bypassPermissions` (`--dangerously-skip-permissions`) is the exception, and this changed underneath the mode's own history.** Through 2.1.78, protected
+directories were writable without a prompt in bypass mode — a gap that release
+closed, making the list above apply there too. 2.1.121 carved
+`.claude/skills/`, `.claude/agents/`, and `.claude/commands/` back out of the
+bypass-mode prompt, and 2.1.126 broadened that carve-out to essentially every
+path on the lists above: `.claude/`, `.git/`, `.vscode/`, shell config files,
+and other previously-protected paths are now bypassed without a prompt. The
+only surviving safety net is catastrophic removal commands (e.g. `rm -rf ~`),
+which still prompt in bypass mode — as of 2.1.208 that prompt also fires when
+the removal is wrapped in `$(…)`/backticks/`<(…)` instead of typed plainly, and
+in auto mode too. So: protected-path prompting holds under `default`,
+`acceptEdits`, and `auto`; it does **not** hold under `bypassPermissions` past
+2.1.126. Separately, 2.1.257 made a project-level `defaultMode:
+"bypassPermissions"` (in `.claude/settings.json` or
+`.claude/settings.local.json`) **ignored**, like `"auto"` already was — set it
+in user or managed settings, or pass `--permission-mode` instead.
 
 ## Subagents Under Auto Mode
 
@@ -92,7 +141,7 @@ The classifier checks subagent work at three points:
 
 1. **Spawn**: the delegated task description is evaluated; a dangerous-looking task is blocked at spawn time.
 2. **Each action**: every tool call goes through the classifier with the same rules as the parent session.
-3. **Return**: the subagent's full action history is reviewed; flagged concerns prepend a security warning to the subagent's results.
+3. **Return**: as of 2.1.271, the subagent reports back to its caller through a dedicated hand-back call that the safety classifier reviews, rather than only its last message being reviewed after the fact. Flagged concerns prepend a security warning to the subagent's results.
 
 Crucially, **`permissionMode` in subagent frontmatter is ignored** in auto mode. Skill authors should not rely on per-subagent permission overrides under auto mode; rely on `allowed-tools` for the subagent's tool boundary instead.
 
@@ -163,7 +212,7 @@ The auto-mode classifier handles approve/deny logic for most cases that previous
 | `plan` | Reads only; no source edits | Approve-from-plan can transition into `auto` |
 | `auto` | Everything that survives classifier review | Subject to availability matrix above. Built-in starting mode on Pro/Max/Team |
 | `dontAsk` | Pre-approved tools only | Auto-denies anything that would prompt |
-| `bypassPermissions` | Everything (except protected paths) | No safety classifier; isolated environments only |
+| `bypassPermissions` | Everything, including protected paths (2.1.126) | No safety classifier; isolated environments only. `defaultMode: "bypassPermissions"` is ignored from project settings (2.1.257) |
 
 ## Related Rules
 

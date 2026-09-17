@@ -1,7 +1,7 @@
 ---
 created: 2026-01-16
-modified: 2026-09-02
-reviewed: 2026-09-02
+modified: 2026-09-16
+reviewed: 2026-09-16
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -18,11 +18,36 @@ Claude Code now ships several permission modes. The relevant ones for skill auth
 
 | Mode | What runs without asking | Skill-authoring impact |
 |------|--------------------------|------------------------|
-| `default` | Reads only | Granular `allowed-tools` is the only way to avoid prompts. |
+| `default` ("Manual" as of 2.1.200) | Reads only | Granular `allowed-tools` is the only way to avoid prompts. `--permission-mode manual` / `"defaultMode": "manual"` are accepted aliases. |
 | `acceptEdits` | Reads, file edits, common filesystem commands (`mkdir`, `touch`, `mv`, `cp`, `sed`, etc.) | Bash skills still benefit from narrow `Bash(<command> *)` patterns. |
 | `auto` | Everything that survives a classifier review | Broad rules like `Bash(*)` and `Bash(python*)` are **dropped on entering auto mode**. Narrow rules like `Bash(git status *)` carry over and skip the classifier round-trip. |
 | `dontAsk` | Pre-approved tools only | Without granular `allow` rules, the skill cannot run. |
-| `bypassPermissions` | Everything except protected paths | No safety layer — granular permissions are unenforced but still document intent. |
+| `bypassPermissions` | Everything, including protected paths (2.1.126) | No safety layer — granular permissions are unenforced but still document intent. |
+
+**`bypassPermissions` no longer excepts protected paths.** Through 2.1.78,
+`.git`, `.claude`, and other protected directories were writable without a
+prompt in `bypassPermissions` mode — a gap that release closed. 2.1.121 then
+carved `.claude/skills/`, `.claude/agents/`, and `.claude/commands/` back out
+of the prompt (matching the classifier's own auto-mode carve-out), and 2.1.126
+broadened that carve-out to essentially all paths: `--dangerously-skip-permissions`
+now bypasses prompts for writes to `.claude/`, `.git/`, `.vscode/`, shell
+config files, and other previously-protected paths. The only surviving safety
+net is catastrophic removal commands (e.g. `rm -rf ~`), which still prompt in
+bypass mode — as of 2.1.208 that prompt also fires when the removal is wrapped
+in `$(…)`/backticks/`<(…)` instead of typed plainly. Protected-path prompting
+still holds under `default`, `acceptEdits`, and `auto` — it is specifically
+`bypassPermissions` that stopped honouring it. Separately, 2.1.257 made a
+project-level `defaultMode: "bypassPermissions"` (in `.claude/settings.json`
+or `.claude/settings.local.json`) **ignored**, like `"auto"`; set it in user
+or managed settings, or pass `--permission-mode` instead.
+
+`--restricted` (or `CLAUDE_CODE_RESTRICTED=1`, 2.1.248) is a separate,
+harness-level lockdown rather than a `permissionMode` value: it removes the
+built-in tools that run commands or code and `WebFetch` (unless named in
+`--tools`), keeps file tools inside the working directory, **refuses
+`bypassPermissions` outright**, and ignores user, project, and local settings
+files. A skill that depends on `Bash` or on `bypassPermissions` cannot run
+under it.
 
 See `.claude/rules/auto-mode.md` for the full auto-mode model (decision order, dropped-rule list, conversation boundaries, subagent behaviour, deny-and-continue thresholds).
 
@@ -85,6 +110,8 @@ allowed-tools: Bash(git status *), Bash(gh pr *), Read, TodoWrite
 
 > **Note (2.1.139)**: `Skill(<name> *)` permission rules use prefix matching, just like `Bash(<command> *)` — matching `Bash(ls *)` behavior. Before 2.1.139, wildcards inside `Skill(...)` were treated as literal characters and silently failed to match (only the bare `Skill(*)` form worked).
 
+> **Note (2.1.246)**: never put the wildcard **before** the subcommand, e.g. `Bash(git * main)` — Claude Code now warns about this pattern at startup because it also matches options inserted before the subcommand (e.g. `git --exec-path=... main`). Keep the wildcard at the end: `Bash(git main *)` / `Bash(git status *)`.
+
 ### Parameter-Matching Rules — `Tool(param:value)` (2.1.178+)
 
 Permission rules can match a tool's **input parameters**, not just its name, with the `Tool(param:value)` syntax (the value supports a `*` wildcard):
@@ -97,7 +124,7 @@ Permission rules can match a tool's **input parameters**, not just its name, wit
 
 Pair `Agent(model:...)` deny rules with the pre-launch classifier check (`.claude/rules/agent-development.md` § Subagent Nesting Depth) to govern which subagents a session may spawn.
 
-### Wildcard and Glob Matching (2.1.166+ / 2.1.172+ / 2.1.178+)
+### Wildcard and Glob Matching (2.1.166+ / 2.1.172+ / 2.1.178+ / 2.1.214)
 
 A run of fixes made wildcard/glob handling in permission rules behave as written:
 
@@ -106,6 +133,7 @@ A run of fixes made wildcard/glob handling in permission rules behave as written
 | 2.1.166 | Glob patterns are supported in the **deny** rule tool-name position — `"*"` denies **all** tools. Allow rules **reject** non-MCP globs (a glob tool-name in an allow rule is an error), and **unknown tool names in deny rules warn at startup** instead of silently never matching. |
 | 2.1.172 | `WebFetch(domain:*.example.com)` wildcard domain rules now match **subdomains** (previously the leading `*.` failed to match). `Read(secrets-*/config.json)` and other **mid-pattern** wildcards are no longer rejected at startup. |
 | 2.1.178 | MCP **server-level** specs (`mcp__server`, `mcp__server__*`, `mcp__*`) in a subagent's `disallowedTools` now work — previously only fully-qualified `mcp__server__tool` names matched, so server-wide denials silently let MCP tools through. |
+| 2.1.214 | **BREAKING:** single-segment `dir/**` **allow** rules (e.g. `Edit(src/**)`) now match only `<cwd>/dir` — they no longer auto-approve a nested `dir/` anywhere in the tree. `deny`/`ask` rules keep their old any-depth match, so allow and deny/ask now genuinely differ for the same pattern shape. Write `**/dir/**` if you need any-depth **allow** matching. |
 
 ## Shell Operator Protections
 
@@ -132,14 +160,56 @@ When a Bash command contains shell operators:
 2. Permission patterns like `Bash(git *)` won't match `git status && rm -rf`
 3. Users see a clear warning about the blocked operator
 
-### Working-Directory Bypass Hardening (2.1.149)
+2.1.223 fixed two further bypasses: a crafted command could hide parts of
+itself from permission-pattern matching, and a command padded with tabs or
+invisible Unicode could hide part of itself from the approval dialog the user
+sees.
+
+### Exec-Wrapper and Removal-Target Hardening (2.1.113)
+
+- **Deny rules now see through exec wrappers.** A `Bash` deny rule matches a
+  command wrapped in `env`, `sudo`, `watch`, `ionice`, `setsid`, and similar
+  exec wrappers (`sudo rm -rf /`, `env git push --force`), instead of only the
+  bare command.
+- **macOS removal targets.** `/private/{etc,var,tmp,home}` paths are now
+  treated as dangerous removal targets under `Bash(rm:*)` allow rules.
+- **`find` allow rules narrowed.** `Bash(find:*)` allow rules no longer
+  auto-approve `find -exec` or `find -delete` — those still prompt.
+
+### Bash Permission-Check Hardening (2.1.214)
+
+A further round tightened the permission analyzer itself:
+
+- Commands using file-descriptor redirect forms the analyzer parses
+  differently than bash now **fail closed** (prompt) instead of matching
+  loosely.
+- Commands over 10,000 characters always prompt instead of being evaluated
+  for auto-approval.
+- zsh variable subscripts and modifiers inside `[[ ]]` comparisons now
+  prompt instead of being treated as inert text.
+- Some `help`/`man` invocations that could run unsafe options, command
+  substitutions, or backslash paths are no longer auto-approved.
+- `docker`/Podman commands carrying daemon-redirect flags (`--url`,
+  `--connection`, `--identity`, and Podman's remote mode) now prompt.
+- `file -m`/`--magic-file` and `-f`/`--files-from` now require permission
+  instead of being auto-allowed as read-only.
+- A Windows PowerShell 5.1 permission-check bypass was fixed.
+
+### Working-Directory Bypass Hardening (2.1.149, revisited 2.1.271/2.1.273)
 
 The permission analyzer tracks the working directory so a command cannot quietly escape the workspace and read outside it. Two 2.1.149 fixes closed bypasses:
 
 - **PowerShell built-in `cd` forms.** `cd..`, `cd\`, `cd~`, and bare drive switches like `X:` changed the working directory undetected, letting a later command read outside the workspace. These now register as directory changes.
 - **Stale variable tracking across `cd`/`pushd`/`popd`.** The analyzer previously trusted stale values for `PWD`, `OLDPWD`, and `DIRSTACK` after a directory change, leaving a gap where a path check used the wrong working directory. The tracking is now refreshed on each `cd`/`pushd`/`popd`.
 
-These are harness-level guards, not skill-authoring concerns — but they mean a skill can rely on the workspace boundary holding even when its scripts navigate directories.
+These are harness-level guards, not an airtight boundary — the same class of
+bypass kept resurfacing well past 2.1.149. 2.1.271 fixed Bash commands with two
+directory changes, a subshell, or a `cd`+`git` chain skipping the
+`permissions.blockReadsOutsideWorkingDirectories` prompt in bypass and auto
+mode; 2.1.273 fixed commands the permission checker cannot fully analyze doing
+the same, plus a subshell hiding a dangerous `rm` in bypass mode. Treat
+`blockReadsOutsideWorkingDirectories` as best-effort, not an airtight boundary
+against adversarial input, when authoring a security-sensitive skill.
 
 ### Safe Patterns
 
@@ -338,9 +408,11 @@ An `Edit(<glob>)` allow rule in `settings.json` resolves at step 1 of the decisi
 }
 ```
 
-One `Edit(<glob>)` rule covers **all** file-editing tools — `Edit`, `Write`, and `NotebookEdit`. A matching `Write(<glob>)` rule is dead weight: file permission checks only consult `Edit(path)` rules, so Claude Code warns on startup (`Write(...) is not matched by file permission checks — only Edit(path) rules are`) and ignores it. Do not pair a `Write(<glob>)` allow rule with the `Edit(<glob>)` one.
+One `Edit(<glob>)` rule covers **all** file-editing tools — `Edit`, `Write`, and `NotebookEdit`. A matching `Write(<glob>)` rule is dead weight: file permission checks only consult `Edit(path)` rules, so Claude Code warns on startup (`Write(...) is not matched by file permission checks — only Edit(path) rules are`) and ignores it. Do not pair a `Write(<glob>)` allow rule with the `Edit(<glob>)` one. The same startup warning fires for a `NotebookEdit(<glob>)` rule (also covered by `Edit(path)`) and for a `Glob(<glob>)` rule (2.1.210) — use `Read(<glob>)` in place of a `Glob(<glob>)` permission rule.
 
 This repo carves out `.claude/rules/**` because the files there are documentation read by humans and injected into agent context — not configuration that affects the harness. Skills, agents, and commands directories are already in Claude Code's default carve-out for the same reason; rules belong in the same trust tier.
+
+`.claude/rules/**` is a **multi-segment** glob (`rules` is nested under `.claude`), so it is unaffected by the 2.1.214 single-segment allow-glob narrowing above — it was already anchored at `<cwd>/.claude/rules`, not matching any-depth. The narrowing only bites a bare single-segment carve-out like `Edit(rules/**)`.
 
 ### `autoMode.hard_deny` (2.1.136+)
 
@@ -357,6 +429,14 @@ Rules in `autoMode.hard_deny` block unconditionally -- the classifier cannot ove
 ```
 
 Use `hard_deny` for security-critical operations that must never run in auto mode even when the user explicitly permits them. Contrast with `autoMode.soft_deny`, which the classifier can override for good reason.
+
+### "Always Allow" Persistence Across Worktrees (2.1.211)
+
+Interactive "Always allow" approvals now save at the **repository root**, so an
+approval granted in one `git worktree` applies in sibling worktrees of the same
+repo too — previously each worktree tracked approvals separately. See
+`.claude/rules/agent-coworker-detection.md` for the broader worktree-sharing
+picture this changes.
 
 ### Auto Mode Dialog Reasons (2.1.141+)
 
@@ -379,6 +459,26 @@ Background sessions launched from `claude agents` honor `permissions.defaultMode
 ### Remote Control Disabled by API Key (2.1.139+)
 
 Remote Control, `/schedule`, and claude.ai MCP connectors are disabled when any of `ANTHROPIC_API_KEY`, `apiKeyHelper`, or `ANTHROPIC_AUTH_TOKEN` is set. These features rely on the claude.ai session identity to route remote control commands and scheduled jobs; an API-key session has no such identity, so silently allowing the features would break in unintuitive ways. If you need remote control, sign in via the standard OAuth flow rather than configuring an API key.
+
+### `disable-model-invocation` Refusal Wording (2.1.222)
+
+As of 2.1.222, the refusal Claude receives when it tries to invoke a
+`disable-model-invocation` skill now explicitly tells it to ask the user to
+run the skill, rather than replicate the skill's workflow itself. This
+reinforces the recommend-don't-delegate pattern in
+`.claude/rules/pr-branch-sync.md` § "Gated siblings are recommended, never
+delegated to" — a skill body that says "address it via `/git:pr-feedback`"
+still fails silently as prose delegation; write the recommendation form
+instead.
+
+### `skillOverrides` and Skill Discoverability (2.1.129)
+
+The session-level `skillOverrides` setting changes whether a skill is
+discoverable at all: `off` hides it from both the model and `/`,
+`user-invocable-only` hides it from the model only (leaving `/` access),
+and `name-only` collapses its description. A skill author cannot assume
+"my skill is always visible to the model" — an admin can restrict any skill
+via this setting independent of the skill's own frontmatter.
 
 ## Context Section Patterns
 
