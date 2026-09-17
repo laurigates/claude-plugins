@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.45.6](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.45.5...agent-patterns-plugin-v2.45.6) (2026-09-17)
+
+
+### Documentation
+
+* **rules:** add sandbox credential controls and narrow the parallel-query premise ([#2680](https://github.com/laurigates/claude-plugins/issues/2680)) ([d84627d](https://github.com/laurigates/claude-plugins/commit/d84627dfddf803ff18d5a6b05e3cf5549b5f523c))
+* **rules:** apply verified changelog findings for sandbox, workflow, MCP rules ([d84627d](https://github.com/laurigates/claude-plugins/commit/d84627dfddf803ff18d5a6b05e3cf5549b5f523c)), closes [#2623](https://github.com/laurigates/claude-plugins/issues/2623) [#2656](https://github.com/laurigates/claude-plugins/issues/2656)
+
 ## [2.45.5](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.45.4...agent-patterns-plugin-v2.45.5) (2026-09-05)
 
 
