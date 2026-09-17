@@ -1,7 +1,7 @@
 ---
 created: 2025-12-20
-modified: 2026-09-02
-reviewed: 2026-09-02
+modified: 2026-09-16
+reviewed: 2026-09-16
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -19,6 +19,7 @@ As of Claude Code 2.1.7, skills and slash commands have been merged into a unifi
 | **Auto-discovery** | Claude Code automatically discovers skills/commands |
 | **Hot-reload** | Changes to skill/command files take effect immediately |
 | **SlashCommand tool** | Commands can invoke other commands via the SlashCommand tool |
+| **Stacked invocation** (2.1.199+) | `/skill-a /skill-b do XYZ` loads all leading skills in one line, up to 5 |
 
 ### Hot-Reload
 
@@ -61,9 +62,13 @@ Then proceed with...
 
 This enables composable command workflows.
 
+> **Note (2.1.223 end-state)**: Claude no longer auto-invokes `/verify` or `/code-review` on its own (2.1.215) — a skill that wants a review run must invoke it explicitly via the SlashCommand tool. `/review` is now an alias of `/code-review`, which reuses the effort level last typed when invoked with none (2.1.223).
+
 ## Skill File Structure
 
 Skills live in `<plugin-name>/skills/<skill-name>/SKILL.md` (or `skill.md`).
+
+> **Save `SKILL.md` as UTF-8 without a byte-order mark (2.1.239 fix).** A leading BOM caused Claude Code to silently ignore the entire file (agent, skill, or command) before this fix — worth checking first if a skill mysteriously never loads.
 
 ### Root-Level `SKILL.md` Layout (2.1.142+)
 
@@ -123,10 +128,12 @@ hooks:                                       # Skill-scoped hooks (optional)
 - **`disable-model-invocation`**: When `true`, the skill content is used as the complete prompt without additional model reasoning. The skill body is passed directly to the model as instructions.
 - **`effort`**: Overrides the session effort level (`low|medium|high|xhigh|max`) while this skill is active; default inherits the session. Set it `low` only on genuinely mechanical wrappers — see Model Selection below.
 - **`when_to_use`**: Additional triggering guidance beyond `description`, for a skill whose activation conditions need more than one or two sentences to disambiguate from siblings.
-- **`paths`**: Glob-scoped auto-activation — the skill's guidance is treated as relevant only when a matching file is in scope (see `.claude/rules/context-engineering.md`).
+- **`paths`**: Glob-scoped auto-activation — the skill's guidance is treated as relevant only when a matching file is in scope (see `.claude/rules/context-engineering.md`). Keep brace groups (`{a,b,c}`) modest — a `paths:` value with many brace groups could OOM-kill or stall the CLI at startup before 2.1.217 added a budget bound; the bound caps the blast radius today, but an enormous glob is still wasted startup cost.
 - **`hooks`**: Define hooks that are only active when this skill is loaded. Uses the same schema as settings.json hooks. Agent `Stop` hooks are converted to `SubagentStop` when the agent runs as a subagent.
 
 > **Note**: The `description` field must be a string type. Multi-line YAML strings using `|` or `>` are supported. Non-string values cause a crash (fixed in 2.1.51).
+
+> **Malformed frontmatter (2.1.186+)**: Invalid YAML in the frontmatter block no longer fails the skill silently — the body loads with empty metadata (so `description`, `name`, etc. are all unset) rather than the skill disappearing outright.
 
 ### String Substitutions
 
@@ -141,6 +148,10 @@ Skills support these dynamic variables in content:
 | `${CLAUDE_SKILL_DIR}` | Directory containing the skill's `SKILL.md` file — use for bundled scripts |
 | `${CLAUDE_EFFORT}` | Current effort level (`low`, `medium`, `high`, `xhigh`, `max`; `/effort ultracode` reports as `xhigh`) — use for effort-aware behavior |
 | `${CLAUDE_PLUGIN_ROOT}` | Root of the loaded plugin (hooks only) |
+
+> **Unmatched positionals render verbatim (2.1.210+)**: An unmatched `$1`/`$2`… placeholder (no argument supplied at that position) renders literally rather than being silently stripped — a skill body written assuming missing positionals vanish will instead show a literal `$2` in output.
+
+> **Argument values are not re-expanded (2.1.233+)**: An argument's *value* is no longer re-expanded as a further substitution marker — if a caller passes the literal text `$1` as one argument, it is not substituted a second time.
 
 **Examples:**
 

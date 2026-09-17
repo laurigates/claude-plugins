@@ -1,7 +1,7 @@
 ---
 created: 2026-03-03
-modified: 2026-06-08
-reviewed: 2026-06-08
+modified: 2026-09-16
+reviewed: 2026-09-16
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -59,6 +59,8 @@ The web sandbox enforces a **"Limited" network allowlist**. Skills must only dow
 
 **Do not assume** npm registry (`registry.npmjs.org`), Docker Hub, arbitrary apt mirrors, or other CDNs are reachable.
 
+> **Note (2.1.243)**: The sandboxed Bash tool prompt no longer enumerates the allowed hosts. A request to an unlisted host is now attempted (and surfaces an approval prompt) rather than assumed pre-blocked, so skill authors should not treat the domain table above as an exhaustive hard allowlist derivable from the tool's own prompt.
+
 ### Network Mode Configuration
 
 Network access mode is configured in the Claude Code web UI settings — not via code. If a skill requires access beyond the "Limited" allowlist, document this requirement explicitly and instruct users to enable "Full" network access in their web session settings.
@@ -80,6 +82,14 @@ Network access mode is configured in the Claude Code web UI settings — not via
 
 Use to carve out exceptions from broad allow wildcards without restricting other traffic.
 
+### Strict Allowlist — no prompting for non-allowlisted hosts (2.1.219+)
+
+`sandbox.network.strictAllowlist: true` denies any host not on `sandbox.network.allowedDomains` outright, with no permission-prompt fallback. Use when a skill must never reach an unexpected host, even with user approval.
+
+### Per-Command Network Grants — `allowed_domains` (2.1.271+)
+
+Under auto mode with sandboxing, a `Bash`/`PowerShell`/`Monitor` call can carry `allowed_domains`: the hosts that one command needs are reviewed alongside the call itself and opened for it alone, rather than granted against the session-wide allowlist. This is a narrower, per-invocation network grant model distinct from the static domain table above — relevant when authoring a skill that runs under auto mode.
+
 ## Filesystem
 
 ### Writable Paths
@@ -95,6 +105,8 @@ The sandbox runs as **root**, so `sudo` is unnecessary for writes to `/usr/local
 ### Git Worktree Write Allowlist (2.1.149+)
 
 When working in a git worktree, the sandbox write allowlist previously covered the **entire main repo root**, letting sandboxed commands write anywhere in the primary checkout. As of 2.1.149 it is narrowed to only the shared `.git` directory — and even there, `hooks/` and `config` are denied. Sandboxed writes that relied on reaching back into the main repo from a worktree will now be blocked; scope writes to the worktree itself.
+
+A separate Linux sandbox bug (fixed 2.1.239) made a nonexistent `.git/config.worktree` file unreadable in repos with `extensions.worktreeConfig` set, breaking every sandboxed git command in those worktrees. If sandboxed git commands in a linked worktree failed mysteriously before 2.1.239, this was the cause — no workaround is needed on current versions.
 
 ### Sandbox Startup Robustness (2.1.176+ / 2.1.178+ / 2.1.179+)
 
@@ -121,6 +133,14 @@ If a sandboxed session previously failed to start in a repo that symlinks `.clau
 ```
 
 macOS-only — the setting has no effect in the Linux web sandbox.
+
+### Disabling Filesystem Isolation Only — `sandbox.filesystem.disabled` (2.1.216+)
+
+`sandbox.filesystem.disabled: true` skips filesystem sandboxing while keeping network egress control active — useful when a skill needs unrestricted local file access (e.g. tooling that writes outside the working directory) but should still have its outbound network traffic gated.
+
+### Deny Rule Matching and Violation Detail (2.1.224+)
+
+A `denyRead`/`denyWrite` glob is matched with or without a trailing slash as of 2.1.224 — `~/.aws/` and `~/.aws` deny identically (a bare trailing slash was previously silently bypassable on Linux and macOS). When a sandboxed command is denied, the Bash tool result now includes which file or network access was denied and why, instead of a bare failure — read that detail before retrying a blocked command differently (see `.claude/rules/handling-blocked-hooks.md`).
 
 ### Temp Directory Pattern
 
@@ -180,6 +200,7 @@ The web sandbox base image includes standard language runtimes and system tools 
 | `CLAUDE_CODE_SESSION_ID` | Always (incl. stdio MCP server subprocesses as of 2.1.154) | Session ID matching hook `session_id` -- available in Bash tool subprocesses (2.1.132+) |
 | `CLAUDECODE` | Stdio MCP server subprocesses (2.1.154+) | Set to `1` so MCP servers can detect they were launched by Claude Code |
 | `CLAUDE_CODE_SAFE_MODE` | Troubleshooting (2.1.169+) | Equivalent to the `--safe-mode` flag — starts Claude Code with **all customizations disabled** (CLAUDE.md, plugins, skills, hooks, MCP servers) |
+| `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` | Set to `1` (2.1.83+) | Strips Anthropic and cloud-provider credentials from subprocess environments (Bash tool, hooks, MCP stdio servers) |
 
 > **Note (2.1.169) — Safe mode for troubleshooting**: the `--safe-mode` flag (and the `CLAUDE_CODE_SAFE_MODE` env var) starts a session with every customization disabled — CLAUDE.md, plugins, skills, hooks, and MCP servers all off. Use it to bisect whether a misbehaviour comes from the harness itself or from a custom skill/hook/plugin: if the problem vanishes in safe mode, it's in your customizations. Because skills and hooks are inert in safe mode, do not rely on a SessionStart install hook in a safe-mode session — install tools manually.
 
@@ -285,6 +306,24 @@ The default hook timeout is 600 seconds (10 minutes), but explicit timeouts docu
 
 ---
 
+## Credential Protection
+
+`sandbox.credentials` (2.1.187+) blocks sandboxed commands from reading credential files and secret environment variables outright.
+
+### Masking Instead of Denying — `mode: "mask"` (2.1.221+)
+
+A credential-file entry can be configured with `mode: "mask"` instead of `deny`. On Linux and WSL, sandboxed commands read a sentinel copy of the file (the whole file, or just the spans an `extract` regex captures), and the sandbox network proxy substitutes the real value only on egress. On macOS, file masking is unsupported and falls back to `deny`.
+
+### Structured Masking (2.1.224+)
+
+Further masking options, all requiring `sandbox.network.tlsTerminate` and honored **only** from user, managed, or `--settings` settings — a project `.claude/settings.json` cannot configure them:
+
+| Option | Masks |
+|---|---|
+| `extract` / `onExtractNoMatch` | A substring inside a structured env value |
+| `decode: "jwt"` + `maskClaims` | Specific JWT claims |
+| `awsPairs` / `sigv4` | Re-signs AWS requests after masking the underlying credential |
+
 ## Auto-Allow in Sandbox
 
 ### `autoAllowBashIfSandboxed` and Shell Expansions (2.1.139+)
@@ -304,6 +343,14 @@ Setting `NO_COLOR` or `FORCE_COLOR` under `env` in `settings.json` previously al
   }
 }
 ```
+
+### Managed-Only Sandbox Binary Overrides — `sandbox.ripgrep` (2.1.232+)
+
+`sandbox.ripgrep` (the sandbox's ripgrep binary path) is honored only from user, managed, or `--settings` settings as of 2.1.232 — a project `.claude/settings.json` entry is ignored. The same restriction applies to `sandbox.bwrapPath`/`sandbox.socatPath`, and managed-settings overrides of any of the three now require explicit approval.
+
+### Failing Closed When the Sandbox Can't Start — `sandbox.failIfUnavailable` (2.1.83+)
+
+`sandbox.failIfUnavailable` exits with an error when the sandbox is enabled but cannot start, instead of silently running the command unsandboxed. Use it when a hard failure is preferable to an unnoticed unsandboxed fallback.
 
 ## Multi-Agent Patterns in Sandbox
 

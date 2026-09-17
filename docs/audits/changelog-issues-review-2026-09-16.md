@@ -38,23 +38,46 @@ The tracking issues are triage output, not verified guidance. Three of their bul
 
 ## Recommended sequencing
 
-The 66 actionable items do not belong in one PR. Grouped by the cluster they were verified in, each is an independently reviewable change:
+The 66 items from this pass, plus 38 more from the two unreviewed windows, do not belong in one PR.
+Grouped by the cluster they were verified in, each is an independently reviewable change. All six
+were opened on 2026-09-16:
 
 | PR | Files | Items | Why this grouping |
 |---|---|---|---|
-| 1 | `hooks-reference.md`, `prompt-agent-hooks.md` | 14 | The file claims to be a *complete* event reference and is missing an event (`DirectoryAdded`) — the completeness claim is the bug. Highest-value single PR. |
-| 2 | `agentic-permissions.md`, `auto-mode.md` | 12 | Security surface; carries the BREAKING allow-glob narrowing that a skill author would get wrong when writing a new `allowed-tools` carve-out. |
-| 3 | `agent-development.md`, `agent-coworker-detection.md`, `skill-fork-context.md` | 11 | Needs all three limits disentangled at once, plus the worktree-isolation hardening that narrows a hazard `agent-coworker-detection.md` documents as open. |
-| 4 | `plugin-structure.md`, `skill-development.md` | 12 | Plugin/skill authoring surface; the `${user_config.*}` shell-form rejection is the guardrail that keeps the next plugin from breaking. |
-| 5 | `sandbox-guidance.md`, `workflow-*.md`, `context-engineering.md`, `mcp-management/SKILL.md` | 17 | Mostly new settings and CLI affordances; lowest risk, largest volume. |
-| 6 | `.claude-code-version-check.json` | — | Housekeeping: correct the `rewindNote`/`actionsRequired` claims about `agent-development.md`; close #2657 as a duplicate. |
+| [#2676](https://github.com/laurigates/claude-plugins/pull/2676) | `hooks-reference.md`, `prompt-agent-hooks.md` | 25 | The file claims to be a *complete* event reference and is missing an event (`DirectoryAdded`) — the completeness claim is the bug. Highest-value single PR. |
+| [#2677](https://github.com/laurigates/claude-plugins/pull/2677) | `agentic-permissions.md`, `auto-mode.md` | 25 | Security surface; carries the BREAKING allow-glob narrowing that a skill author would get wrong when writing a new `allowed-tools` carve-out. |
+| [#2678](https://github.com/laurigates/claude-plugins/pull/2678) | `agent-development.md`, `agent-coworker-detection.md`, `skill-fork-context.md` | 13 | Needs all three limits disentangled at once, plus the worktree-isolation hardening that narrows a hazard `agent-coworker-detection.md` documents as open. |
+| [#2679](https://github.com/laurigates/claude-plugins/pull/2679) | `plugin-structure.md`, `skill-development.md` | 19 | Plugin/skill authoring surface; the `${user_config.*}` shell-form rejection is the guardrail that keeps the next plugin from breaking. |
+| [#2680](https://github.com/laurigates/claude-plugins/pull/2680) | `sandbox-guidance.md`, `workflow-*.md`, `context-engineering.md`, `parallel-safe-queries.md`, `mcp-management/SKILL.md` | 23 | Mostly new settings and CLI affordances; lowest risk, largest volume. |
+| [#2675](https://github.com/laurigates/claude-plugins/pull/2675) | `.claude-code-version-check.json` | — | Housekeeping: correct the `rewindNote`/`actionsRequired` claims about `agent-development.md`; close #2657 as a duplicate. |
 
-## Two unreviewed windows remain after this
+## Both remaining windows were reviewed the same day
 
-`.claude-code-version-check.json` records them explicitly, so they are visible rather than implied:
+The two ranges this audit listed as outstanding were picked up in a second pass rather than left
+for the next scheduled run, so the backlog closed in one sitting:
 
-- **2.1.242 → 2.1.270** (29 versions) — the next scheduled run picks this up. The 2.1.257 `reviewedChanges` entry does *not* cover it; that entry came from the Fable 5.1 adaptation sweep, a docs-adaptation angle only.
-- **2.1.77 → 2.1.137** (61 versions) — never reviewed; `reviewedChanges` jumps 2.1.76 → 2.1.138. Recorded as NOT recovered because rewinding that far would put ~180 versions in one excerpt.
+- **2.1.242 → 2.1.273** (32 versions) — upstream had moved three versions past the 2.1.270 the
+  tracking issue recorded, so the window was extended rather than stopping where the issue left it.
+- **2.1.77 → 2.1.137** (61 versions) — the gap `reviewedChanges` jumped over (2.1.76 → 2.1.138),
+  sliced into three chunks to fit.
+
+That second pass changed the audit's own headline. This document's first pass found **one** stale
+assertion across 66 items. The unreviewed windows held **five more**, including the most serious
+finding in the whole backlog — `--dangerously-skip-permissions` stopped honouring protected paths
+in 2.1.126, and both `agentic-permissions.md` and `auto-mode.md` still asserted it did. The
+lesson is worth recording: the ranges nobody had read were where the dangerous drift lived, and
+a pass over the *tracking issues alone* would never have surfaced it, because no issue covered
+those versions.
+
+| File | Version | Asserted, but untrue |
+|---|---|---|
+| `agentic-permissions.md`, `auto-mode.md` | 2.1.126 | `bypassPermissions` excepts protected paths |
+| `agentic-permissions.md` | 2.1.271/273 | Workspace boundary "holds" — dated to one 2.1.149 fix |
+| `hooks-reference.md` | 2.1.268 | SessionEnd 1.5s cap "fixed in 2.1.74" |
+| `plugin-structure.md` | 2.1.105 | `monitors` nests under `experimental` |
+| `parallel-safe-queries.md` | 2.1.128 | Failing read-only commands cancel sibling parallel calls |
+
+All four ranges `knownUnreviewedRanges` tracked now read RECOVERED, and the pointer sits at 2.1.273.
 
 ## Actionable findings by file
 

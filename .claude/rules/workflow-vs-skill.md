@@ -1,7 +1,7 @@
 ---
 created: 2026-07-29
-modified: 2026-07-29
-reviewed: 2026-07-29
+modified: 2026-09-16
+reviewed: 2026-09-16
 paths:
   - "*/skills/**/workflows/*.js"
   - "*/skills/**/SKILL.md"
@@ -83,6 +83,16 @@ Worked instances, all from the migration eval:
 - **`adversarial-review`** — a skill whose stated precondition is "stakes are
   high, spend deliberately" would pay an opus gate agent on every invocation,
   *including the ones it refuses*.
+
+## Platform guideline agrees (2.1.219+)
+
+Claude Code itself now ships a `workflowSizeGuideline` setting (`/config` →
+Dynamic workflow size; hidden once a settings file sets it), defaulting
+dynamic workflows to a **medium** guideline — aim for fewer than 15 agents.
+This is advisory, not an enforced cap, but it independently corroborates the
+enumerable-N bar above: a workflow whose design invents an N in the dozens
+("40 plugin agents") is already fighting the platform default, not just this
+repo's cost rule.
 
 ## The two shapes with no fit here
 

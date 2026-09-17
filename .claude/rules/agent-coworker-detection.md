@@ -1,7 +1,7 @@
 ---
 created: 2026-04-21
-modified: 2026-06-28
-reviewed: 2026-07-04
+modified: 2026-09-16
+reviewed: 2026-09-16
 ---
 
 # Agent Coworker Detection
@@ -16,7 +16,7 @@ The root cause is missing coordination: each agent assumes it is the sole writer
 
 ## Detection Signals
 
-No single signal is reliable. Combine these six and treat any positive as "assume a coworker is present".
+No single signal is reliable. Combine these seven and treat any positive as "assume a coworker is present".
 
 | Signal | Detects | Cost | Platform |
 |--------|---------|------|----------|
@@ -26,6 +26,7 @@ No single signal is reliable. Combine these six and treat any positive as "assum
 | **Taskwarrior `+ACTIVE` claims** — query `task project:<repo-basename> +ACTIVE export` for claims by other agent IDs | Coworkers that picked up coordination work via `/taskwarrior:task-claim`, even from a different process tree or host | ~50ms | Any host with `task` + `jq` |
 | **Worktree leak** — every untracked file in the parent is probed against the working tree and HEAD of each linked `git worktree` | Transient leaks where a child `Agent(isolation: "worktree")` writes a file that briefly appears in the parent checkout at the same relative path (issue #1319) | ~10ms per worktree | All |
 | **Bare flip** — the shared checkout reports `core.bare=true` via `git rev-parse --is-bare-repository`, or a leaked `GIT_DIR` / `GIT_WORK_TREE` env points away from the repo | A concurrent agent fleet flipping the shared repo to bare (every `git status`/`commit` then fails with "fatal: this operation must be run in a work tree") or redirecting git at another tree (issue #1692) | Free | All |
+| **Cross-session discovery** — `ListAgents` (native, 2.1.224+) | Other live Claude Code sessions on this or other machines that have cross-session messaging enabled | Free (built-in tool call) | macOS/Linux (2.1.224), Windows (2.1.239) |
 
 ### Baseline drift
 
@@ -126,6 +127,8 @@ Limitations:
 
 ### Bare flip (issue #1692)
 
+> **Upstream context (2.1.216, 2.1.222):** Claude Code hardened `isolation: worktree` subagents specifically against `git -C` / `--git-dir` / `GIT_DIR` / `GIT_WORK_TREE` redirection out of their own worktree (2.1.216), and (2.1.222) extended isolation to file edits **and** Bash in every session type (`.claude/rules/agent-development.md` § Worktree Isolation). That closes the isolation-driven path to this hazard on 2.1.222+. The detection/recovery below still matters for the other cause this rule documents — a *shared, non-isolated* checkout where a script/hook bug (the class `scripts/check-git-sandbox-guards.sh` guards against) or a bad `GIT_DIR` export flips the repo bare, which is unrelated to subagent isolation.
+
 A concurrent agent fleet sharing one checkout can flip the shared repo to `core.bare = true` (observed alongside a junk `[user]` identity injected into `.git/config`). Once bare, every `git status` / `git commit` in every linked worktree fails with `fatal: this operation must be run in a work tree`. The sibling failure mode is a leaked `GIT_DIR` / `GIT_WORK_TREE` env that silently redirects git at another tree.
 
 The prevention side already landed: `scripts/check-git-sandbox-guards.sh` blocks the root cause — a test/hook running `git -C "$VAR"` against an unguarded `VAR=$(mktemp -d)` that resolves empty and falls back to the CWD. This sixth signal is the **detection + recovery** complement, so a session can notice the corruption instead of misreading the cascade of git failures as its own fault.
@@ -149,6 +152,10 @@ A positive yields the dedicated verdict `bare_flip_suspected`, ranked ahead of t
 | Recover wiped untracked work | `git reflog -20`, `git fsck --unreachable`, and check the agent worktree branches (`git worktree list`, `git branch -a`) — a file an agent committed survives on its branch even when the parent's untracked copy was wiped |
 
 **Commit early.** Untracked files are the only work a concurrent branch switch / reset can destroy with no recovery path — committed work survives in the reflog, untracked work does not. When many sibling worktrees are active in one clone, commit or stash new files promptly and prefer working in your own `git worktree` so a flip in the shared checkout cannot reach your tree.
+
+### Cross-session discovery (`ListAgents`, 2.1.224+)
+
+`ListAgents` is a native alternative/supplement to the hand-rolled session-marker-file convention above: it lists other live Claude Code sessions reachable via `SendMessage`, without either side needing to adopt a marker file. As of 2.1.239, `ListAgents` also reports the session's own name and lists live teammates (previously only subagents and other sessions appeared). It only surfaces sessions that have cross-session messaging enabled (`crossSessionInbound`), so a session that opts out is still invisible to it — the marker-file signal is still needed for those. See `.claude/rules/agent-development.md` § Native Team Tools for the full `SendMessage`/`ListAgents` cross-session picture.
 
 ## Response Rules
 
