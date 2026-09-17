@@ -1,7 +1,7 @@
 {
-  "lastCheckedVersion": "2.1.241",
-  "lastCheckedDate": "2026-09-14",
-  "rewindNote": "Rewound from 2.1.257 to 2.1.185 on 2026-09-03. The excerpt is sliced from lastCheckedVersion forward, so the pointer must name the last version a review actually covered. 2.1.257 was written by the Fable 5.1 adaptation sweep (docs/audits/fable-5.1-adaptation-2026-09-02.md), whose declared window was 2.1.232-2.1.257 -- it advanced the pointer past 46 versions it never read. The automated changelog review had already gone silent after 2.1.185: 22 successful runs, 13 consecutive filing nothing, last tracking issue #1733 (2026-06-21). Confirmed casualty of the resulting blind spot: the subagent nesting ceiling in .claude/rules/agent-development.md still instructed 5 levels after 2.1.217 disabled nesting by default and 2.1.219 set it to 3.",
+  "lastCheckedVersion": "2.1.273",
+  "lastCheckedDate": "2026-09-16",
+  "rewindNote": "Rewound from 2.1.257 to 2.1.185 on 2026-09-03. The excerpt is sliced from lastCheckedVersion forward, so the pointer must name the last version a review actually covered. 2.1.257 was written by the Fable 5.1 adaptation sweep (docs/audits/fable-5.1-adaptation-2026-09-02.md), whose declared window was 2.1.232-2.1.257 -- it advanced the pointer past 46 versions it never read. The automated changelog review had already gone silent after 2.1.185: 22 successful runs, 13 consecutive filing nothing, last tracking issue #1733 (2026-06-21). The blind spot's confirmed casualty was the subagent nesting ceiling in .claude/rules/agent-development.md, which instructed 5 levels after 2.1.217 disabled nesting by default and 2.1.219 set it to 3. CORRECTED 2026-09-16: that line was already fixed on 2026-09-02 (the file now carries a depth-3 default with a per-version history table); the fix and this note crossed in flight, so the 2.1.241 entry's claim that the rule 'still claims 5 levels' was stale when written. The rewind itself was still correct -- the unread ranges were real, and reviewing them found 6 further stale assertions the pointer had hidden.",
   "knownUnreviewedRanges": [
     {
       "range": "2.1.186-2.1.215",
@@ -16,27 +16,62 @@
       "status": "RECOVERED 2026-09-14 - reviewed in the windowed catch-up run, tracking issue #2657"
     },
     {
-      "range": "2.1.242-2.1.270",
-      "versions": 29,
+      "range": "2.1.242-2.1.273",
+      "versions": 32,
       "cause": "remainder of the rewind backlog; the 2026-09-14 run was windowed and deliberately ratcheted only to 2.1.241",
-      "status": "NOT recovered - the next scheduled run starts at 2.1.242. Note the 2.1.257 entry below was written by the Fable 5.1 adaptation sweep and covers 2.1.232-2.1.257 from a docs-adaptation angle only; it is not a substitute for a changelog review of this range."
+      "status": "RECOVERED 2026-09-16 - reviewed in a five-agent triage pass over the upstream changelog (upstream had moved to 2.1.273 by then, so the window was extended past the 2.1.270 recorded on 2026-09-14). Findings folded into the 2.1.273 entry below and docs/audits/changelog-issues-review-2026-09-16.md"
     },
     {
       "range": "2.1.77-2.1.137",
       "versions": 61,
       "cause": "reviewedChanges jumps 2.1.76 -> 2.1.138; no entry covers the gap",
-      "status": "NOT recovered - rewinding this far would put ~180 versions in one excerpt. Recorded so the gap is visible rather than implied by an absent entry."
+      "status": "RECOVERED 2026-09-16 - backfilled by the same five-agent pass, sliced into three chunks so the 61 versions fit. Most of the range was superseded by later behaviour already documented, but it carried the backlog's two highest-severity stale assertions (the 2.1.126 protected-path bypass, asserted in both agentic-permissions.md and auto-mode.md). Findings in the 2.1.137 entry below"
     }
   ],
   "changelogUrl": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
   "reviewedChanges": [
+    {
+      "version": "2.1.273",
+      "date": "2026-09-16",
+      "windowed": true,
+      "coveredRange": "2.1.242-2.1.273",
+      "relevantChanges": [
+        "HIGH/STALE: 2.1.271 and 2.1.273 each fixed a further permissions.blockReadsOutsideWorkingDirectories bypass (multi-cd chains, subshells, cd+git chains; then commands the checker cannot fully analyze, plus a subshell hiding a dangerous rm in bypass mode). agentic-permissions.md's Working-Directory Bypass Hardening section dated its confidence to the single 2.1.149 fix and told readers a skill 'can rely on the workspace boundary holding' - that claim did not hold between 2.1.149 and 2.1.273",
+        "HIGH/SEE-SAW: Read()/Edit() deny rules covering Bash command arguments was added 2.1.259, fully reverted 2.1.260, re-added narrowly for env -C/eval lines 2.1.268, and reverted again 2.1.273. Post-2.1.273 reality: such a command prompts rather than being denied. Do not cite 2.1.259 or 2.1.268 as current",
+        "HIGH: auto mode gained a Containment Escape rule - cloud metadata-credential fetches, egress evasion and cross-tenant reach are no longer auto-approved unless the environment marks them expected (2.1.257)",
+        "HIGH: --restricted / CLAUDE_CODE_RESTRICTED=1 removes the built-in command- and code-running tools and WebFetch unless named in --tools, keeps file tools inside the working directory, refuses bypassPermissions, and ignores user/project/local settings files (2.1.248)",
+        "HIGH: defaultMode 'bypassPermissions' in a project .claude/settings.json or .claude/settings.local.json is now ignored, like 'auto'; set it in user or managed settings, or pass --permission-mode (2.1.257)",
+        "PreModelSwitch/PostModelSwitch hook events (2.1.251); SessionStart resume hooks now receive session staleness and an estimated re-cache cost (2.1.251)",
+        "CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS now extends SessionEnd hooks that carry no per-hook timeout; they were still cancelled at 1.5s until 2.1.268, which makes hooks-reference.md's 'fixed in 2.1.74' parenthetical incomplete",
+        "Startup warning for Bash allow rules with a wildcard before the subcommand (e.g. Bash(git * main)) - they also match options inserted before the subcommand (2.1.246)",
+        "One-time prompt in auto mode before the first file read outside the working directories, blockable via permissions.blockReadsOutsideWorkingDirectories (2.1.257)",
+        "Plugin component paths that resolve outside the plugin directory - including via a symlink at a declared commands/agents/skills/hooks path - are refused with a path-traversal error (2.1.251, 2.1.257)",
+        "The sandboxed Bash tool prompt no longer lists allowed network hosts, so Claude attempts a request to an unlisted host (with an approval prompt) instead of assuming it is blocked (2.1.243)"
+      ]
+    },
+    {
+      "version": "2.1.137",
+      "date": "2026-09-16",
+      "windowed": true,
+      "coveredRange": "2.1.77-2.1.137",
+      "backfill": true,
+      "relevantChanges": [
+        "HIGH/STALE/SECURITY: --dangerously-skip-permissions (bypassPermissions) now bypasses prompts for writes to .claude/, .git/, .vscode/, shell config files and other previously-protected paths; only catastrophic removal commands still prompt (2.1.126, narrower precursor 2.1.121 for .claude/skills|agents|commands). Both agentic-permissions.md ('Everything except protected paths') and auto-mode.md ('never auto-approved in any mode') asserted the opposite. Full trace: 2.1.78 protected them, 2.1.121 carved out three, 2.1.126 dropped the rest, and no later version re-protects them",
+        "Catastrophic removals inside $(...)/backticks/<(...) prompt in bypass and auto mode, matching the plain form (2.1.208) - the surviving safety net referenced above",
+        "STALE: a failing read-only command (grep, git diff, ls) no longer cancels sibling parallel tool calls (2.1.128). parallel-safe-queries.md is built on the premise that it does; its task list / gh pr list core (application-level exit-1-on-empty) still stands, but the grep/rg/ls framing is narrowed",
+        "STALE: background monitor support for plugins ships as a TOP-LEVEL monitors manifest key that auto-arms at session start or on skill invoke (2.1.105); plugin-structure.md nests monitors under experimental",
+        "SUPERSEDED-WITHIN-RANGE: 2.1.128 made EnterWorktree branch from local HEAD as documented, but 2.1.133's worktree.baseRef setting defaults to 'fresh', which returns the base to origin/<default>. Document the 2.1.133 end-state only",
+        "Bash(find:*) allow rules no longer auto-approve find -exec / -delete (2.1.113)",
+        "PermissionRequest hooks returning updatedInput are re-checked against permissions.deny rules (2.1.110)"
+      ]
+    },
     {
       "version": "2.1.241",
       "date": "2026-09-14",
       "windowed": true,
       "coveredRange": "2.1.216-2.1.241",
       "relevantChanges": [
-        "HIGH: subagent nesting settled - 2.1.217 disabled nested subagent spawning by default, then 2.1.219 set the default depth to 3 (CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1 disables). This is the confirmed casualty named in rewindNote; agent-development.md still claims 5 levels",
+        "HIGH: subagent nesting settled - 2.1.217 disabled nested subagent spawning by default, then 2.1.219 set the default depth to 3 (CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1 disables). Named in rewindNote as the blind spot's casualty; CORRECTED 2026-09-16 -- agent-development.md was already fixed on 2026-09-02 and states depth 3 with a version-history table. No action outstanding",
         "HIGH: new cap on concurrently-running subagents, default 20, override CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS (2.1.217); --max-budget-usd now denies new spawns and halts running background subagents (2.1.217)",
         "HIGH/REMOVAL: the 200-subagent-per-session spawn cap was removed (2.1.224), superseding the CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION note from the 2.1.212 triage",
         "HIGH: subagent forking on by default - subagent_type 'fork' inherits the full conversation and prompt cache; non-teammate spawns in interactive sessions run in the background by default (2.1.232)",
