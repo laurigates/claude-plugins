@@ -8,6 +8,11 @@
 #    contains future-tense calendar estimates.
 #  - Allows past-tense observations, frequency descriptions, and config values
 #    that mention time units.
+#  - Matches only the main agent's own trailing text: subagent (isSidechain)
+#    turns and text blocks before the last tool_use are out of scope, while
+#    transcripts lacking either marker keep their previous behaviour (#2650).
+#  - Leads with rate x quantity, not the effort-unit list, when the blocked
+#    text names a measured rate (#2650).
 #
 # Run: bash hooks-plugin/hooks/test-no-calendar-estimates.sh
 # Exit 0 = all tests pass, Exit 1 = failures
@@ -28,6 +33,63 @@ make_transcript() {
     jq -nc --arg text "$text" '{
         message: { role: "assistant", content: [{ type: "text", text: $text }] }
     }' > "$path"
+}
+
+# (#2650) Transcript whose LAST assistant entry is a subagent turn
+# (isSidechain: true). The main agent's own trailing message is $main_text.
+make_transcript_sidechain() {
+    local main_text="$1" sidechain_text="$2" path="$3"
+    jq -nc --arg text "$main_text" '{
+        message: { role: "assistant", content: [{ type: "text", text: $text }] }
+    }' > "$path"
+    jq -nc --arg text "$sidechain_text" '{
+        isSidechain: true,
+        message: { role: "assistant", content: [{ type: "text", text: $text }] }
+    }' >> "$path"
+}
+
+# (#2650) One assistant entry holding [text, tool_use, text] — narration before
+# a tool call, then the text the turn actually ends with.
+make_transcript_blocks() {
+    local pre_text="$1" post_text="$2" path="$3"
+    jq -nc --arg pre "$pre_text" --arg post "$post_text" '{
+        message: {
+            role: "assistant",
+            content: [
+                { type: "text", text: $pre },
+                { type: "tool_use", id: "toolu_test", name: "Bash", input: {} },
+                { type: "text", text: $post }
+            ]
+        }
+    }' > "$path"
+}
+
+# Assertions over an already-built transcript file (the builders above produce
+# shapes make_transcript cannot express).
+assert_blocks_file() {
+    local desc="$1" transcript="$2"
+    local out
+    out=$(run_hook_output "$transcript")
+    if echo "$out" | grep -q '"decision": "block"'; then
+        printf "  PASS: %s\n" "$desc"
+        PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (expected block, got: %s)\n" "$desc" "$out"
+        FAIL=$((FAIL + 1))
+    fi
+}
+
+assert_allows_file() {
+    local desc="$1" transcript="$2"
+    local out
+    out=$(run_hook_output "$transcript")
+    if [ -z "$out" ]; then
+        printf "  PASS: %s\n" "$desc"
+        PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (expected silent allow, got: %s)\n" "$desc" "$out"
+        FAIL=$((FAIL + 1))
+    fi
 }
 
 # Run the hook with a synthesized transcript and return its stdout.
@@ -137,6 +199,40 @@ echo "matcher stays unnarrowed (#2574 control):"
 assert_blocks "measured render extrapolation still blocks" \
     "Roughly 70–80 minutes for 3870 frames at a measured 1.0 s/frame."
 
+# ── match scope: the main agent's own trailing text (issue #2650) ─────────────
+# The reported symptom was a block on "Seed hunt at 4 of 32." — a message with
+# no duration in it at all. Two ways text outside that message reached the
+# matcher: a subagent turn appended to the same transcript, and an earlier text
+# block of the same entry (before a tool call). Both must stop firing; both
+# fail-open paths (no isSidechain field, no tool_use) must keep firing, or the
+# narrowing has quietly disabled the hook.
+echo ""
+echo "match is scoped to the agent's own trailing text (#2650):"
+
+t="$TMPDIR/transcript-sidechain.jsonl"
+make_transcript_sidechain "Seed hunt at 4 of 32." \
+    "The remaining renders should take roughly 20 minutes." "$t"
+assert_allows_file "subagent estimate after an estimate-free main message" "$t"
+
+t="$TMPDIR/transcript-sidechain-blocks.jsonl"
+make_transcript_sidechain "This will take 3 hours to finish." \
+    "Cleaned up the scratch files." "$t"
+assert_blocks_file "main-agent estimate still blocks when a subagent turn follows" "$t"
+
+t="$TMPDIR/transcript-blocks-pre.jsonl"
+make_transcript_blocks "34 renders, roughly 35 minutes." "Seed hunt at 4 of 32." "$t"
+assert_allows_file "pre-tool-call estimate with an estimate-free closing block" "$t"
+
+t="$TMPDIR/transcript-blocks-post.jsonl"
+make_transcript_blocks "Seed hunt at 4 of 32." "This will take 3 hours to finish." "$t"
+assert_blocks_file "estimate in the closing block of a multi-block entry still blocks" "$t"
+
+# Fail-open control: a transcript carrying no isSidechain field anywhere and no
+# tool_use in its content array must behave exactly as before the narrowing.
+t="$TMPDIR/transcript-failopen.jsonl"
+make_transcript "This will take 3 hours to finish." "$t"
+assert_blocks_file "no isSidechain field and no tool_use — unchanged behaviour" "$t"
+
 # ── past-tense and observational mentions SHOULD pass ─────────────────────────
 echo ""
 echo "past-tense and observational mentions pass:"
@@ -204,6 +300,68 @@ if echo "$out" | jq -e '.decision == "block" and (.reason | length > 0)' >/dev/n
     PASS=$((PASS + 1))
 else
     printf "  FAIL: emitted block is not valid JSON (output: %s)\n" "$out"
+    FAIL=$((FAIL + 1))
+fi
+
+# ── reason branches on a measured rate (issue #2650) ──────────────────────────
+# "Restate as tokens / effort tier" cannot express a render queue. When the
+# blocked text names a measured rate, the message must LEAD with rate x quantity
+# instead of the effort-unit list. The block itself is unchanged — this selects
+# which remediation ships, it does not narrow the matcher (#2574 control above).
+echo ""
+echo "reason branches on a measured rate (#2650):"
+
+t="$TMPDIR/transcript-measured.jsonl"
+make_transcript "34 GPU renders at a measured 81 s/render, so roughly 35 minutes." "$t"
+measured_out=$(run_hook_output "$t")
+
+if echo "$measured_out" | grep -q '"decision": "block"'; then
+    printf "  PASS: measured-rate estimate still blocks\n"
+    PASS=$((PASS + 1))
+else
+    printf "  FAIL: measured-rate estimate no longer blocks (output: %s)\n" "$measured_out"
+    FAIL=$((FAIL + 1))
+fi
+
+for token in "measured rate" "rate × quantity" "external machine work"; do
+    if echo "$measured_out" | grep -qF "$token"; then
+        printf "  PASS: measured-rate reason mentions '%s'\n" "$token"
+        PASS=$((PASS + 1))
+    else
+        printf "  FAIL: measured-rate reason missing '%s' (output: %s)\n" "$token" "$measured_out"
+        FAIL=$((FAIL + 1))
+    fi
+done
+
+# The units that cannot express a render queue must not lead the message.
+for token in "effort tier" "xhigh"; do
+    if echo "$measured_out" | grep -qF "$token"; then
+        printf "  FAIL: measured-rate reason still offers '%s' (output: %s)\n" "$token" "$measured_out"
+        FAIL=$((FAIL + 1))
+    else
+        printf "  PASS: measured-rate reason drops '%s'\n" "$token"
+        PASS=$((PASS + 1))
+    fi
+done
+
+# The generic branch must be unreachable-by-accident: an estimate with no
+# measured rate keeps the original effort-unit message verbatim.
+t="$TMPDIR/transcript-generic.jsonl"
+make_transcript "Would take about 3 hours" "$t"
+generic_out=$(run_hook_output "$t")
+if echo "$generic_out" | grep -qF "effort tier" && ! echo "$generic_out" | grep -qF "That names a measured rate"; then
+    printf "  PASS: estimate without a measured rate keeps the generic effort-unit reason\n"
+    PASS=$((PASS + 1))
+else
+    printf "  FAIL: generic estimate got the machine-work reason (output: %s)\n" "$generic_out"
+    FAIL=$((FAIL + 1))
+fi
+
+if echo "$measured_out" | jq -e '.decision == "block" and (.reason | length > 0)' >/dev/null 2>&1; then
+    printf "  PASS: measured-rate block parses as valid JSON\n"
+    PASS=$((PASS + 1))
+else
+    printf "  FAIL: measured-rate block is not valid JSON (output: %s)\n" "$measured_out"
     FAIL=$((FAIL + 1))
 fi
 
