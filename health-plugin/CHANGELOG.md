@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.1](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.19.0...health-plugin-v1.19.1) (2026-09-18)
+
+
+### Documentation
+
+* **health-plugin:** record how a project-scope entry pins an old plugin version ([#2681](https://github.com/laurigates/claude-plugins/issues/2681)) ([50f0a17](https://github.com/laurigates/claude-plugins/commit/50f0a175785c573a36219f12fa812bbc552d07ee))
+
 ## [1.19.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.18.0...health-plugin-v1.19.0) (2026-08-29)
 
 
