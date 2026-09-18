@@ -129,6 +129,14 @@ git worktree prune
 git worktree list | grep -E '<your-branch-pattern>' || echo "branches free"
 ```
 
+`--force` is correct **here** only because step 3 already salvaged the killed
+agents' trees. After a run that **completed cleanly** there is nothing to
+salvage: remove those worktrees **non-force** (so a dirty tree refuses),
+scoped to this run's own `wf_<run-id>-` prefix and gated on the completion
+notification — see `agent-patterns-plugin:parallel-agent-dispatch` →
+`references/worktree-hazards.md` § "Workflow agents are unreachable and their
+worktrees pin branches" (#2614).
+
 ## 6. Re-verify the parts that were mid-flight
 
 An agent killed between "wrote the files" and "ran the gates" leaves work whose

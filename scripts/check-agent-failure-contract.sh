@@ -235,6 +235,21 @@ require_marker "$worktree_hazards_md" "draft PR before the bulk of the work" \
 require_marker "$failure_recovery_md" "Audit local worktrees alongside the remote" \
   "the local-worktree recovery-audit section (issue #2447)"
 
+# Regression #2614: the repo documented the Agent-spawned SendMessage-resume
+# hazard (#1546) and the resumeFromRunId re-run hazard (#1868), but never that a
+# Workflow-spawned agent is NOT SendMessage-addressable at all — so every
+# "resume the original agent" remedy has no route on that substrate — nor that a
+# run completing with ZERO errors still leaves one worktree per changed agent
+# pinning its branch, blocking the next isolation:"worktree" dispatch. Both
+# halves are pinned against references/worktree-hazards.md, which OWNS them: the
+# unreachability statement, and the safety half of the cleanup remedy (the
+# completion-notification gate that distinguishes it from the interrupted-run
+# --force removal in workflow-interrupted-run-recovery step 5).
+require_marker "$worktree_hazards_md" "Workflow agents are unreachable" \
+  "the Workflow-unreachability section (issue #2614)"
+require_marker "$worktree_hazards_md" "gated on the run's completion notification" \
+  "the completion-gated, non-force cleanup condition (issue #2614)"
+
 if [ "$errors" -ne 0 ]; then
   echo
   echo "The loud-failure contract (issue #1422) and the hook-thrashing heuristic"

@@ -29,6 +29,8 @@
 #   P. parallel-agent-dispatch SKILL.md missing "#2447" → exit 1
 #   Q. references/worktree-hazards.md missing the draft-PR-early mitigation → exit 1
 #   R. parallel-agent-dispatch SKILL.md missing the "worktreePath" tell → exit 1
+#   S. references/worktree-hazards.md missing "Workflow agents are unreachable" → exit 1
+#   T. references/worktree-hazards.md missing the completion-notification gate → exit 1
 #
 # Issue #1868: Workflow({resumeFromRunId}) re-runs an already-succeeded
 # isolation:"worktree" agent instead of returning its cached result, re-firing
@@ -55,6 +57,14 @@
 # mode-detection statement and the draft-PR-early mitigation in
 # references/worktree-hazards.md, the local-worktree recovery audit in
 # references/failure-recovery.md, and the pointer + tells in SKILL.md.
+#
+# Issue #2614: a Workflow-spawned agent is NOT SendMessage-addressable even
+# after the run completes (so every "resume the original agent" remedy has no
+# route there), and a run completing with ZERO errors still leaves one worktree
+# per changed agent pinning its branch. Guards S/T keep both halves pinned to
+# references/worktree-hazards.md — S the unreachability statement, T the
+# completion-notification gate that makes the non-force cleanup safe and
+# distinguishes it from the interrupted-run --force removal.
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -272,5 +282,28 @@ assert "R: dispatch SKILL.md missing the worktreePath tell fails (exit 1)" \
   "$([ "$(run_fixture "$fx_r")" -eq 1 ] && echo true || echo false)"
 rm -rf "$fx_r"
 
-echo "check-agent-failure-contract (#1601/#1868/#2039/#2143/#2447): ${pass_count} passed, ${fail_count} failed"
+# --- Guard S: worktree-hazards.md missing the Workflow-unreachability statement ---
+# Issue #2614: a Workflow-spawned agent has no SendMessage target, so the #1546
+# "resume the original agent" remedy does not transfer. Strip the statement and
+# confirm the checker fails, so a bulk edit can't silently drop it.
+fx_s="$(mktemp -d)"
+build_fixture "$fx_s"
+strip_marker "$fx_s/agent-patterns-plugin/skills/parallel-agent-dispatch/references/worktree-hazards.md" "Workflow agents are unreachable"
+assert "S: worktree-hazards.md missing the Workflow-unreachability statement fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_s")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_s"
+
+# --- Guard T: worktree-hazards.md missing the completion-notification gate ---
+# The safety half of the #2614 remedy: removal is gated on the run's completion
+# notification (never on PR state) and is never --force. Losing this line turns
+# the documented cleanup into the unscoped sweep agent-coworker-detection.md
+# exists to forbid.
+fx_t="$(mktemp -d)"
+build_fixture "$fx_t"
+strip_marker "$fx_t/agent-patterns-plugin/skills/parallel-agent-dispatch/references/worktree-hazards.md" "gated on the run's completion notification"
+assert "T: worktree-hazards.md missing the completion-notification gate fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_t")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_t"
+
+echo "check-agent-failure-contract (#1601/#1868/#2039/#2143/#2447/#2614): ${pass_count} passed, ${fail_count} failed"
 [ "$fail_count" -eq 0 ]

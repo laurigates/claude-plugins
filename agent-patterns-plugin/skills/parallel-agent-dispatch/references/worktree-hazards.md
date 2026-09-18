@@ -271,3 +271,59 @@ Related but distinct — all three concern `worktree`, none concerns `remote`:
 harness worktreed the *outer* repo), `../SKILL.md` § "Resuming agents:
 SendMessage loses worktree isolation" (#1546), and
 [deleted worktree (#2372)](#deleted-worktree-kills-the-shell-not-the-agent-2372).
+
+## Workflow agents are unreachable and their worktrees pin branches (#2614)
+
+Two facts about the `Workflow` substrate that the `Agent`-spawned guidance above
+does **not** transfer to. Observed 2026-09-04 in `laurigates/claude-plugins`
+across two runs (`wf_671995f7-033`, 14/14 agents / 0 errors, and
+`wf_e9de7386-be6`); treat them as a dated report of harness behaviour, not a
+standing invariant — re-check before relying on either.
+
+**1. A `Workflow`-spawned agent is not `SendMessage`-addressable**, even after
+the run completes. At the moment both runs finished, `ListAgents` listed 14 peer
+*sessions* and **no** `wf_*` agent. So any remedy phrased as "resume the original
+agent" — including `../SKILL.md` § "Resuming agents: SendMessage loses worktree
+isolation" (#1546) and the upstream `agent-worktree-resume-for-pr-feedback` rule
+— **has no route on the `Workflow` substrate**. The contrast is the whole point:
+
+| Spawned by | `SendMessage`-resumable? | What resume costs |
+|---|---|---|
+| `Agent` | Yes | Loses worktree isolation — runs in the main checkout (#1546) |
+| `Workflow` | **No** — no addressable target exists | n/a; re-dispatch a fresh agent instead |
+
+**2. A run that completes with zero errors still leaves one worktree per
+*changed* agent, each pinning its branch.** The next `isolation: "worktree"`
+dispatch onto that branch then fails exactly as in § Target-branch preflight
+(#1969) above: `fatal: '<branch>' is already checked out at
+'.../worktrees/wf_<run>-<n>'`. Five of the first run's 14 worktrees survived it:
+
+```
+git worktree list
+.../.claude/worktrees/wf_671995f7-033-1  22e2b5f2 [test/wire-calendar-estimates-test-2580]
+.../.claude/worktrees/wf_671995f7-033-2  25be5af5 [ci/docs-index-precommit-trigger-2522]
+.../.claude/worktrees/wf_671995f7-033-3  f5c5940d [fix/terraform-apply-hook-position-2506]
+.../.claude/worktrees/wf_671995f7-033-6  b6f8ec03 [fix/survey-git-prs-confidence-2441]
+.../.claude/worktrees/wf_671995f7-033-7  b8e10d96 [feat/issue-chooser-discussions-link-2568]
+```
+
+### Remedy — scoped, non-force removal
+
+```sh
+git worktree remove .claude/worktrees/wf_<run-id>-<n>   # no --force
+git worktree prune
+```
+
+The scoping conditions are load-bearing, not decoration
+(`.claude/rules/agent-coworker-detection.md` § "Cleanup: never force-remove
+worktrees you don't own" owns them):
+
+- Removal is gated on the run's completion notification, never on PR state — a merged PR does not mean the agent is finished.
+- Every path carries **this run's own** `wf_<run-id>-` prefix. Never remove a worktree another session created.
+- **Never `--force`.** A non-forced remove *refuses* on a dirty tree, and that refusal is precisely what makes the sweep safe.
+- Skip any `locked` worktree — `locked` is a live-work signal.
+
+Distinct from `workflow-orchestration-plugin:workflow-interrupted-run-recovery`
+§ 5, which covers a run **killed** mid-flight: there salvage precedes a
+`--force` removal. Here the run **completed**, so there is nothing to salvage
+and force is never warranted.
