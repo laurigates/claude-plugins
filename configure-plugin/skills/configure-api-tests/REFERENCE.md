@@ -606,7 +606,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Download pacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8.0.1
         with:
           name: pacts
           path: pacts/
@@ -646,7 +646,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Download pacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8.0.1
         with:
           name: pacts
           path: pacts/
