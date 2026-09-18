@@ -1,12 +1,12 @@
 ---
 name: plugin-registry
-description: "Claude Code plugin registry structure, installation scopes, and common issues. Use when troubleshooting plugin installation problems or manually fixing registry entries."
+description: "Claude Code plugin registry structure, install scopes, and version lag. Use when troubleshooting plugin problems, a stale plugin version in one project, or fixing registry entries."
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-02-04
-modified: 2026-07-18
+modified: 2026-09-17
 compatibility: claude-code
-reviewed: 2026-02-05
+reviewed: 2026-09-17
 ---
 
 # Claude Code Plugin Registry
@@ -55,6 +55,14 @@ This file tracks all installed plugins across all projects.
 
 Each plugin key maps to an **array** of installations (supporting multiple scopes).
 
+**The registry holds version pointers, not plugin copies.** Every entry's
+`installPath` — at any scope — resolves under
+`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`, and nothing is
+written inside the project. Measured 2026-09-13 on one machine: all 44
+project-scope and all 50 user-scope entries pointed into that one cache. So an
+entry is a claim about *which cached version this scope uses*, and two entries
+for one plugin mean two version directories sitting side by side.
+
 ### Field Reference
 
 | Field | Required | Description |
@@ -90,6 +98,15 @@ Each plugin key maps to an **array** of installations (supporting multiple scope
 - Should only be active in that project
 - **Bug #14202**: Still shows as "installed" in other projects
 
+A project entry is also created **without anyone running an install command**.
+At session start Claude Code logs `Syncing installed_plugins.json with
+enabledPlugins from all settings.json files` and then one `Added
+<plugin>@<marketplace> installation for scope project (<projectPath>)` per
+plugin the project's committed `.claude/settings.json` enables. The version
+recorded is whatever is current at that moment, and it does not follow later
+updates to the user-scope install — so the entry starts correct and drifts.
+See "Which install loads" below for the consequence.
+
 ## Known Issue: #14202
 
 **Problem**: Project-scoped plugins incorrectly appear as globally installed.
@@ -109,6 +126,33 @@ Each plugin key maps to an **array** of installations (supporting multiple scope
 4. Plugin doesn't actually work in current project
 
 **Workaround**: Manually edit the registry to add an entry for the current project.
+
+## Which Install Loads, and Why a Project Can Run an Old Version
+
+When a plugin has both a project entry for the current directory and a user
+entry, **the project entry decides which cached version loads there**, and it
+does not follow the user install's updates — so a project can quietly run a
+version behind the rest of the machine, missing skills that a newer version
+added.
+
+`claude plugin details` reports the **user** version from inside such a project
+and so cannot detect this; `claude plugin list --json` reports each row's
+`scope` but not which row wins. The reliable read is the debug log:
+
+```bash
+CLAUDECODE= claude -p "reply ok" --debug plugins --debug-file /tmp/p.log
+```
+
+Then read its `skillsPath:` lines for the version actually loaded.
+
+Removing a lagging row is a **repair, not a fix** — the next session in that
+project re-creates it, so the lag returns after the next release. Measured on
+one machine: a sweep removing 462 entries left zero lagging on 2026-09-13, and
+19 had returned by 2026-09-17.
+
+For the measured evidence, the query that finds lagging rows, the
+uninstall-rewrites-committed-settings hazard and its snapshot-restore procedure,
+and the upstream report, see [REFERENCE.md](REFERENCE.md).
 
 ## Manual Registry Operations
 
@@ -163,17 +207,21 @@ cp ~/.claude/plugins/installed_plugins.json ~/.claude/plugins/installed_plugins.
 
 ## Project Settings Integration
 
-Project-scoped plugins also need entries in `.claude/settings.json`:
+Project-scoped plugins also need entries in `.claude/settings.json`.
+`enabledPlugins` is an **object** mapping `plugin@marketplace` to a boolean —
+not an array of names:
 
 ```json
 {
-  "enabledPlugins": [
-    "plugin-name@marketplace"
-  ]
+  "enabledPlugins": {
+    "plugin-name@marketplace": true
+  }
 }
 ```
 
-Without this, even a correctly registered project-scoped plugin won't load.
+Without this, even a correctly registered project-scoped plugin won't load. And
+because session start syncs the registry from these keys, every plugin enabled
+here also gains a project-scope registry row.
 
 ## Troubleshooting Checklist
 
@@ -192,7 +240,12 @@ Without this, even a correctly registered project-scoped plugin won't load.
    - Need separate registry entry per project
    - Or convert to global scope
 
-4. **Registry file is corrupted**
+4. **A skill or command is missing in one project only, or behaves as an older version**
+   - Suspect a project entry lagging the user install — run the `jq` query above
+   - Confirm with `--debug plugins` and read the `skillsPath:` version
+   - `claude plugin details` reports the user version here and will mislead you
+
+5. **Registry file is corrupted**
    - Restore from backup if available
    - Or delete and reinstall plugins
    - Location: `~/.claude/plugins/installed_plugins.json`
