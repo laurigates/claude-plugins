@@ -1,6 +1,6 @@
 ---
 name: workflow-interrupted-run-recovery
-description: Recover a Workflow run killed mid-flight: salvage killed agents' worktrees, resume without duplicating PRs already opened. Use when a run reports agents_error after a session limit, kill, or crash.
+description: "Recover a Workflow run killed mid-flight: salvage killed agents' worktrees, resume without duplicating PRs already opened. Use when a run reports agents_error after a session limit, kill, or crash."
 user-invocable: false
 allowed-tools: Bash, Read, Glob, Grep
 created: 2026-09-08
