@@ -23,6 +23,12 @@
 #   - commit-bracketing: commands in the interval terminated by `git commit`
 #     are a completed unit of work
 #   - novelty vs `just --dump`: don't propose a recipe that already exists
+#   - argument stability (#2683): a shape whose reusable payload lives only
+#     in placeholders counts only when at least one placeholder resolves to
+#     the SAME concrete value in >=2 separate window sessions; a shape with
+#     no placeholders at all is stable by construction
+#   - compound/control-flow lines (`;`, `&&`, `||`, loop keywords) are
+#     workflows, not recipes — they belong to --process if anywhere
 #
 # Graceful degradation (mirrors health-plugin's check-usage.sh): projects dir
 # missing / this session's transcript not found / fewer than --min-sessions
@@ -303,11 +309,20 @@ fi
 # ---------------------------------------------------------------------------
 # Extraction + normalization.
 #
-# extract_norm_raw <file> emits, one per line, "<normalized>\t<raw>" for every
-# Bash command in the transcript, in order. Normalization is deliberately lossy
-# (quoted strings → <str>, path-tokens → <path>, bare numbers → <n>); the raw
-# example is preserved so the LLM can refine.
+# extract_norm_raw <file> emits, one per line,
+# "<normalized>\t<raw>\t<concrete-args>" for every Bash command in the
+# transcript, in order. Normalization is deliberately lossy (quoted strings →
+# <str>, path-tokens → <path>, bare numbers → <n>); the raw example is
+# preserved so the LLM can refine.
+#
+# The third field (#2683) is the list of CONCRETE values that the placeholders
+# collapsed, in token order, joined by ARG_SEP. It is what the argument-
+# stability gate below weighs: a shape is only a recipe candidate when one of
+# those values actually repeats across sessions. Quoted strings are swapped for
+# a space-free sentinel BEFORE the token split so a `"ship it"` argument stays
+# one token and the normalized/concrete token streams stay aligned.
 # ---------------------------------------------------------------------------
+ARG_SEP=$'\003'
 extract_norm_raw() {
   jq -r '
     select(.type=="assistant")
@@ -317,23 +332,49 @@ extract_norm_raw() {
     | select(. != "")
     | gsub("[\r\n]+"; " ")
   ' "$1" 2>/dev/null | awk '
-    BEGIN { sq = sprintf("%c", 39) }   # single quote, portably (no \x27)
+    BEGIN {
+      sq = sprintf("%c", 39)      # single quote, portably (no \x27)
+      S1 = sprintf("%c", 1)       # quoted-string sentinel open
+      S2 = sprintf("%c", 2)       # quoted-string sentinel close
+      AS = sprintf("%c", 3)       # concrete-arg join separator (ARG_SEP)
+    }
     {
+      gsub(/\t/, " ")            # keep the 3 output fields tab-separable
       raw = $0
       work = $0
-      gsub(/"[^"]*"/, "<str>", work)
-      gsub(sq "[^" sq "]*" sq, "<str>", work)
+      # Swap each quoted string for a space-free sentinel, recording the
+      # original. Same leftmost-match order as the gsub pair this replaces, so
+      # the normalized output is unchanged — but a quoted string with spaces
+      # now stays a SINGLE token, which is what keeps norm/raw aligned.
+      nq = 0
+      while (match(work, /"[^"]*"/)) {
+        nq++; qv[nq] = substr(work, RSTART, RLENGTH)
+        work = substr(work, 1, RSTART - 1) S1 nq S2 substr(work, RSTART + RLENGTH)
+      }
+      while (match(work, sq "[^" sq "]*" sq)) {
+        nq++; qv[nq] = substr(work, RSTART, RLENGTH)
+        work = substr(work, 1, RSTART - 1) S1 nq S2 substr(work, RSTART + RLENGTH)
+      }
       n = split(work, t, /[ \t]+/)
-      out = ""
+      out = ""; args = ""
       for (i = 1; i <= n; i++) {
         tok = t[i]
         if (tok == "") continue
-        if (tok ~ /\//) tok = "<path>"
-        else if (tok ~ /^[0-9]+(\.[0-9]+)?$/) tok = "<n>"
-        out = (out == "" ? tok : out " " tok)
+        shown = tok; concrete = tok
+        while (match(shown, S1 "[0-9]+" S2))
+          shown = substr(shown, 1, RSTART - 1) "<str>" substr(shown, RSTART + RLENGTH)
+        while (match(concrete, S1 "[0-9]+" S2)) {
+          k = substr(concrete, RSTART + 1, RLENGTH - 2) + 0
+          concrete = substr(concrete, 1, RSTART - 1) qv[k] substr(concrete, RSTART + RLENGTH)
+        }
+        if (shown ~ /\//) shown = "<path>"
+        else if (shown ~ /^[0-9]+(\.[0-9]+)?$/) shown = "<n>"
+        if (shown == "<path>" || shown == "<n>" || shown == "<str>")
+          args = args (args == "" ? "" : AS) concrete
+        out = (out == "" ? shown : out " " shown)
       }
       if (out == "") next
-      print out "\t" raw
+      print out "\t" raw "\t" args
     }'
 }
 
@@ -360,30 +401,96 @@ novel_tokens() {
   printf '%s' "$out"
 }
 
+# Compound / control-flow lines are workflows, not recipes (#2683): a recipe for
+# `until ...; do sleep 20; done; gh pr checks <n>` is a recipe for the wait, not
+# for a command. Judged on the NORMALIZED form, so a `;`/`&&` living inside a
+# quoted argument has already collapsed to <str> and cannot false-positive.
+# A single `|` pipe is deliberately NOT compound — a pipeline is one command;
+# the ones the issue names (`git show <path> | sed -n <str>`) are dropped by the
+# argument-stability gate instead.
+is_compound() {
+  case " $1 " in
+    *";"*|*"&&"*|*"||"*|*" until "*|*" while "*|*" for "*|*" do "*|*" done "*) return 0 ;;
+  esac
+  return 1
+}
+
+# True when the normalized form contains ANY placeholder — standalone (`<path>`)
+# or embedded in a flag (`--title=<str>`, the ordinary `--flag="value"` idiom).
+# Either way part of the payload was collapsed and could differ between
+# invocations, so the shape must prove argument stability before it qualifies.
+# Only STANDALONE placeholders contribute concrete values to `args`, so an
+# embedded-only shape can never be stable and is always dropped — the
+# conservative outcome #2683 asks for (`gh pr create --title=<str>` standing in
+# for three unrelated PR titles is not recipe material).
+has_placeholder() {
+  case "$1" in *"<str>"*|*"<path>"*|*"<n>"*) return 0 ;; esac
+  return 1
+}
+
 # ---------------------------------------------------------------------------
 # Window pass — per-session distinct normalized-command sets → cross-session
 # recurrence counts, plus a first-raw example per normalized command.
 # ---------------------------------------------------------------------------
 declare -A win_sessions=()   # norm -> distinct-file count
 declare -A win_first=()      # norm -> first raw example seen anywhere in window
+declare -A win_argfiles=()   # "norm<ARG_SEP>concrete-arg" -> distinct-file count
 for f in "${WINDOW_FILES[@]}"; do
   declare -A seen_here=()
-  while IFS=$'\t' read -r norm raw; do
+  declare -A seen_arg_here=()
+  while IFS=$'\t' read -r norm raw args; do
     [ -n "$norm" ] || continue
     [ -n "${win_first[$norm]+x}" ] || win_first["$norm"]="$raw"
     if [ -z "${seen_here[$norm]+x}" ]; then
       seen_here["$norm"]=1
       win_sessions["$norm"]=$(( ${win_sessions[$norm]:-0} + 1 ))
     fi
+    if [ -n "${args:-}" ]; then
+      declare -a arg_toks=()
+      IFS="$ARG_SEP" read -ra arg_toks <<< "$args"
+      for a in "${arg_toks[@]:-}"; do
+        [ -n "$a" ] || continue
+        argkey="${norm}${ARG_SEP}${a}"
+        if [ -z "${seen_arg_here[$argkey]+x}" ]; then
+          seen_arg_here["$argkey"]=1
+          win_argfiles["$argkey"]=$(( ${win_argfiles[$argkey]:-0} + 1 ))
+        fi
+      done
+    fi
   done < <(extract_norm_raw "$f")
-  unset seen_here
+  unset seen_here seen_arg_here
 done
+
+# Argument stability (#2683). A normalized shape is stable when either it has no
+# placeholder at all (nothing varies — `terraform apply -auto-approve`), or at
+# least one placeholder resolved to the SAME concrete value in >=2 separate
+# window sessions. Unstable shapes — `gh api <path> --jq <str>` standing in for
+# three unrelated API reads — are one-offs wearing a recurrence count.
+declare -A arg_stable=()
+declare -A stable_args=()
+declare -A stable_n=()
+if [ "${#win_argfiles[@]}" -gt 0 ]; then
+  # Keys are iterated in sorted order, not bash hash order, so the emitted
+  # `_STABLE_ARGS` list is deterministic (structured-script-output.md). The
+  # three-example cap counts entries rather than commas, so a concrete value
+  # that itself contains a comma (`1,50p`) cannot truncate the list early.
+  while IFS= read -r argkey; do
+    [ -n "$argkey" ] || continue
+    [ "${win_argfiles[$argkey]}" -ge 2 ] || continue
+    sn="${argkey%%"$ARG_SEP"*}"
+    sa="${argkey#*"$ARG_SEP"}"
+    arg_stable["$sn"]=yes
+    [ "${stable_n[$sn]:-0}" -lt 3 ] || continue
+    stable_n["$sn"]=$(( ${stable_n[$sn]:-0} + 1 ))
+    stable_args["$sn"]="${stable_args[$sn]:+${stable_args[$sn]},}$sa"
+  done < <(printf '%s\n' "${!win_argfiles[@]}" | LC_ALL=C sort)
+fi
 
 # ---------------------------------------------------------------------------
 # This-session pass — ordered arrays for digest / commit intervals / bracket.
 # ---------------------------------------------------------------------------
 declare -a RAW=() NORM=()
-while IFS=$'\t' read -r norm raw; do
+while IFS=$'\t' read -r norm raw _args; do
   [ -n "$norm" ] || continue
   NORM+=("$norm"); RAW+=("$raw")
 done < <(extract_norm_raw "$session_file")
@@ -460,16 +567,23 @@ fi
 # ---------------------------------------------------------------------------
 # Build RECIPE_CANDIDATES.
 # ---------------------------------------------------------------------------
-declare -a cand_lines=()   # sortkey<TAB>norm<TAB>sessions<TAB>bracket
+declare -a cand_lines=()   # sortkey<TAB>norm<TAB>sessions<TAB>bracket<TAB>stable_args
 for norm in "${sess_order[@]:-}"; do
   [ -n "$norm" ] || continue
   is_churn "$norm" && continue
+  is_compound "$norm" && continue
   [ -n "${covered[$norm]+x}" ] && continue
+  if has_placeholder "$norm"; then
+    [ "${arg_stable[$norm]:-no}" = yes ] || continue
+    sargs="${stable_args[$norm]:-}"
+  else
+    sargs="literal"
+  fi
   sess_n=${win_sessions[$norm]:-1}
   brk=no; [ -n "${bracketed[$norm]+x}" ] && brk=yes
   if [ "$sess_n" -ge 2 ] || [ "$brk" = yes ]; then
     printf -v key '%03d%03d' "$sess_n" "${sess_count[$norm]:-0}"
-    cand_lines+=("${key}"$'\t'"${norm}"$'\t'"${sess_n}"$'\t'"${brk}")
+    cand_lines+=("${key}"$'\t'"${norm}"$'\t'"${sess_n}"$'\t'"${brk}"$'\t'"${sargs}")
   fi
 done
 
@@ -569,13 +683,14 @@ echo "=== RECIPE_CANDIDATES ==="
 echo "COUNT=${#cand_lines[@]}"
 idx=0
 if [ "${#cand_lines[@]}" -gt 0 ]; then
-  while IFS=$'\t' read -r _key norm sess_n brk; do
+  while IFS=$'\t' read -r _key norm sess_n brk sargs; do
     idx=$((idx + 1))
     [ "$idx" -gt "$MAX_CANDIDATES" ] && { echo "TRUNCATED=${#cand_lines[@]} candidates, showing ${MAX_CANDIDATES}"; break; }
     echo "CANDIDATE_${idx}=${norm}"
     echo "CANDIDATE_${idx}_SESSIONS=${sess_n}"
     echo "CANDIDATE_${idx}_BRACKETED=${brk}"
     echo "CANDIDATE_${idx}_NOVEL_TOKENS=$(novel_tokens "$norm")"
+    echo "CANDIDATE_${idx}_STABLE_ARGS=${sargs}"
     echo "CANDIDATE_${idx}_FIRST=${win_first[$norm]:-}"
   done < <(printf '%s\n' "${cand_lines[@]}" | sort -rn)
 fi

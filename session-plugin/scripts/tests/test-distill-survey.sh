@@ -2,7 +2,8 @@
 # Regression tests for distill-survey.sh — the read-only distill collector.
 # Covers: churn exclusion, cross-session recurrence, commit-bracketing,
 # just-coverage exclusion, exact HOT_FILES, .claude/worktrees prune, SKIP on
-# empty/missing, --summary shape, and the RULE_HINTS_FROM_TOOLING denial signal.
+# empty/missing, --summary shape, the RULE_HINTS_FROM_TOOLING denial signal,
+# and (TEST N, #2683) argument stability + compound-line exclusion.
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,7 +15,7 @@ pass=0
 fail=0
 check() {
   local label="$1" haystack="$2" needle="$3"
-  if printf '%s' "$haystack" | grep -qF "$needle"; then
+  if printf '%s' "$haystack" | grep -qF -e "$needle"; then
     pass=$((pass + 1))
   else
     fail=$((fail + 1))
@@ -24,7 +25,7 @@ check() {
 }
 check_absent() {
   local label="$1" haystack="$2" needle="$3"
-  if printf '%s' "$haystack" | grep -qF "$needle"; then
+  if printf '%s' "$haystack" | grep -qF -e "$needle"; then
     fail=$((fail + 1))
     echo "FAIL: $label (unexpected: $needle)"
   else
@@ -64,7 +65,8 @@ bash_line() { printf '{"type":"assistant","message":{"content":[{"type":"tool_us
 {
   bash_line 'git status'                       # churn, before commit
   bash_line 'terraform apply -auto-approve'    # recurs across sessions → candidate
-  bash_line 'kubectl apply -f deploy/'         # bracketed → candidate
+  bash_line 'kubectl apply -f deploy/'         # bracketed but <path> never repeats → dropped (#2683)
+  bash_line 'docker compose up -d'             # bracketed + fully literal → candidate
   bash_line 'helm upgrade myrel ./chart'       # covered by recipe body → excluded
   bash_line 'git commit -m "ship it"'          # commit delimiter
   bash_line 'just deploy'                       # covered by recipe name → excluded
@@ -98,8 +100,10 @@ check "A: meta STATUS OK" "$out" "$(printf '=== SESSION_META ===')"
 cand=$(printf '%s' "$out" | sed -n '/=== RECIPE_CANDIDATES ===/,/=== END RECIPE_CANDIDATES ===/p')
 check "B: cross-session recurring command surfaces" "$cand" "terraform apply -auto-approve"
 check "B: recurrence count is 2" "$cand" "_SESSIONS=2"
-check "B: commit-bracketed command surfaces" "$cand" "kubectl apply -f <path>"
+check "B: commit-bracketed command surfaces" "$cand" "docker compose up -d"
 check "B: bracketed flag set" "$cand" "_BRACKETED=yes"
+check "B: literal shapes are labelled stable" "$cand" "_STABLE_ARGS=literal"
+check_absent "B: bracketed shape with a never-repeated <path> excluded (#2683)" "$cand" "kubectl apply -f <path>"
 check "B: novel tokens emitted" "$cand" "NOVEL_TOKENS=terraform,apply"
 check "B: concrete _FIRST example preserved" "$cand" "_FIRST=terraform apply -auto-approve"
 check_absent "B: churn (git status) excluded" "$cand" "git status"
@@ -197,6 +201,7 @@ pi_edit() { pi_call "$1" edit "$(jq -cn --arg p "$2" '{path:$p,edits:[{oldText:"
   pi_bash c1 'git status'
   pi_bash c2 'terraform apply -auto-approve'
   pi_bash c3 'kubectl apply -f deploy/'
+  pi_bash c3b 'docker compose up -d'
   pi_bash c4 'helm upgrade myrel ./chart'
   pi_bash c5 'git commit -m "ship it"'
   pi_bash c6 'just deploy'
@@ -232,7 +237,8 @@ cand=$(printf '%s' "$out" | sed -n '/=== RECIPE_CANDIDATES ===/,/=== END RECIPE_
 check "L/B: candidate count matches Claude fixture" "$cand" "COUNT=2"
 check "L/B: cross-session recurring command surfaces" "$cand" "CANDIDATE_1=terraform apply -auto-approve"
 check "L/B: recurrence count is 2" "$cand" "CANDIDATE_1_SESSIONS=2"
-check "L/B: commit-bracketed command surfaces" "$cand" "CANDIDATE_2=kubectl apply -f <path>"
+check "L/B: commit-bracketed command surfaces" "$cand" "CANDIDATE_2=docker compose up -d"
+check_absent "L/B: bracketed shape with a never-repeated <path> excluded (#2683)" "$cand" "kubectl apply -f <path>"
 check "L/B: bracketed-only command not counted in the child session" "$cand" "CANDIDATE_2_SESSIONS=1"
 check "L/B: bracketed flag set" "$cand" "CANDIDATE_2_BRACKETED=yes"
 check "L/B: novel tokens emitted" "$cand" "NOVEL_TOKENS=terraform,apply"
@@ -282,6 +288,70 @@ check "M3: missing PI_SESSION_FILE → unavailable" "$out" "TRANSCRIPT_AVAILABLE
 out=$(PI_SESSION_FILE="$PI_FILE" run)
 check "M4: Claude lookup stays authoritative over PI_SESSION_FILE" "$out" "TRANSCRIPT_FORMAT=claude-code"
 check "M4: Claude denial signal still present" "$out" "DENIAL_user-rejected=2"
+
+# --- TEST N: argument stability + compound-line exclusion (#2683) -------------
+# A shape whose whole reusable payload sits in placeholders that never repeat is
+# a one-off wearing a recurrence count — it must not be a candidate. Every
+# negative below is PAIRED with a positive so the filter cannot silently
+# over-filter into "drop anything with a placeholder".
+N_PROJECTS="$SANDBOX/n-projects"
+N_SLUG="$N_PROJECTS/-n-slug"
+N_PROJ="$SANDBOX/n-proj"
+mkdir -p "$N_SLUG" "$N_PROJ"
+cp "$PROJ/justfile" "$N_PROJ/justfile"
+N_SID="33333333-3333-3333-3333-333333333333"
+{
+  bash_line "gh api repos/a/b/rulesets/1 --jq '.rules'"   # <path>/<str> never repeat
+  bash_line "sed -n '1,50p' docs/stable.md"               # <path> DOES repeat below
+  bash_line "git show abc123:docs/x.md | sed -n '1,20p'"  # pipeline, args never repeat
+  bash_line 'until [ "pending" = "" ]; do sleep 20; done; echo done; gh pr checks 42 --watch'
+  bash_line 'npm run build:prod'                          # fully literal, bracketed
+  bash_line 'gh pr create --title="docs: first one"'      # placeholder EMBEDDED in a flag
+  bash_line 'ruff check --output-format=concise'          # same --flag= idiom, but literal
+  bash_line "rsync -a 'a,b' src/alpha/ dst/beta/ node_modules/"   # 4 stable args, one with a comma
+  bash_line 'git commit -m "wip"'                         # commit delimiter
+} > "$N_SLUG/$N_SID.jsonl"
+{
+  bash_line "gh api repos/c/d/pulls/2 --jq '.title'"
+  bash_line "sed -n '5,9p' docs/stable.md"                # same path, different range
+  bash_line "git show def456:docs/y.md | sed -n '1,30p'"
+  bash_line 'gh pr create --title="docs: second one"'
+  bash_line "rsync -a 'a,b' src/alpha/ dst/beta/ node_modules/"
+} > "$N_SLUG/44444444-4444-4444-4444-444444444444.jsonl"
+{
+  bash_line "gh api repos/e/f/issues/9 --jq '.body'"
+  bash_line 'gh pr create --title="docs: third one"'
+} > "$N_SLUG/55555555-5555-5555-5555-555555555555.jsonl"
+
+run_n() {
+  DISTILL_SURVEY_PROJECTS_DIR="$N_PROJECTS" DISTILL_SURVEY_JUST_BIN="$STUB/just" \
+    bash "$COLLECTOR" --session-id "$N_SID" --project-dir "$N_PROJ" "$@"
+}
+nout=$(run_n)
+ncand=$(printf '%s' "$nout" | sed -n '/=== RECIPE_CANDIDATES ===/,/=== END RECIPE_CANDIDATES ===/p')
+check "N: all three sessions are in the window" "$nout" "SESSIONS_SCANNED=3"
+# Negatives — the exact shapes the issue named.
+check_absent "N: placeholder-only shape over unrelated sessions dropped" "$ncand" "gh api <path> --jq <str>"
+check_absent "N: pipeline whose args never repeat dropped" "$ncand" "git show <path> | sed -n <str>"
+check_absent "N: compound wait-loop dropped" "$ncand" "until ["
+check_absent "N: nothing of the compound line survives" "$ncand" "gh pr checks"
+# A placeholder EMBEDDED in a flag (`--title="..."`) is still a placeholder: three
+# unrelated PR titles over three sessions must not collapse into one candidate,
+# and must never be mislabelled `_STABLE_ARGS=literal`.
+check_absent "N: embedded --flag=<str> over unrelated sessions dropped" "$ncand" "--title=<str>"
+check_absent "N: embedded-placeholder shape never reaches a candidate" "$ncand" "gh pr create"
+# Positives — the counter-assertions that pin the filter against over-reach.
+check "N: placeholder shape WITH a repeated concrete arg survives" "$ncand" "sed -n <str> <path>"
+check "N: the repeated concrete arg is reported" "$ncand" "_STABLE_ARGS=docs/stable.md"
+check "N: fully literal bracketed command survives" "$ncand" "npm run build:prod"
+check "N: literal shape labelled as stable-by-construction" "$ncand" "_STABLE_ARGS=literal"
+check "N: a LITERAL --flag=value shape is not collateral damage" "$ncand" "ruff check --output-format=concise"
+# _STABLE_ARGS is sorted (deterministic KEY=VALUE output) and capped at three
+# ENTRIES — a concrete value containing a comma must not truncate the list.
+check "N: stable args are sorted and capped by entry, not by comma count" "$ncand" \
+  "_STABLE_ARGS='a,b',dst/beta/,node_modules/"
+check "N: only the four stable shapes remain" "$ncand" "COUNT=4"
+check "N: summary count agrees with the digest" "$(run_n --summary)" "RECIPE_CANDIDATE_COUNT=4"
 
 echo "---"
 echo "PASS=$pass FAIL=$fail"
