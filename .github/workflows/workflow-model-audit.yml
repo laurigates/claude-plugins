@@ -147,13 +147,31 @@ jobs:
           #   - No write tool and no Bash(git *): "Do NOT edit any files or
           #     workflows" is now enforced, not just asserted.
           #
+          # MEASURED 2026-09-08 (#2493, run 34234073610 — the first post-fix
+          # scheduled run). It went red on
+          #   "Claude reported a successful result after 42 turns, exceeding
+          #    the configured maximum of 40"
+          # with `permission_denials` carrying 4 entries. So the 25 -> 40 bump
+          # above was itself an estimate and was undersized; 42 is the measured
+          # floor and 60 is the replacement ceiling. Three of the 4 denied calls
+          # wrapped an ALREADY-GRANTED command (`gh run view`, `gh pr view`,
+          # `gh issue list`) in a `for` loop or appended `; echo ...`, which
+          # matches no grant because `Bash(...)` is a PREFIX match — see the
+          # "Tool-call shape" section of the prompt below, which generalises the
+          # rule the `gh issue create` snippet already carried. The fourth
+          # needed `grep`/`head`, hence:
+          #   - Bash(grep *) + Bash(head *) ADDED: the audit greps the workflow
+          #     files for model/effort/max-turns lines and truncates the hits.
+          # Both are read-only; the no-write-tool / no-Bash(git *) boundary is
+          # unchanged.
+          #
           # One flag per line: scripts/check-workflow-model.sh matches
           # `--model`/`--effort` anchored at line start in a folded scalar.
           claude_args: >-
             --model opus
             --effort medium
-            --max-turns 40
-            --allowedTools "Read,Grep,Glob,TodoWrite,Bash(gh run list *),Bash(gh run view *),Bash(gh issue list *),Bash(gh issue view *),Bash(gh issue create *),Bash(gh pr list *),Bash(gh pr view *),Bash(gh api *),Bash(date *),Bash(cat *),mcp__github_ci"
+            --max-turns 60
+            --allowedTools "Read,Grep,Glob,TodoWrite,Bash(gh run list *),Bash(gh run view *),Bash(gh issue list *),Bash(gh issue view *),Bash(gh issue create *),Bash(gh pr list *),Bash(gh pr view *),Bash(gh api *),Bash(grep *),Bash(head *),Bash(date *),Bash(cat *),mcp__github_ci"
           # Claude reads Actions run health, so its token needs the Actions
           # scope as a real permissions map (paired with `actions: read` in the
           # job permissions block above).
@@ -165,6 +183,42 @@ jobs:
             .claude/rules/workflow-model-effort.md for the standard and the
             canonical per-workflow table. Do NOT edit any files or workflows —
             your ONLY side effect is creating one GitHub issue (see the end).
+
+            ## Tool-call shape (applies to EVERY Bash call, not just the last)
+
+            Each `Bash(...)` entry in this run's allowlist is a PREFIX match
+            against the whole command string. A call is granted only when the
+            command BEGINS with a granted prefix. So every Bash call must be a
+            SINGLE command that starts with a granted word:
+
+            - No `for` / `while` / `until` loops, and no nesting one inside
+              another — the command then begins with `for`, which is granted
+              nowhere. Issue one call per iteration instead.
+            - No `;`, `&&` or `||` chaining, and no trailing `; echo "EXIT=$?"`
+              — the leading command may be granted, but the joined string is
+              not.
+            - No leading `VAR=$(...)` assignment — the command begins with the
+              variable name. Run the inner command as its own call and reuse the
+              value you read from its output.
+            - Pipes into a granted-or-not filter are still one command string:
+              prefer `gh ... --jq '...'` over piping, and keep any pipeline's
+              FIRST word granted.
+
+            Worked example — the denied form, then the granted rewrite:
+
+            ```bash
+            # DENIED: begins with `for`, matches no grant
+            # for id in 1 2; do gh run view $id --json jobs; done
+            gh run view 1 --json jobs
+            ```
+
+            ```bash
+            # second call, same shape
+            gh run view 2 --json jobs
+            ```
+
+            If a call you need has no granted prefix, say so in the issue as a
+            coverage gap rather than reshaping it to sneak past the boundary.
 
             Pre-computed deterministic data:
 
@@ -199,10 +253,9 @@ jobs:
             side effect — do not edit any repo files). Compute the month with
             `date +%Y-%m` and reproduce this title/labels exactly:
 
-            Run these as TWO separate Bash calls. The second must BEGIN with
-            `gh issue create`: the allowlist grants `Bash(gh issue create *)`,
-            which is a PREFIX match, so a line starting with a `VAR=$(...)`
-            assignment matches no grant and is denied.
+            Run these as TWO separate Bash calls, per the "Tool-call shape"
+            rules above: the second must BEGIN with `gh issue create`, because
+            the allowlist grants `Bash(gh issue create *)` as a prefix match.
 
             ```bash
             date -u +%Y-%m    # note the value, e.g. 2026-08
