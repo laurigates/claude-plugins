@@ -71,6 +71,34 @@ assert_decision() {
     fi
 }
 
+# Decision + reason assertion in ONE hook invocation. The hook caches per
+# session+branch, so a second run with the same payload is silent — the reason
+# must therefore be checked from the same call that checks the decision.
+# Args: desc, expected_decision, must_contain (or ""), must_not_contain (or ""), json
+assert_case() {
+    local desc="$1" expected="$2" needle="$3" absent="$4" json="$5"
+    local out decision reason ok=1 detail=""
+    out=$(run_hook "$json")
+    if [ -z "$out" ]; then
+        decision="none"; reason=""
+    else
+        decision=$(printf '%s' "$out" | jq -r '.hookSpecificOutput.permissionDecision // "none"' 2>/dev/null || echo "parse_error")
+        reason=$(printf '%s' "$out" | jq -r '.hookSpecificOutput.permissionDecisionReason // ""' 2>/dev/null || echo "")
+    fi
+    if [ "$decision" != "$expected" ]; then ok=0; detail="decision=$decision want=$expected"; fi
+    if [ -n "$needle" ]; then
+        case "$reason" in *"$needle"*) ;; *) ok=0; detail="$detail; missing '$needle'" ;; esac
+    fi
+    if [ -n "$absent" ]; then
+        case "$reason" in *"$absent"*) ok=0; detail="$detail; unexpected '$absent'" ;; esac
+    fi
+    if [ "$ok" = "1" ]; then
+        printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (%s | reason=%s)\n" "$desc" "$detail" "${reason:-<empty>}"; FAIL=$((FAIL + 1))
+    fi
+}
+
 echo "=== check-branch-sync-on-push hook tests ==="
 
 # ── Guard clauses ─────────────────────────────────────────────────────────────
@@ -118,6 +146,91 @@ git -C "$CLONE2" commit --allow-empty -m "other: drift" -q
 git -C "$CLONE2" push -q origin feature
 MOCK_PR_JSON=$(jq -n '{number:7,state:"OPEN",mergedAt:null,url:"https://x/7"}')
 assert_decision "behind origin → ask before commit" ask "$(make_json "git commit -m mine")"
+
+# ── #2672: lease-pinned force-push after a rebase must NOT read as "behind" ───
+echo ""
+echo "lease-pinned force-push (#2672):"
+git -C "$TMPDIR" fetch -q origin 2>/dev/null || true
+ORIGIN_TIP=$(git -C "$TMPDIR" rev-parse refs/remotes/origin/feature)
+ORIGIN_TIP_SHORT=${ORIGIN_TIP:0:7}
+LOCAL_TIP=$(git -C "$TMPDIR" rev-parse HEAD)
+MOCK_PR_JSON=$(jq -n '{number:7,state:"OPEN",mergedAt:null,url:"https://x/7"}')
+
+# 1. Explicit lease whose (abbreviated) SHA is the fetched origin tip → silent.
+assert_case "lease-pinned force-push matching origin tip → no nudge" none "" "" \
+    "$(make_json "git push --force-with-lease=feature:${ORIGIN_TIP_SHORT} origin \"${LOCAL_TIP}:refs/heads/feature\"")"
+
+# 2. Stale lease (a coworker pushed after the lease was taken) → still nudges.
+assert_case "stale lease SHA → still nudges" ask "expected after a rebase" "git pull --rebase" \
+    "$(make_json "git push --force-with-lease=feature:${LOCAL_TIP} origin \"${LOCAL_TIP}:refs/heads/feature\"")"
+
+# 3. Lease naming a DIFFERENT branch → not self-verifying for this push.
+assert_case "lease pinned to another branch → still nudges" ask "expected after a rebase" "" \
+    "$(make_json "git push --force-with-lease=other:${ORIGIN_TIP_SHORT} origin feature")"
+
+# 4. Bare --force-with-lease leases against the tracking ref this hook's own
+#    fetch just advanced, so it must NOT suppress.
+assert_case "bare --force-with-lease → still nudges" ask "expected after a rebase" "" \
+    "$(make_json "git push --force-with-lease origin feature")"
+
+# 5. Force-push with no lease → reworded message, no 'git pull --rebase' advice.
+assert_case "force-push while behind → rebase wording, no pull advice" ask "expected after a rebase" "git pull --rebase" \
+    "$(make_json "git push --force origin feature")"
+
+# 6. Plain push keeps the original coworker-push wording verbatim.
+assert_case "plain push while behind → keeps 'someone … pushed' wording" ask "someone (a teammate, another agent, or a CI auto-fix) pushed" "" \
+    "$(make_json "git push origin feature")"
+assert_case "plain push while behind → keeps 'git pull --rebase' advice" ask "git pull --rebase" "" \
+    "$(make_json "git push origin feature")"
+
+# Refspec-parser robustness: a flag before the remote, and a HEAD: source.
+assert_case "git push -u origin feature → resolves feature" ask "Branch 'feature'" "" \
+    "$(make_json "git push -u origin feature")"
+assert_case "git push origin HEAD:feature → resolves feature" ask "Branch 'feature'" "" \
+    "$(make_json "git push origin HEAD:feature")"
+
+# ── #2672 repair: an unresolvable refspec destination must fall back to HEAD ───
+# The hook sees the command as WRITTEN, so a substituted/variable branch name
+# arrives as raw source text. Adopting it verbatim silenced the hook entirely.
+echo ""
+echo "unparseable refspec destination falls back to HEAD (#2672):"
+
+# 10. This repo's own documented primary push idiom (git-push/SKILL.md).
+# shellcheck disable=SC2016  # the literal, UNEXPANDED $(...) is the fixture
+assert_case "push \$(git branch --show-current) → falls back to HEAD, names feature" ask "Branch 'feature'" "Branch '\$(git'" \
+    "$(make_json 'git push -u origin $(git branch --show-current)')"
+
+# 11. An unexpanded variable destination.
+# shellcheck disable=SC2016  # the literal, UNEXPANDED $BRANCH is the fixture
+assert_case "push \"\$BRANCH\" → falls back to HEAD, names feature" ask "Branch 'feature'" "Branch '\$BRANCH'" \
+    "$(make_json 'git push origin "$BRANCH"')"
+
+# 12. Multi-refspec push: ambiguous, so HEAD (feature) is the safer base — the
+#     first-token-wins parse would resolve `main` and exit at the exclusion.
+assert_case "push origin main feature → falls back to HEAD, names feature" ask "Branch 'feature'" "Branch 'main'" \
+    "$(make_json "git push origin main feature")"
+
+# ── #2672: the refspec destination, not HEAD, is what gets evaluated ──────────
+echo ""
+echo "refspec destination resolution (#2672):"
+MOCK_PR_JSON=$(jq -n '{number:99,state:"MERGED",mergedAt:"2026-01-01T00:00:00Z",url:"https://x/99"}')
+git -C "$TMPDIR" checkout main -q
+
+# 7. push-by-SHA from the default branch: today's HEAD-based hook exits at the
+#    main/master exclusion and says nothing. It must evaluate `feature`.
+assert_case "push <sha>:refs/heads/feature from main → nudges about feature" ask "Branch 'feature'" "" \
+    "$(make_json "git push --force-with-lease origin \"${LOCAL_TIP}:refs/heads/feature\"")"
+
+# 8. push-by-SHA from an unrelated branch must not name that branch.
+git -C "$TMPDIR" checkout -q -b other 2>/dev/null || git -C "$TMPDIR" checkout -q other
+assert_case "push <sha>:refs/heads/feature from 'other' → names feature, not other" ask "Branch 'feature'" "Branch 'other'" \
+    "$(make_json "git push origin \"${LOCAL_TIP}:refs/heads/feature\"")"
+
+# 9. A refspec destination of main still hits the default-branch exclusion.
+git -C "$TMPDIR" checkout feature -q
+assert_case "push <sha>:refs/heads/main is excluded (default branch)" none "" "" \
+    "$(make_json "git push --force origin \"${LOCAL_TIP}:refs/heads/main\"")"
+
 rm -rf "$CLONE2"
 
 # ── git -C <worktree> routing (#1389) ─────────────────────────────────────────
