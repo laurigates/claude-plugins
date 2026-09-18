@@ -623,6 +623,20 @@ repos:
         entry: bash ./scripts/tests/test-check-workflow-labels.sh
         language: system
         files: '^scripts/(check-workflow-labels\.sh|tests/test-check-workflow-labels\.sh)$'
+      - id: check-workflow-tool-grants
+        name: prompt bash calls can reach a --allowedTools grant
+        entry: bash ./scripts/check-workflow-tool-grants.sh
+        language: system
+        # Runs the whole sweep rather than the changed files: a grant edit in one
+        # step and the prompt snippet it covers can land in the same commit.
+        files: '^\.github/workflows/.*\.ya?ml$'
+        pass_filenames: false
+      - id: test-check-workflow-tool-grants
+        name: workflow tool-grant guard regression
+        entry: bash ./scripts/tests/test-check-workflow-tool-grants.sh
+        language: system
+        files: '^scripts/(check-workflow-tool-grants\.sh|tests/test-check-workflow-tool-grants\.sh)$'
+        pass_filenames: false
       # Only the self-test is wired here: check-audit-liveness.sh itself queries
       # `gh run list` / `gh issue list`, so it belongs in the scheduled sweep,
       # not in a pre-commit hook that must work offline.
