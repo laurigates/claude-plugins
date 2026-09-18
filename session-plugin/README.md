@@ -311,8 +311,39 @@ naming a sequence or a rule, stay in the skill), `=== SECTION ===` /
 Signals are chosen to reward durable workflows over TDD/debug thrash:
 cross-session recurrence (a novel command recurring across **separate**
 sessions), commit-bracketing (commands in the interval a `git commit`
-terminates), and novelty vs `just --dump`. It emits a command *digest* and
+terminates), novelty vs `just --dump`, **argument stability**, and the
+exclusion of **compound/control-flow lines**. It emits a command *digest* and
 commit-interval groupings — it never infers a sequence (that is judgment).
+
+Argument stability ([#2683](https://github.com/laurigates/claude-plugins/issues/2683))
+is what keeps the count honest. Candidates are normalized (quoted strings →
+`<str>`, path tokens → `<path>`, bare numbers → `<n>`), so without it three
+unrelated `gh api …` reads collapse into one shape scored `SESSIONS=3`. A
+normalized shape qualifies only when:
+
+| Shape | Qualifies when |
+|---|---|
+| No placeholder at all (`terraform apply -auto-approve`) | always — nothing varies, so it is stable by construction (`_STABLE_ARGS=literal`) |
+| Contains a standalone `<str>` / `<path>` / `<n>` | at least one placeholder resolved to the **same concrete value** in ≥2 separate window sessions (that value is echoed in `_STABLE_ARGS`) |
+| Contains a placeholder **embedded in a flag** (`gh pr create --title=<str>`) | never — only standalone placeholders record concrete values, so such a shape can never prove stability and is always dropped (three unrelated PR titles are not one recipe) |
+
+`_STABLE_ARGS` lists at most three examples, sorted, so the line is
+deterministic even when several arguments are stable.
+
+Two consequences worth knowing. A commit-bracketed command seen in only one
+window session now surfaces only when it is fully literal — a bracketed
+`kubectl apply -f deploy/` no longer counts, because its one path proves
+nothing. And a narrow window (`--window-sessions 1`) makes every
+placeholder-bearing shape unstable by definition, leaving literals only.
+
+Compound and control-flow lines — anything whose **normalized** form contains
+`;`, `&&`, `||`, or a loop keyword (`until`/`while`/`for`/`do`/`done`) — are
+workflows, not recipes, and are dropped from `RECIPE_CANDIDATES` (they are
+`--process` material if anything). The test is on the normalized form, so a
+`;` inside a quoted argument has already collapsed to `<str>` and cannot
+false-positive. A single `|` pipe is *not* compound — a pipeline is one
+command, and the unstable ones (`git show <path> | sed -n <str>`) are dropped
+by argument stability instead.
 
 | Flag | Adds |
 |---|---|
@@ -324,8 +355,10 @@ commit-interval groupings — it never infers a sequence (that is judgment).
 | `--summary` | coarse counts only (`RECIPE_CANDIDATE_COUNT`, `HOT_FILE_COUNT`, `PROCESS_SIGNAL`, `TRANSCRIPT_AVAILABLE`) — used by session-end's Distill qualify gate |
 
 Sections: `SESSION_META`, `RECIPE_CANDIDATES` (novel + recurring/bracketed
-commands with `_FIRST`/`_SESSIONS`/`_NOVEL_TOKENS`), `HOT_FILES` (files
-edited ≥3× this session, exact paths), `COMMIT_INTERVALS`, `COMMAND_DIGEST`,
+commands with `_FIRST`/`_SESSIONS`/`_NOVEL_TOKENS`/`_STABLE_ARGS`, the last
+naming the repeated concrete argument — or `literal` — that let the shape
+through), `HOT_FILES` (files edited ≥3× this session, exact paths),
+`COMMIT_INTERVALS`, `COMMAND_DIGEST`,
 and `RULE_HINTS_FROM_TOOLING` (repeated permission/auth denials — the only
 mechanical rule signal). Degrades to `TRANSCRIPT_AVAILABLE=false` +
 `STATUS=SKIP` when no transcript is reachable, and `session-distill` falls

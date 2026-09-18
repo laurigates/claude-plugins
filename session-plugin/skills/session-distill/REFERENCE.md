@@ -32,9 +32,11 @@ criteria; capture from it.
 | Capture when (a `RECIPE_CANDIDATE`)… | Skip when… |
 |-----------------|--------------|
 | The normalized command **recurred across ≥2 separate sessions** (`_SESSIONS ≥ 2`) | It appears only this session and isn't commit-bracketed |
-| It is **commit-bracketed** — in an interval terminated by `git commit` (a completed unit of work) | It is churn (`status`/`diff`/`log`/`test`/`build`/`ls`/`cd`/`pwd`/`cat`) — excluded by the collector |
+| It is **commit-bracketed** — in an interval terminated by `git commit` (a completed unit of work) **and carries a stable argument** | It is churn (`status`/`diff`/`log`/`test`/`build`/`ls`/`cd`/`pwd`/`cat`) — excluded by the collector |
+| It has a **stable argument** (`_STABLE_ARGS`) — a concrete value repeated across sessions, or `literal` when nothing varies | Its placeholders never resolve to a repeated value (`gh api <path> --jq <str>` standing in for unrelated reads) — dropped by the collector (#2683) |
 | It is **novel** — not already covered by `just --dump` | It is already a `just` recipe (the collector drops these) |
-| Refine the collector's `_FIRST` example (normalization is lossy) | Common well-known flags with no project specifics |
+| Refine the collector's `_FIRST` example (normalization is lossy) | It is a compound / control-flow line (`;`, `&&`, `\|\|`, `until`/`while`/`for`) — dropped by the collector; that is `--process` material |
+| — | Common well-known flags with no project specifics |
 
 ### Process / Methodology Worth Capturing (`--process`)
 
