@@ -34,7 +34,9 @@ Status: [OK|WARN|ERROR|N/A]
 MCP Servers
 -----------
 Status: [OK|WARN|ERROR|N/A]
-- Configured servers: N
+- Configured servers: N (scanned M .mcp.json locations)
+- <server-name>: <path/to/.mcp.json>
+- Shadowed: <server-name> in <outer .mcp.json> (overridden by <nearer .mcp.json>)
 - Issues: <details if any>
 
 Summary

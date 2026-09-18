@@ -73,6 +73,8 @@ Parse `STATUS=` and `ISSUES:` from each. Pass `--verbose` when set on `$ARGUMENT
 
 If `check-settings.sh` emits `PROJECT_DIR_RESOLVED=<path>`, the workspace root had no `.claude/` but a single nested `*/.claude/settings.json` was found one level down (parent-workspace / monorepo layout). Note the resolved path in the report so the user knows which config was checked. If it emits `PROJECT_DIR_HINT=<msg>`, surface the hint — multiple nested configs were found and the user should re-run with `--project-dir` to target one.
 
+`check-mcp.sh` walks `.mcp.json` from `--project-dir` up through its ancestors, stopping after `--home-dir` or the filesystem root, because Claude Code also loads `.mcp.json` from parent directories (issue #2666). It emits `MCP_SOURCE_COUNT=<n>` as the denominator for the `MCP_SOURCES:` block and one `SERVER: name=<n> file=<path>` line per server, so the report can name the file each server came from. A server name defined at more than one level is counted once against the nearest file; the outer copy is reported as `SERVER_SHADOWED: name=<n> file=<outer> shadowed_by=<nearer>`. Surface the source file (and any shadowing) in the report — parent-provided servers still need per-project approval via `enabledMcpjsonServers`.
+
 #### 1b. SessionStart smoke test
 
 Check whether `scripts/install_pkgs.sh` (or any script registered in the `SessionStart` hook in `.claude/settings.json`) is executable and exits cleanly in both remote and local contexts.
