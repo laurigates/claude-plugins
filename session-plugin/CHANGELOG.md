@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.11.0...session-plugin-v1.11.1) (2026-09-19)
+
+
+### Bug Fixes
+
+* **session-plugin:** gate distill recipe candidates on argument stability ([7861f3f](https://github.com/laurigates/claude-plugins/commit/7861f3fabc8dbb46c4fe4f2758052f6e38f70ea7)), closes [#2683](https://github.com/laurigates/claude-plugins/issues/2683)
+
 ## [1.11.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.10.5...session-plugin-v1.11.0) (2026-09-16)
 
 

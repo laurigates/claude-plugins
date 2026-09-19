@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.25.4](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.25.3...code-quality-plugin-v1.25.4) (2026-09-19)
+
+
+### Bug Fixes
+
+* **code-quality-plugin:** name resolvable plugin-qualified skill IDs in the preflight cue ([b41251d](https://github.com/laurigates/claude-plugins/commit/b41251d58145e58e67faf7689dd3952e40252f8b)), closes [#2682](https://github.com/laurigates/claude-plugins/issues/2682)
+
 ## [1.25.3](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.25.2...code-quality-plugin-v1.25.3) (2026-09-03)
 
 
