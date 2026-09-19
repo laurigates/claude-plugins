@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.2](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.19.1...health-plugin-v1.19.2) (2026-09-19)
+
+
+### Bug Fixes
+
+* **health-plugin:** walk ancestor directories for .mcp.json ([89a9eca](https://github.com/laurigates/claude-plugins/commit/89a9eca2a99827ecb747a48ee34683d81f34b018)), closes [#2666](https://github.com/laurigates/claude-plugins/issues/2666)
+
 ## [1.19.1](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.19.0...health-plugin-v1.19.1) (2026-09-18)
 
 

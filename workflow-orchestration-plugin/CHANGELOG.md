@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.11.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.11.0...workflow-orchestration-plugin-v1.11.1) (2026-09-19)
+
+
+### Bug Fixes
+
+* **workflow-orchestration-plugin:** quote the frontmatter description so it parses as YAML ([3932967](https://github.com/laurigates/claude-plugins/commit/39329678af7b8364c313f1568628585b52a36415))
+
+
+### Documentation
+
+* **agent-patterns-plugin:** document Workflow agent unreachability and post-run branch pinning ([9fea9a6](https://github.com/laurigates/claude-plugins/commit/9fea9a650fe3c5fd9316847e0d7f9c9f0a9267d0)), closes [#2614](https://github.com/laurigates/claude-plugins/issues/2614)
+
 ## [1.11.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.10.1...workflow-orchestration-plugin-v1.11.0) (2026-09-10)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.55.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.55.0...git-plugin-v2.55.1) (2026-09-19)
+
+
+### Bug Fixes
+
+* **git-plugin:** stop branch-sync hook misreading a lease-pinned force-push as a coworker push ([f3dad07](https://github.com/laurigates/claude-plugins/commit/f3dad07a713aade452166ab158fa9ba4c2418235)), closes [#2672](https://github.com/laurigates/claude-plugins/issues/2672)
+
 ## [2.55.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.54.2...git-plugin-v2.55.0) (2026-09-12)
 
 

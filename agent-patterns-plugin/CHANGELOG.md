@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.45.7](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.45.6...agent-patterns-plugin-v2.45.7) (2026-09-19)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** document Workflow agent unreachability and post-run branch pinning ([9fea9a6](https://github.com/laurigates/claude-plugins/commit/9fea9a650fe3c5fd9316847e0d7f9c9f0a9267d0)), closes [#2614](https://github.com/laurigates/claude-plugins/issues/2614)
+
 ## [2.45.6](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.45.5...agent-patterns-plugin-v2.45.6) (2026-09-17)
 
 

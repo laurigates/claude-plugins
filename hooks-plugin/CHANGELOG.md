@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.11.9](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.11.8...hooks-plugin-v2.11.9) (2026-09-19)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** make the git-stash-reminder block satisfiable ([a753b72](https://github.com/laurigates/claude-plugins/commit/a753b729dba5181dc11e63ce18cb2660a05c840b)), closes [#2686](https://github.com/laurigates/claude-plugins/issues/2686)
+* **hooks-plugin:** scope calendar-estimate match to the agent's own trailing message ([3e712a8](https://github.com/laurigates/claude-plugins/commit/3e712a8dc978fd3bcdc532e7d33f3865f96ef4ed)), closes [#2650](https://github.com/laurigates/claude-plugins/issues/2650)
+* **hooks-plugin:** stop no-calendar-estimates matching currency rates and non-adjacent day counts ([7733811](https://github.com/laurigates/claude-plugins/commit/77338118e5914c115424b4a1b6deb5f5b60542b7)), closes [#2654](https://github.com/laurigates/claude-plugins/issues/2654)
+
 ## [2.11.8](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.11.7...hooks-plugin-v2.11.8) (2026-09-16)
 
 
