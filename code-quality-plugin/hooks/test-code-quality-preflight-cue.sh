@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2317   # file-level: cq_invoke/cq_invoke_sid helpers are defined for reuse but not all called
+# shellcheck disable=SC2317,SC2329   # file-level: cq_invoke/cq_invoke_sid helpers are defined for reuse but not all called;
+# cq_n_cleanup is invoked indirectly via `trap ... EXIT`. SC2329 is the newer shellcheck code for the same finding SC2317 covered.
 # Regression tests for code-quality-preflight-cue.sh
 # Run: bash code-quality-plugin/hooks/test-code-quality-preflight-cue.sh
 set -uo pipefail
@@ -675,6 +676,54 @@ if [ -n "$CQ_P2_CACHE" ] && [ -d "$CQ_P2_CACHE" ]; then
   rm -rf "$CQ_P2_CACHE"
 else
   cq_fail "(p2) could not create a scratch cache dir"
+fi
+
+# --- (q) emitted slash commands are plugin-qualified, i.e. resolvable (issue #2682) ---
+# The cue is a runtime instruction the agent pastes into the `Skill` tool. Claude
+# Code namespaces skills as `<plugin-name>:<skill-name>` and there is no plugin
+# named `code-quality`, so the README shorthand `/code-quality:code-lint` returned
+# "Unknown skill" and cost a tool call. Assert the resolvable form is emitted AND
+# the short form is gone, on both cue branches.
+echo "--- Test (q): cue names plugin-qualified, resolvable skill IDs ---"
+CQ_Q_CACHE="$(mktemp -d)"
+CQ_OUT_Q1="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_Q_CACHE" bash "$CQ_SCRIPT" \
+  <<< "$(cq_payload Edit /repo/src/q1.ts 'export function q1(){}' '' "test-sid-q1-$(date +%s%N)")")"
+rm -rf "$CQ_Q_CACHE"
+CQ_Q_CACHE="$(mktemp -d)"
+CQ_OUT_Q2="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_Q_CACHE" bash "$CQ_SCRIPT" \
+  <<< "$(cq_payload Edit /repo/some-plugin/skills/foo/scripts/q2.sh 'pub fn q2() {}' '' "test-sid-q2-$(date +%s%N)")")"
+rm -rf "$CQ_Q_CACHE"
+
+# Guard: both probes must actually fire, or every assertion below passes vacuously.
+if echo "$CQ_OUT_Q1" | jq -e '.decision == "block"' > /dev/null 2>&1 &&
+   echo "$CQ_OUT_Q2" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(q) guard: both probe invocations fire"
+else
+  cq_fail "(q) guard: both probes should fire; got: [$CQ_OUT_Q1] [$CQ_OUT_Q2]"
+fi
+
+CQ_Q1_REASON="$(echo "$CQ_OUT_Q1" | jq -r '.reason')"
+CQ_Q2_REASON="$(echo "$CQ_OUT_Q2" | jq -r '.reason')"
+
+if printf '%s' "$CQ_Q1_REASON" | grep -q -- "/code-quality-plugin:code-lint"; then
+  cq_pass "(q) non-skill cue names /code-quality-plugin:code-lint"
+else
+  cq_fail "(q) non-skill cue should name /code-quality-plugin:code-lint; got: $CQ_Q1_REASON"
+fi
+if printf '%s' "$CQ_Q1_REASON" | grep -q -- "/code-quality:code-lint"; then
+  cq_fail "(q) non-skill cue still carries the unresolvable /code-quality:code-lint; got: $CQ_Q1_REASON"
+else
+  cq_pass "(q) non-skill cue omits the unresolvable /code-quality:code-lint"
+fi
+if printf '%s' "$CQ_Q2_REASON" | grep -q -- "/evaluate-plugin:evaluate-skill"; then
+  cq_pass "(q) skills/ cue names /evaluate-plugin:evaluate-skill"
+else
+  cq_fail "(q) skills/ cue should name /evaluate-plugin:evaluate-skill; got: $CQ_Q2_REASON"
+fi
+if printf '%s' "$CQ_Q2_REASON" | grep -q -- "/evaluate:evaluate-skill"; then
+  cq_fail "(q) skills/ cue still carries the unresolvable /evaluate:evaluate-skill; got: $CQ_Q2_REASON"
+else
+  cq_pass "(q) skills/ cue omits the unresolvable /evaluate:evaluate-skill"
 fi
 
 # --- Summary ---

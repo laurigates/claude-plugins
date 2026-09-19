@@ -170,6 +170,7 @@ jobs:
             --only 'scripts/tests/test-check-context-command-execution.sh' \
             --only 'scripts/tests/test-check-dead-api-endpoints.sh' \
             --only 'scripts/tests/test-check-delegation-reachability.sh' \
+            --only 'scripts/tests/test-check-hook-cue-skill-refs.sh' \
             --only 'scripts/tests/test-check-issue-template-inheritance.sh' \
             --only 'scripts/tests/test-check-loop-integrity.sh' \
             --only 'scripts/tests/test-check-prose-house-style.sh' \
@@ -355,6 +356,15 @@ jobs:
         # prose, so there is no tool call to refuse — issue #2442). This guard
         # is the only signal; the self-test step above proves the guard first.
         run: bash scripts/check-delegation-reachability.sh
+
+      - name: Check hook cues name resolvable skill IDs (#2682)
+        # A slash command a hook EMITS is pasted straight into the `Skill` tool,
+        # so the README `/<ns>:<name>` shorthand returns "Unknown skill" and
+        # costs a tool call. Enforced for code-quality-plugin/hooks; every other
+        # plugin's hooks are scanned ADVISORY-only and reported, so the
+        # remaining sweep stays visible without going red on unfixed files. The
+        # self-test step above proves the guard first.
+        run: bash scripts/check-hook-cue-skill-refs.sh
 
       - name: Check shell scripts follow shell-scripting.md
         # Whole-repo invariant (every shell script follows shell-scripting.md:
