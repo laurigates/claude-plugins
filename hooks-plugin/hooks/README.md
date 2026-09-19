@@ -373,28 +373,41 @@ Configured in `.claude-plugin/plugin.json` as a SessionStart event with matcher 
 
 ## git-stash-reminder.sh
 
-A Stop hook that checks for git stashes **created during the current session**. Pre-existing stashes (recorded at session start by `git-stash-session-init.sh`) are ignored. Only blocks when session-created stashes remain unaddressed.
+A Stop hook that checks for git stashes **created during the current session**. Pre-existing stashes (recorded at session start by `git-stash-session-init.sh`) are ignored. Only blocks when session-created stashes remain unaddressed — and, since #2686, only while they still hold something and have not already been surfaced.
 
 ### Behavior
 
 | Condition | Action |
 |-----------|--------|
-| Session stashes exist | Block exit, recommend `git stash pop` |
+| Hand-made session stash | Block exit, recommend `git stash pop` |
+| `auto-checkpoint before …` session stash | Block exit, recommend "verify against the working tree, then `git stash drop`" (#2686) |
+| Session stash whose tree equals the working tree | Silent exit — nothing to recover (#2686) |
+| Session stash already reported this session | Silent exit — the block is clearable by review, not only by deletion (#2686) |
+| `git stash push -u` stash with an untracked payload | Always reported, even when its tracked tree matches (#2686) |
 | Only pre-existing stashes | Silent exit (no block) |
 | No stashes at all | Silent exit |
 | No baseline file | Silent exit (avoids false positives) |
 | `stop_hook_active` is true | Silent exit (prevents infinite loops) |
+| `CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER=1` | Silent exit (#2686) |
 | Not a git repo | Silent exit |
 
 ### How It Works
 
-1. The hook receives JSON input with `cwd`, `session_id`, and `stop_hook_active`
-2. Guards against infinite loops (`stop_hook_active` check)
-3. Lists current stashes with `git stash list --format='%H|%gd|%ct|%gs'`
-4. Loads the baseline file for this session (written by `git-stash-session-init.sh`)
-5. Filters out stashes whose commit hashes appear in the baseline
-6. If new (session-created) stashes remain, outputs `{"decision": "block", "reason": "..."}`
-7. Claude sees the list of session stashes with recommended actions
+1. Exits immediately when `CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER=1`
+2. The hook receives JSON input with `cwd`, `session_id`, and `stop_hook_active`
+3. Guards against infinite loops (`stop_hook_active` check)
+4. Lists current stashes with `git stash list --format='%H|%gd|%ct|%gs'`
+5. Loads the baseline file for this session (written by `git-stash-session-init.sh`)
+6. Filters out stashes whose commit hashes appear in the baseline
+7. Filters out stashes created **before** the session start
+8. Filters out stashes whose hashes are in the sibling `<baseline>.reported` file — this session has already surfaced them
+9. Filters out **redundant** stashes: `git diff --quiet <stash-sha>` exits 0, i.e. the stash's tree already equals the working tree. A stash with a 3rd parent (untracked payload, only `git stash push -u`) is never judged this way, because `git diff` cannot see that payload
+10. Appends the surviving hashes to `<baseline>.reported`, then outputs `{"decision": "block", "reason": "..."}`
+11. Claude sees the list of session stashes, each with a verb chosen by provenance: `git stash pop` for a hand-made stash, "verify …, then `git stash drop`" for an `auto-checkpoint before …` one
+
+The filter order is deliberate: the cheap hash and timestamp comparisons run
+first, so the one filter that costs a tree comparison runs only for stashes that
+survived everything else (the Stop timeout is 10s).
 
 ### Edge Cases
 
@@ -405,6 +418,10 @@ A Stop hook that checks for git stashes **created during the current session**. 
 - **`stop_hook_active` is true**: Exits silently (loop prevention)
 - **Stash subjects containing `|`**: Handled safely via `IFS='|' read` (subject captures remainder)
 - **Pre-existing stashes only**: All filtered out by baseline comparison, silent exit
+- **Unwritable `.reported` file**: Falls back to re-reporting on the next Stop — never to silence about a stash the user has not seen
+- **`git diff` errors** (odd repo state, missing object): Treated as "not redundant", so the stash stays in the report
+- **`git stash create` vs `git stash push -u`**: only `push -u` produces the 3rd parent that marks an untracked payload; `create --include-untracked` does not (verified on git 2.43), which is why `auto-checkpoint.sh` stashes are exactly comparable with `git diff`
+- **A stash that becomes non-redundant later**: Redundancy is re-evaluated every Stop and is never remembered, so a checkpoint the working tree later diverges from is reported at that point
 
 ### Configuration
 
@@ -457,6 +474,25 @@ echo '{"cwd": "/tmp/test-stash", "session_id": "test-123"}' | \
 # Test: stop_hook_active guard (should exit 0, no output)
 echo '{"cwd": "/tmp/test-stash", "session_id": "test-123", "stop_hook_active": true}' | \
   bash hooks/git-stash-reminder.sh
+
+# Test: the same stash a second time (should exit 0 — reported once per session)
+echo '{"cwd": "/tmp/test-stash", "session_id": "test-123"}' | \
+  bash hooks/git-stash-reminder.sh
+
+# Test: a redundant auto-checkpoint (should exit 0, no output)
+echo "checkpoint" > file.txt
+git stash store -m "auto-checkpoint before rm -rf (probe)" "$(git stash create)"
+echo '{"cwd": "/tmp/test-stash", "session_id": "test-123"}' | \
+  bash hooks/git-stash-reminder.sh
+# The working tree still matches the stash, so there is nothing to say.
+# Diverge the tree and it is reported — with `git stash drop`, not `pop`:
+echo "diverged" > file.txt
+echo '{"cwd": "/tmp/test-stash", "session_id": "test-123"}' | \
+  bash hooks/git-stash-reminder.sh
+
+# Test: opt-out (should exit 0, no output)
+CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER=1 \
+  bash hooks/git-stash-reminder.sh <<< '{"cwd": "/tmp/test-stash", "session_id": "test-123"}'
 
 # Test: missing baseline (should exit 0, no output)
 echo '{"cwd": "/tmp/test-stash", "session_id": "no-baseline"}' | \

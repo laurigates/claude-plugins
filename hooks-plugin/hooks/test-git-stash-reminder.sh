@@ -29,6 +29,28 @@
 #     - the pre-#2306 legacy FLAT baseline degrades to silence
 #     - a stash older than SessionStart in the baseline's own repo → SILENT
 #
+# Issue #2686 — the same hook, blocking Stop forever on stashes that held
+# nothing recoverable, with the wrong remedy and no way off. A Stop hook that
+# cannot be satisfied teaches the agent to ignore it, so these fixes are all
+# about making the block CLEARABLE without making it toothless:
+#
+#   SUPPRESSIONS #2686 adds (each paired with a twin that must still report)
+#     - a stash whose tree equals the working tree → SILENT; twin: the SAME
+#       stash once the tree diverges → REPORT
+#     - a stash already surfaced this session → SILENT on the next Stop; twin:
+#       a second, DISTINCT stash → REPORT (the memory must not degenerate
+#       into blanket silence)
+#     - CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER=1 → SILENT; twin: the same
+#       fixture with the var unset, and with it set to 0 → REPORT
+#
+#   WORDING / GUARDS #2686 pins
+#     - a `git stash push -u` stash whose TRACKED tree matches the working
+#       tree is still REPORTED — `git diff` cannot see its untracked payload,
+#       so the 3rd-parent guard is the only thing standing between it and
+#       silent information loss (the content #2610 was filed about)
+#     - an `auto-checkpoint before …` entry is worded "… then git stash drop",
+#       never "git stash pop"; a hand-made stash keeps `pop`
+#
 #   TRUE POSITIVES the fix must keep
 #     - a stash created after SessionStart in the baseline's own repo → REPORT
 #       (and the pre-existing stash beside it is NOT named)
@@ -120,6 +142,29 @@ make_stash() { # make_stash <dir> <message> [epoch]
     fi
 }
 
+# The redundant shape #2686 is about: auto-checkpoint.sh stores a stash with
+# `git stash create` + `git stash store`, which — unlike `git stash push` —
+# leaves the working tree alone, so the stash's tree EQUALS the working tree.
+make_checkpoint() { # make_checkpoint <dir> <message>
+    local dir="$1" msg="$2" commit=""
+    printf '%s\n' "$msg" > "$dir/file.txt"
+    commit=$(git -C "$dir" stash create --include-untracked)
+    git -C "$dir" stash store -m "$msg" "$commit"
+}
+
+reset_tree() { # reset_tree <dir> — back to HEAD, minus this suite's untracked files
+    git -C "$1" checkout -q -- . 2>/dev/null || true
+    rm -f "$1/untracked.txt"
+}
+
+# Run a command for its exit code without letting `set -e` abort the suite, so
+# a premise assertion can report a FAILING probe instead of vanishing.
+probe_rc() { # probe_rc <command...>
+    local rc=0
+    "$@" >/dev/null 2>&1 || rc=$?
+    printf '%s' "$rc"
+}
+
 REPO_A="$SANDBOX/repo-a"      # the repo the session starts in
 REPO_B="$SANDBOX/repo-b"      # a separate repo the cwd moves into later
 REPO_C="$SANDBOX/repo-c"      # a third repo, entered while it is stash-free
@@ -143,6 +188,14 @@ make_stash "$REPO_B" "old work from 2025" "$OLD_EPOCH"
 reset_baselines() {
     rm -rf "${BASELINES:?}/${SESSION_ID}.d"
     rm -f "${BASELINES:?}/${SESSION_ID}"
+}
+
+# Clear the #2686 report-once memory WITHOUT disturbing the #2306 baselines.
+# Assertions that Stop twice on the same stash were written to prove a
+# baseline/age guard still holds across Stops; the memory would otherwise
+# silence the second Stop and mask whatever those assertions actually test.
+forget_reported() {
+    find "${BASELINES:?}/${SESSION_ID}.d" -name '*.reported' -delete 2>/dev/null || true
 }
 
 empty_all_baselines() { # truncate every baseline to 0 bytes, keep the marker
@@ -276,6 +329,7 @@ make_stash "$REPO_A" "session work in a clean repo"
 run_stop "$REPO_A" >/dev/null
 ck "clean-at-start repo: session stash reported"     REPORT "$LAST_VERDICT"
 ck_reason "names it"                                 "session work in a clean repo"
+forget_reported   # under test here is the header gate, not #2686's memory
 ck "and it is still reported on the next Stop"       REPORT "$(run_stop "$REPO_A")"
 
 echo "== a genuine session stash in a repo entered AFTER SessionStart =="
@@ -290,6 +344,7 @@ make_stash "$REPO_B" "session work in repo B"
 run_stop "$REPO_B" >/dev/null
 ck "first Stop in a newly-entered repo reports it" REPORT "$LAST_VERDICT"
 ck_reason "names the repo-B session stash"         "session work in repo B"
+forget_reported   # as above: the baseline capture is under test, not the memory
 ck "still reported on the next Stop there"         REPORT "$(run_stop "$REPO_B")"
 
 echo "== entering a stash-free repo establishes its bound (no marker) =="
@@ -338,9 +393,11 @@ make_stash "$REPO_A" "real session work"
 ck "reported before any re-fire" REPORT "$(run_stop "$REPO_A")"
 sleep 1   # so a re-stamped marker would provably move the bound forward
 run_init "$REPO_B"
+forget_reported   # the age bound is under test here, not #2686's memory
 ck "still reported after a re-fire in another repo" REPORT "$(run_stop "$REPO_A")"
 sleep 1
 run_init "$REPO_A"
+forget_reported
 ck "still reported after a re-fire in the same repo" REPORT "$(run_stop "$REPO_A")"
 
 echo "== a stash older than SessionStart is not reported =="
@@ -358,6 +415,111 @@ run_init "$REPO_A"
 make_stash "$REPO_A" "session work"
 ck "stop_hook_active suppresses the block" SILENT "$(run_stop "$REPO_A" true)"
 ck "non-git cwd is silent"                 SILENT "$(run_stop "$SANDBOX")"
+
+echo "== #2686: a checkpoint whose tree equals the working tree is not reported =="
+# The exact shape the issue reports: `auto-checkpoint before rm -rf (…)` whose
+# two files are byte-identical to the working tree. Nothing to recover, so
+# nothing to say.
+reset_baselines
+git -C "$REPO_A" stash clear
+reset_tree "$REPO_A"
+run_init "$REPO_A"
+make_checkpoint "$REPO_A" "auto-checkpoint before rm -rf (probe)"
+ck "redundant checkpoint → silent"            SILENT "$(run_stop "$REPO_A")"
+ck "and still silent on the next Stop"        SILENT "$(run_stop "$REPO_A")"
+# Twin: suppression is a property of the TREE, not of the word
+# "auto-checkpoint". The same stash becomes information-bearing the moment the
+# working tree moves away from it.
+printf 'diverged\n' > "$REPO_A/file.txt"
+run_stop "$REPO_A" >/dev/null
+ck "the SAME stash is reported once the tree diverges" REPORT "$LAST_VERDICT"
+ck_reason "names it"                          "auto-checkpoint before rm -rf (probe)"
+reset_tree "$REPO_A"
+
+echo "== #2686: a -u stash's untracked payload is never called redundant =="
+# `git diff` compares tracked content only. This stash's tracked tree matches
+# the working tree exactly, so the 3rd-parent guard is the ONLY thing keeping
+# its untracked payload — the one kind of content that exists nowhere else —
+# from being silently dropped from the report (#2610).
+reset_baselines
+git -C "$REPO_A" stash clear
+reset_tree "$REPO_A"
+run_init "$REPO_A"
+printf 'unrecoverable\n' > "$REPO_A/untracked.txt"
+git -C "$REPO_A" stash push -u -q -m "hand work with an untracked file"
+U_STASH=$(git -C "$REPO_A" stash list --format='%H' | head -1)
+ck "premise: the -u stash has a 3rd parent" \
+   0 "$(probe_rc git -C "$REPO_A" rev-parse --verify --quiet "${U_STASH}^3")"
+ck "premise: its TRACKED tree already matches the working tree" \
+   0 "$(probe_rc git -C "$REPO_A" diff --quiet "$U_STASH" --)"
+run_stop "$REPO_A" >/dev/null
+ck "untracked payload keeps it reported"   REPORT "$LAST_VERDICT"
+ck_reason "names it"                       "hand work with an untracked file"
+git -C "$REPO_A" stash clear
+reset_tree "$REPO_A"
+
+echo "== #2686: a stash already surfaced this session does not re-block =="
+reset_baselines
+git -C "$REPO_A" stash clear
+reset_tree "$REPO_A"
+run_init "$REPO_A"
+make_stash "$REPO_A" "first session stash"
+ck "first Stop reports it"             REPORT "$(run_stop "$REPO_A")"
+ck "the next Stop does NOT re-block"   SILENT "$(run_stop "$REPO_A")"
+# Twin: the memory must not degenerate into blanket silence. A second, DISTINCT
+# stash still has to reach the user — and the already-reported one must not be
+# repeated alongside it.
+make_stash "$REPO_A" "second session stash"
+run_stop "$REPO_A" >/dev/null
+ck "a second, distinct stash is still reported"    REPORT "$LAST_VERDICT"
+ck_reason       "names the new one"                "second session stash"
+ck_reason_lacks "does not repeat the reported one" "first session stash"
+ck_reason       "counts only the unreported one"   "Found 1 git stash"
+ck "and that one is not repeated either"           SILENT "$(run_stop "$REPO_A")"
+
+echo "== #2686: the remedy is worded by stash provenance =="
+# A checkpoint-shaped stash that is NOT redundant (the tree is restored after
+# it is stored), so it reaches the report and its wording can be asserted.
+reset_baselines
+git -C "$REPO_A" stash clear
+reset_tree "$REPO_A"
+run_init "$REPO_A"
+make_checkpoint "$REPO_A" "auto-checkpoint before git checkout file restore"
+reset_tree "$REPO_A"
+run_stop "$REPO_A" >/dev/null
+ck "checkpoint stash is reported once the tree is restored" REPORT "$LAST_VERDICT"
+ck_reason       "prescribes drop"             "then git stash drop"
+ck_reason_lacks "does not prescribe pop"      "→ git stash pop"
+ck_reason       "heads the list neutrally"    "review each one"
+ck_reason_lacks "does not head it with pop"   "pop or apply them"
+# Inverse: a hand-made stash keeps the pop wording, so the fix cannot be a
+# blanket rewrite of the verb.
+reset_baselines
+git -C "$REPO_A" stash clear
+reset_tree "$REPO_A"
+run_init "$REPO_A"
+make_stash "$REPO_A" "hand-made work"
+run_stop "$REPO_A" >/dev/null
+ck "hand-made stash is reported"              REPORT "$LAST_VERDICT"
+ck_reason       "keeps the pop wording"       "→ git stash pop"
+ck_reason_lacks "does not prescribe drop"     "git stash drop"
+ck_reason       "heads the list with pop"     "pop or apply them"
+
+echo "== #2686: CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER silences the hook =="
+reset_baselines
+git -C "$REPO_A" stash clear
+reset_tree "$REPO_A"
+run_init "$REPO_A"
+make_stash "$REPO_A" "work the opt-out must hide"
+ck "control: reported with the var unset" REPORT "$(run_stop "$REPO_A")"
+forget_reported
+export CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER=1
+ck "opt-out → silent"                     SILENT "$(run_stop "$REPO_A")"
+# Only the literal "1" disables it, so a stray empty/0 value cannot silently
+# turn the guard off for a whole session.
+export CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER=0
+ck "a value other than 1 does not disable" REPORT "$(run_stop "$REPO_A")"
+unset CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER
 
 echo
 printf '%s passed, %s failed\n' "$PASS" "$FAIL"

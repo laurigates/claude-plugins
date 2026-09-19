@@ -795,7 +795,7 @@ repos:
         files: '^hooks-plugin/hooks/(external-pr-merge-guard\.sh|test-external-pr-merge-guard\.sh)$'
         pass_filenames: false
       - id: test-git-stash-reminder
-        name: git-stash-reminder namespace/age/write-once invariants (#2306)
+        name: git-stash-reminder namespace/age/write-once + satisfiable-block invariants (#2306, #2686)
         entry: bash ./hooks-plugin/hooks/test-git-stash-reminder.sh
         language: system
         # Covers both halves of the pair: the Stop hook and its SessionStart initializer.

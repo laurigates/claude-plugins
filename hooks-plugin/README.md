@@ -58,6 +58,7 @@ A SessionStart hook that writes two session-scoped baselines used by other hooks
 | Baseline | Path | Used by |
 |----------|------|---------|
 | Pre-existing stash hashes | `<baseline-dir>/<session_id>.d/<sha256-of-git-common-dir>` | `git-stash-reminder.sh` |
+| Stash hashes already reported | `<baseline-dir>/<session_id>.d/<sha256-of-git-common-dir>.reported` | `git-stash-reminder.sh` (written by it, #2686) |
 | Session start time | `<baseline-dir>/<session_id>.d/.session-start` (mtime) | `git-stash-reminder.sh` |
 | HEAD commit at session start | `/tmp/claude-test-baselines/<session_id>` | `test-verification.sh` |
 
@@ -75,17 +76,37 @@ A Stop hook that checks for git stashes **created during the current session**. 
 
 | Condition | Action |
 |-----------|--------|
-| Session stashes exist | Recommend `git stash pop` |
+| Hand-made session stash | Block, recommend `git stash pop` |
+| `auto-checkpoint before …` session stash | Block, recommend "verify against the working tree, then `git stash drop`" (#2686) |
+| Stash tree equals the working tree | Silent exit — it holds nothing the tree does not (#2686) |
+| Already reported earlier this session | Silent exit — reviewing and keeping a stash clears the block (#2686) |
 | Only pre-existing stashes | Silent exit (no block) |
+| No stashes at all | Silent exit |
 | Repo first seen mid-session | Baseline captured for that namespace, then the age filter still applies — a genuine session stash is reported |
+
+**Toggle:** `CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER=1` disables the hook entirely.
 
 A repo the session enters later (a moved cwd, a linked worktree, a repo that was
 stash-free at SessionStart) gets its baseline captured on first observation, but
 only stashes **older than the session start** are absorbed into it — so a stash
 the session actually created is reported on that Stop and every Stop after.
 
+The three #2686 filters exist to keep the block **satisfiable**. A Stop hook that
+re-fires on the same entry for the life of the session — which is what happened
+once `auto-checkpoint.sh` switched to `git stash create` + `git stash store`
+(#2610/#2641) and every checkpoint began persisting in `git stash list` — teaches
+the agent to ignore it, which is worse than a hook that never fires. Reported
+commit hashes are remembered in a sibling `<baseline>.reported` file (hashes, not
+`stash@{N}`, so the memory survives reindexing).
+
+Redundancy is judged by comparing the stash commit against the working tree, and
+a stash carrying an **untracked payload** — a 3rd parent, which only
+`git stash push -u` creates — is never called redundant: `git diff` cannot see
+that payload, and it is exactly the content #2610 was filed to protect. Both new
+filters fail toward **reporting**, so an unreadable memory file or an errored
+comparison costs a repeated nag rather than silent information loss.
+
 **Tests:** `bash hooks-plugin/hooks/test-git-stash-reminder.sh` (hermetic — sandboxed via `CLAUDE_STASH_BASELINE_DIR`).
-| No stashes at all | Silent exit |
 
 ### session-end-issue-hook.sh
 
@@ -523,6 +544,7 @@ Every hook can be individually enabled or disabled via environment variables. Se
 | permission-auto-approve.sh | `CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO=1` | Enabled |
 | task-completeness.sh | `CLAUDE_HOOKS_DISABLE_TASK_COMPLETENESS=1` | Enabled |
 | test-verification.sh | `CLAUDE_HOOKS_DISABLE_TEST_VERIFICATION=1` | Enabled |
+| git-stash-reminder.sh | `CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER=1` | Enabled |
 | event-logger.sh | `CLAUDE_HOOKS_ENABLE_EVENT_LOGGER=1` | **Disabled** (opt-in) |
 | bash-antipatterns-teach.sh | `CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1` | **Disabled** (opt-in) |
 | no-calendar-estimates.sh | `CLAUDE_HOOKS_ENABLE_CALENDAR_ESTIMATES=1` | **Disabled** (opt-in) |

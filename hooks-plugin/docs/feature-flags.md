@@ -54,6 +54,7 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 | `CLAUDE_HOOKS_DISABLE_PERMISSION_REQUEST` | The permission-request hook | `skills/hooks-permission-request-hook/` |
 | `CLAUDE_HOOKS_DISABLE_TASK_COMPLETENESS` | Stop-hook heuristics for incomplete work (TODO/conflict markers/debug artifacts) | `hooks/task-completeness.sh` |
 | `CLAUDE_HOOKS_DISABLE_TEST_VERIFICATION` | Stop-hook reminder to run tests when code changed | `hooks/test-verification.sh` |
+| `CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER` | Stop-hook reminder about stashes created during the session (#2686) | `hooks/git-stash-reminder.sh` |
 | `CLAUDE_HOOKS_DISABLE_DRIFT_NUDGE` | The consolidated drift-aggregator SessionStart nudge | `hooks/drift-aggregator.sh` |
 | `CLAUDE_HOOKS_DISABLE_README_CURRENCY` | Advisory nudge to update a changed plugin's README.md | `scripts/check-plugin-readme-currency.sh` |
 
