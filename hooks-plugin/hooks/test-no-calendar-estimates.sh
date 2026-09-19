@@ -188,6 +188,17 @@ assert_blocks "approximately 5 hours"               "Approximately 5 hours of en
 assert_blocks "expect this in 2 weeks"              "Expect this work in 2 weeks if priorities hold."
 assert_blocks "roughly 4 hours"                     "Roughly 4 hours to finish the migration."
 
+# ── the narrowing must not stop real estimates firing (issue #2654) ───────────
+# #2654 required the number to sit adjacent to a word-bounded time unit. These
+# positives pin the forms that adjacency must keep covering, so a future
+# tightening cannot quietly turn the hook off: a spelled-out range, a
+# punctuation range, and the vague quantifier's idiomatic "of".
+echo ""
+echo "adjacent quantities still block after the #2654 narrowing:"
+assert_blocks "spelled-out range"                   "This will take 3 to 4 days."
+assert_blocks "hyphenated range"                    "Rollout will need 30-45 minutes."
+assert_blocks "couple of days"                      "Finishing this would take a couple of days."
+
 # ── control: the matcher is deliberately NOT narrowed (issue #2574) ───────────
 # The reporter's exact blocked text. #2574 asked for the *message* to name the
 # external-machine-work case (option 1), explicitly NOT for the matcher to stop
@@ -241,6 +252,20 @@ assert_allows "modified N days ago"                 "The file was modified 2 day
 assert_allows "frequency (every N hours)"           "The cron job runs every 3 hours."
 assert_allows "config timeout in seconds"           "The API timeout is 30 seconds."
 assert_allows "ran for N minutes"                   "The build ran for 5 minutes before failing."
+
+# ── currency rates and non-adjacent day counts SHOULD pass (issue #2654) ──────
+# Reported from a cost-analysis session: three blocks, none of which contained a
+# work estimate. Every match paired a money figure (or a count of calendar days)
+# with a time unit several words away, and neither remediation branch — effort
+# units or rate × quantity — had anything to say about a euro figure per year.
+# The narrowing is purely syntactic (word-bounded unit + number adjacency), so
+# the #2574 control above must stay green alongside these.
+echo ""
+echo "currency rates and non-adjacent day counts pass (#2654):"
+assert_allows "currency rate per year"              "The saving is roughly €20 a year."
+assert_allows "currency range per year"             "The saving is roughly €15–35 a year."
+assert_allows "currency rate per hour"              "Contractors are roughly \$50 per hour."
+assert_allows "day count, unit not adjacent"        "Holiday scaling would take 16 weekdays off a year."
 
 # ── unrelated content SHOULD pass ─────────────────────────────────────────────
 echo ""

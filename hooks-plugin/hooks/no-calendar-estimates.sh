@@ -11,9 +11,12 @@
 # restates in tokens / effort tier / tool calls; external machine work the agent
 # *measured* (a CI run, build, model download, render, long test suite) really
 # is wall-clock and restates as rate x quantity with the measurement named
-# (#2574). The matcher stays deliberately broad — it still fires on a measured
-# rate, and the message tells the reader how to phrase it honestly rather than
-# offering only units that cannot express it. Which of the two branches is
+# (#2574). The matcher stays deliberately broad *semantically* — it still fires
+# on a measured rate, and the message tells the reader how to phrase it honestly
+# rather than offering only units that cannot express it. #2654 narrowed it
+# *syntactically* only: the number must sit next to a word-bounded time unit, so
+# currency rates ("roughly €20 a year") and day counts whose unit is four words
+# away ("take 16 weekdays off a year") stop matching. Which of the two branches is
 # emitted is chosen per block (#2650): a measured rate in the matched text leads
 # with rate x quantity; everything else keeps the generic effort-unit message.
 #
@@ -87,18 +90,53 @@ if [ -z "$LAST_RESPONSE" ]; then
     exit 0
 fi
 
-# Calendar-time estimation regexes. Two carefully-scoped patterns:
+# Calendar-time estimation regexes. Two carefully-scoped patterns, both ending
+# in the shared $QTY quantity fragment built just below:
 #
-#   PATTERN_FUTURE — future-tense modal + estimation verb + number + time unit.
+#   PATTERN_FUTURE — future-tense modal + estimation verb + quantity.
 #     Catches: "this'll take 3 hours", "would take roughly 5 minutes",
-#              "should require 2 weeks", "will need about 30 minutes".
+#              "should require 2 weeks", "will need about 30 minutes",
+#              "will take 3 to 4 days".
 #     Skips:   "took 2 minutes" (past tense), "every 3 hours" (frequency),
-#              "modified 2 days ago" (observation), "30s timeout" (config).
+#              "modified 2 days ago" (observation), "30s timeout" (config),
+#              "would take 16 weekdays off a year" (#2654 — a count of calendar
+#              days whose number is nowhere near a time unit).
 #
-#   PATTERN_MARKER — explicit estimation marker + number + time unit.
+#   PATTERN_MARKER — explicit estimation marker + quantity.
 #     Catches: "ETA: 30 minutes", "estimated 2 days", "approximately 5 hours",
 #              "expect this in 2 weeks".
-#     Skips:   "about 30 minutes ago" (we drop "about" — too ambiguous past/future).
+#     Skips:   "about 30 minutes ago" (we drop "about" — too ambiguous
+#              past/future), "roughly €20 a year", "roughly €15–35 a year",
+#              "roughly $50 per hour" (#2654 — currency rates, where the number
+#              is money and the time unit is only the period it is quoted over).
+#
+# The quantity fragment carries two *syntactic* narrowings (#2654). Neither
+# touches the *semantics* #2574 declined to exempt — a measured rate still
+# blocks, and the message branch above is what adapts to it:
+#
+#   1. Word-bounded unit. The time-unit alternation ends in a right-hand
+#      boundary, so "weekdays" no longer matches on the "week" / "day"
+#      substrings it happens to contain. Written as ([^[:alnum:]]|$) rather
+#      than GNU's \b so the pattern behaves the same under BSD grep. No
+#      left-hand boundary is needed: the number-adjacency below supplies it.
+#   2. Number adjacent to unit. The number and the unit may be separated only
+#      by spaces or a hyphen. The previous unbounded [^.!?]* gap between them
+#      paired "20" with "year" across "€20 a year", and "16" with "year" four
+#      words later in "take 16 weekdays off a year".
+#
+# The trade is deliberately asymmetric: an estimate with an adjective wedged in
+# ("2 full days") now slips through, which costs a reader nothing, while a
+# currency figure no longer costs a turn spent explaining that no estimate was
+# present. No filler word is allowed back in, because any filler wide enough to
+# re-admit "2 full days" also re-admits "€20 a year" / "20 euros a year".
+#
+# Ranges need no branch of their own: "3 to 4 days", "30-45 minutes" and the
+# #2574 control's "70–80 minutes" all put the unit after the range's *last*
+# number, so plain adjacency already covers them. The assertions for those
+# forms are in the test suite regardless — they pin the behaviour, so a later
+# tightening that does break them goes red. The only quantifier that genuinely
+# needs help is the idiomatic "a couple of days", whose "of" the adjacency rule
+# would otherwise reject.
 #
 # Time-unit floor is "minute" — seconds are usually config (timeouts, sleeps,
 # retries) rather than effort estimates.
@@ -107,8 +145,11 @@ fi
 # bounded {0,N} repetition. GNU grep's NFA implementation can hit catastrophic
 # backtracking on long bounded patterns with multiple groups; the unbounded
 # form stays linear and naturally stops at sentence boundaries.
-PATTERN_FUTURE="(will|would|should|could|may|might|'ll|going to|gonna)[^.!?]*(take|takes|taking|require|requires|need|needs)[^.!?]*([0-9]+|a few|several|many|couple)[^.!?]*(minute|hour|day|week|month|year)s?"
-PATTERN_MARKER="(ETA|estimate|estimated|estimating|expect|expects|expected|approximately|roughly|around)[^.!?]*([0-9]+|a few|several|many|couple)[^.!?]*(minute|hour|day|week|month|year)s?"
+TIME_UNIT='(minute|hour|day|week|month|year)s?([^[:alnum:]]|$)'
+QTY="([0-9]+|(a few|several|many|couple)([[:space:]]+of)?)[[:space:]-]*${TIME_UNIT}"
+
+PATTERN_FUTURE="(will|would|should|could|may|might|'ll|going to|gonna)[^.!?]*(take|takes|taking|require|requires|need|needs)[^.!?]*${QTY}"
+PATTERN_MARKER="(ETA|estimate|estimated|estimating|expect|expects|expected|approximately|roughly|around)[^.!?]*${QTY}"
 
 # Message-branch selection (#2650). These two patterns do NOT gate the block —
 # the matcher above stays exactly as broad as it was (#2574 control). They only
