@@ -233,11 +233,26 @@ Works well with:
 
 ## PostToolUse Pre-flight Cue
 
-The plugin ships a PostToolUse behavioral cue hook (ADR-0017) that fires **once per session** when an Edit or Write touches a file with structural signals. When it fires, it feeds back a short reminder to run `/code-quality:code-lint` **once the current edit sequence is complete** — and, **only when a skill file under a `skills/` tree changed**, to also run `/evaluate:evaluate-skill`.
+The plugin ships a PostToolUse behavioral cue hook (ADR-0017) that fires **once per session** when an Edit or Write touches a file with structural signals. When it fires, it feeds back a short reminder to run `/code-quality-plugin:code-lint` **once the current edit sequence is complete** — and, **only when a skill file under a `skills/` tree changed**, to also run `/evaluate-plugin:evaluate-skill`.
 
 The cue deliberately does *not* ask for a lint *right now*. A PostToolUse hook cannot tell edit 1 of 4 from a finished change, and linting a knowingly half-applied refactor produces actively-wrong findings — e.g. "`inline` is unused, rename to `_inline`" for a symbol whose four uses land three edits later (issue #2272).
 
 **Which layer covers which case.** The rewording above is what addresses the scenario issue #2272 actually filed: edit 1 of a 4-edit sequence *still fires*, because the sequence debounce is **backward-looking** — it can only see edits that already happened, so it can never suppress the first edit of anything. Only the instruction changed, from "lint before continuing" to "lint once the sequence settles". The debounce's narrower job is to make sure the session's single cue lands on a *settled* edit instead of a mid-burst one.
+
+### Cue skill IDs are plugin-qualified
+
+The cue is emitted at runtime and the agent pastes the slash command straight
+into the `Skill` tool, so every skill the cue names is written in the
+**plugin-qualified** form `<plugin-name>:<skill-name>`
+(`/code-quality-plugin:code-lint`, `/evaluate-plugin:evaluate-skill`) — never the
+`/<ns>:<name>` shorthand this repo's README tables use. There is no plugin named
+`code-quality`, so the short form returned `Unknown skill: code-quality:code-lint`
+and cost a tool call (issue #2682). The cue also names the *action* ("or this
+repo's own linter/formatter if that skill is unavailable") so it stays followable
+in a session where the plugin is not installed.
+
+`scripts/check-hook-cue-skill-refs.sh` enforces this for every emitted line of
+this plugin's hooks and resolves each ID against the skills/agents on disk.
 
 ### How it works
 
@@ -246,7 +261,7 @@ The cue deliberately does *not* ask for a lint *right now*. A PostToolUse hook c
   - The diff contains a public-symbol line: `export`, `export default`, `module.exports`, `pub`, `public`, `def`, `class`, `func` — for shell scripts (`.sh`/`.bash`/`.zsh`), `export` is excluded since `export FOO=bar` is a builtin assignment, not a public-API symbol (issue #1766)
   - The edited file is a manifest: `plugin.json`, `marketplace.json`, `package.json`, `Cargo.toml`, `pyproject.toml`
   - The payload (new_string + content) is >= 50 lines
-- **`/evaluate:evaluate-skill` reminder**: appended only for paths under a `skills/` tree, so the cue points at a real action rather than a no-op on ordinary code edits (issue #1766)
+- **`/evaluate-plugin:evaluate-skill` reminder**: appended only for paths under a `skills/` tree, so the cue points at a real action rather than a no-op on ordinary code edits (issue #1766)
 - **Silenced for**: `.md`/`.txt` files, `CHANGELOG.md`, test/spec files, lockfiles, docs under `docs/adrs/` or `docs/prds/`
 - **Sequence debounce** (issue #2272): the cue stays silent when another Edit/Write to the **same file** landed within the last `CODE_QUALITY_PREFLIGHT_CUE_DEBOUNCE_TTL` seconds (default 120) — a burst of edits to one file means a sequence is still in flight. A debounced edit **does not consume the once-per-session budget**, so the session's one cue lands on a settled edit rather than on the noisiest mid-burst one. Recency is recorded for every non-excluded Edit/Write (structural or not) in `~/.cache/code-quality-preflight-cue/.edits/<session_id>/<file-key>`, and re-arms once the file goes quiet. Keying is session-scoped so concurrent sessions editing the same path never debounce each other.
   - **Accepted true-positive loss**: in a session that edits *one* file repeatedly at sub-TTL intervals and never returns to it after a quiet period, the cue can never fire for that file — every edit refreshes the recency marker, and PostToolUse only runs when an edit happens, so no invocation ever observes the quiet gap. Issue #2272's shape (1) takes this trade knowingly.

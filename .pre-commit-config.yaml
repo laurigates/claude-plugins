@@ -719,6 +719,24 @@ repos:
         language: system
         files: '^scripts/(check-delegation-reachability\.sh|tests/test-check-delegation-reachability\.sh)$'
         pass_filenames: false
+      - id: check-hook-cue-skill-refs
+        name: hook cues name resolvable plugin-qualified skill IDs (#2682)
+        entry: bash ./scripts/check-hook-cue-skill-refs.sh
+        language: system
+        # Whole-scope (pass_filenames: false), so the trigger must reach every
+        # file the verdict depends on: the scanned hooks (enforced AND advisory,
+        # since the advisory roll-up is part of the report) and the ground-truth
+        # sources — a skill RENAME changes what resolves without touching any
+        # hook. A list of citation sites alone would stay silent on exactly the
+        # commit that breaks them (the #2164 drift trap).
+        files: '([^/]*-plugin/hooks/.*\.sh|[^/]*-plugin/skills/.*/SKILL\.md|[^/]*-plugin/agents/.*\.md|^scripts/check-hook-cue-skill-refs\.sh)$'
+        pass_filenames: false
+      - id: test-check-hook-cue-skill-refs
+        name: hook-cue skill-ref guard regression (detects, exempts comments, fails on an empty tree)
+        entry: bash ./scripts/tests/test-check-hook-cue-skill-refs.sh
+        language: system
+        files: '^scripts/(check-hook-cue-skill-refs\.sh|tests/test-check-hook-cue-skill-refs\.sh)$'
+        pass_filenames: false
       - id: test-check-driver-freshness
         name: driver-freshness equal-date invariant + epoch diagnostics (#1704)
         entry: bash ./scripts/tests/test-check-driver-freshness.sh

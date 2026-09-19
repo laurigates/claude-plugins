@@ -60,7 +60,7 @@ cq_base_name="${cq_file_path##*/}"
 
 # .md/.txt prose and diagram/binary assets — always silent.
 # Diagram sources (.d2) and rendered/binary artifacts (.svg/.png/.jpg/.jpeg/.pdf)
-# are not lintable by /code-quality:code-lint, so a large diagram edit should not
+# are not lintable by /code-quality-plugin:code-lint, so a large diagram edit should not
 # trip the structural cue (issue #1730).
 case "$cq_file_path" in
     *.md|*.txt|*.d2|*.svg|*.png|*.jpg|*.jpeg|*.pdf) exit 0 ;;
@@ -218,7 +218,7 @@ if [ "$cq_is_structural" -eq 0 ] && \
 fi
 
 # Signal 3: large payload (>= 50 lines) — but ONLY for source types that
-# /code-quality:code-lint can actually act on. code-lint auto-detects
+# /code-quality-plugin:code-lint can actually act on. code-lint auto-detects
 # ruff/eslint/biome/clippy/gofmt/shellcheck (see skills/code-lint/SKILL.md); it has
 # no linter for config/data/IaC files (.yaml/.yml/.json/.toml/.tf/.tfvars/.hcl, …),
 # which routinely exceed 50 lines. Firing the cue there points at a skill that does
@@ -251,7 +251,7 @@ if [ -n "$cq_session_id" ]; then
     touch "$cq_marker" 2>/dev/null || true
 fi
 
-# The /evaluate:evaluate-skill half is only relevant when a skill file changed;
+# The /evaluate-plugin:evaluate-skill half is only relevant when a skill file changed;
 # mention it exclusively for paths under a skills/ tree so it doesn't read as a
 # no-op suggestion on ordinary code edits (issue #1766). SKILL.md itself is .md
 # (excluded above), so in practice this fires for non-.md files under skills/.
@@ -265,9 +265,17 @@ fi
 # filed: edit 1 of a 4-edit sequence still FIRES (a backward-looking debounce
 # cannot suppress the first edit of anything); only the instruction changed,
 # from "lint before continuing" to "lint once the sequence settles".
+#
+# The slash commands are written PLUGIN-QUALIFIED (`/code-quality-plugin:code-lint`,
+# not `/code-quality:code-lint`) because this string is emitted at runtime and the
+# agent pastes it straight into the `Skill` tool. Claude Code namespaces skills as
+# `<plugin-name>:<skill-name>`, and there is no plugin named `code-quality`, so the
+# short README shorthand resolves to "Unknown skill" and burns a tool call
+# (issue #2682). The "or this repo's own linter/formatter" fallback keeps the cue
+# followable in a session where the plugin is not installed at all.
 case "$cq_file_path" in
-    */skills/*|skills/*) cq_cue="[code-quality] Large/structural edit detected. Run /code-quality:code-lint as a pre-flight, and /evaluate:evaluate-skill since a skill changed, once this edit sequence is complete — not mid-sequence, where a partly-applied refactor lints as broken." ;;
-    *)                   cq_cue="[code-quality] Large/structural edit detected. Run /code-quality:code-lint as a pre-flight once this edit sequence is complete — not mid-sequence, where a partly-applied refactor lints as broken." ;;
+    */skills/*|skills/*) cq_cue="[code-quality] Large/structural edit detected. Run /code-quality-plugin:code-lint as a pre-flight (or this repo's own linter/formatter if that skill is unavailable), and /evaluate-plugin:evaluate-skill since a skill changed, once this edit sequence is complete — not mid-sequence, where a partly-applied refactor lints as broken." ;;
+    *)                   cq_cue="[code-quality] Large/structural edit detected. Run /code-quality-plugin:code-lint as a pre-flight (or this repo's own linter/formatter if that skill is unavailable) once this edit sequence is complete — not mid-sequence, where a partly-applied refactor lints as broken." ;;
 esac
 
 jq -n --arg reason "$cq_cue" '{"decision":"block","reason":$reason}'
