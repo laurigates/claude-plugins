@@ -48,7 +48,47 @@
 # <dir>/<session-id>) both degrade to SILENCE — never to a false alarm. A stash
 # genuinely created during the session is still reported, in the SessionStart
 # repo, in a repo entered later, and through a linked worktree.
+#
+# Three further filters keep the block SATISFIABLE (issue #2686). A Stop hook
+# that cannot be cleared teaches the agent to ignore it, which is strictly
+# worse than a hook that never fires:
+#
+#   4. Redundancy. A stash whose tree already equals the working tree holds
+#      nothing the tree does not, so reporting it is pure noise. That is the
+#      shape auto-checkpoint.sh produces (`git stash create` + `git stash
+#      store`, since #2610/#2641) whenever the checkpointed command changed
+#      nothing in the repo. `git diff` cannot see untracked files, so a stash
+#      carrying an untracked payload — a 3rd parent, which only
+#      `git stash push -u` creates — is NEVER called redundant; that payload
+#      is exactly the content #2610 was filed to protect.
+#
+#   5. Report-once memory. Hashes that were actually reported are appended to
+#      a sibling `<baseline>.reported` file, so a stash surfaced once and
+#      consciously kept stops re-blocking every Stop for the life of the
+#      session. The key is the commit hash, not `stash@{N}`, so the memory
+#      survives reindexing when an earlier stash is dropped. It is a SIBLING
+#      of the baseline on purpose: appending to the baseline itself would make
+#      a session stash indistinguishable from a pre-existing one and would
+#      collide with defence 2's 0-byte path.
+#
+#   6. Provenance-aware remedy. `git stash pop` is the wrong verb for an
+#      auto-checkpoint — at best a no-op, at worst it restores a deliberate
+#      mutation the session made on purpose. Checkpoint entries are worded
+#      "verify …, then git stash drop"; hand-made stashes keep `pop`.
+#
+# Both new filters fail toward REPORTING: an unreadable `.reported` file or an
+# errored `git diff` leaves the stash in the report. Silence is the safe
+# degradation for a false ALARM (defences 1-3); reporting is the safe
+# degradation for information LOSS.
+#
+# Opt out entirely with CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER=1, matching the
+# convention in repo-deletion-safety.sh and its ten siblings.
 set -euo pipefail
+
+# Opt out (#2686). Checked first so a disabled hook costs nothing.
+if [ "${CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER:-}" = "1" ]; then
+    exit 0
+fi
 
 # Stable per-namespace filename. MUST stay byte-identical to the copy in
 # git-stash-session-init.sh — the two scripts have to agree on where a repo's
@@ -97,6 +137,25 @@ file_mtime() {
     esac
 }
 
+# True when the stash commit's tree already equals the working tree, i.e. the
+# stash holds nothing the tree does not (#2686, filter 4).
+#
+# The 3rd-parent guard is load-bearing, not defensive padding: `git diff`
+# compares tracked content only, so a stash carrying untracked files could have
+# a matching tracked tree while still holding the one kind of content that
+# cannot be recovered from anywhere else. Only `git stash push -u` produces
+# that 3rd parent — `git stash create --include-untracked` does not (verified
+# on git 2.43), which is why auto-checkpoint stashes are exactly comparable.
+#
+# Any git failure returns non-zero, i.e. "not redundant", so an odd repo state
+# degrades to reporting rather than to silent information loss.
+stash_is_redundant() { # stash_is_redundant <cwd> <stash-sha>
+    if git -C "$1" rev-parse --verify --quiet "$2^3" >/dev/null 2>&1; then
+        return 1
+    fi
+    git -C "$1" diff --quiet "$2" -- >/dev/null 2>&1
+}
+
 # Read JSON input from stdin and extract fields
 INPUT=$(cat)
 CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
@@ -139,6 +198,9 @@ REPO_ROOT=$(git -C "$CWD" rev-parse --show-toplevel 2>/dev/null || printf '%s' "
 BASELINE_ROOT="${CLAUDE_STASH_BASELINE_DIR:-/tmp/claude-stash-baselines}"
 SESSION_BASELINE_DIR="${BASELINE_ROOT}/${SESSION_ID}.d"
 BASELINE_FILE="${SESSION_BASELINE_DIR}/$(repo_key "$STASH_ROOT")"
+# Sibling of the baseline, never the baseline itself (see the header): hashes
+# this session has ALREADY surfaced to the user (#2686, filter 5).
+REPORTED_FILE="${BASELINE_FILE}.reported"
 
 CURRENT_STASHES=$(git -C "$CWD" stash list --format='%H|%gd|%ct|%gs' 2>/dev/null || true)
 
@@ -197,6 +259,9 @@ if [ -z "$CURRENT_STASHES" ]; then
 fi
 
 BASELINE_HASHES=$(cat "$BASELINE_FILE" 2>/dev/null || true)
+# Unreadable/absent memory reads as "nothing reported yet", which re-reports a
+# stash rather than swallowing it — the conservative direction for this filter.
+REPORTED_HASHES=$(cat "$REPORTED_FILE" 2>/dev/null || true)
 if [ "$SESSION_START" -eq 0 ]; then
     SESSION_START=$(file_mtime "$BASELINE_FILE")
 fi
@@ -205,6 +270,11 @@ fi
 NOW=$(date +%s)
 NEW_STASHES=""
 NEW_COUNT=0
+# Appended to REPORTED_FILE in one write once the report is built.
+REPORTED_NOW=""
+# Set when at least one reported entry came from auto-checkpoint.sh, which
+# changes the remedy wording (#2686, filter 6).
+HAS_CHECKPOINT=0
 
 while IFS='|' read -r hash ref ts subject; do
     [ -z "$hash" ] && continue
@@ -225,6 +295,19 @@ while IFS='|' read -r hash ref ts subject; do
         continue
     fi
 
+    # Filter 5: already surfaced to the user earlier in this session. Reviewing
+    # a stash and keeping it deliberately must clear the block; only deleting
+    # the stash used to, which made the block unsatisfiable (#2686).
+    if [ -n "$REPORTED_HASHES" ] && printf '%s\n' "$REPORTED_HASHES" | grep -qF "$hash" 2>/dev/null; then
+        continue
+    fi
+
+    # Filter 4: nothing to recover. Runs LAST of the filters because it is the
+    # only one that costs a tree comparison (this hook's Stop timeout is 10s).
+    if stash_is_redundant "$CWD" "$hash"; then
+        continue
+    fi
+
     # This is a new stash created during the session
     NEW_COUNT=$((NEW_COUNT + 1))
     AGE=$((NOW - ts))
@@ -235,7 +318,21 @@ while IFS='|' read -r hash ref ts subject; do
     else
         AGE_STR="${MINS}m ago"
     fi
-    NEW_STASHES="${NEW_STASHES}  ${ref} (${AGE_STR}): ${subject} → git stash pop\n"
+    # Filter 6: `pop` is wrong for a checkpoint this hook family made itself.
+    # auto-checkpoint.sh writes its message through `git stash store -m`, which
+    # stores it verbatim; `git stash push -m` would prefix "On <branch>: ".
+    # Match both so the wording survives a change of mechanism.
+    case "$subject" in
+        "auto-checkpoint before "*|*": auto-checkpoint before "*)
+            ACTION="verify against the working tree, then git stash drop"
+            HAS_CHECKPOINT=1
+            ;;
+        *)
+            ACTION="git stash pop"
+            ;;
+    esac
+    NEW_STASHES="${NEW_STASHES}  ${ref} (${AGE_STR}): ${subject} → ${ACTION}\n"
+    REPORTED_NOW="${REPORTED_NOW}${hash}"$'\n'
 done <<< "$CURRENT_STASHES"
 
 # No new stashes → exit silently
@@ -243,10 +340,26 @@ if [ "$NEW_COUNT" -eq 0 ]; then
     exit 0
 fi
 
+# Remember what is about to be reported so the next Stop does not re-block on
+# it (#2686, filter 5). Written BEFORE the block is emitted: a failed write
+# degrades to today's re-reporting behaviour, never to silence about a stash
+# the user has not seen. The braces put the redirection failure itself inside
+# the suppressed group.
+if [ -n "$REPORTED_NOW" ]; then
+    { printf '%s' "$REPORTED_NOW" >> "$REPORTED_FILE"; } 2>/dev/null || true
+fi
+
 # Build the reason message for new session stashes only
 REASON="Found ${NEW_COUNT} git stash(es) created during this session in ${REPO_ROOT}. Review before exiting:\n"
-REASON="${REASON}\nSession stashes — pop or apply them:\n${NEW_STASHES}"
+if [ "$HAS_CHECKPOINT" -eq 1 ]; then
+    # At least one entry is an auto-checkpoint, for which "pop or apply" is the
+    # wrong instruction; each line carries its own verb instead.
+    REASON="${REASON}\nSession stashes — review each one:\n${NEW_STASHES}"
+else
+    REASON="${REASON}\nSession stashes — pop or apply them:\n${NEW_STASHES}"
+fi
 REASON="${REASON}\nRun 'git stash list' to inspect, or 'git stash show -p stash@{N}' to review contents."
+REASON="${REASON}\nEach stash is reported once per session, so reviewing and keeping one clears this block. Set CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER=1 to silence the hook entirely."
 
 # Output block decision with proper JSON escaping via jq
 FORMATTED_REASON=$(printf '%b' "$REASON")
