@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.19.8](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.19.7...testing-plugin-v3.19.8) (2026-09-20)
+
+
+### Documentation
+
+* **rules:** narrow the context: fork hazard to unbounded fan-out width ([15a79e9](https://github.com/laurigates/claude-plugins/commit/15a79e920e31e81cd44b6d6872855450ca64b73e)), closes [#2172](https://github.com/laurigates/claude-plugins/issues/2172) [#2174](https://github.com/laurigates/claude-plugins/issues/2174)
+
 ## [3.19.7](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.19.6...testing-plugin-v3.19.7) (2026-09-05)
 
 

@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.56.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.55.1...git-plugin-v2.56.0) (2026-09-20)
+
+
+### Features
+
+* **git-plugin:** ship the git-issue --parallel workflow template ([986d893](https://github.com/laurigates/claude-plugins/commit/986d89391d8ff188e68fc8d69300a272306a221e)), closes [#2172](https://github.com/laurigates/claude-plugins/issues/2172) [#2174](https://github.com/laurigates/claude-plugins/issues/2174)
+* **git-plugin:** ship the git-pr-feedback --all workflow template ([2c756ff](https://github.com/laurigates/claude-plugins/commit/2c756ff9088266970b2098d98826b549dc9ff7ff)), closes [#2172](https://github.com/laurigates/claude-plugins/issues/2172) [#2174](https://github.com/laurigates/claude-plugins/issues/2174)
+
+
+### Code Refactoring
+
+* **split:** extract reference content from git-issue ([31e7f65](https://github.com/laurigates/claude-plugins/commit/31e7f6587888854de629214bddd44710736ffaa6))
+
 ## [2.55.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.55.0...git-plugin-v2.55.1) (2026-09-19)
 
 
