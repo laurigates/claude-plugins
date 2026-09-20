@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.45.3](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.45.2...blueprint-plugin-v3.45.3) (2026-09-20)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** narrow ADR required sections to Context/Decision/Consequences ([9f79205](https://github.com/laurigates/claude-plugins/commit/9f79205528da61e9f43db9bf7e771e976f9d517c)), closes [#2446](https://github.com/laurigates/claude-plugins/issues/2446)
+* **blueprint-plugin:** stop claiming an enforced five-section ceiling ([097c9a0](https://github.com/laurigates/claude-plugins/commit/097c9a0e022332e17bad9e963be548bd44cd2be2)), closes [#2446](https://github.com/laurigates/claude-plugins/issues/2446)
+
 ## [3.45.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.45.1...blueprint-plugin-v3.45.2) (2026-09-02)
 
 
