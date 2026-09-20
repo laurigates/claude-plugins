@@ -6,7 +6,7 @@ allowed-tools: Task, Read, Write, Glob, Grep, Bash(bash *), SlashCommand
 argument-hint: "git-plugin [--create-missing-evals]"
 agent: general-purpose
 created: 2026-03-04
-modified: 2026-09-02
+modified: 2026-09-20
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -36,6 +36,68 @@ Parse these from `$ARGUMENTS`:
 | `<plugin-name>` | required | Name of the plugin to evaluate |
 | `--create-missing-evals` | false | Generate evals for skills that lack them |
 | `--parallel N` | 1 | Max concurrent skill evaluations |
+
+## Workflow harness (template)
+
+`workflows/evaluate-plugin-batch.workflow.js` ships beside this skill. **It is a
+TEMPLATE to adapt, not a script to run verbatim.** Read it, then rewrite it for
+the work in front of you.
+
+**Adapt freely:** the inventory and aggregation agent prompts, the effort tiers,
+the `DEFAULT_WAVE` starting width, the `CELL_CAP` handed to each child, the
+`skipped[]` reason strings, and the shape of the `rows` your project's report
+actually needs.
+
+**Preserve across any adaptation:** (a) the loop bound comes from
+`inspect_eval.sh --plugin-dir <plugin>`'s `=== SKILLS ===` / `=== EVALS ===`
+listings, never from a prose "for each skill" — and eval-readiness stays the
+pure `s.hasEvals || createMissingEvals` filter over a file that exists or does
+not, so no agent classifies it; (b) `REPORT_SCHEMA`'s closed
+`complete | partial-sweep | aggregate-failed` status enum and its one-value
+`denominatorSource` enum, which together make it structurally impossible to
+report a plugin pass rate without stating that the denominator came from the
+script; (c) the Aggregate stage is a barrier — `aggregate_benchmark.sh` walks
+the filesystem for every skill's `eval-results/benchmark.json`, so its
+denominators are only correct once the last cell has finished writing, and no
+single cell can see the plugin-level numbers.
+
+Three consequences of (a)–(c) that are also non-negotiable:
+
+- **`CAP` (default 25) ABORTS; it never truncates.** A silently-shortened sweep
+  publishes a pass rate over a denominator nobody chose — which is precisely the
+  number this skill exists to produce correctly. The abort states the count and
+  the cap.
+- **`--parallel N` is the caller's and is never superseded.** The wave width is
+  derived from `args.parallel`; `DEFAULT_WAVE` applies only when the caller
+  supplied nothing, and a non-integer value falls back loudly via `log()`. The
+  platform separately caps concurrency at `min(16, CPUs-2)`, and a nested child
+  shares this run's cap and agent counter.
+- **The workflow's own count is only a cross-check.** `crossCheck.agrees`
+  compares the cells this run dispatched against the benchmarks the script found
+  on disk. A disagreement emits `partial-sweep` — that disagreement is the
+  anti-laziness signal, not a rounding error, and must never be smoothed into
+  `complete`.
+
+**This harness runs near-empty until a golden set of `evals.json` files exists.**
+Per [`.claude/rules/skill-evaluation.md`](../../../.claude/rules/skill-evaluation.md)
+eval coverage is deliberately scoped to ~15–25 canary skills, so most plugins
+today have zero or one eval-ready skill and the run aborts with
+`reason: 'below-floor'`. That is the designed outcome, not a bug — an empty
+sweep means the evals have not been written yet, and the fix is to author them
+(or pass `--create-missing-evals`), never to widen the harness.
+
+**Skip the harness when:** the plugin has fewer than 2 eval-ready skills — the
+modal case today, and `FLOOR = 2` is a hard bound that aborts there rather than
+a tunable knob, because a single skill is exactly what `/evaluate:skill` already
+does without an inventory agent, a nested workflow and an aggregate agent on
+top. The steps below remain the authoritative description of *what* each stage
+must produce; the harness only fixes *how* the work is split.
+
+`context: fork` stays **off** for this skill. The fan-out here is a caller-chosen
+`--parallel N` width, so the `[1m]` concurrent-subagent cascade hazard in
+[`.claude/rules/skill-fork-context.md`](../../../.claude/rules/skill-fork-context.md)
+applies; `scripts/plugin-compliance-check.sh` keeps this skill out of its
+`context: fork` pin list for that reason, and the harness does not change it.
 
 ## Execution
 
