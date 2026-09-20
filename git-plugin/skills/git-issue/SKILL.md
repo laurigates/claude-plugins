@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-09-02
+modified: 2026-09-20
 reviewed: 2026-09-02
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git fetch *), Bash(git pull *), Bash(git stash *), Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(gh label *), Bash(gh api *), Bash(pre-commit *), Read, Edit, Write, Grep, Glob, TodoWrite, AskUserQuestion, Task, mcp__github__create_pull_request, mcp__github__issue_read, mcp__github__list_issues
 description: "GitHub issue to PR end-to-end — branch, TDD implementation, PR — one issue or several in parallel. Use when asked to work on an issue, fix issue #N, or batch-process several."
@@ -364,6 +364,58 @@ Use origin/main" (rule 3: *base PRs on `origin/main` when creating branches*)
 and `~/.claude/rules/git-hazards.md` #2.
 
 ---
+
+## Workflow harness (template)
+
+`workflows/issue-group-wave.workflow.js` ships beside this skill and covers the
+`--parallel` path only.
+**It is a TEMPLATE to adapt, not a script to run verbatim.**
+Read it, then rewrite it for the work in front of you.
+
+**Adapt freely:** the grouping and implementation agent prompts, the default
+wave width, the conflict heuristics, the deferral vocabulary, and the
+project-specific test and commit commands.
+
+**Preserve across any adaptation:** (a) the loop bound is `args.issues` — the
+refs Step 0 normalised — and the grouping agent **partitions** that set, never
+extends it: the template validates the returned partition against the input,
+discards invented issues, keeps the first placement of a duplicate, and
+re-dispatches an omitted issue standalone rather than dropping it; (b) the
+`GROUP_SCHEMA` shape, where every input issue lands in exactly one group **or**
+in `deferred` with a closed `blocked|low-confidence|cross-repo|not-open` reason,
+plus `IMPL_SCHEMA`'s `implemented|no-change|failed` outcome — so "skipped it" is
+not expressible, and an issue already fixed at HEAD stays distinguishable from a
+failed one; (c) the Group stage is a real barrier — conflict detection is
+pairwise over the whole set (file overlap, opposing requirements, `blocked_by`
+chains, sub-issue ordering), so no group can be dispatched until every issue has
+been read, and you cannot partition work by a partition the work itself
+discovers, which is why the grouping lane is always ONE agent.
+
+**Skip the harness when:** a single issue was supplied — the modal case — or the
+partition collapses to one group because every issue conflicts with every other;
+that is a linear pass and the harness is pure overhead (the template aborts
+below two issues, and returns the partition rather than dispatching when only
+one group survives). The steps above remain the authoritative description of
+*what* each stage must produce; the harness only fixes *how* the work is split.
+
+One thing the harness changes rather than splits: `AskUserQuestion` cannot run
+inside a workflow, so the blocked-issue and sub-70%-confidence prompts above
+become **deferrals** the caller adjudicates — the issue is neither silently
+attempted nor silently dropped.
+
+Two clauses this template carries. Both are unconditional here — every
+fanned-out group runs in its own worktree, and this skill's deliverable is a PR:
+
+> Never `Workflow({resumeFromRunId})` to retry a few failed worktree agents — a
+> resume re-runs agents that already succeeded and opens duplicate PRs (#1868).
+> Re-dispatch the failed units fresh and sequentially after checking
+> `gh pr list --head <branch> --state all --json number,state`.
+
+> Push and PR creation happen **only** in the single sequential finalise stage,
+> never inside a fanned-out agent. Under the harness the Execution Workflow's
+> "Commit and Push" and "Create PR" steps move there: each agent commits on
+> `fix/issue-<n>` inside its own worktree, and the returned `finalisePlan` is
+> what the orchestrator pushes and opens PRs from, one at a time.
 
 ## Summary Report
 
