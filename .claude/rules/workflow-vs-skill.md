@@ -124,7 +124,9 @@ as its justification — `fork` bought that isolation, for free, with zero extra
 agents.
 
 Eight skills are CI-pinned to `context: fork` in `plugin-compliance-check.sh`
-(the guard list, currently around lines 899–913): `code-quality-plugin/code-review`,
+(the `for fork_skill in` loop inside `check_skill_body()` — cited by name, because a
+line number in that file drifts every time a regression guard is inserted):
+`code-quality-plugin/code-review`,
 `agents-plugin/agents-analyze`, `testing-plugin/test-analyze`,
 `testing-plugin/test-full`, `documentation-plugin/claude-blog-sources`,
 `documentation-plugin/docs-generate`, `evaluate-plugin/evaluate-skill`,
@@ -136,11 +138,16 @@ Two further constraints on that list:
 - The pin and [`skill-fork-context.md`](skill-fork-context.md) must agree.
   Changing `context:` on a pinned skill is **never a silent frontmatter edit** —
   it requires editing the rule *and* the guard list in the **same commit**.
-- The parallel-fan-out skills (`git-plugin/git-pr-feedback`,
+- The criterion is **unbounded width, not fan-out as such**. The skills that keep
+  `fork` **off** (`git-plugin/git-pr-feedback`,
   `evaluate-plugin/evaluate-plugin-batch`, `code-quality-plugin/code-antipatterns`)
-  deliberately keep `fork` **off** and are intentionally absent from the pin.
-  A harness that turns a pinned skill into a *wide* fan-out changes which side of
-  that line it belongs on.
+  are absent from the pin because their width is *caller-chosen* — one agent per PR,
+  per skill, per file, with no ceiling the script decides. A harness whose width is
+  **statically bounded** (a fixed table, a cap constant such as `cellCap`, a
+  script-enumerated set) keeps the pin: `testing-plugin/test-analyze` and
+  `evaluate-plugin/evaluate-skill` are both pinned *and* ship such a harness. See
+  [`skill-fork-context.md`](skill-fork-context.md) § the bounded-width carve-out —
+  a harness only moves a skill across that line when it makes the width unbounded.
 
 ## Layout convention
 
