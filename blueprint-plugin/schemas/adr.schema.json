@@ -172,13 +172,11 @@
     },
     "sections": {
       "type": "object",
-      "description": "Map of `## ` heading text to its 0-based ordinal. Missing sections WARN rather than block: only 2 of this repo's 22 ADRs carry all five, and a PreToolUse block would refuse an edit to a 2026-01 ADR until someone back-wrote an Options Considered section it never had. /blueprint:adr-validate is the gate that can insist. See .claude/rules/hook-block-vs-nudge.md.",
+      "description": "Map of `## ` heading text to its 0-based ordinal. Only the three load-bearing sections are required — `Options Considered` and `Related ADRs` are optional (ADR-0023): 20 of this repo's 22 ADRs carry neither, and requiring them made the validator report 45 section warnings nobody could honestly clear without back-writing deliberation that may never have happened. The ADR template still asks for all five, and /blueprint:adr-validate is the gate that can insist on them for new ADRs. Missing sections WARN rather than block, so a PreToolUse edit to a 2026-01 ADR is never refused. See .claude/rules/hook-block-vs-nudge.md.",
       "required": [
         "Context",
         "Decision",
-        "Consequences",
-        "Options Considered",
-        "Related ADRs"
+        "Consequences"
       ],
       "additionalProperties": {
         "type": "integer"
