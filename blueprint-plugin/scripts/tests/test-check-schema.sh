@@ -192,11 +192,22 @@ has_issue "$out" "frontmatter_missing" \
 # ==========================================================================
 # Severity lives in the schema, not the hook
 # ==========================================================================
-sed '/^## Related ADRs$/,+1d' "$WORK/good.md" > "$WORK/nosection.md"
+# Consequences (not Related ADRs) — ADR-0023 narrowed the required set to
+# Context/Decision/Consequences, so a dropped `## Related ADRs` is now clean.
+sed '/^## Consequences$/,+1d' "$WORK/good.md" > "$WORK/nosection.md"
 out="$(run adr "$WORK/nosection.md")"
 [ "$(severity_of "$out" "/sections")" = "WARN" ] \
     && ok "severity: a missing required section WARNs (hook-block-vs-nudge)" \
     || notok "severity: a missing section must WARN -- got: $out"
+
+# ADR-0023: the optional pair must NOT warn. Asserting both polarities keeps
+# this from passing against a schema that requires nothing at all.
+sed -e '/^## Options Considered$/,+1d' -e '/^## Related ADRs$/,+1d' \
+    "$WORK/good.md" > "$WORK/threesections.md"
+out="$(run adr "$WORK/threesections.md")"
+has_issue "$out" "STATUS=OK" \
+    && ok "ADR-0023: Context/Decision/Consequences alone validates clean" \
+    || notok "ADR-0023: the three-section floor must validate clean -- got: $out"
 
 sed 's/^status: Accepted/status: Bogus/' "$WORK/good.md" > "$WORK/badstatus.md"
 out="$(run adr "$WORK/badstatus.md")"

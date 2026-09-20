@@ -347,7 +347,7 @@ the ADR schema spelled the back-reference `superseded_by` while the hook read
 
 | Schema | Required frontmatter | Required sections |
 |---|---|---|
-| [`adr.schema.json`](schemas/adr.schema.json) | `id` (`ADR-NNNN`), `status`, `created`, `modified` | Context, Decision, Consequences, Options Considered, Related ADRs |
+| [`adr.schema.json`](schemas/adr.schema.json) | `id` (`ADR-NNNN`), `status`, `created`, `modified` | Context, Decision, Consequences (ADR-0023 dropped `Options Considered` and `Related ADRs` to optional; the template still asks for all five) |
 | [`prd.schema.json`](schemas/prd.schema.json) | `id` (`PRD-NNN`), `status`, `created`, `modified` | none — the template governs structure |
 | [`prp.schema.json`](schemas/prp.schema.json) | `id` (`PRP-NNN`), `status`, `created`, `modified`, `reviewed`, `confidence`, `domain` | Context Framing, AI Documentation, Implementation Blueprint, Test Strategy, Validation Gates, Success Criteria |
 
@@ -370,7 +370,7 @@ nudge rather than block (`.claude/rules/hook-block-vs-nudge.md`):
 | Finding | Severity | Why |
 |---|---|---|
 | Unknown `status`, bad `id` pattern, missing required field, no line-1 frontmatter | ERROR (blocks) | The document is malformed or unparseable |
-| Missing `## ` section | WARN | Only 2 of this repo's 22 ADRs carry all five; blocking an edit until someone back-writes an "Options Considered" they never had is hostile |
+| Missing `## ` section | WARN | Blocking an edit until someone back-writes a section the ADR never had is hostile. ADR-0023 narrowed the required set to the three load-bearing sections, taking the corpus from 45 section warnings to 5 |
 | `Superseded` with no `superseded-by` | WARN | A decision can be marked superseded before its replacement is numbered |
 | Deprecated spelling (`superseded_by`, `status: completed`) | WARN | Named so it can be migrated, accepted so downstream documents keep validating |
 | `reviewed` older than `x-blueprint-staleness-days` | WARN | Staleness is a fact about time, not a defect in the document |
