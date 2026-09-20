@@ -130,8 +130,9 @@ Two consequences worth stating inline:
   tools, so the dependency edges in the merged plan are *inferred by the group agents*,
   not planned. A run that genuinely needs PAL planning (Step 2 below) should stay inline.
 - **`context: fork` stays, and it is not what justifies the harness.** The pin lives in
-  `scripts/plugin-compliance-check.sh` (the `context: fork` guard list, currently around
-  lines 898–914) and is unchanged by this template. Per
+  `scripts/plugin-compliance-check.sh` (the `for fork_skill in` loop inside
+  `check_skill_body()` — cited by name, because a line number in that file drifts every
+  time a regression guard is inserted) and is unchanged by this template. Per
   `.claude/rules/workflow-vs-skill.md` § "The `context: fork` corollary", fork already
   bought context isolation for free — so this harness has to earn its tokens by
   **splitting** the planning work across agent types behind a real barrier, which it does.

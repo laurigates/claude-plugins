@@ -1009,16 +1009,26 @@ check_skill_body() {
     # 2026-06-15) and was treated as PASSED, after which #1667 rolled the
     # restoration out to the remaining single-subagent skills. See
     # laurigates/claude-plugins#980 / #1667 and .claude/rules/skill-fork-context.md.
-    # The semantic invariant is that each of these single-subagent,
-    # verbose-output skills carries `context: fork` so its output stays out of the
-    # main context. A bulk edit silently dropping it would erase the rollout; a
-    # deliberate rollback (e.g. a [1m] verification failing) is an edit that
-    # updates this guard AND the rule together. Keyed by "plugin/skill-directory"
-    # so it never fires on an unrelated skill sharing a directory name.
-    # NOTE: the parallel-fan-out skills (git-plugin/git-pr-feedback,
-    # evaluate-plugin/evaluate-plugin-batch, code-quality-plugin/code-antipatterns)
-    # deliberately keep `context: fork` OFF (the [1m] concurrent-subagent cascade
-    # hazard) and are intentionally absent from this list.
+    # The semantic invariant is that each of these skills carries `context: fork`
+    # so its verbose output stays out of the main context. A bulk edit silently
+    # dropping it would erase the rollout; a deliberate rollback (e.g. a [1m]
+    # verification failing) is an edit that updates this guard AND the rule
+    # together. Keyed by "plugin/skill-directory" so it never fires on an
+    # unrelated skill sharing a directory name.
+    # NOTE (narrowed 2026-09-20): the excluded set is the skills whose fan-out
+    # width is UNBOUNDED or CALLER-CHOSEN, not every skill that fans out at all.
+    # git-plugin/git-pr-feedback (one agent per PR its query returns),
+    # evaluate-plugin/evaluate-plugin-batch (a width the caller picks with
+    # --parallel N) and code-quality-plugin/code-antipatterns (a mandatory
+    # parallel agent delegation with no stated ceiling) deliberately keep
+    # `context: fork` OFF for the [1m] concurrent-subagent cascade hazard, and
+    # are intentionally absent from this list.
+    # Two skills ON the list DO fan out, under the bounded-width carve-out in
+    # .claude/rules/skill-fork-context.md: testing-plugin/test-analyze (capped at
+    # its fixed 8 agent types) and evaluate-plugin/evaluate-skill (capped by its
+    # cellCap ceiling, which aborts rather than truncating). Their bounds are
+    # decidable before dispatch, which is what the carve-out turns on — so
+    # "fans out" is not by itself grounds for removing a skill from this list.
     local fork_skill
     for fork_skill in \
       "code-quality-plugin/code-review" \
