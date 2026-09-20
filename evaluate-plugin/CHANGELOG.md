@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.15.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.14.5...evaluate-plugin-v1.15.0) (2026-09-20)
+
+
+### Features
+
+* **evaluate-plugin:** ship the evaluate-plugin-batch capped fan-out template ([3071672](https://github.com/laurigates/claude-plugins/commit/307167206987c63e9ce944a744e8a349a1a2a432)), closes [#2169](https://github.com/laurigates/claude-plugins/issues/2169) [#2174](https://github.com/laurigates/claude-plugins/issues/2174)
+* **evaluate-plugin:** ship the evaluate-skill batch workflow template ([a7fc437](https://github.com/laurigates/claude-plugins/commit/a7fc437b04c2c71d05f058f41dc019b8927caadd)), closes [#2172](https://github.com/laurigates/claude-plugins/issues/2172) [#2174](https://github.com/laurigates/claude-plugins/issues/2174)
+
 ## [1.14.5](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.14.4...evaluate-plugin-v1.14.5) (2026-09-03)
 
 
