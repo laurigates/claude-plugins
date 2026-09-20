@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "blueprint-plugin/adr.schema.json",
   "title": "Architecture Decision Record",
-  "description": "The single source of truth for ADR structure. hooks/validate-adr-frontmatter.sh is a thin caller of scripts/check-schema.py against this file and declares no field list of its own; scripts/tests/test-schema-field-parity.sh fails if it grows one. The validated object is built by check-schema.py: `frontmatter` is the parsed line-1 YAML block, `sections` maps each `## ` heading text to its ordinal.",
+  "description": "The single source of truth for ADR structure. hooks/validate-adr-frontmatter.sh is a thin caller of scripts/check-schema.py against this file and declares no field list of its own; scripts/tests/test-check-schema.sh fails if it grows one (its `no field lists:` assertions). The validated object is built by check-schema.py: `frontmatter` is the parsed line-1 YAML block, `sections` maps each `## ` heading text to its ordinal.",
   "x-blueprint-doc-kind": "adr",
   "x-blueprint-path-glob": "docs/adrs/**",
   "type": "object",
@@ -39,7 +39,7 @@
             "Superseded",
             "Deprecated"
           ],
-          "description": "Lifecycle state. Capitalised, unlike PRP status — ADRs have used this casing since ADR-0001."
+          "description": "Lifecycle state. Capitalised, unlike PRP status \u2014 ADRs have used this casing since ADR-0001."
         },
         "created": {
           "type": "string",
@@ -103,7 +103,7 @@
         "superseded_by": {
           "not": {},
           "x-blueprint-severity": "warning",
-          "title": "`superseded_by` (underscore) is the pre-reconciliation spelling — rename it to `superseded-by`. The hyphen form is what hooks and skills read; the underscore form is silently ignored."
+          "title": "`superseded_by` (underscore) is the pre-reconciliation spelling \u2014 rename it to `superseded-by`. The hyphen form is what hooks and skills read; the underscore form is silently ignored."
         },
         "extends": {
           "type": "string",
@@ -146,7 +146,7 @@
               "superseded-by"
             ],
             "x-blueprint-severity": "warning",
-            "title": "status is `Superseded` but no `superseded-by` names the replacement — /blueprint:adr-validate can set both ends. Warning, not an error: a decision can be marked superseded before its replacement is numbered."
+            "title": "status is `Superseded` but no `superseded-by` names the replacement \u2014 /blueprint:adr-validate can set both ends. Warning, not an error: a decision can be marked superseded before its replacement is numbered."
           }
         },
         {
@@ -172,7 +172,7 @@
     },
     "sections": {
       "type": "object",
-      "description": "Map of `## ` heading text to its 0-based ordinal. Only the three load-bearing sections are required — `Options Considered` and `Related ADRs` are optional (ADR-0023): 20 of this repo's 22 ADRs carry neither, and requiring them made the validator report 45 section warnings nobody could honestly clear without back-writing deliberation that may never have happened. The ADR template still asks for all five, and /blueprint:adr-validate is the gate that can insist on them for new ADRs. Missing sections WARN rather than block, so a PreToolUse edit to a 2026-01 ADR is never refused. See .claude/rules/hook-block-vs-nudge.md.",
+      "description": "Map of `## ` heading text to its 0-based ordinal. Only the three load-bearing sections are required \u2014 `Options Considered` and `Related ADRs` are RECOMMENDED BUT UNENFORCED (ADR-0023): 20 of this repo's 22 ADRs carry neither, and requiring them made the validator report 45 section warnings nobody could honestly clear without back-writing deliberation that may never have happened. Nothing in the repo currently checks for the two optional sections \u2014 /blueprint:adr-validate validates relationships, reference integrity, numbering and index drift, not sections \u2014 so treat them as a convention this schema deliberately does not police. Missing required sections WARN rather than block, so a PreToolUse edit to a 2026-01 ADR is never refused. See .claude/rules/hook-block-vs-nudge.md.",
       "required": [
         "Context",
         "Decision",
@@ -182,7 +182,7 @@
         "type": "integer"
       },
       "x-blueprint-severity": "warning",
-      "title": "required `## ` section missing — the ADR/PRP template declares it; add it or run the matching validate skill"
+      "title": "required `## ` section missing \u2014 add it (Context, Decision and Consequences are the required set)"
     }
   }
 }

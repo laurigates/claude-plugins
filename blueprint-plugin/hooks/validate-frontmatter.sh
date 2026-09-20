@@ -14,7 +14,7 @@
 #
 # The schema is now the only description. Every rule — required fields, enums,
 # id patterns, required `##` sections, which failures merely warn — lives in
-# schemas/<kind>.schema.json. scripts/tests/test-schema-field-parity.sh fails
+# schemas/<kind>.schema.json. scripts/tests/test-check-schema.sh fails
 # the build if a field list reappears here.
 #
 # Fails OPEN: a missing uv/python/jsonschema is an environment gap, not a

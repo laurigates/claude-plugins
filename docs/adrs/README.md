@@ -69,6 +69,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 - ADR-0015: Adopt Agent Teams and Deprecate Manual Orchestration
 - ADR-0021: Do Not Adopt the Open Knowledge Format (OKF) for Skills
 - ADR-0022: Adapter over Export — Runtime Skill Discovery for Foreign Harnesses
+- ADR-0023: ADR Required Sections Narrowed to Context, Decision, Consequences
 
 ### Performance & Optimization
 - ADR-0016: Extract Deterministic Skill Procedure into Structured-Output Scripts

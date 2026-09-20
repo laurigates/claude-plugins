@@ -172,19 +172,23 @@ The complexity is real and the benefit is redundant with Option 2's mitigation.
 - Less schema pressure toward recording alternatives. New ADRs can now omit
   `Options Considered` without a warning, and the template is only a
   convention.
-- The standard is now split across two surfaces: the schema (floor, enforced)
-  and the template plus `/blueprint:adr-validate` (ceiling, advisory). A reader
-  consulting only one gets an incomplete picture.
-- Prose elsewhere that enumerates the old five-section set — notably
-  `blueprint-plugin/README.md`'s schema table — is now stale until updated.
+- **There is no enforced ceiling.** `Options Considered` and `Related ADRs` are
+  now recommended by convention only. `/blueprint:adr-validate` checks
+  relationships, reference integrity, numbering and index drift — it has never
+  checked sections — and the repo carries no five-section authoring template
+  (`docs/adrs/README.md` §ADR Format documents the three-section Nygard shape).
+  So this ADR removes the floor's lower two rungs without any surface picking
+  them up. Building that ceiling — a section check in `blueprint-adr-validate`,
+  or a real template — is deliberately left as separate work, because adding a
+  new gate is a different decision from narrowing this one.
 
 ### Mitigations
 
 | Issue | Mitigation |
 |-------|------------|
-| Weaker pressure on new ADRs | Template and `/blueprint:adr-validate` keep asking for all five; this ADR models the full shape |
-| Two-surface standard | The schema's `sections` description states the floor/ceiling split explicitly |
-| Stale prose | `blueprint-plugin/README.md`'s schema table (rows for `adr.schema.json` and for the missing-section WARN rationale) still enumerates five and needs the same narrowing — tracked on #2446 |
+| Weaker pressure on new ADRs | Unmitigated by design, and stated plainly above rather than papered over: no surface enforces the two optional sections today. This ADR models the full five-section shape as the convention to imitate |
+| Two-surface standard | The schema's `sections` description says which sections it polices and which it deliberately does not, so a reader of the schema alone is not misled |
+| Stale prose | Fixed in the same commit: `blueprint-plugin/README.md`'s schema table and WARN rationale, `blueprint-plugin/docs/hook-design-decisions.md`'s section table (which listed all five as "P0 - Blocking" — wrong on both counts), and `docs/adrs/README.md`'s index and category lists |
 
 ## Related ADRs
 
