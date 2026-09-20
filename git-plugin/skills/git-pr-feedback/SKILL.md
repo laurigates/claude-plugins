@@ -1,6 +1,6 @@
 ---
 created: 2026-01-30
-modified: 2026-09-02
+modified: 2026-09-20
 reviewed: 2026-09-02
 allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh run view *), Bash(gh run list *), Bash(gh api *), Bash(gh repo view *), Bash(gh issue create *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(git fetch *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Bash(bash *), Read, Edit, Write, Grep, Glob, Task, mcp__github__pull_request_read, mcp__github__add_reply_to_pull_request_comment, mcp__github__pull_request_review_write, mcp__github__issue_write
 args: "[pr-number] [--commit] [--push] [--all] [--dry-run] [--limit N] [--include-automation]"
@@ -278,6 +278,53 @@ If `--commit`/`--push` was not passed, still post replies for questions and refu
 Provide a summary table of feedback addressed, replies posted, threads resolved, and next steps. See [REFERENCE.md](REFERENCE.md) for the report template.
 
 ---
+
+## Workflow harness (template)
+
+`workflows/pr-feedback-wave.workflow.js` ships beside this skill and covers the
+`--all` path only. **It is a TEMPLATE to adapt, not a script to run verbatim.**
+Read it, then rewrite it for the work in front of you.
+
+**Adapt freely:** the per-PR and synthesis agent prompts, the default wave
+width, the `--include-automation` and `--dry-run` handling, the ordering
+heuristic inside the finalise plan, and any forge-specific commands.
+
+**Preserve across any adaptation:** (a) the loop bound comes from
+[`scripts/list-actionable-prs.sh`](scripts/list-actionable-prs.sh)'s JSON array,
+passed in as `args.prs`, never from a prose "for each open PR" — and the
+concurrency ceiling stays the caller's `--limit N`, because a harness that picks
+its own width silently overrides the flag that exists to dodge the burst rate
+limit; (b) `PR_RESULT_SCHEMA` is Step 1A.6's return contract made **enforced**
+rather than requested — the closed `fix|accept|adapt|defer|answer|decline`
+action enum and the boolean `resolve` make a vague "handled it" structurally
+impossible, and a null agent becomes an explicit `PARSE_ERROR` row instead of a
+silent pass; (c) the Finalise plan is a barrier — push, reply, resolve and
+re-request all draw on one GitHub rate-limit pool against one remote, so the
+ORDER is a cross-PR fact no single per-PR agent could know, and Step 7's rollup
+has to see every PR at once. Two consequences of (c) that are equally
+non-negotiable: the fanned-out agents **commit but never push**, and each
+result's status is a pure function of the returned contract (null /
+`blockers[]` / `commits[]`), never a judgement an agent re-derives.
+
+**Skip the harness when:** exactly one PR is actionable — the modal case, which
+is the single-PR path in Steps 1–7 — or `--dry-run` is set; that is a linear
+pass and the harness is pure overhead (the template aborts below two). The
+steps above remain the authoritative description of *what* each stage must
+produce; the harness only fixes *how* the work is split.
+
+Two clauses this template carries. Both are unconditional here — every
+fanned-out unit runs in its own worktree, and this skill's entire output is a
+forge mutation:
+
+> Never `Workflow({resumeFromRunId})` to retry a few failed worktree agents — a
+> resume re-runs agents that already succeeded and opens duplicate PRs (#1868).
+> Re-dispatch the failed units fresh and sequentially after checking
+> `gh pr list --head <branch> --state all --json number,state`.
+
+> Push, PR creation, replies and thread resolution happen **only** in the single
+> sequential finalise stage, never inside a fanned-out agent. Here that stage is
+> Step 1A.7, which the harness does not perform: it returns an ordered
+> `finalisePlan` for the orchestrator to apply one PR at a time.
 
 ## Agentic Optimizations
 
