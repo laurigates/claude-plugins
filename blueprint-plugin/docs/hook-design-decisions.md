@@ -113,13 +113,21 @@ Extended status set:
 | `Superseded` | Replaced by newer ADR |
 | `Deprecated` | No longer recommended |
 
-### Required Markdown Sections (P0 - Blocking)
+### Markdown Sections (WARN, never blocking)
+
+Required — a missing one emits `SEVERITY=WARN`, not a block
+(`.claude/rules/hook-block-vs-nudge.md`):
 
 | Section | Purpose |
 |---------|---------|
 | `## Context` | Problem and background |
 | `## Decision` | The architecture decision |
 | `## Consequences` | Impact of the decision |
+
+Recommended but **unenforced** since ADR-0023 — nothing checks for these:
+
+| Section | Purpose |
+|---------|---------|
 | `## Options Considered` | Alternatives evaluated |
 | `## Related ADRs` | Links to related decisions |
 

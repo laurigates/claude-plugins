@@ -23,7 +23,7 @@ them in sync, and they drifted:
   * Nothing referenced schemas/adr.schema.json at all. It was dead text.
 
 Now the schema is the only description. The hooks declare no field list; they
-call this script. scripts/tests/test-schema-field-parity.sh fails the build if
+call this script. scripts/tests/test-check-schema.sh fails the build if
 a hook grows one back.
 
 WHAT IT VALIDATES

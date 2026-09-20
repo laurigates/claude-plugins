@@ -64,8 +64,8 @@ run() { # <kind> <file>
     uv run --quiet --script "$CHECKER" --kind "$1" --file "$2" 2>&1
 }
 
-has_issue() { # <output> <substring>
-    printf '%s\n' "$1" | grep -q -- "$2"
+has_issue() { # <output> <substring> -- literal, never a regex
+    printf '%s\n' "$1" | grep -qF -- "$2"
 }
 
 severity_of() { # <output> <substring> -> the SEVERITY= token on the matching row
@@ -192,9 +192,38 @@ has_issue "$out" "frontmatter_missing" \
 # ==========================================================================
 # Severity lives in the schema, not the hook
 # ==========================================================================
+# A `sed` that matches nothing still exits 0, so a renamed or absent heading
+# would silently produce a fixture identical to the input and the assertion
+# below would pass against a validator that checks nothing. `drop_section`
+# deletes a `## ` heading and its body up to the next `## ` (no `+1d` guess
+# about body length) and FAILS LOUDLY if the heading was not there.
+drop_section() { # <infile> <outfile> <heading...>
+    local in="$1" out="$2"; shift 2
+    cp "$in" "$out"
+    for h in "$@"; do
+        grep -qxF "## $h" "$out" || { notok "fixture: '$in' has no '## $h' to drop"; return 1; }
+        awk -v h="## $h" '
+            $0 == h { drop = 1; next }
+            /^## / { drop = 0 }
+            !drop
+        ' "$out" > "$out.tmp" && mv "$out.tmp" "$out"
+    done
+}
+
+section_count() { grep -cE '^## ' "$1"; }
+
+# good.md is the five-section shape every fixture below is derived from. If it
+# ever stops being that, the derived fixtures mean something else.
+[ "$(section_count "$WORK/good.md")" = "5" ] \
+    && ok "fixture integrity: good.md carries all five sections" \
+    || notok "fixture integrity: good.md must have 5 sections -- got $(section_count "$WORK/good.md")"
+
 # Consequences (not Related ADRs) — ADR-0023 narrowed the required set to
 # Context/Decision/Consequences, so a dropped `## Related ADRs` is now clean.
-sed '/^## Consequences$/,+1d' "$WORK/good.md" > "$WORK/nosection.md"
+drop_section "$WORK/good.md" "$WORK/nosection.md" "Consequences"
+[ "$(section_count "$WORK/nosection.md")" = "4" ] \
+    && ok "fixture integrity: nosection.md dropped exactly one section" \
+    || notok "fixture integrity: nosection.md must have 4 sections -- got $(section_count "$WORK/nosection.md")"
 out="$(run adr "$WORK/nosection.md")"
 [ "$(severity_of "$out" "/sections")" = "WARN" ] \
     && ok "severity: a missing required section WARNs (hook-block-vs-nudge)" \
@@ -202,8 +231,10 @@ out="$(run adr "$WORK/nosection.md")"
 
 # ADR-0023: the optional pair must NOT warn. Asserting both polarities keeps
 # this from passing against a schema that requires nothing at all.
-sed -e '/^## Options Considered$/,+1d' -e '/^## Related ADRs$/,+1d' \
-    "$WORK/good.md" > "$WORK/threesections.md"
+drop_section "$WORK/good.md" "$WORK/threesections.md" "Options Considered" "Related ADRs"
+[ "$(section_count "$WORK/threesections.md")" = "3" ] \
+    && ok "fixture integrity: threesections.md is exactly the required floor" \
+    || notok "fixture integrity: threesections.md must have 3 sections -- got $(section_count "$WORK/threesections.md")"
 out="$(run adr "$WORK/threesections.md")"
 has_issue "$out" "STATUS=OK" \
     && ok "ADR-0023: Context/Decision/Consequences alone validates clean" \
