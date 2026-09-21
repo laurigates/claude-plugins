@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.12.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.11.1...tools-plugin-v2.12.0) (2026-09-21)
+
+
+### Features
+
+* **tools-plugin:** add zsh-gotchas skill ([#2709](https://github.com/laurigates/claude-plugins/issues/2709)) ([96bb075](https://github.com/laurigates/claude-plugins/commit/96bb075500cbb87b92bd1d57de180ecd2aed6122))
+
 ## [2.11.1](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.11.0...tools-plugin-v2.11.1) (2026-09-06)
 
 
