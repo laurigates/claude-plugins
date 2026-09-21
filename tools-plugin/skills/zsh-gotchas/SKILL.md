@@ -25,8 +25,8 @@ real answer about the world. Every one below was diagnosed the wrong way first.
 | `$2` empty after `set -- $spec`; tool prints its usage text | zsh does not word-split | [3](#3-zsh-does-not-word-split-an-unquoted-parameter) |
 | `command not found` for a tool that is installed | `path` is tied to `PATH` | [4](#4-path-is-not-a-free-variable-name) |
 
-Sibling: zsh-vs-POSIX pattern expansion and extended glob, which is scoped to
-`.zsh` / `zshrc` files rather than to every command.
+Out of scope: zsh-vs-POSIX pattern expansion and extended glob. Those bite when
+writing `.zsh` / `zshrc` files, not on every command, and are not covered here.
 
 ## When to Use This Skill
 
