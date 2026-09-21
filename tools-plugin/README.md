@@ -36,6 +36,7 @@ Collection of general-purpose development utilities for file finding, text searc
 | Skill | Description |
 |-------|-------------|
 | `shell-expert` | Shell scripting and bash patterns |
+| `zsh-gotchas` | Zsh expansions that silently rewrite a command — `$VAR:word` modifiers, leading `=`, no word splitting, `path` tied to `PATH` |
 | `justfile-expert` | Just command runner and recipe development |
 | `cli-smoke-recipes` | Advisory pattern for exposing transforming modules via CLI plus a bulk-smoke justfile recipe — decoders, codecs, parsers, formatters |
 | `imagemagick-conversion` | Image conversion and manipulation |
