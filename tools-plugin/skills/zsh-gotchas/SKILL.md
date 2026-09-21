@@ -1,6 +1,6 @@
 ---
 name: zsh-gotchas
-description: "Zsh expansions that silently rewrite a command — $VAR:word modifiers, a leading =, no word splitting, `path` tied to PATH. Use when a zsh one-liner returns an empty or wrong result, a later command in a chain printed nothing, positional args are empty, or `command not found` names an installed tool."
+description: "Four zsh expansions that silently rewrite a command — $VAR:word modifiers, a leading =, no word splitting, `path` tied to PATH. Use when a zsh one-liner returns a wrong or empty result, or `command not found` names an installed tool."
 allowed-tools: Bash, Read
 created: 2026-09-21
 modified: 2026-09-21
@@ -27,6 +27,18 @@ real answer about the world. Every one below was diagnosed the wrong way first.
 
 Sibling: zsh-vs-POSIX pattern expansion and extended glob, which is scoped to
 `.zsh` / `zshrc` files rather than to every command.
+
+## When to Use This Skill
+
+Reach for this when a zsh command **ran and returned something wrong**, not when
+you are writing shell code. The trigger is a result that does not match the
+command you typed — an unexpected 404, an empty positional, a missing chunk of
+output, a "missing" tool that is installed.
+
+`tools-plugin:shell-expert` is the sibling to use instead when the task is
+*authoring* — writing a script, choosing portable constructs, structuring
+pipes. It covers bash/zsh/POSIX style; this skill covers the four runtime
+expansions that make a correct-looking zsh command do something else.
 
 ## 1. `$VAR:word` Is a Modifier, Not a Colon After a Variable
 
