@@ -1,6 +1,6 @@
 ---
 name: zsh-gotchas
-description: "Four zsh expansions that silently rewrite a command — $VAR:word modifiers, a leading =, no word splitting, `path` tied to PATH. Use when a zsh one-liner returns a wrong or empty result, or `command not found` names an installed tool."
+description: "Four zsh expansions that silently rewrite a command: $VAR:word modifiers, a leading =, no word splitting, `path` tied to PATH. Use when a zsh one-liner gives a wrong result or a tool seems missing."
 allowed-tools: Bash, Read
 created: 2026-09-21
 modified: 2026-09-21
@@ -30,15 +30,15 @@ Sibling: zsh-vs-POSIX pattern expansion and extended glob, which is scoped to
 
 ## When to Use This Skill
 
-Reach for this when a zsh command **ran and returned something wrong**, not when
-you are writing shell code. The trigger is a result that does not match the
-command you typed — an unexpected 404, an empty positional, a missing chunk of
-output, a "missing" tool that is installed.
+| Use this skill when... | Use `shell-expert` instead when... |
+|---|---|
+| A zsh command ran and returned a result that does not match what you typed | Writing a shell script, function, or pipeline from scratch |
+| An unexpected 404, an empty positional, or a missing chunk of output from a chain | Choosing portable constructs across bash / zsh / POSIX |
+| `command not found` names a tool you know is installed | Structuring error handling, `set` flags, or CLI argument parsing |
+| A bash-tested snippet behaves differently once run through the Bash tool | The question is shell *style* rather than a wrong runtime result |
 
-`tools-plugin:shell-expert` is the sibling to use instead when the task is
-*authoring* — writing a script, choosing portable constructs, structuring
-pipes. It covers bash/zsh/POSIX style; this skill covers the four runtime
-expansions that make a correct-looking zsh command do something else.
+The split is runtime versus authoring: this skill covers four expansions that
+make a correct-looking zsh command do something else, three of them silently.
 
 ## 1. `$VAR:word` Is a Modifier, Not a Colon After a Variable
 
