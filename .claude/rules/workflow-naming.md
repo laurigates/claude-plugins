@@ -25,7 +25,7 @@ Every workflow's `name:` follows:
 - **Target** — kebab-case identifier (script, plugin, target name) when relevant.
 - **Quote the value** — colons must be quoted in YAML scalars: `name: "Plugin: Lint skills"`.
 
-A genuinely standalone workflow with no domain peers (e.g. `Renovate`) may go un-prefixed. Bias toward picking a domain — a one-off becomes a peer the moment a sibling workflow lands.
+A genuinely standalone workflow with no domain peers may go un-prefixed. Bias toward picking a domain — a one-off becomes a peer the moment a sibling workflow lands. (This repo has no un-prefixed workflow today; `Renovate` was the last one, removed with the workflow itself.)
 
 ## Domains in this repo
 
@@ -36,7 +36,7 @@ A genuinely standalone workflow with no domain peers (e.g. `Renovate`) may go un
 | `Release:` | release-please ecosystem — version bumps, changelog, release-PR doc audit, conflict repair |
 | `PR:` | Cross-cutting PR governance — conflict resolution, conventional-commit enforcement |
 | `Auto-fix:` | Autonomous CI failure remediation triggered by `workflow_run` |
-| _(none)_ | Standalones with no obvious domain peer (e.g. `Renovate`) |
+| _(none)_ | Standalones with no obvious domain peer — none in this repo today |
 
 The canonical list of current names lives in `.github/workflows/README.md`. Update both that file and any affected `workflow_run.workflows` references when a `name:` changes.
 
