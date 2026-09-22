@@ -109,6 +109,58 @@ echo "$TOOL"
 EOF
 assert_lint "TOOL (not TOOL_NAME) variable is an error" "1 0 1" "$d6"
 
+# 7-11. Check 5: portable in-place sed. Each single-platform spelling fails on
+#    the other platform WITHOUT editing, so both are errors; the attached-suffix
+#    form and the two documented exemptions must stay clean.
+
+# 7. BSD-only empty suffix -> ERROR (GNU sed would exit 2 without editing).
+d7="$WORK/sed-bsd"; mkdir -p "$d7"
+cat > "$d7/bsd.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+sed -i '' "s/a/b/" f.txt
+EOF
+assert_lint "BSD-only in-place sed is an error" "1 0 1" "$d7"
+
+# 8. GNU-only detached script -> ERROR (BSD sed eats the script as a suffix).
+d8="$WORK/sed-gnu"; mkdir -p "$d8"
+cat > "$d8/gnu.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+sed -i "s/a/b/" f.txt
+EOF
+assert_lint "GNU-only in-place sed is an error" "1 0 1" "$d8"
+
+# 9. Attached suffix -> clean. This is the spelling both implementations accept.
+d9="$WORK/sed-ok"; mkdir -p "$d9"
+cat > "$d9/ok.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+sed -i.bak "s/a/b/" f.txt
+rm -f f.txt.bak
+EOF
+assert_lint "attached-suffix in-place sed passes clean" "0 0 0" "$d9"
+
+# 10. A try-GNU-then-fall-back-to-BSD pair contains BOTH spellings and is
+#     nonetheless portable; the portable-sed-ok tag is its escape hatch.
+d10="$WORK/sed-marked"; mkdir -p "$d10"
+cat > "$d10/marked.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+sed -i "s/a/b/" f 2>/dev/null || sed -i '' "s/a/b/" f  # portable-sed-ok
+EOF
+assert_lint "portable-sed-ok exempts a deliberate fallback pair" "0 0 0" "$d10"
+
+# 11. test-*.sh carries both spellings as fixture STRINGS (data, not commands),
+#     so the whole file is skipped for this check.
+d11="$WORK/sed-fixture"; mkdir -p "$d11"
+cat > "$d11/test-thing.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+sed -i '' "s/a/b/" f.txt
+EOF
+assert_lint "test-*.sh fixtures are skipped by the sed check" "0 0 0" "$d11"
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ] && exit 0 || exit 1
