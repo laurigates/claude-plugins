@@ -1,7 +1,7 @@
 ---
 created: 2026-04-30
-modified: 2026-04-30
-reviewed: 2026-04-30
+modified: 2026-09-22
+reviewed: 2026-09-22
 name: bookmarks
 description: "Obsidian bookmarks: list and add file/folder/heading/saved-search/URL bookmarks. Use when starring or saving notes for quick access."
 user-invocable: false
@@ -24,7 +24,7 @@ external URLs.
 
 ## Prerequisites
 
-- Obsidian desktop v1.12.4+ with CLI enabled
+- Obsidian desktop 1.12.7+ installer with CLI enabled
 - Obsidian must be running
 - Core **Bookmarks** plugin enabled
 

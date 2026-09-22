@@ -1,7 +1,7 @@
 ---
 created: 2026-03-04
-modified: 2026-05-09
-reviewed: 2026-04-30
+modified: 2026-09-22
+reviewed: 2026-09-22
 name: publish-sync
 description: "Obsidian Publish and Sync operations. Use when publishing notes, managing change sets, pausing/resuming sync, or recovering sync-deleted files."
 user-invocable: false
@@ -24,7 +24,7 @@ Manage Obsidian Publish and Obsidian Sync services from the CLI.
 
 ## Prerequisites
 
-- Obsidian desktop v1.12.4+ with CLI enabled
+- Obsidian desktop 1.12.7+ installer with CLI enabled
 - Obsidian must be running
 - Active Obsidian Publish and/or Sync subscription for the respective commands
 

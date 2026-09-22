@@ -1,7 +1,7 @@
 ---
 created: 2026-03-04
-modified: 2026-05-09
-reviewed: 2026-04-30
+modified: 2026-09-22
+reviewed: 2026-09-22
 name: vault-files
 description: "Obsidian vault file ops via CLI: read, create, append, move, rename, delete, listings, daily/random notes. Use when managing vault files."
 user-invocable: false
@@ -24,7 +24,7 @@ Comprehensive guidance for managing files, folders, and daily notes in Obsidian 
 
 ## Prerequisites
 
-- Obsidian desktop v1.12.4+ installed
+- Obsidian desktop 1.12.7+ installer
 - CLI enabled in **Settings → General → Command line interface**
 - Obsidian must be running (CLI communicates with the running instance)
 
@@ -56,9 +56,12 @@ obsidian files ext=canvas
 # Total note count
 obsidian files total
 
-# All folders, or a tree view
+# All folders, or just those under a parent
 obsidian folders
-obsidian folders format=tree
+obsidian folders folder=Projects
+
+# Folder count
+obsidian folders total
 ```
 
 ### File Info
@@ -202,6 +205,9 @@ obsidian random:read folder=Inbox
 
 # Unique note creator (Zettelkasten-style)
 obsidian unique name="Idea" content="# Spark\n\n" open
+
+# Open the new unique note in a split or window
+obsidian unique name="Idea" paneType=split open
 ```
 
 ## Web Viewer
@@ -236,7 +242,6 @@ obsidian restart
 |------------------|-------------|
 | `format=json` | JSON output for machine parsing |
 | `format=csv`, `format=tsv` | Spreadsheet-friendly outputs |
-| `format=tree` | Tree view (folders, outline) |
 | `--copy` | **Universal**: copy command output to clipboard |
 | `overwrite` | Replace existing file on `create` |
 | `permanent` | Irreversible delete (skip trash) |
@@ -253,7 +258,7 @@ obsidian restart
 | List files (structured) | `obsidian files format=json` |
 | Filter by extension | `obsidian files ext=md` |
 | File count | `obsidian files total` |
-| Folder tree | `obsidian folders format=tree` |
+| Folders under a parent | `obsidian folders folder=X` |
 | Read note content | `obsidian read file="Name"` |
 | Read & copy to clipboard | `obsidian read file="Name" --copy` |
 | Quick capture to daily | `obsidian daily:append content="text"` |

@@ -1,7 +1,7 @@
 ---
 created: 2026-04-30
-modified: 2026-05-09
-reviewed: 2026-04-30
+modified: 2026-09-22
+reviewed: 2026-09-22
 name: vault-management
 description: "Obsidian vault inspection and cross-vault routing via `vault=` prefix. Use when checking vault info (path, size, file count) or targeting a non-active vault."
 user-invocable: false
@@ -25,7 +25,7 @@ both, scoped to a single command invocation.
 
 ## Prerequisites
 
-- Obsidian desktop v1.12.4+ with CLI enabled
+- Obsidian desktop 1.12.7+ installer with CLI enabled
 - Obsidian must be running
 
 ## Vault Info

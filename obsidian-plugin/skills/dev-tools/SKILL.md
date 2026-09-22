@@ -1,7 +1,7 @@
 ---
 created: 2026-04-30
-modified: 2026-05-09
-reviewed: 2026-04-30
+modified: 2026-09-22
+reviewed: 2026-09-22
 name: dev-tools
 description: "Obsidian plugin/theme dev: DevTools, CDP, JS eval, console/error buffers, CSS/DOM inspection, mobile emulation, screenshots. Use when debugging the app."
 user-invocable: false
@@ -26,7 +26,7 @@ point for agentic plugin testing.
 
 ## Prerequisites
 
-- Obsidian desktop v1.12.4+ with CLI enabled
+- Obsidian desktop 1.12.7+ installer with CLI enabled
 - Obsidian must be running
 - For `dev:debug` and `dev:cdp`: Chrome DevTools Protocol available
   (Electron-based Obsidian — true on desktop)
