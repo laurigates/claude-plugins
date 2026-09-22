@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.6](https://github.com/laurigates/claude-plugins/compare/obsidian-plugin-v1.3.5...obsidian-plugin-v1.3.6) (2026-09-22)
+
+
+### Documentation
+
+* **obsidian-plugin:** sync CLI skills with upstream doc 884d3f36a30a ([#2717](https://github.com/laurigates/claude-plugins/issues/2717)) ([b05c6bb](https://github.com/laurigates/claude-plugins/commit/b05c6bbd55833b5fea8ff23dd1b721c9d4788c42))
+
 ## [1.3.5](https://github.com/laurigates/claude-plugins/compare/obsidian-plugin-v1.3.4...obsidian-plugin-v1.3.5) (2026-06-28)
 
 
