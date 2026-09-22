@@ -1,6 +1,6 @@
 {
-  "lastCheckedVersion": "2.1.273",
-  "lastCheckedDate": "2026-09-16",
+  "lastCheckedVersion": "2.1.278",
+  "lastCheckedDate": "2026-09-21",
   "rewindNote": "Rewound from 2.1.257 to 2.1.185 on 2026-09-03. The excerpt is sliced from lastCheckedVersion forward, so the pointer must name the last version a review actually covered. 2.1.257 was written by the Fable 5.1 adaptation sweep (docs/audits/fable-5.1-adaptation-2026-09-02.md), whose declared window was 2.1.232-2.1.257 -- it advanced the pointer past 46 versions it never read. The automated changelog review had already gone silent after 2.1.185: 22 successful runs, 13 consecutive filing nothing, last tracking issue #1733 (2026-06-21). The blind spot's confirmed casualty was the subagent nesting ceiling in .claude/rules/agent-development.md, which instructed 5 levels after 2.1.217 disabled nesting by default and 2.1.219 set it to 3. CORRECTED 2026-09-16: that line was already fixed on 2026-09-02 (the file now carries a depth-3 default with a per-version history table); the fix and this note crossed in flight, so the 2.1.241 entry's claim that the rule 'still claims 5 levels' was stale when written. The rewind itself was still correct -- the unread ranges were real, and reviewing them found 6 further stale assertions the pointer had hidden.",
   "knownUnreviewedRanges": [
     {
@@ -30,6 +30,38 @@
   ],
   "changelogUrl": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
   "reviewedChanges": [
+    {
+      "version": "2.1.278",
+      "date": "2026-09-21",
+      "windowed": false,
+      "coveredRange": "2.1.274-2.1.278",
+      "relevantChanges": [
+        "HIGH/REMOVAL: the deprecated TaskOutput tool was removed (2.1.278); Claude reads a background task's output file with Read, and the taskOutputMaxChars setting plus TASK_MAX_OUTPUT_LENGTH no longer have any effect. The automated deprecated-identifier detector handed this run an EMPTY list even though TaskOutput is still named in agent-development.md, agent-patterns-plugin:agent-teams, hooks-plugin/hooks/bash-antipatterns.sh (+ its test), agents-plugin/agents/debug.md and test.md, scripts/export-pi-agents.py (+ its test) and docs/pi-export.md - the claude-plugins#1638 miss class recurring",
+        "HIGH: auto mode for Claude API and Enterprise users, and on Bedrock, Vertex, Foundry and gateways, now defaults to the server-side classifier, which does not charge for classifier overhead; CLAUDE_CODE_AUTO_MODE_SERVER=0 opts out on Bedrock/Vertex/Foundry/gateways, a billed fallback warns, and /status gained an 'Auto mode server' row (2.1.278)",
+        "HIGH: AGENTS.md support - in a project with no CLAUDE.md, Claude Code reads AGENTS.md instead; switchable under 'Project instructions' in /config (not yet on Bedrock, Vertex or Foundry) (2.1.277)",
+        "HIGH: a sandbox.excludedCommands glob no longer exempts an entire compound Bash command when only one part matched - every part must now match (2.1.278)",
+        "HIGH: subagent results now reach the main agent under a header marking them as subagent output, with the result indented, so text in a subagent's result cannot pass as the session's own instructions (2.1.278); workflow scripts' computed agent() prompts on Bedrock/Vertex/Foundry are likewise framed as script-authored text (2.1.278)",
+        "HIGH: plugins installed from an npm source are now fetched with npm pack --ignore-scripts and integrity-verified, so a package's install scripts no longer run (2.1.276)",
+        "HIGH/MCP: Bedrock, Vertex, Foundry and telemetry-disabled installs now use the v2 MCP client and MCP 2026-07-28 negotiation with direct HTTP servers by default (opt out MCP_SDK_GENERATION=v1 or MCP_PROTOCOL_NEGOTIATION=legacy); \"type\": \"sdk\" MCP entries in .mcp.json, settings, plugins and agent files are now skipped with a warning (2.1.274)",
+        "HIGH: one malformed strictKnownMarketplaces or blockedMarketplaces entry was silently disabling the whole enterprise marketplace policy - fixed (2.1.278)",
+        "Bash permission checks now ask for commands that loop over or assign certain special shell variables, and worktree-isolated sessions refuse certain nested shell expansions (2.1.274); /update-config no longer writes Write(path) rules, which file permission checks don't match, and writes Edit(path) instead (2.1.276) - reinforces the 2.1.210 Write/NotebookEdit/Glob path-rule deprecation",
+        "SubagentStop hooks with a specific matcher were firing for every stopping subagent whose agent type was empty - fixed (2.1.276); Stop prompt hooks no longer re-send their whole prompt on every block, naming the condition with a 500-character label instead (2.1.274); a SessionStart hook printing output made a post-/clear continuation drop part of its first message and miss the prompt cache - fixed (2.1.278)",
+        "Project skills from the main repository were not loading in --worktree sessions when .claude/skills is untracked - fixed (2.1.278); /plugin Installed and /skills crashed on a skill named like a built-in Object property such as constructor or toString - fixed (2.1.278)",
+        "claude.ai account skills and plugins now sync to terminal sessions signed in with that account; opt out with syncClaudeAiSkills: false / syncClaudeAiPlugins: false (2.1.275). --forward-subagent-text no longer drops messages of subagents spawned by a context: fork skill (2.1.275)",
+        "Plugin bookkeeping: official-marketplace plugins were recorded without their commit in installed_plugins.json and kept the old commit after a pinned-commit update - fixed (2.1.278); reinstalling a version another session was using no longer breaks the installed copy (2.1.278); plugin/marketplace clones leave Git LFS files as pointers (2.1.274); /plugin install <plugin> --marketplace <source> added (2.1.275)",
+        "Sandbox/shell: $TMPDIR expanded empty in Bash commands running outside the sandbox while sandboxing is enabled - fixed (2.1.278); sandboxed Bash on Linux reported exit code 0 for failed commands under zsh - fixed (2.1.276); sandboxed commands could not write to project directories named hooks/ or config/ - fixed (2.1.276)",
+        "CLAUDE_CODE_MCP_STARTUP_WAIT_MS bounds how long the first non-interactive turn waits for connecting MCP servers (0 = don't wait) (2.1.274); Streamable HTTP MCP tool calls now honor a per-server timeout longer than ~5 minutes; a 403 insufficient_scope now names the missing permissions instead of reporting an expired sign-in (2.1.274)",
+        "/code-review now uses leaner inline review prompts for every model with no tuned settings of its own instead of spawning many review subagents (2.1.274); /ultrareview refuses in non-interactive sessions when the repository has no base branch or shared history (2.1.278)",
+        "Subagents with model: \"opus\" on Bedrock/Vertex/Foundry left the session's model when its id has no recognizable family - fixed (2.1.274); resumed subagents and teammates re-rendered their MCP tool definitions, breaking prompt caching - fixed (2.1.278); safety checks improved before removing an agent worktree containing submodule checkouts (2.1.274)",
+        "2.1.276 is a single-line regression fix for ANTHROPIC_BASE_URL proxies; the remaining bulk of the window is VS Code, Claude Tag, Claude Code on the web, TUI rendering and crash fixes with no rule impact"
+      ],
+      "actionsRequired": [
+        "See issue #2712 for the rule update plan (no rule files were edited by this triage run)",
+        "Issue #2712 groups the bullets by candidate file: agent-development.md, hooks-reference.md, prompt-agent-hooks.md, agentic-permissions.md, auto-mode.md, skill-development.md, plugin-structure.md, sandbox-guidance.md, CLAUDE.md / workflow-model-effort.md, plus the MCP-facing skills",
+        "TaskOutput removal is the top follow-up: it is still referenced in eight non-self-referential files listed in #2712",
+        "The laurigates assignee could not be applied to #2712 by this run (token lacked replaceActorsForAssignable) - set it by hand. Labels changelog-review/maintenance were applied successfully"
+      ]
+    },
     {
       "version": "2.1.273",
       "date": "2026-09-16",
