@@ -6,6 +6,8 @@
 # 2. Error handling: must have set -euo pipefail (or documented variant)
 # 3. Block function: hook scripts using exit 2 should use block() function
 # 4. Variable naming: TOOL_NAME not TOOL for tool name extraction
+# 5. Portable in-place sed: neither the BSD-only nor the GNU-only spelling
+#    of an in-place edit, since these scripts run on macOS and on CI runners
 #
 # Usage: bash scripts/lint-shell-scripts.sh [--fix] [ROOT_DIR]
 #        --fix      auto-fix shebang issues (other issues require manual fixes)
@@ -74,7 +76,10 @@ for script in $SCRIPTS; do
     SHEBANG=$(head -1 "$script")
     if [ "$SHEBANG" = "#!/bin/bash" ]; then
         if [ "$FIX_MODE" = "--fix" ]; then
-            sed -i '1s|^#!/bin/bash|#!/usr/bin/env bash|' "$script"
+            # Suffix ATTACHED: the detached form is GNU-only and aborts on
+            # macOS, so --fix never worked there (Check 5 now catches this).
+            sed -i.bak '1s|^#!/bin/bash|#!/usr/bin/env bash|' "$script"
+            rm -f "$script.bak"
             info "$REL_PATH: Fixed shebang"
         else
             error "$REL_PATH: Uses #!/bin/bash instead of #!/usr/bin/env bash"
@@ -114,6 +119,35 @@ for script in $SCRIPTS; do
     # --- Check 4: Variable naming ---
     if grep -qE '^\s*TOOL=\$\(.*jq.*tool_name' "$script"; then
         error "$REL_PATH: Uses 'TOOL' variable — rename to 'TOOL_NAME'"
+    fi
+
+    # --- Check 5: Portable in-place sed ---
+    # The two single-platform spellings of an in-place edit, each of which
+    # fails on the other platform WITHOUT editing anything:
+    #
+    #   BSD-only   empty suffix       GNU parses it as the script, then reads
+    #                                 the real script as a filename -> exit 2
+    #   GNU-only   detached script    BSD consumes the script as the backup
+    #                                 suffix, then reads the file as the script
+    #
+    # Attaching the suffix is the only form both accept. Measured on bsdtar-era
+    # macOS sed and GNU sed 4.9. These scripts run on macOS AND on ubuntu CI
+    # runners, so either single-platform spelling is a latent break.
+    #
+    # Stripped before matching: full-line comments, and any line tagged
+    # portable-sed-ok — the escape hatch for a deliberate try-GNU-then-fall-
+    # back-to-BSD pair, which is portable despite containing both spellings.
+    #
+    # test-*.sh is skipped wholesale: this repo's hook tests carry both
+    # spellings as fixture STRINGS, which are data rather than commands.
+    if ! echo "$REL_PATH" | grep -qE '(^|/)test-[^/]*\.sh$'; then
+        SED_CODE=$(grep -vE '^[[:space:]]*#' "$script" | grep -v 'portable-sed-ok' || true)
+        if echo "$SED_CODE" | grep -qE "sed( +-[a-zA-Z.]+)* +-i +''"; then
+            error "$REL_PATH: BSD-only in-place sed (empty suffix) — GNU sed exits 2 without editing. Attach the suffix: sed -i.bak ... then rm the backup"
+        fi
+        if echo "$SED_CODE" | grep -qE "sed( +-[a-zA-Z.]+)* +-i +['\"][^'\"]"; then
+            error "$REL_PATH: GNU-only in-place sed (detached script) — BSD sed eats the script as a backup suffix. Attach the suffix: sed -i.bak ... then rm the backup"
+        fi
     fi
 done
 
