@@ -1,7 +1,7 @@
 ---
 created: 2026-04-30
-modified: 2026-05-09
-reviewed: 2026-04-30
+modified: 2026-09-22
+reviewed: 2026-09-22
 name: command-palette
 description: "Run, list, and inspect Obsidian commands and hotkeys from the CLI. Use when triggering a command, enumerating commands, or checking hotkey bindings."
 user-invocable: false
@@ -25,7 +25,7 @@ plugin command becomes scriptable without writing JavaScript.
 
 ## Prerequisites
 
-- Obsidian desktop v1.12.4+ with CLI enabled
+- Obsidian desktop 1.12.7+ installer with CLI enabled
 - Obsidian must be running
 
 ## List Commands

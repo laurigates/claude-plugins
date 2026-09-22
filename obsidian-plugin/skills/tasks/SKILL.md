@@ -1,9 +1,9 @@
 ---
 created: 2026-03-04
-modified: 2026-04-25
-reviewed: 2026-04-25
+modified: 2026-09-22
+reviewed: 2026-09-22
 name: tasks
-description: "Obsidian tasks via CLI: list open tasks, create tasks, mark complete. Use when user mentions Obsidian tasks, todos, checklists, or completion."
+description: "Obsidian tasks via CLI: list open tasks, filter by file/status, toggle or complete checklist items. Use when user mentions Obsidian tasks, todos, or checklists."
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
@@ -14,71 +14,122 @@ allowed-tools: Bash, Read, Grep, Glob
 
 | Use this skill when... | Use the alternative instead when... |
 |---|---|
-| Listing open `- [ ]` tasks across the vault, creating tasks, or marking tasks complete | Editing arbitrary note content rather than checklist lines — use `vault-files` |
+| Listing open `- [ ]` tasks across the vault, or toggling/completing them | Editing arbitrary note content rather than checklist lines — use `vault-files` |
 | Filing a task on a daily note via the running Obsidian CLI | Tracking work in `taskwarrior` outside Obsidian — use a `taskwarrior-plugin` skill |
 | Verifying which tasks Obsidian itself indexes as open | Searching for arbitrary text patterns including non-task content — use `search-discovery` |
 
-List, create, and complete tasks across the Obsidian vault using the official CLI.
+List, filter, and update tasks across the Obsidian vault using the official CLI.
 
 ## Prerequisites
 
-- Obsidian desktop v1.12.4+ with CLI enabled
+- Obsidian desktop 1.12.7+ installer with CLI enabled
 - Obsidian must be running
 
-## When to Use
+## The Two Commands
 
-Use this skill automatically when:
-- User wants to list open tasks from their vault
-- User needs to create new tasks in notes
-- User wants to mark tasks as complete
-- User asks about todos or checklists in Obsidian
+The CLI exposes exactly two task commands. There is no create command —
+tasks are **content**, so you add one by appending a `- [ ]` line with
+`append` / `daily:append` (see `vault-files`).
 
-## Core Operations
+| Command | Purpose |
+|---------|---------|
+| `tasks` | List / filter / count tasks |
+| `task` | Show or update **one** task, addressed by location |
 
-### List Tasks
+## List Tasks
 
 ```bash
-# All open tasks across vault
+# All tasks in the vault
 obsidian tasks
 
-# JSON output for parsing
+# Incomplete only / completed only
+obsidian tasks todo
+obsidian tasks done
+
+# Scope to a file
+obsidian tasks file=Recipe
+obsidian tasks path="Projects/Sprint.md"
+
+# Scope to the active file or today's daily note
+obsidian tasks active
+obsidian tasks daily
+
+# Counts instead of rows
+obsidian tasks total
+obsidian tasks daily total
+
+# Group by file with line numbers (the agentic default —
+# gives you the path:line that `task` needs to update)
+obsidian tasks verbose
+
+# Structured output (default format is plain text)
 obsidian tasks format=json
+obsidian tasks format=tsv
+obsidian tasks format=csv
+
+# Filter by a custom status character; quote shell-special ones
+obsidian tasks 'status=?'
+obsidian tasks status=-
 ```
 
-### Create a Task
+Filters combine: `obsidian tasks file=Recipe todo verbose`.
+
+## Show or Update a Task
+
+`task` addresses a single checklist line by location — either a combined
+`ref=path:line`, or `file=`/`path=`/`daily` plus `line=`.
 
 ```bash
-# Create a new task
-obsidian task:create content="Review PR #42"
+# Show task info
+obsidian task file=Recipe line=8
+obsidian task ref="Recipe.md:8"
 
-# Create task in specific note
-obsidian task:create content="Update documentation" file="Sprint Tasks"
+# Toggle completion
+obsidian task ref="Recipe.md:8" toggle
+obsidian task daily line=3 toggle
+
+# Set an explicit state
+obsidian task file=Recipe line=8 done      # → [x]
+obsidian task file=Recipe line=8 todo      # → [ ]
+obsidian task file=Recipe line=8 status=-  # → [-]
+obsidian task daily line=3 done
 ```
 
-### Complete a Task
-
-```bash
-# Mark task as done by ID
-obsidian task:complete task=task-id
-```
+`done`/`todo`/`status=` set a state outright; `toggle` flips whatever is
+there. Use `status=` for custom markers your theme or plugin renders
+(`-` cancelled, `/` in progress, `?` question, etc.).
 
 ## Workflow Patterns
 
-### Daily Task Capture
+### Capture a task to today's daily note
 
 ```bash
-# Add task to today's daily note
-obsidian daily:append content="- [ ] New task from CLI"
-
-# Or use task:create
-obsidian task:create content="Follow up on meeting action items"
+obsidian daily:append content="- [ ] Review PR #42"
 ```
 
-### Task Review
+### Find an open task, then complete it
 
 ```bash
-# List all open tasks, pipe to grep for filtering
-obsidian tasks format=json
+# 1. Locate it — verbose gives path and line number
+obsidian tasks todo verbose
+
+# 2. Update by that location
+obsidian task ref="Projects/Sprint.md:14" done
+```
+
+### Close out every task in today's daily note
+
+```bash
+obsidian tasks daily todo verbose
+# then, per reported line:
+obsidian task daily line=<n> done
+```
+
+### Count outstanding work
+
+```bash
+obsidian tasks todo total
+obsidian tasks daily todo total
 ```
 
 ## Agentic Optimizations
@@ -86,11 +137,18 @@ obsidian tasks format=json
 | Context | Command |
 |---------|---------|
 | List tasks (structured) | `obsidian tasks format=json` |
-| Create task | `obsidian task:create content="text"` |
-| Complete task | `obsidian task:complete task=ID` |
+| Open tasks only | `obsidian tasks todo` |
+| Locate tasks (path + line) | `obsidian tasks verbose` |
+| Tasks in one file | `obsidian tasks file=X` |
+| Today's tasks | `obsidian tasks daily` |
+| Outstanding count | `obsidian tasks todo total` |
+| Complete a task | `obsidian task ref="path.md:N" done` |
+| Toggle a task | `obsidian task ref="path.md:N" toggle` |
+| Custom status | `obsidian task file=X line=N status=-` |
 | Quick capture to daily | `obsidian daily:append content="- [ ] task"` |
 
 ## Related Skills
 
-- **vault-files** — Append tasks to specific notes
-- **search-discovery** — Find notes containing tasks
+- **vault-files** — Append task lines to notes and daily notes (there is no `task` create command)
+- **search-discovery** — Find notes containing tasks, or search task text
+- **properties** — Track task metadata in frontmatter instead of checklist lines

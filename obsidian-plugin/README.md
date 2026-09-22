@@ -1,6 +1,6 @@
 # Obsidian Plugin
 
-Obsidian CLI operations plugin for Claude Code, providing expert knowledge for managing Obsidian vaults via the official command line interface (v1.12.4+).
+Obsidian CLI operations plugin for Claude Code, providing expert knowledge for managing Obsidian vaults via the official command line interface (requires the 1.12.7+ installer).
 
 ## Overview
 
@@ -8,13 +8,13 @@ This plugin bundles all Obsidian CLI-related skills for managing knowledge bases
 - File and folder CRUD operations with daily note management
 - Full-text search, tag operations, and link graph traversal
 - YAML frontmatter property management
-- Task listing, creation, and completion
+- Task listing, filtering, and completion
 - Plugin and theme management with developer tools
 - Obsidian Publish and Sync workflows
 
 ## Prerequisites
 
-- Obsidian desktop v1.12.4+ installed
+- Obsidian desktop 1.12.7+ installer
 - CLI enabled in **Settings → General → Command line interface**
 - Obsidian must be running (CLI communicates with the running instance)
 
@@ -60,10 +60,10 @@ YAML frontmatter property management.
 **When to use**: User mentions frontmatter, properties, metadata, note status, aliases, or custom fields.
 
 **Capabilities**:
-- Read all properties from notes
-- Set typed properties (text, date, tags, number, boolean)
-- Remove properties
-- Alias management
+- List property names vault-wide with occurrence counts, or per note
+- Read, set, and remove a property (`property:read` / `property:set` / `property:remove`)
+- Typed values (`text`, `list`, `number`, `checkbox`, `date`, `datetime`)
+- Alias listing (`aliases`) and management
 
 ---
 
@@ -75,9 +75,10 @@ Task management across the vault.
 **When to use**: User mentions tasks, todos, checklists, or completing items in Obsidian.
 
 **Capabilities**:
-- List all open tasks
-- Create tasks in specific notes
-- Mark tasks complete
+- List and filter tasks (`todo`/`done`, by file, status character, active file, daily note)
+- Locate tasks by `path:line` with `verbose`, and count with `total`
+- Toggle or set a task's state (`task … toggle` / `done` / `todo` / `status=`)
+- Capture new tasks by appending a `- [ ]` line (see `vault-files`)
 
 ---
 

@@ -1,7 +1,7 @@
 ---
 created: 2026-03-04
-modified: 2026-06-28
-reviewed: 2026-06-28
+modified: 2026-09-22
+reviewed: 2026-09-22
 name: search-discovery
 description: "Obsidian vault search: full-text/grep, tag listing, link traversal, outline, orphan/dead-end detection, broken wikilink audit. Use when exploring backlinks."
 user-invocable: false
@@ -23,7 +23,7 @@ Search, navigate, and audit the vault link graph using the official Obsidian CLI
 
 ## Prerequisites
 
-- Obsidian desktop v1.12.4+ with CLI enabled
+- Obsidian desktop 1.12.7+ installer with CLI enabled
 - Obsidian must be running
 
 ## Offline Limitation (App Closed)

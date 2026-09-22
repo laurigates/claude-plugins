@@ -1,7 +1,7 @@
 ---
 created: 2026-04-30
-modified: 2026-05-09
-reviewed: 2026-04-30
+modified: 2026-09-22
+reviewed: 2026-09-22
 name: file-history
 description: "Obsidian File Recovery and Sync history: inspect, diff, restore previous note versions. Use when undoing edits, restoring versions, or recovering files."
 user-invocable: false
@@ -28,7 +28,7 @@ across both stores. `filter=local|sync` narrows the source.
 
 ## Prerequisites
 
-- Obsidian desktop v1.12.4+ with CLI enabled
+- Obsidian desktop 1.12.7+ installer with CLI enabled
 - Obsidian must be running
 - File Recovery enabled (Settings → File Recovery) for local history
 - Active Obsidian Sync subscription for `sync:*` commands

@@ -2,10 +2,33 @@
   "_comment": "Tracks the Obsidian CLI documentation page so the obsidian-cli-changelog workflow can detect upstream changes and propose skill/README updates. See .github/workflows/obsidian-cli-changelog.yml.",
   "docUrl": "https://publish-01.obsidian.md/access/f786db9fac45774fa4f0d8112e232d67/Extending%20Obsidian/Obsidian%20CLI.md",
   "humanUrl": "https://obsidian.md/help/cli",
-  "lastCheckedDocSha256": "1544d5de218c9a84bb44666c6a19e35b6635532c0a853cd3721f2f6912207c75",
-  "lastCheckedDate": "2026-04-30",
-  "lastSeenObsidianVersion": "1.12.7",
+  "lastCheckedDocSha256": "884d3f36a30ad2dc08bcdc84c1243e17e255677a2bd4a7a1aa0d8f77939fc012",
+  "lastCheckedDate": "2026-09-22",
+  "lastSeenObsidianVersion": "1.13.7",
   "reviewedChanges": [
+    {
+      "date": "2026-09-22",
+      "obsidianVersion": "1.13.7",
+      "docSha256": "884d3f36a30ad2dc08bcdc84c1243e17e255677a2bd4a7a1aa0d8f77939fc012",
+      "summary": "No new top-level command group appeared; the doc's command surface is essentially the same set the plugin already covers, so this pass was almost entirely drift correction. Two skills documented commands that do not exist in the CLI at all: `tasks` described `task:create` and `task:complete`, whereas the real surface is `tasks` (list/filter/count, with todo/done/active/daily/verbose/status= and format=json|tsv|csv) plus `task` (show or update one task addressed by ref=path:line or file/path/daily + line=, with toggle/done/todo/status=), and there is no create command — tasks are appended as `- [ ]` content. `properties` described `properties:set`/`properties:remove` taking `key=value`, whereas the real commands are singular `property:set` (name=, value=, optional type=text|list|number|checkbox|date|datetime), `property:remove` (name=) and `property:read` (name=); the plural `properties` is a vault-wide listing view (name=, sort=count, format=yaml|json|tsv, total/counts/active), and the `aliases` command was undocumented. Both were rewritten. Smaller corrections in `vault-files`: `folders` takes `folder=` and `total`, not the `format=tree` the skill advertised, and `unique` accepts `paneType`. Finally, the doc now requires the Obsidian 1.12.7 installer, while every CLI-wrapping skill and the plugin README claimed v1.12.4+ — corrected across all thirteen, since a user on 1.12.4 would find no command works at all.",
+      "updatedSkills": [
+        "obsidian-plugin/skills/tasks/SKILL.md",
+        "obsidian-plugin/skills/properties/SKILL.md",
+        "obsidian-plugin/skills/vault-files/SKILL.md",
+        "obsidian-plugin/skills/bases/SKILL.md",
+        "obsidian-plugin/skills/bookmarks/SKILL.md",
+        "obsidian-plugin/skills/command-palette/SKILL.md",
+        "obsidian-plugin/skills/dev-tools/SKILL.md",
+        "obsidian-plugin/skills/file-history/SKILL.md",
+        "obsidian-plugin/skills/plugins-themes/SKILL.md",
+        "obsidian-plugin/skills/publish-sync/SKILL.md",
+        "obsidian-plugin/skills/search-discovery/SKILL.md",
+        "obsidian-plugin/skills/templates/SKILL.md",
+        "obsidian-plugin/skills/vault-management/SKILL.md",
+        "obsidian-plugin/skills/workspaces/SKILL.md"
+      ],
+      "followUpIssues": []
+    },
     {
       "date": "2026-04-30",
       "obsidianVersion": "1.12.7",

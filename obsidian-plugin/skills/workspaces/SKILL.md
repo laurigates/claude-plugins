@@ -1,7 +1,7 @@
 ---
 created: 2026-04-30
-modified: 2026-05-09
-reviewed: 2026-04-30
+modified: 2026-09-22
+reviewed: 2026-09-22
 name: workspaces
 description: "Obsidian editor workspace: list open tabs, recent files, saved Workspaces. Use when checking what's open, switching layouts, or opening files into tabs."
 user-invocable: false
@@ -24,7 +24,7 @@ The Workspaces core plugin must be enabled for `workspace:save` / `:load` /
 
 ## Prerequisites
 
-- Obsidian desktop v1.12.4+ with CLI enabled
+- Obsidian desktop 1.12.7+ installer with CLI enabled
 - Obsidian must be running
 - For saved-layout commands: enable the **Workspaces** core plugin
 

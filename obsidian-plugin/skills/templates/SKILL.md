@@ -1,7 +1,7 @@
 ---
 created: 2026-04-30
-modified: 2026-05-09
-reviewed: 2026-04-30
+modified: 2026-09-22
+reviewed: 2026-09-22
 name: templates
 description: "Obsidian Templates plugin: list, read, insert templates with {{date}}/{{time}}/{{title}} variables. Use when inserting or applying a template."
 user-invocable: false
@@ -24,7 +24,7 @@ plugin uses a different command surface — invoke it via `command-palette`
 
 ## Prerequisites
 
-- Obsidian desktop v1.12.4+ with CLI enabled
+- Obsidian desktop 1.12.7+ installer with CLI enabled
 - Obsidian must be running
 - Core **Templates** plugin enabled, with a templates folder configured
 
