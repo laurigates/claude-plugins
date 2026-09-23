@@ -72,7 +72,7 @@ eval harness — is [`../adapters/README.md`](../adapters/README.md) § pi. Read
 there rather than restating it here.
 
 ```
-just pi-adapter-check        # prereqs: pi, bun deps, ollama embed model
+just pi-adapter-check        # prereqs: pi, bun deps, ollama embed model, the two packages in § Extension triad
 just pi-adapter              # trial it, ZERO config changes (pi -e <path>)
 just pi-adapter-register     # persist into ~/.pi/agent/settings.json extensions[]
 just pi-adapter-unregister   # reverse the above
@@ -112,6 +112,58 @@ about a minute would share it. The adapter exports a permutation of the pi id
 with the random bits first. A command that references only `CLAUDE_SESSION_ID`
 is never blocked. `PI_SESSION_FILE` carries pi's session transcript path for
 scripts that need it.
+
+## Extension triad
+
+pi ships without subagents and without an MCP client by design, so running the
+marketplace's skills, agents and `.mcp.json` servers under pi takes three
+extensions:
+
+| Surface | Extension | Install | Documented in |
+|---|---|---|---|
+| Skills | `adapters/pi/` (ADR-0022) | `just pi-adapter-register` | § The adapter |
+| Subagents | `@tintinweb/pi-subagents` | `pi install npm:@tintinweb/pi-subagents` | § Subagents |
+| MCP servers | `pi-mcp-adapter` | `pi install npm:pi-mcp-adapter` | § MCP servers, below |
+
+`just pi-adapter-check` reports the two packages as `SUBAGENTS=` and
+`MCP_ADAPTER=`. It reads the `packages` array of `~/.pi/agent/settings.json`
+(or `$PI_CODING_AGENT_DIR/settings.json`) and the `npm/node_modules/` tree that
+`pi install` fills, and prints the install command for a package found in
+neither. The adapter is not a package (it is registered through `extensions`),
+so the check covers it through its file and dependencies instead (`EXTENSION=`,
+`NODE_MODULES=`).
+
+### MCP servers (`pi-mcp-adapter`)
+
+pi-mcp-adapter reads the same project `.mcp.json` that Claude Code does, plus
+the user-global `~/.config/mcp/mcp.json`. Servers configured for this
+repository, or written by `configure-plugin:configure-mcp`, connect without
+changes, including `${VAR}` references in `env`. It does not register each
+server's tools. The model gets one `mcp` proxy tool for searching, describing
+and calling them (`mcp({ search: "…" })`, then `mcp({ tool: "…", args: {…} })`),
+and by default a server connects only when one of its tools is first called.
+
+It differs from Claude Code in four places:
+
+- **Claude Code's own user-scoped servers are not loaded.** Host-specific
+  configs are adopted explicitly with `/mcp setup` (or `pi-mcp-adapter init`),
+  or loaded as a fallback when `settings.hostConfigDiscovery` is `"on"`.
+- **`/mcp disable <server>` persists** in the project's `.pi/mcp.json`. In Claude
+  Code it lasts one session.
+- **No approval step** is documented for a project `.mcp.json` server; the
+  adapter uses the file immediately. Per-call approval is opt-in through
+  `settings.approveTools`.
+- **Plugin hooks do not run.** Its `claudePlugins` setting loads a Claude
+  plugin's `.mcp.json` and skills but never executes the plugin's hooks (#2634
+  covers hooks). No marketplace plugin ships a `.mcp.json` today.
+
+A subagent reaches the proxy through the extension's name, which pi-subagents
+takes from the package directory: `pi-mcp-adapter`, not the `mcp` used in
+pi-subagents' README examples. `tools: "*, ext:pi-mcp-adapter/mcp"` grants it,
+but any `ext:` entry switches the agent's extension tools to an explicit
+allowlist, which hides `search_skills` unless that is listed too. No marketplace
+agent grants an MCP tool, so the exporter emits no such selector; #2647 tracks
+the adapter's selector name, which an agent needs before it can list both.
 
 ## Pipeline
 
@@ -267,3 +319,4 @@ built-ins (an unknown `tools:` entry is a hard `tools-error:` in pi).
 - [`adrs/0022-adapter-over-export-for-foreign-harnesses.md`](adrs/0022-adapter-over-export-for-foreign-harnesses.md) — adapter-over-export decision
 - [`opencode-export.md`](opencode-export.md) — the sibling harness: same adapter for skills, plus its own subagent/hook export
 - [pi custom-provider docs](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/custom-provider.md) — upstream `models.json` schema
+- [pi-mcp-adapter](https://github.com/nicobailon/pi-mcp-adapter) and [pi-subagents](https://github.com/tintinweb/pi-subagents) — upstream READMEs for the two packages in § Extension triad

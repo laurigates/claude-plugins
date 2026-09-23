@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-09-16
+modified: 2026-09-23
 reviewed: 2026-09-16
 name: mcp-management
 description: Install, configure and troubleshoot MCP servers. Use when adding/enabling servers, editing .mcp.json, fixing OAuth, or when a server runs stale code after an upstream fix.
@@ -165,6 +165,10 @@ example in [REFERENCE.md → Configuration patterns](REFERENCE.md#configuration-
 ### Post-add approval gate (project-scoped)
 
 A **newly-added project `.mcp.json` server requires one-time user approval before its tools are callable in the *current* session** — this is expected, not an error. Immediately after writing the config, `claude mcp list` shows the server as `⏸ Pending approval (run 'claude' to approve)` and it stays uncallable until the user approves it via the `/mcp` command or restarts the CLI session — both user-only actions the agent cannot perform for them. So after writing a project `.mcp.json` entry, **tell the user proactively** that a one-time approval (`/mcp` or a session restart) is needed for the new server's tools to become available, rather than discovering the gate via a status check and asking mid-flow.
+
+### Under pi
+
+pi has no MCP client; `pi install npm:pi-mcp-adapter` adds one that reads this `.mcp.json` through a single `mcp` proxy tool. `/mcp disable` then persists, user-scoped servers need `/mcp setup`, and no approval gate is documented: [docs/pi-export.md § MCP servers](https://github.com/laurigates/claude-plugins/blob/main/docs/pi-export.md#mcp-servers-pi-mcp-adapter).
 
 ## Agentic Optimizations
 
