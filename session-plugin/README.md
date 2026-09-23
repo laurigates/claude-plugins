@@ -100,7 +100,7 @@ All writes and judgment stay in the invoking skill.
 | Flag | Adds |
 |---|---|
 | (none) | PROJECT, GIT, TASKWARRIOR, STALE_ACTIVE_ELSEWHERE, PRS |
-| `--with-dedup` | GITHUB_DRIFT (assigned-open issues minus those tracked in taskwarrior) |
+| `--with-dedup` | GITHUB_DRIFT (assigned-open issues minus those tracked in taskwarrior, plus unanswered Discussions) |
 | `--with-journal --journal-path <dir>` | JOURNAL (unchecked todos from the most recent dated note) |
 | `--with-commits` | COMMITS (recent commit subjects) |
 | `--with-blueprint` | BLUEPRINT (manifest/tracker presence, ready/blocked/in-flight feature counts, closed-but-undrained WO-linked tasks). Degrades to `MANIFEST=false` + zeroed counts when the repo isn't blueprint-enabled |
@@ -154,6 +154,29 @@ slow. Each mode makes exactly the
 calls whose output it prints: the summary prints `GH_READY` and
 `ASSIGNED_ISSUES`, so it issues the assigned-issue query even without
 `--with-dedup`.
+
+### Unanswered Discussions
+
+`gh` has no discussion subcommand, so `--with-dedup` makes one GraphQL call
+for the first 100 open Discussions and `GITHUB_DRIFT` reports those in an
+answerable category that are not yet answered. Answerability is GitHub's own
+`category.isAnswerable`, never a category name, so adding or retiring a
+category needs no change here. The filter is `isAnswered != true` because
+GitHub returns `isAnswered: null` outside answerable categories.
+
+| Key | Meaning |
+|---|---|
+| `DISCUSSIONS_QUERY_OK` | `true` when the query answered; always emitted |
+| `DISCUSSIONS_UNANSWERED` | count of unanswered threads; emitted **only** when `DISCUSSIONS_QUERY_OK=true` |
+| `DISCUSSIONS_ENABLED` | `false` means the repo has Discussions switched off, so the zero is genuine |
+| `DISCUSSIONS_TRUNCATED` | `true` when more than one page of open threads exists |
+| `DISCUSSION_<n>_NUMBER` / `_CATEGORY` / `_URL` / `_AGE_DAYS` / `_TITLE` | one row set per unanswered thread |
+| `DISCUSSIONS_FAIL_REASON` | present when `DISCUSSIONS_QUERY_OK=false`: `GH_FAIL_REASON`'s vocabulary, plus `no-jq` |
+
+The query has its own ok-key rather than riding on `GH_READY`: the list calls
+can succeed while GraphQL fails, and a failed query must not print a zero.
+`GH_READY` keys only on the list calls, so a Discussions failure alone never
+flips it or adds a `GH_FAIL_REASON`.
 
 ### Git state reports both directions
 
