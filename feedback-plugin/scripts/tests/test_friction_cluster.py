@@ -110,6 +110,32 @@ def test_stop_hook_feedback_clusters_are_measured_not_prescribed(tmp_path):
     assert f"| `{sig}` | 4 | watch |" in pr_body, pr_body
 
 
+def test_clusters_carry_session_prevalence_and_repeat():
+    """Issue #2659's third acceptance criterion: the report must give prevalence
+    and same-session repeat for `stop:*` clusters, not only a raw count. Every
+    cluster therefore carries `sessions` (distinct sessions it fired in) and
+    `repeat_sessions` (sessions where it fired at least twice), so the numbers
+    come from the clusterer rather than being re-derived by hand each week.
+    """
+    sig = "stop:no-calendar-estimates"
+    events = []
+    for session, n in (("s1", 3), ("s2", 1), ("s3", 2)):
+        for _ in range(n):
+            ev = make_event(sig, kind="stop_hook_feedback", tool="-")
+            ev["session"] = session
+            events.append(ev)
+    other = make_event("interrupt:user", kind="user_interrupt", tool="-")
+    other["session"] = "s4"
+    events.append(other)
+
+    clusters, _ = run_cluster(events, min_count=1)
+    [stop] = [p for p in clusters["actionable"] if p["signature"] == sig]
+    assert stop["count"] == 6, stop["count"]
+    assert stop["sessions"] == 3, stop
+    assert stop["repeat_sessions"] == 2, stop
+    assert clusters["total_sessions"] == 4, clusters["total_sessions"]
+
+
 def test_exitplanmode_rejection_is_classify_required():
     """Regression: reject:exitplanmode must surface samples for human classification.
 
