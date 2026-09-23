@@ -253,11 +253,72 @@ exporter against a fixture and pins the mapping, the widening/drop reports, the
 skip-on-missing-description path, and the emitted tool names against pi's seven
 built-ins (an unknown `tools:` entry is a hard `tools-error:` in pi).
 
+## Safety hooks (`just export-pi-hooks`)
+
+pi never evaluates a Claude Code hook manifest, so without this step every
+guard in the marketplace is inert under pi. `scripts/generate-pi-hook-extension.py`
+projects the safety subset into one pi extension that registers `pi.on(...)`
+handlers and runs the original shell scripts unchanged (#2634):
+
+```bash
+just export-pi-hooks    # -> dist/pi/extensions/plugin-hooks/{index.ts,hook-scripts/}
+just install-pi-hooks   # -> ~/.pi/agent/extensions/plugin-hooks/ (auto-discovered)
+```
+
+`setup-pi` runs `install-pi-hooks`. To try it without installing, pass the
+generated file with `pi -e dist/pi/extensions/plugin-hooks/index.ts`. Undo an
+install by deleting `~/.pi/agent/extensions/plugin-hooks`.
+
+| Claude Code event | pi event | Behaviour |
+|---|---|---|
+| `PreToolUse` | `tool_call` | exit 2 or JSON `deny` returns `{ block: true, reason }`; JSON `ask` calls `ctx.ui.confirm()` and blocks when pi has no UI (`-p`, `--mode json`/`rpc`); `updatedInput.command` rewrites a `bash` call |
+| `PostToolUse` | `tool_result` | exit-2 stderr, a block reason or `additionalContext` is appended to the tool result |
+| `SessionStart` | `session_start` | `additionalContext` (or plain stdout) is queued with `pi.sendMessage(..., { deliverAs: "nextTurn" })` |
+
+Manifests are read from **both** `<plugin>/hooks.json` and inline
+`.claude-plugin/plugin.json` `hooks`. Eight plugins declare hooks only inline,
+hooks-plugin among them, and hooks-plugin holds the safety guards; the OpenCode
+exporter reads `hooks.json` alone and misses them (#2724). The scripts see
+Claude Code's stdin shape: pi's `read`/`write`/`edit` become `Read`/`Write`/`Edit`
+with an absolute `file_path`, and a multi-edit's `edits[]` is joined into
+`old_string`/`new_string` so content-scanning hooks see every replacement.
+Matching hooks run concurrently and their results are read in declaration
+order, so the first block wins. A script that is missing, crashes or times out
+fails open.
+
+**What is exported.** Only hooks named in the generator's `PI_SAFETY_ALLOWLIST`:
+branch protection, secret protection, repo-deletion safety, the external-PR
+merge guard, the branch-base guard, the three git-plugin PR/branch guards named
+in #2634, the terraform apply gate, both kubectl guards, the force-push guard,
+and the git drift probe with the aggregator that delivers its findings. Every
+other hook is skipped **by name** and listed in the generator's report and in
+the extension's header. Three skips are deliberate rather than
+unclassified:
+
+- `bash-antipatterns.sh` mixes a few safety blocks with tool-hygiene blocks
+  whose remedy text names Claude Code's `Read`/`Grep` tools, so it is not
+  exported whole (#2788).
+- `auto-checkpoint.sh` writes stash entries that only the `Stop` hook
+  `git-stash-reminder.sh` surfaces, and `Stop` has no pi mapping here.
+- The drift probes other than git-plugin's, and session-plugin's two nudges
+  (#2661), stay out until they are classified.
+
+`--allow <plugin>/<script>` adds an allowlist entry for one run. `Stop`,
+`PreCompact`, `PermissionRequest`, `TaskCompleted` and prompt/agent hooks have
+no pi equivalent and are reported as skipped.
+
+### Verifying it landed
+
+`scripts/tests/test-export-pi-hooks.sh` executes the generated extension under
+`node` with a stub `pi`: a fixture pins each mapping above, and the real-repo
+half drives pi's `read` of `.env` through the real `secret-protection.sh` and
+asserts the block. Loading it in a live pi 0.85.1 RPC session
+(`pi --mode rpc --no-session -ne -e …/index.ts`, no prompt, so no model call)
+produced no extension error, and `session_start` ran the git drift probe,
+which wrote its signal file under pi's session id.
+
 ## Out of scope (deferred)
 
-- **Hook porting (#2634).** Selective: only the *safety* hooks would earn a pi
-  `pi.on` port; the style nudges are noise on a different harness. pi never
-  evaluates a Claude Code `hooks.json`, so those guards are inert there today.
 - **Prompt templates.** Nothing in the marketplace uses that surface yet.
 
 ## Related

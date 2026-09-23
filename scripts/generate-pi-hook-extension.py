@@ -87,6 +87,12 @@ CLAUDE_TO_PI_TOOL = {
 
 # Hooks exported to pi, keyed <plugin>/<script>. Safety, integrity and
 # drift-prevention guards only (#2634). Anything absent is skipped by name.
+# Deliberately absent, not merely unclassified:
+#   hooks-plugin/bash-antipatterns.sh — safety blocks mixed with style blocks
+#     whose remedy names Claude Code's Read/Grep tools (#2788).
+#   hooks-plugin/auto-checkpoint.sh — its stash entries are surfaced only by
+#     the Stop hook git-stash-reminder.sh, and Stop has no pi mapping here.
+#   session-plugin's spinup/end nudges — tracked in #2661.
 PI_SAFETY_ALLOWLIST = {
     "hooks-plugin/branch-protection.sh": "blocks commits and pushes on the default branch",
     "hooks-plugin/secret-protection.sh": "blocks reads/writes of credential files and env dumps",

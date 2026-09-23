@@ -112,3 +112,8 @@ scripts/tests/test-check-golden-set-coverage.sh
 # narrowing -- a measured-rate extrapolation must still block; PATTERN_FUTURE is
 # pinned separately by the future-tense cases at :113-118 (#2580).
 hooks-plugin/hooks/test-no-calendar-estimates.sh
+
+# The pi safety-hook bridge (#2634) executes its generated extension under
+# node with a stub pi; its only skip is "node not available". Every CI runner
+# has node, so a skip here means the runtime half silently stopped running.
+scripts/tests/test-export-pi-hooks.sh
