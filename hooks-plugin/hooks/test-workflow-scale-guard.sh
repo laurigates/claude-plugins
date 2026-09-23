@@ -162,10 +162,11 @@ echo "== estimator arithmetic (#2670): the figure the guard shows is the figure 
 
 # The estimate is the agent count a template author states and the ask names, so
 # an arithmetic error is a wrong cost statement, not just a wrong verdict. These
-# assert the ESTIMATE= number itself, straight from the estimator. Each of the
-# first three failed against the shipped templates before #2670: the literal-array
-# and trailing-comma cases costed blueprint-story-audit at 71 (true: 20), and the
-# nested-template case hid a live agent() call in evaluate-skill.
+# assert the ESTIMATE= number itself, straight from the estimator. Before #2670
+# the literal-array case costed blueprint-story-audit at 71 (true: 20) and
+# verify-before-filing at 81 (true: 49), and the nested-template case hid a live
+# agent() call in evaluate-skill. The trailing-comma case changes no shipped
+# template's figure; it guards a .map over a declared array written in house style.
 ESTIMATOR="$(dirname "$0")/workflow-scale-estimate.py"
 
 estimate_of() {
@@ -191,12 +192,17 @@ assert_estimate "literal array of distinct thunks counts each once" 2 '
 await parallel([() => agent("a", { label: "a" }), () => agent("b", { label: "b" })])
 '
 
-# A trailing comma is not an element.
-assert_estimate "trailing comma in a literal array is not an element" 2 '
-await parallel([
-  () => agent("a", { label: "a" }),
-  () => agent("b", { label: "b" }),
-])
+# A trailing comma is not an element. The fixture maps over a declared array
+# because that is the path that reads the item count: a site inside a literal
+# thunk array runs once and never consults the length, so a trailing comma
+# there cannot change the figure and would pin nothing.
+assert_estimate "trailing comma in a mapped array is not an element" 3 '
+const D = [
+  1,
+  2,
+  3,
+]
+await parallel(D.map(d => () => agent("a", { label: "a" })))
 '
 
 # Control for the two above: a .map over a literal array DOES multiply — its one
