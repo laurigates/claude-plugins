@@ -180,6 +180,7 @@ jobs:
             --only 'scripts/tests/test-check-taskcompleted-verification.sh' \
             --only 'scripts/tests/test-check-unused-bash-grant.sh' \
             --only 'scripts/tests/test-check-version-pin-coverage.sh' \
+            --only 'scripts/tests/test-check-workflow-cron-collisions.sh' \
             --only 'scripts/tests/test-check-workflow-js-model.sh' \
             --only 'scripts/tests/test-check-workflow-model.sh' \
             --only 'scripts/tests/test-check-workflow-script-triggers.sh' \
@@ -254,6 +255,14 @@ jobs:
         # to those scripts. The filter here was removed by #2258; this keeps a
         # future re-add from silently re-orphaning the guards (#2219).
         run: bash scripts/check-workflow-script-triggers.sh --strict
+
+      - name: Check no two scheduled workflows fire in the same minute
+        # Expands every `cron:` into its fire times, so an hourly entry such as
+        # fix-release-conflicts.yml's `23,53 * * * *` is compared against every
+        # weekly slot -- the comparison the #2554 planning routine skipped when
+        # it recorded `53 9 * * 1` as free. The self-test step above proves the
+        # guard before it gates the tree.
+        run: bash scripts/check-workflow-cron-collisions.sh --strict
 
       - name: Check skills and scripts call no retired REST endpoint
         # Repo-root scripts/tests/ IS discovered by run-skill-script-tests.sh

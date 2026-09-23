@@ -245,6 +245,18 @@ repos:
         language: script
         files: '^scripts/(check-workflow-script-triggers\.sh|tests/test-check-workflow-script-triggers\.sh)$'
         pass_filenames: false
+      - id: check-workflow-cron-collisions
+        name: no two scheduled workflows fire in the same minute (#2554)
+        entry: ./scripts/check-workflow-cron-collisions.sh --strict
+        language: script
+        files: '^(\.github/workflows/.*\.ya?ml|scripts/check-workflow-cron-collisions\.sh)$'
+        pass_filenames: false
+      - id: test-check-workflow-cron-collisions
+        name: workflow cron-collision guard regression
+        entry: ./scripts/tests/test-check-workflow-cron-collisions.sh
+        language: script
+        files: '^scripts/(check-workflow-cron-collisions\.sh|tests/test-check-workflow-cron-collisions\.sh)$'
+        pass_filenames: false
       - id: check-issue-template-inheritance
         name: local ISSUE_TEMPLATE keeps what the org directory provided (#2568)
         entry: ./scripts/check-issue-template-inheritance.sh

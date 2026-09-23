@@ -119,11 +119,13 @@ out="$(bash "$checker" --project-dir "$d2" --strict 2>&1)"; rc=$?
 assert "D2: 1st vs 2nd of the month exits 0" "$(rc_is "$rc" 0)"
 assert "D2: 1st vs 2nd of the month is not a collision" "$(has_line "$out" 'COLLISION_COUNT=0')"
 # POSIX OR-semantics: with BOTH day fields restricted a cron fires when EITHER
-# matches, so `0 3 15 * 5` also fires every Friday -- and collides with a
-# Friday-only cron even though no 15th is involved.
+# matches, so `5 3 15 * 5` fires on every 15th AND every Friday -- and collides
+# with a 16th-of-the-month cron whenever the 16th is a Friday. Read with AND
+# semantics it would fire only on Friday-the-15ths and never meet the 16th, so
+# this pair discriminates the two readings.
 d3="$fx/d3"
 mkwf "$d3" either.yml '5 3 15 * 5'
-mkwf "$d3" friday.yml '5 3 * * 5'
+mkwf "$d3" sixteenth.yml '5 3 16 * *'
 out="$(bash "$checker" --project-dir "$d3" --strict 2>&1)"; rc=$?
 assert "D3: dom+dow OR-semantics collide on the dow arm" "$(has_line "$out" 'COLLISION_COUNT=1')"
 
@@ -140,6 +142,12 @@ mkwf "$e2" odd.yml '7 1-5/2 * * *'
 out="$(bash "$checker" --project-dir "$e2" --strict 2>&1)"; rc=$?
 assert "E2: */15 never hits :07" "$(has_line "$out" 'COLLISION_COUNT=0')"
 assert "E2: a range-with-step cron parses" "$(has_line "$out" 'CRONS_PARSED=2')"
+# `a/n` starts at a and steps to the field maximum: 5/20 is 5, 25, 45.
+e3="$fx/e3"
+mkwf "$e3" stepped.yml '5/20 * * * *'
+mkwf "$e3" late.yml '45 2 * * *'
+out="$(bash "$checker" --project-dir "$e3" --strict 2>&1)"; rc=$?
+assert "E3: 5/20 reaches :45" "$(has_line "$out" 'COLLISION_COUNT=1')"
 
 # --- TEST F: disjoint months never co-fire ------------------------------------
 echo "=== TEST F: January vs February ==="
