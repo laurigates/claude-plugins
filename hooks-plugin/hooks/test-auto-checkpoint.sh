@@ -83,6 +83,9 @@ fail() {
 # Initialize the test repo
 init_repo() {
     git -C "$SANDBOX" init -q
+    # No hooks from the developer's git template: a templated pre-commit prints
+    # unindented lines, and the runner then counts a no-ast-grep SKIP as a PASS.
+    git -C "$SANDBOX" config core.hooksPath /dev/null
     git -C "$SANDBOX" config commit.gpgsign false
     git -C "$SANDBOX" config user.email "test@example.com"
     git -C "$SANDBOX" config user.name "Test"
