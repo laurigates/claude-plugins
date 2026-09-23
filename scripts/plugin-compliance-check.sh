@@ -297,6 +297,40 @@ check_skill_body() {
       has_errors=true
     fi
 
+    # references/ link integrity (issue #2700). A skill split into references/
+    # (.claude/rules/skill-quality.md § "references/ — a multi-file split for
+    # large skills") reaches its detail only through relative links, and nothing
+    # else resolves them. Two silent failures, one per direction:
+    #   forward — a `](references/<f>)` link in SKILL.md or REFERENCE.md names a
+    #             file that does not exist (renamed/deleted), so the agent opens
+    #             nothing mid-procedure. Fenced code is skipped: a link there is
+    #             an example, not a link. An `#anchor` suffix is stripped.
+    #   reverse — a references/*.md that neither SKILL.md nor the REFERENCE.md
+    #             index names is unreachable; nothing ever loads it.
+    local skill_dir ref_index ref_target ref_file ref_path
+    skill_dir=$(dirname "$skill_file")
+    ref_index=""
+    [ -f "$skill_dir/REFERENCE.md" ] && ref_index="$skill_dir/REFERENCE.md"
+    while IFS= read -r ref_target; do
+      [ -n "$ref_target" ] || continue
+      if [ ! -f "$skill_dir/$ref_target" ]; then
+        issues+=("❌ ${plugin}/${skill_name}: links ${ref_target}, which does not exist — repoint the link or restore the file (issue #2700)")
+        has_errors=true
+      fi
+    done < <(awk 'FNR == 1 { in_code = 0 } /^[[:space:]]*```/ { in_code = !in_code; next } !in_code' \
+               "$skill_file" ${ref_index:+"$ref_index"} \
+             | grep -oE '\]\((\./)?references/[^)#[:space:]]+' \
+             | sed -E 's#^\]\((\./)?##' | sort -u)
+    if [ -d "$skill_dir/references" ]; then
+      while IFS= read -r -d '' ref_file; do
+        ref_path="references/$(basename "$ref_file")"
+        if ! grep -qF "$ref_path" "$skill_file" ${ref_index:+"$ref_index"}; then
+          issues+=("❌ ${plugin}/${skill_name}: ${ref_path} is named from neither SKILL.md nor REFERENCE.md, so nothing loads it — link it or delete it (issue #2700)")
+          has_errors=true
+        fi
+      done < <(find "$skill_dir/references" -maxdepth 1 -type f -name '*.md' -print0 2>/dev/null)
+    fi
+
     # Regression: blueprint rule-writing skills must reference the configurable
     # output path (`generated_rules_path`) rather than hardcoding `.claude/rules/`.
     # See issue #1043: hardcoded paths collide with hand-authored rules in the
