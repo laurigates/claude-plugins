@@ -1,6 +1,6 @@
 ---
 created: 2026-04-25
-modified: 2026-08-08
+modified: 2026-09-23
 reviewed: 2026-04-25
 description: Audit user stories against codebase and tests for tier-ranked coverage gaps. Use when running story audit, PRD reconciliation, or surfacing PRD-code drift.
 args: "[--scope <area>] [--prd <path>] [--no-write] [--report-only]"
@@ -63,6 +63,11 @@ force a determinate verdict per row instead of a paragraph that reads like one, 
 `tierCutoff` field that makes Step 4's documented cutoff non-optional; (c) the `parallel()` at
 Step 1 is a real barrier — every downstream join is a *cross-lane* fact (a capability with no
 story; a story with no test), so no lane's output is usable until all three have landed.
+
+**Agent budget:** 20 — one capability sweep, one story agent per PRD, one test
+agent per test root, then join, bug-triage and compose (4 + PRDs + test roots).
+The scale estimator costs each runtime list at 8 items; a repo with 20 PRDs and
+10 test roots spends 34.
 
 **Skip the harness when:** the repo has one PRD and one test directory — the modal case, which
 collapses to three agents total (capability + story + test) and is a linear pass where the harness

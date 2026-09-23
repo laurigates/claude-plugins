@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-09-20
+modified: 2026-09-23
 reviewed: 2026-09-02
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git fetch *), Bash(git pull *), Bash(git stash *), Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(gh label *), Bash(gh api *), Bash(pre-commit *), Read, Edit, Write, Grep, Glob, TodoWrite, AskUserQuestion, Task, mcp__github__create_pull_request, mcp__github__issue_read, mcp__github__list_issues
 description: "GitHub issue to PR end-to-end — branch, TDD implementation, PR — one issue or several in parallel. Use when asked to work on an issue, fix issue #N, or batch-process several."
@@ -257,6 +257,9 @@ pairwise over the whole set (file overlap, opposing requirements, `blocked_by`
 chains, sub-issue ordering), so no group can be dispatched until every issue has
 been read, and you cannot partition work by a partition the work itself
 discovers, which is why the grouping lane is always ONE agent.
+
+**Agent budget:** 9 — one grouping agent plus one implementation agent per issue
+group, costed at 8 groups. The wave width bounds concurrency, not the total.
 
 **Skip the harness when:** a single issue was supplied — the modal case — or the
 partition collapses to one group because every issue conflicts with every other;

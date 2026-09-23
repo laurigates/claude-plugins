@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-08-08
+modified: 2026-09-23
 reviewed: 2026-08-08
 description: "Run all infrastructure standards checks and fixes. Use when onboarding a new project, doing a full compliance audit, or batch-fixing with --fix."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, SlashCommand, Agent
@@ -185,6 +185,10 @@ contention over a shared file (pre-commit and linting both write
 `.pre-commit-config.yaml`) is invisible to any single check agent. Two
 consequences of (c) that are also non-negotiable: the checks are **read-only**,
 and `--fix` is applied outside the workflow, sequentially.
+
+**Agent budget:** 9 — one check agent per applicable component plus one synthesis
+agent, costed at 8 components. The wave width bounds how many run at once, not
+how many run: 30 applicable components spend 31 agents.
 
 **Skip the harness when:** fewer than ~15 components are applicable, or the run
 is a single-component check, or the lister reported `STATUS=ERROR` — that is a

@@ -7,7 +7,7 @@ argument-hint: "git-plugin/git-commit [--create-evals] [--runs 3] [--baseline]"
 agent: general-purpose
 context: fork
 created: 2026-03-04
-modified: 2026-09-20
+modified: 2026-09-23
 compatibility: claude-code
 reviewed: 2026-03-04
 ---
@@ -65,6 +65,10 @@ transcript** (`.claude/rules/loop-integrity.md` Pillar 1 - an author asked to ju
 own output optimises for done, not for correct), `grade_deterministic.py` grades first
 and its verdicts are never re-judged, and the `cellCap` ceiling **aborts** rather than
 truncating.
+
+**Agent budget:** 18 — preflight, one rollout plus one independent grader per
+cell, and aggregate (2 + 2 × cells), costed at 8 cells. The run aborts above
+`cellCap` (default 30, caller-overridable), so the default ceiling is 62.
 
 **Skip the harness when:** the run is fewer than three cells - a one- or two-case spot
 check, or a single re-run of one eval id - which is a linear pass where the harness is

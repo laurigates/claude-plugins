@@ -51,6 +51,15 @@
 #                                 clauses the rule says every such template must
 #                                 also carry (#1868 resume hazard; push/PR only
 #                                 in the sequential finalise stage)
+#     ERROR missing_agent_budget  a reachable harness whose framing section does
+#                                 not declare `**Agent budget:** N` (#2670)
+#     ERROR agent_budget_exceeded hooks-plugin/hooks/workflow-scale-estimate.py
+#                                 estimates more agents than the declared N — see
+#                                 "The declared agent budget" below. Every
+#                                 checked file is itemised under AGENT_BUDGETS:
+#                                 with its ESTIMATE= and BUDGET=, pass or fail
+#     ERROR estimator_missing / estimator_error — the budget could not be
+#                                 checked; fails closed rather than passing
 #
 # THE FRAMING LITERAL — `not a script to run verbatim` (issue #2164)
 # `.claude/rules/workflow-vs-skill.md` § "The framing snippet (copy verbatim)"
@@ -157,7 +166,8 @@ Usage: check-workflow-js-model.sh [--strict] [--project-dir DIR]
 Guards bundled dynamic-workflow harnesses (*/skills/*/workflows/*.workflow.js):
 every agent() call pins an opus (or inherited) model and an explicit valid
 effort, and every harness is reachable from a sibling SKILL.md whose framing
-section carries the literal "not a script to run verbatim".
+section carries the literal "not a script to run verbatim" and declares an
+"**Agent budget:** N" that the scale estimator's figure does not exceed.
 
 One exemption: a call whose opts.label starts with coldread/recoldread AND whose
 opts.model is 'haiku' is the sanctioned measurement instrument, not a delegate.
@@ -240,6 +250,62 @@ done < <(
 
 python_ok=1
 command -v python3 >/dev/null 2>&1 || python_ok=0
+
+# ---------------------------------------------------------------------------
+# The declared agent budget (issue #2670).
+#
+# A multi-agent run is billed by how many agents it CREATES — every fresh agent
+# builds its own prompt cache — and nothing stated that number at authoring
+# time. The framing section therefore declares it (`**Agent budget:** N`), and
+# this check runs the SAME estimator the runtime scale guard uses
+# (hooks-plugin/hooks/workflow-scale-estimate.py) and fails when its ESTIMATE
+# exceeds N. So the figure a user is shown before a run, and the figure the
+# template's author wrote down, cannot drift apart silently: adding an agent per
+# item raises the estimate past the declaration and turns this gate red.
+#
+# The estimator is resolved from THIS script's location, not --project-dir, so a
+# fixture tree is judged by the real estimator. A missing estimator fails closed
+# (a budget check that silently checks nothing is the #2219 class).
+# ---------------------------------------------------------------------------
+ESTIMATOR="$SCRIPT_DIR/../hooks-plugin/hooks/workflow-scale-estimate.py"
+budgets_checked=0
+estimator_missing_reported=0
+declare -a budget_rows=()
+
+# check_agent_budget <js> <rel> <framing-section-body>
+check_agent_budget() {
+    local js="$1" rel="$2" body="$3" match budget est_out verdict estimate
+    match=$(grep -m1 -oE '\*\*Agent budget:\*\*[[:space:]]*~?[0-9]+' <<<"$body")
+    if [ -z "$match" ]; then
+        add_error "TYPE=missing_agent_budget FILE=$rel MSG=the '## Workflow harness (template)' section must declare '**Agent budget:** N' — the agents this file creates, as workflow-scale-estimate.py counts them (.claude/rules/workflow-vs-skill.md § The cost model)"
+        return
+    fi
+    budget="${match##*[!0-9]}"
+    [ "$python_ok" -eq 1 ] || return
+    if [ ! -f "$ESTIMATOR" ]; then
+        if [ "$estimator_missing_reported" -eq 0 ]; then
+            estimator_missing_reported=1
+            add_error "TYPE=estimator_missing FILE=$rel MSG=cannot check agent budgets: $ESTIMATOR not found"
+        fi
+        return
+    fi
+    est_out=$(python3 "$ESTIMATOR" "$budget" <"$js" 2>/dev/null)
+    verdict=$(sed -n 's/^VERDICT=//p' <<<"$est_out")
+    estimate=$(sed -n 's/^ESTIMATE=//p' <<<"$est_out")
+    case "$verdict" in
+        NO_AGENTS) estimate=0 ;;
+        OK | OVER_LIMIT) : ;;
+        *)
+            add_error "TYPE=estimator_error FILE=$rel MSG=workflow-scale-estimate.py could not analyse this file (VERDICT=${verdict:-none})"
+            return
+            ;;
+    esac
+    budgets_checked=$((budgets_checked + 1))
+    budget_rows+=("  - FILE=$rel ESTIMATE=$estimate BUDGET=$budget")
+    if [ "$estimate" -gt "$budget" ]; then
+        add_error "TYPE=agent_budget_exceeded FILE=$rel ESTIMATE=$estimate BUDGET=$budget MSG=the framing declares $budget agents but workflow-scale-estimate.py counts $estimate (a list it cannot bound is costed at 8 items): declare the real figure, or cut agents per item / cap the list at its source with a literal .slice(0, N) (.claude/rules/workflow-vs-skill.md § The cost model)"
+    fi
+}
 
 # parse_agent_calls <file> — emit one line per agent() call:
 #   CALL <line> MODEL=<literal|-|?> EFFORT=<literal|-|?> COLDREAD=<yes|no> LABEL=<slug|->
@@ -482,13 +548,15 @@ for js in "${js_files[@]+"${js_files[@]}"}"; do
         # the framing section itself, not the whole file, so an unrelated
         # mention elsewhere cannot satisfy it.
         if [ "$has_framing" -eq 1 ] && [ "$names_file" -eq 1 ]; then
+            framing_body="$(framing_section "$skill_md")"
             # Here-string, not `framing_section … | grep -qF`: under `pipefail` a
             # `grep -q` that matches and closes the pipe early can SIGPIPE the
             # producer, so the pipeline reports non-zero and the `if !` inverts
             # into a phantom finding (.claude/rules/shell-scripting.md; #1744).
-            if ! grep -qF 'not a script to run verbatim' <<<"$(framing_section "$skill_md")"; then
+            if ! grep -qF 'not a script to run verbatim' <<<"$framing_body"; then
                 add_error "TYPE=missing_template_framing FILE=$rel MSG=the '## Workflow harness (template)' section must contain the literal string 'not a script to run verbatim' — copy the framing snippet from .claude/rules/workflow-vs-skill.md (a section that only names the file reads as a script to run, not a template to adapt)"
             fi
+            check_agent_budget "$js" "$rel" "$framing_body"
         fi
         # Worktree-dispatching templates carry two extra clauses (the rule's
         # copy-verbatim block). Only checked when the harness actually dispatches
@@ -573,6 +641,9 @@ echo "WARN_COUNT=$warn_count"
 # Always emitted, even at 0: a carve-out that only appears when it fires is a
 # carve-out you cannot notice is missing (#2216).
 echo "EXEMPTED_CALLS=$exempted_calls"
+# Always emitted: every scanned, reachable harness should be budget-checked, so
+# AGENT_BUDGETS_CHECKED < FILES_SCANNED is itself a signal (#2670).
+echo "AGENT_BUDGETS_CHECKED=$budgets_checked"
 if [ "$issue_count" -gt 0 ]; then
     echo "ISSUES:"
     printf '%s\n' "${issues[@]}"
@@ -580,6 +651,10 @@ fi
 if [ "$exempted_calls" -gt 0 ]; then
     echo "EXEMPTIONS:"
     printf '%s\n' "${exemptions[@]}"
+fi
+if [ "$budgets_checked" -gt 0 ]; then
+    echo "AGENT_BUDGETS:"
+    printf '%s\n' "${budget_rows[@]}"
 fi
 echo "=== END WORKFLOW JS MODEL/EFFORT ==="
 

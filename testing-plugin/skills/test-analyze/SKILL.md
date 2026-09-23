@@ -4,7 +4,7 @@ args: "<results-path> [--type <test-type>] [--focus <area>]"
 argument-hint: "Path to test results (e.g., ./test-results/), optional --type and --focus filters"
 allowed-tools: Task, Read, Glob, Grep, TodoWrite
 created: 2025-12-16
-modified: 2026-09-02
+modified: 2026-09-23
 reviewed: 2026-09-02
 name: test-analyze
 agent: general-purpose
@@ -117,6 +117,9 @@ caps the harness at 8 concurrent agents; (b) the `category` and `severity` enums
 `unroutable[]` with a stated reason instead of the nearest-looking row; (c) the
 `parallel()` barrier before Synthesize — group agents emit `depends_on` edges pointing at
 failures in *other* groups, so the ordering only exists once every group has returned.
+
+**Agent budget:** 10 — parse, one planning agent per routed agent type (at most
+8, the `AGENT_FOR` table), and synthesize.
 
 **Skip the harness when:** there are fewer than 5 routable failures — the script returns
 `{mode:'inline'}` at that floor, because below it one opus agent per category costs more

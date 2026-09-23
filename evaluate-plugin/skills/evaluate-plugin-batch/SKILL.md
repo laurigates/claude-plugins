@@ -6,7 +6,7 @@ allowed-tools: Task, Read, Write, Glob, Grep, Bash(bash *), SlashCommand
 argument-hint: "git-plugin [--create-missing-evals]"
 agent: general-purpose
 created: 2026-03-04
-modified: 2026-09-20
+modified: 2026-09-23
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -85,6 +85,11 @@ today have zero or one eval-ready skill and the run aborts with
 `reason: 'below-floor'`. That is the designed outcome, not a bug — an empty
 sweep means the evals have not been written yet, and the fix is to author them
 (or pass `--create-missing-evals`), never to widen the harness.
+
+**Agent budget:** 2 — the inventory and aggregate agents in this file. Each
+included skill (at most 25) also runs one `evaluate-skill` child, which spends
+that skill's own budget; the scale estimator cannot see into a `workflow()`
+child, so the guard shows 2 for a run that can spend hundreds.
 
 **Skip the harness when:** the plugin has fewer than 2 eval-ready skills — the
 modal case today, and `FLOOR = 2` is a hard bound that aborts there rather than
