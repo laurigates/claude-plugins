@@ -82,21 +82,29 @@ winner. The ranking is recorded in `history.json`.
 <plugin-name>/skills/<skill-name>/
 ├── SKILL.md
 ├── evals.json              # Committed: test case definitions
-└── eval-results/           # Gitignored: run outputs
+└── eval-results/           # Gitignored: aggregated outputs
     ├── benchmark.json
     ├── history.json
-    ├── candidates/         # --best-of candidate revisions
-    │   └── candidate-<i>.md
-    └── runs/
-        └── <eval-id>-<run-id>/
-            ├── grading.json
-            ├── comparison.json
-            ├── transcript.md
-            └── timing.json
+    ├── model-matrix.json
+    └── candidates/         # --best-of candidate revisions
+        └── candidate-<i>.md
+
+tmp/eval-runs/<plugin-name>/<skill-name>/   # Gitignored: per-run staging
+└── runs/                   # baseline/ for --baseline runs
+    └── <eval-id>-run-<N>/
+        ├── manifest.json
+        ├── grading.json
+        ├── comparison.json
+        ├── transcript.md
+        └── timing.json
 ```
 
 - `evals.json` is version-controlled (test definitions)
-- `eval-results/` is gitignored (transient run data)
+- `eval-results/` is gitignored (transient aggregated data)
+- Run directories are staged by `scripts/prepare_run.sh` under the repo's
+  `tmp/eval-runs/` (override with `EVAL_RUNS_ROOT`), deliberately **outside**
+  `skills/`: path-scoped rules on `**/skills/**` would otherwise load into every
+  eval subagent that writes its transcript (#2667)
 
 ## Scripts
 

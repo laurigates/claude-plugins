@@ -21,8 +21,9 @@
  *      child — `evaluate-plugin:evaluate-plugin-batch` calls
  *      `workflow('evaluate-skill', {...})`, so a `workflow()` here would throw
  *      and kill the whole batch.
- *   2. No worktree isolation on any agent. Every rollout agent writes under
- *      `<skillDir>/eval-results/`, and the Aggregate agent has to read what all
+ *   2. No worktree isolation on any agent. Every rollout agent writes its run
+ *      dir into the shared checkout (`tmp/eval-runs/`, staged by
+ *      prepare_run.sh), and the Aggregate agent has to read what all
  *      of them wrote. A worktree-isolated agent's writes are invisible to its
  *      siblings, so isolating them would silently empty the benchmark. Nothing
  *      here pushes, opens a PR, or mutates a forge either, so the two

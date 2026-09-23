@@ -102,6 +102,16 @@ combination:
    serializes them: pass `run_in_background: false` on each dispatch, or wait
    for that agent's result to arrive before issuing the next one —
    serialization is the wait, not the dispatch order.
+
+   **Keep the subagent off `…/skills/…` paths.** Paste the SKILL.md body into
+   the prompt instead of naming its path, and have the subagent return its
+   artifact in the reply. Path-scoped rules load whole into any agent that
+   touches a matching file, and this repo scopes over a dozen of them to
+   `**/skills/**`; a haiku subagent handed a skill path failed with HTTP 400
+   `Prompt is too long` before running anything (#2667). A 400 on the haiku arm
+   is the context surface, not the skill — `prepare_run.sh` stages run dirs
+   outside `skills/` for the same reason, and `check-context-engineering.py`
+   caps each rule's size so the surface cannot regrow unseen.
 3. Write the subagent's produced artifact to `$RUN_DIR/transcript.md`.
 
 ### Step 3: Grade — deterministic first, judge only on deferral
