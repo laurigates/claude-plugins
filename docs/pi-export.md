@@ -127,9 +127,9 @@ extensions:
 
 `just pi-adapter-check` reports the two packages as `SUBAGENTS=` and
 `MCP_ADAPTER=`. It reads the `packages` array of `~/.pi/agent/settings.json`
-(or `$PI_CODING_AGENT_DIR/settings.json`) and the `npm/node_modules/` tree that
-`pi install` fills, and prints the install command for a package found in
-neither. The adapter is not a package (it is registered through `extensions`),
+(or `$PI_CODING_AGENT_DIR/settings.json`), where an npm, git or local-path
+source counts, and the `npm/node_modules/` tree that `pi install` fills. It
+prints the install command for a package found in neither. The adapter is not a package (it is registered through `extensions`),
 so the check covers it through its file and dependencies instead (`EXTENSION=`,
 `NODE_MODULES=`).
 

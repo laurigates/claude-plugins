@@ -18,9 +18,10 @@
 #   A. nothing installed: both packages MISSING, each naming `pi install npm:<pkg>`
 #   B. a string entry and a pinned {source} entry in settings.json count as present
 #   C. the npm/node_modules tree alone (no settings.json) counts as present
-#   D. near-miss entries (a longer package name, a local path) do not count
+#   D. near-miss entries (a longer npm name, a differently named git repo) do not count
 #   E. an unparseable settings.json falls back to the npm tree instead of aborting
 #   F. every case exits 0: the check is informational, so `setup-pi` still runs
+#   G. git and local-path sources count, matched on the repo or directory name
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -112,15 +113,14 @@ assert "C: npm/node_modules/@tintinweb/pi-subagents marks it present" \
 mkdir -p "$tmp/d"
 cat >"$tmp/d/settings.json" <<'JSON'
 {
-  "packages": ["npm:pi-mcp-adapter-extras", "/home/me/src/pi-subagents"],
-  "extensions": ["/home/me/src/pi-mcp-adapter/index.ts"]
+  "packages": ["npm:pi-mcp-adapter-extras", "git:github.com/me/pi-subagents-fork@v1"]
 }
 JSON
 run_check "$tmp/d"
 echo "=== TEST D: near-miss entries ==="
 assert "D: npm:pi-mcp-adapter-extras does not count as pi-mcp-adapter" \
   "$(line "$tmp/d" MCP_ADAPTER | grep -qF 'MISSING' && echo true || echo false)"
-assert "D: a local path containing pi-subagents does not count" \
+assert "D: a git repo named pi-subagents-fork does not count as pi-subagents" \
   "$(line "$tmp/d" SUBAGENTS | grep -qF 'MISSING' && echo true || echo false)"
 
 # --- E. unparseable settings.json -----------------------------------------------
@@ -133,9 +133,29 @@ assert "E: the npm tree still marks pi-mcp-adapter present" \
 assert "E: pi-subagents (in neither) is MISSING" \
   "$(line "$tmp/e" SUBAGENTS | grep -qF 'MISSING' && echo true || echo false)"
 
+# --- G. git and local-path sources ----------------------------------------------
+# pi also installs from git (cloned under git/, not npm/) and from a local path
+# (not copied at all), so settings.json is the only record; the repo or
+# directory name identifies the package.
+mkdir -p "$tmp/g"
+cat >"$tmp/g/settings.json" <<'JSON'
+{
+  "packages": [
+    "git:github.com/tintinweb/pi-subagents@v0.19.0",
+    { "source": "/home/me/src/pi-mcp-adapter/" }
+  ]
+}
+JSON
+run_check "$tmp/g"
+echo "=== TEST G: git and local-path sources ==="
+assert "G: a pinned git: source marks pi-subagents present" \
+  "$(line "$tmp/g" SUBAGENTS | grep -qF 'present (@tintinweb/pi-subagents)' && echo true || echo false)"
+assert "G: a local-path {source} marks pi-mcp-adapter present" \
+  "$(line "$tmp/g" MCP_ADAPTER | grep -qF 'present (pi-mcp-adapter)' && echo true || echo false)"
+
 # --- F. informational: exit 0 everywhere ----------------------------------------
 echo "=== TEST F: exit status ==="
-for c in a b c d e; do
+for c in a b c d e g; do
   assert "F: case $c exits 0 (got $(cat "$tmp/$c.rc"))" \
     "$([ "$(cat "$tmp/$c.rc")" = 0 ] && echo true || echo false)"
 done
