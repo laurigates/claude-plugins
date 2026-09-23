@@ -7,8 +7,9 @@
 #              the worker, decides "done"; else the loop optimises for completion
 #              over correctness).
 #   Pillar 2 — each iteration leaves a COMPACT STATE PACKET (objective, ref,
-#              files-in-scope, exit condition, verifier result, changed-since)
-#              so a context-free successor can re-enter cleanly.
+#              files-in-scope, exit condition, verifier result, changed-since,
+#              ordering / preconditions, next target) so a context-free
+#              successor can re-enter cleanly (#2693 added the last two).
 #
 # WHY A SEMANTIC GUARD
 # These invariants live as prose + a plan-file schema across four files. A
@@ -60,11 +61,15 @@ require() {
 require "$RULE" "independently" "Pillar 1 (independent stop condition) dropped from the rule"
 require "$RULE" "compact state packet" "Pillar 2 (state packet) dropped from the rule"
 require "$RULE" "Verifier result" "state-packet field list dropped from the rule"
+require "$RULE" "Ordering / preconditions" "state packet lost the ordering field (successor acts out of order) (#2693)"
+require "$RULE" "Next target" "state packet lost the next-target field (successor re-derives target selection) (#2693)"
 
 # Checkpoint skill — the plan file IS the state packet; gate stays independent.
 require "$CHECKPOINT" "Verifier result" "checkpoint plan format lost the Verifier-result field (reverts to self-judged done)"
 require "$CHECKPOINT" "Changed since last run" "checkpoint plan format lost the changed-since field (resume redoes/undoes work)"
 require "$CHECKPOINT" "Exit condition" "checkpoint plan format lost the top-level exit condition"
+require "$CHECKPOINT" "Ordering / preconditions" "checkpoint plan format lost the per-phase ordering field (#2693)"
+require "$CHECKPOINT" "Next target" "checkpoint plan format lost the next-target field (#2693)"
 require "$CHECKPOINT" "independent verifier" "checkpoint phase gate lost the independent-verifier step"
 require "$CHECKPOINT" "loop-integrity.md" "checkpoint skill lost its loop-integrity cross-reference"
 
@@ -72,6 +77,10 @@ require "$CHECKPOINT" "loop-integrity.md" "checkpoint skill lost its loop-integr
 require "$TEST_LOOP" "loop-integrity.md" "project-test-loop lost its loop-integrity cross-reference"
 require "$ADVERSARIAL" "loop-integrity.md" "adversarial-review lost its loop-integrity (Pillar 1) cross-reference"
 require "$EXEC_REVIEW" "loop-integrity.md" "execution-grounded-review lost its loop-integrity (Pillar 1) cross-reference"
+# The attribution step must stay bounded (loop-integrity.md "Bounding runaway")
+# and must report a checkable span, not an impression (#2694).
+require "$EXEC_REVIEW" "Attribution bound" "execution-grounded-review attribution search lost its stated upper bound (#2694)"
+require "$EXEC_REVIEW" "evidenceSpan" "execution-grounded-review LEDGER lost the evidenceSpan field (#2694)"
 
 status="OK"
 [ "$issue_count" -gt 0 ] && status="ERROR"
