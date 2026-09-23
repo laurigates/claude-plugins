@@ -243,6 +243,26 @@ await pipeline(CELLS,
   r => agent("grade", { label: "g" }))
 '
 
+# A pushed array's initializer is a FLOOR the push adds to, not something it
+# discards. Read as merely unbounded, a 12-item array was costed at ASSUMED (8),
+# below #2668's 12, and the hook went silent on a script #2668 asked about
+# (#2670 review, round 4). It holds at least 12 + 1.
+PUSHED_12='
+const items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+if (extra) items.push(extra);
+await parallel(items.map((i) => () => agent("w " + i)));
+'
+assert_estimate "pushed literal longer than ASSUMED costs its length plus the push" 13 "$PUSHED_12"
+assert_asks "pushed literal longer than ASSUMED still asks" "$PUSHED_12"
+
+# The literal-element rule covers sites reached through the literal's elements
+# and modeled fan-outs only. A site in a .filter()-style callback runs once per
+# element, and no such callback is a fan-out here, so it keeps #2668's
+# multiplier rather than dropping to 1.
+assert_estimate "agent() in a .filter() callback over a literal source keeps the multiplier" 3 '
+await parallel([1, 2, 3].filter((x) => agent("a " + x)))
+'
+
 # A loop window bounds CONCURRENCY, not the agent count: a for-loop stepping by
 # WAVE over a runtime list still creates one agent per item. Reading
 # .slice(i, i + WAVE) as a bound of WAVE would understate cost by the number of
@@ -353,12 +373,23 @@ const units = [1, 2, 3, 4, 5, 6];
 const close = (s) => `e ${s.replace(/}/g, ")")} f`;
 await pipeline(units, (u) => agent(open(u)), (u) => agent(close(u)));
 EOF
+# An unproven parse gets no rule that lowers #2668's figure. Here both scans
+# lose the pipeline to the quote regex; #2668 asked only because it tripled the
+# literal array beside it, and the literal-element rule (30 -> 10) turned that
+# into silence on a script whose true count is 34 (#2670 review, round 4). The
+# #2668 bound logic now sets the floor on any parse that cannot prove itself.
+fx unproven_literal_beside_quote_regex <<'EOF'
+await parallel([() => agent("r"), () => agent("s"), ...args.units.map((u) => () => agent(u))]);
+const w2 = s.replace(/'/g, "");
+await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
+EOF
 
 assert_asks "regex holding ' inside \${...} still asks" "$(<"$FX_DIR/regex_squote_in_interp.js")"
 assert_asks "regex holding \" inside \${...} still asks" "$(<"$FX_DIR/regex_dquote_in_interp.js")"
 assert_asks "templates merged across a pipeline still ask" "$(<"$FX_DIR/brace_regex_blanks_calls.js")"
 assert_asks "brace-regex pair around a bounding declaration still asks" "$(<"$FX_DIR/brace_pair_blanks_bound.js")"
 assert_asks "brace-regex pair around a pipeline source still asks" "$(<"$FX_DIR/brace_pair_raises_pipeline.js")"
+assert_asks "literal array beside a quote regex on an unproven parse still asks" "$(<"$FX_DIR/unproven_literal_beside_quote_regex.js")"
 
 # assert_parse <desc> <estimate> <sanitizer> <fallback-substring> <fixture>
 assert_parse() {
@@ -391,6 +422,7 @@ assert_parse "code token the #2668 scan kept"        16 flat "would blank the co
 assert_parse "nested template walked structurally"   32 structural "" nested_template_proves_itself
 assert_parse "proven walk blanks a bound: flat is higher" 12 flat "flat scan costs it higher" brace_pair_blanks_bound
 assert_parse "proven walk is the higher reading"         16 structural "" brace_pair_raises_pipeline
+assert_parse "unproven parse: #2668 bound logic is the floor" 30 flat "the #2668 bound logic costs it higher" unproven_literal_beside_quote_regex
 
 echo
 echo "== differential against the #2668 estimator (#2670 review) =="
@@ -403,6 +435,10 @@ BASELINE="$(dirname "$0")/fixtures/workflow-scale-estimate-2668.py"
 
 # correct_count <input> — the true agent count for an input whose live figure
 # is below #2668's (a runtime-length list costed at 8, as both estimators do).
+# Exactly two rules can lower a figure, and only on a parse that proved itself:
+# a site inside a literal-array source is one element run once (the first five
+# rows), and a trailing comma is not an element (the last). Ablating both
+# reproduces #2668's figure on every bundled template.
 correct_count() {
     case "$1" in
         literal_4_thunks) echo 4 ;;               # four thunks, each run once
@@ -410,6 +446,7 @@ correct_count() {
         literal_concat_mapped) echo 9 ;;          # 1 + 8
         blueprint-story-audit.workflow.js) echo 20 ;;
         verify-before-filing.workflow.js) echo 49 ;;
+        trailing_comma_mapped) echo 10 ;;         # ten elements; `10,]` adds none
         *) echo none ;;
     esac
 }
@@ -431,6 +468,36 @@ await pipeline([1, 2, 3, 4, 5, 6], s => agent("a"), t => agent("b"))
 EOF
 fx literal_concat_mapped <<'EOF'
 await parallel([() => agent("a")].concat(args.xs.map(x => () => agent("b"))))
+EOF
+fx trailing_comma_mapped <<'EOF'
+const D = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10,]
+await parallel(D.map(d => () => agent("a")))
+EOF
+# A hole is an element (JS length 3), so it lowers nothing: only a FINAL empty
+# segment is dropped.
+fx holey_array_mapped <<'EOF'
+const H = [1, , 3]
+await parallel(H.map(h => () => agent("a")))
+EOF
+# A pushed array is costed at max(initializer + 1, ASSUMED). None of these may
+# fall below #2668, which read the initializer alone (counting a trailing comma).
+fx pushed_literal_over_assumed <<'EOF'
+const items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+if (extra) items.push(extra);
+await parallel(items.map((i) => () => agent("w " + i)));
+EOF
+fx pushed_trailing_comma <<'EOF'
+const D = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10,]
+if (x) D.push(x)
+await parallel(D.map(d => () => agent("a")))
+EOF
+fx pushed_capped_declaration <<'EOF'
+const G = args.units.slice(0, 20)
+if (x) G.push(x)
+await parallel(G.map(g => () => agent("a")))
+EOF
+fx filter_callback_in_literal_source <<'EOF'
+await parallel([1, 2, 3].filter((x) => agent("a " + x)))
 EOF
 fx close_brace_regex_in_interp <<'EOF'
 const p = (s) => `x ${s.replace(/}/g, '')} y`
@@ -582,6 +649,69 @@ if [ "${prop_t:-0}" -gt 0 ] && [ "${prop_l:-0}" -gt 0 ] && ! grep -q '^VIOLATION
 elif ! grep -q '^VIOLATION' <<<"$PROP_OUT"; then
     FAIL=$((FAIL + 1))
     printf '  FAIL  property is vacuous or did not run: %s\n' "${PROP_OUT:-<no output>}"
+fi
+
+echo
+echo "== property: an unproven parse is never below #2668 (#2670 review, round 4) =="
+
+# The two lowering rules apply only where the structural walk proved itself.
+# On any input it could not prove, the reported ESTIMATE must be at least the
+# frozen #2668 estimator's. Non-vacuous only if some unproven input would have
+# fallen below #2668 without the floor, i.e. the floor did work.
+UNPROVEN_PY=$(
+    cat <<'PY'
+import importlib.util, sys
+
+def load(path, name):
+    spec = importlib.util.spec_from_file_location(name, path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+est, base = load(sys.argv[1], "est"), load(sys.argv[2], "base")
+
+def rank(r):
+    return r.get("ESTIMATE", -1)
+
+unproven = floored = 0
+for path in sys.stdin.read().split("\n"):
+    if not path:
+        continue
+    src = open(path, encoding="utf-8").read()
+    text, mode, _ = est.sanitize(src)
+    if mode != "flat":
+        continue
+    unproven += 1
+    b = rank(base.analyze(src, 10, 8))
+    if rank(est.estimate_text(text, src, 10, 8)) < b:
+        floored += 1
+    if rank(est.analyze(src, 10, 8)) < b:
+        print(f"VIOLATION {path.rsplit('/', 1)[-1]} live={rank(est.analyze(src, 10, 8))} base={b}")
+print(f"UNPROVEN={unproven} FLOORED={floored}")
+PY
+)
+UNPROVEN_OUT=$(
+    {
+        for f in "$FX_DIR"/*.js; do printf '%s\n' "$f"; done
+        [ -n "$REPO_ROOT" ] && git -C "$REPO_ROOT" ls-files '*/workflows/*.js' | sed "s|^|$REPO_ROOT/|"
+    } | python3 -c "$UNPROVEN_PY" "$ESTIMATOR" "$BASELINE" 2>&1
+)
+while IFS= read -r line; do
+    case "$line" in
+        VIOLATION*)
+            FAIL=$((FAIL + 1))
+            printf '  FAIL  unproven property: %s\n' "${line#VIOLATION }"
+            ;;
+    esac
+done <<<"$UNPROVEN_OUT"
+up_n=$(sed -n 's/.*UNPROVEN=\([0-9]*\).*/\1/p' <<<"$UNPROVEN_OUT")
+up_f=$(sed -n 's/.*FLOORED=\([0-9]*\).*/\1/p' <<<"$UNPROVEN_OUT")
+if [ "${up_f:-0}" -gt 0 ] && ! grep -q '^VIOLATION' <<<"$UNPROVEN_OUT"; then
+    PASS=$((PASS + 1))
+    printf '  PASS  unproven property held over %d unproven inputs; the floor raised %d\n' "$up_n" "$up_f"
+elif ! grep -q '^VIOLATION' <<<"$UNPROVEN_OUT"; then
+    FAIL=$((FAIL + 1))
+    printf '  FAIL  unproven property is vacuous or did not run: %s\n' "${UNPROVEN_OUT:-<no output>}"
 fi
 
 echo

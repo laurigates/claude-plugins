@@ -55,8 +55,9 @@ Known gaps, deliberately fail-open (an unanalyzable script is NOT blocked):
   - Indirection through a helper function (`const fan = xs => parallel(...)`)
     is not followed; the call site reads as a plain call and bounds as unknown.
   - Dynamic array construction (`arr.push(...)` in a loop) is not counted: an
-    array grown in place reads as unbounded (costed at ASSUMED), never as the
-    length of its initializer.
+    array grown in place reads as unbounded, costed at the larger of ASSUMED
+    and its initializer length plus one (the push), never at the initializer
+    length alone.
   - A saved workflow referenced by name has no script text to read at all.
 """
 
@@ -332,25 +333,30 @@ def receiver_of(text: str, dot: int) -> str:
     return text[i + 1 : end].strip()
 
 
-def top_level_items(inner: str) -> int:
-    """Count comma-separated items at depth 0 inside an array/arg body.
+def top_level_items(inner: str, proven: bool = True) -> int:
+    """Length of the array literal whose body is `inner`, as JS counts it.
 
-    Only non-empty segments are items: a trailing comma (`[a, b,]`, the house
-    style for multi-line arrays) is not a third element (#2670).
+    Every depth-0 comma ends an element, holes included (`[a, , b]` has length
+    3). A final comma with nothing after it does not start one, so the trailing
+    comma of a house-style multi-line array (`[a, b,]`) is not a third element
+    (#2670). That is the only case where this is below the #2668 count, which
+    added one for every comma, and it is the #2668 count that an unproven read
+    gets (see analyze()).
     """
-    depth, items, segment = 0, 0, ""
-    for ch in inner + ",":
+    depth, commas, last = 0, 0, ""
+    for ch in inner:
         if ch in "([{":
             depth += 1
         elif ch in ")]}":
             depth -= 1
         elif ch == "," and depth == 0:
-            if segment.strip():
-                items += 1
-            segment = ""
+            commas += 1
+            last = ""
             continue
-        segment += ch
-    return items
+        last += ch
+    if not proven:
+        return commas + 1 if inner.strip() else 0
+    return commas + (1 if last.strip() else 0)
 
 
 def unwrap_tail(expr: str):
@@ -380,8 +386,28 @@ def unwrap_tail(expr: str):
     return receiver, method, args
 
 
-def bound_of(expr: str, text: str, seen=None):
+class Grown:
+    """A list grown in place: unbounded like None, but never costed below `floor`.
+
+    `const items = [1, ..., 12]` followed by `items.push(x)` holds at least 13
+    items on any run where the push executes. Reading it as unbounded alone
+    costed it at ASSUMED (8), below the #2668 figure of 12, and the guard went
+    silent on a script #2668 asked about (#2670 review, round 4). The fan-out is
+    costed at max(floor, ASSUMED).
+    """
+
+    __slots__ = ("floor",)
+
+    def __init__(self, floor: int):
+        self.floor = floor
+
+
+def bound_of(expr: str, text: str, seen=None, proven: bool = True):
     """Upper bound on the length of `expr`, or None when it cannot be bounded.
+
+    A list grown by push()/unshift()/splice() returns a Grown: unbounded, with
+    the floor its declaration shows. It passes through the same length-keeping
+    operations None does, and an explicit `.slice(0, N)` caps it like any list.
 
     Operations that can only shrink a list (`filter`, `slice`, `flat`) or
     preserve its length (`map`, `reverse`, `sort`) keep the base's bound: an
@@ -407,9 +433,9 @@ def bound_of(expr: str, text: str, seen=None):
             if m:
                 return max(0, int(m.group(2)) - int(m.group(1)))
             # Single-argument slice: drops items, bounded only if receiver is bounded
-            return bound_of(receiver, text, seen)
+            return bound_of(receiver, text, seen, proven)
         if method in ("filter", "flat", "map", "reverse", "sort"):
-            return bound_of(receiver, text, seen)
+            return bound_of(receiver, text, seen, proven)
 
     # Array.from({length: N})
     m = re.search(r"Array\.from\(\s*\{\s*length\s*:\s*(\d+)", expr)
@@ -420,32 +446,44 @@ def bound_of(expr: str, text: str, seen=None):
     if expr.startswith("["):
         close = match_forward(expr, 0)
         if close == len(expr):
-            return top_level_items(expr[1:-1])
+            return top_level_items(expr[1:-1], proven)
 
     # Bare identifier: resolve a const/let/var array literal declaration.
     if re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", expr):
+        declared = _declared_bound(expr, text, seen, proven)
         # An array grown in place is as long as the code that grows it, not as
         # long as its initializer: `const CELLS = []` then `CELLS.push(...)` in a
         # loop read as ZERO items and costed a whole pipeline at nothing (#2670).
+        # Its initializer still sets a floor: the push adds at least one item.
         if re.search(
             r"(?<![A-Za-z0-9_$.])"
             + re.escape(expr)
             + r"\s*\.\s*(?:push|unshift|splice)\s*\(",
             text,
         ):
-            return None
-        d = re.search(r"\b(?:const|let|var)\s+" + re.escape(expr) + r"\s*=\s*", text)
-        if d:
-            rest = text[d.end() :].lstrip()
-            if rest.startswith("["):
-                close = match_forward(rest, 0)
-                if close > 0:
-                    return top_level_items(rest[1 : close - 1])
-            # Non-literal initializer (a call, an await): try its tail form.
-            stop = rest.find("\n")
-            cand = rest[: stop if stop > 0 else len(rest)].rstrip().rstrip(";")
-            if cand and cand != expr:
-                return bound_of(cand, text, seen)
+            if declared is None:
+                return None
+            floor = declared.floor if isinstance(declared, Grown) else declared
+            return Grown(floor + 1)
+        return declared
+    return None
+
+
+def _declared_bound(name: str, text: str, seen: set, proven: bool):
+    """Bound of the const/let/var declaration of `name`, or None."""
+    d = re.search(r"\b(?:const|let|var)\s+" + re.escape(name) + r"\s*=\s*", text)
+    if not d:
+        return None
+    rest = text[d.end() :].lstrip()
+    if rest.startswith("["):
+        close = match_forward(rest, 0)
+        if close > 0:
+            return top_level_items(rest[1 : close - 1], proven)
+    # Non-literal initializer (a call, an await): try its tail form.
+    stop = rest.find("\n")
+    cand = rest[: stop if stop > 0 else len(rest)].rstrip().rstrip(";")
+    if cand and cand != name:
+        return bound_of(cand, text, seen, proven)
     return None
 
 
@@ -536,6 +574,24 @@ def is_wrapper(kind: str, source: str) -> bool:
     return False
 
 
+# Array methods that call their callback once per element but that this
+# estimator does not model as a fan-out. A site inside one of these within a
+# literal source is NOT one element run once: `parallel([1, 2, 3].filter(x =>
+# agent(x)))` runs three agents.
+_ITERATING = re.compile(
+    r"\.\s*(?:filter|forEach|reduce|reduceRight|some|every|find|findIndex"
+    r"|findLast|findLastIndex|sort|toSorted)\s*\("
+)
+
+
+def _runs_once(text: str, site: int, lo: int) -> bool:
+    """True when no unmodeled iterating callback between `lo` and `site` encloses it."""
+    for m in _ITERATING.finditer(text, lo, site):
+        if match_forward(text, m.end() - 1) > site:
+            return False
+    return True
+
+
 def _risk(result: dict) -> int:
     """Order two readings by what they make the guard do: NO_AGENTS lowest."""
     return result.get("ESTIMATE", -1)
@@ -553,38 +609,65 @@ def analyze(src: str, limit: int, assumed: int = 8) -> dict:
     of the #2668 scan. The price is that a false positive the walk would have
     removed (prose inside a nested template read as code) is kept whenever
     the flat scan sees it.
+
+    The rules that can cost a script BELOW #2668 (a literal-array element runs
+    once; a trailing comma is not an element) apply only to a parse that proved
+    itself. When the walk cannot prove itself, the file is one this estimator
+    admits it cannot read, so the flat text is also costed with #2668's own
+    bound logic and the higher figure is kept: on an unproven parse the
+    estimate is never below #2668's. Without that, a regex holding a quote hid
+    the code that put a script over the limit from both estimators, and
+    dropping #2668's 3x over-count of a literal array beside it turned its
+    accidental ask into silence (#2670 review, round 4).
     """
     text, mode, reason = sanitize(src)
-    readings = [(text, mode, reason)]
+    # (text, mode, reason, proven): `proven` enables the lowering rules.
+    readings = [(text, mode, reason, True)]
     if mode == "structural":
-        readings.append((_flat_sanitize(src), "flat", ""))
+        readings.append((_flat_sanitize(src), "flat", "", True))
+    else:
+        readings.append((text, "flat", reason, False))
     results, failure = [], None
-    for text, mode, reason in readings:
+    for text, mode, reason, proven in readings:
         try:
-            result = estimate_text(text, src, limit, assumed)
+            result = estimate_text(text, src, limit, assumed, proven=proven)
         except Exception as exc:  # noqa: BLE001 - the other reading may still succeed
             failure = exc
             continue
         result["SANITIZER"] = mode
         if reason:
             result["FALLBACK"] = reason
+        result["_proven"] = proven
         results.append(result)
     if not results:
         raise failure
     best = max(results, key=_risk)  # max() keeps the first of equals
-    if len(readings) == 2 and best["SANITIZER"] == "flat":
+    first_mode, first_reason = readings[0][1], readings[0][2]
+    low = results[0].get("ESTIMATE", "NO_AGENTS")
+    if first_mode == "structural" and best["SANITIZER"] == "flat":
         if len(results) == 1:
             best["FALLBACK"] = f"the structural reading raised {type(failure).__name__}"
         else:
-            low = results[0].get("ESTIMATE", "NO_AGENTS")
             best["FALLBACK"] = (
                 f"the #2668 flat scan costs it higher ({best.get('ESTIMATE')} > {low})"
             )
+    elif first_mode == "flat" and len(results) == 2 and best is not results[0]:
+        best["FALLBACK"] = (
+            f"{first_reason}; the #2668 bound logic costs it higher "
+            f"({best.get('ESTIMATE')} > {low})"
+        )
+    for result in results:
+        del result["_proven"]
     return best
 
 
-def estimate_text(text: str, src: str, limit: int, assumed: int = 8) -> dict:
+def estimate_text(
+    text: str, src: str, limit: int, assumed: int = 8, proven: bool = True
+) -> dict:
     """Cost one sanitized reading `text` of `src` against `limit`.
+
+    `proven=False` costs it with the #2668 bound logic: no literal-array
+    element rule and a trailing comma counted as an element (see analyze()).
 
     A fan-out whose length is only knowable at runtime is not waved through and
     is not hard-blocked either: it is costed at `assumed` items. That single
@@ -616,12 +699,19 @@ def estimate_text(text: str, src: str, limit: int, assumed: int = 8) -> dict:
             # agent(b)])` is two agents, not four. Multiplying it by the array
             # length costed blueprint-story-audit at 71 instead of 20 (#2670).
             # A site in a pipeline STAGE (outside the source span) still runs
-            # once per element, and `.map` over a literal still multiplies.
-            if src_lo <= site < src_hi and source.startswith("["):
+            # once per element, and `.map` over a literal still multiplies. A
+            # site in a `.filter()`-style callback runs once per element too,
+            # and none of those is a fan-out here, so it keeps the multiplier.
+            if (
+                proven
+                and src_lo <= site < src_hi
+                and source.startswith("[")
+                and _runs_once(text, site, src_lo)
+            ):
                 continue
-            b = bound_of(source, text)
-            if b is None:
-                product *= assumed
+            b = bound_of(source, text, proven=proven)
+            if b is None or isinstance(b, Grown):
+                product *= assumed if b is None else max(b.floor, assumed)
                 label = short(source) or f"{kind}(...)"
                 if label not in unknown_sources:
                     unknown_sources.append(label)
