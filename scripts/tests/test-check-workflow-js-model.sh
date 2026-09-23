@@ -34,7 +34,8 @@
 #   N. The declared agent budget (issue #2670) — within budget, over budget,
 #      and (GUARD INTEGRITY) the same over-budget harness passing once its
 #      budget is honest; a missing or out-of-section declaration; no
-#      double-report on an orphan; and every shipped template fits its budget.
+#      double-report on an orphan; every shipped template fits its budget; and
+#      a NO_AGENTS verdict beside parsed agent() calls is a desync, not a 0.
 
 set -uo pipefail
 
@@ -541,6 +542,45 @@ o=$(bash "$guard" --project-dir "$root" 2>&1)
 check "N9: broken estimator typed"           "1"     "$(printf '%s\n' "$o" | grep -c 'TYPE=estimator_error .*VERDICT=none')"
 check "N9: broken estimator STATUS=ERROR"    "ERROR" "$(field "$o" STATUS)"
 check "N9: nothing counted as checked"       "0"     "$(field "$o" AGENT_BUDGETS_CHECKED)"
+
+# N10. A NO_AGENTS verdict on a file this guard parses agent() calls from is a
+# desync, not a zero budget. Before #2670's review the mapping was NO_AGENTS ->
+# 0 unconditionally, so an estimator that misread a file passed any template.
+root=$(mk_root N10)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_js "$d" audit.workflow.js opus low
+guard=$(mk_guard_copy N10-guard)
+printf 'print("VERDICT=NO_AGENTS")\nprint("SITES=0")\n' > "$(dirname "$guard")/../hooks-plugin/hooks/workflow-scale-estimate.py"
+o=$(bash "$guard" --project-dir "$root" 2>&1)
+check "N10: NO_AGENTS beside a real call is a desync" "1"     "$(printf '%s\n' "$o" | grep -c 'TYPE=estimator_desync')"
+check "N10: desync STATUS=ERROR"                      "ERROR" "$(field "$o" STATUS)"
+check "N10: desync counts nothing as checked"         "0"     "$(field "$o" AGENT_BUDGETS_CHECKED)"
+
+# N11. GUARD INTEGRITY for N10 -- the same stub on a harness with NO agent()
+# call is a genuine zero: the check must not fire on every NO_AGENTS.
+root=$(mk_root N11)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+printf 'export default async function () {\n  return { ok: true };\n}\n' > "$d/workflows/audit.workflow.js"
+o=$(bash "$guard" --project-dir "$root" 2>&1)
+check "N11: a genuine zero is not a desync"           "0"  "$(printf '%s\n' "$o" | grep -c 'TYPE=estimator_desync')"
+check "N11: a genuine zero is budget-checked at 0"    "1"  "$(printf '%s\n' "$o" | grep -c 'ESTIMATE=0 BUDGET=10$')"
+
+# N12. End to end against the REAL estimator: a regex literal holding a quote
+# inside a template interpolation must still cost the fan-out after it (2 sites
+# x 8 = 16 > 10), not blank the file into NO_AGENTS (#2670 review).
+root=$(mk_root N12)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+{
+    echo "export default async function ({ agent, pipeline }) {"
+    echo "  const p = (s) => \`x \${s.replace(/'/g, \"\")} y\`;"
+    echo "  return pipeline(args.units,"
+    echo "    (u) => agent(p(u), { label:'edit', schema: S, model:'opus', effort:'low' }),"
+    echo "    (e) => agent(p(e), { label:'review', schema: S, model:'opus', effort:'low' }));"
+    echo "}"
+} > "$d/workflows/audit.workflow.js"
+o=$(out "$root")
+check "N12: regex-quote template still over budget"  "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=agent_budget_exceeded .*ESTIMATE=16 BUDGET=10')"
+check "N12: not reported as a desync"                 "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=estimator_desync')"
 
 # N7. The shipped templates: every one declares a budget its estimate fits in.
 # Not an exact count (a sibling PR may add a template), but non-vacuous: every

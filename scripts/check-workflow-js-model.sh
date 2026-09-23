@@ -293,7 +293,18 @@ check_agent_budget() {
     verdict=$(sed -n 's/^VERDICT=//p' <<<"$est_out")
     estimate=$(sed -n 's/^ESTIMATE=//p' <<<"$est_out")
     case "$verdict" in
-        NO_AGENTS) estimate=0 ;;
+        NO_AGENTS)
+            # The estimator saw no agent() call. This script's own call parser is
+            # an independent second reading of the same file, and if it counts
+            # calls the two disagree about what is code: a budget of 0 would then
+            # pass a template of any size. A regex literal holding a quote once
+            # blanked a whole file this way (#2670 review).
+            if [ "$(parse_agent_calls "$js" | grep -c '^CALL ')" -gt 0 ]; then
+                add_error "TYPE=estimator_desync FILE=$rel MSG=workflow-scale-estimate.py found no agent() call in a file this guard parses agent() calls from, so the budget cannot be checked (fix the estimator's reading of this file, not the budget)"
+                return
+            fi
+            estimate=0
+            ;;
         OK | OVER_LIMIT) : ;;
         *)
             add_error "TYPE=estimator_error FILE=$rel MSG=workflow-scale-estimate.py could not analyse this file (VERDICT=${verdict:-none})"
