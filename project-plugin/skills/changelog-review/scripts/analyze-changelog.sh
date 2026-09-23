@@ -17,6 +17,9 @@
 #     `/`-separated pair ("BREAKING: `TeamCreate`/`TeamDelete` tools removed",
 #     2.1.178) — the shape the deprecation-grammar forms missed, which left the
 #     agent-teams skill referencing removed tools unflagged (issue #1733).
+#   - Extends it again to an un-backticked tool subject ("Removed the deprecated
+#     TaskOutput tool", 2.1.278), which every backtick-anchored form missed
+#     (issue #2712).
 #   - Flags an oversized excerpt (a review stall) as STATUS=WARN so a 60-version
 #     mega-batch is visible rather than silently lossy.
 #
@@ -141,6 +144,40 @@ if [ "$DEPRECATION" -gt 0 ]; then
                 head = substr(head, RSTART + RLENGTH)
               }
             }
+          }'
+      # Bare (un-backticked) tool subject (#2712): upstream wrote 2.1.278 as
+      # "Removed the deprecated TaskOutput tool" and 1.0.93 as "Unshipped
+      # AgentOutputTool and BashOutputTool, in favor of …" — no backticks, so
+      # every form above returned nothing and the TaskOutput grants in two
+      # agents went unflagged. The subject is the run of capitalised words that
+      # directly follows the verb (after an optional "the"/"deprecated"/"legacy",
+      # joined by "and"); the first other word ends it, so an "in favor of X"
+      # replacement is never read. A subject word counts only when it is
+      # tool-shaped: the run is followed by the noun "tool"/"tools", or the word
+      # itself ends in "Tool". Both anchors were set by sweeping the full
+      # upstream CHANGELOG, whose other bare capitalised words after these verbs
+      # are not tools — "Removed Opus 4.7", "Removed the JetBrains plugin …",
+      # "Renamed Windsurf to …", "every Agent tool call" nine words after the
+      # verb, and "Deprecated the Task tool's `mode` parameter", whose subject is
+      # the parameter, not the Task tool.
+      grep -E '(Deprecated|Removed|Renamed|Unshipped|Un-shipped) ' "$excerpt" 2>/dev/null \
+        | awk '{
+            if (!match($0, /(Deprecated|Removed|Renamed|Unshipped|Un-shipped) /)) next
+            n = split(substr($0, RSTART + RLENGTH), w, " ")
+            i = 1
+            while (i <= n && w[i] ~ /^(the|deprecated|legacy)$/) i++
+            k = 0
+            for (; i <= n; i++) {
+              t = w[i]
+              sub(/[,;:]$/, "", t)
+              if (t == "and") continue
+              if (t !~ /^[A-Z][A-Za-z0-9]+$/) break
+              subj[++k] = t
+            }
+            noun = (i <= n) ? w[i] : ""
+            sub(/[,;:.)]$/, "", noun)
+            for (j = 1; j <= k; j++)
+              if (noun ~ /^tools?$/ || subj[j] ~ /Tool$/) print subj[j]
           }'
     } 2>/dev/null \
       | tr -d '`' \

@@ -14,6 +14,11 @@
 #     flag (no false positives).
 #   - An oversized excerpt (review stall) flags STATUS=WARN.
 #   - A pure feature excerpt stays STATUS=OK with no deprecation.
+#
+# Covers issue #2712 (bare, un-backticked removal subjects):
+#   - "Removed the deprecated TaskOutput tool" (2.1.278) and "Unshipped
+#     AgentOutputTool and BashOutputTool" surface their subjects; bare
+#     capitalised non-tools (Opus, Task tool's `mode`, JetBrains) do not.
 set -uo pipefail
 
 SCRIPT="$(cd "$(dirname "$0")/.." && pwd)/analyze-changelog.sh"
@@ -152,6 +157,53 @@ run "## 2.1.178
 - BREAKING: \`TeamCreate\` removed in favor of \`SendMessage\` between agents"
 assert_contains "the removed subject is surfaced" "TeamCreate"
 assert_absent "the replacement named after the verb is not surfaced" "DEPRECATED_TOKENS=SendMessage"
+
+# ── bare (un-backticked) removal subject (#2712) ──────────────────────────────
+# Upstream does not always backtick the removed tool. 2.1.278 wrote "Removed the
+# deprecated TaskOutput tool" bare, every form above requires a backticked
+# subject, and the bridge returned DEPRECATED_TOKENS= / STATUS=OK against a tree
+# that still granted TaskOutput in two agents. The fixtures are verbatim upstream
+# lines; the negatives are the bare capitalised words a looser form would grab
+# (a sweep of the full upstream CHANGELOG found these beside the three real
+# subjects). The fake file references every one of them so a loose extractor
+# WOULD surface it.
+cat > "$REPO/fake-plugin/hooks/bare-words.sh" <<'EOF'
+# AgentOutputTool BashOutputTool TaskOutputTool; the Task tool spawns agents;
+# runs Opus in JetBrains or Windsurf on Windows
+EOF
+echo ""
+echo "bare tool-removal subject (no backticks) is surfaced:"
+run "## 2.1.278
+- Removed the deprecated TaskOutput tool; Claude reads a background task's output file with Read instead, and the \`taskOutputMaxChars\` setting and \`TASK_MAX_OUTPUT_LENGTH\` no longer have any effect"
+
+assert_eq "ACTIONABLE_DEPRECATION raised for the bare subject" "1" "$(field ACTIONABLE_DEPRECATION)"
+assert_contains "DEPRECATED_TOKENS names the bare TaskOutput" "DEPRECATED_TOKENS=TaskOutput"
+assert_eq "STATUS is WARN for the bare removal" "WARN" "$(field STATUS)"
+# The fake hook names Read too, so a loose extractor would list "Read TaskOutput".
+assert_eq "only the removed tool, not the Read replacement, is surfaced" "TaskOutput" "$(field DEPRECATED_TOKENS)"
+
+echo ""
+echo "bare *Tool list subject surfaces every listed tool, not the replacement:"
+run "## 1.0.93
+- Unshipped AgentOutputTool and BashOutputTool, in favor of a new unified TaskOutputTool"
+
+assert_contains "first listed tool surfaced" "AgentOutputTool"
+assert_contains "second listed tool surfaced" "BashOutputTool"
+assert_absent "the in-favor-of replacement is not surfaced" "TaskOutputTool"
+
+echo ""
+echo "bare capitalised words that are not a removed tool do not raise the flag:"
+run "## 2.1.219
+- Removed Opus 4.7 from fast mode; \`/fast\` now applies to Opus 5 and Opus 4.8
+## 2.1.212
+- Deprecated the Task tool's \`mode\` parameter (now ignored); subagents inherit the parent session's permission mode by default
+## 2.1.150
+- Removed the JetBrains plugin install suggestion from startup
+- Renamed Windsurf to Devin Desktop in the \`/ide\` menu"
+
+assert_eq "DEPRECATION still counts the four lines" "4" "$(field DEPRECATION)"
+assert_eq "ACTIONABLE_DEPRECATION stays 0" "0" "$(field ACTIONABLE_DEPRECATION)"
+assert_absent "bare-words fixture file not surfaced" "bare-words.sh"
 
 # ── oversized batch (review stall) flags WARN ────────────────────────────────
 echo ""

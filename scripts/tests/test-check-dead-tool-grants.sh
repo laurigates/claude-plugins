@@ -6,6 +6,8 @@
 # (verified 2026-09-03 against https://code.claude.com/docs/en/tools, which
 # lists 45 tools including their successors). Two ALWAYS-LOADED authoring rules
 # were minting them, so the count grew with every skill written from them.
+# TaskOutput joined in #2712: removed in 2.1.278 (upstream CHANGELOG) while
+# still granted by agents-plugin/agents/{debug,test}.md.
 #
 # The negative cases carry as much weight as the positives: this guard scans a
 # corpus where the retired names are legitimately DISCUSSED (the rules that
@@ -42,7 +44,7 @@ assert "A read real grant lines" \
 
 # --- B: each retired name IS caught in a grant -------------------------------
 echo "=== B: a retired name in a grant is an ERROR ==="
-for pair in "LS|Glob" "BashOutput|Bash" "KillShell|TaskStop" "MultiEdit|Edit"; do
+for pair in "LS|Glob" "BashOutput|Bash" "KillShell|TaskStop" "MultiEdit|Edit" "TaskOutput|Read"; do
   name="${pair%%|*}"; succ="${pair##*|}"
   d="b-$name"
   mkskill "$d" "s" "allowed-tools: Read, Grep, $name, Write"
@@ -64,6 +66,19 @@ out="$(bash "$CHECK" --project-dir "$fx/c-ts" 2>&1)"
 assert "C both names on one line are caught" \
   "$([ "$(has "$out" 'TOOL=BashOutput')" = true ] && [ "$(has "$out" 'TOOL=KillShell')" = true ] && echo true || echo false)"
 assert "C reports both, not just the first" "$(has "$out" 'ISSUE_COUNT=2')"
+# The two agents that still granted TaskOutput after its 2.1.278 removal
+# (#2712), verbatim from agents-plugin/agents/{debug,test}.md:6 pre-sweep.
+mkskill c-debug "s" "tools: Glob, Grep, Read, Edit, Write, Bash(npm *), Bash(yarn *), Bash(bun *), Bash(pytest *), Bash(python *), Bash(node *), Bash(cargo *), Bash(go *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git add *), Bash(git commit *), TaskOutput, TodoWrite"
+out="$(bash "$CHECK" --project-dir "$fx/c-debug" 2>&1)"
+assert "C debug.md TaskOutput grant is caught" "$(has "$out" 'TOOL=TaskOutput')"
+assert "C debug.md finding names Read as the fix" "$(has "$out" 'FIX=Read')"
+mkskill c-test "s" "tools: Glob, Grep, Read, Edit, Write, Bash(npm test *), Bash(npm run test *), Bash(yarn test *), Bash(bun test *), Bash(pytest *), Bash(vitest *), Bash(jest *), Bash(cargo test *), Bash(go test *), Bash(git status *), Bash(git diff *), Bash(git log *), TaskOutput, TodoWrite"
+out="$(bash "$CHECK" --project-dir "$fx/c-test" 2>&1)"
+assert "C test.md TaskOutput grant is caught" "$(has "$out" 'TOOL=TaskOutput')"
+# TaskStop is live and TaskOutputTool is an older, different name: neither is TaskOutput.
+mkskill c-near "s" "allowed-tools: Read, TaskStop, TaskOutputTool, TaskCreate"
+out="$(bash "$CHECK" --project-dir "$fx/c-near" 2>&1)"; rc=$?
+assert "C TaskStop/TaskOutputTool are not mistaken for TaskOutput" "$([ $rc -eq 0 ] && echo true || echo false)"
 
 # --- D: NEGATIVE cases - discussion is not a grant ---------------------------
 # Without these the guard would flag the rules that document the removal, this
@@ -81,6 +96,8 @@ allowed-tools: Read, Glob, Bash, Edit
 
 `LS` was removed in favour of `Glob`, and MultiEdit no longer exists.
 Do not grant BashOutput or KillShell.
+The TaskOutput tool was removed in 2.1.278; Claude reads the output file with Read.
+| `TaskOutput` | Removed in 2.1.278 |
 
 | Tool | Status |
 |------|--------|

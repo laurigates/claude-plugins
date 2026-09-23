@@ -202,7 +202,7 @@ The script (`scripts/analyze-changelog.sh`, tested by
 and, beyond keyword counts, carries a **deprecation/removal → plugin-code
 bridge**: for any tool/setting/command named in a deprecation **or BREAKING
 removal** line, it greps this repo's skills/hooks/agents/rules and surfaces the
-files that still reference it as triage candidates. Two miss classes drive this:
+files that still reference it as triage candidates. Three miss classes drive this:
 
 - **#1638** — a deprecated identifier (e.g. `TaskOutput`) that stayed referenced
   in a hook script because the old keyword map only ever pointed at
@@ -212,6 +212,10 @@ files that still reference it as triage candidates. Two miss classes drive this:
   deprecation-grammar forms missed, leaving the `agent-patterns-plugin:agent-teams`
   skill referencing removed tools unflagged. Caught by the BREAKING-line
   extractor.
+- **#2712** — a removal whose subject upstream left un-backticked ("Removed the
+  deprecated TaskOutput tool", 2.1.278), invisible to every backtick-anchored
+  form. Caught by the bare-subject extractor, which accepts only tool-shaped
+  subjects (followed by "tool", or ending in `Tool`).
 
 **Reviewing the changelog is never doc-only.** Every run treats updating rule
 docs *and* fixing plugin **code** that references a removed/renamed

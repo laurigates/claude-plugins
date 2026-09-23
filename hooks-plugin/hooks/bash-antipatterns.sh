@@ -398,7 +398,7 @@ SGRULES
     # message ahead of the generic cat read (both would match a `.output` read).
     if ast_matched "task-output-read"; then
         block "REMINDER: Use the Read tool on the task-output file path from the task
-notification instead of cat/tail/head. (The TaskOutput tool is deprecated.)
+notification instead of cat/tail/head. (The TaskOutput tool was removed in 2.1.278.)
 
 For a large structured output file, Read'ing the whole thing is wasteful — pipe
 an extraction to a compact summary instead (pipelines are allowed):

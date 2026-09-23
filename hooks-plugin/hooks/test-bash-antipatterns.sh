@@ -790,8 +790,8 @@ assert_stderr_contains \
     "cat /tmp/claude/x/tasks/run.output"
 
 assert_stderr_contains \
-    "task-output block no longer names the deprecated TaskOutput tool as the fix" \
-    'TaskOutput tool is deprecated' \
+    "task-output block says TaskOutput was removed (2.1.278), not offered as a fix (#2712)" \
+    'TaskOutput tool was removed in 2.1.278' \
     "cat /tmp/claude/x/tasks/run.output"
 
 # ── long-pipeline block is no longer blocked (demoted, #1873/#2051/#2052) ────
