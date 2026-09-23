@@ -90,6 +90,26 @@ def test_plan_mode_entry_does_not_auto_prescribe_qa_rule():
     )
 
 
+def test_stop_hook_feedback_clusters_are_measured_not_prescribed(tmp_path):
+    """Issue #2659: `stop:*` clusters are reported for prevalence, never
+    auto-prescribed. The fix for a noisy Stop hook lives in the hook itself
+    (e.g. #2652 for auto-checkpoint stashes), so the clusterer must not emit a
+    rule file for it the way it does for `hook:*` PreToolUse blocks.
+    """
+    sig = "stop:git-stash-reminder:auto-checkpoint"
+    events = [make_event(sig, kind="stop_hook_feedback", tool="-") for _ in range(4)]
+    clusters, pr_body = run_cluster(events, write_pr_body=True, tmp_dir=tmp_path)
+
+    [stop] = [p for p in clusters["actionable"] if p["signature"] == sig]
+    assert stop["kind"] == "watch", stop
+    assert stop["path"] == "" and stop["body"] == "", (
+        "a stop:* cluster must not write a committed file or render a rule body"
+    )
+    assert stop["title"] == f"Hook feedback: {sig}", stop["title"]
+    # Prevalence is the point: the cluster appears in the report table.
+    assert f"| `{sig}` | 4 | watch |" in pr_body, pr_body
+
+
 def test_exitplanmode_rejection_is_classify_required():
     """Regression: reject:exitplanmode must surface samples for human classification.
 
