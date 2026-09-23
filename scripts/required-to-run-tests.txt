@@ -89,6 +89,11 @@ scripts/tests/test-fetch-arxiv-window.sh
 # names, so a skip would hide a guard that had started flagging documentation.
 scripts/tests/test-check-dead-tool-grants.sh
 
+# Its only skip is a missing jq, which ubuntu-latest ships, so a skip here means
+# the suite stopped running. It executes the pi-adapter-check recipe body lifted
+# from the justfile; without it nothing notices the package probe breaking.
+scripts/tests/test-pi-adapter-check.sh
+
 # Pure filesystem fixtures -- no network, and nothing beyond POSIX grep/find/awk
 # -- so a skip is never legitimate. Its CASE H reads this repo's own
 # ISSUE_TEMPLATE directory, and the defect it guards is invisible from the repo
