@@ -151,6 +151,13 @@ out="$(run j)"; rc=$?
 assert "J exits 1" "$([ $rc -eq 1 ] && echo true || echo false)"
 assert "J names pass_probe_failed" "$(has "$out" 'pass_probe_failed')"
 
+echo "=== J2: a fail probe that clears every check (the checks lost their teeth) ==="
+stage j2
+edit j2 "$PROBES" 'p=[x for x in d["probes"] if x["case"]=="rg-001" and x["expect"]=="fail"][0]; p["output"]="rg -F '"'"'requests.get('"'"' -t py src/"'
+out="$(run j2)"; rc=$?
+assert "J2 exits 1" "$([ $rc -eq 1 ] && echo true || echo false)"
+assert "J2 names fail_probe_passed" "$(has "$out" 'fail_probe_passed')"
+
 echo "=== K: nothing eval-ready is an error, not a clean pass ==="
 stage k
 edit k evaluate-plugin/golden-set.json 'd["canaries"]=[{"skill":"nope-plugin/nope","pattern":"x"}]; d["evalCoverageFloor"]=0'
