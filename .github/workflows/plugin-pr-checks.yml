@@ -189,6 +189,19 @@ jobs:
             --only 'scripts/tests/test-lint-shell-scripts.sh' \
             --only 'scripts/tests/test-plugin-compliance-check.sh'
 
+      - name: Gate plugin license and author metadata (#2698, #2699)
+        # Whole-repo invariant, always-on: every */.claude-plugin/plugin.json
+        # and every .claude-plugin/marketplace.json entry declares a `license`
+        # from the allowlist (["MIT"]) and an `author.name`. The full
+        # compliance run above cannot gate this: it is advisory (`|| true`) and
+        # scoped to the changed plugins, so a marketplace.json-only edit would
+        # never be checked. `--license-only` runs just these predicates over
+        # every plugin in seconds and exits 1 on any finding. Metadata-only by
+        # decision: the repo-root MIT LICENSE covers every plugin, so no
+        # per-plugin LICENSE file is required. Self-tested above by
+        # test-plugin-compliance-check.sh.
+        run: bash scripts/plugin-compliance-check.sh --license-only
+
       - name: Check agent dispatch loud-failure / completion-manifest contract (#1422, #1601)
         # Whole-repo invariant (the dispatch skills + refactor agent carry the
         # loud-failure and completion-manifest contracts). The self-test step
