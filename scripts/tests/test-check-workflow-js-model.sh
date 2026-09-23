@@ -31,6 +31,10 @@
 #      passing case, the failing case, that the assertion is SECTION-scoped
 #      (a mention elsewhere in the file does not satisfy it), and that an
 #      already-unreachable orphan is not double-reported.
+#   N. The declared agent budget (issue #2670) — within budget, over budget,
+#      and (GUARD INTEGRITY) the same over-budget harness passing once its
+#      budget is honest; a missing or out-of-section declaration; no
+#      double-report on an orphan; and every shipped template fits its budget.
 
 set -uo pipefail
 
@@ -84,6 +88,8 @@ description: Fixture. Use when testing the bundled-workflow guard.
 
 `workflows/audit.workflow.js` ships beside this skill. **It is a TEMPLATE to adapt,
 not a script to run verbatim.** Read it, then rewrite it for the work in front of you.
+
+**Agent budget:** 10 — generous on purpose, so cases A–M test only what they name.
 
 > Never `Workflow({resumeFromRunId})` to retry a few failed worktree agents (#1868).
 
@@ -436,6 +442,89 @@ printf -- '---\nname: x\ndescription: y. Use when z.\n---\n\nNo harness section 
 o=$(out "$root")
 check "M4: orphan raises unreachable_workflow" "2" "$(printf '%s\n' "$o" | grep -c 'TYPE=unreachable_workflow')"
 check "M4: orphan not double-reported"         "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=missing_template_framing')"
+
+# ---------------------------------------------------------------------------
+# N. The declared agent budget (issue #2670). A harness's cost is the number of
+#    agents it creates, and nothing stated that number at authoring time. The
+#    framing section now declares it, and the guard runs the scale estimator
+#    (hooks-plugin/hooks/workflow-scale-estimate.py — the same one the runtime
+#    guard uses) and fails when the estimate exceeds the declaration.
+# ---------------------------------------------------------------------------
+
+# mk_fanout_js <skill-dir> — two agent() sites in a pipeline over a runtime list:
+# the estimator costs it at 2 per item x 8 assumed items = 16.
+mk_fanout_js() {
+    {
+        echo "export default async function ({ agent, pipeline }) {"
+        echo "  return pipeline(args.units,"
+        echo "    (u) => agent(\`Edit.\`, { label:'edit', schema: S, model:'opus', effort:'low' }),"
+        echo "    (e) => agent(\`Review.\`, { label:'review', schema: S, model:'opus', effort:'low' }));"
+        echo "}"
+    } > "$1/workflows/audit.workflow.js"
+}
+
+# set_budget <skill-md> <n> — rewrite the fixture's declared budget.
+set_budget() {
+    sed "s/^\*\*Agent budget:\*\* [0-9]*/**Agent budget:** $2/" "$1" > "$1.tmp" && mv "$1.tmp" "$1"
+}
+
+# N1. Within budget — checked, itemised, no finding.
+root=$(mk_root N1)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_js "$d" audit.workflow.js opus low
+o=$(out "$root")
+check "N1: within budget STATUS=OK"          "OK" "$(field "$o" STATUS)"
+check "N1: AGENT_BUDGETS_CHECKED=1"          "1"  "$(field "$o" AGENT_BUDGETS_CHECKED)"
+check "N1: estimate and budget itemised"     "1"  "$(printf '%s\n' "$o" | grep -c 'FILE=demo-plugin/skills/demo-skill/workflows/audit.workflow.js ESTIMATE=1 BUDGET=10$')"
+
+# N2. Over budget — the estimate (16) exceeds the declaration (10).
+root=$(mk_root N2)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_fanout_js "$d"
+o=$(out "$root")
+check "N2: over budget typed"                "1"     "$(printf '%s\n' "$o" | grep -c 'TYPE=agent_budget_exceeded')"
+check "N2: finding names estimate+budget"    "1"     "$(printf '%s\n' "$o" | grep -c 'TYPE=agent_budget_exceeded .*ESTIMATE=16 BUDGET=10')"
+check "N2: over budget STATUS=ERROR"         "ERROR" "$(field "$o" STATUS)"
+check "N2: over budget --strict exit 1"      "1"     "$(run "$root" --strict)"
+
+# N3. GUARD INTEGRITY for N2 — the SAME harness with an honest budget passes,
+# so N2's finding is attributable to the number and not to the fixture.
+set_budget "$d/SKILL.md" 16
+o=$(out "$root")
+check "N3: honest budget STATUS=OK"          "OK" "$(field "$o" STATUS)"
+check "N3: honest budget --strict exit 0"    "0"  "$(run "$root" --strict)"
+check "N3: honest budget itemised"           "1"  "$(printf '%s\n' "$o" | grep -c 'ESTIMATE=16 BUDGET=16$')"
+
+# N4. No declaration in the framing section.
+root=$(mk_root N4)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_js "$d" audit.workflow.js opus low
+grep -v '^\*\*Agent budget:\*\*' "$d/SKILL.md" > "$d/SKILL.md.tmp" && mv "$d/SKILL.md.tmp" "$d/SKILL.md"
+o=$(out "$root")
+check "N4: missing budget typed"             "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=missing_agent_budget')"
+check "N4: missing budget --strict exit 1"   "1" "$(run "$root" --strict)"
+
+# N5. SECTION-SCOPED — a budget line under a different heading does not count.
+printf '\n## Notes\n\n**Agent budget:** 99 — not in the framing section.\n' >> "$d/SKILL.md"
+o=$(out "$root")
+check "N5: budget outside the section still ERRORs" "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=missing_agent_budget')"
+
+# N6. NO DOUBLE-REPORT — an orphan already raises unreachable_workflow.
+root=$(mk_root N6)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_js "$d" audit.workflow.js opus low
+printf -- '---\nname: x\ndescription: y. Use when z.\n---\n\nNo harness section here.\n' > "$d/SKILL.md"
+o=$(out "$root")
+check "N6: orphan not double-reported"       "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=missing_agent_budget')"
+
+# N7. The shipped templates: every one declares a budget its estimate fits in.
+# Not an exact count (a sibling PR may add a template), but non-vacuous: every
+# scanned file must have been budget-checked, and there must be files at all.
+o=$(out "$REPO_ROOT")
+n7_files=$(field "$o" FILES_SCANNED)
+check "N7: shipped templates pass --strict"  "0" "$(run "$REPO_ROOT" --strict)"
+check "N7: every shipped template checked"   "$n7_files" "$(field "$o" AGENT_BUDGETS_CHECKED)"
+check "N7: the corpus is not empty"          "true" "$([ "${n7_files:-0}" -gt 0 ] && echo true || echo false)"
 
 printf '\n%s: %d passed, %d failed\n' "$(basename "$0")" "$pass" "$fail"
 [ "$fail" -eq 0 ]
