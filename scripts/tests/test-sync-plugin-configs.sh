@@ -148,7 +148,13 @@ else
     || fail "fix mode: failed to add valid-plugin to manifest"
 
   # Verify marketplace was fixed
-  grep -A 8 '"name": "valid-plugin"' "$repo/.claude-plugin/marketplace.json" | grep -q '"category": "testing"' \
+  # Read the entry as JSON, not as a fixed `grep -A N` line window: the entry
+  # now also carries author + license (#2698), which pushes `category` past any
+  # window sized for the old six-key shape.
+  valid_category=$(python3 -c 'import json,sys
+print(next((p.get("category","") for p in json.load(open(sys.argv[1]))["plugins"] if p["name"]=="valid-plugin"), ""))' \
+    "$repo/.claude-plugin/marketplace.json")
+  [ "$valid_category" = "testing" ] \
     && pass "fix mode: added valid-plugin to marketplace with correct inferred category" \
     || fail "fix mode: failed to add valid-plugin to marketplace with category"
 
