@@ -30,6 +30,7 @@ tagged several 2.1.277 bullets as 2.1.278 and several 2.1.275 bullets as
 
 | Bullet | Version | Reason |
 |---|---|---|
+| `docs/pi-export.md` mapping row and `scripts/tests/test-export-pi-agents.sh` `bad` set still name `TaskOutput` | 2.1.277 | Left as is. Both stay true: the exporter drops any tool name it does not know, and the test asserts the name is absent from exported keys. The pi-export row sits next to the row #2739 rewrites, so an edit here would conflict with it |
 | `taskOutputMaxChars`, `TASK_MAX_OUTPUT_LENGTH` inert | 2.1.277 | Neither is set or documented anywhere in the repo outside this record and the changelog-review fixtures |
 | AGENTS.md read when no CLAUDE.md exists | 2.1.277 | Every repo this marketplace scaffolds ships a CLAUDE.md, so the fallback does not engage |
 | `/update-config` writes `Edit(path)` instead of `Write(path)` | 2.1.275 | Already covered by `agentic-permissions.md`'s `Edit(<glob>)` paragraph; the fix brings the command in line with it |
