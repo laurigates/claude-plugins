@@ -158,6 +158,102 @@ await agent("real", { label: "only-one" })
 '
 
 echo
+echo "== estimator arithmetic (#2670): the figure the guard shows is the figure paid =="
+
+# The estimate is the agent count a template author states and the ask names, so
+# an arithmetic error is a wrong cost statement, not just a wrong verdict. These
+# assert the ESTIMATE= number itself, straight from the estimator. Each of the
+# first three failed against the shipped templates before #2670: the literal-array
+# and trailing-comma cases costed blueprint-story-audit at 71 (true: 20), and the
+# nested-template case hid a live agent() call in evaluate-skill.
+ESTIMATOR="$(dirname "$0")/workflow-scale-estimate.py"
+
+estimate_of() {
+    printf '%s\n' "$1" | python3 "$ESTIMATOR" 10 8 2>/dev/null
+}
+
+assert_estimate() {
+    local desc="$1" want="$2" script="$3"
+    local got
+    got=$(estimate_of "$script" | sed -n 's/^ESTIMATE=//p')
+    if [ "$got" = "$want" ]; then
+        PASS=$((PASS + 1))
+        printf '  PASS  ESTIMATE=%s: %s\n' "$want" "$desc"
+    else
+        FAIL=$((FAIL + 1))
+        printf '  FAIL  expected ESTIMATE=%s, got "%s": %s\n' "$want" "${got:-<none>}" "$desc"
+    fi
+}
+
+# parallel([thunkA, thunkB]) runs each thunk ONCE. A site inside one element of a
+# literal array is not multiplied by the array's length.
+assert_estimate "literal array of distinct thunks counts each once" 2 '
+await parallel([() => agent("a", { label: "a" }), () => agent("b", { label: "b" })])
+'
+
+# A trailing comma is not an element.
+assert_estimate "trailing comma in a literal array is not an element" 2 '
+await parallel([
+  () => agent("a", { label: "a" }),
+  () => agent("b", { label: "b" }),
+])
+'
+
+# Control for the two above: a .map over a literal array DOES multiply — its one
+# site runs once per element. Without this, "never multiply literal arrays" would
+# pass both cases above.
+assert_estimate "map over a literal array still multiplies" 3 '
+const D = [1, 2, 3]
+await parallel(D.map(d => () => agent("a", { label: "a" })))
+'
+
+# A template literal nested inside a ${...} interpolation (a prompt with a
+# conditional section) must not desync the sanitizer. Before #2670 the inner
+# backticks closed the outer template, the apostrophe opened a quote that never
+# closed, and every later agent() call was blanked as string content.
+# shellcheck disable=SC2016  # the ${...} below is JS fixture text, not shell
+assert_estimate "calls after a nested template literal stay visible" 2 "
+const P = (c) => \`head \${
+  c ? \`the skill's file\` : \`none\`
+} tail\`
+const x = await agent('one', { label: 'a' })
+const y = await agent('two', { label: 'b' })
+"
+
+# A loop window bounds CONCURRENCY, not the agent count: a for-loop stepping by
+# WAVE over a runtime list still creates one agent per item. Reading
+# .slice(i, i + WAVE) as a bound of WAVE would understate cost by the number of
+# waves — the opposite of what this estimator exists to report.
+LOOP_OUT=$(estimate_of '
+const WAVE = 5
+for (let i = 0; i < ITEMS.length; i += WAVE) {
+  const batch = ITEMS.slice(i, i + WAVE)
+  await parallel(batch.map(x => () => agent("a", { label: "a" })))
+}
+')
+if grep -q '^ASSUMED=8$' <<<"$LOOP_OUT" && grep -q '^ESTIMATE=8$' <<<"$LOOP_OUT"; then
+    PASS=$((PASS + 1))
+    printf '  PASS  loop window .slice(i, i + WAVE) stays unbounded (costed at ASSUMED)\n'
+else
+    FAIL=$((FAIL + 1))
+    printf '  FAIL  loop window read as a bound: %s\n' "$(tr '\n' ' ' <<<"$LOOP_OUT")"
+fi
+
+# End to end: the nested-template desync made the hook go SILENT on a real
+# runaway, because the fan-out after the prompt was blanked away.
+# shellcheck disable=SC2016  # the ${...} below is JS fixture text, not shell
+assert_asks "4-site fan-out after a nested template literal still asks" "
+const P = (c) => \`head \${
+  c ? \`the skill's file\` : \`none\`
+} tail\`
+await pipeline(args.units,
+  u => agent('edit', { label: 'edit' }),
+  e => agent('review', { label: 'review' }),
+  r => agent('repair', { label: 'repair' }),
+  s => agent('rereview', { label: 'rereview' }))
+"
+
+echo
 echo "== structural guards: must stay silent =="
 
 assert_silent_payload "resume of an earlier run" \
