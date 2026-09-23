@@ -3,6 +3,10 @@
   "name": "accessibility-plugin",
   "version": "2.3.6",
   "description": "Accessibility and UX implementation - WCAG, ARIA, design tokens",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "license": "MIT",
   "keywords": [
     "accessibility",
     "wcag",

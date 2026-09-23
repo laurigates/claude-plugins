@@ -3,6 +3,10 @@
   "name": "agent-patterns-plugin",
   "version": "2.45.7",
   "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, and hooks configuration",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "license": "MIT",
   "hooks": "./hooks.json",
   "keywords": [
     "agents",
