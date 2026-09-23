@@ -191,7 +191,7 @@ has "$OUT" "SUITE=s-plugin/hooks/test-style.sh HOOK=s-plugin/hooks/style.sh MESS
   || fail "(e) expected an UNCHECKED row for test-style.sh: $OUT"
 
 # --- (f) discarding redirects are not captures ---
-echo "--- Test (f): >/dev/null 2>&1, &>/dev/null and 2>/dev/null inside \$() do not count ---"
+echo "--- Test (f): >/dev/null 2>&1, &>/dev/null, 2>/dev/null, and an unread 2>&1 || true do not count ---"
 TREE="$TMP_ROOT/f"
 write_kubectl_hook "$TREE/k-plugin/hooks"
 cat > "$TREE/k-plugin/hooks/test-ctx.sh" <<'EOF'
@@ -200,12 +200,13 @@ HOOK="$(dirname "$0")/ctx.sh"
 a=$(printf '%s' '{}' | bash "$HOOK" >/dev/null 2>&1; echo $?)
 b=$(printf '%s' '{}' | bash "$HOOK" &>/dev/null; echo $?)
 c=$(printf '%s' '{}' | bash "$HOOK" 2>/dev/null)
+printf '%s' '{}' | bash "$HOOK" 2>&1 || true
 echo "KUBECTL SAFETY:"
 EOF
 OUT="$(run_guard "$TREE")"; RC=$?
 expect "(f) verdict" "$OUT" "$RC" 1 STATUS=ERROR ISSUE_COUNT=1
 has "$OUT" "TYPE=output_never_captured" \
-  && pass "(f) all three discarding forms read as no capture" \
+  && pass "(f) all four non-capturing forms read as no capture" \
   || fail "(f) expected output_never_captured: $OUT"
 
 # --- (g) accepted capture spellings ---

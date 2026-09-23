@@ -112,7 +112,9 @@ captures_hook_stderr() {
     if grep -qE '>[[:space:]]*/dev/null[[:space:]]+2>&1|&>[[:space:]]*/dev/null' <<<"$line"; then
       return 1
     fi
-    if grep -qE '\$\(|<\(' <<<"$line" || grep -qE '2>&1[^|]*\|' <<<"$line"; then
+    # Piped onward means a single `|`: `2>&1 || true` is an OR-list whose
+    # output still goes to the suite's own stdout, unread.
+    if grep -qE '\$\(|<\(' <<<"$line" || grep -qE '2>&1[^|]*\|([^|]|$)' <<<"$line"; then
       return 0
     fi
     return 1
