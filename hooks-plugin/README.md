@@ -294,11 +294,13 @@ heredoc body, a commit message or a `grep` pattern no longer checkpoints, nor
 does an `rm -rf` whose every operand is a literal absolute path outside the
 repository. The pre-#2652 regex matcher still runs over whatever the parser
 cannot prove inert, and alone when `ast-grep` is missing, so the hook
-over-checkpoints rather than under-checkpoints. It also runs over the whole
-command when a program it would treat as inert can be made to run its
-arguments (`gh alias set '!…'`, `git grep -O`, `printf -v`, …) or a program
-name is rebound in the same command (a function, `alias`, `hash`, `PATH`). `rm -rf "$T"` with `T` from
-`mktemp -d` still checkpoints — it cannot be resolved statically. Details and
+over-checkpoints rather than under-checkpoints. That exemption is a closed
+allowlist of shapes, not a list of hazards: unless every part of the command is
+an allowed program, redirect or structure, the old matcher reads the whole
+command, as before #2652 — so `exec`, `tee`, `eval`, a shell, `find`, a
+substitution, an assignment, `git log --output` or any `-o` option anywhere in
+it restores the old verdict. `rm -rf "$T"` with `T` from `mktemp -d` still
+checkpoints — it cannot be resolved statically. Details and
 the full list of shapes that still checkpoint:
 [`hooks/README.md` § auto-checkpoint.sh](hooks/README.md#auto-checkpointsh).
 

@@ -11,13 +11,18 @@
 #   A. False positives from the issue thread create NO stash — an out-of-repo
 #      `rm -rf`, a `gh issue comment --body` / `--body-file` heredoc quoting the
 #      pattern, `echo`/`grep`/`git commit` carrying it — each beside an in-repo
-#      control that MUST still checkpoint.
+#      control that MUST still checkpoint. Then every shape outside the
+#      exemption's closed allowlist (a file-writing option, a redirect to a
+#      file, `exec`, `tee`, `eval`, `source`, a shell, `xargs`, `find`,
+#      `parallel`, a substitution, an assignment, an unquoted heredoc that
+#      expands, …) added to an inert command that alone still skips.
 #   B. A GENERIC spelling probe: variants of every destructive base are
 #      generated mechanically (program spelling, prefix wrapper, rm flag
-#      spelling, git global options, shell-string wrapper, shell context, and an
-#      "inert" program made to run its arguments or rebound by name) and
-#      every one must checkpoint. Hand-enumerated spellings are what let five
-#      earlier attempts ship a fail-open (`\rm`, `bash --norc -c`, …).
+#      spelling, git global options, shell-string wrapper, shell context, an
+#      "inert" program made to run its arguments or rebound by name, and every
+#      allowlist-voiding shape from A) and every one must checkpoint.
+#      Hand-enumerated spellings are what let five earlier attempts ship a
+#      fail-open (`\rm`, `bash --norc -c`, …).
 #   C. A DIFFERENTIAL: the same set runs through every baseline — the hook's own
 #      no-parser path, and `git show <ref>:…` for HEAD and the pinned pre-#2652
 #      commit when those objects exist and differ — and a spelling any baseline
@@ -442,11 +447,20 @@ expect skip "gh issue comment --body-file heredoc quoting the pattern (repro 3)"
     "$(printf '%s\n' "gh issue comment 2652 --body-file - <<'EOF'" \
         'Second repro: `rm -rf "$T"` on a mktemp dir, then rm -rf ./src and git reset --hard.' \
         'EOF')"
-expect skip "gh pr create --body \"\$(cat <<'EOF' …)\" quoting the pattern" \
+expect skip "gh pr create --body-file heredoc quoting the pattern" \
+    "$(printf '%s\n' "gh pr create --title t --body-file - <<'EOF'" \
+        'We stop matching rm -rf ./src and git checkout -- tracked.txt in text.' \
+        'EOF')"
+expect skip "git commit -F heredoc quoting the pattern" \
+    "$(printf '%s\n' "git commit -F - <<'EOF'" 'fix: rm -rf ./src is not run here' 'EOF')"
+# A command substitution is outside the exemption's allowlist, so the
+# `--body "$(cat <<'EOF' …)"` spelling of the same bodies checkpoints exactly as
+# it did before #2652.
+expect CHECKPOINT "  control: gh pr create --body \"\$(cat <<'EOF' …)\" (a substitution)" \
     "$(printf '%s\n' "gh pr create --title t --body \"\$(cat <<'EOF'" \
         'We stop matching rm -rf ./src and git checkout -- tracked.txt in text.' \
         'EOF' ')"')"
-expect skip "git commit -m \"\$(cat <<'EOF' …)\" quoting the pattern" \
+expect CHECKPOINT "  control: git commit -m \"\$(cat <<'EOF' …)\" (a substitution)" \
     "$(printf '%s\n' "git commit -m \"\$(cat <<'EOF'" 'fix: rm -rf ./src is not run here' 'EOF' ')"')"
 expect skip "gh issue create --body | tail -1" \
     "gh issue create --title t --body 'rm -rf ./src and git clean -fd' | tail -1"
@@ -483,7 +497,9 @@ expect skip "gh api -f body= quoting the pattern" \
 expect skip "gh pr comment --body quoting the pattern" "gh pr comment 1 --body 'never run git reset --hard'"
 expect skip "git grep for the pattern" "git grep -n 'rm -rf' -- '*.sh'"
 expect skip "printf with a format, carrying the pattern" "printf '%s\n' 'rm -rf ./src'"
-expect skip "an export with an expansion in its value, then a gh body" \
+expect skip "an expansion in an echo argument" 'echo "rm -rf ./src in $HOME"'
+expect skip "the same gh body without the export" 'gh issue comment 1 --body "rm -rf ./src"'
+expect CHECKPOINT "  control: an export before the gh body (a declaration)" \
     'export FOO="$BAR"; gh issue comment 1 --body "rm -rf ./src"'
 expect CHECKPOINT "  control: gh alias set '!…' runs the alias through sh" "gh alias set nuke '!rm -rf ./src' && gh nuke"
 expect CHECKPOINT "  control: gh alias set --shell" "gh alias set --shell nuke 'rm -rf ./src'; gh nuke"
@@ -501,6 +517,63 @@ expect CHECKPOINT "  control: printf -v from a heredoc substitution" \
 expect CHECKPOINT "  control: a function shadowing an inert name" "cat() { eval \"\$*\"; }; cat 'rm -rf ./src'"
 expect CHECKPOINT "  control: hash -p rebinding an inert name" "hash -p /bin/sh cat; cat -c 'rm -rf ./src'"
 expect CHECKPOINT "  control: PATH reassigned before an inert name" "PATH=/tmp/evil:\$PATH; cat -c 'rm -rf ./src'"
+
+# The exemption is a closed allowlist of shapes (second review of PR #2743).
+# Each CHECKPOINT row adds one shape outside the list to a command whose inert
+# part is unchanged; the skip row above it is that inert part with nothing
+# added. Run for real in a scratch repository, `git log --output=F` + `sh F`,
+# `exec >F`, a backtick in an unquoted heredoc, `awk '{system($0)}'`, `git fetch
+# --upload-pack=…`, `git -c alias.z='!…'`, `: ${BASH_CMDS[cat]:=/bin/sh}`, `bash <
+# F`, `find -exec sh` and `find -delete` each deleted ./src (git 2.55.0, bash
+# 5.3), and the hook at 0021b591 skipped every one but `bash < F` and `find
+# -exec sh`.
+expect skip "git log --format carrying the pattern" "git log -1 --format='format:rm -rf ./src'"
+expect skip "git log --oneline (a long option starting with o)" "git log --oneline -1 --grep 'rm -rf ./src'"
+expect CHECKPOINT "  control: git log --output=F, then sh F" "git log -1 --format='format:rm -rf ./src' --output=x.sh && sh x.sh"
+expect CHECKPOINT "  control: git log --output F (separate value)" "git log -1 --format='format:rm -rf ./src' --output x.sh && sh x.sh"
+expect CHECKPOINT "  control: git show '--output=F' (quoted)" "git show -s --format='format:rm -rf ./src' '--output=y.sh'; bash y.sh"
+expect CHECKPOINT "  control: git log --output into a git hook" \
+    "git log -1 --format='format:rm -rf ./src' --output=.git/hooks/post-commit && chmod +x .git/hooks/post-commit && git commit --allow-empty -m x"
+expect CHECKPOINT "  control: sort -o writing a file" "git commit -m 'rm -rf ./src' && sort -o x.sh .git/COMMIT_EDITMSG && sh x.sh"
+expect skip "echo, then printf to stderr (fd duplications)" "echo 'rm -rf ./src'; printf 'rm -rf ./src\\n' 2>&1 >&2"
+expect skip "grep from an input redirect" "grep -c 'rm -rf ./src' < README.md"
+expect CHECKPOINT "  control: exec >F, then echo" "exec > z.sh; echo 'rm -rf ./src'; exec >/dev/null; sh z.sh"
+expect CHECKPOINT "  control: exec 1>F, then printf" "exec 1>z.sh; printf 'rm -rf ./src\\n'; exec 1>&2; bash z.sh"
+expect CHECKPOINT "  control: exec 2>F, then echo >&2" "exec 2>z.sh; echo 'rm -rf ./src' >&2; exec 2>/dev/null; sh z.sh"
+expect CHECKPOINT "  control: exec 3>&1 >F, then a heredoc" \
+    "$(printf '%s\n' "exec 3>&1 >z.sh; cat <<'X'" 'rm -rf ./src' 'X' 'exec >&3; sh z.sh')"
+expect CHECKPOINT "  control: exec >F, then git log" "exec >z.sh; git log -1 --format='format:rm -rf ./src'; exec >/dev/tty; sh z.sh"
+expect CHECKPOINT "  control: a redirect to /dev/stderr" "echo 'rm -rf ./src' > /dev/stderr"
+expect skip "echo, then ls to /dev/null" "echo 'rm -rf ./src'; ls > /dev/null"
+expect CHECKPOINT "  control: any redirect to a file, even one writing other text" "echo 'rm -rf ./src'; ls > listing.txt"
+expect CHECKPOINT "  control: <> opens a file for writing" "echo 'rm -rf ./src' 1<> x.sh; sh x.sh"
+expect skip "git commit -m, then cat the message" "git commit -m 'rm -rf ./src' && cat .git/COMMIT_EDITMSG"
+expect CHECKPOINT "  control: then tee it to a file" "git commit -m 'rm -rf ./src' && tee x.sh < .git/COMMIT_EDITMSG >/dev/null && sh x.sh"
+expect CHECKPOINT "  control: then eval it" "git commit -m 'rm -rf ./src' && eval \"\$(cat .git/COMMIT_EDITMSG)\""
+expect CHECKPOINT "  control: then source it" "git commit -m 'rm -rf ./src' && . .git/COMMIT_EDITMSG"
+expect CHECKPOINT "  control: then sh it" "git commit -m 'rm -rf ./src' && sh .git/COMMIT_EDITMSG"
+expect CHECKPOINT "  control: then feed it to bash (no argument)" "git commit -m 'rm -rf ./src' && bash < .git/COMMIT_EDITMSG"
+expect CHECKPOINT "  control: then xargs it" "git commit -m 'rm -rf ./src' && xargs -I{} sh -c '{}' < .git/COMMIT_EDITMSG"
+expect CHECKPOINT "  control: then find -exec it" "git commit -m 'rm -rf ./src' && find .git -name COMMIT_EDITMSG -exec sh {} \\;"
+expect CHECKPOINT "  control: then parallel it" "git commit -m 'rm -rf ./src' && parallel :::: .git/COMMIT_EDITMSG"
+expect CHECKPOINT "  control: then awk system() it" "git commit -m 'rm -rf ./src' && awk '{system(\$0)}' .git/COMMIT_EDITMSG"
+expect CHECKPOINT "  control: then git fetch --upload-pack it" "git commit -m 'rm -rf ./src' && git fetch --upload-pack='sh .git/COMMIT_EDITMSG #' ."
+expect CHECKPOINT "  control: then git -c alias it" "git commit -m 'rm -rf ./src' && git -c alias.z='!sh .git/COMMIT_EDITMSG' z"
+expect CHECKPOINT "  control: then a GIT_PAGER prefix" "git commit -m 'rm -rf ./src' && GIT_PAGER='sh .git/COMMIT_EDITMSG #' git -p log -1"
+expect CHECKPOINT "  control: then an export" "git commit -m 'rm -rf ./src' && export GIT_EDITOR='sh .git/COMMIT_EDITMSG #'"
+expect CHECKPOINT "  control: then a process substitution" "git commit -m 'rm -rf ./src' && sh <(cat .git/COMMIT_EDITMSG)"
+expect CHECKPOINT "  control: find -delete beside an echo" "echo 'rm -rf ./src'; find ./src -delete"
+expect CHECKPOINT "  control: a substitution run as the command" "\$(git log -1 --format='format:rm -rf ./src')"
+expect skip "an expansion with a default value" 'echo "${HOME:-x} rm -rf ./src"'
+expect CHECKPOINT "  control: an assigning expansion rebinds cat" ": \${BASH_CMDS[cat]:=/bin/sh}; cat -c 'rm -rf ./src'"
+expect skip "an unquoted heredoc with plain text" \
+    "$(printf '%s\n' 'gh issue comment 1 --body-file - <<EOF' 'plain rm -rf ./src text' 'EOF')"
+expect CHECKPOINT "  control: a backtick in an unquoted heredoc runs" \
+    "$(printf '%s\n' 'gh issue comment 1 --body-file - <<EOF' '`rm -rf ./src`' 'EOF')"
+expect CHECKPOINT "  control: a heredoc fed to an interpreter" \
+    "$(printf '%s\n' "git commit -F - <<'EOF'" 'rm -rf ./src' 'EOF' "perl -ne 'system \$_' .git/COMMIT_EDITMSG")"
+expect skip "git -C and --no-pager are allowed global options" \
+    "git commit -m 'rm -rf ./src' && git -C . status && git --no-pager log -1"
 
 echo "  == B + C. generated spelling probe, and the differential against every baseline =="
 
@@ -591,8 +664,9 @@ for x in 'for d in 1; do X; done' 'X 2>&1 | cat' 'if true; then X; fi'; do
     done
 done
 # Programs the hook treats as inert, made to run their arguments, and program
-# names the same command rebinds (review of PR #2743). One X per template; ~NL~
-# is a line break. `bash --rcfile=/dev/null` above is a spelling bash itself
+# names the same command rebinds (review of PR #2743); then every shape outside
+# the exemption's closed allowlist, from section A (second review). One X per
+# template; ~NL~ is a line break. `bash --rcfile=/dev/null` above is a spelling bash itself
 # rejects, kept so a parser that splits an attached `=value` cannot drop it.
 EXEC_VIA_INERT=()
 while IFS= read -r line; do
@@ -634,6 +708,59 @@ read -r PATH <<< /tmp/evil; cat -c 'X'
 export "PATH=/tmp/evil"; cat -c 'X'
 declare -n r=PATH; r=/tmp/evil; cat -c 'X'
 BASH_CMDS[cat]=/bin/sh; cat -c 'X'
+git log -1 --format='format:X' --output=x.sh && sh x.sh
+git log -1 --format='format:X' --output x.sh && sh x.sh
+git show -s --format='format:X' '--output=y.sh'; bash y.sh
+git log -1 --format='format:X' --outp=x.sh && sh x.sh
+git log -1 --format='format:X' --output=.git/hooks/post-commit && chmod +x .git/hooks/post-commit && git commit --allow-empty -m x
+git commit -m 'X' && sort -o x.sh .git/COMMIT_EDITMSG && sh x.sh
+echo 'X' > x.sh; sh x.sh
+echo 'X' >> x.sh && bash x.sh
+echo 'X' >| x.sh; zsh x.sh
+echo 'X' &> x.sh; dash x.sh
+echo 'X' 1<> x.sh; sh x.sh
+{ echo 'X'; } > x.sh; sh x.sh
+echo 'X' > /dev/stderr
+echo 'X'; ls > listing.txt
+exec > z.sh; echo 'X'; exec >/dev/null; sh z.sh
+exec 1>z.sh; printf 'X\n'; exec 1>&2; bash z.sh
+exec 2>z.sh; echo 'X' >&2; exec 2>/dev/null; sh z.sh
+exec 3>&1 >z.sh; cat <<'EOF'~NL~X~NL~EOF~NL~exec >&3; sh z.sh
+exec >z.sh; git log -1 --format='format:X'; exec >/dev/tty; sh z.sh
+exec >z.sh; gh api repos/o/r -q '"X"'; exec >&2; . ./z.sh
+git commit -m 'X' && tee x.sh < .git/COMMIT_EDITMSG >/dev/null && sh x.sh
+echo 'X' | tee x.sh >/dev/null; sh x.sh
+git commit -m 'X' && eval "$(cat .git/COMMIT_EDITMSG)"
+git commit -m 'X' && . .git/COMMIT_EDITMSG
+git commit -m 'X' && source .git/COMMIT_EDITMSG
+git commit -m 'X' && sh .git/COMMIT_EDITMSG
+git commit -m 'X' && bash < .git/COMMIT_EDITMSG
+git commit -m 'X' && zsh -s < .git/COMMIT_EDITMSG
+git commit -m 'X'; dash .git/COMMIT_EDITMSG
+git commit -m 'X' && xargs -I{} sh -c '{}' < .git/COMMIT_EDITMSG
+git commit -m 'X' && find .git -name COMMIT_EDITMSG -exec sh {} \;
+git commit -m 'X' && find .git -name COMMIT_EDITMSG -execdir sh {} \;
+git commit -m 'X' && find .git -name COMMIT_EDITMSG -ok sh {} \;
+echo 'X'; find ./src -delete
+git commit -m 'X' && parallel :::: .git/COMMIT_EDITMSG
+$(git log -1 --format='format:X')
+git commit -m 'X' && sh <(cat .git/COMMIT_EDITMSG)
+gh pr create --title t --body "$(cat <<'EOF'~NL~X~NL~EOF~NL~)"
+git commit -F - <<'EOF'~NL~X~NL~EOF~NL~perl -ne 'system $_' .git/COMMIT_EDITMSG
+gh issue comment 1 --body-file - <<EOF~NL~`X`~NL~EOF
+cat <<EOF~NL~$(X)~NL~EOF
+git commit -m 'X' && GIT_PAGER='sh .git/COMMIT_EDITMSG #' git -p log -1
+git commit -m 'X' && export GIT_EDITOR='sh .git/COMMIT_EDITMSG #' && git commit --amend
+git commit -m 'X' && GIT_EDITOR='sh .git/COMMIT_EDITMSG #' git commit --amend
+: ${BASH_CMDS[cat]:=/bin/sh}; cat -c 'X'
+echo *(e:'X':)
+git commit -m 'X' && awk '{system($0)}' .git/COMMIT_EDITMSG
+git commit -m 'X' && git fetch --upload-pack='sh .git/COMMIT_EDITMSG #' .
+git commit -m 'X' && git -c alias.z='!sh .git/COMMIT_EDITMSG' z
+git commit -m 'X' && git -c core.pager='sh .git/COMMIT_EDITMSG #' log -p -1
+git commit -m 'X' && git rebase -x 'sh .git/COMMIT_EDITMSG' HEAD
+git commit -m 'X' && env sh .git/COMMIT_EDITMSG
+git commit -m 'X' && gh alias set z '!sh .git/COMMIT_EDITMSG' && gh z
 TEMPLATES
 for c in "rm -rf ./src" "git clean -fd"; do
     for x in "${EXEC_VIA_INERT[@]}"; do SPELLINGS+=("$(fill "$x" "$c")"); done

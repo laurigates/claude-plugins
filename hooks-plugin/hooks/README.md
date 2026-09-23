@@ -347,7 +347,9 @@ commands that delete nothing: a `gh issue comment --body` quoting the phrase, a
 recorded 50 redundant stashes. The verdict is now:
 
 ```
-structural(command nodes)  OR  old-matcher(residue)
+structural(command nodes)
+  OR old-matcher(residue)
+  OR old-matcher(whole command), unless the command is built only from allowlisted shapes
 ```
 
 - **Structural.** `ast-grep --lang bash` yields each `command` node; its words
@@ -358,38 +360,57 @@ structural(command nodes)  OR  old-matcher(residue)
   --force`, options after operands). The quoted arguments of a shell invoker
   (`bash -c`, `sh -ec`, `bash --rcfile X -c`, `eval`, …), of a command piped
   into one, and a heredoc fed to one are re-parsed as shell.
-- **Residue.** The old regex matcher still runs, over the command text with only
-  parser-proven inert spans removed: comments, output-only programs (`echo`,
+- **Residue.** The old regex matcher runs over the command text with
+  parser-classified spans blanked: comments, output-only programs (`echo`,
   `printf`, `grep`, `rg`, `jq`, `cat`, `head`, `tail`, `wc`, `gh
   issue|pr|api|release|search|label|run|workflow|status`, `git
-  commit|log|show|diff|grep|status|tag|notes`) whose output reaches nothing
-  that executes it, and a direct `rm` whose operands were all proven to lie
-  outside the repository. Everything else — an unknown program (`python3 -c`,
-  `ssh`), a shell string, an assignment, a heredoc to `bash` — stays in the
-  residue.
+  commit|log|show|diff|grep|status|tag|notes`) whose output reaches no other
+  program in its pipeline or redirected statement, and a direct `rm` whose
+  operands were all proven to lie outside the repository.
+- **The exemption.** Blanking is an exemption, and it holds only when the whole
+  command is built from the closed allowlist below. Otherwise the old matcher
+  reads the whole command and it checkpoints exactly as before #2652.
 
-### When an "inert" program is not inert
+### The exemption is a closed allowlist of shapes
 
-Some programs on that list can be made to execute their arguments, and a
-program name can be rebound earlier in the same command. In each case below the
-whole command goes to the old matcher. The option checks read the words the
-shell delivers, so `printf '-v' …` and `git grep '-O…'` count as well.
+Earlier rounds of this fix listed the ways an "inert" program could be made to
+run its text — `gh alias set '!…'`, `printf -v`, `rg --pre`, `git grep -O`, a
+rebound name — and each review found more of the same class: `git log
+--output=F` then `sh F`, an `exec >F` earlier in the command, a backtick in an
+unquoted heredoc, `awk '{system($0)}'` over the commit message, `git fetch
+--upload-pack=…`, `git -c alias.z='!…'`, `: ${BASH_CMDS[cat]:=/bin/sh}`. Run in a
+scratch repository, each deleted `./src` after a blanked `git commit -m` or
+`echo`. So the exemption no longer names hazards; it names what is allowed, and
+every other shape anywhere in the command voids it.
 
-| Shape | What runs |
-|-------|-----------|
-| `gh alias set x '!cmd'`, `gh alias set --shell`, `gh alias import -`, then `gh x` | `cmd`, through `sh` |
-| `gh` with any other subcommand not listed above | an alias or an extension |
-| `GH_BROWSER='cmd' gh pr view --web`, or any environment prefix | whatever the variable names |
-| `printf -v VAR …` | the text, once `VAR` is expanded as a command |
-| `rg --pre CMD`, `rg --hostname-bin CMD` | `CMD` |
-| `git grep -O<pager>`, `--open-files-in-pager=<pager>` (any unique prefix, any short-option cluster) | `<pager>`, through the shell |
-| A function definition, `alias`, `hash`, `source`/`.`, `eval`, `trap`, `enable`, `autoload`, `setopt`, `shopt` | a rebound `cat`, `grep`, … |
-| An assignment to `PATH`/`path`, zsh's `functions`/`aliases`/`commands`, bash's `BASH_CMDS`/`BASH_ALIASES`; `read`/`export`/`declare` naming one; a `declare -n` nameref | a different binary behind the same name |
-| A program word the hook cannot read (`$c …`) | anything, including `eval` |
+| Allowed | Detail |
+|---------|--------|
+| Structure | simple commands, pipelines, `&&` / `\|\|` / `;` lists, comments |
+| Input | heredocs with a quoted delimiter; unquoted ones with no `$` or backtick in them; here-strings; `< file` |
+| Output | redirects to `/dev/null`, fd duplications (`2>&1`, `>&2`) and closes |
+| Programs | the output-only programs above, `rm`, `cd`, `pwd`, `ls`, `mkdir`, `test`, `[`, `true`, `false`, `:`, `sleep` |
+| `gh` | the subcommands above only |
+| `git` | `status log show diff grep commit tag notes add rev-parse branch switch checkout restore reset clean stash rm mv ls-files merge-base rev-list describe shortlog blame reflog cat-file show-ref for-each-ref symbolic-ref`; global options `-C DIR` and `--no-pager` only |
+
+Each program's words are read as the shell delivers them, and on an allowed
+program these still void it: a short option cluster holding `o` or `O`, or a
+long option spelling a prefix of `--output` or `--out…` (`sort -o`, `git log
+--output`, `git grep -O`); `printf -v`; `rg --pre` / `--hostname-bin`; `git grep
+--open-files-in-pager`; and on `git`, `gh`, `printf` or `rg` any word whose value
+the hook cannot read. So does any assignment (including an environment prefix),
+declaration, function, command or process substitution, `${x=…}` expansion,
+loop, conditional, `[[ … ]]`, subshell or `{ … }` group anywhere in the command.
+`exec`, `tee`, `eval`, `source`, `.`, every shell, `xargs`, `find`, `parallel`,
+`env`, `sudo`, `awk` and `perl` void it by not being on the list.
+
+The `gh pr create --body "$(cat <<'EOF' … EOF)"` and `git commit -m "$(cat
+<<'EOF' …)"` spellings therefore checkpoint as they did before #2652; their
+`--body-file - <<'EOF'` and `git commit -F - <<'EOF'` forms are exempt.
 
 Shell state from before the command is trusted: a program name rebound by the
-user's shell profile, or found through a relative `PATH` entry after a `cd`, is
-not seen, and such a command can be skipped where the old matcher checkpointed.
+user's shell profile, a git hook, alias or pager already configured, or a
+variable already exported is not seen, and such a command can be skipped where
+the old matcher checkpointed.
 
 ### Operand locality
 
@@ -422,10 +443,10 @@ bash hooks-plugin/hooks/test-auto-checkpoint.sh
 ```
 
 Beyond the #2610 cases, the suite pairs every false positive from the #2652
-thread with an in-repo control, generates ~450 spellings of the destructive
+thread with an in-repo control, generates ~550 spellings of the destructive
 commands (program spelling × wrapper × flag spelling × shell-string wrapper ×
-shell context, plus every shape in the table above) and requires each to
-checkpoint, and runs the same set through
+shell context, plus every allowlist-voiding shape above, each beside a control
+that skips) and requires each to checkpoint, and runs the same set through
 the pre-#2652 hook (`git show <ref>:…` at HEAD and at the pinned pre-fix commit,
 or the no-parser path when neither is in the clone): any spelling a baseline
 checkpoints but the hook skips fails the run. It needs `ast-grep`; without it
