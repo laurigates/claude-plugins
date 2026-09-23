@@ -113,6 +113,30 @@ with the random bits first. A command that references only `CLAUDE_SESSION_ID`
 is never blocked. `PI_SESSION_FILE` carries pi's session transcript path for
 scripts that need it.
 
+A bare `task start` gets no agent identity under pi. taskwarrior-plugin's native
+on-modify hook (`install-native-hooks`) stamps `agent` from `CLAUDE_SESSION_ID`
+in its own environment whatever the command says, and the adapter exports the
+variable only into a `bash` call whose text references it. `task-claim` names
+the variable in its command, so its claims carry an agent; the hook still stamps
+`host`, `branch` and `worktree` on a bare `task start`.
+
+## Session nudges
+
+session-plugin's two nudges are Claude Code hook-manifest entries, which pi never
+reads. The adapter runs both itself (`adapters/pi/session-nudges.ts`, #2661):
+
+| Nudge | pi event | Behaviour |
+|---|---|---|
+| Spinup | `session_start` | Runs `session-plugin/hooks/session-spinup-nudge.sh` unchanged with Claude Code's SessionStart stdin. pi's `startup` and `resume` pass through as the hook's `source`; `/fork` counts as a resume and `/new` as Claude Code's `/clear`, which the hook ignores. The hook's `additionalContext` is queued with `pi.sendMessage(..., { deliverAs: "nextTurn" })` |
+| End | `agent_settled` | The Stop hook's gates, reimplemented over pi's session entries: six user turns not counting `/skill:` expansions, a wind-down phrase in the last three, no `session-wrap`/`session-end`/`session-distill` already loaded (by `/skill:` or by a `read` of its `SKILL.md`), and taskwarrior on `PATH` or a `.claude/rules/` or justfile to capture into. pi has no Stop `block`, so the offer is a follow-up message that triggers one more turn |
+
+Each fires at most once per session. The spinup hook keeps its own state file;
+the end offer is persisted in the session as a custom message, so a resumed
+session is not offered twice. `"sessionNudges": false` in `skill-discovery.json`
+turns both off. The end nudge's phrase list, turn threshold, window and offer
+text are copies of the shell hook's, and `adapters/tests/pi-session-nudges.test.ts`
+reads the hook and fails when they diverge.
+
 ## Pipeline
 
 ```
