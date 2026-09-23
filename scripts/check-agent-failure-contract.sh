@@ -235,6 +235,21 @@ require_marker "$worktree_hazards_md" "draft PR before the bulk of the work" \
 require_marker "$failure_recovery_md" "Audit local worktrees alongside the remote" \
   "the local-worktree recovery-audit section (issue #2447)"
 
+# Regression #2670: a workflow's bill is set by how many agents it CREATES —
+# each builds its own prompt cache — not by context reuse; a 496-agent session
+# spent 64% of its bill on cache writes. .claude/rules/workflow-vs-skill.md owns
+# the authoring half: the cost model (agents per item, the levers, the scale
+# guard's limit variable) and the framing snippet's **Agent budget:** slot that
+# check-workflow-js-model.sh enforces. Pin all three so a tightening pass cannot
+# drop the cost model and leave the enforcement with no guidance behind it.
+workflow_rule=".claude/rules/workflow-vs-skill.md"
+require_marker "$workflow_rule" "## The cost model: agents created, not context reused" \
+  "the workflow cost-model section (issue #2670)"
+require_marker "$workflow_rule" "CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS" \
+  "the scale guard's limit variable (issue #2670)"
+require_marker "$workflow_rule" "**Agent budget:** [N" \
+  "the framing snippet's agent-budget slot (issue #2670)"
+
 # Regression #2614: the repo documented the Agent-spawned SendMessage-resume
 # hazard (#1546) and the resumeFromRunId re-run hazard (#1868), but never that a
 # Workflow-spawned agent is NOT SendMessage-addressable at all — so every

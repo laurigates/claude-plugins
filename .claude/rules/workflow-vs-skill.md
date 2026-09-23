@@ -1,6 +1,6 @@
 ---
 created: 2026-07-29
-modified: 2026-09-16
+modified: 2026-09-23
 reviewed: 2026-09-16
 paths:
   - "*/skills/**/workflows/*.js"
@@ -94,6 +94,39 @@ enumerable-N bar above: a workflow whose design invents an N in the dozens
 ("40 plugin agents") is already fighting the platform default, not just this
 repo's cost rule.
 
+## The cost model: agents created, not context reused
+
+A run is billed by how many agents it **creates**. Every fresh agent writes its
+own prompt cache at 1.25x the input rate, and a short-lived agent exits before
+re-reading enough of it to amortise the write. In the session behind #2670, five
+workflows created 496 agents: cache **writes** were 64% of a $528 bill, and
+cache reads, at 4.6x the volume, were 24%. Trimming prompts reduces the read
+half, which was the smaller one.
+
+The multiplier to watch is **agents per item**, not whether a fan-out exists.
+One agent per runtime item is the normal shape; `pipeline(units, edit, review,
+repair, rereview)` is four cache builds per unit, and a fan-out nested in a
+fan-out multiplies again. In rough order of saving per unit of effort:
+
+| Lever | Move |
+|---|---|
+| Collapse per-item stages | One agent carrying edit, self-review and repair in one context is one build. Keep a separate stage only where independence is the point (a grader, a cold reader) |
+| Cap at the source | A literal `.slice(0, N)` where the list is produced; the estimator reads the literal as the bound |
+| Batch items per agent | Eight files reviewed by one agent is one build instead of eight |
+
+A loop window (`for (i …; i += WAVE) xs.slice(i, i + WAVE)`) limits concurrency;
+the run still creates one agent per item.
+
+`hooks-plugin/hooks/workflow-scale-guard.sh` asks before a run whose estimate
+exceeds `CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS` (default 10), costing each list it
+cannot bound at 8 items. The framing snippet's `**Agent budget:**` line states
+that estimate at authoring time, and `scripts/check-workflow-js-model.sh` fails
+when the estimator's figure exceeds it, so adding an agent per item turns that
+gate red until the budget is restated. Two #2670 levers are deliberately absent:
+a realised count and cost in the run summary is harness output this repo cannot
+produce, and a cheaper model for read-only workers is decided under #2630
+against the Opus floor.
+
 ## The two shapes with no fit here
 
 Of the six shapes in the source taxonomy, two have **no** instance in this repo.
@@ -173,9 +206,9 @@ tells a reader it exists, and nothing tells an adapter what may be rewritten.
 
 ## The framing snippet (copy verbatim)
 
-Fill the three bracketed slots. Slot 3 is what makes it a template rather than a
+Fill the four bracketed slots. Slot 3 is what makes it a template rather than a
 script: naming what an adapter is *allowed to rewrite* implies everything else is
-structure.
+structure. Slot 4 states the agent count (§ The cost model).
 
 ```markdown
 ## Workflow harness (template)
@@ -189,6 +222,10 @@ the project-specific commands].
 **Preserve across any adaptation:** [(a) the loop bound comes from <the deterministic
 source>, never from a prose "for each"; (b) <the schema/enum that forces a determinate
 verdict>; (c) <the barrier and why it is a barrier>].
+
+**Agent budget:** [N — how N decomposes: agents per item × the list, plus the fixed
+stages, plus anything the estimator cannot see (a nested `workflow()` child). N is
+the ESTIMATE `hooks-plugin/hooks/workflow-scale-estimate.py` prints for this file.]
 
 **Skip the harness when:** [<the modal small case>] — that is a linear pass and the
 harness is pure overhead. The steps below remain the authoritative description of
@@ -222,8 +259,9 @@ Two clauses every template that dispatches `isolation:'worktree'` agents must
   this rule: every `agent()` call pins an opus model (or inherits — never
   `sonnet`/`haiku`) and an explicit valid `effort`; the file is named
   `<purpose>.workflow.js`; it is reachable from a sibling
-  `## Workflow harness (template)` section that names it; and a template
-  dispatching `isolation:'worktree'` agents carries the two clauses above.
+  `## Workflow harness (template)` section that names it; a template
+  dispatching `isolation:'worktree'` agents carries the two clauses above; and
+  the framing's `**Agent budget:**` is at least the scale estimator's figure.
   The three gating axes stay a judgement call — no script can decide them.
 
 ## Related

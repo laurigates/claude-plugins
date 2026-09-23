@@ -91,6 +91,9 @@ build_fixture() {
   local root="$1"
   mkdir -p "$root/scripts"
   cp "$checker" "$root/scripts/check-agent-failure-contract.sh"
+  # .claude/rules/workflow-vs-skill.md (#2670) — the workflow cost-model pins.
+  mkdir -p "$root/.claude/rules"
+  cp "$repo_root/.claude/rules/workflow-vs-skill.md" "$root/.claude/rules/workflow-vs-skill.md"
   mkdir -p "$root/agent-patterns-plugin/skills/parallel-agent-dispatch"
   mkdir -p "$root/agent-patterns-plugin/skills/custom-agent-definitions"
   mkdir -p "$root/agents-plugin/agents"
@@ -281,6 +284,24 @@ strip_marker "$fx_r/agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.m
 assert "R: dispatch SKILL.md missing the worktreePath tell fails (exit 1)" \
   "$([ "$(run_fixture "$fx_r")" -eq 1 ] && echo true || echo false)"
 rm -rf "$fx_r"
+
+# --- Guards Z1-Z3: workflow-vs-skill.md losing the #2670 cost model ---
+# A workflow's bill is set by the agents it creates. The rule carries the cost
+# model, the scale guard's limit variable, and the framing snippet's agent-budget
+# slot that check-workflow-js-model.sh enforces; strip each and require exit 1.
+for z in "Z1|## The cost model: agents created, not context reused" \
+         "Z2|CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS" \
+         "Z3|**Agent budget:** [N"; do
+  z_id="${z%%|*}"
+  z_needle="${z#*|}"
+  fx_z="$(mktemp -d)"
+  [ -n "$fx_z" ] || { echo "mktemp failed" >&2; exit 1; }
+  build_fixture "$fx_z"
+  strip_marker "$fx_z/.claude/rules/workflow-vs-skill.md" "$z_needle"
+  assert "$z_id: workflow-vs-skill.md missing '$z_needle' fails (exit 1)" \
+    "$([ "$(run_fixture "$fx_z")" -eq 1 ] && echo true || echo false)"
+  rm -rf "$fx_z"
+done
 
 # --- Guard S: worktree-hazards.md missing the Workflow-unreachability statement ---
 # Issue #2614: a Workflow-spawned agent has no SendMessage target, so the #1546
