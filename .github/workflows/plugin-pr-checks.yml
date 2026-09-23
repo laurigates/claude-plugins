@@ -187,7 +187,8 @@ jobs:
             --only 'scripts/tests/test-guard-worktree-root-discovery.sh' \
             --only 'scripts/tests/test-infra-compliance-check.sh' \
             --only 'scripts/tests/test-lint-shell-scripts.sh' \
-            --only 'scripts/tests/test-plugin-compliance-check.sh'
+            --only 'scripts/tests/test-plugin-compliance-check.sh' \
+            --only 'scripts/tests/test-workflow-run-cost.sh'
 
       - name: Check agent dispatch loud-failure / completion-manifest contract (#1422, #1601)
         # Whole-repo invariant (the dispatch skills + refactor agent carry the

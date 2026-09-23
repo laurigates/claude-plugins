@@ -91,8 +91,14 @@ Every non-interactive workflow prompt (all rows except `claude.yml` @mentions) r
 | `claude-code-review.yml` | — | **Out of scope**: model lives in the external `laurigates/.github` reusable workflow; the guard skips it (classification, not allowlist) |
 
 The recurring `Plugin: Workflow model audit` workflow re-evaluates these picks
-monthly against real run health and output samples, and opens an issue with
-up/down effort recommendations.
+monthly against real run health, measured per-run cost and turn draw, and
+output samples, and opens an issue with up/down effort recommendations ranked
+by measured spend. The cost input comes from `scripts/workflow-run-cost.sh`
+(#2669), which reads each run's `total_cost_usd` / `num_turns` /
+`permission_denials_count` from its job log (claude-code-action exposes them
+nowhere else) and flags a run within two turns of the `--max-turns` it ran
+with, or past it. A run whose log has no accounting object reports
+`COST_USD=unknown`, never `0`.
 
 ## Enforcement: classification
 

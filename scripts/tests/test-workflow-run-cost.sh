@@ -36,8 +36,13 @@ assert() {
   if [ "$2" = "true" ]; then pass=$((pass + 1)); else
     echo "FAIL: $1" >&2; fail=$((fail + 1)); fi
 }
+# Single-line needles only: grep -F splits a multi-line pattern into one
+# pattern per line, and an empty line matches everything.
 contains() { printf '%s' "$1" | grep -qF -- "$2" && echo true || echo false; }
 lacks()    { printf '%s' "$1" | grep -qF -- "$2" && echo false || echo true; }
+# has_line: a WHOLE-line match, so the header's MAX_TURNS= is not satisfied by
+# a row's "MAX_TURNS=60 NEAR_CAP=..." and NEAR_CAP_RUNS=2 by no other key.
+has_line() { printf '%s\n' "$1" | grep -qxF -- "$2" && echo true || echo false; }
 
 for f in "$SUBJECT" "$GOLDEN" "$OVER" "$NOACCT"; do
   [ -f "$f" ] || { echo "FAIL: missing $f" >&2; fail=$((fail + 1)); }
@@ -83,7 +88,7 @@ jobs:
     steps:
       - uses: anthropics/claude-code-action@v1
         with:
-          # --max-turns 25 was the old budget; this comment must not be read.
+          # A comment ending in a cap must not be read as the cap: was --max-turns 25
           claude_args: >-
             --model opus
             --effort medium
@@ -118,10 +123,10 @@ run_cost "$c" "$c/wf.yml"
 assert "A: exit 0 (got $rc)" "$([ "$rc" -eq 0 ] && echo true || echo false)"
 assert "A: row carries COST_USD=32.59 TURNS=59 MAX_TURNS=60 NEAR_CAP=true" \
   "$(contains "$out" "RUN=111 CONCLUSION=success CREATED=2026-09-15T14:25:49Z COST_USD=32.59 TURNS=59 MAX_TURNS=60 NEAR_CAP=true DENIALS=6")"
-assert "A: file cap parsed from the flag line, not the comment" "$(contains "$out" $'\nMAX_TURNS=60\n')"
-assert "A: STATUS=WARN" "$(contains "$out" "STATUS=WARN")"
+assert "A: file cap parsed from the flag line, not the comment" "$(has_line "$out" "MAX_TURNS=60")"
+assert "A: STATUS=WARN" "$(has_line "$out" "STATUS=WARN")"
 assert "A: a near_cap issue row names the run" "$(contains "$out" "SEVERITY=WARN TYPE=near_cap RUN=111 MSG=59 turns against --max-turns 60")"
-assert "A: TOTAL_COST_USD=32.59" "$(contains "$out" "TOTAL_COST_USD=32.59")"
+assert "A: TOTAL_COST_USD=32.59" "$(has_line "$out" "TOTAL_COST_USD=32.59")"
 assert "A: the stub served the log" "$(contains "$(cat "$c/calls.log")" "STUB-GH run view 111 --log")"
 
 echo "=== CASE B: 55 of 60 is not near the cap; the margin is two turns ==="
@@ -132,8 +137,8 @@ for t in 55:false 57:false 58:true; do
   run_cost "$c" "$c/wf.yml"
   assert "B: ${t%%:*}/60 -> NEAR_CAP=${t##*:}" "$(contains "$out" "TURNS=${t%%:*} MAX_TURNS=60 NEAR_CAP=${t##*:}")"
   if [ "${t##*:}" = false ]; then
-    assert "B: ${t%%:*}/60 -> STATUS=OK" "$(contains "$out" "STATUS=OK")"
-    assert "B: ${t%%:*}/60 -> NEAR_CAP_RUNS=0" "$(contains "$out" "NEAR_CAP_RUNS=0")"
+    assert "B: ${t%%:*}/60 -> STATUS=OK" "$(has_line "$out" "STATUS=OK")"
+    assert "B: ${t%%:*}/60 -> NEAR_CAP_RUNS=0" "$(has_line "$out" "NEAR_CAP_RUNS=0")"
   fi
 done
 
@@ -145,16 +150,16 @@ run_cost "$c" "$c/wf.yml"
 assert "C: exit 0 (got $rc)" "$([ "$rc" -eq 0 ] && echo true || echo false)"
 assert "C: skipped-Claude-step run -> COST_USD=unknown TURNS=unknown" "$(contains "$out" "RUN=111 CONCLUSION=success CREATED=2026-09-08T13:35:33Z COST_USD=unknown TURNS=unknown MAX_TURNS=40 NEAR_CAP=unknown DENIALS=unknown")"
 assert "C: expired log -> COST_USD=unknown" "$(contains "$out" "RUN=222 CONCLUSION=success CREATED=2026-09-01T13:35:33Z COST_USD=unknown")"
-assert "C: TOTAL_COST_USD=unknown" "$(contains "$out" "TOTAL_COST_USD=unknown")"
-assert "C: COSTED_RUNS=0" "$(contains "$out" "COSTED_RUNS=0")"
+assert "C: TOTAL_COST_USD=unknown" "$(has_line "$out" "TOTAL_COST_USD=unknown")"
+assert "C: COSTED_RUNS=0" "$(has_line "$out" "COSTED_RUNS=0")"
 assert "C: no zero cost anywhere" "$(lacks "$out" "COST_USD=0")"
-assert "C: STATUS=OK (no data is not a finding)" "$(contains "$out" "STATUS=OK")"
+assert "C: STATUS=OK (no data is not a finding)" "$(has_line "$out" "STATUS=OK")"
 
 echo "=== CASE D: the cap the run used wins over the file's current cap ==="
 new_case "$one_run"; cp "$GOLDEN" "$c/logs/111.txt"
 write_wf "$c/wf.yml" "            --max-turns 90"
 run_cost "$c" "$c/wf.yml"
-assert "D: header MAX_TURNS is the file's current 90" "$(contains "$out" $'\nMAX_TURNS=90\n')"
+assert "D: header MAX_TURNS is the file's current 90" "$(has_line "$out" "MAX_TURNS=90")"
 assert "D: row MAX_TURNS is the run's echoed 60, and NEAR_CAP=true" "$(contains "$out" "TURNS=59 MAX_TURNS=60 NEAR_CAP=true")"
 
 echo "=== CASE E: past the cap counts as near it (72 against 40) ==="
@@ -184,11 +189,13 @@ runs='[{"databaseId":900,"conclusion":"skipped","createdAt":"2026-09-22T00:00:00
 new_case "$runs"; cp "$GOLDEN" "$c/logs/111.txt"; cp "$OVER" "$c/logs/222.txt"; cp "$GOLDEN" "$c/logs/333.txt"
 write_wf "$c/wf.yml" "            --max-turns 60"
 run_cost "$c" "$c/wf.yml" --limit 2
-assert "G: RUNS_SAMPLED=2" "$(contains "$out" "RUNS_SAMPLED=2")"
+assert "G: RUNS_SAMPLED=2" "$(has_line "$out" "RUNS_SAMPLED=2")"
 assert "G: skipped runs absent" "$(lacks "$out" "RUN=90")"
 assert "G: the third model-reaching run is beyond --limit" "$(lacks "$out" "RUN=333")"
-assert "G: TOTAL_COST_USD sums the unrounded costs (32.5936 + 10.2948 = 42.89)" "$(contains "$out" "TOTAL_COST_USD=42.89")"
-assert "G: NEAR_CAP_RUNS=2 and ISSUE_COUNT=2" "$(contains "$out" $'NEAR_CAP_RUNS=2\nSTATUS=WARN\nISSUE_COUNT=2')"
+assert "G: TOTAL_COST_USD sums the unrounded costs (32.5936 + 10.2948 = 42.89)" "$(has_line "$out" "TOTAL_COST_USD=42.89")"
+assert "G: NEAR_CAP_RUNS=2" "$(has_line "$out" "NEAR_CAP_RUNS=2")"
+assert "G: ISSUE_COUNT=2" "$(has_line "$out" "ISSUE_COUNT=2")"
+assert "G: STATUS=WARN" "$(has_line "$out" "STATUS=WARN")"
 
 echo "=== CASE H: several Claude steps in one run sum cost and denials, keep max turns ==="
 new_case "$one_run"; cat "$GOLDEN" "$OVER" > "$c/logs/111.txt"
@@ -201,7 +208,7 @@ new_case "$one_run"; : > "$c/list-fail"
 write_wf "$c/wf.yml" "            --max-turns 60"
 run_cost "$c" "$c/wf.yml"
 assert "I: exit 1 (got $rc)" "$([ "$rc" -eq 1 ] && echo true || echo false)"
-assert "I: STATUS=ERROR TYPE=run_list_failed" "$(contains "$out" "STATUS=ERROR")"
+assert "I: STATUS=ERROR TYPE=run_list_failed" "$(has_line "$out" "STATUS=ERROR")"
 assert "I: run_list_failed issue" "$(contains "$out" "TYPE=run_list_failed")"
 
 echo "=== CASE J: usage errors exit 2 ==="
@@ -216,7 +223,7 @@ new_case "$one_run"; grep -v 'claude_args:' "$GOLDEN" > "$c/logs/111.txt"
 assert "K: control - the log echoes no claude_args" "$(lacks "$(cat "$c/logs/111.txt")" "claude_args:")"
 write_wf "$c/wf.yml" "            --max-turns 60 \\"
 run_cost "$c" "$c/wf.yml"
-assert "K: header MAX_TURNS=60 from '--max-turns 60 \\'" "$(contains "$out" $'\nMAX_TURNS=60\n')"
+assert "K: header MAX_TURNS=60 from '--max-turns 60 \\'" "$(has_line "$out" "MAX_TURNS=60")"
 assert "K: row falls back to the file cap" "$(contains "$out" "TURNS=59 MAX_TURNS=60 NEAR_CAP=true")"
 
 echo "=== CASE L: the audit's pre-compute step feeds the cost block into the prompt ==="

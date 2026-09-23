@@ -112,3 +112,10 @@ scripts/tests/test-check-golden-set-coverage.sh
 # narrowing -- a measured-rate extrapolation must still block; PATTERN_FUTURE is
 # pinned separately by the future-tense cases at :113-118 (#2580).
 hooks-plugin/hooks/test-no-calendar-estimates.sh
+
+# Stubs gh on PATH and replays verbatim excerpts of three real run logs -- no
+# network, no credentials, no skip branch -- so a SKIP here can only mean the
+# file stopped being discovered. Its case L executes the model audit's own
+# pre-compute block, so a skip would also hide the audit losing its cost input
+# (#2669).
+scripts/tests/test-workflow-run-cost.sh
