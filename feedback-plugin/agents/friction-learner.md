@@ -13,7 +13,7 @@ tools: Bash(python3 *), Bash(jq *), Bash(git status *), Bash(git diff *), Bash(g
 context: fork
 maxTurns: 40
 created: 2026-04-16
-modified: 2026-07-21
+modified: 2026-09-23
 reviewed: 2026-04-28
 ---
 
@@ -68,6 +68,7 @@ a JSON record. Friction signals come from these record shapes:
 | Tool error | `toolUseResult.is_error: true` with command output |
 | Plan-mode entry | assistant `tool_use` with `name: ExitPlanMode` |
 | Push-to-PR-branch failure | `git push` tool_result mentioning `open pull request` or `protected branch` |
+| Stop-hook feedback | `type: user`, `isMeta: true`, string content starting `Stop hook feedback:` (never a tool_result) |
 
 ## Workflow
 
@@ -116,8 +117,21 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/friction_parse.py" \
 The parser emits one friction event per line:
 
 ```json
-{"session": "…", "ts": "…", "kind": "hook_block|tool_error|user_reject|user_interrupt|plan_mode|push_to_pr_branch", "signature": "…", "tool": "…", "evidence": "…"}
+{"session": "…", "ts": "…", "kind": "hook_block|tool_error|user_reject|user_interrupt|plan_mode|push_to_pr_branch|stop_hook_feedback|hook_feedback", "signature": "…", "tool": "…", "evidence": "…"}
 ```
+
+Stop-hook output is not a tool result: the harness injects it as an `isMeta`
+user record beginning `Stop hook feedback:`. The parser keys each one on the
+hook that emitted it, because the reason text never names the script —
+`stop:git-stash-reminder:<auto-checkpoint|mixed|other>`, `stop:task-completeness`,
+`stop:no-calendar-estimates`, `stop:session-end-nudge`, and
+`stop:subagent-output-check` (the `SubagentStop` prompt hook, which the harness
+also labels "Stop hook feedback"). A reason no key matches lands as
+`stop:unclassified`. Any other `<Event> hook feedback|error:` record is emitted
+as `hook_feedback` with a `hook-feedback:<event>` / `hook-error:<event>`
+signature rather than dropped. `--list-prefixes` prints which of those
+prefixes the window contains and whether each has a dedicated branch
+(`STATUS=WARN` when one does not).
 
 ### Step 1b: Pull skill usage, to target the analysis (optional)
 
@@ -163,6 +177,7 @@ For each cluster with ≥3 occurrences, map to a concrete deliverable:
 | Tool error with a known flag-fix | Skill SKILL.md edit adding the correct flag |
 | Plan-mode entry / `ExitPlanMode` rejection | **Classify-required**: surface samples in the PR body, do NOT auto-prescribe a rule (see "Evidence gate" below) |
 | Push-to-PR-branch repeats | Hook adjustment: pre-push check for open PR on target branch |
+| `stop:*` / `hook-feedback:*` / `hook-error:*` | **Watch**: report prevalence and same-session repeat. A rule file cannot quiet a Stop hook; the fix lives in the emitting hook, so file or cite an issue against it |
 
 #### Corroborate and escalate against the fast loop (Step 0 set)
 
