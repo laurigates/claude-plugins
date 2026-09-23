@@ -61,11 +61,22 @@ precommit_config="$proj_dir/.pre-commit-config.yaml"
 workflow_dir="$proj_dir/.github/workflows"
 
 issue_count=0
+error_count=0
+first_error=""
+first_warn=""
 declare -a issues=()
 
+# Each finding also records the first cause per severity, so the summary can
+# carry a REASON= for the worst one (structured-script-output.md, #2691).
 add_issue() {
   issues+=("  - SEVERITY=$1 TYPE=$2 MSG=$3")
   issue_count=$((issue_count + 1))
+  if [ "$1" = ERROR ]; then
+    error_count=$((error_count + 1))
+    [ -n "$first_error" ] || first_error="$2: $3"
+  else
+    [ -n "$first_warn" ] || first_warn="$2: $3"
+  fi
 }
 
 # --- pre-commit rev ----------------------------------------------------------
@@ -126,7 +137,7 @@ if [ -n "$precommit_rev" ]; then
   done
 elif [ "${#ci_pins[@]}" -gt 0 ]; then
   add_issue WARN missing_precommit_rev \
-    ".pre-commit-config.yaml has no rhysd/actionlint rev to compare the $(echo "${#ci_pins[@]}") CI pin(s) against"
+    ".pre-commit-config.yaml has no rhysd/actionlint rev to compare the ${#ci_pins[@]} CI pin(s) against"
 fi
 
 # --- Report ------------------------------------------------------------------
@@ -146,9 +157,18 @@ fi
 echo "ISSUE_COUNT=$issue_count"
 
 if [ "$issue_count" -gt 0 ]; then
+  status=WARN
+  reason="$first_warn"
+  if [ "$error_count" -gt 0 ]; then
+    status=ERROR
+    reason="$first_error"
+  fi
+  reason="${reason:0:180}"
+  [ "$issue_count" -gt 1 ] && reason="$reason (+$((issue_count - 1)) more)"
   echo "ISSUES:"
   printf '%s\n' "${issues[@]}"
-  echo "STATUS=FAIL"
+  echo "STATUS=$status"
+  echo "REASON=$reason"
   echo "=== END ACTIONLINT VERSION SYNC ==="
   [ "$strict" = true ] && exit 1
   exit 0
