@@ -16,6 +16,9 @@ Deliverable mapping:
     error:Bash:*            -> skill patch (quick reference flag or note)
     reject:*                -> watch (rejection cause is ambiguous without sampling)
     interrupt:*             -> summary only (usually not actionable)
+    stop:*, hook-feedback:*, hook-error:*
+                            -> watch: reported for prevalence, never prescribed; the
+                               fix lives in the emitting hook (e.g. #2652). See #2659.
 
 `classify-required` clusters are reported in the PR body with sample evidence
 so a human can decide which (if any) rule is justified. They never write a
@@ -152,6 +155,17 @@ def propose(signature: str, hits: list[dict]) -> dict:
                 "path": "",
                 "title": _CLASSIFY_TITLES[signature],
                 "body": _CLASSIFY_BODIES[signature],
+            }
+        elif signature.startswith(("stop:", "hook-feedback:", "hook-error:")):
+            # Hook output that is not a PreToolUse block (#2659). A rule file
+            # cannot fix a noisy Stop hook; the hook itself has to change, so
+            # these are measured (count, same-session repeat) and never
+            # prescribed. The explicit branch keeps them off the `hook:` path.
+            spec = {
+                "kind": "watch",
+                "path": "",
+                "title": f"Hook feedback: {signature}",
+                "body": "",
             }
         elif signature.startswith("hook:"):
             spec = {
