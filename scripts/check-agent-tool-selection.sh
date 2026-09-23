@@ -28,7 +28,7 @@
 # commits are never ancestors and a fully-landed branch reads as unmerged.
 # Piping that into `xargs git branch -d` is a delete loop keyed on a signal
 # known to be wrong — the SAME defect already fixed for `git-plugin:deadbranch`
-# (issue #1869, recorded in .claude/rules/regression-testing.md). `-d` refuses
+# (issue #1869, recorded in docs/regression-ledger.md). `-d` refuses
 # the unsafe deletes today, but the classification is still wrong and the usual
 # "fix" for the refusals is `-D`, which deletes real work.
 #

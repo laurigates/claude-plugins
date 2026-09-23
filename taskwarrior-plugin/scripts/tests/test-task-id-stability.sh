@@ -155,19 +155,21 @@ fi
 # stale filename does not reappear anywhere in the repo, not just in the
 # skill bodies plugin-compliance-check.sh's check_skill_body() scans (that
 # function only walks SKILL.md; the broken citations also lived in
-# REFERENCE.md and a .sh script). Excludes this test file and
-# regression-testing.md's own Known Regressions row, both of which cite the
-# stale filename deliberately as historical record, not as a live reference.
+# REFERENCE.md and a .sh script). Excludes this test file and the regression
+# ledger's own row (docs/regression-ledger.md, moved out of
+# .claude/rules/regression-testing.md by #2667), both of which cite the stale
+# filename deliberately as historical record, not as a live reference.
 
 repo_root="$(cd "${PLUGIN_DIR}/.." && pwd)"
 self_path="${SCRIPT_DIR}/$(basename "${BASH_SOURCE[0]}")"
-regression_log="${repo_root}/.claude/rules/regression-testing.md"
+regression_log="${repo_root}/docs/regression-ledger.md"
 # Prune generated/cloned COPIES of the repo, not just .git/ — otherwise this
 # walk re-finds the two deliberately-excluded files under every copy of them.
 # Both exclusions below are by ABSOLUTE path, so a copy at a different path
 # defeats them: `.claude/worktrees/<agent>/` (a full clone per agent worktree,
 # incl. OTHER concurrent sessions') and `dist/` (gitignored OpenCode export)
-# each carry their own regression-testing.md and their own copy of this test.
+# each carry their own docs/regression-ledger.md and their own copy of this
+# test.
 # Invisible in CI, which checks out neither — the #1492 / #1548 / #2214 / #2290
 # class, local-developer-only by construction.
 stale_hits="$(grep -rl "taskwarrior-bulk-operations" "$repo_root" \

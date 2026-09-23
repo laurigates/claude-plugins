@@ -169,7 +169,7 @@ repos:
         files: '^scripts/(check-unused-bash-grant\.sh|tests/test-check-unused-bash-grant\.sh)$'
         pass_filenames: false
       # --strict since the corpus reached UNQUALIFIED=0 (see the ratchet note in
-      # .claude/rules/regression-testing.md). Without it the WARN tier reached
+      # docs/regression-ledger.md). Without it the WARN tier reached
       # nobody: the hook ran unflagged and non-verbose, and the guard appeared in
       # no workflow at all, so 6 bare names resolved only by plugin-name fallback
       # -- "luck of name resolution", in the script's own header.
@@ -555,7 +555,7 @@ repos:
         # TEST J asserts on the guard's two TRIGGERS, which live in this file
         # and in plugin-pr-checks.yml — neither a `scripts/` path. Both must be
         # named here or editing a trigger never re-runs the test guarding it
-        # (the allowlist-drift shape in .claude/rules/regression-testing.md).
+        # (the allowlist-drift shape in docs/regression-ledger.md).
         files: '^(scripts/(check-version-pin-coverage\.sh|lib/extract-md-elements\.py|tests/test-check-version-pin-coverage\.sh)|\.pre-commit-config\.yaml|\.github/workflows/plugin-pr-checks\.yml)$'
         pass_filenames: false
       - id: test-export-opencode-agents

@@ -4,7 +4,7 @@
 # SEMANTIC, not syntactic: every assertion EXECUTES the guard against a planted
 # fixture tree and reads its verdict. A grep for the fixed literal would have
 # passed against the broken `_get uuid` fix in #1417 too — the lesson recorded
-# in .claude/rules/regression-testing.md.
+# in docs/regression-ledger.md.
 #
 # The guard derives its scan root from its own location, so each fixture tree
 # gets its own `scripts/` copy of the guard. That doubles as the scan-root

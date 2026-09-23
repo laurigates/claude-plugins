@@ -672,7 +672,7 @@ assert "the non-YAML template finding is the template_pin_unmanaged shape" \
 # J1/J2 assert on `.pre-commit-config.yaml` and the workflow, but neither is a
 # `scripts/` path — so this hook's own `files:` regex has to name them, or
 # editing a trigger locally never re-runs the test that guards it (the
-# allowlist-drift shape in .claude/rules/regression-testing.md).
+# allowlist-drift shape in docs/regression-ledger.md).
 assert "this test's trigger reaches .pre-commit-config.yaml (it asserts on it)" \
   "$(precommit_match '.pre-commit-config.yaml' test-check-version-pin-coverage)"
 assert "this test's trigger reaches the workflow it asserts on" \
