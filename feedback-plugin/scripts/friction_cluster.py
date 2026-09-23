@@ -238,12 +238,16 @@ def render_pr_body(
         f"- Friction events: {total_events}",
         f"- Actionable clusters: {sum(1 for p in proposals if p['kind'] != 'watch')}",
         "",
-        "| Cluster | Count | Deliverable | Path |",
-        "|---|---|---|---|",
+        # Sessions / Repeat sessions are prevalence and same-session repeat
+        # (#2659): rendered here so the report carries them without the agent
+        # having to copy them out of clusters.json.
+        "| Cluster | Count | Sessions | Repeat sessions | Deliverable | Path |",
+        "|---|---|---|---|---|---|",
     ]
     for p in sorted(proposals, key=lambda x: -x["count"]):
         lines.append(
-            f"| `{p['signature']}` | {p['count']} | {p['kind']} | `{p['path'] or '—'}` |"
+            f"| `{p['signature']}` | {p['count']} | {p['sessions']} | "
+            f"{p['repeat_sessions']} | {p['kind']} | `{p['path'] or '—'}` |"
         )
     classify = [p for p in proposals if p["kind"] == "classify-required"]
     if classify:
