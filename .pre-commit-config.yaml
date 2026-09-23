@@ -513,10 +513,11 @@ repos:
         files: '(research-radar\.yml|check-research-radar-grounding\.sh)$'
         pass_filenames: false
       - id: test-check-research-radar-grounding
-        name: research-radar grounding guard regression
+        name: research-radar grounding guard + target collector regression (#2697)
         entry: bash ./scripts/tests/test-check-research-radar-grounding.sh
         language: system
-        files: '^scripts/(check-research-radar-grounding\.sh|tests/test-check-research-radar-grounding\.sh)$'
+        # research-radar.yml: case 13 executes the workflow's own collector step.
+        files: '^(\.github/workflows/research-radar\.yml|scripts/(check-research-radar-grounding\.sh|tests/test-check-research-radar-grounding\.sh))$'
         pass_filenames: false
       - id: test-run-skill-script-tests
         name: skill-script runner reports SKIP separately from PASS (#2221)
