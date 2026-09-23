@@ -4,7 +4,7 @@
 # not yet emit REASON= on its non-OK path. The guard exempts a listed script
 # from missing_reason, and reports an ERROR for any entry that now emits REASON=
 # or is no longer a STATUS= emitter, so this list can only shrink. Delete a
-# line in the same commit that migrates the script.
+# line in the same commit that migrates the script. Rollout: #2760.
 scripts/check-auto-resolve-mergeability-poll.sh
 scripts/check-blueprint-level3-templates.sh
 scripts/check-branch-containment-guidance.sh
