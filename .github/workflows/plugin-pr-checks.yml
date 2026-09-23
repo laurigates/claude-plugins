@@ -170,6 +170,7 @@ jobs:
             --only 'scripts/tests/test-check-context-command-execution.sh' \
             --only 'scripts/tests/test-check-dead-api-endpoints.sh' \
             --only 'scripts/tests/test-check-delegation-reachability.sh' \
+            --only 'scripts/tests/test-check-evals-abstention.sh' \
             --only 'scripts/tests/test-check-hook-cue-skill-refs.sh' \
             --only 'scripts/tests/test-check-issue-template-inheritance.sh' \
             --only 'scripts/tests/test-check-loop-integrity.sh' \
@@ -222,6 +223,14 @@ jobs:
         # `git rm .github/ISSUE_TEMPLATE/*.yml` still runs this step — which the
         # path-filtered `Test: Skill scripts` alone could not promise.
         run: bash scripts/check-issue-template-inheritance.sh
+
+      - name: Check every eval suite carries a detectable abstention control
+        # Whole-repo invariant (#2690): every evals.json carries at least one
+        # `expected_outcome: abstain` case, and every such case an absent_regex
+        # that fails a fabricated answer for zero judge tokens. Always-on here
+        # because `Test: Skill scripts` is path-filtered and skill-only PRs do
+        # not trigger it.
+        run: bash scripts/check-evals-abstention.sh
 
       - name: Check every plugin agent runs on opus
         # Whole-repo invariant (every plugin agent must run on opus). Runs
