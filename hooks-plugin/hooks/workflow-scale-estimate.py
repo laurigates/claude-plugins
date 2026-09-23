@@ -597,6 +597,26 @@ def _risk(result: dict) -> int:
     return result.get("ESTIMATE", -1)
 
 
+# A regex literal whose body holds a quote or backtick (`/[{}`]/`, `/'/g`).
+# Both literal scans read that quote as opening a string and can blank the
+# agent code after it, yet the structural walk may still prove itself: its
+# literals close and its brackets balance around the gap. The lowering rules
+# then applied to BOTH readings of a file whose agent code neither scan saw,
+# and a script #2668 asked about went silent (#2670 review, round 5). A `/` is
+# read as a regex opener after the punctuators and keywords that expect an
+# operand, or at the start of a line. Over-matching (a division followed by a
+# quote on one line) only adds a reading, which can raise an estimate but
+# never lower one.
+_QUOTED_REGEX = re.compile(
+    r"(?:^|[(,=:!&|?\[{};<>+\-*%~^]"
+    r"|\b(?:return|typeof|instanceof|in|of|new|delete|void|throw|case|do|else|yield|await))"
+    r"\s*/(?![/*])(?:\\.|\[(?:\\.|[^\]\n])*\]|[^/\n\\])*?"
+    r"[`'\"](?:\\.|\[(?:\\.|[^\]\n])*\]|[^/\n\\])*/",
+    re.MULTILINE,
+)
+_QUOTED_REGEX_REASON = "a regex literal holds a quote"
+
+
 def analyze(src: str, limit: int, assumed: int = 8) -> dict:
     """Estimate the agent count and compare it to `limit`.
 
@@ -619,45 +639,53 @@ def analyze(src: str, limit: int, assumed: int = 8) -> dict:
     the code that put a script over the limit from both estimators, and
     dropping #2668's 3x over-count of a literal array beside it turned its
     accidental ask into silence (#2670 review, round 4).
+
+    A parse that proves itself is not enough when the file holds a regex
+    literal with a quote in it (see _QUOTED_REGEX): both scans can lose the
+    same agent code there, so the flat text is also costed with the #2668
+    bound logic, and that figure is a floor too (#2670 review, round 5).
     """
     text, mode, reason = sanitize(src)
     # (text, mode, reason, proven): `proven` enables the lowering rules.
     readings = [(text, mode, reason, True)]
     if mode == "structural":
-        readings.append((_flat_sanitize(src), "flat", "", True))
+        flat = _flat_sanitize(src)
+        readings.append((flat, "flat", "", True))
+        if _QUOTED_REGEX.search(src):
+            readings.append((flat, "flat", _QUOTED_REGEX_REASON, False))
     else:
         readings.append((text, "flat", reason, False))
     results, failure = [], None
-    for text, mode, reason, proven in readings:
+    for index, (text, mode, reason, proven) in enumerate(readings):
         try:
             result = estimate_text(text, src, limit, assumed, proven=proven)
-        except Exception as exc:  # noqa: BLE001 - the other reading may still succeed
-            failure = exc
+        except Exception as exc:  # noqa: BLE001 - another reading may still succeed
+            failure = failure or exc
             continue
         result["SANITIZER"] = mode
         if reason:
             result["FALLBACK"] = reason
-        result["_proven"] = proven
+        result["_reading"] = index
         results.append(result)
     if not results:
         raise failure
     best = max(results, key=_risk)  # max() keeps the first of equals
-    first_mode, first_reason = readings[0][1], readings[0][2]
-    low = results[0].get("ESTIMATE", "NO_AGENTS")
-    if first_mode == "structural" and best["SANITIZER"] == "flat":
-        if len(results) == 1:
-            best["FALLBACK"] = f"the structural reading raised {type(failure).__name__}"
+    first = results[0] if results[0]["_reading"] == 0 else None
+    if first is None and readings[0][1] == "structural":
+        best["FALLBACK"] = f"the structural reading raised {type(failure).__name__}"
+    elif first is not None and best is not first:
+        low = first.get("ESTIMATE", "NO_AGENTS")
+        why = readings[best["_reading"]][2]
+        if why:
+            best["FALLBACK"] = (
+                f"{why}; the #2668 bound logic costs it higher ({best.get('ESTIMATE')} > {low})"
+            )
         else:
             best["FALLBACK"] = (
                 f"the #2668 flat scan costs it higher ({best.get('ESTIMATE')} > {low})"
             )
-    elif first_mode == "flat" and len(results) == 2 and best is not results[0]:
-        best["FALLBACK"] = (
-            f"{first_reason}; the #2668 bound logic costs it higher "
-            f"({best.get('ESTIMATE')} > {low})"
-        )
     for result in results:
-        del result["_proven"]
+        del result["_reading"]
     return best
 
 

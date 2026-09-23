@@ -383,6 +383,32 @@ await parallel([() => agent("r"), () => agent("s"), ...args.units.map((u) => () 
 const w2 = s.replace(/'/g, "");
 await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
 EOF
+# The same loss on a parse that DOES prove itself. A regex holding a backtick
+# opens a template in both scans and the next one closes it, so the pipeline
+# between them is blanked, every literal closes, and the brackets balance. The
+# lowering rules then took #2668's 30 to 10 on a script whose true count is 34
+# (#2670 review, round 5). Any file holding a regex literal with a quote in it
+# is now also costed with the #2668 bound logic.
+fx quote_regex_on_proven_parse <<'EOF'
+const a2 = s.match(/[{}`]/);
+await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
+const a2 = s.match(/[{}`]/);
+await parallel([() => agent("r"), () => agent("s"), ...args.units.map((u) => () => agent(u))]);
+EOF
+# The regex opener is recognized after an operator such as `=>` and after a
+# keyword such as `return`, not only after `(` or `=`.
+fx quote_regex_after_arrow <<'EOF'
+const f = (s) => /[{}`]/.test(s);
+await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
+const g = (s) => /[{}`]/.test(s);
+await parallel([() => agent("r"), () => agent("s"), ...args.units.map((u) => () => agent(u))]);
+EOF
+fx quote_regex_after_return <<'EOF'
+function f(s) { return /[{}`]/.test(s) }
+await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
+function g(s) { return /[{}`]/.test(s) }
+await parallel([() => agent("r"), () => agent("s"), ...args.units.map((u) => () => agent(u))]);
+EOF
 
 assert_asks "regex holding ' inside \${...} still asks" "$(<"$FX_DIR/regex_squote_in_interp.js")"
 assert_asks "regex holding \" inside \${...} still asks" "$(<"$FX_DIR/regex_dquote_in_interp.js")"
@@ -390,6 +416,9 @@ assert_asks "templates merged across a pipeline still ask" "$(<"$FX_DIR/brace_re
 assert_asks "brace-regex pair around a bounding declaration still asks" "$(<"$FX_DIR/brace_pair_blanks_bound.js")"
 assert_asks "brace-regex pair around a pipeline source still asks" "$(<"$FX_DIR/brace_pair_raises_pipeline.js")"
 assert_asks "literal array beside a quote regex on an unproven parse still asks" "$(<"$FX_DIR/unproven_literal_beside_quote_regex.js")"
+assert_asks "backtick regex on a parse that proves itself still asks" "$(<"$FX_DIR/quote_regex_on_proven_parse.js")"
+assert_asks "backtick regex after => still asks" "$(<"$FX_DIR/quote_regex_after_arrow.js")"
+assert_asks "backtick regex after return still asks" "$(<"$FX_DIR/quote_regex_after_return.js")"
 
 # assert_parse <desc> <estimate> <sanitizer> <fallback-substring> <fixture>
 assert_parse() {
@@ -423,6 +452,7 @@ assert_parse "nested template walked structurally"   32 structural "" nested_tem
 assert_parse "proven walk blanks a bound: flat is higher" 12 flat "flat scan costs it higher" brace_pair_blanks_bound
 assert_parse "proven walk is the higher reading"         16 structural "" brace_pair_raises_pipeline
 assert_parse "unproven parse: #2668 bound logic is the floor" 30 flat "the #2668 bound logic costs it higher" unproven_literal_beside_quote_regex
+assert_parse "quoted regex on a proven parse: #2668 bound logic is the floor" 30 flat "a regex literal holds a quote" quote_regex_on_proven_parse
 
 echo
 echo "== differential against the #2668 estimator (#2670 review) =="
@@ -652,12 +682,13 @@ elif ! grep -q '^VIOLATION' <<<"$PROP_OUT"; then
 fi
 
 echo
-echo "== property: an unproven parse is never below #2668 (#2670 review, round 4) =="
+echo "== property: an unproven or quoted-regex parse is never below #2668 (#2670 review, rounds 4-5) =="
 
-# The two lowering rules apply only where the structural walk proved itself.
-# On any input it could not prove, the reported ESTIMATE must be at least the
-# frozen #2668 estimator's. Non-vacuous only if some unproven input would have
-# fallen below #2668 without the floor, i.e. the floor did work.
+# The two lowering rules apply only where the structural walk proved itself
+# and the file holds no regex literal with a quote in it. On any other input
+# the reported ESTIMATE must be at least the frozen #2668 estimator's.
+# Non-vacuous only if some such input would have fallen below #2668 without
+# the floor, i.e. the floor did work.
 UNPROVEN_PY=$(
     cat <<'PY'
 import importlib.util, sys
@@ -679,7 +710,7 @@ for path in sys.stdin.read().split("\n"):
         continue
     src = open(path, encoding="utf-8").read()
     text, mode, _ = est.sanitize(src)
-    if mode != "flat":
+    if mode != "flat" and not est._QUOTED_REGEX.search(src):
         continue
     unproven += 1
     b = rank(base.analyze(src, 10, 8))
@@ -708,7 +739,7 @@ up_n=$(sed -n 's/.*UNPROVEN=\([0-9]*\).*/\1/p' <<<"$UNPROVEN_OUT")
 up_f=$(sed -n 's/.*FLOORED=\([0-9]*\).*/\1/p' <<<"$UNPROVEN_OUT")
 if [ "${up_f:-0}" -gt 0 ] && ! grep -q '^VIOLATION' <<<"$UNPROVEN_OUT"; then
     PASS=$((PASS + 1))
-    printf '  PASS  unproven property held over %d unproven inputs; the floor raised %d\n' "$up_n" "$up_f"
+    printf '  PASS  unproven property held over %d unproven or quoted-regex inputs; the floor raised %d\n' "$up_n" "$up_f"
 elif ! grep -q '^VIOLATION' <<<"$UNPROVEN_OUT"; then
     FAIL=$((FAIL + 1))
     printf '  FAIL  unproven property is vacuous or did not run: %s\n' "${UNPROVEN_OUT:-<no output>}"
