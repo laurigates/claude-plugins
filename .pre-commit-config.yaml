@@ -228,10 +228,12 @@ repos:
         files: '^scripts/(check-unrendered-templates\.sh|tests/test-check-unrendered-templates\.sh)$'
         pass_filenames: false
       - id: check-workflow-model
-        name: every Claude workflow pins opus + explicit effort
+        name: every Claude workflow pins opus + explicit effort (and has a rule-table row)
         entry: ./scripts/check-workflow-model.sh
         language: script
-        files: '^\.github/workflows/.*\.ya?ml$'
+        # The rule file is an input too (#2630): the guard cross-checks its
+        # canonical per-workflow table, so an edit that drops a row must fire it.
+        files: '^(\.github/workflows/.*\.ya?ml|\.claude/rules/workflow-model-effort\.md|scripts/(check-workflow-model\.sh|tests/test-check-workflow-model\.sh))$'
         pass_filenames: false
       - id: check-workflow-script-triggers
         name: workflow-run scripts are reachable from its path triggers (#2219)

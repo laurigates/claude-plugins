@@ -1,6 +1,6 @@
 ---
 created: 2026-06-22
-modified: 2026-09-16
+modified: 2026-09-23
 reviewed: 2026-09-16
 paths:
   - ".github/workflows/**"
@@ -83,6 +83,8 @@ Every non-interactive workflow prompt (all rows except `claude.yml` @mentions) r
 | `release-pr-doc-audit.yml` | `opus` / `low` | Mechanical compliance; turns are for file reads |
 | `skill-splitter.yml` | `opus` / `low` | Mechanical content split |
 | `research-radar.yml` | `opus` / `medium` | Judging paper relevance is real reasoning |
+| `golden-set-evaluation.yml` | `opus` / `medium` | Cross-model sweep; interpreting the delta is real judgment (`--max-turns 90`, #2688) |
+| `workflow-model-audit.yml` | `opus` / `medium` | Recommends effort changes from run health and sampled output (`--max-turns 60`, #2493) |
 | `changelog-review.yml` | — | **Out of scope**: invocation lives in the external `laurigates/.github` reusable workflow (`reusable-changelog-review.yml`), pinned there to opus/medium via input defaults (severity triage, the #1638 deprecation-miss class); the guard skips the thin caller (classification, not allowlist) |
 | `obsidian-cli-changelog.yml` | `opus` / `medium` | Structured doc-to-skill transformation |
 | `github-workflow-auto-fix.yml` | `opus` / `medium` | Diagnose + fix CI failures |
@@ -107,6 +109,13 @@ up/down effort recommendations.
 Failure types: `missing_model`, `non_opus_model`, `missing_effort`,
 `invalid_effort`. Output follows `.claude/rules/structured-script-output.md`
 (`=== WORKFLOW MODEL/EFFORT ===` / `STATUS=` / `ISSUE_COUNT=`).
+
+The guard also cross-checks the canonical per-workflow table above: every
+**invoking** workflow needs a row whose first cell names it
+(`missing_table_row`), and a table that parses to zero rows is reported as
+`rule_table_unparsed` rather than passed. The table mirrors a scanned set, so it
+lands in the same commit as a new invoking workflow (#2630 found it two rows
+behind).
 
 ## Related
 
