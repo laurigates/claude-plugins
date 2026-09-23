@@ -6,6 +6,8 @@
  * the shipped hook through a real child process.
  */
 
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: the parity block names the shell hook's ${task_cue} literally
+
 import { describe, expect, test } from "bun:test";
 import { execFile, execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
@@ -20,6 +22,7 @@ import {
   endNudgeReason,
   genuineUserMessages,
   MIN_USER_TURNS,
+  type NudgeEntry,
   RECENT_USER_WINDOW,
   registerSessionNudges,
   SPINUP_HOOK,
@@ -42,13 +45,15 @@ interface ExecCall {
   options?: { timeout?: number; cwd?: string };
 }
 type Handler = (event: unknown, ctx: unknown) => unknown;
+type Sent = { message: Record<string, unknown>; options?: Record<string, unknown> };
 
 const ok = (stdout = ""): ExecResult => ({ stdout, stderr: "", code: 0, killed: false });
 const fail = (code = 1): ExecResult => ({ stdout: "", stderr: "boom", code, killed: false });
+const contentOf = (sent: Sent[]): unknown => sent[0]?.message.content;
 
 function stubPi(respond: (call: ExecCall) => ExecResult | Promise<ExecResult>) {
   const execCalls: ExecCall[] = [];
-  const sent: Array<{ message: Record<string, unknown>; options?: Record<string, unknown> }> = [];
+  const sent: Sent[] = [];
   const handlers = new Map<string, Handler[]>();
   const pi = {
     async exec(command: string, args: string[], options?: ExecCall["options"]) {
@@ -85,7 +90,7 @@ function register(
 
 // --- session entry fixtures ----------------------------------------------
 
-type Entry = Record<string, unknown>;
+type Entry = NudgeEntry & Record<string, unknown>;
 const user = (text: string): Entry => ({
   type: "message",
   message: { role: "user", content: [{ type: "text", text }] },
@@ -287,7 +292,7 @@ describe("spinup nudge (session_start)", () => {
     await fire("session_start", { reason: "startup" }, ctx);
     expect(warnings).toEqual([]);
     expect(sent).toHaveLength(1);
-    const content = (sent[0]?.message as { content: string }).content;
+    const content = contentOf(sent);
     expect(content).toContain("uncommitted changes");
     expect(content).toContain("session-plugin:session-spinup");
 
@@ -317,7 +322,7 @@ describe("end nudge (agent_settled)", () => {
       endResponder({ task: true, summary: { OPEN_TASKS: "2", RECENT_TASK_COUNT: "0" } }),
     );
     await fire("agent_settled", {}, ctxOf(WINDING_DOWN, "/proj"));
-    expect((sent[0]?.message as { content: string }).content).toBe(endNudgeReason(true));
+    expect(contentOf(sent)).toBe(endNudgeReason(true));
     expect(endNudgeReason(true)).toContain(END_TASK_CUE);
     const survey = execCalls.find((c) => c.args[0]?.endsWith("session-survey.sh"));
     expect(survey?.args.slice(1)).toEqual(["--summary", "--project-dir", "/proj"]);
@@ -337,7 +342,7 @@ describe("end nudge (agent_settled)", () => {
       }),
     );
     await fire("agent_settled", {}, ctxOf(WINDING_DOWN));
-    expect((sent[0]?.message as { content: string }).content).toBe(endNudgeReason(true));
+    expect(contentOf(sent)).toBe(endNudgeReason(true));
   });
 
   test("fewer than six genuine turns: silent, nothing executed", async () => {
@@ -407,7 +412,7 @@ describe("end nudge (agent_settled)", () => {
     writeFileSync(join(withJustfile, "justfile"), "default:\n");
     const { sent, fire } = register(endResponder({ task: false }));
     await fire("agent_settled", {}, ctxOf(WINDING_DOWN, withJustfile));
-    expect((sent[0]?.message as { content: string }).content).toBe(endNudgeReason(false));
+    expect(contentOf(sent)).toBe(endNudgeReason(false));
   });
 
   test("disabled: silent", async () => {
@@ -443,7 +448,8 @@ describe("parity with session-end-nudge.sh", () => {
 
   test("same offer text, with and without the taskwarrior cue", () => {
     const reason = capture(/^reason="(.*)"$/m);
-    const cue = capture(/^\s*task_cue="(.*)"$/m);
+    // The assignment inside the open-tasks branch, not the empty initialiser.
+    const cue = capture(/^\s+task_cue="(.+)"$/m);
     expect(endNudgeReason(false)).toBe(reason.replace("${task_cue}", ""));
     expect(endNudgeReason(true)).toBe(reason.replace("${task_cue}", cue));
   });
