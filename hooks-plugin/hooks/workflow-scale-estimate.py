@@ -32,13 +32,26 @@ because per-item agent count and nesting depth are exactly what turn a fan-out
 into a runaway. The remedy is a visible cap (`.slice(0, N)`), which the bound
 resolver recognizes, so the block clears on a one-token edit.
 
+What bounds a fan-out, and what does not: a loop WINDOW is not a bound. A
+`for (i = 0; i < xs.length; i += WAVE) { xs.slice(i, i + WAVE) ... }` runs
+WAVE agents at a time but one per item in total, so `.slice(i, i + WAVE)`
+resolves to the receiver (`xs`, unbounded) rather than to WAVE. Reading it as
+WAVE would understate cost by the number of waves; cost is set by how many
+agents are created, not by how many run at once (#2670).
+
 Known gaps, deliberately fail-open (an unanalyzable script is NOT blocked):
   - Template-literal interpolations `${...}` are treated as string content, so
     an agent() call written inside one is invisible here. Prompts live in
-    templates; calls do not.
+    templates; calls do not. The interpolation's EXTENT is still parsed, so a
+    template nested inside one cannot end the outer literal early.
+  - An abort guard (`if (xs.length > CAP) return ...`) is not read as a bound.
+    The one shipped instance, evaluate-skill's cellCap, is caller-overridable
+    (`INPUT.cellCap ?? 30`), so it is not a static bound anyway.
   - Indirection through a helper function (`const fan = xs => parallel(...)`)
     is not followed; the call site reads as a plain call and bounds as unknown.
-  - Dynamic array construction (`arr.push(...)` in a loop) is not modeled.
+  - Dynamic array construction (`arr.push(...)` in a loop) is not counted: an
+    array grown in place reads as unbounded (costed at ASSUMED), never as the
+    length of its initializer.
   - A saved workflow referenced by name has no script text to read at all.
 """
 
@@ -50,56 +63,99 @@ import sys
 _IDENT = re.compile(r"[A-Za-z0-9_$]")
 
 
+def _comment_end(src: str, i: int) -> int:
+    """Index just past the comment opening at `i`, or `i` when none opens there."""
+    n = len(src)
+    if src.startswith("//", i):
+        end = src.find("\n", i)
+        return n if end < 0 else end
+    if src.startswith("/*", i):
+        end = src.find("*/", i + 2)
+        return n if end < 0 else end + 2
+    return i
+
+
+def _string_end(src: str, i: int, quote: str) -> int:
+    """Index of the quote closing a literal whose body starts at `i` (n if none).
+
+    A template literal's `${...}` interpolation is CODE, and that code may hold
+    its own strings and templates -- a prompt with a conditional section is
+    `${c ? `with` : `without`}`. Treating the inner backticks as the outer's
+    close desyncs everything after it: the inner text is read as code, a stray
+    apostrophe there opens a quote that never closes, and every later agent()
+    call is blanked as string content (#2670 -- evaluate-skill's preflight call
+    vanished this way). So an interpolation is walked with brace and nesting
+    awareness to find its real end.
+    """
+    n = len(src)
+    while i < n:
+        c = src[i]
+        if c == "\\":
+            i += 2
+            continue
+        if c == quote:
+            return i
+        if quote == "`" and c == "$" and i + 1 < n and src[i + 1] == "{":
+            i = _interpolation_end(src, i + 2)
+            continue
+        i += 1
+    return n
+
+
+def _interpolation_end(src: str, i: int) -> int:
+    """Index just past the `}` closing a `${` whose body starts at `i`."""
+    n, depth = len(src), 0
+    while i < n:
+        after_comment = _comment_end(src, i)
+        if after_comment != i:
+            i = after_comment
+            continue
+        c = src[i]
+        if c in "'\"`":
+            i = _string_end(src, i + 1, c) + 1
+            continue
+        if c == "{":
+            depth += 1
+        elif c == "}":
+            if depth == 0:
+                return i + 1
+            depth -= 1
+        i += 1
+    return n
+
+
 def sanitize(src: str) -> str:
     """Blank out comments and string/template bodies, preserving offsets.
 
     Every removed character becomes a space so that offsets computed on the
     sanitized text index correctly into the original. Without this a `//` in a
     URL or the word `agent(` inside a prompt string would be counted as code.
+    A template literal is blanked whole, interpolations included (see the
+    known-gaps note in the module docstring); its extent is found structurally,
+    so an interpolation holding its own template literal cannot end it early.
     """
     out = list(src)
-    i, n = 0, len(src)
+    n = len(src)
+
+    def blank(lo: int, hi: int) -> None:
+        for j in range(lo, min(hi, n)):
+            if src[j] != "\n":
+                out[j] = " "
+
+    i = 0
     while i < n:
+        after_comment = _comment_end(src, i)
+        if after_comment != i:
+            blank(i, after_comment)
+            i = after_comment
+            continue
         c = src[i]
-        # Line comment
-        if c == "/" and i + 1 < n and src[i + 1] == "/":
-            while i < n and src[i] != "\n":
-                out[i] = " "
-                i += 1
-            continue
-        # Block comment
-        if c == "/" and i + 1 < n and src[i + 1] == "*":
-            out[i] = out[i + 1] = " "
-            i += 2
-            while i < n and not (src[i] == "*" and i + 1 < n and src[i + 1] == "/"):
-                if src[i] != "\n":
-                    out[i] = " "
-                i += 1
-            if i < n:
-                out[i] = " "
-                if i + 1 < n:
-                    out[i + 1] = " "
-                i += 2
-            continue
         # String or template literal: blank the body, keep the delimiters so
         # that `[` / `,` scanning still sees a well-formed expression shape.
         if c in "'\"`":
-            quote = c
-            i += 1
-            while i < n:
-                if src[i] == "\\":
-                    if src[i] != "\n":
-                        out[i] = " "
-                    if i + 1 < n and src[i + 1] != "\n":
-                        out[i + 1] = " "
-                    i += 2
-                    continue
-                if src[i] == quote:
-                    break
-                if src[i] != "\n":
-                    out[i] = " "
-                i += 1
-            i += 1
+            end = _string_end(src, i + 1, c)
+            blank(i + 1, end)
+            i = end + 1
             continue
         i += 1
     return "".join(out)
@@ -151,17 +207,23 @@ def receiver_of(text: str, dot: int) -> str:
 
 
 def top_level_items(inner: str) -> int:
-    """Count comma-separated items at depth 0 inside an array/arg body."""
-    if not inner.strip():
-        return 0
-    depth, items = 0, 1
-    for ch in inner:
+    """Count comma-separated items at depth 0 inside an array/arg body.
+
+    Only non-empty segments are items: a trailing comma (`[a, b,]`, the house
+    style for multi-line arrays) is not a third element (#2670).
+    """
+    depth, items, segment = 0, 0, ""
+    for ch in inner + ",":
         if ch in "([{":
             depth += 1
         elif ch in ")]}":
             depth -= 1
         elif ch == "," and depth == 0:
-            items += 1
+            if segment.strip():
+                items += 1
+            segment = ""
+            continue
+        segment += ch
     return items
 
 
@@ -236,6 +298,16 @@ def bound_of(expr: str, text: str, seen=None):
 
     # Bare identifier: resolve a const/let/var array literal declaration.
     if re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", expr):
+        # An array grown in place is as long as the code that grows it, not as
+        # long as its initializer: `const CELLS = []` then `CELLS.push(...)` in a
+        # loop read as ZERO items and costed a whole pipeline at nothing (#2670).
+        if re.search(
+            r"(?<![A-Za-z0-9_$.])"
+            + re.escape(expr)
+            + r"\s*\.\s*(?:push|unshift|splice)\s*\(",
+            text,
+        ):
+            return None
         d = re.search(r"\b(?:const|let|var)\s+" + re.escape(expr) + r"\s*=\s*", text)
         if d:
             rest = text[d.end() :].lstrip()
@@ -252,14 +324,21 @@ def bound_of(expr: str, text: str, seen=None):
 
 
 def fanouts(text: str):
-    """Every fan-out construct: (kind, source_expr, body_start, body_end)."""
+    """Every fan-out construct.
+
+    Returns (kind, source_expr, body_start, body_end, src_start, src_end); the
+    last two span the iteration-source argument of a parallel/pipeline call
+    (-1, -1 for `.map`, whose source is the receiver outside the parens).
+    """
     found = []
     for m in re.finditer(r"\.(map|flatMap)\s*\(", text):
         open_paren = m.end() - 1
         close = match_forward(text, open_paren)
         if close < 0:
             continue
-        found.append((m.group(1), receiver_of(text, m.start()), open_paren, close))
+        found.append(
+            (m.group(1), receiver_of(text, m.start()), open_paren, close, -1, -1)
+        )
 
     for m in re.finditer(r"\b(parallel|pipeline)\s*\(", text):
         open_paren = m.end() - 1
@@ -279,7 +358,16 @@ def fanouts(text: str):
             elif ch == "," and depth == 0:
                 cut = i
                 break
-        found.append((m.group(1), inner[:cut].strip(), open_paren, close))
+        found.append(
+            (
+                m.group(1),
+                inner[:cut].strip(),
+                open_paren,
+                close,
+                open_paren + 1,
+                open_paren + 1 + cut,
+            )
+        )
     return found
 
 
@@ -350,7 +438,15 @@ def analyze(src: str, limit: int, assumed: int = 8) -> dict:
     for site in sites:
         enclosing = [f for f in fos if f[2] < site < f[3]]
         product = 1
-        for kind, source, _s, _e in enclosing:
+        for kind, source, _s, _e, src_lo, src_hi in enclosing:
+            # A site INSIDE a literal-array source is one element of that array,
+            # and each element runs once: `parallel([() => agent(a), () =>
+            # agent(b)])` is two agents, not four. Multiplying it by the array
+            # length costed blueprint-story-audit at 71 instead of 20 (#2670).
+            # A site in a pipeline STAGE (outside the source span) still runs
+            # once per element, and `.map` over a literal still multiplies.
+            if src_lo <= site < src_hi and source.startswith("["):
+                continue
             b = bound_of(source, text)
             if b is None:
                 product *= assumed

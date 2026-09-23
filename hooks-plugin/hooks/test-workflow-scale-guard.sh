@@ -220,6 +220,18 @@ const x = await agent('one', { label: 'a' })
 const y = await agent('two', { label: 'b' })
 "
 
+# An array declared empty and filled by push() is as long as the loop makes it,
+# not zero. The empty literal read as "0 items" costed evaluate-skill's whole
+# rollout+grade pipeline at nothing; the nested-template desync above had been
+# hiding the declaration, which is the only reason it ever read as 8.
+assert_estimate "array filled by push() is unbounded, not zero" 16 '
+const CELLS = []
+for (const id of ids) CELLS.push({ id })
+await pipeline(CELLS,
+  c => agent("rollout", { label: "r" }),
+  r => agent("grade", { label: "g" }))
+'
+
 # A loop window bounds CONCURRENCY, not the agent count: a for-loop stepping by
 # WAVE over a runtime list still creates one agent per item. Reading
 # .slice(i, i + WAVE) as a bound of WAVE would understate cost by the number of
