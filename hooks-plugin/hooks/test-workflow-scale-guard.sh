@@ -14,6 +14,11 @@
 # Exit 0 = all tests pass, Exit 1 = failures
 set -uo pipefail
 
+# The differential below asks git for the bundled templates. Under a git
+# commit hook, GIT_DIR/GIT_INDEX_FILE are exported and override `git -C`, so
+# --show-toplevel resolves to the cwd instead of the repo (#1745).
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX
+
 HOOK="$(dirname "$0")/workflow-scale-guard.sh"
 PASS=0
 FAIL=0
@@ -270,6 +275,222 @@ await pipeline(args.units,
   r => agent('repair', { label: 'repair' }),
   s => agent('rereview', { label: 'rereview' }))
 "
+
+echo
+echo "== an unproven parse falls back to the #2668 scan (#2670 review) =="
+
+# The walk above reads ${...} interpolations as code, and code holds things a
+# quote-and-brace scanner cannot parse -- chiefly a regex literal. `/'/g` inside
+# an interpolation opened a quote that never closed, blanked the rest of the
+# file, and the hook went SILENT on a 32-agent pipeline that #2668 asked about.
+# The walk is now used only when it proves itself. Each case below is rejected
+# by exactly one check, names it, and reports the #2668 figure, because the
+# #2668 scan decided. Removing any one check turns its case red.
+FX_DIR=$(mktemp -d) || { echo "FATAL: mktemp -d failed" >&2; exit 1; }
+if [ -z "$FX_DIR" ] || [ ! -d "$FX_DIR" ]; then echo "FATAL: bad fixture dir" >&2; exit 1; fi
+trap 'rm -rf "$FX_DIR"' EXIT
+fx() { cat >"$FX_DIR/$1.js"; }
+
+fx regex_squote_in_interp <<'EOF'
+const p = (s) => `x ${s.replace(/'/g, "")} y`
+await pipeline(args.units,
+  u => agent('edit', { label: 'edit' }),
+  e => agent('review', { label: 'review' }),
+  r => agent('repair', { label: 'repair' }),
+  s => agent('rereview', { label: 'rereview' }))
+EOF
+fx regex_dquote_in_interp <<'EOF'
+const p = (s) => `Prompt: ${s.replace(/"/g, '\\"')} end`
+await parallel(args.items.map(x => () => agent(p(x), { label: 'a' })))
+await parallel(args.items.map(x => () => agent(p(x), { label: 'b' })))
+EOF
+# Walked structurally, the template runs to end of file and blanks the
+# declaration of L, so L reads as unbounded: 32 instead of 8.
+fx literal_runs_to_eof <<'EOF'
+await pipeline(L, u => agent('a'), e => agent('b'), r => agent('c'), s => agent('d'))
+const p = `x ${s.replace(/{/g, '')} y`
+const L = [1, 2]
+EOF
+# Walked structurally, the first template ends inside the second, which blanks
+# the fan-out's closing parens: the fan-out drops out and costs 1 instead of 8.
+fx brace_regex_blanks_parens <<'EOF'
+await parallel(args.xs.map(x => () => agent(`p ${x.replace(/{/g, '')}`)))
+const q = `x ${s.replace(/}/g, '')} y`
+EOF
+# Walked structurally, the two templates merge and the pipeline between them is
+# blanked: NO_AGENTS, and silence, instead of 16.
+fx brace_regex_blanks_calls <<'EOF'
+const p = `x ${s.replace(/{/g, '')} y`
+await pipeline(args.units, u => agent('a'), e => agent('b'))
+const q = `x ${s.replace(/}/g, '')} y`
+EOF
+# Control: the shape the walk exists for still proves itself.
+fx nested_template_proves_itself <<'EOF'
+const P = (c) => `head ${
+  c ? `the skill's file` : `none`
+} tail`
+await pipeline(args.units, u => agent('edit'), e => agent('review'), r => agent('repair'), s => agent('rereview'))
+EOF
+
+assert_asks "regex holding ' inside \${...} still asks" "$(<"$FX_DIR/regex_squote_in_interp.js")"
+assert_asks "regex holding \" inside \${...} still asks" "$(<"$FX_DIR/regex_dquote_in_interp.js")"
+assert_asks "templates merged across a pipeline still ask" "$(<"$FX_DIR/brace_regex_blanks_calls.js")"
+
+# assert_parse <desc> <estimate> <sanitizer> <fallback-substring> <fixture>
+assert_parse() {
+    local desc="$1" want_est="$2" want_mode="$3" want_why="$4" out est mode why ok=1
+    out=$(python3 "$ESTIMATOR" 10 8 <"$FX_DIR/$5.js" 2>/dev/null)
+    est=$(sed -n 's/^ESTIMATE=//p' <<<"$out")
+    mode=$(sed -n 's/^SANITIZER=//p' <<<"$out")
+    why=$(sed -n 's/^FALLBACK=//p' <<<"$out")
+    [ "$est" = "$want_est" ] && [ "$mode" = "$want_mode" ] || ok=0
+    if [ -z "$want_why" ]; then
+        [ -z "$why" ] || ok=0
+    else
+        [[ "$why" == *"$want_why"* ]] || ok=0
+    fi
+    if [ "$ok" -eq 1 ]; then
+        PASS=$((PASS + 1))
+        printf '  PASS  ESTIMATE=%s SANITIZER=%s: %s\n' "$want_est" "$want_mode" "$desc"
+    else
+        FAIL=$((FAIL + 1))
+        printf '  FAIL  expected %s/%s/"%s", got %s/%s/"%s": %s\n' \
+            "$want_est" "$want_mode" "$want_why" "${est:-<none>}" "${mode:-<none>}" "$why" "$desc"
+    fi
+}
+
+assert_parse "quoted string reaching a newline (')"  32 flat "quoted string crosses a newline" regex_squote_in_interp
+assert_parse "quoted string reaching a newline (\")" 16 flat "quoted string crosses a newline" regex_dquote_in_interp
+assert_parse "literal reaching end of file"          8  flat "runs to end of file"             literal_runs_to_eof
+assert_parse "code left with unbalanced brackets"    8  flat "brackets do not balance"         brace_regex_blanks_parens
+assert_parse "code token the #2668 scan kept"        16 flat "would blank the code token"      brace_regex_blanks_calls
+assert_parse "nested template walked structurally"   32 structural "" nested_template_proves_itself
+
+echo
+echo "== differential against the #2668 estimator (#2670 review) =="
+
+# The live estimator may cost a script LOWER than #2668 did only where the
+# lower figure is the correct count, listed here; it may never report NO_AGENTS
+# where #2668 found agents. Every bundled template is compared, plus shapes a
+# review built to break the sanitizer. Raising an estimate is always allowed.
+BASELINE="$(dirname "$0")/fixtures/workflow-scale-estimate-2668.py"
+
+# correct_count <input> — the true agent count for an input whose live figure
+# is below #2668's (a runtime-length list costed at 8, as both estimators do).
+correct_count() {
+    case "$1" in
+        literal_4_thunks) echo 4 ;;               # four thunks, each run once
+        literal_holding_nested_fanout) echo 9 ;;  # 8 for the inner map + 1
+        literal_concat_mapped) echo 9 ;;          # 1 + 8
+        blueprint-story-audit.workflow.js) echo 20 ;;
+        verify-before-filing.workflow.js) echo 49 ;;
+        *) echo none ;;
+    esac
+}
+
+fx spread_then_map <<'EOF'
+await parallel([...args.items].map(x => () => agent("a", { label: "a" })))
+EOF
+fx spread_inner_map <<'EOF'
+await parallel([...args.items.map(x => () => agent("a", { label: "a" }))])
+EOF
+fx literal_4_thunks <<'EOF'
+await parallel([() => agent("a"), () => agent("b"), () => agent("c"), () => agent("d")])
+EOF
+fx literal_holding_nested_fanout <<'EOF'
+await parallel([() => parallel(args.xs.map(x => () => agent("a"))), () => agent("b")])
+EOF
+fx pipeline_literal_source <<'EOF'
+await pipeline([1, 2, 3, 4, 5, 6], s => agent("a"), t => agent("b"))
+EOF
+fx literal_concat_mapped <<'EOF'
+await parallel([() => agent("a")].concat(args.xs.map(x => () => agent("b"))))
+EOF
+fx close_brace_regex_in_interp <<'EOF'
+const p = (s) => `x ${s.replace(/}/g, '')} y`
+await pipeline(args.units, u => agent('a'), e => agent('b'), r => agent('c'))
+EOF
+fx open_brace_regex_in_interp <<'EOF'
+const p = (s) => `x ${s.replace(/{/g, '')} y`
+await pipeline(args.units, u => agent('a'), e => agent('b'), r => agent('c'))
+EOF
+fx paren_regex_in_interp <<'EOF'
+const p = (s) => `x ${s.replace(/\(/g, '')} y`
+await parallel(args.xs.map(x => () => agent('a')))
+await parallel(args.ys.map(y => () => agent('b')))
+EOF
+fx unterminated_block_comment <<'EOF'
+await pipeline(args.units, u => agent('a'), e => agent('b'))
+const re = /a\/*b/
+await pipeline(args.units, u => agent('c'), e => agent('d'))
+EOF
+
+DIFF_N=0
+DIFF_LOWERED=0
+# diff_one <label> <file>
+diff_one() {
+    local label="$1" file="$2" base live bv be lv le want
+    base=$(python3 "$BASELINE" 10 8 <"$file" 2>/dev/null)
+    live=$(python3 "$ESTIMATOR" 10 8 <"$file" 2>/dev/null)
+    bv=$(sed -n 's/^VERDICT=//p' <<<"$base")
+    be=$(sed -n 's/^ESTIMATE=//p' <<<"$base")
+    lv=$(sed -n 's/^VERDICT=//p' <<<"$live")
+    le=$(sed -n 's/^ESTIMATE=//p' <<<"$live")
+    DIFF_N=$((DIFF_N + 1))
+    case "$lv" in
+        OK | OVER_LIMIT | NO_AGENTS) : ;;
+        *)
+            FAIL=$((FAIL + 1))
+            printf '  FAIL  differential: %s: live VERDICT=%s\n' "$label" "${lv:-<none>}"
+            return
+            ;;
+    esac
+    if [ "$lv" = "NO_AGENTS" ] && [ "$bv" != "NO_AGENTS" ]; then
+        FAIL=$((FAIL + 1))
+        printf '  FAIL  differential: %s: live NO_AGENTS where #2668 had %s/%s\n' "$label" "$bv" "$be"
+        return
+    fi
+    if [ "${le:-0}" -lt "${be:-0}" ]; then
+        want=$(correct_count "$label")
+        if [ "$le" = "$want" ]; then
+            DIFF_LOWERED=$((DIFF_LOWERED + 1))
+            PASS=$((PASS + 1))
+            printf '  PASS  differential: %s: %s -> %s, the correct count\n' "$label" "$be" "$le"
+        else
+            FAIL=$((FAIL + 1))
+            printf '  FAIL  differential: %s: %s -> %s, below #2668 and not the listed count (%s)\n' \
+                "$label" "$be" "$le" "$want"
+        fi
+        return
+    fi
+    PASS=$((PASS + 1))
+    printf '  PASS  differential: %s: %s/%s -> %s/%s\n' "$label" "${bv}" "${be:--}" "${lv}" "${le:--}"
+}
+
+for f in "$FX_DIR"/*.js; do
+    diff_one "$(basename "$f" .js)" "$f"
+done
+
+REPO_ROOT=$(git -C "$(dirname "$0")" rev-parse --show-toplevel 2>/dev/null)
+N_TEMPLATES=0
+if [ -n "$REPO_ROOT" ]; then
+    while IFS= read -r rel; do
+        [ -n "$rel" ] || continue
+        N_TEMPLATES=$((N_TEMPLATES + 1))
+        diff_one "$(basename "$rel")" "$REPO_ROOT/$rel"
+    done < <(git -C "$REPO_ROOT" ls-files '*/workflows/*.js')
+fi
+
+# Non-vacuous: a differential over nothing is green by construction.
+if [ "$N_TEMPLATES" -gt 0 ] && [ "$DIFF_LOWERED" -gt 0 ] && [ -f "$BASELINE" ]; then
+    PASS=$((PASS + 1))
+    printf '  PASS  differential covered %d inputs (%d bundled templates), %d at a lower correct count\n' \
+        "$DIFF_N" "$N_TEMPLATES" "$DIFF_LOWERED"
+else
+    FAIL=$((FAIL + 1))
+    printf '  FAIL  differential is vacuous: %d templates, %d lowered, baseline %s\n' \
+        "$N_TEMPLATES" "$DIFF_LOWERED" "$([ -f "$BASELINE" ] && echo present || echo missing)"
+fi
 
 echo
 echo "== structural guards: must stay silent =="

@@ -1,4 +1,10 @@
-#!/usr/bin/env python3
+# FROZEN ORACLE -- do not edit. This is workflow-scale-estimate.py exactly as
+# #2668 shipped it (d82d6c42), shebang aside. test-workflow-scale-guard.sh runs
+# it beside the live estimator as a differential: the live one may report a
+# LOWER estimate than this only where the test lists the lower figure as the
+# correct count, and may never report NO_AGENTS where this found agents. A
+# guard's baseline has to stay fixed to mean anything, so improvements land in
+# the live estimator and in the test's expected-count table, never here.
 """Statically estimate how many agents a Workflow tool script will spawn.
 
 Reads a workflow script on stdin, writes a KEY=VALUE rollup on stdout
@@ -11,8 +17,6 @@ rather than recomputing the analysis:
     LIMIT=<int>            the threshold it was compared against
     ASSUMED=<int>          items each unbounded fan-out was costed at (if any)
     SOURCE=<expr>          the fan-out expression(s) that could not be bounded
-    SANITIZER=structural|flat  which literal scan decided (see sanitize())
-    FALLBACK=<reason>      why the structural scan was rejected (flat only)
     DETAIL=<one line>      human-readable summary
 
 Why static estimation at all: the Workflow tool hands the script to a runtime
@@ -34,28 +38,13 @@ because per-item agent count and nesting depth are exactly what turn a fan-out
 into a runaway. The remedy is a visible cap (`.slice(0, N)`), which the bound
 resolver recognizes, so the block clears on a one-token edit.
 
-What bounds a fan-out, and what does not: a loop WINDOW is not a bound. A
-`for (i = 0; i < xs.length; i += WAVE) { xs.slice(i, i + WAVE) ... }` runs
-WAVE agents at a time but one per item in total, so `.slice(i, i + WAVE)`
-resolves to the receiver (`xs`, unbounded) rather than to WAVE. Reading it as
-WAVE would understate cost by the number of waves; cost is set by how many
-agents are created, not by how many run at once (#2670).
-
 Known gaps, deliberately fail-open (an unanalyzable script is NOT blocked):
   - Template-literal interpolations `${...}` are treated as string content, so
     an agent() call written inside one is invisible here. Prompts live in
-    templates; calls do not. The interpolation's EXTENT is still parsed, so a
-    template nested inside one cannot end the outer literal early -- unless
-    that parse cannot prove itself (a regex literal holding a quote or brace
-    is the usual cause), in which case the #2668 flat scan decides instead.
-  - An abort guard (`if (xs.length > CAP) return ...`) is not read as a bound.
-    The one shipped instance, evaluate-skill's cellCap, is caller-overridable
-    (`INPUT.cellCap ?? 30`), so it is not a static bound anyway.
+    templates; calls do not.
   - Indirection through a helper function (`const fan = xs => parallel(...)`)
     is not followed; the call site reads as a plain call and bounds as unknown.
-  - Dynamic array construction (`arr.push(...)` in a loop) is not counted: an
-    array grown in place reads as unbounded (costed at ASSUMED), never as the
-    length of its initializer.
+  - Dynamic array construction (`arr.push(...)` in a loop) is not modeled.
   - A saved workflow referenced by name has no script text to read at all.
 """
 
@@ -67,88 +56,12 @@ import sys
 _IDENT = re.compile(r"[A-Za-z0-9_$]")
 
 
-class _Unproven(Exception):
-    """The structural walk reached text it cannot prove is a literal or comment."""
+def sanitize(src: str) -> str:
+    """Blank out comments and string/template bodies, preserving offsets.
 
-
-def _comment_end(src: str, i: int) -> int:
-    """Index just past the comment opening at `i`, or `i` when none opens there."""
-    if src.startswith("//", i):
-        end = src.find("\n", i)
-        return len(src) if end < 0 else end
-    if src.startswith("/*", i):
-        end = src.find("*/", i + 2)
-        if end < 0:
-            raise _Unproven("block comment runs to end of file")
-        return end + 2
-    return i
-
-
-def _string_end(src: str, i: int, quote: str) -> int:
-    """Index of the quote closing a literal whose body starts at `i`.
-
-    A template literal's `${...}` interpolation is CODE, and that code may hold
-    its own strings and templates -- a prompt with a conditional section is
-    `${c ? `with` : `without`}`. Treating the inner backticks as the outer's
-    close desyncs everything after it: the inner text is read as code, a stray
-    apostrophe there opens a quote that never closes, and every later agent()
-    call is blanked as string content (#2670 -- evaluate-skill's preflight call
-    vanished this way). So an interpolation is walked with brace and nesting
-    awareness to find its real end.
-
-    Walking code means meeting what this scanner cannot parse, chiefly a regex
-    literal holding a quote (`${s.replace(/'/g, "")}`): the quote opens a
-    "string" that is not one. Raises _Unproven instead of guessing, on the two
-    signals that expose it -- a '/" string reaching a newline, which JS forbids,
-    or any literal reaching end of file.
-    """
-    n = len(src)
-    while i < n:
-        c = src[i]
-        if c == "\\":
-            i += 2
-            continue
-        if c == quote:
-            return i
-        if c == "\n" and quote != "`":
-            raise _Unproven("quoted string crosses a newline")
-        if quote == "`" and c == "$" and src.startswith("{", i + 1):
-            i = _interpolation_end(src, i + 2)
-            continue
-        i += 1
-    raise _Unproven("literal runs to end of file")
-
-
-def _interpolation_end(src: str, i: int) -> int:
-    """Index just past the `}` closing a `${` whose body starts at `i`."""
-    n, depth = len(src), 0
-    while i < n:
-        after_comment = _comment_end(src, i)
-        if after_comment != i:
-            i = after_comment
-            continue
-        c = src[i]
-        if c in "'\"`":
-            i = _string_end(src, i + 1, c) + 1
-            continue
-        if c == "{":
-            depth += 1
-        elif c == "}":
-            if depth == 0:
-                return i + 1
-            depth -= 1
-        i += 1
-    raise _Unproven("interpolation runs to end of file")
-
-
-def _flat_sanitize(src: str) -> str:
-    """The #2668 scan: a literal ends at the next unescaped matching quote.
-
-    Blind to `${...}` nesting, so a template holding a template ends early --
-    but it never walks code as if it were a literal, so it cannot blank a whole
-    file on a regex it misreads. Kept verbatim as the fallback: whatever the
-    structural walk cannot prove, this scan decides, which makes the estimate
-    exactly what the guard computed before the structural walk existed.
+    Every removed character becomes a space so that offsets computed on the
+    sanitized text index correctly into the original. Without this a `//` in a
+    URL or the word `agent(` inside a prompt string would be counted as code.
     """
     out = list(src)
     i, n = 0, len(src)
@@ -198,92 +111,6 @@ def _flat_sanitize(src: str) -> str:
     return "".join(out)
 
 
-def _structural_sanitize(src: str) -> str:
-    """Blank comments and literals, finding each template's extent structurally.
-
-    Raises _Unproven when any comment, string, template, or interpolation does
-    not close where JS requires it to.
-    """
-    out = list(src)
-    n = len(src)
-
-    def blank(lo: int, hi: int) -> None:
-        for j in range(lo, min(hi, n)):
-            if src[j] != "\n":
-                out[j] = " "
-
-    i = 0
-    while i < n:
-        after_comment = _comment_end(src, i)
-        if after_comment != i:
-            blank(i, after_comment)
-            i = after_comment
-            continue
-        c = src[i]
-        if c in "'\"`":
-            end = _string_end(src, i + 1, c)
-            blank(i + 1, end)
-            i = end + 1
-            continue
-        i += 1
-    return "".join(out)
-
-
-# The code tokens the estimate is computed from. Blanking one of them is the
-# only way a sanitizer can LOWER the estimate: a lost agent() site, a lost
-# fan-out multiplier, or a lost push() that marks a list as unbounded.
-_LOAD_BEARING = re.compile(
-    r"\bagent\s*\(|\b(?:parallel|pipeline)\s*\(|\.\s*(?:map|flatMap|push|unshift|splice)\s*\("
-)
-
-
-def _balanced(text: str) -> bool:
-    """True when every bracket in `text` closes in order."""
-    pairs = {"(": ")", "[": "]", "{": "}"}
-    stack = []
-    for ch in text:
-        if ch in pairs:
-            stack.append(pairs[ch])
-        elif ch in ")]}" and (not stack or stack.pop() != ch):
-            return False
-    return not stack
-
-
-def sanitize(src: str):
-    """Blank out comments and string/template bodies, preserving offsets.
-
-    Returns (text, mode, reason). Every removed character becomes a space so that
-    offsets computed on the sanitized text index correctly into the original.
-    Without this a `//` in a URL or the word `agent(` inside a prompt string
-    would be counted as code. A template literal is blanked whole,
-    interpolations included (see the known-gaps note in the module docstring).
-
-    The structural walk is used only when it proves itself (mode
-    "structural"); otherwise the #2668 flat scan decides (mode "flat", with
-    `reason` naming the check that failed). Proof
-    is structural, not a list of special cases: every literal and comment
-    closed where JS requires, the remaining code's brackets balance, and every
-    load-bearing token the flat scan leaves as code is still code. The walk
-    exists to blank MORE than the flat scan -- a nested template's body -- and
-    those checks are what stop "more" from including a live agent() call.
-    """
-    flat = _flat_sanitize(src)
-    try:
-        text = _structural_sanitize(src)
-    except _Unproven as exc:
-        return flat, "flat", str(exc)
-    if not _balanced(text):
-        return flat, "flat", "brackets do not balance"
-    for m in _LOAD_BEARING.finditer(flat):
-        if text[m.start() : m.end()] != m.group():
-            return (
-                flat,
-                "flat",
-                f"would blank the code token {' '.join(m.group().split())}",
-            )
-    return text, "structural", ""
-
-
 def match_forward(text: str, start: int) -> int:
     """Index just past the bracket group opening at `start`. -1 if unbalanced."""
     pairs = {"(": ")", "[": "]", "{": "}"}
@@ -330,23 +157,17 @@ def receiver_of(text: str, dot: int) -> str:
 
 
 def top_level_items(inner: str) -> int:
-    """Count comma-separated items at depth 0 inside an array/arg body.
-
-    Only non-empty segments are items: a trailing comma (`[a, b,]`, the house
-    style for multi-line arrays) is not a third element (#2670).
-    """
-    depth, items, segment = 0, 0, ""
-    for ch in inner + ",":
+    """Count comma-separated items at depth 0 inside an array/arg body."""
+    if not inner.strip():
+        return 0
+    depth, items = 0, 1
+    for ch in inner:
         if ch in "([{":
             depth += 1
         elif ch in ")]}":
             depth -= 1
         elif ch == "," and depth == 0:
-            if segment.strip():
-                items += 1
-            segment = ""
-            continue
-        segment += ch
+            items += 1
     return items
 
 
@@ -421,16 +242,6 @@ def bound_of(expr: str, text: str, seen=None):
 
     # Bare identifier: resolve a const/let/var array literal declaration.
     if re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", expr):
-        # An array grown in place is as long as the code that grows it, not as
-        # long as its initializer: `const CELLS = []` then `CELLS.push(...)` in a
-        # loop read as ZERO items and costed a whole pipeline at nothing (#2670).
-        if re.search(
-            r"(?<![A-Za-z0-9_$.])"
-            + re.escape(expr)
-            + r"\s*\.\s*(?:push|unshift|splice)\s*\(",
-            text,
-        ):
-            return None
         d = re.search(r"\b(?:const|let|var)\s+" + re.escape(expr) + r"\s*=\s*", text)
         if d:
             rest = text[d.end() :].lstrip()
@@ -447,21 +258,14 @@ def bound_of(expr: str, text: str, seen=None):
 
 
 def fanouts(text: str):
-    """Every fan-out construct.
-
-    Returns (kind, source_expr, body_start, body_end, src_start, src_end); the
-    last two span the iteration-source argument of a parallel/pipeline call
-    (-1, -1 for `.map`, whose source is the receiver outside the parens).
-    """
+    """Every fan-out construct: (kind, source_expr, body_start, body_end)."""
     found = []
     for m in re.finditer(r"\.(map|flatMap)\s*\(", text):
         open_paren = m.end() - 1
         close = match_forward(text, open_paren)
         if close < 0:
             continue
-        found.append(
-            (m.group(1), receiver_of(text, m.start()), open_paren, close, -1, -1)
-        )
+        found.append((m.group(1), receiver_of(text, m.start()), open_paren, close))
 
     for m in re.finditer(r"\b(parallel|pipeline)\s*\(", text):
         open_paren = m.end() - 1
@@ -481,16 +285,7 @@ def fanouts(text: str):
             elif ch == "," and depth == 0:
                 cut = i
                 break
-        found.append(
-            (
-                m.group(1),
-                inner[:cut].strip(),
-                open_paren,
-                close,
-                open_paren + 1,
-                open_paren + 1 + cut,
-            )
-        )
+        found.append((m.group(1), inner[:cut].strip(), open_paren, close))
     return found
 
 
@@ -544,17 +339,13 @@ def analyze(src: str, limit: int, assumed: int = 8) -> dict:
     was exactly that shape (`pipeline(args.units, editor, reviewer, repairer)`,
     four sites over a list the script never bounds).
     """
-    text, mode, reason = sanitize(src)
-    parse = {"SANITIZER": mode}
-    if reason:
-        parse["FALLBACK"] = reason
+    text = sanitize(src)
     sites = [m.start() for m in re.finditer(r"\bagent\s*\(", text)]
     if not sites:
         return {
             "VERDICT": "NO_AGENTS",
             "SITES": 0,
             "LIMIT": limit,
-            **parse,
             "DETAIL": "no agent() call sites found",
         }
 
@@ -565,15 +356,7 @@ def analyze(src: str, limit: int, assumed: int = 8) -> dict:
     for site in sites:
         enclosing = [f for f in fos if f[2] < site < f[3]]
         product = 1
-        for kind, source, _s, _e, src_lo, src_hi in enclosing:
-            # A site INSIDE a literal-array source is one element of that array,
-            # and each element runs once: `parallel([() => agent(a), () =>
-            # agent(b)])` is two agents, not four. Multiplying it by the array
-            # length costed blueprint-story-audit at 71 instead of 20 (#2670).
-            # A site in a pipeline STAGE (outside the source span) still runs
-            # once per element, and `.map` over a literal still multiplies.
-            if src_lo <= site < src_hi and source.startswith("["):
-                continue
+        for kind, source, _s, _e in enclosing:
             b = bound_of(source, text)
             if b is None:
                 product *= assumed
@@ -589,7 +372,6 @@ def analyze(src: str, limit: int, assumed: int = 8) -> dict:
         "SITES": len(sites),
         "ESTIMATE": estimate,
         "LIMIT": limit,
-        **parse,
     }
     name_match = re.search(r"\bname:\s*['\"]([^'\"]+)['\"]", src)
     if name_match:
@@ -637,8 +419,6 @@ def main() -> int:
         "LIMIT",
         "ASSUMED",
         "SOURCE",
-        "SANITIZER",
-        "FALLBACK",
         "DETAIL",
     ):
         if key in result:

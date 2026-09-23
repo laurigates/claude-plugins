@@ -819,7 +819,9 @@ repos:
         name: workflow-scale-guard hook regression
         entry: bash ./hooks-plugin/hooks/test-workflow-scale-guard.sh
         language: system
-        files: '^hooks-plugin/hooks/(workflow-scale-guard\.sh|workflow-scale-estimate\.py|test-workflow-scale-guard\.sh)$'
+        # The differential reads the frozen #2668 oracle and every bundled
+        # workflow template, so a change to either re-runs it (#2670 review).
+        files: '^(hooks-plugin/hooks/(workflow-scale-guard\.sh|workflow-scale-estimate\.py|test-workflow-scale-guard\.sh|fixtures/workflow-scale-estimate-2668\.py)|[^/]+-plugin/skills/[^/]+/workflows/.*\.js)$'
         pass_filenames: false
       - id: test-secret-protection
         name: secret-protection hook regression
