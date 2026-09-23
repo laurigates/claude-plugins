@@ -485,6 +485,118 @@ rc=$?
 assert_eq "unknown flag exits 2" "$rc" "2"
 assert_contains "unknown flag prints usage" "$err" "usage: probe-delta.py"
 
+echo "TEST i4: --expect-baseline makes a LOST baseline loud instead of a silent first run (#2554)"
+# A scheduled workflow keeps its baseline in a cache that can be evicted. Without
+# a way to say "a baseline was expected", eviction is a silent FIRST_RUN=true
+# re-record that swallows whatever appeared during the evicted window -- the
+# exact failure delta reporting exists to prevent. With the flag, a missing or
+# untrusted baseline re-reports EVERY finding, says why, and still re-records.
+WARN_ONLY="$FIXROOT/warn-only.json"
+cat > "$WARN_ONLY" <<'JSON'
+{"counts": {}, "findings": [
+ {"severity": "warn", "kind": "review_staleness",
+  "summary": "x changed 200d after its declared reviewed:2020-01-01",
+  "paths": ["/c/x.md"], "gap_days": 200},
+ {"severity": "info", "kind": "rule_covered_by_skill",
+  "summary": "portfolio:r is 60% covered by skill s -- candidate for a pointer stub",
+  "paths": ["/c/r.md", "/c/s/SKILL.md"]}
+]}
+JSON
+# CONTROL first: without the flag the historical behaviour is unchanged.
+out=$(cd / && python3 "$DELTA" --findings "$WARN_ONLY" --baseline "$FIXROOT/eb-control.json" \
+    --probe config-drift --root "$FIXROOT/proj" 2>&1)
+rc=$?
+assert_contains "CONTROL: without the flag a missing baseline is still a first run" "$out" "FIRST_RUN=true"
+assert_contains "CONTROL: ...still silent"                                        "$out" "ISSUE_COUNT=0"
+assert_contains "CONTROL: ...still OK"                                            "$out" "STATUS=OK"
+assert_contains "CONTROL: ...and says no baseline was lost"                       "$out" "BASELINE_LOST=false"
+assert_absent  "CONTROL: ...with no baseline_lost row"                            "$out" "TYPE=baseline_lost"
+assert_eq "CONTROL: ...exits 0" "$rc" "0"
+
+EB="$FIXROOT/eb.json"
+out=$(cd / && python3 "$DELTA" --findings "$WARN_ONLY" --baseline "$EB" --expect-baseline \
+    --probe config-drift --root "$FIXROOT/proj" 2>&1)
+rc=$?
+assert_contains "with the flag a missing baseline is NOT reported as a first run" "$out" "FIRST_RUN=false"
+assert_contains "the loss is a key of its own"                                   "$out" "BASELINE_LOST=true"
+assert_contains "the loss is a finding a rollup can see"                         "$out" "TYPE=baseline_lost"
+assert_contains "the loss names a missing baseline"                              "$out" "no baseline at"
+assert_contains "every analyzer finding is re-reported (staleness)"              "$out" "TYPE=review_staleness"
+assert_contains "every analyzer finding is re-reported (coverage)"               "$out" "TYPE=rule_covered_by_skill"
+assert_contains "NEW counts the re-reported analyzer findings"                   "$out" "NEW=2"
+assert_contains "ISSUE_COUNT is the findings plus the loss"                      "$out" "ISSUE_COUNT=3"
+assert_contains "a warn-only re-report is WARN"                                  "$out" "STATUS=WARN"
+assert_eq "a lost baseline exits 1, like any run with findings" "$rc" "1"
+assert_eq "the lost baseline is re-recorded" "$([ -s "$EB" ] && echo yes || echo no)" "yes"
+# The re-record must hold the ANALYZER findings only: the synthetic loss is not a
+# corpus finding, and recording it would make the next run report it resolved.
+out=$(cd / && python3 "$DELTA" --findings "$WARN_ONLY" --baseline "$EB" --expect-baseline \
+    --probe config-drift --root "$FIXROOT/proj" 2>&1)
+assert_contains "the next run finds the re-recorded baseline"   "$out" "BASELINE_LOST=false"
+assert_contains "...and reports nothing new"                    "$out" "NEW=0"
+assert_contains "...and nothing resolved (the loss was never recorded)" "$out" "RESOLVED=0"
+assert_contains "...and is OK"                                  "$out" "STATUS=OK"
+
+# An UNTRUSTED baseline (recorded at another root) is lost too, and says so
+# differently: an evicted cache and a corrupted/mismatched one need different fixes.
+out=$(cd / && python3 "$DELTA" --findings "$WARN_ONLY" --baseline "$EB" --expect-baseline \
+    --probe config-drift --root "$FIXROOT" 2>&1)
+assert_contains "a root-mismatched baseline is lost under the flag" "$out" "BASELINE_LOST=true"
+assert_contains "...and is named as untrusted, not missing"         "$out" "could not be trusted"
+
+# The flag never DOWNGRADES a re-report: an error-severity finding in it is ERROR.
+out=$(cd / && python3 "$DELTA" --findings "$FINDINGS_JSON" --baseline "$FIXROOT/eb-err.json" \
+    --expect-baseline --probe config-drift --root "$FIXROOT/proj" 2>&1)
+assert_contains "FIXTURE: the planted corpus carries an error finding" "$out" "TYPE=broken_pointer_stub"
+assert_contains "an error in a lost-baseline re-report stays ERROR"    "$out" "STATUS=ERROR"
+
+# Analyzer failure still outranks everything, flag or not.
+out=$(cd / && printf '' | python3 "$DELTA" --findings - --baseline "$FIXROOT/eb-empty.json" \
+    --expect-baseline --probe config-drift --root "$FIXROOT/proj" 2>&1)
+assert_contains "empty input under the flag is still analyzer_failed" "$out" "TYPE=analyzer_failed"
+assert_absent  "...not a baseline loss"                               "$out" "TYPE=baseline_lost"
+
+echo "TEST i5: every Baseline.load caller offers a caller-side loud-miss option"
+# The class, not the instance: a delta consumer whose lost-state path is
+# indistinguishable from a first run. Read out of the shipped scripts via the
+# AST, so a second consumer that forgets the flag fails here by name.
+cat > "$FIXROOT/loudmiss.py" <<'PY'
+import ast
+import pathlib
+import sys
+
+callers, missing = [], []
+for py in sorted(pathlib.Path(sys.argv[1]).glob("*.py")):
+    tree = ast.parse(py.read_text(encoding="utf-8"))
+    loads = any(
+        isinstance(n, ast.Call)
+        and isinstance(n.func, ast.Attribute)
+        and n.func.attr == "load"
+        and isinstance(n.func.value, ast.Name)
+        and n.func.value.id == "Baseline"
+        for n in ast.walk(tree)
+    )
+    if not loads:
+        continue
+    callers.append(py.name)
+    flag = any(
+        isinstance(n, ast.Call)
+        and isinstance(n.func, ast.Attribute)
+        and n.func.attr == "add_argument"
+        and n.args
+        and isinstance(n.args[0], ast.Constant)
+        and n.args[0].value == "--expect-baseline"
+        for n in ast.walk(tree)
+    )
+    if not flag:
+        missing.append(py.name)
+print("CALLERS %s" % (",".join(callers) or "NONE"))
+print("MISSING %s" % (",".join(missing) or "NONE"))
+PY
+out=$(python3 "$FIXROOT/loudmiss.py" "$SCRIPTS_DIR" 2>&1)
+assert_contains "FIXTURE: at least one Baseline.load caller was found" "$out" "CALLERS probe-delta.py"
+assert_contains "every Baseline.load caller defines --expect-baseline" "$out" "MISSING NONE"
+
 echo "TEST h: the cheap tier imports neither fastembed nor numpy"
 POISON="$FIXROOT/poison"
 mkdir -p "$POISON"

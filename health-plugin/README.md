@@ -74,6 +74,14 @@ First run records the baseline and says nothing. Later runs report only new
 findings; an empty or unparseable input is `STATUS=ERROR TYPE=analyzer_failed`,
 never a clean sweep.
 
+`--expect-baseline` is for a scheduled caller that knows it is **not** on its
+first run, such as a workflow keeping the baseline in an evictable cache. There a
+missing or untrusted baseline is a loss: every finding is re-reported beside a
+`TYPE=baseline_lost` finding that names the cause (missing file vs. one recorded
+at another root or schema), `FIRST_RUN=false BASELINE_LOST=true`, and the
+baseline is re-recorded. Without the flag the same condition stays a silent
+first run, which would swallow whatever appeared while the baseline was gone.
+
 ### `config-drift.py`
 
 Answers a question the other health checks do not: **is the configuration
