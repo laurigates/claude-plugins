@@ -218,6 +218,9 @@ json.dump([
         "body": ids % 2 + "\n" + targets % ".claude/rules/loop-integrity.md"},
     {"number": 2573, "createdAt": ago(1), "body": "legacy body\n" + ids % 3},
     {"number": 2600, "createdAt": ago(1), "body": None},
+    # #2697 itself carries the research-radar label and quotes the template
+    # placeholder; `<path1>` must never be collected as a target.
+    {"number": 2697, "createdAt": ago(1), "body": targets % "<path1> <path2>"},
     {"number": 2507, "createdAt": ago(window + 1),
         "body": targets % "prompt-engineering-plugin/skills/stale-target/SKILL.md"},
 ], open(out + "/issues.json", "w"))
@@ -251,6 +254,7 @@ assert_eq "13: every path in a multi-target block is listed" "yes" \
 assert_eq "13: a target just outside the window is dropped" "no" "$(has "$out" 'stale-target')"
 assert_eq "13: a legacy ids-only issue contributes nothing" "no" "$(has "$out" '#2573')"
 assert_eq "13: a null body contributes nothing" "no" "$(has "$out" '#2600')"
+assert_eq "13: a quoted template placeholder contributes nothing" "no" "$(has "$out" '#2697')"
 assert_eq "13: each line carries a YYYY-MM-DD date" "3" \
   "$(grep -cE '^[^ ]+ #[0-9]+ [0-9]{4}-[0-9]{2}-[0-9]{2}$' "$out" 2>/dev/null)"
 
