@@ -331,10 +331,34 @@ const P = (c) => `head ${
 } tail`
 await pipeline(args.units, u => agent('edit'), e => agent('review'), r => agent('repair'), s => agent('rereview'))
 EOF
+# The four checks prove the walk kept every token that COUNTS, not every token
+# that BOUNDS. A `{` regex in one template and a `}` regex in a later one keep
+# the span between them inside one template: literals close, brackets balance,
+# no agent()/fan-out token is lost -- and the declaration of `items` is
+# blanked, so the fan-out costs 8 instead of 12 and the hook went silent
+# (#2670 review, round 3). No list of checks is complete, so the estimator now
+# costs both readings and keeps the higher: the flat scan decides here.
+fx brace_pair_blanks_bound <<'EOF'
+const open = (s) => `g ${s.replace(/{/g, "(")} h`;
+const items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+const close = (s) => `e ${s.replace(/}/g, ")")} f`;
+await parallel(items.map((i) => () => agent(open(i) + close(i))));
+EOF
+# The same pair around a pipeline source. Here the blanked declaration makes the
+# structural reading HIGHER (unbounded, 2 x 8 = 16 against 2 x 6 = 12), and the
+# higher reading decides whichever scan produced it.
+fx brace_pair_raises_pipeline <<'EOF'
+const open = (s) => `g ${s.replace(/{/g, "(")} h`;
+const units = [1, 2, 3, 4, 5, 6];
+const close = (s) => `e ${s.replace(/}/g, ")")} f`;
+await pipeline(units, (u) => agent(open(u)), (u) => agent(close(u)));
+EOF
 
 assert_asks "regex holding ' inside \${...} still asks" "$(<"$FX_DIR/regex_squote_in_interp.js")"
 assert_asks "regex holding \" inside \${...} still asks" "$(<"$FX_DIR/regex_dquote_in_interp.js")"
 assert_asks "templates merged across a pipeline still ask" "$(<"$FX_DIR/brace_regex_blanks_calls.js")"
+assert_asks "brace-regex pair around a bounding declaration still asks" "$(<"$FX_DIR/brace_pair_blanks_bound.js")"
+assert_asks "brace-regex pair around a pipeline source still asks" "$(<"$FX_DIR/brace_pair_raises_pipeline.js")"
 
 # assert_parse <desc> <estimate> <sanitizer> <fallback-substring> <fixture>
 assert_parse() {
@@ -365,6 +389,8 @@ assert_parse "literal reaching end of file"          8  flat "runs to end of fil
 assert_parse "code left with unbalanced brackets"    8  flat "brackets do not balance"         brace_regex_blanks_parens
 assert_parse "code token the #2668 scan kept"        16 flat "would blank the code token"      brace_regex_blanks_calls
 assert_parse "nested template walked structurally"   32 structural "" nested_template_proves_itself
+assert_parse "proven walk blanks a bound: flat is higher" 12 flat "flat scan costs it higher" brace_pair_blanks_bound
+assert_parse "proven walk is the higher reading"         16 structural "" brace_pair_raises_pipeline
 
 echo
 echo "== differential against the #2668 estimator (#2670 review) =="
@@ -490,6 +516,72 @@ else
     FAIL=$((FAIL + 1))
     printf '  FAIL  differential is vacuous: %d templates, %d lowered, baseline %s\n' \
         "$N_TEMPLATES" "$DIFF_LOWERED" "$([ -f "$BASELINE" ] && echo present || echo missing)"
+fi
+
+echo
+echo "== property: never below the flat reading (#2670 review, round 3) =="
+
+# Three review rounds each found code the structural walk blanked that its
+# proof checks missed. analyze() therefore costs the #2668 flat scan too and
+# keeps the higher figure. This asserts that property directly, per input:
+# the reported ESTIMATE is at least what the SAME analysis gives on the
+# flat-sanitized text (NO_AGENTS ranks below any estimate). It is non-vacuous
+# only if some input's proven structural reading is strictly LOWER than its
+# flat reading -- the case the maximum exists for -- and a template was read.
+# The program is passed with -c: `python3 -` would read it from the same stdin
+# that carries the file list, and the list would be lost.
+PROP_PY=$(
+    cat <<'PY'
+import importlib.util, sys
+
+spec = importlib.util.spec_from_file_location("est", sys.argv[1])
+est = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(est)
+
+def rank(r):
+    return r.get("ESTIMATE", -1)
+
+n = templates = lower = 0
+for path in sys.stdin.read().split("\n"):
+    if not path:
+        continue
+    src = open(path, encoding="utf-8").read()
+    n += 1
+    templates += path.endswith(".workflow.js")
+    live = est.analyze(src, 10, 8)
+    flat = est.estimate_text(est._flat_sanitize(src), src, 10, 8)
+    text, mode, _ = est.sanitize(src)
+    if mode == "structural" and rank(est.estimate_text(text, src, 10, 8)) < rank(flat):
+        lower += 1
+    if rank(live) < rank(flat):
+        print(f"VIOLATION {path.rsplit('/', 1)[-1]} live={rank(live)} flat={rank(flat)}")
+print(f"INPUTS={n} TEMPLATES={templates} STRUCTURAL_LOWER={lower}")
+PY
+)
+PROP_OUT=$(
+    {
+        for f in "$FX_DIR"/*.js; do printf '%s\n' "$f"; done
+        [ -n "$REPO_ROOT" ] && git -C "$REPO_ROOT" ls-files '*/workflows/*.js' | sed "s|^|$REPO_ROOT/|"
+    } | python3 -c "$PROP_PY" "$ESTIMATOR" 2>&1
+)
+while IFS= read -r line; do
+    case "$line" in
+        VIOLATION*)
+            FAIL=$((FAIL + 1))
+            printf '  FAIL  property: %s\n' "${line#VIOLATION }"
+            ;;
+    esac
+done <<<"$PROP_OUT"
+prop_n=$(sed -n 's/.*INPUTS=\([0-9]*\).*/\1/p' <<<"$PROP_OUT")
+prop_t=$(sed -n 's/.*TEMPLATES=\([0-9]*\).*/\1/p' <<<"$PROP_OUT")
+prop_l=$(sed -n 's/.*STRUCTURAL_LOWER=\([0-9]*\).*/\1/p' <<<"$PROP_OUT")
+if [ "${prop_t:-0}" -gt 0 ] && [ "${prop_l:-0}" -gt 0 ] && ! grep -q '^VIOLATION' <<<"$PROP_OUT"; then
+    PASS=$((PASS + 1))
+    printf '  PASS  property held over %d inputs (%d templates); %d had a lower structural reading\n' \
+        "$prop_n" "$prop_t" "$prop_l"
+elif ! grep -q '^VIOLATION' <<<"$PROP_OUT"; then
+    FAIL=$((FAIL + 1))
+    printf '  FAIL  property is vacuous or did not run: %s\n' "${PROP_OUT:-<no output>}"
 fi
 
 echo

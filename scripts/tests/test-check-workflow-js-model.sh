@@ -582,6 +582,26 @@ o=$(out "$root")
 check "N12: regex-quote template still over budget"  "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=agent_budget_exceeded .*ESTIMATE=16 BUDGET=10')"
 check "N12: not reported as a desync"                 "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=estimator_desync')"
 
+# N13. End to end against the REAL estimator: a `{` regex in one template and a
+# `}` regex in a later one blank the declaration of `items` between them while
+# passing every proof check, so the structural reading costs the fan-out at 8
+# and the budget of 10 passed. The estimator now keeps the higher of that and
+# the #2668 flat reading (12 items), so the budget gate agrees with the scale
+# guard (#2670 review, round 3).
+root=$(mk_root N13)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+{
+    echo "export default async function ({ agent, parallel }) {"
+    echo "  const open = (s) => \`g \${s.replace(/{/g, \"(\")} h\`;"
+    echo "  const items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];"
+    echo "  const close = (s) => \`e \${s.replace(/}/g, \")\")} f\`;"
+    echo "  return parallel(items.map((i) => () => agent(open(i) + close(i), { label:'w', schema: S, model:'opus', effort:'low' })));"
+    echo "}"
+} > "$d/workflows/audit.workflow.js"
+o=$(out "$root")
+check "N13: brace-regex pair still over budget"      "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=agent_budget_exceeded .*ESTIMATE=12 BUDGET=10')"
+check "N13: not reported as a desync"                 "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=estimator_desync')"
+
 # N7. The shipped templates: every one declares a budget its estimate fits in.
 # Not an exact count (a sibling PR may add a template), but non-vacuous: every
 # scanned file must have been budget-checked, and there must be files at all.

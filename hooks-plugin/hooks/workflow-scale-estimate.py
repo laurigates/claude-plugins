@@ -11,8 +11,8 @@ rather than recomputing the analysis:
     LIMIT=<int>            the threshold it was compared against
     ASSUMED=<int>          items each unbounded fan-out was costed at (if any)
     SOURCE=<expr>          the fan-out expression(s) that could not be bounded
-    SANITIZER=structural|flat  which literal scan decided (see sanitize())
-    FALLBACK=<reason>      why the structural scan was rejected (flat only)
+    SANITIZER=structural|flat  which literal scan decided (see analyze())
+    FALLBACK=<reason>      why the flat scan decided (flat only)
     DETAIL=<one line>      human-readable summary
 
 Why static estimation at all: the Workflow tool hands the script to a runtime
@@ -45,9 +45,10 @@ Known gaps, deliberately fail-open (an unanalyzable script is NOT blocked):
   - Template-literal interpolations `${...}` are treated as string content, so
     an agent() call written inside one is invisible here. Prompts live in
     templates; calls do not. The interpolation's EXTENT is still parsed, so a
-    template nested inside one cannot end the outer literal early -- unless
-    that parse cannot prove itself (a regex literal holding a quote or brace
-    is the usual cause), in which case the #2668 flat scan decides instead.
+    template nested inside one cannot end the outer literal early. That walk
+    can still misread a regex literal holding a quote or brace, so it never
+    decides alone: the #2668 flat scan is costed too and the higher estimate
+    is reported (see analyze()).
   - An abort guard (`if (xs.length > CAP) return ...`) is not read as a bound.
     The one shipped instance, evaluate-skill's cellCap, is caller-overridable
     (`INPUT.cellCap ?? 30`), so it is not a static bound anyway.
@@ -146,9 +147,9 @@ def _flat_sanitize(src: str) -> str:
 
     Blind to `${...}` nesting, so a template holding a template ends early --
     but it never walks code as if it were a literal, so it cannot blank a whole
-    file on a regex it misreads. Kept verbatim as the fallback: whatever the
-    structural walk cannot prove, this scan decides, which makes the estimate
-    exactly what the guard computed before the structural walk existed.
+    file on a regex it misreads. Kept verbatim: whatever the structural walk
+    cannot prove, this scan decides, and beside a proven walk analyze() still
+    costs this reading and reports the higher of the two.
     """
     out = list(src)
     i, n = 0, len(src)
@@ -258,14 +259,16 @@ def sanitize(src: str):
     would be counted as code. A template literal is blanked whole,
     interpolations included (see the known-gaps note in the module docstring).
 
-    The structural walk is used only when it proves itself (mode
-    "structural"); otherwise the #2668 flat scan decides (mode "flat", with
-    `reason` naming the check that failed). Proof
-    is structural, not a list of special cases: every literal and comment
-    closed where JS requires, the remaining code's brackets balance, and every
-    load-bearing token the flat scan leaves as code is still code. The walk
-    exists to blank MORE than the flat scan -- a nested template's body -- and
-    those checks are what stop "more" from including a live agent() call.
+    The structural walk is returned only when it proves itself (mode
+    "structural"); otherwise the #2668 flat scan is (mode "flat", with
+    `reason` naming the check that failed): every literal and comment closed
+    where JS requires, the remaining code's brackets balance, and every
+    load-bearing token the flat scan leaves as code is still code. Those checks
+    keep a garbled walk from being costed at all. They do NOT prove the walk
+    kept every token that sets a BOUND -- a `{` regex in one template and a `}`
+    regex in a later one blank the declaration between them and pass all four
+    (#2670 review, round 3) -- which is why analyze() also costs the flat scan
+    and keeps the higher figure.
     """
     flat = _flat_sanitize(src)
     try:
@@ -533,8 +536,55 @@ def is_wrapper(kind: str, source: str) -> bool:
     return False
 
 
+def _risk(result: dict) -> int:
+    """Order two readings by what they make the guard do: NO_AGENTS lowest."""
+    return result.get("ESTIMATE", -1)
+
+
 def analyze(src: str, limit: int, assumed: int = 8) -> dict:
     """Estimate the agent count and compare it to `limit`.
+
+    Costs the proven structural reading AND the #2668 flat scan, and reports
+    the higher estimate (ties go to the structural reading). A sanitizer can
+    only lower an estimate by blanking code, and the review rounds on #2670
+    each found code the structural walk blanked that its proof checks did not
+    cover. Taking the maximum makes the guarantee structural rather than a
+    list of cases: this estimator never costs a script below its own reading
+    of the #2668 scan. The price is that a false positive the walk would have
+    removed (prose inside a nested template read as code) is kept whenever
+    the flat scan sees it.
+    """
+    text, mode, reason = sanitize(src)
+    readings = [(text, mode, reason)]
+    if mode == "structural":
+        readings.append((_flat_sanitize(src), "flat", ""))
+    results, failure = [], None
+    for text, mode, reason in readings:
+        try:
+            result = estimate_text(text, src, limit, assumed)
+        except Exception as exc:  # noqa: BLE001 - the other reading may still succeed
+            failure = exc
+            continue
+        result["SANITIZER"] = mode
+        if reason:
+            result["FALLBACK"] = reason
+        results.append(result)
+    if not results:
+        raise failure
+    best = max(results, key=_risk)  # max() keeps the first of equals
+    if len(readings) == 2 and best["SANITIZER"] == "flat":
+        if len(results) == 1:
+            best["FALLBACK"] = f"the structural reading raised {type(failure).__name__}"
+        else:
+            low = results[0].get("ESTIMATE", "NO_AGENTS")
+            best["FALLBACK"] = (
+                f"the #2668 flat scan costs it higher ({best.get('ESTIMATE')} > {low})"
+            )
+    return best
+
+
+def estimate_text(text: str, src: str, limit: int, assumed: int = 8) -> dict:
+    """Cost one sanitized reading `text` of `src` against `limit`.
 
     A fan-out whose length is only knowable at runtime is not waved through and
     is not hard-blocked either: it is costed at `assumed` items. That single
@@ -544,17 +594,12 @@ def analyze(src: str, limit: int, assumed: int = 8) -> dict:
     was exactly that shape (`pipeline(args.units, editor, reviewer, repairer)`,
     four sites over a list the script never bounds).
     """
-    text, mode, reason = sanitize(src)
-    parse = {"SANITIZER": mode}
-    if reason:
-        parse["FALLBACK"] = reason
     sites = [m.start() for m in re.finditer(r"\bagent\s*\(", text)]
     if not sites:
         return {
             "VERDICT": "NO_AGENTS",
             "SITES": 0,
             "LIMIT": limit,
-            **parse,
             "DETAIL": "no agent() call sites found",
         }
 
@@ -589,7 +634,6 @@ def analyze(src: str, limit: int, assumed: int = 8) -> dict:
         "SITES": len(sites),
         "ESTIMATE": estimate,
         "LIMIT": limit,
-        **parse,
     }
     name_match = re.search(r"\bname:\s*['\"]([^'\"]+)['\"]", src)
     if name_match:
