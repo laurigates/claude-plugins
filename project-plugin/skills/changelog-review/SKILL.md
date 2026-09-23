@@ -213,7 +213,7 @@ files that still reference it as triage candidates. Three miss classes drive thi
   skill referencing removed tools unflagged. Caught by the BREAKING-line
   extractor.
 - **#2712** — a removal whose subject upstream left un-backticked ("Removed the
-  deprecated TaskOutput tool", 2.1.278), invisible to every backtick-anchored
+  deprecated TaskOutput tool", 2.1.277), invisible to every backtick-anchored
   form. Caught by the bare-subject extractor, which accepts only tool-shaped
   subjects (followed by "tool", or ending in `Tool`).
 

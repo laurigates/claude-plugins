@@ -6,7 +6,7 @@
 # (verified 2026-09-03 against https://code.claude.com/docs/en/tools, which
 # lists 45 tools including their successors). Two ALWAYS-LOADED authoring rules
 # were minting them, so the count grew with every skill written from them.
-# TaskOutput joined in #2712: removed in 2.1.278 (upstream CHANGELOG) while
+# TaskOutput joined in #2712: removed in 2.1.277 (upstream CHANGELOG) while
 # still granted by agents-plugin/agents/{debug,test}.md.
 #
 # The negative cases carry as much weight as the positives: this guard scans a
@@ -66,7 +66,7 @@ out="$(bash "$CHECK" --project-dir "$fx/c-ts" 2>&1)"
 assert "C both names on one line are caught" \
   "$([ "$(has "$out" 'TOOL=BashOutput')" = true ] && [ "$(has "$out" 'TOOL=KillShell')" = true ] && echo true || echo false)"
 assert "C reports both, not just the first" "$(has "$out" 'ISSUE_COUNT=2')"
-# The two agents that still granted TaskOutput after its 2.1.278 removal
+# The two agents that still granted TaskOutput after its 2.1.277 removal
 # (#2712), verbatim from agents-plugin/agents/{debug,test}.md:6 pre-sweep.
 mkskill c-debug "s" "tools: Glob, Grep, Read, Edit, Write, Bash(npm *), Bash(yarn *), Bash(bun *), Bash(pytest *), Bash(python *), Bash(node *), Bash(cargo *), Bash(go *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git add *), Bash(git commit *), TaskOutput, TodoWrite"
 out="$(bash "$CHECK" --project-dir "$fx/c-debug" 2>&1)"
@@ -96,8 +96,8 @@ allowed-tools: Read, Glob, Bash, Edit
 
 `LS` was removed in favour of `Glob`, and MultiEdit no longer exists.
 Do not grant BashOutput or KillShell.
-The TaskOutput tool was removed in 2.1.278; Claude reads the output file with Read.
-| `TaskOutput` | Removed in 2.1.278 |
+The TaskOutput tool was removed in 2.1.277; Claude reads the output file with Read.
+| `TaskOutput` | Removed in 2.1.277 |
 
 | Tool | Status |
 |------|--------|

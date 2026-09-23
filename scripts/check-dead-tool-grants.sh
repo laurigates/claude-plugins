@@ -23,9 +23,9 @@
 # `lint-mcp-tool-references.sh` and `lint-package-references.sh`.
 #
 # A fifth name, TaskOutput, is sourced from the upstream CHANGELOG rather than
-# the tools page: 2.1.278 "Removed the deprecated TaskOutput tool; Claude reads
+# the tools page: 2.1.277 "Removed the deprecated TaskOutput tool; Claude reads
 # a background task's output file with Read instead" (#2712), while
-# code.claude.com/docs/en/tools still listed it on 2026-09-22. It had been left
+# code.claude.com/docs/en/tools still listed it on 2026-09-23. It had been left
 # out as merely deprecated; the changelog line is what graduates it here.
 #
 # Output follows .claude/rules/structured-script-output.md.
@@ -43,7 +43,7 @@ DENYLIST='LS|Glob|directory listing moved to Glob
 BashOutput|Bash|background output now arrives as a file path in the tool result
 KillShell|TaskStop|background work is stopped through the task tools
 MultiEdit|Edit|Edit gained replace_all; MultiEdit was removed
-TaskOutput|Read|removed in 2.1.278; read the background task output file with Read'
+TaskOutput|Read|removed in 2.1.277; read the background task output file with Read'
 
 ROOT_DIR=""
 while [ $# -gt 0 ]; do

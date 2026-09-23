@@ -18,7 +18,7 @@
 #     2.1.178) — the shape the deprecation-grammar forms missed, which left the
 #     agent-teams skill referencing removed tools unflagged (issue #1733).
 #   - Extends it again to an un-backticked tool subject ("Removed the deprecated
-#     TaskOutput tool", 2.1.278), which every backtick-anchored form missed
+#     TaskOutput tool", 2.1.277), which every backtick-anchored form missed
 #     (issue #2712).
 #   - Flags an oversized excerpt (a review stall) as STATUS=WARN so a 60-version
 #     mega-batch is visible rather than silently lossy.
@@ -145,7 +145,7 @@ if [ "$DEPRECATION" -gt 0 ]; then
               }
             }
           }'
-      # Bare (un-backticked) tool subject (#2712): upstream wrote 2.1.278 as
+      # Bare (un-backticked) tool subject (#2712): upstream wrote 2.1.277 as
       # "Removed the deprecated TaskOutput tool" and 1.0.93 as "Unshipped
       # AgentOutputTool and BashOutputTool, in favor of …" — no backticks, so
       # every form above returned nothing and the TaskOutput grants in two

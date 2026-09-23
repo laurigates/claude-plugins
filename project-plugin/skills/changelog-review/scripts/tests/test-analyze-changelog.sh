@@ -16,7 +16,7 @@
 #   - A pure feature excerpt stays STATUS=OK with no deprecation.
 #
 # Covers issue #2712 (bare, un-backticked removal subjects):
-#   - "Removed the deprecated TaskOutput tool" (2.1.278) and "Unshipped
+#   - "Removed the deprecated TaskOutput tool" (2.1.277) and "Unshipped
 #     AgentOutputTool and BashOutputTool" surface their subjects; bare
 #     capitalised non-tools (Opus, Task tool's `mode`, JetBrains) do not.
 set -uo pipefail
@@ -159,7 +159,7 @@ assert_contains "the removed subject is surfaced" "TeamCreate"
 assert_absent "the replacement named after the verb is not surfaced" "DEPRECATED_TOKENS=SendMessage"
 
 # ── bare (un-backticked) removal subject (#2712) ──────────────────────────────
-# Upstream does not always backtick the removed tool. 2.1.278 wrote "Removed the
+# Upstream does not always backtick the removed tool. 2.1.277 wrote "Removed the
 # deprecated TaskOutput tool" bare, every form above requires a backticked
 # subject, and the bridge returned DEPRECATED_TOKENS= / STATUS=OK against a tree
 # that still granted TaskOutput in two agents. The fixtures are verbatim upstream
@@ -173,7 +173,7 @@ cat > "$REPO/fake-plugin/hooks/bare-words.sh" <<'EOF'
 EOF
 echo ""
 echo "bare tool-removal subject (no backticks) is surfaced:"
-run "## 2.1.278
+run "## 2.1.277
 - Removed the deprecated TaskOutput tool; Claude reads a background task's output file with Read instead, and the \`taskOutputMaxChars\` setting and \`TASK_MAX_OUTPUT_LENGTH\` no longer have any effect"
 
 assert_eq "ACTIONABLE_DEPRECATION raised for the bare subject" "1" "$(field ACTIONABLE_DEPRECATION)"
