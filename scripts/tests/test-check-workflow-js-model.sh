@@ -517,6 +517,31 @@ printf -- '---\nname: x\ndescription: y. Use when z.\n---\n\nNo harness section 
 o=$(out "$root")
 check "N6: orphan not double-reported"       "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=missing_agent_budget')"
 
+# N8/N9. FAIL CLOSED — a budget check that cannot run must say so, not pass.
+# The guard resolves the estimator from its own location, so each case runs a
+# copy of it from a scratch tree whose estimator is absent (N8) or broken (N9).
+# Both use N1's within-budget fixture, which passes against the real estimator.
+mk_guard_copy() { # mk_guard_copy <name> → path of a guard copy with no estimator
+    local g="$WORK/$1"
+    mkdir -p "$g/scripts" "$g/hooks-plugin/hooks"
+    cp "$CHECK" "$g/scripts/check-workflow-js-model.sh"
+    echo "$g/scripts/check-workflow-js-model.sh"
+}
+root=$(mk_root N8)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_js "$d" audit.workflow.js opus low
+guard=$(mk_guard_copy N8-guard)
+o=$(bash "$guard" --project-dir "$root" 2>&1)
+check "N8: missing estimator typed"          "1"     "$(printf '%s\n' "$o" | grep -c 'TYPE=estimator_missing')"
+check "N8: missing estimator STATUS=ERROR"   "ERROR" "$(field "$o" STATUS)"
+check "N8: nothing counted as checked"       "0"     "$(field "$o" AGENT_BUDGETS_CHECKED)"
+
+printf 'import sys\nsys.exit(1)\n' > "$(dirname "$guard")/../hooks-plugin/hooks/workflow-scale-estimate.py"
+o=$(bash "$guard" --project-dir "$root" 2>&1)
+check "N9: broken estimator typed"           "1"     "$(printf '%s\n' "$o" | grep -c 'TYPE=estimator_error .*VERDICT=none')"
+check "N9: broken estimator STATUS=ERROR"    "ERROR" "$(field "$o" STATUS)"
+check "N9: nothing counted as checked"       "0"     "$(field "$o" AGENT_BUDGETS_CHECKED)"
+
 # N7. The shipped templates: every one declares a budget its estimate fits in.
 # Not an exact count (a sibling PR may add a template), but non-vacuous: every
 # scanned file must have been budget-checked, and there must be files at all.
