@@ -288,9 +288,20 @@ A PreToolUse hook that creates a git stash checkpoint before destructive operati
 
 Skips checkpointing for build artifact removal (node_modules, dist, build, .next, etc.).
 
+Since #2652 the triggers are matched on parsed commands (`ast-grep --lang bash`),
+not on the raw command text: the phrase inside a `gh issue comment --body`, a
+heredoc body, a commit message or a `grep` pattern no longer checkpoints, nor
+does an `rm -rf` whose every operand is a literal absolute path outside the
+repository. The pre-#2652 regex matcher still runs over whatever the parser
+cannot prove inert, and alone when `ast-grep` is missing, so the hook
+over-checkpoints rather than under-checkpoints. `rm -rf "$T"` with `T` from
+`mktemp -d` still checkpoints — it cannot be resolved statically. Details and
+the full list of shapes that still checkpoint:
+[`hooks/README.md` § auto-checkpoint.sh](hooks/README.md#auto-checkpointsh).
+
 **Toggle:** `CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT=1`
 
-**Tests:** `bash hooks-plugin/hooks/test-auto-checkpoint.sh` (hermetic — fixture repos under `mktemp -d`).
+**Tests:** `bash hooks-plugin/hooks/test-auto-checkpoint.sh` (hermetic — fixture repos under `mktemp -d`; the #2652 sections need `ast-grep`, including a generated spelling probe and a differential against the pre-#2652 hook).
 
 ### event-logger.sh
 

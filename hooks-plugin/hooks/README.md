@@ -331,6 +331,83 @@ When blocked, the agent receives a helpful message explaining:
 
 ---
 
+## auto-checkpoint.sh
+
+A PreToolUse hook that stores a `git stash create` checkpoint before `git
+reset`, `git checkout -- <paths>`, `git restore` (unless staged-only), `rm -rf`,
+and `git clean -f`. It never blocks; the checkpoints it leaves are what
+`git-stash-reminder.sh` below reports.
+
+### What counts as a destructive command (#2652)
+
+Before #2652 every detector was a regex over the raw command string, so the hook
+fired on an `rm -rf` whose every operand was outside the repository and on
+commands that delete nothing: a `gh issue comment --body` quoting the phrase, a
+`--body-file` heredoc, a commit message, a `grep` for the pattern. One session
+recorded 50 redundant stashes. The verdict is now:
+
+```
+structural(command nodes)  OR  old-matcher(residue)
+```
+
+- **Structural.** `ast-grep --lang bash` yields each `command` node; its words
+  are rebuilt the way the shell delivers them (quotes removed, escapes
+  resolved), and an `rm`/`git` word anywhere in them is examined — so `sudo rm`,
+  `timeout 5 rm`, `\rm`, `/bin/rm`, `"rm"` and `xargs rm` need no wrapper list.
+  Any spelling of recursive + force counts (`-r -f`, `-Rf`, `--recursive
+  --force`, options after operands). The quoted arguments of a shell invoker
+  (`bash -c`, `sh -ec`, `bash --rcfile X -c`, `eval`, …), of a command piped
+  into one, and a heredoc fed to one are re-parsed as shell.
+- **Residue.** The old regex matcher still runs, over the command text with only
+  parser-proven inert spans removed: comments, output-only programs (`echo`,
+  `printf`, `gh`, `grep`, `rg`, `jq`, `cat`, `head`, `tail`, `wc`, `git
+  commit|log|show|diff|grep|status|tag|notes`) whose output reaches nothing
+  that executes it, and a direct `rm` whose operands were all proven to lie
+  outside the repository. Everything else — an unknown program (`python3 -c`,
+  `ssh`), a shell string, an assignment, a heredoc to `bash` — stays in the
+  residue.
+
+### Operand locality
+
+An `rm` is skipped only when every operand is a literal absolute path whose
+physical location (symlinks resolved through `cd -P`, compared
+case-insensitively) is neither inside `git rev-parse --show-toplevel` nor an
+ancestor of it, or an unquoted build-artifact name (`node_modules`, `dist`,
+`build`, …), now judged per operand. These still checkpoint:
+
+| Shape | Why |
+|-------|-----|
+| `rm -rf "$T"`, `rm -rf "$(mktemp -d)"` | Not statically resolvable. #2652 is **reduced** for this shape, not fixed |
+| `cd /tmp && rm -rf scratch` | A relative operand; the `cd` could point anywhere |
+| `rm -rf ~/x`, `rm -rf /tmp/{a,b}` | Tilde and brace expansion are not resolved |
+| `sudo rm -rf /tmp/x`, `bash -c "rm -rf /tmp/x"` | A wrapped `rm` stays in the residue, where the old matcher fires |
+
+### Fail safe, not fail open
+
+`bash-antipatterns.sh` and `validate-terraform-apply.sh` fail open without
+their parser. This hook does the opposite: no `ast-grep`, an `ast-grep` error or
+empty answer, or a tree-sitter `ERROR` node all leave the residue whole, so the
+old matcher decides and the pre-#2652 behaviour returns. A missed checkpoint
+loses work; a spare one costs a stash. `CLAUDE_HOOKS_AUTO_CHECKPOINT_NO_ASTGREP=1`
+forces that path (tests).
+
+### Testing
+
+```bash
+bash hooks-plugin/hooks/test-auto-checkpoint.sh
+```
+
+Beyond the #2610 cases, the suite pairs every false positive from the #2652
+thread with an in-repo control, generates ~350 spellings of the destructive
+commands (program spelling × wrapper × flag spelling × shell-string wrapper ×
+shell context) and requires each to checkpoint, and runs the same set through
+the pre-#2652 hook (`git show <ref>:…` at HEAD and at the pinned pre-fix commit,
+or the no-parser path when neither is in the clone): any spelling a baseline
+checkpoints but the hook skips fails the run. It needs `ast-grep`; without it
+the parser sections are skipped and the suite reports `SKIP`.
+
+---
+
 ## git-stash-session-init.sh
 
 A SessionStart hook that records the current git stash baseline for session-scoped tracking. Required by `git-stash-reminder.sh`.

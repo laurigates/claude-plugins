@@ -39,6 +39,12 @@ hooks-plugin/hooks/test-bash-antipatterns.sh
 # command must exit 2. Without the second assertion a run on a box lacking
 # ast-grep would report every row green over a hook that no-ops.
 terraform-plugin/hooks/test-validate-terraform-apply.sh
+# auto-checkpoint decides command position with ast-grep but fails SAFE without
+# it (the pre-#2652 regex matcher decides alone), so a parser-less run would be
+# green over exactly the behaviour #2652 changed. Without ast-grep the suite
+# runs its no-parser half and ends on a SKIP line; listing it here makes that
+# SKIP an error on the runner, which installs ast-grep for this purpose (#2652).
+hooks-plugin/hooks/test-auto-checkpoint.sh
 
 # uv  (workflow: "Set up uv")
 blueprint-plugin/scripts/tests/test-check-manifest-schema.sh
