@@ -304,7 +304,9 @@ stash_count() { git -C "$SANDBOX" stash list | wc -l | tr -d ' '; }
 # Run one command through a hook file inside repo $1. Sets VERDICT
 # (CHECKPOINT|skip, read off the hook's own notice) and LAST_RC. Extra
 # arguments are env assignments. `@TOP@` in the command becomes the repo path,
-# so an absolute in-repo spelling follows whichever sandbox runs it.
+# so an absolute in-repo spelling follows whichever sandbox runs it; `@PTOP@`
+# its physical path (`cd -P`), `@NAME@` its basename, and `@LINK@` a symlink
+# beside the repo (outside it) that points at it, made on first use.
 #
 # Every run first writes a fresh value into the TRACKED file. Two identical
 # `git stash create` calls in the same second produce the SAME commit, and
@@ -317,6 +319,13 @@ RUN_SEQ=0
 run_verdict_in() {
     local repo=$1 hook=$2 cmd=$3 json out
     shift 3
+    case $cmd in *@PTOP@*) cmd=${cmd//@PTOP@/$(cd -P "$repo" && pwd -P)} ;; esac
+    case $cmd in *@LINK@*)
+        [ -L "$repo.link" ] || ln -s "$repo" "$repo.link"
+        cmd=${cmd//@LINK@/$repo.link}
+        ;;
+    esac
+    cmd=${cmd//@NAME@/${repo##*/}}
     cmd=${cmd//@TOP@/$repo}
     RUN_SEQ=$((RUN_SEQ + 1))
     echo "modified tracked content $RUN_SEQ" > "$repo/tracked.txt"
@@ -426,6 +435,75 @@ expect CHECKPOINT "  control: '..' walking from outside back into the repository
 ln -s "$SANDBOX/src" "$NON_GIT_DIR/link-into-repo"
 expect CHECKPOINT "  control: a symlink outside the repository pointing into it" \
     "rm -rf \"$NON_GIT_DIR/link-into-repo/\""
+# Second names for an in-repo directory. The out-of-repo test compares file
+# identity (device and inode), so no spelling other than the one git reports
+# may pass for "outside" (third review of PR #2743: a macOS firmlink did).
+expect CHECKPOINT "  control: '..' through a symlink outside the repository, back into it" \
+    "rm -rf \"$NON_GIT_DIR/link-into-repo/../src\""
+expect CHECKPOINT "  control: an in-repo path that walks '..' and back" "rm -rf \"$SANDBOX/src/../src\""
+expect CHECKPOINT "  control: a build-artifact name followed by '..' (node_modules/../src)" \
+    'rm -rf node_modules/../src'
+ln -s "$NON_GIT_DIR/nowhere" "$NON_GIT_DIR/dangling"
+expect CHECKPOINT "  control: a path through a dangling symlink (its target is unknown)" \
+    "rm -rf \"$NON_GIT_DIR/dangling/x\""
+expect CHECKPOINT "  control: /proc/self/cwd resolves per process" 'rm -rf /proc/self/cwd/src'
+expect CHECKPOINT "  control: /dev/fd/N resolves per process" "rm -rf /dev/fd/3/src 3<\"$SANDBOX\""
+expect CHECKPOINT "  control: \$OLDPWD bound to the repository by a cd" 'cd /tmp && rm -rf "$OLDPWD/src"'
+expect CHECKPOINT "  control: \$PWD bound to the repository by a cd" "cd \"$SANDBOX\" && rm -rf \"\$PWD/src\""
+expect CHECKPOINT "  control: a relative operand after cd through a symlink into the repository" \
+    "cd \"$NON_GIT_DIR/link-into-repo\" && rm -rf ../src"
+SANDBOX_PHYS=$(cd -P "$SANDBOX" && pwd -P)
+NON_GIT_PHYS=$(cd -P "$NON_GIT_DIR" && pwd -P)
+if [ -d /System/Volumes/Data ] && [ "/System/Volumes/Data$SANDBOX_PHYS" -ef "$SANDBOX" ]; then
+    FIRM=/System/Volumes/Data$SANDBOX_PHYS
+    expect CHECKPOINT "  control: a macOS firmlink alias of an in-repo directory" "rm -rf \"$FIRM/src\""
+    expect CHECKPOINT "  control: a macOS firmlink alias of the repository itself" "rm -rf \"$FIRM\""
+    expect CHECKPOINT "  control: a firmlink alias of an in-repo glob" "rm -rf $FIRM/src/*"
+    expect CHECKPOINT "  control: the data volume that holds the repository" 'rm -rf /System/Volumes/Data'
+    expect CHECKPOINT "  control: a relative operand after cd to a firmlink alias" "cd \"$FIRM\" && rm -rf src"
+    VOL_SRC=/.vol/$(stat -f %d "$SANDBOX/src")/$(stat -f %i "$SANDBOX/src")
+    VOL_TOP=/.vol/$(stat -f %d "$SANDBOX_PHYS")/$(stat -f %i "$SANDBOX_PHYS")
+    expect CHECKPOINT "  control: a /.vol/<dev>/<ino> name for an in-repo directory" "rm -rf $VOL_SRC"
+    expect CHECKPOINT "  control: a /.vol/<dev>/<ino> name for the repository, plus a child" \
+        "rm -rf $VOL_TOP/src"
+    expect skip "out-of-repo literal spelled through the firmlink" \
+        "rm -rf \"/System/Volumes/Data$NON_GIT_PHYS/scratch\""
+else
+    echo "  NOTE: no /System/Volumes/Data alias for the sandbox; firmlink and /.vol rows skipped"
+fi
+# A linked worktree's git dir and common dir lie outside its work tree.
+WT_DIR="$NON_GIT_DIR/wt-2652"
+if git -C "$SANDBOX" worktree add -q --detach "$WT_DIR" 2>/dev/null; then
+    run_verdict_in "$WT_DIR" "$HOOK" "rm -rf \"$SANDBOX/.git/worktrees/wt-2652\""
+    if [ "$VERDICT" = CHECKPOINT ] && [ "$LAST_RC" = 0 ]; then
+        pass "  control: from a linked worktree, deleting its git dir"
+    else
+        fail "  control: from a linked worktree, deleting its git dir" "got $VERDICT (exit $LAST_RC)"
+    fi
+    run_verdict_in "$WT_DIR" "$HOOK" "rm -rf \"$SANDBOX/.git\""
+    if [ "$VERDICT" = CHECKPOINT ] && [ "$LAST_RC" = 0 ]; then
+        pass "  control: from a linked worktree, deleting the common dir"
+    else
+        fail "  control: from a linked worktree, deleting the common dir" "got $VERDICT (exit $LAST_RC)"
+    fi
+    run_verdict_in "$WT_DIR" "$HOOK" "rm -rf \"$SANDBOX/.git/refs\""
+    if [ "$VERDICT" = CHECKPOINT ] && [ "$LAST_RC" = 0 ]; then
+        pass "  control: from a linked worktree, deleting a directory inside the common dir"
+    else
+        fail "  control: from a linked worktree, deleting a directory inside the common dir" \
+            "got $VERDICT (exit $LAST_RC)"
+    fi
+    run_verdict_in "$WT_DIR" "$HOOK" "rm -rf \"$NON_GIT_DIR/scratch\""
+    if [ "$VERDICT" = skip ] && [ "$LAST_RC" = 0 ]; then
+        pass "from a linked worktree, an out-of-repo literal is still skipped"
+    else
+        fail "from a linked worktree, an out-of-repo literal is still skipped" "got $VERDICT (exit $LAST_RC)"
+    fi
+    git -C "$SANDBOX" worktree remove --force "$WT_DIR"
+    git -C "$SANDBOX" stash clear
+else
+    fail "linked worktree fixture" "git worktree add failed"
+fi
 SANDBOX_UPPER=$(printf '%s' "$SANDBOX" | tr '[:lower:]' '[:upper:]')
 expect CHECKPOINT "  control: the repository path in another letter case" "rm -rf \"$SANDBOX_UPPER/src\""
 expect CHECKPOINT "  control: one out-of-repo and one in-repo operand" 'rm -rf /tmp/scratch-2652 ./src'
@@ -620,7 +698,13 @@ REP=("rm -rf ./src" "git checkout -- tracked.txt" "git restore tracked.txt" "git
 RM_ARGS=("-rf ./src" "-fr ./src" "-r -f ./src" "-f -r ./src" "-Rf ./src" "-rfv ./src"
     "--recursive --force ./src" "-r --force ./src" "--rec --for ./src" "-rf -- ./src"
     "-rf dummy" "-rf src/" "-rf ./src/*" '-rf "./src"' "-rf ./a ./src" "./src -rf"
-    "-rf @TOP@/src" '-rf "@TOP@"' "--interactive=never -rf ./src")
+    "-rf @TOP@/src" '-rf "@TOP@"' "--interactive=never -rf ./src"
+    "-rf @LINK@/src" '-rf "@LINK@/"' "-rf @LINK@/../@NAME@/src" "-rf @TOP@/src/../src"
+    "-rf node_modules/../src" "-rf /proc/self/cwd/src")
+if [ -n "${FIRM:-}" ]; then
+    RM_ARGS+=("-rf /System/Volumes/Data@PTOP@/src" '-rf "/System/Volumes/Data@PTOP@"'
+        "-rf /System/Volumes/Data@PTOP@/src/*")
+fi
 GIT_ARGS=("checkout -- tracked.txt" "checkout HEAD -- tracked.txt" "checkout -f -- tracked.txt"
     "-C . checkout -- tracked.txt" "-c core.pager=cat checkout -- tracked.txt"
     "--no-pager checkout -- tracked.txt" "restore tracked.txt" "restore --worktree tracked.txt"
@@ -766,6 +850,9 @@ for c in "rm -rf ./src" "git clean -fd"; do
     for x in "${EXEC_VIA_INERT[@]}"; do SPELLINGS+=("$(fill "$x" "$c")"); done
 done
 # The must-checkpoint controls from section A take part in the differential too.
+SPELLINGS+=('cd /tmp && rm -rf "$OLDPWD/src"' 'cd @TOP@ && rm -rf "$PWD/src"' 'cd @LINK@ && rm -rf ./src'
+    'cd @LINK@/src && rm -rf ../src')
+if [ -n "${FIRM:-}" ]; then SPELLINGS+=('cd /System/Volumes/Data@PTOP@ && rm -rf src'); fi
 SPELLINGS+=('echo "rm -rf ./src" | bash' "$(printf '%s\n' "cat <<'EOF' | bash" 'rm -rf ./src' 'EOF')"
     "X='rm -rf ./src'; \$X" "ssh host 'rm -rf ./src'" "python3 -c \"import os; os.system('rm -rf ./src')\"")
 

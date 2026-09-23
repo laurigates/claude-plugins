@@ -414,14 +414,31 @@ the old matcher checkpointed.
 
 ### Operand locality
 
-An `rm` is skipped only when every operand is a literal absolute path whose
-physical location (symlinks resolved through `cd -P`, compared
-case-insensitively) is neither inside `git rev-parse --show-toplevel` nor an
-ancestor of it, or an unquoted build-artifact name (`node_modules`, `dist`,
-`build`, …), now judged per operand. These still checkpoint:
+An `rm` is skipped only when every operand is a literal absolute path that is
+neither inside the repository nor an ancestor of it, or an unquoted
+build-artifact name (`node_modules`, `dist`, `build`, …) with no `..`
+component, now judged per operand. The repository is `git rev-parse
+--show-toplevel` plus its git dir and common dir, which lie outside the work
+tree in a linked worktree. "Neither inside nor an ancestor" must hold twice:
+
+- by **file identity**: `[ A -ef B ]` (device and inode) between the deepest
+  existing directory on the operand, every directory above it (climbing by
+  `/..`, which the kernel resolves), and each protected root and its ancestors.
+  A second name for an in-repo directory therefore does not pass for outside: a
+  macOS firmlink (`/System/Volumes/Data/Users/…` is `/Users/…`), a
+  `/.vol/<dev>/<ino>` path, a bind mount or a symlink. On macOS the ancestors
+  include the firmlink spelling's, so `/System/Volumes/Data` itself is one;
+- by the **path string**, symlinks resolved through `cd -P` and compared
+  case-insensitively, which also merges spellings that differ only in case on
+  a case-sensitive filesystem.
+
+These still checkpoint:
 
 | Shape | Why |
 |-------|-----|
+| `rm -rf /tmp/x/../y` where `/tmp/x` does not exist, `rm -rf /tmp/dangling-link/y` | Not resolvable now: a `..` after a missing component, or a dangling or looping symlink |
+| `rm -rf /proc/self/cwd/x`, `rm -rf /dev/fd/3/x 3<dir` | `/proc` and `/dev` names resolve per process, so the hook's view says nothing about rm's |
+| `rm -rf node_modules/../src` | A build-artifact name with a `..` component is `./src` (the old matcher's `\b` skipped it) |
 | `rm -rf "$T"`, `rm -rf "$(mktemp -d)"` | Not statically resolvable. #2652 is **reduced** for this shape, not fixed |
 | `cd /tmp && rm -rf scratch` | A relative operand; the `cd` could point anywhere |
 | `rm -rf ~/x`, `rm -rf /tmp/{a,b}` | Tilde and brace expansion are not resolved |

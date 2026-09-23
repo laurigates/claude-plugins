@@ -74,11 +74,17 @@
 #
 # ── rm operands: when is a deletion "outside the repository"? ────────────────
 #
-# Only when every operand is a literal ABSOLUTE path whose physical location
-# (symlinks followed through `cd -P`) is disjoint from `git rev-parse
-# --show-toplevel` — neither inside it nor an ancestor of it. A glob operand is
-# judged by its literal directory prefix. Anything else checkpoints:
+# Only when every operand is a literal ABSOLUTE path that is disjoint from the
+# repository — neither inside it nor an ancestor of it — both as a case-folded
+# physical path string (symlinks followed through `cd -P`) and by file identity
+# (`[ A -ef B ]` on device and inode, which a macOS firmlink, a /.vol path, a
+# bind mount or a symlink cannot disguise). The repository is `git rev-parse
+# --show-toplevel` plus its git dir and common dir. A glob operand is judged by
+# its literal directory prefix. Anything else checkpoints:
 #
+#   - a path the hook cannot resolve now: a `..` after a component that does
+#     not exist, a dangling or looping symlink, or anything through /proc or
+#     /dev, whose names resolve per process (/proc/self/cwd, /dev/fd/N)
 #   - a relative operand — a preceding `cd` in the same command could point it
 #     anywhere, so `cd /tmp && rm -rf scratch` still checkpoints
 #   - an operand carrying an expansion or substitution. `rm -rf "$T"` where T
@@ -90,7 +96,8 @@
 #
 # Build-artifact names (node_modules, dist, build, …) are exempt as before, but
 # per operand: `rm -rf dist ./src` now checkpoints, where the old matcher let the
-# first artifact name exempt the whole command.
+# first artifact name exempt the whole command. So does one holding a `..`
+# component (`node_modules/../src`), which the old matcher's `\b` let through.
 #
 # CLAUDE_HOOKS_AUTO_CHECKPOINT_NO_ASTGREP=1 forces the no-parser path (tests):
 # the old matcher alone, i.e. the pre-#2652 behaviour.
@@ -511,57 +518,128 @@ tokenize() {
 }
 
 # ── Is a literal absolute path outside the repository? ───────────────────────
+#
+# "Outside" is decided twice, and a path is exempt only when both agree:
+#
+#   - by FILE IDENTITY (device and inode, `[ A -ef B ]`), which a second name
+#     for the same directory cannot fool: a macOS firmlink
+#     (/System/Volumes/Data/Users/… is /Users/…), /.vol/<dev>/<ino>, a bind
+#     mount, a symlink (identity_disjoint below);
+#   - by the path STRING, case-folded (paths_disjoint below), which also merges
+#     two spellings that differ only in letter case on a case-sensitive
+#     filesystem, where identity would call them distinct.
+#
+# The protected roots are the work tree's top and the repository's git dir and
+# common dir; in a linked worktree those two lie outside the work tree.
+#
+# ANCS lists every directory whose deletion would take a root with it, by
+# string: each root's path prefixes and, on macOS, those of its firmlink
+# spelling under /System/Volumes/Data. Climbing by `..` alone misses those: the
+# data volume's root (/System/Volumes/Data) and /System hold /private/tmp/repo,
+# yet `..` from /private leads to /, not to them.
 REPO_TOP=""
+PROTECT=()
+PROTECT_LC=()
+ANCS=()
+add_ancestors() {
+  local a=$1
+  while :; do
+    ANCS+=("$a")
+    [ "$a" != / ] || break
+    a=${a%/*}
+    [ -n "$a" ] || a=/
+  done
+}
 ensure_repo_top() {
-  local t
+  local out lc line d top=""
+  local -a roots=() lcs=()
   if [ -n "$REPO_TOP" ]; then return 0; fi
-  t=$(git rev-parse --show-toplevel 2>/dev/null) || return 1
-  [ -n "$t" ] || return 1
-  REPO_TOP=$(CDPATH='' cd -P -- "$t" 2>/dev/null && pwd -P) || return 1
-  [ -n "$REPO_TOP" ]
+  # One git call and one subshell resolve all three (absolute, so each `cd -P`
+  # is independent of the last). A git without --path-format fails here, and
+  # every absolute operand then checkpoints. No `case` inside the substitution:
+  # bash 3.2 misparses its `)`.
+  out=$(git rev-parse --path-format=absolute --show-toplevel --git-dir --git-common-dir 2>/dev/null |
+    while IFS= read -r line; do
+      [ "${line#/}" != "$line" ] || exit 1
+      CDPATH='' cd -P -- "$line" 2>/dev/null || exit 1
+      pwd -P
+    done) || return 1
+  lc=$(printf '%s\n' "$out" | tr '[:upper:]' '[:lower:]') || return 1
+  while IFS= read -r line; do
+    [ -n "$line" ] || return 1
+    case $line in *[![:print:]]*) return 1 ;; esac
+    [ -n "$top" ] || top=$line
+    roots+=("$line")
+  done <<<"$out"
+  while IFS= read -r line; do lcs+=("$line"); done <<<"$lc"
+  [ "${#roots[@]}" = 3 ] && [ "${#lcs[@]}" = 3 ] || return 1
+  ANCS=()
+  for d in "${roots[@]}"; do
+    add_ancestors "$d"
+    if [ -d /System/Volumes/Data ] && [ "/System/Volumes/Data$d" -ef "$d" ]; then
+      add_ancestors "/System/Volumes/Data$d"
+    fi
+  done
+  PROTECT=("${roots[@]}")
+  PROTECT_LC=("${lcs[@]}")
+  REPO_TOP=$top
 }
 
-# Sets PHYS to the physical form of an absolute path: the longest existing
-# directory prefix is resolved through `cd -P` (so a symlink under /tmp that
-# points into the repo is seen for what it is), the non-existent remainder is
-# appended lexically, and a `..` after a non-existent component is refused as
-# unresolvable. A `..` is taken from the RESOLVED prefix, as the kernel does, so
-# `/tmp/link/..` is the parent of the link's target, not /tmp.
+# Reads an absolute path and sets:
+#   DEEP   the longest leading run of its components that the KERNEL resolves
+#          to an existing directory, spelled with the literal components (`..`
+#          included) so that identity_disjoint stats what rm will reach, not
+#          bash's string idea of it. Searched from the whole path down, because
+#          a longer prefix can resolve where a shorter one does not
+#          (/.vol/<dev>/<ino> exists; /.vol/<dev> does not).
+#   EXISTS 1 when that run is the whole path.
+#   PHYS   the physical string: DEEP through `cd -P`, the rest appended.
+# Refused (return 1, so the caller checkpoints), because what the path names
+# when rm runs cannot be read now:
+#   - a `..` after the existing run;
+#   - a first missing component that is a symlink (dangling, a loop, or a link
+#     to a non-directory): what it points at when rm runs is unknown;
+#   - a path through /proc or /dev, by name or by identity, whose names resolve
+#     per process (/proc/self/cwd, /dev/fd/N): the hook's own view of them says
+#     nothing about rm's.
 PHYS=""
+DEEP=""
+EXISTS=0
 physical_path() {
-  local rest=${1#/} cur=/ comp cand exists=1
+  local rest=${1#/} comp k kd n tail d
+  local -a comps=() pres=(/)
   while [ -n "$rest" ]; do
     comp=${rest%%/*}
     case $rest in
       */*) rest=${rest#*/} ;;
       *) rest="" ;;
     esac
-    case $comp in
-      '' | .) continue ;;
-      ..)
-        if [ "$exists" != 1 ]; then return 1; fi
-        cur=$(CDPATH='' cd -P -- "$cur" 2>/dev/null && pwd -P) || return 1
-        cur=${cur%/*}
-        [ -n "$cur" ] || cur=/
-        continue
-        ;;
-    esac
-    if [ "$cur" = / ]; then cand=/$comp; else cand=$cur/$comp; fi
-    if [ "$exists" = 1 ]; then
-      if [ -d "$cand" ]; then
-        cur=$cand
-        continue
-      fi
-      cur=$(CDPATH='' cd -P -- "$cur" 2>/dev/null && pwd -P) || return 1
-      exists=0
-      if [ "$cur" = / ]; then cand=/$comp; else cand=$cur/$comp; fi
-    fi
-    cur=$cand
+    case $comp in '' | .) continue ;; esac
+    comps+=("$comp")
+    pres+=("${pres[${#pres[@]} - 1]%/}/$comp")
   done
-  if [ "$exists" = 1 ]; then
-    cur=$(CDPATH='' cd -P -- "$cur" 2>/dev/null && pwd -P) || return 1
-  fi
-  PHYS=$cur
+  n=${#comps[@]}
+  case ${comps[0]-} in proc | dev) return 1 ;; esac
+  for ((kd = n; kd > 0; kd--)); do
+    if [ -d "${pres[kd]}" ]; then break; fi
+  done
+  for ((k = 1; k <= kd; k++)); do
+    if [ "${pres[k]}" -ef /proc ] || [ "${pres[k]}" -ef /dev ]; then return 1; fi
+  done
+  DEEP=${pres[kd]}
+  EXISTS=0
+  if [ "$kd" = "$n" ]; then EXISTS=1; fi
+  tail=""
+  for ((k = kd; k < n; k++)); do
+    comp=${comps[k]}
+    if [ "$comp" = .. ]; then return 1; fi
+    if [ "$k" = "$kd" ] && [ -L "${pres[k + 1]}" ]; then return 1; fi
+    tail=$tail/$comp
+  done
+  d=$(CDPATH='' cd -P -- "$DEEP" 2>/dev/null && pwd -P) || return 1
+  [ -n "$d" ] || return 1
+  PHYS=${d%/}$tail
+  [ -n "$PHYS" ] || PHYS=/
 }
 
 # 0 when the two physical paths are disjoint: neither equal, nor one inside the
@@ -572,28 +650,64 @@ physical_path() {
 # `/Users/me/repo`. On a case-sensitive filesystem this can only merge two
 # distinct paths, which errs toward checkpointing. A non-ASCII byte in either
 # path is refused outright — Unicode normalisation (NFC vs NFD) is the same
-# trap one level down.
+# trap one level down. Callers pass both paths already lower-cased (one `tr`
+# per operand, and one for the roots in ensure_repo_top).
 paths_disjoint() {
-  local a b both
-  case $1$2 in *[![:print:]]*) return 1 ;; esac
-  both=$(printf '%s\n%s' "$1" "$2" | tr '[:upper:]' '[:lower:]')
-  a=${both%%$'\n'*}
-  b=${both#*$'\n'}
+  local a=$1 b=$2
   if [ "$a" = / ] || [ "$b" = / ] || [ "$a" = "$b" ]; then return 1; fi
   case $a/ in "$b"/*) return 1 ;; esac
   case $b/ in "$a"/*) return 1 ;; esac
   return 0
 }
 
+# 0 when DEEP is none of the protected roots and sits below none of them, and —
+# when the whole path exists — is none of their ancestors. Every comparison is
+# `-ef` on a path the kernel resolves, so no spelling of a directory is trusted
+# to be its only name. "Below" climbs from DEEP by appending `/..`; "ancestor"
+# climbs from each root the same way and also checks ANCS. A level that cannot
+# be stat'ed (vanished, or longer than PATH_MAX) refuses, as does a climb deeper
+# than 255 levels.
+identity_disjoint() {
+  local up=$DEEP anc root n=0
+  while :; do
+    [ -e "$up" ] || return 1
+    for root in "${PROTECT[@]}"; do
+      if [ "$up" -ef "$root" ]; then return 1; fi
+    done
+    if [ "$up" -ef "$up/.." ]; then break; fi
+    up=$up/..
+    n=$((n + 1))
+    [ "$n" -lt 256 ] || return 1
+  done
+  [ "$EXISTS" = 1 ] || return 0
+  for anc in "${ANCS[@]}"; do
+    if [ "$DEEP" -ef "$anc" ]; then return 1; fi
+  done
+  for root in "${PROTECT[@]}"; do
+    anc=$root
+    n=0
+    while :; do
+      [ -e "$anc" ] || return 1
+      if [ "$DEEP" -ef "$anc" ]; then return 1; fi
+      if [ "$anc" -ef "$anc/.." ]; then break; fi
+      anc=$anc/..
+      n=$((n + 1))
+      [ "$n" -lt 256 ] || return 1
+    done
+  done
+  return 0
+}
+
 path_outside_repo() {
-  local p=$1 lit=$1 rest
+  local p=$1 lit=$1 rest root plc
   case $p in
     /*) ;;
     *) return 1 ;;
   esac
   case $p in
     *[\*\?\[]*)
-      # A glob matches only descendants of its literal directory prefix.
+      # A glob matches only descendants of its literal directory prefix, so
+      # that prefix stands in for the target.
       lit=${p%%[\*\?\[]*}
       lit=${lit%/*}
       rest=${p#"$lit"}
@@ -603,9 +717,16 @@ path_outside_repo() {
   esac
   physical_path "$lit" || return 1
   ensure_repo_top || return 1
-  paths_disjoint "$PHYS" "$REPO_TOP"
+  case $PHYS in *[![:print:]]*) return 1 ;; esac
+  plc=$(printf '%s' "$PHYS" | tr '[:upper:]' '[:lower:]') || return 1
+  for root in "${PROTECT_LC[@]}"; do
+    paths_disjoint "$plc" "$root" || return 1
+  done
+  identity_disjoint
 }
 
+# A build-artifact name, relative, with no `..` component (`node_modules/../src`
+# is ./src).
 BUILD_ARTIFACT_RE='^(node_modules|dist|build|\.next|\.cache|__pycache__|\.pytest_cache|target|\.build)(/.*)?$'
 
 # $1 = token index of an rm operand. 0 when deleting it cannot touch the repo's
@@ -616,6 +737,7 @@ rm_operand_exempt() {
   [ "${TOK_E[k]}" = 0 ] || return 1
   case $a in
     /*) path_outside_repo "$a" ;;
+    */../* | */..) return 1 ;;
     *) [ "${TOK_Q[k]}" = 0 ] && [[ $a =~ $BUILD_ARTIFACT_RE ]] ;;
   esac
 }
