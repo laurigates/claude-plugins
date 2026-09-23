@@ -107,7 +107,7 @@ def test_stop_hook_feedback_clusters_are_measured_not_prescribed(tmp_path):
     )
     assert stop["title"] == f"Hook feedback: {sig}", stop["title"]
     # Prevalence is the point: the cluster appears in the report table.
-    assert f"| `{sig}` | 4 | watch |" in pr_body, pr_body
+    assert f"| `{sig}` | 4 | 1 | 1 | watch |" in pr_body, pr_body
 
 
 def test_clusters_carry_session_prevalence_and_repeat():
@@ -134,6 +134,27 @@ def test_clusters_carry_session_prevalence_and_repeat():
     assert stop["sessions"] == 3, stop
     assert stop["repeat_sessions"] == 2, stop
     assert clusters["total_sessions"] == 4, clusters["total_sessions"]
+
+
+def test_pr_body_renders_prevalence_and_repeat(tmp_path):
+    """Issue #2659 criterion 3 is about the REPORT, so the numbers must be in
+    the rendered PR body, not only in clusters.json where the friction-learner
+    agent would have to remember to copy them. Every cluster row carries its
+    distinct-session count and its same-session-repeat count.
+    """
+    sig = "stop:no-calendar-estimates"
+    events = []
+    for session, n in (("s1", 3), ("s2", 1), ("s3", 2)):
+        for _ in range(n):
+            ev = make_event(sig, kind="stop_hook_feedback", tool="-")
+            ev["session"] = session
+            events.append(ev)
+    _, pr_body = run_cluster(events, write_pr_body=True, tmp_dir=tmp_path)
+    assert (
+        "| Cluster | Count | Sessions | Repeat sessions | Deliverable | Path |"
+        in pr_body
+    ), pr_body
+    assert f"| `{sig}` | 6 | 3 | 2 | watch |" in pr_body, pr_body
 
 
 def test_exitplanmode_rejection_is_classify_required():
