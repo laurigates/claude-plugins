@@ -28,13 +28,28 @@
 #   - residue is the command TEXT with only parser-PROVEN-inert spans blanked.
 #     It starts as the whole command. A span is removed only on positive
 #     evidence from `ast-grep --lang bash` (tree-sitter-bash): a comment; an
-#     inert program (echo, printf, gh, grep, rg, jq, cat, head, tail, wc,
-#     `git commit|log|show|diff|grep|status|tag|notes`) whose output reaches no
+#     inert program (echo, printf, grep, rg, jq, cat, head, tail, wc, `gh
+#     issue|pr|api|release|search|label|run|workflow|status`, `git
+#     commit|log|show|diff|grep|status|tag|notes`) whose output reaches no
 #     executing consumer — not piped into, redirected to a file, or substituted
 #     into anything else; or a direct `rm` whose every operand the structural
 #     pass proved to lie outside the repository. Any other span — an unknown
 #     program, a shell invoker, an assignment, a heredoc fed to `bash` — stays in
 #     the residue, so the old matcher still sees it.
+#   - "inert" is a claim about what the program does with its arguments, so it
+#     is withdrawn wherever a program on that list can be made to execute them
+#     (the whole command then goes to the old matcher): `gh` outside the
+#     subcommands above (`gh alias set '!…'`, `gh alias import`, an extension,
+#     `gh config set browser`); an environment prefix on it (`GH_BROWSER=… gh`);
+#     `printf -v`; `rg --pre` / `--hostname-bin`; `git grep -O<pager>` /
+#     `--open-files-in-pager`. Those options are read from the words the shell
+#     delivers (quotes removed), so `printf '-v' …` and `git grep '-O…'` count.
+#     And a program name can be rebound in the same command — a function
+#     definition, `alias`, `hash -p`, `source`, `eval`, `trap`, an assignment to
+#     PATH — after which `cat 'rm -rf ./src'` runs whatever the name now means.
+#     Any of those also sends the whole command to the old matcher. Shell state
+#     from BEFORE the command is trusted: a name rebound by the user's profile,
+#     or found through a relative PATH entry, is not seen.
 #   - structural() walks each tree-sitter `command` node, rebuilds its argument
 #     vector the way the shell would (quotes removed, escapes resolved), and
 #     looks for an `rm`/`git` token ANYWHERE in it — so `sudo rm`, `timeout 5
@@ -199,17 +214,33 @@ export LC_ALL
 # tree-sitter-bash places the `| tail -1` of `gh … <<'EOF' | tail -1` INSIDE the
 # heredoc redirect, so the redirected-statement arm is what sees `cat <<EOF |
 # bash` at all.
-INERT_PROGS='^(echo|printf|gh|grep|egrep|fgrep|rg|jq|cat|head|tail|wc)$'
+#
+# `gh` is inert only under the subcommands below, which take their arguments as
+# data. Elsewhere gh executes them: `gh alias set x '!cmd'` (or `--shell`, or
+# `gh alias import -`) then `gh x` runs cmd through sh; an unknown subcommand is
+# an alias or an extension; `gh config set browser 'cmd'` is run by `--web`. An
+# environment prefix withdraws inertness from every program here, since it can
+# name what gh itself runs (`GH_BROWSER='cmd' gh pr view --web`).
+INERT_PROGS='^(echo|printf|grep|egrep|fgrep|rg|jq|cat|head|tail|wc)$'
 INERT_GIT='^git[ \t]+(commit|log|show|diff|grep|status|tag|notes)([ \t\n]|$)'
+INERT_GH='^gh[ \t]+(issue|pr|api|release|search|label|run|workflow|status)([ \t\n]|$)'
+# A standalone assignment to one of these rebinds what a later program name
+# means: PATH (and zsh's tied `path`), zsh's function/alias/command tables, and
+# bash's hash and alias tables.
+REBIND_VARS='PATH|path|fpath|FPATH|functions|aliases|galiases|saliases|commands|builtins|BASH_CMDS|BASH_ALIASES'
 BENIGN_REDIRECT='^[0-9]*(>|>>|&>|&>>|>\|)[ \t]*/dev/(null|stdout|stderr|tty)$|^[0-9]*>&[ \t]*[12]$|^[0-9]*[<>]&-$|^[0-9]*<[ \t]*[^<>&|( \t]+$'
 RM_NAME='^\\?(/[^/ \t]+)*/?rm$'
 INVOKER_WORD='^\\?(/[^/ \t]+)*/?(sh|bash|zsh|ksh|dash|ash|mksh|yash|fish|eval)$'
 
 INERT_UTILS="utils:
   inert-name:
-    any:
-      - has: { field: name, regex: '${INERT_PROGS}' }
-      - regex: '${INERT_GIT}'
+    all:
+      - kind: command
+      - not: { has: { kind: variable_assignment } }
+      - any:
+          - has: { field: name, regex: '${INERT_PROGS}' }
+          - regex: '${INERT_GIT}'
+          - regex: '${INERT_GH}'
   data-subst:
     kind: command_substitution
     inside: { stopBy: { kind: command }, kind: command, matches: inert-name }
@@ -217,8 +248,6 @@ INERT_UTILS="utils:
     all:
       - kind: command
       - matches: inert-name
-      - not: { has: { stopBy: end, regex: '^--pre' } }
-      - not: { all: [ { has: { field: name, regex: '^printf\$' } }, { has: { stopBy: end, regex: '^-v' } } ] }
       - not: { inside: { stopBy: end, kind: command_substitution, not: { matches: data-subst } } }
       - not: { inside: { stopBy: end, any: [ { kind: process_substitution }, { kind: function_definition } ] } }
       - not:
@@ -251,6 +280,22 @@ id: inert-cmd
 language: bash
 ${INERT_UTILS}
 rule: { matches: inert-command }
+---
+id: iname
+language: bash
+${INERT_UTILS}
+rule: { matches: inert-name }
+---
+id: rebind
+language: bash
+rule:
+  any:
+    - kind: function_definition
+    - { kind: variable_assignment, regex: '^(${REBIND_VARS})(\\[|\\+?=)' }
+---
+id: decl
+language: bash
+rule: { kind: declaration_command }
 ---
 id: inert-stmt
 language: bash
@@ -670,6 +715,85 @@ git_reason() {
   return 0
 }
 
+# ── When "inert" does not hold ───────────────────────────────────────────────
+#
+# Both checks read the tokenised words (TOK_*), so quoting cannot hide an
+# option: `printf '-v' c …`, `git grep "-O…"` and `e''val` are seen as the shell
+# delivers them. A word this hook cannot know (TOK_E) in a position that could
+# spell the option counts as the option. A hit sends the whole command to the
+# old matcher (FORCE_LEGACY).
+FORCE_LEGACY=0
+
+# 0 when an inert-named program's own options make it execute an argument:
+# `printf -v VAR` (a later `eval "$VAR"` runs it), `rg --pre CMD` /
+# `--hostname-bin CMD`, `git grep -O<pager>` / `--open-files-in-pager=<pager>`
+# (git parses short-option clusters and any unique long-option prefix).
+inert_executes() {
+  local t=${#TOK_VAL[@]} k
+  [ "$t" -gt 1 ] || return 1
+  case ${TOK_VAL[0]} in
+    printf)
+      # Options end at the first non-option word, and printf's only one is -v.
+      [ "${TOK_E[1]}" = 0 ] || return 0
+      case ${TOK_VAL[1]} in
+        --) return 1 ;;
+        -*) return 0 ;;
+      esac
+      ;;
+    rg)
+      for ((k = 1; k < t; k++)); do
+        [ "${TOK_E[k]}" = 0 ] || return 0
+        case ${TOK_VAL[k]} in --pre* | --hostname-bin*) return 0 ;; esac
+      done
+      ;;
+    git)
+      [ "${TOK_VAL[1]}" = grep ] || return 1
+      for ((k = 2; k < t; k++)); do
+        [ "${TOK_E[k]}" = 0 ] || return 0
+        case ${TOK_VAL[k]} in
+          --op*) return 0 ;;
+          --*) ;;
+          -*O*) return 0 ;;
+        esac
+      done
+      ;;
+  esac
+  return 1
+}
+
+# 0 when a tokenised command can rebind what a later program name means: a
+# builtin that defines or loads names (alias, hash, source, eval, trap, …), an
+# unknown program word (it could be any of those), or a word naming PATH or a
+# name table (`read -r PATH`, `export PATH=…`, `set -A path …`).
+REBIND_CMDS='^(alias|hash|enable|disable|source|\.|eval|trap|autoload|zmodload|functions|setopt|unsetopt|emulate|shopt)$'
+REBIND_WORD="^(${REBIND_VARS})(\\[.*\\])?(\\+?=.*)?\$"
+rebinds_names() {
+  local t=${#TOK_VAL[@]} k v
+  for ((k = 0; k < t; k++)); do
+    if [ "${TOK_E[k]}" = 0 ] && [[ ${TOK_VAL[k]} =~ $REBIND_WORD ]]; then return 0; fi
+  done
+  # The program word: past NAME=value prefixes and the precommand words that
+  # keep the next word a builtin (`builtin eval`, `command -p eval`).
+  k=0
+  while [ "$k" -lt "$t" ]; do
+    v=${TOK_VAL[k]}
+    [ "${TOK_E[k]}" = 0 ] || return 0
+    if [[ $v =~ ^[A-Za-z_][A-Za-z0-9_]*(\[[^]]*\])?\+?= ]]; then
+      k=$((k + 1))
+      continue
+    fi
+    case $v in
+      builtin | command | exec | noglob | nocorrect | time | - | -?*)
+        k=$((k + 1))
+        continue
+        ;;
+    esac
+    [[ $v =~ $REBIND_CMDS ]]
+    return
+  done
+  return 1
+}
+
 # ── Residue painting ─────────────────────────────────────────────────────────
 #
 # SEGS holds disjoint "<start> <end> <label>" segments covering the snippet.
@@ -743,7 +867,7 @@ HAS_PARSE_ERROR=0
 analyse() {
   local snippet=$1 top=$2
   local nodes rid s e key text t k first base owned invoker
-  local inert_keys=" " piped_keys=" " cmd_list=() paint_list=()
+  local inert_keys=" " piped_keys=" " cmd_list=() paint_list=() check_list=()
   nodes=$(nodes_of "$snippet")
 
   while read -r rid s e; do
@@ -762,8 +886,40 @@ analyse() {
       subst | hot-stmt) paint_list+=("$s $e K") ;;
       sh-heredoc) QUEUE+=("${snippet:s:e-s}") ;;
       cmd) cmd_list+=("$s $e") ;;
+      rebind) FORCE_LEGACY=1 ;;
+      iname | decl) check_list+=("$rid $s $e") ;;
     esac
   done <<<"$nodes"
+
+  # Withdraw "inert" where it does not hold (see inert_executes / rebinds_names).
+  # Only printf, rg and `git grep` have an executing option, so only they are
+  # tokenised here; a declaration is checked for what it assigns.
+  for key in "${check_list[@]+"${check_list[@]}"}"; do
+    read -r rid s e <<<"$key"
+    text=${snippet:s:e-s}
+    case $rid in
+      iname)
+        case $text in
+          printf | printf[[:space:]]* | rg | rg[[:space:]]* | git[[:space:]]*grep*) ;;
+          *) continue ;;
+        esac
+        tokenize "$text"
+        if inert_executes; then FORCE_LEGACY=1; fi
+        ;;
+      decl)
+        tokenize "$text"
+        for ((k = 1; k < ${#TOK_VAL[@]}; k++)); do
+          # A nameref (`declare -n r=PATH`), or a name this hook cannot read
+          # (`export "$n=…"`). An expansion in the VALUE of a literal name is fine.
+          case ${TOK_VAL[k]} in [-+]*n*) FORCE_LEGACY=1 ;; esac
+          if [ "${TOK_E[k]}" = 1 ] && ! [[ ${TOK_VAL[k]} =~ ^[A-Za-z_][A-Za-z0-9_]*\+?= ]]; then
+            FORCE_LEGACY=1
+          fi
+        done
+        if rebinds_names; then FORCE_LEGACY=1; fi
+        ;;
+    esac
+  done
 
   for key in "${cmd_list[@]+"${cmd_list[@]}"}"; do
     read -r s e <<<"$key"
@@ -772,6 +928,7 @@ analyse() {
     tokenize "$text"
     t=${#TOK_VAL[@]}
     owned=0
+    if rebinds_names; then FORCE_LEGACY=1; fi
 
     # A shell invoker anywhere in the word list makes every quoted or escaped
     # argument a script: re-parse it as shell. No option parsing — the
@@ -880,8 +1037,10 @@ while [ "${#QUEUE[@]}" -gt 0 ] && [ "$depth" -lt 3 ] && [ "$reentered" -lt 16 ];
 done
 
 # A parse with an ERROR node is a shape tree-sitter did not understand, so no
-# span of it is trusted as inert: the old matcher reads the whole command.
-if [ "$HAS_PARSE_ERROR" = 1 ]; then
+# span of it is trusted as inert: the old matcher reads the whole command. The
+# same holds when an "inert" program could be made to run its arguments, or a
+# program name could be rebound (FORCE_LEGACY).
+if [ "$HAS_PARSE_ERROR" = 1 ] || [ "$FORCE_LEGACY" = 1 ]; then
   checkpoint_if_legacy "$COMMAND"
   exit 0
 fi

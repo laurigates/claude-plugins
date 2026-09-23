@@ -360,12 +360,36 @@ structural(command nodes)  OR  old-matcher(residue)
   into one, and a heredoc fed to one are re-parsed as shell.
 - **Residue.** The old regex matcher still runs, over the command text with only
   parser-proven inert spans removed: comments, output-only programs (`echo`,
-  `printf`, `gh`, `grep`, `rg`, `jq`, `cat`, `head`, `tail`, `wc`, `git
+  `printf`, `grep`, `rg`, `jq`, `cat`, `head`, `tail`, `wc`, `gh
+  issue|pr|api|release|search|label|run|workflow|status`, `git
   commit|log|show|diff|grep|status|tag|notes`) whose output reaches nothing
   that executes it, and a direct `rm` whose operands were all proven to lie
   outside the repository. Everything else — an unknown program (`python3 -c`,
   `ssh`), a shell string, an assignment, a heredoc to `bash` — stays in the
   residue.
+
+### When an "inert" program is not inert
+
+Some programs on that list can be made to execute their arguments, and a
+program name can be rebound earlier in the same command. In each case below the
+whole command goes to the old matcher. The option checks read the words the
+shell delivers, so `printf '-v' …` and `git grep '-O…'` count as well.
+
+| Shape | What runs |
+|-------|-----------|
+| `gh alias set x '!cmd'`, `gh alias set --shell`, `gh alias import -`, then `gh x` | `cmd`, through `sh` |
+| `gh` with any other subcommand not listed above | an alias or an extension |
+| `GH_BROWSER='cmd' gh pr view --web`, or any environment prefix | whatever the variable names |
+| `printf -v VAR …` | the text, once `VAR` is expanded as a command |
+| `rg --pre CMD`, `rg --hostname-bin CMD` | `CMD` |
+| `git grep -O<pager>`, `--open-files-in-pager=<pager>` (any unique prefix, any short-option cluster) | `<pager>`, through the shell |
+| A function definition, `alias`, `hash`, `source`/`.`, `eval`, `trap`, `enable`, `autoload`, `setopt`, `shopt` | a rebound `cat`, `grep`, … |
+| An assignment to `PATH`/`path`, zsh's `functions`/`aliases`/`commands`, bash's `BASH_CMDS`/`BASH_ALIASES`; `read`/`export`/`declare` naming one; a `declare -n` nameref | a different binary behind the same name |
+| A program word the hook cannot read (`$c …`) | anything, including `eval` |
+
+Shell state from before the command is trusted: a program name rebound by the
+user's shell profile, or found through a relative `PATH` entry after a `cd`, is
+not seen, and such a command can be skipped where the old matcher checkpointed.
 
 ### Operand locality
 
@@ -398,9 +422,10 @@ bash hooks-plugin/hooks/test-auto-checkpoint.sh
 ```
 
 Beyond the #2610 cases, the suite pairs every false positive from the #2652
-thread with an in-repo control, generates ~350 spellings of the destructive
+thread with an in-repo control, generates ~450 spellings of the destructive
 commands (program spelling × wrapper × flag spelling × shell-string wrapper ×
-shell context) and requires each to checkpoint, and runs the same set through
+shell context, plus every shape in the table above) and requires each to
+checkpoint, and runs the same set through
 the pre-#2652 hook (`git show <ref>:…` at HEAD and at the pinned pre-fix commit,
 or the no-parser path when neither is in the clone): any spelling a baseline
 checkpoints but the hook skips fails the run. It needs `ast-grep`; without it

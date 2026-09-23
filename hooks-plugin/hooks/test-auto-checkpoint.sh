@@ -14,7 +14,8 @@
 #      control that MUST still checkpoint.
 #   B. A GENERIC spelling probe: variants of every destructive base are
 #      generated mechanically (program spelling, prefix wrapper, rm flag
-#      spelling, git global options, shell-string wrapper, shell context) and
+#      spelling, git global options, shell-string wrapper, shell context, and an
+#      "inert" program made to run its arguments or rebound by name) and
 #      every one must checkpoint. Hand-enumerated spellings are what let five
 #      earlier attempts ship a fail-open (`\rm`, `bash --norc -c`, …).
 #   C. A DIFFERENTIAL: the same set runs through every baseline — the hook's own
@@ -472,6 +473,35 @@ expect CHECKPOINT "  control: rg --pre runs a command" "rg --pre 'rm -rf ./src' 
 expect CHECKPOINT "  control: a remote shell string keeps the old matcher" "ssh host 'rm -rf ./src'"
 expect CHECKPOINT "  control: python -c keeps the old matcher" "python3 -c \"import os; os.system('rm -rf ./src')\""
 
+# A program on the inert list that can be made to run its arguments, or whose
+# name the same command rebinds, is not inert (review of PR #2743). The skip rows
+# are the same programs used as data. Run in a scratch directory, `gh alias set
+# '!…'`, `git grep -O`, `printf '-v'`, `GH_BROWSER`, a shadowing function and
+# `hash -p` each deleted ./src (gh 2.101.0, git 2.55.0, bash 5.3, zsh).
+expect skip "gh api -f body= quoting the pattern" \
+    "gh api repos/o/r/issues/1/comments -f body='rm -rf ./src is quoted here'"
+expect skip "gh pr comment --body quoting the pattern" "gh pr comment 1 --body 'never run git reset --hard'"
+expect skip "git grep for the pattern" "git grep -n 'rm -rf' -- '*.sh'"
+expect skip "printf with a format, carrying the pattern" "printf '%s\n' 'rm -rf ./src'"
+expect skip "an export with an expansion in its value, then a gh body" \
+    'export FOO="$BAR"; gh issue comment 1 --body "rm -rf ./src"'
+expect CHECKPOINT "  control: gh alias set '!…' runs the alias through sh" "gh alias set nuke '!rm -rf ./src' && gh nuke"
+expect CHECKPOINT "  control: gh alias set --shell" "gh alias set --shell nuke 'rm -rf ./src'; gh nuke"
+expect CHECKPOINT "  control: gh alias import fed by printf" \
+    "printf 'nuke: \"!rm -rf ./src\"\\n' | gh alias import - && gh nuke"
+expect CHECKPOINT "  control: an environment prefix on gh (GH_BROWSER runs on --web)" \
+    "GH_BROWSER='rm -rf ./src' gh pr view 1 --web"
+expect CHECKPOINT "  control: an unknown gh subcommand (an alias or an extension)" "gh nuke 'rm -rf ./src'"
+expect CHECKPOINT "  control: git grep -O runs its pager" "git grep -O'rm -rf ./src' -e y"
+expect CHECKPOINT "  control: git grep --open-files-in-pager=" "git grep --open-files-in-pager='rm -rf ./src' y"
+expect CHECKPOINT "  control: git grep with -O inside quotes" "git grep '-Orm -rf ./src' y"
+expect CHECKPOINT "  control: printf with -v inside quotes, run by perl" "printf '-v' c 'rm -rf ./src'; perl -e 'system \$ARGV[0]' \"\$c\""
+expect CHECKPOINT "  control: printf -v from a heredoc substitution" \
+    "$(printf '%s\n' "printf -v c \"\$(cat <<'EOF'" 'rm -rf ./src' 'EOF' ')"; eval "$c"')"
+expect CHECKPOINT "  control: a function shadowing an inert name" "cat() { eval \"\$*\"; }; cat 'rm -rf ./src'"
+expect CHECKPOINT "  control: hash -p rebinding an inert name" "hash -p /bin/sh cat; cat -c 'rm -rf ./src'"
+expect CHECKPOINT "  control: PATH reassigned before an inert name" "PATH=/tmp/evil:\$PATH; cat -c 'rm -rf ./src'"
+
 echo "  == B + C. generated spelling probe, and the differential against every baseline =="
 
 dq() { # double-quote a string for the shell
@@ -517,18 +547,20 @@ REP=("rm -rf ./src" "git checkout -- tracked.txt" "git restore tracked.txt" "git
 RM_ARGS=("-rf ./src" "-fr ./src" "-r -f ./src" "-f -r ./src" "-Rf ./src" "-rfv ./src"
     "--recursive --force ./src" "-r --force ./src" "--rec --for ./src" "-rf -- ./src"
     "-rf dummy" "-rf src/" "-rf ./src/*" '-rf "./src"' "-rf ./a ./src" "./src -rf"
-    "-rf @TOP@/src" '-rf "@TOP@"')
+    "-rf @TOP@/src" '-rf "@TOP@"' "--interactive=never -rf ./src")
 GIT_ARGS=("checkout -- tracked.txt" "checkout HEAD -- tracked.txt" "checkout -f -- tracked.txt"
     "-C . checkout -- tracked.txt" "-c core.pager=cat checkout -- tracked.txt"
     "--no-pager checkout -- tracked.txt" "restore tracked.txt" "restore --worktree tracked.txt"
     "restore --staged --worktree tracked.txt" "restore -W tracked.txt" "restore ."
     "clean -fd" "clean -df" "clean -d -f" "clean --force -d" "clean -fdx" "clean -xdf" "clean -f"
     "reset --hard" "reset --hard HEAD~1" "reset" "reset --mixed HEAD" "-C . reset --hard"
-    "--git-dir=.git reset --hard" "rm -rf ./src")
+    "--git-dir=.git reset --hard" "--work-tree=. clean -fd" "--git-dir=.git checkout -- tracked.txt"
+    "rm -rf ./src")
 STYLES=(backslash dquote squote split abs)
-WRAPPERS=('env X=1 ' 'X=1 ' 'timeout 5 ' 'sudo ' 'command ' 'nice -n 5 ' 'nohup ' 'exec ' 'time ' 'xargs -r ')
+WRAPPERS=('env X=1 ' 'X=1 ' 'timeout 5 ' 'sudo ' 'command ' 'nice -n 5 ' 'nohup ' 'exec ' 'time ' 'xargs -r '
+    'timeout --signal=KILL 5 ' 'nice --adjustment=5 ' 'sudo --user=root ')
 SHELL_WRAPS=('bash -c DQ' 'sh -c SQ' 'sh -ec SQ' 'bash --norc -c DQ' 'bash --rcfile /dev/null -c DQ'
-    'bash -lc DQ' 'zsh -c SQ' 'eval DQ' '\bash -c DQ' '/bin/sh -c SQ' 'sudo bash -c SQ'
+    'bash --init-file /dev/null -c DQ' 'bash --rcfile=/dev/null -c DQ' 'bash -lc DQ' 'zsh -c SQ' 'eval DQ' '\bash -c DQ' '/bin/sh -c SQ' 'sudo bash -c SQ'
     'bash -c SQ _ extra' 'bash -o pipefail -c DQ' 'env -i bash -c SQ' 'echo SQ | sh'
     'printf "%s\n" SQ | bash' 'bash <<< SQ' 'HEREDOC')
 SHELL_INNER=("${REP[@]}" "rm -r -f ./src" "rm --recursive --force ./src" '\rm -rf ./src' "git -C . clean -d -f")
@@ -557,6 +589,54 @@ for x in 'for d in 1; do X; done' 'X 2>&1 | cat' 'if true; then X; fi'; do
             SPELLINGS+=("$(fill "$x" "$(wrap_shell "$h" "$c")")")
         done
     done
+done
+# Programs the hook treats as inert, made to run their arguments, and program
+# names the same command rebinds (review of PR #2743). One X per template; ~NL~
+# is a line break. `bash --rcfile=/dev/null` above is a spelling bash itself
+# rejects, kept so a parser that splits an attached `=value` cannot drop it.
+EXEC_VIA_INERT=()
+while IFS= read -r line; do
+    [ -n "$line" ] && EXEC_VIA_INERT+=("${line//'~NL~'/$'\n'}")
+done <<'TEMPLATES'
+gh alias set nuke '!X' && gh nuke
+gh alias set --shell nuke 'X'; gh nuke
+printf 'nuke: "!X"\n' | gh alias import - && gh nuke
+GH_CONFIG_DIR=/tmp/ghc gh alias set nuke '!X' && GH_CONFIG_DIR=/tmp/ghc gh nuke
+gh config set browser 'X' && gh browse
+GH_BROWSER='X' gh pr view 1 --web
+gh nuke 'X'
+gh extension exec nuke 'X'
+git grep -O'X' -e y
+git grep -nO'X' y
+git grep --open-files-in-pager='X' y
+git grep --op='X' y
+git grep '-OX' y
+git grep "--open-files-in-pager=X" y
+git grep $'-OX' y
+printf -v c 'X'; eval "$c"
+printf '-v' c 'X'; eval "$c"
+printf "-v" c 'X'; eval "$c"
+printf $'\x2dv' c 'X'; eval "$c"
+printf '-v' c 'X'; perl -e 'system $ARGV[0]' "$c"
+printf -v c "$(cat <<'EOF'~NL~X~NL~EOF~NL~)"; eval "$c"
+rg --pre 'X' y
+rg '--pre' 'X' y
+cat() { eval "$*"; }; cat 'X'
+function grep { eval "$1"; }; grep 'X'
+hash -p /bin/sh cat; cat -c 'X'
+alias cat='sh -c'~NL~cat 'X'
+trap 'eval "$BASH_COMMAND"' DEBUG; echo 'X'
+PATH=/tmp/evil:$PATH; cat -c 'X'
+e''val 'cat() { sh -c "$1"; }'; cat 'X'
+source /tmp/defs.sh; cat 'X'
+c=eval; $c 'cat() { sh -c "$1"; }'; cat 'X'
+read -r PATH <<< /tmp/evil; cat -c 'X'
+export "PATH=/tmp/evil"; cat -c 'X'
+declare -n r=PATH; r=/tmp/evil; cat -c 'X'
+BASH_CMDS[cat]=/bin/sh; cat -c 'X'
+TEMPLATES
+for c in "rm -rf ./src" "git clean -fd"; do
+    for x in "${EXEC_VIA_INERT[@]}"; do SPELLINGS+=("$(fill "$x" "$c")"); done
 done
 # The must-checkpoint controls from section A take part in the differential too.
 SPELLINGS+=('echo "rm -rf ./src" | bash' "$(printf '%s\n' "cat <<'EOF' | bash" 'rm -rf ./src' 'EOF')"
