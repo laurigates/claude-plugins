@@ -4,7 +4,7 @@ description: Add, modify, or delete a skill or plugin in this repo — frontmatt
 allowed-tools: Read, Edit, Write, Grep, Glob, Bash(mkdir *), Bash(jq *), Bash(git log *), Bash(bash scripts/check-docs-index.sh *), Bash(bash scripts/plugin-compliance-check.sh *), TodoWrite
 argument-hint: (no args)
 created: 2026-07-29
-modified: 2026-07-29
+modified: 2026-09-23
 reviewed: 2026-07-29
 ---
 
@@ -95,20 +95,38 @@ When creating, modifying, or deleting a plugin, update these files:
 > **Quick scaffold (Claude Code 2.1.157):** `claude plugin init <name>` scaffolds a new plugin in `.claude/skills` (auto-loaded, no marketplace entry needed). Use it for local/quick plugins; for plugins published from this repo, follow the full marketplace + release-please steps below.
 
 1. Create plugin directory structure (see Project Structure in `CLAUDE.md`)
-2. Create `.claude-plugin/plugin.json` with required fields
+2. Create `.claude-plugin/plugin.json`:
+   ```json
+   {
+     "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+     "name": "new-plugin",
+     "version": "1.0.0",
+     "description": "Plugin description",
+     "author": {
+       "name": "Lauri Gates"
+     },
+     "license": "MIT",
+     "keywords": ["keyword1", "keyword2"]
+   }
+   ```
+   `license` (from the allowlist `["MIT"]`) and `author.name` are required here and in the marketplace entry below; `bash scripts/plugin-compliance-check.sh --license-only` fails the PR without them. The repo-root MIT `LICENSE` covers every plugin, so no per-plugin `LICENSE` file is needed.
 3. Create `README.md` with plugin documentation
-4. Add entry to `.claude-plugin/marketplace.json` (under the `plugins` array):
+4. Add entry to `.claude-plugin/marketplace.json` (under the `plugins` array), carrying the same `author` and `license` as the plugin's `plugin.json`:
    ```json
    {
      "name": "new-plugin",
      "source": "./new-plugin",
      "description": "Plugin description",
      "version": "1.0.0",
+     "author": {
+       "name": "Lauri Gates"
+     },
+     "license": "MIT",
      "keywords": ["keyword1", "keyword2"],
      "category": "category-name"
    }
    ```
-   Note: marketplace.json has structure `{ "name": "...", "plugins": [...] }` — add to the `plugins` array.
+   Note: marketplace.json has structure `{ "name": "...", "plugins": [...] }` — add to the `plugins` array. `python3 scripts/sync-plugin-configs.py --fix` generates this entry from the manifest.
 5. Add to `release-please-config.json`:
    ```json
    "new-plugin": {
