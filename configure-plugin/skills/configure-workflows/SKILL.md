@@ -1,8 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
+modified: 2026-09-23
 reviewed: 2026-06-03
-description: "GitHub Actions CI/CD workflows for container builds, tests, releases. Use when updating outdated action versions, adding multi-platform builds, or auditing workflows."
+description: "Whole-repo audit of .github/workflows/ — baseline workflows the project type is missing, and stale action pins. Use when reviewing a repo's CI as a set or bumping outdated action versions."
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"
