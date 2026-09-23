@@ -177,7 +177,7 @@ For each cluster with ≥3 occurrences, map to a concrete deliverable:
 | Tool error with a known flag-fix | Skill SKILL.md edit adding the correct flag |
 | Plan-mode entry / `ExitPlanMode` rejection | **Classify-required**: surface samples in the PR body, do NOT auto-prescribe a rule (see "Evidence gate" below) |
 | Push-to-PR-branch repeats | Hook adjustment: pre-push check for open PR on target branch |
-| `stop:*` / `hook-feedback:*` / `hook-error:*` | **Watch**: report prevalence and same-session repeat. A rule file cannot quiet a Stop hook; the fix lives in the emitting hook, so file or cite an issue against it |
+| `stop:*` / `hook-feedback:*` / `hook-error:*` | **Watch**: report prevalence (`sessions` / `total_sessions`) and same-session repeat (`repeat_sessions` / `sessions`), both read from the cluster in `clusters.json`. A rule file cannot quiet a Stop hook; the fix lives in the emitting hook, so file or cite an issue against it |
 
 #### Corroborate and escalate against the fast loop (Step 0 set)
 

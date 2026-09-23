@@ -159,7 +159,7 @@ def propose(signature: str, hits: list[dict]) -> dict:
         elif signature.startswith(("stop:", "hook-feedback:", "hook-error:")):
             # Hook output that is not a PreToolUse block (#2659). A rule file
             # cannot fix a noisy Stop hook; the hook itself has to change, so
-            # these are measured (count, same-session repeat) and never
+            # these are measured (count, sessions, repeat_sessions) and never
             # prescribed. The explicit branch keeps them off the `hook:` path.
             spec = {
                 "kind": "watch",
@@ -199,9 +199,17 @@ def propose(signature: str, hits: list[dict]) -> dict:
         if spec["body"]
         else ""
     )
+    per_session: dict[str, int] = {}
+    for h in hits:
+        key = h.get("session") or ""
+        per_session[key] = per_session.get(key, 0) + 1
     return {
         "signature": signature,
         "count": len(hits),
+        # Prevalence and same-session repeat (#2659): distinct sessions the
+        # cluster fired in, and how many of those it fired in more than once.
+        "sessions": len(per_session),
+        "repeat_sessions": sum(1 for n in per_session.values() if n > 1),
         "kind": spec["kind"],
         "path": spec["path"],
         "title": spec["title"],
