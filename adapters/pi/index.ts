@@ -223,11 +223,12 @@ export interface ClaudeEnvToolCallContext {
 /**
  * tool_call body for the Claude Code variables (see core/claude-env.ts). A
  * `read` of a SKILL.md records its directory. A `bash` call referencing
- * `CLAUDE_SKILL_DIR` or `CLAUDE_SESSION_ID` has `event.input.command`
- * rewritten in place; an unresolvable or ambiguous skill directory blocks the
- * call with a reason naming the fix. `indexedDirs` is consulted only when the
- * session tiers find nothing. pi clones tool arguments before `tool_call`
- * runs, so the rewrite reaches execution but not the transcript.
+ * `CLAUDE_SKILL_DIR`, `CLAUDE_PLUGIN_ROOT` or `CLAUDE_SESSION_ID` has
+ * `event.input.command` rewritten in place; an unresolvable or ambiguous skill
+ * directory blocks the call with a reason naming the fix. `indexedDirs` is
+ * consulted only when the session tiers find nothing. pi clones tool
+ * arguments before `tool_call` runs, so the rewrite reaches execution but not
+ * the transcript.
  */
 export function handleClaudeEnvToolCall(
   event: { toolName: string; input: Record<string, unknown> },

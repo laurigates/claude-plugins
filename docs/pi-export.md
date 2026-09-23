@@ -85,11 +85,13 @@ list` manage — so `pi list` will not show it; that is expected, not a failure.
 ## Claude Code variables in pi
 
 Claude Code substitutes `${CLAUDE_SKILL_DIR}` and `${CLAUDE_SESSION_ID}` into a
-skill's text before the model sees it. pi does neither: it performs no variable
+skill's text before the model sees it, and sets `${CLAUDE_PLUGIN_ROOT}` to the
+skill's plugin directory. pi does none of this: it performs no variable
 substitution, and its `bash` tool exports no such variables. Without the adapter,
 a command such as `task-add`'s `bash "${CLAUDE_SKILL_DIR}/../../scripts/ensure-udas.sh" --check`
-runs as `bash "/../../scripts/ensure-udas.sh" --check`. Around 50 skills that pi
-loads are affected.
+runs as `bash "/../../scripts/ensure-udas.sh" --check`. Around 60 skills that pi
+loads are affected. The OpenCode binding shares the same resolver
+(`adapters/core/claude-env.ts`).
 
 The adapter's `tool_call` handler rewrites the `bash` input before it runs.
 Skill text is untouched, so Claude Code's behaviour does not change.
@@ -97,9 +99,9 @@ Skill text is untouched, so Claude Code's behaviour does not change.
 | Step | Behaviour |
 |---|---|
 | Record | A `read` of a `*/SKILL.md` records that directory; a `/skill:` expansion (`<skill … location="…">` in the prompt) records its directory too |
-| Resolve | Every `${CLAUDE_SKILL_DIR}/<rel>` (or `$CLAUDE_SKILL_DIR/<rel>`) in the command must exist under the chosen directory. Read history is tried first (most recent first), then `/skill:` expansions, then every indexed skill |
-| Rewrite | One line, `export CLAUDE_SKILL_DIR='…' CLAUDE_SESSION_ID='…' PI_SESSION_FILE='…'`, is prepended, single-quote-escaped. Heredocs, `set -e`, and a leading `cd` behave as before. Commands that reference neither variable pass through unchanged |
-| Block | No candidate matches, or several indexed skills match different real files (two skills each shipping `scripts/run.sh`): the call is blocked and the reason tells the model to replace `${CLAUDE_SKILL_DIR}` with the absolute directory of the SKILL.md it is following |
+| Resolve | Every `${CLAUDE_SKILL_DIR}/<rel>` (or `$CLAUDE_SKILL_DIR/<rel>`) in the command must exist under the chosen directory, and every `${CLAUDE_PLUGIN_ROOT}/<rel>` under its plugin directory (`<plugin>/skills/<name>` → `<plugin>`). Read history is tried first (most recent first), then `/skill:` expansions, then every indexed skill |
+| Rewrite | One line, `export CLAUDE_SKILL_DIR='…' CLAUDE_PLUGIN_ROOT='…' CLAUDE_SESSION_ID='…' PI_SESSION_FILE='…'`, is prepended, single-quote-escaped, carrying only the variables the command references. Heredocs, `set -e`, and a leading `cd` behave as before. Commands that reference none of the variables pass through unchanged |
+| Block | No candidate matches, or several indexed skills match different real files (two skills each shipping `scripts/run.sh`): the call is blocked and the reason tells the model to replace `${CLAUDE_SKILL_DIR}` with the absolute directory of the SKILL.md it is following (and `${CLAUDE_PLUGIN_ROOT}` with that skill's plugin directory) |
 
 pi clones tool arguments before `tool_call` runs, so the prepended line reaches
 execution but not the transcript or the model's context.
