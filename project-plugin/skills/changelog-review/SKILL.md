@@ -4,7 +4,7 @@ description: Claude Code changelog analysis for plugin impact. Use when checking
 user-invocable: false
 allowed-tools: Bash(git log *), Bash(git diff *), Read, Write, Edit, Glob, Grep, WebFetch, TodoWrite
 created: 2026-01-14
-modified: 2026-07-06
+modified: 2026-09-23
 reviewed: 2026-07-06
 ---
 
@@ -225,10 +225,14 @@ Workflow flow:
 1. Run weekly on schedule
 2. Fetch changelog and compare versions (skip-if-exists is drift-aware: an open
    but unactioned tracking issue no longer suppresses *newer* versions)
-3. If new versions found: run the analyzer, open ONE tracking issue (highest
-   priority = deprecated identifiers still referenced in our code), ratchet the
-   version JSON via a tiny PR
-4. Label issues appropriately
+3. If new versions found: run the analyzer, then an opus run writes the
+   tracking-issue body (highest priority = deprecated identifiers still
+   referenced in our code) and the state-file entry to two files. The agent
+   files nothing itself.
+4. A bash step publishes them: it files the issue once (reusing an open issue
+   with the same title, never retrying a failed create), applies labels and
+   assignee with the workflow token, reads them back, records that read-back in
+   the version JSON, and opens the tiny ratchet PR (#2720)
 
 ## Agentic Optimizations
 
