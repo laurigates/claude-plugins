@@ -639,6 +639,27 @@ repos:
         language: system
         files: '^scripts/(check-workflow-tool-grants\.sh|tests/test-check-workflow-tool-grants\.sh)$'
         pass_filenames: false
+      - id: check-comment-deliverable-assertions
+        name: comment-posting Claude steps assert delivery + upload their transcript (#2630, #2719)
+        entry: bash ./scripts/check-comment-deliverable-assertions.sh
+        language: system
+        # Whole sweep, like tool-grants above: the Claude step and the assertion
+        # step that follows it live in the same file and can change together.
+        files: '^(\.github/workflows/.*\.ya?ml|scripts/(check-comment-deliverable-assertions|assert-pr-comment-delivered)\.sh)$'
+        pass_filenames: false
+      - id: test-check-comment-deliverable-assertions
+        name: comment-deliverable assertion sweep regression
+        entry: bash ./scripts/tests/test-check-comment-deliverable-assertions.sh
+        language: system
+        files: '^scripts/(check-comment-deliverable-assertions\.sh|tests/test-check-comment-deliverable-assertions\.sh)$'
+        pass_filenames: false
+      # Stubs gh and asserts on the endpoints queried, so it needs no network.
+      - id: test-assert-pr-comment-delivered
+        name: PR comment delivery assertion regression (#2630, #2719)
+        entry: bash ./scripts/tests/test-assert-pr-comment-delivered.sh
+        language: system
+        files: '^scripts/(assert-pr-comment-delivered\.sh|tests/test-assert-pr-comment-delivered\.sh)$'
+        pass_filenames: false
       # Only the self-test is wired here: check-audit-liveness.sh itself queries
       # `gh run list` / `gh issue list`, so it belongs in the scheduled sweep,
       # not in a pre-commit hook that must work offline.
