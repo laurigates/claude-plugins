@@ -114,7 +114,7 @@ the Trust caveat below — global is preferred). Equivalent by hand:
   via `resources_discover` — that would refeed the uncapped native listing
   it exists to replace.
 - Makes Claude Code's skill variables work in pi's `bash` tool via a
-  `tool_call` handler (pure helpers in `pi/claude-env.ts`). A command
+  `tool_call` handler (shared helpers in `core/claude-env.ts`). A command
   referencing `${CLAUDE_SKILL_DIR}` gets one `export CLAUDE_SKILL_DIR=…
   CLAUDE_SESSION_ID=… PI_SESSION_FILE=…` line prepended. The skill directory is
   the first candidate under which every `${CLAUDE_SKILL_DIR}/<rel>` in the

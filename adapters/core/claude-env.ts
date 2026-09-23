@@ -1,18 +1,19 @@
 /**
- * Claude Code skill variables for pi bash calls.
+ * Claude Code skill variables for foreign-harness bash calls.
  *
  * Claude Code substitutes `${CLAUDE_SKILL_DIR}` and `${CLAUDE_SESSION_ID}`
- * into a skill's text before the model sees it. pi does no substitution and
- * its bash tool exports neither variable, so a skill command such as
- * `bash "${CLAUDE_SKILL_DIR}/../../scripts/ensure-udas.sh"` runs as
- * `bash "/../../scripts/ensure-udas.sh"`. The pi binding closes that gap in its
- * `tool_call` handler: it resolves the skill directory from the command's own
- * relative paths and prepends one `export …` line to the command. pi clones
- * tool arguments before `tool_call` runs, so the rewrite reaches execution but
- * not the transcript. Pure helpers only; the wiring lives in index.ts.
+ * into a skill's text before the model sees it. pi and OpenCode do no
+ * substitution and their bash tools export neither variable, so a skill
+ * command such as `bash "${CLAUDE_SKILL_DIR}/../../scripts/ensure-udas.sh"`
+ * runs as `bash "/../../scripts/ensure-udas.sh"`. Each binding closes that gap
+ * in its pre-execution tool hook: it resolves the skill directory from the
+ * command's own relative paths and prepends one `export …` line to the
+ * command. The resolution and the rewrite live here so every binding behaves
+ * the same; the hook wiring lives in each binding's index.ts.
  */
 
 import { createHash } from "node:crypto";
+import { existsSync, realpathSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const SKILL_DIR_REF = /\$\{CLAUDE_SKILL_DIR\}|\$CLAUDE_SKILL_DIR(?![A-Za-z0-9_])/;
@@ -136,9 +137,10 @@ export interface ClaudeEnvValues {
 /**
  * Prepend one `export …` line when the command references `CLAUDE_SKILL_DIR`
  * or `CLAUDE_SESSION_ID`; otherwise return it unchanged. Only values that are
- * known are exported. `PI_SESSION_FILE` rides along so a skill script can find
- * pi's transcript. A prepended line (not a wrapper) matches pi's own
- * `commandPrefix` and leaves heredocs, `set -e`, and a leading `cd` intact.
+ * known are exported. `PI_SESSION_FILE` rides along when the binding supplies
+ * a session file (pi does) so a skill script can find pi's transcript. A
+ * prepended line (not a wrapper) matches pi's own `commandPrefix` and leaves
+ * heredocs, `set -e`, and a leading `cd` intact.
  */
 export function withClaudeEnv(command: string, values: ClaudeEnvValues): string {
   if (!referencesSkillDir(command) && !referencesSessionId(command)) return command;
@@ -157,10 +159,86 @@ export function withClaudeEnv(command: string, values: ClaudeEnvValues): string 
 }
 
 /** Reason returned with a blocked bash call whose skill directory could not be resolved. */
-export function unresolvedSkillDirReason(resolution: SkillDirResolution): string {
-  const base =
-    "CLAUDE_SKILL_DIR is a Claude Code variable that pi does not set, and this command's skill directory could not be determined";
+export function unresolvedSkillDirReason(resolution: SkillDirResolution, harness = "pi"): string {
+  const base = `CLAUDE_SKILL_DIR is a Claude Code variable that ${harness} does not set, and this command's skill directory could not be determined`;
   const detail =
     "ambiguous" in resolution ? ` (several skills match: ${resolution.ambiguous.join(", ")})` : "";
   return `${base}${detail}. Replace \${CLAUDE_SKILL_DIR} with the absolute directory of the SKILL.md you are following, then re-run the command.`;
+}
+
+/** Session-scoped skill directories the model has loaded, most recent first. */
+export interface ClaudeEnvState {
+  readDirs: string[];
+  expandedDirs: string[];
+}
+
+export function createClaudeEnvState(): ClaudeEnvState {
+  return { readDirs: [], expandedDirs: [] };
+}
+
+/** Move `dir` to the front of `dirs` (most recent first, no duplicates). */
+export function recordSkillDir(dirs: string[], dir: string): void {
+  const existing = dirs.indexOf(dir);
+  if (existing !== -1) dirs.splice(existing, 1);
+  dirs.unshift(dir);
+}
+
+export function realpathOrResolve(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    return resolve(path);
+  }
+}
+
+/** Session values a binding exports alongside the resolved skill directory. */
+export interface ClaudeEnvSession {
+  /** Already derived (see deriveSessionId), never the harness's raw id. */
+  sessionId: string;
+  sessionFile?: string;
+}
+
+/** A rewritten command to run, or the reason the call must not run. */
+export type ClaudeEnvRewrite = { command: string } | { reason: string };
+
+/**
+ * The bash-call half of every binding's pre-execution hook. A command that
+ * references no Claude Code variable returns `undefined` (leave it alone).
+ * Otherwise the skill directory, when referenced, is resolved from the
+ * session tiers first and the index only when those find nothing
+ * (`indexedDirs` is called lazily, at most once); an unresolvable or
+ * ambiguous directory returns a `reason` naming the fix.
+ */
+export function rewriteClaudeEnvCommand(
+  command: string,
+  state: ClaudeEnvState,
+  indexedDirs: () => readonly string[],
+  session: ClaudeEnvSession,
+  harness: string,
+  exists: (path: string) => boolean = existsSync,
+  realpath: (path: string) => string = realpathOrResolve,
+): ClaudeEnvRewrite | undefined {
+  const needsSkillDir = referencesSkillDir(command);
+  if (!needsSkillDir && !referencesSessionId(command)) return undefined;
+
+  let skillDir: string | undefined;
+  if (needsSkillDir) {
+    const tiers = { read: state.readDirs, expanded: state.expandedDirs, indexed: [] };
+    let resolution = resolveSkillDir(command, tiers, exists, realpath);
+    if ("unresolved" in resolution) {
+      resolution = resolveSkillDir(command, { ...tiers, indexed: indexedDirs() }, exists, realpath);
+    }
+    if (!("dir" in resolution)) {
+      return { reason: unresolvedSkillDirReason(resolution, harness) };
+    }
+    skillDir = resolution.dir;
+  }
+
+  return {
+    command: withClaudeEnv(command, {
+      skillDir,
+      sessionId: session.sessionId,
+      sessionFile: session.sessionFile,
+    }),
+  };
 }

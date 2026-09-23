@@ -11,6 +11,13 @@ import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ExtensionAPI, ToolDefinition } from "@earendil-works/pi-coding-agent";
+import {
+  deriveSessionId,
+  extractSkillDirPaths,
+  extractSkillLocations,
+  resolveSkillDir,
+  withClaudeEnv,
+} from "../core/claude-env.ts";
 import type { SearchFilters, SearchResult } from "../core/index.ts";
 import {
   AVAILABLE_SKILLS_CLOSE,
@@ -20,13 +27,6 @@ import {
   DEFAULT_MODEL,
   INJECTED_BLOCK_TRAILER,
 } from "../core/index.ts";
-import {
-  deriveSessionId,
-  extractSkillDirPaths,
-  extractSkillLocations,
-  resolveSkillDir,
-  withClaudeEnv,
-} from "../pi/claude-env.ts";
 import {
   CONFIG_FILE_NAME,
   defaultConfig,
@@ -461,7 +461,7 @@ describe("wrapModuleResolutionError", () => {
   });
 });
 
-// --- Claude Code variables (claude-env.ts) --------------------------------
+// --- Claude Code variables (core/claude-env.ts) ---------------------------
 
 /**
  * A throwaway marketplace-shaped tree: two plugins, each with skills whose
