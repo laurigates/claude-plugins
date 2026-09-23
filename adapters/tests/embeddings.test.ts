@@ -101,7 +101,11 @@ describe("prefix correctness", () => {
     await embedDocuments(["alpha skill", "beta skill"], raw);
     await embedQuery("do the thing", raw);
     expect(await probeEndpoint(raw)).toBe(true);
-    expect(state.receivedInputs).toEqual([["alpha skill", "beta skill"], ["do the thing"], ["probe"]]);
+    expect(state.receivedInputs).toEqual([
+      ["alpha skill", "beta skill"],
+      ["do the thing"],
+      ["probe"],
+    ]);
   });
 
   test("the nomic scheme string is unchanged (tasks.json's frozen prefix_scheme) and `none` differs", () => {
