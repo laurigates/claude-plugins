@@ -737,6 +737,20 @@ repos:
         language: system
         files: '^scripts/(check-hook-cue-skill-refs\.sh|tests/test-check-hook-cue-skill-refs\.sh)$'
         pass_filenames: false
+      - id: check-hook-message-pins
+        name: blocking-hook suites read the block message, not just the exit code (#2715)
+        entry: bash ./scripts/check-hook-message-pins.sh
+        language: system
+        # Whole-scope: a suite's verdict depends on its paired hook too (a new
+        # block "…" call adds a message to pin), so every hook script triggers it.
+        files: '([^/]*-plugin/hooks/.*\.sh|^scripts/check-hook-message-pins\.sh)$'
+        pass_filenames: false
+      - id: test-check-hook-message-pins
+        name: hook-message-pin guard regression (capture forms, per-message tags, empty tree)
+        entry: bash ./scripts/tests/test-check-hook-message-pins.sh
+        language: system
+        files: '^scripts/(check-hook-message-pins\.sh|tests/test-check-hook-message-pins\.sh)$'
+        pass_filenames: false
       - id: test-check-driver-freshness
         name: driver-freshness equal-date invariant + epoch diagnostics (#1704)
         entry: bash ./scripts/tests/test-check-driver-freshness.sh
