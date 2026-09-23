@@ -48,6 +48,12 @@ Static compliance checks (`plugin-compliance-check.sh`) verify structure — thi
 /evaluate:skill git-plugin/git-commit --runs 3 --baseline
 ```
 
+`--create-evals` always generates an abstention control: an impossible task whose
+passing answer is a refusal, marked `"expected_outcome": "abstain"`, with an
+`absent_regex` that fails a fabricated answer. Every `evals.json` must carry one
+(`scripts/check-evals-abstention.sh`); see
+[`references/schemas.md`](references/schemas.md#abstention-controls-impossible-tasks).
+
 ### Batch evaluate a plugin
 
 ```
