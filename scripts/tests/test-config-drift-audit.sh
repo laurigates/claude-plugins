@@ -12,6 +12,7 @@
 #   analyzer failure comments an error, never silence -> E
 #   a lost baseline on a non-first run is loud -> F
 #   the planted-duplicate control reports exactly one finding -> G
+#   an error-severity finding (--gate) keeps every run red while it persists -> L
 # and the control's own guard-integrity half: a broken delta must FAIL it (H).
 #
 # The analyzer runs in its cheap tier (CONFIG_DRIFT_AUDIT_CHEAP_TIER=1): no
@@ -293,6 +294,71 @@ assert "J: a degraded run is marked DEGRADED=true" "$(has_line "$out" 'DEGRADED=
 assert "J: a degraded run does not record" "$(has_line "$out" 'RECORDED=false')"
 assert "J: the baseline is untouched" "$(cmp -s "$state/baseline.json" "$fx/baseline.before-j" && echo true || echo false)"
 assert "J: the degradation is commented" "$(contains "$comment_file" 'semantic_pass_unavailable')"
+
+# --- L: an error-severity finding keeps every run red while it persists -------
+# #2554 decision 4: `--gate` (analyzer exit 2 on an error finding) is the red
+# boundary. The finding is commented once, like any other, but the job fails on
+# every run until it is gone -- a baselined error must not read as STATUS=OK.
+echo "=== L: --gate red state ==="
+# A pointer stub naming a skill that does not exist is broken_pointer_stub, an
+# error. (Other stub text can also trip coverage_metric_broken, a second
+# error; this text yields exactly one.)
+stub_rule="$rules/old.md"
+write_stub() {
+  cat > "$stub_rule" <<'EOF'
+---
+reviewed: 2026-09-01
+---
+# Old
+
+Promoted to a skill: invoke `nonexistent-skill-xyz` for this.
+EOF
+}
+write_stub
+run l1 --prior-success "$steady"
+assert "L1: an error-severity finding exits 3" "$(rc_is "$rc" 3)"
+assert "L1: the analyzer ran with --gate (exit 2)" "$(has_line "$out" 'ANALYZER_RC=2')"
+assert "L1: the gate is red" "$(has_line "$out" 'GATE=red')"
+assert "L1: STATUS=ERROR" "$(has_line "$out" 'STATUS=ERROR')"
+assert "L1: one error-severity finding counted" "$(has_line "$out" 'ERROR_FINDINGS=1')"
+assert "L1: ISSUES names the error finding" "$(grep -qF 'SEVERITY=ERROR TYPE=broken_pointer_stub' <<<"$out" && echo true || echo false)"
+assert "L1: the error is reported as new" "$(has_line "$out" 'NEW=1')"
+assert "L1: the error is recorded, so it is commented once" "$(has_line "$out" 'RECORDED=true')"
+assert "L1: the comment carries the error row" "$(contains "$comment_file" '`broken_pointer_stub`')"
+assert "L1: the comment says the job fails" "$(contains "$comment_file" 'error-severity finding(s) present')"
+run l2 --prior-success "$steady"
+assert "L2: the persisting error still exits 3" "$(rc_is "$rc" 3)"
+assert "L2: the gate is still red" "$(has_line "$out" 'GATE=red')"
+assert "L2: nothing is new" "$(has_line "$out" 'NEW=0')"
+assert "L2: no second comment" "$(has_line "$out" 'COMMENT=false')"
+assert "L2: the red run still names the finding" "$(grep -qF 'TYPE=broken_pointer_stub' <<<"$out" && echo true || echo false)"
+rm -f "$stub_rule"
+run l3 --prior-success "$steady"
+assert "L3: removing the error exits 0" "$(rc_is "$rc" 0)"
+assert "L3: the gate is green" "$(has_line "$out" 'GATE=green')"
+assert "L3: STATUS=OK" "$(has_line "$out" 'STATUS=OK')"
+# A first run over a corpus that already carries the error: silent, still red.
+write_stub
+out="$(bash "$audit" --root "$root" --out-dir "$fx/out-l4" --state-dir "$fx/state-l4" --prior-success false 2>&1)"; rc=$?
+assert "L4: a first run over an error is a first run" "$(has_line "$out" 'FIRST_RUN=true')"
+assert "L4: ...writes no comment" "$(has_line "$out" 'COMMENT=false')"
+assert "L4: ...and still exits 3" "$(rc_is "$rc" 3)"
+# A failure outranks the gate: a broken control over a red corpus exits 1.
+REAL_DELTA="$real_delta" CONFIG_DRIFT_AUDIT_PROBE_DELTA="$fx/blind-delta.py" \
+  run l5 --prior-success "$steady" --plant-control
+assert "L5: a failed control over a red gate exits 1, not 3" "$(rc_is "$rc" 1)"
+assert "L5: ...with the gate still reported red" "$(has_line "$out" 'GATE=red')"
+rm -f "$stub_rule"
+run l6 --prior-success "$steady"
+# argparse exits 2 as well; an exit 2 with no error-severity finding in the
+# output did not come from --gate and is an analyzer failure.
+cp "$state/baseline.json" "$fx/baseline.before-l"
+printf 'import sys\nprint("{\\"counts\\": {}, \\"findings\\": []}")\nsys.exit(2)\n' > "$fx/exit2.py"
+CONFIG_DRIFT_AUDIT_ANALYZER="$fx/exit2.py" run l7 --prior-success "$steady"
+assert "L7: exit 2 with no error finding is a failure" "$(rc_is "$rc" 1)"
+assert "L7: ...typed analyzer_failed" "$(grep -qF 'TYPE=analyzer_failed' <<<"$out" && echo true || echo false)"
+assert "L7: ...commented" "$(contains "$comment_file" 'did not come from --gate')"
+assert "L7: ...and the baseline is untouched" "$(cmp -s "$state/baseline.json" "$fx/baseline.before-l" && echo true || echo false)"
 
 # --- K: usage errors are rejected, not swallowed (#2057) ----------------------
 echo "=== K: usage ==="

@@ -20,6 +20,10 @@ name: "Plugin: Config drift audit"
 # whenever a run started a few minutes late; twice a week keeps every read well
 # inside the window. A miss after a completed run is still reported loudly
 # (--expect-baseline), never re-recorded in silence.
+#
+# Red state is the analyzer's --gate: an error-severity finding fails the job
+# on every run while it persists, even after its one comment. Warn and info
+# findings only ever reach the rolling issue.
 
 on:
   schedule:
@@ -68,14 +72,30 @@ jobs:
         run: |
           # A completed run on this ref recorded a baseline, so a missing one
           # now is an evicted cache (a loss to report), not a first run.
+          # "Completed" means the "Run the audit" step succeeded. The gate step
+          # at the end turns a completed run red while error-severity findings
+          # persist, and that run recorded a baseline all the same, so a red
+          # run is checked step by step when no green run exists.
+          prior=false
           count=$(gh run list --repo "$GITHUB_REPOSITORY" \
             --workflow config-drift-audit.yml --branch "$GITHUB_REF_NAME" \
             --status success --limit 1 --json databaseId --jq 'length')
           if [ "$count" -gt 0 ]; then
-            echo "prior_success=true" >> "$GITHUB_OUTPUT"
+            prior=true
           else
-            echo "prior_success=false" >> "$GITHUB_OUTPUT"
+            ids=$(gh run list --repo "$GITHUB_REPOSITORY" \
+              --workflow config-drift-audit.yml --branch "$GITHUB_REF_NAME" \
+              --status failure --limit 20 --json databaseId --jq '.[].databaseId')
+            for id in $ids; do
+              step=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id/jobs" \
+                --jq '[.jobs[].steps[]? | select(.name == "Run the audit") | .conclusion][0] // ""')
+              if [ "$step" = "success" ]; then
+                prior=true
+                break
+              fi
+            done
           fi
+          echo "prior_success=$prior" >> "$GITHUB_OUTPUT"
 
       - name: Restore the embedding model
         id: restore-model
@@ -117,7 +137,17 @@ jobs:
             if [ -n "$(ls -A "$FASTEMBED_CACHE_PATH" 2>/dev/null)" ]; then
               echo "model_present=true"
             fi
+            if [ "$rc" -eq 3 ]; then
+              echo "gate=red"
+            fi
           } >> "$GITHUB_OUTPUT"
+          # Exit 3: the audit completed and recorded, but error-severity
+          # findings are present. This step stays green, because its success is
+          # what the previous-run lookup reads as "completed"; the last step
+          # fails the job.
+          if [ "$rc" -eq 3 ]; then
+            rc=0
+          fi
           exit "$rc"
 
       # Runs even when the audit failed: an analyzer or control failure is a
@@ -164,3 +194,15 @@ jobs:
         with:
           path: ~/.cache/fastembed
           key: fastembed-bge-small-en-v1.5-${{ runner.os }}
+
+      # Last, after the comment and the cache save: the --gate boundary (#2554).
+      # Error-severity findings fail the job on every run while they persist,
+      # not only on the run whose comment first reported them.
+      - name: Fail on error-severity findings
+        if: always() && steps.audit.outputs.gate == 'red'
+        run: |
+          awk '/^  - SEVERITY=ERROR /' "$RUNNER_TEMP/audit.txt" | while IFS= read -r row; do
+            echo "::error title=Config drift error finding::${row#  - }"
+          done
+          echo "The analyzer's --gate found error-severity findings. Warn and info findings never fail this job."
+          exit 1

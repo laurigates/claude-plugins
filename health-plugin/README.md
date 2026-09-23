@@ -193,10 +193,16 @@ It complements the portfolio run tracked in #2319 rather than replacing it:
   After that, a missing baseline is a loss: `probe-delta.py --expect-baseline`
   re-reports every finding beside a `baseline_lost` row instead of re-recording
   in silence.
-- **Exit codes.** Analyzer exit 0 and 1 are both completed runs. Any other code,
-  or empty output, posts an error comment, fails the job, and leaves the
-  baseline untouched. A run whose model failed to load is reported but does not
-  roll the baseline forward.
+- **Exit codes.** Analyzer exit 0 and 1 are completed runs, and so is exit 2
+  under `--gate` (next item). Any other code, or empty output, posts an error
+  comment, fails the job, and leaves the baseline untouched. A run whose model
+  failed to load is reported but does not roll the baseline forward.
+- **Red state.** The analyzer runs with `--gate`, so an error-severity finding
+  (`broken_pointer_stub`, `agent_discovery_misfire`, `coverage_metric_broken`)
+  makes it exit 2. That run still completes: the finding is commented once and
+  recorded like any other. The job then fails on every run for as long as the
+  finding persists, including the first run. Warn and info findings never fail
+  the job; they only reach the rolling issue.
 - **Control.** Dispatch with `plant_control: true` to check the delta logic end
   to end. The run plants two unrelated rules one scope apart, injects a 0.95
   similarity through `--sim-fixture`, and fails unless exactly that pair comes

@@ -11,9 +11,16 @@
 #
 #   * Exit-code discipline. The analyzer exits 1 whenever ANY warn finding
 #     exists -- its normal state on a real corpus -- so 0 and 1 are both a
-#     completed run. Anything else, or empty output, is an analyzer failure:
-#     it is reported as an error comment and the run fails. It is never
-#     reported as "nothing new", and the baseline is left untouched.
+#     completed run. It runs with `--gate`, which makes it exit 2 when an
+#     error-severity finding exists (broken_pointer_stub, agent_discovery_misfire,
+#     coverage_metric_broken). Exit 2 is also a completed run -- delta, record
+#     and comment as usual -- but this script then exits 3, so the job stays red
+#     on EVERY run while the error persists, not only on the run that first
+#     reported it. Warn and info findings never fail the job. Exit 2 with no
+#     error-severity finding in the output (argparse also exits 2), any other
+#     code, or empty output is an analyzer failure: it is reported as an error
+#     comment and the run fails. It is never reported as "nothing new", and the
+#     baseline is left untouched.
 #   * First run vs. lost baseline. `--prior-success true` says a previous run
 #     of this workflow completed, so a missing baseline is a LOSS (an evicted
 #     cache), not a first run. probe-delta's `--expect-baseline` then
@@ -58,6 +65,8 @@
 #   0 - the audit completed (with or without new findings)
 #   1 - analyzer or delta failure, or the planted control failed
 #   2 - usage error
+#   3 - the audit completed, but error-severity findings are present (the
+#       analyzer's `--gate`); the job must go red. A failure (1) outranks it.
 
 set -uo pipefail
 
@@ -193,6 +202,7 @@ if [ "${CONFIG_DRIFT_AUDIT_CHEAP_TIER:-}" = "1" ]; then
 else
   analyzer_cmd=(uv run --script "$ANALYZER")
 fi
+analyzer_cmd+=(--gate)
 
 start=$SECONDS
 "${analyzer_cmd[@]}" --root "$root_abs" --format=json --waivers "$waivers" \
@@ -202,12 +212,39 @@ analyzer_seconds=$((SECONDS - start))
 
 analyzer_failed=0
 failure_reason=""
-if [ "$analyzer_rc" -ne 0 ] && [ "$analyzer_rc" -ne 1 ]; then
+error_rows="$out_dir/errors.txt"
+error_count=0
+: > "$error_rows"
+if [ "$analyzer_rc" -gt 2 ]; then
   analyzer_failed=1
-  failure_reason="the analyzer exited ${analyzer_rc} (0 and 1 are the only completed-run codes)"
+  failure_reason="the analyzer exited ${analyzer_rc} (0, 1 and 2 under --gate are the only completed-run codes)"
 elif [ ! -s "$findings" ]; then
   analyzer_failed=1
   failure_reason="the analyzer exited ${analyzer_rc} with empty output"
+else
+  # One ISSUES row per error-severity finding, so a red run names what turned
+  # it red even when nothing is new. Unparseable output counts 0 here and is
+  # failed by probe-delta below.
+  error_count="$(python3 - "$findings" "$error_rows" <<'PY'
+import json, sys
+findings_path, rows_path = sys.argv[1:3]
+try:
+    found = [f for f in json.load(open(findings_path, encoding="utf-8"))["findings"]
+             if isinstance(f, dict) and f.get("severity") == "error"]
+except (OSError, ValueError, KeyError, TypeError):
+    found = []
+with open(rows_path, "w", encoding="utf-8") as out:
+    for f in found:
+        msg = " ".join(str(f.get("summary", "")).split())
+        out.write(f"  - SEVERITY=ERROR TYPE={f.get('kind', 'unknown')} MSG={msg}\n")
+print(len(found))
+PY
+)"
+  error_count="${error_count:-0}"
+  if [ "$analyzer_rc" -eq 2 ] && [ "$error_count" -eq 0 ]; then
+    analyzer_failed=1
+    failure_reason="the analyzer exited 2 but reported no error-severity finding, so it did not come from --gate"
+  fi
 fi
 
 first_run="false" baseline_lost="false" new=0 total=0 recorded="false" degraded="false"
@@ -281,7 +318,22 @@ elif [ "$new" -gt 0 ] || [ "$baseline_lost" = "true" ]; then
     render_rows "$delta" "$findings"
     echo
     echo "Totals: ${total} finding(s) now, reported once each. Waive a finding judged not to be a defect in \`health-plugin/config-drift-waivers.json\`."
+    if [ "$analyzer_rc" -eq 2 ]; then
+      echo
+      echo "**${error_count} error-severity finding(s) present.** The job fails on every run while any error-severity finding remains; warn and info findings never fail it."
+    fi
   } > "$comment"
+fi
+
+# The --gate boundary: a completed run with error-severity findings is red on
+# every run while they persist, whether or not they are new.
+gate="green"
+if [ "$analyzer_failed" -eq 0 ] && [ "$analyzer_rc" -eq 2 ]; then
+  gate="red"
+  status="ERROR"
+  while IFS= read -r row; do
+    issues+=("$row")
+  done < "$error_rows"
 fi
 
 # --------------------------------------------------------- planted control
@@ -454,6 +506,8 @@ echo "NEW=${new}"
 echo "DEGRADED=${degraded}"
 echo "RECORDED=${recorded}"
 echo "CONTROL=${control}"
+echo "ERROR_FINDINGS=${error_count}"
+echo "GATE=${gate}"
 echo "COMMENT=${comment_ready}"
 echo "COMMENT_FILE=${comment}"
 echo "STATUS=${status}"
@@ -463,4 +517,7 @@ if [ "${#issues[@]}" -gt 0 ]; then
   printf '%s\n' "${issues[@]}"
 fi
 echo "=== END CONFIG DRIFT AUDIT ==="
+if [ "$exit_rc" -eq 0 ] && [ "$gate" = "red" ]; then
+  exit_rc=3
+fi
 exit "$exit_rc"
