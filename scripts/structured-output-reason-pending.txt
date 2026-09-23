@@ -35,4 +35,3 @@ scripts/check-version-pin-coverage.sh
 scripts/check-workflow-js-model.sh
 scripts/check-workflow-model.sh
 scripts/check-workflow-script-triggers.sh
-scripts/check-workflow-tool-grants.sh
