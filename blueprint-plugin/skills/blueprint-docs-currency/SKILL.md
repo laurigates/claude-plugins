@@ -1,9 +1,9 @@
 ---
 name: blueprint-docs-currency
 description: Enforce same-commit landing of code and docs (APIs, formats, ADRs). Use when committing API/format changes, promoting research to docs/, or landing an ADR decision.
-allowed-tools: Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(bash *), Read, Grep, Glob, TodoWrite
 created: 2026-04-24
-modified: 2026-05-09
+modified: 2026-09-23
 reviewed: 2026-04-24
 ---
 
@@ -77,12 +77,44 @@ Sidecars record priority, status, and notes for humans. If a reader
 needs the information to port, debug, or onboard, it belongs in `docs/`,
 not the sidecar.
 
+## Dependency sweep
+
+Before committing, run the bounded sweep over the staged diff:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/docs-dependency-sweep.sh" --project-dir "$(pwd)"
+```
+
+It names the hand-written docs that may describe what the commit
+changes, one hop from each staged path. It reports; it never edits.
+
+| Staged path | Candidate docs (`KIND=`) |
+|-------------|--------------------------|
+| `<plugin>/skills/<skill>/…`, `<plugin>/agents/<agent>.md`, `<plugin>/.claude-plugin/…` | plugin `README.md` (`plugin_readme`), plugin `plugin.json` (`plugin_manifest`), `README.md` / `docs/PLUGIN-MAP.md` / `.claude-plugin/marketplace.json` (`catalog`) |
+| `<plugin>/<any other path>` | plugin `README.md`, plugin `plugin.json` |
+| `.claude/rules/<rule>.md` | `CLAUDE.md` / `AGENTS.md` (`rule_index`), then every other tracked `*.md` citing `<rule>.md` (`rule_backref`) |
+| Anything else | Not swept (`UNMAPPED_PATHS=`); use the Same-commit scope table |
+
+**Bound.** At most `CANDIDATE_CAP` files are examined (default 10; set
+it with `--cap N` or `DOCS_SWEEP_CAP`). Candidates already staged count
+as covered and are not examined. Past the cap the sweep stops and emits
+one `cap_reached` finding with the number dropped: a change that broad
+needs a full review, not a longer sweep.
+
+**Reading the output.** Each `review_candidate` row carries `DOC=`,
+`KIND=`, the staged `SOURCE=`, and `ENTRY_LINES=`, the lines in that doc
+that name the change (`none`: the doc does not name it; `-`: there was
+no specific name to look for). Open each doc at those lines, then update
+it in this commit or confirm it is unaffected. `STATUS=OK` means nothing
+is left to review.
+
 ## Pre-commit checklist
 
 Before `git commit`, ask:
 
 - [ ] Does this change the public API, file format, error enum, or milestone status?
 - [ ] Same commit touches the corresponding `docs/` file?
+- [ ] Dependency sweep run, and every `review_candidate` updated in this commit or confirmed unaffected?
 - [ ] Decision made → new / updated ADR in the same commit?
 - [ ] `tmp/research/` either empty or intentionally scratch for this change?
 - [ ] Feature tracker entry's evidence field cites the new `docs/` path?
@@ -120,6 +152,7 @@ stop and write the spec now.
 - `blueprint-plugin:blueprint-curate-docs` — mechanics of producing curated rule entries
 - `blueprint-plugin:blueprint-sync` — drift detection for generated docs
 - `blueprint-plugin:feature-tracking` — tracker entry mechanics
+- `scripts/check-docs-index.sh` (claude-plugins, Layer 1 of #1460) — the whole-repo audit that owns skill/agent counts; the sweep names rows and never compares counts
 - `.claude/rules/conventional-commits.md` — commit types that co-evolve with docs
 
 > Evidence: research landed without a same-commit `docs/` update — the
