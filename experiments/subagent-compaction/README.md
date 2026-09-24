@@ -10,11 +10,13 @@ scope `subagent-compaction` matches no release-please package.
 
 ## Why
 
-Model quality degrades well before the context window is full (roughly past
-50%), and a main session run with auto-compact disabled gives no control over
+The working assumption is that model quality degrades well before the context
+window is full (roughly past 50%). A main session run with auto-compact disabled gives no control over
 subagent context. Claude Code exposes no per-subagent context limit or
 compaction setting (`maxTurns`, `model`, `effort` are the only
-bounding frontmatter fields), so the behaviour has to be measured.
+bounding frontmatter fields; environment variables such as
+`CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` apply to the whole process), so the
+behaviour has to be measured.
 
 ## Findings so far
 
@@ -37,9 +39,10 @@ one-line result. Table produced by `scripts/analyze.sh --transcript`.
 
 Observations:
 
-1. **Subagents auto-compact independently** of the main session. The first
-   compaction triggered at ~75% of the 200k window (80% override minus
-   reserve).
+1. **The subagent auto-compacted on its own schedule**; the main session had
+   not compacted. The first compaction triggered at ~75% of the 200k window
+   (80% override minus reserve). Whether a main-session
+   `autoCompactEnabled=false` reaches subagents is Q1 below, unmeasured.
 2. **The task was abandoned after compaction.** The subagent treated the
    compaction instruction ("text only, produce a summary") as its task and
    returned that summary as its final report.
@@ -52,7 +55,8 @@ Observations:
 5. **Briefed-subagent baseline ≈ 58k tokens** (system prompt, tools,
    CLAUDE.md, unscoped rules): 29% of a 200k window, ~6% of 1M.
 
-Caveats: one run, haiku, host-specific override. The questions below are
+Caveats: one run, haiku, host-specific override. Treat observations 2–4 as a
+failure mode to design around, not a measured rate. The questions below are
 what `ctx-probe.sh` is built to answer on 1M-window models with the
 operator's own configuration.
 
@@ -61,12 +65,18 @@ operator's own configuration.
 | # | Question | Arm | Read |
 |---|---|---|---|
 | Q1 | Does main-config `autoCompactEnabled=false` reach subagents? | `ac-off` | `SUBAGENT_COMPACTED` — `yes` means the setting does not propagate |
-| Q2 | Does the subagent resume its task after compacting? | `ac-on` | `SENTINELS_CORRECT` vs expected; `SENTINELS_WRONG` > 0 is fabrication |
+| Q2 | Does the subagent resume its task after compacting? | `ac-on` | `SENTINELS_CORRECT` vs `SENTINELS_EXPECTED`; `SENTINELS_WRONG` > 0 is fabrication |
 | Q3 | Does `PreCompact` fire inside a subagent, with an agent identifier? | both | `HOOK_PreCompact`, `PRECOMPACT_WITH_AGENT_ID`, `PRECOMPACT_KEYS` |
 
 Mechanics:
 
-- Each arm runs `claude -p` with an isolated fake `HOME` (its own
+- Each arm runs `claude -p` under `env -i` with an allowlist (PATH, TERM,
+  locale, auth, proxy/CA), so no variable from the calling Claude Code session
+  leaks in. `CLAUDE_CODE_SUBAGENT_MODEL` is set to the arm's model so the
+  subagent keeps the `[1m]` window.
+- The child's working directory is a `mktemp -d` fixture outside the repo, so
+  no project `CLAUDE.md`, rules or settings load.
+- Each arm has an isolated fake `HOME` (its own
   `.claude.json` with `autoCompactEnabled`, and `settings.json` with logging
   hooks for `PreCompact`/`PostCompact`/`SubagentStart`/`SubagentStop`).
 - `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` defaults to `10`, so a 1M-window model
@@ -77,7 +87,13 @@ Mechanics:
   The subagent must report every sentinel, writing `MISSING <file>` for any
   it can no longer see. After compaction a sentinel it did not re-read
   cannot be recalled honestly, so recall and fabrication are both scored
-  deterministically.
+  deterministically. The score reads the subagent's own final text
+  (`REPORT_SOURCE=subagent`), falling back to the main agent's relay only
+  when the subagent left none. CR, backticks and list markers are stripped;
+  file names match exactly.
+- `analyze.sh` emits `STATUS=OK|WARN|ERROR` with `REASON=` and an `ISSUES:`
+  block: ERROR for a failed run or no subagent, WARN for a truncated
+  transcript (unparseable lines), no `Read` calls, or an unparseable report.
 
 ## Usage
 
@@ -91,14 +107,15 @@ just subagent-compaction::dry-run                     # arm setup + commands, no
 just subagent-compaction::run                         # opus[1m], ac-on + ac-off
 just subagent-compaction::run "opus[1m] sonnet[1m]"   # model comparison
 just subagent-compaction::transcript <agent-*.jsonl>  # analyse any subagent transcript
-just subagent-compaction::test                        # offline analyzer test
+just subagent-compaction::test                        # offline analyzer + probe tests
 ```
 
-Results land in `results/<run-id>/` (gitignored): per-arm `main.jsonl`,
-`hooks.jsonl`, `summary.txt`, the fake `HOME` with subagent transcripts, and
-`summary.tsv` across arms.
+Results land in `results/<run-id>/` (gitignored): `sentinels.txt`, per-arm
+`main.jsonl`, `hooks.jsonl`, `summary.txt`, the fake `HOME` with subagent
+transcripts, and `summary.tsv` across arms (`compacted`, `auto_compacted`,
+`report_source`, sentinel scores, hook counts, `status`).
 
-Cost: each arm reads `files × kb` of filler (default 20 × 60 KiB ≈ 300k
+Cost: each arm reads `files × kb` of filler (default 30 × 40 KiB ≈ 300k
 tokens) through at least one compaction. Reduce `--files` for a cheaper
 smoke run.
 

@@ -11,7 +11,7 @@ help:
 
 # Full probe: models × autoCompactEnabled on/off. Real `claude -p` calls.
 [group: "run"]
-run models="opus[1m]" arms="on off" pct="10" files="20" kb="60":
+run models="opus[1m]" arms="on off" pct="10" files="30" kb="40":
     bash scripts/ctx-probe.sh --models "{{models}}" --arms "{{arms}}" --pct "{{pct}}" --files "{{files}}" --kb "{{kb}}"
 
 # Print the arm setup and commands without calling claude.
@@ -24,7 +24,8 @@ dry-run models="opus[1m]":
 transcript file:
     bash scripts/analyze.sh --transcript "{{file}}"
 
-# Offline test of the analyzer against a synthetic arm.
+# Offline tests: analyzer against synthetic arms, probe against a stub claude.
 [group: "test"]
 test:
     bash tests/test-analyze.sh
+    bash tests/test-ctx-probe.sh

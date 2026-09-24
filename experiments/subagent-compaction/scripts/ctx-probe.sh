@@ -15,7 +15,12 @@
 # ANTHROPIC_API_KEY) from the environment or ~/.api_tokens (`claude setup-token`).
 #
 # Usage: ctx-probe.sh [--models "opus[1m] sonnet[1m]"] [--arms "on off"] [--pct 10]
-#                     [--files 20] [--kb 60] [--run-id ID] [--dry-run]
+#                     [--files 30] [--kb 40] [--run-id ID] [--results-root DIR] [--dry-run]
+#
+# The child runs under `env -i` with an allowlist (PATH, TERM, locale, auth,
+# proxy/CA) so no parent Claude Code session variable leaks into an arm.
+# CLAUDE_CODE_SUBAGENT_MODEL is set to the arm's model so the subagent keeps the
+# [1m] window instead of falling back to a default model.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -24,10 +29,11 @@ exp_root="$(dirname "$here")"
 models="opus[1m]"
 arms="on off"
 pct=10
-files=20
-kb=60
+files=30
+kb=40
 run_id="$(date +%Y%m%dT%H%M%S)"
 dry_run=0
+results_root="$exp_root/results"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -37,8 +43,9 @@ while [ $# -gt 0 ]; do
     --files) files="$2"; shift 2 ;;
     --kb) kb="$2"; shift 2 ;;
     --run-id) run_id="$2"; shift 2 ;;
+    --results-root) results_root="$2"; shift 2 ;;
     --dry-run) dry_run=1; shift ;;
-    -h|--help) sed -n '2,20p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,25p' "$0"; exit 0 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
@@ -62,10 +69,15 @@ if [ "$dry_run" -eq 0 ]; then
   fi
 fi
 
-results="$exp_root/results/$run_id"
-fixture="$results/fixture"
+results="$results_root/$run_id"
 mkdir -p "$results"
+# Fixture lives outside the repo so the child session loads no project
+# CLAUDE.md, rules or settings. sentinels.txt is copied into results for scoring.
+fixture="$(mktemp -d)"
+if [ -z "$fixture" ] || [ ! -d "$fixture" ]; then echo "mktemp failed" >&2; exit 1; fi
+trap 'rm -rf "$fixture"' EXIT
 bash "$here/make-fixture.sh" "$fixture" "$files" "$kb"
+cp "$fixture/sentinels.txt" "$results/sentinels.txt"
 
 last="$(printf 'f%02d.txt' "$files")"
 prompt="This is a context-window probe. Do exactly this and nothing else.
@@ -78,8 +90,17 @@ Read the files $fixture/files/f01.txt through $fixture/files/$last in numeric or
 
 Then reply with the subagent's report verbatim and nothing else."
 
-printf 'arm\tmodel\tautocompact\tcompacted\tcompactions\tpeak_ctx\tfiles_read\tcorrect\twrong\tdeclared_missing\tabsent\tprecompact_hooks\tprecompact_agent_id\toutcome\n' > "$results/summary.tsv"
+printf 'arm\tmodel\tautocompact\tcompacted\tauto_compacted\tcompactions\tpeak_ctx\tfiles_read\treport_source\tcorrect\twrong\tdeclared_missing\tabsent\tprecompact_hooks\tprecompact_agent_id\tstatus\n' > "$results/summary.tsv"
 
+# Environment passed to the child: an allowlist, not the parent's environment.
+base_env=("PATH=$PATH")
+for var in TERM LANG LC_ALL CLAUDE_CODE_OAUTH_TOKEN ANTHROPIC_API_KEY \
+    HTTPS_PROXY HTTP_PROXY NO_PROXY https_proxy http_proxy no_proxy \
+    NODE_EXTRA_CA_CERTS SSL_CERT_FILE REQUESTS_CA_BUNDLE; do
+  if [ -n "${!var:-}" ]; then base_env+=("$var=${!var}"); fi
+done
+
+set -f  # model names contain [ ]; keep word splitting, disable globbing
 for model in $models; do
   for arm in $arms; do
     case "$arm" in on) ac=true ;; off) ac=false ;; *) echo "unknown arm: $arm" >&2; exit 2 ;; esac
@@ -89,7 +110,7 @@ for model in $models; do
     mkdir -p "$home/.claude"
 
     jq -n --argjson ac "$ac" '{hasCompletedOnboarding: true, autoCompactEnabled: $ac}' > "$home/.claude.json"
-    hook_cmd="bash '$here/log-hook.sh' '$arm_dir/hooks.jsonl'"
+    hook_cmd="bash $(printf %q "$here/log-hook.sh") $(printf %q "$arm_dir/hooks.jsonl")"
     jq -n --arg c "$hook_cmd" '{hooks: (["PreCompact","PostCompact","SubagentStart","SubagentStop"]
         | map({key: ., value: [{matcher: "", hooks: [{type: "command", command: $c}]}]}) | from_entries)}' \
       > "$home/.claude/settings.json"
@@ -97,30 +118,31 @@ for model in $models; do
 
     echo "=== RUN $slug ==="
     if [ "$dry_run" -eq 1 ]; then
-      echo "DRY_RUN: cd $fixture/files && HOME=$home CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=$pct claude -p <prompt> --model '$model' --output-format stream-json --verbose --allowedTools Read,Agent,Task"
+      echo "DRY_RUN: cd $fixture/files && env -i <allowlist> HOME=$home CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=$pct CLAUDE_CODE_SUBAGENT_MODEL='$model' claude -p <prompt> --model '$model' --output-format stream-json --verbose --allowedTools Read,Agent,Task"
       continue
     fi
 
-    # Strip inherited Claude Code session/compaction env so only this arm's settings apply.
-    ( cd "$fixture/files" && env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u DISABLE_AUTO_COMPACT -u DISABLE_COMPACT \
-        -u CLAUDE_CODE_DISABLE_1M_CONTEXT -u CLAUDE_CODE_SUBAGENT_MODEL \
-        HOME="$home" CLAUDE_AUTOCOMPACT_PCT_OVERRIDE="$pct" \
+    ( cd "$fixture/files" && env -i "${base_env[@]}" \
+        HOME="$home" CLAUDE_AUTOCOMPACT_PCT_OVERRIDE="$pct" CLAUDE_CODE_SUBAGENT_MODEL="$model" \
         "$claude_bin" -p "$prompt" --model "$model" --output-format stream-json --verbose \
           --allowedTools "Read,Agent,Task" \
         > "$arm_dir/main.jsonl" 2> "$arm_dir/stderr.log" ) || echo "RUN_EXIT=$?"
 
-    bash "$here/analyze.sh" "$arm_dir" "$fixture/sentinels.txt" | tee "$arm_dir/summary.txt"
+    # analyze.sh exits 1 on an ERROR arm; record it and keep going.
+    bash "$here/analyze.sh" "$arm_dir" "$results/sentinels.txt" > "$arm_dir/summary.txt" || true
+    cat "$arm_dir/summary.txt"
     s="$arm_dir/summary.txt"
-    v() { grep -m1 "^$1=" "$s" | cut -d= -f2- || true; }
-    peak="$(grep '^PEAK_CTX=' "$s" | cut -d= -f2 | sort -n | tail -1 || true)"
-    comps="$(grep '^COMPACTIONS=' "$s" | cut -d= -f2 | awk '{t += $1} END {print t + 0}')"
-    read_n="$(grep '^DISTINCT_FILES_READ=' "$s" | cut -d= -f2 | sort -n | tail -1 || true)"
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-      "$slug" "$model" "$ac" "$(v SUBAGENT_COMPACTED)" "${comps:-0}" "$peak" "$read_n" \
-      "$(v SENTINELS_CORRECT)" "$(v SENTINELS_WRONG)" "$(v SENTINELS_DECLARED_MISSING)" "$(v SENTINELS_ABSENT)" \
-      "$(v HOOK_PreCompact)" "$(v PRECOMPACT_WITH_AGENT_ID)" "$(v OUTCOME)" >> "$results/summary.tsv"
+    v() { awk -F= -v k="$1" '$1 == k {sub(/^[^=]*=/, ""); print; exit}' "$s"; }
+    peak="$(awk -F= '/^PEAK_CTX=/ && $2 > m {m = $2} END {print m + 0}' "$s")"
+    comps="$(awk -F= '/^COMPACTIONS=/ {t += $2} END {print t + 0}' "$s")"
+    read_n="$(awk -F= '/^DISTINCT_FILES_READ=/ && $2 > m {m = $2} END {print m + 0}' "$s")"
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+      "$slug" "$model" "$ac" "$(v SUBAGENT_COMPACTED)" "$(v SUBAGENT_AUTO_COMPACTED)" "$comps" "$peak" "$read_n" \
+      "$(v REPORT_SOURCE)" "$(v SENTINELS_CORRECT)" "$(v SENTINELS_WRONG)" "$(v SENTINELS_DECLARED_MISSING)" \
+      "$(v SENTINELS_ABSENT)" "$(v HOOK_PreCompact)" "$(v PRECOMPACT_WITH_AGENT_ID)" "$(v STATUS)" >> "$results/summary.tsv"
   done
 done
+set +f
 
 echo "=== SUMMARY ==="
 column -t -s $'\t' "$results/summary.tsv" 2>/dev/null || cat "$results/summary.tsv"
