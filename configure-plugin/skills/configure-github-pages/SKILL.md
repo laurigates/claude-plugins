@@ -1,8 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
+modified: 2026-09-23
 reviewed: 2026-06-01
-description: "GitHub Pages deployment workflows for docs sites. Use when setting up Pages, migrating to actions/deploy-pages, or auditing Pages action versions."
+description: "actions/deploy-pages workflow publishing a docs site (MkDocs, TypeDoc, Docusaurus) to GitHub Pages. Use when setting up Pages or migrating off peaceiris/actions-gh-pages."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--source <docs|site|custom>]"
 argument-hint: "[--check-only] [--fix] [--source <docs|site|custom>]"

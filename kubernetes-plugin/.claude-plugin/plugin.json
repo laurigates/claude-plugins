@@ -3,6 +3,10 @@
   "name": "kubernetes-plugin",
   "version": "1.8.1",
   "description": "Kubernetes and Helm operations - deployments, charts, releases, diagnostics",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "license": "MIT",
   "keywords": [
     "kubernetes",
     "helm",

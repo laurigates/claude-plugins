@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
+modified: 2026-09-23
 reviewed: 2026-05-14
 description: Check and configure MCP servers for project integration. Use when setting up MCP servers, checking MCP status, or adding new servers to a project.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
@@ -115,6 +115,8 @@ After configuring `.mcp.json`, use these `/mcp` commands in Claude Code to manag
 | `/mcp disable <server>` | Disable a server for the current session (session-scoped) |
 
 **Note**: Enable/disable are session-scoped only. Permanent changes require editing `.mcp.json`.
+
+**Under pi**: the `.mcp.json` this skill writes works unchanged once `pi-mcp-adapter` is installed (`pi install npm:pi-mcp-adapter`; pi has no MCP client of its own). Its `/mcp enable|disable` persist in `.pi/mcp.json` rather than lasting one session. See [docs/pi-export.md § MCP servers](https://github.com/laurigates/claude-plugins/blob/main/docs/pi-export.md#mcp-servers-pi-mcp-adapter).
 
 ## Agentic Optimizations
 

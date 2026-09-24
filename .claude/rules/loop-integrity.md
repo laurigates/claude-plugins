@@ -1,6 +1,6 @@
 ---
 created: 2026-06-22
-modified: 2026-09-05
+modified: 2026-09-23
 reviewed: 2026-07-04
 ---
 
@@ -68,10 +68,14 @@ context-free successor pick up cleanly:
 | **Exit condition** | The literal criterion that ends the loop |
 | **Verifier result** | What the independent check last returned (pass / fail + why) |
 | **Changed since last run** | What the previous iteration actually did, so the successor doesn't redo or undo it |
+| **Ordering / preconditions** | Which steps must precede which, so the successor neither acts out of order nor repeats a step whose precondition already holds |
+| **Next target** | What the last iteration chose to do next, so target selection is inherited, not re-derived |
 
 The dangerous shape the community flagged: a treadmill that overwrites its goal
 file with the next phase but carries none of the above forward. It keeps moving;
-it stops being *resumable*.
+it stops being *resumable*. Fields, not a serialised graph: an ordering entry past
+a few lines has failed. RSIAgent's action→consequence memory (#2693) is prior art
+for *Changed since last run*.
 
 ## Bounding runaway
 

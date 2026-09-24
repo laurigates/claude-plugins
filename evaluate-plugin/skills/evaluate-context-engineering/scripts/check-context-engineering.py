@@ -34,6 +34,8 @@ Output: structured KEY=VALUE per .claude/rules/structured-script-output.md.
   --top N                    offenders listed per dimension (default 10)
   --always-loaded-budget N   chars; ERROR above it (default 100000). The ratchet
                              that stops the every-session surface growing.
+  --rule-size-ceiling N      chars; ERROR when any ONE rule exceeds it, scoped
+                             or not (default 50000). See below.
   --project-dir PATH         repo root (default: this script's parent)
   --also PATH                extra repo root whose always-loaded (C5) surface
                              counts toward one shared budget. Repeatable.
@@ -49,6 +51,19 @@ sums the surfaces so the portfolio total is gated by something.
 Only the C5 surface is summed. Skill-level dimensions (C1-C4, C6) stay scoped
 to --project-dir: they measure authoring quality inside one marketplace, which
 does not aggregate meaningfully across unrelated repos.
+
+WHY A PER-RULE CEILING (issue #2667)
+The always-loaded budget sums UNSCOPED rules only, so a path-scoped rule of any
+size is invisible to it. But a scoped rule is not free: it loads whole into any
+agent that touches a matching path. .claude/rules/regression-testing.md grew to
+513 KB behind a `**/skills/**` scope and pushed a haiku eval subagent past its
+context window (HTTP 400 "Prompt is too long") while this scanner reported OK.
+The ceiling applies to every rule regardless of scoping.
+
+It is a ratchet, set just above the largest rule at the time it landed
+(agent-development.md, ~46,000 chars), so it catches the pathological case
+without flagging the ordinary one. Lower it as large rules are split; raise it
+only with a measurement that says a single rule must be that big.
 """
 
 from __future__ import annotations
@@ -104,6 +119,8 @@ SHINGLE_W = 8  # words per shingle
 SHINGLE_MIN_SHARED = 20  # shared shingles before a pair is worth reporting
 SHINGLE_MIN_CONTAINMENT = 0.15
 SHINGLE_UBIQUITY_CAP = 20  # a shingle in >N units is boilerplate, not a pair signal
+
+RULE_SIZE_CEILING = 50_000  # chars, per rule, scoped or not (see module docstring)
 
 FLAT_BODY_CHARS = 10_000  # body this big with zero supporting files = flat
 EXAMPLE_RATIO_FLAG = 0.25
@@ -455,7 +472,11 @@ def portfolio_issues(portfolio: dict | None) -> list[dict]:
 
 
 def build_issues(
-    skills: list[dict], rules: list[dict], always_loaded: int, budget: int
+    skills: list[dict],
+    rules: list[dict],
+    always_loaded: int,
+    budget: int,
+    rule_ceiling: int = RULE_SIZE_CEILING,
 ) -> list[dict]:
     issues: list[dict] = []
 
@@ -469,6 +490,21 @@ def build_issues(
                 "msg": f"always-loaded surface {always_loaded} chars exceeds budget {budget}",
             }
         )
+
+    for r in rules:
+        if r["chars"] > rule_ceiling:
+            scope = "path-scoped" if r["path_scoped"] else "unscoped"
+            issues.append(
+                {
+                    "severity": "ERROR",
+                    "dim": "C5",
+                    "type": "rule_over_size_ceiling",
+                    "unit": r["path"],
+                    "msg": f"{r['chars']} chars exceeds the per-rule ceiling "
+                    f"{rule_ceiling} ({scope}; a rule loads whole whenever it "
+                    "loads, and the always-loaded budget cannot see a scoped one)",
+                }
+            )
 
     for s in skills:
         if (
@@ -611,6 +647,10 @@ def emit_text(data: dict, n_top: int, max_issues: int) -> None:
     out(f"C5_ALWAYS_LOADED_CHARS={t['c5_always_loaded_chars']}\n")
     out(f"C5_ALWAYS_LOADED_EST_TOKENS={t['c5_always_loaded_est_tokens']}\n")
     out(f"C5_ALWAYS_LOADED_BUDGET={t['c5_always_loaded_budget']}\n")
+    out(f"C5_RULE_SIZE_CEILING={t['c5_rule_size_ceiling']}\n")
+    out(f"C5_RULES_OVER_CEILING={t['c5_rules_over_ceiling']}\n")
+    out(f"C5_LARGEST_RULE={t['c5_largest_rule']}\n")
+    out(f"C5_LARGEST_RULE_CHARS={t['c5_largest_rule_chars']}\n")
 
     pf = data.get("portfolio")
     if pf:
@@ -698,6 +738,12 @@ def main() -> int:
     ap.add_argument("--top", type=int, default=10)
     ap.add_argument("--max-issues", type=int, default=40, help="0 = no cap")
     ap.add_argument("--always-loaded-budget", type=int, default=100_000)
+    ap.add_argument(
+        "--rule-size-ceiling",
+        type=int,
+        default=RULE_SIZE_CEILING,
+        help="chars; ERROR when any single rule exceeds it, scoped or not",
+    )
     ap.add_argument(
         "--also",
         action="append",
@@ -793,7 +839,11 @@ def main() -> int:
             ),
         }
 
-    issues = build_issues(skills, rules, always_loaded, args.always_loaded_budget)
+    issues = build_issues(
+        skills, rules, always_loaded, args.always_loaded_budget, args.rule_size_ceiling
+    )
+    # Ties broken on path so the reported "largest" is deterministic.
+    largest = max(rules, key=lambda r: (r["chars"], r["path"]), default=None)
     issues += portfolio_issues(portfolio)
     # ERRORs first so --max-issues can never truncate the reason STATUS is ERROR.
     # Stable, so within-severity order (and the determinism contract) is intact.
@@ -862,6 +912,12 @@ def main() -> int:
             "c5_always_loaded_chars": always_loaded,
             "c5_always_loaded_est_tokens": always_loaded // 4,
             "c5_always_loaded_budget": args.always_loaded_budget,
+            "c5_rule_size_ceiling": args.rule_size_ceiling,
+            "c5_rules_over_ceiling": sum(
+                1 for r in rules if r["chars"] > args.rule_size_ceiling
+            ),
+            "c5_largest_rule": largest["path"] if largest else "",
+            "c5_largest_rule_chars": largest["chars"] if largest else 0,
             "c6_skills_with_scripts": sum(1 for s in skills if s["c3_has_scripts"]),
             "c6_prose_procedure_no_script": sum(
                 1

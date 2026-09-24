@@ -14,7 +14,7 @@ set -uo pipefail
 #
 # See the "(just export-opencode)" regression comment in
 # scripts/plugin-compliance-check.sh and the Known Regressions row in
-# .claude/rules/regression-testing.md.
+# docs/regression-ledger.md.
 #
 # check_skill_frontmatter() resolves "${plugin}/skills" and the script cd's to
 # the repo root, so an *absolute* plugin path lets us test against a temp

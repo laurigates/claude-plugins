@@ -24,6 +24,12 @@
 #       (`git -C "$WORKTREE"`) that defends against cwd-reset leaks
 #   custom-agent-definitions/SKILL.md
 #     - references issue #1422 (the cross-reference to the contract)
+#     - does NOT describe `context: fork` as an agent context mode (#2646)
+#   .claude/rules/agent-development.md (#2646)
+#     - states that `context:` is a skill field, not an agent field
+#     - states that a named agent does not see the parent's conversation history
+#     - does NOT carry the retired "sees parent history" claim or the
+#       `context` agent field-table row
 #
 # Supporting material for parallel-agent-dispatch lives in references/*.md
 # (issue #2143 — multi-file progressive disclosure, split by the path that needs
@@ -46,6 +52,7 @@ cd "$(dirname "$0")/.." || exit 1
 
 dispatch_skill="agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md"
 agentdef_skill="agent-patterns-plugin/skills/custom-agent-definitions/SKILL.md"
+agent_dev_rule=".claude/rules/agent-development.md"
 
 # parallel-agent-dispatch's supporting material, split by consumer path (#2143).
 dispatch_refs="agent-patterns-plugin/skills/parallel-agent-dispatch/references"
@@ -67,6 +74,24 @@ require_marker() {
   if ! grep -qF -- "$needle" "$file"; then
     echo "ERROR: $file is missing the loud-failure contract marker: $desc"
     echo "       expected to find: $needle"
+    errors=$((errors + 1))
+  fi
+}
+
+forbid_marker() {
+  # forbid_marker <file> <fixed-string> <human description>
+  # The inverse pin: a retired, factually wrong claim must not come back. A
+  # presence-only pin cannot catch a bulk edit that restores the old sentence
+  # beside the corrected one (#2646).
+  local file="$1" needle="$2" desc="$3"
+  if [ ! -f "$file" ]; then
+    echo "ERROR: $file not found"
+    errors=$((errors + 1))
+    return
+  fi
+  if grep -qF -- "$needle" "$file"; then
+    echo "ERROR: $file carries a retired claim: $desc"
+    echo "       must not contain: $needle"
     errors=$((errors + 1))
   fi
 }
@@ -265,6 +290,33 @@ require_marker "$worktree_hazards_md" "Workflow agents are unreachable" \
 require_marker "$worktree_hazards_md" "gated on the run's completion notification" \
   "the completion-gated, non-force cleanup condition (issue #2614)"
 
+# Regression #2646: agent-development.md described `context: fork` two
+# contradictory ways — as isolation ("an independent context copy" in which
+# "the agent sees parent history") and as inheritance ("a named plugin agent
+# without context: fork starts cold"). Both were wrong: `context` is a SKILL
+# frontmatter field (code.claude.com/docs/en/skills.md § Run skills in a
+# subagent — the forked skill "doesn't see your conversation history"), it is
+# absent from the subagent frontmatter table, and on an agent it was measured
+# inert (forked and briefed probes returned bit-identical 2549 subagent_tokens,
+# both blind to the parent turn). Inheritance belongs only to the runtime
+# `fork` subagent type. Pin the corrected distinction and ban both retired
+# claims, in the rule and in the custom-agent-definitions skill that restated
+# them.
+require_marker "$agent_dev_rule" "is a skill field, not an agent field" \
+  "the skill-field-vs-agent-field distinction (issue #2646)"
+require_marker "$agent_dev_rule" "does not see the parent's conversation history" \
+  "the named-agent-starts-without-history statement (issue #2646)"
+forbid_marker "$agent_dev_rule" "sees parent history" \
+  "the retired isolation-with-history claim (issue #2646)"
+# shellcheck disable=SC2016  # literal markdown backticks, not command substitution
+forbid_marker "$agent_dev_rule" '`fork` for isolated context' \
+  "the retired \`context\` agent field-table row (issue #2646)"
+forbid_marker "$agentdef_skill" "sees parent history" \
+  "the retired isolation-with-history claim (issue #2646)"
+# shellcheck disable=SC2016  # literal markdown backticks, not command substitution
+forbid_marker "$agentdef_skill" 'Context mode: `fork` or default' \
+  "the retired \`context\` agent field-table row (issue #2646)"
+
 if [ "$errors" -ne 0 ]; then
   echo
   echo "The loud-failure contract (issue #1422) and the hook-thrashing heuristic"
@@ -274,8 +326,9 @@ if [ "$errors" -ne 0 ]; then
   echo "  - 'Killed-agent worktree recovery' section in $failure_recovery_md"
   echo "  - 'WIP salvage before re-dispatch' section in $failure_recovery_md (issue #1491)"
   echo "  - the references/*.md index rows in $reference_index (issue #2143)"
+  echo "  - the 'Context Isolation' section in $agent_dev_rule (issue #2646)"
   exit 1
 fi
 
-echo "OK: loud-failure contract, hook-thrashing heuristic, and WIP-salvage discrimination present in agent-patterns dispatch skills"
+echo "OK: loud-failure contract, hook-thrashing heuristic, WIP-salvage discrimination, and the agent context-field distinction present"
 exit 0

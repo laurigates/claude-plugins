@@ -1,7 +1,7 @@
 ---
 created: 2026-06-22
-modified: 2026-06-24
-reviewed: 2026-07-04
+modified: 2026-09-23
+reviewed: 2026-09-23
 paths:
   - "**/.gitattributes"
 ---
@@ -11,14 +11,14 @@ A repo's `.gitattributes` is a path→attribute map git consults for **merge**,
 **diff**, **checkout**, and **archive** behavior. This repo uses it for three
 things; the reusable cross-repo automation is
 [`configure-plugin:configure-gitattributes`](../../configure-plugin/skills/configure-gitattributes/SKILL.md),
-and the conflict-resolution side is `.claude/rules/regression-testing.md` plus
+and the conflict-resolution side is `docs/regression-ledger.md` plus
 `scripts/resolve-additive-conflicts.py`.
 
 ## The three uses (and what each is safe for)
 
 | Attribute | Effect | Safe for | Never for |
 |-----------|--------|----------|-----------|
-| `merge=union` | Built-in driver; concatenates both sides' additions, no markers | **Append-only files where every logical entry is exactly one line** (the regression-testing table) | Code, JSON, multi-line-entry files, anything that gets *edited* not just appended |
+| `merge=union` | Built-in driver; concatenates both sides' additions, no markers | **Append-only files where every logical entry is exactly one line** (the regression ledger table) | Code, JSON, multi-line-entry files, anything that gets *edited* not just appended |
 | `text=auto eol=lf` | Normalize line endings to LF on commit/checkout | Any repo with shell scripts/hooks (CRLF silently breaks a shebang) | — (safe globally; no-op on an all-LF tree) |
 | `linguist-generated` | Collapse in GitHub PR diffs + drop from language stats | Build output, tool-owned files (changelogs, lockfiles, rendered diagrams, compiled prompts) | — (display-only; changes **no** merge behavior, so safe even where `merge=union` is wrong) |
 
@@ -27,7 +27,9 @@ and the conflict-resolution side is `.claude/rules/regression-testing.md` plus
 Union merge is correct **only** when both sides add disjoint lines and every
 entry is self-contained on one line. Apply the test before marking a file:
 
-- ✅ `.claude/rules/regression-testing.md` — one table row per bug, append-only.
+- ✅ `docs/regression-ledger.md` — one table row per bug, append-only.
+- ❌ `.claude/rules/regression-testing.md` — carried the ledger until #2667; now
+  an edited rule, so a stale branch appending there must conflict, not union.
 - ❌ `**/CHANGELOG.md` — entries are **multi-line**; union interleaves them
   wrongly. (Also release-please-owned — feature branches never append, so they
   don't conflict anyway.)
@@ -91,6 +93,6 @@ concrete need appears — the three above cover the common cases.
 ## Related
 
 - `configure-plugin:configure-gitattributes` — the reusable skill that audits/writes a repo's `.gitattributes`
-- `.claude/rules/regression-testing.md` — the additive-conflict resolver + `merge=union` Known-Regressions entry
+- `docs/regression-ledger.md` — the additive-conflict resolver + `merge=union` ledger entry
 - `scripts/resolve-additive-conflicts.py` — the deterministic union pre-pass for the conflict workflow
 - `.claude/rules/conventional-commits.md` — `chore`/`build` scope for tooling-config commits

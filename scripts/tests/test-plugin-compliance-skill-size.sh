@@ -17,7 +17,7 @@ set -uo pipefail
 # invisible.
 #
 # See .claude/rules/skill-quality.md "Size Limits" and the
-# "skill-line-count-validity" row in .claude/rules/regression-testing.md.
+# "skill-line-count-validity" row in docs/regression-ledger.md.
 #
 # Thresholds under test:
 #   ≤ 10000 chars        → OK   (silent — no size line)

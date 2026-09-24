@@ -3,6 +3,10 @@
   "name": "migration-patterns-plugin",
   "version": "1.6.0",
   "description": "Migration patterns - dual write, shadow mode, and automated tool migrations (mypy→ty, black→ruff-format, flake8→ruff, ESLint→Biome)",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "license": "MIT",
   "keywords": [
     "migration",
     "dual-write",

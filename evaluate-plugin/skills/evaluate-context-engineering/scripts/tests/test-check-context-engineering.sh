@@ -342,5 +342,57 @@ assert "--also on a missing path exits 1" "$?" "1"
 assert_true "no --also means no portfolio keys" \
   "$(printf '%s' "$out" | grep -qE '^C5_PORTFOLIO' && echo false || echo true)"
 
+# --- per-rule size ceiling (#2667) -------------------------------------------
+# The always-loaded budget above sums UNSCOPED rules only, so a path-scoped rule
+# of any size is invisible to it. That is how .claude/rules/regression-testing.md
+# reached 513 KB: scoped to `**/skills/**`, it loaded whole into every subagent
+# that touched a skill path, pushing a haiku eval dispatch past its context
+# window (HTTP 400 "Prompt is too long"). The ceiling applies to EVERY rule
+# regardless of scoping. A separate fixture keeps the exact C5 counts above
+# untouched.
+ceiling_fixture="$sandbox/ceiling-fixture"
+mkdir -p "$ceiling_fixture/.claude/rules"
+printf 'c%.0s' $(seq 1 200) >"$ceiling_fixture/CLAUDE.md"
+{
+  printf -- '---\npaths:\n  - "**/skills/**"\n---\n# Oversized scoped rule\n\n'
+  python3 -c 'print("r" * 60000)'
+} >"$ceiling_fixture/.claude/rules/huge-scoped.md"
+cat >"$ceiling_fixture/.claude/rules/small-scoped.md" <<'RULE_EOF'
+---
+paths:
+  - "**/*.py"
+---
+# Small scoped rule
+RULE_EOF
+
+ceil_out="$("$scanner" --project-dir "$ceiling_fixture" --max-issues 0 2>&1)"
+assert "oversized path-scoped rule is an ERROR at the default ceiling" \
+  "$(value_of "$ceil_out" STATUS)" "ERROR"
+assert_true "the ERROR names the oversized rule and the ceiling type" \
+  "$(printf '%s' "$ceil_out" | grep -qE 'SEVERITY=ERROR DIM=C5 TYPE=rule_over_size_ceiling UNIT=\.claude/rules/huge-scoped\.md ' && echo true || echo false)"
+assert_true "the small scoped rule is not flagged" \
+  "$(printf '%s' "$ceil_out" | grep -q 'UNIT=\.claude/rules/small-scoped\.md' && echo false || echo true)"
+assert "exactly one rule is over the ceiling" \
+  "$(value_of "$ceil_out" C5_RULES_OVER_CEILING)" "1"
+assert "the default ceiling is reported" \
+  "$(value_of "$ceil_out" C5_RULE_SIZE_CEILING)" "50000"
+assert "the largest rule is named" \
+  "$(value_of "$ceil_out" C5_LARGEST_RULE)" ".claude/rules/huge-scoped.md"
+# The always-loaded surface must be UNCHANGED by the ceiling: the oversized rule
+# is scoped, so it still does not count toward C5. The ceiling is a second gate,
+# not a re-definition of the first.
+assert "a scoped rule still does not enter the always-loaded surface" \
+  "$(value_of "$ceil_out" C5_UNSCOPED_RULES)" "0"
+"$scanner" --project-dir "$ceiling_fixture" --strict >/dev/null 2>&1
+assert "--strict exits 1 on an oversized scoped rule" "$?" "1"
+# Guard integrity: the SAME tree under a ceiling it meets must be clean, or every
+# assertion above would also hold for a scanner that errors on any scoped rule.
+"$scanner" --project-dir "$ceiling_fixture" --rule-size-ceiling 999999 --strict >/dev/null 2>&1
+assert "--strict exits 0 when every rule is under the ceiling" "$?" "0"
+# Scoping is irrelevant to the ceiling: an UNSCOPED rule over it is flagged too.
+under_budget_out="$("$scanner" --project-dir "$fixture" --rule-size-ceiling 10 --always-loaded-budget 999999 --max-issues 0 2>&1)"
+assert_true "an unscoped rule over the ceiling is flagged as well" \
+  "$(printf '%s' "$under_budget_out" | grep -qE 'TYPE=rule_over_size_ceiling UNIT=\.claude/rules/procedural-unscoped\.md ' && echo true || echo false)"
+
 echo "PASS=$pass_count FAIL=$fail_count"
 [ "$fail_count" -eq 0 ]

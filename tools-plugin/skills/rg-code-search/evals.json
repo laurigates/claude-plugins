@@ -1,0 +1,64 @@
+{
+  "skill_name": "rg-code-search",
+  "skill_path": "tools-plugin/skills/rg-code-search/SKILL.md",
+  "evals": [
+    {
+      "id": "rg-001",
+      "description": "Type-filtered, path-scoped search with the pattern's metacharacters handled",
+      "prompt": "Give me the ripgrep command to find every Python file under src/ that calls `requests.get(`.",
+      "expectations": [
+        { "assertion": "Uses rg", "check": "regex", "pattern": "\\brg\\s" },
+        { "assertion": "Restricts to Python files", "check": "regex", "pattern": "(-t\\s*py\\b|--type[= ]py\\b|-g\\s*['\\\"]?\\*\\.py\\b|--glob[= ]['\\\"]?\\*\\.py\\b)" },
+        { "assertion": "Scopes the search to src/", "check": "regex", "pattern": "\\bsrc/" },
+        { "assertion": "Escapes the regex metacharacters or uses fixed-string mode", "check": "regex", "pattern": "(\\s-F\\b|--fixed-strings|requests\\\\\\.get\\\\\\()" },
+        "Does not offer grep -r or find | xargs grep as the primary answer"
+      ],
+      "tags": ["cli", "type-filter", "basic"]
+    },
+    {
+      "id": "rg-002",
+      "description": "File names only, restricted to TypeScript",
+      "prompt": "I only want the file names, not the matching lines: which TypeScript files mention TODO?",
+      "expectations": [
+        { "assertion": "Uses rg", "check": "regex", "pattern": "\\brg\\s" },
+        { "assertion": "Lists matching files only", "check": "regex", "pattern": "(\\s-l\\b|--files-with-matches)" },
+        { "assertion": "Restricts to TypeScript", "check": "regex", "pattern": "(-t\\s*ts\\b|--type[= ]ts\\b|-g\\s*['\\\"]?\\*\\.tsx?\\b|-g\\s*['\\\"]?\\*\\.\\{ts)" },
+        "Relies on rg honouring .gitignore (or excludes node_modules explicitly) rather than scanning dependencies"
+      ],
+      "tags": ["cli", "files-only"]
+    },
+    {
+      "id": "rg-003",
+      "description": "Context lines around matches in Rust sources",
+      "prompt": "Show three lines of context around every `panic!` in the Rust sources.",
+      "expectations": [
+        { "assertion": "Uses rg", "check": "regex", "pattern": "\\brg\\s" },
+        { "assertion": "Requests three lines of context", "check": "regex", "pattern": "(-C\\s*3\\b|--context[= ]3\\b|-A\\s*3\\b[^\\n]*-B\\s*3\\b|-B\\s*3\\b[^\\n]*-A\\s*3\\b)" },
+        { "assertion": "Restricts to Rust files", "check": "regex", "pattern": "(-t\\s*(rust|rs)\\b|--type[= ](rust|rs)\\b|-g\\s*['\\\"]?\\*\\.rs\\b)" }
+      ],
+      "tags": ["cli", "context"]
+    },
+    {
+      "id": "rg-004",
+      "description": "Directory lookup avoids the basename-only glob trap the skill documents",
+      "prompt": "Find where the directory named `sentry-triage` lives in this repo, using rg's file listing.",
+      "expectations": [
+        { "assertion": "Uses a glob anchored on the path (or find -type d), not a basename glob", "check": "regex", "pattern": "(\\*\\*/sentry-triage/\\*\\*|find\\b[^\\n]*-type\\s+d[^\\n]*-name\\s+['\\\"]?sentry-triage)" },
+        "Does not present `rg --files -g '*sentry-triage*'` as a working answer (a glob without a slash matches basenames only)"
+      ],
+      "tags": ["cli", "glob-trap"]
+    },
+    {
+      "id": "rg-005",
+      "description": "Impossible task: the file's contents are unavailable, so no line number can be given",
+      "prompt": "Using rg, tell me the line number in config/settings.yaml where `timeout` is set. The file is not in this conversation, I am not running anything for you, and I will not paste it.",
+      "expected_outcome": "abstain",
+      "expectations": [
+        { "assertion": "Does not invent a line number", "check": "absent_regex", "pattern": "(settings\\.yaml:\\d+|\\bline\\s+(number\\s+)?\\d+\\b|\\bon line\\s+\\d+)", "flags": "i" },
+        { "assertion": "States it cannot see the file", "check": "regex", "pattern": "((can('|no)t|cannot|unable to|not able to|don't|do not|have no) (see|read|access|view|know|determine|tell)|without (access|seeing|reading))", "flags": "i" },
+        "Offers the command to run (for example rg -n timeout config/settings.yaml) instead of an answer"
+      ],
+      "tags": ["abstention", "impossible-task"]
+    }
+  ]
+}
