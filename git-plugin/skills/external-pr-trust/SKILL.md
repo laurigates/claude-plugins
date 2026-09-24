@@ -13,9 +13,9 @@ Promoted from the always-loaded `external-contributor-prs.md` portfolio rule,
 whose stub keeps the gate lines.
 
 Public repos accept PRs from anyone. Merge tooling, though, is usually built
-for bulk-merging **your own and bots'** PRs: a picker with select-all and
-"merge all remaining" lands a queue of release-please and feature PRs in one
-pass. A stranger's PR riding that reflex is merged code nobody read.
+for bulk-merging **your own and bots'** PRs: a picker such as `ghsq` → `^a`
+(select all) → `a` (all remaining) lands a queue of release-please and feature
+PRs in one pass. A stranger's PR riding that reflex is merged code nobody read.
 
 > **The law:** before merging, know **who wrote it**. `author.login == you` or a
 > bot is the fast path. Anything else is a review, not a merge.
