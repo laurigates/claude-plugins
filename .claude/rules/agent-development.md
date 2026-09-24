@@ -287,8 +287,10 @@ Agent tool with run_in_background: true
 
 **Background execution behavior (2.1.232+: background is the default for non-teammate spawns):**
 - The spawn returns immediately; the agent's result is delivered to the main session as a notification when it finishes — the main session does not poll.
-- To block on a specific result before proceeding, wait for it at the point the result is needed: `TaskOutput` (deprecated in favour of reading the task's output file path, which the spawn result names) still blocks until completion.
+- To block on a specific result before proceeding, spawn with `run_in_background: false`, or `Read` the output file path the spawn result names once its completion notification arrives; the blocking `TaskOutput` tool was removed in 2.1.277.
 - Use `TaskStop` to stop a background agent.
+- A subagent's result reaches the main agent under a header marking it as subagent output, indented, so its text cannot pass as the session's own instructions (2.1.277, after 2.1.210 hardened the Agent tool against indirect prompt injection); background notifications between turns arrive inside `<system-reminder>` tags (2.1.234).
+- A subagent cut off by a rate limit or server error returns its partial work to the parent instead of failing silently (2.1.199).
 
 **When to use background execution:**
 - Independent work that doesn't need to block the main session
@@ -433,7 +435,7 @@ Lead Agent (orchestrator)
 |------|---------|
 | `SendMessage` | Send messages between agents (DM, broadcast, shutdown); address by agent ID or name |
 | `TaskStop` | Stop a running background agent |
-| `ListAgents` | Discover other sessions and teammates reachable via `SendMessage`; reports the session's own name and lists live teammates (2.1.239) |
+| `ListAgents` | Discover other sessions and teammates reachable via `SendMessage`; reports the session's own name and lists live teammates (2.1.239); marks disconnected Remote Control sessions `offline` and cloud sessions `cloud` (2.1.229) |
 
 > **Security (2.1.166)**: Cross-session messaging is hardened — messages relayed via `SendMessage` **no longer carry user authority**, and auto mode blocks them. A teammate cannot use a relayed message to escalate privileges or auto-approve actions that the receiving session's own permission mode would otherwise gate.
 

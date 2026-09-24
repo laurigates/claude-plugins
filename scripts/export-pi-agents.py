@@ -20,7 +20,7 @@ both are reported rather than adjusted silently:
      `WIDENED_BASH=` and listed per agent. Nothing in this repo can narrow it;
      it is a property of the target schema.
   2. **Claude-Code-only tools are dropped**, because no pi built-in exists for
-     them: `TodoWrite`, `TaskOutput`, `WebFetch`, `WebSearch`, `NotebookEdit`.
+     them: `TodoWrite`, `WebFetch`, `WebSearch`, `NotebookEdit`.
      They are reported as `DROPPED_TOOLS=` per agent.
      `WebFetch`/`WebSearch` *could* be reached as `ext:` selectors (the tool is
      provided by the optional `pi-web-search` extension), but a single `ext:`
@@ -83,7 +83,7 @@ TOOL_MAP = {
 
 # No pi built-in equivalent. Kept as a named tuple so the report can say which
 # one went missing rather than just how many.
-DROPPED_TOOLS = ("TodoWrite", "TaskOutput", "WebFetch", "WebSearch", "NotebookEdit")
+DROPPED_TOOLS = ("TodoWrite", "WebFetch", "WebSearch", "NotebookEdit")
 
 # Source frontmatter keys this projection owns; anything else is reported as a
 # dropped key so a new field cannot be added to an agent and vanish silently.
