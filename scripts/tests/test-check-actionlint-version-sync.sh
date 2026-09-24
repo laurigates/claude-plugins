@@ -34,6 +34,12 @@ assert() {
 
 is_true() { [ "$1" = "true" ] && echo true || echo false; }
 contains() { printf '%s' "$1" | grep -q -- "$2" && echo true || echo false; }
+# The runtime half of the structured-output contract (#2691): one canonical
+# STATUS=, REASON= present iff non-OK, ISSUE_COUNT= equal to the ISSUES: rows.
+validates() {
+  printf '%s\n' "$1" | bash "$repo_root/scripts/check-structured-output-contract.sh" --validate >/dev/null 2>&1 \
+    && echo true || echo false
+}
 
 fx="$(mktemp -d)"
 [ -n "$fx" ] || { echo "mktemp failed" >&2; exit 1; }
@@ -74,6 +80,8 @@ echo "=== TEST A: real repo pins agree ==="
 out="$(bash "$checker" --strict 2>&1)"; rc=$?
 assert "A exits 0" "$(is_true "$([ $rc -eq 0 ] && echo true)")"
 assert "A STATUS=OK" "$(contains "$out" 'STATUS=OK')"
+assert "A carries no REASON on OK" "$([ "$(contains "$out" '^REASON=')" = false ] && echo true || echo false)"
+assert "A output satisfies the contract" "$(validates "$out")"
 # Guard integrity: a checker that found no install site would also print OK.
 assert "A actually found a CI pin" \
   "$([ "$(contains "$out" 'CI_PIN_COUNT=0')" = false ] && echo true || echo false)"
@@ -86,7 +94,9 @@ echo "=== TEST B: skew between pre-commit rev and CI pin is flagged ==="
 d="$(mkrepo b 'v1.7.12' 'go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.11')"
 out="$(bash "$checker" --project-dir "$d" --strict 2>&1)"; rc=$?
 assert "B exits 1 under --strict" "$(is_true "$([ $rc -eq 1 ] && echo true)")"
-assert "B STATUS=FAIL" "$(contains "$out" 'STATUS=FAIL')"
+assert "B STATUS=ERROR" "$(contains "$out" '^STATUS=ERROR$')"
+assert "B REASON names the skew" "$(contains "$out" '^REASON=actionlint_version_skew: ')"
+assert "B output satisfies the contract" "$(validates "$out")"
 assert "B names the skew type" "$(contains "$out" 'TYPE=actionlint_version_skew')"
 assert "B reports both versions" \
   "$([ "$(contains "$out" 'v1.7.11')" = true ] && [ "$(contains "$out" 'v1.7.12')" = true ] && echo true || echo false)"
@@ -116,7 +126,16 @@ echo "=== TEST F: skew is reported but non-fatal without --strict ==="
 d="$(mkrepo f 'v1.7.12' 'go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.11')"
 out="$(bash "$checker" --project-dir "$d" 2>&1)"; rc=$?
 assert "F exits 0 without --strict" "$(is_true "$([ $rc -eq 0 ] && echo true)")"
-assert "F still reports STATUS=FAIL" "$(contains "$out" 'STATUS=FAIL')"
+assert "F still reports STATUS=ERROR" "$(contains "$out" '^STATUS=ERROR$')"
+
+# --- TEST F2: a WARN-only finding reports WARN, not ERROR ---------------------
+echo "=== TEST F2: a missing pre-commit rev is a WARN with a REASON ==="
+d="$(mkrepo f2 '' 'go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12')"
+out="$(bash "$checker" --project-dir "$d" 2>&1)"; rc=$?
+assert "F2 exits 0 without --strict" "$(is_true "$([ $rc -eq 0 ] && echo true)")"
+assert "F2 STATUS=WARN" "$(contains "$out" '^STATUS=WARN$')"
+assert "F2 REASON names the missing rev" "$(contains "$out" '^REASON=missing_precommit_rev: ')"
+assert "F2 output satisfies the contract" "$(validates "$out")"
 
 # --- TEST G: guard integrity on an empty tree --------------------------------
 echo "=== TEST G: a tree with no actionlint install is marked SCANNED_EMPTY ==="
