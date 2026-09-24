@@ -637,6 +637,22 @@ repos:
         language: system
         files: '^scripts/(check-workflow-tool-grants\.sh|tests/test-check-workflow-tool-grants\.sh)$'
         pass_filenames: false
+      # The STATUS= contract (#2691): canonical OK|WARN|ERROR, ISSUE_COUNT=, and
+      # REASON= on the non-OK path, swept across every scripts/check-*.sh. The
+      # whole sweep runs on any change to one, since the pending list it reads
+      # must shrink in the same commit that migrates a script.
+      - id: check-structured-output-contract
+        name: STATUS= emitters honour the structured-output contract
+        entry: bash ./scripts/check-structured-output-contract.sh --strict
+        language: system
+        files: '^scripts/(check-[^/]*\.sh|structured-output-reason-pending\.txt)$'
+        pass_filenames: false
+      - id: test-check-structured-output-contract
+        name: structured-output contract guard regression
+        entry: bash ./scripts/tests/test-check-structured-output-contract.sh
+        language: system
+        files: '^scripts/(check-structured-output-contract\.sh|structured-output-reason-pending\.txt|tests/test-check-structured-output-contract\.sh)$'
+        pass_filenames: false
       # Only the self-test is wired here: check-audit-liveness.sh itself queries
       # `gh run list` / `gh issue list`, so it belongs in the scheduled sweep,
       # not in a pre-commit hook that must work offline.
