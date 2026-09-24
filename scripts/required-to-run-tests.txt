@@ -113,6 +113,11 @@ scripts/tests/test-check-golden-set-coverage.sh
 # pinned separately by the future-tense cases at :113-118 (#2580).
 hooks-plugin/hooks/test-no-calendar-estimates.sh
 
+# The pi safety-hook bridge (#2634) executes its generated extension under
+# node with a stub pi; its only skip is "node not available". Every CI runner
+# has node, so a skip here means the runtime half silently stopped running.
+scripts/tests/test-export-pi-hooks.sh
+
 # Stubs gh on PATH and replays verbatim excerpts of three real run logs -- no
 # network, no credentials, no skip branch -- so a SKIP here can only mean the
 # file stopped being discovered. Its case L executes the model audit's own

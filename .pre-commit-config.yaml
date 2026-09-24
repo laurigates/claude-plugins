@@ -615,6 +615,16 @@ repos:
         language: system
         files: '^(scripts/(generate-opencode-hook-plugins\.py|export-opencode\.sh|install-opencode\.sh|tests/test-export-opencode-hooks\.sh)|[^/]+-plugin/hooks\.json)$'
         pass_filenames: false
+      - id: test-export-pi-hooks
+        name: pi safety-hook extension export regression (#2634)
+        entry: bash ./scripts/tests/test-export-pi-hooks.sh
+        language: system
+        # plugin.json is in scope because eight plugins declare hooks inline
+        # there, with no hooks.json; the opencode generator is in scope because
+        # the pi generator imports its manifest-parsing helpers; hook scripts
+        # because the real-repo half runs the allowlisted ones end to end.
+        files: '^(scripts/(generate-pi-hook-extension\.py|generate-opencode-hook-plugins\.py|tests/test-export-pi-hooks\.sh)|[^/]+-plugin/(hooks\.json|\.claude-plugin/plugin\.json|hooks/[^/]+\.sh)|justfile)$'
+        pass_filenames: false
       - id: check-git-sandbox-guards
         name: shell test sandboxes guard mktemp against shared-checkout leak (#1692)
         entry: bash ./scripts/check-git-sandbox-guards.sh --strict
