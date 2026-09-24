@@ -6,11 +6,22 @@
 #
 # Network seam: every `gh` call is routed through an injectable fixture so tests
 # run fully offline. Set GIT_TRIAGE_ISSUES_FIXTURE / GIT_TRIAGE_PRS_FIXTURE to
-# canned gh JSON arrays, or GIT_TRIAGE_NO_FETCH=1 to skip live fetches entirely.
+# canned gh JSON arrays, GIT_TRIAGE_COUNTS_FIXTURE to a canned open-count
+# GraphQL response, or GIT_TRIAGE_NO_FETCH=1 to skip live fetches entirely.
 #
 # Usage: bash git-triage.sh [--home-dir <path>] [--project-dir <path>]
 #          [--repo owner/name] [--type issues|prs|both] [--batch N]
 #          [--days-stale-issue N] [--days-stale-pr N]
+#
+# Coverage keys (issue #2714). --batch caps each `gh … list` call, and gh
+# returns the N most recently CREATED open items, so a batch is a sample, not
+# the backlog. Each half therefore emits:
+#   <HALF>_FETCHED    items in this batch (the domain count)
+#   <HALF>_TOTAL      unbounded open count, or `unknown` if it could not be read
+#   <HALF>_TRUNCATED  true | false | unknown  (true when TOTAL > FETCHED)
+# and the trailer carries a TRUNCATED roll-up (true > unknown > false).
+# ISSUE_COUNT= / ISSUES: are NOT GitHub issues: they are this collector's own
+# diagnostics, per .claude/rules/structured-script-output.md.
 #
 # gh --json fields: PR merge state is `state`/`mergedAt` (never `merged`);
 # CI status lives in `statusCheckRollup[].conclusion` (never a flat field).
@@ -150,6 +161,63 @@ fetch_prs() {
     --json number,title,createdAt,updatedAt,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup,isDraft,baseRefName,headRefName,author,labels,body 2>/dev/null || echo "[]"
 }
 
+# --- Fetch unbounded open counts (issue #2714) -----------------------------
+# `--limit "$batch"` above is a cap, so the lists alone cannot say whether they
+# are the whole backlog. One GraphQL call returns the exact open totals for
+# both halves. Without --repo, gh's {owner}/{repo} placeholders (which only -F
+# resolves) pick the same cwd repository `gh issue list` infers; with --repo,
+# the explicit values go through -f so a numeric-looking name stays a string.
+# Prints nothing when the count is unavailable; the caller reads that as
+# `unknown`, never as zero.
+fetch_counts() {
+  if [ -n "${GIT_TRIAGE_COUNTS_FIXTURE:-}" ]; then
+    cat "$GIT_TRIAGE_COUNTS_FIXTURE"
+    return
+  fi
+  if [ "${GIT_TRIAGE_NO_FETCH:-}" = "1" ]; then
+    return
+  fi
+  # shellcheck disable=SC2016  # $owner/$name are GraphQL variables, not shell
+  local count_query='query($owner:String!,$name:String!){repository(owner:$owner,name:$name){issues(states:OPEN){totalCount} pullRequests(states:OPEN){totalCount}}}'
+  if [ -n "$repo" ]; then
+    gh api graphql -f owner="${repo%%/*}" -f name="${repo#*/}" -f query="$count_query" 2>/dev/null
+  else
+    gh api graphql -F owner='{owner}' -F name='{repo}' -f query="$count_query" 2>/dev/null
+  fi
+}
+
+# Extract one half's open total from the count response; `unknown` unless it is
+# a plain non-negative integer (covers no response, non-JSON, repository:null).
+count_of() {
+  local counts_json="$1" field="$2"
+  local count_value=""
+  count_value=$(jq -r --arg f "$field" '.data.repository[$f].totalCount // empty' <<<"$counts_json" 2>/dev/null)
+  case "$count_value" in
+    ''|*[!0-9]*) echo "unknown" ;;
+    *) echo "$count_value" ;;
+  esac
+}
+
+# Pure: true when the open total exceeds what was fetched; unknown without a total.
+truncation_state() {
+  local fetched_count="$1" open_total="$2"
+  case "$open_total" in
+    ''|*[!0-9]*) echo "unknown"; return ;;
+  esac
+  if [ "$open_total" -gt "$fetched_count" ]; then echo "true"; else echo "false"; fi
+}
+
+# TRUNCATED roll-up over the halves emitted this run: true > unknown > false.
+truncated_rollup="false"
+note_truncation() {
+  case "$1" in
+    true) truncated_rollup="true" ;;
+    unknown) [ "$truncated_rollup" = "false" ] && truncated_rollup="unknown" ;;
+  esac
+}
+
+counts_json=$(fetch_counts)
+
 # --- Issues section -------------------------------------------------------
 if [ "$triage_type" != "prs" ]; then
   issues_json=$(fetch_issues)
@@ -159,8 +227,13 @@ if [ "$triage_type" != "prs" ]; then
     triage_issue_count=$((triage_issue_count + 1))
     [ "$triage_status" = "OK" ] && triage_status="WARN"
   fi
-  issue_total=$(echo "$issues_json" | jq 'length')
-  echo "ISSUES_FETCHED=${issue_total}"
+  issues_fetched=$(echo "$issues_json" | jq 'length')
+  issues_open_total=$(count_of "$counts_json" issues)
+  issues_truncated=$(truncation_state "$issues_fetched" "$issues_open_total")
+  note_truncation "$issues_truncated"
+  echo "ISSUES_FETCHED=${issues_fetched}"
+  echo "ISSUES_TOTAL=${issues_open_total}"
+  echo "ISSUES_TRUNCATED=${issues_truncated}"
 
   # Per-issue: number, age, referenced PR numbers (closing-keyword candidates),
   # comment count, and the title (issue #2480). The title comes free from the
@@ -206,8 +279,13 @@ if [ "$triage_type" != "issues" ]; then
     triage_issue_count=$((triage_issue_count + 1))
     [ "$triage_status" = "OK" ] && triage_status="WARN"
   fi
-  pr_total=$(echo "$prs_json" | jq 'length')
-  echo "PRS_FETCHED=${pr_total}"
+  prs_fetched=$(echo "$prs_json" | jq 'length')
+  prs_open_total=$(count_of "$counts_json" pullRequests)
+  prs_truncated=$(truncation_state "$prs_fetched" "$prs_open_total")
+  note_truncation "$prs_truncated"
+  echo "PRS_FETCHED=${prs_fetched}"
+  echo "PRS_TOTAL=${prs_open_total}"
+  echo "PRS_TRUNCATED=${prs_truncated}"
 
   # Per-PR metadata runs in its OWN jq pass keyed by PR number, so a multi-line
   # bot PR body (embedded tabs/newlines) can never shift the categorization enum
@@ -317,6 +395,9 @@ if [ "$triage_type" != "issues" ]; then
   echo "SYSTEMATIC_FAILURE_COUNT=${sys_idx}"
 fi
 
+# Coverage roll-up (#2714). A truncated batch is a caveat on what was triaged,
+# not a collector fault, so it never moves STATUS.
+echo "TRUNCATED=${truncated_rollup}"
 echo "STATUS=${triage_status}"
 echo "ISSUE_COUNT=${triage_issue_count}"
 if [ -n "$triage_issues_list" ]; then
