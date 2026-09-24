@@ -574,22 +574,125 @@ def is_wrapper(kind: str, source: str) -> bool:
     return False
 
 
-# Array methods that call their callback once per element but that this
-# estimator does not model as a fan-out. A site inside one of these within a
-# literal source is NOT one element run once: `parallel([1, 2, 3].filter(x =>
-# agent(x)))` runs three agents.
-_ITERATING = re.compile(
-    r"\.\s*(?:filter|forEach|reduce|reduceRight|some|every|find|findIndex"
-    r"|findLast|findLastIndex|sort|toSorted)\s*\("
-)
+# The only two ways JS runs one code location more than once per evaluation of
+# the expression holding it: a loop, or a function that something calls more
+# than once. `_runs_once` refuses both unless the repetition is one this
+# estimator already multiplies by.
+_LOOP_KEYWORD = re.compile(r"\b(?:for|while|do)\b")
+
+
+def _call_kind(text: str, open_paren: int) -> str:
+    """Which modeled fan-out, if any, the `(` at `open_paren` calls."""
+    before = text[:open_paren].rstrip()
+    if re.search(r"\.\s*(?:map|flatMap)$", before):
+        return "map"
+    if re.search(r"(?<![A-Za-z0-9_$.])pipeline$", before):
+        return "pipeline"
+    return "call"
+
+
+def _function_start(text: str, arrow: int) -> int:
+    """Index where the arrow function whose `=>` is at `arrow` begins."""
+    k = arrow - 1
+    while k >= 0 and text[k] in " \t\n":
+        k -= 1
+    if k >= 0 and text[k] == ")":
+        depth = 0
+        while k >= 0:
+            if text[k] == ")":
+                depth += 1
+            elif text[k] == "(":
+                depth -= 1
+                if depth == 0:
+                    break
+            k -= 1
+    else:
+        while k >= 0 and _IDENT.match(text[k]):
+            k -= 1
+        k += 1
+    m = re.search(r"(?<![A-Za-z0-9_$])async\s*$", text[:k])
+    return m.start() if m else k
+
+
+def _called_once(text: str, start: int, frame: list) -> bool:
+    """True when the function beginning at `start` runs once per modeled item.
+
+    Only three placements qualify: an element of an array literal (a thunk
+    that parallel() calls once), the callback of a `.map`/`.flatMap`, and a
+    stage of a `pipeline` -- each of the last two is multiplied by its own
+    fan-out. The concise body of a qualifying arrow (`x => () => ...`)
+    inherits its answer. Anything else -- a callback to an unmodeled call
+    such as `.filter()` or `Array.from()`, a function bound to a name and
+    called by hand, a named function expression that can recurse -- may run
+    any number of times.
+    """
+    prev = text[:start].rstrip()
+    if prev.endswith("=>"):
+        return bool(frame[3]) and frame[3][-1]
+    last = prev[-1:]
+    kind = frame[2]
+    return (
+        (kind == "array" and last in "[,")
+        or (kind == "map" and last == "(")
+        or (kind == "pipeline" and last == ",")
+    )
 
 
 def _runs_once(text: str, site: int, lo: int) -> bool:
-    """True when no unmodeled iterating callback between `lo` and `site` encloses it."""
-    for m in _ITERATING.finditer(text, lo, site):
-        if match_forward(text, m.end() - 1) > site:
-            return False
-    return True
+    """True when `site`, inside a literal-array source starting at `lo`, runs once.
+
+    The literal-array rule drops the fan-out's multiplier, which is right only
+    when nothing between the source and the site repeats it. A closed check
+    rather than a list of iterating methods (#2670 review, round 7): a `for`
+    loop inside an element, or `Array.from({length: n}, fn)`, took #2668's
+    110 or 200 to 10. So the site runs once only when no loop keyword appears
+    between `lo` and it, and every function enclosing it is one `_called_once`
+    accepts. Refusing costs the site as #2668 did, so it never lowers.
+    """
+    if _LOOP_KEYWORD.search(text, lo, site):
+        return False
+    # Each frame is [bracket, index, kind, open functions' _called_once answers].
+    frames = [["", lo, "top", []]]
+    i = lo
+    while i < site:
+        ch = text[i]
+        if ch in "([{":
+            prev = text[:i].rstrip()[-1:]
+            if ch == "(":
+                kind = _call_kind(text, i)
+            elif ch == "[":
+                kind = (
+                    "index"
+                    if prev and (_IDENT.match(prev) or prev in ")]")
+                    else "array"
+                )
+            else:
+                kind = "brace"
+            frames.append([ch, i, kind, []])
+        elif ch in ")]}":
+            if len(frames) == 1:
+                return False
+            frames.pop()
+        elif ch in ",;":
+            # A concise arrow body ends at the next comma or statement end.
+            frames[-1][3].clear()
+        elif text.startswith("=>", i):
+            start = _function_start(text, i)
+            frames[-1][3].append(_called_once(text, start, frames[-1]))
+            i += 2
+            continue
+        elif text.startswith("function", i) and not (i and _IDENT.match(text[i - 1])):
+            if not re.match(r"function\b", text[i:]):
+                i += 1
+                continue
+            m = re.search(r"(?<![A-Za-z0-9_$])async\s*$", text[:i])
+            start = m.start() if m else i
+            anonymous = re.match(r"function\s*\(", text[i:]) is not None
+            frames[-1][3].append(anonymous and _called_once(text, start, frames[-1]))
+            i += len("function")
+            continue
+        i += 1
+    return all(all(open_fns) for *_, open_fns in frames)
 
 
 def _risk(result: dict) -> int:
@@ -603,18 +706,22 @@ def _risk(result: dict) -> int:
 # literals close and its brackets balance around the gap. The lowering rules
 # then applied to BOTH readings of a file whose agent code neither scan saw,
 # and a script #2668 asked about went silent (#2670 review, round 5). A `/` is
-# read as a regex opener at the start of a line, after the punctuators and
-# keywords that expect an operand, after the `)` that closes a one-line
-# if/while/for/with header (up to two levels of nested parens), and after a
-# closing `*/`. After any other `)`, a `]` or an identifier it is division.
-# Over-matching (a division followed by a quote on one line) only adds a
-# reading, which can raise an estimate but never lower one. Matching every
-# `/` instead would read path prose in 7 of the 8 bundled templates as regex
-# and raise two of their budgets (20 -> 71, 49 -> 81).
+# read as a regex opener everywhere JS's lexical grammar allows one: at the
+# start of a line, after any punctuator that is not `]` (`)` and `}` included,
+# since after a control header or a block a regex can follow), after a spread
+# `...`, after a closing `*/`, and after every keyword that takes an operand.
+# What remains -- after a `]`, an identifier, a number or a string -- is always
+# division, so the set is closed rather than a list of positions: round 6's
+# header alternative missed a header spanning lines or nesting parens three
+# deep, and `export default` was missing too (#2670 review, round 7).
+# Over-matching (a division after `)` followed by a quote on one line) only
+# adds a reading, which can raise an estimate but never lower one. Matching
+# every `/` instead would read path prose in 7 of the 8 bundled templates as
+# regex and raise two of their budgets (20 -> 71, 49 -> 81).
 _QUOTED_REGEX = re.compile(
-    r"(?:^|[(,=:!&|?\[{};<>+\-*%~^]"
-    r"|\b(?:return|typeof|instanceof|in|of|new|delete|void|throw|case|do|else|yield|await)"
-    r"|\b(?:if|while|for|with)\s*\((?:[^()\n]|\((?:[^()\n]|\([^()\n]*\))*\))*\)"
+    r"(?:^|[(),=:!&|?\[{};<>+\-*%~^]|\.\.\."
+    r"|\b(?:return|typeof|instanceof|in|of|new|delete|void|throw|case|do|else"
+    r"|yield|await|default|extends)"
     r"|\*/)"
     r"\s*/(?![/*])(?:\\.|\[(?:\\.|[^\]\n])*\]|[^/\n\\])*?"
     r"[`'\"](?:\\.|\[(?:\\.|[^\]\n])*\]|[^/\n\\])*/",
@@ -646,10 +753,11 @@ def analyze(src: str, limit: int, assumed: int = 8) -> dict:
     dropping #2668's 3x over-count of a literal array beside it turned its
     accidental ask into silence (#2670 review, round 4).
 
-    A parse that proves itself is not enough when the file holds a regex
-    literal with a quote in it (see _QUOTED_REGEX): both scans can lose the
-    same agent code there, so the flat text is also costed with the #2668
-    bound logic, and that figure is a floor too (#2670 review, round 5).
+    A parse that proves itself is not enough when _QUOTED_REGEX matches the
+    source, i.e. it finds a regex literal with a quote in it: both scans can
+    lose the same agent code there, so the flat text is also costed with the
+    #2668 bound logic, and that figure is a floor too (#2670 review, round 5).
+    A quoted regex that _QUOTED_REGEX does not recognize gets no floor.
     """
     text, mode, reason = sanitize(src)
     # (text, mode, reason, proven): `proven` enables the lowering rules.
@@ -734,16 +842,22 @@ def estimate_text(
             # length costed blueprint-story-audit at 71 instead of 20 (#2670).
             # A site in a pipeline STAGE (outside the source span) still runs
             # once per element, and `.map` over a literal still multiplies. A
-            # site in a `.filter()`-style callback runs once per element too,
-            # and none of those is a fan-out here, so it keeps the multiplier.
-            if (
-                proven
-                and src_lo <= site < src_hi
-                and source.startswith("[")
-                and _runs_once(text, site, src_lo)
-            ):
-                continue
-            b = bound_of(source, text, proven=proven)
+            # site under a loop or in a callback this estimator does not model
+            # (`.filter()`, `Array.from(..., fn)`) may run any number of times,
+            # so it keeps the multiplier (see _runs_once).
+            b = None
+            if proven and src_lo <= site < src_hi and source.startswith("["):
+                if _runs_once(text, site, src_lo):
+                    continue
+                open_bracket = text.index("[", src_lo)
+                if site < match_forward(text, open_bracket):
+                    # Inside an element, but repeated by a loop or callback
+                    # whose count is unknown: cost it as unbounded, and never
+                    # below the literal's own length, which #2668 charged.
+                    b = bound_of(source, text, proven=proven)
+                    b = Grown(b.floor if isinstance(b, Grown) else (b or 0))
+            if b is None:
+                b = bound_of(source, text, proven=proven)
             if b is None or isinstance(b, Grown):
                 product *= assumed if b is None else max(b.floor, assumed)
                 label = short(source) or f"{kind}(...)"

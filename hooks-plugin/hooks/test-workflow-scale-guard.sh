@@ -409,8 +409,8 @@ await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
 function g(s) { return /[{}`]/.test(s) }
 await parallel([() => agent("r"), () => agent("s"), ...args.units.map((u) => () => agent(u))]);
 EOF
-# After a `)` a `/` is division, except where the `)` closes a control header,
-# here with two levels of nested parens; a closing `*/` also precedes a regex.
+# A `)` can close a control header, after which a regex follows; a closing `*/`
+# also precedes a regex.
 fx quote_regex_after_if_header <<'EOF'
 if (ok(trim(s))) /[{}`]/.test(s);
 await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
@@ -423,6 +423,50 @@ await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
 /* strip */ /[{}`]/.test(s);
 await parallel([() => agent("r"), () => agent("s"), ...args.units.map((u) => () => agent(u))]);
 EOF
+# Round 6 recognized a header's `)` only on one line with at most two levels of
+# nested parens. Any `)` is now an opener, and the keyword list is complete, so
+# a header spanning lines, one nesting three deep, one holding `)` in a string,
+# a spread `...` and `export default` all get the floor (#2670 review, round 7).
+fx quote_regex_after_multiline_header <<'EOF'
+if (a &&
+    b) /[`]/.test(s);
+await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
+if (a &&
+    b) /[`]/.test(s);
+await parallel([() => agent("r"), () => agent("s"), ...args.units.map((u) => () => agent(u))]);
+EOF
+fx quote_regex_after_three_deep_header <<'EOF'
+if (f(g(h(x)))) /[`]/.test(s);
+await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
+if (f(g(h(x)))) /[`]/.test(s);
+await parallel([() => agent("r"), () => agent("s"), ...args.units.map((u) => () => agent(u))]);
+EOF
+fx quote_regex_after_paren_string_header <<'EOF'
+if (s === ")") /[`]/.test(s);
+await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
+if (s === ")") /[`]/.test(s);
+await parallel([() => agent("r"), () => agent("s"), ...args.units.map((u) => () => agent(u))]);
+EOF
+fx quote_regex_after_spread <<'EOF'
+f(.../[`]/);
+await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
+f(.../[`]/);
+await parallel([() => agent("r"), () => agent("s"), ...args.units.map((u) => () => agent(u))]);
+EOF
+fx quote_regex_after_export_default <<'EOF'
+export const meta = { name: "ed-flip3", description: "x", phases: [] }
+export default /`/.test(s);
+await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
+// the template opened above is closed by the backtick here `
+const BT = 1;
+await parallel([() => agent("r1"), () => agent("r2"), () => agent("r3"), () => agent("r4")]);
+EOF
+
+assert_asks "backtick regex after a header spanning two lines still asks" "$(<"$FX_DIR/quote_regex_after_multiline_header.js")"
+assert_asks "backtick regex after a header nesting parens three deep still asks" "$(<"$FX_DIR/quote_regex_after_three_deep_header.js")"
+assert_asks "backtick regex after a header holding \")\" in a string still asks" "$(<"$FX_DIR/quote_regex_after_paren_string_header.js")"
+assert_asks "backtick regex after a spread still asks" "$(<"$FX_DIR/quote_regex_after_spread.js")"
+assert_asks "backtick regex after export default still asks" "$(<"$FX_DIR/quote_regex_after_export_default.js")"
 
 assert_asks "regex holding ' inside \${...} still asks" "$(<"$FX_DIR/regex_squote_in_interp.js")"
 assert_asks "regex holding \" inside \${...} still asks" "$(<"$FX_DIR/regex_dquote_in_interp.js")"
@@ -469,6 +513,8 @@ assert_parse "proven walk blanks a bound: flat is higher" 12 flat "flat scan cos
 assert_parse "proven walk is the higher reading"         16 structural "" brace_pair_raises_pipeline
 assert_parse "unproven parse: #2668 bound logic is the floor" 30 flat "the #2668 bound logic costs it higher" unproven_literal_beside_quote_regex
 assert_parse "quoted regex on a proven parse: #2668 bound logic is the floor" 30 flat "a regex literal holds a quote" quote_regex_on_proven_parse
+assert_parse "quoted regex after a two-line header: #2668 bound logic is the floor" 30 flat "a regex literal holds a quote" quote_regex_after_multiline_header
+assert_parse "quoted regex after export default: #2668 bound logic is the floor" 16 flat "a regex literal holds a quote" quote_regex_after_export_default
 
 echo
 echo "== differential against the #2668 estimator (#2670 review) =="
@@ -493,6 +539,20 @@ correct_count() {
         blueprint-story-audit.workflow.js) echo 20 ;;
         verify-before-filing.workflow.js) echo 49 ;;
         trailing_comma_mapped) echo 10 ;;         # ten elements; `10,]` adds none
+        promise_all_map_in_literal_element) echo 9 ;;  # 1 + 8
+        array_from_in_literal_element) echo 29 ;; # 9 + 20
+        *) echo none ;;
+    esac
+}
+
+# true_floor <input> — for an input whose live figure is below #2668's but not
+# exactly the true count: the site the literal-array rule cannot prove runs
+# once is costed at max(the literal's length, ASSUMED), so the figure sits
+# between the true count and #2668's, never under the true count.
+true_floor() {
+    case "$1" in
+        loop_in_literal_element) echo 17 ;;      # 9 + 8; live 9 + 10
+        while_in_literal_element) echo 17 ;;     # 9 + 8; live 9 + 10
         *) echo none ;;
     esac
 }
@@ -545,6 +605,62 @@ EOF
 fx filter_callback_in_literal_source <<'EOF'
 await parallel([1, 2, 3].filter((x) => agent("a " + x)))
 EOF
+# A literal-array element that repeats its own agent() call runs it more than
+# once. Round 6 recognized only a list of iterating methods, so a loop, a
+# `while`, or `Array.from({length: n}, fn)` inside an element dropped the
+# multiplier and #2668's 110 or 200 became a silent 10 (#2670 review, round 7).
+# Such a site is now costed as unbounded, and never below the literal's length.
+fx loop_in_literal_element <<'EOF'
+await parallel([
+  () => agent("a"), () => agent("b"), () => agent("c"), () => agent("d"),
+  () => agent("e"), () => agent("f"), () => agent("g"), () => agent("h"),
+  () => agent("i"),
+  async () => { for (const f of args.findings) await agent("verify " + f) },
+]);
+EOF
+fx while_in_literal_element <<'EOF'
+await parallel([
+  () => agent("a"), () => agent("b"), () => agent("c"), () => agent("d"),
+  () => agent("e"), () => agent("f"), () => agent("g"), () => agent("h"),
+  () => agent("i"),
+  async () => { let i = 0; while (i < args.findings.length) { await agent("v " + i); i++ } },
+]);
+EOF
+fx array_from_in_literal_element <<'EOF'
+await parallel([
+  () => agent("a"), () => agent("b"), () => agent("c"), () => agent("d"),
+  () => agent("e"), () => agent("f"), () => agent("g"), () => agent("h"),
+  () => agent("i"),
+  () => Array.from({ length: 20 }, (_, i) => agent("spawn " + i)),
+]);
+EOF
+# With a short literal the literal's length is below ASSUMED; the loop still
+# costs 8. Keeping only the literal's multiplier would read 3, under #2668's 4.
+fx loop_in_short_literal_element <<'EOF'
+await parallel([() => agent("a"), async () => { for (const f of args.findings) await agent(f) }])
+EOF
+# A function bound to a name and called by hand is not a thunk parallel() calls
+# once: it holds no loop keyword, so only the function check refuses it.
+fx hand_called_fn_in_literal_element <<'EOF'
+await parallel([() => agent("a"), () => { const g = () => agent("b"); g(); g() }])
+EOF
+# A named function expression can call itself, so it is not run once either.
+fx recursive_fn_literal_element <<'EOF'
+await parallel([() => agent("a"), async function rec(n) { await agent("b"); if (n) await rec(n - 1) }])
+EOF
+# Control: a modeled .map inside an unmodeled call's ARGUMENT (not a callback
+# to it) still runs once per element, so the literal rule still lowers it.
+fx promise_all_map_in_literal_element <<'EOF'
+await parallel([() => agent("a"), () => Promise.all(args.findings.map((f) => agent("v " + f)))])
+EOF
+
+assert_asks "loop inside a literal-array element still asks" "$(<"$FX_DIR/loop_in_literal_element.js")"
+assert_asks "while inside a literal-array element still asks" "$(<"$FX_DIR/while_in_literal_element.js")"
+assert_asks "Array.from mapper inside a literal-array element still asks" "$(<"$FX_DIR/array_from_in_literal_element.js")"
+assert_estimate "loop in a short literal's element costs ASSUMED, not the literal length" 9 "$(<"$FX_DIR/loop_in_short_literal_element.js")"
+assert_estimate "hand-called function in a literal's element costs ASSUMED" 9 "$(<"$FX_DIR/hand_called_fn_in_literal_element.js")"
+assert_estimate "recursive named function as a literal's element costs ASSUMED" 9 "$(<"$FX_DIR/recursive_fn_literal_element.js")"
+assert_estimate "modeled .map inside Promise.all in a literal's element runs once per item" 9 "$(<"$FX_DIR/promise_all_map_in_literal_element.js")"
 fx close_brace_regex_in_interp <<'EOF'
 const p = (s) => `x ${s.replace(/}/g, '')} y`
 await pipeline(args.units, u => agent('a'), e => agent('b'), r => agent('c'))
@@ -591,10 +707,15 @@ diff_one() {
     fi
     if [ "${le:-0}" -lt "${be:-0}" ]; then
         want=$(correct_count "$label")
+        floor=$(true_floor "$label")
         if [ "$le" = "$want" ]; then
             DIFF_LOWERED=$((DIFF_LOWERED + 1))
             PASS=$((PASS + 1))
             printf '  PASS  differential: %s: %s -> %s, the correct count\n' "$label" "$be" "$le"
+        elif [ "$floor" != none ] && [ "$le" -ge "$floor" ]; then
+            DIFF_LOWERED=$((DIFF_LOWERED + 1))
+            PASS=$((PASS + 1))
+            printf '  PASS  differential: %s: %s -> %s, at or above the true count %s\n' "$label" "$be" "$le" "$floor"
         else
             FAIL=$((FAIL + 1))
             printf '  FAIL  differential: %s: %s -> %s, below #2668 and not the listed count (%s)\n' \
