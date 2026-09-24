@@ -1,0 +1,282 @@
+{
+ "waivers": [
+  {
+   "kind": "review_staleness",
+   "path": ".claude/rules/agentic-optimization.md",
+   "hash": "970e77ebcc02c16c",
+   "reason": "Body changed by 16 line(s) since the review on 2025-12-20, all of it mechanical: a template-conditional example replaced by a lookup table, correcting advice Claude Code cannot render (#2289). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: agentic-optimization changed 230d after its declared reviewed:2025-12-20"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "agents-plugin/agents/review.md",
+   "hash": "592d3881f6efff56",
+   "reason": "Body changed by 15 line(s) since the review on 2026-03-09, all of it mechanical: the fleet-wide Tool Selection section added to every agent (#1262). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: review changed 178d after its declared reviewed:2026-03-09"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "agents-plugin/agents/security-audit.md",
+   "hash": "d467b62e47bf6a82",
+   "reason": "Body changed by 15 line(s) since the review on 2026-03-09, all of it mechanical: the fleet-wide Tool Selection section added to every agent (#1262). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: security-audit changed 178d after its declared reviewed:2026-03-09"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "blueprint-plugin/skills/blueprint-development/SKILL.md",
+   "hash": "7f5bbac894fa5746",
+   "reason": "Body changed by 10 line(s) since the review on 2026-02-14, all of it mechanical: Context commands rewritten to the missing-directory-safe `find` form. The reviewed content is otherwise intact.",
+   "finding": "review_staleness: blueprint-development changed 124d after its declared reviewed:2026-02-14"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "blueprint-plugin/skills/blueprint-prp-create/SKILL.md",
+   "hash": "02b7c189bd7398f3",
+   "reason": "Body changed by 20 line(s) since the review on 2026-02-14, all of it mechanical: Context commands made missing-directory-safe and ai_docs references retargeted to curated rules (#1927). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: blueprint-prp-create changed 139d after its declared reviewed:2026-02-14"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "blueprint-plugin/skills/confidence-scoring/SKILL.md",
+   "hash": "49e61de8b971d58e",
+   "reason": "Body changed by 15 line(s) since the review on 2025-12-16, all of it mechanical: When to Use converted to a table and ai_docs references retargeted to curated `.claude/rules/` entries (#1927). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: confidence-scoring changed 199d after its declared reviewed:2025-12-16"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "code-quality-plugin/skills/code-refactor/SKILL.md",
+   "hash": "6cc66a768a8a3c74",
+   "reason": "Body changed by 12 line(s) since the review on 2026-03-09, all of it mechanical: a stale agent name repointed to `agents-plugin:refactor` (#2196) and a Related Skills list added. The reviewed content is otherwise intact.",
+   "finding": "review_staleness: code-refactor changed 141d after its declared reviewed:2026-03-09"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "configure-plugin/skills/multi-repo-discipline/SKILL.md",
+   "hash": "b4711da6d560cc34",
+   "reason": "Body changed by 2 line(s) since the review on 2026-04-24, all of it mechanical: one cross-reference repointed to `git-plugin:git-coworker-check` by the citation-resolution sweep (#2627). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: multi-repo-discipline changed 137d after its declared reviewed:2026-04-24"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "documentation-plugin/skills/claude-blog-sources/SKILL.md",
+   "hash": "4c7505f17f196916",
+   "reason": "Body byte-identical to the revision reviewed on 2026-02-09; every later change was frontmatter only (description trims, metadata fields). The reviewed content is intact.",
+   "finding": "review_staleness: claude-blog-sources changed 146d after its declared reviewed:2026-02-09"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "evaluate-plugin/skills/evaluate-report/SKILL.md",
+   "hash": "b21e5eb68327c277",
+   "reason": "Body changed by 2 line(s) since the review on 2026-03-04, all of it mechanical: one command name updated after a rename (`/evaluate:plugin` -> `/evaluate:plugin-batch`). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: evaluate-report changed 171d after its declared reviewed:2026-03-04"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "git-plugin/skills/git-rebase-patterns/SKILL.md",
+   "hash": "121938d63a704814",
+   "reason": "Body changed by 5 line(s) since the review on 2026-01-30, all of it mechanical: a four-line pointer to `git-plugin:git-stacked-prs` added (#2585). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: git-rebase-patterns changed 217d after its declared reviewed:2026-01-30"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "git-plugin/skills/github-labels/SKILL.md",
+   "hash": "419ca10efd448913",
+   "reason": "Body byte-identical to the revision reviewed on 2026-04-01; every later change was frontmatter only (description trims, metadata fields). The reviewed content is intact.",
+   "finding": "review_staleness: github-labels changed 136d after its declared reviewed:2026-04-01"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "github-actions-plugin/skills/github-social-preview/SKILL.md",
+   "hash": "d0f54a71650a916c",
+   "reason": "Body changed by 23 line(s) since the review on 2025-12-16, all of it mechanical: the script path made repo-relative and use/don't-use bullets converted to a table. The reviewed content is otherwise intact.",
+   "finding": "review_staleness: github-social-preview changed 179d after its declared reviewed:2025-12-16"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "health-plugin/skills/settings-configuration/SKILL.md",
+   "hash": "821b0c1222270c3d",
+   "reason": "Body changed by 4 line(s) since the review on 2026-02-04, all of it mechanical: retired Serena and detect-secrets entries dropped from an example allowlist. The reviewed content is otherwise intact.",
+   "finding": "review_staleness: settings-configuration changed 164d after its declared reviewed:2026-02-04"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "migration-patterns-plugin/skills/shadow-mode/SKILL.md",
+   "hash": "10cf640a4a46d6b6",
+   "reason": "Body byte-identical to the revision reviewed on 2026-02-18; every later change was frontmatter only (description trims, metadata fields). The reviewed content is intact.",
+   "finding": "review_staleness: shadow-mode changed 163d after its declared reviewed:2026-02-18"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "python-plugin/skills/python-development/SKILL.md",
+   "hash": "bf6545d72320600f",
+   "reason": "Body byte-identical to the revision reviewed on 2026-04-25; every later change was frontmatter only (description trims, metadata fields). The reviewed content is intact.",
+   "finding": "review_staleness: python-development changed 131d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "python-plugin/skills/uv-run/SKILL.md",
+   "hash": "c383c0b797d4a7ea",
+   "reason": "Body byte-identical to the revision reviewed on 2026-04-25; every later change was frontmatter only (description trims, metadata fields). The reviewed content is intact.",
+   "finding": "review_staleness: uv-run changed 131d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "rust-plugin/skills/rust-development/SKILL.md",
+   "hash": "ea39225230252f91",
+   "reason": "Body changed by 2 line(s) since the review on 2026-04-25, all of it mechanical: a two-line pointer to the cargo-generate skill added (#2205). The reviewed content is otherwise intact.",
+   "finding": "review_staleness: rust-development changed 131d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "testing-plugin/skills/test-focus/SKILL.md",
+   "hash": "5431a677305f9451",
+   "reason": "Body byte-identical to the revision reviewed on 2026-04-25; every later change was frontmatter only (description trims, metadata fields). The reviewed content is intact.",
+   "finding": "review_staleness: test-focus changed 133d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "testing-plugin/skills/test-full/SKILL.md",
+   "hash": "2179bcb84a3cf03c",
+   "reason": "Body changed by 2 line(s) since the review on 2026-04-25, all of it mechanical: `subagent_type` qualified to `testing-plugin:test-runner`. The reviewed content is otherwise intact.",
+   "finding": "review_staleness: test-full changed 133d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "testing-plugin/skills/test-quick/SKILL.md",
+   "hash": "ff35524a806677e9",
+   "reason": "Body changed by 4 line(s) since the review on 2026-04-25, all of it mechanical: a Context command made missing-directory-safe and `subagent_type` qualified to `testing-plugin:test-runner`. The reviewed content is otherwise intact.",
+   "finding": "review_staleness: test-quick changed 133d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "testing-plugin/skills/test-report/SKILL.md",
+   "hash": "42873a693ed509b2",
+   "reason": "Body byte-identical to the revision reviewed on 2026-04-25; every later change was frontmatter only (description trims, metadata fields). The reviewed content is intact.",
+   "finding": "review_staleness: test-report changed 133d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "testing-plugin/skills/test-run/SKILL.md",
+   "hash": "71cca3a4ef982d2b",
+   "reason": "Body changed by 6 line(s) since the review on 2026-04-25, all of it mechanical: two Context commands made missing-file-safe and `subagent_type` qualified to `testing-plugin:test-runner`. The reviewed content is otherwise intact.",
+   "finding": "review_staleness: test-run changed 133d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "testing-plugin/skills/test-setup/SKILL.md",
+   "hash": "a740541a59d6016a",
+   "reason": "Body changed by 2 line(s) since the review on 2026-04-25, all of it mechanical: one Context command rewritten to the missing-directory-safe `find` form. The reviewed content is otherwise intact.",
+   "finding": "review_staleness: test-setup changed 131d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "testing-plugin/skills/test-tier-selection/SKILL.md",
+   "hash": "8c260ef6fe14c60a",
+   "reason": "Body byte-identical to the revision reviewed on 2026-04-25; every later change was frontmatter only (description trims, metadata fields). The reviewed content is intact.",
+   "finding": "review_staleness: test-tier-selection changed 133d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "tools-plugin/skills/imagemagick-conversion/SKILL.md",
+   "hash": "277aa78812f09e7e",
+   "reason": "Body changed by 19 line(s) since the review on 2025-12-16, all of it mechanical: use/don't-use bullets converted to the standard When to Use table. The reviewed content is otherwise intact.",
+   "finding": "review_staleness: imagemagick-conversion changed 149d after its declared reviewed:2025-12-16"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "tools-plugin/skills/shell-expert/SKILL.md",
+   "hash": "726d9acfdcf0f33e",
+   "reason": "Body byte-identical to the revision reviewed on 2026-04-25; every later change was frontmatter only (description trims, metadata fields). The reviewed content is intact.",
+   "finding": "review_staleness: shell-expert changed 131d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "typescript-plugin/skills/bun-build/SKILL.md",
+   "hash": "65ad65b01170f927",
+   "reason": "Body changed by 10 line(s) since the review on 2025-12-20, all of it mechanical: a When to Use table added by the fleet standardisation sweep. The reviewed content is otherwise intact.",
+   "finding": "review_staleness: bun-build changed 221d after its declared reviewed:2025-12-20"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "typescript-plugin/skills/bun-debug/SKILL.md",
+   "hash": "d67dfe551b78ac1e",
+   "reason": "Body byte-identical to the revision reviewed on 2026-04-25; every later change was frontmatter only (description trims, metadata fields). The reviewed content is intact.",
+   "finding": "review_staleness: bun-debug changed 131d after its declared reviewed:2026-04-25"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "typescript-plugin/skills/bun-development/SKILL.md",
+   "hash": "5b555113a77468f4",
+   "reason": "Body changed by 13 line(s) since the review on 2025-12-20, all of it mechanical: a When to Use table added by the typescript-plugin standardisation sweep. The reviewed content is otherwise intact.",
+   "finding": "review_staleness: bun-development changed 257d after its declared reviewed:2025-12-20"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "typescript-plugin/skills/bun-package-manager/SKILL.md",
+   "hash": "06f0d956b5901d5d",
+   "reason": "Body changed by 13 line(s) since the review on 2025-12-20, all of it mechanical: a When to Use table added by the typescript-plugin standardisation sweep. The reviewed content is otherwise intact.",
+   "finding": "review_staleness: bun-package-manager changed 175d after its declared reviewed:2025-12-20"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "typescript-plugin/skills/bun-test/SKILL.md",
+   "hash": "c18121b398a9258d",
+   "reason": "Body changed by 15 line(s) since the review on 2025-12-20, all of it mechanical: a When to Use table and one test-name filter example added. The reviewed content is otherwise intact.",
+   "finding": "review_staleness: bun-test changed 257d after its declared reviewed:2025-12-20"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "typescript-plugin/skills/nodejs-development/SKILL.md",
+   "hash": "cef2f685dc825093",
+   "reason": "Body changed by 13 line(s) since the review on 2025-12-16, all of it mechanical: a When to Use table added by the typescript-plugin standardisation sweep. The reviewed content is otherwise intact.",
+   "finding": "review_staleness: nodejs-development changed 261d after its declared reviewed:2025-12-16"
+  },
+  {
+   "kind": "review_staleness",
+   "path": "typescript-plugin/skills/typescript-debugging/SKILL.md",
+   "hash": "f3759e6fe7cb1e64",
+   "reason": "Body changed by 13 line(s) since the review on 2026-01-22, all of it mechanical: a When to Use table added by the typescript-plugin standardisation sweep. The reviewed content is otherwise intact.",
+   "finding": "review_staleness: typescript-debugging changed 142d after its declared reviewed:2026-01-22"
+  },
+  {
+   "a": ".claude/rules/conventional-commits.md",
+   "b": "git-plugin/skills/github-pr-title/SKILL.md",
+   "a_hash": "6cc5b5f82ae21beb",
+   "b_hash": "ad8b132aeae4c61d",
+   "reason": "Repo policy the skill does not carry: how release-please routes commits across this multi-package manifest (the scope is a label; the files touched decide what releases). The rule already delegates procedure to git-plugin skills in its Related section, so a pointer stub would drop the policy rather than a duplicate.",
+   "finding": "rule_covered_by_skill: portfolio:conventional-commits is 64% covered by skill github-pr-title -- candidate for a pointer stub"
+  },
+  {
+   "a": ".claude/rules/gitattributes.md",
+   "b": "configure-plugin/skills/configure-gitattributes/SKILL.md",
+   "a_hash": "e8a1737682c818ef",
+   "b_hash": "f8218d071e8fa3e3",
+   "reason": "Path-scoped and repo-local: which files here qualify for merge=union, and the measured fact that GitHub's merge button ignores merge=union (PR #1759). It already names configure-gitattributes as the cross-repo automation, so the overlap is that delegation.",
+   "finding": "rule_covered_by_skill: portfolio:gitattributes is 57% covered by skill configure-gitattributes -- candidate for a pointer stub"
+  },
+  {
+   "a": "blueprint-plugin/skills/blueprint-story-reconcile/SKILL.md",
+   "b": "blueprint-plugin/skills/blueprint-story-audit/SKILL.md",
+   "a_hash": "0a8722255053cc12",
+   "b_hash": "979b44d31bf95c35",
+   "reason": "A deliberate pipeline pair, not a duplicate: story-audit is read-only and writes a drift report; story-reconcile applies that report to the PRDs. Each names the other as the home of the other half.",
+   "finding": "semantic_overlap_skill_skill: skill blueprint-story-reconcile and skill blueprint-story-audit are 91% semantically similar"
+  },
+  {
+   "a": "component-patterns-plugin/skills/version-badge-pattern/SKILL.md",
+   "b": "component-patterns-plugin/skills/components-version-badge/SKILL.md",
+   "a_hash": "edee9bffb2c7ddef",
+   "b_hash": "37abd7d1e05d6f2e",
+   "reason": "A deliberate implementation/pattern pair: components-version-badge implements the badge per framework and routes to version-badge-pattern for the pattern documentation in its When to Use table.",
+   "finding": "semantic_overlap_skill_skill: skill version-badge-pattern and skill components-version-badge are 92% semantically similar"
+  },
+  {
+   "a": "typescript-plugin/skills/bun-publishing/SKILL.md",
+   "b": "typescript-plugin/skills/bun-publish/SKILL.md",
+   "a_hash": "6929ba6adb9f93fe",
+   "b_hash": "dbe9d5d35815d740",
+   "reason": "A deliberate quick-command/reference pair, the typescript-plugin convention (bun-test beside bun-development): bun-publish runs a publish, bun-publishing covers package configuration and release automation, and bun-publish routes to bun-publishing in its When to Use table.",
+   "finding": "semantic_overlap_skill_skill: skill bun-publishing and skill bun-publish are 92% semantically similar"
+  }
+ ]
+}

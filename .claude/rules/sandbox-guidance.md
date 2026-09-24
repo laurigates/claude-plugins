@@ -332,6 +332,10 @@ The `autoAllowBashIfSandboxed` setting auto-approves Bash tool calls when the ha
 
 If you previously worked around the gap with explicit `Bash(... $VAR ...)` allow rules, you can remove them.
 
+### `sandbox.excludedCommands` Matches Every Part (2.1.277+)
+
+An `excludedCommands` glob exempts a compound Bash command from the sandbox only when every part matches; before 2.1.277 one matching part exempted the whole command.
+
 ### `NO_COLOR` / `FORCE_COLOR` Scoping (2.1.143+)
 
 Setting `NO_COLOR` or `FORCE_COLOR` under `env` in `settings.json` previously also stripped Claude Code's own UI colours, because the variable was exported into the harness process. As of 2.1.143, these two variables are passed only to **subprocesses** — the harness UI keeps its colours. Configure them for tools (linters, formatters) without losing CLI usability:

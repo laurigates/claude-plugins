@@ -89,6 +89,44 @@ those and want them, pass `--no-adapter` to `configure-opencode` and accept the
 uncapped listing, or move them into the marketplace where the adapter can rank
 them.
 
+### Claude Code variables in OpenCode
+
+Claude Code substitutes `${CLAUDE_SKILL_DIR}` and `${CLAUDE_SESSION_ID}` into a
+skill's text before the model sees it, and sets `${CLAUDE_PLUGIN_ROOT}` to the
+skill's plugin directory. OpenCode does none of this, so without the adapter
+`bash "${CLAUDE_SKILL_DIR}/../../scripts/ensure-udas.sh"` runs as
+`bash "/../../scripts/ensure-udas.sh"`. Around 60 skills the adapter surfaces
+reference one of the three. The binding's `tool.execute.before` hook rewrites
+the `bash` call before it runs, using the resolver it shares with the pi
+binding ([`docs/pi-export.md`](pi-export.md) § Claude Code variables in pi).
+Skill text is untouched.
+
+| Step | Behaviour |
+|---|---|
+| Record | A `read` of a `*/SKILL.md` records that directory for the session. OpenCode's `read` takes `filePath`; a relative path resolves against the instance directory |
+| Resolve | Every `${CLAUDE_SKILL_DIR}/<rel>` must exist under the chosen directory, and every `${CLAUDE_PLUGIN_ROOT}/<rel>` under its plugin directory (`<plugin>/skills/<name>` → `<plugin>`). The session's read history is tried first (most recent first), then every indexed skill |
+| Rewrite | `output.args.command` gets one line, `export CLAUDE_SKILL_DIR='…' CLAUDE_PLUGIN_ROOT='…' CLAUDE_SESSION_ID='…'`, prepended in place, carrying only the variables the command references. Commands that reference none of them pass through unchanged |
+| Block | No candidate matches, or several indexed skills match different real files: the hook throws, OpenCode fails the call before it runs, and the model receives the reason, which tells it to substitute the absolute directory itself |
+
+Three OpenCode specifics:
+
+- **The rewrite shows in the transcript.** OpenCode passes the same `args`
+  object to the hook, the tool, and the stored tool input, so the `export`
+  line is visible. (pi clones the arguments, so there it is not.) OpenCode's
+  shell permission scan collects only command nodes, and `export …` parses as
+  a declaration, so the line adds nothing to a permission prompt.
+- **`CLAUDE_SESSION_ID` is hashed from OpenCode's session id.** `ses_…` ids
+  begin with a time-ordered segment, so the raw id's first eight characters,
+  which `task-claim` and `git-coworker-check` use as an agent identity, would
+  collide between sessions started close together.
+- **No transcript hint.** Nothing like pi's `PI_SESSION_FILE` is exported, so
+  `session-distill` still re-reads the conversation under OpenCode.
+
+Verified against the OpenCode v1.18.3 source (`session/tools.ts`,
+`tool/shell.ts`, `plugin/index.ts`) and the stubbed hook tests in
+`adapters/tests/opencode-binding.test.ts`; not yet exercised in a live
+OpenCode session.
+
 ### Why the adapter rather than a copy — the measurement
 
 Measured 2026-08-24 against OpenCode 1.17.16 (full method and arms in
