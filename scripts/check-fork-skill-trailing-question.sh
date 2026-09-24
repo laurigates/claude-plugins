@@ -77,6 +77,7 @@ QUESTION_RE='(do you want me to|would you like|shall i proceed|should i proceed|
 
 errors=0
 checked=0
+first_reason=""
 
 for skill_file in "${skill_files[@]}"; do
   [ -f "$skill_file" ] || continue
@@ -99,6 +100,8 @@ for skill_file in "${skill_files[@]}"; do
     errors=$((errors + 1))
     echo "❌ ${skill_file}: context: fork skill ends its body with a user-directed confirmation question — there is no channel back to the user in a forked subagent"
     echo "   Last line: ${last_line}"
+    [ -n "$first_reason" ] || \
+      first_reason="fork_trailing_question: ${skill_file#./} ends its body on a user-directed confirmation question"
   fi
 done
 
@@ -106,7 +109,12 @@ echo "SKILLS_SCANNED=${checked}"
 echo "ISSUE_COUNT=${errors}"
 
 if [ "$errors" -gt 0 ]; then
+  # The first offender is the cause a rollup reads (#2691); the full list is
+  # in the lines above.
+  reason="${first_reason:0:180}"
+  [ "$errors" -gt 1 ] && reason="$reason (+$((errors - 1)) more)"
   echo "STATUS=ERROR"
+  echo "REASON=$reason"
   exit 1
 fi
 
