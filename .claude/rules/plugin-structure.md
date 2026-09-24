@@ -276,6 +276,7 @@ This prevents the previous "I disabled a base plugin and now its dependents fail
 |--------|----------|
 | `github` / `git` | Standard git clone — see § HTTPS Clone Override below for the SSH/HTTPS toggle and LFS skip |
 | `archive` (2.1.224+) | Install from a zip over HTTPS, no git or npm required; `pinDigest: sha256:...` optional |
+| npm (2.1.275+) | Fetched with `npm pack --ignore-scripts` and integrity-verified, so a package's install scripts no longer run |
 | marketplace `command` (2.1.229+) | A local command (e.g. an IDE) prints the plugin directory, re-resolved every session; `mode: "link"` uses the printed path directly |
 
 `headersHelper` on a `url` marketplace or catalog entry (2.1.238+) runs a command that mints HTTP headers (e.g. a short-lived token) for catalog and same-origin archive fetches. A catalog entry's helper runs only on install/update, after its command is shown, gated by a `[y/N]` prompt (`-y` to skip). Helpers run without inherited credential env vars.
@@ -298,6 +299,8 @@ The override applies to clone operations only; existing SSH-cloned plugin checko
 ### `skipLfs` Marketplace Source Option (2.1.153+)
 
 A `github` or `git` plugin marketplace source can set `"skipLfs": true` to skip Git LFS downloads during clone and update. Use it for plugins whose LFS assets aren't needed at runtime, to cut clone time and disk usage.
+
+Since 2.1.274, plugin and marketplace clones leave Git LFS files as pointers by default; `git lfs pull` in the checkout fetches them.
 
 ## Version Management
 
