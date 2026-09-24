@@ -9,7 +9,8 @@
 # The interesting property is that failing on the GAP was rejected: it would be
 # red on arrival until 15 evals are written, and a permanently-red monthly audit
 # gets switched off. So case A is load-bearing in the unusual direction -- the
-# real repo, at 1 of 16, must be GREEN.
+# real repo, carrying a standing gap (1 of 16 then, 8 of 16 after #2144), must
+# be GREEN.
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -19,6 +20,7 @@ CHECK="$repo_root/scripts/check-golden-set-coverage.sh"
 pass=0; fail=0
 assert() { if [ "$2" = "true" ]; then pass=$((pass+1)); else echo "FAIL: $1" >&2; fail=$((fail+1)); fi; }
 has() { printf '%s' "$1" | grep -qF -- "$2" && echo true || echo false; }
+hasline() { grep -qxF -- "$2" <<<"$1" && echo true || echo false; }
 
 fx="$(mktemp -d)"; [ -n "$fx" ] || { echo "mktemp failed" >&2; exit 1; }
 trap 'rm -rf "$fx"' EXIT
@@ -61,7 +63,7 @@ jobs:
 WF
 }
 
-# --- A: the real repo, at 1 of 16, must be GREEN ----------------------------
+# --- A: the real repo, with a standing gap, must be GREEN --------------------
 # A guard that failed here would be switched off before it ever caught anything.
 echo "=== A: a standing coverage gap is NOT an error ==="
 out="$(bash "$CHECK" 2>&1)"; rc=$?
@@ -69,9 +71,25 @@ assert "A exits 0 on the real repo" "$([ $rc -eq 0 ] && echo true || echo false)
 assert "A STATUS=OK" "$(has "$out" 'STATUS=OK')"
 # Non-vacuity: the gap must be REPORTED even though it is not an error, or the
 # check is indistinguishable from one that measured nothing.
-assert "A reports the real total" "$(has "$out" 'CANARIES_TOTAL=16')"
-assert "A reports the real ready count" "$(has "$out" 'CANARIES_EVAL_READY=1')"
-assert "A reports the declared floor" "$(has "$out" 'COVERAGE_FLOOR=1')"
+# Expected values are derived from disk here rather than hardcoded, so landing
+# an evals.json (and raising the ratchet with it, #2144) does not break A while
+# a checker that counted nothing still would.
+read -r real_total real_ready real_floor < <(python3 - "$repo_root" <<'PY'
+import json, os, sys
+root = sys.argv[1]
+gs = json.load(open(os.path.join(root, "evaluate-plugin/golden-set.json")))
+ready = sum(
+    os.path.isfile(os.path.join(root, c["skill"].split("/", 1)[0], "skills",
+                                c["skill"].split("/", 1)[1], "evals.json"))
+    for c in gs["canaries"]
+)
+print(len(gs["canaries"]), ready, gs.get("evalCoverageFloor"))
+PY
+)
+assert "A derived a non-empty canary set" "$([ "${real_total:-0}" -gt 0 ] && echo true || echo false)"
+assert "A reports the real total" "$(hasline "$out" "CANARIES_TOTAL=$real_total")"
+assert "A reports the real ready count" "$(hasline "$out" "CANARIES_EVAL_READY=$real_ready")"
+assert "A reports the declared floor" "$(hasline "$out" "COVERAGE_FLOOR=$real_floor")"
 
 # --- B: a REGRESSION below the floor is an error ----------------------------
 echo "=== B: dropping below the declared floor fails ==="

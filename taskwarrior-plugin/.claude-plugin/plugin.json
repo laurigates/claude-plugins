@@ -3,6 +3,10 @@
   "name": "taskwarrior-plugin",
   "version": "1.14.0",
   "description": "Coordination layer for multi-agent work using taskwarrior - parallel-safe queries, urgency scoring, GitHub issue/PR reconciliation, and native scheduling (wait/scheduled/due/recur)",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "license": "MIT",
   "hooks": {
     "SessionStart": [
       {

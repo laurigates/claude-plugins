@@ -1,0 +1,5 @@
+There is nothing staged to commit. You have not added anything since your
+last commit and the status shows no modified or untracked files, so there
+are no changes to put in a commit and I have not created one.
+
+Stage the changes you want first, then ask again.

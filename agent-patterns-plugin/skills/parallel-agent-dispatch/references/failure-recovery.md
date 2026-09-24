@@ -272,6 +272,8 @@ follow-up cleanly closed the gap left by a rate-limited cascade agent.
 | Same agent rate-limits twice in a row | Smaller scope or staggered dispatch — the wave size is still too high |
 | Burst killed agents at **startup** (worktree fan-out died before committing) | `git worktree prune` + delete the empty leftover branches before the reduced-concurrency retry — else each agent's `git switch -c <branch>` collides with the orphaned ref |
 
+Since 2.1.199 a subagent cut off by a rate limit or server error returns its partial work to the parent instead of failing silently. Workflow fan-outs stagger same-prefix sibling agents so later ones read the cached prompt prefix (2.1.229; `CLAUDE_CODE_WORKFLOW_PREFIX_STAGGER_MS=0` disables).
+
 ### Burst limit vs session usage limit
 
 The table above covers the **server burst limit** — many agents dispatched at

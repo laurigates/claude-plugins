@@ -1,8 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
+modified: 2026-09-23
 reviewed: 2026-06-01
-description: "Container infrastructure: GHCR builds, Trivy/Grype scanning, devcontainer. Use when setting up multi-platform GHCR workflows or adding container scanning to CI."
+description: "GHCR image pipeline: multi-platform builds, Trivy/Grype scanning, .dockerignore, devcontainer. Use when setting up GHCR image publishing or adding image scanning to CI."
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, SlashCommand, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--component <dockerfile|workflow|registry|scanning|devcontainer>]"
 argument-hint: "[--check-only] [--fix] [--component <dockerfile|workflow|registry|scanning|devcontainer>]"

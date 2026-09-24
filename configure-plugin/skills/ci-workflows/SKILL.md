@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-07-05
+modified: 2026-09-23
 reviewed: 2026-06-01
 name: ci-workflows
-description: "GitHub Actions workflow standards. Use when checking CI/CD compliance, referencing canonical workflow shapes, or another skill needs workflow structure guidance."
+description: "Reference YAML for the canonical container-build, test, release-please and auto-fix workflow files. Use when another skill or a review needs the standard shape to cite or diff against."
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
