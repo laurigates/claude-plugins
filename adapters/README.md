@@ -239,6 +239,7 @@ in-repo).
 
 ```
 === EVAL === MODE=hybrid|bm25-only K= TASKS= DEGRADED_QUERIES=
+=== EMBEDDING === MODEL= DIGEST= DIMENSIONS= PREFIX_SCHEME=   (NA in a bm25-only run)
 === RETRIEVAL_MAIN === HIT_AT_1= HIT_AT_K= MRR= TASKS=
 === RETRIEVAL_HEADROOM === HIT_AT_1= HIT_AT_K= MRR= TASKS=
 === NEGATIVES === TOP1_MARGIN_NEG_P50= ... (report-only)
@@ -263,6 +264,30 @@ The #2093/#2094 cutover threshold is frozen only by the local procedure in
 chars/4 proxy over the pi entry template; it was calibrated against OpenCode's
 own listing on 2026-08-24 and reads **+1.4%** high (90.5 proxy vs 89.3
 measured, inside the ±20% band) — see [`CUTOVER.md`](CUTOVER.md) §8.
+
+### Comparing embedding models
+
+Three flags select the embedding side of a `--with-embeddings` run. Passing
+one without `--with-embeddings`, an unknown flag, or an invalid value exits 2
+before anything runs.
+
+| Flag | Default | Notes |
+|---|---|---|
+| `--embed-model <name>` | `nomic-embed-text` | Any model in the local ollama |
+| `--embed-dimensions <n>` | `768` | Must equal the model's output width, or the index degrades to BM25 and the gate fails |
+| `--prefix-scheme nomic\|none` | `nomic` | `nomic` sends `search_document: ` / `search_query: `; `none` sends raw text, for prefix-free models such as bge-small-en-v1.5 |
+
+```
+cd adapters && bun eval/run-eval.ts --with-embeddings --embed-model <model> --embed-dimensions 384 --prefix-scheme none
+```
+
+Every results file records what produced its vectors in a `provenance` block
+with the keys the frozen threshold in `tasks.json` carries: `embedding_model`,
+`embedding_model_digest` (read from ollama's `/api/tags`),
+`embedding_dimensions`, and `prefix_scheme` (`"/"` for `none`). All four are
+`null` in a bm25-only run, and a hybrid run that cannot resolve one is a
+`GATE FAIL`. The prefix scheme is part of the embedding cache key, so
+switching it re-embeds the corpus.
 
 ## Freezing the cutover threshold
 

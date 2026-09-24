@@ -14,7 +14,9 @@ import {
   embedBatch,
   embedDocuments,
   embedQuery,
+  PREFIX_SCHEME,
   PROBE_TIMEOUT_MS,
+  prefixSchemeString,
   probeEndpoint,
 } from "../core/embeddings.ts";
 import { buildIndex } from "../core/search.ts";
@@ -88,6 +90,28 @@ describe("prefix correctness", () => {
       "search_document: beta skill",
     ]);
     expect(state.receivedInputs[1]).toEqual(["search_query: do the thing"]);
+  });
+
+  // #2529: bge-small-en-v1.5 takes no task prefixes, so measuring it with
+  // nomic's `search_document: ` would compare a mis-fed model.
+  test("prefix scheme `none` sends raw text for documents, queries, and the probe", async () => {
+    state.mode = "ok";
+    state.receivedInputs = [];
+    const raw = { ...opts(), prefixScheme: "none" as const };
+    await embedDocuments(["alpha skill", "beta skill"], raw);
+    await embedQuery("do the thing", raw);
+    expect(await probeEndpoint(raw)).toBe(true);
+    expect(state.receivedInputs).toEqual([
+      ["alpha skill", "beta skill"],
+      ["do the thing"],
+      ["probe"],
+    ]);
+  });
+
+  test("the nomic scheme string is unchanged (tasks.json's frozen prefix_scheme) and `none` differs", () => {
+    expect(prefixSchemeString("nomic")).toBe("search_document: /search_query: ");
+    expect(prefixSchemeString("nomic")).toBe(PREFIX_SCHEME);
+    expect(prefixSchemeString("none")).not.toBe(PREFIX_SCHEME);
   });
 });
 
@@ -205,5 +229,29 @@ describe("hybrid happy path", () => {
     expect(index2.mode).toBe("hybrid");
     const newBatches = state.receivedInputs.slice(callsBefore).filter((b) => b.length > 1);
     expect(newBatches).toEqual([]);
+  });
+
+  test("switching the prefix scheme to `none` is a cache miss that re-embeds raw text", async () => {
+    state.mode = "ok";
+    const freshCache = mkdtempSync(join(tmpdir(), "adapters-embed-cache3-"));
+    const embed = { endpoint, model: "mock-embed", dimensions: DIMS };
+    await buildIndex({ repoRoot: fixtureRoot, embed, cacheDir: freshCache });
+
+    state.receivedInputs = [];
+    const index = await buildIndex({
+      repoRoot: fixtureRoot,
+      embed: { ...embed, prefixScheme: "none" },
+      cacheDir: freshCache,
+    });
+    expect(index.mode).toBe("hybrid");
+    expect(index.embeddingInfo()?.prefixScheme).toBe(prefixSchemeString("none"));
+    const batches = state.receivedInputs.filter((batch) => batch.length > 1);
+    expect(batches).toHaveLength(1);
+    expect(batches[0]).toHaveLength(4);
+    expect(batches[0]?.some((text) => text.startsWith("search_document: "))).toBe(false);
+
+    state.receivedInputs = [];
+    await index.search("commit staged changes", 3);
+    expect(state.receivedInputs).toEqual([["commit staged changes"]]);
   });
 });
