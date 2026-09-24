@@ -175,6 +175,7 @@ echo "$tout" | grep -q "^ISSUE_78_TITLE=refactor collector$" \
 pass "#2480: issue title emitted as ISSUE_<n>_TITLE"
 
 # Tab sanitized to a space; the rest of the title survives verbatim on one line.
+# shellcheck disable=SC2016  # the backticks are literal title text in the fixture
 echo "$tout" | grep -q '^ISSUE_77_TITLE=fix(x): KEY=VALUE `--flag` breaks$' \
   || fail "#2480: issue #77 title expected tab-sanitized and intact, got:\n$(echo "$tout" | grep '^ISSUE_77_TITLE')"
 pass "#2480: tabs in a title are sanitized, KEY=VALUE line stays single-line"
@@ -317,5 +318,211 @@ if echo "$sout" | grep -q "#1301"; then
   fail "#1628: solo-signature bot PR #1301 must not be grouped (count 1)"
 fi
 pass "#1628: solo-signature bot PR is excluded (needs >=2 to be systematic)"
+
+# -----------------------------------------------------------------------------
+# Regression for #2714: the rollup counters contradicted the per-item output
+# (ISSUE_COUNT=0 four lines below ten populated issue blocks), and --batch
+# truncated silently (10 of 68 open issues fetched, nothing said so).
+#
+#   (a) the DOMAIN count ISSUES_FETCHED must equal the number of emitted
+#       ISSUE_<n>_TITLE blocks — asserted by VALUE, not by key presence (the
+#       only prior counter check, above, asserts ISSUE_COUNT merely exists);
+#   (b) ISSUES_TOTAL carries the unbounded open count and ISSUES_TRUNCATED /
+#       TRUNCATED say whether the batch dropped anything — paired with the twin
+#       (total == fetched -> false) so a collector hardwired to "true" fails;
+#   (c) ISSUE_COUNT keeps its structured-script-output meaning (the collector's
+#       own diagnostics): 0 on a clean fixture, 1 on invalid JSON, moving
+#       independently of ISSUES_FETCHED — the two keys are provably distinct.
+#
+# The counts fixtures reproduce the REAL response of the GraphQL query the
+# script issues, captured live 2026-09-23 against laurigates/claude-plugins and
+# ForumViriumHelsinki/infrastructure; only the integers differ.
+# -----------------------------------------------------------------------------
+counts_fixture() {  # counts_fixture <path> <issues_total> <prs_total>
+  printf '{"data":{"repository":{"issues":{"totalCount":%s},"pullRequests":{"totalCount":%s}}}}\n' \
+    "$2" "$3" > "$1"
+}
+line_value() {  # line_value <output> <KEY> -> value of the first ^KEY= line
+  grep -m1 "^$2=" <<<"$1" | cut -d= -f2-
+}
+assert_line() {  # assert_line <output> <exact line> <label>
+  grep -qxF -- "$2" <<<"$1" \
+    || fail "$3: expected line '$2', got: '$(grep -m1 "^${2%%=*}=" <<<"$1")'"
+}
+refute_key() {  # refute_key <output> <KEY> <label>
+  if grep -q "^$2=" <<<"$1"; then
+    fail "$3: key $2 must not be emitted, got: '$(grep -m1 "^$2=" <<<"$1")'"
+  fi
+}
+
+unset GIT_TRIAGE_PRS_FIXTURE
+export GIT_TRIAGE_ISSUES_FIXTURE="$issues_fixture"   # two issues: #42, #13
+
+# (b) total > fetched -> truncated.
+counts_fixture "${work_dir}/counts-68-3.json" 68 3
+export GIT_TRIAGE_COUNTS_FIXTURE="${work_dir}/counts-68-3.json"
+trunc_out="$(bash "$triage_script" --type issues --batch 2)"
+
+# (a) the domain count equals the emitted blocks, by value.
+title_blocks=$(grep -c '^ISSUE_[0-9]*_TITLE=' <<<"$trunc_out")
+fetched_value=$(line_value "$trunc_out" ISSUES_FETCHED)
+[ "$title_blocks" -eq 2 ] \
+  || fail "#2714: fixture should emit 2 ISSUE_<n>_TITLE blocks, got ${title_blocks}"
+[ "$fetched_value" = "$title_blocks" ] \
+  || fail "#2714: ISSUES_FETCHED='${fetched_value}' must equal the ${title_blocks} emitted ISSUE_<n>_TITLE blocks"
+pass "#2714 (a): ISSUES_FETCHED equals the number of emitted issue blocks (${title_blocks})"
+
+assert_line "$trunc_out" "ISSUES_TOTAL=68" "#2714 (b)"
+assert_line "$trunc_out" "ISSUES_TRUNCATED=true" "#2714 (b)"
+assert_line "$trunc_out" "TRUNCATED=true" "#2714 (b)"
+pass "#2714 (b): 2 of 68 fetched reports ISSUES_TOTAL=68 and TRUNCATED=true"
+
+# (c) on a clean run the diagnostic trailer stays empty, whatever the domain count.
+assert_line "$trunc_out" "ISSUE_COUNT=0" "#2714 (c)"
+assert_line "$trunc_out" "STATUS=OK" "#2714 (c)"
+if grep -qx 'ISSUES:' <<<"$trunc_out"; then
+  fail "#2714 (c): a clean run must not emit the diagnostic ISSUES: block"
+fi
+# A truncated batch is a caveat on coverage, not a collector fault.
+pass "#2714 (c): clean fixture keeps ISSUE_COUNT=0 / STATUS=OK beside 2 fetched issues"
+
+# --type issues emits no PR-half keys.
+refute_key "$trunc_out" PRS_TOTAL "#2714"
+refute_key "$trunc_out" PRS_TRUNCATED "#2714"
+pass "#2714: --type issues emits no PRS_TOTAL / PRS_TRUNCATED"
+
+# (b) twin: total == fetched -> not truncated. Guard integrity: without this a
+# collector that always printed TRUNCATED=true would pass the block above.
+counts_fixture "${work_dir}/counts-2-3.json" 2 3
+export GIT_TRIAGE_COUNTS_FIXTURE="${work_dir}/counts-2-3.json"
+twin_out="$(bash "$triage_script" --type issues --batch 2)"
+assert_line "$twin_out" "ISSUES_FETCHED=2" "#2714 (b twin)"
+assert_line "$twin_out" "ISSUES_TOTAL=2" "#2714 (b twin)"
+assert_line "$twin_out" "ISSUES_TRUNCATED=false" "#2714 (b twin)"
+assert_line "$twin_out" "TRUNCATED=false" "#2714 (b twin)"
+pass "#2714 (b twin): 2 of 2 fetched reports TRUNCATED=false"
+
+# No counts available (offline / GIT_TRIAGE_NO_FETCH) -> unknown, never a
+# confident false: a count that was not taken must not read as "complete".
+unset GIT_TRIAGE_COUNTS_FIXTURE
+unknown_out="$(bash "$triage_script" --type issues --batch 2)"
+assert_line "$unknown_out" "ISSUES_TOTAL=unknown" "#2714 (unknown)"
+assert_line "$unknown_out" "ISSUES_TRUNCATED=unknown" "#2714 (unknown)"
+assert_line "$unknown_out" "TRUNCATED=unknown" "#2714 (unknown)"
+assert_line "$unknown_out" "STATUS=OK" "#2714 (unknown)"
+pass "#2714: no count available reports ISSUES_TOTAL/TRUNCATED=unknown, not false"
+
+# The REAL not-found response (repository: null + errors) must also read unknown.
+printf '%s\n' '{"data":{"repository":null},"errors":[{"type":"NOT_FOUND","path":["repository"],"locations":[{"line":1,"column":37}],"message":"Could not resolve to a Repository with the name '"'"'acme/nope'"'"'."}]}' \
+  > "${work_dir}/counts-not-found.json"
+export GIT_TRIAGE_COUNTS_FIXTURE="${work_dir}/counts-not-found.json"
+nf_out="$(bash "$triage_script" --type issues --batch 2)"
+assert_line "$nf_out" "ISSUES_TOTAL=unknown" "#2714 (not found)"
+assert_line "$nf_out" "TRUNCATED=unknown" "#2714 (not found)"
+printf 'not json\n' > "${work_dir}/counts-garbage.json"
+export GIT_TRIAGE_COUNTS_FIXTURE="${work_dir}/counts-garbage.json"
+garbage_out="$(bash "$triage_script" --type issues --batch 2)"
+assert_line "$garbage_out" "ISSUES_TOTAL=unknown" "#2714 (garbage)"
+pass "#2714: a not-found or non-JSON count response reads unknown"
+
+# (c) invalid issue JSON: the DIAGNOSTIC count moves to 1 while the DOMAIN
+# count moves to 0 — opposite directions, so the keys cannot be the same count.
+printf 'not json at all\n' > "${work_dir}/issues-invalid.json"
+export GIT_TRIAGE_ISSUES_FIXTURE="${work_dir}/issues-invalid.json"
+counts_fixture "${work_dir}/counts-5-0.json" 5 0
+export GIT_TRIAGE_COUNTS_FIXTURE="${work_dir}/counts-5-0.json"
+bad_out="$(bash "$triage_script" --type issues --batch 2)"
+assert_line "$bad_out" "ISSUE_COUNT=1" "#2714 (c invalid)"
+assert_line "$bad_out" "STATUS=WARN" "#2714 (c invalid)"
+assert_line "$bad_out" "ISSUES_FETCHED=0" "#2714 (c invalid)"
+grep -qx 'ISSUES:' <<<"$bad_out" \
+  || fail "#2714 (c invalid): the diagnostic ISSUES: block must list the invalid fetch"
+grep -q 'TYPE=invalid_issues_json' <<<"$bad_out" \
+  || fail "#2714 (c invalid): expected TYPE=invalid_issues_json in the ISSUES: block"
+# A failed fetch against 5 open issues is "0 of 5", not a clean zero.
+assert_line "$bad_out" "ISSUES_TOTAL=5" "#2714 (c invalid)"
+assert_line "$bad_out" "ISSUES_TRUNCATED=true" "#2714 (c invalid)"
+pass "#2714 (c): invalid JSON gives ISSUE_COUNT=1 with ISSUES_FETCHED=0 and 0-of-5 truncation"
+
+# PR half: the same --batch caps gh pr list, so it carries the same keys.
+export GIT_TRIAGE_ISSUES_FIXTURE="$issues_fixture"
+export GIT_TRIAGE_PRS_FIXTURE="$prs_fixture"          # six PRs
+counts_fixture "${work_dir}/counts-2-23.json" 2 23
+export GIT_TRIAGE_COUNTS_FIXTURE="${work_dir}/counts-2-23.json"
+both_out="$(bash "$triage_script" --type both --batch 10)"
+assert_line "$both_out" "PRS_FETCHED=6" "#2714 (prs)"
+assert_line "$both_out" "PRS_TOTAL=23" "#2714 (prs)"
+assert_line "$both_out" "PRS_TRUNCATED=true" "#2714 (prs)"
+assert_line "$both_out" "ISSUES_TRUNCATED=false" "#2714 (prs)"
+assert_line "$both_out" "TRUNCATED=true" "#2714 (prs)"
+pass "#2714: PR half reports 6 of 23; the roll-up is true when either half is truncated"
+
+counts_fixture "${work_dir}/counts-2-6.json" 2 6
+export GIT_TRIAGE_COUNTS_FIXTURE="${work_dir}/counts-2-6.json"
+none_out="$(bash "$triage_script" --type both --batch 10)"
+assert_line "$none_out" "PRS_TRUNCATED=false" "#2714 (prs twin)"
+assert_line "$none_out" "TRUNCATED=false" "#2714 (prs twin)"
+pass "#2714: both halves complete gives TRUNCATED=false"
+
+# Roll-up precedence: true beats unknown, unknown beats false.
+printf '%s\n' '{"data":{"repository":{"issues":{"totalCount":2}}}}' > "${work_dir}/counts-issues-only.json"
+export GIT_TRIAGE_COUNTS_FIXTURE="${work_dir}/counts-issues-only.json"
+half_out="$(bash "$triage_script" --type both --batch 10)"
+assert_line "$half_out" "PRS_TOTAL=unknown" "#2714 (precedence)"
+assert_line "$half_out" "ISSUES_TRUNCATED=false" "#2714 (precedence)"
+assert_line "$half_out" "TRUNCATED=unknown" "#2714 (precedence: unknown beats false)"
+printf '%s\n' '{"data":{"repository":{"issues":{"totalCount":68}}}}' > "${work_dir}/counts-issues-68-only.json"
+export GIT_TRIAGE_COUNTS_FIXTURE="${work_dir}/counts-issues-68-only.json"
+half_true_out="$(bash "$triage_script" --type both --batch 10)"
+assert_line "$half_true_out" "TRUNCATED=true" "#2714 (precedence: true beats unknown)"
+pass "#2714: TRUNCATED roll-up precedence is true > unknown > false"
+
+# Live path: every fixture seam above bypasses the gh call, so the real count
+# query is pinned separately through an executable stub gh on PATH. The stub's
+# totals (4242 / 17) are values no fixture above uses, so seeing them proves the
+# stub — not a fixture, not the real gh — answered.
+stub_dir="${work_dir}/stub-bin"
+mkdir -p "$stub_dir"
+cat > "${stub_dir}/gh" <<'STUB'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "${GH_STUB_LOG:?}"
+case "$1 $2" in
+  "issue list"|"pr list") printf '[]\n' ;;
+  "api graphql") printf '{"data":{"repository":{"issues":{"totalCount":4242},"pullRequests":{"totalCount":17}}}}\n' ;;
+  *) exit 1 ;;
+esac
+STUB
+chmod +x "${stub_dir}/gh"
+[ -x "${stub_dir}/gh" ] || fail "#2714 (live): stub gh is not executable"
+[ "$(PATH="${stub_dir}:$PATH" command -v gh)" = "${stub_dir}/gh" ] \
+  || fail "#2714 (live): stub gh is not the gh in effect on PATH"
+
+run_live() {  # run_live <log> <args...>
+  local log="$1"; shift
+  env -u GIT_TRIAGE_NO_FETCH -u GIT_TRIAGE_ISSUES_FIXTURE -u GIT_TRIAGE_PRS_FIXTURE \
+      -u GIT_TRIAGE_COUNTS_FIXTURE PATH="${stub_dir}:$PATH" GH_STUB_LOG="$log" \
+      bash "$triage_script" "$@"
+}
+
+live_log="${work_dir}/gh-live-repo.log"
+live_out="$(run_live "$live_log" --type both --repo acme/widgets)"
+assert_line "$live_out" "ISSUES_TOTAL=4242" "#2714 (live --repo)"
+assert_line "$live_out" "PRS_TOTAL=17" "#2714 (live --repo)"
+grep -q '^api graphql .*-f owner=acme -f name=widgets' "$live_log" \
+  || fail "#2714 (live --repo): expected 'gh api graphql -f owner=acme -f name=widgets', got: $(grep '^api' "$live_log")"
+grep -qF 'issues(states:OPEN){totalCount}' "$live_log" \
+  || fail "#2714 (live --repo): the count query must ask issues(states:OPEN){totalCount}"
+grep -qF 'pullRequests(states:OPEN){totalCount}' "$live_log" \
+  || fail "#2714 (live --repo): the count query must ask pullRequests(states:OPEN){totalCount}"
+[ "$(grep -c '^api graphql' "$live_log")" -eq 1 ] \
+  || fail "#2714 (live --repo): both totals must come from ONE graphql call"
+pass "#2714 (live): --repo owner/name drives one graphql count query for both halves"
+
+live_log2="${work_dir}/gh-live-cwd.log"
+live_out2="$(run_live "$live_log2" --type issues)"
+assert_line "$live_out2" "ISSUES_TOTAL=4242" "#2714 (live cwd)"
+grep -qF 'api graphql -F owner={owner} -F name={repo}' "$live_log2" \
+  || fail "#2714 (live cwd): without --repo the query must use gh's {owner}/{repo} placeholders, got: $(grep '^api' "$live_log2")"
+pass "#2714 (live): without --repo the count query resolves the cwd repo via {owner}/{repo}"
 
 echo "ALL TESTS PASSED"
