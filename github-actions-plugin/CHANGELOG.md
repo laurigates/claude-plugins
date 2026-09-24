@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.11.0...github-actions-plugin-v1.12.0) (2026-09-24)
+
+
+### Features
+
+* **skills:** wave-2 skill homes for promoted always-loaded rules ([#2814](https://github.com/laurigates/claude-plugins/issues/2814)) ([7896233](https://github.com/laurigates/claude-plugins/commit/7896233c7c6c5663725beff7b3f50778eb15d559))
+
 ## [1.11.0](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.10.0...github-actions-plugin-v1.11.0) (2026-09-24)
 
 

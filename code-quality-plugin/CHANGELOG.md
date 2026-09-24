@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.26.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.25.5...code-quality-plugin-v1.26.0) (2026-09-24)
+
+
+### Features
+
+* **skills:** wave-2 skill homes for promoted always-loaded rules ([#2814](https://github.com/laurigates/claude-plugins/issues/2814)) ([7896233](https://github.com/laurigates/claude-plugins/commit/7896233c7c6c5663725beff7b3f50778eb15d559))
+
 ## [1.25.5](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.25.4...code-quality-plugin-v1.25.5) (2026-09-24)
 
 

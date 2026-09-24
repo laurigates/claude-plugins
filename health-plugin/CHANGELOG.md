@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.21.0...health-plugin-v1.22.0) (2026-09-24)
+
+
+### Features
+
+* **skills:** wave-2 skill homes for promoted always-loaded rules ([#2814](https://github.com/laurigates/claude-plugins/issues/2814)) ([7896233](https://github.com/laurigates/claude-plugins/commit/7896233c7c6c5663725beff7b3f50778eb15d559))
+
 ## [1.21.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.20.0...health-plugin-v1.21.0) (2026-09-24)
 
 
