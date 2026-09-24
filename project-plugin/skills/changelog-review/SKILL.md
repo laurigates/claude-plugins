@@ -4,7 +4,7 @@ description: Claude Code changelog analysis for plugin impact. Use when checking
 user-invocable: false
 allowed-tools: Bash(git log *), Bash(git diff *), Read, Write, Edit, Glob, Grep, WebFetch, TodoWrite
 created: 2026-01-14
-modified: 2026-07-06
+modified: 2026-09-24
 reviewed: 2026-07-06
 ---
 
