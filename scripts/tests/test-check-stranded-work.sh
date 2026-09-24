@@ -17,6 +17,10 @@ trap 'rm -rf "$tmp"' EXIT
 fail=0
 pass() { echo "PASS: $1"; }
 fail() { echo "FAIL: $1"; fail=1; }
+# The runtime half of the structured-output contract (#2691): one canonical
+# STATUS=, REASON= present iff non-OK, ISSUE_COUNT= equal to the ISSUES: rows.
+contract="$script_dir/check-structured-output-contract.sh"
+validates() { bash "$contract" --validate <<<"$1" >/dev/null 2>&1; }
 
 cat > "$tmp/fixture.json" <<'JSON'
 [
@@ -83,6 +87,10 @@ grep -q '^STRANDED_NO_PR=1$'      <<<"$out" && pass "STRANDED_NO_PR=1"     || fa
 grep -q '^CLOSED_DELIBERATE=1$'   <<<"$out" && pass "CLOSED_DELIBERATE=1"  || fail "wrong CLOSED_DELIBERATE"
 grep -q '^LANDED=1$'              <<<"$out" && pass "LANDED=1"             || fail "wrong LANDED"
 grep -q '^STATUS=WARN$'           <<<"$out" && pass "STATUS=WARN when strands exist" || fail "expected STATUS=WARN"
+grep -q '^ISSUE_COUNT=2$'         <<<"$out" && pass "ISSUE_COUNT=2"        || fail "expected ISSUE_COUNT=2"
+grep -q '^REASON=stranded_autoclose: o/r:feat/pi-installer-recipes (PR #2049, 2 commits ahead) (+1 more)$' <<<"$out" \
+  && pass "REASON names the auto-closed strand first" || fail "expected REASON naming the auto-closed strand"
+validates "$out" && pass "strand output satisfies the contract" || fail "strand output violates the contract"
 
 # 7. Clean repo → PASS, and --issue-body emits nothing (workflow skips issue creation).
 cat > "$tmp/clean.json" <<'JSON'
@@ -92,7 +100,9 @@ cat > "$tmp/clean.json" <<'JSON'
 ]
 JSON
 clean_out="$("$check" --fixture "$tmp/clean.json")"
-grep -q '^STATUS=PASS$' <<<"$clean_out" && pass "STATUS=PASS with no strands" || fail "expected STATUS=PASS"
+grep -q '^STATUS=OK$' <<<"$clean_out" && pass "STATUS=OK with no strands" || fail "expected STATUS=OK"
+grep -q '^REASON=' <<<"$clean_out" && fail "clean output carries a REASON" || pass "clean output carries no REASON"
+validates "$clean_out" && pass "clean output satisfies the contract" || fail "clean output violates the contract"
 
 body="$("$check" --fixture "$tmp/clean.json" --issue-body)"
 if [ -z "$body" ]; then
@@ -118,11 +128,13 @@ else
   pass "branch pushed today (no PR yet) is treated as in-flight, not stranded"
 fi
 grep -q '^IN_FLIGHT=1$' <<<"$inflight_out" && pass "IN_FLIGHT=1" || fail "wrong IN_FLIGHT count"
-grep -q '^STATUS=PASS$' <<<"$inflight_out" && pass "in-flight branch alone yields STATUS=PASS" || fail "in-flight branch should not WARN"
+grep -q '^STATUS=OK$' <<<"$inflight_out" && pass "in-flight branch alone yields STATUS=OK" || fail "in-flight branch should not WARN"
 
 # ...but the SAME branch, aged past the grace period, IS a strand.
 aged_out="$("$check" --fixture "$tmp/inflight.json" --min-age-days 0)"
 grep -q 'VERDICT=stranded_no_pr' <<<"$aged_out" && pass "same branch past grace period IS reported" || fail "aged never-PR'd branch not reported"
+grep -q '^REASON=stranded_no_pr: o/r:docs/adr-okf-mapping (no PR, 1 commits ahead)$' <<<"$aged_out" \
+  && pass "REASON names the never-PR'd strand" || fail "expected REASON naming the never-PR'd strand"
 
 # 9. --issue-body renders both sections when strands exist.
 body="$("$check" --fixture "$tmp/fixture.json" --issue-body)"
