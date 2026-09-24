@@ -150,7 +150,9 @@ if [ -n "${TASK_ARGV_LOG:-}" ]; then printf '%s\n' "$args" >> "$TASK_ARGV_LOG"; 
 case "$args" in
   *"bpid.any:"*) cat "$TASK_BPID_FIXTURE" 2>/dev/null || echo "[]" ;;
   *"export"*)    cat "$TASK_ALL_FIXTURE" 2>/dev/null || echo "[]" ;;
-  *) echo "[]" ;;
+  # An unknown call FAILS, loudly (#2569). Answering it with a valid empty
+  # result would let a new call in the collector pass unexercised.
+  *) echo "task stub: unexpected argv: $args" >&2; exit 1 ;;
 esac
 TASKSTUB
 chmod +x "$STUB/task"
@@ -158,6 +160,9 @@ chmod +x "$STUB/task"
 # gh stub: issue/pr lists from fixtures. "pr list" branches on the query so
 # --author and --head can serve distinct fixtures (the #1915 union).
 # GH_STUB_SLEEP simulates a slow/hung network call; GH_ARGV_LOG records argv.
+# `api graphql` is the Discussions query (#2569): GH_DISCUSSION_FIXTURE serves a
+# response built from the live one, GH_DISCUSSION_FAIL reproduces gh's exit on
+# a GraphQL error while every other call still succeeds.
 cat > "$STUB/gh" <<'GHSTUB'
 #!/usr/bin/env bash
 args="$*"
@@ -173,7 +178,17 @@ case "$1 $2" in
       *)          cat "$GH_PR_FIXTURE" 2>/dev/null || echo "[]" ;;
     esac
     ;;
-  *) echo "[]" ;;
+  "api graphql")
+    if [ -n "${GH_DISCUSSION_FAIL:-}" ]; then
+      echo "GraphQL: Something went wrong while executing your query. (repository.discussions)" >&2
+      exit 1
+    fi
+    cat "$GH_DISCUSSION_FIXTURE" 2>/dev/null \
+      || echo '{"data":{"repository":{"hasDiscussionsEnabled":true,"discussions":{"pageInfo":{"hasNextPage":false},"nodes":[]}}}}'
+    ;;
+  # An unknown call FAILS, loudly (#2569). Answering it with a valid empty
+  # result would let a new call in the collector pass unexercised.
+  *) echo "gh stub: unexpected argv: $args" >&2; exit 1 ;;
 esac
 GHSTUB
 chmod +x "$STUB/gh"
@@ -2230,6 +2245,123 @@ end_ref=$(cat "$SCRIPT_DIR/../../skills/session-end/REFERENCE.md" 2>/dev/null)
 check "AP11: session-end documents GIT_CONFIDENCE" "$end_skill$end_ref" "GIT_CONFIDENCE"
 
 export TASK_ALL_FIXTURE="$SANDBOX/proj.json"
+
+# ============================================================================
+# TEST AQ: unanswered Discussions in answerable categories (#2569)
+#
+# Discussions have no `gh` subcommand, so they come from one GraphQL call. The
+# fixture is the live response for this repo (a single Announcements thread,
+# `isAnswered: null`) with three Q&A threads added: two unanswered, one
+# answered. The filter reads GitHub's own `isAnswerable`, never a category name,
+# and a failed or unasked query must never read as a zero.
+# ============================================================================
+AQ_FIXTURE="$SCRIPT_DIR/fixtures/discussions-graphql.json"
+export GH_DISCUSSION_FIXTURE="$AQ_FIXTURE"
+
+# --- AQ0: fixture validity ----------------------------------------------------
+check_eq "AQ0: the fixture holds four open discussions" \
+  "$(jq '.data.repository.discussions.nodes | length' "$AQ_FIXTURE")" "4"
+check_eq "AQ0: the Announcements thread carries isAnswered: null, as live" \
+  "$(jq -r '.data.repository.discussions.nodes[] | select(.category.name == "Announcements") | .isAnswered' "$AQ_FIXTURE")" "null"
+"$STUB/gh" repo view >/dev/null 2>&1
+aq_rc=$?
+check_eq "AQ0: the gh stub fails an unknown call instead of answering it" "$aq_rc" "1"
+
+# --- AQ1: two unanswered answerable threads, and exactly two rows ------------
+out=$(run --with-dedup)
+d=$(drift_of "$out")
+check_line "AQ1: the query succeeded" "$d" "DISCUSSIONS_QUERY_OK=true"
+check_line "AQ1: discussions are enabled" "$d" "DISCUSSIONS_ENABLED=true"
+check_line "AQ1: two unanswered threads in answerable categories" "$d" "DISCUSSIONS_UNANSWERED=2"
+check_count_line "AQ1: exactly one count row, even beside a hostile title" \
+  "$out" '^DISCUSSIONS_UNANSWERED=' 1
+check_count_line "AQ1: exactly two discussion rows" "$d" '^DISCUSSION_[0-9]+_NUMBER=' 2
+check_line "AQ1: the first unanswered thread" "$d" "DISCUSSION_1_NUMBER=2610"
+check_line "AQ1: the second unanswered thread" "$d" "DISCUSSION_2_NUMBER=2611"
+check_absent "AQ1: the answered thread is excluded" "$d" "discussions/2612"
+check_absent "AQ1: the Announcements thread is excluded" "$d" "discussions/2564"
+check_line "AQ1: the category is named" "$d" "DISCUSSION_1_CATEGORY=Q&A"
+check_line "AQ1: the URL is carried" "$d" \
+  "DISCUSSION_1_URL=https://github.com/laurigates/claude-plugins/discussions/2610"
+check_line "AQ1: a newline in a title is flattened, not a new row" "$d" \
+  "DISCUSSION_2_TITLE=Hook not firing DISCUSSIONS_UNANSWERED=99"
+check_line "AQ1: the first page held every thread" "$d" "DISCUSSIONS_TRUNCATED=false"
+check_line "AQ1: GH_READY is untouched" "$d" "GH_READY=true"
+
+# --- AQ1b (guard integrity): the filter keys on isAnswerable, not a name -----
+jq '(.data.repository.discussions.nodes[].category | select(.name == "Q&A") | .name) = "Help desk"' \
+  "$AQ_FIXTURE" > "$SANDBOX/disc-renamed.json"
+out=$(GH_DISCUSSION_FIXTURE="$SANDBOX/disc-renamed.json" run --with-dedup)
+check_line "AQ1b: a renamed answerable category still counts" \
+  "$(drift_of "$out")" "DISCUSSIONS_UNANSWERED=2"
+jq '(.data.repository.discussions.nodes[].category | select(.name == "Q&A") | .isAnswerable) = false' \
+  "$AQ_FIXTURE" > "$SANDBOX/disc-unanswerable.json"
+out=$(GH_DISCUSSION_FIXTURE="$SANDBOX/disc-unanswerable.json" run --with-dedup)
+check_line "AQ1b: a category that is not answerable never counts" \
+  "$(drift_of "$out")" "DISCUSSIONS_UNANSWERED=0"
+check_count_line "AQ1b: and emits no discussion rows" "$out" '^DISCUSSION_[0-9]+_NUMBER=' 0
+
+# --- AQ2: a failed GraphQL call is "not asked", never a zero -----------------
+out=$(GH_DISCUSSION_FAIL=1 run --with-dedup)
+d=$(drift_of "$out")
+check_line "AQ2: the rest of GitHub still answered" "$d" "GH_READY=true"
+check_line "AQ2: the discussions query is reported failed" "$d" "DISCUSSIONS_QUERY_OK=false"
+check_line "AQ2: with a reason from the shared vocabulary" "$d" "DISCUSSIONS_FAIL_REASON=api-error"
+check_absent "AQ2: and NO count — an unqueried zero is not a zero" "$out" "DISCUSSIONS_UNANSWERED="
+check_count_line "AQ2: and no discussion rows" "$out" '^DISCUSSION_[0-9]+_' 0
+check_absent "AQ2: the failure does not leak into GH_FAIL_REASON" "$out" "GH_FAIL_REASON="
+
+# --- AQ3: gh absent — no count key, and GH_READY is unchanged ---------------
+out=$(SESSION_SURVEY_GH_BIN=/nonexistent/gh run --with-dedup)
+d=$(drift_of "$out")
+check_line "AQ3: GH_READY=false as before" "$d" "GH_READY=false"
+check_line "AQ3: GH_FAIL_REASON=no-cli as before" "$d" "GH_FAIL_REASON=no-cli"
+check_line "AQ3: the discussions query was not asked" "$d" "DISCUSSIONS_QUERY_OK=false"
+check_line "AQ3: for the same reason" "$d" "DISCUSSIONS_FAIL_REASON=no-cli"
+check_absent "AQ3: and the count key is absent" "$out" "DISCUSSIONS_UNANSWERED="
+
+# --- AQ4: exactly one GraphQL call, and it carries the isAnswerable filter ---
+export GH_ARGV_LOG="$SANDBOX/gh-argv-discussions.log"
+: > "$GH_ARGV_LOG"
+out=$(run --with-dedup)
+argv=$(cat "$GH_ARGV_LOG")
+check_count_line "AQ4: exactly one api graphql call" "$argv" '^api graphql ' 1
+check_count_line "AQ4: and its query reads isAnswerable" "$argv" '^api graphql .*isAnswerable' 1
+# Each launched job reached a real arm of the stub. With the fallthrough now
+# failing, a call outside this set would also have turned GH rows red above.
+check_count_line "AQ4: the assigned-issue query ran" "$argv" '^issue list ' 1
+check_count_line "AQ4: the --author PR query ran" "$argv" '^pr list --author ' 1
+check_count_line "AQ4: the --head PR query ran" "$argv" '^pr list --head ' 1
+check_count_line "AQ4: no call outside the known set" "$argv" \
+  '^(api graphql|issue list|pr list) ' "$(printf '%s\n' "$argv" | grep -c .)"
+
+# --- AQ5: each mode asks only for what it prints -----------------------------
+: > "$GH_ARGV_LOG"
+out=$(run)
+out_s=$(run --summary)
+argv=$(cat "$GH_ARGV_LOG")
+check_count_line "AQ5: without --with-dedup there is no GraphQL call" "$argv" '^api graphql ' 0
+check_absent "AQ5: and no discussions keys in either mode" "$out$out_s" "DISCUSSIONS_"
+unset GH_ARGV_LOG
+
+# --- AQ6: truncation and a disabled repo are reported, not guessed ----------
+jq '.data.repository.discussions.pageInfo.hasNextPage = true' \
+  "$AQ_FIXTURE" > "$SANDBOX/disc-truncated.json"
+out=$(GH_DISCUSSION_FIXTURE="$SANDBOX/disc-truncated.json" run --with-dedup)
+check_line "AQ6: a further page is reported" "$(drift_of "$out")" "DISCUSSIONS_TRUNCATED=true"
+jq '.data.repository.hasDiscussionsEnabled = false | .data.repository.discussions.nodes = []' \
+  "$AQ_FIXTURE" > "$SANDBOX/disc-disabled.json"
+out=$(GH_DISCUSSION_FIXTURE="$SANDBOX/disc-disabled.json" run --with-dedup)
+d=$(drift_of "$out")
+check_line "AQ6: a repo without Discussions says so" "$d" "DISCUSSIONS_ENABLED=false"
+check_line "AQ6: and its zero is a queried zero" "$d" "DISCUSSIONS_UNANSWERED=0"
+
+# --- AQ7: the collector README documents the new keys -----------------------
+README_DOC=$(cat "$SCRIPT_DIR/../../README.md" 2>/dev/null)
+check "AQ7: the README documents DISCUSSIONS_QUERY_OK" "$README_DOC" "DISCUSSIONS_QUERY_OK"
+check "AQ7: the README documents DISCUSSIONS_UNANSWERED" "$README_DOC" "DISCUSSIONS_UNANSWERED"
+
+unset GH_DISCUSSION_FIXTURE
 
 # ============================================================================
 # TEST AN: check()'s own harness must not race on SIGPIPE (#2452)

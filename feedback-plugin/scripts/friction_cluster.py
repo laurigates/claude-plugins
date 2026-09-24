@@ -16,6 +16,9 @@ Deliverable mapping:
     error:Bash:*            -> skill patch (quick reference flag or note)
     reject:*                -> watch (rejection cause is ambiguous without sampling)
     interrupt:*             -> summary only (usually not actionable)
+    stop:*, hook-feedback:*, hook-error:*
+                            -> watch: reported for prevalence, never prescribed; the
+                               fix lives in the emitting hook (e.g. #2652). See #2659.
 
 `classify-required` clusters are reported in the PR body with sample evidence
 so a human can decide which (if any) rule is justified. They never write a
@@ -153,6 +156,17 @@ def propose(signature: str, hits: list[dict]) -> dict:
                 "title": _CLASSIFY_TITLES[signature],
                 "body": _CLASSIFY_BODIES[signature],
             }
+        elif signature.startswith(("stop:", "hook-feedback:", "hook-error:")):
+            # Hook output that is not a PreToolUse block (#2659). A rule file
+            # cannot fix a noisy Stop hook; the hook itself has to change, so
+            # these are measured (count, sessions, repeat_sessions) and never
+            # prescribed. The explicit branch keeps them off the `hook:` path.
+            spec = {
+                "kind": "watch",
+                "path": "",
+                "title": f"Hook feedback: {signature}",
+                "body": "",
+            }
         elif signature.startswith("hook:"):
             spec = {
                 "kind": "rule",
@@ -185,9 +199,17 @@ def propose(signature: str, hits: list[dict]) -> dict:
         if spec["body"]
         else ""
     )
+    per_session: dict[str, int] = {}
+    for h in hits:
+        key = h.get("session") or ""
+        per_session[key] = per_session.get(key, 0) + 1
     return {
         "signature": signature,
         "count": len(hits),
+        # Prevalence and same-session repeat (#2659): distinct sessions the
+        # cluster fired in, and how many of those it fired in more than once.
+        "sessions": len(per_session),
+        "repeat_sessions": sum(1 for n in per_session.values() if n > 1),
         "kind": spec["kind"],
         "path": spec["path"],
         "title": spec["title"],
@@ -216,12 +238,16 @@ def render_pr_body(
         f"- Friction events: {total_events}",
         f"- Actionable clusters: {sum(1 for p in proposals if p['kind'] != 'watch')}",
         "",
-        "| Cluster | Count | Deliverable | Path |",
-        "|---|---|---|---|",
+        # Sessions / Repeat sessions are prevalence and same-session repeat
+        # (#2659): rendered here so the report carries them without the agent
+        # having to copy them out of clusters.json.
+        "| Cluster | Count | Sessions | Repeat sessions | Deliverable | Path |",
+        "|---|---|---|---|---|---|",
     ]
     for p in sorted(proposals, key=lambda x: -x["count"]):
         lines.append(
-            f"| `{p['signature']}` | {p['count']} | {p['kind']} | `{p['path'] or '—'}` |"
+            f"| `{p['signature']}` | {p['count']} | {p['sessions']} | "
+            f"{p['repeat_sessions']} | {p['kind']} | `{p['path'] or '—'}` |"
         )
     classify = [p for p in proposals if p["kind"] == "classify-required"]
     if classify:

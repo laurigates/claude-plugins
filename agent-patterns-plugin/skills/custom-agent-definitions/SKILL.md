@@ -4,9 +4,9 @@ description: Write and configure custom agent definitions in Claude Code agents/
 user-invocable: false
 allowed-tools: Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-09-02
+modified: 2026-09-23
 compatibility: claude-code
-reviewed: 2026-09-02
+reviewed: 2026-09-23
 ---
 
 # Custom Agent Definitions
@@ -22,7 +22,7 @@ complete security auditor, plugin layout, common patterns), see
 | Use this skill when... | Use agent-teams instead when... |
 |---|---|
 | Authoring a new `.md` agent definition file in `.claude/agents/` | Spawning multiple already-defined agents that coordinate as a team |
-| Configuring a single agent's `model`, `allowed-tools`, or `context: fork` | Setting up a lead/teammate architecture with a shared task list |
+| Configuring a single agent's `model`, `allowed-tools`, or `isolation` | Setting up a lead/teammate architecture with a shared task list |
 | Constraining tool access for a specialised read-only or write-restricted agent | Sequencing parallel work across worktrees (see parallel-agent-dispatch) |
 | Writing the system prompt that defines what one agent does | Auditing existing agent definitions for security (see meta-audit) |
 
@@ -30,7 +30,7 @@ complete security auditor, plugin layout, common patterns), see
 
 **Custom agents** let you define specialized agent types beyond the built-in
 ones (Explore, Plan, Bash, etc.). Each can have its own model, tools, and
-context configuration. They are defined in `.claude/agents/` or via plugin
+isolation settings. They are defined in `.claude/agents/` or via plugin
 `agents/` directories, with YAML frontmatter + a markdown system prompt:
 
 ```yaml
@@ -48,15 +48,21 @@ Instructions and context for the agent...
 
 ## Key Fields
 
-### Context Forking
+### Context: isolated by default
 
-| Value | Behavior |
-|-------|----------|
-| `fork` | Independent context copy — agent sees parent history but changes don't affect parent |
-| (default) | Agent shares context with parent and can see/modify conversation state |
+A named agent always starts in a fresh context: its own system prompt, the
+brief the caller writes, CLAUDE.md, and any preloaded `skills:`. It does not see
+the caller's conversation history, and no agent frontmatter field changes that.
 
-Use `fork` for exploratory research, parallel investigations, and isolated
-experiments. See [REFERENCE.md → Isolated research agent](REFERENCE.md#isolated-research-agent-context-fork).
+| Want | Use |
+|------|-----|
+| A delegate that keeps verbose work out of the main context | A named agent — isolation is the default, no field needed |
+| A subagent that already knows the conversation so far | `subagent_type: "fork"` on the `Agent` call (fork mode is off under `-p` unless `CLAUDE_CODE_FORK_SUBAGENT=1`) |
+
+`context: fork` is a **skill** frontmatter field that runs a skill body in a
+new subagent. On an agent it is not a documented field, and Claude Code ignores
+it without an error. See [REFERENCE.md → Isolated research agent](REFERENCE.md#isolated-research-agent)
+and `.claude/rules/agent-development.md` § Context Isolation.
 
 ### Tool Access (allowed vs disallowed)
 
@@ -86,7 +92,6 @@ agent: security-auditor
 | `description` | string | What the agent does |
 | `model` | string | `opus`, `sonnet`, `haiku`, `fable`, `inherit`, or a full model ID |
 | `effort` | string | `low`, `medium`, `high`, `xhigh`, `max` — overrides the session effort while this agent runs; default inherits. The cost lever for mechanical delegates |
-| `context` | string | Context mode: `fork` or default |
 | `permissionMode` | string | `default`, `acceptEdits`, `dontAsk`, `bypassPermissions`, or `plan` |
 | `maxTurns` | number | Maximum agentic turns before agent stops |
 | `background` | bool | Set `true` to always run as a background task |
@@ -100,7 +105,7 @@ agent: security-auditor
 ## Best Practices
 
 1. **Principle of least privilege** — grant only the tools the agent needs.
-2. **Use `context: fork` for isolation** — exploratory work shouldn't pollute main context.
+2. **Rely on default isolation** — a named agent never sees the caller's conversation, so exploratory work stays out of the main context without any field. Only documented agent fields take effect; an unrecognized key, such as a skill's `context:`, is ignored without an error.
 3. **Combine allowed + disallowed** — explicit whitelist with a safety blacklist.
 4. **Clear descriptions** — describe what the agent does and its boundaries.
 5. **Model and effort** — `model: opus` is the floor for any agent whose output
@@ -137,12 +142,12 @@ Worked YAML for each practice is in [REFERENCE.md → Best-practice snippets](RE
 
 ## Quick Reference
 
-### Context Modes
+### Context Inheritance
 
-| Mode | Isolation | Use Case |
-|------|-----------|----------|
-| (default) | Shared | Normal workflows |
-| `fork` | Isolated | Research, experiments |
+| Dispatch | Sees the caller's conversation | Use Case |
+|----------|--------------------------------|----------|
+| Named agent (`subagent_type: "<name>"`) | No — brief only | Research, review, tool-bounded work |
+| `subagent_type: "fork"` | Yes — the whole conversation | Side task that needs the prior context |
 
 ### Tool Restriction Patterns
 

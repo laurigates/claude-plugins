@@ -20,7 +20,7 @@ both are reported rather than adjusted silently:
      `WIDENED_BASH=` and listed per agent. Nothing in this repo can narrow it;
      it is a property of the target schema.
   2. **Claude-Code-only tools are dropped**, because no pi built-in exists for
-     them: `TodoWrite`, `TaskOutput`, `WebFetch`, `WebSearch`, `NotebookEdit`.
+     them: `TodoWrite`, `WebFetch`, `WebSearch`, `NotebookEdit`.
      They are reported as `DROPPED_TOOLS=` per agent.
      `WebFetch`/`WebSearch` *could* be reached as `ext:` selectors (the tool is
      provided by the optional `pi-web-search` extension), but a single `ext:`
@@ -39,11 +39,18 @@ Tool mapping (`pi` 0.84.1: `BUILTIN_TOOL_NAMES` = `createCodingTools` +
     "*" / all -> "*"   none / "" -> none
 
 Two source fields are deliberately **not** mapped, and are reported instead:
-`context:` (10 agents) because pi has no counterpart to assert — a pi subagent
-always runs in its own session, so Claude Code's fork-isolation is pi's default,
-while pi's `inherit_context:` is the *opposite* direction and inferring it would
-be a guess; and any future unknown field, which lands in `DROPPED_KEYS=` rather
-than vanishing.
+`context:` (10 agents), and any future unknown field, which lands in
+`DROPPED_KEYS=` rather than vanishing. Dropping `context:` is correct because
+there is nothing to project (#2646): it is a SKILL frontmatter field, absent
+from Claude Code's subagent frontmatter table, and Claude Code ignores it on an
+agent without an error — a live probe measured it inert (agents with and
+without it returned bit-identical subagent_tokens, both blind to the parent
+turn). A Claude Code named agent therefore always starts without the parent's
+conversation, which is also what a pi subagent does by default. Mapping it to
+pi's `inherit_context: true` would give the exported agent the parent's
+conversation — the behaviour of Claude Code's runtime `fork` subagent type,
+which the key never had. The key stays reported, not silently dropped, so its
+removal from the sources (#2722) is visible in the export.
 
 Usage: export-pi-agents.py <repo-root> <out-dir>
 Emits <out-dir>/agents/<name>.md plus a KEY=VALUE report.
@@ -76,13 +83,13 @@ TOOL_MAP = {
 
 # No pi built-in equivalent. Kept as a named tuple so the report can say which
 # one went missing rather than just how many.
-DROPPED_TOOLS = ("TodoWrite", "TaskOutput", "WebFetch", "WebSearch", "NotebookEdit")
+DROPPED_TOOLS = ("TodoWrite", "WebFetch", "WebSearch", "NotebookEdit")
 
 # Source frontmatter keys this projection owns; anything else is reported as a
 # dropped key so a new field cannot be added to an agent and vanish silently.
-# `context` is intentionally absent from both tuples: it is a real Claude Code
-# field (agent-development.md: `fork` = isolated context) with no pi counterpart
-# to assert, so it is reported alongside genuinely unknown keys.
+# `context` is intentionally absent from both tuples: it is a skill field that
+# Claude Code ignores on an agent (see the module docstring, #2646), so there is
+# no behaviour to project and it is reported alongside genuinely unknown keys.
 MAPPED_KEYS = (
     "name",
     "description",

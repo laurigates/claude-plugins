@@ -1276,6 +1276,39 @@ check_skill_body() {
       done
     fi
 
+    # Regression: ai-review-max-turns must cover the two gaps found triaging
+    # ForumViriumHelsinki/thelma#1524 (issue #2718).
+    #   (a) A FOURTH cause: a result with subtype "success" AND is_error true
+    #       (5 turns, 0 denials, no "Found N", no result string) that the wrapper
+    #       failed on that combination alone, and that passed on a rerun of the
+    #       identical commit. The skill previously described both finished-run
+    #       rows as `is_error: false`, and its law said is_error "separates a run
+    #       that died from one that finished" — so this run read as budget
+    #       exhaustion, whose fix (raise max_turns) cannot help a 5-turn run.
+    #   (b) The control-test advice presumed a prior run exists. A workflow with
+    #       <=1 historical run has no baseline at all, and an empty `gh run list`
+    #       reads as "nothing to see"; rerunning the identical commit becomes the
+    #       PRIMARY discriminator, not a follow-up.
+    # Positive tokens pin the new row, the corrected law, and the no-baseline
+    # instruction. The negative token is the retired claim itself, so a bulk
+    # edit restoring the old law fails even if the new prose survives beside it.
+    if [ "$skill_name" = "ai-review-max-turns" ] && [ "$plugin" = "github-actions-plugin" ]; then
+      for token in \
+        'Result flagged errored despite completing' \
+        'is_error` alone does not separate' \
+        'no baseline exists' \
+        'primary discriminator'; do
+        if ! grep -qF -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain token '${token}' (subtype success + is_error true is a fourth cause; a workflow with <=1 historical run has no baseline, so the identical-commit rerun is the primary discriminator — issue #2718)")
+          has_errors=true
+        fi
+      done
+      if grep -qF 'that *died* from one that *finished*' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md restates the retired claim that is_error separates a run that died from one that finished — a completed run can report is_error: true (issue #2718)")
+        has_errors=true
+      fi
+    fi
+
     # Regression: claude-security-settings must warn that flag-scoped deny rules
     # belong in the space form ("Bash(git push --force *)"), never the colon form
     # ("Bash(git push --force:*)"). The colon form was observed prefix-matching

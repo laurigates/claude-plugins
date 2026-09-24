@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "agent-patterns-plugin",
-  "version": "2.45.7",
+  "version": "2.45.9",
   "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, and hooks configuration",
   "author": {
     "name": "Lauri Gates"
