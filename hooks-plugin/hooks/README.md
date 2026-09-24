@@ -361,7 +361,11 @@ structural(command nodes)
   (`bash -c`, `sh -ec`, `bash --rcfile X -c`, `eval`, …), of a command piped
   into one, and a heredoc fed to one are re-parsed as shell.
 - **Residue.** The old regex matcher runs over the command text with
-  parser-classified spans blanked: comments, output-only programs (`echo`,
+  parser-classified spans blanked: comments whose `#` opens a word for the
+  shell (first byte, or after a blank, `;`, `&` or `|` that no odd run of
+  backslashes escapes — tree-sitter also reads `\ #`, `\<TAB>#` and a
+  mid-word `\<newline>#` as comments, where the shell runs the rest of the
+  line), output-only programs (`echo`,
   `printf`, `grep`, `rg`, `jq`, `cat`, `head`, `tail`, `wc`, `gh
   issue|pr|api|release|search|label|run|workflow|status`, `git
   commit|log|show|diff|grep|status|tag|notes`) whose output reaches no other
@@ -414,7 +418,8 @@ the old matcher checkpointed.
 
 ### Operand locality
 
-An `rm` is skipped only when every operand is a literal absolute path that is
+An `rm` is skipped only when every operand is a literal absolute path, with no
+glob character (`*`, `?`, `[`, and zsh's extended_glob `^`, `~`, `#`), that is
 neither inside the repository nor an ancestor of it, or an unquoted
 build-artifact name (`node_modules`, `dist`, `build`, …) with no `..`
 component, now judged per operand. The repository is `git rev-parse
@@ -439,6 +444,7 @@ These still checkpoint:
 | `rm -rf /tmp/x/../y` where `/tmp/x` does not exist, `rm -rf /tmp/dangling-link/y` | Not resolvable now: a `..` after a missing component, or a dangling or looping symlink |
 | `rm -rf /proc/self/cwd/x`, `rm -rf /dev/fd/3/x 3<dir` | `/proc` and `/dev` names resolve per process, so the hook's view says nothing about rm's |
 | `rm -rf node_modules/../src` | A build-artifact name with a `..` component is `./src` (the old matcher's `\b` skipped it) |
+| `rm -rf /outside/lin*/src`, `rm -rf /outside/.?/repo/src` | A glob is never exempt: a component it matches can be a symlink into the repository, and under bash 3.2 `.?` matches `..` |
 | `rm -rf "$T"`, `rm -rf "$(mktemp -d)"` | Not statically resolvable. #2652 is **reduced** for this shape, not fixed |
 | `cd /tmp && rm -rf scratch` | A relative operand; the `cd` could point anywhere |
 | `rm -rf ~/x`, `rm -rf /tmp/{a,b}` | Tilde and brace expansion are not resolved |
@@ -460,7 +466,8 @@ bash hooks-plugin/hooks/test-auto-checkpoint.sh
 ```
 
 Beyond the #2610 cases, the suite pairs every false positive from the #2652
-thread with an in-repo control, generates ~550 spellings of the destructive
+thread with an in-repo control, generates 582 spellings (4 fewer where there is
+no macOS firmlink) of the destructive
 commands (program spelling × wrapper × flag spelling × shell-string wrapper ×
 shell context, plus every allowlist-voiding shape above, each beside a control
 that skips) and requires each to checkpoint, and runs the same set through

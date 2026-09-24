@@ -699,23 +699,16 @@ identity_disjoint() {
 }
 
 path_outside_repo() {
-  local p=$1 lit=$1 rest root plc
+  local p=$1 root plc
   case $p in
     /*) ;;
     *) return 1 ;;
   esac
-  case $p in
-    *[\*\?\[]*)
-      # A glob matches only descendants of its literal directory prefix, so
-      # that prefix stands in for the target.
-      lit=${p%%[\*\?\[]*}
-      lit=${lit%/*}
-      rest=${p#"$lit"}
-      case /$rest/ in */../*) return 1 ;; esac
-      [ -n "$lit" ] || lit=/
-      ;;
-  esac
-  physical_path "$lit" || return 1
+  # A glob is never exempt: a component it matches can be a symlink into the
+  # repository (`/outside/lin*/src`), and under bash 3.2 `.?` matches `..`.
+  # `^`, `~` and `#` are glob operators in zsh under extended_glob.
+  case $p in *[\*\?\[~#^]*) return 1 ;; esac
+  physical_path "$p" || return 1
   ensure_repo_top || return 1
   case $PHYS in *[![:print:]]*) return 1 ;; esac
   plc=$(printf '%s' "$PHYS" | tr '[:upper:]' '[:lower:]') || return 1
@@ -1024,6 +1017,26 @@ SHELL_INVOKERS='sh|bash|zsh|ksh|dash|ash|mksh|yash|fish|eval|su|runuser|script|f
 QUEUE=()
 REASON=""
 
+# 0 when the `#` at byte $2 of $1 starts a comment for the shell: it opens a
+# word, so it is the first byte or follows a blank or `;`, `&`, `|` that no odd
+# run of backslashes escapes. tree-sitter-bash also opens a comment after an
+# escaped blank (`\ #`, `\<TAB>#`, `\<newline>#`), where the shell keeps `#` in
+# the word and runs the rest of the line. Anything else is kept, not blanked.
+comment_opens_word() {
+  local text=$1 at=$2 j n=0
+  [ "${text:at:1}" = "#" ] || return 1
+  [ "$at" -gt 0 ] || return 0
+  case ${text:at-1:1} in
+    ' ' | $'\t' | $'\n' | ';' | '&' | '|') ;;
+    *) return 1 ;;
+  esac
+  for ((j = at - 2; j >= 0; j--)); do
+    [ "${text:j:1}" = "$BACKSLASH" ] || break
+    n=$((n + 1))
+  done
+  [ $((n % 2)) = 0 ]
+}
+
 # Structural pass over one snippet. Sets REASON on the first destructive
 # invocation. With $2 = 1 (the top-level command) it also computes RESIDUE.
 RESIDUE=""
@@ -1047,7 +1060,14 @@ analyse() {
     [ -n "$rid" ] || continue
     case $rid in
       perr) HAS_PARSE_ERROR=1 ;;
-      comment | inert-cmd | inert-stmt) paint_list+=("$s $e B") ;;
+      comment)
+        if comment_opens_word "$snippet" "$s"; then
+          paint_list+=("$s $e B")
+        else
+          paint_list+=("$s $e K")
+        fi
+        ;;
+      inert-cmd | inert-stmt) paint_list+=("$s $e B") ;;
       subst | hot-stmt) paint_list+=("$s $e K") ;;
       sh-heredoc) QUEUE+=("${snippet:s:e-s}") ;;
       cmd) cmd_list+=("$s $e") ;;

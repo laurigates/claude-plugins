@@ -293,8 +293,13 @@ not on the raw command text: the phrase inside a `gh issue comment --body`, a
 heredoc body, a commit message or a `grep` pattern no longer checkpoints, nor
 does an `rm -rf` whose every operand is a literal absolute path outside the
 repository. The pre-#2652 regex matcher still runs over whatever the parser
-cannot prove inert, and alone when `ast-grep` is missing, so the hook
-over-checkpoints rather than under-checkpoints. That exemption is a closed
+cannot prove inert, and alone when `ast-grep` is missing. That leaves one way
+to under-checkpoint: a span the parser reads differently from the shell. A
+fourth review found two (`echo \ #; rm -rf ./src`, where tree-sitter reads a
+comment the shell does not, and `rm -rf /outside/lin*/src`, a glob exempted on
+its literal prefix through a symlink into the repository); both now checkpoint,
+and the suite's differential against the old matcher is the check, not a proof.
+That exemption is a closed
 allowlist of shapes, not a list of hazards: unless every part of the command is
 an allowed program, redirect or structure, the old matcher reads the whole
 command, as before #2652 — so `exec`, `tee`, `eval`, a shell, `find`, a

@@ -306,7 +306,10 @@ stash_count() { git -C "$SANDBOX" stash list | wc -l | tr -d ' '; }
 # arguments are env assignments. `@TOP@` in the command becomes the repo path,
 # so an absolute in-repo spelling follows whichever sandbox runs it; `@PTOP@`
 # its physical path (`cd -P`), `@NAME@` its basename, and `@LINK@` a symlink
-# beside the repo (outside it) that points at it, made on first use.
+# beside the repo (outside it) that points at it, made on first use. `@OUT@` is
+# a directory beside the repo, neither inside it nor an ancestor of it, holding
+# `lin`, a symlink to the repo, so a glob under it reaches the repo only through
+# the link.
 #
 # Every run first writes a fresh value into the TRACKED file. Two identical
 # `git stash create` calls in the same second produce the SAME commit, and
@@ -323,6 +326,11 @@ run_verdict_in() {
     case $cmd in *@LINK@*)
         [ -L "$repo.link" ] || ln -s "$repo" "$repo.link"
         cmd=${cmd//@LINK@/$repo.link}
+        ;;
+    esac
+    case $cmd in *@OUT@*)
+        [ -L "$repo.out/lin" ] || { mkdir -p "$repo.out" && ln -s "$repo" "$repo.out/lin"; }
+        cmd=${cmd//@OUT@/$repo.out}
         ;;
     esac
     cmd=${cmd//@NAME@/${repo##*/}}
@@ -420,7 +428,8 @@ expect skip "out-of-repo literal under /private/tmp" 'rm -rf /private/tmp/scratc
 expect skip "out-of-repo quoted /var/folders literal (repro 2's mktemp path)" \
     'rm -rf "/var/folders/xx/T/tmp.abc123"'
 expect skip "out-of-repo real sibling directory, quoted literal" "rm -rf \"$NON_GIT_DIR/scratch\""
-expect skip "out-of-repo glob under a sibling directory" "rm -rf $NON_GIT_DIR/scratch-*"
+expect CHECKPOINT "  control: a glob is never exempt, even under an out-of-repo directory" \
+    "rm -rf $NON_GIT_DIR/scratch-*"
 expect skip "two out-of-repo operands" 'rm -rf /tmp/scratch-a /private/tmp/scratch-b'
 expect skip "out-of-repo rm with a redirect" 'rm -rf /tmp/scratch-2652 2>/dev/null'
 expect skip "out-of-repo rm, then echo" 'rm -rf /tmp/scratch-2652 && echo done'
@@ -441,6 +450,29 @@ expect CHECKPOINT "  control: a symlink outside the repository pointing into it"
 expect CHECKPOINT "  control: '..' through a symlink outside the repository, back into it" \
     "rm -rf \"$NON_GIT_DIR/link-into-repo/../src\""
 expect CHECKPOINT "  control: an in-repo path that walks '..' and back" "rm -rf \"$SANDBOX/src/../src\""
+# A glob component can match a symlink into the repository, so its literal
+# prefix says nothing about the target (fourth review of PR #2743: each of these
+# deleted repo content while the hook stayed silent). `^`, `#` and `~` are zsh
+# extended_glob operators: `lin^x` matches `lin-top` there.
+ln -s "$SANDBOX" "$NON_GIT_DIR/lin-top"
+for glob_op in 'lin*/src' 'lin?top/src' 'li[n]-top/src' '*/src' 'lin*/s?c' 'lin*/' 'lin*//src' \
+    'lin*/./src' './lin*/src' 'lin-to[p]/src/' 'lin^x/src' 'lin-to#p/src' 'lin-top~x/src'; do
+    expect CHECKPOINT "  control: a glob through an outside symlink into the repository: $glob_op" \
+        "rm -rf $NON_GIT_DIR/$glob_op"
+done
+expect CHECKPOINT "  control: '.?' matches '..' under bash 3.2, climbing into the repository" \
+    "rm -rf $NON_GIT_DIR/.?/$SANDBOX_NAME/src"
+# The shell opens a comment only where `#` starts a word. After an escaped blank
+# it does not, and the rest of the line runs; tree-sitter reads a comment there.
+expect CHECKPOINT "  control: '#' after an escaped space is not a comment" 'echo \ #; rm -rf ./src'
+expect CHECKPOINT "  control: '#' after an escaped tab is not a comment" $'echo \\\t#; rm -rf ./src'
+expect CHECKPOINT "  control: '#' after a mid-word line continuation is not a comment" \
+    $'echo a\\\n#; rm -rf ./src'
+expect CHECKPOINT "  control: '#' after an escaped space, then git checkout --" \
+    'echo \ #;git checkout -- tracked.txt'
+expect skip "a comment after an escaped backslash and a real blank" 'echo \\ # rm -rf ./src'
+expect skip "a comment right after ';'" 'echo hi;# rm -rf ./src'
+expect skip "a comment on its own line" $'echo hi\n# rm -rf ./src'
 expect CHECKPOINT "  control: a build-artifact name followed by '..' (node_modules/../src)" \
     'rm -rf node_modules/../src'
 ln -s "$NON_GIT_DIR/nowhere" "$NON_GIT_DIR/dangling"
@@ -700,7 +732,7 @@ RM_ARGS=("-rf ./src" "-fr ./src" "-r -f ./src" "-f -r ./src" "-Rf ./src" "-rfv .
     "-rf dummy" "-rf src/" "-rf ./src/*" '-rf "./src"' "-rf ./a ./src" "./src -rf"
     "-rf @TOP@/src" '-rf "@TOP@"' "--interactive=never -rf ./src"
     "-rf @LINK@/src" '-rf "@LINK@/"' "-rf @LINK@/../@NAME@/src" "-rf @TOP@/src/../src"
-    "-rf node_modules/../src" "-rf /proc/self/cwd/src")
+    "-rf node_modules/../src" "-rf /proc/self/cwd/src" "-rf @OUT@/lin*/src" "-rf @OUT@/l?n/src" "-rf @OUT@/*/src" "-rf @OUT@/lin*/")
 if [ -n "${FIRM:-}" ]; then
     RM_ARGS+=("-rf /System/Volumes/Data@PTOP@/src" '-rf "/System/Volumes/Data@PTOP@"'
         "-rf /System/Volumes/Data@PTOP@/src/*")
@@ -845,6 +877,8 @@ git commit -m 'X' && git -c core.pager='sh .git/COMMIT_EDITMSG #' log -p -1
 git commit -m 'X' && git rebase -x 'sh .git/COMMIT_EDITMSG' HEAD
 git commit -m 'X' && env sh .git/COMMIT_EDITMSG
 git commit -m 'X' && gh alias set z '!sh .git/COMMIT_EDITMSG' && gh z
+echo \ #; X
+echo a\~NL~#; X
 TEMPLATES
 for c in "rm -rf ./src" "git clean -fd"; do
     for x in "${EXEC_VIA_INERT[@]}"; do SPELLINGS+=("$(fill "$x" "$c")"); done
