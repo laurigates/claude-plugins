@@ -84,6 +84,12 @@ jobs:
       - name: Install ast-grep
         run: npm install -g @ast-grep/cli@0.43.0
 
+      # documentation-plugin's check-public-export.sh scans with ripgrep and
+      # exits 2 without it; ubuntu-latest does not ship rg, so its regression
+      # suite failed every case here while passing locally.
+      - name: Install ripgrep
+        run: sudo apt-get install -y -qq ripgrep
+
       # blueprint-plugin/scripts/check-manifest-schema.py is a self-contained
       # `uv run` PEP723 script (jsonschema). Absent uv, its regression suite
       # SKIPs; installed, the manifest-schema gate actually runs in CI (#2136).
