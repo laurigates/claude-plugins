@@ -1,0 +1,5 @@
+{"type": "user", "isMeta": true, "timestamp": "2026-09-20T13:00:00Z", "message": {"role": "user", "content": "PostToolUse hook feedback:\nA hypothetical post-tool reason no parser branch knows."}}
+{"type": "user", "isMeta": true, "timestamp": "2026-09-20T13:00:01Z", "message": {"role": "user", "content": "Stop hook error:\nhook exited with status 1"}}
+{"type": "user", "isMeta": true, "timestamp": "2026-09-20T13:00:02Z", "message": {"role": "user", "content": "Stop hook feedback:\nFound 1 debugging artifact(s) (console.log, debugger, breakpoint, etc.) in uncommitted changes. Clean up before finishing."}}
+{"type": "user", "isMeta": true, "timestamp": "2026-09-20T13:00:03Z", "message": {"role": "user", "content": "Base directory for this skill: /x. It mentions Stop hook feedback: only mid-line, so it is not a hook record."}}
+{"type": "user", "timestamp": "2026-09-20T13:00:04Z", "message": {"content": "Stop hook feedback:\nA NON-meta user record typed by a human is a prompt, not hook output."}}

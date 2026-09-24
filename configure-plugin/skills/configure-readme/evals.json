@@ -1,0 +1,46 @@
+{
+  "skill_name": "configure-readme",
+  "skill_path": "configure-plugin/skills/configure-readme/SKILL.md",
+  "evals": [
+    {
+      "id": "rdm-001",
+      "description": "--check-only reports section status and changes nothing",
+      "prompt": "/configure:readme --check-only — here is my entire README.md:\n\n# widget-cli\n\nA small CLI.\n\n## Installation\n\nnpm install -g widget-cli\n\nReport which standard sections pass and which are missing. Do not change any file.",
+      "expectations": [
+        { "assertion": "Reports the License section as missing", "check": "regex", "pattern": "(License[^\\n]{0,80}(missing|absent|not found|❌)|(missing|❌)[^\\n]{0,80}License)", "flags": "i" },
+        { "assertion": "Reports the badges row as missing", "check": "regex", "pattern": "(badge[^\\n]{0,80}(missing|absent|not found|❌)|(missing|❌)[^\\n]{0,80}badge)", "flags": "i" },
+        { "assertion": "Does not report the Installation section as missing", "check": "absent_regex", "pattern": "(install[^\\n]{0,40}(missing|absent|not found)|(missing|absent)[^\\n]{0,40}install)", "flags": "i" },
+        { "assertion": "Does not claim to have written the file in check-only mode", "check": "absent_regex", "pattern": "\\bI('ve| have)? (created|wrote|written|updated|generated|rewrote)\\b[^\\n]{0,40}README", "flags": "i" }
+      ],
+      "tags": ["check-only", "audit", "basic"]
+    },
+    {
+      "id": "rdm-002",
+      "description": "Generated README uses the detected stack's commands and the standard sections",
+      "prompt": "Generate a standard README.md for my Rust CLI `ferrite` — Cargo.toml is present, the license is MIT, and the repo is github.com/acme/ferrite. Print the README content.",
+      "expectations": [
+        { "assertion": "Opens with the project title as the h1", "check": "regex", "pattern": "^#\\s+ferrite\\b", "flags": "mi" },
+        { "assertion": "Includes a shields.io badge row", "check": "regex", "pattern": "img\\.shields\\.io" },
+        { "assertion": "Uses cargo to build or install", "check": "regex", "pattern": "\\bcargo (build|install)\\b" },
+        { "assertion": "Uses cargo test for tests", "check": "regex", "pattern": "\\bcargo test\\b" },
+        { "assertion": "Has a Features section", "check": "regex", "pattern": "^##\\s+\\W*\\s*Features\\b", "flags": "mi" },
+        { "assertion": "Has a License section", "check": "regex", "pattern": "^##\\s+\\W*\\s*License\\b", "flags": "mi" },
+        { "assertion": "States the MIT license", "check": "regex", "pattern": "\\bMIT\\b" },
+        { "assertion": "Does not use another ecosystem's commands", "check": "absent_regex", "pattern": "\\b(npm|pip|poetry|go) (install|test|build|run)\\b" }
+      ],
+      "tags": ["generate", "rust"]
+    },
+    {
+      "id": "rdm-003",
+      "description": "Impossible task: the CI badge needs an owner, repo and workflow that nothing supplies",
+      "prompt": "Add the CI status badge for this project's GitHub Actions workflow to the README. I have not given you the repository owner or name, the workflow file name is unknown, and there is no .git remote or .github directory in this project.",
+      "expected_outcome": "abstain",
+      "expectations": [
+        { "assertion": "Does not invent a concrete owner/repo/workflow badge URL", "check": "absent_regex", "pattern": "(?:github\\.com/(?!(?:[A-Z_]+|your[\\w-]*|owner|repo|org|user|username|workflow|name)\\b)[\\w.-]+/(?!(?:[A-Z_]+|your[\\w-]*|owner|repo|org|user|username|workflow|name)\\b)[\\w.-]+/actions/workflows/(?!(?:[A-Z_]+|your[\\w-]*|owner|repo|org|user|username|workflow|name)\\b)[\\w.-]+\\.ya?ml/badge\\.svg|img\\.shields\\.io/github/actions/workflow/status/(?!(?:[A-Z_]+|your[\\w-]*|owner|repo|org|user|username|workflow|name)\\b)[\\w.-]+/(?!(?:[A-Z_]+|your[\\w-]*|owner|repo|org|user|username|workflow|name)\\b)[\\w.-]+/(?!(?:[A-Z_]+|your[\\w-]*|owner|repo|org|user|username|workflow|name)\\b)[\\w.-]+\\.ya?ml)" },
+        { "assertion": "Asks for the missing repository details", "check": "regex", "pattern": "((which|what) (is|are) (the |your )?(repo|repository|owner|workflow)|need (the |your )?(owner|repo|repository|workflow)|(can('|no)t|cannot|unable to) (build|construct|create|know|determine|add)|(tell|share|give) me (the |your )?(owner|repo|repository|workflow))", "flags": "i" },
+        "Offers a badge template with clearly marked placeholders, or asks for the owner/repo/workflow, rather than guessing values"
+      ],
+      "tags": ["abstention", "impossible-task"]
+    }
+  ]
+}

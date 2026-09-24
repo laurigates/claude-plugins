@@ -35,7 +35,7 @@ The domain grouping below mirrors the authoritative manifest
 
 | Skill | Description |
 |-------|-------------|
-| `ci-workflows` | CI/CD workflow standards |
+| `ci-workflows` | Canonical YAML for the container-build, test, release-please and auto-fix workflows that `configure-workflows` audits against |
 | `claude-security-settings` | Claude Code security settings and wildcard permissions |
 | `openfeature` | OpenFeature vendor-agnostic feature-flag SDK reference |
 | `go-feature-flag` | GO Feature Flag (GOFF) provider reference |
@@ -50,10 +50,10 @@ merged into their configure siblings' `REFERENCE.md` files
 
 | Skill | Description |
 |-------|-------------|
-| `configure-workflows` | GitHub Actions CI/CD workflows |
-| `configure-reusable-workflows` | Install Claude-powered reusable workflows (security, quality, a11y) |
+| `configure-workflows` | Whole-repo `.github/workflows/` audit: baseline workflows missing for the project type, and stale action pins |
+| `configure-reusable-workflows` | Install pre-built Claude PR scans as `claude-*.yml` callers (security, quality, a11y) |
 | `configure-release-please` | Release-please workflow, manifest, and config for a **single-package** repo (monorepo component tags live in `git-plugin:release-please-configuration`) |
-| `configure-pre-commit` | Pre-commit hooks for project standards |
+| `configure-pre-commit` | Set up `.pre-commit-config.yaml` with hooks for the project type |
 | `configure-github-pages` | GitHub Pages deployment |
 | `configure-argocd-automerge` | Auto-merge workflow for ArgoCD Image Updater branches |
 | `configure-claude-plugins` | Configure Claude Code plugin marketplace and GitHub Actions workflows |
@@ -71,7 +71,7 @@ merged into their configure siblings' `REFERENCE.md` files
 | Skill | Description |
 |-------|-------------|
 | `configure-dockerfile` | Dockerfile for project standards (minimal Alpine/slim, non-root, multi-stage) |
-| `configure-container` | Container infrastructure (builds, registry, scanning, devcontainer) |
+| `configure-container` | GHCR image pipeline (multi-platform builds, Trivy/Grype scanning, `.dockerignore`, devcontainer) |
 | `configure-skaffold` | Skaffold configuration |
 
 ### Testing
@@ -90,8 +90,8 @@ merged into their configure siblings' `REFERENCE.md` files
 
 | Skill | Description |
 |-------|-------------|
-| `configure-linting` | Linting tools (Biome, Ruff, Clippy) |
-| `configure-formatting` | Code formatting (Biome, Prettier, Ruff, rustfmt) |
+| `configure-linting` | Set up linters (Biome, Ruff, Clippy) and wire them into pre-commit and CI |
+| `configure-formatting` | Set up formatters (Biome, Ruff format, rustfmt), replacing Prettier or Black |
 | `configure-dead-code` | Dead code detection (Knip, Vulture, cargo-machete) |
 
 ### Security
@@ -126,7 +126,7 @@ merged into their configure siblings' `REFERENCE.md` files
 
 | Skill | Description |
 |-------|-------------|
-| `configure-editor` | EditorConfig and VS Code workspace settings |
+| `configure-editor` | Set up `.editorconfig` and `.vscode/` workspace settings |
 | `configure-mcp` | MCP servers for project integration |
 | `configure-makefile` | Makefile with standard targets |
 | `configure-justfile` | Justfile with standard recipes (simpler alternative to Make) |

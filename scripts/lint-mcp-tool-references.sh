@@ -24,8 +24,8 @@
 # Deliberately OUT of scope: narrative documentation — `.claude/rules/*.md`,
 # `docs/**`, and the release-please-generated `CHANGELOG.md` files — because
 # those cite known-broken tool names on purpose (that is what a
-# regression-testing row or a changelog entry IS). A walk that included them
-# would fire on `.claude/rules/regression-testing.md` itself. Fix a stale
+# regression-ledger row or a changelog entry IS). A walk that included them
+# would fire on `docs/regression-ledger.md` itself. Fix a stale
 # tool name in those files by hand.
 #
 # Lines starting with `>` (markdown blockquote) are skipped so the

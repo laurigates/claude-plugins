@@ -12,8 +12,8 @@ Diagnose and fix Claude Code configuration issues including plugin registry, set
 
 | Skill | Description |
 |-------|-------------|
-| `/health:check` | **Single entry point.** Diagnose (and optionally fix) Claude Code environment, plugin registry, project-stack fit, and skill agentic-optimisation — routed by `--scope`. |
-| `/health:skill-audit` | Audit the plugin skill tree for skill-to-skill overlap, split-pressure inside a SKILL.md, and consolidation candidates. Writes four reports to `tmp/skill-audit/`. |
+| `/health:check` | **Single entry point** when the broken layer is unknown. Diagnose (and optionally fix) Claude Code environment, plugin registry, project-stack fit, and skill agentic-optimisation — routed by `--scope`. |
+| `/health:skill-audit` | Skill-overlap report for the plugin repo: skills that could answer the same request, split-pressure inside a SKILL.md, and merge candidates. Writes four reports to `tmp/skill-audit/`. |
 | `plugin-registry` | Reference skill: Claude Code's plugin registry, install scopes, why a project can load an older plugin version than the rest of the machine, and troubleshooting |
 | `settings-configuration` | Reference skill: settings file hierarchy, permission wildcards, and patterns |
 
@@ -42,8 +42,9 @@ These internal skills are auto-discoverable but not user-invocable — use `/hea
 ### `lib/probe.py` — the shared contract
 
 What a probe must agree with other probes about, and nothing else: the
-`Finding` shape, `fingerprint` (identity across runs), `Waivers` (pair-keyed,
-self-expiring), `Baseline`/`Delta`, and the `STATUS=`/`ISSUE_COUNT=` renderers.
+`Finding` shape, `fingerprint` (identity across runs), `Waivers` (pair and
+single-path, content-hash-keyed, self-expiring), `Baseline`/`Delta`, and the
+`STATUS=`/`ISSUE_COUNT=` renderers.
 Thresholds, the corpus walk and the `check_*` functions deliberately stay in
 `config-drift.py` — those are one probe's opinion, and a second probe adopting
 them would be adopting a bug rather than a contract.
@@ -73,6 +74,14 @@ config-drift.py --format=json | probe-delta.py --probe config-drift --root <abs>
 First run records the baseline and says nothing. Later runs report only new
 findings; an empty or unparseable input is `STATUS=ERROR TYPE=analyzer_failed`,
 never a clean sweep.
+
+`--expect-baseline` is for a scheduled caller that knows it is **not** on its
+first run, such as a workflow keeping the baseline in an evictable cache. There a
+missing or untrusted baseline is a loss: every finding is re-reported beside a
+`TYPE=baseline_lost` finding that names the cause (missing file vs. one recorded
+at another root or schema), `FIRST_RUN=false BASELINE_LOST=true`, and the
+baseline is re-recorded. Without the flag the same condition stays a silent
+first run, which would swallow whatever appeared while the baseline was gone.
 
 ### `config-drift.py`
 
@@ -157,16 +166,77 @@ config-drift.py --format=report                    # + embeddings, scheduled use
 hash**, never mtime, so it cannot go stale and cannot be invalidated by a
 checkout that rewrites timestamps.
 
-**Waivers.** Deliberate duplication is suppressed via
-`~/.claude/config-drift-waivers.json`, keyed by both sides' content hashes — so
-a waiver expires the moment either file is edited. Without that, a recurring
-report re-lists its known-accepted findings until you stop reading it.
+**Waivers.** A finding judged not to be a defect is suppressed by a waiver that
+records the content hash of every file it vouches for, so it expires the moment
+one of them is edited. Without that, a recurring report re-lists its
+known-accepted findings until you stop reading it. `--waivers` defaults to the
+operator-local `~/.claude/config-drift-waivers.json`; this repo's own corpus has
+a committed, reviewed file at `health-plugin/config-drift-waivers.json`, which
+`just config-drift-semantic` reads. Two entry forms share one file:
+
+| Form | Keys | Suppresses |
+|---|---|---|
+| pair | `a`, `b`, `a_hash`, `b_hash`, `reason` | every pairwise kind over that pair: the lexical and semantic duplicates, `rule_covered_by_skill`, `promotion_candidate` |
+| single-path | `kind`, `path`, `hash`, `reason` | that one kind on that one file: `review_staleness`, `broken_pointer_stub` |
+
+A relative path resolves against `--root`, which is what makes the committed
+file mean the same thing on a CI runner; absolute and `~/` paths are unchanged.
+Six kinds are aggregates or probe-health signals with no file to hash, and are
+declared unwaivable in `WAIVER_EXEMPT_KINDS` with their reasons.
+
+Hashes are never written by hand. `--format=waivers` prints a draft entry, hash
+filled in, for every waivable finding the run reports (so against an existing
+file, exactly the new and revived findings); keep the entries you judge
+non-defects and write each `reason`. `WAIVERS_ACTIVE` / `WAIVERS_MATCHED` /
+`WAIVERS_SKIPPED` read together: `MATCHED` below `ACTIVE` means a waived file
+was edited or removed (in the cheap tier the semantic-pair waivers cannot match
+by construction), and `SKIPPED` counts malformed entries, each named on stderr.
 
 **Semantic threshold.** The embedding pass is calibrated to cosine ≥ 0.91 with
 same-name and structural pairs excluded. This is not a default worth changing
 casually: at 0.86 on a real 884-document corpus it emitted 491 findings, of
 which 290 were same-name pairs the cheap tier already owns. Everything here is
 one genre of document, so baseline similarity is high.
+
+### Scheduled CI audit
+
+`.github/workflows/config-drift-audit.yml` (**Plugin: Config drift audit**) runs
+the semantic tier over this repository's own corpus on Mondays and Thursdays and
+comments only what is new into one rolling issue labelled `config-drift`. No
+Claude model runs; the cost is Actions minutes. The decisions live in
+`scripts/config-drift-audit.sh` and are tested by
+`scripts/tests/test-config-drift-audit.sh`.
+
+It complements the portfolio run tracked in #2319 rather than replacing it:
+
+| | CI audit | Portfolio run (#2319) |
+|---|---|---|
+| Corpus | this checkout: rules, skills, agents, `CLAUDE.md` in git | `~/repos` and `~/.claude/rules`, the fleet `T_PROMOTE` was calibrated on |
+| Waivers | committed `health-plugin/config-drift-waivers.json` | operator-local `~/.claude/config-drift-waivers.json` |
+| A finding is | fixable by a PR to this repo | often in another repo or in home config |
+
+- **State.** The baseline and both caches share one `actions/cache` entry, saved
+  under a fresh key each run and restored by prefix; the model has its own. An
+  entry not read for 7 days is evicted, so a weekly schedule would lose the
+  baseline whenever a run started late. That is why the audit runs twice a week.
+- **First run vs. lost baseline.** The first completed run records silently.
+  After that, a missing baseline is a loss: `probe-delta.py --expect-baseline`
+  re-reports every finding beside a `baseline_lost` row instead of re-recording
+  in silence.
+- **Exit codes.** Analyzer exit 0 and 1 are completed runs, and so is exit 2
+  under `--gate` (next item). Any other code, or empty output, posts an error
+  comment, fails the job, and leaves the baseline untouched. A run whose model
+  failed to load is reported but does not roll the baseline forward.
+- **Red state.** The analyzer runs with `--gate`, so an error-severity finding
+  (`broken_pointer_stub`, `agent_discovery_misfire`, `coverage_metric_broken`)
+  makes it exit 2. That run still completes: the finding is commented once and
+  recorded like any other. The job then fails on every run for as long as the
+  finding persists, including the first run. Warn and info findings never fail
+  the job; they only reach the rolling issue.
+- **Control.** Dispatch with `plant_control: true` to check the delta logic end
+  to end. The run plants two unrelated rules one scope apart, injects a 0.95
+  similarity through `--sim-fixture`, and fails unless exactly that pair comes
+  back as one new `promotion_candidate`.
 
 ## Use Cases
 

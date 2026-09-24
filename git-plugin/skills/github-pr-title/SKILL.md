@@ -1,6 +1,6 @@
 ---
 created: 2026-01-30
-modified: 2026-04-25
+modified: 2026-09-23
 reviewed: 2026-04-25
 name: github-pr-title
 description: |
@@ -52,7 +52,7 @@ See [Conventional Commits Standards](../../.claude/rules/conventional-commits.md
 
 ### Scope
 
-Optional component identifier. Keeps commits organized:
+**The scope is required.** The Conventional Commits spec lets you omit it; this house convention does not (`.claude/rules/conventional-commits.md`), and a squash-merge lands the PR title as the commit on `main`. Use the component or plugin the change touches:
 
 ```
 feat(auth): add OAuth support

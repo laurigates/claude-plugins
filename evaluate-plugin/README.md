@@ -48,6 +48,12 @@ Static compliance checks (`plugin-compliance-check.sh`) verify structure — thi
 /evaluate:skill git-plugin/git-commit --runs 3 --baseline
 ```
 
+`--create-evals` always generates an abstention control: an impossible task whose
+passing answer is a refusal, marked `"expected_outcome": "abstain"`, with an
+`absent_regex` that fails a fabricated answer. Every `evals.json` must carry one
+(`scripts/check-evals-abstention.sh`); see
+[`references/schemas.md`](references/schemas.md#abstention-controls-impossible-tasks).
+
 ### Batch evaluate a plugin
 
 ```
@@ -82,21 +88,29 @@ winner. The ranking is recorded in `history.json`.
 <plugin-name>/skills/<skill-name>/
 ├── SKILL.md
 ├── evals.json              # Committed: test case definitions
-└── eval-results/           # Gitignored: run outputs
+└── eval-results/           # Gitignored: aggregated outputs
     ├── benchmark.json
     ├── history.json
-    ├── candidates/         # --best-of candidate revisions
-    │   └── candidate-<i>.md
-    └── runs/
-        └── <eval-id>-<run-id>/
-            ├── grading.json
-            ├── comparison.json
-            ├── transcript.md
-            └── timing.json
+    ├── model-matrix.json
+    └── candidates/         # --best-of candidate revisions
+        └── candidate-<i>.md
+
+tmp/eval-runs/<plugin-name>/<skill-name>/   # Gitignored: per-run staging
+└── runs/                   # baseline/ for --baseline runs
+    └── <eval-id>-run-<N>/
+        ├── manifest.json
+        ├── grading.json
+        ├── comparison.json
+        ├── transcript.md
+        └── timing.json
 ```
 
 - `evals.json` is version-controlled (test definitions)
-- `eval-results/` is gitignored (transient run data)
+- `eval-results/` is gitignored (transient aggregated data)
+- Run directories are staged by `scripts/prepare_run.sh` under the repo's
+  `tmp/eval-runs/` (override with `EVAL_RUNS_ROOT`), deliberately **outside**
+  `skills/`: path-scoped rules on `**/skills/**` would otherwise load into every
+  eval subagent that writes its transcript (#2667)
 
 ## Scripts
 
@@ -107,6 +121,7 @@ winner. The ranking is recorded in `history.json`.
 | `scripts/grade_deterministic.py` | Grade machine-checkable (regex/substring) assertions with zero judge tokens; defers fuzzy ones to `eval-grader` |
 | `scripts/render_matrix_report.py` | Render the cross-model delta report from a `model-matrix.json` (delta verdict, portability flag, `executable_on_haiku` executability flag) |
 | `scripts/apply_fixture.sh` | Apply/tear down an eval's opt-in `fixture` block in an isolated temp workdir so context-needing skills can honestly execute |
+| `scripts/check_golden_set_evals.py` | Validate every golden-set canary's `evals.json` and run recorded probes (`scripts/tests/fixtures/golden-set-probes.json`) through the grader, so a suite counted toward `evalCoverageFloor` is shown to grade |
 | `skills/evaluate-context-engineering/scripts/check-context-engineering.py` | Channel M scanner — deterministic C1–C6 proxies over the tree (`scripts/check-context-engineering.py` at the repo root is a shim onto it) |
 
 ## Context Engineering

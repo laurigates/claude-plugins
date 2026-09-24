@@ -14,6 +14,11 @@ Kinds:
   user_interrupt     user message starts with "[Request interrupted"
   plan_mode          assistant tool_use name == "ExitPlanMode"
   push_to_pr_branch  git push result mentioning an existing open PR / protected branch
+  stop_hook_feedback isMeta user record "Stop hook feedback:\\n<reason>", keyed stop:<hook>
+  hook_feedback      any other isMeta "<Event> hook feedback|error:" record (unkeyed)
+
+Run with --list-prefixes to count every "<Event> hook feedback|error:" prefix
+seen in isMeta records and which branch handles it (the #2659 class sweep).
 """
 
 from __future__ import annotations
@@ -63,6 +68,36 @@ PUSH_PR_RE = re.compile(
 )
 INTERRUPT_RE = re.compile(r"^\[Request interrupted")
 SECRET_RE = re.compile(r"\b[A-Za-z0-9_\-]{32,}\b")
+
+# Hook output that is NOT a PreToolUse block reaches the transcript as a meta
+# user record rather than a tool_result: `isMeta: true`, string content
+# "Stop hook feedback:\n<reason>". Nothing above ever saw it, so Stop-hook
+# friction was invisible to the weekly report (#2659). Anchored at the start of
+# the record so a skill body that merely quotes the phrase is not a hook record.
+META_HOOK_RE = re.compile(r"^([A-Za-z]+) hook (feedback|error):\n?")
+# A prompt-type hook renders its feedback as "[<prompt>]: <reason>".
+PROMPT_HOOK_RE = re.compile(r"^\[(.*?)\]: ", re.S)
+
+# Stop-hook reasons never name their script, so each hook is keyed on prose it
+# ships. Every needle is text the deployed hook emits; the fixture that proves
+# it is generated from the hook sources (tests/fixtures/stop_hook_feedback).
+STOP_HOOK_NEEDLES = (
+    ("git stash(es) created during this session", "git-stash-reminder"),
+    ("TODO/FIXME/HACK/XXX marker(s)", "task-completeness"),
+    ("Unresolved merge conflict markers found in", "task-completeness"),
+    ("debugging artifact(s) (console.log", "task-completeness"),
+    ("Avoid quoting AI work in calendar time", "no-calendar-estimates"),
+    ("That names a measured rate", "no-calendar-estimates"),
+    ("session-plugin:session-end orchestrator", "session-end-nudge"),
+)
+# Prompt-type Stop/SubagentStop hooks, keyed on the prompt's opening sentence.
+STOP_PROMPT_NEEDLES = (
+    (
+        "You are evaluating whether a subagent's output is complete and actionable",
+        "subagent-output-check",
+    ),
+)
+STASH_ENTRY_RE = re.compile(r"^\s+stash@\{\d+\}", re.M)
 
 EDIT_VERB_RE = re.compile(
     r"\b(add|addition|fix|change|remove|delete|drop|rename|refactor|"
@@ -294,6 +329,60 @@ def canonical_signature(kind: str, tool: str, evidence: str) -> str:
     return f"{kind}:{tool.lower()}"
 
 
+def stop_hook_signature(body: str) -> str:
+    """Key a Stop-hook reason on the hook that emitted it.
+
+    git-stash-reminder is split by what the listed stashes are, because
+    auto-checkpoint stashes (#2652) and deliberate ones need different fixes:
+    `auto-checkpoint` when every entry is one, `mixed` when some are, `other`
+    when none are. The issue's `stop:auto-checkpoint` is the first of these.
+    """
+    prompt = PROMPT_HOOK_RE.match(body)
+    if prompt:
+        for needle, hook in STOP_PROMPT_NEEDLES:
+            if prompt.group(1).startswith(needle):
+                return f"stop:{hook}"
+        return "stop:unclassified"
+    for needle, hook in STOP_HOOK_NEEDLES:
+        if needle not in body:
+            continue
+        if hook == "git-stash-reminder":
+            entries = STASH_ENTRY_RE.findall(body)
+            checkpoints = [
+                line
+                for line in body.splitlines()
+                if STASH_ENTRY_RE.match(line) and "auto-checkpoint before" in line
+            ]
+            if entries and len(checkpoints) == len(entries):
+                variant = "auto-checkpoint"
+            elif checkpoints:
+                variant = "mixed"
+            else:
+                variant = "other"
+            return f"stop:{hook}:{variant}"
+        return f"stop:{hook}"
+    return "stop:unclassified"
+
+
+def meta_hook_record(rec: dict) -> tuple[str, str, str] | None:
+    """(kind, signature, evidence) for an isMeta hook-output record, else None."""
+    if rec.get("type") != "user" or not rec.get("isMeta"):
+        return None
+    text = first_text(rec.get("message", {}).get("content"))
+    m = META_HOOK_RE.match(text or "")
+    if not m:
+        return None
+    event, flavor = m.group(1), m.group(2)
+    body = text[m.end() :]
+    prompt = PROMPT_HOOK_RE.match(body)
+    evidence = body[prompt.end() :] if prompt else body
+    if (event, flavor) == ("Stop", "feedback"):
+        return "stop_hook_feedback", stop_hook_signature(body), evidence
+    # Surfaced but unkeyed: a record class nobody has classified yet must show
+    # up in the report, not vanish the way Stop feedback did before #2659.
+    return "hook_feedback", f"hook-{flavor}:{event.lower()}", evidence
+
+
 def iter_transcripts(roots: list[Path], since: datetime | None) -> Iterator[Path]:
     for root in roots:
         if not root.exists():
@@ -352,8 +441,13 @@ def build_tool_index(path: Path) -> dict[str, str]:
 
 
 def is_user_prompt(rec: dict) -> bool:
-    """True if a user record is a genuine prompt (not a tool_result wrapper)."""
-    if rec.get("type") != "user":
+    """True if a user record is a genuine prompt (not a tool_result wrapper).
+
+    isMeta records are harness-injected (hook feedback, skill bodies, caveats),
+    never something the user typed; counting them let Stop-hook prose overwrite
+    `last_user_prompt` and steer classify_plan_mode() (#2659).
+    """
+    if rec.get("type") != "user" or rec.get("isMeta"):
         return False
     content = rec.get("message", {}).get("content")
     if isinstance(content, str):
@@ -417,6 +511,19 @@ def extract_frictions(path: Path) -> Iterator[dict]:
 
         if is_user_prompt(rec):
             last_user_prompt = first_text(rec.get("message", {}).get("content")) or ""
+
+        meta = meta_hook_record(rec)
+        if meta:
+            kind, signature, evidence = meta
+            yield {
+                "session": session,
+                "ts": ts,
+                "kind": kind,
+                "tool": "-",
+                "signature": signature,
+                "evidence": redact(evidence[:EVIDENCE_MAX_CHARS]),
+            }
+            continue
 
         # User interrupt markers (sit in user messages)
         if rtype == "user":
@@ -493,6 +600,43 @@ def extract_frictions(path: Path) -> Iterator[dict]:
                             }
 
 
+def list_prefixes(roots: list[Path], since: datetime | None) -> int:
+    """The #2659 class sweep, as a diagnostic.
+
+    Stop feedback went unparsed because nothing enumerated the record classes
+    the transcripts actually contain. This counts every hook-output prefix in
+    the window and names the branch that handles it: `classified` (keyed to a
+    hook) or `generic` (surfaced as hook_feedback, but nobody keyed it yet).
+    """
+    counts: dict[tuple[str, str], int] = {}
+    stop_unclassified = 0
+    files = 0
+    for path in iter_transcripts(roots, since):
+        files += 1
+        for rec in iter_jsonl(path):
+            meta = meta_hook_record(rec)
+            if not meta:
+                continue
+            m = META_HOOK_RE.match(first_text(rec["message"]["content"]))
+            key = (m.group(1), m.group(2))
+            counts[key] = counts.get(key, 0) + 1
+            if meta[1] == "stop:unclassified":
+                stop_unclassified += 1
+    generic = [k for k in counts if k != ("Stop", "feedback")]
+    print("=== HOOK FEEDBACK PREFIXES ===")
+    print(f"TRANSCRIPTS={files}")
+    for event, flavor in sorted(counts):
+        handled = "classified" if (event, flavor) == ("Stop", "feedback") else "generic"
+        print(
+            f"PREFIX={event} hook {flavor} COUNT={counts[(event, flavor)]} HANDLED={handled}"
+        )
+    print(f"STOP_UNCLASSIFIED={stop_unclassified}")
+    print(f"STATUS={'WARN' if generic else 'OK'}")
+    print(f"ISSUE_COUNT={len(generic)}")
+    print("=== END HOOK FEEDBACK PREFIXES ===")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument(
@@ -505,10 +649,18 @@ def main() -> int:
         help="Transcript root (repeatable). Defaults to ~/.claude/projects",
     )
     ap.add_argument("--out", default="-", help="Output path; '-' for stdout")
+    ap.add_argument(
+        "--list-prefixes",
+        action="store_true",
+        help="Report every '<Event> hook feedback|error:' prefix seen in isMeta "
+        "records and whether a dedicated parser branch handles it",
+    )
     args = ap.parse_args()
 
     roots = [Path(r) for r in args.root] or [DEFAULT_ROOT]
     since = parse_since(args.since)
+    if args.list_prefixes:
+        return list_prefixes(roots, since)
     out = sys.stdout if args.out == "-" else open(args.out, "w", encoding="utf-8")
 
     total_files = 0

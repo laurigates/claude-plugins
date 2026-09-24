@@ -650,6 +650,13 @@ gh_read() {
   cat "$gh_dir/$1.json" 2>/dev/null
 }
 
+# First page of open Discussions, newest activity first. `isAnswerable` comes
+# from the category, so the filter follows whatever GitHub marks answerable and
+# needs no update when a category is added or retired (#2569 decision).
+# The `$owner`/`$name` are GraphQL variables, not shell ones.
+# shellcheck disable=SC2016
+discussions_query='query($owner:String!,$name:String!){repository(owner:$owner,name:$name){hasDiscussionsEnabled discussions(first:100,states:OPEN,orderBy:{field:UPDATED_AT,direction:DESC}){pageInfo{hasNextPage} nodes{number title url updatedAt isAnswered category{name isAnswerable}}}}}'
+
 if [ -n "$gh_dir" ]; then
   # --summary emits no PR data (THREADS omits pr_count), so summary mode makes
   # only the call whose output it actually prints.
@@ -666,6 +673,14 @@ if [ -n "$gh_dir" ]; then
   if [ "$with_dedup" = true ] || [ "$summary_mode" = true ]; then
     gh_job issues issue list --assignee @me --state open \
       --json number,title,url,updatedAt
+  fi
+  # Open Discussions (#2569). `gh` has no discussion subcommand, so this is the
+  # one GraphQL call. Only GITHUB_DRIFT prints it, so only --with-dedup asks.
+  # `{owner}`/`{repo}` are gh's own placeholders, resolved from the same
+  # checkout remote the list calls above use.
+  if [ "$with_dedup" = true ]; then
+    gh_job discussions api graphql -F 'owner={owner}' -F 'name={repo}' \
+      -f query="$discussions_query"
   fi
 fi
 
@@ -1118,6 +1133,37 @@ reap_github() {
     [ -n "$drift_json" ] || drift_json="[]"
     drift_issues=$(printf '%s' "$drift_json" | jq 'length' 2>/dev/null || echo 0)
   fi
+
+  # Unanswered Discussions (#2569). This query has its own ok-key rather than
+  # riding on GH_READY: the list calls can succeed while GraphQL fails, and a
+  # query that failed or was never asked must not read as a clean zero. The
+  # filter is `isAnswered != true`, not `== false`, because GitHub returns
+  # `isAnswered: null` outside answerable categories.
+  if [ "$with_dedup" = true ]; then
+    local disc_raw=""
+    if ! disc_raw=$(gh_read discussions); then
+      discussions_fail_reason="$(gh_classify discussions)"
+    elif ! have jq; then
+      discussions_fail_reason="no-jq"
+    else
+      discussions_json=$(printf '%s' "$disc_raw" | jq -c '
+        .data.repository
+        | if type != "object" then error("no repository in response") else . end
+        | { enabled: (.hasDiscussionsEnabled == true),
+            truncated: (.discussions.pageInfo.hasNextPage == true),
+            items: [ (.discussions.nodes // [])[]
+                     | select(.category.isAnswerable == true and .isAnswered != true) ] }' \
+        2>/dev/null) || discussions_json=""
+      if [ -n "$discussions_json" ]; then
+        discussions_ok=true
+        discussions_enabled=$(printf '%s' "$discussions_json" | jq -r '.enabled')
+        discussions_truncated=$(printf '%s' "$discussions_json" | jq -r '.truncated')
+        discussions_unanswered=$(printf '%s' "$discussions_json" | jq '.items | length')
+      else
+        discussions_fail_reason="unknown"
+      fi
+    fi
+  fi
 }
 
 gh_ready=false
@@ -1129,6 +1175,14 @@ gh_fail_reason=""
 gh_fail_detail=""
 prs_json="[]"
 drift_json="[]"
+# Discussions (#2569). DISCUSSIONS_FAIL_REASON uses GH_FAIL_REASON's vocabulary,
+# plus `no-jq` (the query answered but could not be filtered).
+discussions_ok=false
+discussions_fail_reason=""
+discussions_json=""
+discussions_enabled=false
+discussions_truncated=false
+discussions_unanswered=0
 
 compute_threads() {
   threads=0
@@ -1466,6 +1520,34 @@ if [ "$with_dedup" = true ]; then
       echo "ISSUE_${idx}_URL=${url}"
       [ -n "$sd" ] && echo "ISSUE_${idx}_AGE_DAYS=${sd}"
     done < <(printf '%s' "$drift_json" | jq -r '.[] | [(.number|tostring), (.title|gsub("\t";" ")), .url, .updatedAt] | @tsv' 2>/dev/null)
+  fi
+  # Unanswered Discussions in answerable categories (#2569). The count is
+  # emitted ONLY when the query answered; otherwise the reason says why not.
+  echo "DISCUSSIONS_QUERY_OK=${discussions_ok}"
+  if [ "$discussions_ok" = true ]; then
+    echo "DISCUSSIONS_ENABLED=${discussions_enabled}"
+    echo "DISCUSSIONS_TRUNCATED=${discussions_truncated}"
+    echo "DISCUSSIONS_UNANSWERED=${discussions_unanswered}"
+    idx=0
+    # Titles and category names are written by anyone who can open a thread,
+    # so every row-breaking byte is flattened, and the title goes LAST so an
+    # empty field cannot shift the columns after it (#2480).
+    while IFS=$'\t' read -r num category url upd title; do
+      idx=$((idx + 1))
+      sd=$(days_since "$upd" 2>/dev/null || echo "")
+      echo "DISCUSSION_${idx}_NUMBER=${num}"
+      echo "DISCUSSION_${idx}_CATEGORY=${category}"
+      echo "DISCUSSION_${idx}_URL=${url}"
+      [ -n "$sd" ] && echo "DISCUSSION_${idx}_AGE_DAYS=${sd}"
+      echo "DISCUSSION_${idx}_TITLE=${title}"
+    done < <(printf '%s' "$discussions_json" | jq -r '.items[]
+      | [ (.number|tostring),
+          (.category.name // "" | gsub("[\\t\\r\\n]";" ")
+            | if . == "" then "none" else . end),
+          .url, .updatedAt,
+          (.title // "" | gsub("[\\t\\r\\n]";" ")) ] | @tsv' 2>/dev/null)
+  else
+    echo "DISCUSSIONS_FAIL_REASON=${discussions_fail_reason:-unknown}"
   fi
   echo "STATUS=OK"
   echo "=== END GITHUB_DRIFT ==="

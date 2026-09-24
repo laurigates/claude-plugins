@@ -78,7 +78,7 @@ allowlist=(
   'my-plugin:*'
 
   # A trailing `-` is the extractor hitting a glob form in prose, e.g.
-  # `typescript-plugin:bun-*` in regression-testing.md, which cites a FAMILY
+  # `typescript-plugin:bun-*` in a regression-ledger row, which cites a FAMILY
   # of skills rather than one ID. The bare stem never resolves and should not.
   '*-'
 )

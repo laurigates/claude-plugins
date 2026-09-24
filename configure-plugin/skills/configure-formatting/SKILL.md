@@ -1,8 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-08-25
+modified: 2026-09-23
 reviewed: 2026-08-25
-description: "Biome formatter for JS/TS/JSON/CSS — the modern Prettier/ESLint replacement. Also Ruff (Python) and rustfmt. Use when setting up formatting, replacing Prettier, or wiring CI format checks."
+description: "Set up formatters (Biome, Ruff format, rustfmt) with pre-commit and CI format checks. Use when a repo has no formatter, replacing Prettier or Black, or unifying monorepo style."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--formatter <biome|ruff|rustfmt>]"
 argument-hint: "[--check-only] [--fix] [--formatter <biome|ruff|rustfmt>]"

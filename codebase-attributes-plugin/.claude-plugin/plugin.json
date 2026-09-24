@@ -6,6 +6,7 @@
   "author": {
     "name": "Lauri Gates"
   },
+  "license": "MIT",
   "hooks": "./hooks.json",
   "keywords": [
     "attributes",
