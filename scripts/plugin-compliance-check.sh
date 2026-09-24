@@ -534,6 +534,29 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: git-triage Step 1 told the agent to "Parse `STATUS=` and
+    # `ISSUES:`" — the collector's structured-script-output DIAGNOSTIC keys —
+    # so a run with ten populated issue blocks read as zero issues, and the
+    # batch cap was never mentioned, so 10 of 68 read as full coverage
+    # (issue #2714). Step 1 must name the domain count (ISSUES_FETCHED), say
+    # how to read TRUNCATED, label the diagnostic keys as not GitHub issues,
+    # and say --oldest-first only reorders the batch. The tokens are read from
+    # the Step 1 slice, so an empty slice (heading renamed) fails every one.
+    if [ "$skill_name" = "git-triage" ]; then
+      local triage_step1
+      triage_step1=$(awk '/^### Step 1/{f=1; next} /^### Step [0-9]/{f=0} f' "$skill_file")
+      for token in "ISSUES_FETCHED" "TRUNCATED=true" "not GitHub issues" "reorders only the fetched batch"; do
+        if ! grep -qF -- "$token" <<<"$triage_step1"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md Step 1 must retain '${token}' (coverage/diagnostic key contract, issue #2714)")
+          has_errors=true
+        fi
+      done
+      if grep -qF 'Parse `STATUS=` and `ISSUES:`' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md tells the agent to parse the diagnostic ISSUES: block as the issue list; read ISSUES_FETCHED (issue #2714)")
+        has_errors=true
+      fi
+    fi
+
     # Regression: session-end's blueprint tracker-sync pass delegates the WO
     # drain to blueprint-plugin:blueprint-feature-tracker-sync (--drain-wave)
     # and qualifies on the survey digest's UNDRAINED_COUNT. A bulk edit that
