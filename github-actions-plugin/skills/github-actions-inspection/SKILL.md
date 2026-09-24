@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-08-15
+modified: 2026-09-24
 reviewed: 2026-04-25
 name: github-actions-inspection
 description: "Failing step, stack trace, and test output from a completed GitHub Actions run; rerun failed jobs. Use when a CI check finished red and you need the error extracted from its log."
@@ -164,6 +164,25 @@ gh api repos/:owner/:repo/actions/runs/<run-id>/jobs \
   | jq '.jobs[] | select(.conclusion == "failure") | {name, steps: [.steps[] | select(.conclusion == "failure")]}'
 ```
 
+### Read job conclusions, not the workflow's
+
+A run's `conclusion: success` also covers jobs that were **skipped**. Jobs gated
+on a tag push or a release event (`if: github.event_name == 'push'`,
+`if: startsWith(github.ref, 'refs/tags/')`, release-please pre-release only)
+report `skipped` on every PR, so PR CI is green for them by construction. A
+change that breaks one merges cleanly and fails on the next release, which can
+be weeks later.
+
+```bash
+gh run view <run-id> --json jobs --jq '.jobs[] | {name, conclusion}'
+```
+
+- To judge whether a specific job (an image build, a release upload) actually
+  ran, read that job's `conclusion`. `skipped` means it verified nothing.
+- Before merging a change to a release-gated job, exercise it: trigger it with
+  `workflow_dispatch`, push a throwaway tag, or run the step locally (for
+  example `docker build --file <Dockerfile> .`).
+
 ### Check Workflow Timing
 
 ```bash
@@ -207,6 +226,7 @@ gh run list --limit 50 --json conclusion \
 | JSON run details | `gh run view <id> --json status,conclusion,jobs` |
 | Failure rate | `gh run list --limit 50 --json conclusion \| jq 'group_by(.conclusion)'` |
 | Rerun failed only | `gh run rerun <id> --failed` |
+| Per-job conclusions | `gh run view <id> --json jobs --jq '.jobs[] \| {name, conclusion}'` |
 
 ## Quick Reference
 
