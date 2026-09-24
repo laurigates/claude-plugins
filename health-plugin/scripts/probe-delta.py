@@ -6,7 +6,7 @@ it against a stored baseline, so a recurring report says "one new thing" rather
 than repeating a corpus-sized list that a reader learns to skip.
 
     python3 probe-delta.py --findings - --baseline <path> --probe config-drift \\
-        --root <abs> [--record] [--section "CONFIG DRIFT DELTA"]
+        --root <abs> [--record] [--expect-baseline] [--section "CONFIG DRIFT DELTA"]
 
 Behaviour:
 
@@ -15,6 +15,13 @@ Behaviour:
   from another root would compare two disjoint fingerprint sets and call every
   finding new AND every stored one resolved, so refusing to compare is the only
   honest answer.
+* ...unless the caller passes `--expect-baseline`, asserting this is NOT a first
+  run. Then a missing or untrusted baseline is a LOSS, not a first run: every
+  finding is re-reported beside a `baseline_lost` finding saying why,
+  `FIRST_RUN=false BASELINE_LOST=true`, and the baseline is re-recorded. A
+  scheduled job keeping its baseline in an evictable cache needs this: a silent
+  re-record on eviction swallows everything that appeared during the evicted
+  window, which is the one failure delta reporting exists to prevent (#2554).
 * Nothing new: `STATUS=OK NEW=0 ISSUE_COUNT=0`.
 * New findings: `STATUS=WARN`/`ERROR`, rendering ONLY the new ones, counted by
   `NEW_ERRORS=`/`NEW_WARNINGS=` — deliberately not the `ERRORS=`/`WARNINGS=`
@@ -103,6 +110,14 @@ def main() -> int:
         action="store_true",
         help="update the baseline after reporting (a first run always records)",
     )
+    ap.add_argument(
+        "--expect-baseline",
+        action="store_true",
+        help=(
+            "this is not a first run: a missing or untrusted baseline re-reports "
+            "every finding (BASELINE_LOST=true) instead of recording silently"
+        ),
+    )
     ap.add_argument("--section", default=None, help="section header for the report")
     # argparse rejects an unknown argument with usage on stderr and exit 2,
     # which is the contract here -- a swallowed flag is how a bounded run turns
@@ -139,16 +154,43 @@ def main() -> int:
         baseline = Baseline(args.probe, root, _now())
     delta = baseline.delta(findings)
 
-    # On a first run every finding is trivially "new", which is noise rather
-    # than news -- record it and stay silent.
-    reported = [] if delta.first_run else delta.new
+    # A missing baseline means "first run" only when the CALLER does not know
+    # better. `--expect-baseline` says it does, so the same condition is a loss:
+    # nothing can be compared, so nothing may be hidden.
+    lost = delta.first_run and args.expect_baseline
+
+    if lost:
+        why = (
+            f"a baseline at {args.baseline} could not be trusted (unreadable, "
+            "wrong schema, or recorded for another root or probe)"
+            if Path(args.baseline).exists()
+            else f"no baseline at {args.baseline} (evicted cache or first run?)"
+        )
+        reported = [
+            Finding(
+                "warn",
+                "baseline_lost",
+                f"{why}; re-reporting all {len(findings)} finding(s) because "
+                "none could be compared against a previous run",
+            ),
+            *findings,
+        ]
+        new = len(findings)
+    else:
+        # On a first run every finding is trivially "new", which is noise
+        # rather than news -- record it and stay silent.
+        reported = [] if delta.first_run else delta.new
+        new = len(reported)
 
     counts = {
         "probe": args.probe,
         "root": root,
-        "first_run": "true" if delta.first_run else "false",
+        "first_run": "true" if delta.first_run and not lost else "false",
+        # Emitted EVEN WHEN false: a key that appears only when true is
+        # indistinguishable from one an older probe-delta never emitted.
+        "baseline_lost": "true" if lost else "false",
         "total_findings": len(findings),
-        "new": len(reported),
+        "new": new,
         "resolved": len(delta.resolved),
         "carried": len(delta.carried),
     }
@@ -163,9 +205,11 @@ def main() -> int:
 
     # No STATUS override: `render_status` derives OK/WARN/ERROR, and OK over an
     # empty `reported` list IS "nothing new". The distinction a reader wants —
-    # nothing new vs. nothing at all vs. never run before — is carried by
-    # `NEW=`, `TOTAL_FINDINGS=` and `FIRST_RUN=` above, which add a key rather
-    # than putting a fourth word where a rollup greps for three.
+    # nothing new vs. nothing at all vs. never run before vs. baseline lost — is
+    # carried by `NEW=`, `TOTAL_FINDINGS=`, `FIRST_RUN=` and `BASELINE_LOST=`
+    # above, which add a key rather than putting a fourth word where a rollup
+    # greps for three. A lost baseline is at least WARN through its own finding,
+    # and never downgrades an error in the re-report.
     print(render_status(section, reported, counts))
     return exit_code(reported)
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.10](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.11.9...hooks-plugin-v2.11.10) (2026-09-24)
+
+
+### Bug Fixes
+
+* **project-plugin:** catch bare tool removals and retire TaskOutput ([#2752](https://github.com/laurigates/claude-plugins/issues/2752)) ([2e07766](https://github.com/laurigates/claude-plugins/commit/2e07766617d92e8955e9939014e949836b6356ba))
+
 ## [2.11.9](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.11.8...hooks-plugin-v2.11.9) (2026-09-19)
 
 

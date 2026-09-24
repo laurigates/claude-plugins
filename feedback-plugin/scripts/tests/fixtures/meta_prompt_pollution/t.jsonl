@@ -1,0 +1,4 @@
+{"type": "user", "timestamp": "2026-09-20T12:00:00Z", "message": {"content": "how does the friction parser decide what counts as a hook block?"}}
+{"type": "assistant", "timestamp": "2026-09-20T12:00:05Z", "message": {"content": [{"type": "text", "text": "It keys on the harness wrapper prose."}]}}
+{"type": "user", "isMeta": true, "timestamp": "2026-09-20T12:00:06Z", "message": {"role": "user", "content": "Stop hook feedback:\nFound 2 TODO/FIXME/HACK/XXX marker(s) in uncommitted changes. Address or remove them before finishing."}}
+{"type": "assistant", "timestamp": "2026-09-20T12:00:09Z", "message": {"content": [{"type": "tool_use", "id": "toolu_plan1", "name": "ExitPlanMode", "input": {"plan": "Explain the classification order."}}]}}

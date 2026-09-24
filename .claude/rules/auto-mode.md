@@ -36,9 +36,11 @@ As of 2.1.236, Bedrock, Vertex AI, and Foundry sessions — and any session with
 telemetry disabled — use the same classifier defaults as the Claude API,
 including severity-scored classification; behaviour is no longer degraded on
 those providers. Where the classifier itself *runs* is a separate question:
-for now, auto mode on Bedrock, Vertex, and Foundry uses the **local**
-classifier by default (2.1.273); set `CLAUDE_CODE_AUTO_MODE_SERVER=1` to use
-the platform's server-side classifier instead.
+as of 2.1.278, auto mode for Claude API and Enterprise users, and on Bedrock,
+Vertex, Foundry and gateways, defaults to the **server-side** classifier, which
+does not charge for classifier overhead; `CLAUDE_CODE_AUTO_MODE_SERVER=0` opts
+out on Bedrock, Vertex, Foundry and gateways. This reverses 2.1.273, which had
+made the local classifier the default there.
 
 ## How the Classifier Decides
 
@@ -82,7 +84,7 @@ boundary against adversarial input in a security-sensitive skill.
 | Force push, or pushing directly to `main` | |
 | Cloud metadata-credential fetches, egress evasion, cross-tenant reach (Containment Escape rule, 2.1.257) | |
 | Tampering with session transcript files (2.1.205) | |
-| `rm -rf` on a variable the classifier can't resolve from context (2.1.205) — asks rather than silently running | |
+| `rm -rf` on a variable the classifier can't resolve from context (2.1.205) — asks rather than silently running; the prompt names the flagged `rm` and suggests a `${VAR:?}` guard (2.1.277) | |
 | Catastrophic removals wrapped in `$(...)`/backticks/`<(...)` (2.1.208) — prompts even under `--dangerously-skip-permissions` and in auto mode | |
 
 Sandbox network access requests are routed through the classifier rather than allowed by default. Run `claude auto-mode defaults` to see the live rule lists. Administrators can extend the trust set for specific repos, buckets, and services via the `autoMode.environment` setting — see [Configure auto mode](https://code.claude.com/docs/en/auto-mode-config). Custom `autoMode.allow`/`soft_deny`/`environment` entries **replace** the built-in rule list unless they include the literal string `"$defaults"` (2.1.118), which is the difference between extending the trust set and silently dropping the built-in denials above.
@@ -142,6 +144,8 @@ The classifier checks subagent work at three points:
 1. **Spawn**: the delegated task description is evaluated; a dangerous-looking task is blocked at spawn time.
 2. **Each action**: every tool call goes through the classifier with the same rules as the parent session.
 3. **Return**: as of 2.1.271, the subagent reports back to its caller through a dedicated hand-back call that the safety classifier reviews, rather than only its last message being reviewed after the fact. Flagged concerns prepend a security warning to the subagent's results.
+
+Messages sent to other agent sessions via `SendMessage` are classified before dispatch (2.1.222).
 
 Crucially, **`permissionMode` in subagent frontmatter is ignored** in auto mode. Skill authors should not rely on per-subagent permission overrides under auto mode; rely on `allowed-tools` for the subagent's tool boundary instead.
 

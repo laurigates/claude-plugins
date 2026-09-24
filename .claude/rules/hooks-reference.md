@@ -106,6 +106,8 @@ These are the two most commonly confused events:
 | **Blocking** | Can block next user turn with `"decision": "block"` | Can block subagent from being considered complete |
 | **Frequency** | Once per response cycle | Once per Task tool invocation |
 
+Before 2.1.275, a `SubagentStop` hook with a specific `matcher` also fired for every stopping subagent whose agent type was empty.
+
 ```json
 // Stop — blocks the session from completing the turn
 {
