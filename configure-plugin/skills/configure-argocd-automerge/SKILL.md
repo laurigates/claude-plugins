@@ -1,8 +1,8 @@
 ---
 created: 2026-02-03
-modified: 2026-06-18
+modified: 2026-09-23
 reviewed: 2026-06-01
-description: "ArgoCD auto-merge: configure GitHub Actions for image-updater-** branches. Use when setting up argocd-automerge.yml or verifying PAT permissions."
+description: "argocd-automerge.yml: auto-create and merge PRs from ArgoCD Image Updater's image-updater-** branches. Use when setting up that workflow or checking its PAT permissions."
 allowed-tools: Glob, Grep, Read, Write, Edit, TodoWrite
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"
