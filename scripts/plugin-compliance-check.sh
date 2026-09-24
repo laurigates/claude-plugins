@@ -591,6 +591,24 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: changelog-review Step 6 told every reader to write
+    # .claude-code-version-check.json, while the CI triage run (which loads this
+    # skill via the caller's `plugins:` input) must leave the state file to the
+    # workflow's publish step, which discards any agent edit to it (PR #2771,
+    # issue #2720). Step 6 must scope itself to interactive runs and route the
+    # CI entry to triage-entry.json. Read from the Step 6 slice, so a renamed
+    # heading empties the slice and fails both tokens.
+    if [ "$skill_name" = "changelog-review" ]; then
+      local changelog_step6
+      changelog_step6=$(awk '/^### Step 6/{f=1; next} /^##+ /{f=0} f' "$skill_file")
+      for token in "the workflow owns the state file" "triage-entry.json"; do
+        if ! grep -qF -- "$token" <<<"$changelog_step6"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md Step 6 must retain '${token}' (CI triage run must not write the state file, PR #2771)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: session-end's blueprint tracker-sync pass delegates the WO
     # drain to blueprint-plugin:blueprint-feature-tracker-sync (--drain-wave)
     # and qualifies on the survey digest's UNDRAINED_COUNT. A bulk edit that
