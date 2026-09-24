@@ -1,6 +1,6 @@
 ---
 name: blueprint-docs-currency
-description: Enforce same-commit landing of code and docs (APIs, formats, ADRs). Use when committing API/format changes, promoting research to docs/, or landing an ADR decision.
+description: Enforce same-commit landing of code and docs (APIs, formats, ADRs). Use when committing API/format changes, finding docs a staged change affects, promoting research, or landing an ADR.
 allowed-tools: Bash(bash *), Read, Grep, Glob, TodoWrite
 created: 2026-04-24
 modified: 2026-09-23
