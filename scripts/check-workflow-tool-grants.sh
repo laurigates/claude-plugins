@@ -380,7 +380,7 @@ for path in workflow_files():
                         % (where, leading_token(cmd), short)
                     )
 
-status = "FAIL" if issues else "OK"
+status = "ERROR" if issues else "OK"
 
 print("=== WORKFLOW TOOL GRANTS ===")
 print("WORKFLOWS_SCANNED=%d" % scanned)
@@ -389,6 +389,15 @@ print("STEPS_WITH_ALLOWLIST=%d" % steps_with_allowlist)
 print("SKIPPED_NO_ALLOWLIST=%d" % skipped_no_allowlist)
 print("BASH_CALLS_CHECKED=%d" % calls_checked)
 print("STATUS=%s" % status)
+if issues:
+    # The first finding, as "<TYPE>: <rest of the row>", is the cause a rollup
+    # reads (#2691); every finding is listed under ISSUES: below.
+    first = re.search(r"TYPE=(\S+)\s+(.*)$", issues[0])
+    reason = ("%s: %s" % first.groups()) if first else issues[0].strip()
+    reason = " ".join(reason.split())[:180]
+    if len(issues) > 1:
+        reason += " (+%d more)" % (len(issues) - 1)
+    print("REASON=%s" % reason)
 print("ISSUE_COUNT=%d" % len(issues))
 if issues:
     print("ISSUES:")
