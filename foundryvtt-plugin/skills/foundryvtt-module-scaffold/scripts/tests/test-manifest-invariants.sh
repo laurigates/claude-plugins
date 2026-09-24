@@ -116,6 +116,25 @@ else
     check "cargo-generate template ships the test" "present" "absent"
 fi
 
+echo "=== EMITTED WORKFLOWS (no repo-local Renovate runner, #2708) ==="
+
+# A repo-local renovate.yml is a SECOND Renovate runner beside the gitops
+# autodiscover App: it authenticates as github-actions[bot], the App as
+# laurigates-renovate, and Renovate finds its dependency dashboard only among
+# issues its own identity created, so every module carried two dashboards
+# indefinitely. Fixed for the ComfyUI fleet on 2026-08-16 and for this repo in
+# #2707; this pins the foundry generator to match. renovate.json is what the
+# surviving App reads, so it must STILL be emitted.
+emitted() { # emitted <path-relative-to-module> -> present|absent
+    [ -f "${PRISTINE}/$1" ] && echo present || echo absent
+}
+check "no renovate.yml workflow emitted" "absent" "$(emitted .github/workflows/renovate.yml)"
+# Guard integrity: without these, the absence check above would also pass
+# against a generator that stopped writing .github/ (or anything) at all.
+check "renovate.json still emitted" "present" "$(emitted renovate.json)"
+check "ci.yml still emitted" "present" "$(emitted .github/workflows/ci.yml)"
+check "release-please.yml still emitted" "present" "$(emitted .github/workflows/release-please.yml)"
+
 echo "=== FRESH SCAFFOLD (no ERROR by construction) ==="
 
 run_verify "$PRISTINE"
@@ -142,6 +161,8 @@ for variant in app libwrapper; do
         check "${variant} variant scaffolds" "ok" "failed"
         continue
     fi
+    check "${variant} variant emits no renovate.yml workflow" "absent" \
+        "$([ -f "${WORK}/${variant}/${MODULE_NAME}/.github/workflows/renovate.yml" ] && echo present || echo absent)"
     touch "${WORK}/${variant}/${MODULE_NAME}/bun.lock"
     run_verify "${WORK}/${variant}/${MODULE_NAME}"
     check "${variant} variant reaches OK" "OK" "$(field STATUS)"

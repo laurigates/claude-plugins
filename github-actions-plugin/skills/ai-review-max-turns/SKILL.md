@@ -1,13 +1,13 @@
 ---
 name: ai-review-max-turns
-description: "A Claude-powered CI review check reports red. Use when triaging it, to separate a genuine finding the check could not publish from turn-budget exhaustion — read is_error first, never the red X."
+description: "Triage a red Claude-powered CI review check. Use when an AI review job fails or flakes: tell a real unpublished finding from turn-budget or ceiling overruns and infra reruns via subtype + is_error."
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
 created: 2026-09-02
-modified: 2026-09-12
-reviewed: 2026-09-12
+modified: 2026-09-23
+reviewed: 2026-09-23
 ---
 
-# A Red AI-Review CI Check Has Three Very Different Causes — Separate Them Before Acting
+# A Red AI-Review CI Check Has Four Very Different Causes — Separate Them Before Acting
 
 A growing class of CI checks are **Claude-powered reviewers** — a workflow
 that runs the Claude Code action over the PR diff and reports findings as a
@@ -16,7 +16,7 @@ pass/fail check. They are usually a family of `reusable-quality-*`,
 checks named `typescript / analyze`, `secrets / scan`, `owasp / scan`,
 `aria / analyze`, `wcag / analyze`, and the like.
 
-They go red for three reasons that demand **opposite** responses. Reading one
+They go red for four reasons that demand **opposite** responses. Reading one
 as another is the whole hazard:
 
 | Cause | Tell | Response |
@@ -24,17 +24,22 @@ as another is the whole hazard:
 | **Budget exhaustion** — the run died mid-flight | `error_max_turns` in the log; `is_error: true` | Ignore the failure; it says nothing about the code |
 | **Turn-ceiling overrun** — the run *finished*, the wrapper failed the job | `is_error: false`, `subtype: "success"`, **no** `Found N` line, and `##[error]Claude reported a successful result after N turns, exceeding the configured maximum of M` | Ignore the failure; the scan completed and found nothing |
 | **A real finding it could not publish** | `is_error: false`, `subtype: "success"`, a `::error::Found N …` line, **and no PR comment** | Investigate the code by hand — the check found something |
+| **Result flagged errored despite completing** | `subtype: "success"` **and** `is_error: true`, low `num_turns`, 0 denials, no `Found N` line, no `result` string | Rerun the identical commit once; a pass means it was infra |
 
-> **The law: the red X is never the discriminator.** `is_error` separates a run
-> that *died* from one that *finished*, but it does not separate the two
-> finished cases — both read `is_error: false`, `subtype: "success"`. Between
-> those, the **finding count** decides: a `Found N` line means the check is
-> trying to tell you something through a blocked channel; its absence alongside
-> a turn-count error means the wrapper failed a scan that had nothing to say.
+> **The law: the red X is never the discriminator, and neither is `is_error`
+> on its own.** Read `subtype` and `is_error` together. `error_max_turns` means
+> the run died mid-flight. `subtype: "success"` means it finished, and a
+> finished run can still report `is_error: true` (Cause 4), so
+> `is_error` alone does not separate a run that died from one that finished.
+> Among finished runs reading `is_error: false`, the **finding count** decides:
+> a `Found N` line means the check is trying to tell you something through a
+> blocked channel; its absence alongside a turn-count error means the wrapper
+> failed a scan that had nothing to say.
 
-Read `is_error` first, then the finding count. Stopping at `is_error` sends a
-turn-ceiling overrun to the hand-audit response, which is the same wasted
-investigation this skill exists to prevent.
+Read `subtype` and `is_error` first, then the finding count. Stopping at
+`is_error` sends a turn-ceiling overrun to the hand-audit response, and files
+Cause 4 under budget exhaustion, whose upstream fix (raise `max_turns`) cannot
+help a five-turn run.
 
 Read the subtype before forming any theory:
 
@@ -155,7 +160,37 @@ files yourself against the check's own category list. The finding is often in
 **The count is not stable.** Same commit, different answer. Never treat a
 delta between runs as evidence a fix worked.
 
-## The trap under all three: a check that never ran looks exactly like a pass
+## Cause 4 — a result flagged errored despite completing
+
+The SDK returned `subtype: "success"` and `is_error: true` in the same result,
+and the wrapper failed the job on that combination alone:
+
+```
+##[error]Claude result reported subtype success with is_error:true (run did not complete successfully)
+##[error]Action failed with error: Claude execution failed: result is_error:true
+```
+
+It matches none of the other three rows. The `subtype` is `success`, so the run
+did not die on its turn budget, and five turns is nowhere near a ceiling. There
+is no `Found N` line, `permission_denials_count` is 0, the publish step logs
+`No buffered inline comments`, and the PR carries no comment, so no finding is
+waiting behind a blocked channel. The payload also has no `result` string at
+all, which may be the actual trigger.
+
+```sh
+gh run view --job <job-id> -R <o>/<r> --log | grep -E '"is_error"|"subtype"|"num_turns"|permission_denials_count|"result":|Found [0-9]|subtype success with is_error'
+```
+
+**Rerun the identical commit once.** A pass with no code change means the red
+was infra. A second identical failure means it is deterministic: read the run
+before blaming either the code or the platform.
+
+> Evidence (2026-09-22, ForumViriumHelsinki/thelma#1524): `A11y WCAG` failed in
+> run `35730697939` with `subtype: "success"`, `is_error: true`, `num_turns: 5`,
+> `permission_denials_count: 0`, no `Found N` line and no `result` string. A
+> rerun of the same commit passed.
+
+## The trap under all four: a check that never ran looks exactly like a pass
 
 Before using a sibling PR as a "it's green there" control, check the
 **duration**. These workflows carry `file-patterns` filters, so a PR touching
@@ -172,6 +207,27 @@ A green tick from a skipped run is not a control. This is
 the "passing" comparison never executed, you have no baseline, and
 `pr-merge-hazards.md`'s merge-over-red test ("same check already fails on
 `main`") cannot be satisfied.
+
+### No history at all: the workflow has ≤1 historical run
+
+The control above presumes some earlier run exists. A newly added workflow may
+have none, and its only run can be the failing one:
+
+```sh
+gh run list --workflow <file>.yml -L 12   # only the failing run, or nothing
+```
+
+When the workflow has ≤1 historical run, state it in the triage: no baseline exists,
+so "is this normal for this check?" cannot be answered from history. An empty
+`gh run list` reads as *nothing to see*; it means there is nothing to compare
+against. Rerunning the identical commit then becomes the primary discriminator
+rather than a follow-up (a deterministic failure repeats, a flake does not),
+alongside reading the changed files against the check's own criteria.
+
+> Evidence (2026-09-22, thelma#1524): `a11y-wcag.yml` had exactly one run in
+> its history, the failing one. The rerun passed, and the changed components
+> already carried `aria-label`, `aria-hidden` and `sr-only`, so a genuine
+> Level A finding was implausible.
 
 ## When it bites
 
@@ -191,8 +247,8 @@ A red check on valid code is worse than no check: it reads as a real finding,
 so it pulls a reviewer into chasing a non-existent defect and erodes trust in
 the AI-review signal. But the inverse error is worse still — treating every
 AI-review red as flakiness waves through the findings that are real and merely
-unpublishable. One `grep` for `is_error` and the finding count separates all
-three. Same instinct as
+unpublishable. Reading `subtype`, `is_error` and the finding count together
+separates all four. Same instinct as
 `github-actions-plugin:multirepo-ci-cd`: diagnose against what CI actually
 did (read the run), not against the surface red.
 

@@ -8,11 +8,12 @@ fleet-wide with no gate at all, and a stale `just assets` recipe silently
 distorted banner artwork in one pack for months.
 
 This script REPORTS. It never writes to a pack, because drift is BIDIRECTIONAL
-— all 13 packs are ahead of the template on `release-please.yml` (ubuntu-slim +
-release-please-action@v5), the template is ahead on `RELEASE-CHECKLIST.md`, and
-Renovate independently pushes packs ahead on pinned versions. An automatic
-template -> pack apply would be a silent-revert bug across 13 repos. A human or
-agent reads the report and lands the fix on whichever side is behind.
+— all 13 packs were ahead of the template on `release-please.yml` (ubuntu-slim +
+release-please-action@v5) until #2494 back-ported it, the template is ahead on
+`RELEASE-CHECKLIST.md`, and Renovate independently pushes packs ahead on pinned
+versions. An automatic template -> pack apply would be a silent-revert bug
+across 13 repos. A human or agent reads the report and lands the fix on
+whichever side is behind.
 
 Per-file authority comes from `fleet-policy.toml` (managed / seed / shared /
 block); see that file for the semantics and the per-entry rationale.

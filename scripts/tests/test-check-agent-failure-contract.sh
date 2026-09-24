@@ -31,6 +31,11 @@
 #   R. parallel-agent-dispatch SKILL.md missing the "worktreePath" tell → exit 1
 #   S. references/worktree-hazards.md missing "Workflow agents are unreachable" → exit 1
 #   T. references/worktree-hazards.md missing the completion-notification gate → exit 1
+#   U. agent-development.md missing "is a skill field, not an agent field" → exit 1
+#   V. agent-development.md missing the no-parent-history statement → exit 1
+#   W. agent-development.md regaining the retired "sees parent history" claim → exit 1
+#   X. agent-development.md regaining the retired `context` field-table row → exit 1
+#   Y. custom-agent-definitions SKILL.md regaining the `context` mode row → exit 1
 #
 # Issue #1868: Workflow({resumeFromRunId}) re-runs an already-succeeded
 # isolation:"worktree" agent instead of returning its cached result, re-firing
@@ -65,6 +70,16 @@
 # references/worktree-hazards.md — S the unreachability statement, T the
 # completion-notification gate that makes the non-force cleanup safe and
 # distinguishes it from the interrupted-run --force removal.
+#
+# Issue #2646: agent-development.md described agent-frontmatter `context: fork`
+# as isolation ("the agent sees parent history") in one place and as
+# inheritance ("a named plugin agent without context: fork starts cold") in
+# another. `context` is a SKILL field; on an agent it is undocumented and was
+# measured inert, and inheritance belongs to the runtime `fork` subagent type.
+# Guards U/V pin the corrected statements. W/X/Y are the inverse half: they
+# APPEND a retired sentence to an otherwise-correct fixture, so a presence-only
+# checker (which every pin before #2646 was) would still exit 0 — only the
+# forbid_marker pins turn them red.
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -106,6 +121,16 @@ build_fixture() {
      "$root/agent-patterns-plugin/skills/custom-agent-definitions/SKILL.md"
   cp "$repo_root/agents-plugin/agents/refactor.md" \
      "$root/agents-plugin/agents/refactor.md"
+  # agent-development.md (#2646) — the rule the context-field pins read.
+  mkdir -p "$root/.claude/rules"
+  cp "$repo_root/.claude/rules/agent-development.md" \
+     "$root/.claude/rules/agent-development.md"
+}
+
+# append_line <file> <text> — add a line to the end of a fixture file. Used to
+# re-introduce a retired claim beside the corrected text (guards W/X/Y).
+append_line() {
+  printf '%s\n' "$2" >> "$1"
 }
 
 # strip_marker <file> <fixed-string> — rewrite the file with every line
@@ -305,5 +330,54 @@ assert "T: worktree-hazards.md missing the completion-notification gate fails (e
   "$([ "$(run_fixture "$fx_t")" -eq 1 ] && echo true || echo false)"
 rm -rf "$fx_t"
 
-echo "check-agent-failure-contract (#1601/#1868/#2039/#2143/#2447/#2614): ${pass_count} passed, ${fail_count} failed"
+# --- Guard U: agent-development.md missing the skill-field distinction ---
+# Issue #2646: the rule must say `context:` is a skill field, not an agent
+# field — the fact both contradictory passages got wrong.
+fx_u="$(mktemp -d)"
+build_fixture "$fx_u"
+strip_marker "$fx_u/.claude/rules/agent-development.md" "is a skill field, not an agent field"
+assert "U: agent-development.md missing the skill-field distinction fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_u")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_u"
+
+# --- Guard V: agent-development.md missing the no-parent-history statement ---
+fx_v="$(mktemp -d)"
+build_fixture "$fx_v"
+strip_marker "$fx_v/.claude/rules/agent-development.md" "does not see the parent's conversation history"
+assert "V: agent-development.md missing the no-parent-history statement fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_v")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_v"
+
+# --- Guard W: agent-development.md regaining the retired isolation claim ---
+# The verbatim pre-#2646 sentence, appended beside the corrected text. A
+# presence-only checker passes this fixture; forbid_marker must not.
+fx_w="$(mktemp -d)"
+build_fixture "$fx_w"
+append_line "$fx_w/.claude/rules/agent-development.md" \
+  "Creates an independent context copy. The agent sees parent history but its changes don't affect the parent session."
+assert "W: agent-development.md regaining 'sees parent history' fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_w")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_w"
+
+# --- Guard X: agent-development.md regaining the `context` field-table row ---
+fx_x="$(mktemp -d)"
+build_fixture "$fx_x"
+# shellcheck disable=SC2016  # literal markdown backticks, not command substitution
+append_line "$fx_x/.claude/rules/agent-development.md" \
+  '| `context` | string | No | `fork` for isolated context (default: shared) |'
+assert "X: agent-development.md regaining the context field-table row fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_x")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_x"
+
+# --- Guard Y: custom-agent-definitions SKILL.md regaining the context-mode row ---
+fx_y="$(mktemp -d)"
+build_fixture "$fx_y"
+# shellcheck disable=SC2016  # literal markdown backticks, not command substitution
+append_line "$fx_y/agent-patterns-plugin/skills/custom-agent-definitions/SKILL.md" \
+  '| `context` | string | Context mode: `fork` or default |'
+assert "Y: custom-agent-definitions SKILL.md regaining the context-mode row fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_y")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_y"
+
+echo "check-agent-failure-contract (#1601/#1868/#2039/#2143/#2447/#2614/#2646): ${pass_count} passed, ${fail_count} failed"
 [ "$fail_count" -eq 0 ]

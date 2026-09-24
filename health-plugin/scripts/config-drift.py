@@ -21,9 +21,11 @@ Design notes (why it is shaped this way):
   and chezmoi apply without the content changing; a hash cannot lie. Timestamps
   are used for a different job entirely -- `reviewed:` staleness policy.
 
-* Waivers expire themselves. A waiver records both sides' content hashes, so
-  editing either side revives the finding. This is what keeps a recurring report
-  from decaying into noise you learn to skip.
+* Waivers expire themselves. A waiver records the content hash of every file it
+  vouches for -- both sides of a pair, or the one file of a single-path waiver --
+  so editing any of them revives the finding. This is what keeps a recurring
+  report from decaying into noise you learn to skip. Every finding kind is
+  either waivable or listed in WAIVER_EXEMPT_KINDS with its reason.
 
 Exit codes: 0 clean, 1 warnings, 2 errors (CI gate), 3 internal failure.
 """
@@ -93,6 +95,28 @@ LEXICAL_KINDS = ("rule", "agent", "claude_md")
 # re-checks the rank, because a kind list is a policy and a None rank is a
 # fact).
 PROMOTION_KINDS = ("rule", "claude_md")
+
+# The finding kinds a waiver can NEVER suppress, each with its reason. Every
+# other kind is anchored to specific file content and consults the waiver file:
+# two-path kinds through the pair form, one-path kinds (`review_staleness`,
+# `broken_pointer_stub`) through the kind-scoped single-path form. What is left
+# here is either an AGGREGATE over the corpus -- there is no one file whose hash
+# a waiver could record -- or a signal that the probe itself did not work, where
+# suppressing the report would hide the breakage it reports.
+#
+# Declared, not implied: `test-config-drift.sh` TEST 24 derives every emittable
+# kind from this file's `Finding(...)` sites and fails on any kind that is
+# neither waived there nor listed here, so an unwaivable kind is a reviewed
+# decision rather than a gap nobody noticed (#2319). `--format=waivers` reads
+# this too, and drafts no entry for these kinds.
+WAIVER_EXEMPT_KINDS = {
+    "always_loaded_budget": "aggregate over every always-loaded document; no single file to hash",
+    "frontmatter_coverage": "aggregate over every rule; the fix is adding reviewed: dates",
+    "corpus_unreadable": "the file could not be read, so there is no content hash to record",
+    "agent_discovery_misfire": "the probe misfired; waiving it would hide a broken run",
+    "coverage_metric_broken": "the metric failed its own control; waiving it would hide that",
+    "semantic_pass_unavailable": "the expensive tier did not run; waiving it would report a pass that never happened",
+}
 
 # A file whose presence DECLARES that the tree it heads is a generator template
 # rather than live configuration. See `_is_generator_template`.
@@ -856,7 +880,7 @@ def _stub_target(head: str, known: set[str]) -> str | None:
     return refs[0] if refs else None
 
 
-def check_stub_integrity(docs, skills) -> list[Finding]:
+def check_stub_integrity(docs, skills, waivers) -> list[Finding]:
     """Pointer stubs are a RULE convention; the guard is on the kind, not the flag.
 
     Guarded on `kind == "rule"` rather than on `stub` alone even though only
@@ -866,6 +890,11 @@ def check_stub_integrity(docs, skills) -> list[Finding]:
     which is exactly what a repo's own CLAUDE.md does -- would set the flag and
     then fail resolution as a broken stub. The kind is the fact; the substring
     is a heuristic for it.
+
+    Waivable through the single-path form: a stub can name a skill that lives
+    in a marketplace outside the scanned root, which reads as broken here and is
+    not. The waiver is kind-scoped and hash-keyed, so it covers that stub text
+    only, and an edit to the stub revives the check.
     """
     known = {s["name"] for s in skills}
     out = []
@@ -873,7 +902,7 @@ def check_stub_integrity(docs, skills) -> list[Finding]:
         if r["kind"] != "rule" or not r["stub"]:
             continue
         target = _stub_target(r["body"][:700], known)
-        if target not in known:
+        if target not in known and not waivers.waived_path("broken_pointer_stub", r):
             out.append(
                 Finding(
                     "error",
@@ -885,8 +914,17 @@ def check_stub_integrity(docs, skills) -> list[Finding]:
     return out
 
 
-def check_review_staleness(items, cache: dict, allow_spawn: bool) -> list[Finding]:
+def check_review_staleness(
+    items, cache: dict, allow_spawn: bool, waivers
+) -> list[Finding]:
     """Compare each item's declared `reviewed:` against its real last-change date.
+
+    WAIVABLE, through the single-path form (#2319). Until then this check never
+    consulted the waiver file at all -- and the file could not have expressed a
+    one-document waiver anyway -- so the decision to waive the first run's
+    non-defect findings could not reach 83 of the 85 of them. A waiver here
+    records the document's content hash, and the git date is itself cached
+    under `path:hash`, so an edit both revives the finding and re-dates it.
 
     One `git log` per file is ~10ms and there are ~900 files, which is far too
     slow for a SessionStart probe. The date is cached under `path:content-hash`:
@@ -932,7 +970,7 @@ def check_review_staleness(items, cache: dict, allow_spawn: bool) -> list[Findin
             gap = (dt.date.fromisoformat(changed) - dt.date.fromisoformat(rv)).days
         except ValueError:
             continue
-        if gap > STALE_DAYS:
+        if gap > STALE_DAYS and not waivers.waived_path("review_staleness", it):
             out.append(
                 Finding(
                     "warn",
@@ -1610,6 +1648,74 @@ def emit_calibration(corpus, cache_path: Path, root: Path) -> None:
 # ported: no caller invoked them. `hooks/config-drift-probe.sh` consumes
 # `--format=json` and derives kind -> remediation-skill in jq, which is now the
 # single source for that mapping rather than one of two copies.
+def render_waiver_draft(findings, corpus, root: Path) -> str:
+    """The `--format=waivers` document: one DRAFT waiver per waivable finding reported.
+
+    A draft, never a verdict. Whether a finding is a non-defect is a human call
+    made in review; what this removes is the MECHANICAL half of filing one -- the
+    content hash a waiver must record is this analyzer's `sha(body)`, and a hash
+    computed any other way is a retyped copy that matches nothing and reads
+    exactly like an expired waiver. Every `reason` is left empty for the person
+    who judges the finding to fill, and `finding` records what was judged.
+
+    Only findings this run REPORTED appear, so against an existing waiver file
+    the draft is exactly the new and revived findings. Declared-exempt kinds are
+    skipped. Paths under `root` are written root-relative, so the entry means the
+    same file on every checkout; a path outside it (a `~/.claude/rules`
+    document) has no root-relative spelling and stays absolute.
+    """
+    hashes = {
+        Waivers._canon(d["path"]): d["hash"] for docs in corpus.values() for d in docs
+    }
+
+    def rel(p: str) -> str:
+        try:
+            return Path(p).relative_to(root).as_posix()
+        except ValueError:
+            return p
+
+    singles: dict[tuple[str, str], dict] = {}
+    pairs: dict[tuple[str, str], dict] = {}
+    for f in findings:
+        if f["kind"] in WAIVER_EXEMPT_KINDS:
+            continue
+        paths = list(f.get("paths") or [])
+        hs = [hashes.get(Waivers._canon(p)) for p in paths]
+        label = f"{f['kind']}: {f['summary']}"
+        if len(paths) not in (1, 2) or None in hs:
+            print(f"config-drift: no waiver drafted for {label}", file=sys.stderr)
+            continue
+        if len(paths) == 1:
+            key = (f["kind"], rel(paths[0]))
+            singles[key] = {
+                "kind": f["kind"],
+                "path": key[1],
+                "hash": hs[0],
+                "reason": "",
+                "finding": label,
+            }
+            continue
+        key = (rel(paths[0]), rel(paths[1]))
+        entry = pairs.setdefault(
+            key,
+            {
+                "a": key[0],
+                "b": key[1],
+                "a_hash": hs[0],
+                "b_hash": hs[1],
+                "reason": "",
+                "finding": "",
+            },
+        )
+        # One pair waiver suppresses every pairwise kind over that pair, so a
+        # pair that fired twice is drafted once and names both findings.
+        entry["finding"] = (
+            f"{entry['finding']} | {label}" if entry["finding"] else label
+        )
+    entries = [singles[k] for k in sorted(singles)] + [pairs[k] for k in sorted(pairs)]
+    return json.dumps({"waivers": entries}, indent=1)
+
+
 def emit_status(findings, counts):
     # severity_prefix="": `findings` here is EVERY finding this run produced,
     # not a delta subset, so the counters keep the bare `ERRORS=`/`WARNINGS=`
@@ -1641,7 +1747,15 @@ def main() -> int:
     # ~/.claude/rules are always scanned regardless of --root, because they load
     # in every session no matter which project is open.
     ap.add_argument("--root", default=".")
-    ap.add_argument("--format", choices=["status", "report", "json"], default="status")
+    ap.add_argument(
+        "--format",
+        choices=["status", "report", "json", "waivers"],
+        default="status",
+        help=(
+            "waivers: a DRAFT waiver entry per waivable finding reported, with "
+            "the content hash filled in and the reason left for a human"
+        ),
+    )
     ap.add_argument(
         "--no-embed",
         action="store_true",
@@ -1653,7 +1767,9 @@ def main() -> int:
         help="only report findings touching files changed since this git ref",
     )
     ap.add_argument(
-        "--waivers", default=str(Path.home() / ".claude" / "config-drift-waivers.json")
+        "--waivers",
+        default=str(Path.home() / ".claude" / "config-drift-waivers.json"),
+        help="waiver file; relative paths inside it resolve against --root",
     )
     ap.add_argument(
         "--cache",
@@ -1691,12 +1807,19 @@ def main() -> int:
     skills = corpus["skill"]
     agents = corpus["agent"]
     claude_mds = corpus["claude_md"]
-    waivers = Waivers.load(Path(args.waivers).expanduser())
+    # `root=`: a relative path in the waiver file names a file under THIS scan
+    # root, which is what lets a committed waiver file mean the same thing on a
+    # CI runner as on the machine that wrote it.
+    waivers = Waivers.load(Path(args.waivers).expanduser(), root=root)
+    for problem in waivers.problems:
+        # stderr, not a finding: the JSON consumers (the SessionStart hook,
+        # probe-delta) read stdout only, and WAIVERS_SKIPPED carries the count.
+        print(f"config-drift: waiver skipped: {problem}", file=sys.stderr)
 
     # The check x kind matrix, guarded explicitly at every call site. Each
     # check's own docstring carries the reason it takes the kinds it takes.
     findings: list[Finding] = []
-    findings += check_stub_integrity(rules, skills)
+    findings += check_stub_integrity(rules, skills, waivers)
     findings += check_budget(rules + claude_mds)
     lexical, lexical_pairs = check_lexical_dupes(corpus, waivers)
     findings += lexical
@@ -1720,7 +1843,7 @@ def main() -> int:
     # `reviewed:` date, so excluding it would buy nothing and would have to be
     # revisited the moment one gained a date.
     findings += check_review_staleness(
-        rules + skills + agents + claude_mds, datecache, allow_spawn=not args.fast
+        rules + skills + agents + claude_mds, datecache, not args.fast, waivers
     )
     if len(datecache) != before:
         datecache_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1848,7 +1971,14 @@ def main() -> int:
         # N(N-1)/2 over every kind, partitioned it is the sum of each kind's own
         # n(n-1)/2.
         "lexical_pairs": lexical_pairs,
+        # The three waiver counters read together. ACTIVE counts usable
+        # entries of both forms; MATCHED counts those that suppressed a finding
+        # this run, so MATCHED < ACTIVE is the only visible trace of a waiver
+        # whose file was edited (its finding revived) or deleted; SKIPPED counts
+        # entries too malformed to load, each named on stderr.
         "waivers_active": len(waivers),
+        "waivers_matched": waivers.matched,
+        "waivers_skipped": len(waivers.problems),
         "semantic_pass": "off" if args.no_embed else "on",
         # Present only when the promotion pass ran -- see the comment above
         # `promotion_counts`. PROMOTION_PAIRS_CONSIDERED is the pair UNIVERSE
@@ -1873,6 +2003,7 @@ def main() -> int:
             render_report(f, c, dt.datetime.now().isoformat(timespec="seconds"))
         ),
         "json": lambda f, c: print(render_json(f, c, indent=1)),
+        "waivers": lambda f, c: print(render_waiver_draft(f, corpus, root)),
     }[args.format](findings, counts)
 
     errs = sum(1 for f in findings if f["severity"] == "error")

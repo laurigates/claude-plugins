@@ -3,6 +3,10 @@
   "name": "documentation-plugin",
   "version": "1.11.2",
   "description": "Documentation generation - API docs, README, LaTeX PDF conversion",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "license": "MIT",
   "keywords": [
     "documentation",
     "docs",

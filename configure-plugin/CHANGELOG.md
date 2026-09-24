@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.35.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.35.0...configure-plugin-v1.35.1) (2026-09-24)
+
+
+### Bug Fixes
+
+* **project-plugin:** catch bare tool removals and retire TaskOutput ([#2752](https://github.com/laurigates/claude-plugins/issues/2752)) ([2e07766](https://github.com/laurigates/claude-plugins/commit/2e07766617d92e8955e9939014e949836b6356ba))
+
 ## [1.35.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.34.6...configure-plugin-v1.35.0) (2026-09-08)
 
 
