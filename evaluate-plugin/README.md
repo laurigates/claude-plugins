@@ -48,6 +48,12 @@ Static compliance checks (`plugin-compliance-check.sh`) verify structure — thi
 /evaluate:skill git-plugin/git-commit --runs 3 --baseline
 ```
 
+`--create-evals` always generates an abstention control: an impossible task whose
+passing answer is a refusal, marked `"expected_outcome": "abstain"`, with an
+`absent_regex` that fails a fabricated answer. Every `evals.json` must carry one
+(`scripts/check-evals-abstention.sh`); see
+[`references/schemas.md`](references/schemas.md#abstention-controls-impossible-tasks).
+
 ### Batch evaluate a plugin
 
 ```
@@ -115,6 +121,7 @@ tmp/eval-runs/<plugin-name>/<skill-name>/   # Gitignored: per-run staging
 | `scripts/grade_deterministic.py` | Grade machine-checkable (regex/substring) assertions with zero judge tokens; defers fuzzy ones to `eval-grader` |
 | `scripts/render_matrix_report.py` | Render the cross-model delta report from a `model-matrix.json` (delta verdict, portability flag, `executable_on_haiku` executability flag) |
 | `scripts/apply_fixture.sh` | Apply/tear down an eval's opt-in `fixture` block in an isolated temp workdir so context-needing skills can honestly execute |
+| `scripts/check_golden_set_evals.py` | Validate every golden-set canary's `evals.json` and run recorded probes (`scripts/tests/fixtures/golden-set-probes.json`) through the grader, so a suite counted toward `evalCoverageFloor` is shown to grade |
 | `skills/evaluate-context-engineering/scripts/check-context-engineering.py` | Channel M scanner — deterministic C1–C6 proxies over the tree (`scripts/check-context-engineering.py` at the repo root is a shim onto it) |
 
 ## Context Engineering

@@ -1,12 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-08-07
+modified: 2026-09-23
 reviewed: 2026-08-07
 allowed-tools: Bash, Read, SlashCommand
 model: sonnet
 args: "[path] [--fix] [--format]"
 argument-hint: "[path] [--fix] [--format]"
-description: Universal linter that auto-detects ruff/eslint/clippy/gofmt for the project language. Use when linting code, auto-fixing, formatting, or running pre-commit checks.
+description: Run the project's linters and formatters — auto-detects ruff/eslint/clippy/gofmt. Use when linting code, auto-fixing lint errors, or checking formatting.
 name: code-lint
 ---
 

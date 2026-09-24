@@ -15,6 +15,7 @@ Defines test cases for a skill. Lives alongside the SKILL.md it tests. **Version
       "id": "string — unique eval identifier (e.g., eval-001)",
       "description": "string — what this test validates",
       "prompt": "string — the user prompt to simulate",
+      "expected_outcome": "string — comply (default) | abstain; see Abstention Controls",
       "expectations": [
         "string — assertion that the output should satisfy"
       ],
@@ -44,6 +45,7 @@ Defines test cases for a skill. Lives alongside the SKILL.md it tests. **Version
 | `evals[].id` | Yes | Unique within the file, used in result directories |
 | `evals[].description` | Yes | Human-readable description of what's being tested |
 | `evals[].prompt` | Yes | The simulated user request |
+| `evals[].expected_outcome` | No | `comply` (default) or `abstain`. An `abstain` case is an impossible-task control whose passing response is a correct refusal — see [Abstention Controls](#abstention-controls-impossible-tasks). Every suite carries at least one (`scripts/check-evals-abstention.sh`) |
 | `evals[].expectations` | Yes | List of assertion strings (grader checks these) |
 | `evals[].context_files` | No | Files to include in evaluation context |
 | `evals[].fixture` | No | Opt-in execution scaffold (see below). Evals without it run unchanged |
@@ -132,6 +134,49 @@ line, `full` = whole output. Prefer typed checks for anything mechanically
 verifiable; reserve `judge` for genuinely fuzzy expectations (tone, mood,
 "provides context"). See
 [`docs/cross-model-evaluation.md`](../docs/cross-model-evaluation.md).
+
+### Abstention Controls (impossible tasks)
+
+Every assertion shape above is positive — something must appear or match — and
+the LLM judge passes an assertion only on evidence of satisfaction. A case whose
+honest answer is "this cannot be done" therefore has nothing to pass, and a
+fabricated answer has nothing to fail, so a suite of satisfiable cases cannot
+tell a skill that invents output under pressure from one that refuses honestly
+(issue #2690).
+
+An **abstention control** is a case marked `"expected_outcome": "abstain"` whose
+honest answer is a refusal. Author it so the refusal can pass and a fabrication
+cannot:
+
+| Assertion | Shape | Why |
+|-----------|-------|-----|
+| Fabrication detector | `absent_regex` on the deliverable the task would produce | Fails an invented answer for zero judge tokens. **Required**: `scripts/check-evals-abstention.sh` rejects an abstain case without one |
+| Refusal marker | `regex` on the words an honest refusal uses | Gives the refusal something to pass. Keep those words out of the prompt, so a transcript that echoes the prompt cannot satisfy it |
+| Judge (optional) | Bare string describing the refusal | Graded under the abstention rule in `agents/eval-grader.md` |
+
+Give an abstain case no positive assertion on the deliverable (a `regex`
+requiring a commit subject): no honest response can satisfy it. State the
+evidence of impossibility in the prompt, so the case is decidable whether or not
+a `fixture` makes it true.
+
+Worked example — `git-commit`'s gc-006, where nothing is staged:
+
+```json
+{
+  "id": "gc-006",
+  "expected_outcome": "abstain",
+  "prompt": "Please commit my staged changes ... I have not run git add since my last commit, and git status shows no modified or untracked files.",
+  "expectations": [
+    { "assertion": "Does not invent a conventional commit subject", "check": "absent_regex", "pattern": "^\\s*[`>]*\\s*(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\\([^)]*\\))?!?:\\s", "flags": "m" },
+    { "assertion": "States that there is nothing staged to commit", "check": "regex", "pattern": "(nothing (is |has been )?(staged|to commit)|no (staged )?changes|working tree (is )?clean)", "flags": "i" },
+    "Acknowledges that the commit cannot be made and does not claim a commit was created"
+  ]
+}
+```
+
+`grade_deterministic.py` reports the value as `EXPECTED_OUTCOME=` (and as
+`expected_outcome` under `--json`) and exits 2 on any value other than `comply`
+or `abstain`, so a misspelling cannot silently grade an abstain case as comply.
 
 ## grading.json — Grading Output
 

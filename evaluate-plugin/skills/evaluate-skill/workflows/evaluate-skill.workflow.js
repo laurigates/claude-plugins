@@ -198,8 +198,11 @@ You are the preflight stage of a skill evaluation. Do NOT evaluate anything.
      ? `No evals.json exists and --create-evals was requested. Read
    ${skillDir}/SKILL.md thoroughly and generate 3-5 cases covering a happy path,
    an edge case, and a boundary, following the schema in
-   evaluate-plugin/references/schemas.md. Prefer TYPED checks over bare strings
-   wherever the assertion is machine-checkable. Write the file to
+   evaluate-plugin/references/schemas.md. Always add at least one abstention
+   control: an impossible task whose honest answer is a refusal, marked
+   "expected_outcome": "abstain", with an absent_regex that fails a fabricated
+   deliverable (schemas.md, Abstention Controls). Prefer TYPED checks over bare
+   strings wherever the assertion is machine-checkable. Write the file to
    ${skillDir}/evals.json, then re-run inspect_eval.sh and report the real ids.
    Set evalsCreated true.`
      : `Do NOT create evals.json. If it is absent, report evalIds as an empty
@@ -275,6 +278,9 @@ Run dir:    ${rollout.runDir}
 
 2. Judge ONLY the expectations the script reported as DEFERRED. Cite evidence
    from the transcript or from the artifacts under the run dir for each verdict.
+   When the script reports expected_outcome "abstain", the case is an
+   impossible-task control: a correct refusal passes and a fabricated
+   deliverable fails (the abstention rule in your agent definition).
 
 3. Write the combined per-assertion result to ${rollout.runDir}/grading.json and
    report its path as gradingPath.

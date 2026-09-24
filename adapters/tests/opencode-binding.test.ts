@@ -2,8 +2,8 @@
  * OpenCode binding tests (#2091): stubbed PluginInput/Hooks harness — no
  * live OpenCode required. Covers system.transform strip+inject (block
  * present / absent / positions collapsed), messages.transform capture,
- * tool execute output shape, options handling, and the module-resolution
- * rethrow.
+ * tool execute output shape, options handling, the module-resolution
+ * rethrow, and the tool.execute.before Claude Code variable rewrite (#2662).
  *
  * The index is built over the mini-marketplace fixture (same skilldirs/ →
  * skills/ rename trick as indexer.test.ts) with the embed endpoint pointed
@@ -11,11 +11,14 @@
  * with zero network.
  */
 
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: the tool.execute.before fixtures are literal shell commands containing ${CLAUDE_SKILL_DIR}
+
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { cpSync, existsSync, mkdtempSync, readdirSync, renameSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import type { Hooks, PluginInput, ToolContext } from "@opencode-ai/plugin";
+import { deriveSessionId } from "../core/claude-env.ts";
 import {
   AVAILABLE_SKILLS_CLOSE,
   AVAILABLE_SKILLS_OPEN,
@@ -438,5 +441,145 @@ describe("experimental.chat.messages.transform — ranking-input capture", () =>
     const block = system[0] as string;
     expect(block).toContain("<name>alpha-plugin:normal-skill</name>");
     expect(block).not.toContain("nope:missing");
+  });
+});
+
+describe("tool.execute.before — Claude Code variables (#2662)", () => {
+  // Real skills in this checkout: the resolver checks that each
+  // ${CLAUDE_SKILL_DIR}/<rel> exists under the candidate directory.
+  const TASK_ADD = join(DEFAULT_REPO_ROOT, "taskwarrior-plugin", "skills", "task-add");
+  const COMMIT_WORKFLOW = join(DEFAULT_REPO_ROOT, "git-plugin", "skills", "git-commit-workflow");
+  const ENSURE_UDAS = 'bash "${CLAUDE_SKILL_DIR}/../../scripts/ensure-udas.sh" --check';
+  /** An OpenCode-shaped session id (`ses_` + ascending id), not a UUID. */
+  const OC_SESSION = "ses_1a2b3c4d5e6fQ7rS8tU9vW0xYz";
+
+  /**
+   * Fires the hook the way session/tools.ts does at v1.18.3:
+   * `trigger("tool.execute.before", {tool, sessionID, callID}, {args})` and
+   * then `item.execute(args, ctx)` with the SAME `args` object — so only
+   * in-place mutation of `output.args` reaches the tool.
+   */
+  async function runToolBefore(
+    hooks: Hooks,
+    tool: string,
+    args: Record<string, unknown>,
+    sessionID: string = OC_SESSION,
+  ): Promise<void> {
+    await hooks["tool.execute.before"]?.({ tool, sessionID, callID: "call_1" }, { args });
+  }
+
+  test("the binding registers a tool.execute.before hook", async () => {
+    const hooks = await makeHooks();
+    expect(typeof hooks["tool.execute.before"]).toBe("function");
+  });
+
+  test("bash after reading a SKILL.md gets CLAUDE_SKILL_DIR and CLAUDE_SESSION_ID exported", async () => {
+    const hooks = await makeHooks();
+    await runToolBefore(hooks, "read", { filePath: join(TASK_ADD, "SKILL.md") });
+    const args = { command: ENSURE_UDAS, description: "check UDAs" };
+    await runToolBefore(hooks, "bash", args);
+    expect(args.command).toBe(
+      `export CLAUDE_SKILL_DIR='${TASK_ADD}' CLAUDE_SESSION_ID='${deriveSessionId(OC_SESSION)}'\n${ENSURE_UDAS}`,
+    );
+    expect(args.description).toBe("check UDAs");
+  });
+
+  test("mutates output.args in place — a reassigned args object would never reach the tool", async () => {
+    const hooks = await makeHooks();
+    await runToolBefore(hooks, "read", { filePath: join(TASK_ADD, "SKILL.md") });
+    const args = { command: ENSURE_UDAS };
+    const output = { args };
+    await hooks["tool.execute.before"]?.(
+      { tool: "bash", sessionID: OC_SESSION, callID: "call_2" },
+      output,
+    );
+    expect(output.args).toBe(args);
+    expect(args.command.startsWith("export CLAUDE_SKILL_DIR=")).toBe(true);
+  });
+
+  test("a relative read filePath resolves against the plugin input's directory", async () => {
+    const hooks = await SkillDiscoveryPlugin(
+      { ...stubInput(), directory: DEFAULT_REPO_ROOT } as unknown as PluginInput,
+      { repoRoot: fixtureRoot, endpoint: DEAD_ENDPOINT },
+    );
+    await runToolBefore(hooks, "read", { filePath: "taskwarrior-plugin/skills/task-add/SKILL.md" });
+    const args = { command: ENSURE_UDAS };
+    await runToolBefore(hooks, "bash", args);
+    expect(args.command.split("\n")[0]).toContain(`CLAUDE_SKILL_DIR='${TASK_ADD}'`);
+  });
+
+  test("CLAUDE_SESSION_ID is derived from input.sessionID, never OpenCode's raw id", async () => {
+    const hooks = await makeHooks();
+    const command = 'agent="claude-${CLAUDE_SESSION_ID:0:8}"';
+    const args = { command };
+    await runToolBefore(hooks, "bash", args);
+    const derived = deriveSessionId(OC_SESSION);
+    expect(args.command).toBe(`export CLAUDE_SESSION_ID='${derived}'\n${command}`);
+    expect(derived).not.toBe(OC_SESSION);
+    // OpenCode ids share a `ses_` + timestamp prefix, so the raw id's first
+    // eight characters would collide between sessions started close together.
+    const sibling = "ses_1a2b3c4d5e6fZZZZZZZZZZZZZZ";
+    expect(sibling.slice(0, 8)).toBe(OC_SESSION.slice(0, 8));
+    expect(deriveSessionId(sibling).slice(0, 8)).not.toBe(derived.slice(0, 8));
+  });
+
+  test("CLAUDE_PLUGIN_ROOT resolves to the plugin that contains the read SKILL.md", async () => {
+    const hooks = await makeHooks();
+    await runToolBefore(hooks, "read", { filePath: join(COMMIT_WORKFLOW, "SKILL.md") });
+    const command =
+      'bash "${CLAUDE_PLUGIN_ROOT}/skills/git-commit-workflow/scripts/commit-context.sh" --with-issues';
+    const args = { command };
+    await runToolBefore(hooks, "bash", args);
+    expect(args.command).toBe(
+      `export CLAUDE_PLUGIN_ROOT='${join(DEFAULT_REPO_ROOT, "git-plugin")}' CLAUDE_SESSION_ID='${deriveSessionId(OC_SESSION)}'\n${command}`,
+    );
+  });
+
+  test("falls back to the index when nothing was read this session", async () => {
+    const hooks = await makeHooks({ repoRoot: DEFAULT_REPO_ROOT });
+    const args = { command: ENSURE_UDAS };
+    await runToolBefore(hooks, "bash", args);
+    // Every taskwarrior skill reaches the same plugin-level script, so the
+    // index tier resolves to the first one rather than reporting ambiguity.
+    const first = scanSkills(DEFAULT_REPO_ROOT).entries.find(
+      (entry) => entry.plugin === "taskwarrior-plugin",
+    );
+    expect(first).toBeDefined();
+    expect(args.command.split("\n")[0]).toContain(
+      `CLAUDE_SKILL_DIR='${dirname((first as { path: string }).path)}'`,
+    );
+  });
+
+  test("read history is per session: another session's read does not resolve", async () => {
+    const hooks = await makeHooks(); // fixture index: no skill ships ensure-udas.sh
+    await runToolBefore(hooks, "read", { filePath: join(TASK_ADD, "SKILL.md") }, "ses_alpha");
+    const args = { command: ENSURE_UDAS };
+    await expect(runToolBefore(hooks, "bash", args, "ses_beta")).rejects.toThrow(
+      /could not be determined/,
+    );
+    expect(args.command).toBe(ENSURE_UDAS);
+  });
+
+  test("an unresolvable CLAUDE_SKILL_DIR throws, which fails the call with the reason", async () => {
+    const hooks = await makeHooks();
+    const command = 'bash "${CLAUDE_SKILL_DIR}/scripts/definitely-absent-7f3a.sh"';
+    const args = { command };
+    const run = runToolBefore(hooks, "bash", args);
+    await expect(run).rejects.toThrow(/OpenCode does not set/);
+    await expect(run).rejects.toThrow(/absolute directory of the SKILL\.md/);
+    expect(args.command).toBe(command); // not rewritten
+  });
+
+  test("commands without the variables, and other tools, pass through untouched", async () => {
+    const hooks = await makeHooks();
+    const bash = { command: "git status" };
+    await runToolBefore(hooks, "bash", bash);
+    expect(bash.command).toBe("git status");
+    const edit = { filePath: join(TASK_ADD, "SKILL.md"), command: ENSURE_UDAS };
+    await runToolBefore(hooks, "edit", edit);
+    expect(edit.command).toBe(ENSURE_UDAS);
+    const nonString = { command: 42 };
+    await runToolBefore(hooks, "bash", nonString);
+    expect(nonString.command).toBe(42);
   });
 });

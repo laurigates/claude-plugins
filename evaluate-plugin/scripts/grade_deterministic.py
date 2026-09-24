@@ -33,6 +33,16 @@ Optional fields on a typed check:
   scope   full | subject | body   (default: full)
   flags   any of "imsx"           (regex flags; applied to regex/absent_regex)
 
+Case-level field (issue #2690):
+  expected_outcome   comply | abstain   (default: comply)
+
+An "abstain" case is an impossible-task control: its honest answer is that the
+task cannot be done. Grading is unchanged -- its typed checks already encode
+the abstention (an absent_regex fabrication detector fails an invented
+deliverable, and the honest refusal passes it) -- but the value is reported so
+the LLM grader applies the abstention rule to the deferred judge half. An
+unknown value exits 2 rather than silently grading the case as comply.
+
 Usage:
   grade_deterministic.py --evals <evals.json> --eval-id <id> \
     --output <file|-> [--json] [--strict]
@@ -130,6 +140,14 @@ def grade_expectation(exp, output: str) -> dict:
     }
 
 
+EXPECTED_OUTCOMES = ("comply", "abstain")
+
+
+def expected_outcome_of(eval_case: dict) -> str:
+    """Return the case's expected outcome, defaulting to comply."""
+    return eval_case.get("expected_outcome", "comply")
+
+
 def grade_eval_case(eval_case: dict, output: str) -> dict:
     results = [grade_expectation(e, output) for e in eval_case.get("expectations", [])]
     deterministic = [r for r in results if not r.get("deferred")]
@@ -138,6 +156,7 @@ def grade_eval_case(eval_case: dict, output: str) -> dict:
     failed = len(deterministic) - passed
     return {
         "eval_id": eval_case.get("id", ""),
+        "expected_outcome": expected_outcome_of(eval_case),
         "deterministic": deterministic,
         "deferred": deferred,
         "summary": {
@@ -161,6 +180,7 @@ def render_structured(graded: dict) -> tuple[str, int]:
 
     lines = ["=== DETERMINISTIC GRADING ==="]
     lines.append(f"EVAL_ID={graded['eval_id']}")
+    lines.append(f"EXPECTED_OUTCOME={graded['expected_outcome']}")
     lines.append(f"DETERMINISTIC_TOTAL={s['deterministic_total']}")
     lines.append(f"DETERMINISTIC_PASSED={s['deterministic_passed']}")
     lines.append(f"DETERMINISTIC_FAILED={s['deterministic_failed']}")
@@ -203,6 +223,15 @@ def main(argv=None) -> int:
     if eval_case is None:
         print(
             f"ERROR: eval id {args.eval_id!r} not found in {args.evals}",
+            file=sys.stderr,
+        )
+        return 2
+
+    outcome = expected_outcome_of(eval_case)
+    if outcome not in EXPECTED_OUTCOMES:
+        print(
+            f"ERROR: eval {args.eval_id!r} has expected_outcome {outcome!r}; "
+            f"expected one of {', '.join(EXPECTED_OUTCOMES)}",
             file=sys.stderr,
         )
         return 2

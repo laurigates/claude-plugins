@@ -5,14 +5,13 @@ The decision tables, schema overview, field reference, and best practices live i
 `SKILL.md`; this file carries the full worked YAML examples and configuration
 snippets.
 
-## Isolated research agent (`context: fork`)
+## Isolated research agent
 
 ```yaml
 ---
 name: research-agent
 description: Research questions without modifying main context
 model: opus
-context: fork
 allowed-tools: WebSearch, WebFetch, Read
 ---
 
@@ -22,9 +21,15 @@ You are a research specialist. Search for information and provide findings.
 Your research doesn't affect the main conversation context.
 ```
 
-**When to use `context: fork`:** exploratory research that shouldn't pollute main
-context, parallel investigations with conflicting approaches, isolated
-experiments, background tasks that run independently.
+A named agent is isolated by default, so the definition needs no context field:
+it starts without the caller's conversation and only its final result returns.
+Do not add `context: fork` — that is a skill frontmatter field, and on an agent
+Claude Code ignores it without an error.
+
+**When to use a research agent:** exploratory research that shouldn't pollute
+main context, parallel investigations with conflicting approaches, isolated
+experiments, background tasks that run independently. When the subagent needs
+the conversation so far, dispatch `subagent_type: "fork"` instead.
 
 ## Read-only explorer (`disallowedTools`)
 
@@ -54,7 +59,6 @@ specific tasks, security-sensitive contexts.
 name: security-auditor
 description: Security-focused code review agent
 model: opus
-context: fork
 allowed-tools: Read, Grep, Glob, WebSearch, TodoWrite
 disallowedTools: Bash, Write, Edit
 created: 2026-01-20
@@ -123,7 +127,6 @@ The delegation system matches tasks to appropriate custom agents.
 ### Read-only research agent
 
 ```yaml
-context: fork
 allowed-tools: Read, Grep, Glob, WebSearch, WebFetch
 disallowedTools: Bash, Write, Edit
 ```

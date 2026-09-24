@@ -20,9 +20,11 @@ What is contract, and why:
 * `fingerprint` — identity of a finding ACROSS runs, so a delta report can say
   "this one is new" without diffing prose. It deliberately folds a singular
   `path` into the path set (see the function).
-* `Waivers` — the two-orientation lookup. A waiver file is hand-written, so
-  either side may be spelled first; a probe that only tried one orientation
-  would silently ignore half the file.
+* `Waivers` — the two-orientation pair lookup plus the kind-scoped single-path
+  lookup. A waiver file is hand-written, so either side of a pair may be
+  spelled first; a probe that only tried one orientation would silently ignore
+  half the file. Relative paths resolve against the scan root, which is what
+  lets a waiver file be committed and read on a CI runner.
 * `Baseline` / `Delta` — remembering what was already reported.
 * `render_status` / `render_report` / `render_json` / `exit_code` — the output
   contract an orchestrating skill greps. `render_status` emits the shape
@@ -158,47 +160,129 @@ def fingerprint(finding) -> str:
 
 
 # --------------------------------------------------------------------- waivers
+_PAIR_KEYS = ("a", "b", "a_hash", "b_hash")
+_SINGLE_KEYS = ("kind", "path", "hash")
+
+
 class Waivers:
-    """Pair-keyed waivers that expire when either side's content changes."""
+    """Content-hash-keyed waivers that expire when the content they vouch for changes.
 
-    __slots__ = ("_by_pair",)
+    Two entry forms live side by side in one `{"waivers": [...]}` file:
 
-    def __init__(self, by_pair=None):
+    * PAIR -- `{"a", "b", "a_hash", "b_hash", "reason"}`. Suppresses any
+      pairwise finding over that pair (lexical and semantic duplicates, rule
+      coverage, promotion). Not kind-scoped: the pair is the accepted fact.
+    * SINGLE-PATH -- `{"kind", "path", "hash", "reason"}`. Suppresses ONE kind
+      of finding on ONE file. Kind-scoped on purpose: waiving a file's review
+      staleness must not also hide a broken pointer stub in the same file. This
+      form exists because the first-run backlog it was built for is 98%
+      `review_staleness` -- one file per finding -- which the pair form cannot
+      express at all (#2319).
+
+    Either way the recorded hash must equal the file's current content hash, so
+    an edit revives the finding: a waiver can never outlive the text it judged.
+
+    A RELATIVE path is resolved against `root` -- the scan root -- when one is
+    given. That is what makes a waiver file committable: an absolute path names
+    one machine's checkout and matches nothing on a CI runner. Absolute and
+    `~/`-prefixed paths are unaffected, so an operator-local file keeps working.
+
+    A malformed entry is SKIPPED and recorded in `problems`, never raised: the
+    file is hand-written and reviewed, and one typo must not take every other
+    waiver down with it -- nor vanish silently, because a waiver that is quietly
+    ignored reads exactly like a waiver that expired.
+    """
+
+    __slots__ = ("_by_pair", "_by_path", "problems", "_matched")
+
+    def __init__(self, by_pair=None, by_path=None, problems=None):
         self._by_pair = dict(by_pair or {})
+        self._by_path = dict(by_path or {})
+        self.problems = list(problems or [])
+        self._matched: set = set()
 
     @staticmethod
-    def _canon(path: str) -> str:
+    def _canon(path: str, root=None) -> str:
         """Canonicalise a path for waiver matching.
 
         Waiver files are hand-written, so a side may be spelled `~/repos/...`
         or `/var/...` while the scan resolves it to `/private/var/...` (macOS
         symlinks every temp and `/var` path). Comparing raw strings silently
         fails to match and the waiver looks ignored, which is
-        indistinguishable from a bug.
+        indistinguishable from a bug. A relative path is joined onto `root`
+        first when one is given; without one it resolves against the cwd, which
+        is the historical behaviour.
         """
-        return os.path.realpath(os.path.expanduser(path))
+        path = os.path.expanduser(path)
+        if root is not None and not os.path.isabs(path):
+            path = os.path.join(str(root), path)
+        return os.path.realpath(path)
 
     @classmethod
-    def load(cls, path) -> "Waivers":
+    def load(cls, path, root=None) -> "Waivers":
         path = Path(path)
         if not path.is_file():
-            return cls({})
+            return cls()
         try:
-            raw = json.loads(path.read_text())
-        except (OSError, json.JSONDecodeError):
-            return cls({})
-        return cls(
-            {
-                (cls._canon(w["a"]), cls._canon(w["b"])): w
-                for w in raw.get("waivers", [])
-            }
-        )
+            raw = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            return cls(
+                problems=[f"{path}: unreadable waiver file ({type(exc).__name__})"]
+            )
+        entries = raw.get("waivers") if isinstance(raw, dict) else None
+        if not isinstance(entries, list):
+            return cls(problems=[f'{path}: not a {{"waivers": [...]}} document'])
+
+        by_pair, by_path, problems = {}, {}, []
+        for i, w in enumerate(entries):
+            where = f"{path}: entry {i}"
+            if not isinstance(w, dict):
+                problems.append(f"{where}: not an object")
+                continue
+            pair = [k for k in _PAIR_KEYS if k in w]
+            single = [k for k in _SINGLE_KEYS if k in w]
+            if pair and single:
+                problems.append(
+                    f"{where}: mixes pair keys ({', '.join(pair)}) with single-path "
+                    f"keys ({', '.join(single)}); a pair waiver is not kind-scoped"
+                )
+            elif pair:
+                if any(not isinstance(w.get(k), str) or not w[k] for k in _PAIR_KEYS):
+                    problems.append(
+                        f"{where}: a pair waiver needs {', '.join(_PAIR_KEYS)}"
+                    )
+                    continue
+                by_pair[(cls._canon(w["a"], root), cls._canon(w["b"], root))] = w
+            elif single:
+                if any(not isinstance(w.get(k), str) or not w[k] for k in _SINGLE_KEYS):
+                    problems.append(
+                        f"{where}: a single-path waiver needs {', '.join(_SINGLE_KEYS)}"
+                    )
+                    continue
+                by_path[(w["kind"], cls._canon(w["path"], root))] = w
+            else:
+                problems.append(
+                    f"{where}: neither a pair ({', '.join(_PAIR_KEYS)}) nor a "
+                    f"single-path ({', '.join(_SINGLE_KEYS)}) waiver"
+                )
+        return cls(by_pair, by_path, problems)
 
     def __len__(self) -> int:
-        return len(self._by_pair)
+        """Usable waivers of BOTH forms; skipped entries are in `problems`."""
+        return len(self._by_pair) + len(self._by_path)
+
+    @property
+    def matched(self) -> int:
+        """Distinct waivers that suppressed at least one finding so far.
+
+        Beside `len()` this is what separates "the waiver file is doing its job"
+        from "its waivers have all expired": an edit revives a finding without a
+        word, and `matched` dropping below `len()` is the only place that shows.
+        """
+        return len(self._matched)
 
     def waived(self, a: dict, b: dict) -> bool:
-        """A waiver holds only while BOTH sides are byte-identical to when it was filed.
+        """A pair waiver holds only while BOTH sides are byte-identical to when it was filed.
 
         Both orientations are tried, and the recorded hash pair is swapped to
         match whichever orientation hit — a waiver filed as (a, b) must still
@@ -215,7 +299,17 @@ class Waivers:
                 else (w.get("b_hash"), w.get("a_hash"))
             )
             if ha == a["hash"] and hb == b["hash"]:
+                self._matched.add(("pair",) + key)
                 return True
+        return False
+
+    def waived_path(self, kind: str, item: dict) -> bool:
+        """A single-path waiver holds only for its KIND and only while the file is unchanged."""
+        key = (kind, self._canon(item["path"]))
+        w = self._by_path.get(key)
+        if w and w["hash"] == item["hash"]:
+            self._matched.add(("path",) + key)
+            return True
         return False
 
 
