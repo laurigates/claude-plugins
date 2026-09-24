@@ -162,6 +162,7 @@ describe("pi config", () => {
       model: DEFAULT_MODEL,
       pins: [],
       push: true,
+      sessionNudges: true,
     });
   });
 

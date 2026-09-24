@@ -46,6 +46,7 @@ import {
   scanSkills,
 } from "../core/index.ts";
 import { loadConfig, resolvePins, type SkillDiscoveryConfig } from "./config.ts";
+import { registerSessionNudges } from "./session-nudges.ts";
 
 const PI_DIR = dirname(fileURLToPath(import.meta.url));
 /** The bun package root — where `bun install` must have been run. */
@@ -415,6 +416,13 @@ const skillDiscovery = async (pi: ExtensionAPI): Promise<void> => {
       { index, config },
       (warnings) => emitWarningsOnce(warned, warnings),
     );
+  });
+
+  // session-plugin's SessionStart/Stop nudges, which pi never runs from the
+  // hook manifest (#2661).
+  registerSessionNudges(pi, {
+    repoRoot: () => getConfig().repoRoot,
+    enabled: () => getConfig().sessionNudges,
   });
 };
 

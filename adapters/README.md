@@ -134,6 +134,11 @@ the Trust caveat below — global is preferred). Equivalent by hand:
   `-p`/json/rpc modes with `defaultProjectTrust: ask` (the default) the
   extension is **silently skipped** — prefer global registration
   (`~/.pi/agent/settings.json`) or `--approve` for headless runs.
+- Runs session-plugin's spinup and end nudges, which pi would otherwise never
+  fire (`pi/session-nudges.ts`): the SessionStart hook script on
+  `session_start`, and the Stop hook's gates reimplemented over pi's session
+  entries on `agent_settled`. See [`docs/pi-export.md`](../docs/pi-export.md)
+  § Session nudges.
 - Config: `~/.pi/agent/skill-discovery.json`, overridden key-by-key by
   project `.pi/skill-discovery.json`. Missing file = all defaults
   (`repoRoot` derives from the extension's own location in this checkout):
@@ -146,7 +151,8 @@ the Trust caveat below — global is preferred). Equivalent by hand:
   "endpoint": "http://localhost:11434",      // embedding endpoint
   "model": "nomic-embed-text",               // embedding model
   "pins": ["git-plugin:git-commit"],         // always injected; ranked results fill k after pins
-  "push": true                               // false = pull-only (debug/ablation)
+  "push": true,                              // false = pull-only (debug/ablation)
+  "sessionNudges": true                      // false = no session-plugin spinup/end nudges
 }
 ```
 
