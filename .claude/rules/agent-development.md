@@ -210,15 +210,7 @@ The `Agent` tool's `subagent_type: "fork"` inherits the parent's full conversati
 
 ### Subagent context budget
 
-No agent frontmatter field caps a subagent's context or tunes its compaction; per agent, `maxTurns`, `model` (window size), and `effort` are the only bounding levers. Process-wide environment variables such as `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` apply to every agent in the process, not to one. Observed 2026-09-23 (`experiments/subagent-compaction/`, one haiku 200k run):
-
-| Observation | Consequence |
-|---|---|
-| A freshly briefed subagent starts at ~58k tokens | Negligible on 1M; 29% of a 200k window before any work |
-| The subagent auto-compacted at ~75% of its window, in a session whose main agent had not compacted | Subagents compact on their own schedule; whether the main session's `autoCompactEnabled` reaches them is not yet measured |
-| After compacting, the subagent returned its compaction summary as the final report and claimed completion | One run, one model: treat compaction inside a subagent as a failure mode to design around, not a measured rate |
-
-So bound subagents by **task size**, not by a setting: scope each brief to finish well under half the window, require a state-packet return (`loop-integrity.md` Pillar 2), give an early-exit rule ("if scope grows, stop and return the packet"), and verify reports against artefacts rather than trusting them. Whether `autoCompactEnabled: false` propagates to subagents, and whether `PreCompact` fires inside one, is what `just subagent-compaction::run` measures.
+No agent frontmatter field caps a subagent's context or tunes its compaction: per agent only `maxTurns`, `model` (window size) and `effort` bound it, and env vars such as `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` apply process-wide. Bound subagents by **task size**: scope each brief to finish well under half the window, require a state-packet return (`loop-integrity.md` Pillar 2), give an early-exit rule, and verify reports against artefacts. One haiku 200k run (2026-09-23) auto-compacted at ~75% and returned its compaction summary as a false completion report; treat that as a failure mode to design around. Baseline, open questions and the probe: `experiments/subagent-compaction/README.md`.
 
 ### Worktree Isolation
 
