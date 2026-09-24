@@ -591,6 +591,22 @@ repos:
         language: system
         files: '^scripts/(audit-skill-descriptions\.py|tests/test-audit-skill-descriptions-dedup\.sh)$'
         pass_filenames: false
+      # The sweep reads the audit's `description_full`, so an audit edit must
+      # re-run it too. Advisory on the corpus; this pins the sweep itself.
+      - id: test-check-description-collisions
+        name: description-collision sweep flags shared Use-when triggers (#2244)
+        entry: bash ./scripts/tests/test-check-description-collisions.sh
+        language: system
+        files: '^scripts/(check-description-collisions\.py|audit-skill-descriptions\.py|tests/test-check-description-collisions\.sh)$'
+        pass_filenames: false
+      # experiments/ matches no discovery glob in run-skill-script-tests.sh, so
+      # this hook is the scorer test's only automatic trigger.
+      - id: test-skill-catalog-routing-scorer
+        name: routing scorer treats plugin:skill and plugin/skill as one id (#2244)
+        entry: bash ./experiments/skill-catalog-routing/scripts/tests/test-score-run.sh
+        language: system
+        files: '^experiments/skill-catalog-routing/scripts/(score-run\.py|tests/test-score-run\.sh)$'
+        pass_filenames: false
       - id: test-extract-md-elements
         name: tree-sitter markdown extraction helper regression
         entry: bash ./scripts/tests/test-extract-md-elements.sh
