@@ -1,0 +1,37 @@
+# REASON= rollout ratchet for scripts/check-structured-output-contract.sh (#2691).
+#
+# Each line is a repo-relative scripts/check-*.sh that emits STATUS= but does
+# not yet emit REASON= on its non-OK path. The guard exempts a listed script
+# from missing_reason, and reports an ERROR for any entry that now emits REASON=
+# or is no longer a STATUS= emitter, so this list can only shrink. Delete a
+# line in the same commit that migrates the script. Rollout: #2760.
+scripts/check-auto-resolve-mergeability-poll.sh
+scripts/check-blueprint-level3-templates.sh
+scripts/check-branch-containment-guidance.sh
+scripts/check-configure-components.sh
+scripts/check-context-command-execution.sh
+scripts/check-dead-api-endpoints.sh
+scripts/check-dead-tool-grants.sh
+scripts/check-delegation-reachability.sh
+scripts/check-docs-index.sh
+scripts/check-enabled-plugins-drift.sh
+scripts/check-feature-flags-catalog.sh
+scripts/check-git-sandbox-guards.sh
+scripts/check-golden-set-coverage.sh
+scripts/check-hook-cue-skill-refs.sh
+scripts/check-issue-template-inheritance.sh
+scripts/check-loop-integrity.sh
+scripts/check-plugin-readme-currency.sh
+scripts/check-prose-house-style.sh
+scripts/check-research-radar-grounding.sh
+scripts/check-routine-prompt.sh
+scripts/check-ruff-version-sync.sh
+scripts/check-skill-filename-case.sh
+scripts/check-subagent-types.sh
+scripts/check-taskcompleted-verification.sh
+scripts/check-unrendered-templates.sh
+scripts/check-unused-bash-grant.sh
+scripts/check-version-pin-coverage.sh
+scripts/check-workflow-js-model.sh
+scripts/check-workflow-model.sh
+scripts/check-workflow-script-triggers.sh
