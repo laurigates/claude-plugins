@@ -85,11 +85,13 @@ list` manage — so `pi list` will not show it; that is expected, not a failure.
 ## Claude Code variables in pi
 
 Claude Code substitutes `${CLAUDE_SKILL_DIR}` and `${CLAUDE_SESSION_ID}` into a
-skill's text before the model sees it. pi does neither: it performs no variable
+skill's text before the model sees it, and sets `${CLAUDE_PLUGIN_ROOT}` to the
+skill's plugin directory. pi does none of this: it performs no variable
 substitution, and its `bash` tool exports no such variables. Without the adapter,
 a command such as `task-add`'s `bash "${CLAUDE_SKILL_DIR}/../../scripts/ensure-udas.sh" --check`
-runs as `bash "/../../scripts/ensure-udas.sh" --check`. Around 50 skills that pi
-loads are affected.
+runs as `bash "/../../scripts/ensure-udas.sh" --check`. Around 60 skills that pi
+loads are affected. The OpenCode binding shares the same resolver
+(`adapters/core/claude-env.ts`).
 
 The adapter's `tool_call` handler rewrites the `bash` input before it runs.
 Skill text is untouched, so Claude Code's behaviour does not change.
@@ -97,9 +99,9 @@ Skill text is untouched, so Claude Code's behaviour does not change.
 | Step | Behaviour |
 |---|---|
 | Record | A `read` of a `*/SKILL.md` records that directory; a `/skill:` expansion (`<skill … location="…">` in the prompt) records its directory too |
-| Resolve | Every `${CLAUDE_SKILL_DIR}/<rel>` (or `$CLAUDE_SKILL_DIR/<rel>`) in the command must exist under the chosen directory. Read history is tried first (most recent first), then `/skill:` expansions, then every indexed skill |
-| Rewrite | One line, `export CLAUDE_SKILL_DIR='…' CLAUDE_SESSION_ID='…' PI_SESSION_FILE='…'`, is prepended, single-quote-escaped. Heredocs, `set -e`, and a leading `cd` behave as before. Commands that reference neither variable pass through unchanged |
-| Block | No candidate matches, or several indexed skills match different real files (two skills each shipping `scripts/run.sh`): the call is blocked and the reason tells the model to replace `${CLAUDE_SKILL_DIR}` with the absolute directory of the SKILL.md it is following |
+| Resolve | Every `${CLAUDE_SKILL_DIR}/<rel>` (or `$CLAUDE_SKILL_DIR/<rel>`) in the command must exist under the chosen directory, and every `${CLAUDE_PLUGIN_ROOT}/<rel>` under its plugin directory (`<plugin>/skills/<name>` → `<plugin>`). Read history is tried first (most recent first), then `/skill:` expansions, then every indexed skill |
+| Rewrite | One line, `export CLAUDE_SKILL_DIR='…' CLAUDE_PLUGIN_ROOT='…' CLAUDE_SESSION_ID='…' PI_SESSION_FILE='…'`, is prepended, single-quote-escaped, carrying only the variables the command references. Heredocs, `set -e`, and a leading `cd` behave as before. Commands that reference none of the variables pass through unchanged |
+| Block | No candidate matches, or several indexed skills match different real files (two skills each shipping `scripts/run.sh`): the call is blocked and the reason tells the model to replace `${CLAUDE_SKILL_DIR}` with the absolute directory of the SKILL.md it is following (and `${CLAUDE_PLUGIN_ROOT}` with that skill's plugin directory) |
 
 pi clones tool arguments before `tool_call` runs, so the prepended line reaches
 execution but not the transcript or the model's context.
@@ -255,7 +257,7 @@ rename (`maxTurns` → `max_turns`) rather than a loss:
 | `skills: [a, b]` | `skills: a, b` | both preload; pi's list form also drops the inherited rest |
 | `model`, `color`, `thinking`, `maxTurns` | same, `max_turns` | `model: opus` resolves fuzzily in pi; a provider without it reports `(unavailable, fallback: inherit)` |
 | `TodoWrite`, `TaskOutput`, `WebFetch`, `WebSearch` | *dropped* | no pi built-in exists |
-| `context: fork` | *dropped* | a pi subagent is **always** its own session — fork-isolation is pi's default, and `inherit_context:` is the opposite direction, so no mapping is asserted |
+| `context: fork` | *dropped* | a skill field that Claude Code ignores on an agent (#2646), so there is no behaviour to carry over; `inherit_context:` would hand the pi agent the parent conversation, which the source agent never had |
 
 The exporter reports rather than silently adjusts. On the corpus today it prints
 `WIDENED_BASH=142` (every scoped `Bash(git diff *)` grant becomes an unscoped
@@ -277,11 +279,72 @@ exporter against a fixture and pins the mapping, the widening/drop reports, the
 skip-on-missing-description path, and the emitted tool names against pi's seven
 built-ins (an unknown `tools:` entry is a hard `tools-error:` in pi).
 
+## Safety hooks (`just export-pi-hooks`)
+
+pi never evaluates a Claude Code hook manifest, so without this step every
+guard in the marketplace is inert under pi. `scripts/generate-pi-hook-extension.py`
+projects the safety subset into one pi extension that registers `pi.on(...)`
+handlers and runs the original shell scripts unchanged (#2634):
+
+```bash
+just export-pi-hooks    # -> dist/pi/extensions/plugin-hooks/{index.ts,hook-scripts/}
+just install-pi-hooks   # -> ~/.pi/agent/extensions/plugin-hooks/ (auto-discovered)
+```
+
+`setup-pi` runs `install-pi-hooks`. To try it without installing, pass the
+generated file with `pi -e dist/pi/extensions/plugin-hooks/index.ts`. Undo an
+install by deleting `~/.pi/agent/extensions/plugin-hooks`.
+
+| Claude Code event | pi event | Behaviour |
+|---|---|---|
+| `PreToolUse` | `tool_call` | exit 2 or JSON `deny` returns `{ block: true, reason }`; JSON `ask` calls `ctx.ui.confirm()` and blocks when pi has no UI (`-p`, `--mode json`/`rpc`); `updatedInput.command` rewrites a `bash` call |
+| `PostToolUse` | `tool_result` | exit-2 stderr, a block reason or `additionalContext` is appended to the tool result |
+| `SessionStart` | `session_start` | `additionalContext` (or plain stdout) is queued with `pi.sendMessage(..., { deliverAs: "nextTurn" })` |
+
+Manifests are read from **both** `<plugin>/hooks.json` and inline
+`.claude-plugin/plugin.json` `hooks`. Eight plugins declare hooks only inline,
+hooks-plugin among them, and hooks-plugin holds the safety guards; the OpenCode
+exporter reads `hooks.json` alone and misses them (#2724). The scripts see
+Claude Code's stdin shape: pi's `read`/`write`/`edit` become `Read`/`Write`/`Edit`
+with an absolute `file_path`, and a multi-edit's `edits[]` is joined into
+`old_string`/`new_string` so content-scanning hooks see every replacement.
+Matching hooks run concurrently and their results are read in declaration
+order, so the first block wins. A script that is missing, crashes or times out
+fails open.
+
+**What is exported.** Only hooks named in the generator's `PI_SAFETY_ALLOWLIST`:
+branch protection, secret protection, repo-deletion safety, the external-PR
+merge guard, the branch-base guard, the three git-plugin PR/branch guards named
+in #2634, the terraform apply gate, both kubectl guards, the force-push guard,
+and the git drift probe with the aggregator that delivers its findings. Every
+other hook is skipped **by name** and listed in the generator's report and in
+the extension's header. Three skips are deliberate rather than
+unclassified:
+
+- `bash-antipatterns.sh` mixes a few safety blocks with tool-hygiene blocks
+  whose remedy text names Claude Code's `Read`/`Grep` tools, so it is not
+  exported whole (#2788).
+- `auto-checkpoint.sh` writes stash entries that only the `Stop` hook
+  `git-stash-reminder.sh` surfaces, and `Stop` has no pi mapping here.
+- The drift probes other than git-plugin's, and session-plugin's two nudges
+  (#2661), stay out until they are classified.
+
+`--allow <plugin>/<script>` adds an allowlist entry for one run. `Stop`,
+`PreCompact`, `PermissionRequest`, `TaskCompleted` and prompt/agent hooks have
+no pi equivalent and are reported as skipped.
+
+### Verifying it landed
+
+`scripts/tests/test-export-pi-hooks.sh` executes the generated extension under
+`node` with a stub `pi`: a fixture pins each mapping above, and the real-repo
+half drives pi's `read` of `.env` through the real `secret-protection.sh` and
+asserts the block. Loading it in a live pi 0.85.1 RPC session
+(`pi --mode rpc --no-session -ne -e …/index.ts`, no prompt, so no model call)
+produced no extension error, and `session_start` ran the git drift probe,
+which wrote its signal file under pi's session id.
+
 ## Out of scope (deferred)
 
-- **Hook porting (#2634).** Selective: only the *safety* hooks would earn a pi
-  `pi.on` port; the style nudges are noise on a different harness. pi never
-  evaluates a Claude Code `hooks.json`, so those guards are inert there today.
 - **Prompt templates.** Nothing in the marketplace uses that surface yet.
 
 ## Related

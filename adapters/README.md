@@ -18,12 +18,12 @@ OpenCode binding (`opencode/`) in
 
 | Path | What |
 |------|------|
-| `core/` | Indexer (marketplace scan + DIY frontmatter parse + compatibility filter), BM25 (Lucene IDF, k1=1.2, b=0.75), ollama `/api/embed` client (`search_document:`/`search_query:` prefixes, BM25 fallback), RRF fusion (k=60), L2-normalized Float32Array vector index, XDG content-hash embedding cache, shared render templates |
+| `core/` | Indexer (marketplace scan + DIY frontmatter parse + compatibility filter), BM25 (Lucene IDF, k1=1.2, b=0.75), ollama `/api/embed` client (`search_document:`/`search_query:` prefixes, BM25 fallback), RRF fusion (k=60), L2-normalized Float32Array vector index, XDG content-hash embedding cache, shared render templates, the Claude Code variable resolver both bindings share (`claude-env.ts`) |
 | `CUTOVER.md` | The #2093/#2094 gate: measurement procedure, the frozen threshold + provenance, the hybrid-integrity guards, and the refuted gate constructions |
 | `eval/` | `tasks.json` (committed golden task set, k=5), `run-eval.ts` runner, ranker seam (`hybrid \| bm25Only \| embeddingOnly \| random(seed) \| oracle \| nameSubstring \| descriptionSubstring`), baseline derivation (the export-opencode glob, computed offline; the pi arm reports `BASELINE_ARM=ABSENT` since #2093 removed `pi/tiers.yaml`), `results/` (gitignored per-run output) |
 | `pi/` | pi binding (#2090) — default-exported extension factory: `search_skills` pull tool + `before_agent_start` push injection, `skill-discovery.json` config |
-| `opencode/` | OpenCode binding (#2091) — named `SkillDiscoveryPlugin` plugin: `search_skills` tool (pull), `experimental.chat.system.transform` push injection + defensive listing strip, `experimental.chat.messages.transform` ranking-input capture, `[path, options]` tuple config |
-| `tests/` | `bun test` suites: frontmatter diff vs `Bun.YAML`, BM25 goldens + committed `rank_bm25` fixture, indexer over the mini-marketplace fixture, cache, fusion, embeddings fallback matrix, eval meta-tests |
+| `opencode/` | OpenCode binding (#2091) — named `SkillDiscoveryPlugin` plugin: `search_skills` tool (pull), `experimental.chat.system.transform` push injection + defensive listing strip, `experimental.chat.messages.transform` ranking-input capture, `tool.execute.before` Claude Code variable rewrite (#2662), `[path, options]` tuple config |
+| `tests/` | `bun test` suites: frontmatter diff vs `Bun.YAML`, BM25 goldens + committed `rank_bm25` fixture, indexer over the mini-marketplace fixture, cache, fusion, embeddings fallback matrix, eval meta-tests, the Claude-variable sweep over every foreign-visible skill (`claude-env.test.ts`) |
 
 There is **no build step**: `tsconfig.json` is `noEmit` and both harnesses
 consume `.ts` source directly (jiti / Bun). This also sidesteps the repo-wide
@@ -114,14 +114,19 @@ the Trust caveat below — global is preferred). Equivalent by hand:
   via `resources_discover` — that would refeed the uncapped native listing
   it exists to replace.
 - Makes Claude Code's skill variables work in pi's `bash` tool via a
-  `tool_call` handler (pure helpers in `pi/claude-env.ts`). A command
-  referencing `${CLAUDE_SKILL_DIR}` gets one `export CLAUDE_SKILL_DIR=…
-  CLAUDE_SESSION_ID=… PI_SESSION_FILE=…` line prepended. The skill directory is
-  the first candidate under which every `${CLAUDE_SKILL_DIR}/<rel>` in the
-  command exists, checked in order: SKILL.md files read this session, then
-  `/skill:` expansions, then the index. If no candidate matches, or several
-  indexed skills match different files, the call is blocked with a reason
-  telling the model to substitute the SKILL.md's absolute directory.
+  `tool_call` handler (shared helpers in `core/claude-env.ts`). A command
+  referencing `${CLAUDE_SKILL_DIR}`, `${CLAUDE_PLUGIN_ROOT}` or
+  `${CLAUDE_SESSION_ID}` gets one `export CLAUDE_SKILL_DIR=…
+  CLAUDE_PLUGIN_ROOT=… CLAUDE_SESSION_ID=… PI_SESSION_FILE=…` line prepended,
+  carrying only the variables it references (plus the session file). The
+  skill directory is the first candidate under which every
+  `${CLAUDE_SKILL_DIR}/<rel>` in the command exists, and under whose plugin
+  directory (`<plugin>/skills/<name>` → `<plugin>`) every
+  `${CLAUDE_PLUGIN_ROOT}/<rel>` exists, checked in order: SKILL.md files read
+  this session, then `/skill:` expansions, then the index. If no candidate
+  matches, or several indexed skills match different files, the call is
+  blocked with a reason telling the model to substitute the SKILL.md's
+  absolute directory.
   `CLAUDE_SESSION_ID` is derived from pi's UUIDv7 session id with the random
   bits first, so `claude-${CLAUDE_SESSION_ID:0:8}` differs between sessions.
   See [`docs/pi-export.md`](../docs/pi-export.md) § Claude Code variables in pi.
@@ -203,6 +208,20 @@ config file; the tuple form carries the options):
   is pull-first by design. At init the binding logs the server version from
   `GET /global/health` (informational, never gating) to aid "why no
   injected block" debugging.
+- Makes Claude Code's skill variables work in OpenCode's `bash` tool via a
+  `tool.execute.before` hook, using the same resolver as pi (above). A
+  `read` of a `SKILL.md` (`filePath`, relative paths resolved against the
+  instance directory) records its directory, per session. The rewrite
+  mutates `output.args.command` in place, because OpenCode passes that same
+  object on to the tool. An unresolvable directory throws, which fails the
+  call and hands the model the reason. Two differences from pi: there is no
+  `/skill:` tier, and OpenCode keeps the rewritten command as the tool
+  input, so the `export` line shows in the transcript. OpenCode's shell
+  permission scan ignores it (`export` parses as a declaration, not a
+  command). `CLAUDE_SESSION_ID` is hashed from OpenCode's `ses_…` id, whose
+  prefix is time-ordered too. No `PI_SESSION_FILE` equivalent is exported.
+  See [`docs/opencode-export.md`](../docs/opencode-export.md) § Claude Code
+  variables in OpenCode.
 
 ## Embeddings (soft dependency)
 

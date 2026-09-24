@@ -112,3 +112,21 @@ scripts/tests/test-check-golden-set-coverage.sh
 # narrowing -- a measured-rate extrapolation must still block; PATTERN_FUTURE is
 # pinned separately by the future-tense cases at :113-118 (#2580).
 hooks-plugin/hooks/test-no-calendar-estimates.sh
+
+# The pi safety-hook bridge (#2634) executes its generated extension under
+# node with a stub pi; its only skip is "node not available". Every CI runner
+# has node, so a skip here means the runtime half silently stopped running.
+scripts/tests/test-export-pi-hooks.sh
+
+# Stubs gh on PATH and replays verbatim excerpts of three real run logs -- no
+# network, no credentials, no skip branch -- so a SKIP here can only mean the
+# file stopped being discovered. Its case L executes the model audit's own
+# pre-compute block, so a skip would also hide the audit losing its cost input
+# (#2669).
+scripts/tests/test-workflow-run-cost.sh
+
+# Pure filesystem fixtures plus a read of this repo's own agents -- no network,
+# nothing beyond POSIX find/awk/grep -- so a skip is never legitimate. Case A2
+# pins the declared residuals to the live defect (#2646): a skip would hide a
+# residual list drifting away from the ten `context: fork` keys it exists for.
+scripts/tests/test-check-agent-frontmatter-keys.sh

@@ -33,7 +33,7 @@ adapters that honour that marker list them.
 |---|---|
 | Claude Code | Full: skills, both hooks, `${CLAUDE_SKILL_DIR}`, the session transcript |
 | pi, with the claude-plugins adapter | Skills work. The adapter resolves `${CLAUDE_SKILL_DIR}` and exports `PI_SESSION_FILE`, which `distill-survey.sh` reads as a second transcript format. Where `AskUserQuestion` or the Skill tool is absent, the skills ask in plain text and read sibling `SKILL.md` files directly. The adapter runs both nudges: the spinup hook unchanged on `session_start`, and the end nudge's gates over pi's session on `agent_settled` ([`docs/pi-export.md`](../docs/pi-export.md#session-nudges)) |
-| OpenCode | Degraded: no skill-directory resolution, so the collector scripts are not found, and no transcript hint, so distill falls back to re-reading the conversation ([#2662](https://github.com/laurigates/claude-plugins/issues/2662)). The nudge hooks do not run ([#2661](https://github.com/laurigates/claude-plugins/issues/2661)) |
+| OpenCode, with the claude-plugins adapter | Skills work as in pi: the adapter resolves `${CLAUDE_SKILL_DIR}` and `${CLAUDE_SESSION_ID}` ([#2662](https://github.com/laurigates/claude-plugins/issues/2662)), and the plain-text fallbacks apply where `AskUserQuestion` or the Skill tool is absent. There is no transcript hint, so distill falls back to re-reading the conversation. The nudge hooks do not run ([#2802](https://github.com/laurigates/claude-plugins/issues/2802)) |
 
 ## Configuration (`session-plugin.local.md`)
 

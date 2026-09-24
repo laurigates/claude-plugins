@@ -1,0 +1,41 @@
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:53.7081484Z ##[endgroup]
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0374060Z Latest Obsidian desktop: 1.13.7
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0437788Z ##[group]Run if [ -f "$TRACKING_FILE" ]; then
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0438496Z ^[[36;1mif [ -f "$TRACKING_FILE" ]; then^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0439367Z ^[[36;1m  PREV_SHA=$(jq -r '.lastCheckedDocSha256 // ""' "$TRACKING_FILE")^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0440287Z ^[[36;1m  PREV_VER=$(jq -r '.lastSeenObsidianVersion // "unknown"' "$TRACKING_FILE")^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0441037Z ^[[36;1melse^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0441462Z ^[[36;1m  PREV_SHA=""^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0442108Z ^[[36;1m  PREV_VER="unknown"^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0442594Z ^[[36;1mfi^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0443106Z ^[[36;1mecho "previous_sha=$PREV_SHA" >> "$GITHUB_OUTPUT"^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0443865Z ^[[36;1mecho "previous_version=$PREV_VER" >> "$GITHUB_OUTPUT"^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0444940Z ^[[36;1mecho "Tracked sha=$PREV_SHA version=$PREV_VER"^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0460416Z shell: /usr/bin/bash -e {0}
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0460935Z env:
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0461897Z   CLI_DOC_URL: https://publish-01.obsidian.md/access/f786db9fac45774fa4f0d8112e232d67/Extending%20Obsidian/Obsidian%20CLI.md
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0463348Z   RELEASES_URL: https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/desktop-releases.json
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0464376Z   TRACKING_FILE: .obsidian-cli-version-check.json
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0465990Z ##[endgroup]
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0671543Z Tracked sha=1544d5de218c9a84bb44666c6a19e35b6635532c0a853cd3721f2f6912207c75 version=1.12.7
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0866753Z ##[group]Run if [ "$FORCE" = "true" ]; then
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0867430Z ^[[36;1mif [ "$FORCE" = "true" ]; then^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0903229Z ^[[36;1m  echo "Forced full review requested"^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0903955Z ^[[36;1m  echo "has_updates=true" >> "$GITHUB_OUTPUT"^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0906284Z ^[[36;1m  exit 0^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0906804Z ^[[36;1mfi^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0908120Z ^[[36;1m^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0908595Z ^[[36;1mif [ "$LATEST" != "$TRACKED" ]; then^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0909268Z ^[[36;1m  echo "CLI doc changed: $TRACKED -> $LATEST"^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0909964Z ^[[36;1m  echo "has_updates=true" >> "$GITHUB_OUTPUT"^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0910581Z ^[[36;1melse^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0911047Z ^[[36;1m  echo "No changes since $TRACKED"^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0911714Z ^[[36;1m  echo "has_updates=false" >> "$GITHUB_OUTPUT"^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0912308Z ^[[36;1mfi^[[0m
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0924297Z shell: /usr/bin/bash -e {0}
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0927365Z env:
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0928816Z   CLI_DOC_URL: https://publish-01.obsidian.md/access/f786db9fac45774fa4f0d8112e232d67/Extending%20Obsidian/Obsidian%20CLI.md
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0931059Z   RELEASES_URL: https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/desktop-releases.json
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0932087Z   TRACKING_FILE: .obsidian-cli-version-check.json
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0932893Z   LATEST: 1544d5de218c9a84bb44666c6a19e35b6635532c0a853cd3721f2f6912207c75
+check-cli-doc	UNKNOWN STEP	2026-09-08T13:35:54.0933815Z   TRACKED: 1544d5de218c9a84bb44666c6a19e35b6635532c0a853cd3721f2f6912207c75

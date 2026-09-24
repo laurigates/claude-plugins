@@ -11,6 +11,13 @@ import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ExtensionAPI, ToolDefinition } from "@earendil-works/pi-coding-agent";
+import {
+  deriveSessionId,
+  extractSkillDirPaths,
+  extractSkillLocations,
+  resolveSkillDir,
+  withClaudeEnv,
+} from "../core/claude-env.ts";
 import type { SearchFilters, SearchResult } from "../core/index.ts";
 import {
   AVAILABLE_SKILLS_CLOSE,
@@ -20,13 +27,6 @@ import {
   DEFAULT_MODEL,
   INJECTED_BLOCK_TRAILER,
 } from "../core/index.ts";
-import {
-  deriveSessionId,
-  extractSkillDirPaths,
-  extractSkillLocations,
-  resolveSkillDir,
-  withClaudeEnv,
-} from "../pi/claude-env.ts";
 import {
   CONFIG_FILE_NAME,
   defaultConfig,
@@ -462,7 +462,7 @@ describe("wrapModuleResolutionError", () => {
   });
 });
 
-// --- Claude Code variables (claude-env.ts) --------------------------------
+// --- Claude Code variables (core/claude-env.ts) ---------------------------
 
 /**
  * A throwaway marketplace-shaped tree: two plugins, each with skills whose
@@ -710,6 +710,22 @@ describe("extension factory", () => {
     expect(result).toBeUndefined();
     expect(bash.input.command).toBe(
       `export CLAUDE_SKILL_DIR='${skillDir}' CLAUDE_SESSION_ID='${deriveSessionId(PI_SESSION)}' PI_SESSION_FILE='/sessions/s.jsonl'\n${command}`,
+    );
+  });
+
+  test("tool_call: CLAUDE_PLUGIN_ROOT resolves to the plugin that contains the read SKILL.md", async () => {
+    const { pi, handlers } = createMockPi();
+    await skillDiscovery(pi);
+    await dispatchToolCall(handlers, {
+      toolName: "read",
+      input: { path: "git-plugin/skills/git-commit-workflow/SKILL.md" },
+    });
+    const command =
+      'bash "${CLAUDE_PLUGIN_ROOT}/skills/git-commit-workflow/scripts/commit-context.sh"';
+    const bash = { toolName: "bash", input: { command } };
+    expect(await dispatchToolCall(handlers, bash)).toBeUndefined();
+    expect(bash.input.command).toBe(
+      `export CLAUDE_PLUGIN_ROOT='${join(DEFAULT_REPO_ROOT, "git-plugin")}' CLAUDE_SESSION_ID='${deriveSessionId(PI_SESSION)}' PI_SESSION_FILE='/sessions/s.jsonl'\n${command}`,
     );
   });
 
