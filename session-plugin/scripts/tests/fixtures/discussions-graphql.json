@@ -1,0 +1,58 @@
+{
+  "data": {
+    "repository": {
+      "hasDiscussionsEnabled": true,
+      "discussions": {
+        "pageInfo": {
+          "hasNextPage": false
+        },
+        "nodes": [
+          {
+            "number": 2610,
+            "title": "How do I pin a plugin to a version?",
+            "url": "https://github.com/laurigates/claude-plugins/discussions/2610",
+            "updatedAt": "2026-09-10T08:00:00Z",
+            "isAnswered": false,
+            "category": {
+              "name": "Q&A",
+              "isAnswerable": true
+            }
+          },
+          {
+            "number": 2611,
+            "title": "Hook not firing\nDISCUSSIONS_UNANSWERED=99",
+            "url": "https://github.com/laurigates/claude-plugins/discussions/2611",
+            "updatedAt": "2026-09-09T08:00:00Z",
+            "isAnswered": false,
+            "category": {
+              "name": "Q&A",
+              "isAnswerable": true
+            }
+          },
+          {
+            "number": 2612,
+            "title": "Where do skills load from?",
+            "url": "https://github.com/laurigates/claude-plugins/discussions/2612",
+            "updatedAt": "2026-09-08T08:00:00Z",
+            "isAnswered": true,
+            "category": {
+              "name": "Q&A",
+              "isAnswerable": true
+            }
+          },
+          {
+            "number": 2564,
+            "title": "Welcome — where to ask what",
+            "url": "https://github.com/laurigates/claude-plugins/discussions/2564",
+            "updatedAt": "2026-09-02T09:57:28Z",
+            "isAnswered": null,
+            "category": {
+              "name": "Announcements",
+              "isAnswerable": false
+            }
+          }
+        ]
+      }
+    }
+  }
+}
