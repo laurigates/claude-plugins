@@ -13,7 +13,7 @@ This plugin provides comprehensive code quality tools including automated code r
 | `/code:review` | Comprehensive code review with automated fixes |
 | `/code:refactor` | Refactor code applying functional programming principles - pure functions, immutability, and composition |
 | `/code:antipatterns` | Analyze codebase for anti-patterns and code smells using ast-grep |
-| `/code:lint` | Universal linter - auto-detects and runs appropriate linting tools (with `--fix` for autofix) |
+| `/code:lint` | Run the project's linters and formatters - auto-detects ruff/eslint/clippy/gofmt (`--fix` to autofix) |
 | `/code:dry-consolidation` | Find and extract duplicated code into shared, tested abstractions |
 | `/code:scaffold-backport` | Back-port an instance fix into the generator that produced it — cookiecutter/copier template, justfile `new-*` recipe, scaffolding skill — so the next generation isn't born with the same bug |
 | `/code:docs-quality` | Analyze documentation quality - PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ |
