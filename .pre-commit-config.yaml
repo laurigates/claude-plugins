@@ -240,10 +240,12 @@ repos:
         files: '^scripts/(check-unrendered-templates\.sh|tests/test-check-unrendered-templates\.sh)$'
         pass_filenames: false
       - id: check-workflow-model
-        name: every Claude workflow pins opus + explicit effort
+        name: every Claude workflow pins opus + explicit effort (and has a rule-table row)
         entry: ./scripts/check-workflow-model.sh
         language: script
-        files: '^\.github/workflows/.*\.ya?ml$'
+        # The rule file is an input too (#2630): the guard cross-checks its
+        # canonical per-workflow table, so an edit that drops a row must fire it.
+        files: '^(\.github/workflows/.*\.ya?ml|\.claude/rules/workflow-model-effort\.md|scripts/(check-workflow-model\.sh|tests/test-check-workflow-model\.sh))$'
         pass_filenames: false
       - id: check-workflow-script-triggers
         name: workflow-run scripts are reachable from its path triggers (#2219)
@@ -648,6 +650,27 @@ repos:
         entry: bash ./scripts/tests/test-check-workflow-tool-grants.sh
         language: system
         files: '^scripts/(check-workflow-tool-grants\.sh|tests/test-check-workflow-tool-grants\.sh)$'
+        pass_filenames: false
+      - id: check-comment-deliverable-assertions
+        name: comment-posting Claude steps assert delivery + upload their transcript (#2630, #2719)
+        entry: bash ./scripts/check-comment-deliverable-assertions.sh
+        language: system
+        # Whole sweep, like tool-grants above: the Claude step and the assertion
+        # step that follows it live in the same file and can change together.
+        files: '^(\.github/workflows/.*\.ya?ml|scripts/(check-comment-deliverable-assertions|assert-pr-comment-delivered)\.sh)$'
+        pass_filenames: false
+      - id: test-check-comment-deliverable-assertions
+        name: comment-deliverable assertion sweep regression
+        entry: bash ./scripts/tests/test-check-comment-deliverable-assertions.sh
+        language: system
+        files: '^scripts/(check-comment-deliverable-assertions\.sh|tests/test-check-comment-deliverable-assertions\.sh)$'
+        pass_filenames: false
+      # Stubs gh and asserts on the endpoints queried, so it needs no network.
+      - id: test-assert-pr-comment-delivered
+        name: PR comment delivery assertion regression (#2630, #2719)
+        entry: bash ./scripts/tests/test-assert-pr-comment-delivered.sh
+        language: system
+        files: '^scripts/(assert-pr-comment-delivered\.sh|tests/test-assert-pr-comment-delivered\.sh)$'
         pass_filenames: false
       # The STATUS= contract (#2691): canonical OK|WARN|ERROR, ISSUE_COUNT=, and
       # REASON= on the non-OK path, swept across every scripts/check-*.sh. The
