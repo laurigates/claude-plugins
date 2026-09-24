@@ -459,6 +459,51 @@ for cmd in jq curl; do
 done
 ```
 
+### `pipefail` and readers that exit early
+
+`grep -q` exits as soon as it matches, and `head -N` exits after N lines. Either
+closes its end of the pipe. A producer that is still writing then gets `SIGPIPE`
+(exit 141) or a write error ("Broken pipe", exit 1 for a builtin like `printf`).
+Without `pipefail` the pipeline takes the last command's status, so nothing
+happens. With `pipefail` it takes the producer's failure, so a `grep -q` that
+**matched** reports failure and sends control down the `||` or `else` branch.
+
+Whether the producer finishes first depends on timing: output size, the pipe
+buffer, and scheduling. The same test can pass every time on macOS and fail on a
+Linux CI runner.
+
+```bash
+set -euo pipefail
+
+# Wrong: intermittently false-negative
+printf '%s\n' "$section" | grep -Fq "$needle" || fail "not documented"
+some_command | grep -q "ready" || fail "not ready"
+
+# Right: no second process, so nothing can take SIGPIPE
+grep -Fq "$needle" <<<"$section" || fail "not documented"
+grep -q "ready" <<<"$(some_command)" || fail "not ready"
+
+# Right: grep without -q reads to EOF, so the producer always finishes
+some_command | grep "ready" >/dev/null || fail "not ready"
+```
+
+`| head` has the same mechanism. It is usually deliberate truncation, so drop
+`pipefail` for that script or add `|| true` to that line. Do not add `|| true`
+to a `grep -q` check, because it would hide a real miss as well.
+
+**GitHub Actions `run:` steps.** Only an explicit `shell: bash` runs with
+`pipefail`, as `bash --noprofile --norc -eo pipefail {0}`. That can be set on the
+step, in job `defaults.run.shell`, or in workflow `defaults.run.shell`. A step
+with no `shell:` runs `bash -e {0}`, which has no `pipefail`
+([workflow syntax, `jobs.<job_id>.steps[*].shell`](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax)).
+Adding `shell: bash` to an existing step can therefore turn a working
+`| grep -q` into an intermittent failure.
+
+**Enforce it mechanically.** A scan that flags `| grep -q`/`--quiet`/`--silent`
+in files that set `pipefail`, and in workflow steps whose effective shell is
+`bash`, catches the pattern before it flakes. ForumViriumHelsinki/.github
+`.github/tests/pipefail-grep-q/run.sh` is a worked example.
+
 ## Performance Optimization Tips
 
 1. **Avoid unnecessary subshells**: Use `${var//search/replace}` instead of `$(echo "$var" | sed 's/search/replace/')`
