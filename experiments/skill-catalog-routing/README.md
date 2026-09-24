@@ -58,7 +58,8 @@ inject, for every arm including C0.
 | `scripts/check-tasks.py` | schema + lexical-leakage gate over the task set |
 | `scripts/build-arm-prompt.sh` | assemble router + injected catalog for an arm |
 | `scripts/run-one.sh` / `run-suite.sh` | one triple / the cartesian sweep |
-| `scripts/score-run.py` | parse the router's last-line JSON, match id ↔ gold |
+| `scripts/score-run.py` | parse the router's last-line JSON, match id ↔ gold (`plugin:skill` and `plugin/skill` are one id) |
+| `scripts/tests/` | the harness's own regression tests (`just test`) |
 | `scripts/compare.py` | per-condition routing metrics → `results.json` + `report.md` |
 | `scripts/render-frontier.py` | accuracy-vs-length curves + per-model degradation slope |
 | `scripts/measure-catalog-tokens.sh` | real input tokens per catalog variant |

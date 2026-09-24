@@ -1,8 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-09-23
 reviewed: 2025-12-16
-description: "EditorConfig and VS Code workspace settings for team consistency. Use when setting up format-on-save, recommended extensions, or debug configurations."
+description: "Set up .editorconfig and .vscode/ workspace settings shared by the team. Use when adding format-on-save, recommended extensions, or debug launch configs."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"

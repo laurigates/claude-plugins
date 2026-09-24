@@ -53,7 +53,7 @@ merged into their configure siblings' `REFERENCE.md` files
 | `configure-workflows` | Whole-repo `.github/workflows/` audit: baseline workflows missing for the project type, and stale action pins |
 | `configure-reusable-workflows` | Install pre-built Claude PR scans as `claude-*.yml` callers (security, quality, a11y) |
 | `configure-release-please` | Release-please workflow, manifest, and config for a **single-package** repo (monorepo component tags live in `git-plugin:release-please-configuration`) |
-| `configure-pre-commit` | Pre-commit hooks for project standards |
+| `configure-pre-commit` | Set up `.pre-commit-config.yaml` with hooks for the project type |
 | `configure-github-pages` | GitHub Pages deployment |
 | `configure-argocd-automerge` | Auto-merge workflow for ArgoCD Image Updater branches |
 | `configure-claude-plugins` | Configure Claude Code plugin marketplace and GitHub Actions workflows |
@@ -90,8 +90,8 @@ merged into their configure siblings' `REFERENCE.md` files
 
 | Skill | Description |
 |-------|-------------|
-| `configure-linting` | Linting tools (Biome, Ruff, Clippy) |
-| `configure-formatting` | Code formatting (Biome, Prettier, Ruff, rustfmt) |
+| `configure-linting` | Set up linters (Biome, Ruff, Clippy) and wire them into pre-commit and CI |
+| `configure-formatting` | Set up formatters (Biome, Ruff format, rustfmt), replacing Prettier or Black |
 | `configure-dead-code` | Dead code detection (Knip, Vulture, cargo-machete) |
 
 ### Security
@@ -126,7 +126,7 @@ merged into their configure siblings' `REFERENCE.md` files
 
 | Skill | Description |
 |-------|-------------|
-| `configure-editor` | EditorConfig and VS Code workspace settings |
+| `configure-editor` | Set up `.editorconfig` and `.vscode/` workspace settings |
 | `configure-mcp` | MCP servers for project integration |
 | `configure-makefile` | Makefile with standard targets |
 | `configure-justfile` | Justfile with standard recipes (simpler alternative to Make) |

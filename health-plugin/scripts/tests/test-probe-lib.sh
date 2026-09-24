@@ -237,6 +237,90 @@ assert_contains "waived when the ENTRY is stored (b, a)"    "$out" "REVERSED_ENT
 assert_contains "the reversed entry still expires on a hash change" "$out" "REVERSED_ENTRY_MUTATED False"
 assert_contains "a missing waiver file loads as empty"      "$out" "MISSING_FILE 0"
 
+echo "TEST c2: single-path waivers load beside pair waivers, and a bad entry is skipped (#2319)"
+# The first-run backlog is 98% `review_staleness` -- ONE file per finding -- and
+# the pair-keyed form above cannot express a waiver for it. A single-path waiver
+# is kind-scoped (waiving a file's staleness must not also waive a broken stub in
+# the same file) and hash-keyed exactly like the pair form, so editing the file
+# revives the finding. A waiver file is hand-written and committed for review, so
+# a malformed entry is reported and skipped rather than crashing the whole load.
+cat > "$FIXROOT/waivers2.py" <<'PY'
+import json
+import os
+import sys
+
+from lib.probe import Waivers
+
+root = sys.argv[1]
+scan = os.path.join(root, "c2")  # the scan root a relative waiver path resolves against
+os.makedirs(os.path.join(scan, "rules"), exist_ok=True)
+a = {"path": os.path.join(scan, "rules", "a.md"), "hash": "aaaaaaaaaaaaaaaa"}
+b = {"path": os.path.join(scan, "rules", "b.md"), "hash": "bbbbbbbbbbbbbbbb"}
+s = {"path": os.path.join(scan, "rules", "s.md"), "hash": "5555555555555555"}
+
+entries = [
+    {"a": a["path"], "b": b["path"], "a_hash": a["hash"], "b_hash": b["hash"], "reason": "pair"},
+    {"kind": "review_staleness", "path": "rules/s.md", "hash": s["hash"], "reason": "root-relative"},
+    {"kind": "review_staleness", "reason": "malformed: no path and no hash"},
+    "not even an object",
+    {"a": a["path"], "a_hash": a["hash"], "reason": "malformed: a pair missing b"},
+    {"a": a["path"], "b": b["path"], "a_hash": a["hash"], "b_hash": b["hash"],
+     "kind": "duplicate_rule_lexical", "reason": "malformed: pairs are not kind-scoped"},
+]
+mixed = os.path.join(root, "mixed.json")
+with open(mixed, "w", encoding="utf-8") as fh:
+    json.dump({"waivers": entries}, fh)
+w = Waivers.load(mixed, root=scan)
+print("MIXED_LEN %d" % len(w))
+print("MIXED_PROBLEMS %d" % len(w.problems))
+print("PAIR_STILL_WAIVED %s" % w.waived(a, b))
+print("SINGLE_WAIVED %s" % w.waived_path("review_staleness", s))
+print("SINGLE_OTHER_KIND %s" % w.waived_path("broken_pointer_stub", s))
+print("SINGLE_MUTATED %s" % w.waived_path("review_staleness", dict(s, hash="6666666666666666")))
+print("SINGLE_IS_NOT_A_PAIR %s" % w.waived(s, a))
+# Two distinct entries suppressed something above (the pair, the single); the
+# non-matching lookups must not count.
+print("MATCHED %d" % w.matched)
+
+# A root-relative path belongs to ONE scan root: the same file loaded against a
+# different root names a different file and must not match.
+print("WRONG_ROOT %s" % Waivers.load(mixed, root=os.path.join(root, "elsewhere"))
+      .waived_path("review_staleness", s))
+
+absolute = os.path.join(root, "absolute.json")
+with open(absolute, "w", encoding="utf-8") as fh:
+    json.dump({"waivers": [{"kind": "review_staleness", "path": s["path"],
+                            "hash": s["hash"], "reason": "absolute"}]}, fh)
+print("ABSOLUTE %s" % Waivers.load(absolute).waived_path("review_staleness", s))
+
+not_doc = os.path.join(root, "not-a-doc.json")
+with open(not_doc, "w", encoding="utf-8") as fh:
+    fh.write("[1, 2, 3]")
+wn = Waivers.load(not_doc)
+print("NOT_A_DOCUMENT len=%d problems=%d" % (len(wn), len(wn.problems)))
+garbled = os.path.join(root, "garbled.json")
+with open(garbled, "w", encoding="utf-8") as fh:
+    fh.write('{"waivers": [')
+wg = Waivers.load(garbled)
+print("UNPARSEABLE len=%d problems=%d" % (len(wg), len(wg.problems)))
+# A missing file is the normal "no waivers" state, not a problem to report.
+print("MISSING_PROBLEMS %d" % len(Waivers.load(os.path.join(root, "nope.json")).problems))
+PY
+out=$(PYTHONPATH="$SCRIPTS_DIR" python3 "$FIXROOT/waivers2.py" "$FIXROOT" 2>&1)
+assert_contains "pair and single-path entries load side by side; len() counts both" "$out" "MIXED_LEN 2"
+assert_contains "every malformed entry is reported, none crashes the load"          "$out" "MIXED_PROBLEMS 4"
+assert_contains "the pair entry still waives its pair"                             "$out" "PAIR_STILL_WAIVED True"
+assert_contains "a root-relative single-path entry waives its file"                "$out" "SINGLE_WAIVED True"
+assert_contains "a single-path waiver is scoped to its kind"                       "$out" "SINGLE_OTHER_KIND False"
+assert_contains "a single-path waiver expires when the file's hash changes"        "$out" "SINGLE_MUTATED False"
+assert_contains "a single-path waiver never satisfies a pair lookup"               "$out" "SINGLE_IS_NOT_A_PAIR False"
+assert_contains "matched counts distinct entries that suppressed something"        "$out" "MATCHED 2"
+assert_contains "a relative path resolved against another root does not match"     "$out" "WRONG_ROOT False"
+assert_contains "an absolute single-path entry needs no root"                      "$out" "ABSOLUTE True"
+assert_contains "a JSON array is not a waiver document: reported, not crashed"     "$out" "NOT_A_DOCUMENT len=0 problems=1"
+assert_contains "an unparseable file is reported, not crashed"                     "$out" "UNPARSEABLE len=0 problems=1"
+assert_contains "a missing file is not a problem"                                  "$out" "MISSING_PROBLEMS 0"
+
 echo "TEST d: fingerprint same/different ladder"
 # The `different` half is load-bearing: without it a fingerprint() that returned
 # a constant would pass every `same` case below.
@@ -484,6 +568,118 @@ err=$(cd / && python3 "$DELTA" --findings - --baseline "$FIXROOT/x.json" --probe
 rc=$?
 assert_eq "unknown flag exits 2" "$rc" "2"
 assert_contains "unknown flag prints usage" "$err" "usage: probe-delta.py"
+
+echo "TEST i4: --expect-baseline makes a LOST baseline loud instead of a silent first run (#2554)"
+# A scheduled workflow keeps its baseline in a cache that can be evicted. Without
+# a way to say "a baseline was expected", eviction is a silent FIRST_RUN=true
+# re-record that swallows whatever appeared during the evicted window -- the
+# exact failure delta reporting exists to prevent. With the flag, a missing or
+# untrusted baseline re-reports EVERY finding, says why, and still re-records.
+WARN_ONLY="$FIXROOT/warn-only.json"
+cat > "$WARN_ONLY" <<'JSON'
+{"counts": {}, "findings": [
+ {"severity": "warn", "kind": "review_staleness",
+  "summary": "x changed 200d after its declared reviewed:2020-01-01",
+  "paths": ["/c/x.md"], "gap_days": 200},
+ {"severity": "info", "kind": "rule_covered_by_skill",
+  "summary": "portfolio:r is 60% covered by skill s -- candidate for a pointer stub",
+  "paths": ["/c/r.md", "/c/s/SKILL.md"]}
+]}
+JSON
+# CONTROL first: without the flag the historical behaviour is unchanged.
+out=$(cd / && python3 "$DELTA" --findings "$WARN_ONLY" --baseline "$FIXROOT/eb-control.json" \
+    --probe config-drift --root "$FIXROOT/proj" 2>&1)
+rc=$?
+assert_contains "CONTROL: without the flag a missing baseline is still a first run" "$out" "FIRST_RUN=true"
+assert_contains "CONTROL: ...still silent"                                        "$out" "ISSUE_COUNT=0"
+assert_contains "CONTROL: ...still OK"                                            "$out" "STATUS=OK"
+assert_contains "CONTROL: ...and says no baseline was lost"                       "$out" "BASELINE_LOST=false"
+assert_absent  "CONTROL: ...with no baseline_lost row"                            "$out" "TYPE=baseline_lost"
+assert_eq "CONTROL: ...exits 0" "$rc" "0"
+
+EB="$FIXROOT/eb.json"
+out=$(cd / && python3 "$DELTA" --findings "$WARN_ONLY" --baseline "$EB" --expect-baseline \
+    --probe config-drift --root "$FIXROOT/proj" 2>&1)
+rc=$?
+assert_contains "with the flag a missing baseline is NOT reported as a first run" "$out" "FIRST_RUN=false"
+assert_contains "the loss is a key of its own"                                   "$out" "BASELINE_LOST=true"
+assert_contains "the loss is a finding a rollup can see"                         "$out" "TYPE=baseline_lost"
+assert_contains "the loss names a missing baseline"                              "$out" "no baseline at"
+assert_contains "every analyzer finding is re-reported (staleness)"              "$out" "TYPE=review_staleness"
+assert_contains "every analyzer finding is re-reported (coverage)"               "$out" "TYPE=rule_covered_by_skill"
+assert_contains "NEW counts the re-reported analyzer findings"                   "$out" "NEW=2"
+assert_contains "ISSUE_COUNT is the findings plus the loss"                      "$out" "ISSUE_COUNT=3"
+assert_contains "a warn-only re-report is WARN"                                  "$out" "STATUS=WARN"
+assert_eq "a lost baseline exits 1, like any run with findings" "$rc" "1"
+assert_eq "the lost baseline is re-recorded" "$([ -s "$EB" ] && echo yes || echo no)" "yes"
+# The re-record must hold the ANALYZER findings only: the synthetic loss is not a
+# corpus finding, and recording it would make the next run report it resolved.
+out=$(cd / && python3 "$DELTA" --findings "$WARN_ONLY" --baseline "$EB" --expect-baseline \
+    --probe config-drift --root "$FIXROOT/proj" 2>&1)
+assert_contains "the next run finds the re-recorded baseline"   "$out" "BASELINE_LOST=false"
+assert_contains "...and reports nothing new"                    "$out" "NEW=0"
+assert_contains "...and nothing resolved (the loss was never recorded)" "$out" "RESOLVED=0"
+assert_contains "...and is OK"                                  "$out" "STATUS=OK"
+
+# An UNTRUSTED baseline (recorded at another root) is lost too, and says so
+# differently: an evicted cache and a corrupted/mismatched one need different fixes.
+out=$(cd / && python3 "$DELTA" --findings "$WARN_ONLY" --baseline "$EB" --expect-baseline \
+    --probe config-drift --root "$FIXROOT" 2>&1)
+assert_contains "a root-mismatched baseline is lost under the flag" "$out" "BASELINE_LOST=true"
+assert_contains "...and is named as untrusted, not missing"         "$out" "could not be trusted"
+
+# The flag never DOWNGRADES a re-report: an error-severity finding in it is ERROR.
+out=$(cd / && python3 "$DELTA" --findings "$FINDINGS_JSON" --baseline "$FIXROOT/eb-err.json" \
+    --expect-baseline --probe config-drift --root "$FIXROOT/proj" 2>&1)
+assert_contains "FIXTURE: the planted corpus carries an error finding" "$out" "TYPE=broken_pointer_stub"
+assert_contains "an error in a lost-baseline re-report stays ERROR"    "$out" "STATUS=ERROR"
+
+# Analyzer failure still outranks everything, flag or not.
+out=$(cd / && printf '' | python3 "$DELTA" --findings - --baseline "$FIXROOT/eb-empty.json" \
+    --expect-baseline --probe config-drift --root "$FIXROOT/proj" 2>&1)
+assert_contains "empty input under the flag is still analyzer_failed" "$out" "TYPE=analyzer_failed"
+assert_absent  "...not a baseline loss"                               "$out" "TYPE=baseline_lost"
+
+echo "TEST i5: every Baseline.load caller offers a caller-side loud-miss option"
+# The class, not the instance: a delta consumer whose lost-state path is
+# indistinguishable from a first run. Read out of the shipped scripts via the
+# AST, so a second consumer that forgets the flag fails here by name.
+cat > "$FIXROOT/loudmiss.py" <<'PY'
+import ast
+import pathlib
+import sys
+
+callers, missing = [], []
+for py in sorted(pathlib.Path(sys.argv[1]).glob("*.py")):
+    tree = ast.parse(py.read_text(encoding="utf-8"))
+    loads = any(
+        isinstance(n, ast.Call)
+        and isinstance(n.func, ast.Attribute)
+        and n.func.attr == "load"
+        and isinstance(n.func.value, ast.Name)
+        and n.func.value.id == "Baseline"
+        for n in ast.walk(tree)
+    )
+    if not loads:
+        continue
+    callers.append(py.name)
+    flag = any(
+        isinstance(n, ast.Call)
+        and isinstance(n.func, ast.Attribute)
+        and n.func.attr == "add_argument"
+        and n.args
+        and isinstance(n.args[0], ast.Constant)
+        and n.args[0].value == "--expect-baseline"
+        for n in ast.walk(tree)
+    )
+    if not flag:
+        missing.append(py.name)
+print("CALLERS %s" % (",".join(callers) or "NONE"))
+print("MISSING %s" % (",".join(missing) or "NONE"))
+PY
+out=$(python3 "$FIXROOT/loudmiss.py" "$SCRIPTS_DIR" 2>&1)
+assert_contains "FIXTURE: at least one Baseline.load caller was found" "$out" "CALLERS probe-delta.py"
+assert_contains "every Baseline.load caller defines --expect-baseline" "$out" "MISSING NONE"
 
 echo "TEST h: the cheap tier imports neither fastembed nor numpy"
 POISON="$FIXROOT/poison"

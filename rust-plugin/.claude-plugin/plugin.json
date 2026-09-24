@@ -3,6 +3,10 @@
   "name": "rust-plugin",
   "version": "1.7.1",
   "description": "Rust development - cargo, clippy, testing, memory safety",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "license": "MIT",
   "keywords": [
     "rust",
     "cargo",

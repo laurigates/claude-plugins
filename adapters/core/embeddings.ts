@@ -5,12 +5,16 @@
  *   native; response `embeddings: number[][]` in input order (always
  *   array-of-arrays). Never the legacy /api/embeddings (superseded).
  * - Task prefixes are mandatory for nomic-embed-text: corpus texts embed as
- *   `search_document: <text>`, queries as `search_query: <text>`. The prefix
- *   scheme string is part of the cache key so a prefix change invalidates.
+ *   `search_document: <text>`, queries as `search_query: <text>`. That is the
+ *   default "nomic" scheme; "none" sends raw text for prefix-free models such
+ *   as bge-small-en-v1.5. The prefix scheme string is part of the cache key
+ *   so a prefix change invalidates.
  * - Fallback contract: fetch rejection (ECONNREFUSED etc.), non-2xx status,
  *   JSON `error` body (e.g. model not pulled), or AbortSignal.timeout expiry
  *   all signal "embeddings unavailable" — the index degrades to BM25-only.
  */
+
+import type { PrefixSchemeName } from "./types.ts";
 
 export const DEFAULT_ENDPOINT = "http://localhost:11434";
 export const DEFAULT_MODEL = "nomic-embed-text";
@@ -18,11 +22,26 @@ export const DEFAULT_DIMENSIONS = 768;
 
 export const DOCUMENT_PREFIX = "search_document: ";
 export const QUERY_PREFIX = "search_query: ";
+
+export const DEFAULT_PREFIX_SCHEME: PrefixSchemeName = "nomic";
+
+const PREFIXES: Record<PrefixSchemeName, { document: string; query: string }> = {
+  nomic: { document: DOCUMENT_PREFIX, query: QUERY_PREFIX },
+  none: { document: "", query: "" },
+};
+
 /**
- * Recorded in the cache key; derived from the actual prefixes so any prefix
- * edit auto-invalidates cached vectors (one source of truth).
+ * The scheme as recorded in the cache key and in eval provenance; derived
+ * from the actual prefixes so any prefix edit auto-invalidates cached vectors
+ * (one source of truth). "nomic" yields the string tasks.json froze.
  */
-export const PREFIX_SCHEME = `${DOCUMENT_PREFIX}/${QUERY_PREFIX}`;
+export function prefixSchemeString(scheme: PrefixSchemeName = DEFAULT_PREFIX_SCHEME): string {
+  const { document, query } = PREFIXES[scheme];
+  return `${document}/${query}`;
+}
+
+/** The default ("nomic") scheme string. */
+export const PREFIX_SCHEME = prefixSchemeString("nomic");
 
 /** 15 s on the initial probe (embed one short string at build; handles Ollama cold-load). */
 export const PROBE_TIMEOUT_MS = 15_000;
@@ -33,6 +52,12 @@ export interface EmbedOptions {
   endpoint: string;
   model: string;
   dimensions?: number;
+  /** Default "nomic". */
+  prefixScheme?: PrefixSchemeName;
+}
+
+function prefixesFor(opts: EmbedOptions): { document: string; query: string } {
+  return PREFIXES[opts.prefixScheme ?? DEFAULT_PREFIX_SCHEME];
 }
 
 /** Thrown on any unavailability condition; callers degrade to BM25-only. */
@@ -104,26 +129,27 @@ export async function embedBatch(
   return rows;
 }
 
-/** Embed corpus texts with the mandatory search_document prefix. */
+/** Embed corpus texts with the scheme's document prefix. */
 export function embedDocuments(
   texts: string[],
   opts: EmbedOptions,
   timeoutMs: number = BATCH_TIMEOUT_MS,
 ): Promise<number[][]> {
+  const { document } = prefixesFor(opts);
   return embedBatch(
-    texts.map((t) => `${DOCUMENT_PREFIX}${t}`),
+    texts.map((t) => `${document}${t}`),
     opts,
     timeoutMs,
   );
 }
 
-/** Embed a query with the mandatory search_query prefix. */
+/** Embed a query with the scheme's query prefix. */
 export async function embedQuery(
   query: string,
   opts: EmbedOptions,
   timeoutMs: number = BATCH_TIMEOUT_MS,
 ): Promise<number[]> {
-  const rows = await embedBatch([`${QUERY_PREFIX}${query}`], opts, timeoutMs);
+  const rows = await embedBatch([`${prefixesFor(opts).query}${query}`], opts, timeoutMs);
   const row = rows[0];
   if (!row) throw new EmbedUnavailableError("empty embeddings payload");
   return row;
@@ -135,7 +161,7 @@ export async function embedQuery(
  */
 export async function probeEndpoint(opts: EmbedOptions): Promise<boolean> {
   try {
-    await embedBatch([`${DOCUMENT_PREFIX}probe`], opts, PROBE_TIMEOUT_MS);
+    await embedBatch([`${prefixesFor(opts).document}probe`], opts, PROBE_TIMEOUT_MS);
     return true;
   } catch {
     return false;

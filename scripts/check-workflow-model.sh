@@ -22,6 +22,16 @@
 #               direct invocation — the model lives upstream. Skipped.
 #   - NO-INVOCATION: never invokes Claude. Skipped silently.
 #
+# Table membership (#2630 Rec 2): every INVOKING workflow must also have a row
+# in the canonical per-workflow table of `.claude/rules/workflow-model-effort.md`
+# (the FIRST cell of a row under "## Per-workflow table (canonical)"). The table
+# is hand-maintained and mirrors the scanned set; it had silently fallen two
+# workflows behind (golden-set-evaluation.yml, workflow-model-audit.yml) while
+# this guard reported OK. A rule file whose table parses to zero rows is a
+# misfire (`rule_table_unparsed`), never a pass; an absent rule file (fixture
+# trees) is reported as `RULE_TABLE=absent`. Explicit-file mode checks
+# model/effort only — a pre-commit file list is not the set the table mirrors.
+#
 # Usage:
 #   bash scripts/check-workflow-model.sh [--project-dir <path>] [workflow.yml ...]
 #
@@ -46,6 +56,10 @@ WORKFLOW_MODEL_ALLOWLIST=()
 WORKFLOW_MODEL_ALLOWLIST+=(${CHECK_WORKFLOW_MODEL_ALLOWLIST:-})
 
 VALID_EFFORTS="low medium high xhigh max"
+
+# The canonical per-workflow table this guard cross-checks (#2630 Rec 2).
+RULE_FILE_REL=".claude/rules/workflow-model-effort.md"
+TABLE_HEADING="## Per-workflow table (canonical)"
 
 usage() {
   echo "Usage: check-workflow-model.sh [--project-dir DIR] [workflow.yml ...]" >&2
@@ -126,12 +140,34 @@ is_allowlisted() {
   return 1
 }
 
+# table_rows <rule-file> — emit the workflow basename named in the FIRST cell of
+# every row of the canonical per-workflow table, one per line. Only that
+# section counts, and only the first cell: a workflow named in a rationale cell
+# or in prose elsewhere in the rule is not a row for it.
+table_rows() {
+  awk -v heading="$TABLE_HEADING" '
+    { sub(/\r$/, "") }
+    $0 == heading { in_table = 1; next }
+    in_table && /^## / { exit }
+    in_table && /^\|/ {
+      split($0, cells, "|")
+      if (match(cells[2], /`[^`]+\.ya?ml`/)) {
+        name = substr(cells[2], RSTART + 1, RLENGTH - 2)
+        sub(/.*\//, "", name)
+        print name
+      }
+    }
+  ' "$1"
+}
+
 scanned=0
 invoking=0
 skipped_no_invocation=0
 skipped_reusable=0
 issue_count=0
+model_issue_count=0
 issues=()
+invoking_files=()
 
 for wf in "${workflow_files[@]}"; do
   [ -f "$wf" ] || continue
@@ -164,6 +200,7 @@ for wf in "${workflow_files[@]}"; do
   efforts=$(extract_flag "$wf" effort)
 
   wf_rel="${wf#"$proj_dir"/}"
+  invoking_files+=("$wf_rel")
 
   # Model assertions.
   if [ -z "$models" ]; then
@@ -197,6 +234,34 @@ for wf in "${workflow_files[@]}"; do
   fi
 done
 
+model_issue_count=$issue_count
+
+# Canonical-table membership (#2630 Rec 2). Discovery mode only: an explicit
+# file list is not the set the table mirrors.
+rule_table="absent"
+table_rows_count=0
+missing_table_rows=0
+if [ ${#explicit_files[@]} -gt 0 ]; then
+  rule_table="skipped_explicit_files"
+elif [ -f "$proj_dir/$RULE_FILE_REL" ]; then
+  rows=$(table_rows "$proj_dir/$RULE_FILE_REL")
+  table_rows_count=$(grep -c . <<< "$rows" || true)
+  if [ "$table_rows_count" -eq 0 ]; then
+    rule_table="unparsed"
+    issues+=("  - SEVERITY=ERROR TYPE=rule_table_unparsed FILE=$RULE_FILE_REL MSG=no rows parsed under '$TABLE_HEADING' (renamed heading or reformatted table) so membership cannot be checked")
+    issue_count=$((issue_count + 1))
+  else
+    rule_table="present"
+    for wf_rel in ${invoking_files[@]+"${invoking_files[@]}"}; do
+      if ! grep -qxF -- "${wf_rel##*/}" <<< "$rows"; then
+        issues+=("  - SEVERITY=ERROR TYPE=missing_table_row FILE=$wf_rel MSG=invoking workflow has no row in $RULE_FILE_REL under '$TABLE_HEADING'")
+        issue_count=$((issue_count + 1))
+        missing_table_rows=$((missing_table_rows + 1))
+      fi
+    done
+  fi
+fi
+
 status="OK"
 [ "$issue_count" -gt 0 ] && status="ERROR"
 
@@ -205,6 +270,9 @@ echo "WORKFLOWS_SCANNED=$scanned"
 echo "INVOKING_WORKFLOWS=$invoking"
 echo "SKIPPED_NO_INVOCATION=$skipped_no_invocation"
 echo "SKIPPED_REUSABLE=$skipped_reusable"
+echo "RULE_TABLE=$rule_table"
+echo "TABLE_ROWS=$table_rows_count"
+echo "MISSING_TABLE_ROWS=$missing_table_rows"
 echo "STATUS=$status"
 echo "ISSUE_COUNT=$issue_count"
 if [ "$issue_count" -gt 0 ]; then
@@ -216,9 +284,15 @@ echo "=== END WORKFLOW MODEL/EFFORT ==="
 if [ "$issue_count" -gt 0 ]; then
   echo "" >&2
   echo "Found $issue_count workflow model/effort issue(s) (of $invoking invoking workflows)." >&2
-  echo "Every Claude workflow must pin '--model opus' and set an explicit '--effort'" >&2
-  echo "level — effort, not model, is the cost lever, and opus defaults to high." >&2
-  echo "Haiku supports no effort at all. See .claude/rules/workflow-model-effort.md." >&2
+  if [ "$model_issue_count" -gt 0 ]; then
+    echo "Every Claude workflow must pin '--model opus' and set an explicit '--effort'" >&2
+    echo "level — effort, not model, is the cost lever, and opus defaults to high." >&2
+    echo "Haiku supports no effort at all. See .claude/rules/workflow-model-effort.md." >&2
+  fi
+  if [ "$issue_count" -gt "$model_issue_count" ]; then
+    echo "Every invoking workflow needs a row in the canonical per-workflow table of" >&2
+    echo "$RULE_FILE_REL — the table lands in the same commit as the workflow." >&2
+  fi
   exit 1
 fi
 

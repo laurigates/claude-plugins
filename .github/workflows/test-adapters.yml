@@ -25,7 +25,9 @@ on:
       - 'adapters/**'
       - '.github/workflows/test-adapters.yml'
   schedule:
-    - cron: '23 5 * * 1'  # weekly corpus-drift check on main
+    - cron: '27 5 * * 1'  # weekly corpus-drift check on main
+    # Not :23 -- fix-release-conflicts.yml fires at :23 and :53 every hour, so
+    # '23 5 * * 1' co-fired with it (scripts/check-workflow-cron-collisions.sh).
   # So the weekly corpus-drift check can be re-run on demand instead of only
   # on the cron or an adapters/** change.
   workflow_dispatch:

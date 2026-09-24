@@ -1,0 +1,325 @@
+{
+  "_note": "Recorded outputs that prove each golden-set suite's typed checks discriminate. evaluate-plugin/scripts/check_golden_set_evals.py runs every probe through the shipped grade_deterministic.py: a pass probe must clear every deterministic check, a fail probe must fail at least one (of the fails_on type when given). Probes are hand-written against each skill's purpose, not captured from a model run (#2144).",
+  "probes": [
+    {
+      "suite": "git-plugin/git-commit",
+      "case": "gc-001",
+      "expect": "pass",
+      "note": "shared with test_grade_deterministic.sh",
+      "output_file": "gc-001-good.txt"
+    },
+    {
+      "suite": "git-plugin/git-commit",
+      "case": "gc-001",
+      "expect": "fail",
+      "fails_on": "regex",
+      "note": "shared with test_grade_deterministic.sh",
+      "output_file": "gc-001-bad.txt"
+    },
+    {
+      "suite": "git-plugin/github-pr-title",
+      "case": "gpt-001",
+      "expect": "pass",
+      "output": "Suggested PR title:\n\n`feat(settings): add dark-mode toggle`\n\nIt adds user-facing functionality, so the `feat` type drives a minor release."
+    },
+    {
+      "suite": "git-plugin/github-pr-title",
+      "case": "gpt-001",
+      "expect": "fail",
+      "fails_on": "absent_regex",
+      "note": "past tense and an uppercase subject",
+      "output": "`feat(settings): Added dark-mode toggle`"
+    },
+    {
+      "suite": "git-plugin/github-pr-title",
+      "case": "gpt-004",
+      "expect": "pass",
+      "output": "`build(deps): bump lodash to 4.17.21`"
+    },
+    {
+      "suite": "git-plugin/github-pr-title",
+      "case": "gpt-004",
+      "expect": "fail",
+      "fails_on": "regex",
+      "note": "chore(deps) instead of the skill's build(deps) template",
+      "output": "`chore(deps): bump lodash from 4.17.20 to 4.17.21`"
+    },
+    {
+      "suite": "git-plugin/github-pr-title",
+      "case": "gpt-006",
+      "expect": "pass",
+      "note": "honest refusal; the placeholder template must not trip the fabrication detector",
+      "output": "I can't write a meaningful title yet: `git log origin/main..HEAD` is empty, so the branch has no commits ahead of main. What does the branch change? Once you tell me, I'll apply the `<type>(<scope>): <subject>` format."
+    },
+    {
+      "suite": "git-plugin/github-pr-title",
+      "case": "gpt-006",
+      "expect": "fail",
+      "fails_on": "absent_regex",
+      "note": "a fabricated title",
+      "output": "Title: `feat(core): improve branch handling`"
+    },
+    {
+      "suite": "tools-plugin/rg-code-search",
+      "case": "rg-001",
+      "expect": "pass",
+      "output": "```bash\nrg -F 'requests.get(' -t py src/\n```\n\n`-F` treats the pattern literally and `-t py` limits the search to Python files."
+    },
+    {
+      "suite": "tools-plugin/rg-code-search",
+      "case": "rg-001",
+      "expect": "fail",
+      "fails_on": "regex",
+      "output": "grep -rn 'requests.get(' src/ --include='*.py'"
+    },
+    {
+      "suite": "tools-plugin/rg-code-search",
+      "case": "rg-004",
+      "expect": "pass",
+      "output": "rg --files -g '**/sentry-triage/**'\n\nA glob without a slash matches basenames only, so `-g '*sentry-triage*'` never matches the directory."
+    },
+    {
+      "suite": "tools-plugin/rg-code-search",
+      "case": "rg-004",
+      "expect": "fail",
+      "fails_on": "regex",
+      "note": "the basename-only glob trap",
+      "output": "rg --files -g '*sentry-triage*'"
+    },
+    {
+      "suite": "tools-plugin/rg-code-search",
+      "case": "rg-005",
+      "expect": "pass",
+      "output": "I can't see config/settings.yaml, so I cannot tell you the line. Run `rg -n timeout config/settings.yaml`; the number before the colon is the line."
+    },
+    {
+      "suite": "tools-plugin/rg-code-search",
+      "case": "rg-005",
+      "expect": "fail",
+      "fails_on": "absent_regex",
+      "note": "an invented line number",
+      "output": "`timeout` is set on line 42 (config/settings.yaml:42: timeout: 30)."
+    },
+    {
+      "suite": "tools-plugin/jq-json-processing",
+      "case": "jq-001",
+      "expect": "pass",
+      "output": "jq -r '.[] | select(.active == true) | .email' users.json"
+    },
+    {
+      "suite": "tools-plugin/jq-json-processing",
+      "case": "jq-001",
+      "expect": "fail",
+      "fails_on": "regex",
+      "note": "no select, quoted output",
+      "output": "jq '.[] | .email' users.json"
+    },
+    {
+      "suite": "tools-plugin/jq-json-processing",
+      "case": "jq-003",
+      "expect": "pass",
+      "output": "jq -c '.[]' events.json"
+    },
+    {
+      "suite": "tools-plugin/jq-json-processing",
+      "case": "jq-003",
+      "expect": "fail",
+      "fails_on": "regex",
+      "note": "pretty-printed, not compact",
+      "output": "jq '.[]' events.json"
+    },
+    {
+      "suite": "tools-plugin/jq-json-processing",
+      "case": "jq-004",
+      "expect": "pass",
+      "note": "honest refusal naming the jq-only-JSON boundary",
+      "output": "jq cannot parse YAML: it only reads JSON input, so a jq-only conversion is not possible. You would need yq (`yq -o=json config.yaml`)."
+    },
+    {
+      "suite": "tools-plugin/jq-json-processing",
+      "case": "jq-004",
+      "expect": "fail",
+      "fails_on": "absent_regex",
+      "note": "a jq invocation on the YAML file presented as working",
+      "output": "jq -R -s '.' config.yaml > config.json"
+    },
+    {
+      "suite": "git-plugin/git-cli-agentic",
+      "case": "gca-001",
+      "expect": "pass",
+      "output": "git status --porcelain=v2 --branch\n\nThe `# branch.head`, `# branch.upstream` and `# branch.ab +N -M` headers carry the branch, the upstream and the ahead/behind counts."
+    },
+    {
+      "suite": "git-plugin/git-cli-agentic",
+      "case": "gca-001",
+      "expect": "fail",
+      "fails_on": "regex",
+      "note": "parses the human-readable output",
+      "output": "git status | grep 'On branch'"
+    },
+    {
+      "suite": "git-plugin/git-cli-agentic",
+      "case": "gca-003",
+      "expect": "pass",
+      "output": "git log -n 10 --format='%H%x09%s'"
+    },
+    {
+      "suite": "git-plugin/git-cli-agentic",
+      "case": "gca-003",
+      "expect": "fail",
+      "fails_on": "regex",
+      "note": "abbreviated hash, no tab",
+      "output": "git log --oneline -10"
+    },
+    {
+      "suite": "git-plugin/git-cli-agentic",
+      "case": "gca-005",
+      "expect": "pass",
+      "output": "I can't know that from here: nothing from your repository is visible to me. Run `git rev-list --count origin/main..HEAD` and it prints the number."
+    },
+    {
+      "suite": "git-plugin/git-cli-agentic",
+      "case": "gca-005",
+      "expect": "fail",
+      "fails_on": "absent_regex",
+      "note": "an invented count",
+      "output": "Your branch is 3 commits ahead of origin/main."
+    },
+    {
+      "suite": "agent-patterns-plugin/parallel-agent-dispatch",
+      "case": "pad-001",
+      "expect": "pass",
+      "output": "You own tests/test_a.py and run in your own worktree (isolation: \"worktree\"). Only edit tests/test_a.py and the code it exercises; do not touch tests/test_b.py or tests/test_c.py.\n\n### Return contract (mandatory)\n\n## Result\nstatus: success | partial | failed\nbranch: <name>\npr: <url>\n\nLoud-failure contract: never end on a one-word message. If you are blocked, push what you have, open a draft PR, and say what blocked you."
+    },
+    {
+      "suite": "agent-patterns-plugin/parallel-agent-dispatch",
+      "case": "pad-001",
+      "expect": "fail",
+      "fails_on": "regex",
+      "note": "no isolation, no scope, no contract",
+      "output": "Fix tests/test_a.py and report back when done."
+    },
+    {
+      "suite": "agent-patterns-plugin/parallel-agent-dispatch",
+      "case": "pad-005",
+      "expect": "pass",
+      "output": "I don't know: no transcript, gh output or branch name has reached me. The URL is in that agent's Return Contract, or run `gh pr list --head <branch> --json url`."
+    },
+    {
+      "suite": "agent-patterns-plugin/parallel-agent-dispatch",
+      "case": "pad-005",
+      "expect": "fail",
+      "fails_on": "absent_regex",
+      "note": "an invented PR URL",
+      "output": "It opened https://github.com/acme/app/pull/1234."
+    },
+    {
+      "suite": "configure-plugin/configure-readme",
+      "case": "rdm-001",
+      "expect": "pass",
+      "output": "README compliance (check-only, no files changed):\n\n| Section | Status |\n|---|---|\n| Title | ✅ PASS |\n| Badges | ❌ MISSING |\n| Installation | ✅ PASS |\n| License | ❌ MISSING |"
+    },
+    {
+      "suite": "configure-plugin/configure-readme",
+      "case": "rdm-001",
+      "expect": "fail",
+      "fails_on": "absent_regex",
+      "note": "writes in check-only mode and misreports Installation",
+      "output": "I've updated README.md with the missing sections.\n\n| Installation | ❌ MISSING |"
+    },
+    {
+      "suite": "configure-plugin/configure-readme",
+      "case": "rdm-002",
+      "expect": "pass",
+      "output": "# ferrite\n\n[![CI](https://img.shields.io/github/actions/workflow/status/acme/ferrite/ci.yml)](https://github.com/acme/ferrite/actions)\n[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)\n\n## Features\n\n- Fast\n\n## Installation\n\n```bash\ncargo install ferrite\n```\n\n## Development\n\n```bash\ncargo build\ncargo test\n```\n\n## License\n\nMIT"
+    },
+    {
+      "suite": "configure-plugin/configure-readme",
+      "case": "rdm-002",
+      "expect": "fail",
+      "fails_on": "absent_regex",
+      "note": "another ecosystem's commands",
+      "output": "# ferrite\n\n## Installation\n\n```bash\nnpm install -g ferrite\n```\n\n## License\n\nMIT"
+    },
+    {
+      "suite": "configure-plugin/configure-readme",
+      "case": "rdm-003",
+      "expect": "pass",
+      "note": "angle-bracket placeholders must not trip the fabrication detector",
+      "output": "I can't build that badge yet: I need the repository owner, the repository name and the workflow file. The template is:\n\n`![CI](https://github.com/<owner>/<repo>/actions/workflows/<workflow>.yml/badge.svg)`\n\nWhat are the owner and repo?"
+    },
+    {
+      "suite": "configure-plugin/configure-readme",
+      "case": "rdm-003",
+      "expect": "pass",
+      "note": "upper-case placeholders must not trip the fabrication detector",
+      "output": "Template: https://github.com/OWNER/REPO/actions/workflows/WORKFLOW.yml/badge.svg — I need the owner and repo to fill it in."
+    },
+    {
+      "suite": "configure-plugin/configure-readme",
+      "case": "rdm-003",
+      "expect": "fail",
+      "fails_on": "absent_regex",
+      "note": "an invented owner/repo/workflow",
+      "output": "Added: ![CI](https://github.com/acme/widget/actions/workflows/ci.yml/badge.svg)"
+    },
+    {
+      "suite": "configure-plugin/configure-readme",
+      "case": "rdm-003",
+      "expect": "fail",
+      "fails_on": "absent_regex",
+      "note": "an invented badge in shields.io form",
+      "output": "Added: ![CI](https://img.shields.io/github/actions/workflow/status/acme/widget/ci.yml)"
+    },
+    {
+      "suite": "session-plugin/session-wrap",
+      "case": "sw-001",
+      "expect": "pass",
+      "output": "Preview:\n\nTaskwarrior\n- `task 1f3c9a2e-5b7d-4c1a-9e8f-0a1b2c3d4e5f done`\n- `task add project:uploader priority:M +bug 'CSV importer drops rows starting with a byte-order mark'`\n\nNo task for PR #412: the open PR is its own tracker.\n\nApply these?"
+    },
+    {
+      "suite": "session-plugin/session-wrap",
+      "case": "sw-001",
+      "expect": "fail",
+      "fails_on": "absent_regex",
+      "note": "duplicates the open PR as a task",
+      "output": "task add project:uploader 'Follow up on PR #412 review'"
+    },
+    {
+      "suite": "session-plugin/session-wrap",
+      "case": "sw-002",
+      "expect": "pass",
+      "output": "Nothing from this session passes the signal filter: the typo fix merged cleanly, so there is nothing to log."
+    },
+    {
+      "suite": "session-plugin/session-wrap",
+      "case": "sw-002",
+      "expect": "fail",
+      "fails_on": "absent_regex",
+      "note": "manufactures a follow-up",
+      "output": "task add project:docs 'Double-check the typo fix landed'"
+    },
+    {
+      "suite": "session-plugin/session-wrap",
+      "case": "sw-004",
+      "expect": "pass",
+      "output": "Which task was it? I can't tell from here. `task completed` lists today's finished tasks with their UUIDs; then run `task <uuid> done`."
+    },
+    {
+      "suite": "session-plugin/session-wrap",
+      "case": "sw-004",
+      "expect": "fail",
+      "fails_on": "absent_regex",
+      "note": "an invented numeric id",
+      "output": "task 17 done"
+    },
+    {
+      "suite": "session-plugin/session-wrap",
+      "case": "sw-004",
+      "expect": "fail",
+      "fails_on": "absent_regex",
+      "note": "an invented UUID",
+      "output": "task 3b2a1c4d-0e9f-4a8b-9c7d-6e5f4a3b2c1d done"
+    }
+  ]
+}

@@ -15,12 +15,14 @@ export {
   DEFAULT_DIMENSIONS,
   DEFAULT_ENDPOINT,
   DEFAULT_MODEL,
+  DEFAULT_PREFIX_SCHEME,
   DOCUMENT_PREFIX,
   EmbedUnavailableError,
   embedBatch,
   embedDocuments,
   embedQuery,
   PREFIX_SCHEME,
+  prefixSchemeString,
   probeEndpoint,
   QUERY_PREFIX,
 } from "./embeddings.ts";
@@ -41,6 +43,7 @@ export {
 export { buildIndex, SkillIndex } from "./search.ts";
 export type {
   IndexOptions,
+  PrefixSchemeName,
   Ranker,
   SearchFilters,
   SearchResult,

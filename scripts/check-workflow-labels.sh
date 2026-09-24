@@ -446,7 +446,37 @@ if findings or composite or (strict and unresolved):
     print("parallel-safe. The workflow needs `issues: write`, which every")
     print("issue-creating workflow already declares.")
 
+# Every finding, in report order. An unresolved value is a WARN unless --strict
+# promotes it; the rest are always ERRORs. The first one at the reported
+# severity becomes REASON=, the one line a rollup reads (#2691).
+errors = (
+    [("unprovisioned_label", "%s attaches label %s with no provisioning ahead of it" % (rel, label))
+     for rel, label in findings]
+    + [("composite_optout_unprovisioned",
+        "%s job %s opts out of composite provisioning for label %s" % (rel, jid, label))
+       for rel, jid, label in composite]
+    + [("invalid_label_color", "%s:%d sends colour %s from %s" % (rel, lineno, sent, raw))
+       for rel, lineno, sent, raw, _quoted in bad_colors]
+)
+unresolved_rows = [("unresolved_label", "%s attaches a label the guard cannot resolve: %s" % (rel, raw))
+                   for rel, raw in unresolved]
+if strict:
+    errors += unresolved_rows
+    warnings = []
+else:
+    warnings = unresolved_rows
+
+status = "ERROR" if failed else ("WARN" if warnings else "OK")
+reported = errors if failed else warnings
+
 print("")
-print("STATUS=%s" % ("FAIL" if failed else "OK"))
+print("ISSUE_COUNT=%d" % (len(errors) + len(warnings)))
+print("STATUS=%s" % status)
+if reported:
+    reason = " ".join(("%s: %s" % reported[0]).split())[:180]
+    extra = len(errors) + len(warnings) - 1
+    if extra:
+        reason += " (+%d more)" % extra
+    print("REASON=%s" % reason)
 sys.exit(1 if failed else 0)
 PY

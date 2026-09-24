@@ -47,6 +47,23 @@ assert_exit() {
     fi
 }
 
+# assert_exit discards the hook's output, so it pins that the push is stopped
+# but not the review material the block prints (the PR, its commits, and how to
+# get past the check) — the part that makes the block actionable (issue #2715).
+# Capture stderr and read it.
+assert_stderr_contains() {
+    local desc="$1" needle="$2" json="$3"
+    local out
+    out=$(printf '%s' "$json" | bash "$HOOK" 2>&1 >/dev/null || true)
+    if grep -qF -- "$needle" <<<"$out"; then
+        printf "  PASS: %s\n" "$desc"
+        PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (stderr missing: %s)\n" "$desc" "$needle"
+        FAIL=$((FAIL + 1))
+    fi
+}
+
 skip_test() {
     local desc="$1" reason="$2"
     printf "  SKIP: %s (%s)\n" "$desc" "$reason"
@@ -399,6 +416,35 @@ MOCK_PR_JSON=$(jq -n --arg t "$PR_PAST" \
 PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
     assert_exit "absent state field still blocks (no fail-open) (#2545)" 2 \
     "$(make_json "git push origin feature")"
+
+# ── Block message carries the review material (issue #2715) ───────────────
+# The block asks the agent to reconcile PR metadata with the commits being
+# pushed, so the message must name the PR, list those commits, and say how to
+# get past the check. Uses the same OPEN, not-updated-since-HEAD PR as the
+# blocking cases above.
+echo ""
+echo "block message names the PR, its commits, and the bypass (#2715):"
+
+MOCK_PR_JSON=$(jq -n --arg t "$PR_PAST" \
+    '{number:42,title:"feat: x",body:"body",url:"https://example/42",updatedAt:$t,state:"OPEN"}')
+MSG_PUSH_JSON=$(make_json "git push origin feature")
+
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_stderr_contains "block message states why the push stopped" \
+    "PR METADATA CHECK: You are pushing to a branch with an existing PR." "$MSG_PUSH_JSON"
+
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_stderr_contains "block message names the PR number and title" \
+    "PR #42: feat: x" "$MSG_PUSH_JSON"
+
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_stderr_contains "block message lists the pushed branch's commits" \
+    "  - feat: add feature" "$MSG_PUSH_JSON"
+
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_stderr_contains "block message says how to get past the check" \
+    "To bypass: edit the PR title or body so it reflects the new commit, THEN push." \
+    "$MSG_PUSH_JSON"
 
 rm -rf "$MOCK_BIN"
 
