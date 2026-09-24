@@ -25,6 +25,16 @@
 # grounding clauses are PRESENT and the old blanket prohibition is ABSENT
 # (.claude/rules/regression-testing.md: semantic > syntactic).
 #
+# TARGET CARRY-FORWARD (#2697)
+# The radar remembered paper IDs across runs but not the target file each
+# finding amends, so a week-over-week collision on one file (#2631 / #2673,
+# both amending loop-integrity.md) reached triage unflagged. The fix is again
+# prose in the same block scalar: the Step 3 template emits a
+# `<!-- research-radar-targets: -->` block, the prompt reads the collected
+# `recent-targets.txt`, and a collision is FLAGGED, never filtered. Each of the
+# three clauses is pinned below; the collector step itself is exercised by the
+# regression test, which runs the shipped run block against a stubbed `gh`.
+#
 # Output: structured KEY=VALUE per .claude/rules/structured-script-output.md.
 #
 # Usage:
@@ -111,6 +121,15 @@ require "$WORKFLOW" "State the exact file(s) and pattern grepped" \
     "research-radar prompt lost the grounding-evidence disclosure in the issue body"
 forbid "$WORKFLOW" "Do not read plugin source files" \
     "research-radar prompt re-introduced the blanket no-source-read clause (#2507 root cause)"
+# The template line itself, not the prose that describes it: the instruction
+# paragraph carries `<path2> ... -->`, so only the emitted line matches.
+require "$WORKFLOW" "<!-- research-radar-targets: <path1> <path2> -->" \
+    "research-radar Step 3 template no longer emits the targets block, so the next run cannot see a repeat target (#2697)"
+# shellcheck disable=SC2016  # the backticks are literal prompt text, not an expansion
+require "$WORKFLOW" '`recent-targets.txt` in the repo root:' \
+    "research-radar prompt lost the recent-targets.txt pre-computed input (#2697)"
+require "$WORKFLOW" "Never drop a paper because its target was recently amended" \
+    "research-radar prompt lost the flag-do-not-filter rule for a recent-target collision (#2697)"
 
 status="OK"
 [ "$issue_count" -gt 0 ] && status="ERROR"
@@ -124,7 +143,8 @@ if [ "$issue_count" -gt 0 ]; then
     printf '%s\n' "${issues[@]}"
     echo ""
     echo "FIX: restore the grounding bullets in the 'Efficiency rules' section of"
-    echo "     .github/workflows/research-radar.yml; see issue #2507."
+    echo "     .github/workflows/research-radar.yml (see issue #2507), and the"
+    echo "     recent-targets.txt input, collision rule and targets block (issue #2697)."
 fi
 echo "=== END RESEARCH RADAR GROUNDING ==="
 

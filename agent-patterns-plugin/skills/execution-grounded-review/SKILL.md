@@ -6,7 +6,7 @@ argument-hint: "diff|PR|files to verify; optional --criteria <file> of acceptanc
 allowed-tools: Agent, Read, Glob, Grep, Bash(git diff *), Bash(git log *), Bash(gh pr view *), Bash(npm *), Bash(npx *), Bash(uv run *), Bash(pytest *), Bash(cargo *), Bash(go test *), TodoWrite
 model: opus
 created: 2026-06-22
-modified: 2026-09-02
+modified: 2026-09-23
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -107,10 +107,11 @@ quietly unanswered.
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["criterion", "evidence", "verdict", "sequenceMatchesProduction"],
+        "required": ["criterion", "evidence", "evidenceSpan", "verdict", "sequenceMatchesProduction"],
         "properties": {
           "criterion": { "type": "string" },
           "evidence": { "type": "string" },
+          "evidenceSpan": { "type": "string" },
           "verdict": { "enum": ["PASS", "FAIL", "PARTIAL", "UNVERIFIED"] },
           "sequenceMatchesProduction": { "enum": ["yes", "no", "not-applicable"] }
         }
@@ -123,7 +124,11 @@ quietly unanswered.
 ```
 
 `evidence` is the test name / `file:line` / observed output drawn from the
-execution-evidence file, or the literal `none`. `coverage` is
+execution-evidence file, or the literal `none`. `evidenceSpan` is where that
+evidence sits in the execution-evidence file — `<file>:<startLine>-<endLine>` —
+or the literal `none`; it lets the caller check an attribution instead of
+trusting it (Step 3b). It carries no `maxLength` or `pattern` on purpose: a
+locator rejected by a length cap gets resent, not fixed (#2280). `coverage` is
 `<#rows with PASS/FAIL evidence> / <total rows>`.
 
 | Row verdict | Meaning |
@@ -170,7 +175,15 @@ prompt: |
   For every row, decide `sequenceMatchesProduction` explicitly: identify what
   real call sequence exercises the claim in production and confirm the test
   reproduces that sequence, not just a convenient shorter one.
-  Cite evidence for every row. Your final message is the deliverable.
+
+  When a criterion fails and the evidence file is long, locate before you read:
+  `grep -n` it for anchors from the criterion (test name, assertion text, error
+  class, changed file path), read only a window around each hit, and let a
+  candidate that does not explain the failure narrow the next query. Stop after
+  3 search rounds or 5 windows for that criterion; if nothing explains it, set
+  its `evidenceSpan` to "none" and say the cause was not located.
+  Cite evidence and its `evidenceSpan` for every row. Your final message is the
+  deliverable.
 ```
 
 > **No workflow harness here — deliberately.** The schema is the whole delta;
@@ -213,6 +226,36 @@ Grade such a claim `UNVERIFIED` until the test reproduces the production
 sequence, even though a green test exists — that is the row whose
 `sequenceMatchesProduction` is `no`.
 
+### Step 3b: Attribute a failure by searching the trace, not reading it
+
+When a criterion fails on a **long** run, its evidence is usually sparse and
+spread across actions far apart in the trace. Reading end to end gets worse as
+the trace grows: the relevant lines are diluted by irrelevant ones, and the
+reader settles on the most recent plausible cause rather than the actual one.
+Summarising first does not help — a summary is exactly where sparse evidence is
+dropped. So when a row is heading for `FAIL` or `PARTIAL` and the
+execution-evidence file is longer than one pass (roughly 300+ lines), the
+verifier searches instead:
+
+1. **Locate first.** `grep -n` the evidence file for anchors taken from the
+   criterion — the test name, the assertion text, the error class, the changed
+   file's path. Each hit is a candidate.
+2. **Read narrowly.** Open only a window around each candidate (about ±20
+   lines), never the file end to end.
+3. **Narrow, don't stop.** A candidate that does not explain the failure feeds
+   the next query — drop its anchor, add the symbol it pointed at — rather than
+   ending the search on the nearest plausible line.
+4. **Report the span.** The window that explains the failure becomes the row's
+   `evidenceSpan`, so the caller can open that range and check the attribution.
+
+**Attribution bound:** at most 3 search rounds and 5 candidate windows per
+criterion — the hard ceiling `.claude/rules/loop-integrity.md` ("Bounding
+runaway") requires of every loop. When the bound is reached with no explaining
+span, the row records `evidenceSpan: "none"` and states that the cause was not
+located within the bound. That row goes to a human; it is never filled with the
+most plausible-looking line. A named failing test in `evidence` still stands —
+the missing span says only that its cause was not pinned down.
+
 ### Step 4: Triage against over-correction
 
 The verifier grades strictly, so guard **both** failure modes before acting —
@@ -228,8 +271,8 @@ neither talk yourself into passing broken code, nor into failing correct code:
 
 ### Step 5: Report and bound the loop
 
-Emit the ledger: target, per-criterion rows with evidence, `COVERAGE`, and the
-overall verdict. Apply or hand off the genuine fixes (closing `UNVERIFIED` rows
+Emit the ledger: target, per-criterion rows with evidence and `evidenceSpan`,
+`COVERAGE`, and the overall verdict. Apply or hand off the genuine fixes (closing `UNVERIFIED` rows
 by adding the missing test counts as a fix). Re-run from Step 1 **only if the
 verdict was `fail`**; do not loop more than twice — a third round means a
 structural problem the gate can't resolve, which is the signal to surface to a
@@ -242,6 +285,7 @@ human, not to keep grinding.
 | Grading the diff without running anything | Execute first (Step 1) — appearance is not evidence |
 | Passing a criterion because the code "looks like it does that" | No execution evidence → `UNVERIFIED`, not pass |
 | Passing a round-trip/determinism claim because "a test exists and passes" | Confirm the test's operation sequence matches the production call path (Step 3a) |
+| Reading a long trace end to end and naming the latest plausible cause | Locate with `grep -n`, read narrow windows, report the span — within the attribution bound (Step 3b) |
 | Feeding the verifier the author's plan/rationale | Intent-starved inputs — criteria + diff + execution evidence only |
 | Inventing requirements the spec never stated | Triage (Step 4) — FAIL only on listed criteria |
 | Looping until the verifier goes quiet | One revise round; persistent fail = structural problem |

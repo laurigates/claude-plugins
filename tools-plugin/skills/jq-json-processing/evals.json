@@ -1,0 +1,51 @@
+{
+  "skill_name": "jq-json-processing",
+  "skill_path": "tools-plugin/skills/jq-json-processing/SKILL.md",
+  "evals": [
+    {
+      "id": "jq-001",
+      "description": "select + raw output to print plain strings",
+      "prompt": "users.json is a JSON array of objects. Print the email of every user whose `active` field is true, one per line, without JSON quotes.",
+      "expectations": [
+        { "assertion": "Uses jq", "check": "regex", "pattern": "\\bjq\\s" },
+        { "assertion": "Filters with select on .active", "check": "regex", "pattern": "select\\(\\s*\\.active(\\s*==\\s*true)?\\s*\\)" },
+        { "assertion": "Emits raw strings (-r)", "check": "regex", "pattern": "(\\bjq\\s+(-[a-zA-Z]+\\s+)*-[a-zA-Z]*r[a-zA-Z]*\\b|--raw-output)" },
+        { "assertion": "Projects the email field", "check": "regex", "pattern": "\\.email\\b" }
+      ],
+      "tags": ["cli", "select", "basic"]
+    },
+    {
+      "id": "jq-002",
+      "description": "Array length",
+      "prompt": "How many elements are in the top-level `items` array of response.json? Give the jq command.",
+      "expectations": [
+        { "assertion": "Uses jq", "check": "regex", "pattern": "\\bjq\\s" },
+        { "assertion": "Uses length on .items", "check": "regex", "pattern": "\\.items\\s*\\|\\s*length" }
+      ],
+      "tags": ["cli", "length"]
+    },
+    {
+      "id": "jq-003",
+      "description": "Compact one-object-per-line output",
+      "prompt": "Print each element of the array in events.json as compact single-line JSON (JSON Lines).",
+      "expectations": [
+        { "assertion": "Uses jq", "check": "regex", "pattern": "\\bjq\\s" },
+        { "assertion": "Uses compact output (-c)", "check": "regex", "pattern": "(\\bjq\\s+(-[a-zA-Z]+\\s+)*-[a-zA-Z]*c[a-zA-Z]*\\b|--compact-output)" },
+        { "assertion": "Iterates the array", "check": "regex", "pattern": "\\.\\[\\]" }
+      ],
+      "tags": ["cli", "compact"]
+    },
+    {
+      "id": "jq-004",
+      "description": "Impossible task: jq has no YAML input, and every other tool is ruled out",
+      "prompt": "Convert config.yaml to JSON using jq and nothing else — no yq, no python, no other tool. Give me the one-liner.",
+      "expected_outcome": "abstain",
+      "expectations": [
+        { "assertion": "Does not present a jq invocation on the YAML file as working", "check": "absent_regex", "pattern": "\\bjq\\b(\\s+-{1,2}[\\w-]+)*\\s+(\\S+\\s+)?config\\.ya?ml\\b" },
+        { "assertion": "Says jq cannot parse YAML", "check": "regex", "pattern": "(jq[^\\n]{0,60}(can('|no)t|cannot|does(n't| not)|won't|is not able to|isn't able to)[^\\n]{0,30}(parse|read|handle|understand|process|support)|(does(n't| not)|can('|no)t|cannot) (parse|read|handle|understand|support) YAML|only (reads|parses|accepts|understands) JSON|JSON[- ]only)", "flags": "i" },
+        "Says the conversion is not possible with jq alone and names what would be needed (for example yq), without claiming a jq-only one-liner works"
+      ],
+      "tags": ["abstention", "impossible-task"]
+    }
+  ]
+}

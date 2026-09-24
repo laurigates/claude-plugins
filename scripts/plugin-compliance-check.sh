@@ -3,11 +3,23 @@
 set -euo pipefail
 
 # Plugin compliance checker - validates plugin structure and metadata
-# Usage: ./scripts/plugin-compliance-check.sh [plugin1 plugin2 ...]
-# If no args provided, auto-detects all *-plugin directories
+# Usage: ./scripts/plugin-compliance-check.sh [--license-only] [plugin1 plugin2 ...]
+# If no plugins are named, auto-detects all *-plugin directories
+#
+# --license-only (#2699): run ONLY the license/author metadata predicates over
+# each plugin.json and its marketplace.json entry, print the structured
+# === LICENSE === block, and exit 1 on any finding. This is the mode CI gates
+# on: the full run is advisory in plugin-pr-checks.yml (`|| true`, posted as a
+# PR comment) and takes minutes over every plugin, while this takes seconds.
 
 # Change to repository root
 cd "$(dirname "$0")/.." || exit 1
+
+LICENSE_ONLY=false
+if [ "${1:-}" = "--license-only" ]; then
+  LICENSE_ONLY=true
+  shift
+fi
 
 # Auto-detect plugins if no args provided
 if [ $# -eq 0 ]; then
@@ -57,6 +69,92 @@ to_symbol() {
   esac
 }
 
+# License allowlist (#2699). Every plugin ships under the repo-root MIT
+# LICENSE, so per-plugin LICENSE files are deliberately not required — this is
+# a metadata check over plugin.json and marketplace.json only.
+ALLOWED_LICENSES=("MIT")
+
+# License/author findings (#2698/#2699), consumed by emit_license_report.
+license_rows=()
+manifests_checked=0
+entries_checked=0
+missing_license=0
+disallowed_license=0
+missing_author=0
+
+# check_license_fields <plugin> <surface> <label> <json>
+#   surface: plugin.json | marketplace.json (the structured SURFACE= value)
+#   label:   prefix for the human-readable ❌ line
+# Every manifest and every marketplace entry must declare a `license` from
+# ALLOWED_LICENSES and an `author.name`. Both manifest schemas define `license`
+# as an SPDX string and `author` as an object with a required `name`, so a
+# non-string license or a bare-string author counts as missing. Each defect is
+# a blocking ❌ issue plus a structured row; returns 2 on any defect, else 0.
+check_license_fields() {
+  local plugin="$1" surface="$2" label="$3" json="$4"
+  local license author_name allowed a status=0 is_allowed=false
+  allowed=$(IFS=,; echo "${ALLOWED_LICENSES[*]}")
+
+  if [ "$surface" = "plugin.json" ]; then
+    manifests_checked=$((manifests_checked + 1))
+  else
+    entries_checked=$((entries_checked + 1))
+  fi
+
+  license=$(jq -r '(.license | strings) // ""' <<<"$json" 2>/dev/null || echo "")
+  author_name=$(jq -r '(.author | objects | .name | strings) // ""' <<<"$json" 2>/dev/null || echo "")
+
+  for a in "${ALLOWED_LICENSES[@]}"; do
+    if [ "$license" = "$a" ]; then
+      is_allowed=true
+    fi
+  done
+
+  if [ -z "$license" ]; then
+    issues+=("❌ ${plugin}: ${label} missing 'license' (allowed: ${allowed})")
+    license_rows+=("  - SEVERITY=ERROR TYPE=missing_license SURFACE=${surface} PLUGIN=${plugin}")
+    missing_license=$((missing_license + 1))
+    status=2
+  elif ! $is_allowed; then
+    issues+=("❌ ${plugin}: ${label} license '${license}' not in allowlist [${allowed}]")
+    license_rows+=("  - SEVERITY=ERROR TYPE=disallowed_license SURFACE=${surface} PLUGIN=${plugin} LICENSE=${license}")
+    disallowed_license=$((disallowed_license + 1))
+    status=2
+  fi
+
+  if [ -z "$author_name" ]; then
+    issues+=("❌ ${plugin}: ${label} missing 'author.name'")
+    license_rows+=("  - SEVERITY=ERROR TYPE=missing_author SURFACE=${surface} PLUGIN=${plugin}")
+    missing_author=$((missing_author + 1))
+    status=2
+  fi
+
+  return "$status"
+}
+
+# Structured roll-up of the license/author findings
+# (.claude/rules/structured-script-output.md).
+emit_license_report() {
+  local status=OK
+  if [ ${#license_rows[@]} -gt 0 ]; then
+    status=ERROR
+  fi
+  echo "=== LICENSE ==="
+  echo "ALLOWED_LICENSES=$(IFS=,; echo "${ALLOWED_LICENSES[*]}")"
+  echo "MANIFESTS_CHECKED=${manifests_checked}"
+  echo "ENTRIES_CHECKED=${entries_checked}"
+  echo "MISSING_LICENSE=${missing_license}"
+  echo "DISALLOWED_LICENSE=${disallowed_license}"
+  echo "MISSING_AUTHOR=${missing_author}"
+  echo "STATUS=${status}"
+  echo "ISSUE_COUNT=${#license_rows[@]}"
+  if [ ${#license_rows[@]} -gt 0 ]; then
+    echo "ISSUES:"
+    printf '%s\n' "${license_rows[@]}"
+  fi
+  echo "=== END LICENSE ==="
+}
+
 # Check 1: plugin.json required fields
 check_plugin_json() {
   local plugin="$1"
@@ -85,6 +183,9 @@ check_plugin_json() {
     return 2
   fi
 
+  local license_status=0
+  check_license_fields "$plugin" "plugin.json" "plugin.json" "$(jq -c . "$json_file" 2>/dev/null || echo '{}')" || license_status=$?
+
   local missing_recommended=()
   local version description keywords
   version=$(jq -r '.version // ""' "$json_file" 2>/dev/null)
@@ -97,6 +198,12 @@ check_plugin_json() {
 
   if [ ${#missing_recommended[@]} -gt 0 ]; then
     recommendations+=("⚠️ ${plugin}: plugin.json missing recommended fields: ${missing_recommended[*]}")
+  fi
+
+  if [ "$license_status" -ne 0 ]; then
+    return 2
+  fi
+  if [ ${#missing_recommended[@]} -gt 0 ]; then
     return 1
   fi
 
@@ -1203,6 +1310,39 @@ check_skill_body() {
       done
     fi
 
+    # Regression: ai-review-max-turns must cover the two gaps found triaging
+    # ForumViriumHelsinki/thelma#1524 (issue #2718).
+    #   (a) A FOURTH cause: a result with subtype "success" AND is_error true
+    #       (5 turns, 0 denials, no "Found N", no result string) that the wrapper
+    #       failed on that combination alone, and that passed on a rerun of the
+    #       identical commit. The skill previously described both finished-run
+    #       rows as `is_error: false`, and its law said is_error "separates a run
+    #       that died from one that finished" — so this run read as budget
+    #       exhaustion, whose fix (raise max_turns) cannot help a 5-turn run.
+    #   (b) The control-test advice presumed a prior run exists. A workflow with
+    #       <=1 historical run has no baseline at all, and an empty `gh run list`
+    #       reads as "nothing to see"; rerunning the identical commit becomes the
+    #       PRIMARY discriminator, not a follow-up.
+    # Positive tokens pin the new row, the corrected law, and the no-baseline
+    # instruction. The negative token is the retired claim itself, so a bulk
+    # edit restoring the old law fails even if the new prose survives beside it.
+    if [ "$skill_name" = "ai-review-max-turns" ] && [ "$plugin" = "github-actions-plugin" ]; then
+      for token in \
+        'Result flagged errored despite completing' \
+        'is_error` alone does not separate' \
+        'no baseline exists' \
+        'primary discriminator'; do
+        if ! grep -qF -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain token '${token}' (subtype success + is_error true is a fourth cause; a workflow with <=1 historical run has no baseline, so the identical-commit rerun is the primary discriminator — issue #2718)")
+          has_errors=true
+        fi
+      done
+      if grep -qF 'that *died* from one that *finished*' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md restates the retired claim that is_error separates a run that died from one that finished — a completed run can report is_error: true (issue #2718)")
+        has_errors=true
+      fi
+    fi
+
     # Regression: claude-security-settings must warn that flag-scoped deny rules
     # belong in the space form ("Bash(git push --force *)"), never the colon form
     # ("Bash(git push --force:*)"). The colon form was observed prefix-matching
@@ -1236,6 +1376,34 @@ check_skill_body() {
           has_errors=true
         fi
       done
+    fi
+
+    # Regression: evaluate-skill --create-evals must generate an abstention
+    # control (issue #2690). Every assertion shape is positive and the judge
+    # passes only on evidence of satisfaction, so a suite without an
+    # impossible-task case cannot tell a skill that fabricates under pressure
+    # from one that refuses honestly. New suites inherit the control from Step 3;
+    # a bulk edit that trims it back to happy/edge/boundary would silently stop
+    # that. scripts/check-evals-abstention.sh gates the suites themselves.
+    if [ "$skill_name" = "evaluate-skill" ] && [ "$plugin" = "evaluate-plugin" ]; then
+      for token in 'Abstention control' '"expected_outcome": "abstain"' 'absent_regex'; do
+        if ! grep -qF -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: --create-evals must retain abstention-control token '${token}' (generate an impossible-task case whose fabricated answer fails — issue #2690)")
+          has_errors=true
+        fi
+      done
+    fi
+
+    # Regression: the convention-enforcer skills must say the commit scope is
+    # REQUIRED (#2667 recommendation 2). Both showed `type(scope)` templates
+    # without saying so — github-pr-title called it "Optional" — and on the
+    # golden-set sweep opus WITH git-commit loaded wrote a scopeless
+    # `docs: ...` subject while its own no-skill baseline wrote `docs(readme):`.
+    if { [ "$skill_name" = "git-commit" ] || [ "$skill_name" = "github-pr-title" ]; } && [ "$plugin" = "git-plugin" ]; then
+      if ! grep -qF 'The scope is required' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must state 'The scope is required' (house convention is type(scope): subject — #2667)")
+        has_errors=true
+      fi
     fi
 
     # Regression: bulk-sweep-classify must cover the two failures that sit
@@ -1472,6 +1640,9 @@ check_marketplace() {
     return 2
   fi
 
+  local license_status=0
+  check_license_fields "$plugin" "marketplace.json" "marketplace.json entry" "$entry" || license_status=$?
+
   local mp_name mp_source mp_description mp_version
   mp_name=$(echo "$entry" | jq -r '.name // ""')
   mp_source=$(echo "$entry" | jq -r '.source // ""')
@@ -1491,6 +1662,12 @@ check_marketplace() {
 
   if [ ${#missing_fields[@]} -gt 0 ]; then
     recommendations+=("⚠️ ${plugin}: marketplace.json entry issues: ${missing_fields[*]}")
+  fi
+
+  if [ "$license_status" -ne 0 ]; then
+    return 2
+  fi
+  if [ ${#missing_fields[@]} -gt 0 ]; then
     return 1
   fi
 
@@ -1807,6 +1984,31 @@ check_skill_size() {
 
   return 0
 }
+
+# --license-only: the license/author predicates alone, over both surfaces. A
+# missing plugin.json or marketplace entry is checked as `{}`, so it fails
+# closed as missing license + author rather than being skipped.
+if $LICENSE_ONLY; then
+  for plugin in "${PLUGINS[@]}"; do
+    manifest_json='{}'
+    if [ -f "${plugin}/.claude-plugin/plugin.json" ]; then
+      manifest_json=$(jq -c . "${plugin}/.claude-plugin/plugin.json" 2>/dev/null || echo '{}')
+    fi
+    check_license_fields "$plugin" "plugin.json" "plugin.json" "$manifest_json" || true
+
+    entry_json='{}'
+    if [ -f ".claude-plugin/marketplace.json" ]; then
+      entry_json=$(jq -c --arg p "$plugin" 'first(.plugins[]? | select(.name == $p)) // {}' .claude-plugin/marketplace.json 2>/dev/null || echo '{}')
+    fi
+    check_license_fields "$plugin" "marketplace.json" "marketplace.json entry" "$entry_json" || true
+  done
+
+  emit_license_report
+  if [ ${#license_rows[@]} -gt 0 ]; then
+    exit 1
+  fi
+  exit 0
+fi
 
 # Main check loop
 for i in "${!PLUGINS[@]}"; do

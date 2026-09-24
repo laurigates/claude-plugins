@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2015  # test idiom: `cond && pass || fail` — `pass` returns 0
-# shellcheck disable=SC2016  # fixture bodies are literal skill text: `${CLAUDE_SKILL_DIR}` and code fences must NOT expand
+# shellcheck disable=SC2016  # fixture SKILL.md bodies are literal text: ``` and ${...} must not expand
+# shellcheck disable=SC2034  # some cases capture rc_* alongside out_* but assert on output only
 set -uo pipefail
 
 # Regression test for plugin-compliance-check.sh check_skill_when_to_use().
@@ -79,7 +80,18 @@ cp "$REPO_ROOT/scripts/plugin-compliance-check.sh" "$root/scripts/"
 cp "$REPO_ROOT/scripts/audit-skill-descriptions.py" "$root/scripts/"
 
 PLUGIN="fixture-plugin"
-cat > "$root/.claude-plugin/marketplace.json" <<JSON
+
+# The license/author fields every manifest and marketplace entry must carry
+# (#2698/#2699). The writers below take the metadata as a JSON fragment so the
+# license-gate cases at the end can drop or corrupt one field on one surface
+# while everything else stays byte-identical to the clean fixture.
+CLEAN_META=',
+  "author": {"name": "Fixture Author"},
+  "license": "MIT"'
+
+# write_marketplace <entry-meta-fragment>
+write_marketplace() {
+  cat > "$root/.claude-plugin/marketplace.json" <<JSON
 {
   "name": "fixture-marketplace",
   "plugins": [
@@ -87,11 +99,13 @@ cat > "$root/.claude-plugin/marketplace.json" <<JSON
       "name": "${PLUGIN}",
       "source": "./${PLUGIN}",
       "description": "Fixture plugin for the compliance-check self-test.",
-      "version": "1.0.0"
+      "version": "1.0.0"$1
     }
   ]
 }
 JSON
+}
+write_marketplace "$CLEAN_META"
 cat > "$root/release-please-config.json" <<JSON
 {
   "packages": {
@@ -105,13 +119,17 @@ JSON
 printf '{\n  "%s": "1.0.0"\n}\n' "$PLUGIN" > "$root/.release-please-manifest.json"
 
 mkdir -p "$root/$PLUGIN/.claude-plugin"
-cat > "$root/$PLUGIN/.claude-plugin/plugin.json" <<JSON
+# write_manifest <manifest-meta-fragment>
+write_manifest() {
+  cat > "$root/$PLUGIN/.claude-plugin/plugin.json" <<JSON
 {
   "name": "${PLUGIN}",
   "version": "1.0.0",
-  "description": "Fixture plugin for the compliance-check self-test."
+  "description": "Fixture plugin for the compliance-check self-test."$1
 }
 JSON
+}
+write_manifest "$CLEAN_META"
 printf '# %s\n\nFixture.\n' "$PLUGIN" > "$root/$PLUGIN/README.md"
 
 # make_skill <name> <with|without>  — the ONLY difference is the When-to-Use section.
@@ -351,6 +369,120 @@ run_check; out_threefield="$OUT"; rc_threefield="$RC"
 assert_eq "three-field gate exits 0" "$rc_threefield" "0"
 assert_absent "three-field gate raises no auto-drain gate issue" \
   "$out_threefield" "blueprint auto-drain jq gate"
+
+# ---------------------------------------------------------------------------
+# #2699: license/author metadata gate (and the #2698 data it keeps fixed).
+#
+# THE SEMANTIC INVARIANT UNDER TEST: a plugin.json or marketplace.json entry
+# with no `license`, a `license` outside the allowlist ["MIT"], or no
+# `author.name` is a BLOCKING ❌ issue (exit 1) — never a ⚠️ recommendation,
+# because a recommendation exits 0 and gates nothing. The `--license-only`
+# mode is what CI runs as the gate: it must emit the structured === LICENSE ===
+# block and carry the verdict in its exit code. Before the gate existed, every
+# case below exited 0 with no license finding at all.
+# ---------------------------------------------------------------------------
+
+# run_license_check → same contract as run_check, for the CI invocation shape:
+# `--license-only` with NO plugin args, so auto-detection is exercised too.
+run_license_check() {
+  ( cd "$root" && bash scripts/plugin-compliance-check.sh --license-only ) > "$tmp/run.out" 2>&1
+  RC=$?
+  OUT="$(cat "$tmp/run.out")"
+}
+
+# count_lines <haystack> <ERE> → number of matching lines (0 when none).
+count_lines() { grep -cE "$2" <<<"$1" || true; }
+
+NO_LICENSE_META=',
+  "author": {"name": "Fixture Author"}'
+NO_AUTHOR_META=',
+  "license": "MIT"'
+APACHE_META=',
+  "author": {"name": "Fixture Author"},
+  "license": "Apache-2.0"'
+STRING_AUTHOR_META=',
+  "author": "Fixture Author",
+  "license": "MIT"'
+
+# --- Guard integrity: the clean fixture passes the gate in both modes -------
+write_manifest "$CLEAN_META"; write_marketplace "$CLEAN_META"
+run_check; out_lic_clean="$OUT"; rc_lic_clean="$RC"
+assert_eq "license: clean fixture exits 0 (full run)" "$rc_lic_clean" "0"
+assert_absent "license: clean fixture raises no ❌" "$out_lic_clean" "❌"
+run_license_check; out_lo_clean="$OUT"; rc_lo_clean="$RC"
+assert_eq "license-only: clean fixture exits 0" "$rc_lo_clean" "0"
+assert_contains "license-only: opens the LICENSE section" "$out_lo_clean" "=== LICENSE ==="
+assert_contains "license-only: closes the LICENSE section" "$out_lo_clean" "=== END LICENSE ==="
+assert_contains "license-only: auto-detected and checked the one manifest" "$out_lo_clean" "MANIFESTS_CHECKED=1"
+assert_contains "license-only: checked the one marketplace entry" "$out_lo_clean" "ENTRIES_CHECKED=1"
+assert_contains "license-only: clean STATUS=OK" "$out_lo_clean" "STATUS=OK"
+assert_contains "license-only: clean ISSUE_COUNT=0" "$out_lo_clean" "ISSUE_COUNT=0"
+assert_absent "license-only: skips the per-skill checks (no compliance table)" "$out_lo_clean" "## Plugin Compliance Review"
+
+# --- (a) plugin.json without `license` → ❌ issue, not ⚠️ recommendation ----
+write_manifest "$NO_LICENSE_META"
+run_check; out_a="$OUT"; rc_a="$RC"
+assert_eq "manifest without license exits 1 (blocking)" "$rc_a" "1"
+assert_contains "manifest without license is a ❌ issue" \
+  "$out_a" "❌ ${PLUGIN}: plugin.json missing 'license' (allowed: MIT)"
+assert_eq "manifest without license is NOT a ⚠️ recommendation" \
+  "$(count_lines "$out_a" '⚠️.*license')" "0"
+assert_contains "plugin.json column reports ❌" "$out_a" "| ${PLUGIN} | ❌ |"
+run_license_check; out_a_lo="$OUT"; rc_a_lo="$RC"
+assert_eq "license-only: manifest without license exits 1" "$rc_a_lo" "1"
+assert_contains "license-only: MISSING_LICENSE=1" "$out_a_lo" "MISSING_LICENSE=1"
+assert_contains "license-only: STATUS=ERROR" "$out_a_lo" "STATUS=ERROR"
+assert_contains "license-only: names the defect row" \
+  "$out_a_lo" "SEVERITY=ERROR TYPE=missing_license SURFACE=plugin.json PLUGIN=${PLUGIN}"
+
+# --- (b) a license outside the allowlist → ❌ not in allowlist --------------
+write_manifest "$APACHE_META"
+run_check; out_b="$OUT"; rc_b="$RC"
+assert_eq "Apache-2.0 manifest exits 1" "$rc_b" "1"
+assert_contains "Apache-2.0 manifest is a ❌ allowlist issue" \
+  "$out_b" "❌ ${PLUGIN}: plugin.json license 'Apache-2.0' not in allowlist [MIT]"
+run_license_check; out_b_lo="$OUT"
+assert_contains "license-only: DISALLOWED_LICENSE=1" "$out_b_lo" "DISALLOWED_LICENSE=1"
+assert_contains "license-only: allowlist is stated" "$out_b_lo" "ALLOWED_LICENSES=MIT"
+
+# --- (a') plugin.json without author, and author as a bare string ----------
+write_manifest "$NO_AUTHOR_META"
+run_check; out_c="$OUT"; rc_c="$RC"
+assert_eq "manifest without author exits 1" "$rc_c" "1"
+assert_contains "manifest without author is a ❌ issue" \
+  "$out_c" "❌ ${PLUGIN}: plugin.json missing 'author.name'"
+write_manifest "$STRING_AUTHOR_META"
+run_license_check; out_c_lo="$OUT"; rc_c_lo="$RC"
+assert_eq "license-only: string author (schema wants an object) exits 1" "$rc_c_lo" "1"
+assert_contains "license-only: string author counts as MISSING_AUTHOR=1" "$out_c_lo" "MISSING_AUTHOR=1"
+write_manifest "$CLEAN_META"
+
+# --- (c) marketplace entry without author / without license → ❌ ----------
+write_marketplace "$NO_AUTHOR_META"
+run_check; out_d="$OUT"; rc_d="$RC"
+assert_eq "entry without author exits 1" "$rc_d" "1"
+assert_contains "entry without author is a ❌ issue" \
+  "$out_d" "❌ ${PLUGIN}: marketplace.json entry missing 'author.name'"
+run_license_check; out_d_lo="$OUT"
+assert_contains "license-only: entry without author → MISSING_AUTHOR=1" "$out_d_lo" "MISSING_AUTHOR=1"
+assert_contains "license-only: names the entry surface" \
+  "$out_d_lo" "TYPE=missing_author SURFACE=marketplace.json PLUGIN=${PLUGIN}"
+
+write_marketplace "$NO_LICENSE_META"
+run_check; out_e="$OUT"; rc_e="$RC"
+assert_eq "entry without license exits 1" "$rc_e" "1"
+assert_contains "entry without license is a ❌ issue" \
+  "$out_e" "❌ ${PLUGIN}: marketplace.json entry missing 'license' (allowed: MIT)"
+run_license_check; out_e_lo="$OUT"; rc_e_lo="$RC"
+assert_eq "license-only: entry without license exits 1" "$rc_e_lo" "1"
+assert_contains "license-only: entry without license → MISSING_LICENSE=1" "$out_e_lo" "MISSING_LICENSE=1"
+
+# --- (d) restoring the clean fixture returns both modes to green ------------
+write_marketplace "$CLEAN_META"
+run_check; rc_f="$RC"
+assert_eq "restored fixture exits 0 (full run)" "$rc_f" "0"
+run_license_check; rc_f_lo="$RC"
+assert_eq "restored fixture exits 0 (license-only)" "$rc_f_lo" "0"
 
 # ============================================================================
 # references/ link integrity (issue #2700)

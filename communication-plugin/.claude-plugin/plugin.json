@@ -3,6 +3,10 @@
   "name": "communication-plugin",
   "version": "1.2.5",
   "description": "External communication formatting - Google Chat, ticket drafting",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "license": "MIT",
   "keywords": [
     "communication",
     "google-chat",

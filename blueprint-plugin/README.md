@@ -71,7 +71,7 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 | `blueprint-claude-md` | Update CLAUDE.md from blueprint artifacts |
 | `blueprint-sync-ids` | Assign IDs to all documents, build traceability registry |
 | `blueprint-workspace-scan` | Discover child blueprints in a monorepo and refresh the root's `workspaces.children` registry with cached feature-tracker stats |
-| `blueprint-docs-currency` | Advisory discipline for same-commit landing of code and its docs (API, format specs, error enums, milestone status, ADRs); research-promotion workflow from `tmp/` to `docs/` |
+| `blueprint-docs-currency` | Advisory discipline for same-commit landing of code and its docs (API, format specs, error enums, milestone status, ADRs); research-promotion workflow from `tmp/` to `docs/`; bounded dependency sweep (`scripts/docs-dependency-sweep.sh`) naming the docs a staged change may invalidate, capped at `CANDIDATE_CAP` files |
 
 ### Feature Tracking Skills
 

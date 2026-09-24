@@ -20,7 +20,7 @@ import {
   embedDocuments,
   embedQuery,
   normalizeVector,
-  PREFIX_SCHEME,
+  prefixSchemeString,
   probeEndpoint,
   toNormalizedMatrix,
 } from "./embeddings.ts";
@@ -76,6 +76,25 @@ export class SkillIndex {
     this.dims = dims;
     this.bm25 = new Bm25Index(entries.map((e) => documentText(e)));
     this.idToIdx = new Map(entries.map((e, i) => [e.id, i]));
+  }
+
+  /**
+   * What the vectors behind this index were built with: the eval records it
+   * as results provenance (#2529). Null in bm25-only mode (no vectors).
+   */
+  embeddingInfo(): {
+    endpoint: string;
+    model: string;
+    dimensions: number;
+    prefixScheme: string;
+  } | null {
+    if (this.mode !== "hybrid" || this.embedOpts === null) return null;
+    return {
+      endpoint: this.embedOpts.endpoint,
+      model: this.embedOpts.model,
+      dimensions: this.dims,
+      prefixScheme: prefixSchemeString(this.embedOpts.prefixScheme),
+    };
   }
 
   /** Ranker seam — BM25 over the whole index (eval ablation entry point). */
@@ -194,6 +213,7 @@ export async function buildIndex(opts: IndexOptions): Promise<SkillIndex> {
     endpoint: opts.embed?.endpoint ?? DEFAULT_ENDPOINT,
     model: opts.embed?.model ?? DEFAULT_MODEL,
     ...(opts.embed?.dimensions !== undefined ? { dimensions: opts.embed.dimensions } : {}),
+    ...(opts.embed?.prefixScheme !== undefined ? { prefixScheme: opts.embed.prefixScheme } : {}),
   };
   const dims = opts.embed?.dimensions ?? DEFAULT_DIMENSIONS;
 
@@ -220,7 +240,7 @@ export async function buildIndex(opts: IndexOptions): Promise<SkillIndex> {
       entryKey({
         model: embedOpts.model,
         dims,
-        prefixScheme: PREFIX_SCHEME,
+        prefixScheme: prefixSchemeString(embedOpts.prefixScheme),
         skillName: entry.name,
         description: entry.description,
       }),
