@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.1](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.14.0...taskwarrior-plugin-v1.14.1) (2026-09-24)
+
+
+### Bug Fixes
+
+* **evaluate-plugin:** keep the regression ledger out of eval subagent context ([#2750](https://github.com/laurigates/claude-plugins/issues/2750)) ([ac8a545](https://github.com/laurigates/claude-plugins/commit/ac8a545978f64dd943e889489b9aa8046a5274ac))
+
 ## [1.14.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.13.5...taskwarrior-plugin-v1.14.0) (2026-08-20)
 
 

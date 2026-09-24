@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.57.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.56.1...git-plugin-v2.57.0) (2026-09-24)
+
+
+### Features
+
+* **documentation-plugin:** add public-export-sanitization; fold generic lessons into seven skills ([#2810](https://github.com/laurigates/claude-plugins/issues/2810)) ([b82ba11](https://github.com/laurigates/claude-plugins/commit/b82ba11afcb46a9055e6d83ca9a0d3da110d2068))
+* **evaluate-plugin:** add an impossible-task abstention control to eval grading ([#2778](https://github.com/laurigates/claude-plugins/issues/2778)) ([cde9168](https://github.com/laurigates/claude-plugins/commit/cde9168a9a3352ab36e2d02278cfa68161dd718c))
+
 ## [2.56.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.56.0...git-plugin-v2.56.1) (2026-09-24)
 
 

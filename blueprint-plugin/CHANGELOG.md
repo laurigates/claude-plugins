@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.46.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.45.3...blueprint-plugin-v3.46.0) (2026-09-24)
+
+
+### Features
+
+* **blueprint-plugin:** add a bounded doc dependency sweep to blueprint-docs-currency ([#2781](https://github.com/laurigates/claude-plugins/issues/2781)) ([6b890f1](https://github.com/laurigates/claude-plugins/commit/6b890f1651f6fc47cfd171789d873d252eb6ea2f))
+
+
+### Code Refactoring
+
+* **blueprint-plugin:** split blueprint-claude-md's all-inline body into references/ ([#2780](https://github.com/laurigates/claude-plugins/issues/2780)) ([f831af3](https://github.com/laurigates/claude-plugins/commit/f831af38d29d88cb655c4a75d1a9d6da5600430d))
+* **skills:** disambiguate the rules-authoring skill descriptions (cluster 3) ([#2797](https://github.com/laurigates/claude-plugins/issues/2797)) ([b0d7d5d](https://github.com/laurigates/claude-plugins/commit/b0d7d5d10dd93378d6193c51cc521bf4f0066979)), closes [#2244](https://github.com/laurigates/claude-plugins/issues/2244)
+
 ## [3.45.3](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.45.2...blueprint-plugin-v3.45.3) (2026-09-20)
 
 

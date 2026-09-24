@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.36.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.35.1...configure-plugin-v1.36.0) (2026-09-24)
+
+
+### Features
+
+* **pi:** document the pi extension triad and probe pi-mcp-adapter in pi-adapter-check ([#2799](https://github.com/laurigates/claude-plugins/issues/2799)) ([2ecdd7a](https://github.com/laurigates/claude-plugins/commit/2ecdd7aca8e2d0431246388237ce4f5cd799f272))
+
+
+### Code Refactoring
+
+* **configure-plugin:** disambiguate the workflow skill descriptions (cluster 5) ([#2800](https://github.com/laurigates/claude-plugins/issues/2800)) ([99f5e6e](https://github.com/laurigates/claude-plugins/commit/99f5e6eb26b1c3c96b31331cc0484c5bb8c2e000)), closes [#2244](https://github.com/laurigates/claude-plugins/issues/2244)
+* **health-plugin:** disambiguate the health-check and skill-audit descriptions ([#2801](https://github.com/laurigates/claude-plugins/issues/2801)) ([2276e82](https://github.com/laurigates/claude-plugins/commit/2276e82912efebdb2e535418603108911ed4b4ee)), closes [#2244](https://github.com/laurigates/claude-plugins/issues/2244)
+* **skills:** disambiguate the lint-run and lint-setup skill descriptions (cluster 2) ([#2796](https://github.com/laurigates/claude-plugins/issues/2796)) ([cf92f1c](https://github.com/laurigates/claude-plugins/commit/cf92f1c80410fa66023350a8c0597da45db0a838))
+
 ## [1.35.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.35.0...configure-plugin-v1.35.1) (2026-09-24)
 
 
