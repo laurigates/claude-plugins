@@ -212,6 +212,12 @@ print(f"SKIPPED_TAG_MODE={skipped_tag}")
 print(f"SKIPPED_NO_ALLOWLIST={skipped_no_allowlist}")
 print(f"SCANNED_EMPTY={'true' if scanned == 0 else 'false'}")
 print(f"STATUS={status}")
+if issues:
+    # REASON= names the first finding (.claude/rules/structured-script-output.md, #2691).
+    first = issues[0]
+    rtype = first.split("TYPE=", 1)[1].split(" ", 1)[0]
+    rmsg = first.split(" MSG=", 1)[1] if " MSG=" in first else first
+    print(f"REASON={(rtype + ': ' + rmsg)[:200]}")
 print(f"ISSUE_COUNT={len(issues)}")
 if issues:
     print("ISSUES:")
