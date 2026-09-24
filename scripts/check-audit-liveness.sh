@@ -210,6 +210,16 @@ if [ "$OVER_COUNT" -gt 0 ]; then
 fi
 
 echo ""
-echo "STATUS=$([ "$OVER_COUNT" -gt 0 ] && echo FAIL || echo OK)"
-[ "$OVER_COUNT" -gt 0 ] && exit 1
+if [ "$OVER_COUNT" -gt 0 ]; then
+  # The first silent workflow is the cause a rollup reads (#2691); the full list
+  # stays in SILENT WORKFLOWS above.
+  reason="$(printf '%s' "$RESULT" | jq -r --argjson max "$MAX_SILENT" '[.[] | select(.over)][0] |
+    "silent_streak: \(.workflow) filed nothing in \(.silent_streak) consecutive successful runs (threshold \($max))"')"
+  reason="${reason:0:180}"
+  [ "$OVER_COUNT" -gt 1 ] && reason="$reason (+$((OVER_COUNT - 1)) more)"
+  echo "STATUS=ERROR"
+  echo "REASON=$reason"
+  exit 1
+fi
+echo "STATUS=OK"
 exit 0
