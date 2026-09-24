@@ -32,6 +32,23 @@ assert_exit() {
     fi
 }
 
+# assert_exit discards stdout and stderr, so it pins that a context-less command
+# is refused but not the corrected form the refusal prints — and the corrected
+# form is what makes the block recoverable in one retry (issue #2715). Capture
+# stderr and read it.
+assert_stderr_contains() {
+    local desc="$1" needle="$2" json="$3"
+    local out
+    out=$(printf '%s' "$json" | bash "$HOOK" 2>&1 >/dev/null || true)
+    if grep -qF -- "$needle" <<<"$out"; then
+        printf "  PASS: %s\n" "$desc"
+        PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (stderr missing: %s)\n" "$desc" "$needle"
+        FAIL=$((FAIL + 1))
+    fi
+}
+
 echo "=== validate-kubectl-context hook tests ==="
 
 # ── Heredoc regression tests ────────────────────────────────────────────────
@@ -299,6 +316,39 @@ assert_exit \
 assert_exit \
     "env-prefixed skaffold deploy without --kube-context is still blocked" 2 \
     '{"tool_name":"Bash","tool_input":{"command":"SKAFFOLD_DEFAULT_REPO=reg.example.com skaffold deploy"}}'
+
+# ── Block messages name the missing flag and the corrected form (#2715) ─────
+# Each of the three blocks must say which flag is missing AND print the command
+# shape that satisfies it. The kubectl case replays the #2715 command verbatim.
+echo ""
+echo "Block messages name the missing flag and the corrected form (#2715):"
+
+ISSUE_KUBECTL='{"tool_name":"Bash","tool_input":{"command":"kubectl -n internal-tools get pods"}}'
+assert_exit \
+    "kubectl -n <ns> get pods without --context is blocked (#2715 command)" 2 \
+    "$ISSUE_KUBECTL"
+assert_stderr_contains \
+    "kubectl block names the missing --context flag" \
+    "KUBECTL SAFETY: Missing --context flag." "$ISSUE_KUBECTL"
+assert_stderr_contains \
+    "kubectl block prints the corrected command form" \
+    "kubectl --context=CONTEXT_NAME <command>" "$ISSUE_KUBECTL"
+
+HELM_NO_CONTEXT='{"tool_name":"Bash","tool_input":{"command":"helm install myapp ./chart"}}'
+assert_stderr_contains \
+    "helm block names the missing --kube-context flag" \
+    "HELM SAFETY: Missing --kube-context flag." "$HELM_NO_CONTEXT"
+assert_stderr_contains \
+    "helm block prints the corrected command form" \
+    "helm --kube-context=CONTEXT_NAME <command>" "$HELM_NO_CONTEXT"
+
+SKAFFOLD_NO_CONTEXT='{"tool_name":"Bash","tool_input":{"command":"skaffold deploy"}}'
+assert_stderr_contains \
+    "skaffold block names the missing --kube-context flag" \
+    "SKAFFOLD SAFETY: Missing --kube-context flag." "$SKAFFOLD_NO_CONTEXT"
+assert_stderr_contains \
+    "skaffold block prints the corrected command form" \
+    "skaffold --kube-context=CONTEXT_NAME deploy" "$SKAFFOLD_NO_CONTEXT"
 
 # ── Edge cases ───────────────────────────────────────────────────────────────
 echo ""

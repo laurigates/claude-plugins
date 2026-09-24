@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-03-03
-modified: 2026-09-02
+modified: 2026-09-23
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -62,7 +62,7 @@ the one team the session already has:
 | `Agent` | Spawn a teammate (give it a `name`; `team_name` is accepted but ignored) |
 | `SendMessage` | Send DMs, broadcasts, shutdown requests, plan approvals |
 | `TaskCreate` / `TaskList` / `TaskUpdate` | Create, discover, and assign/advance shared tasks |
-| `TaskOutput` | Get output from a background agent |
+| `Read` | Get a background agent's output from the file path its spawn result names (`TaskOutput` was removed in 2.1.277) |
 | `TaskStop` | Stop a running background agent |
 
 The setup sequence — `TaskCreate` → spawn teammates via the `Agent` tool (with a
