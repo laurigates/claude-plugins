@@ -198,6 +198,46 @@ casually: at 0.86 on a real 884-document corpus it emitted 491 findings, of
 which 290 were same-name pairs the cheap tier already owns. Everything here is
 one genre of document, so baseline similarity is high.
 
+### Scheduled CI audit
+
+`.github/workflows/config-drift-audit.yml` (**Plugin: Config drift audit**) runs
+the semantic tier over this repository's own corpus on Mondays and Thursdays and
+comments only what is new into one rolling issue labelled `config-drift`. No
+Claude model runs; the cost is Actions minutes. The decisions live in
+`scripts/config-drift-audit.sh` and are tested by
+`scripts/tests/test-config-drift-audit.sh`.
+
+It complements the portfolio run tracked in #2319 rather than replacing it:
+
+| | CI audit | Portfolio run (#2319) |
+|---|---|---|
+| Corpus | this checkout: rules, skills, agents, `CLAUDE.md` in git | `~/repos` and `~/.claude/rules`, the fleet `T_PROMOTE` was calibrated on |
+| Waivers | committed `health-plugin/config-drift-waivers.json` | operator-local `~/.claude/config-drift-waivers.json` |
+| A finding is | fixable by a PR to this repo | often in another repo or in home config |
+
+- **State.** The baseline and both caches share one `actions/cache` entry, saved
+  under a fresh key each run and restored by prefix; the model has its own. An
+  entry not read for 7 days is evicted, so a weekly schedule would lose the
+  baseline whenever a run started late. That is why the audit runs twice a week.
+- **First run vs. lost baseline.** The first completed run records silently.
+  After that, a missing baseline is a loss: `probe-delta.py --expect-baseline`
+  re-reports every finding beside a `baseline_lost` row instead of re-recording
+  in silence.
+- **Exit codes.** Analyzer exit 0 and 1 are completed runs, and so is exit 2
+  under `--gate` (next item). Any other code, or empty output, posts an error
+  comment, fails the job, and leaves the baseline untouched. A run whose model
+  failed to load is reported but does not roll the baseline forward.
+- **Red state.** The analyzer runs with `--gate`, so an error-severity finding
+  (`broken_pointer_stub`, `agent_discovery_misfire`, `coverage_metric_broken`)
+  makes it exit 2. That run still completes: the finding is commented once and
+  recorded like any other. The job then fails on every run for as long as the
+  finding persists, including the first run. Warn and info findings never fail
+  the job; they only reach the rolling issue.
+- **Control.** Dispatch with `plant_control: true` to check the delta logic end
+  to end. The run plants two unrelated rules one scope apart, injects a 0.95
+  similarity through `--sim-fixture`, and fails unless exactly that pair comes
+  back as one new `promotion_candidate`.
+
 ## Use Cases
 
 ### Plugin Shows "Installed" But Doesn't Work
