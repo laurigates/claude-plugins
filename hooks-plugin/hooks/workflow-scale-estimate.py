@@ -614,43 +614,153 @@ def _function_start(text: str, arrow: int) -> int:
     return m.start() if m else k
 
 
-def _called_once(text: str, start: int, frame: list) -> bool:
+def _skip_space(text: str, j: int, step: int) -> int:
+    while 0 <= j < len(text) and text[j] in " \t\n\r":
+        j += step
+    return j
+
+
+def _thunks_reach_parallel_once(text: str, frames: list, source_bracket: int) -> bool:
+    """True when the thunks a `.map` call returns are each called once.
+
+    `frames[-1]` is the `.map(` call's frame. Its thunks are called once only
+    when the array it returns becomes parallel()'s own argument list: it is
+    the whole argument of a `parallel(...)` call, a spread `...` element of
+    the fan-out's source literal, or an argument of a `.concat(` chained on
+    that literal. Kept in a name or indexed (`xs.map(...)[0]`), a returned
+    thunk can be called any number of times (#2670 review, round 8).
+    """
+    map_open = frames[-1][1]
+    end = match_forward(text, map_open)
+    dot = re.search(r"\.\s*(?:map|flatMap)\s*$", text[:map_open])
+    if end < 0 or dot is None or len(frames) < 2:
+        return False
+    head = text[: dot.start()].rstrip()
+    receiver = receiver_of(text, dot.start())
+    pre = head[: len(head) - len(receiver)].rstrip()
+    j = _skip_space(text, end, 1)
+    post = text[j] if j < len(text) else ""
+    parent = frames[-2]
+    # receiver_of() reads dots as part of a member chain, so a spread's `...`
+    # can arrive at the front of the receiver rather than in `pre`.
+    spread = receiver.startswith("...") or pre.endswith("...")
+    if spread:
+        # A spread element of the source literal, or of a `.concat(` argument.
+        return post in ",])" and (
+            parent[1] == source_bracket or parent is frames[1] and parent[2] == "call"
+        )
+    if pre[-1:] not in "(," or parent[2] != "call":
+        return False
+    if post == ",":
+        j = _skip_space(text, j + 1, 1)
+        post = text[j] if j < len(text) else ""
+    callee = text[: parent[1]].rstrip()
+    if re.search(r"\.\s*concat$", callee):
+        # `[...].concat(xs.map(...))` at the source's top level.
+        return parent is frames[1] and post in ",)"
+    return (
+        post == ")"
+        and pre[-1:] == "("
+        and re.search(r"(?<![A-Za-z0-9_$.])parallel$", callee) is not None
+    )
+
+
+def _called_once(text: str, start: int, frames: list, source_bracket: int) -> bool:
     """True when the function beginning at `start` runs once per modeled item.
 
-    Only three placements qualify: an element of an array literal (a thunk
-    that parallel() calls once), the callback of a `.map`/`.flatMap`, and a
-    stage of a `pipeline` -- each of the last two is multiplied by its own
-    fan-out. The concise body of a qualifying arrow (`x => () => ...`)
-    inherits its answer. Anything else -- a callback to an unmodeled call
-    such as `.filter()` or `Array.from()`, a function bound to a name and
-    called by hand, a named function expression that can recurse -- may run
-    any number of times.
+    Only three placements qualify: an element of the fan-out's own source
+    literal (a thunk that parallel() calls once), the callback of a
+    `.map`/`.flatMap`, and a stage of a `pipeline` -- each of the last two is
+    multiplied by its own fan-out. A thunk returned as the concise body of a
+    `.map` callback (`xs.map(x => () => ...)`) qualifies only where
+    `_thunks_reach_parallel_once` says parallel() calls it. Anything else --
+    a callback to an unmodeled call such as `.filter()` or `Array.from()`, a
+    function bound to a name and called by hand, a named function expression
+    that can recurse, an element of some other array literal (`fs[0](f)` can
+    call it any number of times, #2670 review, round 8) -- may run any number
+    of times.
     """
+    frame = frames[-1]
     prev = text[:start].rstrip()
     if prev.endswith("=>"):
-        return bool(frame[3]) and frame[3][-1]
+        return (
+            frame[2] == "map"
+            and bool(frame[3])
+            and frame[3][-1]
+            and _thunks_reach_parallel_once(text, frames, source_bracket)
+        )
     last = prev[-1:]
     kind = frame[2]
     return (
-        (kind == "array" and last in "[,")
+        (kind == "array" and frame[1] == source_bracket and last in "[,")
         or (kind == "map" and last == "(")
         or (kind == "pipeline" and last == ",")
     )
+
+
+# Words whose `(...)` header may precede a `{` that is not a function body.
+# Loop headers are refused earlier by _LOOP_KEYWORD, so only these remain.
+_CONTROL_HEADER = re.compile(r"(?<![A-Za-z0-9_$.])(?:if|switch|catch|with)\s*$")
+# `function`, optionally `*` and a name, before a parameter list's `(`.
+_FUNCTION_HEADER = re.compile(
+    r"(?<![A-Za-z0-9_$.])function\s*(?:\*\s*)?(?:[A-Za-z_$][A-Za-z0-9_$]*\s*)?$"
+)
+
+
+def _brace_kind(text: str, brace: int) -> str:
+    """Classify the `{` at `brace` as "brace", or "method" for an unmodeled body.
+
+    Every non-arrow function body in JS opens with `{` straight after the `)`
+    of its parameter list: `function f(a) {`, a method `run(f) {`, a getter
+    `get go() {`, a class method. So a `{` after `)` is a function body unless
+    the `(` is a control header's (`if`, `switch`, `catch`, `with`) or
+    belongs to a `function` keyword, which the walker already opens a frame
+    for. What is left is a method, whose calls the estimator cannot see
+    (#2670 review, round 8).
+    """
+    k = brace - 1
+    while k >= 0 and text[k] in " \t\n\r":
+        k -= 1
+    if k < 0 or text[k] != ")":
+        return "brace"
+    depth = 0
+    while k >= 0:
+        if text[k] == ")":
+            depth += 1
+        elif text[k] == "(":
+            depth -= 1
+            if depth == 0:
+                break
+        k -= 1
+    if k < 0:
+        return "method"
+    head = text[:k]
+    if _CONTROL_HEADER.search(head) or _FUNCTION_HEADER.search(head):
+        return "brace"
+    return "method"
 
 
 def _runs_once(text: str, site: int, lo: int) -> bool:
     """True when `site`, inside a literal-array source starting at `lo`, runs once.
 
     The literal-array rule drops the fan-out's multiplier, which is right only
-    when nothing between the source and the site repeats it. A closed check
-    rather than a list of iterating methods (#2670 review, round 7): a `for`
-    loop inside an element, or `Array.from({length: n}, fn)`, took #2668's
-    110 or 200 to 10. So the site runs once only when no loop keyword appears
+    when nothing between the source and the site repeats it. Round 6 checked
+    a list of iterating methods, and a `for` loop inside an element, or
+    `Array.from({length: n}, fn)`, took #2668's 110 or 200 to 10 (#2670
+    review, round 7). So the site runs once only when no loop keyword appears
     between `lo` and it, and every function enclosing it is one `_called_once`
-    accepts. Refusing costs the site as #2668 did, so it never lowers.
+    accepts. A loop or `.map` AFTER the site can repeat it only by calling a
+    function that encloses it, so the function check is what covers that
+    case, and it holds only as far as the walker recognizes every enclosing
+    function: an arrow (`=>`), a `function`, and any other `{` after a `)` (a
+    method, getter or class method, see `_brace_kind`). Round 7 missed the
+    last, accepted a thunk in any array literal, and accepted a thunk a
+    `.map` returned wherever it went (#2670 review, round 8). Refusing costs
+    the site as #2668 did, so it never lowers.
     """
     if _LOOP_KEYWORD.search(text, lo, site):
         return False
+    source_bracket = text.find("[", lo)
     # Each frame is [bracket, index, kind, open functions' _called_once answers].
     frames = [["", lo, "top", []]]
     i = lo
@@ -667,7 +777,7 @@ def _runs_once(text: str, site: int, lo: int) -> bool:
                     else "array"
                 )
             else:
-                kind = "brace"
+                kind = _brace_kind(text, i)
             frames.append([ch, i, kind, []])
         elif ch in ")]}":
             if len(frames) == 1:
@@ -678,7 +788,7 @@ def _runs_once(text: str, site: int, lo: int) -> bool:
             frames[-1][3].clear()
         elif text.startswith("=>", i):
             start = _function_start(text, i)
-            frames[-1][3].append(_called_once(text, start, frames[-1]))
+            frames[-1][3].append(_called_once(text, start, frames, source_bracket))
             i += 2
             continue
         elif text.startswith("function", i) and not (i and _IDENT.match(text[i - 1])):
@@ -688,11 +798,13 @@ def _runs_once(text: str, site: int, lo: int) -> bool:
             m = re.search(r"(?<![A-Za-z0-9_$])async\s*$", text[:i])
             start = m.start() if m else i
             anonymous = re.match(r"function\s*\(", text[i:]) is not None
-            frames[-1][3].append(anonymous and _called_once(text, start, frames[-1]))
+            frames[-1][3].append(
+                anonymous and _called_once(text, start, frames, source_bracket)
+            )
             i += len("function")
             continue
         i += 1
-    return all(all(open_fns) for *_, open_fns in frames)
+    return all(kind != "method" and all(open_fns) for _b, _i, kind, open_fns in frames)
 
 
 def _risk(result: dict) -> int:
@@ -706,14 +818,16 @@ def _risk(result: dict) -> int:
 # literals close and its brackets balance around the gap. The lowering rules
 # then applied to BOTH readings of a file whose agent code neither scan saw,
 # and a script #2668 asked about went silent (#2670 review, round 5). A `/` is
-# read as a regex opener everywhere JS's lexical grammar allows one: at the
-# start of a line, after any punctuator that is not `]` (`)` and `}` included,
-# since after a control header or a block a regex can follow), after a spread
-# `...`, after a closing `*/`, and after every keyword that takes an operand.
-# What remains -- after a `]`, an identifier, a number or a string -- is always
-# division, so the set is closed rather than a list of positions: round 6's
-# header alternative missed a header spanning lines or nesting parens three
-# deep, and `export default` was missing too (#2670 review, round 7).
+# read as a regex opener at the start of a line, after any punctuator that is
+# not `]` (`)` and `}` included, since after a control header or a block a
+# regex can follow), after a spread `...`, after a closing `*/`, after every
+# keyword that takes an operand, and after a division `/` followed by
+# whitespace (`a / /re/`; without the whitespace `//` opens a comment). Round
+# 6's header alternative missed a header spanning lines or nesting parens three
+# deep and `export default` (#2670 review, round 7); round 7's punctuator class
+# left out `/` itself (round 8). Every listed position is one a regex can
+# follow, but the list was built by enumeration and has had to grow three
+# times, so a position this pattern misses gets no floor (see analyze()).
 # Over-matching (a division after `)` followed by a quote on one line) only
 # adds a reading, which can raise an estimate but never lower one. Matching
 # every `/` instead would read path prose in 7 of the 8 bundled templates as
@@ -722,7 +836,7 @@ _QUOTED_REGEX = re.compile(
     r"(?:^|[(),=:!&|?\[{};<>+\-*%~^]|\.\.\."
     r"|\b(?:return|typeof|instanceof|in|of|new|delete|void|throw|case|do|else"
     r"|yield|await|default|extends)"
-    r"|\*/)"
+    r"|\*/|(?<![/*])/(?=\s))"
     r"\s*/(?![/*])(?:\\.|\[(?:\\.|[^\]\n])*\]|[^/\n\\])*?"
     r"[`'\"](?:\\.|\[(?:\\.|[^\]\n])*\]|[^/\n\\])*/",
     re.MULTILINE,

@@ -461,12 +461,29 @@ await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
 const BT = 1;
 await parallel([() => agent("r1"), () => agent("r2"), () => agent("r3"), () => agent("r4")]);
 EOF
+# Round 7's opener class held every punctuator but `/`, so a regex after the
+# division operator (`a / /re/`) got no floor: #2668's 30 became a silent 10
+# (#2670 review, round 8). Without the space, `a //re/` is a comment.
+fx quote_regex_after_division <<'EOF'
+x = a / /[`]/.test(s);
+await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
+x = a / /[`]/.test(s);
+await parallel([() => agent("r"), () => agent("s"), ...args.units.map((u) => () => agent(u))]);
+EOF
+fx quote_regex_after_division_in_call <<'EOF'
+f(a / /[`]/.test(s));
+await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
+f(a / /[`]/.test(s));
+await parallel([() => agent("r"), () => agent("s"), ...args.units.map((u) => () => agent(u))]);
+EOF
 
 assert_asks "backtick regex after a header spanning two lines still asks" "$(<"$FX_DIR/quote_regex_after_multiline_header.js")"
 assert_asks "backtick regex after a header nesting parens three deep still asks" "$(<"$FX_DIR/quote_regex_after_three_deep_header.js")"
 assert_asks "backtick regex after a header holding \")\" in a string still asks" "$(<"$FX_DIR/quote_regex_after_paren_string_header.js")"
 assert_asks "backtick regex after a spread still asks" "$(<"$FX_DIR/quote_regex_after_spread.js")"
 assert_asks "backtick regex after export default still asks" "$(<"$FX_DIR/quote_regex_after_export_default.js")"
+assert_asks "backtick regex after a division still asks" "$(<"$FX_DIR/quote_regex_after_division.js")"
+assert_asks "backtick regex after a division inside a call still asks" "$(<"$FX_DIR/quote_regex_after_division_in_call.js")"
 
 assert_asks "regex holding ' inside \${...} still asks" "$(<"$FX_DIR/regex_squote_in_interp.js")"
 assert_asks "regex holding \" inside \${...} still asks" "$(<"$FX_DIR/regex_dquote_in_interp.js")"
@@ -515,6 +532,7 @@ assert_parse "unproven parse: #2668 bound logic is the floor" 30 flat "the #2668
 assert_parse "quoted regex on a proven parse: #2668 bound logic is the floor" 30 flat "a regex literal holds a quote" quote_regex_on_proven_parse
 assert_parse "quoted regex after a two-line header: #2668 bound logic is the floor" 30 flat "a regex literal holds a quote" quote_regex_after_multiline_header
 assert_parse "quoted regex after export default: #2668 bound logic is the floor" 16 flat "a regex literal holds a quote" quote_regex_after_export_default
+assert_parse "quoted regex after a division: #2668 bound logic is the floor" 30 flat "a regex literal holds a quote" quote_regex_after_division
 
 echo
 echo "== differential against the #2668 estimator (#2670 review) =="
@@ -541,6 +559,10 @@ correct_count() {
         trailing_comma_mapped) echo 10 ;;         # ten elements; `10,]` adds none
         promise_all_map_in_literal_element) echo 9 ;;  # 1 + 8
         array_from_in_literal_element) echo 29 ;; # 9 + 20
+        if_block_in_literal_element) echo 2 ;;    # two thunks, each run once
+        anonymous_function_literal_element) echo 2 ;;
+        pipeline_stage_in_literal_element) echo 9 ;;  # 1 + 8
+        returned_thunks_into_parallel_element) echo 9 ;;  # 1 + 8
         *) echo none ;;
     esac
 }
@@ -553,6 +575,12 @@ true_floor() {
     case "$1" in
         loop_in_literal_element) echo 17 ;;      # 9 + 8; live 9 + 10
         while_in_literal_element) echo 17 ;;     # 9 + 8; live 9 + 10
+        method_shorthand_loop_after | method_shorthand_map_after | \
+            class_method_map_after | getter_loop_after | \
+            inner_array_thunk_map_after | inner_array_thunk_loop_after | \
+            map_returned_thunk_indexed_loop | map_returned_thunk_indexed_map)
+            echo 17 ;;                           # 9 + 8; live 9 + 10
+        inner_array_recursive_thunk) echo 18 ;;  # 9 + 8 + 1; live 9 + 10
         *) echo none ;;
     esac
 }
@@ -661,7 +689,125 @@ assert_estimate "loop in a short literal's element costs ASSUMED, not the litera
 assert_estimate "hand-called function in a literal's element costs ASSUMED" 9 "$(<"$FX_DIR/hand_called_fn_in_literal_element.js")"
 assert_estimate "recursive named function as a literal's element costs ASSUMED" 9 "$(<"$FX_DIR/recursive_fn_literal_element.js")"
 assert_estimate "modeled .map inside Promise.all in a literal's element runs once per item" 9 "$(<"$FX_DIR/promise_all_map_in_literal_element.js")"
-fx close_brace_regex_in_interp <<'EOF'
+# Round 7 saw only `=>` and `function` as functions, and accepted a thunk in ANY
+# array literal as run once. A method, getter or class method holding the site,
+# or a thunk in an inner array, can be called by a loop or .map placed AFTER the
+# site, which the loop-keyword scan does not reach: #2668's 110 became a silent
+# 10 (#2670 review, round 8). Each is now refused and costed as unbounded.
+fx method_shorthand_loop_after <<'EOF'
+await parallel([
+  () => agent("a"), () => agent("b"), () => agent("c"), () => agent("d"),
+  () => agent("e"), () => agent("f"), () => agent("g"), () => agent("h"),
+  () => agent("i"),
+  async () => { const o = { async run(f) { await agent("v " + f) } }; for (const f of args.findings) await o.run(f) },
+]);
+EOF
+fx method_shorthand_map_after <<'EOF'
+await parallel([
+  () => agent("a"), () => agent("b"), () => agent("c"), () => agent("d"),
+  () => agent("e"), () => agent("f"), () => agent("g"), () => agent("h"),
+  () => agent("i"),
+  async () => { const o = { run(f) { return agent("v " + f) } }; return Promise.all(args.findings.map((f) => o.run(f))) },
+]);
+EOF
+fx class_method_map_after <<'EOF'
+await parallel([
+  () => agent("a"), () => agent("b"), () => agent("c"), () => agent("d"),
+  () => agent("e"), () => agent("f"), () => agent("g"), () => agent("h"),
+  () => agent("i"),
+  async () => { class W { run(f) { return agent("v " + f) } }; const w = new W(); return Promise.all(args.findings.map((f) => w.run(f))) },
+]);
+EOF
+fx getter_loop_after <<'EOF'
+await parallel([
+  () => agent("a"), () => agent("b"), () => agent("c"), () => agent("d"),
+  () => agent("e"), () => agent("f"), () => agent("g"), () => agent("h"),
+  () => agent("i"),
+  async () => { const o = { get go() { return agent("v") } }; for (const f of args.findings) await o.go },
+]);
+EOF
+fx inner_array_thunk_map_after <<'EOF'
+await parallel([
+  () => agent("a"), () => agent("b"), () => agent("c"), () => agent("d"),
+  () => agent("e"), () => agent("f"), () => agent("g"), () => agent("h"),
+  () => agent("i"),
+  async () => { const fs = [(f) => agent("v " + f)]; return Promise.all(args.findings.map((f) => fs[0](f))) },
+]);
+EOF
+fx inner_array_thunk_loop_after <<'EOF'
+await parallel([
+  () => agent("a"), () => agent("b"), () => agent("c"), () => agent("d"),
+  () => agent("e"), () => agent("f"), () => agent("g"), () => agent("h"),
+  () => agent("i"),
+  async () => { const fs = [(f) => agent("v " + f)]; for (const f of args.findings) await fs[0](f) },
+]);
+EOF
+fx inner_array_recursive_thunk <<'EOF'
+await parallel([
+  () => agent("a"), () => agent("b"), () => agent("c"), () => agent("d"),
+  () => agent("e"), () => agent("f"), () => agent("g"), () => agent("h"),
+  () => agent("i"),
+  async () => { const fs = [async (n) => { await agent("v" + n); if (n) await fs[0](n - 1) }]; await fs[0](args.findings.length) },
+]);
+EOF
+# A thunk returned by a .map callback is called once only when the mapped
+# array becomes parallel()'s argument list. Indexed out of it, it is a plain
+# function a later loop or .map can call any number of times.
+fx map_returned_thunk_indexed_loop <<'EOF'
+await parallel([
+  () => agent("a"), () => agent("b"), () => agent("c"), () => agent("d"),
+  () => agent("e"), () => agent("f"), () => agent("g"), () => agent("h"),
+  () => agent("i"),
+  async () => { const run = [0].map(() => (f) => agent("v " + f))[0]; for (const f of args.findings) await run(f) },
+]);
+EOF
+fx map_returned_thunk_indexed_map <<'EOF'
+await parallel([
+  () => agent("a"), () => agent("b"), () => agent("c"), () => agent("d"),
+  () => agent("e"), () => agent("f"), () => agent("g"), () => agent("h"),
+  () => agent("i"),
+  async () => { const run = [0].map(() => (f) => agent("v " + f))[0]; return Promise.all(args.findings.map((f) => run(f))) },
+]);
+EOF
+# Controls: a `{` after an `if` header or a `function` keyword's parameters is
+# not a method body, and a stage of a pipeline inside an element is multiplied
+# by that pipeline, so each still runs once per item.
+fx if_block_in_literal_element <<'EOF'
+await parallel([() => agent("a"), async () => { if (x) { await agent("b") } }])
+EOF
+fx anonymous_function_literal_element <<'EOF'
+await parallel([() => agent("a"), async function () { await agent("b") }])
+EOF
+fx pipeline_stage_in_literal_element <<'EOF'
+await parallel([() => agent("a"), () => pipeline(args.units, (u) => agent("b " + u))])
+EOF
+# The shape two bundled templates use: an element whose thunks a .map returns
+# straight into parallel(), here with the trailing comma house style adds.
+fx returned_thunks_into_parallel_element <<'EOF'
+await parallel([
+  () => agent("a"),
+  () =>
+    parallel(
+      args.units.map((u) => () =>
+        agent("b " + u),
+      ),
+    ),
+]);
+EOF
+
+assert_asks "method shorthand called by a later loop still asks" "$(<"$FX_DIR/method_shorthand_loop_after.js")"
+assert_asks "method shorthand called by a later .map still asks" "$(<"$FX_DIR/method_shorthand_map_after.js")"
+assert_asks "class method called by a later .map still asks" "$(<"$FX_DIR/class_method_map_after.js")"
+assert_asks "getter read by a later loop still asks" "$(<"$FX_DIR/getter_loop_after.js")"
+assert_asks "inner-array thunk called by a later .map still asks" "$(<"$FX_DIR/inner_array_thunk_map_after.js")"
+assert_asks "inner-array thunk called by a later loop still asks" "$(<"$FX_DIR/inner_array_thunk_loop_after.js")"
+assert_asks "recursive inner-array thunk still asks" "$(<"$FX_DIR/inner_array_recursive_thunk.js")"
+assert_asks "thunk indexed out of a .map, called by a later loop, still asks" "$(<"$FX_DIR/map_returned_thunk_indexed_loop.js")"
+assert_asks "thunk indexed out of a .map, called by a later .map, still asks" "$(<"$FX_DIR/map_returned_thunk_indexed_map.js")"
+assert_estimate "an if block inside a literal's element runs once" 2 "$(<"$FX_DIR/if_block_in_literal_element.js")"
+assert_estimate "an anonymous function as a literal's element runs once" 2 "$(<"$FX_DIR/anonymous_function_literal_element.js")"
+assert_estimate "a pipeline stage inside a literal's element runs once per item" 9 "$(<"$FX_DIR/pipeline_stage_in_literal_element.js")"
+assert_estimate "thunks a .map returns into parallel() inside an element run once per item" 9 "$(<"$FX_DIR/returned_thunks_into_parallel_element.js")"fx close_brace_regex_in_interp <<'EOF'
 const p = (s) => `x ${s.replace(/}/g, '')} y`
 await pipeline(args.units, u => agent('a'), e => agent('b'), r => agent('c'))
 EOF
