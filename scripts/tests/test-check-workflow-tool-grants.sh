@@ -56,6 +56,12 @@ assert() {
 is_true() { [ "$1" = "true" ] && echo true || echo false; }
 contains() { printf '%s' "$1" | grep -qF -- "$2" && echo true || echo false; }
 lacks() { [ "$(contains "$1" "$2")" = false ] && echo true || echo false; }
+# The runtime half of the structured-output contract (#2691): one canonical
+# STATUS=, REASON= present iff non-OK, ISSUE_COUNT= equal to the ISSUES: rows.
+validates() {
+  printf '%s\n' "$1" | bash "$repo_root/scripts/check-structured-output-contract.sh" --validate >/dev/null 2>&1 \
+    && echo true || echo false
+}
 
 fx="$(mktemp -d)"
 [ -n "$fx" ] || { echo "mktemp failed" >&2; exit 1; }
@@ -103,6 +109,8 @@ echo "=== TEST A: real repo is clean and was actually inspected ==="
 out="$(bash "$checker" 2>&1)"; rc=$?
 assert "A real repo exits 0" "$(is_true "$([ $rc -eq 0 ] && echo true)")"
 assert "A real repo STATUS=OK" "$(contains "$out" 'STATUS=OK')"
+assert "A real repo carries no REASON on OK" "$(lacks "$out" 'REASON=')"
+assert "A real repo output satisfies the contract" "$(validates "$out")"
 # Guard integrity: a checker that parsed nothing would also print STATUS=OK.
 assert "A real repo scanned workflows" "$(lacks "$out" 'WORKFLOWS_SCANNED=0')"
 assert "A real repo found claude steps" "$(lacks "$out" 'CLAUDE_STEPS=0')"
@@ -114,7 +122,9 @@ echo "=== TEST B: for-loop over a GRANTED command is flagged ==="
 d="$(mkwf b "$DEFAULT_TOOLS" 'for id in 34221403143 34027709049; do gh run view $id --json jobs; done')"
 out="$(run_fixture "$d")"; rc=$?
 assert "B exits 1" "$(is_true "$([ $rc -eq 1 ] && echo true)")"
-assert "B STATUS=FAIL" "$(contains "$out" 'STATUS=FAIL')"
+assert "B STATUS=ERROR" "$(contains "$out" 'STATUS=ERROR')"
+assert "B REASON names the loop" "$(contains "$out" 'REASON=unprefixable_shape: SHAPE=loop ')"
+assert "B output satisfies the contract" "$(validates "$out")"
 assert "B TYPE=unprefixable_shape" "$(contains "$out" 'TYPE=unprefixable_shape')"
 assert "B SHAPE=loop" "$(contains "$out" 'SHAPE=loop')"
 assert "B does not misreport it as merely ungranted" "$(lacks "$out" 'TYPE=ungranted_command')"
