@@ -183,6 +183,115 @@ fetched the bad state. The mitigations:
 `--force` makes Scenario 4 worse, not better — it cannot detect that
 someone else's pollution is now on the remote.
 
+## Shared-checkout branch isolation — verify your branch before pushing
+
+Promoted from the always-loaded `shared-checkout-branch-isolation.md`
+portfolio rule, whose stub keeps the gate lines. Scenario 1 above is the
+recovery; this section is the push-time check that catches it first, and the
+guard that stops the recovery from destroying the coworker's work.
+
+A single clone can be operated on by **more than one agent/session at once**
+(one session opens a PR while another is mid-way through unrelated work in the
+same checkout). A concurrent writer can then move `HEAD` *between* your
+`git switch -c` and your `git commit`, so your commit silently lands on
+**someone else's in-flight branch** instead of clean `main`. The push then
+bundles their unmerged work into your PR. Nothing errors, the commit succeeds,
+and the contamination is only visible in the branch's history.
+
+```
+git fetch && git switch -c ci/my-feature origin/main   # branch at clean main
+#   ...concurrent writer in the same clone switches HEAD to their feature branch,
+#   commits, resets — all between the switch above and the commit below...
+git add … && git commit -m "…"      # lands on top of THEIR commit, not main
+git push                            # PR now contains their unmerged commit too
+```
+
+In the observed case it surfaced only because a PR-issue-link hook flagged a
+`Closes #<their-issue>` reference that was not the author's.
+
+**Before pushing a new branch, verify it contains only your own commit(s)** —
+run this as the line right before every `git push -u`:
+
+```sh
+git log --oneline origin/main..HEAD     # should be EXACTLY your commit(s)
+```
+
+If it shows a commit you didn't author, your branch was contaminated. Recover
+by replaying only your commit onto clean `origin/main` — your work is safe in
+the reflog:
+
+```sh
+git fetch origin
+git switch -C <branch> origin/main      # reset branch to clean main
+git cherry-pick <your-commit-sha>       # reflog HEAD@{n}; diff is just your files
+git log --oneline origin/main..HEAD     # re-verify: only your commit
+git push --force-with-lease origin <branch>
+```
+
+`git rebase --onto origin/main <their-commit> <branch>` also works, but a plain
+cherry-pick of your isolated commit is the most predictable when HEAD is being
+moved under you.
+
+### Check whether their commit lives anywhere else *before* you rewrite
+
+The recovery above is written from your side, and read literally it will
+**destroy the coworker's work**. `git switch -C` moves the branch label; if
+your branch was the only ref holding their commit, it becomes unreachable —
+recoverable from their reflog for a while, but nowhere a `git log`, a fetch, or
+another session will ever find it.
+
+Do not assume their commit is safe on the branch it was *meant* for. It landed
+on yours precisely because HEAD was somewhere unexpected, and the branch they
+think they are on can still be sitting at `origin/main`.
+
+```sh
+git branch -a --contains <their-commit>     # if this prints ONLY your branch, it is the sole ref
+```
+
+If your branch is the only one, preserve it before touching anything, then
+recover yourself in a worktree so the contended checkout is out of the loop:
+
+```sh
+git branch rescue/<short-description> <their-commit>        # additive; destroys nothing
+git worktree add -b <your-branch>-clean <path> origin/main  # your own HEAD, unmovable by peers
+git -C <path> cherry-pick <your-commit-sha>
+git -C <path> log --format='%h %an %s' origin/main..HEAD    # exactly your commit, and %an proves it
+```
+
+Leave the rescue ref unpushed and un-PR'd — landing it is the other session's
+call, not yours (same reason you never pop a peer's stash). Surface it to the
+user instead, and say plainly that the commit exists in exactly one place.
+
+> Example: a coworker session's `fix(...)` commit landed on a branch cut seconds
+> earlier from clean `origin/main`. `git branch -a --contains` showed **only**
+> that branch — the coworker's own fix branch was still at `origin/main` locally
+> *and* on the remote. The documented `switch -C` + cherry-pick would have
+> stranded three files of someone else's work while looking like a clean
+> recovery.
+
+Prefer a worktree from the start for anything non-trivial in a contended clone
+— it is the only way your `HEAD` cannot be moved by a peer, and it costs one
+command.
+
+### When this bites
+
+- Multi-agent / multi-session work in a **side-by-side checkout**, especially
+  when another session has an open PR branch in the same clone.
+- Any gap between branch-create and commit during which *anything* could move
+  `HEAD` — a coworker agent, a background script, the user switching branches.
+- **Push-time, not just commit-time**: `git push … HEAD:<branch>` resolves
+  `HEAD` at push, so a coworker moving it between your commands pushes the
+  wrong tip (observed wiping a rebased PR branch with `main`'s tip mid
+  stacked-chain merge). Push explicit SHAs in a shared checkout — see
+  `git-plugin:git-merge-hazards` for the full stacked-chain push-by-SHA protocol.
+
+This is the commit-time companion to detection (SKILL.md) and to fetch-first
+diagnosis (`github-actions-plugin:multirepo-ci-cd`). The *read* side — whose
+branch a verifier reports on — is `agent-patterns-plugin:parallel-agent-dispatch`
+`references/verifier-shared-state.md`.
+
+Portfolio incident evidence is kept privately (repos-claude-config docs/rule-evidence/shared-checkout-branch-isolation.md).
+
 ## Avoiding the Whole Class of Problem
 
 The robust answer to coworker collision is **worktrees**:

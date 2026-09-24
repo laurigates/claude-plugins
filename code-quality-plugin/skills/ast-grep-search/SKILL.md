@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-09-24
 reviewed: 2026-04-25
 name: ast-grep-search
 description: Find and replace code patterns structurally with ast-grep. Use when matching code by AST structure, finding functions with specific signatures, or detecting anti-patterns regex cannot match.
@@ -33,6 +33,37 @@ Structural code search and refactoring using `ast-grep` — matches code by its 
 | Replacing while preserving variables | Quick filename/line check |
 
 **Decision rule**: If your search pattern contains wildcards for "any expression," "any arguments," or "any function name," use ast-grep.
+
+## Find References With the Sharpest Instrument
+
+Promoted from `~/.claude/rules/tool-use-patterns.md`. `Edit` refuses on a file
+unread this session, so "read it first" is already a harness invariant. The
+**uncovered** half is checking what *else* depends on what you're changing, and
+the reflex there is `grep`, which cannot tell a call from a comment, a
+definition from a mention, or `foo()` from `"foo"` in a string. Measured across
+282 local sessions: ~2,400 code-symbol searches went through `grep`/`rg`,
+against **6** `ast-grep` calls and **6** `LSP` calls.
+
+Ladder, sharpest first. Falling back down it is normal; starting at the bottom
+for a code symbol is the miss.
+
+| Reach for | When |
+|---|---|
+| `LSP` — `findReferences`, `incomingCalls`, `goToDefinition` | A language server is running for that filetype. Exact: no comment/string hits, and it follows imports and re-exports that no text pattern can. |
+| `ast-grep -p '$FN($$$ARGS)'` | No LSP, or the target is a *shape* rather than a name — a call with a given arity, a decorator, an un-awaited async call. Cross-language, bash included. |
+| `rg` | Non-code: markdown rules, chezmoi templates, config keys, justfile recipes, workflow YAML. The right tool there, not a fallback — most of a dotfiles or plugins repo is prose. |
+
+Two things that make the middle rung less automatic than it looks. A **bare
+identifier pattern matches the definition too** (`ast-grep --lang bash -p 'foo'`
+returns `foo() { … }` alongside every call), so an unshaped pattern is just
+`grep` with extra syntax. And a language server has to be **on `PATH`**, not
+merely installed — `bash-language-server` sitting in `~/.local/share/nvim/mason/bin`
+is invisible to the `LSP` tool, which silently drops shell to the middle rung.
+
+Structural tools carry their own empty-result trap: an `ast-grep` pattern that
+fails to parse returns no matches and exit 0, indistinguishable from a clean
+tree. Control-test the negative against a term you know is present, in the tool
+you are actually using (`agent-patterns-plugin:tool-result-traps`).
 
 ## Pattern Syntax
 

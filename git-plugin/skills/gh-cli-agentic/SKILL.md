@@ -4,7 +4,7 @@ description: gh CLI commands with JSON output for agent workflows. Use when quer
 user-invocable: false
 allowed-tools: Bash(gh pr *), Bash(gh run *), Bash(gh issue *), Bash(gh repo *), Bash(gh workflow *), Bash(gh api *), Read
 created: 2025-01-16
-modified: 2026-05-09
+modified: 2026-09-24
 reviewed: 2026-04-25
 ---
 
@@ -24,6 +24,23 @@ Optimized `gh` commands for AI agent consumption using JSON output and structure
 ## Core Principle
 
 Always use `--json <fields>` for machine-readable output. The `--jq` filter is built-in (no jq installation required).
+
+### `gh api` sends every field as a string unless you use `-F`
+
+`-f key=value` types the value as a **string**, so an endpoint expecting a
+number rejects it:
+
+```
+gh api -X POST repos/O/R/issues/2380/sub_issues -f sub_issue_id=5471095685
+Invalid property /sub_issue_id: "5471095685" is not of type `integer`. (HTTP 422)
+```
+
+`-F key=value` reads the value as a typed literal (number, boolean, null, or
+`@file`) and the identical call succeeds. Observed 2026-09-16: six sub-issue
+links failed this way before the flag changed. The error quotes the value and
+names the property, so it reads as a bad id — the id was right and the flag was
+wrong. Use `-F` for every numeric id (`sub_issue_id`, `after_id`) and `-f` for
+free text.
 
 ## Pull Request Operations
 
@@ -165,14 +182,14 @@ gh issue create --title "..." --body "..." --type "Task"
 gh api repos/{owner}/{repo}/issues/{parent}/sub_issues --jq '.[].number'
 
 # Add existing issue as sub-issue
-gh api repos/{owner}/{repo}/issues/{parent}/sub_issues -f sub_issue_id={child_id}
+gh api repos/{owner}/{repo}/issues/{parent}/sub_issues -F sub_issue_id={child_id}
 
 # Remove sub-issue
 gh api repos/{owner}/{repo}/issues/{parent}/sub_issues/{sub_issue_id} -X DELETE
 
 # Reprioritize sub-issue (move after another sub-issue)
 gh api repos/{owner}/{repo}/issues/{parent}/sub_issues -X PATCH \
-  -f sub_issue_id={id} -f after_id={after_id}
+  -F sub_issue_id={id} -F after_id={after_id}
 
 # Get sub-issue summary via issue view
 gh issue view {N} --json title,subIssuesSummary
@@ -285,7 +302,7 @@ gh api repos/{owner}/{repo}/commits/{sha} -H "Accept: application/vnd.github.pat
 | Quick issue list | `gh issue list --json number,title,labels -L 10` |
 | Sub-issue progress | `gh issue view $N --json title,subIssuesSummary` |
 | List sub-issues | `gh api repos/{o}/{r}/issues/{N}/sub_issues --jq '.[].number'` |
-| Add sub-issue | `gh api repos/{o}/{r}/issues/{N}/sub_issues -f sub_issue_id=M` |
+| Add sub-issue | `gh api repos/{o}/{r}/issues/{N}/sub_issues -F sub_issue_id=M` |
 | Transfer issue | `gh issue transfer N target-repo` |
 | Create dev branch | `gh issue develop N --checkout` |
 | Workflow trigger | `gh workflow run $NAME` |

@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-09-02
+modified: 2026-09-24
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -430,7 +430,7 @@ also dodges the burst rate limit), checking for an already-open PR first
 
 ## Related
 
-- [REFERENCE.md](REFERENCE.md) — index over `references/`: dispatch contract, brief templates, failure recovery, worktree hazards
+- [REFERENCE.md](REFERENCE.md) — index over `references/`: dispatch contract, briefs, failure recovery, worktree hazards, verifier shared state
 - `agent-teams` — implicit-team / SendMessage mechanics, out-of-scope discovery protocol
 - `custom-agent-definitions` — agent file structure, tool restrictions, context forking
 - `.claude/rules/agent-development.md` — agent authoring conventions

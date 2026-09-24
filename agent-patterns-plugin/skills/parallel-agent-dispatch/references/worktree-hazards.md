@@ -5,8 +5,10 @@ fails to isolate what you meant: a cwd reset writing to the main checkout, an
 exported `GIT_DIR` hijacking every sibling worktree, a nested repo the harness
 never worktreed, two agents colliding in one shared scratchpad clone, a worktree
 deleted out from under a live agent, a fixed target branch another session
-already holds, and an `isolation: "remote"` dispatch that quietly ran in a local
-worktree. Entry point: [`../SKILL.md`](../SKILL.md) § Worktree Preflight.
+already holds, an `isolation: "remote"` dispatch that quietly ran in a local
+worktree, and a fresh agent that cannot take a PR branch still pinned by the
+original agent's worktree. Entry point: [`../SKILL.md`](../SKILL.md) § Worktree
+Preflight.
 
 ## Worktree cwd-reset guardrail (#1480)
 
@@ -327,3 +329,119 @@ Distinct from `workflow-orchestration-plugin:workflow-interrupted-run-recovery`
 § 5, which covers a run **killed** mid-flight: there salvage precedes a
 `--force` removal. Here the run **completed**, so there is nothing to salvage
 and force is never warranted.
+
+## PR feedback on a worktree agent's PR: resume the original agent, don't spawn a fresh one
+
+Promoted from the always-loaded `agent-worktree-resume-for-pr-feedback.md`
+portfolio rule, whose stub keeps the gate line.
+
+When you dispatched a unit of work to an `isolation: "worktree"` subagent and
+it opened a PR, a later round of work on **that same PR** (review feedback,
+follow-up fixes) should **resume the original agent via `SendMessage`** — not
+spawn a new `isolation: "worktree"` agent. A fresh worktree agent **cannot
+check out the PR branch**, because that branch is still checked out in the
+original agent's worktree, and git refuses to check out a branch that is live
+in another worktree (the same pin as [Target-branch preflight
+(#1969)](#target-branch-preflight-1969)).
+
+```
+# Round 1: spawn worktree agents → they push branches + open PRs
+Agent(isolation: "worktree", ...)   # → worktree on feat/x, pushes feat/x, PR #N
+
+# Round 2 (PR feedback): the obvious move re-fails
+Agent(isolation: "worktree", ...)   # fresh worktree off main
+#   agent runs: git switch -C feat/x origin/feat/x
+#   → "fatal: 'feat/x' is already checked out at '.../worktrees/agent-...'"
+```
+
+`git worktree list` after round 1 shows the branches are pinned (`+`-prefixed
+= checked out elsewhere):
+
+```
+.../worktrees/agent-aXXX  407d0c8 [feat/<first-pr-branch>]
+.../worktrees/agent-aYYY  e382375 [fix/<second-pr-branch>]
+```
+
+A new worktree off `main` can't take those branches, and you don't want it
+to re-create the branch from scratch (loses the agent's context).
+
+### The rule
+
+**Continue the original agent with `SendMessage({to: <agentId>, ...})`.** Its
+worktree is still alive, still on the PR branch, with the full implementation
+context (it knows the code it wrote, which is exactly what review-feedback work
+needs). Completed non-background agents resume fine — the harness reports *"had
+no active task; resumed from transcript in the background"* and runs the new
+instructions. The `agentId` (format `aXXX...`) comes from the original spawn
+result.
+
+```
+SendMessage({ to: "a1b2d7b0c23950c17",
+  message: "Resume PR #<n> in your worktree. Address these review comments: ..." })
+```
+
+**Reconcile with `../SKILL.md` § "Resuming agents: SendMessage loses worktree
+isolation" (#1546).** The resumed run may execute with its cwd in the
+orchestrator's **main checkout**, not in the worktree. The worktree and its
+branch still exist, so the resume is still the right route — but the brief must
+make the agent operate on the worktree by absolute path (`git -C
+<worktreePath> …`, edits under `<worktreePath>/`) and confirm
+`git -C <worktreePath> branch --show-current` before its first write. Resume
+file-mutating agents one at a time, never several concurrently, or they tangle
+in the main checkout exactly as #1546 describes. On the `Workflow` substrate
+there is no agent to resume at all (see § Workflow agents are unreachable,
+above) — remove that run's worktree (non-force) and dispatch a fresh agent onto
+the freed branch.
+
+Give the agent the reviewer's words, not your summary — hand it the PR number
+and the raw threads (`gh api repos/<o>/<r>/pulls/<n>/comments --jq '.[] | {id,
+path, line, body}'`, or let it run that itself) and put your own instructions
+after them. The relay brief is where reviewer intent gets bent (Fable 5.1 has a
+slightly higher propensity to distort user intent when briefing subagents —
+system card §6.2.1), and the agent needs each thread's id to reply anyway.
+
+Brief the resumed agent to: `git fetch origin`, confirm it's on its PR
+branch in sync with origin, **verify each review suggestion against the code
+before applying** (don't blind-accept — reviewers, incl. bots, are sometimes
+wrong), re-run the verification gates, push to the same branch, and reply to
+each review thread (`gh api repos/<o>/<r>/pulls/<n>/comments/<id>/replies -f
+body=...`).
+
+### When a fresh worktree *is* right
+
+- The original agent's worktree was already cleaned up (merged + pruned), so
+  the branch is no longer checked out anywhere — a fresh agent can take it.
+- Genuinely new, independent work (a different branch/PR), not iteration on
+  the existing one.
+
+In the first case, fetch the remote branch into the new worktree explicitly
+(`git switch -C <branch> origin/<branch>`); it only works because nothing
+holds the branch anymore.
+
+### Cleanup note
+
+After the PR merges, the local branch delete fails while its worktree holds
+it (`cannot delete branch '<x>' used by worktree at ...`). Remove the
+worktree first, then the branch:
+
+```sh
+git worktree remove --force .claude/worktrees/agent-<id>
+git branch -D <branch>
+git worktree prune
+```
+
+The `--force` here is for a worktree **this session's own agent** created and
+whose PR has merged; the scoping conditions in § Remedy above (never force-remove
+a worktree another session created, skip `locked`) still apply.
+
+### Rationale
+
+The original agent is the cheapest *and* most context-rich way to iterate on
+its own PR: its worktree is the only checkout that already has the branch,
+and it remembers the design. Spawning fresh re-pays worktree setup, fails the
+checkout, and discards the context that makes feedback work fast. Pairs with
+`../SKILL.md` (the round-1 spawn contract) and `git-plugin:git-coworker-check`
+REFERENCE.md § Shared-checkout branch isolation (why branches pinned to
+worktrees matter in a contended clone).
+
+Portfolio incident evidence is kept privately (repos-claude-config docs/rule-evidence/agent-worktree-resume-for-pr-feedback.md).

@@ -23,9 +23,9 @@ This plugin provides comprehensive code quality tools including automated code r
 | `/code:test-quality` | Analyze test suite quality — detect test smells, empty assertions, flaky patterns |
 | `/code:complexity` | Analyze code complexity metrics — cyclomatic, cognitive, function length, coupling |
 | `/code-quality:bulk-sweep-classify` | Route a bulk sweep by target: code renames go through `ast-grep-search` structurally; prose/docs sweeps use the four-category classify-then-transform discipline with allowlist-aware verification; parallel sweeps resolve a central rename map before dispatch and brief auditors with the artifact's purpose |
-| `ast-grep-search` | AST-based code search for structural pattern matching |
+| `ast-grep-search` | AST-based code search for structural pattern matching, and the LSP → `ast-grep` → `rg` ladder for finding references before a change |
 | `code-review-checklist` | Checklist for security, correctness, and performance review — secrets/injection, error handling, N+1 queries |
-| `debugging-methodology` | Systematic debugging for memory, performance, and system-level issues — leaks, strace/eBPF, profiling, races |
+| `debugging-methodology` | Systematic debugging for memory, performance, and system-level issues — leaks, strace/eBPF, profiling, races; diagnosing at the failure point (sentinel ids in errors, reading the resource for exhaustion symptoms) |
 
 ## Agents
 

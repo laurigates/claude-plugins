@@ -5,7 +5,7 @@ args: "[--check | --claim | --release]"
 argument-hint: "[--claim | --release | --check (default)]"
 allowed-tools: Bash(bash *), Bash(git status *), Bash(git stash *), Bash(git rev-parse *), Read, TodoWrite
 created: 2026-04-21
-modified: 2026-05-27
+modified: 2026-09-24
 reviewed: 2026-05-19
 ---
 
@@ -175,6 +175,7 @@ Quick triage:
 | Symptom | Action |
 |---|---|
 | Your commit is on a branch you didn't expect | REFERENCE.md § Scenario 1 (mixed-reset + `git branch -f` + cherry-pick) |
+| About to `git push -u` a new branch, or it holds a commit you didn't author | REFERENCE.md § Shared-checkout branch isolation (`origin/main..HEAD` check; `git branch -a --contains` before any rewrite) |
 | `git switch` carried unfamiliar WIP into the new branch | REFERENCE.md § Scenario 2 (selective `git checkout HEAD -- <paths>`) |
 | `git stash list` is shorter than you remember | REFERENCE.md § Scenario 3 (recover via `git fsck --unreachable`) |
 | You force-pushed the polluted branch already | REFERENCE.md § Scenario 4 (only `--force-with-lease` mitigations) |
