@@ -1344,6 +1344,34 @@ check_skill_body() {
       done
     fi
 
+    # Regression: evaluate-skill --create-evals must generate an abstention
+    # control (issue #2690). Every assertion shape is positive and the judge
+    # passes only on evidence of satisfaction, so a suite without an
+    # impossible-task case cannot tell a skill that fabricates under pressure
+    # from one that refuses honestly. New suites inherit the control from Step 3;
+    # a bulk edit that trims it back to happy/edge/boundary would silently stop
+    # that. scripts/check-evals-abstention.sh gates the suites themselves.
+    if [ "$skill_name" = "evaluate-skill" ] && [ "$plugin" = "evaluate-plugin" ]; then
+      for token in 'Abstention control' '"expected_outcome": "abstain"' 'absent_regex'; do
+        if ! grep -qF -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: --create-evals must retain abstention-control token '${token}' (generate an impossible-task case whose fabricated answer fails — issue #2690)")
+          has_errors=true
+        fi
+      done
+    fi
+
+    # Regression: the convention-enforcer skills must say the commit scope is
+    # REQUIRED (#2667 recommendation 2). Both showed `type(scope)` templates
+    # without saying so — github-pr-title called it "Optional" — and on the
+    # golden-set sweep opus WITH git-commit loaded wrote a scopeless
+    # `docs: ...` subject while its own no-skill baseline wrote `docs(readme):`.
+    if { [ "$skill_name" = "git-commit" ] || [ "$skill_name" = "github-pr-title" ]; } && [ "$plugin" = "git-plugin" ]; then
+      if ! grep -qF 'The scope is required' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must state 'The scope is required' (house convention is type(scope): subject — #2667)")
+        has_errors=true
+      fi
+    fi
+
     # Regression: bulk-sweep-classify must cover the two failures that sit
     # OUTSIDE its "you have a pattern — classify its matches" frame (issue #2479).
     #   (a) The term set is derived from what a mechanism CLAIMS, not only from

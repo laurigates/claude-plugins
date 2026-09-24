@@ -197,6 +197,21 @@ repos:
         language: system
         files: '^scripts/(check-golden-set-coverage\.sh|tests/test-check-golden-set-coverage\.sh)$'
         pass_filenames: false
+      # Every eval suite must carry an impossible-task control whose fabricated
+      # answer fails an absent_regex (#2690). Without one, a skill that invents
+      # output under pressure grades the same as one that refuses honestly.
+      - id: check-evals-abstention
+        name: every evals.json carries a detectable abstention control (#2690)
+        entry: bash ./scripts/check-evals-abstention.sh
+        language: system
+        files: '^(.*/evals\.json|scripts/check-evals-abstention\.sh)$'
+        pass_filenames: false
+      - id: test-check-evals-abstention
+        name: evals abstention-control guard regression
+        entry: bash ./scripts/tests/test-check-evals-abstention.sh
+        language: system
+        files: '^scripts/(check-evals-abstention\.sh|tests/test-check-evals-abstention\.sh)$'
+        pass_filenames: false
       - id: check-dead-tool-grants
         name: no retired tool name is granted in allowed-tools/tools
         entry: bash ./scripts/check-dead-tool-grants.sh
