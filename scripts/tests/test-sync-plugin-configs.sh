@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2015  # test idiom: `cond && pass || fail` — `pass` returns 0
 # Regression tests for scripts/sync-plugin-configs.py
 #
 # Tests both check mode and fix mode to ensure configuration files stay in sync
@@ -35,6 +36,20 @@ make_mock_repo() {
   "name": "valid-plugin",
   "version": "1.0.0",
   "description": "A valid test plugin",
+  "keywords": ["testing"]
+}
+JSON
+
+  # A plugin whose manifest already declares author + license: the generated
+  # marketplace entry must mirror them rather than overwrite with defaults.
+  mkdir -p "$repo/licensed-plugin/.claude-plugin"
+  cat << 'JSON' > "$repo/licensed-plugin/.claude-plugin/plugin.json"
+{
+  "name": "licensed-plugin",
+  "version": "1.0.0",
+  "description": "A plugin with explicit author and license",
+  "author": {"name": "Fixture Author", "url": "https://example.invalid/fixture"},
+  "license": "MIT",
   "keywords": ["testing"]
 }
 JSON
@@ -133,9 +148,38 @@ else
     || fail "fix mode: failed to add valid-plugin to manifest"
 
   # Verify marketplace was fixed
-  grep -A 8 '"name": "valid-plugin"' "$repo/.claude-plugin/marketplace.json" | grep -q '"category": "testing"' \
+  # Read the entry as JSON, not as a fixed `grep -A N` line window: the entry
+  # now also carries author + license (#2698), which pushes `category` past any
+  # window sized for the old six-key shape.
+  valid_category=$(python3 -c 'import json,sys
+print(next((p.get("category","") for p in json.load(open(sys.argv[1]))["plugins"] if p["name"]=="valid-plugin"), ""))' \
+    "$repo/.claude-plugin/marketplace.json")
+  [ "$valid_category" = "testing" ] \
     && pass "fix mode: added valid-plugin to marketplace with correct inferred category" \
     || fail "fix mode: failed to add valid-plugin to marketplace with category"
+
+  # #2698: a generated entry carries author + license. valid-plugin's manifest
+  # declares neither, so the entry takes the defaults (the root MIT LICENSE and
+  # the marketplace owner); licensed-plugin's entry mirrors its own manifest.
+  # Before the fix create_marketplace_entry emitted only name/source/
+  # description/version/keywords/category, so both reads below were empty.
+  entry_meta() {
+    python3 -c 'import json,sys
+e=[p for p in json.load(open(sys.argv[1]))["plugins"] if p["name"]==sys.argv[2]]
+e=e[0] if e else {}
+a=e.get("author")
+print("%s|%s|%s" % (a.get("name","") if isinstance(a,dict) else "", a.get("url","") if isinstance(a,dict) else "", e.get("license","")))' \
+      "$repo/.claude-plugin/marketplace.json" "$1"
+  }
+  valid_meta=$(entry_meta valid-plugin)
+  [ "$valid_meta" = "Lauri Gates||MIT" ] \
+    && pass "fix mode: generated entry carries default author + license (MIT)" \
+    || fail "fix mode: generated entry lacks author/license. Got: '$valid_meta'"
+
+  licensed_meta=$(entry_meta licensed-plugin)
+  [ "$licensed_meta" = "Fixture Author|https://example.invalid/fixture|MIT" ] \
+    && pass "fix mode: generated entry mirrors the manifest's author + license" \
+    || fail "fix mode: generated entry did not mirror manifest author/license. Got: '$licensed_meta'"
 
   # Verify version mismatch was fixed in marketplace to match manifest
   marketplace_mismatch_version=$(grep -A 8 '"name": "mismatch-plugin"' "$repo/.claude-plugin/marketplace.json" | grep '"version"' | awk -F'"' '{print $4}')

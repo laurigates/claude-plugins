@@ -144,6 +144,18 @@ repos:
         language: script
         files: '/agents/.*\.md$'
         pass_filenames: false
+      - id: check-agent-frontmatter-keys
+        name: agent frontmatter uses only fields Claude Code reads (#2646)
+        entry: ./scripts/check-agent-frontmatter-keys.sh
+        language: script
+        files: '(/agents/.*\.md|^scripts/check-agent-frontmatter-keys\.sh)$'
+        pass_filenames: false
+      - id: test-check-agent-frontmatter-keys
+        name: agent frontmatter keys guard regression (#2646)
+        entry: bash ./scripts/tests/test-check-agent-frontmatter-keys.sh
+        language: system
+        files: '^scripts/(check-agent-frontmatter-keys\.sh|tests/test-check-agent-frontmatter-keys\.sh)$'
+        pass_filenames: false
       - id: check-branch-containment-guidance
         name: branch containment is routed to the authority ladder, not branch-audit
         entry: ./scripts/check-branch-containment-guidance.sh
@@ -228,10 +240,12 @@ repos:
         files: '^scripts/(check-unrendered-templates\.sh|tests/test-check-unrendered-templates\.sh)$'
         pass_filenames: false
       - id: check-workflow-model
-        name: every Claude workflow pins opus + explicit effort
+        name: every Claude workflow pins opus + explicit effort (and has a rule-table row)
         entry: ./scripts/check-workflow-model.sh
         language: script
-        files: '^\.github/workflows/.*\.ya?ml$'
+        # The rule file is an input too (#2630): the guard cross-checks its
+        # canonical per-workflow table, so an edit that drops a row must fire it.
+        files: '^(\.github/workflows/.*\.ya?ml|\.claude/rules/workflow-model-effort\.md|scripts/(check-workflow-model\.sh|tests/test-check-workflow-model\.sh))$'
         pass_filenames: false
       - id: check-workflow-script-triggers
         name: workflow-run scripts are reachable from its path triggers (#2219)
@@ -244,6 +258,18 @@ repos:
         entry: ./scripts/tests/test-check-workflow-script-triggers.sh
         language: script
         files: '^scripts/(check-workflow-script-triggers\.sh|tests/test-check-workflow-script-triggers\.sh)$'
+        pass_filenames: false
+      - id: check-workflow-cron-collisions
+        name: no two scheduled workflows fire in the same minute (#2554)
+        entry: ./scripts/check-workflow-cron-collisions.sh --strict
+        language: script
+        files: '^(\.github/workflows/.*\.ya?ml|scripts/check-workflow-cron-collisions\.sh)$'
+        pass_filenames: false
+      - id: test-check-workflow-cron-collisions
+        name: workflow cron-collision guard regression
+        entry: ./scripts/tests/test-check-workflow-cron-collisions.sh
+        language: script
+        files: '^scripts/(check-workflow-cron-collisions\.sh|tests/test-check-workflow-cron-collisions\.sh)$'
         pass_filenames: false
       - id: check-issue-template-inheritance
         name: local ISSUE_TEMPLATE keeps what the org directory provided (#2568)
@@ -329,7 +355,7 @@ repos:
         name: dispatch skills carry the loud-failure / completion-manifest contract (#1422, #1601)
         entry: ./scripts/check-agent-failure-contract.sh
         language: script
-        files: '^(agent-patterns-plugin/skills/(parallel-agent-dispatch|custom-agent-definitions)/((SKILL|REFERENCE)\.md|references/.*\.md)|agents-plugin/agents/refactor\.md|scripts/check-agent-failure-contract\.sh)$'
+        files: '^(agent-patterns-plugin/skills/(parallel-agent-dispatch|custom-agent-definitions)/((SKILL|REFERENCE)\.md|references/.*\.md)|agents-plugin/agents/refactor\.md|\.claude/rules/agent-development\.md|scripts/check-agent-failure-contract\.sh)$'
         pass_filenames: false
       - id: test-check-agent-failure-contract
         name: completion-manifest contract regression (#1601)
@@ -494,6 +520,15 @@ repos:
         language: system
         files: '^scripts/(agentic-audit-precompute\.sh|tests/test-agentic-audit-precompute\.sh)$'
         pass_filenames: false
+      - id: test-workflow-run-cost
+        name: workflow-run-cost reads per-run cost + near-cap, and the model audit feeds it to its prompt (#2669)
+        entry: bash ./scripts/tests/test-workflow-run-cost.sh
+        language: system
+        # The suite also EXECUTES the model audit's own pre-compute run block,
+        # extracted from the shipped YAML, so that workflow is part of what it
+        # guards and must trigger it too.
+        files: '^(scripts/(workflow-run-cost\.sh|tests/test-workflow-run-cost\.sh|tests/fixtures/workflow-run-cost/.*)|\.github/workflows/workflow-model-audit\.yml)$'
+        pass_filenames: false
       - id: test-blueprint-health-report
         name: blueprint-health rolls a bulk `modified:` bump up as one cohort (#2556)
         entry: bash ./scripts/tests/test-blueprint-health-report.sh
@@ -513,10 +548,11 @@ repos:
         files: '(research-radar\.yml|check-research-radar-grounding\.sh)$'
         pass_filenames: false
       - id: test-check-research-radar-grounding
-        name: research-radar grounding guard regression
+        name: research-radar grounding guard + target collector regression (#2697)
         entry: bash ./scripts/tests/test-check-research-radar-grounding.sh
         language: system
-        files: '^scripts/(check-research-radar-grounding\.sh|tests/test-check-research-radar-grounding\.sh)$'
+        # research-radar.yml: case 13 executes the workflow's own collector step.
+        files: '^(\.github/workflows/research-radar\.yml|scripts/(check-research-radar-grounding\.sh|tests/test-check-research-radar-grounding\.sh))$'
         pass_filenames: false
       - id: test-run-skill-script-tests
         name: skill-script runner reports SKIP separately from PASS (#2221)
@@ -574,11 +610,29 @@ repos:
         # script alone.
         files: '^(scripts/(export-pi-agents\.py|tests/test-export-pi-agents\.sh)|justfile)$'
         pass_filenames: false
+      - id: test-pi-adapter-check
+        name: pi-adapter-check package probe regression (#2636)
+        entry: bash ./scripts/tests/test-pi-adapter-check.sh
+        language: system
+        # The suite extracts the recipe body from the justfile and runs it, so
+        # the justfile is the subject, not just a dependency.
+        files: '^(scripts/tests/test-pi-adapter-check\.sh|justfile)$'
+        pass_filenames: false
       - id: test-export-opencode-hooks
         name: opencode hook-plugin export regression (#1605)
         entry: bash ./scripts/tests/test-export-opencode-hooks.sh
         language: system
         files: '^(scripts/(generate-opencode-hook-plugins\.py|export-opencode\.sh|install-opencode\.sh|tests/test-export-opencode-hooks\.sh)|[^/]+-plugin/hooks\.json)$'
+        pass_filenames: false
+      - id: test-export-pi-hooks
+        name: pi safety-hook extension export regression (#2634)
+        entry: bash ./scripts/tests/test-export-pi-hooks.sh
+        language: system
+        # plugin.json is in scope because eight plugins declare hooks inline
+        # there, with no hooks.json; the opencode generator is in scope because
+        # the pi generator imports its manifest-parsing helpers; hook scripts
+        # because the real-repo half runs the allowlisted ones end to end.
+        files: '^(scripts/(generate-pi-hook-extension\.py|generate-opencode-hook-plugins\.py|tests/test-export-pi-hooks\.sh)|[^/]+-plugin/(hooks\.json|\.claude-plugin/plugin\.json|hooks/[^/]+\.sh)|justfile)$'
         pass_filenames: false
       - id: check-git-sandbox-guards
         name: shell test sandboxes guard mktemp against shared-checkout leak (#1692)
@@ -636,6 +690,27 @@ repos:
         entry: bash ./scripts/tests/test-check-workflow-tool-grants.sh
         language: system
         files: '^scripts/(check-workflow-tool-grants\.sh|tests/test-check-workflow-tool-grants\.sh)$'
+        pass_filenames: false
+      - id: check-comment-deliverable-assertions
+        name: comment-posting Claude steps assert delivery + upload their transcript (#2630, #2719)
+        entry: bash ./scripts/check-comment-deliverable-assertions.sh
+        language: system
+        # Whole sweep, like tool-grants above: the Claude step and the assertion
+        # step that follows it live in the same file and can change together.
+        files: '^(\.github/workflows/.*\.ya?ml|scripts/(check-comment-deliverable-assertions|assert-pr-comment-delivered)\.sh)$'
+        pass_filenames: false
+      - id: test-check-comment-deliverable-assertions
+        name: comment-deliverable assertion sweep regression
+        entry: bash ./scripts/tests/test-check-comment-deliverable-assertions.sh
+        language: system
+        files: '^scripts/(check-comment-deliverable-assertions\.sh|tests/test-check-comment-deliverable-assertions\.sh)$'
+        pass_filenames: false
+      # Stubs gh and asserts on the endpoints queried, so it needs no network.
+      - id: test-assert-pr-comment-delivered
+        name: PR comment delivery assertion regression (#2630, #2719)
+        entry: bash ./scripts/tests/test-assert-pr-comment-delivered.sh
+        language: system
+        files: '^scripts/(assert-pr-comment-delivered\.sh|tests/test-assert-pr-comment-delivered\.sh)$'
         pass_filenames: false
       # The STATUS= contract (#2691): canonical OK|WARN|ERROR, ISSUE_COUNT=, and
       # REASON= on the non-OK path, swept across every scripts/check-*.sh. The
@@ -752,6 +827,20 @@ repos:
         entry: bash ./scripts/tests/test-check-hook-cue-skill-refs.sh
         language: system
         files: '^scripts/(check-hook-cue-skill-refs\.sh|tests/test-check-hook-cue-skill-refs\.sh)$'
+        pass_filenames: false
+      - id: check-hook-message-pins
+        name: blocking-hook suites read the block message, not just the exit code (#2715)
+        entry: bash ./scripts/check-hook-message-pins.sh
+        language: system
+        # Whole-scope: a suite's verdict depends on its paired hook too (a new
+        # block "…" call adds a message to pin), so every hook script triggers it.
+        files: '([^/]*-plugin/hooks/.*\.sh|^scripts/check-hook-message-pins\.sh)$'
+        pass_filenames: false
+      - id: test-check-hook-message-pins
+        name: hook-message-pin guard regression (capture forms, per-message tags, empty tree)
+        entry: bash ./scripts/tests/test-check-hook-message-pins.sh
+        language: system
+        files: '^scripts/(check-hook-message-pins\.sh|tests/test-check-hook-message-pins\.sh)$'
         pass_filenames: false
       - id: test-check-driver-freshness
         name: driver-freshness equal-date invariant + epoch diagnostics (#1704)

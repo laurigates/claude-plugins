@@ -122,7 +122,7 @@ Permission rules can match a tool's **input parameters**, not just its name, wit
 | `Agent(model:*)` | Any `Agent` call that sets a model parameter |
 | `WebFetch(domain:*.example.com)` | A `WebFetch` to any subdomain of `example.com` (see wildcard note below) |
 
-Pair `Agent(model:...)` deny rules with the pre-launch classifier check (`.claude/rules/agent-development.md` § Subagent Nesting Depth) to govern which subagents a session may spawn.
+Pair `Agent(model:...)` deny rules with the pre-launch classifier check (`.claude/rules/agent-development.md` § Subagent Nesting Depth) to govern which subagents a session may spawn. `Agent(type)` deny rules and `Agent(x,y)` allowed-types restrictions are enforced for named subagent spawns only since 2.1.186.
 
 ### Wildcard and Glob Matching (2.1.166+ / 2.1.172+ / 2.1.178+ / 2.1.214)
 
@@ -194,6 +194,7 @@ A further round tightened the permission analyzer itself:
 - `file -m`/`--magic-file` and `-f`/`--files-from` now require permission
   instead of being auto-allowed as read-only.
 - A Windows PowerShell 5.1 permission-check bypass was fixed.
+- (2.1.274) Commands that loop over or assign certain special shell variables now ask, and worktree-isolated sessions refuse Bash commands with certain nested shell expansions.
 
 ### Working-Directory Bypass Hardening (2.1.149, revisited 2.1.271/2.1.273)
 
