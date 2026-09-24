@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.56.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.56.0...git-plugin-v2.56.1) (2026-09-24)
+
+
+### Bug Fixes
+
+* **git-plugin:** report git-triage batch coverage and stop reading diagnostics as issues ([#2740](https://github.com/laurigates/claude-plugins/issues/2740)) ([d206af0](https://github.com/laurigates/claude-plugins/commit/d206af0c3684e75fed53e6c8fa59b78c5c642c44))
+
 ## [2.56.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.55.1...git-plugin-v2.56.0) (2026-09-20)
 
 
