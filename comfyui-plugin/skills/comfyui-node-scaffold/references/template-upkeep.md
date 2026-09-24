@@ -42,11 +42,12 @@ the justfile's `Assets` recipe, whose stale copy silently distorted banner
 artwork in one pack for months).
 
 **It reports; it never writes to a pack.** Drift is *bidirectional*: all 13
-packs are ahead of the template on `release-please.yml` (`ubuntu-slim` +
-`release-please-action@v5`), the template is ahead on `RELEASE-CHECKLIST.md`,
-Renovate independently pushes packs ahead on pinned versions, and
-`tests/js/__mocks__/app.js` is pack-owned. A template→pack apply would be a
-silent-revert bug across 13 repos, so a human classifies each row's direction.
+packs were ahead of the template on `release-please.yml` (`ubuntu-slim` +
+`release-please-action@v5`) until #2494 back-ported it, the template is ahead
+on `RELEASE-CHECKLIST.md`, Renovate independently pushes packs ahead on pinned
+versions, and `tests/js/__mocks__/app.js` is pack-owned. A template→pack apply
+would be a silent-revert bug across 13 repos, so a human classifies each row's
+direction.
 A new context-invariant template with no `fleet-policy.toml` entry is itself an
 ERROR, so the manifest cannot fall behind the scaffold. The weekly
 `Plugin: Fleet drift audit` workflow runs the same script and opens one issue

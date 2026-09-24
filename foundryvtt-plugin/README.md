@@ -40,7 +40,8 @@ Scaffold a new FoundryVTT v13 module repository ready for implementation, in the
   ships a module Foundry loads to nothing. `scaffold.py --verify <module-dir>`
   re-runs the same audit from outside and emits `STATUS=OK|WARN|ERROR`
   (exit 1 on ERROR)
-- CI + release-please + renovate GitHub Actions; release-please bumps both
+- CI + release-please GitHub Actions, plus a `renovate.json` read by the
+  account-wide Renovate App (no repo-local runner); release-please bumps both
   `package.json` and `module.json` `$.version`, and the release job zips `dist/`
   and attaches the install assets
 - localization, scoped CSS, `CLAUDE.md`, `README.md`, `LICENSE`, and a toolchain ADR
