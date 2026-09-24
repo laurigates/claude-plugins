@@ -17,11 +17,20 @@
  * would feed the uncapped native listing this binding exists to replace.
  */
 
-import { existsSync, realpathSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, isAbsolute, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import {
+  type ClaudeEnvState,
+  createClaudeEnvState,
+  deriveSessionId,
+  extractSkillLocations,
+  realpathOrResolve,
+  recordSkillDir,
+  rewriteClaudeEnvCommand,
+} from "../core/claude-env.ts";
 import {
   AVAILABLE_SKILLS_CLOSE,
   AVAILABLE_SKILLS_OPEN,
@@ -36,15 +45,6 @@ import {
   type SkillIndex,
   scanSkills,
 } from "../core/index.ts";
-import {
-  deriveSessionId,
-  extractSkillLocations,
-  referencesSessionId,
-  referencesSkillDir,
-  resolveSkillDir,
-  unresolvedSkillDirReason,
-  withClaudeEnv,
-} from "./claude-env.ts";
 import { loadConfig, resolvePins, type SkillDiscoveryConfig } from "./config.ts";
 
 const PI_DIR = dirname(fileURLToPath(import.meta.url));
@@ -201,35 +201,10 @@ export async function runSearchSkills(
   return { content: [{ type: "text", text: renderToolResult(results) }], details: {} };
 }
 
-/** Session-scoped skill directories the model has loaded, most recent first. */
-export interface ClaudeEnvState {
-  readDirs: string[];
-  expandedDirs: string[];
-}
-
-export function createClaudeEnvState(): ClaudeEnvState {
-  return { readDirs: [], expandedDirs: [] };
-}
-
-/** Move `dir` to the front of `dirs` (most recent first, no duplicates). */
-export function recordSkillDir(dirs: string[], dir: string): void {
-  const existing = dirs.indexOf(dir);
-  if (existing !== -1) dirs.splice(existing, 1);
-  dirs.unshift(dir);
-}
-
 /** Record the directory of every `/skill:` expansion in a before_agent_start prompt. */
 export function recordExpandedSkills(state: ClaudeEnvState, prompt: string): void {
   for (const location of extractSkillLocations(prompt)) {
     recordSkillDir(state.expandedDirs, dirname(location));
-  }
-}
-
-function realpathOrResolve(path: string): string {
-  try {
-    return realpathSync(path);
-  } catch {
-    return resolve(path);
   }
 }
 
@@ -246,12 +221,14 @@ export interface ClaudeEnvToolCallContext {
 }
 
 /**
- * tool_call body for the Claude Code variables (see claude-env.ts). A `read`
- * of a SKILL.md records its directory. A `bash` call referencing
- * `CLAUDE_SKILL_DIR` or `CLAUDE_SESSION_ID` has `event.input.command`
- * rewritten in place; an unresolvable or ambiguous skill directory blocks the
- * call with a reason naming the fix. `indexedDirs` is consulted only when the
- * session tiers find nothing.
+ * tool_call body for the Claude Code variables (see core/claude-env.ts). A
+ * `read` of a SKILL.md records its directory. A `bash` call referencing
+ * `CLAUDE_SKILL_DIR`, `CLAUDE_PLUGIN_ROOT` or `CLAUDE_SESSION_ID` has
+ * `event.input.command` rewritten in place; an unresolvable or ambiguous skill
+ * directory blocks the call with a reason naming the fix. `indexedDirs` is
+ * consulted only when the session tiers find nothing. pi clones tool
+ * arguments before `tool_call` runs, so the rewrite reaches execution but not
+ * the transcript.
  */
 export function handleClaudeEnvToolCall(
   event: { toolName: string; input: Record<string, unknown> },
@@ -271,32 +248,21 @@ export function handleClaudeEnvToolCall(
   if (event.toolName !== "bash") return undefined;
   const command = event.input.command;
   if (typeof command !== "string") return undefined;
-  const needsSkillDir = referencesSkillDir(command);
-  if (!needsSkillDir && !referencesSessionId(command)) return undefined;
-
-  let skillDir: string | undefined;
-  if (needsSkillDir) {
-    const session = { read: state.readDirs, expanded: state.expandedDirs, indexed: [] };
-    let resolution = resolveSkillDir(command, session, exists, realpath);
-    if ("unresolved" in resolution) {
-      resolution = resolveSkillDir(
-        command,
-        { ...session, indexed: indexedDirs() },
-        exists,
-        realpath,
-      );
-    }
-    if (!("dir" in resolution)) {
-      return { block: true, reason: unresolvedSkillDirReason(resolution) };
-    }
-    skillDir = resolution.dir;
-  }
-
-  event.input.command = withClaudeEnv(command, {
-    skillDir,
-    sessionId: deriveSessionId(ctx.sessionManager.getSessionId()),
-    sessionFile: ctx.sessionManager.getSessionFile(),
-  });
+  const rewrite = rewriteClaudeEnvCommand(
+    command,
+    state,
+    indexedDirs,
+    {
+      sessionId: deriveSessionId(ctx.sessionManager.getSessionId()),
+      sessionFile: ctx.sessionManager.getSessionFile(),
+    },
+    "pi",
+    exists,
+    realpath,
+  );
+  if (rewrite === undefined) return undefined;
+  if ("reason" in rewrite) return { block: true, reason: rewrite.reason };
+  event.input.command = rewrite.command;
   return undefined;
 }
 

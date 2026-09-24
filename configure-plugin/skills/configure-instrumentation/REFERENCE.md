@@ -182,3 +182,11 @@ When a Prometheus scrape endpoint is preferred over OTLP push:
 
 Prefer the OTel SDK when traces are also wanted — one pipeline, one config
 surface — and reserve the Prometheus clients for scrape-only environments.
+
+## Claude Code's Own Telemetry
+
+Not app instrumentation, but it lands in the same OTel backend when a team exports Claude Code telemetry:
+
+- `claude_code.assistant_response` (2.1.193) carries the model's response text. It is redacted unless `OTEL_LOG_ASSISTANT_RESPONSES=1`, and when that variable is unset it follows `OTEL_LOG_USER_PROMPTS`, so a deployment already logging prompt content starts receiving response content on upgrade; set `OTEL_LOG_ASSISTANT_RESPONSES=0` to keep it out.
+- Workflow-spawned agents tag their telemetry with `workflow.run_id` and `workflow.name` (2.1.202).
+- 2.1.274 added an `effort` attribute on the `claude_code.llm_request` span, a `claude_code.managed_settings_resolved` event (`OTEL_LOG_MANAGED_SETTINGS=1` for redacted settings), and an `index.jsonl` for `OTEL_LOG_RAW_API_BODIES=file:<dir>`; 2.1.275 warns at startup when `otelHeadersHelper` fails.
