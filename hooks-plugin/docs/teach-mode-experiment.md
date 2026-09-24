@@ -74,7 +74,7 @@ right response is "here is your output + the right tool to use next time."
 | `git X && git Y` (**both** index-modifying) | `.git/index.lock` race |
 | `git push -u origin <other-branch>` on `main`/`master` | Wrong upstream |
 | `cat > /tmp/commit_msg.txt` heredoc pattern | Wrong workflow shape |
-| Reading `*.output` task files with cat/tail | Should use TaskOutput tool |
+| Reading `*.output` task files with cat/tail | Should use Read on the task-output file |
 | `sed -i` / `awk > file` / `echo > file` / `cat > file` | Better via Edit/Write; mutating |
 | Long pipelines (5+ pipes) | Over-complexity signal |
 | `timeout` wrapper | Redundant; Bash tool has its own |

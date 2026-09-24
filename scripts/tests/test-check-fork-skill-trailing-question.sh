@@ -29,6 +29,12 @@ assert() {
 }
 
 contains() { printf '%s' "$1" | grep -q -- "$2" && echo true || echo false; }
+# The runtime half of the structured-output contract (#2691): one canonical
+# STATUS=, REASON= present iff non-OK, ISSUE_COUNT= equal to the ISSUES: rows.
+validates() {
+  printf '%s\n' "$1" | bash "$repo_root/scripts/check-structured-output-contract.sh" --validate >/dev/null 2>&1 \
+    && echo true || echo false
+}
 
 # make_skill <path> <context-line-or-empty> <last-body-line>
 make_skill() {
@@ -76,12 +82,23 @@ make_skill "$fx_b/demo-plugin/skills/bad-fork/SKILL.md" "context: fork" \
 run "$fx_b"
 assert "bad-fork fixture exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
 assert "bad-fork fixture names the offending file" "$(contains "$OUT" 'bad-fork/SKILL.md')"
+assert "bad-fork fixture STATUS=ERROR" "$(contains "$OUT" '^STATUS=ERROR$')"
+assert "bad-fork REASON names the file" \
+  "$(contains "$OUT" '^REASON=fork_trailing_question: demo-plugin/skills/bad-fork/SKILL.md ')"
+assert "bad-fork output satisfies the contract" "$(validates "$OUT")"
+make_skill "$fx_b/demo-plugin/skills/bad-fork-2/SKILL.md" "context: fork" "Shall I proceed?"
+run "$fx_b"
+assert "two offenders are counted" "$(contains "$OUT" '^ISSUE_COUNT=2$')"
+assert "two offenders: REASON counts the rest" "$(contains "$OUT" '^REASON=.* (+1 more)$')"
+assert "two offenders: output satisfies the contract" "$(validates "$OUT")"
 
 echo "=== TEST C: fork skill NOT ending on a question exits 0 ==="
 make_skill "$fx_c/demo-plugin/skills/good-fork/SKILL.md" "context: fork" \
   "Proceed with the analysis and planning now."
 run "$fx_c"
 assert "good-fork fixture exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+assert "good-fork carries no REASON on OK" "$([ "$(contains "$OUT" '^REASON=')" = false ] && echo true || echo false)"
+assert "good-fork output satisfies the contract" "$(validates "$OUT")"
 
 echo "=== TEST D: non-fork skill ending on a question is out of scope ==="
 make_skill "$fx_d/demo-plugin/skills/no-fork/SKILL.md" "" \

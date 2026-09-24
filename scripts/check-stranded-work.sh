@@ -221,7 +221,20 @@ main() {
   echo "OPEN_PR=$(jq '[.[] | select(.verdict == "open_pr")] | length' <<<"$data")"
   echo "IN_FLIGHT=$(jq '[.[] | select(.verdict == "in_flight")] | length' <<<"$data")"
   echo "STRANDED_COUNT=$count"
-  echo "STATUS=$([ "$count" -eq 0 ] && echo PASS || echo WARN)"
+  echo "ISSUE_COUNT=$count"
+  if [ "$count" -eq 0 ]; then
+    echo "STATUS=OK"
+    return 0
+  fi
+  # The first strand, auto-closed before never-PR'd, is the cause a rollup
+  # reads (#2691); every strand is listed under STRANDED WORK above.
+  local reason
+  reason="$(jq -rn --argjson a "$autoclose" --argjson n "$no_pr" '($a + $n)[0] |
+    "\(.verdict): \(.repo):\(.branch) (\(if .pr_number == null then "no PR" else "PR #\(.pr_number)" end), \(.ahead) commits ahead)"')"
+  reason="${reason:0:180}"
+  [ "$count" -gt 1 ] && reason="$reason (+$((count - 1)) more)"
+  echo "STATUS=WARN"
+  echo "REASON=$reason"
 }
 
 main
