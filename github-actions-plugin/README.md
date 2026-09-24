@@ -86,10 +86,11 @@ All skills are located in the `skills/` directory:
   - Why a re-run replays the stale `@main` reusable workflow, and how to force a fresh event instead
 
 - **ai-review-max-turns** - Triaging a red Claude-powered review check
-  - Three causes with opposite responses: budget exhaustion, turn-ceiling overrun, an unpublishable real finding
-  - `is_error` then the finding count as the discriminator — never the red X
+  - Four causes with opposite responses: budget exhaustion, turn-ceiling overrun, an unpublishable real finding, a completed run flagged `is_error: true`
+  - `subtype` and `is_error` together, then the finding count, as the discriminator — never the red X
   - The rotating-failure-set tell for budget exhaustion
   - Why a check skipped by its `file-patterns` filter reports `pass` and is not a control
+  - A workflow with ≤1 historical run has no baseline, so rerunning the identical commit becomes the primary discriminator
 
 ### Agent
 

@@ -48,14 +48,17 @@ mkdir -p "$PROJ"
 printf 'deploy:\n\thelm upgrade myrel ./chart\n' > "$PROJ/justfile"
 
 # just stub (test seam) — emits a dump whose recipe name AND body command are
-# used to exclude session commands as already-covered.
+# used to exclude session commands as already-covered. JUST_ARGV_LOG records
+# argv. An unknown call FAILS, loudly (#2569): answering it with a clean exit
+# would let a new call in the collector pass unexercised.
 STUB="$SANDBOX/stub"
 mkdir -p "$STUB"
 cat > "$STUB/just" <<'JUSTSTUB'
 #!/usr/bin/env bash
+if [ -n "${JUST_ARGV_LOG:-}" ]; then printf '%s\n' "$*" >> "$JUST_ARGV_LOG"; fi
 case "$*" in
   *"--dump"*) echo '{"recipes":{"deploy":{"body":[["helm upgrade myrel ./chart"]]}}}' ;;
-  *) exit 0 ;;
+  *) echo "just stub: unexpected argv: $*" >&2; exit 1 ;;
 esac
 JUSTSTUB
 chmod +x "$STUB/just"
@@ -90,7 +93,22 @@ run() {
 }
 
 # --- TEST A: meta + availability --------------------------------------------
+export JUST_ARGV_LOG="$SANDBOX/just-argv.log"
+: > "$JUST_ARGV_LOG"
 out=$(run)
+# The one call the collector makes reached a real arm of the stub, and nothing
+# else was asked: with the fallthrough failing, a new call would also be red.
+if [ "$(cat "$JUST_ARGV_LOG")" = "--dump --dump-format json" ]; then
+  pass=$((pass + 1))
+else
+  fail=$((fail + 1)); echo "FAIL: A: exactly one just call, the recipe dump (got: $(tr '\n' '|' < "$JUST_ARGV_LOG"))"
+fi
+unset JUST_ARGV_LOG
+if "$STUB/just" --list >/dev/null 2>&1; then
+  fail=$((fail + 1)); echo "FAIL: A: the just stub fails an unknown call instead of answering it"
+else
+  pass=$((pass + 1))
+fi
 check "A: transcript available" "$out" "TRANSCRIPT_AVAILABLE=true"
 check "A: both sessions scanned" "$out" "SESSIONS_SCANNED=2"
 check "A: just dump consumed" "$out" "JUST_AVAILABLE=true"

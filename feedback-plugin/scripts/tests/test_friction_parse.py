@@ -559,6 +559,244 @@ def test_dual_parser_only_other_events_change_bucket():
     )
 
 
+STOP_FIXTURE = FIXTURES / "stop_hook_feedback"
+META_FIXTURE = FIXTURES / "meta_hook_records"
+POLLUTION_FIXTURE = FIXTURES / "meta_prompt_pollution"
+META_KINDS = {"stop_hook_feedback", "hook_feedback"}
+
+
+def _stop_generator():
+    """Load the fixture generator, which extracts reasons from the deployed hooks."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "stop_gen", STOP_FIXTURE / "generate.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _parser_module():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("friction_parse_mod", PARSER)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_stop_hook_feedback_emits_one_event_per_record():
+    """Issue #2659: a Stop-hook block reaches the transcript as an isMeta user
+    record (`Stop hook feedback:\\n<reason>`), not a tool_result, so the parser
+    never enumerated it. Every such record must now yield one
+    `stop_hook_feedback` event keyed on the emitting hook.
+    """
+    expected = [sig for sig, _body in _stop_generator().stop_bodies()]
+    events = [e for e in run_parser(STOP_FIXTURE) if e["kind"] == "stop_hook_feedback"]
+    got = [e["signature"] for e in events]
+    assert got == expected, (
+        f"stop signatures drifted:\n  got      {got}\n  expected {expected}"
+    )
+
+    # The four hooks the issue names, plus the auto-checkpoint discriminator
+    # #2652's numeric gate is scored on.
+    for sig in (
+        "stop:git-stash-reminder:auto-checkpoint",
+        "stop:task-completeness",
+        "stop:no-calendar-estimates",
+        "stop:session-end-nudge",
+    ):
+        assert sig in got, f"{sig} not emitted"
+
+    for ev in events:
+        assert ev["tool"] == "-", ev
+        assert ev["evidence"], f"empty evidence for {ev['signature']}"
+        assert not ev["evidence"].startswith("Stop hook feedback"), (
+            "the harness prefix carries no information; evidence must start at the reason"
+        )
+    # A prompt-type hook renders as `[<prompt>]: <reason>`; the evidence is the
+    # reason, not 700 characters of the hook's own prompt.
+    [sub] = [e for e in events if e["signature"] == "stop:subagent-output-check"]
+    assert sub["evidence"].startswith("The output verifies"), sub["evidence"][:120]
+
+
+def test_stop_fixture_matches_deployed_hooks():
+    """The fixture must carry the reasons the hooks actually ship.
+
+    Regenerate with
+    `python3 feedback-plugin/scripts/tests/fixtures/stop_hook_feedback/generate.py`.
+    """
+    regenerated = [json.loads(line) for line in _stop_generator().build_lines()]
+    committed = [
+        json.loads(line)
+        for line in (STOP_FIXTURE / "t.jsonl").read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert committed == regenerated, (
+        "stop_hook_feedback fixture drifted from the deployed Stop hooks; "
+        "regenerate it from the hook sources"
+    )
+    # Non-vacuity: the fixture exercises every deployed reason, not a subset.
+    assert len(regenerated) >= 12, len(regenerated)
+
+
+def test_meta_record_is_not_a_user_prompt():
+    """is_user_prompt() must reject harness-injected isMeta records.
+
+    Before #2659 a Stop-hook feedback record counted as the user's latest
+    prompt, so `last_user_prompt` carried hook prose into classify_plan_mode().
+    """
+    mod = _parser_module()
+    meta = {
+        "type": "user",
+        "isMeta": True,
+        "message": {"content": "Stop hook feedback:\nAddress or remove them."},
+    }
+    assert mod.is_user_prompt(meta) is False
+    # Guard integrity: the same record without the flag is still a prompt, so
+    # the assertion above is about isMeta and not a parser that rejects all.
+    plain = {k: v for k, v in meta.items() if k != "isMeta"}
+    assert mod.is_user_prompt(plain) is True
+
+
+def test_meta_hook_record_does_not_pollute_plan_mode_classification():
+    """A Q&A prompt followed by hook feedback containing an edit verb
+    ("remove") must still classify a later plan-mode entry as Q&A friction.
+    The hook prose is not what the user asked.
+    """
+    events = run_parser(POLLUTION_FIXTURE)
+    kinds = [e["kind"] for e in events]
+    assert kinds.count("plan_mode") == 1, f"expected one plan_mode event, got {kinds}"
+    assert kinds.count("stop_hook_feedback") == 1, kinds
+
+
+def test_non_stop_hook_prefixes_are_surfaced_not_dropped():
+    """Any `<Event> hook feedback|error:` meta record the classifier has no
+    branch for is emitted as `hook_feedback`, so an unknown record class shows
+    up in the report instead of silently vanishing (the #2659 failure mode).
+    """
+    events = run_parser(META_FIXTURE)
+    sigs = sorted(e["signature"] for e in events)
+    assert sigs == [
+        "hook-error:stop",
+        "hook-feedback:posttooluse",
+        "stop:task-completeness",
+    ], sigs
+    for ev in events:
+        assert ev["kind"] in META_KINDS, ev
+
+
+def _list_prefixes(fixture_dir: Path) -> str:
+    return subprocess.run(
+        [
+            sys.executable,
+            str(PARSER),
+            "--root",
+            str(fixture_dir),
+            "--since",
+            "3650d",
+            "--list-prefixes",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+
+
+def test_list_prefixes_flags_prefixes_without_a_dedicated_branch():
+    """The class sweep: every `<Event> hook feedback|error:` prefix observed in
+    isMeta records is reported with the branch that handles it. `generic`
+    means "surfaced, but nobody keyed it" and raises STATUS=WARN.
+    """
+    out = _list_prefixes(META_FIXTURE)
+    lines = out.splitlines()
+    assert "PREFIX=PostToolUse hook feedback COUNT=1 HANDLED=generic" in lines, out
+    assert "PREFIX=Stop hook error COUNT=1 HANDLED=generic" in lines, out
+    assert "PREFIX=Stop hook feedback COUNT=1 HANDLED=classified" in lines, out
+    assert "STATUS=WARN" in lines and "ISSUE_COUNT=2" in lines, out
+
+    # Guard integrity: over the deployed-hook fixture every prefix has a
+    # dedicated branch, so a sweep that always warned would fail here.
+    clean = _list_prefixes(STOP_FIXTURE).splitlines()
+    assert "PREFIX=Stop hook feedback COUNT=12 HANDLED=classified" in clean, clean
+    assert "STATUS=OK" in clean and "ISSUE_COUNT=0" in clean, clean
+    # ...while a Stop reason no needle matches is still counted, not hidden.
+    assert "STOP_UNCLASSIFIED=1" in clean, clean
+
+
+def test_dual_parser_stop_feedback_is_purely_additive():
+    """The issue's identical-input criterion: old and new parser over the SAME
+    fixtures. Every event the baseline emits must survive byte-for-byte, and
+    the only new events may be the meta hook-record kinds.
+
+    `meta_prompt_pollution` is excluded by design: it pins the one intended
+    non-additive change (a plan_mode event the polluted prompt used to hide),
+    asserted by test_meta_hook_record_does_not_pollute_plan_mode_classification.
+    """
+    base_ref = os.environ.get("FRICTION_DUAL_PARSER_BASE", "origin/main")
+    show = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(REPO_ROOT),
+            "show",
+            f"{base_ref}:{PARSER.relative_to(REPO_ROOT)}",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if show.returncode != 0:
+        print(
+            f"  SKIP dual-parser check: `git show {base_ref}:...` failed ({show.stderr.strip()[:120]})"
+        )
+        return
+
+    dirs = sorted(
+        d
+        for d in FIXTURES.iterdir()
+        if d.is_dir() and (d / "t.jsonl").exists() and d != POLLUTION_FIXTURE
+    )
+    old_all: list[dict] = []
+    extras: list[dict] = []
+    with tempfile.TemporaryDirectory() as tmp:
+        baseline = Path(tmp) / "friction_parse_base.py"
+        baseline.write_text(show.stdout, encoding="utf-8")
+        for d in dirs:
+            old = _run_parser_at(baseline, d)
+            new = run_parser(d)
+            remaining = [json.dumps(e, sort_keys=True) for e in new]
+            for ev in old:
+                key = json.dumps(ev, sort_keys=True)
+                assert key in remaining, (
+                    f"{d.name}: baseline event lost or altered: {key[:200]}"
+                )
+                remaining.remove(key)
+            extras.extend(json.loads(k) for k in remaining)
+            old_all.extend(old)
+
+    assert old_all, "baseline produced no events -- harness broken, not a clean run"
+    illegal = [e for e in extras if e["kind"] not in META_KINDS]
+    assert not illegal, f"new non-meta events appeared: {illegal[:3]}"
+
+    unrelated = {e["signature"] for e in old_all}
+    assert len(unrelated) >= 4, (
+        f"too few control signatures to make the check meaningful: {unrelated}"
+    )
+
+    # Two regimes, read off the BASELINE's own output (the baseline moves on
+    # merge): pre-merge it knows no meta records and every one is new;
+    # post-merge it emits them too and nothing may be new.
+    if any(e["kind"] in META_KINDS for e in old_all):
+        assert not extras, (
+            f"baseline already parses meta records, yet {len(extras)} events are new"
+        )
+    else:
+        assert len(extras) == 15, (
+            f"expected 12 + 3 meta hook events to be new, saw {len(extras)}"
+        )
+
+
 def main() -> int:
     tests = [
         fn
@@ -573,6 +811,9 @@ def main() -> int:
         except AssertionError as err:
             failed += 1
             print(f"FAIL {fn.__name__}: {err}")
+        except Exception as err:  # a crash in one test must not hide the rest
+            failed += 1
+            print(f"FAIL {fn.__name__}: {type(err).__name__}: {err}")
     if failed:
         print(f"\n{failed}/{len(tests)} test(s) failed")
         return 1
