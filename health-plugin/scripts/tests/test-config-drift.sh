@@ -2055,6 +2055,414 @@ assert_eq "...nor HIERARCHIES_DECLARED" \
 
 rm -rf "$PROOT"
 
+# --- shared helpers for TESTS 23-25 (#2319) ----------------------------------
+# Both helpers import `lib.probe.sha` rather than re-implementing it: the hash a
+# waiver and the gitdates cache are keyed on is the analyzer's, and a retyped
+# copy is the fabricated-identifier trap (never-fabricate-test-identifiers.md) --
+# a wrong key reads exactly like a correctly-expired waiver.
+LIB_PARENT="${SCRIPT_DIR}/.."
+file_hash() {
+    PYTHONPATH="$LIB_PARENT" python3 -c 'import sys
+from pathlib import Path
+from lib.probe import sha
+print(sha(Path(sys.argv[1]).read_text(encoding="utf-8", errors="replace")))' "$1"
+}
+# seed_date <home> <file> <YYYY-MM-DD>: warm the gitdates cache for the file's
+# CURRENT content exactly as a scheduled (non --fast) run would, so a --fast run
+# can report staleness without spawning git. The key is `path:hash`, so an edit
+# needs its own row -- which is also why a cache can never serve a stale date.
+seed_date() {
+    PYTHONPATH="$LIB_PARENT" python3 - "$1" "$2" "$3" <<'PYSEED'
+import json
+import sys
+from pathlib import Path
+
+from lib.probe import sha
+
+home, f, date = sys.argv[1:4]
+p = Path(f)
+cache = Path(home) / ".cache" / "config-drift" / "gitdates.json"
+cache.parent.mkdir(parents=True, exist_ok=True)
+data = json.loads(cache.read_text()) if cache.is_file() else {}
+data[f"{p}:{sha(p.read_text(encoding='utf-8', errors='replace'))}"] = date
+cache.write_text(json.dumps(data))
+PYSEED
+}
+
+echo "TEST 23: a single-path waiver suppresses review_staleness and expires on edit (#2319)"
+# The regression: `check_review_staleness` never consulted the waiver file, and
+# the waiver file could not express a one-file waiver anyway -- so the recorded
+# decision (waive the first run's non-defects) could not suppress 83 of the 85
+# backlog findings. Four rungs: fires, waived, kind-scoped, revived by an edit.
+WROOT=$(mktemp -d)
+if [ -z "$WROOT" ] || [ ! -d "$WROOT" ]; then
+    echo "FAIL: could not create TEST 23 root"
+    exit 1
+fi
+WROOT=$(cd "$WROOT" && pwd -P)
+mkdir -p "$WROOT/home/.claude/rules" "$WROOT/proj/.claude/rules"
+STALE="$WROOT/proj/.claude/rules/stale-review.md"
+cat > "$STALE" <<'RULE'
+---
+reviewed: 2020-01-01
+---
+# Stale Review
+
+Provisioning the kiln requires the glaze schedule before any bisque firing is
+scheduled on the studio calendar.
+RULE
+seed_date "$WROOT/home" "$STALE" 2026-06-01
+run_w() {
+    HOME="$WROOT/home" python3 "$ANALYZER" --root "$WROOT/proj" --no-embed --fast \
+        --format=json "$@" 2>/dev/null
+}
+out=$(run_w)
+assert_eq "FIXTURE: the stale reviewed: date fires review_staleness" \
+    "$(count_kind "$out" review_staleness)" "1"
+assert_eq "FIXTURE: with no waiver file nothing is active" "$(count_key "$out" waivers_active)" "0"
+
+write_waiver() {  # write_waiver <out.json> <kind> <path> <hash>
+    python3 -c 'import json,sys
+out, kind, path, h = sys.argv[1:5]
+json.dump({"waivers": [{"kind": kind, "path": path, "hash": h,
+                        "reason": "test: accepted"}]}, open(out, "w"))' "$@"
+}
+WV="$WROOT/waivers.json"
+# ROOT-RELATIVE, the form a committed waiver file has to use: an absolute path
+# names one machine's checkout and matches nothing on a CI runner.
+write_waiver "$WV" review_staleness ".claude/rules/stale-review.md" "$(file_hash "$STALE")"
+out=$(run_w --waivers "$WV")
+assert_eq "a single-path waiver with the file's current hash suppresses it" \
+    "$(count_kind "$out" review_staleness)" "0"
+assert_eq "...the waiver is loaded"   "$(count_key "$out" waivers_active)"  "1"
+assert_eq "...and is the one that matched" "$(count_key "$out" waivers_matched)" "1"
+assert_eq "...and nothing was skipped" "$(count_key "$out" waivers_skipped)" "0"
+
+# Kind-scoped: the same file waived for a DIFFERENT kind must not hide staleness.
+write_waiver "$WV" broken_pointer_stub ".claude/rules/stale-review.md" "$(file_hash "$STALE")"
+out=$(run_w --waivers "$WV")
+assert_eq "a waiver for another kind on the same file does not suppress staleness" \
+    "$(count_kind "$out" review_staleness)" "1"
+assert_eq "...and does not count as matched" "$(count_key "$out" waivers_matched)" "0"
+
+# Expiry: edit the file. The waiver keeps the OLD hash, so the finding revives.
+# The edited content gets its own cache row, as the scheduled run would give it.
+write_waiver "$WV" review_staleness ".claude/rules/stale-review.md" "$(file_hash "$STALE")"
+printf '\nAn edit that changes the content.\n' >> "$STALE"
+seed_date "$WROOT/home" "$STALE" 2026-06-02
+out=$(run_w --waivers "$WV")
+assert_eq "editing the waived file revives the finding (hash-keyed expiry)" \
+    "$(count_kind "$out" review_staleness)" "1"
+assert_eq "...and the expired waiver matched nothing" "$(count_key "$out" waivers_matched)" "0"
+
+# A malformed entry is skipped, counted, and named on stderr -- never a crash,
+# and never a silently ignored line in a file that is committed for review.
+python3 -c 'import json,sys
+json.dump({"waivers": [{"kind": "review_staleness", "reason": "no path, no hash"}]},
+          open(sys.argv[1], "w"))' "$WV"
+err=$(HOME="$WROOT/home" python3 "$ANALYZER" --root "$WROOT/proj" --no-embed --fast \
+    --format=json --waivers "$WV" 2>&1 >/dev/null)
+out=$(run_w --waivers "$WV")
+assert_eq "a malformed entry is counted as skipped" "$(count_key "$out" waivers_skipped)" "1"
+assert_eq "...and loads nothing"                     "$(count_key "$out" waivers_active)"  "0"
+assert_contains "...and is named on stderr"          "$err" "waiver skipped"
+rm -rf "$WROOT"
+
+echo "TEST 24: every finding kind is waivable or a DECLARED exemption (the class sweep)"
+# The class: a finding kind that bypasses the waiver mechanism. Before #2319,
+# review_staleness and broken_pointer_stub bypassed it silently. The kind set is
+# derived from the analyzer's own `Finding(...)` call sites (as N3 derives it in
+# test-probe-lib.sh), the exemptions from its own WAIVER_EXEMPT_KINDS, so a new
+# kind that is neither planted-and-waived below nor declared exempt fails HERE,
+# by name.
+PLANTED="review_staleness broken_pointer_stub duplicate_rule_lexical duplicate_agent_lexical duplicate_claude_md_lexical rule_covered_by_skill promotion_candidate"
+# Unplantable in this suite: the semantic pass needs numpy + fastembed, which the
+# bare python3 this required-to-run suite uses does not have. They go through the
+# same pair-keyed `waivers.waived(a, b)` as the lexical kinds planted above, and
+# are held to that structurally (their constructing function must consult it).
+MODEL_ONLY="semantic_overlap_rule_rule semantic_overlap_rule_skill semantic_overlap_skill_skill"
+cat > "$FIXROOT/sweep.py" <<'PYSWEEP'
+import ast
+import itertools
+import sys
+
+src = open(sys.argv[1], encoding="utf-8").read()
+planted = set(sys.argv[2].split())
+model_only = set(sys.argv[3].split())
+tree = ast.parse(src)
+
+item_kinds, exempt = set(), {}
+for node in ast.walk(tree):
+    if not isinstance(node, ast.Assign):
+        continue
+    names = {t.id for t in node.targets if isinstance(t, ast.Name)}
+    if "SEMANTIC_KINDS" in names:
+        item_kinds = set(ast.literal_eval(node.value))
+    if "WAIVER_EXEMPT_KINDS" in names:
+        exempt = ast.literal_eval(node.value)
+
+parent = {}
+for node in ast.walk(tree):
+    for child in ast.iter_child_nodes(node):
+        parent[child] = node
+
+def enclosing_function(node):
+    while node in parent:
+        node = parent[node]
+        if isinstance(node, ast.FunctionDef):
+            return node
+    return None
+
+def consults_waivers(fn, depth=0):
+    """The emitting function consults the waivers -- or, for a constructor helper
+    like `_lexical_finding`, every function that CALLS it does."""
+    if fn is None:
+        return False
+    if any(
+        isinstance(n, ast.Call)
+        and isinstance(n.func, ast.Attribute)
+        and n.func.attr in ("waived", "waived_path")
+        for n in ast.walk(fn)
+    ):
+        return True
+    if depth >= 2:
+        return False
+    callers = [
+        enclosing_function(n)
+        for n in ast.walk(tree)
+        if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == fn.name
+    ]
+    return bool(callers) and all(consults_waivers(c, depth + 1) for c in callers)
+
+kinds, guarded = set(), {}
+for node in ast.walk(tree):
+    if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+            and node.func.id == "Finding" and len(node.args) >= 2):
+        continue
+    arg = node.args[1]
+    if isinstance(arg, ast.Constant):
+        emitted = {arg.value}
+    elif isinstance(arg, ast.JoinedStr):
+        tmpl = "".join(p.value if isinstance(p, ast.Constant) else "{}" for p in arg.values)
+        emitted = {tmpl.format(*c) for c in itertools.product(sorted(item_kinds), repeat=tmpl.count("{}"))}
+    else:
+        emitted = {"UNPARSEABLE_KIND_ARG"}
+    for k in emitted:
+        kinds.add(k)
+        guarded[k] = guarded.get(k, True) and consults_waivers(enclosing_function(node))
+
+# Unreachable, as recorded in test-probe-lib.sh N3: triu makes a cross-kind pair
+# always (rule, skill), never (skill, rule).
+kinds.discard("semantic_overlap_skill_rule")
+
+covered = planted | model_only | set(exempt)
+print("KINDS_N %d" % len(kinds))
+print("EXEMPT_N %d" % len(exempt))
+print("UNCOVERED %s" % (",".join(sorted(kinds - covered)) or "NONE"))
+print("OVERLAP %s" % (",".join(sorted((planted | model_only) & set(exempt))) or "NONE"))
+print("STALE_TABLE_ROWS %s" % (",".join(sorted(covered - kinds)) or "NONE"))
+print("EMPTY_REASONS %s" % (",".join(sorted(k for k, v in exempt.items() if not str(v).strip())) or "NONE"))
+# Function granularity: `check_rule_covered_by_skill` emits a waivable kind AND
+# the exempt `coverage_metric_broken`, so "guarded" can only be asserted in the
+# waivable direction. The planted kinds are held behaviourally below; this is
+# the backstop that reaches the model-only ones.
+print("UNGUARDED %s" % (",".join(sorted(k for k in planted | model_only if not guarded.get(k))) or "NONE"))
+PYSWEEP
+out=$(python3 "$FIXROOT/sweep.py" "$ANALYZER" "$PLANTED" "$MODEL_ONLY" 2>&1)
+# FIXTURE VALIDITY: an AST walk that found no kinds satisfies "none uncovered".
+assert_contains "FIXTURE: the kind derivation found every construction site" "$out" "KINDS_N 16"
+assert_contains "FIXTURE: the exemptions were read out of the analyzer"      "$out" "EXEMPT_N 6"
+assert_contains "no finding kind silently bypasses the waiver mechanism"     "$out" "UNCOVERED NONE"
+assert_contains "no kind is both waivable and declared exempt"               "$out" "OVERLAP NONE"
+assert_contains "the test's tables name no kind the analyzer cannot emit"    "$out" "STALE_TABLE_ROWS NONE"
+assert_contains "every exemption carries its reason"                         "$out" "EMPTY_REASONS NONE"
+assert_contains "every waivable kind's emitting function consults the waivers" "$out" "UNGUARDED NONE"
+
+# The behavioural half, one isolated root per plantable kind: plant exactly the
+# finding, DRAFT its waiver with the analyzer's own --format=waivers, and require
+# the drafted waiver to suppress it. Drafting through the shipped renderer is the
+# point: it pins both "this kind is waivable" and "the draft is correct".
+SROOT=$(mktemp -d)
+if [ -z "$SROOT" ] || [ ! -d "$SROOT" ]; then
+    echo "FAIL: could not create TEST 24 root"
+    exit 1
+fi
+SROOT=$(cd "$SROOT" && pwd -P)
+TORQUE_BODY='# Torque Baseline
+
+Every assembly line records a torque baseline before the first shift of the
+week. The baseline is captured from the calibration jig, logged against the
+jig'"'"'s serial number, and signed off by whoever ran the jig that morning.
+
+A baseline older than seven shifts is treated as absent: the jig drifts with
+ambient temperature, and a stale figure reads as authoritative while being
+wrong. Re-run the jig rather than extrapolating from the previous week.
+
+When two baselines disagree by more than four percent, neither is used. The
+discrepancy is escalated and the line runs on the manufacturer default until a
+third capture agrees with one of them.'
+SPINDLE_BODY='# Spindle Notes
+
+Before a shift opens, the spindle head is measured against the reference gauge
+and the reading is written into the shift log beside the gauge identifier and
+the operator initials.
+
+Readings more than a week old count as missing. Ambient conditions move the
+gauge, so an old number looks trustworthy while describing a machine that no
+longer exists. Take a fresh reading instead of projecting the last one forward.
+
+Two readings that differ by four percent or more cancel each other out. The
+head then runs at the vendor default until a further measurement corroborates
+one of the two.'
+DUP_BODY='# Kiln Log
+The kiln log records every bisque firing with its cone number, the loading
+diagram, and the cooling curve so the next glaze firing can be planned.'
+for kind in $PLANTED; do
+    r="$SROOT/$kind"
+    mkdir -p "$r/home/.claude/rules" "$r/proj"
+    extra=()
+    case "$kind" in
+        review_staleness)
+            mkdir -p "$r/proj/.claude/rules"
+            printf -- '---\nreviewed: 2020-01-01\n---\n%s\n' "$DUP_BODY" > "$r/proj/.claude/rules/kiln.md"
+            seed_date "$r/home" "$r/proj/.claude/rules/kiln.md" 2026-06-01 ;;
+        broken_pointer_stub)
+            mkdir -p "$r/proj/.claude/rules"
+            # shellcheck disable=SC2016  # literal markdown backticks, not an expansion
+            printf '# Ghost\n\nPromoted to a skill: invoke `no-such-skill-anywhere` before the thing.\n' \
+                > "$r/proj/.claude/rules/ghost.md" ;;
+        duplicate_rule_lexical)
+            mkdir -p "$r/proj/a/.claude/rules" "$r/proj/b/.claude/rules"
+            printf '%s\n' "$DUP_BODY" > "$r/proj/a/.claude/rules/kiln.md"
+            printf '%s\n' "$DUP_BODY" > "$r/proj/b/.claude/rules/firing.md" ;;
+        duplicate_agent_lexical)
+            mkdir -p "$r/proj/p-plugin/agents" "$r/proj/q-plugin/agents"
+            printf '%s\n' "$DUP_BODY" > "$r/proj/p-plugin/agents/kiln.md"
+            printf '%s\n' "$DUP_BODY" > "$r/proj/q-plugin/agents/firing.md" ;;
+        duplicate_claude_md_lexical)
+            mkdir -p "$r/proj/x" "$r/proj/y"
+            printf '%s\n' "$DUP_BODY" > "$r/proj/x/CLAUDE.md"
+            printf '%s\n' "$DUP_BODY" > "$r/proj/y/CLAUDE.md" ;;
+        rule_covered_by_skill)
+            mkdir -p "$r/proj/.claude/rules" "$r/proj/w-plugin/skills/widget-wrangling"
+            printf -- '---\nname: widget-wrangling\ndescription: Wrangle widgets across the fleet. Use when calibrating widget torque or auditing widget inventory.\n---\n# widget-wrangling\nCalibrating widget torque requires the fleet inventory. Audit widget torque\ncalibration across every widget in the inventory before adjusting any widget.\n' \
+                > "$r/proj/w-plugin/skills/widget-wrangling/SKILL.md"
+            printf '# Widget Torque\nCalibrating widget torque requires the fleet inventory. Audit widget\ntorque calibration across every widget in the inventory.\n' \
+                > "$r/proj/.claude/rules/widget-torque.md" ;;
+        promotion_candidate)
+            mkdir -p "$r/proj/.claude/rules" "$r/proj/alpha-repo/.claude/rules"
+            printf '%s\n' "$TORQUE_BODY" > "$r/proj/.claude/rules/torque-baseline.md"
+            printf '%s\n' "$SPINDLE_BODY" > "$r/proj/alpha-repo/.claude/rules/spindle-notes.md"
+            PYTHONPATH="$LIB_PARENT" python3 - "$r/sim.json" \
+                "$r/proj/.claude/rules/torque-baseline.md" \
+                "$r/proj/alpha-repo/.claude/rules/spindle-notes.md" <<'PYSIM'
+import json
+import sys
+from pathlib import Path
+
+from lib.probe import sha
+
+out, a, b = sys.argv[1:4]
+h = [sha(Path(p).read_text(encoding="utf-8", errors="replace")) for p in (a, b)]
+json.dump({"|".join(sorted(h)): 0.93}, open(out, "w"))
+PYSIM
+            extra=(--sim-fixture "$r/sim.json") ;;
+    esac
+    run_k() {
+        HOME="$r/home" python3 "$ANALYZER" --root "$r/proj" --no-embed --fast \
+            --format=json ${extra[@]+"${extra[@]}"} "$@" 2>/dev/null
+    }
+    before=$(run_k)
+    assert_ge "FIXTURE: the planted $kind fires" "$(count_kind "$before" "$kind")" 1
+    run_k --format=waivers > "$r/waivers.json"
+    after=$(run_k --waivers "$r/waivers.json")
+    assert_eq "$kind is suppressed by the waiver --format=waivers drafted for it" \
+        "$(count_kind "$after" "$kind")" "0"
+    assert_eq "...no drafted entry was skipped as malformed" "$(count_key "$after" waivers_skipped)" "0"
+    assert_ge "...and a drafted waiver is what matched" "$(count_key "$after" waivers_matched)" 1
+done
+unset -f run_k
+
+echo "TEST 25: the waiver draft is portable, and the committed waiver file is well-formed"
+# --format=waivers: root-relative paths for files under the root (so the entry
+# means the same file on every checkout), absolute for files outside it (a
+# ~/.claude/rules document has no root-relative spelling), an empty reason for a
+# human to fill, and no entry for a declared-exempt kind.
+DROOT="$SROOT/draft"
+mkdir -p "$DROOT/home/.claude/rules" "$DROOT/proj/a/.claude/rules" "$DROOT/proj/b/.claude/rules"
+printf '%s\n' "$DUP_BODY" > "$DROOT/proj/a/.claude/rules/kiln.md"
+printf '%s\n' "$DUP_BODY" > "$DROOT/proj/b/.claude/rules/firing.md"
+# shellcheck disable=SC2016  # literal markdown backticks, not an expansion
+printf '# Ghost\n\nPromoted to a skill: invoke `no-such-skill-anywhere` before the thing.\n' \
+    > "$DROOT/home/.claude/rules/ghost.md"
+draft=$(HOME="$DROOT/home" python3 "$ANALYZER" --root "$DROOT/proj" --no-embed --fast \
+    --format=waivers 2>/dev/null)
+dq() {  # dq <python-expression over `w` (the entry list)>
+    printf '%s' "$draft" | python3 -c 'import json,sys
+w = json.load(sys.stdin)["waivers"]
+print(eval(sys.argv[1]))' "$1" 2>/dev/null || echo ERR
+}
+cheap=$(HOME="$DROOT/home" python3 "$ANALYZER" --root "$DROOT/proj" --no-embed --fast \
+    --format=json 2>/dev/null)
+assert_eq "FIXTURE: the draft root also fires an exempt kind (frontmatter_coverage)" \
+    "$(count_kind "$cheap" frontmatter_coverage)" "1"
+assert_eq "the draft is the loadable {\"waivers\": [...]} shape, one entry per waivable finding" \
+    "$(dq 'len(w)')" "2"
+assert_eq "a pair under the root is drafted with root-relative paths" \
+    "$(dq 'sorted([e["a"], e["b"]] for e in w if "a" in e)[0]')" \
+    "['a/.claude/rules/kiln.md', 'b/.claude/rules/firing.md']"
+assert_eq "a ~/.claude/rules file outside the root keeps its absolute path" \
+    "$(dq '[e["path"] for e in w if "path" in e][0]')" "$DROOT/home/.claude/rules/ghost.md"
+assert_eq "the drafted hash is the file's own content hash" \
+    "$(dq '[e["hash"] for e in w if "path" in e][0]')" "$(file_hash "$DROOT/home/.claude/rules/ghost.md")"
+assert_eq "every drafted reason is left empty for a human to write" \
+    "$(dq 'all(e["reason"] == "" for e in w)')" "True"
+assert_eq "no entry is drafted for a declared-exempt kind" \
+    "$(dq 'any(e.get("kind") == "frontmatter_coverage" for e in w)')" "False"
+
+# The committed file itself. Structure only -- NOT "every waiver still matches":
+# an edit to a waived file is supposed to revive its finding, and failing CI on
+# that would turn a report into a gate nobody decided on.
+REPO_ROOT=$(cd "${SCRIPT_DIR}/../../.." && pwd -P)
+COMMITTED="$REPO_ROOT/health-plugin/config-drift-waivers.json"
+out=$(PYTHONPATH="$LIB_PARENT" python3 - "$COMMITTED" "$REPO_ROOT" "$ANALYZER" <<'PYCOMMIT' 2>&1
+import ast
+import json
+import os
+import sys
+
+from lib.probe import Waivers
+
+path, root, analyzer = sys.argv[1:4]
+raw = json.load(open(path, encoding="utf-8"))["waivers"]
+w = Waivers.load(path, root=root)
+exempt = {}
+for node in ast.walk(ast.parse(open(analyzer, encoding="utf-8").read())):
+    if isinstance(node, ast.Assign) and any(
+        isinstance(t, ast.Name) and t.id == "WAIVER_EXEMPT_KINDS" for t in node.targets
+    ):
+        exempt = ast.literal_eval(node.value)
+paths = [e[k] for e in raw for k in ("a", "b", "path") if k in e]
+print("ENTRIES %d" % len(raw))
+print("LOADED %d" % len(w))
+print("PROBLEMS %d" % len(w.problems))
+print("REASONLESS %d" % sum(1 for e in raw if not str(e.get("reason", "")).strip()))
+print("ABSOLUTE %d" % sum(1 for p in paths if os.path.isabs(os.path.expanduser(p))))
+print("EXEMPT_KIND %d" % sum(1 for e in raw if e.get("kind") in exempt))
+PYCOMMIT
+)
+entries=$(printf '%s\n' "$out" | sed -n 's/^ENTRIES //p')
+loaded=$(printf '%s\n' "$out" | sed -n 's/^LOADED //p')
+assert_ge "FIXTURE: the committed waiver file is not empty" "$entries" 1
+# `:-` defaults that differ, so a checker that printed neither line cannot pass
+# by comparing two empty strings.
+assert_eq "every committed entry loads" "${loaded:-<no LOADED line>}" "${entries:-<no ENTRIES line>}"
+assert_contains "no committed entry is malformed"                           "$out" "PROBLEMS 0"
+assert_contains "every committed waiver says why it is not a defect"        "$out" "REASONLESS 0"
+assert_contains "every committed path is root-relative (portable to CI)"    "$out" "ABSOLUTE 0"
+assert_contains "no committed entry names a kind that cannot be waived"     "$out" "EXEMPT_KIND 0"
+rm -rf "$SROOT"
+
 echo
 echo "=== CONFIG DRIFT TESTS ==="
 echo "PASSED=$PASS"

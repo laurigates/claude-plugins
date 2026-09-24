@@ -233,7 +233,7 @@ rename (`maxTurns` → `max_turns`) rather than a loss:
 | `skills: [a, b]` | `skills: a, b` | both preload; pi's list form also drops the inherited rest |
 | `model`, `color`, `thinking`, `maxTurns` | same, `max_turns` | `model: opus` resolves fuzzily in pi; a provider without it reports `(unavailable, fallback: inherit)` |
 | `TodoWrite`, `TaskOutput`, `WebFetch`, `WebSearch` | *dropped* | no pi built-in exists |
-| `context: fork` | *dropped* | a pi subagent is **always** its own session — fork-isolation is pi's default, and `inherit_context:` is the opposite direction, so no mapping is asserted |
+| `context: fork` | *dropped* | a skill field that Claude Code ignores on an agent (#2646), so there is no behaviour to carry over; `inherit_context:` would hand the pi agent the parent conversation, which the source agent never had |
 
 The exporter reports rather than silently adjusts. On the corpus today it prints
 `WIDENED_BASH=142` (every scoped `Bash(git diff *)` grant becomes an unscoped

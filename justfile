@@ -80,13 +80,19 @@ lint-all: lint-context-commands lint-compliance lint-health lint-infra lint-task
 # It existed only as a command line in a PR body before this recipe.
 #
 # Exits 1 whenever any warn-severity finding exists, which on a real corpus is
-# the normal state (review_staleness alone accounts for ~67). That is the
-# analyzer's standing contract, not a fault in this recipe — read the report,
-# and use `--gate` (exit 2 on error only) for a CI gate.
+# the normal state (review_staleness alone accounts for ~49 unwaived). That is
+# the analyzer's standing contract, not a fault in this recipe — read the
+# report, and use `--gate` (exit 2 on error only) for a CI gate.
+#
+# Reads this repo's committed waiver file — the same one CI reads — so a hand
+# run reports what CI reports. Both flags can be overridden from {{args}} (the
+# last occurrence wins): `just config-drift-semantic --format=waivers` drafts
+# waiver entries, hashes filled in, for the findings the committed file does not
+# already cover (#2319).
 # Semantic-tier config drift: embedding overlap and promotion candidates
 [group: "lint"]
 config-drift-semantic *args:
-    uv run --script ./health-plugin/scripts/config-drift.py --format=report {{args}}
+    uv run --script ./health-plugin/scripts/config-drift.py --format=report --waivers health-plugin/config-drift-waivers.json {{args}}
 
 # Re-derive the T_PROMOTE distribution over a corpus (dev-only; see the
 # constant's comment for the numbers this produced on 2026-08-29). Point --root

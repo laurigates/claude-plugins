@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.19.2...health-plugin-v1.20.0) (2026-09-24)
+
+
+### Features
+
+* **health-plugin:** waive single-path config-drift findings and flag lost baselines ([#2749](https://github.com/laurigates/claude-plugins/issues/2749)) ([5fd77c6](https://github.com/laurigates/claude-plugins/commit/5fd77c62e501d1eeaedb0cad75645b9c39089c80))
+
 ## [1.19.2](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.19.1...health-plugin-v1.19.2) (2026-09-19)
 
 
