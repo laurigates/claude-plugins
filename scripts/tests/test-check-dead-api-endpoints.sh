@@ -103,6 +103,26 @@ out=$(bash "$GUARD" --project-dir "$FIX" 2>&1)
 assert_contains "a live call beside a comment is still caught" "$out" "settings/billing/packages"
 assert_contains "exactly one finding in that file" "$out" "ISSUE_COUNT=1"
 
+echo "TEST 5b: the regression ledger is the hazard log — pruned, but narrowly (#2667)"
+# docs/regression-ledger.md must name the dead endpoint to record that it was
+# fixed, exactly as the rule that used to hold the ledger did. The prune is by
+# exact path: the SAME line in any other docs/ file is still a finding, or this
+# case could pass against a guard that stopped scanning docs/ altogether.
+mkdir -p "$FIX/docs"
+cat > "$FIX/docs/regression-ledger.md" <<'MD'
+| Issue | Root Cause | Check Added | Fixed In |
+|-------|-----------|-------------|----------|
+| finops called `gh api /orgs/{org}/settings/billing/actions` | retired, HTTP 410 | a guard | issue #2321 |
+MD
+out=$(bash "$GUARD" --project-dir "$FIX" 2>&1)
+assert_lacks "the ledger row is not reported" "$out" "regression-ledger.md"
+assert_contains "the pre-existing finding is still the only one" "$out" "ISSUE_COUNT=1"
+cp "$FIX/docs/regression-ledger.md" "$FIX/docs/other-notes.md"
+out=$(bash "$GUARD" --project-dir "$FIX" 2>&1)
+assert_contains "the same line elsewhere in docs/ IS reported" "$out" "other-notes.md"
+assert_contains "and counted" "$out" "ISSUE_COUNT=2"
+rm -rf "$FIX/docs"
+
 echo "TEST 6: an empty tree is OK, not an error"
 EMPTY=$(mktemp -d)
 out=$(bash "$GUARD" --project-dir "$EMPTY" 2>&1)

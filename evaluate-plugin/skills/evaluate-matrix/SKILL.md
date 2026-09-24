@@ -7,7 +7,7 @@ argument-hint: "git-plugin/git-commit --models opus,haiku --with-skill-only"
 model: opus
 agent: general-purpose
 created: 2026-06-13
-modified: 2026-09-02
+modified: 2026-09-23
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -102,6 +102,17 @@ combination:
    serializes them: pass `run_in_background: false` on each dispatch, or wait
    for that agent's result to arrive before issuing the next one —
    serialization is the wait, not the dispatch order.
+
+   **Keep the subagent off `…/skills/…` paths.** Paste the SKILL.md body into
+   the prompt instead of naming its path, and have the subagent return its
+   artifact in the reply. Path-scoped rules load whole into any agent that
+   touches a matching file, and a repo can scope many of them to
+   `**/skills/**` (the claude-plugins marketplace scopes over a dozen); there a
+   haiku subagent handed a skill path failed with HTTP 400 `Prompt is too long`
+   before running anything (#2667). A 400 on the haiku arm is the context
+   surface, not the skill — `prepare_run.sh` stages run dirs outside `skills/`
+   for the same reason, and `check-context-engineering.py` caps each rule's
+   size so the surface cannot regrow unseen.
 3. Write the subagent's produced artifact to `$RUN_DIR/transcript.md`.
 
 ### Step 3: Grade — deterministic first, judge only on deferral

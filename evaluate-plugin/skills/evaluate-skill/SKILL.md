@@ -87,7 +87,8 @@ Four consequences worth stating inline:
   Register this one and nothing else.
 
 - **No agent in this harness is worktree-isolated, and that is deliberate.** Every
-  rollout agent writes under `eval-results/`, and Aggregate has to read what all of
+  rollout agent writes its run dir into the shared checkout (`prepare_run.sh`
+  stages it under `tmp/eval-runs/`), and Aggregate has to read what all of
   them wrote; a worktree-isolated agent's writes are invisible to its siblings, so
   isolating them would silently empty the benchmark. Nothing here pushes, opens a PR,
   or mutates a forge either - so the two clauses
