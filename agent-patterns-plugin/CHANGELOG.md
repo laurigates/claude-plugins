@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.45.9](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.45.8...agent-patterns-plugin-v2.45.9) (2026-09-24)
+
+
+### Bug Fixes
+
+* **project-plugin:** catch bare tool removals and retire TaskOutput ([#2752](https://github.com/laurigates/claude-plugins/issues/2752)) ([2e07766](https://github.com/laurigates/claude-plugins/commit/2e07766617d92e8955e9939014e949836b6356ba))
+
 ## [2.45.8](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.45.7...agent-patterns-plugin-v2.45.8) (2026-09-24)
 
 
