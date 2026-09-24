@@ -47,6 +47,13 @@
 #       the two plausible-but-wrong jsonpath forms that leave it stale while
 #       looking configured.
 #
+# Block 18 pins the fleet back-ports from issue #2494 (fleet-policy.toml
+# `shared` rows where the fleet leads): release-please.yml on ubuntu-slim +
+# release-please-action@v5, clear-autorelease-labels.yml as the thin caller of
+# laurigates/.github's reusable workflow, and — the direction the fleet does NOT
+# lead — .gitattributes keeping bun.lock rather than the stale package-lock.json
+# line a plurality of packs still carries.
+#
 # Requires python3 and git; SKIPs cleanly when python3 is unavailable. Block 16's
 # semantic half additionally needs `uv` and SKIPs without it; block 14's
 # freshness NOTE is advisory and suppressed by SCAFFOLD_OFFLINE=1.
@@ -687,6 +694,62 @@ print(",".join(sorted(imported - exported)))
 PY
 )"
 check "every helper the suite imports is exported by src/index.ts" "" "$GS_MISSING"
+
+# 18. Fleet back-ports (issue #2494). fleet-policy.toml declares these files
+#     `shared`: the fleet leads and the template back-ports, and
+#     check-fleet-drift.py raised a BACKPORT signal on each. The template lagged
+#     the packs, so every new pack was generated behind its siblings.
+FB="$WORK/comfyui-fp-fleet-backport"
+python3 "$SCAFFOLD" --name comfyui-fp-fleet-backport --display "FP Fleet Backport" \
+    --desc "Fleet back-port fixture." --variant frontend --widgets seed \
+    --dir "$WORK" >/dev/null 2>&1
+FB_RP="$FB/.github/workflows/release-please.yml"
+FB_CA="$FB/.github/workflows/clear-autorelease-labels.yml"
+FB_GA="$FB/.gitattributes"
+
+# Guard integrity first: every "absent" assertion below passes vacuously against
+# a file that was never emitted, so each file must exist before it is judged.
+for f in "$FB_RP" "$FB_CA" "$FB_GA"; do
+    check "18: ${f#"$FB"/} emitted" "yes" "$([ -s "$f" ] && echo yes || echo no)"
+done
+
+# 18a. release-please.yml: the 1-CPU slim runner (a pure GitHub-API job) and
+#      release-please-action@v5, which 13/13 and 9/13 packs carry respectively.
+check "18a: release-please runs on ubuntu-slim" "yes" \
+    "$(grep -qE '^    runs-on: ubuntu-slim$' "$FB_RP" && echo yes || echo no)"
+check "18a: release-please no longer runs on ubuntu-latest" "no" \
+    "$(grep -q 'ubuntu-latest' "$FB_RP" && echo yes || echo no)"
+check "18a: release-please-action pinned at @v5" "yes" \
+    "$(grep -qE 'googleapis/release-please-action@v5$' "$FB_RP" && echo yes || echo no)"
+check "18a: no release-please-action@v4 left" "no" \
+    "$(grep -q 'release-please-action@v4' "$FB_RP" && echo yes || echo no)"
+
+# 18b. clear-autorelease-labels.yml is the thin caller: one job that `uses:` the
+#      reusable workflow, no inline runner or steps, manual trigger only, and the
+#      two inputs the reusable declares (label, dry_run) forwarded unchanged.
+check "18b: clear-autorelease calls the reusable workflow" "yes" \
+    "$(grep -qE '^    uses: laurigates/\.github/\.github/workflows/reusable-clear-autorelease-labels\.yml@' "$FB_CA" && echo yes || echo no)"
+check "18b: clear-autorelease has no inline runs-on/steps" "no" \
+    "$(grep -qE '^[[:space:]]+(runs-on|steps):' "$FB_CA" && echo yes || echo no)"
+check "18b: clear-autorelease is workflow_dispatch-triggered" "yes" \
+    "$(grep -qE '^  workflow_dispatch:$' "$FB_CA" && echo yes || echo no)"
+check "18b: clear-autorelease no longer fires on release publish" "no" \
+    "$(grep -qE '^  (release|push|pull_request|schedule):' "$FB_CA" && echo yes || echo no)"
+# The ${{ }} are literal GitHub expressions matched with -F, not shell expansions.
+# shellcheck disable=SC2016
+check "18b: clear-autorelease forwards label and dry_run" "yes" \
+    "$(grep -qF 'label: ${{ inputs.label }}' "$FB_CA" \
+        && grep -qF 'dry_run: ${{ inputs.dry_run }}' "$FB_CA" && echo yes || echo no)"
+
+# 18c. .gitattributes: the direction the fleet does NOT lead. All 13 packs ship
+#      bun.lock and none has package-lock.json, yet 6/13 still carry the
+#      pre-#1528 `package-lock.json linguist-generated` line, so check-fleet-drift
+#      reports that plurality as a BACKPORT. Back-porting it would regress the
+#      template; this pins the correct line against that tempting "fix".
+check "18c: .gitattributes marks bun.lock generated" "yes" \
+    "$(grep -qxF 'bun.lock linguist-generated=true' "$FB_GA" && echo yes || echo no)"
+check "18c: .gitattributes carries no stale package-lock.json line" "no" \
+    "$(grep -q 'package-lock.json' "$FB_GA" && echo yes || echo no)"
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

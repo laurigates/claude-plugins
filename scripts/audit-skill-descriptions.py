@@ -219,6 +219,7 @@ def audit(root: Path) -> list[dict]:
                         "path": str(path.relative_to(REPO_ROOT)),
                         "category": "MISSING",
                         "description": "",
+                        "description_full": "",
                         "auto_invokable": True,
                         "reason": "unparseable frontmatter",
                     }
@@ -237,8 +238,10 @@ def audit(root: Path) -> list[dict]:
         category = classify(desc)
         length_category, length = classify_length(desc)
         preview = ""
+        full = ""
         if isinstance(desc, str):
-            preview = " ".join(desc.split())
+            full = " ".join(desc.split())
+            preview = full
             if len(preview) > 120:
                 preview = preview[:117] + "..."
         results.append(
@@ -250,6 +253,11 @@ def audit(root: Path) -> list[dict]:
                 "length_category": length_category,
                 "length": length,
                 "description": preview,
+                # The whitespace-normalized full text. `description` is a
+                # 120-char display preview, and every description in this
+                # corpus exceeds it, so a consumer tokenizing the `Use when`
+                # clause (check-description-collisions.py) needs this field.
+                "description_full": full,
                 "auto_invokable": auto_invokable,
                 "reason": reason,
             }

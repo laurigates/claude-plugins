@@ -1,0 +1,73 @@
+{
+  "skill_name": "github-pr-title",
+  "skill_path": "git-plugin/skills/github-pr-title/SKILL.md",
+  "evals": [
+    {
+      "id": "gpt-001",
+      "description": "Feature PR gets a feat title with an imperative, lowercase subject",
+      "prompt": "My branch adds a dark-mode toggle to the settings page of our web app. Write the PR title.",
+      "expectations": [
+        { "assertion": "Title uses the feat type", "check": "regex", "pattern": "\\bfeat(\\([^)\\s]+\\))?!?:\\s" },
+        { "assertion": "Subject is not past or present-third tense (added/adds)", "check": "absent_regex", "pattern": "\\bfeat(\\([^)\\s]+\\))?!?:\\s+(added|adds|adding)\\b", "flags": "i" },
+        { "assertion": "Subject does not start with an uppercase letter", "check": "absent_regex", "pattern": "\\bfeat(\\([^)\\s]+\\))?!?:\\s+[A-Z]" },
+        "Subject names the dark-mode toggle (or theme switching) rather than a vague 'update settings'"
+      ],
+      "tags": ["conventional-commits", "feat", "basic"]
+    },
+    {
+      "id": "gpt-002",
+      "description": "Bug-fix PR gets a fix title, not feat",
+      "prompt": "This PR fixes a crash in the importer when the API returns an empty list. Suggest the PR title.",
+      "expectations": [
+        { "assertion": "Title uses the fix type", "check": "regex", "pattern": "\\bfix(\\([^)\\s]+\\))?!?:\\s" },
+        { "assertion": "Does not lead with the feat type", "check": "absent_regex", "pattern": "^\\s*(?:[-*>]\\s*)?[`\\\"']?feat(\\([^)\\s]*\\))?!?:", "flags": "m" },
+        "Subject describes the empty-list crash rather than a generic 'fix bug'"
+      ],
+      "tags": ["conventional-commits", "fix"]
+    },
+    {
+      "id": "gpt-003",
+      "description": "Breaking change is marked with ! because a PR title has no footer",
+      "prompt": "The PR removes the deprecated /v1 REST endpoints; clients must migrate to /v2 before upgrading. What should the PR title be?",
+      "expectations": [
+        { "assertion": "Marks the breaking change with ! before the colon", "check": "regex", "pattern": "\\b(feat|fix|refactor|perf|build|chore)(\\([^)\\s]+\\))?!:\\s" },
+        "Subject says what was removed (the v1 endpoints)"
+      ],
+      "tags": ["conventional-commits", "breaking-change"]
+    },
+    {
+      "id": "gpt-004",
+      "description": "Dependency bump follows the skill's build(deps) template",
+      "prompt": "It's a dependency update PR that bumps lodash from 4.17.20 to 4.17.21. What should the title be?",
+      "expectations": [
+        { "assertion": "Uses the build(deps) type and scope the skill's template prescribes", "check": "regex", "pattern": "\\bbuild\\(deps\\):\\s" },
+        { "assertion": "Subject names lodash and the target version", "check": "regex", "pattern": "lodash[^\\n]*4\\.17\\.21" },
+        { "assertion": "Does not use feat for a dependency bump", "check": "absent_regex", "pattern": "\\bfeat(\\([^)\\s]*\\))?!?:\\s" }
+      ],
+      "tags": ["conventional-commits", "deps"]
+    },
+    {
+      "id": "gpt-005",
+      "description": "Docs-only change gets the docs type and no trailing period",
+      "prompt": "I rewrote the installation section of the README; no code changed. PR title please.",
+      "expectations": [
+        { "assertion": "Uses the docs type", "check": "regex", "pattern": "\\bdocs(\\([^)\\s]+\\))?:\\s" },
+        { "assertion": "Does not use feat or fix for a docs-only change", "check": "absent_regex", "pattern": "\\b(feat|fix)(\\([^)\\s]*\\))?!?:\\s" },
+        { "assertion": "A backticked title does not end with a period", "check": "absent_regex", "pattern": "`\\s*[a-z]+(\\([^)`\\n]*\\))?!?:[^`\\n]*\\.\\s*`" }
+      ],
+      "tags": ["conventional-commits", "docs"]
+    },
+    {
+      "id": "gpt-006",
+      "description": "Impossible task: nothing describes the change, so there is no title to write",
+      "prompt": "Write the PR title for my current branch. I have not said what the branch changes, and there is no diff or commit list here — `git log origin/main..HEAD` printed nothing.",
+      "expected_outcome": "abstain",
+      "expectations": [
+        { "assertion": "Does not invent a conventional PR title", "check": "absent_regex", "pattern": "^\\s*(?:[-*>]\\s*)?(?:\\*\\*Title:?\\*\\*:?\\s*|Title:\\s*)?[`\\\"']?(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\\([^)<>]*\\))?!?:\\s+[a-z]", "flags": "m" },
+        { "assertion": "Says it needs to know what the change is", "check": "regex", "pattern": "(what (does|do|did) (the|this|your) (branch|change|PR|pull request)|(can('|no)t|cannot|unable to|not able to) (write|craft|determine|suggest|propose|infer|know)|need (to know|more (info|information|context|detail)))", "flags": "i" },
+        "Explains there is nothing to title (no commits ahead of main) or asks what the change is, instead of guessing"
+      ],
+      "tags": ["abstention", "impossible-task"]
+    }
+  ]
+}

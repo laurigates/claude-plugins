@@ -3,6 +3,10 @@
   "name": "software-design-plugin",
   "version": "1.2.0",
   "description": "Software design methodology - deep modules, design by contract, GoF pattern selection, legacy code seams, and design by pseudocode",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "license": "MIT",
   "keywords": [
     "software-design",
     "deep-modules",

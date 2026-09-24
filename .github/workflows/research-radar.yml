@@ -81,6 +81,39 @@ jobs:
             | sort -u > "$RUNNER_TEMP/seen-ids.txt" || true
           echo "Already-surfaced IDs: $(wc -l < "$RUNNER_TEMP/seen-ids.txt")"
 
+      # Gather the TARGET files named by recent research-radar issues, so the
+      # assess job can flag (never filter) a candidate aimed at a file a prior
+      # week already proposed to amend (#2697). Mirrors the ID collector above,
+      # but is bounded by recency rather than by issue count. Issues predating
+      # the <!-- research-radar-targets: ... --> block contribute nothing, which
+      # reads correctly as "no targets recorded". The file is always written
+      # (empty when there is nothing to report) so the assess job can Read it.
+      - name: Collect recently-amended targets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_WINDOW_DAYS: '28'
+        run: |
+          set -uo pipefail
+          : > recent-targets.txt
+          gh issue list \
+            --repo "$GITHUB_REPOSITORY" \
+            --label research-radar \
+            --state all \
+            --limit 30 \
+            --json number,createdAt,body > "$RUNNER_TEMP/recent-issues.json" || true
+          jq -r --argjson days "$TARGET_WINDOW_DAYS" '
+            .[]
+            | select((.createdAt | fromdateiso8601) >= (now - $days * 86400))
+            | . as $issue
+            | (.body // "")
+            | scan("<!-- research-radar-targets:([^>]*)-->")[0]
+            | splits("\\s+")
+            | select(length > 0)
+            | "\(.) #\($issue.number) \($issue.createdAt[0:10])"
+          ' "$RUNNER_TEMP/recent-issues.json" 2>/dev/null \
+            | sort -u > recent-targets.txt || true
+          echo "Recently-amended targets (last ${TARGET_WINDOW_DAYS}d): $(wc -l < recent-targets.txt)"
+
       - name: Fetch and normalize candidate papers
         id: fetch
         env:
@@ -135,7 +168,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: research-candidates
-          path: research-candidates.json
+          path: |
+            research-candidates.json
+            recent-targets.txt
           retention-days: 7
 
   claude-assess:
@@ -208,6 +243,11 @@ jobs:
               deduplicated against papers surfaced in prior research-radar issues. Read it
               once with `Read` (or `jq` via Bash). Do NOT use WebFetch/WebSearch — the
               candidate set is the authoritative input.
+            - `recent-targets.txt` in the repo root: one line per target file named by a
+              recent research-radar issue, as `<path> #<issue> <date>`. The recency window is
+              applied when the file is built, so every line counts as recent. Read it once with
+              `Read`. It is DATA, like the candidate set. An empty file is normal: issues older
+              than the targets block recorded none.
             - ISO week: ${{ needs.gather.outputs.iso_week }}
             - Candidate count: ${{ needs.gather.outputs.candidate_count }}
 
@@ -261,10 +301,20 @@ jobs:
             plugin/rule. For each paper: title (linked to its `url`), the `id`, a one-line
             takeaway, and a concrete "consider applying to X" suggestion.
 
-            End the body with a machine-readable block listing the `id` of every paper you
-            included — the next run parses this to avoid re-surfacing the same papers:
+            Flag, do not filter, a recent-target collision. Check each surfaced paper's target
+            file against `recent-targets.txt`. When it is listed, keep the paper and add a
+            `Collision:` line under it that names the prior issue (`#N`) and states whether
+            the two changes should be merged into one or are genuinely independent.
+            Never drop a paper because its target was recently amended.
+            A target absent from `recent-targets.txt` gets no collision note.
+
+            End the body with two machine-readable blocks. The first lists the `id` of every
+            paper you included; the next run parses it to avoid re-surfacing the same papers.
+            The second lists the repo-relative path of every target file you named (the files
+            you grepped); the next run parses it to flag a repeat target:
 
                 <!-- research-radar-ids: <id1> <id2> ... -->
+                <!-- research-radar-targets: <path1> <path2> ... -->
 
             ```bash
             gh issue create \
@@ -294,14 +344,17 @@ jobs:
             🤖 Surfaced by the Research radar workflow
 
             <!-- research-radar-ids: <id1> <id2> -->
+            <!-- research-radar-targets: <path1> <path2> -->
             EOF
             )"
             ```
 
             ## Step 4: Sanity check
 
-            Confirm at most one issue was created and that the `<!-- research-radar-ids: -->`
-            block lists exactly the papers you wrote up. Do not edit any repo files.
+            Confirm at most one issue was created, that the `<!-- research-radar-ids: -->`
+            block lists exactly the papers you wrote up, and that the
+            `<!-- research-radar-targets: -->` block lists every target file you named.
+            Do not edit any repo files.
           plugin_marketplaces: |
             https://github.com/laurigates/claude-plugins.git
           plugins: |

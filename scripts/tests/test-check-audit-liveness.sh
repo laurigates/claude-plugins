@@ -34,12 +34,20 @@ assert() {
 }
 is_true() { [ "$1" = "true" ] && echo true || echo false; }
 contains() { printf '%s' "$1" | grep -q -- "$2" && echo true || echo false; }
+# The runtime half of the structured-output contract (#2691): one canonical
+# STATUS=, REASON= present iff non-OK, ISSUE_COUNT= equal to the ISSUES: rows.
+validates() {
+  printf '%s\n' "$1" | bash "$repo_root/scripts/check-structured-output-contract.sh" --validate >/dev/null 2>&1 \
+    && echo true || echo false
+}
 
 # --- TEST A: today's state (radar filing again) ------------------------------
 echo "=== TEST A: a workflow that is filing is not reported ==="
 out="$(bash "$checker" --fixture "$fx/current.json" 2>&1)"; rc=$?
 assert "A exits 0" "$(is_true "$([ $rc -eq 0 ] && echo true)")"
 assert "A STATUS=OK" "$(contains "$out" 'STATUS=OK')"
+assert "A carries no REASON on OK" "$([ "$(contains "$out" '^REASON=')" = false ] && echo true || echo false)"
+assert "A output satisfies the contract" "$(validates "$out")"
 assert "A streak is 0" "$(contains "$out" 'SILENT_STREAK=0')"
 # Guard integrity: a checker that parsed nothing would also print STATUS=OK.
 assert "A examined the real run history" "$(contains "$out" 'RUNS=14')"
@@ -50,7 +58,10 @@ assert "A is not SCANNED_EMPTY" "$(contains "$out" 'SCANNED_EMPTY=false')"
 echo "=== TEST B: nine silent weeks is reported ==="
 out="$(bash "$checker" --fixture "$fx/mid-gap.json" 2>&1)"; rc=$?
 assert "B exits 1" "$(is_true "$([ $rc -eq 1 ] && echo true)")"
-assert "B STATUS=FAIL" "$(contains "$out" 'STATUS=FAIL')"
+assert "B STATUS=ERROR" "$(contains "$out" '^STATUS=ERROR$')"
+assert "B REASON names the silent workflow" \
+  "$(contains "$out" '^REASON=silent_streak: research-radar.yml filed nothing in 8 consecutive successful runs')"
+assert "B output satisfies the contract" "$(validates "$out")"
 assert "B counts the whole streak" "$(contains "$out" 'SILENT_STREAK=8')"
 assert "B names the workflow" "$(contains "$out" 'SILENT=research-radar.yml')"
 # The remedy has to name the actual cause, or the finding is a puzzle.
@@ -121,6 +132,9 @@ rm -f "$both" "$fx/../../../.tmp-both.json"
 assert "H exits 1 when one of two is silent" "$(is_true "$([ $rc -eq 1 ] && echo true)")"
 assert "H watches both" "$(contains "$out" 'WORKFLOWS_WATCHED=2')"
 assert "H reports exactly one finding" "$(contains "$out" 'ISSUE_COUNT=1')"
+assert "H REASON names only the silent workflow" \
+  "$(contains "$out" '^REASON=silent_streak: changelog-review.yml filed nothing in 13 ')"
+assert "H output satisfies the contract" "$(validates "$out")"
 # The healthy one must NOT be dragged down by its silent neighbour.
 assert "H clears the healthy workflow" "$(contains "$out" 'WORKFLOW=research-radar.yml	RUNS=14	ISSUES=5	SILENT_STREAK=0	OVER=false')"
 
