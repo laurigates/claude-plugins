@@ -44,6 +44,7 @@ echo "=== A: the real repo carries an abstention control in every suite ==="
 out="$(bash "$CHECK" 2>&1)"; rc=$?
 assert "A exits 0 on the real repo" "$(rc_is $rc 0)"
 assert "A STATUS=OK" "$(has_line "$out" 'STATUS=OK')"
+assert "A no REASON= on the OK path" "$([ "$(has "$out" 'REASON=')" = false ] && echo true || echo false)"
 # Guard integrity: STATUS=OK over zero files is what a misfired walk reports.
 scanned="$(printf '%s\n' "$out" | grep -m1 '^EVALS_FILES_SCANNED=' | cut -d= -f2)"
 with="$(printf '%s\n' "$out" | grep -m1 '^EVALS_FILES_WITH_ABSTENTION=' | cut -d= -f2)"
@@ -56,6 +57,7 @@ put "$fx/b" p-plugin/skills/s '{"evals":[{"id":"b-001","expectations":["x"]}]}'
 out="$(bash "$CHECK" --project-dir "$fx/b" 2>&1)"; rc=$?
 assert "B exits 1" "$(rc_is $rc 1)"
 assert "B names no_abstention_case" "$(has "$out" 'TYPE=no_abstention_case')"
+assert "B REASON= names the first finding" "$(printf '%s\n' "$out" | grep -qE '^REASON=no_abstention_case: .+' && echo true || echo false)"
 assert "B names the file" "$(has "$out" 'FILE=p-plugin/skills/s/evals.json')"
 
 # --- C: an abstain case with no fabrication detector fails -------------------

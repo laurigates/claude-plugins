@@ -136,9 +136,11 @@ with="$(printf '%s\n' "$report" | sed -n 's/^WITH=//p')"
 cases="$(printf '%s\n' "$report" | sed -n 's/^CASES=//p')"
 issue_count=0
 findings=""
+first_reason=""
 while IFS=$'\t' read -r tag kind evals_path msg; do
   [ "$tag" = "ISSUE" ] || continue
   issue_count=$((issue_count + 1))
+  [ -n "$first_reason" ] || first_reason="${kind}: ${msg}"
   findings="${findings}  - SEVERITY=ERROR TYPE=${kind} FILE=${evals_path} MSG=${msg}
 "
 done <<<"$report"
@@ -151,6 +153,8 @@ if [ "$scanned" -eq 0 ]; then echo "SCANNED_EMPTY=true"; else echo "SCANNED_EMPT
 echo "ISSUE_COUNT=$issue_count"
 if [ "$issue_count" -gt 0 ]; then
   echo "STATUS=ERROR"
+  # REASON= names the first finding (.claude/rules/structured-script-output.md, #2691).
+  echo "REASON=${first_reason:0:200}"
   echo "ISSUES:"
   printf '%s' "$findings"
 else
