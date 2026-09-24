@@ -245,6 +245,12 @@ print(f"CRONS_PARSED={parsed}")
 print(f"UNPARSEABLE_COUNT={unparseable}")
 print(f"COLLISION_COUNT={collisions}")
 print(f"STATUS={status}")
+if status != "OK" and rows:
+    # REASON= names the worst finding (.claude/rules/structured-script-output.md, #2691).
+    worst = next((r for r in rows if f"SEVERITY={status} " in r), rows[0])
+    rtype = worst.split("TYPE=", 1)[1].split(" ", 1)[0]
+    rmsg = worst.split(" MSG=", 1)[1] if " MSG=" in worst else worst.split("TYPE=", 1)[1]
+    print(f"REASON={(rtype + ': ' + rmsg)[:200]}")
 print(f"ISSUE_COUNT={len(rows)}")
 print(f"ERROR_COUNT={errors}")
 if rows:
