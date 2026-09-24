@@ -1,9 +1,9 @@
 ---
 created: 2026-04-24
-modified: 2026-07-18
+modified: 2026-09-23
 compatibility: claude-code
 reviewed: 2026-04-24
-description: "Audit skill tree for overlap, split-pressure, and consolidation candidates. Use when finding confusing skill clusters or surfacing REFERENCE.md extraction candidates."
+description: "Skill-overlap report for a plugin repo — confusable siblings, split-pressure, merge candidates. Use when two skills seem to answer one request, or a long SKILL.md may need a REFERENCE.md split."
 allowed-tools: Bash(python3 *), Read, TodoWrite
 args: "[--plugin <name>] [--strict]"
 argument-hint: "[--plugin <name>] [--strict]"
