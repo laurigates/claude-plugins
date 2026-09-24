@@ -2,7 +2,7 @@
 created: 2025-12-17
 modified: 2026-09-23
 reviewed: 2026-02-09
-description: Generate or update CLAUDE.md from blueprint artifacts. Use when adding team instructions, converting inline content to @imports, or setting up CLAUDE.local.md.
+description: CLAUDE.md and CLAUDE.local.md from blueprint artifacts. Use when editing CLAUDE.md team instructions, converting inline content to @imports, or setting up CLAUDE.local.md.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 name: blueprint-claude-md
 ---

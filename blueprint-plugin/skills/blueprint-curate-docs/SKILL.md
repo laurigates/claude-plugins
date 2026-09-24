@@ -1,11 +1,11 @@
 ---
-description: Curate library gotchas and project patterns into .claude/rules/ entries for AI context. Use when documenting library knowledge for PRP reuse.
+description: Library gotchas from official docs, researched into a .claude/rules/lib-<name>.md rule. Use when recording a dependency's pitfalls or a codebase pattern for PRP reuse.
 args: "[library-name|project:pattern-name]"
 argument-hint: "Library name (e.g., redis, pydantic) or project:pattern-name"
 allowed-tools: Read, Write, Glob, Bash, WebFetch, WebSearch, AskUserQuestion
 model: opus
 created: 2025-12-16
-modified: 2026-07-03
+modified: 2026-09-23
 reviewed: 2026-02-14
 name: blueprint-curate-docs
 ---

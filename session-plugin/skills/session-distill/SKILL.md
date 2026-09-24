@@ -1,11 +1,11 @@
 ---
 name: session-distill
-description: "Distill session insights into rules, skill improvements, recipes, and cross-repo promotions to marketplace plugins. Use when capturing learnings, codifying workflow into .claude/rules, or promoting a session-invented pattern into a specific plugin/skill as a PR."
+description: "This session's durable learnings, each routed to one home: a rule, recipe, local skill, or plugin PR. Use when a session taught something worth keeping, or asked to distill or codify it."
 allowed-tools: Bash(bash *), Bash(mkdir *), Bash(mktemp *), Bash(git diff *), Bash(git log *), Bash(git status *), Bash(git fetch *), Bash(git clone *), Bash(git switch *), Bash(git checkout *), Bash(git add *), Bash(git commit *), Bash(git branch *), Bash(git push *), Bash(just *), Bash(gh pr *), Bash(gh label *), Read, Grep, Glob, Edit, Write, AskUserQuestion, TodoWrite
 argument-hint: "--rules | --skills | --recipes | --process | --all | --dry-run"
 args: "[--rules] [--skills] [--recipes] [--process] [--all] [--dry-run]"
 created: 2026-02-11
-modified: 2026-09-15
+modified: 2026-09-23
 reviewed: 2026-07-14
 ---
 

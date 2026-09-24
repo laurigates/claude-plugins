@@ -44,7 +44,7 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 | `blueprint-work-order` | Create work-order with minimal context for subagent execution |
 | `blueprint-prp-create` | Create a PRP with systematic research and validation gates |
 | `blueprint-prp-execute` | Execute a PRP with validation loop, TDD workflow, and quality gates |
-| `blueprint-curate-docs` | Curate library gotchas and project patterns into `.claude/rules/` entries for AI context |
+| `blueprint-curate-docs` | Research a library's gotchas from its official docs into a `.claude/rules/lib-<name>.md` entry (or a codebase pattern into its own rule) for PRP reuse |
 | `blueprint-adr-validate` | Validate ADR cross-references, detect domain conflicts, and update superseded ADRs |
 | `blueprint-promote` | Promote a child workspace's status into the root monorepo's portfolio tracker |
 | `blueprint-sync` | Sync generated rules / CLAUDE.md back from PRDs after edits |
@@ -67,8 +67,8 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 | `blueprint-autonomy-level3` | **Level-3 scaffold** (ADR-0020) - Installs the out-of-band pipeline into a consumer repo: scheduled `blueprint-autorun` + label-triggered `blueprint-wo-execute` workflows (gated, budgeted, independently verified, injection-safe) |
 | `blueprint-status` | Show blueprint version, configuration, and traceability report |
 | `blueprint-upgrade` | Upgrade to latest blueprint format |
-| `blueprint-rules` | Manage modular rules |
-| `blueprint-claude-md` | Update CLAUDE.md from blueprint artifacts |
+| `blueprint-rules` | Add, edit, list, or validate rule files in `.claude/rules/` and their `paths:` glob frontmatter |
+| `blueprint-claude-md` | Generate or update `CLAUDE.md` and `CLAUDE.local.md` from blueprint artifacts, moving inline content to `@imports` |
 | `blueprint-sync-ids` | Assign IDs to all documents, build traceability registry |
 | `blueprint-workspace-scan` | Discover child blueprints in a monorepo and refresh the root's `workspaces.children` registry with cached feature-tracker stats |
 | `blueprint-docs-currency` | Advisory discipline for same-commit landing of code and its docs (API, format specs, error enums, milestone status, ADRs); research-promotion workflow from `tmp/` to `docs/`; bounded dependency sweep (`scripts/docs-dependency-sweep.sh`) naming the docs a staged change may invalidate, capped at `CANDIDATE_CAP` files |
