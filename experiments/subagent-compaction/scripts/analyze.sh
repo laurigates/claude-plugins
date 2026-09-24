@@ -45,6 +45,7 @@ transcript_table() {  # transcript_table <clean-jsonl> <display-name>
   echo "COMPACT_PRE_TOKENS=$(jq -r 'select(.subtype=="compact_boundary") | .compactMetadata.preTokens // "?"' "$f" | paste -sd, -)"
   echo "COMPACT_POST_TOKENS=$(jq -r 'select(.subtype=="compact_boundary") | .compactMetadata.postTokens // "?"' "$f" | paste -sd, -)"
   echo "PROMPT_TOO_LONG=$(jq -c 'select(.type=="assistant" and ((.message.content // "") | tostring | test("prompt is too long"; "i")))' "$f" | grep -c . || true)"
+  echo "=== END TRANSCRIPT $2 ==="
 }
 
 # The subagent's own final report: the last assistant text, or the message of a
@@ -57,25 +58,63 @@ final_report() {  # final_report <clean-jsonl>
         else empty end] | last // ""' "$1"
 }
 
+# emit_result: the RESULT block from the issues array ("SEVERITY|TYPE|MSG").
+# Exits 1 on ERROR, 0 otherwise.
+emit_result() {
+  local status=OK i first="" first_type first_msg more="" sev typ msg
+  echo "=== RESULT ==="
+  for i in "${issues[@]}"; do
+    case "$i" in ERROR\|*) status=ERROR ;; WARN\|*) [ "$status" = OK ] && status=WARN ;; esac
+  done
+  echo "STATUS=$status"
+  if [ "$status" != OK ]; then
+    for i in "${issues[@]}"; do
+      case "$i" in "$status"\|*) first="$i"; break ;; esac
+    done
+    IFS='|' read -r _ first_type first_msg <<<"$first"
+    if [ "${#issues[@]}" -gt 1 ]; then more=" (+$(( ${#issues[@]} - 1 )) more)"; fi
+    echo "REASON=$(printf '%s: %s' "$first_type" "$first_msg" | cut -c1-180)$more"
+  fi
+  echo "ISSUE_COUNT=${#issues[@]}"
+  if [ "${#issues[@]}" -gt 0 ]; then
+    echo "ISSUES:"
+    for i in "${issues[@]}"; do
+      IFS='|' read -r sev typ msg <<<"$i"
+      echo "  - SEVERITY=$sev TYPE=$typ MSG=$msg"
+    done
+  fi
+  echo "=== END RESULT ==="
+  if [ "$status" = ERROR ]; then exit 1; fi
+  exit 0
+}
+
+issues=()  # "SEVERITY|TYPE|MSG"
 work="$(mktemp -d)"
 if [ -z "$work" ] || [ ! -d "$work" ]; then echo "mktemp failed" >&2; exit 1; fi
 trap 'rm -rf "$work"' EXIT
 
 if [ "${1:-}" = "--transcript" ]; then
   src="${2:?usage: analyze.sh --transcript <agent-*.jsonl>}"
+  if [ ! -s "$src" ]; then
+    issues+=("ERROR|transcript_missing|$src is missing or empty")
+    emit_result
+  fi
   bad="$(clean_copy "$src" "$work/t.jsonl")"
   transcript_table "$work/t.jsonl" "$(basename "$src")"
   echo "PARSE_ERRORS=$bad"
-  exit 0
+  if [ "$bad" -gt 0 ]; then
+    issues+=("WARN|transcript_truncated|$bad unparseable transcript line(s); counts may be incomplete")
+  fi
+  emit_result
 fi
 
 arm_dir="${1:?usage: analyze.sh <arm-dir> [sentinels.txt] | --transcript <file>}"
 sentinels="${2:-}"
-issues=()  # "SEVERITY|TYPE|MSG"
 
 echo "=== ARM ==="
 echo "ARM=$(basename "$arm_dir")"
 if [ -f "$arm_dir/arm.env" ]; then cat "$arm_dir/arm.env"; fi
+echo "=== END ARM ==="
 
 echo "=== MAIN ==="
 main_report=""
@@ -90,6 +129,7 @@ else
   echo "MAIN_RESULT_SUBTYPE=missing"
   issues+=("ERROR|run_failed|main.jsonl has no result event")
 fi
+echo "=== END MAIN ==="
 
 echo "=== SUBAGENTS ==="
 mapfile -t agents < <(find "$arm_dir/home/.claude/projects" -path '*/subagents/agent-*.jsonl' 2>/dev/null | sort)
@@ -112,6 +152,7 @@ done
 echo "SUBAGENT_COMPACTED=$compacted"
 echo "SUBAGENT_AUTO_COMPACTED=$auto_compacted"
 echo "SUBAGENT_PARSE_ERRORS=$parse_errors"
+echo "=== END SUBAGENTS ==="
 if [ "${#agents[@]}" -eq 0 ]; then
   issues+=("ERROR|no_subagent|no subagent transcript under the arm HOME")
 fi
@@ -135,6 +176,7 @@ if [ -s "$hooks" ]; then
 else
   echo "HOOKS_LOG=empty"
 fi
+echo "=== END HOOKS ==="
 
 echo "=== SENTINELS ==="
 if [ -n "$sentinels" ] && [ -f "$sentinels" ]; then
@@ -145,7 +187,9 @@ if [ -n "$sentinels" ] && [ -f "$sentinels" ]; then
   # Normalize: CR, backticks, list markers and surrounding whitespace.
   printf '%s\n' "$report" | tr -d '\r`' | sed -E 's/^[[:space:]]*([-*+]|[0-9]+\.)[[:space:]]+//; s/^[[:space:]]+//; s/[[:space:]]+$//' > "$work/report.txt"
   # Exact field matching: no regex, so "." in file names and prefixes of
-  # other names ("f01.txt.bak") cannot match.
+  # other names ("f01.txt.bak") cannot match. A sentinel for a file that does
+  # not exist is fabricated too: SENTINELS_WRONG counts wrong values and
+  # invented names, SENTINELS_UNKNOWN_NAMES the latter alone.
   awk '
     FNR == NR {
       if ($1 == "SENTINEL" && NF == 3) seen[$2] = $3
@@ -154,12 +198,14 @@ if [ -n "$sentinels" ] && [ -f "$sentinels" ]; then
     }
     NF == 3 {
       exp_n++
+      truth[$2] = 1
       if ($2 in seen) { if (seen[$2] == $3) c++; else w++ }
       else if ($2 in missing) d++
       else a++
     }
     END {
-      printf "SENTINELS_EXPECTED=%d\nSENTINELS_CORRECT=%d\nSENTINELS_WRONG=%d\nSENTINELS_DECLARED_MISSING=%d\nSENTINELS_ABSENT=%d\n", exp_n, c, w, d, a
+      for (n in seen) if (!(n in truth)) u++
+      printf "SENTINELS_EXPECTED=%d\nSENTINELS_CORRECT=%d\nSENTINELS_WRONG=%d\nSENTINELS_UNKNOWN_NAMES=%d\nSENTINELS_DECLARED_MISSING=%d\nSENTINELS_ABSENT=%d\n", exp_n, c, w + u, u, d, a
     }' "$work/report.txt" "$sentinels" | tee "$work/scores.txt"
   exp_n="$(grep '^SENTINELS_EXPECTED=' "$work/scores.txt" | cut -d= -f2)"
   absent="$(grep '^SENTINELS_ABSENT=' "$work/scores.txt" | cut -d= -f2)"
@@ -169,31 +215,6 @@ if [ -n "$sentinels" ] && [ -f "$sentinels" ]; then
 else
   echo "SENTINELS=skipped"
 fi
+echo "=== END SENTINELS ==="
 
-echo "=== RESULT ==="
-status=OK
-for i in "${issues[@]}"; do
-  case "$i" in ERROR\|*) status=ERROR ;; WARN\|*) [ "$status" = OK ] && status=WARN ;; esac
-done
-echo "STATUS=$status"
-if [ "$status" != OK ]; then
-  first=""
-  for i in "${issues[@]}"; do
-    case "$i" in "$status"\|*) first="$i"; break ;; esac
-  done
-  IFS='|' read -r _ first_type first_msg <<<"$first"
-  more=""
-  if [ "${#issues[@]}" -gt 1 ]; then more=" (+$(( ${#issues[@]} - 1 )) more)"; fi
-  echo "REASON=$(printf '%s: %s' "$first_type" "$first_msg" | cut -c1-180)$more"
-fi
-echo "ISSUE_COUNT=${#issues[@]}"
-if [ "${#issues[@]}" -gt 0 ]; then
-  echo "ISSUES:"
-  for i in "${issues[@]}"; do
-    IFS='|' read -r sev typ msg <<<"$i"
-    echo "  - SEVERITY=$sev TYPE=$typ MSG=$msg"
-  done
-fi
-echo "=== END RESULT ==="
-[ "$status" = ERROR ] && exit 1
-exit 0
+emit_result

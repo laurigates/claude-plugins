@@ -14,13 +14,13 @@ The working assumption is that model quality degrades well before the context
 window is full (roughly past 50%). A main session run with auto-compact disabled gives no control over
 subagent context. Claude Code exposes no per-subagent context limit or
 compaction setting (`maxTurns`, `model`, `effort` are the only
-bounding frontmatter fields; environment variables such as
+bounding frontmatter fields, plus `omitClaudeMd` for the startup size; environment variables such as
 `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` apply to the whole process), so the
 behaviour has to be measured.
 
 ## Findings so far
 
-### 2026-09-23 — haiku 200k subagent, host defaults (n=1)
+### 2026-09-23 — haiku 200k subagent, host settings (n=1)
 
 Environment: Claude Code on the web, `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=80`,
 auto-compact enabled (default). A fresh `general-purpose` subagent (briefed,
@@ -65,7 +65,7 @@ operator's own configuration.
 | # | Question | Arm | Read |
 |---|---|---|---|
 | Q1 | Does main-config `autoCompactEnabled=false` reach subagents? | `ac-off` | `SUBAGENT_COMPACTED` — `yes` means the setting does not propagate |
-| Q2 | Does the subagent resume its task after compacting? | `ac-on` | `SENTINELS_CORRECT` vs `SENTINELS_EXPECTED`; `SENTINELS_WRONG` > 0 is fabrication |
+| Q2 | Does the subagent resume its task after compacting? | `ac-on` | `SENTINELS_CORRECT` vs `SENTINELS_EXPECTED`; `SENTINELS_WRONG` > 0 (wrong value or invented file) is fabrication |
 | Q3 | Does `PreCompact` fire inside a subagent, with an agent identifier? | both | `HOOK_PreCompact`, `PRECOMPACT_WITH_AGENT_ID`, `PRECOMPACT_KEYS` |
 
 Mechanics:
@@ -94,6 +94,9 @@ Mechanics:
 - `analyze.sh` emits `STATUS=OK|WARN|ERROR` with `REASON=` and an `ISSUES:`
   block: ERROR for a failed run or no subagent, WARN for a truncated
   transcript (unparseable lines), no `Read` calls, or an unparseable report.
+  `--transcript` mode follows the same contract: ERROR for a missing file, WARN
+  for unparseable lines. `SENTINELS_WRONG` counts wrong values and sentinels
+  for files that do not exist (`SENTINELS_UNKNOWN_NAMES`).
 
 ## Usage
 

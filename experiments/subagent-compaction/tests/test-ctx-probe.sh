@@ -12,20 +12,18 @@ tmp=$(mktemp -d) || { echo 'mktemp failed' >&2; exit 1; }
 if [ -z "$tmp" ] || [ ! -d "$tmp" ]; then echo 'bad sandbox dir' >&2; exit 1; fi
 trap 'rm -rf "$tmp"' EXIT
 
-mkdir -p "$tmp/bin"
-cat > "$tmp/bin/claude" <<'EOF'
-#!/usr/bin/env bash
+mkdir -p "$tmp/bin" "$tmp/log"
+# The probe passes only an allowlisted env to the child, so the log dir is
+# written into the stub rather than exported. printf + an appended heredoc keeps
+# this portable: GNU and BSD sed disagree on `sed -i`.
+printf '#!/usr/bin/env bash\nSTUB_LOG_DIR=%q\n' "$tmp/log" > "$tmp/bin/claude"
+cat >> "$tmp/bin/claude" <<'EOF'
 n="$(find "$STUB_LOG_DIR" -name 'env-*' | wc -l)"
 env > "$STUB_LOG_DIR/env-$n"
 pwd > "$STUB_LOG_DIR/cwd-$n"
 echo '{"type":"result","subtype":"success","total_cost_usd":0,"result":""}'
 EOF
 chmod +x "$tmp/bin/claude"
-mkdir -p "$tmp/log"
-
-# The probe passes only an allowlisted env to the child, so the log dir is
-# baked into the stub rather than exported.
-sed -i "2i STUB_LOG_DIR='$tmp/log'" "$tmp/bin/claude"
 
 out="$(PATH="$tmp/bin:$PATH" ANTHROPIC_API_KEY=dummy CLAUDE_CODE_CHILD_SESSION=1 \
   CLAUDE_CODE_SUBAGENT_MODEL=leaked CLAUDECODE=1 \
@@ -34,7 +32,8 @@ out="$(PATH="$tmp/bin:$PATH" ANTHROPIC_API_KEY=dummy CLAUDE_CODE_CHILD_SESSION=1
 
 # Both helpers are invoked indirectly through check().
 # shellcheck disable=SC2317
-not_grep() { ! grep -q "$@"; }
+# not_grep <pattern> <file>: the file must exist, so a missing log cannot pass.
+not_grep() { [ -f "$2" ] && ! grep -q "$1" "$2"; }
 # shellcheck disable=SC2317
 outside_repo() { case "$1" in "$repo_root"|"$repo_root"/*) return 1 ;; esac; }
 

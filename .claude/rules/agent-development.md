@@ -210,7 +210,7 @@ The `Agent` tool's `subagent_type: "fork"` inherits the parent's full conversati
 
 ### Subagent context budget
 
-No agent frontmatter field caps a subagent's context or tunes its compaction: per agent only `maxTurns`, `model` (window size) and `effort` bound it, and env vars such as `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` apply process-wide. Bound subagents by **task size**: scope each brief to finish well under half the window, require a state-packet return (`loop-integrity.md` Pillar 2), give an early-exit rule, and verify reports against artefacts. One haiku 200k run (2026-09-23) auto-compacted at ~75% and returned its compaction summary as a false completion report; treat that as a failure mode to design around. Baseline, open questions and the probe: `experiments/subagent-compaction/README.md`.
+No agent frontmatter field caps a subagent's context or tunes its compaction: per agent only `maxTurns`, `model` (window size), `effort` and `omitClaudeMd` (startup size) bound it, and env vars such as `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` apply process-wide. Bound subagents by **task size**: scope each brief to finish well under half the window, require a state-packet return (`loop-integrity.md` Pillar 2), give an early-exit rule, and verify reports against artefacts. One haiku 200k run (2026-09-23) auto-compacted at ~75% and returned its compaction summary as a false completion report; treat that as a failure mode to design around. Baseline, open questions and the probe: `experiments/subagent-compaction/README.md`.
 
 ### Worktree Isolation
 

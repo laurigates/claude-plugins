@@ -124,6 +124,46 @@ run "$arm5"
 expect 'REPORT_SOURCE=main'
 expect 'SENTINELS_WRONG=1'
 
+# --- 5b. A sentinel for a file that does not exist is fabrication ---------
+arm5b="$tmp/fabricated"
+make_arm "$arm5b" '"SENTINEL f01.txt aaaaaaaaaaaa\nSENTINEL f02.txt bbbbbbbbbbbb\nSENTINEL f03.txt cccccccccccc\nSENTINEL f04.txt dddddddddddd\nSENTINEL f99.txt deadbeefdead"'
+run "$arm5b"
+expect 'SENTINELS_CORRECT=4'
+expect 'SENTINELS_WRONG=1'
+expect 'SENTINELS_UNKNOWN_NAMES=1'
+expect 'SENTINELS_ABSENT=0'
+
+# --- 5c. Every section header has a matching footer --------------------------
+opens="$(printf '%s\n' "$out" | grep -c '^=== [A-Z]' || true)"
+closes="$(printf '%s\n' "$out" | grep -c '^=== END ' || true)"
+if [ "$((opens - closes))" -eq "$closes" ] && [ "$closes" -ge 6 ]; then
+  echo "PASS every section closed ($closes)"
+else
+  echo "FAIL sections: $opens markers, $closes END"; fail=1
+fi
+
+# --- 5d. --transcript mode follows the same status contract ------------------
+t="$arm/home/.claude/projects/p/s/subagents/agent-x.jsonl"
+out="$(bash "$analyze" --transcript "$t" || true)"
+expect 'COMPACTIONS=1'
+expect 'PARSE_ERRORS=0'
+expect 'STATUS=OK'
+expect '=== END TRANSCRIPT agent-x.jsonl ==='
+cp "$t" "$tmp/trunc.jsonl"
+printf '{"type":"assis' >> "$tmp/trunc.jsonl"
+out="$(bash "$analyze" --transcript "$tmp/trunc.jsonl" || true)"
+expect 'PARSE_ERRORS=1'
+expect 'STATUS=WARN'
+expect 'REASON=transcript_truncated: 1 unparseable transcript line(s); counts may be incomplete'
+out="$(bash "$analyze" --transcript "$tmp/nope.jsonl" 2>&1 || true)"
+expect 'STATUS=ERROR'
+absent '^PARSE_ERRORS='
+if bash "$analyze" --transcript "$tmp/nope.jsonl" >/dev/null 2>&1; then
+  echo 'FAIL --transcript exit 1 on a missing file'; fail=1
+else
+  echo 'PASS --transcript exit 1 on a missing file'
+fi
+
 # --- 6. Missing main transcript is a failed run, not a clean zero ------------
 rm "$arm/main.jsonl"
 run "$arm"
