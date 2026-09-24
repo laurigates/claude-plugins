@@ -69,7 +69,7 @@ the rules, skills, and hooks that embody it.
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **agent-patterns-plugin** | 22 | Multi-agent coordination and orchestration patterns |
+| **agent-patterns-plugin** | 24 | Multi-agent coordination and orchestration patterns |
 | **agents-plugin** | 1 + 12 agents | Task-focused agents for test, review, debug, docs, and CI workflows |
 | **langchain-plugin** | 4 | LangChain JS/TS development - agents, chains, LangGraph, Deep Agents |
 | **prompt-engineering-plugin** | 1 | Prompt engineering for accurate, grounded responses - anti-hallucination workflow |
@@ -110,14 +110,14 @@ the rules, skills, and hooks that embody it.
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **git-plugin** | 45 + 1 agent | Git workflows - commits, branches, PRs, worktrees, release-please, merge/deletion hazards, issue scoping |
+| **git-plugin** | 48 + 1 agent | Git workflows - commits, branches, PRs, worktrees, release-please, merge/deletion hazards, issue scoping |
 
 ### CI/CD
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
 | **finops-plugin** | 7 | GitHub Actions FinOps - billing, cache usage, workflow efficiency |
-| **github-actions-plugin** | 10 | GitHub Actions CI/CD - workflows, authentication, inspection |
+| **github-actions-plugin** | 12 | GitHub Actions CI/CD - workflows, authentication, inspection |
 
 ### Infrastructure
 

@@ -91,6 +91,17 @@ All skills are located in the `skills/` directory:
   - The rotating-failure-set tell for budget exhaustion
   - Why a check skipped by its `file-patterns` filter reports `pass` and is not a control
   - A workflow with ≤1 historical run has no baseline, so rerunning the identical commit becomes the primary discriminator
+  - The green runaway (REFERENCE.md): a `synchronize`-triggered review loop has no round counter; draft does not stop it; kill switches and their blast radius
+
+- **actions-billing-usage** - Measuring Actions cost before optimizing it
+  - The billing-usage endpoint (the old `/billing/actions` returns 410), filtered by bare repo name
+  - Net vs gross, per-SKU grouping, explicit per-month calls for the trend, outcome distribution alongside minutes
+  - Per-job rounding: fold trivial work into an existing job; skip with a job-level `if:`
+
+- **release-artifact-verification** - Confirming a release actually shipped
+  - The publish job fails while the tag and GitHub release look perfect — check the artifact at its public address
+  - Verify from a directory with no relationship to the source tree
+  - Smoke-run an image before pushing it; `docker run` needs `-i` for a heredoc-fed check
 
 ### Agent
 

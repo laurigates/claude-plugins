@@ -3,7 +3,7 @@ name: ai-review-max-turns
 description: "Triage a red Claude-powered CI review check. Use when an AI review job fails or flakes: tell a real unpublished finding from turn-budget or ceiling overruns and infra reruns via subtype + is_error."
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
 created: 2026-09-02
-modified: 2026-09-23
+modified: 2026-09-24
 reviewed: 2026-09-23
 ---
 
@@ -254,6 +254,7 @@ did (read the run), not against the surface red.
 
 ## Related
 
+- [REFERENCE.md](REFERENCE.md) — the *green* runaway: a `synchronize`-triggered review loop with no round counter, why draft does not stop it, the kill switches and their blast radius, and where the per-run cost actually lives
 - `.claude/rules/pr-merge-hazards.md` §4 — `UNSTABLE` vs `BLOCKED`, and the two
   checks required before merging over red
 - `laurigates/.claude/rules/ci-cd-workflows.md` — the three *green*-but-inert

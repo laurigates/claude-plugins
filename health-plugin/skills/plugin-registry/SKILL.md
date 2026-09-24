@@ -4,7 +4,7 @@ description: "Claude Code plugin registry structure, install scopes, and version
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-02-04
-modified: 2026-09-17
+modified: 2026-09-24
 compatibility: claude-code
 reviewed: 2026-09-17
 ---
@@ -21,6 +21,7 @@ Expert knowledge for understanding and troubleshooting the Claude Code plugin re
 | Need to understand plugin scopes | Configuring plugin permissions (use settings-configuration skill) |
 | Fixing orphaned registry entries | Creating workflows with plugins (use github-actions-plugin) |
 | Debugging installation failures | |
+| A declared capability (LSP server, hook, command) silently never loads — see [REFERENCE.md](REFERENCE.md) § registry vs installed copy | |
 
 ## Registry Location
 

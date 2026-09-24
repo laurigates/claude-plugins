@@ -88,8 +88,8 @@ signal — read `gh pr checks`, and note the newer run id.
   *thread* before scoping the work. This rule is the next step: read the
   *contribution gates* before opening the PR. Both are "go to the primary
   source, and don't stop at the summary."
-- `~/.claude/rules/tool-use-patterns.md` (Read refuses >25 000 tokens; page
-  with offset/limit) — the mechanical habit that causes this: truncating a
+- `agent-patterns-plugin:harness-tool-errors` (Read refuses >25000 tokens;
+  page with offset/limit) — the mechanical habit that causes this: truncating a
   long doc and treating the excerpt as the whole.
 - `github-metadata-hygiene.md` — the metadata checklist for repos *we* own;
   upstream repos impose their own, stricter, and enforced by bot.

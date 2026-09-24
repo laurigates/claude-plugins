@@ -25,7 +25,7 @@ Install these first. They configure the environment other plugins rely on.
 | health-plugin | 7 | Diagnose config issues, audit plugin selection |
 | hooks-plugin | 4 | Enforce best practices via lifecycle hooks |
 | configure-plugin | 48 | Infrastructure standards (CI, linting, testing, Docker, repo onboarding) |
-| agent-patterns-plugin | 22 | Agent orchestration, MCP management, delegation |
+| agent-patterns-plugin | 24 | Agent orchestration, MCP management, delegation |
 
 ### Tier 1 - Core Workflow
 
@@ -34,7 +34,7 @@ The development loop: plan, code, commit, ship.
 | Plugin | Skills | Purpose |
 |--------|--------|---------|
 | blueprint-plugin | 35 | PRD/ADR/PRP/TRP methodology, `/blueprint:execute` auto-pilot, ambient autonomy levels (`/blueprint:autopilot`, `/blueprint:autonomy-level3`), monorepo portfolio tracking, story-audit/reconcile |
-| git-plugin | 45 + 1 agent | Commits, branches, PRs, issues, forks, worktrees, release-please, merge hazards, issue scoping, upstream-fix and repo-deletion checks |
+| git-plugin | 48 + 1 agent | Commits, branches, PRs, issues, forks, worktrees, release-please, merge hazards, issue scoping, upstream-fix and repo-deletion checks |
 | project-plugin | 7 | Project init, modernization, maintenance |
 | session-plugin | 4 | Session bookends: spinup briefing, wrap capture, end orchestrator, distill |
 | agents-plugin | 1 + 12 agents | Task delegation to specialized agents |
