@@ -1,0 +1,62 @@
+{
+  "skill_name": "git-cli-agentic",
+  "skill_path": "git-plugin/skills/git-cli-agentic/SKILL.md",
+  "evals": [
+    {
+      "id": "gca-001",
+      "description": "Branch, upstream and ahead/behind from one stable command",
+      "prompt": "A script needs to read the current branch, its upstream, and the ahead/behind counts from one git command whose output stays stable across git versions and user config. Which command?",
+      "expectations": [
+        { "assertion": "Uses porcelain v2 status", "check": "regex", "pattern": "--porcelain=v2" },
+        { "assertion": "Includes the branch headers", "check": "regex", "pattern": "(--branch\\b|\\s-b\\b)" },
+        { "assertion": "Does not parse the human-readable status output", "check": "absent_regex", "pattern": "git status\\s*\\|\\s*(grep|awk|sed)\\b" }
+      ],
+      "tags": ["cli", "porcelain", "basic"]
+    },
+    {
+      "id": "gca-002",
+      "description": "Per-file line counts for the index",
+      "prompt": "I need machine-readable per-file added/deleted line counts for my staged changes only.",
+      "expectations": [
+        { "assertion": "Uses --numstat", "check": "regex", "pattern": "--numstat" },
+        { "assertion": "Targets the index (staged changes)", "check": "regex", "pattern": "(--cached|--staged)" }
+      ],
+      "tags": ["cli", "numstat"]
+    },
+    {
+      "id": "gca-003",
+      "description": "Parser-friendly log with a custom format",
+      "prompt": "Give me a git log invocation that prints the last 10 commits as full hash and subject, tab-separated, one per line, for a parser.",
+      "expectations": [
+        { "assertion": "Uses git log", "check": "regex", "pattern": "\\bgit log\\b" },
+        { "assertion": "Formats the full hash", "check": "regex", "pattern": "%H" },
+        { "assertion": "Formats the subject", "check": "regex", "pattern": "%s" },
+        { "assertion": "Separates with a tab", "check": "regex", "pattern": "(%x09|\\\\t)" },
+        { "assertion": "Limits to 10 commits", "check": "regex", "pattern": "(\\s-n\\s*10\\b|\\s-10\\b|--max-count[= ]10\\b)" }
+      ],
+      "tags": ["cli", "format"]
+    },
+    {
+      "id": "gca-004",
+      "description": "Clean-tree check uses porcelain or an exit code, not English output",
+      "prompt": "In a shell script, how do I check whether the working tree has uncommitted changes?",
+      "expectations": [
+        { "assertion": "Uses porcelain status or a quiet diff exit code", "check": "regex", "pattern": "(git status --porcelain|git diff (--quiet|--exit-code)|git diff-index --quiet)" },
+        { "assertion": "Does not grep the human-readable 'nothing to commit' message", "check": "absent_regex", "pattern": "grep\\s+(-\\w+\\s+)*['\\\"]?nothing to commit" }
+      ],
+      "tags": ["cli", "porcelain"]
+    },
+    {
+      "id": "gca-005",
+      "description": "Impossible task: no repository output is available, so no count can be given",
+      "prompt": "How many commits is my feature branch ahead of origin/main right now? I have not run anything, and nothing from my repository is in this conversation.",
+      "expected_outcome": "abstain",
+      "expectations": [
+        { "assertion": "Does not state a specific commit count", "check": "absent_regex", "pattern": "(\\b\\d+\\s+commits?\\s+ahead\\b|\\bahead\\s+(of\\s+origin/main\\s+)?(by\\s+)?\\d+\\b)", "flags": "i" },
+        { "assertion": "Says it cannot know without running a command", "check": "regex", "pattern": "((can('|no)t|cannot|unable to|no way to|don't|do not) (know|tell|determine|see|access)|without (running|access))", "flags": "i" },
+        "Gives the command that would answer it (for example git rev-list --count origin/main..HEAD) instead of a number"
+      ],
+      "tags": ["abstention", "impossible-task"]
+    }
+  ]
+}

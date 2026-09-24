@@ -159,6 +159,7 @@ jobs:
           bash scripts/run-skill-script-tests.sh \
             --only 'blueprint-plugin/scripts/tests/test-check-generated-rules-registration.sh' \
             --only 'blueprint-plugin/scripts/tests/test-register-generated-rules.sh' \
+            --only 'evaluate-plugin/scripts/tests/test-golden-set-evals.sh' \
             --only 'evaluate-plugin/skills/evaluate-context-engineering/scripts/tests/test-check-context-engineering.sh' \
             --only 'scripts/tests/test-agentic-audit-precompute.sh' \
             --only 'scripts/tests/test-blueprint-health-report.sh' \
