@@ -16,6 +16,10 @@
 # by scripts/check-docs-index.sh (Check 3); this nudge covers the residual
 # content-currency gap. See .claude/rules/docs-currency.md.
 #
+# See also blueprint-plugin/scripts/docs-dependency-sweep.sh (#2692): the
+# on-demand sweep mirrors this staged-path derivation and extends it to
+# plugin.json, catalog rows, and rule back-references. Change one, check both.
+#
 # Opt out: set CLAUDE_HOOKS_DISABLE_README_CURRENCY=1.
 #
 # Test seam: set PLUGIN_README_CURRENCY_STAGED to a newline-separated list of
