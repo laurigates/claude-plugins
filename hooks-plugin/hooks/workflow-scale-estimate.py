@@ -603,13 +603,19 @@ def _risk(result: dict) -> int:
 # literals close and its brackets balance around the gap. The lowering rules
 # then applied to BOTH readings of a file whose agent code neither scan saw,
 # and a script #2668 asked about went silent (#2670 review, round 5). A `/` is
-# read as a regex opener after the punctuators and keywords that expect an
-# operand, or at the start of a line. Over-matching (a division followed by a
-# quote on one line) only adds a reading, which can raise an estimate but
-# never lower one.
+# read as a regex opener at the start of a line, after the punctuators and
+# keywords that expect an operand, after the `)` that closes a one-line
+# if/while/for/with header (up to two levels of nested parens), and after a
+# closing `*/`. After any other `)`, a `]` or an identifier it is division.
+# Over-matching (a division followed by a quote on one line) only adds a
+# reading, which can raise an estimate but never lower one. Matching every
+# `/` instead would read path prose in 7 of the 8 bundled templates as regex
+# and raise two of their budgets (20 -> 71, 49 -> 81).
 _QUOTED_REGEX = re.compile(
     r"(?:^|[(,=:!&|?\[{};<>+\-*%~^]"
-    r"|\b(?:return|typeof|instanceof|in|of|new|delete|void|throw|case|do|else|yield|await))"
+    r"|\b(?:return|typeof|instanceof|in|of|new|delete|void|throw|case|do|else|yield|await)"
+    r"|\b(?:if|while|for|with)\s*\((?:[^()\n]|\((?:[^()\n]|\([^()\n]*\))*\))*\)"
+    r"|\*/)"
     r"\s*/(?![/*])(?:\\.|\[(?:\\.|[^\]\n])*\]|[^/\n\\])*?"
     r"[`'\"](?:\\.|\[(?:\\.|[^\]\n])*\]|[^/\n\\])*/",
     re.MULTILINE,

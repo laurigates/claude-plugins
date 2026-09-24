@@ -409,6 +409,20 @@ await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
 function g(s) { return /[{}`]/.test(s) }
 await parallel([() => agent("r"), () => agent("s"), ...args.units.map((u) => () => agent(u))]);
 EOF
+# After a `)` a `/` is division, except where the `)` closes a control header,
+# here with two levels of nested parens; a closing `*/` also precedes a regex.
+fx quote_regex_after_if_header <<'EOF'
+if (ok(trim(s))) /[{}`]/.test(s);
+await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
+if (ok(trim(s))) /[{}`]/.test(s);
+await parallel([() => agent("r"), () => agent("s"), ...args.units.map((u) => () => agent(u))]);
+EOF
+fx quote_regex_after_block_comment <<'EOF'
+/* strip */ /[{}`]/.test(s);
+await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
+/* strip */ /[{}`]/.test(s);
+await parallel([() => agent("r"), () => agent("s"), ...args.units.map((u) => () => agent(u))]);
+EOF
 
 assert_asks "regex holding ' inside \${...} still asks" "$(<"$FX_DIR/regex_squote_in_interp.js")"
 assert_asks "regex holding \" inside \${...} still asks" "$(<"$FX_DIR/regex_dquote_in_interp.js")"
@@ -419,6 +433,8 @@ assert_asks "literal array beside a quote regex on an unproven parse still asks"
 assert_asks "backtick regex on a parse that proves itself still asks" "$(<"$FX_DIR/quote_regex_on_proven_parse.js")"
 assert_asks "backtick regex after => still asks" "$(<"$FX_DIR/quote_regex_after_arrow.js")"
 assert_asks "backtick regex after return still asks" "$(<"$FX_DIR/quote_regex_after_return.js")"
+assert_asks "backtick regex after an if header still asks" "$(<"$FX_DIR/quote_regex_after_if_header.js")"
+assert_asks "backtick regex after a block comment still asks" "$(<"$FX_DIR/quote_regex_after_block_comment.js")"
 
 # assert_parse <desc> <estimate> <sanitizer> <fallback-substring> <fixture>
 assert_parse() {
