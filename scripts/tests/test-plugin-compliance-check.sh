@@ -287,7 +287,7 @@ make_session_wrap_fixture() {
 # --- The regression: GITHUB_DRIFT referenced, invocation missing --with-dedup
 make_session_wrap_fixture \
   'bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits'
-run_check; out_missing="$OUT"; rc_missing="$RC"
+run_check; out_missing="$OUT"
 
 assert_contains "missing --with-dedup on the invocation line is flagged ❌" \
   "$out_missing" "SKILL.md references GITHUB_DRIFT but at least one session-survey.sh invocation line is missing --with-dedup"
@@ -298,7 +298,7 @@ assert_contains "missing --with-dedup names the issue (#2357)" "$out_missing" "#
 make_session_wrap_fixture \
   'bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits' \
   'Note: pass --with-dedup to populate GITHUB_DRIFT.'
-run_check; out_prose_only="$OUT"; rc_prose_only="$RC"
+run_check; out_prose_only="$OUT"
 
 assert_contains "--with-dedup) in prose alone still flags the invocation line" \
   "$out_prose_only" "SKILL.md references GITHUB_DRIFT but at least one session-survey.sh invocation line is missing --with-dedup"
@@ -483,6 +483,107 @@ run_check; rc_f="$RC"
 assert_eq "restored fixture exits 0 (full run)" "$rc_f" "0"
 run_license_check; rc_f_lo="$RC"
 assert_eq "restored fixture exits 0 (license-only)" "$rc_f_lo" "0"
+
+# ============================================================================
+# references/ link integrity (issue #2700)
+#
+# A skill split into references/ (.claude/rules/skill-quality.md §
+# "references/ — a multi-file split for large skills") reaches its detail only
+# through relative links, and nothing else resolves them. Two failures are
+# silent: a renamed or deleted reference file leaves SKILL.md pointing at
+# nothing (the agent opens a missing file mid-procedure), and a reference file
+# that no entry point names is never loaded at all.
+#
+# THE SEMANTIC INVARIANTS UNDER TEST:
+#   forward — every `](references/<f>)` link in SKILL.md or REFERENCE.md, outside
+#             fenced code, names a file that exists (an `#anchor` suffix is
+#             stripped before the lookup);
+#   reverse — every references/*.md is named from SKILL.md or REFERENCE.md.
+# Both are asserted on the ❌ line AND the exit code, and a clean split is
+# pinned to exit 0 so the guard cannot pass by flagging everything.
+# ============================================================================
+
+make_refs_skill() {
+  # make_refs_skill <body-line...>  — SKILL.md whose body is the given lines;
+  # references/present.md and references/other.md always exist.
+  local dir="$root/$PLUGIN/skills/refsplit"
+  rm -rf "$dir"
+  mkdir -p "$dir/references"
+  printf '# present\n' > "$dir/references/present.md"
+  printf '# other\n' > "$dir/references/other.md"
+  {
+    printf -- '---\n'
+    printf 'name: refsplit\n'
+    printf 'description: Fixture refsplit. Use when exercising the compliance self-test.\n'
+    printf 'allowed-tools: Read\n'
+    printf 'created: 2026-09-23\n'
+    printf 'modified: 2026-09-23\n'
+    printf 'reviewed: 2026-09-23\n'
+    printf -- '---\n\n'
+    printf '# Fixture refsplit\n\n'
+    printf '## When to Use This Skill\n\n'
+    printf '| Use this skill when... | Use another skill when... |\n'
+    printf '|---|---|\n'
+    printf '| Exercising the fixture | Doing anything real |\n\n'
+    local line
+    for line in "$@"; do printf '%s\n' "$line"; done
+  } > "$dir/SKILL.md"
+}
+
+# --- Guard integrity: a clean split (anchor link + plain link) exits 0 -------
+rm -rf "${root:?}/$PLUGIN/skills/session-end"
+make_refs_skill \
+  'See [present](references/present.md#some-section) for one path.' \
+  'See [other](references/other.md) for the other.'
+run_check; out_refs_ok="$OUT"; rc_refs_ok="$RC"
+assert_eq "clean references/ split exits 0" "$rc_refs_ok" "0"
+assert_absent "clean references/ split raises no #2700 finding" "$out_refs_ok" "#2700"
+
+# --- forward: a link to a reference file that does not exist ----------------
+make_refs_skill \
+  'See [present](references/present.md) and [other](references/other.md).' \
+  'See [gone](references/missing.md#step-3) for the moved step.'
+run_check; out_refs_dead="$OUT"; rc_refs_dead="$RC"
+assert_eq "dead references/ link exits 1" "$rc_refs_dead" "1"
+assert_contains "dead references/ link is flagged ❌ by target" \
+  "$out_refs_dead" "❌ ${PLUGIN}/refsplit: links references/missing.md, which does not exist"
+
+# --- forward: the dead link is also caught when only REFERENCE.md carries it -
+make_refs_skill 'See [present](references/present.md) and [other](references/other.md).'
+printf -- '- [gone](references/index-only-missing.md)\n' > "$root/$PLUGIN/skills/refsplit/REFERENCE.md"
+run_check; out_refs_dead_idx="$OUT"; rc_refs_dead_idx="$RC"
+assert_eq "dead link in REFERENCE.md exits 1" "$rc_refs_dead_idx" "1"
+assert_contains "dead link in REFERENCE.md is flagged ❌ by target" \
+  "$out_refs_dead_idx" "links references/index-only-missing.md, which does not exist"
+
+# --- forward: a link inside fenced code is an example, not a link -----------
+make_refs_skill \
+  'See [present](references/present.md) and [other](references/other.md).' \
+  '```markdown' \
+  'See [example](references/illustrative-only.md).' \
+  '```'
+run_check; out_refs_fence="$OUT"; rc_refs_fence="$RC"
+assert_eq "references/ link inside fenced code exits 0" "$rc_refs_fence" "0"
+assert_absent "references/ link inside fenced code is not flagged" \
+  "$out_refs_fence" "illustrative-only.md"
+
+# --- reverse: a reference file nothing names is unreachable -----------------
+make_refs_skill 'See [present](references/present.md) only.'
+run_check; out_refs_orphan="$OUT"; rc_refs_orphan="$RC"
+assert_eq "orphaned reference file exits 1" "$rc_refs_orphan" "1"
+assert_contains "orphaned reference file is flagged ❌ by path" \
+  "$out_refs_orphan" "❌ ${PLUGIN}/refsplit: references/other.md is named from neither SKILL.md nor REFERENCE.md"
+
+# --- reverse: the thin REFERENCE.md index counts as an entry point ----------
+make_refs_skill 'See [present](references/present.md) only.'
+printf -- '| Path | File |\n|---|---|\n| other | [references/other.md](references/other.md) |\n' \
+  > "$root/$PLUGIN/skills/refsplit/REFERENCE.md"
+run_check; out_refs_index="$OUT"; rc_refs_index="$RC"
+assert_eq "reference file named only from REFERENCE.md exits 0" "$rc_refs_index" "0"
+assert_absent "reference file named only from REFERENCE.md is not flagged" \
+  "$out_refs_index" "#2700"
+
+rm -rf "${root:?}/$PLUGIN/skills/refsplit"
 
 echo "---"
 echo "passed: $pass, failed: $fail"
