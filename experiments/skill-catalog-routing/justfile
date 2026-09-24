@@ -76,6 +76,11 @@ compare run_id="latest":
 frontier run_id="latest":
     scripts/render-frontier.py "{{run_id}}"
 
+# Run the harness's own regression tests (scorer id normalization, #2244).
+[group: "score"]
+test:
+    bash scripts/tests/test-score-run.sh
+
 ##########
 # Measurement
 ##########

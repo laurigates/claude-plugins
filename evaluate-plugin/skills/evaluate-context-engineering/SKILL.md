@@ -6,8 +6,8 @@ allowed-tools: Bash(python3 *), Bash(bash *), Read, Glob, Grep, Task, TodoWrite
 argument-hint: "git-plugin/git-commit --judge"
 model: opus
 created: 2026-07-26
-modified: 2026-07-26
-reviewed: 2026-07-26
+modified: 2026-09-23
+reviewed: 2026-09-23
 ---
 
 # /evaluate:context-engineering
@@ -45,7 +45,7 @@ questions, and averaging them hides which one is driving a recommendation.
 | **C2** | examples → interface design | Fenced-block share of the body; whether `args` enumerates its alternatives |
 | **C3** | upfront → progressive disclosure | Body size vs supporting files; disclosure levels (body → references → scripts) |
 | **C4** | repetition → single source of truth | 8-word shingle overlap between skills, rules, and `CLAUDE.md` |
-| **C5** | (the >80% claim) | Always-loaded chars: `CLAUDE.md` + rules with no `paths:` scope |
+| **C5** | (the >80% claim) | Always-loaded chars: `CLAUDE.md` + rules with no `paths:` scope; plus a per-rule size ceiling that applies to every rule, scoped or not |
 | **C6** | simple specs → rich references | Multi-line shell blocks with no bundled script |
 
 ## Context
@@ -85,11 +85,16 @@ per extra root plus `--portfolio-budget <N>`. Only the C5 surface is summed;
 C1–C4 and C6 stay scoped to `--project-dir`, since they measure authoring
 quality inside one marketplace. `--also` and `--target` are mutually exclusive.
 
-Read the `KEY=VALUE` block. `STATUS=ERROR` means only one thing: an
+Read the `KEY=VALUE` block. `STATUS=ERROR` means one of two things: an
 always-loaded surface is over budget — the primary repo's, or the portfolio's
-(`C5_PORTFOLIO_*`, with a per-repo `C5_PORTFOLIO_BREAKDOWN`). ERRORs are always
-listed first, so `--max-issues` never hides the reason. Every other finding is a `WARN` candidate,
-not a verdict.
+(`C5_PORTFOLIO_*`, with a per-repo `C5_PORTFOLIO_BREAKDOWN`) — or a single rule
+is over the per-rule ceiling (`TYPE=rule_over_size_ceiling`,
+`C5_RULES_OVER_CEILING`, `--rule-size-ceiling`, default 50000). The ceiling
+exists because the budget sums unscoped rules only, while a path-scoped rule
+still loads whole into every agent that touches a matching path; a 513 KB
+scoped rule once pushed a haiku subagent past its window unseen (#2667). ERRORs
+are always listed first, so `--max-issues` never hides the reason. Every other
+finding is a `WARN` candidate, not a verdict.
 
 ### Step 2: Report the C1–C6 card
 

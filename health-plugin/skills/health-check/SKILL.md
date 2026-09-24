@@ -1,9 +1,9 @@
 ---
 created: 2026-02-04
-modified: 2026-06-17
+modified: 2026-09-23
 compatibility: claude-code
 reviewed: 2026-06-17
-description: "Claude Code health check — scans plugins, settings, hooks, MCP, runtime state, usage telemetry, permissions, marketplace with optional fixes. Use when checking project health or troubleshooting setup."
+description: "Claude Code health check — every environment check in one pass, names the broken layer, `--fix` repairs. Use when asked for a health check, or the install misbehaves and the cause is unknown."
 allowed-tools: Bash(bash *), Bash(pre-commit *), Read, Glob, Grep, TodoWrite, AskUserQuestion
 args: "[--scope=all|registry|stack|agentic|runtime|usage] [--fix] [--dry-run] [--verbose]"
 argument-hint: "[--scope=all|registry|stack|agentic|runtime|usage] [--fix] [--dry-run] [--verbose]"

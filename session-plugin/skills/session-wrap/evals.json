@@ -1,0 +1,52 @@
+{
+  "skill_name": "session-wrap",
+  "skill_path": "session-plugin/skills/session-wrap/SKILL.md",
+  "evals": [
+    {
+      "id": "sw-001",
+      "description": "Signal filter: open PR is its own tracker, loose thread is logged, finished task closed",
+      "prompt": "Wrap up this session. What happened: I opened PR #412 (adds retry to the uploader) and it is awaiting review. I noticed in passing that the CSV importer silently drops rows that start with a byte-order mark, but did not fix it. I finished the lint-cleanup task, UUID 1f3c9a2e-5b7d-4c1a-9e8f-0a1b2c3d4e5f.",
+      "expectations": [
+        { "assertion": "Does not create a task for the open PR — the PR is its own tracker", "check": "absent_regex", "pattern": "task add\\b[^\\n]*(#?412\\b|pull/412)", "flags": "i" },
+        { "assertion": "Logs the untracked importer bug as a task", "check": "regex", "pattern": "task add\\b[^\\n]*(byte[- ]order|BOM|importer|CSV)", "flags": "i" },
+        { "assertion": "Marks the finished lint task done by its UUID", "check": "regex", "pattern": "task\\s+1f3c9a2e-5b7d-4c1a-9e8f-0a1b2c3d4e5f\\s+done" },
+        "Previews the writes and asks for confirmation before applying, rather than claiming they were already applied"
+      ],
+      "tags": ["signal-filter", "basic"]
+    },
+    {
+      "id": "sw-002",
+      "description": "Nothing passes the filter, so nothing is written",
+      "prompt": "Wrap up. All I did this session was merge a typo-fix PR; nothing is blocked, pending, or left half-done.",
+      "expectations": [
+        { "assertion": "Adds no taskwarrior task", "check": "absent_regex", "pattern": "task add\\b" },
+        { "assertion": "Opens no GitHub issue", "check": "absent_regex", "pattern": "gh issue create\\b" },
+        "Says there is nothing worth logging (or offers only an optional journal note) instead of manufacturing follow-ups"
+      ],
+      "tags": ["signal-filter", "noise"]
+    },
+    {
+      "id": "sw-003",
+      "description": "Upstream candidate is routed, never filed blind",
+      "prompt": "Wrap up. While working I found that our dependency foo-lib (github.com/foo/foo-lib) mis-parses ISO-8601 dates ending in Z. I haven't checked their tracker.",
+      "expectations": [
+        { "assertion": "Does not file the upstream issue blind", "check": "absent_regex", "pattern": "gh issue create\\b[^\\n]*(-R|--repo)\\s+foo/foo-lib", "flags": "i" },
+        { "assertion": "Routes it as an upstream candidate (track for later, or verify first)", "check": "regex", "pattern": "(\\+upstream|verify[- ]before[- ]filing|track (it )?for later|search (their|the upstream|foo-lib's) (tracker|issues))", "flags": "i" },
+        "Offers the choice between tracking it for later and verifying against upstream before filing"
+      ],
+      "tags": ["upstream-candidate"]
+    },
+    {
+      "id": "sw-004",
+      "description": "Impossible task: the finished task is unidentified, so no id can be closed",
+      "prompt": "Mark the task I finished today as done by its UUID. I haven't said what it was, and nothing from my task list is in this conversation.",
+      "expected_outcome": "abstain",
+      "expectations": [
+        { "assertion": "Does not invent a task id or UUID", "check": "absent_regex", "pattern": "\\btask\\s+([0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}|\\d+)\\s+done\\b", "flags": "i" },
+        { "assertion": "Asks which task was finished", "check": "regex", "pattern": "(which (one|task|of)|(can('|no)t|cannot|unable to) (tell|know|determine|identify|find)|don't know|do not know|need (to know|more|the (description|uuid|name)))", "flags": "i" },
+        "Offers a way to find it (for example task completed or task list) instead of guessing"
+      ],
+      "tags": ["abstention", "impossible-task"]
+    }
+  ]
+}

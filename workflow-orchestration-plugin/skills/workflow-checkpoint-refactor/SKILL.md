@@ -5,7 +5,7 @@ args: "[--init|--continue|--status|--phase=N]"
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(npm run *), Bash(npx *), Bash(uv run *), Bash(cargo *), Read, Write, Edit, Grep, Glob, Task, TodoWrite
 argument-hint: "--init to create plan, --continue to resume, --status to check progress"
 created: 2026-02-08
-modified: 2026-06-21
+modified: 2026-09-23
 reviewed: 2026-02-14
 ---
 
@@ -43,8 +43,9 @@ The plan file (`REFACTOR_PLAN.md`) serves as persistent state. It is the loop's
 **compact state packet** (`.claude/rules/loop-integrity.md`): a fresh session,
 or a sub-agent with no memory of prior phases, must be able to re-enter from this
 file alone. Every phase therefore carries not just *what to do* but *what was
-verified* and *what changed* — without those, resuming across a context limit
-silently redoes or undoes work.
+verified*, *what changed*, and *what must come first* — and the plan names the
+phase the last run chose next. Without those, resuming across a context limit
+silently redoes or undoes work, or re-derives the order from the transcript.
 
 ```markdown
 # Refactor Plan: {description}
@@ -53,6 +54,7 @@ Created: {date}
 Last updated: {date}
 Base commit: {hash}
 Exit condition: {the literal criterion that ends the whole refactor — e.g. "all phases done, full suite + tsc green on base"}
+Next target: {the phase the last run chose to do next, and why — set before a run ends}
 
 ## Overview
 {What is being refactored and why}
@@ -61,6 +63,7 @@ Exit condition: {the literal criterion that ends the whole refactor — e.g. "al
 - **Status**: done | in-progress | pending | needs-review
 - **Files**: file1.ts, file2.ts, file3.ts
 - **Description**: {what this phase does}
+- **Ordering / preconditions**: {what must hold before this phase starts — e.g. "none (first phase)"; keep it to a line or two}
 - **Acceptance criteria**: {how to verify success — the phase's exit condition}
 - **Verifier result**: {what the independent check returned — PASS/FAIL + the criterion it judged; filled in at the phase boundary}
 - **Changed since last run**: {what this phase actually touched, so a successor doesn't redo or undo it}
@@ -70,6 +73,7 @@ Exit condition: {the literal criterion that ends the whole refactor — e.g. "al
 - **Status**: pending
 - **Files**: file4.ts, file5.ts
 - **Description**: {what this phase does}
+- **Ordering / preconditions**: {e.g. "after Phase 1 — uses its shared types"}
 - **Acceptance criteria**: {how to verify success}
 - **Verifier result**: {empty until verified}
 - **Changed since last run**: {empty until completed}
@@ -102,8 +106,10 @@ If `--init` flag provided:
 If `--continue` flag provided:
 
 1. Read `REFACTOR_PLAN.md`
-2. Find next pending phase (status `pending` or `needs-review`)
-3. Verify all prior phases are `done`
+2. Take the plan's **Next target**; if it is empty, fall back to the first
+   pending phase (status `pending` or `needs-review`)
+3. Verify the phase's **Ordering / preconditions** hold (prior phases it names are
+   `done`); if one does not, work the unmet precondition instead
 4. Execute phase (go to Step 4)
 
 ### Step 3: Check progress (--status mode)
@@ -144,7 +150,8 @@ For each phase:
    - If the verifier returns FAIL, leave status `in-progress`/`needs-review`
      and address the gap before marking `done`.
 7. Once verified, update the plan file: set status to `done`, fill **Verifier
-   result**, **Changed since last run**, and **Result**, then commit:
+   result**, **Changed since last run**, and **Result**, set the plan's
+   **Next target**, then commit:
    `git add -u && git commit -m "refactor phase N: {description}"`
 8. If more phases remain, proceed to next phase or suggest `--continue`
 

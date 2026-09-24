@@ -120,6 +120,8 @@ SDK-based MCP servers causes `CLIConnectionError: ProcessTransport is not ready
 for writing`. Workaround: use pre-computed context or static stdio servers
 instead of SDK MCP servers.
 
+Since 2.1.274, a `"type": "sdk"` entry in `.mcp.json`, settings, a plugin or an agent file is skipped with a warning (only an SDK host application can register in-process servers), and Bedrock, Vertex, Foundry and telemetry-disabled installs use the v2 MCP client with direct HTTP servers (opt out: `MCP_SDK_GENERATION=v1` or `MCP_PROTOCOL_NEGOTIATION=legacy`).
+
 ## Configuration patterns
 
 ### Project-scoped (recommended)

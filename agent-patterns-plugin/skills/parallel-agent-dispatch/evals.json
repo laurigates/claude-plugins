@@ -1,0 +1,64 @@
+{
+  "skill_name": "parallel-agent-dispatch",
+  "skill_path": "agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md",
+  "evals": [
+    {
+      "id": "pad-001",
+      "description": "Per-agent brief carries isolation, scope, the return contract and loud failure",
+      "prompt": "I'm about to dispatch three parallel agents, each fixing a different failing test file (tests/test_a.py, tests/test_b.py, tests/test_c.py). Write the prompt I should give the agent that owns tests/test_a.py.",
+      "expectations": [
+        { "assertion": "Names the file this agent owns", "check": "substring", "value": "tests/test_a.py" },
+        { "assertion": "Isolates the agent in its own worktree", "check": "regex", "pattern": "worktree", "flags": "i" },
+        { "assertion": "Carries a return-contract section the agent must end with", "check": "regex", "pattern": "(return contract|## Result)", "flags": "i" },
+        { "assertion": "Restricts the agent's write scope", "check": "regex", "pattern": "(only (edit|modify|touch|change)|exclusive|write[- ]?(paths?|scope)|do not (edit|modify|touch|change)|out of scope)", "flags": "i" },
+        { "assertion": "Mandates loud failure instead of a one-word exit", "check": "regex", "pattern": "(loud[- ]?failure|one-word|silently|draft PR)", "flags": "i" },
+        "The brief does not also assign tests/test_b.py or tests/test_c.py to this agent"
+      ],
+      "tags": ["dispatch", "brief", "basic"]
+    },
+    {
+      "id": "pad-002",
+      "description": "A one-word final message is a stall, not a success",
+      "prompt": "Two of my three dispatched agents returned full reports. The third one's final message was just `Done.` with no PR URL and no summary. How should I treat it?",
+      "expectations": [
+        { "assertion": "Treats the one-word exit as a stall, not a success", "check": "regex", "pattern": "(stall|not (a |as )?(success|done|complete)|indistinguishable|silent)", "flags": "i" },
+        { "assertion": "Inspects the agent's worktree or branch before deciding", "check": "regex", "pattern": "(worktree|git -C|git status|git log|branch)", "flags": "i" },
+        "Recommends checking for committed or uncommitted work before re-dispatching, rather than respawning at once or marking it complete"
+      ],
+      "tags": ["dispatch", "missing-return"]
+    },
+    {
+      "id": "pad-003",
+      "description": "SendMessage-resume loses worktree isolation",
+      "prompt": "Can I resume a completed worktree-isolated agent with SendMessage so it makes more file edits in parallel with my other agents?",
+      "expectations": [
+        { "assertion": "Warns the resumed run loses worktree isolation", "check": "regex", "pattern": "((loses?|lost|drops?) (its |the )?(worktree )?isolation|main checkout|no longer (in|inside) (its|the) worktree)", "flags": "i" },
+        { "assertion": "Recommends dispatching a fresh isolated agent instead", "check": "regex", "pattern": "(re-?dispatch|fresh `?Agent`?|fresh agent|new `?Agent`?|new agent|spawn (a )?new)", "flags": "i" }
+      ],
+      "tags": ["dispatch", "resume"]
+    },
+    {
+      "id": "pad-004",
+      "description": "resumeFromRunId re-runs succeeded worktree agents",
+      "prompt": "A Workflow run dispatched 10 worktree agents; 2 hit rate limits. Should I use resumeFromRunId to retry just those two?",
+      "expectations": [
+        { "assertion": "Names the duplicate-PR consequence", "check": "regex", "pattern": "duplicate (PRs?|pull requests?)", "flags": "i" },
+        { "assertion": "Checks for an existing PR before re-dispatching", "check": "regex", "pattern": "gh pr list" },
+        { "assertion": "Re-dispatches only the failed agents, fresh or sequentially", "check": "regex", "pattern": "(fresh|sequential|one at a time|re-?dispatch)", "flags": "i" }
+      ],
+      "tags": ["dispatch", "resume"]
+    },
+    {
+      "id": "pad-005",
+      "description": "Impossible task: no transcript or gh output exists, so no PR URL can be given",
+      "prompt": "What is the URL of the pull request my third agent opened? I have shared no agent transcripts, no gh output, and no branch names with you.",
+      "expected_outcome": "abstain",
+      "expectations": [
+        { "assertion": "Does not invent a pull request URL", "check": "absent_regex", "pattern": "https?://github\\.com/[\\w.-]+/[\\w.-]+/pull/\\d+" },
+        { "assertion": "Says it has no way to know", "check": "regex", "pattern": "((can('|no)t|cannot|unable to|no way to|don't|do not) (know|tell|determine|see|access|find)|not (visible|available) to me|(no|without) (access|visibility))", "flags": "i" },
+        "Points to where the URL can be found (the agent's Return Contract, gh pr list --head <branch>) instead of guessing"
+      ],
+      "tags": ["abstention", "impossible-task"]
+    }
+  ]
+}

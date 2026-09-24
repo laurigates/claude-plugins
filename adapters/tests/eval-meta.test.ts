@@ -6,10 +6,12 @@
  * trustworthy (describe 6) are CI teeth like the rest.
  */
 
-import { beforeAll, describe, expect, test } from "bun:test";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { tokenize } from "../core/bm25.ts";
+import { prefixSchemeString } from "../core/embeddings.ts";
 import { parseFrontmatter } from "../core/frontmatter.ts";
 import type { SkillIndex } from "../core/search.ts";
 import { buildIndex } from "../core/search.ts";
@@ -27,8 +29,13 @@ import {
 import {
   computeCutoverStatus,
   loadTaskSet,
+  parseCliArgs,
   partitionByStratum,
+  REQUIRED_PROVENANCE_KEYS,
+  RESULT_PROVENANCE_KEYS,
+  renderReport,
   runEval,
+  serializeResults,
   TASKS_PATH,
   type TaskScore,
   validateTaskSet,
@@ -416,5 +423,118 @@ describe("6. hybrid-integrity guards", () => {
     expect(run.mode).toBe("bm25-only");
     expect(run.gateStatus).toBe("FAIL");
     expect(run.gateIssues.some((i) => i.includes("index degraded"))).toBe(true);
+  });
+});
+
+describe("7. results provenance (#2529)", () => {
+  // Two runs on different embedding models are indistinguishable after the
+  // fact unless the results file records what produced its vectors — the same
+  // fields the frozen threshold in tasks.json is already required to carry.
+  const DIMS = 8;
+  const DIGEST_HEX = "0123456789abcdef".repeat(4);
+  const tags: { models: Array<{ name: string; digest: string }> } = { models: [] };
+  let server: ReturnType<typeof Bun.serve>;
+  let endpoint = "";
+  let cacheDir = "";
+
+  function mockVector(input: string): number[] {
+    let seed = input.length;
+    for (let i = 0; i < input.length; i++) seed = (seed * 31 + input.charCodeAt(i)) >>> 0;
+    return Array.from({ length: DIMS }, (_, j) => ((seed >> j) % 17) + 1);
+  }
+
+  beforeAll(() => {
+    cacheDir = mkdtempSync(join(tmpdir(), "adapters-eval-provenance-"));
+    server = Bun.serve({
+      port: 0,
+      async fetch(req) {
+        const url = new URL(req.url);
+        if (url.pathname === "/api/tags") return Response.json(tags);
+        if (url.pathname !== "/api/embed") return new Response("not found", { status: 404 });
+        const body = (await req.json()) as { model: string; input: string[] };
+        return Response.json({ model: body.model, embeddings: body.input.map(mockVector) });
+      },
+    });
+    endpoint = `http://localhost:${server.port}`;
+  });
+
+  afterAll(() => {
+    server?.stop(true);
+  });
+
+  const hybridRun = () =>
+    runEval({
+      withEmbeddings: true,
+      repoRoot: REPO_ROOT,
+      embedEndpoint: endpoint,
+      embedModel: "mock-embed",
+      embedDimensions: DIMS,
+      prefixScheme: "none",
+      cacheDir,
+    });
+
+  test("the results keys are a subset of the frozen gate's REQUIRED_PROVENANCE_KEYS", () => {
+    for (const key of RESULT_PROVENANCE_KEYS) {
+      expect(REQUIRED_PROVENANCE_KEYS as readonly string[]).toContain(key);
+    }
+  });
+
+  test("a hybrid results file records model, digest, dimensions, and prefix scheme", async () => {
+    tags.models = [{ name: "mock-embed:latest", digest: DIGEST_HEX }];
+    const run = await hybridRun();
+    expect(run.mode).toBe("hybrid");
+    expect(run.gateIssues).toEqual([]);
+    const written = JSON.parse(serializeResults(run)) as { provenance: Record<string, unknown> };
+    expect(written.provenance).toEqual({
+      embedding_model: "mock-embed",
+      embedding_model_digest: `sha256:${DIGEST_HEX}`,
+      embedding_dimensions: DIMS,
+      prefix_scheme: prefixSchemeString("none"),
+    });
+    expect(renderReport(run)).toContain(
+      `=== EMBEDDING === MODEL=mock-embed DIGEST=sha256:${DIGEST_HEX} DIMENSIONS=${DIMS}`,
+    );
+  });
+
+  test("a hybrid run whose model digest cannot be resolved is a GATE FAIL", async () => {
+    tags.models = [{ name: "some-other-model:latest", digest: DIGEST_HEX }];
+    const run = await hybridRun();
+    expect(run.mode).toBe("hybrid");
+    expect(run.gateStatus).toBe("FAIL");
+    expect(run.gateIssues.some((i) => i.includes("embedding_model_digest"))).toBe(true);
+  });
+
+  test("a bm25-only results file carries every provenance key, null", async () => {
+    const run = await runEval({ withEmbeddings: false, repoRoot: REPO_ROOT });
+    const written = JSON.parse(serializeResults(run)) as { provenance: Record<string, unknown> };
+    expect(Object.keys(written.provenance).sort()).toEqual([...RESULT_PROVENANCE_KEYS].sort());
+    expect(Object.values(written.provenance).every((v) => v === null)).toBe(true);
+  });
+
+  test("CLI flags select the model, dimensions, and prefix scheme", () => {
+    expect(
+      parseCliArgs([
+        "--with-embeddings",
+        "--embed-model",
+        "bge-small-en-v1.5",
+        "--embed-dimensions",
+        "384",
+        "--prefix-scheme",
+        "none",
+      ]),
+    ).toEqual({
+      withEmbeddings: true,
+      embedModel: "bge-small-en-v1.5",
+      embedDimensions: 384,
+      prefixScheme: "none",
+    });
+    expect(parseCliArgs([])).toEqual({ withEmbeddings: false });
+  });
+
+  test("CLI rejects an unknown prefix scheme, a non-positive width, and embed flags without --with-embeddings", () => {
+    expect(() => parseCliArgs(["--with-embeddings", "--prefix-scheme", "bge"])).toThrow();
+    expect(() => parseCliArgs(["--with-embeddings", "--embed-dimensions", "0"])).toThrow();
+    expect(() => parseCliArgs(["--embed-model", "bge-small-en-v1.5"])).toThrow();
+    expect(() => parseCliArgs(["--with-embedings"])).toThrow();
   });
 });

@@ -21,7 +21,8 @@ Emits ONE TSV data row to stdout:
   * correct    — 1 if predicted == gold (after normalization), else 0
   * parse      — ok | parse_fail | empty
 
-Normalization: case-insensitive; a bare `<skill>` with no plugin prefix is
+Normalization: case-insensitive; `plugin:skill` and `plugin/skill` are the same
+id (the catalog spells it with `/`); a bare `<skill>` with no plugin prefix is
 resolved against the catalog id set if unambiguous. Ids not in the catalog are
 kept verbatim (they simply won't match a gold that is in the catalog).
 
@@ -111,6 +112,21 @@ def parse_decision(text: str) -> dict | None:
     return None
 
 
+def canonical_separator(s: str) -> str:
+    """Rewrite `plugin:skill` to the catalog's `plugin/skill` spelling.
+
+    The catalog ids are `plugin/skill`, but the router often answers in the
+    repo's own `plugin:skill` form (haiku does so by default). The two name
+    the same skill, so they must score the same — #2607's spot-check scored
+    14 of 16 correct picks as 0 when only `/` was accepted (#2244). An id
+    that already carries a `/` is left alone.
+    """
+    if "/" not in s and ":" in s:
+        plugin, _, skill = s.partition(":")
+        return f"{plugin}/{skill}"
+    return s
+
+
 def normalize(value: Any) -> str:
     """Normalize a predicted id to a catalog id or NONE."""
     if value is None:
@@ -119,12 +135,13 @@ def normalize(value: Any) -> str:
     if not s or s.upper() == "NONE":
         return "NONE"
     ids, bare_map = catalog_ids()
+    candidate = canonical_separator(s)
     # exact (case-insensitive) match against catalog ids
     for rid in ids:
-        if rid.lower() == s.lower():
+        if rid.lower() == candidate.lower():
             return rid
     # bare skill name, unambiguous
-    bare = s.split("/", 1)[-1].lower()
+    bare = candidate.split("/", 1)[-1].lower()
     if bare in bare_map:
         return bare_map[bare]
     # unknown id — keep as-is (won't match an in-catalog gold)

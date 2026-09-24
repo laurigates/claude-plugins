@@ -15,7 +15,12 @@
 # The built-in `union` driver concatenates both sides' additions with no
 # conflict markers and no LLM. ONLY safe for genuinely append-only files —
 # never apply to code or JSON (union duplicates edited lines / breaks syntax).
-.claude/rules/regression-testing.md merge=union
+#
+# The regression ledger moved out of .claude/rules/regression-testing.md
+# (#2667). That rule is no longer append-only, so it drops the union driver: a
+# stale branch that still appends a row there now conflicts loudly instead of
+# union-merging the row into the rule, outside any table.
+docs/regression-ledger.md merge=union
 
 # --- Generated files (GitHub linguist) -------------------------------------
 # Collapse in PR diffs and exclude from language stats. These are build output

@@ -7,7 +7,7 @@ argument-hint: "git-plugin/git-commit [--create-evals] [--runs 3] [--baseline]"
 agent: general-purpose
 context: fork
 created: 2026-03-04
-modified: 2026-09-20
+modified: 2026-09-23
 compatibility: claude-code
 reviewed: 2026-03-04
 ---
@@ -87,7 +87,8 @@ Four consequences worth stating inline:
   Register this one and nothing else.
 
 - **No agent in this harness is worktree-isolated, and that is deliberate.** Every
-  rollout agent writes under `eval-results/`, and Aggregate has to read what all of
+  rollout agent writes its run dir into the shared checkout (`prepare_run.sh`
+  stages it under `tmp/eval-runs/`), and Aggregate has to read what all of
   them wrote; a worktree-isolated agent's writes are invisible to its siblings, so
   isolating them would silently empty the benchmark. Nothing here pushes, opens a PR,
   or mutates a forge either - so the two clauses
@@ -148,10 +149,12 @@ Look for `<plugin-name>/skills/<skill-name>/evals.json`.
    - **Happy path**: Standard usage that should work correctly
    - **Edge case**: Unusual but valid inputs
    - **Boundary**: Inputs that test the limits of the skill's scope
+   - **Abstention control** (at least one, always): an impossible task whose honest answer is a refusal — nothing to act on, a target that does not exist, a request outside the skill's scope. Mark it `"expected_outcome": "abstain"` and give it an `absent_regex` that fails a fabricated deliverable. Without it, a skill that invents output under pressure grades the same as one that refuses honestly. Shape and worked example: `evaluate-plugin/references/schemas.md` § Abstention Controls.
 3. For each eval case, write:
    - `id`: Unique identifier (e.g., `eval-001`)
    - `description`: What this test validates
    - `prompt`: The user prompt to simulate
+   - `expected_outcome`: `abstain` on the abstention control; omit it (defaults to `comply`) elsewhere
    - `expectations`: List of assertion strings the output should satisfy
    - `tags`: Categorization tags
 4. Write the generated cases to `<plugin-name>/skills/<skill-name>/evals.json`.
