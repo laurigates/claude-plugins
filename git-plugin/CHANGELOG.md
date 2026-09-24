@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.58.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.57.0...git-plugin-v2.58.0) (2026-09-24)
+
+
+### Features
+
+* **skills:** wave-2 skill homes for promoted always-loaded rules ([#2814](https://github.com/laurigates/claude-plugins/issues/2814)) ([7896233](https://github.com/laurigates/claude-plugins/commit/7896233c7c6c5663725beff7b3f50778eb15d559))
+
 ## [2.57.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.56.1...git-plugin-v2.57.0) (2026-09-24)
 
 
