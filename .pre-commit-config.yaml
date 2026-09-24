@@ -508,6 +508,15 @@ repos:
         language: system
         files: '^scripts/(agentic-audit-precompute\.sh|tests/test-agentic-audit-precompute\.sh)$'
         pass_filenames: false
+      - id: test-workflow-run-cost
+        name: workflow-run-cost reads per-run cost + near-cap, and the model audit feeds it to its prompt (#2669)
+        entry: bash ./scripts/tests/test-workflow-run-cost.sh
+        language: system
+        # The suite also EXECUTES the model audit's own pre-compute run block,
+        # extracted from the shipped YAML, so that workflow is part of what it
+        # guards and must trigger it too.
+        files: '^(scripts/(workflow-run-cost\.sh|tests/test-workflow-run-cost\.sh|tests/fixtures/workflow-run-cost/.*)|\.github/workflows/workflow-model-audit\.yml)$'
+        pass_filenames: false
       - id: test-blueprint-health-report
         name: blueprint-health rolls a bulk `modified:` bump up as one cohort (#2556)
         entry: bash ./scripts/tests/test-blueprint-health-report.sh
