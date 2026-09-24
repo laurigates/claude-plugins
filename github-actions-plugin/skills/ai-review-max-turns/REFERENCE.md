@@ -90,8 +90,6 @@ orthogonal to capping rounds, and `claude_args`' default
   Read which they are from the caller files — `Security - Secret Scanning` is
   LLM-backed despite the name.
 
-Portfolio incident evidence is kept privately (repos-claude-config docs/rule-evidence/ai-review-loop-has-no-brake.md).
-
 ## Related
 
 - [SKILL.md](SKILL.md) — what a red AI-review check means

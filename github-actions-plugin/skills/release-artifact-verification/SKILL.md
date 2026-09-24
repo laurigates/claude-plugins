@@ -138,8 +138,6 @@ Before saying "released", answer: **"What URL would a stranger fetch to get
 this, and have I fetched it?"** If the answer cites a workflow badge, a tag, or
 a GitHub release page, you have verified the mechanics and not the outcome.
 
-Portfolio incident evidence is kept privately (repos-claude-config docs/rule-evidence/release-artifact-verification.md).
-
 ## Related
 
 - `github-actions-plugin:multirepo-ci-cd` — a re-run replays the *stale* workflow,

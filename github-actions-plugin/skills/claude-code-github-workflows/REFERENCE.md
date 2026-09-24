@@ -93,8 +93,6 @@ runaway-loop notes in `ai-review-max-turns` REFERENCE.md).
   surface supports it — `--json-schema` and the `structured_output` output
   (SKILL.md § Outputs are fixed).
 
-Portfolio incident evidence is kept privately (repos-claude-config docs/rule-evidence/agent-emitted-markers-are-not-machine-readable.md).
-
 ### Related
 
 - `offload-to-deterministic-substrate.md` (in `~/.claude/rules/`) — the parent

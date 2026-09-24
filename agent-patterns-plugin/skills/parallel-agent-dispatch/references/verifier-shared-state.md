@@ -144,8 +144,6 @@ None was dishonest. Each is the ordinary failure of checking your own work.
 - Judge panels specifically: they are prompted to be adversarial, which makes a
   confident wrong premise read as rigour rather than as an error.
 
-Portfolio incident evidence is kept privately (repos-claude-config docs/rule-evidence/parallel-verifier-reads-shared-state.md).
-
 ## Related
 
 - `git-plugin:git-coworker-check` REFERENCE.md § Shared-checkout branch isolation — the *write* side: whose branch your commit

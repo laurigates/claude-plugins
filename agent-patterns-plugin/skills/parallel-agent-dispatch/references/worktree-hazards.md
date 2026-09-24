@@ -443,5 +443,3 @@ checkout, and discards the context that makes feedback work fast. Pairs with
 `../SKILL.md` (the round-1 spawn contract) and `git-plugin:git-coworker-check`
 REFERENCE.md § Shared-checkout branch isolation (why branches pinned to
 worktrees matter in a contended clone).
-
-Portfolio incident evidence is kept privately (repos-claude-config docs/rule-evidence/agent-worktree-resume-for-pr-feedback.md).

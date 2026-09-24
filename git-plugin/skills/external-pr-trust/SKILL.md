@@ -142,8 +142,6 @@ three weeks later in #1229. It also flipped the hook's file mode `100755 →
 100644`, which is still un-restored. One drive-by merge, two defects, neither
 noticed at merge time. That is the failure mode both guards exist to stop.
 
-Portfolio incident evidence is kept privately (repos-claude-config docs/rule-evidence/external-contributor-prs.md).
-
 ## Related
 
 - `git-plugin:git-merge-hazards` — the *mechanics* of merging (squash-merge detection, stacked-PR auto-close, `UNSTABLE` vs `BLOCKED`). This skill is the *trust* axis: that one asks "did the merge do what I think?", this one asks "should I be merging this at all?"

@@ -131,8 +131,6 @@ over a quarter, with the first net charges arriving) was what justified acting
 at all. Without that one query the work would have landed almost entirely in
 the wrong repos.
 
-Portfolio incident evidence is kept privately (repos-claude-config docs/rule-evidence/ci-cost-read-the-billing-api.md).
-
 ## Related
 
 - `offload-to-deterministic-substrate.md` (in `~/.claude/rules/`) — one API call

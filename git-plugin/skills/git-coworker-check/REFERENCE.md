@@ -290,8 +290,6 @@ diagnosis (`github-actions-plugin:multirepo-ci-cd`). The *read* side — whose
 branch a verifier reports on — is `agent-patterns-plugin:parallel-agent-dispatch`
 `references/verifier-shared-state.md`.
 
-Portfolio incident evidence is kept privately (repos-claude-config docs/rule-evidence/shared-checkout-branch-isolation.md).
-
 ## Avoiding the Whole Class of Problem
 
 The robust answer to coworker collision is **worktrees**:

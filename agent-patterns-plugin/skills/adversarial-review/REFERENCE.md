@@ -74,8 +74,6 @@ It moves findings in both directions, and both are wins:
   demand is what makes an agent write a plausible owner, and a plausible owner
   is indistinguishable from a real one to the next reader.
 
-Portfolio incident evidence is kept privately (repos-claude-config docs/rule-evidence/separate-settled-facts-from-decisions.md).
-
 ### Related
 
 - `agent-patterns-plugin:parallel-agent-dispatch` `references/verifier-shared-state.md`
