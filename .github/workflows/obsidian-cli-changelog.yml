@@ -109,7 +109,10 @@ jobs:
             echo "CLI doc changed: $TRACKED -> $LATEST"
             echo "has_updates=true" >> "$GITHUB_OUTPUT"
           else
-            echo "No changes since $TRACKED"
+            # A notice, not a bare echo, so a green run that never reached the
+            # Claude step reads as "no work to do" in the run summary rather
+            # than as evidence about Claude's output (#2630 Rec 6).
+            echo "::notice::No CLI doc changes since ${TRACKED}; Claude review skipped (no work to do)"
             echo "has_updates=false" >> "$GITHUB_OUTPUT"
           fi
 
