@@ -5,8 +5,8 @@ args: "[--type issues|prs|both] [--batch N] [--repo owner/name] [--days-stale-is
 argument-hint: "--type both --batch 10 (defaults: days-stale-issue=90, days-stale-pr=30, current repo)"
 allowed-tools: Bash(bash *), Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git log *), Bash(rg *), Read, Grep, Glob, AskUserQuestion
 created: 2026-04-22
-modified: 2026-09-02
-reviewed: 2026-09-02
+modified: 2026-09-23
+reviewed: 2026-09-23
 ---
 
 # /git:triage
@@ -37,13 +37,13 @@ Parse these from `$ARGUMENTS` (all optional):
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--type issues\|prs\|both` | `both` | What to triage |
-| `--batch N` | `10` | Items per batch |
+| `--batch N` | `10` | Max items fetched per type — the N most recently created open items |
 | `--repo owner/name` | current repo (from `origin`) | Target repository |
 | `--days-stale-issue N` | `90` | Age threshold for stale issues |
 | `--days-stale-pr N` | `30` | Age threshold for stale PRs |
 | `--auto-close` | off | Close implemented / stale issues (asks confirmation first) |
 | `--auto-merge` | off | Merge ready-to-merge PRs (asks confirmation first) |
-| `--oldest-first` | on | Process chronologically by `updatedAt` |
+| `--oldest-first` | on | Process the fetched batch chronologically by `updatedAt`; never changes which items were fetched |
 
 Writes are **disabled by default**. `--auto-close` and `--auto-merge` still require a per-batch `AskUserQuestion` confirmation before any `gh issue close` or `gh pr merge`.
 
@@ -64,7 +64,31 @@ closing keywords:
 bash "${CLAUDE_SKILL_DIR}/scripts/git-triage.sh" --home-dir "$HOME" --project-dir "$(pwd)" --type "$TYPE" --batch "$BATCH" --days-stale-issue "$STALE_ISSUE" --days-stale-pr "$STALE_PR"
 ```
 
-Parse `STATUS=` and `ISSUES:` from the output. Per item it emits
+Read the coverage keys first — they say what the batch actually covers:
+
+| Key | Meaning |
+|-----|---------|
+| `ISSUES_FETCHED` / `PRS_FETCHED` | Items in this batch — the count to report |
+| `ISSUES_TOTAL` / `PRS_TOTAL` | Unbounded open count, or `unknown` when it could not be read |
+| `ISSUES_TRUNCATED` / `PRS_TRUNCATED` | `true` when the total exceeds the batch |
+| `TRUNCATED` | Roll-up over both halves: `true` beats `unknown` beats `false` |
+
+`--batch` caps each fetch, and gh returns the N most recently **created** open
+items, so the default batch is the newest slice of the backlog. It therefore
+leaves out the oldest items, which are exactly the stale candidates. When
+`TRUNCATED=true`, say "triaged N of M" wherever the report states a count, and
+re-run with `--batch` set to the `_TOTAL` value for a full sweep. When
+`TRUNCATED=unknown`, report the coverage as unverified rather than complete.
+`--oldest-first` reorders only the fetched batch; it never changes which items
+were fetched.
+
+`STATUS=`, `ISSUE_COUNT=`, and the `ISSUES:` block are the collector's own
+diagnostics (for example, a fetch that returned non-JSON), not GitHub issues:
+`ISSUE_COUNT=0` beside ten issue blocks means the collector hit no problems.
+Read `STATUS=` to decide whether the data can be trusted, and the `ISSUES:`
+rows (present only when `ISSUE_COUNT` is above 0) for why.
+
+Per item it emits
 `ISSUE_<n>_TITLE` / `ISSUE_<n>_AGE_DAYS` / `ISSUE_<n>_REFS` /
 `ISSUE_<n>_COMMENTS` / `ISSUE_<n>_STALE_CANDIDATE` and
 `PR_<n>_CATEGORY` / `PR_<n>_AGE_DAYS` / `PR_<n>_CLOSES` (plus the underlying
@@ -150,7 +174,7 @@ Ordering: quick wins first. Use AskUserQuestion only when the user will need to 
 Print a status table (one row per item) grouped by category:
 
 ```
-## Issues (N open, triaged)
+## Issues (N of M open, triaged)
 
 | # | Age | Title | Category | Cross-link |
 |---|-----|-------|----------|------------|
@@ -158,7 +182,7 @@ Print a status table (one row per item) grouped by category:
 | 17 | 210d | Deprecated docs | stale | — |
 | 13 | 14d  | Add retry logic | still-valid | — |
 
-## PRs (N open, triaged)
+## PRs (N of M open, triaged)
 
 | # | Age | Title | Category | Cross-link |
 |---|-----|-------|----------|------------|
@@ -216,7 +240,7 @@ After per-item actions, emit a structured summary:
 
 ## Post-actions
 
-- Print a one-line summary: `Triaged N issues (X closed), M PRs (Y merged). See report above.`
+- Print a one-line summary: `Triaged N of M open issues (X closed), P of Q open PRs (Y merged). See report above.`
 - If any writes were gated behind confirmation that the user declined, leave the items open and note "no writes — report only".
 - Remind the user they can re-run with `--type prs` or `--type issues` to focus the sweep.
 
