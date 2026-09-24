@@ -33,7 +33,7 @@ indistinguishable in the response.
 The fabricated value *looks* real, so it never gets questioned. Its failure then
 gets attributed to the hypothesis actually under test.
 
-> Canonical break (2026-07, `research` repo): investigating whether Reddit's
+> Canonical break (2026-07, a research repo): investigating whether Reddit's
 > `.json` endpoint still worked, I made up a thread URL —
 > `/r/LocalLLaMA/comments/1i6r9rp/deepseek_r1_is_now_available_on_azure` — a
 > plausible id and slug, entirely invented. It returned `403 Blocked`, as did two

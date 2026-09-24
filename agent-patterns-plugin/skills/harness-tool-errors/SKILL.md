@@ -62,10 +62,10 @@ Glob(pattern="/abs/path/to/dir/**/*.md")
 Bash("ls -1 /abs/path/to/dir")
 ```
 
-### Read refuses files >25 000 tokens
+### Read refuses files >25000 tokens
 
 ```
-File content (164 836 tokens) exceeds maximum allowed tokens (25 000).
+File content (164836 tokens) exceeds maximum allowed tokens (25000).
 ```
 
 Common offenders: vendored JSON dumps, generated schemas, lockfiles,

@@ -73,7 +73,7 @@ test "$(git merge-base origin/main <branch>)" = "$(git rev-parse origin/main)" &
 
 This resolves the stale base with **no force-push**, so it sidesteps the whole
 hazard family the rebase path carries: no `HEAD:`-refspec SHA race
-(`~/.claude/rules/git-hazards.md` #7), no empty-diff auto-close, no
+(`git-plugin:git-merge-hazards`, stacked-chain push-by-SHA), no empty-diff auto-close, no
 force-with-lease confirmation, and nothing destructive to recover from if it
 goes wrong. The squash-merge collapses the extra merge commit anyway, so the
 landed history is identical to the rebased version.

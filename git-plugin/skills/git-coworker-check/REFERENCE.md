@@ -221,6 +221,8 @@ by replaying only your commit onto clean `origin/main` — your work is safe in
 the reflog:
 
 ```sh
+# FIRST run the `git branch -a --contains` check below: if your branch is the
+# only ref holding their commit, this recipe strands it.
 git fetch origin
 git switch -C <branch> origin/main      # reset branch to clean main
 git cherry-pick <your-commit-sha>       # reflog HEAD@{n}; diff is just your files

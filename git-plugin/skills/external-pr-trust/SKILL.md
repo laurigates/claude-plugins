@@ -135,7 +135,7 @@ cannot self-serve the bypass (`handling-blocked-hooks.md`).
 
 ## Evidence
 
-`claude-plugins#1222` (2026-05, `tjhub1983`, `FIRST_TIME_CONTRIBUTOR`) was
+`claude-plugins#1222` (2026-05, a `FIRST_TIME_CONTRIBUTOR`) was
 merged with **no review and no comments**. It rewrote a Claude Code Stop hook —
 code that runs locally — and shipped a broken TODO scan that had to be repaired
 three weeks later in #1229. It also flipped the hook's file mode `100755 →

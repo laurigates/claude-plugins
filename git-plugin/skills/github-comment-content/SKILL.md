@@ -29,7 +29,7 @@ skims and misses the part that mattered.
 |---|---|
 | Replying to a maintainer on a PR or issue | Register and structure once content is decided → `communication-plugin:ticket-drafting-guidelines` |
 | Running a cold-read gate over a comment | The text goes to a context-free reader (an issue body, docs) → `agent-patterns-plugin:cold-read-gate` |
-| Writing a PR description or a status update comment | Choosing the PR title → `github-pr-title` |
+| Writing a PR description or a status update comment | Choosing the PR title → `git-plugin:github-pr-title` |
 
 ## What the page renders (measured, not assumed)
 
