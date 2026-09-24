@@ -207,7 +207,33 @@ Tool results that mean something other than they look — an empty result, a gre
 - A rejected flag reading as "no results" — and its worse variants on a *write*, and on an accepted flag that takes a stdin marker literally
 - The persistent-cwd pair: the shell wedge `cd` cannot undo, and the vacuous path-scoped verification that shares its cause
 - `Workflow` `args` arriving JSON-encoded, so agents run against `undefined`
-- Control-testing every negative that gates an action; parallel-batch rule for siblings that can exit non-zero
+- Control-testing every negative that gates an action — with a control that exercises the part of the pattern that can fail; parallel-batch rule for siblings that can exit non-zero
+
+#### `harness-tool-errors`
+Claude Code harness tool errors that the loud hooks do not catch: `Read` on a missing path, a directory, or a file over the token limit; `Edit`/`Write` before a Read or after a formatter rewrote the file; Bash permission denials, which are terminal.
+
+**When to use:**
+- A `Read`, `Edit`, `Write`, or Bash call returned an error rather than a result
+- About to rewrite a whole file (or round-trip JSON) to change one span
+
+**Features:**
+- Glob-before-Read, `EISDIR`, and Grep-then-page for files over 25,000 tokens
+- The re-Read triggers table (pre-commit, formatter, commit hooks, coworker, background Bash)
+- Surgical `Edit` over `Write`, including the `json.load` → `json.dumps` reformatting trap
+- Permission denials are final: switch tools or hand the command over with `! <cmd>`
+
+#### `probe-input-integrity`
+Never fabricate an identifier you are about to test against: take it from the system, run a known-good control, extract the code under test instead of retyping it, and make sure a `PATH` stub is actually the one that runs.
+
+**When to use:**
+- Probing an endpoint, URL, record id, path, or ticket number
+- Building a harness around code that is awkward to run directly
+- A sweep's own target set is empty, so a green result asserts nothing
+
+**Features:**
+- List-before-get, and a known-good control to separate "denied" from "not found" from "wrong shape"
+- `sed -n` extraction of the shipped text, and borrowing a control set when yours is empty
+- `chmod +x` + `command -v` + an unmistakable sentinel for stubbed CLIs
 
 #### `adversarial-review`
 Adversarial second-pass review that tries to break code, designs, plans, or ADRs — a thin posture (isolation, inverted objective, triage gate, bounded loop) layered on top of the existing domain review skills.
