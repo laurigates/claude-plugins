@@ -1,6 +1,6 @@
 ---
 created: 2026-02-25
-modified: 2026-09-23
+modified: 2026-09-24
 reviewed: 2026-09-23
 paths:
   - "**/agents/**"
@@ -206,7 +206,19 @@ A research agent that should keep verbose output out of the main window needs no
 
 ### Runtime fork vs named agent (2.1.232+)
 
-The `Agent` tool's `subagent_type: "fork"` inherits the parent's full conversation and its prompt cache — no re-briefing, and cache reads on Fable 5.1 cost $0.25/MTok. Fork mode is on by default in interactive sessions since 2.1.232 and off by default under `-p` and in the Agent SDK, where requesting `fork` fails with `Agent type 'fork' not found` unless `CLAUDE_CODE_FORK_SUBAGENT=1` is set ([sub-agents.md § Turn fork mode on or off](https://code.claude.com/docs/en/sub-agents#turn-fork-mode-on-or-off)). A named plugin agent starts cold with only its brief, whatever its frontmatter says. Use a fork for "continue this work in isolation"; use a named agent when the tool boundary (`tools:`), model, or preloaded `skills:` is the point. A fork has read the user's request verbatim; a briefed agent only has the parent's paraphrase, and Fable 5.1 has a slightly higher propensity to distort user intent when briefing subagents (system card §6.2.1) — so a named-agent brief quotes the user's request rather than paraphrasing it.
+The `Agent` tool's `subagent_type: "fork"` inherits the parent's full conversation and its prompt cache — no re-briefing, and cache reads on Fable 5.1 cost $0.25/MTok. Fork mode is on by default in interactive sessions since 2.1.232 and off by default under `-p` and in the Agent SDK, where requesting `fork` fails with `Agent type 'fork' not found` unless `CLAUDE_CODE_FORK_SUBAGENT=1` is set ([sub-agents.md § Turn fork mode on or off](https://code.claude.com/docs/en/sub-agents#turn-fork-mode-on-or-off)). A named plugin agent starts cold with only its brief, whatever its frontmatter says. **Default to a briefed agent**; fork only when the task depends on implicit conversation state that costs more to write down than to inherit. A fork of a 400k parent starts near the ~50% point where model quality degrades, and carries stale or abandoned reasoning with it; a brief bounds the task and doubles as its hand-off contract. A named agent is also the only choice when the tool boundary (`tools:`), model, or preloaded `skills:` is the point. A fork has read the user's request verbatim; a briefed agent only has the parent's paraphrase, and Fable 5.1 has a slightly higher propensity to distort user intent when briefing subagents (system card §6.2.1) — so a named-agent brief quotes the user's request rather than paraphrasing it.
+
+### Subagent context budget
+
+No frontmatter field or setting caps a subagent's context or tunes its compaction — `maxTurns`, `model` (window size), and `effort` are the only bounding levers. Measured 2026-09-23 (`experiments/subagent-compaction/`, haiku 200k, n=1):
+
+| Observation | Consequence |
+|---|---|
+| A freshly briefed subagent starts at ~58k tokens | Negligible on 1M; 29% of a 200k window before any work |
+| Subagents auto-compact independently of the main session | The main session's own compaction setting is not a subagent control |
+| After compacting, the subagent returned its compaction summary as the final report and claimed completion | Compaction inside a subagent derails the task, not just its detail |
+
+So bound subagents by **task size**, not by a setting: scope each brief to finish well under half the window, require a state-packet return (`loop-integrity.md` Pillar 2), give an early-exit rule ("if scope grows, stop and return the packet"), and verify reports against artefacts rather than trusting them. Whether `autoCompactEnabled: false` propagates to subagents, and whether `PreCompact` fires inside one, is what `just subagent-compaction::run` measures.
 
 ### Worktree Isolation
 
