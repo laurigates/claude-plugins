@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.25.5](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.25.4...code-quality-plugin-v1.25.5) (2026-09-24)
+
+
+### Code Refactoring
+
+* **skills:** disambiguate the lint-run and lint-setup skill descriptions (cluster 2) ([#2796](https://github.com/laurigates/claude-plugins/issues/2796)) ([cf92f1c](https://github.com/laurigates/claude-plugins/commit/cf92f1c80410fa66023350a8c0597da45db0a838))
+
 ## [1.25.4](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.25.3...code-quality-plugin-v1.25.4) (2026-09-19)
 
 

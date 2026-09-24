@@ -1,5 +1,35 @@
 # Changelog
 
+## [1.21.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.20.0...health-plugin-v1.21.0) (2026-09-24)
+
+
+### Features
+
+* **health-plugin:** add config-drift probe for rules/skills corpus hygiene ([#2318](https://github.com/laurigates/claude-plugins/issues/2318)) ([ae812d0](https://github.com/laurigates/claude-plugins/commit/ae812d0081c32399f8f8a0da88d3c33140b57343))
+* **health-plugin:** add the cross-scope promotion_candidate verdict ([#2543](https://github.com/laurigates/claude-plugins/issues/2543)) ([50cb2fa](https://github.com/laurigates/claude-plugins/commit/50cb2fa1f1920674f1e1e1416306b1e231cd81f4)), closes [#2528](https://github.com/laurigates/claude-plugins/issues/2528)
+* **health-plugin:** waive single-path config-drift findings and flag lost baselines ([#2749](https://github.com/laurigates/claude-plugins/issues/2749)) ([5fd77c6](https://github.com/laurigates/claude-plugins/commit/5fd77c62e501d1eeaedb0cad75645b9c39089c80))
+* **health-plugin:** widen the config-drift corpus to agents and CLAUDE.md ([#2541](https://github.com/laurigates/claude-plugins/issues/2541)) ([d5b521a](https://github.com/laurigates/claude-plugins/commit/d5b521a54cbe3387321f73ad2b4a3449249a89b9))
+
+
+### Bug Fixes
+
+* **health-plugin:** normalize path to paths, ship the conformant status block, delete emit_probe ([#2538](https://github.com/laurigates/claude-plugins/issues/2538)) ([3fd3c90](https://github.com/laurigates/claude-plugins/commit/3fd3c90a20a9b491df437397f1347fe3a6b06a64)), closes [#2527](https://github.com/laurigates/claude-plugins/issues/2527) [#2319](https://github.com/laurigates/claude-plugins/issues/2319)
+* **health-plugin:** parse block scalars, widened keys and the closing fence in frontmatter() ([#2531](https://github.com/laurigates/claude-plugins/issues/2531)) ([1e05852](https://github.com/laurigates/claude-plugins/commit/1e0585293bd676c9454c9a9b12855736ef943e3d))
+* **health-plugin:** resolve a stub's target by its invoke phrase, not the first backtick ([#2328](https://github.com/laurigates/claude-plugins/issues/2328)) ([f5a9c80](https://github.com/laurigates/claude-plugins/commit/f5a9c80f4214479afc1c9c19597525aaf81a7129))
+* **health-plugin:** walk ancestor directories for .mcp.json ([89a9eca](https://github.com/laurigates/claude-plugins/commit/89a9eca2a99827ecb747a48ee34683d81f34b018)), closes [#2666](https://github.com/laurigates/claude-plugins/issues/2666)
+
+
+### Code Refactoring
+
+* **health-plugin:** disambiguate the health-check and skill-audit descriptions ([#2801](https://github.com/laurigates/claude-plugins/issues/2801)) ([2276e82](https://github.com/laurigates/claude-plugins/commit/2276e82912efebdb2e535418603108911ed4b4ee)), closes [#2244](https://github.com/laurigates/claude-plugins/issues/2244)
+* **health-plugin:** extract the finding/waiver/delta contract into lib/probe.py ([#2536](https://github.com/laurigates/claude-plugins/issues/2536)) ([c55f62c](https://github.com/laurigates/claude-plugins/commit/c55f62c2b7f4140fb9eae1376277ca04df05adca))
+
+
+### Documentation
+
+* **health-plugin:** record how a project-scope entry pins an old plugin version ([#2681](https://github.com/laurigates/claude-plugins/issues/2681)) ([50f0a17](https://github.com/laurigates/claude-plugins/commit/50f0a175785c573a36219f12fa812bbc552d07ee))
+* **health-plugin:** record that pluginUsage.usageCount counts hook fires ([#2396](https://github.com/laurigates/claude-plugins/issues/2396)) ([2422407](https://github.com/laurigates/claude-plugins/commit/2422407fcc28ff075c455092ca93c793dd75a0e8)), closes [#2245](https://github.com/laurigates/claude-plugins/issues/2245)
+
 ## [1.20.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.19.2...health-plugin-v1.20.0) (2026-09-24)
 
 
