@@ -107,6 +107,10 @@ write_kubectl_hook "$TREE/k-plugin/hooks"
 write_prefix_suite "$TREE/k-plugin/hooks"
 OUT="$(run_guard "$TREE")"; RC=$?
 expect "(a) verdict" "$OUT" "$RC" 1 STATUS=ERROR ISSUE_COUNT=2 SUITES_SCANNED=1 BLOCKING_SUITES=1 MESSAGES_CHECKED=1
+case "$(field "$OUT" REASON)" in
+  "output_never_captured: "?*) pass "(a) REASON= names the first finding" ;;
+  *) fail "(a) expected REASON=output_never_captured: ..., got REASON=$(field "$OUT" REASON)" ;;
+esac
 has "$OUT" "TYPE=output_never_captured SUITE=k-plugin/hooks/test-ctx.sh" \
   && pass "(a) names the suite that never captures stderr" \
   || fail "(a) expected output_never_captured for k-plugin/hooks/test-ctx.sh: $OUT"
@@ -128,6 +132,7 @@ write_kubectl_hook "$TREE/.claude/worktrees/agent-y/k-plugin/hooks"
 write_prefix_suite "$TREE/.claude/worktrees/agent-y/k-plugin/hooks"
 OUT="$(run_guard "$TREE")"; RC=$?
 expect "(b) verdict" "$OUT" "$RC" 0 STATUS=OK ISSUE_COUNT=0 SUITES_SCANNED=1 BLOCKING_SUITES=1 BLOCK_MESSAGES=1 MESSAGES_CHECKED=1 MESSAGES_UNCHECKED=0
+has "$OUT" "REASON=" && fail "(b) REASON= must not appear on the OK path" || pass "(b) no REASON= on the OK path"
 
 # --- (c) per-message: one of two unique tags unpinned ---
 echo "--- Test (c): each uniquely tagged message must be pinned, not just one ---"

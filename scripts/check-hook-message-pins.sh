@@ -238,6 +238,12 @@ fi
 echo "ISSUE_COUNT=$issue_count"
 if [ "$issue_count" -gt 0 ]; then
   echo "STATUS=ERROR"
+  # REASON= names the first finding (.claude/rules/structured-script-output.md, #2691).
+  first="${issues[0]}"
+  reason_type="${first#*TYPE=}"
+  reason_type="${reason_type%% *}"
+  reason="${reason_type}: ${first#* MSG=}"
+  echo "REASON=${reason:0:200}"
   echo "ISSUES:"
   printf '%s\n' "${issues[@]}"
 else
