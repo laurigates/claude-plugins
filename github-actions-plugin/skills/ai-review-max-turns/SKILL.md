@@ -1,6 +1,6 @@
 ---
 name: ai-review-max-turns
-description: "A Claude-powered CI review check reports red. Use when triaging it, to separate a genuine finding the check could not publish from turn-budget exhaustion — read subtype and is_error, never the red X."
+description: "Triage a red Claude-powered CI review check. Use when an AI review job fails or flakes: tell a real unpublished finding from turn-budget or ceiling overruns and infra reruns via subtype + is_error."
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
 created: 2026-09-02
 modified: 2026-09-23
