@@ -4,7 +4,7 @@ description: Enforce same-commit landing of code and docs (APIs, formats, ADRs).
 allowed-tools: Bash(bash *), Read, Grep, Glob, TodoWrite
 created: 2026-04-24
 modified: 2026-09-23
-reviewed: 2026-04-24
+reviewed: 2026-09-23
 ---
 
 # Blueprint Docs Currency
