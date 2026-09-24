@@ -10,8 +10,9 @@
 # The matrix deliberately includes a run with every value NON-default. The first
 # parity run used defaults throughout and passed while two fields were still
 # hardcoded in the template (the README Foundry-version line, and renovate.yml's
-# reusable-workflow org, which scaffold.py pins to `laurigates` regardless of
-# --publisher). Defaults-only inputs cannot see that class of bug.
+# reusable-workflow org, which scaffold.py pinned to `laurigates` regardless of
+# --publisher; that workflow was later dropped from both generators, #2708).
+# Defaults-only inputs cannot see that class of bug.
 #
 # Requires python3 + cargo-generate; SKIPs cleanly when either is unavailable so
 # it degrades on a contributor's machine (cargo-generate is not part of the base

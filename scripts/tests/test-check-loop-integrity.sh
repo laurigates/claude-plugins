@@ -11,7 +11,7 @@ PASS=0
 FAIL=0
 
 WORK=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
-[ -n "$WORK" ] && [ -d "$WORK" ] || { echo "bad sandbox dir" >&2; exit 1; }
+if [ -z "$WORK" ] || [ ! -d "$WORK" ]; then echo "bad sandbox dir" >&2; exit 1; fi
 trap 'rm -rf "$WORK"' EXIT
 
 # Build a fixture root with all four files carrying the required tokens.
@@ -27,10 +27,14 @@ seed_clean() {
 The stop condition is judged independently.
 Every iteration leaves a compact state packet.
 Fields: Verifier result, Changed since last run.
+- Ordering / preconditions: which steps must precede which
+- Next target: what the last iteration chose to do next
 EOF
 
   cat > "$root/workflow-orchestration-plugin/skills/workflow-checkpoint-refactor/SKILL.md" <<'EOF'
 Exit condition: all phases done.
+Next target: Phase 2
+- Ordering / preconditions: after Phase 1
 - Verifier result: PASS
 - Changed since last run: nothing
 gate done on an independent verifier.
@@ -47,6 +51,8 @@ EOF
 
   cat > "$root/agent-patterns-plugin/skills/execution-grounded-review/SKILL.md" <<'EOF'
 See .claude/rules/loop-integrity.md
+"evidenceSpan": { "type": "string" }
+**Attribution bound:** at most 3 search rounds
 EOF
 }
 
@@ -92,8 +98,49 @@ assert_count "test-loop missing cross-reference is flagged" 1 "$no_xref"
 # 4b. execution-grounded-review (behaviour verifier sibling) loses its xref → flagged.
 no_egr="$WORK/no_egr"; seed_clean "$no_egr"
 egr="$no_egr/agent-patterns-plugin/skills/execution-grounded-review/SKILL.md"
-: > "$egr"   # empty out the cross-reference
+grep -v 'loop-integrity.md' "$egr" > "$egr.tmp" && mv "$egr.tmp" "$egr"   # strip only the cross-reference
 assert_count "execution-grounded-review missing cross-reference is flagged" 1 "$no_egr"
+
+# strip_mutant NAME RELPATH TOKEN DESC — one fixture per token, stripping only the
+# line that carries TOKEN, so each case is a single-token mutant (expects exactly 1).
+strip_mutant() {
+  local name="$1" rel="$2" token="$3" desc="$4" dir f
+  dir="$WORK/$name"; seed_clean "$dir"
+  f="$dir/$rel"
+  grep -vF "$token" "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+  assert_count "$desc" 1 "$dir"
+}
+
+RULE_REL=".claude/rules/loop-integrity.md"
+CK_REL="workflow-orchestration-plugin/skills/workflow-checkpoint-refactor/SKILL.md"
+EGR_REL="agent-patterns-plugin/skills/execution-grounded-review/SKILL.md"
+
+# 4c-4f. Pillar 2 ordering / next-target fields (#2693): the rule names them and
+# the checkpoint plan template (the loop's state packet) carries them.
+strip_mutant rule_no_ordering "$RULE_REL" "Ordering / preconditions" \
+  "rule missing the Ordering / preconditions field is flagged (#2693)"
+strip_mutant rule_no_next "$RULE_REL" "Next target" \
+  "rule missing the Next target field is flagged (#2693)"
+strip_mutant ck_no_ordering "$CK_REL" "Ordering / preconditions" \
+  "checkpoint plan missing Ordering / preconditions is flagged (#2693)"
+strip_mutant ck_no_next "$CK_REL" "Next target" \
+  "checkpoint plan missing Next target is flagged (#2693)"
+
+# 4g-4h. execution-grounded-review attribution step (#2694): the stated upper
+# bound on the trace search, and the ledger's checkable evidence span.
+strip_mutant egr_no_bound "$EGR_REL" "Attribution bound" \
+  "execution-grounded-review missing the attribution bound is flagged (#2694)"
+strip_mutant egr_no_span "$EGR_REL" "evidenceSpan" \
+  "execution-grounded-review missing the evidenceSpan ledger field is flagged (#2694)"
+
+# 4i. Guard integrity: the real repository satisfies every token the guard
+# requires, so the fixture tokens above are the ones the shipped files carry.
+real_root="$(cd "$SCRIPT_DIR/.." && pwd)"
+if bash "$GUARD" --strict "$real_root" >/dev/null 2>&1; then
+  printf "  PASS: real repository passes --strict\n"; PASS=$((PASS + 1))
+else
+  printf "  FAIL: real repository should pass --strict\n"; FAIL=$((FAIL + 1))
+fi
 
 # 5. --strict exits non-zero on issues, zero when clean.
 if bash "$GUARD" --strict "$clean" >/dev/null 2>&1; then
