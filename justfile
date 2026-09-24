@@ -162,6 +162,12 @@ eval-adapter-hybrid:
 
 # node_modules populated + ollama reachable with nomic-embed-text = hybrid ranker;
 # a missing embed model still works but degrades to BM25-only (worse ranking).
+# Also reports the other two pi extensions (docs/pi-export.md § Extension triad).
+# `pi install` records each source in settings.json `packages` (a string or a
+# {source} object): npm:<pkg>[@version] is matched on the package name, a git
+# URL or local path on its last segment. npm installs also land under
+# npm/node_modules/, which counts too. Informational like every other line: a
+# missing package never fails the check.
 # Verify the pi adapter's prerequisites (deterministic, no model call, no cost)
 [group: "adapters"]
 pi-adapter-check:
@@ -182,6 +188,24 @@ pi-adapter-check:
     else
         echo "OLLAMA=unreachable at $endpoint — ranker degrades to BM25-only"
     fi
+    agent_home="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
+    pi_package() {
+        if jq -e --arg name "$1" '
+                ($name | sub("^@[^/]+/"; "")) as $short
+                | [.packages[]? | if type == "object" then .source else . end | strings
+                   | if startswith("npm:")
+                     then (ltrimstr("npm:") | try capture("^(?<n>@?[^@]+)").n catch "") == $name
+                     else (rtrimstr("/") | split("/") | last | try capture("^(?<n>[^@]*)").n catch "" | rtrimstr(".git")) == $short
+                     end]
+                | any' "$agent_home/settings.json" >/dev/null 2>&1 \
+            || [ -d "$agent_home/npm/node_modules/$1" ]; then
+            echo "present ($1)"
+        else
+            echo "MISSING (pi install npm:$1) — $2"
+        fi
+    }
+    echo "SUBAGENTS=$(pi_package @tintinweb/pi-subagents 'pi ignores exported agents without it')"
+    echo "MCP_ADAPTER=$(pi_package pi-mcp-adapter 'pi has no MCP client, so .mcp.json servers are unreachable')"
 
 # Launches pi with the ADR-0022 skill-discovery extension via --extension,
 # replacing the uncapped native <available_skills> listing with pins + ranked

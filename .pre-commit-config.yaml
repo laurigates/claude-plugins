@@ -609,6 +609,14 @@ repos:
         # script alone.
         files: '^(scripts/(export-pi-agents\.py|tests/test-export-pi-agents\.sh)|justfile)$'
         pass_filenames: false
+      - id: test-pi-adapter-check
+        name: pi-adapter-check package probe regression (#2636)
+        entry: bash ./scripts/tests/test-pi-adapter-check.sh
+        language: system
+        # The suite extracts the recipe body from the justfile and runs it, so
+        # the justfile is the subject, not just a dependency.
+        files: '^(scripts/tests/test-pi-adapter-check\.sh|justfile)$'
+        pass_filenames: false
       - id: test-export-opencode-hooks
         name: opencode hook-plugin export regression (#1605)
         entry: bash ./scripts/tests/test-export-opencode-hooks.sh
