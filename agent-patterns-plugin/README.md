@@ -87,11 +87,11 @@ Audit a machine-local notes file (`CLAUDE.local.md`) — verify every claim agai
 - Complements `meta-context-diet`: that skill audits a file's load cost, this one audits its truth
 
 #### `custom-agent-definitions`
-Define and configure custom agents and teammate templates with context forking and tool restrictions.
+Define and configure custom agents and teammate templates with tool restrictions and worktree isolation.
 
 **When to use:**
 - Creating custom agent or teammate definitions
-- Configuring isolated agent contexts with `context: fork`
+- Choosing between a named agent (fresh context) and the runtime `fork` subagent type (inherits the conversation)
 - Restricting agent capabilities with `disallowedTools`
 - Setting up specialized teammates for team workflows
 

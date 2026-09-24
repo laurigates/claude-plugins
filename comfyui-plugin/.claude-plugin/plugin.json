@@ -3,6 +3,10 @@
   "name": "comfyui-plugin",
   "version": "1.13.7",
   "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "license": "MIT",
   "keywords": [
     "comfyui",
     "custom-node",

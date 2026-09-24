@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.3](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.14.2...agents-plugin-v1.14.3) (2026-09-24)
+
+
+### Bug Fixes
+
+* **project-plugin:** catch bare tool removals and retire TaskOutput ([#2752](https://github.com/laurigates/claude-plugins/issues/2752)) ([2e07766](https://github.com/laurigates/claude-plugins/commit/2e07766617d92e8955e9939014e949836b6356ba))
+
 ## [1.14.2](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.14.1...agents-plugin-v1.14.2) (2026-09-03)
 
 
