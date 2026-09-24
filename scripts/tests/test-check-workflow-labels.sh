@@ -53,6 +53,12 @@ assert() {
 
 is_true() { [ "$1" = "true" ] && echo true || echo false; }
 contains() { printf '%s' "$1" | grep -q -- "$2" && echo true || echo false; }
+# The runtime half of the structured-output contract (#2691): one canonical
+# STATUS=, REASON= present iff non-OK, ISSUE_COUNT= equal to the ISSUES: rows.
+validates() {
+  printf '%s\n' "$1" | bash "$repo_root/scripts/check-structured-output-contract.sh" --validate >/dev/null 2>&1 \
+    && echo true || echo false
+}
 
 fx="$(mktemp -d)"
 [ -n "$fx" ] || { echo "mktemp failed" >&2; exit 1; }
@@ -71,6 +77,8 @@ echo "=== TEST A: real repo has every attached label provisioned ==="
 out="$(bash "$checker" 2>&1)"; rc=$?
 assert "real repo exits 0" "$(is_true "$([ $rc -eq 0 ] && echo true)")"
 assert "real repo STATUS=OK" "$(contains "$out" 'STATUS=OK')"
+assert "real repo carries no REASON on OK" "$([ "$(contains "$out" '^REASON=')" = false ] && echo true || echo false)"
+assert "real repo output satisfies the contract" "$(validates "$out")"
 # Guard integrity: a checker that inspected nothing would also print STATUS=OK.
 assert "real repo scanned a non-zero number of workflows" \
   "$([ "$(contains "$out" 'WORKFLOWS_SCANNED=0')" = false ] && echo true || echo false)"
@@ -93,7 +101,11 @@ jobs:
       - run: gh issue create --title x --label "blueprint-health,maintenance"')"
 out="$(bash "$checker" --project-dir "$d" 2>&1)"; rc=$?
 assert "B exits 1" "$(is_true "$([ $rc -eq 1 ] && echo true)")"
-assert "B STATUS=FAIL" "$(contains "$out" 'STATUS=FAIL')"
+assert "B STATUS=ERROR" "$(contains "$out" '^STATUS=ERROR$')"
+assert "B ISSUE_COUNT=1" "$(contains "$out" '^ISSUE_COUNT=1$')"
+assert "B REASON names the unprovisioned label" \
+  "$(contains "$out" '^REASON=unprovisioned_label: .*blueprint-health')"
+assert "B output satisfies the contract" "$(validates "$out")"
 assert "B names the missing label" "$(contains "$out" 'LABEL=blueprint-health')"
 assert "B does not flag the allowlisted co-label" \
   "$([ "$(contains "$out" 'LABEL=maintenance')" = false ] && echo true || echo false)"
@@ -186,8 +198,13 @@ jobs:
 out="$(bash "$checker" --project-dir "$d" 2>&1)"; rc=$?
 assert "H exits 0 without --strict" "$(is_true "$([ $rc -eq 0 ] && echo true)")"
 assert "H counts the unresolved value" "$(contains "$out" 'UNRESOLVED_COUNT=1')"
+assert "H is a WARN without --strict" "$(contains "$out" '^STATUS=WARN$')"
+assert "H REASON names the unresolved value" "$(contains "$out" '^REASON=unresolved_label: ')"
+assert "H output satisfies the contract" "$(validates "$out")"
 out="$(bash "$checker" --strict --project-dir "$d" 2>&1)"; rc=$?
 assert "H exits 1 under --strict" "$(is_true "$([ $rc -eq 1 ] && echo true)")"
+assert "H is an ERROR under --strict" "$(contains "$out" '^STATUS=ERROR$')"
+assert "H --strict output satisfies the contract" "$(validates "$out")"
 
 # --- TEST I: an unknown argument is rejected, never swallowed ----------------
 echo "=== TEST I: unknown argument exits 2 ==="

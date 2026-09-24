@@ -1,7 +1,8 @@
 name: "Plugin: Workflow model audit"
 
 # Monthly re-evaluation of every Claude workflow's model/effort choice against
-# its job shape and real run history. The migration to opus+effort
+# its job shape, real run history, and measured per-run cost and turn draw
+# (scripts/workflow-run-cost.sh, #2669). The migration to opus+effort
 # (.claude/rules/workflow-model-effort.md) set the initial per-workflow effort
 # levels as a hypothesis; this audit is the feedback loop that ratifies or
 # revises them as models change. It only RECOMMENDS - it opens an issue, it
@@ -79,6 +80,15 @@ jobs:
           # Tolerate a non-zero exit (drift is data here, not a failure).
           DRIFT=$(bash scripts/check-workflow-model.sh 2>&1 || true)
 
+          # The Claude-invoking workflows, detected once for both sections below.
+          invoking=()
+          for wf in .github/workflows/*.yml .github/workflows/*.yaml; do
+            [ -f "$wf" ] || continue
+            if grep -q 'anthropics/claude-code-action' "$wf" || grep -q 'npx @anthropic-ai/claude-code' "$wf"; then
+              invoking+=("$wf")
+            fi
+          done
+
           # Recent run health per invoking workflow. gh output (conclusion
           # enums, repo-controlled file names) is kept in shell variables and
           # never interpolated into the run block via a GitHub Actions
@@ -92,15 +102,28 @@ jobs:
             echo ""
             echo "## Recent run health (last 10 runs per invoking workflow)"
             echo ""
-            for wf in .github/workflows/*.yml .github/workflows/*.yaml; do
-              [ -f "$wf" ] || continue
-              if grep -q 'anthropics/claude-code-action' "$wf" || grep -q 'npx @anthropic-ai/claude-code' "$wf"; then
-                base=$(basename "$wf")
-                rollup=$(gh run list --workflow "$base" -L 10 --json conclusion \
-                  --jq '"\([.[].conclusion] | map(select(. == "success")) | length) ok / \([.[].conclusion] | map(select(. == "failure")) | length) fail / \(length) recent"' 2>/dev/null || echo "no run data")
-                echo "- $base: $rollup"
-              fi
+            for wf in "${invoking[@]}"; do
+              base=$(basename "$wf")
+              rollup=$(gh run list --workflow "$base" -L 10 --json conclusion \
+                --jq '"\([.[].conclusion] | map(select(. == "success")) | length) ok / \([.[].conclusion] | map(select(. == "failure")) | length) fail / \(length) recent"' 2>/dev/null || echo "no run data")
+              echo "- $base: $rollup"
             done
+            echo ""
+            # Measured cost and turn draw (#2669). claude-code-action prints
+            # each run's accounting object (num_turns, total_cost_usd,
+            # permission_denials_count) only in its job log, so run health
+            # alone cannot say which workflow is expensive or which budget is
+            # binding. The collector exits 1 only when it cannot list runs;
+            # its ERROR block is still data here, so the exit is tolerated.
+            echo "## Measured cost and turn draw (last 3 model-reaching runs per invoking workflow)"
+            echo ""
+            echo "COST_USD=unknown means the run's log carried no accounting object (its Claude step did not run, or the log expired): no data, not zero. NEAR_CAP=true means the run used within 2 turns of the --max-turns it ran with, or went past it."
+            echo ""
+            echo '```'
+            for wf in "${invoking[@]}"; do
+              bash scripts/workflow-run-cost.sh "$wf" --limit 3 2>&1 || true
+            done
+            echo '```'
           } > "${RUNNER_TEMP}/precomputed.md"
 
           # Sentinel: GITHUB_OUTPUT_EOF, the one delimiter used repo-wide for a
@@ -244,8 +267,21 @@ jobs:
             is mechanical and over-spends). Justify each from the job shape plus
             the evidence you sampled.
 
+            Use the measured cost section as the ranking input. Order the
+            prioritized Recommendations list by measured spend (each
+            workflow's TOTAL_COST_USD), highest first, so the list reflects
+            what each workflow costs and not its job shape alone. A workflow
+            whose sampled runs are all COST_USD=unknown is unmeasured: say so,
+            and do not rank it as cheap. Name every NEAR_CAP=true run: a run
+            within two turns of its --max-turns, or past it, has a binding
+            budget. For each, read its CONCLUSION and DENIALS before
+            recommending anything, because every denied tool call burns a
+            turn; a denial-driven overrun wants a grant or prompt fix rather
+            than a larger cap or a higher effort.
+
             Format the issue body with a summary table (columns: Workflow,
-            Model/effort, Recent runs, Output-quality note, Recommendation), a
+            Model/effort, Recent runs, Measured cost, Turns vs cap,
+            Output-quality note, Recommendation), a
             Config drift section (workflows the guard flagged off-standard, or
             "none"), and a prioritized Recommendations list.
 

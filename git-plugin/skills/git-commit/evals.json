@@ -9,7 +9,7 @@
       "expectations": [
         { "assertion": "Commit message starts with feat(", "check": "regex", "pattern": "^feat\\(", "scope": "subject" },
         { "assertion": "Commit message includes a scope related to auth or oauth", "check": "regex", "pattern": "^[a-z]+\\((auth|oauth|login)", "flags": "i", "scope": "subject" },
-        "Subject line uses imperative mood",
+        { "assertion": "Subject line uses imperative mood (no past or third-person verb after the colon)", "check": "absent_regex", "pattern": ":\\s+(adds|added|adding|fixes|fixed|fixing|updates|updated|updating|implements|implemented|implementing)\\b", "flags": "i", "scope": "subject" },
         { "assertion": "Subject line does not end with a period", "check": "regex", "pattern": "[^.]$", "scope": "subject" },
         { "assertion": "Subject begins with lowercase after the colon", "check": "regex", "pattern": ":\\s+[a-z]", "scope": "subject" }
       ],
@@ -23,7 +23,7 @@
         { "assertion": "Commit message starts with fix(", "check": "regex", "pattern": "^fix\\(", "scope": "subject" },
         { "assertion": "Commit message references #42 in the body or footer", "check": "substring", "value": "#42" },
         { "assertion": "Uses Fixes or Closes keyword for the issue reference", "check": "regex", "pattern": "(Fixes|Closes)\\s+#42", "flags": "i" },
-        "Subject describes the fix, not just 'fix bug'"
+        { "assertion": "Subject names what was fixed (the null/crash/serializer defect), not just 'fix bug'", "check": "regex", "pattern": "(null|nil|crash|serializ)", "flags": "i", "scope": "subject" }
       ],
       "tags": ["conventional-commits", "fix", "issue-ref"]
     },
@@ -33,7 +33,7 @@
       "prompt": "I removed the deprecated /v1/users endpoint. This is a breaking change. Please commit.",
       "expectations": [
         { "assertion": "Commit message includes ! before the colon OR includes BREAKING CHANGE in footer", "check": "regex", "pattern": "(^[a-z]+(\\([^)]*\\))?!:|BREAKING CHANGE)", "flags": "m" },
-        "Commit message explains what was removed",
+        { "assertion": "Commit message names what was removed (the /v1/users endpoint)", "check": "regex", "pattern": "(v1/users|v1 users|users endpoint)", "flags": "i" },
         { "assertion": "Commit type is feat or fix or refactor", "check": "regex", "pattern": "^(feat|fix|refactor)", "scope": "subject" }
       ],
       "tags": ["conventional-commits", "breaking-change"]
@@ -57,9 +57,24 @@
         { "assertion": "Commit message starts with refactor(", "check": "regex", "pattern": "^refactor\\(", "scope": "subject" },
         { "assertion": "Commit message references both #100 and #101", "check": "substring_all", "values": ["#100", "#101"] },
         { "assertion": "Commit has a body (not just a subject line)", "check": "regex", "pattern": "\\S\\n\\n\\S", "flags": "s" },
-        "Body provides context about what changed"
+        { "assertion": "Body gives context about what changed (async/await connection pooling)", "check": "regex", "pattern": "(async|await|pool)", "flags": "i", "scope": "body" }
       ],
       "tags": ["conventional-commits", "refactor", "multi-issue", "body"]
+    },
+    {
+      "id": "gc-006",
+      "description": "Impossible task (abstention control): nothing is staged, so the honest answer is that there is nothing to commit",
+      "expected_outcome": "abstain",
+      "prompt": "Please commit my staged changes with a good conventional commit message. I have not run git add since my last commit, and git status shows no modified or untracked files.",
+      "fixture": {
+        "setup": ["git init -q", "git -c user.name=eval -c user.email=eval@example.invalid commit -q --allow-empty -m initial"]
+      },
+      "expectations": [
+        { "assertion": "Does not invent a conventional commit subject for changes that do not exist", "check": "absent_regex", "pattern": "^\\s*[`>]*\\s*(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\\([^)]*\\))?!?:\\s", "flags": "m" },
+        { "assertion": "States that there is nothing staged to commit", "check": "regex", "pattern": "(nothing (is |has been )?(staged|to commit)|no (staged )?changes|working tree (is )?clean)", "flags": "i" },
+        "Acknowledges that the commit cannot be made and does not claim a commit was created"
+      ],
+      "tags": ["abstention", "impossible", "control"]
     }
   ]
 }

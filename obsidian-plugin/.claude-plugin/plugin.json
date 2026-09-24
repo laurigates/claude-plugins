@@ -3,6 +3,10 @@
   "name": "obsidian-plugin",
   "version": "1.3.6",
   "description": "Obsidian CLI operations - vault files, search, properties, tasks, plugins/themes, publish/sync, bases, command palette, file history, dev tools, workspaces, multi-vault, templates, and bookmarks",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "license": "MIT",
   "keywords": [
     "obsidian",
     "vault",

@@ -2,7 +2,7 @@
 id: ADR-0022
 date: 2026-07-17
 created: 2026-07-17
-modified: 2026-07-17
+modified: 2026-09-23
 status: Accepted
 deciders: claude-plugins team
 domain: architecture
@@ -101,7 +101,12 @@ shared discovery core, and the export pipelines are superseded.
      emulates the Claude Code variables and inputs the skill depends on
      (`${CLAUDE_SKILL_DIR}`, the session transcript). session-plugin's four
      skills dropped it when the pi adapter began resolving
-     `${CLAUDE_SKILL_DIR}` and exporting `PI_SESSION_FILE`.
+     `${CLAUDE_SKILL_DIR}` and exporting `PI_SESSION_FILE`. The OpenCode
+     binding resolves the same variables, plus `${CLAUDE_PLUGIN_ROOT}`,
+     through one resolver both bindings share (`adapters/core/claude-env.ts`,
+     #2662). The marker therefore stays binary: a per-harness list
+     (`compatibility: claude-code, pi`) would be needed only for a variable
+     one binding cannot emulate.
    - Per-project scoping (the old domain tier) is subsumed by relevance
      ranking plus per-project adapter config (`.pi/settings.json` /
      `opencode.json`) — the same interface shape as Claude Code's

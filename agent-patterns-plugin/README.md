@@ -87,11 +87,11 @@ Audit a machine-local notes file (`CLAUDE.local.md`) — verify every claim agai
 - Complements `meta-context-diet`: that skill audits a file's load cost, this one audits its truth
 
 #### `custom-agent-definitions`
-Define and configure custom agents and teammate templates with context forking and tool restrictions.
+Define and configure custom agents and teammate templates with tool restrictions and worktree isolation.
 
 **When to use:**
 - Creating custom agent or teammate definitions
-- Configuring isolated agent contexts with `context: fork`
+- Choosing between a named agent (fresh context) and the runtime `fork` subagent type (inherits the conversation)
 - Restricting agent capabilities with `disallowedTools`
 - Setting up specialized teammates for team workflows
 
@@ -236,6 +236,7 @@ Verify an implementation meets its acceptance criteria by running the suite firs
 - Execute-first: runs suite + typecheck + lint before any verdict
 - `LEDGER` schema binding the verifier's output: one row per criterion, `verdict` enum (PASS/FAIL/PARTIAL/UNVERIFIED) grounded in execution evidence
 - Required `sequenceMatchesProduction` enum on every row — makes "I did not check the production call sequence" unrepresentable
+- Search-shaped failure attribution on long traces — locate with `grep -n`, read narrow windows, report a checkable `evidenceSpan`, within a stated bound of 3 rounds / 5 windows
 - Intent-starved isolated opus verifier — grades behaviour, not the author's rationale
 - Over-correction triage guarding both "pass broken code" and "fail correct code"
 

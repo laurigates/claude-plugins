@@ -1,0 +1,4 @@
+feat(auth): add OAuth login support
+
+Implements the OAuth2 authorization code flow for the auth module so
+enterprise users can sign in with a federated identity provider.

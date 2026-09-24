@@ -3,6 +3,10 @@
   "name": "bevy-plugin",
   "version": "1.4.2",
   "description": "Bevy game engine development - ECS, rendering, game architecture",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "license": "MIT",
   "keywords": [
     "bevy",
     "game-engine",

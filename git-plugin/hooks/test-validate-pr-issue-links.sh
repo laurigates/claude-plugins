@@ -51,6 +51,23 @@ assert_exit() {
     fi
 }
 
+# assert_exit discards the hook's output, so on its own it pins that the block
+# FIRES but not what it SAYS. What it says — the `Closes #N` keywords derived
+# from the branch's own commits — is what turns the block into a one-edit fix
+# (issue #2715). Capture stderr and read it.
+assert_stderr_contains() {
+    local desc="$1" needle="$2" json="$3"
+    local out
+    out=$(printf '%s' "$json" | bash "$HOOK" 2>&1 >/dev/null || true)
+    if grep -qF -- "$needle" <<<"$out"; then
+        printf "  PASS: %s\n" "$desc"
+        PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (stderr missing: %s)\n" "$desc" "$needle"
+        FAIL=$((FAIL + 1))
+    fi
+}
+
 make_json() {
     local cmd="$1"
     # Use jq to safely encode the command string (handles newlines, quotes)
@@ -233,6 +250,51 @@ assert_exit \
 assert_exit \
     "--head <missing-branch> that doesn't resolve locally defers (not block)" 0 \
     "$(make_json "gh pr create --head no-such-branch --base main --title 'feat: x' --body 'Just a summary'")"
+
+# ── Block message carries the commit-derived keywords (issue #2715) ─────────
+# The exit code says the PR body is incomplete; the message says how to
+# complete it. Pin both halves: the headline naming what is missing, and the
+# reference line listing the exact keywords found in the branch's commits.
+echo ""
+echo "block message lists the commit-derived closing keywords (issue #2715):"
+
+BLOCK_JSON="$(make_json "gh pr create --title 'feat: add feature' --body 'Just a summary'")"
+assert_stderr_contains \
+    "block message names what the body is missing" \
+    "PR ISSUE LINKING: PR body is missing issue closing keywords." \
+    "$BLOCK_JSON"
+assert_stderr_contains \
+    "block message lists the keyword derived from the branch's commit" \
+    "Commits in this branch reference:  Closes #42" \
+    "$BLOCK_JSON"
+
+# Several issues referenced across a branch's commits: every keyword lands on
+# the one reference line, which is the shape the #2715 report quotes
+# (`Closes #1418 Closes #1453 Closes #1460`). Checked per keyword rather than
+# as one exact line so the test does not pin the sort order.
+git -C "$TMPDIR" checkout -b multi-ref main -q
+git -C "$TMPDIR" commit --allow-empty -m "fix: first thing
+
+Fixes #7" -q
+git -C "$TMPDIR" commit --allow-empty -m "feat: second thing
+
+Closes #3
+Closes #12" -q
+git -C "$TMPDIR" checkout feature -q
+
+MULTI_OUT=$(make_json "gh pr create --head multi-ref --base main --title 'fix: two things' --body 'Just a summary'" \
+    | bash "$HOOK" 2>&1 >/dev/null || true)
+MULTI_REF_LINE=$(grep -F 'Commits in this branch reference:' <<<"$MULTI_OUT" || true)
+for kw in "Fixes #7" "Closes #3" "Closes #12"; do
+    if grep -qE -- "(^|[[:space:]])${kw}([[:space:]]|\$)" <<<"$MULTI_REF_LINE"; then
+        printf "  PASS: %s\n" "reference line lists '$kw' from the --head branch's commits"
+        PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (reference line was: %s)\n" \
+            "reference line lists '$kw' from the --head branch's commits" "$MULTI_REF_LINE"
+        FAIL=$((FAIL + 1))
+    fi
+done
 
 # ── Summary ─────────────────────────────────────────────────────────────────
 echo ""

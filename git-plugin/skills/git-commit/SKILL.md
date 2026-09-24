@@ -1,6 +1,6 @@
 ---
 created: 2026-01-21
-modified: 2026-09-02
+modified: 2026-09-23
 reviewed: 2026-09-02
 name: git-commit
 description: Create commits with conventional messages and issue references. Use when user says "commit", "save changes", or "stage and commit". Local commits only — see git-push for remote.
@@ -104,6 +104,8 @@ Co-Authored-By: Claude <model name> <noreply@anthropic.com>
 EOF
 )"
 ```
+
+**The scope is required.** Write `type(scope): …` — `docs(readme): update install steps`, never a bare `docs: update install steps`. The Conventional Commits spec lets you omit the scope; this house convention does not (`.claude/rules/conventional-commits.md`). Take it from the component or plugin the change touches.
 
 Use the exact `Co-Authored-By` line the harness provides for the current
 session — do not copy a model name from this example.

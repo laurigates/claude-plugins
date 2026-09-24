@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016  # literal markdown backticks in rule-table fixtures, never expansions
 # Regression test for scripts/check-workflow-model.sh
 # (.claude/rules/workflow-model-effort.md — every Claude workflow pins
 #  `--model opus` and an explicit `--effort` level).
@@ -21,6 +22,12 @@
 #   M. an unknown dash-argument (e.g. `--strict`) exits 2 and scans NOTHING,
 #      instead of being swallowed into the explicit-files list and reporting a
 #      vacuous WORKFLOWS_SCANNED=0 / STATUS=OK / exit 0 (#2057)
+#   N. every INVOKING workflow has a row in the rule's canonical per-workflow
+#      table (#2630 Rec 2): the table is hand-maintained and had silently
+#      fallen two workflows behind the scanned set. Only the FIRST cell of a
+#      row inside the "Per-workflow table (canonical)" section counts, so a
+#      mention in a rationale cell or in another section does not satisfy it;
+#      a rule file whose table parses to zero rows is a misfire, not a pass.
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -41,6 +48,32 @@ assert() {
 }
 
 contains() { printf '%s' "$1" | grep -q -- "$2" && echo true || echo false; }
+# has_line <text> <KEY=VALUE> — whole-line match. A substring match lets a
+# sibling key satisfy an assertion (`TABLE_ROWS=1` inside `MISSING_TABLE_ROWS=1`,
+# the #2297 anchoring lesson), so every new KEY=VALUE assertion is anchored.
+has_line() { grep -qxF -- "$2" <<<"$1" && echo true || echo false; }
+
+# make_rule_table <project-dir> <row-cell>... — write a minimal
+# .claude/rules/workflow-model-effort.md whose canonical table carries one row
+# per argument (each argument is the row's FIRST cell, verbatim).
+make_rule_table() {
+  local dir="$1"; shift
+  mkdir -p "$dir/.claude/rules"
+  {
+    echo "# Workflow Model + Effort"
+    echo ""
+    echo "## Per-workflow table (canonical)"
+    echo ""
+    echo "| Workflow | Model + effort | Rationale |"
+    echo "|----------|----------------|-----------|"
+    local cell
+    for cell in "$@"; do
+      echo "| $cell | \`opus\` / \`low\` | fixture row |"
+    done
+    echo ""
+    echo "## Enforcement: classification"
+  } > "$dir/.claude/rules/workflow-model-effort.md"
+}
 
 # make_action_workflow <path> <claude_args-value> — minimal claude-code-action
 # workflow with the given claude_args string.
@@ -135,6 +168,12 @@ run() {
 echo "=== TEST A: real repo is clean (all invoking workflows opus+effort) ==="
 run "$repo_root"
 assert "real repo exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+# Non-vacuity for TEST N on the real tree: the membership verdict is only
+# meaningful if the canonical table was actually parsed.
+assert "real repo rule table is present" "$(has_line "$OUT" 'RULE_TABLE=present')"
+assert "real repo has no invoking workflow missing a table row" "$(has_line "$OUT" 'MISSING_TABLE_ROWS=0')"
+a_rows=$(sed -n 's/^TABLE_ROWS=//p' <<<"$OUT")
+assert "real repo table parses to >= 9 rows (got '${a_rows:-none}')" "$([ "${a_rows:-0}" -ge 9 ] 2>/dev/null && echo true || echo false)"
 
 # --- TEST B: opus+effort claude_args fixture ---------------------------------
 echo "=== TEST B: opus+effort claude_args exits 0 ==="
@@ -286,6 +325,74 @@ assert "explicit positional file is still classified" "$(contains "$m4_out" 'INV
 bash "$checker" --help >/dev/null 2>&1
 m5_rc=$?
 assert "--help exits 0" "$([ "$m5_rc" -eq 0 ] && echo true || echo false)"
+# Explicit-file mode checks model/effort only: a pre-commit file list is not the
+# set the table mirrors, and the real repo's table cannot be expected to name a
+# fixture file. The skip is reported, never silent.
+assert "explicit positional file skips table membership (reported)" "$(has_line "$m4_out" 'RULE_TABLE=skipped_explicit_files')"
+
+# --- TEST N: canonical-table membership (#2630 Rec 2) ------------------------
+echo "=== TEST N: every invoking workflow has a canonical-table row ==="
+fx_n="$(mktemp -d)"
+trap 'rm -rf "$fx_b" "${fx_c:-}" "${fx_d:-}" "${fx_e:-}" "${fx_f:-}" "${fx_g:-}" "${fx_h:-}" "${fx_i:-}" "${fx_j:-}" "${fx_k:-}" "${fx_l:-}" "${fx_m:-}" "${fx_n:-}"' EXIT
+make_action_workflow "$fx_n/.github/workflows/good.yml" "--model opus --effort low"
+make_action_workflow "$fx_n/.github/workflows/unlisted.yml" "--model opus --effort medium"
+make_plain_workflow "$fx_n/.github/workflows/plain.yml"
+make_reusable_workflow "$fx_n/.github/workflows/reusable.yml"
+
+# N1: the #2630 shape — one invoking workflow listed, one not.
+make_rule_table "$fx_n" '`good.yml`'
+run "$fx_n"
+assert "N1: unlisted invoking workflow exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "N1: TYPE=missing_table_row reported" "$(contains "$OUT" 'TYPE=missing_table_row')"
+assert "N1: the unlisted file is named" "$(contains "$OUT" 'FILE=.github/workflows/unlisted.yml')"
+assert "N1: the listed file is NOT named" "$([ "$(contains "$OUT" 'missing_table_row FILE=.github/workflows/good.yml')" = "false" ] && echo true || echo false)"
+assert "N1: exactly one missing row counted" "$(has_line "$OUT" 'MISSING_TABLE_ROWS=1')"
+assert "N1: table parsed (1 row)" "$(has_line "$OUT" 'TABLE_ROWS=1')"
+# Non-invoking workflows mirror nothing in the table and must not be demanded.
+assert "N1: no-invocation workflow not demanded" "$([ "$(contains "$OUT" 'FILE=.github/workflows/plain.yml')" = "false" ] && echo true || echo false)"
+assert "N1: reusable-only workflow not demanded" "$([ "$(contains "$OUT" 'FILE=.github/workflows/reusable.yml')" = "false" ] && echo true || echo false)"
+
+# N2: guard integrity — list both and the same fixture is clean.
+make_rule_table "$fx_n" '`good.yml`' '`unlisted.yml` (CLI)'
+run "$fx_n"
+assert "N2: fully listed fixture exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+assert "N2: MISSING_TABLE_ROWS=0" "$(has_line "$OUT" 'MISSING_TABLE_ROWS=0')"
+assert "N2: a first cell carrying a trailing qualifier still counts (2 rows)" "$(has_line "$OUT" 'TABLE_ROWS=2')"
+
+# N3: a mention OUTSIDE the first cell of a canonical-table row does not count:
+# not in the rationale cell of a row whose first cell names no workflow, not in
+# the first cell of a row in a DIFFERENT table, and not in prose. Each shape
+# kills a distinct wrong implementation (whole-line match; no section bound;
+# whole-file grep), so a row whose first cell already names some workflow would
+# prove nothing — the leftmost token would be picked either way.
+make_rule_table "$fx_n" '`good.yml`' '(external)'
+sed -i.bak 's/^| (external) | `opus` \/ `low` | fixture row |$/| (external) | — | see `unlisted.yml` |/' "$fx_n/.claude/rules/workflow-model-effort.md"
+rm -f "$fx_n/.claude/rules/workflow-model-effort.md.bak"
+printf '\n## Another table\n\n| Workflow | Note |\n|---|---|\n| `unlisted.yml` | not the canonical table |\n\nProse naming `unlisted.yml` outside any table.\n' \
+  >> "$fx_n/.claude/rules/workflow-model-effort.md"
+if grep -qF 'see `unlisted.yml`' "$fx_n/.claude/rules/workflow-model-effort.md"; then n3_planted=true; else n3_planted=false; fi
+assert "N3: fixture validity — the rationale-cell mention was planted" "$n3_planted"
+run "$fx_n"
+assert "N3: rationale-cell / other-table / prose mention does not satisfy membership" "$(contains "$OUT" 'FILE=.github/workflows/unlisted.yml')"
+assert "N3: exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "N3: only the canonical first cell counted (1 row)" "$(has_line "$OUT" 'TABLE_ROWS=1')"
+
+# N4: a rule file whose canonical table parses to ZERO rows is a misfire
+# (renamed heading, reformatted table), never a clean pass.
+mkdir -p "$fx_n/.claude/rules"
+printf '# Workflow Model + Effort\n\n## Some other heading\n\n| Workflow | x |\n|---|---|\n| `good.yml` | y |\n' \
+  > "$fx_n/.claude/rules/workflow-model-effort.md"
+run "$fx_n"
+assert "N4: unparsed table exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "N4: TYPE=rule_table_unparsed reported" "$(contains "$OUT" 'TYPE=rule_table_unparsed')"
+assert "N4: RULE_TABLE=unparsed" "$(has_line "$OUT" 'RULE_TABLE=unparsed')"
+
+# N5: no rule file at all (every other fixture in this suite) — reported as
+# absent, not treated as a violation.
+rm -f "$fx_n/.claude/rules/workflow-model-effort.md"
+run "$fx_n"
+assert "N5: absent rule file does not fail membership" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+assert "N5: RULE_TABLE=absent reported" "$(has_line "$OUT" 'RULE_TABLE=absent')"
 
 # --- Summary -----------------------------------------------------------------
 echo ""
