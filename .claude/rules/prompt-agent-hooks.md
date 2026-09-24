@@ -163,7 +163,7 @@ Both prompt and agent hooks return the same JSON:
 
 ## Stop Hook Loop Prevention
 
-Stop hooks fire **every time** Claude finishes responding, including after it acts on a Stop hook's feedback. Prevent infinite loops by checking the `stop_hook_active` field:
+Stop hooks fire **every time** Claude finishes responding, including after it acts on a Stop hook's feedback. Prevent infinite loops by checking the `stop_hook_active` field. Since 2.1.274, repeat blocks from a Stop prompt hook no longer re-send its whole prompt; they name the condition with a 500-character label.
 
 ```json
 {
