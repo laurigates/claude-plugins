@@ -1,7 +1,7 @@
 {
   "_note": "The cross-model (Tier-2) canary set. ~15-25 representative, high-traffic, or high-risk skills covering distinct patterns. /evaluate:matrix runs the full sweep against these; the long tail stays on Tier 0/1. See .claude/rules/skill-evaluation.md (Principle 3) and docs/cross-model-evaluation.md. Only golden-set skills should carry fixture blocks (references/schemas.md).",
-  "evalCoverageFloor": 1,
-  "_evalCoverageFloorNote": "Minimum canaries carrying an evals.json before the sweep is allowed to report green. A RATCHET, not a target: raise it as evals land, never lower it. Set to 1 on 2026-09-03, the coverage measured that day (1 of 16). The sweep's gate is `eval_ready_count != 0`, so before this floor existed a 1-of-16 sweep ran and reported green with the ratio visible only in an ephemeral step summary.",
+  "evalCoverageFloor": 8,
+  "_evalCoverageFloorNote": "Minimum canaries carrying an evals.json before the sweep is allowed to report green. A RATCHET, not a target: raise it as evals land, never lower it. Set to 1 on 2026-09-03, the coverage measured that day (1 of 16). The sweep's gate is `eval_ready_count != 0`, so before this floor existed a 1-of-16 sweep ran and reported green with the ratio visible only in an ephemeral step summary. Raised to 8 on 2026-09-23 when seven suites landed beside git-commit's (#2144); evaluate-plugin/scripts/check_golden_set_evals.py validates each one and runs its probes.",
   "patterns": [
     "cli-wrapper",
     "multi-step-orchestrator",

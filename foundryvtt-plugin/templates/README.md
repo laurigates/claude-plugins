@@ -78,8 +78,8 @@ when a generated file comes out with something missing:
 
 **GitHub Actions `${{ }}`** renders to the empty string if Liquid sees it.
 
-- `ci.yml` and `renovate.yml` carry no template value, so `cargo-generate.toml`
-  `exclude`s them — they are copied verbatim and never meet Liquid. This is the
+- `ci.yml` carries no template value, so `cargo-generate.toml` `exclude`s it —
+  it is copied verbatim and never meets Liquid. This is the
   preferred fix when a file needs no substitution at all.
 - `release-please.yml` does carry the module id (the zip name), so it is
   rendered, and each `${{ … }}` is wrapped in `{% raw %}…{% endraw %}`.

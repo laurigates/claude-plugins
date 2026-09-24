@@ -2078,7 +2078,8 @@ permissions:
 
 jobs:
   release-please:
-    runs-on: ubuntu-latest
+    # Pure GitHub-API job (no build) — 1-CPU slim runner is 3x cheaper.
+    runs-on: ubuntu-slim
     steps:
       - name: Generate GitHub App Token
         id: app-token
@@ -2086,7 +2087,7 @@ jobs:
         with:
           app-id: ${{ vars.RELEASE_PLEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_PLEASE_PRIVATE_KEY }}
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         id: release
         with:
           token: ${{ steps.app-token.outputs.token }}
@@ -2286,11 +2287,11 @@ GITATTRIBUTES = (
     "uv.lock linguist-generated=true\n"
     "bun.lock linguist-generated=true\n"
     "\n"
-    "# Built frontend bundle — committed (not gitignored) so git clone / a\n"
-    "# touch-manager git update carries the real served artifact, and force-shipped\n"
-    "# to the Comfy Registry via [tool.comfy] includes in pyproject.toml. Treat as\n"
-    "# generated: collapse/exclude in GitHub diffs+stats, suppress the noisy minified\n"
-    "# textual diff, keep current-branch copy on merge (regenerated, never hand-merged).\n"
+    "# Built frontend bundle — committed (not gitignored) so git clone / a touch-manager\n"
+    "# git update carries the real served artifact, and force-shipped to the Comfy\n"
+    "# Registry via [tool.comfy] includes in pyproject.toml. Treat as generated:\n"
+    "# collapse/exclude in GitHub diffs+stats, suppress the noisy minified textual diff,\n"
+    "# and keep current-branch copy on merge (the bundle is regenerated, never hand-merged).\n"
     "web/dist/** linguist-generated=true -diff -merge\n"
 )
 
@@ -2767,38 +2768,40 @@ jobs:
           echo "OK: ${ver} is Active"
 """
 
-# Housekeeping: clear the transient release-please `autorelease: pending` /
-# `autorelease: tagged` labels once a release PR is merged and published, so the
-# label list stays readable. Mirrors the sibling packs' clear-autorelease-labels.yml.
+# Manual escape hatch for a clogged release-please pipeline: a thin caller for
+# laurigates/.github's reusable-clear-autorelease-labels.yml, which strips a
+# stale `autorelease: pending` label from closed PRs so release-please can move
+# on. Byte-identical to the fleet form (fleet-policy.toml, `shared`).
 CLEAR_AUTORELEASE_YML = """\
-name: "Release: clear autorelease labels"
+name: "Maintenance: clear autorelease labels"
+
+# Thin caller for the org reusable workflow. See
+# laurigates/.github/.github/workflows/reusable-clear-autorelease-labels.yml
+# for what this does and when to run it (manual escape hatch for a clogged
+# release-please pipeline).
 
 on:
-  release:
-    types: [published]
-  workflow_dispatch: {}
-
-permissions:
-  contents: read
-  pull-requests: write
+  workflow_dispatch:
+    inputs:
+      label:
+        description: "Label to strip from closed PRs"
+        default: "autorelease: pending"
+        required: false
+      dry_run:
+        description: "List matches without removing the label"
+        type: boolean
+        default: false
 
 jobs:
   clear-labels:
-    name: Remove stale autorelease labels
-    runs-on: ubuntu-latest
-    steps:
-      - name: Remove autorelease:pending / autorelease:tagged from merged PRs
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-        run: |
-          for label in "autorelease: pending" "autorelease: tagged"; do
-            prs=$(gh pr list -R "$REPO" --state all --label "$label" --json number --jq '.[].number')
-            for pr in $prs; do
-              echo "clearing '$label' from PR #$pr"
-              gh pr edit -R "$REPO" "$pr" --remove-label "$label" || true
-            done
-          done
+    uses: laurigates/.github/.github/workflows/reusable-clear-autorelease-labels.yml@main
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    with:
+      label: ${{ inputs.label }}
+      dry_run: ${{ inputs.dry_run }}
 """
 
 

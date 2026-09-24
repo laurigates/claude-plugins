@@ -20,9 +20,23 @@
  * deprecated-surface alias, normalized into permission upstream.) The
  * system.transform filter below is only the DEFENSIVE secondary for
  * consumers who forgot the config line.
+ *
+ * Claude Code variables (#2662): a `tool.execute.before` hook rewrites `bash`
+ * calls that reference `${CLAUDE_SKILL_DIR}`, `${CLAUDE_PLUGIN_ROOT}` or
+ * `${CLAUDE_SESSION_ID}`, using the resolver pi's binding shares
+ * (core/claude-env.ts).
  */
 
+import { basename, dirname, isAbsolute, resolve } from "node:path";
 import type { Hooks, Plugin, ToolDefinition } from "@opencode-ai/plugin";
+import {
+  type ClaudeEnvState,
+  createClaudeEnvState,
+  deriveSessionId,
+  realpathOrResolve,
+  recordSkillDir,
+  rewriteClaudeEnvCommand,
+} from "../core/claude-env.ts";
 import {
   AVAILABLE_SKILLS_OPEN,
   buildIndex,
@@ -32,6 +46,7 @@ import {
   SEARCH_SKILLS_TOOL_DESCRIPTION,
   type SkillEntry,
   type SkillIndex,
+  scanSkills,
   stripAvailableSkillsBlocks,
 } from "../core/index.ts";
 import { DEFAULT_REPO_ROOT, type OpencodeBindingConfig, resolveOptions } from "./config.ts";
@@ -77,6 +92,62 @@ export function resolvePins(
 interface PluginState {
   index: SkillIndex;
   pins: SkillEntry[];
+}
+
+/** The harness name the unresolved-directory reason gives the model. */
+const HARNESS = "OpenCode";
+
+/**
+ * tool.execute.before body for the Claude Code variables (core/claude-env.ts).
+ * A `read` of a SKILL.md records its directory (OpenCode's read tool takes
+ * `filePath` and resolves a relative one against the instance directory). A
+ * `bash` call referencing a variable has `output.args.command` rewritten IN
+ * PLACE: session/tools.ts (verified at v1.18.3) passes the same `args` object
+ * to the trigger and then to `item.execute`, so reassigning `output.args` is
+ * silently discarded. An unresolvable or ambiguous skill directory THROWS:
+ * the trigger runs the hook inside `Effect.promise`, so the rejection fails
+ * the tool call before it runs and the model receives the reason — the same
+ * path OpenCode's documented env-protection example and the generated hook
+ * plugins (scripts/generate-opencode-hook-plugins.py) use to block a call.
+ *
+ * Unlike pi, OpenCode keeps the mutated `args` as the tool part's input, so
+ * the prepended `export` line is visible in the transcript. OpenCode's shell
+ * permission scan collects only tree-sitter `command` nodes, and `export …`
+ * parses as a `declaration_command`, so the line adds no permission pattern.
+ */
+export function handleClaudeEnvToolExecute(
+  input: { tool: string; sessionID: string },
+  output: { args: Record<string, unknown> },
+  state: ClaudeEnvState,
+  indexedDirs: () => readonly string[],
+  directory: string,
+  exists?: (path: string) => boolean,
+  realpath: (path: string) => string = realpathOrResolve,
+): void {
+  const args = output.args;
+  if (input.tool === "read") {
+    const filePath = args?.filePath;
+    if (typeof filePath === "string" && basename(filePath) === "SKILL.md") {
+      const absolute = isAbsolute(filePath) ? filePath : resolve(directory, filePath);
+      recordSkillDir(state.readDirs, dirname(absolute));
+    }
+    return;
+  }
+  if (input.tool !== "bash") return;
+  const command = args?.command;
+  if (typeof command !== "string") return;
+  const rewrite = rewriteClaudeEnvCommand(
+    command,
+    state,
+    indexedDirs,
+    { sessionId: deriveSessionId(input.sessionID) },
+    HARNESS,
+    exists,
+    realpath,
+  );
+  if (rewrite === undefined) return;
+  if ("reason" in rewrite) throw new Error(rewrite.reason);
+  args.command = rewrite.command;
 }
 
 /**
@@ -128,6 +199,20 @@ export const SkillDiscoveryPlugin: Plugin = async (input, options) => {
   let latestUserMessage: string | null = null;
   let pushFailureLogged = false;
 
+  // One plugin instance serves every session of an OpenCode instance, so the
+  // read history behind ${CLAUDE_SKILL_DIR} is keyed by session. The indexed
+  // skill directories (scan only, no embeddings) are built on first need.
+  const claudeEnvBySession = new Map<string, ClaudeEnvState>();
+  let indexedDirs: string[] | null = null;
+  const claudeEnvFor = (sessionID: string): ClaudeEnvState => {
+    let state = claudeEnvBySession.get(sessionID);
+    if (state === undefined) {
+      state = createClaudeEnvState();
+      claudeEnvBySession.set(sessionID, state);
+    }
+    return state;
+  };
+
   const hooks: Hooks = {
     tool: {
       search_skills: tool({
@@ -142,6 +227,19 @@ export const SkillDiscoveryPlugin: Plugin = async (input, options) => {
           return renderToolResult(results);
         },
       }) satisfies ToolDefinition,
+    },
+
+    "tool.execute.before": async (toolInput, output) => {
+      handleClaudeEnvToolExecute(
+        toolInput,
+        output,
+        claudeEnvFor(toolInput.sessionID),
+        () => {
+          indexedDirs ??= scanSkills(config.repoRoot).entries.map((entry) => dirname(entry.path));
+          return indexedDirs;
+        },
+        input.directory,
+      );
     },
 
     "experimental.chat.messages.transform": async (_input, output) => {

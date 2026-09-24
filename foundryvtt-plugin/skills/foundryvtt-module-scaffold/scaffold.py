@@ -539,37 +539,6 @@ RENOVATE_JSON = """\
 }
 """
 
-RENOVATE_YML = """\
-name: Renovate
-
-on:
-  schedule:
-    - cron: '23 */4 * * *'
-  workflow_dispatch:
-    inputs:
-      dryRun:
-        description: 'Dry run mode'
-        required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'full'
-          - 'lookup'
-
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-  packages: read
-
-jobs:
-  renovate:
-    uses: laurigates/.github/.github/workflows/reusable-renovate.yml@main
-    with:
-      dry-run: ${{ inputs.dryRun || 'false' }}
-"""
-
 JUSTFILE = """\
 # @@NAME@@ — task runner. Run `just` (or `just --list`) for recipes.
 
@@ -1248,7 +1217,6 @@ def build_file_map(ctx: dict[str, str], variant: str) -> dict[str, str]:
         "renovate.json": RENOVATE_JSON,
         ".github/workflows/ci.yml": CI_YML,
         ".github/workflows/release-please.yml": RELEASE_PLEASE_YML,
-        ".github/workflows/renovate.yml": RENOVATE_YML,
         "justfile": JUSTFILE,
         "LICENSE": LICENSE,
         "README.md": README,
