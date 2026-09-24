@@ -1,7 +1,7 @@
 ---
 created: 2026-02-25
-modified: 2026-09-16
-reviewed: 2026-09-16
+modified: 2026-09-23
+reviewed: 2026-09-23
 paths:
   - "**/agents/**"
 ---
@@ -58,7 +58,6 @@ reviewed: YYYY-MM-DD
 ---
 # ... required fields above ...
 color: "#E53E3E"       # Hex color for UI display
-context: fork          # Context isolation: 'fork' creates independent context copy
 isolation: worktree    # Filesystem isolation: give agent its own git worktree
 permissionMode: default  # Permission mode: default, acceptEdits, dontAsk, bypassPermissions, plan
 maxTurns: 20           # Maximum agentic turns before agent stops
@@ -93,7 +92,6 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
 | `model` | string | Yes | `opus`, `sonnet`, `haiku`, `fable` (2.1.255+), `inherit`, or a full model ID (e.g. `claude-fable-5-1`). Aliases resolve to the current generation (`opus` → Opus 5, `sonnet` → Sonnet 5, `haiku` → Haiku 4.5, `fable` → Fable 5.1). Full IDs honoured since 2.1.74 |
 | `effort` | string | No | `low`, `medium`, `high`, `xhigh`, or `max` (2.1.251+) — overrides the session effort while this agent runs; default inherits. This is the per-agent cost lever the Model Selection section refers to |
 | `tools` | comma-list | Yes | Tools the agent can use; use `Agent(name)` to restrict spawnable subagents |
-| `context` | string | No | `fork` for isolated context (default: shared) |
 | `isolation` | string | No | `worktree` to run agent in an isolated git worktree |
 | `color` | string | No | Hex color for UI display |
 | `permissionMode` | string | No | `default`, `acceptEdits`, `dontAsk`, `bypassPermissions`, or `plan` |
@@ -109,6 +107,8 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
 | `created` | date | Recommended | Initial creation date |
 | `modified` | date | Recommended | Last substantive change |
 | `reviewed` | date | Recommended | Last verified against current docs |
+
+Claude Code ignores an agent frontmatter key it does not recognize, without an error ([sub-agents.md § Supported frontmatter fields](https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields)). That includes the skill-only fields `context`, `agent`, and `allowed-tools`, which read as if they configure the agent and do nothing on one. `scripts/check-agent-frontmatter-keys.sh` fails on any key outside the documented set plus the three lifecycle dates above.
 
 ### `tools` vs `allowed-tools`
 
@@ -190,29 +190,23 @@ On an org account that restricts model choice, an agent's `model: opus` frontmat
 
 ## Context Isolation
 
-### `context: fork`
+Every named agent is context-isolated by default: it starts in a fresh context window with its own system prompt, the brief the parent writes, the CLAUDE.md hierarchy, a git status snapshot, and any preloaded `skills:` ([sub-agents.md § What loads at startup](https://code.claude.com/docs/en/sub-agents#what-loads-at-startup)). A named agent does not see the parent's conversation history, and no agent frontmatter field changes that. Its tool calls stay out of the parent's context, and only its final result comes back.
 
-Creates an independent context copy. The agent sees parent history but its changes don't affect the parent session.
+### `context: fork` is a skill field, not an agent field
 
-```yaml
----
-name: research-agent
-description: Research without polluting main context
-model: opus
-context: fork
-tools: Glob, Grep, Read, WebFetch, WebSearch
----
-```
+Three mechanisms share the word "fork", and only the last one hands a subagent the parent's conversation:
 
-**When to use `context: fork`:**
-- Exploratory research that shouldn't affect the main session
-- Parallel investigations with potentially conflicting approaches
-- Isolated experiments or background tasks
-- Agents that generate verbose output that would fill the main context
+| Mechanism | Where it is set | What the subagent sees |
+|-----------|-----------------|------------------------|
+| `context: fork` in **skill** frontmatter | a `SKILL.md` | Only the skill body, run in a new subagent of the `agent:` type — it does not see the conversation history ([skills.md § Run skills in a subagent](https://code.claude.com/docs/en/skills#run-skills-in-a-subagent)). Isolation, despite the name. See `.claude/rules/skill-fork-context.md` |
+| `context:` in **agent** frontmatter | an `agents/*.md` | Nothing changes. It is absent from the subagent frontmatter table, and Claude Code ignores unrecognized fields without an error. Measured inert in #2646: agents with and without it returned bit-identical `subagent_tokens` (2549), both blind to the parent turn |
+| The runtime `fork` subagent type | the `Agent` call, `subagent_type: "fork"` | The parent's whole conversation, system prompt, tools, and model ([sub-agents.md § Fork the current conversation](https://code.claude.com/docs/en/sub-agents#fork-the-current-conversation)) |
+
+A research agent that should keep verbose output out of the main window needs no field: a named agent already does. For work that needs the conversation so far, dispatch a fork instead of a named agent.
 
 ### Runtime fork vs named agent (2.1.232+)
 
-The `Agent` tool's `subagent_type: "fork"` (available by default since 2.1.232) inherits the parent's full conversation and its prompt cache — no re-briefing, and cache reads on Fable 5.1 cost $0.25/MTok. A named plugin agent without `context: fork` starts cold with only its brief. Use a fork for "continue this work in isolation"; use a named agent when the tool boundary (`tools:`), model, or preloaded `skills:` is the point. A fork has read the user's request verbatim; a briefed agent only has the parent's paraphrase, and Fable 5.1 has a slightly higher propensity to distort user intent when briefing subagents (system card §6.2.1) — so a named-agent brief quotes the user's request rather than paraphrasing it.
+The `Agent` tool's `subagent_type: "fork"` inherits the parent's full conversation and its prompt cache — no re-briefing, and cache reads on Fable 5.1 cost $0.25/MTok. Fork mode is on by default in interactive sessions since 2.1.232 and off by default under `-p` and in the Agent SDK, where requesting `fork` fails with `Agent type 'fork' not found` unless `CLAUDE_CODE_FORK_SUBAGENT=1` is set ([sub-agents.md § Turn fork mode on or off](https://code.claude.com/docs/en/sub-agents#turn-fork-mode-on-or-off)). A named plugin agent starts cold with only its brief, whatever its frontmatter says. Use a fork for "continue this work in isolation"; use a named agent when the tool boundary (`tools:`), model, or preloaded `skills:` is the point. A fork has read the user's request verbatim; a briefed agent only has the parent's paraphrase, and Fable 5.1 has a slightly higher propensity to distort user intent when briefing subagents (system card §6.2.1) — so a named-agent brief quotes the user's request rather than paraphrasing it.
 
 ### Worktree Isolation
 
@@ -248,7 +242,7 @@ For filesystem-level isolation, give agents their own git worktree so they work 
 
 | Isolation Type | Mechanism | Isolates | Use Case |
 |----------------|-----------|----------|----------|
-| `context: fork` | Context fork | Context window | Research, exploration |
+| Any named agent (default) | Fresh subagent context | Context window (no parent history) | Research, exploration |
 | `isolation: worktree` | Git worktree | Filesystem + Git | Implementation, commits |
 | Manual worktree | `git worktree add` | Filesystem + Git | Complex multi-issue parallel work |
 
@@ -393,7 +387,7 @@ Agents participate in Claude Code's memory hierarchy. Memory is loaded from mult
 
 **For agents:**
 - Agents inherit the full memory hierarchy of their parent session in principle, but **in practice user-level rules under `~/.claude/rules/*.md` do not reliably hold across agent threads** (issue #1109 measured 200+ weekly hook-block reminders even though the rules existed at the user scope).
-- `context: fork` agents see parent memory but don't write back to it
+- A named (non-fork) agent loads the parent's CLAUDE.md hierarchy but not its conversation or its auto memory; `omitClaudeMd: true` drops the CLAUDE.md files, and the `memory:` field gives the agent persistent memory of its own ([sub-agents.md § What loads at startup](https://code.claude.com/docs/en/sub-agents#what-loads-at-startup))
 - Auto memory in `~/.claude/projects/<project>/memory/` persists across all sessions
 
 ### Bake Tool-Selection Rules into Agent Bodies
@@ -552,7 +546,7 @@ claude --agents '{"my-agent": {"description": "...", "prompt": "...", "tools": [
 - [ ] `model: opus` (the default for all subagents — `effort` is the cost lever, not the model; see Model Selection for Agents). The only sanctioned non-Opus subagent is the cold-read-gate haiku reader.
 - [ ] `tools` uses principle of least privilege
 - [ ] Granular `Bash(command *)` patterns used instead of bare `Bash`
-- [ ] `context: fork` added if agent needs isolated context window
+- [ ] Frontmatter uses only documented subagent fields — no skill fields such as `context:` or `allowed-tools:` (`scripts/check-agent-frontmatter-keys.sh`)
 - [ ] `isolation: worktree` added if agent needs filesystem-level git isolation
 - [ ] `permissionMode` set if non-default permission behavior is needed
 - [ ] `maxTurns` set if agent should be bounded

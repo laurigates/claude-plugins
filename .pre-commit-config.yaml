@@ -144,6 +144,18 @@ repos:
         language: script
         files: '/agents/.*\.md$'
         pass_filenames: false
+      - id: check-agent-frontmatter-keys
+        name: agent frontmatter uses only fields Claude Code reads (#2646)
+        entry: ./scripts/check-agent-frontmatter-keys.sh
+        language: script
+        files: '(/agents/.*\.md|^scripts/check-agent-frontmatter-keys\.sh)$'
+        pass_filenames: false
+      - id: test-check-agent-frontmatter-keys
+        name: agent frontmatter keys guard regression (#2646)
+        entry: bash ./scripts/tests/test-check-agent-frontmatter-keys.sh
+        language: system
+        files: '^scripts/(check-agent-frontmatter-keys\.sh|tests/test-check-agent-frontmatter-keys\.sh)$'
+        pass_filenames: false
       - id: check-branch-containment-guidance
         name: branch containment is routed to the authority ladder, not branch-audit
         entry: ./scripts/check-branch-containment-guidance.sh
@@ -329,7 +341,7 @@ repos:
         name: dispatch skills carry the loud-failure / completion-manifest contract (#1422, #1601)
         entry: ./scripts/check-agent-failure-contract.sh
         language: script
-        files: '^(agent-patterns-plugin/skills/(parallel-agent-dispatch|custom-agent-definitions)/((SKILL|REFERENCE)\.md|references/.*\.md)|agents-plugin/agents/refactor\.md|scripts/check-agent-failure-contract\.sh)$'
+        files: '^(agent-patterns-plugin/skills/(parallel-agent-dispatch|custom-agent-definitions)/((SKILL|REFERENCE)\.md|references/.*\.md)|agents-plugin/agents/refactor\.md|\.claude/rules/agent-development\.md|scripts/check-agent-failure-contract\.sh)$'
         pass_filenames: false
       - id: test-check-agent-failure-contract
         name: completion-manifest contract regression (#1601)

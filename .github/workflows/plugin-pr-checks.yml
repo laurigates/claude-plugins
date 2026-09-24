@@ -163,6 +163,7 @@ jobs:
             --only 'scripts/tests/test-agentic-audit-precompute.sh' \
             --only 'scripts/tests/test-blueprint-health-report.sh' \
             --only 'scripts/tests/test-check-agent-failure-contract.sh' \
+            --only 'scripts/tests/test-check-agent-frontmatter-keys.sh' \
             --only 'scripts/tests/test-check-agent-model.sh' \
             --only 'scripts/tests/test-check-auto-resolve-mergeability-poll.sh' \
             --only 'scripts/tests/test-check-blueprint-level3-templates.sh' \
@@ -228,6 +229,15 @@ jobs:
         # unconditionally like the docs-index check below — the lint is cheap
         # and the self-test step above proves the guard before it gates the tree.
         run: bash scripts/check-agent-model.sh
+
+      - name: Check agent frontmatter uses only fields Claude Code reads
+        # Claude Code ignores an agent frontmatter key it does not recognize
+        # WITHOUT an error (sub-agents.md § Supported frontmatter fields), so a
+        # skill field such as `context: fork` or `allowed-tools` on an agent
+        # does nothing while reading as if it did (#2646). The ten pre-existing
+        # `context` keys are declared residuals owned by #2722; a residual that
+        # matches nothing is itself an error, so the list can only shrink.
+        run: bash scripts/check-agent-frontmatter-keys.sh
 
       - name: Check for unused Bash grants
         # A bare `Bash` in a skill's allowed-tools is the ratified standard
