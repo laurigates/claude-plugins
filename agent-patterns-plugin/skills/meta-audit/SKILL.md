@@ -1,8 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-09-02
+modified: 2026-09-23
 compatibility: claude-code
-reviewed: 2026-09-02
+reviewed: 2026-09-23
 allowed-tools: Glob, Read, TodoWrite
 model: opus
 description: Audit Claude subagent configs for completeness, security, and best practices. Use when reviewing agents/ for missing frontmatter, overprivileged tools, or bad model choices.
@@ -18,7 +18,7 @@ name: meta-audit
 | Use this skill when... | Use custom-agent-definitions instead when... |
 |---|---|
 | Reviewing existing `.claude/agents/*.md` files for missing frontmatter, overprivileged tools, or wrong models | Authoring a new agent definition file from scratch |
-| Validating read-only vs write-enabled agent privilege boundaries before committing | Configuring a single agent's `model`, `allowed-tools`, or `context: fork` |
+| Validating read-only vs write-enabled agent privilege boundaries before committing | Configuring a single agent's `model`, `allowed-tools`, or `isolation` |
 | Auditing agents across an entire project for naming and security consistency | Copying or generalising another project's agents (use meta-assimilate) |
 
 ## Context
@@ -51,6 +51,7 @@ For each agent, verify required fields are present:
 - Mismatched name vs filename
 - Invalid model names
 - Malformed color codes
+- Keys Claude Code ignores on an agent — skill fields such as `context` or `allowed-tools`, and misspelled fields. An unrecognized key is dropped without an error, so it reads as configuration and does nothing ([sub-agents.md § Supported frontmatter fields](https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields))
 
 ### 3. Tool Assignment Analysis
 

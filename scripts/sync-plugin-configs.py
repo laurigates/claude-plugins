@@ -24,6 +24,13 @@ DEFAULT_CHANGELOG_SECTIONS = [
     {"type": "docs", "section": "Documentation"},
 ]
 
+# author/license every marketplace entry carries (#2698). Taken from the
+# plugin's own plugin.json when it declares them; otherwise these defaults,
+# which match the marketplace owner and the repo-root MIT LICENSE that covers
+# every plugin. scripts/plugin-compliance-check.sh gates both fields (#2699).
+DEFAULT_AUTHOR = {"name": "Lauri Gates"}
+DEFAULT_LICENSE = "MIT"
+
 # Category mapping based on keywords (used when creating marketplace entries)
 CATEGORY_KEYWORDS = {
     "infrastructure": [
@@ -139,6 +146,8 @@ def create_marketplace_entry(plugin_name: str, plugin_data: dict, version: str) 
         "source": f"./{plugin_name}",
         "description": plugin_data.get("description", f"{plugin_name} plugin"),
         "version": version,
+        "author": plugin_data.get("author", dict(DEFAULT_AUTHOR)),
+        "license": plugin_data.get("license", DEFAULT_LICENSE),
         "keywords": keywords[:10],  # Limit to 10 keywords for readability
         "category": infer_category(keywords),
     }

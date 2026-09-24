@@ -1,0 +1,208 @@
+name: "Plugin: Config drift audit"
+
+# Runs the semantic tier of health-plugin/scripts/config-drift.py (embedding
+# overlap + promotion candidates) over this repository's own configuration
+# corpus and comments ONLY what is new since the last run into one rolling
+# issue labelled `config-drift` (#2554). No Claude model runs here: the
+# analyzer is a plain script, so the cost is Actions minutes only.
+#
+# This watches the corpus that lives in git -- findings a PR to this repo can
+# fix. The portfolio run over ~/repos and ~/.claude/rules (#2319) watches a
+# different corpus; neither replaces the other.
+#
+# The decisions live in scripts/config-drift-audit.sh, which is tested
+# (scripts/tests/test-config-drift-audit.sh) rather than re-derived here:
+# exit-code discipline, first run vs. lost baseline, degraded runs, and the
+# planted-duplicate control.
+#
+# State is kept in actions/cache. GitHub evicts an entry not read for 7 days,
+# so a weekly schedule would sit on the eviction boundary and lose the baseline
+# whenever a run started a few minutes late; twice a week keeps every read well
+# inside the window. A miss after a completed run is still reported loudly
+# (--expect-baseline), never re-recorded in silence.
+#
+# Red state is the analyzer's --gate: an error-severity finding fails the job
+# on every run while it persists, even after its one comment. Warn and info
+# findings only ever reach the rolling issue.
+
+on:
+  schedule:
+    - cron: '47 9 * * 1,4'  # Mon + Thu 09:47 UTC. Not :00 (scheduler surge),
+                            # not :23/:53 (fix-release-conflicts.yml runs hourly
+                            # there); checked by scripts/check-workflow-cron-collisions.sh.
+  workflow_dispatch:
+    inputs:
+      plant_control:
+        description: "Also run the planted-duplicate control, which proves the delta logic end to end"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+  actions: read  # the previous-run lookup below
+
+# Bare group, no ref suffix: a scheduled run and a dispatch must not race on the
+# cached baseline or on creating the rolling issue. Never cancel a run that may
+# be mid-write.
+concurrency:
+  group: config-drift-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          # review_staleness reads each file's last-change date from git log.
+          # In a shallow clone every file's last change is the one fetched
+          # commit, which would report the whole corpus as stale.
+          fetch-depth: 0
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Look up a previous completed run
+        id: prior
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # A completed run on this ref recorded a baseline, so a missing one
+          # now is an evicted cache (a loss to report), not a first run.
+          # "Completed" means the "Run the audit" step succeeded. The gate step
+          # at the end turns a completed run red while error-severity findings
+          # persist, and that run recorded a baseline all the same, so a red
+          # run is checked step by step when no green run exists.
+          prior=false
+          count=$(gh run list --repo "$GITHUB_REPOSITORY" \
+            --workflow config-drift-audit.yml --branch "$GITHUB_REF_NAME" \
+            --status success --limit 1 --json databaseId --jq 'length')
+          if [ "$count" -gt 0 ]; then
+            prior=true
+          else
+            ids=$(gh run list --repo "$GITHUB_REPOSITORY" \
+              --workflow config-drift-audit.yml --branch "$GITHUB_REF_NAME" \
+              --status failure --limit 20 --json databaseId --jq '.[].databaseId')
+            for id in $ids; do
+              step=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id/jobs" \
+                --jq '[.jobs[].steps[]? | select(.name == "Run the audit") | .conclusion][0] // ""')
+              if [ "$step" = "success" ]; then
+                prior=true
+                break
+              fi
+            done
+          fi
+          echo "prior_success=$prior" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the embedding model
+        id: restore-model
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/fastembed
+          key: fastembed-bge-small-en-v1.5-${{ runner.os }}
+
+      - name: Restore the baseline and caches
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/config-drift
+          key: config-drift-state-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: config-drift-state-
+
+      - name: Run the audit
+        id: audit
+        env:
+          PRIOR_SUCCESS: ${{ steps.prior.outputs.prior_success }}
+          PLANT_CONTROL: ${{ inputs.plant_control }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          export FASTEMBED_CACHE_PATH="$HOME/.cache/fastembed"
+          args=(--out-dir "$RUNNER_TEMP/config-drift" --state-dir "$HOME/.cache/config-drift"
+            --prior-success "$PRIOR_SUCCESS" --run-url "$RUN_URL")
+          if [ "$PLANT_CONTROL" = "true" ]; then
+            args+=(--plant-control)
+          fi
+          rc=0
+          bash scripts/config-drift-audit.sh "${args[@]}" > "$RUNNER_TEMP/audit.txt" || rc=$?
+          cat "$RUNNER_TEMP/audit.txt"
+          comment=$(awk -F= '$1 == "COMMENT" { print $2; exit }' "$RUNNER_TEMP/audit.txt")
+          {
+            echo "comment=${comment:-false}"
+            echo "comment_file=$RUNNER_TEMP/config-drift/comment.md"
+            if [ -s "$HOME/.cache/config-drift/baseline.json" ]; then
+              echo "baseline_present=true"
+            fi
+            if [ -n "$(ls -A "$FASTEMBED_CACHE_PATH" 2>/dev/null)" ]; then
+              echo "model_present=true"
+            fi
+            if [ "$rc" -eq 3 ]; then
+              echo "gate=red"
+            fi
+          } >> "$GITHUB_OUTPUT"
+          # Exit 3: the audit completed and recorded, but error-severity
+          # findings are present. This step stays green, because its success is
+          # what the previous-run lookup reads as "completed"; the last step
+          # fails the job.
+          if [ "$rc" -eq 3 ]; then
+            rc=0
+          fi
+          exit "$rc"
+
+      # Runs even when the audit failed: an analyzer or control failure is a
+      # comment on the rolling issue, never silence.
+      - name: Post to the rolling issue
+        if: always() && steps.audit.outputs.comment == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMENT_FILE: ${{ steps.audit.outputs.comment_file }}
+        run: |
+          # `gh issue create --label` hard-fails on an unknown label, so the
+          # label is provisioned here, beside the only step that attaches it.
+          gh label create config-drift --repo "$GITHUB_REPOSITORY" --color c5def5 \
+            --description "Delta reports from the config-drift semantic audit" --force
+          number=$(gh issue list --repo "$GITHUB_REPOSITORY" --label config-drift \
+            --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --repo "$GITHUB_REPOSITORY" --body-file "$COMMENT_FILE"
+          else
+            {
+              echo "Rolling report from \`.github/workflows/config-drift-audit.yml\`: each comment lists only what is new since the previous run. See \`health-plugin/README.md\` for how to read and waive findings."
+              echo
+              cat "$COMMENT_FILE"
+            } > "$RUNNER_TEMP/issue-body.md"
+            gh issue create --repo "$GITHUB_REPOSITORY" \
+              --title "Config drift audit: new findings (rolling)" \
+              --label "config-drift,maintenance" \
+              --assignee laurigates \
+              --body-file "$RUNNER_TEMP/issue-body.md"
+          fi
+
+      # Saved under a fresh key every run: a cache entry is immutable, and
+      # restoring by prefix returns the most recent one.
+      - name: Save the baseline and caches
+        if: always() && steps.audit.outputs.baseline_present == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/config-drift
+          key: config-drift-state-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Save the embedding model
+        if: always() && steps.restore-model.outputs.cache-hit != 'true' && steps.audit.outputs.model_present == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/fastembed
+          key: fastembed-bge-small-en-v1.5-${{ runner.os }}
+
+      # Last, after the comment and the cache save: the --gate boundary (#2554).
+      # Error-severity findings fail the job on every run while they persist,
+      # not only on the run whose comment first reported them.
+      - name: Fail on error-severity findings
+        if: always() && steps.audit.outputs.gate == 'red'
+        run: |
+          awk '/^  - SEVERITY=ERROR /' "$RUNNER_TEMP/audit.txt" | while IFS= read -r row; do
+            echo "::error title=Config drift error finding::${row#  - }"
+          done
+          echo "The analyzer's --gate found error-severity findings. Warn and info findings never fail this job."
+          exit 1

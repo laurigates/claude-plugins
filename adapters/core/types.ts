@@ -42,6 +42,13 @@ export interface SearchFilters {
 
 export type Ranker = (query: string, k: number) => Promise<Array<{ id: string; score: number }>>;
 
+/**
+ * Task-prefix scheme for the embedding model. "nomic" is nomic-embed-text's
+ * mandatory `search_document: ` / `search_query: `; "none" sends raw text
+ * (bge-small-en-v1.5 and other prefix-free models).
+ */
+export type PrefixSchemeName = "nomic" | "none";
+
 export interface IndexOptions {
   /** Marketplace checkout root. */
   repoRoot: string;
@@ -54,6 +61,8 @@ export interface IndexOptions {
     model?: string;
     /** Default 768; Matryoshka knob (512/256/128/64) — one line of config, else YAGNI. */
     dimensions?: number;
+    /** Default "nomic". Part of the cache key, so switching schemes re-embeds. */
+    prefixScheme?: PrefixSchemeName;
     /** Force BM25-only (eval smoke mode). */
     disabled?: boolean;
   };

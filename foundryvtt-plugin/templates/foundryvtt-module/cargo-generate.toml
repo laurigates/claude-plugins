@@ -4,21 +4,21 @@ cargo_generate_version = ">=0.23.0"
 # Removed from the generated project entirely.
 ignore = ["hooks"]
 
-# Copied verbatim instead of rendered. Both carry GitHub Actions `${{ }}`
-# expressions — which Liquid would render to the empty string — and neither
-# carries a template value, so keeping Liquid away from them is safer and
-# clearer than escaping every expression.
+# Copied verbatim instead of rendered. ci.yml carries GitHub Actions `${{ }}`
+# expressions — which Liquid would render to the empty string — and no
+# template value, so keeping Liquid away from it is safer and clearer than
+# escaping every expression.
 #
-# renovate.yml's `uses: laurigates/.github/...` is the org that HOSTS the
-# reusable workflow, not the module's publisher: scaffold.py hardcodes it
-# regardless of `--publisher`, and this template preserves that rather than
-# silently retargeting it at `github_owner`.
+# There is deliberately no repo-local renovate.yml (#2708): the default owner
+# is the laurigates account, which the gitops autodiscover Renovate App already
+# covers, and a second runner kept a second dependency dashboard under a second
+# bot identity. renovate.json is what that App reads, so it is still emitted.
+# A module published under another owner needs its own Renovate setup.
 #
 # release-please.yml DOES carry the module id (zip name), so it is rendered —
 # its `${{ }}` expressions are wrapped in `{% raw %}` in the file itself.
 exclude = [
   ".github/workflows/ci.yml",
-  ".github/workflows/renovate.yml",
 ]
 
 [hooks]

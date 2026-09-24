@@ -43,6 +43,8 @@ export interface SkillDiscoveryConfig {
   pins: string[];
   /** false = pull-only (debug/ablation). */
   push: boolean;
+  /** false turns off session-plugin's spinup and end nudges (session-nudges.ts). */
+  sessionNudges: boolean;
 }
 
 export function defaultConfig(defaultRepoRoot: string): SkillDiscoveryConfig {
@@ -53,6 +55,7 @@ export function defaultConfig(defaultRepoRoot: string): SkillDiscoveryConfig {
     model: DEFAULT_MODEL,
     pins: [],
     push: true,
+    sessionNudges: true,
   };
 }
 
@@ -104,7 +107,8 @@ export function parseConfigText(
         else ignore(key, "an array of strings");
         break;
       case "push":
-        if (typeof value === "boolean") partial.push = value;
+      case "sessionNudges":
+        if (typeof value === "boolean") partial[key] = value;
         else ignore(key, "a boolean");
         break;
       default:
