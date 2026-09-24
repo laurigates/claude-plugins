@@ -326,6 +326,23 @@ echo "KEYS_CHECKED=$keys_checked"
 echo "SCANNED_EMPTY=$scanned_empty"
 echo "ALLOWLISTED=$allowlisted"
 echo "STATUS=$item_status"
+# REASON= names the worst finding on the non-OK path only
+# (.claude/rules/structured-script-output.md, #2691).
+if [ "$item_status" != OK ] && [ ${#issues[@]} -gt 0 ]; then
+  worst=""
+  for row in "${issues[@]}"; do
+    case "$row" in *"SEVERITY=$item_status "*) worst="$row"; break ;; esac
+  done
+  [ -n "$worst" ] || worst="${issues[0]}"
+  reason_type="${worst#*TYPE=}"
+  reason_type="${reason_type%% *}"
+  case "$worst" in
+    *" MSG="*) reason_msg="${worst#* MSG=}" ;;
+    *) reason_msg="${worst#*TYPE="$reason_type" }" ;;
+  esac
+  reason="${reason_type}: ${reason_msg}"
+  echo "REASON=${reason:0:200}"
+fi
 echo "ISSUE_COUNT=${#issues[@]}"
 if [ ${#issues[@]} -gt 0 ]; then
   echo "ISSUES:"

@@ -139,6 +139,7 @@ t="$(new_tree b)"; write_agent "$t" demo-plugin worker "$CLEAN_FM"
 out="$(run "$t")"; rc=$?
 assert "B: clean agent exits 0" "$([ "$rc" -eq 0 ] && echo true || echo false)"
 assert "B: clean agent STATUS=OK" "$(has_line "$out" "STATUS=OK")"
+assert "B: no REASON= on the OK path" "$(lacks_text "$out" "REASON=")"
 assert "B: clean agent scanned exactly 1 file" "$(has_line "$out" "AGENT_FILES_SCANNED=1")"
 assert "B: clean agent ISSUE_COUNT=0" "$(has_line "$out" "ISSUE_COUNT=0")"
 
@@ -147,6 +148,7 @@ t="$(new_tree c)"; write_agent "$t" demo-plugin worker "$CLEAN_FM
 context: fork"
 out="$(run "$t")"; rc=$?
 assert "C: context: fork exits 1" "$([ "$rc" -eq 1 ] && echo true || echo false)"
+assert "C: REASON= names the worst finding" "$(printf '%s\n' "$out" | grep -qE '^REASON=skill_only_key: .{1,}$' && echo true || echo false)"
 assert "C: context: fork is reported as a skill-only key" \
   "$(has_text "$out" "TYPE=skill_only_key FILE=demo-plugin/agents/worker.md KEY=context ")"
 assert "C: the message points at the runtime fork subagent type" \
