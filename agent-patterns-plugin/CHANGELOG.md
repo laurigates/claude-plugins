@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.45.8](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.45.7...agent-patterns-plugin-v2.45.8) (2026-09-24)
+
+
+### Bug Fixes
+
+* **agent-patterns-plugin:** describe context: fork as a skill field, not an agent field ([#2739](https://github.com/laurigates/claude-plugins/issues/2739)) ([7057211](https://github.com/laurigates/claude-plugins/commit/70572111b1fe66ca7502dc021b0c84ddbac6b772))
+
 ## [2.45.7](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.45.6...agent-patterns-plugin-v2.45.7) (2026-09-19)
 
 
