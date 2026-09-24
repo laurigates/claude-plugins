@@ -4,8 +4,8 @@ args: <package> [--dev] [--exact]
 allowed-tools: Bash, Read
 argument-hint: package-name [--dev] [--exact]
 created: 2025-12-20
-modified: 2026-08-07
-reviewed: 2026-08-07
+modified: 2026-09-24
+reviewed: 2026-09-24
 name: bun-add
 ---
 
@@ -64,6 +64,37 @@ bun add lodash --cwd packages/utils
 # Preview without writing package.json
 bun add --dry-run zod
 ```
+
+## An unpinned `bun add` bypasses the lockfile
+
+`bun install --frozen-lockfile` governs only what *that* install resolves. A
+later `bun add <pkg>` with no version resolves the registry's **`latest`
+dist-tag** at run time, and the lockfile does not apply to it. The usual place
+this happens is a Dockerfile that installs with `--production` (to skip dev
+packages) and then re-adds one CLI from `devDependencies`.
+
+`latest` is a registry convention, not a stability guarantee. Publishers can
+tag a prerelease as `latest`.
+
+> Observed 2026-08: `bun add --dev prisma` in a `--production` Docker stage
+> pulled `8.0.0-rc.12`, because npm's `latest` for `prisma` was a release
+> candidate. Its CLI had no `generate` command, so the image build failed at a
+> commit that touched neither Prisma nor the Dockerfile. Another image built
+> from a plain `--frozen-lockfile` install kept working, which is the sign that
+> a version was being resolved rather than locked. Unit-test CI stayed green
+> because it never built the image.
+
+When an install line has to name a package that the primary install skipped,
+read the version from `package.json` instead of hardcoding a second copy. That
+keeps one source of truth, and Renovate keeps bumping it:
+
+```dockerfile
+RUN bun add --dev "prisma@$(bun -e 'console.log(JSON.parse(await Bun.file("package.json").text()).devDependencies.prisma)')"
+```
+
+If `package.json` holds a range (`^7.9.1`), this resolves the highest version
+inside that range, which may differ from the locked one. Pin exact versions in
+`package.json` when that difference matters.
 
 ## Post-add
 

@@ -48,7 +48,7 @@ Automated quality enforcement.
 | testing-plugin | 17 | Test execution, TDD, Vitest, Playwright, Playwright CLI, mutation testing |
 | code-quality-plugin | 16 | Review, refactoring, linting, ast-grep, debugging, silent degradation, dead code, dep audit, test quality, complexity, bulk-sweep classification, scaffold back-port |
 | software-design-plugin | 6 | Deep modules, design by contract, GoF pattern selection, legacy seams, design by pseudocode |
-| documentation-plugin | 8 | API docs, README generation, LaTeX PDFs, single-source linking, machine-fact verification, WebFetch fallbacks |
+| documentation-plugin | 9 | API docs, README generation, LaTeX PDFs, single-source linking, machine-fact verification, public-export sanitization, WebFetch fallbacks |
 | evaluate-plugin | 7 + 3 agents | Skill evaluation, benchmarking, quality improvement |
 
 ### Tier 3+ - Pick What Applies

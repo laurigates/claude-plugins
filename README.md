@@ -136,7 +136,7 @@ the rules, skills, and hooks that embody it.
 |--------|--------|-------------|
 | **blog-plugin** | 2 | Blog post creation - project logs, technical write-ups |
 | **communication-plugin** | 2 | Communication formatting - Google Chat, ticket drafting |
-| **documentation-plugin** | 8 | Documentation generation - API docs, README, LaTeX PDFs, single-source linking, machine-fact verification, fetch fallbacks |
+| **documentation-plugin** | 9 | Documentation generation - API docs, README, LaTeX PDFs, single-source linking, machine-fact verification, public-export sanitization, fetch fallbacks |
 | **prose-plugin** | 3 | Prose transformation - synthesis, distillation, tone, clarity, house-style self-check |
 
 ### UX & Components

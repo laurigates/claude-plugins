@@ -18,6 +18,7 @@ Comprehensive documentation tooling for generating API references, maintaining R
 | `claude-blog-sources` | Access Claude Blog for latest features, patterns, and best practices |
 | `docs-single-source` | Link docs to the single source of truth instead of restating it |
 | `docs-verify-machine-facts` | Verify machine-read values (`scutil`, `route`, `ifconfig`, local config) against the authoritative IaC before publishing |
+| `public-export-sanitization` | Scan an internal-to-public export for leaked identifiers and repo-escaping links (`check-public-export.sh`), then genericize |
 
 ## Agents
 

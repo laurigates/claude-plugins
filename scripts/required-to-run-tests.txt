@@ -135,3 +135,7 @@ scripts/tests/test-workflow-run-cost.sh
 # pins the declared residuals to the live defect (#2646): a skip would hide a
 # residual list drifting away from the ten `context: fork` keys it exists for.
 scripts/tests/test-check-agent-frontmatter-keys.sh
+
+# check-public-export.sh needs ripgrep, installed above; the suite has no skip
+# branch, so a missing rg shows up as failures rather than a silent green.
+documentation-plugin/skills/public-export-sanitization/scripts/tests/test-check-public-export.sh
