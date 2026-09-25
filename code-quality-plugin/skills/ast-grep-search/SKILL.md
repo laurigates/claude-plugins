@@ -1,12 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-09-24
+modified: 2026-09-25
 reviewed: 2026-04-25
 name: ast-grep-search
 description: Find and replace code patterns structurally with ast-grep. Use when matching code by AST structure, finding functions with specific signatures, or detecting anti-patterns regex cannot match.
 user-invocable: false
 allowed-tools: Bash(sg *), Bash(ast-grep *), Read, Grep, Glob
-model: sonnet
+effort: low
 ---
 
 # ast-grep Structural Code Search & Refactoring
