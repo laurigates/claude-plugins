@@ -1063,6 +1063,18 @@ check_skill_body() {
       done
     fi
 
+    # Regression: git-local-hazards §1 claimed `git cherry` "survives squash".
+    # A multi-commit squash-merge marks every branch commit `+` (no single
+    # commit's patch-id matches the combined squash commit), so cherry cannot
+    # single out the orphan it was recommended for. Keep the caveat
+    # (independent review of PR #2814, finding 2).
+    if [ "$plugin" = "git-plugin" ] && [ "$skill_name" = "git-local-hazards" ]; then
+      if ! grep -qF "multi-commit" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must keep the multi-commit squash caveat on 'git cherry' (it marks every commit '+' there)")
+        has_errors=true
+      fi
+    fi
+
     # Regression: github-workflow-auto-fix's inline template must use the
     # `claude_args` + `prompt:` shape, not the deprecated `direct_prompt`
     # (which the sibling claude-code-github-workflows skill documents as

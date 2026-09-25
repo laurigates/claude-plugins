@@ -3,7 +3,7 @@ name: git-local-hazards
 description: Local git traps where a green command is wrong. Use when branching after a squash-merge, cutting a PR branch, after a clean merge or rebase, when a staged file vanishes, or before reset --hard.
 allowed-tools: Read, Grep, Glob, Bash(git *), Bash(gh pr list *), Bash(grep *), TodoWrite
 created: 2026-09-24
-modified: 2026-09-24
+modified: 2026-09-25
 reviewed: 2026-09-24
 ---
 
@@ -39,7 +39,12 @@ work; the first symptom is an ImportError far downstream.
   grep for `tier == "deliver"` reported a change as landed when the hit came
   from a pre-existing line that merely contained the same text (2026-08-19).
   Prefer `git cherry origin/main <branch>` — `+` means not upstream, and it
-  survives squash and SHA rewriting, which plain ancestry checks do not.
+  survives SHA rewriting (rebase, cherry-pick) and a single-commit squash,
+  which plain ancestry checks do not. It does **not** survive a multi-commit
+  squash: no single commit's patch matches the combined squash commit, so
+  every commit — landed or orphaned — reads `+`. There, compare
+  `git log --format='%h %cI %s' origin/main..<branch>` against the PR's
+  `mergedAt`; commits dated after it are the orphans.
 - **Fix**: replay only the orphans: `git rebase --onto origin/main <squash-point> <branch>`,
   then verify `git log --oneline origin/main..HEAD` shows only the orphaned + new commits.
   Confirm nothing was lost by comparing **trees**, not diffs:
