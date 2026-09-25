@@ -804,6 +804,150 @@ assert_estimate "two block functions of one name are each charged every call" 24
 if (!ok()) { function spawn(i) { return agent("a" + i) } } else { function spawn(i) { return agent("b" + i) } }
 for (let i = 0; i < 12; i++) await spawn(i)
 '
+# Round 11 (#2670 review): a loop the parse recognises but nothing in its text
+# bounds -- no test, a counter it moves back or resets, a limit it raises, a
+# list it grows -- a hand-built iterator, and a method the language calls with
+# no visible call are costed at HIGH, one over the limit (11 here), where round
+# 10 costed them at ASSUMED (8) and went silent. Their true counts vary, so each
+# is pinned at HIGH here rather than at a true count in the corpus.
+assert_estimate "a while (true) with no stated count costs HIGH" 11 '
+while (true) { const r = await agent("poll"); if (r.verdict) break }
+'
+assert_estimate "a for (;;) with no stated count costs HIGH" 11 '
+for (;;) { const r = await agent("poll"); if (r.verdict) break }
+'
+assert_estimate "a do...while (true) costs HIGH" 11 '
+do { await agent("poll") } while (true)
+'
+assert_estimate "a counter the body moves back costs HIGH" 11 '
+let r = 0
+for (let i = 0; i < 3; i++) { await agent("x"); if (r++ < 12) i-- }
+'
+assert_estimate "a counter a closure resets costs HIGH" 11 '
+let i = 0, r = 0
+const back = () => { i = 0 }
+while (i < 3) { await agent("x"); if (r++ < 12) back(); i++ }
+'
+assert_estimate "a counter that only moves away from its limit costs HIGH" 11 '
+for (let i = 0; i < 3; i--) { await agent("x"); if (i < -10) break }
+'
+assert_estimate "a limit the loop raises costs HIGH" 11 '
+let N = 2
+for (let i = 0; i < N; i++) { await agent("x"); if (N < 14) N++ }
+'
+assert_estimate "a for...of over a list it pushes to costs HIGH" 11 '
+const xs = [1, 2]
+for (const x of xs) { await agent("x"); if (xs.length < 14) xs.push(0) }
+'
+assert_estimate "a while over a queue it refills costs HIGH" 11 '
+const q = [1]
+let n = 0
+while (q.length) { q.shift(); await agent("x"); if (n++ < 12) q.push(1, 2) }
+'
+assert_estimate "a Set grown while it is iterated costs HIGH" 11 '
+const s = new Set([1])
+for (const x of s) { await agent("x"); if (s.size < 13) s.add(s.size + 1) }
+'
+assert_estimate "an object with a hand-built iterator costs HIGH" 11 '
+const it = { [Symbol.iterator]() { let i = 0; return { next: () => ({ done: i >= 12, value: i++ }) } } }
+for (const x of it) await agent(x)
+'
+# shellcheck disable=SC2016  # the ${o} below is JS fixture text, not shell
+assert_estimate "an implicitly called toString costs HIGH" 11 '
+const o = { toString() { agent("s"); return "x" } }
+for (let i = 0; i < 20; i++) log(`${o}`)
+'
+assert_estimate "an awaited thenable costs HIGH" 11 '
+const o = { then(res) { agent("t"); res(1) } }
+for (let i = 0; i < 12; i++) await o
+'
+assert_estimate "a [Symbol.toPrimitive] method costs HIGH" 11 '
+const o = { [Symbol.toPrimitive]() { agent("p"); return 1 } }
+for (let i = 0; i < 12; i++) log(o * 2)
+'
+assert_estimate "a generator whose loop has no test costs HIGH" 11 '
+function* gen() { for (let i = 0; ; i++) yield agent("g" + i) }
+let k = 0
+for (const p of gen()) { await p; if (++k >= 20) break }
+'
+assert_estimate "a zero step never moves its counter: HIGH" 11 '
+let k = 0
+for (let i = 0; i < 3; i += 0) { await agent("x"); if (++k >= 12) break }
+'
+assert_estimate "a list an index write grows costs HIGH" 11 '
+const xs = [1, 2]
+for (let i = 0; i < xs.length; i++) { await agent("x"); if (i < 12) xs[i + 1] = 1 }
+'
+# Pins for branches a true count cannot hold, each at the figure it must keep:
+# an assignment in a for-init is not a reset; a class also built through
+# `this.constructor`, an object with a `__proto__`, and a registry whose method
+# hands `this` on fall back to ASSUMED rather than to what the text shows (the
+# last would read 0); a named key written onto an array is one more key for
+# for...in; and a recursion guard that does not stop its step (n < 10 while n
+# falls) proves no depth.
+assert_estimate "a counter assigned in its for-init is not reset by the loop" 8 '
+let i
+for (i = 0; i < args.limit; i++) await agent("x" + i)
+'
+assert_estimate "a class also built through this.constructor costs ASSUMED, not its one new" 8 '
+class C { constructor() { agent("c") } clone() { return new this.constructor() } }
+const c = new C()
+for (let i = 0; i < 12; i++) c.clone()
+'
+assert_estimate "for...in over an object with a __proto__ costs ASSUMED" 8 '
+const base = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6 }
+const o = { __proto__: base, g: 7, h: 8, i: 9, j: 10, k: 11, l: 12 }
+for (const k in o) await agent(k)
+'
+assert_estimate "for...in over an array given a named key costs its length plus one" 12 '
+const xs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+xs.extra = 1
+for (const k in xs) await agent(k)
+'
+assert_estimate "a registry whose method hands on this is not followed: ASSUMED, not 0" 8 '
+const reg = { run: () => agent("r"), self() { return this } }
+const r2 = reg.self()
+const k = "run"
+for (let i = 0; i < 12; i++) r2[k]()
+'
+assert_estimate "a recursion guard that does not stop its step proves no depth" 12 '
+let guard = 0
+function f(n) { agent("r"); if (n < 10 && guard++ < 13) f(n - 1) }
+f(5)
+'
+assert_estimate "a recursion guard that does not stop a rising step proves no depth" 9 '
+let guard = 0
+function f(n) { agent("r"); if (n > 0 && guard++ < 13) f(n + 1) }
+f(1)
+'
+# HIGH is one over whatever limit is set, so a raised limit still asks.
+high_out=$(printf '%s\n' 'while (true) { await agent("poll") }' | python3 "$ESTIMATOR" 50 8 2>/dev/null)
+if grep -qx 'ESTIMATE=51' <<<"$high_out" && grep -qx 'VERDICT=OVER_LIMIT' <<<"$high_out" \
+    && grep -qx 'HIGH=51' <<<"$high_out" && grep -q '^UNBOUNDED=a while loop' <<<"$high_out"; then
+    PASS=$((PASS + 1))
+    printf '  PASS  HIGH follows the limit: 51 over a limit of 50, named in UNBOUNDED=\n'
+else
+    FAIL=$((FAIL + 1))
+    printf '  FAIL  HIGH did not follow a limit of 50: %s\n' "$(tr '\n' ' ' <<<"$high_out")"
+fi
+# The shapes HIGH must not catch: a flag beside a counter, a break test that
+# states a small count, and a recursion whose depth the text proves.
+assert_silent "a retry loop behind a flag and a counter stays silent" '
+let done = false, tries = 0
+while (!done && tries < 3) { const r = await agent("x"); tries++; if (r.verdict) done = true }
+'
+assert_silent "a while (true) whose break states 3 stays silent" '
+let n = 0
+while (true) { await agent("x"); if (++n >= 3) break }
+'
+assert_estimate "a recursion two levels deep with two calls each costs 7" 7 '
+async function walk(node, depth) { await agent(node); if (depth < 2) for (const c of [1, 2]) await walk(c, depth + 1) }
+await walk(0, 0)
+'
+assert_silent "results pushed to another list stay silent" '
+const results = []
+for (const u of args.units) results.push(await agent(u))
+'
 # Before this commit a missing newline joined the next `fx` line to the
 # assertion above, so close_brace_regex_in_interp was fed to that assertion's
 # stdin and never written, and the differential never ran it.
@@ -883,20 +1027,35 @@ EXPECTED_FALLBACK = {"quote_regex_on_proven_parse"}
 # ASSUMED (8) where the script states a larger count. Fixing one turns its
 # row red on purpose -- then delete it here and from the README's gap list.
 KNOWN_UNDER = {
-    "known_gap_function_in_map": "a function stored in a Map is called ASSUMED times",
     "known_gap_array_grown_by_index": "an array grown by index is ASSUMED long",
 }
 # The committed corpus is costed at exactly its true count, so a change that
 # over-counts fails too; these are above it by design. Each still fails if it
 # drops below its true count, which is what pins the branch it covers.
 ABOVE = {
-    "enclosing_recursion": "a recursion is 1 + ASSUMED calls per entry; go(8) recurses 8 deep",
+    "enclosing_recursion": "go(8) is entered 9 times; the ninth returns before its 4 agents",
     "window_with_a_site_per_wave": "3 waves of 3 run the plan agent 3 times; the loop is costed at its list, 8",
-    "spread_before_argument": "an argument after a spread sits at an unknown position: ASSUMED calls",
     "tag_calls_returned_function": "a tag's use of a substitution's result is not followed: ASSUMED calls",
     "set_grown_by_add": "a Set grown by add() is costed at max(source + 1, ASSUMED), as a pushed array is",
     "rest_param_helper_passed_on": "a helper read other than by a plain call has a rest list ASSUMED long",
 }
+# A call through a callback's array parameter may reach any element, so each
+# element is charged every such call: arr[i]() over 2 elements costs 2x (round 11).
+for label in """
+    element_array_param_index element_array_param_named_map element_array_param_filter
+    element_array_param_reduce element_array_param_spread rest_param_array_param_index
+""".split():
+    ABOVE[label] = "a call through the array parameter is charged to every element"
+ABOVE["element_rest_param_collects_array"] = "a rest parameter holding the array is not followed: ASSUMED calls per element"
+ABOVE["loop_step_body_resets"] = "a counter the body also writes keeps its stated 20; the body's resets stop at 14"
+ABOVE["while_true_stated_break"] = "a break test states 20 plus the pass that meets it; the break comes first"
+ABOVE["string_replace_callback"] = "a pattern matches at most once per position: 20 characters, 21 positions"
+ABOVE["loop_fractional_step"] = "a fractional step costs one pass more, for runtime rounding"
+ABOVE["loop_half_step_over_list"] = "a fractional step costs one pass more, for runtime rounding"
+ABOVE["while_true_labeled_break"] = "a break test states 20 plus the pass that meets it; the break comes first"
+ABOVE["string_split_regex"] = "a regex split is costed at (length + 1) x (1 + its groups): 20 for 13 pieces"
+ABOVE["recursion_unproven_branching"] = "an unproven depth is ASSUMED levels: 2 calls per entry cost 511"
+ABOVE["recursion_restarted_elsewhere"] = "an outside call from inside the recursion leaves its depth unproven: 511"
 
 
 def rollup(path, script):
@@ -1152,6 +1311,16 @@ if printf '%s' "$OUT" | jq -e '.hookSpecificOutput.hookEventName == "PreToolUse"
 else
     FAIL=$((FAIL + 1))
     printf '  FAIL  malformed ask payload: %s\n' "$OUT"
+fi
+# A repetition costed at HIGH is named in the reason, with the figure it got.
+OUT=$(run_hook "$(payload_for 'while (true) { const r = await agent("poll"); if (r.verdict) break }')")
+if printf '%s' "$OUT" | jq -e '.hookSpecificOutput.permissionDecision == "ask"' >/dev/null 2>&1 \
+   && printf '%s' "$OUT" | jq -e '.hookSpecificOutput.permissionDecisionReason | test("nothing in the text bounds: a while loop whose test is always true[[:space:]]+[(]costed at 11, one over the limit[)]")' >/dev/null 2>&1; then
+    PASS=$((PASS + 1))
+    printf '  PASS  reason names a repetition nothing bounds and its HIGH figure\n'
+else
+    FAIL=$((FAIL + 1))
+    printf '  FAIL  reason does not name the HIGH repetition: %s\n' "$OUT"
 fi
 
 echo

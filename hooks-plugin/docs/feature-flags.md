@@ -96,7 +96,7 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 | `CLAUDE_HOOKS_BRANCH_BASE_FETCH` | `0` | `1` runs `git fetch --quiet origin <default>` on a cache miss for a fresher ahead-count | `hooks/branch-base-guard.sh` |
 | `CLAUDE_HOOKS_REPO_DELETION_TMP_EXEMPT` | `1` | `0` also guards repos under `/tmp`, `/private/tmp`, `/var/folders`, `$TMPDIR` | `hooks/repo-deletion-safety.sh` |
 | `CLAUDE_HOOKS_REPO_DELETION_WARN_DIRTY` | `0` | `1` enables the tier-2 `ask` on a remote-backed repo carrying uncommitted/unpushed/stashed work | `hooks/repo-deletion-safety.sh` |
-| `CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS` | `10` | Estimated agent count a Workflow script may reach before the guard asks; the default matches the `medium` `workflowSizeGuideline` | `hooks/workflow-scale-guard.sh` |
+| `CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS` | `10` | Estimated agent count a Workflow script may reach before the guard asks; the default matches the `medium` `workflowSizeGuideline`. A repetition nothing in the script bounds (`while (true)` with no stated count, a loop that grows its own list) is costed one over this, so it always asks | `hooks/workflow-scale-guard.sh` |
 | `CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH` | `8` | Items each runtime-length fan-out is costed at, so a fan-out with no static bound is neither waved through nor hard-blocked | `hooks/workflow-scale-guard.sh` |
 | `CLAUDE_REPO_BACKUP_DIR` | `$HOME/Backups` | Where an existing `<basename>-*.tar.*` clears the repo-deletion block; also the dir named in the block message | `hooks/repo-deletion-safety.sh` |
 | `CLAUDE_TASKWARRIOR_DRIFT_STALE_TTL` | `14400` (s) | Age before a `+ACTIVE` claim counts as stale | `hooks/taskwarrior-drift-probe.sh` |

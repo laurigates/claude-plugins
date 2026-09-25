@@ -34,7 +34,10 @@
 #      vendored acorn under `node` and returns a KEY=VALUE rollup (VERDICT /
 #      ESTIMATE / SITES / SOURCE / PARSER). Bounded fan-outs and loops are
 #      counted exactly; a repetition over a runtime-length list is costed at
-#      CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH items so the limit still governs it.
+#      CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH items so the limit still governs it,
+#      and one nothing in the text bounds (`while (true)` with no stated
+#      count, a loop that grows its own list) at one over the limit, named in
+#      UNBOUNDED, so it asks.
 #      Without `node`, or on a script acorn rejects, the frozen #2668
 #      estimator decides instead (PARSER=fallback). It asks more than the parse
 #      on a literal array, and less on loops and recursion, which it does not
@@ -110,6 +113,8 @@ VERDICT=$(field VERDICT)
 ESTIMATE=$(field ESTIMATE)
 SITES=$(field SITES)
 SOURCE=$(field SOURCE)
+UNBOUNDED=$(field UNBOUNDED)
+HIGH=$(field HIGH)
 NAME=$(printf '%s' "$INPUT" | jq -r '.tool_input.name // empty' 2>/dev/null)
 [ -n "$NAME" ] || NAME=$(field NAME)
 [ -n "$NAME" ] || NAME=$(printf '%s' "$SCRIPT_TEXT" | grep -o "name:[[:space:]]*'[^']*'" | head -1 | cut -d"'" -f2)
@@ -123,6 +128,10 @@ REASON="This workflow is estimated to spawn ~${ESTIMATE} agents, over the limit 
 if [ -n "$SOURCE" ]; then
     REASON="${REASON}
   unbounded fan-out over: ${SOURCE}  (costed at ${WIDTH} items each)"
+fi
+if [ -n "$UNBOUNDED" ]; then
+    REASON="${REASON}
+  nothing in the text bounds: ${UNBOUNDED}  (costed at ${HIGH}, one over the limit)"
 fi
 
 REASON="${REASON}
