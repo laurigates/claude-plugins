@@ -252,3 +252,13 @@ The damage is a **false status report**: 2026-08-05, a PR body written to
 disclaim closure closed loractl #162 at merge, and the session reported it open
 for two turns afterward. Like #2, GitHub does this silently — only re-reading
 issue state from the API catches it.
+
+## Agentic Optimizations
+
+| Context | Command |
+|---|---|
+| Did the branch land? (§1, authoritative) | `gh pr list --state all --head <branch> --json number,state,mergedAt` |
+| Can a red PR merge? (§4) | `gh pr view <n> --json mergeStateStatus,mergeable` — `UNSTABLE` merges, `BLOCKED` refuses |
+| Merge-over-red evidence (§4) | `gh pr view <n> --json files --jq '.files[].path'` and `gh run list --branch main --workflow <wf> -L 1 --json conclusion,createdAt` |
+| Before a force-push (§3) | `git log --oneline origin/main..<sha>` — exactly the child's commits |
+| Who closed an issue (§5) | `gh issue view <n> --json closedByPullRequestsReferences,closedAt` |
