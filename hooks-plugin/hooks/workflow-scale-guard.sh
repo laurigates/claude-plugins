@@ -36,7 +36,9 @@
 #      counted exactly; a repetition over a runtime-length list is costed at
 #      CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH items so the limit still governs it.
 #      Without `node`, or on a script acorn rejects, the frozen #2668
-#      estimator decides instead (PARSER=fallback), which asks more, not less.
+#      estimator decides instead (PARSER=fallback). It asks more than the parse
+#      on a literal array, and less on loops and recursion, which it does not
+#      see.
 #   5. VERDICT=OVER_LIMIT -> `ask`, surfacing the estimate and the two cheap
 #      remedies. Everything else exits 0 silently.
 #

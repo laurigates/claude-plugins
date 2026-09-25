@@ -780,6 +780,30 @@ assert_estimate "an if block inside a literal's element runs once" 2 "$(<"$FX_DI
 assert_estimate "an anonymous function as a literal's element runs once" 2 "$(<"$FX_DIR/anonymous_function_literal_element.js")"
 assert_estimate "a pipeline stage inside a literal's element runs once per item" 9 "$(<"$FX_DIR/pipeline_stage_in_literal_element.js")"
 assert_estimate "thunks a .map returns into parallel() inside an element run once per item" 9 "$(<"$FX_DIR/returned_thunks_into_parallel_element.js")"
+# Round 10 (#2670 review): rest parameters, template tags and block functions.
+# Round 9 read every argument after a rest slot as never called, so twelve
+# thunks through `(...tasks) => parallel(tasks)` cost 8 and the hook went
+# silent where origin/main asked at 12. The shapes are corpus fixtures, which
+# the differential holds at their true counts; these pin the ask end to end,
+# the negative that keeps a small rest-parameter helper silent, and two
+# branches a true count cannot pin.
+assert_asks "thunks taken through a rest parameter still ask" "$(<"$CORPUS_DIR/rest_param_thunks_into_parallel.js")"
+assert_asks "thunks a template tag receives still ask" "$(<"$CORPUS_DIR/tag_receives_thunks.js")"
+assert_silent "two thunks through a rest-parameter helper stay silent" '
+const runAll = (...fns) => Promise.all(fns.map((fn) => fn()))
+await runAll(() => agent("a"), () => agent("b"))
+'
+# An exported function may be called from outside the script, so it costs
+# ASSUMED even when the script never calls it. Its true count is 0.
+assert_estimate "an exported function the script never calls costs ASSUMED" 8 '
+export async function review(f) { return agent("review " + f) }
+'
+# Which of two block functions of one name the name holds depends on the run
+# (Annex B), so each is charged every call: 12 + 12, where the true count is 12.
+assert_estimate "two block functions of one name are each charged every call" 24 '
+if (!ok()) { function spawn(i) { return agent("a" + i) } } else { function spawn(i) { return agent("b" + i) } }
+for (let i = 0; i < 12; i++) await spawn(i)
+'
 # Before this commit a missing newline joined the next `fx` line to the
 # assertion above, so close_brace_regex_in_interp was fed to that assertion's
 # stdin and never written, and the differential never ran it.
@@ -863,10 +887,15 @@ KNOWN_UNDER = {
     "known_gap_array_grown_by_index": "an array grown by index is ASSUMED long",
 }
 # The committed corpus is costed at exactly its true count, so a change that
-# over-counts fails too; these two are above it by design.
+# over-counts fails too; these are above it by design. Each still fails if it
+# drops below its true count, which is what pins the branch it covers.
 ABOVE = {
     "enclosing_recursion": "a recursion is 1 + ASSUMED calls per entry; go(8) recurses 8 deep",
     "window_with_a_site_per_wave": "3 waves of 3 run the plan agent 3 times; the loop is costed at its list, 8",
+    "spread_before_argument": "an argument after a spread sits at an unknown position: ASSUMED calls",
+    "tag_calls_returned_function": "a tag's use of a substitution's result is not followed: ASSUMED calls",
+    "set_grown_by_add": "a Set grown by add() is costed at max(source + 1, ASSUMED), as a pushed array is",
+    "rest_param_helper_passed_on": "a helper read other than by a plain call has a rest list ASSUMED long",
 }
 
 
@@ -986,9 +1015,10 @@ fi
 echo
 echo "== the fallback is the #2668 estimator, figure for figure =="
 
-# When the parse cannot run, the #2668 estimator decides, and it asks more
-# often than the parse, never less. With node off PATH, every input must
-# report exactly #2668's VERDICT and ESTIMATE, name the fallback, and say why.
+# When the parse cannot run, the #2668 estimator decides. It asks more than the
+# parse on a literal array, and less on loops, recursion and `agent?.()`, which
+# it does not see. With node off PATH, every input must report exactly #2668's
+# VERDICT and ESTIMATE, name the fallback, and say why.
 FALLBACK_PY=$(
     cat <<'PY'
 import os, subprocess, sys, tempfile

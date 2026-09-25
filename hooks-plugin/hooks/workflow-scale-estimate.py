@@ -37,51 +37,76 @@ thunk a `.map` callback returns into `parallel()` once per mapped element, a
 `.then` callback or a `new Promise` executor once, a named or const-bound
 function once per call of each reference (a reference passed on is costed
 where it goes, destructuring included), a function passed to a helper the
-script defines as often as the helper calls that parameter, and a function
-that reaches itself again is recursive: one entry plus ASSUMED re-entries per
-entry. Loops multiply by their bound: `for...of` by its list, `for (i = a; i <
-N; i += s)` by (N - a) / s, `for (i = 0; i < X.length; i += W)` by X (and a
+script defines as often as the helper calls that parameter -- through a rest
+parameter (`(...fns) =>`) as often as the helper calls each element, and
+through a template tag's substitutions likewise -- an element of an array of
+functions as often as an inline `.map`/`forEach`/`filter`/... callback calls
+the parameter it arrives in, and a function that reaches itself again is
+recursive: one entry plus ASSUMED re-entries per entry. A function declared in
+a block is also reached by calls after the block (Annex B of ECMA-262, which
+applies if the runtime runs the script as sloppy code). Loops multiply by
+their bound: `for...of` by its list, `for (i = a; i < N; i += s)` by
+(N - a) / s, `for (i = 0; i < X.length; i += W)` by X (and a
 `X.slice(i, i + W)` consumed inside it counts 1 per pass, so the pair is X in
 total), `while (i < N) { ...; i++ }` by N when every pass runs the increment,
-and any other `while`/`do`/`for` by ASSUMED, or by the literal its test states
-if that is larger.
+and any other `while`/`do`/`for` by ASSUMED, or by the count its test states
+if that is larger: a literal on either side (`i !== 12`), or the literal a
+compared name was given (`for (let i = 12; i > 0; i--)`, `let n = 12;
+while (n-- > 0)`, a helper's `n` that a plain call passes 12 or defaults to),
+divided by a `for` update's literal step on that name.
 
 Anything this cannot bound is costed as unbounded -- ASSUMED items (default 8),
 or more where a floor is known -- and never as once: a method, getter, setter
 or a function stored in an object (its callers are property reads the parse
 does not resolve to an object, so the reads of its name set a floor), a
-function read out of an array other than by `parallel()`, an index or a
-`for...of`, a class field initializer, and any callback of a call not listed
-above. That split is deliberate. One agent per runtime item passes a limit of
-10; two per item, or a fan-out nested in another, does not -- which is where a
-runaway comes from.
+function read out of an array other than by `parallel()`, an index, a
+`for...of` or an inline array-method callback, a class field initializer, an
+argument after a spread (its parameter depends on the spread's length), and
+any callback of a call not listed above. That split is deliberate. One agent
+per runtime item passes a limit of 10; two per item, or a fan-out nested in
+another, does not -- which is where a runaway comes from.
 
 What bounds a list: a literal array (holes count, a trailing comma does not), a
-literal `.slice(a, b)`, `Array.from({ length: N })`, a const bound to one of
-those, and length-keeping or shrinking methods of a bounded list. An array grown
-by `push`/`unshift`/`splice` is unbounded but costed at no less than its
-initializer plus one. A loop window `.slice(i, i + WAVE)` is NOT a bound on its
-own: it bounds concurrency, and the loop around it repeats it (#2670).
+literal `.slice(a, b)`, `Array.from({ length: N })`, `Array(N)` and
+`new Array(N)`, `new Set(X)` (at most X), a const bound to one of those, a rest
+parameter of a function every reference to which is a plain call (the most
+arguments a call passes it), and length-keeping or shrinking methods of a
+bounded list (`map`, `filter`, `fill`, `keys`, `values`, `entries`, ...). An
+array grown by `push`/`unshift`/`splice`, or a Set grown by `add`, is unbounded
+but costed at no less than its initializer plus one. A loop window
+`.slice(i, i + WAVE)` is NOT a bound on its own: it bounds concurrency, and the
+loop around it repeats it (#2670).
 
 Fallback. When the parse cannot run -- no `node` on PATH, a script acorn
 rejects, a timeout, or an error in the analysis below -- the #2668 estimator
 (lib/workflow-scale-estimate-2668.py, frozen: what main shipped before #2670)
 decides, and the rollup says so (`PARSER=fallback`, `FALLBACK=<reason>`). It
 asks more than the parse on a literal array, whose every thunk it multiplies by
-the array's length, and it is the baseline the review rounds of #2670 were
-judged against. It is not complete either: see the last item below.
+the array's length, and less on loops, recursion and `agent?.()`, which it does
+not see; it is the baseline the review rounds of #2670 were judged against.
 
 What the parse still cannot bound, all fail-open:
   - Lists whose length is only known at runtime are costed at ASSUMED. That is
     a convention, not a bound: a run over 20 items creates more than this says.
-    The same holds for every repetition costed at ASSUMED above: a function
-    stored in a Map and called by a literal 12-pass loop costs 8, and so does
-    an array grown by index assignment (both pinned as known gaps in the test).
+    The same holds for every repetition costed at ASSUMED above, including ones
+    whose script states a larger count in a form this does not read, among
+    them: a function stored in a Map or an object registry, an array grown by
+    index assignment (these two pinned as known gaps in the test), a class
+    field or the constructor of a class expression or subclass under `new` in
+    a loop, a getter read through destructuring or `defineProperty`, a
+    default-parameter function, a helper called through `.call`, a
+    `while (true)` left by `break`, recursion deeper than ASSUMED, a generator
+    or custom iterable, `for...in` over an array, `Object.keys` of a named
+    object, `.flat()`, and a string iterated by character.
   - An array mutated through an alias, or by a function it is passed to, keeps
     its declared length; a loop window assumes a step of at least 1 and a list
     the loop body does not change.
   - `workflow()` children, `eval`/`new Function`, and `agent` reached through a
     computed property (`ctx["agent"]`) are not counted.
+  - Over-counts, which ask more than needed: an argument after a spread, a
+    function whose result a template tag uses, and a rest list of a helper that
+    is also passed on as a value are each costed at ASSUMED; two block
+    functions of one name are each charged every call of the name.
   - Under the fallback, every gap #2668 has: prose read as code after a regex
     literal holding a quote, agent() calls hidden by a nested template or
     written `agent?.()`, and no loops or recursion at all.
@@ -139,9 +164,22 @@ TESTED_RESULT = frozenset(
         "findLastIndex",
     }
 )
-# Methods that keep (or shrink) the list they are called on.
+# Methods that keep (or shrink) the list they are called on. `keys`, `values`
+# and `entries` iterate an array's indexes; on anything else the receiver's own
+# bound is already unbounded.
 LENGTH_KEEPING = frozenset(
-    {"filter", "map", "reverse", "sort", "toSorted", "toReversed"}
+    {
+        "filter",
+        "map",
+        "reverse",
+        "sort",
+        "toSorted",
+        "toReversed",
+        "fill",
+        "keys",
+        "values",
+        "entries",
+    }
 )
 
 
@@ -174,6 +212,7 @@ class Binding:
         "reads",
         "writes",
         "exported",
+        "param",
     )
 
     def __init__(self, name, kind, declarator=None, init=None, fn=None):
@@ -185,6 +224,7 @@ class Binding:
         self.reads = []
         self.writes = []
         self.exported = False
+        self.param = None  # a parameter's own node in its function's params
 
 
 def parse(src: str) -> dict:
@@ -446,7 +486,9 @@ class Analysis:
                     self._declare(scope, node["id"], b)
                 for param in node["params"]:
                     for ident in _pattern_ids(param):
-                        self._declare(node, ident, Binding(ident["name"], "param"))
+                        b = Binding(ident["name"], "param")
+                        b.param = param
+                        self._declare(node, ident, b)
             elif t in ("ClassDeclaration", "ClassExpression") and node.get("id"):
                 scope = (
                     self._scope_of(node, BLOCKS) if t == "ClassDeclaration" else node
@@ -464,6 +506,43 @@ class Analysis:
                 self._declare(
                     program, node["local"], Binding(node["local"]["name"], "import")
                 )
+        self._annex_b()
+
+    def _annex_b(self):
+        """Bind each block-level function in its enclosing function as well.
+
+        Outside strict code, `{ function f() {} }` also binds `f` in the
+        enclosing function (ECMA-262 Annex B.3.3), so a call to `f` after the
+        block reaches it. acorn parses a module, which is strict and has no such
+        binding, and the Workflow runtime's mode is not documented; so the
+        binding is added, and a read of it counts as a call. In strict code that
+        call would throw instead, so the cost of adding it is an over-count.
+        Where the enclosing function already has a `var` or function of that
+        name, the block assigns to it, so its reads are charged too; two block
+        functions of one name share one binding and are each charged its reads.
+        """
+        self.annex_b = {}
+        added = set()
+        for node in self.nodes:
+            if node["type"] != "FunctionDeclaration" or not node.get("id"):
+                continue
+            block = self._scope_of(node, BLOCKS)
+            if block["type"] == "Program" or block["_p"]["type"] in FUNCTIONS:
+                continue
+            var_scope = self._scope_of(node, FUNCTIONS | {"Program"})
+            names = self.scopes.setdefault(var_scope["_i"], {})
+            body = var_scope.get("body") if var_scope["type"] in FUNCTIONS else None
+            lexical = self.scopes.get(body["_i"], {}) if body is not None else {}
+            name = node["id"]["name"]
+            b = names.get(name) or lexical.get(name)
+            if b is None:
+                b = names[name] = Binding(name, "function", declarator=node, fn=node)
+                added.add(id(b))
+            elif id(b) in added:
+                b.fn = None  # which function the name holds depends on the run
+            elif b.kind not in ("var", "function"):
+                continue  # a let, const, class or parameter of that name wins
+            self.annex_b[node["_i"]] = b
 
     def _is_reference(self, ident) -> bool:
         if ident["_i"] in self.decl_ids:
@@ -698,18 +777,7 @@ class Analysis:
         self._tick()
         t = e["type"]
         if t == "ArrayExpression":
-            n, floor, exact = 0, 0, True
-            for el in e["elements"]:
-                if el is not None and el["type"] == "SpreadElement":
-                    b = self.bound(el["argument"], at, seen)
-                    if b.n is None:
-                        exact = False
-                        floor += b.floor
-                    else:
-                        n += b.n
-                else:
-                    n += 1
-            return Bound(n) if exact else Bound(None, n + floor)
+            return self._bound_elements(e["elements"], at, seen)
         if t == "Identifier":
             return self._bound_name(e, at, seen)
         if t in ("AwaitExpression", "ChainExpression"):
@@ -728,15 +796,47 @@ class Analysis:
             if all(b.n is not None for b in bs):
                 return Bound(max(b.n for b in bs))
             return Bound(None, max(b.n if b.n is not None else b.floor for b in bs))
-        if t == "CallExpression":
-            return self._bound_call(e, at, seen)
+        if t in ("CallExpression", "NewExpression"):
+            callee, args = e["callee"], e["arguments"]
+            if callee["type"] == "Identifier" and self.binding_of(callee) is None:
+                # `Array(20)` / `new Array(20)`: 20 slots. `new Set(X)`: at most X.
+                if callee["name"] == "Array" and len(args) == 1:
+                    n = _int_literal(args[0])
+                    if n is not None:
+                        return Bound(n)
+                if callee["name"] == "Set" and t == "NewExpression" and args:
+                    return self.bound(args[0], at, seen)
+            if t == "CallExpression":
+                return self._bound_call(e, at, seen)
         return UNBOUNDED
+
+    def _bound_elements(self, elements, at, seen) -> Bound:
+        """Length of an array literal's elements, or of a call's arguments."""
+        n, floor, exact = 0, 0, True
+        for el in elements:
+            if el is not None and el["type"] == "SpreadElement":
+                b = self.bound(el["argument"], at, seen)
+                if b.n is None:
+                    exact = False
+                    floor += b.floor
+                else:
+                    n += b.n
+            else:
+                n += 1
+        return Bound(n) if exact else Bound(None, n + floor)
 
     def _bound_name(self, ident, at, seen) -> Bound:
         b = self.binding_of(ident)
-        if b is None or b.kind not in ("const", "let", "var") or b.init is None:
+        if b is None or id(b) in seen or b.writes:
             return UNBOUNDED
-        if id(b) in seen or b.writes:
+        rest = b.param if b.kind == "param" else None
+        if rest is not None:
+            if (
+                rest["type"] != "RestElement"
+                or rest["argument"]["type"] != "Identifier"
+            ):
+                return UNBOUNDED
+        elif b.kind not in ("const", "let", "var") or b.init is None:
             return UNBOUNDED
         seen = seen | {id(b)}
         grown = False
@@ -752,7 +852,11 @@ class Analysis:
                     return UNBOUNDED
                 continue
             name = p["property"].get("name")
-            if name in ("push", "unshift", "splice") and gp["type"] == "CallExpression":
+            # `add` grows a `new Set(X)`, which is otherwise bounded by X.
+            if (
+                name in ("push", "unshift", "splice", "add")
+                and gp["type"] == "CallExpression"
+            ):
                 grown = grown or gp["callee"] is p
             elif (
                 name == "length"
@@ -760,12 +864,66 @@ class Analysis:
                 and gp["left"] is p
             ):
                 return UNBOUNDED
-        base = self.bound(b.init, at, seen)
+        if rest is not None:
+            base = self._bound_rest(rest, at, seen)
+        else:
+            base = self.bound(b.init, at, seen)
         if grown:
             # Unbounded, but never below what the declaration already holds
             # plus the push: #2668 read the initializer alone (#2670 round 4).
             return Bound(None, (base.n if base.n is not None else base.floor) + 1)
         return base
+
+    def _bound_rest(self, rest, at, seen) -> Bound:
+        """Length of `(...xs) =>`'s xs: the most arguments any call passes it.
+
+        Bounded only when every reference to the function is a plain call
+        (see direct_calls); a spread passed into it adds its own bound.
+        """
+        fn = rest["_p"]
+        idx = len(fn["params"]) - 1
+        calls = self.direct_calls(fn)
+        if calls is None:
+            return UNBOUNDED
+        per_call = []
+        for call in calls:
+            args = call["arguments"]
+            if any(a["type"] == "SpreadElement" for a in args[:idx]):
+                return UNBOUNDED
+            per_call.append(self._bound_elements(args[idx:], at, seen))
+        if all(b.n is not None for b in per_call):
+            return Bound(max((b.n for b in per_call), default=0))
+        return Bound(None, max(b.n if b.n is not None else b.floor for b in per_call))
+
+    def direct_calls(self, fn):
+        """Every call of `fn` when each reference to it is a plain call, else None.
+
+        Covers a function declaration and a function bound to a name; one that
+        is exported, reassigned, passed on or read any other way is None.
+        """
+        p = fn["_p"]
+        if fn["type"] == "FunctionDeclaration":
+            if p["type"] == "ExportDefaultDeclaration":
+                return None
+            bindings = self.fn_bindings(fn)
+        elif (
+            p["type"] == "VariableDeclarator"
+            and p["init"] is fn
+            and p["id"]["type"] == "Identifier"
+        ):
+            bindings = [self.scopes_lookup(p["id"])] + self.fn_bindings(fn)
+        else:
+            return None
+        calls = []
+        for b in bindings:
+            if b is None or b.exported or b.writes:
+                return None
+            for r in b.reads:
+                q = r["_p"]
+                if q["type"] != "CallExpression" or q["callee"] is not r:
+                    return None
+                calls.append(q)
+        return calls
 
     def _bound_call(self, call, at, seen) -> Bound:
         callee, args = call["callee"], call["arguments"]
@@ -931,24 +1089,85 @@ class Analysis:
         )
 
     def stated_limit(self, loop) -> int:
-        """The literal a refused loop's test compares against (`i < 12`), or 0.
+        """The largest count a refused loop's test states, or 0.
 
         Not a bound -- the counter may move any way -- but a loop that states
-        12 is not costed at 8: the figure is a floor under ASSUMED's guess.
+        20 is not costed at 8: the figure is a floor under ASSUMED's guess.
+        Either side of a `<`, `<=`, `>`, `>=`, `!=` or `!==` test states it:
+        a literal (`i < 12`, `i !== 12`), or a name declared with one, so that
+        `for (let i = 20; i > 0; i--)`, `while (n-- > 0)` after `let n = 20`,
+        and `i < N` after `let N = 20` each state 20. A `for` whose update
+        moves a compared name by a literal step states that many times fewer:
+        `for (let i = 100; i > 0; i -= 10)` states 10.
         """
         test = loop.get("test")
         if test is None or test["type"] != "BinaryExpression":
             return 0
-        if test["operator"] in ("<", "<="):
-            side = test["right"]
-        elif test["operator"] in (">", ">="):
-            side = test["left"]
-        else:
+        op = test["operator"]
+        if op not in ("<", "<=", ">", ">=", "!=", "!=="):
             return 0
-        n = _int_literal(side)
-        return (
-            n + (1 if test["operator"] in ("<=", ">=") else 0) if n is not None else 0
-        )
+        n = max(self.stated_int(test["left"]), self.stated_int(test["right"]))
+        if not n:
+            return 0
+        n += 1 if op in ("<=", ">=") else 0
+        return math.ceil(n / self.stated_step(loop, test))
+
+    def stated_step(self, loop, test) -> int:
+        """The literal step a `for` update moves a name its test compares, else 1."""
+        update = loop.get("update")
+        if update is None:
+            return 1
+        step, target = 1, None
+        if update["type"] == "AssignmentExpression":
+            target, right = update["left"], update["right"]
+            if update["operator"] in ("+=", "-="):
+                step = _int_literal(right)
+            elif (
+                update["operator"] == "="
+                and right["type"] == "BinaryExpression"
+                and right["operator"] in ("+", "-")
+                and self.binding_of(right["left"]) is self.binding_of(target)
+            ):
+                step = _int_literal(right["right"])
+        compared = {
+            id(self.binding_of(s["argument"] if s["type"] == "UpdateExpression" else s))
+            for s in (test["left"], test["right"])
+        }
+        b = self.binding_of(target) if target is not None else None
+        if b is None or id(b) not in compared or not step:
+            return 1
+        return step
+
+    def stated_int(self, e) -> int:
+        """The integer `e` states: a literal, or one its name was given.
+
+        A name is given the literal it was declared with, or, for a parameter,
+        its default and the literals plain calls pass it (`times(20, fn)`).
+        """
+        if e["type"] == "UpdateExpression":
+            e = e["argument"]
+        n = _int_literal(e)
+        if n is not None:
+            return n
+        b = self.binding_of(e)
+        if b is None:
+            return 0
+        if b.kind in ("let", "const", "var"):
+            return _int_literal(b.init) or 0
+        if b.param is None:
+            return 0
+        param, fn = b.param, b.param["_p"]
+        idx = next(k for k, p in enumerate(fn["params"]) if p is param)
+        stated = [0]
+        if param["type"] == "AssignmentPattern":
+            stated.append(_int_literal(param["right"]) or 0)
+        for call in self.direct_calls(fn) or []:
+            args = call["arguments"]
+            if idx < len(args) and not any(
+                a["type"] == "SpreadElement" for a in args[: idx + 1]
+            ):
+                stated.append(_int_literal(args[idx]) or 0)
+        return max(stated)
 
     def while_counter(self, loop):
         """Iterations of `while (i < N) { ...; i++ }` with N a literal, else None.
@@ -1076,23 +1295,29 @@ class Analysis:
             c = self.count(fn)
             if c:
                 total += c * self.calls_per_eval(fn)
-        if fn.get("id"):
-            binding = self.scopes.get(
-                (
-                    fn
-                    if fn["type"] != "FunctionDeclaration"
-                    else self._scope_of(fn, BLOCKS)
-                )["_i"],
-                {},
-            ).get(fn["id"]["name"])
-            if binding is not None and binding.fn is fn:
-                for r in binding.reads:
-                    c = self.count(r)
-                    if c:
-                        total += c * self.calls_per_eval(r)
-                if binding.exported:
-                    total += self.unbounded(f"exported function {binding.name}")
+        for binding in self.fn_bindings(fn):
+            for r in binding.reads:
+                c = self.count(r)
+                if c:
+                    total += c * self.calls_per_eval(r)
+            if binding.exported:
+                total += self.unbounded(f"exported function {binding.name}")
         return total
+
+    def fn_bindings(self, fn):
+        """The names a function is reached through: its own, and Annex B's."""
+        if not fn.get("id"):
+            return []
+        scope = (
+            fn if fn["type"] != "FunctionDeclaration" else self._scope_of(fn, BLOCKS)
+        )
+        out = []
+        binding = self.scopes.get(scope["_i"], {}).get(fn["id"]["name"])
+        if binding is not None and binding.fn is fn:
+            out.append(binding)
+        if fn["_i"] in self.annex_b:
+            out.append(self.annex_b[fn["_i"]])
+        return out
 
     # -- where a function value goes ----------------------------------------
 
@@ -1139,7 +1364,19 @@ class Analysis:
             return self.calls_per_eval(p)
         if t == "SequenceExpression":
             return self.calls_per_eval(p) if p["expressions"][-1] is n else 0
-        if t in ("ExpressionStatement", "BinaryExpression", "TemplateLiteral"):
+        if t == "TemplateLiteral":
+            tagged = p["_p"]
+            if tagged["type"] != "TaggedTemplateExpression" or tagged["quasi"] is not p:
+                return 0  # interpolated as text
+            # A tag receives each substitution as an argument after the strings.
+            idx = 1 + next(k for k, e in enumerate(p["expressions"]) if e is n)
+            via_param = self.param_calls(tagged, idx, elem=False)
+            if via_param is not None:
+                return via_param
+            return self.unbounded(
+                f"a function passed to the tag {self.text(tagged['tag'])}"
+            )
+        if t in ("ExpressionStatement", "BinaryExpression"):
             return 0
         if t == "UnaryExpression" and p["operator"] in (
             "typeof",
@@ -1277,14 +1514,38 @@ class Analysis:
         body says so. Every call through that parameter, over all of the
         helper's invocations, is charged to each call site that passes a
         function in -- an upper bound when several sites share the helper.
+        An argument that lands in a rest parameter (`(...fns) => ...`) is one
+        element of that array, called as often as each of its elements is, and
+        so is each element spread into it (`all(...thunks)`). A spread whose
+        elements land in plain parameters, or an argument after a spread that
+        may not reach the rest parameter, sits at a position the parse cannot
+        know, so it is unresolved (None), as is an array in a rest parameter.
+        `call` is a call, or a tagged template, whose tag receives the
+        substitutions from argument 1 on.
         """
-        target = self.callee_function(call["callee"])
+        tagged = call["type"] == "TaggedTemplateExpression"
+        target = self.callee_function(call["tag"] if tagged else call["callee"])
         if target is None or idx < 0 or self.reads_arguments(target):
             return None
+        if tagged:
+            fixed, spread = idx, False
+        else:
+            before = call["arguments"][:idx]
+            # The fewest positions ahead of the argument: a spread may be empty.
+            fixed = sum(a["type"] != "SpreadElement" for a in before)
+            spread = fixed < idx or call["arguments"][idx]["type"] == "SpreadElement"
         params = target["params"]
-        if idx >= len(params):
+        per_read = self.elem_calls if elem else self.calls_per_eval
+        if params and params[-1]["type"] == "RestElement" and fixed >= len(params) - 1:
+            if elem:
+                return None
+            param, per_read = params[-1]["argument"], self.elem_calls
+        elif spread:
+            return None
+        elif idx >= len(params):
             return 0
-        param = params[idx]
+        else:
+            param = params[idx]
         if param["type"] == "AssignmentPattern":
             param = param["left"]
         if param["type"] != "Identifier":
@@ -1296,7 +1557,7 @@ class Analysis:
         for r in b.reads:
             c = self.count(r)
             if c:
-                total += c * (self.elem_calls(r) if elem else self.calls_per_eval(r))
+                total += c * per_read(r)
         return math.ceil(total / max(self.count(call), 1))
 
     def scopes_lookup(self, ident):
@@ -1361,9 +1622,34 @@ class Analysis:
                     return self.elem_calls(gp)
                 if name in ("at", "pop", "shift"):
                     return self.calls_per_eval(gp)
+                args = gp["arguments"]
+                # A reduce callback gets the element second, and first too when
+                # there is no initial value, which is left unresolved.
+                idx = 0
+                if name in ("reduce", "reduceRight"):
+                    idx = 1 if len(args) >= 2 else None
+                if name in PER_ELEMENT and args and idx is not None:
+                    k = self.element_param_calls(args[0], idx)
+                    if k is not None:
+                        # filter and find hand elements on in their result.
+                        if name == "filter":
+                            k += self.elem_calls(gp)
+                        elif name in ("find", "findLast"):
+                            k += self.calls_per_eval(gp)
+                        return k
             return self.unbounded(f"functions read through .{name}")
         if t == "SpreadElement" and p["_p"]["type"] == "ArrayExpression":
             return self.elem_calls(p["_p"])
+        if t == "SpreadElement" and p["_p"]["type"] == "CallExpression":
+            # `all(...thunks)`: each element becomes one argument.
+            call = p["_p"]
+            idx = next(k for k, x in enumerate(call["arguments"]) if x is p)
+            via_param = self.param_calls(call, idx, elem=False)
+            if via_param is not None:
+                return via_param
+            return self.unbounded(
+                f"functions spread into {self.text(call['callee'])}()"
+            )
         if t == "ForOfStatement" and p["right"] is a:
             # Each pass binds one element; it is called as often per pass as
             # the loop variable is.
@@ -1404,6 +1690,34 @@ class Analysis:
             return 0
         return self.unbounded(f"functions held in {t}")
 
+    def element_param_calls(self, cb, idx):
+        """Calls an array method's inline callback makes to its element parameter.
+
+        `fns.map((fn) => fn())` hands each element to one invocation of the
+        callback as parameter `idx`, so each element is called as often as one
+        invocation calls that parameter (a returned element is followed where
+        the result goes). None where the callback is not an inline function
+        with a plain parameter there.
+        """
+        if cb["type"] not in ("ArrowFunctionExpression", "FunctionExpression"):
+            return None
+        if self.reads_arguments(cb):
+            return None
+        if idx >= len(cb["params"]):
+            return 0  # the callback never sees the element
+        param = cb["params"][idx]
+        if param["type"] == "AssignmentPattern":
+            param = param["left"]
+        b = self.scopes_lookup(param) if param["type"] == "Identifier" else None
+        if b is None or b.writes:
+            return None
+        total = 0
+        for r in b.reads:
+            c = self.count(r)
+            if c:
+                total += c * self.calls_per_eval(r)
+        return math.ceil(total / max(self.inv(cb), 1))
+
     def ret_calls(self, fn, elem) -> int:
         """Calls per invocation of `fn` to the function(s) it returns."""
         return self._cached(("ret", fn["_i"], elem), lambda: self._ret_calls(fn, elem))
@@ -1435,10 +1749,8 @@ class Analysis:
                 return [("unknown", "the entry point's return value")]
         else:
             positions.append(fn)
-        if fn.get("id"):
-            b = self.scopes_lookup(fn["id"])
-            if b is not None and b.fn is fn:
-                positions.extend(b.reads)
+        for b in self.fn_bindings(fn):
+            positions.extend(b.reads)
         uses = []
         for pos in positions:
             uses.extend(self._value_uses(pos, 0))
@@ -1504,6 +1816,8 @@ class Analysis:
             if not (t == "ConditionalExpression" and p["test"] is pos):
                 return self._value_uses(p, depth + 1)
             return [("none", None)]
+        if t == "TemplateLiteral" and p["_p"]["type"] == "TaggedTemplateExpression":
+            return [("unknown", "the result of a function passed to a template tag")]
         if t in (
             "ExpressionStatement",
             "BinaryExpression",
