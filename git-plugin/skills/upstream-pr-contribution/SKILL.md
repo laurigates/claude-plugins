@@ -3,7 +3,7 @@ name: upstream-pr-contribution
 description: "Opening a pull request against a repository you do not own. Use when about to open one, to read CONTRIBUTING.md and the PR template in full and meet the contribution gates bots enforce."
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
 created: 2026-08-06
-modified: 2026-09-12
+modified: 2026-09-25
 reviewed: 2026-09-12
 ---
 
@@ -15,6 +15,14 @@ welcoming "here's what we merge" list is at the top; the *gates* — the
 requirements that get a PR auto-closed by a bot — are typically 150+ lines
 down, past the local-dev setup. A `head -60` read looks like due diligence and
 misses them entirely.
+
+## When to Use This Skill
+
+| Use this skill when... | Use something else when... |
+|---|---|
+| About to open a PR against a repo you don't own | Opening a PR in your own repo → `git-pr` |
+| Writing the description for that PR | Scoping the work from the upstream issue thread → `git-issue-scoping` |
+| A bot flagged the PR within a minute of opening | The fork has diverged and the commit won't rebase cleanly → `git-upstream-pr-diverged` |
 
 ## The two gate classes a truncated read misses
 
