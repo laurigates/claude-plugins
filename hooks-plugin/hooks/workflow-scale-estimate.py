@@ -50,45 +50,59 @@ index (`(f, i, arr) => arr[i]()` may reach any element), a class's constructor
 and instance fields once per `new` of it or of a subclass, a getter or method
 once per read of its name (a destructuring of it included, and the key
 `Object.defineProperty` gives a descriptor), a default-parameter function as
-often as the body calls that parameter, a function stored in a named object or
-`Map` as often as its key, `this.key` or `m.get()` is called, and a function
-that reaches itself again is recursive: a tree whose entries each call the
-function as often as its body does, to the depth the text proves -- one
-parameter every outside call gives a number, stepped by a constant toward a
-test that stops the recursive calls (`if (d < 3) rec(d + 1)`, or
-`if (n <= 0) return` ahead of them) -- or else to ASSUMED levels or the larger
-count its parameters are given or compared with. A function declared in a
-block is also reached by calls after the block (Annex B of ECMA-262, which
-applies if the runtime runs the script as sloppy code).
+often as the body calls that parameter, a function stored in a named object as
+often as its key, `this.key` or any `this[k]` whose key the text does not state
+is called, a function stored in a `Map` as a value as often as `m.get()`,
+`m.values()` or `m.forEach` reach it and as a key as often as `m.keys()` or
+`m.forEach` do, and a function that reaches itself again is recursive: a tree
+whose entries each call the function as often as its body does, to the depth
+the text proves -- one parameter every outside call gives a number, stepped by
+a constant toward a test that stops the recursive calls (`if (d < 3)
+rec(d + 1)`, or `if (n <= 0) return` ahead of them) -- or else to ASSUMED
+levels or the larger count its parameters are given or compared with, or HIGH
+levels where the function resets a parameter its test reads. A function
+declared in a block is also reached by calls after the block (Annex B of
+ECMA-262, which applies if the runtime runs the script as sloppy code); for the
+same reason a function that writes to or hands on `arguments` is taken to write
+each of its parameters.
 
 Loops multiply by their bound: `for...of` by its list, `for (i = a; i < N;
-i += s)` by (N - a) / s (a, N and s literal, arithmetic of literals, or a
-const holding one; a fractional one costs a pass more), `for (i = a; i <
-X.length; i += W)` by X - a (and a `X.slice(i, i + W)` consumed inside it
-counts 1 per pass, so the pair is X in total), `for...in` by an array's length
-or a named object's keys, `while (i < N) { ...; i++ }` by N when every pass
-runs the increment, and any other `while`/`do`/`for` by ASSUMED, or by the
-count its test states if that is larger: a literal on either side
-(`i !== 12`), the literal a compared name was given or assigned
-(`for (let i = 12; i > 0; i--)`, `for (let i = 12; i--;)`, `let n = 12;
-while (n-- > 0)`, a helper's `n` that a plain call passes 12 or defaults to),
-divided by a `for` update's literal step on that name unless the body also
-writes it. A loop only a `break` leaves (`while (true)`, `for (;;)`) states
-the count its break's test does (`if (++n >= 12) break`: 13).
+i += s)` by (N - a) / s and `for (i = a; i > N; i -= s)` by (a - N) / s (a, N
+and s literal, arithmetic of literals, or a const holding one; a fractional one
+costs a pass more), `for (i = a; i < X.length; i += W)` by X - a (and a
+`X.slice(i, i + W)` consumed inside it counts 1 per pass, so the pair is X in
+total), `for...in` by an array's length, a string's or a named object's keys
+(unless the script adds a key to a prototype), `while (i < N) { ...; i++ }` by
+N when every pass runs the increment, and any other `while`/`do`/`for` by
+ASSUMED, or by the count its test states if that is larger: a literal on either
+side (`i !== 12`), the literal a compared name was given or assigned
+(`for (let i = 12; i--;)`, `let n = 12; while (n-- > 0)`, a helper's `n` that
+a plain call passes 12 or defaults to), divided by a `for` update's literal
+step on that name unless the body also writes it. A loop only a `break` leaves
+(`while (true)`, `for (;;)`) is bounded by a break whose test compares a
+counter with a constant, where the counter starts at a stated number, moves
+toward the limit by at least 1 on every pass, and nothing resets it or skips
+the break (`if (++n >= 12) break`: 13).
 
-Anything this cannot bound is costed as unbounded, never as once. ASSUMED
-items (default 8), or more where a floor is known, for what repeats over
-runtime data: a method, getter, setter or a function stored in an object the
-parse does not follow (the reads of its name set a floor), a function read out
-of an array other than by `parallel()`, an index, a `for...of` or an
-array-method callback, a class field or constructor where some instance is
-made without naming the class, and any callback of a call not listed above.
-HIGH -- one over the limit, never below ASSUMED -- for a repetition the parse
+A count of 0 or 1 for a site that can run more often is a bug, and each round
+of #2670's review has found some; the rule is that anything this cannot bound
+is costed at ASSUMED or HIGH. ASSUMED items (default 8), or more where a floor
+is known, for what repeats over runtime data: a method, getter, setter or a
+function stored in an object the parse does not follow (the reads of its name
+set a floor), a function read out of an array other than by `parallel()`, an
+index, a `for...of` or an array-method callback, a class field or constructor
+where some instance is made without naming the class, and any callback of a
+call not listed above (a `replace` on anything but a string the text states, or
+with a pattern that may carry its own `[Symbol.replace]`, among them). HIGH --
+one over the limit, never below ASSUMED -- for a repetition the parse
 recognises and nothing in the text bounds: a loop only a `break` leaves whose
-break states no count, a loop that moves its counter back, resets it, only
+break proves no count, a loop that moves its counter back, resets it, only
 moves it away from its limit, raises its limit, or grows the list it runs
-over, an object with a hand-built iterator, and a method the language calls
-with no visible call (`toString`, `valueOf`, `toJSON`, `then`, `[Symbol.*]`).
+over, a recursion that resets the parameter its test reads, an object with a
+hand-built iterator, a method the language calls with no visible call
+(`toString`, `valueOf`, `toJSON`, `then`, `[Symbol.*]`), and a recursion found
+after 32 others were measured (each measurement costs the function twice, so a
+ring of mutually recursive functions doubles the work per function).
 HIGH makes the guard ask; it is not a bound. That split is deliberate. One
 agent per runtime item passes a limit of 10; two per item, or a fan-out nested
 in another, does not -- which is where a runaway comes from -- and a loop that
@@ -96,10 +110,12 @@ nothing in its text ends is worth a question whatever it runs over.
 
 What bounds a list: a literal array (holes count, a trailing comma does not), a
 literal `.slice(a, b)`, `Array.from({ length: N })`, `Array(N)`, `new Array(N)`,
-`Array(a, b, ...)` and `Array.of`, `new Set(X)` (at most X), a string (by
-character), a literal string's `split` on a literal separator (a regex one at
-most (length + 1) x (1 + its groups)), `.flat()` of literal lists, a `flatMap`
-callback returning literal lists, `Object.keys`/`values`/`entries` of an
+`Array(a, b, ...)`, `Array(...[N])` and `Array.of`, `new Set(X)` (at most X), a
+string (by code point when iterated; `.length`, its keys, `split('')` and a
+regex's positions count UTF-16 code units), a literal string's `split` on a
+literal separator (a regex one at most (length + 1) x (1 + its groups)),
+`.flat()` of literal lists, a `flatMap` callback returning literal lists,
+`Object.keys`/`values`/`entries` of an
 object nothing adds keys to, a generator's yields (each `yield` times the
 loops around it, a `yield*` the length it delegates), a const bound to one of
 those, a rest parameter of a function every reference to which is a plain call
@@ -124,23 +140,32 @@ What the parse still cannot bound, all fail-open:
     a convention, not a bound: a run over 20 items creates more than this says.
     The same holds for every repetition costed at ASSUMED above, including ones
     whose script states a larger count in a form this does not read, among
-    them (as of round 11): an array grown by index assignment (pinned as a
-    known gap in the test); a class also built without naming it
-    (`new this.constructor()`, `new.target`, `Reflect.construct`, a factory's
-    parameter, an alias); a getter read through object spread or
-    `Object.assign`, or given by `defineProperty` a key that is not a literal;
-    a function stored where the parse does not follow it (an array in an
-    array, an object or Map passed on, iterated or read through
-    `Object.values`); keys added to an object by assignment, `Object.assign`
-    or a function it is passed to; `.flat()` deeper than one level or of a
-    list that is not literal, and a `flatMap` callback returning a parameter;
-    a generator that delegates to itself; `for...in` over an object with a
+    them (as of round 12): an array grown by index assignment (pinned as a
+    known gap in the test), and `.flat()` of one; a class also built without
+    naming it (`new this.constructor()`, `new this()` in its own static
+    method, `new.target`, `Reflect.construct`, a factory's parameter, an
+    alias, an export); a getter read through object spread, `Object.assign`,
+    `Object.values` or `JSON.stringify`, or given by `defineProperty` a key
+    that is not a literal; a function stored where the parse does not follow
+    it (an array in an array, an object or Map passed on, iterated, read
+    through `Object.values`, a computed member, an alias or
+    `Map.prototype.get.call`, or a Map whose `set()` result is used); a
+    function called through `.bind`, `Reflect.apply`, `this()` inside a
+    `.call`, or a rest list reached through `.call(...spread)`; a `replace`
+    method of an object, and a `replace` or `split` whose pattern may carry
+    its own `[Symbol.replace]`/`[Symbol.split]` (see symbol_hooks), or whose
+    string is a template or a name assigned more than once, each costed at no
+    less than the string rules give; keys added to an object by assignment, `Object.assign` or a
+    function it is passed to; `.flat()` deeper than one level or of a list
+    that is not literal, and a `flatMap` callback returning a parameter; a
+    generator that delegates to itself; `for...in` over an object with a
     `__proto__`; a counter started from a parameter, or assigned before a
     `while`; a `while (X.length)` that drains X; a template tag read through
     a member or stored and called later; and several copies of one runtime
     list (`[...units, ...units]`), costed at ASSUMED once, not per copy.
   - A repetition costed at HIGH asks, but its count may exceed HIGH: a
-    `while (true)` polling loop that runs 20 times is costed at 11.
+    `while (true)` polling loop that runs 20 times is costed at 11, and a
+    recursion that resets its tested parameter 20 times at 12.
   - An array mutated through an alias, or by a function it is passed to, keeps
     its declared length; a loop window assumes a step of at least 1 and a list
     the loop body does not change.
@@ -150,8 +175,12 @@ What the parse still cannot bound, all fail-open:
     parameter is charged to every element, a function whose result a template
     tag uses and a rest list of a helper that is also passed on as a value are
     each costed at ASSUMED, an unproven recursion with two calls per entry is
-    a tree ASSUMED levels deep (511 entries), and two block functions of one
-    name are each charged every call of the name.
+    a tree ASSUMED levels deep (511 entries), two block functions of one
+    name are each charged every call of the name, a method that calls
+    `this[k]()` with a key the text does not state is charged as a recursion
+    (the key may name the method itself: 180 for a true 20), and `for...in`
+    after the script adds a key to a prototype costs max(own keys + 1,
+    ASSUMED) per pass.
   - Under the fallback, every gap #2668 has: prose read as code after a regex
     literal holding a quote, agent() calls hidden by a nested template or
     written `agent?.()`, and no loops or recursion at all.
@@ -229,6 +258,27 @@ LENGTH_KEEPING = frozenset(
 # Methods the language calls without a visible call site: string conversion,
 # JSON, `await` on a thenable. (`[Symbol.*]` keys are recognised by text.)
 IMPLICIT = frozenset({"toString", "valueOf", "toJSON", "then"})
+# Nodes that evaluate every child they have: a child of one runs whenever it does.
+EVALUATED = frozenset(
+    {
+        "ExpressionStatement",
+        "BlockStatement",
+        "VariableDeclaration",
+        "ReturnStatement",
+        "ThrowStatement",
+        "SequenceExpression",
+        "BinaryExpression",
+        "UnaryExpression",
+        "UpdateExpression",
+        "AwaitExpression",
+        "SpreadElement",
+        "TemplateLiteral",
+        "TaggedTemplateExpression",
+        "ArrayExpression",
+        "ObjectExpression",
+        "Property",
+    }
+)
 # Global functions that never call the argument they are given.
 NON_CALLING = frozenset({"Boolean", "String", "Number"})
 # Expressions that never evaluate to an array: `.flat()` keeps each as one item.
@@ -246,6 +296,8 @@ NOT_LISTS = frozenset(
 )
 # A recursion's entries are summed level by level; past this, stop counting.
 RECURSION_CAP = 1_000_000
+# Recursion measurements per script; a recursion found past these costs HIGH.
+MEASURED_RECURSIONS = 32
 
 
 class Unanalyzable(Exception):
@@ -392,6 +444,28 @@ def _int_literal(node):
     return None
 
 
+def _utf16(s: str) -> str:
+    """`s` as JavaScript measures it: one character per UTF-16 code unit.
+
+    `.length`, `split('')`, `for...in`, `Object.keys` and a regex's positions
+    count code units, so a character outside the BMP counts twice. Iterating a
+    string (`for...of`, spread, `Array.from`) goes by code point instead, which
+    is what bound() counts.
+    """
+    if all(ord(c) <= 0xFFFF for c in s):
+        return s
+    out = []
+    for c in s:
+        o = ord(c)
+        if o > 0xFFFF:
+            o -= 0x10000
+            out.append(chr(0xD800 + (o >> 10)))
+            out.append(chr(0xDC00 + (o & 0x3FF)))
+        else:
+            out.append(c)
+    return "".join(out)
+
+
 def _passes(start, limit, inclusive, step) -> int:
     """Passes of `for (i = start; i < limit; i += step)` (`<=` when inclusive)."""
     span = limit - start
@@ -417,6 +491,7 @@ class Analysis:
         self.labels = []
         self.high_labels = []
         self.reentry = {}
+        self.measured = 0
         self.yielding = set()
         self.memo = {}
         self.computing = set()
@@ -438,6 +513,7 @@ class Analysis:
         self.decl_ids = set()
         self.ref_binding = {}
         self.members = {}
+        self.this_computed = []
         self.pattern_keys = {}
         self.sites = []
         self._declare_all()
@@ -710,6 +786,10 @@ class Analysis:
                 name = _key_name(node["property"], node["computed"])
                 if name is not None:
                     self.members.setdefault(name, []).append(node)
+                elif node["object"]["type"] == "ThisExpression":
+                    # `this[name]`: a key the text may not state, on the
+                    # object a method was called through.
+                    self.this_computed.append(node)
                 if name == "agent" and not node["computed"]:
                     call = node["_p"]
                     if call["type"] == "CallExpression" and call["callee"] is node:
@@ -734,6 +814,38 @@ class Analysis:
                     binding.reads.append(node)
             if node["name"] == "agent" and not write:
                 self.sites.append(("ref", node))
+        # Outside strict code `arguments[0] = x` writes the first parameter of
+        # a function whose parameters are all plain names (a mapped arguments
+        # object), so a function that reads `arguments` may write each of its
+        # parameters: each is given that read as a write.
+        for node in self.nodes:
+            if (
+                node["type"] != "Identifier"
+                or node["name"] != "arguments"
+                or node["_i"] in self.ref_binding
+                or not self._is_reference(node)
+            ):
+                continue
+            q = node["_p"]
+            if (
+                q["type"] == "MemberExpression"
+                and q["object"] is node
+                and not self._is_write(q)
+                and not (q["_p"]["type"] == "CallExpression" and q["_p"]["callee"] is q)
+            ):
+                continue  # `arguments.length`, `arguments[0]`: a read writes nothing
+            fn = node["_p"]
+            while fn is not None and fn["type"] not in (
+                "FunctionExpression",
+                "FunctionDeclaration",
+            ):
+                fn = fn["_p"]  # an arrow's `arguments` is its enclosing function's
+            if fn is None or any(p["type"] != "Identifier" for p in fn["params"]):
+                continue
+            for param in fn["params"]:
+                b = self.scopes.get(fn["_i"], {}).get(param["name"])
+                if b is not None and b.kind == "param":
+                    b.writes.append(node)
 
     # -- list bounds --------------------------------------------------------
 
@@ -869,6 +981,59 @@ class Analysis:
                 return None
         return binding, start, test["operator"], test["right"], step
 
+    def down_passes(self, loop):
+        """Passes of `for (i = a; i > N; i -= s)` (`>=`, or `N < i`), else None.
+
+        a, N and s are numbers the text states (see const_num), s positive,
+        and nothing but the update and init writes i: (a - N) / s passes.
+        """
+        init, test, update = loop["init"], loop["test"], loop["update"]
+        if init is None or test is None or update is None:
+            return None
+        if init["type"] == "VariableDeclaration":
+            decls = init["declarations"]
+            if len(decls) != 1 or decls[0]["id"]["type"] != "Identifier":
+                return None
+            start = self.const_num(decls[0]["init"])
+            binding = self.scopes_lookup(decls[0]["id"])
+        elif init["type"] == "AssignmentExpression" and init["operator"] == "=":
+            start = self.const_num(init["right"])
+            binding = self.binding_of(init["left"])
+        else:
+            return None
+        if binding is None or start is None or test["type"] != "BinaryExpression":
+            return None
+        op = test["operator"]
+        if op in (">", ">=") and self.binding_of(test["left"]) is binding:
+            limit = self.const_num(test["right"])
+        elif op in ("<", "<=") and self.binding_of(test["right"]) is binding:
+            limit, op = self.const_num(test["left"]), {"<": ">", "<=": ">="}[op]
+        else:
+            return None
+        step = None
+        if update["type"] == "UpdateExpression" and update["operator"] == "--":
+            if self.binding_of(update["argument"]) is binding:
+                step = 1
+        elif (
+            update["type"] == "AssignmentExpression"
+            and self.binding_of(update["left"]) is binding
+        ):
+            if update["operator"] == "-=":
+                step = self.const_num(update["right"])
+            elif (
+                update["operator"] == "="
+                and update["right"]["type"] == "BinaryExpression"
+                and update["right"]["operator"] == "-"
+                and self.binding_of(update["right"]["left"]) is binding
+            ):
+                step = self.const_num(update["right"]["right"])
+        if limit is None or step is None or step <= 0:
+            return None
+        for w in binding.writes:
+            if not (self.inside(w, update) or self.inside(w, init)):
+                return None
+        return _passes(limit, start, op == ">=", step)
+
     def window(self, loop):
         """(binding, X, W) when `loop` is `for (i = 0; i < X.length; i += W)`."""
         c = self.counter(loop)
@@ -946,7 +1111,8 @@ class Analysis:
                 return Bound(max(b.n for b in bs))
             return Bound(None, max(b.n if b.n is not None else b.floor for b in bs))
         if t == "Literal" and isinstance(e.get("value"), str):
-            # A string iterates by character (spread, Array.from, for...of).
+            # A string iterates by code point (spread, Array.from, for...of);
+            # its `.length` and keys count UTF-16 code units (see code_units).
             return Bound(len(e["value"]))
         if t == "ObjectExpression":
             return self.iterable_bound(self.iterator_method(e))
@@ -954,7 +1120,9 @@ class Analysis:
             callee, args = e["callee"], e["arguments"]
             if callee["type"] == "Identifier" and self.binding_of(callee) is None:
                 # `Array(20)` / `new Array(20)`: 20 slots; `Array(a, b)`: 2.
-                # `new Set(X)`: at most X.
+                # `new Set(X)`: at most X. `Array(...[20])` is `Array(20)`.
+                if callee["name"] == "Array":
+                    args = self.spread_literals(args)
                 if callee["name"] == "Array" and len(args) == 1:
                     n = self.const_count(args[0])
                     if n is not None:
@@ -973,6 +1141,35 @@ class Analysis:
                     return self.yields(gen)
                 return self._bound_call(e, at, seen)
         return UNBOUNDED
+
+    def code_units(self, e):
+        """`e.length` and the keys of `e` where it is a string the text states, else None.
+
+        Both count UTF-16 code units, so a character outside the BMP counts
+        twice where iterating the string counts it once.
+        """
+        s = self.string_value(e)
+        return Bound(len(_utf16(s))) if s is not None else None
+
+    @staticmethod
+    def spread_literals(args):
+        """`args` with each spread of an array literal replaced by its elements.
+
+        Where a spread's elements are not all plain (a hole, a nested spread)
+        or it spreads anything else, `args` is returned unchanged.
+        """
+        out = []
+        for a in args:
+            if a["type"] != "SpreadElement":
+                out.append(a)
+                continue
+            arr = a["argument"]
+            if arr["type"] != "ArrayExpression" or any(
+                e is None or e["type"] == "SpreadElement" for e in arr["elements"]
+            ):
+                return args
+            out.extend(arr["elements"])
+        return out
 
     def iterator_method(self, obj):
         """The `[Symbol.iterator]` (or async) function an object literal or class body holds."""
@@ -1173,7 +1370,11 @@ class Analysis:
 
     @staticmethod
     def call_args(ref):
-        """What a reference to a function passes it: `f(a)` and `f.call(t, a)` pass a."""
+        """What a reference to a function passes it: `f(a)` and `f.call(t, a)` pass a.
+
+        None where it is not such a call, or where `.call` is handed a spread
+        first (`f.call(...xs)`), which leaves unknown which items are arguments.
+        """
         q = ref["_p"]
         if q["type"] == "CallExpression" and q["callee"] is ref:
             return q["arguments"]
@@ -1185,7 +1386,10 @@ class Analysis:
         ):
             c = q["_p"]
             if c["type"] == "CallExpression" and c["callee"] is q:
-                return c["arguments"][1:]
+                args = c["arguments"]
+                if args and args[0]["type"] == "SpreadElement":
+                    return None
+                return args[1:]
         return None
 
     def _bound_call(self, call, at, seen) -> Bound:
@@ -1286,15 +1490,27 @@ class Analysis:
         return e.get("regex") if e["type"] == "Literal" else None
 
     def split_bound(self, obj, args) -> Bound:
-        """Pieces `s.split(sep, limit)` makes of a string the text states."""
+        """Pieces `s.split(sep, limit)` makes of a string the text states.
+
+        Where the script may give a separator its own `[Symbol.split]` (see
+        symbol_hooks) the count is unbounded, costed at no less than this.
+        """
         s = self.string_value(obj)
         if s is None:
             return UNBOUNDED
+        b = self._split_pieces(_utf16(s), args)
+        if self.symbol_hooks():
+            return Bound(None, b.n if b.n is not None else b.floor)
+        return b
+
+    def _split_pieces(self, s, args) -> Bound:
+        """Pieces the built-in split makes of `s`, a string in UTF-16 code units."""
         sep = self.string_value(args[0]) if args else None
         regex = self.regex_of(args[0]) if args else None
         if not args:
             n = 1
         elif sep is not None:
+            sep = _utf16(sep)
             n = len(s.split(sep)) if sep else len(s)
         elif regex is not None:
             # At most one split per position, each adding its captured groups.
@@ -1305,6 +1521,52 @@ class Analysis:
             limit = self.const_count(args[1])
             n = n if limit is None else min(n, limit)
         return Bound(n)
+
+    def symbol_hooks(self) -> bool:
+        """True where the script may change what `replace` or `split` does.
+
+        A pattern with its own `[Symbol.replace]` or `[Symbol.split]` runs in
+        place of the built-in, and so does a method put on `String.prototype`
+        or `RegExp.prototype` or a subclass of RegExp: any read of `Symbol`
+        other than `.iterator` or `.asyncIterator`, of either prototype, or of
+        `RegExp` other than to build one, turns the string rules off.
+        """
+        key = ("symbol_hooks",)
+        if key not in self.memo:
+            found = False
+            for n in self.nodes:
+                if n["type"] != "Identifier" or n["name"] not in (
+                    "Symbol",
+                    "String",
+                    "RegExp",
+                ):
+                    continue
+                if n["_i"] in self.decl_ids or self.binding_of(n) is not None:
+                    continue
+                p = n["_p"]
+                member = (
+                    p["type"] == "MemberExpression"
+                    and p["object"] is n
+                    and not p["computed"]
+                )
+                name = p["property"].get("name") if member else None
+                if not self._is_reference(n):
+                    continue
+                if n["name"] == "Symbol":
+                    found = name not in ("iterator", "asyncIterator")
+                elif n["name"] == "RegExp":
+                    # `new RegExp(p, 'g')` builds a plain regex; a subclass,
+                    # or anything else done with RegExp, may not be one.
+                    found = not (
+                        p["type"] in ("NewExpression", "CallExpression")
+                        and p["callee"] is n
+                    )
+                else:
+                    found = name == "prototype"
+                if found:
+                    break
+            self.memo[key] = found
+        return self.memo[key]
 
     def flat_bound(self, obj, at, seen):
         """Length of `obj.flat()` when each element's length is known, else None.
@@ -1406,6 +1668,9 @@ class Analysis:
             ):
                 return Bound(len(props))
             return UNBOUNDED
+        units = self.code_units(e)
+        if units is not None:
+            return units  # a string's keys are its UTF-16 indexes
         b = self.binding_of(e)
         if b is None or b.init is None:
             return self.bound(e, at)
@@ -1429,6 +1694,37 @@ class Analysis:
                     None, (whole.n if whole.n is not None else whole.floor) + 1
                 )
         return whole
+
+    def prototype_extended(self) -> bool:
+        """True where the script may add an enumerable key to a prototype.
+
+        `for...in` visits inherited keys, so `Object.prototype.zz = 1` adds
+        one to every object it runs over. Any use of `X.prototype` other than
+        reading one of its members (`Array.prototype.slice.call(...)`), a
+        write through `__proto__`, or a `setPrototypeOf` call counts.
+        """
+        key = ("prototype_extended",)
+        if key not in self.memo:
+            found = False
+            for n in self.nodes:
+                if n["type"] != "MemberExpression" or n["computed"]:
+                    continue
+                name = n["property"].get("name")
+                if name == "setPrototypeOf" or (
+                    name == "__proto__" and self._is_write(n)
+                ):
+                    found = True
+                elif name == "prototype":
+                    p = n["_p"]
+                    found = not (
+                        p["type"] == "MemberExpression"
+                        and p["object"] is n
+                        and not self._is_write(p)
+                    )
+                if found:
+                    break
+            self.memo[key] = found
+        return self.memo[key]
 
     def keeps_keys(self, ref) -> bool:
         """True where a read of an object cannot add a key to it."""
@@ -1601,9 +1897,14 @@ class Analysis:
         if t == "ForInStatement":
             right = loop["right"]
             b = self.key_count(right, loop)
-            if b.n is not None:
+            if b.n is not None and not self.prototype_extended():
                 return b.n
-            return self.unbounded(f"for...in {self.text(right)}", b.floor)
+            # for...in also visits the enumerable keys of every prototype.
+            own = b.n if b.n is not None else b.floor
+            return self.unbounded(
+                f"for...in {self.text(right)}",
+                own + 1 if self.prototype_extended() else own,
+            )
         if t == "ForStatement":
             c = self.counter(loop)
             if c is not None:
@@ -1621,7 +1922,9 @@ class Analysis:
                     # Not divided by a step above 1: a window `X.slice(i, i + W)`
                     # inside it counts 1 per pass, so the pair is X in total.
                     step = min(1, v) if v is not None else 1
-                    b = self.bound(limit["object"], loop)
+                    b = self.code_units(limit["object"]) or self.bound(
+                        limit["object"], loop
+                    )
                     if b.n is not None:
                         return _passes(start, b.n, inclusive, step)
                     width = max(b.floor, self.assumed)
@@ -1634,6 +1937,9 @@ class Analysis:
                         self.text(limit["object"]),
                         _passes(start, width, inclusive, step),
                     )
+            n = self.down_passes(loop)
+            if n is not None:
+                return n
             if self.always_true(loop["test"]):
                 return self.no_exit(loop, "a for loop with no test")
             if self.unsettled(loop):
@@ -1763,33 +2069,244 @@ class Analysis:
         )
 
     def no_exit(self, loop, label) -> int:
-        """A loop only a `break` leaves: the count a break's test states, else HIGH.
+        """A loop only a `break` leaves: the count its breaks prove, else HIGH.
 
-        `while (true) { ...; if (++n >= 12) break }` states 12, costed like any
-        stated count (never below ASSUMED). With no count stated, nothing in
-        the text bounds it, so it is costed above the limit and the guard asks.
+        `while (true) { ...; if (++n >= 12) break }` runs at most 13 times: a
+        counter that starts at a stated number and moves toward the break's
+        stated limit by at least 1 on every pass (see proven_exit), costed
+        like any stated count (never below ASSUMED). Where no break proves a
+        count -- none states one, or its counter is reset, moves back, moves
+        only on some passes, or a `continue` may skip it -- nothing in the text
+        bounds the loop: HIGH, or the largest count a break states if larger.
         """
-        stated = self.stated_break(loop)
-        if stated:
-            return self.unbounded(label, stated)
-        return self.unbounded_high(label)
+        stated, proven = self.stated_break(loop)
+        if proven:
+            return self.unbounded(label, proven)
+        return self.unbounded_high(label, stated)
 
-    def stated_break(self, loop) -> int:
-        """The largest count the test of an `if` holding a break out of `loop` states."""
-        best = 0
+    def stated_break(self, loop):
+        """(largest count a break's test states, largest count one proves).
+
+        A break proves a count when its `if` runs on every pass, the break is
+        reached whenever that `if` takes it, and no `continue` in the loop can
+        skip either (see every_pass and proven_exit).
+        """
+        best = proven = 0
+        skips = self.continues(loop)
         for n in self.nodes:
             if n["type"] != "BreakStatement" or not self.inside(n, loop["body"]):
                 continue
             if self.break_target(n) is not loop:
                 continue
-            cur = n
+            cur, direct = n, True
             while cur is not loop:
                 p = cur["_p"]
                 if p["type"] == "IfStatement" and p["test"] is not cur:
                     best = max(best, self.stated_exit(p["test"]))
+                    if direct and not skips and self.every_pass(p, loop, None):
+                        proven = max(
+                            proven,
+                            self.proven_exit(
+                                p["test"], cur is p["consequent"], loop, p
+                            ),
+                        )
                     break
+                direct = direct and p["type"] == "BlockStatement"
                 cur = p
-        return best
+        return best, proven
+
+    def continues(self, loop) -> bool:
+        """True when a `continue` in `loop` may start its next pass early."""
+        for n in self.nodes:
+            if n["type"] != "ContinueStatement" or not self.inside(n, loop["body"]):
+                continue
+            name = n["label"]["name"] if n.get("label") else None
+            cur = n["_p"]
+            while cur is not None and cur["type"] not in FUNCTIONS:
+                if name is None and (
+                    cur["type"] in LOOP_HEADS
+                    or cur["type"] in ("WhileStatement", "DoWhileStatement")
+                ):
+                    break
+                if (
+                    name is not None
+                    and cur["type"] == "LabeledStatement"
+                    and cur["label"]["name"] == name
+                ):
+                    cur = cur["body"]
+                    break
+                cur = cur["_p"]
+            if cur is loop:
+                return True
+        return False
+
+    def every_pass(self, node, loop, exit_if) -> bool:
+        """True where `node` is evaluated on every pass of `loop` that reaches its end.
+
+        Its path up to the loop's body may only pass through what always
+        evaluates its parts -- a statement of the body or of a plain block in
+        it, an `if` test, an operand, an argument, the left of `&&`/`||` --
+        and not a branch, a nested loop, a `try`, a function or `?.`. The
+        right of `||` in the test of `exit_if` counts too: when the left holds,
+        the loop is left. A `for` update runs every pass.
+        """
+        if (
+            loop["type"] == "ForStatement"
+            and loop["update"] is not None
+            and self.inside(node, loop["update"])
+        ):
+            return True
+        cur, via_or, body = node, False, loop["body"]
+        while cur is not body:
+            p = cur["_p"]
+            if p is None:
+                return False
+            t = p["type"]
+            if t == "LogicalExpression":
+                if p["right"] is cur:
+                    if p["operator"] != "||":
+                        return False
+                    via_or = True
+            elif t == "ConditionalExpression":
+                if p["test"] is not cur:
+                    return False
+            elif t == "IfStatement":
+                if p["test"] is not cur or (via_or and p is not exit_if):
+                    return False
+                via_or = False
+            elif t == "AssignmentExpression":
+                if p["right"] is cur and p["operator"] in ("||=", "&&=", "??="):
+                    return False
+            elif t == "VariableDeclarator":
+                if p["init"] is not cur:
+                    return False
+            elif t in ("CallExpression", "NewExpression", "MemberExpression"):
+                if p.get("optional"):
+                    return False
+            elif t not in EVALUATED:
+                return False
+            cur = p
+        return not via_or
+
+    def proven_exit(self, test, holds, loop, exit_if) -> int:
+        """Passes of `loop` after which `test` being `holds` must have ended it, else 0.
+
+        A comparison of one counter with a constant (`n >= 12`, `12 <= n`,
+        `--n <= 0`, `n === 12`): the counter is a `let` or `var` given a
+        number (or a `for` init giving it one) and written nowhere else but
+        during the loop, each write moves it the way the break needs by a
+        stated step of at least 1 (an `===` break: by exactly 1, from the
+        right side of the limit, with one write), and one of those writes
+        runs on every pass. `||` of such tests proves the larger count, `&&`
+        none (either part may never hold).
+        """
+        t = test["type"]
+        if t == "LogicalExpression":
+            if test["operator"] == "??" or (test["operator"] == "||") != holds:
+                return 0
+            return max(
+                self.proven_exit(side, holds, loop, exit_if)
+                for side in (test["left"], test["right"])
+            )
+        if t == "UnaryExpression" and test["operator"] == "!":
+            return self.proven_exit(test["argument"], not holds, loop, exit_if)
+        if t != "BinaryExpression":
+            return 0
+        negate = {"<": ">=", "<=": ">", ">": "<=", ">=": "<"}
+        op = test["operator"] if holds else negate.get(test["operator"])
+        if op not in ("<", "<=", ">", ">=", "==", "==="):
+            return 0
+        sides = (test["left"], test["right"])
+        names = [
+            self.binding_of(x["argument"] if x["type"] == "UpdateExpression" else x)
+            for x in sides
+        ]
+        moving = [
+            k
+            for k in (0, 1)
+            if names[k] is not None
+            and any(self.runs_during(w, loop) for w in names[k].writes)
+        ]
+        if len(moving) != 1:
+            return 0
+        k = moving[0]
+        b, limit = names[k], self.const_num(sides[1 - k])
+        if limit is None or b.kind not in ("let", "var"):
+            return 0
+        if self.inside(b.declarator, loop) and not (
+            loop["type"] == "ForStatement"
+            and loop["init"] is not None
+            and self.inside(b.declarator, loop["init"])
+        ):
+            return 0  # declared in the body: given its start again every pass
+        if k == 1:  # `12 <= n` reads as `n >= 12`
+            op = {"<": ">", "<=": ">=", ">": "<", ">=": "<="}.get(op, op)
+        start = self.const_num(b.init)
+        moves, every = [], False
+        for w in b.writes:
+            if not self.runs_during(w, loop):
+                a = w["_p"]
+                if (
+                    loop["type"] == "ForStatement"
+                    and loop["init"] is not None
+                    and self.inside(w, loop["init"])
+                    and a["type"] == "AssignmentExpression"
+                    and a["operator"] == "="
+                    and a["left"] is w
+                ):
+                    start = self.const_num(a["right"])
+                    continue
+                return 0  # set before the loop, or elsewhere
+            m = self.move(w)
+            if m is None:
+                return 0
+            moves.append(m)
+            every = every or (
+                self.inside(w, loop) and self.every_pass(w, loop, exit_if)
+            )
+        if start is None or not every:
+            return 0
+        if op in (">", ">="):
+            need, span = "up", limit - start
+        elif op in ("<", "<="):
+            need, span = "down", start - limit
+        else:
+            need = "up" if start < limit else "down"
+            span = abs(limit - start)
+            if span == 0 or len(moves) != 1 or moves[0][1] != 1:
+                return 0
+        if any(d != need or step < 1 for d, step in moves):
+            return 0
+        # Before the k-th pass's test the counter has moved at least k - 1:
+        # `>=` holds by pass ceil(span) + 1, `>` by floor(span) + 2.
+        if op in (">", "<"):
+            return max(1, math.floor(span) + 2)
+        return max(1, math.ceil(span) + 1)
+
+    def move(self, w):
+        """(direction, step) of a write that moves a counter by a stated step, else None.
+
+        `n++`, `n -= 2` and `n = n + 2`; any other write sets the counter.
+        """
+        p = w["_p"]
+        if p["type"] == "UpdateExpression":
+            return ("up" if p["operator"] == "++" else "down"), 1
+        if p["type"] != "AssignmentExpression" or p["left"] is not w:
+            return None
+        if p["operator"] in ("+=", "-="):
+            v, plus = self.const_num(p["right"]), p["operator"] == "+="
+        elif (
+            p["operator"] == "="
+            and p["right"]["type"] == "BinaryExpression"
+            and p["right"]["operator"] in ("+", "-")
+            and self.binding_of(p["right"]["left"]) is self.binding_of(w)
+        ):
+            v, plus = self.const_num(p["right"]["right"]), p["right"]["operator"] == "+"
+        else:
+            return None
+        if v is None or v == 0:
+            return None
+        return ("up" if (v > 0) == plus else "down"), abs(v)
 
     @staticmethod
     def break_target(brk):
@@ -1983,9 +2500,19 @@ class Analysis:
         mark = len(self.events)
         try:
             raw = self._raw_inv(fn)
-            if i in self.events[mark:]:
+            if i in self.events[mark:] and self.measured >= MEASURED_RECURSIONS:
+                # Each measurement below counts the function twice, and every
+                # recursion it reaches is measured again inside both counts,
+                # so mutual recursions cost twice as much per function. Past
+                # the budget a recursion is recognised and not measured: HIGH.
+                raw = max(raw, 1) * self.unbounded_high(
+                    f"recursion through {self.fn_name(fn)} past "
+                    f"{MEASURED_RECURSIONS} measured recursions"
+                )
+            elif i in self.events[mark:]:
                 # Counted again with each re-entry worth one call, the
                 # difference is how many calls one entry makes to itself.
+                self.measured += 1
                 self.reentry[i] = 1
                 try:
                     branching = max(1, self._raw_inv(fn) - raw)
@@ -2008,7 +2535,14 @@ class Analysis:
         (`go(20)`, `if (d < 20)`).
         """
         depth = self.proven_depth(fn)
-        if depth is None:
+        if depth is None and self.writes_tested_param(fn):
+            # The parameter its test reads is moved back or reset, as a loop
+            # that resets its counter is: nothing in the text bounds it.
+            depth = self.unbounded_high(
+                f"recursion through {self.fn_name(fn)} that writes the parameter it tests",
+                self.stated_depth(fn),
+            )
+        elif depth is None:
             depth = max(self.assumed, self.stated_depth(fn))
             self.unbounded(f"recursion through {self.fn_name(fn)}")
         total, level = 1, 1
@@ -2164,6 +2698,39 @@ class Analysis:
             return bound, op == ">="
         return None
 
+    def writes_tested_param(self, fn) -> bool:
+        """True when `fn` resets a parameter it compares (`d = 0` beside `d < 3`).
+
+        A write that sets it outright, or writes that move it both ways, as
+        unsettled() reads a loop counter; `arguments[0] = 0` counts, as a
+        write of every parameter (see _resolve_all). One that only steps it
+        (`d = d + 1`, see move) leaves the recursion at ASSUMED levels.
+        """
+        written = set()
+        for p in fn["params"]:
+            for ident in _pattern_ids(p):
+                b = self.scopes_lookup(ident)
+                if b is None:
+                    continue
+                moves = {(self.move(w) or ("set",))[0] for w in b.writes}
+                if "set" in moves or {"up", "down"} <= moves:
+                    written.add(id(b))
+        if not written:
+            return False
+        for n in self.nodes:
+            if (
+                n["type"] == "BinaryExpression"
+                and n["operator"] in ("<", "<=", ">", ">=", "==", "===", "!=", "!==")
+                and self.enclosing_function(n) is fn
+            ):
+                for s in (n["left"], n["right"]):
+                    b = self.binding_of(
+                        s["argument"] if s["type"] == "UpdateExpression" else s
+                    )
+                    if b is not None and id(b) in written:
+                        return True
+        return False
+
     def stated_depth(self, fn) -> int:
         """The largest count a function's parameters are given or compared with."""
         params = set()
@@ -2238,7 +2805,11 @@ class Analysis:
             )
         if name is None:
             return guess
-        reads = self.members.get(name, []) + self.pattern_keys.get(name, [])
+        reads = (
+            self.members.get(name, [])
+            + self.pattern_keys.get(name, [])
+            + self.this_reads(name)
+        )
         return max(guess, sum(self.count(m) for m in reads))
 
     def prop_name(self, prop):
@@ -2484,7 +3055,8 @@ class Analysis:
         does not, and destructuring hands it to a name. Any other read (the
         object passed on, spread, returned), or a method of it handing `this`
         on, hides callers, so it is None. Any other `x.key` in the script may
-        be it too (`this.key` in a method, above all) and is charged.
+        be it too (`this.key` in a method, above all) and is charged, and so is
+        every `this[k]` whose key the text does not state (see this_reads).
         """
         if (
             holder is None
@@ -2518,12 +3090,28 @@ class Analysis:
                 total += self.count(q) * self._destructured(q, key, elem=False)
             else:
                 return None
-        for m in self.members.get(key, []):
+        for m in self.members.get(key, []) + self.this_reads(key):
             if m["_i"] not in own and not self._is_write(m):
                 c = self.count(m)
                 if c:
                     total += c * self.calls_per_eval(m)
         return math.ceil(total / max(self.count(at), 1))
+
+    def this_reads(self, key):
+        """`this[k]` reads anywhere in the script that may read `key`.
+
+        A method reaches the object it was called through as `this`, so a
+        computed key the text does not state (`this[name]()`, a dispatch
+        table) may name any of its properties.
+        """
+        out = []
+        for m in self.this_computed:
+            if self._is_write(m):
+                continue
+            name = self.string_value(m["property"])
+            if name is None or name == key:
+                out.append(m)
+        return out
 
     def hands_on_this(self, obj) -> bool:
         """True when a method of the object literal uses `this` other than as `this.x`."""
@@ -2606,8 +3194,11 @@ class Analysis:
                 return self.mult(self.array_like(args[0], call, frozenset()), args[0])
             if name in ("replace", "replaceAll") and idx == 1:
                 return self.replacements(call)
-            if name == "set" and idx == 1:
-                k = self.map_calls(self.binding_of(obj), call)
+            if name == "set" and idx in (0, 1):
+                # `m.set(key, value)`: a function stored as either.
+                k = self.map_calls(
+                    self.binding_of(obj), call, "key" if idx == 0 else "value"
+                )
                 if k is not None:
                     return k
         if callee["type"] == "Identifier" and callee["name"] == "pipeline" and idx >= 1:
@@ -2617,9 +3208,20 @@ class Analysis:
             return via_param
         return self.unbounded(f"a function passed to {self.text(callee)}()")
 
-    def replacements(self, call) -> int:
-        """Calls `s.replace(pattern, fn)` makes to fn: one per match."""
+    def replacements(self, call):
+        """Calls `s.replace(pattern, fn)` makes to fn: one per match.
+
+        Only where `s` is a string (a literal, a template, or a name only ever
+        holding a literal) and nothing in the script can change what a
+        pattern does (see symbol_hooks): any other receiver may be an object
+        with its own `replace`, which may call fn any number of times, so it
+        is ASSUMED. A string pattern, or a regex literal without /g, matches
+        once; any other pattern at most once per position of a string the
+        text states.
+        """
         callee = call["callee"]
+        obj = callee["object"]
+        s = self.string_value(obj)
         pattern = call["arguments"][0]
         regex = self.regex_of(pattern)
         text = self.string_value(pattern)
@@ -2627,21 +3229,30 @@ class Analysis:
             text is not None
             or (regex is not None and "g" not in regex.get("flags", ""))
         ):
-            return 1  # a string pattern, or a regex without /g, matches once
-        s = self.string_value(callee["object"])
-        if s is not None:
-            if text:
-                return s.count(text)
-            return len(s) + 1  # a pattern matches at most once per position
-        return self.unbounded(f"matches in {self.text(callee['object'])}")
+            k = 1  # a string pattern, or a regex without /g, matches once
+        elif s is not None and text is not None:
+            k = _utf16(s).count(_utf16(text))
+        elif s is not None:
+            k = len(_utf16(s)) + 1  # a pattern matches at most once per position
+        else:
+            k = None
+        if (s is None and obj["type"] != "TemplateLiteral") or self.symbol_hooks():
+            # Not the string rules: ASSUMED, never below what they would give.
+            return self.unbounded(f"a function passed to {self.text(callee)}()", k or 0)
+        if k is None:
+            return self.unbounded(f"matches in {self.text(obj)}")
+        return k
 
-    def map_calls(self, holder, at):
-        """Calls per evaluation of `at` to each value of the Map `holder` names, or None.
+    def map_calls(self, holder, at, role):
+        """Calls per evaluation of `at` to each key or value of the Map `holder`, or None.
 
-        Followed through every read: `m.get(k)` hands a value on (called where
-        its result is), `m.forEach` passes each to its callback, and `has`,
-        `set`, `delete`, `clear`, `keys` and `size` call none. Any other read
-        (iterated, spread, passed on) is None.
+        `role` is "key" or "value". Followed through every read: `m.get(k)`
+        hands a value on (called where its result is), `m.keys()` and
+        `m.values()` hand each key or value on where the iterator goes,
+        `m.forEach` passes each value and key to its callback, and the Map
+        third (a call through that may reach any of them), and `has`, `set`
+        (its result unused), `delete`, `clear` and `size` call none. Any other
+        read (`entries`, iterated, spread, passed on) is None.
         """
         if (
             holder is None
@@ -2667,15 +3278,24 @@ class Analysis:
             if not called:
                 return None
             if name == "get":
-                c = self.count(gp)
+                c = self.count(gp) if role == "value" else 0
                 if c:
                     total += c * self.calls_per_eval(gp)
+            elif name in ("keys", "values"):
+                c = self.count(gp) if (name == "keys") == (role == "key") else 0
+                if c:
+                    total += c * self.elem_calls(gp)
             elif name == "forEach" and gp["arguments"]:
-                k = self.element_param_calls(gp["arguments"][0], 0)
+                # The callback is handed (value, key, map).
+                k = self.element_param_calls(
+                    gp["arguments"][0], 0 if role == "value" else 1, whole=2
+                )
                 if k is None:
                     return None
                 total += self.count(gp) * k
-            elif name not in ("has", "set", "delete", "clear", "keys"):
+            elif name == "set" and gp["_p"]["type"] != "ExpressionStatement":
+                return None  # `m.set(k, v)` returns the Map: `.get(k)()` may follow
+            elif name not in ("has", "set", "delete", "clear"):
                 return None
         return math.ceil(total / max(self.count(at), 1))
 
@@ -2756,6 +3376,10 @@ class Analysis:
             first = sum(a["type"] != "SpreadElement" for a in args[shift:idx])
             spread = args[idx]["type"] == "SpreadElement"
             exact = first == idx - shift and not spread
+            if any(a["type"] == "SpreadElement" for a in args[:shift]):
+                # `f.call(...xs, fn)`: xs holds the `this` and any number of
+                # arguments ahead of fn, so fn may land at any position.
+                first, exact = 0, False
         params = target["params"]
         rest = bool(params) and params[-1]["type"] == "RestElement"
         plain = len(params) - rest
@@ -2918,7 +3542,8 @@ class Analysis:
         ):
             return self.var_calls(self.scopes_lookup(p["left"]), a, elem=True)
         if t == "ArrayExpression" and a["type"] == "ArrayExpression":
-            # `new Map([[key, fn], ...])`: each pair is an entry of the Map.
+            # `new Map([[key, fn], ...])`: each pair is an entry of the Map,
+            # and a function in it may be the key or the value.
             entries, new = p, p["_p"]
             if (
                 new["type"] == "NewExpression"
@@ -2928,9 +3553,18 @@ class Analysis:
                 and new["_p"]["init"] is new
                 and new["_p"]["id"]["type"] == "Identifier"
             ):
-                k = self.map_calls(self.scopes_lookup(new["_p"]["id"]), new)
-                if k is not None:
-                    return k
+                holder = self.scopes_lookup(new["_p"]["id"])
+                # A literal in a position cannot be called; past the second
+                # element nothing is stored.
+                roles = [
+                    role
+                    for role, el in zip(("key", "value"), a["elements"])
+                    if el is not None
+                    and el["type"] not in ("Literal", "TemplateLiteral")
+                ]
+                ks = [self.map_calls(holder, new, role) for role in roles]
+                if None not in ks:
+                    return max(ks, default=0)
         if t == "ReturnStatement":
             return self.ret_calls(self.enclosing_function(p), elem=True)
         if t == "ArrowFunctionExpression" and p["body"] is a:
@@ -2945,15 +3579,16 @@ class Analysis:
             return 0
         return self.unbounded(f"functions held in {t}")
 
-    def element_param_calls(self, cb, idx):
+    def element_param_calls(self, cb, idx, whole=None):
         """Calls an array method's inline callback makes to each element.
 
         `fns.map((fn) => fn())` hands each element to one invocation of the
         callback as parameter `idx`, so each element is called as often as one
         invocation calls that parameter (a returned element is followed where
         the result goes). Every invocation is also handed the whole array two
-        parameters later (`(fn, i, arr) => arr[i]()`), and a call through that
-        parameter may reach any element, so each element is charged every
+        parameters later (`(fn, i, arr) => arr[i]()`), or at `whole` where
+        given (a Map's key comes second and the Map third), and a call through
+        that parameter may reach any element, so each element is charged every
         call made through it. A callback named by a function the script
         defines is read the same way (every invocation of it runs the same
         body), and `Boolean`, `String` and `Number` call nothing. None where the
@@ -2976,11 +3611,12 @@ class Analysis:
         if self.reads_arguments(cb):
             return None
         params = cb["params"]
+        whole = idx + 2 if whole is None else whole
         # A rest parameter at or before the array's position collects it.
-        if any(p["type"] == "RestElement" for p in params[: idx + 3]):
+        if any(p["type"] == "RestElement" for p in params[: max(idx, whole) + 1]):
             return None
         per_element = per_array = 0
-        for pos, elem in ((idx, False), (idx + 2, True)):
+        for pos, elem in ((idx, False), (whole, True)):
             if pos >= len(params):
                 continue  # the callback never sees it
             param = params[pos]

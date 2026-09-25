@@ -948,6 +948,155 @@ assert_silent "results pushed to another list stay silent" '
 const results = []
 for (const u of args.units) results.push(await agent(u))
 '
+# Round 12 (#2670 review of round 11): paths round 11 added that costed a
+# reachable agent() at 0 or once, or went silent where round 10 asked. The
+# shapes with a true count the estimate meets are corpus fixtures (map keys,
+# UTF-16 strings, this[k] dispatch, a spread in .call, Array(...[n]), a
+# count-down to a negative constant); these pin the rest at the figure each
+# must keep: a replace or pattern the string rules do not govern, and a spread
+# ahead of .call's arguments, fall back to ASSUMED per callback.
+assert_estimate "an object's own replace method is not the string one: ASSUMED, not 2" 16 '
+const o = { replace(p, f) { for (let i = 0; i < 20; i++) f() } }
+o.replace("x", () => { agent("a"); agent("b") })
+'
+assert_estimate "a pattern with its own [Symbol.replace] is not a regex: ASSUMED, not 4" 16 '
+const pat = { [Symbol.replace](s, f) { for (let i = 0; i < 20; i++) f() } }
+"x".replace(pat, () => { agent("a"); agent("b") })
+'
+assert_estimate "a rest list reached through .call(...spread) is not bounded by the spread" 16 '
+function run(...fns) { for (let i = 0; i < fns.length; i++) { agent("a"); agent("b") } }
+run.call(...[null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+'
+# A break's count bounds a while (true) only when its counter starts at a
+# stated number and moves toward the break on every pass: a reset, a move on
+# some passes only, a counter declared in the body, or a continue past it
+# leaves nothing bounding the loop, so each costs HIGH where round 11 read the
+# break's stated count (ASSUMED, silent).
+assert_estimate "a while (true) whose break counter the body resets costs HIGH" 11 '
+let n = 0, k = 0
+while (true) { await agent("x"); if (++n >= 5) { if (k++ < 3) { n = 0; continue } break } }
+'
+assert_estimate "a while (true) whose break counter moves on some passes only costs HIGH" 11 '
+let j = 0, k = 0
+while (true) { await agent("x"); if (++j % 10 === 0) k++; if (k >= 3) break }
+'
+assert_estimate "a while (true) whose break counter a nested branch resets costs HIGH" 11 '
+let n = 0, r = 0
+while (true) { await agent("x"); if (++n >= 4) { if (r++ < 4) n = 0; else break } }
+'
+assert_estimate "a break counter declared in the loop body starts again every pass: HIGH" 11 '
+while (true) { let n = 0; await agent("x"); if (++n >= 5) break }
+'
+assert_estimate "a break counter a continue may skip bounds nothing: HIGH" 11 '
+let n = 0, k = 0
+while (true) { await agent("x"); if (k++ < 20) continue; if (++n >= 3) break }
+'
+assert_estimate "a break counter moved only behind && bounds nothing: HIGH" 11 '
+let n = 0
+const go = false
+while (true) { await agent("x"); go && n++; if (n >= 3) break }
+'
+assert_estimate "a break a try may skip bounds nothing: HIGH" 11 '
+const f = () => { throw 1 }
+let n = 0
+while (true) { await agent("x"); if (++n >= 3) { try { f(); break } catch {} } }
+'
+assert_estimate "a count-down whose body moves its counter back costs HIGH" 11 '
+let r = 0
+for (let i = 3; i > 0; i--) { await agent("x"); if (r++ < 20) i++ }
+'
+assert_estimate "a Map whose set() result is used is not followed: ASSUMED, not 0" 8 '
+const m = new Map()
+m.set("a", () => agent("a"))
+for (let i = 0; i < 20; i++) m.set("b", 1).get("a")()
+'
+assert_estimate "a break counter stepped by less than 1 bounds nothing: HIGH" 11 '
+let n = 0
+while (true) { await agent("x"); n += 0.5; if (n >= 5) break }
+'
+assert_estimate "an === break a step of 2 can jump past bounds nothing: HIGH" 11 '
+let n = 0
+while (true) { await agent("x"); n += 2; if (n === 7) break }
+'
+assert_estimate "a break counter set again before the loop does not start at its declaration: HIGH" 11 '
+let n = 0
+n = -15
+while (true) { await agent("x"); if (++n >= 2) break }
+'
+assert_silent "a poll that breaks on a verdict or a counted try stays silent" '
+let tries = 0
+while (true) { const r = await agent("x"); if (r.verdict || ++tries >= 5) break }
+'
+assert_silent "a break counter stepped by n = n + 1 bounds its loop" '
+let n = 0
+while (true) { await agent("x"); n = n + 1; if (n >= 3) break }
+'
+# A recursion that resets the parameter its test reads -- directly, or through
+# a sloppy-mode arguments[0] -- is costed HIGH levels deep, as a loop that
+# resets its counter is; one that only reads arguments keeps its proven depth.
+assert_estimate "a recursion that resets its tested parameter through arguments costs HIGH depth" 12 '
+let k = 0
+function rec(d) { if (k++ < 20) arguments[0] = 0; agent("r"); if (d < 3) rec(d + 1) }
+rec(0)
+'
+assert_estimate "a recursion that resets its tested parameter costs HIGH depth" 12 '
+let k = 0
+function rec(d) { agent("r"); if (k++ < 20) d = 0; if (d < 3) rec(d + 1) }
+rec(0)
+'
+assert_estimate "a recursion that only reads arguments keeps its proven depth" 4 '
+function rec(d) { agent("r" + arguments.length); if (d < 3) rec(d + 1) }
+rec(0)
+'
+assert_estimate "a recursion that moves its tested parameter both ways costs HIGH depth" 12 '
+let k = 0
+function rec(d) { agent("r"); if (k++ < 20) d--; d++; if (d < 3) rec(d + 1) }
+rec(0)
+'
+assert_estimate "a recursion that only steps its tested parameter stays ASSUMED levels deep" 9 '
+function rec(d) { agent("r"); d = d + 1; if (d < 3) rec(d) }
+rec(0)
+'
+# Branches round 11 added that no fixture pinned (its verifier's surviving
+# mutants): each figure is what a mutant of that branch lowers.
+assert_estimate "a list grown through .length++ while iterated costs HIGH" 11 '
+const xs = [1]
+for (const x of xs) { await agent("x"); if (xs.length < 20) xs.length++ }
+'
+assert_estimate "a class a factory builds is not followed: ASSUMED, not 1" 8 '
+class W { x = agent("w") }
+function make(C) { return new C() }
+for (let i = 0; i < 20; i++) make(W)
+'
+assert_estimate "a generator that delegates to itself costs ASSUMED, not 1" 9 '
+function* g(n) { yield n; if (n < 19) yield* g(n + 1) }
+for (const x of g(0)) await agent("x" + x)
+'
+assert_estimate "two copies of a runtime list flattened cost ASSUMED, not 2" 8 '
+const inner = units.slice()
+for (const x of [inner, inner].flat()) await agent(x)
+'
+# Costing a recursion counts the function twice, and each recursion it reaches
+# is costed again inside both counts, so a ring of self-recursive functions
+# doubled the work per function: 20 of them exceeded the step budget and the
+# #2668 estimator decided, silently (OK/1 for a true 21). Past a budget of
+# measured recursions the rest cost HIGH, so the parse still decides and asks.
+ring=$(python3 -c '
+n = 20
+print("let budget = 0")
+for i in range(n):
+    body = "agent(); " if i == 0 else ""
+    print(f"function f{i}(d) {{ if (budget++ > 400) return; {body}if (d < 2) f{i}(d + 1); f{(i + 1) % n}(0) }}")
+print("f0(0)")
+')
+ring_out=$(printf '%s\n' "$ring" | python3 "$ESTIMATOR" 10 8 2>/dev/null)
+if grep -qx 'PARSER=acorn' <<<"$ring_out" && grep -qx 'VERDICT=OVER_LIMIT' <<<"$ring_out"; then
+    PASS=$((PASS + 1))
+    printf '  PASS  a ring of 20 self-recursive functions is costed by the parse and asks\n'
+else
+    FAIL=$((FAIL + 1))
+    printf '  FAIL  a ring of 20 self-recursive functions: %s\n' "$(grep -E '^(VERDICT|ESTIMATE|PARSER|FALLBACK)=' <<<"$ring_out" | tr '\n' ' ')"
+fi
 # Before this commit a missing newline joined the next `fx` line to the
 # assertion above, so close_brace_regex_in_interp was fed to that assertion's
 # stdin and never written, and the differential never ran it.
@@ -1056,6 +1205,14 @@ ABOVE["while_true_labeled_break"] = "a break test states 20 plus the pass that m
 ABOVE["string_split_regex"] = "a regex split is costed at (length + 1) x (1 + its groups): 20 for 13 pieces"
 ABOVE["recursion_unproven_branching"] = "an unproven depth is ASSUMED levels: 2 calls per entry cost 511"
 ABOVE["recursion_restarted_elsewhere"] = "an outside call from inside the recursion leaves its depth unproven: 511"
+# Round 12 (#2670 review of round 11).
+ABOVE["while_true_break_negative_start"] = "a counter moved in its break's own test is counted one pass more: 13 for 12"
+ABOVE["string_replace_regexp_object"] = "a pattern matches at most once per position: 20 characters, 21 positions"
+ABOVE["string_replace_with_symbol_read"] = "a pattern matches at most once per position: 20 characters, 21 positions"
+ABOVE["for_in_prototype_extended"] = "for...in after a prototype gains a key costs max(own keys + 1, ASSUMED) per pass"
+for label in "registry_this_computed_dispatch registry_member_store_this_computed class_this_computed_dispatch".split():
+    ABOVE[label] = "this[k]() with a key the text does not state may name any key, its own method's too: a recursion"
+ABOVE["map_key_forEach_map_param"] = "a call through the Map forEach hands its callback is charged ASSUMED per key"
 
 
 def rollup(path, script):

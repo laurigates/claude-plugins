@@ -35,9 +35,9 @@
 #      ESTIMATE / SITES / SOURCE / PARSER). Bounded fan-outs and loops are
 #      counted exactly; a repetition over a runtime-length list is costed at
 #      CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH items so the limit still governs it,
-#      and one nothing in the text bounds (`while (true)` with no stated
-#      count, a loop that grows its own list) at one over the limit, named in
-#      UNBOUNDED, so it asks.
+#      and one nothing in the text bounds (`while (true)` whose breaks prove
+#      no count, a loop that grows its own list) at one over the limit, named
+#      in UNBOUNDED, so it asks.
 #      Without `node`, or on a script acorn rejects, the frozen #2668
 #      estimator decides instead (PARSER=fallback). It asks more than the parse
 #      on a literal array, and less on loops and recursion, which it does not
