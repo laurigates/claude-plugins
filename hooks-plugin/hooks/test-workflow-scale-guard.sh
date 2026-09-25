@@ -1072,6 +1072,10 @@ assert_estimate "a generator that delegates to itself costs ASSUMED, not 1" 9 '
 function* g(n) { yield n; if (n < 19) yield* g(n + 1) }
 for (const x of g(0)) await agent("x" + x)
 '
+assert_estimate "a recursion stepped by 0 proves no depth: ASSUMED levels, not the #2668 fallback" 18 '
+function rec(d) { agent("a"); agent("b"); if (d < 3) rec(d + 0) }
+rec(0)
+'
 assert_estimate "two copies of a runtime list flattened cost ASSUMED, not 2" 8 '
 const inner = units.slice()
 for (const x of [inner, inner].flat()) await agent(x)
