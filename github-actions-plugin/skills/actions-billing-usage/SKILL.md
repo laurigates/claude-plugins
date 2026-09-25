@@ -3,7 +3,7 @@ name: actions-billing-usage
 description: Measure GitHub Actions cost with the billing-usage API — per repo, month and SKU; net vs gross; per-job rounding. Use when optimizing CI cost or speed, or before removing a workflow as expensive.
 allowed-tools: Bash(gh api *), Bash(gh run list *), Bash(jq *), Read, TodoWrite
 created: 2026-09-24
-modified: 2026-09-24
+modified: 2026-09-25
 reviewed: 2026-09-24
 ---
 
@@ -131,7 +131,20 @@ over a quarter, with the first net charges arriving) was what justified acting
 at all. Without that one query the work would have landed almost entirely in
 the wrong repos.
 
+## Agentic Optimizations
+
+| Context | Command |
+|---|---|
+| Minutes and net spend per repo | the aggregate query under *The endpoint* |
+| Which runner tiers bill | that query with `group_by(.sku)` and `sku:.[0].sku` in place of the repo grouping |
+| One month, one repo (bare name) | `gh api "/orgs/<org>/settings/billing/usage?year=2026&month=9" --jq '[.usageItems[] \| select(.product=="actions" and .repositoryName=="<repo>")] \| map(.quantity) \| add // 0'` |
+| Outcomes per workflow | `gh run list -R <o>/<r> --workflow <name> -L 400 --json conclusion --jq 'group_by(.conclusion) \| map({(.[0].conclusion // "null"): length}) \| add'` |
+
 ## Related
+
+- `finops-plugin:github-actions-finops` — the org/repo waste sweep (skipped
+  runs, bot triggers, missing concurrency) that reads this same endpoint; this
+  skill owns reading the endpoint itself
 
 - `offload-to-deterministic-substrate.md` (in `~/.claude/rules/`) — one API call
   beats re-deriving cost from run logs by hand, every time.
