@@ -9,10 +9,24 @@
 #    small/bounded/capped/one-agent-per-item cases are the real contract.
 #  - Honors the opt-out, ignores resumes and non-Workflow tools, and fails open
 #    when there is no script text to read.
+#  - Costs every fixture at or above its TRUE count, measured by running it in
+#    node with a counting agent() (fixtures/workflow-scale/truecount.mjs), and
+#    never below the frozen #2668 estimator where #2668 asks except at a
+#    listed, measured correct count.
+#  - Falls back to the #2668 estimator, figure for figure, when the JavaScript
+#    parse cannot run.
+#
+# Needs node on PATH: the estimator parses with it, and the ground truth runs
+# in it. Without node the suite fails rather than testing only the fallback.
 #
 # Run: bash hooks-plugin/hooks/test-workflow-scale-guard.sh
 # Exit 0 = all tests pass, Exit 1 = failures
 set -uo pipefail
+
+if ! command -v node >/dev/null 2>&1; then
+    echo "FATAL: node is not on PATH; this suite measures the parse and the ground truth with it" >&2
+    exit 1
+fi
 
 # The differential below asks git for the bundled templates. Under a git
 # commit hook, GIT_DIR/GIT_INDEX_FILE are exported and override `git -C`, so
@@ -297,15 +311,17 @@ await pipeline(args.units,
 "
 
 echo
-echo "== an unproven parse falls back to the #2668 scan (#2670 review) =="
+echo "== regex literals and nested templates the text scans misread (#2670 review) =="
 
-# The walk above reads ${...} interpolations as code, and code holds things a
-# quote-and-brace scanner cannot parse -- chiefly a regex literal. `/'/g` inside
-# an interpolation opened a quote that never closed, blanked the rest of the
-# file, and the hook went SILENT on a 32-agent pipeline that #2668 asked about.
-# The walk is now used only when it proves itself. Each case below is rejected
-# by exactly one check, names it, and reports the #2668 figure, because the
-# #2668 scan decided. Removing any one check turns its case red.
+# Eight review rounds found spellings a quote-and-brace text scanner misreads:
+# a regex literal holding a quote or brace (`/'/g`, `/[{}`]/`) opened a
+# "string" that swallowed the agent code after it, and a template nested in a
+# ${...} interpolation ended the outer one early. Each blanked code and the
+# hook went SILENT where #2668 asked. The estimator now parses the script with
+# acorn, which tokenizes a regex and a template as JavaScript does, so these
+# are pins that the parse decides (PARSER=acorn) at the true count. The one
+# script here that is not valid JavaScript (quote_regex_on_proven_parse
+# declares `a2` twice) is costed by the #2668 estimator instead.
 FX_DIR=$(mktemp -d) || { echo "FATAL: mktemp -d failed" >&2; exit 1; }
 if [ -z "$FX_DIR" ] || [ ! -d "$FX_DIR" ]; then echo "FATAL: bad fixture dir" >&2; exit 1; fi
 trap 'rm -rf "$FX_DIR"' EXIT
@@ -344,59 +360,55 @@ const p = `x ${s.replace(/{/g, '')} y`
 await pipeline(args.units, u => agent('a'), e => agent('b'))
 const q = `x ${s.replace(/}/g, '')} y`
 EOF
-# Control: the shape the walk exists for still proves itself.
+# Control: the shape the round-1 structural walk existed for.
 fx nested_template_proves_itself <<'EOF'
 const P = (c) => `head ${
   c ? `the skill's file` : `none`
 } tail`
 await pipeline(args.units, u => agent('edit'), e => agent('review'), r => agent('repair'), s => agent('rereview'))
 EOF
-# The four checks prove the walk kept every token that COUNTS, not every token
-# that BOUNDS. A `{` regex in one template and a `}` regex in a later one keep
-# the span between them inside one template: literals close, brackets balance,
-# no agent()/fan-out token is lost -- and the declaration of `items` is
-# blanked, so the fan-out costs 8 instead of 12 and the hook went silent
-# (#2670 review, round 3). No list of checks is complete, so the estimator now
-# costs both readings and keeps the higher: the flat scan decides here.
+# A `{` regex in one template and a `}` regex in a later one kept the span
+# between them inside one template for the structural walk, which blanked the
+# declaration of `items`: 8 instead of 12, and the hook went silent (#2670
+# review, round 3).
 fx brace_pair_blanks_bound <<'EOF'
 const open = (s) => `g ${s.replace(/{/g, "(")} h`;
 const items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 const close = (s) => `e ${s.replace(/}/g, ")")} f`;
 await parallel(items.map((i) => () => agent(open(i) + close(i))));
 EOF
-# The same pair around a pipeline source. Here the blanked declaration makes the
-# structural reading HIGHER (unbounded, 2 x 8 = 16 against 2 x 6 = 12), and the
-# higher reading decides whichever scan produced it.
+# The same pair around a pipeline source. The walk read the blanked list as
+# unbounded (2 x 8 = 16); it holds 6 items, so the count is 2 x 6 = 12.
 fx brace_pair_raises_pipeline <<'EOF'
 const open = (s) => `g ${s.replace(/{/g, "(")} h`;
 const units = [1, 2, 3, 4, 5, 6];
 const close = (s) => `e ${s.replace(/}/g, ")")} f`;
 await pipeline(units, (u) => agent(open(u)), (u) => agent(close(u)));
 EOF
-# An unproven parse gets no rule that lowers #2668's figure. Here both scans
-# lose the pipeline to the quote regex; #2668 asked only because it tripled the
-# literal array beside it, and the literal-element rule (30 -> 10) turned that
-# into silence on a script whose true count is 34 (#2670 review, round 4). The
-# #2668 bound logic now sets the floor on any parse that cannot prove itself.
+# Both text scans lost the pipeline to the quote regex; #2668 asked only because
+# it tripled the literal array beside it, and the literal-element rule (30 ->
+# 10) turned that into silence on a script whose true count is 34 (#2670
+# review, round 4).
 fx unproven_literal_beside_quote_regex <<'EOF'
 await parallel([() => agent("r"), () => agent("s"), ...args.units.map((u) => () => agent(u))]);
 const w2 = s.replace(/'/g, "");
 await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
 EOF
-# The same loss on a parse that DOES prove itself. A regex holding a backtick
-# opens a template in both scans and the next one closes it, so the pipeline
-# between them is blanked, every literal closes, and the brackets balance. The
-# lowering rules then took #2668's 30 to 10 on a script whose true count is 34
-# (#2670 review, round 5). Any file holding a regex literal with a quote in it
-# is now also costed with the #2668 bound logic.
+# A regex holding a backtick opened a template in both text scans and the next
+# one closed it, so the pipeline between them was blanked while every check the
+# walk ran still passed: #2668's 30 became a silent 10 (#2670 review, round 5).
+# This one also declares `a2` twice, which is a SyntaxError, so acorn rejects
+# it and the #2668 estimator decides: the fallback, pinned on a real input.
 fx quote_regex_on_proven_parse <<'EOF'
 const a2 = s.match(/[{}`]/);
 await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
 const a2 = s.match(/[{}`]/);
 await parallel([() => agent("r"), () => agent("s"), ...args.units.map((u) => () => agent(u))]);
 EOF
-# The regex opener is recognized after an operator such as `=>` and after a
-# keyword such as `return`, not only after `(` or `=`.
+# Rounds 5-8 grew a list of positions a regex can follow, one missed spelling
+# per round: after `=>` and `return`, a control header's `)`, a block comment,
+# a header across lines or three parens deep, a spread, `export default`, and
+# a division. Each is the same script with the regex in another position.
 fx quote_regex_after_arrow <<'EOF'
 const f = (s) => /[{}`]/.test(s);
 await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
@@ -409,8 +421,6 @@ await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
 function g(s) { return /[{}`]/.test(s) }
 await parallel([() => agent("r"), () => agent("s"), ...args.units.map((u) => () => agent(u))]);
 EOF
-# A `)` can close a control header, after which a regex follows; a closing `*/`
-# also precedes a regex.
 fx quote_regex_after_if_header <<'EOF'
 if (ok(trim(s))) /[{}`]/.test(s);
 await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
@@ -423,10 +433,6 @@ await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
 /* strip */ /[{}`]/.test(s);
 await parallel([() => agent("r"), () => agent("s"), ...args.units.map((u) => () => agent(u))]);
 EOF
-# Round 6 recognized a header's `)` only on one line with at most two levels of
-# nested parens. Any `)` is now an opener, and the keyword list is complete, so
-# a header spanning lines, one nesting three deep, one holding `)` in a string,
-# a spread `...` and `export default` all get the floor (#2670 review, round 7).
 fx quote_regex_after_multiline_header <<'EOF'
 if (a &&
     b) /[`]/.test(s);
@@ -461,9 +467,7 @@ await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
 const BT = 1;
 await parallel([() => agent("r1"), () => agent("r2"), () => agent("r3"), () => agent("r4")]);
 EOF
-# Round 7's opener class held every punctuator but `/`, so a regex after the
-# division operator (`a / /re/`) got no floor: #2668's 30 became a silent 10
-# (#2670 review, round 8). Without the space, `a //re/` is a comment.
+# Without the space, `a //re/` is a comment.
 fx quote_regex_after_division <<'EOF'
 x = a / /[`]/.test(s);
 await pipeline(units, (u) => agent("a"), (u) => agent("b"), (u) => agent("c"));
@@ -490,21 +494,23 @@ assert_asks "regex holding \" inside \${...} still asks" "$(<"$FX_DIR/regex_dquo
 assert_asks "templates merged across a pipeline still ask" "$(<"$FX_DIR/brace_regex_blanks_calls.js")"
 assert_asks "brace-regex pair around a bounding declaration still asks" "$(<"$FX_DIR/brace_pair_blanks_bound.js")"
 assert_asks "brace-regex pair around a pipeline source still asks" "$(<"$FX_DIR/brace_pair_raises_pipeline.js")"
-assert_asks "literal array beside a quote regex on an unproven parse still asks" "$(<"$FX_DIR/unproven_literal_beside_quote_regex.js")"
-assert_asks "backtick regex on a parse that proves itself still asks" "$(<"$FX_DIR/quote_regex_on_proven_parse.js")"
+assert_asks "literal array beside a quote regex still asks" "$(<"$FX_DIR/unproven_literal_beside_quote_regex.js")"
+assert_asks "backtick regex in a script acorn rejects still asks (#2668 decides)" "$(<"$FX_DIR/quote_regex_on_proven_parse.js")"
 assert_asks "backtick regex after => still asks" "$(<"$FX_DIR/quote_regex_after_arrow.js")"
 assert_asks "backtick regex after return still asks" "$(<"$FX_DIR/quote_regex_after_return.js")"
 assert_asks "backtick regex after an if header still asks" "$(<"$FX_DIR/quote_regex_after_if_header.js")"
 assert_asks "backtick regex after a block comment still asks" "$(<"$FX_DIR/quote_regex_after_block_comment.js")"
 
-# assert_parse <desc> <estimate> <sanitizer> <fallback-substring> <fixture>
+# assert_parse <desc> <estimate> <parser> <fallback-substring> <fixture>
+# The regex-era version of this asserted which text scan decided (SANITIZER=).
+# There is one scan now, so it asserts the parser and the figure.
 assert_parse() {
-    local desc="$1" want_est="$2" want_mode="$3" want_why="$4" out est mode why ok=1
+    local desc="$1" want_est="$2" want_parser="$3" want_why="$4" out est parser why ok=1
     out=$(python3 "$ESTIMATOR" 10 8 <"$FX_DIR/$5.js" 2>/dev/null)
     est=$(sed -n 's/^ESTIMATE=//p' <<<"$out")
-    mode=$(sed -n 's/^SANITIZER=//p' <<<"$out")
+    parser=$(sed -n 's/^PARSER=//p' <<<"$out")
     why=$(sed -n 's/^FALLBACK=//p' <<<"$out")
-    [ "$est" = "$want_est" ] && [ "$mode" = "$want_mode" ] || ok=0
+    [ "$est" = "$want_est" ] && [ "$parser" = "$want_parser" ] || ok=0
     if [ -z "$want_why" ]; then
         [ -z "$why" ] || ok=0
     else
@@ -512,78 +518,40 @@ assert_parse() {
     fi
     if [ "$ok" -eq 1 ]; then
         PASS=$((PASS + 1))
-        printf '  PASS  ESTIMATE=%s SANITIZER=%s: %s\n' "$want_est" "$want_mode" "$desc"
+        printf '  PASS  ESTIMATE=%s PARSER=%s: %s\n' "$want_est" "$want_parser" "$desc"
     else
         FAIL=$((FAIL + 1))
         printf '  FAIL  expected %s/%s/"%s", got %s/%s/"%s": %s\n' \
-            "$want_est" "$want_mode" "$want_why" "${est:-<none>}" "${mode:-<none>}" "$why" "$desc"
+            "$want_est" "$want_parser" "$want_why" "${est:-<none>}" "${parser:-<none>}" "$why" "$desc"
     fi
 }
 
-assert_parse "quoted string reaching a newline (')"  32 flat "quoted string crosses a newline" regex_squote_in_interp
-assert_parse "quoted string reaching a newline (\")" 16 flat "quoted string crosses a newline" regex_dquote_in_interp
-assert_parse "literal reaching end of file"          8  flat "runs to end of file"             literal_runs_to_eof
-assert_parse "code left with unbalanced brackets"    8  flat "brackets do not balance"         brace_regex_blanks_parens
-assert_parse "code token the #2668 scan kept"        16 flat "would blank the code token"      brace_regex_blanks_calls
-assert_parse "nested template walked structurally"   32 structural "" nested_template_proves_itself
-assert_parse "proven walk blanks a bound: flat is higher" 12 flat "flat scan costs it higher" brace_pair_blanks_bound
-assert_parse "proven walk is the higher reading"         16 structural "" brace_pair_raises_pipeline
-assert_parse "unproven parse: #2668 bound logic is the floor" 30 flat "the #2668 bound logic costs it higher" unproven_literal_beside_quote_regex
-assert_parse "quoted regex on a proven parse: #2668 bound logic is the floor" 30 flat "a regex literal holds a quote" quote_regex_on_proven_parse
-assert_parse "quoted regex after a two-line header: #2668 bound logic is the floor" 30 flat "a regex literal holds a quote" quote_regex_after_multiline_header
-assert_parse "quoted regex after export default: #2668 bound logic is the floor" 16 flat "a regex literal holds a quote" quote_regex_after_export_default
-assert_parse "quoted regex after a division: #2668 bound logic is the floor" 30 flat "a regex literal holds a quote" quote_regex_after_division
+assert_parse "regex holding ' inside \${...}"             32 acorn "" regex_squote_in_interp
+assert_parse "regex holding \" inside \${...}"            16 acorn "" regex_dquote_in_interp
+assert_parse "declaration after a regex holding {"       8  acorn "" literal_runs_to_eof
+assert_parse "fan-out between { and } regexes"            8  acorn "" brace_regex_blanks_parens
+assert_parse "pipeline between { and } regexes"           16 acorn "" brace_regex_blanks_calls
+assert_parse "nested template"                            32 acorn "" nested_template_proves_itself
+assert_parse "bounding declaration between brace regexes" 12 acorn "" brace_pair_blanks_bound
+# Was 16: the structural walk blanked `units`, and the higher reading was kept.
+assert_parse "6-item pipeline source between brace regexes" 12 acorn "" brace_pair_raises_pipeline
+# Was 30, #2668's reading, which had lost the pipeline: 3 x 8 + 2 + 8 = 34.
+assert_parse "literal array beside a quote regex"         34 acorn "" unproven_literal_beside_quote_regex
+assert_parse "quoted regex after a two-line header"       34 acorn "" quote_regex_after_multiline_header
+# Was 16, #2668's reading: 3 x 8 + 4 = 28.
+assert_parse "quoted regex after export default"          28 acorn "" quote_regex_after_export_default
+assert_parse "quoted regex after a division"              34 acorn "" quote_regex_after_division
+assert_parse "a script acorn rejects is costed by #2668"  30 fallback "not parsable as a module" quote_regex_on_proven_parse
 
 echo
-echo "== differential against the #2668 estimator (#2670 review) =="
+echo "== fixtures for the differential against the #2668 estimator and the true count =="
 
-# The live estimator may cost a script LOWER than #2668 did only where the
-# lower figure is the correct count, listed here; it may never report NO_AGENTS
-# where #2668 found agents. Every bundled template is compared, plus shapes a
-# review built to break the sanitizer. Raising an estimate is always allowed.
-BASELINE="$(dirname "$0")/fixtures/workflow-scale-estimate-2668.py"
-
-# correct_count <input> — the true agent count for an input whose live figure
-# is below #2668's (a runtime-length list costed at 8, as both estimators do).
-# Exactly two rules can lower a figure, and only on a parse that proved itself:
-# a site inside a literal-array source is one element run once (the first five
-# rows), and a trailing comma is not an element (the last). Ablating both
-# reproduces #2668's figure on every bundled template.
-correct_count() {
-    case "$1" in
-        literal_4_thunks) echo 4 ;;               # four thunks, each run once
-        literal_holding_nested_fanout) echo 9 ;;  # 8 for the inner map + 1
-        literal_concat_mapped) echo 9 ;;          # 1 + 8
-        blueprint-story-audit.workflow.js) echo 20 ;;
-        verify-before-filing.workflow.js) echo 49 ;;
-        trailing_comma_mapped) echo 10 ;;         # ten elements; `10,]` adds none
-        promise_all_map_in_literal_element) echo 9 ;;  # 1 + 8
-        array_from_in_literal_element) echo 29 ;; # 9 + 20
-        if_block_in_literal_element) echo 2 ;;    # two thunks, each run once
-        anonymous_function_literal_element) echo 2 ;;
-        pipeline_stage_in_literal_element) echo 9 ;;  # 1 + 8
-        returned_thunks_into_parallel_element) echo 9 ;;  # 1 + 8
-        *) echo none ;;
-    esac
-}
-
-# true_floor <input> — for an input whose live figure is below #2668's but not
-# exactly the true count: the site the literal-array rule cannot prove runs
-# once is costed at max(the literal's length, ASSUMED), so the figure sits
-# between the true count and #2668's, never under the true count.
-true_floor() {
-    case "$1" in
-        loop_in_literal_element) echo 17 ;;      # 9 + 8; live 9 + 10
-        while_in_literal_element) echo 17 ;;     # 9 + 8; live 9 + 10
-        method_shorthand_loop_after | method_shorthand_map_after | \
-            class_method_map_after | getter_loop_after | \
-            inner_array_thunk_map_after | inner_array_thunk_loop_after | \
-            map_returned_thunk_indexed_loop | map_returned_thunk_indexed_map)
-            echo 17 ;;                           # 9 + 8; live 9 + 10
-        inner_array_recursive_thunk) echo 18 ;;  # 9 + 8 + 1; live 9 + 10
-        *) echo none ;;
-    esac
-}
+# The shapes review rounds 1-8 built to break the text-pattern estimator. The
+# differential below runs each of them, the committed round 7-8 corpus
+# (fixtures/workflow-scale/), and every bundled template.
+BASELINE="$(dirname "$0")/lib/workflow-scale-estimate-2668.py"
+CORPUS_DIR="$(dirname "$0")/fixtures/workflow-scale"
+TRUECOUNT="$CORPUS_DIR/truecount.mjs"
 
 fx spread_then_map <<'EOF'
 await parallel([...args.items].map(x => () => agent("a", { label: "a" })))
@@ -686,8 +654,12 @@ assert_asks "loop inside a literal-array element still asks" "$(<"$FX_DIR/loop_i
 assert_asks "while inside a literal-array element still asks" "$(<"$FX_DIR/while_in_literal_element.js")"
 assert_asks "Array.from mapper inside a literal-array element still asks" "$(<"$FX_DIR/array_from_in_literal_element.js")"
 assert_estimate "loop in a short literal's element costs ASSUMED, not the literal length" 9 "$(<"$FX_DIR/loop_in_short_literal_element.js")"
-assert_estimate "hand-called function in a literal's element costs ASSUMED" 9 "$(<"$FX_DIR/hand_called_fn_in_literal_element.js")"
-assert_estimate "recursive named function as a literal's element costs ASSUMED" 9 "$(<"$FX_DIR/recursive_fn_literal_element.js")"
+# Regex era: 9, because the text scan could not see g's two calls and costed the
+# element at ASSUMED. The parse counts the calls: 1 + 2 = 3, the true count.
+assert_estimate "hand-called function in a literal's element costs its calls" 3 "$(<"$FX_DIR/hand_called_fn_in_literal_element.js")"
+# Regex era: 9, max(literal length, ASSUMED) + 1. A recursive function is now
+# costed as one entry plus ASSUMED re-entries per entry: 1 + (1 + 8) = 10.
+assert_estimate "recursive named function as a literal's element costs 1 + ASSUMED re-entries" 10 "$(<"$FX_DIR/recursive_fn_literal_element.js")"
 assert_estimate "modeled .map inside Promise.all in a literal's element runs once per item" 9 "$(<"$FX_DIR/promise_all_map_in_literal_element.js")"
 # Round 7 saw only `=>` and `function` as functions, and accepted a thunk in ANY
 # array literal as run once. A method, getter or class method holding the site,
@@ -807,7 +779,11 @@ assert_asks "thunk indexed out of a .map, called by a later .map, still asks" "$
 assert_estimate "an if block inside a literal's element runs once" 2 "$(<"$FX_DIR/if_block_in_literal_element.js")"
 assert_estimate "an anonymous function as a literal's element runs once" 2 "$(<"$FX_DIR/anonymous_function_literal_element.js")"
 assert_estimate "a pipeline stage inside a literal's element runs once per item" 9 "$(<"$FX_DIR/pipeline_stage_in_literal_element.js")"
-assert_estimate "thunks a .map returns into parallel() inside an element run once per item" 9 "$(<"$FX_DIR/returned_thunks_into_parallel_element.js")"fx close_brace_regex_in_interp <<'EOF'
+assert_estimate "thunks a .map returns into parallel() inside an element run once per item" 9 "$(<"$FX_DIR/returned_thunks_into_parallel_element.js")"
+# Before this commit a missing newline joined the next `fx` line to the
+# assertion above, so close_brace_regex_in_interp was fed to that assertion's
+# stdin and never written, and the differential never ran it.
+fx close_brace_regex_in_interp <<'EOF'
 const p = (s) => `x ${s.replace(/}/g, '')} y`
 await pipeline(args.units, u => agent('a'), e => agent('b'), r => agent('c'))
 EOF
@@ -826,208 +802,294 @@ const re = /a\/*b/
 await pipeline(args.units, u => agent('c'), e => agent('d'))
 EOF
 
-DIFF_N=0
-DIFF_LOWERED=0
-# diff_one <label> <file>
-diff_one() {
-    local label="$1" file="$2" base live bv be lv le want
-    base=$(python3 "$BASELINE" 10 8 <"$file" 2>/dev/null)
-    live=$(python3 "$ESTIMATOR" 10 8 <"$file" 2>/dev/null)
-    bv=$(sed -n 's/^VERDICT=//p' <<<"$base")
-    be=$(sed -n 's/^ESTIMATE=//p' <<<"$base")
-    lv=$(sed -n 's/^VERDICT=//p' <<<"$live")
-    le=$(sed -n 's/^ESTIMATE=//p' <<<"$live")
-    DIFF_N=$((DIFF_N + 1))
-    case "$lv" in
-        OK | OVER_LIMIT | NO_AGENTS) : ;;
-        *)
-            FAIL=$((FAIL + 1))
-            printf '  FAIL  differential: %s: live VERDICT=%s\n' "$label" "${lv:-<none>}"
-            return
-            ;;
-    esac
-    if [ "$lv" = "NO_AGENTS" ] && [ "$bv" != "NO_AGENTS" ]; then
-        FAIL=$((FAIL + 1))
-        printf '  FAIL  differential: %s: live NO_AGENTS where #2668 had %s/%s\n' "$label" "$bv" "$be"
-        return
-    fi
-    if [ "${le:-0}" -lt "${be:-0}" ]; then
-        want=$(correct_count "$label")
-        floor=$(true_floor "$label")
-        if [ "$le" = "$want" ]; then
-            DIFF_LOWERED=$((DIFF_LOWERED + 1))
-            PASS=$((PASS + 1))
-            printf '  PASS  differential: %s: %s -> %s, the correct count\n' "$label" "$be" "$le"
-        elif [ "$floor" != none ] && [ "$le" -ge "$floor" ]; then
-            DIFF_LOWERED=$((DIFF_LOWERED + 1))
-            PASS=$((PASS + 1))
-            printf '  PASS  differential: %s: %s -> %s, at or above the true count %s\n' "$label" "$be" "$le" "$floor"
-        else
-            FAIL=$((FAIL + 1))
-            printf '  FAIL  differential: %s: %s -> %s, below #2668 and not the listed count (%s)\n' \
-                "$label" "$be" "$le" "$want"
-        fi
-        return
-    fi
-    PASS=$((PASS + 1))
-    printf '  PASS  differential: %s: %s/%s -> %s/%s\n' "$label" "${bv}" "${be:--}" "${lv}" "${le:--}"
+echo
+echo "== differential: the true count, and the #2668 estimator where it asks =="
+
+# Every inline fixture above, the committed corpus, and every bundled template
+# is run three ways: the live estimator, the frozen #2668 estimator, and (for
+# fixtures) node with a counting agent() and 8-item lists, which is the true
+# count on the estimator's own ASSUMED=8 convention. The rules:
+#   1. The estimate is never below a measured true count, and never NO_AGENTS
+#      where a fixture creates agents. This is the no-fail-open property: the
+#      guard never goes silent on a run it should ask about. The exceptions are
+#      the KNOWN_UNDER fixtures, which pin the documented gaps instead.
+#   2. Where #2668 asks, the estimate is below #2668's only for an input listed
+#      in LOWERED with the #2668 over-count it corrects, and even then never
+#      below the measured count (a template's, which cannot run, is its budget).
+#   3. The parse decides (PARSER=acorn) on every input except the listed one
+#      acorn rejects; a corpus of fallbacks would test #2668, not the parse.
+#   4. Every committed corpus fixture runs under the harness and is costed at
+#      exactly its true count, except the two listed in ABOVE, so a change
+#      that over-counts is caught as well as one that under-counts.
+# It is vacuous unless it ran templates, fixtures over the limit, and at least
+# one lowered input.
+DIFF_PY=$(
+    cat <<'PY'
+import concurrent.futures, subprocess, sys
+
+estimator, baseline, truecount, limit = sys.argv[1], sys.argv[2], sys.argv[3], 10
+
+# #2668 multiplied a thunk inside a literal array by the array's length, and
+# read a trailing comma as an element. These inputs are costed below its
+# figure at their measured count; nothing else may be.
+LOWERED = {
+    "literal array element run once": """
+        literal_4_thunks literal_holding_nested_fanout literal_concat_mapped
+        promise_all_map_in_literal_element pipeline_stage_in_literal_element
+        returned_thunks_into_parallel_element array_from_in_literal_element
+        loop_in_literal_element while_in_literal_element
+        method_shorthand_loop_after method_shorthand_map_after class_method_map_after
+        getter_loop_after inner_array_thunk_map_after inner_array_thunk_loop_after
+        inner_array_recursive_thunk map_returned_thunk_indexed_loop
+        map_returned_thunk_indexed_map element_const_arrow_map_after
+        element_default_parameter element_forEach_callback element_function_array_for_of
+        element_iife_arrow_loop_after element_map_callback element_named_function_map_after
+        element_object_arrow_map_after element_pipeline_stage element_then_callback
+        element_while_loop method_named_catch method_named_if class_method_named_catch
+        method_named_switch_and_with
+        setter_assigned_in_loop generator_beside_loop thunk_from_map_indexed_and_called
+        blueprint-story-audit.workflow.js verify-before-filing.workflow.js
+    """,
+    "a trailing comma is not an element": "trailing_comma_mapped",
+}
+LOWERED = {name: why for why, names in LOWERED.items() for name in names.split()}
+TEMPLATE_BUDGET = {"blueprint-story-audit.workflow.js": 20, "verify-before-filing.workflow.js": 49}
+EXPECTED_FALLBACK = {"quote_regex_on_proven_parse"}
+# Documented fail-opens, pinned so the docs stay true: each is costed at
+# ASSUMED (8) where the script states a larger count. Fixing one turns its
+# row red on purpose -- then delete it here and from the README's gap list.
+KNOWN_UNDER = {
+    "known_gap_function_in_map": "a function stored in a Map is called ASSUMED times",
+    "known_gap_array_grown_by_index": "an array grown by index is ASSUMED long",
+}
+# The committed corpus is costed at exactly its true count, so a change that
+# over-counts fails too; these two are above it by design.
+ABOVE = {
+    "enclosing_recursion": "a recursion is 1 + ASSUMED calls per entry; go(8) recurses 8 deep",
+    "window_with_a_site_per_wave": "3 waves of 3 run the plan agent 3 times; the loop is costed at its list, 8",
 }
 
-for f in "$FX_DIR"/*.js; do
-    diff_one "$(basename "$f" .js)" "$f"
-done
 
+def rollup(path, script):
+    out = subprocess.run([sys.executable, script, str(limit), "8"], stdin=open(path), capture_output=True, text=True).stdout
+    return dict(line.split("=", 1) for line in out.splitlines() if "=" in line)
+
+
+def truth(path):
+    try:
+        r = subprocess.run(["node", truecount, path], capture_output=True, text=True, timeout=60)
+    except subprocess.TimeoutExpired:
+        return None
+    out = r.stdout.strip()
+    return int(out) if r.returncode == 0 and out.isdigit() else None
+
+
+def run(item):
+    label, path, kind = item
+    return label, kind, rollup(path, estimator), rollup(path, baseline), None if kind == "template" else truth(path)
+
+
+items = [line.split("\t") for line in sys.stdin.read().splitlines() if line]
+n = templates = measured = over = lowered = 0
+with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+    results = list(pool.map(run, items))
+def check(label, kind, live, base, true):
+    """Violations for one input, and a one-line account of it."""
+    bad = []
+    lv, bv = live.get("VERDICT"), base.get("VERDICT")
+    # NO_AGENTS carries no ESTIMATE: it is a count of zero.
+    le, be = int(live.get("ESTIMATE") or 0), int(base.get("ESTIMATE") or 0)
+    if lv not in ("OK", "OVER_LIMIT", "NO_AGENTS"):
+        return [f"live VERDICT={lv}"], "", False
+    parser = live.get("PARSER")
+    if (parser == "acorn") == (label in EXPECTED_FALLBACK):
+        bad.append(f"PARSER={parser} FALLBACK={live.get('FALLBACK', '')}")
+    if label in KNOWN_UNDER:
+        if true is None or le >= true:
+            bad.append(f"no longer below its true count ({le} vs {true}): remove it from KNOWN_UNDER and the README")
+        return bad, f"known gap, {le} for a true {true}: {KNOWN_UNDER[label]}", False
+    if true is not None:
+        if lv == "NO_AGENTS" and true > 0:
+            bad.append(f"NO_AGENTS, true count {true}")
+        elif le < true:
+            bad.append(f"estimate {le} below the true count {true}")
+        elif kind == "corpus" and le != true and label not in ABOVE:
+            bad.append(f"estimate {le} above the true count {true} (corpus fixtures are exact)")
+    elif kind == "corpus":
+        bad.append("the corpus fixture did not run under truecount.mjs")
+    elif lv == "NO_AGENTS" and bv != "NO_AGENTS":
+        bad.append(f"NO_AGENTS where #2668 had {bv}/{be}")
+    note, low = f"#2668 {be}, true {true if true is not None else '-'}, live {le}", False
+    if bv == "OVER_LIMIT" and le < be:
+        why = LOWERED.get(label)
+        floor = TEMPLATE_BUDGET.get(label, true)
+        if why is None:
+            bad.append(f"{be} -> {le}, below #2668 and not listed in LOWERED")
+        elif floor is None or le < floor or (label in TEMPLATE_BUDGET and le != floor):
+            bad.append(f"{be} -> {le}, listed ({why}) but not at its measured count {floor}")
+        else:
+            note, low = f"#2668 {be} -> live {le}, the true count ({why})", True
+    return bad, note, low
+
+
+for label, kind, live, base, true in results:
+    n += 1
+    templates += kind == "template"
+    measured += true is not None
+    over += true is not None and true > limit
+    bad, note, low = check(label, kind, live, base, true)
+    lowered += low and not bad
+    for b in bad:
+        print(f"VIOLATION {label}: {b}")
+    if not bad:
+        print(f"OK {label}: {note}")
+print(f"INPUTS={n} TEMPLATES={templates} MEASURED={measured} OVER_LIMIT_TRUE={over} LOWERED={lowered}")
+PY
+)
 REPO_ROOT=$(git -C "$(dirname "$0")" rev-parse --show-toplevel 2>/dev/null)
-N_TEMPLATES=0
-if [ -n "$REPO_ROOT" ]; then
-    while IFS= read -r rel; do
-        [ -n "$rel" ] || continue
-        N_TEMPLATES=$((N_TEMPLATES + 1))
-        diff_one "$(basename "$rel")" "$REPO_ROOT/$rel"
-    done < <(git -C "$REPO_ROOT" ls-files '*/workflows/*.js')
-fi
-
-# Non-vacuous: a differential over nothing is green by construction.
-if [ "$N_TEMPLATES" -gt 0 ] && [ "$DIFF_LOWERED" -gt 0 ] && [ -f "$BASELINE" ]; then
+DIFF_INPUTS=$(
+    for f in "$FX_DIR"/*.js; do printf '%s\t%s\tfixture\n' "$(basename "$f" .js)" "$f"; done
+    for f in "$CORPUS_DIR"/*.js; do printf '%s\t%s\tcorpus\n' "$(basename "$f" .js)" "$f"; done
+    if [ -n "$REPO_ROOT" ]; then
+        git -C "$REPO_ROOT" ls-files '*/workflows/*.js' | while IFS= read -r rel; do
+            printf '%s\t%s\ttemplate\n' "$(basename "$rel")" "$REPO_ROOT/$rel"
+        done
+    fi
+)
+DIFF_OUT=$(python3 -c "$DIFF_PY" "$ESTIMATOR" "$BASELINE" "$TRUECOUNT" <<<"$DIFF_INPUTS" 2>&1)
+while IFS= read -r line; do
+    case "$line" in
+        VIOLATION*)
+            FAIL=$((FAIL + 1))
+            printf '  FAIL  differential: %s\n' "${line#VIOLATION }"
+            ;;
+        OK*)
+            PASS=$((PASS + 1))
+            printf '  PASS  differential: %s\n' "${line#OK }"
+            ;;
+    esac
+done <<<"$DIFF_OUT"
+d_n=$(sed -n 's/.*INPUTS=\([0-9]*\).*/\1/p' <<<"$DIFF_OUT")
+d_t=$(sed -n 's/.*TEMPLATES=\([0-9]*\).*/\1/p' <<<"$DIFF_OUT")
+d_m=$(sed -n 's/.*MEASURED=\([0-9]*\).*/\1/p' <<<"$DIFF_OUT")
+d_o=$(sed -n 's/.*OVER_LIMIT_TRUE=\([0-9]*\).*/\1/p' <<<"$DIFF_OUT")
+d_l=$(sed -n 's/.*LOWERED=\([0-9]*\).*/\1/p' <<<"$DIFF_OUT")
+if [ "${d_t:-0}" -gt 0 ] && [ "${d_o:-0}" -gt 0 ] && [ "${d_l:-0}" -gt 0 ] && ! grep -q '^VIOLATION' <<<"$DIFF_OUT"; then
     PASS=$((PASS + 1))
-    printf '  PASS  differential covered %d inputs (%d bundled templates), %d at a lower correct count\n' \
-        "$DIFF_N" "$N_TEMPLATES" "$DIFF_LOWERED"
-else
+    printf '  PASS  differential held over %d inputs (%d templates, %d measured, %d over the limit, %d lowered to their true count)\n' \
+        "$d_n" "$d_t" "$d_m" "$d_o" "$d_l"
+elif ! grep -q '^VIOLATION' <<<"$DIFF_OUT"; then
     FAIL=$((FAIL + 1))
-    printf '  FAIL  differential is vacuous: %d templates, %d lowered, baseline %s\n' \
-        "$N_TEMPLATES" "$DIFF_LOWERED" "$([ -f "$BASELINE" ] && echo present || echo missing)"
+    printf '  FAIL  differential is vacuous or did not run: %s\n' "$(tail -3 <<<"${DIFF_OUT:-<no output>}")"
 fi
 
 echo
-echo "== property: never below the flat reading (#2670 review, round 3) =="
+echo "== the fallback is the #2668 estimator, figure for figure =="
 
-# Three review rounds each found code the structural walk blanked that its
-# proof checks missed. analyze() therefore costs the #2668 flat scan too and
-# keeps the higher figure. This asserts that property directly, per input:
-# the reported ESTIMATE is at least what the SAME analysis gives on the
-# flat-sanitized text (NO_AGENTS ranks below any estimate). It is non-vacuous
-# only if some input's proven structural reading is strictly LOWER than its
-# flat reading -- the case the maximum exists for -- and a template was read.
-# The program is passed with -c: `python3 -` would read it from the same stdin
-# that carries the file list, and the list would be lost.
-PROP_PY=$(
+# When the parse cannot run, the #2668 estimator decides, and it asks more
+# often than the parse, never less. With node off PATH, every input must
+# report exactly #2668's VERDICT and ESTIMATE, name the fallback, and say why.
+FALLBACK_PY=$(
     cat <<'PY'
-import importlib.util, sys
+import os, subprocess, sys, tempfile
 
+estimator, baseline = sys.argv[1], sys.argv[2]
+nodeless = tempfile.mkdtemp()
+n = mismatched = 0
+for line in sys.stdin.read().splitlines():
+    if not line:
+        continue
+    label, path, _ = line.split("\t")
+    def rollup(script, env=None):
+        out = subprocess.run([sys.executable, script, "10", "8"], stdin=open(path), capture_output=True, text=True, env=env).stdout
+        return dict(l.split("=", 1) for l in out.splitlines() if "=" in l)
+    live = rollup(estimator, {"PATH": nodeless})
+    base = rollup(baseline)
+    n += 1
+    same = all(live.get(k) == base.get(k) for k in ("VERDICT", "ESTIMATE", "SITES"))
+    named = live.get("PARSER") == "fallback" and "node not found" in live.get("FALLBACK", "")
+    if not (same and named):
+        mismatched += 1
+        print(f"VIOLATION {label}: nodeless {live.get('VERDICT')}/{live.get('ESTIMATE')} {live.get('PARSER')} vs #2668 {base.get('VERDICT')}/{base.get('ESTIMATE')}")
+    else:
+        print(f"OK {label}: {base.get('VERDICT')}/{base.get('ESTIMATE', '-')}")
+os.rmdir(nodeless)
+print(f"FALLBACK_INPUTS={n}")
+PY
+)
+FB_OUT=$(python3 -c "$FALLBACK_PY" "$ESTIMATOR" "$BASELINE" <<<"$DIFF_INPUTS" 2>&1)
+while IFS= read -r line; do
+    case "$line" in
+        VIOLATION*)
+            FAIL=$((FAIL + 1))
+            printf '  FAIL  fallback: %s\n' "${line#VIOLATION }"
+            ;;
+        OK*)
+            PASS=$((PASS + 1))
+            printf '  PASS  fallback without node = #2668: %s\n' "${line#OK }"
+            ;;
+    esac
+done <<<"$FB_OUT"
+fb_n=$(sed -n 's/.*FALLBACK_INPUTS=\([0-9]*\).*/\1/p' <<<"$FB_OUT")
+if [ "${fb_n:-0}" -gt 0 ] && ! grep -q '^VIOLATION' <<<"$FB_OUT"; then
+    PASS=$((PASS + 1))
+    printf '  PASS  without node, all %d inputs report the #2668 figure\n' "$fb_n"
+elif ! grep -q '^VIOLATION' <<<"$FB_OUT"; then
+    FAIL=$((FAIL + 1))
+    printf '  FAIL  fallback check did not run: %s\n' "${FB_OUT:-<no output>}"
+fi
+
+# End to end through the hook, with a `node` that fails first on PATH: the four
+# literal thunks the parse costs at 4 (silent) are costed by #2668 at 16, and
+# the hook asks. The estimator's own FALLBACK= reason proves the stub is the
+# node that ran; without that, a stub PATH lookup skipped would pass silently.
+FAKE_BIN=$(mktemp -d) || { echo "FATAL: mktemp -d failed" >&2; exit 1; }
+printf '#!/bin/sh\nexit 3\n' >"$FAKE_BIN/node"
+chmod +x "$FAKE_BIN/node"
+fake_why=$(PATH="$FAKE_BIN:$PATH" python3 "$ESTIMATOR" 10 8 <"$FX_DIR/literal_4_thunks.js" | sed -n 's/^FALLBACK=//p')
+out=$(run_hook "$(payload_for "$(<"$FX_DIR/literal_4_thunks.js")")" PATH="$FAKE_BIN:$PATH")
+if [[ "$fake_why" == "parser exited 3"* ]] \
+    && [ "$(jq -r '.hookSpecificOutput.permissionDecision // empty' <<<"$out" 2>/dev/null)" = "ask" ] \
+    && [ -z "$(run_hook "$(payload_for "$(<"$FX_DIR/literal_4_thunks.js")")")" ]; then
+    PASS=$((PASS + 1))
+    printf '  PASS  with a failing node the hook asks where #2668 does (4 thunks: 16), and is silent with a working one\n'
+else
+    FAIL=$((FAIL + 1))
+    printf '  FAIL  failing-node hook did not fall back to asking: reason "%s", output %s\n' "$fake_why" "${out:-<silent>}"
+fi
+rm -rf "$FAKE_BIN"
+
+# An error inside the analysis falls back too, rather than failing open.
+ERR_OUT=$(python3 -c '
+import importlib.util, sys
 spec = importlib.util.spec_from_file_location("est", sys.argv[1])
 est = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(est)
-
-def rank(r):
-    return r.get("ESTIMATE", -1)
-
-n = templates = lower = 0
-for path in sys.stdin.read().split("\n"):
-    if not path:
-        continue
-    src = open(path, encoding="utf-8").read()
-    n += 1
-    templates += path.endswith(".workflow.js")
-    live = est.analyze(src, 10, 8)
-    flat = est.estimate_text(est._flat_sanitize(src), src, 10, 8)
-    text, mode, _ = est.sanitize(src)
-    if mode == "structural" and rank(est.estimate_text(text, src, 10, 8)) < rank(flat):
-        lower += 1
-    if rank(live) < rank(flat):
-        print(f"VIOLATION {path.rsplit('/', 1)[-1]} live={rank(live)} flat={rank(flat)}")
-print(f"INPUTS={n} TEMPLATES={templates} STRUCTURAL_LOWER={lower}")
-PY
-)
-PROP_OUT=$(
-    {
-        for f in "$FX_DIR"/*.js; do printf '%s\n' "$f"; done
-        [ -n "$REPO_ROOT" ] && git -C "$REPO_ROOT" ls-files '*/workflows/*.js' | sed "s|^|$REPO_ROOT/|"
-    } | python3 -c "$PROP_PY" "$ESTIMATOR" 2>&1
-)
-while IFS= read -r line; do
-    case "$line" in
-        VIOLATION*)
-            FAIL=$((FAIL + 1))
-            printf '  FAIL  property: %s\n' "${line#VIOLATION }"
-            ;;
-    esac
-done <<<"$PROP_OUT"
-prop_n=$(sed -n 's/.*INPUTS=\([0-9]*\).*/\1/p' <<<"$PROP_OUT")
-prop_t=$(sed -n 's/.*TEMPLATES=\([0-9]*\).*/\1/p' <<<"$PROP_OUT")
-prop_l=$(sed -n 's/.*STRUCTURAL_LOWER=\([0-9]*\).*/\1/p' <<<"$PROP_OUT")
-if [ "${prop_t:-0}" -gt 0 ] && [ "${prop_l:-0}" -gt 0 ] && ! grep -q '^VIOLATION' <<<"$PROP_OUT"; then
+def boom(self, limit):
+    raise KeyError("simulated")
+est.Analysis.run = boom
+r = est.analyze(open(sys.argv[2]).read(), 10, 8)
+print(r.get("PARSER"), r.get("ESTIMATE"), r.get("FALLBACK"))
+' "$ESTIMATOR" "$FX_DIR/literal_4_thunks.js" 2>&1)
+if [[ "$ERR_OUT" == "fallback 16 analysis error (KeyError)"* ]]; then
     PASS=$((PASS + 1))
-    printf '  PASS  property held over %d inputs (%d templates); %d had a lower structural reading\n' \
-        "$prop_n" "$prop_t" "$prop_l"
-elif ! grep -q '^VIOLATION' <<<"$PROP_OUT"; then
+    printf '  PASS  an analysis error is costed by #2668 (16), not reported as ERROR\n'
+else
     FAIL=$((FAIL + 1))
-    printf '  FAIL  property is vacuous or did not run: %s\n' "${PROP_OUT:-<no output>}"
+    printf '  FAIL  analysis error did not fall back: %s\n' "$ERR_OUT"
 fi
 
-echo
-echo "== property: an unproven or quoted-regex parse is never below #2668 (#2670 review, rounds 4-5) =="
-
-# The two lowering rules apply only where the structural walk proved itself
-# and the file holds no regex literal with a quote in it. On any other input
-# the reported ESTIMATE must be at least the frozen #2668 estimator's.
-# Non-vacuous only if some such input would have fallen below #2668 without
-# the floor, i.e. the floor did work.
-UNPROVEN_PY=$(
-    cat <<'PY'
-import importlib.util, sys
-
-def load(path, name):
-    spec = importlib.util.spec_from_file_location(name, path)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
-
-est, base = load(sys.argv[1], "est"), load(sys.argv[2], "base")
-
-def rank(r):
-    return r.get("ESTIMATE", -1)
-
-unproven = floored = 0
-for path in sys.stdin.read().split("\n"):
-    if not path:
-        continue
-    src = open(path, encoding="utf-8").read()
-    text, mode, _ = est.sanitize(src)
-    if mode != "flat" and not est._QUOTED_REGEX.search(src):
-        continue
-    unproven += 1
-    b = rank(base.analyze(src, 10, 8))
-    if rank(est.estimate_text(text, src, 10, 8)) < b:
-        floored += 1
-    if rank(est.analyze(src, 10, 8)) < b:
-        print(f"VIOLATION {path.rsplit('/', 1)[-1]} live={rank(est.analyze(src, 10, 8))} base={b}")
-print(f"UNPROVEN={unproven} FLOORED={floored}")
-PY
-)
-UNPROVEN_OUT=$(
-    {
-        for f in "$FX_DIR"/*.js; do printf '%s\n' "$f"; done
-        [ -n "$REPO_ROOT" ] && git -C "$REPO_ROOT" ls-files '*/workflows/*.js' | sed "s|^|$REPO_ROOT/|"
-    } | python3 -c "$UNPROVEN_PY" "$ESTIMATOR" "$BASELINE" 2>&1
-)
-while IFS= read -r line; do
-    case "$line" in
-        VIOLATION*)
-            FAIL=$((FAIL + 1))
-            printf '  FAIL  unproven property: %s\n' "${line#VIOLATION }"
-            ;;
-    esac
-done <<<"$UNPROVEN_OUT"
-up_n=$(sed -n 's/.*UNPROVEN=\([0-9]*\).*/\1/p' <<<"$UNPROVEN_OUT")
-up_f=$(sed -n 's/.*FLOORED=\([0-9]*\).*/\1/p' <<<"$UNPROVEN_OUT")
-if [ "${up_f:-0}" -gt 0 ] && ! grep -q '^VIOLATION' <<<"$UNPROVEN_OUT"; then
+# The fallback and the oracle are one frozen file. Pin it: an edit that made
+# #2668 ask less would weaken the fallback and move the baseline in one go.
+BASELINE_SHA=f7086551844fa8dcf9408f9fc91980d58220a490fdedc2acf25c5660b03f0945
+got_sha=$(python3 -c 'import hashlib, sys; print(hashlib.sha256(open(sys.argv[1], "rb").read()).hexdigest())' "$BASELINE")
+if [ "$got_sha" = "$BASELINE_SHA" ]; then
     PASS=$((PASS + 1))
-    printf '  PASS  unproven property held over %d unproven or quoted-regex inputs; the floor raised %d\n' "$up_n" "$up_f"
-elif ! grep -q '^VIOLATION' <<<"$UNPROVEN_OUT"; then
+    printf '  PASS  the #2668 estimator is unchanged (sha256 pinned)\n'
+else
     FAIL=$((FAIL + 1))
-    printf '  FAIL  unproven property is vacuous or did not run: %s\n' "${UNPROVEN_OUT:-<no output>}"
+    printf '  FAIL  lib/workflow-scale-estimate-2668.py changed: sha256 %s\n' "$got_sha"
 fi
-
 echo
 echo "== structural guards: must stay silent =="
 

@@ -585,9 +585,9 @@ check "N12: not reported as a desync"                 "0" "$(printf '%s\n' "$o" 
 # N13. End to end against the REAL estimator: a `{` regex in one template and a
 # `}` regex in a later one blank the declaration of `items` between them while
 # passing every proof check, so the structural reading costs the fan-out at 8
-# and the budget of 10 passed. The estimator now keeps the higher of that and
-# the #2668 flat reading (12 items), so the budget gate agrees with the scale
-# guard (#2670 review, round 3).
+# and the budget of 10 passed (#2670 review, round 3). The estimator now parses
+# the script, so it reads the 12 items wherever the regexes sit, and the budget
+# gate agrees with the scale guard.
 root=$(mk_root N13)
 d=$(mk_skill "$root" demo-plugin demo-skill)
 {

@@ -1,10 +1,12 @@
-# FROZEN ORACLE -- do not edit. This is workflow-scale-estimate.py exactly as
-# #2668 shipped it (d82d6c42), shebang aside. test-workflow-scale-guard.sh runs
-# it beside the live estimator as a differential: the live one may report a
-# LOWER estimate than this only where the test lists the lower figure as the
-# correct count, and may never report NO_AGENTS where this found agents. A
-# guard's baseline has to stay fixed to mean anything, so improvements land in
-# the live estimator and in the test's expected-count table, never here.
+# FROZEN -- do not edit. This is workflow-scale-estimate.py exactly as #2668
+# shipped it (d82d6c42), shebang aside. It has two jobs:
+#   * the FALLBACK: workflow-scale-estimate.py loads it and reports its figure
+#     whenever the JavaScript parse cannot run (no `node`, a syntax error, a
+#     timeout, an analysis error).
+#   * the ORACLE: test-workflow-scale-guard.sh runs it beside the live estimator
+#     as a differential, and pins this file's sha256 so an edit fails the suite.
+# A baseline has to stay fixed to mean anything, so improvements land in the
+# live estimator and in the test's tables, never here.
 """Statically estimate how many agents a Workflow tool script will spawn.
 
 Reads a workflow script on stdin, writes a KEY=VALUE rollup on stdout

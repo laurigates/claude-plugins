@@ -30,10 +30,13 @@
 #      gated and a resume re-runs only what changed.
 #   3. Obtain the script text: inline `script`, else read `scriptPath`. A saved
 #      workflow referenced by `name` has no text here — fail open.
-#   4. Hand the text to lib/workflow-scale-estimate.py, which returns a
-#      KEY=VALUE rollup (VERDICT / ESTIMATE / SITES / SOURCE). Bounded fan-outs
-#      are counted exactly; a fan-out over a runtime-length list is costed at
+#   4. Hand the text to workflow-scale-estimate.py, which parses it with the
+#      vendored acorn under `node` and returns a KEY=VALUE rollup (VERDICT /
+#      ESTIMATE / SITES / SOURCE / PARSER). Bounded fan-outs and loops are
+#      counted exactly; a repetition over a runtime-length list is costed at
 #      CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH items so the limit still governs it.
+#      Without `node`, or on a script acorn rejects, the frozen #2668
+#      estimator decides instead (PARSER=fallback), which asks more, not less.
 #   5. VERDICT=OVER_LIMIT -> `ask`, surfacing the estimate and the two cheap
 #      remedies. Everything else exits 0 silently.
 #
@@ -44,11 +47,11 @@
 # them approve in one keystroke. Declining returns the agent to the script with
 # a concrete reason.
 #
-# Fails OPEN by design. Never asks: a script the analyzer cannot parse, a saved
-# workflow with no inline script, a resume, an absent python3/jq, or any script
-# whose agent() sites are all bounded and within the limit. Template-literal
-# interpolations are treated as string content, so an agent() call written
-# inside one is invisible — prompts live in templates, calls do not.
+# Fails OPEN by design. Never asks: a saved workflow with no inline script, a
+# resume, an absent python3/jq, an estimator that errors outright
+# (VERDICT=ERROR), or any script whose agent() sites are all bounded and within
+# the limit. What the estimate itself cannot bound is listed in the
+# estimator's docstring and hooks-plugin/README.md.
 #
 # Tunables (read from the hook's own process environment):
 #   CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS      limit before asking (default 10)
