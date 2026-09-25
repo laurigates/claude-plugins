@@ -4,7 +4,7 @@ description: "GitHub Actions billing, workflow efficiency, and waste analysis at
 user-invocable: false
 allowed-tools: Bash(bash *), Bash(gh api *), Bash(gh repo *), Bash(gh workflow *), Bash(gh run *), Read, Grep, Glob, TodoWrite
 created: 2025-01-30
-modified: 2026-06-18
+modified: 2026-09-25
 reviewed: 2026-06-10
 ---
 
@@ -20,6 +20,7 @@ Analyze GitHub Actions usage, costs, and efficiency across organizations and rep
 | Identifying wasted workflow runs | Setting up new workflows -- use github-actions-workflows |
 | Investigating workflow trigger patterns | Managing cache keys -- use github-actions-cache-optimization |
 | Comparing efficiency across repos | Monitoring a single run -- use gh-workflow-monitoring |
+| Sweeping an org or repo for waste | Reading the billing-usage API by hand (bare repo-name filter, net vs gross, monthly trend) -- use `github-actions-plugin:actions-billing-usage` |
 
 ## Context
 
