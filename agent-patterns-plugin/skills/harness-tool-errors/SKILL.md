@@ -3,7 +3,7 @@ name: harness-tool-errors
 description: Claude Code harness tool errors — Read on a missing path, directory or oversized file; Edit before Read or after a formatter; Bash permission denials. Use when a Read, Edit, Write or Bash call errors.
 allowed-tools: Read, Glob, Grep, Edit, Bash(ls *), Bash(git status *), TodoWrite
 created: 2026-09-24
-modified: 2026-09-24
+modified: 2026-09-25
 reviewed: 2026-09-24
 ---
 
@@ -137,6 +137,10 @@ Invoke `documentation-plugin:docs-fetch-fallbacks` when a WebFetch returns 404,
 string, `raw.githubusercontent.com`, `gh api repos/<o>/<r>/contents/<path>`,
 alternate UA, context7/WebSearch), the two-attempt ceiling, and the rule to
 surface the failure rather than loop.
+
+A fetch that *succeeds* is still a summary: WebFetch returns a model's digest of
+the page, not the page. When the answer gates real work, read the full source
+(`gh api …/contents/<path>`, a raw URL, the file itself) rather than the digest.
 
 ## Bash permission denials are terminal
 
