@@ -26,15 +26,29 @@ them before adding a second registered name; two of them need no registry.
 | Route | Call shape | Cost |
 |---|---|---|
 | **Registered name** *(chosen)* | `workflow('evaluate-skill', args)` | Needs a saved copy outside the repo. Throws on an unknown name. |
-| Script path | `workflow({scriptPath: '<repo>/evaluate-plugin/skills/evaluate-skill/workflows/evaluate-skill.workflow.js'}, args)` | No registry, but hardcodes a cross-plugin path into `evaluate-plugin-batch`, which then breaks if either skill moves or if only one plugin is installed. |
+| Script path | `workflow({scriptPath: '<repo>/evaluate-plugin/skills/evaluate-skill/workflows/evaluate-skill.workflow.js'}, args)` | No registry and no install step, but the path must be one the session can already read. The installed plugin cache is not (see below). |
 | Slash command per unit | each fan-out agent invokes `/evaluate:skill <plugin>/<skill>` with the `SlashCommand` tool — the pattern `configure-all-check.workflow.js` uses | No registry and no path, but the child runs as prose inside one agent, so the cell-level fan-out and the schema-forced verdicts are lost. |
 
-The name was chosen because `evaluate-plugin-batch` wants the *harness*, not the
-prose skill, and a cross-plugin filesystem path is exactly the kind of reference
-`.claude/rules/skill-consolidation.md` § 2 rules out (a relative path is dead for
-anyone who installed one plugin without the other). If registration ever proves
-unreliable in practice, the script-path route is the documented fallback — it is
-a supported platform input, not a workaround.
+`evaluate-plugin-batch` wants the *harness*, not the prose skill, which rules
+out the slash-command route. Both skills live in `evaluate-plugin`, so a script
+path would not cross a plugin boundary. What rules it out is a platform
+restriction: a nested `workflow({scriptPath})` only accepts *a script path the
+Workflow tool returned, or a file the session can already read (the working
+directory or a directory you have added)*. Probed 2026-09-25 with zero-agent
+workflows (empty `args` makes `evaluate-skill` abort before any `agent()` call):
+
+| `scriptPath` target | Result |
+|---|---|
+| The repo checkout, from a session whose working directory is the checkout | Resolved |
+| `~/.claude/plugins/cache/<marketplace>/evaluate-plugin/<version>/…` | Threw the restriction above |
+| `~/.claude/workflows/evaluate-skill.workflow.js` | Threw the restriction above |
+
+So the script path works only when the session runs inside this checkout, and
+fails for anyone who installed the plugin. Adding the plugin cache to
+`permissions.additionalDirectories` would lift that; whether to grant it is
+open in [#2829](https://github.com/laurigates/claude-plugins/issues/2829).
+Until it is decided, the registered name is the only route that works from a
+plugin install.
 
 ## Where a registered workflow lives
 
@@ -91,7 +105,11 @@ about the runner's home directory. Verify it by hand, in this order:
    — the installed copy has not drifted from the bundled source of truth. Re-run
    this after any edit to the bundled file; a stale registered copy is a silent
    fork.
-4. In a session, check that `evaluate-skill` appears in `/workflows`.
+4. In a session, check that `evaluate-skill` appears in `/workflows`. The
+   registry is not re-read the moment the file lands: on 2026-09-25 the session
+   that installed it still got `no workflow with that name. Available:
+   deep-research` about half an hour later, and the same call resolved only
+   after the registry reloaded. Check from a new session.
 
 Do **not** verify it by invoking the workflow. It is a template: running it
 against empty or placeholder `args` spends real opus agents to discover that.
