@@ -1,420 +1,343 @@
 #!/usr/bin/env python3
-"""Statically estimate how many agents a Workflow tool script will spawn.
+"""Count the agents a Workflow script will spawn, or say that it cannot.
 
-Reads a workflow script on stdin, writes a KEY=VALUE rollup on stdout
-(structured-script-output convention) so the calling hook reads a verdict
-rather than recomputing the analysis:
+Reads a workflow script on stdin and writes a KEY=VALUE rollup on stdout
+(structured-script-output convention) for workflow-scale-guard.sh:
 
-    VERDICT=OK|OVER_LIMIT|NO_AGENTS|ERROR
-    SITES=<int>            agent() call sites found
-    ESTIMATE=<int>         agents the script is expected to spawn
-    LIMIT=<int>            the threshold it was compared against
-    ASSUMED=<int>          items each unbounded fan-out was costed at (if any)
-    SOURCE=<expr>          the fan-out expression(s) that could not be bounded
-    DETAIL=<one line>      human-readable summary
+    VERDICT=OK|OVER_LIMIT|UNBOUNDED|NO_AGENTS|PARSE_ERROR
+    PARSER=acorn|fallback
+    NAME=<meta name>           when the script states one
+    SITES=<int>                agent() and workflow() call sites
+    ESTIMATE=<int>             agents from the counted sites (all of them when
+                               VERDICT is OK or OVER_LIMIT)
+    LIMIT=<int>
+    UNBOUNDED=<int>            sites whose run count the text does not state
+    UNBOUNDED_AT=<line N: why; ...>
+    DETAIL=<one line>
 
-Why static estimation at all: the Workflow tool hands the script to a runtime
-that fans out agent() calls across map/parallel/pipeline. The cost of a run is
-set almost entirely by how many agents it creates, and that number is knowable
-from the script's shape *before* anything runs -- but only when the iteration
-source has a literal bound. This module's whole job is to separate
-"provably small", "provably large", and "cannot be bounded from the text".
+The rule, deliberately small:
 
-How an unbounded fan-out is costed, and why it is not simply blocked: a
-fan-out over a runtime-length list (`args.units`, `review.findings`) is both
-extremely common and genuinely unknowable from the text. Refusing all of them
-would tax nearly every legitimate workflow; waving them through is what let a
-496-agent run start against a 10-agent guideline. So each unbounded fan-out is
-costed at ASSUMED items (default 8) and the product is compared to the limit
-like any other. One agent per runtime item passes; two or more per item, or a
-fan-out nested inside another fan-out, does not -- which is the correct split,
-because per-item agent count and nesting depth are exactly what turn a fan-out
-into a runaway. The remedy is a visible cap (`.slice(0, N)`), which the bound
-resolver recognizes, so the block clears on a one-token edit.
+  A site's count is the product of the constructs around it. A construct is
+  BOUNDED only when it is a for...of / .map / .forEach / .flatMap /
+  parallel(xs.map(...)) / pipeline(xs, ...) over an array literal (its length)
+  or over an expression ending in .slice(a, b) with numeric literals (b - a);
+  a classic `for (let i = <lit>; i < <lit>; i++ | i += <lit>)` whose body never
+  writes i; parallel([...]) of thunks (each runs once); or a pipeline stage
+  (once per item of a bounded source). The site must sit in the top-level
+  script body or in inline callbacks/thunks of those constructs.
 
-Known gaps, deliberately fail-open (an unanalyzable script is NOT blocked):
-  - Template-literal interpolations `${...}` are treated as string content, so
-    an agent() call written inside one is invisible here. Prompts live in
-    templates; calls do not.
-  - Indirection through a helper function (`const fan = xs => parallel(...)`)
-    is not followed; the call site reads as a plain call and bounds as unknown.
-  - Dynamic array construction (`arr.push(...)` in a loop) is not modeled.
-  - A saved workflow referenced by name has no script text to read at all.
+  Everything else makes the site UNBOUNDED: while/do/for...in loops, a list
+  that is not a literal or a literal slice (a const holding a literal
+  included: it can be pushed to), any function or method whose callers would
+  have to be traced, a class body, and every workflow() call (a child
+  workflow's agents are invisible here).
+
+What it deliberately does not try to do: resolve variables, follow helpers,
+model mutation, recursion, getters, or any other JavaScript. UNBOUNDED makes
+the guard ask, and the ask says how to make it silent (cap the list at its
+source with .slice(0, N)). Asking is cheap; a model of JavaScript that grows a
+case per review round is not (#2787 reached 3,885 lines that way). Not seen at
+all: `agent` referenced without a call (passed as a callback, used as a
+template tag), and a saved workflow run by name, which has no script text.
+
+Parsing uses the vendored acorn parser under node (lib/workflow-scale-parse.cjs).
+A syntax error is PARSE_ERROR (the guard asks). No node, a crashed parser, a
+timeout, or an error in this file falls back to the pre-parser estimator
+(lib/workflow-scale-estimate-fallback.py), which regex-scans and costs runtime
+lists at ASSUMED items, so a machine without node behaves as it did before.
 """
 
+import importlib.util
+import json
+import os
 import re
+import shutil
+import subprocess
 import sys
 
-# Characters that can precede a `(` and still leave it a call rather than a
-# grouping paren. Used when walking backwards to find a `.map` receiver.
-_IDENT = re.compile(r"[A-Za-z0-9_$]")
+HERE = os.path.dirname(os.path.abspath(__file__))
+PARSER = os.path.join(HERE, "lib", "workflow-scale-parse.cjs")
+FALLBACK = os.path.join(HERE, "lib", "workflow-scale-estimate-fallback.py")
+FUNCS = ("FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression")
+EACH = ("map", "forEach", "flatMap")
+LOOPS = {
+    "WhileStatement": "while",
+    "DoWhileStatement": "do",
+    "ForInStatement": "for-in",
+}
+NOT_LITERAL = "not a literal array or .slice(0, N)"
 
 
-def sanitize(src: str) -> str:
-    """Blank out comments and string/template bodies, preserving offsets.
-
-    Every removed character becomes a space so that offsets computed on the
-    sanitized text index correctly into the original. Without this a `//` in a
-    URL or the word `agent(` inside a prompt string would be counted as code.
-    """
-    out = list(src)
-    i, n = 0, len(src)
-    while i < n:
-        c = src[i]
-        # Line comment
-        if c == "/" and i + 1 < n and src[i + 1] == "/":
-            while i < n and src[i] != "\n":
-                out[i] = " "
-                i += 1
-            continue
-        # Block comment
-        if c == "/" and i + 1 < n and src[i + 1] == "*":
-            out[i] = out[i + 1] = " "
-            i += 2
-            while i < n and not (src[i] == "*" and i + 1 < n and src[i + 1] == "/"):
-                if src[i] != "\n":
-                    out[i] = " "
-                i += 1
-            if i < n:
-                out[i] = " "
-                if i + 1 < n:
-                    out[i + 1] = " "
-                i += 2
-            continue
-        # String or template literal: blank the body, keep the delimiters so
-        # that `[` / `,` scanning still sees a well-formed expression shape.
-        if c in "'\"`":
-            quote = c
-            i += 1
-            while i < n:
-                if src[i] == "\\":
-                    if src[i] != "\n":
-                        out[i] = " "
-                    if i + 1 < n and src[i + 1] != "\n":
-                        out[i + 1] = " "
-                    i += 2
-                    continue
-                if src[i] == quote:
-                    break
-                if src[i] != "\n":
-                    out[i] = " "
-                i += 1
-            i += 1
-            continue
-        i += 1
-    return "".join(out)
+class ParserUnavailable(Exception):
+    pass
 
 
-def match_forward(text: str, start: int) -> int:
-    """Index just past the bracket group opening at `start`. -1 if unbalanced."""
-    pairs = {"(": ")", "[": "]", "{": "}"}
-    if start >= len(text) or text[start] not in pairs:
-        return -1
-    stack = [pairs[text[start]]]
-    i = start + 1
-    while i < len(text) and stack:
-        ch = text[i]
-        if ch in pairs:
-            stack.append(pairs[ch])
-        elif ch in ")]}":
-            if ch != stack[-1]:
-                return -1
-            stack.pop()
-        i += 1
-    return i if not stack else -1
+def parse(src: str) -> dict:
+    node = shutil.which("node")
+    if not node or not os.path.isfile(PARSER):
+        raise ParserUnavailable("node not on PATH")
+    try:
+        cmd = [node, PARSER]
+        opts = {
+            "capture_output": True,
+            "encoding": "utf-8",
+            "timeout": 4,
+            "check": False,
+        }
+        out = subprocess.run(cmd, input=src, **opts)  # noqa: PLW1510 - check=False in opts
+        return json.loads(out.stdout)
+    except subprocess.TimeoutExpired as exc:
+        raise ParserUnavailable("parser timed out") from exc
+    except ValueError as exc:
+        raise ParserUnavailable("parser crashed") from exc
 
 
-def receiver_of(text: str, dot: int) -> str:
-    """Expression to the left of a `.map`/`.flatMap` dot at index `dot`."""
-    i = dot - 1
-    while i >= 0 and text[i] in " \t\n":
-        i -= 1
-    end = i + 1
-    closers = {")": "(", "]": "[", "}": "{"}
-    while i >= 0:
-        ch = text[i]
-        if ch in closers:
-            depth, opener = 1, closers[ch]
-            i -= 1
-            while i >= 0 and depth:
-                if text[i] == ch:
-                    depth += 1
-                elif text[i] == opener:
-                    depth -= 1
-                i -= 1
-            continue
-        if _IDENT.match(ch) or ch in "._":
-            i -= 1
-            continue
-        break
-    return text[i + 1 : end].strip()
+def kids(node):
+    """Child nodes and node lists of an AST node (location data excluded)."""
+    return [v for k, v in node.items() if k != "loc" and isinstance(v, (dict, list))]
 
 
-def top_level_items(inner: str) -> int:
-    """Count comma-separated items at depth 0 inside an array/arg body."""
-    if not inner.strip():
-        return 0
-    depth, items = 0, 1
-    for ch in inner:
-        if ch in "([{":
-            depth += 1
-        elif ch in ")]}":
-            depth -= 1
-        elif ch == "," and depth == 0:
-            items += 1
-    return items
+def int_literal(node):
+    """The value of a non-negative integer literal, else None."""
+    v = node.get("value") if node and node.get("type") == "Literal" else None
+    return int(v) if type(v) in (int, float) and v >= 0 and v == int(v) else None
 
 
-def unwrap_tail(expr: str):
-    """If expr ends in a balanced call .methodName(...), return (receiver, method, args)."""
-    expr = expr.strip()
-    if not expr.endswith(")"):
-        return None
-    depth = 0
-    open_idx = -1
-    for i in range(len(expr) - 1, -1, -1):
-        if expr[i] == ")":
-            depth += 1
-        elif expr[i] == "(":
-            depth -= 1
-            if depth == 0:
-                open_idx = i
-                break
-    if open_idx <= 0:
-        return None
-    prefix = expr[:open_idx].rstrip()
-    dot_idx = prefix.rfind(".")
-    if dot_idx <= 0:
-        return None
-    method = prefix[dot_idx + 1 :].strip()
-    receiver = prefix[:dot_idx].strip()
-    args = expr[open_idx + 1 : -1].strip()
-    return receiver, method, args
-
-
-def bound_of(expr: str, text: str, seen=None):
-    """Upper bound on the length of `expr`, or None when it cannot be bounded.
-
-    Operations that can only shrink a list (`filter`, `slice`, `flat`) or
-    preserve its length (`map`, `reverse`, `sort`) keep the base's bound: an
-    upper bound survives them. An explicit numeric slice `.slice(0, N)` or
-    `.slice(start, end)` bounds an otherwise unbounded receiver. Single-arg
-    `.slice(start)` does NOT bound an unbounded list (it drops `start` items and
-    keeps the rest; `.slice(0)` is a shallow copy).
-    """
-    if seen is None:
-        seen = set()
-    expr = expr.strip()
-    if not expr or expr in seen:
-        return None
-    seen.add(expr)
-
-    # Method calls on a receiver:
-    tail = unwrap_tail(expr)
-    if tail is not None:
-        receiver, method, args = tail
-        if method == "slice":
-            # Explicit cap: .slice(0, N) or .slice(start, end)
-            m = re.match(r"^(\d+)\s*,\s*(\d+)$", args)
-            if m:
-                return max(0, int(m.group(2)) - int(m.group(1)))
-            # Single-argument slice: drops items, bounded only if receiver is bounded
-            return bound_of(receiver, text, seen)
-        if method in ("filter", "flat", "map", "reverse", "sort"):
-            return bound_of(receiver, text, seen)
-
-    # Array.from({length: N})
-    m = re.search(r"Array\.from\(\s*\{\s*length\s*:\s*(\d+)", expr)
-    if m:
-        return int(m.group(1))
-
-    # Literal array
-    if expr.startswith("["):
-        close = match_forward(expr, 0)
-        if close == len(expr):
-            return top_level_items(expr[1:-1])
-
-    # Bare identifier: resolve a const/let/var array literal declaration.
-    if re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", expr):
-        d = re.search(r"\b(?:const|let|var)\s+" + re.escape(expr) + r"\s*=\s*", text)
-        if d:
-            rest = text[d.end() :].lstrip()
-            if rest.startswith("["):
-                close = match_forward(rest, 0)
-                if close > 0:
-                    return top_level_items(rest[1 : close - 1])
-            # Non-literal initializer (a call, an await): try its tail form.
-            stop = rest.find("\n")
-            cand = rest[: stop if stop > 0 else len(rest)].rstrip().rstrip(";")
-            if cand and cand != expr:
-                return bound_of(cand, text, seen)
+def method(callee):
+    """`name` when callee is `<obj>.name` (not computed), else None."""
+    if callee and callee.get("type") == "MemberExpression" and not callee["computed"]:
+        return callee["property"].get("name")
     return None
 
 
-def fanouts(text: str):
-    """Every fan-out construct: (kind, source_expr, body_start, body_end)."""
-    found = []
-    for m in re.finditer(r"\.(map|flatMap)\s*\(", text):
-        open_paren = m.end() - 1
-        close = match_forward(text, open_paren)
-        if close < 0:
-            continue
-        found.append((m.group(1), receiver_of(text, m.start()), open_paren, close))
-
-    for m in re.finditer(r"\b(parallel|pipeline)\s*\(", text):
-        open_paren = m.end() - 1
-        close = match_forward(text, open_paren)
-        if close < 0:
-            continue
-        inner = text[open_paren + 1 : close - 1]
-        # parallel(xs) fans over its single argument; pipeline(xs, ...stages)
-        # fans over its first. In both cases the first top-level argument is
-        # the iteration source.
-        depth, cut = 0, len(inner)
-        for i, ch in enumerate(inner):
-            if ch in "([{":
-                depth += 1
-            elif ch in ")]}":
-                depth -= 1
-            elif ch == "," and depth == 0:
-                cut = i
-                break
-        found.append((m.group(1), inner[:cut].strip(), open_paren, close))
-    return found
+def is_name(node, name):
+    return bool(node) and node.get("type") == "Identifier" and node["name"] == name
 
 
-def short(expr: str, width: int = 60) -> str:
-    """One-line, length-capped rendering of an expression for messages.
-
-    A fan-out source can be an entire multi-line arrow function; pasting that
-    into a hook message buries the one thing the reader needs (which list is
-    unbounded) under a wall of text.
-    """
-    flat = " ".join(expr.split())
-    return flat if len(flat) <= width else flat[: width - 1] + "\u2026"
-
-
-def is_wrapper(kind: str, source: str) -> bool:
-    """True when a fan-out's source is itself a fan-out call that drives it.
-
-    `parallel(xs.map(f))` produces a record for `parallel` whose source is
-    `xs.map(f)` AND a record for `.map` whose source is `xs`. Both records
-    enclose the same agent() site, so counting both multiplies the estimate by
-    a phantom factor -- the bug that costed one real script at 4104 agents
-    instead of 64. The outer `parallel` is the pass-through and is dropped.
-    A `pipeline(xs.map(f), stage1, ...)` is NOT a wrapper: pipeline's stages
-    lie outside its first argument, so dropping pipeline would leave stage
-    agent() calls with no enclosing fan-out.
-    """
-    if kind != "parallel":
+def binds(pattern, name):
+    """True when an assignment target (or pattern) writes the variable `name`."""
+    if isinstance(pattern, list):
+        return any(binds(p, name) for p in pattern)
+    if not isinstance(pattern, dict) or pattern.get("type") == "MemberExpression":
         return False
-    src = source.strip()
-    if not src:
+    if pattern.get("type") == "Identifier":
+        return pattern["name"] == name
+    return any(binds(k, name) for k in kids(pattern))
+
+
+def writes(node, name):
+    """True when anything under `node` assigns or increments `name`."""
+    if isinstance(node, list):
+        return any(writes(n, name) for n in node)
+    if not isinstance(node, dict):
         return False
-    # `parallel(...)` spanning the whole expression.
-    m = re.match(r"parallel\s*\(", src)
-    if m and match_forward(src, m.end() - 1) == len(src):
+    if node.get("type") == "AssignmentExpression" and binds(node["left"], name):
         return True
-    # A trailing `.map(...)` / `.flatMap(...)` call.
-    for m in re.finditer(r"\.(map|flatMap)\s*\(", src):
-        if match_forward(src, m.end() - 1) == len(src):
+    if node.get("type") == "UpdateExpression" and is_name(node["argument"], name):
+        return True
+    return any(writes(k, name) for k in kids(node))
+
+
+class Walker:
+    def __init__(self, src: str):
+        self.src16 = src.encode("utf-16-le")  # acorn offsets are UTF-16 units
+        self.sites = []  # (line, count, why): why is None when the site is counted
+
+    def text(self, node) -> str:
+        raw = self.src16[2 * node["start"] : 2 * node["end"]]
+        flat = " ".join(raw.decode("utf-16-le", "replace").split())
+        return flat if len(flat) <= 40 else flat[:39] + "…"
+
+    @staticmethod
+    def line(node) -> int:
+        return node["loc"]["start"]["line"]
+
+    @staticmethod
+    def unbounded(ctx, why):
+        return ctx if ctx[1] else (ctx[0], why)
+
+    def bound(self, node):
+        """Items a list expression holds, or None when the text does not say."""
+        if node["type"] == "ArrayExpression":
+            spread = any(e and e["type"] == "SpreadElement" for e in node["elements"])
+            return None if spread else len(node["elements"])
+        if node["type"] == "CallExpression" and method(node["callee"]) == "slice":
+            args = [int_literal(a) for a in node["arguments"]]
+            if len(args) == 2 and None not in args and args[1] >= args[0]:
+                return args[1] - args[0]
+        return None
+
+    def over(self, ctx, src, what):
+        """Context for a body that runs once per item of `src`."""
+        n = self.bound(src)
+        if n is None:
+            return self.unbounded(ctx, f"{what} `{self.text(src)}`, {NOT_LITERAL}")
+        return (ctx[0] * n, ctx[1])
+
+    def counted(self, loop):
+        """Iterations of `for (let i = a; i < b; i++ | i += s)`, else None."""
+        init, test, update = loop["init"], loop["test"], loop["update"]
+        decls = init["declarations"] if init and "declarations" in init else []
+        if len(decls) != 1 or decls[0]["id"]["type"] != "Identifier":
+            return None
+        i, start = decls[0]["id"]["name"], int_literal(decls[0]["init"])
+        if start is None or not test or test["type"] != "BinaryExpression":
+            return None
+        if test["operator"] not in ("<", "<=") or not is_name(test["left"], i):
+            return None
+        stop, step, kind = int_literal(test["right"]), None, update and update["type"]
+        if kind == "UpdateExpression" and update["operator"] == "++":
+            step = 1 if is_name(update["argument"], i) else None
+        elif kind == "AssignmentExpression" and update["operator"] == "+=":
+            step = int_literal(update["right"]) if is_name(update["left"], i) else None
+        if stop is None or not step or writes(loop["body"], i):
+            return None
+        return len(range(start, stop + (test["operator"] == "<="), step))
+
+    def inline(self, fn, ctx):
+        """Walk a callback or thunk as code that runs once per `ctx`."""
+        if fn and fn["type"] in FUNCS:
+            self.walk([fn["params"], fn["body"]], ctx)
+        else:
+            self.walk(fn, ctx)
+
+    def call(self, node, ctx) -> bool:
+        callee, args = node["callee"], node["arguments"]
+        name = callee.get("name") if callee["type"] == "Identifier" else None
+        if name in ("agent", "workflow"):
+            why = ctx[1]
+            if name == "workflow" and not why:
+                why = "a workflow() child runs agents this script does not show"
+            self.sites.append((self.line(node), ctx[0], why))
+            self.walk(args, ctx)
             return True
-    return False
+        if name == "parallel" and args:
+            self.parallel(args[0], ctx)
+            self.walk(args[1:], ctx)
+            return True
+        if name == "pipeline" and args:
+            self.walk(args[0], ctx)
+            per_item = self.over(ctx, args[0], "pipeline over")
+            for stage in args[1:]:
+                self.inline(stage, per_item)
+            return True
+        verb = method(callee)
+        if verb in EACH and args and args[0]["type"] in FUNCS:
+            self.walk(callee["object"], ctx)
+            self.inline(args[0], self.over(ctx, callee["object"], f".{verb} over"))
+            self.walk(args[1:], ctx)
+            return True
+        return False
+
+    def parallel(self, arg, ctx):
+        if arg["type"] == "ArrayExpression":
+            for element in arg["elements"]:
+                self.inline(element, ctx)  # each thunk runs once
+            return
+        is_call = arg["type"] == "CallExpression" and arg["arguments"]
+        cb = arg["arguments"][0] if is_call else None
+        if method(arg.get("callee")) == "map" and cb and cb["type"] in FUNCS:
+            self.walk(arg["callee"]["object"], ctx)
+            per_item = self.over(ctx, arg["callee"]["object"], "parallel over")
+            # xs.map(x => () => agent(x)): the returned thunk runs once per item.
+            self.inline(cb["body"] if cb["body"]["type"] in FUNCS else cb, per_item)
+            return
+        self.walk(arg, ctx)
+
+    def walk(self, node, ctx):
+        if isinstance(node, list):
+            for child in node:
+                self.walk(child, ctx)
+            return
+        if not isinstance(node, dict) or "type" not in node:
+            return
+        t, at = node["type"], f"line {node['loc']['start']['line']}"
+        if t in FUNCS:
+            label = (
+                f"function `{node['id']['name']}`" if node.get("id") else "a function"
+            )
+            ctx = self.unbounded(ctx, f"inside {label} ({at}); callers are not traced")
+        elif t == "ClassBody":
+            ctx = self.unbounded(ctx, f"inside a class ({at})")
+        elif t in LOOPS:
+            ctx = self.unbounded(ctx, f"a {LOOPS[t]} loop ({at})")
+        elif t == "CallExpression" and self.call(node, ctx):
+            return
+        elif t == "ForOfStatement":
+            self.walk(node["right"], ctx)
+            self.walk(node["body"], self.over(ctx, node["right"], "for-of over"))
+            return
+        elif t == "ForStatement":
+            self.walk(node["init"], ctx)
+            n = self.counted(node)
+            why = f"a for loop ({at}) not counted by literals"
+            loop = (ctx[0] * n, ctx[1]) if n is not None else self.unbounded(ctx, why)
+            self.walk([node["test"], node["update"], node["body"]], loop)
+            return
+        self.walk(kids(node), ctx)
 
 
-def analyze(src: str, limit: int, assumed: int = 8) -> dict:
-    """Estimate the agent count and compare it to `limit`.
-
-    A fan-out whose length is only knowable at runtime is not waved through and
-    is not hard-blocked either: it is costed at `assumed` items. That single
-    mechanism replaces a tier ladder and keeps the limit governing every shape.
-    Two agent() sites inside one runtime-length fan-out cost 2 * assumed, which
-    is how a "flat" script still trips a limit of 10 -- the real 496-agent run
-    was exactly that shape (`pipeline(args.units, editor, reviewer, repairer)`,
-    four sites over a list the script never bounds).
-    """
-    text = sanitize(src)
-    sites = [m.start() for m in re.finditer(r"\bagent\s*\(", text)]
+def analyze(src: str, limit: int) -> dict:
+    tree = parse(src)
+    result = {"PARSER": "acorn", "LIMIT": limit}
+    name = re.search(r"\bname:\s*['\"]([^'\"]+)['\"]", src)
+    if name:
+        result["NAME"] = name.group(1)
+    if "error" in tree:
+        result.update(VERDICT="PARSE_ERROR", DETAIL=f"does not parse: {tree['error']}")
+        return result
+    walker = Walker(src)
+    walker.walk(tree, (1, None))
+    sites = walker.sites
+    loose = [f"line {line}: {why}" for line, _, why in sites if why]
+    shown = list(dict.fromkeys(loose))  # one entry per distinct line and reason
+    estimate = sum(count for _, count, why in sites if not why)
+    result.update(SITES=len(sites), ESTIMATE=estimate, UNBOUNDED=len(loose))
     if not sites:
-        return {
-            "VERDICT": "NO_AGENTS",
-            "SITES": 0,
-            "LIMIT": limit,
-            "DETAIL": "no agent() call sites found",
-        }
-
-    fos = [f for f in fanouts(text) if not is_wrapper(f[0], f[1])]
-
-    estimate = 0
-    unknown_sources = []
-    for site in sites:
-        enclosing = [f for f in fos if f[2] < site < f[3]]
-        product = 1
-        for kind, source, _s, _e in enclosing:
-            b = bound_of(source, text)
-            if b is None:
-                product *= assumed
-                label = short(source) or f"{kind}(...)"
-                if label not in unknown_sources:
-                    unknown_sources.append(label)
-            else:
-                product *= max(b, 0)
-        estimate += product
-
-    result = {
-        "VERDICT": "OVER_LIMIT" if estimate > limit else "OK",
-        "SITES": len(sites),
-        "ESTIMATE": estimate,
-        "LIMIT": limit,
-    }
-    name_match = re.search(r"\bname:\s*['\"]([^'\"]+)['\"]", src)
-    if name_match:
-        result["NAME"] = name_match.group(1)
-    if unknown_sources:
-        result["ASSUMED"] = assumed
-        result["SOURCE"] = ", ".join(unknown_sources[:2])
+        result.update(VERDICT="NO_AGENTS", DETAIL="no agent() call sites found")
+    elif loose:
+        more = f"; +{len(shown) - 3} more" if len(shown) > 3 else ""
+        result.update(VERDICT="UNBOUNDED", UNBOUNDED_AT="; ".join(shown[:3]) + more)
         result["DETAIL"] = (
-            f"~{estimate} agents across {len(sites)} call site(s); "
-            f"{len(unknown_sources)} fan-out(s) have no static bound "
-            f"({result['SOURCE']}) and were costed at {assumed} items each"
+            f"{len(loose)} of {len(sites)} site(s) have no stated bound; "
+            f"the counted rest spawn {estimate}"
         )
     else:
+        result["VERDICT"] = "OVER_LIMIT" if estimate > limit else "OK"
         result["DETAIL"] = f"{estimate} agents across {len(sites)} call site(s)"
     return result
 
 
+def fallback(src: str, limit: int, width: int, reason: str) -> dict:
+    spec = importlib.util.spec_from_file_location("workflow_scale_fallback", FALLBACK)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    result = module.analyze(src, limit, width)
+    result.update(PARSER="fallback", FALLBACK=reason)
+    return result
+
+
 def main() -> int:
-    limit, assumed = 10, 8
-    if len(sys.argv) > 1:
-        try:
-            limit = int(sys.argv[1])
-        except ValueError:
-            pass
-    if len(sys.argv) > 2:
-        try:
-            assumed = int(sys.argv[2])
-        except ValueError:
-            pass
+    nums = [int(a) if a.isdigit() else None for a in sys.argv[1:3]] + [None, None]
+    limit = 10 if nums[0] is None else nums[0]
+    width = 8 if nums[1] is None else nums[1]
+    src = sys.stdin.read()
     try:
-        src = sys.stdin.read()
-    except Exception:  # noqa: BLE001 - fail open
-        return 0
-    try:
-        result = analyze(src, limit, assumed)
-    except Exception as exc:  # noqa: BLE001 - fail open: an unparsable script is not a block
-        print("VERDICT=ERROR")
-        print(f"DETAIL=analyzer error: {type(exc).__name__}")
-        return 0
-    for key in (
-        "VERDICT",
-        "NAME",
-        "SITES",
-        "ESTIMATE",
-        "LIMIT",
-        "ASSUMED",
-        "SOURCE",
-        "DETAIL",
-    ):
+        result = analyze(src, limit)
+    except Exception as exc:  # noqa: BLE001 - no node, or a bug here: behave as before
+        reason = str(exc) if isinstance(exc, ParserUnavailable) else "analysis error"
+        try:
+            result = fallback(src, limit, width, reason)
+        except Exception:  # noqa: BLE001 - main's behaviour: an unreadable script is silent
+            result = {
+                "VERDICT": "ERROR",
+                "PARSER": "fallback",
+                "DETAIL": "fallback error",
+            }
+    for key in ("VERDICT", "PARSER", "FALLBACK", "NAME", "SITES", "ESTIMATE", "LIMIT"):
+        if key in result:
+            print(f"{key}={result[key]}")
+    for key in ("UNBOUNDED", "UNBOUNDED_AT", "ASSUMED", "SOURCE", "DETAIL"):
         if key in result:
             print(f"{key}={result[key]}")
     return 0

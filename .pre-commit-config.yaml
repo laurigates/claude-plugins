@@ -366,7 +366,8 @@ repos:
         name: bundled workflow .js model/effort guard regression (#2210)
         entry: bash ./scripts/tests/test-check-workflow-js-model.sh
         language: system
-        files: '^scripts/(check-workflow-js-model\.sh|tests/test-check-workflow-js-model\.sh)$'
+        # The estimator is in scope because the agent-budget cases run it.
+        files: '^(scripts/(check-workflow-js-model\.sh|tests/test-check-workflow-js-model\.sh)|hooks-plugin/hooks/(workflow-scale-estimate\.py|lib/(workflow-scale-parse\.cjs|workflow-scale-estimate-fallback\.py)))$'
         pass_filenames: false
       - id: check-workflow-js-model
         name: bundled workflow .js agent() calls pin opus + explicit effort and stay reachable (#2210)
@@ -374,7 +375,9 @@ repos:
         language: system
         # SKILL.md is in scope because the reachability half of the guard reads
         # the sibling skill's `## Workflow harness (template)` framing section.
-        files: '^([^/]+-plugin/skills/[^/]+/(workflows/.*\.js|SKILL\.md)|scripts/check-workflow-js-model\.sh)$'
+        # The scale estimator is in scope because the agent-budget half re-counts
+        # every shipped template with it.
+        files: '^([^/]+-plugin/skills/[^/]+/(workflows/.*\.js|SKILL\.md)|scripts/check-workflow-js-model\.sh|hooks-plugin/hooks/(workflow-scale-estimate\.py|lib/(workflow-scale-parse\.cjs|workflow-scale-estimate-fallback\.py)))$'
         pass_filenames: false
       - id: check-agent-failure-contract
         name: dispatch skills carry the loud-failure / completion-manifest contract (#1422, #1601)
@@ -963,7 +966,7 @@ repos:
         name: workflow-scale-guard hook regression
         entry: bash ./hooks-plugin/hooks/test-workflow-scale-guard.sh
         language: system
-        files: '^hooks-plugin/hooks/(workflow-scale-guard\.sh|workflow-scale-estimate\.py|test-workflow-scale-guard\.sh)$'
+        files: '^hooks-plugin/hooks/(workflow-scale-guard\.sh|workflow-scale-estimate\.py|test-workflow-scale-guard\.sh|lib/(workflow-scale-parse\.cjs|workflow-scale-estimate-fallback\.py))$'
         pass_filenames: false
       - id: test-secret-protection
         name: secret-protection hook regression
