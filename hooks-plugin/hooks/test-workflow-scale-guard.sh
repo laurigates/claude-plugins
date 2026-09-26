@@ -104,6 +104,7 @@ for (var i = 0; i < 3; i++) { await agent(i); reset() }'
 t ask "agent.call over a runtime list"        'for (const x of args.xs) await agent.call(null, x)'
 t ask "agent aliased then called"             'const a = agent; for (const x of args.xs) await a(x)'
 t ask "agent passed as a callback"            'await Promise.all(args.xs.map(agent))'
+t ask "agent aliased by destructuring"        'const { agent: a } = { agent }; for (const x of args.xs) await a(x)'
 # A deeply nested expression parses but exceeds the walker's recursion limit.
 DEEP="const P = $(python3 -c "print(' + '.join(\"'l%d'\" % k for k in range(4000)))")
 await agent(P)"
@@ -123,6 +124,8 @@ est ESTIMATE 6   "nested product counted exactly"   'for (const a of [1, 2]) for
 est ESTIMATE 7   "step 3 over 0..20 is 7 passes"    'for (let i = 0; i < 20; i += 3) await agent(i)'
 est ESTIMATE 2   "counted sites summed beside an unbounded one" 'await agent(1); await agent(2); await parallel(xs.map(x => () => agent(x)))'
 est UNBOUNDED 1  "one unbounded site"               'await agent(1); await parallel(xs.map(x => () => agent(x)))'
+est SITES 1      "destructured agent parameter is a declaration, not a use" 'export default async function ({ agent, parallel }) { await agent(1) }'
+est ESTIMATE 2   "parameter default is ordinary code" 'await agent(0); [1].forEach((x, y = agent(x)) => y)'
 est VERDICT PARSE_ERROR "syntax error is not a fallback" 'await agent(1'
 est PARSER acorn "the parser ran"                   'await agent(1)'
 

@@ -209,7 +209,8 @@ class Walker:
     def inline(self, fn, ctx):
         """Walk a callback or thunk as code that runs once per `ctx`."""
         if fn and fn["type"] in FUNCS:
-            self.walk([fn["params"], fn["body"]], ctx)
+            self.pattern(fn["params"], ctx)
+            self.walk(fn["body"], ctx)
         else:
             self.walk(fn, ctx)
 
@@ -261,6 +262,31 @@ class Walker:
             return
         self.walk(arg, ctx)
 
+    def pattern(self, node, ctx):
+        """Walk a binding pattern: names it declares (`{ agent }` in a parameter
+        list) are not uses; defaults and computed keys are ordinary code."""
+        if isinstance(node, list):
+            for child in node:
+                self.pattern(child, ctx)
+            return
+        if not isinstance(node, dict):
+            return
+        t = node.get("type")
+        if t == "AssignmentPattern":
+            self.pattern(node["left"], ctx)
+            self.walk(node["right"], ctx)
+        elif t == "ObjectPattern":
+            for prop in node["properties"]:
+                if prop.get("computed"):
+                    self.walk(prop["key"], ctx)
+                self.pattern(prop.get("value", prop.get("argument")), ctx)
+        elif t == "ArrayPattern":
+            self.pattern(node["elements"], ctx)
+        elif t == "RestElement":
+            self.pattern(node["argument"], ctx)
+        elif t != "Identifier":
+            self.walk(node, ctx)  # e.g. a member expression as an assignment target
+
     def walk(self, node, ctx):
         if isinstance(node, list):
             for child in node:
@@ -286,6 +312,13 @@ class Walker:
                 f"function `{node['id']['name']}`" if node.get("id") else "a function"
             )
             ctx = self.unbounded(ctx, f"inside {label} ({at}); callers are not traced")
+            self.pattern(node["params"], ctx)
+            self.walk(node["body"], ctx)
+            return
+        elif t == "VariableDeclarator":
+            self.pattern(node["id"], ctx)
+            self.walk(node["init"], ctx)
+            return
         elif t == "ClassBody":
             ctx = self.unbounded(ctx, f"inside a class ({at})")
         elif t in LOOPS:
