@@ -111,8 +111,17 @@ about the runner's home directory. Verify it by hand, in this order:
    deep-research` about half an hour later, and the same call resolved only
    after the registry reloaded. Check from a new session.
 
-Do **not** verify it by invoking the workflow. It is a template: running it
-against empty or placeholder `args` spends real opus agents to discover that.
+5. Resolve it the way the batch caller does, with **empty** `args`. Run a
+   Workflow script whose body is
+   `return await workflow('evaluate-skill', {})`; it should return
+   `{abort: true, reason: 'missing-skill-dir'}`. That comes from the
+   `skillDir` guard in `evaluate-skill.workflow.js`, which returns before the
+   first `agent()` call, so the check spawns no agents (measured 2026-09-26:
+   0 agents, 0 tokens). An unregistered name throws `no workflow with that name`
+   instead.
+
+Pass exactly `{}`. Any non-empty `skillDir`, including a placeholder, gets past
+the guard and starts the preflight agent.
 
 ## Two platform constraints the caller must design around
 
