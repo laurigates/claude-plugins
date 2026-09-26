@@ -19,8 +19,8 @@
 # Five hand-rolled tokenisers were tried and withdrawn before this version, and
 # every one lost a spelling the shell executes (`\rm`, `bash --norc -c`, `bash
 # --rcfile X -c`). So this is a PROTECTIVE hook first: it may over-checkpoint,
-# it must never under-checkpoint relative to the old matcher. The design keeps
-# that guarantee structurally rather than by enumerating spellings:
+# and it aims never to under-checkpoint relative to the old matcher. The design
+# pursues that aim structurally rather than by enumerating spellings:
 #
 #   verdict = structural(command nodes)
 #             OR legacy(residue)
@@ -44,16 +44,19 @@
 #     comments, heredocs and here-strings, redirects to /dev/null, fd
 #     duplications, input redirects, and these programs — the inert ones above,
 #     rm, git (a fixed set of subcommands, no global option but -C and
-#     --no-pager), gh (the subcommands above), cd, pwd, ls, mkdir, test, [,
-#     true, false, :, sleep. Each program's words are read as the shell delivers
+#     --no-pager), gh (the subcommands above), cd, pwd, ls, mkdir, test, true,
+#     false, :, sleep. Each program's words are read as the shell delivers
 #     them (quotes removed), and one that could make an allowed program write a
 #     file or run one voids the exemption: -o/-O in a short option cluster or a
 #     long --output / --out… option on any program, `printf -v`, `rg --pre`,
 #     `git grep --open-files-in-pager`, and for git, gh, printf and rg a word
 #     this hook cannot read. So does any assignment, declaration, function,
 #     command or process substitution, `${x=…}` expansion, loop, conditional,
-#     subshell or group, and a heredoc with an unquoted delimiter whose body
-#     holds `$` or a backtick. `exec`, `tee`, `eval`, `source`, `.`, every
+#     `[ … ]` or `[[ … ]]` test, subshell or group, and a heredoc with an
+#     unquoted delimiter whose text holds `$`, a backtick or a backslash (bash
+#     joins a backslash-newline before it compares a line with the delimiter,
+#     so `EO\` + newline + `F` ends the body where tree-sitter reads on and
+#     blanks the lines after it). `exec`, `tee`, `eval`, `source`, `.`, every
 #     shell, `xargs`, `find`, `parallel`, `env`, `sudo`, `awk`, `perl` and every
 #     other program are simply not on the list. Shell state from BEFORE the
 #     command is trusted: a name rebound by the user's profile, a git hook or
@@ -67,10 +70,18 @@
 #     fed to one are re-parsed as shell, with no option parsing to get wrong.
 #
 # Every failure of the parser therefore degrades toward the old behaviour: no
-# ast-grep, an ast-grep error, a tree-sitter ERROR node, or a shape outside the
-# allowlist all leave the old matcher deciding over the whole command. The only
-# way to under-checkpoint is an allowlisted shape that runs text or writes a
-# file after all.
+# ast-grep, an ast-grep error, an answer without valid byte offsets, a parser
+# that has not answered within CLAUDE_HOOKS_AUTO_CHECKPOINT_PARSE_TIMEOUT
+# seconds (default 3), a tree-sitter ERROR node, or a shape outside the
+# allowlist all leave the old matcher deciding over the whole command.
+#
+# Never checkpointing less than the old matcher is still an aim, checked by the
+# suite's differential against it, not a proof. The known ways to
+# under-checkpoint are: a span the parser reads
+# differently from the shell (reviews found the `#` after an escaped blank and
+# a heredoc delimiter joined by a backslash-newline; both now checkpoint); an
+# allowlisted program that runs text or writes a file through a path the hook
+# does not check; and shell state from before the command (above).
 #
 # ── rm operands: when is a deletion "outside the repository"? ────────────────
 #
@@ -79,9 +90,15 @@
 # physical path string (symlinks followed through `cd -P`) and by file identity
 # (`[ A -ef B ]` on device and inode, which a macOS firmlink, a /.vol path, a
 # bind mount or a symlink cannot disguise). The repository is `git rev-parse
-# --show-toplevel` plus its git dir and common dir. A glob operand is judged by
-# its literal directory prefix. Anything else checkpoints:
+# --show-toplevel` plus its git dir and common dir. Anything else checkpoints:
 #
+#   - a glob operand (`*`, `?`, `[`, and zsh extended_glob's `^`, `~`, `#`): a
+#     component it matches can be a symlink into the repository
+#   - an out-of-repo operand in a command that also runs something able to
+#     create, rename or restore a path (gh, a git subcommand that writes the
+#     work tree, anything off the allowlist): the operand is resolved before
+#     the command runs, and `git -C /o switch b` can check out a symlink into
+#     this repository at the path rm then deletes through
 #   - a path the hook cannot resolve now: a `..` after a component that does
 #     not exist, a dangling or looping symlink, or anything through /proc or
 #     /dev, whose names resolve per process (/proc/self/cwd, /dev/fd/N)
@@ -327,7 +344,7 @@ id: gate-heredoc
 language: bash
 rule:
   kind: heredoc_redirect
-  regex: '[\x24\x60]'
+  regex: '[\x24\x60\x5c]'
   has: { kind: heredoc_start, regex: '${UNQUOTED_DELIM}' }
 ---
 id: inert-stmt
@@ -370,14 +387,57 @@ rule:
         kind: redirected_statement
         has: { stopBy: end, kind: command, has: { field: name, regex: '${INVOKER_WORD}' } }"
 
+# Writes ast-grep's answer for snippet $1 into file $2. A parser still running
+# after PARSE_TIMEOUT seconds is killed, and the status is then 128 or more: a
+# hung parser must end like a failed one, not hold the Bash call until the
+# harness kills this hook with no checkpoint made. `timeout(1)` is not on stock
+# macOS, so the watchdog is a subshell; its trap takes its `sleep` with it. The
+# answer goes to a file, not a pipe, so a child the killed parser leaves behind
+# (a wrapper's real binary) cannot hold this hook open by holding the pipe.
+PARSE_TIMEOUT=${CLAUDE_HOOKS_AUTO_CHECKPOINT_PARSE_TIMEOUT:-3}
+case $PARSE_TIMEOUT in '' | *[!0-9]* | 0) PARSE_TIMEOUT=3 ;; esac
+parse_bounded() {
+  local p w rc=0
+  printf '%s' "$1" | "$ASTGREP" scan --inline-rules "$AST_RULES" --stdin --json=compact >"$2" 2>/dev/null &
+  p=$!
+  (
+    s=""
+    trap 'kill "$s" 2>/dev/null; exit 0' TERM
+    sleep "$PARSE_TIMEOUT" &
+    s=$!
+    wait "$s"
+    kill -9 "$p"
+  ) >/dev/null 2>&1 &
+  w=$!
+  wait "$p" || rc=$?
+  kill "$w" 2>/dev/null || true
+  wait "$w" 2>/dev/null || true
+  return "$rc"
+}
+
 # One node per line: "<rule-id> <start-byte> <end-byte>". Any ast-grep or jq
 # failure yields no lines — and no lines means nothing is proven inert, so the
-# residue stays whole and the old matcher decides.
+# residue stays whole and the old matcher decides. So does an answer in which
+# any node lacks a rule id or an integer byte range inside the snippet (a
+# drifted output schema): the whole answer is dropped, never half of it. A
+# parser killed at the deadline returns 1, and the caller parses no further.
 nodes_of() {
-  local out
-  out=$(printf '%s' "$1" | "$ASTGREP" scan --inline-rules "$AST_RULES" --stdin --json=compact 2>/dev/null) || true
+  local out="" rc=0 tmp
+  tmp=$(mktemp "${TMPDIR:-/tmp}/auto-checkpoint.XXXXXX" 2>/dev/null) || return 0
+  parse_bounded "$1" "$tmp" || rc=$?
+  out=$(cat "$tmp" 2>/dev/null) || out=""
+  rm -f "$tmp"
+  [ "$rc" -lt 128 ] || return 1
   [ -n "$out" ] || return 0
-  jq -r '.[] | "\(.ruleId) \(.range.byteOffset.start) \(.range.byteOffset.end)"' <<<"$out" 2>/dev/null || true
+  jq -r --argjson n "${#1}" '
+    def offset: type == "number" and . == floor and . >= 0;
+    def node: (.ruleId | type == "string" and test("^[a-z-]+$"))
+      and (.range.byteOffset.start | offset) and (.range.byteOffset.end | offset)
+      and .range.byteOffset.start <= .range.byteOffset.end
+      and .range.byteOffset.end <= $n;
+    if type == "array" and all(.[]; node)
+    then .[] | "\(.ruleId) \(.range.byteOffset.start) \(.range.byteOffset.end)"
+    else empty end' <<<"$out" 2>/dev/null || true
 }
 
 # ── Shell-word reconstruction ────────────────────────────────────────────────
@@ -738,6 +798,9 @@ rm_operand_exempt() {
 # Reason set by rm_reason / git_reason (globals, not echo, so no subshell forks
 # on a hook that runs before every Bash call).
 RSN=""
+# 1 once an rm -rf was let through because an absolute operand lies outside the
+# repository as the filesystem stands now; checked after the analysis.
+RM_OUTSIDE=0
 
 # $1 = index of the rm token. Sets RSN="rm -rf" when the invocation is a
 # recursive forced delete that can reach the repository. Options are read
@@ -747,7 +810,7 @@ RSN=""
 # checkpoint.
 rm_reason() {
   local i=$1 n=${#TOK_VAL[@]} k a name letters
-  local r=0 f=0 opts_done=0 nops=0 all_exempt=1
+  local r=0 f=0 opts_done=0 nops=0 all_exempt=1 abs=0
   for ((k = i + 1; k < n; k++)); do
     a=${TOK_VAL[k]}
     if [ "$opts_done" = 0 ] && [ "${TOK_E[k]}" = 0 ]; then
@@ -772,10 +835,15 @@ rm_reason() {
       esac
     fi
     nops=$((nops + 1))
+    case $a in /*) abs=1 ;; esac
     if ! rm_operand_exempt "$k"; then all_exempt=0; fi
   done
   if [ "$r" = 1 ] && [ "$f" = 1 ]; then
-    if [ "$nops" = 0 ] || [ "$all_exempt" = 0 ]; then RSN="rm -rf"; fi
+    if [ "$nops" = 0 ] || [ "$all_exempt" = 0 ]; then
+      RSN="rm -rf"
+    elif [ "$abs" = 1 ]; then
+      RM_OUTSIDE=1
+    fi
   fi
   return 0
 }
@@ -866,18 +934,26 @@ git_reason() {
 # --output=F` writing a hook. Earlier rounds found those one at a time; this
 # list stops enumerating them. The exemption holds only for a command whose
 # every part is named below; anything else sends the whole command to the old
-# matcher.
-ALLOW_PROGS='^(echo|printf|grep|egrep|fgrep|rg|jq|cat|head|tail|wc|rm|git|gh|cd|pwd|ls|mkdir|test|\[|true|false|:|sleep)$'
+# matcher. `[` is not listed: tree-sitter reads `[ … ]` as a test_command, which
+# gate-kind voids like `[[ … ]]`; `test` is the allowed spelling.
+ALLOW_PROGS='^(echo|printf|grep|egrep|fgrep|rg|jq|cat|head|tail|wc|rm|git|gh|cd|pwd|ls|mkdir|test|true|false|:|sleep)$'
 ALLOW_GIT_SUBS='^(status|log|show|diff|grep|commit|tag|notes|add|rev-parse|branch|switch|checkout|restore|reset|clean|stash|rm|mv|ls-files|merge-base|rev-list|describe|shortlog|blame|reflog|cat-file|show-ref|for-each-ref|symbolic-ref)$'
+# The git subcommands above that leave the work tree alone. The rest (switch,
+# checkout, restore, reset, clean, stash, rm, mv) can create, rename or restore
+# a path, and so can gh (`pr checkout`, `release download`, `run download`).
+READONLY_GIT_SUBS='^(status|log|show|diff|grep|commit|tag|notes|add|rev-parse|branch|ls-files|merge-base|rev-list|describe|shortlog|blame|reflog|cat-file|show-ref|for-each-ref|symbolic-ref)$'
 ALLOW_GH_SUBS='^(issue|pr|api|release|search|label|run|workflow|status)$'
 # An option that makes a program write a file: a short cluster holding o or O
 # (`sort -o F`, `git grep -O<pager>`, `curl -o F`), or a long option spelling a
 # prefix of --output, or --out… . Checked on every word of every program.
 WRITE_OPT='^-[A-Za-z0-9]*[oO]|^--(o|ou|out|outp|outpu)(=|$)|^--(output|out-|out_|outfile|o-file)'
 
-# 0 when the tokenised command (TOK_*) is an allowlisted shape.
+# 0 when the tokenised command (TOK_*) is an allowlisted shape. Sets GIT_SUB to
+# a git command's subcommand (empty for anything else).
+GIT_SUB=""
 command_allowed() {
   local t=${#TOK_VAL[@]} k prog j sub
+  GIT_SUB=""
   [ "$t" -gt 0 ] || return 1
   [ "${TOK_E[0]}" = 0 ] || return 1
   prog=${TOK_VAL[0]}
@@ -922,6 +998,7 @@ command_allowed() {
       [ "$j" -lt "$t" ] || return 0
       sub=${TOK_VAL[j]}
       [[ $sub =~ $ALLOW_GIT_SUBS ]] || return 1
+      GIT_SUB=$sub
       if [ "$sub" = grep ]; then
         # --open-files-in-pager by any unique prefix (-O is WRITE_OPT's).
         for ((k = j + 1; k < t; k++)); do
@@ -935,10 +1012,11 @@ command_allowed() {
 
 # 0 when the top-level command (TOP_NODES, from analyse) is built only from the
 # allowlist: no gate-* node anywhere, and every command node an allowlisted
-# shape. No nodes at all is a parse that proved nothing.
+# shape. No nodes at all is a parse that proved nothing. With $1 = readonly,
+# no command may be gh or a git subcommand that writes the work tree either.
 TOP_NODES=""
 exemption_holds() {
-  local rid s e
+  local rid s e mode=${1-}
   [ -n "$TOP_NODES" ] || return 1
   while read -r rid s e; do
     case $rid in gate-*) return 1 ;; esac
@@ -947,6 +1025,11 @@ exemption_holds() {
     [ "$rid" = cmd ] || continue
     tokenize "${COMMAND:s:e-s}"
     command_allowed || return 1
+    [ "$mode" = readonly ] || continue
+    case ${TOK_VAL[0]} in
+      gh) return 1 ;;
+      git) if [ -n "$GIT_SUB" ] && ! [[ $GIT_SUB =~ $READONLY_GIT_SUBS ]]; then return 1; fi ;;
+    esac
   done <<<"$TOP_NODES"
   return 0
 }
@@ -1041,11 +1124,15 @@ comment_opens_word() {
 # invocation. With $2 = 1 (the top-level command) it also computes RESIDUE.
 RESIDUE=""
 HAS_PARSE_ERROR=0
+PARSE_DEAD=0
 analyse() {
   local snippet=$1 top=$2
-  local nodes rid s e key text t k first base owned invoker
+  local nodes="" rid s e key text t k first base owned invoker
   local inert_keys=" " piped_keys=" " cmd_list=() paint_list=()
-  nodes=$(nodes_of "$snippet")
+  # After one parse was killed at the deadline, no further snippet waits on it.
+  if [ "$PARSE_DEAD" = 0 ]; then
+    nodes=$(nodes_of "$snippet") || PARSE_DEAD=1
+  fi
   if [ "$top" = 1 ]; then TOP_NODES=$nodes; fi
 
   while read -r rid s e; do
@@ -1188,6 +1275,22 @@ while [ "${#QUEUE[@]}" -gt 0 ] && [ "$depth" -lt 3 ] && [ "$reentered" -lt 16 ];
   depth=$((depth + 1))
 done
 
+# An rm let through above was judged on the filesystem as it stands BEFORE the
+# command runs. Another command in the same call can change it first: `git -C
+# /o switch b` checks out a symlink into this repository at the path rm then
+# deletes through (fifth review of PR #2743). So the verdict stands only when
+# the whole command is allowlisted and nothing in it but rm, mkdir and the
+# read-only programs touches a path: no gh, no git subcommand that writes the
+# work tree. Checked for every such rm, whatever its flag spelling.
+READONLY_HOLDS=0
+if [ "$RM_OUTSIDE" = 1 ]; then
+  if [ "$HAS_PARSE_ERROR" = 1 ] || ! exemption_holds readonly; then
+    create_checkpoint "rm -rf"
+    exit 0
+  fi
+  READONLY_HOLDS=1
+fi
+
 # A parse with an ERROR node is a shape tree-sitter did not understand, so no
 # span of it is trusted as inert: the old matcher reads the whole command.
 if [ "$HAS_PARSE_ERROR" = 1 ]; then
@@ -1205,9 +1308,10 @@ esac
 # only through the blanked spans, and blanking is an exemption that holds for
 # allowlisted shapes alone (exemption_holds). Otherwise the old matcher's
 # verdict over the whole command stands, exactly as before #2652. Checked last,
-# so the common command pays for no extra tokenising.
+# so the common command pays for no extra tokenising; the read-only check above
+# already implies it.
 legacy_reason "$COMMAND"
-if [ -n "$LEGACY_REASON" ] && ! exemption_holds; then
+if [ -n "$LEGACY_REASON" ] && [ "$READONLY_HOLDS" = 0 ] && ! exemption_holds; then
   create_checkpoint "$LEGACY_REASON"
 fi
 exit 0

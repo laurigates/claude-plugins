@@ -92,6 +92,7 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 | `CLAUDE_HOOKS_EVENT_LOGGER_VERBOSE` | off | Log full JSON input (vs one-line summary) | `hooks/event-logger.sh` |
 | `CLAUDE_SKILL_USAGE_LOG` | `~/.claude/skill-usage.jsonl` | Skill-usage log path (rotates to `<path>.1` at 16 MB) | `feedback-plugin/hooks/skill-usage-log.sh` |
 | `CLAUDE_HOOKS_TEST_TIMEOUT` | `45` (s) | Test-verification timeout | `hooks/test-verification.sh` |
+| `CLAUDE_HOOKS_AUTO_CHECKPOINT_PARSE_TIMEOUT` | `3` (s) | How long auto-checkpoint waits for `ast-grep` before killing it and letting the pre-#2652 matcher decide (fail safe); a whole number of seconds | `hooks/auto-checkpoint.sh` |
 | `CLAUDE_HOOKS_BRANCH_SYNC_TTL` | `300` (s) | Per-session+branch sync-check cache TTL | `git-plugin/hooks/check-branch-sync-on-push.sh` |
 | `CLAUDE_HOOKS_BRANCH_BASE_TTL` | `300` (s) | Per-session+repo+default branch-base nudge dedup window | `hooks/branch-base-guard.sh` |
 | `CLAUDE_HOOKS_BRANCH_BASE_FETCH` | `0` | `1` runs `git fetch --quiet origin <default>` on a cache miss for a fresher ahead-count | `hooks/branch-base-guard.sh` |

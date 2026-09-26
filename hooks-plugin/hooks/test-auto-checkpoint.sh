@@ -23,12 +23,15 @@
 #      allowlist-voiding shape from A) and every one must checkpoint.
 #      Hand-enumerated spellings are what let five earlier attempts ship a
 #      fail-open (`\rm`, `bash --norc -c`, …).
-#   C. A DIFFERENTIAL: the same set runs through every baseline — the hook's own
-#      no-parser path, and `git show <ref>:…` for HEAD and the pinned pre-#2652
-#      commit when those objects exist and differ — and a spelling any baseline
-#      checkpoints but the hook skips fails the suite.
-#   D. Fail-safe polarity: with ast-grep hidden or broken, the old matcher still
-#      decides, so an in-repo `rm -rf` still checkpoints.
+#   C. A DIFFERENTIAL: the same set runs through every baseline — `git show
+#      <ref>:…` for HEAD and the pinned pre-#2652 commit, each when its object
+#      exists and differs from the hook and from the other; only when neither
+#      remains (a shallow clone after this change lands) the hook's own
+#      no-parser path — and a spelling any baseline checkpoints but the hook
+#      skips fails the suite.
+#   D. Fail-safe polarity: with ast-grep hidden, failing, answering in a drifted
+#      schema or hanging, the old matcher still decides, so an in-repo `rm -rf`
+#      still checkpoints.
 #   E. The allow path exits 0 under macOS's /bin/bash 3.2.
 #
 # Without a working ast-grep, A-C and the parser half of D cannot run: the
@@ -375,22 +378,45 @@ expect CHECKPOINT "no parser: pattern quoted in a gh body over-checkpoints, as b
 expect CHECKPOINT "no parser: git checkout -- still checkpoints" \
     'git checkout -- tracked.txt' "$NOPARSE"
 
-# A parser that fails, answers nothing, or answers garbage must degrade to the
-# old matcher, never to silence. Each fake is made executable and confirmed to
-# be the ast-grep the hook will find, so a green row cannot mean the real
-# parser ran instead.
+# A parser that fails, answers nothing, answers garbage, answers well-formed
+# JSON in a drifted schema, or hangs must degrade to the old matcher, never to
+# silence or a crash (fifth review of PR #2743: an answer without byteOffset
+# killed the hook under `set -u`, and a hung parser was never timed out). Each
+# fake is made executable and confirmed to be the ast-grep the hook will find,
+# so a green row cannot mean the real parser ran instead. The out-of-range and
+# late answers claim the whole command is inert, so a hook that trusted them
+# would skip: those rows cannot pass by the fake merely failing.
 FAKE_ROOT=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 if [ -z "$FAKE_ROOT" ] || [ ! -d "$FAKE_ROOT" ]; then
     echo "bad fake-parser dir" >&2
     exit 1
 fi
 trap 'rm -rf "$SANDBOX" "$NON_GIT_DIR" "$FAKE_ROOT"' EXIT
-for fake_kind in exit2 empty-array garbage; do
+for fake_kind in exit2 empty-array garbage no-offsets out-of-range late; do
     mkdir -p "$FAKE_ROOT/$fake_kind"
     case $fake_kind in
         exit2) printf '#!/usr/bin/env bash\nexit 2\n' > "$FAKE_ROOT/$fake_kind/ast-grep" ;;
         empty-array) printf '#!/usr/bin/env bash\ncat >/dev/null\necho "[]"\n' > "$FAKE_ROOT/$fake_kind/ast-grep" ;;
         garbage) printf '#!/usr/bin/env bash\ncat >/dev/null\necho "{not json"\n' > "$FAKE_ROOT/$fake_kind/ast-grep" ;;
+        no-offsets) cat > "$FAKE_ROOT/$fake_kind/ast-grep" <<'FAKE'
+#!/usr/bin/env bash
+cat >/dev/null
+echo '[{"ruleId":"cmd","range":{"start":{"line":0,"column":0},"end":{"line":0,"column":12}}}]'
+FAKE
+            ;;
+        out-of-range) cat > "$FAKE_ROOT/$fake_kind/ast-grep" <<'FAKE'
+#!/usr/bin/env bash
+cat >/dev/null
+echo '[{"ruleId":"inert-cmd","range":{"byteOffset":{"start":0,"end":100000}}}]'
+FAKE
+            ;;
+        late) cat > "$FAKE_ROOT/$fake_kind/ast-grep" <<'FAKE'
+#!/usr/bin/env bash
+n=$(( $(wc -c) ))
+sleep 6
+printf '[{"ruleId":"inert-cmd","range":{"byteOffset":{"start":0,"end":%d}}}]\n' "$n"
+FAKE
+            ;;
     esac
     chmod +x "$FAKE_ROOT/$fake_kind/ast-grep"
     resolved=$(PATH="$FAKE_ROOT/$fake_kind:$PATH" command -v ast-grep)
@@ -398,12 +424,13 @@ for fake_kind in exit2 empty-array garbage; do
         fail "broken parser ($fake_kind): the fake is the ast-grep on PATH" "resolved to $resolved"
         continue
     fi
+    FAKE_ENV=("PATH=$FAKE_ROOT/$fake_kind:$PATH" CLAUDE_HOOKS_AUTO_CHECKPOINT_PARSE_TIMEOUT=1)
     expect CHECKPOINT "broken parser ($fake_kind): in-repo rm -rf ./src still checkpoints" \
-        'rm -rf ./src' "PATH=$FAKE_ROOT/$fake_kind:$PATH"
+        'rm -rf ./src' "${FAKE_ENV[@]}"
     expect CHECKPOINT "broken parser ($fake_kind): out-of-repo rm -rf falls back to the old matcher" \
-        'rm -rf /tmp/scratch-2652' "PATH=$FAKE_ROOT/$fake_kind:$PATH"
+        'rm -rf /tmp/scratch-2652' "${FAKE_ENV[@]}"
     expect CHECKPOINT "broken parser ($fake_kind): git reset --hard still checkpoints" \
-        'git reset --hard' "PATH=$FAKE_ROOT/$fake_kind:$PATH"
+        'git reset --hard' "${FAKE_ENV[@]}"
 done
 
 if [ "$HAVE_WORKING_ASTGREP" = false ]; then
@@ -473,6 +500,20 @@ expect CHECKPOINT "  control: '#' after an escaped space, then git checkout --" 
 expect skip "a comment after an escaped backslash and a real blank" 'echo \\ # rm -rf ./src'
 expect skip "a comment right after ';'" 'echo hi;# rm -rf ./src'
 expect skip "a comment on its own line" $'echo hi\n# rm -rf ./src'
+# Under an unquoted delimiter bash joins a backslash-newline before it compares
+# a line with the delimiter, so `EO\` + newline + `F` ends the heredoc and the
+# lines after it run; tree-sitter reads the body on to the later `EOF` (fifth
+# review of PR #2743: each of these deleted ./src or reverted a file).
+expect CHECKPOINT "  control: a heredoc delimiter joined by a backslash-newline ends the body" \
+    $'cat <<EOF\nhello\nEO\\\nF\nrm -rf ./src\nEOF'
+expect CHECKPOINT "  control: the same in a gh --body-file heredoc, then git checkout --" \
+    $'gh pr create --title t --body-file - <<EOF\nhello\nEO\\\nF\ngit checkout -- tracked.txt\nEOF'
+expect CHECKPOINT "  control: the same under <<-" $'cat <<-EOF\n\thello\n\tEO\\\nF\nrm -rf ./src\nEOF'
+expect skip "a quoted delimiter keeps the backslash-newline in the body" \
+    $'gh issue comment 1 --body-file - <<\'EOF\'\nhello\nEO\\\nF\nrm -rf ./src\nEOF'
+# `[ … ]` parses as a test_command, outside the allowlist; `test` is on it.
+expect CHECKPOINT "  control: [ … ] voids the exemption, like [[ … ]]" "[ -d src ] && echo 'rm -rf ./src'"
+expect skip "test -d, then an echo carrying the pattern" "test -d src && echo 'rm -rf ./src'"
 expect CHECKPOINT "  control: a build-artifact name followed by '..' (node_modules/../src)" \
     'rm -rf node_modules/../src'
 ln -s "$NON_GIT_DIR/nowhere" "$NON_GIT_DIR/dangling"
@@ -503,6 +544,92 @@ if [ -d /System/Volumes/Data ] && [ "/System/Volumes/Data$SANDBOX_PHYS" -ef "$SA
 else
     echo "  NOTE: no /System/Volumes/Data alias for the sandbox; firmlink and /.vol rows skipped"
 fi
+# A bind mount is the Linux second name for an in-repo directory: `cd -P`
+# resolves it to the mount point, so only file identity (`-ef`) sees through
+# it, and without these rows identity_disjoint could be stubbed out on Linux
+# with the suite green (fifth review of PR #2743). No unprivileged process can
+# make one outside a mount namespace, so the hook runs in one: `unshare -rm`
+# where user namespaces are allowed, else, in CI, `sudo -n unshare -m`, which
+# drops back to this user before the hook runs. The mount dies with it.
+BIND_ALIAS=$NON_GIT_DIR/bind-alias
+mkdir -p "$BIND_ALIAS"
+BIND_RUN=()
+BIND_DROP=()
+if command -v unshare >/dev/null 2>&1; then
+    if unshare -rm sh -c 'mount --bind "$1" "$2" && [ "$2" -ef "$1" ]' _ "$SANDBOX" "$BIND_ALIAS" 2>/dev/null; then
+        BIND_RUN=(unshare -rm)
+    elif [ "${CI:-}" = true ] && command -v setpriv >/dev/null 2>&1 &&
+        sudo -n unshare -m sh -c 'mount --bind "$1" "$2" && [ "$2" -ef "$1" ]' _ "$SANDBOX" "$BIND_ALIAS" 2>/dev/null; then
+        BIND_RUN=(sudo -n env "PATH=$PATH" "HOME=$HOME" unshare -m)
+        BIND_DROP=(setpriv "--reuid=$(id -u)" "--regid=$(id -g)" --clear-groups)
+    fi
+fi
+bind_expect() { # $1 = CHECKPOINT|skip, $2 = label, $3 = command, run with $SANDBOX bound at $BIND_ALIAS
+    local want=$1 label=$2 cmd=$3 json before after got rc=0
+    RUN_SEQ=$((RUN_SEQ + 1))
+    echo "modified tracked content $RUN_SEQ" > "$SANDBOX/tracked.txt"
+    json=$(jq -nc --arg c "$cmd" '{tool_name: "Bash", tool_input: {command: $c}}')
+    before=$(stash_count)
+    printf '%s' "$json" | "${BIND_RUN[@]}" sh -c \
+        'src=$1 dst=$2 hook=$3; shift 3; mount --bind "$src" "$dst" && cd "$src" && exec "$@" bash "$hook"' \
+        _ "$SANDBOX" "$BIND_ALIAS" "$HOOK" ${BIND_DROP[@]+"${BIND_DROP[@]}"} >/dev/null 2>&1 || rc=$?
+    after=$(stash_count)
+    if [ "$after" -gt "$before" ]; then got=CHECKPOINT; else got=skip; fi
+    if [ "$rc" -ne 0 ]; then
+        fail "$label" "hook exited $rc"
+    elif [ "$got" = "$want" ]; then
+        pass "$label"
+    else
+        fail "$label" "expected $want, got $got for: $cmd"
+    fi
+}
+if [ "${#BIND_RUN[@]}" -gt 0 ]; then
+    bind_expect CHECKPOINT "  control: a bind-mount alias of an in-repo directory" "rm -rf $BIND_ALIAS/src"
+    bind_expect CHECKPOINT "  control: a bind-mount alias of the repository itself" "rm -rf $BIND_ALIAS"
+    bind_expect skip "an out-of-repo literal still skips inside the mount namespace (the parser is live)" \
+        "rm -rf $NON_GIT_DIR/scratch"
+else
+    echo "  NOTE: no private mount namespace (unshare -rm, or sudo -n in CI); bind-mount rows skipped"
+fi
+# An out-of-repo verdict is read before the command runs. An allowlisted git
+# subcommand earlier in the same command can plant a symlink into the repository
+# at the path rm then deletes through (fifth review of PR #2743: git mv, switch,
+# checkout and restore each deleted repo content that way). `lnk` is tracked on
+# OTHER's `withlink` branch and `lnk2` on its first branch, both pointing here.
+OTHER=$NON_GIT_DIR/other-repo
+git init -q "$OTHER"
+git -C "$OTHER" config core.hooksPath /dev/null
+git -C "$OTHER" config commit.gpgsign false
+git -C "$OTHER" config user.email "test@example.com"
+git -C "$OTHER" config user.name "Test"
+ln -s "$SANDBOX" "$OTHER/lnk2"
+git -C "$OTHER" add lnk2
+git -C "$OTHER" commit -q -m base
+git -C "$OTHER" checkout -q -b withlink
+git -C "$OTHER" rm -q --cached lnk2
+mv "$OTHER/lnk2" "$OTHER/lnk"
+git -C "$OTHER" add lnk
+git -C "$OTHER" commit -q -m link
+git -C "$OTHER" checkout -q -
+expect CHECKPOINT "  control: git -C switch checks out a symlink, then rm through it" \
+    "git -C \"$OTHER\" switch withlink && rm -rf \"$OTHER/lnk/src\""
+expect CHECKPOINT "  control: git -C checkout <branch>, then rm through the link" \
+    "git -C \"$OTHER\" checkout withlink && rm -rf \"$OTHER/lnk/src\""
+expect CHECKPOINT "  control: git -C restore --source, then rm through the link" \
+    "git -C \"$OTHER\" restore --source=withlink lnk && rm -rf \"$OTHER/lnk/src\""
+expect CHECKPOINT "  control: git -C mv renames a link, then rm through the new name" \
+    "git -C \"$OTHER\" mv lnk2 moved && rm -rf \"$OTHER/moved/src\""
+expect CHECKPOINT "  control: cd, git mv, then rm through the new name" \
+    "cd \"$OTHER\" && git mv lnk2 moved && rm -rf \"$OTHER/moved/src\""
+expect CHECKPOINT "  control: git -C stash pop, then rm" "git -C \"$OTHER\" stash pop && rm -rf \"$OTHER/lnk/src\""
+expect CHECKPOINT "  control: git -C reset --hard <branch>, then rm" \
+    "git -C \"$OTHER\" reset --hard withlink && rm -rf \"$OTHER/lnk/src\""
+expect CHECKPOINT "  control: gh pr checkout, then rm" "cd \"$OTHER\" && gh pr checkout 1 && rm -rf \"$OTHER/lnk/src\""
+expect CHECKPOINT "  control: the same with rm -r -f, which the old matcher never read" \
+    "git -C \"$OTHER\" switch withlink && rm -r -f \"$OTHER/lnk/src\""
+expect skip "a read-only git beside an out-of-repo rm" "git -C \"$OTHER\" log -1 && rm -rf \"$OTHER/scratch\""
+expect skip "mkdir beside an out-of-repo rm (a directory cannot alias one)" \
+    "mkdir -p \"$NON_GIT_DIR/made\" && rm -rf \"$NON_GIT_DIR/made/x\""
 # A linked worktree's git dir and common dir lie outside its work tree.
 WT_DIR="$NON_GIT_DIR/wt-2652"
 if git -C "$SANDBOX" worktree add -q --detach "$WT_DIR" 2>/dev/null; then
@@ -879,6 +1006,8 @@ git commit -m 'X' && env sh .git/COMMIT_EDITMSG
 git commit -m 'X' && gh alias set z '!sh .git/COMMIT_EDITMSG' && gh z
 echo \ #; X
 echo a\~NL~#; X
+cat <<EOF~NL~hello~NL~EO\~NL~F~NL~X~NL~EOF
+gh issue comment 1 --body-file - <<EOF~NL~hello~NL~E\~NL~OF~NL~X~NL~EOF
 TEMPLATES
 for c in "rm -rf ./src" "git clean -fd"; do
     for x in "${EXEC_VIA_INERT[@]}"; do SPELLINGS+=("$(fill "$x" "$c")"); done
@@ -886,6 +1015,12 @@ done
 # The must-checkpoint controls from section A take part in the differential too.
 SPELLINGS+=('cd /tmp && rm -rf "$OLDPWD/src"' 'cd @TOP@ && rm -rf "$PWD/src"' 'cd @LINK@ && rm -rf ./src'
     'cd @LINK@/src && rm -rf ../src')
+# A command that can create, rename or restore a path before an out-of-repo rm
+# (`l2` does not exist now; each of these could make it a link to the repo).
+SPELLINGS+=('git -C @OUT@ switch b && rm -rf @OUT@/l2/src' 'git -C @OUT@ checkout b && rm -rf @OUT@/l2/src'
+    'git -C @OUT@ restore --source=b l2 && rm -rf @OUT@/l2/src' 'git -C @OUT@ mv lin l2 && rm -rf @OUT@/l2/src'
+    'cd @OUT@ && git mv lin l2 && rm -rf @OUT@/l2/src' 'git -C @OUT@ stash pop && rm -rf @OUT@/l2/src'
+    'git -C @OUT@ reset --hard b && rm -rf @OUT@/l2/src' 'cd @OUT@ && gh pr checkout 1 && rm -rf @OUT@/l2/src')
 if [ -n "${FIRM:-}" ]; then SPELLINGS+=('cd /System/Volumes/Data@PTOP@ && rm -rf src'); fi
 SPELLINGS+=('echo "rm -rf ./src" | bash' "$(printf '%s\n' "cat <<'EOF' | bash" 'rm -rf ./src' 'EOF')"
     "X='rm -rf ./src'; \$X" "ssh host 'rm -rf ./src'" "python3 -c \"import os; os.system('rm -rf ./src')\"")

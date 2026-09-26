@@ -390,9 +390,9 @@ every other shape anywhere in the command voids it.
 | Allowed | Detail |
 |---------|--------|
 | Structure | simple commands, pipelines, `&&` / `\|\|` / `;` lists, comments |
-| Input | heredocs with a quoted delimiter; unquoted ones with no `$` or backtick in them; here-strings; `< file` |
+| Input | heredocs with a quoted delimiter; unquoted ones with no `$`, backtick or backslash in them; here-strings; `< file` |
 | Output | redirects to `/dev/null`, fd duplications (`2>&1`, `>&2`) and closes |
-| Programs | the output-only programs above, `rm`, `cd`, `pwd`, `ls`, `mkdir`, `test`, `[`, `true`, `false`, `:`, `sleep` |
+| Programs | the output-only programs above, `rm`, `cd`, `pwd`, `ls`, `mkdir`, `test`, `true`, `false`, `:`, `sleep` |
 | `gh` | the subcommands above only |
 | `git` | `status log show diff grep commit tag notes add rev-parse branch switch checkout restore reset clean stash rm mv ls-files merge-base rev-list describe shortlog blame reflog cat-file show-ref for-each-ref symbolic-ref`; global options `-C DIR` and `--no-pager` only |
 
@@ -403,9 +403,15 @@ long option spelling a prefix of `--output` or `--out…` (`sort -o`, `git log
 --open-files-in-pager`; and on `git`, `gh`, `printf` or `rg` any word whose value
 the hook cannot read. So does any assignment (including an environment prefix),
 declaration, function, command or process substitution, `${x=…}` expansion,
-loop, conditional, `[[ … ]]`, subshell or `{ … }` group anywhere in the command.
-`exec`, `tee`, `eval`, `source`, `.`, every shell, `xargs`, `find`, `parallel`,
-`env`, `sudo`, `awk` and `perl` void it by not being on the list.
+loop, conditional, `[ … ]` or `[[ … ]]` test (tree-sitter reads both as a test
+command; `test` is the allowed spelling), subshell or `{ … }` group anywhere in
+the command. `exec`, `tee`, `eval`, `source`, `.`, every shell, `xargs`, `find`,
+`parallel`, `env`, `sudo`, `awk` and `perl` void it by not being on the list.
+
+An unquoted heredoc holding a backslash voids it too. Bash joins a
+backslash-newline before it compares a line with the delimiter, so `EO\` +
+newline + `F` ends the body there, while tree-sitter reads on to a later `EOF`
+and the lines between would be blanked although bash runs them (fifth review).
 
 The `gh pr create --body "$(cat <<'EOF' … EOF)"` and `git commit -m "$(cat
 <<'EOF' …)"` spellings therefore checkpoint as they did before #2652; their
@@ -445,6 +451,7 @@ These still checkpoint:
 | `rm -rf /proc/self/cwd/x`, `rm -rf /dev/fd/3/x 3<dir` | `/proc` and `/dev` names resolve per process, so the hook's view says nothing about rm's |
 | `rm -rf node_modules/../src` | A build-artifact name with a `..` component is `./src` (the old matcher's `\b` skipped it) |
 | `rm -rf /outside/lin*/src`, `rm -rf /outside/.?/repo/src` | A glob is never exempt: a component it matches can be a symlink into the repository, and under bash 3.2 `.?` matches `..` |
+| `git -C /o switch b && rm -rf /o/lnk/src` (also `checkout`, `restore`, `reset`, `stash`, `mv`, `rm`, `clean`, any `gh`) | The operand is resolved before the command runs, and an earlier command can check out or rename a symlink into the repository at the path rm then deletes through. An out-of-repo verdict stands only when nothing else in the command can create, rename or restore a path; this holds for every flag spelling, `rm -r -f` included |
 | `rm -rf "$T"`, `rm -rf "$(mktemp -d)"` | Not statically resolvable. #2652 is **reduced** for this shape, not fixed |
 | `cd /tmp && rm -rf scratch` | A relative operand; the `cd` could point anywhere |
 | `rm -rf ~/x`, `rm -rf /tmp/{a,b}` | Tilde and brace expansion are not resolved |
@@ -454,10 +461,21 @@ These still checkpoint:
 
 `bash-antipatterns.sh` and `validate-terraform-apply.sh` fail open without
 their parser. This hook does the opposite: no `ast-grep`, an `ast-grep` error or
-empty answer, or a tree-sitter `ERROR` node all leave the residue whole, so the
-old matcher decides and the pre-#2652 behaviour returns. A missed checkpoint
-loses work; a spare one costs a stash. `CLAUDE_HOOKS_AUTO_CHECKPOINT_NO_ASTGREP=1`
-forces that path (tests).
+empty answer, an answer in which any node lacks a rule id or an integer byte
+range inside the command (a drifted output schema; the whole answer is
+dropped), a parser still running after
+`CLAUDE_HOOKS_AUTO_CHECKPOINT_PARSE_TIMEOUT` seconds (default 3; it is killed),
+or a tree-sitter `ERROR` node all leave the residue whole, so the old matcher
+decides and the pre-#2652 behaviour returns. A missed checkpoint loses work; a
+spare one costs a stash. `CLAUDE_HOOKS_AUTO_CHECKPOINT_NO_ASTGREP=1` forces that
+path (tests).
+
+That polarity is an aim, which the suite's differential checks; it is not a
+proof. The known ways to under-checkpoint are a span the parser reads
+differently from the shell (the escaped-blank `#` and the backslash-newline
+heredoc delimiter were two), an allowlisted program that runs text or writes a
+file through a path the hook does not check, and shell state from before the
+command (above).
 
 ### Testing
 
@@ -466,15 +484,18 @@ bash hooks-plugin/hooks/test-auto-checkpoint.sh
 ```
 
 Beyond the #2610 cases, the suite pairs every false positive from the #2652
-thread with an in-repo control, generates 582 spellings (4 fewer where there is
-no macOS firmlink) of the destructive
+thread with an in-repo control, generates 590 spellings (594 where there is a
+macOS firmlink) of the destructive
 commands (program spelling × wrapper × flag spelling × shell-string wrapper ×
 shell context, plus every allowlist-voiding shape above, each beside a control
 that skips) and requires each to checkpoint, and runs the same set through
 the pre-#2652 hook (`git show <ref>:…` at HEAD and at the pinned pre-fix commit,
 or the no-parser path when neither is in the clone): any spelling a baseline
-checkpoints but the hook skips fails the run. It needs `ast-grep`; without it
-the parser sections are skipped and the suite reports `SKIP`.
+checkpoints but the hook skips fails the run. File identity has its own rows on
+each platform: macOS firmlink and `/.vol` aliases, and on Linux a bind-mount
+alias, run in a private mount namespace (`unshare -rm`, or `sudo -n unshare -m`
+in CI) and reported as a `NOTE` where none can be made. It needs `ast-grep`;
+without it the parser sections are skipped and the suite reports `SKIP`.
 
 ---
 
