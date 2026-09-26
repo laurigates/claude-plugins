@@ -56,11 +56,18 @@
 #     unquoted delimiter whose text holds `$`, a backtick or a backslash (bash
 #     joins a backslash-newline before it compares a line with the delimiter,
 #     so `EO\` + newline + `F` ends the body where tree-sitter reads on and
-#     blanks the lines after it). `exec`, `tee`, `eval`, `source`, `.`, every
-#     shell, `xargs`, `find`, `parallel`, `env`, `sudo`, `awk`, `perl` and every
-#     other program are simply not on the list. Shell state from BEFORE the
-#     command is trusted: a name rebound by the user's profile, a git hook or
-#     alias already installed, or a variable already exported is not seen.
+#     blanks the lines after it). So does a heredoc whose delimiter is not a
+#     plain word (letters, digits, `_`; bare, after one backslash or in one
+#     pair of quotes) ending the shell word, or whose closing line holds
+#     anything but that word (after tabs under `<<-`): tree-sitter keeps a
+#     quote that does not open the word (`<<E"O"F`, `<<$'EOF'`) and closes the
+#     body at a line that only starts with the delimiter (`EOF; cat <<'Z'`),
+#     so bash's body ends on another line (heredoc_*_agrees below). `exec`,
+#     `tee`, `eval`, `source`, `.`, every shell, `xargs`, `find`, `parallel`,
+#     `env`, `sudo`, `awk`, `perl` and every other program are simply not on
+#     the list. Shell state from BEFORE the command is trusted: a name rebound
+#     by the user's profile, a git hook or alias already installed, or a
+#     variable already exported is not seen.
 #   - structural() walks each tree-sitter `command` node, rebuilds its argument
 #     vector the way the shell would (quotes removed, escapes resolved), and
 #     looks for an `rm`/`git` token ANYWHERE in it — so `sudo rm`, `timeout 5
@@ -78,8 +85,9 @@
 # Never checkpointing less than the old matcher is still an aim, checked by the
 # suite's differential against it, not a proof. The known ways to
 # under-checkpoint are: a span the parser reads
-# differently from the shell (reviews found the `#` after an escaped blank and
-# a heredoc delimiter joined by a backslash-newline; both now checkpoint); an
+# differently from the shell (reviews found the `#` after an escaped blank, a
+# heredoc delimiter joined by a backslash-newline, a partly quoted one, and a
+# closing line that only starts with the delimiter; all now checkpoint); an
 # allowlisted program that runs text or writes a file through a path the hook
 # does not check; and shell state from before the command (above).
 #
@@ -346,6 +354,18 @@ rule:
   kind: heredoc_redirect
   regex: '[\x24\x60\x5c]'
   has: { kind: heredoc_start, regex: '${UNQUOTED_DELIM}' }
+---
+id: heredoc-start
+language: bash
+rule: { kind: heredoc_start }
+---
+id: heredoc-end
+language: bash
+rule: { kind: heredoc_end, not: { inside: { kind: heredoc_redirect, regex: '^<<-' } } }
+---
+id: heredoc-end-dash
+language: bash
+rule: { kind: heredoc_end, inside: { kind: heredoc_redirect, regex: '^<<-' } }
 ---
 id: inert-stmt
 language: bash
@@ -1010,16 +1030,54 @@ command_allowed() {
   return 0
 }
 
+# A heredoc is allowed only where bash ends its body on the line tree-sitter
+# does. tree-sitter-bash takes the delimiter up to the first blank, or up to the
+# closing quote when the word opens with one, keeping any other quote; and it
+# ends the body at the first line that merely STARTS with the delimiter, after
+# any leading blanks under `<<-`. bash removes quotes from the whole word and
+# ends at the first line equal to it, after leading tabs under `<<-`. So
+# `<<E"O"F`, `<<$'EOF'`, `<<EOF;`, `<<'E'OF`, a closing line `EOF; cat <<'Z'`
+# or a space-indented one each let tree-sitter read as heredoc text lines bash
+# runs (sixth review of PR #2743). Allowed: a delimiter of letters, digits and
+# `_`, bare, after one backslash or in one pair of quotes, that ends the shell
+# word, closed by a line holding it alone (after tabs under `<<-`). Anything
+# else voids the exemption.
+HEREDOC_W='[A-Za-z0-9_]+'
+HEREDOC_WORD="^($HEREDOC_W|\\\\$HEREDOC_W|'$HEREDOC_W'|\"$HEREDOC_W\")\$"
+heredoc_start_agrees() { # $1 $2 = byte span of a heredoc_start in COMMAND
+  [[ ${COMMAND:$1:$2-$1} =~ $HEREDOC_WORD ]] || return 1
+  case ${COMMAND:$2:1} in '' | ' ' | $'\t' | $'\n' | ';' | '&' | '|' | '<' | '>' | ')') return 0 ;; esac
+  return 1
+}
+heredoc_end_agrees() { # $1 $2 = byte span of a heredoc_end, $3 = 1 under <<-
+  local j
+  case ${COMMAND:$2:1} in '' | $'\n') ;; *) return 1 ;; esac
+  for ((j = $1 - 1; j >= 0; j--)); do
+    case ${COMMAND:j:1} in
+      $'\n') return 0 ;;
+      $'\t') [ "$3" = 1 ] || return 1 ;;
+      *) return 1 ;;
+    esac
+  done
+  return 1
+}
+
 # 0 when the top-level command (TOP_NODES, from analyse) is built only from the
-# allowlist: no gate-* node anywhere, and every command node an allowlisted
-# shape. No nodes at all is a parse that proved nothing. With $1 = readonly,
-# no command may be gh or a git subcommand that writes the work tree either.
+# allowlist: no gate-* node anywhere, every heredoc read alike by bash and
+# tree-sitter, and every command node an allowlisted shape. No nodes at all is
+# a parse that proved nothing. With $1 = readonly, no command may be gh or a git
+# subcommand that writes the work tree either.
 TOP_NODES=""
 exemption_holds() {
   local rid s e mode=${1-}
   [ -n "$TOP_NODES" ] || return 1
   while read -r rid s e; do
-    case $rid in gate-*) return 1 ;; esac
+    case $rid in
+      gate-*) return 1 ;;
+      heredoc-start) heredoc_start_agrees "$s" "$e" || return 1 ;;
+      heredoc-end) heredoc_end_agrees "$s" "$e" 0 || return 1 ;;
+      heredoc-end-dash) heredoc_end_agrees "$s" "$e" 1 || return 1 ;;
+    esac
   done <<<"$TOP_NODES"
   while read -r rid s e; do
     [ "$rid" = cmd ] || continue

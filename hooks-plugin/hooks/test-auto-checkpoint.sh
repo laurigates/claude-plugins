@@ -511,6 +511,36 @@ expect CHECKPOINT "  control: the same in a gh --body-file heredoc, then git che
 expect CHECKPOINT "  control: the same under <<-" $'cat <<-EOF\n\thello\n\tEO\\\nF\nrm -rf ./src\nEOF'
 expect skip "a quoted delimiter keeps the backslash-newline in the body" \
     $'gh issue comment 1 --body-file - <<\'EOF\'\nhello\nEO\\\nF\nrm -rf ./src\nEOF'
+# tree-sitter keeps a quote that does not open the delimiter word and ends the
+# body at a line that merely starts with the delimiter (after any blanks under
+# <<-); bash removes every quote and ends at a line equal to it (after tabs).
+# Each of these deleted ./src or reverted a file under bash while the hook
+# stayed silent (sixth review of PR #2743).
+for hd_delim in 'E"O"F' "E'O'F" 'E""OF' "\$'EOF'" '$"EOF"'; do
+    expect CHECKPOINT "  control: a partly quoted heredoc delimiter <<$hd_delim ends at the plain EOF" \
+        "cat <<$hd_delim"$'\nhello\nEOF\nrm -rf ./src\n'"$hd_delim"
+done
+expect CHECKPOINT "  control: the same under <<-" $'cat <<-E"O"F\n\thello\n\tEOF\nrm -rf ./src\nE"O"F'
+expect CHECKPOINT "  control: a partly quoted delimiter on git commit -F -" \
+    $'git commit -F - <<E\'O\'F\nhello\nEOF\nrm -rf ./src\nE\'O\'F'
+expect CHECKPOINT "  control: a partly quoted delimiter on gh --body-file, then git checkout --" \
+    $'gh issue comment 1 --body-file - <<E"O"F\nhello\nEOF\ngit checkout -- tracked.txt\nE"O"F'
+expect CHECKPOINT "  control: a delimiter the shell word ends before (<<EOF;)" \
+    $'cat <<EOF;\nhello\nEOF\nrm -rf ./src\nEOF;'
+expect CHECKPOINT "  control: a quoted delimiter the word runs on past (<<'E'OF)" \
+    $'cat <<\'E\'OF\nE; cat <<\'Z\'\nEOF\nrm -rf ./src\nZ'
+expect CHECKPOINT "  control: the same after the closing quote (<<\"EOF\"x)" \
+    $'cat <<"EOF"x\nEOF; cat <<\'Z\'\nEOFx\nrm -rf ./src\nZ'
+expect CHECKPOINT "  control: a line that only starts with the delimiter does not close the body" \
+    $'cat <<\'EOF\'\nEOF; cat <<\'Z\'\nEOF\nrm -rf ./src\nZ'
+expect CHECKPOINT "  control: the same on gh --body-file, then git checkout --" \
+    $'gh issue comment 1 --body-file - <<\'EOF\'\nEOF; cat <<\'Z\'\nEOF\ngit checkout -- tracked.txt\nZ'
+expect CHECKPOINT "  control: <<- strips tabs, not spaces, before the closing line" \
+    $'cat <<-EOF\n  EOF\ncat <<\'Z\'\nEOF\nrm -rf ./src\nZ'
+expect skip "a tab-indented closing line under <<-" $'cat <<-\'EOF\'\n\trm -rf ./src\n\tEOF'
+expect skip "a delimiter after one backslash (<<\\EOF)" $'gh issue comment 1 --body-file - <<\\EOF\nrm -rf ./src\nEOF'
+expect skip "a double-quoted delimiter, then a command after the body" \
+    $'gh issue comment 1 --body-file - <<"EOF_1"\nrm -rf ./src\nEOF_1\necho done'
 # `[ … ]` parses as a test_command, outside the allowlist; `test` is on it.
 expect CHECKPOINT "  control: [ … ] voids the exemption, like [[ … ]]" "[ -d src ] && echo 'rm -rf ./src'"
 expect skip "test -d, then an echo carrying the pattern" "test -d src && echo 'rm -rf ./src'"
@@ -1008,6 +1038,10 @@ echo \ #; X
 echo a\~NL~#; X
 cat <<EOF~NL~hello~NL~EO\~NL~F~NL~X~NL~EOF
 gh issue comment 1 --body-file - <<EOF~NL~hello~NL~E\~NL~OF~NL~X~NL~EOF
+cat <<E"O"F~NL~hello~NL~EOF~NL~X~NL~E"O"F
+gh issue comment 1 --body-file - <<$'EOF'~NL~hello~NL~EOF~NL~X~NL~$'EOF'
+cat <<'EOF'~NL~EOF; cat <<'Z'~NL~EOF~NL~X~NL~Z
+cat <<-EOF~NL~  EOF~NL~cat <<'Z'~NL~EOF~NL~X~NL~Z
 TEMPLATES
 for c in "rm -rf ./src" "git clean -fd"; do
     for x in "${EXEC_VIA_INERT[@]}"; do SPELLINGS+=("$(fill "$x" "$c")"); done

@@ -299,10 +299,12 @@ matcher, and the suite's differential against it is the check, not a proof.
 The known ways to under-checkpoint are a span the parser reads differently from
 the shell, an allowlisted program that runs text or writes a file through a
 path the hook does not check, and shell state from before the command. Reviews
-found four such shapes (`echo \ #; rm -rf ./src`, where tree-sitter reads a
+found five such shapes (`echo \ #; rm -rf ./src`, where tree-sitter reads a
 comment the shell does not; `rm -rf /outside/lin*/src`, a glob exempted on its
 literal prefix through a symlink into the repository; a heredoc delimiter
-joined by a backslash-newline; `git -C /o switch b && rm -rf /o/lnk/src`, where
+joined by a backslash-newline; a heredoc delimiter tree-sitter reads
+differently from bash, partly quoted (`<<E"O"F`) or closed by a line that only
+starts with it (`EOF; cat <<'Z'`); `git -C /o switch b && rm -rf /o/lnk/src`, where
 the checkout plants a symlink into the repository before rm runs), and a parser
 answer without byte offsets crashed the hook; all now checkpoint.
 The parser's exemption is a closed

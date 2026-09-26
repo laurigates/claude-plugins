@@ -390,7 +390,7 @@ every other shape anywhere in the command voids it.
 | Allowed | Detail |
 |---------|--------|
 | Structure | simple commands, pipelines, `&&` / `\|\|` / `;` lists, comments |
-| Input | heredocs with a quoted delimiter; unquoted ones with no `$`, backtick or backslash in them; here-strings; `< file` |
+| Input | heredocs whose delimiter is a plain word (letters, digits, `_`) — quoted whole, after one backslash, or bare with no `$`, backtick or backslash in the heredoc — closed by a line holding that word alone (after tabs under `<<-`); here-strings; `< file` |
 | Output | redirects to `/dev/null`, fd duplications (`2>&1`, `>&2`) and closes |
 | Programs | the output-only programs above, `rm`, `cd`, `pwd`, `ls`, `mkdir`, `test`, `true`, `false`, `:`, `sleep` |
 | `gh` | the subcommands above only |
@@ -412,6 +412,16 @@ An unquoted heredoc holding a backslash voids it too. Bash joins a
 backslash-newline before it compares a line with the delimiter, so `EO\` +
 newline + `F` ends the body there, while tree-sitter reads on to a later `EOF`
 and the lines between would be blanked although bash runs them (fifth review).
+
+The delimiter itself has the same problem (sixth review). tree-sitter keeps a
+quote that does not open the delimiter word (`<<E"O"F`, `<<E'O'F`, `<<$'EOF'`)
+and reads `<<EOF;` as the delimiter `EOF;`, where bash removes the quotes or
+ends the word; and it closes the body at the first line that merely *starts*
+with the delimiter (`EOF; cat <<'Z'`, or a space-indented `  EOF` under `<<-`),
+where bash needs the word alone. Either way bash ends the body on a different
+line, and a second heredoc opened in the gap can hide the commands bash then
+runs. So a heredoc voids the exemption unless its delimiter is a plain word
+that ends the shell word and its closing line holds that word alone.
 
 The `gh pr create --body "$(cat <<'EOF' … EOF)"` and `git commit -m "$(cat
 <<'EOF' …)"` spellings therefore checkpoint as they did before #2652; their
@@ -472,8 +482,9 @@ path (tests).
 
 That polarity is an aim, which the suite's differential checks; it is not a
 proof. The known ways to under-checkpoint are a span the parser reads
-differently from the shell (the escaped-blank `#` and the backslash-newline
-heredoc delimiter were two), an allowlisted program that runs text or writes a
+differently from the shell (the escaped-blank `#`, the backslash-newline and
+partly quoted heredoc delimiters, and a closing line that only starts with the
+delimiter were four), an allowlisted program that runs text or writes a
 file through a path the hook does not check, and shell state from before the
 command (above).
 
@@ -484,7 +495,7 @@ bash hooks-plugin/hooks/test-auto-checkpoint.sh
 ```
 
 Beyond the #2610 cases, the suite pairs every false positive from the #2652
-thread with an in-repo control, generates 590 spellings (594 where there is a
+thread with an in-repo control, generates 598 spellings (602 where there is a
 macOS firmlink) of the destructive
 commands (program spelling × wrapper × flag spelling × shell-string wrapper ×
 shell context, plus every allowlist-voiding shape above, each beside a control
