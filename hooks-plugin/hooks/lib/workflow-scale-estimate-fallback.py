@@ -2,7 +2,7 @@
 """Statically estimate how many agents a Workflow tool script will spawn.
 
 FALLBACK ONLY. This is the pre-parser estimator, kept unchanged so a machine
-without `node` behaves as it did before the count-or-ask rule. The primary
+without `node` counts as it did before the count-or-ask rule. The primary
 estimator is ../workflow-scale-estimate.py, which imports analyze() from here
 when it cannot run its parser.
 

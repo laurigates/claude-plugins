@@ -39,8 +39,9 @@
 #   5. Ask on UNBOUNDED (naming the lines and how to make them silent),
 #      OVER_LIMIT (the counted total exceeds the limit), PARSE_ERROR (the
 #      script does not parse, so nothing can be counted) and ANALYSIS_ERROR
-#      (the parser crashed or timed out twice, or the script parsed but the
-#      estimator failed on it). Everything else exits 0 silently.
+#      (the parser crashed or timed out twice, the script parsed but the
+#      estimator failed on it, or the estimator process exited non-zero or
+#      printed no verdict). Everything else exits 0 silently.
 #
 # ASK, NOT BLOCK — on purpose. The failure here is not "this workflow is
 # forbidden", it is "nobody was asked". A hard block would force the agent to
@@ -57,11 +58,20 @@
 # and within the limit. Without node the estimator falls back to the
 # pre-parser regex estimator, which costs a runtime-length fan-out at
 # CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH items and never reports UNBOUNDED, so a
-# machine without node behaves as it did before. With node, a parser that
+# machine without node counts as it did before, and an exception inside that
+# fallback is VERDICT=ERROR, silent as on main. With node, a parser that
 # crashes or times out twice is ANALYSIS_ERROR and asks; it does not fall back.
+# With or without node, an estimator that exits non-zero or prints no verdict
+# (main's guard exited 0 there) is ANALYSIS_ERROR and asks.
 #
 # Tunables (read from the hook's own process environment):
-#   CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS      limit before asking (default 10)
+#   CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS      asks when the counted total exceeds it
+#                                         (default 10; a total equal to it is
+#                                         silent; 0 asks on any counted agent;
+#                                         a value not all digits means 10). The
+#                                         subagent-count tripwire reads the same
+#                                         variable differently: see
+#                                         docs/feature-flags.md.
 #   CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH   items per runtime-length fan-out, read
 #                                         only by the no-node fallback (default 8)
 #   CLAUDE_HOOKS_DISABLE_WORKFLOW_SCALE_GUARD=1   disable entirely
@@ -105,10 +115,19 @@ WIDTH="${CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH:-8}"
 case "$LIMIT" in ''|*[!0-9]*) LIMIT=10 ;; esac
 case "$WIDTH" in ''|*[!0-9]*) WIDTH=8 ;; esac
 
-ROLLUP=$(printf '%s' "$SCRIPT_TEXT" | python3 "$ESTIMATOR" "$LIMIT" "$WIDTH" 2>/dev/null) || exit 0
-[ -n "$ROLLUP" ] || exit 0
+ROLLUP=$(printf '%s' "$SCRIPT_TEXT" | python3 "$ESTIMATOR" "$LIMIT" "$WIDTH" 2>/dev/null)
+EST_EXIT=$?
 
 field() { printf '%s\n' "$ROLLUP" | grep "^$1=" | head -1 | cut -d= -f2-; }
+
+# An estimator that exits non-zero or prints no verdict counted nothing, so it
+# asks like any other estimator failure (count-or-ask) instead of passing the
+# run silently. A crash's partial output is discarded: its verdict never
+# finished, and a VERDICT line printed before the crash is not a count.
+if [ "$EST_EXIT" -ne 0 ] || [ -z "$(field VERDICT)" ]; then
+    ROLLUP="VERDICT=ANALYSIS_ERROR
+DETAIL=the estimator stopped without a verdict (exit ${EST_EXIT})"
+fi
 
 VERDICT=$(field VERDICT)
 case "$VERDICT" in OVER_LIMIT | UNBOUNDED | PARSE_ERROR | ANALYSIS_ERROR) ;; *) exit 0 ;; esac

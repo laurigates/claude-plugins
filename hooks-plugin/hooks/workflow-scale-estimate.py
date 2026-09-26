@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Count the agents a Workflow script will spawn, or say that it cannot.
 
-Reads a workflow script on stdin and writes a KEY=VALUE rollup on stdout
-(structured-script-output convention) for workflow-scale-guard.sh:
+Reads a workflow script on stdin and writes a KEY=VALUE rollup on stdout, as
+UTF-8 whatever the locale (structured-script-output convention), for
+workflow-scale-guard.sh:
 
     VERDICT=OK|OVER_LIMIT|UNBOUNDED|NO_AGENTS|PARSE_ERROR|ANALYSIS_ERROR
     PARSER=acorn|fallback
@@ -54,10 +55,12 @@ that shadows or redefines one (a local `parallel`, a patched
 Parsing uses the vendored acorn parser under node (lib/workflow-scale-parse.cjs).
 A syntax error is PARSE_ERROR. A parser that crashes, or times out twice (the
 retry absorbs a cold node start), is ANALYSIS_ERROR, as is an error while
-walking a parsed script; the guard asks on all three. Only a machine without
-node falls back to the pre-parser estimator
-(lib/workflow-scale-estimate-fallback.py), which regex-scans and costs runtime
-lists at ASSUMED items, so it behaves as it did before.
+walking a parsed script; the guard asks on all three, and when a run of this
+file exits non-zero or prints no VERDICT. Only a machine without node falls
+back to the pre-parser estimator (lib/workflow-scale-estimate-fallback.py),
+which regex-scans and costs runtime lists at ASSUMED items, so it counts as it
+did before; an exception inside it is VERDICT=ERROR, on which the guard stays
+silent, as it did on main.
 """
 
 import importlib.util
@@ -500,12 +503,15 @@ def main() -> int:
 
 
 def emit(result: dict) -> int:
-    for key in ("VERDICT", "PARSER", "FALLBACK", "NAME", "SITES", "ESTIMATE", "LIMIT"):
-        if key in result:
-            print(f"{key}={result[key]}")
-    for key in ("UNBOUNDED", "UNBOUNDED_AT", "ASSUMED", "SOURCE", "DETAIL"):
-        if key in result:
-            print(f"{key}={result[key]}")
+    keys = ("VERDICT", "PARSER", "FALLBACK", "NAME", "SITES", "ESTIMATE", "LIMIT")
+    keys += ("UNBOUNDED", "UNBOUNDED_AT", "ASSUMED", "SOURCE", "DETAIL")
+    rollup = "".join(f"{key}={result[key]}\n" for key in keys if key in result)
+    # UTF-8 bytes whatever the locale: the guard hands this text to jq, which
+    # reads UTF-8, and a latin-1 or ASCII stdout (PYTHONIOENCODING, an ISO-8859
+    # locale) cannot encode the `…` of a clipped snippet or the U+FFFD of a
+    # replaced byte. print() would raise there, and a crash asks, not counts.
+    sys.stdout.buffer.write(rollup.encode("utf-8", "backslashreplace"))
+    sys.stdout.buffer.flush()
     return 0
 
 

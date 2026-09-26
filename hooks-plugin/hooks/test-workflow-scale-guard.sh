@@ -12,7 +12,8 @@
 # Plus the structural guards (resume, other tool, saved-by-name, opt-out, limit
 # override), the no-node fallback to the pre-parser estimator, a node whose
 # parser crashes or times out (asks; a cold first call is retried), a script
-# file that is not UTF-8, and the shape of the ask payload.
+# file that is not UTF-8, a stdout that is not UTF-8, an estimator that stops
+# without a verdict (asks), and the shape of the ask payload.
 #
 # Run: bash hooks-plugin/hooks/test-workflow-scale-guard.sh
 # Exit 0 = all tests pass, Exit 1 = failures
@@ -141,6 +142,11 @@ t ask "counted for of 11"                     'for (let i = 0; i < 11; i++) awai
 t ask "nested product 3 x 4 = 12"             'for (const a of [1, 2, 3]) await parallel([1, 2, 3, 4].map(b => () => agent(a, b)))'
 t ask "inclusive bound 0..10 = 11"            'for (let i = 0; i <= 10; i++) await agent(i)'
 t silent "limit raised above the count"       'for (let i = 0; i < 11; i++) await agent(i)' CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS=20
+# The guard's reading of CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS, as docs/feature-flags.md
+# states it (the subagent-count tripwire reads the same variable differently).
+t silent "a total equal to the limit"         'for (let i = 0; i < 10; i++) await agent(i)'
+t ask "limit 0 asks on one counted agent"     'await agent(1)' CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS=0
+t silent "a non-numeric limit means 10"       'for (let i = 0; i < 10; i++) await agent(i)' CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS=ten
 
 echo
 echo "== rollup fields =="
@@ -232,6 +238,51 @@ for lc in C C.UTF-8; do
     got=$(LC_ALL=$lc python3 "$ESTIMATOR" 10 < "$LATIN1" | grep -E '^(VERDICT|PARSER)=' | tr '\n' ' ')
     if [ "$got" = "VERDICT=UNBOUNDED PARSER=acorn " ]; then ok "Latin-1 byte parsed under LC_ALL=$lc"; else bad "Latin-1 byte under LC_ALL=$lc: $got"; fi
 done
+
+echo
+echo "== a non-UTF-8 stdout cannot crash the estimator (PR #2831 review) =="
+# Under PYTHONIOENCODING=latin-1 or ascii (or an ISO-8859 locale), print() raised
+# on the U+FFFD of a replaced byte or the `…` of a clipped snippet in
+# UNBOUNDED_AT, the estimator exited 1, and the guard passed the run silently.
+# The rollup is now UTF-8 bytes whatever the locale.
+LATIN1_AT="$STUBS/latin1-at.js"
+printf 'for (const u of args["caf\351"]) { await agent(u); }\n' > "$LATIN1_AT"
+FFFD=$(printf 'caf\357\277\275')
+LONG='for (const u of args.aVeryLongPropertyNameThatRunsPastForty) await agent(u)'
+for enc in latin-1 ascii; do
+    t ask "clipped snippet under PYTHONIOENCODING=$enc" "$LONG" PYTHONIOENCODING=$enc
+    OUT=$(run_hook "$(jq -nc --arg p "$LATIN1_AT" '{tool_name:"Workflow", tool_input:{scriptPath:$p}}')" PYTHONIOENCODING=$enc)
+    REASON=$(printf '%s' "$OUT" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty')
+    if LC_ALL=C grep -qF "not counted: line 1: for-of over \`args[\"$FFFD\"]\`" <<<"$REASON"; then
+        ok "replaced byte named in the ask under PYTHONIOENCODING=$enc"
+    else
+        bad "replaced byte under PYTHONIOENCODING=$enc: $OUT"
+    fi
+    got=$(PYTHONIOENCODING=$enc python3 "$ESTIMATOR" 10 < "$LATIN1_AT" 2>/dev/null; echo "EXIT=$?")
+    if LC_ALL=C grep -qF "UNBOUNDED_AT=line 1: for-of over \`args[\"$FFFD\"]\`" <<<"$got" && grep -qx 'EXIT=0' <<<"$got"; then
+        ok "estimator writes UTF-8 and exits 0 under PYTHONIOENCODING=$enc"
+    else
+        bad "estimator under PYTHONIOENCODING=$enc: $got"
+    fi
+done
+
+echo
+echo "== an estimator that stops without a verdict asks (PR #2831 review) =="
+# Main's guard exited 0 on any estimator failure (`|| exit 0`), which contradicts
+# count-or-ask: nothing was counted. A stand-in plugin root holds the estimator.
+FAKE="$STUBS/fake-root"
+mkdir -p "$FAKE/hooks"
+cp "$HOOK" "$FAKE/hooks/"
+printf 'import sys\nsys.stdout.write("VERDICT=OK\\n")\nsys.stdout.flush()\nsys.exit(1)\n' > "$FAKE/hooks/workflow-scale-estimate.py"
+t ask "estimator exits 1 after a partial VERDICT=OK" "$UNBOUNDED_SCRIPT" CLAUDE_PLUGIN_ROOT="$FAKE"
+OUT=$(run_hook "$(payload_for "$UNBOUNDED_SCRIPT")" CLAUDE_PLUGIN_ROOT="$FAKE")
+if printf '%s' "$OUT" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' | grep -qF 'the estimator stopped without a verdict (exit 1)'; then
+    ok "crash ask names the estimator's exit status"
+else
+    bad "crash ask payload: $OUT"
+fi
+printf 'pass\n' > "$FAKE/hooks/workflow-scale-estimate.py"
+t ask "estimator exits 0 with no output" "$UNBOUNDED_SCRIPT" CLAUDE_PLUGIN_ROOT="$FAKE"
 
 echo
 echo "== the ask payload names the lines and the remedy =="
