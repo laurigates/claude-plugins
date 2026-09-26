@@ -4,7 +4,7 @@ description: Verify accumulated bug claims at upstream HEAD and dedup against tr
 allowed-tools: Agent, Read, Write, Edit, Bash(bash *), Bash(glab *), Bash(gh *), TodoWrite
 model: opus
 created: 2026-06-11
-modified: 2026-08-08
+modified: 2026-09-26
 reviewed: 2026-08-08
 ---
 
@@ -185,6 +185,10 @@ reads *both*, and the batch-dedup pass, which compares survivors to **each other
 only to the tracker. Also structural: the cold-read agent is **never** the drafter (that
 independence is the gate), exactly one revise round, and `DRAFT_SCHEMA` carries the issue
 **body** — a workflow script has no filesystem, so dedup cannot merge on a path.
+
+**Agent budget:** 1 + 6 x candidates — up to six agents per candidate (verify,
+search, draft, cold-read, revise, re-cold-read) plus one batch dedup. The scale guard asks before every run, because the list comes from the
+caller at runtime.
 
 **Skip the harness when:** the manifest holds one or two candidates — that is a linear pass and
 the harness is pure overhead (the template aborts below three). A 24-candidate run is roughly
