@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/laurigates/claude-plugins/compare/foundryvtt-plugin-v1.3.1...foundryvtt-plugin-v1.3.2) (2026-09-24)
+
+
+### Bug Fixes
+
+* **foundryvtt-plugin:** stop emitting a repo-local Renovate runner ([#2754](https://github.com/laurigates/claude-plugins/issues/2754)) ([21d1272](https://github.com/laurigates/claude-plugins/commit/21d127240ce3eea4b0fc5a60b62b5b5283488d1b))
+
 ## [1.3.1](https://github.com/laurigates/claude-plugins/compare/foundryvtt-plugin-v1.3.0...foundryvtt-plugin-v1.3.1) (2026-08-07)
 
 

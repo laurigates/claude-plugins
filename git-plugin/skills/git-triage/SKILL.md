@@ -5,7 +5,7 @@ args: "[--type issues|prs|both] [--batch N] [--repo owner/name] [--days-stale-is
 argument-hint: "--type both --batch 10 (defaults: days-stale-issue=90, days-stale-pr=30, current repo)"
 allowed-tools: Bash(bash *), Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git log *), Bash(rg *), Read, Grep, Glob, AskUserQuestion
 created: 2026-04-22
-modified: 2026-09-23
+modified: 2026-09-24
 reviewed: 2026-09-23
 ---
 
@@ -159,6 +159,9 @@ gh run view <run-id> --repo $REPO --log-failed
 ```
 Diagnose the shared cause once and present a single grouped row (Step 6) /
 blocker (Step 8) instead of N independent `needs-fix` PRs.
+
+For bot PRs whose checks may belong to a pre-rebase SHA, and for pin PRs that
+smuggle a minor bump, see [REFERENCE.md](REFERENCE.md).
 
 ### Step 5: Cross-link issues and PRs
 

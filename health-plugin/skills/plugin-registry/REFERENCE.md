@@ -83,6 +83,96 @@ The durable remedies are an upstream change — project entries following the us
 install's updates, or not being created when a user install exists — and a
 recurring check that reports the lag rather than a one-off cleanup.
 
+## A capability declared in a registry is not proof it reached the installed copy
+
+Promoted from the always-loaded `registry-declared-capability-not-installed.md`
+portfolio rule, whose stub keeps the gate line.
+
+When a capability is declared in an upstream **registry** (a marketplace index,
+a catalog, a manifest you did not author) but the runtime reads it from the
+**installed artifact**, the install step is a silent lossy boundary. The
+registry entry is complete and correct, the installed copy is missing the block,
+and the runtime — reading only the installed copy — reports nothing at all.
+
+**The failure mode is absence, not error.** A missing capability looks exactly
+like a product that never had the feature: no warning, no failed check, no
+string to search for. The first hypothesis is "this build doesn't support it",
+which is unfalsifiable from the surface and sends the diagnosis to the wrong
+layer.
+
+> Canonical break (2026-08, Claude Code 2.1.246). Every official `*-lsp` plugin
+> declares its server **only** in the marketplace's `marketplace.json`:
+> ```json
+> "rust-analyzer": { "command": "rust-analyzer", "extensionToLanguage": { ".rs": "rust" } }
+> ```
+> The LSP manager reads `lspServers` from the **installed** plugin's
+> `.claude-plugin/plugin.json`, which ships with only name/description/version/
+> author. So the manager starts, finds nothing, and logs
+> `getAllLspServers returned 0 server(s)`. No server spawns, no `LSP` tool is
+> registered, and 5 of 6 installed plugins were affected. Open upstream since
+> **2025-12** (anthropics/claude-code#15148, anthropics/claude-plugins-official#379);
+> the fix PR was closed **unmerged**. Diagnosed only by asking what the runtime
+> reads, after the binary's own strings had already sent the diagnosis down a
+> false path.
+
+### The check
+
+**Read what the runtime reads, not what the catalog declares**, and diff them.
+Two moves, in order:
+
+1. **Find the loader's own count.** Most runtimes have a debug category that
+   prints it. That single number separates "not supported" from "supported,
+   loaded nothing":
+
+   ```sh
+   claude -p "hi" --debug lsp --debug-file /tmp/d.log   # then grep the log
+   ```
+
+   `returned 0` with the feature enabled is the whole diagnosis.
+
+2. **Compare the two descriptions.** The registry entry and the installed
+   artifact are different files; open both.
+
+   ```sh
+   jq '.plugins[] | select(.name=="<p>") | .lspServers' ~/.claude/plugins/marketplaces/<mp>/.claude-plugin/marketplace.json
+   jq '.lspServers' ~/.claude/plugins/cache/<mp>/<p>/<ver>/.claude-plugin/plugin.json
+   ```
+
+**Do not diagnose from the runtime's binary.** Grepping the executable for the
+declared value (a command name, a key) finds nothing when the value legitimately
+comes from config — which reads as "this build has no such feature" and is
+wrong. That inference cost a wrong verdict in the canonical break above.
+
+`returned 0` is a negative that gates an action — control-test it
+(`agent-patterns-plugin:tool-result-traps`).
+
+### The repair has two halves
+
+1. **Write the block into the artifact the runtime reads**, and
+2. **make it self-healing**, because the installer re-wipes the installed copy on
+   every update — the fix has a lifetime of one `update` command otherwise.
+
+**Derive the payload from the registry at repair time; never hand-copy it.** A
+transcribed block drifts from upstream silently and re-creates the same class of
+bug one layer down. Read it out of the registry file on each run, so a changed
+command or an added entry propagates on its own.
+
+### When it bites
+
+- A plugin/extension capability that "isn't supported" — check whether it is
+  declared upstream and simply never installed.
+- Any two-file arrangement where **you author neither file**: catalog + install,
+  lockfile + vendored tree, image manifest + running container.
+- Reasoning about a capability from **documentation or source** rather than from
+  the installed copy. Both describe intent; only the installed copy runs.
+
+Relatives of the same law: an MCP server whose handler implements a parameter
+its declared `inputSchema` omits (there both files are yours and the fix is to
+declare it); a GitHub Actions workflow whose declared triggers say nothing about
+whether it is disabled; and a tool migration, where removal is gated on a
+positive *operational* signal rather than config presence
+(`migration-patterns-plugin:tool-migration-cutover`).
+
 ## Upstream
 
 - [anthropics/claude-code#87667](https://github.com/anthropics/claude-code/issues/87667)

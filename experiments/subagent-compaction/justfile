@@ -1,0 +1,31 @@
+# subagent-compaction — subagent context/compaction probe.
+# Run `just` or `just help` for the recipe list.
+
+set positional-arguments
+
+default: help
+
+# List all recipes.
+help:
+    @just --list
+
+# Full probe: models × autoCompactEnabled on/off. Real `claude -p` calls.
+[group: "run"]
+run models="opus[1m]" arms="on off" pct="10" files="30" kb="40":
+    bash scripts/ctx-probe.sh --models "{{models}}" --arms "{{arms}}" --pct "{{pct}}" --files "{{files}}" --kb "{{kb}}"
+
+# Print the arm setup and commands without calling claude.
+[group: "run"]
+dry-run models="opus[1m]":
+    bash scripts/ctx-probe.sh --dry-run --models "{{models}}" --files 3 --kb 4 --run-id dry-run
+
+# Context/compaction table for one subagent transcript (any session).
+[group: "analyze"]
+transcript file:
+    bash scripts/analyze.sh --transcript "{{file}}"
+
+# Offline tests: analyzer against synthetic arms, probe against a stub claude.
+[group: "test"]
+test:
+    bash tests/test-analyze.sh
+    bash tests/test-ctx-probe.sh

@@ -138,7 +138,7 @@ the next branch cut from it and land in an unrelated PR — visible only in the
 file list once squashed. Basing on `origin/main` makes the local `main` state
 irrelevant. This matches `git-branch-pr-workflow` § "Branch Comparison: Always
 Use origin/main" (rule 3: *base PRs on `origin/main` when creating branches*)
-and `~/.claude/rules/git-hazards.md` #2.
+and `git-plugin:git-local-hazards` §2.
 
 ## Summary Report
 

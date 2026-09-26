@@ -4,7 +4,7 @@ description: gh CLI commands with JSON output for agent workflows. Use when quer
 user-invocable: false
 allowed-tools: Bash(gh pr *), Bash(gh run *), Bash(gh issue *), Bash(gh repo *), Bash(gh workflow *), Bash(gh api *), Read
 created: 2025-01-16
-modified: 2026-05-09
+modified: 2026-09-24
 reviewed: 2026-04-25
 ---
 
@@ -24,6 +24,23 @@ Optimized `gh` commands for AI agent consumption using JSON output and structure
 ## Core Principle
 
 Always use `--json <fields>` for machine-readable output. The `--jq` filter is built-in (no jq installation required).
+
+### `gh api` sends every field as a string unless you use `-F`
+
+`-f key=value` types the value as a **string**, so an endpoint expecting a
+number rejects it:
+
+```
+gh api -X POST repos/O/R/issues/2380/sub_issues -f sub_issue_id=5471095685
+Invalid property /sub_issue_id: "5471095685" is not of type `integer`. (HTTP 422)
+```
+
+`-F key=value` reads the value as a typed literal (number, boolean, null, or
+`@file`) and the identical call succeeds. Observed 2026-09-16: six sub-issue
+links failed this way before the flag changed. The error quotes the value and
+names the property, so it reads as a bad id — the id was right and the flag was
+wrong. Use `-F` for every numeric id (`sub_issue_id`, `after_id`) and `-f` for
+free text.
 
 ## Pull Request Operations
 
@@ -165,51 +182,18 @@ gh issue create --title "..." --body "..." --type "Task"
 gh api repos/{owner}/{repo}/issues/{parent}/sub_issues --jq '.[].number'
 
 # Add existing issue as sub-issue
-gh api repos/{owner}/{repo}/issues/{parent}/sub_issues -f sub_issue_id={child_id}
+gh api repos/{owner}/{repo}/issues/{parent}/sub_issues -F sub_issue_id={child_id}
 
 # Remove sub-issue
 gh api repos/{owner}/{repo}/issues/{parent}/sub_issues/{sub_issue_id} -X DELETE
 
 # Reprioritize sub-issue (move after another sub-issue)
 gh api repos/{owner}/{repo}/issues/{parent}/sub_issues -X PATCH \
-  -f sub_issue_id={id} -f after_id={after_id}
+  -F sub_issue_id={id} -F after_id={after_id}
 
 # Get sub-issue summary via issue view
 gh issue view {N} --json title,subIssuesSummary
 # Returns: {"total": 5, "completed": 3, "percentCompleted": 60}
-```
-
-### Custom Issue Fields
-
-```bash
-# List available fields for an org
-gh api orgs/{org}/issue-fields --jq '.[].name'
-
-# Get field values for an issue
-gh api repos/{owner}/{repo}/issues/{N}/issue-field-values
-
-# Set field value
-gh api repos/{owner}/{repo}/issues/{N}/issue-field-values \
-  -X POST -f field_id={id} -f value='{value}'
-```
-
-### Issue Management
-
-```bash
-# Transfer issue to another repo
-gh issue transfer {N} {target-repo}
-
-# Pin/unpin issue
-gh issue pin {N}
-gh issue unpin {N}
-
-# Lock/unlock issue thread
-gh issue lock {N} --reason resolved
-gh issue unlock {N}
-
-# Create development branch from issue
-gh issue develop {N} --checkout
-gh issue develop {N} --name {branch-name}
 ```
 
 ## Repository Operations
@@ -234,47 +218,6 @@ gh api repos/{owner}/{repo}/actions/runs --jq '.workflow_runs[:5]'
 gh api repos/{owner}/{repo}/issues --paginate --jq '.[].number'
 ```
 
-## GitHub URL Resolution
-
-Translate GitHub URLs into `gh` API commands for programmatic access.
-
-### URL → Command Mapping
-
-| URL Pattern | Command |
-|-------------|---------|
-| `github.com/{owner}/{repo}/pull/{n}` | `gh pr view {n} --repo {owner}/{repo} --json number,title,body,state` |
-| `github.com/{owner}/{repo}/issues/{n}` | `gh issue view {n} --repo {owner}/{repo} --json number,title,body,state` |
-| `github.com/{owner}/{repo}/commit/{sha}` | `gh api repos/{owner}/{repo}/commits/{sha}` |
-| `github.com/{owner}/{repo}/blob/{ref}/{path}` | `gh api repos/{owner}/{repo}/contents/{path}?ref={ref}` |
-
-### File Contents by Ref
-
-```bash
-# Get decoded file content at a specific ref (branch, tag, or SHA)
-gh api repos/{owner}/{repo}/contents/{path}?ref={ref} --jq '.content' | base64 -d
-
-# Get raw file content directly (no JSON wrapper)
-gh api repos/{owner}/{repo}/contents/{path}?ref={ref} -H "Accept: application/vnd.github.raw+json"
-```
-
-### Diff and Patch via API
-
-Use Accept headers to get raw diff or patch output from PRs and commits:
-
-```bash
-# PR diff
-gh api repos/{owner}/{repo}/pulls/{n} -H "Accept: application/vnd.github.diff"
-
-# PR patch
-gh api repos/{owner}/{repo}/pulls/{n} -H "Accept: application/vnd.github.patch"
-
-# Commit diff
-gh api repos/{owner}/{repo}/commits/{sha} -H "Accept: application/vnd.github.diff"
-
-# Commit patch
-gh api repos/{owner}/{repo}/commits/{sha} -H "Accept: application/vnd.github.patch"
-```
-
 ## Agentic Optimizations
 
 | Context | Command |
@@ -285,7 +228,7 @@ gh api repos/{owner}/{repo}/commits/{sha} -H "Accept: application/vnd.github.pat
 | Quick issue list | `gh issue list --json number,title,labels -L 10` |
 | Sub-issue progress | `gh issue view $N --json title,subIssuesSummary` |
 | List sub-issues | `gh api repos/{o}/{r}/issues/{N}/sub_issues --jq '.[].number'` |
-| Add sub-issue | `gh api repos/{o}/{r}/issues/{N}/sub_issues -f sub_issue_id=M` |
+| Add sub-issue | `gh api repos/{o}/{r}/issues/{N}/sub_issues -F sub_issue_id=M` |
 | Transfer issue | `gh issue transfer N target-repo` |
 | Create dev branch | `gh issue develop N --checkout` |
 | Workflow trigger | `gh workflow run $NAME` |
@@ -299,20 +242,4 @@ Use `2>/dev/null` to suppress errors in context expressions (do NOT use `||` fal
 - Run status: !`gh run view $ID --json status,conclusion`
 ```
 
-## Field Reference
-
-### PR Fields
-
-`number`, `title`, `body`, `state`, `author`, `labels`, `assignees`, `reviewDecision`, `mergeable`, `statusCheckRollup`, `headRefName`, `baseRefName`, `isDraft`, `url`, `createdAt`, `updatedAt`
-
-### Issue Fields
-
-`number`, `title`, `body`, `state`, `author`, `labels`, `assignees`, `comments`, `milestone`, `url`, `createdAt`, `updatedAt`, `closedAt`, `subIssuesSummary`, `type`
-
-### Run Fields
-
-`databaseId`, `name`, `status`, `conclusion`, `jobs`, `createdAt`, `updatedAt`, `url`, `headBranch`, `headSha`, `event`
-
-### Job Fields (within runs)
-
-`name`, `status`, `conclusion`, `startedAt`, `completedAt`, `steps`
+For custom issue fields, issue management (transfer/pin/lock/develop), GitHub URL resolution (file contents, diffs, patches), and complete JSON field lists, see [REFERENCE.md](REFERENCE.md).

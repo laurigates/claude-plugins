@@ -25,7 +25,7 @@ Install these first. They configure the environment other plugins rely on.
 | health-plugin | 7 | Diagnose config issues, audit plugin selection |
 | hooks-plugin | 4 | Enforce best practices via lifecycle hooks |
 | configure-plugin | 48 | Infrastructure standards (CI, linting, testing, Docker, repo onboarding) |
-| agent-patterns-plugin | 22 | Agent orchestration, MCP management, delegation |
+| agent-patterns-plugin | 24 | Agent orchestration, MCP management, delegation |
 
 ### Tier 1 - Core Workflow
 
@@ -34,7 +34,7 @@ The development loop: plan, code, commit, ship.
 | Plugin | Skills | Purpose |
 |--------|--------|---------|
 | blueprint-plugin | 35 | PRD/ADR/PRP/TRP methodology, `/blueprint:execute` auto-pilot, ambient autonomy levels (`/blueprint:autopilot`, `/blueprint:autonomy-level3`), monorepo portfolio tracking, story-audit/reconcile |
-| git-plugin | 45 + 1 agent | Commits, branches, PRs, issues, forks, worktrees, release-please, merge hazards, issue scoping, upstream-fix and repo-deletion checks |
+| git-plugin | 48 + 1 agent | Commits, branches, PRs, issues, forks, worktrees, release-please, merge hazards, issue scoping, upstream-fix and repo-deletion checks |
 | project-plugin | 7 | Project init, modernization, maintenance |
 | session-plugin | 4 | Session bookends: spinup briefing, wrap capture, end orchestrator, distill |
 | agents-plugin | 1 + 12 agents | Task delegation to specialized agents |
@@ -48,7 +48,7 @@ Automated quality enforcement.
 | testing-plugin | 17 | Test execution, TDD, Vitest, Playwright, Playwright CLI, mutation testing |
 | code-quality-plugin | 16 | Review, refactoring, linting, ast-grep, debugging, silent degradation, dead code, dep audit, test quality, complexity, bulk-sweep classification, scaffold back-port |
 | software-design-plugin | 6 | Deep modules, design by contract, GoF pattern selection, legacy seams, design by pseudocode |
-| documentation-plugin | 8 | API docs, README generation, LaTeX PDFs, single-source linking, machine-fact verification, WebFetch fallbacks |
+| documentation-plugin | 9 | API docs, README generation, LaTeX PDFs, single-source linking, machine-fact verification, public-export sanitization, WebFetch fallbacks |
 | evaluate-plugin | 7 + 3 agents | Skill evaluation, benchmarking, quality improvement |
 
 ### Tier 3+ - Pick What Applies

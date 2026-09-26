@@ -2,7 +2,8 @@
 
 Environment- and orchestration-level traps: a wedged worktree shell, a persistent
 cwd that makes verification vacuous, `Workflow` args arriving as a JSON string,
-and parallel-batch / agent fan-out hazards. The search- and stderr-level traps
+a control that never tested the part of the pattern that fails, and
+parallel-batch / agent fan-out hazards. The search- and stderr-level traps
 stay in [SKILL.md](SKILL.md).
 
 ## A worktree-isolated shell can wedge — and `cd` cannot unwedge it
@@ -104,6 +105,28 @@ and said so in its report.
 - **The tell is absence, not error**: agents reporting thin, generic, or
   hedged findings on material you know is rich. Have at least one agent state
   what it actually received.
+
+## A control must exercise the part of the pattern that can fail
+
+"Control-test any negative that gates an action" is only as good as the
+control. Re-running the command against a known-present term proves the
+*command* runs; it proves nothing about the parts of the pattern that can fail.
+The control must exercise those parts, not just the command name.
+
+Observed 2026-09-02: `git grep -nE 'parseFloat\([^)]*\)\s*\|\|'` returned
+nothing and was "confirmed" by a control counting bare `parseFloat` — which
+tests neither the `[^)]*` (it cannot span the nested parens in
+`parseFloat((e.target as HTMLInputElement).value)`) nor the `|| fallback`. The
+bug was live at four sites and was reported to the user as fixed. A second
+attempt returned empty *including its control*, which is what finally named the
+tool rather than the tree; `rg` with the same pattern found all four.
+
+Two lessons:
+
+- **Negated character classes cannot span nested delimiters.** `[^)]*` stops at
+  the first `)`, so any argument containing a call or a cast defeats it.
+- **`git grep -E` and `rg` do not agree on every regex.** When a negative
+  matters, confirm it with the other tool.
 
 ## Parallel tool calls
 

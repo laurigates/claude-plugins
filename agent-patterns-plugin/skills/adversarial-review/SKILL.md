@@ -6,7 +6,7 @@ argument-hint: "path|PR|file|plan description; optional 'focus on X'"
 allowed-tools: Agent, Read, Glob, Grep, Bash(git diff *), Bash(git log *), Bash(gh pr view *), TodoWrite
 model: opus
 created: 2026-06-21
-modified: 2026-09-02
+modified: 2026-09-24
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -164,6 +164,7 @@ review can't resolve.
 
 ## Related
 
+- [REFERENCE.md](REFERENCE.md) — audit sweeps: find, verify adversarially, then resolve settled facts before editing; apply an undecided finding only where the facts make it policy-neutral, never "TBD" or a plausible owner
 - [`cold-read-gate`](../cold-read-gate/SKILL.md) — the isolation + triage +
   bounded-loop pattern this skill generalises (legibility lens; uses haiku)
 - [`verify-before-plan`](../verify-before-plan/SKILL.md) — adversarial review

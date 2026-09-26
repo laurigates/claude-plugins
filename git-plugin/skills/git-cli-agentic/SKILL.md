@@ -4,7 +4,7 @@ description: Git commands with porcelain and machine-readable output for agent w
 user-invocable: false
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git remote *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git restore *), Read
 created: 2025-01-16
-modified: 2026-06-18
+modified: 2026-09-24
 reviewed: 2026-04-25
 ---
 
@@ -142,6 +142,26 @@ git diff main..feature --numstat
 # Between commits
 git diff $COMMIT1..$COMMIT2 --name-status
 ```
+
+### Pathspecs: use `:(glob)` for `**`
+
+A plain git pathspec is not a gitignore-style glob. Without magic, `*` matches
+across `/` and `**` is just two of them, so a filter can silently miss files:
+
+| Pathspec | `src/proxy.ts` | `src/lib/a.ts` |
+|----------|:---:|:---:|
+| `'src/**/*.ts'` | no (needs a second `/`) | yes |
+| `':(glob)src/**/*.ts'` | yes | yes |
+| `'src/*.ts'` | yes | yes (`*` crosses `/`) |
+| `':(glob)src/*.ts'` | yes | no |
+
+```bash
+git diff --name-only origin/main...HEAD -- ':(glob)src/**/*.ts'
+```
+
+The miss produces no error, only a shorter file list. A changed-files step that
+feeds CI checks then skips top-level files without anyone noticing. Test a new
+pathspec against a repo that has both top-level and nested matches.
 
 ## Log Operations
 

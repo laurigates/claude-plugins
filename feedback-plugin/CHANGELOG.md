@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.3](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.12.2...feedback-plugin-v1.12.3) (2026-09-24)
+
+
+### Bug Fixes
+
+* **feedback-plugin:** parse Stop-hook feedback into stop:&lt;hook&gt; friction events ([#2755](https://github.com/laurigates/claude-plugins/issues/2755)) ([a3a7695](https://github.com/laurigates/claude-plugins/commit/a3a7695f2f52a4762242255f0842faa12fecbe7c))
+
 ## [1.12.2](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.12.1...feedback-plugin-v1.12.2) (2026-09-16)
 
 

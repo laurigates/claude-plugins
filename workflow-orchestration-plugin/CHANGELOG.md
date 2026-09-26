@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.11.1...workflow-orchestration-plugin-v1.12.0) (2026-09-24)
+
+
+### Features
+
+* **plugins:** add state-packet ordering fields and bounded trace attribution ([#2775](https://github.com/laurigates/claude-plugins/issues/2775)) ([520d551](https://github.com/laurigates/claude-plugins/commit/520d5517307813405b1c7babd737c20a92715cc2)), closes [#2693](https://github.com/laurigates/claude-plugins/issues/2693) [#2694](https://github.com/laurigates/claude-plugins/issues/2694)
+
 ## [1.11.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.11.0...workflow-orchestration-plugin-v1.11.1) (2026-09-19)
 
 

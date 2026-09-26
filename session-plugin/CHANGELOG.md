@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.12.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.11.1...session-plugin-v1.12.0) (2026-09-24)
+
+
+### Features
+
+* **adapters:** resolve Claude Code variables in OpenCode bash calls ([#2728](https://github.com/laurigates/claude-plugins/issues/2728)) ([990b091](https://github.com/laurigates/claude-plugins/commit/990b091e3d9d166e4a2757439a4ea094424a74cd))
+* **adapters:** run session-plugin's spinup and end nudges under pi ([#2803](https://github.com/laurigates/claude-plugins/issues/2803)) ([adf469c](https://github.com/laurigates/claude-plugins/commit/adf469c6fd002bf0cc55f104078e1c4a8a03d3bb))
+* **session-plugin:** surface unanswered Discussions in the session survey ([#2762](https://github.com/laurigates/claude-plugins/issues/2762)) ([794cdb8](https://github.com/laurigates/claude-plugins/commit/794cdb80a93e396e0d76d681a3458acfa0133d3c))
+
+
+### Code Refactoring
+
+* **skills:** disambiguate the rules-authoring skill descriptions (cluster 3) ([#2797](https://github.com/laurigates/claude-plugins/issues/2797)) ([b0d7d5d](https://github.com/laurigates/claude-plugins/commit/b0d7d5d10dd93378d6193c51cc521bf4f0066979)), closes [#2244](https://github.com/laurigates/claude-plugins/issues/2244)
+
 ## [1.11.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.11.0...session-plugin-v1.11.1) (2026-09-19)
 
 

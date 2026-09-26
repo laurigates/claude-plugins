@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.16.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.15.0...evaluate-plugin-v1.16.0) (2026-09-24)
+
+
+### Features
+
+* **evaluate-plugin:** add an impossible-task abstention control to eval grading ([#2778](https://github.com/laurigates/claude-plugins/issues/2778)) ([cde9168](https://github.com/laurigates/claude-plugins/commit/cde9168a9a3352ab36e2d02278cfa68161dd718c))
+
+
+### Bug Fixes
+
+* **evaluate-plugin:** keep the regression ledger out of eval subagent context ([#2750](https://github.com/laurigates/claude-plugins/issues/2750)) ([ac8a545](https://github.com/laurigates/claude-plugins/commit/ac8a545978f64dd943e889489b9aa8046a5274ac))
+
 ## [1.15.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.14.5...evaluate-plugin-v1.15.0) (2026-09-20)
 
 

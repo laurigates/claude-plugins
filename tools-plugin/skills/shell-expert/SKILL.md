@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-09-24
 reviewed: 2026-04-25
 name: shell-expert
 description: "Shell scripting: bash, zsh, POSIX, CLI tools, cross-platform automation. Use when writing shell scripts, pipes, command-line automation, or portable shell code."
@@ -119,6 +119,7 @@ rg -C 3 'error'              # Search with context
 **Critical Guidelines**
 - Always use shellcheck for linting
 - Set strict mode: `set -euo pipefail`
+- Under `pipefail`, never pipe into a reader that exits early (`grep -q`, `head`): the producer gets SIGPIPE and a pipeline that succeeded reports failure, intermittently. Use `grep -q … <<<"$var"` or `grep … >/dev/null` (see REFERENCE.md)
 - Quote all variables: `"${var}"`
 - Use functions for reusable code
 - Implement proper cleanup with trap

@@ -134,8 +134,9 @@ that emits its own PASS/WARN/FAIL per section wants to run every section, so dro
 
 #### `set -e` + `OUT=$(cmd-that-exits-nonzero)` aborts *before* the next line
 
-Under `set -e` (which GitHub Actions applies to every `run:` block by default —
-`bash -eo pipefail`), a command substitution whose command **exits non-zero**
+Under `set -e` (which GitHub Actions applies to every `run:` block: `bash -e {0}`
+by default, `bash --noprofile --norc -eo pipefail {0}` with an explicit
+`shell: bash`), a command substitution whose command **exits non-zero**
 fails the whole statement, so the script aborts **at the assignment**, before
 any code that inspects `OUT`. A script deliberately designed to exit `1` as a
 *signal* (an invalid-input parser, a validator that carries its verdict in
@@ -143,7 +144,7 @@ any code that inspects `OUT`. A script deliberately designed to exit `1` as a
 branch on it" step never runs.
 
 ```yaml
-# Wrong (GitHub Actions run: — set -eo pipefail): parser exits 1 on bad input,
+# Wrong (GitHub Actions run: — set -e): parser exits 1 on bad input,
 # so the step aborts here; the `valid=` output and the reject branch never run.
 - run: |
     OUT=$(bash validate.sh --in x)      # validate.sh exits 1 on invalid → step dies

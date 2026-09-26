@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.47.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.46.0...agent-patterns-plugin-v2.47.0) (2026-09-24)
+
+
+### Features
+
+* **skills:** wave-2 skill homes for promoted always-loaded rules ([#2814](https://github.com/laurigates/claude-plugins/issues/2814)) ([7896233](https://github.com/laurigates/claude-plugins/commit/7896233c7c6c5663725beff7b3f50778eb15d559))
+
+## [2.46.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.45.9...agent-patterns-plugin-v2.46.0) (2026-09-24)
+
+
+### Features
+
+* **pi:** document the pi extension triad and probe pi-mcp-adapter in pi-adapter-check ([#2799](https://github.com/laurigates/claude-plugins/issues/2799)) ([2ecdd7a](https://github.com/laurigates/claude-plugins/commit/2ecdd7aca8e2d0431246388237ce4f5cd799f272))
+* **plugins:** add state-packet ordering fields and bounded trace attribution ([#2775](https://github.com/laurigates/claude-plugins/issues/2775)) ([520d551](https://github.com/laurigates/claude-plugins/commit/520d5517307813405b1c7babd737c20a92715cc2)), closes [#2693](https://github.com/laurigates/claude-plugins/issues/2693) [#2694](https://github.com/laurigates/claude-plugins/issues/2694)
+
 ## [2.45.9](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.45.8...agent-patterns-plugin-v2.45.9) (2026-09-24)
 
 
