@@ -1086,9 +1086,16 @@ check_skill_body() {
     # commit's patch-id matches the combined squash commit), so cherry cannot
     # single out the orphan it was recommended for. Keep the caveat
     # (independent review of PR #2814, finding 2).
+    # Regression (PR #2825 review): the fallback compared commit dates against
+    # `mergedAt`, which misses a commit made before the merge but pushed after
+    # it. The boundary is the PR's frozen head, `git log <headRefOid>..<branch>`.
     if [ "$plugin" = "git-plugin" ] && [ "$skill_name" = "git-local-hazards" ]; then
       if ! grep -qF "multi-commit" "$skill_file"; then
         issues+=("❌ ${plugin}/${skill_name}: SKILL.md must keep the multi-commit squash caveat on 'git cherry' (it marks every commit '+' there)")
+        has_errors=true
+      fi
+      if ! grep -qF "<headRefOid>..<branch>" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must bound post-squash orphans by the PR's frozen head ('git log <headRefOid>..<branch>'), not by commit date vs mergedAt")
         has_errors=true
       fi
     fi
