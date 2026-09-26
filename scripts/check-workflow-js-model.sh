@@ -284,6 +284,12 @@ check_agent_budget() {
     fi
     [ "$python_ok" -eq 1 ] || return
     est=$(python3 "$ESTIMATOR" 1000000 <"$js" 2>/dev/null)
+    # One retry before failing closed: the parser has a 4s timeout, and a cold
+    # node start on a loaded CI runner can exceed it once (a warm run is ~60ms).
+    # A persistent fallback (no node) still falls back on the retry.
+    if ! grep -qx 'PARSER=acorn' <<<"$est"; then
+        est=$(python3 "$ESTIMATOR" 1000000 <"$js" 2>/dev/null)
+    fi
     verdict=$(sed -n 's/^VERDICT=//p' <<<"$est")
     estimate=$(sed -n 's/^ESTIMATE=//p' <<<"$est")
     loose=$(sed -n 's/^UNBOUNDED=//p' <<<"$est")
