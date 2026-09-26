@@ -132,6 +132,10 @@ Update `.claude-code-version-check.json` with:
 - New lastCheckedDate
 - Summary of reviewed changes
 
+This step is for interactive runs only. In the CI triage run (Automation
+Integration below) the workflow owns the state file and discards any edit the
+agent makes to it; write the entry to `triage-entry.json` instead.
+
 ## Change Detection Patterns
 
 ### Breaking Changes
@@ -229,10 +233,19 @@ Workflow flow:
 1. Run weekly on schedule
 2. Fetch changelog and compare versions (skip-if-exists is drift-aware: an open
    but unactioned tracking issue no longer suppresses *newer* versions)
-3. If new versions found: run the analyzer, open ONE tracking issue (highest
-   priority = deprecated identifiers still referenced in our code), ratchet the
-   version JSON via a tiny PR
-4. Label issues appropriately
+3. If new versions found: run the analyzer, then an opus run writes the
+   tracking-issue body (highest priority = deprecated identifiers still
+   referenced in our code) to `triage-issue-body.md` and the state-file entry
+   to `triage-entry.json`. The agent edits neither the version JSON nor any
+   rule file, and files nothing itself.
+4. A bash step publishes them: it files the issue once (reusing an open issue
+   with the same title, never retrying a failed create), applies labels and
+   assignee with the workflow token, reads them back, records that read-back in
+   the version JSON, and opens the tiny ratchet PR (#2720)
+
+Items 3 and 4 describe the reusable workflow from laurigates/.github#70
+onward. Before that change the triage agent filed the issue itself with
+`--label`/`--assignee`, which is how each tracking issue was filed twice.
 
 ## Agentic Optimizations
 

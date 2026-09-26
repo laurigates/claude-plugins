@@ -585,6 +585,65 @@ assert_absent "reference file named only from REFERENCE.md is not flagged" \
 
 rm -rf "${root:?}/$PLUGIN/skills/refsplit"
 
+# ---------------------------------------------------------------------------
+# PR #2771 / issue #2720: changelog-review Step 6 must not tell the CI triage
+# run to write the version state file.
+#
+# THE SEMANTIC INVARIANT UNDER TEST: the pre-fix Step 6 (write the state file,
+# no CI carve-out) is a ❌ issue and exit 1; the fixed Step 6 passes clean. The
+# carve-out tokens placed in a DIFFERENT section must still fail, which proves
+# the check reads the Step 6 slice rather than grepping the whole body.
+make_changelog_review_skill() {
+  # make_changelog_review_skill <step6-extra-line> <later-section-line>
+  local dir="$root/$PLUGIN/skills/changelog-review"
+  rm -rf "$dir"
+  mkdir -p "$dir"
+  {
+    printf -- '---\n'
+    printf 'name: changelog-review\n'
+    printf 'description: Fixture changelog-review. Use when exercising the compliance self-test.\n'
+    printf 'allowed-tools: Read\n'
+    printf 'created: 2026-09-24\n'
+    printf 'modified: 2026-09-24\n'
+    printf 'reviewed: 2026-09-24\n'
+    printf -- '---\n\n'
+    printf '# Fixture changelog-review\n\n'
+    printf '### Step 6: Update Version Tracking\n\n'
+    printf 'Update `.claude-code-version-check.json` with the new version.\n\n'
+    [ -n "$1" ] && printf '%s\n\n' "$1"
+    printf '## Automation Integration\n\n'
+    [ -n "$2" ] && printf '%s\n' "$2"
+    printf 'Body text.\n'
+  } > "$dir/SKILL.md"
+}
+
+FIXED_STEP6='In the CI triage run the workflow owns the state file; write the entry to `triage-entry.json` instead.'
+
+# --- The regression: pre-fix Step 6 with no CI carve-out must FAIL ----------
+make_changelog_review_skill '' ''
+run_check; out_cr_prefix="$OUT"; rc_cr_prefix="$RC"
+assert_eq "changelog-review: pre-fix Step 6 exits 1" "$rc_cr_prefix" "1"
+assert_contains "changelog-review: pre-fix Step 6 flags the state-file owner token" \
+  "$out_cr_prefix" "SKILL.md Step 6 must retain 'the workflow owns the state file'"
+assert_contains "changelog-review: pre-fix Step 6 flags the triage-entry.json token" \
+  "$out_cr_prefix" "SKILL.md Step 6 must retain 'triage-entry.json'"
+
+# --- Guard integrity: carve-out outside Step 6 must still FAIL --------------
+make_changelog_review_skill '' "$FIXED_STEP6"
+run_check; out_cr_elsewhere="$OUT"; rc_cr_elsewhere="$RC"
+assert_eq "changelog-review: carve-out outside Step 6 still exits 1" "$rc_cr_elsewhere" "1"
+assert_contains "changelog-review: carve-out outside Step 6 is still flagged" \
+  "$out_cr_elsewhere" "SKILL.md Step 6 must retain 'the workflow owns the state file'"
+
+# --- The fix: carve-out inside Step 6 passes clean --------------------------
+make_changelog_review_skill "$FIXED_STEP6" ''
+run_check; out_cr_fixed="$OUT"; rc_cr_fixed="$RC"
+assert_eq "changelog-review: fixed Step 6 exits 0" "$rc_cr_fixed" "0"
+assert_absent "changelog-review: fixed Step 6 raises no Step 6 issue" \
+  "$out_cr_fixed" "SKILL.md Step 6 must retain"
+
+rm -rf "${root:?}/$PLUGIN/skills/changelog-review"
+
 echo "---"
 echo "passed: $pass, failed: $fail"
 [ "$fail" -eq 0 ]
