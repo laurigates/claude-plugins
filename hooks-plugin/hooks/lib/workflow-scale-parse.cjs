@@ -7,7 +7,9 @@
 // MIT licensed; see vendor/acorn/LICENSE.
 //
 // A script acorn rejects prints {"error": "..."} and exits 0, so the caller can
-// tell a syntax error (ask) from a missing or crashing parser (fall back).
+// tell a syntax error (PARSE_ERROR) from a parser that crashed without printing
+// JSON (ANALYSIS_ERROR). The guard asks on both. Only a missing node or a
+// missing copy of this file falls back to the pre-parser estimator.
 "use strict";
 
 const fs = require("fs");
