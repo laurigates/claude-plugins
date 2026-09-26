@@ -331,6 +331,153 @@ When blocked, the agent receives a helpful message explaining:
 
 ---
 
+## auto-checkpoint.sh
+
+A PreToolUse hook that stores a `git stash create` checkpoint before `git
+reset`, `git checkout -- <paths>`, `git restore` (unless staged-only), `rm -rf`,
+and `git clean -f`. It never blocks; the checkpoints it leaves are what
+`git-stash-reminder.sh` below reports.
+
+### What counts as a destructive command (#2652)
+
+Before #2652 every detector was a regex over the raw command string, so the hook
+fired on an `rm -rf` whose every operand was outside the repository and on
+commands that delete nothing: a `gh issue comment --body` quoting the phrase, a
+`--body-file` heredoc, a commit message, a `grep` for the pattern. One session
+recorded 50 redundant stashes. The verdict is now:
+
+```
+structural(command nodes)
+  OR old-matcher(residue)
+  OR old-matcher(whole command), unless the command is built only from allowlisted shapes
+```
+
+- **Structural.** `ast-grep --lang bash` yields each `command` node; its words
+  are rebuilt the way the shell delivers them (quotes removed, escapes
+  resolved), and an `rm`/`git` word anywhere in them is examined — so `sudo rm`,
+  `timeout 5 rm`, `\rm`, `/bin/rm`, `"rm"` and `xargs rm` need no wrapper list.
+  Any spelling of recursive + force counts (`-r -f`, `-Rf`, `--recursive
+  --force`, options after operands). The quoted arguments of a shell invoker
+  (`bash -c`, `sh -ec`, `bash --rcfile X -c`, `eval`, …), of a command piped
+  into one, and a heredoc fed to one are re-parsed as shell.
+- **Residue.** The old regex matcher runs over the command text with
+  parser-classified spans blanked: comments whose `#` opens a word for the
+  shell (first byte, or after a blank, `;`, `&` or `|` that no odd run of
+  backslashes escapes — tree-sitter also reads `\ #`, `\<TAB>#` and a
+  mid-word `\<newline>#` as comments, where the shell runs the rest of the
+  line), output-only programs (`echo`,
+  `printf`, `grep`, `rg`, `jq`, `cat`, `head`, `tail`, `wc`, `gh
+  issue|pr|api|release|search|label|run|workflow|status`, `git
+  commit|log|show|diff|grep|status|tag|notes`) whose output reaches no other
+  program in its pipeline or redirected statement, and a direct `rm` whose
+  operands were all proven to lie outside the repository.
+- **The exemption.** Blanking is an exemption, and it holds only when the whole
+  command is built from the closed allowlist below. Otherwise the old matcher
+  reads the whole command and it checkpoints exactly as before #2652.
+
+### The exemption is a closed allowlist of shapes
+
+Earlier rounds of this fix listed the ways an "inert" program could be made to
+run its text — `gh alias set '!…'`, `printf -v`, `rg --pre`, `git grep -O`, a
+rebound name — and each review found more of the same class: `git log
+--output=F` then `sh F`, an `exec >F` earlier in the command, a backtick in an
+unquoted heredoc, `awk '{system($0)}'` over the commit message, `git fetch
+--upload-pack=…`, `git -c alias.z='!…'`, `: ${BASH_CMDS[cat]:=/bin/sh}`. Run in a
+scratch repository, each deleted `./src` after a blanked `git commit -m` or
+`echo`. So the exemption no longer names hazards; it names what is allowed, and
+every other shape anywhere in the command voids it.
+
+| Allowed | Detail |
+|---------|--------|
+| Structure | simple commands, pipelines, `&&` / `\|\|` / `;` lists, comments |
+| Input | heredocs with a quoted delimiter; unquoted ones with no `$` or backtick in them; here-strings; `< file` |
+| Output | redirects to `/dev/null`, fd duplications (`2>&1`, `>&2`) and closes |
+| Programs | the output-only programs above, `rm`, `cd`, `pwd`, `ls`, `mkdir`, `test`, `[`, `true`, `false`, `:`, `sleep` |
+| `gh` | the subcommands above only |
+| `git` | `status log show diff grep commit tag notes add rev-parse branch switch checkout restore reset clean stash rm mv ls-files merge-base rev-list describe shortlog blame reflog cat-file show-ref for-each-ref symbolic-ref`; global options `-C DIR` and `--no-pager` only |
+
+Each program's words are read as the shell delivers them, and on an allowed
+program these still void it: a short option cluster holding `o` or `O`, or a
+long option spelling a prefix of `--output` or `--out…` (`sort -o`, `git log
+--output`, `git grep -O`); `printf -v`; `rg --pre` / `--hostname-bin`; `git grep
+--open-files-in-pager`; and on `git`, `gh`, `printf` or `rg` any word whose value
+the hook cannot read. So does any assignment (including an environment prefix),
+declaration, function, command or process substitution, `${x=…}` expansion,
+loop, conditional, `[[ … ]]`, subshell or `{ … }` group anywhere in the command.
+`exec`, `tee`, `eval`, `source`, `.`, every shell, `xargs`, `find`, `parallel`,
+`env`, `sudo`, `awk` and `perl` void it by not being on the list.
+
+The `gh pr create --body "$(cat <<'EOF' … EOF)"` and `git commit -m "$(cat
+<<'EOF' …)"` spellings therefore checkpoint as they did before #2652; their
+`--body-file - <<'EOF'` and `git commit -F - <<'EOF'` forms are exempt.
+
+Shell state from before the command is trusted: a program name rebound by the
+user's shell profile, a git hook, alias or pager already configured, or a
+variable already exported is not seen, and such a command can be skipped where
+the old matcher checkpointed.
+
+### Operand locality
+
+An `rm` is skipped only when every operand is a literal absolute path, with no
+glob character (`*`, `?`, `[`, and zsh's extended_glob `^`, `~`, `#`), that is
+neither inside the repository nor an ancestor of it, or an unquoted
+build-artifact name (`node_modules`, `dist`, `build`, …) with no `..`
+component, now judged per operand. The repository is `git rev-parse
+--show-toplevel` plus its git dir and common dir, which lie outside the work
+tree in a linked worktree. "Neither inside nor an ancestor" must hold twice:
+
+- by **file identity**: `[ A -ef B ]` (device and inode) between the deepest
+  existing directory on the operand, every directory above it (climbing by
+  `/..`, which the kernel resolves), and each protected root and its ancestors.
+  A second name for an in-repo directory therefore does not pass for outside: a
+  macOS firmlink (`/System/Volumes/Data/Users/…` is `/Users/…`), a
+  `/.vol/<dev>/<ino>` path, a bind mount or a symlink. On macOS the ancestors
+  include the firmlink spelling's, so `/System/Volumes/Data` itself is one;
+- by the **path string**, symlinks resolved through `cd -P` and compared
+  case-insensitively, which also merges spellings that differ only in case on
+  a case-sensitive filesystem.
+
+These still checkpoint:
+
+| Shape | Why |
+|-------|-----|
+| `rm -rf /tmp/x/../y` where `/tmp/x` does not exist, `rm -rf /tmp/dangling-link/y` | Not resolvable now: a `..` after a missing component, or a dangling or looping symlink |
+| `rm -rf /proc/self/cwd/x`, `rm -rf /dev/fd/3/x 3<dir` | `/proc` and `/dev` names resolve per process, so the hook's view says nothing about rm's |
+| `rm -rf node_modules/../src` | A build-artifact name with a `..` component is `./src` (the old matcher's `\b` skipped it) |
+| `rm -rf /outside/lin*/src`, `rm -rf /outside/.?/repo/src` | A glob is never exempt: a component it matches can be a symlink into the repository, and under bash 3.2 `.?` matches `..` |
+| `rm -rf "$T"`, `rm -rf "$(mktemp -d)"` | Not statically resolvable. #2652 is **reduced** for this shape, not fixed |
+| `cd /tmp && rm -rf scratch` | A relative operand; the `cd` could point anywhere |
+| `rm -rf ~/x`, `rm -rf /tmp/{a,b}` | Tilde and brace expansion are not resolved |
+| `sudo rm -rf /tmp/x`, `bash -c "rm -rf /tmp/x"` | A wrapped `rm` stays in the residue, where the old matcher fires |
+
+### Fail safe, not fail open
+
+`bash-antipatterns.sh` and `validate-terraform-apply.sh` fail open without
+their parser. This hook does the opposite: no `ast-grep`, an `ast-grep` error or
+empty answer, or a tree-sitter `ERROR` node all leave the residue whole, so the
+old matcher decides and the pre-#2652 behaviour returns. A missed checkpoint
+loses work; a spare one costs a stash. `CLAUDE_HOOKS_AUTO_CHECKPOINT_NO_ASTGREP=1`
+forces that path (tests).
+
+### Testing
+
+```bash
+bash hooks-plugin/hooks/test-auto-checkpoint.sh
+```
+
+Beyond the #2610 cases, the suite pairs every false positive from the #2652
+thread with an in-repo control, generates 582 spellings (4 fewer where there is
+no macOS firmlink) of the destructive
+commands (program spelling × wrapper × flag spelling × shell-string wrapper ×
+shell context, plus every allowlist-voiding shape above, each beside a control
+that skips) and requires each to checkpoint, and runs the same set through
+the pre-#2652 hook (`git show <ref>:…` at HEAD and at the pinned pre-fix commit,
+or the no-parser path when neither is in the clone): any spelling a baseline
+checkpoints but the hook skips fails the run. It needs `ast-grep`; without it
+the parser sections are skipped and the suite reports `SKIP`.
+
+---
+
 ## git-stash-session-init.sh
 
 A SessionStart hook that records the current git stash baseline for session-scoped tracking. Required by `git-stash-reminder.sh`.
