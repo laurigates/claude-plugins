@@ -640,7 +640,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, changelog review, and continuous development workflows",
-      "version": "1.21.7",
+      "version": "1.21.8",
       "author": {
         "name": "Lauri Gates"
       },
