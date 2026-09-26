@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.26.1](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.26.0...code-quality-plugin-v1.26.1) (2026-09-26)
+
+
+### Bug Fixes
+
+* **repo:** close the open review items left on [#2814](https://github.com/laurigates/claude-plugins/issues/2814) ([#2825](https://github.com/laurigates/claude-plugins/issues/2825)) ([8c5ed57](https://github.com/laurigates/claude-plugins/commit/8c5ed574c580b6dedd152a0a395c9cb694bdf8bd))
+
 ## [1.26.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.25.5...code-quality-plugin-v1.26.0) (2026-09-24)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.2](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.4.1...finops-plugin-v1.4.2) (2026-09-26)
+
+
+### Bug Fixes
+
+* **repo:** close the open review items left on [#2814](https://github.com/laurigates/claude-plugins/issues/2814) ([#2825](https://github.com/laurigates/claude-plugins/issues/2825)) ([8c5ed57](https://github.com/laurigates/claude-plugins/commit/8c5ed574c580b6dedd152a0a395c9cb694bdf8bd))
+
 ## [1.4.1](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.4.0...finops-plugin-v1.4.1) (2026-08-08)
 
 
