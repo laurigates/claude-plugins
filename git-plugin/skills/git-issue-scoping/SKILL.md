@@ -3,7 +3,7 @@ name: git-issue-scoping
 description: "Read an issue's full comment thread and re-verify its cited evidence at HEAD. Use when scoping a PR or plan from a GitHub issue, or before filing or reversing one in your own tracker."
 allowed-tools: Read, Grep, Glob, Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(git log *), TodoWrite
 created: 2026-08-19
-modified: 2026-09-05
+modified: 2026-09-25
 reviewed: 2026-08-19
 ---
 
@@ -174,8 +174,9 @@ write-up, the less anyone re-checks it.
 - `~/.claude/rules/verify-upstream-before-patching.md` — same instinct (check
   the authoritative source before acting) for vendored code; this is the
   issue-thread analogue.
-- `~/.claude/rules/tool-use-patterns.md` (WebFetch) — a summary is lossy; for a
-  decision that gates real work, go to the full source, not the fetched digest.
+- `agent-patterns-plugin:harness-tool-errors` (WebFetch) — a summary is lossy;
+  for a decision that gates real work, go to the full source, not the fetched
+  digest.
 - `git-plugin:git-issue` — the consumer: the end-to-end issue→PR workflow that
   scopes from the issue thread this skill teaches you to read in full.
 
