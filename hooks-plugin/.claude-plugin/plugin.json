@@ -33,7 +33,8 @@
     "repo-deletion-safety",
     "branch-base",
     "prose-style",
-    "workflow-scale"
+    "workflow-scale",
+    "subagent-count"
   ],
   "hooks": {
     "SessionStart": [
@@ -191,6 +192,22 @@
           {
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/no-calendar-estimates.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/subagent-count-tripwire.sh",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/subagent-count-tripwire.sh",
             "timeout": 5000
           }
         ]
