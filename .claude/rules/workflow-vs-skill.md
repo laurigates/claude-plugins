@@ -202,8 +202,11 @@ harness is pure overhead. The steps below remain the authoritative description o
 guard uses: a bare integer equal to its count when every `agent()` site is
 counted, otherwise a per-item formula whose integer terms equal the counted
 part. A template whose list comes from the caller has uncounted sites, so the
-guard asks before every run of it; capping the list with `.slice(0, N)` at its
-source is what makes a run silent.
+guard asks before every run of it. What makes a run silent is a bound written
+in the fan-out itself — `for (const x of items.slice(0, N))`,
+`items.slice(0, N).map(...)`, or a `for` loop bounded by a literal; a capped
+copy held in a variable still asks, because the estimator does not resolve
+variables.
 
 Two clauses every template that dispatches `isolation:'worktree'` agents must
 **also** carry:

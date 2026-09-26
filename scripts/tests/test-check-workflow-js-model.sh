@@ -34,7 +34,9 @@
 #   N. The declared agent budget — an integer equal to the scale estimator's
 #      count when every agent() site is counted, a per-item formula whose
 #      integer terms equal the counted part when some are not; a missing
-#      declaration and an unparseable harness both fail closed.
+#      declaration and an unparseable harness both fail closed, and so do no
+#      node on PATH (the lenient fallback) and a crashing parser (N9-N10),
+#      while a cold first parse that times out is retried (N11).
 
 set -uo pipefail
 
@@ -528,6 +530,51 @@ d=$(mk_skill "$root" demo-plugin demo-skill)
 # shellcheck disable=SC2016  # JS template-literal backticks, not a substitution
 printf 'const a = await agent(`One.`, { label:%s, model:%s, effort:%s }\n' "'one'" "'opus'" "'low'" > "$d/workflows/audit.workflow.js"
 check "N8: parse error is estimator_error"  "1"  "$(printf '%s\n' "$(out "$root")" | grep -c 'TYPE=estimator_error')"
+
+# N9-N11 (PR #2831 review): the estimator's own failure modes. Each runs the N1
+# harness (every site counted, budget 2), which the lenient fallback would
+# also count as 2 — so a check that trusted the fallback would pass it.
+root=$(mk_root N9)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_top_js "$d" no
+set_budget "$d/SKILL.md" 2
+STUB="$WORK/stub-bin"
+mkdir -p "$STUB/nonode" "$STUB/crash" "$STUB/cold"
+
+# N9. No node on PATH: the estimator falls back (PARSER=fallback), and the
+#     check fails closed on that instead of comparing against its count.
+IFS=: read -ra path_dirs <<<"$PATH"
+for pd in "${path_dirs[@]}"; do
+    [ -d "$pd" ] || continue
+    for f in "$pd"/*; do
+        if [ ! -x "$f" ] || [ -d "$f" ]; then continue; fi
+        case "${f##*/}" in node | nodejs) continue ;; esac
+        [ -e "$STUB/nonode/${f##*/}" ] || ln -s "$f" "$STUB/nonode/${f##*/}"
+    done
+done
+# The resolved interpreter, as the guard suite does: a venv/toolcache python
+# reached through a symlink chain must still find its own prefix.
+ln -sf "$(python3 -c 'import os, sys; print(os.path.realpath(sys.executable))')" "$STUB/nonode/python3"
+o=$(PATH="$STUB/nonode" bash "$CHECK" --project-dir "$root" 2>&1)
+check "N9: fixture PATH hides node"         "" "$(PATH="$STUB/nonode" command -v node)"
+check "N9: no node is estimator_error"      "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=estimator_error.*no parser (node not on PATH)')"
+check "N9: no node is not STATUS=OK"        "ERROR" "$(field "$o" STATUS)"
+
+# N10. node present but the parser crashes: estimator_error, not the fallback.
+printf '#!/usr/bin/env bash\nexit 3\n' > "$STUB/crash/node"
+chmod +x "$STUB/crash/node"
+o=$(PATH="$STUB/crash:$PATH" bash "$CHECK" --project-dir "$root" 2>&1)
+check "N10: crashed parser is estimator_error" "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=estimator_error.*VERDICT=ANALYSIS_ERROR')"
+
+# N11. A cold first parse that times out is retried by the estimator, so the
+#      budget is still checked (#2831 CI flake). `exec sleep` so the timeout
+#      kills the sleeper itself rather than leaving it holding the pipe.
+printf '#!/usr/bin/env bash\nif [ ! -e "%s" ]; then : > "%s"; exec sleep 5; fi\nexec "%s" "$@"\n' \
+    "$STUB/cold/first" "$STUB/cold/first" "$(command -v node)" > "$STUB/cold/node"
+chmod +x "$STUB/cold/node"
+o=$(PATH="$STUB/cold:$PATH" bash "$CHECK" --project-dir "$root" 2>&1)
+check "N11: cold first parse retried, STATUS=OK" "OK" "$(field "$o" STATUS)"
+check "N11: the stub's first call did hang"      "yes" "$([ -e "$STUB/cold/first" ] && echo yes)"
 
 printf '\n%s: %d passed, %d failed\n' "$(basename "$0")" "$pass" "$fail"
 [ "$fail" -eq 0 ]

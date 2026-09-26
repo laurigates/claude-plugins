@@ -39,8 +39,8 @@
 #   5. Ask on UNBOUNDED (naming the lines and how to make them silent),
 #      OVER_LIMIT (the counted total exceeds the limit), PARSE_ERROR (the
 #      script does not parse, so nothing can be counted) and ANALYSIS_ERROR
-#      (it parsed, but the estimator failed on it). Everything else exits 0
-#      silently.
+#      (the parser crashed or timed out twice, or the script parsed but the
+#      estimator failed on it). Everything else exits 0 silently.
 #
 # ASK, NOT BLOCK — on purpose. The failure here is not "this workflow is
 # forbidden", it is "nobody was asked". A hard block would force the agent to
@@ -54,10 +54,11 @@
 #
 # Never asks: a resume, a saved workflow with no inline script, an absent
 # python3/jq, a script with no agent() call, or one whose sites are all counted
-# and within the limit. Without node (or when the parser itself crashes or times out)
-# the estimator falls back to the pre-parser regex estimator, which costs a
-# runtime-length fan-out at CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH items and never
-# reports UNBOUNDED, so a machine without node behaves as it did before.
+# and within the limit. Without node the estimator falls back to the
+# pre-parser regex estimator, which costs a runtime-length fan-out at
+# CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH items and never reports UNBOUNDED, so a
+# machine without node behaves as it did before. With node, a parser that
+# crashes or times out twice is ANALYSIS_ERROR and asks; it does not fall back.
 #
 # Tunables (read from the hook's own process environment):
 #   CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS      limit before asking (default 10)
@@ -148,8 +149,11 @@ literals, and it is not inside a named function, a while loop, or a function
 value whose callers would have to be traced. A workflow() child is never
 counted.
 
-To make this silent: cap the list where it is created, e.g. items.slice(0, 6),
-and call agent() inline in that fan-out. Approve to run it as written."
+To make this silent: slice the list in the fan-out itself, e.g.
+for (const x of items.slice(0, 6)) or items.slice(0, 6).map(...), or bound a
+for loop by a literal (i < 6), and call agent() inline in that fan-out. A
+capped copy held in a variable still asks: variables are not resolved.
+Approve to run it as written."
         ;;
     *)
         REASON="This workflow will spawn about ${ESTIMATE} agents, over the limit of ${LIMIT}.

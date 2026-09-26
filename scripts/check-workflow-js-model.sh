@@ -56,7 +56,8 @@
 #     ERROR agent_budget_mismatch the declaration disagrees with the scale
 #                                 estimator — see "THE DECLARED AGENT BUDGET"
 #     ERROR estimator_error       the estimator could not count the file (no node,
-#                                 a parse error); fails closed rather than passing
+#                                 a parse error, a parser that crashed or timed
+#                                 out twice); fails closed rather than passing
 #
 # THE DECLARED AGENT BUDGET
 # A multi-agent run is billed by how many agents it creates, and the runtime
@@ -283,13 +284,9 @@ check_agent_budget() {
         return
     fi
     [ "$python_ok" -eq 1 ] || return
+    # The estimator retries a parser timeout once itself (a cold node start on
+    # a loaded CI runner can exceed its 4s limit), so one call is enough here.
     est=$(python3 "$ESTIMATOR" 1000000 <"$js" 2>/dev/null)
-    # One retry before failing closed: the parser has a 4s timeout, and a cold
-    # node start on a loaded CI runner can exceed it once (a warm run is ~60ms).
-    # A persistent fallback (no node) still falls back on the retry.
-    if ! grep -qx 'PARSER=acorn' <<<"$est"; then
-        est=$(python3 "$ESTIMATOR" 1000000 <"$js" 2>/dev/null)
-    fi
     verdict=$(sed -n 's/^VERDICT=//p' <<<"$est")
     estimate=$(sed -n 's/^ESTIMATE=//p' <<<"$est")
     loose=$(sed -n 's/^UNBOUNDED=//p' <<<"$est")

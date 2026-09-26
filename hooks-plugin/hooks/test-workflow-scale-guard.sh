@@ -10,8 +10,9 @@
 #   ask     an unbounded site, a counted total over the limit, or a parse error
 #
 # Plus the structural guards (resume, other tool, saved-by-name, opt-out, limit
-# override), the no-node fallback to the pre-parser estimator, and the shape of
-# the ask payload.
+# override), the no-node fallback to the pre-parser estimator, a node whose
+# parser crashes or times out (asks; a cold first call is retried), a script
+# file that is not UTF-8, and the shape of the ask payload.
 #
 # Run: bash hooks-plugin/hooks/test-workflow-scale-guard.sh
 # Exit 0 = all tests pass, Exit 1 = failures
@@ -73,8 +74,12 @@ t silent "pipeline over a literal, 2 stages"  'await pipeline(["a", "b"], x => a
 t silent "forEach and flatMap over literals"  '[1, 2].forEach(x => agent(x)); [3].flatMap(y => [agent(y)])'
 t silent "counted loop writing another name"  'const r = []; for (let i = 0; i < 3; i += 1) { r[i] = await agent(i) }'
 t silent "no agent() calls at all"            'export const meta = { name: "noop" }; return { ok: true }'
-t silent "agent as a property name"           'const o = { agent: 1, workflow: 2 }; await agent(o.agent + o.workflow)'
+t silent "agent as an object key"            'const o = { agent: 1, workflow: 2 }; await agent(o)'
 t silent "agent.call counted like agent()"    'for (let i = 0; i < 3; i++) await agent.call(null, i)'
+t silent "property call counted like agent()" 'for (const x of [1, 2]) await globalThis.agent(x); await ctx["agent"](3)'
+t silent "unnamed function callback inlined"  '[1, 2].forEach(function (d) { agent(d) })'
+t silent "slice inline in the fan-out"        'for (const x of args.items.slice(0, 6)) await agent(x)'
+t silent "destructured agent, counted calls"  'const { agent } = ctx; for (const x of [1, 2]) await agent(x)'
 # shellcheck disable=SC2016  # the ${x} below is JS fixture text, not shell
 t silent "agent( only in strings and comments" '// items.map(x => agent(x))
 const p = "call agent( for each of 200 items"; const q = `agent( ${x}`
@@ -105,6 +110,25 @@ t ask "agent.call over a runtime list"        'for (const x of args.xs) await ag
 t ask "agent aliased then called"             'const a = agent; for (const x of args.xs) await a(x)'
 t ask "agent passed as a callback"            'await Promise.all(args.xs.map(agent))'
 t ask "agent aliased by destructuring"        'const { agent: a } = { agent }; for (const x of args.xs) await a(x)'
+# PR #2831 review: named function expressions inlined as callbacks (can recurse).
+t ask "named function expression in forEach"  '[1].forEach(function f(d) { agent(d); if (d < 50) f(d + 1) })'
+t ask "named thunk in parallel([...])"         'await parallel([function f() { agent(1); return f() }])'
+t ask "named pipeline stage"                  'await pipeline([1], function f(x) { agent(x); if (x) f(x - 1) })'
+t ask "named thunk returned by a map callback" 'await parallel([1].map(x => function g() { agent(x); return g() }))'
+# PR #2831 review: a capped copy held in a variable is not resolved.
+t ask "slice held in a const"                 'const items = args.items.slice(0, 6); for (const x of items) await agent(x)'
+# PR #2831 review: agent reached as a property, or renamed by destructuring.
+t ask "property call in a while loop"         'while (true) await globalThis.agent("x")'
+t ask "property call over a runtime list"     'for (const x of args.xs) await ctx.agent(x)'
+t ask "workflow() reached as a property"      'await globalThis.workflow("review")'
+t ask "property read as a value"              'const spawn = globalThis.agent; await spawn(1)'
+t ask "object key read back as a value"       'const o = { agent: 1 }; await agent(o.agent)'
+t ask "rename by destructuring, no other use" 'const { agent: spawn } = globalThis; await spawn(1)'
+t ask "rename in a parameter pattern"         'export default async function ({ agent: spawn }) { await spawn(1) }'
+t ask "rename in an assignment pattern"       'let spawn; ({ agent: spawn } = globalThis); await spawn(1)'
+# PR #2831 review: sites the walker used to skip.
+t ask "for-of left-side default"              'for (const { a = agent(1) } of args.xs) {}'
+t ask "map-callback default under parallel()" 'await parallel(args.xs.map((x, y = agent(x)) => () => y))'
 # A deeply nested expression parses but exceeds the walker's recursion limit.
 DEEP="const P = $(python3 -c "print(' + '.join(\"'l%d'\" % k for k in range(4000)))")
 await agent(P)"
@@ -126,6 +150,9 @@ est ESTIMATE 2   "counted sites summed beside an unbounded one" 'await agent(1);
 est UNBOUNDED 1  "one unbounded site"               'await agent(1); await parallel(xs.map(x => () => agent(x)))'
 est SITES 1      "destructured agent parameter is a declaration, not a use" 'export default async function ({ agent, parallel }) { await agent(1) }'
 est ESTIMATE 2   "parameter default is ordinary code" 'await agent(0); [1].forEach((x, y = agent(x)) => y)'
+est ESTIMATE 2   "for-of left-side default counted per item" 'for (const { a = agent(1) } of [1, 2]) {}'
+est ESTIMATE 2   "map-callback default under parallel() counted" 'await parallel([1, 2].map((x, y = agent(x)) => () => y))'
+est SITES 1      "rename recorded as its own site"  'const { agent: spawn } = globalThis; await spawn(1)'
 est VERDICT PARSE_ERROR "syntax error is not a fallback" 'await agent(1'
 est PARSER acorn "the parser ran"                   'await agent(1)'
 
@@ -165,13 +192,55 @@ t ask "fallback: two agents per runtime item" 'await pipeline(args.units, a => a
 t ask "parser: one agent per runtime item" "$UNBOUNDED_SCRIPT"
 
 echo
+echo "== node present but the parser fails: ask, never the lenient fallback (PR #2831 review) =="
+# Stub `node`s placed first on PATH. `exec sleep` so the parser's timeout kills
+# the sleeper itself (a forked sleep would hold the output pipe open).
+REAL_NODE=$(command -v node)
+STUBS=$(mktemp -d)
+if [ -z "$STUBS" ] || [ ! -d "$STUBS" ]; then echo "mktemp failed" >&2; exit 1; fi
+trap 'rm -rf "$BIN" "$STUBS"' EXIT
+mkdir -p "$STUBS/crash" "$STUBS/hang" "$STUBS/cold"
+printf '#!/usr/bin/env bash\nexit 3\n' > "$STUBS/crash/node"
+printf '#!/usr/bin/env bash\nexec sleep 5\n' > "$STUBS/hang/node"
+# Cold start: the first call hangs past the 4 s timeout, later calls run node.
+printf '#!/usr/bin/env bash\nif [ ! -e "%s" ]; then : > "%s"; exec sleep 5; fi\nexec "%s" "$@"\n' \
+    "$STUBS/cold/first" "$STUBS/cold/first" "$REAL_NODE" > "$STUBS/cold/node"
+chmod +x "$STUBS/crash/node" "$STUBS/hang/node" "$STUBS/cold/node"
+t ask "parser crashes: one agent per runtime item" "$UNBOUNDED_SCRIPT" PATH="$STUBS/crash:$PATH"
+got=$(printf '%s' "$UNBOUNDED_SCRIPT" | PATH="$STUBS/crash:$PATH" python3 "$ESTIMATOR" 10 | grep -m1 '^VERDICT=')
+if [ "$got" = "VERDICT=ANALYSIS_ERROR" ]; then ok "crashed parser is ANALYSIS_ERROR"; else bad "crashed parser: $got"; fi
+t ask "parser times out twice: one agent per runtime item" "$UNBOUNDED_SCRIPT" PATH="$STUBS/hang:$PATH"
+# A cold first call is retried: the ask is the UNBOUNDED one, naming the line.
+OUT=$(run_hook "$(payload_for "$UNBOUNDED_SCRIPT")" PATH="$STUBS/cold:$PATH")
+if printf '%s' "$OUT" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' | grep -qF 'not counted: line 1'; then
+    ok "cold first parse retried: the unbounded ask, not a parser error"
+else
+    bad "cold first parse: $OUT"
+fi
+
+echo
+echo "== a scriptPath that is not UTF-8 is still parsed (PR #2831 review) =="
+LATIN1="$STUBS/latin1.js"
+printf 'await parallel(args.xs.map(x => () => agent(x))) // caf\351\n' > "$LATIN1"
+assert_ask_payload() {
+    local desc="$1" payload="$2" out
+    out=$(run_hook "$payload")
+    if [ "$(decision_of "$out")" = ask ]; then ok "ask: $desc"; else bad "expected ask: $desc"; fi
+}
+assert_ask_payload "Latin-1 byte in a scriptPath file" "$(jq -nc --arg p "$LATIN1" '{tool_name:"Workflow", tool_input:{scriptPath:$p}}')"
+for lc in C C.UTF-8; do
+    got=$(LC_ALL=$lc python3 "$ESTIMATOR" 10 < "$LATIN1" | grep -E '^(VERDICT|PARSER)=' | tr '\n' ' ')
+    if [ "$got" = "VERDICT=UNBOUNDED PARSER=acorn " ]; then ok "Latin-1 byte parsed under LC_ALL=$lc"; else bad "Latin-1 byte under LC_ALL=$lc: $got"; fi
+done
+
+echo
 echo "== the ask payload names the lines and the remedy =="
 OUT=$(run_hook "$(payload_for 'export const meta = { name: "named-check" }
 await agent(0)
 await parallel(args.units.map(u => () => agent(u)))')")
 REASON=$(printf '%s' "$OUT" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty')
 # shellcheck disable=SC2016  # literal backticks in the expected reason text
-for needle in 'workflow:  named-check' 'line 3: parallel over `args.units`' 'the counted ones spawn 1' '.slice(0, 6)'; do
+for needle in 'workflow:  named-check' 'line 3: parallel over `args.units`' 'the counted ones spawn 1' 'for (const x of items.slice(0, 6))' 'capped copy held in a variable still asks'; do
     if grep -qF "$needle" <<<"$REASON"; then ok "reason contains: $needle"; else bad "reason lacks '$needle': $REASON"; fi
 done
 OUT=$(run_hook "$(payload_for 'for (let i = 0; i < 12; i++) await agent(i)')")

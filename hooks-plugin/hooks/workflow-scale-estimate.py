@@ -4,7 +4,7 @@
 Reads a workflow script on stdin and writes a KEY=VALUE rollup on stdout
 (structured-script-output convention) for workflow-scale-guard.sh:
 
-    VERDICT=OK|OVER_LIMIT|UNBOUNDED|NO_AGENTS|PARSE_ERROR
+    VERDICT=OK|OVER_LIMIT|UNBOUNDED|NO_AGENTS|PARSE_ERROR|ANALYSIS_ERROR
     PARSER=acorn|fallback
     NAME=<meta name>           when the script states one
     SITES=<int>                agent() and workflow() call sites
@@ -28,27 +28,36 @@ The rule, deliberately small:
   script body or in inline callbacks/thunks of those constructs.
 
   Everything else makes the site UNBOUNDED: while/do/for...in loops, a list
-  that is not a literal or a literal slice (a const holding a literal
-  included: it can be pushed to), any function or method whose callers would
-  have to be traced, a class body, every workflow() call (a child
+  that is not a literal or a literal slice (a const holding a literal, or a
+  slice of one, included: it can be pushed to), any function or method whose
+  callers would have to be traced (a named function expression passed inline
+  included: it can call itself), a class body, every workflow() call (a child
   workflow's agents are invisible here), and `agent` used as a value (an
-  alias, a callback, a template tag). `agent.call(...)` and `agent.apply(...)`
-  are call sites like `agent(...)`.
+  alias, a callback, a template tag, a property read such as `ctx.agent`, or
+  a destructuring rename such as `const { agent: spawn } = ctx`).
+  `agent.call(...)`, `agent.apply(...)` and a property call such as
+  `ctx.agent(...)` or `globalThis["agent"](...)` are call sites like
+  `agent(...)`.
 
 What it deliberately does not try to do: resolve variables, follow helpers,
 model mutation, recursion, getters, or any other JavaScript. UNBOUNDED makes
-the guard ask, and the ask says how to make it silent (cap the list at its
-source with .slice(0, N)). Asking is cheap; a model of JavaScript that grows a
-case per review round is not (#2787 reached 3,885 lines that way). Not seen at
-all: a saved workflow run by name, which has no script text, and `agent`
-reached under another name without being mentioned (`globalThis["age" + "nt"]`).
+the guard ask, and the ask says how to make it silent (slice the list where
+the fan-out iterates it: `for (const x of items.slice(0, N))`). Asking is
+cheap; a model of JavaScript that grows a case per review round is not (#2787
+reached 3,885 lines that way). Not seen at all: a saved workflow run by name,
+which has no script text, and `agent` reached under another name without being
+mentioned (`globalThis["age" + "nt"]`). Taken on trust: `parallel`, `pipeline`,
+`.slice`, `.map`, `.forEach` and `.flatMap` are recognised by name, so a script
+that shadows or redefines one (a local `parallel`, a patched
+`Array.prototype.map`) is counted as if it had not.
 
 Parsing uses the vendored acorn parser under node (lib/workflow-scale-parse.cjs).
-A syntax error is PARSE_ERROR and an error while walking a parsed script is
-ANALYSIS_ERROR; the guard asks on both. No node, a crashed parser, or a
-timeout falls back to the pre-parser estimator
+A syntax error is PARSE_ERROR. A parser that crashes, or times out twice (the
+retry absorbs a cold node start), is ANALYSIS_ERROR, as is an error while
+walking a parsed script; the guard asks on all three. Only a machine without
+node falls back to the pre-parser estimator
 (lib/workflow-scale-estimate-fallback.py), which regex-scans and costs runtime
-lists at ASSUMED items, so a machine without node behaves as it did before.
+lists at ASSUMED items, so it behaves as it did before.
 """
 
 import importlib.util
@@ -75,27 +84,39 @@ NOT_LITERAL = "not a literal array or .slice(0, N)"
 
 
 class ParserUnavailable(Exception):
-    pass
+    """No node: the pre-parser fallback decides."""
+
+
+class ParserFailed(Exception):
+    """node ran but the parser crashed or timed out: the guard asks."""
 
 
 def parse(src: str) -> dict:
     node = shutil.which("node")
     if not node or not os.path.isfile(PARSER):
         raise ParserUnavailable("node not on PATH")
-    try:
-        cmd = [node, PARSER]
-        opts = {
-            "capture_output": True,
-            "encoding": "utf-8",
-            "timeout": 4,
-            "check": False,
-        }
-        out = subprocess.run(cmd, input=src, **opts)  # noqa: PLW1510 - check=False in opts
-        return json.loads(out.stdout)
-    except subprocess.TimeoutExpired as exc:
-        raise ParserUnavailable("parser timed out") from exc
-    except ValueError as exc:
-        raise ParserUnavailable("parser crashed") from exc
+    cmd = [node, PARSER]
+    opts = {
+        "capture_output": True,
+        "encoding": "utf-8",
+        "timeout": 4,
+        "check": False,
+    }
+    # One retry on a timeout: a cold node start on a loaded machine can exceed
+    # the limit once (a warm parse is ~60 ms). A second timeout asks.
+    for attempt in (1, 2):
+        try:
+            out = subprocess.run(cmd, input=src, **opts)  # noqa: PLW1510 - check=False in opts
+        except subprocess.TimeoutExpired as exc:
+            if attempt == 2:
+                raise ParserFailed("the parser timed out twice") from exc
+            continue
+        try:
+            return json.loads(out.stdout)
+        except ValueError as exc:
+            raise ParserFailed(f"the parser crashed (exit {out.returncode})") from exc
+    # Unreachable: the loop returns or raises.
+    raise ParserFailed("the parser did not run")
 
 
 def kids(node):
@@ -118,6 +139,30 @@ def method(callee):
 
 def is_name(node, name):
     return bool(node) and node.get("type") == "Identifier" and node["name"] == name
+
+
+def key_name(key, computed):
+    """The name a property key spells: `agent` in `x.agent`, `x["agent"]`,
+    `{ agent: v }` or `{ "agent": v }`; None for a computed expression key."""
+    if key.get("type") == "Identifier" and not computed:
+        return key["name"]
+    if key.get("type") == "Literal" and isinstance(key.get("value"), str):
+        return key["value"]
+    return None
+
+
+def spawn_of(node):
+    """`agent` or `workflow` when node names one, directly or as a property
+    (`agent`, `ctx.agent`, `globalThis["agent"]`), else None."""
+    if not isinstance(node, dict):
+        return None
+    if node.get("type") == "Identifier":
+        name = node["name"]
+    elif node.get("type") == "MemberExpression":
+        name = key_name(node["property"], node["computed"])
+    else:
+        return None
+    return name if name in SPAWN else None
 
 
 def binds(pattern, name):
@@ -207,8 +252,10 @@ class Walker:
         return len(range(start, stop + (test["operator"] == "<="), step))
 
     def inline(self, fn, ctx):
-        """Walk a callback or thunk as code that runs once per `ctx`."""
-        if fn and fn["type"] in FUNCS:
+        """Walk a callback or thunk as code that runs once per `ctx`. A named
+        function expression can call itself, so it is walked as a function
+        (callers not traced), not inlined."""
+        if fn and fn["type"] in FUNCS and not fn.get("id"):
             self.pattern(fn["params"], ctx)
             self.walk(fn["body"], ctx)
         else:
@@ -216,19 +263,20 @@ class Walker:
 
     def call(self, node, ctx) -> bool:
         callee, args = node["callee"], node["arguments"]
-        name = callee.get("name") if callee["type"] == "Identifier" else None
-        if (
-            method(callee) in ("call", "apply")
-            and callee["object"].get("name") in SPAWN
-        ):
-            name = callee["object"]["name"]  # agent.call(null, x) is agent(x)
-        if name in SPAWN:
+        ref = callee
+        if method(callee) in ("call", "apply") and spawn_of(callee["object"]):
+            ref = callee["object"]  # agent.call(null, x) is agent(x)
+        name = spawn_of(ref)
+        if name:
+            if ref["type"] == "MemberExpression":
+                self.walk(ref["object"], ctx)  # ctx.agent(x): `ctx` is ordinary code
             why = ctx[1]
             if name == "workflow" and not why:
                 why = "a workflow() child runs agents this script does not show"
             self.sites.append((self.line(node), ctx[0], why))
             self.walk(args, ctx)
             return True
+        name = callee.get("name") if callee["type"] == "Identifier" else None
         if name == "parallel" and args:
             self.parallel(args[0], ctx)
             self.walk(args[1:], ctx)
@@ -257,8 +305,13 @@ class Walker:
         if method(arg.get("callee")) == "map" and cb and cb["type"] in FUNCS:
             self.walk(arg["callee"]["object"], ctx)
             per_item = self.over(ctx, arg["callee"]["object"], "parallel over")
-            # xs.map(x => () => agent(x)): the returned thunk runs once per item.
-            self.inline(cb["body"] if cb["body"]["type"] in FUNCS else cb, per_item)
+            if cb["body"]["type"] in FUNCS:
+                # xs.map(x => () => agent(x)): the returned thunk runs once per
+                # item, and so do the map callback's own parameter defaults.
+                self.pattern(cb["params"], per_item)
+                self.inline(cb["body"], per_item)
+            else:
+                self.inline(cb, per_item)
             return
         self.walk(arg, ctx)
 
@@ -279,13 +332,31 @@ class Walker:
             for prop in node["properties"]:
                 if prop.get("computed"):
                     self.walk(prop["key"], ctx)
-                self.pattern(prop.get("value", prop.get("argument")), ctx)
+                target = prop.get("value", prop.get("argument"))
+                self.renamed(prop, target, ctx)
+                self.pattern(target, ctx)
         elif t == "ArrayPattern":
             self.pattern(node["elements"], ctx)
         elif t == "RestElement":
             self.pattern(node["argument"], ctx)
         elif t != "Identifier":
             self.walk(node, ctx)  # e.g. a member expression as an assignment target
+
+    def renamed(self, prop, target, ctx):
+        """`{ agent: spawn }` in a pattern binds agent under another name, whose
+        calls are not traced; `{ agent }` and `{ agent = f }` declare `agent`."""
+        name = (
+            key_name(prop["key"], prop.get("computed"))
+            if prop["type"] == "Property"
+            else None
+        )
+        if name not in SPAWN:
+            return
+        bound = target["left"] if target["type"] == "AssignmentPattern" else target
+        if not is_name(bound, name):
+            at = f"line {self.line(prop)}"
+            why = f"`{name}` bound under another name ({at}); its calls are not traced"
+            self.sites.append((self.line(prop), ctx[0], why))
 
     def walk(self, node, ctx):
         if isinstance(node, list):
@@ -301,8 +372,20 @@ class Walker:
             why = f"`{node['name']}` used as a value ({at}); its calls are not traced"
             self.sites.append((self.line(node), ctx[0], why))
             return
+        if t == "MemberExpression" and spawn_of(node):
+            # `ctx.agent` read rather than called: it may be the runtime's agent
+            # under a new name, so it is a value use like a bare `agent`.
+            why = (
+                f"`{self.text(node)}` used as a value ({at}); its calls are not traced"
+            )
+            self.sites.append((self.line(node), ctx[0], why))
+            self.walk(node["object"], ctx)
+            return
         if t == "MemberExpression" and not node["computed"]:
-            self.walk(node["object"], ctx)  # `x.agent` is a property name
+            self.walk(node["object"], ctx)  # `x.name` is a property name
+            return
+        if t in ("ObjectPattern", "ArrayPattern"):
+            self.pattern(node, ctx)  # an assignment, for-of or catch target
             return
         if t in KEYED and not node.get("computed"):
             self.walk(node.get("value"), ctx)  # `{ agent: ... }` names a key
@@ -327,7 +410,9 @@ class Walker:
             return
         elif t == "ForOfStatement":
             self.walk(node["right"], ctx)
-            self.walk(node["body"], self.over(ctx, node["right"], "for-of over"))
+            per_item = self.over(ctx, node["right"], "for-of over")
+            # The left side binds per item too: `for (const { a = agent() } of xs)`.
+            self.walk([node["left"], node["body"]], per_item)
             return
         elif t == "ForStatement":
             self.walk(node["init"], ctx)
@@ -383,19 +468,24 @@ def main() -> int:
     nums = [int(a) if a.isdigit() else None for a in sys.argv[1:3]] + [None, None]
     limit = 10 if nums[0] is None else nums[0]
     width = 8 if nums[1] is None else nums[1]
-    src = sys.stdin.read()
+    # Bytes, not text: a scriptPath file need not be UTF-8, and a strict decode
+    # (or an unencodable surrogate escape later) would end in the silent path.
+    # node sees the same replaced text, so the parser's offsets still match.
+    src = sys.stdin.buffer.read().decode("utf-8", "replace")
     sys.setrecursionlimit(5000)  # deeply nested expressions are legal JavaScript
     try:
         result = analyze(src, limit)
     except Exception as exc:  # noqa: BLE001 - see the two branches below
         if not isinstance(exc, ParserUnavailable):
-            # The script parsed but this file could not walk it. Ask rather than
-            # hand it to the fallback, which never reports UNBOUNDED.
+            # node ran but the parser failed, or the script parsed and this
+            # file could not walk it. Ask rather than hand it to the fallback,
+            # which never reports UNBOUNDED.
             kind = type(exc).__name__
+            detail = f"the estimator failed on this script ({kind})"
             result = {
                 "VERDICT": "ANALYSIS_ERROR",
                 "PARSER": "acorn",
-                "DETAIL": f"the estimator failed on this script ({kind})",
+                "DETAIL": str(exc) if isinstance(exc, ParserFailed) else detail,
             }
             return emit(result)
         try:
