@@ -55,6 +55,7 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 | `CLAUDE_HOOKS_DISABLE_TASK_COMPLETENESS` | Stop-hook heuristics for incomplete work (TODO/conflict markers/debug artifacts) | `hooks/task-completeness.sh` |
 | `CLAUDE_HOOKS_DISABLE_TEST_VERIFICATION` | Stop-hook reminder to run tests when code changed | `hooks/test-verification.sh` |
 | `CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER` | Stop-hook reminder about stashes created during the session (#2686) | `hooks/git-stash-reminder.sh` |
+| `CLAUDE_HOOKS_DISABLE_SUBAGENT_COUNT` | Counting subagents at SubagentStart and the Stop `systemMessage` when the session's count crosses the limit or a doubling of it | `hooks/subagent-count-tripwire.sh` |
 | `CLAUDE_HOOKS_DISABLE_DRIFT_NUDGE` | The consolidated drift-aggregator SessionStart nudge | `hooks/drift-aggregator.sh` |
 | `CLAUDE_HOOKS_DISABLE_README_CURRENCY` | Advisory nudge to update a changed plugin's README.md | `scripts/check-plugin-readme-currency.sh` |
 
@@ -96,8 +97,9 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 | `CLAUDE_HOOKS_BRANCH_BASE_FETCH` | `0` | `1` runs `git fetch --quiet origin <default>` on a cache miss for a fresher ahead-count | `hooks/branch-base-guard.sh` |
 | `CLAUDE_HOOKS_REPO_DELETION_TMP_EXEMPT` | `1` | `0` also guards repos under `/tmp`, `/private/tmp`, `/var/folders`, `$TMPDIR` | `hooks/repo-deletion-safety.sh` |
 | `CLAUDE_HOOKS_REPO_DELETION_WARN_DIRTY` | `0` | `1` enables the tier-2 `ask` on a remote-backed repo carrying uncommitted/unpushed/stashed work | `hooks/repo-deletion-safety.sh` |
-| `CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS` | `10` | Estimated agent count a Workflow script may reach before the guard asks; the default matches the `medium` `workflowSizeGuideline` | `hooks/workflow-scale-guard.sh` |
+| `CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS` | `10` | Estimated agent count a Workflow script may reach before the guard asks; the default matches the `medium` `workflowSizeGuideline`. Also the first threshold of the subagent-count tripwire | `hooks/workflow-scale-guard.sh`, `hooks/subagent-count-tripwire.sh` |
 | `CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH` | `8` | Items each runtime-length fan-out is costed at, so a fan-out with no static bound is neither waved through nor hard-blocked | `hooks/workflow-scale-guard.sh` |
+| `CLAUDE_HOOKS_SUBAGENT_COUNT_DIR` | `$TMPDIR/claude-subagent-count` | Per-session subagent-count state directory (the test suite points it at a scratch dir) | `hooks/subagent-count-tripwire.sh` |
 | `CLAUDE_REPO_BACKUP_DIR` | `$HOME/Backups` | Where an existing `<basename>-*.tar.*` clears the repo-deletion block; also the dir named in the block message | `hooks/repo-deletion-safety.sh` |
 | `CLAUDE_TASKWARRIOR_DRIFT_STALE_TTL` | `14400` (s) | Age before a `+ACTIVE` claim counts as stale | `hooks/taskwarrior-drift-probe.sh` |
 | `CLAUDE_TASKWARRIOR_DRIFT_STALE_LIMIT` | `50` | Max stale claims reported | `hooks/taskwarrior-drift-probe.sh` |

@@ -208,6 +208,21 @@ Estimation runs in [`hooks/workflow-scale-estimate.py`](hooks/workflow-scale-est
 
 **Tests:** `bash hooks-plugin/hooks/test-workflow-scale-guard.sh` (15 cases; the negatives carry the contract — a guard that asks on ordinary workflows gets disabled within a day).
 
+### subagent-count-tripwire.sh
+
+A `SubagentStart` + `Stop` hook that tells the user, after the fact, how many subagents the session has started. `workflow-scale-guard.sh` estimates a workflow before it runs; this counts what actually ran, across Workflow agents (`agent_type` `workflow-subagent`) and Agent-tool subagents alike. It exists because a `SubagentStart` hook cannot stop or alter a subagent: on Claude Code 2.1.283, exit 2, `{"decision":"block"}`, `{"continue":false}` and `updatedPrompt` were all ignored. A trivial workflow agent still costs ~66k tokens of prompt-cache creation.
+
+| Event | Behavior |
+|---|---|
+| `SubagentStart` | Appends `agent_id`/`agent_type` to `${TMPDIR:-/tmp}/claude-subagent-count/<session_id>.log`. Silent, always exits 0. On a session's first subagent it deletes per-session files older than 3 days. |
+| `Stop` | Counts distinct `agent_id`s (a resumed subagent re-fires `SubagentStart`). When the count reaches the next unreported threshold, prints one `systemMessage`, e.g. `This session has started 20 subagents (14 workflow, 6 agent-tool); limit is 10.` |
+
+Thresholds are the limit, then each doubling (10, 20, 40, 80, ...), each reported once; jumping past several at once reports once. `systemMessage` is shown to the user and does not continue the turn — no `decision: "block"`, no `additionalContext`.
+
+**Toggle:** `export CLAUDE_HOOKS_DISABLE_SUBAGENT_COUNT=1`. The first threshold is `CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS` (default 10), shared with `workflow-scale-guard.sh`.
+
+**Tests:** `bash hooks-plugin/hooks/test-subagent-count-tripwire.sh`.
+
 ### branch-base-guard.sh
 
 A PreToolUse hook that nudges before cutting a new branch from a local default branch that is **ahead of its remote** — `git-hazards.md` trap #2: unpushed commits on local `main` ride into the new branch, get bundled into its PR under an unrelated title, and a squash-merge hides them everywhere except the file list.
@@ -545,6 +560,7 @@ Every hook can be individually enabled or disabled via environment variables. Se
 | task-completeness.sh | `CLAUDE_HOOKS_DISABLE_TASK_COMPLETENESS=1` | Enabled |
 | test-verification.sh | `CLAUDE_HOOKS_DISABLE_TEST_VERIFICATION=1` | Enabled |
 | git-stash-reminder.sh | `CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER=1` | Enabled |
+| subagent-count-tripwire.sh | `CLAUDE_HOOKS_DISABLE_SUBAGENT_COUNT=1` | Enabled |
 | event-logger.sh | `CLAUDE_HOOKS_ENABLE_EVENT_LOGGER=1` | **Disabled** (opt-in) |
 | bash-antipatterns-teach.sh | `CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1` | **Disabled** (opt-in) |
 | no-calendar-estimates.sh | `CLAUDE_HOOKS_ENABLE_CALENDAR_ESTIMATES=1` | **Disabled** (opt-in) |
