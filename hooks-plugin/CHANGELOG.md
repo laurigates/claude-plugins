@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.12.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.11.10...hooks-plugin-v2.12.0) (2026-09-26)
+
+
+### Features
+
+* **hooks-plugin:** add after-the-fact subagent-count tripwire ([#2828](https://github.com/laurigates/claude-plugins/issues/2828)) ([3315ce5](https://github.com/laurigates/claude-plugins/commit/3315ce59d017fbd8fa2b9b2ab27992e53a5ee4f6))
+
 ## [2.11.10](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.11.9...hooks-plugin-v2.11.10) (2026-09-24)
 
 
