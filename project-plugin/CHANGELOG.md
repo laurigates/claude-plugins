@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.8](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.21.7...project-plugin-v1.21.8) (2026-09-26)
+
+
+### Bug Fixes
+
+* **project-plugin:** record that changelog triage publishes from a bash step ([#2771](https://github.com/laurigates/claude-plugins/issues/2771)) ([19414e2](https://github.com/laurigates/claude-plugins/commit/19414e2e045d0299f7a1a7d457d1d3ae37061ebb))
+
 ## [1.21.7](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.21.6...project-plugin-v1.21.7) (2026-09-24)
 
 
