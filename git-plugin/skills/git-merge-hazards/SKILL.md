@@ -3,7 +3,7 @@ name: git-merge-hazards
 description: Traps in GitHub's merge machinery. Use when merging a PR, merging a stacked PR chain, auditing whether a branch really landed, or merging over red CI.
 allowed-tools: Read, Grep, Glob, Bash(gh pr *), Bash(gh issue *), Bash(gh api *), Bash(git cherry *), Bash(git merge-tree *), Bash(git rev-parse *), Bash(git log *), Bash(git reflog *), Bash(git rebase *), Bash(git push *), Bash(git fetch *), Bash(just *), Bash(bash *), TodoWrite
 created: 2026-08-19
-modified: 2026-09-25
+modified: 2026-09-26
 reviewed: 2026-08-21
 ---
 
@@ -21,7 +21,10 @@ Read before merging a PR, merging a stacked PR chain, auditing whether a branch
 really landed, or merging over red CI. The body below is the verbatim text of
 the promoted `~/.claude/rules/pr-merge-hazards.md` rule.
 
-Three notes that are *not* part of that body:
+Notes that are *not* part of that body:
+
+- The `## Agentic Optimizations` table at the end is this skill's own command
+  index, not rule text. Leave it out when syncing with `pr-merge-hazards.md`.
 
 - Two gates below — §1's merged-ness authority order and the whole of §4 — are
   also reproduced verbatim in the `pr-merge-hazards.md` stub, because they are
