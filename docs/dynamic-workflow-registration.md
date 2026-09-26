@@ -132,8 +132,8 @@ not, and its header comment says why so an adapter does not add one.
 
 **`workflow()` throws on an unknown name.** If the registration is missing, the
 throw propagates and kills the *entire* batch — not just the one skill it was
-evaluating. A caller that fans out over many skills must therefore either wrap
-each call:
+evaluating. A caller that fans out over many skills must therefore wrap each
+call:
 
 ```js
 let result
@@ -147,10 +147,11 @@ try {
 }
 ```
 
-…or fall back to the script-path route above. Either is acceptable; silently
-letting the throw escape is not, because a batch that dies on its first skill
-reports nothing and looks like an infrastructure failure rather than a missing
-install step.
+Silently letting the throw escape is not acceptable, because a batch that dies
+on its first skill reports nothing and looks like an infrastructure failure
+rather than a missing install step. Falling back to the script-path route above
+does not replace the catch: it resolves only in a session running inside this
+checkout, and from a plugin install it throws too (see "Why a name at all").
 
 The child also **shares the parent's concurrency cap, agent counter, abort
 signal and token budget**. That is why `evaluate-skill.workflow.js` imposes no
@@ -162,8 +163,10 @@ whatever `--parallel N` the batch caller was given.
 Don't, unless a *second* harness genuinely has to call a template by name. When
 that happens:
 
-1. Confirm neither alternative in the table above fits — a slash command or a
-   script path is cheaper and carries no install step.
+1. Confirm neither alternative in the table above fits — a slash command is
+   cheaper and carries no install step, and so is a script path when every
+   session that calls it can already read the file (the plugin cache is not
+   readable today; see "Why a name at all").
 2. Add the template to the table at the top of this file, with its call site.
 3. Update `.claude/rules/workflow-vs-skill.md` § "Layout convention", which
    currently states the rule as "register a name **only** when another harness
