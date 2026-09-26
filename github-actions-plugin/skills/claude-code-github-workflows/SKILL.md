@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-09-02
+modified: 2026-09-24
 reviewed: 2026-09-02
 name: claude-code-github-workflows
 description: "Claude Code GitHub Actions workflow patterns — PR reviews, issue triage, CI/CD integration. Use when creating or modifying workflows that integrate Claude Code."
@@ -293,6 +293,10 @@ outputs:
 The same guarded expression works in `if:` gates
 (`fromJSON(... || '{}').critical > 0`) — an unguarded comparison against a
 missing output silently never fires.
+
+The same law covers comment markers: anything CI greps for in an agent's output
+must be written by a workflow step, not requested from the model — see
+[REFERENCE.md](REFERENCE.md) § A marker the model has to emit.
 
 ### Bots are blocked by default
 

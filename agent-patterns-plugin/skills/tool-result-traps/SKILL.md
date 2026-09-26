@@ -4,7 +4,7 @@ description: Tool results that mean something other than they look — a pattern
 allowed-tools: Read, Glob, Grep, Bash(rg *), Bash(git grep *), Bash(git log *), Bash(git status *), Bash(git worktree *), Bash(gh api *), Bash(gh pr view *), Bash(python3 *), TodoWrite
 model: opus
 created: 2026-08-21
-modified: 2026-08-26
+modified: 2026-09-24
 compatibility: claude-code
 reviewed: 2026-08-21
 ---
@@ -315,5 +315,6 @@ input.
   deletions.
 
 For the worktree-shell wedge, the vacuous path-scoped verification, the
-`Workflow` `args` JSON-string trap, and the parallel-batch / agent fan-out
-hazards, see [REFERENCE.md](REFERENCE.md).
+`Workflow` `args` JSON-string trap, the control that must exercise the failing
+part of the pattern (the `parseFloat` case), and the parallel-batch / agent
+fan-out hazards, see [REFERENCE.md](REFERENCE.md).

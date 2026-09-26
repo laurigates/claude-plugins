@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.8](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.7...comfyui-plugin-v1.13.8) (2026-09-24)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** back-port fleet-leading workflows into the pack scaffold ([#2763](https://github.com/laurigates/claude-plugins/issues/2763)) ([b7d4da4](https://github.com/laurigates/claude-plugins/commit/b7d4da4b91937f39be3fb35499b6d13fb74edbc6))
+
 ## [1.13.7](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.6...comfyui-plugin-v1.13.7) (2026-08-16)
 
 

@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-07-28
+modified: 2026-09-24
 reviewed: 2025-12-16
 name: biome-tooling
 description: "Biome all-in-one JS/TS formatter and linter, 15-20x faster than ESLint/Prettier. Use when setting up formatting/linting or migrating from ESLint+Prettier."
@@ -142,6 +142,24 @@ Biome works without configuration. For basic customization:
 }
 ```
 
+### Scope a run to changed files
+
+Both scopes need VCS integration (`"vcs": { "enabled": true, "clientKind": "git" }`).
+
+| Scope | Command | Notes |
+|-------|---------|-------|
+| Staged files only (pre-commit) | `bunx biome check --staged --reporter=github` | Not available on `biome ci` |
+| Committed changes vs a base | `bunx biome check --changed --since=main --reporter=github` | `--since` overrides `vcs.defaultBranch`; without it, set `defaultBranch` |
+
+`--changed` compares committed changes only (staged and unstaged edits are
+excluded), and it does not follow imports: a changed exported type can break a
+file that is not in the diff. Run a full `biome check` before merging when
+exports change.
+
+For an agent reading the output, combine a scope with `--reporter=github`
+(one `file:line:col` line per diagnostic), `--diagnostic-level=error`, and
+`--max-diagnostics=N`.
+
 ## Performance Comparison
 
 | Tool | Time (1000 files) | Notes |
@@ -163,6 +181,8 @@ Biome works without configuration. For basic customization:
 | Errors only | `bunx biome check --diagnostic-level=error src/` |
 | Limited output | `bunx biome check --max-diagnostics=10 src/` |
 | GitHub reporter | `bunx biome check --reporter=github src/` |
+| Staged files only | `bunx biome check --staged --reporter=github` |
+| Changed vs main | `bunx biome check --changed --since=main --reporter=github` |
 | JSON output | `bunx biome check --reporter=json src/` |
 | Migrate ESLint | `bunx biome migrate eslint --write` |
 | Migrate Prettier | `bunx biome migrate prettier --write` |

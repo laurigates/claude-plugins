@@ -1,6 +1,6 @@
 ---
 created: 2026-01-15
-modified: 2026-05-09
+modified: 2026-09-24
 reviewed: 2026-01-15
 name: nodejs-containers
 description: "Node.js container optimization — Alpine, multi-stage builds, node_modules caching, BuildKit mounts (900MB to ~100MB). Use when working with Node.js containers or optimizing image sizes."
@@ -132,6 +132,41 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile --prod
 # pnpm creates smaller node_modules with hard links (20-30% smaller)
 ```
+
+## Next.js on Bun: build with Bun, run with Node
+
+Bun works for the dependency and build stages of a Next.js image, but the
+runtime stage that serves `.next/standalone` must be **Node.js**. The standalone
+output targets Node, and Bun does not resolve the React Server Components SSR
+modules it loads (`react-dom/server.edge`, `react-dom/server-rendering-stub`,
+`react-server-dom-webpack/client.edge`), so it fails at runtime with
+"Could not resolve" errors.
+
+```dockerfile
+FROM oven/bun:1-debian AS deps        # install
+FROM oven/bun:1-debian AS builder     # next build
+FROM gcr.io/distroless/nodejs22-debian12 AS runner
+CMD ["server.js"]
+```
+
+## Distroless runtime: no shell, so no `child_process` to CLI tools
+
+A distroless Node image contains Node and nothing else: no `/bin/sh`, `gzip`,
+`pg_dump`, or `psql`. Application code that shells out through
+`node:child_process` (`exec`, `execSync`, `spawn` of a CLI) works in local dev
+and fails only in production, with `spawn /bin/sh ENOENT`. Use Node built-ins
+or a library instead:
+
+| Shell tool | In-process replacement |
+|------------|------------------------|
+| `gzip` / `gunzip` | `node:zlib` (`gzipSync`, `createGzip`, `gunzipSync`) |
+| `cat`, `cp`, file writes | `node:fs` |
+| `pg_dump` / `psql` | export/import through the app's database client or ORM |
+
+The same constraint means ops scripts cannot be `kubectl exec`'d into the
+running app pod. Ship them in a separate image and run them as a Job. To stop
+the mistake before review, ban the import with a lint rule (for example Biome
+`noRestrictedImports` on `node:child_process` for server source).
 
 ## Performance Impact
 

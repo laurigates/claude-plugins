@@ -32,7 +32,7 @@ Three notes that are *not* part of that body:
 
 Four traps in GitHub's merge machinery, one law: "PR merged" says nothing about
 *content* — and a red check is not proof of failure. Each: the trap, the
-5-second check, the fix. Sibling: `~/.claude/rules/git-hazards.md` (local git).
+5-second check, the fix. Sibling: `git-plugin:git-local-hazards` (local git).
 
 ## 1. `--merged` misses squash-merged branches
 

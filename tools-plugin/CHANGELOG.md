@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.12.1](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.12.0...tools-plugin-v2.12.1) (2026-09-24)
+
+
+### Documentation
+
+* **tools-plugin:** warn about pipefail with readers that exit early in shell-expert ([#2812](https://github.com/laurigates/claude-plugins/issues/2812)) ([3920a6e](https://github.com/laurigates/claude-plugins/commit/3920a6e9fdf01a2a8c7fc5939558d5d0313a7fb6))
+
 ## [2.12.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.11.1...tools-plugin-v2.12.0) (2026-09-21)
 
 

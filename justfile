@@ -6,6 +6,7 @@ set positional-arguments
 # Subdirectory modules — invoke via `just <mod>::recipe`.
 mod claude-probe 'experiments/claude-probe'
 mod skill-catalog-routing 'experiments/skill-catalog-routing'
+mod subagent-compaction 'experiments/subagent-compaction'
 
 # Show available recipes
 default:

@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.10.0](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.9.4...container-plugin-v2.10.0) (2026-09-24)
+
+
+### Features
+
+* **documentation-plugin:** add public-export-sanitization; fold generic lessons into seven skills ([#2810](https://github.com/laurigates/claude-plugins/issues/2810)) ([b82ba11](https://github.com/laurigates/claude-plugins/commit/b82ba11afcb46a9055e6d83ca9a0d3da110d2068))
+
 ## [2.9.4](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.9.3...container-plugin-v2.9.4) (2026-09-03)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/laurigates/claude-plugins/compare/migration-patterns-plugin-v1.6.0...migration-patterns-plugin-v1.7.0) (2026-09-24)
+
+
+### Features
+
+* **documentation-plugin:** add public-export-sanitization; fold generic lessons into seven skills ([#2810](https://github.com/laurigates/claude-plugins/issues/2810)) ([b82ba11](https://github.com/laurigates/claude-plugins/commit/b82ba11afcb46a9055e6d83ca9a0d3da110d2068))
+
 ## [1.6.0](https://github.com/laurigates/claude-plugins/compare/migration-patterns-plugin-v1.5.0...migration-patterns-plugin-v1.6.0) (2026-09-12)
 
 

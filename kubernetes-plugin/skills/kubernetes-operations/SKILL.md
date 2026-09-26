@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-09-24
 reviewed: 2026-04-25
 name: kubernetes-operations
 description: "Kubernetes operations — deployment, management, troubleshooting, kubectl mastery. Use when the user mentions K8s, kubectl, pods, deployments, services, ingress, or cluster stability."
@@ -122,6 +122,22 @@ kubectl --context=staging-cluster apply -f deployment.yaml
 # WRONG: Relying on current context
 kubectl get pods  # Which cluster is this targeting?
 ```
+
+**GKE: kubectl 403 as the wrong Google account**
+
+`gke-gcloud-auth-plugin` caches its token in
+`~/.kube/gke_gcloud_auth_plugin_cache`, and that cache survives a
+`gcloud auth login` account switch. kubectl keeps authenticating as the old
+account (often a personal one) and gets 403s. Clear the cache, then refresh the
+credentials:
+
+```bash
+rm -f ~/.kube/gke_gcloud_auth_plugin_cache
+gcloud container clusters get-credentials <cluster> --region <region> --project <project>
+```
+
+`gcloud auth application-default login` sets Application Default Credentials for
+SDKs and Terraform. It does not change the account kubectl uses.
 
 **Resource Definitions**
 - Use declarative YAML manifests
