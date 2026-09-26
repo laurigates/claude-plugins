@@ -99,7 +99,7 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 | `CLAUDE_HOOKS_REPO_DELETION_WARN_DIRTY` | `0` | `1` enables the tier-2 `ask` on a remote-backed repo carrying uncommitted/unpushed/stashed work | `hooks/repo-deletion-safety.sh` |
 | `CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS` | `10` | Estimated agent count a Workflow script may reach before the guard asks; the default matches the `medium` `workflowSizeGuideline`. Also the first threshold of the subagent-count tripwire | `hooks/workflow-scale-guard.sh`, `hooks/subagent-count-tripwire.sh` |
 | `CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH` | `8` | Items each runtime-length fan-out is costed at, so a fan-out with no static bound is neither waved through nor hard-blocked | `hooks/workflow-scale-guard.sh` |
-| `CLAUDE_HOOKS_SUBAGENT_COUNT_DIR` | `$TMPDIR/claude-subagent-count` | Per-session subagent-count state directory (the test suite points it at a scratch dir) | `hooks/subagent-count-tripwire.sh` |
+| `CLAUDE_HOOKS_SUBAGENT_COUNT_DIR` | `$TMPDIR/claude-subagent-count-<uid>` | Per-session subagent-count state directory (the test suite points it at a scratch dir). Ignored unless owned by the current user and not a symlink; stale-file cleanup runs only in a directory the hook created | `hooks/subagent-count-tripwire.sh` |
 | `CLAUDE_REPO_BACKUP_DIR` | `$HOME/Backups` | Where an existing `<basename>-*.tar.*` clears the repo-deletion block; also the dir named in the block message | `hooks/repo-deletion-safety.sh` |
 | `CLAUDE_TASKWARRIOR_DRIFT_STALE_TTL` | `14400` (s) | Age before a `+ACTIVE` claim counts as stale | `hooks/taskwarrior-drift-probe.sh` |
 | `CLAUDE_TASKWARRIOR_DRIFT_STALE_LIMIT` | `50` | Max stale claims reported | `hooks/taskwarrior-drift-probe.sh` |

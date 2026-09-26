@@ -210,11 +210,11 @@ Estimation runs in [`hooks/workflow-scale-estimate.py`](hooks/workflow-scale-est
 
 ### subagent-count-tripwire.sh
 
-A `SubagentStart` + `Stop` hook that tells the user, after the fact, how many subagents the session has started. `workflow-scale-guard.sh` estimates a workflow before it runs; this counts what actually ran, across Workflow agents (`agent_type` `workflow-subagent`) and Agent-tool subagents alike. It exists because a `SubagentStart` hook cannot stop or alter a subagent: on Claude Code 2.1.283, exit 2, `{"decision":"block"}`, `{"continue":false}` and `updatedPrompt` were all ignored. A trivial workflow agent still costs ~66k tokens of prompt-cache creation.
+A `SubagentStart` + `Stop` hook that tells the user, after the fact, how many subagents the session has started. `workflow-scale-guard.sh` estimates a workflow before it runs; this counts what actually ran, across Workflow agents (`agent_type` `workflow-subagent`) and Agent-tool subagents alike. It exists because a `SubagentStart` hook cannot block or stop a subagent — it can only add context to one (`additionalContext`): on Claude Code 2.1.283, exit 2, `{"decision":"block"}`, `{"continue":false}` and `updatedPrompt` were all ignored. A trivial workflow agent still costs ~66k tokens of prompt-cache creation.
 
 | Event | Behavior |
 |---|---|
-| `SubagentStart` | Appends `agent_id`/`agent_type` to `${TMPDIR:-/tmp}/claude-subagent-count/<session_id>.log`. Silent, always exits 0. On a session's first subagent it deletes this hook's own top-level `.log` files idle for over 3 days, each with its `.reported` marker, plus markers whose log is gone. |
+| `SubagentStart` | Appends `agent_id`/`agent_type` to `${TMPDIR:-/tmp}/claude-subagent-count-<uid>/<session_id>.log`. Silent, always exits 0. It creates the directory mode 700 and writes nothing unless the directory is owned by the current user and is not a symlink. On a session's first subagent it deletes top-level `.log` files idle for over 3 days, each with its `.reported` marker, plus `.reported` markers idle for over 3 days whose log is gone. Cleanup runs only in a directory the hook created, so pointing `CLAUDE_HOOKS_SUBAGENT_COUNT_DIR` at an existing directory never deletes anything in it. |
 | `Stop` | Counts distinct `agent_id`s (a resumed subagent re-fires `SubagentStart`). When the count reaches the next unreported threshold, prints one `systemMessage`, e.g. `This session has started 20 subagents (14 workflow, 6 agent-tool); limit is 10.` |
 
 Thresholds are the limit, then each doubling (10, 20, 40, 80, ...), each reported once; jumping past several at once reports once. `systemMessage` is shown to the user and does not continue the turn — no `decision: "block"`, no `additionalContext`.
