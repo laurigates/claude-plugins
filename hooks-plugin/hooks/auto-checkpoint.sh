@@ -441,15 +441,25 @@ parse_bounded() {
 # any node lacks a rule id or an integer byte range inside the snippet (a
 # drifted output schema): the whole answer is dropped, never half of it. A
 # parser killed at the deadline returns 1, and the caller parses no further.
+#
+# Every offset must reach bash arithmetic as plain decimal digits, so any line
+# that is not "<rule-id> <digits> <digits>" (no leading zero) drops the whole
+# answer. The range check alone is not enough: jq 1.7 keeps a number literal's
+# spelling, so an integral `12.0` passes `. == floor` and prints as `12.0`, and
+# `-0.0` passes `>= 0` too; bash then aborted the analysis with a syntax error
+# and the hook exited 0 with no stash (verification of the fifth repair of PR
+# #2743). A jq error drops the answer as well, even after jq printed lines for
+# a first JSON value.
+NODE_LINE='^[a-z-]+ (0|[1-9][0-9]*) (0|[1-9][0-9]*)$'
 nodes_of() {
-  local out="" rc=0 tmp
+  local out="" rc=0 tmp line
   tmp=$(mktemp "${TMPDIR:-/tmp}/auto-checkpoint.XXXXXX" 2>/dev/null) || return 0
   parse_bounded "$1" "$tmp" || rc=$?
   out=$(cat "$tmp" 2>/dev/null) || out=""
   rm -f "$tmp"
   [ "$rc" -lt 128 ] || return 1
   [ -n "$out" ] || return 0
-  jq -r --argjson n "${#1}" '
+  out=$(jq -r --argjson n "${#1}" '
     def offset: type == "number" and . == floor and . >= 0;
     def node: (.ruleId | type == "string" and test("^[a-z-]+$"))
       and (.range.byteOffset.start | offset) and (.range.byteOffset.end | offset)
@@ -457,7 +467,12 @@ nodes_of() {
       and .range.byteOffset.end <= $n;
     if type == "array" and all(.[]; node)
     then .[] | "\(.ruleId) \(.range.byteOffset.start) \(.range.byteOffset.end)"
-    else empty end' <<<"$out" 2>/dev/null || true
+    else empty end' <<<"$out" 2>/dev/null) || return 0
+  [ -n "$out" ] || return 0
+  while IFS= read -r line; do
+    [[ $line =~ $NODE_LINE ]] || return 0
+  done <<<"$out"
+  printf '%s\n' "$out"
 }
 
 # ── Shell-word reconstruction ────────────────────────────────────────────────

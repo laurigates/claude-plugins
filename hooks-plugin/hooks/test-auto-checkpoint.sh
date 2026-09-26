@@ -30,8 +30,9 @@
 #      no-parser path — and a spelling any baseline checkpoints but the hook
 #      skips fails the suite.
 #   D. Fail-safe polarity: with ast-grep hidden, failing, answering in a drifted
-#      schema or hanging, the old matcher still decides, so an in-repo `rm -rf`
-#      still checkpoints.
+#      schema (offsets missing, out of range or spelled `12.0` / `-0.0`, or
+#      an answer followed by garbage) or hanging, the old matcher still
+#      decides, so an in-repo `rm -rf` still checkpoints.
 #   E. The allow path exits 0 under macOS's /bin/bash 3.2.
 #
 # Without a working ast-grep, A-C and the parser half of D cannot run: the
@@ -385,14 +386,19 @@ expect CHECKPOINT "no parser: git checkout -- still checkpoints" \
 # fake is made executable and confirmed to be the ast-grep the hook will find,
 # so a green row cannot mean the real parser ran instead. The out-of-range and
 # late answers claim the whole command is inert, so a hook that trusted them
-# would skip: those rows cannot pass by the fake merely failing.
+# would skip: those rows cannot pass by the fake merely failing. The float and
+# negative-zero answers spell offsets that pass jq's range check and that jq 1.7
+# prints unchanged (verification of the fifth repair): `0.0`/`12.0` made bash
+# arithmetic abort the analysis, so the hook exited 0 with no stash, and
+# `-0.0` calls the whole command inert. The trailing-garbage answer is a valid
+# inert claim followed by a jq parse error. Each must be dropped whole.
 FAKE_ROOT=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 if [ -z "$FAKE_ROOT" ] || [ ! -d "$FAKE_ROOT" ]; then
     echo "bad fake-parser dir" >&2
     exit 1
 fi
 trap 'rm -rf "$SANDBOX" "$NON_GIT_DIR" "$FAKE_ROOT"' EXIT
-for fake_kind in exit2 empty-array garbage no-offsets out-of-range late; do
+for fake_kind in exit2 empty-array garbage no-offsets out-of-range late float-offsets negative-zero trailing-garbage; do
     mkdir -p "$FAKE_ROOT/$fake_kind"
     case $fake_kind in
         exit2) printf '#!/usr/bin/env bash\nexit 2\n' > "$FAKE_ROOT/$fake_kind/ast-grep" ;;
@@ -415,6 +421,24 @@ FAKE
 n=$(( $(wc -c) ))
 sleep 6
 printf '[{"ruleId":"inert-cmd","range":{"byteOffset":{"start":0,"end":%d}}}]\n' "$n"
+FAKE
+            ;;
+        float-offsets) cat > "$FAKE_ROOT/$fake_kind/ast-grep" <<'FAKE'
+#!/usr/bin/env bash
+cat >/dev/null
+echo '[{"ruleId":"cmd","range":{"byteOffset":{"start":0.0,"end":12.0}}}]'
+FAKE
+            ;;
+        negative-zero) cat > "$FAKE_ROOT/$fake_kind/ast-grep" <<'FAKE'
+#!/usr/bin/env bash
+n=$(( $(wc -c) ))
+printf '[{"ruleId":"inert-cmd","range":{"byteOffset":{"start":-0.0,"end":%d}}}]\n' "$n"
+FAKE
+            ;;
+        trailing-garbage) cat > "$FAKE_ROOT/$fake_kind/ast-grep" <<'FAKE'
+#!/usr/bin/env bash
+n=$(( $(wc -c) ))
+printf '[{"ruleId":"inert-cmd","range":{"byteOffset":{"start":0,"end":%d}}}]\n{not json\n' "$n"
 FAKE
             ;;
     esac

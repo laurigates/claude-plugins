@@ -473,7 +473,9 @@ These still checkpoint:
 their parser. This hook does the opposite: no `ast-grep`, an `ast-grep` error or
 empty answer, an answer in which any node lacks a rule id or an integer byte
 range inside the command (a drifted output schema; the whole answer is
-dropped), a parser still running after
+dropped; so is one whose offsets jq prints as anything but plain digits, such
+as `12.0` or `-0.0`, which once aborted bash arithmetic into an exit with no
+stash, and one followed by text jq cannot parse), a parser still running after
 `CLAUDE_HOOKS_AUTO_CHECKPOINT_PARSE_TIMEOUT` seconds (default 3; it is killed),
 or a tree-sitter `ERROR` node all leave the residue whole, so the old matcher
 decides and the pre-#2652 behaviour returns. A missed checkpoint loses work; a
@@ -495,14 +497,17 @@ bash hooks-plugin/hooks/test-auto-checkpoint.sh
 ```
 
 Beyond the #2610 cases, the suite pairs every false positive from the #2652
-thread with an in-repo control, generates 598 spellings (602 where there is a
-macOS firmlink) of the destructive
+thread with an in-repo control, generates 598 spellings on Linux (the probe
+adds four where there is a macOS firmlink) of the destructive
 commands (program spelling × wrapper × flag spelling × shell-string wrapper ×
 shell context, plus every allowlist-voiding shape above, each beside a control
 that skips) and requires each to checkpoint, and runs the same set through
 the pre-#2652 hook (`git show <ref>:…` at HEAD and at the pinned pre-fix commit,
 or the no-parser path when neither is in the clone): any spelling a baseline
-checkpoints but the hook skips fails the run. File identity has its own rows on
+checkpoints but the hook skips fails the run. Fake `ast-grep` binaries that
+exit 2, answer `[]` or garbage, drift (no offsets, a span past the command,
+offsets spelled `12.0` or `-0.0`, garbage after a valid answer) or answer too
+late must still checkpoint. File identity has its own rows on
 each platform: macOS firmlink and `/.vol` aliases, and on Linux a bind-mount
 alias, run in a private mount namespace (`unshare -rm`, or `sudo -n unshare -m`
 in CI) and reported as a `NOTE` where none can be made. It needs `ast-grep`;

@@ -323,7 +323,8 @@ joined by a backslash-newline; a heredoc delimiter tree-sitter reads
 differently from bash, partly quoted (`<<E"O"F`) or closed by a line that only
 starts with it (`EOF; cat <<'Z'`); `git -C /o switch b && rm -rf /o/lnk/src`, where
 the checkout plants a symlink into the repository before rm runs), and a parser
-answer without byte offsets crashed the hook; all now checkpoint.
+answer without byte offsets crashed the hook, as did one with offsets spelled
+`0.0`/`12.0`, which bash arithmetic rejects; all now checkpoint.
 The parser's exemption is a closed
 allowlist of shapes, not a list of hazards: unless every part of the command is
 an allowed program, redirect or structure, the old matcher reads the whole
