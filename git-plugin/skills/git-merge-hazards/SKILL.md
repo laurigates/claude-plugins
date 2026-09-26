@@ -3,11 +3,19 @@ name: git-merge-hazards
 description: Traps in GitHub's merge machinery. Use when merging a PR, merging a stacked PR chain, auditing whether a branch really landed, or merging over red CI.
 allowed-tools: Read, Grep, Glob, Bash(gh pr *), Bash(gh issue *), Bash(gh api *), Bash(git cherry *), Bash(git merge-tree *), Bash(git rev-parse *), Bash(git log *), Bash(git reflog *), Bash(git rebase *), Bash(git push *), Bash(git fetch *), Bash(just *), Bash(bash *), TodoWrite
 created: 2026-08-19
-modified: 2026-08-21
+modified: 2026-09-25
 reviewed: 2026-08-21
 ---
 
 # Git Merge Hazards
+
+## When to Use This Skill
+
+| Use this skill when... | Use something else when... |
+|---|---|
+| Merging a PR, or proving a branch landed | The PR's green CI ran against an older `main` → `git-plugin:worktree-stale-base-merge` |
+| Deciding whether a red PR can merge (§4) | Deciding whether a red AI-review check is a real finding → `github-actions-plugin:ai-review-max-turns` |
+| Merging an ad-hoc stacked chain (§2, §3) | Release-please PRs are piling up or conflicting → `git-plugin:release-please-pr-workflow` |
 
 Read before merging a PR, merging a stacked PR chain, auditing whether a branch
 really landed, or merging over red CI. The body below is the verbatim text of
@@ -244,3 +252,13 @@ The damage is a **false status report**: 2026-08-05, a PR body written to
 disclaim closure closed loractl #162 at merge, and the session reported it open
 for two turns afterward. Like #2, GitHub does this silently — only re-reading
 issue state from the API catches it.
+
+## Agentic Optimizations
+
+| Context | Command |
+|---|---|
+| Did the branch land? (§1, authoritative) | `gh pr list --state all --head <branch> --json number,state,mergedAt` |
+| Can a red PR merge? (§4) | `gh pr view <n> --json mergeStateStatus,mergeable` — `UNSTABLE` merges, `BLOCKED` refuses |
+| Merge-over-red evidence (§4) | `gh pr view <n> --json files --jq '.files[].path'` and `gh run list --branch main --workflow <wf> -L 1 --json conclusion,createdAt` |
+| Before a force-push (§3) | `git log --oneline origin/main..<sha>` — exactly the child's commits |
+| Who closed an issue (§5) | `gh issue view <n> --json closedByPullRequestsReferences,closedAt` |
