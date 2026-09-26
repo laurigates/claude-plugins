@@ -3,7 +3,7 @@ name: worktree-stale-base-merge
 description: "Merging a PR from a parallel worktree-agent branch, or any branch cut from an older main. Use when deciding whether a green CI check still means anything after sibling branches have landed."
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
 created: 2026-08-06
-modified: 2026-09-12
+modified: 2026-09-25
 reviewed: 2026-09-12
 ---
 
@@ -27,6 +27,14 @@ This is the merge-time companion to `agent-worktree-resume-for-pr-feedback.md`
 (resume vs. fresh worktree for PR feedback) and
 `shared-checkout-branch-isolation.md` (commit-time HEAD contamination). Here the
 hazard is purely about the **base** a parallel branch was cut from.
+
+## When to Use This Skill
+
+| Use this skill when... | Use something else when... |
+|---|---|
+| A PR's branch was cut before sibling PRs merged | Asking whether the branch's work already landed → `git-merge-hazards` (next section) |
+| Deciding between `gh pr update-branch` and a rebase | Rebasing a stack registered with `gh stack` → `git-stacked-prs` |
+| Re-verifying a worktree agent's branch before merge | Addressing review feedback on that agent's PR — resume the agent instead of a fresh worktree |
 
 ## First, don't confuse this with containment
 

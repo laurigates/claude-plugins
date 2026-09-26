@@ -3,7 +3,7 @@ name: ai-review-max-turns
 description: "Triage a red Claude-powered CI review check. Use when an AI review job fails or flakes: tell a real unpublished finding from turn-budget or ceiling overruns and infra reruns via subtype + is_error."
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
 created: 2026-09-02
-modified: 2026-09-24
+modified: 2026-09-25
 reviewed: 2026-09-23
 ---
 
@@ -15,6 +15,16 @@ pass/fail check. They are usually a family of `reusable-quality-*`,
 `reusable-security-*`, and `reusable-a11y-*` workflows, surfaced on the PR as
 checks named `typescript / analyze`, `secrets / scan`, `owasp / scan`,
 `aria / analyze`, `wcag / analyze`, and the like.
+
+## When to Use This Skill
+
+| Use this skill when... | Use something else when... |
+|---|---|
+| The red check is Claude-powered (`owasp / scan`, `secrets / scan`, `aria`/`wcag`, …) | A deterministic check failed and you need its error → `github-actions-inspection` |
+| Deciding whether that red is a finding or noise | The failure is real and needs a code fix pushed → `git-plugin:git-fix-pr` |
+| The AI review stays green but re-runs on every push — see [REFERENCE.md](REFERENCE.md) | |
+
+## The four causes
 
 They go red for four reasons that demand **opposite** responses. Reading one
 as another is the whole hazard:
