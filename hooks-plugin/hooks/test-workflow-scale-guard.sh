@@ -73,6 +73,8 @@ t silent "pipeline over a literal, 2 stages"  'await pipeline(["a", "b"], x => a
 t silent "forEach and flatMap over literals"  '[1, 2].forEach(x => agent(x)); [3].flatMap(y => [agent(y)])'
 t silent "counted loop writing another name"  'const r = []; for (let i = 0; i < 3; i += 1) { r[i] = await agent(i) }'
 t silent "no agent() calls at all"            'export const meta = { name: "noop" }; return { ok: true }'
+t silent "agent as a property name"           'const o = { agent: 1, workflow: 2 }; await agent(o.agent + o.workflow)'
+t silent "agent.call counted like agent()"    'for (let i = 0; i < 3; i++) await agent.call(null, i)'
 # shellcheck disable=SC2016  # the ${x} below is JS fixture text, not shell
 t silent "agent( only in strings and comments" '// items.map(x => agent(x))
 const p = "call agent( for each of 200 items"; const q = `agent( ${x}`
@@ -96,6 +98,17 @@ t ask "thunks built outside parallel()"       'const th = [1, 2].map(x => () => 
 t ask "workflow() child"                      'await workflow("review", { x: 1 })'
 t ask "nested runtime fan-out"                'await pipeline(gaps, g => agent(g), r => parallel(r.findings.map(f => () => agent(f))))'
 t ask "script that does not parse"            'await agent(1'
+t ask "inner for-of reassigns the counter"    'for (let i = 0; i < 3; i++) { await agent(i); for (i of [0]) {} }'
+t ask "var counter reset from outside"        'function reset() { i = 0 }
+for (var i = 0; i < 3; i++) { await agent(i); reset() }'
+t ask "agent.call over a runtime list"        'for (const x of args.xs) await agent.call(null, x)'
+t ask "agent aliased then called"             'const a = agent; for (const x of args.xs) await a(x)'
+t ask "agent passed as a callback"            'await Promise.all(args.xs.map(agent))'
+# A deeply nested expression parses but exceeds the walker's recursion limit.
+DEEP="const P = $(python3 -c "print(' + '.join(\"'l%d'\" % k for k in range(4000)))")
+await agent(P)"
+t ask "estimator error on a parsed script"    "$DEEP"
+est VERDICT ANALYSIS_ERROR "walker failure asks, not the lenient fallback" "$DEEP"
 
 echo
 echo "== counted but over the limit: ask =="

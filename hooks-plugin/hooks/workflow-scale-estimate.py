@@ -22,27 +22,31 @@ The rule, deliberately small:
   parallel(xs.map(...)) / pipeline(xs, ...) over an array literal (its length)
   or over an expression ending in .slice(a, b) with numeric literals (b - a);
   a classic `for (let i = <lit>; i < <lit>; i++ | i += <lit>)` whose body never
-  writes i; parallel([...]) of thunks (each runs once); or a pipeline stage
+  writes i (a `var` counter is not counted: code outside the body can reset
+  it); parallel([...]) of thunks (each runs once); or a pipeline stage
   (once per item of a bounded source). The site must sit in the top-level
   script body or in inline callbacks/thunks of those constructs.
 
   Everything else makes the site UNBOUNDED: while/do/for...in loops, a list
   that is not a literal or a literal slice (a const holding a literal
   included: it can be pushed to), any function or method whose callers would
-  have to be traced, a class body, and every workflow() call (a child
-  workflow's agents are invisible here).
+  have to be traced, a class body, every workflow() call (a child
+  workflow's agents are invisible here), and `agent` used as a value (an
+  alias, a callback, a template tag). `agent.call(...)` and `agent.apply(...)`
+  are call sites like `agent(...)`.
 
 What it deliberately does not try to do: resolve variables, follow helpers,
 model mutation, recursion, getters, or any other JavaScript. UNBOUNDED makes
 the guard ask, and the ask says how to make it silent (cap the list at its
 source with .slice(0, N)). Asking is cheap; a model of JavaScript that grows a
 case per review round is not (#2787 reached 3,885 lines that way). Not seen at
-all: `agent` referenced without a call (passed as a callback, used as a
-template tag), and a saved workflow run by name, which has no script text.
+all: a saved workflow run by name, which has no script text, and `agent`
+reached under another name without being mentioned (`globalThis["age" + "nt"]`).
 
 Parsing uses the vendored acorn parser under node (lib/workflow-scale-parse.cjs).
-A syntax error is PARSE_ERROR (the guard asks). No node, a crashed parser, a
-timeout, or an error in this file falls back to the pre-parser estimator
+A syntax error is PARSE_ERROR and an error while walking a parsed script is
+ANALYSIS_ERROR; the guard asks on both. No node, a crashed parser, or a
+timeout falls back to the pre-parser estimator
 (lib/workflow-scale-estimate-fallback.py), which regex-scans and costs runtime
 lists at ASSUMED items, so a machine without node behaves as it did before.
 """
@@ -60,6 +64,8 @@ PARSER = os.path.join(HERE, "lib", "workflow-scale-parse.cjs")
 FALLBACK = os.path.join(HERE, "lib", "workflow-scale-estimate-fallback.py")
 FUNCS = ("FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression")
 EACH = ("map", "forEach", "flatMap")
+SPAWN = ("agent", "workflow")
+KEYED = ("Property", "MethodDefinition", "PropertyDefinition")
 LOOPS = {
     "WhileStatement": "while",
     "DoWhileStatement": "do",
@@ -135,6 +141,10 @@ def writes(node, name):
         return True
     if node.get("type") == "UpdateExpression" and is_name(node["argument"], name):
         return True
+    if node.get("type") in ("ForOfStatement", "ForInStatement") and binds(
+        node["left"], name
+    ):
+        return True  # `for (i of xs)` assigns i; shadowing it also lands here (asks)
     return any(writes(k, name) for k in kids(node))
 
 
@@ -177,7 +187,9 @@ class Walker:
     def counted(self, loop):
         """Iterations of `for (let i = a; i < b; i++ | i += s)`, else None."""
         init, test, update = loop["init"], loop["test"], loop["update"]
-        decls = init["declarations"] if init and "declarations" in init else []
+        # `let` only: a `var` counter can be reset by code outside the loop body.
+        is_let = bool(init) and init.get("kind") == "let"
+        decls = init["declarations"] if is_let else []
         if len(decls) != 1 or decls[0]["id"]["type"] != "Identifier":
             return None
         i, start = decls[0]["id"]["name"], int_literal(decls[0]["init"])
@@ -204,7 +216,12 @@ class Walker:
     def call(self, node, ctx) -> bool:
         callee, args = node["callee"], node["arguments"]
         name = callee.get("name") if callee["type"] == "Identifier" else None
-        if name in ("agent", "workflow"):
+        if (
+            method(callee) in ("call", "apply")
+            and callee["object"].get("name") in SPAWN
+        ):
+            name = callee["object"]["name"]  # agent.call(null, x) is agent(x)
+        if name in SPAWN:
             why = ctx[1]
             if name == "workflow" and not why:
                 why = "a workflow() child runs agents this script does not show"
@@ -252,6 +269,18 @@ class Walker:
         if not isinstance(node, dict) or "type" not in node:
             return
         t, at = node["type"], f"line {node['loc']['start']['line']}"
+        if t == "Identifier" and node["name"] in SPAWN:
+            # Reached only when not called directly: an alias, a callback, a
+            # template tag. Its callers are not traced, so it cannot be counted.
+            why = f"`{node['name']}` used as a value ({at}); its calls are not traced"
+            self.sites.append((self.line(node), ctx[0], why))
+            return
+        if t == "MemberExpression" and not node["computed"]:
+            self.walk(node["object"], ctx)  # `x.agent` is a property name
+            return
+        if t in KEYED and not node.get("computed"):
+            self.walk(node.get("value"), ctx)  # `{ agent: ... }` names a key
+            return
         if t in FUNCS:
             label = (
                 f"function `{node['id']['name']}`" if node.get("id") else "a function"
@@ -322,18 +351,32 @@ def main() -> int:
     limit = 10 if nums[0] is None else nums[0]
     width = 8 if nums[1] is None else nums[1]
     src = sys.stdin.read()
+    sys.setrecursionlimit(5000)  # deeply nested expressions are legal JavaScript
     try:
         result = analyze(src, limit)
-    except Exception as exc:  # noqa: BLE001 - no node, or a bug here: behave as before
-        reason = str(exc) if isinstance(exc, ParserUnavailable) else "analysis error"
+    except Exception as exc:  # noqa: BLE001 - see the two branches below
+        if not isinstance(exc, ParserUnavailable):
+            # The script parsed but this file could not walk it. Ask rather than
+            # hand it to the fallback, which never reports UNBOUNDED.
+            kind = type(exc).__name__
+            result = {
+                "VERDICT": "ANALYSIS_ERROR",
+                "PARSER": "acorn",
+                "DETAIL": f"the estimator failed on this script ({kind})",
+            }
+            return emit(result)
         try:
-            result = fallback(src, limit, width, reason)
+            result = fallback(src, limit, width, str(exc))
         except Exception:  # noqa: BLE001 - main's behaviour: an unreadable script is silent
             result = {
                 "VERDICT": "ERROR",
                 "PARSER": "fallback",
                 "DETAIL": "fallback error",
             }
+    return emit(result)
+
+
+def emit(result: dict) -> int:
     for key in ("VERDICT", "PARSER", "FALLBACK", "NAME", "SITES", "ESTIMATE", "LIMIT"):
         if key in result:
             print(f"{key}={result[key]}")

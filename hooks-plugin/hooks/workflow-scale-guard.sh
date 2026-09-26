@@ -37,9 +37,10 @@
 #      counted `for`; any other site is UNBOUNDED. The full rule, and what it
 #      deliberately does not model, is in the estimator's docstring.
 #   5. Ask on UNBOUNDED (naming the lines and how to make them silent),
-#      OVER_LIMIT (the counted total exceeds the limit), and PARSE_ERROR (the
-#      script does not parse, so nothing can be counted). Everything else exits
-#      0 silently.
+#      OVER_LIMIT (the counted total exceeds the limit), PARSE_ERROR (the
+#      script does not parse, so nothing can be counted) and ANALYSIS_ERROR
+#      (it parsed, but the estimator failed on it). Everything else exits 0
+#      silently.
 #
 # ASK, NOT BLOCK — on purpose. The failure here is not "this workflow is
 # forbidden", it is "nobody was asked". A hard block would force the agent to
@@ -53,7 +54,7 @@
 #
 # Never asks: a resume, a saved workflow with no inline script, an absent
 # python3/jq, a script with no agent() call, or one whose sites are all counted
-# and within the limit. Without node (or when the parser crashes or times out)
+# and within the limit. Without node (or when the parser itself crashes or times out)
 # the estimator falls back to the pre-parser regex estimator, which costs a
 # runtime-length fan-out at CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH items and never
 # reports UNBOUNDED, so a machine without node behaves as it did before.
@@ -109,7 +110,7 @@ ROLLUP=$(printf '%s' "$SCRIPT_TEXT" | python3 "$ESTIMATOR" "$LIMIT" "$WIDTH" 2>/
 field() { printf '%s\n' "$ROLLUP" | grep "^$1=" | head -1 | cut -d= -f2-; }
 
 VERDICT=$(field VERDICT)
-case "$VERDICT" in OVER_LIMIT | UNBOUNDED | PARSE_ERROR) ;; *) exit 0 ;; esac
+case "$VERDICT" in OVER_LIMIT | UNBOUNDED | PARSE_ERROR | ANALYSIS_ERROR) ;; *) exit 0 ;; esac
 
 ESTIMATE=$(field ESTIMATE)
 SITES=$(field SITES)
@@ -125,6 +126,14 @@ case "$VERDICT" in
   $(field DETAIL)
 
 Approve to run it as written; the Workflow runtime will report the same error."
+        ;;
+    ANALYSIS_ERROR)
+        REASON="The scale estimator could not analyse this workflow script, so its agent count cannot be checked before it runs.
+
+  workflow:  ${NAME}
+  $(field DETAIL)
+
+Approve to run it as written."
         ;;
     UNBOUNDED)
         REASON="This workflow has agent() call sites whose run count the script does not state, so its size cannot be checked before it runs.
