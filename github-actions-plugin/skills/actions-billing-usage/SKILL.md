@@ -3,7 +3,7 @@ name: actions-billing-usage
 description: Measure GitHub Actions cost with the billing-usage API — per repo, month and SKU; net vs gross; per-job rounding. Use when optimizing CI cost or speed, or before removing a workflow as expensive.
 allowed-tools: Bash(gh api *), Bash(gh run list *), Bash(jq *), Read, TodoWrite
 created: 2026-09-24
-modified: 2026-09-25
+modified: 2026-09-26
 reviewed: 2026-09-24
 ---
 
@@ -73,7 +73,7 @@ gh api "/users/<u>/settings/billing/usage" --jq '[.usageItems[] | select(.produc
   per-month calls and let the months you asked for be the months you got:
 
   ```
-  for m in $(seq 1 12); do gh api "/orgs/<org>/settings/billing/usage?year=2026&month=$m" --jq "[.usageItems[] | select(.product==\"actions\" and .repositoryName==\"<repo>\")] | map(.quantity) | add // 0" ; done
+  for m in $(seq 1 12); do gh api "/orgs/<org>/settings/billing/usage?year=2026&month=$m" --jq "[.usageItems[] | select(.product==\"actions\" and .unitType==\"Minutes\" and .repositoryName==\"<repo>\")] | map(.quantity) | add // 0" ; done
   ```
 - **Read the outcome distribution, not just the minutes.** Minutes tell you
   something is expensive; outcomes tell you whether you are buying anything.
@@ -137,7 +137,7 @@ the wrong repos.
 |---|---|
 | Minutes and net spend per repo | the aggregate query under *The endpoint* |
 | Which runner tiers bill | that query with `group_by(.sku)` and `sku:.[0].sku` in place of the repo grouping |
-| One month, one repo (bare name) | `gh api "/orgs/<org>/settings/billing/usage?year=2026&month=9" --jq '[.usageItems[] \| select(.product=="actions" and .repositoryName=="<repo>")] \| map(.quantity) \| add // 0'` |
+| One month, one repo (bare name) | `gh api "/orgs/<org>/settings/billing/usage?year=2026&month=9" --jq '[.usageItems[] \| select(.product=="actions" and .unitType=="Minutes" and .repositoryName=="<repo>")] \| map(.quantity) \| add // 0'` |
 | Outcomes per workflow | `gh run list -R <o>/<r> --workflow <name> -L 400 --json conclusion --jq 'group_by(.conclusion) \| map({(.[0].conclusion // "null"): length}) \| add'` |
 
 ## Related
