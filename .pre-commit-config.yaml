@@ -965,6 +965,12 @@ repos:
         language: system
         files: '^hooks-plugin/hooks/(workflow-scale-guard\.sh|workflow-scale-estimate\.py|test-workflow-scale-guard\.sh)$'
         pass_filenames: false
+      - id: test-subagent-count-tripwire
+        name: subagent-count-tripwire hook regression
+        entry: bash ./hooks-plugin/hooks/test-subagent-count-tripwire.sh
+        language: system
+        files: '^hooks-plugin/hooks/(subagent-count-tripwire\.sh|test-subagent-count-tripwire\.sh)$'
+        pass_filenames: false
       - id: test-secret-protection
         name: secret-protection hook regression
         entry: bash ./hooks-plugin/hooks/test-secret-protection.sh
