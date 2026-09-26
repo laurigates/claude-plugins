@@ -46,7 +46,7 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 | `CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION` | Blocking access to secret files / env-var exposure | `hooks/secret-protection.sh` |
 | `CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION` | Blocking writes on `main`/`master` (**human-operator only** — inline prefixes are ignored so agents can't self-serve) | `hooks/branch-protection.sh` |
 | `CLAUDE_HOOKS_DISABLE_REPO_DELETION_SAFETY` | Blocking `rm -rf` of a git repo with no remote / an unpushed remote (**human-operator only** — inline prefixes are ignored so agents can't self-serve) | `hooks/repo-deletion-safety.sh` |
-| `CLAUDE_HOOKS_DISABLE_WORKFLOW_SCALE_GUARD` | The `ask` before a Workflow run whose estimated agent count exceeds the limit (**human-operator only** — a hook runs as its own process, so no inline prefix reaches it) | `hooks/workflow-scale-guard.sh` |
+| `CLAUDE_HOOKS_DISABLE_WORKFLOW_SCALE_GUARD` | The `ask` before a Workflow run whose counted agents exceed the limit or whose agent count the script does not bound (**human-operator only** — a hook runs as its own process, so no inline prefix reaches it) | `hooks/workflow-scale-guard.sh` |
 | `CLAUDE_HOOKS_DISABLE_BRANCH_BASE_GUARD` | The `ask` nudge before cutting a branch from a local default branch that is ahead of its remote (**human-operator only**; the documented answer for a repo that legitimately develops on its default branch) | `hooks/branch-base-guard.sh` |
 | `CLAUDE_HOOKS_DISABLE_EXTERNAL_PR_MERGE` | Blocking merges of PRs authored by someone other than you or a bot (**human-operator only** — inline prefixes are ignored so agents can't self-serve) | `hooks/external-pr-merge-guard.sh` |
 | `CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT` | Auto-stash checkpoint before destructive git/`rm -rf` ops | `hooks/auto-checkpoint.sh` |
@@ -97,7 +97,7 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 | `CLAUDE_HOOKS_REPO_DELETION_TMP_EXEMPT` | `1` | `0` also guards repos under `/tmp`, `/private/tmp`, `/var/folders`, `$TMPDIR` | `hooks/repo-deletion-safety.sh` |
 | `CLAUDE_HOOKS_REPO_DELETION_WARN_DIRTY` | `0` | `1` enables the tier-2 `ask` on a remote-backed repo carrying uncommitted/unpushed/stashed work | `hooks/repo-deletion-safety.sh` |
 | `CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS` | `10` | Estimated agent count a Workflow script may reach before the guard asks; the default matches the `medium` `workflowSizeGuideline` | `hooks/workflow-scale-guard.sh` |
-| `CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH` | `8` | Items each runtime-length fan-out is costed at, so a fan-out with no static bound is neither waved through nor hard-blocked | `hooks/workflow-scale-guard.sh` |
+| `CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH` | `8` | Items each runtime-length fan-out is costed at by the no-`node` fallback estimator; with `node` such a fan-out is unbounded and the guard asks | `hooks/workflow-scale-guard.sh` |
 | `CLAUDE_REPO_BACKUP_DIR` | `$HOME/Backups` | Where an existing `<basename>-*.tar.*` clears the repo-deletion block; also the dir named in the block message | `hooks/repo-deletion-safety.sh` |
 | `CLAUDE_TASKWARRIOR_DRIFT_STALE_TTL` | `14400` (s) | Age before a `+ACTIVE` claim counts as stale | `hooks/taskwarrior-drift-probe.sh` |
 | `CLAUDE_TASKWARRIOR_DRIFT_STALE_LIMIT` | `50` | Max stale claims reported | `hooks/taskwarrior-drift-probe.sh` |

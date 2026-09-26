@@ -31,6 +31,10 @@
 #      passing case, the failing case, that the assertion is SECTION-scoped
 #      (a mention elsewhere in the file does not satisfy it), and that an
 #      already-unreachable orphan is not double-reported.
+#   N. The declared agent budget — an integer equal to the scale estimator's
+#      count when every agent() site is counted, a per-item formula whose
+#      integer terms equal the counted part when some are not; a missing
+#      declaration and an unparseable harness both fail closed.
 
 set -uo pipefail
 
@@ -84,6 +88,9 @@ description: Fixture. Use when testing the bundled-workflow guard.
 
 `workflows/audit.workflow.js` ships beside this skill. **It is a TEMPLATE to adapt,
 not a script to run verbatim.** Read it, then rewrite it for the work in front of you.
+
+**Agent budget:** 1 x calls of the harness function — mk_js wraps its agent() in
+a function, which the scale estimator never counts, so cases A–M need a formula.
 
 > Never `Workflow({resumeFromRunId})` to retry a few failed worktree agents (#1868).
 
@@ -436,6 +443,91 @@ printf -- '---\nname: x\ndescription: y. Use when z.\n---\n\nNo harness section 
 o=$(out "$root")
 check "M4: orphan raises unreachable_workflow" "2" "$(printf '%s\n' "$o" | grep -c 'TYPE=unreachable_workflow')"
 check "M4: orphan not double-reported"         "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=missing_template_framing')"
+check "M4: orphan budget not double-reported"  "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=missing_agent_budget')"
+
+# ---------------------------------------------------------------------------
+# N. The declared agent budget. The check runs the runtime scale estimator
+#    (hooks-plugin/hooks/workflow-scale-estimate.py) on each harness: a file
+#    whose every agent() site is counted declares that integer; a file with an
+#    unbounded site declares a per-item formula whose integer terms equal the
+#    counted part.
+# ---------------------------------------------------------------------------
+
+# mk_top_js <skill-dir> <runtime-fanout: yes|no> — two top-level agent() calls
+# (counted: 2), plus, with "yes", one fan-out over a runtime list (unbounded).
+mk_top_js() {
+    {
+        echo "const a = await agent(\`One.\`, { label:'one', model:'opus', effort:'low' })"
+        echo "const b = await agent(\`Two.\`, { label:'two', model:'opus', effort:'low' })"
+        [ "$2" = yes ] && echo "await parallel(args.units.map((u) => () => agent(\`U.\`, { label:'u', model:'opus', effort:'low' })))"
+        echo "return [a, b]"
+    } > "$1/workflows/audit.workflow.js"
+}
+
+# set_budget <skill-md> <declaration> — rewrite the fixture's declared budget.
+set_budget() {
+    awk -v d="$2" '/^\*\*Agent budget:\*\*/ { print "**Agent budget:** " d " — fixture."; skip = 1; next }
+                   skip && /^[^ ]/ && !/^$/ && !/^>/ { next }
+                   { skip = 0; print }' "$1" > "$1.tmp" && mv "$1.tmp" "$1"
+}
+
+budget_errors() { printf '%s\n' "$1" | grep -c 'TYPE=agent_budget_mismatch'; }
+
+# N1. Every site counted, integer equal to the count — checked and itemised.
+root=$(mk_root N1)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_top_js "$d" no
+set_budget "$d/SKILL.md" 2
+o=$(out "$root")
+check "N1: exact budget STATUS=OK"          "OK" "$(field "$o" STATUS)"
+check "N1: AGENT_BUDGETS_CHECKED=1"         "1"  "$(field "$o" AGENT_BUDGETS_CHECKED)"
+check "N1: row itemised"                    "1"  "$(printf '%s\n' "$o" | grep -c 'ESTIMATE=2 UNBOUNDED=0 BUDGET=2$')"
+
+# N2. GUARD INTEGRITY for N1 — the same harness with a wrong integer fails.
+set_budget "$d/SKILL.md" 3
+o=$(out "$root")
+check "N2: wrong integer typed"             "1"  "$(budget_errors "$o")"
+check "N2: wrong integer --strict exit 1"   "1"  "$(run "$root" --strict)"
+
+# N3. Every site counted, but declared as a formula — must be the integer.
+set_budget "$d/SKILL.md" "2 + items"
+check "N3: formula for a counted file"      "1"  "$(budget_errors "$(out "$root")")"
+
+# N4. An unbounded site with the right formula (counted part 2) passes.
+root=$(mk_root N4)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_top_js "$d" yes
+set_budget "$d/SKILL.md" "2 + units"
+o=$(out "$root")
+check "N4: formula STATUS=OK"               "OK" "$(field "$o" STATUS)"
+check "N4: formula row itemised"            "1"  "$(printf '%s\n' "$o" | grep -c 'ESTIMATE=2 UNBOUNDED=1 BUDGET=2 + units$')"
+
+# N5. The same unbounded harness declared as a bare integer fails: no single
+#     number is true for it.
+set_budget "$d/SKILL.md" 10
+check "N5: bare integer for unbounded"      "1"  "$(budget_errors "$(out "$root")")"
+
+# N6. A formula whose fixed terms disagree with the counted part fails.
+set_budget "$d/SKILL.md" "3 + units"
+check "N6: wrong fixed part"                "1"  "$(budget_errors "$(out "$root")")"
+set_budget "$d/SKILL.md" "1 + 1 + 2 x units"
+check "N6: fixed terms are summed"          "0"  "$(budget_errors "$(out "$root")")"
+
+# N7. No declaration at all.
+root=$(mk_root N7)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_top_js "$d" no
+grep -v 'Agent budget\|^a function, which the scale' "$d/SKILL.md" > "$d/SKILL.md.tmp" && mv "$d/SKILL.md.tmp" "$d/SKILL.md"
+o=$(out "$root")
+check "N7: missing budget typed"            "1"  "$(printf '%s\n' "$o" | grep -c 'TYPE=missing_agent_budget')"
+check "N7: missing budget --strict exit 1"  "1"  "$(run "$root" --strict)"
+
+# N8. A harness the estimator cannot parse fails closed, not open.
+root=$(mk_root N8)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+# shellcheck disable=SC2016  # JS template-literal backticks, not a substitution
+printf 'const a = await agent(`One.`, { label:%s, model:%s, effort:%s }\n' "'one'" "'opus'" "'low'" > "$d/workflows/audit.workflow.js"
+check "N8: parse error is estimator_error"  "1"  "$(printf '%s\n' "$(out "$root")" | grep -c 'TYPE=estimator_error')"
 
 printf '\n%s: %d passed, %d failed\n' "$(basename "$0")" "$pass" "$fail"
 [ "$fail" -eq 0 ]
