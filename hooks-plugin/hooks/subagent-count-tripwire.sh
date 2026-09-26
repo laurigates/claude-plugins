@@ -16,6 +16,11 @@
 #                  doubling (10, 20, 40, ...) — print one systemMessage, which
 #                  Stop shows to the user without continuing the turn.
 #
+# Timing gap: a workflow's agents start after the Stop of the turn that
+# launched it, so the count is reported at a later Stop (in an interactive
+# session, the turn that handles the workflow's completion). A headless
+# `claude -p` run can end before any Stop sees the full count.
+#
 # Tunables:
 #   CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS         first threshold (default 10)
 #   CLAUDE_HOOKS_DISABLE_SUBAGENT_COUNT=1    disable entirely
@@ -39,15 +44,25 @@ SubagentStart)
     [ -n "$AID" ] || exit 0
     if [ ! -f "$LOG" ]; then
         # First subagent of this session: the only time we pay for cleanup.
+        # Only this hook's own files, top level only. A session's log is
+        # appended on every start, so its mtime is the activity signal: drop a
+        # stale log together with its marker, and a marker only once its log
+        # is gone (a long session's marker can be old while its log is fresh).
         mkdir -p "$DIR" 2>/dev/null || exit 0
-        find "$DIR" -type f -mtime +3 -delete 2>/dev/null
+        find "$DIR" -maxdepth 1 -type f -name '*.log' -mtime +3 2>/dev/null |
+            while IFS= read -r f; do rm -f "$f" "${f%.log}.reported"; done
+        find "$DIR" -maxdepth 1 -type f -name '*.reported' -mtime +3 2>/dev/null |
+            while IFS= read -r f; do [ -f "${f%.reported}.log" ] || rm -f "$f"; done
     fi
     printf '%s\t%s\n' "$AID" "${ATYPE:-unknown}" >>"$LOG" 2>/dev/null
     ;;
 Stop)
     [ -f "$LOG" ] || exit 0
     LIMIT="${CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS:-10}"
-    case "$LIMIT" in ''|*[!0-9]*|0) LIMIT=10 ;; esac
+    case "$LIMIT" in ''|*[!0-9]*) LIMIT=10 ;; esac
+    # Base 10: "08" is not octal, and "00" must not reach the doubling loop.
+    LIMIT=$((10#$LIMIT))
+    [ "$LIMIT" -gt 0 ] || LIMIT=10
     read -r TOTAL WF < <(sort -u -t$'\t' -k1,1 "$LOG" | awk -F'\t' '{n++; if ($2=="workflow-subagent") w++} END {print n+0, w+0}')
     [ "$TOTAL" -ge "$LIMIT" ] || exit 0
     T=$LIMIT

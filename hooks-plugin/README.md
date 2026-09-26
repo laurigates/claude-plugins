@@ -214,10 +214,12 @@ A `SubagentStart` + `Stop` hook that tells the user, after the fact, how many su
 
 | Event | Behavior |
 |---|---|
-| `SubagentStart` | Appends `agent_id`/`agent_type` to `${TMPDIR:-/tmp}/claude-subagent-count/<session_id>.log`. Silent, always exits 0. On a session's first subagent it deletes per-session files older than 3 days. |
+| `SubagentStart` | Appends `agent_id`/`agent_type` to `${TMPDIR:-/tmp}/claude-subagent-count/<session_id>.log`. Silent, always exits 0. On a session's first subagent it deletes this hook's own top-level `.log` files idle for over 3 days, each with its `.reported` marker, plus markers whose log is gone. |
 | `Stop` | Counts distinct `agent_id`s (a resumed subagent re-fires `SubagentStart`). When the count reaches the next unreported threshold, prints one `systemMessage`, e.g. `This session has started 20 subagents (14 workflow, 6 agent-tool); limit is 10.` |
 
 Thresholds are the limit, then each doubling (10, 20, 40, 80, ...), each reported once; jumping past several at once reports once. `systemMessage` is shown to the user and does not continue the turn — no `decision: "block"`, no `additionalContext`.
+
+A workflow's agents start after the `Stop` of the turn that launched it, so the count is reported at a later `Stop`: in an interactive session, the turn that handles the workflow's completion. A headless `claude -p` run can end before any `Stop` sees the full count.
 
 **Toggle:** `export CLAUDE_HOOKS_DISABLE_SUBAGENT_COUNT=1`. The first threshold is `CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS` (default 10), shared with `workflow-scale-guard.sh`.
 

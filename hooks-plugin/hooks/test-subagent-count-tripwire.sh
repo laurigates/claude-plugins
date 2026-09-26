@@ -86,9 +86,23 @@ check "custom limit" "limit is 3." "$(CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS=3 stop s4
 check "disabled start" "" "$(CLAUDE_HOOKS_DISABLE_SUBAGENT_COUNT=1 start s5 a1 general-purpose)"
 check "disabled records nothing" "no" "$([ -f "$STATE/s5.log" ] && echo yes || echo no)"
 
-# Unsafe session_id is ignored rather than used as a path.
-start "../evil" a1 general-purpose >/dev/null
-check "path traversal ignored" "no" "$([ -f "$STATE/../evil.log" ] && echo yes || echo no)"
+# Unsafe session_id is ignored rather than used as a path. The name is unique
+# per run so a leftover file in the shared parent cannot fail (or pass) it.
+EVIL="evil-$$-$RANDOM"
+start "../$EVIL" a1 general-purpose >/dev/null
+check "path traversal ignored" "no" "$([ -f "$STATE/../$EVIL.log" ] && echo yes || echo no)"
+rm -f "$STATE/../$EVIL.log"
+
+# Limit is read in base 10 and a zero limit falls back to 10, so Stop cannot hang.
+spawn s7 1 12 general-purpose >/dev/null
+# Bounded by timeout where available: the pre-fix hook looped forever here.
+TO=$(command -v timeout || command -v gtimeout || true)
+check "limit 00 falls back to 10" "limit is 10." \
+    "$(jq -nc '{hook_event_name:"Stop", session_id:"s7"}' |
+        CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS=00 ${TO:+$TO 5} bash "$HOOK" | grep -o 'limit is 10.')"
+rm -f "$STATE/s7.reported"
+check "limit 08 is eight" "limit is 8." \
+    "$(CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS=08 stop s7 2>&1 | grep -o 'limit is 8.')"
 
 # Garbage input exits 0 silently.
 check "garbage input" "0:" "$(echo 'not json' | bash "$HOOK"; echo "$?:")"
@@ -98,6 +112,18 @@ touch -t 202001010000 "$STATE/old.log"
 start s6 a1 general-purpose >/dev/null
 check "stale file cleaned" "no" "$([ -f "$STATE/old.log" ] && echo yes || echo no)"
 check "live file kept" "yes" "$([ -f "$STATE/s1.log" ] && echo yes || echo no)"
+
+# Cleanup touches only this hook's top-level files, and keeps a live session's
+# marker even when the marker itself is old.
+mkdir -p "$STATE/sub"
+touch -t 202001010000 "$STATE/unrelated.txt" "$STATE/sub/nested.log" "$STATE/s1.reported"
+touch -t 202001010000 "$STATE/gone.reported"
+start s8 a1 general-purpose >/dev/null
+check "unrelated file kept" "yes" "$([ -f "$STATE/unrelated.txt" ] && echo yes || echo no)"
+check "nested file kept" "yes" "$([ -f "$STATE/sub/nested.log" ] && echo yes || echo no)"
+check "live session marker kept" "yes" "$([ -f "$STATE/s1.reported" ] && echo yes || echo no)"
+check "orphan marker cleaned" "no" "$([ -f "$STATE/gone.reported" ] && echo yes || echo no)"
+check "live session not re-reported" "" "$(stop s1)"
 
 echo "PASS=$PASS FAIL=$FAIL"
 [ "$FAIL" -eq 0 ]
