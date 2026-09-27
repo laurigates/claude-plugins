@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.58.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.58.1...git-plugin-v2.58.2) (2026-09-27)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** replace workflow-scale estimator with a count-or-ask rule ([#2831](https://github.com/laurigates/claude-plugins/issues/2831)) ([4b934fa](https://github.com/laurigates/claude-plugins/commit/4b934fae9b23416182e5d46cbc7aad376091956f))
+
 ## [2.58.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.58.0...git-plugin-v2.58.1) (2026-09-26)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.19.9](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.19.8...testing-plugin-v3.19.9) (2026-09-27)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** replace workflow-scale estimator with a count-or-ask rule ([#2831](https://github.com/laurigates/claude-plugins/issues/2831)) ([4b934fa](https://github.com/laurigates/claude-plugins/commit/4b934fae9b23416182e5d46cbc7aad376091956f))
+
 ## [3.19.8](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.19.7...testing-plugin-v3.19.8) (2026-09-20)
 
 

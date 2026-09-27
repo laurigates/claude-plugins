@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.36.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.36.0...configure-plugin-v1.36.1) (2026-09-27)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** replace workflow-scale estimator with a count-or-ask rule ([#2831](https://github.com/laurigates/claude-plugins/issues/2831)) ([4b934fa](https://github.com/laurigates/claude-plugins/commit/4b934fae9b23416182e5d46cbc7aad376091956f))
+
 ## [1.36.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.35.1...configure-plugin-v1.36.0) (2026-09-24)
 
 
