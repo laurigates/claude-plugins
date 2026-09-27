@@ -7,7 +7,7 @@ argument-hint: "git-plugin/git-commit [--create-evals] [--runs 3] [--baseline]"
 agent: general-purpose
 context: fork
 created: 2026-03-04
-modified: 2026-09-23
+modified: 2026-09-26
 compatibility: claude-code
 reviewed: 2026-03-04
 ---
@@ -65,6 +65,10 @@ transcript** (`.claude/rules/loop-integrity.md` Pillar 1 - an author asked to ju
 own output optimises for done, not for correct), `grade_deterministic.py` grades first
 and its verdicts are never re-judged, and the `cellCap` ceiling **aborts** rather than
 truncating.
+
+**Agent budget:** 2 + 2 x cells — preflight and aggregate, plus one rollout and one
+independent grader per cell (at most `cellCap` cells). The scale guard asks before
+every run, because the cell list is built at runtime.
 
 **Skip the harness when:** the run is fewer than three cells - a one- or two-case spot
 check, or a single re-run of one eval id - which is a linear pass where the harness is

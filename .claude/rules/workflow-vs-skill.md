@@ -186,6 +186,8 @@ not a script to run verbatim.** Read it, then rewrite it for the work in front o
 **Adapt freely:** [the agent prompts, the partition/fan-out width, the filter rules,
 the project-specific commands].
 
+**Agent budget:** [N | C + k x <items>] — [which agents spend it].
+
 **Preserve across any adaptation:** [(a) the loop bound comes from <the deterministic
 source>, never from a prose "for each"; (b) <the schema/enum that forces a determinate
 verdict>; (c) <the barrier and why it is a barrier>].
@@ -194,6 +196,17 @@ verdict>; (c) <the barrier and why it is a barrier>].
 harness is pure overhead. The steps below remain the authoritative description of
 *what* each stage must produce; the harness only fixes *how* the work is split.
 ```
+
+`scripts/check-workflow-js-model.sh` checks the budget line against
+`hooks-plugin/hooks/workflow-scale-estimate.py`, the estimator the runtime scale
+guard uses: a bare integer equal to its count when every `agent()` site is
+counted, otherwise a per-item formula whose integer terms equal the counted
+part. A template whose list comes from the caller has uncounted sites, so the
+guard asks before every run of it. What makes a run silent is a bound written
+in the fan-out itself — `for (const x of items.slice(0, N))`,
+`items.slice(0, N).map(...)`, or a `for` loop bounded by a literal; a capped
+copy held in a variable still asks, because the estimator does not resolve
+variables.
 
 Two clauses every template that dispatches `isolation:'worktree'` agents must
 **also** carry:
