@@ -1,6 +1,6 @@
 ---
 created: 2025-12-20
-modified: 2026-09-16
+modified: 2026-09-28
 reviewed: 2026-09-16
 paths:
   - "**/skills/**"
@@ -70,6 +70,10 @@ Skills live in `<plugin-name>/skills/<skill-name>/SKILL.md` (or `skill.md`).
 
 > **Save `SKILL.md` as UTF-8 without a byte-order mark (2.1.239 fix).** A leading BOM caused Claude Code to silently ignore the entire file (agent, skill, or command) before this fix — worth checking first if a skill mysteriously never loads.
 
+> **`anthropic-skills` is a reserved namespace (2.1.283).** Skill folders, command files and workflow commands in the `anthropic-skills` namespace do not load. Do not name a plugin or skill namespace `anthropic-skills`.
+
+> **Plugin load failures (2.1.283).** When a skill's plugin failed to load, the Skill tool says so. Before 2.1.283 it reported the skill as not installed, which pointed at the wrong fix.
+
 ### Root-Level `SKILL.md` Layout (2.1.142+)
 
 A plugin with a root-level `SKILL.md` and **no** `skills/` subdirectory is surfaced as a single skill. The plugin itself **is** the skill — useful for tiny single-purpose plugins where the directory overhead is noise:
@@ -117,7 +121,7 @@ hooks:                                       # Skill-scoped hooks (optional)
     - matcher: "Bash"
       hooks:
         - type: command
-          command: "bash ${CLAUDE_PLUGIN_ROOT}/hooks/validate.sh"
+          command: 'bash "${CLAUDE_PLUGIN_ROOT}/hooks/validate.sh"'
           timeout: 10
 ---
 ```
@@ -183,7 +187,7 @@ Skills inherit the user's active model by default. Tag a skill with `model:` onl
 
 **Why both extremes?** A user defaulting to Opus saves cost when a *genuinely* mechanical skill self-selects Sonnet. A user defaulting to Sonnet (or Haiku) gets reliable results when a complex skill self-selects Opus.
 
-**Opus is often the cheaper default — `effort`, not `model`, is the main cost lever.** Opus at low effort tends to spend far fewer thinking + output tokens than Sonnet at high effort, so for reasoning-shaped work Opus-low can be both better *and* cheaper. That win rides on `effort`, which a skill **can** now pin in frontmatter (`effort: low|medium|high|xhigh|max`; overrides the session effort while the skill is active, default inherits; available levels depend on the model). So the practical translation is: for a genuinely mechanical skill, prefer `effort: low` with `model:` unset over reaching for `model: sonnet`; keep `model: sonnet` for the narrow case where Sonnet at low effort is demonstrably enough. The ≈1.7× premium and the Opus-low-beats-Sonnet-high result were measured on the Opus 4.8 / Sonnet 4.6 generation; `opus`/`sonnet` now resolve to Opus 5 / Sonnet 5 and effort names do not map across generations — treat the heuristic as workload-dependent and confirm per-skill with the cross-model delta harness in [`.claude/rules/skill-evaluation.md`](skill-evaluation.md).
+**Opus is often the cheaper default — `effort`, not `model`, is the main cost lever.** Opus at low effort tends to spend far fewer thinking + output tokens than Sonnet at high effort, so for reasoning-shaped work Opus-low can be both better *and* cheaper. That win rides on `effort`, which a skill **can** now pin in frontmatter (`effort: low|medium|high|xhigh|max`; overrides the session effort while the skill is active, default inherits; available levels depend on the model). So the practical translation is: for a genuinely mechanical skill, prefer `effort: low` with `model:` unset over reaching for `model: sonnet`; keep `model: sonnet` for the narrow case where Sonnet at low effort is demonstrably enough. The ≈1.7× premium and the Opus-low-beats-Sonnet-high result were measured on the Opus 4.8 / Sonnet 4.6 generation; `opus`/`sonnet` now resolve to Opus 5.5 / Sonnet 5 (2.1.280) and effort names do not map across generations — treat the heuristic as workload-dependent and confirm per-skill with the cross-model delta harness in [`.claude/rules/skill-evaluation.md`](skill-evaluation.md).
 
 **Hard constraints:**
 
@@ -200,6 +204,8 @@ Skills inherit the user's active model by default. Tag a skill with `model:` onl
 | `reviewed` | Last verified current | After checking against latest docs |
 
 **Review triggers**: Tool major version releases, Claude Code updates, quarterly audits.
+
+`/doctor prompt-audit` (also `/checkup prompt-audit`, 2.1.283) audits CLAUDE.md, skills, agents and commands for older-model prompting patterns, and lists stale paths/commands and contradicting instruction files first. It is an optional input to a review pass (`docs/audits/README.md`).
 
 ### Common Tool Sets
 
@@ -223,6 +229,8 @@ When listing `Bash` in `allowed-tools`, prefer narrow `Bash(<command> *)` permis
 `Skill(<name> *)` permission rules also work as a **prefix match** (2.1.139+) — fixed to match `Bash(ls *)` behavior. `Skill(git-*)` matches `git-commit`, `git-rebase`, etc.; `Skill(*)` matches every skill. Before 2.1.139, wildcards in `Skill(...)` were treated as literals and silently failed to match.
 
 As of 2.1.147, auto mode no longer suppresses `AskUserQuestion` when a user or skill explicitly relies on it — a skill built around an `AskUserQuestion` prompt keeps working under auto mode.
+
+Under managed `allowManagedPermissionRulesOnly`, a repo, user or `--add-dir` skill's `allowed-tools` no longer pre-approves its own tools (2.1.282); only managed rules grant. A skill that relies on `allowed-tools` will prompt in such an org.
 
 See `.claude/rules/agentic-permissions.md` for canonical patterns and `.claude/rules/auto-mode.md` for the full auto-mode model.
 

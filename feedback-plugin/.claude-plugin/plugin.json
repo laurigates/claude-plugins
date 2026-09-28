@@ -25,7 +25,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/check-open-pr.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/check-open-pr.sh\"",
             "timeout": 15
           }
         ]
@@ -35,7 +35,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/skill-usage-log.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/skill-usage-log.sh\"",
             "timeout": 15
           }
         ]
@@ -46,7 +46,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/skill-usage-log.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/skill-usage-log.sh\"",
             "timeout": 15
           }
         ]

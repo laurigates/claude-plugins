@@ -1,6 +1,6 @@
 ---
 created: 2026-02-25
-modified: 2026-09-24
+modified: 2026-09-28
 reviewed: 2026-09-23
 paths:
   - "**/agents/**"
@@ -34,7 +34,7 @@ Patterns and standards for creating and configuring custom agents in Claude Code
 
 Agents live in `<plugin-name>/agents/<agent-name>.md`.
 
-> **Note (2.1.198)**: The interactive `/agents` wizard was removed. Create or edit agents by writing `<plugin>/agents/<name>.md` directly (below) — there is no guided flow.
+> **Note (2.1.198)**: The `/agents` wizard was removed; its menu entry followed in 2.1.281. Write `<plugin>/agents/<name>.md` directly (below).
 
 ### Required Frontmatter
 
@@ -74,7 +74,7 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
     - matcher: ""
       hooks:
         - type: command
-          command: "bash ${CLAUDE_PLUGIN_ROOT}/hooks/verify.sh"
+          command: 'bash "${CLAUDE_PLUGIN_ROOT}/hooks/verify.sh"'
           timeout: 30
 ---
 ```
@@ -89,7 +89,7 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
 |-------|------|----------|-------------|
 | `name` | string | Yes | Agent identifier (kebab-case); `:` is rejected (2.1.218) — reserved for plugin namespacing (`plugin:agent-name`) |
 | `description` | string | Yes | Purpose and use cases for agent selection |
-| `model` | string | Yes | `opus`, `sonnet`, `haiku`, `fable` (2.1.255+), `inherit`, or a full model ID (e.g. `claude-fable-5-1`). Aliases resolve to the current generation (`opus` → Opus 5, `sonnet` → Sonnet 5, `haiku` → Haiku 4.5, `fable` → Fable 5.1). Full IDs honoured since 2.1.74 |
+| `model` | string | Yes | `opus`, `sonnet`, `haiku`, `fable` (2.1.255+), `inherit`, or a full model ID (e.g. `claude-fable-5-1`). Aliases resolve to the current generation (`opus` → Opus 5.5, `sonnet` → Sonnet 5, `haiku` → Haiku 4.5, `fable` → Fable 5.1). Full IDs honoured since 2.1.74 |
 | `effort` | string | No | `low`, `medium`, `high`, `xhigh`, or `max` (2.1.251+) — overrides the session effort while this agent runs; default inherits. This is the per-agent cost lever the Model Selection section refers to |
 | `tools` | comma-list | Yes | Tools the agent can use; use `Agent(name)` to restrict spawnable subagents |
 | `isolation` | string | No | `worktree` to run agent in an isolated git worktree |
@@ -172,21 +172,21 @@ Distinct from nesting depth above, Claude Code also caps how many subagents may 
 
 ## Model Selection for Agents
 
-**Default to `model: opus` for every plugin agent.** A subagent's output feeds back into the main loop as a tool result, so a weaker delegate quietly degrades everything downstream. Measured on the Opus 4.8 / Sonnet 4.6 generation, Opus at *low* effort beat Sonnet at *high* effort on both quality and token efficiency, so **`effort`, not `model`, is the cost lever** for delegated work. The `opus` / `sonnet` aliases resolve to Opus 5 / Sonnet 5, and effort level names do not map across model generations — re-run the `skill-evaluation.md` Tier 2 sweep before changing an agent's effort on the strength of the old figure. This matches the user-global standard in `~/.claude/rules/agent-and-tool-selection.md` ("Opus Is the Floor for Subagents and Agent Teams").
+**Default to `model: opus` for every plugin agent.** A subagent's output feeds back into the main loop as a tool result, so a weaker delegate quietly degrades everything downstream. Measured on the Opus 4.8 / Sonnet 4.6 generation, Opus at *low* effort beat Sonnet at *high* effort on both quality and token efficiency, so **`effort`, not `model`, is the cost lever** for delegated work. The `opus` / `sonnet` aliases resolve to Opus 5.5 (2.1.280) / Sonnet 5, and effort level names do not map across model generations — re-run the `skill-evaluation.md` Tier 2 sweep before changing an agent's effort on the strength of the old figure. This matches the user-global standard in `~/.claude/rules/agent-and-tool-selection.md` ("Opus Is the Floor for Subagents and Agent Teams").
 
 | Model | Use For |
 |-------|---------|
 | `opus` | **Default for all subagents** — reasoning, review, debugging, refactoring, *and* mechanical/high-volume work (dial `effort` down for the latter rather than downgrading the model) |
-| `fable` | Sanctioned for the hardest delegated reasoning (long-horizon, multi-file, adversarial verification). Accepted by `scripts/check-agent-model.sh`. Not the default: no plan defaults to Fable and it costs 2x Opus per token |
+| `fable` | Sanctioned for the hardest delegated reasoning (long-horizon, multi-file, adversarial verification). Accepted by `scripts/check-agent-model.sh`. Not the default: no plan defaults to Fable and it costs 2.5x Opus 5.5 per token |
 | `sonnet` / `haiku` | Avoid for subagents. The one sanctioned exception is the `agent-patterns-plugin:cold-read-gate` haiku reader, where a low-capability model is the *measurement instrument*, not a delegate. |
 
-`model: opus` remains the committed floor for plugin agents (portable: every plan has Opus; Fable is no plan's default and costs 2x per token). `model: fable` is sanctioned for agents whose job is the hardest delegated reasoning (long-horizon, multi-file, adversarial verification), and the guard accepts it. `inherit` is not used for plugin agents because it would also inherit Sonnet/Haiku sessions below the floor. `effort:` frontmatter (`low|medium|high|xhigh|max`, default inherits) is the cost lever; use `effort: low` for mechanical/high-volume agents.
+`model: opus` remains the committed floor for plugin agents (portable: every plan has Opus; Fable is no plan's default and costs 2.5x Opus 5.5 per token). `model: fable` is sanctioned for agents whose job is the hardest delegated reasoning (long-horizon, multi-file, adversarial verification), and the guard accepts it. `inherit` is not used for plugin agents because it would also inherit Sonnet/Haiku sessions below the floor. `effort:` frontmatter (`low|medium|high|xhigh|max`, default inherits) is the cost lever; use `effort: low` for mechanical/high-volume agents.
 
 **Resolution order (2.1.251+):** per-spawn `Agent(model: …)` > agent frontmatter `model:` > `CLAUDE_CODE_SUBAGENT_MODEL` > the main session model. `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` (2.1.257) overrides all of these, so a frontmatter `model: opus` is a default, not a guarantee, when a user or CI environment sets the force variable; `scripts/check-agent-model.sh` checks the frontmatter only. The model actually used is reported in the `SubagentStart` hook's `subagent_model` field (`.claude/rules/hooks-reference.md`).
 
 On an org account that restricts model choice, an agent's `model: opus` frontmatter steps down to the newest org-allowed model in the Opus family rather than falling back to the parent session's model (2.1.222); a hard-restricted request instead warns and runs the parent's model (2.1.223).
 
-> **Note (fast mode)**: Fast mode is available only on Opus 5 and Opus 4.8; Fable 5.1 has no fast mode. The legacy fast-mode override env var has been a no-op since 2.1.160 — delete it from agent launch scripts.
+> **Note (fast mode)**: Fast mode is available only on Opus 5.5, Opus 5 and Opus 4.8; Fable 5.1 has no fast mode. The legacy fast-mode override env var has been a no-op since 2.1.160 — delete it from agent launch scripts.
 
 ## Context Isolation
 
@@ -538,7 +538,7 @@ When multiple agents share the same name, higher-priority location wins:
 
 > **Note (2.1.178)**: With **nested** `.claude/` directories, the agent (and workflow / output-style) **closest to the working directory wins** on a name collision. A repo-root `.claude/agents/reviewer.md` is shadowed by a `subdir/.claude/agents/reviewer.md` when working inside `subdir/`. Project-scope workflow saves now target the closest existing `.claude/workflows/`.
 
-CLI-defined agents use `--agents` flag with JSON (same frontmatter fields, use `prompt` for body):
+CLI-defined agents use `--agents` flag with JSON (same frontmatter fields, use `prompt` for body). With `-p` it also takes a JSON file path (2.1.281):
 ```bash
 claude --agents '{"my-agent": {"description": "...", "prompt": "...", "tools": ["Read"]}}'
 ```
@@ -689,5 +689,4 @@ Pair `--cwd` with the launch flags to spin up isolated, per-directory background
 - `.claude/rules/skill-development.md` — Skill creation (use when agent is not needed)
 - `.claude/rules/agentic-optimization.md` — CLI output optimization for agent consumption
 - `.claude/rules/agent-coworker-detection.md` — Detecting in-flight coworker changes before destructive git ops (relevant when `worktree.bgIsolation: "none"`)
-
 

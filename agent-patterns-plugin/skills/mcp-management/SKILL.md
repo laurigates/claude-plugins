@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-09-23
+modified: 2026-09-28
 reviewed: 2026-09-16
 name: mcp-management
 description: Install, configure and troubleshoot MCP servers. Use when adding/enabling servers, editing .mcp.json, fixing OAuth, or when a server runs stale code after an upstream fix.
@@ -92,7 +92,8 @@ exposing project-context-specific tools. Same pattern for `resources` and
 ## Troubleshooting
 
 Common failure modes and the diagnostic scripts for each (server won't connect,
-missing env vars, OAuth issues, the SDK MCP race condition) are in
+missing env vars, OAuth issues, client behaviors that look like server bugs,
+the SDK MCP race condition) are in
 [REFERENCE.md → Troubleshooting scripts](REFERENCE.md#troubleshooting-scripts).
 Quick OAuth triage:
 

@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/session-spinup-nudge.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-spinup-nudge.sh\"",
             "timeout": 15
           }
         ]
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/session-end-nudge.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-end-nudge.sh\"",
             "timeout": 10
           }
         ]

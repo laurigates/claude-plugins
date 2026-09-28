@@ -128,29 +128,29 @@ cat > "$fx/hooks-plugin/.claude-plugin/plugin.json" <<'JSON'
   "hooks": {
     "PreToolUse": [
       {"matcher": "Bash", "hooks": [
-        {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/branch-protection.sh", "timeout": 5},
-        {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/repo-deletion-safety.sh", "timeout": 5}
+        {"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/branch-protection.sh\"", "timeout": 5},
+        {"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/repo-deletion-safety.sh\"", "timeout": 5}
       ]},
       {"matcher": "Read|Edit|Write|Bash", "hooks": [
-        {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/secret-protection.sh", "timeout": 5}
+        {"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/secret-protection.sh\"", "timeout": 5}
       ]},
       {"matcher": "Workflow", "hooks": [
-        {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/external-pr-merge-guard.sh"}
+        {"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/external-pr-merge-guard.sh\""}
       ]}
     ],
     "PostToolUse": [
       {"matcher": "Write|Edit|Bash", "hooks": [
-        {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/prose-house-style-nudge.sh"}
+        {"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/prose-house-style-nudge.sh\""}
       ]}
     ],
     "SessionStart": [
       {"matcher": "", "hooks": [
-        {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/drift-aggregator.sh", "timeout": 5}
+        {"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/drift-aggregator.sh\"", "timeout": 5}
       ]}
     ],
     "Stop": [
       {"matcher": "", "hooks": [
-        {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/prose-house-style-nudge.sh"}
+        {"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/prose-house-style-nudge.sh\""}
       ]}
     ],
     "SubagentStop": [
@@ -212,7 +212,7 @@ cat > "$fx/git-plugin/hooks.json" <<'JSON'
   "hooks": {
     "PreToolUse": [
       {"matcher": "Bash", "hooks": [
-        {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/check-branch-sync-on-push.sh", "timeout": 5}
+        {"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/check-branch-sync-on-push.sh\"", "timeout": 5}
       ]},
       {"matcher": "mcp__github__create_pull_request", "hooks": [
         {"type": "prompt", "prompt": "check closing keywords"}
@@ -220,7 +220,7 @@ cat > "$fx/git-plugin/hooks.json" <<'JSON'
     ],
     "SessionStart": [
       {"matcher": "", "hooks": [
-        {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/git-drift-probe.sh", "timeout": 5}
+        {"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/git-drift-probe.sh\"", "timeout": 5}
       ]}
     ]
   }
@@ -246,6 +246,9 @@ drift_write "$DRIFT_TEST_SIGNALS/$sid" "probe-ran:$CLAUDE_PLUGIN_ROOT"
 SH
 
 # kubernetes-plugin: inline hooks; the dry-run injector returns updatedInput.
+# Its command deliberately keeps the legacy UNQUOTED `bash ${CLAUDE_PLUGIN_ROOT}/...`
+# form (every other fixture uses the quoted form `claude plugin validate`
+# requires since 2.1.281) to prove the shared COMMAND_RE stays back-compatible.
 mkdir -p "$fx/kubernetes-plugin/.claude-plugin" "$fx/kubernetes-plugin/hooks"
 cat > "$fx/kubernetes-plugin/.claude-plugin/plugin.json" <<'JSON'
 {"name": "kubernetes-plugin", "hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [
@@ -269,16 +272,16 @@ cat > "$fx/extra-plugin/hooks.json" <<'JSON'
   "hooks": {
     "PostToolUse": [
       {"matcher": "Bash", "hooks": [
-        {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/note.sh"},
+        {"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/note.sh\""},
         {"type": "command", "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/oddball.py"},
-        {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/missing.sh"}
+        {"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/missing.sh\""}
       ]},
       {"matcher": "Write(docs/adrs/**)", "hooks": [
-        {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/note.sh", "timeout": 3000}
+        {"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/note.sh\"", "timeout": 3000}
       ]}
     ],
     "PreCompact": [
-      {"matcher": "auto", "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/note.sh"}]}
+      {"matcher": "auto", "hooks": [{"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/note.sh\""}]}
     ]
   }
 }

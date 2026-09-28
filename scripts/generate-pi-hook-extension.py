@@ -37,7 +37,10 @@ Skipped, loudly (reported on stdout and in the generated header):
   - events with no pi equivalent (Stop, PreCompact, PermissionRequest, ...),
   - matchers naming only tools pi does not have (Workflow, Skill, ...),
   - hooks not in the safety allowlist,
-  - command strings not shaped `bash ${CLAUDE_PLUGIN_ROOT}/hooks/<script>.sh`,
+  - command strings not shaped `bash "${CLAUDE_PLUGIN_ROOT}/hooks/<script>.sh"`
+    (quoted, as `claude plugin validate` requires since 2.1.281; the unquoted
+    legacy form is still accepted — COMMAND_RE is shared with the OpenCode
+    generator),
   - referenced scripts that do not exist.
 
 A script missing or crashing at RUN time fails open (console.error + allow),
@@ -202,7 +205,7 @@ def collect(repo_root, allowlist):
                     kind = hook.get("type", "command")
                     cmd = (hook.get("command") or "").strip()
                     m = COMMAND_RE.match(cmd) if kind == "command" else None
-                    script = m.group(1) if m else "-"
+                    script = m.group("script") if m else "-"
                     if slot is None:
                         skip(
                             event,

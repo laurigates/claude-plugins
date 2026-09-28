@@ -55,6 +55,10 @@ cat > "$fixture_root/synthetic-plugin/hooks/cue.sh" <<'SH'
 #!/usr/bin/env bash
 exit 0
 SH
+# Commands use the quoted `bash "${CLAUDE_PLUGIN_ROOT}/hooks/x.sh"` form that
+# `claude plugin validate` requires (2.1.281+); the Write(docs/adrs/**) entry
+# deliberately keeps the legacy unquoted form to prove back-compat, and one
+# unbalanced-quote command must be skipped as unparseable.
 cat > "$fixture_root/synthetic-plugin/hooks.json" <<'JSON'
 {
   "hooks": {
@@ -62,9 +66,10 @@ cat > "$fixture_root/synthetic-plugin/hooks.json" <<'JSON'
       {
         "matcher": "Bash",
         "hooks": [
-          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/guard.sh", "timeout": 10},
+          {"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/guard.sh\"", "timeout": 10},
           {"type": "prompt", "prompt": "evaluate something", "timeout": 15},
-          {"type": "command", "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/oddball.py"}
+          {"type": "command", "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/oddball.py"},
+          {"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/guard.sh"}
         ]
       },
       {
@@ -76,7 +81,7 @@ cat > "$fixture_root/synthetic-plugin/hooks.json" <<'JSON'
       {
         "matcher": "Bash",
         "hooks": [
-          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/missing.sh"}
+          {"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/missing.sh\""}
         ]
       }
     ],
@@ -84,7 +89,7 @@ cat > "$fixture_root/synthetic-plugin/hooks.json" <<'JSON'
       {
         "matcher": "Edit",
         "hooks": [
-          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/cue.sh", "timeout": 5}
+          {"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/cue.sh\"", "timeout": 5}
         ]
       }
     ],
@@ -92,7 +97,7 @@ cat > "$fixture_root/synthetic-plugin/hooks.json" <<'JSON'
       {
         "matcher": "",
         "hooks": [
-          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/cue.sh"}
+          {"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/cue.sh\""}
         ]
       }
     ]
@@ -110,11 +115,13 @@ fixture_report="$(python3 "$test_generator" "$fixture_root" "$fixture_out")" || 
 fixture_js="$fixture_out/plugins/synthetic-plugin-hooks.js"
 check "fixture: JS emitted" test -f "$fixture_js"
 check "fixture: exported command hooks counted" \
-    grep -q "PLUGIN=synthetic-plugin JS=plugins/synthetic-plugin-hooks.js EXPORTED=3 SKIPPED=4" <<<"$fixture_report"
+    grep -q "PLUGIN=synthetic-plugin JS=plugins/synthetic-plugin-hooks.js EXPORTED=3 SKIPPED=5" <<<"$fixture_report"
 check "fixture: prompt hook skipped with reason" \
     grep -q "type=prompt reason=OpenCode has no model-evaluation hook" <<<"$fixture_report"
 check "fixture: unparseable command skipped" \
     grep -q "reason=unparseable command: python3" <<<"$fixture_report"
+check "fixture: unbalanced-quote command skipped" \
+    grep -q 'reason=unparseable command: bash "${CLAUDE_PLUGIN_ROOT}/hooks/guard.sh$' <<<"$fixture_report"
 check "fixture: missing script skipped" \
     grep -q "reason=referenced script missing: hooks/missing.sh" <<<"$fixture_report"
 check "fixture: SessionStart skipped" \

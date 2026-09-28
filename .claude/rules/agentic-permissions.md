@@ -1,6 +1,6 @@
 ---
 created: 2026-01-16
-modified: 2026-09-16
+modified: 2026-09-28
 reviewed: 2026-09-16
 paths:
   - "**/skills/**"
@@ -110,7 +110,11 @@ allowed-tools: Bash(git status *), Bash(gh pr *), Read, TodoWrite
 
 > **Note (2.1.139)**: `Skill(<name> *)` permission rules use prefix matching, just like `Bash(<command> *)` — matching `Bash(ls *)` behavior. Before 2.1.139, wildcards inside `Skill(...)` were treated as literal characters and silently failed to match (only the bare `Skill(*)` form worked).
 
+> **Note (2.1.282/2.1.283)**: `anthropic-skills` is a reserved namespace. `Skill(anthropic-skills:*)` allow rules cover only claude.ai-synced skills, and a `Skill(anthropic-skills:<name>)` deny also blocks the skill when Claude Desktop delivers it as a plugin. `Skill(skill:<name>)` denies match the skill's alias and display name.
+
 > **Note (2.1.246)**: never put the wildcard **before** the subcommand, e.g. `Bash(git * main)` — Claude Code now warns about this pattern at startup because it also matches options inserted before the subcommand (e.g. `git --exec-path=... main`). Keep the wildcard at the end: `Bash(git main *)` / `Bash(git status *)`.
+
+> **Note (2.1.282)**: Bash rules with a mid-pattern `:*` now apply from every settings source (they were skipped in settings files before), with a startup warning explaining how they match.
 
 ### Parameter-Matching Rules — `Tool(param:value)` (2.1.178+)
 
@@ -122,9 +126,9 @@ Permission rules can match a tool's **input parameters**, not just its name, wit
 | `Agent(model:*)` | Any `Agent` call that sets a model parameter |
 | `WebFetch(domain:*.example.com)` | A `WebFetch` to any subdomain of `example.com` (see wildcard note below) |
 
-Pair `Agent(model:...)` deny rules with the pre-launch classifier check (`.claude/rules/agent-development.md` § Subagent Nesting Depth) to govern which subagents a session may spawn. `Agent(type)` deny rules and `Agent(x,y)` allowed-types restrictions are enforced for named subagent spawns only since 2.1.186.
+Pair `Agent(model:...)` deny rules with the pre-launch classifier check (`.claude/rules/agent-development.md` § Subagent Nesting Depth) to govern which subagents a session may spawn. `Agent(type)` deny rules and `Agent(x,y)` allowed-types restrictions are enforced for named subagent spawns only since 2.1.186. Admins can restrict models for the whole session with the managed `deniedModels` and `availableModelsMatch: "exact"` settings (2.1.283).
 
-### Wildcard and Glob Matching (2.1.166+ / 2.1.172+ / 2.1.178+ / 2.1.214)
+### Wildcard and Glob Matching (2.1.166+ / 2.1.172+ / 2.1.178+ / 2.1.214 / 2.1.281)
 
 A run of fixes made wildcard/glob handling in permission rules behave as written:
 
@@ -134,6 +138,7 @@ A run of fixes made wildcard/glob handling in permission rules behave as written
 | 2.1.172 | `WebFetch(domain:*.example.com)` wildcard domain rules now match **subdomains** (previously the leading `*.` failed to match). `Read(secrets-*/config.json)` and other **mid-pattern** wildcards are no longer rejected at startup. |
 | 2.1.178 | MCP **server-level** specs (`mcp__server`, `mcp__server__*`, `mcp__*`) in a subagent's `disallowedTools` now work — previously only fully-qualified `mcp__server__tool` names matched, so server-wide denials silently let MCP tools through. |
 | 2.1.214 | **BREAKING:** single-segment `dir/**` **allow** rules (e.g. `Edit(src/**)`) now match only `<cwd>/dir` — they no longer auto-approve a nested `dir/` anywhere in the tree. `deny`/`ask` rules keep their old any-depth match, so allow and deny/ask now genuinely differ for the same pattern shape. Write `**/dir/**` if you need any-depth **allow** matching. |
+| 2.1.281 | A permission rule containing a NUL byte matches nothing. |
 
 ## Shell Operator Protections
 
@@ -195,8 +200,9 @@ A further round tightened the permission analyzer itself:
   instead of being auto-allowed as read-only.
 - A Windows PowerShell 5.1 permission-check bypass was fixed.
 - (2.1.274) Commands that loop over or assign certain special shell variables now ask, and worktree-isolated sessions refuse Bash commands with certain nested shell expansions.
+- (2.1.281) Recursive removes whose target comes only from command substitution (`rm -rf "$(pwd)"`), from `$VAR/topdir`, or from the cwd prompt even when a Bash allow rule matches (opt out: `CLAUDE_CODE_DISABLE_SUBSTITUTION_RM_PROMPT=1`). In auto and skip-permissions mode the dangerous-`rm` prompt waits 2 minutes, then denies with a rewrite hint (`CLAUDE_CODE_DISABLE_DANGEROUS_RM_TIMEOUT=1` disables the timeout).
 
-### Working-Directory Bypass Hardening (2.1.149, revisited 2.1.271/2.1.273)
+### Working-Directory Bypass Hardening (2.1.149, revisited 2.1.271/2.1.273/2.1.280)
 
 The permission analyzer tracks the working directory so a command cannot quietly escape the workspace and read outside it. Two 2.1.149 fixes closed bypasses:
 
@@ -211,6 +217,10 @@ mode; 2.1.273 fixed commands the permission checker cannot fully analyze doing
 the same, plus a subshell hiding a dangerous `rm` in bypass mode. Treat
 `blockReadsOutsideWorkingDirectories` as best-effort, not an airtight boundary
 against adversarial input, when authoring a security-sensitive skill.
+
+Writes through a symlinked path are judged by where they land (2.1.280):
+`acceptEdits`, allow rules and auto mode no longer approve a write whose real
+target is outside the tree.
 
 ### Safe Patterns
 
