@@ -24,12 +24,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/validate-kubectl-context.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/validate-kubectl-context.sh\"",
             "timeout": 3000
           },
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/inject-kubectl-dry-run.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/inject-kubectl-dry-run.sh\"",
             "timeout": 5
           }
         ]

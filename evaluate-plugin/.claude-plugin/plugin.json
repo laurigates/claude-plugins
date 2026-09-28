@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/evaluate-drift-probe.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/evaluate-drift-probe.sh\"",
             "timeout": 3000
           }
         ]

@@ -14,12 +14,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/health-drift-probe.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/health-drift-probe.sh\"",
             "timeout": 3000
           },
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/config-drift-probe.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/config-drift-probe.sh\"",
             "timeout": 3000
           }
         ]

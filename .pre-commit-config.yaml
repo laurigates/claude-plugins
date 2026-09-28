@@ -872,6 +872,20 @@ repos:
         language: system
         files: '^scripts/(check-hook-cue-skill-refs\.sh|tests/test-check-hook-cue-skill-refs\.sh)$'
         pass_filenames: false
+      - id: check-plugin-root-quoting
+        name: shell-form plugin hook commands quote ${CLAUDE_PLUGIN_ROOT} (2.1.281 validate warning)
+        entry: bash ./scripts/check-plugin-root-quoting.sh
+        language: system
+        # Whole-scope: every file the guard scans (hooks.json, hooks/hooks.json,
+        # inline plugin.json hooks) plus the guard itself.
+        files: '([^/]*-plugin/(hooks\.json|hooks/hooks\.json|\.claude-plugin/plugin\.json)|^scripts/check-plugin-root-quoting\.sh)$'
+        pass_filenames: false
+      - id: test-check-plugin-root-quoting
+        name: plugin-root quoting guard regression (unquoted/bare/single-quoted flagged, exec-form skipped, empty tree errors)
+        entry: bash ./scripts/tests/test-check-plugin-root-quoting.sh
+        language: system
+        files: '^scripts/(check-plugin-root-quoting\.sh|tests/test-check-plugin-root-quoting\.sh)$'
+        pass_filenames: false
       - id: check-hook-message-pins
         name: blocking-hook suites read the block message, not just the exit code (#2715)
         entry: bash ./scripts/check-hook-message-pins.sh

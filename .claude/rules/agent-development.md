@@ -74,7 +74,7 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
     - matcher: ""
       hooks:
         - type: command
-          command: "bash ${CLAUDE_PLUGIN_ROOT}/hooks/verify.sh"
+          command: 'bash "${CLAUDE_PLUGIN_ROOT}/hooks/verify.sh"'
           timeout: 30
 ---
 ```

@@ -23,7 +23,9 @@ Fidelity contract (what exports and how):
 Skipped, loudly (reported on stdout and in the generated JS header):
   - prompt / agent hooks — OpenCode has no model-evaluation hook (by design).
   - SessionStart / PreCompact / other events — no context-injection equivalent.
-  - command strings not shaped `bash ${CLAUDE_PLUGIN_ROOT}/hooks/<script>.sh`.
+  - command strings not shaped `bash "${CLAUDE_PLUGIN_ROOT}/hooks/<script>.sh"`
+    (the unquoted `bash ${CLAUDE_PLUGIN_ROOT}/hooks/<script>.sh` is still
+    accepted for back-compat).
 
 A missing script at runtime FAILS OPEN (console.error + allow) — deliberately
 NOT the throw-ENOENT-on-every-matched-call failure mode a path-only projection
@@ -55,7 +57,14 @@ CLAUDE_TO_OPENCODE_TOOL = {
     "TodoWrite": "todowrite",
 }
 
-COMMAND_RE = re.compile(r"^bash \$\{CLAUDE_PLUGIN_ROOT\}/hooks/([A-Za-z0-9._-]+\.sh)$")
+# Accepts both `bash ${CLAUDE_PLUGIN_ROOT}/hooks/x.sh` and the quoted
+# `bash "${CLAUDE_PLUGIN_ROOT}/hooks/x.sh"` (the form `claude plugin validate`
+# requires since 2.1.281, so a plugin root containing a space is not
+# word-split). The opening quote is captured and the closing one must match
+# it; callers read the script name from the named group `script`.
+COMMAND_RE = re.compile(
+    r'^bash (?P<q>")?\$\{CLAUDE_PLUGIN_ROOT\}/hooks/(?P<script>[A-Za-z0-9._-]+\.sh)(?(q)"|)$'
+)
 MATCHER_WITH_ARG_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\((.*)\)$")
 
 
@@ -340,7 +349,7 @@ def process_plugin(plugin_dir, out_dir):
                         (event, matcher, kind, f"unparseable command: {cmd}")
                     )
                     continue
-                script = m.group(1)
+                script = m.group("script")
                 parsed = parse_matcher(matcher)
                 if parsed is None:
                     skipped.append((event, matcher, kind, "untranslatable matcher"))
