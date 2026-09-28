@@ -4,7 +4,7 @@ description: Error monitoring and performance with Sentry SDK for Bun/Node.js/Ne
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-22
-modified: 2026-07-28
+modified: 2026-09-28
 reviewed: 2026-01-22
 ---
 
@@ -167,7 +167,7 @@ Sentry.captureMessage("Payment failed", {
 | `profileLifecycle` | `"trace"` profiles every traced request |
 | `replaysSessionSampleRate` | Session replay sample rate |
 | `replaysOnErrorSampleRate` | Replay capture rate on errors |
-| `ignoreErrors` | Array of error patterns to suppress |
+| `ignoreErrors` | Error patterns to suppress; strings match as **substrings** (see REFERENCE.md) |
 | `beforeSend` | Filter/modify events before sending |
 | `beforeSendTransaction` | Filter transactions before sending |
 | `beforeSendLog` | Filter structured logs before sending |

@@ -585,11 +585,14 @@ Sentry.init({
     /moz-extension:\/\//,
     "Network request failed",
     "Failed to fetch",
-    "AbortError",
+    /^AbortError(:|$)/, // anchored: a bare "AbortError" string is a substring match
   ],
 
   // Strip sensitive data from events
-  beforeSend(event) {
+  beforeSend(event, hint) {
+    // Suppress an error *class* here, not in ignoreErrors
+    if (hint.originalException instanceof KnownNoiseError) return null
+
     const headers = event.request?.headers
     if (headers) {
       delete headers.authorization
@@ -600,6 +603,34 @@ Sentry.init({
   },
 })
 ```
+
+**`ignoreErrors` matches text, not types.** A string pattern matches as a
+**substring** (`value.includes(pattern)`) against `event.message`, the last
+exception's `value`, and `` `${type}: ${value}` ``. So `"AuthError"` also
+silences `PodioAuthError` and any message containing the word. Use anchored
+`RegExp`s for class names. To drop an error class, test
+`hint.originalException instanceof X` in `beforeSend`. That field holds the
+thrown object only on the exception path. After `captureMessage` it holds the
+message string.
+
+### `captureConsoleIntegration` — Two Event Shapes
+
+`captureConsoleIntegration({ levels: ["error"] })` turns each `console.error`
+into an event, and the call's arguments decide which kind:
+
+| Arguments | Path | Event carries |
+|-----------|------|---------------|
+| No argument is an `Error` | `captureMessage` | `event.message` = the arguments joined with spaces |
+| Any argument is an `Error` | `captureException` on the first one | no `event.message`; the `Error`'s value and stack, raw args in `extra.arguments` |
+
+Consequences:
+
+- On the message path, Sentry groups by message text. An interpolated id, date
+  or response body therefore creates one issue per value. To keep them
+  together, set a fingerprint from the static prefix in `beforeSend`.
+- On the exception path, context you logged as a prefix (`"[Podio] fetch
+  failed:", err`) survives only in `extra.arguments`. If `beforeSend` scrubs
+  `extra`, copy the prefix to a tag first.
 
 ### Transaction Filtering (beforeSendTransaction)
 

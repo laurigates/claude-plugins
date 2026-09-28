@@ -369,6 +369,16 @@ const config: KnipConfig = {
 };
 ```
 
+### Unused Re-exports Appear After Upgrading to knip 6.28+
+
+Before 6.28, `ignoreExportsUsedInFile: true` also hid unused barrel re-exports
+(`export { x } from "./y"`) as a side effect. [6.28.0](https://github.com/webpro-nl/knip/releases/tag/knip%406.28.0)
+reports them ("Report unused re-exports when ignoreExportsUsedInFile is set",
+#1895). A lockfile bump can therefore turn a green check red with a large batch
+of findings, all in `index.ts` barrels (observed: 138 at once). These are real
+findings, not a config regression. Remove the unused names from the barrels
+instead of loosening the config.
+
 ### Knip Not Finding Entry Points
 
 ```bash
