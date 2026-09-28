@@ -1,6 +1,6 @@
 ---
 created: 2026-06-22
-modified: 2026-09-23
+modified: 2026-09-28
 reviewed: 2026-09-16
 paths:
   - ".github/workflows/**"
@@ -32,7 +32,8 @@ workflows is purely **cost-economics**, which still holds:
   Sonnet at *high* effort on both quality and token efficiency, because the
   per-token premium (Opus output ≈ 1.7× Sonnet) was outweighed by token
   *volume*. So `effort`, not `model`, is the cost lever. The `opus` alias
-  resolves to Opus 5 (2.1.219+) and effort names do not carry across
+  resolves to Opus 5.5 since 2.1.280 ($4/$20 per MTok, below Opus 5's $5/$25),
+  and effort names do not carry across
   generations — the economics and their re-verification live in
   skill-development.md § Model Selection; the monthly audit below is what
   checks the picks still hold.
@@ -47,9 +48,13 @@ contaminate a main loop.
 
 `--effort <level>` is passed in the `claude_args` string (for
 `anthropics/claude-code-action@v1`) or as a raw flag to `npx @anthropic-ai/claude-code`.
-Valid levels: `low`, `medium`, `high`, `xhigh`, `max`. **Opus defaults to
-`high`** — so effort must be set *explicitly* or the cost savings are forfeited
-(this is what the guard's `missing_effort` check enforces).
+Valid levels: `low`, `medium`, `high`, `xhigh`, `max`. The default differs by
+model (Opus 5 `high`, Opus 5.5 `medium` at the API) and has moved between
+releases, so effort must be set *explicitly* or the pick is not ours (this is
+what the guard's `missing_effort` check enforces). Since 2.1.280 an effort saved
+before `/effort` became per-model no longer applies to new models, and Opus
+4.7/4.8 and Fable 5 no longer hold their launch default over `-p` / settings
+`effortLevel`; an explicit `--effort` flag is unaffected by either.
 
 An org-level `maxEffortLevel` setting (2.1.267+, top-level or per model under
 `modelSettings`) can cap the effective effort on every provider including
