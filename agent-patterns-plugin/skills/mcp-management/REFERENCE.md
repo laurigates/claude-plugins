@@ -38,6 +38,9 @@ scripts, and full configuration-pattern examples.
 Use `${VAR_NAME}` syntax for environment variable references — never hardcode
 tokens.
 
+Do not name a server `anthropic-skills`: that name is reserved, and a server
+registered under it lists no skills or prompts (2.1.283).
+
 ## OAuth support for remote MCP servers
 
 Remote MCP servers using HTTP+SSE transport use OAuth 2.1 (Claude Code 2.1.50+):
@@ -112,6 +115,20 @@ done
 | Step-up auth loop | Scope mismatch | Revoke and re-authorize |
 | Discovery fails | Server down or URL wrong | Verify server URL and connectivity |
 | Cache stale | Server changed OAuth config | Disable/enable server to refresh |
+
+### Client behaviors that look like server bugs
+
+| Symptom | Cause / fix |
+|---------|-------------|
+| Tool description or server instructions cut off | Capped at 2,048 chars; raise with `CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH` (2.1.280) |
+| Server instructions missing from the context budget | `/context` shows MCP server instructions as their own row (2.1.283) |
+| Image returned by a tool needed as a file | Images from MCP tools are also saved to a file (2.1.283) |
+| Same remote server connected twice | Fixed for the same server spelled with different URLs (2.1.281) |
+| Stateless remote server unusable after a brief 404 | Fixed; it recovers (2.1.283) |
+| claude.ai connector ignores `MCP_CONNECT_TIMEOUT_MS` | Set `MCP_CONNECTION_NONBLOCKING=0` (2.1.281) |
+| Server asks the user to open a URL | URL-mode elicitation, supported on 2026-07-28 protocol connections (2.1.281) |
+| Progress lost on a backgrounded tool call | Progress notifications are now kept (2.1.283) |
+| Stdio server process left behind at exit | Servers still starting at session end are cleaned up (2.1.283) |
 
 ### SDK MCP server race condition (2.1.49/2.1.50)
 
