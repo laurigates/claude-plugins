@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.36.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.36.1...configure-plugin-v1.36.2) (2026-09-28)
+
+
+### Bug Fixes
+
+* **configure-plugin:** drop Vitest coverage.all, pin the denominator with include ([#2844](https://github.com/laurigates/claude-plugins/issues/2844)) ([0709e3b](https://github.com/laurigates/claude-plugins/commit/0709e3bef1af0c0987038fc05b17fcff41089e5d))
+
+
+### Documentation
+
+* **configure-plugin:** release-please under GitHub immutable releases ([#2846](https://github.com/laurigates/claude-plugins/issues/2846)) ([0f19c19](https://github.com/laurigates/claude-plugins/commit/0f19c19b22a15bf1334783a5427978475b9e33b4))
+
 ## [1.36.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.36.0...configure-plugin-v1.36.1) (2026-09-27)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.9.0...typescript-plugin-v1.9.1) (2026-09-28)
+
+
+### Documentation
+
+* **typescript-plugin:** Sentry ignoreErrors/console-capture gotchas, knip 6.28 re-exports ([#2845](https://github.com/laurigates/claude-plugins/issues/2845)) ([0e9345d](https://github.com/laurigates/claude-plugins/commit/0e9345dd74b4f9247b13cd46dfbfd0f0f6deb8d4))
+
 ## [1.9.0](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.8.11...typescript-plugin-v1.9.0) (2026-09-24)
 
 

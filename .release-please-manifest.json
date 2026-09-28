@@ -11,7 +11,7 @@
   "comfyui-plugin": "1.13.8",
   "communication-plugin": "1.2.5",
   "component-patterns-plugin": "1.5.0",
-  "configure-plugin": "1.36.1",
+  "configure-plugin": "1.36.2",
   "container-plugin": "2.10.0",
   "css-plugin": "1.2.3",
   "documentation-plugin": "1.12.0",
@@ -39,7 +39,7 @@
   "terraform-plugin": "1.7.8",
   "testing-plugin": "3.19.9",
   "tools-plugin": "2.12.1",
-  "typescript-plugin": "1.9.0",
+  "typescript-plugin": "1.9.1",
   "session-plugin": "1.12.0",
   "software-design-plugin": "1.2.0",
   "workflow-orchestration-plugin": "1.12.1"
