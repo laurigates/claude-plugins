@@ -110,7 +110,7 @@ allowed-tools: Bash(git status *), Bash(gh pr *), Read, TodoWrite
 
 > **Note (2.1.139)**: `Skill(<name> *)` permission rules use prefix matching, just like `Bash(<command> *)` — matching `Bash(ls *)` behavior. Before 2.1.139, wildcards inside `Skill(...)` were treated as literal characters and silently failed to match (only the bare `Skill(*)` form worked).
 
-> **Note (2.1.283)**: `anthropic-skills` is a reserved namespace. `Skill(anthropic-skills:*)` allow rules cover only claude.ai-synced skills, and a `Skill(anthropic-skills:<name>)` deny also blocks the skill when Claude Desktop delivers it as a plugin. `Skill(skill:<name>)` denies match the skill's alias and display name.
+> **Note (2.1.282/2.1.283)**: `anthropic-skills` is a reserved namespace. `Skill(anthropic-skills:*)` allow rules cover only claude.ai-synced skills, and a `Skill(anthropic-skills:<name>)` deny also blocks the skill when Claude Desktop delivers it as a plugin. `Skill(skill:<name>)` denies match the skill's alias and display name.
 
 > **Note (2.1.246)**: never put the wildcard **before** the subcommand, e.g. `Bash(git * main)` — Claude Code now warns about this pattern at startup because it also matches options inserted before the subcommand (e.g. `git --exec-path=... main`). Keep the wildcard at the end: `Bash(git main *)` / `Bash(git status *)`.
 

@@ -48,6 +48,7 @@ Not all events support prompt/agent hooks.
 
 | Event | Typical Use |
 |-------|-------------|
+| `PermissionRequest` | Auto-approve/deny based on intent (`prompt` only; `agent` refused since 2.1.280, use `command`/`http`) |
 | `PreToolUse` | Block unsafe tool calls based on context |
 | `PostToolUse` | Evaluate tool output quality |
 | `PostToolUseFailure` | Decide whether to retry or abort |
@@ -58,8 +59,6 @@ Not all events support prompt/agent hooks.
 | `Elicitation` | Auto-accept/decline MCP input requests |
 | `ElicitationResult` | Override MCP input results before sending |
 | `MessageDisplay` (2.1.152+) | Judgment-based redaction or rewriting of assistant message text before it is displayed |
-
-`PermissionRequest` (auto-approve/deny) does **not** run `type: "agent"` hooks (2.1.280): an agent hook's answer could never allow or deny the request, so configuring one shows an error pointing to `command` or `http` hooks.
 
 > **Note (2.1.152)**: `MessageDisplay` fires as an assistant message is about to be rendered and can transform or hide the displayed text (see `hooks-reference.md` § MessageDisplay). Because deciding *what* to redact or rewrite is often a judgment call, it belongs with the judgment-capable events above rather than the command-only list — though a deterministic redaction (regex over the text) is still a `type: "command"` job. Follow the decision tree: deterministic rule → `command`; needs judgment on the message text alone → `prompt`.
 

@@ -38,19 +38,19 @@ including severity-scored classification; behaviour is no longer degraded on
 those providers. Where the classifier itself *runs* is a separate question.
 The **server-side** classifier, which does not charge for classifier overhead,
 is the default for Claude API and Enterprise users, on Bedrock, Vertex, Foundry
-and gateways (2.1.278, reversing 2.1.273), and in any session with telemetry
-off (2.1.282); other sessions use the local classifier.
+and gateways (2.1.278, reversing 2.1.273), and on a direct API connection with
+telemetry off (2.1.282).
 `CLAUDE_CODE_AUTO_MODE_SERVER` overrides the default on every connection,
 including a direct API connection (2.1.281): `0` opts out, `1` opts in. Where
 the review runs server-side, read-only and sandboxed shell commands also wait
-for it and are blocked if it flags them (2.1.282).
+for it and are blocked if it flags them (2.1.281).
 
 ## How the Classifier Decides
 
 Each tool call walks a fixed decision order. The first matching step wins:
 
 1. Actions matching the user's `allow` or `deny` rules resolve immediately. A `PreToolUse` hook that returns `ask` floors the decision at a manual prompt (2.1.211) — auto mode cannot silently approve past a hook's explicit `ask`, even though it can generally auto-approve actions a hook did not gate.
-2. Read-only actions and file edits inside the working directory are auto-approved (except writes to [protected paths](https://code.claude.com/docs/en/permission-modes#protected-paths)), and, as of 2.1.257, a file read outside the working directories gets a one-time prompt instead of silent approval — see `permissions.blockReadsOutsideWorkingDirectories` below. Under the server-side classifier, read-only and sandboxed shell commands are reviewed too (2.1.282)
+2. Read-only actions and file edits inside the working directory are auto-approved (except writes to [protected paths](https://code.claude.com/docs/en/permission-modes#protected-paths)), and, as of 2.1.257, a file read outside the working directories gets a one-time prompt instead of silent approval — see `permissions.blockReadsOutsideWorkingDirectories` below. Under the server-side classifier, read-only and sandboxed shell commands are reviewed too (2.1.281)
 3. Everything else goes to the classifier
 4. If the classifier blocks, Claude receives the reason and tries an alternative
 
@@ -164,7 +164,7 @@ If blocking happens **3 times in a row** or **20 times total** in a session, aut
 
 In `-p` (non-interactive) mode there is no user to prompt — repeated blocks abort the session.
 
-A safety check the user declines or leaves unanswered denies the action once instead of looping; retries back off, and the turn stops after ten denials in a row (2.1.280).
+When a safety check declines to review an action or gives no answer, the action is denied once instead of retried in a loop; retries back off, and the turn stops after ten denials in a row (2.1.280).
 
 ## Cost and Latency
 
