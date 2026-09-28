@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-07-28
+modified: 2026-09-28
 reviewed: 2025-12-16
 name: knip-dead-code
 description: "Knip dead-code detector for JS/TS: unused files, deps, exports, types. Use when cleaning up codebases, finding dead exports, or enforcing dependency hygiene in CI."
