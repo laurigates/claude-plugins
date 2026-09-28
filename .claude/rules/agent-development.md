@@ -34,7 +34,7 @@ Patterns and standards for creating and configuring custom agents in Claude Code
 
 Agents live in `<plugin-name>/agents/<agent-name>.md`.
 
-> **Note (2.1.198)**: The interactive `/agents` wizard was removed, and its leftover `/agents` menu entry went in 2.1.281. Create or edit agents by writing `<plugin>/agents/<name>.md` directly (below) — there is no guided flow.
+> **Note (2.1.198)**: The `/agents` wizard was removed; its menu entry followed in 2.1.281. Write `<plugin>/agents/<name>.md` directly (below).
 
 ### Required Frontmatter
 
@@ -89,7 +89,7 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
 |-------|------|----------|-------------|
 | `name` | string | Yes | Agent identifier (kebab-case); `:` is rejected (2.1.218) — reserved for plugin namespacing (`plugin:agent-name`) |
 | `description` | string | Yes | Purpose and use cases for agent selection |
-| `model` | string | Yes | `opus`, `sonnet`, `haiku`, `fable` (2.1.255+), `inherit`, or a full model ID (e.g. `claude-fable-5-1`). Aliases resolve to the current generation (`opus` → Opus 5.5 since 2.1.280, `sonnet` → Sonnet 5, `haiku` → Haiku 4.5, `fable` → Fable 5.1). Full IDs honoured since 2.1.74 |
+| `model` | string | Yes | `opus`, `sonnet`, `haiku`, `fable` (2.1.255+), `inherit`, or a full model ID (e.g. `claude-fable-5-1`). Aliases resolve to the current generation (`opus` → Opus 5.5, `sonnet` → Sonnet 5, `haiku` → Haiku 4.5, `fable` → Fable 5.1). Full IDs honoured since 2.1.74 |
 | `effort` | string | No | `low`, `medium`, `high`, `xhigh`, or `max` (2.1.251+) — overrides the session effort while this agent runs; default inherits. This is the per-agent cost lever the Model Selection section refers to |
 | `tools` | comma-list | Yes | Tools the agent can use; use `Agent(name)` to restrict spawnable subagents |
 | `isolation` | string | No | `worktree` to run agent in an isolated git worktree |
@@ -177,7 +177,7 @@ Distinct from nesting depth above, Claude Code also caps how many subagents may 
 | Model | Use For |
 |-------|---------|
 | `opus` | **Default for all subagents** — reasoning, review, debugging, refactoring, *and* mechanical/high-volume work (dial `effort` down for the latter rather than downgrading the model) |
-| `fable` | Sanctioned for the hardest delegated reasoning (long-horizon, multi-file, adversarial verification). Accepted by `scripts/check-agent-model.sh`. Not the default: no plan defaults to Fable and it costs 2.5x Opus 5.5 per token ($10/$50 vs $4/$20 per MTok) |
+| `fable` | Sanctioned for the hardest delegated reasoning (long-horizon, multi-file, adversarial verification). Accepted by `scripts/check-agent-model.sh`. Not the default: no plan defaults to Fable and it costs 2.5x Opus 5.5 per token |
 | `sonnet` / `haiku` | Avoid for subagents. The one sanctioned exception is the `agent-patterns-plugin:cold-read-gate` haiku reader, where a low-capability model is the *measurement instrument*, not a delegate. |
 
 `model: opus` remains the committed floor for plugin agents (portable: every plan has Opus; Fable is no plan's default and costs 2.5x Opus 5.5 per token). `model: fable` is sanctioned for agents whose job is the hardest delegated reasoning (long-horizon, multi-file, adversarial verification), and the guard accepts it. `inherit` is not used for plugin agents because it would also inherit Sonnet/Haiku sessions below the floor. `effort:` frontmatter (`low|medium|high|xhigh|max`, default inherits) is the cost lever; use `effort: low` for mechanical/high-volume agents.
@@ -261,8 +261,6 @@ Controls the branch base for `--worktree`, `EnterWorktree`, and agent-isolation 
 
 Set `worktree.baseRef: head` to keep unpushed commits in new worktrees.
 
-Worktree checkouts honor CA certificates passed through `GIT_CONFIG_COUNT` env pairs (2.1.283), which matters behind a TLS-inspecting proxy. `/batch` also runs where a `WorktreeCreate` hook supplies the worktrees, not only in a git repo (2.1.281).
-
 ## Preloading Skills into Agents
 
 Use the `skills` field to inject full skill content into an agent's context at startup. Unlike the main session where skill descriptions are loaded and full content loads on invocation, preloaded skills are fully injected immediately.
@@ -297,7 +295,6 @@ Agent tool with run_in_background: true
 - Use `TaskStop` to stop a background agent.
 - A subagent's result reaches the main agent under a header marking it as subagent output, indented, so its text cannot pass as the session's own instructions (2.1.277, after 2.1.210 hardened the Agent tool against indirect prompt injection); background notifications between turns arrive inside `<system-reminder>` tags (2.1.234).
 - A subagent cut off by a rate limit or server error returns its partial work to the parent instead of failing silently (2.1.199).
-- Before 2.1.280, a message sent to a finishing background subagent was lost in headless/SDK sessions, a finished subagent's report was lost across compaction, and background subagents had no LSP. Resumed fork subagents now re-send their original tool list, so the prompt cache holds.
 
 **When to use background execution:**
 - Independent work that doesn't need to block the main session
@@ -316,15 +313,12 @@ Agent tool with run_in_background: true
 | 2.1.143 | `/bg` preserves `--mcp-config`, `--settings`, `--add-dir`, `--plugin-dir`, and `--strict-mcp-config` across respawn |
 | 2.1.154 | Subagents in background sessions no longer bypass the worktree-isolation guard — previously a background subagent could write to the shared checkout despite isolation being requested |
 | 2.1.169 | Background sessions are now told that edits to the shared checkout are blocked until `EnterWorktree` is called — the session gets explicit guidance to enter a worktree before writing, instead of silently failing edits |
-| 2.1.281 | `--setting-sources` / SDK `settingSources` is forwarded to teammates, `/bg`, `claude agents` sessions and `--worktree --tmux` |
 
 > **Note (2.1.154)**: `claude agents` accepts `! <command>` to run a shell command as a background session (equivalently `claude --bg --exec '<command>'`). Use it to fire off a one-shot background job from the dashboard without a full interactive session.
 
 ### Dynamic Workflows (`/workflows`, 2.1.154+)
 
 `/workflows` orchestrates work across tens to hundreds of background agents from a single session — a fan-out scale beyond manual `/bg` dispatch. Reach for it when a task decomposes into many independent units that each warrant their own background agent; the framework manages the dispatch and result collection.
-
-A workflow started during a model fallback ran every agent on the fallback model before 2.1.283; agents now retry the configured model.
 
 > **Resume caveat — worktree agents are not resume-cacheable.** `Workflow({resumeFromRunId})` caches completed `agent()` calls by `(prompt, opts)`, but an `isolation: "worktree"` agent that **already succeeded** is **re-executed** on resume rather than served from cache — re-running its outward side effects and opening a **duplicate PR / branch** (issue [#1868](https://github.com/laurigates/claude-plugins/issues/1868)). Do not resume a whole workflow to retry a few failed worktree agents; re-dispatch only the failed ones with a fresh sequential pass. See `agent-patterns-plugin:parallel-agent-dispatch` → "Resuming a workflow: `resumeFromRunId` re-runs succeeded worktree agents" and `.claude/rules/agent-coworker-detection.md`.
 
@@ -544,7 +538,7 @@ When multiple agents share the same name, higher-priority location wins:
 
 > **Note (2.1.178)**: With **nested** `.claude/` directories, the agent (and workflow / output-style) **closest to the working directory wins** on a name collision. A repo-root `.claude/agents/reviewer.md` is shadowed by a `subdir/.claude/agents/reviewer.md` when working inside `subdir/`. Project-scope workflow saves now target the closest existing `.claude/workflows/`.
 
-CLI-defined agents use `--agents` flag with JSON (same frontmatter fields, use `prompt` for body). With `-p`, `--agents` also takes a path to a JSON file, and `prompt` may be empty (2.1.281):
+CLI-defined agents use `--agents` flag with JSON (same frontmatter fields, use `prompt` for body). With `-p` it also takes a JSON file path (2.1.281):
 ```bash
 claude --agents '{"my-agent": {"description": "...", "prompt": "...", "tools": ["Read"]}}'
 ```
@@ -695,5 +689,4 @@ Pair `--cwd` with the launch flags to spin up isolated, per-directory background
 - `.claude/rules/skill-development.md` — Skill creation (use when agent is not needed)
 - `.claude/rules/agentic-optimization.md` — CLI output optimization for agent consumption
 - `.claude/rules/agent-coworker-detection.md` — Detecting in-flight coworker changes before destructive git ops (relevant when `worktree.bgIsolation: "none"`)
-
 
