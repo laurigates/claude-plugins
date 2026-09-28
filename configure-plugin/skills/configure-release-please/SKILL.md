@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-08-15
+modified: 2026-09-28
 reviewed: 2026-06-24
 description: "release-please workflow file, manifest, and config for a single-package repo — setup and compliance audit. Use when adding release-please or upgrading release-please-action."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
