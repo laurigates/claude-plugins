@@ -1,6 +1,6 @@
 ---
 created: 2025-12-23
-modified: 2026-09-16
+modified: 2026-09-28
 reviewed: 2026-09-16
 paths:
   - "**/.claude-plugin/**"
@@ -73,6 +73,8 @@ claude plugin init <name>
 
 This creates a new plugin under `.claude/skills` ready to edit.
 
+`--plugin-dir` pointed at a folder with `.claude-plugin/marketplace.json` loads the plugins inside it (2.1.281), so `claude --plugin-dir .` at this repo root loads the whole marketplace. `--channels` entries must match the plugin name as well as the marketplace (2.1.281).
+
 > **Note (2.1.200+)**: Project-scoped plugins (declared in a project's own `.claude/settings.json` / `.claude/skills`) now load correctly from any `git worktree` of the same repository, not just the primary checkout — relevant when working across the `wf_<run>-*` worktrees described in `.claude/rules/agent-coworker-detection.md`.
 
 ## plugin.json Schema
@@ -140,6 +142,8 @@ LSP servers declared via `lspServers` show up in `claude plugin details` and `/p
 
 > **Note (2.1.221+)**: Plugins also accept a bare string `skills: "."` (not just the array form `["./"]`), and the root-level `SKILL.md` validation error now suggests using the plugin root. `claude plugin validate` (2.1.196+) no longer skips local plugins whose `source` is `"."`, and (2.1.233+) it also checks a bare `.claude/skills` directory and reports any `SKILL.md` whose frontmatter fails to parse.
 
+> **`claude plugin validate` checks (2.1.281, 2.1.283).** It fails `marketplace.json` names Claude Code cannot install, and `outputStyles` / `themes` / `monitors` / `lspServers` paths that are missing or resolve outside the plugin dir (2.1.283). It reports `.mcp.json` entries that would be silently dropped, undeclared `${user_config.*}` references and insecure MCP URLs, and warns on an unquoted `${CLAUDE_PLUGIN_ROOT}` in a shell-form hook (2.1.281). `privacyPolicyUrl` / `supportUrl` are accepted keys. This marketplace passed on 2.1.283 (checked 2026-09-28).
+
 ## Field Validation Rules
 
 | Field | Rule |
@@ -157,6 +161,8 @@ my-plugin
 api-tester
 code-quality-plugin
 ```
+
+`anthropic-skills` is reserved (2.1.283): skill folders, command files and workflow commands in that namespace do not load, and an MCP server of that name lists no skills or prompts. A marketplace name that imitates a reserved marketplace name is refused (2.1.280).
 
 ## Custom Component Paths
 
@@ -184,7 +190,7 @@ By default, Claude discovers components in standard directories. Override with e
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/validate.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/validate.sh\"",
             "timeout": 30
           }
         ]
@@ -305,6 +311,8 @@ Since 2.1.274, plugin and marketplace clones leave Git LFS files as pointers by 
 ## Version Management
 
 Versions are managed automatically by release-please. Use conventional commits to trigger version bumps.
+
+Keep `version` declared in every `plugin.json`. Before 2.1.283, a plugin with no version was restored at its source's newest commit rather than the installed one.
 
 See `.claude/rules/release-please.md` for details.
 
