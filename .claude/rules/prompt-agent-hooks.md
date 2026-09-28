@@ -1,6 +1,6 @@
 ---
 created: 2026-02-27
-modified: 2026-09-16
+modified: 2026-09-28
 reviewed: 2026-09-16
 paths:
   - ".claude/hooks/**"
@@ -36,6 +36,8 @@ Does the check have a deterministic rule?
     Does verification need to read files or run commands?
     ├─ No, hook input data is enough → type: "prompt"
     └─ Yes, needs filesystem/tool access → type: "agent"
+        (not on PermissionRequest — refused there since 2.1.280;
+         use a command or http hook that does the inspection itself)
 ```
 
 ## Supported Events
@@ -49,7 +51,6 @@ Not all events support prompt/agent hooks.
 | `PreToolUse` | Block unsafe tool calls based on context |
 | `PostToolUse` | Evaluate tool output quality |
 | `PostToolUseFailure` | Decide whether to retry or abort |
-| `PermissionRequest` | Auto-approve/deny based on intent |
 | `Stop` | Task completeness gates |
 | `SubagentStop` | Subagent output quality verification |
 | `TaskCompleted` | Implementation completeness checks |
@@ -57,6 +58,8 @@ Not all events support prompt/agent hooks.
 | `Elicitation` | Auto-accept/decline MCP input requests |
 | `ElicitationResult` | Override MCP input results before sending |
 | `MessageDisplay` (2.1.152+) | Judgment-based redaction or rewriting of assistant message text before it is displayed |
+
+`PermissionRequest` (auto-approve/deny) does **not** run `type: "agent"` hooks (2.1.280): an agent hook's answer could never allow or deny the request, so configuring one shows an error pointing to `command` or `http` hooks.
 
 > **Note (2.1.152)**: `MessageDisplay` fires as an assistant message is about to be rendered and can transform or hide the displayed text (see `hooks-reference.md` § MessageDisplay). Because deciding *what* to redact or rewrite is often a judgment call, it belongs with the judgment-capable events above rather than the command-only list — though a deterministic redaction (regex over the text) is still a `type: "command"` job. Follow the decision tree: deterministic rule → `command`; needs judgment on the message text alone → `prompt`.
 
@@ -133,6 +136,8 @@ Multi-turn subagent with tool access (Read, Grep, Glob, Bash). 60-second default
 ### MCP Tool Hook (2.1.118+)
 
 Hooks can invoke an MCP tool directly via `type: "mcp_tool"` instead of running a shell command or an LLM evaluation. The changelog entry names the capability but not its field-level config shape (e.g. which fields identify the target server and tool, or how arguments are supplied) — confirm the exact schema against code.claude.com/docs before authoring one.
+
+On blocking events (`PreToolUse` etc.), an `mcp_tool` hook waits for a still-connecting MCP server, up to the MCP connect timeout (2.1.281). Before that it was skipped, so a gate backed by a slow-starting server silently passed.
 
 ## Response Schema
 
@@ -253,7 +258,7 @@ Combine command hooks (fast/free structural checks) with prompt/agent hooks (jud
       "hooks": [
         {
           "type": "command",
-          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/check-prp-readiness.sh",
+          "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/check-prp-readiness.sh\"",
           "timeout": 10
         },
         {
@@ -282,7 +287,7 @@ The command hook runs first (fast structural validation). If it passes, the agen
 
 ## Checklist for New Prompt/Agent Hooks
 
-- [ ] Event supports `type: "prompt"` or `type: "agent"` (see Supported Events)
+- [ ] Event supports `type: "prompt"` or `type: "agent"` (see Supported Events; no `agent` on `PermissionRequest`)
 - [ ] Hook type matches the decision complexity (see Decision Tree)
 - [ ] Prompt includes `$ARGUMENTS` placeholder for hook input
 - [ ] Stop hooks check `stop_hook_active` to prevent infinite loops

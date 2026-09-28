@@ -1,6 +1,6 @@
 ---
 created: 2026-02-26
-modified: 2026-09-16
+modified: 2026-09-28
 reviewed: 2026-09-16
 paths:
   - ".claude/hooks/**"
@@ -15,6 +15,10 @@ Comprehensive reference for Claude Code hook events, schemas, and patterns. This
 > **Note (2.1.142)**: `SessionStart`, `Setup`, and `SubagentStart` accept only `type: "command"` hooks. Configuring a prompt- or agent-type hook for these events now surfaces a clear "use a command-type hook instead" error at load time, rather than silently ignoring the handler. See `.claude/rules/prompt-agent-hooks.md` for the events that do support prompt and agent hooks.
 
 > **Note (2.1.199)**: `SessionStart`, `Setup`, and `SubagentStart` hooks no longer hide stderr when exiting with code 2 — the error text now shows in the transcript, matching other command hooks.
+
+> **Note (2.1.280)**: `PermissionRequest` no longer runs `type: "agent"` hooks — their answer could never allow or deny the request. Configuring one shows an error pointing to `command` or `http` hooks.
+
+> **Note (2.1.281)**: `claude --bg` asks for workspace trust before running project hooks.
 
 ## Hook Events
 
@@ -192,6 +196,8 @@ Command hooks support two invocation forms:
 ```
 
 The exec form (`args: string[]`) spawns the command directly without a shell, so path placeholders like `${CLAUDE_PROJECT_DIR}` are passed as a single argument even when they contain spaces. Prefer the exec form when the only reason to use a shell would be quoting paths.
+
+In the shell form, quote the placeholder: `"command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/<script>.sh\""`. `claude plugin validate` warns on an unquoted `${CLAUDE_PLUGIN_ROOT}` in a shell-form hook, and plugin hook-failure errors name the plugin (2.1.281).
 
 ---
 
@@ -674,6 +680,8 @@ replayed transcript" as deliberately as "never reaches a diff."
 
 > **Note (2.1.89)**: Hook output over 50K characters is no longer injected into context directly — it's saved to disk and the model sees a file path + preview instead. This caps the worst case of an unbounded hook output blowing up the transcript, but design for the smaller output regardless (see Design guidance below).
 
+> **Note (2.1.280)**: The `hook_execution_complete` OTel event reports output sizes and a count of oversized outputs, so hook output cost can be measured rather than estimated. The `UserPromptSubmit` timeout notice names the hook that timed out.
+
 ### Which output the model sees (and replays)
 
 | Output mechanism | Reaches the model? | Replays each turn? |
@@ -763,7 +771,7 @@ Canonical implementation with regression tests:
 
 ## PermissionRequest Hook Pattern
 
-`PermissionRequest` hooks fire when Claude requests permission for an operation (e.g., in default permission mode). They allow automated approval/denial without user interaction.
+`PermissionRequest` hooks fire when Claude requests permission for an operation (e.g., in default permission mode). They allow automated approval/denial without user interaction. Use `command` or `http` hooks here; agent-type hooks are refused on this event (2.1.280).
 
 ### Auto-Approve Known Safe Patterns
 
@@ -992,7 +1000,7 @@ hooks:
     - matcher: "Bash"
       hooks:
         - type: command
-          command: "bash ${CLAUDE_PLUGIN_ROOT}/hooks/validate.sh"
+          command: 'bash "${CLAUDE_PLUGIN_ROOT}/hooks/validate.sh"'
           timeout: 10
 ---
 ```
@@ -1011,7 +1019,7 @@ hooks:
     - matcher: ""
       hooks:
         - type: command
-          command: "bash ${CLAUDE_PLUGIN_ROOT}/hooks/verify-output.sh"
+          command: 'bash "${CLAUDE_PLUGIN_ROOT}/hooks/verify-output.sh"'
           timeout: 30
 ---
 ```
@@ -1078,6 +1086,8 @@ Self-hosted runners gained a `post-session` lifecycle hook that runs **after the
 This is a runner lifecycle hook (configured in the runner's lifecycle config), distinct from the in-session `SessionEnd` hook event above: `post-session` fires in the runner harness around the whole session, whereas `SessionEnd` fires inside the session.
 
 > **Note (2.1.229)**: Self-hosted runner sessions can also receive **server-supplied hooks** — hooks injected by the runner infrastructure itself, matching how managed environments already deliver hooks.
+
+> **Note (2.1.281)**: A runner `command` hook that appends a system prompt must use `--system-prompt-file` / `--append-system-prompt-file`, not the inline `--system-prompt` / `--append-system-prompt` forms.
 
 ---
 
