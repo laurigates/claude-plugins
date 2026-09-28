@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
+modified: 2026-09-28
 reviewed: 2025-12-16
 description: "Code coverage: thresholds and reporters for Vitest, Jest, pytest, Rust. Use when setting thresholds, adding Codecov/Coveralls, or wiring lcov/HTML reports."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
