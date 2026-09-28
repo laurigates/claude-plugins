@@ -118,6 +118,37 @@ jobs:
 
 Version `0.0.0` is a placeholder — release-please updates it automatically.
 
+### Immutable Releases: Draft, Attach, Publish
+
+With GitHub [immutable releases](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases)
+enabled, assets cannot be added to a release after it is published. An upload
+step triggered by `release: published` therefore fails, and anything after it
+in the job, such as a store or registry publish, is skipped. Follow GitHub's
+recommended order instead: create a draft, attach the assets, then publish.
+
+```json
+{
+  "packages": { ".": { "release-type": "node" } },
+  "draft": true,
+  "force-tag-creation": true
+}
+```
+
+- `force-tag-creation` is required with `draft`. GitHub creates no tag for a
+  draft until it is published, so without it release-please cannot find the
+  previous release on its next run.
+- Gate an asset job in the release-please workflow on
+  `release_created == 'true'`. It builds from `tag_name`, uploads to the draft,
+  runs any external publish, and finally publishes the draft
+  (`gh release edit <tag> --draft=false`).
+- A release that stays in draft means that job did not finish. Retry it with
+  **Re-run failed jobs**. A full re-run recomputes `release_created`, finds
+  nothing new to release, and skips the job. Any re-run replays the workflow
+  file from the original commit, so a fix merged since then does not apply.
+  Rebuild from a new `workflow_dispatch` run instead.
+- To rebuild an already-published release, a `workflow_dispatch` run with a
+  `tag` input can build it, but the assets can only go to a run artifact.
+
 ## Project Type Variations
 
 | Project type | release-type | Updates |
@@ -186,3 +217,5 @@ Release-please manages these automatically — never edit them manually:
 | Release PR not created | Conventional commit format; workflow permissions; token has write access |
 | Version not updated | Manifest is valid JSON; release-type matches project; release-please logs in Actions |
 | CI not running on release PR | Token must be a dedicated release token (App token or PAT), not `GITHUB_TOKEN` |
+| Asset upload fails on a published release; later publish steps skipped | Immutable releases are on — use `draft: true` + `force-tag-creation` (see Immutable Releases above) |
+| Release stuck in draft | The asset/publish job did not finish — **Re-run failed jobs**, not a full re-run |
