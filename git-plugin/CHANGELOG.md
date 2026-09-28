@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.58.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.58.2...git-plugin-v2.58.3) (2026-09-28)
+
+
+### Bug Fixes
+
+* **plugins:** quote CLAUDE_PLUGIN_ROOT in hook commands; apply 2.1.279-2.1.283 changelog review ([#2854](https://github.com/laurigates/claude-plugins/issues/2854)) ([3e15bf9](https://github.com/laurigates/claude-plugins/commit/3e15bf961986c0f475785fbac9b777d4f6ec4995))
+
 ## [2.58.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.58.1...git-plugin-v2.58.2) (2026-09-27)
 
 
