@@ -13,6 +13,7 @@ TypeScript development support with modern tooling: strict type configuration, E
 | `typescript-strict` | Strict TypeScript configuration and patterns |
 | `typescript-debugging` | Debugging with Bun inspector, VSCode, memory profiling |
 | `typescript-sentry` | Error monitoring and performance tracking with Sentry |
+| `typescript-temporal` | Dates and times with the `Temporal` API instead of `Date` |
 | `eslint-configuration` | ESLint configuration and patterns |
 | `biome-tooling` | Biome linter and formatter |
 | `bun-package-manager` | Fast package management with Bun |

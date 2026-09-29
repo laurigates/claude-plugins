@@ -93,7 +93,7 @@ the rules, skills, and hooks that embody it.
 | **css-plugin** | 2 | CSS tooling - Lightning CSS transpilation, UnoCSS atomic utilities |
 | **python-plugin** | 17 | Python ecosystem - uv, ruff, pytest, basedpyright, packaging |
 | **rust-plugin** | 8 | Rust development - cargo, clippy, nextest, scaffolding, memory safety |
-| **typescript-plugin** | 17 | TypeScript development - Bun, Biome, ESLint, strict types |
+| **typescript-plugin** | 18 | TypeScript development - Bun, Biome, ESLint, strict types |
 
 ### Quality & Testing
 
