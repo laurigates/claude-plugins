@@ -26,6 +26,8 @@
     "sentry",
     "error-monitoring",
     "performance-tracing",
-    "observability"
+    "observability",
+    "temporal",
+    "date-time"
   ]
 }
