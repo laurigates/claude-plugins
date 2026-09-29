@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.7.2...macos-plugin-v1.8.0) (2026-09-29)
+
+
+### Features
+
+* promote licence-position and workflow-scale rules to skills ([#2860](https://github.com/laurigates/claude-plugins/issues/2860)) ([a6ec7d0](https://github.com/laurigates/claude-plugins/commit/a6ec7d0caefff29b6f46cc76e1c3f5bba064b5c6))
+
 ## [1.7.2](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.7.1...macos-plugin-v1.7.2) (2026-08-07)
 
 
