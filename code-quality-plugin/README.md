@@ -20,6 +20,7 @@ This plugin provides comprehensive code quality tools including automated code r
 | `/code:hidden-failures` | Detect hidden failures — swallowed errors (empty catch, `\|\| true`, `2>/dev/null`, floating promises, ignored Go/Rust errors) and silent degradation (ops succeed with zero results); `--track errors\|degradation\|both` |
 | `/code:dead-code` | Detect dead code, unused exports, unreachable branches, and orphaned files |
 | `/code:dep-audit` | Audit dependencies for security vulnerabilities, outdated packages, and license compliance |
+| `code-license-position` | Check a vendor's licence FAQ, discussion threads, and commit authors before calling a `LICENSE` restriction a blocker |
 | `/code:test-quality` | Analyze test suite quality — detect test smells, empty assertions, flaky patterns |
 | `/code:complexity` | Analyze code complexity metrics — cyclomatic, cognitive, function length, coupling |
 | `/code-quality:bulk-sweep-classify` | Route a bulk sweep by target: code renames go through `ast-grep-search` structurally; prose/docs sweeps use the four-category classify-then-transform discipline with allowlist-aware verification; parallel sweeps resolve a central rename map before dispatch and brief auditors with the artifact's purpose |
