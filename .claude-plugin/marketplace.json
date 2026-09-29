@@ -862,7 +862,7 @@
       "name": "typescript-plugin",
       "source": "./typescript-plugin",
       "description": "TypeScript development - strict types, ESLint, Biome",
-      "version": "1.9.1",
+      "version": "1.10.0",
       "author": {
         "name": "Lauri Gates"
       },

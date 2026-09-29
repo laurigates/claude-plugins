@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.9.1...typescript-plugin-v1.10.0) (2026-09-29)
+
+
+### Features
+
+* **typescript-plugin:** add typescript-temporal skill for date and time handling ([#2862](https://github.com/laurigates/claude-plugins/issues/2862)) ([aa558b7](https://github.com/laurigates/claude-plugins/commit/aa558b7389606e6d0cee9678141158ad83c12854))
+
 ## [1.9.1](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.9.0...typescript-plugin-v1.9.1) (2026-09-28)
 
 
