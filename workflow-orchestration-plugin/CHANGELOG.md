@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.12.1...workflow-orchestration-plugin-v1.13.0) (2026-09-29)
+
+
+### Features
+
+* promote licence-position and workflow-scale rules to skills ([#2860](https://github.com/laurigates/claude-plugins/issues/2860)) ([a6ec7d0](https://github.com/laurigates/claude-plugins/commit/a6ec7d0caefff29b6f46cc76e1c3f5bba064b5c6))
+
 ## [1.12.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.12.0...workflow-orchestration-plugin-v1.12.1) (2026-09-27)
 
 

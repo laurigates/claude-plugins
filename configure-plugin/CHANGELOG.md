@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.37.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.36.3...configure-plugin-v1.37.0) (2026-09-29)
+
+
+### Features
+
+* promote licence-position and workflow-scale rules to skills ([#2860](https://github.com/laurigates/claude-plugins/issues/2860)) ([a6ec7d0](https://github.com/laurigates/claude-plugins/commit/a6ec7d0caefff29b6f46cc76e1c3f5bba064b5c6))
+
 ## [1.36.3](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.36.2...configure-plugin-v1.36.3) (2026-09-28)
 
 
