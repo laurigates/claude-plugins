@@ -145,7 +145,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, dependency auditing, dead code detection, test quality, complexity metrics, and static analysis",
-      "version": "1.26.2",
+      "version": "1.27.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -243,7 +243,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.36.3",
+      "version": "1.37.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -548,7 +548,7 @@
       "name": "macos-plugin",
       "source": "./macos-plugin",
       "description": "macOS-specific dev environment tooling - kitty session persistence, LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift",
-      "version": "1.7.2",
+      "version": "1.8.0",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -879,7 +879,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - parallel agents, CI pipelines, preflight checks, checkpoint refactoring",
-      "version": "1.12.1",
+      "version": "1.13.0",
       "author": {
         "name": "Lauri Gates"
       },
