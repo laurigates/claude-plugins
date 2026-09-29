@@ -207,10 +207,37 @@ mise ls-remote <tool>      # available versions before pinning
 - **Trust**: mise refuses untrusted config files; `mise trust` (or `mise trust --all`) after writing.
 - **`pipx:` resolution** depends on a mise-managed `uv` + `pipx.uvx = true`.
 - **aqua names** are `org/repo` and must match the aqua-registry; otherwise fall back to `github:`/`cargo:`/`go:`.
-- **Stale tool copies**: a global tool can reappear from another node version's `node_modules` or from `~/.default-npm-packages` re-seeding — see the global `mise-stale-tool-copies` rule.
+- **Stale tool copies**: a global tool can reappear from another node version's `node_modules` or from `~/.default-npm-packages` re-seeding — see [Stale tool copies](#stale-tool-copies-a-tool-keeps-coming-back).
 - **One-off version**: `mise exec <tool>@<ver> -- <cmd>` scopes a version to a single command; `mise use` *changes the default* (global `dependency-management` rule).
 - **node ≥26** prebuilt binaries need `libatomic.so.1` — absent on some minimal Linux/appliances; gate or pin.
 
+## Stale tool copies — a tool "keeps coming back"
+
+mise keeps a separate global `node_modules` per node version, so an
+`npm install -g` binary (notably `claude`) lives per-version: uninstalling it
+from the *active* version leaves stale copies under every other installed
+version, and the tool "returns" whenever mise activates one of them. No
+reinstall is happening — it's leftovers.
+
+Sweep all three locations, not just the active version:
+
+```sh
+ls -d ~/.local/share/mise/installs/node/*/lib/node_modules/@anthropic-ai/claude-code
+ls -la ~/.local/share/mise/installs/node/*/bin/claude ~/.local/share/mise/shims/claude
+for d in ~/.local/share/mise/installs/node/*/lib/node_modules/@anthropic-ai; do [ -d "$d" ] && rm -rf "$d"; done
+for s in ~/.local/share/mise/installs/node/*/bin/claude; do rm -f "$s"; done
+rm -f ~/.local/share/mise/shims/claude
+```
+
+Keep it gone: `~/.default-npm-packages` is auto-installed into every *new* node
+version — if the tool is listed there, removal is pointless. Confirm
+`which -a claude` resolves only to the native `~/.local/bin/claude`, and
+`~/.claude.json` shows `"installMethod": "native"`. Deleting a running process's
+files is safe on macOS (the open inode persists until exit).
+
+Same pattern for any mise runtime's globals (pipx, bun): check every installed
+version, not just the active one.
+
 ## Sources
 
-Distilled from the laurigates dotfiles mise setup (`private_dot_config/mise/config.toml.tmpl`, `docs/mise-migration-guide.md`, `docs/mise-quick-reference.md`, `docs/adrs/0002-unified-tool-version-management-mise.md`) and the global `mise-stale-tool-copies` / `dependency-management` rules.
+Distilled from the laurigates dotfiles mise setup (`private_dot_config/mise/config.toml.tmpl`, `docs/mise-migration-guide.md`, `docs/mise-quick-reference.md`, `docs/adrs/0002-unified-tool-version-management-mise.md`) and the global `dependency-management` rule.

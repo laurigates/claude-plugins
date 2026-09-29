@@ -15,6 +15,7 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of the preflight → checkpoint
 | workflow-ci-fix-pipeline | `/workflow:ci-fix` | Autonomous CI failure diagnosis and fix across PRs |
 | workflow-checkpoint-refactor | `/workflow:checkpoint-refactor` | Multi-phase refactoring with persistent state across sessions |
 | workflow-interrupted-run-recovery | — | Recover a `Workflow` run killed mid-flight: salvage killed agents' worktrees, resume without duplicating PRs the completed agents opened |
+| workflow-scale-budget | — | Size a `Workflow` script's agent count before running it: cost per agent, per-item multipliers, theme grouping, re-drive design |
 
 ## Usage
 

@@ -99,7 +99,7 @@ the rules, skills, and hooks that embody it.
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **code-quality-plugin** | 16 | Code review, refactoring, linting, static analysis, debugging methodology, scaffold back-porting |
+| **code-quality-plugin** | 17 | Code review, refactoring, linting, static analysis, debugging methodology, scaffold back-porting, licence-position checks |
 | **software-design-plugin** | 6 | Software design methodology - deep modules, design by contract, GoF pattern selection, legacy seams, pseudocode |
 | **evaluate-plugin** | 7 + 3 agents | Skill evaluation and benchmarking - test effectiveness, grade results |
 | **codebase-attributes-plugin** | 3 | Structured codebase health attributes with severity-based agent routing |
@@ -155,7 +155,7 @@ the rules, skills, and hooks that embody it.
 | **macos-plugin** | 8 | macOS dev tooling - kitty session persistence, LaunchServices health, incident postmortems, APFS disk-usage / space recovery, performance triage and benchmark suite, dead-keybinding debug |
 | **taskwarrior-plugin** | 9 | Taskwarrior coordination for multi-agent work - parallel-safe queries, urgency scoring |
 | **tools-plugin** | 16 | General utilities - fd, rg, jq, shell, ImageMagick, d2 |
-| **workflow-orchestration-plugin** | 5 | Workflow orchestration - preflight checks, checkpoint refactoring |
+| **workflow-orchestration-plugin** | 6 | Workflow orchestration - preflight checks, checkpoint refactoring, workflow scale budgeting |
 
 ### Game Development
 
