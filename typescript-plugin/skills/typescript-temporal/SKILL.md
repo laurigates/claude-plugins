@@ -38,9 +38,11 @@ If answering "which day is this?" needs a time zone, the value is not a
 // yesterday from 00:00 to 02:00 local in winter and to 03:00 in summer.
 const utcToday = new Date().toISOString().slice(0, 10); // or .split("T")[0]
 
-// Right
+// Right: one "today" seam for the whole codebase (see Testing for why it
+// reads Date.now())
 const TZ = "Europe/Helsinki";
-const today = Temporal.Now.plainDateISO(TZ);
+export const today = (tz = TZ): Temporal.PlainDate =>
+  Temporal.Instant.fromEpochMilliseconds(Date.now()).toZonedDateTimeISO(tz).toPlainDate();
 const day = Temporal.Instant.from(apiTimestamp).toZonedDateTimeISO(TZ).toPlainDate();
 ```
 
@@ -89,6 +91,29 @@ Interop with legacy `Date` and libraries happens at that same boundary:
 
 Template literals call `toString()` and are safe: `` `${date}` ``.
 
+## Testing
+
+A pinned test clock reaches `Temporal.Now` only if the fake-timer library fakes
+it. `@sinonjs/fake-timers` added `Temporal.Now.*` faking in 15.4.0
+(2026-05-05). Measured on Node 26 after pinning the clock to 2020-01-15:
+
+| Runner | `Temporal.Now.instant()` |
+|---|---|
+| Vitest 4.1.4, 4.1.6, 4.1.11, `vi.useFakeTimers()` + `vi.setSystemTime()` | real time; only `Date` is pinned |
+| Vitest 5.0.0 and 5.0.2 (5.0.0 release notes: "support mocking `Temporal`") | pinned |
+| Jest 30.5.2, `jest.useFakeTimers({ now })` | pinned; `@jest/fake-timers` 30.4.0+ requires fake-timers `^15.4.0` |
+| Bun 1.4.2, `setSystemTime()` | pinned |
+
+An explicit `toFake` list that leaves out `"Temporal"` also leaves it real. On
+runners that do not fake it, code that calls `Temporal.Now.*` directly ignores
+the pinned clock and nothing fails loudly. The `today()` seam above reads
+`Date.now()`, which every fake-timer version pins, so it behaves the same on
+every runner; injecting a clock (`now: () => Temporal.Instant`) works as well.
+
+`bun test` runs in UTC unless `TZ` is set. In UTC, UTC slicing and local
+getters agree, so both off-by-one-day bugs above pass. Run date tests under a
+zone east and a zone west of UTC.
+
 ## Availability
 
 Native support per MDN browser-compat-data (8.1.3, 2026-09-24):
@@ -121,7 +146,8 @@ Native support per MDN browser-compat-data (8.1.3, 2026-09-24):
 New code that reaches for `new Date(`, `Date.now()`, moment, date-fns, dayjs or
 luxon uses Temporal instead. The exception is an external API that takes or
 returns `Date` (a library signature, `valueAsDate`, a database driver): convert
-at that call site and keep Temporal on both sides. Migrate existing `Date` code
+at that call site and keep Temporal on both sides. The `today()` seam's
+`Date.now()` is the other exception. Migrate existing `Date` code
 when it is touched for a date bug, not as a drive-by sweep.
 
 ## Agentic Optimizations
@@ -131,10 +157,6 @@ when it is touched for a date bug, not as a drive-by sweep.
 | Runtime has native Temporal | `node -p 'typeof Temporal'` (`object`) |
 | Types resolve | `bunx tsc --noEmit` |
 | Reproduce a zone bug | `TZ=America/New_York bun test` |
-
-`bun test` runs in UTC unless `TZ` is set, where UTC slicing and local getters
-agree and both off-by-one-day bugs above pass. Run date tests under a zone east
-and a zone west of UTC.
 
 Find the patterns this skill replaces:
 
