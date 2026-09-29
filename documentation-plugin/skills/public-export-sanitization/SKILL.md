@@ -3,7 +3,7 @@ name: public-export-sanitization
 description: "Sanitize internal content before it goes public (repo, blog, talk). Use when publishing, to catch leaked project ids, service-account emails, hostnames, names, and repo-escaping links."
 allowed-tools: Bash(bash *), Read, Grep, Glob, Edit, TodoWrite
 created: 2026-09-24
-modified: 2026-09-24
+modified: 2026-09-29
 reviewed: 2026-09-24
 ---
 
@@ -68,6 +68,23 @@ the list from the source's git authors and access grants), `--allow <regex>`
 (dismiss a known-benign hit, such as a CSS class that shares a project-id
 prefix; check the regex does not also hide real ids), `--no-links`, `-q`.
 
+It takes **one** tree per run. Given several paths it scans only the last, and
+the summary line then reads like a clean sweep of all of them. Loop over the
+trees instead, and check that each summary names the tree you meant.
+
+No pattern catches **private repository names**, and they are often the leak
+that matters most: a repo name is not shaped like an identifier, so no regex
+can recognise it. Grep for them separately, with the list taken from GitHub
+rather than from memory:
+
+```bash
+gh repo list <owner> --visibility private --limit 1000 --json name --jq '.[].name' > /tmp/private-repos.txt
+grep -rnoFf /tmp/private-repos.txt <export-tree>
+```
+
+Short repo names match as substrings (a repo named `dot` matches "two-dot
+diff"), so read each hit rather than counting them.
+
 It is **not** a secret scanner. Run `gitleaks` for tokens and keys; this catches
 *context* leakage, a different axis.
 
@@ -94,6 +111,9 @@ Replace the real value and keep the architecture. Common classes:
 - Database, KMS, and secret-manager resource names: `<cloud-sql-instance>`,
   `<…-keyring>`, `<…-secret>`
 - Internal hostnames: `<…-host>`
+- **Private repo names**: describe the shape instead ("a 16-file PR", "a
+  node-pack repo"). A public repo in the same org can be named; check its
+  visibility rather than assuming it from the org
 - Internal issue/PR refs (`#NNNN`): drop, or "(tracked internally)"
 - **Personal names** and usernames: a role ("a team member", "an applicant")
 - Internal cost or accounting codes: the project name, not the numeric code
@@ -101,6 +121,13 @@ Replace the real value and keep the architecture. Common classes:
 **Keep** the non-sensitive facts that carry the value: region, machine types,
 CIDRs, component/chart/image versions, public DNS hostnames, public upstream
 URLs.
+
+**A claim about how the organisation is configured** ("this org's `main` has no
+required status checks") needs more than a placeholder: it is internal, and it
+goes stale when the setting changes. Replace it with the check the reader can
+run on their own repo. For that example: `mergeStateStatus` is `UNSTABLE` when
+a failing check is present but not required, and `BLOCKED` when it is required
+and the merge is refused.
 
 ## Link rewriting
 
