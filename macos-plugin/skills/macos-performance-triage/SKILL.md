@@ -90,7 +90,9 @@ brew install macmon bottom samply hyperfine
 - **`OrbStack Helper`** — quitting the OrbStack *app* does **not** stop the VM; the
   helper reparents to launchd (`PPID 1`) and keeps eating ~40–50% CPU / ~20% RAM
   with no visible app. Confirm with `ps -Ao pid,ppid,comm | grep -i '[o]rb'` (a
-  `PPID` of `1` is the tell) and stop it with `orb stop`, not `kill`. (Disk side of
+  `PPID` of `1` is the tell) and stop it with `orb stop` (clean VM shutdown,
+  reversible with `orb start`), not `kill`, which skips the VM's own shutdown.
+  Verify: `ps -Aceo pid,comm -r | grep -i '[o]rb' || echo stopped`. (Disk side of
   the same tool: `macos-disk-usage`.)
 - A backgrounded Electron app (Slack, Discord, VS Code) animating off-screen.
 - A browser tab running video/WebRTC/canvas — see Step 2.

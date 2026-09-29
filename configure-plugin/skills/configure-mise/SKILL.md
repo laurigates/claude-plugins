@@ -20,7 +20,7 @@ Set up and audit [mise](https://mise.jdx.dev/) as the unified manager for langua
 | Setting up `mise.toml` to pin a project's runtimes and CLI tools | Installing one tool ad-hoc — run `mise use <tool>@<ver>` directly |
 | Picking the right backend for a tool (core / `pipx:` / `aqua:` / `npm:` / `cargo:` / `go:`) | The project only needs Python/JS *libraries* — use `/configure:package-management` (uv/bun) |
 | Migrating from `.tool-versions`/asdf, `.nvmrc`, `.python-version`, Homebrew, or a Makefile | Defining build/test recipes only, no version management — use `/configure:justfile` or `/configure:makefile` |
-| Adding `[tasks]`, `[env]`, secret loading, or a `mise.lock` for reproducible installs | Running a specific runtime version once — `mise exec <tool>@<ver> -- <cmd>` (see global rule `mise-stale-tool-copies` / `dependency-management`) |
+| Adding `[tasks]`, `[env]`, secret loading, or a `mise.lock` for reproducible installs | Running a specific runtime version once — `mise exec <tool>@<ver> -- <cmd>` (see global rule `dependency-management`) |
 | Auditing an existing mise setup for pinning, lockfile, trust, and backend correctness | Configuring CI runtime install — that consumes the `mise.toml` this skill produces (`jdx/mise-action`) |
 
 ## Context
@@ -194,7 +194,7 @@ A committed `mise.toml` + `mise.lock` is consumed in CI by `jdx/mise-action` (`m
 - **Untrusted config**: mise refuses to load an untrusted file — run `mise trust` after writing.
 - **`pipx:` tool fails to resolve**: ensure `uv` is a mise-managed tool and `pipx.uvx = true` is set (`jdx/mise#7477`).
 - **aqua package not found**: the `org/repo` name must match an aqua-registry entry; fall back to `github:`/`cargo:`/`go:` or core.
-- **Tool "keeps coming back" after removal**: stale per-node-version copies + `~/.default-npm-packages` re-seeding — see the global `mise-stale-tool-copies` rule.
+- **Tool "keeps coming back" after removal**: stale per-node-version copies + `~/.default-npm-packages` re-seeding — sweep procedure in [REFERENCE.md § Stale tool copies](REFERENCE.md#stale-tool-copies-a-tool-keeps-coming-back).
 - **node ≥26 on minimal Linux**: prebuilt binaries link `libatomic.so.1`; gate `node` to platforms that have it (chezmoi-style `os` guard) or pin an older line.
 
 ## See Also
@@ -202,6 +202,6 @@ A committed `mise.toml` + `mise.lock` is consumed in CI by `jdx/mise-action` (`m
 - `/configure:package-management` — uv/bun for Python/JS **libraries** (mise installs the runtimes; uv/bun manage deps)
 - `/configure:justfile`, `/configure:makefile` — task runners mise's `[tasks]` can replace
 - `/configure:ci-workflows` — CI that consumes `mise.toml` via `jdx/mise-action`
-- Global rules: `dependency-management` (tool-install priority, `mise exec` vs `mise use`), `mise-stale-tool-copies` (per-version cleanup)
+- Global rule: `dependency-management` (tool-install priority, `mise exec` vs `mise use`)
 - [REFERENCE.md](REFERENCE.md) — full `[tasks]`/`[env]`/`[settings]` grammar, backend cheat-sheet, migration mapping tables
 - **mise docs**: <https://mise.jdx.dev/> · **aqua registry**: <https://github.com/aquaproj/aqua-registry>
