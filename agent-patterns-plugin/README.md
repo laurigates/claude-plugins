@@ -250,7 +250,7 @@ Adversarial second-pass review that tries to break code, designs, plans, or ADRs
 - Triage gate separating genuine faults from manufactured objections before acting
 
 #### `execution-grounded-review`
-Verify an implementation meets its acceptance criteria by running the suite first, then tracing each criterion to execution evidence — the execution-grounded sibling of `adversarial-review`.
+Verify an implementation meets its acceptance criteria by running the suite first, then tracing each criterion to execution evidence — the execution-grounded sibling of `adversarial-review`. The report lists narrative-changing limitations (unverified criteria, skipped steps, stale evidence) before the verdict, and states `none` explicitly when there are none.
 
 **When to use:**
 - Verifying an implementation meets explicit acceptance criteria, proven by running it

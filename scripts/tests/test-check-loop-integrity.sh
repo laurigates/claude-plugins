@@ -53,6 +53,8 @@ EOF
 See .claude/rules/loop-integrity.md
 "evidenceSpan": { "type": "string" }
 **Attribution bound:** at most 3 search rounds
+"limitations": { "type": "array", "minItems": 1 }
+LIMITATIONS:
 EOF
 }
 
@@ -132,6 +134,13 @@ strip_mutant egr_no_bound "$EGR_REL" "Attribution bound" \
   "execution-grounded-review missing the attribution bound is flagged (#2694)"
 strip_mutant egr_no_span "$EGR_REL" "evidenceSpan" \
   "execution-grounded-review missing the evidenceSpan ledger field is flagged (#2694)"
+
+# 4h'. Narrative-changing limitations (#2870): the LEDGER field and the report
+# block that must precede the verdict.
+strip_mutant egr_no_limitations "$EGR_REL" '"limitations"' \
+  "execution-grounded-review missing the limitations ledger field is flagged (#2870)"
+strip_mutant egr_no_limits_block "$EGR_REL" "LIMITATIONS:" \
+  "execution-grounded-review missing the LIMITATIONS report block is flagged (#2870)"
 
 # 4i. Guard integrity: the real repository satisfies every token the guard
 # requires, so the fixture tokens above are the ones the shipped files carry.

@@ -81,6 +81,10 @@ require "$EXEC_REVIEW" "loop-integrity.md" "execution-grounded-review lost its l
 # and must report a checkable span, not an impression (#2694).
 require "$EXEC_REVIEW" "Attribution bound" "execution-grounded-review attribution search lost its stated upper bound (#2694)"
 require "$EXEC_REVIEW" "evidenceSpan" "execution-grounded-review LEDGER lost the evidenceSpan field (#2694)"
+# The report must declare narrative-changing limitations before the verdict,
+# with "none" stated explicitly rather than omitted (#2870).
+require "$EXEC_REVIEW" '"limitations"' "execution-grounded-review LEDGER lost the required limitations field (#2870)"
+require "$EXEC_REVIEW" "LIMITATIONS:" "execution-grounded-review report lost the LIMITATIONS block before VERDICT (#2870)"
 
 status="OK"
 [ "$issue_count" -gt 0 ] && status="ERROR"
