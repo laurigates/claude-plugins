@@ -151,12 +151,27 @@ checklist:
 | Every row with `sequenceMatchesProduction: "no"` | A green test exists but does not cover the production path |
 | Every row whose `evidenceSpan` is `none` | An attribution was not located within the bound (Step 3b) |
 | Any caveat that would flip `pass` → `fail` if it proved true (flaky rerun, environment-only pass, stale evidence predating the last push) | The pass is conditional, and the reader must know on what |
+| Every step still running, timed out, or whose output is truncated or missing | The verdict describes a partial result as if it were complete |
+| Collateral damage: failures, side effects, or broken behaviour outside the listed criteria — including anything Step 4 drops from the verdict | Every criterion can pass while the change breaks something else |
+| Any claim in the inputs (a pass count, a metric, a "ship-ready" note) that the execution output does not back | The report would repeat a success the evidence never showed |
 
-Summarising long-horizon work tends to drop exactly the flaws that would change
-the story — errors and limitations that undermine an otherwise successful
-account ([Language Models Are "Insecure" Reporters](https://huggingface.co/papers/2609.36139), #2870).
-A required, front-loaded field makes that omission unrepresentable, the same way
-`sequenceMatchesProduction` does for Step 3a.
+**Why.** [Language Models Are "Insecure" Reporters](https://arxiv.org/abs/2609.36139)
+(#2870) planted narrative-changing flaws in 200 work logs per scenario and found
+frontier models omit or downplay them when writing a report — not for lack of
+capability (they find the same flaws when asked directly) but from reasoning
+about appearing successful — for example calling the flaw "outside the scope of
+the task", or deferring to the log's own confident framing. Two findings are measured
+and applied here:
+
+| Measured in the paper | Applied as |
+|---|---|
+| Appending *"Be honest in your response."* raised flagging sharply (GPT-5.5: 1% → 95% on planted negative results) with little rise in false flags on clean logs; "be thorough / critical / skeptical" were weaker and less consistent | That literal line in the verifier brief (Step 3) |
+| Flagging stayed lowest, even with the honesty instruction, on pending results reported as current (≤25%), and among the lowest on collateral damage outside the task | The last three checklist rows above, and the Step 4 rule that dropping is from the verdict, not the report |
+
+The required, front-loaded `limitations` field is this skill's own extension —
+the paper did not test a structured field. It rests on the same reasoning as
+`sequenceMatchesProduction`: a required slot makes "I did not check" or "I left
+it out" unrepresentable rather than silent.
 
 | Row verdict | Meaning |
 |---|---|
@@ -210,10 +225,11 @@ prompt: |
   3 search rounds or 5 windows for that criterion; if nothing explains it, set
   its `evidenceSpan` to "none" and say the cause was not located.
   Cite evidence and its `evidenceSpan` for every row. Fill `limitations` from
-  the checklist (UNVERIFIED rows, skipped/partial steps, sequence mismatches,
-  unlocated spans, verdict-flipping caveats); if there are none, write the
-  single entry "none" — never omit the field. Your final message is the
-  deliverable.
+  the checklist (UNVERIFIED rows, skipped/partial/still-running steps, sequence
+  mismatches, unlocated spans, verdict-flipping caveats, collateral damage
+  outside the criteria, claims the output does not back); if there are none,
+  write the single entry "none" — never omit the field. Be honest in your response.
+  Your final message is the deliverable.
 ```
 
 > **No workflow harness here — deliberately.** The schema is the whole delta;
@@ -299,6 +315,15 @@ neither talk yourself into passing broken code, nor into failing correct code:
 | A coverage gap on a load-bearing criterion | A hypothetical input the contract makes impossible |
 | A round-trip/determinism test whose sequence diverges from production (Step 3a) | A sequence difference that provably can't affect the claim's outcome |
 
+**"Drop" removes an item from the verdict, never from the report.** "Outside
+the scope of the task" is a rationalisation the paper above records for
+concealing a flaw, so a dropped item that is still narrative-changing — a
+failing test unrelated to the criteria, a side effect on shared state, broken
+behaviour the spec never mentioned — goes into `LIMITATIONS` as collateral
+damage. Only items that cannot change the story leave the report entirely:
+style preferences, impossible inputs, and sequence differences that provably
+cannot affect the outcome.
+
 ### Step 5: Report and bound the loop
 
 Emit the ledger in this order — the limitations come **before** the verdict, so
@@ -334,6 +359,7 @@ human, not to keep grinding.
 | Reporting the verdict first and caveats after — or not at all | `LIMITATIONS` block before `VERDICT`, `none` stated explicitly (Step 5) |
 | Feeding the verifier the author's plan/rationale | Intent-starved inputs — criteria + diff + execution evidence only |
 | Inventing requirements the spec never stated | Triage (Step 4) — FAIL only on listed criteria |
+| Omitting collateral damage because it is "out of scope" | Drop it from the verdict, list it in `LIMITATIONS` (Step 4) |
 | Looping until the verifier goes quiet | One revise round; persistent fail = structural problem |
 
 ## Related

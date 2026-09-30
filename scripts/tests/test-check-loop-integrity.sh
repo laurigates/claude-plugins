@@ -55,6 +55,7 @@ See .claude/rules/loop-integrity.md
 **Attribution bound:** at most 3 search rounds
 "limitations": { "type": "array", "minItems": 1 }
 LIMITATIONS:
+single entry "none" — never omit the field. Be honest in your response.
 EOF
 }
 
@@ -141,6 +142,8 @@ strip_mutant egr_no_limitations "$EGR_REL" '"limitations"' \
   "execution-grounded-review missing the limitations ledger field is flagged (#2870)"
 strip_mutant egr_no_limits_block "$EGR_REL" "LIMITATIONS:" \
   "execution-grounded-review missing the LIMITATIONS report block is flagged (#2870)"
+strip_mutant egr_no_honesty "$EGR_REL" "never omit the field. Be honest in your response." \
+  "execution-grounded-review missing the honesty instruction is flagged (#2870)"
 
 # 4i. Guard integrity: the real repository satisfies every token the guard
 # requires, so the fixture tokens above are the ones the shipped files carry.

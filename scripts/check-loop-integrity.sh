@@ -85,6 +85,10 @@ require "$EXEC_REVIEW" "evidenceSpan" "execution-grounded-review LEDGER lost the
 # with "none" stated explicitly rather than omitted (#2870).
 require "$EXEC_REVIEW" '"limitations"' "execution-grounded-review LEDGER lost the required limitations field (#2870)"
 require "$EXEC_REVIEW" "LIMITATIONS:" "execution-grounded-review report lost the LIMITATIONS block before VERDICT (#2870)"
+# The one mitigation the paper measured: a literal honesty instruction in the
+# verifier brief. A "tighten the brief" edit that drops it loses the evidence-
+# backed part of #2870.
+require "$EXEC_REVIEW" "never omit the field. Be honest in your response." "execution-grounded-review verifier brief lost the honesty instruction (#2870)"
 
 status="OK"
 [ "$issue_count" -gt 0 ] && status="ERROR"
