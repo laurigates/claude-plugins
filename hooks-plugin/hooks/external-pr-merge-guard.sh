@@ -25,7 +25,8 @@
 #     retitled the user-visible PR to get past it.
 #   - The PR is resolved in the hook's cwd, except when the command is exactly
 #     `cd <literal dir> && gh pr merge …` with no --repo/-R (in any spelling,
-#     quoted or attached — such text keeps the cwd): then it is resolved
+#     quoted, attached or globbed — the text after `&&` must be plain literal
+#     characters, else the cwd is kept): then it is resolved
 #     in that directory, where the merge actually runs (issue #2872). Every
 #     other cd shape keeps the cwd. A failed lookup without --repo names the
 #     directory it used and suggests `-R OWNER/REPO`.
@@ -458,11 +459,13 @@ case "$TOOL_NAME" in
         #     searched before the cwd for it;
         #   - no --repo/-R (that already names the repository);
         #   - the rest of the command holds nothing that could be a repo flag
-        #     in a spelling the parser above misses: no word starting `-` that
-        #     contains `R` or `-repo` (`-Rx`, `-R=x`, `-sRx`), and no quote,
-        #     backslash, `$`, backtick or `{` that could assemble one
-        #     (`"-R" x`, `--r""epo x`, `-\R x`, `{-R,x}`, `$F`). Any of them
-        #     keeps the session cwd, as before this fix;
+        #     in a spelling the parser above misses. It is an ALLOW-list: every
+        #     character after the `&&` must be a letter, digit, blank or one of
+        #     `._/:=@%+,-&;>` — so no quote, backslash, `$`, backtick, brace,
+        #     glob (`?`, `*`, `[`, a file named `-R` in the cd target), extglob
+        #     (`(`, `!`, `^`, `|`, `#`, `~`) or newline can assemble one — and
+        #     no word may start `-` and contain `R` or `-repo` (`-Rx`, `-R=x`,
+        #     `-sRx`). Anything else keeps the session cwd, as before this fix;
         #   - the rest of the command mentions no other cd/pushd/popd, no
         #     GH_REPO, and no second merge;
         #   - the directory exists, and resolves to the same place logically
@@ -473,8 +476,10 @@ case "$TOOL_NAME" in
             CD_WORD="${BASH_REMATCH[1]}"
             CD_REST="${COMMAND#*&&}"
             CD_AFTER_MERGE="${CD_REST#*merge}"
-            CD_REPOFLAG_RE="[\"'\\\\\$\`{]|(^|[[:space:]])-[^[:space:]]*(R|-repo)"
-            if ! [[ "$CD_REST" =~ $CD_REPOFLAG_RE ]] \
+            CD_LITERAL_RE='^[A-Za-z0-9[:blank:]._/:=@%+,&;>-]*$'
+            CD_REPOFLAG_RE='(^|[^A-Za-z0-9._/:=@%+,-])-[^[:blank:]&;>]*(R|-repo)'
+            if [[ "$CD_REST" =~ $CD_LITERAL_RE ]] \
+               && ! [[ "$CD_REST" =~ $CD_REPOFLAG_RE ]] \
                && ! printf '%s' "$CD_REST" | grep -Eq '(^|[^A-Za-z0-9_])(cd|pushd|popd)([^A-Za-z0-9_]|$)|GH_REPO' \
                && ! printf '%s' "$CD_AFTER_MERGE" | grep -Eq 'gh[[:space:]]+pr[[:space:]]+merge|pulls/[^/[:space:]]+/merge'; then
               CD_BASE="$HOOK_CWD"

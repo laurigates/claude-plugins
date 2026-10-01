@@ -211,6 +211,9 @@ mk_repo "$WS/ext"     acme/ext
 mkdir -p "$WS/plain" "$WS/ext/sub"
 # own/l/.. is `own` logically but `ext` physically (cd -P, `set -o physical`).
 ln -s ../ext/sub "$WS/own/l"
+# Files named like repo flags, so a glob after `cd own &&` (`-?`, `--re?o`)
+# expands to `-R`/`--repo` when the merge runs there (verifier, #2872 round 2).
+touch -- "$WS/own/-R" "$WS/own/--repo"
 export STUB_REPO_AUTHORS="acme/own=laurigates acme/ext=joshua-trustabl"
 export STUB_CEILING="$TMPDIR"
 
@@ -307,6 +310,17 @@ ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 --r""epo acme/ext
 ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -\R acme/ext
 ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 {-R,acme/ext}
 ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 $F
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -? acme/ext
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -[Q-S] acme/ext
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -* acme/ext
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 --re?o acme/ext
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 --squash --delete-branch -? acme/ext
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -!(Q) acme/ext
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -(Q|R) acme/ext
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -^Q acme/ext
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -Q# acme/ext
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -~ acme/ext
+own	ALLOW	ALLOW	-	cd @WS@/ext && gh pr merge 5 -?
 CORPUS
 )
 
