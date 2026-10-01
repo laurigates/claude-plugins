@@ -26,7 +26,8 @@
 #   - The PR is resolved in the hook's cwd, except when the command is exactly
 #     `cd <literal dir> && gh pr merge …` with no --repo/-R (in any spelling,
 #     quoted, attached or globbed — the text after `&&` must be plain literal
-#     characters, else the cwd is kept): then it is resolved
+#     characters with no redirection or lone backgrounding `&`, else the cwd
+#     is kept): then it is resolved
 #     in that directory, where the merge actually runs (issue #2872). Every
 #     other cd shape keeps the cwd. A failed lookup without --repo names the
 #     directory it used and suggests `-R OWNER/REPO`.
@@ -461,11 +462,18 @@ case "$TOOL_NAME" in
         #   - the rest of the command holds nothing that could be a repo flag
         #     in a spelling the parser above misses. It is an ALLOW-list: every
         #     character after the `&&` must be a letter, digit, blank or one of
-        #     `._/:=@%+,-&;>` — so no quote, backslash, `$`, backtick, brace,
+        #     `._/:=@%+,-&;` — so no quote, backslash, `$`, backtick, brace,
         #     glob (`?`, `*`, `[`, a file named `-R` in the cd target), extglob
         #     (`(`, `!`, `^`, `|`, `#`, `~`) or newline can assemble one — and
         #     no word may start `-` and contain `R` or `-repo` (`-Rx`, `-R=x`,
         #     `-sRx`). Anything else keeps the session cwd, as before this fix;
+        #   - nothing runs before or alongside gh: no redirection (`>`, `<`
+        #     are outside the allow-list — `gh pr merge 5 > .git/HEAD`
+        #     truncates the cd target's gitdir before gh runs, so git
+        #     discovery walks up to an enclosing repo) and no lone `&` (a
+        #     backgrounded merge races whatever follows, e.g. a
+        #     `git remote set-url`). `;` and `&&` after the merge run only
+        #     once gh has finished, so they stay;
         #   - the rest of the command mentions no other cd/pushd/popd, no
         #     GH_REPO, and no second merge;
         #   - the directory exists, and resolves to the same place logically
@@ -476,10 +484,12 @@ case "$TOOL_NAME" in
             CD_WORD="${BASH_REMATCH[1]}"
             CD_REST="${COMMAND#*&&}"
             CD_AFTER_MERGE="${CD_REST#*merge}"
-            CD_LITERAL_RE='^[A-Za-z0-9[:blank:]._/:=@%+,&;>-]*$'
-            CD_REPOFLAG_RE='(^|[^A-Za-z0-9._/:=@%+,-])-[^[:blank:]&;>]*(R|-repo)'
+            CD_LITERAL_RE='^[A-Za-z0-9[:blank:]._/:=@%+,&;-]*$'
+            CD_REPOFLAG_RE='(^|[^A-Za-z0-9._/:=@%+,-])-[^[:blank:]&;]*(R|-repo)'
+            CD_BG_RE='(^|[^&])&([^&]|$)'
             if [[ "$CD_REST" =~ $CD_LITERAL_RE ]] \
                && ! [[ "$CD_REST" =~ $CD_REPOFLAG_RE ]] \
+               && ! [[ "$CD_REST" =~ $CD_BG_RE ]] \
                && ! printf '%s' "$CD_REST" | grep -Eq '(^|[^A-Za-z0-9_])(cd|pushd|popd)([^A-Za-z0-9_]|$)|GH_REPO' \
                && ! printf '%s' "$CD_AFTER_MERGE" | grep -Eq 'gh[[:space:]]+pr[[:space:]]+merge|pulls/[^/[:space:]]+/merge'; then
               CD_BASE="$HOOK_CWD"

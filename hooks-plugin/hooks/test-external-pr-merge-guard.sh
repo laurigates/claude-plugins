@@ -214,6 +214,10 @@ ln -s ../ext/sub "$WS/own/l"
 # Files named like repo flags, so a glob after `cd own &&` (`-?`, `--re?o`)
 # expands to `-R`/`--repo` when the merge runs there (verifier, #2872 round 2).
 touch -- "$WS/own/-R" "$WS/own/--repo"
+# A self-authored repo nested inside the external one. A redirection that
+# truncates own2/.git/HEAD before gh runs makes git discovery walk up to `ext`,
+# so the merge lands there (verifier, #2872 round 3).
+mk_repo "$WS/ext/own2" acme/own
 export STUB_REPO_AUTHORS="acme/own=laurigates acme/ext=joshua-trustabl"
 export STUB_CEILING="$TMPDIR"
 
@@ -321,6 +325,15 @@ ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -^Q acme/ext
 ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -Q# acme/ext
 ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -~ acme/ext
 own	ALLOW	ALLOW	-	cd @WS@/ext && gh pr merge 5 -?
+ext	DENY	DENY	-	cd @WS@/ext/own2 && gh pr merge 5 > .git/HEAD
+ext	DENY	DENY	-	cd @WS@/ext/own2 && gh pr merge 5 >.git/HEAD
+ext	DENY	DENY	-	cd @WS@/ext/own2 && gh pr merge 5 2>.git/HEAD
+ext	DENY	DENY	-	cd @WS@/ext/own2 && gh pr merge 5 &>.git/HEAD
+ext	DENY	DENY	-	cd @WS@/ext/own2 && gh pr merge 5 >&2
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 & git -C @WS@/own remote set-url origin https://github.com/acme/ext.git
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 &
+own	ALLOW	ALLOW	-	cd @WS@/ext && gh pr merge 5 > /dev/null
+own	ALLOW	ALLOW	-	cd @WS@/ext && gh pr merge 5 & true
 CORPUS
 )
 
