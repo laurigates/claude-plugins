@@ -5,7 +5,7 @@
       "suite": "git-plugin/git-commit",
       "case": "gc-001",
       "expect": "pass",
-      "note": "shared with test_grade_deterministic.sh",
+      "note": "shared with test-grade-deterministic.sh",
       "output_file": "gc-001-good.txt"
     },
     {
@@ -13,7 +13,7 @@
       "case": "gc-001",
       "expect": "fail",
       "fails_on": "regex",
-      "note": "shared with test_grade_deterministic.sh",
+      "note": "shared with test-grade-deterministic.sh",
       "output_file": "gc-001-bad.txt"
     },
     {

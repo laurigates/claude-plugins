@@ -147,3 +147,11 @@ scripts/tests/test-check-agent-frontmatter-keys.sh
 # check-public-export.sh needs ripgrep, installed above; the suite has no skip
 # branch, so a missing rg shows up as failures rather than a silent green.
 documentation-plugin/skills/public-export-sanitization/scripts/tests/test-check-public-export.sh
+
+# python3 + git only, no skip branch. Both ran nowhere for their whole life:
+# they were named `test_*.sh` (underscore), which the runner's `test-*.sh` glob
+# never matches, while the design doc called the grader suite "wired for CI"
+# (#2795). These entries are the denominator guard for that class -- a rename
+# back to an undiscovered name raises `required_test_missing` and exits 1.
+evaluate-plugin/scripts/tests/test-grade-deterministic.sh
+evaluate-plugin/scripts/tests/test-apply-fixture.sh

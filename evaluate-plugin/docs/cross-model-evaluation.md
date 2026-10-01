@@ -141,12 +141,12 @@ be worth not eyeballing.
 | Typed-check schema on `expectations` | done — `git-commit/evals.json` migrated, back-compatible |
 | `scripts/grade_deterministic.py` | done — regex/substring/absent, scope, JSON + KEY=value out |
 | `scripts/render_matrix_report.py` | done — delta table, verdicts, portability flag |
-| `scripts/tests/test_grade_deterministic.sh` | done — 14 assertions, wired for CI |
+| `scripts/tests/test-grade-deterministic.sh` | done — run by `scripts/run-skill-script-tests.sh` (`Test: Skill scripts`, path-filtered) and pre-commit; declared in `scripts/required-to-run-tests.txt`. Ran nowhere until #2795: the old `test_*.sh` name missed the runner's `test-*.sh` glob |
 | `model-matrix.json` schema | done — documented; example fixture renders |
 | `/evaluate:matrix` orchestration skill | done — runs the matrix, grades deterministic-first, renders the executability flag |
 | Golden set definition (`golden-set.json`) | done — 16 canaries across 6 patterns |
 | Golden-set `evals.json` coverage | partial — 8 of 16 canaries (5 of 6 patterns; `weak-model-gate` has none yet), `evalCoverageFloor` 8, each suite with an abstention case; `scripts/check_golden_set_evals.py` runs recorded probes through the grader (#2144) |
-| Fixture / scaffolding layer (`evals[].fixture`, `apply_fixture.sh`) | done — opt-in, isolated temp workdir, golden-set scope; dir-copy + teardown demonstrated in `scripts/tests/test_apply_fixture.sh` |
+| Fixture / scaffolding layer (`evals[].fixture`, `apply_fixture.sh`) | done — opt-in, isolated temp workdir, golden-set scope; dir-copy + teardown demonstrated in `scripts/tests/test-apply-fixture.sh` (same CI wiring as the grader suite, #2795) |
 | Cron / model-release trigger | done — `.github/workflows/golden-set-evaluation.yml` (monthly cron + `workflow_dispatch` for the on-model-release run) |
 
 ## Related
