@@ -335,11 +335,21 @@ A PermissionRequest hook that auto-approves safe operations and auto-denies dang
 
 | Decision | Patterns |
 |----------|----------|
-| Auto-approve | Read-only git, test runners, linters, gh CLI reads |
-| Auto-deny | `rm -rf /`, force push to main/master |
+| Auto-deny (checked first) | `rm -rf /`, force push to main/master — anywhere in the command |
+| Auto-approve | Read-only git, test runners, linters, gh CLI reads — only when **every** command in the line is one of them |
 | Pass through | Everything else (user decides) |
 
+Approval is decided on an `ast-grep --lang bash` parse, not the raw string
+([#2733](https://github.com/laurigates/claude-plugins/issues/2733)): `git status && touch x`,
+`npm test; chmod -R 777 .` and a multi-line command with an unreviewed second line all pass
+through. Only plain commands joined by `&&`, `||`, `;`, `|`, `&` or newlines can be approved —
+a substitution, process substitution, `$VAR`, subshell, group, loop, conditional, function,
+redirection, heredoc, assignment prefix or comment means no decision. Without ast-grep (or if
+the parse errors or takes over 5 s) the hook never approves; the deny rules still fire.
+
 **Toggle:** `CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO=1`
+
+**Tests:** `bash hooks-plugin/hooks/test-permission-auto-approve.sh` (needs ast-grep for the parser sections; SKIPs them otherwise).
 
 ### task-completeness.sh
 

@@ -39,6 +39,10 @@ hooks-plugin/hooks/test-bash-antipatterns.sh
 # command must exit 2. Without the second assertion a run on a box lacking
 # ast-grep would report every row green over a hook that no-ops.
 terraform-plugin/hooks/test-validate-terraform-apply.sh
+# permission-auto-approve never approves without ast-grep (#2733), so a run
+# lacking the parser would only prove the no-decision half; the approve, probe
+# and subset-differential sections need it.
+hooks-plugin/hooks/test-permission-auto-approve.sh
 
 # uv  (workflow: "Set up uv")
 blueprint-plugin/scripts/tests/test-check-manifest-schema.sh

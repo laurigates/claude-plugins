@@ -932,6 +932,12 @@ repos:
         language: system
         files: '^hooks-plugin/hooks/(auto-checkpoint\.sh|test-auto-checkpoint\.sh)$'
         pass_filenames: false
+      - id: test-permission-auto-approve
+        name: permission-auto-approve hook regression (#2733)
+        entry: bash ./hooks-plugin/hooks/test-permission-auto-approve.sh
+        language: system
+        files: '^hooks-plugin/hooks/(permission-auto-approve\.sh|test-permission-auto-approve\.sh)$'
+        pass_filenames: false
       - id: test-bash-antipatterns-teach
         name: bash-antipatterns teach-nudge hook regression
         entry: bash ./hooks-plugin/hooks/test-bash-antipatterns-teach.sh
