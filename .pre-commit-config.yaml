@@ -1021,3 +1021,10 @@ repos:
         language: system
         files: '^terraform-plugin/hooks/(validate-terraform-apply\.sh|test-validate-terraform-apply\.sh)$'
         pass_filenames: false
+      # kubernetes-plugin ships its own PreToolUse hook, outside hooks-plugin.
+      - id: test-inject-kubectl-dry-run
+        name: kubectl dry-run injector — flag on the parsed node, no allow on compound commands (#2734)
+        entry: bash ./kubernetes-plugin/hooks/test-inject-kubectl-dry-run.sh
+        language: system
+        files: '^kubernetes-plugin/hooks/(inject-kubectl-dry-run\.sh|test-inject-kubectl-dry-run\.sh)$'
+        pass_filenames: false
