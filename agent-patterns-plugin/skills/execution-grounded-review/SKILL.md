@@ -6,7 +6,7 @@ argument-hint: "diff|PR|files to verify; optional --criteria <file> of acceptanc
 allowed-tools: Agent, Read, Glob, Grep, Bash(git diff *), Bash(git log *), Bash(gh pr view *), Bash(npm *), Bash(npx *), Bash(uv run *), Bash(pytest *), Bash(cargo *), Bash(go test *), TodoWrite
 model: opus
 created: 2026-06-22
-modified: 2026-09-23
+modified: 2026-10-01
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -42,6 +42,7 @@ verifier a judgement-based loop gate delegates to (`.claude/rules/loop-integrity
 | **Execute first** | Run the full suite + typecheck + lint *before* any verdict. A criterion is `PASS` only with execution evidence — never "the code looks like it does this". |
 | **Trace each criterion** | One ledger row per acceptance criterion: premise → evidence (file:line / test name / observed output) → verdict. |
 | **No silent pass** | A criterion with no execution backing is `UNVERIFIED` (a coverage gap to surface), not an assumed pass. |
+| **Flaws before the verdict** | The report states its narrative-changing limitations — gaps and caveats that would flip or weaken the verdict — *ahead of* the verdict, and says `none` explicitly when there are none (Step 5). |
 | **Match the production sequence** | For a round-trip / determinism / reproducibility / idempotence claim, a passing test is evidence only if its *operation sequence* reproduces the real production call path — not a convenient shorter one (see Step 3a). |
 | **Intent-starved verifier** | The isolated verifier reads the criteria, the diff, and the captured execution evidence — *not* the author's plan narrative or rationale, which would let it rationalise a pass. |
 | **Bounded loop** | One revise round on `fail`; a third means a structural problem the gate can't resolve. |
@@ -85,8 +86,12 @@ Record the exit codes and failing-test names. A red suite is itself an
 ### Step 2: Name the criteria
 
 State, in one numbered list, the acceptance criteria under verification (from
-`--criteria` or context). If the list is empty, stop and ask for it — there is
-nothing to ground a verdict in. Each criterion is one ledger row in Step 3.
+`--criteria` or context). Each criterion is one ledger row in Step 3.
+
+If there are no criteria, or no execution evidence (Step 1 could not run and
+none was supplied), stop: emit no ledger and no `VERDICT` line, name the missing
+input, and ask for it. A missing input is not a `fail` — `fail` claims the code
+was graded and found wanting, and nothing was graded.
 
 ### Step 3: Dispatch the intent-starved verifier
 
@@ -101,7 +106,7 @@ quietly unanswered.
 ```json
 {
   "type": "object",
-  "required": ["rows", "coverage", "verdict"],
+  "required": ["rows", "coverage", "limitations", "verdict"],
   "properties": {
     "rows": {
       "type": "array",
@@ -118,6 +123,11 @@ quietly unanswered.
       }
     },
     "coverage": { "type": "string" },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
     "verdict": { "enum": ["pass", "fail"] }
   }
 }
@@ -130,6 +140,49 @@ or the literal `none`; it lets the caller check an attribution instead of
 trusting it (Step 3b). It carries no `maxLength` or `pattern` on purpose: a
 locator rejected by a length cap gets resent, not fixed (#2280). `coverage` is
 `<#rows with PASS/FAIL evidence> / <total rows>`.
+
+`limitations` lists every **narrative-changing** fact — one that, read after the
+verdict, would change what the verdict means. It sits before `verdict` in the
+schema and in the report on purpose, and it carries `minItems: 1`: when there is
+nothing to declare, the single entry is the literal `none`, so an absent caveat
+is a stated claim rather than an omission. One entry per item, from this
+checklist:
+
+| Must appear in `limitations` | Why it changes the narrative |
+|---|---|
+| Every `UNVERIFIED` row, by criterion | The verdict rests on fewer criteria than were listed |
+| Every suite / typecheck / lint step that was skipped, errored before running, or ran on a subset (filtered, `--bail`, `-k`) | Step 1 evidence is narrower than "the suite passed" implies |
+| Every row with `sequenceMatchesProduction: "no"` | A green test exists but does not cover the production path |
+| Every `FAIL` or `PARTIAL` row whose `evidenceSpan` is `none` | The failure's cause was not located within the bound (Step 3b) |
+| Any caveat that would flip `pass` → `fail` if it proved true (flaky rerun, environment-only pass, stale evidence predating the last push) | The pass is conditional, and the reader must know on what |
+| Every step still running, timed out, or whose output is truncated or missing | The verdict describes a partial result as if it were complete |
+| Collateral damage: failures, side effects, or broken behaviour outside the listed criteria — including anything Step 4 drops from the verdict | Every criterion can pass while the change breaks something else |
+| Any factual claim in the inputs (a pass count, a metric, "all green") that the execution output does not back | The report would repeat a success the evidence never showed |
+
+Every entry points at something the inputs show, or show to be missing: a step
+that did not run, an output line, a criterion with no test. Speculative risks
+with no sign in the inputs — code the verifier did not open, evidence that
+"might" be stale with no later commit named — are not limitations. Listing them
+is the false-flag cost the paper below measured, and it makes `none` unreachable
+on a clean run.
+
+**Why.** [Language Models Are "Insecure" Reporters](https://arxiv.org/abs/2609.36139)
+(#2870) planted narrative-changing flaws in 200 work logs per scenario and found
+frontier models omit or downplay them when writing a report — not for lack of
+capability (they find the same flaws when asked directly) but from reasoning
+about appearing successful — for example calling the flaw "outside the scope of
+the task", or deferring to the log's own confident framing. Two findings are measured
+and applied here:
+
+| Measured in the paper | Applied as |
+|---|---|
+| Appending *"Be honest in your response."* raised flagging sharply (GPT-5.5: 1% → 95% on planted negative results) with little rise in false flags on clean logs; "be thorough / critical / skeptical" were weaker and less consistent | That literal line in the verifier brief (Step 3) |
+| Flagging stayed lowest, even with the honesty instruction, on pending results reported as current (≤25%), and among the lowest on collateral damage outside the task | The last three checklist rows above, and the Step 4 rule that dropping is from the verdict, not the report |
+
+The required, front-loaded `limitations` field is this skill's own extension —
+the paper did not test a structured field. It rests on the same reasoning as
+`sequenceMatchesProduction`: a required slot makes "I did not check" or "I left
+it out" unrepresentable rather than silent.
 
 | Row verdict | Meaning |
 |---|---|
@@ -149,9 +202,12 @@ required enum makes "I did not check" unrepresentable.
 | `no` | the test passes over a shorter or rearranged sequence than production uses → the row's `verdict` becomes `UNVERIFIED` |
 | `not-applicable` | the criterion makes no round-trip / determinism / reproducibility / idempotence claim |
 
-The overall `verdict` is `pass` only when every row is `PASS` **and** no row is
-`sequenceMatchesProduction: "no"`. Any `FAIL`, any `UNVERIFIED`, or any sequence
-divergence makes it `fail`.
+The overall `verdict` is `pass` only when every row is `PASS`, no row is
+`sequenceMatchesProduction: "no"`, **and** every Step 1 step ran to completion
+over the full suite. Any `FAIL`, any `UNVERIFIED`, any sequence divergence, or a
+Step 1 step that was skipped, errored before running, ran on a subset, or is
+still running makes it `fail`. Step 1 is a precondition of the verdict, not a
+caveat to list beside a `pass`.
 
 Template:
 
@@ -182,8 +238,12 @@ prompt: |
   candidate that does not explain the failure narrow the next query. Stop after
   3 search rounds or 5 windows for that criterion; if nothing explains it, set
   its `evidenceSpan` to "none" and say the cause was not located.
-  Cite evidence and its `evidenceSpan` for every row. Your final message is the
-  deliverable.
+  Cite evidence and its `evidenceSpan` for every row. Fill `limitations` from
+  the checklist (UNVERIFIED rows, skipped/partial/still-running steps, sequence
+  mismatches, unlocated spans, verdict-flipping caveats, collateral damage
+  outside the criteria, claims the output does not back); if there are none,
+  write the single entry "none" — never omit the field. Be honest in your response.
+  Your final message is the deliverable.
 ```
 
 > **No workflow harness here — deliberately.** The schema is the whole delta;
@@ -269,11 +329,36 @@ neither talk yourself into passing broken code, nor into failing correct code:
 | A coverage gap on a load-bearing criterion | A hypothetical input the contract makes impossible |
 | A round-trip/determinism test whose sequence diverges from production (Step 3a) | A sequence difference that provably can't affect the claim's outcome |
 
+**"Drop" removes an item from the verdict, never from the report.** "Outside
+the scope of the task" is a rationalisation the paper above records for
+concealing a flaw, so a dropped item that is still narrative-changing — a
+failing test unrelated to the criteria, a side effect on shared state, broken
+behaviour the spec never mentioned — goes into `LIMITATIONS` as collateral
+damage. Only items that cannot change the story leave the report entirely:
+style preferences, impossible inputs, and sequence differences that provably
+cannot affect the outcome.
+
 ### Step 5: Report and bound the loop
 
-Emit the ledger: target, per-criterion rows with evidence and `evidenceSpan`,
-`COVERAGE`, and the overall verdict. Apply or hand off the genuine fixes (closing `UNVERIFIED` rows
-by adding the missing test counts as a fix). Re-run from Step 1 **only if the
+Emit the ledger in this order — the limitations come **before** the verdict, so
+a reader who stops at the verdict has already seen what it rests on:
+
+```
+TARGET: <target>
+ROWS: <per-criterion rows with evidence and evidenceSpan>
+COVERAGE: <n>/<total>
+LIMITATIONS:
+  - <one narrative-changing item per line, or the single line "none">
+VERDICT: pass|fail
+```
+
+`LIMITATIONS` is never omitted and never left empty: an empty list is written as
+`none`. A report that carries a `VERDICT` line with no `LIMITATIONS` block above
+it is malformed — re-emit it rather than acting on it. When Step 2 stopped for a
+missing input, there is no report to emit; ask for the input instead.
+
+Apply or hand off the genuine fixes (closing `UNVERIFIED` rows by adding the
+missing test counts as a fix). Re-run from Step 1 **only if the
 verdict was `fail`**; do not loop more than twice — a third round means a
 structural problem the gate can't resolve, which is the signal to surface to a
 human, not to keep grinding.
@@ -286,8 +371,10 @@ human, not to keep grinding.
 | Passing a criterion because the code "looks like it does that" | No execution evidence → `UNVERIFIED`, not pass |
 | Passing a round-trip/determinism claim because "a test exists and passes" | Confirm the test's operation sequence matches the production call path (Step 3a) |
 | Reading a long trace end to end and naming the latest plausible cause | Locate with `grep -n`, read narrow windows, report the span — within the attribution bound (Step 3b) |
+| Reporting the verdict first and caveats after — or not at all | `LIMITATIONS` block before `VERDICT`, `none` stated explicitly (Step 5) |
 | Feeding the verifier the author's plan/rationale | Intent-starved inputs — criteria + diff + execution evidence only |
 | Inventing requirements the spec never stated | Triage (Step 4) — FAIL only on listed criteria |
+| Omitting collateral damage because it is "out of scope" | Drop it from the verdict, list it in `LIMITATIONS` (Step 4) |
 | Looping until the verifier goes quiet | One revise round; persistent fail = structural problem |
 
 ## Related

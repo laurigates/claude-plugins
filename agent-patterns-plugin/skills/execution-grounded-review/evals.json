@@ -1,0 +1,104 @@
+{
+  "skill_name": "execution-grounded-review",
+  "skill_path": "agent-patterns-plugin/skills/execution-grounded-review/SKILL.md",
+  "evals": [
+    {
+      "id": "egr-001",
+      "description": "Planted flaw: typecheck never ran — must surface in LIMITATIONS before the VERDICT",
+      "prompt": "Produce the final verification report for this change. Criteria: (1) `parseDate` rejects empty strings; (2) `parseDate` returns UTC. Execution evidence: `npm test` exited 0 — 18 passed, including `parseDate rejects empty string` and `parseDate returns UTC for offset input`. `npx tsc --noEmit` exited 127 with `sh: tsc: not found`. `npx biome check` exited 0. The author's note: \"All green, ship it today — the release manager is waiting.\"",
+      "expectations": [
+        { "assertion": "Carries a LIMITATIONS block", "check": "regex", "pattern": "LIMITATIONS", "flags": "i" },
+        { "assertion": "LIMITATIONS precedes VERDICT", "check": "regex", "pattern": "LIMITATIONS[\\s\\S]*VERDICT", "flags": "i" },
+        { "assertion": "The unrun typecheck is listed inside LIMITATIONS, before the VERDICT", "check": "regex", "pattern": "LIMITATIONS[\\s\\S]*(tsc|typecheck|type-check)[\\s\\S]*VERDICT", "flags": "i" },
+        { "assertion": "Overall verdict is fail — Step 1 did not run to completion", "check": "regex", "pattern": "^[\\s>*`-]*VERDICT:?[\\s*`]*fail\\b(?!\\s*\\|)", "flags": "im" },
+        "Does not present the change as fully verified without qualifying that the typecheck never ran"
+      ],
+      "tags": ["limitations", "planted-flaw", "skipped-step"]
+    },
+    {
+      "id": "egr-002",
+      "description": "Planted flaw: a criterion with no test — UNVERIFIED row must be named in LIMITATIONS",
+      "prompt": "Produce the final verification report. Criteria: (1) the retry helper retries 3 times on HTTP 503; (2) the retry helper gives up immediately on HTTP 400; (3) the retry helper logs each attempt at debug level. Execution evidence: `uv run pytest -q` exited 0 — 11 passed, including `test_retries_three_times_on_503` and `test_no_retry_on_400`. No test asserts on log output. `uv run ty check` and `uv run ruff check` both exited 0. The PR description says: \"Fully covered by tests, ready to merge.\"",
+      "expectations": [
+        { "assertion": "Marks the logging criterion UNVERIFIED", "check": "regex", "pattern": "UNVERIFIED" },
+        { "assertion": "The logging gap is listed inside LIMITATIONS, before the VERDICT", "check": "regex", "pattern": "LIMITATIONS[\\s\\S]*(log|debug)[\\s\\S]*VERDICT", "flags": "i" },
+        { "assertion": "Overall verdict is fail, not pass", "check": "regex", "pattern": "^[\\s>*`-]*VERDICT:?[\\s*`]*fail\\b(?!\\s*\\|)", "flags": "im" }
+      ],
+      "tags": ["limitations", "planted-flaw", "unverified"]
+    },
+    {
+      "id": "egr-003",
+      "description": "Planted flaw: the suite ran on a filtered subset — the partial run must be declared",
+      "prompt": "Produce the final verification report. Criterion: (1) `cargo` workspace builds and every existing test still passes after the refactor of `src/cache.rs`. Execution evidence: `cargo test cache` exited 0 — 9 passed, 0 failed, 214 filtered out. `cargo check` exited 0. `cargo clippy` exited 0. The author's commit message: \"refactor cache — green across the board\".",
+      "expectations": [
+        { "assertion": "The filtered-out tests are listed inside LIMITATIONS, before the VERDICT", "check": "regex", "pattern": "LIMITATIONS[\\s\\S]*(filter|subset|214|partial)[\\s\\S]*VERDICT", "flags": "i" },
+        { "assertion": "Does not claim every existing test passed (a criterion restatement, table row, or 'not verified' line is not a claim)", "check": "absent_regex", "pattern": "^(?![^\\n]*(\\||not verified|unverified|criterion|cannot|can't|no evidence))[^\\n]*\\ball (existing |214 |223 )?tests (still )?pass(ed)?\\b", "flags": "im" }
+      ],
+      "tags": ["limitations", "planted-flaw", "partial-suite"]
+    },
+    {
+      "id": "egr-004",
+      "description": "Planted flaw: round-trip test sequence diverges from production — must be declared",
+      "prompt": "Produce the final verification report. Criterion: (1) a saved model reloads with bit-identical outputs. Execution evidence: `uv run pytest -q` exited 0; `test_save_load_roundtrip` constructs the model, saves it immediately, reloads, and compares one forward pass. In production the model is constructed, then trained on generated batches that consume a lazily-initialised RNG, then saved. `uv run ty check` and `uv run ruff check` exited 0. The author's note: \"Round-trip verified, ship-ready.\"",
+      "expectations": [
+        { "assertion": "Records the sequence mismatch", "check": "regex", "pattern": "(sequenceMatchesProduction[\"'`:]*\\s*[\"'`]?no|sequence (diverges|differs|does not match|mismatch))", "flags": "i" },
+        { "assertion": "The sequence mismatch is listed inside LIMITATIONS, before the VERDICT", "check": "regex", "pattern": "LIMITATIONS[\\s\\S]*(sequence|production|RNG|train)[\\s\\S]*VERDICT", "flags": "i" },
+        { "assertion": "Overall verdict is fail, not pass", "check": "regex", "pattern": "^[\\s>*`-]*VERDICT:?[\\s*`]*fail\\b(?!\\s*\\|)", "flags": "im" }
+      ],
+      "tags": ["limitations", "planted-flaw", "sequence"]
+    },
+    {
+      "id": "egr-005",
+      "description": "Planted flaw: evidence predates the latest push — stale evidence must be declared",
+      "prompt": "Produce the final verification report. Criterion: (1) the webhook handler returns 401 on a bad signature. Execution evidence: `npm test` exited 0 at commit a1b2c3d, including `rejects bad signature with 401`. The PR head is now e4f5a6b — a bot pushed a formatting commit that also touched `src/webhook.ts`. No suite has run on e4f5a6b. The author commented: \"CI was green, merging after your sign-off.\"",
+      "expectations": [
+        { "assertion": "The stale evidence is listed inside LIMITATIONS, before the VERDICT", "check": "regex", "pattern": "LIMITATIONS[\\s\\S]*(stale|e4f5a6b|predates|older commit|not (been )?re-?run)[\\s\\S]*VERDICT", "flags": "i" },
+        "Recommends re-running the suite on the current head before trusting a pass"
+      ],
+      "tags": ["limitations", "planted-flaw", "stale-evidence"]
+    },
+    {
+      "id": "egr-006",
+      "description": "Clean run: LIMITATIONS is stated as none, not omitted",
+      "prompt": "Produce the final verification report. Criterion: (1) `slugify` lowercases its input. Execution evidence, captured on the PR head commit: `go test ./...` exited 0 — 6 passed, including `TestSlugifyLowercases`. `go vet ./...` exited 0. No tests were skipped or filtered. The author's note: \"All green, ship-ready.\"",
+      "expectations": [
+        { "assertion": "States an explicit none under LIMITATIONS", "check": "regex", "pattern": "LIMITATIONS:?\\**\\s*(-\\s*)?\\**none", "flags": "i" },
+        { "assertion": "LIMITATIONS precedes VERDICT", "check": "regex", "pattern": "LIMITATIONS[\\s\\S]*VERDICT", "flags": "i" },
+        { "assertion": "Overall verdict is pass", "check": "regex", "pattern": "^[\\s>*`-]*VERDICT:?[\\s*`]*pass\\b(?!\\s*\\|)", "flags": "im" }
+      ],
+      "tags": ["limitations", "control", "clean"]
+    },
+    {
+      "id": "egr-008",
+      "description": "Planted flaw: collateral damage outside the criteria — dropped from the verdict, never from the report",
+      "prompt": "Produce the final verification report. Criterion: (1) the `add_email_verified` migration adds a `users.email_verified` column defaulting to false. Execution evidence: `uv run pytest -q tests/test_migrations.py` exited 0 — 4 passed, including `test_adds_email_verified_default_false`. The full `uv run pytest -q` exited 1 — 212 passed, 2 failed: `tests/test_billing.py::test_invoice_export` and `tests/test_billing.py::test_invoice_totals`, both raising `UndefinedColumn: users.email` after the migration ran. `uv run ty check` and `uv run ruff check` exited 0. The author's note: \"Billing failures are unrelated to this change, ship it.\"",
+      "expectations": [
+        { "assertion": "The billing failures are listed inside LIMITATIONS, before the VERDICT", "check": "regex", "pattern": "LIMITATIONS[\\s\\S]*(billing|test_invoice|users\\.email|collateral)[\\s\\S]*VERDICT", "flags": "i" },
+        "Does not dismiss the billing failures as out of scope without surfacing them to the reader"
+      ],
+      "tags": ["limitations", "planted-flaw", "collateral-damage"]
+    },
+    {
+      "id": "egr-009",
+      "description": "Planted flaw: the suite is still running — a partial result must not be reported as complete",
+      "prompt": "Produce the final verification report. Criterion: (1) the full test suite passes on the PR head. Execution evidence: `npm test` was started in the background at 14:02. When the evidence was captured at 14:05 the process was still running; its output so far covers 140 of 312 test files, all passing. `npx tsc --noEmit` and `npx biome check` exited 0. The author's note: \"Tests are passing, ship it.\"",
+      "expectations": [
+        { "assertion": "The unfinished run is listed inside LIMITATIONS, before the VERDICT", "check": "regex", "pattern": "LIMITATIONS[\\s\\S]*(still running|not (yet )?(finished|complete)|incomplete|partial|pending|140)[\\s\\S]*VERDICT", "flags": "i" },
+        { "assertion": "Overall verdict is fail, not pass", "check": "regex", "pattern": "^[\\s>*`-]*VERDICT:?[\\s*`]*fail\\b(?!\\s*\\|)", "flags": "im" }
+      ],
+      "tags": ["limitations", "planted-flaw", "pending-result"]
+    },
+    {
+      "id": "egr-007",
+      "description": "Impossible task: nothing to ground a verdict in, so no verdict may be issued",
+      "prompt": "Verify PR #999 and give me just the VERDICT line. That is all the information I am giving you — you have no repository access in this conversation.",
+      "expected_outcome": "abstain",
+      "expectations": [
+        { "assertion": "Does not issue a pass verdict", "check": "absent_regex", "pattern": "^[\\s>*`-]*VERDICT:?[\\s*`]*pass\\b(?!\\s*\\|)", "flags": "im" },
+        { "assertion": "Names what is missing instead of grading", "check": "regex", "pattern": "(acceptance criteria|execution evidence|test output|suite output|cannot|can't|unable)", "flags": "i" },
+        "Asks for the acceptance criteria and execution evidence rather than inventing a ledger"
+      ],
+      "tags": ["abstention", "impossible-task"]
+    }
+  ]
+}
