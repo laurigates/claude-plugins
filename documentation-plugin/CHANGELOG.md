@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.0](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.12.0...documentation-plugin-v1.13.0) (2026-10-01)
+
+
+### Features
+
+* **documentation-plugin:** add three export-sanitization lessons ([#2864](https://github.com/laurigates/claude-plugins/issues/2864)) ([f8ec3c6](https://github.com/laurigates/claude-plugins/commit/f8ec3c68be87ad30a765b14606b7c47cc4150191))
+
 ## [1.12.0](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.11.2...documentation-plugin-v1.12.0) (2026-09-24)
 
 
