@@ -295,6 +295,18 @@ session	DENY	DENY	-	cd @WS@/own | gh pr merge 5
 session	DENY	DENY	-	cd @WS@/own && gh pr merge $N
 session	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -R acme/ext
 session	ALLOW	ALLOW	-	cd @WS@/ext && gh pr merge 5 -R acme/own
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -Racme/ext
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -R=acme/ext
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge -Racme/ext 5
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 "-R" acme/ext
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 '--repo' acme/ext
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 --squash -Racme/ext --delete-branch
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 2>/dev/null -Racme/ext
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -sRacme/ext
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 --r""epo acme/ext
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -\R acme/ext
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 {-R,acme/ext}
+ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 $F
 CORPUS
 )
 

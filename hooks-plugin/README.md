@@ -280,7 +280,7 @@ is looked up in `<dir>`, where the merge actually runs.
 | Leading `cd` shape | Looked up in |
 |--------------------|--------------|
 | `cd /abs/path && gh pr merge 5`, also `./…`, `../…`, `~/…` — one plain literal operand, the cd first and the merge second, joined by `&&` | The cd target, if it exists and resolves to the same directory logically and physically |
-| `cd x; gh pr merge`, `cd x \|\| …`, `cd -P x`, `cd "x"`, `cd $X`, a glob or brace, a bare relative name (CDPATH-dependent), `pushd`, a second cd/pushd/popd, `GH_REPO`, or a second merge anywhere in the command | The session cwd, exactly as before |
+| `cd x; gh pr merge`, `cd x \|\| …`, `cd -P x`, `cd "x"`, `cd $X`, a glob or brace, a bare relative name (CDPATH-dependent), `pushd`, a second cd/pushd/popd, `GH_REPO`, or a second merge anywhere in the command; any word after the `&&` starting `-` that contains `R` or `-repo` (`-Racme/x`, `-R=acme/x`, `-sRacme/x`), or any quote, backslash, `$`, backtick or `{` there (`"-R" acme/x`, `$FLAGS`) — a repo flag the parser might miss | The session cwd, exactly as before |
 
 When the lookup fails and no `--repo` was given, the denial names the directory
 it resolved the repository from and suggests retrying with `-R OWNER/REPO`.

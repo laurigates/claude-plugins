@@ -24,7 +24,8 @@
 #     `gh pr create` because the PR body quoted the phrase, and the agent
 #     retitled the user-visible PR to get past it.
 #   - The PR is resolved in the hook's cwd, except when the command is exactly
-#     `cd <literal dir> && gh pr merge …` with no --repo/-R: then it is resolved
+#     `cd <literal dir> && gh pr merge …` with no --repo/-R (in any spelling,
+#     quoted or attached — such text keeps the cwd): then it is resolved
 #     in that directory, where the merge actually runs (issue #2872). Every
 #     other cd shape keeps the cwd. A failed lookup without --repo names the
 #     directory it used and suggests `-R OWNER/REPO`.
@@ -456,6 +457,12 @@ case "$TOOL_NAME" in
         #     because CDPATH (possibly set only in the agent shell's rc) is
         #     searched before the cwd for it;
         #   - no --repo/-R (that already names the repository);
+        #   - the rest of the command holds nothing that could be a repo flag
+        #     in a spelling the parser above misses: no word starting `-` that
+        #     contains `R` or `-repo` (`-Rx`, `-R=x`, `-sRx`), and no quote,
+        #     backslash, `$`, backtick or `{` that could assemble one
+        #     (`"-R" x`, `--r""epo x`, `-\R x`, `{-R,x}`, `$F`). Any of them
+        #     keeps the session cwd, as before this fix;
         #   - the rest of the command mentions no other cd/pushd/popd, no
         #     GH_REPO, and no second merge;
         #   - the directory exists, and resolves to the same place logically
@@ -466,7 +473,9 @@ case "$TOOL_NAME" in
             CD_WORD="${BASH_REMATCH[1]}"
             CD_REST="${COMMAND#*&&}"
             CD_AFTER_MERGE="${CD_REST#*merge}"
-            if ! printf '%s' "$CD_REST" | grep -Eq '(^|[^A-Za-z0-9_])(cd|pushd|popd)([^A-Za-z0-9_]|$)|GH_REPO' \
+            CD_REPOFLAG_RE="[\"'\\\\\$\`{]|(^|[[:space:]])-[^[:space:]]*(R|-repo)"
+            if ! [[ "$CD_REST" =~ $CD_REPOFLAG_RE ]] \
+               && ! printf '%s' "$CD_REST" | grep -Eq '(^|[^A-Za-z0-9_])(cd|pushd|popd)([^A-Za-z0-9_]|$)|GH_REPO' \
                && ! printf '%s' "$CD_AFTER_MERGE" | grep -Eq 'gh[[:space:]]+pr[[:space:]]+merge|pulls/[^/[:space:]]+/merge'; then
               CD_BASE="$HOOK_CWD"
               case "$CD_WORD" in
