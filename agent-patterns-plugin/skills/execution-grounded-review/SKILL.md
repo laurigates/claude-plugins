@@ -6,7 +6,7 @@ argument-hint: "diff|PR|files to verify; optional --criteria <file> of acceptanc
 allowed-tools: Agent, Read, Glob, Grep, Bash(git diff *), Bash(git log *), Bash(gh pr view *), Bash(npm *), Bash(npx *), Bash(uv run *), Bash(pytest *), Bash(cargo *), Bash(go test *), TodoWrite
 model: opus
 created: 2026-06-22
-modified: 2026-09-30
+modified: 2026-10-01
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -86,8 +86,12 @@ Record the exit codes and failing-test names. A red suite is itself an
 ### Step 2: Name the criteria
 
 State, in one numbered list, the acceptance criteria under verification (from
-`--criteria` or context). If the list is empty, stop and ask for it — there is
-nothing to ground a verdict in. Each criterion is one ledger row in Step 3.
+`--criteria` or context). Each criterion is one ledger row in Step 3.
+
+If there are no criteria, or no execution evidence (Step 1 could not run and
+none was supplied), stop: emit no ledger and no `VERDICT` line, name the missing
+input, and ask for it. A missing input is not a `fail` — `fail` claims the code
+was graded and found wanting, and nothing was graded.
 
 ### Step 3: Dispatch the intent-starved verifier
 
@@ -149,11 +153,18 @@ checklist:
 | Every `UNVERIFIED` row, by criterion | The verdict rests on fewer criteria than were listed |
 | Every suite / typecheck / lint step that was skipped, errored before running, or ran on a subset (filtered, `--bail`, `-k`) | Step 1 evidence is narrower than "the suite passed" implies |
 | Every row with `sequenceMatchesProduction: "no"` | A green test exists but does not cover the production path |
-| Every row whose `evidenceSpan` is `none` | An attribution was not located within the bound (Step 3b) |
+| Every `FAIL` or `PARTIAL` row whose `evidenceSpan` is `none` | The failure's cause was not located within the bound (Step 3b) |
 | Any caveat that would flip `pass` → `fail` if it proved true (flaky rerun, environment-only pass, stale evidence predating the last push) | The pass is conditional, and the reader must know on what |
 | Every step still running, timed out, or whose output is truncated or missing | The verdict describes a partial result as if it were complete |
 | Collateral damage: failures, side effects, or broken behaviour outside the listed criteria — including anything Step 4 drops from the verdict | Every criterion can pass while the change breaks something else |
-| Any claim in the inputs (a pass count, a metric, a "ship-ready" note) that the execution output does not back | The report would repeat a success the evidence never showed |
+| Any factual claim in the inputs (a pass count, a metric, "all green") that the execution output does not back | The report would repeat a success the evidence never showed |
+
+Every entry points at something the inputs show, or show to be missing: a step
+that did not run, an output line, a criterion with no test. Speculative risks
+with no sign in the inputs — code the verifier did not open, evidence that
+"might" be stale with no later commit named — are not limitations. Listing them
+is the false-flag cost the paper below measured, and it makes `none` unreachable
+on a clean run.
 
 **Why.** [Language Models Are "Insecure" Reporters](https://arxiv.org/abs/2609.36139)
 (#2870) planted narrative-changing flaws in 200 work logs per scenario and found
@@ -191,9 +202,12 @@ required enum makes "I did not check" unrepresentable.
 | `no` | the test passes over a shorter or rearranged sequence than production uses → the row's `verdict` becomes `UNVERIFIED` |
 | `not-applicable` | the criterion makes no round-trip / determinism / reproducibility / idempotence claim |
 
-The overall `verdict` is `pass` only when every row is `PASS` **and** no row is
-`sequenceMatchesProduction: "no"`. Any `FAIL`, any `UNVERIFIED`, or any sequence
-divergence makes it `fail`.
+The overall `verdict` is `pass` only when every row is `PASS`, no row is
+`sequenceMatchesProduction: "no"`, **and** every Step 1 step ran to completion
+over the full suite. Any `FAIL`, any `UNVERIFIED`, any sequence divergence, or a
+Step 1 step that was skipped, errored before running, ran on a subset, or is
+still running makes it `fail`. Step 1 is a precondition of the verdict, not a
+caveat to list beside a `pass`.
 
 Template:
 
@@ -340,7 +354,8 @@ VERDICT: pass|fail
 
 `LIMITATIONS` is never omitted and never left empty: an empty list is written as
 `none`. A report that carries a `VERDICT` line with no `LIMITATIONS` block above
-it is malformed — re-emit it rather than acting on it.
+it is malformed — re-emit it rather than acting on it. When Step 2 stopped for a
+missing input, there is no report to emit; ask for the input instead.
 
 Apply or hand off the genuine fixes (closing `UNVERIFIED` rows by adding the
 missing test counts as a fix). Re-run from Step 1 **only if the

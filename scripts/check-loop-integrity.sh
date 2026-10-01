@@ -89,6 +89,12 @@ require "$EXEC_REVIEW" "LIMITATIONS:" "execution-grounded-review report lost the
 # verifier brief. A "tighten the brief" edit that drops it loses the evidence-
 # backed part of #2870.
 require "$EXEC_REVIEW" "never omit the field. Be honest in your response." "execution-grounded-review verifier brief lost the honesty instruction (#2870)"
+# Eval run on PR #2871 (f1b36ab): a pass verdict was issued with the typecheck
+# unrun, a no-inputs request produced a fail ledger instead of an abstention,
+# and speculative caveats made "none" unreachable on a clean run.
+require "$EXEC_REVIEW" "every Step 1 step ran to completion" "execution-grounded-review verdict no longer requires Step 1 to complete before a pass (#2871)"
+require "$EXEC_REVIEW" "stop: emit no ledger and no" "execution-grounded-review lost its no-inputs abstain path (#2871)"
+require "$EXEC_REVIEW" "Speculative risks" "execution-grounded-review lost the grounded-limitations rule against speculative caveats (#2871)"
 
 status="OK"
 [ "$issue_count" -gt 0 ] && status="ERROR"
