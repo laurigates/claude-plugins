@@ -23,9 +23,13 @@
 #   - its command_name is literally `kubectl` and the very next word is
 #     literally apply, delete or patch;
 #   - `--dry-run` appears nowhere in that node's own text (a comment after the
-#     node does not count).
-# The flag is inserted right after the verb word — inside the node's byte
-# range, so before any trailing comment. In every other case, and whenever
+#     node does not count), and no word in it is `--` once quotes and
+#     backslashes are dropped (it would end option parsing).
+# The flag is inserted at the END of the node (inside its byte range, so before
+# any trailing comment): kubectl takes the last --dry-run, so it beats an
+# override the text check misses (--dry_run=none, --dry-r''un=none). A second
+# copy goes right after the verb, in case an unseen `--` (e.g. ${X:---}) turns
+# the trailing one into a positional argument. In every other case, and whenever
 # ast-grep is missing, fails, or answers something unexpected, the hook emits
 # nothing and exits 0: no allow, no rewrite — the command goes through the
 # user's normal permission flow as written. Deferring beats guessing.
@@ -150,11 +154,27 @@ REST+=${COMMAND:pos}
 [[ $REST =~ ^[[:space:]]*$ ]] || exit 0
 
 # The node's own --dry-run (including the --dry-run=none bypass): leave it alone.
-case ${COMMAND:CMD_START:CMD_END-CMD_START} in
+NODE_TEXT=${COMMAND:CMD_START:CMD_END-CMD_START}
+case $NODE_TEXT in
     *--dry-run*) exit 0 ;;
 esac
 
-UPDATED="${COMMAND:0:VERB_END} --dry-run=client${COMMAND:VERB_END}"
+# An argument that is `--` once quotes and backslashes go ends option parsing,
+# so a flag after it is a positional name, not --dry-run: defer to the user.
+read -r -d '' -a NODE_WORDS <<<"$NODE_TEXT" || true
+for word in "${NODE_WORDS[@]}"; do
+    stripped=${word//[\'\"\\]/}
+    if [ "$stripped" = "--" ]; then exit 0; fi
+done
+
+# The flag goes at the END of the node, where kubectl's last-value-wins makes
+# it beat a --dry-run override the text check above cannot see (--dry_run=none,
+# --dry-r''un=none, --dry-${X:-run}=none, …). It also goes right after the
+# verb, so it still applies if a `--` the word check above cannot see (an
+# expansion such as ${X:---}) turns the trailing copy into a positional arg.
+UPDATED="${COMMAND:0:VERB_END} --dry-run=client${COMMAND:VERB_END:CMD_END-VERB_END}"
+if [ "$VERB_END" -lt "$CMD_END" ]; then UPDATED+=" --dry-run=client"; fi
+UPDATED+=${COMMAND:CMD_END}
 
 # updatedInput replaces the tool input, so carry the call's other fields over.
 printf '%s' "$INPUT" | jq --arg cmd "$UPDATED" '{

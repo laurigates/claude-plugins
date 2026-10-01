@@ -10,8 +10,11 @@
 # returning allow, so `kubectl apply -f x.yaml && echo done` became
 # `… && echo done --dry-run=client`: the apply ran for real, auto-approved.
 # Pinned here:
-#   - a single simple kubectl statement gets the flag INSIDE the kubectl node
-#     (right after the verb, so before any trailing comment) and an allow;
+#   - a single simple kubectl statement gets the flag INSIDE the kubectl node,
+#     at its END (so before any trailing comment, and after any --dry-run
+#     override the text check misses, since kubectl's last value wins) plus a
+#     copy right after the verb, and an allow;
+#   - a `--` argument (which ends option parsing) gets no output;
 #   - anything beyond one simple command, a node that already carries its own
 #     --dry-run, quoted text, and a parse the hook cannot trust (no parser, a
 #     failing parser, an ERROR node) produce NO output at all: no allow, no
@@ -105,21 +108,52 @@ assert_silent 'for f in a b; do kubectl apply -f "$f"; done' 'loop'
 assert_silent '! kubectl delete pod web-0' 'negated command'
 
 echo "=== single simple command: flag lands inside the kubectl node ==="
-assert_rewrite 'kubectl apply -f x.yaml' 'kubectl apply --dry-run=client -f x.yaml' 'apply'
-assert_rewrite 'kubectl delete pod web-0' 'kubectl delete --dry-run=client pod web-0' 'delete'
+D=--dry-run=client
+assert_rewrite 'kubectl apply -f x.yaml' "kubectl apply $D -f x.yaml $D" 'apply'
+assert_rewrite 'kubectl delete pod web-0' "kubectl delete $D pod web-0 $D" 'delete'
 assert_rewrite 'kubectl patch deploy web -p '"'"'{"spec":{"replicas":2}}'"'"'' \
-    'kubectl patch --dry-run=client deploy web -p '"'"'{"spec":{"replicas":2}}'"'"'' 'patch with quoted JSON'
-assert_rewrite 'kubectl apply' 'kubectl apply --dry-run=client' 'verb with no arguments'
+    "kubectl patch $D deploy web -p '{\"spec\":{\"replicas\":2}}' $D" 'patch with quoted JSON'
+assert_rewrite 'kubectl apply' "kubectl apply $D" 'verb with no arguments: one copy'
 assert_rewrite 'kubectl apply -f x.yaml # deploy web' \
-    'kubectl apply --dry-run=client -f x.yaml # deploy web' 'flag lands before a trailing comment'
+    "kubectl apply $D -f x.yaml $D # deploy web" 'flag lands before a trailing comment'
 assert_rewrite 'kubectl apply -f x.yaml # rerun with --dry-run=none later' \
-    'kubectl apply --dry-run=client -f x.yaml # rerun with --dry-run=none later' \
+    "kubectl apply $D -f x.yaml $D # rerun with --dry-run=none later" \
     'a --dry-run in the comment is not the node'"'"'s argument'
-assert_rewrite "kubectl apply ${BS}${NL}  -f x.yaml" "kubectl apply --dry-run=client ${BS}${NL}  -f x.yaml" 'line continuation'
-assert_rewrite '  kubectl delete pod web-0  ' '  kubectl delete --dry-run=client pod web-0  ' 'surrounding whitespace'
-# ast-grep reports BYTE offsets; multibyte text before the verb must not shift the insertion.
+assert_rewrite "kubectl apply ${BS}${NL}  -f x.yaml" "kubectl apply $D ${BS}${NL}  -f x.yaml $D" 'line continuation'
+assert_rewrite '  kubectl delete pod web-0  ' "  kubectl delete $D pod web-0 $D  " 'surrounding whitespace'
+# ast-grep reports BYTE offsets; multibyte text must not shift either insertion.
 assert_rewrite 'KUBECONFIG=/tmp/kö kubectl apply -f x.yaml' \
-    'KUBECONFIG=/tmp/kö kubectl apply --dry-run=client -f x.yaml' 'multibyte bytes before the verb'
+    "KUBECONFIG=/tmp/kö kubectl apply $D -f x.yaml $D" 'multibyte bytes before the verb'
+assert_rewrite 'kubectl apply -f kö.yaml # ö' "kubectl apply $D -f kö.yaml $D # ö" 'multibyte bytes inside the node'
+
+echo "=== an override the text check misses: the injected flag still comes LAST ==="
+# kubectl takes the last --dry-run, and its normalizer maps _ to -. A flag put
+# right after the verb loses to any of these, so the apply ran for real while
+# the hook allowed it (an earlier draft of the #2734 fix).
+assert_rewrite "kubectl apply -f x.yaml --dry-r''un=none" \
+    "kubectl apply $D -f x.yaml --dry-r''un=none $D" "--dry-r''un=none"
+assert_rewrite 'kubectl apply -f x.yaml --dry-r""un=none' \
+    "kubectl apply $D -f x.yaml --dry-r\"\"un=none $D" '--dry-r""un=none'
+assert_rewrite "kubectl apply -f x.yaml --dry-r${BS}un=none" \
+    "kubectl apply $D -f x.yaml --dry-r${BS}un=none $D" '--dry-r\un=none'
+assert_rewrite 'kubectl apply -f x.yaml --dry-${X:-run}=none' \
+    "kubectl apply $D -f x.yaml --dry-\${X:-run}=none $D" '--dry-${X:-run}=none'
+assert_rewrite "kubectl apply -f x.yaml \$'--dry-r${BS}x75n=none'" \
+    "kubectl apply $D -f x.yaml \$'--dry-r${BS}x75n=none' $D" "\$'--dry-r\\x75n=none'"
+assert_rewrite 'kubectl apply -f x.yaml --dry_run=none' \
+    "kubectl apply $D -f x.yaml --dry_run=none $D" '--dry_run=none (apply)'
+assert_rewrite 'kubectl delete pod x --dry_run=none' \
+    "kubectl delete $D pod x --dry_run=none $D" '--dry_run=none (delete)'
+# An unseen `--` makes the trailing copy positional; the after-verb copy still applies.
+assert_rewrite 'kubectl delete pod x ${X:---} y' \
+    "kubectl delete $D pod x \${X:---} y $D" 'expansion that may be -- keeps the after-verb copy'
+
+echo "=== a -- argument ends option parsing: no output ==="
+assert_silent 'kubectl delete pod x -- y' 'bare --'
+assert_silent "kubectl delete pod x '--' y" "quoted '--'"
+assert_silent 'kubectl delete pod x "--" y' 'double-quoted "--"'
+assert_silent "kubectl delete pod x ${BS}-- y" 'escaped \--'
+assert_silent 'kubectl patch deploy web -p {} --' 'trailing --'
 
 echo "=== the node already carries --dry-run: unchanged ==="
 assert_silent 'kubectl apply -f x.yaml --dry-run=none' '--dry-run=none bypass'
@@ -181,12 +215,12 @@ assert_silent 'kubectl apply -f x.yaml' 'ast-grep prints junk' "$SANDBOX/junk"
 assert_silent 'kubectl apply -f x.yaml' 'parse holds an ERROR node' "$SANDBOX/errnode"
 # Non-vacuity: the canned clean parse, and the real parser, DO rewrite it.
 run_hook 'kubectl apply -f x.yaml' "$SANDBOX/canned"
-if [ "$(jq -r '.hookSpecificOutput.updatedInput.command // empty' <<<"$OUT" 2>/dev/null)" = 'kubectl apply --dry-run=client -f x.yaml' ]; then
+if [ "$(jq -r '.hookSpecificOutput.updatedInput.command // empty' <<<"$OUT" 2>/dev/null)" = "kubectl apply $D -f x.yaml $D" ]; then
     pass
 else
     fail "canned clean parse should rewrite (else the ERROR row is vacuous): $OUT"
 fi
-assert_rewrite 'kubectl apply -f x.yaml' 'kubectl apply --dry-run=client -f x.yaml' 'same command with the parser present'
+assert_rewrite 'kubectl apply -f x.yaml' "kubectl apply $D -f x.yaml $D" 'same command with the parser present'
 
 echo
 echo "Passed: $PASS, Failed: $FAIL"
