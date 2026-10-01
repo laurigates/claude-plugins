@@ -272,6 +272,19 @@ Covers every merge route: `gh pr merge` (in any flag order, inside a compound
 command, with or without `--repo`), `gh api ... /pulls/N/merge`, and the GitHub
 MCP `merge_pull_request` tool. `--admin` does not bypass it.
 
+**Which repository the PR is looked up in.** With `--repo`/`-R`, that
+repository. Otherwise the repository of the hook's cwd, with one exception
+(issue #2872): when the command is exactly `cd <dir> && gh pr merge …`, the PR
+is looked up in `<dir>`, where the merge actually runs.
+
+| Leading `cd` shape | Looked up in |
+|--------------------|--------------|
+| `cd /abs/path && gh pr merge 5`, also `./…`, `../…`, `~/…` — one plain literal operand, the cd first and the merge second, joined by `&&` | The cd target, if it exists and resolves to the same directory logically and physically |
+| `cd x; gh pr merge`, `cd x \|\| …`, `cd -P x`, `cd "x"`, `cd $X`, a glob or brace, a bare relative name (CDPATH-dependent), `pushd`, a second cd/pushd/popd, `GH_REPO`, or a second merge anywhere in the command | The session cwd, exactly as before |
+
+When the lookup fails and no `--repo` was given, the denial names the directory
+it resolved the repository from and suggests retrying with `-R OWNER/REPO`.
+
 The command word is resolved **structurally**, so a merge stays a merge when it
 is reached through:
 

@@ -23,6 +23,11 @@
 #     the phrase must begin a command (issue #2307). The guard once denied
 #     `gh pr create` because the PR body quoted the phrase, and the agent
 #     retitled the user-visible PR to get past it.
+#   - The PR is resolved in the hook's cwd, except when the command is exactly
+#     `cd <literal dir> && gh pr merge …` with no --repo/-R: then it is resolved
+#     in that directory, where the merge actually runs (issue #2872). Every
+#     other cd shape keeps the cwd. A failed lookup without --repo names the
+#     directory it used and suggests `-R OWNER/REPO`.
 #
 # Deliberately does NOT defer to permission mode "auto" (unlike
 # branch-protection.sh). Auto mode's classifier models destructive-git and
@@ -73,6 +78,9 @@ PR_REPO=""
 # for the same reason an unresolved `$var` does, instead of resolving (and
 # possibly ALLOWing) against the wrong PR or repo.
 TRUNC_MARK=""
+# The directory a leading literal `cd <dir> &&` moves the merge into (issue
+# #2872), or empty to resolve the PR in the hook's cwd.
+CD_DIR=""
 
 case "$TOOL_NAME" in
   mcp__github__merge_pull_request)
@@ -432,6 +440,56 @@ case "$TOOL_NAME" in
         # guard off. Whether the selector resolves is the author check's
         # business below, which denies when it cannot be read: "cannot verify"
         # is not "safe".
+
+        # Leading `cd <dir> &&` (issue #2872). An agent in a multi-repo
+        # workspace writes `cd /path/to/other-repo && gh pr merge 5`, because
+        # the Bash tool's cwd resets between calls. Resolving that PR in the
+        # session cwd checks the wrong repository. Honour the cd ONLY in the one
+        # shape whose target is certain, and keep the session cwd for every
+        # other shape:
+        #   - the cd is the FIRST statement and the merge is the SECOND, joined
+        #     by `&&` (so the merge runs only if the cd succeeded) — `;`, `||`,
+        #     newlines, wrappers, prefixes and `pushd` are all excluded;
+        #   - its single operand is a plain literal word: absolute, `./…`,
+        #     `../…`, `.`, `..`, `~` or `~/…` — no quotes, `$`, backticks,
+        #     globs, braces or options. A bare relative name is excluded
+        #     because CDPATH (possibly set only in the agent shell's rc) is
+        #     searched before the cwd for it;
+        #   - no --repo/-R (that already names the repository);
+        #   - the rest of the command mentions no other cd/pushd/popd, no
+        #     GH_REPO, and no second merge;
+        #   - the directory exists, and resolves to the same place logically
+        #     and physically (`own/link/..` would differ under `cd -P`).
+        if [ -z "$PR_REPO" ] && [ -z "$TRUNC_MARK" ]; then
+          CD_RE='^[[:space:]]*cd[[:blank:]]+(/[A-Za-z0-9._/@,:%=+-]*|\.\.?(/[A-Za-z0-9._/@,:%=+-]*)?|~(/[A-Za-z0-9._/@,:%=+-]*)?)[[:blank:]]*&&[[:blank:]]*gh[[:blank:]]+pr[[:blank:]]+merge([[:blank:]]|$)'
+          if [[ "$COMMAND" =~ $CD_RE ]]; then
+            CD_WORD="${BASH_REMATCH[1]}"
+            CD_REST="${COMMAND#*&&}"
+            CD_AFTER_MERGE="${CD_REST#*merge}"
+            if ! printf '%s' "$CD_REST" | grep -Eq '(^|[^A-Za-z0-9_])(cd|pushd|popd)([^A-Za-z0-9_]|$)|GH_REPO' \
+               && ! printf '%s' "$CD_AFTER_MERGE" | grep -Eq 'gh[[:space:]]+pr[[:space:]]+merge|pulls/[^/[:space:]]+/merge'; then
+              CD_BASE="$HOOK_CWD"
+              case "$CD_WORD" in
+                /*) CD_BASE="/" ;;
+                '~'*)
+                  # bash and zsh expand a leading `~` to $HOME; only an
+                  # absolute HOME is taken, so the result is absolute too.
+                  CD_BASE="/"
+                  case "${HOME:-}" in
+                    /*) CD_WORD="${HOME}${CD_WORD#\~}" ;;
+                    *)  CD_WORD="" ;;
+                  esac ;;
+              esac
+              if [ -n "$CD_WORD" ] && [ -n "$CD_BASE" ] && [ -d "$CD_BASE" ]; then
+                CD_LOGICAL=$(cd "$CD_BASE" 2>/dev/null && CDPATH='' cd -- "$CD_WORD" 2>/dev/null && pwd -P) || CD_LOGICAL=""
+                CD_PHYSICAL=$(cd -P "$CD_BASE" 2>/dev/null && CDPATH='' cd -P -- "$CD_WORD" 2>/dev/null && pwd -P) || CD_PHYSICAL=""
+                if [ -n "$CD_LOGICAL" ] && [ "$CD_LOGICAL" = "$CD_PHYSICAL" ]; then
+                  CD_DIR="$CD_LOGICAL"
+                fi
+              fi
+            fi
+          fi
+        fi
         ;;
       *)
         exit 0
@@ -463,9 +521,12 @@ fi
 # `gh pr merge` with no --repo resolves the repo the agent is actually in. cd
 # once here rather than wrapping each call in `cd "$GH_DIR" && gh … || true`,
 # which folds a cd failure into the same `|| true` as a gh failure (SC2015).
+# A leading literal `cd <dir> &&` (CD_DIR, issue #2872) is where the merge runs.
 GH_DIR="${HOOK_CWD:-.}"
+[ -n "$CD_DIR" ] && GH_DIR="$CD_DIR"
 [ -d "$GH_DIR" ] || GH_DIR="."
 cd "$GH_DIR" || exit 0
+GH_DIR_SHOWN=$(pwd)
 
 ME=$(gh api user --jq '.login' 2>/dev/null || true)
 
@@ -494,6 +555,13 @@ if [ -z "$META" ]; then
     *'$'*|*'`'*)
       deny "Refusing to merge ${WHAT}: the PR selector or repo is a shell variable, so this hook cannot tell whose PR it is. Merges of PRs authored by anyone other than the repo owner or a bot are not permitted from an agent. Resolve shell variables to their literal values first (gh pr list --json number,author to find PR numbers; check which repo you mean if --repo/-R was a variable), then merge with literal values one at a time — each will be checked individually." ;;
     *)
+      if [ -z "$PR_REPO" ]; then
+        # Issue #2872: the commonest cause is the repository, not the number —
+        # with no --repo, gh resolves the repo from the directory below, which
+        # is the session cwd unless the command began with a literal
+        # `cd <dir> &&`. Say so, and name the unambiguous remedy.
+        deny "Refusing to merge ${WHAT}: could not read the PR's author (gh pr view returned nothing). No --repo/-R was given, so the PR was looked up in the repository of ${GH_DIR_SHOWN} — if the PR lives in another repository (for example one you cd into in a way this hook does not follow), that is the likely cause; otherwise check the PR number and the network. 'Cannot verify' is not 'safe', so this is denied rather than allowed. Retry naming the repository explicitly: gh pr merge ${PR_SELECTOR:-<number>} -R OWNER/REPO …"
+      fi
       deny "Refusing to merge ${WHAT}: could not read the PR's author (gh pr view returned nothing — bad PR number, wrong repo, or no network). 'Cannot verify' is not 'safe', so this is denied rather than allowed. Check the PR exists and is reachable (gh pr view ${PR_SELECTOR:-} ${PR_REPO:+--repo $PR_REPO}), then retry." ;;
   esac
 fi

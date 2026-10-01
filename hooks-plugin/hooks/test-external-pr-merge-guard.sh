@@ -45,18 +45,49 @@ args="$*"
 # alone cannot distinguish "checked PR 2231" from "checked PR 999", since the
 # stub answers for any selector.
 if [ -n "${STUB_LOG:-}" ]; then printf '%s\n' "$args" >> "$STUB_LOG"; fi
+# Per-repository mode (issue #2872). When STUB_REPO_AUTHORS is set
+# ("owner/repo=author ..."), the stub resolves the repository the way real gh
+# does — the --repo value, else the `origin` remote of the git repo at the
+# CURRENT DIRECTORY — and answers with that repository's PR author. A repository
+# with no entry, or a directory with no remote, has no such PR, so the lookup
+# fails exactly as `gh pr view` does there. This is what lets the suite prove
+# WHICH directory the hook resolved a cd-prefixed merge in.
+STUB_RESOLVED=""
+if [ -n "${STUB_REPO_AUTHORS:-}" ]; then
+    prev=""
+    for a in "$@"; do
+        [ "$prev" = "--repo" ] && STUB_RESOLVED="$a"
+        prev="$a"
+    done
+    if [ -z "$STUB_RESOLVED" ]; then
+        url=$(env -u GIT_DIR -u GIT_WORK_TREE GIT_CEILING_DIRECTORIES="${STUB_CEILING:-}" \
+              git config --get remote.origin.url 2>/dev/null || true)
+        STUB_RESOLVED=$(printf '%s' "$url" | sed -E 's#^.*github\.com[:/]##; s#\.git$##')
+    fi
+    if [ -n "${STUB_LOG:-}" ]; then printf 'resolved repo=%s cwd=%s\n' "$STUB_RESOLVED" "$PWD" >> "$STUB_LOG"; fi
+fi
 case "$args" in
   "api user --jq .login")
       [ -n "${STUB_NO_ME:-}" ] && exit 1
       printf '%s\n' "${STUB_ME-laurigates}" ;;
   "repo view --json nameWithOwner"*)
-      printf '%s\n' "${STUB_SLUG-laurigates/claude-plugins}" ;;
+      if [ -n "${STUB_REPO_AUTHORS:-}" ]; then [ -n "$STUB_RESOLVED" ] || exit 1; printf '%s\n' "$STUB_RESOLVED"
+      else printf '%s\n' "${STUB_SLUG-laurigates/claude-plugins}"; fi ;;
   *"--json number,title,author,url"*)
       [ -n "${STUB_VIEW_FAIL:-}" ] && exit 1
       # Real `gh pr view '$n'` cannot resolve an unexpanded shell variable —
       # model that, or the loop case would look resolvable and the test would
       # assert against the wrong denial path.
       case "$args" in *'$'*) exit 1 ;; esac
+      if [ -n "${STUB_REPO_AUTHORS:-}" ]; then
+          author=""
+          for pair in $STUB_REPO_AUTHORS; do
+              case "$pair" in "$STUB_RESOLVED="*) author="${pair#*=}" ;; esac
+          done
+          { [ -n "$STUB_RESOLVED" ] && [ -n "$author" ]; } || exit 1
+          printf '%s\t%s\t%s\t%s\t%s\n' 5 "$author" false "a title" "https://example.invalid/pr"
+          exit 0
+      fi
       printf '%s\t%s\t%s\t%s\t%s\n' "${STUB_NUM-42}" "${STUB_AUTHOR-laurigates}" \
         "${STUB_ISBOT-false}" "${STUB_TITLE-a title}" "https://example.invalid/pr" ;;
   *"pulls/"*"--jq .author_association")
@@ -147,6 +178,211 @@ ck "inside a compound command"        DENY "$(run "$(bash_json 'cd /tmp && gh pr
 ck "gh api PUT .../merge"             DENY "$(run "$(bash_json 'gh api -X PUT repos/laurigates/claude-plugins/pulls/2231/merge')")"
 ck "MCP merge_pull_request"           DENY "$(run '{"tool_name":"mcp__github__merge_pull_request","cwd":"'"$TMPDIR"'","tool_input":{"owner":"laurigates","repo":"claude-plugins","pullNumber":2231}}')"
 ck "--admin does not bypass"          DENY "$(run "$(bash_json 'gh pr merge 2231 --admin --squash')")"
+
+echo "== a leading literal 'cd <dir> &&' is where the PR is resolved (issue #2872) =="
+# The compound-command case above (`cd /tmp && gh pr merge 2231`) is the shape
+# issue #2872 is about. The hook used to resolve the PR in the SESSION cwd and
+# ignore the cd, so in a multi-repo workspace a self-authored PR in the cd
+# target was denied ("could not read the PR's author") whenever the session
+# repo had no PR with that number. These cases use REAL git repositories with
+# configured remotes, and the stub resolves the repository from the directory
+# gh runs in, so each verdict proves which repository was checked.
+#
+#   session  acme/session  no PRs (lookup fails, as in the issue)
+#   own      acme/own      PR authored by you
+#   ext      acme/ext      PR authored by an external contributor
+#   plain    (no git)      lookup fails
+WS="$TMPDIR/ws"
+mkdir -p "$WS"
+if [ ! -d "$WS" ]; then echo "bad workspace dir" >&2; exit 1; fi
+mk_repo() { # mk_repo <dir> <owner/repo>
+    local dir="$1" slug="$2"
+    # Never let an empty path reach git: `git -C ""` falls back to the CWD,
+    # which is the real checkout (scripts/check-git-sandbox-guards.sh).
+    if [ -z "$dir" ] || [ -z "$slug" ]; then echo "mk_repo: empty argument" >&2; exit 1; fi
+    mkdir -p "$dir"
+    if [ ! -d "$dir" ]; then echo "mk_repo: $dir was not created" >&2; exit 1; fi
+    env -u GIT_DIR -u GIT_WORK_TREE git -C "$dir" init -q
+    env -u GIT_DIR -u GIT_WORK_TREE git -C "$dir" remote add origin "https://github.com/$slug.git"
+}
+mk_repo "$WS/session" acme/session
+mk_repo "$WS/own"     acme/own
+mk_repo "$WS/ext"     acme/ext
+mkdir -p "$WS/plain" "$WS/ext/sub"
+# own/l/.. is `own` logically but `ext` physically (cd -P, `set -o physical`).
+ln -s ../ext/sub "$WS/own/l"
+export STUB_REPO_AUTHORS="acme/own=laurigates acme/ext=joshua-trustabl"
+export STUB_CEILING="$TMPDIR"
+
+bash_json_in() { # bash_json_in <cwd> <command>
+    printf '{"tool_name":"Bash","cwd":"%s","tool_input":{"command":%s}}' "$1" "$(printf '%s' "$2" | jq -Rs .)"
+}
+# run_hook_in <hook> <cwd> <command> → DENY/ALLOW (no globals; safe in $( )).
+# HOME is the workspace, so `cd ~/own` names a fixture repo.
+run_hook_in() {
+    local out
+    out=$(bash_json_in "$2" "$3" | HOME="$WS" PATH="$TMPDIR/bin:$PATH" bash "$1" 2>/dev/null || true)
+    if printf '%s' "$out" | grep -q '"permissionDecision":"deny"'; then echo DENY; else echo ALLOW; fi
+}
+
+# The corpus. Tab-separated: session cwd key (`.` = the workspace root, not a
+# repo), expected verdict now, the verdict of the hook BEFORE this fix (frozen;
+# re-checked live below when the pre-fix hook is in the clone), a tag, and the
+# command. @WS@ → the workspace, @NL@ → a newline.
+#   FLIP     old DENY → new ALLOW. Only legal for the exact literal-cd&& shape
+#            whose cd target holds a self-authored PR (asserted below).
+#   NEWDENY  old ALLOW → new DENY: the merge really runs in an external repo.
+#   -        unchanged. Every fallback shape is listed twice where it can be:
+#            from `session` into `own` (stays DENY) and from `own` into `ext`
+#            (stays ALLOW) — the second proves the cd was ignored, not honoured.
+CORPUS=$(cat <<'CORPUS'
+session	ALLOW	DENY	FLIP	cd @WS@/own && gh pr merge 2506 --squash --delete-branch
+session	ALLOW	DENY	FLIP	cd ../own && gh pr merge 5
+session	ALLOW	DENY	FLIP	cd ./../own && gh pr merge 5
+session	ALLOW	DENY	FLIP	cd ~/own && gh pr merge 5 --squash
+session	ALLOW	DENY	FLIP	  cd @WS@/own&&gh pr merge 5
+session	ALLOW	DENY	FLIP	cd @WS@/own/ && gh pr merge 5 && echo done
+own	DENY	ALLOW	NEWDENY	cd @WS@/ext && gh pr merge 5
+own	DENY	ALLOW	NEWDENY	cd ../ext && gh pr merge 5 --squash
+own	DENY	ALLOW	NEWDENY	cd @WS@/plain && gh pr merge 5
+own	DENY	ALLOW	NEWDENY	cd ~ && gh pr merge 5
+session	DENY	DENY	-	gh pr merge 5
+own	ALLOW	ALLOW	-	gh pr merge 5
+ext	DENY	DENY	-	gh pr merge 5
+session	DENY	DENY	-	cd @WS@/ext && gh pr merge 5
+ext	DENY	DENY	-	cd . && gh pr merge 5
+session	DENY	DENY	-	cd @WS@/own; gh pr merge 5
+own	ALLOW	ALLOW	-	cd @WS@/ext; gh pr merge 5
+session	DENY	DENY	-	cd @WS@/own || exit 1; gh pr merge 5
+session	DENY	DENY	-	cd @WS@/nope || cd @WS@/own && gh pr merge 5
+session	DENY	DENY	-	cd -P @WS@/own && gh pr merge 5
+own	ALLOW	ALLOW	-	cd -P @WS@/ext && gh pr merge 5
+session	DENY	DENY	-	cd -L @WS@/own && gh pr merge 5
+session	DENY	DENY	-	cd -- @WS@/own && gh pr merge 5
+session	DENY	DENY	-	cd @WS@/own @WS@/ext && gh pr merge 5
+session	DENY	DENY	-	cd "@WS@/own" && gh pr merge 5
+own	ALLOW	ALLOW	-	cd "@WS@/ext" && gh pr merge 5
+session	DENY	DENY	-	cd '@WS@/own' && gh pr merge 5
+session	DENY	DENY	-	cd $D && gh pr merge 5
+session	DENY	DENY	-	cd @WS@/ow? && gh pr merge 5
+session	DENY	DENY	-	cd @WS@/o* && gh pr merge 5
+session	DENY	DENY	-	cd @WS@/{own,x} && gh pr merge 5
+session	DENY	DENY	-	cd `echo @WS@/own` && gh pr merge 5
+session	DENY	DENY	-	cd $(echo @WS@/own) && gh pr merge 5
+session	DENY	DENY	-	cd ~root && gh pr merge 5
+session	DENY	DENY	-	cd @WS@/own/l/.. && gh pr merge 5
+own	ALLOW	ALLOW	-	cd @WS@/own/l/.. && gh pr merge 5
+.	DENY	DENY	-	cd own && gh pr merge 5
+session	DENY	DENY	-	cd @WS@/nope && gh pr merge 5
+own	ALLOW	ALLOW	-	cd @WS@/nope && gh pr merge 5
+session	DENY	DENY	-	pushd @WS@/own && gh pr merge 5
+own	ALLOW	ALLOW	-	pushd @WS@/ext && gh pr merge 5
+session	DENY	DENY	-	\cd @WS@/own && gh pr merge 5
+session	DENY	DENY	-	command cd @WS@/own && gh pr merge 5
+session	DENY	DENY	-	true && cd @WS@/own && gh pr merge 5
+session	DENY	DENY	-	cd @WS@/own && cd . && gh pr merge 5
+session	DENY	DENY	-	cd @WS@/own && pushd . && gh pr merge 5
+session	DENY	DENY	-	cd @WS@/own && gh pr merge 5 && popd
+session	DENY	DENY	-	cd @WS@/own && GH_REPO=acme/ext gh pr merge 5
+session	DENY	DENY	-	cd @WS@/own && gh pr merge 5 && export GH_REPO=x
+session	DENY	DENY	-	cd @WS@/own && env -C @WS@/ext gh pr merge 5
+session	DENY	DENY	-	cd @WS@/own && sudo gh pr merge 5
+session	DENY	DENY	-	cd @WS@/own && echo hi && gh pr merge 5
+session	DENY	DENY	-	cd @WS@/own && gh pr merge 5; gh pr merge 6
+session	DENY	DENY	-	cd @WS@/own &&@NL@gh pr merge 5
+session	DENY	DENY	-	cd @WS@/own & gh pr merge 5
+session	DENY	DENY	-	cd @WS@/own | gh pr merge 5
+session	DENY	DENY	-	cd @WS@/own && gh pr merge $N
+session	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -R acme/ext
+session	ALLOW	ALLOW	-	cd @WS@/ext && gh pr merge 5 -R acme/own
+CORPUS
+)
+
+expand_ws() { local s="$1"; s="${s//@WS@/$WS}"; printf '%s' "${s//@NL@/$'\n'}"; }
+
+# The repository a FLIP row's leading cd lands in, resolved by a real `cd`.
+flip_target_repo() { # flip_target_repo <cwd> <cd operand>
+    local w="$2"
+    case "$w" in \~) w="$WS" ;; \~/*) w="$WS/${w#\~/}" ;; esac
+    ( cd "$1" 2>/dev/null && cd "$w" 2>/dev/null \
+      && env -u GIT_DIR -u GIT_WORK_TREE GIT_CEILING_DIRECTORIES="$TMPDIR" git config --get remote.origin.url ) || true
+}
+FLIP_RE='^[[:space:]]*cd[[:blank:]]+([^[:space:]&;|]+)[[:blank:]]*&&[[:blank:]]*gh[[:blank:]]+pr[[:blank:]]+merge([[:blank:]]|$)'
+
+CORPUS_N=0
+while IFS=$'\t' read -r cwdk want old tag cmd; do
+    [ -n "$cwdk" ] || continue
+    CORPUS_N=$((CORPUS_N + 1))
+    cmd=$(expand_ws "$cmd")
+    ck "[$cwdk] ${cmd//$'\n'/'\n'}" "$want" "$(run_hook_in "$HOOK" "$WS/$cwdk" "$cmd")"
+    # The frozen columns must be consistent with the tag, so a row cannot
+    # quietly reclassify an old DENY as an acceptable ALLOW.
+    if [ "$old" = DENY ] && [ "$want" != DENY ]; then
+        if [ "$tag" != FLIP ]; then
+            printf '  FAIL corpus row un-guards an old DENY without a FLIP tag: %s\n' "$cmd"; FAIL=$((FAIL + 1))
+        elif ! [[ "$cmd" =~ $FLIP_RE ]] \
+             || [ "$(flip_target_repo "$WS/$cwdk" "${BASH_REMATCH[1]}")" != "https://github.com/acme/own.git" ]; then
+            printf '  FAIL FLIP row is not a literal cd&& into a self-authored repo: %s\n' "$cmd"; FAIL=$((FAIL + 1))
+        fi
+    fi
+done <<< "$CORPUS"
+
+echo "== the issue repro is looked up in the cd target, and the deny names the cause =="
+WS_LOG="$TMPDIR/ws.log"
+: > "$WS_LOG"
+STUB_LOG="$WS_LOG" HOME="$WS" run "$(bash_json_in "$WS/session" "cd $WS/own && gh pr merge 2506 --squash --delete-branch")" >/dev/null
+unset STUB_LOG
+ck "issue #2872 repro allowed" ALLOW "$LAST_VERDICT"
+if grep -qF "cwd=$WS/own" "$WS_LOG" && ! grep -qF "cwd=$WS/session" "$WS_LOG"; then
+    printf '  ok   the PR was looked up in the cd target, not the session cwd\n'; PASS=$((PASS + 1))
+else
+    printf '  FAIL the PR was not looked up (only) in the cd target\n'; FAIL=$((FAIL + 1))
+fi
+# Fix 2: a failed lookup with no --repo names the directory it resolved the
+# repository from, and the -R remedy — not just "bad PR number or no network".
+run "$(bash_json_in "$WS/session" "gh pr merge 2506 --squash")" >/dev/null
+ck "no such PR in the session repo"         DENY "$LAST_VERDICT"
+ck_reason "still fails closed"              "Cannot verify"
+ck_reason "names the directory it looked in" "$WS/session"
+ck_reason "suggests naming the repository"  "-R OWNER/REPO"
+# A fallback shape is still looked up in the session cwd, and says so.
+run "$(bash_json_in "$WS/session" "cd $WS/own; gh pr merge 2506")" >/dev/null
+ck "fallback shape, no such PR in session"  DENY "$LAST_VERDICT"
+ck_reason "names the session directory"     "$WS/session"
+ck_reason "suggests -R for the fallback"    "-R OWNER/REPO"
+
+echo "== differential: every merge the pre-fix hook denied is still denied =="
+# Frozen columns can drift from what the old hook really did, so when the
+# pre-fix hook is in this clone, run it over the same corpus and compare.
+# Shallow CI clones may not have it; the frozen column (asserted above) is the
+# fallback, and this section says so instead of passing vacuously.
+BASE_HOOK="$TMPDIR/baseline-hook.sh"
+BASE_REF=785b0d9802399823dffcda7cfb86f883e2524584
+if git -C "$(dirname "$HOOK")" show "$BASE_REF:./external-pr-merge-guard.sh" > "$BASE_HOOK" 2>/dev/null \
+   && [ -s "$BASE_HOOK" ]; then
+    DIFF_DENIES=0
+    while IFS=$'\t' read -r cwdk want old tag cmd; do
+        [ -n "$cwdk" ] || continue
+        cmd=$(expand_ws "$cmd")
+        got_old=$(run_hook_in "$BASE_HOOK" "$WS/$cwdk" "$cmd")
+        ck "baseline matches the frozen column: [$cwdk] ${cmd//$'\n'/'\n'}" "$old" "$got_old"
+        if [ "$got_old" = DENY ]; then
+            DIFF_DENIES=$((DIFF_DENIES + 1))
+            got_new=$(run_hook_in "$HOOK" "$WS/$cwdk" "$cmd")
+            if [ "$got_new" != DENY ] && [ "$tag" != FLIP ]; then
+                printf '  FAIL old hook denied, new hook allows (untagged): %s\n' "$cmd"; FAIL=$((FAIL + 1))
+            fi
+        fi
+    done <<< "$CORPUS"
+    if [ "$DIFF_DENIES" -gt 0 ]; then
+        printf '  ok   differential is not vacuous: the baseline denied %s of %s cases\n' "$DIFF_DENIES" "$CORPUS_N"; PASS=$((PASS + 1))
+    else
+        printf '  FAIL differential is vacuous: the baseline denied nothing\n'; FAIL=$((FAIL + 1))
+    fi
+else
+    printf '  NOTE pre-fix baseline %s not in this clone — relying on the frozen old column\n' "${BASE_REF:0:9}"
+fi
+unset STUB_REPO_AUTHORS STUB_CEILING
 
 echo "== a flag VALUE is not mistaken for the PR selector =="
 # Without the value-flag skip list, `--subject "feat: x"` would be read as the
