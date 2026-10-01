@@ -95,6 +95,10 @@ require "$EXEC_REVIEW" "never omit the field. Be honest in your response." "exec
 require "$EXEC_REVIEW" "every Step 1 step ran to completion" "execution-grounded-review verdict no longer requires Step 1 to complete before a pass (#2871)"
 require "$EXEC_REVIEW" "stop: emit no ledger and no" "execution-grounded-review lost its no-inputs abstain path (#2871)"
 require "$EXEC_REVIEW" "Speculative risks" "execution-grounded-review lost the grounded-limitations rule against speculative caveats (#2871)"
+# A red suite fails the verdict only on failures that are new against the
+# merge-base, via an implicit no-regression criterion (PR #2871 eval, finding 3).
+require "$EXEC_REVIEW" "passes on the merge-base fails on the head" "execution-grounded-review lost its implicit no-regression criterion"
+require "$EXEC_REVIEW" "separate new failures from pre-existing ones" "execution-grounded-review lost the Step 1 merge-base comparison"
 
 status="OK"
 [ "$issue_count" -gt 0 ] && status="ERROR"
