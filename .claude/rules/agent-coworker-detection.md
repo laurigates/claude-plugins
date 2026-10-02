@@ -127,7 +127,7 @@ Limitations:
 
 ### Bare flip (issue #1692)
 
-> **Upstream context (2.1.216, 2.1.222):** Claude Code hardened `isolation: worktree` subagents specifically against `git -C` / `--git-dir` / `GIT_DIR` / `GIT_WORK_TREE` redirection out of their own worktree (2.1.216), and (2.1.222) extended isolation to file edits **and** Bash in every session type (`.claude/rules/agent-development.md` § Worktree Isolation). That closes the isolation-driven path to this hazard on 2.1.222+. The detection/recovery below still matters for the other cause this rule documents — a *shared, non-isolated* checkout where a script/hook bug (the class `scripts/check-git-sandbox-guards.sh` guards against) or a bad `GIT_DIR` export flips the repo bare, which is unrelated to subagent isolation.
+> **Upstream context (2.1.216, 2.1.222):** Claude Code hardened `isolation: worktree` subagents specifically against `git -C` / `--git-dir` / `GIT_DIR` / `GIT_WORK_TREE` redirection out of their own worktree (2.1.216), and (2.1.222) extended isolation to file edits **and** Bash in every session type (`.claude/rules/agent-runtime.md` § Worktree Isolation). That closes the isolation-driven path to this hazard on 2.1.222+. The detection/recovery below still matters for the other cause this rule documents — a *shared, non-isolated* checkout where a script/hook bug (the class `scripts/check-git-sandbox-guards.sh` guards against) or a bad `GIT_DIR` export flips the repo bare, which is unrelated to subagent isolation.
 
 A concurrent agent fleet sharing one checkout can flip the shared repo to `core.bare = true` (observed alongside a junk `[user]` identity injected into `.git/config`). Once bare, every `git status` / `git commit` in every linked worktree fails with `fatal: this operation must be run in a work tree`. The sibling failure mode is a leaked `GIT_DIR` / `GIT_WORK_TREE` env that silently redirects git at another tree.
 
@@ -155,7 +155,7 @@ A positive yields the dedicated verdict `bare_flip_suspected`, ranked ahead of t
 
 ### Cross-session discovery (`ListAgents`, 2.1.224+)
 
-`ListAgents` is a native alternative/supplement to the hand-rolled session-marker-file convention above: it lists other live Claude Code sessions reachable via `SendMessage`, without either side needing to adopt a marker file. As of 2.1.239, `ListAgents` also reports the session's own name and lists live teammates (previously only subagents and other sessions appeared). It only surfaces sessions that have cross-session messaging enabled (`crossSessionInbound`), so a session that opts out is still invisible to it — the marker-file signal is still needed for those. See `.claude/rules/agent-development.md` § Native Team Tools for the full `SendMessage`/`ListAgents` cross-session picture.
+`ListAgents` is a native alternative/supplement to the hand-rolled session-marker-file convention above: it lists other live Claude Code sessions reachable via `SendMessage`, without either side needing to adopt a marker file. As of 2.1.239, `ListAgents` also reports the session's own name and lists live teammates (previously only subagents and other sessions appeared). It only surfaces sessions that have cross-session messaging enabled (`crossSessionInbound`), so a session that opts out is still invisible to it — the marker-file signal is still needed for those. See `agent-patterns-plugin:agent-teams` § Native Team Tools for the full `SendMessage`/`ListAgents` cross-session picture.
 
 ## Response Rules
 
@@ -260,5 +260,5 @@ Before any recovery dispatch, check
 ## Related Rules
 
 - `.claude/rules/handling-blocked-hooks.md` — how to respond when a PreToolUse coworker-check hook blocks a command
-- `.claude/rules/agent-development.md` — worktree isolation as the preferred answer to concurrency
+- `.claude/rules/agent-runtime.md` — worktree isolation as the preferred answer to concurrency
 - `.claude/rules/sandbox-guidance.md` — `/proc` and `lsof` availability in the web sandbox

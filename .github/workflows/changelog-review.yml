@@ -47,6 +47,7 @@ jobs:
         .claude/rules/hooks-reference.md
         .claude/rules/skill-development.md
         .claude/rules/agent-development.md
+        .claude/rules/agent-runtime.md
         .claude/rules/agentic-permissions.md
         .claude/rules/plugin-structure.md
         .claude/rules/sandbox-guidance.md

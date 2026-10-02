@@ -229,7 +229,7 @@ def render(
     skills = front.get("skills")
     if isinstance(skills, (list, tuple)) and skills:
         # Claude Code: "skill names to preload into agent context at startup"
-        # (agent-development.md § Frontmatter Fields). pi's list form preloads
+        # (agent-development.md § Complete Field Reference). pi's list form preloads
         # those skills AND does not inherit the parent's rest — the preload
         # intent is shared, the inheritance edge is not, and pi is the narrower
         # of the two. Left in on that basis; `skills: true` (the pi default) is
