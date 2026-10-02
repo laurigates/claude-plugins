@@ -313,7 +313,7 @@
       "name": "evaluate-plugin",
       "source": "./evaluate-plugin",
       "description": "Skill evaluation and benchmarking - test skill effectiveness with behavioral eval cases, grade results, and track quality improvements",
-      "version": "1.16.2",
+      "version": "1.16.3",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -488,7 +488,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.12.2",
+      "version": "2.12.3",
       "author": {
         "name": "Lauri Gates"
       },
@@ -509,7 +509,7 @@
       "name": "kubernetes-plugin",
       "source": "./kubernetes-plugin",
       "description": "Kubernetes and Helm operations - deployments, charts, releases",
-      "version": "1.9.1",
+      "version": "1.9.2",
       "author": {
         "name": "Lauri Gates"
       },
