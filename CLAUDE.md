@@ -44,7 +44,8 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/hook-block-vs-nudge.md` | **Block (exit 2) only for safety; nudge for style** — why a hard block on a tool-substitution dead-ends subagents lacking the tool, and the "what does it exempt?" litigation test |
 | `.claude/rules/hooks-reference.md` | Complete hook event reference (2.1.50+): all events, schemas, timeouts, PermissionRequest |
 | `.claude/rules/prompt-agent-hooks.md` | **When to use prompt/agent hooks** — decision tree, config schema, prompts guide |
-| `.claude/rules/agent-development.md` | Agent configuration, isolation, background execution, memory, and teams |
+| `.claude/rules/agent-development.md` | Agent frontmatter, model, context isolation, memory |
+| `.claude/rules/agent-runtime.md` | Agent runtime: worktrees, background, workflows |
 | `.claude/rules/skill-fork-context.md` | When to set `context: fork` and `agent:` on skills |
 | `.claude/rules/workflow-vs-skill.md` | When a bundled workflow `.js` earns its agents — enumerable N, real barrier, script-decidable bound; the `workflows/` layout |
 | `.claude/rules/regression-testing.md` | **Required**: add a script check for every skill bug fixed |

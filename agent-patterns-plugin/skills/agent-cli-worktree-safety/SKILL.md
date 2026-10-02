@@ -1,6 +1,6 @@
 ---
 created: 2026-09-02
-modified: 2026-09-02
+modified: 2026-10-02
 reviewed: 2026-09-02
 name: agent-cli-worktree-safety
 description: Data-loss invariants for a CLI that runs an agent SDK in a git worktree then force-removes it. Use when building or reviewing such a CLI, or when an agent run reports "no changes" after writing files.
@@ -147,6 +147,10 @@ declined. This is failure mode 2 above, and it is silent.
 - Remove the interactive tool from `allowed_tools` on paths that must not fail silently, so the attempt is an error rather than a shrug.
 
 Worked example: [git-repo-agent ADR-003](https://github.com/laurigates/git-repo-agent/blob/main/docs/adr/003-switch-to-claude-sdk-client-for-interactive-workflows.md).
+
+The `query()` vs `ClaudeSDKClient` split, the full two-phase snippet, and
+creating the worktree in Python (`ClaudeAgentOptions` has no `isolation`
+parameter) are in [REFERENCE.md](REFERENCE.md).
 
 ## Required tests
 
