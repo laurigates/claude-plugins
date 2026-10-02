@@ -336,5 +336,4 @@ limit and recovered fully):
    those with a fresh **sequential** re-dispatch of only the dead agents, after
    the step-2 audit confirms no PR is already open. See
    [`../SKILL.md`](../SKILL.md) § "Resuming a workflow: `resumeFromRunId`
-   re-runs succeeded worktree agents" and
-   `.claude/rules/agent-coworker-detection.md`.
+   re-runs succeeded worktree agents".

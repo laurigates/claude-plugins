@@ -5,7 +5,7 @@ args: "[--check | --claim | --release]"
 argument-hint: "[--claim | --release | --check (default)]"
 allowed-tools: Bash(bash *), Bash(git status *), Bash(git stash *), Bash(git rev-parse *), Read, TodoWrite
 created: 2026-04-21
-modified: 2026-09-24
+modified: 2026-10-02
 reviewed: 2026-05-19
 ---
 
@@ -24,8 +24,9 @@ destructive operations that could destroy its uncommitted changes.
 | **Bulk-edit / commit-loop fan-out** about to start (per-plugin, per-package commits across many subdirectories) | Each iteration is already isolated in its own worktree |
 | A collision already happened and you need to recover | See [REFERENCE.md](REFERENCE.md) — Recovery section |
 
-See `.claude/rules/agent-coworker-detection.md` for the full rationale and
-signal design.
+Signal design — what each signal survives and where it goes blind — is in
+[REFERENCE.md](REFERENCE.md) § Signal design. The always-loaded response rules
+are `.claude/rules/agent-coworker-detection.md`.
 
 ## Bulk-edit / commit-loop precondition
 

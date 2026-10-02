@@ -1,12 +1,14 @@
 ---
 created: 2026-04-21
-modified: 2026-09-16
-reviewed: 2026-09-16
+modified: 2026-10-02
+reviewed: 2026-10-02
 ---
 
 # Agent Coworker Detection
 
 How an agent detects that another agent is already working in the same repository clone, and how it avoids destroying that coworker's in-flight changes.
+
+Unscoped on purpose: the hazard fires on a git **command** (`stash`, `reset`, `add -A`, `worktree remove`), not on editing a file of a known shape, so a `paths:` glob cannot scope it (`.claude/rules/context-engineering.md`).
 
 ## The Problem
 
@@ -28,134 +30,17 @@ No single signal is reliable. Combine these seven and treat any positive as "ass
 | **Bare flip** — the shared checkout reports `core.bare=true` via `git rev-parse --is-bare-repository`, or a leaked `GIT_DIR` / `GIT_WORK_TREE` env points away from the repo | A concurrent agent fleet flipping the shared repo to bare (every `git status`/`commit` then fails with "fatal: this operation must be run in a work tree") or redirecting git at another tree (issue #1692) | Free | All |
 | **Cross-session discovery** — `ListAgents` (native, 2.1.224+) | Other live Claude Code sessions on this or other machines that have cross-session messaging enabled | Free (built-in tool call) | macOS/Linux (2.1.224), Windows (2.1.239) |
 
-### Baseline drift
-
-At the start of each session / skill invocation, capture a baseline:
-
-```bash
-git status --porcelain=v2 --branch > .git/.claude-baseline-$$
-git stash list > .git/.claude-stash-baseline-$$
-```
-
-Before any destructive operation (`stash`, `restore`, `checkout -- .`, `reset --hard`), compare current state against the baseline. Entries present now but not in the baseline are **coworker changes**, not session changes — never stash or discard them.
-
-### Session marker file
-
-Marker path: `.git/.claude-session-<pid>` (kept inside `.git/` so it is never staged and is wiped by `git clean -x`).
-
-```bash
-marker=".git/.claude-session-$$"
-printf '%s\t%s\t%s\n' "$$" "$(date -Iseconds)" "$(hostname)" > "$marker"
-trap 'rm -f "$marker"' EXIT
-```
-
-Siblings: `ls .git/.claude-session-*` matching PIDs other than `$$`. For each, `kill -0 <pid> 2>/dev/null` confirms the process is still alive; stale markers from crashed sessions are safe to ignore.
-
-### Process scan
-
-Linux (cross-reference `/proc/*/cwd` symlinks against the repo root):
-
-```bash
-repo_root="$(git rev-parse --show-toplevel)"
-for pid_dir in /proc/[0-9]*; do
-  pid="${pid_dir##*/}"
-  [ "$pid" = "$$" ] && continue
-  cwd="$(readlink "$pid_dir/cwd" 2>/dev/null)" || continue
-  case "$cwd" in "$repo_root"|"$repo_root"/*) echo "$pid" ;; esac
-done
-```
-
-macOS uses `lsof -a -d cwd -c claude -c node -Fpn` since `/proc` is not available. The process-scan signal is a fallback — do not depend on it working in sandboxed environments (Claude Code on the web, restricted sandboxes) where process enumeration may be blocked.
-
-### Taskwarrior `+ACTIVE` claims
-
-When agents coordinate via `taskwarrior-plugin`, every claimed task is `task start`-ed (which sets the `+ACTIVE` virtual tag) and stamped with identity UDAs by `/taskwarrior:task-claim`:
-
-| UDA | Source on claim |
-|-----|-----------------|
-| `agent` | `claude-${CLAUDE_SESSION_ID:0:8}` |
-| `pid` | `$$` at claim time |
-| `host` | `hostname` |
-| `branch` | `git branch --show-current` |
-| `worktree` | `git rev-parse --show-toplevel` |
-
-Probe for active claims by other agents without contacting their processes:
-
-```bash
-project="$(basename "$(git rev-parse --show-toplevel)")"
-task project:"$project" +ACTIVE export \
-  | jq '.[] | {id, agent, pid, host, branch, worktree, start}'
-```
-
-The query is parallel-safe (`export` returns `[]` and exits 0 on no matches; see `.claude/rules/parallel-safe-queries.md`). Each row's `agent` is compared against `claude-${CLAUDE_SESSION_ID:0:8}` — matches are own claims and are reported as `OWN_CLAIM_*`; anything else counts toward `TW_CLAIM_COUNT` and raises the `coworker_detected` verdict.
-
-This signal is the only one that survives:
-
-- **Different hosts.** Taskwarrior stores can be synced via TaskChampion, so a claim on host A is visible to host B.
-- **Crashed Claude processes.** The claim outlives the process; staleness is reported separately by filtering on `start.before:now-Nh` (default 4h) without auto-stopping.
-- **Worktrees in the same project.** Taskwarrior records the project basename — not the worktree path — so two agents in sibling worktrees of the same repo still see each other's claims.
-
-The cross-link cuts both ways: when one agent claims via `/taskwarrior:task-claim`, the next agent's `/git:coworker-check` sees the claim before its destructive op even if that agent never invoked taskwarrior itself. The four-signal verdict is only as strong as the weakest signal that fires, so opting in to taskwarrior coordination strengthens the guard for every clone of the project.
+How each signal is computed, its platform caveats, and the verdict vocabulary live in `git-plugin:git-coworker-check` (`detect-coworkers.sh`, `claim-session.sh`, and its REFERENCE.md § Signal design). Run `/git:coworker-check` rather than re-deriving a probe by hand. Two of the signals are harness gotchas worth holding every turn:
 
 ### Worktree leak (issue #1319)
 
-`Agent(isolation: "worktree")` is supposed to give the child a sealed filesystem view: writes inside the worktree should not be visible in the parent checkout. In practice we have observed a transient leak where the child's brand-new file briefly appears in the **parent** at the same relative path as an **untracked file**, before vanishing when the child commits. From the issue:
-
-> The worktree's filesystem did **not** contain `check-runtime.sh`. The parent checkout's filesystem **did** contain `check-runtime.sh` as an untracked file. A few minutes later the agent committed and pushed; the file is correctly present in the agent's pushed branch. At that point, the orphan in the parent checkout had vanished.
-
-A naive parent session that saw the orphan would `git stash` or `git add -A; git commit` the file onto the wrong branch. The fifth signal exists to catch the leak shape before that happens.
-
-Detection walks `git worktree list --porcelain` for linked worktrees, then probes each untracked file in the parent against every linked worktree:
-
-```bash
-for wt in $(git worktree list --porcelain | awk '/^worktree / && $2 != repo_root {print $2}'); do
-  for path in $(git status --porcelain --untracked-files=all | awk '/^\?\? / {sub(/^\?\? /,""); print}'); do
-    # Match if the path exists in the linked worktree (working tree or HEAD).
-    if [ -e "$wt/$path" ] || git -C "$wt" cat-file -e "HEAD:$path" 2>/dev/null; then
-      echo "WORKTREE_LEAK_PATH=$path WORKTREE=$wt"
-    fi
-  done
-done
-```
-
-A leak match yields the dedicated verdict `worktree_leak_suspected`. The response is the same as for any coworker signal — **leave the working tree alone** — with one addition: do not commit on the parent branch while child worktree agents are running, because the parent's untracked entry will be reclaimed by the child's commit.
-
-Limitations:
-
-- Two agents writing genuinely independent files that happen to share a path will produce a false-positive leak match. Treat the verdict as a strong hint, not a proof.
-- A bare-clone style harness that doesn't use `git worktree` won't produce any `LINKED_WORKTREE_COUNT > 0`, so the signal silently degrades to a no-op there.
+A child `Agent(isolation: "worktree")` can briefly leak a new file into the **parent** checkout as an untracked file at the same relative path; it vanishes when the child commits. Do not stash, stage, or commit that path — and do not commit on the parent branch at all while child worktree agents are running, because the parent's untracked entry will be reclaimed by the child's commit.
 
 ### Bare flip (issue #1692)
 
-> **Upstream context (2.1.216, 2.1.222):** Claude Code hardened `isolation: worktree` subagents specifically against `git -C` / `--git-dir` / `GIT_DIR` / `GIT_WORK_TREE` redirection out of their own worktree (2.1.216), and (2.1.222) extended isolation to file edits **and** Bash in every session type (`.claude/rules/agent-development.md` § Worktree Isolation). That closes the isolation-driven path to this hazard on 2.1.222+. The detection/recovery below still matters for the other cause this rule documents — a *shared, non-isolated* checkout where a script/hook bug (the class `scripts/check-git-sandbox-guards.sh` guards against) or a bad `GIT_DIR` export flips the repo bare, which is unrelated to subagent isolation.
-
-A concurrent agent fleet sharing one checkout can flip the shared repo to `core.bare = true` (observed alongside a junk `[user]` identity injected into `.git/config`). Once bare, every `git status` / `git commit` in every linked worktree fails with `fatal: this operation must be run in a work tree`. The sibling failure mode is a leaked `GIT_DIR` / `GIT_WORK_TREE` env that silently redirects git at another tree.
-
-The prevention side already landed: `scripts/check-git-sandbox-guards.sh` blocks the root cause — a test/hook running `git -C "$VAR"` against an unguarded `VAR=$(mktemp -d)` that resolves empty and falls back to the CWD. This sixth signal is the **detection + recovery** complement, so a session can notice the corruption instead of misreading the cascade of git failures as its own fault.
-
-Detection is cheap and worktree-independent:
-
-```bash
-is_bare="$(git rev-parse --is-bare-repository 2>/dev/null || echo unknown)"
-[ "$is_bare" = "true" ] && echo "BARE_FLIP_DETECTED=true"
-# Plus: GIT_DIR / GIT_WORK_TREE set and pointing outside the repo root.
-```
-
-A positive yields the dedicated verdict `bare_flip_suspected`, ranked ahead of the other signals because a bare flip breaks git for every linked worktree.
-
-#### Recovery and commit-early
-
-| Step | Action |
-|------|--------|
-| Restore the working tree | `git config core.bare false`; if that refuses, `GIT_DIR=.git GIT_WORK_TREE=. git -c core.bare=false status` |
-| Clear leaked env | `unset GIT_DIR GIT_WORK_TREE` (whatever the signal reported as `LEAKED_GIT_DIR` / `LEAKED_GIT_WORK_TREE`) |
-| Recover wiped untracked work | `git reflog -20`, `git fsck --unreachable`, and check the agent worktree branches (`git worktree list`, `git branch -a`) — a file an agent committed survives on its branch even when the parent's untracked copy was wiped |
+`fatal: this operation must be run in a work tree` on every `git status`/`commit` means the shared checkout was flipped to `core.bare=true`, or a leaked `GIT_DIR`/`GIT_WORK_TREE` redirected git at another tree. It is not your fault; stop and recover via `git-plugin:git-coworker-check` § Recovering from a bare flip. Worktree-isolation hardening (2.1.216, 2.1.222; `.claude/rules/agent-development.md` § Worktree Isolation) closes the isolation-driven path to this hazard on 2.1.222+; the *shared, non-isolated* checkout cause — a script/hook bug (the class `scripts/check-git-sandbox-guards.sh` guards against) or a bad `GIT_DIR` export — remains.
 
 **Commit early.** Untracked files are the only work a concurrent branch switch / reset can destroy with no recovery path — committed work survives in the reflog, untracked work does not. When many sibling worktrees are active in one clone, commit or stash new files promptly and prefer working in your own `git worktree` so a flip in the shared checkout cannot reach your tree.
-
-### Cross-session discovery (`ListAgents`, 2.1.224+)
-
-`ListAgents` is a native alternative/supplement to the hand-rolled session-marker-file convention above: it lists other live Claude Code sessions reachable via `SendMessage`, without either side needing to adopt a marker file. As of 2.1.239, `ListAgents` also reports the session's own name and lists live teammates (previously only subagents and other sessions appeared). It only surfaces sessions that have cross-session messaging enabled (`crossSessionInbound`), so a session that opts out is still invisible to it — the marker-file signal is still needed for those. See `.claude/rules/agent-development.md` § Native Team Tools for the full `SendMessage`/`ListAgents` cross-session picture.
 
 ## Response Rules
 
@@ -170,19 +55,10 @@ When no signal reports a coworker, still prefer explicit paths over bulk staging
 
 ### Cleanup: never force-remove worktrees you don't own (issue: 2026-06-28)
 
-A tempting end-of-task "tidy up" is to prune the worktree pool. The footgun is
-the scoping predicate. A prune that removes **every worktree whose branch is not
-on origin** sweeps up *other sessions'* in-flight worktrees — local-only branches
-are exactly what an active peer is mid-work on (`refactor/*`, `claude/*`,
-`feat/*` not yet pushed). `git worktree remove --force` then **discards any
-uncommitted changes** in those trees, destroying peer work with no recovery path
-(committed refs survive — uncommitted does not, same asymmetry as the bare-flip
-recovery above).
-
-Real break: a sweep's cleanup force-removed ~24 peer worktrees (the
-`refactor/*-skill-scripts-155x` set and several `claude/*` sessions) on the
-"branch not on origin" predicate. Branch refs survived, so committed work was
-safe, but any peer's staged-but-uncommitted edits were unrecoverable.
+A prune that removes **every worktree whose branch is not on origin** sweeps up
+*other sessions'* in-flight worktrees — local-only branches are exactly what an
+active peer is mid-work on — and `git worktree remove --force` then **discards
+their uncommitted changes** with no recovery path.
 
 **The rule:** scope worktree pruning to **your own session's** worktrees by name
 (e.g. only `wf_<this-run-id>-*`, or paths you created this session). Never
@@ -193,15 +69,10 @@ a worktree, leave it — a stale worktree costs disk; a force-removed one can co
 coworker their afternoon.
 
 **Correct scoping is not sufficient — "all PRs merged" is not the completion
-signal.** Observed 2026-08-15: a cleanup obeying every rule above (scoped to the
-session's own six agent IDs by name, plain `git worktree remove`, no `--force`)
-still killed two live peers' shells. Non-force removal *did* hold the data line —
-it refuses on a dirty tree, so all six were provably clean and nothing was lost —
-but an agent whose PR has merged is not necessarily **done**: one was mid-rebase,
-another was messaging a peer, and a third (skipped only because its worktree was
-`locked`) ran on for two more hours. `SendMessage` to a removed worktree also
-fails permanently (*"cannot be resumed: its worktree no longer exists"*), so the
-peer cannot even be warned.
+signal.** A non-force remove refuses on a dirty tree, so it cannot lose data, but
+an agent whose PR has merged may still be mid-rebase or messaging a peer, and
+`SendMessage` to a removed worktree fails permanently, so the peer cannot even be
+warned.
 
 - **Gate removal on the agent-completion notification, never on PR state.** The
   harness reports each agent's completion; merged PRs say nothing about whether
@@ -210,17 +81,7 @@ peer cannot even be warned.
   is never urgent, and deferring it to the next session costs only disk.
 - A `locked` worktree is a live-work signal. Leave it.
 
-## Integration Points
-
-| Where | How |
-|-------|-----|
-| `git-coworker-check` skill | User-invocable diagnostic — runs all three signals and reports |
-| `git-commit*` skills | Call the baseline-drift check before staging; fail loudly if drift is detected |
-| `git-maintain` skill | Never runs `git stash` or `git clean` without first running the coworker check |
-| SessionStart hook (optional) | Write the session marker; capture the baseline snapshot |
-| PreToolUse hook (optional) | Block `git stash`, `git checkout -- .`, `git reset --hard` when a coworker is detected |
-
-The skill is the primary surface; hooks are an enforcement layer that users can opt into via `hooks-plugin`.
+The incidents behind this section (~24 force-removed peer worktrees; the 2026-08-15 non-force cleanup that still killed two live peers) are recorded in `agent-patterns-plugin:parallel-agent-dispatch` `references/worktree-hazards.md` § Remedy.
 
 ## Anti-Patterns
 
@@ -230,35 +91,20 @@ The skill is the primary surface; hooks are an enforcement layer that users can 
 | `git add -A` / `git add .` | Stage explicit paths you know you touched |
 | `git clean -fd` as cleanup | Never auto-clean in a shared checkout |
 | `git worktree remove --force` on "branch not on origin" | Scope prune to your own `wf_<run>-*`; never force-remove a branch you didn't create |
-| Resume a `Workflow` to recover a few failed worktree agents | Re-dispatch the failed ones fresh/sequentially (see below) |
+| Resume a `Workflow` to recover a few failed worktree agents | Re-dispatch the failed ones fresh/sequentially (`agent-patterns-plugin:parallel-agent-dispatch` § Resuming a workflow, #1868) |
 | Trust `git status` as "my changes" | Treat it as "everyone's changes" until proven otherwise |
 | Block on the process scan alone | Treat it as a hint; the baseline + markers are authoritative |
 
-### `Workflow` resume re-runs already-succeeded worktree agents (issue: 2026-06-28)
-
-`Workflow({resumeFromRunId})` caches completed `agent()` calls by `(prompt, opts)`
-— but `isolation: "worktree"` agents do **not** cache cleanly across a resume. A
-resume intended to recover a *few* rate-limited worktree agents **re-executed
-agents that had already succeeded**, opening a **duplicate PR** (#1858 dup of
-#1857). The failure is invisible until you spot two PRs for one issue.
-
-**The rule:** do not resume a whole workflow to retry a handful of failed
-worktree agents. Recover them with a **fresh, sequential dispatch** (one Opus
-agent doing the remainder one-at-a-time, or a small re-run waved ≤3) — which also
-dodges the burst rate-limit that caused the original failures
-(`agent-patterns-plugin:parallel-agent-dispatch` § Concurrent Rate-Limit Risk).
-Before any recovery dispatch, check
-`gh pr list --search "issue-<N>"` so you don't open a duplicate.
-
 ## Limitations
 
-- **Marker files** only help when both agents adopt the convention. An agent that skips writing a marker is invisible to marker-based detection.
-- **Process scans** fail silently in sandboxes without `/proc` or `lsof` — rely on baseline drift in those environments.
-- **Baseline drift** cannot tell "my earlier edit I forgot about" from "a coworker's edit". When in doubt, ask the user.
 - None of these signals handle concurrent writes to the **same file** — they only detect that a coworker exists, not that you are about to clobber its work.
+
+The remaining per-signal caveats (marker adoption, sandboxed process scans, baseline ambiguity) are in `git-plugin:git-coworker-check` REFERENCE.md § Signal design.
 
 ## Related Rules
 
 - `.claude/rules/handling-blocked-hooks.md` — how to respond when a PreToolUse coworker-check hook blocks a command
 - `.claude/rules/agent-development.md` — worktree isolation as the preferred answer to concurrency
 - `.claude/rules/sandbox-guidance.md` — `/proc` and `lsof` availability in the web sandbox
+- `git-plugin:git-coworker-check` — the detection skill, its scripts, signal design, and recovery
+- `agent-patterns-plugin:parallel-agent-dispatch` — `Workflow` resume (#1868) and worktree-cleanup incidents

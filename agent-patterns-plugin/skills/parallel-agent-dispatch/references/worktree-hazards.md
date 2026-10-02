@@ -325,6 +325,11 @@ worktrees you don't own" owns them):
 - **Never `--force`.** A non-forced remove *refuses* on a dirty tree, and that refusal is precisely what makes the sweep safe.
 - Skip any `locked` worktree — `locked` is a live-work signal.
 
+**Incidents behind these conditions** (moved from `.claude/rules/agent-coworker-detection.md`):
+
+- **~24 force-removed peer worktrees (2026-06-28).** A sweep's cleanup force-removed ~24 peer worktrees (the `refactor/*-skill-scripts-155x` set and several `claude/*` sessions) on the "branch not on origin" predicate. Local-only branches are exactly what an active peer is mid-work on (`refactor/*`, `claude/*`, `feat/*` not yet pushed). Branch refs survived, so committed work was safe, but any peer's staged-but-uncommitted edits were unrecoverable.
+- **Correct scoping still killed two live peers (2026-08-15).** A cleanup obeying every condition (scoped to the session's own six agent IDs by name, plain `git worktree remove`, no `--force`) still killed two live peers' shells. Non-force removal *did* hold the data line: it refuses on a dirty tree, so all six were provably clean and nothing was lost. But one agent was mid-rebase, another was messaging a peer, and a third (skipped only because its worktree was `locked`) ran on for two more hours. `SendMessage` to a removed worktree fails permanently (*"cannot be resumed: its worktree no longer exists"*).
+
 Distinct from `workflow-orchestration-plugin:workflow-interrupted-run-recovery`
 § 5, which covers a run **killed** mid-flight: there salvage precedes a
 `--force` removal. Here the run **completed**, so there is nothing to salvage

@@ -1,9 +1,11 @@
-# git-coworker-check — Recovery REFERENCE
+# git-coworker-check — Signal Design and Recovery REFERENCE
 
-When detection fires *too late* — i.e., a coworker collision has already
-corrupted your local git state — this reference walks through specific
-recovery scenarios. Detection (SKILL.md) prevents the damage; this file
-fixes the damage when prevention failed.
+Two halves. § Signal design (at the end) explains why each detection signal
+exists, what it survives, and where it goes blind. Everything before it is
+recovery: when detection fires *too late* — i.e., a coworker collision has
+already corrupted your local git state — the scenarios below walk through
+specific repairs. Detection (SKILL.md) prevents the damage; this file fixes the
+damage when prevention failed.
 
 ## When To Reach For This File
 
@@ -325,3 +327,98 @@ the 20+ minutes a Scenario 1 recovery costs.
   WIP undisturbed. The full reflog trace and the diff before/after
   recovery are in the PR thread:
   https://github.com/ForumViriumHelsinki/infrastructure/pull/1840
+
+## Signal design
+
+Moved here from `.claude/rules/agent-coworker-detection.md`, which keeps the
+seven-row signal table and the response rules always-loaded. The mechanics of
+each signal live in `scripts/detect-coworkers.sh` (Signals 1–6) and
+`scripts/claim-session.sh` / `scripts/release-session.sh` (the baseline and
+marker writes). This section holds the *why*: what each signal survives, and
+where it goes blind. No single signal is reliable; treat any positive as
+"assume a coworker is present".
+
+### Baseline drift
+
+Captured at `--claim` time and diffed before any destructive operation
+(`stash`, `restore`, `checkout -- .`, `reset --hard`). Entries present now but
+not in the baseline are **coworker changes**, not session changes — never stash
+or discard them.
+
+### Process scan
+
+Linux cross-references `/proc/*/cwd` symlinks against the repo root; macOS uses
+`lsof -a -d cwd -c claude -c node -Fpn` since `/proc` is not available. The
+process-scan signal is a fallback — do not depend on it working in sandboxed
+environments (Claude Code on the web, restricted sandboxes) where process
+enumeration may be blocked.
+
+### Taskwarrior `+ACTIVE` claims
+
+The claim UDAs are written by `/taskwarrior:task-claim` (which owns their
+table); the 4h stale filter is applied by `task-status` / `task-coordinate`.
+This signal is the only one that survives:
+
+- **Different hosts.** Taskwarrior stores can be synced via TaskChampion, so a claim on host A is visible to host B.
+- **Crashed Claude processes.** The claim outlives the process; staleness is reported separately by filtering on `start.before:now-Nh` (default 4h) without auto-stopping.
+- **Worktrees in the same project.** Taskwarrior records the project basename — not the worktree path — so two agents in sibling worktrees of the same repo still see each other's claims.
+
+The cross-link cuts both ways: when one agent claims via
+`/taskwarrior:task-claim`, the next agent's `/git:coworker-check` sees the claim
+before its destructive op even if that agent never invoked taskwarrior itself.
+The seven-signal verdict is only as strong as the weakest signal that fires, so
+opting in to taskwarrior coordination strengthens the guard for every clone of
+the project.
+
+### Worktree leak (issue #1319)
+
+`Agent(isolation: "worktree")` is supposed to give the child a sealed filesystem
+view: writes inside the worktree should not be visible in the parent checkout.
+In practice we have observed a transient leak where the child's brand-new file
+briefly appears in the **parent** at the same relative path as an **untracked
+file**, before vanishing when the child commits. From the issue:
+
+> The worktree's filesystem did **not** contain `check-runtime.sh`. The parent checkout's filesystem **did** contain `check-runtime.sh` as an untracked file. A few minutes later the agent committed and pushed; the file is correctly present in the agent's pushed branch. At that point, the orphan in the parent checkout had vanished.
+
+A naive parent session that saw the orphan would `git stash` or
+`git add -A; git commit` the file onto the wrong branch. The signal exists to
+catch the leak shape before that happens.
+
+Limitations:
+
+- Two agents writing genuinely independent files that happen to share a path will produce a false-positive leak match. Treat the verdict as a strong hint, not a proof.
+- A bare-clone style harness that doesn't use `git worktree` won't produce any `LINKED_WORKTREE_COUNT > 0`, so the signal silently degrades to a no-op there.
+
+### Bare flip (issue #1692)
+
+A concurrent agent fleet sharing one checkout can flip the shared repo to
+`core.bare = true` (observed alongside a junk `[user]` identity injected into
+`.git/config`). Once bare, every `git status` / `git commit` in every linked
+worktree fails with `fatal: this operation must be run in a work tree`. The
+sibling failure mode is a leaked `GIT_DIR` / `GIT_WORK_TREE` env that silently
+redirects git at another tree.
+
+The prevention side already landed: `scripts/check-git-sandbox-guards.sh` (repo
+root) blocks the root cause — a test/hook running `git -C "$VAR"` against an
+unguarded `VAR=$(mktemp -d)` that resolves empty and falls back to the CWD. The
+bare-flip signal is the **detection + recovery** complement, so a session can
+notice the corruption instead of misreading the cascade of git failures as its
+own fault. It is ranked ahead of the other signals because a bare flip breaks
+git for every linked worktree. Recovery steps: SKILL.md § Recovering from a bare
+flip / leaked GIT_DIR.
+
+### Cross-session discovery (`ListAgents`)
+
+`detect-coworkers.sh` does not call `ListAgents` — it is a native tool call the
+agent makes itself. It lists other live Claude Code sessions reachable via
+`SendMessage` without either side adopting a marker file, but it only surfaces
+sessions that have cross-session messaging enabled (`crossSessionInbound`), so a
+session that opts out is still invisible to it — the marker-file signal is
+still needed for those.
+
+### Limitations of the combined verdict
+
+- **Marker files** only help when both agents adopt the convention. An agent that skips writing a marker is invisible to marker-based detection.
+- **Process scans** fail silently in sandboxes without `/proc` or `lsof` — rely on baseline drift in those environments.
+- **Baseline drift** cannot tell "my earlier edit I forgot about" from "a coworker's edit". When in doubt, ask the user.
+- None of these signals handle concurrent writes to the **same file** — they only detect that a coworker exists, not that you are about to clobber its work.
