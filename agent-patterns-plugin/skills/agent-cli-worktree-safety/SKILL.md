@@ -15,6 +15,14 @@ Data-loss prevention for CLIs that create a git worktree, run an LLM
 orchestrator (`claude-agent-sdk` or similar) that writes files there, and then
 clean up with `git worktree remove --force`.
 
+## When to Use This Skill
+
+| Use this skill when... | Use something else when... |
+|------------------------|----------------------------|
+| Building or reviewing a CLI that runs an agent SDK in a worktree it later removes | Isolating a Claude Code subagent with `isolation: "worktree"` → `.claude/rules/agent-runtime.md` § Worktree Isolation |
+| An agent run wrote files but reported "No changes were made" | Pruning other sessions' worktrees → `.claude/rules/agent-coworker-detection.md` § Cleanup |
+| Wiring the SDK's two-phase or `create_worktree` flow → [REFERENCE.md](REFERENCE.md) | Coordinating parallel agents → `agent-patterns-plugin:agent-teams` |
+
 ## The core failure mode
 
 Three independent mistakes compound into silent data loss:
