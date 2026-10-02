@@ -272,6 +272,19 @@ Covers every merge route: `gh pr merge` (in any flag order, inside a compound
 command, with or without `--repo`), `gh api ... /pulls/N/merge`, and the GitHub
 MCP `merge_pull_request` tool. `--admin` does not bypass it.
 
+**Which repository the PR is looked up in.** With `--repo`/`-R`, that
+repository. Otherwise the repository of the hook's cwd, with one exception
+(issue #2872): when the command is exactly `cd <dir> && gh pr merge …`, the PR
+is looked up in `<dir>`, where the merge actually runs.
+
+| Leading `cd` shape | Looked up in |
+|--------------------|--------------|
+| `cd /abs/path && gh pr merge 5`, also `./…`, `../…`, `~/…` — one plain literal operand, the cd first and the merge second, joined by `&&` | The cd target, if it exists and resolves to the same directory logically and physically |
+| `cd x; gh pr merge`, `cd x \|\| …`, `cd -P x`, `cd "x"`, `cd $X`, a glob or brace, a bare relative name (CDPATH-dependent), `pushd`, a second cd/pushd/popd, `GH_REPO`, or a second merge anywhere in the command; any word after the `&&` starting `-` that contains `R` or `-repo` (`-Racme/x`, `-R=acme/x`, `-sRacme/x`), or any character there outside letters, digits, blanks and `._/:=@%+,-&;` — quotes, backslash, `$`, backtick, braces, globs and extglobs (`"-R" acme/x`, `$FLAGS`, `-? acme/x`, `--re?o acme/x`, `-!(Q) acme/x`, which expand to `-R`/`--repo` when the cd target holds a file of that name), `\|` or a newline — anything that could spell a repo flag the parser misses; a redirection (`> f`, `2>f`, `&>f`, which can truncate the cd target's `.git/HEAD` before gh runs) or a lone backgrounding `&` (the merge would race what follows) — anything that runs before or alongside gh | The session cwd, exactly as before |
+
+When the lookup fails and no `--repo` was given, the denial names the directory
+it resolved the repository from and suggests retrying with `-R OWNER/REPO`.
+
 The command word is resolved **structurally**, so a merge stays a merge when it
 is reached through:
 
@@ -335,11 +348,21 @@ A PermissionRequest hook that auto-approves safe operations and auto-denies dang
 
 | Decision | Patterns |
 |----------|----------|
-| Auto-approve | Read-only git, test runners, linters, gh CLI reads |
-| Auto-deny | `rm -rf /`, force push to main/master |
+| Auto-deny (checked first) | `rm -rf /`, force push to main/master — anywhere in the command |
+| Auto-approve | Read-only git, test runners, linters, gh CLI reads — only when **every** command in the line is one of them |
 | Pass through | Everything else (user decides) |
 
+Approval is decided on an `ast-grep --lang bash` parse, not the raw string
+([#2733](https://github.com/laurigates/claude-plugins/issues/2733)): `git status && touch x`,
+`npm test; chmod -R 777 .` and a multi-line command with an unreviewed second line all pass
+through. Only plain commands joined by `&&`, `||`, `;`, `|`, `&` or newlines can be approved —
+a substitution, process substitution, `$VAR`, subshell, group, loop, conditional, function,
+redirection, heredoc, assignment prefix or comment means no decision. Without ast-grep (or if
+the parse errors or takes over 5 s) the hook never approves; the deny rules still fire.
+
 **Toggle:** `CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO=1`
+
+**Tests:** `bash hooks-plugin/hooks/test-permission-auto-approve.sh` (needs ast-grep for the parser sections; SKIPs them otherwise).
 
 ### task-completeness.sh
 

@@ -106,7 +106,7 @@ echo "=== TEST: dir-copy fixture + teardown commands ==="
 # The template root doubles as --repo-root so the demo needs no committed
 # fixture tree (fixture.dir is resolved relative to the repo root).
 tmpl_root="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
-[ -n "$tmpl_root" ] && [ -d "$tmpl_root" ] || { echo "mktemp -d produced no dir" >&2; exit 1; }
+if [ -z "$tmpl_root" ] || [ ! -d "$tmpl_root" ]; then echo "mktemp -d produced no dir" >&2; exit 1; fi
 tmpl_rel="fixtures/repo-with-config"
 tmpl_src="$tmpl_root/$tmpl_rel"
 mkdir -p "$tmpl_src/nested"

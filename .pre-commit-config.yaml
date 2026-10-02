@@ -190,6 +190,23 @@ repos:
         language: system
         files: '^(evaluate-plugin/golden-set\.json|evaluate-plugin/scripts/(check_golden_set_evals\.py|grade_deterministic\.py|tests/test-golden-set-evals\.sh|tests/fixtures/golden-set-probes\.json|tests/fixtures/gc-001-(good|bad)\.txt)|[^/]+-plugin/skills/[^/]+/evals\.json)$'
         pass_filenames: false
+      # The grader and fixture-engine suites were named test_*.sh until #2795,
+      # so the runner's test-*.sh glob never ran them. `Test: Skill scripts` now
+      # discovers them, but it is path-filtered to scripts/: the grader suite
+      # also reads git-commit/evals.json and agents/eval-grader.md, which only
+      # these local triggers cover.
+      - id: test-grade-deterministic
+        name: deterministic grader + matrix renderer regression (#2795)
+        entry: bash ./evaluate-plugin/scripts/tests/test-grade-deterministic.sh
+        language: system
+        files: '^(evaluate-plugin/(scripts/(grade_deterministic\.py|render_matrix_report\.py|tests/test-grade-deterministic\.sh|tests/fixtures/.*)|agents/eval-grader\.md)|git-plugin/skills/git-commit/evals\.json)$'
+        pass_filenames: false
+      - id: test-apply-fixture
+        name: eval fixture run-engine regression (#2795)
+        entry: bash ./evaluate-plugin/scripts/tests/test-apply-fixture.sh
+        language: system
+        files: '^evaluate-plugin/scripts/(apply_fixture\.sh|tests/test-apply-fixture\.sh)$'
+        pass_filenames: false
       # --strict since the corpus reached UNQUALIFIED=0 (see the ratchet note in
       # docs/regression-ledger.md). Without it the WARN tier reached
       # nobody: the hook ran unflagged and non-verbose, and the guard appeared in
@@ -932,6 +949,12 @@ repos:
         language: system
         files: '^hooks-plugin/hooks/(auto-checkpoint\.sh|test-auto-checkpoint\.sh)$'
         pass_filenames: false
+      - id: test-permission-auto-approve
+        name: permission-auto-approve hook regression (#2733)
+        entry: bash ./hooks-plugin/hooks/test-permission-auto-approve.sh
+        language: system
+        files: '^hooks-plugin/hooks/(permission-auto-approve\.sh|test-permission-auto-approve\.sh)$'
+        pass_filenames: false
       - id: test-bash-antipatterns-teach
         name: bash-antipatterns teach-nudge hook regression
         entry: bash ./hooks-plugin/hooks/test-bash-antipatterns-teach.sh
@@ -1014,4 +1037,11 @@ repos:
         entry: bash ./terraform-plugin/hooks/test-validate-terraform-apply.sh
         language: system
         files: '^terraform-plugin/hooks/(validate-terraform-apply\.sh|test-validate-terraform-apply\.sh)$'
+        pass_filenames: false
+      # kubernetes-plugin ships its own PreToolUse hook, outside hooks-plugin.
+      - id: test-inject-kubectl-dry-run
+        name: kubectl dry-run injector — flag on the parsed node, no allow on compound commands (#2734)
+        entry: bash ./kubernetes-plugin/hooks/test-inject-kubectl-dry-run.sh
+        language: system
+        files: '^kubernetes-plugin/hooks/(inject-kubectl-dry-run\.sh|test-inject-kubectl-dry-run\.sh)$'
         pass_filenames: false
