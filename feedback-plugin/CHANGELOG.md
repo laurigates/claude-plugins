@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.4](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.12.3...feedback-plugin-v1.12.4) (2026-09-28)
+
+
+### Bug Fixes
+
+* **plugins:** quote CLAUDE_PLUGIN_ROOT in hook commands; apply 2.1.279-2.1.283 changelog review ([#2854](https://github.com/laurigates/claude-plugins/issues/2854)) ([3e15bf9](https://github.com/laurigates/claude-plugins/commit/3e15bf961986c0f475785fbac9b777d4f6ec4995))
+
 ## [1.12.3](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.12.2...feedback-plugin-v1.12.3) (2026-09-24)
 
 

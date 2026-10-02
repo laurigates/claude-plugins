@@ -52,6 +52,10 @@ adds or removes a skill and touches nothing under `scripts/` can still merge
 with a stated count out of date. That gap is what the pre-commit entry above
 mitigates locally; closing it in CI is a separate decision.
 
+Optional manual input: `/doctor prompt-audit` (Claude Code 2.1.283) flags stale
+paths/commands, contradicting instruction files and older-model prompting
+patterns across CLAUDE.md, skills, agents and commands. It is not wired into CI.
+
 Nothing here needs scheduling by hand. (The 2026-06-28 cadence decision described
 this job as weekly; the workflow's schedule has since been consolidated to
 monthly.)

@@ -8,7 +8,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/attributes-health-cue.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/attributes-health-cue.sh\"",
             "timeout": 15
           }
         ]

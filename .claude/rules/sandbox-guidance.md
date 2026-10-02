@@ -1,6 +1,6 @@
 ---
 created: 2026-03-03
-modified: 2026-09-16
+modified: 2026-09-28
 reviewed: 2026-09-16
 paths:
   - "**/skills/**"
@@ -86,6 +86,8 @@ Use to carve out exceptions from broad allow wildcards without restricting other
 
 `sandbox.network.strictAllowlist: true` denies any host not on `sandbox.network.allowedDomains` outright, with no permission-prompt fallback. Use when a skill must never reach an unexpected host, even with user approval.
 
+On macOS, when a dev server cannot bind a local port inside the sandbox, the error now points to `sandbox.network.allowLocalBinding` (2.1.281).
+
 ### Per-Command Network Grants — `allowed_domains` (2.1.271+)
 
 Under auto mode with sandboxing, a `Bash`/`PowerShell`/`Monitor` call can carry `allowed_domains`: the hosts that one command needs are reviewed alongside the call itself and opened for it alone, rather than granted against the session-wide allowlist. This is a narrower, per-invocation network grant model distinct from the static domain table above — relevant when authoring a skill that runs under auto mode.
@@ -101,6 +103,8 @@ Under auto mode with sandboxing, a `Bash`/`PowerShell`/`Monitor` call can carry 
 | `$CLAUDE_PROJECT_DIR` | Project working directory |
 
 The sandbox runs as **root**, so `sudo` is unnecessary for writes to `/usr/local/bin`.
+
+`claude mcp add` / `remove` report a failure when the sandbox prevents writing the config (2.1.283).
 
 ### Git Worktree Write Allowlist (2.1.149+)
 
@@ -153,7 +157,7 @@ rm -rf "$tmp_dir"
 
 ### `$TMPDIR` Consistency (2.1.154+)
 
-Before 2.1.154, `$TMPDIR` could resolve to **different directories** in sandboxed vs unsandboxed Bash commands within the same session — a file written to `$TMPDIR` by one command was not necessarily visible to the next. As of 2.1.154 `$TMPDIR` resolves to the same path across both, so handing a temp path between sandboxed and unsandboxed steps is safe.
+Before 2.1.154, `$TMPDIR` could resolve to **different directories** in sandboxed vs unsandboxed Bash commands within the same session — a file written to `$TMPDIR` by one command was not necessarily visible to the next. As of 2.1.154 `$TMPDIR` resolves to the same path across both, so handing a temp path between sandboxed and unsandboxed steps is safe. When `CLAUDE_CODE_TMPDIR` is set, sandboxed Bash can write to that `$TMPDIR` (2.1.281).
 
 ---
 
@@ -324,6 +328,8 @@ Further masking options, all requiring `sandbox.network.tlsTerminate` and honore
 | `decode: "jwt"` + `maskClaims` | Specific JWT claims |
 | `awsPairs` / `sigv4` | Re-signs AWS requests after masking the underlying credential |
 
+Sandboxed `git` no longer asks credential helpers to store the proxy login (2.1.283).
+
 ## Auto-Allow in Sandbox
 
 ### `autoAllowBashIfSandboxed` and Shell Expansions (2.1.139+)
@@ -334,7 +340,9 @@ If you previously worked around the gap with explicit `Bash(... $VAR ...)` allow
 
 ### `sandbox.excludedCommands` Matches Every Part (2.1.277+)
 
-An `excludedCommands` glob exempts a compound Bash command from the sandbox only when every part matches; before 2.1.277 one matching part exempted the whole command.
+An `excludedCommands` glob exempts a compound Bash command from the sandbox only when every part matches; before 2.1.277 one matching part exempted the whole command. Since 2.1.281 a pattern also matches `git rev-parse --git-dir`, programs named like shell builtins, and commit messages containing `[WIP]` or `#`.
+
+Project and local `excludedCommands` entries are ignored when managed settings or `--settings` set `allowUnsandboxedCommands: false`, or managed settings set `allowManagedDomainsOnly: true` (2.1.282). A skill cannot rely on its repo's `.claude/settings.json` to exempt a command in those environments.
 
 ### `NO_COLOR` / `FORCE_COLOR` Scoping (2.1.143+)
 
@@ -351,6 +359,8 @@ Setting `NO_COLOR` or `FORCE_COLOR` under `env` in `settings.json` previously al
 ### Managed-Only Sandbox Binary Overrides — `sandbox.ripgrep` (2.1.232+)
 
 `sandbox.ripgrep` (the sandbox's ripgrep binary path) is honored only from user, managed, or `--settings` settings as of 2.1.232 — a project `.claude/settings.json` entry is ignored. The same restriction applies to `sandbox.bwrapPath`/`sandbox.socatPath`, and managed-settings overrides of any of the three now require explicit approval.
+
+An invalid nested value in managed `sandbox` settings fails closed for that value, and the rest of the block still applies (2.1.283).
 
 ### Failing Closed When the Sandbox Can't Start — `sandbox.failIfUnavailable` (2.1.83+)
 

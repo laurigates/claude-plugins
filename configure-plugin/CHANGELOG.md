@@ -1,5 +1,38 @@
 # Changelog
 
+## [1.37.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.36.3...configure-plugin-v1.37.0) (2026-09-29)
+
+
+### Features
+
+* promote licence-position and workflow-scale rules to skills ([#2860](https://github.com/laurigates/claude-plugins/issues/2860)) ([a6ec7d0](https://github.com/laurigates/claude-plugins/commit/a6ec7d0caefff29b6f46cc76e1c3f5bba064b5c6))
+
+## [1.36.3](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.36.2...configure-plugin-v1.36.3) (2026-09-28)
+
+
+### Bug Fixes
+
+* **plugins:** quote CLAUDE_PLUGIN_ROOT in hook commands; apply 2.1.279-2.1.283 changelog review ([#2854](https://github.com/laurigates/claude-plugins/issues/2854)) ([3e15bf9](https://github.com/laurigates/claude-plugins/commit/3e15bf961986c0f475785fbac9b777d4f6ec4995))
+
+## [1.36.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.36.1...configure-plugin-v1.36.2) (2026-09-28)
+
+
+### Bug Fixes
+
+* **configure-plugin:** drop Vitest coverage.all, pin the denominator with include ([#2844](https://github.com/laurigates/claude-plugins/issues/2844)) ([0709e3b](https://github.com/laurigates/claude-plugins/commit/0709e3bef1af0c0987038fc05b17fcff41089e5d))
+
+
+### Documentation
+
+* **configure-plugin:** release-please under GitHub immutable releases ([#2846](https://github.com/laurigates/claude-plugins/issues/2846)) ([0f19c19](https://github.com/laurigates/claude-plugins/commit/0f19c19b22a15bf1334783a5427978475b9e33b4))
+
+## [1.36.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.36.0...configure-plugin-v1.36.1) (2026-09-27)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** replace workflow-scale estimator with a count-or-ask rule ([#2831](https://github.com/laurigates/claude-plugins/issues/2831)) ([4b934fa](https://github.com/laurigates/claude-plugins/commit/4b934fae9b23416182e5d46cbc7aad376091956f))
+
 ## [1.36.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.35.1...configure-plugin-v1.36.0) (2026-09-24)
 
 

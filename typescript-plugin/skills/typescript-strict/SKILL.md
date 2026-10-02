@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-07-28
+modified: 2026-09-29
 reviewed: 2025-12-16
 name: typescript-strict
 description: "TypeScript strict mode: tsconfig.json, strict flags, Bundler/NodeNext moduleResolution, verbatimModuleSyntax. Use when setting up TS or migrating to stricter type safety."
@@ -209,6 +209,7 @@ import { fetchUser, type User } from './api';
 | `moduleResolution` | `Bundler` / `NodeNext` | Modules |
 | `verbatimModuleSyntax` | `true` | Modules |
 | `target` | `ES2022` | Emit |
+| `lib` | add `"ESNext"` (TS 6.0+) for `Temporal` types; see `typescript-temporal` | Type Checking |
 | `isolatedModules` | `true` | Interop |
 | `skipLibCheck` | `true` | Interop |
 

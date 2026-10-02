@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "configure-plugin",
-  "version": "1.36.0",
+  "version": "1.37.0",
   "description": "Project infrastructure standards - comprehensive project configuration for pre-commit, CI/CD, Docker, testing, linting, formatting, and more",
   "author": {
     "name": "Lauri Gates"
@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/configure-drift-probe.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/configure-drift-probe.sh\"",
             "timeout": 3000
           }
         ]

@@ -176,6 +176,7 @@ jobs:
             --only 'scripts/tests/test-check-hook-cue-skill-refs.sh' \
             --only 'scripts/tests/test-check-issue-template-inheritance.sh' \
             --only 'scripts/tests/test-check-loop-integrity.sh' \
+            --only 'scripts/tests/test-check-plugin-root-quoting.sh' \
             --only 'scripts/tests/test-check-prose-house-style.sh' \
             --only 'scripts/tests/test-check-research-radar-grounding.sh' \
             --only 'scripts/tests/test-check-routine-prompt.sh' \
@@ -408,6 +409,13 @@ jobs:
         # remaining sweep stays visible without going red on unfixed files. The
         # self-test step above proves the guard first.
         run: bash scripts/check-hook-cue-skill-refs.sh
+
+      - name: Check plugin hook commands quote CLAUDE_PLUGIN_ROOT
+        # Claude Code 2.1.281's `claude plugin validate` warns on a shell-form
+        # hook command that leaves ${CLAUDE_PLUGIN_ROOT} unquoted: the expanded
+        # root is word-split when the install path holds a space. Whole-repo
+        # invariant, always-on; the self-test step above proves the guard first.
+        run: bash scripts/check-plugin-root-quoting.sh
 
       - name: Check shell scripts follow shell-scripting.md
         # Whole-repo invariant (every shell script follows shell-scripting.md:

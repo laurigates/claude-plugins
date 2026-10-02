@@ -81,6 +81,24 @@ require "$EXEC_REVIEW" "loop-integrity.md" "execution-grounded-review lost its l
 # and must report a checkable span, not an impression (#2694).
 require "$EXEC_REVIEW" "Attribution bound" "execution-grounded-review attribution search lost its stated upper bound (#2694)"
 require "$EXEC_REVIEW" "evidenceSpan" "execution-grounded-review LEDGER lost the evidenceSpan field (#2694)"
+# The report must declare narrative-changing limitations before the verdict,
+# with "none" stated explicitly rather than omitted (#2870).
+require "$EXEC_REVIEW" '"limitations"' "execution-grounded-review LEDGER lost the required limitations field (#2870)"
+require "$EXEC_REVIEW" "LIMITATIONS:" "execution-grounded-review report lost the LIMITATIONS block before VERDICT (#2870)"
+# The one mitigation the paper measured: a literal honesty instruction in the
+# verifier brief. A "tighten the brief" edit that drops it loses the evidence-
+# backed part of #2870.
+require "$EXEC_REVIEW" "never omit the field. Be honest in your response." "execution-grounded-review verifier brief lost the honesty instruction (#2870)"
+# Eval run on PR #2871 (f1b36ab): a pass verdict was issued with the typecheck
+# unrun, a no-inputs request produced a fail ledger instead of an abstention,
+# and speculative caveats made "none" unreachable on a clean run.
+require "$EXEC_REVIEW" "every Step 1 step ran to completion" "execution-grounded-review verdict no longer requires Step 1 to complete before a pass (#2871)"
+require "$EXEC_REVIEW" "stop: emit no ledger and no" "execution-grounded-review lost its no-inputs abstain path (#2871)"
+require "$EXEC_REVIEW" "Speculative risks" "execution-grounded-review lost the grounded-limitations rule against speculative caveats (#2871)"
+# A red suite fails the verdict only on failures that are new against the
+# merge-base, via an implicit no-regression criterion (PR #2871 eval, finding 3).
+require "$EXEC_REVIEW" "passes on the merge-base fails on the head" "execution-grounded-review lost its implicit no-regression criterion"
+require "$EXEC_REVIEW" "separate new failures from pre-existing ones" "execution-grounded-review lost the Step 1 merge-base comparison"
 
 status="OK"
 [ "$issue_count" -gt 0 ] && status="ERROR"

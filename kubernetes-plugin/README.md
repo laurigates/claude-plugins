@@ -243,6 +243,29 @@ that omit an explicit context flag. `skaffold` is included because
 default and would otherwise bypass the guard (see issue #1870). Pin the context
 per-command with `--kube-context`, or in `skaffold.yaml` via `deploy.kubeContext`.
 
+### Dry-Run Checkpoint
+The `inject-kubectl-dry-run.sh` PreToolUse hook rewrites a lone
+`kubectl apply|delete|patch …` to carry `--dry-run=client` and allows it, so
+the first run shows what would change. Re-run with `--dry-run=none` to apply
+for real; a kubectl call that already carries any `--dry-run` is left alone.
+
+The decision is made on the `ast-grep --lang bash` parse (issue #2734). The
+flag goes at the end of the kubectl command node, because kubectl uses the last
+`--dry-run` it sees, so the flag beats any earlier override that the text check
+does not catch, such as `--dry_run=none`. A second copy goes right after the
+verb, in case an unseen `--` turns the trailing one into a positional argument:
+
+| Command shape | Result |
+|---------------|--------|
+| One simple `kubectl apply\|delete\|patch` command, optionally with a trailing comment | Rewritten (`kubectl apply --dry-run=client -f x.yaml --dry-run=client # note`) and allowed |
+| The command has a `--` argument (also when quoted, as in `'--'` or `\--`), which ends option parsing | **No output** |
+| Anything beyond one simple command — `&&`, `;`, a pipe, a redirect, a heredoc, a substitution, a subshell or loop | **No output**: not rewritten, not allowed — your normal permission flow decides |
+| `kubectl apply` only in quoted text, a heredoc body, or `bash -c "…"` | Not a kubectl node, so not rewritten |
+| `ast-grep` missing or failing, a parse ERROR, or an unterminated quote | **No output** |
+
+Without `ast-grep` on PATH the hook does nothing, and the dry-run checkpoint is
+back to being a convention.
+
 ### Atomic Deployments
 Use atomic flags for production:
 ```bash

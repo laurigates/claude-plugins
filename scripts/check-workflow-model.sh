@@ -7,11 +7,11 @@
 # guard's rationale) does not apply here. The justification is cost-economics:
 # an Opus-class model at low effort beat a Sonnet-class model at high effort on
 # both quality and token efficiency when measured (Opus 4.8 vs Sonnet 4.6; the
-# `opus`/`sonnet` aliases resolve to Opus 5 / Sonnet 5, so re-measure the exact
+# `opus`/`sonnet` aliases resolve to Opus 5.5 / Sonnet 5, so re-measure the exact
 # spread), so `effort`, not `model`, is the cost lever. Haiku supports
 # no effort at all, so it cannot access that lever — haiku → opus --effort low
-# is the natural replacement. Opus defaults to `--effort high`, so effort MUST
-# be explicit or the savings are forfeited. See
+# is the natural replacement. The Opus default effort differs by model and has
+# moved between releases, so effort MUST be explicit or the savings are forfeited. See
 # `.claude/rules/workflow-model-effort.md` and `.claude/rules/agent-development.md`
 # (§ "Model Selection for Agents") for the sibling agent standard.
 #
@@ -218,7 +218,7 @@ for wf in "${workflow_files[@]}"; do
 
   # Effort assertions.
   if [ -z "$efforts" ]; then
-    issues+=("  - SEVERITY=ERROR TYPE=missing_effort FILE=$wf_rel MSG=opus requires explicit --effort (default high forfeits savings)")
+    issues+=("  - SEVERITY=ERROR TYPE=missing_effort FILE=$wf_rel MSG=opus requires explicit --effort (the model default can forfeit savings)")
     issue_count=$((issue_count + 1))
   else
     while IFS= read -r e; do
@@ -286,7 +286,7 @@ if [ "$issue_count" -gt 0 ]; then
   echo "Found $issue_count workflow model/effort issue(s) (of $invoking invoking workflows)." >&2
   if [ "$model_issue_count" -gt 0 ]; then
     echo "Every Claude workflow must pin '--model opus' and set an explicit '--effort'" >&2
-    echo "level — effort, not model, is the cost lever, and opus defaults to high." >&2
+    echo "level — effort, not model, is the cost lever, and the opus default varies by model." >&2
     echo "Haiku supports no effort at all. See .claude/rules/workflow-model-effort.md." >&2
   fi
   if [ "$issue_count" -gt "$model_issue_count" ]; then

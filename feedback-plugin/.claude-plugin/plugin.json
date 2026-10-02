@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "feedback-plugin",
-  "version": "1.12.3",
+  "version": "1.12.4",
   "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
   "author": {
     "name": "Lauri Gates",
@@ -25,7 +25,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/check-open-pr.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/check-open-pr.sh\"",
             "timeout": 15
           }
         ]
@@ -35,7 +35,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/skill-usage-log.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/skill-usage-log.sh\"",
             "timeout": 15
           }
         ]
@@ -46,7 +46,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/skill-usage-log.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/skill-usage-log.sh\"",
             "timeout": 15
           }
         ]

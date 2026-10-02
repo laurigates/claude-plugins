@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/git-drift-probe.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/git-drift-probe.sh\"",
             "timeout": 5000
           }
         ]
@@ -19,17 +19,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/validate-pr-issue-links.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/validate-pr-issue-links.sh\"",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/check-pr-metadata-on-push.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/check-pr-metadata-on-push.sh\"",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/check-branch-sync-on-push.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/check-branch-sync-on-push.sh\"",
             "timeout": 15
           }
         ]

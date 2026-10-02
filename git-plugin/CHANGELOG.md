@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.58.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.58.2...git-plugin-v2.58.3) (2026-09-28)
+
+
+### Bug Fixes
+
+* **plugins:** quote CLAUDE_PLUGIN_ROOT in hook commands; apply 2.1.279-2.1.283 changelog review ([#2854](https://github.com/laurigates/claude-plugins/issues/2854)) ([3e15bf9](https://github.com/laurigates/claude-plugins/commit/3e15bf961986c0f475785fbac9b777d4f6ec4995))
+
+## [2.58.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.58.1...git-plugin-v2.58.2) (2026-09-27)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** replace workflow-scale estimator with a count-or-ask rule ([#2831](https://github.com/laurigates/claude-plugins/issues/2831)) ([4b934fa](https://github.com/laurigates/claude-plugins/commit/4b934fae9b23416182e5d46cbc7aad376091956f))
+
 ## [2.58.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.58.0...git-plugin-v2.58.1) (2026-09-26)
 
 

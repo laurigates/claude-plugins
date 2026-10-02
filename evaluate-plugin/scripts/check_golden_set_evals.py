@@ -28,7 +28,7 @@ Every eval-ready canary needs at least one pass probe and one fail probe, and a
 suite with an abstention case needs one abstain case probed with a fabrication
 that fails on absent_regex. The single exemption is git-commit: its abstention
 case (gc-006) arrives with #2778, which ships its own fabricated/refusal
-fixtures in test_grade_deterministic.sh.
+fixtures in test-grade-deterministic.sh.
 
 Output follows .claude/rules/structured-script-output.md.
 

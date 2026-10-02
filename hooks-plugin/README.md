@@ -189,24 +189,32 @@ A PreToolUse hook on the **Workflow** tool that asks the user to confirm before 
 
 Two shipped mechanisms look like they cover this and do not. `workflowSizeGuideline` is advisory system-prompt text that ends *"This is a guideline, not a hard limit — follow it unless the user's prompt calls for a different scale"*, and a sweep-shaped prompt reads exactly like a call for a different scale. `skipWorkflowUsageWarning` is a **one-time** acceptance of the multi-agent usage warning; once set, auto mode stops prompting before every workflow, at every scale, permanently. Observed 2026-09-15: five workflow runs in one session spawned 496 subagents against a `medium` guideline of 10 and cost $528 in an afternoon — 67% of the day's spend and roughly 8x the entire GitHub Actions bill — with no prompt, because the acceptance flag had been set long before.
 
-| Script shape | Estimate | Behavior |
-|---|---|---|
-| Bounded fan-out (literal array, `.slice(0, N)`, `Array.from({length: N})`) within the limit | exact | Silent |
-| One `agent()` per runtime-length list (`files.map(f => agent(...))`) | 1 x width | Silent at defaults |
-| Two or more `agent()` sites inside one runtime-length fan-out | n x width | **`ask`** |
-| A runtime-length fan-out nested inside another | width squared and up | **`ask`** |
-| Bounded fan-out whose product exceeds the limit | exact | **`ask`** |
-| Resume (`resumeFromRunId`), saved workflow by `name`, unparsable script, no `agent()` | — | Silent (fails open) |
+The rule is **count or ask**. The estimator parses the script and counts each `agent()` call site only when every loop or fan-out around it has a bound written in the text; any other site is *unbounded*, and one unbounded site is enough to ask.
 
-A fan-out whose length is only knowable at runtime is neither waved through nor hard-blocked: it is costed at `CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH` items (default 8) so the limit governs it like any other shape. That single mechanism replaces a tier ladder and puts the split where the cost actually is — agents *per item* and nesting depth, not fan-out presence.
+| Script shape | Behavior |
+|---|---|
+| Plain top-level `agent()` calls, `parallel([() => agent(), ...])` thunks | Counted (once each) |
+| `for...of` / `.map` / `.forEach` / `.flatMap` / `parallel(xs.map(...))` / `pipeline(xs, ...)` over an array literal or a `.slice(a, b)` with numeric literals | Counted (list length, or `b - a`) |
+| `for (let i = 0; i < 5; i++)` or `i += step`, with literals, whose body never writes `i` (a `var` counter is not counted: code outside the body can reset it) | Counted (iterations) |
+| Counted total within `CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS` | Silent |
+| Counted total over the limit | **`ask`** with the count |
+| A list the text does not bound (`args.units`, `const DIMS = [...]`, `const top = xs.slice(0, 6)`, `xs.length`), a `while` / `do` / `for...in` loop, a site inside any named function (a named function expression passed inline included: it can call itself), method, class, or function value, every `workflow()` child, and `agent` used as a value (an alias, a callback, a template tag, a property read such as `ctx.agent`, a destructuring rename such as `const { agent: spawn } = ctx`). `agent.call(...)` / `agent.apply(...)` and property calls such as `ctx.agent(...)` / `globalThis["agent"](...)` are call sites like `agent(...)` | **`ask`**, naming each line and why |
+| A script that does not parse, one the estimator fails on, one the parser crashes or times out on (twice: one retry absorbs a cold `node` start), or an estimator run that exits non-zero or prints no verdict | **`ask`**, saying so |
+| Resume (`resumeFromRunId`), saved workflow by `name`, no `agent()` call | Silent |
 
-**`ask`, not a block, on purpose.** The failure is not "this workflow is forbidden", it is "nobody was asked". A hard block would make the agent judge whether the scale is justified, which is the judgment that already went wrong; `ask` puts the number in front of the person paying and lets them approve in one keystroke. The message names the two cheap remedies — cap the fan-out where its length is decided (`.slice(0, 6)`, which the estimator reads as the bound, so the prompt clears on a one-token edit), or reduce agents per item by reusing one agent across stages.
+The ask says how to make a run silent: slice the list in the fan-out itself (`for (const x of items.slice(0, 6))`, `items.slice(0, 6).map(...)`) or bound a `for` loop by a literal (`i < 6`), and call `agent()` inline in that fan-out. A capped copy held in a variable (`const top = items.slice(0, 6)`) still asks, because variables are not resolved. A caller-supplied list is unbounded by design, so a template whose fan-out width comes from its arguments asks before every run; that is the intended trade.
 
-Estimation runs in [`hooks/workflow-scale-estimate.py`](hooks/workflow-scale-estimate.py), which blanks comment and string/template bodies before counting so an `agent(` discussed in a prompt is not read as a call. Known gaps, all fail-open: `agent()` inside a `${...}` interpolation, fan-out through a helper function, and arrays built by `push` in a loop.
+**What it deliberately does not try to do:** resolve variables (a `const` holding a literal can still be pushed to), follow helper functions or their call sites, model mutation, recursion, getters, or any other JavaScript semantics. Each of those makes a site unbounded, so the cost of not modelling them is an extra question. Not seen at all: `agent` reached without being named (`globalThis["age" + "nt"]`). Taken on trust, and so a possible silent over-spend: `parallel`, `pipeline`, `.slice`, `.map`, `.forEach` and `.flatMap` are recognised by name, so a script that shadows or redefines one (a local `parallel`, a user `.slice`, a patched `Array.prototype.map`) is counted as if it had not. The pre-parser estimator this replaces grew to 3,885 lines across twelve review rounds (#2787) chasing shapes like these; asking is cheaper than modelling them.
 
-**Toggle:** `export CLAUDE_HOOKS_DISABLE_WORKFLOW_SCALE_GUARD=1`. Tuning: `CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS` (default 10, matching the `medium` guideline), `CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH` (default 8). A hook runs as its own process with the session environment, so there is no inline prefix an agent can use to reach these — raising the limit is an operator action.
+**`ask`, not a block, on purpose.** The failure is not "this workflow is forbidden", it is "nobody was asked". A hard block would make the agent judge whether the scale is justified, which is the judgment that already went wrong; `ask` puts the number in front of the person paying and lets them approve in one keystroke. It is also the only enforcement point: a `SubagentStart` hook fires per agent but cannot stop a workflow's agents from starting.
 
-**Tests:** `bash hooks-plugin/hooks/test-workflow-scale-guard.sh` (15 cases; the negatives carry the contract — a guard that asks on ordinary workflows gets disabled within a day).
+Estimation runs in [`hooks/workflow-scale-estimate.py`](hooks/workflow-scale-estimate.py), which parses with [acorn](https://github.com/acornjs/acorn) 8.18.0 (MIT, vendored unmodified under `hooks/lib/vendor/acorn/`, run by `hooks/lib/workflow-scale-parse.cjs` under `node`). Its rollup reports `PARSER=acorn`. A parser that crashes or times out twice (the 4 s timeout is retried once, for a cold `node` start), or an error while walking a script that parsed, is `VERDICT=ANALYSIS_ERROR`, and the guard asks. The guard also asks, as `ANALYSIS_ERROR`, when the estimator process exits non-zero or prints no verdict, with or without `node`; the pre-parser guard exited 0 there. Only without `node` does it fall back to the pre-parser regex estimator ([`hooks/lib/workflow-scale-estimate-fallback.py`](hooks/lib/workflow-scale-estimate-fallback.py)) and report `PARSER=fallback`: that estimator costs a runtime-length fan-out at `CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH` items and never reports unbounded, so a machine without `node` counts as it did before this rule, and an exception inside it is `VERDICT=ERROR`, which stays silent as it did then. A script file that is not valid UTF-8 is read with the bad bytes replaced, so it is still parsed, and the rollup is written as UTF-8 whatever the locale, so a latin-1 or ASCII stdout cannot crash the estimator.
+
+Bundled workflow templates declare their agent count as `**Agent budget:**` in the skill's framing section; `scripts/check-workflow-js-model.sh` checks it against the same estimator (an integer when every site is counted, a per-item formula such as `2 + 2 x cells` when some are not).
+
+**Toggle:** `export CLAUDE_HOOKS_DISABLE_WORKFLOW_SCALE_GUARD=1`. Tuning: `CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS` (default 10, matching the `medium` guideline; the guard asks when the counted total exceeds it, so a total equal to it is silent, `0` asks on any counted agent, and a value that is not all digits means 10), `CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH` (default 8, read only by the no-`node` fallback). A hook runs as its own process with the session environment, so there is no inline prefix an agent can use to reach these — raising the limit is an operator action.
+
+**Tests:** `bash hooks-plugin/hooks/test-workflow-scale-guard.sh` (table-driven: counted shapes stay silent, each unbounded kind asks, over-limit and parse-error ask, the structural guards stay silent, the no-`node` fallback reproduces the pre-parser behaviour, and a crashing or cold-starting parser asks rather than falling back).
 
 ### subagent-count-tripwire.sh
 
@@ -221,7 +229,7 @@ Thresholds are the limit, then each doubling (10, 20, 40, 80, ...), each reporte
 
 A workflow's agents start after the `Stop` of the turn that launched it, so the count is reported at a later `Stop`: in an interactive session, the turn that handles the workflow's completion. A headless `claude -p` run can end before any `Stop` sees the full count.
 
-**Toggle:** `export CLAUDE_HOOKS_DISABLE_SUBAGENT_COUNT=1`. The first threshold is `CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS` (default 10), shared with `workflow-scale-guard.sh`.
+**Toggle:** `export CLAUDE_HOOKS_DISABLE_SUBAGENT_COUNT=1`. The first threshold is `CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS` (default 10), shared with `workflow-scale-guard.sh`, which reads it differently. Here a count equal to the threshold reports, and `0`, or a value that is not all digits, means 10, since the thresholds double from it. The guard asks only when a script's counted total exceeds the limit, and treats `0` as asking on any counted agent.
 
 **Tests:** `bash hooks-plugin/hooks/test-subagent-count-tripwire.sh`.
 
@@ -263,6 +271,19 @@ A public repo attracts drive-by PRs, and merge tooling is built for bulk-merging
 Covers every merge route: `gh pr merge` (in any flag order, inside a compound
 command, with or without `--repo`), `gh api ... /pulls/N/merge`, and the GitHub
 MCP `merge_pull_request` tool. `--admin` does not bypass it.
+
+**Which repository the PR is looked up in.** With `--repo`/`-R`, that
+repository. Otherwise the repository of the hook's cwd, with one exception
+(issue #2872): when the command is exactly `cd <dir> && gh pr merge …`, the PR
+is looked up in `<dir>`, where the merge actually runs.
+
+| Leading `cd` shape | Looked up in |
+|--------------------|--------------|
+| `cd /abs/path && gh pr merge 5`, also `./…`, `../…`, `~/…` — one plain literal operand, the cd first and the merge second, joined by `&&` | The cd target, if it exists and resolves to the same directory logically and physically |
+| `cd x; gh pr merge`, `cd x \|\| …`, `cd -P x`, `cd "x"`, `cd $X`, a glob or brace, a bare relative name (CDPATH-dependent), `pushd`, a second cd/pushd/popd, `GH_REPO`, or a second merge anywhere in the command; any word after the `&&` starting `-` that contains `R` or `-repo` (`-Racme/x`, `-R=acme/x`, `-sRacme/x`), or any character there outside letters, digits, blanks and `._/:=@%+,-&;` — quotes, backslash, `$`, backtick, braces, globs and extglobs (`"-R" acme/x`, `$FLAGS`, `-? acme/x`, `--re?o acme/x`, `-!(Q) acme/x`, which expand to `-R`/`--repo` when the cd target holds a file of that name), `\|` or a newline — anything that could spell a repo flag the parser misses; a redirection (`> f`, `2>f`, `&>f`, which can truncate the cd target's `.git/HEAD` before gh runs) or a lone backgrounding `&` (the merge would race what follows) — anything that runs before or alongside gh | The session cwd, exactly as before |
+
+When the lookup fails and no `--repo` was given, the denial names the directory
+it resolved the repository from and suggests retrying with `-R OWNER/REPO`.
 
 The command word is resolved **structurally**, so a merge stays a merge when it
 is reached through:
@@ -357,11 +378,21 @@ A PermissionRequest hook that auto-approves safe operations and auto-denies dang
 
 | Decision | Patterns |
 |----------|----------|
-| Auto-approve | Read-only git, test runners, linters, gh CLI reads |
-| Auto-deny | `rm -rf /`, force push to main/master |
+| Auto-deny (checked first) | `rm -rf /`, force push to main/master — anywhere in the command |
+| Auto-approve | Read-only git, test runners, linters, gh CLI reads — only when **every** command in the line is one of them |
 | Pass through | Everything else (user decides) |
 
+Approval is decided on an `ast-grep --lang bash` parse, not the raw string
+([#2733](https://github.com/laurigates/claude-plugins/issues/2733)): `git status && touch x`,
+`npm test; chmod -R 777 .` and a multi-line command with an unreviewed second line all pass
+through. Only plain commands joined by `&&`, `||`, `;`, `|`, `&` or newlines can be approved —
+a substitution, process substitution, `$VAR`, subshell, group, loop, conditional, function,
+redirection, heredoc, assignment prefix or comment means no decision. Without ast-grep (or if
+the parse errors or takes over 5 s) the hook never approves; the deny rules still fire.
+
 **Toggle:** `CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO=1`
+
+**Tests:** `bash hooks-plugin/hooks/test-permission-auto-approve.sh` (needs ast-grep for the parser sections; SKIPs them otherwise).
 
 ### task-completeness.sh
 

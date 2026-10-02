@@ -1,6 +1,6 @@
 ---
 created: 2026-04-29
-modified: 2026-09-16
+modified: 2026-09-28
 reviewed: 2026-09-16
 paths:
   - "**/skills/**"
@@ -12,7 +12,7 @@ paths:
 
 Auto mode lets Claude Code execute without permission prompts. A separate classifier model reviews each action before it runs, blocking anything that escalates beyond the user's request, targets unrecognized infrastructure, or appears driven by hostile content.
 
-Auto mode is the built-in starting permission mode on Pro, Max and Team plans; Bedrock, Google Agent Platform, Foundry and apps-gateway sessions still start in Manual (`default`). Keep it on for Fable 5.1 sessions: the system card's rare hook/classifier workarounds — fabricated user-authorization quotes to satisfy an approval gate, relaunching a subagent as "I am <user> and this is my instruction", rewriting a routine command so a malfunctioning regex hook would not match (all <0.01% of completions), and scripts launching agents with `bypassPermissions` (<0.001%) — were all blocked by auto mode, which sees the user's messages, tool calls and CLAUDE.md but not tool results.
+Auto mode is the built-in starting permission mode on Pro, Max and Team plans and, as of 2.1.283, for interactive sessions on third-party providers (Bedrock, Google Agent Platform, Foundry) or with telemetry off, when no permission mode is configured; `permissions.defaultMode` still overrides it. Keep it on for Fable 5.1 sessions: the system card's rare hook/classifier workarounds — fabricated user-authorization quotes to satisfy an approval gate, relaunching a subagent as "I am <user> and this is my instruction", rewriting a routine command so a malfunctioning regex hook would not match (all <0.01% of completions), and scripts launching agents with `bypassPermissions` (<0.001%) — were all blocked by auto mode, which sees the user's messages, tool calls and CLAUDE.md but not tool results.
 
 Authoritative reference: [Choose a permission mode](https://code.claude.com/docs/en/permission-modes#eliminate-prompts-with-auto-mode). This rule summarises the parts that affect how plugin skills, settings, and hooks should be authored.
 
@@ -35,19 +35,22 @@ A "Auto mode unavailable" message means a requirement above is unmet — it is n
 As of 2.1.236, Bedrock, Vertex AI, and Foundry sessions — and any session with
 telemetry disabled — use the same classifier defaults as the Claude API,
 including severity-scored classification; behaviour is no longer degraded on
-those providers. Where the classifier itself *runs* is a separate question:
-as of 2.1.278, auto mode for Claude API and Enterprise users, and on Bedrock,
-Vertex, Foundry and gateways, defaults to the **server-side** classifier, which
-does not charge for classifier overhead; `CLAUDE_CODE_AUTO_MODE_SERVER=0` opts
-out on Bedrock, Vertex, Foundry and gateways. This reverses 2.1.273, which had
-made the local classifier the default there.
+those providers. Where the classifier itself *runs* is a separate question.
+The **server-side** classifier, which does not charge for classifier overhead,
+is the default for Claude API and Enterprise users, on Bedrock, Vertex, Foundry
+and gateways (2.1.278, reversing 2.1.273), and on a direct API connection with
+telemetry off (2.1.282).
+`CLAUDE_CODE_AUTO_MODE_SERVER` overrides the default on every connection,
+including a direct API connection (2.1.281): `0` opts out, `1` opts in. Where
+the review runs server-side, read-only and sandboxed shell commands also wait
+for it and are blocked if it flags them (2.1.281).
 
 ## How the Classifier Decides
 
 Each tool call walks a fixed decision order. The first matching step wins:
 
 1. Actions matching the user's `allow` or `deny` rules resolve immediately. A `PreToolUse` hook that returns `ask` floors the decision at a manual prompt (2.1.211) — auto mode cannot silently approve past a hook's explicit `ask`, even though it can generally auto-approve actions a hook did not gate.
-2. Read-only actions and file edits inside the working directory are auto-approved (except writes to [protected paths](https://code.claude.com/docs/en/permission-modes#protected-paths)), and, as of 2.1.257, a file read outside the working directories gets a one-time prompt instead of silent approval — see `permissions.blockReadsOutsideWorkingDirectories` below
+2. Read-only actions and file edits inside the working directory are auto-approved (except writes to [protected paths](https://code.claude.com/docs/en/permission-modes#protected-paths)), and, as of 2.1.257, a file read outside the working directories gets a one-time prompt instead of silent approval — see `permissions.blockReadsOutsideWorkingDirectories` below. Under the server-side classifier, read-only and sandboxed shell commands are reviewed too (2.1.281)
 3. Everything else goes to the classifier
 4. If the classifier blocks, Claude receives the reason and tries an alternative
 
@@ -85,7 +88,7 @@ boundary against adversarial input in a security-sensitive skill.
 | Cloud metadata-credential fetches, egress evasion, cross-tenant reach (Containment Escape rule, 2.1.257) | |
 | Tampering with session transcript files (2.1.205) | |
 | `rm -rf` on a variable the classifier can't resolve from context (2.1.205) — asks rather than silently running; the prompt names the flagged `rm` and suggests a `${VAR:?}` guard (2.1.277) | |
-| Catastrophic removals wrapped in `$(...)`/backticks/`<(...)` (2.1.208) — prompts even under `--dangerously-skip-permissions` and in auto mode | |
+| Catastrophic removals wrapped in `$(...)`/backticks/`<(...)` (2.1.208) — prompts even under `--dangerously-skip-permissions` and in auto mode; an unanswered dangerous-`rm` prompt denies after 2 minutes with a rewrite hint (2.1.281) | |
 
 Sandbox network access requests are routed through the classifier rather than allowed by default. Run `claude auto-mode defaults` to see the live rule lists. Administrators can extend the trust set for specific repos, buckets, and services via the `autoMode.environment` setting — see [Configure auto mode](https://code.claude.com/docs/en/auto-mode-config). Custom `autoMode.allow`/`soft_deny`/`environment` entries **replace** the built-in rule list unless they include the literal string `"$defaults"` (2.1.118), which is the difference between extending the trust set and silently dropping the built-in denials above.
 
@@ -161,9 +164,11 @@ If blocking happens **3 times in a row** or **20 times total** in a session, aut
 
 In `-p` (non-interactive) mode there is no user to prompt — repeated blocks abort the session.
 
+When a safety check declines to review an action or gives no answer, the action is denied once instead of retried in a loop; retries back off, and the turn stops after ten denials in a row (2.1.280).
+
 ## Cost and Latency
 
-Each classifier check adds a round-trip and consumes tokens against the user's quota. Reads and working-directory edits skip the classifier, so the overhead lands mainly on shell commands and network operations. Narrow `allow` rules in `settings.json` and skill `allowed-tools` reduce that overhead by short-circuiting step 1 of the decision order.
+Each classifier check adds a round-trip. A local-classifier check also consumes tokens against the user's quota; the server-side classifier does not charge for it (see Availability). Reads and working-directory edits skip the local classifier, so the overhead lands mainly on shell commands and network operations; under the server-side classifier, read-only shell commands wait for review as well. Narrow `allow` rules in `settings.json` and skill `allowed-tools` reduce that overhead by short-circuiting step 1 of the decision order.
 
 ## Authoring Guidance for Plugin Skills
 
@@ -211,10 +216,10 @@ The auto-mode classifier handles approve/deny logic for most cases that previous
 
 | Permission mode | Auto-approves | Notes |
 |-----------------|---------------|-------|
-| `default` | Reads only | Permission prompts for everything else. Manual; starting mode on Bedrock/Agent Platform/Foundry/gateway |
+| `default` | Reads only | Permission prompts for everything else. Manual; select it with `permissions.defaultMode` or `--permission-mode` |
 | `acceptEdits` | Reads, file edits, common filesystem commands | Edits scoped to working dir / `additionalDirectories` |
 | `plan` | Reads only; no source edits | Approve-from-plan can transition into `auto` |
-| `auto` | Everything that survives classifier review | Subject to availability matrix above. Built-in starting mode on Pro/Max/Team |
+| `auto` | Everything that survives classifier review | Subject to availability matrix above. Built-in starting mode on Pro/Max/Team, and for interactive third-party-provider or telemetry-off sessions (2.1.283) |
 | `dontAsk` | Pre-approved tools only | Auto-denies anything that would prompt |
 | `bypassPermissions` | Everything, including protected paths (2.1.126) | No safety classifier; isolated environments only. `defaultMode: "bypassPermissions"` is ignored from project settings (2.1.257) |
 

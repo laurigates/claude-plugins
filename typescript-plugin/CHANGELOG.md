@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.10.0](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.9.1...typescript-plugin-v1.10.0) (2026-09-29)
+
+
+### Features
+
+* **typescript-plugin:** add typescript-temporal skill for date and time handling ([#2862](https://github.com/laurigates/claude-plugins/issues/2862)) ([aa558b7](https://github.com/laurigates/claude-plugins/commit/aa558b7389606e6d0cee9678141158ad83c12854))
+
+## [1.9.1](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.9.0...typescript-plugin-v1.9.1) (2026-09-28)
+
+
+### Documentation
+
+* **typescript-plugin:** Sentry ignoreErrors/console-capture gotchas, knip 6.28 re-exports ([#2845](https://github.com/laurigates/claude-plugins/issues/2845)) ([0e9345d](https://github.com/laurigates/claude-plugins/commit/0e9345dd74b4f9247b13cd46dfbfd0f0f6deb8d4))
+
 ## [1.9.0](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.8.11...typescript-plugin-v1.9.0) (2026-09-24)
 
 

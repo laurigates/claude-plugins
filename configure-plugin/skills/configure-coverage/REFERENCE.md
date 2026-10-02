@@ -38,6 +38,7 @@ export default defineConfig({
         statements: 80,
       },
 
+      // Load-bearing: pins the denominator to source files (see below)
       include: ['src/**/*.{js,ts,jsx,tsx}'],
 
       exclude: [
@@ -53,12 +54,15 @@ export default defineConfig({
       ],
 
       clean: true,
-      all: true,
       skipFull: false,
     },
   },
 });
 ```
+
+**Vitest 4 removed `coverage.all`** (and `coverage.extensions`). It now reports only the files the tests loaded, unless `coverage.include` is set. An `all: true` left in a v4 config is silently ignored, so the config looks correct while the denominator stays unpinned. Use `include` in its place.
+
+Without `include`, the denominator is the test suite's import graph, not the codebase. A PR that adds *only tests* can then lower the measured figure and fail its own threshold. The first test that imports a module with many untested siblings pulls them in at near-zero coverage (observed: 61.8% → 42.0% against 60% thresholds, with no regression). Treat thresholds as a ratchet. A change of basis, such as adding `include`, goes in its own commit that states the old and new figures.
 
 ### Package.json Scripts
 

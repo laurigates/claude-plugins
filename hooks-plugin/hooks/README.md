@@ -619,7 +619,7 @@ The hook is configured in `.claude-plugin/plugin.json` as a Stop event:
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/git-stash-reminder.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/git-stash-reminder.sh\"",
             "timeout": 10000
           }
         ]

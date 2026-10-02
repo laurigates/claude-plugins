@@ -45,6 +45,14 @@ terraform-plugin/hooks/test-validate-terraform-apply.sh
 # runs its no-parser half and ends on a SKIP line; listing it here makes that
 # SKIP an error on the runner, which installs ast-grep for this purpose (#2652).
 hooks-plugin/hooks/test-auto-checkpoint.sh
+# permission-auto-approve never approves without ast-grep (#2733), so a run
+# lacking the parser would only prove the no-decision half; the approve, probe
+# and subset-differential sections need it.
+hooks-plugin/hooks/test-permission-auto-approve.sh
+# The kubectl dry-run injector rewrites only on a clean ast-grep parse and is
+# silent without one, so a parser-less run would pass every "no output" row
+# over a hook that no-ops (#2734).
+kubernetes-plugin/hooks/test-inject-kubectl-dry-run.sh
 
 # uv  (workflow: "Set up uv")
 blueprint-plugin/scripts/tests/test-check-manifest-schema.sh
@@ -145,3 +153,11 @@ scripts/tests/test-check-agent-frontmatter-keys.sh
 # check-public-export.sh needs ripgrep, installed above; the suite has no skip
 # branch, so a missing rg shows up as failures rather than a silent green.
 documentation-plugin/skills/public-export-sanitization/scripts/tests/test-check-public-export.sh
+
+# python3 + git only, no skip branch. Both ran nowhere for their whole life:
+# they were named `test_*.sh` (underscore), which the runner's `test-*.sh` glob
+# never matches, while the design doc called the grader suite "wired for CI"
+# (#2795). These entries are the denominator guard for that class -- a rename
+# back to an undiscovered name raises `required_test_missing` and exits 1.
+evaluate-plugin/scripts/tests/test-grade-deterministic.sh
+evaluate-plugin/scripts/tests/test-apply-fixture.sh

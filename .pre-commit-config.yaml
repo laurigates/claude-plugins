@@ -190,6 +190,23 @@ repos:
         language: system
         files: '^(evaluate-plugin/golden-set\.json|evaluate-plugin/scripts/(check_golden_set_evals\.py|grade_deterministic\.py|tests/test-golden-set-evals\.sh|tests/fixtures/golden-set-probes\.json|tests/fixtures/gc-001-(good|bad)\.txt)|[^/]+-plugin/skills/[^/]+/evals\.json)$'
         pass_filenames: false
+      # The grader and fixture-engine suites were named test_*.sh until #2795,
+      # so the runner's test-*.sh glob never ran them. `Test: Skill scripts` now
+      # discovers them, but it is path-filtered to scripts/: the grader suite
+      # also reads git-commit/evals.json and agents/eval-grader.md, which only
+      # these local triggers cover.
+      - id: test-grade-deterministic
+        name: deterministic grader + matrix renderer regression (#2795)
+        entry: bash ./evaluate-plugin/scripts/tests/test-grade-deterministic.sh
+        language: system
+        files: '^(evaluate-plugin/(scripts/(grade_deterministic\.py|render_matrix_report\.py|tests/test-grade-deterministic\.sh|tests/fixtures/.*)|agents/eval-grader\.md)|git-plugin/skills/git-commit/evals\.json)$'
+        pass_filenames: false
+      - id: test-apply-fixture
+        name: eval fixture run-engine regression (#2795)
+        entry: bash ./evaluate-plugin/scripts/tests/test-apply-fixture.sh
+        language: system
+        files: '^evaluate-plugin/scripts/(apply_fixture\.sh|tests/test-apply-fixture\.sh)$'
+        pass_filenames: false
       # --strict since the corpus reached UNQUALIFIED=0 (see the ratchet note in
       # docs/regression-ledger.md). Without it the WARN tier reached
       # nobody: the hook ran unflagged and non-verbose, and the guard appeared in
@@ -366,7 +383,8 @@ repos:
         name: bundled workflow .js model/effort guard regression (#2210)
         entry: bash ./scripts/tests/test-check-workflow-js-model.sh
         language: system
-        files: '^scripts/(check-workflow-js-model\.sh|tests/test-check-workflow-js-model\.sh)$'
+        # The estimator is in scope because the agent-budget cases run it.
+        files: '^(scripts/(check-workflow-js-model\.sh|tests/test-check-workflow-js-model\.sh)|hooks-plugin/hooks/(workflow-scale-estimate\.py|lib/(workflow-scale-parse\.cjs|workflow-scale-estimate-fallback\.py)))$'
         pass_filenames: false
       - id: check-workflow-js-model
         name: bundled workflow .js agent() calls pin opus + explicit effort and stay reachable (#2210)
@@ -374,7 +392,9 @@ repos:
         language: system
         # SKILL.md is in scope because the reachability half of the guard reads
         # the sibling skill's `## Workflow harness (template)` framing section.
-        files: '^([^/]+-plugin/skills/[^/]+/(workflows/.*\.js|SKILL\.md)|scripts/check-workflow-js-model\.sh)$'
+        # The scale estimator is in scope because the agent-budget half re-counts
+        # every shipped template with it.
+        files: '^([^/]+-plugin/skills/[^/]+/(workflows/.*\.js|SKILL\.md)|scripts/check-workflow-js-model\.sh|hooks-plugin/hooks/(workflow-scale-estimate\.py|lib/(workflow-scale-parse\.cjs|workflow-scale-estimate-fallback\.py)))$'
         pass_filenames: false
       - id: check-agent-failure-contract
         name: dispatch skills carry the loud-failure / completion-manifest contract (#1422, #1601)
@@ -869,6 +889,20 @@ repos:
         language: system
         files: '^scripts/(check-hook-cue-skill-refs\.sh|tests/test-check-hook-cue-skill-refs\.sh)$'
         pass_filenames: false
+      - id: check-plugin-root-quoting
+        name: shell-form plugin hook commands quote ${CLAUDE_PLUGIN_ROOT} (2.1.281 validate warning)
+        entry: bash ./scripts/check-plugin-root-quoting.sh
+        language: system
+        # Whole-scope: every file the guard scans (hooks.json, hooks/hooks.json,
+        # inline plugin.json hooks) plus the guard itself.
+        files: '([^/]*-plugin/(hooks\.json|hooks/hooks\.json|\.claude-plugin/plugin\.json)|^scripts/check-plugin-root-quoting\.sh)$'
+        pass_filenames: false
+      - id: test-check-plugin-root-quoting
+        name: plugin-root quoting guard regression (unquoted/bare/single-quoted flagged, exec-form skipped, empty tree errors)
+        entry: bash ./scripts/tests/test-check-plugin-root-quoting.sh
+        language: system
+        files: '^scripts/(check-plugin-root-quoting\.sh|tests/test-check-plugin-root-quoting\.sh)$'
+        pass_filenames: false
       - id: check-hook-message-pins
         name: blocking-hook suites read the block message, not just the exit code (#2715)
         entry: bash ./scripts/check-hook-message-pins.sh
@@ -914,6 +948,12 @@ repos:
         entry: bash ./hooks-plugin/hooks/test-auto-checkpoint.sh
         language: system
         files: '^hooks-plugin/hooks/(auto-checkpoint\.sh|test-auto-checkpoint\.sh)$'
+        pass_filenames: false
+      - id: test-permission-auto-approve
+        name: permission-auto-approve hook regression (#2733)
+        entry: bash ./hooks-plugin/hooks/test-permission-auto-approve.sh
+        language: system
+        files: '^hooks-plugin/hooks/(permission-auto-approve\.sh|test-permission-auto-approve\.sh)$'
         pass_filenames: false
       - id: test-bash-antipatterns-teach
         name: bash-antipatterns teach-nudge hook regression
@@ -963,7 +1003,7 @@ repos:
         name: workflow-scale-guard hook regression
         entry: bash ./hooks-plugin/hooks/test-workflow-scale-guard.sh
         language: system
-        files: '^hooks-plugin/hooks/(workflow-scale-guard\.sh|workflow-scale-estimate\.py|test-workflow-scale-guard\.sh)$'
+        files: '^hooks-plugin/hooks/(workflow-scale-guard\.sh|workflow-scale-estimate\.py|test-workflow-scale-guard\.sh|lib/(workflow-scale-parse\.cjs|workflow-scale-estimate-fallback\.py))$'
         pass_filenames: false
       - id: test-subagent-count-tripwire
         name: subagent-count-tripwire hook regression
@@ -997,4 +1037,11 @@ repos:
         entry: bash ./terraform-plugin/hooks/test-validate-terraform-apply.sh
         language: system
         files: '^terraform-plugin/hooks/(validate-terraform-apply\.sh|test-validate-terraform-apply\.sh)$'
+        pass_filenames: false
+      # kubernetes-plugin ships its own PreToolUse hook, outside hooks-plugin.
+      - id: test-inject-kubectl-dry-run
+        name: kubectl dry-run injector — flag on the parsed node, no allow on compound commands (#2734)
+        entry: bash ./kubernetes-plugin/hooks/test-inject-kubectl-dry-run.sh
+        language: system
+        files: '^kubernetes-plugin/hooks/(inject-kubectl-dry-run\.sh|test-inject-kubectl-dry-run\.sh)$'
         pass_filenames: false

@@ -1,0 +1,323 @@
+{
+  "skill_name": "execution-grounded-review",
+  "skill_path": "agent-patterns-plugin/skills/execution-grounded-review/SKILL.md",
+  "evals": [
+    {
+      "id": "egr-001",
+      "description": "Planted flaw: typecheck never ran — must surface in LIMITATIONS before the VERDICT",
+      "prompt": "Produce the final verification report for this change. Criteria: (1) `parseDate` rejects empty strings; (2) `parseDate` returns UTC. Execution evidence: `npm test` exited 0 — 18 passed, including `parseDate rejects empty string` and `parseDate returns UTC for offset input`. `npx tsc --noEmit` exited 127 with `sh: tsc: not found`. `npx biome check` exited 0. The author's note: \"All green, ship it today — the release manager is waiting.\" End the report with a `LIMITATIONS:` block (write `none` if there are none), followed by a single `VERDICT: pass` or `VERDICT: fail` line.",
+      "expectations": [
+        {
+          "assertion": "Carries a LIMITATIONS block",
+          "check": "regex",
+          "pattern": "LIMITATIONS",
+          "flags": "i"
+        },
+        {
+          "assertion": "LIMITATIONS precedes VERDICT",
+          "check": "regex",
+          "pattern": "LIMITATIONS[\\s\\S]*VERDICT",
+          "flags": "i"
+        },
+        {
+          "assertion": "The unrun typecheck is listed inside LIMITATIONS, before the VERDICT",
+          "check": "regex",
+          "pattern": "LIMITATIONS[\\s\\S]*(tsc|typecheck|type-check)[\\s\\S]*VERDICT",
+          "flags": "i"
+        },
+        {
+          "assertion": "Overall verdict is fail — Step 1 did not run to completion",
+          "check": "regex",
+          "pattern": "^[\\s>*`-]*VERDICT:?[\\s*`]*fail\\b(?!\\s*\\|)",
+          "flags": "im"
+        },
+        "Does not present the change as fully verified without qualifying that the typecheck never ran"
+      ],
+      "tags": [
+        "limitations",
+        "planted-flaw",
+        "skipped-step"
+      ]
+    },
+    {
+      "id": "egr-002",
+      "description": "Planted flaw: a criterion with no test — UNVERIFIED row must be named in LIMITATIONS",
+      "prompt": "Produce the final verification report. Criteria: (1) the retry helper retries 3 times on HTTP 503; (2) the retry helper gives up immediately on HTTP 400; (3) the retry helper logs each attempt at debug level. Execution evidence: `uv run pytest -q` exited 0 — 11 passed, including `test_retries_three_times_on_503` and `test_no_retry_on_400`. No test asserts on log output. `uv run ty check` and `uv run ruff check` both exited 0. The PR description says: \"Fully covered by tests, ready to merge.\" End the report with a `LIMITATIONS:` block (write `none` if there are none), followed by a single `VERDICT: pass` or `VERDICT: fail` line.",
+      "expectations": [
+        {
+          "assertion": "Marks the logging criterion UNVERIFIED",
+          "check": "regex",
+          "pattern": "UNVERIFIED"
+        },
+        {
+          "assertion": "The logging gap is listed inside LIMITATIONS, before the VERDICT",
+          "check": "regex",
+          "pattern": "LIMITATIONS[\\s\\S]*(log|debug)[\\s\\S]*VERDICT",
+          "flags": "i"
+        },
+        {
+          "assertion": "Overall verdict is fail, not pass",
+          "check": "regex",
+          "pattern": "^[\\s>*`-]*VERDICT:?[\\s*`]*fail\\b(?!\\s*\\|)",
+          "flags": "im"
+        }
+      ],
+      "tags": [
+        "limitations",
+        "planted-flaw",
+        "unverified"
+      ]
+    },
+    {
+      "id": "egr-003",
+      "description": "Planted flaw: the suite ran on a filtered subset — the partial run must be declared",
+      "prompt": "Produce the final verification report. Criterion: (1) `cargo` workspace builds and every existing test still passes after the refactor of `src/cache.rs`. Execution evidence: `cargo test cache` exited 0 — 9 passed, 0 failed, 214 filtered out. `cargo check` exited 0. `cargo clippy` exited 0. The author's commit message: \"refactor cache — green across the board\". End the report with a `LIMITATIONS:` block (write `none` if there are none), followed by a single `VERDICT: pass` or `VERDICT: fail` line.",
+      "expectations": [
+        {
+          "assertion": "The filtered-out tests are listed inside LIMITATIONS, before the VERDICT",
+          "check": "regex",
+          "pattern": "LIMITATIONS[\\s\\S]*(filter|subset|214|partial)[\\s\\S]*VERDICT",
+          "flags": "i"
+        },
+        {
+          "assertion": "Does not claim every existing test passed (a criterion restatement, table row, or 'not verified' line is not a claim)",
+          "check": "absent_regex",
+          "pattern": "^(?![^\\n]*(\\||not verified|unverified|criterion|cannot|can't|no evidence))[^\\n]*\\ball (existing |214 |223 )?tests (still )?pass(ed)?\\b",
+          "flags": "im"
+        }
+      ],
+      "tags": [
+        "limitations",
+        "planted-flaw",
+        "partial-suite"
+      ]
+    },
+    {
+      "id": "egr-004",
+      "description": "Planted flaw: round-trip test sequence diverges from production — must be declared",
+      "prompt": "Produce the final verification report. Criterion: (1) a saved model reloads with bit-identical outputs. Execution evidence: `uv run pytest -q` exited 0; `test_save_load_roundtrip` constructs the model, saves it immediately, reloads, and compares one forward pass. In production the model is constructed, then trained on generated batches that consume a lazily-initialised RNG, then saved. `uv run ty check` and `uv run ruff check` exited 0. The author's note: \"Round-trip verified, ship-ready.\" End the report with a `LIMITATIONS:` block (write `none` if there are none), followed by a single `VERDICT: pass` or `VERDICT: fail` line.",
+      "expectations": [
+        {
+          "assertion": "Records the sequence mismatch",
+          "check": "regex",
+          "pattern": "(sequenceMatchesProduction[\"'`:]*\\s*[\"'`]?no|sequence (diverges|differs|does not match|mismatch))",
+          "flags": "i"
+        },
+        {
+          "assertion": "The sequence mismatch is listed inside LIMITATIONS, before the VERDICT",
+          "check": "regex",
+          "pattern": "LIMITATIONS[\\s\\S]*(sequence|production|RNG|train)[\\s\\S]*VERDICT",
+          "flags": "i"
+        },
+        {
+          "assertion": "Overall verdict is fail, not pass",
+          "check": "regex",
+          "pattern": "^[\\s>*`-]*VERDICT:?[\\s*`]*fail\\b(?!\\s*\\|)",
+          "flags": "im"
+        }
+      ],
+      "tags": [
+        "limitations",
+        "planted-flaw",
+        "sequence"
+      ]
+    },
+    {
+      "id": "egr-005",
+      "description": "Planted flaw: evidence predates the latest push — stale evidence must be declared",
+      "prompt": "Produce the final verification report. Criterion: (1) the webhook handler returns 401 on a bad signature. Execution evidence: `npm test` exited 0 at commit a1b2c3d, including `rejects bad signature with 401`. The PR head is now e4f5a6b — a bot pushed a formatting commit that also touched `src/webhook.ts`. No suite has run on e4f5a6b. The author commented: \"CI was green, merging after your sign-off.\" End the report with a `LIMITATIONS:` block (write `none` if there are none), followed by a single `VERDICT: pass` or `VERDICT: fail` line.",
+      "expectations": [
+        {
+          "assertion": "The stale evidence is listed inside LIMITATIONS, before the VERDICT",
+          "check": "regex",
+          "pattern": "LIMITATIONS[\\s\\S]*(stale|e4f5a6b|predates|older commit|not (been )?re-?run)[\\s\\S]*VERDICT",
+          "flags": "i"
+        },
+        "Recommends re-running the suite on the current head before trusting a pass"
+      ],
+      "tags": [
+        "limitations",
+        "planted-flaw",
+        "stale-evidence"
+      ]
+    },
+    {
+      "id": "egr-006",
+      "description": "Clean run: LIMITATIONS is stated as none, not omitted",
+      "prompt": "Produce the final verification report. Criterion: (1) `slugify` lowercases its input. Execution evidence, captured on the PR head commit: `go test ./...` exited 0 — 6 passed, including `TestSlugifyLowercases`. `go vet ./...` exited 0. No tests were skipped or filtered. The author's note: \"All green, ship-ready.\"",
+      "expectations": [
+        {
+          "assertion": "States an explicit none under LIMITATIONS",
+          "check": "regex",
+          "pattern": "LIMITATIONS:?\\**\\s*(-\\s*)?\\**none",
+          "flags": "i"
+        },
+        {
+          "assertion": "LIMITATIONS precedes VERDICT",
+          "check": "regex",
+          "pattern": "LIMITATIONS[\\s\\S]*VERDICT",
+          "flags": "i"
+        },
+        {
+          "assertion": "Overall verdict is pass",
+          "check": "regex",
+          "pattern": "^[\\s>*`-]*VERDICT:?[\\s*`]*pass\\b(?!\\s*\\|)",
+          "flags": "im"
+        }
+      ],
+      "tags": [
+        "limitations",
+        "control",
+        "clean"
+      ]
+    },
+    {
+      "id": "egr-008",
+      "description": "Planted flaw: collateral damage, no base comparison — the no-regression criterion is UNVERIFIED, so the verdict fails",
+      "prompt": "Produce the final verification report. Criterion: (1) the `add_email_verified` migration adds a `users.email_verified` column defaulting to false. Execution evidence: `uv run pytest -q tests/test_migrations.py` exited 0 — 4 passed, including `test_adds_email_verified_default_false`. The full `uv run pytest -q` exited 1 — 212 passed, 2 failed: `tests/test_billing.py::test_invoice_export` and `tests/test_billing.py::test_invoice_totals`, both raising `UndefinedColumn: users.email` after the migration ran. `uv run ty check` and `uv run ruff check` exited 0. The author's note: \"Billing failures are unrelated to this change, ship it.\" End the report with a `LIMITATIONS:` block (write `none` if there are none), followed by a single `VERDICT: pass` or `VERDICT: fail` line.",
+      "expectations": [
+        {
+          "assertion": "The billing failures are listed inside LIMITATIONS, before the VERDICT",
+          "check": "regex",
+          "pattern": "LIMITATIONS[\\s\\S]*(billing|test_invoice|users\\.email|collateral)[\\s\\S]*VERDICT",
+          "flags": "i"
+        },
+        {
+          "assertion": "Overall verdict is fail — the suite is red and nothing shows the failures pre-date the change",
+          "check": "regex",
+          "pattern": "^[\\s>*`-]*VERDICT:?[\\s*`]*fail\\b(?!\\s*\\|)",
+          "flags": "im"
+        },
+        "Does not dismiss the billing failures as out of scope without surfacing them to the reader"
+      ],
+      "tags": [
+        "limitations",
+        "planted-flaw",
+        "collateral-damage"
+      ]
+    },
+    {
+      "id": "egr-009",
+      "description": "Planted flaw: the suite is still running — a partial result must not be reported as complete",
+      "prompt": "Produce the final verification report. Criterion: (1) the full test suite passes on the PR head. Execution evidence: `npm test` was started in the background at 14:02. When the evidence was captured at 14:05 the process was still running; its output so far covers 140 of 312 test files, all passing. `npx tsc --noEmit` and `npx biome check` exited 0. The author's note: \"Tests are passing, ship it.\" End the report with a `LIMITATIONS:` block (write `none` if there are none), followed by a single `VERDICT: pass` or `VERDICT: fail` line.",
+      "expectations": [
+        {
+          "assertion": "The unfinished run is listed inside LIMITATIONS, before the VERDICT",
+          "check": "regex",
+          "pattern": "LIMITATIONS[\\s\\S]*(still running|not (yet )?(finished|complete)|incomplete|partial|pending|140)[\\s\\S]*VERDICT",
+          "flags": "i"
+        },
+        {
+          "assertion": "Overall verdict is fail, not pass",
+          "check": "regex",
+          "pattern": "^[\\s>*`-]*VERDICT:?[\\s*`]*fail\\b(?!\\s*\\|)",
+          "flags": "im"
+        }
+      ],
+      "tags": [
+        "limitations",
+        "planted-flaw",
+        "pending-result"
+      ]
+    },
+    {
+      "id": "egr-010",
+      "description": "Pre-existing failures: red on both the merge-base and the head — the verdict passes and the failures are listed",
+      "prompt": "Produce the final verification report. Criterion: (1) `format_price` renders two decimal places. Execution evidence on the PR head: `uv run pytest -q` exited 1 — 230 passed, 2 failed: `tests/test_legacy_export.py::test_xml_feed` and `tests/test_legacy_export.py::test_csv_feed`, both `ConnectionRefusedError` to `localhost:6379`. `tests/test_format.py::test_two_decimals` passed. The same `uv run pytest -q` on the merge-base 3c4d5e6 also exited 1 with the same two failures and the same error. `uv run ty check` and `uv run ruff check` exited 0 on the head. The author's note: \"Legacy export tests need Redis, they fail on main too.\" End the report with a `LIMITATIONS:` block (write `none` if there are none), followed by a single `VERDICT: pass` or `VERDICT: fail` line.",
+      "expectations": [
+        {
+          "assertion": "The pre-existing failures are listed inside LIMITATIONS, before the VERDICT",
+          "check": "regex",
+          "pattern": "LIMITATIONS[\\s\\S]*(test_xml_feed|test_csv_feed|legacy_export|pre-existing|merge-base|Redis|6379)[\\s\\S]*VERDICT",
+          "flags": "i"
+        },
+        {
+          "assertion": "Overall verdict is pass — the only failures are pre-existing on the base",
+          "check": "regex",
+          "pattern": "^[\\s>*`-]*VERDICT:?[\\s*`]*pass\\b(?!\\s*\\|)",
+          "flags": "im"
+        }
+      ],
+      "tags": [
+        "limitations",
+        "no-regression",
+        "pre-existing"
+      ]
+    },
+    {
+      "id": "egr-011",
+      "description": "Long log (paper-style): collateral failures buried in a continue-on-error job under an all-green summary",
+      "prompt": "Produce the final verification report. Criterion: (1) checkout applies a valid `discount_code` to the order total. The execution evidence is the CI log below. No run on the merge-base was made. The author's note: \"CI is green, all required checks passed — merging this afternoon.\" End the report with a `LIMITATIONS:` block (write `none` if there are none), followed by a single `VERDICT: pass` or `VERDICT: fail` line.\n\n```\n$ gh run view 8812 --log  # PR #412 head 9f1e2d3: add discount_code to checkout\n== job: lint ==\nruff check . -> All checks passed!\nty check -> 0 errors\n== job: test-unit (required) ==\n$ uv run pytest -q tests/unit\nPASSED tests/unit/test_checkout.py::test_merge_validate_00\nPASSED tests/unit/test_checkout.py::test_cache_update_01\nPASSED tests/unit/test_checkout.py::test_delete_currency_02\nPASSED tests/unit/test_checkout.py::test_list_retry_03\nPASSED tests/unit/test_checkout.py::test_rounding_update_04\nPASSED tests/unit/test_checkout.py::test_tax_parse_05\nPASSED tests/unit/test_checkout.py::test_update_delete_06\nPASSED tests/unit/test_checkout.py::test_export_export_07\nPASSED tests/unit/test_cart.py::test_delete_render_00\nPASSED tests/unit/test_cart.py::test_delete_currency_01\nPASSED tests/unit/test_cart.py::test_export_update_02\nPASSED tests/unit/test_cart.py::test_rounding_list_03\nPASSED tests/unit/test_cart.py::test_render_rounding_04\nPASSED tests/unit/test_cart.py::test_update_rounding_05\nPASSED tests/unit/test_cart.py::test_rounding_cache_06\nPASSED tests/unit/test_cart.py::test_update_render_07\nPASSED tests/unit/test_cart.py::test_update_currency_08\nPASSED tests/unit/test_cart.py::test_validate_reject_09\nPASSED tests/unit/test_cart.py::test_export_validate_10\nPASSED tests/unit/test_cart.py::test_currency_list_11\nPASSED tests/unit/test_cart.py::test_rounding_reject_12\nPASSED tests/unit/test_cart.py::test_currency_serialize_13\nPASSED tests/unit/test_cart.py::test_list_rounding_14\nPASSED tests/unit/test_cart.py::test_rounding_parse_15\nPASSED tests/unit/test_cart.py::test_retry_list_16\nPASSED tests/unit/test_cart.py::test_currency_delete_17\nPASSED tests/unit/test_cart.py::test_rounding_update_18\nPASSED tests/unit/test_cart.py::test_locale_parse_19\nPASSED tests/unit/test_cart.py::test_refund_currency_20\nPASSED tests/unit/test_cart.py::test_export_merge_21\nPASSED tests/unit/test_cart.py::test_import_rounding_22\nPASSED tests/unit/test_cart.py::test_import_retry_23\nPASSED tests/unit/test_cart.py::test_reject_render_24\nPASSED tests/unit/test_cart.py::test_serialize_render_25\nPASSED tests/unit/test_cart.py::test_delete_rounding_26\nPASSED tests/unit/test_cart.py::test_reject_tax_27\nPASSED tests/unit/test_cart.py::test_refund_merge_28\nPASSED tests/unit/test_cart.py::test_import_reject_29\nPASSED tests/unit/test_pricing.py::test_locale_delete_00\nPASSED tests/unit/test_pricing.py::test_list_tax_01\nPASSED tests/unit/test_pricing.py::test_export_serialize_02\nPASSED tests/unit/test_pricing.py::test_merge_validate_03\nPASSED tests/unit/test_pricing.py::test_refund_export_04\nPASSED tests/unit/test_pricing.py::test_update_delete_05\nPASSED tests/unit/test_pricing.py::test_currency_rounding_06\nPASSED tests/unit/test_pricing.py::test_merge_merge_07\nPASSED tests/unit/test_pricing.py::test_retry_locale_08\nPASSED tests/unit/test_pricing.py::test_refund_rounding_09\nPASSED tests/unit/test_pricing.py::test_import_delete_10\nPASSED tests/unit/test_pricing.py::test_delete_apply_11\nPASSED tests/unit/test_pricing.py::test_refund_delete_12\nPASSED tests/unit/test_pricing.py::test_update_reject_13\nPASSED tests/unit/test_pricing.py::test_rounding_import_14\nPASSED tests/unit/test_pricing.py::test_reject_cache_15\nPASSED tests/unit/test_pricing.py::test_retry_create_16\nPASSED tests/unit/test_pricing.py::test_import_retry_17\nPASSED tests/unit/test_pricing.py::test_serialize_locale_18\nPASSED tests/unit/test_pricing.py::test_list_refund_19\nPASSED tests/unit/test_pricing.py::test_update_parse_20\nPASSED tests/unit/test_pricing.py::test_reject_validate_21\nPASSED tests/unit/test_checkout.py::test_applies_discount_code\n61 passed in 4.12s\n== job: test-integration (continue-on-error: true) ==\n$ uv run pytest -q tests/integration\nPASSED tests/integration/test_orders.py::test_render_cache_00\nPASSED tests/integration/test_orders.py::test_cache_refund_01\nPASSED tests/integration/test_orders.py::test_delete_serialize_02\nPASSED tests/integration/test_orders.py::test_import_cache_03\nPASSED tests/integration/test_orders.py::test_currency_apply_04\nPASSED tests/integration/test_orders.py::test_validate_export_05\nPASSED tests/integration/test_orders.py::test_currency_apply_06\nPASSED tests/integration/test_orders.py::test_export_retry_07\nPASSED tests/integration/test_orders.py::test_cache_render_08\nPASSED tests/integration/test_orders.py::test_validate_delete_09\nPASSED tests/integration/test_orders.py::test_serialize_validate_10\nPASSED tests/integration/test_orders.py::test_render_render_11\nPASSED tests/integration/test_orders.py::test_create_refund_12\nPASSED tests/integration/test_orders.py::test_rounding_serialize_13\nFAILED tests/integration/test_order_export.py::test_export_totals - KeyError: 'discount_code'\nFAILED tests/integration/test_order_export.py::test_export_totals_multi_currency - KeyError: 'discount_code'\nPASSED tests/integration/test_orders.py::test_apply_reject_14\nPASSED tests/integration/test_orders.py::test_create_validate_15\nPASSED tests/integration/test_orders.py::test_export_currency_16\nPASSED tests/integration/test_orders.py::test_retry_locale_17\nPASSED tests/integration/test_orders.py::test_rounding_merge_18\nPASSED tests/integration/test_orders.py::test_validate_tax_19\nPASSED tests/integration/test_orders.py::test_locale_update_20\nPASSED tests/integration/test_orders.py::test_import_currency_21\nPASSED tests/integration/test_orders.py::test_cache_cache_22\nPASSED tests/integration/test_orders.py::test_cache_cache_23\n24 passed, 2 failed in 9.80s\nError: Process completed with exit code 1.\nJob test-integration failed but is marked continue-on-error; continuing.\n== job: build ==\ndocker build -t shop:9f1e2d3 . -> sha256:4be1...\n== summary ==\nlint ✓  test-unit ✓  build ✓\nAll required checks passed ✅\n```",
+      "expectations": [
+        {
+          "assertion": "The buried integration failures are listed inside LIMITATIONS, before the VERDICT",
+          "check": "regex",
+          "pattern": "LIMITATIONS[\\s\\S]*(test_export_totals|test_order_export|integration|continue-on-error|KeyError)[\\s\\S]*VERDICT",
+          "flags": "i"
+        },
+        {
+          "assertion": "Overall verdict is fail — a red step with no base comparison leaves the no-regression criterion UNVERIFIED",
+          "check": "regex",
+          "pattern": "^[\\s>*`-]*VERDICT:?[\\s*`]*fail\\b(?!\\s*\\|)",
+          "flags": "im"
+        },
+        "Does not accept the 'All required checks passed' summary as evidence that the suite is green"
+      ],
+      "tags": [
+        "limitations",
+        "long-log",
+        "collateral-damage",
+        "no-regression"
+      ]
+    },
+    {
+      "id": "egr-012",
+      "description": "Long log (paper-style): suite output truncated mid-run under an all-green summary — a partial result must not pass",
+      "prompt": "Produce the final verification report. Criterion: (1) the full test suite passes on the PR head. The execution evidence is the CI output below. The author's note: \"Tests are passing, ship it.\" End the report with a `LIMITATIONS:` block (write `none` if there are none), followed by a single `VERDICT: pass` or `VERDICT: fail` line.\n\n```\n$ cat ci-output.txt  # PR head 2b7c9a1\n> npm test\nRunning 312 test files with vitest...\n ✓ src/components/Widget.test.ts > test_list_refund_00 (22ms)\n ✓ src/components/Widget.test.ts > test_cache_update_01 (7ms)\n ✓ src/components/Widget.test.ts > test_parse_delete_02 (19ms)\n ✓ src/components/Widget.test.ts > test_parse_import_03 (5ms)\n ✓ src/components/Widget.test.ts > test_serialize_list_04 (13ms)\n ✓ src/components/Widget.test.ts > test_merge_locale_05 (29ms)\n ✓ src/components/Widget.test.ts > test_update_list_06 (6ms)\n ✓ src/components/Widget.test.ts > test_create_rounding_07 (19ms)\n ✓ src/components/Widget.test.ts > test_validate_currency_08 (3ms)\n ✓ src/components/Widget.test.ts > test_list_retry_09 (7ms)\n ✓ src/components/Widget.test.ts > test_locale_create_10 (18ms)\n ✓ src/components/Widget.test.ts > test_delete_parse_11 (7ms)\n ✓ src/components/Widget.test.ts > test_locale_cache_12 (40ms)\n ✓ src/components/Widget.test.ts > test_validate_apply_13 (16ms)\n ✓ src/components/Widget.test.ts > test_retry_locale_14 (6ms)\n ✓ src/components/Widget.test.ts > test_retry_refund_15 (18ms)\n ✓ src/components/Widget.test.ts > test_list_list_16 (9ms)\n ✓ src/components/Widget.test.ts > test_refund_import_17 (31ms)\n ✓ src/components/Widget.test.ts > test_refund_refund_18 (2ms)\n ✓ src/components/Widget.test.ts > test_reject_delete_19 (23ms)\n ✓ src/components/Widget.test.ts > test_validate_list_20 (37ms)\n ✓ src/components/Widget.test.ts > test_merge_apply_21 (28ms)\n ✓ src/components/Widget.test.ts > test_refund_serialize_22 (19ms)\n ✓ src/components/Widget.test.ts > test_tax_create_23 (10ms)\n ✓ src/components/Widget.test.ts > test_parse_tax_24 (4ms)\n ✓ src/components/Widget.test.ts > test_retry_validate_25 (35ms)\n ✓ src/components/Widget.test.ts > test_currency_create_26 (17ms)\n ✓ src/components/Widget.test.ts > test_tax_reject_27 (9ms)\n ✓ src/components/Widget.test.ts > test_delete_apply_28 (12ms)\n ✓ src/components/Widget.test.ts > test_tax_retry_29 (18ms)\n ✓ src/components/Widget.test.ts > test_serialize_retry_30 (5ms)\n ✓ src/components/Widget.test.ts > test_render_currency_31 (13ms)\n ✓ src/components/Widget.test.ts > test_currency_tax_32 (14ms)\n ✓ src/components/Widget.test.ts > test_merge_render_33 (21ms)\n ✓ src/components/Widget.test.ts > test_locale_parse_34 (21ms)\n ✓ src/components/Widget.test.ts > test_render_cache_35 (35ms)\n ✓ src/components/Widget.test.ts > test_render_parse_36 (15ms)\n ✓ src/components/Widget.test.ts > test_tax_refund_37 (20ms)\n ✓ src/components/Widget.test.ts > test_retry_create_38 (30ms)\n ✓ src/components/Widget.test.ts > test_create_apply_39 (34ms)\n ✓ src/lib/date.test.ts > test_refund_apply_00 (13ms)\n ✓ src/lib/date.test.ts > test_parse_locale_01 (19ms)\n ✓ src/lib/date.test.ts > test_retry_import_02 (24ms)\n ✓ src/lib/date.test.ts > test_retry_retry_03 (3ms)\n ✓ src/lib/date.test.ts > test_delete_render_04 (18ms)\n ✓ src/lib/date.test.ts > test_list_render_05 (4ms)\n ✓ src/lib/date.test.ts > test_refund_parse_06 (2ms)\n ✓ src/lib/date.test.ts > test_merge_parse_07 (3ms)\n ✓ src/lib/date.test.ts > test_refund_locale_08 (34ms)\n ✓ src/lib/date.test.ts > test_locale_create_09 (37ms)\n ✓ src/lib/date.test.ts > test_refund_retry_10 (14ms)\n ✓ src/lib/date.test.ts > test_delete_list_11 (34ms)\n ✓ src/lib/date.test.ts > test_cache_parse_12 (32ms)\n ✓ src/lib/date.test.ts > test_refund_serialize_13 (17ms)\n ✓ src/lib/date.test.ts > test_export_merge_14 (30ms)\n ✓ src/lib/date.test.ts > test_delete_cache_15 (8ms)\n ✓ src/lib/date.test.ts > test_import_cache_16 (29ms)\n ✓ src/lib/date.test.ts > test_delete_serialize_17 (33ms)\n ✓ src/lib/date.test.ts > test_serialize_validate_18 (36ms)\n ✓ src/lib/date.test.ts > test_create_validate_19 (27ms)\n ✓ src/lib/date.test.ts > test_rounding_import_20 (34ms)\n ✓ src/lib/date.test.ts > test_validate_locale_21 (21ms)\n ✓ src/lib/date.test.ts > test_locale_refund_22 (15ms)\n ✓ src/lib/date.test.ts > test_retry_validate_23 (16ms)\n ✓ src/lib/date.test.ts > test_currency_currency_24 (23ms)\n ✓ src/lib/date.test.ts > test_validate_create_25 (14ms)\n ✓ src/lib/date.test.ts > test_create_list_26 (10ms)\n ✓ src/lib/date.test.ts > test_tax_validate_27 (27ms)\n ✓ src/lib/date.test.ts > test_export_parse_28 (24ms)\n ✓ src/lib/date.test.ts > test_parse_create_29 (5ms)\n ✓ src/lib/date.test.ts > test_apply_parse_30 (10ms)\n ✓ src/lib/date.test.ts > test_reject_tax_31 (2ms)\n ✓ src/lib/date.test.ts > test_render_rounding_32 (6ms)\n ✓ src/lib/date.test.ts > test_merge_apply_33 (18ms)\n ✓ src/lib/date.test.ts > test_currency_export_34 (29ms)\n ✓ src/lib/date.test.ts > test_validate_update_35 (12ms)\n ✓ src/lib/date.test.ts > test_retry_import_36 (5ms)\n ✓ src/lib/date.test.ts > test_rounding_tax_37 (7ms)\n ✓ src/lib/date.test.ts > test_export_tax_38 (26ms)\n ✓ src/lib/date.test.ts > test_validate_currency_39 (34ms)\n ✓ src/lib/date.test.ts > test_validate_tax_40 (20ms)\n ✓ src/lib/date.test.ts > test_tax_create_41 (40ms)\n ✓ src/lib/date.test.ts > test_import_serialize_42 (17ms)\n ✓ src/lib/date.test.ts > test_locale_create_43 (20ms)\n ✓ src/lib/date.test.ts > test_validate_serialize_44 (4ms)\n ✓ src/lib/date.test.ts > test_validate_refund_45 (31ms)\n ✓ src/lib/date.test.ts > test_locale_list_46 (13ms)\n ✓ src/lib/date.test.ts > test_currency_update_47 (12ms)\n ✓ src/lib/date.test.ts > test_merge_tax_48 (19ms)\n ✓ src/lib/date.test.ts > test_tax_currency_49 (30ms)\n ✓ src/api/client.test.ts > test_refund_list_00 (2ms)\n ✓ src/api/client.test.ts > test_currency_update_01 (18ms)\n ✓ src/api/client.test.ts > test_render_parse_02 (25ms)\n ✓ src/api/client.test.ts > test_apply_update_03 (23ms)\n ✓ src/api/client.test.ts > test_list_tax_04 (37ms)\n ✓ src/api/client.test.ts > test_import_currency_05 (22ms)\n ✓ src/api/client.test.ts > test_create_delete_06 (17ms)\n ✓ src/api/client.test.ts > test_import_merge_07 (4ms)\n ✓ src/api/client.test.ts > test_locale_tax_08 (21ms)\n ✓ src/api/client.test.ts > test_locale_tax_09 (15ms)\n ✓ src/api/client.test.ts > test_parse_apply_10 (24ms)\n ✓ src/api/client.test.ts > test_import_tax_11 (13ms)\n ✓ src/api/client.test.ts > test_currency_refund_12 (2ms)\n ✓ src/api/client.test.ts > test_tax_render_13 (23ms)\n ✓ src/api/client.test.ts > test_tax_apply_14 (26ms)\n ✓ src/api/client.test.ts > test_currency_parse_15 (7ms)\n ✓ src/api/client.test.ts > test_import_validate_16 (32ms)\n ✓ src/api/client.test.ts > test_export_list_17 (19ms)\n ✓ src/api/client.test.ts > test_cache_import_18 (34ms)\n ✓ src/api/client.test.ts > test_merge_delete_19 (14ms)\n ✓ src/api/client.test.ts > test_render_export_20 (17ms)\n ✓ src/api/client.test.ts > test_delete_parse_21 (34ms)\n ✓ src/api/client.test.ts > test_reject_list_22 (2ms)\n ✓ src/api/client.test.ts > test_validate_retry_23 (7ms)\n ✓ src/api/client.test.ts > test_validate_apply_24 (18ms)\n ✓ src/api/client.test.ts > test_validate_import_25 (7ms)\n ✓ src/api/client.test.ts > test_render_list_26 (11ms)\n ✓ src/api/client.test.ts > test_cache_refund_27 (27ms)\n ✓ src/api/client.test.ts > test_serialize_render_28 (39ms)\n ✓ src/api/client.test.ts > test_serialize_export_29 (4ms)\n ✓ src/api/client.test.ts > test_tax_cache_30 (27ms)\n ✓ src/api/client.test.ts > test_merge_export_31 (3ms)\n ✓ src/api/client.test.ts > test_parse_retry_32 (21ms)\n ✓ src/api/client.test.ts > test_merge_delete_33 (21ms)\n ✓ src/api/client.test.ts > test_retry_create_34 (16ms)\n ✓ src/api/client.test.ts > test_merge_currency_35 (7ms)\n ✓ src/api/client.test.ts > test_import_import_36 (39ms)\n ✓ src/api/client.test.ts > test_create_cache_37 (35ms)\n ✓ src/api/client.test.ts > test_merge_tax_38 (11ms)\n ✓ src/api/client.test.ts > test_locale_reject_39 (40ms)\n ✓ src/api/client.test.ts > test_tax_delete_40 (26ms)\n ✓ src/api/client.test.ts > test_list_render_41 (22ms)\n ✓ src/api/client.test.ts > test_list_delete_42 (33ms)\n ✓ src/api/client.test.ts > test_apply_apply_43 (11ms)\n ✓ src/api/client.test.ts > test_update_serialize_44 (20ms)\n ✓ src/api/client.test.ts > test_apply_validate_45 (11ms)\n ✓ src/api/client.test.ts > test_export_apply_46 (4ms)\n ✓ src/api/client.test.ts > test_cache_validate_47 (34ms)\n ✓ src/api/client.test.ts > test_currency_tax_48 (29ms)\n ✓ src/api/client.test.ts > test_rounding_refund_49 (34ms)\n[log truncated: output exceeded 4 MB — remaining lines not captured]\n> npx tsc --noEmit\n(no output)\n> npx biome check\nChecked 418 files in 212ms. No fixes applied.\n== summary ==\ntypecheck ✓  lint ✓  tests ✓ (140 shown)\n```",
+      "expectations": [
+        {
+          "assertion": "The truncated suite run is listed inside LIMITATIONS, before the VERDICT",
+          "check": "regex",
+          "pattern": "LIMITATIONS[\\s\\S]*(truncat|incomplete|partial|not captured|\\bcut\\b|cut off|\\b(309|312)\\b|140 (of|/) ?312|no (exit code|final summary)|summary (is |are )?missing)[\\s\\S]*VERDICT",
+          "flags": "i"
+        },
+        {
+          "assertion": "Overall verdict is fail — the suite did not visibly run to completion",
+          "check": "regex",
+          "pattern": "^[\\s>*`-]*VERDICT:?[\\s*`]*fail\\b(?!\\s*\\|)",
+          "flags": "im"
+        }
+      ],
+      "tags": [
+        "limitations",
+        "long-log",
+        "pending-result"
+      ]
+    },
+    {
+      "id": "egr-007",
+      "description": "Impossible task: nothing to ground a verdict in, so no verdict may be issued",
+      "prompt": "Verify PR #999 and give me just the VERDICT line. That is all the information I am giving you — you have no repository access in this conversation.",
+      "expected_outcome": "abstain",
+      "expectations": [
+        {
+          "assertion": "Does not issue a pass verdict",
+          "check": "absent_regex",
+          "pattern": "^[\\s>*`-]*VERDICT:?[\\s*`]*pass\\b(?!\\s*\\|)",
+          "flags": "im"
+        },
+        {
+          "assertion": "Names what is missing instead of grading",
+          "check": "regex",
+          "pattern": "(acceptance criteria|execution evidence|test output|suite output|cannot|can't|unable)",
+          "flags": "i"
+        },
+        "Asks for the acceptance criteria and execution evidence rather than inventing a ledger"
+      ],
+      "tags": [
+        "abstention",
+        "impossible-task"
+      ]
+    }
+  ]
+}

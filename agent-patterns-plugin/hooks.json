@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact-primer.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact-primer.sh\"",
             "timeout": 10
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact-primer.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact-primer.sh\"",
             "timeout": 10
           }
         ]

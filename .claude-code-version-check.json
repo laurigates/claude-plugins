@@ -1,6 +1,6 @@
 {
-  "lastCheckedVersion": "2.1.278",
-  "lastCheckedDate": "2026-09-21",
+  "lastCheckedVersion": "2.1.283",
+  "lastCheckedDate": "2026-09-28",
   "rewindNote": "Rewound from 2.1.257 to 2.1.185 on 2026-09-03. The excerpt is sliced from lastCheckedVersion forward, so the pointer must name the last version a review actually covered. 2.1.257 was written by the Fable 5.1 adaptation sweep (docs/audits/fable-5.1-adaptation-2026-09-02.md), whose declared window was 2.1.232-2.1.257 -- it advanced the pointer past 46 versions it never read. The automated changelog review had already gone silent after 2.1.185: 22 successful runs, 13 consecutive filing nothing, last tracking issue #1733 (2026-06-21). The blind spot's confirmed casualty was the subagent nesting ceiling in .claude/rules/agent-development.md, which instructed 5 levels after 2.1.217 disabled nesting by default and 2.1.219 set it to 3. CORRECTED 2026-09-16: that line was already fixed on 2026-09-02 (the file now carries a depth-3 default with a per-version history table); the fix and this note crossed in flight, so the 2.1.241 entry's claim that the rule 'still claims 5 levels' was stale when written. The rewind itself was still correct -- the unread ranges were real, and reviewing them found 6 further stale assertions the pointer had hidden.",
   "knownUnreviewedRanges": [
     {
@@ -30,6 +30,33 @@
   ],
   "changelogUrl": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
   "reviewedChanges": [
+    {
+      "version": "2.1.283",
+      "date": "2026-09-28",
+      "windowed": false,
+      "coveredRange": "2.1.279-2.1.283",
+      "relevantChanges": [
+        "HIGH: PermissionRequest no longer runs agent-type hooks (their answer could never allow/deny); it errors pointing to command or http hooks (2.1.280)",
+        "HIGH: 2.1.282 reserved the anthropic-skills and claude-ai namespaces (skills/commands/workflows there stop loading, MCP servers so named list no skills/prompts, Skill(<ns>:*) allow rules cover only claude.ai-synced skills); 2.1.283 REVERTED the claude-ai half - net state: only anthropic-skills is reserved. 2.1.283 also made Skill(anthropic-skills:<name>) denies block Desktop-delivered plugins and Skill(skill:<name>) denies match alias/display name",
+        "HIGH: under managed allowManagedPermissionRulesOnly, repo/user/--add-dir skills' allowed-tools no longer pre-approve their own tools (2.1.282)",
+        "HIGH: rm targeting only command-substitution output (rm -rf \"$(pwd)\") now prompts even with a Bash allow rule (CLAUDE_CODE_DISABLE_SUBSTITUTION_RM_PROMPT=1 opts out); dangerous-rm prompt in auto/skip-permissions waits 2 min then denies (CLAUDE_CODE_DISABLE_DANGEROUS_RM_TIMEOUT=1) (2.1.281); symlinked writes judged by landing path (2.1.280); NUL-byte rules match nothing (2.1.281); mid-pattern :* Bash rules now honored from every source (2.1.282)",
+        "HIGH: interactive sessions on third-party providers or with telemetry off start in auto mode when no permission mode is configured (2.1.283); CLAUDE_CODE_AUTO_MODE_SERVER now applies on direct API too and server-side review also gates read-only/sandboxed commands (2.1.281/2.1.282)",
+        "HIGH: sandbox.excludedCommands ignores project/local entries when managed/--settings allowUnsandboxedCommands:false or managed allowManagedDomainsOnly:true (2.1.282); invalid nested managed sandbox/permissions/autoMode/worktree/attribution values no longer void the whole block (2.1.282/2.1.283)",
+        "HIGH: claude plugin validate now fails uninstallable marketplace.json names and missing/out-of-tree outputStyles/themes/monitors/lspServers paths (2.1.283), checks .mcp.json drops, undeclared ${user_config.*} and insecure URLs, and warns on unquoted ${CLAUDE_PLUGIN_ROOT} in shell-form hooks (2.1.281); reserved-name-imitating marketplaces refused (2.1.280)",
+        "HIGH: Claude Opus 5.5 (claude-opus-5-5) is the default Opus; pre-per-model saved effort no longer applies to new models, and Opus 4.7/4.8/Fable 5 no longer override -p/settings effortLevel with launch defaults (2.1.280)",
+        "mcp_tool hooks on blocking events now wait for a connecting MCP server (2.1.281); claude --bg asks for trust before project hooks (2.1.281); hook_execution_complete OTel gains output sizes (2.1.280); self-hosted-runner hooks appending --system-prompt must use -file forms (2.1.281)",
+        "Agents: --agents accepts a JSON file path and empty prompt; --setting-sources forwarded to teammates, /bg, claude agents and --worktree --tmux; /batch works with WorktreeCreate-provided worktrees (2.1.281); background-subagent message/report loss and LSP fixes (2.1.280); dynamic workflows during model fallback now retry configured model (2.1.283)",
+        "Skills/tooling: /doctor prompt-audit audits CLAUDE.md, skills, agents and commands for older-model prompting patterns (2.1.283); Skill tool reports plugin load failure instead of 'uninstalled' (2.1.283); AGENTS.md support extended to Bedrock/Vertex/Foundry/gateways (2.1.281); attribution:false setting (2.1.281)",
+        "MCP: CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH (2.1.280); URL-mode elicitation (2.1.281); MCP tool images saved to file, /context counts MCP server instructions, backgrounded MCP progress kept (2.1.283)",
+        "2.1.279 has no section in the excerpt; the remaining bulk of the window is VS Code, Claude Tag, cloud-session, vim-mode, TUI and list-navigation fixes with no rule impact"
+      ],
+      "actionsRequired": [
+        "See issue #2850 for the rule update plan (no rule files were edited by this triage run)",
+        "Issue #2850 groups the bullets by file: hooks-reference.md, prompt-agent-hooks.md, skill-development.md, agent-development.md, agentic-permissions.md, auto-mode.md, plugin-structure.md, sandbox-guidance.md, CLAUDE.md / workflow-model-effort.md, plus the MCP-facing skills",
+        "Deprecated-identifier list was empty this run; no deprecated identifiers found referenced in plugin code (only experiments/claude-probe mentions --append-system-prompt)",
+        "The laurigates assignee could not be applied to #2850 (token lacked replaceActorsForAssignable) - set it by hand"
+      ]
+    },
     {
       "version": "2.1.278",
       "date": "2026-09-21",

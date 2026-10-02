@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.27.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.26.2...code-quality-plugin-v1.27.0) (2026-09-29)
+
+
+### Features
+
+* promote licence-position and workflow-scale rules to skills ([#2860](https://github.com/laurigates/claude-plugins/issues/2860)) ([a6ec7d0](https://github.com/laurigates/claude-plugins/commit/a6ec7d0caefff29b6f46cc76e1c3f5bba064b5c6))
+
+## [1.26.2](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.26.1...code-quality-plugin-v1.26.2) (2026-09-28)
+
+
+### Bug Fixes
+
+* **plugins:** quote CLAUDE_PLUGIN_ROOT in hook commands; apply 2.1.279-2.1.283 changelog review ([#2854](https://github.com/laurigates/claude-plugins/issues/2854)) ([3e15bf9](https://github.com/laurigates/claude-plugins/commit/3e15bf961986c0f475785fbac9b777d4f6ec4995))
+
 ## [1.26.1](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.26.0...code-quality-plugin-v1.26.1) (2026-09-26)
 
 
