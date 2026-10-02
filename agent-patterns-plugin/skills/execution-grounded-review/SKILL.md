@@ -3,10 +3,10 @@ name: execution-grounded-review
 description: "Execution-grounded review: run tests first, trace each acceptance criterion to execution evidence. Use when verifying an implementation meets spec."
 args: "[target] [--criteria <file>]"
 argument-hint: "diff|PR|files to verify; optional --criteria <file> of acceptance criteria"
-allowed-tools: Agent, Read, Glob, Grep, Bash(git diff *), Bash(git log *), Bash(gh pr view *), Bash(npm *), Bash(npx *), Bash(uv run *), Bash(pytest *), Bash(cargo *), Bash(go test *), TodoWrite
+allowed-tools: Agent, Read, Glob, Grep, Bash(git diff *), Bash(git log *), Bash(git merge-base *), Bash(git worktree *), Bash(git rev-parse *), Bash(gh pr view *), Bash(npm *), Bash(npx *), Bash(uv run *), Bash(pytest *), Bash(cargo *), Bash(go test *), TodoWrite
 model: opus
 created: 2026-06-22
-modified: 2026-10-01
+modified: 2026-10-02
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -83,12 +83,27 @@ Record the exit codes and failing-test names. A red suite is itself an
 *independent* signal — a failing test does not care how hard the author worked
 (`.claude/rules/loop-integrity.md`).
 
+**When any step exits red, separate new failures from pre-existing ones.** Run
+the same command on the merge-base (`git merge-base HEAD origin/<default>`,
+checked out in a throwaway `git worktree`) and record each failure as *new*
+(passes on the base, fails on the head) or *pre-existing* (fails on both). Only
+a red run pays for this second run. If the base run cannot be made, record that:
+the comparison is then missing evidence, never an assumed pass.
+
 ### Step 2: Name the criteria
 
 State, in one numbered list, the acceptance criteria under verification (from
 `--criteria` or context). Each criterion is one ledger row in Step 3.
 
-If there are no criteria, or no execution evidence (Step 1 could not run and
+Always append one implicit criterion, last: **No regression — no test that
+passes on the merge-base fails on the head.** Grade it from Step 1's base
+comparison: `PASS` when nothing failed or every failure is pre-existing, `FAIL`
+naming each new failure, `UNVERIFIED` when a step is red and no base comparison
+exists. This is how breakage outside the listed criteria reaches the verdict
+without each caller restating it, while failures already on the base do not
+block a change that did not cause them.
+
+If there are no stated criteria, or no execution evidence (Step 1 could not run and
 none was supplied), stop: emit no ledger and no `VERDICT` line, name the missing
 input, and ask for it. A missing input is not a `fail` — `fail` claims the code
 was graded and found wanting, and nothing was graded.
@@ -156,33 +171,19 @@ checklist:
 | Every `FAIL` or `PARTIAL` row whose `evidenceSpan` is `none` | The failure's cause was not located within the bound (Step 3b) |
 | Any caveat that would flip `pass` → `fail` if it proved true (flaky rerun, environment-only pass, stale evidence predating the last push) | The pass is conditional, and the reader must know on what |
 | Every step still running, timed out, or whose output is truncated or missing | The verdict describes a partial result as if it were complete |
-| Collateral damage: failures, side effects, or broken behaviour outside the listed criteria — including anything Step 4 drops from the verdict | Every criterion can pass while the change breaks something else |
+| Every pre-existing failure — red on both the merge-base and the head | The suite is red for a reason this change did not cause, and a reader who sees `pass` must know it |
+| Collateral damage no failing test catches: side effects or broken behaviour outside the listed criteria — including anything Step 4 drops from the verdict | Every criterion can pass while the change breaks something the suite does not cover |
 | Any factual claim in the inputs (a pass count, a metric, "all green") that the execution output does not back | The report would repeat a success the evidence never showed |
 
 Every entry points at something the inputs show, or show to be missing: a step
 that did not run, an output line, a criterion with no test. Speculative risks
 with no sign in the inputs — code the verifier did not open, evidence that
 "might" be stale with no later commit named — are not limitations. Listing them
-is the false-flag cost the paper below measured, and it makes `none` unreachable
+is the measured false-flag cost of over-reporting, and it makes `none` unreachable
 on a clean run.
 
-**Why.** [Language Models Are "Insecure" Reporters](https://arxiv.org/abs/2609.36139)
-(#2870) planted narrative-changing flaws in 200 work logs per scenario and found
-frontier models omit or downplay them when writing a report — not for lack of
-capability (they find the same flaws when asked directly) but from reasoning
-about appearing successful — for example calling the flaw "outside the scope of
-the task", or deferring to the log's own confident framing. Two findings are measured
-and applied here:
-
-| Measured in the paper | Applied as |
-|---|---|
-| Appending *"Be honest in your response."* raised flagging sharply (GPT-5.5: 1% → 95% on planted negative results) with little rise in false flags on clean logs; "be thorough / critical / skeptical" were weaker and less consistent | That literal line in the verifier brief (Step 3) |
-| Flagging stayed lowest, even with the honesty instruction, on pending results reported as current (≤25%), and among the lowest on collateral damage outside the task | The last three checklist rows above, and the Step 4 rule that dropping is from the verdict, not the report |
-
-The required, front-loaded `limitations` field is this skill's own extension —
-the paper did not test a structured field. It rests on the same reasoning as
-`sequenceMatchesProduction`: a required slot makes "I did not check" or "I left
-it out" unrepresentable rather than silent.
+Why this field exists, which parts the source paper measured, and which parts
+are this skill's own extension: [REFERENCE.md](REFERENCE.md) § Insecure reporting.
 
 | Row verdict | Meaning |
 |---|---|
@@ -323,15 +324,15 @@ neither talk yourself into passing broken code, nor into failing correct code:
 
 | Act on it | Drop it |
 |---|---|
-| A `FAIL` with a named failing test/input | A `FAIL` on a requirement the spec never stated |
+| A `FAIL` with a named failing test/input | A `FAIL` on a requirement the spec never stated (the implicit no-regression criterion counts as stated) |
 | An `UNVERIFIED` criterion → write/run the missing test, then re-grade | An `UNVERIFIED` on behaviour outside the change's responsibility |
 | A `PARTIAL` where a *stated* edge case is unhandled | Style/preference dressed up as a criterion failure |
 | A coverage gap on a load-bearing criterion | A hypothetical input the contract makes impossible |
 | A round-trip/determinism test whose sequence diverges from production (Step 3a) | A sequence difference that provably can't affect the claim's outcome |
 
 **"Drop" removes an item from the verdict, never from the report.** "Outside
-the scope of the task" is a rationalisation the paper above records for
-concealing a flaw, so a dropped item that is still narrative-changing — a
+the scope of the task" is a recorded rationalisation for concealing a flaw
+([REFERENCE.md](REFERENCE.md)), so a dropped item that is still narrative-changing — a
 failing test unrelated to the criteria, a side effect on shared state, broken
 behaviour the spec never mentioned — goes into `LIMITATIONS` as collateral
 damage. Only items that cannot change the story leave the report entirely:

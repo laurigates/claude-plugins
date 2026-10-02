@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.49.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.48.0...agent-patterns-plugin-v2.49.0) (2026-10-01)
+
+
+### Features
+
+* **agent-patterns-plugin:** fail execution-grounded-review only on new regressions ([#2878](https://github.com/laurigates/claude-plugins/issues/2878)) ([8b73ee0](https://github.com/laurigates/claude-plugins/commit/8b73ee0aeaff0bbed9e31d8fe8967996a1bbbec7))
+
+## [2.48.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.47.2...agent-patterns-plugin-v2.48.0) (2026-10-01)
+
+
+### Features
+
+* **agent-patterns-plugin:** require narrative-changing limitations before the verdict in execution-grounded-review ([#2871](https://github.com/laurigates/claude-plugins/issues/2871)) ([785b0d9](https://github.com/laurigates/claude-plugins/commit/785b0d9802399823dffcda7cfb86f883e2524584)), closes [#2870](https://github.com/laurigates/claude-plugins/issues/2870)
+
 ## [2.47.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.47.1...agent-patterns-plugin-v2.47.2) (2026-09-28)
 
 

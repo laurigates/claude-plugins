@@ -59,6 +59,8 @@ single entry "none" — never omit the field. Be honest in your response.
 **and** every Step 1 step ran to completion
 stop: emit no ledger and no `VERDICT` line, name the missing
 Speculative risks
+passes on the merge-base fails on the head
+separate new failures from pre-existing ones
 EOF
 }
 
@@ -153,6 +155,10 @@ strip_mutant egr_no_abstain "$EGR_REL" "stop: emit no ledger and no" \
   "execution-grounded-review missing the no-inputs abstain path is flagged (#2871)"
 strip_mutant egr_no_grounding "$EGR_REL" "Speculative risks" \
   "execution-grounded-review missing the grounded-limitations rule is flagged (#2871)"
+strip_mutant egr_no_noregress "$EGR_REL" "passes on the merge-base fails on the head" \
+  "execution-grounded-review missing the no-regression criterion is flagged"
+strip_mutant egr_no_basecmp "$EGR_REL" "separate new failures from pre-existing ones" \
+  "execution-grounded-review missing the merge-base comparison is flagged"
 
 # 4i. Guard integrity: the real repository satisfies every token the guard
 # requires, so the fixture tokens above are the ones the shipped files carry.
