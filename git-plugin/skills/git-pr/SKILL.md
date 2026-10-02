@@ -98,31 +98,37 @@ EOF
 
 **Inside `<<'EOF'` (quoted delimiter), backticks, `$`, and `\` are already literal — never backslash-escape them.** A reflexive `\`` survives into the rendered PR description and needs a follow-up `gh pr edit --body-file` to clean up. (The `Write` tool → `--body-file` path above sidesteps the question entirely and stays the default for non-trivial bodies.)
 
-Body content of `/tmp/pr-body.md`:
+Body content of `/tmp/pr-body.md` — under squash-merge with *PR title and
+description* as the default message, this body **is the commit body on `main`**
+and release-please parses it (see `github-pr-title` →
+[merge-strategies.md](../github-pr-title/merge-strategies.md)). Write it as a
+commit message: prose first, footers last, no checklists or reviewer-only notes.
 
 ```markdown
-## Summary
-Brief description of what this PR does.
+Add retry with backoff to the webhook dispatcher so transient 5xx
+responses from receivers no longer drop events.
 
-## Motivation
-Why this change is needed.
+- Retry up to 5 times with jittered exponential backoff
+- Record final failures in the dead-letter table
 
-## Changes
-- Change 1
-- Change 2
+Follow-up: #456 (run migration after deploy), #457 (prod config)
 
-## Pre-merge Checklist
-- [ ] Tests pass locally
-- [ ] Code reviewed
-
-## Follow-up Issues
-- #456: run database migration after deploy
-- #457: update production config
-
-## Related Issues
 Fixes #123
-Related: #456
+Refs #456
 ```
+
+Rules for the footer paragraph (last block, one per line, no blank lines):
+
+| Line | Effect under squash |
+|------|---------------------|
+| `Fixes #N` / `Closes #N` | Closes issue on merge |
+| `Refs #N` | Link only |
+| `BREAKING CHANGE: <what breaks>` | **Major** bump — only when intended |
+| `Release-As: X.Y.Z` | Forces version |
+
+Never start a line with `feat(…):` / `fix(…):` in the footer block unless you
+mean an additional changelog entry. Reviewer instructions (test steps,
+screenshots) go in a PR comment, not the body.
 
 ### 5. Verify Closing Keywords
 

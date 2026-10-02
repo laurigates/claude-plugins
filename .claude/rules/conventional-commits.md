@@ -58,6 +58,17 @@ a wrong one mislabels every package the commit touched (`code-quality-plugin`
 release. To keep a plugin unpublished, change no files under its directory, or
 use a type that does not bump.
 
+## Merge strategy decides which text is parsed
+
+| Strategy | release-please reads | PR title | PR body |
+|----------|---------------------|----------|---------|
+| Squash (repo default: PR title + description) | One commit: title as subject, body as body | Decides the bump | Parsed — `BREAKING CHANGE:`, `Release-As:`, and footer lines like `fix(x): …` all take effect |
+| Rebase / merge commit | Every branch commit individually | Ignored | Ignored |
+
+So under squash, write the PR body as a commit body (prose + footers, no
+checklists), and retitle a releasable PR before merge. Details and post-merge
+repair: `git-plugin/skills/github-pr-title/merge-strategies.md`.
+
 ## Issue references
 
 Footer keywords, one per line, after a blank line in the commit body:
