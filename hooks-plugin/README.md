@@ -326,9 +326,39 @@ A PreToolUse hook that creates a git stash checkpoint before destructive operati
 
 Skips checkpointing for build artifact removal (node_modules, dist, build, .next, etc.).
 
+Since #2652 the triggers are matched on parsed commands (`ast-grep --lang bash`),
+not on the raw command text: the phrase inside a `gh issue comment --body`, a
+heredoc body, a commit message or a `grep` pattern no longer checkpoints, nor
+does an `rm -rf` whose every operand is a literal absolute path outside the
+repository. The pre-#2652 regex matcher still runs over whatever the parser
+cannot prove inert, and alone when `ast-grep` is missing, fails, answers in a
+drifted schema or hangs. The hook aims never to checkpoint less than that
+matcher, and the suite's differential against it is the check, not a proof.
+The known ways to under-checkpoint are a span the parser reads differently from
+the shell, an allowlisted program that runs text or writes a file through a
+path the hook does not check, and shell state from before the command. Reviews
+found five such shapes (`echo \ #; rm -rf ./src`, where tree-sitter reads a
+comment the shell does not; `rm -rf /outside/lin*/src`, a glob exempted on its
+literal prefix through a symlink into the repository; a heredoc delimiter
+joined by a backslash-newline; a heredoc delimiter tree-sitter reads
+differently from bash, partly quoted (`<<E"O"F`) or closed by a line that only
+starts with it (`EOF; cat <<'Z'`); `git -C /o switch b && rm -rf /o/lnk/src`, where
+the checkout plants a symlink into the repository before rm runs), and a parser
+answer without byte offsets crashed the hook, as did one with offsets spelled
+`0.0`/`12.0`, which bash arithmetic rejects; all now checkpoint.
+The parser's exemption is a closed
+allowlist of shapes, not a list of hazards: unless every part of the command is
+an allowed program, redirect or structure, the old matcher reads the whole
+command, as before #2652 — so `exec`, `tee`, `eval`, a shell, `find`, a
+substitution, an assignment, `git log --output` or any `-o` option anywhere in
+it restores the old verdict. `rm -rf "$T"` with `T` from `mktemp -d` still
+checkpoints — it cannot be resolved statically. Details and
+the full list of shapes that still checkpoint:
+[`hooks/README.md` § auto-checkpoint.sh](hooks/README.md#auto-checkpointsh).
+
 **Toggle:** `CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT=1`
 
-**Tests:** `bash hooks-plugin/hooks/test-auto-checkpoint.sh` (hermetic — fixture repos under `mktemp -d`).
+**Tests:** `bash hooks-plugin/hooks/test-auto-checkpoint.sh` (hermetic — fixture repos under `mktemp -d`; the #2652 sections need `ast-grep`, including a generated spelling probe and a differential against the pre-#2652 hook).
 
 ### event-logger.sh
 
