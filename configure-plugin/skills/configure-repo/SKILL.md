@@ -5,9 +5,9 @@ allowed-tools: Glob, Grep, Read, Write, Edit, Bash(git add *), Bash(git status *
 args: "[--check-only] [--skip-health] [--skip-migrations]"
 argument-hint: "[--check-only] [--skip-health] [--skip-migrations]"
 created: 2026-04-14
-modified: 2026-07-18
+modified: 2026-10-05
 compatibility: claude-code
-reviewed: 2026-10-04
+reviewed: 2026-10-05
 ---
 
 # /configure:repo
@@ -116,41 +116,7 @@ Parse the health check output. If any checks fail:
 
 ### Step 6: Stage files and report
 
-Run `git status` to list all created/modified files. Stage the relevant files:
-
-```bash
-git add .claude/settings.json
-git add scripts/install_pkgs.sh        # if created
-git add .gitattributes                 # if created/updated
-git add .github/workflows/claude.yml   # if created
-git add .github/workflows/claude-code-review.yml  # if created
-```
-
-Print a summary:
-
-```
-configure-repo complete
-=======================
-Repository: <repo-name>
-
-Files staged:
-  .claude/settings.json             [CREATED | UPDATED]
-  scripts/install_pkgs.sh           [CREATED | UPDATED | SKIPPED]
-  .github/workflows/claude.yml      [CREATED | UPDATED | SKIPPED]
-  .github/workflows/claude-code-review.yml  [CREATED | UPDATED | SKIPPED]
-
-Marketplace enrollment:
-  .claude/settings.json → extraKnownMarketplaces.claude-plugins  ✓
-  .github/workflows/claude.yml → plugin_marketplaces             ✓
-
-Health check: PASS | WARN (<N> warnings) | FAIL (<N> failures)
-
-Next steps:
-  1. Review the staged diff: git diff --cached
-  2. Commit: git commit -m "chore(claude): configure repo for Claude Code"
-  3. Add CLAUDE_CODE_OAUTH_TOKEN to repository secrets
-  4. Push and test: mention @claude in a PR comment
-```
+Run `git status` to list all created/modified files. Stage only the files this run created or updated (explicit paths, never `git add -A`), then print the completion summary (files staged, marketplace enrollment, health result, next steps). The `git add` list and the summary template are in [references/stage-and-report.md](references/stage-and-report.md) — read it when staging and reporting.
 
 If `--check-only` was set, prefix the summary with "DRY RUN — no files modified".
 

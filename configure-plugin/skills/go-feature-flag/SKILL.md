@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-10-05
 reviewed: 2026-04-25
 name: go-feature-flag
 description: GO Feature Flag (GOFF) self-hosted feature flags with OpenFeature integration — config, relay proxy, targeting, rollouts. Use when working with GOFF or flags.goff.yaml.
@@ -20,9 +20,8 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 
 Open-source feature flag solution with file-based configuration and OpenFeature integration. Use when setting up self-hosted feature flags, configuring flag files, or deploying the relay proxy.
 
-## When to Use
+### Activation triggers
 
-**Automatic activation triggers:**
 - User mentions "GO Feature Flag", "GOFF", or "gofeatureflag"
 - Project has `@openfeature/go-feature-flag-provider` dependency
 - Project has `flags.goff.yaml` or similar flag configuration
@@ -183,67 +182,9 @@ For Progressive Rollout, Scheduled Changes, and A/B Testing patterns, see [REFER
 
 ## Relay Proxy Configuration
 
-### Docker Compose (Development)
+The relay serves the API on port 1031 and health/metrics on 1032. Choose a retriever with `RETRIEVER_KIND` (`file`, `s3`, `http`, `github`, `gitlab`, `googlecloud`, `azureblob`, `k8s`) and tune refresh with `POLLING_INTERVAL_MS`.
 
-```yaml
-# docker-compose.yaml
-services:
-  goff-relay:
-    image: gofeatureflag/go-feature-flag:latest
-    ports:
-      - "1031:1031"  # API
-      - "1032:1032"  # Health/metrics
-    volumes:
-      - ./flags.goff.yaml:/goff/flags.yaml:ro
-    environment:
-      # Retriever configuration
-      - RETRIEVER_KIND=file
-      - RETRIEVER_PATH=/goff/flags.yaml
-
-      # Polling interval (ms)
-      - POLLING_INTERVAL_MS=10000
-
-      # Logging
-      - LOG_LEVEL=info
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:1032/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-```
-
-### Environment Variables
-
-```bash
-# Retriever (choose one)
-RETRIEVER_KIND=file|s3|http|github|gitlab|googlecloud|azureblob|k8s
-
-# File retriever
-RETRIEVER_PATH=/path/to/flags.yaml
-
-# S3 retriever
-RETRIEVER_BUCKET=my-bucket
-RETRIEVER_ITEM=flags/production.yaml
-AWS_REGION=us-east-1
-
-# GitHub retriever
-RETRIEVER_REPOSITORY_SLUG=owner/repo
-RETRIEVER_FILE_PATH=flags/production.yaml
-RETRIEVER_BRANCH=main
-GITHUB_TOKEN=ghp_xxxx
-
-# HTTP retriever
-RETRIEVER_URL=https://api.example.com/flags.yaml
-RETRIEVER_HEADERS=Authorization=Bearer xxx
-
-# Polling
-POLLING_INTERVAL_MS=30000
-
-# Server
-HTTP_PORT=1031
-ADMIN_PORT=1032
-LOG_LEVEL=info|debug|warn|error
-```
+For the Docker Compose service definition and the full retriever/polling/server environment variables, see [references/relay-proxy.md](references/relay-proxy.md) — read it when standing up or reconfiguring the relay.
 
 For Kubernetes deployment configuration, see [REFERENCE.md](REFERENCE.md).
 
@@ -261,34 +202,7 @@ For webhook URL configuration, see [REFERENCE.md](REFERENCE.md).
 
 ## CLI Tools
 
-### Validate Configuration
-
-```bash
-# Install CLI
-go install github.com/thomaspoignant/go-feature-flag/cmd/goff@latest
-
-# Validate flag file
-goff lint --config flags.goff.yaml
-
-# Output format
-goff lint --config flags.goff.yaml --format json
-```
-
-### Testing Flags Locally
-
-```bash
-# Start relay in foreground
-docker run -p 1031:1031 -p 1032:1032 \
-  -v $(pwd)/flags.goff.yaml:/goff/flags.yaml:ro \
-  -e RETRIEVER_KIND=file \
-  -e RETRIEVER_PATH=/goff/flags.yaml \
-  gofeatureflag/go-feature-flag:latest
-
-# Test flag evaluation
-curl -X POST http://localhost:1031/v1/feature/new-feature/eval \
-  -H "Content-Type: application/json" \
-  -d '{"evaluationContext": {"targetingKey": "user-123"}}'
-```
+Validate flag files with `goff lint --config flags.goff.yaml` and test evaluation against a local relay via `POST /v1/feature/<flag>/eval`. Install commands, the `docker run` invocation, and the `curl` evaluation call are in [references/cli-and-troubleshooting.md](references/cli-and-troubleshooting.md).
 
 ## Best Practices
 
@@ -330,44 +244,7 @@ For GitOps CI/CD workflow and environment-specific flag patterns, see [REFERENCE
 
 ## Troubleshooting
 
-### Flag Not Evaluating Correctly
-
-```bash
-# Check relay logs
-docker logs goff-relay
-
-# Test evaluation directly
-curl -X POST http://localhost:1031/v1/feature/my-flag/eval \
-  -H "Content-Type: application/json" \
-  -d '{"evaluationContext": {"targetingKey": "test", "email": "test@example.com"}}'
-```
-
-### Provider Connection Issues
-
-```typescript
-// Check provider initialization
-const provider = new GoFeatureFlagProvider({
-  endpoint: process.env.GOFF_RELAY_URL,
-  timeout: 5000, // Increase timeout
-});
-
-// Handle events
-provider.on('PROVIDER_READY', () => console.log('Provider ready'));
-provider.on('PROVIDER_ERROR', (e) => console.error('Provider error', e));
-```
-
-### Configuration Not Updating
-
-```bash
-# Check polling interval
-POLLING_INTERVAL_MS=10000  # 10 seconds
-
-# Verify file is readable
-docker exec goff-relay cat /goff/flags.yaml
-
-# Check retriever status
-curl http://localhost:1032/info
-```
+For diagnostic commands covering flags not evaluating correctly, provider connection issues (timeout and `PROVIDER_READY`/`PROVIDER_ERROR` events), and configuration not updating, see [references/cli-and-troubleshooting.md](references/cli-and-troubleshooting.md#troubleshooting) — read it when a flag misbehaves at runtime.
 
 ## Documentation
 
