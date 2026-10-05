@@ -191,6 +191,6 @@ Print:
 - `/taskwarrior:task-release` — release without closing (handoff)
 - `/taskwarrior:task-done` — close after landing (auto-releases the claim)
 - `/git:coworker-check` — sister signal: process-scan + session marker
-- `.claude/rules/agent-coworker-detection.md` — combined-signal rationale
+- `git-plugin:git-coworker-check` (REFERENCE.md § Signal design) — combined-signal rationale
 - `.claude/rules/parallel-safe-queries.md` — `export | jq` idiom
 - `.claude/rules/task-id-stability.md` — why this skill resolves `$TASK_UUID` once and mutates by UUID

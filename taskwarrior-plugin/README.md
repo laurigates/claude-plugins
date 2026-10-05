@@ -92,7 +92,7 @@ Taskwarrior UDAs are declared in `~/.taskrc`. On first use, `task-add` prompts t
 | `branch` | string | Git branch at claim time (omitted on detached HEAD) |
 | `worktree` | string | `git rev-parse --show-toplevel` at claim time |
 
-The identity UDAs power `task-coordinate`'s "In flight" / "Stale claims" sections, `task-status --mine`, and the taskwarrior signal in `/git:coworker-check`. See `.claude/rules/agent-coworker-detection.md` for how the four detection signals combine.
+The identity UDAs power `task-coordinate`'s "In flight" / "Stale claims" sections, `task-status --mine`, and the taskwarrior signal in `/git:coworker-check`. See `git-plugin:git-coworker-check` (REFERENCE.md § Signal design) for how the seven detection signals combine.
 
 ## Tag conventions
 
@@ -315,6 +315,6 @@ See [docs/task-tracking.md](docs/task-tracking.md) for conventions on UDAs, tags
 - `agent-patterns-plugin:exclusive-lock-dispatch` — taskwarrior's own store is single-writer; bulk modifies need exclusive-lock discipline
 - `workflow-orchestration-plugin:workflow-wave-dispatch` — wave scheduling that `task-coordinate` supports
 - `git-plugin:git-coworker-check` — sister signal: reads `+ACTIVE` claims as a fourth detection mechanism
-- `.claude/rules/agent-coworker-detection.md` — combined-signal rationale (drift + marker + process + taskwarrior)
+- `git-plugin:git-coworker-check` (REFERENCE.md § Signal design) — combined-signal rationale (drift, marker, process, taskwarrior, worktree leak, bare flip, `ListAgents`)
 - `.claude/rules/parallel-safe-queries.md` — the `task export \| jq` idiom this plugin follows
 - `blueprint-plugin:feature-tracking` — blueprint IDs that `bpid` links to

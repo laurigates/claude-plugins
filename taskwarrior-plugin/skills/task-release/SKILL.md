@@ -153,5 +153,5 @@ Print:
 - `/taskwarrior:task-done` — close after landing (also auto-stops + drains identity)
 - `/taskwarrior:task-coordinate` — finds the next dispatch candidate
 - `/git:coworker-check` — sister marker that this skill drops on `--release`
-- `.claude/rules/agent-coworker-detection.md` — combined-signal rationale
+- `git-plugin:git-coworker-check` (REFERENCE.md § Signal design) — combined-signal rationale
 - `.claude/rules/task-id-stability.md` — why this skill resolves `$TASK_UUID` once and mutates by UUID
