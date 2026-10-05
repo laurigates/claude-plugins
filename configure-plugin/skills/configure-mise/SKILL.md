@@ -1,6 +1,6 @@
 ---
 created: 2026-06-24
-modified: 2026-06-24
+modified: 2026-10-05
 reviewed: 2026-06-24
 description: "mise runtime/tool version manager - mise.toml, backends (pipx/aqua/npm/cargo/go), tasks, env, lockfile. Use when setting up, pinning runtimes/CLI tools, or migrating from asdf/nvm/pyenv/brew/Make."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -44,15 +44,7 @@ Parse from command arguments:
 
 mise installs every tool through a *backend*. Picking the right one mirrors the user's tool-install priority (`dependency-management` rule): **mise first, with the most secure/fastest backend**.
 
-| Tool kind | Backend | Syntax | Why |
-|-----------|---------|--------|-----|
-| Language runtime | core | `python = ["3.12","3.13"]`, `node = "lts"`, `go = "1.23"`, `rust = "latest"` | Native version switching, the reason mise exists |
-| Python CLI tool | `pipx:` | `"pipx:ruff" = "latest"` | Routed through `uvx` (fast); set `pipx.uvx = true` |
-| Standalone CLI binary | `aqua:` | `"aqua:BurntSushi/ripgrep" = "latest"` | Checksums + SLSA provenance + Cosign — the secure default |
-| Node global | `npm:` | `"npm:typescript-language-server" = "latest"` | When no aqua entry exists |
-| Rust tool (no aqua) | `cargo:` | `"cargo:tokei" = "latest"` | Builds from source; prefer aqua if available |
-| Go tool (no aqua) | `go:` | `"go:golang.org/x/tools/gopls" = "latest"` | Installs via `go install` |
-| GitHub release (no aqua) | `github:` | `"github:starship/starship" = "latest"` | Direct release-asset fetch |
+Full backend table (syntax and rationale per tool kind): [references/backends.md](references/backends.md) — read it in Step 3.
 
 Rule of thumb: **runtime → core; Python CLI → `pipx:`; everything else → `aqua:` first**, falling back to `npm:`/`cargo:`/`go:`/`github:` only when the aqua registry lacks the tool. Verify aqua availability at <https://github.com/aquaproj/aqua-registry>.
 
@@ -103,22 +95,7 @@ node = "lts"
 
 ### Step 5: Audit (always; the whole job when `--check-only`)
 
-Report a compliance table:
-
-```
-mise Configuration Report
-=========================
-Config file            mise.toml                 [PRESENT | MISSING]
-Runtimes pinned        python, node              [PINNED | UNPINNED]
-CLI backends           aqua / pipx               [SECURE | cargo-from-source | mixed]
-pipx.uvx setting       true                      [SET | MISSING (pipx tools present)]
-Lockfile               mise.lock                 [COMMITTED | MISSING]
-Local overrides        mise.local.toml           [GITIGNORED | TRACKED ⚠ | n/a]
-Trust                  trusted                    [TRUSTED | UNTRUSTED]
-Legacy files remaining .tool-versions            [MIGRATED | STILL PRESENT]
-
-Overall: [N issues]
-```
+Report a compliance table using the template in [references/audit-report.md](references/audit-report.md).
 
 Checks: every runtime pinned; CLI tools prefer `aqua:` over `cargo:`/source builds; `pipx.uvx = true` present if any `pipx:` tool; `mise.lock` committed; `mise.local.toml` gitignored if present; config trusted (`mise trust`). If `--check-only`, stop here.
 
@@ -133,13 +110,7 @@ Checks: every runtime pinned; CLI tools prefer `aqua:` over `cargo:`/source buil
 
 ### Step 7: Migrations (`--migrate <source>`)
 
-| Source | Action |
-|--------|--------|
-| `asdf` | Read `.tool-versions`, map each line to a `[tools]` entry, keep `legacy_version_file = true`, then remove `.tool-versions` once verified. asdf plugin names usually match mise core/aqua names. |
-| `nvm` | `.nvmrc` → `node = "<ver>"`. |
-| `pyenv` | `.python-version` → `python = "<ver>"` (a list if multiple). |
-| `brew` | Move CLI tools (not casks/services/build-deps) from Brewfile to `aqua:`/core backends; leave GUI apps, fonts, daemons, and compilers in Homebrew. |
-| `makefile` | Convert each target to a `[tasks.<name>]` with `run`; map prerequisites to `depends`. See REFERENCE.md task grammar. |
+Per-source actions (`asdf`, `nvm`, `pyenv`, `brew`, `makefile`): [references/migrations.md](references/migrations.md) — read the row for the requested source.
 
 Always verify with `mise install && mise doctor` before deleting the source file. See [REFERENCE.md](REFERENCE.md) for per-source mapping tables and worked examples.
 
@@ -190,12 +161,7 @@ A committed `mise.toml` + `mise.lock` is consumed in CI by `jdx/mise-action` (`m
 
 ## Error Handling
 
-- **mise not installed**: Offer the install one-liner (`curl https://mise.run | sh`) or note it is itself a Homebrew bootstrap tool; do not block the audit.
-- **Untrusted config**: mise refuses to load an untrusted file — run `mise trust` after writing.
-- **`pipx:` tool fails to resolve**: ensure `uv` is a mise-managed tool and `pipx.uvx = true` is set (`jdx/mise#7477`).
-- **aqua package not found**: the `org/repo` name must match an aqua-registry entry; fall back to `github:`/`cargo:`/`go:` or core.
-- **Tool "keeps coming back" after removal**: stale per-node-version copies + `~/.default-npm-packages` re-seeding — sweep procedure in [REFERENCE.md § Stale tool copies](REFERENCE.md#stale-tool-copies-a-tool-keeps-coming-back).
-- **node ≥26 on minimal Linux**: prebuilt binaries link `libatomic.so.1`; gate `node` to platforms that have it (chezmoi-style `os` guard) or pin an older line.
+Fixes for mise-not-installed, untrusted config, `pipx:`/aqua resolution failures, tools that keep coming back, and node ≥26 `libatomic` on minimal Linux: [references/troubleshooting.md](references/troubleshooting.md) — read it when an install, trust, or resolve step fails.
 
 ## See Also
 

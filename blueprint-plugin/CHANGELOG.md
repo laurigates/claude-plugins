@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.46.3](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.2...blueprint-plugin-v3.46.3) (2026-10-05)
+
+
+### Documentation
+
+* **rules:** split agent-development.md and move teams/SDK detail into skills ([#2884](https://github.com/laurigates/claude-plugins/issues/2884)) ([147ed17](https://github.com/laurigates/claude-plugins/commit/147ed1737bd5d72936c6cc02ad3f3f1c92622abe))
+
 ## [3.46.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.1...blueprint-plugin-v3.46.2) (2026-09-28)
 
 

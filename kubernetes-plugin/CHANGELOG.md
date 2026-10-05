@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.2](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.9.1...kubernetes-plugin-v1.9.2) (2026-10-02)
+
+
+### Bug Fixes
+
+* **hooks-plugin,kubernetes-plugin:** decide allow-side hooks on parsed command nodes ([#2880](https://github.com/laurigates/claude-plugins/issues/2880)) ([ae46358](https://github.com/laurigates/claude-plugins/commit/ae46358514b48ef7444dc3ff23e3f7ef0aac71d5))
+
 ## [1.9.1](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.9.0...kubernetes-plugin-v1.9.1) (2026-09-28)
 
 

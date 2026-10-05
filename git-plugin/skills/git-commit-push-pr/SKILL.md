@@ -181,16 +181,14 @@ If falling back to `gh pr create` instead of the MCP tool, write the body to a t
 
 PR body structure when follow-up issues exist:
 
+The body becomes the squash commit body (see `github-pr-title` →
+[merge-strategies.md](../github-pr-title/merge-strategies.md)) — prose, then footers:
+
 ```markdown
-## Summary
-...
+<1–3 sentence summary of what changed and why>
 
-## Follow-up Issues
-<!-- Post-merge actions tracked as issues so they survive PR closure -->
-- #456: run database migration for new schema
-- #457: update production feature-flag config
+Follow-up: #456 (database migration), #457 (feature-flag config)
 
-## Related Issues
 Fixes #123
 ```
 

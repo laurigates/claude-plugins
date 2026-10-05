@@ -1,6 +1,6 @@
 ---
 created: 2026-02-25
-modified: 2026-09-28
+modified: 2026-10-04
 reviewed: 2026-09-23
 paths:
   - "**/agents/**"
@@ -125,7 +125,7 @@ To restrict which subagents an agent can spawn (when running as main thread with
 tools: Agent(worker, researcher), Read, Bash
 ```
 
-This is an allowlist — only `worker` and `researcher` can be spawned. To allow any subagent without restriction, use `Agent` without parentheses. If `Agent` is omitted, the agent cannot spawn any subagents.
+This is an allowlist — only `worker` and `researcher` can be spawned. To allow any subagent without restriction, use `Agent` without parentheses. If `Agent` is omitted, the agent cannot spawn any subagents. Every entry of a multi-entry `Agent(a, b)` list is honored as of 2.1.147; earlier releases kept only the last.
 
 #### Pin a deliberate roster with the allowlist, not prose
 
@@ -162,14 +162,6 @@ The ceiling moved twice in quick succession, so a rule or skill citing 5 is read
 
 Distinct from nesting depth above, Claude Code also caps how many subagents may run **concurrently** in one session — default **20**, override with `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`. A `Workflow`/parallel fan-out beyond 20 waves queues rather than fails, but design large fan-outs (`agent-patterns-plugin:parallel-agent-dispatch`) with this ceiling in mind. `--max-budget-usd`, once hit, halts running background subagents and denies further spawns (2.1.217) — a budget-capped session's fan-out can die mid-wave for a reason unrelated to depth or concurrency.
 
-### MCP Servers in Agent Definitions (2.1.147 / 2.1.153)
-
-| Version | Fix |
-|---------|-----|
-| 2.1.147 | A plugin agent that declares multiple `Agent(...)` types in its `tools:` frontmatter no longer drops all but the last entry — every declared subagent type is now honored |
-| 2.1.153 | Subagent-frontmatter MCP servers now respect `--strict-mcp-config`, `--bare`, remote mode, enterprise managed MCP config, and managed-settings MCP allow/deny policies (previously these constraints were ignored for servers declared in agent frontmatter) |
-| 2.1.153 | `--strict-mcp-config` no longer strips inline `mcpServers` from explicitly-passed agent definitions (`--agents` / SDK `agents`); when a subagent's MCP server is blocked by policy, a visible warning is now surfaced instead of failing silently |
-
 ## Model Selection for Agents
 
 **Default to `model: opus` for every plugin agent.** A subagent's output feeds back into the main loop as a tool result, so a weaker delegate quietly degrades everything downstream. Measured on the Opus 4.8 / Sonnet 4.6 generation, Opus at *low* effort beat Sonnet at *high* effort on both quality and token efficiency, so **`effort`, not `model`, is the cost lever** for delegated work. The `opus` / `sonnet` aliases resolve to Opus 5.5 (2.1.280) / Sonnet 5, and effort level names do not map across model generations — re-run the `skill-evaluation.md` Tier 2 sweep before changing an agent's effort on the strength of the old figure. This matches the user-global standard in `~/.claude/rules/agent-and-tool-selection.md` ("Opus Is the Floor for Subagents and Agent Teams").
@@ -180,7 +172,7 @@ Distinct from nesting depth above, Claude Code also caps how many subagents may 
 | `fable` | Sanctioned for the hardest delegated reasoning (long-horizon, multi-file, adversarial verification). Accepted by `scripts/check-agent-model.sh`. Not the default: no plan defaults to Fable and it costs 2.5x Opus 5.5 per token |
 | `sonnet` / `haiku` | Avoid for subagents. The one sanctioned exception is the `agent-patterns-plugin:cold-read-gate` haiku reader, where a low-capability model is the *measurement instrument*, not a delegate. |
 
-`model: opus` remains the committed floor for plugin agents (portable: every plan has Opus; Fable is no plan's default and costs 2.5x Opus 5.5 per token). `model: fable` is sanctioned for agents whose job is the hardest delegated reasoning (long-horizon, multi-file, adversarial verification), and the guard accepts it. `inherit` is not used for plugin agents because it would also inherit Sonnet/Haiku sessions below the floor. `effort:` frontmatter (`low|medium|high|xhigh|max`, default inherits) is the cost lever; use `effort: low` for mechanical/high-volume agents.
+`model: opus` remains the committed floor for plugin agents (portable: every plan has Opus). `inherit` is not used for plugin agents because it would also inherit Sonnet/Haiku sessions below the floor. `effort:` frontmatter is the cost lever; use `effort: low` for mechanical/high-volume agents.
 
 **Resolution order (2.1.251+):** per-spawn `Agent(model: …)` > agent frontmatter `model:` > `CLAUDE_CODE_SUBAGENT_MODEL` > the main session model. `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` (2.1.257) overrides all of these, so a frontmatter `model: opus` is a default, not a guarantee, when a user or CI environment sets the force variable; `scripts/check-agent-model.sh` checks the frontmatter only. The model actually used is reported in the `SubagentStart` hook's `subagent_model` field (`.claude/rules/hooks-reference.md`).
 
@@ -204,62 +196,7 @@ Three mechanisms share the word "fork", and only the last one hands a subagent t
 
 A research agent that should keep verbose output out of the main window needs no field: a named agent already does. For work that needs the conversation so far, dispatch a fork instead of a named agent.
 
-### Runtime fork vs named agent (2.1.232+)
-
-The `Agent` tool's `subagent_type: "fork"` inherits the parent's full conversation and its prompt cache — no re-briefing, and cache reads on Fable 5.1 cost $0.25/MTok. Fork mode is on by default in interactive sessions since 2.1.232 and off by default under `-p` and in the Agent SDK, where requesting `fork` fails with `Agent type 'fork' not found` unless `CLAUDE_CODE_FORK_SUBAGENT=1` is set ([sub-agents.md § Turn fork mode on or off](https://code.claude.com/docs/en/sub-agents#turn-fork-mode-on-or-off)). A named plugin agent starts cold with only its brief, whatever its frontmatter says. **Default to a briefed agent**; fork only when the task depends on implicit conversation state that costs more to write down than to inherit. A fork of a 400k parent starts with all 400k, stale and abandoned reasoning included; a brief bounds the task and doubles as its hand-off contract. A named agent is also the only choice when the tool boundary (`tools:`), model, or preloaded `skills:` is the point. A fork has read the user's request verbatim; a briefed agent only has the parent's paraphrase, and Fable 5.1 has a slightly higher propensity to distort user intent when briefing subagents (system card §6.2.1) — so a named-agent brief quotes the user's request rather than paraphrasing it.
-
-### Subagent context budget
-
-No agent frontmatter field caps a subagent's context or tunes its compaction: per agent only `maxTurns`, `model` (window size), `effort` and `omitClaudeMd` (startup size) bound it, and env vars such as `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` apply process-wide. Bound subagents by **task size**: scope each brief to finish well under half the window, require a state-packet return (`loop-integrity.md` Pillar 2), give an early-exit rule, and verify reports against artefacts. One haiku 200k run (2026-09-23) auto-compacted at ~75% and returned its compaction summary as a false completion report; treat that as a failure mode to design around. Baseline, open questions and the probe: `experiments/subagent-compaction/README.md`.
-
-### Worktree Isolation
-
-For filesystem-level isolation, give agents their own git worktree so they work on an isolated copy of the repository. The worktree is automatically cleaned up if the agent makes no changes; if changes are made, the worktree path and branch are returned.
-
-> **Note (2.1.157)**: Claude-managed worktrees are left **unlocked** when the agent finishes, so `git worktree remove` / `git worktree prune` can clean them up directly (previously the lock blocked manual cleanup). `EnterWorktree` can also now switch between Claude-managed worktrees mid-session, rather than being a one-way entry.
-
-> **Note (2.1.203–2.1.222, isolation hardening)**: Several releases closed escape vectors where an `isolation: worktree` subagent could still touch the parent checkout: shell commands running in the parent checkout instead of the isolated worktree (2.1.203), git-mutating commands against the main repo checkout (2.1.210), and `git -C` / `--git-dir` / `GIT_DIR` / `GIT_WORK_TREE` redirection out of the isolated worktree (2.1.216). As of 2.1.222, isolation applies to both file edits and Bash in every session type, and isolated sessions can no longer run destructive git commands against the main checkout. Treat isolation as materially more trustworthy on 2.1.222+ than on older installs — see `.claude/rules/agent-coworker-detection.md` § Bare flip for how this narrows that hazard.
-
-**Two ways to enable worktree isolation:**
-
-1. **Agent frontmatter** — baked into the agent definition:
-   ```yaml
-   ---
-   name: implementer
-   isolation: worktree
-   ---
-   ```
-
-2. **Task tool parameter** — set per invocation:
-   ```
-   Task tool with isolation: "worktree"
-   ```
-
-> **Note (2.1.212, deprecated)**: A call-site `mode:` parameter on `Agent`/`Task` is deprecated and silently ignored — a spawned subagent always inherits the parent session's permission mode. Use the agent-frontmatter `permissionMode:` field (Complete Field Reference, above) to set a fixed mode for a *named* agent; there is no way to override the mode for an ad-hoc/inline spawn.
-
-**Use worktree isolation when:**
-- Agent will make commits on a separate branch
-- Multiple agents need to work on independent changes simultaneously
-- You want changes isolated until explicitly merged
-
-**Comparison:**
-
-| Isolation Type | Mechanism | Isolates | Use Case |
-|----------------|-----------|----------|----------|
-| Any named agent (default) | Fresh subagent context | Context window (no parent history) | Research, exploration |
-| `isolation: worktree` | Git worktree | Filesystem + Git | Implementation, commits |
-| Manual worktree | `git worktree add` | Filesystem + Git | Complex multi-issue parallel work |
-
-### `worktree.baseRef` Setting (2.1.133+)
-
-Controls the branch base for `--worktree`, `EnterWorktree`, and agent-isolation worktrees:
-
-| Value | Base Branch | Notes |
-|-------|-------------|-------|
-| `fresh` (default) | `origin/default-branch` | Unpushed local commits NOT included |
-| `head` | Local `HEAD` | Includes unpushed commits; pre-2.1.133 default |
-
-Set `worktree.baseRef: head` to keep unpushed commits in new worktrees.
+> **Runtime behaviour lives in [`agent-runtime.md`](agent-runtime.md):** runtime fork vs named agent, the subagent context budget, worktree isolation and `worktree.baseRef` (gitignored inputs such as `.env` reach a worktree only via `.worktreeinclude` — see `/configure:worktreeinclude`), background execution, dynamic-workflow caveats, `worktree.bgIsolation`, MCP policy for frontmatter servers, and the `claude agents` CLI.
 
 ## Preloading Skills into Agents
 
@@ -279,73 +216,6 @@ Implement API endpoints. Follow the conventions and patterns from the preloaded 
 Agents do **not** inherit skills from the parent session — they must be listed explicitly.
 > **Note (2.1.133+)**: Subagents can discover project, user, and plugin skills via the `Skill` tool. Skills listed in `skills:` frontmatter are preloaded; the `Skill` tool discovers others on demand.
 
----
-
-## Background Execution
-
-Non-teammate spawns run in the background by default (2.1.232+); pass `run_in_background: false` to block on the result. The Agent tool's `run_in_background` parameter (previously `Task tool`) controls this explicitly:
-
-```
-Agent tool with run_in_background: true
-```
-
-**Background execution behavior (2.1.232+: background is the default for non-teammate spawns):**
-- The spawn returns immediately; the agent's result is delivered to the main session as a notification when it finishes — the main session does not poll.
-- To block on a specific result before proceeding, spawn with `run_in_background: false`, or `Read` the output file path the spawn result names once its completion notification arrives; the blocking `TaskOutput` tool was removed in 2.1.277.
-- Use `TaskStop` to stop a background agent.
-- A subagent's result reaches the main agent under a header marking it as subagent output, indented, so its text cannot pass as the session's own instructions (2.1.277, after 2.1.210 hardened the Agent tool against indirect prompt injection); background notifications between turns arrive inside `<system-reminder>` tags (2.1.234).
-- A subagent cut off by a rate limit or server error returns its partial work to the parent instead of failing silently (2.1.199).
-
-**When to use background execution:**
-- Independent work that doesn't need to block the main session
-- Long-running tasks where you want to continue other work
-- Parallel agent pipelines where results are collected later
-
-**When to run in the foreground instead:** only when the very next action consumes the result and nothing else can proceed meanwhile (a single blocking lookup). Otherwise spawn in the background and wait for the result at the step that needs it — a research agent's findings can be awaited when you reach that step rather than blocking the session from the moment of spawn. Asynchronous delegation outperforms synchronous delegation on Fable 5.1 (system card §8.13).
-
-### Background Session Behavior (2.1.141+ / 2.1.142+ / 2.1.143+ / 2.1.154+)
-
-| Version | Change |
-|---------|--------|
-| 2.1.141 | Background agents launched via `/bg` or `←←` preserve the current permission mode (no longer silently demoted to `default`) |
-| 2.1.142 | Background sessions recognize pre-existing git worktrees — previously `EnterWorktree` would refuse the duplicate and block `Edit` for the whole session |
-| 2.1.143 | `claude agents`-launched background sessions honor `permissions.defaultMode` from settings.json (was previously hard-overridden to auto mode) |
-| 2.1.143 | `/bg` preserves `--mcp-config`, `--settings`, `--add-dir`, `--plugin-dir`, and `--strict-mcp-config` across respawn |
-| 2.1.154 | Subagents in background sessions no longer bypass the worktree-isolation guard — previously a background subagent could write to the shared checkout despite isolation being requested |
-| 2.1.169 | Background sessions are now told that edits to the shared checkout are blocked until `EnterWorktree` is called — the session gets explicit guidance to enter a worktree before writing, instead of silently failing edits |
-
-> **Note (2.1.154)**: `claude agents` accepts `! <command>` to run a shell command as a background session (equivalently `claude --bg --exec '<command>'`). Use it to fire off a one-shot background job from the dashboard without a full interactive session.
-
-### Dynamic Workflows (`/workflows`, 2.1.154+)
-
-`/workflows` orchestrates work across tens to hundreds of background agents from a single session — a fan-out scale beyond manual `/bg` dispatch. Reach for it when a task decomposes into many independent units that each warrant their own background agent; the framework manages the dispatch and result collection.
-
-> **Resume caveat — worktree agents are not resume-cacheable.** `Workflow({resumeFromRunId})` caches completed `agent()` calls by `(prompt, opts)`, but an `isolation: "worktree"` agent that **already succeeded** is **re-executed** on resume rather than served from cache — re-running its outward side effects and opening a **duplicate PR / branch** (issue [#1868](https://github.com/laurigates/claude-plugins/issues/1868)). Do not resume a whole workflow to retry a few failed worktree agents; re-dispatch only the failed ones with a fresh sequential pass. See `agent-patterns-plugin:parallel-agent-dispatch` → "Resuming a workflow: `resumeFromRunId` re-runs succeeded worktree agents" and `.claude/rules/agent-coworker-detection.md`.
-
-> **Script-authoring caveat — a `.then` wrapper hides `agent()` failures from `filter(Boolean)`.** A failed/killed `agent()` resolves to `null`, but the idiomatic label-attaching wrapper `agent(...).then(r => ({ pair, judge, r }))` re-wraps that `null` in a **truthy object**, so `results.filter(Boolean)` passes it straight through and the `null` payload explodes later (e.g. `jr.dimensions` at the final rollup — this crashed a 24-agent run at the last step, after all judging cost was spent). Filter on the payload field, not the wrapper: `results.filter(x => x && x.r)` — and guard rollup loops (`jr && jr.dimensions`) so one dead agent degrades to a gap instead of aborting the run. (Benchmark run `wf_9e402a8b`, 2026-07-03.)
-
-> **Resume caveat — delete dead agents' output files before resuming.** An agent killed mid-run (session limit, API error) may have died **after** `Write`-ing its output file but **before** returning structured output. The workflow marks it failed, but its complete-looking file remains on disk. On `resumeFromRunId`, the re-run agent's `Write` to that same path fails with *"File has not been read yet"* (fresh subagents must Read an existing file before overwriting). Before resuming: delete output files belonging to **failed** agents; keep files from cached-successful ones (they won't re-run). Cross-check the failure list against the files on disk — "wrote its file" and "counted as done" are different claims. (Same run: 2 of 6 wave-1 judges died between `Write` and structured output.)
-
-> **Completion caveat — Workflow agents are unreachable and their worktrees pin branches.** Observed 2026-09-04 (two runs, one 14/14 agents / 0 errors; [issue #2614](https://github.com/laurigates/claude-plugins/issues/2614)) — a dated report of harness behaviour, not a standing invariant: a `Workflow`-spawned agent is **not `SendMessage`-addressable** even after the run completes (`ListAgents` listed peer *sessions* only), so every "resume the original agent" remedy — including the `Agent`-spawned #1546 case above — has no route here. And a run that completes with **zero errors** still leaves one worktree per *changed* agent, each pinning its branch, so the next `isolation: "worktree"` dispatch onto that branch hits `fatal: '<branch>' is already checked out at '.../worktrees/wf_<run>-<n>'`. Clear them with a scoped, **non-force** `git worktree remove .claude/worktrees/wf_<run-id>-<n>` gated on the run's completion notification (never on PR state), skipping `locked` worktrees — see `agent-patterns-plugin:parallel-agent-dispatch` → "Workflow agents are unreachable and their worktrees pin branches" and `.claude/rules/agent-coworker-detection.md` § "Cleanup: never force-remove worktrees you don't own".
-
-### `worktree.bgIsolation: "none"` (2.1.143+)
-
-By default, background sessions launch into a fresh `EnterWorktree`. For repositories where worktrees are impractical (submodule-heavy repos, repos with paths longer than the OS-permitted symlink depth, host machines that share the worktree directory with other tools), set:
-
-```json
-{
-  "worktree": {
-    "bgIsolation": "none"
-  }
-}
-```
-
-The background session then edits the working copy directly. Trade-off: concurrent edits between the foreground and background sessions are no longer isolated — see `.claude/rules/agent-coworker-detection.md` for how to detect and avoid clobbering a coworker's in-flight changes.
-
-### Worktree Cleanup Safety (2.1.143+)
-
-When `git worktree remove` fails (e.g., gitignored build artifacts or in-progress files in the worktree), the harness used to fall back to `rm -rf` — silently destroying any non-tracked work. As of 2.1.143, the fallback is gone: the cleanup logs the failure and leaves the worktree in place. Inspect manually with `git worktree list` and remove with `git worktree remove --force <path>` once you have rescued any wanted files.
-
 ## Persistent Agent Memory
 
 > **This repo deliberately does not use agent `memory:` (and keeps Claude's auto
@@ -357,37 +227,11 @@ When `git worktree remove` fails (e.g., gitignored build artifacts or in-progres
 > for completeness; treat it as reference, not a recommendation. No agent in this
 > repo sets `memory:`, and no `MEMORY.md` is tracked.
 
-The `memory` field enables per-agent persistent memory that survives across conversations:
-
-```yaml
----
-name: code-reviewer
-memory: user
----
-```
-
-| Scope | Location | Use When |
-|-------|----------|----------|
-| `user` | `~/.claude/agent-memory/<name>/` | Learning should apply across all projects |
-| `project` | `.claude/agent-memory/<name>/` | Knowledge is project-specific and shareable via git |
-| `local` | `.claude/agent-memory-local/<name>/` | Project-specific but not committed to git |
-
-When `memory` is set, Read/Write/Edit are auto-enabled for the memory directory, and the first 200 lines of `MEMORY.md` are injected into the agent's system prompt.
-
----
+When `memory` is set (scope `user` → `~/.claude/agent-memory/<name>/`, `project` → `.claude/agent-memory/<name>/`, `local` → `.claude/agent-memory-local/<name>/`, not committed), Read/Write/Edit are auto-enabled for that directory and the first 200 lines of its `MEMORY.md` are injected into the agent's system prompt.
 
 ## Agent Memory (Session Hierarchy)
 
-Agents participate in Claude Code's memory hierarchy. Memory is loaded from multiple scopes in order of specificity:
-
-| Scope | Location | Loaded When |
-|-------|----------|-------------|
-| User | `~/.claude/CLAUDE.md` | All sessions for this user |
-| User rules | `~/.claude/rules/*.md` | All sessions for this user |
-| Project | `CLAUDE.md` (project root) | All sessions in this project |
-| Project rules | `.claude/rules/*.md` | All sessions in this project |
-| Local | `CLAUDE.local.md` | Sessions on this machine only (gitignored) |
-| Auto memory | `~/.claude/projects/<project>/memory/` | Persists across sessions automatically |
+Agents participate in Claude Code's memory hierarchy (CLAUDE.md files, rules, auto memory).
 
 **For agents:**
 - Agents inherit the full memory hierarchy of their parent session in principle, but **in practice user-level rules under `~/.claude/rules/*.md` do not reliably hold across agent threads** (issue #1109 measured 200+ weekly hook-block reminders even though the rules existed at the user scope).
@@ -398,64 +242,9 @@ Agents participate in Claude Code's memory hierarchy. Memory is loaded from mult
 
 For rules an agent **must not forget** between threads — the friction-mining ones, like "use Glob, not find" — embed them directly in the agent's body so they live in the system prompt rather than depending on inherited memory. Every plugin agent in this repo carries a `## Tool Selection` section that lists the bash idioms the harness blocks and the dedicated tool to use instead. New plugin agents must include the same section; `scripts/check-agent-tool-selection.sh` enforces it.
 
-### Auto Memory Pattern
-
-Claude's auto memory directory (`~/.claude/projects/<project>/memory/`) is loaded into every conversation when enabled:
-
-```
-~/.claude/projects/<project>/memory/
-├── MEMORY.md          # Primary memory file (always loaded, max 200 lines shown)
-├── patterns.md        # Architectural patterns discovered
-└── debugging.md       # Project-specific debugging notes
-```
-
-**This repo keeps auto memory disabled** and captures cross-session knowledge as curated rules and skills instead (see the stance note under "Persistent Agent Memory" above, and `session-plugin:session-distill` for the capture→rule/skill path). The pattern is documented here as reference only.
-
 ## Agent Teams (Multi-Agent Collaboration)
 
-> **Experimental**: Agent teams are disabled by default. Enable by setting `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. The API and behavior may change between versions.
-
-> **BREAKING (2.1.178)**: The explicit `TeamCreate` / `TeamDelete` tools were **removed**. Every session now has **one implicit team** when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is set — there is no team to create or tear down. The `team_name` parameter is still **accepted but ignored** on the tools that took it (e.g. `Agent`), so older agent definitions and skills don't error; drop it from new code. References to `~/.claude/teams/<team-name>/config.json` and a per-team lifecycle no longer apply.
-
-Agent teams enable multiple agents to collaborate on complex tasks with a shared task list and messaging.
-
-### Team Architecture
-
-```
-Lead Agent (orchestrator)
-    ├── Agent tool — spawns teammate agents (previously Task tool)
-    ├── SendMessage — communicates with teammates (by agent ID or name)
-    ├── TaskUpdate — assigns tasks within the implicit shared task list
-    └── Teammate Agents
-            ├── Use TaskList/TaskUpdate — claim and complete tasks
-            └── Use SendMessage — report back to lead
-```
-
-> The `TaskList`/`TaskUpdate` legs exist only when the lead's session has the task tools (opt-in on Opus 4.8, Sonnet 5, Fable 5/5.1 and newer since 2.1.233 — `.claude/rules/agentic-permissions.md` § Task-tool availability). Opt in alongside `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, or coordinate through `SendMessage` and a plan file instead.
-
-### Native Team Tools
-
-| Tool | Purpose |
-|------|---------|
-| `SendMessage` | Send messages between agents (DM, broadcast, shutdown); address by agent ID or name |
-| `TaskStop` | Stop a running background agent |
-| `ListAgents` | Discover other sessions and teammates reachable via `SendMessage`; reports the session's own name and lists live teammates (2.1.239); marks disconnected Remote Control sessions `offline` and cloud sessions `cloud` (2.1.229) |
-
-> **Security (2.1.166)**: Cross-session messaging is hardened — messages relayed via `SendMessage` **no longer carry user authority**, and auto mode blocks them. A teammate cannot use a relayed message to escalate privileges or auto-approve actions that the receiving session's own permission mode would otherwise gate.
-
-> **Note (2.1.224+)**: `SendMessage` can also reach **other Claude Code sessions on your machines** (not just in-team teammates), discovered via `ListAgents` — gated by the `crossSessionInbound` / `dialogExpiry` settings (2.1.224). Windows support landed 2.1.239 (previously macOS/Linux only). `@`-mention a session by its unique per-machine name (2.1.232); `notify_when_idle` asks a session for a one-shot idle notice (2.1.236). Relevant to `agent-coworker-detection.md`'s marker-file signal — see that file's `ListAgents` row.
-
-> **Note (2.1.98)**: Teammates inherit the leader's permission mode, including `--dangerously-skip-permissions` — a bug where teammates did not pick this up was fixed in 2.1.98. Don't assume a teammate needs its own explicit permission grant.
-
-### When to Use Teams
-
-| Scenario | Use Teams | Use Subagents |
-|----------|-----------|---------------|
-| Parallel reviews (security + performance + correctness) | Yes | No |
-| Sequential steps where each needs full context | No | Yes |
-| Background tasks with ongoing communication | Yes | No |
-| Single focused task | No | Yes |
-| Multiple independent changes to the same codebase | Yes (with worktrees) | No |
+Team mechanics — the implicit team (2.1.178), `SendMessage` / `ListAgents` and cross-session messaging, team roles, and when to choose teams over subagents — live in the `agent-patterns-plugin:agent-teams` skill. What stays here is the per-agent body convention:
 
 ### Team Configuration
 
@@ -471,16 +260,6 @@ Each agent's `## Team Configuration` section should document its optimal team ro
 | Teammate | Multi-aspect tasks: spawn parallel specialists |
 | Subagent | Single focused task producing one result |
 ```
-
-### Team Roles
-
-| Role | Behavior | Advantages |
-|------|----------|------------|
-| **Lead** | Orchestrates team, assigns tasks, receives results | Coordinates complex workflows |
-| **Teammate** | Works in parallel, communicates via messaging | Full context window, can message peers |
-| **Subagent** | Focused isolated execution, returns single result | Simple, bounded tasks |
-
-> **Note (2.1.234)**: The "Default teammate model" `/config` setting was removed. Teammates now use the lead session's model unless the spawn names one explicitly.
 
 ## Tool Restrictions
 
@@ -564,129 +343,15 @@ claude --agents '{"my-agent": {"description": "...", "prompt": "...", "tools": [
 
 ---
 
-## Claude Agent SDK (Python) — Interactive Workflows
+## Claude Agent SDK (Python)
 
-> Applies to Python applications using `claude-agent-sdk`, not Claude Code plugin agent `.md` files.
-
-### `query()` vs `ClaudeSDKClient`
-
-| | `query()` | `ClaudeSDKClient` |
-|---|---|---|
-| Transport | Unidirectional — closes stdin after prompt | Bidirectional — keeps connection open |
-| Follow-up messages | Not supported | `await client.query(follow_up)` |
-| Use for | One-shot queries, batch processing | Multi-turn, interactive workflows |
-
-### `AskUserQuestion` Does Not Work in SDK Subprocess Mode
-
-When Claude Code CLI runs as an SDK subprocess, its stdin/stdout are piped for the SDK JSON protocol. `AskUserQuestion` cannot reach the terminal — it fails silently, and the model wraps up as if the user provided no input.
-
-**Symptom:** Output shows `Tool: AskUserQuestion` but no prompt appears, and the session ends prematurely.
-
-**Fix:** Use the two-phase interaction pattern instead.
-
-### Two-Phase Interaction Pattern
-
-For interactive workflows that need user input between analysis and execution:
-
-```python
-async def _stream_interactive(prompt, options, completion_msg):
-    async with ClaudeSDKClient(options) as client:
-        # Phase 1: Agent outputs findings and stops
-        await client.query(prompt)
-        async for msg in client.receive_response():
-            display(msg)
-
-        # Python collects user input (works because it's in the host process)
-        user_input = console.input("Select fixes to apply (numbers, all, none): ")
-
-        # Phase 2: Send selections, agent executes
-        await client.query(f"User selected: {user_input}. Execute steps 4-6.")
-        async for msg in client.receive_response():
-            display(msg, completion_msg)
-```
-
-**Key requirements:**
-- Remove `AskUserQuestion` from `allowed_tools` for interactive mode (prevents accidental use)
-- Agent prompt must instruct the model to output findings and **stop** — not continue or ask questions
-- Phase 2 prompt must tell the model exactly what to do with the user's selections
-
-See [git-repo-agent ADR-003](https://github.com/laurigates/git-repo-agent/blob/main/docs/adr/003-switch-to-claude-sdk-client-for-interactive-workflows.md) for full context and alternatives considered.
-
-### Worktree Isolation Is Not Supported by `ClaudeAgentOptions`
-
-The `isolation: worktree` frontmatter field works for Claude Code plugin agents, but `ClaudeAgentOptions` (Python SDK) has no equivalent parameter. The workaround is to manage the worktree in Python before launching the agent:
-
-```python
-from pathlib import Path
-import subprocess
-
-def create_worktree(repo_path: Path, branch: str) -> Path:
-    worktree_path = repo_path / ".worktrees" / branch.replace("/", "-")
-    worktree_path.parent.mkdir(parents=True, exist_ok=True)
-    base = subprocess.run(
-        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-        cwd=repo_path, capture_output=True, text=True, check=True,
-    ).stdout.strip()
-    subprocess.run(
-        ["git", "worktree", "add", "-b", branch, str(worktree_path), base],
-        cwd=repo_path, check=True,
-    )
-    return worktree_path
-
-# Set cwd to worktree so agent works in isolation
-worktree_path = create_worktree(repo_path, "feature/my-branch")
-options = ClaudeAgentOptions(cwd=str(worktree_path), ...)
-```
-
-**Instruct the agent not to create branches or push** — the orchestrator owns the worktree lifecycle:
-
-```
-"You are working in a git worktree on branch '{branch}'. Commit your changes
- directly to this branch. Do NOT create new branches or push."
-```
-
-**Post-workflow cleanup:** Check for commits after the agent finishes, then offer to push and create a PR:
-
-```python
-result = subprocess.run(
-    ["git", "log", "--oneline", f"{base_branch}..HEAD"],
-    cwd=worktree_path, capture_output=True, text=True,
-)
-has_changes = bool(result.stdout.strip())
-```
-
-See [git-repo-agent ADR-004](https://github.com/laurigates/git-repo-agent/blob/main/docs/adr/004-worktree-isolation-for-agent-changes.md) for full context.
-
-## `claude agents` CLI (2.1.139+, Research Preview)
-
-`claude agents` opens a dashboard listing all Claude Code sessions on the host — running, blocked on a permission prompt, or finished. Use it to attach to a background session, surface a blocked prompt, or list sessions per directory.
-
-```bash
-claude agents                              # full dashboard
-claude agents --cwd ~/projects/my-repo     # scope list to a single directory (2.1.141+)
-```
-
-### Launch Flags (2.1.142+ / 2.1.143+)
-
-The dashboard's "new session" launcher accepts the same flags as the top-level `claude` CLI, so a background session can match the foreground's configuration exactly:
-
-| Flag | Effect |
-|------|--------|
-| `--add-dir <path>` | Add an extra directory to the session's working set |
-| `--settings <file>` | Use a non-default settings.json |
-| `--mcp-config <file>` | Load an MCP server config file |
-| `--plugin-dir <path>` | Add a plugin directory (in addition to discovered ones) |
-| `--permission-mode <mode>` | Start in `default`, `acceptEdits`, `dontAsk`, `bypassPermissions`, or `plan` |
-| `--model <model>` | Pick the model (`opus`, `sonnet`, `haiku`, `fable`, `best`, or a full ID such as `claude-fable-5-1`) |
-| `--effort <level>` | Set effort (`low`, `medium`, `high`, `xhigh`, `max`) |
-| `--dangerously-skip-permissions` | Skip permission prompts — use only in trusted sandboxes |
-
-Pair `--cwd` with the launch flags to spin up isolated, per-directory background sessions without leaving the dashboard.
+For Python apps built on `claude-agent-sdk` — `query()` vs `ClaudeSDKClient`, the two-phase interaction pattern that replaces `AskUserQuestion` in subprocess mode, and running the agent in a worktree without losing uncommitted work — see the `agent-patterns-plugin:agent-cli-worktree-safety` skill.
 
 ## Related Rules
 
 - `.claude/rules/agentic-permissions.md` — Granular tool permission patterns
 - `.claude/rules/skill-development.md` — Skill creation (use when agent is not needed)
 - `.claude/rules/agentic-optimization.md` — CLI output optimization for agent consumption
-- `.claude/rules/agent-coworker-detection.md` — Detecting in-flight coworker changes before destructive git ops (relevant when `worktree.bgIsolation: "none"`)
+- `.claude/rules/agent-runtime.md` — runtime behaviour of dispatched agents: fork vs briefed agent, worktree isolation, background execution, dynamic-workflow caveats, `claude agents` CLI
+- `.claude/rules/agent-coworker-detection.md` — Detecting in-flight coworker changes before destructive git ops
 

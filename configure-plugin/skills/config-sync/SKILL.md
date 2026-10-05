@@ -5,7 +5,7 @@ allowed-tools: Bash(git *), Bash(gh *), Bash(fd *), Bash(rg *), Bash(diff *), Ba
 args: <mode> [options]
 argument-hint: "extract [repo]|diff <file-pattern>|apply <file-pattern> [--from repo] [--to repos|--all]"
 created: 2026-02-21
-modified: 2026-09-02
+modified: 2026-10-05
 reviewed: 2026-09-02
 ---
 
@@ -48,51 +48,7 @@ Parse mode and options from command arguments:
 
 ## Config Categories
 
-Files tracked for cross-repo sync, organized by sync strategy:
-
-### Tier 1: Wholesale (100% identical across repos)
-
-Copy verbatim — no repo-specific variations expected.
-
-| File Pattern | Description |
-|-------------|-------------|
-| `.github/workflows/claude.yml` | Claude Code workflow |
-| `renovate.json` | Renovate dependency updates |
-
-### Tier 2: Parameterized (shared core with known variation points)
-
-Shared structure with specific fields that vary per repo.
-
-| File Pattern | Variation Points |
-|-------------|-----------------|
-| `.github/workflows/auto-merge-image-updater.yml` | Branch prefix pattern |
-| `.github/workflows/release-please.yml` | Publish job, extra steps |
-| `.github/workflows/renovate.yml` | Standalone (infrastructure) vs reusable caller (all others) |
-
-### Tier 3: Structural (standard skeleton, project-specific bodies)
-
-Standard recipe/section names must conform; bodies are project-specific.
-
-| File Pattern | Conformance Target |
-|-------------|-------------------|
-| `justfile` | Standard recipe names from justfile-template conventions |
-
-### Tier 4: Pattern-based (categorized by tech stack)
-
-Group by detected stack, extract general best practices only.
-
-| File Pattern | Stack Detection |
-|-------------|----------------|
-| `Dockerfile*` | `package.json` → Node, `pyproject.toml` → Python, `go.mod` → Go, `Cargo.toml` → Rust |
-| `.github/workflows/container-build.yml` | Same as Dockerfile |
-
-### Tier 5: Reference (compare and report, selective apply)
-
-| File Pattern | Notes |
-|-------------|-------|
-| `release-please-config.json` | Varies by project type |
-| `.release-please-manifest.json` | Version tracking |
-| `skaffold.yaml` | Dev environment config |
+Tracked files fall into five sync tiers: **Wholesale** (copy verbatim: `claude.yml`, `renovate.json`), **Parameterized** (shared core + variation points), **Structural** (`justfile` recipe names), **Pattern-based** (`Dockerfile*`, by stack), and **Reference** (compare and report). Full file patterns, variation points, and stack detection: [references/config-tiers.md](references/config-tiers.md) — read it when classifying a file in Extract Step 3 or Apply Step 3.
 
 ## Execution
 
@@ -140,34 +96,7 @@ For each file found:
 
 #### Step 4: Generate extract report
 
-```
-Config Extract Report: <repo-name>
-====================================
-
-Wholesale Configs:
-  claude.yml       ✅ Matches canonical (sha: abc123)
-  renovate.json    ⚠️  Differs from canonical — newer features detected
-
-Parameterized Configs:
-  auto-merge-image-updater.yml  ✅ Core matches, variation: branch-prefix=argocd
-  release-please.yml            ⚠️  Has publish job (novel improvement)
-
-Structural (Justfile):
-  Standard recipes: 8/11 present
-  Missing: format-check, pre-commit, ci
-  Non-standard names: none
-
-Pattern-based (Dockerfile):
-  Stack: Python
-  ✅ Pinned base image (python:3.12-slim)
-  ✅ Multi-stage build
-  ⚠️  Missing .dockerignore
-  ✅ Non-root user
-
-Potential Improvements to Propagate:
-  1. renovate.json — has newer schedule config
-  2. release-please.yml — publish job pattern
-```
+Emit the report (wholesale/parameterized/structural/pattern-based sections, then "Potential Improvements to Propagate"). Template: [references/report-templates.md](references/report-templates.md#extract-report-extract-step-4).
 
 ### Diff Mode
 
@@ -205,26 +134,7 @@ Heuristics for selecting the canonical version:
 
 #### Step 5: Generate diff report
 
-```
-Config Diff: .github/workflows/claude.yml
-==========================================
-
-Group 1 (canonical) — 18 repos [sha: abc123]:
-  citylogger, CycleRoutePlanner, FVHIoT-python, ...
-
-Group 2 — 2 repos [sha: def456]:
-  theme-management, OLMap
-  Differences from canonical:
-    - Line 12: uses different action version
-    - Line 25: extra step for Node setup
-
-Not present in (5 repos):
-  infrastructure, helm-webapp, terraform-modules, ...
-
-Recommendation: Update Group 2 repos to match canonical.
-```
-
-For small files (< 100 lines), show an inline unified diff between the canonical and each outlier group.
+Report each hash group (canonical first, with repo list and differences), repos missing the file, and a recommendation. For small files (< 100 lines), show an inline unified diff between the canonical and each outlier group. Template: [references/report-templates.md](references/report-templates.md#diff-report-diff-step-5).
 
 ### Apply Mode
 
@@ -264,25 +174,7 @@ For small files (< 100 lines), show an inline unified diff between the canonical
 
 #### Step 4: Preview changes (default / --dry-run)
 
-For each target repo, show the unified diff of what would change.
-
-```
-Dry Run: Apply .github/workflows/claude.yml
-============================================
-
-repo: OLMap
-  Status: Will update (sha def456 → abc123)
-  Diff:
-    @@ -12,1 +12,1 @@
-    -    uses: actions/checkout@v3
-    +    uses: actions/checkout@v4
-
-repo: theme-management
-  Status: Will update (sha def456 → abc123)
-  Diff: (same as above)
-
-Total: 2 repos would be updated
-```
+For each target repo, show the unified diff of what would change, plus a total. Template: [references/report-templates.md](references/report-templates.md#dry-run-preview-apply-step-4).
 
 #### Step 5: Execute changes (--confirm or user approval)
 
@@ -293,44 +185,7 @@ For each target repo:
 3. Commit with conventional message: `chore: sync <filename> from <source-repo>`
 4. Push and create PR via `gh pr create`
 
-```bash
-cd /Users/lgates/repos/ForumViriumHelsinki/<target-repo>
-git checkout -b config-sync/claude-yml
-# ... apply changes ...
-git add <file>
-git commit -m "chore: sync claude.yml from canonical
-
-Co-Authored-By: Claude <noreply@anthropic.com>"
-git push -u origin config-sync/claude-yml
-gh pr create --title "chore: sync claude.yml" --body "$(cat <<'EOF'
-## Summary
-- Synced `.github/workflows/claude.yml` to match canonical version
-- Source: most common version across 18 repos
-
-## Changes
-<inline diff>
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-EOF
-)"
-```
-
-**Inside a quoted heredoc (`<<'EOF'`), backticks, `$`, and `\` are already literal — never backslash-escape them.** A stray `\`` lands in the rendered PR body and needs a follow-up `gh pr edit` to fix. To skip the `$(cat ...)` subshell entirely, feed the body straight to `gh` over stdin:
-
-```bash
-gh pr create --title "chore: sync claude.yml" --body-file - <<'EOF'
-## Summary
-- Synced `.github/workflows/claude.yml` to match canonical version
-EOF
-```
-
-Report results:
-
-```
-Apply Results:
-  OLMap: PR #42 created — https://github.com/ForumViriumHelsinki/OLMap/pull/42
-  theme-management: PR #15 created — https://github.com/ForumViriumHelsinki/theme-management/pull/15
-```
+Full command sequence and the quoted-heredoc PR-body rule (never backslash-escape inside `<<'EOF'`): [references/apply-execution.md](references/apply-execution.md). Report one line per repo with the PR link — template in [references/report-templates.md](references/report-templates.md#apply-results-apply-step-5).
 
 ## Agentic Optimizations
 

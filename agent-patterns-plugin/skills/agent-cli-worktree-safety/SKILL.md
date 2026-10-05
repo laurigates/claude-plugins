@@ -1,6 +1,6 @@
 ---
 created: 2026-09-02
-modified: 2026-09-02
+modified: 2026-10-02
 reviewed: 2026-09-02
 name: agent-cli-worktree-safety
 description: Data-loss invariants for a CLI that runs an agent SDK in a git worktree then force-removes it. Use when building or reviewing such a CLI, or when an agent run reports "no changes" after writing files.
@@ -14,6 +14,14 @@ compatibility: claude-code
 Data-loss prevention for CLIs that create a git worktree, run an LLM
 orchestrator (`claude-agent-sdk` or similar) that writes files there, and then
 clean up with `git worktree remove --force`.
+
+## When to Use This Skill
+
+| Use this skill when... | Use something else when... |
+|------------------------|----------------------------|
+| Building or reviewing a CLI that runs an agent SDK in a worktree it later removes | Isolating a Claude Code subagent with `isolation: "worktree"` → `.claude/rules/agent-runtime.md` § Worktree Isolation |
+| An agent run wrote files but reported "No changes were made" | Pruning other sessions' worktrees → `.claude/rules/agent-coworker-detection.md` § Cleanup |
+| Wiring the SDK's two-phase or `create_worktree` flow → [REFERENCE.md](REFERENCE.md) | Coordinating parallel agents → `agent-patterns-plugin:agent-teams` |
 
 ## The core failure mode
 
@@ -147,6 +155,10 @@ declined. This is failure mode 2 above, and it is silent.
 - Remove the interactive tool from `allowed_tools` on paths that must not fail silently, so the attempt is an error rather than a shrug.
 
 Worked example: [git-repo-agent ADR-003](https://github.com/laurigates/git-repo-agent/blob/main/docs/adr/003-switch-to-claude-sdk-client-for-interactive-workflows.md).
+
+The `query()` vs `ClaudeSDKClient` split, the full two-phase snippet, and
+creating the worktree in Python (`ClaudeAgentOptions` has no `isolation`
+parameter) are in [REFERENCE.md](REFERENCE.md).
 
 ## Required tests
 

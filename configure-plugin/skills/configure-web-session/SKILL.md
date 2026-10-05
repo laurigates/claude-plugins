@@ -5,7 +5,7 @@ allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--tools <list>]"
 argument-hint: "[--check-only] [--fix] [--tools <list>]"
 created: 2026-02-25
-modified: 2026-06-21
+modified: 2026-10-05
 compatibility: claude-code
 reviewed: 2026-06-21
 ---
@@ -84,24 +84,14 @@ An `install_pkgs.sh` that merely **exists** reads as compliant even when the
 canonical spec has moved on — the gap is invisible until a manual audit (see
 issue #1670). When the repo is already onboarded, compare the existing files
 against the **current** spec and report each item as PRESENT / DRIFT / ABSENT.
-Treat any DRIFT or ABSENT as a re-apply trigger, not a no-op:
+Treat any DRIFT or ABSENT as a re-apply trigger, not a no-op. Check: Renovate
+pin annotations, pinned versions vs the Step 3 reference, `path-bootstrap.sh`
+wired as the first `SessionStart` hook, allowlist-safe downloads (no
+`api.github.com` `latest` lookups), and the remote + idempotency guards.
 
-| Spec item | Drift signal to check |
-|-----------|----------------------|
-| Renovate-managed pins | Each `<TOOL>_VERSION="x.y.z"` line carries a `# renovate: datasource=... depName=...` annotation (Step 3). A bare pin is DRIFT. |
-| Pinned versions current | Each pinned version matches the Step 3 reference. A pin behind reference (e.g. `gitleaks 8.30.0` vs `8.30.1`, `just 1.40.0` vs `1.52.0`) is DRIFT. |
-| `scripts/path-bootstrap.sh` wired first | `path-bootstrap.sh` exists **and** runs as the first `SessionStart` hook before `install_pkgs.sh` (Step 5). Missing or out-of-order is DRIFT. |
-| Allowlist-safe downloads | No runtime `api.github.com/.../releases/latest` lookups — `api.github.com` is outside the web "Limited" allowlist and breaks the install. A `latest` lookup is DRIFT; replace with a pinned `github.com/.../releases/download/<tag>` URL. |
-| Remote + idempotency guards | The `CLAUDE_CODE_REMOTE` guard and per-tool `command -v` guards are present (Step 4). |
-
-Report drift as a positive signal:
-
-| Spec item | Status |
-|-----------|--------|
-| Renovate pin annotations | PRESENT / DRIFT / ABSENT |
-| Pinned versions vs reference | CURRENT / STALE (list each stale tool) |
-| `path-bootstrap.sh` wired first | PRESENT / DRIFT / ABSENT |
-| Allowlist-safe downloads | OK / USES api.github.com |
+The per-item drift signals and the drift report table are in
+[references/drift-audit.md](references/drift-audit.md) — read it whenever the
+repo already has `scripts/install_pkgs.sh`.
 
 If `--check-only` is set, stop here and print the status + drift report. Otherwise,
 re-apply the drifted items in Steps 3-5 (update pins, add Renovate annotations,
@@ -110,127 +100,35 @@ repo returns to spec.
 
 ### Step 3: Build tool inventory
 
-For each tool that needs to be installed, pin versions to match `.pre-commit-config.yaml` rev values where applicable. For tools not in pre-commit, use latest stable. Use this reference:
+For each tool that needs to be installed, pin versions to match `.pre-commit-config.yaml` rev values where applicable. For tools not in pre-commit, use latest stable. Use only download sources on the "Limited" network allowlist (github.com, releases.hashicorp.com, raw.githubusercontent.com, pypi.org), and annotate each pin for Renovate.
 
-| Tool | Install method | Version source |
-|------|---------------|----------------|
-| `pre-commit` | `pip install pre-commit` | latest |
-| `helm` | Official get-helm-3 script from `raw.githubusercontent.com` | latest stable |
-| `terraform` | Binary from `releases.hashicorp.com` (`.zip`) | Pin to `.pre-commit-config.yaml` rev or latest |
-| `tflint` | GitHub release binary (`.zip`) | Pin to `.pre-commit-config.yaml` rev |
-| `actionlint` | GitHub release binary (`.tar.gz`) | Pin to `.pre-commit-config.yaml` rev |
-| `helm-docs` | GitHub release binary (`.tar.gz`) | Pin to `.pre-commit-config.yaml` rev |
-| `gitleaks` | GitHub release binary (`.tar.gz`) | Pin to `.pre-commit-config.yaml` rev |
-| `just` | GitHub release binary (`.tar.gz`) | latest stable |
-
-All download sources are compatible with the "Limited" network allowlist (github.com, releases.hashicorp.com, raw.githubusercontent.com, pypi.org).
-
-**Keep the pins fresh, not hand-maintained.** Annotate each `<TOOL>_VERSION="x.y.z"` line with a `# renovate: datasource=... depName=...` comment and add a matching `customManager` to `renovate.json` so the pins are auto-updated rather than rotting (see `.claude/rules/version-pinning.md`). Where a tool's version is also pinned in `.pre-commit-config.yaml` (e.g. `gitleaks`), enable Renovate's `pre-commit` manager and group the dep so both bump in lockstep.
+The per-tool install method / version-source table and the Renovate pin-annotation guidance are in [references/install-script.md](references/install-script.md) — read it before writing or updating any install block.
 
 ### Step 4: Create or update `scripts/install_pkgs.sh`
 
-Create `scripts/install_pkgs.sh` with:
+Create `scripts/install_pkgs.sh` with a `CLAUDE_CODE_REMOTE` remote guard, a `command -v` idempotency guard per tool, installs to `~/.local/bin` (put on the agent-subshell PATH via `path-bootstrap.sh` or `$CLAUDE_ENV_FILE`), a temp dir per download, an `unzip` bootstrap, and one install block per tool in this order: `pre-commit`, `helm`, `terraform`, `tflint`, `actionlint`, `helm-docs`, `gitleaks`, `just`.
 
-1. **Remote guard** — exit immediately if not in a remote session:
-   ```bash
-   if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
-     exit 0
-   fi
-   ```
-
-2. **Idempotency guard** per tool — use `command -v <tool>` before downloading:
-   ```bash
-   if ! command -v helm >/dev/null 2>&1; then
-     # install helm
-   fi
-   ```
-
-3. **Install to `~/.local/bin`** — writable without sudo regardless of whether the session runs as root. Ensure this directory is on the PATH that *agent subshells* inherit: add it to a `path-bootstrap.sh` SessionStart hook (see this repo's `scripts/path-bootstrap.sh`) or append it to `$CLAUDE_ENV_FILE`. A bare `export PATH=...` inside the install script does **not** persist to later tool calls (see `.claude/rules/sandbox-guidance.md`).
-
-4. **Temp directory cleanup** — use a temp dir per download, remove it after:
-   ```bash
-   tmp_dir=$(mktemp -d)
-   # ... download and extract ...
-   rm -rf "$tmp_dir"
-   ```
-
-5. **`unzip` bootstrap** — terraform and tflint ship as `.zip`; install `unzip` via apt if absent.
-
-6. One install block per tool in this order: `pre-commit`, `helm`, `terraform`, `tflint`, `actionlint`, `helm-docs`, `gitleaks`, `just`.
+The guard snippets and the full rationale for each structural requirement are in [references/install-script.md](references/install-script.md#required-script-structure-step-4).
 
 Make the script executable: `chmod +x scripts/install_pkgs.sh`
 
 ### Step 5: Update `.claude/settings.json`
 
-1. Read existing `.claude/settings.json` (or start from `{}` if absent)
-2. Add or merge the `SessionStart` hook:
-
-```json
-"hooks": {
-  "SessionStart": [
-    {
-      "matcher": "",
-      "hooks": [
-        {
-          "type": "command",
-          "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/install_pkgs.sh\""
-        }
-      ]
-    }
-  ]
-}
-```
-
-3. Preserve all existing `permissions` and other keys — do not overwrite them.
+Read existing `.claude/settings.json` (or start from `{}`), add or merge a `SessionStart` hook running `bash "$CLAUDE_PROJECT_DIR/scripts/install_pkgs.sh"`, and preserve all existing `permissions` and other keys. The exact JSON entry is in [references/settings-hook.md](references/settings-hook.md).
 
 ### Step 6: Verify and summarise
 
-Print a final summary:
-
-```
-Web session configuration complete
-===================================
-scripts/install_pkgs.sh  [CREATED/UPDATED]
-.claude/settings.json    [CREATED/UPDATED]
-
-Tools configured: helm, terraform, tflint, actionlint, gitleaks, just, pre-commit
-
-Next steps:
-1. Commit both files: git add scripts/install_pkgs.sh .claude/settings.json
-2. Smoke-test locally: CLAUDE_CODE_REMOTE=true bash scripts/install_pkgs.sh
-3. Run again to verify idempotency: CLAUDE_CODE_REMOTE=true bash scripts/install_pkgs.sh
-4. Start a remote session on claude.ai/code and confirm tools are available
-```
+Print a final summary listing the files CREATED/UPDATED, the tools configured, and next steps (commit both files, smoke-test with `CLAUDE_CODE_REMOTE=true bash scripts/install_pkgs.sh`, re-run for idempotency, confirm in a remote session). The summary template is in [references/settings-hook.md](references/settings-hook.md#final-summary-template-step-6).
 
 ### Step 7: Re-audit onboarded repos after a spec change (portfolio sweep)
 
-When the canonical spec itself changes (new pinned tool, a wired-first
-`path-bootstrap.sh`, a download-source fix), every previously-onboarded repo
-silently falls out of spec — `install_pkgs.sh` still "exists", so nothing flags
-the drift (issue #1670). Make drift a positive signal: re-audit the whole
-portfolio rather than waiting for a manual cross-repo check.
-
-Run `/configure:web-session --check-only` in each repo that already has
-`scripts/install_pkgs.sh` and collect the Step 2b drift reports. A thin sweep
-helper over the onboarded repos turns the silent non-event into an explicit
-PRESENT/DRIFT/ABSENT list — find the onboarded repos, then re-audit each:
-
-```bash
-# Discover onboarded repos under a portfolio root (each has scripts/install_pkgs.sh)
-find . -maxdepth 3 -path '*/scripts/install_pkgs.sh' -print | while read -r script; do
-  repo_dir=$(dirname "$(dirname "$script")")
-  echo "=== ${repo_dir} ==="
-  # Re-audit against the current spec (Step 2b drift checks)
-  grep -q 'renovate:' "$script" && echo "renovate-pins: PRESENT" || echo "renovate-pins: DRIFT"
-  find "${repo_dir}/scripts" -maxdepth 1 -name 'path-bootstrap.sh' -print -quit | grep -q . \
-    && echo "path-bootstrap: PRESENT" || echo "path-bootstrap: ABSENT"
-  grep -q 'api.github.com' "$script" && echo "allowlist: USES api.github.com (DRIFT)" || echo "allowlist: OK"
-done
-```
-
-For each repo that reports DRIFT/ABSENT, run the full `/configure:web-session`
-(no `--check-only`) so Steps 3-5 re-apply the current spec, then open one PR per
-repo. Surface the deltas as a table so the sweep result is reviewable at a glance.
+When the canonical spec itself changes, every previously-onboarded repo
+silently falls out of spec (issue #1670). Run `/configure:web-session
+--check-only` in each repo that already has `scripts/install_pkgs.sh`, collect
+the Step 2b drift reports, then run the full skill on each DRIFT/ABSENT repo and
+open one PR per repo. The sweep helper script and the reporting guidance are in
+[references/drift-audit.md](references/drift-audit.md#portfolio-sweep-step-7) —
+read it when auditing more than one repo.
 
 ## Agentic Optimizations
 

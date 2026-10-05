@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-09-04
+modified: 2026-10-05
 reviewed: 2026-09-04
 description: "Security scanning: dependency automation, SAST, secrets detection. Use when setting up Renovate/Dependabot, CodeQL, or TruffleHog in CI, or creating a SECURITY.md policy."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -53,16 +53,7 @@ Execute this security scanning configuration check:
 
 ### Step 1: Fetch latest tool versions
 
-Verify latest versions before configuring:
-
-1. **Trivy**: Check [GitHub releases](https://github.com/aquasecurity/trivy/releases)
-2. **Grype**: Check [GitHub releases](https://github.com/anchore/grype/releases)
-3. **gitleaks**: Check [GitHub releases](https://github.com/gitleaks/gitleaks/releases)
-4. **pip-audit**: Check [PyPI](https://pypi.org/project/pip-audit/)
-5. **cargo-audit**: Check [crates.io](https://crates.io/crates/cargo-audit)
-6. **CodeQL**: Check [GitHub releases](https://github.com/github/codeql-action/releases)
-
-Use WebSearch or WebFetch to verify current versions.
+Verify latest versions of Trivy, Grype, gitleaks, pip-audit, cargo-audit, and CodeQL with WebSearch or WebFetch before configuring. The release source for each tool is in [references/tool-versions.md](references/tool-versions.md).
 
 ### Step 2: Detect project languages and security posture
 
@@ -75,30 +66,20 @@ bash "${CLAUDE_SKILL_DIR}/scripts/configure-security.sh" --home-dir "$HOME" --pr
 ```
 
 Parse `STATUS=` and the `ISSUES:` block from the output. The `KEY=VALUE` lines
-report language detection (`LANG_JS`, `LANG_PYTHON`, `LANG_RUST`, `LANG_GO`) and
-the presence matrix (`DEPENDABOT`, `RENOVATE`, `DEPENDENCY_AUTOMATION`, `CODEQL`,
-`CODEQL_AVAILABLE`, `CODEQL_AVAILABILITY_REASON`, `GITLEAKS_CONFIG`,
-`SECURITY_POLICY`, `TRUFFLEHOG`, `DEPENDENCY_REVIEW`, `SECURITY_LAYERS_PRESENT`).
+report language detection (`LANG_*`) and the per-layer presence matrix.
 
 `DEPENDENCY_AUTOMATION` is the layer verdict — true when **either** `RENOVATE` or
 `DEPENDABOT` is true. Read that key, not `DEPENDABOT` alone, when deciding
 whether the dependency layer needs work; the `missing_dependency_automation`
 warning is raised only when neither tool is configured.
 
-`CODEQL_AVAILABLE` (`yes`/`no`/`unknown`) says whether CodeQL can run here at all;
-`CODEQL_AVAILABILITY_REASON` says how that was decided. It gates the severity of
-a missing SAST layer:
-
-| `CODEQL_AVAILABLE` | Finding when `CODEQL=false` | Read it as |
-|---|---|---|
-| `yes` | `SEVERITY=WARN TYPE=missing_sast` | a real gap — code scanning is enabled, or the repo is public (CodeQL is free there) |
-| `no` | `SEVERITY=INFO TYPE=sast_unavailable` | code security is **not enabled here**, so a CodeQL workflow would 403 on every run. The API cannot say whether the org is unlicensed or merely has the setting off, so offer both: enable code scanning in the repo's security settings where the plan allows it, otherwise a SARIF-free scanner |
-| `unknown` | `SEVERITY=WARN TYPE=missing_sast` | not determined (`no-remote`, `not-github`, `gh-missing`, `gh-unauthenticated`, `timeout`, `api-error`, `repo-not-found`, `status-field-absent`, `status-unrecognised`, `mktemp-failed`, `opt-out`, `not-probed`) — treat the WARN as provisional |
-
-The probe is the script's only network call and runs only when `CODEQL=false`; a
-repo that already has the workflow reports `not-probed`.
-`CONFIGURE_SECURITY_NO_GHAS_PROBE=1` skips it and `CONFIGURE_SECURITY_GH_TIMEOUT`
-bounds it (default 8s).
+`CODEQL_AVAILABLE` (`yes`/`no`/`unknown`) says whether CodeQL can run here at all
+and gates the severity of a missing SAST layer: `yes` → WARN `missing_sast`,
+`no` → INFO `sast_unavailable`, `unknown` → provisional WARN. The full key list,
+the availability table with every `CODEQL_AVAILABILITY_REASON` value, and the
+probe's opt-out/timeout env vars are in
+[references/detection-output.md](references/detection-output.md) — read it when
+interpreting an unexpected key or reason.
 
 ### Step 3: Generate compliance report
 

@@ -113,7 +113,33 @@ directly as the `recipient`. Implicit-team membership state lives under
 enumerate peers, but you should rarely need to read it: spawn with a known
 `name` and address by that `name`.
 
+`ListAgents` discovers the sessions and teammates reachable via `SendMessage`:
+it reports the session's own name and lists live teammates (2.1.239), and marks
+disconnected Remote Control sessions `offline` and cloud sessions `cloud`
+(2.1.229).
+
 Always use the **name** field (not agentId) for `recipient` in SendMessage.
+
+### Authority, reach, and inheritance
+
+- **Relayed messages carry no user authority (2.1.166).** A message relayed via
+  `SendMessage` is not a user instruction, and auto mode blocks acting on it as
+  one. A teammate cannot use a relayed message to escalate privileges or
+  auto-approve actions that the receiving session's own permission mode would
+  otherwise gate.
+- **Cross-session reach (2.1.224+).** `SendMessage` also reaches **other Claude
+  Code sessions on your machines** (not just in-team teammates), discovered via
+  `ListAgents` and gated by the `crossSessionInbound` / `dialogExpiry` settings.
+  Windows support landed in 2.1.239 (previously macOS/Linux only). `@`-mention a
+  session by its unique per-machine name (2.1.232); `notify_when_idle` asks a
+  session for a one-shot idle notice (2.1.236). This is the native counterpart of
+  the session-marker signal in `.claude/rules/agent-coworker-detection.md`.
+- **Permission mode is inherited (2.1.98).** Teammates inherit the lead's
+  permission mode, including `--dangerously-skip-permissions`; do not assume a
+  teammate needs its own explicit permission grant.
+- **Model is inherited (2.1.234).** The "Default teammate model" `/config`
+  setting was removed; teammates use the lead session's model unless the spawn
+  names one explicitly.
 
 ## Shutdown procedures
 
@@ -271,8 +297,8 @@ blocked tasks until the blocking task is completed.
 
 ## Team roles
 
-| Role | Behavior | When to Use |
-|------|----------|-------------|
-| **Lead** | Orchestrates, assigns tasks, receives results | Always — coordinates the team |
-| **Teammate** | Parallel execution with messaging | Ongoing collaboration, progress reporting |
-| **Subagent** | Focused, isolated, returns single result | Simple bounded tasks, no coordination needed |
+| Role | Behavior | Advantages | When to Use |
+|------|----------|------------|-------------|
+| **Lead** | Orchestrates, assigns tasks, receives results | Coordinates complex workflows | Always — coordinates the team |
+| **Teammate** | Parallel execution with messaging | Full context window, can message peers | Ongoing collaboration, progress reporting |
+| **Subagent** | Focused, isolated, returns single result | Simple, bounded | Simple bounded tasks, no coordination needed |

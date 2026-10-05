@@ -321,7 +321,7 @@ comment. Read-only.`,
 ]);
 
 // A failed agent() resolves to null. Drop the holes rather than letting them
-// explode at the join (agent-development.md § Dynamic Workflows).
+// explode at the join (agent-runtime.md § Dynamic Workflows).
 const storyLanes = (stories ?? []).filter(Boolean);
 const testLanes = (tests ?? []).filter(Boolean);
 

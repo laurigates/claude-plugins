@@ -1,6 +1,6 @@
 ---
 created: 2026-01-30
-modified: 2026-09-23
+modified: 2026-10-02
 reviewed: 2026-04-25
 name: github-pr-title
 description: |
@@ -117,6 +117,19 @@ revert: feat(auth): add OAuth support
 | Deps | `build(deps): bump <pkg> to <ver>` |
 | Breaking | `feat(<scope>)!: change <what>` |
 
+## Merge Strategy and the PR Body
+
+The title only drives release-please under **squash** merge. Under rebase or
+merge-commit, each branch commit lands as-is and the PR title/body are discarded.
+With the repo setting *squash → PR title and description*, the **PR body becomes
+the commit body** and release-please parses it: a `BREAKING CHANGE:` footer
+forces a major bump, a footer line shaped like `fix(x): …` adds an extra
+changelog entry, and `Release-As:` pins the version. Write the body as a commit
+body (prose + `Fixes #N` footers, no checklists).
+
+Strategy table, body shape, and post-merge repair (`BEGIN_COMMIT_OVERRIDE`):
+[merge-strategies.md](merge-strategies.md).
+
 ## Why This Matters
 
 **Conventional commit PR titles ensure:**
@@ -133,6 +146,7 @@ revert: feat(auth): add OAuth support
 | Get commits | `git log origin/main..HEAD --format='%s' -n 10` |
 | Changed dirs | `git diff origin/main..HEAD --name-only \| xargs dirname \| sort -u` |
 | Update title | `gh pr edit N --title "new title"` |
+| Repo merge settings | `gh api repos/{owner}/{repo} --jq '{squash: .allow_squash_merge, rebase: .allow_rebase_merge, title: .squash_merge_commit_title, message: .squash_merge_commit_message}'` |
 | Discover scopes | `gh pr list --state merged -L 30 --json title \| jq -r '.[].title' \| grep -oE '\([^)]+\)' \| sort \| uniq` |
 
 ## Reference

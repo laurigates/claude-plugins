@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-03-03
-modified: 2026-09-23
+modified: 2026-10-02
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -64,6 +64,7 @@ the one team the session already has:
 | `TaskCreate` / `TaskList` / `TaskUpdate` | Create, discover, and assign/advance shared tasks |
 | `Read` | Get a background agent's output from the file path its spawn result names (`TaskOutput` was removed in 2.1.277) |
 | `TaskStop` | Stop a running background agent |
+| `ListAgents` | Discover teammates and other sessions reachable via `SendMessage` |
 
 The setup sequence — `TaskCreate` → spawn teammates via the `Agent` tool (with a
 `name`) → `TaskUpdate` to assign → receive results automatically — is shown with
@@ -91,8 +92,8 @@ Teammates claim tasks in **ID order** (lowest first) via `TaskList` +
 | `shutdown_request` / `shutdown_response` | Graceful teammate exit handshake |
 | `plan_approval_response` | Approve or reject a teammate's plan |
 
-DM, broadcast, and discovery (`Read ~/.claude/teams/<name>/config.json` →
-`members`) examples are in
+DM, broadcast, and discovery (address by spawn-time `name`; enumerate with
+`ListAgents`) examples are in
 [REFERENCE.md → Communication](REFERENCE.md#communication-sendmessage).
 
 ### Key Teammate Rules
@@ -184,6 +185,7 @@ handle, independent of any on-disk layout.
 ## Related Skills and Rules
 
 - `parallel-agent-dispatch` — worktree preflight, scope budgets, and the Return Contract every teammate must emit on exit. Team dispatches are a superset of plain parallel fan-out; follow both.
-- `.claude/rules/agent-development.md` — agent file structure, model selection, worktree isolation
+- `.claude/rules/agent-development.md` — agent file structure, model selection
+- `.claude/rules/agent-runtime.md` — worktree isolation, background execution
 - `.claude/rules/agentic-permissions.md` — granular tool permission patterns
 - `.claude/rules/sandbox-guidance.md` — web sandbox constraints and push delegation

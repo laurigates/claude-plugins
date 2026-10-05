@@ -1,6 +1,6 @@
 {
-  "lastCheckedVersion": "2.1.283",
-  "lastCheckedDate": "2026-09-28",
+  "lastCheckedVersion": "2.1.289",
+  "lastCheckedDate": "2026-10-05",
   "rewindNote": "Rewound from 2.1.257 to 2.1.185 on 2026-09-03. The excerpt is sliced from lastCheckedVersion forward, so the pointer must name the last version a review actually covered. 2.1.257 was written by the Fable 5.1 adaptation sweep (docs/audits/fable-5.1-adaptation-2026-09-02.md), whose declared window was 2.1.232-2.1.257 -- it advanced the pointer past 46 versions it never read. The automated changelog review had already gone silent after 2.1.185: 22 successful runs, 13 consecutive filing nothing, last tracking issue #1733 (2026-06-21). The blind spot's confirmed casualty was the subagent nesting ceiling in .claude/rules/agent-development.md, which instructed 5 levels after 2.1.217 disabled nesting by default and 2.1.219 set it to 3. CORRECTED 2026-09-16: that line was already fixed on 2026-09-02 (the file now carries a depth-3 default with a per-version history table); the fix and this note crossed in flight, so the 2.1.241 entry's claim that the rule 'still claims 5 levels' was stale when written. The rewind itself was still correct -- the unread ranges were real, and reviewing them found 6 further stale assertions the pointer had hidden.",
   "knownUnreviewedRanges": [
     {
@@ -30,6 +30,38 @@
   ],
   "changelogUrl": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
   "reviewedChanges": [
+    {
+      "version": "2.1.289",
+      "date": "2026-10-05",
+      "windowed": false,
+      "relevantChanges": [
+        "HIGH: interactive terminal and VS Code sessions start in auto mode when no permission mode is configured, on every plan and provider (2.1.284) - supersedes the 2.1.283 third-party/telemetry-off-only scope; -p/Python SDK on 3P or telemetry-off also default to auto (2.1.285); permissions.defaultMode / --permission-mode still override",
+        "HIGH: Claude Mods - plugins may now modify deeper behavior, with a built-in cc-plugin-you-should-know@builtin mod (2.1.287); mod APIs $.ui.selection() (2.1.288), ui.render/Client/ui.fault, agent.spawn for teammates and $.agent.list() idle/waiting states, one agent id across plugin hook events (2.1.289)",
+        "HIGH: PreToolUse and PermissionRequest hooks are now fail-closed - if matching fails or tool input can't be serialized to JSON the call is blocked instead of the hook being skipped (2.1.288)",
+        "HIGH: path-scoped .claude/rules and nested CLAUDE.md now load when Write/Edit touches a file in scope, not only on Read (2.1.288); rules symlinked into .claude/rules from outside the project now trigger external-imports approval (2.1.284)",
+        "HIGH: agent teams - a plugin-defined agent spawned by name now runs with its own prompt, tools, disallowedTools and effort instead of the defaults (2.1.288); fork subagents inherit parent plan/dontAsk mode and cannot exit plan mode (2.1.285)",
+        "HIGH: background Bash/PowerShell commands stop at a time limit (timeout with run_in_background, default 30 min, max 2 h) (2.1.285), narrowed to unattended sessions only - -p, Agent SDK, CI, cloud (2.1.288)",
+        "HIGH: permission bypass fixes - dangerous rm inside bash -c/sh -c ran unprompted in bypassPermissions or under a shell allow rule (2.1.288); dangerous-rm safeguard lost with ~/wildcard redirect (2.1.287); Bash deny/ask missed under sandbox auto-allow behind env-var prefix or bare assignment (2.1.289); PowerShell deny/ask skipped when parser failed (2.1.285); Read deny via IDE symlink (2.1.289); BASHPID arithmetic assignment now prompts (2.1.288)",
+        "HIGH: whole-tool Bash allow rules and allowing hooks now prompt for shell writes to files the file tools refuse; repo-committed symlink writes onto sensitive files wait for a person (2.1.287)",
+        "HIGH: plugin allowed-tools pre-approval under managed allowManagedPermissionRulesOnly is limited to official Anthropic or managed-vouched sources (2.1.284), extending the 2.1.282 skill change",
+        "HIGH: project settings can no longer widen/turn off an admin-required sandbox, replace the proxy behind a managed deny list, extend a strict allowlist or reopen managed read-denies (2.1.285)",
+        "Claude Sonnet 5.5 (claude-sonnet-5-5) is the default Sonnet on the Anthropic API (2.1.284); the client-side auto-mode classifier ignores an ANTHROPIC_DEFAULT_SONNET_MODEL pin naming Sonnet 5.5/Opus 5.5 and uses Sonnet 5 (2.1.288); Ultracode became its own /effort toggle that no longer forces xhigh (2.1.284)",
+        "Hooks: Elicitation/ElicitationResult {\"decision\":\"block\"} now declines (was ignored) (2.1.284); idle_prompt Notification hooks no longer fire while background agents run, InstructionsLoaded carries agent_id/agent_type/effort (2.1.288); synchronous hooks no longer hang on a backgrounded child holding stdout (2.1.285); asyncRewake missing-script reported once, synced-plugin SessionStart hooks run in cloud (2.1.287); CLAUDE_CODE_DISABLE_STRUCTURED_OUTPUTS for prompt hooks behind gateways (2.1.288)",
+        "Skills: /skill names typed mid-message are announced as skills including disable-model-invocation ones; stream-json streams typed context: fork skills (2.1.287); a skill named verify is run before committing (2.1.286)",
+        "Plugins: claude plugin configure and install --config <server>.<key>=<value> for .mcpb (2.1.285); npm sources restricted to registry packages (2.1.286); LSP ${user_config.*}/${CLAUDE_PLUGIN_ROOT} substitution and 60s requestTimeout (2.1.288); claude plugin validate skipping a plugin whose folder holds a marketplace manifest fixed (2.1.289)",
+        "MCP: URL-mode elicitation on 2025-11-25 protocol with bareElicitationCapability escape hatch, alwaysLoad:false defers all tools (2.1.287); step-up OAuth re-auth prompt, double-run on >16 MB results fixed (2.1.288); /mcp reconnect all, first -p turn waits 2s for MCP servers named in --allowedTools/mcp_tool hooks (2.1.284)",
+        "Remote: built-in gh api (REST) on self-hosted runners without gh (2.1.287) and in cloud sessions without gh (2.1.288); MCP server name widgets reserved in cloud/self-hosted (2.1.285); --bare narrowed to CLI-named MCP servers and no reminders/background tasks (2.1.286)",
+        "Rename: claude project purge -> claude purge (2.1.288), old name still works; not referenced in this repo. Remaining bulk of the window is VS Code, Claude Tag, Code Review, cloud-session, screen-reader, vim-mode, /ultrareview upload and TUI fixes with no rule impact"
+      ],
+      "actionsRequired": [
+        "See issue #2906 for the rule update plan",
+        "No rule files were edited by this triage run; the tracking issue groups the bullets by file",
+        "Files needing follow-up edits: hooks-reference.md, prompt-agent-hooks.md, skill-development.md, agent-development.md, agent-runtime.md, agentic-permissions.md, auto-mode.md, plugin-structure.md, sandbox-guidance.md, CLAUDE.md / context-engineering.md / workflow-model-effort.md, plus the MCP-facing skills (mcp-management, configure-mcp)",
+        "Top follow-ups: restate the auto-mode default as all plans/providers (2.1.284), document hook fail-closed (2.1.288), the Write/Edit trigger for path-scoped rules in context-engineering.md (2.1.288), and decide whether plugin-structure.md should cover Claude Mods (2.1.287)",
+        "Deprecated-identifier list was empty this run; the only rename in the window (claude project purge -> claude purge) is not referenced in the repo",
+        "Tracking issue #2906, as read back by the workflow: labels present: changelog-review, maintenance; assignee laurigates present"
+      ]
+    },
     {
       "version": "2.1.283",
       "date": "2026-09-28",

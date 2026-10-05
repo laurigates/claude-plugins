@@ -25,14 +25,22 @@ non-responding model rather than a transport error.
 PAL is the normal route. When its MCP server is not connected to the session,
 the same models are reachable at `https://opencode.ai/zen/go/v1/chat/completions`
 with `OPENCODE_API_KEY` — the endpoint PAL's own `opencode_go` provider uses.
-Three mechanics bite there that do not bite through PAL, all measured on
-`qwen3.8-flash` reviewing GitHub Actions diffs (2026-09):
+Take the key from the calling process's environment. Never have an agent read
+`~/.api_tokens`: the secret-protection hook blocks `source`, and an agent blocked
+that way was observed extracting the key with `sed` onto a command line
+(2026-10-04), which puts it in the transcript.
+
+Five mechanics bite there that do not bite through PAL. The first three were
+measured on `qwen3.8-flash` reviewing GitHub Actions diffs (2026-09), the last
+two on `deepseek-v4.1-flash` from a stdlib `urllib` client (2026-10):
 
 | Mechanic | Symptom | Fix |
 |---|---|---|
 | **models.dev's catalogue is not the gateway's catalogue**, and neither is PAL's pinned `conf/opencode_go_models.json` | A model the user names is "not in the list", so you substitute a near-miss id and review with the wrong model. Observed: `qwen3.8-flash` was absent from models.dev's `opencode` provider *and* from PAL's pinned config, while the gateway's own `/v1/models` served it. The reverse also holds — models.dev listed `gemini-3.8-flash`, which the gateway rejects with `Model … is not supported` | Enumerate from the gateway itself: `curl -s $URL/models -H "Authorization: Bearer $OPENCODE_API_KEY"`. A pinned config and a third-party index are both snapshots; only the gateway answers for what it serves |
 | **A non-streaming request hangs on a long generation** | `http=000` after the full `--max-time`, zero bytes, no error body — indistinguishable from a network fault. Measured: a 24 KB payload hung for the full 900 s, while a 33 KB payload of *trivial* content returned 200 in 2.4 s, so payload size is the wrong suspect | Send `"stream": true` and read the SSE deltas. The same request that hung then streamed 3.8 MB |
 | **A reasoning model can spend its whole budget reasoning and emit nothing** | The stream never reaches `[DONE]` and `content` is empty while `reasoning_content` runs to six figures. Measured on a 15 KB diff: **179,283 chars of reasoning, 0 chars of content** | Cut the input until each call is small enough to answer — per file, then per hunk (~4.5 KB worked). Chunks are independent, so run them concurrently; raising `max_tokens` does not help, because the budget is going to reasoning |
+| **The gateway requires an `x-opencode-session` header** | `HTTP 400 {"error":{"type":"MissingSessionID","message":"Request is missing x-opencode-session and cannot be routed efficiently…"}}` on every request, whatever the model or payload | Send one stable ID per conversation, e.g. `x-opencode-session: review-pr-<n>-<uuid>`. PAL sets it in `providers/opencode_go.py` from `utils/session_context.py` (continuation id, or a per-process fallback), which is why the same request works through PAL |
+| **Cloudflare rejects the default client User-Agent** | `HTTP 403`, body `error code: 1010`, before the request reaches the gateway; no JSON error, so it reads like a bad key | Send an explicit `User-Agent` (the OpenAI SDK's form, e.g. `OpenAI/Python 1.0`, was accepted). Python's `urllib` default is refused; PAL goes through the OpenAI SDK and never sees this |
 
 Two consequences for the protocol. **A chunked review is partial by
 construction**: record how many chunks failed and say so wherever the findings

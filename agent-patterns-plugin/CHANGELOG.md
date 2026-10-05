@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.49.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.49.1...agent-patterns-plugin-v2.49.2) (2026-10-05)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** add the session-header and User-Agent rejections to the direct OpenCode Go route ([#2899](https://github.com/laurigates/claude-plugins/issues/2899)) ([4d4557a](https://github.com/laurigates/claude-plugins/commit/4d4557a1e131cd7d4a09b726bfee2e30192950af))
+
+## [2.49.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.49.0...agent-patterns-plugin-v2.49.1) (2026-10-05)
+
+
+### Documentation
+
+* **rules:** lean agent-coworker-detection.md to its always-on invariants ([#2882](https://github.com/laurigates/claude-plugins/issues/2882)) ([3f29b53](https://github.com/laurigates/claude-plugins/commit/3f29b538ed5eee32bfef6ea22bb0f685aeffda1f)), closes [#2140](https://github.com/laurigates/claude-plugins/issues/2140)
+* **rules:** move general glossary out of always-loaded terminology rule ([#2883](https://github.com/laurigates/claude-plugins/issues/2883)) ([3cb106d](https://github.com/laurigates/claude-plugins/commit/3cb106d0d8a42310bceed08a1f4d4b9bd2116bbe)), closes [#2140](https://github.com/laurigates/claude-plugins/issues/2140)
+* **rules:** split agent-development.md and move teams/SDK detail into skills ([#2884](https://github.com/laurigates/claude-plugins/issues/2884)) ([147ed17](https://github.com/laurigates/claude-plugins/commit/147ed1737bd5d72936c6cc02ad3f3f1c92622abe))
+
 ## [2.49.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.48.0...agent-patterns-plugin-v2.49.0) (2026-10-01)
 
 
