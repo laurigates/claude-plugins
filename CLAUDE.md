@@ -61,7 +61,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/bash-tool-replacements.md` | `find`/`grep`/`rg`/`cat`/`head`/`tail` → dedicated tools; when the Bash form is genuinely fine |
 | `.claude/rules/gh-json-fields.md` | Correct `gh --json` field names (PR `state`/`mergedAt`, not `merged`); `--limit` and `head:` truncation traps |
 | `.claude/rules/structured-script-output.md` | `=== HEADER ===` / `KEY=VALUE` / `STATUS=` convention for diagnostic shell scripts |
-| `.claude/rules/terminology.md` | Glossary of development terms with strong intent (scoping, review, parallelism, work state, code ops, requirements) — positive definitions with *Use when* disambiguation |
+| `.claude/rules/terminology.md` | House-specific terms (set the seam, define done, park, pick up where we left off) and the skill/rule that owns each; the general glossary is `docs/terminology.md` |
 | `.claude/rules/parallel-safe-queries.md` | Query commands that exit non-zero on empty results silently cancel sibling parallel tool calls — use the machine-readable variant (`--json`/`export` + `jq`) |
 | `.claude/rules/docs-currency.md` | Code and the docs describing it land in the **same commit** (stub → `blueprint:blueprint-docs-currency`) |
 | `.claude/rules/version-pinning.md` | Version pins in skill examples (`uses:`/`FROM`/`image:`/`rev:`) are a Renovate-managed surface — SHA+comment convention, the coverage guard, and what's illustrative vs. managed |

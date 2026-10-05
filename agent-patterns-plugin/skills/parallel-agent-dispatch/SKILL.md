@@ -401,8 +401,7 @@ So to retry a few failed worktree agents, do **not** resume the whole run —
 **re-dispatch only the failed agents** in a fresh **sequential** pass (which
 also dodges the burst rate limit), checking for an already-open PR first
 (`gh pr list --state all --search …`, reading `state`/`mergedAt` per
-`.claude/rules/gh-json-fields.md`). Non-worktree stages cache correctly. See
-`.claude/rules/agent-coworker-detection.md`.
+`.claude/rules/gh-json-fields.md`). Non-worktree stages cache correctly.
 
 ## Quick Reference
 
