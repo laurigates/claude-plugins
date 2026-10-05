@@ -1,6 +1,6 @@
 ---
 created: 2026-02-25
-modified: 2026-10-02
+modified: 2026-10-04
 reviewed: 2026-09-23
 paths:
   - "**/agents/**"
@@ -196,7 +196,7 @@ Three mechanisms share the word "fork", and only the last one hands a subagent t
 
 A research agent that should keep verbose output out of the main window needs no field: a named agent already does. For work that needs the conversation so far, dispatch a fork instead of a named agent.
 
-> **Runtime behaviour lives in [`agent-runtime.md`](agent-runtime.md):** runtime fork vs named agent, the subagent context budget, worktree isolation and `worktree.baseRef`, background execution, dynamic-workflow caveats, `worktree.bgIsolation`, MCP policy for frontmatter servers, and the `claude agents` CLI.
+> **Runtime behaviour lives in [`agent-runtime.md`](agent-runtime.md):** runtime fork vs named agent, the subagent context budget, worktree isolation and `worktree.baseRef` (gitignored inputs such as `.env` reach a worktree only via `.worktreeinclude` — see `/configure:worktreeinclude`), background execution, dynamic-workflow caveats, `worktree.bgIsolation`, MCP policy for frontmatter servers, and the `claude agents` CLI.
 
 ## Preloading Skills into Agents
 
