@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-10-05
 reviewed: 2026-04-25
 name: openfeature
 description: "OpenFeature vendor-agnostic feature flag SDK: installation, evaluation, providers. Use when implementing feature flags, A/B testing, or progressive rollouts."
@@ -67,61 +67,7 @@ Vendor-agnostic feature flag SDK providing standardized API across languages and
 
 ## SDK Installation
 
-### Node.js (Server)
-
-```bash
-# Core SDK
-npm install @openfeature/server-sdk
-
-# Providers (choose one)
-npm install @openfeature/go-feature-flag-provider  # GO Feature Flag
-npm install @openfeature/flagd-provider            # flagd
-npm install @openfeature/in-memory-provider        # Testing
-```
-
-### Node.js (Browser/React)
-
-```bash
-# Web SDK
-npm install @openfeature/web-sdk
-
-# React integration
-npm install @openfeature/react-sdk
-
-# Web providers
-npm install @openfeature/go-feature-flag-web-provider
-```
-
-### Python
-
-```bash
-uv add openfeature-sdk
-uv add openfeature-provider-go-feature-flag  # GO Feature Flag provider
-```
-
-### Go
-
-```bash
-go get github.com/open-feature/go-sdk
-go get github.com/open-feature/go-sdk-contrib/providers/go-feature-flag
-```
-
-### Java
-
-```xml
-<dependency>
-    <groupId>dev.openfeature</groupId>
-    <artifactId>sdk</artifactId>
-    <version>1.7.0</version>
-</dependency>
-```
-
-### Rust
-
-```toml
-[dependencies]
-open-feature = "0.2"
-```
+Install the core SDK for the runtime plus one provider package (GO Feature Flag, flagd, or the in-memory provider for tests). Per-language install commands (Node.js server and browser/React, Python, Go, Java, Rust): see [references/sdk-installation.md](references/sdk-installation.md).
 
 ## Basic Usage Patterns
 
@@ -254,58 +200,7 @@ function MyComponent() {
 
 ## Testing
 
-### In-Memory Provider
-
-```typescript
-import { OpenFeature } from '@openfeature/server-sdk';
-import { InMemoryProvider } from '@openfeature/in-memory-provider';
-
-// Configure test flags
-const testProvider = new InMemoryProvider({
-  'new-feature': {
-    variants: {
-      on: true,
-      off: false,
-    },
-    defaultVariant: 'off',
-    disabled: false,
-  },
-  'button-color': {
-    variants: {
-      blue: '#0066CC',
-      green: '#00CC66',
-    },
-    defaultVariant: 'blue',
-    disabled: false,
-  },
-});
-
-// Use in tests
-beforeAll(async () => {
-  await OpenFeature.setProviderAndWait(testProvider);
-});
-
-afterAll(async () => {
-  await OpenFeature.close();
-});
-```
-
-### Mocking in Unit Tests
-
-```typescript
-import { vi } from 'vitest';
-import { OpenFeature } from '@openfeature/server-sdk';
-
-// Mock the entire SDK
-vi.mock('@openfeature/server-sdk', () => ({
-  OpenFeature: {
-    getClient: vi.fn().mockReturnValue({
-      getBooleanValue: vi.fn().mockResolvedValue(true),
-      getStringValue: vi.fn().mockResolvedValue('test-value'),
-    }),
-  },
-}));
-```
+Use the in-memory provider for deterministic flag values in tests, or mock the SDK client in unit tests. Fixture and mock examples: see [references/testing.md](references/testing.md).
 
 ## Best Practices
 

@@ -4,7 +4,7 @@ description: "Claude Code security settings: permission wildcards, shell operato
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-09-02
+modified: 2026-10-05
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -193,136 +193,11 @@ Then allow the script:
 
 ## Common Permission Sets
 
-### Read-Only Development
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(git status *)",
-      "Bash(git diff *)",
-      "Bash(git log *)",
-      "Bash(git branch *)",
-      "Bash(npm list *)",
-      "Bash(bun pm ls *)"
-    ]
-  }
-}
-```
-
-### Full Git Workflow
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(git status *)",
-      "Bash(git diff *)",
-      "Bash(git log *)",
-      "Bash(git branch *)",
-      "Bash(git add *)",
-      "Bash(git commit *)",
-      "Bash(git push *)",
-      "Bash(git pull *)",
-      "Bash(git fetch *)",
-      "Bash(git checkout *)",
-      "Bash(git merge *)",
-      "Bash(git rebase *)"
-    ]
-  }
-}
-```
-
-### CI/CD Operations
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(gh pr *)",
-      "Bash(gh run *)",
-      "Bash(gh issue *)",
-      "Bash(gh workflow *)"
-    ]
-  }
-}
-```
-
-### Testing & Linting
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(bun test *)",
-      "Bash(npm test *)",
-      "Bash(vitest *)",
-      "Bash(jest *)",
-      "Bash(biome *)",
-      "Bash(eslint *)",
-      "Bash(prettier *)"
-    ]
-  }
-}
-```
-
-### Security Scanning
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(pre-commit *)",
-      "Bash(gitleaks *)",
-      "Bash(trivy *)"
-    ]
-  }
-}
-```
+Ready-made `allow` lists for read-only development, full git workflow, CI/CD, testing & linting, and security scanning live in [references/permission-sets.md](references/permission-sets.md) — read it when composing an allowlist for one of those workflows.
 
 ## Project Setup Guide
 
-### 1. Create Settings Directory
-
-```bash
-mkdir -p .claude
-```
-
-### 2. Create Project Settings
-
-```bash
-cat > .claude/settings.json << 'EOF'
-{
-  "permissions": {
-    "allow": [
-      "Bash(git status *)",
-      "Bash(git diff *)",
-      "Bash(npm run *)"
-    ]
-  }
-}
-EOF
-```
-
-### 3. Add to .gitignore (for local settings)
-
-```bash
-echo ".claude/settings.local.json" >> .gitignore
-```
-
-### 4. Create Local Settings (optional)
-
-```bash
-cat > .claude/settings.local.json << 'EOF'
-{
-  "permissions": {
-    "allow": [
-      "Bash(docker *)"
-    ]
-  }
-}
-EOF
-```
+The four-step bootstrap (create `.claude/`, write project settings, gitignore the local file, add local settings) is in [references/project-setup.md](references/project-setup.md) — read it when setting up a project's settings files from scratch.
 
 ## Agentic Optimizations
 

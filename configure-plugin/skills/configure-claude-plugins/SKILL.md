@@ -1,10 +1,10 @@
 ---
 created: 2026-01-23
-modified: 2026-09-02
+modified: 2026-10-05
 compatibility: claude-code
 reviewed: 2026-09-02
 description: "Claude plugins marketplace setup: .claude/settings.json, GitHub Actions, plugin pinning. Use when onboarding to claude-plugins, setting up claude.yml, pinning plugins, or overriding global plugins."
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), Bash(test *), Bash(ls *), Bash(git remote *), Bash(gh api *), Bash(jq *), AskUserQuestion, TodoWrite
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(ls *), Bash(git remote *), Bash(gh api *), Bash(jq *), AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--exhaustive] [--plugins <plugin1,plugin2,...>] [--workflows] [--no-workflows]"
 argument-hint: "[--check-only] [--fix] [--exhaustive] [--plugins <plugin1,plugin2,...>] [--workflows] [--no-workflows]"
 name: configure-claude-plugins
@@ -42,13 +42,11 @@ Parse from command arguments:
 | `--check-only` | Report current configuration status without changes |
 | `--fix` | Apply configuration automatically |
 | `--plugins` | Comma-separated list of plugins to install (default: all recommended) |
-| `--exhaustive` | Enumerate every marketplace plugin in `enabledPlugins` as an explicit `true`/`false`, so the project fully overrides the user-global enable state. Derives each boolean from repo context (see the defaults table in Step 3), preserves any value the project already set, and shows a diff before writing. Also triggered by "pin plugins" / "override global plugins for this project". |
-| `--workflows` | Force-scaffold the `claude.yml` / `claude-code-review.yml` workflows even when no git remote is detected (default: scaffold only when a remote exists). |
-| `--no-workflows` | Skip workflow scaffolding even when a git remote is present. Useful for local-only or vendored projects. |
+| `--exhaustive` | Pin every marketplace plugin as explicit `true`/`false` (see Flags) |
+| `--workflows` | Force-scaffold workflows without a git remote (see Flags) |
+| `--no-workflows` | Skip workflow scaffolding (see Flags) |
 
 ## Execution
-
-Execute this Claude plugins configuration workflow:
 
 ### Step 1: Detect current state and project stack
 
@@ -56,176 +54,25 @@ Execute this Claude plugins configuration workflow:
 2. Check for existing `.github/workflows/claude.yml`
 3. Check for existing `.github/workflows/claude-code-review.yml`
 4. Detect project type (language, framework) from file indicators
-5. Check for a git remote with `git remote -v`. Capture `has_remote = true` when the output is non-empty, `has_remote = false` otherwise. This gates workflow scaffolding in Steps 4 and 5 — workflows that cannot run (no remote → no GitHub Actions) should not be scaffolded by default.
+5. Check for a git remote with `git remote -v`: `has_remote = true` when non-empty, else `false`. This gates workflow scaffolding in Steps 4 and 5 (no remote → no GitHub Actions → do not scaffold by default).
 
 ### Step 2: Select plugins
 
-If `--plugins` is not specified, select recommended plugins based on detected project type:
-
-| Project Indicator | Recommended Plugins |
-|-------------------|---------------------|
-| `package.json` | `git-plugin`, `typescript-plugin`, `testing-plugin`, `code-quality-plugin` |
-| `pyproject.toml` / `setup.py` | `git-plugin`, `python-plugin`, `testing-plugin`, `code-quality-plugin` |
-| `Cargo.toml` | `git-plugin`, `rust-plugin`, `testing-plugin`, `code-quality-plugin` |
-| `Dockerfile` | Above + `container-plugin` |
-| `.github/workflows/` | Above + `github-actions-plugin` |
-| `idf_component.yml` / `sdkconfig` | `git-plugin`, `code-quality-plugin`, `testing-plugin`, `container-plugin` |
-| ESPHome yaml | `git-plugin`, `python-plugin`, `code-quality-plugin` |
-| `CMakeLists.txt` (without Dockerfile / ESP-IDF / ESPHome indicators) | `git-plugin`, `code-quality-plugin`, `testing-plugin`, `tools-plugin` + `clangd@claude-plugins-official` (LSP) |
-| Default (any) | `git-plugin`, `code-quality-plugin`, `testing-plugin`, `tools-plugin` |
+If `--plugins` is not specified, map each detected indicator (`package.json`, `pyproject.toml`, `Cargo.toml`, `Dockerfile`, `.github/workflows/`, ESP-IDF, ESPHome, CMake) to its recommended plugin set using the table in [references/plugin-selection.md](references/plugin-selection.md); with no indicator, use the default set (`git-plugin`, `code-quality-plugin`, `testing-plugin`, `tools-plugin`).
 
 Always include: `configure-plugin`, `health-plugin`, `hooks-plugin`.
 
 ### Step 3: Configure .claude/settings.json
 
-Create or merge into `.claude/settings.json`. The permissions baseline includes common entries plus stack-aware expansions. The stanza also enrolls the marketplace so web sessions retain plugin access.
+Create or merge into `.claude/settings.json` (permissions, marketplace enrollment so web sessions retain plugin access, `enabledPlugins`).
 
-> **Suffix forms — read this before copy-pasting.** The two suffix forms below are not interchangeable. Using the wrong one silently breaks the config:
->
-> | Where | Suffix | Source of the suffix |
-> |---|---|---|
-> | `.claude/settings.json` → `enabledPlugins` (Step 3) | `<plugin>@claude-plugins` | The **`extraKnownMarketplaces` key** in the same stanza |
-> | `.github/workflows/claude*.yml` → `plugins:` (Steps 4–5) | `<plugin>@laurigates-claude-plugins` | The **`name` field** in `laurigates/claude-plugins/.claude-plugin/marketplace.json` |
->
-> Wrong suffix in `enabledPlugins` → entry silently ignored (marketplace key does not match). Wrong suffix in the workflow `plugins:` block → action rejects the run.
+> **Suffix forms are not interchangeable.** `enabledPlugins` uses `<plugin>@claude-plugins` (extraKnownMarketplaces key); workflow `plugins:` uses `<plugin>@laurigates-claude-plugins` (marketplace `name` in marketplace.json). Wrong suffix → entry silently ignored / run rejected. Table: [references/settings-json.md](references/settings-json.md#suffix-forms).
 
-#### Why `enabledPlugins` merge semantics matter
+Pick the mode: the default writes only the recommended plugins as `true` (lean, but globally-toggled plugins leak in); `--exhaustive` pins every marketplace plugin as `true`/`false` (drift-resistant). Rationale and mode table: [references/settings-json.md](references/settings-json.md).
 
-`enabledPlugins` is a **per-key merging map** across the settings hierarchy: a project entry overrides the matching global entry, but global entries the project does not mention still take effect. There is no `enabledPluginsExclusive` flag. So if a user has accidentally toggled an unwanted plugin globally (easy to do via the plugins UI), it leaks into every repo that does not explicitly set it to `false`.
-
-| Mode | Project `enabledPlugins` contents | Behaviour vs global toggles |
-|------|------------------------------------|------------------------------|
-| Default (no flag) | Recommended plugins as `true` only | Lean. Vulnerable to global drift — any plugin the user toggled on globally is also active here. |
-| `--exhaustive` | Every marketplace plugin enumerated as `true` or `false` | Deterministic. Project pin overrides every global toggle. Re-run when the marketplace adds plugins. |
-
-Pick `--exhaustive` for repos that need a self-documenting, drift-resistant plugin set (infrastructure repos, repos shared with teammates / CI, repos sensitive to context tax from unrelated plugins). Use the default for personal scratch repos where global toggles are intentional.
-
-#### Stack-aware `permissions.allow` baseline
-
-Always include these common entries:
-
-```json
-"Bash(git:*)", "Bash(gh:*)", "Bash(pre-commit:*)", "Bash(gitleaks:*)", "Bash(python3:*)"
-```
-
-Add stack-specific entries based on detected project type:
-
-| Stack | Additional allow entries |
-|---|---|
-| Python (uv + ruff + ty) | `"Bash(uv:*)"`, `"Bash(uvx:*)"`, `"Bash(ruff:*)"`, `"Bash(ty:*)"`, `"Bash(pytest:*)"` |
-| Node / TypeScript | `"Bash(npm:*)"`, `"Bash(pnpm:*)"`, `"Bash(bun:*)"`, `"Bash(tsc:*)"`, `"Bash(eslint:*)"`, `"Bash(prettier:*)"`, `"Bash(vitest:*)"` |
-| Go | `"Bash(go:*)"`, `"Bash(gofmt:*)"`, `"Bash(golangci-lint:*)"` |
-| Rust | `"Bash(cargo:*)"`, `"Bash(rustc:*)"`, `"Bash(clippy:*)"`, `"Bash(rustfmt:*)"` |
-| C / C++ (CMake) | `"Bash(cmake:*)"`, `"Bash(ctest:*)"`, `"Bash(clang-format:*)"`, `"Bash(clang-tidy:*)"`, `"Bash(cppcheck:*)"`, `"Bash(make:*)"`, `"Bash(ninja:*)"` |
-| ESP-IDF / embedded | `"Bash(idf.py:*)"`, `"Bash(esptool:*)"`, `"Bash(clang-format:*)"`, `"Bash(cppcheck:*)"`, `"Bash(docker:*)"`, `"Bash(docker compose:*)"`, `"Bash(just:*)"`, `"Bash(make:*)"` |
-| ESPHome | `"Bash(esphome:*)"`, `"Bash(uv:*)"`, `"Bash(uvx:*)"` |
-
-Use granular patterns only — do not add `Bash(bash *)` for CLI tools.
-
-#### Exhaustive enumeration (when `--exhaustive` is set)
-
-Build the full `enabledPlugins` map by reading every plugin name from the two relevant marketplaces, then writing each one with an explicit `true`/`false`. Every marketplace plugin is named, so the project's map **fully overrides** the user-global enable state — a plugin the user toggled on globally is forced off here unless it is explicitly `true`. This skill only ever writes `<cwd>/.claude/settings.json`; it never modifies `~/.claude/settings.json` (user-global toggles stay as the user set them).
-
-**Deriving each plugin's boolean.** Start from the Step 2 recommended set (those become `true`), then refine from repo context using the signals below. A plugin a value already exists for in the project's current `enabledPlugins` **wins over the suggestion** — only fill in *missing* entries from this logic, so a deliberate prior choice is never silently flipped.
-
-| Signal in repo | Suggest enabling |
-|---|---|
-| `pyproject.toml`, `requirements.txt`, `*.py` | `python-plugin` |
-| `Cargo.toml`, `*.rs` | `rust-plugin` (and `bevy-plugin` if Bevy is in deps) |
-| `go.mod`, `*.go` | `go-plugin` (if present in the marketplace) |
-| `package.json`, `*.ts`, `*.tsx` | `typescript-plugin` |
-| `*.tf`, `terraform/` | `terraform-plugin` |
-| `Dockerfile`, `compose.yaml` | `container-plugin` |
-| `Chart.yaml`, `kustomization.yaml`, `k8s/` | `kubernetes-plugin` / `helm-plugin` |
-| `flake.nix`, `default.nix` | `nix-plugin` |
-| `langchain` in deps | `langchain-plugin` |
-| `home-assistant`/`hass` configs | `home-assistant-plugin` |
-| `.github/workflows/` | `github-actions-plugin` |
-| macOS host (`uname -s` = Darwin) | `macos-plugin` |
-| Markdown-heavy `docs/` or `blog/` | `documentation-plugin`, `blog-plugin` |
-
-Always-useful baseline (enable unless the user says otherwise): `agents-plugin`, `agent-patterns-plugin`, `blueprint-plugin`, `code-quality-plugin`, `communication-plugin`, `configure-plugin`, `git-plugin`, `health-plugin`, `prose-plugin`, `taskwarrior-plugin`, `testing-plugin`, `tools-plugin`, `workflow-orchestration-plugin`. Anything else not matched defaults to `false`.
-
-1. **Read the laurigates marketplace** in priority order:
-   - If a local clone is present (e.g. inside this repo or a sibling checkout), parse `.claude-plugin/marketplace.json`:
-     ```bash
-     jq -r '.plugins[].name' .claude-plugin/marketplace.json
-     ```
-   - Otherwise fetch over the GitHub API:
-     ```bash
-     gh api repos/laurigates/claude-plugins/contents/.claude-plugin/marketplace.json --jq '.content' | base64 -d | jq -r '.plugins[].name'
-     ```
-   - Suffix each name with `@claude-plugins` to match the existing stanza format.
-
-2. **Add the official LSP plugins** (`@claude-plugins-official`). The currently shipped names are: `pyright`, `typescript-language-server`, `rust-analyzer`, `gopls`, `swift-language-server`, `clangd`. Mark the LSP that matches the detected stack as `true`, the rest as `false`. If none match (no detectable stack), leave them all `false`.
-
-3. **Compose the map** with all entries, alphabetised within each marketplace block. Suffix `@claude-plugins` matches the `extraKnownMarketplaces` *key* (not the marketplace `name` used in workflows):
-
-```json
-{
-  "enabledPlugins": {
-    "accessibility-plugin@claude-plugins": false,
-    "agent-patterns-plugin@claude-plugins": false,
-    "agents-plugin@claude-plugins": false,
-    "...": "...",
-    "code-quality-plugin@claude-plugins": true,
-    "configure-plugin@claude-plugins": true,
-    "git-plugin@claude-plugins": true,
-    "health-plugin@claude-plugins": true,
-    "hooks-plugin@claude-plugins": true,
-    "testing-plugin@claude-plugins": true,
-    "typescript-plugin@claude-plugins": true,
-    "...": "...",
-
-    "clangd@claude-plugins-official": false,
-    "gopls@claude-plugins-official": false,
-    "pyright@claude-plugins-official": false,
-    "rust-analyzer@claude-plugins-official": false,
-    "swift-language-server@claude-plugins-official": false,
-    "typescript-language-server@claude-plugins-official": true
-  }
-}
-```
-
-4. **Drop unknown global entries.** If the project's existing `enabledPlugins` (or a merged-in copy of the user's global file) contains plugin names that are not in either marketplace listing, surface them in the report and ask whether to keep them. They may belong to a third marketplace the user has enrolled. Do not delete them silently — stale entries are harmless and the user may have notes about them.
-
-5. **Show the diff before writing.** Exhaustive mode rewrites the whole `enabledPlugins` map, so present the proposal before committing it. Group it as:
-   - **Already correct** — count only, do not list each one.
-   - **Will add** — new key → `true`/`false`, with a one-line reason for each `true`.
-   - **Will change** — existing key → flipped value, with the reason.
-
-   Render compact (a small markdown table or a `+`/`-` list). **Highlight any currently-`true` entry the proposal would turn off** — that is where users most often disagree. Then confirm once (accept "yes"/"go"/"apply", or let the user veto specific plugins and re-render). Skip the prompt under `--check-only` (report the diff only) and under `--fix` when the user already opted into non-interactive application.
-
-#### Full settings.json stanza to merge
-
-The `extraKnownMarketplaces` key (`claude-plugins`) is what each `enabledPlugins` entry's `@claude-plugins` suffix must match. The two stanzas are coupled — changing the key without also changing every suffix silently disables every plugin in `enabledPlugins`.
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(git:*)",
-      "Bash(gh:*)",
-      "Bash(pre-commit:*)",
-      "Bash(gitleaks:*)",
-      "Bash(python3:*)"
-      // ... plus stack-specific entries from the table above
-    ]
-  },
-  "extraKnownMarketplaces": {
-    "claude-plugins": {                                  // marketplace KEY (used by enabledPlugins suffix below)
-      "source": { "source": "github", "repo": "laurigates/claude-plugins" },
-      "autoUpdate": true
-    }
-  },
-  "enabledPlugins": {
-    "<selected-plugin-1>@claude-plugins": true,          // suffix == extraKnownMarketplaces key, NOT marketplace name
-    "<selected-plugin-2>@claude-plugins": true
-  }
-}
-```
-
-Replace `<selected-plugin-N>` with the plugin names selected in Step 2.
+1. **Permissions** — always include the common baseline (`Bash(git:*)`, `Bash(gh:*)`, `Bash(pre-commit:*)`, `Bash(gitleaks:*)`, `Bash(python3:*)`) plus the stack-specific entries for the detected stack. Use granular patterns only — do not add `Bash(bash *)` for CLI tools. Per-stack table: same file.
+2. **Marketplace + `enabledPlugins`** — merge the full stanza from the same file (`extraKnownMarketplaces` key `claude-plugins`, selected plugins as `<plugin>@claude-plugins: true`).
+3. **Exhaustive mode** (`--exhaustive` only) — enumerate both marketplaces, derive each boolean from repo context, preserve existing project values, and show the diff before writing. Signal table, baseline set, LSP list, diff format: [references/exhaustive-mode.md](references/exhaustive-mode.md).
 
 If `.claude/settings.json` already exists, **MERGE** without duplicating entries. Preserve any existing `hooks`, `env`, or other fields.
 
@@ -243,138 +90,17 @@ If `.claude/settings.json` already exists, **MERGE** without duplicating entries
 
 When the decision is **skip**, do not write the file, and surface `STATUS=SKIPPED (no git remote)` in the Step 6 report so the omission is visible.
 
-When the decision is **scaffold**, create `.github/workflows/claude.yml` with the Claude Code action configured to use the plugin marketplace. Workflow `plugins:` entries use the `@laurigates-claude-plugins` suffix — the marketplace `name` from `marketplace.json`, NOT the `extraKnownMarketplaces` key used in Step 3:
-
-```yaml
-name: Claude Code
-
-on:
-  issue_comment:
-    types: [created]
-  pull_request_review_comment:
-    types: [created]
-  issues:
-    types: [opened, assigned]
-
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-  id-token: write
-
-jobs:
-  claude:
-    if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Run Claude Code
-        uses: anthropics/claude-code-action@v1
-        with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: "--model opus --effort high"
-          plugin_marketplaces: |
-            https://github.com/laurigates/claude-plugins.git
-          plugins: |
-            # suffix matches marketplace `name` in marketplace.json (NOT extraKnownMarketplaces key)
-            PLUGINS_LIST
-```
-
-Replace `PLUGINS_LIST` with the selected plugins in the format `plugin-name@laurigates-claude-plugins`, one per line. The suffix is the marketplace `name` field from `laurigates/claude-plugins/.claude-plugin/marketplace.json` — distinct from the `@claude-plugins` suffix used in `.claude/settings.json` (Step 3).
-
-Pin `--model` (an alias — `opus` is the current Opus, `fable` the current Fable) and `--effort` explicitly: the harness default effort is `high` for every model, and effort level names do not map across model generations, so an explicit pin is what makes the cost visible.
+When the decision is **scaffold**, create `.github/workflows/claude.yml` using the marketplace; `plugins:` entries use the `@laurigates-claude-plugins` suffix (marketplace `name`, NOT the Step 3 key). Pin `--model` and `--effort` explicitly. The full template is in [references/workflow-templates.md](references/workflow-templates.md#claudeyml-step-4).
 
 ### Step 5: Configure .github/workflows/claude-code-review.yml
 
 **Apply the same git-remote gate from Step 4.** Reuse the user's answer (or the `--workflows` / `--no-workflows` flag) — do not re-prompt. If Step 4 skipped, skip Step 5 as well and record `STATUS=SKIPPED (no git remote)`.
 
-When the decision is **scaffold**, create `.github/workflows/claude-code-review.yml` for automatic PR reviews:
-
-```yaml
-name: Claude Code Review
-
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-
-permissions:
-  contents: read
-  pull-requests: write
-  issues: write
-
-jobs:
-  review:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Claude Code Review
-        uses: anthropics/claude-code-action@v1
-        with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          prompt: |
-            Review this pull request. Focus on:
-            - Code quality and best practices
-            - Potential bugs or security issues
-            - Test coverage gaps
-            - Documentation needs
-          claude_args: "--model opus --effort medium --max-turns 5"
-          plugin_marketplaces: |
-            https://github.com/laurigates/claude-plugins.git
-          plugins: |
-            # suffix matches marketplace `name` in marketplace.json (NOT extraKnownMarketplaces key)
-            code-quality-plugin@laurigates-claude-plugins
-            testing-plugin@laurigates-claude-plugins
-```
+When the decision is **scaffold**, create `.github/workflows/claude-code-review.yml` for automatic PR reviews from the template in [references/workflow-templates.md](references/workflow-templates.md#claude-code-reviewyml-step-5).
 
 ### Step 6: Report results
 
-Print a status report:
-
-```
-Claude Plugins Configuration Report
-=====================================
-Repository: <repo-name>
-
-.claude/settings.json:
-  Status:              <CREATED|UPDATED|EXISTS>
-  Mode:                <DEFAULT|EXHAUSTIVE>
-  Permissions:         <N> allowed patterns configured
-  Marketplace:         laurigates/claude-plugins (extraKnownMarketplaces)
-  Plugins pinned:      <N> total (<E> enabled, <D> disabled)   # exhaustive only
-  Enabled plugins:     <list>
-
-Git remote:            <PRESENT|MISSING>
-
-.github/workflows/claude.yml:
-  Status:              <CREATED|UPDATED|EXISTS|SKIPPED (no git remote)|SKIPPED (--no-workflows)>
-  Marketplace:         laurigates/claude-plugins
-  Plugins:             <list>
-
-.github/workflows/claude-code-review.yml:
-  Status:              <CREATED|UPDATED|EXISTS|SKIPPED (no git remote)|SKIPPED (--no-workflows)>
-  Trigger:             PR opened/synchronize/reopened
-
-Next Steps:
-  1. Add CLAUDE_CODE_OAUTH_TOKEN to repository secrets
-     Settings > Secrets and variables > Actions > New repository secret
-  2. Commit and push the new/updated files
-  3. Test by mentioning @claude in a PR comment
-  4. (exhaustive mode) Re-run when the marketplace adds new plugins so they
-     get an explicit `false` rather than inheriting the global toggle
-  5. (no remote) When you add a GitHub remote later, re-run with `--workflows`
-     to scaffold the workflows that were skipped
-```
+Print the status report (settings, git remote, each workflow's status incl. `SKIPPED` reasons, next steps) from [references/report-template.md](references/report-template.md).
 
 ## Agentic Optimizations
 
@@ -398,19 +124,14 @@ Next Steps:
 | `--check-only` | Report current status without making changes |
 | `--fix` | Apply all configuration automatically |
 | `--plugins` | Override automatic plugin selection |
-| `--exhaustive` | Enumerate every marketplace plugin as an explicit `true`/`false` so the project fully overrides global toggles. Derives booleans from repo context, preserves existing project values, and diffs before writing. Triggered by "pin plugins" / "override global plugins for this project". |
-| `--workflows` | Force-scaffold the `claude.yml` / `claude-code-review.yml` workflows even when no git remote is detected. By default, workflow scaffolding is skipped on remote-less repos to avoid dormant files. |
-| `--no-workflows` | Skip workflow scaffolding even when a git remote is present. Useful for local-only or vendored projects where settings should be configured but Actions should not. |
+| `--exhaustive` | Enumerate every marketplace plugin as an explicit `true`/`false` so the project fully overrides global toggles. Triggered by "pin plugins" / "override global plugins for this project". |
+| `--workflows` | Force-scaffold the `claude.yml` / `claude-code-review.yml` workflows even when no git remote is detected. |
+| `--no-workflows` | Skip workflow scaffolding even when a git remote is present. Useful for local-only or vendored projects. |
 
 ## Important Notes
 
-- The `CLAUDE_CODE_OAUTH_TOKEN` secret must be added manually to the repository
-- `extraKnownMarketplaces` in `.claude/settings.json` is the key to surviving ephemeral web sessions — without it, the marketplace is only enrolled via CI
-- **Workflow scaffolding is gated on a git remote.** A repo without a remote cannot run GitHub Actions, so `claude.yml` and `claude-code-review.yml` are skipped by default — writing them would create dormant files that confuse future readers. Override with `--workflows` to pre-stage them before adding a remote.
-- **Two distinct suffix forms** (see the callout at the top of Step 3 for the canonical table):
-  - `enabledPlugins` entries use `<plugin>@claude-plugins` — the `extraKnownMarketplaces` *key*
-  - Workflow `plugins:` blocks use `<plugin>@laurigates-claude-plugins` — the marketplace `name` field from `marketplace.json`
-- Mixing the two forms silently breaks the config — `enabledPlugins` entries with the wrong suffix are ignored; workflow `plugins:` entries with the wrong suffix are rejected by the action
+- The `CLAUDE_CODE_OAUTH_TOKEN` secret must be added manually to the repository.
+- Never mix the two suffix forms (Step 3). Full notes: [references/settings-json.md](references/settings-json.md#important-notes).
 
 ## See Also
 
