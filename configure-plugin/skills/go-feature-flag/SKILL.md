@@ -246,6 +246,15 @@ For GitOps CI/CD workflow and environment-specific flag patterns, see [REFERENCE
 
 For diagnostic commands covering flags not evaluating correctly, provider connection issues (timeout and `PROVIDER_READY`/`PROVIDER_ERROR` events), and configuration not updating, see [references/cli-and-troubleshooting.md](references/cli-and-troubleshooting.md#troubleshooting) — read it when a flag misbehaves at runtime.
 
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Validate flag file | `goff lint --config flags.goff.yaml --format json` |
+| Evaluate one flag | `curl -s -X POST http://localhost:1031/v1/feature/<flag>/eval -H "Content-Type: application/json" -d '{"evaluationContext": {"targetingKey": "user-123"}}' \| jq -c` |
+| Relay health | `curl -sf http://localhost:1032/health` |
+| Relay logs | `docker logs goff-relay` |
+
 ## Documentation
 
 - **Official Docs**: https://gofeatureflag.org/docs
