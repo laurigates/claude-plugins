@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.58.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.58.3...git-plugin-v2.58.4) (2026-10-05)
+
+
+### Documentation
+
+* **rules:** lean agent-coworker-detection.md to its always-on invariants ([#2882](https://github.com/laurigates/claude-plugins/issues/2882)) ([3f29b53](https://github.com/laurigates/claude-plugins/commit/3f29b538ed5eee32bfef6ea22bb0f685aeffda1f)), closes [#2140](https://github.com/laurigates/claude-plugins/issues/2140)
+
 ## [2.58.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.58.2...git-plugin-v2.58.3) (2026-09-28)
 
 
