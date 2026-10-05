@@ -72,9 +72,44 @@
       "expectations": [
         { "assertion": "Does not invent a conventional commit subject for changes that do not exist", "check": "absent_regex", "pattern": "^\\s*[`>]*\\s*(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\\([^)]*\\))?!?:\\s", "flags": "m" },
         { "assertion": "States that there is nothing staged to commit", "check": "regex", "pattern": "(nothing (is |has been )?(staged|to commit)|no (staged )?changes|working tree (is )?clean)", "flags": "i" },
+        { "assertion": "Never runs git commit (headless harness: there is nothing to commit)", "check": "command_ran", "pattern": "\\bgit(\\s+-[cC]\\s+\\S+)*\\s+commit\\b", "max": 0 },
         "Acknowledges that the commit cannot be made and does not claim a commit was created"
       ],
       "tags": ["abstention", "impossible", "control"]
+    },
+    {
+      "id": "gc-007",
+      "description": "Commit a staged README in a real repo; graded on what the agent ran and what the repo holds afterwards (trace + workspace checks, headless harness)",
+      "prompt": "I wrote a README for this project and already staged it. Please commit it.",
+      "fixture": {
+        "setup": [
+          "git init -q",
+          "git -c user.name=eval -c user.email=eval@example.invalid -c commit.gpgsign=false commit -q --allow-empty -m initial",
+          "printf \"# Demo\\n\\nA small demo project.\\n\" > README.md",
+          "git add README.md"
+        ]
+      },
+      "expectations": [
+        { "assertion": "Runs git commit", "check": "command_ran", "pattern": "\\bgit(\\s+-[cC]\\s+\\S+)*\\s+commit\\b" },
+        { "assertion": "The new HEAD subject is a conventional commit with a lowercase description", "check": "run_command", "command": "git log -1 --format=%s", "stdout_regex": "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\\([^)]+\\))?!?: [a-z]" },
+        { "assertion": "Nothing is left staged or modified after the commit", "check": "run_command", "command": "git status --porcelain", "stdout_regex": "\\A\\Z" },
+        "The commit message describes adding the README (a documentation change), not an unrelated feature or fix"
+      ],
+      "tags": ["headless", "workspace", "trace", "docs"]
     }
-  ]
+  ],
+  "triggers": {
+    "skill": "git-plugin:git-commit",
+    "should_trigger": [
+      { "id": "gct-001", "prompt": "Commit my staged changes with a good commit message." },
+      { "id": "gct-002", "prompt": "I fixed the off-by-one in the pagination helper. Stage it and make a commit." },
+      { "id": "gct-003", "prompt": "Save my work to git as a local commit, conventional-commit style please." }
+    ],
+    "should_not_trigger": [
+      { "id": "gcn-001", "prompt": "Suggest a conventional-commits title for my pull request that adds a dark-mode toggle.", "near_miss_of": "git-plugin:github-pr-title" },
+      { "id": "gcn-002", "prompt": "Write a CHANGELOG.md entry for version 2.3.0 describing the new OAuth login support." },
+      { "id": "gcn-003", "prompt": "Explain how git rebase works and when I should use it instead of merge.", "near_miss_of": "git-plugin:git-rebase-patterns" }
+    ],
+    "max_turns": 2
+  }
 }

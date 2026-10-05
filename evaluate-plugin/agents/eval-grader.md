@@ -63,6 +63,14 @@ other than `judge` are graded deterministically upstream by
 `scripts/grade_deterministic.py` — focus your judgment on the `judge`/string
 items and reconcile any deterministic results passed to you.
 
+Trace and workspace checks (`skill_triggered`, `command_ran`, `file_regex`,
+`run_command`, …) need inputs only the headless harness produces. When a run
+lacks them, the grader reports those items as `RESULT=HARNESS_DEFERRED` (JSON
+`harness_deferred`) with evidence starting "requires headless harness". They are
+excluded from the totals: never judge them, never count them as passed or
+failed, and leave them out of `summary.total`. Only `judge`/string items
+reported as `RESULT=DEFERRED` are yours to grade.
+
 For each assertion you grade:
 
 1. **Search the transcript and output** for evidence that the assertion is satisfied

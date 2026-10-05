@@ -1,13 +1,13 @@
 ---
 name: evaluate-skill
 description: Evaluate a skill by running test cases and grading results. Use when testing whether a skill produces correct guidance, validating improvements, or benchmarking before release.
-args: <plugin/skill-name> [--create-evals] [--runs N] [--baseline]
-allowed-tools: Task, Read, Write, Edit, Glob, Grep, Bash(bash *), TodoWrite
-argument-hint: "git-plugin/git-commit [--create-evals] [--runs 3] [--baseline]"
+args: <plugin/skill-name> [--create-evals] [--runs N] [--baseline] [--harness subagent|headless] [--triggers|--triggers-only]
+allowed-tools: Task, Read, Write, Edit, Glob, Grep, Bash(bash *), Bash(python3 *), TodoWrite
+argument-hint: "git-plugin/git-commit [--runs 3] [--baseline] [--harness headless] [--triggers]"
 agent: general-purpose
 context: fork
 created: 2026-03-04
-modified: 2026-09-26
+modified: 2026-10-05
 compatibility: claude-code
 reviewed: 2026-03-04
 ---
@@ -39,13 +39,18 @@ Parse these from `$ARGUMENTS`:
 | `--create-evals` | false | Generate eval cases if none exist |
 | `--runs N` | 1 | Number of runs per eval case |
 | `--baseline` | false | Also run without skill for comparison |
+| `--harness subagent\|headless` | `subagent` | How each cell is rolled out. `subagent`: an in-session Task subagent with the SKILL.md as context. `headless` (opt-in): a real `claude -p` child with the plugin loaded via `rollout_headless.sh`, so plugin loading, description routing, `allowed-tools` and hooks are exercised and trace/workspace checks can be graded. Needs `claude`, `jq`, `python3` |
+| `--triggers` | false | After the eval cases, also run the skill's trigger evals (Step 4b) |
+| `--triggers-only` | false | Run only the trigger evals (Step 4b); skip Step 4 and Steps 5-7 |
 
 ## Workflow harness (template)
 
 `workflows/evaluate-skill.workflow.js` ships beside this skill. **It is a TEMPLATE to
 adapt, not a script to run verbatim.** Read it, then rewrite it for the work in front
-of you. It covers Steps 2-7 for a batch-shaped run; a single spot check stays on the
-prose path below.
+of you. It covers Steps 2-7 for a batch-shaped run **except Step 4b**: it has no
+trigger stage, so with `--triggers` run Step 4b yourself after the workflow returns,
+and with `--triggers-only` run Step 4b instead of the workflow. A single spot check
+stays on the prose path below.
 
 **Adapt freely:** the agent prompts, the config axis (the shipped one is
 `with-skill` / `baseline`), the effort tiers, the generation brief behind
@@ -68,7 +73,9 @@ truncating.
 
 **Agent budget:** 2 + 2 x cells — preflight and aggregate, plus one rollout and one
 independent grader per cell (at most `cellCap` cells). The scale guard asks before
-every run, because the cell list is built at runtime.
+every run, because the cell list is built at runtime. `args.harness: 'headless'`
+does not change it: the rollout agent becomes a thin runner that calls
+`rollout_headless.sh` (and never performs the task itself), still one per cell.
 
 **Skip the harness when:** the run is fewer than three cells - a one- or two-case spot
 check, or a single re-run of one eval id - which is a linear pass where the harness is
@@ -167,7 +174,28 @@ Look for `<plugin-name>/skills/<skill-name>/evals.json`.
 
 ### Step 4: Run evaluations
 
-For each eval case, for each run (up to `--runs N`):
+Skip Step 4 and Steps 5-7 when `--triggers-only` is set (Step 4b still runs). Use the branch matching
+`--harness`; the subagent branch is the default.
+
+**Headless branch (`--harness headless`).** First confirm `command -v claude jq python3`
+all resolve; if any is missing, report `headless-unavailable` and stop rather than
+falling back (subagent and headless numbers are not comparable). Then per eval case
+and run: `prepare_run.sh` as in item 1 below; write the case's `prompt` to
+`$RUN_DIR/prompt.txt`; apply its `fixture` (item 2), or `mktemp -d` an empty workdir
+**outside the repo** (the script refuses a workdir inside it); then launch the child:
+```
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/rollout_headless.sh \
+  --run-dir "$RUN_DIR" --workdir "$WORKDIR" --prompt-file "$RUN_DIR/prompt.txt" \
+  --plugin-dir "$(pwd)/<plugin-name>" --model haiku --max-budget-usd 0.25
+```
+Omit `--plugin-dir` for the baseline. It writes `transcript.md`, `trace.json`,
+`workspace/` and `timing.json` into `$RUN_DIR` and prints a `=== HEADLESS ROLLOUT ===`
+block: `STATUS=ERROR` is an ERROR cell; WARN issues (`foreign_hook`,
+`session_id_leak`, `uncapped`) are findings to report. Tear the workdir down
+afterwards; the snapshot is already in `$RUN_DIR/workspace/`. Do not perform the
+eval prompt yourself on this branch.
+
+**Subagent branch (default).** For each eval case, for each run (up to `--runs N`):
 
 1. Scaffold the run directory and record the start time by running:
    ```
@@ -193,6 +221,18 @@ For each eval case, for each run (up to `--runs N`):
 7. If a fixture was applied, tear it down after the transcript is copied out:
    `bash ${CLAUDE_PLUGIN_ROOT}/scripts/apply_fixture.sh --teardown "$WORKDIR" --fixture '<eval.fixture JSON>'`.
 
+### Step 4b: Trigger evals (if --triggers or --triggers-only)
+
+If `evals.json` has a `triggers` block, check the plan and its worst-case cost first,
+then run it (each prompt is a real headless child killed at its first `Skill` call):
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run_trigger_evals.py --skill-dir <plugin-name>/skills/<skill-name> --dry-run
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run_trigger_evals.py --skill-dir <plugin-name>/skills/<skill-name>
+```
+Report recall, precision, the false positives by `near_miss_of`, and `STATUS`. Results
+at the default `--runs 1` are noisy (a missed threshold is WARN, not ERROR); pass
+`--runs 3` before acting on them. No `triggers` block: say so and continue.
+
 ### Step 5: Run baseline (if --baseline)
 
 If `--baseline` is set, repeat Step 4 but **without** loading the skill content. Pass `--baseline` to `prepare_run.sh` so results are written into a parallel `baseline/` subdirectory. This creates a comparison point to measure skill effectiveness.
@@ -201,7 +241,16 @@ Use the same eval prompts and record results in the `baseline/` subdirectory.
 
 ### Step 6: Grade results
 
-For each run, delegate grading to the `eval-grader` agent via Task:
+For each run, grade the typed checks first, for zero model tokens. Pass `--trace` and
+`--workspace --allow-exec` only when the rollout produced them (headless runs):
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/grade_deterministic.py --evals <evals.json> \
+  --eval-id <id> --output "$RUN_DIR/transcript.md" \
+  [--trace "$RUN_DIR/trace.json"] [--workspace "$RUN_DIR/workspace" --allow-exec] --json
+```
+Its verdicts are final. Items under `harness_deferred` (trace/workspace checks on a
+subagent run) are excluded from every total and never judged. Then delegate only the
+`DEFERRED` (judge) expectations to the `eval-grader` agent via Task:
 
 ```
 Task subagent_type: evaluate-plugin:eval-grader
@@ -224,7 +273,8 @@ If `--baseline` was used, also compute:
 - Baseline mean pass rate
 - Delta (improvement from skill)
 
-Write aggregated results to `<plugin-name>/skills/<skill-name>/eval-results/benchmark.json`.
+Write aggregated results to `<plugin-name>/skills/<skill-name>/eval-results/benchmark.json`,
+recording the harness in `metadata.harness`.
 
 Print a summary table:
 
@@ -254,6 +304,8 @@ Print a summary table:
 | Print evals JSON | `bash evaluate-plugin/scripts/inspect_eval.sh --plugin <plugin> --skill <skill> --print-evals` |
 | Prepare a run directory | `bash evaluate-plugin/scripts/prepare_run.sh --skill-dir <plugin>/skills/<skill> --eval-id <id> --run <N>` |
 | Aggregate results | `bash evaluate-plugin/scripts/aggregate_benchmark.sh <plugin>` |
+| One headless rollout | `bash evaluate-plugin/scripts/rollout_headless.sh --run-dir <d> --workdir <tmp> --prompt-file <f> --plugin-dir <plugin> --max-budget-usd 0.25` |
+| Trigger-eval plan + cost | `python3 evaluate-plugin/scripts/run_trigger_evals.py --skill-dir <plugin>/skills/<skill> --dry-run` |
 
 ## Quick Reference
 
@@ -262,3 +314,5 @@ Print a summary table:
 | `--create-evals` | Generate eval cases from SKILL.md analysis |
 | `--runs N` | Number of runs per eval case (default: 1) |
 | `--baseline` | Run without skill for comparison |
+| `--harness headless` | Real `claude -p` rollouts with the plugin loaded (default: `subagent`) |
+| `--triggers` / `--triggers-only` | Also / only run the `triggers` block's routing evals |

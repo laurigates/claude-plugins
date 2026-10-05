@@ -188,7 +188,7 @@ repos:
         name: golden-set eval suites validate and their probes bite (#2144)
         entry: bash ./evaluate-plugin/scripts/tests/test-golden-set-evals.sh
         language: system
-        files: '^(evaluate-plugin/golden-set\.json|evaluate-plugin/scripts/(check_golden_set_evals\.py|grade_deterministic\.py|tests/test-golden-set-evals\.sh|tests/fixtures/golden-set-probes\.json|tests/fixtures/gc-001-(good|bad)\.txt)|[^/]+-plugin/skills/[^/]+/evals\.json)$'
+        files: '^(evaluate-plugin/golden-set\.json|evaluate-plugin/scripts/(check_golden_set_evals\.py|grade_deterministic\.py|run_trigger_evals\.py|tests/test-golden-set-evals\.sh|tests/fixtures/golden-set-probes\.json|tests/fixtures/gc-00[0-9]-[a-z-]+\.(txt|trace\.json))|[^/]+-plugin/skills/[^/]+/evals\.json)$'
         pass_filenames: false
       # The grader and fixture-engine suites were named test_*.sh until #2795,
       # so the runner's test-*.sh glob never ran them. `Test: Skill scripts` now
@@ -200,6 +200,50 @@ repos:
         entry: bash ./evaluate-plugin/scripts/tests/test-grade-deterministic.sh
         language: system
         files: '^(evaluate-plugin/(scripts/(grade_deterministic\.py|render_matrix_report\.py|tests/test-grade-deterministic\.sh|tests/fixtures/.*)|agents/eval-grader\.md)|git-plugin/skills/git-commit/evals\.json)$'
+        pass_filenames: false
+      # Headless harness (rollout_headless.sh + parse_trace.py), trigger evals,
+      # the inspect_eval .evals count, and the matrix renderer's mixed-harness
+      # warning. All run offline: rollouts go through fixtures/fake-claude.sh,
+      # never a live `claude` (the live smoke is tests/live/smoke-headless.sh,
+      # gated by EVAL_LIVE=1 and deliberately not test-prefixed).
+      - id: test-parse-trace
+        name: stream-json -> trace.json parser regression
+        entry: bash ./evaluate-plugin/scripts/tests/test-parse-trace.sh
+        language: system
+        files: '^evaluate-plugin/scripts/(parse_trace\.py|tests/test-parse-trace\.sh|tests/fixtures/stream-[a-z-]+\.jsonl)$'
+        pass_filenames: false
+      - id: test-rollout-headless
+        name: headless rollout runner regression (env scrub, guards, stop-on-skill)
+        entry: bash ./evaluate-plugin/scripts/tests/test-rollout-headless.sh
+        language: system
+        files: '^evaluate-plugin/scripts/(rollout_headless\.sh|parse_trace\.py|tests/test-rollout-headless\.sh|tests/fixtures/(fake-claude\.sh|stream-[a-z-]+\.jsonl))$'
+        pass_filenames: false
+      - id: test-trigger-evals
+        name: trigger-eval runner regression (maths, budget abort, validation)
+        entry: bash ./evaluate-plugin/scripts/tests/test-trigger-evals.sh
+        language: system
+        files: '^evaluate-plugin/(scripts/(run_trigger_evals\.py|rollout_headless\.sh|parse_trace\.py|grade_deterministic\.py|tests/test-trigger-evals\.sh|tests/fixtures/(fake-claude\.sh|stream-[a-z-]+\.jsonl))|skills/evaluate-skill/(SKILL\.md|workflows/evaluate-skill\.workflow\.js))$'
+        pass_filenames: false
+      - id: test-smoke-headless
+        name: live headless smoke reports routing as WARN, offline via fake-claude
+        entry: bash ./evaluate-plugin/scripts/tests/test-smoke-headless.sh
+        language: system
+        files: '^evaluate-plugin/scripts/(rollout_headless\.sh|parse_trace\.py|run_trigger_evals\.py|grade_deterministic\.py|apply_fixture\.sh|tests/test-smoke-headless\.sh|tests/live/smoke-headless\.sh|tests/fixtures/(fake-claude\.sh|stream-skill-commit\.jsonl))$'
+        pass_filenames: false
+      - id: test-inspect-eval
+        name: inspect_eval counts .evals; matrix inspect args regression
+        entry: bash ./evaluate-plugin/scripts/tests/test-inspect-eval.sh
+        language: system
+        # (f) greps every evaluate-plugin SKILL.md and workflow .js, and the
+        # Test: Skill scripts CI path filter matches neither, so this hook is
+        # their only automatic trigger.
+        files: '^(evaluate-plugin/(scripts/(inspect_eval\.sh|tests/test-inspect-eval\.sh)|skills/[^/]+/(SKILL\.md|workflows/[^/]+\.js))|git-plugin/skills/git-commit/evals\.json)$'
+        pass_filenames: false
+      - id: test-render-matrix-harness
+        name: matrix renderer mixed-harness warning regression
+        entry: bash ./evaluate-plugin/scripts/tests/test-render-matrix-harness.sh
+        language: system
+        files: '^evaluate-plugin/scripts/(render_matrix_report\.py|tests/test-render-matrix-harness\.sh|tests/fixtures/example-model-matrix\.json)$'
         pass_filenames: false
       - id: test-apply-fixture
         name: eval fixture run-engine regression (#2795)

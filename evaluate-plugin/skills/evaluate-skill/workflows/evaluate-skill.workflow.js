@@ -37,6 +37,16 @@
  *      an eval sweep that quietly evaluates 30 of 84 cells and reports a mean
  *      is worse than one that refuses.
  *
+ * HARNESS. `args.harness` picks how a cell is rolled out: `subagent` (the
+ * DEFAULT — the rollout agent performs the prompt itself with the SKILL.md as
+ * context) or `headless` (opt-in — the rollout agent is a thin RUNNER that
+ * calls rollout_headless.sh, which launches a real `claude -p` child with the
+ * plugin loaded, so plugin loading, description routing, allowed-tools and
+ * hooks are exercised). Either way it is one rollout agent per cell, so the
+ * agent budget is unchanged. Headless cells also yield a trace.json and a
+ * workspace snapshot, which the grader passes to grade_deterministic.py so
+ * trace/workspace checks are graded instead of harness-deferred.
+ *
  * REGISTRATION. This is the only template in the marketplace that ships to
  * `~/.claude/workflows` as well as beside its SKILL.md, because
  * `evaluate-plugin-batch` must resolve it BY NAME. `meta.name` below is
@@ -74,6 +84,17 @@ const INLINE_FLOOR = 3
 const CONFIGS_WITH_BASELINE = ['with-skill', 'baseline']
 const CONFIGS_WITHOUT_BASELINE = ['with-skill']
 
+// The rollout harness. `subagent` stays the default; `headless` is opt-in
+// (`/evaluate:skill --harness headless`). Pass rates from the two are NOT
+// comparable — record the harness in every result file.
+const HARNESSES = ['subagent', 'headless']
+const DEFAULT_HARNESS = 'subagent'
+// The headless child's model and per-rollout spend cap. Haiku keeps a cell
+// cheap; rollout_headless.sh refuses to run uncapped without an explicit
+// EVAL_ALLOW_UNCAPPED=1.
+const DEFAULT_HEADLESS_MODEL = 'haiku'
+const DEFAULT_MAX_BUDGET_USD = 0.25
+
 const PREFLIGHT_SCHEMA = {
   type: 'object',
   required: ['compliance', 'evalsPath', 'evalIds', 'evalsCreated'],
@@ -91,6 +112,9 @@ const PREFLIGHT_SCHEMA = {
     // so a run that is 100% judge-graded is visible before it is paid for.
     deterministicExpectations: { type: 'integer' },
     judgeExpectations: { type: 'integer' },
+    // Headless only: `command -v claude jq python3` all resolved. False (or
+    // absent on a headless run) aborts with `headless-unavailable`.
+    headlessAvailable: { type: 'boolean' },
   },
 }
 
@@ -107,6 +131,15 @@ const ROLLOUT_SCHEMA = {
     transcriptPath: { type: 'string' },
     durationMs: { type: 'integer' },
     notes: { type: 'array', items: { type: 'string' } },
+    // Headless-harness fields, all optional so a subagent rollout is unchanged.
+    harness: { type: 'string', enum: HARNESSES },
+    tracePath: { type: 'string' },
+    workspacePath: { type: 'string' },
+    // The full model id the child actually ran (trace.json model_id), never
+    // the alias it was asked for.
+    modelId: { type: 'string' },
+    // Omitted when unknown (a killed or timed-out child has no result event).
+    costUsd: { type: 'number' },
   },
 }
 
@@ -175,7 +208,7 @@ const BENCHMARK_SCHEMA = {
   },
 }
 
-const PREFLIGHT_PROMPT = (plugin, skill, skillDir, createEvals) => `
+const PREFLIGHT_PROMPT = (plugin, skill, skillDir, createEvals, harness) => `
 You are the preflight stage of a skill evaluation. Do NOT evaluate anything.
 
 1. Structural gate. Run:
@@ -189,7 +222,9 @@ You are the preflight stage of a skill evaluation. Do NOT evaluate anything.
    Report \`evalsPath\` and \`evalIds\` — one entry per \`evals[].id\`, in file
    order. Count the expectations across every case and split them:
    \`deterministicExpectations\` are the typed-object checks
-   (regex / substring / substring_all / absent_regex) that
+   (regex / substring / substring_all / absent_regex, plus the trace and
+   workspace checks skill_triggered / tool_called / command_ran / file_exists /
+   file_regex / file_absent_regex / json_path / run_command) that
    \`grade_deterministic.py\` grades for zero model tokens;
    \`judgeExpectations\` are bare strings plus \`"check": "judge"\` objects.
 
@@ -209,9 +244,18 @@ You are the preflight stage of a skill evaluation. Do NOT evaluate anything.
    array and evalsCreated false — the caller decides whether to ask for
    --create-evals.`
  }
+${
+  harness === 'headless'
+    ? `
+4. Headless harness requested. Run:
+     command -v claude jq python3
+   Report headlessAvailable true only if all three resolved. Do not install
+   anything: a missing tool aborts the run as headless-unavailable.`
+    : ''
+}
 `
 
-const ROLLOUT_PROMPT = (cell, ctx) => `
+const SUBAGENT_ROLLOUT_PROMPT = (cell, ctx) => `
 You are executing ONE evaluation cell of a skill benchmark. You are the
 rollout, not the judge: produce a transcript and stop. Do not grade yourself,
 do not edit the skill under test, and do not touch any other cell's directory.
@@ -256,8 +300,70 @@ Cell: ${cell.id}
      bash evaluate-plugin/scripts/apply_fixture.sh --teardown "\$WORKDIR" --fixture '<the fixture JSON>'
 
 Report runDir and transcriptPath as absolute or repo-relative paths that
-another agent can open.
+another agent can open. Report harness "subagent".
 `
+
+// D1: the headless rollout agent is a thin RUNNER. It never performs the task —
+// the `claude -p` child that rollout_headless.sh launches does — so a model that
+// "helpfully" answers the prompt itself would be grading its own work.
+const HEADLESS_ROLLOUT_PROMPT = (cell, ctx) => `
+You are the RUNNER for ONE evaluation cell of a skill benchmark, on the
+headless harness. Do NOT perform the eval prompt yourself, do not grade, do not
+edit the skill under test, and do not touch any other cell's directory. A real
+\`claude -p\` child does the work; you only launch it and report what it did.
+
+Cell: ${cell.id}
+  eval case: ${cell.evalId}
+  run:       ${cell.run}
+  config:    ${cell.config}
+
+1. Scaffold the run directory:
+     bash evaluate-plugin/scripts/prepare_run.sh \\
+       --skill-dir ${ctx.skillDir} --eval-id ${cell.evalId} --run ${cell.run}${
+         cell.config === 'baseline' ? ' \\\n       --baseline' : ''
+       }
+   Parse RUN_DIR=.
+
+2. Write the case's prompt to a file, byte for byte:
+     jq -r --arg id ${cell.evalId} '.evals[] | select(.id == $id) | .prompt' ${ctx.evalsPath} > "$RUN_DIR/prompt.txt"
+
+3. Get a workdir OUTSIDE the repository (rollout_headless.sh refuses one inside
+   it, or one with a \`skills\` path component). If the case carries a
+   \`fixture\` block, apply it:
+     bash evaluate-plugin/scripts/apply_fixture.sh --fixture '<the fixture JSON>' --repo-root "$(pwd)"
+   and parse WORKDIR= (a fixture that fails to apply is status FIXTURE_FAILED
+   — stop). Otherwise create an empty one: WORKDIR="$(mktemp -d)".
+
+4. Launch the child:
+     bash evaluate-plugin/scripts/rollout_headless.sh \\
+       --run-dir "$RUN_DIR" --workdir "$WORKDIR" --prompt-file "$RUN_DIR/prompt.txt" \\
+       --model ${ctx.headlessModel} --max-budget-usd ${ctx.maxBudgetUsd}${
+         cell.config === 'baseline'
+           ? ''
+           : ` \\\n       --plugin-dir "$(pwd)/${ctx.plugin}"`
+       }
+   ${
+     cell.config === 'baseline'
+       ? 'This is the BASELINE config: pass NO --plugin-dir, so the child runs without the plugin.'
+       : 'This is the WITH-SKILL config: the child loads the plugin and must route to the skill by its description.'
+   }
+   Read its \`=== HEADLESS ROLLOUT ===\` block. Exit 0 with STATUS OK or WARN
+   is COMPLETED (put every ISSUES line in notes — a WARN such as foreign_hook
+   or session_id_leak is a finding, not noise). STATUS ERROR or exit 2 is
+   ERROR, with REASON in notes.
+
+5. Tear the workdir down — the snapshot is already in RUN_DIR/workspace:
+   with a fixture, \`bash evaluate-plugin/scripts/apply_fixture.sh --teardown "$WORKDIR" --fixture '<the fixture JSON>'\`;
+   otherwise remove the mktemp dir you created.
+
+Report harness "headless", runDir = RUN_DIR, transcriptPath = TRANSCRIPT_MD,
+tracePath = TRACE, workspacePath = WORKSPACE (omit either when empty),
+modelId = MODEL_ID, costUsd = COST_USD (omit when empty — never 0 for unknown),
+and durationMs from RUN_DIR/timing.json duration_ms.
+`
+
+const ROLLOUT_PROMPT = (cell, ctx) =>
+  ctx.harness === 'headless' ? HEADLESS_ROLLOUT_PROMPT(cell, ctx) : SUBAGENT_ROLLOUT_PROMPT(cell, ctx)
 
 const GRADE_PROMPT = (cell, rollout, ctx) => `
 Grade ONE evaluation cell against its assertions. You did not produce this
@@ -267,14 +373,23 @@ Cell: ${cell.id} (eval ${cell.evalId}, run ${cell.run}, config ${cell.config})
 Eval file:  ${ctx.evalsPath}
 Transcript: ${rollout.transcriptPath}
 Run dir:    ${rollout.runDir}
+Harness:    ${rollout.harness ?? ctx.harness}
 
 1. Grade the machine-checkable expectations FIRST, for zero model tokens:
      python3 evaluate-plugin/scripts/grade_deterministic.py \\
        --evals ${ctx.evalsPath} --eval-id ${cell.evalId} \\
-       --output ${rollout.transcriptPath} --json
+       --output ${rollout.transcriptPath}${
+         rollout.tracePath ? ` \\\n       --trace ${rollout.tracePath}` : ''
+       }${
+         rollout.workspacePath ? ` \\\n       --workspace ${rollout.workspacePath} --allow-exec` : ''
+       } --json
    Take its PASS/FAIL verdicts as final. Do NOT re-judge an expectation the
    script already decided — a second opinion on a regex is noise, and the whole
    point of the split is that ~70% of assertions cost nothing to grade.
+
+   Expectations it lists under \`harness_deferred\` (trace or workspace checks
+   with no input — every subagent-harness run) are EXCLUDED: never judge them
+   and leave them out of every total.
 
 2. Judge ONLY the expectations the script reported as DEFERRED. Cite evidence
    from the transcript or from the artifacts under the run dir for each verdict.
@@ -318,8 +433,10 @@ Required of the report:
               PARTIAL, else PASS.
 
 Then write the benchmark to ${ctx.skillDir}/eval-results/benchmark.json in the
-shape evaluate-plugin/references/schemas.md documents, and report that path as
-benchmarkPath. That file is the CONTRACT with the plugin-level roll-up:
+shape evaluate-plugin/references/schemas.md documents, with
+\`metadata.harness\` = "${ctx.harness}" (subagent and headless pass rates are not
+comparable, so a reader must be able to tell which one this is), and report that
+path as benchmarkPath. That file is the CONTRACT with the plugin-level roll-up:
 \`evaluate-plugin/scripts/aggregate_benchmark.sh\` reads
 \`.summary.with_skill.mean_pass_rate\` and \`.metadata.num_evals\` out of it, so
 those two keys must be populated even when the run is partial.
@@ -334,10 +451,18 @@ const RUNS = Math.max(1, INPUT.runs ?? 1)
 const BASELINE = INPUT.baseline ?? false
 const CREATE_EVALS = INPUT.createEvals ?? false
 const CELL_CAP = INPUT.cellCap ?? DEFAULT_CELL_CAP
+const HARNESS = INPUT.harness ?? DEFAULT_HARNESS
+const HEADLESS_MODEL = INPUT.headlessModel ?? DEFAULT_HEADLESS_MODEL
+const MAX_BUDGET_USD = INPUT.maxBudgetUsd ?? DEFAULT_MAX_BUDGET_USD
 
 if (!SKILL_DIR) {
   log('no skillDir — nothing to evaluate; abort')
   return { abort: true, reason: 'missing-skill-dir' }
+}
+
+if (!HARNESSES.includes(HARNESS)) {
+  log(`unknown harness ${JSON.stringify(HARNESS)} — expected one of ${HARNESSES.join(', ')}; abort`)
+  return { abort: true, reason: 'invalid-harness', harness: HARNESS }
 }
 
 // `<plugin>/skills/<skill>` — the shape `/evaluate:skill` already parses out of
@@ -346,7 +471,7 @@ const PLUGIN = SKILL_DIR.split('/')[0]
 const SKILL_NAME = SKILL_DIR.split('/').pop()
 
 phase('Preflight — structural gate + eval-case inventory, evaluate NOTHING')
-const pre = await agent(PREFLIGHT_PROMPT(PLUGIN, SKILL_NAME, SKILL_DIR, CREATE_EVALS), {
+const pre = await agent(PREFLIGHT_PROMPT(PLUGIN, SKILL_NAME, SKILL_DIR, CREATE_EVALS, HARNESS), {
   label: 'preflight',
   phase: 'Preflight',
   schema: PREFLIGHT_SCHEMA,
@@ -364,6 +489,13 @@ if (!pre) {
 if (pre.compliance === 'FAIL' || pre.compliance === 'ERROR') {
   log(`compliance ${pre.compliance} for ${SKILL_DIR} — refusing to benchmark a structurally broken skill`)
   return { abort: true, reason: `compliance-${pre.compliance.toLowerCase()}`, issues: pre.complianceIssues ?? [] }
+}
+
+// Headless needs `claude`, `jq` and `python3` on PATH. Refuse rather than
+// silently falling back to the subagent harness: a mixed run is not comparable.
+if (HARNESS === 'headless' && pre.headlessAvailable !== true) {
+  log('headless harness requested but `command -v claude jq python3` did not all resolve; abort')
+  return { abort: true, reason: 'headless-unavailable', harness: HARNESS }
 }
 
 if (!pre.evalIds?.length) {
@@ -421,12 +553,16 @@ log(
 const CTX = {
   skill: SKILL || SKILL_DIR,
   skillDir: SKILL_DIR,
+  plugin: PLUGIN,
   evalsPath: pre.evalsPath,
   runs: RUNS,
   baseline: BASELINE,
+  harness: HARNESS,
+  headlessModel: HEADLESS_MODEL,
+  maxBudgetUsd: MAX_BUDGET_USD,
 }
 
-phase(`Rollout + grade — ${CELLS.length} cells, rollout and grader are SEPARATE agents`)
+phase(`Rollout + grade — ${CELLS.length} cells (${HARNESS} harness), rollout and grader are SEPARATE agents`)
 
 // `pipeline`, not two `parallel` waves: cell A's grade does not wait on cell
 // B's rollout, and there is no cross-cell fact until Aggregate. The two stages
@@ -530,11 +666,18 @@ if (!report) {
   // Surface the raw cells rather than returning an empty success. The caller
   // (`evaluate-plugin-batch`, or the skill) can still see every graded cell.
   log('aggregation returned null — returning the raw graded cells so the run is not silently empty')
-  return { report: null, cells: rows, skillDir: SKILL_DIR, cellsErrored: errored }
+  return { report: null, cells: rows, skillDir: SKILL_DIR, harness: HARNESS, cellsErrored: errored }
 }
 
 // The return value IS the skill's documented Step 7 input: the benchmark path
 // the plugin-level `aggregate_benchmark.sh` roll-up will read, plus the rows
 // the summary table renders. The workflow renders no table and sets no exit
 // code — a workflow returns a value, not a process status.
-return { report, benchmarkPath: report.benchmarkPath, cells: rows, skillDir: SKILL_DIR, cellsErrored: errored }
+return {
+  report,
+  benchmarkPath: report.benchmarkPath,
+  cells: rows,
+  skillDir: SKILL_DIR,
+  harness: HARNESS,
+  cellsErrored: errored,
+}

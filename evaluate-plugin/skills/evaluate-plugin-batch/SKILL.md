@@ -1,12 +1,12 @@
 ---
 name: evaluate-plugin-batch
 description: Batch evaluate every skill in a plugin and produce a plugin-level report. Use when auditing an entire plugin's quality or validating before a release.
-args: <plugin-name> [--create-missing-evals] [--parallel N]
+args: <plugin-name> [--create-missing-evals] [--parallel N] [--harness subagent|headless]
 allowed-tools: Task, Read, Write, Glob, Grep, Bash(bash *), SlashCommand
 argument-hint: "git-plugin [--create-missing-evals]"
 agent: general-purpose
 created: 2026-03-04
-modified: 2026-09-26
+modified: 2026-10-05
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -36,6 +36,7 @@ Parse these from `$ARGUMENTS`:
 | `<plugin-name>` | required | Name of the plugin to evaluate |
 | `--create-missing-evals` | false | Generate evals for skills that lack them |
 | `--parallel N` | 1 | Max concurrent skill evaluations |
+| `--harness subagent\|headless` | `subagent` | Rollout harness forwarded to every `/evaluate:skill` run (see that skill). One harness per batch, so the per-skill benchmarks stay comparable |
 
 ## Workflow harness (template)
 
@@ -59,7 +60,9 @@ report a plugin pass rate without stating that the denominator came from the
 script; (c) the Aggregate stage is a barrier — `aggregate_benchmark.sh` walks
 the filesystem for every skill's `eval-results/benchmark.json`, so its
 denominators are only correct once the last cell has finished writing, and no
-single cell can see the plugin-level numbers.
+single cell can see the plugin-level numbers. The `harness` arg is forwarded
+verbatim to every `workflow('evaluate-skill', …)` child — never mixed within one
+batch, because subagent and headless pass rates are not comparable.
 
 Three consequences of (a)–(c) that are also non-negotiable:
 
@@ -134,8 +137,11 @@ Found N skills in <plugin-name>:
 For each included skill, invoke `/evaluate:skill` via the SlashCommand tool:
 
 ```
-SlashCommand: /evaluate:skill <plugin-name>/<skill-name> [--create-evals]
+SlashCommand: /evaluate:skill <plugin-name>/<skill-name> [--create-evals] [--harness <h>]
 ```
+
+Forward `--harness` unchanged to every skill when it was given; omit it otherwise
+(the default is `subagent`).
 
 If `--parallel N` is set and N > 1, batch evaluations into groups of N. Otherwise, run sequentially.
 
@@ -187,3 +193,4 @@ Rank skills by pass rate. Flag any below 50% as needing attention.
 |------|-------------|
 | `--create-missing-evals` | Generate eval cases for skills without them |
 | `--parallel N` | Max concurrent evaluations (default: 1) |
+| `--harness headless` | Run every skill's rollouts through real `claude -p` children (default: `subagent`) |

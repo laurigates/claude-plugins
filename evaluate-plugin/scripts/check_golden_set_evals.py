@@ -15,8 +15,14 @@ Two layers, per eval-ready canary:
   1. Shape: the file parses; skill_name matches the SKILL.md `name:`;
      skill_path points at that SKILL.md; ids are unique; every case has a
      prompt and expectations; expected_outcome (when present) is comply or
-     abstain; every typed check has a known type, its required field, a valid
-     scope, flags drawn from `imsx`, and a pattern that compiles.
+     abstain; a fixture holds no single quote (it is passed as
+     `--fixture '<JSON>'`); every typed check has a known type (all 13 grade_deterministic.py
+     types), its required fields, a valid scope, flags drawn from `imsx`, and
+     patterns that compile. Trace/workspace checks are held to the grader's
+     own contract: workspace paths relative with no `..`, `min <= max`,
+     exactly one json_path comparator, boolean `expect`/`exists`. An optional
+     `triggers` block is validated by run_trigger_evals.validate_triggers, the
+     same function the trigger runner uses, so the two cannot drift.
   2. Teeth: recorded probe outputs (fixtures/golden-set-probes.json) are run
      through the SHIPPED grader (grade_deterministic.py --json). A `pass` probe
      must clear every deterministic check; a `fail` probe must fail at least
@@ -24,11 +30,18 @@ Two layers, per eval-ready canary:
      check type. For an abstention control that means a fabricated answer fails
      on its absent_regex, for zero judge tokens.
 
+Probes for trace/workspace checks carry the headless-harness inputs:
+`trace_file` (a trace.json v1, relative to the probes file), `workspace_dir`
+(a directory relative to the probes file) or `workspace_setup` (shell commands
+materialised into a fresh temp dir, so no nested `.git` is ever committed).
+A probe with a workspace is graded with --allow-exec: probes and evals.json are
+repo-authored. A `pass` probe on a case with trace or workspace checks must
+report HARNESS_DEFERRED=0 — otherwise the checks it claims to exercise were
+never graded.
+
 Every eval-ready canary needs at least one pass probe and one fail probe, and a
 suite with an abstention case needs one abstain case probed with a fabrication
-that fails on absent_regex. The single exemption is git-commit: its abstention
-case (gc-006) arrives with #2778, which ships its own fabricated/refusal
-fixtures in test-grade-deterministic.sh.
+that fails on absent_regex.
 
 Output follows .claude/rules/structured-script-output.md.
 
@@ -40,25 +53,66 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import shutil
 import subprocess
 import sys
-from pathlib import Path
+import tempfile
+from pathlib import Path, PurePosixPath
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 GRADER = SCRIPT_DIR / "grade_deterministic.py"
 DEFAULT_PROBES = Path("evaluate-plugin/scripts/tests/fixtures/golden-set-probes.json")
 
+sys.path.insert(0, str(SCRIPT_DIR))
+from grade_deterministic import MalformedCheck, _parse_query  # noqa: E402
+from run_trigger_evals import validate_triggers  # noqa: E402
+
+# Required fields per check type -- every type grade_deterministic.py
+# dispatches, plus judge. A missing field is check_malformed.
 CHECK_FIELDS = {
-    "regex": "pattern",
-    "absent_regex": "pattern",
-    "substring": "value",
-    "substring_all": "values",
-    "judge": None,
+    "regex": ("pattern",),
+    "absent_regex": ("pattern",),
+    "substring": ("value",),
+    "substring_all": ("values",),
+    "judge": (),
+    "skill_triggered": ("skill",),
+    "tool_called": ("tool",),
+    "command_ran": ("pattern",),
+    "file_exists": ("path",),
+    "file_regex": ("path", "pattern"),
+    "file_absent_regex": ("path", "pattern"),
+    "json_path": ("path", "query"),
+    "run_command": ("command",),
+}
+# Pattern-bearing keys per check type; each present one must compile with the
+# check's flags (drives pattern_invalid).
+PATTERN_CHECKS = {
+    "regex": ("pattern",),
+    "absent_regex": ("pattern",),
+    "tool_called": ("pattern",),
+    "command_ran": ("pattern",),
+    "file_regex": ("pattern",),
+    "file_absent_regex": ("pattern",),
+    "json_path": ("regex",),
+    "run_command": ("stdout_regex",),
+}
+TRACE_CHECKS = {"skill_triggered", "tool_called", "command_ran"}
+WORKSPACE_CHECKS = {
+    "file_exists",
+    "file_regex",
+    "file_absent_regex",
+    "json_path",
+    "run_command",
 }
 SCOPES = {"full", "subject", "body"}
 OUTCOMES = {"comply", "abstain"}
-ABSTAIN_PROBE_EXEMPT = {"git-plugin/git-commit"}
+# Suites allowed an abstention case without a fabrication probe. Empty since
+# gc-006 gained its own probes (fabricated -> absent_regex; a commit that ran
+# -> command_ran).
+ABSTAIN_PROBE_EXEMPT: set = set()
+FLAG_TABLE = {"i": re.I, "m": re.M, "s": re.S, "x": re.X}
 
 
 def frontmatter_name(skill_md: Path) -> str | None:
@@ -72,6 +126,77 @@ def frontmatter_name(skill_md: Path) -> str | None:
         if m:
             return m.group(1).strip("'\"")
     return None
+
+
+def _nonneg_int(value) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+
+def _check_shape(check: str, exp: dict) -> list[str]:
+    """Problems with a typed check's non-pattern fields (empty when sound).
+
+    Mirrors the grader's own MalformedCheck rules so an authoring error is
+    caught at validation time, not on the first headless run.
+    """
+    problems = []
+    if "path" in exp:
+        path = exp["path"]
+        if not isinstance(path, str) or not path.strip():
+            problems.append("path must be a non-empty string")
+        elif PurePosixPath(path).is_absolute() or ".." in PurePosixPath(path).parts:
+            problems.append(f"path {path!r} must be relative with no '..'")
+    for key in ("expect", "exists"):
+        if key in exp and not isinstance(exp[key], bool):
+            problems.append(f"{key} must be a boolean")
+    if check in ("tool_called", "command_ran"):
+        lo, hi = exp.get("min"), exp.get("max")
+        for key, value in (("min", lo), ("max", hi)):
+            if value is not None and not _nonneg_int(value):
+                problems.append(f"{key} must be a non-negative integer")
+        if _nonneg_int(lo) and _nonneg_int(hi) and lo > hi:
+            problems.append(f"min ({lo}) > max ({hi})")
+    if check == "json_path":
+        comparators = [k for k in ("equals", "regex", "exists") if k in exp]
+        if len(comparators) != 1:
+            problems.append(
+                f"json_path needs exactly one of equals|regex|exists, got {comparators or 'none'}"
+            )
+        try:
+            _parse_query(exp.get("query"))
+        except MalformedCheck as err:
+            problems.append(str(err))
+    if check == "run_command":
+        if not isinstance(exp.get("command"), str) or not exp["command"].strip():
+            problems.append("command must be a non-empty string")
+        if "expect_exit" in exp and (
+            isinstance(exp["expect_exit"], bool)
+            or not isinstance(exp["expect_exit"], int)
+        ):
+            problems.append("expect_exit must be an integer")
+        timeout = exp.get("timeout", 30)
+        if (
+            isinstance(timeout, bool)
+            or not isinstance(timeout, (int, float))
+            or timeout <= 0
+        ):
+            problems.append("timeout must be a positive number")
+    for key in {"skill_triggered": ("skill",), "tool_called": ("tool",)}.get(check, ()):
+        if not isinstance(exp.get(key), str) or not exp[key].strip():
+            problems.append(f"{key} must be a non-empty string")
+    return problems
+
+
+def _plugin_name(root: Path, plugin: str) -> str | None:
+    try:
+        data = json.loads(
+            (root / plugin / ".claude-plugin" / "plugin.json").read_text(
+                encoding="utf-8"
+            )
+        )
+    except (OSError, ValueError):
+        return None
+    name = data.get("name") if isinstance(data, dict) else None
+    return name if isinstance(name, str) else None
 
 
 def validate_suite(root: Path, ref: str, issues: list) -> dict | None:
@@ -135,6 +260,21 @@ def validate_suite(root: Path, ref: str, issues: list) -> dict | None:
                     f"{cid} has expected_outcome {outcome!r}",
                 )
             )
+        # Every rollout prompt and SKILL.md applies a fixture as
+        # `apply_fixture.sh --fixture '<the fixture JSON>'`. A single quote
+        # inside the JSON splits that shell word: the script then sees
+        # truncated JSON, reports FIXTURE_APPLIED=false STATUS=OK, and the cell
+        # runs with no fixture (in the user's repo, on the subagent harness).
+        fixture = case.get("fixture")
+        if fixture is not None and "'" in json.dumps(fixture, ensure_ascii=False):
+            issues.append(
+                (
+                    "fixture_unquotable",
+                    rel,
+                    f"{cid} fixture contains a single quote; the documented "
+                    f"--fixture '<JSON>' invocation would split it (use double quotes)",
+                )
+            )
         exps = case.get("expectations")
         if not isinstance(exps, list) or not exps:
             issues.append(("case_malformed", rel, f"{cid} has no expectations"))
@@ -158,10 +298,10 @@ def validate_suite(root: Path, ref: str, issues: list) -> dict | None:
                     ("check_unknown", rel, f"{label} uses unknown check {check!r}")
                 )
                 continue
-            field = CHECK_FIELDS[check]
-            if field and field not in exp:
+            missing = [f for f in CHECK_FIELDS[check] if f not in exp]
+            if missing:
                 issues.append(
-                    ("check_malformed", rel, f"{label} ({check}) lacks {field!r}")
+                    ("check_malformed", rel, f"{label} ({check}) lacks {missing[0]!r}")
                 )
                 continue
             if exp.get("scope", "full") not in SCOPES:
@@ -169,37 +309,122 @@ def validate_suite(root: Path, ref: str, issues: list) -> dict | None:
                     ("check_malformed", rel, f"{label} has scope {exp.get('scope')!r}")
                 )
             flags = exp.get("flags", "")
-            if any(ch not in "imsx" for ch in flags):
+            if not isinstance(flags, str) or any(ch not in FLAG_TABLE for ch in flags):
                 issues.append(("check_malformed", rel, f"{label} has flags {flags!r}"))
                 continue
-            if check in ("regex", "absent_regex"):
-                table = {"i": re.I, "m": re.M, "s": re.S, "x": re.X}
-                value = 0
-                for ch in flags:
-                    value |= table[ch]
+            shape = _check_shape(check, exp)
+            if shape:
+                issues.append(
+                    ("check_malformed", rel, f"{label} ({check}): {shape[0]}")
+                )
+                continue
+            value = 0
+            for ch in flags:
+                value |= FLAG_TABLE[ch]
+            for key in PATTERN_CHECKS.get(check, ()):
+                if key not in exp:
+                    continue
                 try:
-                    re.compile(exp["pattern"], value)
+                    if not isinstance(exp[key], str):
+                        raise re.error(f"{key} must be a string")
+                    re.compile(exp[key], value)
                 except re.error as err:
                     issues.append(("pattern_invalid", rel, f"{label}: {err}"))
+
+    if "triggers" in data:
+        names = tuple(
+            n
+            for n in (skill, frontmatter_name(skill_md) if skill_md.is_file() else None)
+            if n
+        )
+        errors, _peers = validate_triggers(
+            data["triggers"],
+            seen,
+            root,
+            own_plugin=_plugin_name(root, plugin),
+            skill_names=names,
+        )
+        for err in errors:
+            issues.append(("triggers_invalid", rel, err))
     return {
         "rel": rel,
         "cases": {c.get("id"): c for c in data["evals"] if isinstance(c, dict)},
     }
 
 
-def grade(evals_path: Path, case_id: str, output: str) -> dict:
+def case_needs(case: dict) -> set:
+    """Which headless inputs a case's typed checks read: {'trace','workspace'}."""
+    needs = set()
+    for exp in case.get("expectations", []):
+        if isinstance(exp, dict):
+            if exp.get("check") in TRACE_CHECKS:
+                needs.add("trace")
+            elif exp.get("check") in WORKSPACE_CHECKS:
+                needs.add("workspace")
+    return needs
+
+
+def materialise_workspace(commands: list, dest: Path) -> None:
+    """Run ``workspace_setup`` commands in ``dest`` with a hermetic git env.
+
+    Raises RuntimeError naming the first command that fails.
+    """
+    home = dest.parent / "home"
+    home.mkdir(exist_ok=True)
+    env = {
+        "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+        "HOME": str(home),
+        "LANG": "C.UTF-8",
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "GIT_AUTHOR_NAME": "eval",
+        "GIT_AUTHOR_EMAIL": "eval@example.invalid",
+        "GIT_COMMITTER_NAME": "eval",
+        "GIT_COMMITTER_EMAIL": "eval@example.invalid",
+        "GIT_TERMINAL_PROMPT": "0",
+    }
+    for cmd in commands:
+        if not isinstance(cmd, str):
+            raise RuntimeError(f"workspace_setup entry {cmd!r} is not a string")
+        proc = subprocess.run(
+            ["bash", "-c", cmd],
+            cwd=dest,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=False,
+        )
+        if proc.returncode != 0:
+            raise RuntimeError(
+                f"workspace_setup {cmd!r} exited {proc.returncode}: {proc.stderr.strip()[:200]}"
+            )
+
+
+def grade(
+    evals_path: Path,
+    case_id: str,
+    output: str,
+    trace: Path | None = None,
+    workspace: Path | None = None,
+) -> dict:
+    cmd = [
+        sys.executable,
+        str(GRADER),
+        "--evals",
+        str(evals_path),
+        "--eval-id",
+        case_id,
+        "--output",
+        "-",
+        "--json",
+    ]
+    if trace is not None:
+        cmd += ["--trace", str(trace)]
+    if workspace is not None:
+        cmd += ["--workspace", str(workspace), "--allow-exec"]
     proc = subprocess.run(
-        [
-            sys.executable,
-            str(GRADER),
-            "--evals",
-            str(evals_path),
-            "--eval-id",
-            case_id,
-            "--output",
-            "-",
-            "--json",
-        ],
+        cmd,
         input=output,
         capture_output=True,
         text=True,
@@ -307,19 +532,96 @@ def main(argv=None) -> int:
                 ("probe_malformed", str(probes_path), f"{where}: expect is {expect!r}")
             )
             continue
-        if "output_file" in probe:
-            output = (probes_path.parent / probe["output_file"]).read_text(
-                encoding="utf-8"
-            )
-        else:
-            output = probe.get("output", "")
         try:
-            graded = grade(root / suites[ref]["rel"], cid, output)
-        except (RuntimeError, ValueError) as err:
-            issues.append(("grader_failed", suites[ref]["rel"], f"{where}: {err}"))
+            if "output_file" in probe:
+                output = (probes_path.parent / probe["output_file"]).read_text(
+                    encoding="utf-8"
+                )
+            else:
+                output = probe.get("output", "")
+        except OSError as err:
+            issues.append(("probe_malformed", str(probes_path), f"{where}: {err}"))
             continue
+        trace = None
+        if "trace_file" in probe:
+            trace = probes_path.parent / str(probe["trace_file"])
+            if not trace.is_file():
+                issues.append(
+                    (
+                        "probe_malformed",
+                        str(probes_path),
+                        f"{where}: no trace_file {trace}",
+                    )
+                )
+                continue
+        if "workspace_dir" in probe and "workspace_setup" in probe:
+            issues.append(
+                (
+                    "probe_malformed",
+                    str(probes_path),
+                    f"{where}: give workspace_dir or workspace_setup, not both",
+                )
+            )
+            continue
+        scratch = None
+        workspace = None
+        try:
+            if "workspace_dir" in probe:
+                workspace = probes_path.parent / str(probe["workspace_dir"])
+                if not workspace.is_dir():
+                    issues.append(
+                        (
+                            "probe_malformed",
+                            str(probes_path),
+                            f"{where}: no workspace_dir {workspace}",
+                        )
+                    )
+                    continue
+            elif "workspace_setup" in probe:
+                setup = probe["workspace_setup"]
+                if not isinstance(setup, list):
+                    issues.append(
+                        (
+                            "probe_malformed",
+                            str(probes_path),
+                            f"{where}: workspace_setup must be a list of commands",
+                        )
+                    )
+                    continue
+                scratch = Path(tempfile.mkdtemp(prefix="golden-probe-"))
+                workspace = scratch / "ws"
+                workspace.mkdir()
+                try:
+                    materialise_workspace(setup, workspace)
+                except (RuntimeError, subprocess.TimeoutExpired) as err:
+                    issues.append(
+                        ("probe_setup_failed", str(probes_path), f"{where}: {err}")
+                    )
+                    continue
+            try:
+                graded = grade(root / suites[ref]["rel"], cid, output, trace, workspace)
+            except (RuntimeError, ValueError) as err:
+                issues.append(("grader_failed", suites[ref]["rel"], f"{where}: {err}"))
+                continue
+        finally:
+            if scratch is not None:
+                shutil.rmtree(scratch, ignore_errors=True)
         run += 1
         summary = graded["summary"]
+        needs = case_needs(case)
+        if expect == "pass" and needs and summary.get("harness_deferred", 0):
+            deferred = "; ".join(
+                r["assertion"] for r in graded.get("harness_deferred", [])
+            )
+            issues.append(
+                (
+                    "pass_probe_harness_deferred",
+                    suites[ref]["rel"],
+                    f"{where}: the case's {'/'.join(sorted(needs))} checks were never graded "
+                    f"(HARNESS_DEFERRED={summary['harness_deferred']}: {deferred}); "
+                    "give the probe trace_file / workspace_dir / workspace_setup",
+                )
+            )
         failed = [r for r in graded["deterministic"] if not r.get("passed")]
         if summary["deterministic_total"] == 0:
             issues.append(
@@ -411,6 +713,9 @@ def main(argv=None) -> int:
         f"ABSTAIN_CASES={sum(1 for s in suites.values() for c in s['cases'].values() if c.get('expected_outcome') == 'abstain')}"
     )
     print(f"PROBES_RUN={run}")
+    print(
+        f"HEADLESS_CASES={sum(1 for s in suites.values() for c in s['cases'].values() if case_needs(c))}"
+    )
     print(f"ABSTAIN_PROBE_EXEMPT={','.join(sorted(ABSTAIN_PROBE_EXEMPT))}")
     print(f"STATUS={'ERROR' if issues else 'OK'}")
     print(f"ISSUE_COUNT={len(issues)}")

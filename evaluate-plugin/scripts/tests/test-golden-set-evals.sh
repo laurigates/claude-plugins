@@ -10,7 +10,9 @@
 # Case A runs the checker on the real repo. Cases B-K each break ONE thing in a
 # faithful copy of the golden-set corpus and require the checker to name it;
 # case B0 requires the unbroken copy to pass, without which every "must fail"
-# below would hold for a checker that fails everything.
+# below would hold for a checker that fails everything. Cases M-T cover the
+# headless-harness surface: trace/workspace check shapes, the triggers block,
+# and probes that carry a trace.json and a materialised workspace.
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -41,6 +43,11 @@ assert "A the declared floor is at least 8" "$(ge "$(val "$out" COVERAGE_FLOOR)"
 assert "A every ready suite validated" "$([ "$(val "$out" SUITES_VALID)" = "$ready" ] && echo true || echo false)"
 assert "A ran at least two probes per suite" "$(ge "$(val "$out" PROBES_RUN)" $((ready * 2)))"
 assert "A carries at least 7 abstention cases" "$(ge "$(val "$out" ABSTAIN_CASES)" 7)"
+# The headless-harness cases (gc-006's command_ran, gc-007's trace/workspace
+# checks) are probed with real inputs, so they are graded, not deferred.
+assert "A at least 2 cases carry trace/workspace checks" "$(ge "$(val "$out" HEADLESS_CASES)" 2)"
+# git-commit's abstention case is probed now: nothing is exempt any more.
+assert "A no suite is exempt from the abstention probe" "$([ -z "$(val "$out" ABSTAIN_PROBE_EXEMPT)" ] && echo true || echo false)"
 
 # --- fixture: a faithful copy of the corpus the checker reads ---------------
 stage() {
@@ -53,14 +60,19 @@ def cp(rel):
     (dst / rel).parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src / rel, dst / rel)
 cp("evaluate-plugin/golden-set.json")
-for name in ("golden-set-probes.json", "gc-001-good.txt", "gc-001-bad.txt"):
-    cp(f"evaluate-plugin/scripts/tests/fixtures/{name}")
+# Every probe output / trace fixture the probes file may reference.
+fixtures = "evaluate-plugin/scripts/tests/fixtures"
+for f in sorted((src / fixtures).iterdir()):
+    if f.is_file():
+        cp(f"{fixtures}/{f.name}")
 for c in json.loads((src / "evaluate-plugin/golden-set.json").read_text())["canaries"]:
     plugin, skill = c["skill"].split("/", 1)
     base = f"{plugin}/skills/{skill}"
     if (src / base / "evals.json").is_file():
         cp(f"{base}/evals.json")
         cp(f"{base}/SKILL.md")
+        # The triggers block is validated against the owning plugin's name.
+        cp(f"{plugin}/.claude-plugin/plugin.json")
 PY
 }
 
@@ -77,6 +89,7 @@ PY
 
 run() { python3 "$CHECK" --project-dir "$fx/$1" 2>&1; }
 RG=tools-plugin/skills/rg-code-search/evals.json
+GC=git-plugin/skills/git-commit/evals.json
 PROBES=evaluate-plugin/scripts/tests/fixtures/golden-set-probes.json
 
 echo "=== B0: the unmutated copy passes ==="
@@ -164,6 +177,92 @@ edit k evaluate-plugin/golden-set.json 'd["canaries"]=[{"skill":"nope-plugin/nop
 out="$(run k)"; rc=$?
 assert "K exits 1" "$([ $rc -eq 1 ] && echo true || echo false)"
 assert "K names nothing_scanned" "$(has "$out" 'nothing_scanned')"
+
+# mutate_case <dir> <case-id> <check-type> <python stmt over e> -- edit the
+# first expectation of that check type in one git-commit case.
+mutate_case() {
+  edit "$1" "$GC" "c=[x for x in d['evals'] if x['id']=='$2'][0]; e=[x for x in c['expectations'] if isinstance(x,dict) and x.get('check')=='$3'][0]; $4"
+}
+
+echo "=== M: a workspace path that escapes is caught at validation time ==="
+stage m
+edit m "$GC" 'c=[x for x in d["evals"] if x["id"]=="gc-007"][0]; c["expectations"].insert(0, {"assertion":"a","check":"file_exists","path":"../outside"})'
+out="$(run m)"; rc=$?
+assert "M exits 1" "$([ $rc -eq 1 ] && echo true || echo false)"
+assert "M names check_malformed for the .. path" "$(has "$out" "must be relative with no '..'")"
+
+echo "=== N: command_ran with min > max ==="
+stage n
+mutate_case n gc-006 command_ran 'e["min"]=2'
+out="$(run n)"; rc=$?
+assert "N exits 1" "$([ $rc -eq 1 ] && echo true || echo false)"
+assert "N names min > max" "$(has "$out" 'min (2) > max (0)')"
+
+echo "=== O: json_path with two comparators, and a non-boolean expect ==="
+stage o
+edit o "$GC" 'c=[x for x in d["evals"] if x["id"]=="gc-007"][0]; c["expectations"][:0]=[{"assertion":"j","check":"json_path","path":"a.json","query":"x","equals":1,"exists":True},{"assertion":"s","check":"skill_triggered","skill":"git-commit","expect":"yes"}]'
+out="$(run o)"; rc=$?
+assert "O exits 1" "$([ $rc -eq 1 ] && echo true || echo false)"
+assert "O names the comparator count" "$(has "$out" 'json_path needs exactly one of equals|regex|exists')"
+assert "O names the non-boolean expect" "$(has "$out" 'expect must be a boolean')"
+
+echo "=== P: a trace check pattern that does not compile (PATTERN_CHECKS) ==="
+stage p
+mutate_case p gc-007 command_ran 'e["pattern"]="git(commit"'
+out="$(run p)"; rc=$?
+assert "P exits 1" "$([ $rc -eq 1 ] && echo true || echo false)"
+assert "P names pattern_invalid" "$(has "$out" 'pattern_invalid')"
+
+echo "=== Q: an invalid triggers block ==="
+stage q
+edit q "$GC" 'd["triggers"]["should_trigger"][0]["id"]="gc-001"; d["triggers"]["should_trigger"][1]["near_miss_of"]="git-plugin:github-pr-title"; d["triggers"]["skill"]="other-plugin:git-commit"'
+out="$(run q)"; rc=$?
+assert "Q exits 1" "$([ $rc -eq 1 ] && echo true || echo false)"
+assert "Q names triggers_invalid" "$(has "$out" 'triggers_invalid')"
+assert "Q a trigger id colliding with an eval id" "$(has "$out" "collides with an evals[].id")"
+assert "Q near_miss_of on a should_trigger prompt" "$(has "$out" 'near_miss_of must be a non-empty string on should_not_trigger only')"
+assert "Q a skill outside the owning plugin" "$(has "$out" "is not this skill's plugin")"
+
+echo "=== R: a pass probe for a headless case without its trace is not a pass ==="
+stage r
+edit r "$PROBES" 'p=[x for x in d["probes"] if x["case"]=="gc-007" and x["expect"]=="pass"][0]; del p["trace_file"]'
+out="$(run r)"; rc=$?
+assert "R exits 1" "$([ $rc -eq 1 ] && echo true || echo false)"
+assert "R names pass_probe_harness_deferred" "$(has "$out" 'pass_probe_harness_deferred')"
+
+echo "=== S: a workspace probe whose setup no longer reaches the bad state ==="
+# The run_command fail probe's HEAD subject is repaired to a conventional one.
+# Its trace already shows the commit, so the known-bad output now clears every
+# check and the probe must be reported as having lost its teeth.
+stage s
+edit s "$PROBES" 'p=[x for x in d["probes"] if x["case"]=="gc-007" and x.get("fails_on")=="run_command"][0]; p["workspace_setup"][-1]="git commit -q -m '"'"'docs(readme): add project readme'"'"'"'
+out="$(run s)"; rc=$?
+assert "S exits 1" "$([ $rc -eq 1 ] && echo true || echo false)"
+assert "S names fail_probe_passed" "$(has "$out" 'fail_probe_passed')"
+
+echo "=== T: a workspace_setup command that fails is reported, not graded ==="
+stage t
+edit t "$PROBES" 'p=[x for x in d["probes"] if x["case"]=="gc-007" and x["expect"]=="pass"][0]; p["workspace_setup"].append("false")'
+out="$(run t)"; rc=$?
+assert "T exits 1" "$([ $rc -eq 1 ] && echo true || echo false)"
+assert "T names probe_setup_failed" "$(has "$out" 'probe_setup_failed')"
+
+echo "=== U: dropping gc-006's fabrication probe re-opens the abstention gap ==="
+stage u
+edit u "$PROBES" 'd["probes"]=[x for x in d["probes"] if not (x["case"]=="gc-006" and x.get("fails_on")=="absent_regex")]'
+out="$(run u)"; rc=$?
+assert "U exits 1" "$([ $rc -eq 1 ] && echo true || echo false)"
+assert "U names abstention_unprobed for git-commit" "$(has "$out" 'TYPE=abstention_unprobed FILE=git-plugin/skills/git-commit/evals.json')"
+
+echo "=== V: a fixture with a single quote breaks --fixture '<JSON>' ==="
+# Regression: gc-007's setup used printf '...'; filled into the documented
+# `apply_fixture.sh --fixture '<the fixture JSON>'` invocation, the embedded
+# quote split the word and apply_fixture.sh silently applied NO fixture.
+stage v
+edit v "$GC" 'c=[x for x in d["evals"] if x["id"]=="gc-007"][0]; c["fixture"]["setup"][2]="printf '"'"'# Demo\\n'"'"' > README.md"'
+out="$(run v)"; rc=$?
+assert "V exits 1" "$([ $rc -eq 1 ] && echo true || echo false)"
+assert "V names fixture_unquotable for gc-007" "$(has "$out" 'TYPE=fixture_unquotable')"
 
 echo "=== L: unknown argument exits 2 ==="
 python3 "$CHECK" --nope >/dev/null 2>&1; rc=$?
