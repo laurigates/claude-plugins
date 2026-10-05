@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.49.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.49.1...agent-patterns-plugin-v2.49.2) (2026-10-05)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** add the session-header and User-Agent rejections to the direct OpenCode Go route ([#2899](https://github.com/laurigates/claude-plugins/issues/2899)) ([4d4557a](https://github.com/laurigates/claude-plugins/commit/4d4557a1e131cd7d4a09b726bfee2e30192950af))
+
 ## [2.49.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.49.0...agent-patterns-plugin-v2.49.1) (2026-10-05)
 
 

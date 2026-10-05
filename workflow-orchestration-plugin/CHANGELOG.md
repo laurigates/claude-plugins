@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.13.0...workflow-orchestration-plugin-v1.13.1) (2026-10-05)
+
+
+### Documentation
+
+* **workflow-orchestration-plugin:** note that follow-up-filing issue sweeps do not converge ([#2898](https://github.com/laurigates/claude-plugins/issues/2898)) ([44b26e0](https://github.com/laurigates/claude-plugins/commit/44b26e09e6ba58b6571169bec6345ca4ee90751c))
+
 ## [1.13.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.12.1...workflow-orchestration-plugin-v1.13.0) (2026-09-29)
 
 

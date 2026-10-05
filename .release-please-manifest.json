@@ -1,6 +1,6 @@
 {
   "accessibility-plugin": "2.3.6",
-  "agent-patterns-plugin": "2.49.1",
+  "agent-patterns-plugin": "2.49.2",
   "agents-plugin": "1.14.3",
   "api-plugin": "2.0.1",
   "bevy-plugin": "1.4.2",
@@ -42,5 +42,5 @@
   "typescript-plugin": "1.10.0",
   "session-plugin": "1.12.1",
   "software-design-plugin": "1.2.0",
-  "workflow-orchestration-plugin": "1.13.0"
+  "workflow-orchestration-plugin": "1.13.1"
 }
