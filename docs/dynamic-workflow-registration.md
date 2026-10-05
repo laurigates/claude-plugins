@@ -177,6 +177,6 @@ that happens:
 
 - `.claude/rules/workflow-vs-skill.md` — when a bundled template earns its agents; the layout convention and the global-registration rule
 - `.claude/rules/plugin-structure.md` § "Bundled Workflow Templates" — the same four rows in table form
-- `.claude/rules/agent-development.md` § Dynamic Workflows — the nested-`.claude/` closest-wins resolution note
+- `.claude/rules/agent-development.md` § Scope Priority — the nested-`.claude/` closest-wins resolution note
 - `.claude/rules/docs-currency.md` — this doc lands in the same commit as the `.js` that depends on it
 - `docs/plans/dynamic-workflow-migration.md` — the evaluation that made `evaluate-skill` the one exception

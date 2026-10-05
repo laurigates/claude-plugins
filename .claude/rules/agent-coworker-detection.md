@@ -38,7 +38,7 @@ A child `Agent(isolation: "worktree")` can briefly leak a new file into the **pa
 
 ### Bare flip (issue #1692)
 
-`fatal: this operation must be run in a work tree` on every `git status`/`commit` means the shared checkout was flipped to `core.bare=true`, or a leaked `GIT_DIR`/`GIT_WORK_TREE` redirected git at another tree. It is not your fault; stop and recover via `git-plugin:git-coworker-check` § Recovering from a bare flip. Worktree-isolation hardening (2.1.216, 2.1.222; `.claude/rules/agent-development.md` § Worktree Isolation) closes the isolation-driven path to this hazard on 2.1.222+; the *shared, non-isolated* checkout cause — a script/hook bug (the class `scripts/check-git-sandbox-guards.sh` guards against) or a bad `GIT_DIR` export — remains.
+`fatal: this operation must be run in a work tree` on every `git status`/`commit` means the shared checkout was flipped to `core.bare=true`, or a leaked `GIT_DIR`/`GIT_WORK_TREE` redirected git at another tree. It is not your fault; stop and recover via `git-plugin:git-coworker-check` § Recovering from a bare flip. Worktree-isolation hardening (2.1.216, 2.1.222; `.claude/rules/agent-runtime.md` § Worktree Isolation) closes the isolation-driven path to this hazard on 2.1.222+; the *shared, non-isolated* checkout cause — a script/hook bug (the class `scripts/check-git-sandbox-guards.sh` guards against) or a bad `GIT_DIR` export — remains.
 
 **Commit early.** Untracked files are the only work a concurrent branch switch / reset can destroy with no recovery path — committed work survives in the reflog, untracked work does not. When many sibling worktrees are active in one clone, commit or stash new files promptly and prefer working in your own `git worktree` so a flip in the shared checkout cannot reach your tree.
 
@@ -104,7 +104,7 @@ The remaining per-signal caveats (marker adoption, sandboxed process scans, base
 ## Related Rules
 
 - `.claude/rules/handling-blocked-hooks.md` — how to respond when a PreToolUse coworker-check hook blocks a command
-- `.claude/rules/agent-development.md` — worktree isolation as the preferred answer to concurrency
+- `.claude/rules/agent-runtime.md` — worktree isolation as the preferred answer to concurrency
 - `.claude/rules/sandbox-guidance.md` — `/proc` and `lsof` availability in the web sandbox
 - `git-plugin:git-coworker-check` — the detection skill, its scripts, signal design, and recovery
 - `agent-patterns-plugin:parallel-agent-dispatch` — `Workflow` resume (#1868) and worktree-cleanup incidents
