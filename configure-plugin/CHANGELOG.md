@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.37.3](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.37.2...configure-plugin-v1.37.3) (2026-10-05)
+
+
+### Documentation
+
+* **configure-plugin:** add Agentic Optimizations table to go-feature-flag ([#2905](https://github.com/laurigates/claude-plugins/issues/2905)) ([18fbeb0](https://github.com/laurigates/claude-plugins/commit/18fbeb09b7998ef9da6b1a24371a884ed9e9bb79)), closes [#2894](https://github.com/laurigates/claude-plugins/issues/2894)
+
 ## [1.37.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.37.1...configure-plugin-v1.37.2) (2026-10-05)
 
 
