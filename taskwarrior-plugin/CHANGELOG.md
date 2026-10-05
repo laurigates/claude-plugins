@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.3](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.14.2...taskwarrior-plugin-v1.14.3) (2026-10-05)
+
+
+### Documentation
+
+* **rules:** lean agent-coworker-detection.md to its always-on invariants ([#2882](https://github.com/laurigates/claude-plugins/issues/2882)) ([3f29b53](https://github.com/laurigates/claude-plugins/commit/3f29b538ed5eee32bfef6ea22bb0f685aeffda1f)), closes [#2140](https://github.com/laurigates/claude-plugins/issues/2140)
+
 ## [1.14.2](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.14.1...taskwarrior-plugin-v1.14.2) (2026-09-28)
 
 

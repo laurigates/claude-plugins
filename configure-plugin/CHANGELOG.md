@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.37.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.37.1...configure-plugin-v1.37.2) (2026-10-05)
+
+
+### Code Refactoring
+
+* **configure-plugin:** split oversized skill bodies into references/ ([#2896](https://github.com/laurigates/claude-plugins/issues/2896)) ([b05a664](https://github.com/laurigates/claude-plugins/commit/b05a664ba6212aa7f9c0b9d40fd67f3bbd4e95ed))
+
 ## [1.37.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.37.0...configure-plugin-v1.37.1) (2026-10-05)
 
 
