@@ -1,6 +1,6 @@
 ---
 created: 2026-02-25
-modified: 2026-09-28
+modified: 2026-10-04
 reviewed: 2026-09-23
 paths:
   - "**/agents/**"
@@ -237,10 +237,7 @@ For filesystem-level isolation, give agents their own git worktree so they work 
 
 > **Note (2.1.212, deprecated)**: A call-site `mode:` parameter on `Agent`/`Task` is deprecated and silently ignored — a spawned subagent always inherits the parent session's permission mode. Use the agent-frontmatter `permissionMode:` field (Complete Field Reference, above) to set a fixed mode for a *named* agent; there is no way to override the mode for an ad-hoc/inline spawn.
 
-**Use worktree isolation when:**
-- Agent will make commits on a separate branch
-- Multiple agents need to work on independent changes simultaneously
-- You want changes isolated until explicitly merged
+**Gitignored inputs** (`.env`, local config) are absent from a worktree unless listed in `.worktreeinclude` — not applied to `git worktree add` or a `WorktreeCreate` hook. See `/configure:worktreeinclude`.
 
 **Comparison:**
 
