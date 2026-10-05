@@ -3,7 +3,7 @@ name: workflow-scale-budget
 description: Size a Workflow script's agent count before running it — cost per agent, per-item multipliers, theme grouping, re-drive design. Use when authoring or proposing a Workflow fan-out.
 allowed-tools: Read, Grep, Glob, TodoWrite
 created: 2026-09-29
-modified: 2026-09-29
+modified: 2026-10-05
 reviewed: 2026-09-29
 ---
 
@@ -54,3 +54,12 @@ workflow again, at any scale.
    explicit cap as the bound).
 6. **A run large enough to trip the gate is the user's call.** Never raise
    `CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS` to clear your own prompt.
+7. **An issue sweep whose agents file follow-ups does not converge on its own.**
+   Implementers and reviewers are told to split out-of-scope defects into new
+   issues, so each round fills the queue it is draining. 2026-10-04,
+   mcu-tinkering-lab: round 1 (41 agents, 10.2M subagent tokens) closed 21
+   issues and filed 18; round 2 (32 agents, 7.3M tokens) closed 16 and filed
+   15, four of them edge cases in a single checker script. Plan the number of
+   rounds up front, triage the new issues between rounds, and carry the
+   low-value ones as backlog. "Clear the plate" is not a stopping condition
+   for a loop that refills the plate.
