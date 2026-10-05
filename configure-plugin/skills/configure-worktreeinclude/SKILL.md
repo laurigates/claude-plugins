@@ -5,9 +5,9 @@ args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(git add *), Bash(git status *), Bash(git check-ignore *), Bash(git ls-files *), Bash(find *), AskUserQuestion, TodoWrite
 created: 2026-06-25
-modified: 2026-06-25
+modified: 2026-10-04
 compatibility: claude-code
-reviewed: 2026-06-25
+reviewed: 2026-10-04
 ---
 
 # /configure:worktreeinclude
@@ -26,7 +26,7 @@ a generic template.
 |------------------------|------------------------------|
 | Worktrees / subagent worktrees start without `.env` or local config | Ignoring a build artifact — use `/configure:gitignore` |
 | Onboarding a repo to Claude Code (also reachable via `/configure:repo`) | Copying large regenerable dirs (`node_modules/`) — let the worktree's setup hook reinstall them |
-| You want gitignored inputs reproduced per-worktree without committing them | A non-git VCS — a custom `WorktreeCreate` hook must copy files itself; `.worktreeinclude` is git-only |
+| You want gitignored inputs reproduced per-worktree without committing them | A `WorktreeCreate` hook is configured (any VCS) — the hook replaces git creation, so `.worktreeinclude` is not processed; copy files in the hook script |
 
 ## What `.worktreeinclude` is
 
@@ -46,6 +46,43 @@ worktree. The match is constrained two ways by design:
 
 Commit `.worktreeinclude` so the whole team (and every agent worktree) shares
 the same include list.
+
+### When it is processed
+
+| Worktree created by… | `.worktreeinclude` applied? |
+|----------------------|-----------------------------|
+| `claude --worktree <name>` / `-w`, incl. `--worktree "#<pr>"` | Yes |
+| `EnterWorktree` (Claude asked to "work in a worktree") | Yes — same git creation path |
+| Subagent `isolation: worktree` / `Agent(isolation: "worktree")`, background sessions | Yes |
+| Desktop app parallel sessions (worktree option) | Yes |
+| `--worktree <name>` whose directory already exists | No — the existing worktree is reopened, not created |
+| Manual `git worktree add` | No — Claude Code did not create it |
+| A `WorktreeCreate` hook (any VCS, incl. git) | No — copy the files inside the hook script |
+
+Files are copied once, at creation. Later edits to `.env` in the main checkout
+do not propagate to existing worktrees.
+
+### `**/` patterns and wholly-ignored directories (2.1.239+)
+
+When the target files sit inside a directory that is gitignored **as a whole**,
+a pattern starting with `**/` reaches them only if that directory itself
+matches the pattern, or the first name after `**/` appears in the directory's
+path. `**/.claude/skills/*.md` reaches into an ignored `.claude/`;
+`**/config.json` does **not** reach into an ignored `vendor/`. Name the
+directory instead: `vendor/**/config.json`. Before 2.1.239 a `**/` pattern
+reached into an ignored directory only when the directory itself matched.
+
+### What not to include
+
+- **`.claude/skills`, `.claude/agents`, `.claude/commands`** when gitignored —
+  a worktree without its own copy reads the main checkout's through
+  (skills 2.1.277+), so copying them adds a stale snapshot instead.
+- **Project-scope plugins and "don't ask again" approvals** — already shared
+  with the main checkout (plugins 2.1.200+, approvals 2.1.211+).
+- **Git LFS content** — LFS filters from `git lfs install --local` are skipped
+  at creation; run `git lfs pull` in the worktree rather than listing LFS files.
+- **`.claude/worktrees/`** itself — it belongs in `.gitignore`
+  (`/configure:gitignore`), never in the include list.
 
 ## Context
 
@@ -114,7 +151,11 @@ already present (idempotent, safe to re-run). Then `git add .worktreeinclude`.
 Confirm each written pattern targets a gitignored file (so it will actually be
 copied): `git check-ignore -v <path>` should report a match for a representative
 file behind each pattern. A pattern that matches no gitignored file is inert —
-flag it so the user knows it does nothing.
+flag it so the user knows it does nothing. `git check-ignore` alone does not
+catch the `**/` case above: when the representative file lives under a
+wholly-ignored directory (its `!!` entry is the collapsed `dir/`), check the
+pattern names that directory or its first post-`**/` segment is in the path,
+and otherwise rewrite it as `dir/**/<rest>`.
 
 ### Step 6: Report
 
@@ -131,6 +172,9 @@ modified".
   append missing patterns so the skill is idempotent.
 - **Patterns only match gitignored files.** A pattern over a tracked file is a
   silent no-op — `git check-ignore` in Step 5 catches inert patterns.
+- **Hooks disable it.** If the repo's settings define a `WorktreeCreate` hook,
+  `.worktreeinclude` is never read — say so in the report and point the user at
+  the hook script instead.
 - **Prefer rebuild over copy for big trees.** Keep `node_modules/`, virtualenvs,
   and build output out of the include list; let the worktree's setup hook
   regenerate them.

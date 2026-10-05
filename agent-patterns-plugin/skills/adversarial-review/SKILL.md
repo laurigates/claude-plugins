@@ -6,7 +6,7 @@ argument-hint: "path|PR|file|plan description; optional 'focus on X'"
 allowed-tools: Agent, Read, Glob, Grep, Bash(git diff *), Bash(git log *), Bash(gh pr view *), TodoWrite
 model: opus
 created: 2026-06-21
-modified: 2026-09-24
+modified: 2026-10-02
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -18,6 +18,9 @@ review asks *"how could this be wrong?"* and hunts for the fault the first
 pass rationalised away. It is a **second pass for residual risk on
 high-stakes work** — not a replacement for the first pass, and not for
 low-stakes or reversible changes where it only manufactures busywork.
+**Red-teaming** is the same posture aimed at a proposal rather than a
+finished change: actively try to break the proposed approach before you
+commit to an architecture or design.
 
 This is a **thin posture**, not a new checklist. It layers four moves —
 isolation, inverted objective, a triage gate, and a bounded loop — on top of
@@ -174,6 +177,5 @@ review can't resolve.
   skill attacks a design; that one grounds each criterion in execution evidence)
 - `code-quality-plugin:code-review` — the first-pass review this layers on top of
 - `agents-plugin` security-audit / `/security-review` — the security lens
-- `.claude/rules/terminology.md` — defines *Adversarial review* and *Red-team*
 - `.claude/rules/skill-fork-context.md` — the `[1m]` parallel-dispatch caveat
 - `.claude/rules/loop-integrity.md` — looping skills delegate their stop-condition judgement to an isolated reviewer like this one (Pillar 1)

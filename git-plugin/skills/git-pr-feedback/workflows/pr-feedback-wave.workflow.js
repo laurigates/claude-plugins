@@ -25,8 +25,8 @@
  *
  *   Never `Workflow({resumeFromRunId})` to retry a few failed worktree agents —
  *   a resume re-runs agents that already succeeded and opens duplicate PRs
- *   (#1868; `.claude/rules/agent-coworker-detection.md` § "`Workflow` resume
- *   re-runs already-succeeded worktree agents"). Re-dispatch the failed units
+ *   (#1868; `agent-patterns-plugin:parallel-agent-dispatch` § "Resuming a
+ *   workflow: `resumeFromRunId` re-runs succeeded worktree agents"). Re-dispatch the failed units
  *   fresh and sequentially, after checking
  *   `gh pr list --head <branch> --state all --json number,state`.
  *

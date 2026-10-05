@@ -32,7 +32,7 @@ Before staging any files — especially for bulk-edit / commit-loop workflows th
 | Coworker check | Another Claude session in the same checkout may have already pre-staged files (`git commit -a` retry, abandoned staging) that your loop would sweep into the wrong commit. **Run this up front, not opportunistically.** | `SlashCommand` → `/git:coworker-check` |
 | Working tree scoped | Confirm `git status --porcelain` shows only your edits | `git status --porcelain` |
 
-If `/git:coworker-check` returns anything other than `clear`, stop and either move to a fresh worktree (`git worktree add ../<repo>-<task>`) or ask the user before proceeding. See `.claude/rules/agent-coworker-detection.md` for the four detection signals.
+If `/git:coworker-check` returns anything other than `clear`, stop and either move to a fresh worktree (`git worktree add ../<repo>-<task>`) or ask the user before proceeding. See `.claude/rules/agent-coworker-detection.md` for the seven detection signals.
 
 ## Core Expertise
 

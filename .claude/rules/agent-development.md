@@ -1,6 +1,6 @@
 ---
 created: 2026-02-25
-modified: 2026-09-28
+modified: 2026-10-04
 reviewed: 2026-09-23
 paths:
   - "**/agents/**"
@@ -237,10 +237,7 @@ For filesystem-level isolation, give agents their own git worktree so they work 
 
 > **Note (2.1.212, deprecated)**: A call-site `mode:` parameter on `Agent`/`Task` is deprecated and silently ignored — a spawned subagent always inherits the parent session's permission mode. Use the agent-frontmatter `permissionMode:` field (Complete Field Reference, above) to set a fixed mode for a *named* agent; there is no way to override the mode for an ad-hoc/inline spawn.
 
-**Use worktree isolation when:**
-- Agent will make commits on a separate branch
-- Multiple agents need to work on independent changes simultaneously
-- You want changes isolated until explicitly merged
+**Gitignored inputs** (`.env`, local config) are absent from a worktree unless listed in `.worktreeinclude` — not applied to `git worktree add` or a `WorktreeCreate` hook. See `/configure:worktreeinclude`.
 
 **Comparison:**
 
@@ -320,7 +317,7 @@ Agent tool with run_in_background: true
 
 `/workflows` orchestrates work across tens to hundreds of background agents from a single session — a fan-out scale beyond manual `/bg` dispatch. Reach for it when a task decomposes into many independent units that each warrant their own background agent; the framework manages the dispatch and result collection.
 
-> **Resume caveat — worktree agents are not resume-cacheable.** `Workflow({resumeFromRunId})` caches completed `agent()` calls by `(prompt, opts)`, but an `isolation: "worktree"` agent that **already succeeded** is **re-executed** on resume rather than served from cache — re-running its outward side effects and opening a **duplicate PR / branch** (issue [#1868](https://github.com/laurigates/claude-plugins/issues/1868)). Do not resume a whole workflow to retry a few failed worktree agents; re-dispatch only the failed ones with a fresh sequential pass. See `agent-patterns-plugin:parallel-agent-dispatch` → "Resuming a workflow: `resumeFromRunId` re-runs succeeded worktree agents" and `.claude/rules/agent-coworker-detection.md`.
+> **Resume caveat — worktree agents are not resume-cacheable.** `Workflow({resumeFromRunId})` caches completed `agent()` calls by `(prompt, opts)`, but an `isolation: "worktree"` agent that **already succeeded** is **re-executed** on resume rather than served from cache — re-running its outward side effects and opening a **duplicate PR / branch** (issue [#1868](https://github.com/laurigates/claude-plugins/issues/1868)). Do not resume a whole workflow to retry a few failed worktree agents; re-dispatch only the failed ones with a fresh sequential pass. See `agent-patterns-plugin:parallel-agent-dispatch` → "Resuming a workflow: `resumeFromRunId` re-runs succeeded worktree agents".
 
 > **Script-authoring caveat — a `.then` wrapper hides `agent()` failures from `filter(Boolean)`.** A failed/killed `agent()` resolves to `null`, but the idiomatic label-attaching wrapper `agent(...).then(r => ({ pair, judge, r }))` re-wraps that `null` in a **truthy object**, so `results.filter(Boolean)` passes it straight through and the `null` payload explodes later (e.g. `jr.dimensions` at the final rollup — this crashed a 24-agent run at the last step, after all judging cost was spent). Filter on the payload field, not the wrapper: `results.filter(x => x && x.r)` — and guard rollup loops (`jr && jr.dimensions`) so one dead agent degrades to a gap instead of aborting the run. (Benchmark run `wf_9e402a8b`, 2026-07-03.)
 
