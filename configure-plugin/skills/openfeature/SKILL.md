@@ -20,9 +20,8 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 
 Vendor-agnostic feature flag SDK providing standardized API across languages and providers. Use when implementing feature flags, A/B testing, canary releases, or progressive rollouts with any feature flag backend.
 
-## When to Use
+### Activation triggers
 
-**Automatic activation triggers:**
 - User mentions "feature flags", "feature toggles", or "feature management"
 - User asks about A/B testing or canary releases
 - User wants to implement progressive rollouts

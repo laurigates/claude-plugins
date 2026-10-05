@@ -20,9 +20,8 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 
 Open-source feature flag solution with file-based configuration and OpenFeature integration. Use when setting up self-hosted feature flags, configuring flag files, or deploying the relay proxy.
 
-## When to Use
+### Activation triggers
 
-**Automatic activation triggers:**
 - User mentions "GO Feature Flag", "GOFF", or "gofeatureflag"
 - Project has `@openfeature/go-feature-flag-provider` dependency
 - Project has `flags.goff.yaml` or similar flag configuration
