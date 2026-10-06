@@ -5,7 +5,7 @@ args: "[--type issues|prs|both] [--batch N] [--repo owner/name] [--days-stale-is
 argument-hint: "--type both --batch 10 (defaults: days-stale-issue=90, days-stale-pr=30, current repo)"
 allowed-tools: Bash(bash *), Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git log *), Bash(rg *), Read, Grep, Glob, AskUserQuestion
 created: 2026-04-22
-modified: 2026-09-24
+modified: 2026-10-06
 reviewed: 2026-09-23
 ---
 
@@ -118,6 +118,7 @@ For each open issue in parallel (batch reads), gather evidence:
 | `implemented` | A referenced PR is merged AND codebase shows the promised artefacts |
 | `outdated` | Referenced files/resources no longer exist; issue predates current structure |
 | `stale` | `age > --days-stale-issue` AND no recent comments AND not `implemented` |
+| `tripwire-candidate` | Work remains, but only once a condition visible in the source comes true ("if the list ever grows past…", "when we upgrade to…") |
 | `still-valid` | None of the above — work remains |
 
 Record the winning PR number (if any) with each `implemented` entry.
@@ -240,6 +241,7 @@ After per-item actions, emit a structured summary:
 | `still-valid` (actionable) | recommend the user run `/git:issue <n>` (gated by `disable-model-invocation`, so surface it rather than invoking it) |
 | `still-valid` (admin only) | `/git:issue-manage` |
 | `implemented` (not auto-closed) | manual `gh issue close <n>` |
+| `tripwire-candidate` | `testing-plugin:test-tripwire` — a test that fails when the condition comes true, then close the issue linking it |
 
 ## Post-actions
 
