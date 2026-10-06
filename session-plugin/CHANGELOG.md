@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.12.1...session-plugin-v1.13.0) (2026-10-06)
+
+
+### Features
+
+* **testing-plugin:** add test-tripwire skill and route code-triggered deferrals to it ([#2911](https://github.com/laurigates/claude-plugins/issues/2911)) ([5c91e79](https://github.com/laurigates/claude-plugins/commit/5c91e7963ff6c0bad740479b8d85f31a90fd1afe))
+
 ## [1.12.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.12.0...session-plugin-v1.12.1) (2026-09-28)
 
 
