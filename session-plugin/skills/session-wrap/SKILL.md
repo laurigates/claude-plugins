@@ -3,7 +3,7 @@ name: session-wrap
 description: End-of-session capture to taskwarrior, optional journal, GitHub issues. Use when user says wrap up, session wrap, or done for now.
 allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Write, Edit, AskUserQuestion, TodoWrite
 created: 2026-05-12
-modified: 2026-09-15
+modified: 2026-10-06
 reviewed: 2026-06-24
 ---
 
@@ -43,6 +43,7 @@ worked example: [REFERENCE.md](REFERENCE.md).
 | **taskwarrior** | Every wrap | Mark completed tasks done; annotate in-flight tasks with PR / blocker / state; add tasks **only** for threads no open PR or issue already tracks (see "Don't duplicate an existing tracker") |
 | **Journal** (e.g. Obsidian daily note) | Only when configured AND the session matches `journal_scopes` | Narrative log entry; actionable todo items |
 | **GitHub issues** | Only when cwd has a `github.com` origin AND a PR merged (or is about to) with post-merge follow-ups | One issue per follow-up, linked from the PR description |
+| **Tripwire test** | A deferred fix whose trigger is a fact in the source (a list outgrowing a limit, an enum gaining a member, a version bump) | A test in the same PR that fails when the condition comes true — `testing-plugin:test-tripwire` — instead of an issue |
 | **Upstream issue/PR candidate** | A bug/gap noticed in a *third-party* `github.com` repo, or a local fix that belongs upstream | Track for later (`+upstream` task) OR a **verified** issue / local-fix backport — never filed blind (Step 4 routes each candidate) |
 
 Out-of-scope sessions get **only** the taskwarrior pass (plus GitHub
@@ -136,6 +137,7 @@ what was kicked off but not finished, discussed but not done.
 | Loose thread, in journal scope | Journal log (narrative) or todo (action) |
 | Loose thread, out of scope | Taskwarrior only, with `project:<name>` |
 | Post-merge follow-up (GitHub repo) | One `gh issue create` per follow-up; link from the PR |
+| Deferred fix triggered by a code change | Tripwire test in the open PR (`testing-plugin:test-tripwire`); no issue |
 | Upstream candidate (third-party repo) | Per-candidate routing in Step 4 (track for later **or** verify-then-file) |
 | Noise (per filter) | Skip silently |
 

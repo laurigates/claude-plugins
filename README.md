@@ -104,7 +104,7 @@ the rules, skills, and hooks that embody it.
 | **evaluate-plugin** | 7 + 3 agents | Skill evaluation and benchmarking - test effectiveness, grade results |
 | **codebase-attributes-plugin** | 3 | Structured codebase health attributes with severity-based agent routing |
 | **feedback-plugin** | 1 | Session feedback analysis - capture skill bugs and enhancements as issues |
-| **testing-plugin** | 17 | Test execution, TDD workflow, Vitest, Playwright, mutation testing |
+| **testing-plugin** | 18 | Test execution, TDD workflow, Vitest, Playwright, mutation testing, tripwire tests |
 
 ### Version Control
 
