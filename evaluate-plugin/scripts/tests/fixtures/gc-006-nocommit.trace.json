@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "harness": "claude-code",
+  "harness_version": "2.1.289",
+  "model_id": "claude-haiku-4-5-20251001",
+  "session_id": "00000000-0000-4000-8000-000000000006",
+  "cwd": "/tmp/eval-wd.F1x7q",
+  "permission_mode": "bypassPermissions",
+  "plugins_loaded": [
+    {
+      "name": "git-plugin",
+      "path": "/home/user/claude-plugins/git-plugin",
+      "source": "git-plugin@inline",
+      "version": "2.58.4"
+    }
+  ],
+  "skills_available": [
+    "git-plugin:git-commit-push-pr",
+    "git-plugin:git-conflicts"
+  ],
+  "skills_invoked": [
+    {
+      "skill": "git-plugin:git-commit",
+      "args": null,
+      "turn": 1,
+      "tool_use_id": "toolu_6_skill",
+      "denied": false,
+      "is_error": false
+    }
+  ],
+  "tool_calls": [
+    {
+      "turn": 1,
+      "tool_use_id": "toolu_6_skill",
+      "name": "Skill",
+      "input_summary": "git-plugin:git-commit",
+      "input": {
+        "skill": "git-plugin:git-commit"
+      },
+      "is_error": false,
+      "denied": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "toolu_6_status",
+      "name": "Bash",
+      "input_summary": "git status --porcelain",
+      "input": {
+        "command": "git status --porcelain",
+        "description": "Check working tree"
+      },
+      "is_error": false,
+      "denied": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "toolu_6_cached",
+      "name": "Bash",
+      "input_summary": "git diff --cached --stat",
+      "input": {
+        "command": "git diff --cached --stat",
+        "description": "Check staged changes"
+      },
+      "is_error": false,
+      "denied": false
+    }
+  ],
+  "bash_commands": [
+    {
+      "turn": 2,
+      "command": "git status --porcelain",
+      "is_error": false,
+      "denied": false
+    },
+    {
+      "turn": 3,
+      "command": "git diff --cached --stat",
+      "is_error": false,
+      "denied": false
+    }
+  ],
+  "files_written": [],
+  "permission_denied": [],
+  "hooks_fired": [],
+  "num_turns": 4,
+  "cost_usd": 0.02,
+  "usage": {
+    "input_tokens": 1200,
+    "output_tokens": 340,
+    "cache_read_input_tokens": 0,
+    "cache_creation_input_tokens": 0
+  },
+  "duration_ms": 9100,
+  "duration_api_ms": 8200,
+  "final_text": "There is nothing staged to commit: `git status` shows a clean working tree and `git diff --cached` is empty, so I did not create a commit.",
+  "stop_reason": "completed",
+  "is_error": false,
+  "parse_warnings": {
+    "malformed_lines": 0,
+    "missing_init": false,
+    "missing_result": false
+  }
+}

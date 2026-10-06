@@ -1,6 +1,6 @@
 ---
 created: 2026-05-30
-modified: 2026-09-02
+modified: 2026-10-05
 reviewed: 2026-09-02
 paths:
   - "**/skills/**"
@@ -26,10 +26,14 @@ tiers always; reserve the expensive tier for a small golden set.
 |------|------|-------|---------|---------|
 | 0 — static | free | all skills | every PR | `scripts/plugin-compliance-check.sh`, the lints |
 | 1 — deterministic evals | ~free (no judge) | skills with an `evals.json` | CI on changed skill | `evaluate-plugin/scripts/grade_deterministic.py` |
+| 1.5 — trigger evals | cents (haiku, killed at first `Skill` call) | skills with a `triggers` block | on description edits; manual | `run_trigger_evals.py`, `/evaluate:skill --triggers-only` |
 | 2 — cross-model matrix | budgeted | **golden set only**, opus/sonnet/haiku/fable | monthly + on model release | `/evaluate:matrix`, `render_matrix_report.py` |
 
-Tier 0 catches structural rot for free. Tier 2 is the only thing that costs
-tokens, and it is bounded to the canary set.
+Tier 0 catches structural rot for free. Tier 1.5 asks whether description
+routing picks the skill (recall) and leaves its near-misses alone (false
+positives) through real headless `claude -p` children, with per-prompt and total
+spend caps. Results at n=1 are noisy (a miss is WARN), so use `--runs 3` before
+acting. Tier 2 is the main token spend, and it is bounded to the canary set.
 
 ## Principle 1 — grade deterministically, judge only the fuzzy
 

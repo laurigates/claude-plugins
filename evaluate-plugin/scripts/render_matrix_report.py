@@ -10,6 +10,14 @@ See ``evaluate-plugin/references/schemas.md`` (model-matrix.json) for the input
 schema, and ``evaluate-plugin/docs/cross-model-evaluation.md`` for how the
 verdicts are interpreted.
 
+Harness: each ``metadata.models[]`` entry (or ``metadata`` itself) may record
+the rollout ``harness`` -- ``subagent`` (in-session Task subagent, the default
+and the meaning of an absent field) or ``headless`` (a real ``claude -p`` child
+via rollout_headless.sh). The two are not comparable: a headless rollout tests
+plugin loading, description routing and allowed-tools, a subagent rollout pastes
+the SKILL.md in. A file that mixes them gets a mixed-harness warning, and its
+deltas should not be read across the harness boundary.
+
 Usage:
   render_matrix_report.py <model-matrix.json> [--out <file.md>]
 """
@@ -67,6 +75,24 @@ def _verdict(with_skill, baseline) -> str:
     return "marginal"
 
 
+DEFAULT_HARNESS = "subagent"
+
+
+def harnesses(matrix: dict) -> dict:
+    """Map each model alias to the harness its rollouts ran under.
+
+    A model entry's own ``harness`` wins, then ``metadata.harness``, then the
+    historical default (``subagent``) -- every pre-headless matrix file ran
+    in-session subagents.
+    """
+    meta = matrix.get("metadata", {})
+    default = meta.get("harness") or DEFAULT_HARNESS
+    return {
+        m.get("alias", "?"): (m.get("harness") or default)
+        for m in meta.get("models", [])
+    }
+
+
 def render(matrix: dict) -> str:
     meta = matrix.get("metadata", {})
     models = meta.get("models", [])
@@ -83,6 +109,21 @@ def render(matrix: dict) -> str:
     id_line = ", ".join(f"`{m['alias']}`=`{m['model_id']}`" for m in models)
     out.append(f"Pinned models: {id_line}")
     out.append("")
+    by_harness = harnesses(matrix)
+    kinds = sorted(set(by_harness.values()))
+    if len(kinds) == 1:
+        out.append(f"Harness: `{kinds[0]}`")
+        out.append("")
+    elif len(kinds) > 1:
+        detail = ", ".join(f"`{a}`={h}" for a, h in by_harness.items())
+        out.append(
+            f"> **Mixed-harness warning:** this file mixes rollout harnesses ({detail}). "
+            "A headless rollout loads the plugin and routes by description; a subagent "
+            "rollout pastes the SKILL.md in. Their pass rates are not comparable, so do "
+            "not read a delta or the portability/executability flags across the boundary "
+            "-- re-run every model under one harness."
+        )
+        out.append("")
 
     # Summary delta table.
     out.append("## Summary (mean pass rate across all evals)")

@@ -46,7 +46,18 @@ Static compliance checks (`plugin-compliance-check.sh`) verify structure — thi
 /evaluate:skill git-plugin/git-commit
 /evaluate:skill git-plugin/git-commit --create-evals
 /evaluate:skill git-plugin/git-commit --runs 3 --baseline
+/evaluate:skill git-plugin/git-commit --harness headless --baseline
+/evaluate:skill git-plugin/git-commit --triggers-only
 ```
+
+`--harness headless` (opt-in; `subagent` stays the default) rolls each cell out as a
+real `claude -p` child with the plugin loaded, instead of an in-session subagent with
+the SKILL.md pasted in — so plugin loading, description routing, `allowed-tools` and
+hooks are exercised, and the run yields a `trace.json` and a workspace snapshot for
+trace and workspace checks. `--triggers` / `--triggers-only` run the `evals.json`
+`triggers` block: prompts that should and should not invoke the skill, scored as
+recall / precision / false-positive rate. Both need `claude`, `jq` and `python3`;
+see [Headless harness](docs/cross-model-evaluation.md#headless-harness).
 
 `--create-evals` always generates an abstention control: an impossible task whose
 passing answer is a refusal, marked `"expected_outcome": "abstain"`, with an
@@ -59,6 +70,7 @@ passing answer is a refusal, marked `"expected_outcome": "abstain"`, with an
 ```
 /evaluate:plugin-batch git-plugin
 /evaluate:plugin-batch git-plugin --create-missing-evals
+/evaluate:plugin-batch git-plugin --harness headless
 ```
 
 ### View results
@@ -102,7 +114,12 @@ tmp/eval-runs/<plugin-name>/<skill-name>/   # Gitignored: per-run staging
         ├── grading.json
         ├── comparison.json
         ├── transcript.md
-        └── timing.json
+        ├── timing.json
+        │   # headless harness only:
+        ├── transcript.jsonl    # raw stream-json from the claude -p child
+        ├── trace.json          # harness-neutral trace (parse_trace.py)
+        ├── workspace/          # snapshot of the child's workdir
+        └── rollout-meta.json   # flags as run; prompt as sha256 only
 ```
 
 - `evals.json` is version-controlled (test definitions)
@@ -118,10 +135,15 @@ tmp/eval-runs/<plugin-name>/<skill-name>/   # Gitignored: per-run staging
 |--------|---------|
 | `scripts/aggregate_benchmark.sh` | Aggregate benchmark results across a plugin's skills |
 | `scripts/eval_report.sh` | Generate formatted markdown report from benchmark data |
-| `scripts/grade_deterministic.py` | Grade machine-checkable (regex/substring) assertions with zero judge tokens; defers fuzzy ones to `eval-grader` |
-| `scripts/render_matrix_report.py` | Render the cross-model delta report from a `model-matrix.json` (delta verdict, portability flag, `executable_on_haiku` executability flag) |
+| `scripts/inspect_eval.sh` | List a plugin's skills and eval suites (`--plugin-dir <plugin>`), or inspect one skill's suite (`--plugin <p> --skill <s> [--print-evals]`, `NUM_CASES` counted from `.evals`) |
+| `scripts/prepare_run.sh` | Stage a run dir under `tmp/eval-runs/` (outside `skills/`, #2667) and print `RUN_DIR=` / `MANIFEST=` / `STARTED_AT=` |
+| `scripts/grade_deterministic.py` | Grade typed checks with zero judge tokens — output (regex/substring), trace (`--trace`: skill_triggered, tool_called, command_ran) and workspace (`--workspace`, `--allow-exec`: file/json/run_command) checks; trace/workspace checks without their input are `HARNESS_DEFERRED`, never judged; defers fuzzy ones to `eval-grader` |
+| `scripts/rollout_headless.sh` | Run ONE rollout as a real `claude -p` child (`--plugin-dir` repeatable; omit for baseline) in a workdir outside the repo, with a scrubbed env (`--env-mode clean`), a spend cap (`--max-budget-usd`, required), the Skill-listing budget raised to 100000 chars (`--skill-listing-budget <n>\|cli`), optional `--tools` and `--stop-on-skill`; writes transcript, `trace.json`, workspace snapshot and a `=== HEADLESS ROLLOUT ===` block |
+| `scripts/parse_trace.py` | Parse a stream-json transcript into the harness-neutral `trace.json` v1 (skills invoked, tool calls, bash commands, files written, denials, hooks, cost, stop reason) |
+| `scripts/run_trigger_evals.py` | Run an `evals.json` `triggers` block through headless rollouts and score recall / precision / FPR into `triggers.json`; `--dry-run` prints the plan and worst-case cost; per-prompt and total budget caps; `--no-copy` leaves `<skill>/eval-results/triggers.json` untouched |
+| `scripts/render_matrix_report.py` | Render the cross-model delta report from a `model-matrix.json` (delta verdict, portability flag, `executable_on_haiku` executability flag, mixed-harness warning) |
 | `scripts/apply_fixture.sh` | Apply/tear down an eval's opt-in `fixture` block in an isolated temp workdir so context-needing skills can honestly execute |
-| `scripts/check_golden_set_evals.py` | Validate every golden-set canary's `evals.json` and run recorded probes (`scripts/tests/fixtures/golden-set-probes.json`) through the grader, so a suite counted toward `evalCoverageFloor` is shown to grade |
+| `scripts/check_golden_set_evals.py` | Validate every golden-set canary's `evals.json` (all 13 check types, the `triggers` block) and run recorded probes (`scripts/tests/fixtures/golden-set-probes.json`, with `trace_file` / `workspace_setup` for trace and workspace checks) through the grader, so a suite counted toward `evalCoverageFloor` is shown to grade |
 | `skills/evaluate-context-engineering/scripts/check-context-engineering.py` | Channel M scanner — deterministic C1–C6 proxies over the tree (`scripts/check-context-engineering.py` at the repo root is a shim onto it) |
 
 ## Context Engineering
@@ -145,6 +167,13 @@ catch when a skill needs adjusting after a new model ships — is designed in
 [`docs/cross-model-evaluation.md`](docs/cross-model-evaluation.md) and driven by
 **`/evaluate:matrix`** (the executability gate). The token-frugal grader and
 report format run against `git-plugin/skills/git-commit/evals.json` today.
+
+Live smoke for the headless harness (real `claude -p` calls on haiku, asserted
+≤ $1.50; never run by CI because it lacks the `test-` prefix):
+`EVAL_LIVE=1 bash evaluate-plugin/scripts/tests/live/smoke-headless.sh`. It asserts
+the plumbing. Routing is reported as `STATUS=WARN` (`WITH_SKILL_ROUTED=false`,
+trigger thresholds missed), not as a failure; haiku at n=1 did not route to
+`git-commit` on 2026-10-05.
 
 The two weak-model gates are complementary: `/evaluate:legibility` reads a
 SKILL.md cold (comprehension), while `/evaluate:matrix` runs it on a weak model

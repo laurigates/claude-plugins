@@ -68,7 +68,11 @@ fi
 
 if [ -f "$evals_json" ]; then
   evals_json_exists=true
-  num_cases=$(jq '.cases | length' "$evals_json" 2>/dev/null || echo 0)
+  # Count `.evals[]` — the array every evals.json carries (references/schemas.md).
+  # Regression: this read `.cases | length`, a key no evals.json has, so jq
+  # returned `null | length` = 0 and NUM_CASES was always 0 for every skill
+  # (guard: scripts/tests/test-inspect-eval.sh; docs/regression-ledger.md).
+  num_cases=$(jq '.evals | length' "$evals_json" 2>/dev/null || echo 0)
 fi
 
 echo "SKILL_MD=$skill_md"

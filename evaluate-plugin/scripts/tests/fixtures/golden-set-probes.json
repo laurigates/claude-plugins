@@ -1,5 +1,5 @@
 {
-  "_note": "Recorded outputs that prove each golden-set suite's typed checks discriminate. evaluate-plugin/scripts/check_golden_set_evals.py runs every probe through the shipped grade_deterministic.py: a pass probe must clear every deterministic check, a fail probe must fail at least one (of the fails_on type when given). Probes are hand-written against each skill's purpose, not captured from a model run (#2144).",
+  "_note": "Recorded outputs that prove each golden-set suite's typed checks discriminate. evaluate-plugin/scripts/check_golden_set_evals.py runs every probe through the shipped grade_deterministic.py: a pass probe must clear every deterministic check, a fail probe must fail at least one (of the fails_on type when given). Probes are hand-written against each skill's purpose, not captured from a model run (#2144). Probes for trace/workspace checks (the headless harness) add trace_file (a trace.json v1 beside this file) and workspace_setup (shell commands materialised into a temp dir, so no nested .git is committed) or workspace_dir; a pass probe on such a case must report HARNESS_DEFERRED=0.",
   "probes": [
     {
       "suite": "git-plugin/git-commit",
@@ -15,6 +15,77 @@
       "fails_on": "regex",
       "note": "shared with test-grade-deterministic.sh",
       "output_file": "gc-001-bad.txt"
+    },
+    {
+      "suite": "git-plugin/git-commit",
+      "case": "gc-006",
+      "expect": "pass",
+      "note": "honest refusal, and the trace shows only read-only git: the command_ran max:0 check is graded, not deferred",
+      "output_file": "gc-006-refusal.txt",
+      "trace_file": "gc-006-nocommit.trace.json"
+    },
+    {
+      "suite": "git-plugin/git-commit",
+      "case": "gc-006",
+      "expect": "fail",
+      "fails_on": "absent_regex",
+      "note": "a commit subject invented for changes that do not exist (shared with test-grade-deterministic.sh)",
+      "output_file": "gc-006-fabricated.txt"
+    },
+    {
+      "suite": "git-plugin/git-commit",
+      "case": "gc-006",
+      "expect": "fail",
+      "fails_on": "command_ran",
+      "note": "says nothing is staged, but the trace shows a git commit ran: only the trace check can see the contradiction",
+      "output_file": "gc-006-refusal.txt",
+      "trace_file": "gc-007-good.trace.json"
+    },
+    {
+      "suite": "git-plugin/git-commit",
+      "case": "gc-007",
+      "expect": "pass",
+      "note": "skill ran git commit and HEAD now carries a conventional subject with a clean tree",
+      "output": "Committed the staged README as `docs(readme): add project readme`.\n",
+      "trace_file": "gc-007-good.trace.json",
+      "workspace_setup": [
+        "git init -q",
+        "git commit -q --allow-empty -m initial",
+        "printf '# Demo\\n\\nA small demo project.\\n' > README.md",
+        "git add README.md",
+        "git commit -q -m 'docs(readme): add project readme'"
+      ]
+    },
+    {
+      "suite": "git-plugin/git-commit",
+      "case": "gc-007",
+      "expect": "fail",
+      "fails_on": "command_ran",
+      "note": "suggested a message but never committed: no git commit in the trace, README still staged",
+      "output": "You could commit this with a message like \"Added README\".\n",
+      "trace_file": "gc-007-bad.trace.json",
+      "workspace_setup": [
+        "git init -q",
+        "git commit -q --allow-empty -m initial",
+        "printf '# Demo\\n\\nA small demo project.\\n' > README.md",
+        "git add README.md"
+      ]
+    },
+    {
+      "suite": "git-plugin/git-commit",
+      "case": "gc-007",
+      "expect": "fail",
+      "fails_on": "run_command",
+      "note": "git commit ran, but with a non-conventional subject: only the workspace check sees what landed in HEAD",
+      "output": "Committed the staged README.\n",
+      "trace_file": "gc-007-good.trace.json",
+      "workspace_setup": [
+        "git init -q",
+        "git commit -q --allow-empty -m initial",
+        "printf '# Demo\\n\\nA small demo project.\\n' > README.md",
+        "git add README.md",
+        "git commit -q -m 'Added README'"
+      ]
     },
     {
       "suite": "git-plugin/github-pr-title",

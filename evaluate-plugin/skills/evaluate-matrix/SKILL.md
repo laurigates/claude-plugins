@@ -1,13 +1,13 @@
 ---
 name: evaluate-matrix
 description: Cross-model skill evals with real execution and grading — the executability gate. Use when checking whether a weak model can actually do a skill, not just comprehend it.
-args: <plugin/skill-name> [--models opus,haiku] [--with-skill-only] [--runs N]
+args: <plugin/skill-name> [--models opus,haiku] [--with-skill-only] [--runs N] [--harness subagent|headless]
 allowed-tools: Task, Read, Write, Edit, Glob, Bash(bash *), Bash(python3 *), TodoWrite
 argument-hint: "git-plugin/git-commit --models opus,haiku --with-skill-only"
 model: opus
 agent: general-purpose
 created: 2026-06-13
-modified: 2026-09-23
+modified: 2026-10-05
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -48,6 +48,7 @@ calls a follow-up. It reuses, without duplicating: `prepare_run.sh`,
 | `--models <list>` | `opus,haiku` | Comma-separated pinned aliases to run |
 | `--with-skill-only` | false | Skip the cached baseline side (with-skill runs only) |
 | `--runs N` | 1 | Runs per (model × eval × config) |
+| `--harness subagent\|headless` | `subagent` | Rollout harness; `headless` runs each cell as a real `claude -p` child with the plugin loaded (Step 2) |
 
 Aliases float across model generations, so `--models` accepts either an alias
 or a full id; pass the **full id** when the run must be reproducible (the
@@ -115,6 +116,19 @@ combination:
    size so the surface cannot regrow unseen.
 3. Write the subagent's produced artifact to `$RUN_DIR/transcript.md`.
 
+**Headless branch (`--harness headless`).** Replace items 2-3 with one **serial**
+Bash call per combination; no subagent is dispatched and no SKILL.md is pasted.
+Write the eval prompt to `$RUN_DIR/prompt.txt`; use the fixture's `WORKDIR` (or
+`mktemp -d` outside the repo):
+```
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/rollout_headless.sh \
+  --run-dir "$RUN_DIR" --workdir "$WORKDIR" --prompt-file "$RUN_DIR/prompt.txt" \
+  --model <loop model alias or full id> [--effort <e>] --max-budget-usd 0.25 \
+  [--plugin-dir "$(pwd)/<plugin-name>"]      # with_skill only; omit for baseline
+```
+It writes `transcript.md`, `trace.json` and `workspace/` into `$RUN_DIR`. Omit
+`--effort` on haiku. `STATUS=ERROR` is an ERROR cell, not a 0% pass.
+
 ### Step 3: Grade — deterministic first, judge only on deferral
 
 For each run, grade the produced output:
@@ -122,8 +136,11 @@ For each run, grade the produced output:
 1. Run the zero-token deterministic grader first:
    ```
    python3 ${CLAUDE_PLUGIN_ROOT}/scripts/grade_deterministic.py \
-     --evals <evals.json> --eval-id <eval-id> --output $RUN_DIR/transcript.md --json
+     --evals <evals.json> --eval-id <eval-id> --output $RUN_DIR/transcript.md --json \
+     [--trace $RUN_DIR/trace.json] [--workspace $RUN_DIR/workspace --allow-exec]
    ```
+   Bracketed flags: headless runs only. On a subagent run trace/workspace checks
+   are `harness_deferred` — excluded from the pass rate, never judged.
 2. Only if it reports `JUDGE_PENDING > 0`, dispatch the `eval-grader` agent for
    the deferred fuzzy expectations:
    ```
@@ -136,7 +153,8 @@ For each run, grade the produced output:
 
 Combine per-run pass rates into `<skill-dir>/eval-results/model-matrix.json`
 following the schema. Compute, per model alias, the mean `with_skill` and
-`baseline`, the `delta`, and `prev_delta` from any stored prior run.
+`baseline`, the `delta`, and `prev_delta` from any stored prior run. Record
+`metadata.models[].harness`; on a headless run `model_id` is `trace.json`'s.
 
 ### Step 5: Render the report
 
@@ -148,8 +166,9 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/render_matrix_report.py \
 The renderer emits the delta table, per-model verdicts, the **portability
 flag** (opus−haiku spread ≥20 pts), and the **executability flag**
 (`executable_on_haiku=false` when haiku's absolute with-skill rate is below the
-0.5 floor while opus clears it). Print the report and call out whether the
-executability flag fired.
+0.5 floor while opus clears it). It also prints a **mixed-harness warning** when the
+file mixes subagent and headless rollouts (not comparable).
+Print the report and call out whether the executability flag fired.
 
 ## Minimal Provable Increment
 
@@ -163,7 +182,7 @@ golden set.
 
 | Context | Command |
 |---------|---------|
-| Inspect eval setup | `bash evaluate-plugin/scripts/inspect_eval.sh --plugin-dir <plugin>/skills/<skill>` |
+| Inspect eval setup | `bash evaluate-plugin/scripts/inspect_eval.sh --plugin <plugin> --skill <skill>` |
 | Prepare a run dir | `bash evaluate-plugin/scripts/prepare_run.sh --skill-dir <dir> --eval-id <id> --run <N>` |
 | Deterministic grade | `python3 evaluate-plugin/scripts/grade_deterministic.py --evals <f> --eval-id <id> --output <out> --json` |
 | Render the matrix | `python3 evaluate-plugin/scripts/render_matrix_report.py <dir>/eval-results/model-matrix.json` |

@@ -230,6 +230,10 @@ const {
   parallel: parallelArg,
   runs = 1,
   cap: capArg,
+  // Forwarded verbatim to every evaluate-skill child. `subagent` (the default)
+  // or `headless`; the child validates it and aborts on anything else. One
+  // harness per batch, so every benchmark.json in the roll-up is comparable.
+  harness = 'subagent',
 } = INPUT ?? {}
 
 if (!plugin) {
@@ -295,7 +299,7 @@ if (included.length < FLOOR) {
 }
 
 phase('Evaluate')
-log(`dispatching ${included.length} evaluate-skill run(s), <=${WAVE} in flight (--parallel)`)
+log(`dispatching ${included.length} evaluate-skill run(s) on the ${harness} harness, <=${WAVE} in flight (--parallel)`)
 const cells = []
 for (let i = 0; i < included.length; i += WAVE) {
   const wave = included.slice(i, i + WAVE)
@@ -313,6 +317,7 @@ for (let i = 0; i < included.length; i += WAVE) {
           createEvals: createMissingEvals,
           runs,
           cellCap: CELL_CAP,
+          harness,
         })
         return r ?? { skill: s.name, error: 'child workflow returned null' }
       } catch (err) {
@@ -364,9 +369,9 @@ const report = await agent(AGGREGATE_PROMPT(plugin, included.length, cells), {
 
 if (!report) {
   log('aggregate agent returned null — surfacing the raw cells so the run is not silently empty')
-  return { report: null, plugin, included: included.length, skipped, cells, failedCells }
+  return { report: null, plugin, harness, included: included.length, skipped, cells, failedCells }
 }
 
 // The skill maps report.status / report.overallPassRate onto its printed table
 // and its exit code; a workflow returns a value, not a process status.
-return { report, plugin, included: included.length, skipped, cells, failedCells }
+return { report, plugin, harness, included: included.length, skipped, cells, failedCells }

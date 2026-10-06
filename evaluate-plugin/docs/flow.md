@@ -6,8 +6,15 @@ flowchart TD
     U -->|/evaluate:plugin-batch<br/>plugin-name| EB["/evaluate:plugin-batch<br/>(batch router)"]
 
     %% Single-skill pipeline
-    ES --> RUN[Run eval cases<br/>against SKILL.md<br/>capture transcripts]
-    RUN --> GRADE[eval-grader agent<br/>score vs. assertions<br/>cite evidence]
+    ES --> HARN{--harness?}
+    HARN -->|subagent default| RUN[Run eval cases<br/>Task subagent with<br/>SKILL.md as context]
+    HARN -->|headless| HL[rollout_headless.sh<br/>real claude -p child<br/>plugin loaded]
+    HL --> TRACE[parse_trace.py<br/>trace.json +<br/>workspace snapshot]
+    RUN --> DET
+    TRACE --> DET[grade_deterministic.py<br/>output, trace and<br/>workspace checks]
+    DET --> GRADE[eval-grader agent<br/>judge-deferred only<br/>cite evidence]
+    ES -.->|"--triggers"| TRG[run_trigger_evals.py<br/>headless, stop on Skill<br/>recall / precision]
+    TRG --> TJ[Write triggers.json]
     GRADE --> CMP{--baseline?}
     CMP -->|yes| COMP[eval-comparator agent<br/>blind with-skill vs.<br/>baseline comparison]
     CMP -->|no| BENCH
@@ -36,7 +43,8 @@ flowchart TD
     classDef fix fill:#ffa500,stroke:#b37400,color:#000
 
     class ES,EB,FAN router
-    class RUN,GRADE,COMP,BENCH,ANA,RPT,AGG,DISC check
+    class RUN,GRADE,COMP,BENCH,ANA,RPT,AGG,DISC,HL,TRACE,DET,TRG,TJ check
+    class HARN router
     class EDIT,IMP,APPLY fix
 ```
 
@@ -44,7 +52,7 @@ flowchart TD
 
 | Node style | Meaning |
 |------------|---------|
-| Blue | Router / orchestrator skill (`/evaluate:skill`, `/evaluate:plugin-batch`) |
+| Blue | Router / orchestrator skill (`/evaluate:skill`, `/evaluate:plugin-batch`), or a routing decision (`--harness`) |
 | Green | Read-only run, grading, analysis, or reporting step |
 | Orange | Mutating step (applies edits to `SKILL.md`) |
 
@@ -53,6 +61,8 @@ flowchart TD
 | Stage | Skill | Agent |
 |-------|-------|-------|
 | Evaluate | `/evaluate:skill` (`evaluate-skill/`) | `eval-grader` (grade), `eval-comparator` (blind with-skill vs. baseline) |
+| Headless rollout (opt-in `--harness headless`) | `/evaluate:skill`, `/evaluate:matrix` via `scripts/rollout_headless.sh` + `parse_trace.py` | one thin runner per cell; the `claude -p` child does the task |
+| Trigger evals (`--triggers`) | `/evaluate:skill` via `scripts/run_trigger_evals.py` | — (headless children only) |
 | Improve | `/evaluate:improve` (`evaluate-improve/`) | `eval-analyzer` (diagnose + propose edits) |
 | Report | `/evaluate:report` (`evaluate-report/`) | — |
-| Batch | `/evaluate:plugin-batch` (`evaluate-plugin-batch/`) | fans out to `/evaluate:skill` per skill, then `aggregate_benchmark.sh` merges results into a single report |
+| Batch | `/evaluate:plugin-batch` (`evaluate-plugin-batch/`) | fans out to `/evaluate:skill` per skill (forwarding `--harness`), then `aggregate_benchmark.sh` merges results into a single report |
