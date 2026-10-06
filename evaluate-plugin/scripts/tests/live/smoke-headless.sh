@@ -31,7 +31,10 @@
 # provided"), consistent with the CLI's listing budget
 # (SLASH_COMMAND_TOOL_CHAR_BUDGET), so the "Use when user says commit" trigger
 # never reached the child and these runs measure name-only routing (see
-# docs/cross-model-evaluation.md, "Skill descriptions"). So:
+# docs/cross-model-evaluation.md, "Skill descriptions"). Rollouts now raise that
+# budget (--skill-listing-budget, default 100000) and trigger mode runs on
+# --tools Skill; on 2026-10-06 the with-skill rollout then routed and trigger
+# recall was 2/3. Routing stays model behaviour at n=1, so:
 #   - WITH_SKILL_ROUTED=false (the with-skill run never invoked git-commit) and
 #     a trigger run that misses its thresholds (TRIGGERS_STATUS=WARN) are WARN
 #     issues: STATUS=WARN, exit 0, REASON= naming them. They are not failures.

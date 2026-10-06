@@ -377,6 +377,49 @@ check "passthrough: WARN passthrough_denied" "yes" "$(printf '%s\n' "$out" | gre
 check "passthrough: meta lists the name" '["FOO_PASS"]' "$(jq -c .passthrough_env_names "$run_dir/rollout-meta.json")"
 check "passthrough: meta never stores the value" "no" "$(has_line "$run_dir/rollout-meta.json" "foo-pass-value")"
 
+echo "=== TEST: skill listing budget (SLASH_COMMAND_TOOL_CHAR_BUDGET) ==="
+# The CLI elides skill descriptions past this budget; with a 48-skill plugin the
+# default left git-commit listed by name only (2026-10-05 live smoke), so
+# rollouts raise it unless told to keep the CLI default.
+new_dirs
+run --run-dir "$run_dir" --workdir "$workdir" --prompt p --plugin-dir "$plugin" --max-budget-usd 0.05
+check "budget: default reaches the child" "yes" "$(has_line "$log" "$(printf 'ENV\tSLASH_COMMAND_TOOL_CHAR_BUDGET=100000')")"
+check "budget: default in KEY block" "100000" "$(field "$out" SKILL_LISTING_BUDGET)"
+check "budget: default in meta" "100000" "$(jq -r .skill_listing_budget "$run_dir/rollout-meta.json")"
+new_dirs
+EVAL_SKILL_LISTING_BUDGET=7777 run --run-dir "$run_dir" --workdir "$workdir" --prompt p --plugin-dir "$plugin" --max-budget-usd 0.05
+check "budget: EVAL_SKILL_LISTING_BUDGET sets the default" "yes" "$(has_line "$log" "$(printf 'ENV\tSLASH_COMMAND_TOOL_CHAR_BUDGET=7777')")"
+new_dirs
+SLASH_COMMAND_TOOL_CHAR_BUDGET=1 run --run-dir "$run_dir" --workdir "$workdir" --prompt p --plugin-dir "$plugin" \
+  --max-budget-usd 0.05 --passthrough-env SLASH_COMMAND_TOOL_CHAR_BUDGET --skill-listing-budget 4242
+check "budget: flag beats a passed-through value" "yes" "$(has_line "$log" "$(printf 'ENV\tSLASH_COMMAND_TOOL_CHAR_BUDGET=4242')")"
+check "budget: passed-through value overridden" "no" "$(has_line "$log" "$(printf 'ENV\tSLASH_COMMAND_TOOL_CHAR_BUDGET=1')")"
+new_dirs
+SLASH_COMMAND_TOOL_CHAR_BUDGET=1 run --run-dir "$run_dir" --workdir "$workdir" --prompt p --plugin-dir "$plugin" \
+  --max-budget-usd 0.05 --env-mode inherit --skill-listing-budget cli
+check "budget: cli exit 0" "0" "$rc"
+check "budget: cli strips an inherited value" "no" "$(has_line "$log" "$(printf 'ENV\tSLASH_COMMAND_TOOL_CHAR_BUDGET=')")"
+check "budget: cli in KEY block" "cli" "$(field "$out" SKILL_LISTING_BUDGET)"
+check "budget: cli in meta" "cli" "$(jq -r .skill_listing_budget "$run_dir/rollout-meta.json")"
+new_dirs
+SLASH_COMMAND_TOOL_CHAR_BUDGET=1 run --run-dir "$run_dir" --workdir "$workdir" --prompt p --plugin-dir "$plugin" \
+  --max-budget-usd 0.05 --passthrough-env SLASH_COMMAND_TOOL_CHAR_BUDGET --skill-listing-budget cli
+check "budget: cli drops a passed-through value too" "no" "$(has_line "$log" "$(printf 'ENV\tSLASH_COMMAND_TOOL_CHAR_BUDGET=')")"
+new_dirs
+run --run-dir "$run_dir" --workdir "$workdir" --prompt p --plugin-dir "$plugin" --max-budget-usd 0.05 --skill-listing-budget lots
+check "budget: invalid value is a usage error" "2" "$rc"
+
+echo "=== TEST: --tools limits the child's toolset ==="
+new_dirs
+run --run-dir "$run_dir" --workdir "$workdir" --prompt p --plugin-dir "$plugin" --max-budget-usd 0.05 --tools Skill
+check "tools: exit 0" "0" "$rc"
+check "tools: --tools forwarded" "yes" "$(has_line "$log" "$(printf 'ARG\t--tools')")"
+check "tools: value forwarded" "yes" "$(grep -A1 "$(printf '^ARG\t--tools$')" "$log" | grep -q "$(printf '^ARG\tSkill$')" && echo yes || echo no)"
+check "tools: in meta" "Skill" "$(jq -r .tools "$run_dir/rollout-meta.json")"
+new_dirs
+run --run-dir "$run_dir" --workdir "$workdir" --prompt p --plugin-dir "$plugin" --max-budget-usd 0.05
+check "tools: absent by default" "no" "$(has_line "$log" "$(printf 'ARG\t--tools')")"
+
 echo "=== TEST: child session_id equal to the parent's is a WARN ==="
 new_dirs
 out="$(CLAUDE_CODE_SESSION_ID=11111111-2222-4333-8444-555555555555 PATH="$bin:$PATH" bash "$rollout" \

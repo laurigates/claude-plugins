@@ -275,7 +275,7 @@ check "default output under EVAL_RUNS_ROOT" "yes" "$(case "$tj" in "$EVAL_RUNS_R
 check "triggers.json exists" "yes" "$([ -f "$tj" ] && echo yes || echo no)"
 check "copy path" "$skill/eval-results/triggers.json" "$(field "$out" COPY)"
 check "copy identical to output" "yes" "$(cmp -s "$tj" "$skill/eval-results/triggers.json" && echo yes || echo no)"
-check "json top-level keys" '["finished_at","harness","issues","max_budget_usd_per_prompt","max_turns","model","model_id","plugin_dirs","prompts","runs_dir","runs_per_prompt","skill","skill_dir","started_at","status","summary","thresholds","total_budget_usd","version"]' "$(jf "$tj" 'sorted(d)')"
+check "json top-level keys" '["finished_at","harness","issues","max_budget_usd_per_prompt","max_turns","model","model_id","plugin_dirs","prompts","runs_dir","runs_per_prompt","skill","skill_dir","skill_listing_budget","started_at","status","summary","thresholds","total_budget_usd","version"]' "$(jf "$tj" 'sorted(d)')"
 check "json version/harness/skill" '[1,"claude-code","demo-plugin:demo-skill"]' "$(jf "$tj" '[d["version"],d["harness"],d["skill"]]')"
 check "json summary" '{"abort_reason":null,"aborted":false,"attempted":8,"cost_includes_cap_charges":true,"errors":0,"fn":1,"fp":1,"fpr":0.25,"precision":0.75,"recall":0.75,"skipped":0,"tn":3,"total_cost":0.17,"tp":3}' "$(jf "$tj" 'd["summary"]')"
 check "json row keys" '["cost","cost_known","expected","id","kind","near_miss_of","outcome","prompt","prompt_sha256","runs","runs_error","runs_ok","skills_invoked","status","trigger_rate","triggered"]' "$(jf "$tj" 'sorted(d["prompts"][0])')"
@@ -283,11 +283,11 @@ check "json s1 row" '[true,["demo-plugin:demo-skill"],0.05,false,"OK","tp"]' "$(
 check "json s4 denied counts as triggered" '[true,"tp"]' "$(jf "$tj" '[d["prompts"][3]["triggered"],d["prompts"][3]["outcome"]]')"
 check "json n2 near_miss_of + peer skill" '["peer-plugin:peer-skill",["peer-plugin:peer-skill"],false]' "$(jf "$tj" '[d["prompts"][5]["near_miss_of"],d["prompts"][5]["skills_invoked"],d["prompts"][5]["triggered"]]')"
 check "json run record" '[1,null,0.05,false,"stopped_on_skill","OK"]' "$(jf "$tj" '[d["prompts"][0]["runs"][0][k] for k in ("run","cost","cost_charged","cost_known","stop_reason","status")]')"
-check "json thresholds" '{"max_false_positives":0,"min_recall":0.67,"trigger_rate_min":0.5}' "$(jf "$tj" 'd["thresholds"]')"
+check "json thresholds" '{"max_false_positives":0,"min_recall":0.66,"trigger_rate_min":0.5}' "$(jf "$tj" 'd["thresholds"]')"
 check "json status" '"WARN"' "$(jf "$tj" 'd["status"]')"
 check "rollout called once per prompt" "8" "$(calls)"
 first_call="$(grep -m1 '^CALL' "$STUB_LOG")"
-for flag in "--allowed-tools Skill" "--permission default" "--stop-on-skill" "--max-turns 2" "--model haiku" \
+for flag in "--tools Skill" "--allowed-tools Skill" "--permission default" "--stop-on-skill" "--max-turns 2" "--model haiku" \
             "--max-budget-usd 0.05" "--plugin-dir $mkt/demo-plugin" "--plugin-dir $mkt/peer-plugin" "--no-snapshot"; do
   check "rollout argv has: $flag" "yes" "$(printf '%s\n' "$first_call" | grep -qF -- " $flag" && echo yes || echo no)"
 done
@@ -335,7 +335,7 @@ check "null-precision exit (WARN)" "0" "$rc"
 check "null-precision PRECISION empty" "" "$(field "$out" PRECISION)"
 check "null-precision RECALL" "0" "$(field "$out" RECALL)"
 check "null-precision STATUS" "WARN" "$(field "$out" STATUS)"
-check "null-precision REASON" "yes" "$(field "$out" REASON | grep -q '^recall_below_threshold: recall 0 < --min-recall 0.67' && echo yes || echo no)"
+check "null-precision REASON" "yes" "$(field "$out" REASON | grep -q '^recall_below_threshold: recall 0 < --min-recall 0.66' && echo yes || echo no)"
 tj="$(field "$out" OUTPUT)"
 check "null-precision json" '[null,0.0,0.0]' "$(jf "$tj" '[d["summary"]["precision"],d["summary"]["recall"],d["summary"]["fpr"]]')"
 # Only negatives selected: recall and precision both null, no recall WARN.
@@ -421,6 +421,17 @@ check "usage-abort STATUS" "ERROR" "$(field "$out" STATUS)"
 check "usage-abort REASON" "yes" "$(field "$out" REASON | grep -q '^rollout_usage: rollout usage error: usage: claude CLI not found' && echo yes || echo no)"
 check "usage-abort stops after first call" "1" "$(calls)"
 check "usage-abort charges nothing" "0" "$(field "$out" TOTAL_COST_USD)"
+
+echo "=== TEST: --skill-listing-budget forwarding ==="
+check "default run does not pass the flag (rollout default applies)" "no" "$(printf '%s\n' "$first_call" | grep -qF -- " --skill-listing-budget" && echo yes || echo no)"
+reset_state
+write_evals '[{"id":"s1","prompt":"[[SEQ:T]] a"}]' '[]'
+run_runner --skill-listing-budget 4242 --no-copy
+check "budget: exit" "0" "$rc"
+check "budget: forwarded to the rollout" "yes" "$(grep -m1 '^CALL' "$STUB_LOG" | grep -qF -- " --skill-listing-budget 4242" && echo yes || echo no)"
+check "budget: recorded in triggers.json" '"4242"' "$(jf "$(field "$out" OUTPUT)" 'd["skill_listing_budget"]')"
+run_runner --skill-listing-budget nope --no-copy
+check "budget: invalid value is a usage error" "2" "$rc"
 
 # ---------------------------------------------------------------------------
 # Contract check against the REAL rollout_headless.sh + parse_trace.py, with

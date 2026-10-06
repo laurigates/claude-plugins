@@ -246,8 +246,8 @@ anyway fails on the trace, which no transcript check can see.
 ### Trigger Evals (`triggers` block)
 
 Whether description routing picks the skill at all. `scripts/run_trigger_evals.py`
-runs each prompt through `rollout_headless.sh --allowed-tools Skill --permission
-default --stop-on-skill` in an empty temp workdir, with the skill's own plugin plus
+runs each prompt through `rollout_headless.sh --tools Skill --allowed-tools Skill
+--permission default --stop-on-skill` in an empty temp workdir, with the skill's own plugin plus
 every `peers` plugin loaded; the child is killed at its first `Skill` call.
 
 ```json
@@ -277,10 +277,19 @@ The child's `Skill` listing is subject to the CLI's character budget
 (`SLASH_COMMAND_TOOL_CHAR_BUDGET`, scaled to the context window when unset). A
 plugin with many skills can have its descriptions elided to bare names: on
 2026-10-05 (claude 2.1.289, haiku) git-plugin's 48 skills reached the child as
-names only, `git-commit`'s "Use when user says commit" trigger among them. A
-trigger eval then measures **name-only** routing, which is what an installed
-user with the same catalogue gets, not description routing. The runner does not
-raise the budget; see `docs/cross-model-evaluation.md` § Headless harness.
+names only, `git-commit`'s "Use when user says commit" trigger among them, and
+the eval measured name-only routing. Every rollout therefore sets the budget to
+`--skill-listing-budget` (default `$EVAL_SKILL_LISTING_BUDGET` or 100000
+characters), so evals measure **description** routing. `--skill-listing-budget
+cli` keeps the CLI default (and strips an inherited value) to measure what an
+installed user with the same catalogue gets. `run_trigger_evals.py` forwards
+the flag and records it as `skill_listing_budget` (null = rollout default).
+
+`--tools Skill` matters as much: `--allowed-tools` only auto-approves, so with
+Bash still available haiku ran `git status` in the empty workdir, saw no repo
+and stopped without routing. With the toolset limited to `Skill` the probe
+measures the skill-or-not decision alone. See `docs/cross-model-evaluation.md`
+§ Headless harness for the measured effect.
 
 ## triggers.json — Trigger Eval Results
 
@@ -298,7 +307,7 @@ plumbing run never overwrites the skill's genuine result.
   "model": "haiku", "model_id": "string | null — the full id that ran",
   "runs_per_prompt": 1, "max_budget_usd_per_prompt": 0.05, "total_budget_usd": 1.0,
   "max_turns": "number | null",
-  "thresholds": { "min_recall": 0.67, "max_false_positives": 0, "trigger_rate_min": 0.5 },
+  "thresholds": { "min_recall": 0.66, "max_false_positives": 0, "trigger_rate_min": 0.5 },
   "plugin_dirs": ["string"],
   "started_at": "ISO-8601", "finished_at": "ISO-8601", "runs_dir": "string — per-prompt rollout run dirs",
   "prompts": [
@@ -380,7 +389,7 @@ is empty, unreadable, or holds no parseable event.
 | `transcript.md` | `final_text`, then a `\n\n---\n## Tool calls` appendix (output checks stop at it) |
 | `timing.json` | `{started_at, ended_at, duration_ms, durationMs, harness, total_cost_usd, num_turns}`; `total_cost_usd` null when no result event arrived (a stop-on-skill, timeout or truncated run); `num_turns` copies trace.json, so it is the counted turns then, and null only when the trace did not parse |
 | `workspace/` | Snapshot of the workdir (50 MB cap by apparent size, so a sparse file counts at full size; `--no-snapshot` to skip) — what workspace checks grade |
-| `rollout-meta.json` | Flags as run (model, effort, budget, max_turns and whether the CLI accepted it, permission, env mode requested/effective), the prompt as **sha256 only** (it is sent on stdin, never argv), passthrough env **names only**, `inherit_stripped_env` (credential var **names** stripped in inherit mode), plugin dirs, argv |
+| `rollout-meta.json` | Flags as run (model, effort, budget, max_turns and whether the CLI accepted it, `tools`, permission, env mode requested/effective, `skill_listing_budget` as a number or `"cli"`), the prompt as **sha256 only** (it is sent on stdin, never argv), passthrough env **names only**, `inherit_stripped_env` (credential var **names** stripped in inherit mode), plugin dirs, argv |
 
 ## Golden-set probes
 

@@ -14,9 +14,19 @@
 #     [--model haiku] [--effort <low|medium|high|xhigh|max>]
 #     [--max-budget-usd <usd>]         required unless EVAL_ALLOW_UNCAPPED=1 (0.25 is a sane cap)
 #     [--max-turns <n>]                probed: WARN and retried without it if the CLI rejects it
-#     [--allowed-tools <list>] [--permission bypass|default] [--timeout 300]
+#     [--allowed-tools <list>] [--tools <list>] [--permission bypass|default] [--timeout 300]
 #     [--env-mode clean|inherit] [--passthrough-env NAME[,NAME...]]...
 #     [--stop-on-skill] [--no-snapshot] [--snapshot-max-mb 50]
+#     [--skill-listing-budget <chars>|cli]   default $EVAL_SKILL_LISTING_BUDGET or 100000
+#
+# Skill listing budget: the CLI caps the characters it spends on the Skill
+# tool's listing (SLASH_COMMAND_TOOL_CHAR_BUDGET, scaled to the context window
+# when unset) and elides descriptions past the cap -- with a 48-skill plugin
+# loaded, git-commit was listed by name only and haiku never routed to it
+# (2026-10-05 live smoke). Rollouts therefore set the budget high by default so
+# the eval measures description routing, not the cap. `cli` leaves it unset
+# (and strips an inherited value) to measure what an installed user's session
+# sees with the CLI default.
 #
 # Env modes:
 #   clean (default)  `env -i` + an allowlist (PATH, locale, proxy/CA, auth tokens),
@@ -36,7 +46,11 @@
 #
 # Permissions: bypass (default) runs --dangerously-skip-permissions in the
 # throwaway workdir (IS_SANDBOX=1 when euid is 0); default runs
-# --permission-mode default, which with --allowed-tools Skill is trigger mode.
+# --permission-mode default. --allowed-tools only auto-approves; --tools limits
+# the tools the child has at all. Trigger mode is --tools Skill --allowed-tools
+# Skill --permission default: with Bash available, haiku ran `git status` in the
+# empty workdir and stopped at "not a git repository" instead of routing
+# (2026-10-06), so the probe would measure workdir state, not routing.
 #
 # Guards (exit 2): workdir inside this script's repo, inside the CALLER's repo
 # (the git toplevel of $PWD -- an installed ${CLAUDE_PLUGIN_ROOT} copy is not
@@ -76,7 +90,7 @@ CLEAN_ALLOWLIST=(
   NODE_EXTRA_CA_CERTS SSL_CERT_FILE REQUESTS_CA_BUNDLE CURL_CA_BUNDLE GIT_SSL_CAINFO
 )
 
-usage() { sed -n '2,45p' "$0"; }
+usage() { sed -n '2,68p' "$0"; }
 
 # ---------------------------------------------------------------- output helpers
 issues=()      # "SEVERITY|TYPE|MSG"
@@ -101,9 +115,10 @@ usage_error() {
 # ---------------------------------------------------------------- args
 run_dir=""; workdir=""; prompt=""; prompt_file=""; prompt_set=false
 plugin_dirs=(); model="haiku"; effort=""; budget=""; max_turns=""
-allowed_tools=""; permission="bypass"; timeout_s=300
+allowed_tools=""; tools=""; permission="bypass"; timeout_s=300
 env_mode="clean"; passthrough_raw=()
 stop_on_skill=false; do_snapshot=true; snapshot_max_mb=50
+skill_listing_budget="${EVAL_SKILL_LISTING_BUDGET:-100000}"
 
 need_val() { [ $# -ge 2 ] || usage_error "$1 requires a value"; }
 
@@ -119,6 +134,7 @@ while [ $# -gt 0 ]; do
     --max-budget-usd) need_val "$@"; budget="$2"; shift 2 ;;
     --max-turns) need_val "$@"; max_turns="$2"; shift 2 ;;
     --allowed-tools) need_val "$@"; allowed_tools="$2"; shift 2 ;;
+    --tools) need_val "$@"; tools="$2"; shift 2 ;;
     --permission) need_val "$@"; permission="$2"; shift 2 ;;
     --timeout) need_val "$@"; timeout_s="$2"; shift 2 ;;
     --env-mode) need_val "$@"; env_mode="$2"; shift 2 ;;
@@ -126,6 +142,7 @@ while [ $# -gt 0 ]; do
     --stop-on-skill) stop_on_skill=true; shift ;;
     --no-snapshot) do_snapshot=false; shift ;;
     --snapshot-max-mb) need_val "$@"; snapshot_max_mb="$2"; shift 2 ;;
+    --skill-listing-budget) need_val "$@"; skill_listing_budget="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) usage_error "unknown argument: $1" ;;
   esac
@@ -148,6 +165,9 @@ case "$permission" in bypass|default) ;; *) usage_error "--permission must be by
 case "$env_mode" in clean|inherit) ;; *) usage_error "--env-mode must be clean or inherit" ;; esac
 [[ "$timeout_s" =~ ^[1-9][0-9]*$ ]] || usage_error "--timeout must be a positive integer (seconds)"
 [[ "$snapshot_max_mb" =~ ^[1-9][0-9]*$ ]] || usage_error "--snapshot-max-mb must be a positive integer"
+if [ "$skill_listing_budget" != cli ] && ! [[ "$skill_listing_budget" =~ ^[1-9][0-9]*$ ]]; then
+  usage_error "--skill-listing-budget must be a positive integer (characters) or 'cli'"
+fi
 if [ -n "$max_turns" ] && ! [[ "$max_turns" =~ ^[1-9][0-9]*$ ]]; then
   usage_error "--max-turns must be a positive integer"
 fi
@@ -323,6 +343,18 @@ build_env() {
   for v in "${passthrough[@]+"${passthrough[@]}"}"; do
     if [ -n "${!v+x}" ]; then child_env+=("$v=${!v}"); passed_names+=("$v"); fi
   done
+  # After the passthrough names, so the explicit budget wins over a passed-through
+  # value (env applies the last NAME=VALUE).
+  if [ "$skill_listing_budget" = cli ]; then
+    [ "$mode" = inherit ] && child_unset+=("SLASH_COMMAND_TOOL_CHAR_BUDGET")
+    local kept=() e
+    for e in "${child_env[@]+"${child_env[@]}"}"; do
+      case "$e" in SLASH_COMMAND_TOOL_CHAR_BUDGET=*) ;; *) kept+=("$e") ;; esac
+    done
+    child_env=("${kept[@]+"${kept[@]}"}")
+  else
+    child_env+=("SLASH_COMMAND_TOOL_CHAR_BUDGET=$skill_listing_budget")
+  fi
   if [ "$permission" = bypass ] && [ "$(id -u)" = "0" ]; then
     child_env+=("IS_SANDBOX=1")
   fi
@@ -340,6 +372,7 @@ build_args() {
   if [ -n "$max_turns" ] && [ "$use_max_turns" = true ]; then claude_args+=(--max-turns "$max_turns"); fi
   if [ -n "$effort" ] && [ "$use_effort" = true ]; then claude_args+=(--effort "$effort"); fi
   [ -n "$allowed_tools" ] && claude_args+=(--allowedTools "$allowed_tools")
+  [ -n "$tools" ] && claude_args+=(--tools "$tools")
   if [ "$permission" = bypass ]; then
     claude_args+=(--dangerously-skip-permissions)
   else
@@ -592,10 +625,10 @@ denied_json="$(printf '%s\n' "${denied_passthrough[@]+"${denied_passthrough[@]}"
 stripped_json="$(printf '%s\n' "${stripped_creds[@]+"${stripped_creds[@]}"}" | jq -R . | jq -s 'map(select(length > 0))')"
 argv_json="$(printf '%s\n' "${redacted_args[@]}" | jq -R . | jq -s .)"
 jq -n --arg sha "$prompt_sha" --arg model "$model" --arg effort "$effort" --arg budget "$budget" \
-  --arg max_turns "$max_turns" --arg allowed "$allowed_tools" --arg perm "$permission" \
+  --arg max_turns "$max_turns" --arg allowed "$allowed_tools" --arg tools "$tools" --arg perm "$permission" \
   --argjson timeout "$timeout_s" --arg env_req "$env_mode" --arg env_eff "$effective_env_mode" \
   --argjson stop "$stop_on_skill" --argjson plugins "$plugin_json" --argjson passed "$passed_json" \
-  --argjson denied "$denied_json" --argjson stripped "$stripped_json" --argjson argv "$argv_json" --arg workdir "$workdir" \
+  --argjson denied "$denied_json" --argjson stripped "$stripped_json" --argjson argv "$argv_json" --arg workdir "$workdir" --arg slb "$skill_listing_budget" \
   --argjson mt_ok "$use_max_turns" --argjson eff_ok "$use_effort" --argjson remote "$([ -n "${CLAUDE_CODE_REMOTE:-}" ] && echo true || echo false)" \
   '{harness: "claude-code", prompt_sha256: $sha, model: $model,
     effort: (if $effort == "" then null else $effort end),
@@ -604,10 +637,12 @@ jq -n --arg sha "$prompt_sha" --arg model "$model" --arg effort "$effort" --arg 
     max_turns_accepted: (if $max_turns == "" then null else $mt_ok end),
     effort_accepted: (if $effort == "" then null else $eff_ok end),
     allowed_tools: (if $allowed == "" then null else $allowed end),
+    tools: (if $tools == "" then null else $tools end),
     permission: $perm, timeout_s: $timeout, stop_on_skill: $stop,
     env_mode_requested: $env_req, env_mode: $env_eff, cloud_remote: $remote,
     passthrough_env_names: $passed, passthrough_env_denied: $denied,
     inherit_stripped_env: $stripped,
+    skill_listing_budget: (if $slb == "cli" then "cli" else ($slb | tonumber) end),
     plugin_dirs: $plugins, workdir: $workdir, claude_argv: $argv}' >"$run_dir/rollout-meta.json"
 
 # ---------------------------------------------------------------- report
@@ -633,6 +668,7 @@ echo "SKILLS_INVOKED=$skills_invoked"
 echo "STOP_REASON=$stop_reason"
 echo "CHILD_EXIT=$child_exit"
 echo "ENV_MODE=$effective_env_mode"
+echo "SKILL_LISTING_BUDGET=$skill_listing_budget"
 echo "STATUS=$report_status"
 if [ "$report_status" != OK ]; then
   first=""

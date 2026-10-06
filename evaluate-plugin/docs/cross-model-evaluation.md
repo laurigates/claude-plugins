@@ -135,9 +135,11 @@ transcript.
 **Permissions.** A rollout defaults to `--dangerously-skip-permissions` inside its
 throwaway `mktemp` workdir, with `IS_SANDBOX=1` when running as root. The probe
 showed why: under `acceptEdits`, both `Skill` and `Bash` were `permission_denied`.
-Trigger mode instead runs `--permission default --allowed-tools Skill
---stop-on-skill`, so the child can route to a skill and nothing else, and is killed
-at its first `Skill` call. A workdir inside a repository is refused with exit 2:
+Trigger mode instead runs `--tools Skill --allowed-tools Skill --permission
+default --stop-on-skill`, so the child has the `Skill` tool and nothing else, and
+is killed at its first `Skill` call. `--allowed-tools` alone only auto-approves:
+with Bash available, haiku ran `git status` in the empty workdir and stopped at
+"not a git repository" instead of routing (2026-10-06). A workdir inside a repository is refused with exit 2:
 the repo the script lives in, the **caller's** repo (the git toplevel of the
 current directory -- the skills run an installed `${CLAUDE_PLUGIN_ROOT}` copy,
 which sits outside your checkout), or any repo rooted above the workdir. So is a
@@ -163,7 +165,7 @@ session:
 | Hooks | Only the loaded plugin's own hooks fire (e.g. git-plugin's `SessionStart` probe and `PreToolUse:Bash` hooks); a baseline run fires none. A hook no `--plugin-dir` declares is WARN `foreign_hook`. Managed-settings hooks cannot be scrubbed and would surface the same way |
 | Built-in plugins | **Not** removed. The CLI's built-in plugins and their skills stay loaded, so trigger evals compete against them as well as against `peers` |
 | `skills_available` | Mirrors the init event's `skills`, which lists only **user-invocable** skills. All 21 `user-invocable: false` git-plugin skills were absent, the skill under test (`git-plugin:git-commit`) among them, while the 7 `disable-model-invocation: true` ones were present. The model's `Skill` listing still offered `git-commit`. So the field shows what a user can type, not what routing can pick |
-| Skill descriptions | **Elided.** With `--plugin-dir git-plugin` (48 skills) haiku saw `git-plugin:git-commit`, `git-commit-trailers` and `git-commit-workflow` by name with "description not provided", while some other skills kept theirs. This is consistent with the CLI's `Skill`-listing character budget (`SLASH_COMMAND_TOOL_CHAR_BUDGET`, present in the 2.1.289 binary, scaled to the context window when unset). The gc-007 with-skill rollout never invoked `git-commit` and trigger recall was 0/3 in two rounds, so those numbers measure name-only routing. Raising the budget (`--passthrough-env SLASH_COMMAND_TOOL_CHAR_BUDGET` on a rollout) would measure description routing but not what an installed user gets; trimming git-plugin's listing is the other lever. Neither is applied by default: it is an open decision |
+| Skill descriptions | **Elided at the CLI default, so rollouts raise the budget.** With `--plugin-dir git-plugin` (48 skills) haiku saw `git-plugin:git-commit`, `git-commit-trailers` and `git-commit-workflow` by name with "description not provided". The cause is the CLI's `Skill`-listing character budget (`SLASH_COMMAND_TOOL_CHAR_BUDGET`, an integer override read by the 2.1.289 binary, scaled to the context window when unset). At the default the gc-007 with-skill rollout never invoked `git-commit` and trigger recall was 0/3 in two rounds. Every rollout now sets the budget to 100000 (`--skill-listing-budget`, or `$EVAL_SKILL_LISTING_BUDGET`); `cli` keeps the default to measure what an installed user gets. Measured 2026-10-06 (haiku, n=1) with the budget raised and trigger mode on `--tools Skill`: the gc-007 with-skill rollout invoked `git-plugin:git-commit` (baseline did not); trigger recall 2/3, precision 1.0, no should-not prompt triggered. The miss (gct-002, "stage it and make a commit") routed to sibling `git-plugin:git-cli-agentic` -- a real routing finding, not budget elision |
 | `--max-turns` / `--effort` | Both are accepted and enforced, though `--max-turns` is missing from `--help`. `--max-turns 1` ends with `error_max_turns`, which the runner reports as `STOP_REASON=max_turns` WARN. Either flag is retried without it, with a WARN, if a future CLI rejects it |
 
 `--env-mode inherit` is an explicit opt-in. It keeps the real HOME but unsets every

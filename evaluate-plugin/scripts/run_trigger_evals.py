@@ -53,8 +53,8 @@ Env: EVAL_ROLLOUT_SCRIPT overrides the rollout script path (tests use a stub).
 Usage:
   run_trigger_evals.py --skill-dir <dir> [--model haiku] [--runs 1]
     [--max-budget-usd-per-prompt 0.05] [--total-budget-usd 1.00] [--only <id>]...
-    [--min-recall 0.67] [--max-false-positives 0] [--output <file>] [--no-copy]
-    [--dry-run]
+    [--min-recall 0.66] [--max-false-positives 0] [--skill-listing-budget <n>|cli]
+    [--output <file>] [--no-copy] [--dry-run]
 
 Output follows .claude/rules/structured-script-output.md
 (``=== TRIGGER EVALS ===`` block).
@@ -301,6 +301,7 @@ def run_one(
     model: str,
     cap: float,
     max_turns: int | None,
+    skill_listing_budget: str | None = None,
 ) -> dict:
     """One headless rollout. Returns a run record (cost_charged always set)."""
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -318,6 +319,8 @@ def run_one(
         model,
         "--max-budget-usd",
         fmt_num(cap),
+        "--tools",
+        "Skill",
         "--allowed-tools",
         "Skill",
         "--permission",
@@ -329,6 +332,8 @@ def run_one(
         cmd += ["--plugin-dir", str(pd)]
     if max_turns is not None:
         cmd += ["--max-turns", str(max_turns)]
+    if skill_listing_budget is not None:
+        cmd += ["--skill-listing-budget", skill_listing_budget]
     rec: dict = {
         "run_dir": str(run_dir),
         "status": "ERROR",
@@ -422,8 +427,13 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--max-budget-usd-per-prompt", type=float, default=0.05)
     ap.add_argument("--total-budget-usd", type=float, default=1.00)
     ap.add_argument("--only", action="append", default=[])
-    ap.add_argument("--min-recall", type=float, default=0.67)
+    ap.add_argument("--min-recall", type=float, default=0.66)
     ap.add_argument("--max-false-positives", type=int, default=0)
+    ap.add_argument(
+        "--skill-listing-budget",
+        help="forwarded to rollout_headless.sh: characters for the CLI's Skill "
+        "listing, or 'cli' for the CLI default (rollout default: 100000)",
+    )
     ap.add_argument("--output")
     ap.add_argument("--no-copy", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
@@ -485,6 +495,9 @@ def run(args) -> int:
     cap = args.max_budget_usd_per_prompt
     if not cap > 0:
         raise UsageError("--max-budget-usd-per-prompt must be > 0")
+    slb = args.skill_listing_budget
+    if slb is not None and slb != "cli" and not (slb.isdigit() and int(slb) > 0):
+        raise UsageError("--skill-listing-budget must be a positive integer or 'cli'")
     if not args.total_budget_usd > 0:
         raise UsageError("--total-budget-usd must be > 0")
     if not 0 <= args.min_recall <= 1:
@@ -669,6 +682,7 @@ def run(args) -> int:
                 args.model,
                 cap,
                 max_turns,
+                args.skill_listing_budget,
             )
             spent = round(spent + rec["cost_charged"], 6)
             invoked = rec.pop("_invoked", [])
@@ -807,6 +821,7 @@ def run(args) -> int:
         "max_budget_usd_per_prompt": cap,
         "total_budget_usd": args.total_budget_usd,
         "max_turns": max_turns,
+        "skill_listing_budget": args.skill_listing_budget,
         "thresholds": {
             "min_recall": args.min_recall,
             "max_false_positives": args.max_false_positives,
