@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.60.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.59.0...git-plugin-v2.60.0) (2026-10-06)
+
+
+### Features
+
+* **evaluate-plugin:** headless rollouts, trace/workspace checks, trigger evals ([#2909](https://github.com/laurigates/claude-plugins/issues/2909)) ([21b0713](https://github.com/laurigates/claude-plugins/commit/21b0713a1d82f767bb58133f64ca8ec2c6b6a7fa))
+
 ## [2.59.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.58.4...git-plugin-v2.59.0) (2026-10-06)
 
 
