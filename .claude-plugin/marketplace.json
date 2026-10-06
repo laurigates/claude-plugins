@@ -392,7 +392,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.58.4",
+      "version": "2.59.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -743,7 +743,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation",
-      "version": "1.12.1",
+      "version": "1.13.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -822,7 +822,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.19.9",
+      "version": "3.20.0",
       "author": {
         "name": "Lauri Gates"
       },
