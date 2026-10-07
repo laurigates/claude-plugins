@@ -24,13 +24,13 @@ filed-urls.txt + dispositions ──► source-doc annotations, tracking-issue
 The script itself is **not** here. It ships as
 [`workflows/verify-before-filing.workflow.js`](workflows/verify-before-filing.workflow.js) and
 is framed by SKILL.md § "Workflow harness (template)", which names what an adapter may rewrite.
-Same split as Phase 3 below: the structure lives in the file, the *rationale* stays here
+Same split as [Phase 3](#phase-3--paced-filing-why-the-numbers-are-what-they-are): the structure lives in the file, the *rationale* stays here
 (`.claude/rules/workflow-vs-skill.md`, `.claude/rules/offload-to-deterministic-substrate.md`).
 A skeleton kept in both places drifts — this one already had, predating the wave cap, the
 body-carrying draft schema, and the batch-dedup barrier.
 
 Read the file for the prompts, the schemas, and the control flow. What a future run has to
-re-decide is below.
+re-decide is in this section's table.
 
 | Decision | Value | Why |
 |---|---|---|

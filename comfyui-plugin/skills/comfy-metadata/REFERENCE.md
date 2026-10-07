@@ -1,7 +1,7 @@
 # ComfyUI metadata format reference
 
 Code anchors in a real install (upstream pulls move these line numbers;
-re-grep when they drift). Everything below is verified against real
+re-grep when they drift). Everything in this file is verified against real
 output files in a ComfyUI install's `output/` directory.
 
 ## The two JSON forms

@@ -8,7 +8,7 @@ Complete guide to UV project lifecycle and dependency management.
 2. [Dependency Management](#dependency-management)
 3. [Lockfile Operations](#lockfile-operations)
 4. [Environment Synchronization](#environment-synchronization)
-5. [Running Commands](#running-commands)
+5. [Running Scripts](#running-scripts)
 6. [Configuration](#configuration)
 7. [Common Workflows](#common-workflows)
 8. [Troubleshooting](#troubleshooting)

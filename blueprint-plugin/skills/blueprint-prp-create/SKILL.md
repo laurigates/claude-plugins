@@ -90,7 +90,7 @@ Create `docs/prps/[feature-name].md` with frontmatter and sections (see [REFEREN
 
 ### Step 5: Draft PRP content with research findings
 
-Fill all required sections (see [REFERENCE.md](REFERENCE.md#prp-sections)):
+Fill all required sections (see [REFERENCE.md](REFERENCE.md#prp-structure)):
 
 1. **Goal & Why**: One-sentence goal, business justification, target users, priority
 2. **Success Criteria**: Specific, testable acceptance criteria with metrics

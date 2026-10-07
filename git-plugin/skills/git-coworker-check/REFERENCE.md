@@ -3,7 +3,7 @@
 Two halves. § Signal design (at the end) explains why each detection signal
 exists, what it survives, and where it goes blind. Everything before it is
 recovery: when detection fires *too late* — i.e., a coworker collision has
-already corrupted your local git state — the scenarios below walk through
+already corrupted your local git state — the Scenario sections of this file walk through
 specific repairs. Detection (SKILL.md) prevents the damage; this file fixes the
 damage when prevention failed.
 
@@ -188,7 +188,7 @@ someone else's pollution is now on the remote.
 ## Shared-checkout branch isolation — verify your branch before pushing
 
 Promoted from the always-loaded `shared-checkout-branch-isolation.md`
-portfolio rule, whose stub keeps the gate lines. Scenario 1 above is the
+portfolio rule, whose stub keeps the gate lines. [Scenario 1](#scenario-1--your-commit-landed-on-the-wrong-branch) is the
 recovery; this section is the push-time check that catches it first, and the
 guard that stops the recovery from destroying the coworker's work.
 
@@ -238,7 +238,9 @@ moved under you.
 
 ### Check whether their commit lives anywhere else *before* you rewrite
 
-The recovery above is written from your side, and read literally it will
+The `git switch -C` recovery in
+[§ Shared-checkout branch isolation](#shared-checkout-branch-isolation--verify-your-branch-before-pushing)
+is written from your side, and read literally it will
 **destroy the coworker's work**. `git switch -C` moves the branch label; if
 your branch was the only ref holding their commit, it becomes unreachable —
 recoverable from their reflog for a while, but nowhere a `git log`, a fetch, or
@@ -319,7 +321,7 @@ the 20+ minutes a Scenario 1 recovery costs.
 ## Field Notes
 
 - **theme-management Sentry secrets PR, 2026-05-27**: Scenario 1 played
-  out exactly as documented above. Reflog showed the coworker's two
+  out exactly as documented in [Scenario 1](#scenario-1--your-commit-landed-on-the-wrong-branch). Reflog showed the coworker's two
   commits had interleaved with my switch-and-commit sequence. The
   recovery procedure (steps 1–7) took ~3 minutes and produced a clean
   feat branch with exactly the intended diff (2 files, +29 lines)
@@ -404,8 +406,8 @@ unguarded `VAR=$(mktemp -d)` that resolves empty and falls back to the CWD. The
 bare-flip signal is the **detection + recovery** complement, so a session can
 notice the corruption instead of misreading the cascade of git failures as its
 own fault. It is ranked ahead of the other signals because a bare flip breaks
-git for every linked worktree. Recovery steps: SKILL.md § Recovering from a bare
-flip / leaked GIT_DIR.
+git for every linked worktree. Recovery steps: `references/recovery.md` § Recovering from a
+bare flip / leaked GIT_DIR.
 
 ### Cross-session discovery (`ListAgents`)
 

@@ -93,7 +93,7 @@ git add <files-for-fix-1>
 git commit -m "fix: address review feedback - <specific change>"
 ```
 
-For multi-fix commits, list each change and append a `Co-authored-by:` trailer per unique suggester (see "Co-author Attribution" below):
+For multi-fix commits, list each change and append a `Co-authored-by:` trailer per unique suggester (see [Co-author Attribution](#co-author-attribution)):
 
 ```
 fix: address PR review feedback
@@ -204,7 +204,7 @@ Used by Step 1A when `--all` is passed. The orchestrator dispatches one subagent
 
 ### Prompt template
 
-```
+````
 You are addressing review feedback for ONE pull request inside a fresh git worktree.
 
 Repository: <owner>/<repo>
@@ -267,7 +267,7 @@ Edge cases:
 - A thread the reviewer asked to keep open: include it with `"resolve": false`.
 - A suggestion declined with reasoning (nitpick or otherwise): include it with `"action": "decline"`, `"resolve": true`, and the explanation in `reply`.
 - A reply that asks the reviewer a follow-up question: include it with `"resolve": false` and note the open question in `blockers[]` so the orchestrator surfaces it.
-```
+````
 
 ### Orchestrator handling of subagent output
 
@@ -347,4 +347,4 @@ When `--all` was passed, prepend a rollup section above the per-PR sections:
 | #160 | ✅ pushed (no commits — questions only) | 0 | 2 | 1 | — |
 ```
 
-Then emit one of the per-PR templates above for each dispatched PR, scoped to that PR's threads and commits.
+Then emit one of the per-PR templates in [§ Summary Report Template](#summary-report-template) for each dispatched PR, scoped to that PR's threads and commits.

@@ -26,7 +26,7 @@ afterwards. On a read you get a wrong answer; on a write you get a **silently
 skipped action you will later report as done**.
 
 **Worse still: an *accepted* flag that takes your stdin marker literally.** The
-two cases above at least do nothing. A flag that is valid but means something
+two cases in this section at least do nothing. A flag that is valid but means something
 other than what you assumed writes **wrong content, successfully** — exit 0, a
 URL printed, nothing to notice. Observed 2026-08:
 
@@ -56,6 +56,6 @@ empty bullet. Caught only when a human said the description looked wrong.
 
 **Control-test every negative that gates an action.** Re-run the same command
 shape against a term you know is present; if the control also returns nothing,
-the tool is broken, not the result empty. One control run caught all six above.
+the tool is broken, not the result empty. One control run caught all six in this section.
 This is `never-fabricate-test-identifiers.md`'s known-good control, applied to
 search.

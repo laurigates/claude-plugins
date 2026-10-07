@@ -74,8 +74,8 @@ All three look like a normal red or green tick:
 
 The shared tell is that **the check's own message describes its parse, not the
 work** — so read the artifact it claims is missing before believing it is
-missing. One `gh pr view <n> --json comments` would have ended the case above at
-any point.
+missing. One `gh pr view <n> --json comments` would have ended the case in [§ The failure shape](#the-failure-shape)
+at any point.
 
 A related consequence: a "no code change" line in an agent's commit message is
 also model-emitted text, so it is not a skip signal CI may parse either (see the

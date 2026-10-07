@@ -128,7 +128,7 @@ For trailer conventions (Co-authored-by, Signed-off-by, BREAKING CHANGE, Release
 | `ci` | CI/CD config | None |
 | `build` | Build system, deps | None |
 
-See [Conventional Commits Standards](../../.claude/rules/conventional-commits.md) for complete reference.
+See [Conventional Commits Standards](../../../.claude/rules/conventional-commits.md) for complete reference.
 
 ### Issue References
 

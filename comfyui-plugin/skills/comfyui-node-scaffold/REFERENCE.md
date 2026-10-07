@@ -2,7 +2,7 @@
 
 Supporting material for [`comfyui-node-scaffold`](SKILL.md), split across
 `references/` so a run loads only the material its path needs. The operational
-workflow lives in `SKILL.md`; nothing below is loaded unless you follow one of
+workflow lives in `SKILL.md`; nothing listed here is loaded unless you follow one of
 these links.
 
 | Path you are on | File | Carries |
@@ -15,4 +15,4 @@ these links.
 
 This file is an index only. Add new reference material to the file whose path
 needs it — or a new `references/*.md` plus a row here — rather than growing this
-page (`.claude/rules/context-engineering.md` § "Split long skills across files").
+page (`.claude/rules/context-engineering.md` § Authoring rules, "Split long skills across files").

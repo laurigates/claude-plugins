@@ -146,7 +146,7 @@ Two further constraints on that list:
   **statically bounded** (a fixed table, a cap constant such as `cellCap`, a
   script-enumerated set) keeps the pin: `testing-plugin/test-analyze` and
   `evaluate-plugin/evaluate-skill` are both pinned *and* ship such a harness. See
-  [`skill-fork-context.md`](skill-fork-context.md) § the bounded-width carve-out —
+  [`skill-fork-context.md`](skill-fork-context.md) § Current Status (the bounded-width carve-out) —
   a harness only moves a skill across that line when it makes the width unbounded.
 
 ## Layout convention

@@ -66,7 +66,7 @@ patterns by design — one canonical source per pattern, per skill).
 2. Add `rules/tests/<id>-test.yml` with `valid:` (clean code — must **not** match)
    and `invalid:` (the anti-pattern — must match).
 3. `ast-grep test -c rules/sgconfig.yml --skip-snapshot-tests` must pass.
-4. Add a row to the catalog table above.
+4. Add a row to the [catalog table](#the-rule-catalog).
 
 The regression test
 [`scripts/tests/test-rules-project.sh`](scripts/tests/test-rules-project.sh)

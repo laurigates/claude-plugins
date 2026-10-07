@@ -5,9 +5,9 @@ adding or debugging a House rule.
 
 ## The Three Layers
 
-Each layer exists because of a measured limit in the one above it.
+Each layer exists because of a measured limit in the previous layer.
 
-| Layer | Covers | Why not the layer above |
+| Layer | Covers | Why not the previous layer |
 |---|---|---|
 | **vale** | token shapes, doc metrics, markdown scoping | code/table/heading skipping is free from its markdown parser; it has **no ordinal scope** — "No scopes select by ordinal position" (docs.vale.sh/topics/scopes) |
 | **harper** | grammar, readability, sentence length | independent segmenter; a second opinion on length |

@@ -98,14 +98,12 @@ If `--check-only` is set, stop here.
 2. Install native support if `--native`: `uv add --group dev pytest-memray[native]`
 3. Update `pyproject.toml` with pytest configuration (markers, filterwarnings)
 4. Create `memory-reports/` directory
-5. Use configuration templates from [REFERENCE.md](REFERENCE.md)
 
 ### Step 6: Create memory profiling test files
 
 1. Add memory fixtures to `tests/conftest.py` (reports dir setup, threshold fixture, data generator)
 2. Create `tests/test_memory_example.py` with example memory limit tests
 3. Create `tests/benchmarks/test_memory_benchmarks.py` for trend tracking
-4. Use test templates from [REFERENCE.md](REFERENCE.md)
 
 ### Step 7: Add package scripts
 
@@ -122,7 +120,6 @@ Create `.github/workflows/memory-profiling.yml` with:
 - Scheduled weekly benchmarks for trend tracking
 - Flame graph generation
 - PR comment with results
-- Use workflow template from [REFERENCE.md](REFERENCE.md)
 
 ### Step 9: Update standards tracking
 
@@ -141,8 +138,6 @@ components:
 ### Step 10: Print final compliance report
 
 Print a summary of packages installed, configuration applied, test files created, commands available, CI/CD configured, and next steps for the user.
-
-For detailed test templates, CI workflows, and standalone memray commands, see [REFERENCE.md](REFERENCE.md).
 
 ## Agentic Optimizations
 

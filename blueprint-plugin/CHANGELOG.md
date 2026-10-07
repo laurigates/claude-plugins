@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.46.6](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.5...blueprint-plugin-v3.46.6) (2026-10-07)
+
+
+### Bug Fixes
+
+* **skills:** point at anchors, not directions — ratchet + reference-file guard ([#2941](https://github.com/laurigates/claude-plugins/issues/2941)) ([47b65fa](https://github.com/laurigates/claude-plugins/commit/47b65faf0fd141ca5dff9cf435717196e385b115))
+
 ## [3.46.5](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.4...blueprint-plugin-v3.46.5) (2026-10-07)
 
 

@@ -6,7 +6,7 @@ Used by Step 3 of `/configure:claude-plugins` when `--exhaustive` is set (or the
 
 Build the full `enabledPlugins` map by reading every plugin name from the two relevant marketplaces, then writing each one with an explicit `true`/`false`. Every marketplace plugin is named, so the project's map **fully overrides** the user-global enable state — a plugin the user toggled on globally is forced off here unless it is explicitly `true`. This skill only ever writes `<cwd>/.claude/settings.json`; it never modifies `~/.claude/settings.json` (user-global toggles stay as the user set them).
 
-**Deriving each plugin's boolean.** Start from the Step 2 recommended set (those become `true`), then refine from repo context using the signals below. A plugin a value already exists for in the project's current `enabledPlugins` **wins over the suggestion** — only fill in *missing* entries from this logic, so a deliberate prior choice is never silently flipped.
+**Deriving each plugin's boolean.** Start from the Step 2 recommended set (those become `true`), then refine from repo context using the signals in this section's table. A plugin a value already exists for in the project's current `enabledPlugins` **wins over the suggestion** — only fill in *missing* entries from this logic, so a deliberate prior choice is never silently flipped.
 
 | Signal in repo | Suggest enabling |
 |---|---|

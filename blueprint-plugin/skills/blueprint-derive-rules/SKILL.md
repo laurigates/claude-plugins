@@ -72,7 +72,7 @@ Use `$RULES_DIR` for all subsequent reads/writes and conflict checks. Hand-writt
 
 ### Step 3: Extract decision-bearing commits
 
-Use parallel agents to analyze git history efficiently (see [REFERENCE.md](REFERENCE.md#git-analysis)):
+Use parallel agents to analyze git history efficiently (see [REFERENCE.md](REFERENCE.md#git-analysis-patterns)):
 
 - **Agent 1**: Analyze `refactor:` commits for code style patterns
 - **Agent 2**: Analyze `fix:` commits for repeated issue types

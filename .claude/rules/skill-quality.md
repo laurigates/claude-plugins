@@ -1,6 +1,6 @@
 ---
 created: 2026-03-02
-modified: 2026-09-02
+modified: 2026-10-07
 reviewed: 2026-09-02
 paths:
   - "**/skills/**"
@@ -198,8 +198,8 @@ my-skill/
 A single `REFERENCE.md` defers content but is all-or-nothing: a run that needs
 one salvage routine loads every table in the file. For a large skill, split the
 sidecar into a `references/` directory instead — see
-[`context-engineering.md`](context-engineering.md) § "Split long skills across
-files" for why.
+[`context-engineering.md`](context-engineering.md) § Authoring rules ("Split
+long skills across files") for why.
 
 ```
 my-skill/
@@ -234,6 +234,26 @@ Conventions:
 
 Reference implementation: `agent-patterns-plugin/skills/parallel-agent-dispatch`
 (issue [#2143](https://github.com/laurigates/claude-plugins/issues/2143)).
+
+### Point at anchors, not directions
+
+Refer to other content by a named anchor or a file link —
+``the [Subagent Routing](#subagent-routing) table``,
+``[references/recipes.md](references/recipes.md)`` — not by direction (*above*,
+*below*, *earlier*, *the preceding section*, *the following section*). Content
+moves between files, and a reference file is read out of order: the 2026-10
+split sweep moved text into `references/` and left "see above" pointing at
+nothing.
+
+| File | Direction pointers |
+|---|---|
+| `SKILL.md` | Tolerated only inside one short list or step sequence in the same section ("the steps below"); everything else names its target. The ratchet counts the tolerated case too, so new text names its target |
+| `REFERENCE.md`, `references/*.md`, other skill sidecars | None — these are always read out of context |
+
+`scripts/check-positional-references.sh` enforces it: any hit in a reference
+file is an error, and each `SKILL.md` is held at its count in
+`scripts/positional-references-baseline.txt`, so a new pointer fails and the
+baseline only goes down.
 
 ### What Goes Where
 

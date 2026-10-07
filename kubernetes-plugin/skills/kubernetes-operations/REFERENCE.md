@@ -725,14 +725,14 @@ helm create mychart
 
 # Chart directory structure:
 mychart/
-   Chart.yaml              # Chart metadata
-   values.yaml             # Default values
-   templates/              # K8s manifests
-      deployment.yaml
-      service.yaml
-      _helpers.tpl        # Template helpers
-      NOTES.txt           # Post-install notes
-   charts/                 # Dependencies
+├── Chart.yaml              # Chart metadata
+├── values.yaml             # Default values
+├── templates/              # K8s manifests
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   ├── _helpers.tpl        # Template helpers
+│   └── NOTES.txt           # Post-install notes
+└── charts/                 # Dependencies
 ```
 
 **Template Functions**

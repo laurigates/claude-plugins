@@ -66,7 +66,7 @@ Process:
 4. **If the pilot reveals the approach is wrong, re-plan.** Cheap,
    because only one item was touched.
 
-Distinct from the Research-Before-WO Gate above: research produces a
+Distinct from [the Research-Before-WO Gate](#the-research-before-wo-gate): research produces a
 *spec / artefact* to scope an unknown ("what should we build?"); a pilot
 produces a *working reference implementation* of a repeatable change
 ("we know what to build — is the recipe sound, and does the risky step

@@ -25,9 +25,9 @@ for p in pathlib.Path("output").iterdir():
 ```
 
 `extract()` returns parsed JSON for both halves; `summarize()` walks the
-API prompt and yields a `Summary` dataclass. See
-`scripts/rename_outputs.py` for a full example that builds new filenames
-from `summary.samplers[0]` and the source file's mtime.
+API prompt and yields a `Summary` dataclass. Those two calls are enough
+to build new filenames from `summary.samplers[0]` and the source file's
+mtime; `scripts/comfy_meta.py` is the only script this skill ships.
 
 ### The UI workflow half is useful too
 
@@ -52,7 +52,7 @@ for n in workflow.get("nodes", []) or []:
         return BUCKET.rstrip("/")
 ```
 
-`rename_outputs.py`'s NSFW classifier combines this self-label signal
+An NSFW classifier can combine this self-label signal
 with API-prompt asset-name token matching (model / text-encoder / LoRA
 names). The same approach works for any other categorisation the UI
 workflow encodes that the API prompt strips out: node titles, custom

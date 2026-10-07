@@ -19,7 +19,7 @@ report.
 
 | Use this skill when... | Use something else when... |
 |------------------------|----------------------------|
-| Per-plugin counts in README / PLUGIN-MAP / the d2 diagram drifted | A plugin needs adding/removing — follow CLAUDE.md § Plugin Lifecycle first, then run this |
+| Per-plugin counts in README / PLUGIN-MAP / the d2 diagram drifted | A plugin needs adding/removing — follow `/plugin-authoring` § Plugin Lifecycle first, then run this |
 | `check-docs-index.sh` reports `doc_count_drift` / `diagram_count_drift` / `diagram_svg_stale` / `readme_row_dangling` | You need a generic project's docs synced — that's `documentation-plugin:docs-sync` (wrong layout for this repo) |
 | The PR gate `Check docs-index drift` failed in CI | Editing rule-index or marketplace set — the audit reports those, but fix them at their source |
 
@@ -64,7 +64,7 @@ arithmetic repairs them:
 1. `git log --oneline <README-last-touched-sha>..HEAD -- '*/.claude-plugin/plugin.json'`
    — if any **new** `*-plugin` directory landed, it must be added to README's
    category tables, PLUGIN-MAP, marketplace.json, and release config (see
-   CLAUDE.md § Plugin Lifecycle). Surface this rather than guessing a category.
+   `/plugin-authoring` § Plugin Lifecycle). Surface this rather than guessing a category.
 2. Update the rounded total in README's intro line (`NNN+ skills`) to the next
    round number at or below `TOTAL_SKILLS` from the audit.
 

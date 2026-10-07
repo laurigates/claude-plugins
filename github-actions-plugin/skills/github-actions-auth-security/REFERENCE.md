@@ -34,7 +34,7 @@ git log --format='%an <%ae>' HEAD^..HEAD
 - [ ] Repo default `GITHUB_TOKEN` permission set to read-only
 - [ ] Untrusted run-context values pass through an `env:` var (no `${{ … }}` in `run:`)
 - [ ] Third-party actions SHA-pinned (Renovate-managed — see `version-pinning.md`)
-- [ ] `/.github/workflows/` listed in `.github/CODEOWNERS` (ownership + auto-requested review; see the caveat below before making it a merge gate)
+- [ ] `/.github/workflows/` listed in `.github/CODEOWNERS` (ownership + auto-requested review; see [§ CODEOWNERS: ownership vs. enforcement](#codeowners-ownership-vs-enforcement) before making it a merge gate)
 - [ ] Actions blocked from creating/approving PRs unless a workflow needs it
 - [ ] Input validation implemented
 - [ ] Branch protection rules enabled

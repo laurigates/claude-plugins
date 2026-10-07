@@ -110,7 +110,7 @@ Overall: [X issues found]
 
 ## README Template (Standard Style)
 
-```markdown
+````markdown
 <div align="center">
 
 <img src="assets/logo.png" alt="PROJECT_NAME Logo" width="128" height="128">
@@ -202,7 +202,7 @@ Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTIN
 ## License
 
 This project is licensed under the [LICENSE_TYPE](LICENSE) license.
-```
+````
 
 ## Badge URL Patterns
 

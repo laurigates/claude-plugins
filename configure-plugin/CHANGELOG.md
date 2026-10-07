@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.37.4](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.37.3...configure-plugin-v1.37.4) (2026-10-07)
+
+
+### Bug Fixes
+
+* **skills:** point at anchors, not directions — ratchet + reference-file guard ([#2941](https://github.com/laurigates/claude-plugins/issues/2941)) ([47b65fa](https://github.com/laurigates/claude-plugins/commit/47b65faf0fd141ca5dff9cf435717196e385b115))
+
 ## [1.37.3](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.37.2...configure-plugin-v1.37.3) (2026-10-05)
 
 

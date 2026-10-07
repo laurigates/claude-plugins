@@ -110,7 +110,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/git-pr.sh" --home-dir "$HOME" --project-dir "$
 |-----------|---------------|
 | No dependents (leaf PR) | `gh pr merge --squash --delete-branch` (default) |
 | Has dependents | `gh pr merge --squash` — **omit `--delete-branch`** |
-| Has dependents, want to clean up | Re-target dependents first (see below), then merge with `--delete-branch` |
+| Has dependents, want to clean up | Re-target dependents first (see [§ Re-targeting dependents](#re-targeting-dependents)), then merge with `--delete-branch` |
 
 ### Re-targeting dependents
 

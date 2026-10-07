@@ -496,6 +496,21 @@ repos:
         language: system
         files: '^scripts/(check-skill-references\.sh|tests/test-check-skill-references\.sh)$'
         pass_filenames: false
+      - id: check-skill-xrefs
+        name: every § section citation and relative markdown link (with #anchor) resolves
+        entry: python3 ./scripts/check-skill-xrefs.py
+        language: system
+        # Any .md: a citing file, a renamed heading in a cited file, or a moved
+        # link target can each break a reference, and the citer may be the one
+        # file the commit did NOT touch.
+        files: '(\.md|^scripts/check-skill-xrefs\.py|^scripts/lib/extract-md-elements\.py)$'
+        pass_filenames: false
+      - id: test-check-skill-xrefs
+        name: § citation and relative-link resolver detects, exempts fenced code, and fails loudly on an empty tree
+        entry: bash ./scripts/tests/test-check-skill-xrefs.sh
+        language: system
+        files: '^scripts/(check-skill-xrefs\.py|lib/extract-md-elements\.py|tests/test-check-skill-xrefs\.sh)$'
+        pass_filenames: false
       - id: lint-package-references
         name: lint skill files for references to nonexistent packages (npm/PyPI/crates/etc.)
         entry: ./scripts/lint-package-references.sh
@@ -954,6 +969,21 @@ repos:
         entry: bash ./scripts/tests/test-check-plugin-root-quoting.sh
         language: system
         files: '^scripts/(check-plugin-root-quoting\.sh|tests/test-check-plugin-root-quoting\.sh)$'
+        pass_filenames: false
+      - id: check-positional-references
+        name: skill markdown points at anchors, not directions (reference files strict, SKILL.md ratcheted)
+        entry: bash ./scripts/check-positional-references.sh
+        language: system
+        # Whole-scope: the ratchet's stale-baseline check needs every SKILL.md,
+        # so any skill markdown, the guard, its baseline or the fence helper
+        # triggers a full run.
+        files: '([^/]*-plugin/skills/.*\.md|^scripts/(check-positional-references\.sh|positional-references-baseline\.txt|lib/extract-md-elements\.py))$'
+        pass_filenames: false
+      - id: test-check-positional-references
+        name: positional-reference guard regression (detect, exempt shapes, ratchet up/down, empty tree errors)
+        entry: bash ./scripts/tests/test-check-positional-references.sh
+        language: system
+        files: '^scripts/(check-positional-references\.sh|positional-references-baseline\.txt|tests/test-check-positional-references\.sh|lib/extract-md-elements\.py)$'
         pass_filenames: false
       - id: check-hook-message-pins
         name: blocking-hook suites read the block message, not just the exit code (#2715)
