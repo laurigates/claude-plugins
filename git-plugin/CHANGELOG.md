@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.60.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.60.1...git-plugin-v2.60.2) (2026-10-07)
+
+
+### Bug Fixes
+
+* **skills:** correct sixteen content defects from the split sweep ([#2940](https://github.com/laurigates/claude-plugins/issues/2940)) ([9008c65](https://github.com/laurigates/claude-plugins/commit/9008c6586c27af680b6ee2afe2e238adbe1b2b00))
+
 ## [2.60.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.60.0...git-plugin-v2.60.1) (2026-10-07)
 
 

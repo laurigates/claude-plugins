@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.21.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.21.0...testing-plugin-v3.21.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* **skills:** correct sixteen content defects from the split sweep ([#2940](https://github.com/laurigates/claude-plugins/issues/2940)) ([9008c65](https://github.com/laurigates/claude-plugins/commit/9008c6586c27af680b6ee2afe2e238adbe1b2b00))
+
 ## [3.21.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.20.1...testing-plugin-v3.21.0) (2026-10-07)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.46.5](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.4...blueprint-plugin-v3.46.5) (2026-10-07)
+
+
+### Bug Fixes
+
+* **skills:** correct sixteen content defects from the split sweep ([#2940](https://github.com/laurigates/claude-plugins/issues/2940)) ([9008c65](https://github.com/laurigates/claude-plugins/commit/9008c6586c27af680b6ee2afe2e238adbe1b2b00))
+
 ## [3.46.4](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.3...blueprint-plugin-v3.46.4) (2026-10-07)
 
 
