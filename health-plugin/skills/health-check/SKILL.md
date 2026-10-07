@@ -48,7 +48,7 @@ Parse these from `$ARGUMENTS`:
 | `registry` | Plugin registry health (orphaned `projectPath`, stale `enabledPlugins`, registry-vs-settings drift) |
 | `stack` | Enabled plugins vs detected project tech stack |
 | `agentic` | Skill/command/agent agentic-optimisation compliance |
-| `runtime` | `~/.claude.json` bloat (dead `projects[]`, dead `githubRepoPaths[*]`, orphaned `disabledMcpServers`, duplicate MCP naming, legacy per-project `history`), `~/.claude/history.jsonl` growth, and `cleanupPeriodDays` validity. Read-only audit. |
+| `runtime` | `~/.claude.json` bloat (dead `projects[]`/`githubRepoPaths[*]`, orphaned `disabledMcpServers`, duplicate MCP names, legacy `history`), `history.jsonl` growth, `cleanupPeriodDays` validity. Read-only. |
 | `usage` | Session-telemetry mining of `~/.claude/projects/*/*.jsonl` for never-fired and dormant skills *and* plugin agents. Read-only, local-leaning (SKIPs when history is insufficient). |
 | `all` | Environment checks + all five audits |
 
@@ -98,7 +98,7 @@ For `--scope=runtime` or `all`:
 bash "${CLAUDE_SKILL_DIR}/scripts/check-runtime.sh" --home-dir "$HOME" --project-dir "$(pwd)"
 ```
 
-Parse `STATUS=`, `RUNTIME_SIZE_BYTES=`, `PROJECTS_TOTAL=`, `PROJECTS_DEAD=`, `GH_PATHS_TOTAL=`, `GH_PATHS_DEAD=`, `ORPHAN_DISABLED_MCP=`, `DUPLICATE_MCP=`, `LEGACY_PROJECT_HISTORY_ENTRIES=`, `HISTORY_JSONL_BYTES=`, `HISTORY_JSONL_DEAD_PROJECT_ENTRIES=`, `CLEANUP_PERIOD_DAYS=`, `CLEANUP_PERIOD_SOURCE=`, `CLEANUP_SUGGESTED=`, and `ISSUES:`. `--history-warn-mb N` sets the `history.jsonl` size WARN threshold (default 50). Pass `--verbose` to list every dead path / orphaned server (default is a single rolled-up issue per category to keep output compact).
+Parse `STATUS=`, `ISSUES:`, `CLEANUP_SUGGESTED=`, and the per-finding counts (`PROJECTS_DEAD=`, `GH_PATHS_DEAD=`, `ORPHAN_DISABLED_MCP=`, `DUPLICATE_MCP=`, `LEGACY_PROJECT_HISTORY_ENTRIES=`, `HISTORY_JSONL_BYTES=`, `CLEANUP_PERIOD_DAYS=`). `--history-warn-mb N` sets the `history.jsonl` WARN threshold (default 50). Pass `--verbose` to list every dead path / orphaned server (default is a single rolled-up issue per category to keep output compact).
 
 The runtime audit is **read-only**: it prints suggested cleanups (`claude purge <path> --dry-run` for dead projects, `jq` filters otherwise) for the operator; what it detects is described in [references/audit-scopes.md](references/audit-scopes.md#runtime-scope).
 
