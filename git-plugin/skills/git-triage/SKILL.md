@@ -125,44 +125,7 @@ Record the winning PR number (if any) with each `implemented` entry.
 
 ### Step 4: Read each PR's category (skip if `--type issues`)
 
-The script already categorized every PR in Step 1 — read `PR_<n>_CATEGORY`
-straight from its output. The category is a **pure first-match** over the enum
-fields (the script owns this deterministic table, top to bottom):
-
-| Category | Criteria |
-|----------|----------|
-| `draft` | `isDraft` is true |
-| `needs-fix` | Any check in `statusCheckRollup` has `conclusion: FAILURE` |
-| `needs-rebase` | `mergeStateStatus` in `BEHIND`, `DIRTY`; OR `mergeable` is `CONFLICTING` |
-| `changes-requested` | `reviewDecision` is `CHANGES_REQUESTED` |
-| `ready-to-merge` | `mergeable: MERGEABLE` AND `mergeStateStatus` in `CLEAN`/`HAS_HOOKS`/`UNSTABLE` AND `reviewDecision: APPROVED` AND not draft |
-| `awaiting-review` | `reviewDecision` is `REVIEW_REQUIRED` or null AND no failing check |
-| `stale` | `age > --days-stale-pr` AND none of the above trigger |
-
-If a PR comes back as `uncategorized` (e.g. `mergeStateStatus`/`mergeable`
-both `UNKNOWN`), trigger a fresh view and re-run the script, or inspect:
-```bash
-gh pr view <n> --repo $REPO --json mergeable,mergeStateStatus
-```
-
-**Systematic failures.** When ≥2 bot-authored `needs-fix` PRs share an
-identical failing-check signature, the script groups them under
-`SYSTEMATIC_FAILURE_<k>_SIGNATURE` (the sorted `|`-joined failed check names)
-and `SYSTEMATIC_FAILURE_<k>_PRS` (the PR list); `SYSTEMATIC_FAILURE_COUNT`
-holds the number of groups. These almost always have **one** shared root
-cause — e.g. Dependabot can't update `bun.lock`, so every npm-bump PR fails
-the `bun install --frozen-lockfile` step *before* lint/typecheck/tests run, and
-"Lint FAILURE / Type Check FAILURE" is misleading (nothing was linted). For
-each group, read the install step's log once before assuming code defects:
-```bash
-gh pr checks <n> --repo $REPO --json name,state,conclusion,detailsUrl
-gh run view <run-id> --repo $REPO --log-failed
-```
-Diagnose the shared cause once and present a single grouped row (Step 6) /
-blocker (Step 8) instead of N independent `needs-fix` PRs.
-
-For bot PRs whose checks may belong to a pre-rebase SHA, and for pin PRs that
-smuggle a minor bump, see [REFERENCE.md](REFERENCE.md).
+Read `PR_<n>_CATEGORY` from Step 1's output. For the category table, `uncategorized` PRs, and `SYSTEMATIC_FAILURE_*` groups (one shared root cause, one grouped row), see [references/pr-categories.md](references/pr-categories.md).
 
 ### Step 5: Cross-link issues and PRs
 
@@ -173,55 +136,11 @@ smuggle a minor bump, see [REFERENCE.md](REFERENCE.md).
 
 ### Step 6: Present the prioritized queue
 
-Ordering: quick wins first. Use AskUserQuestion only when the user will need to pick what to act on next.
-
-Print a status table (one row per item) grouped by category:
-
-```
-## Issues (N of M open, triaged)
-
-| # | Age | Title | Category | Cross-link |
-|---|-----|-------|----------|------------|
-| 42 | 120d | Remove legacy X | implemented | PR #99 (merged) |
-| 17 | 210d | Deprecated docs | stale | — |
-| 13 | 14d  | Add retry logic | still-valid | — |
-
-## PRs (N of M open, triaged)
-
-| # | Age | Title | Category | Cross-link |
-|---|-----|-------|----------|------------|
-| 101 | 2d  | feat(api): X | ready-to-merge | closes #55 |
-| 102 | 18d | fix(auth): Y | needs-fix | — |
-| 103 | 45d | refactor(ui) | stale | — |
-```
+Order quick wins first; print one status table per type, grouped by category, as in [references/report-template.md](references/report-template.md). Use AskUserQuestion only when the user must pick what to act on next.
 
 ### Step 7: Optional writes (guarded)
 
-If `--auto-close` was set and any issue is `implemented` or `stale`, ask before acting:
-
-```
-AskUserQuestion("Close N issues?", options=[
-  "Yes — close all implemented + stale",
-  "Implemented only",
-  "Stale only",
-  "No, report only"
-])
-```
-
-For each selected issue:
-```bash
-gh issue close <n> --repo $REPO --comment "Closing as <category>.
-
-Evidence: <short summary + cross-link PR>
-
-Triaged by /git:triage on <date>."
-```
-
-If `--auto-merge` was set and any PR is `ready-to-merge`, ask similarly. Merge with:
-```bash
-gh pr merge <n> --repo $REPO --squash --auto
-```
-(`--squash` is the repo default for this project; for other repos, read `gh repo view --json squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed` and pick the first allowed strategy.)
+Only with `--auto-close` / `--auto-merge`: confirm via `AskUserQuestion` before any `gh issue close` or `gh pr merge`, then act per [references/guarded-writes.md](references/guarded-writes.md).
 
 ### Step 8: Synthesize the backlog report
 
@@ -251,20 +170,4 @@ After per-item actions, emit a structured summary:
 
 ## Agentic Optimizations
 
-| Context | Command |
-|---------|---------|
-| Minimal issue list | `gh issue list --repo $REPO --state open --limit $BATCH --json number,title,updatedAt,labels` |
-| Full PR status | `gh pr list --repo $REPO --state open --limit $BATCH --json number,title,updatedAt,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup,isDraft` |
-| PR check bucket summary | `gh pr checks <n> --repo $REPO --json name,state,conclusion,bucket` |
-| Single PR merge state | `gh pr view <n> --repo $REPO --json mergeable,mergeStateStatus` |
-| Close with evidence | `gh issue close <n> --repo $REPO --comment "<reason + PR ref>"` |
-| Squash-merge when green | `gh pr merge <n> --repo $REPO --squash --auto` |
-
-## See Also
-
-- `/git:fix-pr` — fix `needs-fix` PRs
-- `/git:pr-feedback` — address `changes-requested` PRs
-- `/git:issue` — work on a `still-valid` issue
-- `/git:issue-manage` — admin ops on issues
-- `/git:issue-hierarchy` — sub-issue relationships
-- `/git:conflicts` — resolve `needs-rebase` PRs
+See [references/commands.md](references/commands.md) for compact list, status, merge-state, close, and merge commands, and the related skills per category.
