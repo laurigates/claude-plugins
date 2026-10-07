@@ -1,7 +1,6 @@
 # blueprint-work-order — Work-Order Template (Step 5)
 
 ```markdown
-name: blueprint-work-order
 ---
 id: WO-NNN
 created: {YYYY-MM-DD}

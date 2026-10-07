@@ -51,22 +51,19 @@ If a migration step would require any prompt not listed above, **abort the upgra
 
 **Steps**:
 
-1. **Check current state**:
-   - Resolve manifest path — check all known locations (in order):
-     1. `docs/blueprint/.manifest.json` (v3.0+ dot-prefixed)
-     2. `docs/blueprint/manifest.json` (v3.1+ without dot prefix)
-     3. `.claude/blueprints/.manifest.json` (v1.x/v2.x location)
-   - Store the resolved path as `$MANIFEST`; if not found in any location, suggest running `/blueprint:init` instead
-   - Extract current `format_version` (default to "1.0.0" if field missing)
+1. **Check current state**: run the snippet in Step 2. It resolves `$MANIFEST`
+   (if no manifest exists, suggest `/blueprint:init` instead) and reads the current
+   `format_version`, defaulting to "1.0.0" when the field is missing.
 
 2. **Determine upgrade path**:
    ```bash
-   # Resolve manifest path once — use $MANIFEST in all subsequent jq commands
-   if [[ -f docs/blueprint/.manifest.json ]]; then
-     MANIFEST=docs/blueprint/.manifest.json
-   elif [[ -f docs/blueprint/manifest.json ]]; then
-     MANIFEST=docs/blueprint/manifest.json
-   elif [[ -f .claude/blueprints/.manifest.json ]]; then
+   # Resolve manifest path once — use $MANIFEST in all subsequent jq commands.
+   # Same order as blueprint-plugin/scripts/get-validation-config.sh.
+   if [[ -f docs/blueprint/manifest.json ]]; then
+     MANIFEST=docs/blueprint/manifest.json        # v3.0+ canonical (what /blueprint:init writes)
+   elif [[ -f docs/blueprint/.manifest.json ]]; then
+     MANIFEST=docs/blueprint/.manifest.json       # v3.0 dot-prefixed variant from early migrations
+   elif [[ -f .claude/blueprints/.manifest.json ]]; then  # v1.x/v2.x location
      MANIFEST=.claude/blueprints/.manifest.json
    else
      echo "ERROR: no blueprint manifest found. Run /blueprint:init first."
