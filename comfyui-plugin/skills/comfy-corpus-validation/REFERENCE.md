@@ -1,7 +1,7 @@
 # comfy-corpus-validation — worked examples
 
 Three real misses, each worked end to end with the numbers that settled it.
-All values below were verified against a live RES4LYF-equipped ComfyUI
+All values in this file were verified against a live RES4LYF-equipped ComfyUI
 install and the shipped workflow templates on 2026-07-14.
 
 ---
@@ -244,7 +244,7 @@ KSampler `widgets_values` are **positional**, in this order:
 | 5 | `scheduler` |
 | 6 | `denoise` |
 
-So the vector above reads: 8 steps, CFG 1, `euler`, `simple`, denoise 1 —
+So the vector in [§ The actual widget vector](#the-actual-widget-vector) reads: 8 steps, CFG 1, `euler`, `simple`, denoise 1 —
 which is exactly the row in the table in §1.
 
 ### The sibling trap

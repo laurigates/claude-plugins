@@ -7,7 +7,8 @@ Why a display, timer, or logger shows nothing, the wrong value, or slows the run
 - **`ShowText` updates AFTER queue completion**, not live during the
   run. For mid-run display you need a console log
   (`DebugTensorShape`, `CConsoleAny`) plus tailing the server log.
-- **`Preview Bridge` swallows `ExecutionBlocker`** — see above.
+- **`Preview Bridge` swallows `ExecutionBlocker`** — see
+  [SKILL.md § Preview Bridge and the ExecutionBlocker pitfall](../SKILL.md#preview-bridge-and-the-executionblocker-pitfall).
   Mitigations: tee off the path BEFORE any potential blocker, or use
   `FastPreview` downstream.
 - **`CUtilsStatSystem` only polls when its output is consumed**.

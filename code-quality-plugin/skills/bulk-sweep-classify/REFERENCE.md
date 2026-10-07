@@ -55,7 +55,7 @@ Every auditor prompt needs **both**:
 | The transform contract (rename map + do-NOT-rename list) | It cannot check the sweep did what was agreed |
 | What the artifact is **for**, and what is deliberately in scope | It reports the PR's central purpose as unjustified scope creep |
 
-In the thelma sweep above, all three auditors flagged the PR's central purpose
+In the thelma sweep ([§ Parallelizing a Sweep](#parallelizing-a-sweep--resolve-the-rename-map-before-dispatch)), all three auditors flagged the PR's central purpose
 that way, and **10 of 25 findings were false positives** traceable to that one
 omission — expensive to triage precisely because each read as a legitimate
 concern.

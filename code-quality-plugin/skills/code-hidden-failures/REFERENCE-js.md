@@ -30,7 +30,7 @@ for the heuristic ones.
 
 ### ast-grep commands
 
-The structural patterns above are the executable rules in
+The structural patterns in [§ Patterns](#patterns) are the executable rules in
 [`rules/lib/`](rules/lib/) (`js-empty-catch`, `js-promise-catch-empty`,
 `js-void-ignore`) — run them as one pass with
 `ast-grep scan -c rules/sgconfig.yml --json=compact <path>`. As a per-pattern

@@ -45,7 +45,7 @@ Reached only when `--all` is passed. The orchestrator dispatches one subagent pe
 
 | Subagent state | Orchestrator action |
 |----------------|---------------------|
-| Returned valid JSON, has commits, no blockers | Push + reply + resolve as above |
+| Returned valid JSON, has commits, no blockers | Push + reply + resolve per item 7 of [Step 1A](#step-1a-multi-pr-mode---all) |
 | Returned valid JSON, no commits (only questions / declined nitpicks) | Skip push; still post replies and resolve declined nitpick threads |
 | Returned valid JSON, has `blockers[]` | Surface in the summary; do **not** push partial work — let the user decide |
 | Failed to return parseable JSON | Surface its raw output in the summary as `blocked: parse-error`; do nothing further for that PR |

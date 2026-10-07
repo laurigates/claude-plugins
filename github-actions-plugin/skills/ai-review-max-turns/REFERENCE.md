@@ -32,8 +32,8 @@ and it is a *condition to branch on*, never a skip: see fact 3.
 
 **2. Converting the PR to draft does not stop it.** None of the five workflow
 files on that PR referenced `github.event.pull_request.draft`. It is the
-intuitive move and it is inert. The kill switches that work are in the table
-below.
+intuitive move and it is inert. The kill switches that work are in the table in
+[§ Kill switches](#kill-switches-once-a-loop-is-recognised-mid-flight).
 
 **3. Defect density did not decay with round count.** Two of the findings were
 real user-visible bugs in the shipped code path — a positive offset wrongly
@@ -52,7 +52,7 @@ stop it.** Fix the watching and the stopping; do not reach first for a cap.
 
 | Move | Stops | Blast radius |
 |---|---|---|
-| Stop pushing | everything | none — and this is what actually ended the loop above |
+| Stop pushing | everything | none — and this is what actually ended the 2026-09-07 loop |
 | `gh run cancel <id>` | one in-flight run | none; the next push re-arms it |
 | `gh workflow disable <file> -R <o>/<r>` | the whole class, immediately | **every other open PR in that repo**, and it stays off silently — a disabled workflow produces no runs and no red X, so open a re-enable issue in the same action |
 | `gh pr close <n>` | `synchronize` on that PR | reopening re-fires `reopened` |
@@ -71,7 +71,7 @@ gh run view <id> -R <o>/<r> --log | grep -oE '"(num_turns|total_cost_usd)": ?[^,
 Anything that claims to surface per-run cost from `steps.<id>.outputs.total_cost_usd`
 is reading a field that does not exist, and will report empty rather than fail.
 
-Per-round cost also **compounds**: on the PR above it roughly doubled from the
+Per-round cost also **compounds**: on the 2026-09-07 PR it roughly doubled from the
 first round to the last while `num_turns` stayed flat at 19–31.
 `track_progress: true` feeds the whole PR comment thread back into each review,
 so round N pays for rounds 1..N−1's prose. Bounding that context is a cost lever
@@ -82,7 +82,7 @@ orthogonal to capping rounds, and `claude_args`' default
 
 - Any repo whose `claude-review.yml` (or sibling Claude-powered caller) fires on
   `synchronize` — the default shape for these workflows.
-- Hardest where the authoring session is **unattended**: on the PR above the
+- Hardest where the authoring session is **unattended**: on the 2026-09-07 PR the
   reply latency from the human's account to each review was 10–90 seconds for
   four continuous hours, several at 0.00 minutes. No wall-clock gap is
   consistent with anyone reading a review.

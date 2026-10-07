@@ -38,8 +38,8 @@ specifier normalization like `>=1.40` → `>=1.40.0`).
 **New packs are born with it.** `comfyui-node-scaffold` emits this updater in
 the pack's `release-please-config.json`, and `scaffold.py --verify <pack>`
 grades an existing pack's wiring as `RELEASE_PLEASE_UVLOCK=wired|unwired|
-mistargeted` (issue #2187). Packs scaffolded before that still need the manual
-add below.
+mistargeted` (issue #2187). Packs scaffolded before that still need the `extra-files`
+updater added by hand.
 
 **Sweeps miss packs — check before the first release, not after.** A pack
 created after a fix sweep can silently lack the updater. Before merging any

@@ -18,7 +18,7 @@ Quick triage:
 | `git switch` carried unfamiliar WIP into the new branch | REFERENCE.md § Scenario 2 (selective `git checkout HEAD -- <paths>`) |
 | `git stash list` is shorter than you remember | REFERENCE.md § Scenario 3 (recover via `git fsck --unreachable`) |
 | You force-pushed the polluted branch already | REFERENCE.md § Scenario 4 (only `--force-with-lease` mitigations) |
-| Every `git status`/`commit` fails with "fatal: this operation must be run in a work tree" | Bare-flip recovery below (`core.bare false` + unset leaked env) |
+| Every `git status`/`commit` fails with "fatal: this operation must be run in a work tree" | [Bare-flip recovery](#recovering-from-a-bare-flip--leaked-git_dir-issue-1692) (`core.bare false` + unset leaked env) |
 
 **Always run `git reflog -20` first.** The reflog is the ground truth
 for every HEAD move and ref update during the collision window —

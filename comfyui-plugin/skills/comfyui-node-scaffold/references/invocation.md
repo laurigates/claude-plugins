@@ -34,7 +34,7 @@ python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name comfyui-touch-shim --display "Tou
 ## Flag reference
 
 Flags: `--name` (repo + served URL segment), `--display` (Comfy DisplayName),
-`--desc`, `--subfamily` (`touch`|`info`, accent palette), `--tagline` (banner subtitle, ≤46 chars — see below), `--variant
+`--desc`, `--subfamily` (`touch`|`info`, accent palette), `--tagline` (banner subtitle, ≤46 chars — see [§ The banner tagline is not the description](#the-banner-tagline-is-not-the-description)), `--variant
 {frontend,backend,gesture,shim}`, `--widgets` (CSV → the TS stub's
 `TARGET_WIDGETS`; on a modal variant, **omitting** it emits the standalone-modal
 skeleton instead of the widget-intercept one; ignored by `gesture` and `shim`),

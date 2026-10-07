@@ -12,7 +12,11 @@ reviewed: 2026-08-21
 # Tool Result Traps
 
 Promoted from the always-loaded `~/.claude/rules/tool-use-patterns.md` rule,
-whose stub points here. The section bodies below are that rule's verbatim text.
+whose stub points here. The trap bodies are that rule's verbatim text: most now
+live in [references/search-traps.md](references/search-traps.md),
+[references/rejected-flags.md](references/rejected-flags.md) and
+[REFERENCE.md](REFERENCE.md); the `2>/dev/null` trap under
+[The traps](#the-traps) is inline.
 
 One law across all of them: **an empty result, a green exit, and a well-formed
 line of output are each claims about *mechanics*, not about *content*.** Every
@@ -75,7 +79,8 @@ See [references/rejected-flags.md](references/rejected-flags.md) when an empty p
 
 ## Your own `2>/dev/null` turns a loud rejection into a clean negative
 
-The section above is about a tool that stayed quiet. This one is its mirror, and
+[§ A rejected flag looks exactly like "no results"](#a-rejected-flag-looks-exactly-like-no-results)
+is about a tool that stayed quiet. This one is its mirror, and
 the difference is the whole point: **the tool did its job.** It rejected the
 command, printed a diagnostic, and exited non-zero — and the caller's own
 redirect threw all three away. No tool-side improvement reaches this: the

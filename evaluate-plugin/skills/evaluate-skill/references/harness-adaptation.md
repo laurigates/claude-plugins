@@ -6,7 +6,7 @@ is in [SKILL.md](../SKILL.md) under `## Workflow harness (template)`.
 
 ## Consequences for any adaptation
 
-Four consequences worth stating inline:
+Four consequences:
 
 - **This is the only template in the marketplace that also registers a name.** The
   bundled copy is the source of truth, but `evaluate-plugin:evaluate-plugin-batch`

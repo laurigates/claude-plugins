@@ -40,7 +40,7 @@ let evaluation pick the winner.
    `--create-evals` first.
 
 4. **Apply the winner** through the Step 5 apply flow, and record the ranking
-   in the history entry (Step 5b below): a `candidates` array with each
+   in the history entry ([§ Step 5b](#step-5b-record-history)): a `candidates` array with each
    candidate's id, pass rate (or comparison score), and a `selected` flag.
 
 Token cost is bounded at N × eval cases × 1 run plus grading; treat `--best-of`
