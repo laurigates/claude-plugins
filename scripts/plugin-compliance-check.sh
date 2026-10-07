@@ -1983,6 +1983,13 @@ check_skill_when_to_use() {
 #   > 26000 chars (~6500 tok)        → ERROR (exceeds ceiling — must extract before merge)
 # 26000 chars ≈ Anthropic's published 500-line body guidance at this repo's
 # median line density. See .claude/rules/skill-quality.md "Size Limits".
+#
+# The two thresholds are single-sourced here: scripts/select-split-candidates.sh
+# (the skill-splitter workflow's candidate selector) reads
+# SKILL_SIZE_WARN_CHARS from this exact `NAME=<digits>` line, so the splitter
+# processes the skills this gate warns about. Keep the assignment on one line.
+SKILL_SIZE_WARN_CHARS=10000
+SKILL_SIZE_ERROR_CHARS=26000
 check_skill_size() {
   local plugin="$1"
   local skills_dir="${plugin}/skills"
@@ -2004,11 +2011,11 @@ check_skill_size() {
     char_count=$(python3 -c 'import sys; print(len(open(sys.argv[1], encoding="utf-8", errors="surrogateescape").read()))' "$skill_file")
     est_tokens=$(( char_count / 4 ))
 
-    if [ "$char_count" -gt 26000 ]; then
-      issues+=("❌ ${plugin}/${skill_name}: SKILL.md is ${char_count} chars (~${est_tokens} tokens, >26000 ceiling) — extract content to REFERENCE.md or scripts/ (see .claude/rules/skill-quality.md)")
+    if [ "$char_count" -gt "$SKILL_SIZE_ERROR_CHARS" ]; then
+      issues+=("❌ ${plugin}/${skill_name}: SKILL.md is ${char_count} chars (~${est_tokens} tokens, >${SKILL_SIZE_ERROR_CHARS} ceiling) — extract content to REFERENCE.md or scripts/ (see .claude/rules/skill-quality.md)")
       has_errors=true
-    elif [ "$char_count" -gt 10000 ]; then
-      recommendations+=("⚠️ ${plugin}/${skill_name}: SKILL.md is ${char_count} chars (~${est_tokens} tokens, >10000) — consider extracting to REFERENCE.md or scripts/ (ceiling: 26000 chars / ~6500 tokens)")
+    elif [ "$char_count" -gt "$SKILL_SIZE_WARN_CHARS" ]; then
+      recommendations+=("⚠️ ${plugin}/${skill_name}: SKILL.md is ${char_count} chars (~${est_tokens} tokens, >${SKILL_SIZE_WARN_CHARS}) — consider extracting to REFERENCE.md or scripts/ (ceiling: ${SKILL_SIZE_ERROR_CHARS} chars / ~6500 tokens)")
       has_warnings=true
     fi
   done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
