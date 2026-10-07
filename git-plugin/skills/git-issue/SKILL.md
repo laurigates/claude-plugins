@@ -125,9 +125,50 @@ Base the branch on `origin/main`, never on local `main` — local `main` may car
 unpushed commits that would ride into this issue's PR (see
 `git-branch-pr-workflow` § "Branch Comparison: Always Use origin/main").
 
-#### TDD Workflow, Commit and Push, Create PR
+#### TDD Workflow
 
-Then run RED → GREEN → REFACTOR, commit on `fix/issue-$N` with `Fixes #N`, verify `git log --oneline origin/main..HEAD` holds only this issue's commits, push, open the PR against `main`, and apply the captured labels. For the phase checklist, commit format, and PR fields, see [references/tdd-commit-pr.md](references/tdd-commit-pr.md).
+1. **RED phase**: Write failing tests first
+   - Create test file if needed
+   - Write tests that define expected behavior
+   - Run tests to verify they fail
+
+2. **GREEN phase**: Implement fix
+   - Write minimal code to make tests pass
+   - Run tests to verify they pass
+
+3. **REFACTOR phase**: Improve code quality
+   - Clean up implementation
+   - Ensure tests still pass
+
+#### Commit and Push
+
+1. **Stage changes**: `git add -u` and `git add <new-files>`
+2. **Run pre-commit** if configured
+3. **Commit on the issue branch** with message format:
+
+```
+<type>: <description>
+
+<optional body explaining the change>
+
+Fixes #N
+```
+
+4. **Verify the branch carries only this issue's commits**: `git log --oneline origin/main..HEAD`
+5. **Push the issue branch**: `git push -u origin fix/issue-$N`
+
+#### Create PR
+
+Use `mcp__github__create_pull_request` with:
+- `head`: `fix/issue-$N`
+- `base`: `main`
+- `title`: From issue title with `fix:` prefix
+- `body`: Include `Fixes #$N` to auto-link
+
+After PR creation, apply labels:
+```bash
+gh pr edit <pr-number> --add-label "<labels>"
+```
 
 ### Step 3: Parallel Execution (--parallel flag)
 
