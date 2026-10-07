@@ -28,7 +28,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.49.3",
+      "version": "2.49.4",
       "author": {
         "name": "Lauri Gates"
       },
@@ -122,7 +122,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking",
-      "version": "3.46.5",
+      "version": "3.46.6",
       "author": {
         "name": "Lauri Gates"
       },
@@ -145,7 +145,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, dependency auditing, dead code detection, test quality, complexity metrics, and static analysis",
-      "version": "1.27.2",
+      "version": "1.27.3",
       "author": {
         "name": "Lauri Gates"
       },
@@ -185,7 +185,7 @@
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
       "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
-      "version": "1.13.9",
+      "version": "1.13.10",
       "author": {
         "name": "Lauri Gates"
       },
@@ -243,7 +243,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.37.3",
+      "version": "1.37.4",
       "author": {
         "name": "Lauri Gates"
       },
@@ -313,7 +313,7 @@
       "name": "evaluate-plugin",
       "source": "./evaluate-plugin",
       "description": "Skill evaluation and benchmarking - test skill effectiveness with behavioral eval cases, grade results, and track quality improvements",
-      "version": "1.17.1",
+      "version": "1.17.2",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -332,7 +332,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.12.5",
+      "version": "1.12.6",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -371,7 +371,7 @@
       "name": "foundryvtt-plugin",
       "source": "./foundryvtt-plugin",
       "description": "FoundryVTT module lifecycle - scaffold a v13 module (Vite + TS + bun), create + seed the repo, open the gitops adoption PR",
-      "version": "1.3.3",
+      "version": "1.3.4",
       "author": {
         "name": "Lauri Gates"
       },
@@ -392,7 +392,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.60.2",
+      "version": "2.60.3",
       "author": {
         "name": "Lauri Gates"
       },
@@ -423,7 +423,7 @@
       "name": "github-actions-plugin",
       "source": "./github-actions-plugin",
       "description": "GitHub Actions CI/CD - workflows, authentication, inspection, auto-fix",
-      "version": "1.13.1",
+      "version": "1.13.2",
       "author": {
         "name": "Lauri Gates"
       },
@@ -442,7 +442,7 @@
       "name": "health-plugin",
       "source": "./health-plugin",
       "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
-      "version": "1.22.2",
+      "version": "1.22.3",
       "author": {
         "name": "Lauri Gates"
       },
@@ -592,7 +592,7 @@
       "name": "networking-plugin",
       "source": "./networking-plugin",
       "description": "Network diagnostics, reconnaissance, monitoring, and HTTP load testing",
-      "version": "1.4.1",
+      "version": "1.4.2",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -678,7 +678,7 @@
       "name": "prose-plugin",
       "source": "./prose-plugin",
       "description": "Prose transformation and style control - synthesis, distillation, tone, voice, clarity, and consistency for written text",
-      "version": "1.4.0",
+      "version": "1.4.1",
       "author": {
         "name": "Lauri Gates"
       },
@@ -743,7 +743,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation",
-      "version": "1.13.2",
+      "version": "1.13.3",
       "author": {
         "name": "Lauri Gates"
       },
@@ -822,7 +822,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.21.1",
+      "version": "3.21.2",
       "author": {
         "name": "Lauri Gates"
       },
@@ -879,7 +879,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - parallel agents, CI pipelines, preflight checks, checkpoint refactoring",
-      "version": "1.13.2",
+      "version": "1.13.3",
       "author": {
         "name": "Lauri Gates"
       },
