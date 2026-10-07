@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.10](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.9...comfyui-plugin-v1.13.10) (2026-10-07)
+
+
+### Bug Fixes
+
+* **skills:** point at anchors, not directions — ratchet + reference-file guard ([#2941](https://github.com/laurigates/claude-plugins/issues/2941)) ([47b65fa](https://github.com/laurigates/claude-plugins/commit/47b65faf0fd141ca5dff9cf435717196e385b115))
+
 ## [1.13.9](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.8...comfyui-plugin-v1.13.9) (2026-10-07)
 
 
