@@ -5,7 +5,7 @@ Output templates for the end of the run.
 ## Step 10 — initialization report
 
 ```
-Blueprint Development initialized! (v3.3.0)
+Blueprint Development initialized! (v3.4.0)
 
 Blueprint structure created:
 - docs/blueprint/manifest.json

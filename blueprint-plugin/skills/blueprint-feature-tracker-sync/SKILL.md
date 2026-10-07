@@ -95,7 +95,7 @@ Look for inconsistencies:
 - Feature checked in TODO.md but not `complete` in tracker
 - Feature in `tasks.in_progress` but tracker says `complete`
 - PRD status doesn't match feature implementation status
-- Feature marked `not_started` but Step 3b inferred shipped code (confirm via Step 5)
+- Feature marked `not_started` but Step 0 inferred shipped code (a `status_inferred` issue; confirm via Step 5)
 
 ### Step 5: Ask user about discrepancies
 
@@ -162,7 +162,7 @@ For the per-`TYPE=` response table (`statistics_divergence`,
 
 ### Step 9: Output sync report
 
-Print: statistics block (total/complete/partial/in_progress/not_started/blocked + completion %), current phase, phase-status list, active tasks list, "Changes Made" (status flips, TODO checkboxes touched), "Inferred from evidence" (Step 3b flips with their commit SHAs), and "Unresolved Discrepancies" if any were skipped. See [REFERENCE.md](REFERENCE.md#sync-report-template) for the full report template.
+Print: statistics block (total/complete/partial/in_progress/not_started/blocked + completion %), current phase, phase-status list, active tasks list, "Changes Made" (status flips, TODO checkboxes touched), "Inferred from evidence" (Step 0 `status_inferred` flips with their commit SHAs), and "Unresolved Discrepancies" if any were skipped. See [REFERENCE.md](REFERENCE.md#sync-report-template) for the full report template.
 
 ### Step 10: Update task registry
 

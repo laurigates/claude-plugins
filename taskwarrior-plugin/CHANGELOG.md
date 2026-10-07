@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.5](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.14.4...taskwarrior-plugin-v1.14.5) (2026-10-07)
+
+
+### Bug Fixes
+
+* **skills:** correct sixteen content defects from the split sweep ([#2940](https://github.com/laurigates/claude-plugins/issues/2940)) ([9008c65](https://github.com/laurigates/claude-plugins/commit/9008c6586c27af680b6ee2afe2e238adbe1b2b00))
+
 ## [1.14.4](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.14.3...taskwarrior-plugin-v1.14.4) (2026-10-07)
 
 

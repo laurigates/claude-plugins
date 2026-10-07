@@ -77,16 +77,8 @@ plugin in another repo**, applied as a PR.
 
 ## Routing Decision Table
 
-Most-specific destination first. No new artifact type — a project-local process
-reuses `.claude/skills/`.
-
-| Learning | Destination | Tag |
-|---|---|---|
-| Convention/constraint | `.claude/rules/<name>.md` | `[UPDATE]` / `[NEW]` |
-| Recurring single command | `just` recipe | `[UPDATE]` / `[NEW]` |
-| Deterministic multi-step workflow | `scripts/<name>.sh` + `just` recipe | `[NEW]` |
-| Multi-step process w/ decision points, project-local | `.claude/skills/<name>/SKILL.md` | `[NEW]` |
-| Reusable beyond this repo | marketplace plugin (PR) | `[PROMOTE]` |
+The destination table (which home each kind of learning goes to, and its
+proposal tag) lives in [references/routing.md](references/routing.md).
 
 ## Proposal Format Examples
 

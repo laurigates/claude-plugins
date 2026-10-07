@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.13.1](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.13.0...tools-plugin-v2.13.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* **skills:** correct sixteen content defects from the split sweep ([#2940](https://github.com/laurigates/claude-plugins/issues/2940)) ([9008c65](https://github.com/laurigates/claude-plugins/commit/9008c6586c27af680b6ee2afe2e238adbe1b2b00))
+
 ## [2.13.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.12.2...tools-plugin-v2.13.0) (2026-10-07)
 
 

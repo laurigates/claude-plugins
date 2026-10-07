@@ -28,8 +28,16 @@ fi
 
 [ -f "$check_script" ] || fail "check-mcp.sh not found at $check_script"
 
-tmp_root="$(mktemp -d)"
+tmp_root="$(mktemp -d)" || fail "mktemp -d failed"
+if [ -z "$tmp_root" ] || [ ! -d "$tmp_root" ]; then
+  fail "mktemp -d returned no directory"
+fi
 trap 'rm -rf "$tmp_root"' EXIT
+# Canonicalise: check-mcp.sh resolves --home-dir/--project-dir with `pwd -P`
+# and reports physical paths, so on macOS (mktemp returns /var/folders/…, a
+# symlink to /private/var/folders/…) every file= assertion built from the
+# unresolved path fails, and Case F's negative grep passes vacuously.
+tmp_root="$(cd -P -- "$tmp_root" && pwd -P)" || fail "cannot resolve $tmp_root"
 
 # Every fixture lives INSIDE its own fake home so the walk's stop-at-home
 # condition terminates the climb; the test never depends on whether a stray
