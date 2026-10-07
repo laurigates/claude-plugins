@@ -156,7 +156,7 @@ With `--wave`, emit a wave brief:
 | B | WO-013 (task #11) | cli/commands/foo.c           | orchestrator-only: CMakeLists.txt |
 | C | WO-014 (task #15) | docs/format-spec/foo.md      | orchestrator-only: docs/blueprint/manifest.json |
 
-Pre-allocated IDs: WO-012, WO-013, WO-014 (see parallel-agent-dispatch §Pre-Allocated Blueprint IDs).
+Pre-allocated IDs: WO-012, WO-013, WO-014 (see parallel-agent-dispatch § Scope Budget, "Pre-allocated IDs").
 ```
 
 ### Step 5: Note deferred lock-contenders

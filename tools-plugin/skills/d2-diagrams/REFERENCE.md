@@ -1,6 +1,6 @@
 # D2 Diagrams - Reference
 
-Extended reference material for the D2 diagrams skill. See [skill.md](skill.md) for core syntax and common patterns.
+Extended reference material for the D2 diagrams skill. See [SKILL.md](SKILL.md) for core syntax and common patterns.
 
 ## Special Shapes
 

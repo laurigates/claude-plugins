@@ -148,7 +148,7 @@ the wrong repos.
 
 - `offload-to-deterministic-substrate.md` (in `~/.claude/rules/`) — one API call
   beats re-deriving cost from run logs by hand, every time.
-- `code-quality-plugin:debugging-methodology` § failure point — same law applied
+- `code-quality-plugin:debugging-methodology` § Diagnose at the Failure Point — same law applied
   to runtime: measure the thing, don't reason about it. Here the "failure point"
   is the invoice.
 - `github-actions-plugin:multirepo-ci-cd` — the portfolio-sweep mechanics you'll

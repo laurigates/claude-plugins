@@ -16,4 +16,4 @@ these links.
 
 This file is an index only. Add new reference material to the file whose path
 needs it — or a new `references/*.md` plus a row here — rather than growing this
-page (`.claude/rules/context-engineering.md` § "Split long skills across files").
+page (`.claude/rules/context-engineering.md` § Authoring rules, "Split long skills across files").

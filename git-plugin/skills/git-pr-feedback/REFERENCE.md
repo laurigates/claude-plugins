@@ -204,7 +204,7 @@ Used by Step 1A when `--all` is passed. The orchestrator dispatches one subagent
 
 ### Prompt template
 
-```
+````
 You are addressing review feedback for ONE pull request inside a fresh git worktree.
 
 Repository: <owner>/<repo>
@@ -267,7 +267,7 @@ Edge cases:
 - A thread the reviewer asked to keep open: include it with `"resolve": false`.
 - A suggestion declined with reasoning (nitpick or otherwise): include it with `"action": "decline"`, `"resolve": true`, and the explanation in `reply`.
 - A reply that asks the reviewer a follow-up question: include it with `"resolve": false` and note the open question in `blockers[]` so the orchestrator surfaces it.
-```
+````
 
 ### Orchestrator handling of subagent output
 

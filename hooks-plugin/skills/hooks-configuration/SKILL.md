@@ -63,7 +63,7 @@ Hooks are user-defined shell commands that execute at specific points in Claude 
 
 > **Stop vs SubagentStop**: `Stop` fires at the session level when the main agent finishes a response turn. `SubagentStop` fires when an individual subagent (spawned via the Task tool) completes. Use `Stop` for session-level notifications; use `SubagentStop` for per-task quality gates.
 
-For full schemas, examples, and timeout recommendations for each event, see [.claude/rules/hooks-reference.md](../../.claude/rules/hooks-reference.md).
+For full schemas, examples, and timeout recommendations for each event, see [.claude/rules/hooks-reference.md](../../../.claude/rules/hooks-reference.md).
 
 ## Configuration
 
@@ -134,7 +134,7 @@ Four hook types: `command` (shell script, exit code), `http` (HTTPS endpoint), `
 
 Prompt and agent hooks work on `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PermissionRequest`, `Stop`, `SubagentStop`, `TaskCompleted`, `UserPromptSubmit`. All other events support `command` hooks only.
 
-For hook type details, `CLAUDE_ENV_FILE`, and configuration examples, see [REFERENCE.md](REFERENCE.md) and [.claude/rules/prompt-agent-hooks.md](../../.claude/rules/prompt-agent-hooks.md).
+For hook type details, `CLAUDE_ENV_FILE`, and configuration examples, see [REFERENCE.md](REFERENCE.md) and [.claude/rules/prompt-agent-hooks.md](../../../.claude/rules/prompt-agent-hooks.md).
 
 ## Handling Blocked Commands
 

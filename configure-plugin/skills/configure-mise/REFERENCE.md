@@ -207,7 +207,7 @@ mise ls-remote <tool>      # available versions before pinning
 - **Trust**: mise refuses untrusted config files; `mise trust` (or `mise trust --all`) after writing.
 - **`pipx:` resolution** depends on a mise-managed `uv` + `pipx.uvx = true`.
 - **aqua names** are `org/repo` and must match the aqua-registry; otherwise fall back to `github:`/`cargo:`/`go:`.
-- **Stale tool copies**: a global tool can reappear from another node version's `node_modules` or from `~/.default-npm-packages` re-seeding — see [Stale tool copies](#stale-tool-copies-a-tool-keeps-coming-back).
+- **Stale tool copies**: a global tool can reappear from another node version's `node_modules` or from `~/.default-npm-packages` re-seeding — see [Stale tool copies](#stale-tool-copies--a-tool-keeps-coming-back).
 - **One-off version**: `mise exec <tool>@<ver> -- <cmd>` scopes a version to a single command; `mise use` *changes the default* (global `dependency-management` rule).
 - **node ≥26** prebuilt binaries need `libatomic.so.1` — absent on some minimal Linux/appliances; gate or pin.
 

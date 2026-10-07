@@ -111,7 +111,7 @@ Ask for clarifications via `AskUserQuestion`. For the full question templates
 1. **Project purpose** (if not clear from README): present the inferred description for confirmation, or ask the user to provide one
 2. **Target users**: developers, end users, or both — steers the PRD's framing
 3. **Project phase**: MVP / active development / maintenance / planning major changes — sets feature-vs-stability emphasis
-4. **Stakeholders**: scale (solo / small team / larger org / OSS community) → drives the depth of the PRD's stakeholder matrix (see [REFERENCE.md](REFERENCE.md#stakeholders--personas))
+4. **Stakeholders**: scale (solo / small team / larger org / OSS community) → drives the depth of the PRD's stakeholder matrix (see [REFERENCE.md](REFERENCE.md#prd-template))
 5. **Feature confirmation**: present {N} features extracted from git for review/prioritization
 6. **Architecture rationale**: for each identified decision, ask the main driver
 7. **Generation confirmation**: show the summary below and ask if ready to generate

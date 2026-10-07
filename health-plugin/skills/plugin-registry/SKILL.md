@@ -21,7 +21,7 @@ Expert knowledge for understanding and troubleshooting the Claude Code plugin re
 | Need to understand plugin scopes | Configuring plugin permissions (use settings-configuration skill) |
 | Fixing orphaned registry entries | Creating workflows with plugins (use github-actions-plugin) |
 | Debugging installation failures | |
-| A declared capability (LSP server, hook, command) silently never loads — see [REFERENCE.md](REFERENCE.md) § registry vs installed copy | |
+| A declared capability (LSP server, hook, command) silently never loads — see [REFERENCE.md](REFERENCE.md) § A capability declared in a registry is not proof it reached the installed copy | |
 
 ## Registry Location
 

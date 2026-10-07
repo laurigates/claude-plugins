@@ -189,7 +189,7 @@ status: draft
 
 Teach how to do something.
 
-```markdown
+````markdown
 ---
 title: "How to <Do the Thing>"
 date: YYYY-MM-DD
@@ -229,7 +229,7 @@ status: draft
 
 ---
 *Tested: <versions>*
-```
+````
 
 ## Deep Dive Format
 

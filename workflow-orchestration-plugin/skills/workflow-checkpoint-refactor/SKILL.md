@@ -198,7 +198,7 @@ For phases with 7+ files, delegate to Task sub-agent with:
 ## Related Skills
 
 - [code-review-checklist](../../../code-quality-plugin/skills/code-review-checklist/SKILL.md) - Review refactored code
-- [refactoring-patterns](../../../code-quality-plugin/skills/refactoring-patterns/SKILL.md) - Refactoring techniques
+- [code-refactor](../../../code-quality-plugin/skills/code-refactor/SKILL.md) - Refactoring techniques
 - [adversarial-review](../../../agent-patterns-plugin/skills/adversarial-review/SKILL.md) - The isolated verifier a judgement-based phase gate delegates to
 - [execution-grounded-review](../../../agent-patterns-plugin/skills/execution-grounded-review/SKILL.md) - The execution-grounded verifier for behaviour-based phase acceptance criteria
 - `.claude/rules/loop-integrity.md` - Why the plan file is a state packet and why `done` is judged independently
