@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.2](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.22.1...health-plugin-v1.22.2) (2026-10-07)
+
+
+### Code Refactoring
+
+* **skills:** move reference material out of oversized SKILL.md bodies ([#2924](https://github.com/laurigates/claude-plugins/issues/2924)) ([0dc3595](https://github.com/laurigates/claude-plugins/commit/0dc3595ca678565d8944a02d380d6da78caed9ff))
+
 ## [1.22.1](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.22.0...health-plugin-v1.22.1) (2026-09-28)
 
 

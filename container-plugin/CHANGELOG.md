@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.10.1](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.10.0...container-plugin-v2.10.1) (2026-10-07)
+
+
+### Code Refactoring
+
+* **skills:** move reference material out of oversized SKILL.md bodies ([#2924](https://github.com/laurigates/claude-plugins/issues/2924)) ([0dc3595](https://github.com/laurigates/claude-plugins/commit/0dc3595ca678565d8944a02d380d6da78caed9ff))
+
 ## [2.10.0](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.9.4...container-plugin-v2.10.0) (2026-09-24)
 
 

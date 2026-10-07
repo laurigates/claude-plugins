@@ -206,7 +206,7 @@
       "name": "communication-plugin",
       "source": "./communication-plugin",
       "description": "External communication formatting - Google Chat, ticket drafting",
-      "version": "1.2.5",
+      "version": "1.2.6",
       "author": {
         "name": "Lauri Gates"
       },
@@ -259,7 +259,7 @@
       "name": "container-plugin",
       "source": "./container-plugin",
       "description": "Container development and deployment - Docker, registry, Skaffold",
-      "version": "2.10.0",
+      "version": "2.10.1",
       "author": {
         "name": "Lauri Gates"
       },
@@ -313,7 +313,7 @@
       "name": "evaluate-plugin",
       "source": "./evaluate-plugin",
       "description": "Skill evaluation and benchmarking - test skill effectiveness with behavioral eval cases, grade results, and track quality improvements",
-      "version": "1.17.0",
+      "version": "1.17.1",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -332,7 +332,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.12.4",
+      "version": "1.12.5",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -371,7 +371,7 @@
       "name": "foundryvtt-plugin",
       "source": "./foundryvtt-plugin",
       "description": "FoundryVTT module lifecycle - scaffold a v13 module (Vite + TS + bun), create + seed the repo, open the gitops adoption PR",
-      "version": "1.3.2",
+      "version": "1.3.3",
       "author": {
         "name": "Lauri Gates"
       },
@@ -442,7 +442,7 @@
       "name": "health-plugin",
       "source": "./health-plugin",
       "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
-      "version": "1.22.1",
+      "version": "1.22.2",
       "author": {
         "name": "Lauri Gates"
       },
@@ -488,7 +488,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.12.3",
+      "version": "2.12.4",
       "author": {
         "name": "Lauri Gates"
       },
