@@ -155,3 +155,8 @@ documentation-plugin/skills/public-export-sanitization/scripts/tests/test-check-
 # back to an undiscovered name raises `required_test_missing` and exits 1.
 evaluate-plugin/scripts/tests/test-grade-deterministic.sh
 evaluate-plugin/scripts/tests/test-apply-fixture.sh
+
+# check-positional-references.sh takes its fence ranges from the tree-sitter
+# helper via `uv run`, which both workflows install; the suite SKIPs without uv,
+# and a skip here would leave the ratchet's own regressions unexercised.
+scripts/tests/test-check-positional-references.sh
