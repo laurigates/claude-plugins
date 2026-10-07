@@ -290,101 +290,11 @@ jq 'group_by(.level) | map({level: .[0].level, count: length, samples: [.[].mess
 
 ## Common Patterns
 
-### API Response Processing
-```bash
-# GitHub API: Get PR titles and authors
-gh pr list --json title,author,number | \
-  jq -r '.[] | "#\(.number) - \(.title) by @\(.author.login)"'
-
-# REST API: Extract and flatten pagination
-curl -s "https://api.example.com/items" | \
-  jq '.data.items[] | {id, name, status}'
-```
-
-### Configuration Files
-```bash
-# Extract environment-specific config
-jq '.environments.production' config.json
-
-# Update configuration value
-jq '.settings.timeout = 30' config.json > config.updated.json
-
-# Merge base config with environment overrides
-jq -s '.[0] * .[1]' base-config.json prod-config.json
-```
-
-### Log Analysis
-```bash
-# Count errors by type
-jq 'select(.level == "error") | .type' logs.json | sort | uniq -c
-
-# Extract error messages with timestamps
-jq -r 'select(.level == "error") | "\(.timestamp) - \(.message)"' logs.json
-
-# Group by hour and count
-jq -r '.timestamp | split("T")[1] | split(":")[0]' logs.json | sort | uniq -c
-```
-
-### Data Transformation
-```bash
-# CSV to JSON (with headers)
-jq -R -s 'split("\n") | .[1:] | map(split(",")) |
-  map({name: .[0], age: .[1], email: .[2]})' data.csv
-
-# JSON to CSV
-jq -r '.[] | [.name, .age, .email] | @csv' data.json
-
-# Flatten nested structure
-jq '[.items[] | {id, name, category: .meta.category}]' nested.json
-```
+For task-shaped recipes (API response processing, config extraction/merge, log analysis, CSV ↔ JSON transformation), open [references/common-patterns.md](references/common-patterns.md).
 
 ## Troubleshooting
 
-### Invalid JSON
-```bash
-# Validate JSON syntax
-jq empty file.json  # Returns exit code 0 if valid
-
-# Find syntax errors
-jq '.' file.json 2>&1 | grep "parse error"
-```
-
-### Empty Results
-```bash
-# Debug: Print entire structure
-jq '.' file.json
-
-# Debug: Check field existence
-jq 'keys' file.json
-jq 'type' file.json  # Check if array, object, etc.
-
-# Debug: Show all values
-jq '.. | scalars' file.json
-```
-
-### Type Errors
-```bash
-# Check field types
-jq '.field | type' file.json
-
-# Convert types safely
-jq '.id | tonumber' file.json
-jq '.count | tostring' file.json
-
-# Handle mixed types
-jq '.items[] | if type == "array" then .[] else . end' file.json
-```
-
-### Performance Issues
-```bash
-# Stream large files
-jq --stream '.' large-file.json
-
-# Process line by line
-cat large.json | jq -c '.[]' | while read -r line; do
-  echo "$line" | jq '.field'
-done
-```
+When jq reports a parse error, returns nothing, raises a type error, or is slow on a large file, open [references/troubleshooting.md](references/troubleshooting.md).
 
 ## Integration with Other Tools
 
