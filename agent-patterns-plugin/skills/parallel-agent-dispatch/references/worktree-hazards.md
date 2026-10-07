@@ -130,7 +130,7 @@ while carrying someone else's work.
 Give every concurrent agent an **explicit, distinct** working path in its
 prompt — `<scratchpad>/<agent-name>` — rather than letting each choose. This
 applies whenever agents work outside worktree isolation, which the nested-repo
-case above forces them into.
+case ([§ Nested-repo worktree isolation](#nested-repo-worktree-isolation-1838)) forces them into.
 
 Recovery, if it already happened: rebuild in a fresh clone and **re-apply your
 changes by hand**. Do not copy files out of the shared tree — co-modified files
@@ -276,7 +276,7 @@ SendMessage loses worktree isolation" (#1546), and
 
 ## Workflow agents are unreachable and their worktrees pin branches (#2614)
 
-Two facts about the `Workflow` substrate that the `Agent`-spawned guidance above
+Two facts about the `Workflow` substrate that the `Agent`-spawned guidance in this file
 does **not** transfer to. Observed 2026-09-04 in `laurigates/claude-plugins`
 across two runs (`wf_671995f7-033`, 14/14 agents / 0 errors, and
 `wf_e9de7386-be6`); treat them as a dated report of harness behaviour, not a
@@ -296,8 +296,8 @@ isolation" (#1546) and the upstream `agent-worktree-resume-for-pr-feedback` rule
 
 **2. A run that completes with zero errors still leaves one worktree per
 *changed* agent, each pinning its branch.** The next `isolation: "worktree"`
-dispatch onto that branch then fails exactly as in § Target-branch preflight
-(#1969) above: `fatal: '<branch>' is already checked out at
+dispatch onto that branch then fails exactly as in [§ Target-branch preflight
+(#1969)](#target-branch-preflight-1969): `fatal: '<branch>' is already checked out at
 '.../worktrees/wf_<run>-<n>'`. Five of the first run's 14 worktrees survived it:
 
 ```
@@ -394,8 +394,7 @@ make the agent operate on the worktree by absolute path (`git -C
 `git -C <worktreePath> branch --show-current` before its first write. Resume
 file-mutating agents one at a time, never several concurrently, or they tangle
 in the main checkout exactly as #1546 describes. On the `Workflow` substrate
-there is no agent to resume at all (see § Workflow agents are unreachable,
-above) — remove that run's worktree (non-force) and dispatch a fresh agent onto
+there is no agent to resume at all (see [§ Workflow agents are unreachable](#workflow-agents-are-unreachable-and-their-worktrees-pin-branches-2614)) — remove that run's worktree (non-force) and dispatch a fresh agent onto
 the freed branch.
 
 Give the agent the reviewer's words, not your summary — hand it the PR number
@@ -436,7 +435,7 @@ git worktree prune
 ```
 
 The `--force` here is for a worktree **this session's own agent** created and
-whose PR has merged; the scoping conditions in § Remedy above (never force-remove
+whose PR has merged; the scoping conditions in [§ Remedy](#remedy--scoped-non-force-removal) (never force-remove
 a worktree another session created, skip `locked`) still apply.
 
 ### Rationale

@@ -34,6 +34,12 @@ if [ -z "$TMPDIR" ] || [ ! -d "$TMPDIR" ]; then
     exit 1
 fi
 trap 'rm -rf "$TMPDIR"' EXIT
+# Canonicalise: the hook resolves a cd target with `pwd -P`, so on macOS (where
+# mktemp returns /var/folders/…, a symlink to /private/var/folders/…) the stub
+# logs the physical path and a fixture path built from the unresolved one never
+# matches. Resolved only after the empty/missing guard above, so `cd` can never
+# fall back to the real checkout.
+TMPDIR=$(cd -P -- "$TMPDIR" && pwd -P) || { echo "cannot resolve TMPDIR" >&2; exit 1; }
 
 # ---- gh stub -------------------------------------------------------------
 mkdir -p "$TMPDIR/bin"

@@ -37,7 +37,7 @@ these are probe helpers where suppression is the idiom.
 
 ## Severity assignment
 
-Start from the default severity per pattern below, then promote to **High**
+Start from the default severity per pattern in this section's table, then promote to **High**
 if the suppressed command matches the High operation regex; demote to
 **Low** if the allowlist matches.
 

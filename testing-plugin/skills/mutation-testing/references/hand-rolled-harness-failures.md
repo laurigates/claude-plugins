@@ -18,7 +18,7 @@ message does not name the check you are testing, the mutation did not reach it.
 
 ### 2. The mutation has to be one ONLY the target check can see
 
-Fixing the above is not "mutate harder" — it is choosing a mutation that no
+Fixing [§ 1](#1-an-earlier-check-masks-the-one-under-test) is not "mutate harder" — it is choosing a mutation that no
 earlier check can intercept:
 
 | Testing | Bad mutation | Works |
@@ -53,7 +53,7 @@ comprehensions over the table you mutated.
 
 ### 4. The mutated file was never imported
 
-The mirror of the three above. Those are all **false CAUGHT** — a mutation
+The mirror of §§ 1–3. Those are all **false CAUGHT** — a mutation
 reported killed by an assertion other than the intended one. This one is
 **false MISSED**: the harness edits a file the run never loads, and reports a
 coverage hole that does not exist.

@@ -141,7 +141,7 @@ Two moves, in order:
 **Do not diagnose from the runtime's binary.** Grepping the executable for the
 declared value (a command name, a key) finds nothing when the value legitimately
 comes from config — which reads as "this build has no such feature" and is
-wrong. That inference cost a wrong verdict in the canonical break above.
+wrong. That inference cost a wrong verdict in the canonical break (2026-08, Claude Code 2.1.246).
 
 `returned 0` is a negative that gates an action — control-test it
 (`agent-patterns-plugin:tool-result-traps`).
@@ -179,4 +179,5 @@ positive *operational* signal rather than config presence
   — a project entry pinned to an older version loads in preference to the user
   install, and the plugin list renders both rows identically. Carries the
   session-start sync mechanism, the `claude plugin details` blind spot, and the
-  uninstall-rewrites-settings behaviour described above.
+  uninstall-rewrites-settings behaviour described in
+  [§ Removing a lagging row](#removing-a-lagging-row-rewrites-the-projects-committed-settings).

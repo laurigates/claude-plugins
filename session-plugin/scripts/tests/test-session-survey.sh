@@ -1636,9 +1636,9 @@ check_line "AM10: an explicit budget still overrides the default" "$out" "GH_BUD
 #
 # Read SKILL.md AND its REFERENCE.md sidecar. The invariant is that the
 # CONSUMER carries the remediation, not that it lives in one particular file:
-# `.github/workflows/skill-splitter.yml` runs Claude over every changed
-# SKILL.md on a PR (largest first, capped at 10) and moves reference material
-# into a REFERENCE.md sibling, so pinning the table to SKILL.md makes the
+# `.github/workflows/skill-splitter.yml` runs Claude over SKILL.md files the
+# size gate warns about and moves reference material into a REFERENCE.md
+# sibling, so pinning the table to SKILL.md makes the
 # splitter's normal operation a test failure. It did: the bot's 363dd48f moved
 # this exact table and turned four of these assertions red.
 END_SKILL="$SCRIPT_DIR/../../skills/session-end/SKILL.md"

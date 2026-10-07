@@ -2,7 +2,7 @@
 
 Supporting material for [`parallel-agent-dispatch`](SKILL.md), split across
 `references/` so a run loads only the material its path needs. The operational
-workflow lives in `SKILL.md`; nothing below is loaded unless you follow one of
+workflow lives in `SKILL.md`; nothing listed here is loaded unless you follow one of
 these links.
 
 | Path you are on | File | Carries |

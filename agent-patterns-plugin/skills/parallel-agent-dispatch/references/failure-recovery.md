@@ -14,7 +14,7 @@ secrets scan, or lint that runs longer than the agent's effective budget.
 The agent's `git commit` call is parked on the hook, no retry fires, no
 Return Contract is emitted, and the agent's actual diff is sitting intact
 in the worktree. Distinct from a transport-layer rate-limit cascade (see
-below), this is a hook-layer stall with the agent's work fully preserved.
+[§ Concurrent rate-limit risk](#concurrent-rate-limit-risk--recovery-dispatch-routine)), this is a hook-layer stall with the agent's work fully preserved.
 
 **Symptoms** (any of):
 
@@ -108,7 +108,7 @@ made blind.
    StructuredOutput so the pattern is visible.
 
 **Defensive prevention — checkpoint WIP commits in the brief.** The salvage
-above is only possible because the worktree persisted. Make the work *also*
+routine in [§ WIP salvage before re-dispatch](#wip-salvage-before-re-dispatch-1491) is only possible because the worktree persisted. Make the work *also*
 survive on a branch by instructing every worktree-isolated agent to:
 
 > Commit WIP at checkpoints. After each substantive slice — and **before you
@@ -118,12 +118,12 @@ survive on a branch by instructing every worktree-isolated agent to:
 > far more cleanly than an uncommitted worktree.
 
 A checkpoint commit converts the dirty-worktree case into the
-committed-branch case (row 2 above) — the cleanest salvage, a plain
+committed-branch case (row 2 of the [empty-vs-dirty table](#wip-salvage-before-re-dispatch-1491)) — the cleanest salvage, a plain
 `git push` with no commit-on-behalf step.
 
 ## Audit local worktrees alongside the remote (#2447)
 
-The remote audit below (`gh pr list --state open`, `git ls-remote --heads
+The remote audit in [§ Session usage limit](#session-usage-limit--audit-remote-then-recover) (`gh pr list --state open`, `git ls-remote --heads
 origin`) answers one question well and a different question not at all:
 
 > **An empty remote is evidence about the PUSH, not about the WORK** — and the
@@ -142,7 +142,7 @@ git -C <worktree> status --porcelain                     # uncommitted work?
 
 Only "remote empty **and** no local worktree **and** no unpushed commits **and**
 a clean tree" supports the conclusion that nothing landed. Anything else routes
-to the salvage routine above (§ WIP salvage before re-dispatch) — push the
+to the salvage routine in [§ WIP salvage before re-dispatch](#wip-salvage-before-re-dispatch-1491) — push the
 branch, or commit on the agent's behalf and then push.
 
 This bites hardest on a dispatch made with `isolation: "remote"`, which can
@@ -208,7 +208,8 @@ discriminator, see [references/failure-recovery.md → Killed-agent worktree rec
 
 ## Killed-agent worktree recovery (TaskStop)
 
-Distinct from the silent commit-stall above: here the orchestrator
+Distinct from the silent commit-stall
+([§ Agent stalled at commit / push](#agent-stalled-at-commit--push--salvage-routine)): here the orchestrator
 **deliberately kills** a stuck or thrashing agent with `TaskStop` rather
 than waiting for it to fail on its own. The key affordance is that
 `TaskStop` preserves the agent's worktree on disk — every uncommitted
@@ -292,11 +293,11 @@ Since 2.1.199 a subagent cut off by a rate limit or server error returns its par
 
 ### Burst limit vs session usage limit
 
-The table above covers the **server burst limit** — many agents dispatched at
+The [recovery-dispatch table](#concurrent-rate-limit-risk--recovery-dispatch-routine) covers the **server burst limit** — many agents dispatched at
 once, refused by the API. A **session usage limit** kills a wave the same way
 but for a different reason, and the two want different first moves: the burst
 limit wants lower concurrency on an immediate retry, the usage limit wants a
-wait. The wreckage they leave is identical, so the audit step below applies to
+wait. The wreckage they leave is identical, so the audit step in [§ Session usage limit](#session-usage-limit--audit-remote-then-recover) applies to
 either.
 
 The burst-limit signature:
@@ -309,7 +310,7 @@ fires, the agents die after their retries and `parallel()` returns them as
 `null` — **every agent's startup tokens wasted** (observed: 7 Opus auditors,
 628 k tokens, all killed at 18 s).
 
-Mitigations for this class already live above and in
+Mitigations for this class already live in [§ Concurrent rate-limit risk](#concurrent-rate-limit-risk--recovery-dispatch-routine) and in
 [`../SKILL.md`](../SKILL.md) § Concurrent Rate-Limit Risk — safe starting
 concurrency by agent profile, sequential waves over one big fan-out,
 backoff-and-retry rather than task failure, and `git worktree prune` before a
@@ -339,8 +340,8 @@ limit and recovered fully):
    already-pushed branch hits a non-fast-forward reject, and one that
    re-creates an existing PR duplicates it — brief agents to check first, or
    verify the remote is clean yourself. A clean remote is **not** proof the work
-   is gone: pair this with the local-worktree probes above (§ Audit local
-   worktrees alongside the remote, #2447) before writing an agent off.
+   is gone: pair this with the local-worktree probes in [§ Audit local
+   worktrees alongside the remote](#audit-local-worktrees-alongside-the-remote-2447) (#2447) before writing an agent off.
 3. **Resume only what actually caches.** `Workflow({scriptPath,
    resumeFromRunId})` replays completed **ordinary** agents from cache (cache
    key: unchanged prompt + opts) at zero cost, so re-dispatching those from

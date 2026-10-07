@@ -217,15 +217,15 @@ cargo clippy --all-targets --all-features -- -D warnings
 ### Flake8/isort/black to Ruff
 
 1. Install Ruff: `uv add --group dev ruff`
-2. Configure in `pyproject.toml` (see Ruff template above)
+2. Configure in `pyproject.toml` (see [§ pyproject.toml Template](#pyprojecttoml-template))
 3. Remove old tools: `uv remove flake8 isort black pyupgrade`
 4. Remove old config files: `rm .flake8 .isort.cfg`
-5. Update pre-commit hooks (see below)
+5. Update pre-commit hooks (see [§ Pre-commit Integration](#pre-commit-integration))
 
 ### ESLint to Biome
 
 1. Install Biome: `bun add --dev @biomejs/biome`
-2. Create `biome.json` (see template above)
+2. Create `biome.json` (see [§ biome.json Template](#biomejson-template))
 3. Remove ESLint: `bun remove eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin`
 4. Remove config files: `rm .eslintrc* .eslintignore`
 5. Update npm scripts and pre-commit hooks

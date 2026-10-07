@@ -204,7 +204,7 @@ Release-please manages these automatically — never edit them manually:
 
 ## Installation Steps
 
-1. Create workflow, config, and manifest files (templates above)
+1. Create workflow, config, and manifest files ([§ Standard Templates](#standard-templates))
 2. Provide the release token — preferred: `RELEASE_PLEASE_APP_ID` variable +
    `RELEASE_PLEASE_PRIVATE_KEY` secret (gitops provisions these on
    `release_please = true` repos); legacy: `MY_RELEASE_PLEASE_TOKEN` secret
@@ -217,5 +217,5 @@ Release-please manages these automatically — never edit them manually:
 | Release PR not created | Conventional commit format; workflow permissions; token has write access |
 | Version not updated | Manifest is valid JSON; release-type matches project; release-please logs in Actions |
 | CI not running on release PR | Token must be a dedicated release token (App token or PAT), not `GITHUB_TOKEN` |
-| Asset upload fails on a published release; later publish steps skipped | Immutable releases are on — use `draft: true` + `force-tag-creation` (see Immutable Releases above) |
+| Asset upload fails on a published release; later publish steps skipped | Immutable releases are on — use `draft: true` + `force-tag-creation` (see [§ Immutable Releases](#immutable-releases-draft-attach-publish)) |
 | Release stuck in draft | The asset/publish job did not finish — **Re-run failed jobs**, not a full re-run |

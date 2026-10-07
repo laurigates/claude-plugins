@@ -44,7 +44,7 @@ For web frontend findings, **always split** the surfacing into two calls:
    `inline-form-error`.
 
 The generated patch must include both, with the user-channel string run
-through the privacy redaction rules below.
+through the [privacy redaction rules](#privacy-redaction-rules).
 
 ## Privacy redaction rules
 

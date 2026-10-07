@@ -208,8 +208,8 @@ or assigns a follow-up issue.
 > Tracking: laurigates/claude-plugins#1091
 
 The bug lives in Claude Code's worktree path-resolution layer (upstream). Until
-fixed, harden every worktree-isolated agent prompt with the preamble below and
-run the post-flight check before merging.
+fixed, harden every worktree-isolated agent prompt with the [preamble](#recommended-agent-prompt-preamble) and
+run the [post-flight check](#lead-post-flight-check) before merging.
 
 ### Recommended agent-prompt preamble
 

@@ -141,7 +141,7 @@ alongside reading the changed files against the check's own criteria.
 
 - Any PR large enough that a per-file AI reviewer can't finish in its turn
   budget — refactors, new-feature slices, multi-file guards (the rotating-failure
-  example above was 16 files).
+  example in [references/budget-exhaustion.md](references/budget-exhaustion.md) was 16 files).
 - Repos that later mark these AI checks **required** — there, the flake
   *does* wedge the merge, which makes raising `max_turns` urgent rather than
   cosmetic.

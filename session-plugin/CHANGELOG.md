@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.2](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.13.1...session-plugin-v1.13.2) (2026-10-07)
+
+
+### Bug Fixes
+
+* **skills:** correct sixteen content defects from the split sweep ([#2940](https://github.com/laurigates/claude-plugins/issues/2940)) ([9008c65](https://github.com/laurigates/claude-plugins/commit/9008c6586c27af680b6ee2afe2e238adbe1b2b00))
+
 ## [1.13.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.13.0...session-plugin-v1.13.1) (2026-10-07)
 
 

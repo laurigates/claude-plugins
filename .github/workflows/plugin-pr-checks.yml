@@ -177,6 +177,7 @@ jobs:
             --only 'scripts/tests/test-check-issue-template-inheritance.sh' \
             --only 'scripts/tests/test-check-loop-integrity.sh' \
             --only 'scripts/tests/test-check-plugin-root-quoting.sh' \
+            --only 'scripts/tests/test-check-positional-references.sh' \
             --only 'scripts/tests/test-check-prose-house-style.sh' \
             --only 'scripts/tests/test-check-research-radar-grounding.sh' \
             --only 'scripts/tests/test-check-routine-prompt.sh' \
@@ -430,6 +431,15 @@ jobs:
         # root is word-split when the install path holds a space. Whole-repo
         # invariant, always-on; the self-test step above proves the guard first.
         run: bash scripts/check-plugin-root-quoting.sh
+
+      - name: Check skill markdown points at anchors, not directions
+        # A "see above" in a reference file names nothing: the file is read out
+        # of order, and the 2026-10 SKILL.md split left 90 such pointers aimed
+        # at text that had moved. Reference files are strict; each SKILL.md is
+        # held at scripts/positional-references-baseline.txt and the baseline
+        # may only go down. Whole-repo, always-on; the self-test step above
+        # proves the guard first.
+        run: bash scripts/check-positional-references.sh
 
       - name: Check shell scripts follow shell-scripting.md
         # Whole-repo invariant (every shell script follows shell-scripting.md:

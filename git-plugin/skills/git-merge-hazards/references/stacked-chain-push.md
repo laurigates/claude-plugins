@@ -18,7 +18,7 @@ claude-plugins #1979→#1987):
 - **Brace that variable — `"$sha:<branch>"` is a zsh word-modifier expansion.**
   Stock zsh (reproduces under `zsh -f`) eats the character after the colon as a
   history modifier whenever it happens to be one, silently rewriting the
-  refspec the bullet above just told you to use:
+  refspec the **`HEAD:` … is a race** bullet just told you to use:
 
   | Written | zsh actually sends | |
   |---|---|---|
@@ -43,7 +43,7 @@ claude-plugins #1979→#1987):
   "refs/")`. git wraps that message right after `(i.e.,`, so triage by grepping
   the `not a full refname` fragment, not the whole sentence. The full refname
   is accepted whether or not the branch exists, so there is no branch state to
-  reason about. It compounds with the brace rule immediately above rather than
+  reason about. It compounds with the **Brace that variable** rule rather than
   replacing it: `"$sha:refs/heads/x"` is the `:r` word-modifier row in that
   table — unbraced, zsh silently sends `<sha>efs/heads/x`.
 - **An empty-diff force-push auto-closes the PR — and a closed PR whose *head*
@@ -60,7 +60,7 @@ claude-plugins #1979→#1987):
   2026-07: `state=CLEAN` on a **single** check while three CI jobs had not yet
   appeared — merging there merges untested. Gate on **both** nothing-pending
   **and** `--jq 'length'` ≥ the expected check count. Same root cause as the
-  mergeability race above: an async field read once, too early.
+  **single mergeability read** race: an async field read once, too early.
 
 - **Check** before every force-push: `git log --oneline origin/main..<sha>` —
   expect *exactly* the child's commits, nothing more, never empty.
