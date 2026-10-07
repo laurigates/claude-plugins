@@ -9,10 +9,3 @@
 | Feedback | `feedback-plugin:feedback-session` | Notable plugin/skill interactions → GitHub issues on claude-plugins |
 | Taskwarrior sync | (inline, no sub-skill) | Close done tasks, update statuses, add follow-ups no open PR/issue already tracks; uses stable UUIDs |
 | Blueprint tracker-sync | `blueprint-plugin:blueprint-feature-tracker-sync` | Drain closed WO-linked tasks from tracker `tasks.pending` → `tasks.completed` (`--drain-wave`) |
-
-## Seam: distill vs feedback
-
-"Discovered a better flag / a skill suggested something subtly wrong" →
-**feedback** (issue on claude-plugins). "Found a reusable project
-pattern, rule, or recipe" → **distill** (artifact in this repo). When
-both apply, both run — they write to different places.

@@ -59,47 +59,7 @@ Parse these parameters from the command (all optional):
 
 ### Step 2: Auto-Detect Related Issues (unless --skip-issue-detection or --issue provided)
 
-**Purpose**: Automatically identify open GitHub issues that the staged changes may fix or close.
-
-1. **Analyze staged changes**:
-   - Get list of changed files: `git diff --cached --name-only`
-   - Extract modified directories, file names, and content patterns
-   - Identify error messages, function names, or keywords in the diff
-
-2. **Match against open issues**:
-   - Review the open issues from context (or fetch with `gh issue list --state open`)
-   - Score each issue based on:
-     - **High confidence**: File path mentioned in issue body, error message match
-     - **Medium confidence**: Directory/component match, keyword overlap
-     - **Low confidence**: Label matches changed area (e.g., `bug` label + fix changes)
-
-3. **Report detected issues**:
-   ```
-   Detected potentially related issues:
-
-   HIGH CONFIDENCE:
-   - #123 "Login fails with invalid token" → Fixes #123
-     Match: Changes to src/auth/token.ts, issue mentions token validation
-
-   MEDIUM CONFIDENCE:
-   - #456 "Improve error messages" → Refs #456
-     Match: Error handling changes in src/auth/
-
-   Suggested closing keywords for commit message:
-   Fixes #123
-   Refs #456
-   ```
-
-4. **Determine appropriate keywords**:
-   - Use `Fixes #N` for bug fixes that fully resolve the issue
-   - Use `Closes #N` for features that complete the issue
-   - Use `Refs #N` for partial progress or related changes
-   - See **github-issue-autodetect** skill for decision tree
-
-5. **Confirm with user** (if uncertain):
-   - For high-confidence matches, include automatically
-   - For medium-confidence, suggest and confirm
-   - For low-confidence, mention but let user decide
+Follow [references/issue-detection.md](references/issue-detection.md) to match the staged changes against open issues and pick `Fixes` / `Closes` / `Refs` keywords for Step 3.
 
 ### Step 3: Create Commits (unless --no-commit)
 
@@ -229,19 +189,7 @@ gh pr checks <pr-number> --watch --fail-fast
 
 ## Workflow Guidance
 
-- After running pre-commit hooks, stage files modified by hooks using `git add -u`
-- Unstaged changes after pre-commit are expected formatter output - stage them and continue
-- **Direct mode** (`--direct`): Use `git push origin HEAD` to push current branch directly
-- **Feature branch mode** (default): Create a local feature branch from main, commit there, push with `git push -u origin <branch>`
-- When encountering unexpected state, report findings and ask user how to proceed
-- Include all pre-commit automatic fixes in commits
-- **GitHub issue references (REQUIRED)**: Every commit should reference related issues:
-  - **Closing keywords** (`Fixes`, `Closes`, `Resolves`) auto-close issues when merged to default branch
-  - **Reference keywords** (`Refs`, `Related to`, `See`) link without closing - use for partial work
-  - Format examples: `Fixes #123`, `Fixes: #123`, `fixes org/repo#123`
-  - Multiple issues: `Fixes #1, fixes #2, fixes #3` (repeat keyword for each)
-  - When `--issue <num>` provided, use `Fixes #<num>` or `Closes #<num>` in commit body
-  - If no specific issue exists, consider creating one first for traceability
+See [references/workflow-guidance.md](references/workflow-guidance.md) for pre-commit staging, push modes, unexpected state, and issue-reference formats.
 
 ## See Also
 

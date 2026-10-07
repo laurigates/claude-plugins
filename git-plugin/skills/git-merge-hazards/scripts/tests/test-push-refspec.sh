@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2015,SC2016  # deliberate: `A && B || fail` guards; literal '${sha}' placeholder match
 # test-push-refspec.sh — semantic regression test for the push-by-SHA refspec
 # form prescribed by the git-merge-hazards skill (issue #2478).
 #
@@ -49,7 +50,10 @@ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
 export GIT_TERMINAL_PROMPT=0
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SKILL_FILE="${SCRIPT_DIR}/../../SKILL.md"
+# §3 (the push-by-SHA protocol and its recovery bullet) moved verbatim from the
+# SKILL.md body into references/stacked-chain-push.md; the assertions below pin
+# the guidance where it now lives. "SKILL.md" in the messages means that file.
+SKILL_FILE="${SCRIPT_DIR}/../../references/stacked-chain-push.md"
 
 pass=0
 fail=0
