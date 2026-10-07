@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.20.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.20.0...testing-plugin-v3.20.1) (2026-10-07)
+
+
+### Code Refactoring
+
+* **skills:** move reference material out of oversized SKILL.md bodies ([#2919](https://github.com/laurigates/claude-plugins/issues/2919)) ([765f0a9](https://github.com/laurigates/claude-plugins/commit/765f0a99487f222a1b5ea18f0fa5f001b2d435b4))
+
 ## [3.20.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.19.9...testing-plugin-v3.20.0) (2026-10-06)
 
 
