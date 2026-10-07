@@ -69,12 +69,12 @@ The command produces:
 - Works with any test framework that produces structured output
 - Auto-detects common test result formats (JUnit XML, JSON, TAP)
 - Preserves test evidence for debugging
-- Can be chained with `/git:smartcommit` for automated fixes
+- Can be chained with `/git:commit` for automated fixes
 - Respects TDD workflow (RED → GREEN → REFACTOR)
 
 ## Related Commands
 
 - `/test:run` - Run tests with framework detection
 - `/code:review` - Manual code review for test files
-- `/docs:update` - Update test documentation
-- `/git:smartcommit` - Commit fixes with conventional messages
+- `/docs:generate` - Update test documentation
+- `/git:commit` - Commit fixes with conventional messages

@@ -146,15 +146,17 @@ require "$TICS" "pysbd" "segmenter swapped away from pysbd (47/48 on the Golden 
 # repo's `split` CI job auto-extracts reference sections into REFERENCE.md when
 # a SKILL.md grows -- it did exactly that to this skill -- so pinning a token to
 # one filename makes the guard fail on a relocation that lost nothing. What has
-# to survive is the claim, wherever the split puts it.
+# to survive is the claim, wherever the split puts it -- and since the 2026-10
+# split the split puts it in `references/*.md` as well. `fixtures/` is not skill
+# prose (it is test input) and is deliberately not searched.
 require_in_skill() {
     local token="$1" msg="$2" f
-    for f in "$SKILL_DIR/SKILL.md" "$SKILL_DIR/REFERENCE.md"; do
+    for f in "$SKILL_DIR/SKILL.md" "$SKILL_DIR/REFERENCE.md" "$SKILL_DIR"/references/*.md; do
         if [ -f "$f" ] && grep -qiF -- "$token" "$f"; then
             return
         fi
     done
-    fail "SEVERITY=ERROR FILE=prose-plugin/skills/prose-check/{SKILL,REFERENCE}.md TOKEN=\"$token\" MSG=$msg"
+    fail "SEVERITY=ERROR FILE=prose-plugin/skills/prose-check/{SKILL,REFERENCE,references/*}.md TOKEN=\"$token\" MSG=$msg"
 }
 
 require_in_skill "candidates" "skill prose no longer frames findings as candidates rather than defects"

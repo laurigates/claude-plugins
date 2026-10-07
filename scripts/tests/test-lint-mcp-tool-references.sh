@@ -245,6 +245,44 @@ fi
 rm -rf "$fx"
 
 # ---------------------------------------------------------------------------
+# CASE 6b (COVERAGE): a `references/*.md` sidecar is scanned too. The 2026-10
+# split moved skill content into per-skill `references/` files, which the walk
+# (SKILL.md / REFERENCE.md / *.workflow.js) could not see. Both entries are
+# exercised: the path-scoped pal prefix and the unconditional #1429 name.
+# ---------------------------------------------------------------------------
+fx="$(make_fixture)"
+printf -- '---\nname: demo\n---\nclean body\n' \
+  >"$fx/demo-plugin/skills/multi-model-delegation/SKILL.md"
+mkdir -p "$fx/demo-plugin/skills/multi-model-delegation/references"
+printf 'Call `mcp__pal__thinkdeep` for the deep dig.\n' \
+  >"$fx/demo-plugin/skills/multi-model-delegation/references/tools.md"
+run_fixture "$fx"
+out="$FIXTURE_OUT"
+if [ "$FIXTURE_EXIT" -eq 1 ] && printf '%s' "$out" | grep -q 'references/tools.md'; then
+  ok "references/*.md sidecars are scanned (path-scoped entry)"
+else
+  bad "references/*.md sidecars are scanned (path-scoped entry)" "exit=$FIXTURE_EXIT
+$out"
+fi
+rm -rf "$fx"
+
+fx="$(make_fixture)"
+mkdir -p "$fx/demo-plugin/skills/other-demo/references"
+printf -- '---\nname: other-demo\n---\nclean body\n' \
+  >"$fx/demo-plugin/skills/other-demo/SKILL.md"
+printf 'Resolve it with `mcp__github__resolve_review_thread`.\n' \
+  >"$fx/demo-plugin/skills/other-demo/references/resolution.md"
+run_fixture "$fx"
+out="$FIXTURE_OUT"
+if [ "$FIXTURE_EXIT" -eq 1 ] && printf '%s' "$out" | grep -q 'other-demo/references/resolution.md'; then
+  ok "references/*.md sidecars are scanned (unconditional entry)"
+else
+  bad "references/*.md sidecars are scanned (unconditional entry)" "exit=$FIXTURE_EXIT
+$out"
+fi
+rm -rf "$fx"
+
+# ---------------------------------------------------------------------------
 # CASE 7 (COVERAGE): a bundled `*.workflow.js` carries the same tool names in
 # its comments and agent prompts. The #2437 fix had to correct one BY HAND
 # because the walk could not see it.

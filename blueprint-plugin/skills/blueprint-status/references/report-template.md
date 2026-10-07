@@ -121,7 +121,7 @@ Modified content detected: {count} files
 
 {If stale generated content:}
 Stale content detected: {count} files (PRDs changed since generation)
-   Run `/blueprint:generate-skills` to regenerate.
+   Run `/blueprint:sync` to regenerate.
 
 {If up to date:}
 Blueprint is up to date.

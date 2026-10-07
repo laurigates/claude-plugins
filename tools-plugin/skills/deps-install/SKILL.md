@@ -99,6 +99,6 @@ After installation:
 ## Post-install Actions
 
 1. Display installed packages and versions
-2. Run `/lint:check` to ensure code quality
+2. Run `/code:lint` to ensure code quality
 3. Run `/test:run` to verify nothing broke
-4. Suggest `/git:smartcommit` if lock files changed
+4. Suggest `/git:commit` if lock files changed

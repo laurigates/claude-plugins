@@ -20,9 +20,11 @@
 #
 # This is a RESOLUTION check, not a denylist: ground truth is rebuilt from disk
 # on every run, so renaming a skill directory is caught the moment it lands.
-# Same shape as `scripts/check-skill-references.sh`, which covers SKILL.md /
-# REFERENCE.md / *.workflow.js / .claude/rules — hook scripts are NOT in that
-# script's coverage, which is why this defect went unguarded.
+# Same shape as `scripts/check-skill-references.sh`, which covers skill markdown
+# (SKILL.md and its sidecars) / *.workflow.js / .claude/rules — hook scripts are
+# NOT in that script's coverage, which is why this defect went unguarded. That
+# script accepts the `/<ns>:<name>` short form in prose; this one must not,
+# because an emitted cue is pasted into the `Skill` tool verbatim.
 #
 # GROUND TRUTH — an ID resolves if it matches either:
 #   * `<plugin>/skills/<name>/SKILL.md`  -> `<plugin>:<name>`

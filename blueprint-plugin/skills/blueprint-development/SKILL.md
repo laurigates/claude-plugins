@@ -81,14 +81,13 @@ See [REFERENCE.md](REFERENCE.md#rule-generation-guidelines) for detailed guideli
 
 Create project-specific workflow commands in `.claude/skills/` or `docs/blueprint/`:
 
-**Six core commands:**
+**Five core commands:**
 
 1. **`/blueprint:init`** - Initialize Blueprint Development structure
 2. **`/blueprint:generate-rules`** - Generate project rules from PRDs (main entry point)
-3. **`/blueprint:generate-commands`** - Generate workflow commands based on project type
-4. **`/blueprint:work-order`** - Create isolated work-order for subagent execution
-5. **`/project:continue`** - Analyze state and resume development
-6. **`/project:test-loop`** - Run automated TDD cycle
+3. **`/blueprint:work-order`** - Create isolated work-order for subagent execution
+4. **`/project:continue`** - Analyze state and resume development
+5. **`/project:test-loop`** - Run automated TDD cycle
 
 For each command:
 - Determine project type and language

@@ -644,6 +644,34 @@ assert_absent "changelog-review: fixed Step 6 raises no Step 6 issue" \
 
 rm -rf "${root:?}/$PLUGIN/skills/changelog-review"
 
+# --- check_skill_body DENYLIST checks read the skill's sidecars too ----------
+# The 2026-10 split moved skill content into `references/*.md`. A "must NOT
+# contain X" check that reads only SKILL.md stops seeing X the moment the split
+# moves it, yet the agent still reads it there. The `task +LATEST _get uuid`
+# ban applies to every skill, so it is the case exercised. The reference file is
+# linked from SKILL.md so the #2700 orphan check stays quiet and the run's only
+# possible ❌ is the one under test.
+make_skill sidecarban with
+printf '\nSee [usage](references/usage.md).\n' >> "$root/$PLUGIN/skills/sidecarban/SKILL.md"
+mkdir -p "$root/$PLUGIN/skills/sidecarban/references"
+printf '# Usage\n\nCapture it with `task +LATEST _get uuid`.\n' \
+  > "$root/$PLUGIN/skills/sidecarban/references/usage.md"
+run_check; out_sb="$OUT"; rc_sb="$RC"
+assert_eq "denylist: a banned command in references/*.md exits 1" "$rc_sb" "1"
+assert_contains "denylist: the banned command in a sidecar is named" \
+  "$out_sb" "SKILL.md or a sidecar ships the broken 'task +LATEST _get uuid'"
+
+# Guard integrity: the same sidecar quoting it in a blockquote is a gotcha
+# callout, not a recommendation, and stays clean.
+printf '# Usage\n\n> Not `task +LATEST _get uuid`, which returns empty.\n' \
+  > "$root/$PLUGIN/skills/sidecarban/references/usage.md"
+run_check; out_sbq="$OUT"; rc_sbq="$RC"
+assert_eq "denylist: a blockquoted mention in a sidecar exits 0" "$rc_sbq" "0"
+assert_absent "denylist: a blockquoted mention in a sidecar is not flagged" \
+  "$out_sbq" "_get uuid"
+
+rm -rf "${root:?}/$PLUGIN/skills/sidecarban"
+
 echo "---"
 echo "passed: $pass, failed: $fail"
 [ "$fail" -eq 0 ]

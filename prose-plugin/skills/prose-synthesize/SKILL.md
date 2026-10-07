@@ -18,7 +18,7 @@ Synthesize unstructured thinking into a structured, actionable plan — impose o
 | Use this skill when... | Use something else when... |
 |------------------------|---------------------------|
 | User dumps stream-of-consciousness thoughts | Text is already structured but verbose → `/prose:distill` |
-| Scattered notes need organizing into a plan | Need to capture session learnings → `/project:distill` |
+| Scattered notes need organizing into a plan | Need to capture session learnings → `/session:distill` |
 | Brain dump needs goals, actions, priorities extracted | Need to write a plan from scratch with no input → `/blueprint:init` |
 | User says "make sense of this", "organize this" | Document needs style/tone adjustment → `prose-tone` (planned) |
 

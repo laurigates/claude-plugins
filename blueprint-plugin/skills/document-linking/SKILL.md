@@ -275,7 +275,7 @@ Before creating a GitHub issue, run `check_for_duplicates` from [references/orph
 
 ## Integration Points
 
-### /blueprint:prd
+### /blueprint:derive-plans (PRDs)
 
 After creating PRD:
 1. Generate `PRD-NNN` ID
@@ -283,7 +283,7 @@ After creating PRD:
 3. Update manifest registry
 4. Prompt: "Create GitHub issue for tracking?"
 
-### /blueprint:adr
+### /blueprint:derive-plans (ADRs)
 
 After creating ADR:
 1. Extract `ADR-NNNN` from filename

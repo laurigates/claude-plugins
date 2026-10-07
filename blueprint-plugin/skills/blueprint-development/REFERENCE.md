@@ -592,7 +592,6 @@ Test each command:
 ```bash
 /blueprint:init              # Should create directory structure
 /blueprint:generate-rules    # Should create four rules in .claude/rules/
-/blueprint:generate-commands # Should create workflow commands
 /project:continue            # Should analyze state and resume work
 /blueprint:work-order        # Should create work-order document
 /project:test-loop           # Should run tests and report

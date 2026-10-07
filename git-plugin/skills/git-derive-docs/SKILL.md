@@ -176,8 +176,7 @@ For each accepted finding:
 - Examples
 
 **PRD/ADR/PRP**: Generate skeleton documents in appropriate directories. If blueprint commands are available, suggest using:
-- `/blueprint:prd` for PRDs
-- `/blueprint:adr` for ADRs
+- `/blueprint:derive-plans` for PRDs and ADRs
 - `/blueprint:prp-create` for PRPs
 
 ### Step 9: Summary

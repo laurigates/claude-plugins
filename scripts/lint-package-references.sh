@@ -17,6 +17,12 @@
 # is found referencing a package name that is not published under that name
 # in its ecosystem.
 #
+# COVERAGE: `SKILL.md` / `skill.md` / `REFERENCE.md` anywhere in the repo, and
+# every other `*.md` under a `skills/` directory — the `references/*.md` and
+# `REFERENCE-<topic>.md` sidecars the 2026-10 split moved install commands and
+# import examples into. A copy-pasteable install line is as dangerous there as
+# in SKILL.md.
+#
 # Lines starting with `>` (markdown blockquote) are skipped so documented
 # gotcha callouts can still cite the broken form as an example.
 #
@@ -34,6 +40,14 @@ set -euo pipefail
 errors=0
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
+
+# Enter the scan root before discovery so the RELATIVE paths `find .` emits
+# resolve for the `grep` below too. Discovery used to run in a
+# `(cd "$repo_root" && find .)` subshell while the grep ran in the caller's cwd,
+# so an invocation from anywhere other than the repo root opened no file and
+# still exited 0 — the silent no-scan class of #2219/#2290, fixed the same way
+# in lint-mcp-tool-references.sh.
+cd "$repo_root" || exit 1
 
 # Denylist of (ecosystem, wrong-name, suggested-fix) triples. Each triple is
 # three adjacent entries in the same array so bash 3.2 (macOS default) still
@@ -65,8 +79,9 @@ while [ $i -lt ${#denylist[@]} ]; do
       printf "  Fix:       %s\n\n" "$fix"
       errors=$((errors + 1))
     done < <(grep -nF "$pkg" "$file" || true)
-  done < <(cd "$repo_root" && find . -type f \
-              \( -name 'SKILL.md' -o -name 'skill.md' -o -name 'REFERENCE.md' \) \
+  done < <(find . -type f \
+              \( -name 'SKILL.md' -o -name 'skill.md' -o -name 'REFERENCE.md' \
+                 -o \( -path '*/skills/*' -name '*.md' \) \) \
               -not -path './.claude/worktrees/*' \
               -not -path '*/node_modules/*' \
               -print0)

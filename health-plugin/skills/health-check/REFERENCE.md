@@ -48,7 +48,7 @@ Recommended Actions:
 2. <action if needed>
 
 Run `/health:plugins --fix` to fix plugin registry issues.
-Run `/health:settings --fix` to fix settings issues.
+Run `/health:check --fix` to fix settings issues.
 ```
 
 ## Known Issues Database

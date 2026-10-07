@@ -40,7 +40,7 @@ name: test-setup
   - Integration tests for components
   - Edge cases and error handling
 - Use SlashCommand: `/test:run` to verify test execution
-- Use SlashCommand: `/lint:check` to ensure test code quality
+- Use SlashCommand: `/code:lint` to ensure test code quality
 
 ### 3. GitHub Actions
 - Create `.github/workflows/tests.yml` with matrix testing

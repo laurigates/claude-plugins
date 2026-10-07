@@ -74,6 +74,15 @@ make_fixture() {
     >"$dir/demo-plugin/skills/real-skill/SKILL.md"
   printf -- '---\nname: real-agent\n---\n\nBody.\n' \
     >"$dir/demo-plugin/agents/real-agent.md"
+  # Slash-command fixtures. `demo-thing/` is the `<ns>-<name>` shape
+  # (`/demo:thing`); `widget-make/` puts a SECOND namespace (`widget`) inside
+  # demo-plugin, the shape check-docs-index.sh Check 7 resolves through
+  # directory-prefix ownership (`/code:lint` -> code-quality-plugin/skills/code-lint).
+  mkdir -p "$dir/demo-plugin/skills/demo-thing" "$dir/demo-plugin/skills/widget-make"
+  printf -- '---\nname: demo-thing\n---\n\nBody.\n' \
+    >"$dir/demo-plugin/skills/demo-thing/SKILL.md"
+  printf -- '---\nname: widget-make\n---\n\nBody.\n' \
+    >"$dir/demo-plugin/skills/widget-make/SKILL.md"
   printf '%s' "$dir"
 }
 
@@ -178,8 +187,122 @@ run_case "a blockquote callout may cite a dead ID as an example" clean \
   "demo-plugin/skills/other/SKILL.md" \
   '> Formerly `demo-plugin:no-such-skill`, now renamed.'
 
+# --- references/ coverage (the 2026-10 split) -------------------------------
+# Content moved out of SKILL.md into `references/*.md` was invisible to the
+# original walk, which read only SKILL.md / REFERENCE.md. A sidecar is read out
+# of context, so a dead pointer there costs the most.
+run_case "detects a dead skill ID in a references/*.md sidecar" flag \
+  "demo-plugin/skills/real-skill/references/usage.md" \
+  'Chain with `demo-plugin:no-such-skill` afterwards.'
+
+run_case "detects a dead slash command in a references/*.md sidecar" flag \
+  "demo-plugin/skills/real-skill/references/usage.md" \
+  '- `/demo:smartcommit` - Commit fixes with conventional messages'
+
+run_case "detects a dead slash command in a REFERENCE-<topic>.md sidecar" flag \
+  "demo-plugin/skills/real-skill/REFERENCE-shell.md" \
+  'Then run `/demo:no-such-thing`.'
+
+# --- slash commands: detection --------------------------------------------
+run_case "detects a dead slash command in a SKILL.md" flag \
+  "demo-plugin/skills/other/SKILL.md" \
+  'If all clean, ready for `/demo:smartcommit`.'
+
+run_case "detects a dead slash command in an always-loaded rule" flag \
+  ".claude/rules/demo.md" \
+  '| PRD workflow | `/demo:prd` |'
+
+run_case "slash resolution is EXACT: a prefix of a real directory is dead" flag \
+  "demo-plugin/skills/other/SKILL.md" \
+  'Run `/demo:real` first.'
+
+run_case "an unknown namespace is dead even when the name exists elsewhere" flag \
+  "demo-plugin/skills/other/SKILL.md" \
+  'Run `/nosuch:real-skill` first.'
+
+# --- slash commands: resolution -------------------------------------------
+run_case "the <ns>-<name> short form resolves (/demo:thing -> demo-thing/)" clean \
+  "demo-plugin/skills/other/SKILL.md" \
+  'Run `/demo:thing` first.'
+
+run_case "the <name> short form resolves (/demo:real-skill -> real-skill/)" clean \
+  "demo-plugin/skills/other/SKILL.md" \
+  'Run `/demo:real-skill` first.'
+
+run_case "a namespace owned by directory prefix resolves (/widget:make)" clean \
+  "demo-plugin/skills/other/SKILL.md" \
+  'Run `/widget:make` first.'
+
+run_case "the full plugin-qualified form resolves (/demo-plugin:real-skill)" clean \
+  "demo-plugin/skills/other/SKILL.md" \
+  'Run `/demo-plugin:real-skill` first.'
+
+# --- slash commands: narrowness (the classes seen on the real tree) --------
+run_case "a URL with a port is not a slash command" clean \
+  "demo-plugin/skills/other/SKILL.md" \
+  "url: 'http://localhost:3000', base: https://example.com:8443/x"
+
+# Pins the `/` in the boundary class: the `/user:token` after `//` is the only
+# shape above that a letter-or-digit boundary alone would admit.
+run_case "a URL carrying credentials is not a slash command" clean \
+  "demo-plugin/skills/other/SKILL.md" \
+  'git clone https://user:token@example.com/repo.git'
+
+# Pins the `.` in the boundary class (observed: a bpftrace probe spec).
+run_case "a relative path with a colon is not a slash command" clean \
+  "demo-plugin/skills/other/SKILL.md" \
+  "sudo bpftrace -e 'uprobe:./myapp:main.handleReq { }'"
+
+run_case "a container image reference is not a slash command" clean \
+  "demo-plugin/skills/other/SKILL.md" \
+  'FROM ghcr.io/astral-sh/uv:python3.12-alpine and oven/bun:debian'
+
+run_case "a ref path or refspec is not a slash command" clean \
+  "demo-plugin/skills/other/SKILL.md" \
+  'show origin/main:openapi.yaml; push origin HEAD:refs/heads/x'
+
+run_case "a volume mount is not a slash command" clean \
+  "demo-plugin/skills/other/SKILL.md" \
+  'docker run -v ./data:/data:ro -v $HOME/cfg:/etc/cfg image'
+
+run_case "colon-free built-ins (/help, /clear, /loop, /goal) are never matched" clean \
+  "demo-plugin/skills/other/SKILL.md" \
+  'Use `/help`, `/clear`, `/loop 5m /demo:thing` or `/goal` as needed.'
+
+run_case "a placeholder namespace (/ns:cmd, /plugin-name:skill-name) is allowed" clean \
+  "demo-plugin/skills/other/SKILL.md" \
+  'A rename (`/ns:cmd` to `/ns-cmd`); the shape is `/plugin-name:skill-name`.'
+
+run_case "a glob family form (/demo:derive-*) is allowed" clean \
+  "demo-plugin/skills/other/SKILL.md" \
+  'Created on demand by the `/demo:derive-*` skills.'
+
+run_case "a blockquote callout may name a dead slash command" clean \
+  "demo-plugin/skills/other/SKILL.md" \
+  '> Formerly `/demo:smartcommit`, since merged into `/demo:thing`.'
+
+run_case "docs/ is out of scope for slash commands too" clean \
+  "docs/adrs/0008-demo.md" \
+  'At the time, the command was `/demo:smartcommit`.'
+
+# A FILE-SCOPED allowlist entry exempts one file only. The real entry lets the
+# blueprint upgrade skill name the removed `/blueprint:generate-commands`
+# (it deletes that command's leftovers); any other file naming it is told to
+# run something that does not exist.
+run_case "a file-scoped exemption applies inside its file" clean \
+  "blueprint-plugin/skills/blueprint-upgrade/references/deprecated-commands.md" \
+  'Detection of output from the deprecated `/blueprint:generate-commands`.'
+
+run_case "a file-scoped exemption does not leak to other files" flag \
+  "demo-plugin/skills/other/SKILL.md" \
+  'Run `/blueprint:generate-commands` for workflow automation.'
+
 # --- non-vacuity ------------------------------------------------------------
-empty="$(mktemp -d)"
+empty="$(mktemp -d)" || { printf 'mktemp -d failed\n' >&2; exit 1; }
+if [ -z "$empty" ] || [ ! -d "$empty" ]; then
+  printf 'bad sandbox dir\n' >&2
+  exit 1
+fi
 mkdir -p "$empty/scripts"
 cp "$linter" "$empty/scripts/check-skill-references.sh"
 chmod +x "$empty/scripts/check-skill-references.sh"

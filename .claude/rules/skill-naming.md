@@ -1,6 +1,6 @@
 ---
 created: 2025-12-23
-modified: 2026-02-06
+modified: 2026-10-07
 reviewed: 2026-02-06
 paths:
   - "**/skills/**"
@@ -33,6 +33,13 @@ Skill directories are named to match their invocation path:
 
 The pattern is: `skills/{namespace}-{name}/SKILL.md`
 
+`scripts/check-skill-references.sh` resolves every `/<ns>:<name>` in skill
+markdown and rules against the skill directories on disk, so a cited command
+whose directory was renamed or deleted fails pre-commit. It accepts
+`{namespace}-{name}/`, a bare `{name}/` in the `<ns>-plugin`, and the full
+`/<plugin>:<skill>` form, the same mapping `check-docs-index.sh` applies to
+README rows.
+
 ## Sub-namespacing
 
 For related skill groups within a plugin, use hyphenated suffixes:
@@ -40,7 +47,7 @@ For related skill groups within a plugin, use hyphenated suffixes:
 | Pattern | Example Skills |
 |---------|---------------|
 | Core skills | `/blueprint:init`, `/blueprint:status` |
-| PRD/ADR/PRP workflow | `/blueprint:prd`, `/blueprint:adr`, `/blueprint:prp-create` |
+| PRD/ADR/PRP workflow | `/blueprint:derive-plans`, `/blueprint:adr-validate`, `/blueprint:prp-create` |
 | Sub-features | `/blueprint:prp-create`, `/blueprint:prp-execute` |
 
 ## Consistency Rules
@@ -50,7 +57,7 @@ For related skill groups within a plugin, use hyphenated suffixes:
 
 2. **Related skills share a common prefix within the namespace**
    - `/blueprint:prp-create`, `/blueprint:prp-execute` (PRP workflow)
-   - `/blueprint:generate-skills`, `/blueprint:generate-rules` (generation skills)
+   - `/blueprint:derive-plans`, `/blueprint:derive-rules` (derivation skills)
 
 3. **Skill names are kebab-case**
    - `/blueprint:prp-create`, `/blueprint:work-order`
@@ -67,4 +74,4 @@ Use hyphenated sub-namespacing when:
 
 Keep skills flat (no sub-prefix) when:
 - They are standalone operations
-- They are the primary skill for a concept (e.g., `/blueprint:prd` not `/blueprint:prd-create`)
+- They are the primary skill for a concept (e.g., `/blueprint:status`, not a suffixed `status-show`)

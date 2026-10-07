@@ -236,8 +236,8 @@ Present the complete analysis with:
 
 Help the user understand next steps:
 - If Blueprint not initialized → suggest `/blueprint:init`
-- If ADRs missing → suggest `/blueprint:adr`
-- If PRDs missing → suggest `/blueprint:prd`
+- If ADRs missing → suggest `/blueprint:derive-plans`
+- If PRDs missing → suggest `/blueprint:derive-plans`
 - If documentation tooling not configured → suggest `/configure:docs`
 - If documentation outdated → provide update checklist
 - If standards not followed → show examples and templates

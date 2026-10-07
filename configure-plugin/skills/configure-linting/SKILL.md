@@ -17,7 +17,7 @@ Check and configure linting tools against modern best practices.
 
 | Use this skill when... | Use another approach when... |
 |------------------------|------------------------------|
-| Setting up modern linting (Biome, Ruff, Clippy) | Just running linter (use `/lint:check` skill) |
+| Setting up modern linting (Biome, Ruff, Clippy) | Just running linter (use `/code:lint` skill) |
 | Migrating from ESLint/Prettier to Biome | Linters already properly configured |
 | Validating linter configuration | Fixing specific lint errors (run linter and fix) |
 | Ensuring language-specific best practices | Simple script with no linting needs |

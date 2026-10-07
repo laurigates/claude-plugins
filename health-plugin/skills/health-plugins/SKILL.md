@@ -159,5 +159,5 @@ If automatic fix fails, users can manually edit `~/.claude/plugins/installed_plu
 ## See Also
 
 - `/health:check` - Full diagnostic scan
-- `/health:settings` - Settings file validation
+- `/health:settings-configuration` - Settings hierarchy and permission patterns
 - [Issue #14202](https://github.com/anthropics/claude-code/issues/14202) - Upstream bug report

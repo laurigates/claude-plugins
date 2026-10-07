@@ -471,7 +471,7 @@ repos:
         # Must cover every path the walk reads (see the script's COVERAGE
         # header) plus the script itself — a trigger narrower than the scan is
         # the allowlist-drift shape #2164 named.
-        files: '(SKILL\.md|skill\.md|REFERENCE\.md|\.workflow\.js|^scripts/lint-mcp-tool-references\.sh)$'
+        files: '(SKILL\.md|skill\.md|REFERENCE\.md|/skills/.*\.md|\.workflow\.js|^scripts/lint-mcp-tool-references\.sh)$'
         pass_filenames: false
       - id: test-lint-mcp-tool-references
         name: MCP tool-reference denylist detects, stays narrow, and scans from any cwd (#2437)
@@ -488,7 +488,7 @@ repos:
         # resolves without touching any citing file: a trigger listing only
         # citation sites would stay silent on exactly the commit that breaks
         # them. `agents/` and `.claude/rules/` are here for that reason.
-        files: '(SKILL\.md|skill\.md|REFERENCE\.md|\.workflow\.js|^[a-z-]+-plugin/agents/.*\.md|^\.claude/rules/.*\.md|^scripts/check-skill-references\.sh)$'
+        files: '(SKILL\.md|skill\.md|REFERENCE\.md|/skills/.*\.md|\.workflow\.js|^[a-z-]+-plugin/agents/.*\.md|^\.claude/rules/.*\.md|^scripts/check-skill-references\.sh)$'
         pass_filenames: false
       - id: test-check-skill-references
         name: skill-reference resolver detects, stays narrow, and fails loudly on an empty tree
@@ -515,7 +515,13 @@ repos:
         name: lint skill files for references to nonexistent packages (npm/PyPI/crates/etc.)
         entry: ./scripts/lint-package-references.sh
         language: script
-        files: '(SKILL\.md|skill\.md|REFERENCE\.md)$'
+        files: '(SKILL\.md|skill\.md|REFERENCE\.md|/skills/.*\.md|^scripts/lint-package-references\.sh)$'
+        pass_filenames: false
+      - id: test-lint-package-references
+        name: package-reference denylist detects in references/ sidecars and scans from any cwd
+        entry: bash ./scripts/tests/test-lint-package-references.sh
+        language: system
+        files: '^scripts/(lint-package-references\.sh|tests/test-lint-package-references\.sh)$'
         pass_filenames: false
       - id: check-dead-api-endpoints
         name: skills and scripts call no retired REST endpoint (#2321)
@@ -566,7 +572,7 @@ repos:
         name: configure-plugin taxonomy matches components.yaml (manifest/flow/README drift)
         entry: bash ./scripts/check-configure-components.sh --strict
         language: system
-        files: '^(configure-plugin/(skills/[^/]+/SKILL\.md|skills/configure-all/components\.yaml|docs/flow\.md|README\.md)|scripts/check-configure-components\.sh)$'
+        files: '^(configure-plugin/(skills/[^/]+/SKILL\.md|skills/configure-all/(components\.yaml|REFERENCE\.md|references/.*\.md)|docs/flow\.md|README\.md)|scripts/check-configure-components\.sh)$'
         pass_filenames: false
       - id: test-check-configure-components
         name: configure-components drift guard regression
@@ -921,8 +927,10 @@ repos:
         # reach EVERY file its verdict depends on. Since #2483 that is every
         # marketplace skill — a scoped skill's prose, or a sibling's
         # disable-model-invocation flag — plus the checker itself. A per-skill
-        # allowlist drifts from the scope it mirrors (the #2164 lesson).
-        files: '([^/]*-plugin/skills/.*/SKILL\.md|check-delegation-reachability\.sh)$'
+        # allowlist drifts from the scope it mirrors (the #2164 lesson). Since
+        # 2026-10 each skill's sidecar `*.md` (references/, REFERENCE.md) is
+        # read with it, so any skill-directory markdown triggers the guard.
+        files: '([^/]*-plugin/skills/.*\.md|check-delegation-reachability\.sh)$'
         pass_filenames: false
       - id: test-check-delegation-reachability
         name: delegation-reachability guard regression
