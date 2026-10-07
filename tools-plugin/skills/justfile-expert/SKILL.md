@@ -57,76 +57,13 @@ Expert knowledge for Just command runner, recipe development, and task automatio
 | `-watch` suffix | Watch mode | `test-watch`, `docs-watch` |
 | Modifiers after base | `base-modifier` | `build-release` (not `release-build`) |
 
-## Semantic Workflow Recipes
+## Standard and Workflow Recipes
 
-Standard composite recipes with defined meanings:
-
-| Recipe | Composition | Purpose |
-|--------|-------------|---------|
-| `check` | `format-check` + `lint` + `typecheck` | Code quality only, no tests |
-| `pre-commit` | `format-check` + `lint` + `typecheck` + `test-unit` | Fast, non-mutating validation |
-| `ci` | `check` + `test-coverage` + `build` | Full CI simulation |
-| `clean` | Remove build artifacts | Partial cleanup |
-| `clean-all` | `clean` + remove deps/caches | Full cleanup |
-
-```just
-# Composite: code quality only (no tests)
-check: format-check lint typecheck
-
-# Pre-commit checks (fast, non-mutating)
-pre-commit: format-check lint typecheck test-unit
-    @echo "Pre-commit checks passed"
-
-# Full CI simulation
-ci: check test-coverage build
-    @echo "CI simulation passed"
-
-# Clean build artifacts
-clean:
-    rm -rf dist build .next
-
-# Clean everything including deps
-clean-all: clean
-    rm -rf node_modules .venv __pycache__
-```
+When creating or standardizing a project justfile, open [references/standard-recipes.md](references/standard-recipes.md) for the semantic composites (`check`, `pre-commit`, `ci`, `clean`, `clean-all`), the standard recipe set, and the section structure.
 
 ## Key Capabilities
 
-**Recipe Parameters**
-- **Required parameters**: `recipe param:` - must be provided
-- **Default values**: `recipe param="default":` - optional with fallback
-- **Variadic `+`**: `recipe +FILES:` - one or more arguments
-- **Variadic `*`**: `recipe *FLAGS:` - zero or more arguments
-- **Environment export**: `recipe $VAR:` - parameter as env var
-
-**Settings Configuration**
-- **`set dotenv-load`**: Load `.env` file automatically
-- **`set positional-arguments`**: Enable `$1`, `$2` syntax
-- **`set export`**: Export all variables as env vars
-- **`set shell`**: Custom shell interpreter
-- **`set quiet`**: Suppress command echoing
-
-**Recipe Attributes**
-- **`[doc("text")]`**: The `--list` description. Overrides the comment above the
-  recipe; bare **`[doc]`** suppresses it. See "What `--list` Shows" below —
-  without this attribute only the comment block's LAST line is used
-- **`[private]`**: Hide from `--list` and `--summary` output
-- **`[no-cd]`**: Don't change directory
-- **`[no-exit-message]`**: Suppress exit messages
-- **`[unix]`** / **`[windows]`** / **`[linux]`** / **`[macos]`**: Platform-specific recipes
-- **`[positional-arguments]`**: Per-recipe positional args
-- **`[confirm]`** / **`[confirm("message")]`**: Require confirmation before running
-- **`[group: "name"]`** / **`[group("name")]`**: Section recipes in `--list`; both
-  spellings work, and `--groups` lists the group names
-- **`[working-directory: "path"]`**: Run in specific directory
-
-**Module System**
-- **`mod name`**: Declare submodule
-- **`mod name 'path'`**: Custom module path
-- **Invocation**: `just module::recipe` or `just module recipe`
-- **`set fallback` is NOT inherited by a module.** The parent may fall through to
-  *its* parent, but `just sub::parent-recipe` fails with `justfile does not
-  contain recipe`. A module's recipes resolve only within that module
+Parameter forms, settings, recipe attributes (`[doc]`, `[private]`, `[group]`, `[confirm]`, platform), and the module system, including that `set fallback` is not inherited by a module: [references/key-capabilities.md](references/key-capabilities.md).
 
 ## Essential Syntax
 
@@ -261,230 +198,13 @@ open:
     start http://localhost:8080
 ```
 
-## Standard Recipes
-
-Every project should provide these standard recipes, organized by section:
-
-```just
-# Justfile - Project task runner
-# Run `just` or `just help` to see available recipes
-
-set dotenv-load
-set positional-arguments
-
-# Default recipe - show help
-default:
-    @just --list
-
-# Show available recipes with descriptions
-help:
-    @just --list --unsorted
-
-####################
-# Development
-####################
-
-# Start development environment
-dev:
-    # bun run dev / uv run uvicorn app:app --reload / skaffold dev
-
-# Build for production
-build:
-    # bun run build / cargo build --release / docker build
-
-# Clean build artifacts
-clean:
-    # rm -rf dist build .next
-
-####################
-# Code Quality
-####################
-
-# Run linter (read-only)
-lint *args:
-    # bun run lint / uv run ruff check {{args}}
-
-# Auto-fix lint issues
-lint-fix:
-    # bun run lint:fix / uv run ruff check --fix .
-
-# Format code (mutating)
-format *args:
-    # bun run format / uv run ruff format {{args}}
-
-# Check formatting without modifying (non-mutating)
-format-check *args:
-    # bun run format:check / uv run ruff format --check {{args}}
-
-# Type checking
-typecheck:
-    # bunx tsc --noEmit / uv run basedpyright
-
-####################
-# Testing
-####################
-
-# Run all tests
-test *args:
-    # bun test {{args}} / uv run pytest {{args}}
-
-# Run unit tests only
-test-unit *args:
-    # bun test --grep unit {{args}} / uv run pytest -m unit {{args}}
-
-####################
-# Workflows
-####################
-
-# Composite: code quality (no tests)
-check: format-check lint typecheck
-
-# Pre-commit checks (fast, non-mutating)
-pre-commit: format-check lint typecheck test-unit
-    @echo "Pre-commit checks passed"
-
-# Full CI simulation
-ci: check test-coverage build
-    @echo "CI simulation passed"
-```
-
-### Section Structure
-
-Organize recipes into these standard sections:
-
-| Section | Recipes | Purpose |
-|---------|---------|---------|
-| **Metadata** | `default`, `help` | Discovery and navigation |
-| **Development** | `dev`, `build`, `clean`, `start`, `stop` | Core dev cycle |
-| **Code Quality** | `lint`, `lint-fix`, `format`, `format-check`, `typecheck` | Code standards |
-| **Testing** | `test`, `test-unit`, `test-integration`, `test-e2e`, `test-watch` | Test tiers |
-| **Workflows** | `check`, `pre-commit`, `ci` | Composite operations |
-| **Dependencies** | `install`, `update` | Package management |
-| **Database** | `db-migrate`, `db-seed`, `db-reset` | Data operations |
-| **Kubernetes** | `skaffold`, `dev-k8s` | Container orchestration |
-| **Documentation** | `docs`, `docs-serve` | Project docs |
-
-Use `####################` comment blocks as section dividers for readability.
-
 ## Common Patterns
 
-**Setup/Bootstrap Recipe**
-```just
-# Initial project setup
-setup:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "Installing dependencies..."
-    uv sync
-    echo "Setting up pre-commit..."
-    pre-commit install
-    echo "Done!"
-```
-
-**Docker Integration**
-```just
-# Build container image
-docker-build tag="latest":
-    docker build -t {{project}}:{{tag}} .
-
-# Run container
-docker-run tag="latest" *args:
-    docker run --rm -it {{project}}:{{tag}} {{args}}
-
-# Push to registry
-docker-push tag="latest":
-    docker push {{registry}}/{{project}}:{{tag}}
-```
-
-**Database Operations**
-```just
-# Run database migrations
-db-migrate:
-    uv run alembic upgrade head
-
-# Create new migration
-db-revision message:
-    uv run alembic revision --autogenerate -m "{{message}}"
-
-# Reset database
-db-reset:
-    uv run alembic downgrade base
-    uv run alembic upgrade head
-```
-
-**CI/CD Recipes**
-```just
-# Full CI check (lint + test + build)
-ci: lint test build
-    @echo "CI passed!"
-
-# Release workflow
-release version:
-    git tag -a "v{{version}}" -m "Release {{version}}"
-    git push origin "v{{version}}"
-```
-
-**Shared imports + modules: pass per-project values as recipe parameters**
-
-When a monorepo registers submodules (`mod name 'path'`) whose justfiles `import`
-a shared recipe file, hand per-project values to the shared recipes as recipe
-**parameters** — not via a shared *variable*. Two `just` behaviours make the
-variable approach fail:
-
-- An `import` that *defaults* a variable a module also assigns is a **conflict**,
-  not an override: `error: variable `X` has multiple definitions`.
-- An imported recipe that references `{{X}}` is resolved at **load time**, so it
-  forces *every* importing module to define `X` (else `error: variable `X` not
-  defined`) — even modules that never run that recipe.
-
-Passing the value as a recipe argument sidesteps both and keeps it explicit at the
-call site:
-
-```just
-# shared.just — take the value as a parameter, not a shared variable
-[private]
-_flash bin:
-    esptool ... 0x10000 build/{{bin}}.bin
-
-# project justfile
-import 'shared.just'
-bin_name := "my-app"          # this module's own variable
-flash: (_flash bin_name)      # pass it as an argument
-```
+Setup, Docker, database, and CI/release recipes, plus how to pass per-project values into shared imports across modules (parameters, not shared variables): [references/common-patterns.md](references/common-patterns.md).
 
 ## MCP Integration (just-mcp)
 
-The `just-mcp` MCP server enables AI assistants to discover and execute justfile recipes through the Model Context Protocol, reducing context waste since the AI doesn't need to read the full justfile.
-
-**Installation:**
-```bash
-# Via npm
-npx just-mcp --stdio
-
-# Via pip/uvx
-uvx just-mcp --stdio
-
-# Via cargo
-cargo install just-mcp
-```
-
-**Claude Desktop configuration (`.claude/mcp.json`):**
-```json
-{
-  "mcpServers": {
-    "just-mcp": {
-      "command": "npx",
-      "args": ["-y", "just-mcp", "--stdio"]
-    }
-  }
-}
-```
-
-**Available MCP Tools:**
-- `list_recipes` - Discover all recipes and parameters
-- `run_recipe` - Execute a recipe with arguments
-- `get_recipe_info` - Get detailed recipe documentation
-- `validate_justfile` - Check for syntax errors
+To let an AI client list and run recipes over MCP instead of reading the justfile, see [references/mcp-integration.md](references/mcp-integration.md).
 
 ## Agentic Optimizations
 
@@ -529,27 +249,6 @@ cargo install just-mcp
 
 ## Comparison with Alternatives
 
-| Feature | Just | Make | mise tasks |
-|---------|------|------|------------|
-| Syntax | Simple, clear | Complex, tabs required | YAML |
-| Dependencies | Built-in | Built-in | Manual |
-| Parameters | Full support | Limited | Full support |
-| Cross-platform | Excellent | Good | Excellent |
-| Tool versions | No | No | Yes |
-| Error messages | Clear | Cryptic | Clear |
-| Installation | Single binary | Pre-installed | Requires mise |
-
-**When to use Just:**
-- Cross-project standard recipes
-- Simple, readable task automation
-- No tool version management needed
-
-**When to use mise tasks:**
-- Project-specific with tool version pinning
-- Already using mise for tool management
-
-**When to use Make:**
-- Legacy projects with existing Makefiles
-- Build systems requiring incremental compilation
+Feature table and when to pick Just, Make, or mise tasks: [references/comparison.md](references/comparison.md).
 
 For the golden justfile template, detailed syntax reference, advanced patterns, and troubleshooting, see [REFERENCE.md](REFERENCE.md).

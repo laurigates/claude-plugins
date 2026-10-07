@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.27.1](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.27.0...code-quality-plugin-v1.27.1) (2026-10-07)
+
+
+### Code Refactoring
+
+* **skills:** move reference material out of oversized SKILL.md bodies ([#2925](https://github.com/laurigates/claude-plugins/issues/2925)) ([90e0e93](https://github.com/laurigates/claude-plugins/commit/90e0e93315e4728630a3c370e4018a4698e2c594))
+
 ## [1.27.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.26.2...code-quality-plugin-v1.27.0) (2026-09-29)
 
 
