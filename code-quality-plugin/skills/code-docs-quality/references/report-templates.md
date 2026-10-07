@@ -87,8 +87,8 @@ For each issue, provide specific guidance:
 - Run `/code:docs-quality` monthly
 - Update `modified` dates when editing docs
 - Review `reviewed` dates quarterly
-- Use `/blueprint:adr` for new architecture decisions
-- Use `/blueprint:prd` for new features
+- Use `/blueprint:derive-plans` for new architecture decisions
+- Use `/blueprint:derive-plans` for new features
 ```
 
 ### 9.1 Executive Summary

@@ -230,8 +230,6 @@ Rules are generated to the directory configured in `structure.generated_rules_pa
    ```
    question: "Rules generated. What would you like to do next?"
    options:
-     - label: "Generate workflow commands (Recommended)"
-       description: "Create /project:continue and /project:test-loop commands"
      - label: "Update CLAUDE.md"
        description: "Regenerate project overview document with new rules"
      - label: "Review generated rules"
@@ -241,7 +239,6 @@ Rules are generated to the directory configured in `structure.generated_rules_pa
    ```
 
    **Based on selection:**
-   - "Generate workflow commands" -> Run `/blueprint:generate-commands`
    - "Update CLAUDE.md" -> Run `/blueprint:claude-md`
    - "Review generated rules" -> Show rule file locations and exit
    - "I'm done for now" -> Exit

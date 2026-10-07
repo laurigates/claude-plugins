@@ -18,7 +18,7 @@ Refresh the plan so it focuses only on the task that remains, then surface it fo
 | Use this skill when... | Use the alternative when... |
 |------------------------|-----------------------------|
 | Context has grown and the completed early steps now muddy it | Resuming after a break with no live context to trim → `/project:continue` |
-| You want a tightened, forward-only plan before continuing | Capturing session learnings into rules/recipes → `/project:distill` |
+| You want a tightened, forward-only plan before continuing | Capturing session learnings into rules/recipes → `/session:distill` |
 | You want to clear context and continue in auto mode without losing the thread | Entering an unfamiliar codebase needing orientation → `/project:discovery` |
 | The user says "refresh the plan", "refocus", "let's focus on what's left", "trim the context" | Picking the next blueprint action → `/blueprint:execute` |
 

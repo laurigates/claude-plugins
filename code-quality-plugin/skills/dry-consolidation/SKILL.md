@@ -25,7 +25,7 @@ Systematic extraction of duplicated code into shared, tested abstractions.
 | Repeated UI patterns (dialogs, pagination, error states) | Functional refactoring of a file or directory → `/code:refactor` |
 | Duplicated hooks or state management boilerplate | Structural code search only → `ast-grep-search` |
 | Near-duplicate copy-paste with renamed vars needs enumerating (jscpd finds the clusters here) | Matching one known structural pattern → `ast-grep-search` |
-| Import blocks are bloated from repeated inline patterns | Linting/formatting issues → `/lint:check` |
+| Import blocks are bloated from repeated inline patterns | Linting/formatting issues → `/code:lint` |
 
 ## Context
 

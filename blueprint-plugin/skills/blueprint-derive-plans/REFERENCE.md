@@ -406,7 +406,6 @@ PRPs: {N} future work items suggested
 **Next Steps**
 1. Review documents marked "needs clarification"
 2. Run `/blueprint:generate-rules` to create implementation patterns
-3. Run `/blueprint:generate-commands` for workflow automation
 ```
 
 ## Next Action Prompt
@@ -420,8 +419,6 @@ options:
     description: "Go through items marked 'needs clarification'"
   - label: "Generate project rules"
     description: "Run /blueprint:generate-rules from the new PRD"
-  - label: "Generate workflow commands"
-    description: "Run /blueprint:generate-commands for this project"
   - label: "I'm done for now"
     description: "Exit - documents are saved and ready for review"
 ```
@@ -429,7 +426,6 @@ options:
 **Based on selection**:
 - "Review and refine" - Show list of documents needing attention with file paths
 - "Generate project rules" - Run `/blueprint:generate-rules`
-- "Generate workflow commands" - Run `/blueprint:generate-commands`
 - "I'm done" - Exit with quick reference
 
 ## Error Handling

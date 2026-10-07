@@ -8,6 +8,10 @@ on:
       - '**/skills/**/SKILL.md'
       - '**/skills/**/skill.md'
       - '**/skills/**/REFERENCE.md'
+      # Sidecars (`references/*.md`, `REFERENCE-<topic>.md`): read by
+      # check-skill-references.sh since the 2026-10 split moved skill content
+      # into them.
+      - '**/skills/**/*.md'
       - 'taskwarrior-plugin/**/*.md'
       - 'scripts/lint-context-commands.sh'
       - 'scripts/tests/test-lint-context-commands.sh'

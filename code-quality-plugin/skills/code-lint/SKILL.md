@@ -158,4 +158,4 @@ Stop autofix and use a different approach when:
 After linting:
 1. Summary of issues found/fixed
 2. If unfixable issues exist, suggest `/code:refactor` command
-3. If all clean, ready for `/git:smartcommit`
+3. If all clean, ready for `/git:commit`

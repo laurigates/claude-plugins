@@ -26,7 +26,7 @@ Two shapes, selected by flag:
 | Use this skill when... | Use something else when... |
 |------------------------|---------------------------|
 | Setting up auto-fix for a single repo (default) | Fixing a single PR's checks (`/git:fix-pr`) |
-| Setting up a reusable template multiple repos invoke (`--reusable`) | Inspecting workflow runs manually (`/workflow:inspect`) |
+| Setting up a reusable template multiple repos invoke (`--reusable`) | Inspecting workflow runs manually (`/workflow:github-actions-inspection`) |
 | Customizing which workflows trigger auto-fix | Writing new workflows from scratch (`/workflow:dev`) |
 
 ## Context

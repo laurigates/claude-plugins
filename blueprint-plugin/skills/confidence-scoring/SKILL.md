@@ -248,7 +248,7 @@ Overall = (Context + Gotchas + TestCoverage + Validation) / 4
 ## Integration with Blueprint Development
 
 This skill is automatically applied when:
-- `/prp:create` generates a new PRP
+- `/blueprint:prp-create` generates a new PRP
 - `/blueprint:work-order` generates a work-order
 - Reviewing existing PRPs for execution readiness
 

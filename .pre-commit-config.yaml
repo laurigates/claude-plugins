@@ -488,7 +488,7 @@ repos:
         # resolves without touching any citing file: a trigger listing only
         # citation sites would stay silent on exactly the commit that breaks
         # them. `agents/` and `.claude/rules/` are here for that reason.
-        files: '(SKILL\.md|skill\.md|REFERENCE\.md|\.workflow\.js|^[a-z-]+-plugin/agents/.*\.md|^\.claude/rules/.*\.md|^scripts/check-skill-references\.sh)$'
+        files: '(SKILL\.md|skill\.md|REFERENCE\.md|/skills/.*\.md|\.workflow\.js|^[a-z-]+-plugin/agents/.*\.md|^\.claude/rules/.*\.md|^scripts/check-skill-references\.sh)$'
         pass_filenames: false
       - id: test-check-skill-references
         name: skill-reference resolver detects, stays narrow, and fails loudly on an empty tree

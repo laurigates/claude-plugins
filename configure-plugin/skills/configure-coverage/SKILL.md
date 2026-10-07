@@ -17,7 +17,7 @@ Check and configure code coverage thresholds and reporting for test frameworks.
 
 | Use this skill when... | Use another approach when... |
 |------------------------|------------------------------|
-| Setting up coverage thresholds for Vitest, Jest, pytest, or Rust | Running tests with coverage (`/test:coverage`) |
+| Setting up coverage thresholds for Vitest, Jest, pytest, or Rust | Running tests with coverage (`/test:full`) |
 | Configuring coverage reporters (text, JSON, HTML, lcov) | Configuring the test framework itself (`/configure:tests`) |
 | Adding Codecov or Coveralls integration to CI/CD | Analyzing test failures (test-runner agent) |
 | Auditing coverage configuration compliance across a project | Writing individual test cases |
@@ -197,7 +197,7 @@ For detailed configuration templates, see [REFERENCE.md](REFERENCE.md).
 ## See Also
 
 - `/configure:tests` - Configure testing frameworks
-- `/test:coverage` - Run tests with coverage
+- `/test:full` - Run tests with coverage
 - `/configure:all` - Run all compliance checks
 - **Codecov documentation**: https://docs.codecov.com
 - **pytest-cov documentation**: https://pytest-cov.readthedocs.io

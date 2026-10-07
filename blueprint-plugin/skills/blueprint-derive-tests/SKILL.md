@@ -23,7 +23,7 @@ Analyze git history to identify fix and feature commits lacking corresponding te
 | Bug fixes ship without regression tests | You need to run existing tests (`/test:run`) |
 | Want a prioritized test backlog from history | Writing tests for a specific feature (manual TDD) |
 | Onboarding a project and assessing test health | Checking current test coverage metrics |
-| Need to find which fixes lack test coverage | Designing a test strategy from scratch (`/test:architecture`) |
+| Need to find which fixes lack test coverage | Designing a test strategy from scratch (`/test:consult`) |
 
 ## Context
 

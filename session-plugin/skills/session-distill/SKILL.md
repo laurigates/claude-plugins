@@ -20,7 +20,7 @@ Distill session insights into reusable project knowledge.
 | End of session, want to capture learnings | Full end-of-session pass (wrap + distill + feedback) -> `session-plugin:session-end` |
 | Discovered a project pattern worth codifying | Capturing loose threads to taskwarrior -> `session-plugin:session-wrap` |
 | Want learnings as rules/recipes in *this* repo | Need to write a blog post -> `/blog:post` |
-| Discovered a pattern worth reusing | Need to analyze git history for docs gaps -> `/git:log-documentation` |
+| Discovered a pattern worth reusing | Need to analyze git history for docs gaps -> `/git:derive-docs` |
 | Found a CLI workflow worth saving as a recipe | Need to configure a justfile from scratch -> `/configure:justfile` |
 | Want to update rules based on session experience | Need to check project infrastructure -> `/configure:status` |
 | Asked to "codify the workflow" or "analyze and promote session patterns to rules" | Need a one-off implementation, not a reusable rule -> implement directly |

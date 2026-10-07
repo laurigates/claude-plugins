@@ -222,4 +222,4 @@ git commit -m "docs: sync documentation with new UX implementation features"
 
 - **Commands**: `/docs:generate` for generating new documentation
 - **Skills**: `release-please-protection` for automated versioning
-- **Workflow**: Run after `/project:new` or major feature additions
+- **Workflow**: Run after adding skills or commands, or after major feature additions

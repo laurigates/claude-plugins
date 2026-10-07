@@ -16,7 +16,7 @@ description: "End-to-end commit-to-PR workflow. Use when the user says \"create 
 |------------------------|----------------------|
 | Going from uncommitted changes to an open PR in one step | Creating commits only with no push or PR (`/git:commit`) |
 | Auto-detecting issues, committing, pushing, and opening a PR together | Pushing existing commits to a remote without opening a PR (`/git:push`) |
-| Running the full commit-push-PR pipeline non-interactively | Opening a PR from already-pushed commits (`/git:pr-create`) |
+| Running the full commit-push-PR pipeline non-interactively | Opening a PR from already-pushed commits (`/git:pr`) |
 
 ## Context
 
