@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.13.2](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.13.1...tools-plugin-v2.13.2) (2026-10-07)
+
+
+### Bug Fixes
+
+* **skills:** resolve slash commands and read references/ sidecars in content guards ([#2945](https://github.com/laurigates/claude-plugins/issues/2945)) ([3057350](https://github.com/laurigates/claude-plugins/commit/305735016549ce5c66f5b4b9803c61bfec46ec75))
+
 ## [2.13.1](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.13.0...tools-plugin-v2.13.1) (2026-10-07)
 
 

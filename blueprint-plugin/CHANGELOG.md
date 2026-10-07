@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.46.7](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.6...blueprint-plugin-v3.46.7) (2026-10-07)
+
+
+### Bug Fixes
+
+* **skills:** resolve slash commands and read references/ sidecars in content guards ([#2945](https://github.com/laurigates/claude-plugins/issues/2945)) ([3057350](https://github.com/laurigates/claude-plugins/commit/305735016549ce5c66f5b4b9803c61bfec46ec75))
+
 ## [3.46.6](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.5...blueprint-plugin-v3.46.6) (2026-10-07)
 
 
