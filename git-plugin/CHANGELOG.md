@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.60.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.60.0...git-plugin-v2.60.1) (2026-10-07)
+
+
+### Code Refactoring
+
+* **git-plugin:** move reference material out of oversized SKILL.md bodies ([#2927](https://github.com/laurigates/claude-plugins/issues/2927)) ([54faeb9](https://github.com/laurigates/claude-plugins/commit/54faeb96e7f714cde33a7834927ee364833a6ec2))
+
 ## [2.60.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.59.0...git-plugin-v2.60.0) (2026-10-06)
 
 
