@@ -58,9 +58,13 @@ not asked" signal as `PROJECT_CONFIDENCE=low` above — don't treat an empty
 against. Plus the conversation: what finished, what's hanging, what was
 learned, what plugin/skill friction or wins occurred.
 
-**`GH_READY=false`** ships with `GH_FAIL_REASON=`; act on the reason, and
-treat GitHub-derived counts as unqueried, not zero. For the remediation, see
-[references/survey-digest.md](references/survey-digest.md).
+**Remediating `GH_READY=false`.** It always ships with `GH_FAIL_REASON=`,
+which says *why* GitHub went unqueried — the six causes want different
+responses, so act on the reason rather than treating every `false` alike.
+Never re-run for `auth`, `no-cli`, or `no-remote`. In every case the
+GitHub-derived counts stay **unqueried**, not zero — so the taskwarrior-sync
+redundancy test in Step 4 must not use them as evidence a follow-up is
+untracked. See [REFERENCE.md](REFERENCE.md) for the per-reason table.
 
 For the **Distill** qualify gate (Step 2), also run the distill collector's
 coarse summary — the mechanical half of the Distill signal (recipe candidates,
@@ -83,19 +87,23 @@ failure mode.
 | Wrap | ≥1 genuine loose thread per session-wrap's LOG IT filter |
 | Distill | A durable, generalizable learning emerged AND the repo has a distillable surface (`.claude/rules/` or a justfile). Corroborate the mechanical half with the distill collector's `--summary` (below): `RECIPE_CANDIDATE_COUNT` / `HOT_FILE_COUNT` / `PROCESS_SIGNAL` > 0 means recipes/hot-files/process are worth a pass even if no conceptual rule emerged |
 | Feedback | A plugin/skill behaved notably well or badly — bug, enhancement, or positive worth filing |
-| Taskwarrior sync | `TASK_AVAILABLE=true` AND (`OPEN_TASKS` ≥ 1 OR `RECENT_TASK_COUNT` ≥ 1 OR `PROJECT_AMBIGUOUS_TASKS` ≥ 1) in the Step 1 digest. If `PROJECT_CONFIDENCE=low`, `PROJECT_AMBIGUOUS`, or `PROJECT_PREFIX_SIBLINGS` is set, name the scope in the preview and confirm the slug before filing — the preview rules are in [references/survey-digest.md](references/survey-digest.md) |
+| Taskwarrior sync | `TASK_AVAILABLE=true` AND (`OPEN_TASKS` ≥ 1 OR `RECENT_TASK_COUNT` ≥ 1 OR `PROJECT_AMBIGUOUS_TASKS` ≥ 1) in the Step 1 digest. When `PROJECT_CONFIDENCE=low`, name the scope actually used (`TASK_SCOPE`, plus `PROJECT_RESOLVED` when set) in the Step 3 preview and offer `--project <slug>` — a low-confidence zero is an unqueried project, never a clean queue. When `PROJECT_AMBIGUOUS` is set, render the preview as `0 here, N under <slug>` and offer `--project <slug>`; this fires **even at `PROJECT_CONFIDENCE=high`**, because a user-asserted `--project` and a repo declaration both deliberately keep `high` — so the `low`-confidence escape below does not cover it. When `PROJECT_PREFIX_SIBLINGS` is present, name it in the preview as `N under <slugs>` and confirm the slug **before filing anything**: those slugs are what a `task project:<slug>` CLI check would have swept in, so a slug verified that way can be the wrong one and the follow-ups land in a sibling nobody reads |
 | Blueprint tracker-sync | `UNDRAINED_COUNT` ≥ 1 in the Step 1 digest's `BLUEPRINT` section. Non-blueprint / tracker-missing repos auto-disqualify (count is 0) → silent skip. If `blueprint-plugin` isn't installed, note it and skip (as with Feedback) |
 
-**Blueprint auto-drain (ADR-0020 level 1):** a qualifying Blueprint pass may
-be auto-confirmed (skip it in Step 3, still run and receipt it). Run the gate
-as written — `auto` ⇒ auto-confirm, anything else ⇒ ask:
+**Blueprint auto-drain (ADR-0020 level 1):** when the qualifying repo's
+`docs/blueprint/manifest.json` enables and opts the feature-tracker-sync task
+into auto-running at autonomy level ≥ 1, that pass is **auto-confirmed** —
+leave it out of the Step 3 question, run it in Step 4 order, and report a
+one-line receipt in Step 5. All other passes still go through the Step 3
+confirmation. The gate requires all three fields (issue #2358) — run it as
+written, `auto` ⇒ auto-confirm, anything else ⇒ ask:
 
 ```sh
 jq -r 'if ((.automation.autonomy_level // 0) >= 1) and (.task_registry["feature-tracker-sync"].enabled == true) and (.task_registry["feature-tracker-sync"].auto_run == true) then "auto" else "ask" end' docs/blueprint/manifest.json 2>/dev/null
 ```
 
-For why all three fields are required, see
-[references/blueprint-drain.md](references/blueprint-drain.md).
+For why all three are required and the safe default for a missing `enabled`
+key, see [REFERENCE.md](REFERENCE.md).
 
 If **nothing** qualifies, say so in one line and end — no preview, no
 question.
@@ -169,8 +177,10 @@ files edited, issues filed) and which passes were skipped as not qualifying.
 
 ## Seam: distill vs feedback
 
-For deciding whether a finding is distill or feedback (both may run), see
-[references/passes.md](references/passes.md).
+"Discovered a better flag / a skill suggested something subtly wrong" →
+**feedback** (issue on claude-plugins). "Found a reusable project
+pattern, rule, or recipe" → **distill** (artifact in this repo). When
+both apply, both run — they write to different places.
 
 ## Auto-surfacing
 
@@ -181,5 +191,7 @@ How the Stop-hook nudge offers this skill (and how to pre-silence it) is in
 
 Command forms for the survey, the scope/confidence keys (`TASK_SCOPE`,
 `GIT_CONFIDENCE`), the distill signal, the drain wave, and UUID-safe task edits
-are in [references/commands.md](references/commands.md). Per-reason
-`GH_FAIL_REASON` table: [REFERENCE.md](REFERENCE.md).
+are in [references/commands.md](references/commands.md).
+
+For the `GH_FAIL_REASON` remediation table and the Blueprint auto-drain gate
+details, see [REFERENCE.md](REFERENCE.md).

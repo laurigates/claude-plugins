@@ -49,26 +49,44 @@ Parse these from `$ARGUMENTS`:
 adapt, not a script to run verbatim.** Read it, then rewrite it for the work in front
 of you. It covers Steps 2-7 for a batch-shaped run **except Step 4b**: it has no
 trigger stage, so with `--triggers` run Step 4b yourself after the workflow returns,
-and with `--triggers-only` run Step 4b instead of the workflow.
+and with `--triggers-only` run Step 4b instead of the workflow. A single spot check
+stays on the prose path below.
 
 **Adapt freely:** the agent prompts, the config axis (the shipped one is
 `with-skill` / `baseline`), the effort tiers, the generation brief behind
 `--create-evals`, and the shape of the `rows` the summary table renders.
 
-**Preserve across any adaptation:** (a) the fan-out width is
-`evalIds.length x runs x configs.length`, computed in JS from `inspect_eval.sh
---print-evals`; (b) `GRADE_SCHEMA`'s closed `PASS|PARTIAL|FAIL|ERROR` enum with split
-`deterministic*` / `judge*` counters; (c) Aggregate as a real barrier. The grader is
-never the transcript's author; `cellCap` aborts rather than truncating.
+**Preserve across any adaptation:** (a) the fan-out width is the cartesian product
+`evalIds.length x runs x configs.length`, computed in JS from the eval-case list the
+Preflight agent read off disk with `inspect_eval.sh --print-evals` - never a prose "for
+each eval case, for each run"; (b) `GRADE_SCHEMA`'s closed `PASS|PARTIAL|FAIL|ERROR`
+status enum plus the split `deterministic*` / `judge*` counters, so a vague verdict is
+structurally impossible and a dead agent becomes an explicit `ERROR` row that stays in
+the denominator instead of reading as a pass; (c) Aggregate is a real barrier - the
+standard deviation and the baseline delta are cross-cell facts no single cell can
+compute, and `benchmark.json` has to be written exactly once. Three further things are
+structure, not preference: **the grader is never the agent that produced the
+transcript** (`.claude/rules/loop-integrity.md` Pillar 1 - an author asked to judge its
+own output optimises for done, not for correct), `grade_deterministic.py` grades first
+and its verdicts are never re-judged, and the `cellCap` ceiling **aborts** rather than
+truncating.
 
 **Agent budget:** 2 + 2 x cells — preflight and aggregate, plus one rollout and one
-independent grader per cell (at most `cellCap` cells).
+independent grader per cell (at most `cellCap` cells). The scale guard asks before
+every run, because the cell list is built at runtime. `args.harness: 'headless'`
+does not change it: the rollout agent becomes a thin runner that calls
+`rollout_headless.sh` (and never performs the task itself), still one per cell.
 
-**Skip the harness when:** the run is fewer than three cells (the script returns
-`{mode:'inline'}`). The steps below remain the authoritative description of *what* each
+**Skip the harness when:** the run is fewer than three cells - a one- or two-case spot
+check, or a single re-run of one eval id - which is a linear pass where the harness is
+pure overhead; the script returns `{mode:'inline'}` at that floor. The floor is
+deliberately far lower than `configure-all`'s 15, because this harness's marginal cost
+is a constant two agents: Steps 4 and 6 below already spawn one rollout subagent and
+one grader subagent per cell, so the harness redistributes those agents rather than
+adding to them. The steps below remain the authoritative description of *what* each
 stage must produce; the harness only fixes *how* the work is split.
 
-Before adapting the template, read [references/harness-adaptation.md](references/harness-adaptation.md): the full preserve/budget/skip rationale, the registered name `evaluate-skill`, why no agent is worktree-isolated, why the model cannot vary per cell, and why `context: fork` stays.
+Before adapting the template, read [references/harness-adaptation.md](references/harness-adaptation.md): the registered name `evaluate-skill`, why no agent is worktree-isolated, why the model cannot vary per cell, and why `context: fork` stays.
 
 ## Execution
 
