@@ -32,11 +32,11 @@ For each PRD, verify:
 **Frontmatter** (if using Blueprint methodology):
 ```yaml
 ---
+id: PRD-NNN
 created: YYYY-MM-DD
 modified: YYYY-MM-DD
 reviewed: YYYY-MM-DD
-status: Draft | Active | Implemented | Archived
-name: docs-quality-check
+status: Draft | Proposed | Active | Completed | Deprecated
 ---
 ```
 
