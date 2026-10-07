@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.46.4](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.3...blueprint-plugin-v3.46.4) (2026-10-07)
+
+
+### Code Refactoring
+
+* **blueprint-plugin:** move reference material out of oversized SKILL.md bodies ([#2921](https://github.com/laurigates/claude-plugins/issues/2921)) ([924485e](https://github.com/laurigates/claude-plugins/commit/924485e8403594705b84132c9cba18e296179ed5))
+
 ## [3.46.3](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.2...blueprint-plugin-v3.46.3) (2026-10-05)
 
 

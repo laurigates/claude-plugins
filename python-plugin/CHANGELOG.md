@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.9](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.5.8...python-plugin-v1.5.9) (2026-10-07)
+
+
+### Code Refactoring
+
+* **skills:** move reference material out of oversized SKILL.md bodies ([#2922](https://github.com/laurigates/claude-plugins/issues/2922)) ([79fd4ae](https://github.com/laurigates/claude-plugins/commit/79fd4ae75f7c9260a71e92b6ecf16e0a735eed6f))
+
 ## [1.5.8](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.5.7...python-plugin-v1.5.8) (2026-09-03)
 
 

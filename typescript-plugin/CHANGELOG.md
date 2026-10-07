@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.1](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.10.0...typescript-plugin-v1.10.1) (2026-10-07)
+
+
+### Code Refactoring
+
+* **skills:** move reference material out of oversized SKILL.md bodies ([#2922](https://github.com/laurigates/claude-plugins/issues/2922)) ([79fd4ae](https://github.com/laurigates/claude-plugins/commit/79fd4ae75f7c9260a71e92b6ecf16e0a735eed6f))
+
 ## [1.10.0](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.9.1...typescript-plugin-v1.10.0) (2026-09-29)
 
 
