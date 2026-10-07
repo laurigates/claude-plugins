@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.5](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.12.4...feedback-plugin-v1.12.5) (2026-10-07)
+
+
+### Code Refactoring
+
+* **skills:** move reference material out of oversized SKILL.md bodies ([#2924](https://github.com/laurigates/claude-plugins/issues/2924)) ([0dc3595](https://github.com/laurigates/claude-plugins/commit/0dc3595ca678565d8944a02d380d6da78caed9ff))
+
 ## [1.12.4](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.12.3...feedback-plugin-v1.12.4) (2026-09-28)
 
 
