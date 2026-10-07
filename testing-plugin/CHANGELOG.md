@@ -1,5 +1,39 @@
 # Changelog
 
+## [3.21.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.20.1...testing-plugin-v3.21.0) (2026-10-07)
+
+
+### Features
+
+* **scripts:** lint skills that grant Bash without running shell ([#2254](https://github.com/laurigates/claude-plugins/issues/2254)) ([45b827b](https://github.com/laurigates/claude-plugins/commit/45b827b6e0211ae02102e1ddaab54601fc5486f6)), closes [#2250](https://github.com/laurigates/claude-plugins/issues/2250)
+* **testing-plugin:** add test-tripwire skill and route code-triggered deferrals to it ([#2911](https://github.com/laurigates/claude-plugins/issues/2911)) ([5c91e79](https://github.com/laurigates/claude-plugins/commit/5c91e7963ff6c0bad740479b8d85f31a90fd1afe))
+* **testing-plugin:** ship the test-analyze classify-and-act harness template ([#2309](https://github.com/laurigates/claude-plugins/issues/2309)) ([a41c402](https://github.com/laurigates/claude-plugins/commit/a41c402f05b60c79cb2b5523c89f7191b7b5320b)), closes [#2170](https://github.com/laurigates/claude-plugins/issues/2170)
+
+
+### Bug Fixes
+
+* **agent-patterns-plugin:** derive PAL's MCP tool prefix instead of hardcoding it ([3f57aca](https://github.com/laurigates/claude-plugins/commit/3f57acab6c7b35ab396a3a7b3a59caec56839b36)), closes [#2437](https://github.com/laurigates/claude-plugins/issues/2437)
+* **ci:** restore four scheduled-audit signals that were reporting nothing, or nonsense ([#2576](https://github.com/laurigates/claude-plugins/issues/2576)) ([de4337c](https://github.com/laurigates/claude-plugins/commit/de4337c7776ba7531cbe923fe016df78ef9b7e8c))
+* **code-quality-plugin:** replace unrendered template conditionals with a detection step and lookup table ([#2289](https://github.com/laurigates/claude-plugins/issues/2289)) ([a743cff](https://github.com/laurigates/claude-plugins/commit/a743cff9fc9a1650218a5d357937e5f90149435f)), closes [#2265](https://github.com/laurigates/claude-plugins/issues/2265)
+* **hooks-plugin:** replace workflow-scale estimator with a count-or-ask rule ([#2831](https://github.com/laurigates/claude-plugins/issues/2831)) ([4b934fa](https://github.com/laurigates/claude-plugins/commit/4b934fae9b23416182e5d46cbc7aad376091956f))
+* **plugins:** adapt rules, skills, agents, and guards for Claude Fable 5.1 ([#2561](https://github.com/laurigates/claude-plugins/issues/2561)) ([b9e1101](https://github.com/laurigates/claude-plugins/commit/b9e11016b20c42b0ff95c5fef57e98584a4e7c07))
+* **testing-plugin:** route test-analyze to agent types that exist ([#2196](https://github.com/laurigates/claude-plugins/issues/2196)) ([3f586bf](https://github.com/laurigates/claude-plugins/commit/3f586bf05306968e4edde675c2d47e898e65e546)), closes [#2170](https://github.com/laurigates/claude-plugins/issues/2170) [#2174](https://github.com/laurigates/claude-plugins/issues/2174)
+* **testing:** distinguish bun's native runner from the project's test script ([#2596](https://github.com/laurigates/claude-plugins/issues/2596)) ([b10799d](https://github.com/laurigates/claude-plugins/commit/b10799dac95096387bac1de78e39d6e7ceda97f4))
+
+
+### Code Refactoring
+
+* **skills:** move reference material out of oversized SKILL.md bodies ([#2919](https://github.com/laurigates/claude-plugins/issues/2919)) ([765f0a9](https://github.com/laurigates/claude-plugins/commit/765f0a99487f222a1b5ea18f0fa5f001b2d435b4))
+* **testing-plugin:** disambiguate the test-runner skill descriptions (cluster 1) ([#2607](https://github.com/laurigates/claude-plugins/issues/2607)) ([746e349](https://github.com/laurigates/claude-plugins/commit/746e34930840804cbac0ed7b91d1d914898269af))
+
+
+### Documentation
+
+* **rules:** narrow the context: fork hazard to unbounded fan-out width ([15a79e9](https://github.com/laurigates/claude-plugins/commit/15a79e920e31e81cd44b6d6872855450ca64b73e)), closes [#2172](https://github.com/laurigates/claude-plugins/issues/2172) [#2174](https://github.com/laurigates/claude-plugins/issues/2174)
+* **testing-plugin:** document jsdom's limits and the assertions that lie ([#2273](https://github.com/laurigates/claude-plugins/issues/2273)) ([8b43807](https://github.com/laurigates/claude-plugins/commit/8b438076d41c84aae9573d35199c161d23ed2de2))
+* **testing-plugin:** document the false-MISSED harness staging failure ([#2578](https://github.com/laurigates/claude-plugins/issues/2578)) ([a046775](https://github.com/laurigates/claude-plugins/commit/a046775d580dd31005d78f35607bdf1afbb85935)), closes [#2559](https://github.com/laurigates/claude-plugins/issues/2559)
+* **testing-plugin:** hand-rolled mutation harnesses can report the wrong check ([#2423](https://github.com/laurigates/claude-plugins/issues/2423)) ([303ed8d](https://github.com/laurigates/claude-plugins/commit/303ed8dbe63bc778636191276afdc4c3b6a1cf17))
+
 ## [3.20.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.20.0...testing-plugin-v3.20.1) (2026-10-07)
 
 
