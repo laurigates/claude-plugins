@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.13.0...session-plugin-v1.13.1) (2026-10-07)
+
+
+### Code Refactoring
+
+* **skills:** move reference material out of oversized SKILL.md bodies ([#2925](https://github.com/laurigates/claude-plugins/issues/2925)) ([90e0e93](https://github.com/laurigates/claude-plugins/commit/90e0e93315e4728630a3c370e4018a4698e2c594))
+
 ## [1.13.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.12.1...session-plugin-v1.13.0) (2026-10-06)
 
 
