@@ -76,34 +76,7 @@ The reboot/hang decision tree the script encodes:
 | Boot before T with a `JetsamEvent-*` | Memory-pressure kill |
 | Boot before T, none of the above | Power loss or hard power-cycle |
 
-### Diagnostic report category reference
-
-`/Library/Logs/DiagnosticReports/` collects everything macOS thinks is worth
-keeping; the script classifies each by filename suffix:
-
-| Pattern | Category | Severity |
-|---------|----------|----------|
-| `*.panic` | Kernel panic | Critical |
-| `*.ips` (process-specific) | Userspace crash report (Apple's modern format) | Per-process |
-| `*.crash` | Legacy userspace crash | Per-process |
-| `*.cpu_resource.diag` | Process exceeded CPU threshold (typ. 80% / 90s) | Hot daemon |
-| `*.wakeups_resource.diag` | Process woke the system too often | Power drain |
-| `*.diskwrites_resource.diag` | Process wrote too much to disk | I/O drain |
-| `*.hang` | UI thread hang detection | GUI freeze |
-| `*.spindump.txt` | Spindump capture from a hang | GUI freeze |
-| `JetsamEvent-*.ips` | Kernel killed processes for memory pressure | RAM exhaustion |
-
-Note: Apple migrated most categories to the `.ips` extension circa Monterey.
-Older systems and some categories still produce legacy extensions. The script
-matches by suffix, not by exact filename.
-
-`last reboot` reads `/var/log/wtmp.X` rotated logs. On modern macOS, also check
-the unified log when `wtmp` has rotated past the incident:
-
-```bash
-log show --predicate 'eventType == "stateEvent" AND (event == "boot" OR event == "shutdown")' \
-  --last 7d --style syslog
-```
+When a report filename or category is unfamiliar, or `last reboot` comes back empty because `wtmp` rotated past T, open [references/diagnostic-reports.md](references/diagnostic-reports.md) for the suffix → category → severity table and the unified-log boot/shutdown query.
 
 ## Timeline Reconstruction (judgment)
 
@@ -210,35 +183,7 @@ If one of these is the only thing visible in your timeline, look harder — the 
 
 ## Quick Reference
 
-### Key paths
-
-| Path | Contents |
-|------|----------|
-| `/Library/Logs/DiagnosticReports/` | All system-wide reports |
-| `~/Library/Logs/DiagnosticReports/` | Per-user reports (rare; mostly legacy) |
-| `/var/log/wtmp.X` | Reboot / shutdown record (read via `last`) |
-| `/var/log/asl/` | ASL legacy logs (mostly unused in 2026) |
-| `/var/db/diagnostics/` | Unified log binary database |
-
-### Useful `log show` predicates
-
-| Predicate | Use |
-|-----------|-----|
-| `subsystem == "com.apple.WindowServer"` | GUI hangs |
-| `process == "launchservicesd"` | LS XPC stalls |
-| `process == "coreaudiod"` | Audio daemon issues |
-| `eventType == "stateEvent"` | Boot/shutdown/sleep |
-| `eventMessage CONTAINS[c] "hang"` | Hang detection events |
-| `category == "ttsd"` | Speech synthesis stalls |
-
-### Time selectors
-
-| Selector | Example |
-|----------|---------|
-| `--last <duration>` | `--last 1h`, `--last 1d` |
-| `--start <ts> --end <ts>` | `--start "2026-04-22 08:00:00"` |
-| `--info` / `--debug` | Include lower-priority entries |
-| `--style syslog` | Compact, grep-friendly |
+Key paths, useful `log show` predicates, and time selectors for building the timeline queries: [references/quick-reference.md](references/quick-reference.md).
 
 ## Decision Flow
 
@@ -256,13 +201,7 @@ Did `last reboot` advance near time T?
 
 ## Error Handling
 
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| `find: ...DiagnosticReports: Permission denied` | Some user-level reports require sudo | Stick to system-wide; don't sudo unless necessary |
-| `last reboot` empty | `wtmp` rotated past the incident | Use `log show --predicate 'event == "boot"'` instead |
-| `log show` very slow / huge output | Default predicate is too broad | Narrow with `--predicate` and tighter time range |
-| Reports only go back a few days | Apple rotates the diag dir aggressively | Check `~/Library/Logs/DiagnosticReports/` for backups; some events only persist as `log show` entries |
-| Filenames with `.ips` not `.crash` | Modern macOS format change | Treat both as equivalent; same parser tools work |
+When a command fails or the reports do not reach back to T (permission denied, empty `last reboot`, slow `log show`, rotated reports), open [references/troubleshooting.md](references/troubleshooting.md).
 
 ## Related Skills
 
