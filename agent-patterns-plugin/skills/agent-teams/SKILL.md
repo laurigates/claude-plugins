@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-03-03
-modified: 2026-10-02
+modified: 2026-10-07
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -106,14 +106,7 @@ DM, broadcast, and discovery (address by spawn-time `name`; enumerate with
 
 ## Lead Preflight Checklist
 
-Before drafting the PRP and launching agents, a 30-second sweep prevents
-multi-edit renaming work after agents return:
-
-| Check | Command | Why |
-|-------|---------|-----|
-| Next ADR/PRD/PRP sequence number | `ls docs/blueprint/adrs/ \| sort -V \| tail -1` | Prevents numbering collisions in parallel doc writes |
-| Filename conflicts | `git ls-files \| grep <filename>` | Scope tables can't guard against a stale mental model of the tree |
-| Hardware pin budget (embedded) | Read `pin_config.h` or equivalent | Prevents pin assignments overlapping across Phase 1 agents |
+Before drafting the PRP and launching agents, run the 30-second sweep in [references/lead-preflight.md](references/lead-preflight.md): next ADR/PRD/PRP number, filename conflicts, hardware pin budget.
 
 ## Out-of-Scope Discovery Protocol
 
@@ -142,11 +135,7 @@ See also `.claude/rules/agent-coworker-detection.md`.
 
 ## Sandbox Considerations
 
-In web sessions (`CLAUDE_CODE_REMOTE=true`):
-
-- Sub-agents (teammates) may encounter TLS errors on `git push` — delegate all push/PR operations to the lead.
-- Each teammate runs in its own process context.
-- Worktree isolation is recommended for independent filesystem changes.
+In web sessions (`CLAUDE_CODE_REMOTE=true`) the lead does every push/PR: see [references/web-sandbox.md](references/web-sandbox.md).
 
 ## Quick Reference
 
@@ -160,27 +149,9 @@ In web sessions (`CLAUDE_CODE_REMOTE=true`):
 - [ ] Receive messages automatically; respond via `SendMessage`
 - [ ] `SendMessage shutdown_request` to each teammate when done (no `TeamDelete`)
 
-### Key Paths
+### Key Paths and Common Mistakes
 
-| Path | Contents |
-|------|----------|
-| `~/.claude/teams/` | Implicit-team state (members: name, agentId, agentType) |
-| `~/.claude/tasks/` | Shared task list state |
-
-Address teammates by the `name` you gave them at spawn — that is the reliable
-handle, independent of any on-disk layout.
-
-### Common Mistakes
-
-| Mistake | Correct Approach |
-|---------|-----------------|
-| Using agentId as recipient | Use the `name` given at spawn |
-| Calling the removed `TeamCreate`/`TeamDelete` | The team is implicit (2.1.178); spawn with `Agent`, shut down with `shutdown_request` |
-| Passing `team_name` and expecting routing | It is accepted but ignored — there is one implicit team |
-| Sending broadcast for every update | Use `message` for single-recipient comms |
-| Polling for messages | Messages delivered automatically — just wait |
-| Sending JSON status messages | Use `TaskUpdate` for status, plain text for messages |
-| Sub-agent pushes to remote | Delegate push to lead orchestrator |
+On-disk team/task state and the common setup mistakes: [references/troubleshooting.md](references/troubleshooting.md).
 
 ## Related Skills and Rules
 
