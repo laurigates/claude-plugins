@@ -5,6 +5,13 @@ Prune orphaned projects and cached data from ~/.claude.json
 This script safely removes:
 - Project entries for directories that no longer exist
 - Cached data (changelog, feature flags, configs) that will be re-fetched
+- With --drop-legacy-history: per-project `history` arrays left over from
+  releases that stored prompt history in ~/.claude.json. Current releases
+  write prompt history to ~/.claude/history.jsonl instead.
+
+For a dead project, `claude purge <path>` (Claude Code v2.1.288+; earlier
+`claude project purge`) is the native alternative: it also removes the
+project's transcripts and its lines in ~/.claude/history.jsonl.
 """
 
 import argparse
@@ -20,16 +27,22 @@ class ClaudeConfigPruner:
     """Manages pruning of Claude Code configuration file."""
 
     def __init__(
-        self, config_path: Path, dry_run: bool = False, interactive: bool = False
+        self,
+        config_path: Path,
+        dry_run: bool = False,
+        interactive: bool = False,
+        drop_legacy_history: bool = False,
     ):
         self.config_path = config_path
         self.dry_run = dry_run
         self.interactive = interactive
+        self.drop_legacy_history = drop_legacy_history
         self.stats = {
             "original_size": 0,
             "new_size": 0,
             "orphaned_projects": 0,
             "cached_keys_removed": 0,
+            "legacy_history_entries": 0,
         }
 
     def load_config(self) -> Dict[str, Any]:
@@ -79,6 +92,15 @@ class ClaudeConfigPruner:
 
         return cached_keys
 
+    def find_legacy_history(self, config: Dict[str, Any]) -> Dict[str, int]:
+        """Map project path -> entry count of its legacy `history` array."""
+        found = {}
+        for project_path, project in config.get("projects", {}).items():
+            history = project.get("history") if isinstance(project, dict) else None
+            if isinstance(history, list) and history:
+                found[project_path] = len(history)
+        return found
+
     def calculate_size(self, data: Dict[str, Any]) -> int:
         """Calculate approximate size of JSON data in bytes."""
         return len(json.dumps(data))
@@ -93,7 +115,9 @@ class ClaudeConfigPruner:
             Tuple of (pruned_config, removed_data)
         """
         pruned = config.copy()
-        removed = {"projects": {}, "cached_keys": {}}
+        if "projects" in pruned:
+            pruned["projects"] = dict(pruned["projects"])
+        removed = {"projects": {}, "cached_keys": {}, "legacy_history": {}}
 
         # Remove orphaned projects
         orphaned_projects = self.find_orphaned_projects(config)
@@ -110,10 +134,24 @@ class ClaudeConfigPruner:
 
         self.stats["cached_keys_removed"] = len(cached_keys)
 
+        # Remove legacy per-project prompt history (opt-in)
+        if self.drop_legacy_history:
+            for project_path in self.find_legacy_history(pruned):
+                project = dict(pruned["projects"][project_path])
+                removed["legacy_history"][project_path] = project.pop("history")
+                pruned["projects"][project_path] = project
+                self.stats["legacy_history_entries"] += len(
+                    removed["legacy_history"][project_path]
+                )
+
         return pruned, removed
 
     def print_analysis(
-        self, config: Dict[str, Any], orphaned: List[str], cached: List[str]
+        self,
+        config: Dict[str, Any],
+        orphaned: List[str],
+        cached: List[str],
+        legacy: Dict[str, int],
     ) -> None:
         """Print detailed analysis of what will be pruned."""
         total_projects = len(config.get("projects", {}))
@@ -147,6 +185,18 @@ class ClaudeConfigPruner:
         else:
             print("  None found")
 
+        legacy_total = sum(legacy.values())
+        print("\nLegacy per-project prompt history (now in ~/.claude/history.jsonl):")
+        if legacy:
+            action = (
+                "will be removed"
+                if self.drop_legacy_history
+                else "kept; pass --drop-legacy-history"
+            )
+            print(f"  {legacy_total} entries across {len(legacy)} projects ({action})")
+        else:
+            print("  None found")
+
         if len(orphaned) > 0 or len(cached) > 0:
             pct = (len(orphaned) / total_projects * 100) if total_projects > 0 else 0
             print(f"\nEstimated space savings: ~{pct:.0f}% of projects + cached data")
@@ -161,6 +211,10 @@ class ClaudeConfigPruner:
         print("\nRemoved:")
         print(f"  - {self.stats['orphaned_projects']} orphaned project entries")
         print(f"  - {self.stats['cached_keys_removed']} cached data keys")
+        if self.drop_legacy_history:
+            print(
+                f"  - {self.stats['legacy_history_entries']} legacy prompt-history entries"
+            )
 
         if not self.dry_run:
             new_size = self.config_path.stat().st_size / 1024
@@ -188,11 +242,12 @@ class ClaudeConfigPruner:
         # Analyze what will be pruned
         orphaned = self.find_orphaned_projects(config)
         cached = self.get_cached_keys(config)
+        legacy = self.find_legacy_history(config) if self.drop_legacy_history else {}
 
-        self.print_analysis(config, orphaned, cached)
+        self.print_analysis(config, orphaned, cached, self.find_legacy_history(config))
 
         # Check if there's anything to prune
-        if len(orphaned) == 0 and len(cached) == 0:
+        if len(orphaned) == 0 and len(cached) == 0 and not legacy:
             print("✓ Configuration is already clean - nothing to prune!")
             return
 
@@ -233,12 +288,17 @@ Examples:
   %(prog)s --dry-run              # Preview what would be removed
   %(prog)s --interactive          # Confirm before making changes
   %(prog)s                        # Prune immediately (creates backup)
+  %(prog)s --drop-legacy-history  # Also drop pre-history.jsonl prompt arrays
 
 The script removes:
   - Project entries for directories that no longer exist
   - Cached data (changelog, feature flags, configs)
+  - With --drop-legacy-history: projects[*].history arrays
 
-Your settings, MCP servers, and tips history are preserved.
+Your settings, MCP servers, and tips history are preserved. Prompt history
+in ~/.claude/history.jsonl is not touched; for a dead project, `claude purge
+<path>` removes its config entry, transcripts, and history lines together.
+Close other Claude Code sessions first: they rewrite ~/.claude.json.
         """,
     )
 
@@ -264,9 +324,15 @@ Your settings, MCP servers, and tips history are preserved.
     )
 
     parser.add_argument(
+        "--drop-legacy-history",
+        action="store_true",
+        help="Also remove legacy projects[*].history arrays (superseded by ~/.claude/history.jsonl)",
+    )
+
+    parser.add_argument(
         "--version",
         action="version",
-        version="%(prog)s 1.0.0",
+        version="%(prog)s 1.1.0",
     )
 
     args = parser.parse_args()
@@ -281,6 +347,7 @@ Your settings, MCP servers, and tips history are preserved.
         config_path=args.config,
         dry_run=args.dry_run,
         interactive=args.interactive,
+        drop_legacy_history=args.drop_legacy_history,
     )
 
     try:

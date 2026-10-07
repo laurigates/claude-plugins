@@ -15,7 +15,7 @@ flowchart TD
     SCOPE -->|registry<br/>or all| REG[check-registry.sh<br/>• orphaned projectPath<br/>• stale enabledPlugins<br/>• marketplace drift]
     SCOPE -->|stack<br/>or all| STK[health-audit<br/>enabled plugins vs.<br/>project tech stack]
     SCOPE -->|agentic<br/>or all| AGT[health-agentic-audit<br/>skill optimisation<br/>compliance]
-    SCOPE -->|runtime<br/>or all| RUN[check-runtime.sh<br/>~/.claude.json bloat<br/>read-only]
+    SCOPE -->|runtime<br/>or all| RUN[check-runtime.sh<br/>~/.claude.json bloat,<br/>history.jsonl, retention<br/>read-only]
     SCOPE -->|usage<br/>or all| USG[check-usage.sh<br/>never-fired / dormant skills<br/>read-only · local-leaning]
 
     CP & CS & CH & CM & REG & STK & AGT & RUN & USG --> RPT[Step 3: Consolidated report<br/>grouped by scope]

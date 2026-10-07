@@ -1,6 +1,6 @@
 ---
 created: 2026-02-04
-modified: 2026-09-23
+modified: 2026-10-07
 compatibility: claude-code
 reviewed: 2026-06-17
 description: "Claude Code health check — every environment check in one pass, names the broken layer, `--fix` repairs. Use when asked for a health check, or the install misbehaves and the cause is unknown."
@@ -48,7 +48,7 @@ Parse these from `$ARGUMENTS`:
 | `registry` | Plugin registry health (orphaned `projectPath`, stale `enabledPlugins`, registry-vs-settings drift) |
 | `stack` | Enabled plugins vs detected project tech stack |
 | `agentic` | Skill/command/agent agentic-optimisation compliance |
-| `runtime` | `~/.claude.json` bloat (dead `projects[]`, dead `githubRepoPaths[*]`, orphaned `disabledMcpServers`, duplicate MCP naming). Read-only audit. |
+| `runtime` | `~/.claude.json` bloat (dead `projects[]`, dead `githubRepoPaths[*]`, orphaned `disabledMcpServers`, duplicate MCP naming, legacy per-project `history`), `~/.claude/history.jsonl` growth, and `cleanupPeriodDays` validity. Read-only audit. |
 | `usage` | Session-telemetry mining of `~/.claude/projects/*/*.jsonl` for never-fired and dormant skills *and* plugin agents. Read-only, local-leaning (SKIPs when history is insufficient). |
 | `all` | Environment checks + all five audits |
 
@@ -98,9 +98,9 @@ For `--scope=runtime` or `all`:
 bash "${CLAUDE_SKILL_DIR}/scripts/check-runtime.sh" --home-dir "$HOME" --project-dir "$(pwd)"
 ```
 
-Parse `STATUS=`, `RUNTIME_SIZE_BYTES=`, `PROJECTS_TOTAL=`, `PROJECTS_DEAD=`, `GH_PATHS_TOTAL=`, `GH_PATHS_DEAD=`, `ORPHAN_DISABLED_MCP=`, `DUPLICATE_MCP=`, `CLEANUP_SUGGESTED=`, and `ISSUES:`. Pass `--verbose` to list every dead path / orphaned server (default is a single rolled-up issue per category to keep output compact).
+Parse `STATUS=`, `RUNTIME_SIZE_BYTES=`, `PROJECTS_TOTAL=`, `PROJECTS_DEAD=`, `GH_PATHS_TOTAL=`, `GH_PATHS_DEAD=`, `ORPHAN_DISABLED_MCP=`, `DUPLICATE_MCP=`, `LEGACY_PROJECT_HISTORY_ENTRIES=`, `HISTORY_JSONL_BYTES=`, `HISTORY_JSONL_DEAD_PROJECT_ENTRIES=`, `CLEANUP_PERIOD_DAYS=`, `CLEANUP_PERIOD_SOURCE=`, `CLEANUP_SUGGESTED=`, and `ISSUES:`. `--history-warn-mb N` sets the `history.jsonl` size WARN threshold (default 50). Pass `--verbose` to list every dead path / orphaned server (default is a single rolled-up issue per category to keep output compact).
 
-The runtime audit is **read-only**: it prints suggested `jq` cleanups for the operator; what it detects is described in [references/audit-scopes.md](references/audit-scopes.md#runtime-scope).
+The runtime audit is **read-only**: it prints suggested cleanups (`claude purge <path> --dry-run` for dead projects, `jq` filters otherwise) for the operator; what it detects is described in [references/audit-scopes.md](references/audit-scopes.md#runtime-scope).
 
 > **Concurrent-write warning.** The harness rewrites `~/.claude.json` on session end. Before acting on the audit's suggested cleanups, close every other Claude Code session — otherwise the in-memory state of a live session will clobber your edits when it next writes the file. An automated cleanup writer is out of scope for this audit.
 
@@ -110,7 +110,7 @@ For `--scope=usage` or `all`:
 bash "${CLAUDE_SKILL_DIR}/scripts/check-usage.sh" --home-dir "$HOME" --project-dir "$(pwd)"
 ```
 
-Parse `STATUS=`, `HISTORY_AVAILABLE=`, `TRANSCRIPTS_SCANNED=`, `SKILLS_ENABLED=`, `SKILLS_FIRED=`, `SKILLS_NEVER_FIRED=`, `SKILLS_DORMANT=`, `AGENTS_ENABLED=`, `AGENTS_FIRED=`, `AGENTS_NEVER_FIRED=`, `AGENTS_DORMANT=`, `SCHEMA_DRIFT_SUSPECTED=`, and `ISSUES:`. Pass `--verbose` to list every never-fired / dormant skill and agent (default rolls each category into one issue line). Pass `--window-days N` to change the dormancy threshold (default 30).
+Parse `STATUS=`, `HISTORY_AVAILABLE=`, `TRANSCRIPTS_SCANNED=`, `RETENTION_DAYS=`, `SKILLS_ENABLED=`, `SKILLS_FIRED=`, `SKILLS_NEVER_FIRED=`, `SKILLS_DORMANT=`, `AGENTS_ENABLED=`, `AGENTS_FIRED=`, `AGENTS_NEVER_FIRED=`, `AGENTS_DORMANT=`, `SCHEMA_DRIFT_SUSPECTED=`, and `ISSUES:`. Pass `--verbose` to list every never-fired / dormant skill and agent (default rolls each category into one issue line). Pass `--window-days N` to change the dormancy threshold (default 30).
 
 The usage audit is **read-only** and advisory (review candidates, not a delete list); it SKIPs on insufficient history and WARNs on transcript schema drift. Never read `pluginUsage.usageCount` for it. Details: [references/audit-scopes.md](references/audit-scopes.md#usage-scope).
 
@@ -122,7 +122,7 @@ Print a consolidated report grouped by scope:
 2. **Registry** — orphaned projectPath entries, stale enabledPlugins keys, registry-vs-settings drift
 3. **Stack** — detected stack + relevant/irrelevant/missing plugin recommendations
 4. **Agentic** — skills missing optimisation tables, bare CLI commands, stale reviews
-5. **Runtime** — `~/.claude.json` size, dead projects/githubRepoPaths, orphaned disabledMcpServers, duplicate MCP naming (read-only — no `--fix` path)
+5. **Runtime** — `~/.claude.json` size, dead projects/githubRepoPaths, orphaned disabledMcpServers, duplicate MCP naming, legacy per-project history; `history.jsonl` size; effective `cleanupPeriodDays` (read-only — no `--fix` path)
 6. **Usage** — never-fired and dormant skills from session telemetry (read-only — no `--fix` path; SKIPs when history is insufficient)
 
 Use `STATUS=` indicators (OK/WARN/ERROR) and issue counts per scope. Include a summary table:
