@@ -76,6 +76,9 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --model opus
+            --effort medium
 ```
 
 ## Automation Patterns
@@ -154,8 +157,10 @@ with each model generation, so record the alias you chose next to the effort.
 `--effort low|medium|high|xhigh|max` overrides the harness default (`high`);
 effort names do not map across model generations, so re-check the level when
 the alias's target changes. `haiku` supports no `--effort` at all, so `opus
---effort low` is the cheap tier, not haiku. Every template above should carry
-both, e.g.
+--effort low` is the cheap tier, not haiku. Every template — the Essential
+Workflow Template and those in
+[references/automation-patterns.md](references/automation-patterns.md) —
+carries both, with effort picked by job shape, e.g.
 
 ```yaml
 claude_args: |

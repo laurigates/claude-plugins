@@ -25,6 +25,9 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           track_progress: true
+          claude_args: |
+            --model opus
+            --effort medium
           prompt: |
             Review this PR focusing on:
             1. Code Quality
@@ -57,6 +60,9 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --model opus
+            --effort medium
           prompt: |
             The CI workflow failed. Please:
             1. Analyze the failure logs
@@ -82,6 +88,9 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --model opus
+            --effort medium
           prompt: |
             Analyze this issue and:
             1. Add appropriate labels (bug, feature, documentation, etc.)
@@ -111,6 +120,9 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --model opus
+            --effort medium
           prompt: |
             Review backend changes focusing on:
             - API design and RESTful principles
@@ -141,6 +153,9 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           trigger_phrase: "/claude-review"
+          claude_args: |
+            --model opus
+            --effort medium
 ```
 
 ### External Contributor Handling
@@ -174,6 +189,9 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --model opus
+            --effort medium
           prompt: |
             Welcome first-time contributor! Review this PR for:
             - Code quality and style compliance

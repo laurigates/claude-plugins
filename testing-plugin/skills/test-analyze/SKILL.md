@@ -13,7 +13,7 @@ context: fork
 
 # Test Analysis and Fix Planning
 
-Analyzes test results from any testing framework, uses Zen planner to create a systematic fix strategy, and delegates fixes to appropriate subagents.
+Analyzes test results from any testing framework, uses PAL planner to create a systematic fix strategy, and delegates fixes to appropriate subagents.
 
 ## When to Use This Skill
 
@@ -133,7 +133,7 @@ Read the test result files from `<results-path>` and extract:
 
 **Step 2: Use PAL Planner**
 
-Call `mcp__pal-mcp-server__planner` with model "gemini-2.5-pro" to create a systematic fix plan:
+Call `mcp__pal-mcp-server__planner` (no model call; omit `model`) to create a systematic fix plan:
 - Step 1: Summarize findings and identify root causes
 - Step 2: Prioritize issues (impact × effort matrix)
 - Step 3: Break down fixes into actionable tasks
