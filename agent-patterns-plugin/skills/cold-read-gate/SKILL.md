@@ -4,7 +4,7 @@ description: Gate outward-bound text (upstream issues, docs, PR bodies) through 
 allowed-tools: Agent, Read, Write, Edit, TodoWrite
 model: opus
 created: 2026-06-11
-modified: 2026-09-02
+modified: 2026-10-07
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -184,53 +184,11 @@ abandoned gate.
 
 ## Workflow-Script Integration
 
-Inside a `Workflow` script the gate is one schema-enforced stage per item:
+Inside a `Workflow` script the gate is one schema-enforced stage per item: [references/workflow-script.md](references/workflow-script.md).
 
-```javascript
-const cold = await agent(
-  `You are an upstream maintainer triaging a newly filed issue. NO context
-   beyond the text. Read ONLY ${draft.path}. QUESTIONS / HESITATIONS /
-   verdict. Ignore the top HTML comments (stripped before filing).`,
-  { label: `coldread:${item.id}`, phase: 'ColdRead', model: 'haiku',
-    schema: { type: 'object', properties: {
-      verdict: { type: 'string', enum: ['clear', 'needs-revision'] },
-      critique: { type: 'string' } },
-      required: ['verdict', 'critique'] } },
-)
-if (cold?.verdict === 'needs-revision') { /* revise agent, then one re-read */ }
-```
+## Evidence and common mistakes
 
-## Evidence
-
-First production run (FVH infrastructure, 2026-06-11, 7 upstream issue
-drafts + 5 docs): the gate surfaced a timeline whose headline number didn't
-reconcile with its own breakdown, an undefined role name (`NOTARY`) at the
-moment of its dramatic payoff, a Spring Boot issue that never named Spring
-Boot, a fix section offering three options with no recommendation, and two
-drafts judged "not actionable as written" that were revised before filing.
-All 12 issues filed after the gate drew zero clarification round-trips.
-
-Later run (registry-maintainer appeal, 2026-08): two independent readers each
-failed to state the ask — the text argued a finding was unfixable by
-publishers, then asked publishers to approve individual versions. Four rounds
-of author revision had not surfaced it, because each half was individually
-true. The same run caught an arithmetic contradiction and an exception-shopping
-ask that would have jeopardised the other twelve packages.
-
-## Common Mistakes
-
-| Mistake | Correct approach |
-|---|---|
-| Using opus/sonnet as the reader "for better critique" | The weak reader is the point — it measures, not advises |
-| Spawning the reader with `run_in_background: true` | Run synchronously — the critique **is** the tool result of a synchronous run |
-| Polling a completed background reader via `SendMessage` | It only emits `idle_notification`s there; read the task-completion result instead (#2063) |
-| Pasting the artifact into the prompt | Give a path; pasted text tempts context smuggling |
-| Letting the reader explore the repo | "Read ONLY this file" — exploration restores the context the test removes |
-| Acting on every complaint | Triage first (Step 3); artifacts of the test produce busywork |
-| Softening a claim the reader couldn't verify | Run the measurement when one exists — it often inverts the objection |
-| Running the same persona twice on a two-channel artifact | One reader per channel; each gets its real audience |
-| Looping until the reader is silent | One revise round; persistent confusion = structural problem |
-| Gating drafts but not the docs that reference them | Anything a cold audience lands on qualifies |
+Production runs: [references/evidence.md](references/evidence.md). Mistakes to check before dispatching or acting on a critique: [references/common-mistakes.md](references/common-mistakes.md).
 
 ## Related
 
