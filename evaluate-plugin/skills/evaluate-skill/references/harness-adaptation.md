@@ -1,29 +1,8 @@
 # evaluate-skill: adapting the workflow harness
 
-Read this before rewriting `workflows/evaluate-skill.workflow.js`. The framing
-section in [SKILL.md](../SKILL.md) (`## Workflow harness (template)`) keeps the
-template notice, the agent budget, and when to skip the harness.
-
-## What may change, and what must survive
-
-**Adapt freely:** the agent prompts, the config axis (the shipped one is
-`with-skill` / `baseline`), the effort tiers, the generation brief behind
-`--create-evals`, and the shape of the `rows` the summary table renders.
-
-**Preserve across any adaptation:** (a) the fan-out width is the cartesian product
-`evalIds.length x runs x configs.length`, computed in JS from the eval-case list the
-Preflight agent read off disk with `inspect_eval.sh --print-evals` - never a prose "for
-each eval case, for each run"; (b) `GRADE_SCHEMA`'s closed `PASS|PARTIAL|FAIL|ERROR`
-status enum plus the split `deterministic*` / `judge*` counters, so a vague verdict is
-structurally impossible and a dead agent becomes an explicit `ERROR` row that stays in
-the denominator instead of reading as a pass; (c) Aggregate is a real barrier - the
-standard deviation and the baseline delta are cross-cell facts no single cell can
-compute, and `benchmark.json` has to be written exactly once. Three further things are
-structure, not preference: **the grader is never the agent that produced the
-transcript** (`.claude/rules/loop-integrity.md` Pillar 1 - an author asked to judge its
-own output optimises for done, not for correct), `grade_deterministic.py` grades first
-and its verdicts are never re-judged, and the `cellCap` ceiling **aborts** rather than
-truncating.
+Read this before adapting `workflows/evaluate-skill.workflow.js`. The full framing
+(template notice, what may change, what must survive, agent budget, when to skip)
+is in [SKILL.md](../SKILL.md) under `## Workflow harness (template)`.
 
 ## Consequences for any adaptation
 

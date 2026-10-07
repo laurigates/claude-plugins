@@ -52,7 +52,24 @@ trigger stage, so with `--triggers` run Step 4b yourself after the workflow retu
 and with `--triggers-only` run Step 4b instead of the workflow. A single spot check
 stays on the prose path below.
 
-**Before rewriting the template**, read [references/harness-adaptation.md](references/harness-adaptation.md): what may change, the invariants to preserve, and the registered name `evaluate-skill`.
+**Adapt freely:** the agent prompts, the config axis (the shipped one is
+`with-skill` / `baseline`), the effort tiers, the generation brief behind
+`--create-evals`, and the shape of the `rows` the summary table renders.
+
+**Preserve across any adaptation:** (a) the fan-out width is the cartesian product
+`evalIds.length x runs x configs.length`, computed in JS from the eval-case list the
+Preflight agent read off disk with `inspect_eval.sh --print-evals` - never a prose "for
+each eval case, for each run"; (b) `GRADE_SCHEMA`'s closed `PASS|PARTIAL|FAIL|ERROR`
+status enum plus the split `deterministic*` / `judge*` counters, so a vague verdict is
+structurally impossible and a dead agent becomes an explicit `ERROR` row that stays in
+the denominator instead of reading as a pass; (c) Aggregate is a real barrier - the
+standard deviation and the baseline delta are cross-cell facts no single cell can
+compute, and `benchmark.json` has to be written exactly once. Three further things are
+structure, not preference: **the grader is never the agent that produced the
+transcript** (`.claude/rules/loop-integrity.md` Pillar 1 - an author asked to judge its
+own output optimises for done, not for correct), `grade_deterministic.py` grades first
+and its verdicts are never re-judged, and the `cellCap` ceiling **aborts** rather than
+truncating.
 
 **Agent budget:** 2 + 2 x cells — preflight and aggregate, plus one rollout and one
 independent grader per cell (at most `cellCap` cells). The scale guard asks before
@@ -68,6 +85,8 @@ is a constant two agents: Steps 4 and 6 below already spawn one rollout subagent
 one grader subagent per cell, so the harness redistributes those agents rather than
 adding to them. The steps below remain the authoritative description of *what* each
 stage must produce; the harness only fixes *how* the work is split.
+
+Before adapting the template, read [references/harness-adaptation.md](references/harness-adaptation.md): the registered name `evaluate-skill`, why no agent is worktree-isolated, why the model cannot vary per cell, and why `context: fork` stays.
 
 ## Execution
 
