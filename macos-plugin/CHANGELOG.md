@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.9.0](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.8.1...macos-plugin-v1.9.0) (2026-10-07)
+
+
+### Features
+
+* promote licence-position and workflow-scale rules to skills ([#2860](https://github.com/laurigates/claude-plugins/issues/2860)) ([a6ec7d0](https://github.com/laurigates/claude-plugins/commit/a6ec7d0caefff29b6f46cc76e1c3f5bba064b5c6))
+
+
+### Bug Fixes
+
+* **macos-plugin:** report scaling efficiency instead of gating on it ([#2279](https://github.com/laurigates/claude-plugins/issues/2279)) ([86d1ff9](https://github.com/laurigates/claude-plugins/commit/86d1ff92591cff0b2357fefedc53e7f65c652252)), closes [#2183](https://github.com/laurigates/claude-plugins/issues/2183)
+
+
+### Code Refactoring
+
+* **skills:** move reference material out of oversized SKILL.md bodies ([#2919](https://github.com/laurigates/claude-plugins/issues/2919)) ([765f0a9](https://github.com/laurigates/claude-plugins/commit/765f0a99487f222a1b5ea18f0fa5f001b2d435b4))
+
+
+### Documentation
+
+* **macos-plugin:** correct du guidance for copy-on-write clones ([#2270](https://github.com/laurigates/claude-plugins/issues/2270)) ([194e7da](https://github.com/laurigates/claude-plugins/commit/194e7da4191e6cda120dbeb70d005fb8a312715f))
+
+## [1.8.1](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.8.0...macos-plugin-v1.8.1) (2026-10-07)
+
+
+### Code Refactoring
+
+* **skills:** move reference material out of oversized SKILL.md bodies ([#2919](https://github.com/laurigates/claude-plugins/issues/2919)) ([765f0a9](https://github.com/laurigates/claude-plugins/commit/765f0a99487f222a1b5ea18f0fa5f001b2d435b4))
+
 ## [1.8.0](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.7.2...macos-plugin-v1.8.0) (2026-09-29)
 
 

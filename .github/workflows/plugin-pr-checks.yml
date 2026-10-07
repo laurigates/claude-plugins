@@ -193,6 +193,7 @@ jobs:
             --only 'scripts/tests/test-infra-compliance-check.sh' \
             --only 'scripts/tests/test-lint-shell-scripts.sh' \
             --only 'scripts/tests/test-plugin-compliance-check.sh' \
+            --only 'scripts/tests/test-select-split-candidates.sh' \
             --only 'scripts/tests/test-workflow-run-cost.sh'
 
       - name: Gate plugin license and author metadata (#2698, #2699)

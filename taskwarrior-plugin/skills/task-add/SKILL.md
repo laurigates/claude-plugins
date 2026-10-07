@@ -51,15 +51,8 @@ Parse `$ARGUMENTS`:
   - Dates accept taskwarrior synonyms (`today`, `eow`, `eom`, `monday`, `due-4d`, ISO `2026-07-01`).
 - Optional tags: `+wo`, `+prp`, `+fr`, `+re`, `+gh`, `+pr_ready`, `+needs_review`, `+blocked_on_merge`, `+blocked`.
 
-> **Tag naming gotcha — hyphens silently break tags.** Taskwarrior parses
-> `-` mid-token as exclude-filter syntax, even inside a `+tag` argument.
-> `+blocked-on-merge` is parsed as `+blocked` AND `-on-merge`, so the tag
-> never lands and the literal `+blocked-on-merge` string ends up appended
-> to the description as plain text (urgency does not tick up). Single-
-> quoting (`'+blocked-on-merge'`) does **not** help — this is a taskwarrior
-> parser quirk, not a shell issue. Use underscores or camelCase instead:
-> `+blocked_on_merge` or `+blockedOnMerge`. The same applies to any tag
-> name containing a hyphen.
+Tag names use underscores or camelCase, never hyphens — read the gotcha in
+[references/quick-reference.md](references/quick-reference.md) before naming a new tag.
 
 ### Project resolution
 
@@ -78,33 +71,10 @@ Cross-check the resolved name against `Known projects` and reuse the
 exact spelling when it matches (case-insensitive) — taskwarrior treats
 `MyRepo` and `myrepo` as different projects.
 
-#### `project:` is a PREFIX match — a populated result does not prove the slug
-
-`task project:comfyui list` returns every task in `comfyui-nodes`,
-`comfyui-touch-connect`, and any other project starting with that string.
-Nothing in the output says so. A slug you just invented therefore *looks*
-verified the moment a sibling shares its prefix, which is the whole trap:
-the confirming evidence and a false positive are byte-identical.
-
-> Observed twice (2026-08-08, comfyui-nodes). A commit titled "point the
-> backlog at `project:comfyui`, **the slug that exists**" moved the documented
-> slug to the one project that was nearly empty — 60 tasks sat under
-> `comfyui-nodes`, 1 under `comfyui` — because `task project:comfyui list`
-> showed all 60. A later session read that doc, filed four follow-ups into the
-> near-empty sibling, and only caught it when a survey script printed the
-> per-project counts side by side.
-
-**To check a slug is real, read the exact value — never a filter that matches
-its own prefix:**
-
-```sh
-task export | jq -r '[.[].project] | group_by(.) | map({p:.[0], n:length}) | sort_by(-.n)[]'
-```
-
-Corollaries: prefer `task <uuid> modify project:<slug>` when consolidating
-(numeric ids shift); and a *new* project slug is silently created on first
-`add`, so a typo never errors — it just starts a parallel backlog that the
-prefix match then hides.
+`project:` is a **prefix** match, so a populated `task project:<slug> list` does
+not prove the slug exists. Before trusting a slug, read
+[references/project-slug-verification.md](references/project-slug-verification.md)
+for the exact-value check.
 
 ## Execution
 
@@ -230,21 +200,8 @@ task +LATEST uuids
 > UUID at create time and address the task by UUID for later annotate /
 > modify / done. See `.claude/rules/task-id-stability.md`.
 
-#### Sequential WOs: use `depends:` for ordered chains
-
-For work orders that must land in sequence (e.g., WO-058 → 059 → 060),
-set `depends:` on each downstream task pointing to its predecessor's
-taskwarrior numeric ID. When the predecessor closes with `task done`,
-taskwarrior **automatically unblocks all dependents** — no manual
-intervention needed (see `docs/task-tracking.md § Lifecycle`):
-
-```bash
-# WO-059 waits for WO-058 (taskwarrior ID 51)
-task add "WO-059: ..." bpid:WO-059 +wo project:myrepo depends:51
-
-# WO-060 waits for both
-task add "WO-060: ..." bpid:WO-060 +wo project:myrepo depends:51,52
-```
+For work orders that must land in sequence, set `depends:` — see
+[references/depends-chains.md](references/depends-chains.md).
 
 ### Step 6: Report
 
@@ -257,39 +214,10 @@ Print:
 - Tags applied
 - Suggested next step (`/taskwarrior:task-status`, `/taskwarrior:task-coordinate`, or `/taskwarrior:task-claim` if the user is about to start)
 
-## Agentic Optimizations
-
-| Context | Command |
-|---------|---------|
-| Capture stable UUID after add | `task +LATEST uuids` |
-| Duplicate check by bpid | `task bpid:WO-012 export \| jq '.[] \| {id, status}'` |
-| Pre-fill from issue | `gh issue view 145 --json number,title,body,labels` |
-| Next ready (unblocked + scheduled-due) | `task status:pending +READY export \| jq '.[:3]'` |
-| Skip empty filter exit | Always use `export \| jq`, never `list` |
-
 ## Quick Reference
 
-| Flag / field | Purpose |
-|--------------|---------|
-| `project:` | Project (defaults to repo basename) |
-| `--no-project` | File without a project (cross-cutting) |
-| `bpid:` | Blueprint ID link |
-| `bpdoc:` | Blueprint doc path |
-| `bpms:` | Milestone |
-| `ghid:` | GitHub issue number |
-| `ghpr:` | GitHub PR number |
-| `due:` | Deadline — feeds urgency, surfaces `+DUE`/`+OVERDUE` |
-| `scheduled:` | Earliest start — gates `+READY` |
-| `wait:` | Hide until date (auto-unhides) — prefer over `+blocked_on_merge` |
-| `recur:` | Repeat frequency (needs `due:`) |
-| `until:` | Auto-delete date |
-| `+wo` | Work order |
-| `+prp` | PRP |
-| `+fr` | Feature request |
-| `+re` | Research |
-| `+gh` | Linked to GitHub |
-| `+pr_ready` | Open PR waiting |
-| `+blocked_on_merge` | Waiting on another PR |
+Agent-friendly command forms and the full flag / field / tag table are in
+[references/quick-reference.md](references/quick-reference.md).
 
 ## Related
 

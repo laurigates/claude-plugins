@@ -208,46 +208,8 @@ force-single-line = true
 
 ## Advanced Usage
 
-### Per-File Configuration
-```bash
-# Override settings for specific paths
-ruff check --config path/to/ruff.toml
-
-# Use inline configuration
-ruff check --select E,F,B --ignore E501
-```
-
-### Targeting Specific Issues
-```bash
-# Check only specific rule codes
-ruff check --select F401,F841  # Only unused imports/variables
-
-# Security-focused check
-ruff check --select S  # All bandit rules
-
-# Import organization only
-ruff check --select I --fix
-
-# Docstring checks
-ruff check --select D
-```
-
-### Integration Patterns
-```bash
-# Check only changed files (git)
-git diff --name-only --diff-filter=d | grep '\.py$' | xargs ruff check
-
-# Check files modified in branch
-git diff --name-only main...HEAD | grep '\.py$' | xargs ruff check
-
-# Parallel checking of multiple directories
-ruff check src/ &
-ruff check tests/ &
-wait
-
-# Combine with other tools
-ruff check && pytest && ty check
-```
+Per-file config overrides, targeted rule checks, and changed-files-only / parallel
+invocation patterns are in [references/command-recipes.md](references/command-recipes.md).
 
 ## CI/CD Integration
 
@@ -284,95 +246,13 @@ For the full integration recipes — editor setup (VS Code, Neovim, Zed, Helix),
 
 ## Common Patterns
 
-### Finding Specific Issues
-```bash
-# Find unused imports
-ruff check --select F401
-
-# Find mutable default arguments
-ruff check --select B006
-
-# Find deprecated type usage
-ruff check --select UP006
-
-# Security issues
-ruff check --select S
-
-# Code complexity
-ruff check --select C901
-
-# Find all TODOs
-ruff check --select FIX  # flake8-fixme
-```
-
-### Gradual Adoption
-```bash
-# Start with minimal rules
-ruff check --select E,F
-
-# Add bugbear
-ruff check --select E,F,B
-
-# Add import sorting
-ruff check --select E,F,B,I --fix
-
-# Add pyupgrade
-ruff check --select E,F,B,I,UP --fix
-
-# Generate baseline configuration
-ruff check --select ALL --ignore <violations> > ruff-baseline.toml
-```
-
-### Refactoring Support
-```bash
-# Auto-fix all safe violations
-ruff check --fix
-
-# Preview changes before fixing
-ruff check --diff | less
-
-# Fix only imports
-ruff check --select I --fix
-
-# Modernize code
-ruff check --select UP --fix
-
-# Simplify comprehensions
-ruff check --select C4,SIM --fix
-```
+Recipes for finding specific issues, gradual adoption, and refactoring support are
+in [references/command-recipes.md](references/command-recipes.md).
 
 ## Plugin Configuration
 
-### isort (Import Sorting)
-```toml
-[tool.ruff.lint.isort]
-combine-as-imports = true
-known-first-party = ["myapp"]
-section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
-```
-
-### flake8-quotes
-```toml
-[tool.ruff.lint.flake8-quotes]
-docstring-quotes = "double"
-inline-quotes = "single"
-multiline-quotes = "double"
-```
-
-### pydocstyle
-```toml
-[tool.ruff.lint.pydocstyle]
-convention = "google"  # or "numpy", "pep257"
-```
-
-### pylint
-```toml
-[tool.ruff.lint.pylint]
-max-args = 10
-max-branches = 15
-max-returns = 8
-max-statements = 60
-```
+Per-plugin `[tool.ruff.lint.<plugin>]` settings (isort, flake8-quotes, pydocstyle,
+pylint) are in [references/plugin-configuration.md](references/plugin-configuration.md).
 
 ## Best Practices
 

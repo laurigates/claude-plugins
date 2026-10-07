@@ -1,6 +1,6 @@
 ---
 created: 2026-06-16
-modified: 2026-08-15
+modified: 2026-10-07
 compatibility: claude-code
 reviewed: 2026-07-08
 allowed-tools: Glob, Read, Edit, Write, Bash(git status *), Bash(git diff *), Bash(wc *), Bash(ls *), AskUserQuestion, TodoWrite
@@ -74,12 +74,7 @@ The dominant find is usually **Promote to skill**: a rule that began life as "wr
 
 ### 3. For each promote-to-skill candidate, design the target skill
 
-A rule only earns promotion if it can carry a **description good enough to auto-trigger** — otherwise moving it off the always-loaded surface silently loses the guidance. Draft, before proposing:
-
-- **Skill home + name** — a new skill in an existing plugin, named per `skill-naming.md` (`<namespace>-<name>`). If no plugin fits, recommend keep-but-lean instead.
-- **Description** — front-load tool/verb/domain, then a `Use when…` clause with the literal phrases a user would say; target ≤150 chars (`skill-quality.md`). This is the load-bearing artifact: if you cannot write a description that fires on the right intent, the content is not skill-shaped — reclassify as keep-but-lean or path-scope.
-- **Body shape** — the procedure as imperative `## Execution` steps (`skill-execution-structure.md`); large tables go to `REFERENCE.md`.
-- **Residual stub** — typically a one-line pointer (`> For the X workflow, see the \`plugin:skill\` skill.`) so a reader at the old location is routed without re-paying the body cost.
+Before proposing a promotion, draft its skill home + name, an auto-triggering description, body shape, and residual stub per [references/promote-to-skill-design.md](references/promote-to-skill-design.md). No description that fires on the real intent means it is not skill-shaped.
 
 ### 4. Confirm before writing — per candidate, batch only the safe dispositions
 
@@ -101,52 +96,18 @@ The confirmation shape depends on **how lossy the disposition is**, not on conve
 
 #### Batch-approval mode for large surfaces
 
-For a **large audit** — roughly **~15+ candidates**, where the per-candidate loop is ~15+ round-trips — prompting individually for every non-destructive disposition is needless friction. In that case, group the non-destructive candidates by disposition tier and offer **one tier-grouped multi-select `AskUserQuestion`** per tier: the user checks the candidates to approve in a single round-trip (e.g. "Path-scope these 9 rules", "Keep-but-lean these 6"). Put each candidate's file, size, and one-sentence justification in its option so the user can deselect any to hold back.
-
-**Per-candidate confirmation stays mandatory for the destructive/ambiguous tier** — Drop, Consolidate-that-deletes, and Promote-to-skill are never batched, regardless of audit size. The invariant is unchanged: **no lossy or destructive edit to an always-loaded file lands without an explicit per-candidate confirmation.** Batch mode only fast-paths the dispositions that preserve the guidance in place.
-
-For a **small audit** (fewer than ~15 candidates) the per-item loop is cheap — prompt each candidate individually and skip batch mode.
+At ~15+ candidates, batch only the non-destructive tier, per [references/batch-approval.md](references/batch-approval.md). Drop, Consolidate-that-deletes, and Promote-to-skill are never batched.
 
 ### 5. Execute the approved disposition
 
-| Disposition | Mechanics |
-|---|---|
-| Keep — hard invariant | No change. Optionally note why it stays in the report. |
-| Keep but lean | `Edit` the rule to the invariant + a link; move examples/tables to a co-located doc or the rule's own `REFERENCE`-style sidecar. Do not change the invariant's wording. |
-| Path-scope | `Edit` the rule's frontmatter to add a `paths:` glob so it loads only on matching turns. Verify the glob matches the directory shape the rule actually targets. |
-| Promote to skill | Scaffold `<plugin>/skills/<name>/SKILL.md` with the drafted frontmatter + imperative body; move reference material into the new skill's `REFERENCE.md`; trim the source rule to a one-line pointer (or delete it if nothing remains and nothing references it). Then update the plugin metadata per the **Plugin Lifecycle** in `CLAUDE.md` (README skills table; no `marketplace.json`/release-config edits — those are plugin-scoped, not skill-scoped, per `skill-consolidation.md`). Run `/reload-skills` so the new skill is invocable immediately. |
-| Consolidate | **First read the destination and confirm it is current** — drift runs both ways, so where the always-loaded copy is the *fresher* one, fix the destination (or consolidate in the other direction) before pointing at it. Then `Edit` the source to a pointer at the canonical owner **by `plugin:skill` name** (never a cross-plugin file path — see `skill-consolidation.md`); or delete the redundant rule if a loaded plugin skill already covers it. |
-| Drop | Delete the stale file. |
-
-Evidence for the Consolidate check: in [`laurigates/loractl` #167](https://github.com/laurigates/loractl/pull/167) the pointer target still described a landed feature as a pending follow-up while the `CLAUDE.md` section being cut was correct, so consolidating without reading the destination first would have replaced the accurate copy with a pointer at the stale one.
+Apply each approved disposition using the per-disposition mechanics in [references/disposition-mechanics.md](references/disposition-mechanics.md). For Consolidate, **read the destination first and confirm it is current** before pointing at it.
 
 After every write, run `git status` so the user sees exactly what changed before any commit. **Do not commit** — leave a clean tree the user can review and split. When promoting *out of* a `CLAUDE.md` or rule that lives in a chezmoi-managed tree (`~/.claude/`), surface that the source is chezmoi-managed so the edit lands in the source, not the target.
 
 ### 6. Report
 
-Emit a final table and the net context saving:
+Emit the final table, net every-turn saving, and next step in the format in [references/report-format.md](references/report-format.md). This skill does **not** commit.
 
-| Unit | Size (tok) | Disposition | Target | Always-loaded delta |
-|---|---|---|---|---|
-| `.claude/rules/foo.md` | ~1,200 | Promote to skill | `someplugin:foo-workflow` | −1,200 |
-| `CLAUDE.md` § Bar | ~300 | Keep but lean | linked `docs/bar.md` | −260 |
-| `.claude/rules/baz.md` | ~400 | Path-scope | `paths: "**/*.py"` | conditional |
+## Anti-patterns and notes
 
-End with: total tokens removed from the every-turn surface, the new skills created (with their trigger descriptions), and the next step (review `git status`, commit per concern with conventional-commit messages — this skill does **not** commit).
-
-## Anti-patterns to avoid
-
-| Don't | Do |
-|---|---|
-| Promote a hard invariant to a skill because it "looks like a procedure" | Keep anything whose violation is a bug even when the user never mentions it — a skill only fires on intent |
-| Move a rule to a skill with a weak description | The description must auto-trigger on the real intent; if you can't write one ≤150 chars that fires, it is not skill-shaped — lean it or path-scope it instead |
-| Bundle a **destructive** disposition (Drop / Consolidate-that-deletes / Promote-to-skill) into a batch approval | Per-candidate `AskUserQuestion` for anything lossy; batch only the non-destructive tier (Keep / Lean / Path-scope) on a large surface |
-| Delete the rule entirely after promotion when something still references it | Leave a one-line pointer stub; `grep -rn` the old rule name first |
-| Edit the chezmoi *target* (`~/.claude/...`) directly | Edit the chezmoi source (`chezmoi source-path`), then apply |
-| Commit the diet as part of the skill | Leave a clean working tree; the user commits per concern |
-
-## Notes
-
-- **Reads broad, writes narrow** — discovery scans the whole always-loaded surface; the write phase touches only approved files.
-- **Inverse** of `session-distill` (*creates* rules from sessions), orthogonal to `meta-promote` (moves config *between scopes*). The three compose: distill captures learnings as rules, the diet promotes the intent-shaped ones to skills, `meta-promote` lifts shared ones up a scope.
-- Cost model: `skill-quality.md` (listing budget, `skillListingBudgetFraction`) and `skill-development.md` (path-scoped rule frontmatter, description front-loading).
+See [references/anti-patterns.md](references/anti-patterns.md) before finalising a disposition.

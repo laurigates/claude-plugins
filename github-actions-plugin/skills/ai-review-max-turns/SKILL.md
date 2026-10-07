@@ -60,83 +60,11 @@ runid=$(echo "$url" | sed -E 's#.*/runs/([0-9]+)/.*#\1#')
 gh run view "$runid" --log-failed 2>&1 | grep -iE '"is_error"|"subtype"|error_max_turns|num_turns'
 ```
 
-## Cause 1 — budget exhaustion (`error_max_turns`)
+**Cause 1 (budget exhaustion)** — when the log shows `error_max_turns`, open [references/budget-exhaustion.md](references/budget-exhaustion.md) for the rotating-failure tell, why not to blind-rerun, the `mergeStateStatus` check, and the upstream fix.
 
-On a large diff these jobs exhaust their per-run **turn budget** and fail with
-`subtype: error_max_turns` / `is_error: true` — a red ❌ that is infra
-flakiness, not a real finding.
+**Cause 2 (turn-ceiling overrun)** — when a `subtype: "success"` run logs `exceeding the configured maximum`, open [references/turn-ceiling-overrun.md](references/turn-ceiling-overrun.md) for the grep, the evidence, and the upstream fix.
 
-### The tell: the failing set *rotates* across re-runs
-
-The defining signature — and the thing that distinguishes budget exhaustion
-from a genuine defect — is that **re-running the same commit fails a
-*different subset* of the AI jobs each time**:
-
-> Measured 2026-08 on a 16-file / ~1150-line PR, two runs of the *same*
-> commit: run 1 failed only `aria / analyze`; run 2 passed `aria` but
-> failed `typescript`, `secrets`, and `owasp`. All four logs showed
-> `error_max_turns` at `num_turns` 6–7. Deterministic gates (biome, knip,
-> conventional-commits, deps/audit, and the real `wcag / analyze`) passed
-> every run; the PR's full local test suite + build were green throughout.
-
-A real code defect fails the *same* check deterministically. A rotating
-failure set across re-runs is budget exhaustion — the scheduler gets through a
-different subset of the AI jobs before the turn cap each time.
-
-### What to do (and not do)
-
-- **Do not blind-rerun.** A re-run re-trips with a *different* rotating
-  subset — it never converges, and it just burns AI-action cost. One rerun to
-  observe the rotation is enough to diagnose; after that, stop.
-- **Do not chase the "finding."** There is none — the job died before
-  finishing. Reading the partial log for "what it flagged" is wasted effort.
-- **Check whether it actually blocks — read `mergeStateStatus`, don't assume.**
-  `gh pr view <n> --json mergeable,mergeStateStatus`: `UNSTABLE` means the
-  failing check is present but **not required**, so a plain `gh pr merge`
-  works; `BLOCKED` means it is required and the merge is refused. Where it is
-  `UNSTABLE`, merge on the strength of the deterministic gates + local
-  verification (see `git-plugin:git-merge-hazards` for the two checks a
-  merge-over-red needs).
-- **Fix the root cause upstream, once.** The budget is too low for large
-  diffs. Raise `max_turns` on the reusable workflow (or expose it as an input
-  and bump callers — `reusable-claude.yml` already defaults to 30), narrow
-  `file-patterns`, gate on `max-diff-lines`, or have `error_max_turns` post a
-  neutral continuation status instead of a hard fail. Tracked in
-  `ForumViriumHelsinki/.github#79`.
-
-## Cause 2 — turn-ceiling overrun on a run that succeeded
-
-Distinct from Cause 1: nothing died. The model returned a normal successful
-result, and the *action wrapper* then failed the job because the turn count
-exceeded `--max-turns`. The scan's own verdict is discarded along with it.
-
-```sh
-gh run view --job <job-id> -R <o>/<r> --log | grep -E '"is_error"|"subtype"|"num_turns"|exceeding the configured maximum'
-```
-
-```
-"subtype": "success",
-"is_error": false,
-"num_turns": 53,
-##[error]Claude reported a successful result after 53 turns, exceeding the configured maximum of 50
-```
-
-Nondeterministic in exactly the way Cause 1 is — same check, same tree,
-different turn count. Do not read a pass on the next run as evidence a change
-fixed anything.
-
-> Evidence (2026-08-28, pal-mcp-server#87): `secrets-scan / scan` passed, then
-> failed after a rebase that changed no scanned content, at `num_turns: 53`
-> against a max of 50 with `permission_denials_count: 6` and no finding. It
-> passed again on the next push. The diff was comment-only edits to
-> `.env.example`; the scan had nothing to report either time.
-
-The `permission_denials_count` interaction from Cause 3 applies here too: denied
-tool calls get retried, and the retries are what push a scan over the ceiling.
-So a high denial count is a cause of this failure, not a signal about the code.
-
-**Fix it upstream**, not in your PR — raise `--max-turns`, or grant the tool the
-scan keeps being denied. Re-running just re-rolls the count.
+**Cause 4 (errored despite completing)** — when `subtype: "success"` and `is_error: true` appear together, open [references/errored-despite-completing.md](references/errored-despite-completing.md) for the full signature, the grep, and the rerun-once rule.
 
 ## Cause 3 — a real finding the check cannot publish
 
@@ -169,36 +97,6 @@ files yourself against the check's own category list. The finding is often in
 
 **The count is not stable.** Same commit, different answer. Never treat a
 delta between runs as evidence a fix worked.
-
-## Cause 4 — a result flagged errored despite completing
-
-The SDK returned `subtype: "success"` and `is_error: true` in the same result,
-and the wrapper failed the job on that combination alone:
-
-```
-##[error]Claude result reported subtype success with is_error:true (run did not complete successfully)
-##[error]Action failed with error: Claude execution failed: result is_error:true
-```
-
-It matches none of the other three rows. The `subtype` is `success`, so the run
-did not die on its turn budget, and five turns is nowhere near a ceiling. There
-is no `Found N` line, `permission_denials_count` is 0, the publish step logs
-`No buffered inline comments`, and the PR carries no comment, so no finding is
-waiting behind a blocked channel. The payload also has no `result` string at
-all, which may be the actual trigger.
-
-```sh
-gh run view --job <job-id> -R <o>/<r> --log | grep -E '"is_error"|"subtype"|"num_turns"|permission_denials_count|"result":|Found [0-9]|subtype success with is_error'
-```
-
-**Rerun the identical commit once.** A pass with no code change means the red
-was infra. A second identical failure means it is deterministic: read the run
-before blaming either the code or the platform.
-
-> Evidence (2026-09-22, ForumViriumHelsinki/thelma#1524): `A11y WCAG` failed in
-> run `35730697939` with `subtype: "success"`, `is_error: true`, `num_turns: 5`,
-> `permission_denials_count: 0`, no `Found N` line and no `result` string. A
-> rerun of the same commit passed.
 
 ## The trap under all four: a check that never ran looks exactly like a pass
 

@@ -1,5 +1,41 @@
 # Changelog
 
+## [2.13.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.12.2...tools-plugin-v2.13.0) (2026-10-07)
+
+
+### Features
+
+* **agent-patterns-plugin:** catalogue the two search negatives that produced a false "does not exist" ([#2508](https://github.com/laurigates/claude-plugins/issues/2508)) ([cca7f59](https://github.com/laurigates/claude-plugins/commit/cca7f59ee3c3b2d21f6371bfa2d19e6663fa9cd6))
+* **tools-plugin:** add zsh-gotchas skill ([#2709](https://github.com/laurigates/claude-plugins/issues/2709)) ([96bb075](https://github.com/laurigates/claude-plugins/commit/96bb075500cbb87b92bd1d57de180ecd2aed6122))
+* **tools-plugin:** document what `just --list` renders, and a tool that reads it ([#2616](https://github.com/laurigates/claude-plugins/issues/2616)) ([936c2c8](https://github.com/laurigates/claude-plugins/commit/936c2c82c55873661b83aa32b33d45e3c7c21c39))
+
+
+### Bug Fixes
+
+* **ci:** restore four scheduled-audit signals that were reporting nothing, or nonsense ([#2576](https://github.com/laurigates/claude-plugins/issues/2576)) ([de4337c](https://github.com/laurigates/claude-plugins/commit/de4337c7776ba7531cbe923fe016df78ef9b7e8c))
+* **code-quality-plugin:** replace unrendered template conditionals with a detection step and lookup table ([#2289](https://github.com/laurigates/claude-plugins/issues/2289)) ([a743cff](https://github.com/laurigates/claude-plugins/commit/a743cff9fc9a1650218a5d357937e5f90149435f)), closes [#2265](https://github.com/laurigates/claude-plugins/issues/2265)
+* **tools-plugin:** resolve or name a non-literal `help=` instead of dropping it ([#2620](https://github.com/laurigates/claude-plugins/issues/2620)) ([d6d2607](https://github.com/laurigates/claude-plugins/commit/d6d2607281da794e5fae91e0d9ea18ca30aa507c))
+
+
+### Code Refactoring
+
+* **skills:** move reference material out of oversized SKILL.md bodies ([#2919](https://github.com/laurigates/claude-plugins/issues/2919)) ([765f0a9](https://github.com/laurigates/claude-plugins/commit/765f0a99487f222a1b5ea18f0fa5f001b2d435b4))
+* **tools-plugin:** apply the demoted body-section mandates ([#2397](https://github.com/laurigates/claude-plugins/issues/2397)) ([04ffb23](https://github.com/laurigates/claude-plugins/commit/04ffb2378533a52544deb64615edb3560d456a1d)), closes [#2141](https://github.com/laurigates/claude-plugins/issues/2141)
+
+
+### Documentation
+
+* **tools-plugin:** warn about pipefail with readers that exit early in shell-expert ([#2812](https://github.com/laurigates/claude-plugins/issues/2812)) ([3920a6e](https://github.com/laurigates/claude-plugins/commit/3920a6e9fdf01a2a8c7fc5939558d5d0313a7fb6))
+* **tools-plugin:** warn that bare hf download fetches the whole repo ([#2414](https://github.com/laurigates/claude-plugins/issues/2414)) ([4b01453](https://github.com/laurigates/claude-plugins/commit/4b014534f27f0fe8ce607a09c201123894256b40)), closes [#2409](https://github.com/laurigates/claude-plugins/issues/2409)
+* **tools-plugin:** warn that just's {{...}} interpolates unquoted ([#2264](https://github.com/laurigates/claude-plugins/issues/2264)) ([6ae573a](https://github.com/laurigates/claude-plugins/commit/6ae573a1747ae42db6dd36cad2d586bea87d6610))
+
+## [2.12.2](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.12.1...tools-plugin-v2.12.2) (2026-10-07)
+
+
+### Code Refactoring
+
+* **skills:** move reference material out of oversized SKILL.md bodies ([#2919](https://github.com/laurigates/claude-plugins/issues/2919)) ([765f0a9](https://github.com/laurigates/claude-plugins/commit/765f0a99487f222a1b5ea18f0fa5f001b2d435b4))
+
 ## [2.12.1](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.12.0...tools-plugin-v2.12.1) (2026-09-24)
 
 

@@ -36,7 +36,7 @@ The single most-important macOS fact: **APFS shares free space across every volu
 
 The second fact: **`du` lies about reclaimable space.** `tmutil` local snapshots hold purgeable space that `du` never counts, so `du` totals and reported free space can disagree by tens of GB. Check snapshots first when the numbers don't reconcile.
 
-The third fact: **`du` also over-counts in the other direction — copy-on-write clones.** APFS reports a cloned file at *full* `st_blocks` even though its blocks are shared and cost nothing, so a `du` total can far exceed what deleting the tree would actually free. This is not fixable by switching tools: `dust`, `gdu`, and `ncdu` all read `st_blocks` and double-count identically. See [CoW clones](#cow-clones-du-over-counts-what-deleting-would-free) below.
+The third fact: **`du` also over-counts in the other direction — copy-on-write clones.** APFS reports a cloned file at *full* `st_blocks` even though its blocks are shared and cost nothing, so a `du` total can far exceed what deleting the tree would actually free. This is not fixable by switching tools: `dust`, `gdu`, and `ncdu` all read `st_blocks` and double-count identically. See [CoW clones](references/cow-clones.md).
 
 ## Step 1: Measure honestly (built-in CLI)
 
@@ -54,36 +54,7 @@ du -hx -d1 ~ 2>/dev/null | sort -h
 
 BSD `du` counts **allocated blocks**, so it reports the real on-disk size of sparse files (e.g. OrbStack's `data.img.raw` reads its true 33 GB, not its apparent size). Trust the number *for sparse files* — but not as a general rule: allocated blocks are also what makes `du` over-count clones (below), and they never include purgeable snapshot space.
 
-### CoW clones: `du` over-counts what deleting would free
-
-A copy-on-write clone (`cp -c`, `clonefile(2)`) shares blocks with its source, so it costs ~nothing — but every tool reading `st_blocks` bills it at full size. Measured on a 200 MB file plus one clone (**ground truth: 200 MB**):
-
-| Tool | Reports |
-|------|---------|
-| BSD `du`, GNU `du`, `dust`, `gdu` | 400M |
-| `dust -s` (apparent) | 600M — also counts hardlinks |
-| **`df` delta** | **0 MB for the clone** ✅ |
-
-All of them dedupe *hardlinks* by inode; a clone has a **distinct inode**, so that logic never fires.
-
-This is not academic — it is the default on this platform for two common package managers:
-
-| Tool | Global cache | 2nd project's copy costs | `du` claims |
-|------|--------------|--------------------------|-------------|
-| `uv` → `.venv` | `~/.cache/uv` | **0 bytes** (clonefile) | full size |
-| `bun` → `node_modules` | `~/.bun/install/cache` | **0 bytes** (clonefile) | full size |
-| `cargo` → `target/` | `~/.cargo/registry` (sources only) | **full size** — each project compiles its own copy | accurate |
-
-So `du` is honest for `target/` and inflated for `node_modules`/`.venv`. **Deleting a clone frees real space only where it holds the last reference to those blocks.**
-
-**When a size gates a decision ("how much will this free?"), measure a `df` delta — it is the only clone-aware measurement available:**
-
-```bash
-before=$(df -k / | awk 'NR==2{print $4}'); rm -rf <target>; sync
-echo "freed $(( ($(df -k / | awk 'NR==2{print $4}') - before) / 1048576 )) GB"
-```
-
-Real cost of skipping this: a reclaim sweep summing `du` predicted **68.7 GB** where the `df` delta was **17.7 GB** — a 4× overstatement (2026-08). Clones *are* detectable via `fcntl(F_LOG2PHYS_EXT)` — a clone shares physical device offsets while having a distinct inode, and `stat`/`MetadataExt` carries no clone signal at all — but no general-purpose tool implements it yet ([bootandy/dust#590](https://github.com/bootandy/dust/issues/590)).
+When a size gates a decision ("how much will this free?"), or `df` barely moves after a delete, open [references/cow-clones.md](references/cow-clones.md) for the measured clone over-count, the per-package-manager table, and the `df`-delta recipe.
 
 ### Purgeable snapshot space (the thing `du` hides)
 
@@ -111,7 +82,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/scan-suspects.sh" --root ~/repos --min-mb 1000
 
 Output follows the structured `SUSPECT id=… tier=… size_kb=… cmd="…"` convention, plus a ranked human table and per-tier totals (`TIER_SAFE_KB=…`, `RECLAIMABLE_SAFE=…`). Work the tiers exactly as Step 4 — exhaust `safe` before `decision`, never blind-delete `userdata`.
 
-⚠️ Those totals are `du` sums, so they are an **upper bound** wherever CoW clones apply — notably the `node_modules` / `.venv` suspects, which `uv` and `bun` clone from a global cache. Treat `RECLAIMABLE_*` as "at most this much"; confirm with a `df` delta after acting. See [CoW clones](#cow-clones-du-over-counts-what-deleting-would-free).
+⚠️ Those totals are `du` sums, so they are an **upper bound** wherever CoW clones apply — notably the `node_modules` / `.venv` suspects, which `uv` and `bun` clone from a global cache. Treat `RECLAIMABLE_*` as "at most this much"; confirm with a `df` delta after acting. See [CoW clones](references/cow-clones.md).
 
 **This augments Step 1, it does not replace it.** The scan is pure measurement; the judgment stays with the agent — reading the APFS `Avail`-not-`Capacity %` picture, checking purgeable snapshots when `du` and `df` disagree, and deciding *which* `decision`/`userdata` items to actually remove.
 
@@ -149,21 +120,7 @@ Prune **only anonymous-hash volumes** (long hex names), never the human-named on
 
 ## Step 3: Third-party tooling
 
-Install via the mise `aqua:` backend (checksum-verified standalone binaries):
-
-```bash
-mise use -g aqua:bootandy/dust   # `dust` — fast tree-map, the one to lead with
-mise use -g aqua:Byron/dua-cli   # `dua`  — interactive TUI via `dua i`
-```
-
-| Tool | Install | Strength |
-|------|---------|----------|
-| `dust` | `aqua:bootandy/dust` | Fast visual tree; lead with this. `dust -r` reverse, `-d N` depth, `-X <glob>` exclude, `-s` apparent size, `-j` JSON to stdout |
-| `dua` | `aqua:Byron/dua-cli` | Interactive deletion TUI (`dua i`) |
-| `gdu` / `ncdu` | `aqua:dundee/gdu`, `ncdu` | TUI disk usage analyzers |
-| `diskonaut` | `aqua:imsnif/diskonaut` | Spatial treemap navigator |
-
-GUI options (mention, don't install): **DaisyDisk**, **GrandPerspective**, **OmniDiskSweeper**.
+For a faster or interactive scan (`dust`, `dua`, `gdu`/`ncdu`, `diskonaut`) and their mise `aqua:` installs, open [references/third-party-tools.md](references/third-party-tools.md).
 
 ## Step 4: Tiered cleanup
 
@@ -181,41 +138,13 @@ Work top-down — exhaust the safe tier before touching anything that needs a de
 | **User data** | Named Docker volumes | confirm each | Live project databases — never blind-prune |
 | | Anything in `~/Documents`, `~/Downloads` | user confirms | Irreplaceable |
 
-## Agentic Optimizations
-
-| Context | Command |
-|---------|---------|
-| Ranked usual-suspects rollup | `bash "${CLAUDE_SKILL_DIR}/scripts/scan-suspects.sh" --root ~/repos` |
-| Honest free space | `df -h / \| awk 'NR==2{print $4" avail"}'` |
-| Container free space | `diskutil apfs list \| grep -i 'Capacity In Use\|Free'` |
-| Top home consumers | `du -hx -d1 ~ 2>/dev/null \| sort -h \| tail -15` |
-| Snapshot count | `tmutil listlocalsnapshots / \| grep -c com.apple` |
-| Docker reclaimable | `docker system df` |
-| Fast tree (dust) | `dust -d2 -r ~` |
-| Machine-readable sizes (dust) | `dust -j -o b -d1 <dir> \| jq -r '.children[] \| [(.size \| rtrimstr("B") \| tonumber), .name] \| @tsv' \| sort -rn` — `-j` emits a `{size, name, children}` tree to stdout; `-o b` makes sizes bytes (`"12345B"`) instead of human strings |
-
 ## Quick Reference
 
-| Need | Command |
-|------|---------|
-| Fast-path suspect scan | `bash "${CLAUDE_SKILL_DIR}/scripts/scan-suspects.sh"` |
-| Honest free space | `df -h /` (read `Avail`, not `Capacity %`) |
-| APFS container truth | `diskutil apfs list` |
-| Disk hog scan | `du -hx -d1 <dir>` or `dust -d2 -r <dir>` |
-| Purgeable snapshots | `tmutil listlocalsnapshots /` |
-| Thin snapshots | `sudo tmutil thinlocalsnapshots / 999999999999 4` |
-| Docker reclaim | `docker system df` then `docker system prune -a -f` |
+One-line commands per step (suspect scan, honest free space, container truth, snapshots, Docker reclaim, machine-readable `dust` sizes): [references/command-reference.md](references/command-reference.md).
 
 ## Error Handling
 
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| `df` shows 99% but space "missing" | APFS per-volume `Capacity %` on the sealed snapshot volume | Read `Avail`, or `diskutil apfs list` |
-| `du` total ≪ used space | Purgeable local snapshots | `tmutil listlocalsnapshots /`; thin them |
-| Deleted a big tree, `df` barely moved | CoW clones — blocks were shared, `du` billed them per copy | Expected for `.venv`/`node_modules`; measure a `df` delta, and prune the global cache to free the shared blocks |
-| `uv cache clean` lock error | Another uv process / active session running | Close other uv work and retry |
-| Docker image still huge after prune | Reclaim ran inside VM; host image not yet shrunk | OrbStack auto-shrinks shortly; Docker Desktop needs manual reclaim |
-| `volume prune` wiped a database | Named volume pruned while no container ran | Restore from backup; only prune anonymous-hash volumes |
+When a number does not reconcile or a cleanup command fails, open the symptom → cause → fix table in [references/troubleshooting.md](references/troubleshooting.md).
 
 ## Related Skills
 
