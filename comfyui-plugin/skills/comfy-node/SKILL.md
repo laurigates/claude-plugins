@@ -43,22 +43,7 @@ Do **not** use it to add a node to an existing pack, or to publish a release
 
 ## The shape it automates
 
-```mermaid
-flowchart LR
-  idea["idea"] --> sc["scaffold.py"] --> gh["gh repo create<br/>+ seed main"] --> gop["gitops PR<br/>(entry + import block)"]
-  gop --> gate["👤 merge gitops PR"] --> apply["tofu-apply on release:<br/>adopt + secrets + protection"] --> rm["remove import block"] --> impl["implement + release"]
-  classDef g fill:#1b4332,stroke:#2d6a4f,color:#fff
-  classDef m fill:#6a040f,stroke:#9d0208,color:#fff
-  class sc,gh,gop,apply,rm g
-  class gate,impl m
-```
-
-Everything left of the gate is one orchestrated pass. There is **no scaffold
-PR** — the seed goes straight to `main` (see Phase 3 for why). The single gate
-(merging the gitops PR) is intentionally human — it feeds the apply pipeline on
-shared infra state (release-please cuts a gitops release, whose publication
-triggers the `tofu-apply.yml` GitHub Actions workflow). Never merge it on the
-user's behalf.
+idea → `scaffold.py` → `gh repo create` + seed `main` → gitops PR → **human merges the gitops PR** → tofu-apply on release → remove the import block → implement + release. There is no scaffold PR, and the gate is never merged on the user's behalf. Diagram: [references/pipeline-overview.md](references/pipeline-overview.md).
 
 ## Preconditions
 
@@ -350,13 +335,7 @@ DOM test gap) to `project:comfyui-nodes` per `taskwarrior-cross-session`.
 
 ## Failure modes & guards
 
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| `publish.yml` fails `Option '--token' requires an argument` | `comfy_registry` flag not yet applied | Confirm the tofu apply landed; `gh secret list` shows `REGISTRY_ACCESS_TOKEN`; re-run `gh workflow run publish.yml -R laurigates/<name>` |
-| release-please job fails on empty `app-id` | `release_please` credentials not applied, or repo on the legacy PAT workflow | The scaffold ships the App-token `release-please.yml`; confirm the apply landed (`gh api repos/laurigates/<name>/actions/variables/RELEASE_PLEASE_APP_ID --jq .name` returns a name), re-run via `workflow_dispatch` |
-| `403 Resource not accessible by integration` on repo create | Tried to create via the gitops App, not a personal token | Create with personal `gh auth`; the App only adopts via import |
-| The tofu plan shows a *create* (not *import*) for the repo | Import block missing or `id` wrong | The `id` is the bare repo name, not `owner/name`; add/fix the import block |
-| `just check` red in gitops | `tofu fmt`/`validate` failure | `just format` then re-check before pushing |
+When a phase fails — `publish.yml` `--token` error, empty release-please `app-id`, `403` on repo create, a tofu plan showing *create* instead of *import*, red `just check` in gitops — look up the symptom in [references/failure-modes.md](references/failure-modes.md).
 
 ## Notes
 

@@ -151,128 +151,23 @@ ResizeImage / KSampler / SaveImage are all skipped without errors.
 
 ## Null / empty / type probes
 
-| Probe | Returns BOOLEAN when |
-|---|---|
-| `easy isNone` | Input is None / unwired / a placeholder |
-| `ImpactIfNone` | Same, plus passes the non-None value through (combines probe + pass-through) |
-| `easy isMaskEmpty` | All mask pixels are zero (no positive area) |
-| `easy isFileExist` | Filesystem path resolves to a real file |
-| `easy isSDXL` | The CLIP / pipe / model identifies as SDXL architecture |
-
-Use cases:
-
-- Detector pipelines: `isMaskEmpty(face_mask)` → blocker to skip
-  detailer when no face is found.
-- Optional reference image: `isFileExist(ref_path)` → switch between
-  "use reference" and "no reference" branches.
-- Multi-architecture workflows that need different sampler defaults:
-  `isSDXL(pipe)` → switch sampler configuration.
+For what each probe (`easy isNone`, `ImpactIfNone`, `easy isMaskEmpty`, `easy isFileExist`, `easy isSDXL`) returns and typical gating uses, see [references/probes-and-logicutils.md](references/probes-and-logicutils.md).
 
 ## Logicutils — strings, bits, regex
 
-`comfyui-logicutils` is the sole source for:
-
-- **Regex / substring on strings** — `LogicGateCompareString` (also
-  registered as `AContainsB`). Pass a regex pattern in `b`, a string
-  in `a`, get BOOLEAN.
-- **Bitwise integer ops** — for flags packed into a single INT.
-  Niche; mostly useful when interfacing with external systems that
-  send flag bitmasks.
-- **`LogicGateInvertBasic`** — generic invert that handles any
-  truthy/falsy input (more lenient than `ImpactNeg`, which expects
-  strict BOOLEAN).
+Regex-on-string predicates, bitwise INT gates, and the lenient `LogicGateInvertBasic` are detailed in [references/probes-and-logicutils.md](references/probes-and-logicutils.md).
 
 ## Iterator stop
 
-`ImpactConditionalStopIteration` — only useful inside an Impact
-detector→detailer iterator loop. Takes a BOOLEAN; when True, halts
-the iterator's next round. The iterator must support stop signals
-(detector-pipeline variants do; non-iterating Impact paths ignore it).
+`ImpactConditionalStopIteration` (Impact detector→detailer loops only): see [references/probes-and-logicutils.md](references/probes-and-logicutils.md).
 
 ## Recipes
 
-### Skip face-detailer when no face detected
-
-```
-LoadImage ──► BBoxDetector ──► IMAGE/MASK output
-                                    │
-                                    ▼
-                            easy isMaskEmpty ──► (BOOLEAN)
-                                                    │
-                                                    ▼ (invert: empty → skip)
-                                              ImpactNeg
-                                                    │
-                                                    ▼
-                            ┌───────► easy blocker ◄────── (the image+mask payload)
-                            │           continue
-                            ▼
-                  (downstream FaceDetailer chain, silently skipped on empty)
-```
-
-`isMaskEmpty` → True when no face found → ImpactNeg flips it → False
-→ blocker fires → FaceDetailer + SaveImage chain is skipped without
-error.
-
-### Multi-criteria gate
-
-"Run the high-quality upscale path only if **the image is large AND
-the reference exists AND we're not in SDXL mode**":
-
-```
-GetImageSize&Count(image) ──► width  ──► easy compare (> 1024) ──┐ (BOOL)
-                                                                  │
-easy isFileExist(ref_path) ──► (BOOL) ───────────────────────────┤
-                                                                  │
-easy isSDXL(pipe) ──► ImpactNeg (NOT SDXL) ──► (BOOL) ───────────┤
-                                                                  ▼
-                                              ImpactLogicalOperators (AND of 3)
-                                                                  │
-                                                                  ▼
-                                                  ImpactConditionalBranch
-                                                  tt = upscale chain
-                                                  ff = passthrough
-```
-
-Three independent predicates combined with AND. The downstream branch
-is fully lazy: when any predicate is False, none of the upscale chain
-runs.
-
-### Distinguish "first run" from "rerun" via file existence
-
-Useful for caching: if an output file already exists, skip
-regeneration.
-
-```
-easy isFileExist("output/cached_step1.png") ──► (BOOL)
-                                                  │
-                                                  ▼
-                                  ImpactConditionalBranch
-                                  tt = LoadImage from cache
-                                  ff = run full pipeline + SaveImage
-```
+Worked graphs — skip a face-detailer when no face is detected, a multi-criteria AND gate, and first-run vs rerun via file existence — are in [references/recipes.md](references/recipes.md).
 
 ## Gotchas
 
-- **Floats and equality**: `easy compare` with `==` on FLOATs is a
-  trap. Use `SimpleComparison` (epsilon-aware) or `easy compare` with
-  `<` / `>` instead. `1.0 + 2.0 == 3.0` is True, but `0.1 + 0.2 == 0.3`
-  is False.
-- **Lazy branch + `ComfyExecutionBlocker`**: lazy nodes
-  (`easy ifElse`, `ImpactConditionalBranch`) *won't* evaluate the
-  unselected branch, but they pass through whatever node-graph value
-  the selected branch produces — including an `ExecutionBlocker`
-  sentinel. If both branches can emit blockers, plan the merge
-  carefully.
-- **`SimpleMathCondition` returns FLOAT** (1.0 / 0.0), not BOOLEAN.
-  Pass through `ImpactCompare` (`> 0.5`) before feeding a switch that
-  wants BOOLEAN.
-- **`easy isNone` on a pipe**: pipes (`PIPE_LINE`) are tuples — `isNone`
-  returns False on an empty pipe (the tuple exists, just with None
-  fields). To detect missing pipe content, unpack with `pipeOut` and
-  probe individual fields.
-- **`AContainsB` is regex, not substring**: special characters need
-  escaping. To do a plain substring check, escape with `\Q...\E` or
-  use Python regex-special escapes manually.
+Before trusting a predicate, check [references/gotchas.md](references/gotchas.md): float `==`, blockers passing through lazy branches, `SimpleMathCondition` returning FLOAT, `easy isNone` on a pipe, and `AContainsB` being regex.
 
 ## Cross-refs
 
