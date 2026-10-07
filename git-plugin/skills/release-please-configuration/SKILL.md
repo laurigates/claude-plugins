@@ -266,55 +266,15 @@ For the standard `changelog-sections` set and release-type table, see
 
 ## Migrating from Shared Tags to Component Tags
 
-When transitioning from `v1.0.0` style tags to `component-v1.0.0`:
-
-1. Add `"include-component-in-tag": true` to config
-2. Add `"component": "package-name"` to each package
-3. Old tags (`v1.0.0`) will be ignored
-4. New releases will create component-specific tags
-5. Close any pending combined release PRs
-
-**Note:** Release-please scans for component-specific tags. The first run after
-migration creates release PRs for all packages with changes since the manifest
-version.
+When moving from `v1.0.0` tags to `component-v1.0.0` tags, follow [references/tag-migration.md](references/tag-migration.md).
 
 ## Monorepo Troubleshooting
 
-### One Package's PR Not Created (others fine)
-
-Check:
-1. Are there releasable commits scoped to that package path since its last
-   component tag?
-2. Does the commit scope match the package path?
-3. Is the package's `component` set and unique?
-
-### Wrong Version in a Package's Extra File
-
-Ensure the package's `extra-files` paths are relative to the **package
-directory**, not the repo root (release-please prepends the package path):
-```json
-// Correct (package path is "my-package")
-"extra-files": [{"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}]
-```
-
-For single-repo troubleshooting (no PR created at all, version not bumping,
-CI not running on the release PR), see `configure-plugin:configure-release-please`.
+When one package's release PR is not created, or a package's extra file gets the wrong version, see [references/troubleshooting.md](references/troubleshooting.md).
 
 ## Quick Reference
 
-```bash
-# Check latest release-please-action version
-curl -s https://api.github.com/repos/googleapis/release-please-action/releases/latest | jq -r '.tag_name'
-
-# List pending release PRs (per-component in a monorepo)
-gh pr list --label "autorelease: pending"
-
-# View recent workflow runs
-gh run list --workflow=release-please.yml --limit=5
-
-# Inspect a package's current version in the manifest
-jq -r '."my-package"' .release-please-manifest.json
-```
+For the commands that list pending release PRs, recent workflow runs, and a package's manifest version, see [references/quick-reference.md](references/quick-reference.md).
 
 ## Resources
 

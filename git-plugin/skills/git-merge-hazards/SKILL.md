@@ -25,6 +25,8 @@ Notes that are *not* part of that body:
 
 - The `## Agentic Optimizations` table at the end is this skill's own command
   index, not rule text. Leave it out when syncing with `pr-merge-hazards.md`.
+- §3 and §5's two follow-on subsections were moved verbatim into `references/`
+  for size; they are still rule text when syncing with `pr-merge-hazards.md`.
 
 - Two gates below — §1's merged-ness authority order and the whole of §4 — are
   also reproduced verbatim in the `pr-merge-hazards.md` stub, because they are
@@ -101,71 +103,7 @@ branch is gone **cannot be reopened**.
 
 ## 3. Stacked-chain merges: push by SHA, never `HEAD:` — and expect auto-close races
 
-Working down a stacked-PR chain (retarget child → merge base → rebase child →
-force-push → merge, per #2) has several traps of its own (observed 2026-07,
-claude-plugins #1979→#1987):
-
-- **`HEAD:` in a push refspec is a race in a shared checkout.** HEAD is
-  process-global repo state; a coworker session can move it *between two of
-  your Bash calls*. Observed: rebase left HEAD at the child's new tip; by the
-  next call HEAD was `main`'s tip, so `git push --force-with-lease origin
-  HEAD:<child-branch>` overwrote the branch with main. Resolve the tip to an
-  **explicit SHA in the same command that creates it** and push
-  `git push --force-with-lease origin <sha>:refs/heads/<branch>`.
-- **Brace that variable — `"$sha:<branch>"` is a zsh word-modifier expansion.**
-  Stock zsh (reproduces under `zsh -f`) eats the character after the colon as a
-  history modifier whenever it happens to be one, silently rewriting the
-  refspec the bullet above just told you to use:
-
-  | Written | zsh actually sends | |
-  |---|---|---|
-  | `"$sha:refs/heads/x"` | `<sha>efs/heads/x` | `:r` |
-  | `"$sha:feat/x"` | `at/x` | `:f`+`:e` |
-  | `"$sha:chore/x"` | `<sha>hore/x` | `:c` |
-  | `"$sha:test/x"` / `release/` / `ci/` / `hotfix/` / `refactor/` | mangled | `:t :r :c :h :r` |
-  | `"$sha:style/x"` | **hard error** `bad substitution` | `:s` |
-  | `"$sha:fix/x"` / `docs/` / `perf/` / `build/` / `main` | correct | not modifiers |
-
-  Half the conventional-commit prefixes break and half don't, which is why it
-  reads as a baffling one-off instead of a rule. Always
-  `git push --force-with-lease origin "${sha}:refs/heads/<branch>"`. Observed
-  2026-08 pushing `feat/justfile-pr-triage`: `src refspec <sha>efs/heads/… does
-  not match any` — the error names a ref you never typed, so it looks like a
-  stale SHA rather than a quoting bug.
-- **Spell the destination `refs/heads/<branch>`, always.** A `<sha>:<branch>`
-  refspec works only when `<branch>` **already exists on the remote**: git has a
-  bare commit object on the left, so there is no ref namespace to infer the
-  destination from, and it refuses rather than guessing — `error: The
-  destination you provided is not a full refname (i.e., starting with
-  "refs/")`. git wraps that message right after `(i.e.,`, so triage by grepping
-  the `not a full refname` fragment, not the whole sentence. The full refname
-  is accepted whether or not the branch exists, so there is no branch state to
-  reason about. It compounds with the brace rule immediately above rather than
-  replacing it: `"$sha:refs/heads/x"` is the `:r` word-modifier row in that
-  table — unbraced, zsh silently sends `<sha>efs/heads/x`.
-- **An empty-diff force-push auto-closes the PR — and a closed PR whose *head*
-  moved after closing cannot be reopened.** Sibling of #2's
-  base-branch-deleted variant. GitHub saw the branch == main, closed the PR,
-  and refused `gh pr reopen` because the head ref had moved since closing.
-- **A single mergeability read after a force-push is a race.** GitHub
-  recomputes `mergeable` asynchronously; `gh pr merge` right after a push
-  fails with "not mergeable" on a perfectly clean PR. Poll
-  `gh pr view <n> --json mergeable` until it leaves `UNKNOWN`.
-- **Waiting for CI races check *registration*, not just completion.** A loop on
-  "zero pending checks" can exit **immediately** after a push/`update-branch`:
-  zero pending is trivially true before the jobs are registered. Observed
-  2026-07: `state=CLEAN` on a **single** check while three CI jobs had not yet
-  appeared — merging there merges untested. Gate on **both** nothing-pending
-  **and** `--jq 'length'` ≥ the expected check count. Same root cause as the
-  mergeability race above: an async field read once, too early.
-
-- **Check** before every force-push: `git log --oneline origin/main..<sha>` —
-  expect *exactly* the child's commits, nothing more, never empty.
-- **Recovery** when auto-closed: the rebased commits survive in local objects
-  (`git reflog`) — `git push --force-with-lease origin "${sha}:refs/heads/<branch>"`,
-  open a fresh PR from the branch, comment "Superseded by #new" on the closed
-  one. The full refname matters most here: the branch may not exist on the
-  remote yet, and the short form cannot create it.
+Read [references/stacked-chain-push.md](references/stacked-chain-push.md) before any force-push or merge in a stacked-PR chain. It carries the push-by-SHA refspec form (braced variable, full `refs/heads/` refname, the zsh word-modifier table), the empty-diff auto-close, the mergeability and CI-registration races, the pre-push check, and auto-close recovery.
 
 ## 4. A red PR may still be mergeable — `UNSTABLE` is not `BLOCKED`
 
@@ -196,65 +134,7 @@ Does **not** close #162   →   GitHub reads `close #162`, and closes it
 - **Recovery**: `gh issue reopen` works (nothing was deleted, unlike #2), then
   comment so the next reader doesn't re-derive it.
 
-### It is not only negation — plain past tense in a follow-ups section does it
-
-The rule above reads as "watch out for the word *not*". The trap is wider: **any**
-closing verb adjacent to a reference matches, including one merely *describing*
-what already happened, and including a reference wrapped in a **markdown link**.
-
-> Observed 2026-08-16 (comfyui-nodes fleet). A PR body's follow-ups section
-> asked for an issue to be re-opened, describing it as one this bug had
-> **closed** on a false premise. GitHub matched the closing verb against the
-> bracketed cross-repo link that followed it and closed the issue on merge — a
-> line whose entire purpose was to request a re-open. The author had cited this
-> very rule earlier in the same session.
-
-Three amplifiers:
-
-- **A bracketed cross-repo link still matches.** A closing verb followed by a
-  markdown-linked `owner/repo#N` is a match, and a naive audit regex like
-  `keyword\s+[\w./-]*#\d+` misses it on the `[` — then reports the body clean.
-- **A shared fleet body multiplies it.** The same text went into 13 sweep PRs, so
-  13 merges each targeted the same issue.
-- **The actor is *you*, not a bot** — the timeline reads `closed by <you>` seconds
-  after the merge. Don't rule out a closing keyword because no bot appears.
-
-### And not only assertion — a keyword you are *quoting* still fires
-
-The two forms above are sentences that *mean* something about an issue. The
-third means nothing about it at all: the keyword appears inside an **example, a
-fixture, or a regex you are documenting**. GitHub does not care that the line is
-inside backticks, a code fence, or a sentence whose subject is the audit itself.
-
-> Observed 2026-08-17 (FVH `infrastructure` #2213). A PR body's verification
-> section reported that a closing-keyword scan returned zero hits, and quoted
-> its two control fixtures inline as evidence. The scan it was reporting on had
-> genuinely passed — on the *ADR file*. Run against the PR body, the same regex
-> matched the body's own worked examples, which would have closed an unrelated
-> issue on merge. Caught only because the scan was re-run against the artefact
-> about to be published, rather than the one it was describing.
-
-Two things generalise:
-
-- **Scan the artefact you are about to publish, not the one you were auditing.**
-  A PR body, an issue comment, and a rules file each need their own pass; a clean
-  result on one says nothing about the others.
-- **Do not reproduce the fixture in prose that ships.** Describe it — "control-
-  tested against a bare reference and a bracketed cross-repo link, both found" —
-  and keep the literal strings in the throwaway file. Documenting the trap is
-  the one context where you are *guaranteed* to type the trap.
-
-**Audit the body before merging, with a control.** Scan every PR you are about to
-merge for a closing verb adjacent to an issue reference, allowing an optional
-`[` and an optional `owner/repo` between them, and prove the scan works by
-confirming it finds a reference you *know* is there. A negative from an
-unvalidated regex is worth nothing — the first audit run in the case above
-reported the fleet clean.
-
-The damage is a **false status report**: 2026-08-05, a PR body written to
-disclaim closure closed loractl #162 at merge, and the session reported it open
-for two turns afterward. Like #2, GitHub does this silently — only re-reading
-issue state from the API catches it.
+The trap is wider than negation: plain past tense, a markdown-linked cross-repo reference, and a keyword you are only *quoting* all match too. Before merging a PR whose body mentions issue numbers, read [references/closing-keyword-cases.md](references/closing-keyword-cases.md) for those cases, the audit-with-a-control procedure, and the incidents.
 
 ## Agentic Optimizations
 

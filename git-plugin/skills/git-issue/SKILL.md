@@ -79,52 +79,11 @@ Rules:
 4. After normalization, dedupe and count refs: 0 → No-Arguments interactive;
    1 → Single; ≥2 → Multiple.
 
-### No Arguments → Interactive Mode
-
-Use AskUserQuestion to prompt:
-
-```yaml
-questions:
-  - header: "Issues"
-    question: "How would you like to select issues to work on?"
-    options:
-      - label: "Let me choose specific issues"
-        description: "Show issue list for manual selection"
-      - label: "Claude decides priority"
-        description: "Analyze issues and recommend which to tackle"
-      - label: "Filter by label"
-        description: "Select issues with a specific label"
-```
-
-**For "Let me choose specific issues":**
-1. Fetch: `gh issue list --state open --json number,title,labels,assignees`
-2. Present checkboxes with `multiSelect: true`
-
-**For "Claude decides priority":**
-- Analyze all open issues
-- Score by clarity, scope, dependencies
-- Present top recommendations
-
-**For "Filter by label":**
-- Present label selection from available labels
-- Then show matching issues for selection
+With no issue refs, prompt via `AskUserQuestion`; with two or more, analyse and group them before processing; with `--auto`, score, recommend, and wait for approval. See [references/selection-modes.md](references/selection-modes.md) for the question options and each mode's steps.
 
 ### Single Issue (`/git:issue 123`)
 
 Process directly with standard TDD workflow.
-
-### Multiple Issues (`/git:issue 123 456 789`)
-
-1. Analyze all issues for conflicts and parallelization
-2. Group by dependencies
-3. Process sequentially or spawn parallel agents
-
-### Auto Mode (`/git:issue --auto`)
-
-1. Fetch all open issues
-2. Score and prioritize
-3. Present recommendations for approval
-4. Process approved issues
 
 ---
 
@@ -213,25 +172,7 @@ gh pr edit <pr-number> --add-label "<labels>"
 
 ### Step 3: Parallel Execution (--parallel flag)
 
-When `--parallel` is specified:
-
-1. Group issues by dependencies (from analysis)
-2. For each parallel group, spawn a Task agent:
-
-```
-Agent tool with subagent_type: "general-purpose", prompt: "Process issue #N with TDD workflow.
-Cut the branch with `git fetch origin && git switch -c fix/issue-N origin/main` — never from local main..."
-```
-
-Give the subagent the issue's title and body verbatim (quoted, not summarised)
-and the labels to apply, and instruct it to read the full comment thread itself
-— `gh issue view N --json title,body,comments` — before planning, scoping from
-the latest deciding comment rather than from your description of it. Do not
-restate the scope in your own words: the subagent implements what the thread
-decided, not what you paraphrased.
-
-3. Wait for all agents to complete
-4. Consolidate results
+When `--parallel` is set, spawn one agent per parallel group as described in [references/parallel-execution.md](references/parallel-execution.md): each cuts its branch from `origin/main`, gets the issue title and body verbatim, and reads the full comment thread itself.
 
 ---
 

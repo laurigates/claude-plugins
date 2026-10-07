@@ -86,48 +86,7 @@ git push origin def5678..HEAD:fix/api-timeout
 
 ## Modern Git Commands (2025)
 
-### Switch vs Checkout
-
-Modern Git uses specialized commands instead of multi-purpose `git checkout`:
-
-```bash
-# Branch switching - NEW WAY (Git 2.23+)
-git switch feature-branch          # vs git checkout feature-branch
-git switch -c new-feature          # vs git checkout -b new-feature
-git switch -                       # vs git checkout -
-
-# Creating branches with tracking
-git switch -c feature --track origin/feature
-git switch -C force-recreate-branch
-```
-
-### Restore vs Reset/Checkout
-
-File restoration is now handled by `git restore`:
-
-```bash
-# Unstaging files - NEW WAY
-git restore --staged file.txt      # vs git reset HEAD file.txt
-git restore --staged .             # vs git reset HEAD .
-
-# Discarding changes - NEW WAY
-git restore file.txt               # vs git checkout -- file.txt
-git restore .                      # vs git checkout -- .
-
-# Restore from specific commit
-git restore --source=HEAD~2 file.txt    # vs git checkout HEAD~2 -- file.txt
-git restore --source=main --staged .    # vs git reset main .
-```
-
-### Command Migration Guide
-
-| Legacy Command                | Modern Alternative                 | Purpose             |
-| ----------------------------- | ---------------------------------- | ------------------- |
-| `git checkout branch`         | `git switch branch`                | Switch branches     |
-| `git checkout -b new`         | `git switch -c new`                | Create & switch     |
-| `git checkout -- file`        | `git restore file`                 | Discard changes     |
-| `git reset HEAD file`         | `git restore --staged file`        | Unstage file        |
-| `git checkout HEAD~1 -- file` | `git restore --source=HEAD~1 file` | Restore from commit |
+Use `git switch` for branches and `git restore` for files instead of `git checkout` / `git reset`. See [references/modern-git-commands.md](references/modern-git-commands.md) for the forms and the legacy-to-modern migration table.
 
 ## Branch Naming
 
@@ -137,74 +96,7 @@ For comprehensive branch naming conventions including type prefixes, issue linki
 
 ## Linear History Workflow
 
-### Trunk-Based Development
-
-**Preferred: Main-branch development** (see above) - no local feature branches needed.
-
-**Alternative: Local feature branches** for complex multi-day work:
-
-```bash
-# Feature branch lifecycle (max 2 days)
-git switch main
-git pull origin main
-git switch -c feat/user-auth
-
-# Daily rebase to stay current
-git switch main && git pull
-git switch feat/user-auth
-git rebase main
-
-# Interactive cleanup before PR
-git rebase -i main
-# Squash, fixup, reword commits for clean history
-
-# Push and create PR
-git push -u origin feat/user-auth
-```
-
-Use local branches only when:
-- Multi-day complex features requiring isolation
-- Experimental work that might be abandoned
-- Need to switch contexts frequently between unrelated work
-
-### Squash Merge Strategy
-
-Maintain linear main branch history:
-
-```bash
-# Manual squash merge
-git switch main
-git merge --squash feat/user-auth
-git commit -m "feat: add user authentication system
-
-- Implement JWT token validation
-- Add login/logout endpoints
-- Create user session management
-
-Closes #123"
-```
-
-### Interactive Rebase Workflow
-
-Clean up commits before sharing:
-
-```bash
-# Rebase last 3 commits
-git rebase -i HEAD~3
-
-# Common rebase commands:
-# pick   = use commit as-is
-# squash = combine with previous commit
-# fixup  = squash without editing message
-# reword = change commit message
-# drop   = remove commit entirely
-
-# Example rebase todo list:
-pick a1b2c3d feat: add login form
-fixup d4e5f6g fix typo in login form
-squash g7h8i9j add form validation
-reword j1k2l3m implement JWT tokens
-```
+Main-branch development (above) is preferred. For a local feature branch (multi-day or experimental work), squash merging, and interactive rebase cleanup, see [references/local-feature-branches.md](references/local-feature-branches.md).
 
 ## Advanced Rebase Patterns
 
@@ -244,48 +136,7 @@ mcp__github__list_issues(owner="owner", repo="repo")
 
 ## Best Practices
 
-### Daily Integration Workflow
-
-```bash
-# Start of day: sync with main
-git switch main
-git pull origin main
-git switch feat/current-work
-git rebase main
-
-# End of day: push progress
-git add . && git commit -m "wip: daily progress checkpoint"
-git push origin feat/current-work
-
-# Before PR: clean up history
-git rebase -i main
-git push --force-with-lease origin feat/current-work
-```
-
-### Conflict Resolution with Rebase
-
-```bash
-# When rebase conflicts occur
-git rebase main
-# Fix conflicts in editor
-git add resolved-file.txt
-git rebase --continue
-
-# If rebase gets messy, abort and merge instead
-git rebase --abort
-git merge main
-```
-
-### Safe Force Pushing
-
-```bash
-# Always use --force-with-lease to prevent overwriting others' work
-git push --force-with-lease origin feat/branch-name
-
-# Never force push to main/shared branches
-# Use this alias for safety:
-git config alias.pushf 'push --force-with-lease'
-```
+Always force-push with `--force-with-lease`, never to `main`/shared branches. For the daily rebase-onto-main routine and rebase conflict handling, see [references/local-feature-branches.md](references/local-feature-branches.md).
 
 ## Main Branch Protection
 
