@@ -172,16 +172,8 @@ renewal, or a VPN altering routes — it prints events as they happen.
 
 ## Modern Subsystems net-tools Never Covered
 
-```bash
-ip rule                     # policy routing rules (which table applies to what)
-ip route show table 100     # a specific non-main routing table
-ip netns list               # network namespaces (the base under containers)
-ip netns exec <ns> ip -br a # run any command inside a namespace
-ip -br link show type vlan   # VLAN interfaces
-ip -d link show <dev>        # -d = driver/type detail (bond, bridge, vxlan…)
-bridge -c fdb show           # bridge forwarding DB (iproute2 bridge tool)
-bridge vlan show             # per-port VLAN membership on a bridge
-```
+Policy rules, non-main tables, network namespaces, VLAN/bond/bridge detail, and
+the `bridge` tool: see [references/advanced-subsystems.md](references/advanced-subsystems.md).
 
 ## Mutating Commands (require root)
 
@@ -190,43 +182,8 @@ bridge vlan show             # per-port VLAN membership on a bridge
 > (netplan/NetworkManager/systemd-networkd). Flagged here so they're
 > recognizable; run deliberately.
 
-### Addresses
-
-```bash
-sudo ip addr add 10.0.0.5/24 dev eth0        # assign an address
-sudo ip addr add 10.0.0.5/24 dev eth0 label eth0:1   # labeled alias
-sudo ip addr del 10.0.0.5/24 dev eth0        # remove an address
-sudo ip addr flush dev eth0                  # remove ALL addresses on eth0
-```
-
-### Links
-
-```bash
-sudo ip link set eth0 up                     # bring interface up
-sudo ip link set eth0 down                   # bring interface down
-sudo ip link set eth0 mtu 9000               # set MTU (jumbo frames)
-sudo ip link set eth0 address 02:11:22:33:44:55   # override MAC
-sudo ip link add veth0 type veth peer name veth1  # create a veth pair
-sudo ip link delete veth0                    # delete an interface
-```
-
-### Routes
-
-```bash
-sudo ip route add 192.168.5.0/24 via 10.0.0.1        # add a route
-sudo ip route add default via 10.0.0.1 dev eth0      # set default gateway
-sudo ip route add 10.1.0.0/16 dev eth0 metric 100    # metric-weighted route
-sudo ip route del 192.168.5.0/24                     # remove a route
-sudo ip route replace default via 10.0.0.254         # atomically swap default
-```
-
-### Neighbors
-
-```bash
-sudo ip neigh add 10.0.0.9 lladdr 00:11:22:33:44:55 dev eth0 nud permanent  # static ARP
-sudo ip neigh del 10.0.0.9 dev eth0          # drop a neighbor entry
-sudo ip neigh flush dev eth0                 # clear the cache on eth0
-```
+The add / del / set / flush / replace commands for addresses, links, routes,
+and neighbors are in [references/mutating-commands.md](references/mutating-commands.md).
 
 ## Common Patterns
 
@@ -274,67 +231,15 @@ done
 
 ## Quick Reference
 
-### Objects
-
-| Object | Abbrev | Purpose |
-|--------|--------|---------|
-| `address` | `a` | IP addresses on interfaces |
-| `link` | `l` | L2 interface state, MAC, MTU |
-| `route` | `r` | Routing tables |
-| `neigh` | `n` | ARP/NDP neighbor cache |
-| `rule` | `ru` | Policy routing rules |
-| `maddr` | `m` | Multicast group membership |
-| `netns` | | Network namespaces |
-| `monitor` | | Live change stream |
-
-### Common Verbs
-
-| Verb | Meaning |
-|------|---------|
-| `show` (default) | Display entries |
-| `add` | Create an entry (root) |
-| `del` / `delete` | Remove an entry (root) |
-| `set` | Modify link properties (root) |
-| `replace` | Atomically add-or-update (root) |
-| `flush` | Remove all matching entries (root) |
-| `get` | Resolve a single lookup (`route get`) |
+The object and verb tables (with abbreviations) are in
+[references/quick-reference.md](references/quick-reference.md).
 
 ## Troubleshooting
 
-### `Object "a" is unknown, try "ip help"`
-
-Very old iproute2, or a busybox `ip` applet. Spell the object out (`ip address`)
-or check `ip -V` for the version.
-
-### `RTNETLINK answers: Operation not permitted`
-
-A mutating command run without root. Prefix with `sudo`.
-
-### `RTNETLINK answers: File exists` on `ip route add`
-
-The route (or a conflicting one) already exists. Use `ip route replace` to
-overwrite atomically, or `ip route del` first.
-
-### Address vanished after reboot
-
-`ip addr add` is runtime-only. Persist it in the distro's network manager
-(netplan YAML, NetworkManager connection, or systemd-networkd `.network`).
+For `Object "a" is unknown`, `RTNETLINK answers: …` errors, and addresses that
+vanish after reboot, see [references/troubleshooting.md](references/troubleshooting.md).
 
 ## Requirements
 
-```bash
-# iproute2 ships in the base system on essentially all Linux distros.
-# If missing (minimal container images):
-
-# Debian/Ubuntu
-sudo apt install iproute2
-
-# Alpine
-apk add iproute2
-
-# RHEL/Fedora
-sudo dnf install iproute
-
-# jq for JSON parsing (examples above)
-sudo apt install jq        # or: apk add jq / dnf install jq
-```
+`ip` ships with iproute2 on essentially every Linux distro; install commands for
+minimal images (and `jq`) are in [references/troubleshooting.md](references/troubleshooting.md).

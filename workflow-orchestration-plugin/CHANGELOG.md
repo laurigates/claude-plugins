@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.2](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.13.1...workflow-orchestration-plugin-v1.13.2) (2026-10-07)
+
+
+### Code Refactoring
+
+* **skills:** move reference material out of oversized SKILL.md bodies ([#2922](https://github.com/laurigates/claude-plugins/issues/2922)) ([79fd4ae](https://github.com/laurigates/claude-plugins/commit/79fd4ae75f7c9260a71e92b6ecf16e0a735eed6f))
+
 ## [1.13.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.13.0...workflow-orchestration-plugin-v1.13.1) (2026-10-05)
 
 

@@ -1,0 +1,3 @@
+# feedback-session: running in plan mode
+
+**In plan mode**: neither `AskUserQuestion` nor the subsequent `gh issue create` call is permitted — the harness disallows non-readonly tool calls except writes to the active plan file. Write the categorized findings to the active plan file as a single coherent block (one section per finding with category, plugin/skill, description, evidence, and proposed title/body), then call `ExitPlanMode` to surface for user approval. Do not file issues directly. After the user approves the plan, fall back to the default flow: present the selection prompt via `AskUserQuestion` (Step 4) and create the approved issues (Step 5). The `--dry-run` flag remains the fastest way to preview findings without entering plan mode.

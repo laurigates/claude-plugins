@@ -19,10 +19,7 @@ Detect code that fails without saying so. Two tracks:
 | **errors** | *Syntactic* — an error signal is discarded | `catch (e) {}`, `\|\| true`, `2>/dev/null`, floating promise, `_ = err` |
 | **degradation** | *Logical* — an operation "succeeds" with empty/useless output because a precondition was silently unmet | success toast on `count === 0`, `if (!apiKey) return []`, a 1-of-3 detector run with no indication |
 
-The two were previously separate skills (`code-error-swallowing` +
-`code-silent-degradation`); they are the same user intent — "the work
-reported success but nothing real happened" — so they live in one scanner
-with a `--track` selector.
+Why one skill covers both tracks: [references/history.md](references/history.md).
 
 ## When to Use This Skill
 
@@ -100,12 +97,8 @@ bash ${CLAUDE_SKILL_DIR}/scripts/scan-shell.sh <path>
 | JS / TS, Python, Go, Rust | `ast-grep scan -c rules/sgconfig.yml` (one pass) | [REFERENCE-js.md](REFERENCE-js.md), [REFERENCE-python.md](REFERENCE-python.md), [REFERENCE-go.md](REFERENCE-go.md), [REFERENCE-rust.md](REFERENCE-rust.md) |
 | Shell / bash | `scripts/scan-shell.sh` (grep-based) | [REFERENCE-shell.md](REFERENCE-shell.md) |
 
-**Graceful degradation** — if `ast-grep` (packaged as `ast-grep` or `sg`) is not
-installed, fall back to the per-pattern flow: read the `REFERENCE-{js,python,go,
-rust}.md` files (each links its patterns to the rule `.yml`) and run the
-individual `sg -p '<pattern>' --lang <lang>` commands by hand. Prefer the repo's
-own `errcheck`/`staticcheck` (Go) or `cargo clippy` (Rust) when configured — the
-rule project surfaces what those linters would catch, it does not replace them.
+If `ast-grep`/`sg` is not installed, follow the per-pattern fallback in
+[references/no-ast-grep-fallback.md](references/no-ast-grep-fallback.md).
 
 For every finding, capture: `file:line`, matched snippet, surrounding function
 name if discoverable.
@@ -194,34 +187,15 @@ place, then list every change with `file:line` references.
 Group by severity descending; omit Low unless `--severity low`. Tag each row
 with its track.
 
-```
-Hidden-Failure Scan: <path>  (track: both)
-Detected app context: <cli|frontend|backend|library|daemon|ci>
-
-| Track       | Severity | File:Line       | Pattern                     | Recommended action               |
-|-------------|----------|-----------------|-----------------------------|----------------------------------|
-| errors      | High     | release.sh:42   | `npm publish ... \|\| true` | stderr + exit 1                  |
-| degradation | High     | scan.ts:88      | success on zero results     | distinguish "none" vs "skipped"  |
-| errors      | Medium   | api/fetch.ts:17 | empty catch                 | console.error + toast (sanitized)|
-
-Totals: errors(high=N med=N low=N)  degradation(high=N med=N low=N)  across M files
-```
+Use the report layout in [references/report-format.md](references/report-format.md).
 
 ## Agentic Optimizations
 
-| Context | Command |
-|---------|---------|
-| Default scan (both tracks) | `/code:hidden-failures .` |
-| Errors only, shell, high severity | `/code:hidden-failures . --track errors --lang shell --severity high` |
-| Degradation only, with fixes | `/code:hidden-failures src/ --track degradation --fix` |
-| Review-ready error patch | `/code:hidden-failures src/ --track errors --emit-patch > /tmp/fix.patch` |
+Example invocations per track and flag combination are in
+[references/invocations.md](references/invocations.md).
 
 ## See Also
 
-- [`rules/`](rules/) — the executable ast-grep catalog for the errors track (`sgconfig.yml` + `rules/lib/*.yml` + `rules/tests/*-test.yml`); run `ast-grep test -c rules/sgconfig.yml --skip-snapshot-tests` to verify every rule against its fixtures
-- `/code:antipatterns` — delegates here for the error-swallowing category
-- `/code:review` — prose code review
-- `.claude/rules/shell-scripting.md` — canonical allowlist for shell `\|\| true` / `2>/dev/null`
-- `REFERENCE-surfacing.md` — app-context → channel matrix and privacy rules (errors track)
-- `REFERENCE-degradation.md` — the five degradation patterns, severities, and fixes (degradation track)
-- `/configure:sentry`, `/configure:feature-flags` — surfacing/monitoring infrastructure
+The `rules/` catalog (and the `ast-grep test` command that verifies it), sibling
+skills, the shell allowlist rule, and the REFERENCE-* sidecars are indexed in
+[references/related.md](references/related.md).

@@ -1,5 +1,41 @@
 # Changelog
 
+## [1.13.0](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.12.2...github-actions-plugin-v1.13.0) (2026-10-07)
+
+
+### Features
+
+* **documentation-plugin:** add public-export-sanitization; fold generic lessons into seven skills ([#2810](https://github.com/laurigates/claude-plugins/issues/2810)) ([b82ba11](https://github.com/laurigates/claude-plugins/commit/b82ba11afcb46a9055e6d83ca9a0d3da110d2068))
+* **git-plugin:** adopt five portfolio skills into the marketplace ([#2651](https://github.com/laurigates/claude-plugins/issues/2651)) ([3401005](https://github.com/laurigates/claude-plugins/commit/34010056c02cbd2e302c5cab4908807389068183))
+* **skills:** wave-2 skill homes for promoted always-loaded rules ([#2814](https://github.com/laurigates/claude-plugins/issues/2814)) ([7896233](https://github.com/laurigates/claude-plugins/commit/7896233c7c6c5663725beff7b3f50778eb15d559))
+
+
+### Bug Fixes
+
+* **ci:** restore four scheduled-audit signals that were reporting nothing, or nonsense ([#2576](https://github.com/laurigates/claude-plugins/issues/2576)) ([de4337c](https://github.com/laurigates/claude-plugins/commit/de4337c7776ba7531cbe923fe016df78ef9b7e8c))
+* **github-actions-plugin:** add fourth ai-review cause and no-baseline triage ([#2770](https://github.com/laurigates/claude-plugins/issues/2770)) ([5cf72de](https://github.com/laurigates/claude-plugins/commit/5cf72de1560ea7487b1978e1e55ca02288f9cf7d))
+* **github-actions-plugin:** drop the eval-task trigram from the inspection description ([#2405](https://github.com/laurigates/claude-plugins/issues/2405)) ([20706c5](https://github.com/laurigates/claude-plugins/commit/20706c53bcea6bbb5cc8dc757124dbce3cdba9c8)), closes [#2244](https://github.com/laurigates/claude-plugins/issues/2244)
+* **plugins:** adapt rules, skills, agents, and guards for Claude Fable 5.1 ([#2561](https://github.com/laurigates/claude-plugins/issues/2561)) ([b9e1101](https://github.com/laurigates/claude-plugins/commit/b9e11016b20c42b0ff95c5fef57e98584a4e7c07))
+* **repo:** close the open review items left on [#2814](https://github.com/laurigates/claude-plugins/issues/2814) ([#2825](https://github.com/laurigates/claude-plugins/issues/2825)) ([8c5ed57](https://github.com/laurigates/claude-plugins/commit/8c5ed574c580b6dedd152a0a395c9cb694bdf8bd))
+
+
+### Code Refactoring
+
+* **skills:** disambiguate cluster-6 skill descriptions ([#2401](https://github.com/laurigates/claude-plugins/issues/2401)) ([08aee60](https://github.com/laurigates/claude-plugins/commit/08aee609a6308f4e53692229ea1177f69800c5ea)), closes [#2244](https://github.com/laurigates/claude-plugins/issues/2244)
+* **skills:** move reference material out of oversized SKILL.md bodies ([#2919](https://github.com/laurigates/claude-plugins/issues/2919)) ([765f0a9](https://github.com/laurigates/claude-plugins/commit/765f0a99487f222a1b5ea18f0fa5f001b2d435b4))
+
+
+### Documentation
+
+* **github-actions-plugin:** separate CODEOWNERS ownership from merge enforcement ([#2489](https://github.com/laurigates/claude-plugins/issues/2489)) ([827ec89](https://github.com/laurigates/claude-plugins/commit/827ec89f224ce3428527c8637917ebec1b518ace))
+
+## [1.12.2](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.12.1...github-actions-plugin-v1.12.2) (2026-10-07)
+
+
+### Code Refactoring
+
+* **skills:** move reference material out of oversized SKILL.md bodies ([#2919](https://github.com/laurigates/claude-plugins/issues/2919)) ([765f0a9](https://github.com/laurigates/claude-plugins/commit/765f0a99487f222a1b5ea18f0fa5f001b2d435b4))
+
 ## [1.12.1](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.12.0...github-actions-plugin-v1.12.1) (2026-09-26)
 
 

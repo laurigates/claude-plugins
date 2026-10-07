@@ -6,7 +6,7 @@ argument-hint: "diff|PR|files to verify; optional --criteria <file> of acceptanc
 allowed-tools: Agent, Read, Glob, Grep, Bash(git diff *), Bash(git log *), Bash(git merge-base *), Bash(git worktree *), Bash(git rev-parse *), Bash(gh pr view *), Bash(npm *), Bash(npx *), Bash(uv run *), Bash(pytest *), Bash(cargo *), Bash(go test *), TodoWrite
 model: opus
 created: 2026-06-22
-modified: 2026-10-02
+modified: 2026-10-07
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -366,17 +366,7 @@ human, not to keep grinding.
 
 ## Anti-patterns
 
-| Mistake | Correct approach |
-|---|---|
-| Grading the diff without running anything | Execute first (Step 1) — appearance is not evidence |
-| Passing a criterion because the code "looks like it does that" | No execution evidence → `UNVERIFIED`, not pass |
-| Passing a round-trip/determinism claim because "a test exists and passes" | Confirm the test's operation sequence matches the production call path (Step 3a) |
-| Reading a long trace end to end and naming the latest plausible cause | Locate with `grep -n`, read narrow windows, report the span — within the attribution bound (Step 3b) |
-| Reporting the verdict first and caveats after — or not at all | `LIMITATIONS` block before `VERDICT`, `none` stated explicitly (Step 5) |
-| Feeding the verifier the author's plan/rationale | Intent-starved inputs — criteria + diff + execution evidence only |
-| Inventing requirements the spec never stated | Triage (Step 4) — FAIL only on listed criteria |
-| Omitting collateral damage because it is "out of scope" | Drop it from the verdict, list it in `LIMITATIONS` (Step 4) |
-| Looping until the verifier goes quiet | One revise round; persistent fail = structural problem |
+Mistakes and the step that corrects each: [references/anti-patterns.md](references/anti-patterns.md).
 
 ## Related
 

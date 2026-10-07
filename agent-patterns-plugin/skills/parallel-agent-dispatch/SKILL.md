@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-09-24
+modified: 2026-10-07
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -305,19 +305,7 @@ implementers `SendMessage` the report to the lead as their final act. See
 
 ## Killing a Thrashing Agent Preserves Its Worktree
 
-`TaskStop` does **not** discard the agent's work — its worktree stays on disk
-with every uncommitted change intact, making `TaskStop` a **recovery
-affordance**. When an agent is thrashing (high Bash:Edit ratio with a rising
-error rate on hook-blocked Bash calls), killing it early and salvaging beats
-waiting for a silent give-up. Then decide from the worktree state:
-
-| Worktree state | Decision |
-|----------------|----------|
-| Substantive diff vs `origin/main` | **Salvage** — finish in the parent session, commit, push, open the PR |
-| Empty / trivial diff, or wrong design | **Restart** — `git worktree remove <path>` first, then re-dispatch |
-
-For the quantitative kill thresholds and the rate-limit vs hook-block
-discriminator, see [references/failure-recovery.md → Killed-agent worktree recovery](references/failure-recovery.md#killed-agent-worktree-recovery-taskstop).
+`TaskStop` keeps the agent's worktree and uncommitted changes on disk, so killing a thrashing agent early is a recovery move: [references/failure-recovery.md → Killing a thrashing agent](references/failure-recovery.md#killing-a-thrashing-agent-preserves-its-worktree).
 
 ## Concurrent Rate-Limit Risk
 
@@ -417,19 +405,11 @@ also dodges the burst rate limit), checking for an already-open PR first
 
 ### Common Mistakes
 
-| Mistake | Correct Approach |
-|---------|-----------------|
-| Spawning agents from a dirty main tree | Commit or stash first; refuse to dispatch on dirty state |
-| Scope described in prose, not glob | Explicit write-path list per agent |
-| "Report back when done" with no schema | Include Return Contract verbatim in every prompt |
-| Treating agent silence as success | No Return Contract = stall; investigate before reporting done |
-| Respawning after an `idle_notification` with no report | Check the branch, then `SendMessage` the agent to resend the report (#2039) |
-| Accepting a one-word final message (`Terminal.`/`Done.`) | Mandate the loud-failure contract: push work, open a draft PR, explain |
-| Centralizing pushes as a default | Agent pushes its own work; lead pushes only on sandbox/dependency exceptions |
+See [references/common-mistakes.md](references/common-mistakes.md) when reviewing a dispatch plan or lead prompt.
 
 ## Related
 
-- [REFERENCE.md](REFERENCE.md) — index over `references/`: dispatch contract, briefs, failure recovery, worktree hazards, verifier shared state
+- [REFERENCE.md](REFERENCE.md) — index over `references/`: dispatch contract, briefs, failure recovery, worktree hazards, verifier shared state, common mistakes
 - `agent-teams` — implicit-team / SendMessage mechanics, out-of-scope discovery protocol
 - `custom-agent-definitions` — agent file structure, tool restrictions, context forking
 - `.claude/rules/agent-development.md` — agent authoring conventions

@@ -47,26 +47,9 @@ Phases 1–2 also ship as a bundled harness — see
 
 ### Phase 0 — Consolidate a candidate manifest
 
-One JSON/table entry per candidate: id, the **claim** (precise, falsifiable),
-target upstream project, version observed, source refs (your commits/PRs that
-hold real error output), and known-filed prior reports to dedup against.
-Merge all sources first — audit docs, strategy docs, and git sweeps usually
-overlap. Shape:
-
-```json
-{
-  "id": "W2-13",
-  "slug": "notification-smtp-ec-defaults",
-  "claim": "Chart defaults SMTP to dev@simpl-europe.eu via ssl0.ovh.net (vendor dev infra) as live default values; should be placeholder/required.",
-  "targets": ["group/subgroup/notification-service"],
-  "observed_version": "2.1.1 (Apr 2026)",
-  "sources": ["audit-doc item 6"],
-  "evidence_prs": [1826]
-}
-```
-
-Keep prior-filed report URLs (with issue iids) in the same manifest so search
-agents can fetch their bodies.
+Merge every source into one manifest — one entry per candidate with a precise,
+falsifiable claim — before Phase 1. Entry shape and fields:
+[references/candidate-manifest.md](references/candidate-manifest.md).
 
 ### Phase 1 — Verify + dedup (two agents per candidate, parallel)
 
@@ -103,31 +86,10 @@ not waste (see Phase 4).
 
 ### Phase 2 — Draft to a house template
 
-Per surviving candidate, one markdown file per issue:
-
-```markdown
-# <symptom-first title — becomes the issue title>
-<!-- target: <project path>  (stripped by the filing script) -->
-
-## Summary
-<claim, with evidence as blob links PINNED to the verified refs
-(https://<forge>/<path>/-/blob/<ref>/<file>#L<n>) — not bare paths,
-not `main` if HEAD drifts>
-
-<real error signature mined from your own incident PRs/logs>
-
-## Suggested fix
-<EXACTLY ONE recommended fix; alternatives get one trailing sentence;
-"happy to open the MR" only when trivial>
-
----
-Observed while <one-line deployment context>; verified against <refs> on <date>.
-```
-
-Never leak internal PR numbers or repo paths into the body — use them only to
-mine evidence. Then gate every draft through
-`agent-patterns-plugin:cold-read-gate` (isolated haiku maintainer cold-read;
-one revise round, re-gate only if the verdict was `needs-revision`).
+Draft each survivor to the house issue template, then gate every draft through
+`agent-patterns-plugin:cold-read-gate` before filing. The template, the
+no-internal-references rule, and the revise-round limit are in
+[references/draft-template.md](references/draft-template.md).
 
 ### Phase 3 — Paced filing
 
@@ -210,28 +172,12 @@ output is a forge mutation:
 
 ## Verdict Vocabulary Notes
 
-| Verdict | Meaning | Typical doc annotation |
-|---|---|---|
-| `still-present` | Reproduced at HEAD + latest tag | filed URL |
-| `partially-fixed` | Upstream fixed some instances; file the remainder, cite their own fix as the pattern | filed URL (narrowed) |
-| `fixed-upstream` | Shipped in a release — note which | version + local follow-up |
-| `obsolete-version` | The affected line is superseded/retired | superseded note |
-| `claim-invalid` | The original diagnosis was wrong | retraction + what was actually true |
-| `could-not-verify` | Evidence unreachable | human follow-up task |
-
-`claim-invalid` is not failure — it's the workflow catching your own docs
-drifting from reality. Correct the doc in the same pass.
+What each verdict means and its typical doc annotation:
+[references/verdicts.md](references/verdicts.md).
 
 ## Common Mistakes
 
-| Mistake | Correct approach |
-|---|---|
-| Filing the backlog as written ("the audit already verified it") | The audit verified it *then*; verify at HEAD *now* |
-| Dedup against the tracker but not your own issues | Your earlier reports' by-catch findings are duplicates too |
-| Quoting your old observed version in the issue | Quote HEAD/latest-tag content; cite the refs you checked |
-| Bulk-creating issues in a hand-written loop | 429 after the first create; run `scripts/file-wave.sh` (pacing + backoff + manifest) |
-| Discarding gated-out candidates silently | Dispositions update docs, retire forks, close tracking issues |
-| Letting verify agents have write access upstream | Read-only until the dedicated, paced filing step |
+Mistake → correct-approach table: [references/common-mistakes.md](references/common-mistakes.md).
 
 ## Related
 

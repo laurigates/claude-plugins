@@ -49,83 +49,26 @@ Parse these from `$ARGUMENTS`:
 adapt, not a script to run verbatim.** Read it, then rewrite it for the work in front
 of you. It covers Steps 2-7 for a batch-shaped run **except Step 4b**: it has no
 trigger stage, so with `--triggers` run Step 4b yourself after the workflow returns,
-and with `--triggers-only` run Step 4b instead of the workflow. A single spot check
-stays on the prose path below.
+and with `--triggers-only` run Step 4b instead of the workflow.
 
 **Adapt freely:** the agent prompts, the config axis (the shipped one is
 `with-skill` / `baseline`), the effort tiers, the generation brief behind
 `--create-evals`, and the shape of the `rows` the summary table renders.
 
-**Preserve across any adaptation:** (a) the fan-out width is the cartesian product
-`evalIds.length x runs x configs.length`, computed in JS from the eval-case list the
-Preflight agent read off disk with `inspect_eval.sh --print-evals` - never a prose "for
-each eval case, for each run"; (b) `GRADE_SCHEMA`'s closed `PASS|PARTIAL|FAIL|ERROR`
-status enum plus the split `deterministic*` / `judge*` counters, so a vague verdict is
-structurally impossible and a dead agent becomes an explicit `ERROR` row that stays in
-the denominator instead of reading as a pass; (c) Aggregate is a real barrier - the
-standard deviation and the baseline delta are cross-cell facts no single cell can
-compute, and `benchmark.json` has to be written exactly once. Three further things are
-structure, not preference: **the grader is never the agent that produced the
-transcript** (`.claude/rules/loop-integrity.md` Pillar 1 - an author asked to judge its
-own output optimises for done, not for correct), `grade_deterministic.py` grades first
-and its verdicts are never re-judged, and the `cellCap` ceiling **aborts** rather than
-truncating.
+**Preserve across any adaptation:** (a) the fan-out width is
+`evalIds.length x runs x configs.length`, computed in JS from `inspect_eval.sh
+--print-evals`; (b) `GRADE_SCHEMA`'s closed `PASS|PARTIAL|FAIL|ERROR` enum with split
+`deterministic*` / `judge*` counters; (c) Aggregate as a real barrier. The grader is
+never the transcript's author; `cellCap` aborts rather than truncating.
 
 **Agent budget:** 2 + 2 x cells — preflight and aggregate, plus one rollout and one
-independent grader per cell (at most `cellCap` cells). The scale guard asks before
-every run, because the cell list is built at runtime. `args.harness: 'headless'`
-does not change it: the rollout agent becomes a thin runner that calls
-`rollout_headless.sh` (and never performs the task itself), still one per cell.
+independent grader per cell (at most `cellCap` cells).
 
-**Skip the harness when:** the run is fewer than three cells - a one- or two-case spot
-check, or a single re-run of one eval id - which is a linear pass where the harness is
-pure overhead; the script returns `{mode:'inline'}` at that floor. The floor is
-deliberately far lower than `configure-all`'s 15, because this harness's marginal cost
-is a constant two agents: Steps 4 and 6 below already spawn one rollout subagent and
-one grader subagent per cell, so the harness redistributes those agents rather than
-adding to them. The steps below remain the authoritative description of *what* each
+**Skip the harness when:** the run is fewer than three cells (the script returns
+`{mode:'inline'}`). The steps below remain the authoritative description of *what* each
 stage must produce; the harness only fixes *how* the work is split.
 
-Four consequences worth stating inline:
-
-- **This is the only template in the marketplace that also registers a name.** The
-  bundled copy is the source of truth, but `evaluate-plugin:evaluate-plugin-batch`
-  resolves it as `workflow('evaluate-skill', ...)`, so a copy must also live in
-  `~/.claude/workflows/` and `meta.name` must be exactly `evaluate-skill`. Both
-  children have to agree on that literal. Registration, the one-level nesting limit,
-  and what to do when the name does not resolve are in
-  [`docs/dynamic-workflow-registration.md`](../../../docs/dynamic-workflow-registration.md).
-  Register this one and nothing else.
-
-- **No agent in this harness is worktree-isolated, and that is deliberate.** Every
-  rollout agent writes its run dir into the shared checkout (`prepare_run.sh`
-  stages it under `tmp/eval-runs/`), and Aggregate has to read what all of
-  them wrote; a worktree-isolated agent's writes are invisible to its siblings, so
-  isolating them would silently empty the benchmark. Nothing here pushes, opens a PR,
-  or mutates a forge either - so the two clauses
-  `.claude/rules/workflow-vs-skill.md` requires of a worktree-dispatching template
-  (the `resumeFromRunId` / #1868 warning and the sequential-finalise rule) do not
-  apply, and adding worktree isolation to an adaptation would pull both of them in
-  along with the bug.
-
-- **The harness cannot vary the model across cells.** Every `agent()` call pins
-  `model: 'opus'` because `scripts/check-workflow-js-model.sh` requires it, so the
-  `config` axis here is `with-skill` / `baseline` and nothing else. A genuine
-  cross-model or cross-effort sweep is `evaluate-plugin:evaluate-matrix`'s job and
-  stays on its own deliberately sequential path.
-
-- **`context: fork` stays, and it is not what justifies the harness.** The pin lives in
-  `scripts/plugin-compliance-check.sh` (the `for fork_skill in` loop inside
-  `check_skill_body()` - cited by name, because a line number in that file drifts
-  every time a regression guard is inserted) and is unchanged by this template. Per
-  `.claude/rules/workflow-vs-skill.md` "The `context: fork` corollary", fork already
-  bought context isolation for free - so this harness has to earn its tokens by
-  **splitting** rollout from grading behind a real barrier, which it does. Keeping
-  `fork` beside a `pipeline()` is sanctioned because the width is **statically
-  bounded**: `cellCap` (30 by default, and passed explicitly by the batch caller) is a
-  script-decidable ceiling that aborts rather than growing, which is exactly the line
-  `.claude/rules/skill-fork-context.md` now draws between a bounded fan-out and the
-  unbounded, caller-chosen one the `[1m]` cascade hazard is about.
+Before adapting the template, read [references/harness-adaptation.md](references/harness-adaptation.md): the full preserve/budget/skip rationale, the registered name `evaluate-skill`, why no agent is worktree-isolated, why the model cannot vary per cell, and why `context: fork` stays.
 
 ## Execution
 
@@ -177,23 +120,7 @@ Look for `<plugin-name>/skills/<skill-name>/evals.json`.
 Skip Step 4 and Steps 5-7 when `--triggers-only` is set (Step 4b still runs). Use the branch matching
 `--harness`; the subagent branch is the default.
 
-**Headless branch (`--harness headless`).** First confirm `command -v claude jq python3`
-all resolve; if any is missing, report `headless-unavailable` and stop rather than
-falling back (subagent and headless numbers are not comparable). Then per eval case
-and run: `prepare_run.sh` as in item 1 below; write the case's `prompt` to
-`$RUN_DIR/prompt.txt`; apply its `fixture` (item 2), or `mktemp -d` an empty workdir
-**outside the repo** (the script refuses a workdir inside it); then launch the child:
-```
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/rollout_headless.sh \
-  --run-dir "$RUN_DIR" --workdir "$WORKDIR" --prompt-file "$RUN_DIR/prompt.txt" \
-  --plugin-dir "$(pwd)/<plugin-name>" --model haiku --max-budget-usd 0.25
-```
-Omit `--plugin-dir` for the baseline. It writes `transcript.md`, `trace.json`,
-`workspace/` and `timing.json` into `$RUN_DIR` and prints a `=== HEADLESS ROLLOUT ===`
-block: `STATUS=ERROR` is an ERROR cell; WARN issues (`foreign_hook`,
-`session_id_leak`, `uncapped`) are findings to report. Tear the workdir down
-afterwards; the snapshot is already in `$RUN_DIR/workspace/`. Do not perform the
-eval prompt yourself on this branch.
+**Headless branch (`--harness headless`).** Follow [references/headless-rollout.md](references/headless-rollout.md); missing `claude`/`jq`/`python3` means `headless-unavailable` and stop, never fall back.
 
 **Subagent branch (default).** For each eval case, for each run (up to `--runs N`):
 
@@ -204,13 +131,7 @@ eval prompt yourself on this branch.
      --eval-id <eval-id> --run <N>
    ```
    Parse `RUN_DIR=`, `MANIFEST=`, and `STARTED_AT=` from output.
-2. If the eval carries a `fixture` block, apply it to get an isolated workdir:
-   ```
-   bash ${CLAUDE_PLUGIN_ROOT}/scripts/apply_fixture.sh \
-     --fixture '<eval.fixture JSON>' --repo-root "$(pwd)"
-   ```
-   Parse `WORKDIR=` (the subagent then operates there). Skip this for evals
-   without a `fixture` — they run in the repo as before.
+2. If the eval has a `fixture` block, apply it ([references/fixtures.md](references/fixtures.md)) and use its `WORKDIR=`.
 3. Spawn a Task subagent (`subagent_type: general-purpose`) that:
    - Receives the skill content as context
    - Executes the eval prompt
@@ -218,20 +139,11 @@ eval prompt yourself on this branch.
 4. Capture the subagent output.
 5. Record timing data (duration) and write to `$RUN_DIR/timing.json`.
 6. Write the transcript to `$RUN_DIR/transcript.md`.
-7. If a fixture was applied, tear it down after the transcript is copied out:
-   `bash ${CLAUDE_PLUGIN_ROOT}/scripts/apply_fixture.sh --teardown "$WORKDIR" --fixture '<eval.fixture JSON>'`.
+7. Tear down any applied fixture after copying the transcript out (same file).
 
 ### Step 4b: Trigger evals (if --triggers or --triggers-only)
 
-If `evals.json` has a `triggers` block, check the plan and its worst-case cost first,
-then run it (each prompt is a real headless child killed at its first `Skill` call):
-```
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run_trigger_evals.py --skill-dir <plugin-name>/skills/<skill-name> --dry-run
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run_trigger_evals.py --skill-dir <plugin-name>/skills/<skill-name>
-```
-Report recall, precision, the false positives by `near_miss_of`, and `STATUS`. Results
-at the default `--runs 1` are noisy (a missed threshold is WARN, not ERROR); pass
-`--runs 3` before acting on them. No `triggers` block: say so and continue.
+Run the `triggers` block per [references/trigger-evals.md](references/trigger-evals.md); none: say so and continue.
 
 ### Step 5: Run baseline (if --baseline)
 
@@ -252,67 +164,20 @@ Its verdicts are final. Items under `harness_deferred` (trace/workspace checks o
 subagent run) are excluded from every total and never judged. Then delegate only the
 `DEFERRED` (judge) expectations to the `eval-grader` agent via Task:
 
-```
-Task subagent_type: evaluate-plugin:eval-grader
-Prompt: Grade this eval run against the assertions.
-  Eval case: <eval case from evals.json>
-  Transcript: <path to transcript.md>
-  Output artifacts: <list of created/modified files>
-```
+`subagent_type: evaluate-plugin:eval-grader`, prompt in [references/report-format.md](references/report-format.md#grader-prompt-step-6).
 
 The grader produces `grading.json` for each run.
 
 ### Step 7: Aggregate and report
 
-Compute aggregate statistics across all runs:
-- Mean pass rate (assertions passed / total assertions)
-- Standard deviation of pass rate
-- Mean duration
-
-If `--baseline` was used, also compute:
-- Baseline mean pass rate
-- Delta (improvement from skill)
+Compute the statistics in [references/report-format.md](references/report-format.md#aggregate-statistics-step-7) (pass rate, its std dev, duration; plus baseline and delta).
 
 Write aggregated results to `<plugin-name>/skills/<skill-name>/eval-results/benchmark.json`,
 recording the harness in `metadata.harness`.
 
-Print a summary table:
-
-```
-## Evaluation Results: <plugin/skill-name>
-
-| Metric | With Skill | Baseline | Delta |
-|--------|-----------|----------|-------|
-| Pass Rate | 85% | 42% | +43% |
-| Duration | 14s | 12s | +2s |
-| Runs | 3 | 3 | — |
-
-### Per-Eval Breakdown
-
-| Eval | Description | Pass Rate | Status |
-|------|-------------|-----------|--------|
-| eval-001 | Basic usage | 100% | PASS |
-| eval-002 | Edge case | 67% | PARTIAL |
-| eval-003 | Boundary | 100% | PASS |
-```
+Print a summary table laid out as in [references/report-format.md](references/report-format.md).
 
 ## Agentic Optimizations
 
-| Context | Command |
-|---------|---------|
-| Inspect skill eval setup | `bash evaluate-plugin/scripts/inspect_eval.sh --plugin <plugin> --skill <skill>` |
-| Print evals JSON | `bash evaluate-plugin/scripts/inspect_eval.sh --plugin <plugin> --skill <skill> --print-evals` |
-| Prepare a run directory | `bash evaluate-plugin/scripts/prepare_run.sh --skill-dir <plugin>/skills/<skill> --eval-id <id> --run <N>` |
-| Aggregate results | `bash evaluate-plugin/scripts/aggregate_benchmark.sh <plugin>` |
-| One headless rollout | `bash evaluate-plugin/scripts/rollout_headless.sh --run-dir <d> --workdir <tmp> --prompt-file <f> --plugin-dir <plugin> --max-budget-usd 0.25` |
-| Trigger-eval plan + cost | `python3 evaluate-plugin/scripts/run_trigger_evals.py --skill-dir <plugin>/skills/<skill> --dry-run` |
+Script commands and the flag quick reference: [references/command-reference.md](references/command-reference.md).
 
-## Quick Reference
-
-| Flag | Description |
-|------|-------------|
-| `--create-evals` | Generate eval cases from SKILL.md analysis |
-| `--runs N` | Number of runs per eval case (default: 1) |
-| `--baseline` | Run without skill for comparison |
-| `--harness headless` | Real `claude -p` rollouts with the plugin loaded (default: `subagent`) |
-| `--triggers` / `--triggers-only` | Also / only run the `triggers` block's routing evals |

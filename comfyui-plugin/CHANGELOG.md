@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.9](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.8...comfyui-plugin-v1.13.9) (2026-10-07)
+
+
+### Code Refactoring
+
+* **comfyui-plugin:** move reference material out of oversized SKILL.md bodies ([#2918](https://github.com/laurigates/claude-plugins/issues/2918)) ([03ce4d7](https://github.com/laurigates/claude-plugins/commit/03ce4d74ebd25219e85bc3d3fb71113649faf1bd))
+
 ## [1.13.8](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.7...comfyui-plugin-v1.13.8) (2026-09-24)
 
 

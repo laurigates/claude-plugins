@@ -109,22 +109,9 @@ families:
 left behind is dead code, but
 a claim left behind is documentation that is now false.
 
-Concrete case (`ForumViriumHelsinki/podio-mcp`, PRs #160 / #163 — issue #2479):
-a build-time credential injector was removed. The sweep terms were the
-identifiers — `BUILD_DEFAULTS`, `inject-build-defaults`, `postbuild` — which
-correctly found the script, the npm hook, the constants module and the workflow
-passthrough, and the PR shipped. It missed this, in a file the sweep had already
-edited:
-
-```
-src/index.ts:134
- * - PODIO_CLIENT_ID: Your Podio app's client ID (baked into published package)
-```
-
-The comment asserts exactly what the mechanism was supposed to do and contains
-none of the three identifiers. It survived, typedoc renders it into the API
-reference, and so the claim outlived the thing that made it true — caught only
-incidentally, one PR later.
+The incident behind this step (`podio-mcp` PRs #160 / #163, issue #2479 — a claim that
+survived an identifier-only sweep) is in [references/evidence.md](references/evidence.md);
+open it when you need a concrete example of a surviving claim.
 
 ### Step 2: Tighten the pattern to drop false positives at the source
 
@@ -179,30 +166,18 @@ The adjacent trap sits one level up, in the scope the verification runs over:
 **every exclusion in a verification scope is a claim about the world, and needs
 the same treatment as a negative result.** "Generated, so it doesn't count"
 assumes the generator runs — check that it does. Cheap test: for each excluded
-path, state why in one line, then verify that line. In the same sweep (#2479)
-the final pass excluded `docs/api/` — committed typedoc output — reasoning that
-CI regenerates and publishes it. Both halves were false: GitHub Pages was never
-enabled on the repo (`/repos/.../pages` → 404) and the deploy workflow had failed
-every run for ten days, so the excluded directory was the *only* rendered copy
-and still carried the stale claim. The report said "no matches remain," which was
-true of what it searched and false of the repo.
+path, state why in one line, then verify that line. The #2479 case where an
+excluded `docs/api/` turned out to be the only rendered copy is in
+[references/evidence.md](references/evidence.md).
 
 ## Agentic Optimizations
 
-| Context | Command |
-|---------|---------|
-| Enumerate deduped matches | `git grep -nhoE '<pattern>' -- <scope> \| sort -u` |
-| Count matches per file | `git grep -cE '<pattern>' -- <scope>` |
-| Preview a scoped transform | `perl -ne 's{<from>}{<to>}g and print' <files>` |
-| Apply to category-1 files only | `perl -i -pe 's{<from>}{<to>}g' <category-1 files>` |
-| Verify preserved-set only | `git grep -nE '<pattern>' -- <scope>` (expect only categories 2–4) |
+Command templates for each step (enumerate, count, preview, apply, verify) are in
+[references/commands.md](references/commands.md).
 
 ## Related
 
-- `verify-upstream-before-patching` / `read-issue-thread-before-contributing` — establish authoritative *intent* before acting, don't trust a surface signal
-- `git-hazards` — an automated pass reporting success is not proof the *result* is correct; verify the content, not the exit code
-- `code-quality-plugin:ast-grep-search` — structural search/replace when the pattern depends on AST shape rather than text
-- `agent-patterns-plugin:parallel-agent-dispatch` — the dispatch contract a fanned-out sweep rides on; the rename map is the payload you brief into it
-- `agent-patterns-plugin:adversarial-review` — the audit pass; brief it with the artifact's purpose, not only the transform contract
+Adjacent rules and skills (intent verification, ast-grep, parallel dispatch, adversarial review):
+[references/related.md](references/related.md).
 
 For parallelizing a sweep across agents (the pre-dispatch rename map and do-NOT-rename list) and for briefing adversarial auditors, see [REFERENCE.md](REFERENCE.md).
