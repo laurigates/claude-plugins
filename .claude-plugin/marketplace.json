@@ -145,7 +145,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, dependency auditing, dead code detection, test quality, complexity metrics, and static analysis",
-      "version": "1.27.0",
+      "version": "1.27.1",
       "author": {
         "name": "Lauri Gates"
       },
@@ -743,7 +743,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation",
-      "version": "1.13.0",
+      "version": "1.13.1",
       "author": {
         "name": "Lauri Gates"
       },
