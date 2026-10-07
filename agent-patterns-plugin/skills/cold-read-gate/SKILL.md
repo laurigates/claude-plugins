@@ -4,7 +4,7 @@ description: Gate outward-bound text (upstream issues, docs, PR bodies) through 
 allowed-tools: Agent, Read, Write, Edit, TodoWrite
 model: opus
 created: 2026-06-11
-modified: 2026-09-02
+modified: 2026-10-07
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -83,8 +83,8 @@ prompt: |
   4. Verdict: exactly one of `clear` | `needs-revision`.
 
   Ignore: <known artifacts of the test — see Step 3. Plus anything the
-  surrounding UI renders for the real reader — see "The reader is
-  context-free; your audience may not be" below. Example:
+  surrounding UI renders for the real reader — see
+  references/rendered-context.md. Example:
   "Ignore the HTML comments at the top (they are stripped by the filing
   script before publishing) and do not ask which repository this is —
   the issue is filed on the target project's own tracker. The reader can
@@ -104,38 +104,11 @@ see, because each half of the argument is individually true.
 | Team documentation | "a new team member reading this doc with no project context" |
 | PR description | "a reviewer seeing this change for the first time" |
 
-### The reader is context-free; your audience may not be
-
-The gate removes context on purpose, and for a bug report filed into an empty
-tracker that matches the real reader well. It matches badly whenever the
-artifact is published *into a surface that renders state around it* — a PR or
-issue comment, a review thread, a dashboard card, a chat message under a link
-preview. There the real reader sees the page; the cold reader sees a bare file.
-The gate then asks for explanations the surface already supplies, and acting on
-them inflates the artifact with duplication.
-
-> Observed 2026-09-02 (`Comfy-Org/ComfyUI_frontend#13280`): round-one readers
-> asked what the fork-PR approval gate was and whether the four named workflows
-> were the whole set. Answering both produced a closing paragraph that restated
-> the merge box sitting directly below the comment — "17 workflows awaiting
-> approval / This workflow requires approval from a maintainer", GitHub's own
-> explainer link, and the required checks by name. The comment lost 58% of its
-> words when a human asked whether that paragraph needed to exist.
-
-- **Name the rendered context in the `Ignore:` list**, concretely enough that
-  the reader stops asking: the merge box, check names and states, review
-  status, branch names, labels, diff size.
-- **A verdict scores sentences, never whether a paragraph should exist.** Both
-  this gate and a prose linter judge what is on the page. Neither asks what
-  should be cut, so a `needs-revision` acted on literally makes an artifact
-  longer — check the word count across rounds, and treat growth as a signal to
-  re-read rather than a sign of progress.
-- **Disclosed limitations are not defects.** A reader will often restate a
-  caveat the author volunteered as a reason to hesitate. Tell it to judge
-  clarity, not merge-readiness, or it converts your honesty into a `needs-revision`.
-
-For the GitHub-specific inventory of what the page renders, see
-`repos-claude-config` `.claude/rules/pr-comment-vs-ui-affordances.md`.
+When the artifact is published into a surface that renders state around it (a
+PR or issue comment, review thread, dashboard, chat preview), the cold reader
+asks for what the page already shows. For what to put in the `Ignore:` list and
+how to read a verdict there, see
+[references/rendered-context.md](references/rendered-context.md).
 
 **When one artifact serves two channels, give each reader its real audience.**
 An issue-triage persona and a busy-chat-skimmer persona on the same argument
@@ -184,53 +157,11 @@ abandoned gate.
 
 ## Workflow-Script Integration
 
-Inside a `Workflow` script the gate is one schema-enforced stage per item:
+Inside a `Workflow` script the gate is one schema-enforced stage per item: [references/workflow-script.md](references/workflow-script.md).
 
-```javascript
-const cold = await agent(
-  `You are an upstream maintainer triaging a newly filed issue. NO context
-   beyond the text. Read ONLY ${draft.path}. QUESTIONS / HESITATIONS /
-   verdict. Ignore the top HTML comments (stripped before filing).`,
-  { label: `coldread:${item.id}`, phase: 'ColdRead', model: 'haiku',
-    schema: { type: 'object', properties: {
-      verdict: { type: 'string', enum: ['clear', 'needs-revision'] },
-      critique: { type: 'string' } },
-      required: ['verdict', 'critique'] } },
-)
-if (cold?.verdict === 'needs-revision') { /* revise agent, then one re-read */ }
-```
+## Evidence and common mistakes
 
-## Evidence
-
-First production run (FVH infrastructure, 2026-06-11, 7 upstream issue
-drafts + 5 docs): the gate surfaced a timeline whose headline number didn't
-reconcile with its own breakdown, an undefined role name (`NOTARY`) at the
-moment of its dramatic payoff, a Spring Boot issue that never named Spring
-Boot, a fix section offering three options with no recommendation, and two
-drafts judged "not actionable as written" that were revised before filing.
-All 12 issues filed after the gate drew zero clarification round-trips.
-
-Later run (registry-maintainer appeal, 2026-08): two independent readers each
-failed to state the ask — the text argued a finding was unfixable by
-publishers, then asked publishers to approve individual versions. Four rounds
-of author revision had not surfaced it, because each half was individually
-true. The same run caught an arithmetic contradiction and an exception-shopping
-ask that would have jeopardised the other twelve packages.
-
-## Common Mistakes
-
-| Mistake | Correct approach |
-|---|---|
-| Using opus/sonnet as the reader "for better critique" | The weak reader is the point — it measures, not advises |
-| Spawning the reader with `run_in_background: true` | Run synchronously — the critique **is** the tool result of a synchronous run |
-| Polling a completed background reader via `SendMessage` | It only emits `idle_notification`s there; read the task-completion result instead (#2063) |
-| Pasting the artifact into the prompt | Give a path; pasted text tempts context smuggling |
-| Letting the reader explore the repo | "Read ONLY this file" — exploration restores the context the test removes |
-| Acting on every complaint | Triage first (Step 3); artifacts of the test produce busywork |
-| Softening a claim the reader couldn't verify | Run the measurement when one exists — it often inverts the objection |
-| Running the same persona twice on a two-channel artifact | One reader per channel; each gets its real audience |
-| Looping until the reader is silent | One revise round; persistent confusion = structural problem |
-| Gating drafts but not the docs that reference them | Anything a cold audience lands on qualifies |
+Production runs: [references/evidence.md](references/evidence.md). Mistakes to check before dispatching or acting on a critique: [references/common-mistakes.md](references/common-mistakes.md).
 
 ## Related
 
