@@ -88,7 +88,7 @@ git-plugin/skills/release-please-protection/SKILL.md	2
 git-plugin/skills/upstream-pr-contribution/SKILL.md	1
 git-plugin/skills/worktree-stale-base-merge/SKILL.md	3
 github-actions-plugin/skills/ai-review-max-turns/SKILL.md	1
-github-actions-plugin/skills/claude-code-github-workflows/SKILL.md	4
+github-actions-plugin/skills/claude-code-github-workflows/SKILL.md	3
 github-actions-plugin/skills/github-actions-auth-security/SKILL.md	1
 github-actions-plugin/skills/github-workflow-auto-fix/SKILL.md	1
 github-actions-plugin/skills/multirepo-ci-cd/SKILL.md	1
