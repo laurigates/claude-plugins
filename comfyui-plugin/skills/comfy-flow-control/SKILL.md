@@ -108,46 +108,11 @@ more legible.
 
 ## Context vs pipe bundles
 
-Both rgthree's `Context` and easy-use's `pipeIn`/`pipeOut` carry a
-multi-typed bundle on a single wire. They are not interchangeable.
-
-| | rgthree Context | easy-use pipe |
-|---|---|---|
-| Wire type | `RGTHREE_CONTEXT` (custom) | `PIPE_LINE` (custom) |
-| Field access | Named (model / clip / vae / positive / negative / latent / image / seed) | Positional (model, pos, neg, latent, vae, clip, image, seed) |
-| Override / edit mid-graph | `Context Merge` / `Context Merge Big` | `pipeEdit` |
-| Unpack | `Context Switch` selects between multiple full contexts; individual fields auto-emerge from the Context node's right side | `pipeOut` emits all 8 slots; or downstream nodes consume `PIPE_LINE` directly |
-| Bridge between | Convert manually: unpack with `Context` outputs → repack with `pipeIn` (and vice-versa) | Same, reverse |
-| Best for | Sharing a stable model/clip/vae across many subgraphs | easy-use's own ecosystem (its samplers and pre-samplers expect PIPE_LINE) |
-
-Mixing the two in one workflow is allowed but every cross-bridge is a
-manual repack. Pick one bundle convention per workflow.
+rgthree `Context` and easy-use `PIPE_LINE` both carry a multi-typed bundle on one wire but are not interchangeable — pick one convention per workflow. Field-by-field comparison: [references/context-vs-pipe-bundles.md](references/context-vs-pipe-bundles.md).
 
 ## Loops
 
-Easy-use ships the only general-purpose loop primitives in this
-install. Use sparingly — ComfyUI's execution model wasn't designed for
-iteration, and loops expand at prompt-queue time to a sequence of
-copied subgraph nodes (so an N=50 loop is N=50 sampler instances in
-the graph, not one node looping).
-
-| Loop | Setup |
-|---|---|
-| `easy forLoopStart` → body → `easy forLoopEnd` | `total` count (INT), `values_1..N` carry state through iterations |
-| `easy whileLoopStart` → body → `easy whileLoopEnd` | `condition` (BOOLEAN) checked after each iteration; emits FLOW_CONTROL token + state |
-
-Best practice:
-
-- Keep loop bodies short. Each iteration replicates the entire subgraph
-  in the queue, so 30 iterations × 50 nodes ≈ 1500-node queue.
-- Always have an exit predicate. `whileLoopEnd` with no terminating
-  condition will hang the queue forever.
-- The state-carry slots (`values_*`) are how you accumulate — write to
-  them at the end, read at the start.
-- For per-image batch iteration, prefer ComfyUI's native batch
-  semantics (let the sampler process a batch) over a loop. Loops are
-  for iteration where each round depends on the previous round's
-  output.
+Before wiring `easy forLoopStart/End` or `easy whileLoopStart/End`, read [references/loops.md](references/loops.md): loops expand at queue time into copies of the body, and a `whileLoopEnd` without a terminating condition hangs the queue.
 
 ## Execution gating
 
@@ -164,90 +129,11 @@ SaveImage downstream is the abort target).
 
 ## Recipes
 
-### Toggleable LoRA stack with bypass
-
-You have 3–8 LoRAs stacked into a chain. You want each one individually
-toggleable, with a master "all off" too.
-
-```
-UNETLoader ─┐
-            │
-            ▼
-rgthree Power Lora Loader  ← per-row: enabled (bool), name, strength
-            │
-            ▼
-ModelSamplingAuraFlow (or whatever)
-```
-
-- One node holds the stack. UI per-row toggle + strength.
-- Group the loader + downstream sampler nodes; right-click → Mute
-  Group to bypass the whole branch when prototyping.
-- To make a *single* LoRA toggleable as a separate node, wrap with
-  Crystools `CSwitchBooleanAny`: bool=on → goes through `LoraLoaderModelOnly`,
-  bool=off → bypasses straight to the next stage.
-
-### Optional upscale pass with lazy switch
-
-User sometimes wants a 2× upscale, sometimes doesn't. Without lazy
-evaluation, the upscale chain (model loader + KSampler + VAEDecode)
-runs even when discarded.
-
-```
-                              ┌── on_true: UpscaleModelLoader → Sampler → VAEDecode ──┐
-SaveImage upstream ────────── ┤                                                       ├── SaveImage
-                              └── on_false: passthrough ─────────────────────────────┘
-                                 ▲
-                                 │
-                              Crystools CSwitchBooleanImage (lazy)
-```
-
-- The Crystools switch is lazy → when bool=False, the entire upscale
-  chain is skipped, not just discarded.
-- Bool can come from a `PrimitiveBoolean`, a `RgthreeContext` field, or
-  an `easy compare` predicate.
-
-### Migrating a workflow off broadcast wires for review
-
-When sharing a workflow that uses `Anything Everywhere`, the rest of
-the graph has unconnected input sockets that "look" wrong but work
-fine because of the broadcaster. For readability when sending the
-workflow to someone:
-
-1. Right-click `Anything Everywhere` → "Show connections" (frontend
-   flag in the rgthree side panel) — renders dashed lines.
-2. Manually wire what the broadcaster was implicitly doing.
-3. Delete the broadcaster node.
-
-Reverse the process when receiving a wired workflow you want to
-clean up.
+Worked graphs — a toggleable LoRA stack with bypass, an optional upscale pass behind a lazy switch, and migrating a workflow off broadcast wires for review — are in [references/recipes.md](references/recipes.md).
 
 ## Gotchas
 
-- **`ComfySwitchNode` (core)** is widget-overridden by an input.
-  When you wire a BOOLEAN into the `switch` slot of `ComfySwitchNode`,
-  the node's own widget value is ignored — the connected input wins.
-  This bites you when the widget shows False but a connected
-  PrimitiveBoolean(True) is in effect.
-- **`Any Switch` (rgthree)** is eager — it evaluates *all* upstream
-  inputs before picking the first non-None. Don't use it as a
-  performance optimizer; use a typed `CSwitchBoolean*` for laziness.
-- **`Preview Bridge` swallows `ExecutionBlocker`**: if you tee a path
-  through Preview Bridge to inspect it, and the path is blocked, the
-  Preview shows nothing and the downstream abort doesn't propagate
-  through the bridge. Use `FastPreview` (`comfyui-kjnodes`) downstream
-  of a Preview Bridge when blockers may appear, or wire previews off
-  branches that can't be blocked.
-- **`ImpactConditionalBranch.cond` is BOOLEAN, not INT/FLOAT**.
-  `SimpleMathCondition` (essentials) returns FLOAT — convert with a
-  comparator before feeding the branch.
-- **Context Big silently drops mismatched slots**. If you wire an
-  `IMAGE` to a `Context Big.latent` slot the wire is ignored at
-  evaluation. Hover the Context outputs to check what's actually
-  populated.
-- **Easy-use loops expand at queue-time, not runtime**. A loop of 50
-  iterations becomes 50 copies of the body inside the queue's prompt
-  graph. Very large loops can OOM the *frontend* (browser) before
-  even reaching the backend.
+When a switch picks the wrong input, an eager branch runs anyway, or a routed value vanishes, check [references/gotchas.md](references/gotchas.md) (`ComfySwitchNode` input overrides its widget, `Any Switch` is eager, Preview Bridge swallows `ExecutionBlocker`, BOOLEAN-only `cond`, Context Big drops mismatched slots, loops expanding at queue time).
 
 ## Cross-refs
 

@@ -59,20 +59,7 @@ npx jscpd --reporters json --min-tokens 50 --output /tmp/jscpd-dry --silent <pat
 
 It writes `/tmp/jscpd-dry/jscpd-report.json`. Read that report and parse its `duplicates` array — each entry gives the exact file/line ranges of a clone pair plus its size in tokens/lines:
 
-```json
-{
-  "duplicates": [
-    {
-      "format": "tsx",
-      "lines": 12,
-      "tokens": 84,
-      "firstFile":  { "name": "src/UserList.tsx",  "start": 20, "end": 32 },
-      "secondFile": { "name": "src/OrderList.tsx", "start": 15, "end": 27 }
-    }
-  ],
-  "statistics": { "total": { "clones": 3, "duplicatedLines": 40, "duplicatedTokens": 252, "percentage": 5.1 } }
-}
-```
+An example of the report shape is in [references/clone-report.md](references/clone-report.md).
 
 For each reported clone, **Read only the line ranges** (`Read` with `offset`/`limit` around `start`/`end`) to confirm the duplication and classify it — do not Read whole candidate files. jscpd similarity is high by construction for a reported clone (a `--min-tokens` match); note the tokens/lines for the Extraction Plan.
 
@@ -96,12 +83,8 @@ When `npx`/`jscpd` is unavailable, or the ecosystem has no `npx` on PATH, fall b
 
 This fallback has lower recall for near-duplicates (renamed variables, reordered params) — prefer the jscpd path when available, and reserve Grep for when it is not.
 
-**Duplication signals to classify** (both the jscpd and the Grep path feed the same categories in Step 2):
-- Utility functions defined identically in multiple files (string truncation, date formatting, validation)
-- Identical error handling blocks (try/catch patterns, error state JSX)
-- Copy-pasted UI fragments (pagination controls, confirmation dialogs, loading states)
-- Repeated hook/state management patterns (delete confirmation + mutation + handler)
-- Duplicated import blocks that signal repeated inline implementations
+The duplication signals both paths feed into Step 2 are listed in
+[references/duplication-signals.md](references/duplication-signals.md).
 
 ### Step 2: Classify duplications
 
@@ -161,12 +144,8 @@ Mark each extraction as completed in the tracker before moving to the next.
 
 Write tests for each extracted abstraction:
 
-| Abstraction Type | Test Approach |
-|-----------------|---------------|
-| Utility function | Unit tests covering all input variations, edge cases |
-| UI component | Render tests, prop variations, accessibility |
-| Custom hook | Hook testing with mock dependencies, state transitions |
-| Type definitions | Type-level tests if applicable (tsd, expect-type) |
+Pick the test approach per abstraction type (utility, component, hook, types) from
+[references/test-and-verify.md](references/test-and-verify.md#test-approach-by-abstraction-type).
 
 Place test files adjacent to the abstraction or in the project's test directory, following existing conventions.
 
@@ -182,72 +161,23 @@ After all extractions are complete:
 
 Run the full verification suite:
 
-**TypeScript/JavaScript projects:**
-```bash
-npx tsc --noEmit          # Type checking
-npm run lint              # Linting (or biome/eslint directly)
-npm run test              # Full test suite
-```
-
-**Python projects:**
-```bash
-ty check .                # Type checking
-ruff check .              # Linting
-pytest                    # Test suite
-```
-
-**Rust projects:**
-```bash
-cargo check               # Type checking
-cargo clippy              # Linting
-cargo test                # Test suite
-```
+Run type checking, linting, and the full test suite with the project's tools — the
+TypeScript/JavaScript, Python, and Rust command sets are in
+[references/test-and-verify.md](references/test-and-verify.md#verification-commands).
 
 All three must pass. If any fail, fix the issues before reporting completion.
 
 ### Output Summary
 
-After all phases complete, report:
-
-```
-## DRY Consolidation Summary
-
-### Extractions
-- [Abstraction Name] (type) — replaced N blocks in M files
-- ...
-
-### New Files Created
-- path/to/new/file.ts — [description]
-- ...
-
-### Tests Added
-- N tests across M test files
-
-### Net Effect
-- ~N lines of duplicated code consolidated
-- N reusable abstractions created
-- All verified: typecheck + lint + N passing tests
-```
+After all phases complete, report using the summary template in
+[references/output-summary.md](references/output-summary.md).
 
 ## Agentic Optimizations
 
-| Context | Approach |
-|---------|----------|
-| Deterministic clone scan | `npx jscpd --reporters json --min-tokens 50 --output /tmp/jscpd-dry --silent <path>` then parse `duplicates[]` for exact ranges |
-| Structural shape confirm | `ast-grep -p '<pattern with $METAVARS>' --lang <lang> <path>` |
-| Quick scan | Use `--dry-run` to see duplication report without changes |
-| Focused extraction | Use `--scope utilities` to extract only utility functions |
-| Large codebase | Scope to specific directory: `/code:dry-consolidation src/components/` |
-| Post-extraction verify | `npx tsc --noEmit 2>&1 | head -30` for quick type error check |
-| Test run (fast) | `npm test -- --bail=1 --reporter=dot` for quick pass/fail |
+Compact command forms (clone scan, shape confirm, scoped runs, fast verify) are in
+[references/agentic-optimizations.md](references/agentic-optimizations.md).
 
 ## See Also
 
-- `/code:refactor` — Functional refactoring of a file or directory (pure functions, immutability, composition)
-- `/code:antipatterns` — Detection-only analysis for code smells
-- `ast-grep-search` — Structural code search for finding patterns
-
-## Related Skills
-
-- If dead code detected during consolidation → `/code:dead-code`
-- If complexity is high after consolidation → `/code:complexity`
+Sibling skills (`/code:refactor`, `/code:antipatterns`, `ast-grep-search`) and follow-ups
+(`/code:dead-code`, `/code:complexity`) are listed in [references/related.md](references/related.md).

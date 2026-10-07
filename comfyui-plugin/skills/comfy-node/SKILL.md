@@ -28,7 +28,7 @@ adopted into gitops too.
 > single source of truth for **every** laurigates repo class, not just ComfyUI
 > packs. `foundryvtt-plugin:foundryvtt-module` carries only its own deltas and
 > defers here. If you arrived from another skill, read
-> [Adapting Phases 3–5 to another repo class](#adapting-phases-35-to-another-repo-class)
+> [Adapting Phases 3–5 to another repo class](references/gitops-adoption.md#adapting-phases-35-to-another-repo-class)
 > first — it names every value you substitute.
 
 ## When to Use This Skill
@@ -43,22 +43,7 @@ Do **not** use it to add a node to an existing pack, or to publish a release
 
 ## The shape it automates
 
-```mermaid
-flowchart LR
-  idea["idea"] --> sc["scaffold.py"] --> gh["gh repo create<br/>+ seed main"] --> gop["gitops PR<br/>(entry + import block)"]
-  gop --> gate["👤 merge gitops PR"] --> apply["tofu-apply on release:<br/>adopt + secrets + protection"] --> rm["remove import block"] --> impl["implement + release"]
-  classDef g fill:#1b4332,stroke:#2d6a4f,color:#fff
-  classDef m fill:#6a040f,stroke:#9d0208,color:#fff
-  class sc,gh,gop,apply,rm g
-  class gate,impl m
-```
-
-Everything left of the gate is one orchestrated pass. There is **no scaffold
-PR** — the seed goes straight to `main` (see Phase 3 for why). The single gate
-(merging the gitops PR) is intentionally human — it feeds the apply pipeline on
-shared infra state (release-please cuts a gitops release, whose publication
-triggers the `tofu-apply.yml` GitHub Actions workflow). Never merge it on the
-user's behalf.
+idea → `scaffold.py` → `gh repo create` + seed `main` → gitops PR → **human merges the gitops PR** → tofu-apply on release → remove the import block → implement + release. There is no scaffold PR, and the gate is never merged on the user's behalf. Diagram: [references/pipeline-overview.md](references/pipeline-overview.md).
 
 ## Preconditions
 
@@ -190,131 +175,13 @@ gh repo create laurigates/comfyui-touch-resize --public --source . --remote orig
 
 The `--push` makes the seeded `main` the default branch.
 
-## Phase 4 — Open the gitops PR (entry + transient import block)
+## Phases 4–5 — gitops adoption PR, human gate, cleanup
 
-Two edits in the `gitops/` repo, on a dedicated branch.
-
-**`gitops/repositories.tf`** — add to the active repositories `locals` block,
-next to the other `comfyui-*` entries (mirror `comfyui-touch-connect`):
-
-```hcl
-    "comfyui-touch-resize" = {
-      description    = "Selection-gated pinch-to-resize for ComfyUI nodes and groups on touch devices"
-      visibility     = "public"
-      release_please = true
-      comfy_registry = true
-      topics         = ["comfyui", "comfyui-nodes", "mobile", "touch", "resize"]
-    }
-```
-
-**`gitops/main.tf`** — add a transient `import` block alongside the existing
-ones at the top of the file:
-
-```hcl
-import {
-  to = github_repository.this["comfyui-touch-resize"]
-  id = "comfyui-touch-resize"
-}
-```
-
-Validate, branch, commit, push, open the PR (run inside `gitops/`):
-
-```sh
-just check
-```
-
-```sh
-git -C gitops switch -c feat/adopt-comfyui-touch-resize
-```
-
-```sh
-git -C gitops add repositories.tf main.tf
-```
-
-```sh
-git -C gitops commit -m "feat: adopt comfyui-touch-resize (comfy_registry)"
-```
-
-```sh
-git -C gitops push -u origin feat/adopt-comfyui-touch-resize
-```
-
-```sh
-gh pr create -R laurigates/gitops -a laurigates -l chore -l opentofu --title "feat: adopt comfyui-touch-resize (comfy_registry)" --body-file /tmp/gitops-pr-body.md
-```
-
-Write a short body (to `/tmp/gitops-pr-body.md`) rather than `--fill` — it's an
-infra PR that triggers an apply, so spell out what merge does: imports the repo,
-pushes `REGISTRY_ACCESS_TOKEN` + release-please credentials, applies the
-branch-protection ruleset, and that a follow-up PR removes the import block. Use
-labels `chore` + `opentofu` (both exist in the gitops repo; check
-`gh label list -R laurigates/gitops` if unsure).
-
-Set metadata per `github-metadata-hygiene` (assignee `laurigates`; skip
-self-reviewer — the author is the running user). The `tofu-plan.yml` workflow
-posts the plan as a comment on the PR; the expected plan **imports** the repo
-and **creates** the
-`REGISTRY_ACCESS_TOKEN` secret + release-please var/secret + branch-protection
-ruleset.
-
-## Phase 5 — Human gate, then finish
-
-Hand the user the new repo URL and the **gitops PR** URL. **The user merges the
-gitops PR** — that starts the apply chain on shared infra state (release-please
-cuts a gitops release PR; merging that publishes a release, which triggers
-`tofu-apply.yml`). Do not merge it for them.
-
-After the user confirms the tofu apply landed, verify the wiring and remove the
-now-dead import block:
-
-```sh
-gh secret list -R laurigates/comfyui-touch-resize
-```
-
-```sh
-gh api repos/laurigates/comfyui-touch-resize/actions/variables/RELEASE_PLEASE_APP_ID --jq .name
-```
-
-`REGISTRY_ACCESS_TOKEN` should be listed; the variable lookup should return its
-name. Then open the import-block-removal follow-up PR (it is a one-time
-adoption artifact — leaving it is harmless but untidy):
-
-```sh
-git -C gitops switch -c chore/remove-comfyui-touch-resize-import
-```
-
-Remove the `import { … "comfyui-touch-resize" … }` block from `main.tf`, then:
-
-```sh
-git -C gitops commit -am "chore: remove one-time import block for comfyui-touch-resize"
-```
-
-```sh
-git -C gitops push -u origin chore/remove-comfyui-touch-resize-import
-```
-
-```sh
-gh pr create -R laurigates/gitops -a laurigates -l chore --fill --title "chore: remove comfyui-touch-resize import block"
-```
-
-## Adapting Phases 3–5 to another repo class
-
-Phases 3–5 are repo-class-agnostic: the seed-`main`-first rationale, the
-branch-protection hook workaround, the `import`-block mechanics, the human gate,
-and the import-block-removal follow-up are identical for a ComfyUI pack, a
-FoundryVTT module, or anything else gitops adopts. Only these values change —
-substitute them and the phases read verbatim:
-
-| Substitute | ComfyUI pack (the examples above) | How to find yours |
-|---|---|---|
-| Repo name | `comfyui-touch-resize` | The caller skill's Phase 0 spec |
-| Workspace → gitops path | `gitops/` (run from `repos/laurigates/`) | `gitops/` if the clone is a sibling; `../gitops/` from a nested workspace |
-| `repositories.tf` adoption flags | `release_please = true` + `comfy_registry = true` | `release_please = true` is universal; extra flags are per-repo-class |
-| Seed commit subject | `feat: scaffold <name> (gesture pack)` | `feat: scaffold <name> (<variant> <noun>)` |
-| Phase 5 verification | `gh secret list` (`REGISTRY_ACCESS_TOKEN`) **and** the `RELEASE_PLEASE_APP_ID` variable lookup | Check one probe per flag you set; `release_please` always means the `RELEASE_PLEASE_APP_ID` variable |
-
-Everything else — the commands, the PR-body guidance, the labels, the metadata
-hygiene, the failure-mode rows below — applies unchanged.
+Open the gitops PR (`repositories.tf` entry + transient `import` block), hand
+the user the URLs, and **let the user merge it** — never merge it for them.
+After the apply lands, verify the wiring and remove the import block. For the
+HCL, commands, and the cross-repo-class substitution table, see
+[references/gitops-adoption.md](references/gitops-adoption.md).
 
 ## Phase 6 — Verify the finishing pass, then hand back
 
@@ -350,24 +217,10 @@ DOM test gap) to `project:comfyui-nodes` per `taskwarrior-cross-session`.
 
 ## Failure modes & guards
 
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| `publish.yml` fails `Option '--token' requires an argument` | `comfy_registry` flag not yet applied | Confirm the tofu apply landed; `gh secret list` shows `REGISTRY_ACCESS_TOKEN`; re-run `gh workflow run publish.yml -R laurigates/<name>` |
-| release-please job fails on empty `app-id` | `release_please` credentials not applied, or repo on the legacy PAT workflow | The scaffold ships the App-token `release-please.yml`; confirm the apply landed (`gh api repos/laurigates/<name>/actions/variables/RELEASE_PLEASE_APP_ID --jq .name` returns a name), re-run via `workflow_dispatch` |
-| `403 Resource not accessible by integration` on repo create | Tried to create via the gitops App, not a personal token | Create with personal `gh auth`; the App only adopts via import |
-| The tofu plan shows a *create* (not *import*) for the repo | Import block missing or `id` wrong | The `id` is the bare repo name, not `owner/name`; add/fix the import block |
-| `just check` red in gitops | `tofu fmt`/`validate` failure | `just format` then re-check before pushing |
+When a phase fails — `publish.yml` `--token` error, empty release-please `app-id`, `403` on repo create, a tofu plan showing *create* instead of *import*, red `just check` in gitops — look up the symptom in [references/failure-modes.md](references/failure-modes.md).
 
 ## Notes
 
-- The orchestrator never runs `tofu apply` — all applies go through the gitops
-  repo's `tofu-apply.yml` GitHub Actions workflow, triggered by publishing the
-  release-please release (see `gitops/CLAUDE.md`). Local gitops work is
-  `plan`/`validate` only.
-- The scaffold now emits the registry finishing-pass pieces (icon/banner SVGs +
-  wiring, renovate + registry-health + clear-autorelease workflows) and audits
-  for the rest; `just assets` (rsvg-convert) produces the served PNGs. See the
-  finishing-pass note in Phase 2 (issue #1877).
-- Screenshots pipeline + `docs/blueprint/` PRD/ADR set are not scaffolded; add
-  them later from a reference pack (the `comfyui-screenshot-pipeline` skill) if
-  the pack warrants them.
+The orchestrator never runs `tofu apply`. For apply routing and what the
+scaffold does not emit, see
+[references/scope-notes.md](references/scope-notes.md).

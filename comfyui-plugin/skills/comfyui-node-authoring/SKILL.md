@@ -151,66 +151,11 @@ scrollEl.addEventListener("wheel", (e) => {
 
 ## A widget name is not proof of its option source
 
-Matching widgets **by name** is what makes a usability pack generic across node
-packs — any node exposing `lora_name` gets the LoRA picker, whatever its node
-type. But a name is a *convention*, not a contract: a third-party node can
-hardcode a combo under a canonical name, and its options then have nothing to do
-with `folder_paths`.
-
-**The split that decides whether you need a gate:**
-
-| The modal renders… | Risk | Gate needed |
-|---|---|---|
-| The widget's **own** `options.values` (reformatted, filtered, searchable) | none — you show what the node offers | no |
-| Content from an **external** source (a `folder_paths` listing, an endpoint, a corpus) | you can replace the node's only valid choices with values it rejects | **yes** |
-
-> Evidence (2026-08, `comfyui-model-gallery` #66): ComfyUI-Frame-Interpolation's
-> **RIFE VFI** node hardcodes `ckpt_name` to `rife47.pth`, `rife49.pth`,
-> `rife417.pth`, `rife426.pth`, `sudo_rife4_269…pth` — weights living in that
-> pack's own `ckpts/` dir. The gallery matched the name, listed
-> `models/checkpoints` instead, and offered two diffusion checkpoints the node
-> cannot load. Zero overlap between the two sets, which is exactly the signal.
-
-**The gate: require the widget's own values to overlap the external source.**
-
-```ts
-// names = the external source's contents for this category; null when unknown
-function optionsMatchSource(w, names) {
-  if (!names) return true;                       // source unknown — stay optimistic
-  const values = w?.options?.values;
-  if (!Array.isArray(values) || values.length === 0) return true;
-  return values.some((v) => names.has((v ?? "").toString()));
-}
-```
-
-Four things make it work in practice:
-
-- **Prime the source per category at enhance time** (fire-and-forget, once), so
-  the check answers **synchronously** when the user taps. A gate that has to
-  await a fetch mid-pointer-event is a gate that opens the wrong modal first.
-- **Decide at tap time, not patch time.** The listing arrives asynchronously and
-  a node's options can be rebuilt by a definition refresh, so test inside the
-  opener, not in the `if` that decides whether to patch.
-- **Decline by returning `false`** from the `patchWidgetPointer` opener — that
-  falls through to the native control, preserving the additive contract. Do not
-  skip patching entirely; you still want the tooltip/callback enhancements.
-- **Stay optimistic on unknown.** Unknown source or an empty `values` array must
-  open the modal, exactly as before the gate existed. A conservative default
-  silently withholds the feature whenever the backend is unreachable — a
-  regression that presents as "the pack stopped working" with no error.
-
-Partial overlap is a pass, not a failure: a stale entry alongside real files
-(a deleted model still listed in a loaded workflow) is normal.
+If a name-matched modal renders an **external** source (a `folder_paths` listing, an endpoint) instead of the widget's own `options.values`, gate it on overlap with those values: [references/widget-option-source-gate.md](references/widget-option-source-gate.md).
 
 ## Reusing core endpoints
 
-- `/api/view?filename=<name>&type=input|output|temp&subfolder=<sub>&preview=webp;75`
-  returns a webp thumbnail; handles subfolder-escape checks. Works only for
-  the three managed roots — arbitrary absolute paths must be served by your
-  own endpoint.
-- `folder_paths.annotated_filepath()` parses `name [input|output|temp]`.
-- `PromptServer.instance.routes.get("/your_pack/something")` registers an
-  HTTP endpoint. Call from JS via `fetch("/your_pack/...")`.
+`/api/view` thumbnails, `folder_paths.annotated_filepath()`, and registering your own route: [references/backend-endpoints.md](references/backend-endpoints.md).
 
 ## Subfolder safety
 
@@ -227,23 +172,7 @@ reach.
 
 ## Cheap metadata in listing endpoints
 
-`PIL.Image.open(path)` is lazy — only the file header is decoded until pixel
-data is accessed. So `.size`, `.mode`, and `.format` are nearly free and safe
-to call inside an `os.scandir` listing loop, even for directories of 100+
-images. Wrap in `try/except` so a single broken file doesn't kill the
-listing, and do **not** call `im.load()` or access pixels in the listing
-loop — that forces a full decode and turns the loop into a multi-second
-operation.
-
-```python
-width: int | None = None
-height: int | None = None
-try:
-    with Image.open(entry.path) as im:
-        width, height = im.size
-except Exception:
-    pass
-```
+Reading image size/mode in a directory-listing loop without a full decode: [references/backend-endpoints.md](references/backend-endpoints.md).
 
 ## Sibling-module imports must be relative
 
@@ -268,152 +197,19 @@ the runtime `IMPORT FAILED`.
 
 ## Frontend-bundle reverse-engineering
 
-When a frontend behavior isn't documented (e.g. "how do I hide this
-widget"), grep the minified frontend bundle for property tokens:
-
-```sh
-grep -oE ".{60}<token>.{30}" \
-  <venv>/lib/python*/site-packages/comfyui_frontend_package/static/assets/core-*.js \
-  | head -10
-```
-
-Property names survive minification (only variables are mangled), so
-`grep -oE "[a-zA-Z_]+\.hidden\b"` is enough to find that the frontend uses
-`widget.hidden = true` / `widget.options.hidden = true` as the canonical
-hide toggles.
-
-### Verify against the sourcemap for anything non-trivial
-
-For a LiteGraph / canvas API whose shape you need precisely, don't trust a
-guessed property name or an old tutorial — the shipped bundle renames
-properties under minification and forks rename further. The frontend ships
-`.js.map` files with `sourcesContent` (the original TypeScript). LiteGraph is
-bundled in the **`api-*.js.map`** chunk:
-
-```sh
-cd <pack>/.venv/lib/python*/site-packages/comfyui_frontend_package/static/assets
-grep -l 'LGraphGroup' *.js.map        # find the chunk (usually api-*.js.map)
-```
-
-This recovers **full Vue component source too**, not just LiteGraph
-classes — the original `.vue` (template + `<script setup>` + scoped CSS) is
-in `sourcesContent` keyed by a `../../src/...` path. When a UI behaviour
-lives in the app itself (a topbar, a tab, a dialog) rather than in a pack,
-grep the maps for the `.vue` filename:
-
-```sh
-grep -l 'WorkflowTabs.vue' *.js.map   # the component's chunk (e.g. GraphView-*.js.map)
-```
-
-To extract a class/value cleanly, load the map as JSON and slice
-`sourcesContent` (the minified `.js` itself is useless for names):
-
-```sh
-python3 - <<'PY'
-import json
-m = json.load(open("api-<hash>.js.map"))
-for name, src in zip(m["sources"], m["sourcesContent"] or []):
-    if src and "class LGraphGroup" in src:
-        i = src.index("class LGraphGroup"); print(name); print(src[i:i+2000]); break
-PY
-```
-
-Record what you confirm in the pack's `CLAUDE.md` (a "Verified frontend
-API" table), and note the `comfyui-frontend-package` version — re-verify
-after a bump.
-
-### Facts confirmed this way (recheck on version bump)
-
-| Symbol | Finding |
-|---|---|
-| `LiteGraph.NODE_TITLE_HEIGHT` | `= 30`. A node's `pos` is the body top-left; the title bar sits *above* it. A group's `pos` is the whole-box top-left (title drawn inside) — **no** title offset. |
-| `canvas.selectedItems` | `Set<Positionable>` = all selected nodes, groups, and reroutes. Groups and reroutes are individually selectable here. |
-| `canvas.selected_nodes` | `Dictionary<LGraphNode>` (nodes only). |
-| `LGraphGroup.pos` / `.size` | getters/setters over `_pos`/`_size`; the **`size` setter self-clamps** to `minWidth=140`/`minHeight=80`. |
-| `LGraphGroup.recomputeInsideNodes()` | present — call it after mutating a group's size/pos so membership stays correct. |
-| `LGraphGroup.id` | defaults to `-1`, not guaranteed unique → use a selection-index fallback when keying. |
-| Canvas zoom | **wheel-driven** (`processMouseWheel → ds.changeScale`; browsers send pinch-zoom as ctrl+wheel). |
-
-Two implementation gotchas that follow:
-
-- **Discriminate items by shape, not `instanceof`.** The class is renamed
-  under minification (and forks rename further), so `x instanceof
-  LGraphGroup` is fragile. Filter by structure instead: a node has a
-  `computeSize()` method; a group has `pos`+`size`+a string `title` but no
-  `computeSize`; a reroute has no `size`.
-- **Suppress native zoom via a `wheel` interceptor, not just pointer
-  events.** Because zoom is wheel-driven, `e.stopImmediatePropagation()` on
-  `pointerdown`/`pointermove` alone will not stop a pinch-zoom. While a
-  gesture is locked, also intercept `wheel` in the capture phase with
-  `passive: false` and `preventDefault()`.
+For an undocumented frontend behaviour or LiteGraph / Vue API shape, grep the bundle and verify against the `.js.map` sources before relying on it. Technique and the confirmed-facts table: [references/frontend-bundle-reverse-engineering.md](references/frontend-bundle-reverse-engineering.md).
 
 ## Behavioural / touch / visibility bugs: reproduce live, don't trust a static read
 
-Reading the source tells you what the code *says*; for an **interaction
-bug** — hover-gating, touch reachability, z-index overlap, focus, a tap that
-"does nothing" — a static CSS/template read is not enough to confirm the
-mechanism. Reproduce against a live instance (see `comfyui-pack-live-smoke`)
-before concluding.
-
-Technique that settled a real case (a workflow-tab close button unreachable
-on touch — ComfyUI_frontend #13279 / PR #13280):
-
-- Drive it with the chrome-devtools MCP: `emulate` a mobile viewport with the
-  `touch`+`mobile` flags, then **confirm the media state you think you're
-  testing** — `matchMedia('(hover: none)').matches` must be `true`, else
-  you're not actually testing touch.
-- Prove tap reachability with `document.elementFromPoint(cx, cy)` at the
-  target control's centre: if it returns an *overlay* element instead of the
-  button/its child, the control is visually present but **tap-intercepted**
-  — a failure a CSS read of `visibility` alone will miss.
-- Mutate-and-recheck live: inject the candidate fix as a `<style>` and
-  re-run the same `elementFromPoint` + a real `.click()`, watching the
-  result, before committing to it.
-
-When a bug is reported as conditional ("works with a few, breaks with
-many"), treat that as ground truth and reproduce the *conditional* rather
-than defending a first theory that only explains part of it.
+Reproduce an interaction bug (hover-gating, touch reachability, overlap, a dead tap) on a live instance before concluding: [references/live-repro.md](references/live-repro.md).
 
 ## Reading INPUT_TYPES tooltip metadata from JS
 
-Tooltips declared in a node's Python `INPUT_TYPES` are surfaced to the
-frontend at **multiple distinct locations** — there is no single `tooltip`
-field. A JS extension that wants to read them needs to walk this lookup
-chain:
-
-| Source | Path | When populated |
-|---|---|---|
-| Widget option | `widget.options.tooltip` | Canvas-rendered widgets (most common) |
-| Input slot | `node.inputs[i].tooltip` | Wired-socket inputs that round-tripped through the loader |
-| Raw node def | `node.constructor.nodeData.input.required\|optional[name][1].tooltip` | Always — fallback when neither of the above was populated |
-| Output socket | `node.constructor.nodeData.output_tooltips[i]` | Outputs (array indexed by slot) |
-| Node-level | `node.constructor.nodeData.description` | Whole-node hover / final fallback |
-
-`node.constructor.nodeData` is the full registered node definition — same
-shape Python's `INPUT_TYPES` returned, with `[type, opts]` tuples preserved.
-Don't assume `widget.options.tooltip` exists for every widget; DOM widgets
-and dynamically-created widgets often don't get it copied over, so the
-`nodeData` fallback matters.
+Tooltips live in several places, not one field; the lookup chain is in [references/frontend-lookups.md](references/frontend-lookups.md).
 
 ## Hit-testing the canvas from a frontend extension
 
-To map a pointer event to a node / widget / socket / title region:
-
-```js
-const [gx, gy] = canvas.convertEventToCanvasOffset(e);            // screen → graph
-const node = canvas.graph.getNodeOnPos(gx, gy, canvas.visible_nodes);
-// Socket hit (most precise — uses canonical socket positions):
-const p = node.getConnectionPos(/* isInput */ true, slotIndex);   // [x, y] in graph coords
-// Widget hit:
-//   widget.last_y is the y-offset within the node, set on each draw
-//   widget.computeSize(node.size[0]) returns [w, h]; fall back to
-//   LiteGraph.NODE_WIDGET_HEIGHT (20) when computeSize is absent
-// Title-region hit: ly ∈ [-LiteGraph.NODE_TITLE_HEIGHT, 0]
-```
-
-`canvas.visible_nodes` is what's currently on-screen — pass it to
-`getNodeOnPos` so off-screen / culled nodes don't false-hit. Sockets need a
-tolerance radius (≈14 px works for touch, ≈8 px for mouse).
+Pointer event → node / widget / socket / title region: [references/frontend-lookups.md](references/frontend-lookups.md).
 
 ## Smoke-testing a new pack
 
