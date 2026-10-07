@@ -46,43 +46,7 @@ Analyzes test results from any testing framework, uses Zen planner to create a s
 - `--focus <area>`: Specific area to focus on (optional)
   - Examples: `authentication`, `api`, `ui-components`, `database`
 
-## Examples
-
-```bash
-# Analyze Playwright accessibility test results
-/test:analyze ./test-results/ --type accessibility
-
-# Analyze unit test failures with focus on auth
-/test:analyze ./coverage/junit.xml --type unit --focus authentication
-
-# Auto-detect test type and analyze all issues
-/test:analyze ./test-output/
-
-# Analyze security scan results
-/test:analyze ./security-report.json --type security
-```
-
-## Command Flow
-
-1. **Analyze Test Results**
-   - Parse test result files (XML, JSON, HTML, text)
-   - Extract failures, errors, warnings
-   - Categorize issues by type and severity
-   - Identify patterns and root causes
-
-2. **Plan Fixes with PAL Planner**
-   - Use `mcp__pal-mcp-server__planner` for systematic planning
-   - Break down complex fixes into actionable steps
-   - Identify dependencies between fixes
-   - Estimate effort and priority
-
-3. **Delegate to Subagents**
-   - Route each issue category through the [Subagent Routing](#subagent-routing) table below — it is the single source of truth for every `subagent_type` this skill dispatches.
-
-4. **Execute Plan**
-   - Sequential execution based on dependencies
-   - Verification after each fix
-   - Re-run tests to confirm resolution
+Examples, a flow overview, output shape, and related commands: [references/usage.md](references/usage.md). The **Prompt** below is the procedure.
 
 ## Subagent Routing
 
@@ -142,45 +106,6 @@ Two consequences worth stating inline:
   **splitting** the planning work across agent types behind a real barrier, which it does.
   The `parallel()` width is capped at the fixed agent-type set (8) precisely so it does
   not become the wide fan-out `.claude/rules/skill-fork-context.md` warns about.
-
-## Output
-
-The command produces:
-
-1. **Summary Report**
-   - Total issues found
-   - Breakdown by category/severity
-   - Top priorities
-
-2. **Fix Plan** (from PAL planner)
-   - Step-by-step remediation strategy
-   - Dependency graph
-   - Effort estimates
-
-3. **Subagent Assignments**
-   - Which agent handles which issues
-   - Rationale for delegation
-   - Execution order
-
-4. **Actionable Next Steps**
-   - Commands to run
-   - Files to modify
-   - Verification steps
-
-## Notes
-
-- Works with any test framework that produces structured output
-- Auto-detects common test result formats (JUnit XML, JSON, TAP)
-- Preserves test evidence for debugging
-- Can be chained with `/git:smartcommit` for automated fixes
-- Respects TDD workflow (RED → GREEN → REFACTOR)
-
-## Related Commands
-
-- `/test:run` - Run tests with framework detection
-- `/code:review` - Manual code review for test files
-- `/docs:update` - Update test documentation
-- `/git:smartcommit` - Commit fixes with conventional messages
 
 ---
 

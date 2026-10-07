@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.2](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.12.1...github-actions-plugin-v1.12.2) (2026-10-07)
+
+
+### Code Refactoring
+
+* **skills:** move reference material out of oversized SKILL.md bodies ([#2919](https://github.com/laurigates/claude-plugins/issues/2919)) ([765f0a9](https://github.com/laurigates/claude-plugins/commit/765f0a99487f222a1b5ea18f0fa5f001b2d435b4))
+
 ## [1.12.1](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.12.0...github-actions-plugin-v1.12.1) (2026-09-26)
 
 

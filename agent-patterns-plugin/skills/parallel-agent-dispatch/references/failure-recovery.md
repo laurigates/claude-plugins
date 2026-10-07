@@ -190,6 +190,22 @@ fresh agent lacks the context, and for worktree agents cannot take the branch
 via an explicit `SendMessage` to the lead ("main") as their **final act**,
 not rely on the final-text return alone.
 
+## Killing a Thrashing Agent Preserves Its Worktree
+
+`TaskStop` does **not** discard the agent's work — its worktree stays on disk
+with every uncommitted change intact, making `TaskStop` a **recovery
+affordance**. When an agent is thrashing (high Bash:Edit ratio with a rising
+error rate on hook-blocked Bash calls), killing it early and salvaging beats
+waiting for a silent give-up. Then decide from the worktree state:
+
+| Worktree state | Decision |
+|----------------|----------|
+| Substantive diff vs `origin/main` | **Salvage** — finish in the parent session, commit, push, open the PR |
+| Empty / trivial diff, or wrong design | **Restart** — `git worktree remove <path>` first, then re-dispatch |
+
+For the quantitative kill thresholds and the rate-limit vs hook-block
+discriminator, see [references/failure-recovery.md → Killed-agent worktree recovery](failure-recovery.md#killed-agent-worktree-recovery-taskstop).
+
 ## Killed-agent worktree recovery (TaskStop)
 
 Distinct from the silent commit-stall above: here the orchestrator

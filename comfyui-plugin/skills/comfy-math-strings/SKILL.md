@@ -166,157 +166,19 @@ debug-friendly handle.
 
 ## Primitives & sliders
 
-| Source | What it gives you |
-|---|---|
-| kjnodes `INTConstant` / `FloatConstant` / `StringConstant` / `BOOLConstant` / `StringConstantMultiline` | Plain widget-input constants |
-| Crystools `CInteger` / `CFloat` / `CText` / `CTextML` / `CBoolean` | Same, plus some have widget toggle for live update |
-| mxtoolkit `mxSlider` | Single tunable INT or FLOAT slider with live drag |
-| mxtoolkit `mxSlider2D` | 2D drag-pad emitting two independent values |
-| mxtoolkit `mxSeed` | INT pass-through with a seed-control widget (random / fixed / increment) |
-| `easy rangeInt` | Emit a range of INTs — `start`, `end`, plus `step` mode or `num_steps` mode |
-| `RepeatImageToCount` is image-specific (covered in `comfy-image-utils`); for value-list repetition use Python via JoinString | |
-
-### Seed strategy
-
-ComfyUI core's `Seed` node and the `seed` widget on `KSampler` both
-support fixed/random/increment. `mxSeed` adds a slider-style UI and a
-pass-through value (useful when one seed feeds multiple samplers and
-you want it visible). `Seed Everywhere` (cg-use-everywhere) is
-deprecated in favor of `Anything Everywhere` connected to an INT.
+Constants, mxtoolkit sliders / `mxSeed`, `easy rangeInt`, and seed strategy: [references/primitives-and-sliders.md](references/primitives-and-sliders.md).
 
 ## JSON & lists (Crystools)
 
-| Node | Use |
-|---|---|
-| `CJsonFile` | Load a JSON file from disk; emits the parsed structure as a JSON object |
-| `CJsonExtractor` | Extract values from a JSON object via dot-path / JSONPath syntax |
-| `CListAny` | Build / pass a list of any type |
-| `CListString` | Build a list of strings (sometimes more convenient than concatenation) |
-
-Typical use: load a config JSON, extract one value, feed into a
-downstream node. The Crystools JSON nodes don't do JSON-write; for
-that, save text via bjornulf `SaveText` or use the `MathExpression`
-escape hatch.
+Load / extract JSON and build lists (`CJsonFile`, `CJsonExtractor`, `CListAny`, `CListString`; no JSON write): [references/json-and-lists.md](references/json-and-lists.md).
 
 ## Recipes
 
-### Resolution math from megapixels + aspect ratio
-
-You want a target image size of "≈1 MP, 16:9 aspect, both dimensions
-divisible by 8".
-
-```
-PrimitiveFloat (mp = 1.0) ──┐
-                            ▼
-PrimitiveFloat (ar = 16/9) ─►  MathExpression (pysssss)
-                            ▲     expression: int(math.sqrt(a * 1e6 * b) / 8) * 8
-                            │     a = mp, b = ar
-                            ▼
-                          width = 1336 (for ar=1.78)
-                          (compute height by 1e6/width or as another expression)
-```
-
-Two `MathExpression` nodes: one for width, one for height = `int((a * 1e6) / b / 8) * 8`
-with the same `mp` input and width as `b`. The 8-snapping handles
-SD/Flux/Wan latent alignment automatically.
-
-### Filename templating
-
-`SaveImage.filename_prefix` accepts `%date:yyyy-MM-dd%` / `%date:hhmmss%`
-substitution plus `%NodeName.widget%`. A run-signature shape
-(sampler/scheduler/seed) keeps runs distinguishable, but the exact
-convention is per-install — see "Naming conventions are per-install" in
-`comfy-workflow-json`. When the native substitution isn't enough (e.g. you
-need to strip an extension from a source filename), assemble the prefix via:
-
-```
-LoadAndResizeImage ──► image_path (STRING, kjnodes)
-                            │
-                            ▼
-                StringFunction (pysssss)
-                   action: replace, regex: ON
-                   find:    "\.(png|jpg|jpeg|webp)$"
-                   replace: ""
-                            │
-                            ▼ (basename without ext, STRING)
-              JoinStringMulti (kjnodes)
-                 in_1: "<bucket>/%date:yyyy-MM-dd%/%date:hhmmss%_%ksampler.sampler_name%_%ksampler.scheduler%_s%ksampler.seed%_"
-                 in_2: <stripped basename>   # the <descriptor> segment
-                            │
-                            ▼
-              easy imageSave (filename_prefix STRING input)
-```
-
-The `%date:...%` tokens are passed through verbatim; SaveImage's
-internal substitution resolves them at save time. The
-`%LoadImage.image%` widget-substitution is bypassed entirely — we
-build the final string in the graph.
-
-### Build a comma-separated tag list from individual triggers
-
-Three LoRA trigger words plus a manual prompt, combined:
-
-```
-LoraLoaderVanilla (lora_1) ──► civitai_tags_list (STRING)  ──┐
-LoraLoaderVanilla (lora_2) ──► civitai_tags_list (STRING)  ──┤
-LoraLoaderVanilla (lora_3) ──► civitai_tags_list (STRING)  ──┤
-PrimitiveStringMultiline ("a portrait of a woman") ───────────┤
-                                                              ▼
-                                              JoinStringMulti (delimiter = ", ")
-                                                              │
-                                                              ▼
-                                                       CLIPTextEncode
-```
-
-Empty trigger strings produce an extra `, ` — pipe through
-`StringFunction` (action: tidy tags) to collapse redundant separators.
-
-### Range-driven batch
-
-Generate 10 images at incrementing CFG values:
-
-```
-easy rangeInt
-   start: 3,  end: 12,  num_steps: 10
-        │
-        ▼ (emits 10 INTs at execution)
-   (route into a forLoopStart, each iteration sets KSampler.cfg)
-```
-
-Pair with `easy forLoopStart` / `forLoopEnd` (see `comfy-flow-control`)
-for actual iteration.
+Worked graphs (resolution from megapixels + aspect, filename templating, tag lists from LoRA triggers, range-driven batch): [references/recipes.md](references/recipes.md).
 
 ## Gotchas
 
-- **`SimpleMath` ≠ `MathExpression`.** Essentials' SimpleMath is
-  AST-safe (no imports, limited function set — no `sqrt`, no `numpy`).
-  Pysssss MathExpression has full `math` + `numpy` access. Don't mix
-  them up.
-- **kjnodes Constants vs Crystools Constants** — they look
-  interchangeable. They mostly are, but Crystools' `CFloat` /
-  `CInteger` widgets default to wider ranges and Crystools' multiline
-  `CTextML` has different newline handling on Windows. Pick one pack
-  per workflow for consistency.
-- **`MathExpression` errors are server-side**. The node turns red but
-  the error message ("Error executing MathExpression: NameError")
-  lives in the ComfyUI server log (`journalctl -u comfyui.service`
-  on this install). Add a `ShowAnything` on the output to confirm
-  it's emitting what you expect.
-- **`StringFunction` regex syntax is Python `re`**. Forward slashes
-  are NOT escapes; backslashes are. `\.(png|jpg|jpeg|webp)$` works.
-  `/\\.(png|jpg|jpeg|webp)$/` does not — that's JavaScript syntax.
-- **`AnythingToInt` on a non-numeric string crashes**. `"3.14"` →
-  fails; `"3"` → works; `3.14` (float) → 3. To coerce a possibly
-  non-numeric STRING, route through `MathExpression` with
-  `int(float(a) if a else 0)` and a defensive try wrapper.
-- **`JoinStringMulti` shrinks dynamic inputs**. The first time you
-  add a downstream consumer, the node grows its slot count. If you
-  later disconnect, the empty slots stay around. Drop and re-add the
-  node to compact.
-- **`easy rangeInt` `num_steps` is INCLUSIVE on both ends**, so
-  `start=0, end=10, num_steps=11` gives `[0, 1, 2, ..., 10]`. With
-  `num_steps=10`, you get `[0, 1.11, ..., 10]` — not integer.
-  Prefer the `step` mode when you want integer-only spacing.
+When an expression, regex, or conversion misbehaves, check [references/gotchas.md](references/gotchas.md) — `SimpleMath` vs `MathExpression`, server-log-only errors, Python-`re` regex, `AnythingToInt` crashes, inclusive `rangeInt` `num_steps`.
 
 ## Cross-refs
 

@@ -91,33 +91,7 @@ separate INTs that you can wire to math nodes or display.
 
 ## System telemetry
 
-For figuring out what's eating VRAM / CPU / RAM mid-graph:
-
-| Node | What it reports | When called |
-|---|---|---|
-| Crystools `CUtilsStatSystem` | CPU %, RAM used/total, GPU VRAM used/total (per-card) | Re-polls every time its output is consumed |
-| kjnodes `VRAM_Debug` | One-shot VRAM snapshot to console | When the node executes |
-| kjnodes `TimerNodeKJ` | Wall-clock elapsed time between start/end of a section | When the end node executes |
-| kjnodes `Sleep` | Pauses execution for N seconds (throttling, not telemetry) | When executed |
-
-### Per-section timing
-
-```
-                ┌─► TimerNodeKJ (start) ──────► (just a pass-through tag)
-                │
-upstream value ─┤
-                │   (do stuff in between)
-                │
-                └─► TimerNodeKJ (end) ──► duration_seconds (FLOAT)
-                                              │
-                                              ▼
-                                  bjornulf `ShowFloat`
-                                  or DreamFloatToLog
-```
-
-Wire the same TimerNodeKJ id on both sides — the node remembers the
-start timestamp keyed by its instance and emits a duration on the
-"end" port.
+For VRAM / CPU / RAM monitoring (`CUtilsStatSystem`, `VRAM_Debug`) and per-section wall-clock timing (`TimerNodeKJ` start/end pairs), see [references/telemetry-and-profiling.md](references/telemetry-and-profiling.md).
 
 ## Preview Bridge and the ExecutionBlocker pitfall
 
@@ -145,142 +119,19 @@ blocker, not after.
 
 ## Metadata extraction
 
-For lightweight in-graph metadata reads (read PNG-embedded workflow
-JSON during a workflow run):
-
-| Node | Use |
-|---|---|
-| Crystools `CImageLoadWithMetadata` | Load image + emit its `image.info` PNG metadata as JSON |
-| Crystools `CMetadataExtractor` | Pull a specific key from a metadata blob |
-| Crystools `CMetadataCompare` | Diff two metadata blobs and report differences |
-| bjornulf `ImageDetails` | Read width/height/format from any image — doesn't surface workflow JSON |
-
-For batch / cross-output-directory analysis ("which prompt produced
-all these images?", "scan output/ and find runs that used model X"),
-use the dedicated **`comfy-metadata`** skill — it covers the full
-range of metadata sources (PNG tEXt, WebP EXIF Make/Model, MP4
-container, kijai WanVideoWrapper's `comment` blob, VHS metadata,
-`.latent` safetensors) and the scripts/scanners for batch
-inspection.
-
-The Crystools nodes here are for **inline** metadata reads as part
-of a workflow's logic; `comfy-metadata` is for **offline** analysis.
+Reading the *current* image's PNG metadata inside a workflow (`CImageLoadWithMetadata`, `CMetadataExtractor`, `CMetadataCompare`): see [references/inline-metadata.md](references/inline-metadata.md). Offline / cross-directory analysis is `comfy-metadata`.
 
 ## Counter-pattern: timing/profiling vs the wrong layer
 
-If a workflow is slow and you want to find the slow node:
-
-- ✅ Use `TimerNodeKJ` around suspected sections.
-- ✅ Use `CUtilsStatSystem` to log VRAM through the run.
-- ✅ Check the ComfyUI server log (`journalctl -u comfyui.service`)
-  — every node logs its execution time at the end of the run.
-- ❌ Don't add `Sleep` "to give the GPU time" — it doesn't help,
-  ComfyUI is synchronous within a queue.
-
-For deep model-level profiling (CUDA timelines, sageattn vs flash
-attention comparisons, kernel-level), this skill is the wrong layer
-— consult the model-family skill (e.g. `wan` for radial sage
-attention discussion).
+Hunting a slow node? [references/telemetry-and-profiling.md](references/telemetry-and-profiling.md) lists what helps (timers, VRAM logging, the server log's per-node times), what doesn't (`Sleep`), and when to go to the model-family skill instead.
 
 ## Recipes
 
-### "Why is my prompt different from what I typed?"
-
-After all wildcard expansion, LoRA trigger autoload, and string
-manipulation, you want to see the literal STRING that hits the text
-encoder:
-
-```
-(your full prompt-assembly chain)
-                │
-                ▼
-       (output STRING)
-                │
-       ┌────────┴────────┐
-       │                 │
-       ▼                 ▼
-  CLIPTextEncode    ShowText (pysssss)
-```
-
-The `ShowText` widget will display the resolved prompt — visible in
-the editor after queue. Useful for catching wildcards that didn't
-resolve (`__styles__` remained literal because the file was
-missing), or LoRA tags that came back empty.
-
-### Per-step time budget
-
-You want to know how long each sampler in a 3-sampler chain takes:
-
-```
-LoadImage ─► TimerNodeKJ(start, id=t1) ─► Sampler#1 ─► TimerNodeKJ(end, id=t1) ─► dt1
-                                              │              │
-                                              │              ▼ DreamFloatToLog
-                                              │
-                                              └► TimerNodeKJ(start, id=t2) ─► Sampler#2 ─► …
-```
-
-Three Timer pairs, three durations logged. After the run, check
-the server log or the `DreamLogFile` output for a per-sampler
-breakdown.
-
-### VRAM watch during a long batch
-
-```
-LoadImage ──► CUtilsStatSystem ──► (continues to KSampler)
-                    │
-                    ▼ (writes a line per-poll to log)
-              DreamStringToLog
-```
-
-`CUtilsStatSystem` polls VRAM on each evaluation. Wire its output
-through a logger so each queue tick records GPU state — easy to
-correlate OOMs with workflow position.
-
-### Surface batch counts before sampling
-
-```
-LoadImageBatchFromDir ──► IMAGE ───────► (downstream sampler)
-                            │
-                            ▼
-                  GetImageSizeAndCount ──► width / height / batch_count
-                                                          │
-                                                          ▼
-                                                   ShowInt
-```
-
-Before queuing a big batch, glance at the count to confirm you
-didn't accidentally load a directory of 500 images when you meant 5.
+Worked graphs — show the resolved prompt string, a per-sampler time budget, a VRAM watch during a long batch, and surfacing batch counts before sampling — are in [references/recipes.md](references/recipes.md).
 
 ## Gotchas
 
-- **`ShowText` updates AFTER queue completion**, not live during the
-  run. For mid-run display you need a console log
-  (`DebugTensorShape`, `CConsoleAny`) plus tailing the server log.
-- **`Preview Bridge` swallows `ExecutionBlocker`** — see above.
-  Mitigations: tee off the path BEFORE any potential blocker, or use
-  `FastPreview` downstream.
-- **`CUtilsStatSystem` only polls when its output is consumed**.
-  Wiring it to nothing means it never runs. Wire the output to a
-  console logger or a `ShowFloat` to make it actually poll.
-- **`DisplayAny` truncates large strings** to ~10 lines / ~1000 chars.
-  For longer values use `ShowStringText` (bjornulf) which scrolls,
-  or `DreamStringToLog` which writes to the server log without
-  truncation.
-- **`TimerNodeKJ` start/end pairing**: the `id` parameter must
-  match between the start and end instances. Multiple Timer pairs
-  with the same id cross-pollute their start times.
-- **`Sleep` is on the *graph* execution thread**, not GPU. It blocks
-  the entire queue, including unrelated parallel branches. Use only
-  when intentionally throttling.
-- **`FloatsVisualizer` renders to image at fixed resolution** — the
-  output is an IMAGE, not a graph object. Wire it through
-  `PreviewImage` to display.
-- **`DreamLogFile` opens the file in append mode each call** — for
-  high-frequency logging in a loop, file IO becomes the bottleneck.
-  Use a console logger instead and tail the server log offline.
-- **Crystools metadata nodes operate on PNG `image.info` only** —
-  they don't read MP4/WebP/EXIF. For those, the offline
-  `comfy-metadata` skill covers the full range.
+When a display node shows nothing, a stale or truncated value, or a timer/logger misbehaves, check [references/gotchas.md](references/gotchas.md) (ShowText updates after queue, `CUtilsStatSystem` polls only when consumed, `DisplayAny` truncation, Timer id pairing, `Sleep` blocks the queue, PNG-only Crystools metadata).
 
 ## Cross-refs
 

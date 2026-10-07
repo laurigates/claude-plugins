@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-25
-modified: 2026-07-18
+modified: 2026-10-07
 compatibility: claude-code
 reviewed: 2026-06-06
 ---
@@ -43,72 +43,11 @@ If any trigger matches, the work belongs in waves. Inside each wave,
 
 ## The Research-Before-WO Gate
 
-When the scope of a downstream WO depends on information that only a tool
-run can produce — Ghidra decomp, a live API trace, the actual structure
-of a binary format, a benchmark — run that probe as **its own first wave**
-before the implementation WO is written.
-
-The reason is concrete: the implementation WO's *size* collapses once
-the probe lands. A WO scoped as "unknown — possibly days, depends on the
-binary's actual layout" turns into "plumb a known pointer from offset
-0x40 to the existing decoder, hours" once the research wave produces a
-spec artefact. Writing the brief before the research lands locks in the
-worst-case framing and the agent burns its window re-deriving the
-information.
-
-Process:
-
-1. Wave 1 brief asks the probe agent to write findings to gitignored
-   scratch (`tmp/research/format-spec.md`, `tmp/decomp/strings.txt`,
-   `tmp/api/probe-results.json`).
-2. Probe agent returns a Return Contract that lists the artefact paths.
-3. Implementation WO is written **after** wave 1 closes, citing those
-   paths verbatim and forbidding re-running the probe.
-4. If the artefacts are insufficient, the implementation agent returns
-   `partial` with the missing question in `Orchestrator action needed`,
-   and the orchestrator dispatches a follow-up probe wave rather than
-   letting the implementation agent improvise.
-
-See `agent-patterns-plugin:exclusive-lock-dispatch` when the probe tool
-holds an exclusive lock — the pre-dump mechanics there are the right
-shape for the research wave's brief.
+When a downstream WO's scope depends on a tool run (decomp, API trace, format probe, benchmark), that probe is its own first wave. Procedure: [references/first-wave-gates.md](references/first-wave-gates.md).
 
 ## The Pilot-Before-Fan-Out Gate
 
-When the **same transformation** will be applied to N items (repos, files,
-packages, services), validate the whole recipe on **one representative
-pilot end-to-end — including the riskiest unknown — before fanning out**.
-Wave 1 is the pilot; wave 2 is the fan-out, and it *mirrors* the landed
-pilot rather than re-deriving the recipe N times in parallel.
-
-The reason is concrete: a parallel fan-out over an unvalidated recipe
-multiplies a single wrong assumption into N broken outputs, and you pay
-for all N before discovering the flaw. Proving it once converts the
-fan-out agents' job from "figure out how" to "replicate this exact,
-working example" — which is both cheaper and far more reliable.
-
-Process:
-
-1. **Wave 1 = the pilot.** Pick the *simplest representative* item. Do
-   the full transformation, and explicitly confirm the **load-bearing
-   unknown** — the one thing that, if it didn't work, would invalidate
-   the entire approach (a build externalization, an API contract, a
-   migration codemod's output).
-2. **Gate.** The pilot's own gates (build/test/lint) must pass **and**
-   the risky unknown must be confirmed before any fan-out brief is
-   written.
-3. **Wave 2 = the fan-out.** Each agent is told to mirror the landed
-   pilot — cite its path verbatim as the reference implementation — with
-   per-item detection only for the parts that genuinely vary.
-4. **If the pilot reveals the approach is wrong, re-plan.** Cheap,
-   because only one item was touched.
-
-Distinct from the Research-Before-WO Gate above: research produces a
-*spec / artefact* to scope an unknown ("what should we build?"); a pilot
-produces a *working reference implementation* of a repeatable change
-("we know what to build — is the recipe sound, and does the risky step
-actually work?"). Reach for research when the scope is unknown; reach for
-a pilot when the scope is known but the recipe is unproven.
+When the same transformation will be applied to N items, wave 1 is one pilot that proves the recipe and its riskiest unknown; wave 2 mirrors it. Procedure: [references/first-wave-gates.md](references/first-wave-gates.md).
 
 ## Six-Gate Verification Table Between Waves
 
@@ -130,24 +69,7 @@ revert it and re-brief.
 
 ### Gating on a green PR vs a landed merge
 
-The six gates assume wave N **landed on `main`** (Gate 6: clean tree). That
-holds when the orchestrator merges each wave itself. But when **a human reviews
-and merges** — so waves can't land before wave N+1 is due — don't stall the
-pipeline waiting for the merge. Gate wave N+1 on wave N's foundation **PR being
-green** (CI passing on the open PR) and **stack wave N+1 on wave N's branch**
-(`gh pr create --base <wave-N-branch>`), so it builds on wave N's content
-without waiting on the merge. Two adjustments:
-
-- **Gate 6 becomes "wave N's PR is green," not "merged."** Gates 1–5 (build,
-  tests, smoke, task/tracker drain) still apply — run them on wave N's branch.
-- **CI scoped to `pull_request: [main]` does not run on the stacked children**
-  (their base is a feature branch), so their gate is a **local** build/test
-  until they're retargeted to `main`.
-- **Honor stacked-PR merge order at landing time:** retarget children to `main`
-  *before* the base PR merges and deletes its branch, then rebase
-  `--onto origin/main <old-base-tip>` to drop the squashed base commits. See
-  `git-plugin:git-pr` (Stacked PRs) and `git-plugin:git-conflicts` (rerere can
-  replay the resolution across the base merge and each child rebase).
+When a human merges each wave and wave N+1 cannot wait for the merge, see [references/stacked-wave-prs.md](references/stacked-wave-prs.md) for how Gate 6 and stacked-PR landing change.
 
 ## The ~10-Line Inline-Fix Threshold
 
@@ -201,16 +123,7 @@ later waves.
 
 ## Composition
 
-| Layer | Skill | Concern |
-|-------|-------|---------|
-| Per-agent brief inside a wave | `agent-patterns-plugin:parallel-agent-dispatch` | Worktree preflight, scope budget, Return Contract, shared-file exclusion |
-| Lock-holding waves | `agent-patterns-plugin:exclusive-lock-dispatch` | Pre-dump mechanics so downstream waves read artefacts, not the lock |
-| Wave scheduling and gate failures | `workflow-orchestration-plugin:workflow-wave-dispatch` | Workflow-side view: which waves exist, what to do when a gate fails |
-| Where wave candidates come from | `taskwarrior-plugin:task-coordinate` | Surfaces unblocked tasks while skipping lock-contenders |
-
-This skill is the dispatch-time discipline that ties them together —
-the agent-pattern view of why the chain is sequential and what the
-between-wave gates buy you.
+Each wave is a `parallel-agent-dispatch`; lock-holding waves use `exclusive-lock-dispatch`. The full layer map is in [references/plan-review.md](references/plan-review.md).
 
 ## Quick Reference
 
@@ -226,13 +139,7 @@ between-wave gates buy you.
 
 ### Common Mistakes
 
-| Mistake | Correct Approach |
-|---------|-----------------|
-| Writing the implementation brief before the research probe lands | Research wave first; implementation brief cites the artefact paths |
-| Skipping a gate "because nothing changed" | All six gates run at every boundary; cheap gates are cheap on purpose |
-| Re-deriving the exclusion list per wave | Cite once in wave 1; reference by name in waves 2..N |
-| Filing every small issue as a follow-up WO | Inline-fix when ≤ ~10 lines and the orchestrator has the context |
-| Treating a gate failure as "dispatch the next wave to fix it" | Fix in place and retry the gate; revert and re-brief if unrecoverable |
+See [references/plan-review.md](references/plan-review.md) when reviewing a wave plan.
 
 ## Related
 
