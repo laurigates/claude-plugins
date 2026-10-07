@@ -115,37 +115,11 @@ places the module id appears fails a PR, not a user's install.
 
 ### Alternative: the cargo-generate template (pilot)
 
-`templates/foundryvtt-module/` is a cargo-generate port of `scaffold.py` whose
-emitted files are real files (so `tsc`/`biome`/`actionlint` can check them)
-rather than Python strings. Output is byte-identical, enforced by
-`scripts/tests/test-template-parity.sh`.
-
-**`scaffold.py` remains the default.** Reach for the template to edit the
-scaffold itself, or to try the flow before it is promoted:
-
-```sh
-cargo generate --path ${CLAUDE_SKILL_DIR}/../../templates/foundryvtt-module --name foundryvtt-initiative-tweaks --vcs none --define 'display_name=Initiative Tweaks' --define 'description=…' --define variant=basic
-```
-
-Needs `cargo-generate` locally — not in the base image, and the main cost of the
-port. CI installs it from the release tarball so the parity gate actually runs
-(#2221). See [`templates/README.md`](../../templates/README.md)
-for the comparison, the one deliberate divergence (a non-kebab-case name), the
-Liquid brace-collision fixes, and what promoting the template would take.
+`scaffold.py` remains the default. To edit the scaffold itself or try the cargo-generate port (`templates/foundryvtt-module/`), see [references/cargo-generate-template.md](references/cargo-generate-template.md).
 
 ## What you get
 
-A repo where `just check` passes from the first commit: a real `module.json`
-manifest, `package.json` (bun scripts), `vite.config.ts`, strict `tsconfig.json`,
-`biome.json`, `vitest.config.ts` + a green Vitest smoke test (Foundry globals
-stubbed in `tests/setup.ts`) and `tests/manifest.test.ts` (the manifest-vs-build
-gate above), `.github/workflows/` (`ci.yml`,
-`release-please.yml`), `release-please-config.json` + manifest,
-`renovate.json`, a `justfile`, `src/module.ts` + `src/settings.ts` +
-`src/constants.ts` + `src/foundry-shims.d.ts`, `lang/en.json`,
-`styles/<id>.css`, `CLAUDE.md`, `README.md`, `LICENSE`, and an ADR recording the
-toolchain decision. The `app` variant adds `src/app.ts` + `templates/app.hbs`;
-`libwrapper` adds `src/patches.ts`.
+A repo where `just check` passes from the first commit; the full file list per variant is in [references/generated-repo.md](references/generated-repo.md#what-you-get).
 
 ## After scaffolding
 
@@ -207,16 +181,5 @@ chains scaffold → `gh repo create` → seed `main` → the gitops PR.
 
 ## Notes & deferrals
 
-- The biome pin is single-sourced in `scaffold.py`'s `BIOME_VERSION` constant so
-  `biome.json` and the CI `setup-biome` step never drift.
-- Action/tool versions in the generated workflows are current as of scaffolding;
-  the account-wide gitops Renovate App reads the emitted `renovate.json` and
-  bumps them. No repo-local `renovate.yml` is emitted: a second runner kept a
-  second dependency dashboard under a second bot identity (#2708).
-- The generated module uses **local ambient shims**, not `fvtt-types`. This keeps
-  the build green and self-contained; switch `tsconfig` `types` to `fvtt-types`
-  (`github:League-of-Foundry-Developers/foundry-vtt-types#main`) for full API
-  types once you need them.
-- Quench (in-Foundry Mocha runner) and Playwright integration tests against the
-  harness are **not** scaffolded — add them when the module warrants runtime
-  coverage.
+Biome pin single-sourcing, Renovate, `fvtt-types`, and the tests not scaffolded (Quench, Playwright): [references/generated-repo.md](references/generated-repo.md#notes--deferrals).
+
