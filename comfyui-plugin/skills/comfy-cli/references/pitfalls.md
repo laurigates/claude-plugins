@@ -40,13 +40,13 @@ Failure modes of the `comfy` CLI on a systemd-managed install, each with its sym
   API exposes no reason — it's only on `registry.comfy.org`. Republishing
   re-runs the scan; flags can be false positives (an identical change
   flagged some laurigates packs but not their siblings). Full
-  publishing/status playbook: `.claude/rules/comfy-registry-publishing.md`.
+  publishing/status playbook: `comfyui-plugin:comfy-registry-lifecycle` § Version status.
 - **A green `comfy node publish` can still ship a broken tarball.** For
   TS-built packs the registry `node.zip` shipped an empty `web/dist/`
   (dead frontend) for weeks despite passing runs — root cause was
   `publish-node-action@v1` lacking `skip_checkout`. Always verify by
   downloading the `node.zip` from the version's `downloadUrl` and checking
-  for `web/dist/index.js`. See `comfy-registry-publishing.md`.
+  for `web/dist/index.js`. See `comfyui-plugin:comfy-registry-lifecycle` § The empty-`web/dist` publish trap.
 - **Restart is not automatic.** `comfy node install/update/uninstall` modifies
   `custom_nodes/` but does not signal the running server. New nodes don't
   load until the service restarts. The CLI prints a "restart required"

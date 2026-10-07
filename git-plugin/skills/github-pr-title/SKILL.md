@@ -32,7 +32,7 @@ Craft clear PR titles using conventional commits format.
 <type>(<scope>): <subject>
 ```
 
-See [Conventional Commits Standards](../../.claude/rules/conventional-commits.md) for comprehensive format guide.
+See [Conventional Commits Standards](../../../.claude/rules/conventional-commits.md) for comprehensive format guide.
 
 ### Type Selection
 
@@ -151,4 +151,4 @@ Strategy table, body shape, and post-merge repair (`BEGIN_COMMIT_OVERRIDE`):
 
 ## Reference
 
-For detailed rules, patterns, and troubleshooting, see [Conventional Commits Standards](../../.claude/rules/conventional-commits.md).
+For detailed rules, patterns, and troubleshooting, see [Conventional Commits Standards](../../../.claude/rules/conventional-commits.md).

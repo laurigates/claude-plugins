@@ -404,8 +404,8 @@ unguarded `VAR=$(mktemp -d)` that resolves empty and falls back to the CWD. The
 bare-flip signal is the **detection + recovery** complement, so a session can
 notice the corruption instead of misreading the cascade of git failures as its
 own fault. It is ranked ahead of the other signals because a bare flip breaks
-git for every linked worktree. Recovery steps: SKILL.md § Recovering from a bare
-flip / leaked GIT_DIR.
+git for every linked worktree. Recovery steps: `references/recovery.md` § Recovering from a
+bare flip / leaked GIT_DIR.
 
 ### Cross-session discovery (`ListAgents`)
 

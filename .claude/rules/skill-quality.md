@@ -198,8 +198,8 @@ my-skill/
 A single `REFERENCE.md` defers content but is all-or-nothing: a run that needs
 one salvage routine loads every table in the file. For a large skill, split the
 sidecar into a `references/` directory instead — see
-[`context-engineering.md`](context-engineering.md) § "Split long skills across
-files" for why.
+[`context-engineering.md`](context-engineering.md) § Authoring rules ("Split
+long skills across files") for why.
 
 ```
 my-skill/

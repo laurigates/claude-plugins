@@ -97,7 +97,7 @@ sparingly; once the inline fix exceeds ~10 lines, file the WO.
 
 ## Stable Shared-File Exclusion List Across Waves
 
-`parallel-agent-dispatch` §Shared-File Exclusion List defines the
+`parallel-agent-dispatch` § Scope Budget ("Orchestrator-only files") defines the
 orchestrator-only files that no agent may touch (manifest, tracker,
 top-level plan, build manifests, justfile, task store). That list is
 **derived once in the wave-1 brief** and referenced by name in every
@@ -118,7 +118,7 @@ the Nth wave a silent manifest clobber lands. The discipline is:
 
 The same discipline applies to pre-allocated blueprint IDs, ADR
 numbers, and any monotonic counters (`parallel-agent-dispatch`
-§Pre-Allocated Blueprint IDs). Allocate up front; reference by ID in
+§ Scope Budget, "Pre-allocated IDs"). Allocate up front; reference by ID in
 later waves.
 
 ## Composition
@@ -143,7 +143,7 @@ See [references/plan-review.md](references/plan-review.md) when reviewing a wave
 
 ## Related
 
-- `agent-patterns-plugin:parallel-agent-dispatch` — intra-wave contract; the §Worktree Preflight, §Scope Budget, §Return Contract, and §Shared-File Exclusion List sections apply unchanged inside every wave
+- `agent-patterns-plugin:parallel-agent-dispatch` — intra-wave contract; the §Worktree Preflight, §Scope Budget (orchestrator-only files included), and §Return Contract sections apply unchanged inside every wave
 - `agent-patterns-plugin:exclusive-lock-dispatch` — pre-dump mechanics for lock-contending waves; this skill cites it as the right shape for the research wave's brief
 - `workflow-orchestration-plugin:workflow-wave-dispatch` — workflow-side scheduling view: enumerating waves, gate-failure rollback, scheduling heuristics
 - `git-plugin:git-pr` / `git-plugin:git-conflicts` — stacked-PR merge order (retarget children before deleting the base, `--onto` squash cleanup) and pre-merge trial integration for landing a wave's PRs

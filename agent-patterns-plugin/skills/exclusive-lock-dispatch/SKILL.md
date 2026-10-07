@@ -157,7 +157,7 @@ parallel wave reads from scratch.
 
 ## Related
 
-- `parallel-agent-dispatch` — overall dispatch contract; §Wave Splits cites this skill
+- `parallel-agent-dispatch` — overall dispatch contract; its § Scope Budget ("Wave splits for exclusive locks") cites this skill
 - `workflow-wave-dispatch` — wave scheduling between lock-holder and parallel waves
 - `.claude/rules/parallel-safe-queries.md` — commands that exit 1 on empty, a different form of parallel foot-gun
 

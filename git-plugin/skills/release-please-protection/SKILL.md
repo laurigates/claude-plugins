@@ -171,8 +171,8 @@ This skill works alongside:
 Located in `dot_claude/skills/release-please-protection/` (source) which becomes `~/.claude/skills/release-please-protection/` after chezmoi apply:
 
 - `SKILL.md` - This file (skill definition)
-- `patterns.md` - Protected file pattern reference
-- `workflow.md` - Detailed release-please workflow guide
+- [`patterns.md`](patterns.md) - Protected file pattern reference
+- [`workflow.md`](workflow.md) - Detailed release-please workflow guide
 
 ## Limitations
 
@@ -215,7 +215,7 @@ This skill is working properly when:
 
 ## Further Reading
 
-- See `patterns.md` for complete list of protected file patterns
-- See `workflow.md` for detailed release-please workflow documentation
+- See [`patterns.md`](patterns.md) for complete list of protected file patterns
+- See [`workflow.md`](workflow.md) for detailed release-please workflow documentation
 - Release-please docs: https://github.com/googleapis/release-please
 - Conventional commits: https://www.conventionalcommits.org/
