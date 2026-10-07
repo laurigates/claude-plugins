@@ -46,3 +46,36 @@ Four consequences worth stating inline:
   script-decidable ceiling that aborts rather than growing, which is exactly the line
   `.claude/rules/skill-fork-context.md` now draws between a bounded fan-out and the
   unbounded, caller-chosen one the `[1m]` cascade hazard is about.
+
+## Framing detail
+
+The full rationale behind the condensed framing in SKILL.md.
+
+**Preserve across any adaptation:** (a) the fan-out width is the cartesian product
+`evalIds.length x runs x configs.length`, computed in JS from the eval-case list the
+Preflight agent read off disk with `inspect_eval.sh --print-evals` - never a prose "for
+each eval case, for each run"; (b) `GRADE_SCHEMA`'s closed `PASS|PARTIAL|FAIL|ERROR`
+status enum plus the split `deterministic*` / `judge*` counters, so a vague verdict is
+structurally impossible and a dead agent becomes an explicit `ERROR` row that stays in
+the denominator instead of reading as a pass; (c) Aggregate is a real barrier - the
+standard deviation and the baseline delta are cross-cell facts no single cell can
+compute, and `benchmark.json` has to be written exactly once. Three further things are
+structure, not preference: **the grader is never the agent that produced the
+transcript** (`.claude/rules/loop-integrity.md` Pillar 1 - an author asked to judge its
+own output optimises for done, not for correct), `grade_deterministic.py` grades first
+and its verdicts are never re-judged, and the `cellCap` ceiling **aborts** rather than
+truncating.
+
+**Agent budget:** 2 + 2 x cells — preflight and aggregate, plus one rollout and one
+independent grader per cell (at most `cellCap` cells). The scale guard asks before
+every run, because the cell list is built at runtime. `args.harness: 'headless'`
+does not change it: the rollout agent becomes a thin runner that calls
+`rollout_headless.sh` (and never performs the task itself), still one per cell.
+
+**Skip the harness when:** the run is fewer than three cells - a one- or two-case spot
+check, or a single re-run of one eval id - which is a linear pass where the harness is
+pure overhead; the script returns `{mode:'inline'}` at that floor. The floor is
+deliberately far lower than `configure-all`'s 15, because this harness's marginal cost
+is a constant two agents: Steps 4 and 6 already spawn one rollout subagent and
+one grader subagent per cell, so the harness redistributes those agents rather than
+adding to them.
