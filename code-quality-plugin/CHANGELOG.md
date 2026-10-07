@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.27.3](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.27.2...code-quality-plugin-v1.27.3) (2026-10-07)
+
+
+### Bug Fixes
+
+* **skills:** point at anchors, not directions — ratchet + reference-file guard ([#2941](https://github.com/laurigates/claude-plugins/issues/2941)) ([47b65fa](https://github.com/laurigates/claude-plugins/commit/47b65faf0fd141ca5dff9cf435717196e385b115))
+
 ## [1.27.2](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.27.1...code-quality-plugin-v1.27.2) (2026-10-07)
 
 
