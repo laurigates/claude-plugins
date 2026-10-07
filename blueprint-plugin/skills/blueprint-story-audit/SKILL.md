@@ -132,7 +132,7 @@ If Agent 3 reported `test.todo` / `xit` / `skip` blocks with comments that read 
 
 ### Step 6: Compose the audit artifact
 
-Use the template at [REFERENCE.md#audit-template](REFERENCE.md#audit-template) and fill all six sections:
+Fill all seven sections of the template at [REFERENCE.md#audit-template](REFERENCE.md#audit-template):
 
 What goes in each section: [references/artifact-sections.md](references/artifact-sections.md).
 

@@ -168,7 +168,7 @@ This skill works alongside:
 
 ## Skill Configuration
 
-Located in `dot_claude/skills/release-please-protection/` (source) which becomes `~/.claude/skills/release-please-protection/` after chezmoi apply:
+Ships in `git-plugin` as `git-plugin/skills/release-please-protection/`:
 
 - `SKILL.md` - This file (skill definition)
 - `patterns.md` - Protected file pattern reference

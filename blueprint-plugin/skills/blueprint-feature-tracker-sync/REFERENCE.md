@@ -38,7 +38,7 @@ jq '.tasks.pending += [{"id": "FR4.1", "description": "Webhook support", "source
 
 ## Evidence Backfill jq Recipe
 
-After Step 3b scans the working tree and git history, merge results into the tracker. For each feature `$FR_ID` with scanned `$NEW_COMMITS` (newline-separated SHAs in `/tmp/scan-commits.txt`), `$NEW_TESTS` (newline-separated paths in `/tmp/scan-tests.txt`), and an `$INFERRED_STATUS` of `complete` / `partial` / `null`:
+After Step 0 scans the working tree and git history, merge results into the tracker. For each feature `$FR_ID` with scanned `$NEW_COMMITS` (newline-separated SHAs in `/tmp/scan-commits.txt`), `$NEW_TESTS` (newline-separated paths in `/tmp/scan-tests.txt`), and an `$INFERRED_STATUS` of `complete` / `partial` / `null`:
 
 ```bash
 jq --arg id "$FR_ID" \
@@ -214,7 +214,7 @@ Changes Made:
 {If no changes:}
 - No changes needed, all in sync
 
-Inferred from evidence (Step 3b):
+Inferred from evidence (Step 0):
 {For each feature flipped from not_started:}
 - {feature_id} ({feature_title}): not_started -> {inferred_status}
   Files: {implementation.files | join(", ")}
