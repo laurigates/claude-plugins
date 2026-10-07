@@ -213,7 +213,8 @@ To let an AI client list and run recipes over MCP instead of reading the justfil
 | List all recipes | `just --list` or `just -l` |
 | Dry run (preview) | `just --dry-run recipe` |
 | Show variables | `just --evaluate` |
-| JSON recipe list | `just --dump --dump-format json` |
+| Whole parsed justfile as JSON (recipes, params, deps, settings) | `just --dump --dump-format json` |
+| Recipe names only | `just --summary` |
 | Verbose execution | `just --verbose recipe` |
 | Specific justfile | `just --justfile path recipe` |
 | Working directory | `just --working-directory path recipe` |

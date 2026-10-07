@@ -133,7 +133,7 @@ Blueprint is up to date.
 ```
 Blueprint Status
 
-Version: v3.0.0
+Version: v3.4.0
 Initialized: 2024-01-10T09:00:00Z
 Last Updated: 2024-01-15T14:30:00Z
 

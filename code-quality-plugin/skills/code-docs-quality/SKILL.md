@@ -117,7 +117,6 @@ For each rule file in `.claude/rules/`:
 created: YYYY-MM-DD
 modified: YYYY-MM-DD
 reviewed: YYYY-MM-DD
-name: docs-quality-check
 ---
 ```
 

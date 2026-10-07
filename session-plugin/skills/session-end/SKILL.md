@@ -11,8 +11,8 @@ reviewed: 2026-06-24
 
 One survey, one preview, one confirmation — then run only the
 end-of-session passes that actually qualify. This is the orchestrator
-over three capture skills that used to compete for the wind-down moment
-(design decisions D3/D4, `docs/archive/session-plugin-workflow.md`):
+over the five end-of-session passes, which otherwise compete for the wind-down
+moment (design decisions D3/D4, `docs/archive/session-plugin-workflow.md`).
 
 The five passes — Wrap, Distill, Feedback, Taskwarrior sync, Blueprint
 tracker-sync — and what each captures are listed in
@@ -58,13 +58,9 @@ not asked" signal as `PROJECT_CONFIDENCE=low` above — don't treat an empty
 against. Plus the conversation: what finished, what's hanging, what was
 learned, what plugin/skill friction or wins occurred.
 
-**Remediating `GH_READY=false`.** It always ships with `GH_FAIL_REASON=`,
-which says *why* GitHub went unqueried — the six causes want different
-responses, so act on the reason rather than treating every `false` alike.
-Never re-run for `auth`, `no-cli`, or `no-remote`. In every case the
-GitHub-derived counts stay **unqueried**, not zero — so the taskwarrior-sync
-redundancy test in Step 4 must not use them as evidence a follow-up is
-untracked. See [REFERENCE.md](REFERENCE.md) for the per-reason table.
+**Remediating `GH_READY=false`.** Act on its `GH_FAIL_REASON=` — the
+per-reason table, and which reasons must never be re-run, are in
+[REFERENCE.md](REFERENCE.md).
 
 For the **Distill** qualify gate (Step 2), also run the distill collector's
 coarse summary — the mechanical half of the Distill signal (recipe candidates,

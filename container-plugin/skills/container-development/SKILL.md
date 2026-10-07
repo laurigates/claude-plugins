@@ -150,14 +150,14 @@ Start from the annotated builder/runtime template in [references/multi-stage-tem
 - Port binding for services
 - Graceful shutdown handling
 
-## Container Labels (OCI Annotations)
-
-When publishing to GHCR or adding image metadata, use [references/oci-labels.md](references/oci-labels.md): the required (`org.opencontainers.image.source`, `.description`, `.licenses`) and recommended labels, and how to set them in a Dockerfile, at build time, or via `docker/metadata-action`.
-
 **Skaffold Preference**
 - Favor Skaffold over Docker Compose for local development
 - Continuous development loop with hot reload
 - Production-like local environment
+
+## Container Labels (OCI Annotations)
+
+When publishing to GHCR or adding image metadata, use [references/oci-labels.md](references/oci-labels.md): the required (`org.opencontainers.image.source`, `.description`, `.licenses`) and recommended labels, and how to set them in a Dockerfile, at build time, or via `docker/metadata-action`.
 
 ## Agentic Optimizations
 
