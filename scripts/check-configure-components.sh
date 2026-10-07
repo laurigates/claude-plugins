@@ -105,8 +105,17 @@ manifest_names="$(awk '
 # Check 2: every /configure:<x> literal in configure-all/SKILL.md is a
 # manifest entry (component or orchestrator). Blocks a hand-maintained list
 # from drifting off the manifest again.
+#
+# Read with the skill's sidecars (REFERENCE.md, references/*.md): a list moved
+# out of the body by a split is still a hand-maintained list, and the agent
+# running /configure:all still reads it.
 # ---------------------------------------------------------------------------
-skill_refs="$(grep -ohE '/configure:[a-z][a-z0-9-]*' "$all_skill" | sed 's|/configure:||' | sort -u)"
+all_skill_files=("$all_skill")
+for sidecar in "${skills_dir}/configure-all/REFERENCE.md" "${skills_dir}/configure-all"/references/*.md; do
+  [ -f "$sidecar" ] && all_skill_files+=("$sidecar")
+done
+echo "SKILL_FILES_READ=${#all_skill_files[@]}"
+skill_refs="$(grep -ohE '/configure:[a-z][a-z0-9-]*' "${all_skill_files[@]}" | sed 's|/configure:||' | sort -u)"
 unresolved=0
 while read -r ref; do
   [ -n "$ref" ] || continue
@@ -115,7 +124,7 @@ while read -r ref; do
   if printf '%s\n' "$manifest_names" | grep -qx "configure-${ref}"; then continue; fi
   if printf '%s\n' "$manifest_names" | grep -qx "$ref"; then continue; fi
   if printf '%s\n' "$manifest_names" | grep -qx "config-${ref}"; then continue; fi
-  add_issue "ERROR" "skill_ref_unresolved" "configure-all/SKILL.md references /configure:${ref} which is not in components.yaml"
+  add_issue "ERROR" "skill_ref_unresolved" "configure-all (SKILL.md or a sidecar) references /configure:${ref} which is not in components.yaml"
   unresolved=$((unresolved + 1))
 done <<< "$skill_refs"
 echo "SKILL_REFS_UNRESOLVED=${unresolved}"

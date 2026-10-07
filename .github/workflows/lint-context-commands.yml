@@ -9,8 +9,8 @@ on:
       - '**/skills/**/skill.md'
       - '**/skills/**/REFERENCE.md'
       # Sidecars (`references/*.md`, `REFERENCE-<topic>.md`): read by
-      # check-skill-references.sh since the 2026-10 split moved skill content
-      # into them.
+      # check-skill-references.sh and lint-package-references.sh since the
+      # 2026-10 split moved skill content into them.
       - '**/skills/**/*.md'
       - 'taskwarrior-plugin/**/*.md'
       - 'scripts/lint-context-commands.sh'
@@ -20,6 +20,7 @@ on:
       - 'scripts/audit-skill-descriptions.py'
       - 'scripts/lint-taskwarrior-tags.sh'
       - 'scripts/lint-package-references.sh'
+      - 'scripts/tests/test-lint-package-references.sh'
       # Ground-truth sources for check-skill-references.sh, not just its
       # citation sites: a skill rename breaks live citations without editing
       # any citing file, so agents/ and .claude/rules/ must trigger the job.
@@ -82,6 +83,9 @@ jobs:
 
       - name: Lint taskwarrior-plugin docs for hyphenated tag names
         run: ./scripts/lint-taskwarrior-tags.sh
+
+      - name: Package-reference denylist self-test
+        run: bash ./scripts/tests/test-lint-package-references.sh
 
       - name: Lint skill files for nonexistent package references (npm/PyPI/crates/etc.)
         run: ./scripts/lint-package-references.sh

@@ -697,6 +697,111 @@ assert_eq "$(key_of "$out" ALLOWLISTED)" "ALLOWLISTED=0" "P7b nothing is suppres
 assert_lacks "$out" "TYPE=stale_allowlist_entry" "P7c an empty list has no stale keys"
 assert_eq "$rc" "1" "P7d exit 1"
 
+echo "TEST Q: sidecars (references/*.md, REFERENCE.md) are judged with their skill"
+# The 2026-10 split moved skill content into `references/*.md`. Read only
+# SKILL.md, the guard went blind to everything that moved. A sidecar is read
+# with its owning skill: same exemption classes, same skill-keyed allowlist.
+mk_sidecar() {
+  local root="$1" rel="$2"
+  mkdir -p "$(dirname "$root/demo-plugin/skills/demo-watch/$rel")"
+  cat > "$root/demo-plugin/skills/demo-watch/$rel"
+}
+clean_watch() {
+  mk_watch "$1" open <<'EOF'
+# /demo:watch
+
+## Execution
+
+Nothing delegated here.
+EOF
+}
+
+# A references/ file that is a single H1 over prose: the SKILL.md preamble
+# exemption (Class B) must NOT extend to it, or the whole file is exempt.
+fx="$tmp_root/q-ref"; mk_sibling "$fx" demo-feedback gated; clean_watch "$fx"
+mk_sidecar "$fx" references/reactions.md <<'EOF'
+# Reaction table
+
+Address it via `/demo:feedback` (the canonical engine).
+EOF
+out="$(run_checker "$fx")"; rc=$?
+assert_contains "$out" "STATUS=ERROR" "Q1 an imperative in references/*.md ERRORs"
+assert_contains "$out" "FILE=demo-plugin/skills/demo-watch/references/reactions.md" "Q1b the finding names the sidecar"
+assert_eq "$(key_of "$out" SIDECARS_SCANNED)" "SIDECARS_SCANNED=1" "Q1c the sidecar is counted"
+assert_eq "$(key_of "$out" FILES_SCANNED)" "FILES_SCANNED=1" "Q1d FILES_SCANNED still counts skills"
+assert_eq "$rc" "1" "Q1e exit 1"
+
+fx="$tmp_root/q-reference"; mk_sibling "$fx" demo-feedback gated; clean_watch "$fx"
+mk_sidecar "$fx" REFERENCE.md <<'EOF'
+## Execution
+
+Address it via `/demo:feedback` (the canonical engine).
+EOF
+out="$(run_checker "$fx")"; rc=$?
+assert_contains "$out" "FILE=demo-plugin/skills/demo-watch/REFERENCE.md" "Q2 an imperative in REFERENCE.md ERRORs"
+assert_eq "$rc" "1" "Q2b exit 1"
+
+# Narrowness carries over: the hedge, the navigational section, and a sidecar
+# naming its OWN skill's command (Class A compares against the owning SKILL.md).
+fx="$tmp_root/q-hedged"; mk_sibling "$fx" demo-feedback gated; clean_watch "$fx"
+mk_sidecar "$fx" references/reactions.md <<'EOF'
+# Reaction table
+
+Summarise the thread and recommend the user run `/demo:feedback`.
+
+## Related
+
+- `/demo:feedback` - review-thread engine
+EOF
+out="$(run_checker "$fx")"; rc=$?
+assert_contains "$out" "STATUS=OK" "Q3 hedged and navigational sidecar refs are clean"
+assert_eq "$rc" "0" "Q3b exit 0"
+
+fx="$tmp_root/q-self"; mk_watch "$fx" gated <<'EOF'
+# /demo:watch
+
+## Execution
+
+Body.
+EOF
+mk_sidecar "$fx" references/usage.md <<'EOF'
+# Usage
+
+Run `/demo:watch --unsubscribe` to stop.
+EOF
+out="$(run_checker "$fx")"; rc=$?
+assert_contains "$out" "STATUS=OK" "Q4 a sidecar naming its own skill is a self-reference"
+assert_eq "$(key_of "$out" SELF_REFS_SKIPPED)" "SELF_REFS_SKIPPED=1" "Q4b counted as a self-reference"
+
+# The allowlist key is the OWNING skill: a residual declared for demo-watch
+# stays declared when the split moves it into references/.
+fx="$tmp_root/q-allow"; mk_sibling "$fx" demo-feedback gated; clean_watch "$fx"
+mk_sidecar "$fx" references/reactions.md <<'EOF'
+# Reaction table
+
+Address it via `/demo:feedback` (the canonical engine).
+EOF
+out="$(CHECK_DELEGATION_SCOPE="demo-plugin/skills/demo-watch/SKILL.md" \
+  CHECK_DELEGATION_ALLOWLIST="demo-plugin/skills/demo-watch/SKILL.md|/demo:feedback" \
+  bash "$checker" --project-dir "$fx" 2>&1)"; rc=$?
+assert_contains "$out" "STATUS=OK" "Q5 a skill-level declaration covers its sidecar"
+assert_eq "$(key_of "$out" ALLOWLISTED)" "ALLOWLISTED=1" "Q5b the suppression is counted"
+assert_contains "$out" "FILE=demo-plugin/skills/demo-watch/references/reactions.md" "Q5c the row names the sidecar"
+
+# Class C words added with the widening: the human as the only actor.
+fx="$tmp_root/q-human"; mk_sibling "$fx" demo-feedback gated; clean_watch "$fx"
+mk_sidecar "$fx" references/flow.md <<'EOF'
+# Flow
+
+Drafts are filed automatically; the committing act stays with the
+human-invoked `/demo:feedback --from-issue N`.
+
+Promotion stays the human `/demo:feedback` act.
+EOF
+out="$(run_checker "$fx")"; rc=$?
+assert_contains "$out" "STATUS=OK" "Q6 a sidecar stating the human-only gate is clean"
+assert_eq "$(key_of "$out" GATED_STATEMENT_EXEMPTIONS)" "GATED_STATEMENT_EXEMPTIONS=2" "Q6b both phrasings exempted as gated statements"
+
 echo
 echo "PASSED=$pass_count"
 echo "FAILED=$fail_count"

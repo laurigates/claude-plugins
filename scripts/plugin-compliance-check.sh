@@ -379,6 +379,22 @@ check_skill_body() {
     local skill_name
     skill_name=$(basename "$(dirname "$skill_file")")
 
+    # The skill's whole prose: SKILL.md plus its sidecars (REFERENCE.md and the
+    # references/*.md files the 2026-10 split moved content into). The DENYLIST
+    # checks below ("must NOT contain X") read this, because a forbidden
+    # instruction reaches the agent just the same from a sidecar, and the split
+    # would otherwise carry it out of sight. The "must retain X" pins keep
+    # reading SKILL.md alone: they pin text on the page the agent lands on.
+    # `skill_corpus_text` is pre-read once, blockquote lines dropped, so each
+    # denylist test is a here-string grep (no pipe for `grep -q` to SIGPIPE).
+    local skill_corpus=() sidecar_md skill_corpus_text skill_corpus_unquoted
+    skill_corpus=("$skill_file")
+    for sidecar_md in "$(dirname "$skill_file")/REFERENCE.md" "$(dirname "$skill_file")"/references/*.md; do
+      [ -f "$sidecar_md" ] && skill_corpus+=("$sidecar_md")
+    done
+    skill_corpus_text="$(cat "${skill_corpus[@]}")"
+    skill_corpus_unquoted="$(grep -hvE '^[[:space:]]*>' "${skill_corpus[@]}" || true)"
+
     # Detect YAML-key lines immediately followed by '---' outside the frontmatter.
     # In CommonMark, "key: value\n---" creates a setext H2 heading — clearly unintended.
     # Use awk: skip the opening frontmatter block (first ---...--- pair), then flag hits.
@@ -524,8 +540,8 @@ check_skill_body() {
     # propagate to session-plugin:session-end; a non-working command is wrong
     # everywhere. Blockquote lines (gotcha callouts) may cite it; non-quoted
     # lines may not.
-    if grep -v '^[[:space:]]*>' "$skill_file" | grep -q "task +LATEST _get uuid"; then
-      issues+=("❌ ${plugin}/${skill_name}: SKILL.md ships the broken 'task +LATEST _get uuid' (returns empty); use 'task +LATEST uuids'")
+    if grep -q "task +LATEST _get uuid" <<<"$skill_corpus_unquoted"; then
+      issues+=("❌ ${plugin}/${skill_name}: SKILL.md or a sidecar ships the broken 'task +LATEST _get uuid' (returns empty); use 'task +LATEST uuids'")
       has_errors=true
     fi
 
@@ -585,8 +601,8 @@ check_skill_body() {
           has_errors=true
         fi
       done
-      if grep -qF 'Parse `STATUS=` and `ISSUES:`' "$skill_file"; then
-        issues+=("❌ ${plugin}/${skill_name}: SKILL.md tells the agent to parse the diagnostic ISSUES: block as the issue list; read ISSUES_FETCHED (issue #2714)")
+      if grep -qF 'Parse `STATUS=` and `ISSUES:`' <<<"$skill_corpus_text"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md or a sidecar tells the agent to parse the diagnostic ISSUES: block as the issue list; read ISSUES_FETCHED (issue #2714)")
         has_errors=true
       fi
     fi
@@ -763,8 +779,8 @@ check_skill_body() {
           has_errors=true
         fi
       done
-      if grep -q -- 'PLUGINS_REPO" switch' "$skill_file"; then
-        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must not branch the shared PLUGINS_REPO checkout — promote via a throwaway clone (issue #2113)")
+      if grep -q -- 'PLUGINS_REPO" switch' <<<"$skill_corpus_text"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md or a sidecar must not branch the shared PLUGINS_REPO checkout — promote via a throwaway clone (issue #2113)")
         has_errors=true
       fi
     fi
@@ -891,8 +907,8 @@ check_skill_body() {
     # skills legitimately cite the old paths as historical move sources, so this
     # guard is scoped to project-continue only.)
     if [ "$skill_name" = "project-continue" ]; then
-      if grep -q '\.claude/blueprints/' "$skill_file"; then
-        issues+=("❌ ${plugin}/${skill_name}: SKILL.md references deprecated '.claude/blueprints/' state path — use canonical 'docs/prds/' and 'docs/blueprint/work-orders/' (issue #1503)")
+      if grep -q '\.claude/blueprints/' <<<"$skill_corpus_text"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md or a sidecar references deprecated '.claude/blueprints/' state path — use canonical 'docs/prds/' and 'docs/blueprint/work-orders/' (issue #1503)")
         has_errors=true
       fi
     fi
@@ -973,8 +989,8 @@ check_skill_body() {
         has_errors=true
       fi
       # Re-inlining the delegated procedure is the regression this guards.
-      if grep -qF 'transient import block alongside the existing' "$skill_file"; then
-        issues+=("❌ ${plugin}/${skill_name}: SKILL.md re-inlines the delegated gitops procedure — defer to comfyui-plugin:comfy-node Phases 3-5 (#2142)")
+      if grep -qF 'transient import block alongside the existing' <<<"$skill_corpus_text"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md or a sidecar re-inlines the delegated gitops procedure — defer to comfyui-plugin:comfy-node Phases 3-5 (#2142)")
         has_errors=true
       fi
     fi
@@ -1116,8 +1132,8 @@ check_skill_body() {
           has_errors=true
         fi
       done
-      if grep -vE '^\s*>' "$skill_file" | grep -qF -- 'direct_prompt'; then
-        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must not use 'direct_prompt' outside a blockquote (deprecated — see claude-code-github-workflows)")
+      if grep -qF -- 'direct_prompt' <<<"$skill_corpus_unquoted"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md or a sidecar must not use 'direct_prompt' outside a blockquote (deprecated — see claude-code-github-workflows)")
         has_errors=true
       fi
       local ref_file="${plugin}/skills/${skill_name}/REFERENCE.md"
@@ -1374,8 +1390,8 @@ check_skill_body() {
           has_errors=true
         fi
       done
-      if grep -qF 'that *died* from one that *finished*' "$skill_file"; then
-        issues+=("❌ ${plugin}/${skill_name}: SKILL.md restates the retired claim that is_error separates a run that died from one that finished — a completed run can report is_error: true (issue #2718)")
+      if grep -qF 'that *died* from one that *finished*' <<<"$skill_corpus_text"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md or a sidecar restates the retired claim that is_error separates a run that died from one that finished — a completed run can report is_error: true (issue #2718)")
         has_errors=true
       fi
     fi

@@ -58,6 +58,16 @@
 # / `AUDITED=` / `SCOPE_IS_REPO_WIDE=`) so `STATUS=OK` can never be read as more
 # than "every file in the audit set is clean" (#2219's zero-scan lesson).
 #
+# Each scoped skill is read together with its SIDECARS — every other `*.md` in
+# its directory (`REFERENCE.md`, `references/*.md`, `REFERENCE-<topic>.md`).
+# Until 2026-10 only SKILL.md was read, so the split that moved reference
+# material into `references/` also moved it out of this guard's sight. The
+# first widened run found 7 gated-sibling references in sidecars: 2 stated the
+# gate in words Class C did not yet know (now added), and 5 were the same
+# `/blueprint:work-order` residuals #2483 already declares for their owning
+# skills, which the skill-keyed allowlist below now covers. Sidecars are
+# counted separately (`SIDECARS_SCANNED=`).
+#
 # The widening, and the declared residuals (issue #2483, measured 2026-09-04)
 # --------------------------------------------------------------------------
 # Full-corpus runs, via the CHECK_DELEGATION_SCOPE seam, on the corpus as it
@@ -104,6 +114,8 @@
 #     edits is noise. The cost is coarseness — a NEW bad reference to the same
 #     gated sibling in an already-declared file is not caught. Same coarseness
 #     as `check-agent-tool-selection.sh`'s directory-prefix allowlist.
+#   * `<file>` is the OWNING SKILL.md even when the reference sits in one of its
+#     sidecars, so moving declared text into `references/` keeps it declared.
 #
 # Usage:
 #   bash scripts/check-delegation-reachability.sh [--project-dir <path>]
@@ -325,7 +337,14 @@ USER_REFERRAL_RE='(recommend|suggest)[a-z]*[^a-z]+(that[[:space:]]+)?the[[:space
 # on invoking ("never invoke", "must not be run"). A hedge that merely mentions
 # `manual` / `user-invocable` / `recommended` is NOT a gated statement, exactly
 # as it is not a user referral.
-GATED_STATEMENT_RE='never[[:space:]]+(invoke|call|run|use|dispatch|delegate)|(do[[:space:]]+not|does[[:space:]]+not|don.t|must[[:space:]]+not|may[[:space:]]+not|cannot|can.t|is[[:space:]]+not|are[[:space:]]+not)[[:space:]]+(be[[:space:]]+)?(invoke|invoked|invocable|call|called|run|reach|reachable|dispatch|delegated)|disable-model-invocation|human-only|human[[:space:]]+only|model[[:space:]]+cannot[[:space:]]+reach|unreachable[[:space:]]+from[[:space:]]+the[[:space:]]+model'
+#
+# `human-invoked` and `stays (with) the human` were added when the scan was
+# widened to sidecars (2026-10): blueprint-autonomy-level3/REFERENCE.md
+# ("promotion stays the human `/blueprint:work-order --from-issue N` act") and
+# the v3.3->v3.4 migration ("the committing act stays with the human-invoked
+# `/blueprint:work-order`") both state the gate, naming the human as the only
+# actor.
+GATED_STATEMENT_RE='never[[:space:]]+(invoke|call|run|use|dispatch|delegate)|(do[[:space:]]+not|does[[:space:]]+not|don.t|must[[:space:]]+not|may[[:space:]]+not|cannot|can.t|is[[:space:]]+not|are[[:space:]]+not)[[:space:]]+(be[[:space:]]+)?(invoke|invoked|invocable|call|called|run|reach|reachable|dispatch|delegated)|disable-model-invocation|human-only|human[[:space:]]+only|human-invoked|stays[[:space:]]+(with[[:space:]]+)?the[[:space:]]+human|model[[:space:]]+cannot[[:space:]]+reach|unreachable[[:space:]]+from[[:space:]]+the[[:space:]]+model'
 
 files_scanned=0
 scope_size=0
@@ -348,14 +367,53 @@ for skill_path in $scope; do
   audited="${audited:+$audited,}$skill_path"
 done
 
+# Sidecars: every other `*.md` in a skill's directory — `REFERENCE.md`, the
+# `references/*.md` files the 2026-10 split moved content into, and
+# `REFERENCE-<topic>.md`. A gated sibling presented as an action there is the
+# same dead end as in SKILL.md: the agent reads it while running the skill,
+# usually out of context. Discovered ONCE and grouped by owning skill directory,
+# so the per-skill cost is a lookup rather than a `find` fork.
+declare -A SIDECARS=()
+while IFS= read -r sidecar; do
+  sidecar_rest="${sidecar#*/skills/}"
+  sidecar_owner="${sidecar%%/skills/*}/skills/${sidecar_rest%%/*}"
+  SIDECARS[$sidecar_owner]="${SIDECARS[$sidecar_owner]:-} $sidecar"
+done < <(find . \
+  -path './.claude/worktrees/*' -prune -o \
+  -path './dist/*' -prune -o \
+  -path '*-plugin/skills/*' -name '*.md' ! -name 'SKILL.md' -type f -print |
+  sed 's|^\./||' |
+  sort)
+
+# Each scan unit is `<owning SKILL.md>|<file to scan>`. The owner is what
+# Class A compares against (a sidecar naming its own skill's command documents
+# that skill, it delegates nowhere); the scanned file is what FILE= and the
+# allowlist key name.
+scan_units=()
 for skill_path in $scope; do
   skill_path="${skill_path#./}"
-  if [ ! -f "$skill_path" ]; then
-    issues+=("  - SEVERITY=ERROR TYPE=scoped_skill_missing FILE=$skill_path MSG=scoped skill not found")
+  scan_units+=("$skill_path|$skill_path")
+  [ -f "$skill_path" ] || continue
+  for sidecar in ${SIDECARS[${skill_path%/SKILL.md}]:-}; do
+    scan_units+=("$skill_path|$sidecar")
+  done
+done
+
+sidecars_scanned=0
+
+for scan_unit in "${scan_units[@]}"; do
+  skill_path="${scan_unit%%|*}"
+  scan_file="${scan_unit#*|}"
+  if [ ! -f "$scan_file" ]; then
+    issues+=("  - SEVERITY=ERROR TYPE=scoped_skill_missing FILE=$scan_file MSG=scoped skill not found")
     issue_count=$((issue_count + 1))
     continue
   fi
-  files_scanned=$((files_scanned + 1))
+  if [ "$scan_file" = "$skill_path" ]; then
+    files_scanned=$((files_scanned + 1))
+  else
+    sidecars_scanned=$((sidecars_scanned + 1))
+  fi
 
   plugin_dir="${skill_path%%/skills/*}"
   section=""
@@ -363,7 +421,15 @@ for skill_path in $scope; do
   # frontmatter, the `# /ns:command` H1 title, any lead paragraph — is not an
   # action section. `section` is only set on H2, so that whole region used to be
   # judged with `section=""`, which `is_navigational_section` does not exempt.
-  seen_h2=0
+  #
+  # SKILL.md only. A sidecar has no frontmatter and no invocation title, and a
+  # `references/*.md` file is often a single H1 over plain prose: exempting its
+  # preamble would exempt the whole file. Headings are still skipped (Class D).
+  if [ "$scan_file" = "$skill_path" ]; then
+    seen_h2=0
+  else
+    seen_h2=1
+  fi
   in_fence=0
 
   # Buffer the file: the referral marker is matched over the reference's
@@ -374,7 +440,7 @@ for skill_path in $scope; do
   file_lines=()
   while IFS= read -r line; do
     file_lines+=("$line")
-  done < "$skill_path"
+  done < "$scan_file"
 
   total_lines=${#file_lines[@]}
   for (( idx = 0; idx < total_lines; idx++ )); do
@@ -512,15 +578,19 @@ for skill_path in $scope; do
       # Declared residual (issue #2483): suppressed, counted, and named — never
       # silent. Applied LAST so a reference the classes above already exempt
       # never marks an allowlist key hit, which would hide the key going stale.
+      # Keyed on the OWNING skill, not the scanned file: a declaration covers
+      # the skill, and a skill is its SKILL.md plus its sidecars. Keyed on the
+      # file, every split that moves declared text into `references/` would
+      # turn one residual into a new error AND a stale-entry error.
       allow_key="$skill_path|$ref"
       if [ -n "${ALLOWLIST_KEYS[$allow_key]+set}" ]; then
         ALLOWLIST_HIT[$allow_key]=1
         allowlisted=$((allowlisted + 1))
-        allowlist_rows+=("  - TYPE=allowlisted_delegation FILE=$skill_path LINE=$line_no REF=$ref TARGET=$target SECTION=${section:-<none>} OWNER=#2483")
+        allowlist_rows+=("  - TYPE=allowlisted_delegation FILE=$scan_file LINE=$line_no REF=$ref TARGET=$target SECTION=${section:-<none>} OWNER=#2483")
         continue
       fi
 
-      issues+=("  - SEVERITY=ERROR TYPE=unreachable_delegation FILE=$skill_path LINE=$line_no REF=$ref TARGET=$target SECTION=${section:-<none>} MSG=gated sibling presented as an agent action; recommend it to the user instead")
+      issues+=("  - SEVERITY=ERROR TYPE=unreachable_delegation FILE=$scan_file LINE=$line_no REF=$ref TARGET=$target SECTION=${section:-<none>} MSG=gated sibling presented as an agent action; recommend it to the user instead")
       issue_count=$((issue_count + 1))
     done
   done
@@ -556,12 +626,15 @@ echo "=== DELEGATION REACHABILITY ==="
 # 400+ paths, which would bury every other line of the report.
 echo "SCOPE=$scope_size"
 if [ "$scope_is_repo_wide" = "true" ]; then
-  echo "AUDITED=<discovered> *-plugin/skills/*/SKILL.md"
+  echo "AUDITED=<discovered> *-plugin/skills/*/SKILL.md + sidecar *.md"
 else
   echo "AUDITED=$audited"
 fi
 echo "SCOPE_IS_REPO_WIDE=$scope_is_repo_wide"
 echo "FILES_SCANNED=$files_scanned"
+# Sidecars are counted apart from FILES_SCANNED so a skill count stays a skill
+# count, and so a walk that stopped finding sidecars is visible as a 0 here.
+echo "SIDECARS_SCANNED=$sidecars_scanned"
 if [ "$files_scanned" -eq 0 ]; then
   echo "SCANNED_EMPTY=true"
 else

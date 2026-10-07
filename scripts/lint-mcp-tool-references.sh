@@ -14,6 +14,10 @@
 #
 # COVERAGE — what this script actually reads. It is NOT repo-wide:
 #   * `SKILL.md` / `skill.md` / `REFERENCE.md` anywhere in the repo
+#   * every other `*.md` under a `skills/` directory — the `references/*.md`
+#     and `REFERENCE-<topic>.md` sidecars the 2026-10 split moved skill content
+#     into. A tool name documented there is as callable-looking as one in
+#     SKILL.md, and before this the walk could not see it.
 #   * `*.workflow.js` — the workflow scripts bundled beside a skill, which
 #     carry the same tool names in their comments and agent prompts
 # Formerly also covered the compiled git-repo-agent subagent prompts under
@@ -141,6 +145,7 @@ while [ $i -lt ${#denylist[@]} ]; do
   # same shape as #2214. Worktree clones are pruned for the sibling reason.
   done < <(find . -type f \
               \( -name 'SKILL.md' -o -name 'skill.md' -o -name 'REFERENCE.md' \
+                 -o \( -path '*/skills/*' -name '*.md' \) \
                  -o -name '*.workflow.js' \) \
               -not -path './.claude/worktrees/*' \
               -not -path './dist/*' \

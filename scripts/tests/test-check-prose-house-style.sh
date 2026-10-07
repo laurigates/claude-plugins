@@ -131,6 +131,22 @@ else
     echo "SKIP: House rule that matches nothing — vale not on PATH"
 fi
 
+# --- 10b. a skill-prose claim relocated into references/ -------------------
+# PAIRED. The split moves reference sections into `references/*.md`; a guard
+# that read only SKILL.md + REFERENCE.md went red on a relocation that lost
+# nothing (moved), and the same token deleted outright must still fail (gone).
+R="$WORK/moved"; seed "$R"
+P="$R/prose-plugin/skills/prose-check"
+mkdir -p "$P/references"
+grep -i 'hard wrap' "$P/REFERENCE.md" > "$P/references/unwrapping.md"
+grep -vi 'hard wrap' "$P/REFERENCE.md" > "$R/tmp" && mv "$R/tmp" "$P/REFERENCE.md"
+expect "a claim relocated into references/*.md still passes" OK "$R"
+
+R="$WORK/gone"; seed "$R"
+P="$R/prose-plugin/skills/prose-check"
+grep -vi 'hard wrap' "$P/REFERENCE.md" > "$R/tmp" && mv "$R/tmp" "$P/REFERENCE.md"
+expect "the same claim deleted outright is caught" ERROR "$R"
+
 # --- 11. an unmodified copy still passes -----------------------------------
 # The negative control for every case above: if a pristine copy of the tree
 # failed, the failures above would prove nothing about the specific break.

@@ -111,6 +111,19 @@ echo "$outB" | grep -q "TYPE=skill_ref_unresolved" || fail "expected skill_ref_u
 pass "unresolved /configure: literal in configure-all/SKILL.md fails"
 
 # -----------------------------------------------------------------------------
+# Case B2: the same literal in a references/*.md sidecar → skill_ref_unresolved.
+# A hardcoded list moved out of the body by the 2026-10 split is still a
+# hardcoded list; reading SKILL.md alone could not see it.
+# -----------------------------------------------------------------------------
+build_fixture
+mkdir -p "${sandbox}/configure-plugin/skills/configure-all/references"
+printf 'Also run `/configure:ghost --check-only`.\n' > "${sandbox}/configure-plugin/skills/configure-all/references/flags.md"
+outB2="$(bash "$guard" --strict --root "$sandbox")" && fail "expected failure for unresolved /configure:ghost in references/"
+echo "$outB2" | grep -q "TYPE=skill_ref_unresolved" || fail "expected skill_ref_unresolved issue from references/:\n$outB2"
+echo "$outB2" | grep -q "^SKILL_FILES_READ=2$" || fail "expected SKILL.md + 1 sidecar read:\n$outB2"
+pass "unresolved /configure: literal in a configure-all references/*.md sidecar fails"
+
+# -----------------------------------------------------------------------------
 # Case C: component missing from flow.md → flow_missing_component
 # -----------------------------------------------------------------------------
 build_fixture
