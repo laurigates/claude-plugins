@@ -71,87 +71,11 @@ bash "${CLAUDE_SKILL_DIR}/scripts/check-mcp.sh" --home-dir "$HOME" --project-dir
 
 Parse `STATUS=` and `ISSUES:` from each. Pass `--verbose` when set on `$ARGUMENTS`.
 
-If `check-settings.sh` emits `PROJECT_DIR_RESOLVED=<path>`, the workspace root had no `.claude/` but a single nested `*/.claude/settings.json` was found one level down (parent-workspace / monorepo layout). Note the resolved path in the report so the user knows which config was checked. If it emits `PROJECT_DIR_HINT=<msg>`, surface the hint — multiple nested configs were found and the user should re-run with `--project-dir` to target one.
+Read the extra `check-settings.sh` keys (`PROJECT_DIR_RESOLVED=`, `PROJECT_DIR_HINT=`) and `check-mcp.sh` keys (`MCP_SOURCE_COUNT=`, `SERVER:`, `SERVER_SHADOWED:`) as described in [references/environment-checks.md](references/environment-checks.md#interpreting-the-1a-script-output), and name the config or `.mcp.json` file each finding came from.
 
-`check-mcp.sh` walks `.mcp.json` from `--project-dir` up through its ancestors, stopping after `--home-dir` or the filesystem root, because Claude Code also loads `.mcp.json` from parent directories (issue #2666). It emits `MCP_SOURCE_COUNT=<n>` as the denominator for the `MCP_SOURCES:` block and one `SERVER: name=<n> file=<path>` line per server, so the report can name the file each server came from. A server name defined at more than one level is counted once against the nearest file; the outer copy is reported as `SERVER_SHADOWED: name=<n> file=<outer> shadowed_by=<nearer>`. Surface the source file (and any shadowing) in the report — parent-provided servers still need per-project approval via `enabledMcpjsonServers`.
+#### 1b–1e. SessionStart smoke test, pre-commit config, permissions coverage, marketplace enrollment
 
-#### 1b. SessionStart smoke test
-
-Check whether `scripts/install_pkgs.sh` (or any script registered in the `SessionStart` hook in `.claude/settings.json`) is executable and exits cleanly in both remote and local contexts.
-
-1. Locate the `SessionStart` hook command from `.claude/settings.json` (look for the `command` field).
-2. If a script is found, run:
-   ```bash
-   CLAUDE_CODE_REMOTE=true bash <script-path>
-   ```
-   Capture exit code. Expected: 0.
-3. Run again to verify idempotency — expected: 0.
-4. Run with remote guard off:
-   ```bash
-   CLAUDE_CODE_REMOTE=false bash <script-path>
-   ```
-   Expected: 0 (typically a no-op).
-5. Report:
-   - OK: All three exit 0
-   - WARN: Script exists but is not registered in settings.json hook
-   - ERROR: Script exits non-zero, or script referenced in hook does not exist
-
-#### 1c. Pre-commit config validator
-
-If `.pre-commit-config.yaml` exists:
-
-```bash
-pre-commit validate-config .pre-commit-config.yaml
-```
-
-Report:
-- OK: exits 0 (config is valid)
-- WARN: `pre-commit` not installed — skip check, suggest `pip install pre-commit`
-- ERROR: exits non-zero — show validation error
-
-#### 1d. Permissions coverage check
-
-Compare tools referenced in project files against `permissions.allow` in `.claude/settings.json`.
-
-1. Read `permissions.allow` from `.claude/settings.json`. Extract the command prefix from each `Bash(<prefix>:*)` entry.
-2. Scan these files for tool invocations:
-   - `justfile` / `Justfile` — commands on recipe lines
-   - `Makefile` — shell commands on recipe lines
-   - `.pre-commit-config.yaml` — `entry:` fields
-3. For each tool found in project files:
-   - Flag as **MISSING** if no matching `Bash(<tool>:*)` entry exists in `permissions.allow`
-4. For each `Bash(<tool>:*)` entry in `permissions.allow`:
-   - Flag as **UNUSED** if the tool is not found in any project file (informational, not an error)
-
-Scoring:
-- OK: No missing permissions
-- WARN: 1–3 missing permissions
-- ERROR: 4+ missing permissions
-
-#### 1e. Marketplace enrollment check
-
-The local marketplace key (set by `claude marketplace add <name>`) is user-chosen and varies between installs (commonly `laurigates-claude-plugins`, sometimes `claude-plugins`). Identify the marketplace by its stable `source.repo`, not by a hardcoded local key.
-
-1. Read `.claude/settings.json`.
-2. Scan all entries under `extraKnownMarketplaces` and find the one whose `source.repo` equals `"laurigates/claude-plugins"`. Capture that entry's key as `$MP_KEY`.
-3. Check that `enabledPlugins` contains at least one key with the suffix `@$MP_KEY`.
-4. Report:
-   - OK: Both checks pass
-   - WARN: `enabledPlugins` has no `@$MP_KEY` entries (marketplace enrolled but no plugins enabled)
-   - ERROR: no `extraKnownMarketplaces` entry with `source.repo = laurigates/claude-plugins` (run `/configure:claude-plugins --fix` to add it)
-
-Reference `jq` snippet (for verification or fix scripts):
-
-```bash
-MP_KEY=$(jq -r '.extraKnownMarketplaces // {} | to_entries | map(select(.value.source.repo == "laurigates/claude-plugins")) | .[0].key // empty' .claude/settings.json)
-if [ -z "$MP_KEY" ]; then
-  echo "ERROR: no extraKnownMarketplaces entry with source.repo = laurigates/claude-plugins"
-else
-  jq -e --arg k "@$MP_KEY" '.enabledPlugins // {} | to_entries | map(select(.key | endswith($k))) | length > 0' .claude/settings.json >/dev/null \
-    && echo "OK: marketplace enrolled as $MP_KEY with enabled plugins" \
-    || echo "WARN: marketplace $MP_KEY enrolled but no @${MP_KEY} entries in enabledPlugins"
-fi
-```
+Run each check as specified in [references/environment-checks.md](references/environment-checks.md#checks-1b1e) and score it OK/WARN/ERROR (pre-commit may SKIP when the tool is absent).
 
 ### Step 2: Run scope-specific audits
 
@@ -176,7 +100,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/check-runtime.sh" --home-dir "$HOME" --project
 
 Parse `STATUS=`, `RUNTIME_SIZE_BYTES=`, `PROJECTS_TOTAL=`, `PROJECTS_DEAD=`, `GH_PATHS_TOTAL=`, `GH_PATHS_DEAD=`, `ORPHAN_DISABLED_MCP=`, `DUPLICATE_MCP=`, `CLEANUP_SUGGESTED=`, and `ISSUES:`. Pass `--verbose` to list every dead path / orphaned server (default is a single rolled-up issue per category to keep output compact).
 
-The runtime scope audits `~/.claude.json` — the harness state file that grows with every session and is never auto-pruned. It reports four classes of bloat: dead `projects[]` keys, dead `githubRepoPaths[*]` worktree paths, orphaned `disabledMcpServers[]` entries, and bare-vs-namespaced duplicate MCP names. The audit is **read-only**: it prints suggested `jq` filters for the operator to run manually after closing other Claude Code sessions.
+The runtime audit is **read-only**: it prints suggested `jq` cleanups for the operator; what it detects is described in [references/audit-scopes.md](references/audit-scopes.md#runtime-scope).
 
 > **Concurrent-write warning.** The harness rewrites `~/.claude.json` on session end. Before acting on the audit's suggested cleanups, close every other Claude Code session — otherwise the in-memory state of a live session will clobber your edits when it next writes the file. An automated cleanup writer is out of scope for this audit.
 
@@ -188,11 +112,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/check-usage.sh" --home-dir "$HOME" --project-d
 
 Parse `STATUS=`, `HISTORY_AVAILABLE=`, `TRANSCRIPTS_SCANNED=`, `SKILLS_ENABLED=`, `SKILLS_FIRED=`, `SKILLS_NEVER_FIRED=`, `SKILLS_DORMANT=`, `AGENTS_ENABLED=`, `AGENTS_FIRED=`, `AGENTS_NEVER_FIRED=`, `AGENTS_DORMANT=`, `SCHEMA_DRIFT_SUSPECTED=`, and `ISSUES:`. Pass `--verbose` to list every never-fired / dormant skill and agent (default rolls each category into one issue line). Pass `--window-days N` to change the dormancy threshold (default 30).
 
-The usage scope mines local session transcripts (`~/.claude/projects/*/*.jsonl`) for skill- and agent-invocation recency: **never-fired** skills/agents (installed but zero invocations in history) and **dormant** skills/agents (last invoked more than the window ago). Agent invocations are read from `Agent`/`Task` `tool_use` events keyed by `subagent_type`. Findings are **advisory review candidates**, not a delete list — a skill or agent can be correct yet rarely needed (recovery, migration, on-demand subagents gated behind a parent skill). The audit is **read-only** (no `--fix` path).
-
-> **This scope does not read `~/.claude.json`'s `pluginUsage.usageCount`, and must not start.** That counter tallies **hook fires** in the same number as skill/agent/command deliveries, so it ranks a plugin by hook-trigger cadence rather than by use — see [`.claude/rules/plugin-usage-telemetry.md`](../../../.claude/rules/plugin-usage-telemetry.md). Transcript mining is the delivery signal; the `runtime` scope's use of `~/.claude.json` is unrelated (file bloat only).
-
-> **Local-leaning.** Session history is local and long-lived, so this scope is near-useless in a remote/web sandbox (a fresh clone has ≤1 transcript). It emits `STATUS=SKIP` with `HISTORY_AVAILABLE=false` when there are fewer than two transcripts rather than reporting every skill as never-fired. If `TRANSCRIPTS_SCANNED>0` but zero tool calls parse, it emits `STATUS=WARN TYPE=schema_drift` (the transcript JSON shape changed) instead of a bogus all-never-fired result.
+The usage audit is **read-only** and advisory (review candidates, not a delete list); it SKIPs on insufficient history and WARNs on transcript schema drift. Never read `pluginUsage.usageCount` for it. Details: [references/audit-scopes.md](references/audit-scopes.md#usage-scope).
 
 ### Step 3: Report findings
 
@@ -247,30 +167,9 @@ Re-run the relevant checks and confirm issue counts have dropped.
 
 ## Agentic Optimizations
 
-| Context | Command |
-|---------|---------|
-| Full scan | `/health:check` |
-| Registry only | `/health:check --scope=registry` |
-| Stack relevance only | `/health:check --scope=stack` |
-| Agentic audit only | `/health:check --scope=agentic` |
-| Runtime state audit (~/.claude.json) | `/health:check --scope=runtime` |
-| Usage telemetry (never-fired/dormant skills) | `/health:check --scope=usage` |
-| Usage with a custom dormancy window | `bash check-usage.sh --window-days 60 --verbose` |
-| Fix everything (interactive) | `/health:check --fix` |
-| Dry-run preview of fixes | `/health:check --fix --dry-run` |
-| Detailed diagnostics | `/health:check --verbose` |
-| Check plugin registry exists | `find ~/.claude/plugins -name 'installed_plugins.json'` |
-| Validate settings JSON | `find .claude -maxdepth 1 -name 'settings.json'` |
-| Smoke-test install script | `CLAUDE_CODE_REMOTE=true bash scripts/install_pkgs.sh` |
-| Validate pre-commit config | `pre-commit validate-config .pre-commit-config.yaml` |
-| Check marketplace enrollment | `find .claude -maxdepth 1 -name 'settings.json'` then grep for `extraKnownMarketplaces` |
+Per-scope invocations and quick manual checks: [references/command-reference.md](references/command-reference.md).
 
 ## Known Issues
 
-| Issue | Symptom | Fix path |
-|-------|---------|----------|
-| [#14202](https://github.com/anthropics/claude-code/issues/14202) | Plugin shows "installed" but not active | `/health:check --scope=registry --fix` |
-| Stale `enabledPlugins` key in settings.json | Plugin appears enabled but no registry/marketplace entry | `/health:check --scope=registry --fix` |
-| Orphaned `projectPath` | Plugin installed for deleted project | `/health:check --scope=registry --fix` |
-| Invalid settings JSON | Settings file won't load | `/health:check` |
-| Missing marketplace enrollment | laurigates/claude-plugins skills unavailable in web sessions | `/configure:claude-plugins --fix` |
+Known symptoms and their fix paths: [references/known-issues.md](references/known-issues.md).
+
