@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.4](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.14.3...taskwarrior-plugin-v1.14.4) (2026-10-07)
+
+
+### Code Refactoring
+
+* **skills:** move reference material out of oversized SKILL.md bodies ([#2922](https://github.com/laurigates/claude-plugins/issues/2922)) ([79fd4ae](https://github.com/laurigates/claude-plugins/commit/79fd4ae75f7c9260a71e92b6ecf16e0a735eed6f))
+
 ## [1.14.3](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.14.2...taskwarrior-plugin-v1.14.3) (2026-10-05)
 
 
