@@ -258,11 +258,11 @@ while IFS= read -r -d '' wf; do
     # a genuine "no pull_request trigger" answer.
     yq_probe="$(yq -r '
       ((.on // .true) // {}) as $on
-      | (($on | type) == "object") as $ok
+      | (($on | type) == "object" or ($on | type) == "!!map") as $ok
       | (if $ok then ($on | has("pull_request")) else false end) as $pr
       | (if $pr
          then (($on["pull_request"] // {})
-               | ((type == "object") and (has("paths") or has("paths-ignore"))))
+               | ((type == "object" or type == "!!map") and (has("paths") or has("paths-ignore"))))
          else false end) as $p
       | "\($pr) \($p)"' "$wf" 2>/dev/null || true)"
     case "$yq_probe" in

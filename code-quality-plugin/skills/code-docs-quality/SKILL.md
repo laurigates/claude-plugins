@@ -142,30 +142,8 @@ name: docs-quality-check
 - List all ADR files (should be numbered: 0001-title.md)
 
 ### 4.2 ADR Structure Validation
-For each ADR, verify:
-
-**Naming Convention**:
-- Format: `NNNN-kebab-case-title.md` (e.g., `0001-plugin-architecture.md`)
-- Sequential numbering
-- Descriptive titles
-
-**Required Sections** (MADR format):
-```markdown
-# ADR-NNNN: Title
-
-**Date**: YYYY-MM
-**Status**: Accepted | Superseded | Deprecated
-**Deciders**: [who made the decision]
-
-## Context
-[The issue motivating this decision]
-
-## Decision
-[The change being proposed or made]
-
-## Consequences
-[What becomes easier or harder]
-```
+For each ADR, verify naming and the required MADR sections against
+[references/doc-standards.md](references/doc-standards.md#42-adr-structure-validation).
 
 ### 4.3 ADR Quality Checks
 - **Status accuracy**: Are deprecated ADRs marked?
@@ -185,27 +163,8 @@ For each ADR, verify:
 - List all PRD files
 
 ### 5.2 PRD Structure Validation
-For each PRD, verify:
-
-**Frontmatter** (if using Blueprint methodology):
-```yaml
----
-created: YYYY-MM-DD
-modified: YYYY-MM-DD
-reviewed: YYYY-MM-DD
-status: Draft | Active | Implemented | Archived
-name: docs-quality-check
----
-```
-
-**Required Sections**:
-- Executive Summary / Problem Statement
-- Stakeholders & User Personas
-- Functional Requirements
-- Non-Functional Requirements
-- Success Metrics
-- Scope (In/Out of scope)
-- Technical Considerations
+For each PRD, verify frontmatter and required sections against
+[references/doc-standards.md](references/doc-standards.md#52-prd-structure-validation).
 
 ### 5.3 PRD Quality Checks
 - **Clarity**: Are requirements specific and measurable?
@@ -221,16 +180,8 @@ name: docs-quality-check
 - List all PRP files
 
 ### 6.2 PRP Structure Validation
-For each PRP, verify:
-
-**Required Sections**:
-- Goal & Why
-- Success Criteria (testable)
-- Context (documentation refs, codebase intelligence, known gotchas)
-- Implementation Blueprint (architecture, task breakdown)
-- TDD Requirements (test strategy, critical test cases)
-- Validation Gates (executable commands)
-- Confidence Score (0-10 across dimensions)
+For each PRP, verify the required sections against
+[references/doc-standards.md](references/doc-standards.md#62-prp-structure-validation).
 
 ### 6.3 PRP Quality Checks
 - **Specificity**: Are file paths and code references explicit?
@@ -263,122 +214,16 @@ git log -1 --format="%ai %s" -- CLAUDE.md 2>/dev/null || echo "No git history"
 
 ## Phase 8: Generate Quality Report
 
-### 8.1 Documentation Inventory
-
-Generate a summary table:
-
-```markdown
-## Documentation Inventory
-
-| Document Type | Status | Count | Issues |
-|---------------|--------|-------|--------|
-| CLAUDE.md | ✅/❌ | 1 | [list issues] |
-| .claude/rules/ | ✅/❌ | N files | [list issues] |
-| ADRs | ✅/❌ | N files | [list issues] |
-| PRDs | ✅/❌ | N files | [list issues] |
-| PRPs | ✅/❌ | N files | [list issues] |
-```
-
-### 8.2 Quality Score
-
-Calculate an overall quality score:
-
-| Category | Score (0-10) | Notes |
-|----------|--------------|-------|
-| Structure | X | File organization, naming |
-| Completeness | X | Required sections present |
-| Freshness | X | Recent updates, git sync |
-| Standards Compliance | X | Frontmatter, format |
-| Content Quality | X | Clarity, specificity |
-| **Overall** | **X** | Average score |
-
-**Rating Guide**:
-- 9-10: Excellent - Well-maintained, comprehensive
-- 7-8: Good - Minor improvements needed
-- 5-6: Fair - Several issues to address
-- 3-4: Poor - Major gaps or outdated
-- 0-2: Critical - Missing or severely lacking
-
-### 8.3 Issues and Recommendations
-
-Categorize findings:
-
-**Critical Issues** (must fix):
-- Missing required documentation
-- Severe structural problems
-- Completely outdated information
-
-**Warnings** (should fix):
-- Stale documentation (>6 months)
-- Missing frontmatter
-- Incomplete sections
-- Minor structural issues
-
-**Suggestions** (nice to have):
-- Additional documentation that would help
-- Improved organization
-- Better cross-referencing
-- Enhanced examples
-
-### 8.4 Actionable Recommendations
-
-For each issue, provide specific guidance:
-
-```markdown
-## Recommendations
-
-### Immediate Actions
-1. [ ] Fix [specific issue] in [file]
-   - **Why**: [reason]
-   - **How**: [specific steps]
-   - **Command**: [if applicable]
-
-2. [ ] Update [document]
-   - **Why**: [reason]
-   - **How**: [specific steps]
-
-### Maintenance Tasks
-1. [ ] Review and update stale documents:
-   - [file1] - last modified [date]
-   - [file2] - last modified [date]
-
-2. [ ] Improve documentation coverage:
-   - [ ] Document [undocumented decision]
-   - [ ] Create ADR for [architectural choice]
-
-### Best Practices
-- Run `/code:docs-quality` monthly
-- Update `modified` dates when editing docs
-- Review `reviewed` dates quarterly
-- Use `/blueprint:adr` for new architecture decisions
-- Use `/blueprint:prd` for new features
-```
+Build the report in four parts — 8.1 documentation inventory table, 8.2 quality
+score (0-10 per category, with rating guide), 8.3 issues categorized as Critical /
+Warnings / Suggestions, 8.4 actionable recommendations — using the templates in
+[references/report-templates.md](references/report-templates.md).
 
 ## Phase 9: Present Results
 
 ### 9.1 Executive Summary
-Show a clear, concise summary:
-
-```
-📊 Documentation Quality Report
-═══════════════════════════════
-
-Overall Score: X/10 ([Excellent/Good/Fair/Poor/Critical])
-
-✅ Strengths:
-- [strength 1]
-- [strength 2]
-
-⚠️  Issues Found:
-- [issue 1]
-- [issue 2]
-
-📋 Recommendations:
-- [top recommendation 1]
-- [top recommendation 2]
-
-See full report below for details.
-```
+Show a clear, concise summary using the executive-summary template in
+[references/report-templates.md](references/report-templates.md#91-executive-summary).
 
 ### 9.2 Full Report
 Present the complete analysis with:
@@ -408,13 +253,8 @@ Help the user understand next steps:
 - Suggest concrete fixes, not just problems
 
 ### For Documentation Standards
-- **Frontmatter**: Always include created/modified/reviewed dates
-- **Structure**: Follow established templates (ADR, PRD, PRP)
-- **Clarity**: Write for future maintainers and AI assistants
-- **Maintenance**: Review quarterly, update modified dates
-- **Cross-reference**: Link related documentation
-- **Examples**: Include code snippets and real examples
-- **Scope**: Keep focused - one concern per document
+The general standards to recommend (frontmatter dates, templates, maintenance
+cadence) are in [references/doc-standards.md](references/doc-standards.md#for-documentation-standards).
 
 ## Error Handling
 

@@ -27,7 +27,7 @@ Distill session insights into reusable project knowledge.
 | A pattern is reusable **beyond this repo** and belongs in a shared plugin/skill | The learning is project-specific -> keep it in this repo's `.claude/rules` |
 | The session **invented a technique** with no home skill yet, or one a named plugin's skill is missing | Reporting friction/errors for triage -> `feedback-plugin:feedback-session` (the error loop) |
 
-May also be reached via the end-of-session flow: the plugin's Stop hook (`hooks/session-end-nudge.sh`) offers `session-plugin:session-end` once per session on user wind-down, and the orchestrator runs this skill when a durable learning qualifies.
+Reached via the end-of-session flow: [references/auto-surfacing.md](references/auto-surfacing.md).
 
 ## Core Principle: Update Over Add
 
@@ -73,31 +73,9 @@ bash "${CLAUDE_SKILL_DIR}/../../scripts/distill-survey.sh" \
   --session-id "${CLAUDE_SESSION_ID}" --window-sessions 10
 ```
 
-Consume the digest:
-
-- `RECIPE_CANDIDATES` — normalized commands that recurred across **separate**
-  sessions or are commit-bracketed this session, are NOT already a `just`
-  recipe or churn (`status`/`diff`/`log`/`test`/`build`/`ls`/…), are NOT a
-  compound/loop line (`;`, `&&`, `||`, `until`/`while`/`for` — those are
-  `--process` material), and carry a **stable argument**: either no
-  placeholder at all, or one standalone placeholder that resolved to the same
-  concrete value in ≥2 sessions (a placeholder embedded in a flag —
-  `--title=<str>` — can never prove stability, so those shapes are always
-  dropped). Each carries a concrete `_FIRST` example, `_SESSIONS`
-  count, `_NOVEL_TOKENS`, and `_STABLE_ARGS` (up to three repeated values,
-  sorted, or `literal`). A low count is the honest answer, not a broken collector.
-- `HOT_FILES` — the files this session edited/wrote most (exact paths) — where
-  rule/doc updates likely land.
-- `COMMIT_INTERVALS` + `COMMAND_DIGEST` — the mechanical grouping you use to
-  *name* a process or sequence. The script never infers a sequence itself
-  (sequence-naming is judgment); it hands you completed-work intervals.
-- `RULE_HINTS_FROM_TOOLING` — repeated permission/auth denials, the **only**
-  mechanical rule signal.
-
-Under pi, the collector falls back to the transcript named by `PI_SESSION_FILE`
-and reports `TRANSCRIPT_FORMAT=pi`. pi records no permission denials, so its
-`RULE_HINTS_FROM_TOOLING` carries `RULE_HINTS_RECORDED=false`: a zero there
-means "not recorded", not "none".
+Consume the digest (`RECIPE_CANDIDATES`, `HOT_FILES`, `COMMIT_INTERVALS` +
+`COMMAND_DIGEST`, `RULE_HINTS_FROM_TOOLING`); field meanings and the pi fallback:
+[references/collector-digest.md](references/collector-digest.md).
 
 When `TRANSCRIPT_AVAILABLE=false` / `STATUS=SKIP` (fresh clone, remote sandbox,
 mid-conversation flush, or no `--session-id`), fall back to reading the
@@ -123,7 +101,7 @@ Read in one response, evaluate in one pass.
 
 **Recipes / process**: the collector already ran `just --dump`, so
 `RECIPE_CANDIDATES` are already novel (not existing recipes). Route each per the
-[destination table](#routing-a-learning-to-a-destination) — a recurring single
+[destination table](references/routing.md) — a recurring single
 command → a `just` recipe; a multi-step workflow → a script or a project-local
 skill (see `--process`).
 
@@ -131,26 +109,19 @@ skill (see `--process`).
 
 Categorize as: `[UPDATE]`, `[SKIP]`, `[NEW]`, `[REDUNDANT]`, or `[PROMOTE]` with file paths and reasons.
 
-`[PROMOTE]` is the **additive, cross-repo** category — distinct from the others,
-which all write *this* repo's `.claude/`. Use it when the insight is reusable
-**beyond this repo** and belongs in a marketplace plugin: either a pattern the
-session invented that has **no home skill yet** (→ propose a new skill), or a
-capability an **existing named skill is missing** (→ propose an edit to it). A
-`[PROMOTE]` does not require anything to have gone wrong — a smooth session that
-produced a strong reusable technique is exactly its trigger. Each `[PROMOTE]`
-names a target `<plugin>/skills/<skill>` (new or existing) and is applied as a
-**PR against the plugin repo**, never an edit to the current repo (see
-[Cross-Repo Promotion](#cross-repo-promotion-promote)).
+`[PROMOTE]` is the additive, cross-repo category: it targets a marketplace
+plugin and is applied as a PR, never an edit to the current repo. When it
+applies is in [references/promote.md](references/promote.md#when-to-promote).
 
 ### Step 4: Apply changes
 
 If `--dry-run`: skip this step.
 
-**In auto mode**: apply proposals directly without per-category `AskUserQuestion`. All targets are reversible via `git restore` — rule files, skill files, and justfile recipes are tracked in git, so a wrong edit can be undone with one command. This matches auto mode's "prefer action over planning" directive. **Retain `AskUserQuestion` for destructive operations** (`[REDUNDANT]` proposals that remove a rule or recipe).
-
-**In manual / interactive mode**: use `AskUserQuestion` to confirm each category before applying. The user can multi-select which `[UPDATE]` / `[NEW]` proposals to accept. AskUserQuestion keeps the turn open, so no Stop hook fires between the question and the answer. Where `AskUserQuestion` is unavailable (a harness without the tool), ask in plain text and end the turn.
-
-**In plan mode**: neither default applies — the harness disallows non-readonly tool calls (including `AskUserQuestion`-then-apply) except writes to the active plan file. Write the proposal set to the active plan file as a single coherent block (Context + per-category `[UPDATE]` / `[NEW]` / `[REDUNDANT]` sections + a brief verification section), then call `ExitPlanMode` to surface for user approval. Do not apply directly. After the user approves the plan, fall back to the auto-mode or manual-mode flow above depending on which is active.
+Apply per the active permission mode — auto mode applies directly but **retains
+`AskUserQuestion` for destructive `[REDUNDANT]` removals**; manual mode confirms
+each category with `AskUserQuestion`; plan mode writes the proposals to the plan
+file and calls `ExitPlanMode`. The full per-mode rules are in
+[references/apply-modes.md](references/apply-modes.md).
 
 For `[PROMOTE]` proposals, do **not** edit the current repo. Apply them via the
 cross-repo PR hand-off below — gate it behind `AskUserQuestion` in every mode
@@ -164,67 +135,26 @@ Output concise summary of changes made, including any `[PROMOTE]` PRs opened
 
 ## Routing a learning to a destination
 
-Each surviving insight goes to exactly one home. Pick most-specific first — a
-new artifact type was deliberately **not** added (no `.claude/runbooks/`); a
-project-local process reuses the `.claude/skills/` convention CLAUDE.md
-documents as a first-class, auto-loaded home.
-
-| The learning is… | Destination | Proposal tag |
-|---|---|---|
-| A convention/constraint that prevents mistakes | `.claude/rules/<name>.md` | `[UPDATE]` / `[NEW]` |
-| A recurring single command with fixed flags (a `RECIPE_CANDIDATE`) | a `just` recipe | `[UPDATE]` / `[NEW]` |
-| A **deterministic** multi-step workflow (no decision points) | `scripts/<name>.sh` + a thin `just` recipe wrapping it | `[NEW]` |
-| A **multi-step process with decision points**, project-local | a project-local `.claude/skills/<name>/SKILL.md` (auto-loaded, no marketplace entry — see the repo's CLAUDE.md) | `[NEW]` |
-| Reusable **beyond this repo** | a marketplace plugin/skill via PR | `[PROMOTE]` |
-
-The `--process` category covers the two multi-step rows: a deterministic
-workflow becomes `scripts/*.sh` + a recipe (offload to a deterministic
-substrate); a judgment-bearing one becomes a project-local skill. Name the
-sequence yourself from `COMMIT_INTERVALS` / `COMMAND_DIGEST` — the collector
-gives you the grouping, not the name.
+Each surviving insight goes to exactly one home (rule, `just` recipe, script +
+recipe, project-local `.claude/skills/` skill, or `[PROMOTE]` PR); table and
+`--process` split: [references/routing.md](references/routing.md).
 
 ## Cross-Repo Promotion ([PROMOTE])
 
-The other categories keep knowledge in *this* repo. `[PROMOTE]` is how a
-session-invented pattern reaches the **shared plugin marketplace** so every repo
-benefits — the additive complement to `feedback-plugin`'s error loop (which only
-fires on friction). A near-zero-friction session can still produce several
-`[PROMOTE]` candidates.
-
 ### Routing: which plugin/skill should own it
 
-Pick the target by the pattern's domain, most specific first:
-
-| Pattern is about… | Likely owner |
-|-------------------|--------------|
-| A language/tool's build/test/lint (cargo, uv, biome…) | that language plugin (`rust-plugin`, `python-plugin`, …) |
-| Multi-agent orchestration, waves, worktrees, dispatch | `agent-patterns-plugin` / `workflow-orchestration-plugin` |
-| Git, PRs, merges, rebases, conflicts | `git-plugin` |
-| CI/infra/repo configuration | `configure-plugin` / `github-actions-plugin` |
-| Nothing fits, but it's clearly reusable | propose a new skill in the closest plugin and flag the routing choice for review |
-
-Then decide **new skill vs. edit existing**: glob the owner plugin's `skills/`,
-read the closest few, and prefer extending an existing skill (a new section +
-cross-link) over a new skill unless the pattern is genuinely its own topic
-(`Update Over Add` still applies — across repos now).
+Owner-by-domain table and new-vs-edit rule:
+[references/promote.md](references/promote.md#routing-which-pluginskill-should-own-it).
 
 ### The PR hand-off (isolated clone — never edit cwd, never push to default)
 
-The plugin source lives in its own repo. Open a PR there; the human reviews and
-merges. Match the repo's conventions: skills are auto-discovered (add
-`skills/<name>/SKILL.md` with dated frontmatter + `user-invocable`/`allowed-tools`),
-update the plugin README's skill catalog, keep `!`-context commands free of pipes/
-redirects, use a conventional commit (`feat(<plugin>):` for a new skill,
-`docs(<plugin>):` for an edit — release-please versions from it), and apply the
-`<plugin>` routing label (create it if missing).
+The plugin source lives in its own repo; open a PR there and match its
+conventions — listed in [references/promote.md](references/promote.md#plugin-repo-conventions).
 
 **Do the whole promote in a throwaway clone, never in a long-lived local
-checkout of the plugins repo.** That checkout is frequently contended by a
-concurrent Claude session: a coworker's operation can autostash your in-flight
-edit and move `HEAD` between two of your calls, so the next `git add`/`commit`
-reports *"nothing to commit, working tree clean"* and the edit is silently gone
-(issue #2113). A fresh clone shares no `.git` with that checkout, so no coworker
-can move `HEAD` under it. `git worktree add` is **not** equivalent — it
+checkout of the plugins repo.** A concurrent session can move `HEAD` under a shared
+checkout and silently drop the edit (issue #2113 — see
+[references/promote.md](references/promote.md#why-a-throwaway-clone-issue-2113)). `git worktree add` is **not** equivalent — it
 registers in the shared checkout's `.git` and was itself observed failing
 (`already used by worktree`) once `HEAD` had moved.
 
@@ -252,19 +182,9 @@ only your own commits before you push), `repos/.claude/rules/concurrent-session-
 opened a PR for it — never pop a shared stash), and `git-plugin:git-coworker-check`
 (run it before any operation that genuinely must touch a shared checkout).
 
-The PR body should cite the session as evidence (what the pattern is, why it's
-reusable, where it was used) — the additive analogue of the friction loop's
-evidence summary.
+Write the PR body per [references/promote.md](references/promote.md#pr-body).
 
 ## Agentic Optimizations
 
-| Context | Command |
-|---------|---------|
-| Distill collector (recipe candidates + hot files + process groupings) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/distill-survey.sh" --session-id "${CLAUDE_SESSION_ID}"` |
-| Distill qualify signal (counts only) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/distill-survey.sh" --session-id "${CLAUDE_SESSION_ID}" --summary` |
-| Session diff summary | `git log --stat --oneline --max-count=10` |
-| Recent commits | `git log --oneline --max-count=20` |
-| List justfile recipes | `just --list` |
-| Dump justfile as JSON | `just --dump --dump-format json` |
-| Find rules | Glob `.claude/rules/*.md` |
-| Batch-read all rules | Glob then Read all results in one response |
+Command forms for the collector, git history, and justfile/rule discovery are in
+[references/commands.md](references/commands.md).
