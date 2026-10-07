@@ -13,9 +13,17 @@
 # selected. Separately, a dispatch run committed on the dispatched ref (main)
 # and the model ran `git push origin HEAD`, landing splits directly on main.
 #
+# A third incident (#2935): the workflow's `pull_request` trigger re-split
+# every changed SKILL.md over the gate on each branch update and pushed the
+# `refactor(split):` commits to the PR's own head ref. Five PRs received
+# unreviewed splits of skills deliberately left over the threshold; six were
+# merged unverified and one broke scripts/tests/test-lint-mcp-tool-references.sh
+# on main (reverted in #2936). The workflow is now dispatch-only.
+#
 # THE SEMANTIC INVARIANT: the splitter selects exactly the skills the gate
-# warns about, by the gate's own metric and threshold, and a dispatch run
-# publishes to a review branch rather than the dispatched ref.
+# warns about, by the gate's own metric and threshold; it runs only on
+# dispatch; and it publishes to its own review branch, never to the dispatched
+# ref or to another PR's branch.
 #
 # Guards:
 #   A. a dense 40-line skill over 10000 chars IS selected (a >300-line rule misses it)
@@ -31,15 +39,17 @@
 #   K. the threshold is read from the gate: --print-threshold equals the real
 #      gate's SKILL_SIZE_WARN_CHARS, check_skill_size() compares against that
 #      variable, and a gate with the assignment removed makes the selector exit 2
-#   L. the workflow selects via the script in every mode and no longer by lines
+#   L. the workflow selects via the script in every scope and no longer by lines
 #   M. the prompt no longer skips skills that have a REFERENCE.md and asks for
 #      a references/ split
-#   N. Claude cannot push or switch branches; a deterministic step pushes, a
-#      dispatch run to refactor/skill-split-<run_id> and a PR, never bare HEAD
-#   O. PR-mode loop prevention survives
+#   N. Claude cannot push or switch branches; a deterministic step pushes to
+#      refactor/skill-split-<run_id> and a separate job opens a PR, never bare HEAD
+#   O. dispatch-only (#2935): workflow_dispatch is the sole trigger, no
+#      pull_request/pull_request_target trigger, no PR head ref is read, and
+#      every `git push` targets the split branch
 #
 # SKILL_SPLITTER_WORKFLOW overrides the workflow under test, so L-O can be
-# shown red against the pre-fix file.
+# shown red against a pre-fix file.
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -169,7 +179,6 @@ grep -E '^[[:space:]]*--allowedTools ' "$workflow" > "$allowed" || true
 code="$tmp/workflow-no-comments.yml"
 grep -vE '^[[:space:]]*#' "$workflow" > "$code" || true
 
-assert_grep "L. PR mode selects changed files via the script" "$workflow" '"\$SELECT" --stdin --limit'
 assert_grep "L. plugin mode selects via the script" "$workflow" '"\$SELECT" --plugin "\$PLUGIN"'
 assert_grep "L. all mode selects via the script" "$workflow" '"\$SELECT" --all'
 assert_grep "L. SELECT names scripts/select-split-candidates.sh" "$workflow" '^[[:space:]]*SELECT=scripts/select-split-candidates\.sh$'
@@ -183,7 +192,18 @@ assert_no_grep "N. nothing pushes bare HEAD (the dispatched ref)" "$code" 'git p
 assert_grep "N. dispatch runs commit on a refactor/skill-split-<run_id> branch" "$workflow" 'SPLIT_BRANCH: refactor/skill-split-\$\{\{ github\.run_id \}\}'
 assert_grep "N. the publish step pushes the split branch by refspec" "$workflow" 'git push origin "HEAD:refs/heads/\$\{SPLIT_BRANCH\}"'
 assert_grep "N. dispatch runs open a PR" "$workflow" 'gh pr create'
-assert_grep "O. loop prevention still keys on refactor(split):" "$workflow" "grep -qE '\^refactor\\\\\(split\\\\\):'"
+assert_grep "O. workflow_dispatch is a trigger" "$code" '^[[:space:]]*workflow_dispatch:'
+assert_no_grep "O. no pull_request or pull_request_target trigger" "$code" '^[[:space:]]*pull_request(_target)?:'
+assert_no_grep "O. no other trigger besides workflow_dispatch" "$code" \
+  '^[[:space:]]{2}(push|schedule|workflow_run|workflow_call|issue_comment|pull_request_review(_comment)?|repository_dispatch):'
+assert_no_grep "O. no step reads a PR head ref or head SHA" "$code" \
+  'github\.head_ref|pull_request\.head\.|HEAD_REF'
+assert_no_grep "O. no logic branches on a pull_request event" "$code" "event_name == 'pull_request'|= \"pull_request\""
+push_lines=$(grep -E 'git push' "$code" || true)
+push_count=$(grep -c . <<<"$push_lines" || true)
+split_push_count=$(grep -cE 'git push origin "HEAD:refs/heads/\$\{SPLIT_BRANCH\}"' <<<"$push_lines" || true)
+assert_eq "O. the workflow has exactly one git push" "$push_count" "1"
+assert_eq "O. ...and it pushes the split branch" "$split_push_count" "1"
 
 echo
 echo "PASSED=$pass FAILED=$fail"
