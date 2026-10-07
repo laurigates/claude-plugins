@@ -122,7 +122,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking",
-      "version": "3.46.6",
+      "version": "3.46.7",
       "author": {
         "name": "Lauri Gates"
       },
@@ -145,7 +145,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, dependency auditing, dead code detection, test quality, complexity metrics, and static analysis",
-      "version": "1.27.3",
+      "version": "1.27.4",
       "author": {
         "name": "Lauri Gates"
       },
@@ -243,7 +243,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.37.4",
+      "version": "1.37.5",
       "author": {
         "name": "Lauri Gates"
       },
@@ -296,7 +296,7 @@
       "name": "documentation-plugin",
       "source": "./documentation-plugin",
       "description": "Documentation generation - API docs, README, LaTeX PDF conversion",
-      "version": "1.13.0",
+      "version": "1.13.1",
       "author": {
         "name": "Lauri Gates"
       },
@@ -392,7 +392,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.60.3",
+      "version": "2.60.4",
       "author": {
         "name": "Lauri Gates"
       },
@@ -423,7 +423,7 @@
       "name": "github-actions-plugin",
       "source": "./github-actions-plugin",
       "description": "GitHub Actions CI/CD - workflows, authentication, inspection, auto-fix",
-      "version": "1.13.2",
+      "version": "1.13.3",
       "author": {
         "name": "Lauri Gates"
       },
@@ -442,7 +442,7 @@
       "name": "health-plugin",
       "source": "./health-plugin",
       "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
-      "version": "1.22.3",
+      "version": "1.22.4",
       "author": {
         "name": "Lauri Gates"
       },
@@ -640,7 +640,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, changelog review, and continuous development workflows",
-      "version": "1.21.8",
+      "version": "1.21.9",
       "author": {
         "name": "Lauri Gates"
       },
@@ -678,7 +678,7 @@
       "name": "prose-plugin",
       "source": "./prose-plugin",
       "description": "Prose transformation and style control - synthesis, distillation, tone, voice, clarity, and consistency for written text",
-      "version": "1.4.1",
+      "version": "1.4.2",
       "author": {
         "name": "Lauri Gates"
       },
@@ -743,7 +743,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation",
-      "version": "1.13.3",
+      "version": "1.13.4",
       "author": {
         "name": "Lauri Gates"
       },
@@ -822,7 +822,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.21.2",
+      "version": "3.21.3",
       "author": {
         "name": "Lauri Gates"
       },
@@ -843,7 +843,7 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.13.1",
+      "version": "2.13.2",
       "author": {
         "name": "Lauri Gates"
       },

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.37.5](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.37.4...configure-plugin-v1.37.5) (2026-10-07)
+
+
+### Bug Fixes
+
+* **skills:** resolve slash commands and read references/ sidecars in content guards ([#2945](https://github.com/laurigates/claude-plugins/issues/2945)) ([3057350](https://github.com/laurigates/claude-plugins/commit/305735016549ce5c66f5b4b9803c61bfec46ec75))
+
 ## [1.37.4](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.37.3...configure-plugin-v1.37.4) (2026-10-07)
 
 

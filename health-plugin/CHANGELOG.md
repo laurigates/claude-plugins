@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.4](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.22.3...health-plugin-v1.22.4) (2026-10-07)
+
+
+### Bug Fixes
+
+* **skills:** resolve slash commands and read references/ sidecars in content guards ([#2945](https://github.com/laurigates/claude-plugins/issues/2945)) ([3057350](https://github.com/laurigates/claude-plugins/commit/305735016549ce5c66f5b4b9803c61bfec46ec75))
+
 ## [1.22.3](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.22.2...health-plugin-v1.22.3) (2026-10-07)
 
 
