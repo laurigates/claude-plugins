@@ -60,7 +60,7 @@ that `never-fabricate-test-identifiers.md` requires.
   shape against a term you know is present. If the control is also empty, the
   pattern is broken, not the tree clean.
 - Piping (`| wc -l`) masks the exit code entirely, so even the rc=1 tell is gone —
-  see *A pipe discards the command's exit code* below for the general case.
+  see [§ A pipe discards the command's exit code](#a-pipe-discards-the-commands-exit-code---tail-reports-success-for-a-failed-run) for the general case.
 
 ## A wrapped string defeats a source grep — the code is unchanged, the grep says fixed
 
@@ -79,7 +79,7 @@ nothing — and that zero reads as "the text is gone, someone fixed it."
   symbol that owns the message (`check_step_loss`), never the whole sentence.
 - **Then read the hit.** The search locates the text; the verdict comes from
   reading it.
-- The control test in the section above catches this class. Run it on any
+- The control test in [§ `git grep -E` has no `\b`](#git-grep--e-has-no-b--the-pattern-matches-nothing-silently) catches this class. Run it on any
   negative that closes a task or reports something already fixed.
 
 ## A pipe discards the command's exit code — `| tail` reports success for a failed run
@@ -87,7 +87,7 @@ nothing — and that zero reads as "the text is gone, someone fixed it."
 A shell pipeline exits with the status of its **last** command, so `<cmd> | tail`,
 `| head`, `| grep`, `| wc -l` all throw away the status of the thing you ran. The
 result is not merely lossy, it is confidently wrong: a failing build reports
-success. This is the general case of the `| wc -l` note in the grep section above.
+success. This is the general case of the `| wc -l` note in [§ `git grep -E` has no `\b`](#git-grep--e-has-no-b--the-pattern-matches-nothing-silently).
 
 > Observed 2026-08 (loractl). `just test 2>&1 | tail -25` returned exit 0 and was
 > written up as "suite green" — the 0 was `tail`'s. The 25-line window also showed
@@ -170,7 +170,7 @@ MCP servers, user vs. repo git config.
 
 - **Enumerate all three before concluding a command does not exist.** In this
   portfolio, `rg -uu --files -g '**/<name>/**' ~/.claude ~/repos` covers the
-  user and project tiers in one pass (note the glob form — see the trap above).
+  user and project tiers in one pass (note the glob form — see [§ A `-g '*name*'` glob cannot match a directory name](#a--g-name-glob-cannot-match-a-directory-name)).
 - **A marketplace search is not a project search.** `gh api search/code` over
   the plugin repo answers the plugin tier only.
 - **State the tier you searched** when reporting a negative. "Not in

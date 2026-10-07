@@ -4,7 +4,7 @@ Moved verbatim from `SKILL.md` §5. Read before writing or auditing a PR body, i
 
 ### It is not only negation — plain past tense in a follow-ups section does it
 
-The rule above reads as "watch out for the word *not*". The trap is wider: **any**
+The rule in [SKILL.md §5](../SKILL.md#5-a-negated-closing-keyword-still-closes-the-issue) reads as "watch out for the word *not*". The trap is wider: **any**
 closing verb adjacent to a reference matches, including one merely *describing*
 what already happened, and including a reference wrapped in a **markdown link**.
 
@@ -27,7 +27,8 @@ Three amplifiers:
 
 ### And not only assertion — a keyword you are *quoting* still fires
 
-The two forms above are sentences that *mean* something about an issue. The
+The two forms in [SKILL.md §5](../SKILL.md#5-a-negated-closing-keyword-still-closes-the-issue) and
+[§ It is not only negation](#it-is-not-only-negation--plain-past-tense-in-a-follow-ups-section-does-it) are sentences that *mean* something about an issue. The
 third means nothing about it at all: the keyword appears inside an **example, a
 fixture, or a regex you are documenting**. GitHub does not care that the line is
 inside backticks, a code fence, or a sentence whose subject is the audit itself.
@@ -54,8 +55,8 @@ Two things generalise:
 merge for a closing verb adjacent to an issue reference, allowing an optional
 `[` and an optional `owner/repo` between them, and prove the scan works by
 confirming it finds a reference you *know* is there. A negative from an
-unvalidated regex is worth nothing — the first audit run in the case above
-reported the fleet clean.
+unvalidated regex is worth nothing — the first audit run in the quoted-fixture case
+([§ And not only assertion](#and-not-only-assertion--a-keyword-you-are-quoting-still-fires)) reported the fleet clean.
 
 The damage is a **false status report**: 2026-08-05, a PR body written to
 disclaim closure closed loractl #162 at merge, and the session reported it open

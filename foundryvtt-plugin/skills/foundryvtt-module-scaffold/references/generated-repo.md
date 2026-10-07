@@ -6,7 +6,7 @@ A repo where `just check` passes from the first commit: a real `module.json`
 manifest, `package.json` (bun scripts), `vite.config.ts`, strict `tsconfig.json`,
 `biome.json`, `vitest.config.ts` + a green Vitest smoke test (Foundry globals
 stubbed in `tests/setup.ts`) and `tests/manifest.test.ts` (the manifest-vs-build
-gate above), `.github/workflows/` (`ci.yml`,
+gate in [SKILL.md § Verifying a module](../SKILL.md#verifying-a-module---verify)), `.github/workflows/` (`ci.yml`,
 `release-please.yml`), `release-please-config.json` + manifest,
 `renovate.json`, a `justfile`, `src/module.ts` + `src/settings.ts` +
 `src/constants.ts` + `src/foundry-shims.d.ts`, `lang/en.json`,

@@ -78,7 +78,7 @@ Merges are always editorial — the pair is a candidate, not a prescription.
 ### Stop-word and token model
 
 Tokens are extracted from `description` using the lowercase regex
-``[a-z][a-z0-9-]+``. A conservative stop-word list (copied below) drops
+``[a-z][a-z0-9-]+``. A conservative stop-word list (copied in this section) drops
 filler verbs, auxiliaries, and pronouns that would otherwise inflate
 Jaccard scores. Tokens shorter than three characters are dropped.
 

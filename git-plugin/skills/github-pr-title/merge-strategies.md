@@ -25,7 +25,7 @@ gh api repos/{owner}/{repo} --jq '{squash: .allow_squash_merge, rebase: .allow_r
 - The PR title is the *only* place the bump type lives. Intermediate commits
   (`wip`, `fix typo`, `address review`) are discarded and need not be conventional.
 - A releasable change under a `chore`/`docs`/`refactor` title ships **no release**.
-  Retitle before merge; after merge, use `Release-As:` or a commit override (below).
+  Retitle before merge; after merge, use `Release-As:` or a commit override ([§ Fixing after merge](#fixing-after-merge)).
 - The PR body becomes the commit body, so release-please **parses it**:
   - `BREAKING CHANGE: …` (or `BREAKING-CHANGE:`) as a footer → **major** bump.
   - A line in the footer block shaped like `feat(x): …` / `fix(x): …` is treated

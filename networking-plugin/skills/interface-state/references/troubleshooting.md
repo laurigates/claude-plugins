@@ -39,6 +39,6 @@ apk add iproute2
 # RHEL/Fedora
 sudo dnf install iproute
 
-# jq for JSON parsing (examples above)
+# jq for JSON parsing (examples: SKILL.md § JSON + jq Scripting)
 sudo apt install jq        # or: apk add jq / dnf install jq
 ```

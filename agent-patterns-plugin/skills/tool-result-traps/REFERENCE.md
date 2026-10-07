@@ -22,7 +22,7 @@ pwd                              # REFUSED — same reason
 
 **`! <cmd>` does not escape it.** The user's own `!`-prefixed command runs in
 the *same session shell*, so handing them the `cd` (the reflex from the
-denial-handoff above) fails identically. This is the one case where that
+denial-handoff in [harness-tool-errors § Bash permission denials are terminal](../harness-tool-errors/SKILL.md#bash-permission-denials-are-terminal)) fails identically. This is the one case where that
 handoff is wrong.
 
 **Recovery: `EnterWorktree` with an explicit `path`** pointing at the worktree
@@ -42,7 +42,7 @@ EnterWorktree(path="/repo/.claude/worktrees/<name>")   # then `pwd` works again
 
 ## The same persistent cwd makes a path-scoped *verification* pass over nothing
 
-The wedge above is loud — every command is refused. The quieter consequence of
+The wedge in [§ A worktree-isolated shell can wedge](#a-worktree-isolated-shell-can-wedge--and-cd-cannot-unwedge-it) is loud — every command is refused. The quieter consequence of
 the same persistent cwd is a **verification that reports success having checked
 zero items**, because its path filter is relative and the cwd moved out from
 under it. Nothing errors; the check just has an empty input set, and an empty
@@ -140,7 +140,7 @@ marked cancelled** and wasted. Specific offenders to avoid in a batch:
 - `tar -xzf <archive>` — fails on missing archive; verify path first.
 - `ls <glob>` — fails on no-match; verify or use Glob.
 - `jq` on possibly-empty pipelines.
-- `Read` on a possibly-missing path (see above).
+- `Read` on a possibly-missing path (see [harness-tool-errors § Verify the path before calling Read](../harness-tool-errors/SKILL.md#verify-the-path-before-calling-read)).
 
 Pattern: when a batch's siblings depend on existence, do a single
 existence-check call first (`Glob`, `ls -1`), then issue the parallel
@@ -161,7 +161,9 @@ pass over an agent fan-out — see `offload-to-deterministic-substrate.md`.
 
 ### The remote is not the whole audit — a dead agent's work may be in a worktree
 
-Step 2 above says audit the **remote**. That is only sufficient when the agent
+Step 2 of the recovery protocol in
+[parallel-agent-dispatch § Session usage limit](../parallel-agent-dispatch/references/failure-recovery.md#session-usage-limit--audit-remote-then-recover)
+says audit the **remote**. That is only sufficient when the agent
 actually ran remotely, and you cannot assume it did: `isolation: "remote"` can
 resolve to a **local git worktree** in the shared checkout. Nothing in the
 dispatch result distinguishes the two — the completion notification's

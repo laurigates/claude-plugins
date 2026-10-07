@@ -6,7 +6,7 @@ Moved verbatim from `SKILL.md`. Read when working on a local feature branch inst
 
 ### Trunk-Based Development
 
-**Preferred: Main-branch development** (see above) - no local feature branches needed.
+**Preferred: Main-branch development** (see [SKILL.md § Main-Branch Development](../SKILL.md#main-branch-development-preferred)) - no local feature branches needed.
 
 **Alternative: Local feature branches** for complex multi-day work:
 

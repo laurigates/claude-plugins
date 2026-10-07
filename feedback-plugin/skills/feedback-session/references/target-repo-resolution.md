@@ -2,7 +2,7 @@
 
 #### Dominant-source detection: parameters and tiering
 
-The thresholds and prompt order above are deliberate. Keep them aligned when editing this step.
+The thresholds and prompt order in [SKILL.md § Step 1](../SKILL.md#step-1-resolve-target-repo-and-ensure-labels-exist) are deliberate. Keep them aligned when editing that step.
 
 | Parameter | Value | Why |
 |-----------|-------|-----|
@@ -27,7 +27,7 @@ Use this four-combination decision table to resolve `$TARGET_REPO`:
 | No | Yes | Agrees with cwd remote | Use cwd remote silently. |
 | No | Yes | Differs from cwd remote | Prompt: offer dominant source AND cwd remote as named choices. |
 
-Execute the steps below to implement this table.
+Steps A–D in [SKILL.md § Step 1](../SKILL.md#step-1-resolve-target-repo-and-ensure-labels-exist) implement this table.
 
 ## Step D branches when the cwd has no git remote
 

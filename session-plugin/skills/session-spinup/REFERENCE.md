@@ -179,7 +179,8 @@ gracefully rather than omitting:
   project:<name>` explicitly rather than an empty-looking section.
 - **`PROJECT_CONFIDENCE=low`** — the slug was never confirmed, so
   `OPEN_TASKS=0` means *unscoped*, not *empty*. Never present the zero as
-  a clean queue: follow the `TASK_SCOPE` table above (name the resolved
+  a clean queue: follow the `TASK_SCOPE` table in
+  [§ Task scoping](#task-scoping-is-a-guess-and-says-so) (name the resolved
   slug, or surface the `RECENT_TASK_*` rows with `TASKS_ALL_PROJECTS` as
   the denominator and offer `--project <name>`). Same shape as
   `GH_READY=false`.

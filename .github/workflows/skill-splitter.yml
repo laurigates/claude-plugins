@@ -206,10 +206,13 @@ jobs:
             of `.claude/rules/context-engineering.md`. The core principle:
 
             **Keep in SKILL.md** (always loaded into context — keep it focused):
-            - "When to Use" decision table (required)
+            - "When to Use" decision table, where the skill has one — it is
+              recommended only where it disambiguates sibling skills
+              (`.claude/rules/context-engineering.md` § Supersedes); do not add one
             - Installation/setup steps (brief)
             - 5–10 most common commands with examples
-            - Agentic Optimizations table (required for CLI/tool skills)
+            - Agentic Optimizations table, where the skill has one — optional; it
+              earns its place where the commands are the payload (CLI wrappers)
             - Quick Reference flags table (compact — not exhaustive)
             - Core expertise bullets
 
@@ -270,6 +273,16 @@ jobs:
                  `For [what it covers], see [references/<topic>.md](references/<topic>.md).`
                - Every link must resolve; the compliance check enforces link
                  integrity (issue #2700).
+               - Rewrite positional pointers ("see above", "the table below",
+                 "the preceding section") in the moved text, and in SKILL.md text
+                 that pointed at what moved, to a named anchor or a file link —
+                 `the [Kill switches](#kill-switches) table`,
+                 `[references/<topic>.md](references/<topic>.md)`. A reference file
+                 is read out of order, so a direction names nothing there, and
+                 `scripts/check-positional-references.sh` fails on any direction
+                 pointer in `references/*.md` and on any SKILL.md that gains one
+                 (`.claude/rules/skill-quality.md` § Point at anchors, not
+                 directions). Change only the pointer words.
 
             d. Commit this skill's changes. Keep the `refactor(split):` subject
                prefix — the publish step rejects any other:

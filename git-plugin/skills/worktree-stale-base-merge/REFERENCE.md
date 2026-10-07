@@ -14,7 +14,7 @@ git cherry main <branch>                                       # '-' = patch alr
 the work landed, a non-match proves nothing once the base has drifted over the
 same files.
 
-Everything below is about the *other* direction — what tree the merge
+The rest of this file is about the *other* direction — what tree the merge
 produces — plus the superseded diagnostic this rule replaced and how it
 relates to GitHub's strict required-status-checks setting.
 
@@ -48,7 +48,8 @@ green check is about a tree that no longer exists."
 ## The two readings of `merge-tree` — do not conflate them
 
 `git merge-tree --write-tree` appears in two rules with **opposite** strengths,
-and mixing them up is exactly what produced the false claim above.
+and mixing them up is exactly what produced the false claim in
+[§ What this rule used to say](#what-this-rule-used-to-say-and-why-it-was-wrong).
 
 | Reading | Question | Authority |
 |---|---|---|
@@ -83,5 +84,5 @@ because with it on every merge marks every other open PR out-of-date, each
 needing an `update-branch` plus a fresh CI run — O(N²) on a repo built around
 parallel agent PRs. That trade is taken consciously: **this rule is the
 judgement layer that `strict = false` leaves to the human.** Where the setting
-is off, the merge-base check above is the only thing standing between a
+is off, the merge-base check in [SKILL.md § The 5-second check](SKILL.md#the-5-second-check--merge-base-equality) is the only thing standing between a
 stale-based green check and a red `main`.
