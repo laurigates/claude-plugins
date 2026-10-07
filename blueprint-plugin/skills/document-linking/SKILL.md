@@ -263,115 +263,15 @@ validate_links() {
 
 ## Traceability Queries
 
-### Find All Related Documents
-
-```bash
-# Get all documents related to a specific ID
-get_related() {
-  local id="$1"
-  local manifest="docs/blueprint/manifest.json"
-
-  # Direct relations from document
-  jq -r --arg id "$id" '
-    .id_registry.documents[$id].relates_to // [] | .[]
-  ' "$manifest"
-
-  # Documents that reference this one
-  jq -r --arg id "$id" '
-    .id_registry.documents | to_entries[] |
-    select(.value.relates_to // [] | contains([$id])) | .key
-  ' "$manifest"
-}
-```
-
-### Find Implementation Chain
-
-```bash
-# PRD -> PRP -> Work-Orders -> GitHub Issues
-get_implementation_chain() {
-  local prd_id="$1"
-  local manifest="docs/blueprint/manifest.json"
-
-  echo "=== Implementation Chain for $prd_id ==="
-
-  # Find PRPs implementing this PRD
-  echo "PRPs:"
-  jq -r --arg id "$prd_id" '
-    .id_registry.documents | to_entries[] |
-    select(.value.implements // [] | contains([$id])) |
-    "  - \(.key): \(.value.title)"
-  ' "$manifest"
-
-  # Find work-orders for those PRPs
-  echo "Work-Orders:"
-  # ... similar query
-
-  # Find GitHub issues
-  echo "GitHub Issues:"
-  jq -r --arg id "$prd_id" '
-    .id_registry.documents[$id].github_issues // [] | .[] | "  - #\(.)"
-  ' "$manifest"
-}
-```
+`get_related` (all documents linked to an ID) and `get_implementation_chain` (PRD → PRPs → work-orders → GitHub issues): [references/traceability-queries.md](references/traceability-queries.md).
 
 ## Orphan Detection
 
-### Documents Without GitHub Issues
-
-```bash
-find_orphan_documents() {
-  local manifest="docs/blueprint/manifest.json"
-
-  echo "Documents without GitHub issues:"
-  jq -r '
-    .id_registry.documents | to_entries[] |
-    select((.value.github_issues // []) | length == 0) |
-    "  - \(.key): \(.value.title)"
-  ' "$manifest"
-}
-```
-
-### GitHub Issues Without Documents
-
-```bash
-find_orphan_issues() {
-  # List recent open issues
-  gh issue list --json number,title --limit 50 | jq -r '.[] | "\(.number) \(.title)"' | \
-  while read num title; do
-    # Check if issue is in registry
-    if ! jq -e --arg n "$num" '.id_registry.github_issues[$n]' docs/blueprint/manifest.json &>/dev/null; then
-      # Check if title contains document ID
-      if ! echo "$title" | grep -qE '\[(PRD|ADR|PRP|WO)-[0-9]+\]'; then
-        echo "  - #$num: $title"
-      fi
-    fi
-  done
-}
-```
+`find_orphan_documents` (documents without GitHub issues) and `find_orphan_issues` (issues with no registry entry and no ID in the title): [references/orphan-and-duplicate-detection.md](references/orphan-and-duplicate-detection.md).
 
 ## Duplicate Detection
 
-### Before Creating GitHub Issue
-
-```bash
-check_for_duplicates() {
-  local feature_name="$1"
-  local manifest="docs/blueprint/manifest.json"
-
-  # Search for similar document titles
-  echo "Checking for existing documents..."
-
-  # Fuzzy match against PRD titles
-  jq -r '.id_registry.documents | to_entries[] |
-    select(.key | startswith("PRD")) |
-    "\(.key): \(.value.title)"
-  ' "$manifest" | grep -i "$feature_name" || true
-
-  # Search existing GitHub issues
-  gh issue list --search "$feature_name" --json number,title --limit 5 | \
-  jq -r '.[] | "#\(.number): \(.title)"'
-}
-```
+Before creating a GitHub issue, run `check_for_duplicates` from [references/orphan-and-duplicate-detection.md](references/orphan-and-duplicate-detection.md) against registry titles and open issues.
 
 ## Integration Points
 

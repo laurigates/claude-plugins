@@ -73,21 +73,7 @@ collapses to three agents total (capability + story + test) and is a linear pass
 is pure overhead. The steps below remain the authoritative description of *what* each stage must
 produce; the harness only fixes *how* the work is split.
 
-Two constraints the template encodes because they are structure, not style:
-
-- **The capability lane is always ONE agent.** You cannot partition work by a partition the work
-  itself discovers — Agent 1's brief is literally "group by area", so the areas do not exist until
-  it has run. Only the per-PRD and per-test-root splits are enumerable up front.
-- **Steps 2 and 4 stay agent stages, never JS.** Step 2 mandates "verify with a quick file-level
-  read where ambiguous" and a workflow script has no filesystem; Step 4's core/non-core cutoff is
-  explicitly heuristic.
-
-The template also carries this skill's own row caps unchanged — `ROW_LIMIT = 200` from Step 1's
-Agent 1 brief and `AREA_ROW_LIMIT = 15` from the artifact template in
-[REFERENCE.md](REFERENCE.md). They are **not** divided across lanes: the capability lane is a
-single agent, so there is nothing to divide, and the PRD and test lanes are exhaustive extractions
-("Don't infer — only extract", "List every test file") where a derived per-lane budget would
-silently drop the stories and tests the audit exists to surface.
+Two structural constraints the template encodes, and why its row caps are not divided across lanes: [references/workflow-harness.md](references/workflow-harness.md).
 
 ## Execution
 
@@ -97,30 +83,7 @@ Execute this audit workflow. Each step is required unless its inputs are missing
 
 Spawn three Explore subagents via the Task tool **in parallel** (single message, three tool calls). Each agent returns a structured findings list with `file:line` evidence; do **not** ask any agent to write the audit itself.
 
-Agent 1 — **Capability map**:
-
-> Survey this codebase and list every user-facing capability. Group by area
-> (auth, billing, search, …). For each capability emit one row:
-> `<area> | <capability> | <entry-point file:line> | <kind>` where kind is
-> `route`, `cli`, `event-handler`, `component`, `cron`, or `worker`.
-> Flag dependencies that look declared-but-unused (imported library that
-> never has its main API called). Cap output at 200 rows; if a project is
-> larger, summarize tail areas as "+ N more in <area>". Read-only.
-
-Agent 2 — **Story extraction**:
-
-> Read every PRD under {PRD paths from --prd or auto-detected}. Emit one
-> row per stated user story or functional requirement:
-> `<PRD-id> | <story-id-or-section> | <verbatim user-visible behaviour>
-> | <linked deps if any>`. Also list any "Known Drift" or status-marked
-> entries verbatim. Don't infer — only extract. Read-only.
-
-Agent 3 — **Test inventory**:
-
-> List every test file under {test directories from Context}. For each
-> file emit: `<file> | <describe-or-suite> | <test-count> | <skipped-or-todo-count>`.
-> When a file has a top-level comment or describe block citing a story
-> ID (PRD-NNN, FR-N.N, story-name), include it. Read-only.
+Give each agent its brief verbatim from [references/agent-briefs.md](references/agent-briefs.md): Agent 1 — **Capability map**, Agent 2 — **Story extraction**, Agent 3 — **Test inventory**.
 
 Wait for all three to complete. If `--scope <area>` is set, filter Agent 1's rows to that area before moving on.
 
@@ -159,13 +122,7 @@ Stories with **zero matched tests** become Tier-1 gap candidates.
 
 Apply this default ranking. Override per-row only if the user passed explicit guidance.
 
-| Tier | Combination | Examples |
-|------|-------------|----------|
-| 1 — **critical untested** | core capability × zero tests | state machines, auth, payment paths |
-| 2 — **partial coverage** | core capability × `~` confidence tests only | UI flows tested only at the unit level |
-| 3 — **declared drift** | `❌ missing` PRD story | OCR named in PRD, never implemented |
-| 4 — **implicit candidates** | `🆕 candidate` from Step 2 | code-only features awaiting story promotion |
-| 5 — **healthy** | `✅` with `✓` tests | reference for "what good looks like" |
+The five tiers (1 critical untested → 5 healthy) with their combinations and examples: [references/tier-ranking.md](references/tier-ranking.md).
 
 The tier cutoff between core and non-core is heuristic: Agent 1's `kind` field is the strongest signal (`route` and `event-handler` lean core; `component` leans non-core). Document the cutoff used at the top of the artifact so the user can override.
 
@@ -177,13 +134,7 @@ If Agent 3 reported `test.todo` / `xit` / `skip` blocks with comments that read 
 
 Use the template at [REFERENCE.md#audit-template](REFERENCE.md#audit-template) and fill all six sections:
 
-1. **Summary** — counts and the headline number (e.g. "8 PRD requirements drift; 3 critical capability areas have zero tests")
-2. **Capability map** — Agent 1's output, grouped by area
-3. **Story inventory** — explicit (PRD) + candidate (code-only) lists
-4. **Drift report** — table with the four-status enum from Step 2
-5. **Coverage matrix** — story × tests with confidence column
-6. **Tiered gap analysis** — Tier 1 → 5 with one-line "why this matters" per tier
-7. **Bugs surfaced by audit** (only if Step 5 found any)
+What goes in each section: [references/artifact-sections.md](references/artifact-sections.md).
 
 Set the artifact path to `docs/blueprint/audits/<YYYY-MM-DD>-story-audit.md` using the `Today` value from Context. If a file with that name exists, append `-N` (e.g. `-2`).
 
@@ -198,27 +149,11 @@ mkdir -p docs/blueprint/audits
 
 Update the task registry in `docs/blueprint/manifest.json`. When the workflow harness ran, `AUDIT_RESULT`, `STORY_COUNT`, and `TIER1_GAP_COUNT` come from the composition agent's structured return (`auditResult`, `storyCount`, `tier1GapCount`) — do not recount them by hand:
 
-```bash
-jq --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-   --arg result "${AUDIT_RESULT:-success}" \
-   --argjson stories "${STORY_COUNT:-0}" \
-   --argjson gaps "${TIER1_GAP_COUNT:-0}" \
-   '.task_registry["story-audit"].last_completed_at = $now |
-    .task_registry["story-audit"].last_result = $result |
-    .task_registry["story-audit"].stats.runs_total = ((.task_registry["story-audit"].stats.runs_total // 0) + 1) |
-    .task_registry["story-audit"].stats.items_processed = $stories |
-    .task_registry["story-audit"].stats.tier1_gaps = $gaps' \
-   docs/blueprint/manifest.json > docs/blueprint/manifest.json.tmp \
-   && mv docs/blueprint/manifest.json.tmp docs/blueprint/manifest.json
-```
-
-Where `AUDIT_RESULT` is `"success"`, `"{N} drift entries"`, or `"failed: {reason}"`.
+Run the `jq` update in [references/manifest-update.md](references/manifest-update.md).
 
 ### Step 8: Offer next actions
 
 Skip this step if `--report-only` is set.
-
-This step **stays in the skill** — a workflow cannot `AskUserQuestion`, so it has no orchestrated form. `--report-only` is the path an orchestrator (or the harness) takes.
 
 Use AskUserQuestion to offer the three downstream paths the audit unlocks:
 
@@ -234,15 +169,7 @@ For the implicit-story detection heuristics by stack (TypeScript/Python/Go), the
 
 ## Agentic Optimizations
 
-| Context | Command |
-|---------|---------|
-| Count PRD files | `find docs/prds -maxdepth 1 -name '*.md'` |
-| Count test files (TS/JS) | `find . -type f \( -name '*.test.ts' -o -name '*.test.tsx' -o -name '*.spec.ts' \) -not -path '*/node_modules/*'` |
-| Count test files (Python) | `find . -type f -name 'test_*.py' -not -path '*/.venv/*'` |
-| Find skipped tests | `grep -rn -E "test\.(skip\|todo)\|xit\(\|@pytest.mark.skip" --include='*.test.*' --include='test_*.py'` |
-| Detect declared deps | `jq -r '.dependencies // {} \| keys[]' package.json` (or `grep '^[a-z].*=' pyproject.toml`) |
-| Check dep is imported | `grep -rln "from <pkg>\|import <pkg>\|require('<pkg>')" --include='*.ts' --include='*.py'` |
-| Audit filename | `echo "docs/blueprint/audits/$(date -u +%Y-%m-%d)-story-audit.md"` |
+Count/skip/dependency/filename commands: [references/agentic-optimizations.md](references/agentic-optimizations.md).
 
 ---
 
