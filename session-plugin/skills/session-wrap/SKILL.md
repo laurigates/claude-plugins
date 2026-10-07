@@ -24,17 +24,9 @@ user can't remember what was left hanging.
 
 ## Configuration
 
-Read per-user/per-project config before doing anything:
-
-1. `.claude/session-plugin.local.md` in the project (wins)
-2. `~/.claude/session-plugin.local.md` (user-global fallback)
-3. Neither exists → taskwarrior + GitHub-issue destinations only; no journal
-
-YAML frontmatter carries the journal settings (`journal`, `journal_path`,
-`journal_template`, heading targets, `journal_scopes`); the markdown body
-carries freeform scope-detection heuristics and the user's taskwarrior
-project-naming map — read it and apply it as context. Full schema and a
-worked example: [REFERENCE.md](REFERENCE.md).
+Read per-user/per-project config before doing anything — lookup order (project
+wins over user-global; neither means no journal) and what it carries:
+[references/configuration.md](references/configuration.md).
 
 ## Destinations
 
@@ -119,10 +111,8 @@ empty and the check silently passes against nothing. That section's
 **unqueried**, not "nothing open" — never treat an empty section under
 `GH_READY=false` as license to add a task that duplicates an untracked
 PR/issue. The `GH_FAIL_REASON=` beside it says whether that is worth
-fixing before you file: re-run once for `timeout` / `api-error` /
-`unknown`; for `auth` / `no-cli` the dedup set is simply unavailable this
-session, so keep the bar for adding a task high; for `no-remote` there is
-no PR/issue to duplicate and the caveat does not apply. Then read the
+fixing before you file — per-reason handling is in
+[references/gh-fail-reason.md](references/gh-fail-reason.md). Then read the
 conversation itself —
 what was kicked off but not finished, discussed but not done.
 
@@ -183,12 +173,9 @@ two equal-weight options (no default lean):
      local-fix backport. When commenting on an **existing** issue, read
      the full thread first (`git-plugin:git-issue-scoping`).
 
-  **Graceful degradation**: if `workflow-orchestration-plugin` is not
-  installed (mirrors the `feedback-plugin` / `blueprint-plugin`
-  cross-plugin fallback in `session-end`), fall back to
-  `git-plugin:github-issue-writing` + an explicit manual upstream-HEAD
-  verification, or route to *Track for later* instead — **never file
-  unverified**.
+  If `workflow-orchestration-plugin` is not installed, use the fallback in
+  [references/upstream-fallback.md](references/upstream-fallback.md) —
+  never file unverified.
 
 ### Step 5: Report
 
@@ -197,17 +184,9 @@ as noise so the user can sanity-check the filter.
 
 ## Auto-surfacing
 
-A Stop hook (`hooks/session-end-nudge.sh`) offers
-`session-plugin:session-end` (which can route here) once per session on
-genuine user wind-down phrasing. It stays silent while this skill is
-running. Pre-silence for a session:
-`touch ~/.cache/claude-session-end-nudge/<session_id>`.
+The Stop-hook nudge and how to pre-silence it:
+[references/auto-surfacing.md](references/auto-surfacing.md).
 
 ## Agentic Optimizations
 
-| Context | Command |
-|---|---|
-| Survey (detection + git + PRs + tasks-with-UUIDs + commits + GitHub-drift dedup) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits --with-dedup` |
-| Batch close by UUID | `task rc.confirmation:no <uuid> done` |
-| Add a task | `task rc.confirmation:no add project:<name> +<tag> '<desc>'` |
-| Known projects | `task _projects` |
+Survey, batch-close, and task-add commands: [references/commands.md](references/commands.md).

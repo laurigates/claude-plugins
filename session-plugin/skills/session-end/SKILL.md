@@ -14,13 +14,9 @@ end-of-session passes that actually qualify. This is the orchestrator
 over three capture skills that used to compete for the wind-down moment
 (design decisions D3/D4, `docs/archive/session-plugin-workflow.md`):
 
-| Pass | Skill | Captures |
-|---|---|---|
-| Wrap | `session-plugin:session-wrap` | Loose threads → taskwarrior, optional journal, GitHub issues, upstream issue/PR candidates |
-| Distill | `session-plugin:session-distill` | Durable learnings → rules, skill updates, justfile recipes, process/methodology (script+recipe or project-local `.claude/skills/`) |
-| Feedback | `feedback-plugin:feedback-session` | Notable plugin/skill interactions → GitHub issues on claude-plugins |
-| Taskwarrior sync | (inline, no sub-skill) | Close done tasks, update statuses, add follow-ups no open PR/issue already tracks; uses stable UUIDs |
-| Blueprint tracker-sync | `blueprint-plugin:blueprint-feature-tracker-sync` | Drain closed WO-linked tasks from tracker `tasks.pending` → `tasks.completed` (`--drain-wave`) |
+The five passes — Wrap, Distill, Feedback, Taskwarrior sync, Blueprint
+tracker-sync — and what each captures are listed in
+[references/passes.md](references/passes.md).
 
 ## When to Use This Skill
 
@@ -41,21 +37,11 @@ single confirmation gate below is mandatory.
 One shared decision pass — do not let each sub-skill re-survey. Run the
 shared collector (the same one the wrap/spinup skills and the nudge hook
 use); it emits detection, git state, PRs, taskwarrior tasks **with stable
-UUIDs**, and recent commits in one parallel-safe pass. Note two scoping
-keys in its `TASKWARRIOR` section: `TASK_SCOPE` (`project` /
-`remote-name` / `ancestor-name` / `all-projects-fallback` / `unknown` /
-`none`) names where `OPEN_TASKS` was actually counted, and
-`PROJECT_CONFIDENCE` (`high` / `low`) says whether that slug can be
-trusted — the detected project is a directory-basename guess and can be
-wrong (chezmoi source dirs, worktrees, portfolio checkouts, renamed
-clones). A third pair, `PROJECT_AMBIGUOUS` / `PROJECT_AMBIGUOUS_TASKS`,
-appears only when the detected slug owns zero tasks while a named
-ancestor slug owns some. A fourth, `PROJECT_PREFIX_SIBLINGS` /
-`PROJECT_PREFIX_SIBLING_TASKS`, appears only when other slugs share the
-detected slug's **prefix** — the split taskwarrior's own CLI filter
-(`task project:<slug>`) hides, which is how a wrong slug gets "verified"
-and follow-ups land in a near-empty sibling. `PROJECT_EXACT_TASKS` is
-always present: the slug alone, without its `.` subprojects.
+UUIDs**, and recent commits in one parallel-safe pass. Its `TASKWARRIOR`
+section carries scoping keys (`TASK_SCOPE`, `PROJECT_CONFIDENCE`,
+`PROJECT_AMBIGUOUS`, `PROJECT_PREFIX_SIBLINGS`, `PROJECT_EXACT_TASKS`) that say
+whether a task count can be trusted — their meanings are in
+[references/survey-digest.md](references/survey-digest.md).
 
 ```sh
 bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits --with-blueprint --with-dedup
@@ -168,9 +154,9 @@ sync), passing along the Step 1 survey so they don't re-do it:
    tasks after the Step 1 survey. Re-derive the wave inline right before
    delegating (never reuse the survey's `UNDRAINED_WOS` as the drain list):
 
-   ```sh
-   task bpid.any: status:completed export 2>/dev/null | jq -r --slurpfile t docs/blueprint/feature-tracker.json '([.[] | .bpid // empty] | unique) as $closed | (($t[0].tasks.pending // []) | map(.id)) as $pending | [$closed[] | select(. as $w | $pending | index($w))] | join(",")'
-   ```
+   The re-derive command (closed `bpid`s intersected with tracker
+   `tasks.pending`) is in
+   [references/blueprint-drain.md](references/blueprint-drain.md).
 
    Then invoke `/blueprint:blueprint-feature-tracker-sync --drain-wave <list>`
    with **no** evidence flags — the sync skill sources evidence from
@@ -198,24 +184,14 @@ both apply, both run — they write to different places.
 
 ## Auto-surfacing
 
-A Stop hook (`hooks/session-end-nudge.sh`) offers this skill at most
-once per session when the user's own messages carry a wind-down phrase.
-It is offer-only and stays silent when this skill (or wrap/distill) is
-already in the transcript. Pre-silence:
-`touch ~/.cache/claude-session-end-nudge/<session_id>`.
+How the Stop-hook nudge offers this skill (and how to pre-silence it) is in
+[references/auto-surfacing.md](references/auto-surfacing.md).
 
 ## Agentic Optimizations
 
-| Context | Command |
-|---|---|
-| One-pass survey (detection + git + PRs + tasks-with-UUIDs + commits + blueprint tracker state + GitHub-drift dedup) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits --with-blueprint --with-dedup` |
-| Trust the task count? | `TASK_SCOPE=` + `PROJECT_CONFIDENCE=` in the `TASKWARRIOR` section (`low` ⇒ re-run with `--project <slug>` before treating 0 as clean) |
-| Which repo do the branch, dirt and PR rows describe? | `GIT_SCOPE=` + `GIT_CONFIDENCE=` in the `GIT` section (`PRS_SCOPE=` / `PRS_CONFIDENCE=` mirror them). `repo` ⇒ the checkout at `PROJECT_DIR`. `workspace-root` ⇒ an undeclared outer repo contains that checkout and the rows describe **it** — name `GIT_ROOT=` when reporting them, and say the cwd sits inside `GIT_NESTED_REPO=`. Never re-run from the workspace root: the collector already did |
-| Distill qualify signal (recipe/hot-file/process counts) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/distill-survey.sh" --session-id "${CLAUDE_SESSION_ID}" --summary` |
-| Re-derive the drain wave before delegating | `task bpid.any: status:completed export \| jq …` intersected with tracker `tasks.pending` (Step 4.3) |
-| Stable UUID for latest task | `task +LATEST uuids` |
-| Mark task done by UUID | `task <uuid> done` |
-| Distillable surface check | `find . -maxdepth 2 -path '*/.claude/rules' -o -maxdepth 1 -name 'justfile' -o -maxdepth 1 -name 'Justfile'` |
+Command forms for the survey, the scope/confidence keys (`TASK_SCOPE`,
+`GIT_CONFIDENCE`), the distill signal, the drain wave, and UUID-safe task edits
+are in [references/commands.md](references/commands.md).
 
 For the `GH_FAIL_REASON` remediation table and the Blueprint auto-drain gate
 details, see [REFERENCE.md](REFERENCE.md).
