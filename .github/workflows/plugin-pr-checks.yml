@@ -181,6 +181,7 @@ jobs:
             --only 'scripts/tests/test-check-research-radar-grounding.sh' \
             --only 'scripts/tests/test-check-routine-prompt.sh' \
             --only 'scripts/tests/test-check-ruff-version-sync.sh' \
+            --only 'scripts/tests/test-check-skill-xrefs.sh' \
             --only 'scripts/tests/test-check-taskcompleted-verification.sh' \
             --only 'scripts/tests/test-check-unused-bash-grant.sh' \
             --only 'scripts/tests/test-check-version-pin-coverage.sh' \
@@ -230,6 +231,18 @@ jobs:
         # Flipped to --strict at UNQUALIFIED=0 so the ratchet locks a clean
         # state rather than a suppressed one.
         run: bash scripts/check-subagent-types.sh --strict
+
+      - name: Check § section citations and relative markdown links resolve
+        # Whole-repo invariant: every `<target> § <Heading>` citation names a
+        # heading that exists, and every relative link (with its #anchor) in a
+        # skill, agent or rule resolves. A dead citation or link reads exactly
+        # like a live one — the 2026-10 SKILL.md split sweep left three skills
+        # citing parallel-agent-dispatch sections that were never headings, and
+        # a `../../.claude/rules/` link one level too shallow. Landed at
+        # CITATIONS_SCANNED=217 / LINKS_SCANNED=1108 / ISSUE_COUNT=0. Needs uv
+        # (fence detection runs scripts/lib/extract-md-elements.py). The
+        # self-test step above proves the guard before it gates the tree.
+        run: python3 scripts/check-skill-xrefs.py
 
       - name: Check the local issue-template directory still offers a template and both links
         # ALWAYS-ON, and that is the whole point. A repo-local
