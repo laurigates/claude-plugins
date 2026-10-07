@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.60.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.60.2...git-plugin-v2.60.3) (2026-10-07)
+
+
+### Bug Fixes
+
+* **skills:** point at anchors, not directions — ratchet + reference-file guard ([#2941](https://github.com/laurigates/claude-plugins/issues/2941)) ([47b65fa](https://github.com/laurigates/claude-plugins/commit/47b65faf0fd141ca5dff9cf435717196e385b115))
+
 ## [2.60.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.60.1...git-plugin-v2.60.2) (2026-10-07)
 
 

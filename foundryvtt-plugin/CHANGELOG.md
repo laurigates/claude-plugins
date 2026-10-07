@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.4](https://github.com/laurigates/claude-plugins/compare/foundryvtt-plugin-v1.3.3...foundryvtt-plugin-v1.3.4) (2026-10-07)
+
+
+### Bug Fixes
+
+* **skills:** point at anchors, not directions — ratchet + reference-file guard ([#2941](https://github.com/laurigates/claude-plugins/issues/2941)) ([47b65fa](https://github.com/laurigates/claude-plugins/commit/47b65faf0fd141ca5dff9cf435717196e385b115))
+
 ## [1.3.3](https://github.com/laurigates/claude-plugins/compare/foundryvtt-plugin-v1.3.2...foundryvtt-plugin-v1.3.3) (2026-10-07)
 
 
