@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.38.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.37.5...configure-plugin-v1.38.0) (2026-10-08)
+
+
+### Features
+
+* **health-plugin:** audit history.jsonl and cleanupPeriodDays retention ([#2958](https://github.com/laurigates/claude-plugins/issues/2958)) ([fd73bdd](https://github.com/laurigates/claude-plugins/commit/fd73bddf9b8b7b6fa7714eddff8914bef227642f))
+
 ## [1.37.5](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.37.4...configure-plugin-v1.37.5) (2026-10-07)
 
 
