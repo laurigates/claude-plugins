@@ -243,7 +243,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.37.5",
+      "version": "1.38.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -442,7 +442,7 @@
       "name": "health-plugin",
       "source": "./health-plugin",
       "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
-      "version": "1.22.4",
+      "version": "1.23.0",
       "author": {
         "name": "Lauri Gates"
       },
