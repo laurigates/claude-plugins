@@ -1,9 +1,9 @@
 ---
 name: git-merge-hazards
-description: Traps in GitHub's merge machinery. Use when merging a PR, merging a stacked PR chain, auditing whether a branch really landed, or merging over red CI.
+description: Traps in GitHub's merge machinery. Use when merging a PR, merging a stacked or serial PR chain, auditing whether a branch really landed, or merging over red CI.
 allowed-tools: Read, Grep, Glob, Bash(gh pr *), Bash(gh issue *), Bash(gh api *), Bash(git cherry *), Bash(git merge-tree *), Bash(git rev-parse *), Bash(git log *), Bash(git reflog *), Bash(git rebase *), Bash(git push *), Bash(git fetch *), Bash(just *), Bash(bash *), TodoWrite
 created: 2026-08-19
-modified: 2026-09-26
+modified: 2026-10-07
 reviewed: 2026-08-21
 ---
 
@@ -27,6 +27,7 @@ Notes that are *not* part of that body:
   index, not rule text. Leave it out when syncing with `pr-merge-hazards.md`.
 - §3 and §5's two follow-on subsections were moved verbatim into `references/`
   for size; they are still rule text when syncing with `pr-merge-hazards.md`.
+- §6 is skill-only: it is not part of `pr-merge-hazards.md`.
 
 - Two gates below — §1's merged-ness authority order and the whole of §4 — are
   also reproduced verbatim in the `pr-merge-hazards.md` stub, because they are
@@ -43,7 +44,7 @@ Notes that are *not* part of that body:
   Read the authority ladder in §1 as the instruction; the recipe is a
   convenience, and its REVIEW bucket measured ~90% false positives (#2268).
 
-Four traps in GitHub's merge machinery, one law: "PR merged" says nothing about
+Six traps in GitHub's merge machinery, one law: "PR merged" says nothing about
 *content* — and a red check is not proof of failure. Each: the trap, the
 5-second check, the fix. Sibling: `git-plugin:git-local-hazards` (local git).
 
@@ -136,6 +137,15 @@ Does **not** close #162   →   GitHub reads `close #162`, and closes it
 
 The trap is wider than negation: plain past tense, a markdown-linked cross-repo reference, and a keyword you are only *quoting* all match too. Before merging a PR whose body mentions issue numbers, read [references/closing-keyword-cases.md](references/closing-keyword-cases.md) for those cases, the audit-with-a-control procedure, and the incidents.
 
+## 6. A serial merge chain merges commits nobody verified
+
+`gh pr update-branch` re-runs every `pull_request` workflow, so a bot that
+writes to PR branches can push after your review; its commits pass CI and merge
+unread. Before each merge, refuse any non-merge commit newer than your review
+timestamp, and merge with `--match-head-commit <sha>`. A PR that changes such a
+bot goes last in the chain. Guard snippet, the `gh --jq --arg` trap and
+recovery: [references/serial-merge-chain.md](references/serial-merge-chain.md).
+
 ## Agentic Optimizations
 
 | Context | Command |
@@ -145,3 +155,4 @@ The trap is wider than negation: plain past tense, a markdown-linked cross-repo 
 | Merge-over-red evidence (§4) | `gh pr view <n> --json files --jq '.files[].path'` and `gh run list --branch main --workflow <wf> -L 1 --json conclusion,createdAt` |
 | Before a force-push (§3) | `git log --oneline origin/main..<sha>` — exactly the child's commits |
 | Who closed an issue (§5) | `gh issue view <n> --json closedByPullRequestsReferences,closedAt` |
+| Commits a PR gained after review (§6) | `gh pr view <n> --json commits`, filtered with `jq --arg` on `committedDate` |
