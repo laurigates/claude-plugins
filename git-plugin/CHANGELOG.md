@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.60.5](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.60.4...git-plugin-v2.60.5) (2026-10-08)
+
+
+### Documentation
+
+* **git-plugin:** add serial merge chain hazard to git-merge-hazards ([#2957](https://github.com/laurigates/claude-plugins/issues/2957)) ([57d9eeb](https://github.com/laurigates/claude-plugins/commit/57d9eeb01fb19e99031bc7e50b630045f7e6b00e))
+
 ## [2.60.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.60.3...git-plugin-v2.60.4) (2026-10-07)
 
 
