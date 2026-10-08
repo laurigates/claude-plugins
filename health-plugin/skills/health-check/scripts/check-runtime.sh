@@ -5,23 +5,31 @@
 #   - githubRepoPaths[*] entries referencing deleted worktrees
 #   - disabledMcpServers[] referencing servers no longer in mcpServers
 #   - duplicate / non-canonical MCP naming (bare vs plugin:scope:name)
+#   - legacy per-project `history` arrays (prompt history now lives in
+#     ~/.claude/history.jsonl; leftovers only inflate ~/.claude.json)
+# Also measures ~/.claude/history.jsonl, which the cleanupPeriodDays sweep
+# does NOT prune (outside the HIPAA configuration), and resolves the
+# effective cleanupPeriodDays — an invalid value pauses the retention sweep.
 #
 # Read-only audit. Does not write to ~/.claude.json. Prints suggested
 # follow-up jq invocations the operator can run after closing other
 # Claude Code sessions (the harness rewrites this file during sessions).
 #
-# Usage: bash check-runtime.sh --home-dir <path> --project-dir <path> [--verbose]
+# Usage: bash check-runtime.sh --home-dir <path> --project-dir <path>
+#          [--history-warn-mb N] [--verbose]
 
 set -uo pipefail
 
 home_dir=""
 project_dir=""
 verbose_mode=false
+history_warn_mb=50
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --home-dir) home_dir="$2"; shift 2 ;;
     --project-dir) project_dir="$2"; shift 2 ;;
+    --history-warn-mb) history_warn_mb="$2"; shift 2 ;;
     --verbose) verbose_mode=true; shift ;;
     *) shift ;;
   esac
@@ -29,6 +37,10 @@ done
 
 : "${home_dir:=$HOME}"
 : "${project_dir:=$(pwd)}"
+[[ "$history_warn_mb" =~ ^[0-9]+$ ]] || history_warn_mb=50
+
+# shellcheck disable=SC1091  # sibling lib; resolved relative to this script at runtime
+source "$(dirname "${BASH_SOURCE[0]}")/lib/retention.sh"
 
 echo "=== RUNTIME STATE ==="
 
@@ -243,12 +255,87 @@ if [ "$duplicate_mcp" -gt 0 ]; then
   fi
 fi
 
+# 5. Legacy per-project prompt history ---------------------------------------
+# Older releases stored prompt history as projects[<path>].history arrays.
+# Current releases append to ~/.claude/history.jsonl instead, so these arrays
+# are dead weight. INFO only: dropping them is optional and loses nothing the
+# harness still reads.
+legacy_history_entries=$(jq -r '[.projects // {} | .[] | (.history // []) | length] | add // 0' "$runtime_file" 2>/dev/null || echo "0")
+legacy_history_projects=$(jq -r '[.projects // {} | .[] | select((.history // []) | length > 0)] | length' "$runtime_file" 2>/dev/null || echo "0")
+legacy_history_bytes=$(jq -c '[.projects // {} | .[] | (.history // [])]' "$runtime_file" 2>/dev/null | wc -c | tr -d ' ')
+[ "$legacy_history_entries" -eq 0 ] && legacy_history_bytes=0
+
+echo "LEGACY_PROJECT_HISTORY_ENTRIES=${legacy_history_entries}"
+echo "LEGACY_PROJECT_HISTORY_PROJECTS=${legacy_history_projects}"
+echo "LEGACY_PROJECT_HISTORY_BYTES=${legacy_history_bytes}"
+
+info_list=""
+if [ "$legacy_history_entries" -gt 0 ]; then
+  info_list="${info_list}  - SEVERITY=INFO TYPE=legacy_project_history COUNT=${legacy_history_entries} BYTES=${legacy_history_bytes} MSG=projects[].history arrays predate ~/.claude/history.jsonl; safe to drop\n"
+fi
+
+# 6. Prompt history file (~/.claude/history.jsonl) ---------------------------
+# Not covered by the cleanupPeriodDays sweep (except under the HIPAA
+# configuration), so it grows until deleted or filtered by `claude purge`.
+history_file="${home_dir}/.claude/history.jsonl"
+history_dead_entries=0
+history_dead_projects=""
+if [ -f "$history_file" ]; then
+  history_bytes=$(wc -c <"$history_file" | tr -d ' ')
+  history_entries=$(grep -c "" "$history_file" 2>/dev/null || true)
+  history_malformed=$(jq -R -r 'fromjson? // "MALFORMED" | if type == "string" then . else empty end' "$history_file" 2>/dev/null | grep -c '^MALFORMED$' || true)
+  echo "HISTORY_JSONL_EXISTS=true"
+  echo "HISTORY_JSONL_BYTES=${history_bytes}"
+  echo "HISTORY_JSONL_ENTRIES=${history_entries}"
+  echo "HISTORY_JSONL_MALFORMED=${history_malformed:-0}"
+
+  # Entries per project path; a path whose directory is gone is purgeable.
+  while IFS=$'\t' read -r hist_count hist_project; do
+    [ -z "$hist_project" ] && continue
+    if [ ! -d "$hist_project" ]; then
+      history_dead_entries=$((history_dead_entries + hist_count))
+      history_dead_projects="${history_dead_projects}${hist_project}\n"
+      if [ "$verbose_mode" = true ]; then
+        info_list="${info_list}  - SEVERITY=INFO TYPE=history_dead_project PATH=${hist_project} COUNT=${hist_count}\n"
+      fi
+    fi
+  done < <(jq -R -r 'fromjson? | objects | .project // empty | strings' "$history_file" 2>/dev/null \
+             | sort | uniq -c | awk '{c=$1; sub(/^ *[0-9]+ /, ""); print c "\t" $0}')
+  echo "HISTORY_JSONL_DEAD_PROJECT_ENTRIES=${history_dead_entries}"
+
+  if [ "$history_dead_entries" -gt 0 ] && [ "$verbose_mode" = false ]; then
+    info_list="${info_list}  - SEVERITY=INFO TYPE=history_dead_projects COUNT=${history_dead_entries} MSG=history.jsonl prompts recorded for deleted project directories (use --verbose to list)\n"
+  fi
+  if [ "${history_malformed:-0}" -gt 0 ]; then
+    info_list="${info_list}  - SEVERITY=INFO TYPE=history_malformed COUNT=${history_malformed} MSG=history.jsonl lines that are not valid JSON (skipped by the harness)\n"
+  fi
+  if [ "$history_bytes" -gt $((history_warn_mb * 1024 * 1024)) ]; then
+    issue_count=$((issue_count + 1))
+    [ "$check_status" = "OK" ] && check_status="WARN"
+    issues_list="${issues_list}  - SEVERITY=WARN TYPE=history_large BYTES=${history_bytes} THRESHOLD_MB=${history_warn_mb} MSG=history.jsonl exceeds threshold; cleanupPeriodDays does not prune it\n"
+  fi
+else
+  echo "HISTORY_JSONL_EXISTS=false"
+fi
+echo "HISTORY_JSONL_SWEPT=false"
+
+# 7. Retention setting (cleanupPeriodDays) -----------------------------------
+resolve_cleanup_period "$home_dir" "$project_dir"
+echo "CLEANUP_PERIOD_DAYS=${CLEANUP_PERIOD_DAYS}"
+echo "CLEANUP_PERIOD_SOURCE=${CLEANUP_PERIOD_SOURCE}"
+echo "CLEANUP_PERIOD_VALID=${CLEANUP_PERIOD_VALID}"
+if [ "$CLEANUP_PERIOD_VALID" = false ]; then
+  issue_count=$((issue_count + 1))
+  check_status="ERROR"
+  issues_list="${issues_list}  - SEVERITY=ERROR TYPE=invalid_cleanup_period SOURCE=${CLEANUP_PERIOD_SOURCE} VALUE=${CLEANUP_PERIOD_RAW} MSG=cleanupPeriodDays must be a whole number >= 1; an invalid explicit value pauses the retention sweep (use 3650 for long retention)\n"
+fi
+
 # Suggested cleanup (read-only audit; the operator runs these manually) -----
-if [ "$issue_count" -gt 0 ]; then
+if [ "$issue_count" -gt 0 ] || [ "$legacy_history_entries" -gt 0 ] || [ "$history_dead_entries" -gt 0 ]; then
   echo "CLEANUP_SUGGESTED=true"
   echo "CLEANUP_NOTE=Close other Claude Code sessions before editing ~/.claude.json (the harness rewrites this file on session end). Suggested jq filters:"
   if [ "$projects_dead" -gt 0 ]; then
-    echo "  CLEANUP_PROJECTS=jq 'reduce (.projects | keys[]) as \$k (.; if (\$k | test(\"^/\") and (\$k | @sh | \"test -d \" + . | @sh)) then . else del(.projects[\$k]) end)' ~/.claude.json  # preview first"
+    echo "  CLEANUP_PROJECTS=claude purge <dead-path> --dry-run  # per dead project (use --verbose to list); also removes its transcripts and history.jsonl lines. Before v2.1.288: claude project purge"
   fi
   if [ "$gh_paths_dead" -gt 0 ]; then
     echo "  CLEANUP_GH_PATHS=Run a shell loop that filters .githubRepoPaths through 'test -d' before writing back to a temp file"
@@ -256,15 +343,23 @@ if [ "$issue_count" -gt 0 ]; then
   if [ "$orphaned_disabled" -gt 0 ]; then
     echo "  CLEANUP_DISABLED_MCP=jq '.projects |= map_values(.disabledMcpServers |= map(select(. as \$n | (input_filename | .mcpServers | has(\$n)))))' ~/.claude.json  # adapt to your shell"
   fi
+  if [ "$legacy_history_entries" -gt 0 ]; then
+    echo "  CLEANUP_LEGACY_HISTORY=jq '.projects |= map_values(del(.history))' ~/.claude.json  # or: python3 prune-claude-config.py --drop-legacy-history"
+  fi
+  if [ "$history_dead_entries" -gt 0 ]; then
+    echo "  CLEANUP_HISTORY_JSONL=claude purge <dead-path> --dry-run  # filters that project's lines out of history.jsonl"
+  fi
 else
   echo "CLEANUP_SUGGESTED=false"
 fi
 
 echo "STATUS=${check_status}"
 echo "ISSUE_COUNT=${issue_count}"
-if [ -n "$issues_list" ]; then
+if [ -n "$issues_list" ] || [ -n "$info_list" ]; then
   echo "ISSUES:"
-  echo -e "$issues_list" | sed '/^$/d'
+  echo -e "${issues_list}${info_list}" | sed '/^$/d'
 fi
 echo "FIX_SUPPORTED=false"
 echo "=== END RUNTIME STATE ==="
+[ "$check_status" = "ERROR" ] && exit 1
+exit 0

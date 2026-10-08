@@ -65,7 +65,7 @@ A repo-wide search for `pluginUsage` / `usageCount` across `*.md`, `*.sh`,
 
 | Scope | Reads |
 |---|---|
-| `--scope=runtime` | `~/.claude.json`, but only for **bloat** — dead `projects[]`, dead `githubRepoPaths[*]`, orphaned `disabledMcpServers[]`, duplicate MCP names |
+| `--scope=runtime` | `~/.claude.json`, but only for **bloat** — dead `projects[]`, dead `githubRepoPaths[*]`, orphaned `disabledMcpServers[]`, duplicate MCP names, legacy `projects[*].history` — plus `~/.claude/history.jsonl` size and `cleanupPeriodDays` validity |
 | `--scope=usage` | `~/.claude/projects/*/*.jsonl` **session transcripts**, mining skill/agent invocation recency (never-fired, dormant) |
 
 So no normalization work is owed anywhere. This rule exists so the counter is

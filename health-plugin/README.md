@@ -24,7 +24,7 @@ Diagnose and fix Claude Code configuration issues including plugin registry, set
 | `registry` | Orphaned `projectPath` entries, stale `enabledPlugins` keys (addresses [#14202](https://github.com/anthropics/claude-code/issues/14202)) | `health-plugins` |
 | `stack` | Enabled plugins vs project tech stack | `health-audit` |
 | `agentic` | Skill/command/agent agentic-optimisation compliance | `health-agentic-audit` |
-| `runtime` | `~/.claude.json` bloat (dead projects/githubRepoPaths, orphaned MCP). Read-only | `check-runtime.sh` |
+| `runtime` | `~/.claude.json` bloat (dead projects/githubRepoPaths, orphaned MCP, legacy per-project history), `history.jsonl` growth, `cleanupPeriodDays` validity. Read-only | `check-runtime.sh` |
 | `usage` | Never-fired and dormant skills *and* plugin agents mined from session telemetry. Read-only, local-leaning ([ADR-0018](../docs/adrs/0018-health-usage-scope-from-session-telemetry.md)) | `check-usage.sh` |
 | `all` | All of the above (default) | — |
 
@@ -34,7 +34,7 @@ These internal skills are auto-discoverable but not user-invocable — use `/hea
 
 | Script | Description |
 |--------|-------------|
-| `prune-claude-config.py` | Remove orphaned projects and cached data from `~/.claude.json` |
+| `prune-claude-config.py` | Remove orphaned projects, cached data, and (opt-in) legacy per-project prompt history from `~/.claude.json` |
 | `config-drift.py` | Audit the rules/skills corpus itself for duplication, broken pointer stubs, review staleness, and always-loaded budget |
 | `probe-delta.py` | Report only what is NEW since a probe's last run — reads any probe's `--format=json` on stdin against a recorded baseline |
 | `lib/probe.py` | The finding / waiver / delta contract both of the above share. Stdlib only, imported as `from lib.probe import …` |
@@ -321,13 +321,19 @@ python health-plugin/scripts/prune-claude-config.py --interactive
 
 # Run immediately (creates backup automatically)
 python health-plugin/scripts/prune-claude-config.py
+
+# Also drop legacy projects[*].history arrays
+python health-plugin/scripts/prune-claude-config.py --drop-legacy-history
 ```
 
 The script removes:
 - **Orphaned projects**: Entries for directories that no longer exist
 - **Cached data**: `cachedChangelog`, `cachedStatsigGates`, `cachedDynamicConfigs`
+- **Legacy prompt history** (`--drop-legacy-history`): per-project `history` arrays from releases that kept prompt history in `~/.claude.json`
 
-Your settings, MCP servers, and tips history are preserved.
+Your settings, MCP servers, and tips history are preserved. Close other Claude Code sessions first — they rewrite `~/.claude.json`.
+
+Prompt history now lives in `~/.claude/history.jsonl`. The `cleanupPeriodDays` setting (default 30) prunes transcripts and other session data but **not** `history.jsonl`. For a project directory that no longer exists, `claude purge <path>` (v2.1.288+; earlier `claude project purge`) removes its config entry, transcripts, and `history.jsonl` lines in one step.
 
 ## Quick Reference
 
@@ -351,7 +357,8 @@ Your settings, MCP servers, and tips history are preserved.
 | Irrelevant plugins enabled | No relevance audit done | `/health:check --scope=stack --fix` |
 | Permission denied | Missing allow pattern | Check settings-configuration skill |
 | Settings ignored | Invalid JSON | `/health:check` |
-| Large ~/.claude.json | Orphaned projects/caches | `prune-claude-config.py` |
+| Large ~/.claude.json | Orphaned projects/caches, legacy per-project history | `/health:check --scope=runtime`, then `claude purge <path>` or `prune-claude-config.py` |
+| Large ~/.claude/history.jsonl | Not pruned by `cleanupPeriodDays` | `claude purge <path>` per dead project, or delete the file (loses up-arrow / Ctrl+R recall) |
 
 ## Related
 

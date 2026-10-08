@@ -167,4 +167,22 @@ echo "$out6b" | grep -q "TYPE=agent_dormant .*AGENTS=.*git-ops" || fail "Case6b 
 pass "--verbose lists offending agent names"
 rm -rf "$home6" "$inv6"
 
+# -----------------------------------------------------------------------------
+# Case 7: dormancy window wider than cleanupPeriodDays → INFO note (not WARN)
+# -----------------------------------------------------------------------------
+home7="$(mktemp -d)"; make_home "$home7"
+skills7="$(mktemp -d)"; make_skills "$skills7" health-check
+skill_event "health-check" > "$home7/.claude/projects/proj/a.jsonl"
+skill_event "health-check" > "$home7/.claude/projects/proj/b.jsonl"
+out7a="$(bash "$check_script" --home-dir "$home7" --skills-dir "$skills7" --project-dir /tmp --window-days 90)"
+echo "$out7a" | grep -q "^RETENTION_DAYS=30$" || fail "Case7 expected default RETENTION_DAYS=30:\n$out7a"
+echo "$out7a" | grep -q "SEVERITY=INFO TYPE=window_exceeds_retention" || fail "Case7 expected window_exceeds_retention INFO:\n$out7a"
+echo "$out7a" | grep -q "^STATUS=OK$" || fail "Case7 INFO must not raise STATUS:\n$out7a"
+echo '{"cleanupPeriodDays": 365}' > "$home7/.claude/settings.json"
+out7b="$(bash "$check_script" --home-dir "$home7" --skills-dir "$skills7" --project-dir /tmp --window-days 90)"
+echo "$out7b" | grep -q "^RETENTION_DAYS=365$" || fail "Case7 expected RETENTION_DAYS=365 from user settings:\n$out7b"
+echo "$out7b" | grep -q "window_exceeds_retention" && fail "Case7 window within retention must not note:\n$out7b"
+pass "window wider than cleanupPeriodDays → INFO note"
+rm -rf "$home7" "$skills7"
+
 echo "ALL TESTS PASSED"

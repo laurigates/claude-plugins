@@ -42,6 +42,9 @@ done
 # Default skill inventory: installed plugins under the home Claude dir.
 : "${skills_dir:=${home_dir}/.claude/plugins}"
 
+# shellcheck disable=SC1091  # sibling lib; resolved relative to this script at runtime
+source "$(dirname "${BASH_SOURCE[0]}")/lib/retention.sh"
+
 echo "=== USAGE TELEMETRY ==="
 
 usage_issue_count=0
@@ -60,6 +63,16 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 echo "JQ_AVAILABLE=true"
 echo "WINDOW_DAYS=${window_days}"
+
+# Transcripts older than cleanupPeriodDays are deleted by the retention sweep,
+# so a dormancy window wider than retention cannot see the older invocations:
+# a skill last used before the cutoff reads as never-fired, not dormant.
+resolve_cleanup_period "$home_dir" "$project_dir"
+echo "RETENTION_DAYS=${CLEANUP_PERIOD_DAYS}"
+retention_note=""
+if [ "$window_days" -gt "$CLEANUP_PERIOD_DAYS" ] 2>/dev/null; then
+  retention_note="  - SEVERITY=INFO TYPE=window_exceeds_retention WINDOW_DAYS=${window_days} RETENTION_DAYS=${CLEANUP_PERIOD_DAYS} MSG=transcripts older than cleanupPeriodDays are swept; never-fired counts include skills used before the cutoff\n"
+fi
 
 projects_dir="${home_dir}/.claude/projects"
 
@@ -352,6 +365,7 @@ fi
 
 echo "STATUS=${usage_status}"
 echo "ISSUE_COUNT=${usage_issue_count}"
+usage_issues="${usage_issues}${retention_note}"
 if [ -n "$usage_issues" ]; then
   echo "ISSUES:"
   echo -e "$usage_issues" | sed '/^$/d'
