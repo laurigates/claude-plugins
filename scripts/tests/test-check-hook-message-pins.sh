@@ -276,6 +276,95 @@ echo "--- Test (l): an unknown argument exits 1 ---"
 bash "$GUARD" --no-such-flag >/dev/null 2>&1; RC=$?
 [ "$RC" -eq 1 ] && pass "(l) unknown argument exits 1" || fail "(l) expected exit 1, got $RC"
 
+# Shared-tag and tagless messages, one spanning two lines with escaped quotes,
+# for the declared-pin cases (#2727).
+write_shared_tag_hook() { # $1 = hooks dir
+  mkdir -p "$1"
+  cat > "$1/style.sh" <<'EOF'
+#!/usr/bin/env bash
+block() { echo "$1" >&2; exit 2; }
+IN=$(cat)
+case "$IN" in *awk*) block "REMINDER: Use the Edit tool instead of 'awk'." ;; esac
+if [[ "$IN" == *sed* ]]; then
+    block "REMINDER: Use the Edit tool.
+Prefer Edit(old_string=\"a\", new_string=\"b\") over sed -i."
+fi
+case "$IN" in *env*) block "Never dump the environment; name one variable." ;; esac
+EOF
+}
+
+# $1 = hooks dir; remaining args = lines appended to the suite
+write_declared_suite() {
+  local dir="$1"
+  shift
+  {
+    printf '%s\n' '#!/usr/bin/env bash' 'HOOK="$(dirname "$0")/style.sh"'
+    printf '%s\n' 'pin() { out=$(printf "%s" "$1" | bash "$HOOK" 2>&1 >/dev/null || true); grep -qF -- "$2" <<<"$out"; }'
+    printf '%s\n' "$@"
+  } > "$dir/test-style.sh"
+}
+
+# --- (n) declared pins check shared-tag and tagless messages ---
+echo "--- Test (n): declared pins move shared-tag messages from UNCHECKED to CHECKED (#2727) ---"
+TREE="$TMP_ROOT/n"
+write_shared_tag_hook "$TREE/s-plugin/hooks"
+write_declared_suite "$TREE/s-plugin/hooks" \
+  "# hook-message-pin: instead of 'awk'" \
+  "pin awk \"instead of 'awk'\"" \
+  '# hook-message-pin: Edit(old_string="a", new_string="b")' \
+  "pin sed 'Edit(old_string=\"a\", new_string=\"b\")'" \
+  '  #   hook-message-pin:   name one variable   ' \
+  'pin env "name one variable"'
+OUT="$(run_guard "$TREE")"; RC=$?
+expect "(n) verdict" "$OUT" "$RC" 0 STATUS=OK ISSUE_COUNT=0 BLOCK_MESSAGES=3 MESSAGES_CHECKED=3 MESSAGES_UNCHECKED=0
+has "$OUT" "UNCHECKED:" && fail "(n) no UNCHECKED row once every message is declared: $OUT" \
+  || pass "(n) no UNCHECKED row once every message is declared"
+
+# --- (o) a declared token the suite never asserts is an ERROR ---
+echo "--- Test (o): a declared token missing from the suite's non-comment lines is an error (#2727) ---"
+TREE="$TMP_ROOT/o"
+write_shared_tag_hook "$TREE/s-plugin/hooks"
+write_declared_suite "$TREE/s-plugin/hooks" \
+  "# hook-message-pin: instead of 'awk'" \
+  "pin awk \"instead of 'awk'\"" \
+  "# hook-message-pin: name one variable" \
+  "# TODO: pin env \"name one variable\""
+OUT="$(run_guard "$TREE")"; RC=$?
+expect "(o) verdict" "$OUT" "$RC" 1 STATUS=ERROR ISSUE_COUNT=1 MESSAGES_CHECKED=2 MESSAGES_UNCHECKED=1
+has "$OUT" 'TYPE=declared_pin_unasserted SUITE=s-plugin/hooks/test-style.sh HOOK=s-plugin/hooks/style.sh:9 TOKEN="name one variable"' \
+  && pass "(o) names the unasserted token and the message's hook line" \
+  || fail "(o) expected declared_pin_unasserted at style.sh:9: $OUT"
+case "$(field "$OUT" REASON)" in
+  "declared_pin_unasserted: "?*) pass "(o) REASON= names the finding" ;;
+  *) fail "(o) expected REASON=declared_pin_unasserted: ..., got REASON=$(field "$OUT" REASON)" ;;
+esac
+
+# --- (p) a declared token that matches no message is stale ---
+echo "--- Test (p): a declared token found in no block message is an error (#2727) ---"
+TREE="$TMP_ROOT/p"
+write_shared_tag_hook "$TREE/s-plugin/hooks"
+write_declared_suite "$TREE/s-plugin/hooks" \
+  "# hook-message-pin: Use the Write tool" \
+  'pin awk "Use the Write tool"'
+OUT="$(run_guard "$TREE")"; RC=$?
+expect "(p) verdict" "$OUT" "$RC" 1 STATUS=ERROR ISSUE_COUNT=1 MESSAGES_UNCHECKED=3
+has "$OUT" 'TYPE=declared_pin_unmatched SUITE=s-plugin/hooks/test-style.sh HOOK=s-plugin/hooks/style.sh TOKEN="Use the Write tool"' \
+  && pass "(p) reports the stale declaration" \
+  || fail "(p) expected declared_pin_unmatched: $OUT"
+
+# --- (q) a declared token shared by two messages pins neither ---
+echo "--- Test (q): a declared token found in two block messages is an error (#2727) ---"
+TREE="$TMP_ROOT/q"
+write_shared_tag_hook "$TREE/s-plugin/hooks"
+write_declared_suite "$TREE/s-plugin/hooks" \
+  "# hook-message-pin: Use the Edit tool" \
+  'pin awk "Use the Edit tool"'
+OUT="$(run_guard "$TREE")"; RC=$?
+expect "(q) verdict" "$OUT" "$RC" 1 STATUS=ERROR ISSUE_COUNT=1 MESSAGES_CHECKED=0 MESSAGES_UNCHECKED=3
+has "$OUT" 'TYPE=declared_pin_ambiguous SUITE=s-plugin/hooks/test-style.sh HOOK=s-plugin/hooks/style.sh TOKEN="Use the Edit tool"' \
+  && pass "(q) reports the ambiguous declaration" \
+  || fail "(q) expected declared_pin_ambiguous: $OUT"
+
 # --- (m) the real repository is clean and the scan is non-vacuous ---
 echo "--- Test (m): the repository's own hook suites pass ---"
 OUT="$(run_guard "$REPO_ROOT")"; RC=$?
@@ -288,6 +377,12 @@ else
   fail "(m) repo run should be OK and non-vacuous (rc=$RC)"
   printf '%s\n' "$OUT" | sed 's/^/    /'
 fi
+# #2727: every message in these two suites is pinned by tag or by declaration.
+for s in hooks-plugin/hooks/test-bash-antipatterns.sh hooks-plugin/hooks/test-secret-protection.sh; do
+  has "$OUT" "SUITE=$s HOOK=" \
+    && fail "(m) $s still has UNCHECKED messages: $(grep -F "SUITE=$s HOOK=" <<<"$OUT")" \
+    || pass "(m) $s has no UNCHECKED messages (#2727)"
+done
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
