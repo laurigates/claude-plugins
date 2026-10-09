@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regression test for scripts/export-pi-agents.py (#2633).
+# Regression test for scripts/export-pi-agents.py (#2633, #2649).
 #
 # The projection is the only thing standing between 21 marketplace subagents and
 # invisibility in pi: pi does not read `.claude/agents/`, so an exporter that
@@ -18,6 +18,9 @@
 #   G. the prompt body survives verbatim and the header round-trips as YAML
 #   H. every emitted tool name is one of pi's 7 built-ins (the schema contract)
 #   I. the justfile recipes exist, are additive, and the export has no network step
+#   J. --model (#2649): preserve (default) emits the source pin, inherit emits NO
+#      `model:` key at all, a model id replaces the pin, a bad value exits non-zero,
+#      and the justfile threads the mode through both recipes
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -256,6 +259,64 @@ assert "install-pi-agents does not rm -rf its target" \
   "$(grep -A 20 '^install-pi-agents' "$justfile" | grep -qE 'rm -rf "?\$?\{?target|rm -rf \$target' && echo false || echo true)"
 assert "the exporter invokes no bunx/npx/network step" \
   "$(grep -qE '(bunx|npx)[[:space:]]|npm install|curl ' "$exporter" && echo false || echo true)"
+
+echo "=== TEST J: --model preserve | inherit | <model> ==="
+# fm_model <agent-file> — the emitted header's `model` value, or __ABSENT__ when
+# the key is not there at all (inherit must omit it, not emit a null).
+fm_model() {
+  python3 - "$1" <<'PY'
+import sys, yaml
+t = open(sys.argv[1]).read()
+fm = yaml.safe_load(t[4:t.find("\n---\n", 3)])
+print(fm["model"] if "model" in fm else "__ABSENT__")
+PY
+}
+
+assert "default (preserve) emits the source pin: model: opus" \
+  "$([ "$(fm_model "$out_agent")" = "opus" ] && echo true || echo false)"
+assert "default run reports MODEL_MODE=preserve and the emitted pin count" \
+  "$(case "$export_out" in *"MODEL_MODE=preserve"*"MODEL_PINS=1"*) echo true ;; *) echo false ;; esac)"
+
+preserve_out="$(python3 "$exporter" --model=preserve "$fixture/src" "$fixture/out-preserve" 2>&1)"
+assert "explicit --model=preserve keeps model: opus" \
+  "$(grep -qx 'model: opus' "$fixture/out-preserve/agents/worker.md" && echo true || echo false)"
+assert "explicit --model=preserve reports MODEL_MODE=preserve" \
+  "$(case "$preserve_out" in *"MODEL_MODE=preserve"*) echo true ;; *) echo false ;; esac)"
+
+inherit_out="$(python3 "$exporter" --model inherit "$fixture/src" "$fixture/out-inherit" 2>&1)"
+assert "--model inherit emits no ^model: line at all" \
+  "$(grep -q '^model:' "$fixture/out-inherit/agents/worker.md" && echo false || echo true)"
+assert "--model inherit leaves no model key (absent, not null)" \
+  "$([ "$(fm_model "$fixture/out-inherit/agents/worker.md")" = "__ABSENT__" ] && echo true || echo false)"
+assert "--model inherit reports MODEL_MODE=inherit and MODEL_PINS=0" \
+  "$(case "$inherit_out" in *"MODEL_MODE=inherit"*"MODEL_PINS=0"*) echo true ;; *) echo false ;; esac)"
+assert "--model inherit keeps the rest of the header (tools survive)" \
+  "$(grep -qx 'tools: find, grep, read, edit, write, bash' "$fixture/out-inherit/agents/worker.md" && echo true || echo false)"
+
+override_out="$(python3 "$exporter" --model mlx-local/qwen3 "$fixture/src" "$fixture/out-override" 2>&1)"
+assert "--model <id> replaces the source pin" \
+  "$([ "$(fm_model "$fixture/out-override/agents/worker.md")" = "mlx-local/qwen3" ] && echo true || echo false)"
+assert "--model <id> pins agents that declared none (one model for the set)" \
+  "$([ "$(fm_model "$fixture/out-override/agents/wildcard.md")" = "mlx-local/qwen3" ] && echo true || echo false)"
+assert "--model <id> reports MODEL_MODE=<id> and counts every emitted pin" \
+  "$(case "$override_out" in *"MODEL_MODE=mlx-local/qwen3"*"MODEL_PINS=3"*) echo true ;; *) echo false ;; esac)"
+
+python3 "$exporter" --model '' "$fixture/src" "$fixture/out-bad" >/dev/null 2>&1; bad_rc=$?
+assert "an empty --model is rejected non-zero (exit 2)" \
+  "$([ "$bad_rc" -eq 2 ] && echo true || echo false)"
+python3 "$exporter" --model 'two words' "$fixture/src" "$fixture/out-bad" >/dev/null 2>&1; bad_rc=$?
+assert "a --model with whitespace is rejected non-zero (exit 2)" \
+  "$([ "$bad_rc" -eq 2 ] && echo true || echo false)"
+assert "a rejected --model writes nothing" \
+  "$([ ! -e "$fixture/out-bad" ] && echo true || echo false)"
+python3 "$exporter" "$fixture/src" >/dev/null 2>&1; bad_rc=$?
+assert "a missing positional is still a usage error (exit 2)" \
+  "$([ "$bad_rc" -eq 2 ] && echo true || echo false)"
+
+assert "export-pi-agents recipe takes model=\"preserve\" and passes --model" \
+  "$(grep -qE '^export-pi-agents .*model="preserve"' "$justfile" && grep -A 8 '^export-pi-agents' "$justfile" | grep -q -- '--model' && echo true || echo false)"
+assert "install-pi-agents recipe takes model=\"preserve\" and passes --model" \
+  "$(grep -qE '^install-pi-agents .*model="preserve"' "$justfile" && grep -A 25 '^install-pi-agents' "$justfile" | grep -q -- '--model' && echo true || echo false)"
 
 echo ""
 echo "=== SUMMARY ==="

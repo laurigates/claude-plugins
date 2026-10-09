@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Regression test for scripts/check-agent-frontmatter-keys.sh (#2646).
+# Regression test for scripts/check-agent-frontmatter-keys.sh (#2646, #2722,
+# #2723).
 #
 # Issue #2646: ten plugin agents declared `context: fork`, and
 # .claude/rules/agent-development.md documented it as an agent field. It is a
@@ -17,10 +18,11 @@
 # against a checker that never parses a file.
 #
 # Guards:
-#   A. real repo: non-vacuous scan, STATUS=OK under the declared residuals
-#   A2. real repo with the residual list EMPTIED: every finding is `context`,
-#       and there are exactly as many as the default list declares — the
-#       declared residuals are the live defect, no more and no less
+#   A. real repo: non-vacuous scan (agents AND fenced examples), STATUS=OK,
+#      and nothing allowlisted — #2722 removed the ten `context` residuals
+#   A2. real repo with the residual list EMPTIED: zero live findings, so the
+#       empty default list hides nothing; a copy of a real agent with
+#       `context: fork` planted back in is still caught (the guard is armed)
 #   B. clean agent (documented fields + repo lifecycle dates) → OK
 #   C. `context: fork` → ERROR skill_only_key, message names the fork type
 #   D. `allowed-tools:` → ERROR skill_only_key
@@ -37,6 +39,10 @@
 #   M. unknown argument → exit 2
 #   N. --docs-file: the fetched table is the authority; drift is reported
 #   O. a file with no frontmatter block is an ERROR
+#   P. fenced agent examples (#2723): `allowed-tools:` in an agent-shaped YAML
+#      or unlabeled fence is an ERROR naming file and line; `tools:`, a skill
+#      frontmatter fence, a non-YAML fence, prose, and an indented line are not;
+#      a listed doc missing while its plugin exists is an ERROR
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -113,26 +119,40 @@ run() {
 
 # --- A: real repo, default residual list ---------------------------------------
 out_a="$(bash "$checker" 2>&1)"; rc_a=$?
-assert "A: real repo passes under the declared residuals (exit 0)" \
+assert "A: real repo passes (exit 0)" \
   "$([ "$rc_a" -eq 0 ] && echo true || echo false)"
 assert "A: real repo STATUS=OK" "$(has_line "$out_a" "STATUS=OK")"
 assert "A: real repo scan is not empty" "$(has_line "$out_a" "SCANNED_EMPTY=false")"
 scanned_a="$(grep -m1 '^AGENT_FILES_SCANNED=' <<<"$out_a" | cut -d= -f2)"
 assert "A: real repo scanned a non-trivial number of agents (>=10, got '${scanned_a:-}')" \
   "$([ "${scanned_a:-0}" -ge 10 ] && echo true || echo false)"
-allowlisted_a="$(grep -m1 '^ALLOWLISTED=' <<<"$out_a" | cut -d= -f2)"
+assert "A: nothing is allowlisted (#2722 emptied the residual list)" \
+  "$(has_line "$out_a" "ALLOWLISTED=0")"
+assert "A: both custom-agent-definitions docs are scanned for fenced examples" \
+  "$(has_line "$out_a" "EXAMPLE_DOCS_SCANNED=2")"
+fences_a="$(grep -m1 '^EXAMPLE_FENCES_CHECKED=' <<<"$out_a" | cut -d= -f2)"
+assert "A: the fenced-example scan is non-vacuous (>=5 fences, got '${fences_a:-}')" \
+  "$([ "${fences_a:-0}" -ge 5 ] && echo true || echo false)"
 
 # --- A2: real repo, residual list emptied --------------------------------------
 out_a2="$(env "$seam=" bash "$checker" 2>&1)"; rc_a2=$?
-assert "A2: real repo with no declared residuals fails (exit 1)" \
-  "$([ "$rc_a2" -eq 1 ] && echo true || echo false)"
-findings_a2="$(grep -c 'TYPE=skill_only_key' <<<"$out_a2" || true)"
-context_a2="$(grep -c 'TYPE=skill_only_key .* KEY=context ' <<<"$out_a2" || true)"
-issues_a2="$(grep -m1 '^ISSUE_COUNT=' <<<"$out_a2" | cut -d= -f2)"
-assert "A2: every live finding is the inert \`context\` key (${context_a2}/${issues_a2:-?})" \
-  "$([ "${findings_a2:-0}" -ge 1 ] && [ "$context_a2" = "$issues_a2" ] && echo true || echo false)"
-assert "A2: live findings equal the declared residual count (${context_a2} vs ${allowlisted_a:-?})" \
-  "$([ "$context_a2" = "${allowlisted_a:-x}" ] && echo true || echo false)"
+assert "A2: real repo with no declared residuals passes (exit 0)" \
+  "$([ "$rc_a2" -eq 0 ] && echo true || echo false)"
+assert "A2: zero live findings with an empty residual list" \
+  "$(has_line "$out_a2" "ISSUE_COUNT=0")"
+assert "A2: no live \`context\` key remains in any agent" \
+  "$(lacks_text "$out_a2" "KEY=context")"
+# Seeded: a real agent with the removed key planted back in must still fail, so
+# the clean result above is the guard passing a clean tree, not a disarmed one.
+t="$(new_tree a2)"
+mkdir -p "$t/agents-plugin/agents"
+awk 'NR == 2 { print "context: fork" } { print }' \
+  "$repo_root/agents-plugin/agents/research.md" > "$t/agents-plugin/agents/research.md"
+out="$(run "$t")"; rc=$?
+assert "A2: a real agent with \`context: fork\` planted back in fails (exit 1)" \
+  "$([ "$rc" -eq 1 ] && echo true || echo false)"
+assert "A2: the planted key is reported as skill_only_key" \
+  "$(has_text "$out" "TYPE=skill_only_key FILE=agents-plugin/agents/research.md KEY=context ")"
 
 # --- B: clean agent -------------------------------------------------------------
 t="$(new_tree b)"; write_agent "$t" demo-plugin worker "$CLEAN_FM"
@@ -312,5 +332,109 @@ assert "O: an agent with no frontmatter block fails (exit 1)" \
   "$([ "$rc" -eq 1 ] && echo true || echo false)"
 assert "O: it is named no_frontmatter" "$(has_text "$out" "TYPE=no_frontmatter")"
 
-echo "check-agent-frontmatter-keys (#2646): ${pass_count} passed, ${fail_count} failed"
+# --- P: fenced agent examples (#2723) ------------------------------------------
+cad="agent-patterns-plugin/skills/custom-agent-definitions"
+# write_cad <root> <skill-md-body> <reference-md-body>
+write_cad() {
+  mkdir -p "$1/$cad"
+  printf '%s\n' "$2" > "$1/$cad/SKILL.md"
+  printf '%s\n' "$3" > "$1/$cad/REFERENCE.md"
+}
+FENCE='```'
+CLEAN_REF="# Reference
+
+${FENCE}yaml
+tools: Read, Grep
+disallowedTools: Write, Edit
+${FENCE}"
+
+t="$(new_tree p1)"; write_agent "$t" demo-plugin worker "$CLEAN_FM"
+write_cad "$t" "---
+name: custom-agent-definitions
+description: Agents.
+allowed-tools: Read, Write
+---
+
+# Custom Agent Definitions
+
+${FENCE}yaml
+---
+name: my-agent
+description: Does work
+model: opus
+allowed-tools: Bash, Read
+---
+${FENCE}" "$CLEAN_REF"
+out="$(run "$t")"; rc=$?
+assert "P: allowed-tools in an agent example fence fails (exit 1)" \
+  "$([ "$rc" -eq 1 ] && echo true || echo false)"
+assert "P: the finding names the file, the line, and the key" \
+  "$(has_text "$out" "TYPE=example_skill_only_key FILE=$cad/SKILL.md LINE=14 KEY=allowed-tools ")"
+assert "P: the skill's OWN frontmatter allowed-tools is not a finding (exactly one issue)" \
+  "$(has_line "$out" "ISSUE_COUNT=1")"
+assert "P: the message names the agent field" "$(has_text "$out" "the agent field is \`tools:\`")"
+
+# The same tree with the example corrected passes.
+write_cad "$t" "# Custom Agent Definitions
+
+${FENCE}yaml
+---
+name: my-agent
+model: opus
+tools: Bash, Read
+---
+${FENCE}" "$CLEAN_REF"
+out="$(run "$t")"; rc=$?
+assert "P: tools: in the agent example passes (exit 0)" \
+  "$([ "$rc" -eq 0 ] && echo true || echo false)"
+assert "P: both docs and both fences are counted" \
+  "$([ "$(has_line "$out" "EXAMPLE_DOCS_SCANNED=2")" = true ] && [ "$(has_line "$out" "EXAMPLE_FENCES_CHECKED=2")" = true ] && echo true || echo false)"
+
+# Not agent examples: a skill frontmatter fence, a bash fence, prose, and an
+# indented block-scalar line. An unlabeled fence with the skill spelling of
+# disallowedTools IS one.
+t="$(new_tree p2)"; write_agent "$t" demo-plugin worker "$CLEAN_FM"
+write_cad "$t" "# Custom Agent Definitions
+
+Prose: write allowed-tools: in a skill, tools: in an agent.
+
+${FENCE}yaml
+name: my-skill
+user-invocable: false
+allowed-tools: Read
+${FENCE}
+
+${FENCE}bash
+allowed-tools: Read
+${FENCE}
+
+${FENCE}yaml
+description: |
+  allowed-tools: Read
+tools: Read
+${FENCE}
+
+${FENCE}
+name: my-agent
+disallowed-tools: Write
+${FENCE}" "$CLEAN_REF"
+out="$(run "$t")"; rc=$?
+assert "P: only the unlabeled agent fence with disallowed-tools is reported (exactly one issue)" \
+  "$(has_line "$out" "ISSUE_COUNT=1")"
+assert "P: an unlabeled agent fence with disallowed-tools is reported" \
+  "$(has_text "$out" "TYPE=example_skill_only_key FILE=$cad/SKILL.md LINE=23 KEY=disallowed-tools ")"
+assert "P: the bash fence is not a YAML example (4 of 5 fences counted)" \
+  "$(has_line "$out" "EXAMPLE_FENCES_CHECKED=4")"
+
+# A listed doc missing while its plugin exists: a rename must not retire the scan.
+t="$(new_tree p3)"; write_agent "$t" demo-plugin worker "$CLEAN_FM"
+write_cad "$t" "# Custom Agent Definitions" "$CLEAN_REF"
+rm "$t/$cad/REFERENCE.md"
+out="$(run "$t")"; rc=$?
+assert "P: a missing example doc fails (exit 1)" \
+  "$([ "$rc" -eq 1 ] && echo true || echo false)"
+assert "P: it is named example_doc_missing" \
+  "$(has_text "$out" "TYPE=example_doc_missing FILE=$cad/REFERENCE.md ")"
+
+echo "check-agent-frontmatter-keys (#2646/#2723): ${pass_count} passed, ${fail_count} failed"
 [ "$fail_count" -eq 0 ]

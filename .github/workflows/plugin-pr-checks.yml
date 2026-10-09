@@ -276,9 +276,11 @@ jobs:
         # Claude Code ignores an agent frontmatter key it does not recognize
         # WITHOUT an error (sub-agents.md § Supported frontmatter fields), so a
         # skill field such as `context: fork` or `allowed-tools` on an agent
-        # does nothing while reading as if it did (#2646). The ten pre-existing
-        # `context` keys are declared residuals owned by #2722; a residual that
-        # matches nothing is itself an error, so the list can only shrink.
+        # does nothing while reading as if it did (#2646). The residual list is
+        # empty since #2722 removed the ten `context` keys; a residual that
+        # matches nothing is itself an error, so the list can only shrink. The
+        # same step scans custom-agent-definitions' fenced agent examples for
+        # `allowed-tools:` (#2723), parsing fences with the uv helper set up above.
         run: bash scripts/check-agent-frontmatter-keys.sh
 
       - name: Check for unused Bash grants
