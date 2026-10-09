@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-10-07
+modified: 2026-10-09
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -142,6 +142,11 @@ Every agent prompt must declare:
 - **No borrowed authority**: a brief never speaks as the user or asserts
   approvals not given this session (system card: fabricated user quotes
   were observed).
+- **Scope authority per stage**: merge/publish authorization goes only to the
+  stage that owns it; a build stage's brief says "stop at PR opened; do not
+  merge" (#2902, [rationale](references/brief-templates.md#stage-authority-in-multi-stage-pipelines)).
+- **No forward references**: every stage's brief carries the user's decisions
+  verbatim — a downstream stage cannot read an upstream stage's prompt.
 
 These budgets prevent the "agent hit context limits" and "prompt too long"
 failure modes — without them an agent exhausts its window on exploration and
@@ -400,7 +405,8 @@ also dodges the burst rate limit), checking for an already-open PR first
 - [ ] Each prompt includes file/read/output budgets
 - [ ] Each prompt includes the Return Contract schema verbatim
 - [ ] Each prompt mandates the loud-failure contract (no one-word surrenders)
-- [ ] Agents authorized to push their own commits (unless sandbox/dependency exception)
+- [ ] Agents authorized to push their own commits (unless sandbox/dependency exception) — push, not merge
+- [ ] Merge/publish authority only in the owning stage's brief; build stages told "do not merge"
 - [ ] Every returned summary parsed; missing returns treated as stalls
 
 ### Common Mistakes
