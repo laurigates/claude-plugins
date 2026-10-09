@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2015   # file-level: `cond && ok … || notok …` is the
+# deliberate assertion idiom (ok/notok both exit 0) — see test-check-schema.sh.
 # Regression tests for blueprint-autorun.sh (ADR-0020 level-1 runner).
 #
 # Pins the semantic contract:
@@ -197,6 +199,55 @@ out=$(BLUEPRINT_AUTORUN_DISABLE=1 bash "$AUTORUN" --project-dir "$sb")
 assert_contains "H: env opt-out" "AUTORUN=disabled_by_env" "$out"
 last=$(jq -r '.task_registry["sync-ids"].last_completed_at' "$sb/docs/blueprint/manifest.json")
 [ "$last" = "null" ] && ok "H: opt-out mutates nothing" || notok "H: opt-out wrote back"
+rm -rf "$sb"
+
+# ---- Test I: on-change deterministic task reconciles; no-op leaves bytes ----
+# The on-change signal (PostToolUse) misses Bash edits outside the change list
+# and every edit made outside Claude Code, so sync-ids also reconciles at each
+# run. It must not rewrite an unchanged manifest: jq re-serialises the whole
+# file, which would dirty a hand-formatted manifest on every session start.
+sb=$(make_sandbox)
+write_manifest "$sb" 1 true on-change null
+write_doc "$sb" "docs/adrs/0001-test.md" "ADR-0001"
+out=$(bash "$AUTORUN" --project-dir "$sb")
+assert_contains "I: on-change sync-ids reconciles and reports a change" \
+    "TASK=sync-ids KIND=deterministic SCHEDULE=on-change STATE=ran DOCS=1 CHANGED=true" "$out"
+reg=$(jq -r '.id_registry.documents["ADR-0001"].path // "NONE"' "$sb/docs/blueprint/manifest.json")
+[ "$reg" = "docs/adrs/0001-test.md" ] && ok "I: missed ADR registered" || notok "I: missed ADR not registered (got $reg)"
+last=$(jq -r '.task_registry["sync-ids"].last_completed_at' "$sb/docs/blueprint/manifest.json")
+[ "$last" != "null" ] && ok "I: a reconcile that changed the registry records its run" || notok "I: changed reconcile did not record"
+
+# Hand-format the manifest (4-space indent — any layout jq would not produce).
+python3 -c '
+import json, sys
+p = sys.argv[1]
+d = json.load(open(p))
+open(p, "w").write(json.dumps(d, indent=4) + "\n")
+' "$sb/docs/blueprint/manifest.json"
+before=$(cat "$sb/docs/blueprint/manifest.json")
+out=$(bash "$AUTORUN" --project-dir "$sb")
+assert_contains "I: second run finds nothing to change" "STATE=ran DOCS=1 CHANGED=false" "$out"
+[ "$(cat "$sb/docs/blueprint/manifest.json")" = "$before" ] \
+    && ok "I: an unchanged reconcile leaves the manifest byte-identical" \
+    || notok "I: an unchanged reconcile rewrote the manifest"
+leftover=$(find "$sb/docs/blueprint" -name 'manifest.json.autorun.*' | wc -l | tr -d ' ')
+[ "$leftover" = "0" ] && ok "I: no work copy left behind" || notok "I: $leftover work copies left behind"
+rm -rf "$sb"
+
+# ---- Test J: reconcile respects level 0 and --report ----
+sb=$(make_sandbox)
+write_manifest "$sb" 0 true on-change null
+write_doc "$sb" "docs/adrs/0001-test.md" "ADR-0001"
+before=$(cat "$sb/docs/blueprint/manifest.json")
+out=$(bash "$AUTORUN" --project-dir "$sb")
+assert_contains "J: level 0 reports the reconcile without running it" \
+    "TASK=sync-ids KIND=deterministic SCHEDULE=on-change STATE=reconcile" "$out"
+[ "$(cat "$sb/docs/blueprint/manifest.json")" = "$before" ] && ok "J: level 0 mutates nothing" || notok "J: level 0 wrote back"
+write_manifest "$sb" 1 true on-change null
+before=$(cat "$sb/docs/blueprint/manifest.json")
+out=$(bash "$AUTORUN" --project-dir "$sb" --report)
+assert_contains "J: report mode reports the reconcile" "STATE=reconcile" "$out"
+[ "$(cat "$sb/docs/blueprint/manifest.json")" = "$before" ] && ok "J: report mode mutates nothing" || notok "J: report mode wrote back"
 rm -rf "$sb"
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
