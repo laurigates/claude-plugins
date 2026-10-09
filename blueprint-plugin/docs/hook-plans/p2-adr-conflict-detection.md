@@ -12,7 +12,7 @@ Detect potential conflicts when creating or modifying ADRs. Warn when two ADRs s
 
 ```json
 {
-  "matcher": "Write(docs/adrs/**)",
+  "matcher": "Write|Edit",
   "hooks": [
     {
       "type": "command",
@@ -23,6 +23,11 @@ Detect potential conflicts when creating or modifying ADRs. Warn when two ADRs s
   ]
 }
 ```
+
+> A `matcher` sees only the tool name; the path filter goes in the handler's
+> `if` field (e.g. `"if": "Write(docs/adrs/**)"`, one rule per handler) or in the script.
+> To cover edits made through Bash, add the handler to
+> `hooks/blueprint-doc-change.sh` instead of registering it separately.
 
 ## Behavior
 

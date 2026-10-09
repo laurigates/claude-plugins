@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "blueprint-plugin/prd.schema.json",
   "title": "Product Requirements Document",
-  "description": "The single source of truth for PRD structure. hooks/validate-prd-frontmatter.sh is a thin caller of scripts/check-schema.py against this file. The validated object is built by check-schema.py: `frontmatter` is the parsed line-1 YAML block, `sections` maps each `## ` heading text to its ordinal.",
+  "description": "The single source of truth for PRD structure. hooks/validate-frontmatter.sh is a thin caller of scripts/check-schema.py against this file. The validated object is built by check-schema.py: `frontmatter` is the parsed line-1 YAML block, `sections` maps each `## ` heading text to its ordinal.",
   "x-blueprint-doc-kind": "prd",
   "x-blueprint-path-glob": "docs/prds/**",
   "type": "object",
