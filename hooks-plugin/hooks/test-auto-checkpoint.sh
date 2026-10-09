@@ -239,6 +239,108 @@ else
     fail "rm -rf node_modules creates no stash" "found $stash_count stashes"
 fi
 
+# Test 10 — issue #2736: a checkpoint identical to the previous one is not stored.
+#
+# The #2652 pattern: 50 checkpoints in one session holding three distinct
+# trees — 37 byte-identical snapshots of the same uncommitted work. A
+# duplicate at stash@{0} binds no additional content and is exactly the
+# entry `git-stash-reminder.sh` cannot clear for an agent under auto mode
+# (its `git stash diff` cleanliness makes `git stash drop` look irreversible).
+# Skip storing ONLY when stash@{0} is itself an auto-checkpoint with the SAME
+# tree; every failure mode (missing/odd stash@{0}, hand-made stash, unreadable
+# tree) degrades to the original store.
+#
+#   SUPPRESSED (paired with twins that must still store)
+#     - two destructive commands with no content change between them → 1 stash
+#     - the same shape when the previous stash's CONTENT moved elsewhere:
+#       no change after the cp → still 1 stash (tree hash is the oracle)
+#
+#   MUST STORE (twins)
+#     - content changed since the previous auto-checkpoint → new stash
+#     - stash@{0} is a HAND-made stash with an identical tree → new stash
+#       (provenance guard: its tree equality says nothing about what the
+#       checkpoint must protect)
+#     - empty stash list → stored (first checkpoint)
+
+# 10a: control — the first checkpoint stores normally
+git -C "$SANDBOX" stash clear 2>/dev/null || true
+run_hook "$SANDBOX" "rm -rf dummy" "Bash" >/dev/null 2>&1 || true
+stash_count=$(git -C "$SANDBOX" stash list | wc -l | tr -d ' ')
+if [ "$stash_count" -eq 1 ]; then
+    pass "first checkpoint stores (control for the dedupe)"
+else
+    fail "first checkpoint stores (control for the dedupe)" "found $stash_count stashes"
+fi
+
+# 10b: a second identical destructive command adds nothing.
+# The sleep is not incidental: two `git stash create` calls inside the same
+# second produce the SAME commit object when their trees match (tree,
+# parent, and second-resolution dates all coincide), and `git stash store`
+# with a commit equal to the current refs/stash value appends NO reflog
+# entry — git already collapses that case, so a store-less assertion would
+# be indistinguishable from git's quirk rather than the fix under test.
+# The #2652 session stored 37 identical checkpoints because its commands
+# were seconds apart: sleep ≥1s makes the two snapshot commits distinct
+# objects, and the assertion then pins the hook's own skip logic.
+sleep 1
+run_hook "$SANDBOX" "rm -rf dummy2" "Bash" >/dev/null 2>&1 || true
+stash_count=$(git -C "$SANDBOX" stash list | wc -l | tr -d ' ')
+if [ "$stash_count" -eq 1 ]; then
+    pass "identical checkpoint skipped (#2736)"
+else
+    fail "identical checkpoint skipped (#2736)" "found $stash_count stashes"
+fi
+# ...and the original checkpoint's content is intact — skipping must not
+# have disturbed the entry that is doing the protecting
+if git -C "$SANDBOX" stash list | grep -q "auto-checkpoint before rm -rf"; then
+    pass "the protecting checkpoint survives the skip"
+else
+    fail "the protecting checkpoint survives the skip" "stash list was emptied"
+fi
+
+# 10c: twin — content changes, so the next destructive command MUST store.
+# Without this twin, a ratchet that skips everything would satisfy 10b.
+echo "state chased mid-session" >> "$SANDBOX/tracked.txt"
+run_hook "$SANDBOX" "rm -rf dummy2" "Bash" >/dev/null 2>&1 || true
+stash_count=$(git -C "$SANDBOX" stash list | wc -l | tr -d ' ')
+if [ "$stash_count" -eq 2 ]; then
+    pass "changed content stores a new checkpoint"
+else
+    fail "changed content stores a new checkpoint" "found $stash_count stashes"
+fi
+
+# 10d: twin — a HAND-made stash at stash@{0} whose tree is byte-identical to
+# what the checkpoint would hold MUST still store. The provenance guard is
+# the only defence against silently suppressing a duplicate the user's hand
+# stash already covers — its tree equality says nothing about what the
+# checkpoint protects. Fixture discipline: the hand stash captures EXACTLY
+# the state checkpoint snapshot recreates (no untracked divergence, which
+# would change the tree and make this twin pass for the wrong reason), and
+# the premise asserts the two trees really are identical.
+git -C "$SANDBOX" stash clear 2>/dev/null || true
+setup_dirty_tree
+rm -f "$SANDBOX/untracked.txt"          # a hand push without -u captures no untracked content
+git -C "$SANDBOX" stash push -q -m "deliberate hand work"
+# Rebuild the same dirty state the hand stash saw, byte-identical — the
+# checkpoint's snapshot must collide with stash@{0}'s tree here.
+echo "modified tracked content" >> "$SANDBOX/tracked.txt"
+run_hook "$SANDBOX" "rm -rf dummy" "Bash" >/dev/null 2>&1 || true
+# After the store, the checkpoint is at stash@{0}; the hand stash sat below it.
+ck0_tree=$(git -C "$SANDBOX" rev-parse 'stash@{0}^{tree}' 2>/dev/null || true)
+ck1_tree=$(git -C "$SANDBOX" rev-parse 'stash@{1}^{tree}' 2>/dev/null || true)
+if [ -n "$ck0_tree" ] && [ "$ck0_tree" = "$ck1_tree" ]; then
+    pass "premise: the hand stash's tree was byte-identical to the checkpoint's"
+else
+    fail "premise: the hand stash's tree was byte-identical to the checkpoint's" "'stash@{0}^{tree}': '${ck0_tree}' and 'stash@{1}^{tree}': '${ck1_tree}' differ"
+fi
+stash_count=$(git -C "$SANDBOX" stash list | wc -l | tr -d ' ')
+if [ "$stash_count" -eq 2 ]; then
+    pass "hand-made stash@{0} is not treated as a duplicate"
+else
+    fail "hand-made stash@{0} is not treated as a duplicate" "found $stash_count stashes: $(git -C "$SANDBOX" stash list)"
+fi
+git -C "$SANDBOX" stash clear 2>/dev/null || true
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 
