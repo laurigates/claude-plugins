@@ -266,8 +266,23 @@ reporting a confident `OPEN_TASKS=0`:
 | `remote-name` | The slug matched nothing; the **git remote's** repo name did (`PROJECT_RESOLVED=`) | `low` |
 | `ancestor-name` | The slug matched nothing; an **ancestor directory's** repo slug did, and was adopted (`PROJECT_RESOLVED=`, `DETECTION=cwd-repo-basename-ancestor`) | `low` |
 | `all-projects-fallback` | No slug matched; `RECENT_TASK_*` rows list tasks touched within `--recent-days` across all projects | `low` |
-| `unknown` | `jq` unavailable, so no scoping was possible | `low` |
+| `unknown` | `jq` unavailable, or the store could not be read (`TASK_STORE_REACHABLE=false`), so no scoping was possible | `low` |
 | `none` | `task` unavailable | `low` |
+
+`TASK_AVAILABLE` says only that the `task` binary is on PATH. Whether the
+**store** was read is reported separately, in both the `TASKWARRIOR` section
+and `--summary`, the same way `GH_READY` reports GitHub. A `.taskrc` whose
+`data.location` names a missing or read-only path makes `task export` fail, and
+that failure used to read as a confident empty queue:
+
+| Key | Meaning |
+|---|---|
+| `TASK_STORE_REACHABLE` | `true` when `task export` exited 0 with a JSON array; always emitted |
+| `TASK_FAIL_REASON` | present when `false`: `read-only` (the store sits on a read-only mount — point `rc.data.location` at a writable store), `store-unreachable` (the path is missing or unopenable), `no-cli` (no `task` binary), or `unknown` |
+| `TASK_FAIL_DETAIL` | the first non-blank line of `task`'s stderr, sanitised to one row of at most 200 characters |
+
+When the store is unreachable, `TASK_SCOPE=unknown` and `PROJECT_CONFIDENCE=low`
+even under `--project`, so `OPEN_TASKS=0` reads as unqueried rather than empty.
 
 `DETECTION=` reports how the slug was chosen, independently of `TASK_SCOPE`:
 

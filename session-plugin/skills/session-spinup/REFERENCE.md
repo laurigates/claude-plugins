@@ -118,6 +118,27 @@ MCP tools and dedups in-skill (SKILL.md Step 1b), or states
 `GH_READY=true` does an empty drift set mean "everything assigned is
 already tracked" — then the source earns no line.
 
+## Unanswered Discussions (how the collector decides)
+
+The same `--with-dedup` run makes one GraphQL call for the first 100 open
+Discussions and keeps the threads in a category GitHub marks answerable
+(`category.isAnswerable`) that are not yet answered. The query has its own
+ok-key, independent of `GH_READY`: the list calls can succeed while GraphQL
+fails, so a failed Discussions query never flips `GH_READY` and never prints
+a count.
+
+| Key | Briefing consequence |
+|---|---|
+| `DISCUSSIONS_QUERY_OK=false` | `discussions: not queried (<DISCUSSIONS_FAIL_REASON>)` — `DISCUSSIONS_UNANSWERED` is absent, so there is no zero to show. The reason uses `GH_FAIL_REASON`'s vocabulary plus `no-jq` |
+| `DISCUSSIONS_ENABLED=false` | Discussions are off for the repo; the zero is genuine and earns no line |
+| `DISCUSSIONS_UNANSWERED=N` | `discussions: N unanswered`, one row per `DISCUSSION_<n>_NUMBER` / `_CATEGORY` / `_TITLE` / `_URL` / `_AGE_DAYS` set |
+| `DISCUSSIONS_TRUNCATED=true` | More than 100 open threads exist and only the first 100 were read, so N is a floor: `N+ unanswered (first 100 of 100+ open threads read)` |
+
+Titles and category names come from whoever opened the thread; the
+collector flattens row-breaking bytes, and the briefing quotes them as data.
+The count stays out of `--summary` and `THREADS`, so the SessionStart nudge
+and its pi port read exactly what they read before.
+
 ## Journal todos (how the collector decides)
 
 With `--with-journal --journal-path <dir>`, the collector walks back from
@@ -141,6 +162,9 @@ Spin-up — project: work.cost-attribution (cwd: repos/<org>/infrastructure)
 
   github issues (1 assigned, untracked)
     #851 "OpenCost pods OOMKilled on >2k namespaces" — filed 2d ago, no task
+
+  discussions: 1 unanswered
+    #63 [Q&A] "How do I scope cost by namespace label?" — 4d
 
   journal 2026-05-12.md (yesterday)
     - [ ] Nudge production GKE Standard PR #1607 reviewers (stale 7d)
