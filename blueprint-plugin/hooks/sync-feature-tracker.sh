@@ -2,7 +2,8 @@
 # PostToolUse hook — feature-tracker freshness auto-sync on docs changes.
 #
 # Implements docs/hook-plans/p1-feature-tracker-auto-sync.md as the on-change
-# half of the ADR-0020 level-1 rung. Fires after Write/Edit under docs/**.
+# half of the ADR-0020 level-1 rung. Called by blueprint-doc-change.sh for each
+# changed docs/** path (Write, Edit, or a Bash command's bashEditDiff).
 #
 # Bounded auto-apply on an unambiguous fact only: when the changed document
 # references feature codes that ALREADY EXIST in the tracker, refresh the
@@ -24,6 +25,18 @@ fi
 INPUT=$(cat)
 
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null || true)
+if [ -z "$FILE_PATH" ]; then
+    exit 0
+fi
+
+# Write/Edit payloads carry an absolute file_path; the checks below are
+# project-relative. Resolve from the project root.
+HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091  # lib/doc-paths.sh resolves at runtime from HOOK_DIR
+. "${HOOK_DIR}/lib/doc-paths.sh"
+ROOT=$(blueprint_project_root) || exit 0
+cd "$ROOT" || exit 0
+FILE_PATH=$(blueprint_relpath "$FILE_PATH" "$ROOT")
 if [ -z "$FILE_PATH" ]; then
     exit 0
 fi

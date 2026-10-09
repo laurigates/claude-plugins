@@ -4,7 +4,7 @@ description: Refresh plugin catalog docs (README, PLUGIN-MAP, d2 diagram) so per
 allowed-tools: Bash(bash scripts/check-docs-index.sh *), Bash(d2 *), Bash(git log *), Bash(git rev-parse *), Read, Edit, Grep, Glob, TodoWrite
 argument-hint: (no args)
 created: 2026-06-13
-modified: 2026-06-13
+modified: 2026-10-09
 reviewed: 2026-06-13
 ---
 
@@ -19,7 +19,7 @@ report.
 
 | Use this skill when... | Use something else when... |
 |------------------------|----------------------------|
-| Per-plugin counts in README / PLUGIN-MAP / the d2 diagram drifted | A plugin needs adding/removing — follow `/plugin-authoring` § Plugin Lifecycle first, then run this |
+| Per-plugin counts in the README headline / PLUGIN-MAP / the d2 diagram drifted | A plugin needs adding/removing — follow `/plugin-authoring` § Plugin Lifecycle first, then run this |
 | `check-docs-index.sh` reports `doc_count_drift` / `diagram_count_drift` / `diagram_svg_stale` / `readme_row_dangling` | You need a generic project's docs synced — that's `documentation-plugin:docs-sync` (wrong layout for this repo) |
 | The PR gate `Check docs-index drift` failed in CI | Editing rule-index or marketplace set — the audit reports those, but fix them at their source |
 
@@ -43,8 +43,8 @@ names the exact file, line, and the disk-vs-stated count. `STATUS=OK` with
 For every `doc_count_drift` / `diagram_count_drift` issue, Edit the stated count
 to the disk count:
 
-- `README.md` — the `| **<plugin>** | N | ... |` category-table rows. Preserve any
-  `+ M agents` suffix.
+- `docs/CATALOG.md` — never hand-edited; `just catalog` regenerates it from
+  `marketplace.json` and the plugin dirs (CI: `Check catalog is current`).
 - `docs/PLUGIN-MAP.md` — the `| <plugin> | N | ... |` tier-table rows.
 - `docs/diagrams/plugin-relationships.d2` — the `label: "<name>\nN skills"` node
   labels. The `.svg` is generated and never hand-edited; re-render it in Step 4.
@@ -62,8 +62,8 @@ arithmetic repairs them:
 ### Step 3: Light content pass
 
 1. `git log --oneline <README-last-touched-sha>..HEAD -- '*/.claude-plugin/plugin.json'`
-   — if any **new** `*-plugin` directory landed, it must be added to README's
-   category tables, PLUGIN-MAP, marketplace.json, and release config (see
+   — if any **new** `*-plugin` directory landed, it must be added to
+   PLUGIN-MAP, marketplace.json (which `just catalog` reads), and release config (see
    `/plugin-authoring` § Plugin Lifecycle). Surface this rather than guessing a category.
 2. Update the rounded total in README's intro line (`NNN+ skills`) to the next
    round number at or below `TOTAL_SKILLS` from the audit.

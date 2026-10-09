@@ -12,7 +12,7 @@ When PRD documents change, analyze the diff and present selectable options to th
 
 ```json
 {
-  "matcher": "Write(docs/prds/**)|Edit(docs/prds/**)",
+  "matcher": "Write|Edit",
   "hooks": [
     {
       "type": "command",
@@ -23,6 +23,11 @@ When PRD documents change, analyze the diff and present selectable options to th
   ]
 }
 ```
+
+> A `matcher` sees only the tool name; the path filter goes in the handler's
+> `if` field (e.g. `"if": "Write(docs/prds/**)"`, one rule per handler) or in the script.
+> To cover edits made through Bash, add the handler to
+> `hooks/blueprint-doc-change.sh` instead of registering it separately.
 
 ## Behavior
 

@@ -1,6 +1,6 @@
 ---
 created: 2026-02-27
-modified: 2026-09-28
+modified: 2026-10-09
 reviewed: 2026-09-16
 paths:
   - ".claude/hooks/**"
@@ -253,16 +253,18 @@ Combine command hooks (fast/free structural checks) with prompt/agent hooks (jud
 {
   "PreToolUse": [
     {
-      "matcher": "Skill(prp-execute)",
+      "matcher": "Write|Edit",
       "hooks": [
         {
           "type": "command",
-          "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/check-prp-readiness.sh\"",
+          "if": "Write(docs/prps/**)",
+          "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/check-prp-structure.sh\"",
           "timeout": 10
         },
         {
           "type": "agent",
-          "prompt": "Read the PRP file and evaluate content quality...",
+          "if": "Write(docs/prps/**)",
+          "prompt": "Read the PRP being written and evaluate content quality...",
           "timeout": 30
         }
       ]
@@ -272,6 +274,19 @@ Combine command hooks (fast/free structural checks) with prompt/agent hooks (jud
 ```
 
 The command hook runs first (fast structural validation). If it passes, the agent hook evaluates content quality. Both must pass for the action to proceed.
+
+**The `matcher` sees only the tool name.** A value such as `"Skill(prp-execute)"` or
+`"Write(docs/prps/**)"` is not a filter: it is a regex tested against `Skill` or
+`Write`, and never matches — blueprint-plugin shipped this example's earlier form
+and its hooks never ran. Scope by path with the handler's `if` field (one
+permission rule per handler; path patterns fixed in 2.1.176), or filter inside a
+command hook. `scripts/check-hook-matchers.sh` rejects the permission-rule form.
+
+**An agent hook cannot filter itself**, so give it only a matcher (plus `if`) whose
+every hit is worth an agent run. `if` does not cover every tool: on 2.1.295 neither
+`Skill(name)` nor `Skill(skill:name*)` matched a Skill call, so an agent hook for
+one specific skill has no cheap trigger — put the check in the skill body, or in a
+command hook that filters `tool_input.skill`.
 
 ### Event-Specific Patterns
 

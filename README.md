@@ -4,53 +4,93 @@
 
 A curated collection of 44 Claude Code plugins providing 400+ skills and 21 agents for development workflows.
 
-## Install the Marketplace
+The same skills, subagents and safety hooks also run in **OpenCode**, **pi** and
+**Antigravity CLI**.
+Skills are read in place from a checkout of this repo, so a skill edit reaches
+every harness without a copy step; subagents and hooks are exported to each
+tool's own format. Browse everything in the [plugin catalog](docs/CATALOG.md).
 
-Install the full plugin collection as a marketplace:
+## Supported harnesses
+
+| Harness | Skills | Subagents | Safety hooks |
+|---------|--------|-----------|--------------|
+| [Claude Code](#claude-code) | Native plugin marketplace | Native | Native |
+| [OpenCode](#opencode) | Skill adapter: a `search_skills` tool plus the top 5 matches injected each turn | Exported to OpenCode's agent format | Exported as OpenCode JS plugins |
+| [pi](#pi) | Skill adapter (same as OpenCode) | Exported for `@tintinweb/pi-subagents` | Run by a generated pi extension |
+| [Antigravity CLI](#antigravity-cli) | Plugin skill dirs registered in place in `skills.json` | Exported to `agents/<name>/agent.md` | Run by a generated `hooks.json` runner |
+
+OpenCode and pi both read `SKILL.md` unmodified, but neither budgets its skill
+listing: listing 382 skills natively measured ~34,000 tokens of context on
+every turn (2026-08-24). The adapter
+([ADR-0022](docs/adrs/0022-adapter-over-export-for-foreign-harnesses.md),
+[`adapters/`](adapters/README.md)) reaches all of them for ~600.
+
+### Claude Code
+
+Add the marketplace, then install the plugins you want:
 
 ```bash
-claude plugin install laurigates/claude-plugins
+claude plugin marketplace add laurigates/claude-plugins
+claude plugin install git-plugin@laurigates-claude-plugins
+claude plugin install python-plugin@laurigates-claude-plugins
 ```
 
-This registers all 44 plugins. You can then enable individual plugins as needed.
+Inside a session, `/plugin` browses and installs the same plugins.
 
-### Install Individual Plugins
+### OpenCode
 
-If you prefer to install plugins one at a time:
+Needs a clone of this repo, [bun](https://bun.sh) and [just](https://just.systems):
 
 ```bash
-claude plugin install laurigates-claude-plugins/<plugin-name>
+git clone https://github.com/laurigates/claude-plugins && cd claude-plugins
+(cd adapters && bun install)
+just setup-opencode
 ```
 
-For example:
+`setup-opencode` installs the subagents and hook plugins into
+`~/.config/opencode` and writes an `opencode.json` that registers the adapter
+for a local MLX model. An existing `opencode.json` is kept (a sample is written
+beside it); wire the adapter into it with `just oc-adapter-register`. Details:
+[docs/opencode-export.md](docs/opencode-export.md).
+
+### pi
+
+Needs a clone of this repo, [bun](https://bun.sh) and [just](https://just.systems):
 
 ```bash
-claude plugin install laurigates-claude-plugins/git-plugin
-claude plugin install laurigates-claude-plugins/python-plugin
-claude plugin install laurigates-claude-plugins/testing-plugin
+git clone https://github.com/laurigates/claude-plugins && cd claude-plugins
+(cd adapters && bun install)
+just setup-pi
 ```
+
+`setup-pi` registers the adapter in `~/.pi/agent/settings.json`, installs the
+subagents and the safety-hook extension, and prints the steps to serve a local
+model. `just pi-adapter-unregister` reverses the registration. Details:
+[docs/pi-export.md](docs/pi-export.md).
+
+### Antigravity CLI
+
+Needs a clone of this repo, [just](https://just.systems) and Python 3:
+
+```bash
+git clone https://github.com/laurigates/claude-plugins && cd claude-plugins
+just setup-antigravity
+```
+
+`setup-antigravity` adds each plugin's `skills/` directory to
+`~/.gemini/config/skills.json`, and installs the subagents and the safety-hook
+runner into `~/.gemini/config`. Existing entries in `skills.json` and
+`hooks.json` are kept. `just unconfigure-antigravity` removes the skill
+registrations, and `just agy-check` reports what is installed. Details:
+[docs/antigravity-export.md](docs/antigravity-export.md).
 
 ## Getting Started
 
-1. **Install the marketplace** using the command above
-2. **Run a health check** — `/health:check` then `/health:audit` to diagnose your setup and get plugin recommendations for your stack
+1. **Install** the plugins for your harness, above
+2. **Run a health check** — `/health-plugin:health-check` then `/health-plugin:health-audit` to diagnose your setup and get plugin recommendations for your stack
 3. **Follow the tiered setup** — The [Plugin Map](docs/PLUGIN-MAP.md) provides a recommended install order (Tier 0 foundation through Tier 3+ stack-specific), decision trees, and project presets
 
-### MCP Server Setup
-
-Use the included justfile for quick MCP server configuration:
-
-```bash
-# Set up all MCP servers
-just claude-setup
-
-# Or install individual servers
-just mcp-github
-just mcp-playwright
-just mcp-context7
-```
-
-Alternatively, use the `/configure:mcp` skill for interactive configuration.
+For MCP servers, `/configure-plugin:configure-mcp` sets them up interactively.
 
 ## Design Principles
 
@@ -62,183 +102,6 @@ the rules, skills, and hooks that embody it.
 ## Prerequisites
 
 - **Bash 5+** — Required for shell scripts. macOS ships Bash 3.2; install via `brew install bash`.
-
-## Plugins by Category
-
-### AI & Agents
-
-| Plugin | Skills | Description |
-|--------|--------|-------------|
-| **agent-patterns-plugin** | 24 | Multi-agent coordination and orchestration patterns |
-| **agents-plugin** | 1 + 12 agents | Task-focused agents for test, review, debug, docs, and CI workflows |
-| **langchain-plugin** | 4 | LangChain JS/TS development - agents, chains, LangGraph, Deep Agents |
-| **prompt-engineering-plugin** | 1 | Prompt engineering for accurate, grounded responses - anti-hallucination workflow |
-
-### Development
-
-| Plugin | Skills | Description |
-|--------|--------|-------------|
-| **api-plugin** | 1 | API integration and testing - REST endpoints, client generation |
-| **blueprint-plugin** | 35 | Blueprint Development methodology - PRD/PRP workflow with version tracking |
-| **comfyui-plugin** | 17 | ComfyUI custom-node pack lifecycle - scaffold, seed repo, gitops adoption, registry publish |
-| **home-assistant-plugin** | 4 | Home Assistant configuration - automations, scripts, scenes, entities |
-| **obsidian-plugin** | 21 | Obsidian CLI operations - vault management, search, properties, tasks |
-| **project-plugin** | 7 | Project initialization, management, maintenance, and continuous development |
-| **session-plugin** | 4 | Session bookends - spinup briefing, wrap capture, end-of-session orchestration, distillation |
-
-### Languages
-
-| Plugin | Skills | Description |
-|--------|--------|-------------|
-| **css-plugin** | 2 | CSS tooling - Lightning CSS transpilation, UnoCSS atomic utilities |
-| **python-plugin** | 17 | Python ecosystem - uv, ruff, pytest, basedpyright, packaging |
-| **rust-plugin** | 8 | Rust development - cargo, clippy, nextest, scaffolding, memory safety |
-| **typescript-plugin** | 18 | TypeScript development - Bun, Biome, ESLint, strict types |
-
-### Quality & Testing
-
-| Plugin | Skills | Description |
-|--------|--------|-------------|
-| **code-quality-plugin** | 17 | Code review, refactoring, linting, static analysis, debugging methodology, scaffold back-porting, licence-position checks |
-| **software-design-plugin** | 6 | Software design methodology - deep modules, design by contract, GoF pattern selection, legacy seams, pseudocode |
-| **evaluate-plugin** | 7 + 3 agents | Skill evaluation and benchmarking - test effectiveness, grade results |
-| **codebase-attributes-plugin** | 3 | Structured codebase health attributes with severity-based agent routing |
-| **feedback-plugin** | 1 | Session feedback analysis - capture skill bugs and enhancements as issues |
-| **testing-plugin** | 18 | Test execution, TDD workflow, Vitest, Playwright, mutation testing, tripwire tests |
-
-### Version Control
-
-| Plugin | Skills | Description |
-|--------|--------|-------------|
-| **git-plugin** | 48 + 1 agent | Git workflows - commits, branches, PRs, worktrees, release-please, merge/deletion hazards, issue scoping |
-
-### CI/CD
-
-| Plugin | Skills | Description |
-|--------|--------|-------------|
-| **finops-plugin** | 7 | GitHub Actions FinOps - billing, cache usage, workflow efficiency |
-| **github-actions-plugin** | 12 | GitHub Actions CI/CD - workflows, authentication, inspection |
-
-### Infrastructure
-
-| Plugin | Skills | Description |
-|--------|--------|-------------|
-| **configure-plugin** | 48 | Project infrastructure standards - pre-commit, CI/CD, Docker, testing |
-| **container-plugin** | 9 + 1 agent | Container development - Docker, registry, Skaffold, OrbStack |
-| **kubernetes-plugin** | 8 + 1 agent | Kubernetes and Helm - deployments, charts, releases, ArgoCD |
-| **migration-patterns-plugin** | 7 | Safe database and system migration - dual write, shadow mode |
-| **networking-plugin** | 7 | Network diagnostics, discovery, monitoring, HTTP load testing |
-| **terraform-plugin** | 6 + 1 agent | Terraform and Terraform Cloud - infrastructure as code |
-
-### Documentation & Communication
-
-| Plugin | Skills | Description |
-|--------|--------|-------------|
-| **blog-plugin** | 2 | Blog post creation - project logs, technical write-ups |
-| **communication-plugin** | 2 | Communication formatting - Google Chat, ticket drafting |
-| **documentation-plugin** | 9 | Documentation generation - API docs, README, LaTeX PDFs, single-source linking, machine-fact verification, public-export sanitization, fetch fallbacks |
-| **prose-plugin** | 3 | Prose transformation - synthesis, distillation, tone, clarity, house-style self-check |
-
-### UX & Components
-
-| Plugin | Skills | Description |
-|--------|--------|-------------|
-| **accessibility-plugin** | 2 | Accessibility implementation - WCAG, ARIA, design tokens |
-| **component-patterns-plugin** | 2 | Reusable UI component patterns - version badge, tooltips |
-
-### Automation & Utilities
-
-| Plugin | Skills | Description |
-|--------|--------|-------------|
-| **health-plugin** | 7 | Diagnose and fix Claude Code configuration issues |
-| **hooks-plugin** | 4 | Claude Code hooks for enforcing best practices |
-| **macos-plugin** | 8 | macOS dev tooling - kitty session persistence, LaunchServices health, incident postmortems, APFS disk-usage / space recovery, performance triage and benchmark suite, dead-keybinding debug |
-| **taskwarrior-plugin** | 9 | Taskwarrior coordination for multi-agent work - parallel-safe queries, urgency scoring |
-| **tools-plugin** | 16 | General utilities - fd, rg, jq, shell, ImageMagick, d2 |
-| **workflow-orchestration-plugin** | 6 | Workflow orchestration - preflight checks, checkpoint refactoring, workflow scale budgeting |
-
-### Game Development
-
-| Plugin | Skills | Description |
-|--------|--------|-------------|
-| **bevy-plugin** | 2 | Bevy game engine - ECS, rendering, game architecture |
-
-## Plugin Structure
-
-Each plugin follows the standard Claude Code plugin structure:
-
-```
-<plugin-name>/
-├── .claude-plugin/
-│   └── plugin.json     # Plugin manifest
-├── README.md           # Plugin documentation
-├── CHANGELOG.md        # Auto-generated by release-please
-├── skills/
-│   └── <skill-name>/
-│       └── SKILL.md    # Skill definition
-└── agents/             # Agent definitions (optional)
-    └── <agent>.md
-```
-
-## Ecosystem: consumed by dotfiles
-
-This marketplace's primary real-world consumer is
-[`laurigates/dotfiles`](https://github.com/laurigates/dotfiles), which installs,
-pins, and dogfoods the plugins via `just` recipes. The two repos form a
-provider ↔ consumer symbiosis:
-
-```mermaid
-flowchart LR
-    subgraph cp["claude-plugins (this repo — provider)"]
-        mkt["marketplace.json<br/>44 plugins"]
-        skill["/configure-claude-plugins"]
-        rules["shared .claude/rules/"]
-    end
-    subgraph df["dotfiles (consumer)"]
-        pj["just plugins-*<br/>(plugins.just)"]
-        pins["~/.claude/settings.json<br/>canonical pins"]
-    end
-    mkt -->|curl marketplace.json| pj
-    skill -->|plugins-setup-repo| pj
-    pj -->|install / enable| pins
-    pins -->|plugins-audit drift-check| pj
-    rules -.->|conventions mirrored| df
-
-    classDef prov fill:#f3e8ff,stroke:#a855f7;
-    classDef cons fill:#ffedd5,stroke:#f97316;
-    class mkt,skill,rules prov;
-    class pj,pins cons;
-```
-
-- **Provider → consumer:** `dotfiles`' `plugins-install` fetches this repo's
-  `marketplace.json`; `plugins-setup-repo` runs `/configure-claude-plugins` to
-  wire a target repo to the marketplace.
-- **Consumer → provider:** `plugins-audit` / `plugins-sync-repo` compare each
-  repo's committed `enabledPlugins` against the canonical pin set, exercising the
-  marketplace as a live consumer.
-- **Shared conventions:** `conventional-commits`, `parallel-safe-queries`,
-  `gh-json-fields`, and `bash-tool-replacements` rules exist in both repos.
-
-The authoritative diagram (with the full `just` module/group layout) lives in the
-consumer repo: [`dotfiles/docs/justfile-architecture.md`](https://github.com/laurigates/dotfiles/blob/main/docs/justfile-architecture.md).
-Justfile authoring/auditing for both repos is governed by this marketplace's
-`tools-plugin:justfile-expert` and `configure-plugin:configure-justfile`.
-
-### Extracted agent CLIs
-
-Two Claude Agent SDK command-line tools were developed in this repo and now live
-in their own repositories, installable without a `claude-plugins` checkout:
-
-| Tool | Repo | What it does |
-|------|------|--------------|
-| `git-repo-agent` | [`laurigates/git-repo-agent`](https://github.com/laurigates/git-repo-agent) | Onboards and maintains git repos using this marketplace's blueprint, configure, and quality skills (#1017) |
-| `vault-agent` | [`laurigates/vault-agent`](https://github.com/laurigates/vault-agent) | Obsidian vault maintenance — tag consolidation, broken-link repair, stub classification, MOC curation (#1973) |
-
-Both compile their subagent prompts from this marketplace's `SKILL.md` files and
-ship the results pre-compiled in their wheels, so a standalone install needs no
-checkout of this repo. `.github/workflows/sync-agent-prompts.yml` regenerates
-those artifacts here whenever a bundled skill changes and opens a PR on the
-target repo.
 
 ## Questions and Ideas
 
@@ -262,14 +125,6 @@ fix(python-plugin): handle empty venv     # patch bump
 ```
 
 See `CLAUDE.md` for detailed development instructions.
-
-## Regenerating the Plugin List
-
-The flat plugin list can be generated from `marketplace.json`:
-
-```bash
-jq -r '.plugins[] | "| **\(.name)** | \(.category) | \(.description) |"' .claude-plugin/marketplace.json
-```
 
 ## License
 
