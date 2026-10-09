@@ -49,9 +49,9 @@
 # genuinely created during the session is still reported, in the SessionStart
 # repo, in a repo entered later, and through a linked worktree.
 #
-# Three further filters keep the block SATISFIABLE (issue #2686). A Stop hook
-# that cannot be cleared teaches the agent to ignore it, which is strictly
-# worse than a hook that never fires:
+# Four further filters keep the block SATISFIABLE (issues #2686, #2735). A
+# Stop hook that cannot be cleared teaches the agent to ignore it, which is
+# strictly worse than a hook that never fires:
 #
 #   4. Redundancy. A stash whose tree already equals the working tree holds
 #      nothing the tree does not, so reporting it is pure noise. That is the
@@ -76,10 +76,30 @@
 #      mutation the session made on purpose. Checkpoint entries are worded
 #      "verify …, then git stash drop"; hand-made stashes keep `pop`.
 #
-# Both new filters fail toward REPORTING: an unreadable `.reported` file or an
-# errored `git diff` leaves the stash in the report. Silence is the safe
-# degradation for a false ALARM (defences 1-3); reporting is the safe
-# degradation for information LOSS.
+#   7. Committed content (#2735, split out of #2652). A stash whose tree is
+#      already present among the trees of commits reachable from HEAD, the
+#      local branches, the remote refs and the tags holds nothing that is not
+#      recoverable from the history itself — the exact shape the #2652 thread
+#      records: checkpoints taken before a deletion whose files then landed
+#      in commits (`637f3c8a`, `ddd852ff`). Reporting one blocks Stop on work
+#      that already exists on a branch, and an agent under auto mode cannot
+#      drop it (the classifier refuses `git stash drop` as irreversible
+#      destruction). The scan is bounded twice, both bounds fail toward
+#      reporting: commits are limited to those CREATED SINCE THE SESSION
+#      START (an older bound would be a lie that suppresses; a missing bound
+#      disables the filter entirely), and to a fixed max-count so a large
+#      repo cannot stretch the Stop timeout. Refs/stash is deliberately
+#      EXCLUDED from the walk (`--branches --remotes --tags` + HEAD, not
+#      `--all`): with stash refs included every stash would trivially
+#      suppress its own and its neighbours' trees, including the case where
+#      the only other copy sits in another stash the user later drops. The
+#      3rd-parent guard from filter 4 applies here too: a tracked-tree match
+#      says nothing about a `push -u` stash's untracked payload.
+#
+# All new filters fail toward REPORTING: an unreadable `.reported` file, an
+# errored `git diff` or any failure in the committed-content walk leaves the
+# stash in the report. Silence is the safe degradation for a false ALARM
+# (defences 1-3); reporting is the safe degradation for information LOSS.
 #
 # Opt out entirely with CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER=1, matching the
 # convention in repo-deletion-safety.sh and its ten siblings.
@@ -154,6 +174,25 @@ stash_is_redundant() { # stash_is_redundant <cwd> <stash-sha>
         return 1
     fi
     git -C "$1" diff --quiet "$2" -- >/dev/null 2>&1
+}
+
+# Trees of commits whose content this session could not have added anything
+# to (#2735, filter 7): HEAD, the local branches, the remote refs and the
+# tags — NOT --all, which walks refs/stash and would let stashes suppress one
+# another (see the header). Bounded by the session start (filter 3's bound, so
+# the first observation is authoritative for THIS session) and by max-count,
+# so neither a long session nor a huge repo can stretch the 10s Stop budget.
+# A prune that misses an eligible commit costs a report, never a silence.
+#
+# An errored walk yields nothing; an EMPTY index leaves the caller's fixed-
+# string comparison unmatched, so the stash is REPORTED and a repo where git
+# log fails behaves exactly as it did before this filter existed.
+STASH_DEDUP_MAX_COMMITS=2000
+committed_trees() { # committed_trees <cwd> <bound-epoch>
+    git -C "$1" log --max-count="$STASH_DEDUP_MAX_COMMITS" \
+        HEAD --branches --remotes --tags --format='%T %ct' 2>/dev/null \
+        | awk -v b="$2" '!seen[$1]++ && (b == 0 || ($2 + 0) >= b + 0) { print $1 }' \
+        || true
 }
 
 # Read JSON input from stdin and extract fields
@@ -266,6 +305,15 @@ if [ "$SESSION_START" -eq 0 ]; then
     SESSION_START=$(file_mtime "$BASELINE_FILE")
 fi
 
+# Filter 7's index (#2735), built once per Stop and shared by every stash.
+# "Unknown bound" (no marker, no prior observation) leaves SESSION_START at 0,
+# and committed_trees treats a 0 bound as "no epoch bound": the max-count cap
+# alone bounds the walk, and the filter stays available rather than
+# disappearing for exactly the sessions that lack a marker. On untracked-only
+# repos, `--branches --remotes --tags` can legitimately find no refs and walk
+# only what HEAD reaches — same intent as today, just cheaper.
+COMMITTED_TREES=$(committed_trees "$CWD" "$SESSION_START")
+
 # Compare: find stashes whose hashes are NOT in the baseline
 NOW=$(date +%s)
 NEW_STASHES=""
@@ -308,31 +356,42 @@ while IFS='|' read -r hash ref ts subject; do
         continue
     fi
 
-    # This is a new stash created during the session
-    NEW_COUNT=$((NEW_COUNT + 1))
-    AGE=$((NOW - ts))
-    HOURS=$((AGE / 3600))
-    MINS=$(( (AGE % 3600) / 60 ))
-    if [ "$HOURS" -gt 0 ]; then
-        AGE_STR="${HOURS}h ${MINS}m ago"
-    else
-        AGE_STR="${MINS}m ago"
+    STASH_TREE=$(git -C "$CWD" rev-parse --quiet --verify "$hash^{tree}" 2>/dev/null || true)
+
+    # Filter 7 (#2735): the same, for content already committed on a branch —
+    # a checkpoint taken before a deletion whose files then landed in commits.
+    # When the tree hash cannot be resolved, or the index is EMPTY (an errored
+    # walk, a repo with no eligible refs and no commits), the comparison cannot
+    # match and the stash is REPORTED, consistent with this filter's fail-
+    # toward-reporting contract. A NON-EMPTY index only suppresses trees
+    # actually present in it, so a walk that stopped early (the max-count cap)
+    # can only over-report, never under-report.
+    if ! printf '%s\n' "$COMMITTED_TREES" | grep -qFx "$STASH_TREE"; then
+        NEW_COUNT=$((NEW_COUNT + 1))
+        AGE=$((NOW - ts))
+        HOURS=$((AGE / 3600))
+        MINS=$(( (AGE % 3600) / 60 ))
+        if [ "$HOURS" -gt 0 ]; then
+            AGE_STR="${HOURS}h ${MINS}m ago"
+        else
+            AGE_STR="${MINS}m ago"
+        fi
+        # Filter 6: `pop` is wrong for a checkpoint this hook family made itself.
+        # auto-checkpoint.sh writes its message through `git stash store -m`, which
+        # stores it verbatim; `git stash push -m` would prefix "On <branch>: ".
+        # Match both so the wording survives a change of mechanism.
+        case "$subject" in
+            "auto-checkpoint before "*|*": auto-checkpoint before "*)
+                ACTION="verify against the working tree, then git stash drop"
+                HAS_CHECKPOINT=1
+                ;;
+            *)
+                ACTION="git stash pop"
+                ;;
+        esac
+        NEW_STASHES="${NEW_STASHES}  ${ref} (${AGE_STR}): ${subject} → ${ACTION}\n"
+        REPORTED_NOW="${REPORTED_NOW}${hash}"$'\n'
     fi
-    # Filter 6: `pop` is wrong for a checkpoint this hook family made itself.
-    # auto-checkpoint.sh writes its message through `git stash store -m`, which
-    # stores it verbatim; `git stash push -m` would prefix "On <branch>: ".
-    # Match both so the wording survives a change of mechanism.
-    case "$subject" in
-        "auto-checkpoint before "*|*": auto-checkpoint before "*)
-            ACTION="verify against the working tree, then git stash drop"
-            HAS_CHECKPOINT=1
-            ;;
-        *)
-            ACTION="git stash pop"
-            ;;
-    esac
-    NEW_STASHES="${NEW_STASHES}  ${ref} (${AGE_STR}): ${subject} → ${ACTION}\n"
-    REPORTED_NOW="${REPORTED_NOW}${hash}"$'\n'
 done <<< "$CURRENT_STASHES"
 
 # No new stashes → exit silently

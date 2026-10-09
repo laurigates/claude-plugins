@@ -521,6 +521,109 @@ export CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER=0
 ck "a value other than 1 does not disable" REPORT "$(run_stop "$REPO_A")"
 unset CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER
 
+echo "== #2735: a stash whose content is already committed on a branch → silent =="
+# The #2652 shape (a checkpoint taken while work was uncommitted, whose files
+# later land in a commit on some branch), staged as three steps so only filter
+# 7 can explain the verdict: (1) content X exists only as uncommitted working-
+# tree work; (2) an auto-checkpoint snapshots X — via the create+store pair the
+# hook itself uses, so the working tree is untouched; (3) X lands in a commit
+# on a branch and the working tree moves away from it (the session keeps
+# working on something else). After step 3 the stash's tree equals a COMMIT's
+# tree, not the working tree's, so filter 4 is provably open and the committed-
+# content index must decide. This is the exact case that blocked Stop forever:
+# auto mode refuses `git stash drop` as irreversible, so the recorded stashes
+# were cleared only by hand.
+reset_baselines
+git -C "$REPO_A" stash clear
+reset_tree "$REPO_A"
+run_init "$REPO_A"
+printf 'committed-elsewhere work\n' > "$REPO_A/file.txt"
+CK_SHA=$(git -C "$REPO_A" stash create)   # create leaves the worktree alone
+ck "premise: the snapshot exists" 0 "$(probe_rc test -n "$CK_SHA")"
+git -C "$REPO_A" stash store -m "auto-checkpoint before git clean -fd (probe)" "$CK_SHA" 2>/dev/null
+# X lands on a branch; the checkout then leaves X's content behind.
+git -C "$REPO_A" switch -q -c landed 2>/dev/null
+git -C "$REPO_A" add file.txt
+git -C "$REPO_A" commit -q -m landed 2>/dev/null
+git -C "$REPO_A" switch -q main 2>/dev/null
+ck "premise: the committed tree IS the stash's tree" \
+   "$(git -C "$REPO_A" rev-parse 'landed^{tree}')" "$(git -C "$REPO_A" rev-parse 'stash@{0}^{tree}')"
+ck "premise: filter 4 is open (tree ≠ working tree)" \
+   1 "$(probe_rc git -C "$REPO_A" diff --quiet 'stash@{0}' --)"
+run_stop "$REPO_A" >/dev/null
+ck "committed content → silent"            SILENT "$LAST_VERDICT"
+ck "and stays silent on the next Stop"     SILENT "$(run_stop "$REPO_A")"
+git -C "$REPO_A" stash clear
+git -C "$REPO_A" branch -D landed >/dev/null 2>&1 || true
+reset_tree "$REPO_A"
+
+# Twin: the filter is a property of the TREE, not of the phrase. A hand-made
+# stash whose content exists only in the working tree has to keep reporting,
+# even though its message is as innocuous as the suppressed one's.
+make_stash "$REPO_A" "hand work, not committed anywhere"
+run_stop "$REPO_A" >/dev/null
+ck "content existing nowhere else → reported"   REPORT "$LAST_VERDICT"
+ck_reason       "names it"                      "hand work, not committed anywhere"
+git -C "$REPO_A" stash clear
+reset_tree "$REPO_A"
+
+# Twin: a `push -u` stash whose TRACKED tree is already committed but whose
+# untracked payload is not — the 3rd-parent guard must survive this filter
+# too, or #2610's untracked content could be silenced as "already committed".
+printf 'untracked payload\n' > "$REPO_A/untracked.txt"
+git -C "$REPO_A" stash push -u -q -m "hand work with an untracked file"
+U_STASH=$(git -C "$REPO_A" stash list --format='%H' | head -n 1)
+ck "premise: the -u stash has a 3rd parent" \
+   0 "$(probe_rc git -C "$REPO_A" rev-parse --verify --quiet "${U_STASH}^3")"
+ck "premise: its TRACKED tree is already committed" \
+   0 "$(probe_rc git -C "$REPO_A" diff --quiet "${U_STASH}^" "${U_STASH}" --)"
+run_stop "$REPO_A" >/dev/null
+ck "untracked payload keeps it reported"   REPORT "$LAST_VERDICT"
+ck_reason       "names it"                 "hand work with an untracked file"
+git -C "$REPO_A" stash clear
+reset_tree "$REPO_A"
+
+# Boundary: the walk's epoch bound is the session start, so content committed
+# BEFORE the session began — in a repo the session entered mid-flight — is
+# invisible to the filter and still reported. That is the deliberate cost of
+# bounding: the filter may never suppress on the strength of commits it did
+# not observe this session. (Pinned so the bound cannot be silently widened
+# into a whole-history walk.)
+reset_baselines
+git -C "$REPO_A" stash clear
+reset_tree "$REPO_A"
+# The landing commit is dated 10s before "now", so no 1-second-granularity
+# race can pull it inside the session-start bound taken when run_init stamps
+# the marker below.
+PRE_DATE=$(($(date +%s) - 10))
+printf 'pre-bound work\n' > "$REPO_A/file.txt"
+git -C "$REPO_A" switch -q -c stale 2>/dev/null
+git -C "$REPO_A" add file.txt
+GIT_AUTHOR_DATE="@$PRE_DATE +0000" GIT_COMMITTER_DATE="@$PRE_DATE +0000" \
+    git -C "$REPO_A" commit -q -m "landed before the session" 2>/dev/null
+PRE_TREE=$(git -C "$REPO_A" rev-parse 'stale^{tree}')
+git -C "$REPO_A" switch -q main 2>/dev/null
+reset_tree "$REPO_A"
+run_init "$REPO_A"
+# Recreate the same content in the working tree and checkpoint it (again the
+# worktree-preserving create+store pair), then move the working tree back to
+# main's clean state — so filter 4 is open and the epoch bound is the only
+# thing standing between this stash and a report.
+printf 'pre-bound work\n' > "$REPO_A/file.txt"
+CK_PRE=$(git -C "$REPO_A" stash create)
+git -C "$REPO_A" stash store -m "auto-checkpoint before git clean -fd (pre-bound)" "$CK_PRE" 2>/dev/null
+git -C "$REPO_A" checkout -q -- file.txt 2>/dev/null
+ck "premise: same tree as a pre-bound commit" \
+   "$PRE_TREE" "$(git -C "$REPO_A" rev-parse 'stash@{0}^{tree}')"
+ck "premise: filter 4 is open" \
+   1 "$(probe_rc git -C "$REPO_A" diff --quiet 'stash@{0}' --)"
+run_stop "$REPO_A" >/dev/null
+ck "content committed before the bound → reported"   REPORT "$LAST_VERDICT"
+git -C "$REPO_A" stash clear
+git -C "$REPO_A" branch -D stale >/dev/null 2>&1 || true
+reset_tree "$REPO_A"
+
 echo
 printf '%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
+
