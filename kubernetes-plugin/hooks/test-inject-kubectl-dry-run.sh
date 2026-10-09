@@ -23,7 +23,9 @@
 # #2887 pins the shapes the #2734 fix still allowed although they were not dry
 # runs: --raw, a trailing valued flag that swallows the injected flag, a
 # leading redirect, a herestring, any substitution or expansion, a glob or
-# brace expansion, and --profile / --cache-dir. Each now yields no output.
+# brace expansion, and --profile / --cache-dir. Each now yields no output, also
+# when a line continuation splits the flag, and so does an environment prefix
+# other than KUBECONFIG=….
 set -uo pipefail
 
 HOOK="$(cd "$(dirname "$0")" && pwd)/inject-kubectl-dry-run.sh"
@@ -172,6 +174,27 @@ assert_silent 'kubectl patch deploy web -p '"'"'{"spec":{"replicas":2}}'"'"'' \
 # A flag with its value after `=` swallows nothing.
 assert_rewrite 'kubectl apply -f x.yaml -o=yaml' "kubectl apply $D -f x.yaml -o=yaml $D" 'last word -o=yaml'
 
+echo "=== a line continuation inside a word: bash joins it, so does the hook ==="
+# Bash deletes backslash-newline before it splits words, so each of these
+# reaches kubectl as the flag the word guards decline (#2887 review).
+assert_silent "kubectl delete --ra${BS}${NL}w /api/v1/namespaces/x" '--ra\<NL>w is --raw'
+assert_silent "kubectl delete -${BS}${NL}-raw /api/v1/namespaces/x" '-\<NL>-raw is --raw'
+assert_silent "kubectl delete pod x --dry-${BS}${NL}run=none -${BS}${NL}- y" \
+    '--dry-\<NL>run=none and -\<NL>- are --dry-run=none and --'
+assert_silent "kubectl apply -f x.yaml --dry-r${BS}${NL}un=none" '--dry-r\<NL>un=none is the node'"'"'s own --dry-run'
+assert_silent "kubectl apply -f x.yaml --cache${BS}${NL}-dir=/tmp/c" '--cache\<NL>-dir is --cache-dir'
+assert_silent "kubectl apply -f x.yaml -${BS}${NL}o" 'last word -\<NL>o is -o'
+# An escaped backslash before the newline ends the statement instead.
+assert_silent "kubectl delete x${BS}${BS}${NL}--raw /api/v1/namespaces/x" '\\<NL> ends the statement: two commands'
+
+echo "=== an environment prefix other than KUBECONFIG: no output ==="
+assert_silent 'PATH=/tmp/evil kubectl apply -f x.yaml' 'PATH= can swap the kubectl binary'
+assert_silent 'LD_PRELOAD=/tmp/x.so kubectl apply -f x.yaml' 'LD_PRELOAD= loads a library'
+assert_silent 'KUBECONFIG=/tmp/k PATH=/tmp/evil kubectl apply -f x.yaml' 'KUBECONFIG= beside PATH='
+assert_silent 'KUBECONFIG+=/tmp/k kubectl apply -f x.yaml' 'KUBECONFIG+= is not the allowed form'
+assert_rewrite 'KUBECONFIG=/tmp/k kubectl apply -f x.yaml' \
+    "KUBECONFIG=/tmp/k kubectl apply $D -f x.yaml $D" 'KUBECONFIG= alone is still rewritten'
+
 echo "=== a -- argument ends option parsing: no output ==="
 assert_silent 'kubectl delete pod x -- y' 'bare --'
 assert_silent "kubectl delete pod x '--' y" "quoted '--'"
@@ -230,10 +253,11 @@ printf '#!%s\ncat >/dev/null\necho '"'"'[%s,{"ruleId":"err","range":{"byteOffset
     "$BASH" "$CLEAN_PARSE" >"$SANDBOX/errnode/ast-grep"
 chmod +x "$SANDBOX/shadow/sg" "$SANDBOX/fails/ast-grep" "$SANDBOX/junk/ast-grep" \
     "$SANDBOX/canned/ast-grep" "$SANDBOX/errnode/ast-grep"
-# The same clean parse plus one substitution / expansion / redirect node (#2887).
+# The same clean parse plus one substitution / expansion / redirect node, or an
+# environment assignment that is not KUBECONFIG=… (#2887).
 # The command text carries none of $ ` { < >, so the text guard cannot be what
 # silences these rows: only the parse-node bail can.
-AST_BAIL_IDS="csub psub exp sexp fredir hstr"
+AST_BAIL_IDS="csub psub exp sexp fredir hstr asgn"
 for id in $AST_BAIL_IDS; do
     mkdir -p "$SANDBOX/node-$id"
     for tool in jq cat sort grep; do ln -sf "$(command -v "$tool")" "$SANDBOX/node-$id/$tool"; done

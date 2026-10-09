@@ -24,18 +24,22 @@
 #     ANYWHERE, including inside the node: tree-sitter puts a LEADING redirect
 #     (`>f kubectl apply …`) inside the command node, and a redirect-only
 #     `$(>f)` or `<(>f)` has no inner command node to count (#2887);
-#   - the node's text has none of $ ` { < > * ? [ (an expansion, substitution,
-#     redirection, brace expansion or glob can become a flag, a `--` or a file
-#     write that the parse does not show);
+#   - no environment assignment but KUBECONFIG=… precedes kubectl (PATH= or
+#     LD_PRELOAD= can run another binary or library);
+#   - once every backslash-newline is joined (bash deletes it before splitting
+#     words, so `--ra\<NL>w` reaches kubectl as --raw), the node's text has
+#     none of $ ` { < > * ? [ (an expansion, substitution, redirection, brace
+#     expansion or glob can become a flag, a `--` or a file write that the
+#     parse does not show);
 #   - its command_name is literally `kubectl` and the very next word is
 #     literally apply, delete or patch;
-#   - once quotes and backslashes are dropped and `_` reads as `-` (kubectl's
-#     flag normalizer), no word contains --dry-run (so the --dry-run=none
-#     bypass, --dry_run=none and --dry-r''un=none all count; a comment after
-#     the node does not), no word is `--` (it would end option parsing), and
-#     no word is --raw (kubectl sends the raw request before it reads
-#     --dry-run) or a --profile / --cache-dir flag (a dry run still writes
-#     those files);
+#   - once lines are joined, quotes and backslashes are dropped and `_` reads
+#     as `-` (kubectl's flag normalizer), no word contains --dry-run (so the
+#     --dry-run=none bypass, --dry_run=none, --dry-r''un=none and
+#     --dry-r\<NL>un=none all count; a comment after the node does not), no
+#     word is `--` (it would end option parsing), and no word is --raw
+#     (kubectl sends the raw request before it reads --dry-run) or a
+#     --profile / --cache-dir flag (a dry run still writes those files);
 #   - the node's last word is not a flag without `=`: it may take a value,
 #     and would swallow the injected trailing --dry-run=client as that value.
 # The flag is inserted at the END of the node (inside its byte range, so before
@@ -117,6 +121,10 @@ id: hstr
 language: bash
 rule: { kind: herestring_redirect }
 ---
+id: asgn
+language: bash
+rule: { kind: variable_assignment }
+---
 id: word
 language: bash
 rule:
@@ -139,7 +147,7 @@ NAME_END=-1
 NAME_COUNT=0
 VERB_END=-1
 COVERED=()
-LINE_RE='^(0|[1-9][0-9]*) (0|[1-9][0-9]*) (cmd|err|cmt|name|word|csub|psub|exp|sexp|fredir|hstr)$'
+LINE_RE='^(0|[1-9][0-9]*) (0|[1-9][0-9]*) (cmd|err|cmt|name|word|csub|psub|exp|sexp|fredir|hstr|asgn)$'
 while IFS= read -r line; do
     # Anything but a well-formed node line: distrust the whole answer.
     [[ $line =~ $LINE_RE ]] || exit 0
@@ -157,6 +165,14 @@ while IFS= read -r line; do
             COVERED+=("$start $end")
             ;;
         cmt) COVERED+=("$start $end") ;;
+        # An environment prefix other than KUBECONFIG can swap the binary or
+        # load a library (PATH=…, LD_PRELOAD=…): defer.
+        asgn)
+            case ${COMMAND:start:end-start} in
+                KUBECONFIG=*) ;;
+                *) exit 0 ;;
+            esac
+            ;;
         name)
             NAME_COUNT=$((NAME_COUNT + 1))
             if [ "${COMMAND:start:end-start}" = "kubectl" ]; then NAME_END=$end; fi
@@ -191,7 +207,13 @@ done < <(printf '%s\n' "${COVERED[@]}" | sort -n -k1,1)
 REST+=${COMMAND:pos}
 [[ $REST =~ ^[[:space:]]*$ ]] || exit 0
 
+# Bash deletes a backslash-newline before it splits words, so `--ra\<NL>w`
+# reaches kubectl as --raw. Join every line continuation before the text and
+# word guards, or they see two harmless words (#2887 review). Inside quotes
+# joining never splits a word, and inside single quotes kubectl keeps the pair,
+# so a guard can only fire more often than it must: still safe.
 NODE_TEXT=${COMMAND:CMD_START:CMD_END-CMD_START}
+NODE_TEXT=${NODE_TEXT//$'\\\n'/}
 
 # Any expansion, substitution, redirection, brace expansion or glob in the node
 # can become a flag, a `--` or a file write the parse does not show ($'--',
