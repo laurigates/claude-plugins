@@ -3,7 +3,7 @@ name: multirepo-ci-cd
 description: "Diagnose a CI failure or roll a workflow out across many repos. Use when debugging a red check in a multi-repo org, promoting a shared reusable-*.yml, or re-triggering a PR after a @main fix."
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
 created: 2026-08-06
-modified: 2026-09-12
+modified: 2026-10-09
 reviewed: 2026-09-12
 ---
 
@@ -135,3 +135,10 @@ the real fix is `allowed_bots` on the action, not re-triggering — but the same
 "re-run replays the original payload" mechanic is why clicking re-run yourself
 doesn't help. Both traps are the same root cause: a re-run is a replay, not a
 new dispatch.
+
+The bot need not have opened the PR. A workflow that pushes to the PR branch
+with `github.token` makes the next run's `actor` `github-actions[bot]`; GitHub
+holds that run for approval, and the approved attempt still refuses because
+`actor` stays the bot. The signature, the `allowed_bots: "github-actions"` fix
+and a scan that counts these refusals across a repo's failed runs are in
+`github-actions-plugin:ai-review-max-turns` (Cause 5, bot-actor refusal).

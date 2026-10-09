@@ -3,11 +3,11 @@ name: ai-review-max-turns
 description: "Triage a red Claude-powered CI review check. Use when an AI review job fails or flakes: tell a real unpublished finding from turn-budget or ceiling overruns and infra reruns via subtype + is_error."
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
 created: 2026-09-02
-modified: 2026-09-25
+modified: 2026-10-09
 reviewed: 2026-09-23
 ---
 
-# A Red AI-Review CI Check Has Four Very Different Causes — Separate Them Before Acting
+# A Red AI-Review CI Check Has Five Very Different Causes — Separate Them Before Acting
 
 A growing class of CI checks are **Claude-powered reviewers** — a workflow
 that runs the Claude Code action over the PR diff and reports findings as a
@@ -24,9 +24,9 @@ checks named `typescript / analyze`, `secrets / scan`, `owasp / scan`,
 | Deciding whether that red is a finding or noise | The failure is real and needs a code fix pushed → `git-plugin:git-fix-pr` |
 | The AI review stays green but re-runs on every push — see [REFERENCE.md](REFERENCE.md) | |
 
-## The four causes
+## The five causes
 
-They go red for four reasons that demand **opposite** responses. Reading one
+They go red for five reasons that demand **opposite** responses. Reading one
 as another is the whole hazard:
 
 | Cause | Tell | Response |
@@ -35,9 +35,13 @@ as another is the whole hazard:
 | **Turn-ceiling overrun** — the run *finished*, the wrapper failed the job | `is_error: false`, `subtype: "success"`, **no** `Found N` line, and `##[error]Claude reported a successful result after N turns, exceeding the configured maximum of M` | Ignore the failure; the scan completed and found nothing |
 | **A real finding it could not publish** | `is_error: false`, `subtype: "success"`, a `::error::Found N …` line, **and no PR comment** | Investigate the code by hand — the check found something |
 | **Result flagged errored despite completing** | `subtype: "success"` **and** `is_error: true`, low `num_turns`, 0 denials, no `Found N` line, no `result` string | Rerun the identical commit once; a pass means it was infra |
+| **Bot-actor refusal** — the action refused to start Claude | No execution file, no `is_error`, no `num_turns`; the log says `non-human actor: <name> (type: Bot)`; `run_attempt` ≥ 2 with `actor` ≠ `triggering_actor` | Ignore the failure; fix the workflow with `allowed_bots`, or push with a PAT or App token |
 
 > **The law: the red X is never the discriminator, and neither is `is_error`
-> on its own.** Read `subtype` and `is_error` together. `error_max_turns` means
+> on its own.** The discriminator applies only once Claude ran: a run the action
+> refused before starting (Cause 5) has no `subtype`, `is_error` or turn count to
+> read, so rule out the `non-human actor` line first. Then read `subtype` and
+> `is_error` together. `error_max_turns` means
 > the run died mid-flight. `subtype: "success"` means it finished, and a
 > finished run can still report `is_error: true` (Cause 4), so
 > `is_error` alone does not separate a run that died from one that finished.
@@ -57,14 +61,16 @@ Read the subtype before forming any theory:
 url=$(gh pr checks <pr> -R <owner>/<repo> --json name,link \
   --jq '.[]|select(.name=="<check>")|.link')
 runid=$(echo "$url" | sed -E 's#.*/runs/([0-9]+)/.*#\1#')
-gh run view "$runid" --log-failed 2>&1 | grep -iE '"is_error"|"subtype"|error_max_turns|num_turns'
+gh run view "$runid" --log-failed 2>&1 | grep -iE '"is_error"|"subtype"|error_max_turns|num_turns|non-human actor'
 ```
 
 **Cause 1 (budget exhaustion)** — when the log shows `error_max_turns`, open [references/budget-exhaustion.md](references/budget-exhaustion.md) for the rotating-failure tell, why not to blind-rerun, the `mergeStateStatus` check, and the upstream fix.
 
-**Cause 2 (turn-ceiling overrun)** — when a `subtype: "success"` run logs `exceeding the configured maximum`, open [references/turn-ceiling-overrun.md](references/turn-ceiling-overrun.md) for the grep, the evidence, and the upstream fix.
+**Cause 2 (turn-ceiling overrun)** — when a `subtype: "success"` run logs `exceeding the configured maximum`, open [references/turn-ceiling-overrun.md](references/turn-ceiling-overrun.md) for the grep, the evidence, and the upstream fix. It also shows where the turns went: list the tool calls in the run's `claude-execution-output.json`, and on a PR that edits `.claude/` or `CLAUDE.md`, expect the action to have restored those paths from the base branch, with the PR's copies parked in `.claude-pr/`.
 
 **Cause 4 (errored despite completing)** — when `subtype: "success"` and `is_error: true` appear together, open [references/errored-despite-completing.md](references/errored-despite-completing.md) for the full signature, the grep, and the rerun-once rule.
+
+**Cause 5 (bot-actor refusal)** — when the step fails with no execution file and the log says `non-human actor`, open [references/bot-actor-refusal.md](references/bot-actor-refusal.md) for the approval-hold mechanism, the `allowed_bots` fix, and a scan that counts these refusals across a repo's failed runs.
 
 ## Cause 3 — a real finding the check cannot publish
 
@@ -98,7 +104,7 @@ files yourself against the check's own category list. The finding is often in
 **The count is not stable.** Same commit, different answer. Never treat a
 delta between runs as evidence a fix worked.
 
-## The trap under all four: a check that never ran looks exactly like a pass
+## The trap under all five: a check that never ran looks exactly like a pass
 
 Before using a sibling PR as a "it's green there" control, check the
 **duration**. These workflows carry `file-patterns` filters, so a PR touching
@@ -155,8 +161,8 @@ A red check on valid code is worse than no check: it reads as a real finding,
 so it pulls a reviewer into chasing a non-existent defect and erodes trust in
 the AI-review signal. But the inverse error is worse still — treating every
 AI-review red as flakiness waves through the findings that are real and merely
-unpublishable. Reading `subtype`, `is_error` and the finding count together
-separates all four. Same instinct as
+unpublishable. Ruling out the bot-actor refusal, then reading `subtype`,
+`is_error` and the finding count together, separates all five. Same instinct as
 `github-actions-plugin:multirepo-ci-cd`: diagnose against what CI actually
 did (read the run), not against the surface red.
 

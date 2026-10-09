@@ -1,6 +1,6 @@
 # AI Review — Cause 1: Budget Exhaustion
 
-Detail for the first row of the four-causes table in [SKILL.md](../SKILL.md).
+Detail for the first row of the five-causes table in [SKILL.md](../SKILL.md).
 
 ## Cause 1 — budget exhaustion (`error_max_turns`)
 

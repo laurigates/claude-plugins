@@ -42,11 +42,22 @@ the marker and posts it:
 
 ```yaml
 - name: Publish the report
+  env:
+    GH_TOKEN: ${{ github.token }}
+    REPORT_FILE: report.md
+    R: ${{ github.repository }}
+    N: ${{ github.event.pull_request.number }}
   run: |
-    [ -s "${REPORT_FILE}" ] || { echo "::warning::nothing to publish"; exit 0; }
+    [ -s "${REPORT_FILE}" ] || { echo "::error::the agent produced no report"; exit 1; }
     { echo '<!-- report-marker -->'; grep -vFx '<!-- report-marker -->' "${REPORT_FILE}"; } > body.md
     jq -Rs '{body: .}' body.md | gh api -X POST "repos/${R}/issues/${N}/comments" --input -
 ```
+
+**A missing report fails the job.** When this step is the only proof that the
+agent produced anything, `exit 0` on a missing file turns every failed run green.
+Relax it to `::warning::` and `exit 0` only where another step already fails the
+job on a missing report, or where "nothing to report" is a legitimate outcome
+the agent signals some other way (an empty file is still a file).
 
 Three properties that make it hold:
 
@@ -63,14 +74,26 @@ report accumulates one comment per run otherwise.
 
 ### The family
 
-Three ways an AI-powered CI check reports something other than what happened.
-All three look like a normal red or green tick:
+Four ways an AI-powered CI check reports something other than what happened.
+All four look like a normal red or green tick:
 
 | Mode | The check says | Reality | Where |
 |---|---|---|---|
 | Never ran | pass | path filter or disabled workflow skipped it | `github-actions-plugin:ai-review-max-turns` § a check that never ran |
 | Red but unreadable | fail, no detail | a real finding it had no permission to publish | `github-actions-plugin:ai-review-max-turns` Cause 3 |
 | Posted but unparseable | fail, "result discarded" | the result is published and correct | this section |
+| Green but unpublished | pass | the agent was told to publish its own output (`git commit`/`git push`, a wiki or comment write), its calls were denied, and nothing reached the destination | this section; SKILL.md § Denials are a count |
+
+Green but unpublished is the quietest of the four, because nothing about the run
+is red. The `permission_denials_count` in the result is the only trace, and it
+is a count, not the denied calls. The fix is the produce/publish split in
+[§ The fix](#the-fix), with the publish step failing on a missing file.
+
+> Evidence (ForumViriumHelsinki/infrastructure, a weekly summary job,
+> 2026-07-20 to 2026-10-01): every run finished `success` with 2–9 denials, and
+> no report reached the wiki in about ten weeks. Fixed in
+> ForumViriumHelsinki/infrastructure#2526 by a workflow publish step that fails
+> on a missing file and reads the result back.
 
 The shared tell is that **the check's own message describes its parse, not the
 work** — so read the artifact it claims is missing before believing it is
