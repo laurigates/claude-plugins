@@ -1700,6 +1700,14 @@ assert_exit \
     "GUARD INTEGRITY: cd /tmpfoo then echo > file still blocked (#2892)" 2 \
     "cd /tmpfoo; echo a > f"
 
+# Pinned trade-off, not a goal: scratch_ctx is decided for the whole command, so
+# a mktemp -d assignment exempts a repo write that never uses the variable
+# (sed -i has behaved this way since W34). If a per-destination check lands,
+# flip this row to 2 deliberately.
+assert_exit_complex \
+    "ACCEPTED TRADE-OFF: an unused mktemp -d assignment exempts a repo echo write (#2892)" 0 \
+    'T=$(mktemp -d); echo x > src/main.py'
+
 assert_stderr_contains \
     "echo/printf block message names the mktemp -d and project tmp/ exemptions (#2892/#2837)" \
     "into a mktemp -d scratch dir, or into a git-ignored project tmp/ are allowed" \
@@ -1807,6 +1815,34 @@ assert_exit_cwd \
 assert_exit_cwd \
     "GUARD INTEGRITY: a cd before the tmp/ write voids the exemption (#2837)" 2 \
     "$IGN_REPO" "cd sub; echo x > tmp/a.txt"
+
+# A directory change in any position voids it, not only one at a statement
+# start: these four passed while the voiding regex anchored on `^`/`;&|(`.
+assert_exit_cwd \
+    "GUARD INTEGRITY: 'builtin cd' before the tmp/ write voids the exemption (#2837)" 2 \
+    "$IGN_REPO" "builtin cd sub; echo x > tmp/a.txt"
+
+assert_exit_cwd \
+    "GUARD INTEGRITY: 'if cd …; then' before the tmp/ write voids the exemption (#2837)" 2 \
+    "$IGN_REPO" "if cd sub; then echo x > tmp/a.txt; fi"
+
+assert_exit_cwd \
+    "GUARD INTEGRITY: '{ cd …;' group before the tmp/ write voids the exemption (#2837)" 2 \
+    "$IGN_REPO" "{ cd sub; echo x > tmp/a.txt; }"
+
+assert_exit_cwd \
+    "GUARD INTEGRITY: popd before the tmp/ sed -i voids the exemption (#2837)" 2 \
+    "$IGN_REPO" "popd; sed -i 's/a/b/' tmp/a.txt"
+
+# A glob destination is expanded by the shell; check-ignore on the literal
+# pattern says nothing about the tracked file it may expand to.
+assert_exit_cwd \
+    "GUARD INTEGRITY: echo > tmp/*.txt glob over a force-added file still blocked (#2837)" 2 \
+    "$FORCED_REPO" "echo x > tmp/*.txt"
+
+assert_exit_cwd \
+    "GUARD INTEGRITY: sed -i on a tmp/?.txt glob still blocked (#2837)" 2 \
+    "$IGN_REPO" "sed -i 's/a/b/' tmp/?.txt"
 
 assert_exit_cwd \
     "GUARD INTEGRITY: tmp/../ escaping the ignored dir still blocked (#2837)" 2 \

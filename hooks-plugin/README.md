@@ -26,13 +26,6 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 | `sed -i` (repo files; `/tmp`/scratch targets exempt, #2052 — reachable via a literal path, a `cd` target, or a variable value, W34 §Signal C) | Use **Edit** tool instead |
 | `echo`/`printf > file` (repo files; absolute `/tmp`/scratch destinations exempt, W38) | Use **Write** tool instead |
 | `cat > file` | Use **Write** tool instead |
-
-All three write rows share one scratch context: a `cd` into `/tmp`, a variable
-holding a `/tmp` path, or a `mktemp -d` dir (`T=$(mktemp -d)`,
-`cd "$(mktemp -d)"`) exempts the write (#2892). `echo`/`printf > file` and
-`sed -i` also pass when every destination is a literal `tmp/` or `./tmp/` path
-that `git -C <cwd> check-ignore` reports ignored, and the command does not `cd`
-first. A tracked `tmp/` still blocks (#2837).
 | `timeout cmd` | Remove timeout (human approval time exceeds it); append `# allow-timeout` for genuinely-unbounded processes (#2041) |
 | `git add -A` / `git add .` | Stage specific files by name instead |
 | Multi-grep test parsing | Use `--reporter=json` instead |
@@ -40,6 +33,16 @@ first. A tracked `tmp/` still blocks (#2837).
 | Fork bombs | Blocked unconditionally |
 | `chmod 777` | Use restrictive permissions (755, 644, 600) |
 | Write to block device | Blocked unconditionally |
+
+The three write rows share one scratch context: a `cd` into `/tmp`, a variable
+holding a `/tmp` path, or a `mktemp -d` dir (`T=$(mktemp -d)`,
+`cd "$(mktemp -d)"`) exempts the write (#2892). The context is decided for the
+whole command, so such an assignment exempts every write in it, including a
+write to a repo path that never uses the variable; `sed -i` has carried the
+same trade-off since W34. `echo`/`printf > file` and `sed -i` also pass when
+every destination is a literal `tmp/` or `./tmp/` path (no glob) that
+`git -C <cwd> check-ignore` reports ignored, and the command contains no
+`cd`/`pushd`/`popd`. A tracked `tmp/` still blocks (#2837).
 
 The read/write detectors (`cat`/`head`/`tail`, `echo`/`printf`/`cat` writes,
 `sed -i`, task-output reads) are classified **structurally** via

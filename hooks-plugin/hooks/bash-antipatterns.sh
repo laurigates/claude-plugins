@@ -479,6 +479,13 @@ See .claude/rules/bash-tool-replacements.md for the full table."
     # The predicate guards all three WRITE detectors (#2892). It used to guard only
     # `sed-inplace`, so a relative `echo a > f` after `cd /tmp/x;` blocked while
     # the identical `sed -i` was allowed.
+    #
+    # Accepted trade-off: the predicate is decided for the WHOLE command, not per
+    # write. A scratch `cd` or assignment anywhere exempts every write in the
+    # command, including `T=$(mktemp -d); echo x > src/main.py`, where nothing
+    # uses `$T`. `sed -i` has carried this since W34; this is a style nudge, and
+    # a per-destination check would need the hook to model shell state. The
+    # test suite pins the behaviour so a change to it is deliberate.
     SCRATCH_PREFIX_RE='((/private)?/tmp|/var/folders)'
     MKTEMP_D_RE='\$\(mktemp([[:space:]]+[^[:space:])]+)*[[:space:]]+(-[A-Za-z]*d[A-Za-z]*|--directory)([[:space:]]|\))'
     scratch_ctx() {
@@ -491,8 +498,10 @@ See .claude/rules/bash-tool-replacements.md for the full table."
     # The user-global rules send scratch output to the project's `tmp/` (listed
     # in `.git/info/exclude`), so an agent that follows them writes `tmp/x.txt`
     # and was blocked. A destination counts as scratch when ALL of these hold:
-    #   - it is a literal path starting `tmp/` or `./tmp/` (no expansion, no `..`)
-    #   - the command never changes directory (`cd`/`pushd`), so `tmp/` resolves
+    #   - it is a literal path starting `tmp/` or `./tmp/` (no expansion, no
+    #     glob or brace characters, no `..`)
+    #   - the command never changes directory (`cd`/`pushd`/`popd`, in any
+    #     position), so `tmp/` resolves
     #     against the hook input's `.cwd`, the directory git is asked about
     #   - `git -C "$cwd" check-ignore -q` succeeds. A tracked `tmp/` is not
     #     ignored (check-ignore skips tracked paths), so it keeps blocking.
@@ -509,8 +518,11 @@ See .claude/rules/bash-tool-replacements.md for the full table."
             \'*\') p="${p#\'}"; p="${p%\'}" ;;
             \"*\") p="${p#\"}"; p="${p%\"}" ;;
         esac
+        # Quotes, expansions, and glob/brace characters: the shell, not this
+        # literal, decides the file written, and check-ignore on the literal
+        # says nothing about a tracked file the glob expands to.
         case "$p" in
-            *[\"\'\$\`\\]*) return 1 ;;
+            *[\"\'\$\`\\]*|*\**|*\?*|*\[*|*\{*) return 1 ;;
         esac
         [[ "$p" =~ $PROJECT_TMP_RE ]] || return 1
         [[ "$p" =~ $DOTDOT_RE ]] && return 1
@@ -529,9 +541,13 @@ See .claude/rules/bash-tool-replacements.md for the full table."
         [ "$n" -gt 0 ]
     }
 
+    # A `cd`/`pushd`/`popd` WORD anywhere voids the exemption, not only one at
+    # a statement start: `builtin cd`, `command cd`, `if cd x; then`, `{ cd x;`
+    # all change directory too. Over-matching (a `cd` inside a quoted argument)
+    # only keeps the block, which is the safe direction.
     project_tmp_allowed() {
         [ -n "$HOOK_CWD" ] && [ -d "$HOOK_CWD" ] || return 1
-        ! grep -Eq '(^|[;&|(])[[:space:]]*(cd|pushd)([[:space:]]|$)' <<<"$COMMAND_SHELL_ONLY"
+        ! grep -Eq '(^|[^[:alnum:]_./-])(cd|pushd|popd)([^[:alnum:]_./-]|$)' <<<"$COMMAND_SHELL_ONLY"
     }
 
     # Each echo-printf-write match is a file_redirect node whose destination is
