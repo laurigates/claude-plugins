@@ -82,6 +82,15 @@ registry serves), `CLAUDE.md`, the migration ADR, `README`, `LICENSE`, and
   single-sourced in `scaffold.py`'s `BIOME_VERSION` constant so biome.json,
   pre-commit, CI, and the justfile never drift (a guard in
   `scripts/plugin-compliance-check.sh` enforces this).
+- **bun is pinned by `.bun-version`** (from `scaffold.py`'s `BUN_VERSION`), and
+  every `setup-bun` step reads it via `bun-version-file`. CI diffs the committed
+  `web/dist` against a fresh build, and bun's bundler output changes between
+  releases (1.3.14 to 1.4.2 renamed bundled identifiers and failed the whole
+  fleet), so an unpinned runner breaks CI the day a new bun ships. When
+  Renovate bumps `.bun-version`, rebuild `web/dist` with that bun in the same
+  PR. Locally, mise reads `.bun-version` only when `bun` is listed in
+  `idiomatic_version_file_enable_tools`; otherwise run
+  `mise exec bun@$(cat .bun-version) -- bun run build`.
 - The TS stub imports only `openModalShell`; add `fuzzyRank` /
   `highlightMatches` from `@laurigates/comfy-modal-kit` when the real modal's
   search lands.
