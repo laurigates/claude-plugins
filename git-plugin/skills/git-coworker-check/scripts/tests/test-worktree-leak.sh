@@ -10,7 +10,7 @@
 # branch. With the fifth signal, the detect script flags the leak so the
 # orchestrator leaves the working tree alone.
 #
-# Run: bash git-plugin/skills/git-coworker-check/scripts/tests/test_worktree_leak.sh
+# Run: bash git-plugin/skills/git-coworker-check/scripts/tests/test-worktree-leak.sh
 
 set -uo pipefail
 

@@ -11,7 +11,7 @@
 # raise `bare_flip_suspected` so a session can notice the corruption and recover
 # instead of misreading the cascade of git failures as its own fault.
 #
-# Run: bash git-plugin/skills/git-coworker-check/scripts/tests/test_bare_flip.sh
+# Run: bash git-plugin/skills/git-coworker-check/scripts/tests/test-bare-flip.sh
 
 set -uo pipefail
 
