@@ -1,0 +1,21 @@
+# pre-commit hooks this repository publishes for consumer repos.
+#
+#   - repo: https://github.com/laurigates/claude-plugins
+#     rev: blueprint-plugin-vX.Y.Z
+#     hooks:
+#       - id: blueprint-doc-schemas
+#
+# This repository's own checks live in .pre-commit-config.yaml.
+
+- id: blueprint-doc-schemas
+  name: blueprint PRD/ADR/PRP documents match their schemas
+  description: >-
+    Validates docs/{prds,adrs,prps}/*.md against blueprint-plugin/schemas/
+    with check-schema.py. Fails on any schema ERROR; WARNs (missing optional
+    sections, a stale reviewed date) are printed but do not fail. Needs uv on
+    PATH to resolve jsonschema and PyYAML, and fails when uv is missing rather
+    than passing on a degraded validator.
+  entry: blueprint-plugin/hooks/validate-frontmatter.sh --strict
+  language: script
+  files: ^docs/(prds|adrs|prps)/[^/]+\.md$
+  exclude: (^|/)README\.md$

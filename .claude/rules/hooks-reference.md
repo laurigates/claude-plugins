@@ -1,6 +1,6 @@
 ---
 created: 2026-02-26
-modified: 2026-09-28
+modified: 2026-10-09
 reviewed: 2026-09-16
 paths:
   - ".claude/hooks/**"
@@ -1092,6 +1092,27 @@ This is a runner lifecycle hook (configured in the runner's lifecycle config), d
 ---
 
 ## Matcher Patterns
+
+A tool-event `matcher` is tested against the **tool name only** — never the
+tool's input. Letters, digits, `_`, `-`, spaces, `,` and `|` make an exact name
+or name list (`"Write|Edit|Bash"`); any other character makes it an unanchored
+JavaScript regex. So permission-rule syntax in a matcher is a silent no-op:
+`"Write(docs/adrs/**)"` is the regex `/Write(docs/adrs/**)/`, which does not
+even compile, and `"Skill(prp-execute)"` compiles but can only match the text
+`Skillprp-execute`. blueprint-plugin shipped 17 such matchers and none of
+those hooks ever ran. Put an argument or path filter in the handler's `if` field
+(one permission rule per handler), or filter inside the script.
+`scripts/check-hook-matchers.sh` rejects the permission-rule form in CI.
+
+Two limits on `if` (observed on 2.1.295): it does not match Skill calls by
+skill name — neither `Skill(probe-skill)` nor `Skill(skill:probe-*)` fired for a
+call whose `tool_input.skill` was `probe-skill` — so filter `tool_input.skill`
+in the script; and a Write/Edit `if` never sees an edit made through Bash. For
+"this file changed, whatever changed it", read the Bash payload's
+`tool_response.bashEditDiff.changedFiles` (2.1.269+, best-effort; recorded by
+default in auto and bypassPermissions modes, elsewhere only with the user- or
+managed-scope `bashEditDiffEnabled`) — `blueprint-plugin/hooks/lib/doc-paths.sh`
+reads both payload shapes.
 
 ### MCP Tool Matching
 
