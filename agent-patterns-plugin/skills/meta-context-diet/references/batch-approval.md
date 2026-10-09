@@ -1,7 +1,24 @@
 # meta-context-diet — Batch-Approval Mode for Large Surfaces
 
 Moved verbatim from [SKILL.md](../SKILL.md) (Step 4). Open when the audit has
-roughly 15 or more candidates.
+roughly 15 or more candidates, when building a candidate's question, or for why
+the two disposition classes confirm differently.
+
+#### The per-candidate question
+
+Each candidate's `AskUserQuestion` has at most 4 options: the recommended
+disposition first, then the 3 likeliest alternates from Keep / Lean /
+Lean-to-pointer / Path-scope / Promote-to-skill / Consolidate / Drop / Skip. The
+built-in "Other" answer reaches the rest.
+
+#### Why the tiers confirm differently
+
+The confirmation shape depends on **how lossy the disposition is**, not on convenience:
+
+| Disposition class | Confirmation | Why |
+|---|---|---|
+| **Non-destructive** — Keep-invariant, Keep-but-lean that keeps the invariant in the rule, Path-scope | Batchable (see [Batch-approval mode](#batch-approval-mode-for-large-surfaces)) | The guidance survives in place — leaning trims explanation, path-scoping only narrows *when* it loads. Nothing is removed from the always-loaded surface's meaning. |
+| **Destructive / ambiguous** — Drop, Consolidate-that-deletes, Promote-to-skill, Lean-to-pointer (a `docs/` move that leaves only a pointer) | **One candidate, one question** — up to 4 single-candidate questions may share one `AskUserQuestion` call | Each removes guidance from an always-loaded file: Drop deletes it, Consolidate-that-deletes and Lean-to-pointer replace it with a pointer, Promote-to-skill moves the body off the every-turn surface. A wrong call degrades every downstream turn, so the user confirms each individually. |
 
 #### Batch-approval mode for large surfaces
 

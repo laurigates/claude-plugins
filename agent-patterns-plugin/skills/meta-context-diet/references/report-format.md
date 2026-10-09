@@ -1,7 +1,18 @@
 # meta-context-diet — Report Format
 
-Moved verbatim from [SKILL.md](../SKILL.md) (Step 6). Open when writing the final
-report.
+Moved verbatim from [SKILL.md](../SKILL.md) (Steps 5 and 6). Open when applying
+the commit policy at Step 5, or when writing the final report.
+
+### Commit policy
+
+After every write, run `git status` so the user sees exactly what changed before any commit. **Defer to the user's or project's commit policy:**
+
+| Commit policy | Action |
+|---|---|
+| Says to commit (a user `decision-defaults.md` commit section, a project `CLAUDE.md` git-workflow rule) | Commit **per concern** — path-scoping, leaning, each promotion, each consolidation or drop as its own commit — with a conventional-commit message. Stage explicit paths only (`git add <paths>`, never `git add -A`), then `git commit`. |
+| Silent, or says not to commit | Leave the tree uncommitted so the user can review it and split it per concern. |
+
+A commit policy never replaces the per-candidate confirmation for lossy edits — commit only what the user approved.
 
 ### 6. Report
 
