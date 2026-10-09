@@ -600,7 +600,21 @@ permission-rule syntax out of every plugin's matchers.
 document just written comes back to Claude as PostToolUse `additionalContext`.
 It does not block: the edit has already happened, and a PreToolUse block never
 sees a Bash edit. The `blueprint-doc-schemas` hook in this repository's
-`.pre-commit-hooks.yaml` fails the commit instead.
+`.pre-commit-hooks.yaml` fails the commit instead. Add it to a consumer repo's
+`.pre-commit-config.yaml` (it needs `uv` on `PATH`, and fails rather than pass
+when `uv` is missing):
+
+```yaml
+- repo: https://github.com/laurigates/claude-plugins
+  rev: blueprint-plugin-vX.Y.Z
+  hooks:
+    - id: blueprint-doc-schemas
+```
+
+pre-commit checks only the staged files, so a repository whose existing
+documents predate the schemas fails on the first commit that touches each one.
+Run `pre-commit run blueprint-doc-schemas --all-files` before adopting it to
+see the backlog.
 
 **Misses are reconciled at session start.** The Bash change list can miss a
 file (git-ignored paths are never listed, and other permission modes record it

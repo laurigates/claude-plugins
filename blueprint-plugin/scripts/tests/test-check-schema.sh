@@ -298,6 +298,36 @@ else
         || notok "file mode: --strict without uv must fail closed -- rc=$rc out=$out"
 fi
 
+# The published pre-commit hook must call that same entry point in --strict
+# mode, and select documents (not their README index) — a typo here passes
+# every consumer commit silently.
+REPO_ROOT="$(cd "${PLUGIN_DIR}/.." && pwd)"
+manifest_check="$(uv run --quiet --with pyyaml python3 - "$REPO_ROOT/.pre-commit-hooks.yaml" <<'PY' 2>&1
+import os, re, sys, yaml
+hooks = {h["id"]: h for h in yaml.safe_load(open(sys.argv[1]))}
+h = hooks.get("blueprint-doc-schemas")
+if not h:
+    sys.exit("missing hook id blueprint-doc-schemas")
+script, *args = h["entry"].split()
+root = os.path.dirname(sys.argv[1])
+if not os.access(os.path.join(root, script), os.X_OK):
+    sys.exit(f"entry {script} is not an executable file")
+if args != ["--strict"]:
+    sys.exit(f"entry must pass exactly --strict, got {args}")
+def selected(path):
+    return re.search(h["files"], path) and not re.search(h.get("exclude", "^$"), path)
+for path, want in [("docs/adrs/0001-x.md", True), ("docs/prds/x.md", True),
+                   ("docs/prps/x.md", True), ("docs/adrs/README.md", False),
+                   ("docs/blueprint/manifest.json", False), ("src/docs/adrs/x.md", False)]:
+    if bool(selected(path)) != want:
+        sys.exit(f"files/exclude select {path}: {not want}, want {want}")
+print("MANIFEST_OK")
+PY
+)"
+has_issue "$manifest_check" "MANIFEST_OK" \
+    && ok "pre-commit: blueprint-doc-schemas calls validate-frontmatter.sh --strict on docs, not READMEs" \
+    || notok "pre-commit: .pre-commit-hooks.yaml blueprint-doc-schemas is miswired -- $manifest_check"
+
 # ==========================================================================
 # Schemas agree with each other on the shared cross-reference patterns.
 # They are separate files by design, so nothing but a check keeps them equal.
