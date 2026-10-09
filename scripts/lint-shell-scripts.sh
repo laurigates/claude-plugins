@@ -171,8 +171,15 @@ for script in $SCRIPTS; do
     # scripts written to disk) and comment lines are skipped. A producer that
     # is a real command (`cmd | grep -q`) is left alone: only a printf/echo of
     # a quoted "$..." expansion is flagged. The -q flag must sit in grep's own
-    # words: a `)` ends them, so `"$(echo "$x" | grep -c p)" -eq 1` (-c reads
-    # all input, no early exit) is not mistaken for -q.
+    # words: an unbalanced `)` ends them, so `"$(echo "$x" | grep -c p)" -eq 1`
+    # (-c reads all input, no early exit) is not mistaken for -q, while a
+    # balanced group in a pattern (`grep -E "(a)" -q`) is read through.
+    #
+    # Known blind spots (this is a line scanner, not a shell parser): a `<<WORD`
+    # inside a multi-line quoted string is taken for a heredoc and the lines up
+    # to the next WORD are skipped (hooks-plugin/hooks/bash-antipatterns.sh had
+    # one); and the shape inside a string run by eval (`check "..." "printf
+    # '%s' \"\$out\" | grep -q x"`) has escaped quotes and is not matched.
     #
     # Pending: scripts/tests/test-run-skill-script-tests.sh is converted by PR
     # #2989 (left out of the #2959 sweep to avoid a merge conflict). Delete this
@@ -186,7 +193,7 @@ for script in $SCRIPTS; do
                 # \042 = double quote, \047 = single quote (octal escapes keep
                 # this program inside the shell single quotes).
                 prod = "(^|[^[:alnum:]_-])(printf[[:space:]]+(\042[^\042]*\042[[:space:]]+)?[^|\042]*|echo[[:space:]]+)\042\\$[^|]*\\|[[:space:]]*grep[[:space:]]"
-                qflag = "^[^|;&)]*[[:space:]](-[[:alpha:]]*q[[:alpha:]]*|--quiet|--silent)([[:space:]]|$)"
+                qflag = "^([^|;&()]|\\([^()|;&]*\\))*[[:space:]](-[[:alpha:]]*q[[:alpha:]]*|--quiet|--silent)([[:space:]]|$)"
                 hdre = "<<-?[[:space:]]*[\042\047]?[A-Za-z_][A-Za-z0-9_]*"
                 hd = ""
             }

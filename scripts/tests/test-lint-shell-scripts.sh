@@ -234,7 +234,9 @@ d17="$WORK/empty"; mkdir -p "$d17"
 assert_lint "empty tree passes clean" "0 0 0" "$d17"
 
 # 18. Positive: the widened scope. A per-skill suite, a plugin-level suite and
-#     an experiment suite each carry the shape -> one ERROR each, exit 1.
+#     an experiment suite each carry the shape -> one ERROR each, exit 1. The
+#     experiment suite adds a -q placed after a pattern holding a balanced
+#     `(...)` group, which must still read as -q (4 errors in all).
 d18="$WORK/wide-scope"
 mkdir -p "$d18/demo-plugin/skills/demo-skill/scripts/tests" \
   "$d18/demo-plugin/scripts/tests" "$d18/experiments/demo/tests"
@@ -255,8 +257,9 @@ cat > "$d18/experiments/demo/tests/test-demo-exp.sh" <<'EOF'
 set -uo pipefail
 out=$(bash ../demo.sh)
 assert "$(printf '%s' "$out" | grep -qE 'x' && echo true || echo false)"
+echo "$out" | grep -E "^(OK)$" -q || echo "FAIL"
 EOF
-assert_lint "printf/echo | grep -q in skill, plugin and experiment suites is an error" "3 0 1" "$d18"
+assert_lint "printf/echo | grep -q in skill, plugin and experiment suites is an error" "4 0 1" "$d18"
 
 # 19. Negative: in the widened scope, the here-string fix and a `grep -c`
 #     inside $(...) followed by `-eq` both pass (the `)` ends grep's words, so
