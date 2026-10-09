@@ -535,6 +535,12 @@ jobs:
         # PRs. Refresh on demand with the /docs-refresh project skill.
         run: bash scripts/check-docs-index.sh --strict
 
+      - name: Check catalog is current
+        # docs/CATALOG.md is generated from marketplace.json and the plugin
+        # dirs; ungated for the same reason as the step above. Fix with
+        # `just catalog` (the generate-catalog pre-commit hook does it locally).
+        run: python3 scripts/generate-catalog.py --check
+
       - name: Post compliance results
         if: steps.compliance.outputs.result
         env:
