@@ -19,25 +19,52 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Resolve protocol library (ships from hooks-plugin; siblings under the
-# marketplace dir when installed).
-PROTO_LIB="${SCRIPT_DIR}/../../hooks-plugin/hooks/lib/drift-protocol.sh"
-if [ ! -f "$PROTO_LIB" ]; then
-    for candidate in \
-        "${CLAUDE_PLUGIN_ROOT:-}/../hooks-plugin/hooks/lib/drift-protocol.sh" \
-        "$HOME/.claude/plugins/hooks-plugin/hooks/lib/drift-protocol.sh"; do
-        if [ -n "$candidate" ] && [ -f "$candidate" ]; then
-            PROTO_LIB="$candidate"
-            break
-        fi
-    done
-fi
-if [ ! -f "$PROTO_LIB" ]; then
+# >>> drift-protocol resolver >>>
+# Keep this block byte-identical in every drift probe;
+# scripts/tests/test-drift-probe-lib-resolution.sh enforces it.
+# hooks-plugin ships the library. Layouts searched, in order:
+#   flat    <root>/<plugin>/hooks          -> <root>/hooks-plugin/hooks/lib
+#           (a claude-plugins checkout, --plugin-dir)
+#   cache   <mkt>/<plugin>/<version>/hooks -> <mkt>/hooks-plugin/<version>/hooks/lib
+#           (marketplace installs; old versions stay cached, highest wins)
+#   legacy  ~/.claude/plugins/hooks-plugin/hooks/lib
+# Before the cache layout was searched, every installed probe found nothing
+# here and exited silently.
+PROTO_LIB=""
+for _dp_base in \
+    "${SCRIPT_DIR}/../.." \
+    "${CLAUDE_PLUGIN_ROOT:+${CLAUDE_PLUGIN_ROOT}/..}" \
+    "${SCRIPT_DIR}/../../.." \
+    "${CLAUDE_PLUGIN_ROOT:+${CLAUDE_PLUGIN_ROOT}/../..}" \
+    "$HOME/.claude/plugins"; do
+    if [ -z "$_dp_base" ] || [ ! -d "$_dp_base/hooks-plugin" ]; then
+        continue
+    fi
+    if [ -f "$_dp_base/hooks-plugin/hooks/lib/drift-protocol.sh" ]; then
+        PROTO_LIB="$_dp_base/hooks-plugin/hooks/lib/drift-protocol.sh"
+        break
+    fi
+    _dp_ver=$(
+        for _dp_lib in "$_dp_base"/hooks-plugin/*/hooks/lib/drift-protocol.sh; do
+            if [ -f "$_dp_lib" ]; then
+                _dp_lib="${_dp_lib#"$_dp_base"/hooks-plugin/}"
+                printf '%s\n' "${_dp_lib%%/*}"
+            fi
+        done | sort -V | tail -n 1
+    ) || _dp_ver=""
+    if [ -n "$_dp_ver" ]; then
+        PROTO_LIB="$_dp_base/hooks-plugin/$_dp_ver/hooks/lib/drift-protocol.sh"
+        break
+    fi
+done
+unset _dp_base _dp_ver _dp_lib
+if [ -z "$PROTO_LIB" ]; then
     exit 0
 fi
 # shellcheck source=../../hooks-plugin/hooks/lib/drift-protocol.sh
-# shellcheck disable=SC1091  # PROTO_LIB resolves at runtime via fallback chain
+# shellcheck disable=SC1091  # PROTO_LIB resolves at runtime via the search above
 . "$PROTO_LIB"
+# <<< drift-protocol resolver <<<
 
 drift_init "blueprint-autorun"
 drift_no_op_if_missing "docs/blueprint/manifest.json"
@@ -92,9 +119,11 @@ fi
 
 if [ "$cache_fresh" -eq 0 ]; then
     touch "$cache_file" 2>/dev/null
-    bash "$AUTORUN_BIN" --project-dir "$DRIFT_CWD" > "${cache_file}.tmp" 2>/dev/null \
-        && mv -f "${cache_file}.tmp" "$cache_file" \
-        || rm -f "${cache_file}.tmp"
+    if bash "$AUTORUN_BIN" --project-dir "$DRIFT_CWD" > "${cache_file}.tmp" 2>/dev/null; then
+        mv -f "${cache_file}.tmp" "$cache_file" || rm -f "${cache_file}.tmp"
+    else
+        rm -f "${cache_file}.tmp"
+    fi
 fi
 
 if [ ! -s "$cache_file" ]; then
