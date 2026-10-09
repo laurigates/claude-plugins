@@ -5,7 +5,7 @@ args: "[description] [project:<name>] [--no-project] [due:<date>] [scheduled:<da
 allowed-tools: Bash(task *), Bash(jq *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh issue *), Bash(gh api *), Bash(bash *), Read, TodoWrite
 argument-hint: short task description
 created: 2026-04-24
-modified: 2026-08-19
+modified: 2026-10-09
 reviewed: 2026-08-19
 ---
 
@@ -122,12 +122,19 @@ If either fails, skip GitHub-related branches in later steps.
 ### Step 3: Duplicate check by bpid
 
 If `bpid:` was given, run parallel-safe and constrain to the resolved
-project so a matching `bpid` in another repo's queue is not surfaced as
-a false-positive duplicate:
+project (`$PROJECT`, from Parameters) so a matching `bpid` in another
+repo's queue is not surfaced as a false-positive duplicate:
 
 ```bash
-task project:myrepo bpid:"$BPID" export | jq '.[] | {id, description, status}'
+task bpid:"$BPID" export | jq --arg p "$PROJECT" --arg b "$BPID" '.[] | select(.bpid == $b and (.project // "") == $p) | {id, uuid, description, status}'
 ```
+
+Both values are matched exactly in `jq` because taskwarrior's `attr:value`
+filters are prefix matches: `project:myrepo` also returns tasks in `myrepo-docs`
+and `myrepo.sub`, and `bpid:WO-012` also returns `WO-0123` — see
+[references/project-slug-verification.md](references/project-slug-verification.md).
+With `--no-project`, `$PROJECT` is empty and only project-less tasks match.
+Report the `uuid` with any match, so a later update addresses the task by it.
 
 Never use `task bpid:"$BPID" list` — it exits 1 on empty result and cancels sibling tool calls in parallel batches (see `.claude/rules/parallel-safe-queries.md`).
 

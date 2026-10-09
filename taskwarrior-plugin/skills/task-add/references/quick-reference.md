@@ -20,7 +20,7 @@ looking up the agent-friendly command forms.
 | Context | Command |
 |---------|---------|
 | Capture stable UUID after add | `task +LATEST uuids` |
-| Duplicate check by bpid (scoped to the project, per Step 3) | `task project:myrepo bpid:WO-012 export \| jq '.[] \| {id, status}'` |
+| Duplicate check by bpid (exact bpid and project, per Step 3) | `task bpid:WO-012 export \| jq --arg p myrepo --arg b WO-012 '.[] \| select(.bpid == $b and (.project // "") == $p) \| {id, uuid, status}'` |
 | Pre-fill from issue | `gh issue view 145 --json number,title,body,labels` |
 | Next ready (unblocked + scheduled-due) | `task status:pending +READY export \| jq '.[:3]'` |
 | Skip empty filter exit | Always use `export \| jq`, never `list` |

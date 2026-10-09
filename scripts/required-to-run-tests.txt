@@ -58,6 +58,10 @@ blueprint-plugin/scripts/tests/test-check-manifest-schema.sh
 # silent skip returns it to exactly the state it was written to escape.
 taskwarrior-plugin/skills/task-add/scripts/tests/test-uuid-capture.sh
 taskwarrior-plugin/scripts/tests/test-task-id-stability.sh
+# Executes the task-add duplicate check against a scratch store, because the
+# defect it guards (project: is a prefix match, #2951) only shows up in real
+# taskwarrior output; a skip would leave nothing checking it.
+taskwarrior-plugin/skills/task-add/scripts/tests/test-dup-check-exact-project.sh
 
 # python3  (no install step needed — plugin-compliance-check.sh already
 # depends on it, so the runner always has it)
