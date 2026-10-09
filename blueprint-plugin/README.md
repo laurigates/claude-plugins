@@ -321,7 +321,11 @@ The runner implements the `task_registry` `auto_run`/`schedule` contract:
 a task runs only when `enabled: true` **and** `auto_run: true` **and** its
 schedule interval has elapsed since `last_completed_at` (written back with
 `last_result` and `stats.runs`). `on-change` tasks are event-driven
-(PostToolUse hooks) and `on-demand` tasks never auto-run. Work-order creation
+(PostToolUse hooks); a deterministic `on-change` task (`sync-ids`) is also
+reconciled on every run, because the on-change signal misses edits made outside
+Claude Code and Bash edits outside the recorded change list. A reconcile that
+changes nothing leaves the manifest byte-identical. `on-demand` tasks never
+auto-run. Work-order creation
 stays human-only at every level — automation may at most *draft* proposals
 (GitHub issues labeled `work-order-draft`) that a human promotes via
 `/blueprint:work-order --from-issue N`.
