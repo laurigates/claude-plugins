@@ -13,4 +13,4 @@ Emit a final table and the net context saving:
 | `CLAUDE.md` § Bar | ~300 | Keep but lean | linked `docs/bar.md` | −260 |
 | `.claude/rules/baz.md` | ~400 | Path-scope | `paths: "**/*.py"` | conditional |
 
-End with: total tokens removed from the every-turn surface, the new skills created (with their trigger descriptions), and the next step (review `git status`, commit per concern with conventional-commit messages — this skill does **not** commit).
+End with: total tokens removed from the every-turn surface, the new skills created (with their trigger descriptions), and the commit outcome: the per-concern commits made when the user's or project's commit policy says to commit, or — when it does not — the next step (review `git status`, commit per concern with conventional-commit messages).

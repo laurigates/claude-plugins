@@ -1,9 +1,9 @@
 ---
 created: 2026-06-16
-modified: 2026-10-07
+modified: 2026-10-09
 compatibility: claude-code
 reviewed: 2026-07-08
-allowed-tools: Glob, Read, Edit, Write, Bash(git status *), Bash(git diff *), Bash(wc *), Bash(ls *), AskUserQuestion, TodoWrite
+allowed-tools: Glob, Grep, Read, Edit, Write, Bash(git status *), Bash(git diff *), Bash(git add *), Bash(git commit *), Bash(wc *), Bash(ls *), AskUserQuestion, TodoWrite
 model: opus
 description: Audit CLAUDE.md and .claude/rules for always-loaded content that should become an on-demand skill. Use when CLAUDE.md feels bloated, trimming context, or promoting a rule into a skill.
 args: "[scope-path]"
@@ -64,7 +64,7 @@ For each rule file or `CLAUDE.md` section, assign exactly one disposition. The d
 | Disposition | The unit is… | Signal |
 |---|---|---|
 | **Keep — hard invariant** | An always-respected constraint whose violation is a bug even when unmentioned (security boundaries, "never force-push", commit-format that drives release automation, destructive-op guards) | Imperative, unconditional, cheap to keep; the cost of *missing* it is high |
-| **Keep but lean** | A hard invariant wrapped in explanation, examples, or tables that belong in a linked doc/REFERENCE | The invariant is one sentence; the file is 200 lines |
+| **Keep but lean** | A hard invariant wrapped in explanation, examples, or tables that belong in a linked doc/REFERENCE — or in `docs/<topic>.md` when an indexer or a non-Claude agent reads rule and doc paths | The invariant is one sentence; the file is 200 lines |
 | **Path-scope** | Always-true *only when working on a specific file shape* (a language, a config format, a directory) | Advice keyed to "when editing X"; currently unscoped so it loads on every turn | 
 | **Promote to skill** | A **procedure/workflow triggered by intent** — steps you run *when* doing a task, not a constraint you hold *while* doing anything | Reads as "to do X: step 1…step N"; has a clear trigger ("when releasing", "when the build fails"); rarely relevant per-turn but heavy when present |
 | **Consolidate** | Duplicates another rule, a loaded plugin skill, or upstream `~/.claude/rules` | The same guidance exists elsewhere already paid for — **and that copy is current**, not a stale twin of the text being cut |
@@ -92,7 +92,7 @@ The confirmation shape depends on **how lossy the disposition is**, not on conve
 | Disposition class | Confirmation | Why |
 |---|---|---|
 | **Non-destructive** — Keep-invariant, Keep-but-lean, Path-scope | Batchable (see below) | The guidance survives in place — leaning trims explanation, path-scoping only narrows *when* it loads. Nothing is removed from the always-loaded surface's meaning. |
-| **Destructive / ambiguous** — Drop, Consolidate-that-deletes, Promote-to-skill | **One candidate, one `AskUserQuestion`** | Each removes guidance from an always-loaded file: Drop deletes it, Consolidate-that-deletes replaces it with a pointer, Promote-to-skill moves the body off the every-turn surface. A wrong call degrades every downstream turn, so the user confirms each individually. |
+| **Destructive / ambiguous** — Drop, Consolidate-that-deletes, Promote-to-skill | **One candidate, one question** — up to 4 single-candidate questions may share one `AskUserQuestion` call | Each removes guidance from an always-loaded file: Drop deletes it, Consolidate-that-deletes replaces it with a pointer, Promote-to-skill moves the body off the every-turn surface. A wrong call degrades every downstream turn, so the user confirms each individually. |
 
 #### Batch-approval mode for large surfaces
 
@@ -100,10 +100,18 @@ At ~15+ candidates, batch only the non-destructive tier, per [references/batch-a
 
 ### 5. Execute the approved disposition
 
+**Sweep every consumer of the rule path before any Promote, Consolidate, or Drop.** An inbound-link check is not enough: indexers, agent entry points, and code comments read the path without linking to it.
+
+1. `Grep` the rule's file name (with and without `.md`) across the whole tree, hidden paths included and `.git` excluded — the shell equivalent is `rg -n '<rule-file-name>' --hidden -g '!.git' .`. Search everywhere, not only `.claude/` and docs: code comments in `.tf`, `.yaml`, or `.js` files cite rule paths too.
+2. Check for indexers and non-Claude agent entry points: `AGENTS.md`, `.github/copilot-instructions.md`, and any script, bot, or config that globs `.claude/rules` (a curriculum or search indexer built from `.claude/rules/*.md` and `docs/*.md` but not skill directories).
+3. Repoint every hit in the same change, or pick a disposition that keeps the path alive.
+
+**Prefer moving to `docs/` over Promote when the sweep finds a path consumer.** A promoted skill drops out of an indexer that never scans skill directories, and a non-Claude agent pointed at the rule by `AGENTS.md` cannot load a skill. Moving the body to `docs/<topic>.md` keeps it indexed and readable: lean the rule to its invariant (or a one-line pointer) and link the doc. A move that takes the whole body off the every-turn surface keeps Promote's per-candidate confirmation.
+
 | Disposition | Mechanics |
 |---|---|
 | Keep — hard invariant | No change. Optionally note why it stays in the report. |
-| Keep but lean | `Edit` the rule to the invariant + a link; move examples/tables to a co-located doc or the rule's own `REFERENCE`-style sidecar. Do not change the invariant's wording. |
+| Keep but lean | `Edit` the rule to the invariant + a link; move examples/tables to a co-located doc, the rule's own `REFERENCE`-style sidecar, or `docs/<topic>.md` (the target when the consumer sweep found an indexer or a non-Claude agent). Do not change the invariant's wording. |
 | Path-scope | `Edit` the rule's frontmatter to add a `paths:` glob so it loads only on matching turns. Verify the glob matches the directory shape the rule actually targets. |
 | Promote to skill | Scaffold `<plugin>/skills/<name>/SKILL.md` with the drafted frontmatter + imperative body; move reference material into the new skill's `REFERENCE.md`; trim the source rule to a one-line pointer (or delete it if nothing remains and nothing references it). Then update the plugin metadata per the **Plugin Lifecycle** in `CLAUDE.md` (README skills table; no `marketplace.json`/release-config edits — those are plugin-scoped, not skill-scoped, per `skill-consolidation.md`). Run `/reload-skills` so the new skill is invocable immediately. |
 | Consolidate | **First read the destination and confirm it is current** — drift runs both ways, so where the always-loaded copy is the *fresher* one, fix the destination (or consolidate in the other direction) before pointing at it. Then `Edit` the source to a pointer at the canonical owner **by `plugin:skill` name** (never a cross-plugin file path — see `skill-consolidation.md`); or delete the redundant rule if a loaded plugin skill already covers it. |
@@ -111,11 +119,18 @@ At ~15+ candidates, batch only the non-destructive tier, per [references/batch-a
 
 Evidence for the Consolidate check: in [`laurigates/loractl` #167](https://github.com/laurigates/loractl/pull/167) the pointer target still described a landed feature as a pending follow-up while the `CLAUDE.md` section being cut was correct, so consolidating without reading the destination first would have replaced the accurate copy with a pointer at the stale one.
 
-After every write, run `git status` so the user sees exactly what changed before any commit. **Do not commit** — leave a clean tree the user can review and split. When promoting *out of* a `CLAUDE.md` or rule that lives in a chezmoi-managed tree (`~/.claude/`), surface that the source is chezmoi-managed so the edit lands in the source, not the target.
+After every write, run `git status` so the user sees exactly what changed before any commit. **Defer to the user's or project's commit policy:**
+
+| Commit policy | Action |
+|---|---|
+| Says to commit (a user `decision-defaults.md` commit section, a project `CLAUDE.md` git-workflow rule) | Commit **per concern** — path-scoping, leaning, each promotion, each consolidation or drop as its own commit — with a conventional-commit message. Stage explicit paths only (`git add <paths>`, never `git add -A`), then `git commit`. |
+| Silent, or says not to commit | Leave the tree uncommitted so the user can review it and split it per concern. |
+
+A commit policy never replaces the per-candidate confirmation for lossy edits — commit only what the user approved. When promoting *out of* a `CLAUDE.md` or rule that lives in a chezmoi-managed tree (`~/.claude/`), surface that the source is chezmoi-managed so the edit lands in the source, not the target.
 
 ### 6. Report
 
-Emit the final table, net every-turn saving, and next step in the format in [references/report-format.md](references/report-format.md). This skill does **not** commit.
+Emit the final table, net every-turn saving, and next step in the format in [references/report-format.md](references/report-format.md). Report the commits made under the commit policy, or — when the policy did not call for commits — that the tree is left uncommitted.
 
 ## Anti-patterns and notes
 
