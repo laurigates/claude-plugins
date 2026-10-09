@@ -17,7 +17,13 @@
 # Schedule semantics:
 #   daily/weekly : due when last_completed_at is null/unparseable or older
 #                  than the interval
-#   on-change    : event-driven (PostToolUse hooks) — never runner-due
+#   on-change    : event-driven (PostToolUse hooks). An agent-judgment task is
+#                  never runner-due. A DETERMINISTIC task is also reconciled on
+#                  every run (STATE=reconcile): the on-change signal is
+#                  best-effort — a Bash edit's change list can miss files, and
+#                  edits by people or other tools fire no hook at all.
+#                  Reconciling writes the manifest only when the result
+#                  differs, so a clean tree stays clean.
 #   on-demand    : never due
 #
 # Execution is gated on automation.autonomy_level >= 1 (missing block = 0).
@@ -133,13 +139,25 @@ is_deterministic() {
 # document. Registry completeness only (path/status/title/counters) — the
 # relates_to/github_issues cross-refs are the write-time PostToolUse hook's
 # job and existing values are preserved by the merge.
+#
+# Works on a copy and replaces the manifest only when .id_registry differs:
+# jq re-serialises the whole file, so an unconditional write would reformat a
+# hand-edited manifest on every session start and leave the tree dirty.
+#
+# Prints "<docs_seen> <changed:true|false>".
 run_sync_ids() {
     local docs_seen=0
     local doc_file frontmatter doc_id doc_status doc_title doc_created
+    local work="${manifest}.autorun.$$"
 
-    if ! jq -e '.id_registry' "$manifest" >/dev/null 2>&1; then
-        jq '. + {"id_registry": {"last_prd": 0, "last_prp": 0, "documents": {}, "github_issues": {}}}' \
-            "$manifest" > "${manifest}.tmp" && mv "${manifest}.tmp" "$manifest" || return 1
+    cp "$manifest" "$work" || return 1
+
+    if ! jq -e '.id_registry' "$work" >/dev/null 2>&1; then
+        if ! { jq '. + {"id_registry": {"last_prd": 0, "last_prp": 0, "documents": {}, "github_issues": {}}}' \
+                   "$work" > "${work}.tmp" && mv "${work}.tmp" "$work"; }; then
+            rm -f "$work" "${work}.tmp"
+            return 1
+        fi
     fi
 
     while IFS= read -r doc_file; do
@@ -157,26 +175,37 @@ run_sync_ids() {
         doc_created=$(printf '%s\n' "$frontmatter" | grep -m1 "^created:" | sed 's/^created:[[:space:]]*//' | tr -d '\r' || true)
 
         local rel_path="${doc_file#"${project_dir}"/}"
-        jq --arg id "$doc_id" \
-           --arg doc_path "$rel_path" \
-           --arg doc_status "${doc_status:-unknown}" \
-           --arg title "${doc_title:-untitled}" \
-           --arg created "${doc_created:-$now_iso}" \
-           '.id_registry.documents[$id] =
-              ((.id_registry.documents[$id] // {"created": $created, "relates_to": [], "github_issues": []})
-               + {path: $doc_path, status: $doc_status, title: $title}) |
-            (if ($id | startswith("PRD-")) then
-               .id_registry.last_prd = ([.id_registry.last_prd // 0, (($id | ltrimstr("PRD-")) | tonumber? // 0)] | max)
-             elif ($id | startswith("PRP-")) then
-               .id_registry.last_prp = ([.id_registry.last_prp // 0, (($id | ltrimstr("PRP-")) | tonumber? // 0)] | max)
-             else . end)' \
-           "$manifest" > "${manifest}.tmp" && mv "${manifest}.tmp" "$manifest" || return 1
+        if ! { jq --arg id "$doc_id" \
+             --arg doc_path "$rel_path" \
+             --arg doc_status "${doc_status:-unknown}" \
+             --arg title "${doc_title:-untitled}" \
+             --arg created "${doc_created:-$now_iso}" \
+             '.id_registry.documents[$id] =
+                ((.id_registry.documents[$id] // {"created": $created, "relates_to": [], "github_issues": []})
+                 + {path: $doc_path, status: $doc_status, title: $title}) |
+              (if ($id | startswith("PRD-")) then
+                 .id_registry.last_prd = ([.id_registry.last_prd // 0, (($id | ltrimstr("PRD-")) | tonumber? // 0)] | max)
+               elif ($id | startswith("PRP-")) then
+                 .id_registry.last_prp = ([.id_registry.last_prp // 0, (($id | ltrimstr("PRP-")) | tonumber? // 0)] | max)
+               else . end)' \
+             "$work" > "${work}.tmp" && mv "${work}.tmp" "$work"; }; then
+            rm -f "$work" "${work}.tmp"
+            return 1
+        fi
         docs_seen=$((docs_seen + 1))
     done < <(find "${project_dir}/docs/prds" "${project_dir}/docs/adrs" "${project_dir}/docs/prps" \
                   "${project_dir}/docs/blueprint/work-orders" \
                   -maxdepth 1 -type f -name '*.md' 2>/dev/null)
 
-    printf '%s' "$docs_seen"
+    local changed=true
+    if [ "$(jq -S '.id_registry' "$work" 2>/dev/null)" = "$(jq -S '.id_registry' "$manifest" 2>/dev/null)" ]; then
+        changed=false
+        rm -f "$work"
+    else
+        mv "$work" "$manifest" || { rm -f "$work"; return 1; }
+    fi
+
+    printf '%s %s' "$docs_seen" "$changed"
     return 0
 }
 
@@ -209,7 +238,11 @@ while IFS=$'\t' read -r task_name task_enabled task_auto task_schedule task_last
             task_state="on_demand"
             ;;
         on-change)
-            task_state="event_driven"
+            if is_deterministic "$task_name"; then
+                task_state="reconcile"
+            else
+                task_state="event_driven"
+            fi
             ;;
         daily|weekly)
             interval=86400
@@ -228,24 +261,30 @@ while IFS=$'\t' read -r task_name task_enabled task_auto task_schedule task_last
             ;;
     esac
 
-    if [ "$task_state" != "due" ]; then
+    if [ "$task_state" != "due" ] && [ "$task_state" != "reconcile" ]; then
         printf 'TASK=%s SCHEDULE=%s STATE=%s\n' "$task_name" "$task_schedule" "$task_state"
         continue
     fi
 
     if is_deterministic "$task_name"; then
         if [ "$run_mode" = "report" ] || [ "$autonomy_level" -lt 1 ]; then
-            printf 'TASK=%s KIND=deterministic SCHEDULE=%s STATE=due\n' "$task_name" "$task_schedule"
+            printf 'TASK=%s KIND=deterministic SCHEDULE=%s STATE=%s\n' "$task_name" "$task_schedule" "$task_state"
             continue
         fi
         case "$task_name" in
             sync-ids)
-                docs_count=$(run_sync_ids)
+                sync_out=$(run_sync_ids)
                 sync_rc=$?
+                docs_count=${sync_out%% *}
+                sync_changed=${sync_out##* }
                 if [ "$sync_rc" -eq 0 ]; then
-                    record_task_result "$task_name" "ok"
-                    printf 'TASK=%s KIND=deterministic SCHEDULE=%s STATE=ran DOCS=%s\n' \
-                        "$task_name" "$task_schedule" "$docs_count"
+                    # A reconcile that changed nothing leaves the manifest
+                    # alone, last_completed_at included: it runs every session.
+                    if [ "$task_state" = "due" ] || [ "$sync_changed" = "true" ]; then
+                        record_task_result "$task_name" "ok"
+                    fi
+                    printf 'TASK=%s KIND=deterministic SCHEDULE=%s STATE=ran DOCS=%s CHANGED=%s\n' \
+                        "$task_name" "$task_schedule" "$docs_count" "$sync_changed"
                     ran_count=$((ran_count + 1))
                 else
                     record_task_result "$task_name" "error: sync-ids sweep failed"

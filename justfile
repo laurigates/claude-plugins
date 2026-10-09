@@ -41,6 +41,10 @@ lint-infra:
 lint-taskwarrior-tags:
     ./scripts/lint-taskwarrior-tags.sh
 
+# Regenerate docs/CATALOG.md from marketplace.json and the plugin dirs
+catalog:
+    python3 scripts/generate-catalog.py
+
 # Channel M scan for the six context-engineering shifts (C1-C6); --strict gates the always-loaded ratchet
 [group: "lint"]
 lint-context-engineering *args:
@@ -533,3 +537,55 @@ setup-pi: pi-adapter-check pi-adapter-register install-pi-agents install-pi-hook
     @echo "  5. Undo the wiring:     just pi-adapter-unregister"
     @echo "     (subagents: just install-pi-agents — needs @tintinweb/pi-subagents)"
     @echo "     (safety hooks: delete {{pi_extensions_dir}}/plugin-hooks)"
+
+####################
+# Antigravity CLI (in-place skills + agent/hook export)
+####################
+
+agy_config := env_var_or_default("AGY_CONFIG", "~/.gemini/config")
+
+# Project marketplace subagents + lifecycle hooks to Antigravity format (output: dist/antigravity)
+[group: "antigravity"]
+export-antigravity out="dist/antigravity":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    out="{{out}}"
+    case "$out" in /*) ;; *) out="{{justfile_directory()}}/$out" ;; esac
+    ./scripts/export-antigravity.sh "$out"
+
+# Install exported subagents into Antigravity agents dir (default: global ~/.gemini/config)
+[group: "antigravity"]
+install-antigravity-agents target=agy_config:
+    ./scripts/install-antigravity.sh "{{target}}" --agents-only
+
+# Install safety hooks + CLAUDE_* variable rewriter into Antigravity config dir (default: global ~/.gemini/config)
+[group: "antigravity"]
+install-antigravity-hooks target=agy_config:
+    ./scripts/install-antigravity.sh "{{target}}" --hooks-only
+
+# Register marketplace skills in-place via skills.json (zero copying, zero drift)
+[group: "antigravity"]
+configure-antigravity target=agy_config:
+    ./scripts/configure-antigravity.sh "{{target}}"
+
+# Unregister marketplace skills from skills.json
+[group: "antigravity"]
+unconfigure-antigravity target=agy_config:
+    ./scripts/configure-antigravity.sh "{{target}}" --remove
+
+# Verify Antigravity CLI prerequisites and configuration (deterministic, no model call, zero cost)
+[group: "antigravity"]
+agy-check target=agy_config:
+    ./scripts/check-antigravity.sh "{{target}}"
+
+# End-to-end setup: register skills in-place, install subagents and safety hooks
+[group: "antigravity"]
+setup-antigravity target=agy_config: (configure-antigravity target)
+    ./scripts/install-antigravity.sh "{{target}}"
+    @echo ""
+    @echo "Antigravity CLI setup complete!"
+    @echo "Next steps:"
+    @echo "  1. Verify setup:   just agy-check"
+    @echo "  2. Run the CLI:    agy"
+    @echo "  3. Undo setup:     just unconfigure-antigravity"
+
