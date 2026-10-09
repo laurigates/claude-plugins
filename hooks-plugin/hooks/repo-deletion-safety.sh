@@ -113,7 +113,7 @@ esac
 # Cheap pre-filter: an `rm` with at least one flag, optionally behind
 # sudo/command or leading VAR=value assignments, at a statement boundary.
 PREFILTER_RE='(^|[;&|(]|&&|\|\||[[:space:]])(sudo[[:space:]]+|command[[:space:]]+|[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*rm[[:space:]]+-'
-printf '%s' "$COMMAND" | grep -Eq "$PREFILTER_RE" || exit 0
+grep -Eq "$PREFILTER_RE" <<<"$COMMAND" || exit 0
 
 block() {
     echo "$1" >&2
