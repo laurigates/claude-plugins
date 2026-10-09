@@ -108,6 +108,16 @@ repos:
         files: '(^[^/]+-plugin/(skills|agents|\.claude-plugin)/|^README\.md$|^docs/PLUGIN-MAP\.md$|^docs/diagrams/plugin-relationships\.(d2|svg)$|^scripts/check-docs-index\.sh$)'
         pass_filenames: false
         verbose: true
+      - id: generate-catalog
+        name: docs/CATALOG.md is regenerated from the marketplace
+        # A fixer, like a formatter: it rewrites docs/CATALOG.md, and pre-commit
+        # fails the commit when the file changed so the regenerated catalog is
+        # staged with the skill/plugin change that moved it. CI runs the same
+        # script with --check (plugin-pr-checks.yml "Check catalog is current").
+        entry: python3 scripts/generate-catalog.py
+        language: system
+        files: '(^[^/]+-plugin/(skills|agents)/|^\.claude-plugin/marketplace\.json$|^docs/CATALOG\.md$|^scripts/generate-catalog\.py$)'
+        pass_filenames: false
       - id: audit-skill-descriptions
         name: audit skill descriptions for auto-invocation
         entry: python3 ./scripts/audit-skill-descriptions.py --strict-all
