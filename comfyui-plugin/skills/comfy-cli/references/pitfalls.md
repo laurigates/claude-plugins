@@ -35,9 +35,11 @@ Failure modes of the `comfy` CLI on a systemd-managed install, each with its sym
   Until it transitions, `comfy node install` won't see it but
   `comfy node registry-install` will.
 - **`NodeVersionStatusFlagged` does NOT auto-clear** (distinct from
-  Pending). The scan flagged the version; it stays non-installable and
-  `comfy node install` falls back to the older Active version. The public
-  API exposes no reason — it's only on `registry.comfy.org`. Republishing
+  Pending). The scan flagged the version, but it **stays installable**:
+  `/nodes/<id>/install` returns the newest non-**Banned** version, Flagged
+  included. Only a `NodeVersionStatusBanned` version makes installs fall
+  back to an older one. Reasons are readable via
+  `?include_status_reason=true` on the versions endpoint. Republishing
   re-runs the scan; flags can be false positives (an identical change
   flagged some laurigates packs but not their siblings). Full
   publishing/status playbook: `comfyui-plugin:comfy-registry-lifecycle` § Version status.
