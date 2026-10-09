@@ -41,6 +41,10 @@ lint-infra:
 lint-taskwarrior-tags:
     ./scripts/lint-taskwarrior-tags.sh
 
+# Regenerate docs/CATALOG.md from marketplace.json and the plugin dirs
+catalog:
+    python3 scripts/generate-catalog.py
+
 # Channel M scan for the six context-engineering shifts (C1-C6); --strict gates the always-loaded ratchet
 [group: "lint"]
 lint-context-engineering *args:

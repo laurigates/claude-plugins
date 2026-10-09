@@ -185,7 +185,7 @@
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
       "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
-      "version": "1.13.10",
+      "version": "1.13.11",
       "author": {
         "name": "Lauri Gates"
       },
@@ -392,7 +392,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.60.4",
+      "version": "2.60.5",
       "author": {
         "name": "Lauri Gates"
       },

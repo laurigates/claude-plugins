@@ -4,7 +4,7 @@ description: Add, modify, or delete a skill or plugin in this repo — frontmatt
 allowed-tools: Read, Edit, Write, Grep, Glob, Bash(mkdir *), Bash(jq *), Bash(git log *), Bash(bash scripts/check-docs-index.sh *), Bash(bash scripts/plugin-compliance-check.sh *), TodoWrite
 argument-hint: (no args)
 created: 2026-07-29
-modified: 2026-09-23
+modified: 2026-10-09
 reviewed: 2026-07-29
 ---
 
@@ -89,6 +89,10 @@ When creating, modifying, or deleting a plugin, update these files:
 | `.release-please-manifest.json` | Root | Add/remove plugin version entry |
 | `PLUGIN-MAP.md` | `docs/PLUGIN-MAP.md` | Add/remove plugin from navigation map |
 | `settings.json` | `.claude/settings.json` | Add/remove the plugin in `enabledPlugins` (`<plugin>@laurigates-claude-plugins`) — enforced by the `Plugin: Enablement drift` check |
+
+`docs/CATALOG.md` is generated from `marketplace.json` and the plugin dirs, so it
+is not on this list: the `generate-catalog` pre-commit hook rewrites it, or run
+`just catalog`. CI fails a PR whose committed catalog is stale.
 
 ### Creating a New Plugin
 
