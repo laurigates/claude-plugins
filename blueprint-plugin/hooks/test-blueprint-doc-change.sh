@@ -137,6 +137,23 @@ if [ "$(registered_path "$proj" ADR-104)" = "docs/adrs/ADR-104-probe.md" ]; then
 else
     notok "auto-sync-id-registry.sh invoked directly accepts an absolute file_path (got $(registered_path "$proj" ADR-104))"
 fi
+
+# A body-only edit to a registered document must not rewrite the manifest:
+# jq re-serialises the whole file, which reformats a hand-edited manifest.
+python3 -c '
+import json, sys
+p = sys.argv[1]
+d = json.load(open(p))
+open(p, "w").write(json.dumps(d, indent=4) + "\n")
+' "$proj/docs/blueprint/manifest.json"
+printf '\nA body paragraph.\n' >> "$proj/docs/adrs/ADR-104-probe.md"
+before=$(cat "$proj/docs/blueprint/manifest.json")
+run_hook "$HOOK" "$proj" "$(write_payload Edit "$proj/docs/adrs/ADR-104-probe.md")"
+if [ "$(cat "$proj/docs/blueprint/manifest.json")" = "$before" ]; then
+    ok "a body-only edit to a registered ADR leaves the manifest byte-identical"
+else
+    notok "a body-only edit to a registered ADR rewrote the manifest"
+fi
 rm -rf "$proj"
 
 # --- Bash ----------------------------------------------------------------------

@@ -85,6 +85,19 @@ if jq -e --arg id "$DOC_ID" '.id_registry.documents[$id]' "$MANIFEST" >/dev/null
         DOC_TITLE=$(grep -m1 "^# " "$FILE_PATH" | sed 's/^# //' | tr -d '\r' || true)
     fi
 
+    # Most edits change the body, not the registered fields. jq re-serialises
+    # the whole manifest, so writing anyway would reformat a hand-edited file
+    # (expanding inline arrays) on every document edit.
+    if jq -e --arg id "$DOC_ID" \
+          --arg path "$FILE_PATH" \
+          --arg status "${DOC_STATUS:-unknown}" \
+          --arg title "${DOC_TITLE:-untitled}" \
+          '.id_registry.documents[$id] as $d
+           | $d.path == $path and $d.status == $status and $d.title == $title' \
+          "$MANIFEST" >/dev/null 2>&1; then
+        exit 0
+    fi
+
     jq --arg id "$DOC_ID" \
        --arg path "$FILE_PATH" \
        --arg status "${DOC_STATUS:-unknown}" \
