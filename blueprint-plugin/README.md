@@ -321,10 +321,12 @@ The runner implements the `task_registry` `auto_run`/`schedule` contract:
 a task runs only when `enabled: true` **and** `auto_run: true` **and** its
 schedule interval has elapsed since `last_completed_at` (written back with
 `last_result` and `stats.runs`). `on-change` tasks are event-driven
-(PostToolUse hooks) and `on-demand` tasks never auto-run. Work-order creation
-stays human-only at every level — automation may at most *draft* proposals
-(GitHub issues labeled `work-order-draft`) that a human promotes via
-`/blueprint:work-order --from-issue N`.
+(PostToolUse hooks) and `on-demand` tasks never auto-run. At every level,
+ambient automation may at most *draft* work-order proposals (GitHub issues
+labeled `work-order-draft`); promotion is a separate, reviewed
+`/blueprint:work-order --from-issue N` run. `/blueprint:work-order` and
+`/blueprint:prp-execute` are model-invocable (ADR-0024), so a user can also
+ask the agent to create a work order or execute a PRP directly.
 
 ```bash
 # Dry-run the due-ness computation (no execution, no writeback)
