@@ -186,7 +186,7 @@ check "dry-run MAX_COST_USD" "0.15" "$(field "$out" MAX_COST_USD)"
 check "dry-run MAX_TURNS" "2" "$(field "$out" MAX_TURNS)"
 check "dry-run plugin dirs (own + peer)" "$mkt/demo-plugin,$mkt/peer-plugin" "$(field "$out" PLUGIN_DIRS)"
 check "dry-run no REASON on OK" "" "$(field "$out" REASON)"
-check "dry-run plan lists near miss" "yes" "$(printf '%s\n' "$out" | grep -q '^  - ID=n1 EXPECTED=no_trigger NEAR_MISS_OF=git-rebase$' && echo yes || echo no)"
+check "dry-run plan lists near miss" "yes" "$(grep -q '^  - ID=n1 EXPECTED=no_trigger NEAR_MISS_OF=git-rebase$' <<<"$out" && echo yes || echo no)"
 check "dry-run ran no rollout" "0" "$(calls)"
 check "dry-run wrote no copy" "no" "$([ -e "$skill/eval-results/triggers.json" ] && echo yes || echo no)"
 check "dry-run wrote no runs" "no" "$([ -e "$EVAL_RUNS_ROOT" ] && echo yes || echo no)"
@@ -232,7 +232,7 @@ check "invalid block ISSUE_COUNT" "8" "$(field "$out" ISSUE_COUNT)"
 for frag in "duplicates triggers.should_trigger\[0\]" "collides with an evals\[\].id" "should_trigger\[3\].prompt must be a non-empty" \
             "near_miss_of must be" "'notaplugin' is not a plugin dir" "'missing-plugin' is not a plugin dir" \
             "must not contain '..'" "max_turns must be a positive integer"; do
-  check "invalid block reports: $frag" "yes" "$(printf '%s\n' "$out" | grep -q -- "TYPE=invalid_triggers MSG=.*$frag" && echo yes || echo no)"
+  check "invalid block reports: $frag" "yes" "$(grep -q -- "TYPE=invalid_triggers MSG=.*$frag" <<<"$out" && echo yes || echo no)"
 done
 check "invalid block ran no rollout" "0" "$(calls)"
 
@@ -268,8 +268,8 @@ check "maths TOTAL_COST_USD (killed runs at cap)" "0.17" "$(field "$out" TOTAL_C
 check "maths BUDGET_ABORTED" "false" "$(field "$out" BUDGET_ABORTED)"
 check "maths MODEL_ID" "claude-haiku-stub" "$(field "$out" MODEL_ID)"
 check "maths REASON names the fp" "yes" "$(field "$out" REASON | grep -q '^false_positives: 1 false positive(s) > --max-false-positives 0: n4' && echo yes || echo no)"
-check "maths results row s3" "yes" "$(printf '%s\n' "$out" | grep -qx '  - ID=s3 EXPECTED=trigger TRIGGERED=true RATE=1 OUTCOME=tp STATUS=OK' && echo yes || echo no)"
-check "maths results row n3 (other plugin, same bare name)" "yes" "$(printf '%s\n' "$out" | grep -qx '  - ID=n3 EXPECTED=no_trigger TRIGGERED=false RATE=0 OUTCOME=tn STATUS=OK' && echo yes || echo no)"
+check "maths results row s3" "yes" "$(grep -qx '  - ID=s3 EXPECTED=trigger TRIGGERED=true RATE=1 OUTCOME=tp STATUS=OK' <<<"$out" && echo yes || echo no)"
+check "maths results row n3 (other plugin, same bare name)" "yes" "$(grep -qx '  - ID=n3 EXPECTED=no_trigger TRIGGERED=false RATE=0 OUTCOME=tn STATUS=OK' <<<"$out" && echo yes || echo no)"
 tj="$(field "$out" OUTPUT)"
 check "default output under EVAL_RUNS_ROOT" "yes" "$(case "$tj" in "$EVAL_RUNS_ROOT"/demo-plugin/demo-skill/triggers/*/triggers.json) echo yes ;; *) echo no ;; esac)"
 check "triggers.json exists" "yes" "$([ -f "$tj" ] && echo yes || echo no)"
@@ -289,7 +289,7 @@ check "rollout called once per prompt" "8" "$(calls)"
 first_call="$(grep -m1 '^CALL' "$STUB_LOG")"
 for flag in "--tools Skill" "--allowed-tools Skill" "--permission default" "--stop-on-skill" "--max-turns 2" "--model haiku" \
             "--max-budget-usd 0.05" "--plugin-dir $mkt/demo-plugin" "--plugin-dir $mkt/peer-plugin" "--no-snapshot"; do
-  check "rollout argv has: $flag" "yes" "$(printf '%s\n' "$first_call" | grep -qF -- " $flag" && echo yes || echo no)"
+  check "rollout argv has: $flag" "yes" "$(grep -qF -- " $flag" <<<"$first_call" && echo yes || echo no)"
 done
 check "every workdir was empty" "8" "$(grep -c 'WD_EMPTY=yes' "$STUB_LOG")"
 wd1="$(grep -m1 '^WD=' "$STUB_LOG" | sed 's/^WD=\([^ ]*\) .*/\1/')"
@@ -359,7 +359,7 @@ check "runs3 triggered" '[true,false,true,false]' "$(jf "$tj" '[r["triggered"] f
 check "runs3 s3 ok/error runs" '[2,1,"OK"]' "$(jf "$tj" '[d["prompts"][2][k] for k in ("runs_ok","runs_error","status")]')"
 check "runs3 TP/FN/TN/FP" "2/1/1/0" "$(field "$out" TP)/$(field "$out" FN)/$(field "$out" TN)/$(field "$out" FP)"
 check "runs3 rollout calls" "12" "$(calls)"
-check "runs3 RATE line" "yes" "$(printf '%s\n' "$out" | grep -qx '  - ID=s1 EXPECTED=trigger TRIGGERED=true RATE=0.6667 OUTCOME=tp STATUS=OK' && echo yes || echo no)"
+check "runs3 RATE line" "yes" "$(grep -qx '  - ID=s1 EXPECTED=trigger TRIGGERED=true RATE=0.6667 OUTCOME=tp STATUS=OK' <<<"$out" && echo yes || echo no)"
 
 # ---------------------------------------------------------------------------
 echo "=== TEST: ERROR rows excluded ==="
@@ -423,7 +423,7 @@ check "usage-abort stops after first call" "1" "$(calls)"
 check "usage-abort charges nothing" "0" "$(field "$out" TOTAL_COST_USD)"
 
 echo "=== TEST: --skill-listing-budget forwarding ==="
-check "default run does not pass the flag (rollout default applies)" "no" "$(printf '%s\n' "$first_call" | grep -qF -- " --skill-listing-budget" && echo yes || echo no)"
+check "default run does not pass the flag (rollout default applies)" "no" "$(grep -qF -- " --skill-listing-budget" <<<"$first_call" && echo yes || echo no)"
 reset_state
 write_evals '[{"id":"s1","prompt":"[[SEQ:T]] a"}]' '[]'
 run_runner --skill-listing-budget 4242 --no-copy

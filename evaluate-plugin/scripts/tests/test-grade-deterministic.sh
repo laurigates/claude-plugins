@@ -82,7 +82,7 @@ check "gc-006 is an abstention case" "true" "$(case " $abstain_ids " in *" gc-00
 # A fabricated answer: a plausible commit message for changes that do not exist.
 fab_out="$(python3 "$grader" --evals "$evals" --eval-id gc-006 --output "$fixtures/gc-006-fabricated.txt")"
 check "fabricated: expected outcome reported" "abstain" "$(field "$fab_out" EXPECTED_OUTCOME)"
-check "fabricated: absent_regex fails" "true" "$(printf '%s\n' "$fab_out" | grep -q 'CHECK=absent_regex RESULT=FAIL' && echo true || echo false)"
+check "fabricated: absent_regex fails" "true" "$(grep -q 'CHECK=absent_regex RESULT=FAIL' <<<"$fab_out" && echo true || echo false)"
 check "fabricated: status" "ERROR" "$(field "$fab_out" STATUS)"
 python3 "$grader" --evals "$evals" --eval-id gc-006 --output "$fixtures/gc-006-fabricated.txt" --strict >/dev/null
 check "fabricated: --strict exit code" "1" "$?"
@@ -93,7 +93,7 @@ check "fabricated: --strict exit code" "1" "$?"
 ref_out="$(python3 "$grader" --evals "$evals" --eval-id gc-006 --output "$fixtures/gc-006-refusal.txt")"
 check "refusal: deterministic total" "2" "$(field "$ref_out" DETERMINISTIC_TOTAL)"
 check "refusal: deterministic failed" "0" "$(field "$ref_out" DETERMINISTIC_FAILED)"
-check "refusal: absent_regex passes" "true" "$(printf '%s\n' "$ref_out" | grep -q 'CHECK=absent_regex RESULT=PASS' && echo true || echo false)"
+check "refusal: absent_regex passes" "true" "$(grep -q 'CHECK=absent_regex RESULT=PASS' <<<"$ref_out" && echo true || echo false)"
 check "refusal: judge pending" "1" "$(field "$ref_out" JUDGE_PENDING)"
 check "refusal: status" "WARN" "$(field "$ref_out" STATUS)"
 
@@ -122,27 +122,27 @@ done
 
 echo "=== TEST: matrix report rendering ==="
 report="$(python3 "$renderer" "$fixtures/example-model-matrix.json")"
-printf '%s\n' "$report" | grep -q "earns its keep" \
+grep -q "earns its keep" <<<"$report" \
   && pass_count=$((pass_count + 1)) \
   || { echo "FAIL: report missing 'earns its keep' verdict" >&2; fail_count=$((fail_count + 1)); }
-printf '%s\n' "$report" | grep -q "claude-opus-4-8" \
+grep -q "claude-opus-4-8" <<<"$report" \
   && pass_count=$((pass_count + 1)) \
   || { echo "FAIL: report missing pinned model id" >&2; fail_count=$((fail_count + 1)); }
-printf '%s\n' "$report" | grep -q "Portability flag" \
+grep -q "Portability flag" <<<"$report" \
   && pass_count=$((pass_count + 1)) \
   || { echo "FAIL: report missing portability flag (opus-haiku spread = 30pts)" >&2; fail_count=$((fail_count + 1)); }
 
 # Executability flag (Slice 2): absent when haiku (0.7) is above the 0.5 floor.
-printf '%s\n' "$report" | grep -q "executable_on_haiku=false" \
+grep -q "executable_on_haiku=false" <<<"$report" \
   && { echo "FAIL: example report should NOT fire executability flag (haiku 0.7 >= floor)" >&2; fail_count=$((fail_count + 1)); } \
   || pass_count=$((pass_count + 1))
 
 echo "=== TEST: executability callout fires when haiku < floor < opus ==="
 low_report="$(python3 "$renderer" "$fixtures/low-haiku-model-matrix.json")"
-printf '%s\n' "$low_report" | grep -q "executable_on_haiku=false" \
+grep -q "executable_on_haiku=false" <<<"$low_report" \
   && pass_count=$((pass_count + 1)) \
   || { echo "FAIL: low-haiku report missing executability flag (haiku 0.3 < 0.5 <= opus 0.9)" >&2; fail_count=$((fail_count + 1)); }
-printf '%s\n' "$low_report" | grep -q "Executability flag" \
+grep -q "Executability flag" <<<"$low_report" \
   && pass_count=$((pass_count + 1)) \
   || { echo "FAIL: low-haiku report missing 'Executability flag' heading" >&2; fail_count=$((fail_count + 1)); }
 
@@ -389,7 +389,7 @@ cat > "$fifo_evals" <<'JSON'
 JSON
 fifo_out="$(python3 "$grader" --evals "$fifo_evals" --eval-id t-fifo --output "$no_trace_out" --workspace "$ws_fifo" --allow-exec 2>&1)"
 check "fifo: grader exits 0" "0" "$?"
-check "fifo: no traceback" "false" "$(printf '%s\n' "$fifo_out" | grep -q 'Traceback' && echo true || echo false)"
+check "fifo: no traceback" "false" "$(grep -q 'Traceback' <<<"$fifo_out" && echo true || echo false)"
 check "fifo: other check still graded" "1" "$(field "$fifo_out" DETERMINISTIC_PASSED)"
 check "fifo: run_command FAILs" "1" "$(field "$fifo_out" DETERMINISTIC_FAILED)"
 e='{"assertion":"a","check":"run_command","command":"true"}'
@@ -498,8 +498,8 @@ e='{"assertion":"a","check":"regex","pattern":"x","flags":"q"}'
 printf '{"evals":[{"id":"t-1","expectations":[%s]}]}\n' "$e" > "$one_evals"
 bf_out="$(python3 "$grader" --evals "$one_evals" --eval-id t-1 --output "$no_trace_out" 2>&1)"
 check "bad flags: grader exits 0" "0" "$?"
-check "bad flags: graded FAIL" "true" "$(printf '%s\n' "$bf_out" | grep -q 'CHECK=regex RESULT=FAIL' && echo true || echo false)"
-check "bad flags: no traceback" "false" "$(printf '%s\n' "$bf_out" | grep -q 'Traceback' && echo true || echo false)"
+check "bad flags: graded FAIL" "true" "$(grep -q 'CHECK=regex RESULT=FAIL' <<<"$bf_out" && echo true || echo false)"
+check "bad flags: no traceback" "false" "$(grep -q 'Traceback' <<<"$bf_out" && echo true || echo false)"
 check "bad flags: evidence" "true" "$(evidence_one "$e" "$no_trace_out" | grep -q "^malformed check: unknown regex flag" && echo true || echo false)"
 python3 "$grader" --evals "$one_evals" --eval-id t-1 --output "$no_trace_out" --strict >/dev/null 2>&1
 check "bad flags: --strict exit code" "1" "$?"
