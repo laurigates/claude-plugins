@@ -64,7 +64,7 @@ change silently.
 | Path | Role |
 |---|---|
 | `cargo-generate.toml` | Placeholders, per-variant `[conditional]` blocks, `exclude`d files, the pre-hook |
-| `hooks/derive-module-id.rhai` | Derives `module_id` from the repo name; sets the copyright year and ADR date |
+| `hooks/derive-module-id.rhai` | Derives `module_id` from the repo name; sets the copyright year and ADR date from `system::date()`, which is UTC (`scaffold.py` reads the UTC date to match) |
 | everything else | The module tree, with Liquid expressions where values vary |
 
 `module_id` is derived rather than prompted because it must byte-match across

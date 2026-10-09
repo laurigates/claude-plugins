@@ -135,6 +135,37 @@ check "renovate.json still emitted" "present" "$(emitted renovate.json)"
 check "ci.yml still emitted" "present" "$(emitted .github/workflows/ci.yml)"
 check "release-please.yml still emitted" "present" "$(emitted .github/workflows/release-please.yml)"
 
+echo "=== UTC DATES (#2804) ==="
+
+# scaffold.py must stamp the UTC date, as cargo-generate's `system::date()`
+# does. test-template-parity.sh asserts the two agree, but it SKIPs wherever
+# cargo-generate is absent, so this half runs on python3 alone. Kiritimati
+# (UTC+14) and Etc/GMT+12 (UTC-12) are 26 hours apart: at any hour at least one
+# of them is on a different calendar day from UTC, so a local-date regression
+# fails here whenever the test runs.
+check "TZ pair resolves to different local dates (tzdata present)" "differ" \
+    "$([ "$(TZ=Pacific/Kiritimati date +%F)" != "$(TZ=Etc/GMT+12 date +%F)" ] && echo differ || echo same)"
+
+for tz in Pacific/Kiritimati Etc/GMT+12; do
+    tz_dir="${WORK}/tz-${tz//\//-}"
+    mkdir -p "$tz_dir"
+    # Bracket the run so a UTC midnight rollover mid-scaffold cannot flake it.
+    utc_day_before="$(date -u +%F)"
+    utc_year_before="$(date -u +%Y)"
+    if ! TZ="$tz" scaffold "$tz_dir" basic; then
+        check "scaffold under TZ=${tz}" "ok" "failed"
+        continue
+    fi
+    utc_day_after="$(date -u +%F)"
+    utc_year_after="$(date -u +%Y)"
+    adr_date="$(sed -n 's/^- Date: //p' "${tz_dir}/${MODULE_NAME}/docs/adr/0001-vite-bun-typescript.md")"
+    license_year="$(sed -n 's/^Copyright (c) \([0-9]*\) .*/\1/p' "${tz_dir}/${MODULE_NAME}/LICENSE")"
+    if [ "$adr_date" = "$utc_day_after" ]; then utc_day_before="$utc_day_after"; fi
+    if [ "$license_year" = "$utc_year_after" ]; then utc_year_before="$utc_year_after"; fi
+    check "TZ=${tz}: ADR date is the UTC date" "$utc_day_before" "$adr_date"
+    check "TZ=${tz}: LICENSE year is the UTC year" "$utc_year_before" "$license_year"
+done
+
 echo "=== FRESH SCAFFOLD (no ERROR by construction) ==="
 
 run_verify "$PRISTINE"

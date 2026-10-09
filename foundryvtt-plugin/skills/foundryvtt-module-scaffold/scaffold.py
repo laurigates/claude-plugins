@@ -742,11 +742,8 @@ export class @@MODULE_CLASS@@App extends HandlebarsApplicationMixin(ApplicationV
   }
 
   // Declared `static`, but the framework rebinds `this` to the live instance.
-  static async #onRefresh(
-    this: @@MODULE_CLASS@@App,
-    _event: Event,
-    _target: HTMLElement,
-  ): Promise<void> {
+  // The framework also passes (event, target); this handler needs neither.
+  static async #onRefresh(this: @@MODULE_CLASS@@App): Promise<void> {
     await this.render();
   }
 }
@@ -1551,6 +1548,11 @@ def main() -> int:
         )
 
     ctx = derive(args.name, args.id)
+    # UTC, not the local date: the cargo-generate port reads `system::date()`
+    # (hooks/derive-module-id.rhai), which is UTC. A local date makes the two
+    # generators disagree on the ADR date and copyright year whenever the local
+    # day differs from the UTC day (#2804).
+    today = datetime.datetime.now(datetime.timezone.utc).date()
     ctx.update(
         DISPLAY=args.display,
         DESC=args.desc,
@@ -1558,8 +1560,8 @@ def main() -> int:
         AUTHOR=args.author,
         FVTT_MIN=args.fvtt_min,
         FVTT_VERIFIED=args.fvtt_verified,
-        YEAR=str(datetime.date.today().year),
-        DATE=datetime.date.today().isoformat(),
+        YEAR=str(today.year),
+        DATE=today.isoformat(),
     )
 
     parent = Path(args.dir).resolve()
