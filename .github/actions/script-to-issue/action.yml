@@ -7,8 +7,9 @@ description: >-
 # ---------------------------------------------------------------------------
 # Two invocation modes:
 #
-#   Guard-only  — pass `label` (plus `color`/`description`). The action
-#                 provisions the label and sets the `exists` output. Callers
+#   Guard-only  — pass `label` (plus `color`/`description`, and
+#                 `title-prefix` when the report title is a fixed string). The
+#                 action provisions the label and sets the `exists` output. Callers
 #                 that interleave their own steps (a Claude audit, a fleet
 #                 clone) gate those steps on `steps.<id>.outputs.exists`.
 #
@@ -27,8 +28,19 @@ inputs:
   label:
     description: >-
       The audit's own label. Doubles as the duplicate-issue key: the guard looks
-      for an open issue carrying exactly this label.
+      for an open issue carrying exactly this label (narrowed by `title-prefix`
+      when that is set).
     required: true
+  title-prefix:
+    description: >-
+      Fixed leading text of the audit's own report titles, such as
+      'Fleet drift:'. When set, only open issues that carry `label` AND whose
+      title starts with this text count as the previous report; other issues
+      carrying the label (routing tags on related work) no longer switch the
+      audit off (#2729). Leave empty only when the report title is not a fixed
+      string: the guard then counts every open issue carrying `label`.
+    required: false
+    default: ''
   color:
     description: "Hex colour (no leading #) for `gh label create`."
     required: false
@@ -83,6 +95,12 @@ outputs:
       'true' when an open issue already carries `label`. Guard-only callers gate
       their own steps on this.
     value: ${{ steps.guard.outputs.exists }}
+  matched:
+    description: >-
+      Comma-separated numbers of the open issues the guard matched (empty when
+      none). The same list is written to the job summary, so a skipped run
+      names the issue that caused the skip.
+    value: ${{ steps.guard.outputs.matched }}
 
 runs:
   using: composite
@@ -112,15 +130,21 @@ runs:
         if [ -n "$DESCRIPTION" ]; then ARGS+=(--description "$DESCRIPTION"); fi
         gh label create "$LABEL" --repo "$GITHUB_REPOSITORY" "${ARGS[@]}" --force
 
+    # The guard logic lives in scripts/script-to-issue-guard.sh so its self-test
+    # (scripts/tests/test-script-to-issue-guard.sh) runs in `Test: Skill
+    # scripts` on every change. It writes `exists`/`matched` to GITHUB_OUTPUT
+    # and names the matched issues in the job summary. A `gh` failure fails
+    # this step rather than guessing either way (#2729).
     - name: Check for existing open issue
       id: guard
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
         LABEL: ${{ inputs.label }}
+        TITLE_PREFIX: ${{ inputs.title-prefix }}
       run: |
-        EXISTING=$(gh issue list --label "$LABEL" --state open --json number --jq 'length')
-        echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+        bash "${GITHUB_WORKSPACE}/scripts/script-to-issue-guard.sh" \
+          --label "$LABEL" --title-prefix "$TITLE_PREFIX"
 
     # The body is transported as a FILE under $RUNNER_TEMP, not through
     # GITHUB_OUTPUT. A heredoc-delimited GITHUB_OUTPUT value breaks whenever the

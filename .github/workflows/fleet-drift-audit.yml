@@ -62,6 +62,7 @@ jobs:
           label: fleet-drift
           color: b60205
           description: Drift between the ComfyUI pack fleet and its scaffold
+          title-prefix: 'Fleet drift:'
 
       - name: Clone the pack fleet
         if: steps.check_issue.outputs.exists == 'false'
@@ -145,6 +146,7 @@ jobs:
           label: fleet-drift
           color: b60205
           description: Drift between the ComfyUI pack fleet and its scaffold
+          title-prefix: 'Fleet drift:'
           script: cat "${RUNNER_TEMP}/audit-body.md"
           title: 'Fleet drift: ComfyUI packs vs the scaffold template ({date})'
           extra-labels: comfyui-plugin,maintenance

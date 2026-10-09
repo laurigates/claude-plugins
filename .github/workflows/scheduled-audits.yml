@@ -37,6 +37,7 @@ jobs:
           description: Monthly blueprint health audit
           script: bash scripts/blueprint-health-check.sh
           title: 'Monthly Blueprint Health: {date}'
+          title-prefix: 'Monthly Blueprint Health:'
 
   infra-compliance:
     # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
@@ -54,6 +55,7 @@ jobs:
           description: Monthly infrastructure compliance dashboard
           script: bash scripts/infra-compliance-check.sh
           title: 'Infrastructure Compliance Dashboard: {month}'
+          title-prefix: 'Infrastructure Compliance Dashboard:'
 
   agentic-audit:
     runs-on: ubuntu-latest
@@ -92,6 +94,8 @@ jobs:
         uses: ./.github/actions/script-to-issue
         with:
           label: agentic-audit
+          # The title this job's Claude prompt pins (#2729).
+          title-prefix: 'Monthly Agentic Quality Audit:'
           force: 'false'
 
       - name: Pre-compute deterministic data
@@ -297,6 +301,7 @@ jobs:
           description: A scheduled audit has gone green while filing nothing
           script: bash scripts/check-audit-liveness.sh --issue-body
           title: 'Scheduled audit filing nothing: {month}'
+          title-prefix: 'Scheduled audit filing nothing:'
 
   docs-index:
     # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
@@ -318,3 +323,4 @@ jobs:
           description: Top-level docs drift (Layer 1) audit
           script: bash scripts/check-docs-index.sh --issue-body
           title: 'Top-level docs drift (Layer 1): {month}'
+          title-prefix: 'Top-level docs drift (Layer 1):'
