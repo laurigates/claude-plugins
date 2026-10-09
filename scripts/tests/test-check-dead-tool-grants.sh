@@ -21,7 +21,7 @@ CHECK="$repo_root/scripts/check-dead-tool-grants.sh"
 
 pass=0; fail=0
 assert() { if [ "$2" = "true" ]; then pass=$((pass+1)); else echo "FAIL: $1" >&2; fail=$((fail+1)); fi; }
-has() { printf '%s' "$1" | grep -qF -- "$2" && echo true || echo false; }
+has() { grep -qF -- "$2" <<<"$1" && echo true || echo false; }
 
 fx="$(mktemp -d)"; [ -n "$fx" ] || { echo "mktemp failed" >&2; exit 1; }
 trap 'rm -rf "$fx"' EXIT

@@ -42,7 +42,7 @@ echo "=== check-feature-flags-catalog tests ==="
 # something, so they are checked here and beside every fixture case.
 out=$(bash "$SCRIPT" --project-dir "$REPO_ROOT" --strict 2>&1); rc=$?
 scanned=$(printf '%s\n' "$out" | grep -m1 '^FILES_SCANNED=' | cut -d= -f2)
-if [ "$rc" -eq 0 ] && echo "$out" | grep -qx "STATUS=OK"; then
+if [ "$rc" -eq 0 ] && grep -qx "STATUS=OK" <<<"$out"; then
     pass "real repo passes --strict (STATUS=OK, exit 0)"
 else
     fail "real repo should pass --strict (got exit $rc): $out"
@@ -52,7 +52,7 @@ if [ -n "${scanned:-}" ] && [ "$scanned" -gt 0 ] 2>/dev/null; then
 else
     fail "real repo reported no scanned files — a clean STATUS would be meaningless: $out"
 fi
-if echo "$out" | grep -qx "SCANNED_EMPTY=false"; then
+if grep -qx "SCANNED_EMPTY=false" <<<"$out"; then
     pass "real repo reports SCANNED_EMPTY=false"
 else
     fail "real repo should report SCANNED_EMPTY=false: $out"
@@ -61,7 +61,7 @@ fi
 # 2. A documented flag → OK.
 d=$(make_project "CLAUDE_HOOKS_ENABLE_SAMPLE" "CLAUDE_HOOKS_ENABLE_SAMPLE")
 out=$(bash "$SCRIPT" --project-dir "$d" --strict 2>&1); rc=$?
-if [ "$rc" -eq 0 ] && echo "$out" | grep -qx "MISSING_COUNT=0"; then
+if [ "$rc" -eq 0 ] && grep -qx "MISSING_COUNT=0" <<<"$out"; then
     pass "documented flag → STATUS=OK, exit 0"
 else
     fail "documented flag should pass (got exit $rc): $out"
@@ -72,15 +72,15 @@ rm -rf "$d"
 d=$(make_project "CLAUDE_HOOKS_ENABLE_SAMPLE" "")
 out=$(bash "$SCRIPT" --project-dir "$d" --strict 2>&1); rc=$?
 if [ "$rc" -eq 1 ] \
-   && echo "$out" | grep -qx "MISSING_COUNT=1" \
-   && echo "$out" | grep -q "FLAG=CLAUDE_HOOKS_ENABLE_SAMPLE"; then
+   && grep -qx "MISSING_COUNT=1" <<<"$out" \
+   && grep -q "FLAG=CLAUDE_HOOKS_ENABLE_SAMPLE" <<<"$out"; then
     pass "undocumented flag → strict exit 1, names the flag"
 else
     fail "undocumented flag should fail --strict (got exit $rc): $out"
 fi
 # The DENY above must be attributable to the flag, not to a walk that happened
 # to read the one hook and nothing else.
-if echo "$out" | grep -qx "FILES_SCANNED=1"; then
+if grep -qx "FILES_SCANNED=1" <<<"$out"; then
     pass "the fixture's single hook is exactly what was scanned (FILES_SCANNED=1)"
 else
     fail "fixture should report FILES_SCANNED=1: $out"
@@ -99,9 +99,9 @@ mkdir -p "$d/hooks-plugin/docs"
 printf '# Feature Flags Catalog\n' > "$d/hooks-plugin/docs/feature-flags.md"
 out=$(bash "$SCRIPT" --project-dir "$d" --strict 2>&1); rc=$?
 if [ "$rc" -eq 1 ] \
-   && echo "$out" | grep -qx "STATUS=ERROR" \
-   && echo "$out" | grep -qx "SCANNED_EMPTY=true" \
-   && echo "$out" | grep -q "TYPE=nothing_scanned"; then
+   && grep -qx "STATUS=ERROR" <<<"$out" \
+   && grep -qx "SCANNED_EMPTY=true" <<<"$out" \
+   && grep -q "TYPE=nothing_scanned" <<<"$out"; then
     pass "zero scannable sources → ERROR + nothing_scanned, not a clean OK"
 else
     fail "empty source tree should be an ERROR, not OK (got exit $rc): $out"
@@ -111,7 +111,7 @@ rm -rf "$d"
 # 4. Without --strict, a gap reports ERROR but still exits 0 (audit-friendly).
 d=$(make_project "CLAUDE_TASKWARRIOR_NO_SAMPLE" "")
 out=$(bash "$SCRIPT" --project-dir "$d" 2>&1); rc=$?
-if [ "$rc" -eq 0 ] && echo "$out" | grep -qx "STATUS=ERROR"; then
+if [ "$rc" -eq 0 ] && grep -qx "STATUS=ERROR" <<<"$out"; then
     pass "gap without --strict → STATUS=ERROR but exit 0"
 else
     fail "non-strict gap should exit 0 with STATUS=ERROR (got exit $rc): $out"

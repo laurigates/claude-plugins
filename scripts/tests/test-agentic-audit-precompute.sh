@@ -288,7 +288,7 @@ assert "a skill WITH Bash in allowed-tools reads '(Bash in allowed-tools: yes)'"
      | grep -qF 'demo-plugin/skills/has-bash/SKILL.md (Bash in allowed-tools: yes)' && echo true || echo false)"
 # The list ANNOTATES, it does not FILTER: a Bash-less skill must still be listed.
 assert "the Bash-less skill is still listed (annotation, not a filter)" \
-  "$(printf '%s\n' "$agentic_section" | grep -qF 'demo-plugin/skills/no-bash/SKILL.md' && echo true || echo false)"
+  "$(grep -qF 'demo-plugin/skills/no-bash/SKILL.md' <<<"$agentic_section" && echo true || echo false)"
 
 ##########
 # DEFECT 2 — unanchored `when to use` grep (current behaviour pinned)
@@ -312,17 +312,17 @@ assert "the 400-day-old skill appears in the stale list" \
   "$(printf '%s\n' "$stale_section" \
      | grep -qF "demo-plugin/skills/stale-review/SKILL.md: reviewed $STALE_DATE" && echo true || echo false)"
 assert "a freshly-reviewed skill does NOT appear in the stale list" \
-  "$(! printf '%s\n' "$stale_section" | grep -q 'skills/no-bash/SKILL.md' && echo true || echo false)"
+  "$(! grep -q 'skills/no-bash/SKILL.md' <<<"$stale_section" && echo true || echo false)"
 assert "the cohort section counts exactly the 2 stale skills" \
-  "$(printf '%s\n' "$cohort_section" | grep -qF -- '- Stale skills counted: 2' && echo true || echo false)"
+  "$(grep -qF -- '- Stale skills counted: 2' <<<"$cohort_section" && echo true || echo false)"
 assert "the cohort section reports 1 distinct reviewed: date" \
-  "$(printf '%s\n' "$cohort_section" | grep -qF -- '- Distinct `reviewed:` dates among them: 1' && echo true || echo false)"
+  "$(grep -qF -- '- Distinct `reviewed:` dates among them: 1' <<<"$cohort_section" && echo true || echo false)"
 assert "the stale skill's date appears in the cohort roll-up with its count" \
-  "$(printf '%s\n' "$cohort_section" | grep -qE "^  - +2 $STALE_DATE\$" && echo true || echo false)"
+  "$(grep -qE "^  - +2 $STALE_DATE\$" <<<"$cohort_section" && echo true || echo false)"
 # Data, not diagnosis (#2557 Rec 3): this checkout's history is grafted, so a
 # shared date cannot be proven to be a bulk edit here.
 assert "the cohort section presents itself as data, not a diagnosis" \
-  "$(printf '%s\n' "$cohort_section" | grep -q 'not as a diagnosis' && echo true || echo false)"
+  "$(grep -q 'not as a diagnosis' <<<"$cohort_section" && echo true || echo false)"
 
 ##########
 # Structure — the three original headings survive the extraction verbatim

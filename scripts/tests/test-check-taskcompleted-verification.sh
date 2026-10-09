@@ -101,14 +101,14 @@ run_guard() { bash "$GUARD" --plugin-json "$1" 2>&1; }
 
 assert_contains() {
     local desc="$1" needle="$2" haystack="$3"
-    if printf '%s\n' "$haystack" | grep -qF -- "$needle"; then ok "$desc"; else
+    if grep -qF -- "$needle" <<<"$haystack"; then ok "$desc"; else
         bad "$desc (missing '$needle')"
     fi
 }
 
 assert_lacks() {
     local desc="$1" needle="$2" haystack="$3"
-    if printf '%s\n' "$haystack" | grep -qF -- "$needle"; then
+    if grep -qF -- "$needle" <<<"$haystack"; then
         bad "$desc (unexpectedly found '$needle')"
     else ok "$desc"; fi
 }
