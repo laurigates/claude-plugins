@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1003,SC2088  # file-level: '\' is a literal backslash in
+#   the quote scanner, and '~'/'~/'* match a literal leading tilde before it is
+#   expanded by hand (see shell-scripting.md § Suppressing shellcheck findings)
 # PreToolUse hook for the Bash tool — blocks `rm -rf` on a git repository whose
 # history exists nowhere else.
 #
