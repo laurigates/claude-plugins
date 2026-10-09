@@ -24,9 +24,13 @@
 #                    regex, case-sensitive; '#' comment lines and blank lines
 #                    ignored). Repeatable. Example line:
 #                      Internal hostname (corp.example)::\b[a-z0-9-]+\.corp\.example\b
-#   --names FILE     Newline-separated personal names to flag (one per line;
-#                    '#' comments allowed). Names can't be regex'd reliably, so
-#                    seed this per export from the source's git authors / RBAC.
+#   --names FILE     Newline-separated personal names to flag, one literal
+#                    entry per line. A line is a comment only when, after
+#                    leading whitespace, it is a bare '#' or '#' followed by
+#                    whitespace ("# authors from git log"). Any other '#' is
+#                    part of the entry, so "#1234" flags a PR/issue number and
+#                    "C#" stays "C#". Names can't be regex'd reliably, so seed
+#                    this per export from the source's git authors / RBAC.
 #   --allow REGEX    Dismiss findings matching REGEX (repeatable). Use for
 #                    known-benign hits, e.g. a diagram CSS class that shares a
 #                    project-id prefix.
@@ -40,6 +44,10 @@
 #   -h, --help       This help.
 #
 # Exit status: 0 = clean, 1 = findings, 2 = usage error.
+#
+# Dot-directories (.claude/, .github/, .cursor/, ...) are scanned like any
+# other path; only .git/ is skipped. Ignore files (.gitignore, .rgignore) are
+# not honoured — an ignored file still ships if the tree is copied.
 #
 # Write patterns so they do NOT match genericized <placeholder> tokens (those
 # use angle brackets, which [a-z0-9-] character classes exclude).
@@ -67,7 +75,8 @@ REPO_ROOT=""
 ALLOWS=()
 PATTERN_FILES=()
 
-usage() { sed -n '2,45p' "$0" | sed 's/^#\{0,1\} \{0,1\}//'; exit "${1:-0}"; }
+# Print the header comment block (line 2 up to the first non-comment line).
+usage() { awk 'NR == 1 { next } !/^#/ { exit } { sub(/^# ?/, ""); print }' "$0"; exit "${1:-0}"; }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -122,7 +131,7 @@ report() {
 # shell), then report.
 scan() {
   local label="$1" regex="$2" out
-  out="$(rg -n --no-heading --no-ignore -e "$regex" "$ROOT" 2>/dev/null || true)"
+  out="$(rg -n --no-heading --no-ignore --hidden -g '!.git' -e "$regex" "$ROOT" 2>/dev/null || true)"
   report "$label" "$out"
 }
 
@@ -139,10 +148,13 @@ done
 # ---------------------------------------------------------------------------
 if [[ -n "$NAMES_FILE" ]]; then
   [[ -f "$NAMES_FILE" ]] || { echo "error: --names file not found: $NAMES_FILE" >&2; exit 2; }
-  while IFS= read -r name; do
-    name="${name%%#*}"; name="$(echo "$name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+  while IFS= read -r name || [[ -n "$name" ]]; do
+    name="$(printf '%s' "$name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
     [[ -n "$name" ]] || continue
-    name_out="$(rg -n --no-heading --no-ignore -F -- "$name" "$ROOT" 2>/dev/null || true)"
+    # Comment = bare '#' or '#' + whitespace. Any other '#' belongs to the
+    # entry: '#13280' is a PR number to flag, not a comment (#2820).
+    [[ "$name" =~ ^#([[:space:]]|$) ]] && continue
+    name_out="$(rg -n --no-heading --no-ignore --hidden -g '!.git' -F -- "$name" "$ROOT" 2>/dev/null || true)"
     report "Personal name: ${name}" "$name_out"
   done < "$NAMES_FILE"
 fi

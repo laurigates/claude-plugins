@@ -3,7 +3,7 @@ name: public-export-sanitization
 description: "Sanitize internal content before it goes public (repo, blog, talk). Use when publishing, to catch leaked project ids, service-account emails, hostnames, names, and repo-escaping links."
 allowed-tools: Bash(bash *), Read, Grep, Glob, Edit, TodoWrite
 created: 2026-09-24
-modified: 2026-09-29
+modified: 2026-10-09
 reviewed: 2026-09-24
 ---
 
@@ -37,7 +37,8 @@ bash "${CLAUDE_SKILL_DIR}/scripts/check-public-export.sh" --patterns <org.patter
 It scans for internal **identifiers** and for **Markdown links that escape the
 export or are broken**. Exit 1 means findings to review; exit 2 is a usage
 error. Patterns ignore `<placeholder>` tokens, so a genericized tree comes back
-clean.
+clean. Dot-directories such as `.claude/` and `.github/` are scanned too; only
+`.git/` is skipped.
 
 **Built-in patterns are org-neutral only**: GCP service-account emails
 (`*.iam.gserviceaccount.com`), 12-digit GCP project numbers, and absolute home
@@ -64,7 +65,9 @@ Two modes:
   `../other-doc`) are allowed and only repo-escaping or broken links flag.
 
 Other options: `--names <file>` (personal names, which can't be regex'd; seed
-the list from the source's git authors and access grants), `--allow <regex>`
+the list from the source's git authors and access grants; one literal entry per
+line, and only a bare `#` or `# ` plus text is a comment, so `#1234` flags that
+PR or issue number), `--allow <regex>`
 (dismiss a known-benign hit, such as a CSS class that shares a project-id
 prefix; check the regex does not also hide real ids), `--no-links`, `-q`.
 

@@ -75,5 +75,29 @@ expect "D2: broken link flagged under --repo-root" 1 'broken link -> gone.md' --
 out="$(bash "$CHECK" --repo-root "$SANDBOX/repo" "$SANDBOX/repo/export" 2>&1)"
 if grep -q 'escapes boundary' <<<"$out"; then bad "D3: sibling link allowed under --repo-root"; else ok "D3: sibling link allowed under --repo-root"; fi
 
+# --- E: dot-directories are scanned; .git/ is not (#2820) ---------------------
+# rg skips hidden paths unless --hidden, so a hit that lives only under
+# .claude/ or .github/ used to come back "clean".
+mkdir -p "$SANDBOX/dotdir/.claude/rules" "$SANDBOX/dotdir/.github/workflows"
+printf 'Runs as deployer@acme-prod.iam.gserviceaccount.com.\n' > "$SANDBOX/dotdir/.claude/rules/infra.md"
+expect "E1: hit under .claude/rules/ is flagged" 1 'GCP service-account email' -- --no-links "$SANDBOX/dotdir"
+printf 'path: /home/alice/ci\n' > "$SANDBOX/dotdir/.github/workflows/ci.yml"
+expect "E2: hit under .github/ is flagged" 1 '\.github/workflows/ci\.yml' -- --no-links "$SANDBOX/dotdir"
+mkdir -p "$SANDBOX/gitdir/.git"
+printf 'project 123456789012\n' > "$SANDBOX/gitdir/.git/config"
+printf '# Clean\n' > "$SANDBOX/gitdir/doc.md"
+expect "E3: .git/ internals are not scanned" 0 'clean' -- --no-links "$SANDBOX/gitdir"
+
+# --- F: --names comment syntax (#2820) -----------------------------------------
+# Only a bare '#' or '#'+whitespace starts a comment; '#13280' is a literal entry.
+mkdir -p "$SANDBOX/names"
+printf 'Fixed in PR #13280 by the platform team.\n' > "$SANDBOX/names/doc.md"
+printf '#13280\n' > "$SANDBOX/hash.names"
+expect "F1: '#'-prefixed names entry is matched" 1 'Personal name: #13280' -- --no-links --names "$SANDBOX/hash.names" "$SANDBOX/names"
+printf '# platform\n  #\n\n' > "$SANDBOX/comment.names"
+expect "F2: '# comment' and bare '#' lines are ignored" 0 'clean' -- --no-links --names "$SANDBOX/comment.names" "$SANDBOX/names"
+printf '# authors\nplatform team\n' > "$SANDBOX/mixed.names"
+expect "F3: entry after a comment line still matches" 1 'Personal name: platform team' -- --no-links --names "$SANDBOX/mixed.names" "$SANDBOX/names"
+
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [[ "$fail" -eq 0 ]]
