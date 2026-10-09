@@ -265,6 +265,23 @@ run_case "a volume mount is not a slash command" clean \
   "demo-plugin/skills/other/SKILL.md" \
   'docker run -v ./data:/data:ro -v $HOME/cfg:/etc/cfg image'
 
+# Pins the `}` in the boundary class (#2956): a PR fetch refspec written with a
+# braced variable, inside a fenced block. Fences are NOT skipped, so the class
+# is what keeps this clean; dropping `}` re-flags `/head:refs`.
+run_case "a refspec after a braced variable is not a slash command (fenced)" clean \
+  "demo-plugin/skills/other/SKILL.md" \
+  "$(printf '%s\n' '```bash' 'git fetch origin "pull/${n}/head:refs/remotes/pr/${n}"' '```')"
+
+# Pins the `>` in the boundary class (#2956): a placeholder segment in prose.
+run_case "a refspec after a <placeholder> segment is not a slash command" clean \
+  "demo-plugin/skills/other/SKILL.md" \
+  'Fetch the PR head as `pull/<n>/head:refs/remotes/pr/<n>` first.'
+
+# The counter-case: fences stay scanned, so a dead command inside one is found.
+run_case "a dead slash command inside a fenced block is still detected" flag \
+  "demo-plugin/skills/other/SKILL.md" \
+  "$(printf '%s\n' '```text' '/demo:smartcommit' '```')"
+
 run_case "colon-free built-ins (/help, /clear, /loop, /goal) are never matched" clean \
   "demo-plugin/skills/other/SKILL.md" \
   'Use `/help`, `/clear`, `/loop 5m /demo:thing` or `/goal` as needed.'
