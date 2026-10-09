@@ -470,8 +470,8 @@ See .claude/rules/bash-tool-replacements.md for the full table."
     # a variable value is consumed as `"$SP/f.py"`, so the slash is part of the
     # shape it matches.
     scratch_ctx() {
-        echo "$COMMAND_SHELL_ONLY" | grep -Eq '(^|[;&|])[[:space:]]*cd[[:space:]]+"?((/private)?/tmp|/var/folders)(/|"|$|[[:space:]]|[;&|])' || \
-        echo "$COMMAND_SHELL_ONLY" | grep -Eq '(^|[[:space:];&|])[A-Za-z_][A-Za-z0-9_]*="?((/private)?/tmp/|/var/folders/)'
+        grep -Eq '(^|[;&|])[[:space:]]*cd[[:space:]]+"?((/private)?/tmp|/var/folders)(/|"|$|[[:space:]]|[;&|])' <<<"$COMMAND_SHELL_ONLY" || \
+        grep -Eq '(^|[[:space:];&|])[A-Za-z_][A-Za-z0-9_]*="?((/private)?/tmp/|/var/folders/)' <<<"$COMMAND_SHELL_ONLY"
     }
 
     if ast_matched "sed-inplace" && ! scratch_ctx; then
@@ -591,11 +591,11 @@ commit_message_file_flag() {
     grep -Eq 'git[[:space:]]+(commit|tag)[^;&|()`]*[[:space:]](-F|--file)([[:space:]=]|$)' <<<"$masked"
 }
 
-if echo "$COMMAND" | grep -Eq 'git\s+(commit|tag)\b' && \
-   echo "$COMMAND" | grep -Eq '(feat|fix|docs|refactor|test|chore|perf|ci)(\(.+\))?[!:]' && \
+if grep -Eq 'git\s+(commit|tag)\b' <<<"$COMMAND" && \
+   grep -Eq '(feat|fix|docs|refactor|test|chore|perf|ci)(\(.+\))?[!:]' <<<"$COMMAND" && \
    ! commit_message_file_flag && \
-   { echo "$COMMAND" | grep -Eq 'cat\s*>\s*[^|]*commit' || \
-     echo "$COMMAND" | grep -Eq "(cat|echo|printf)\s*>\s*/tmp/.*<<.*EOF"; }; then
+   { grep -Eq 'cat\s*>\s*[^|]*commit' <<<"$COMMAND" || \
+     grep -Eq "(cat|echo|printf)\s*>\s*/tmp/.*<<.*EOF" <<<"$COMMAND"; }; then
     block "REMINDER: Use HEREDOC directly in git commit:
 
 git commit -m \"\$(cat <<'EOF'
