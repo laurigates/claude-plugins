@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.46.9](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.8...blueprint-plugin-v3.46.9) (2026-10-09)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** fire document hooks for absolute paths and Bash edits ([#2999](https://github.com/laurigates/claude-plugins/issues/2999)) ([0c32046](https://github.com/laurigates/claude-plugins/commit/0c32046bcae2a15cf6970f9fb7dfef95e6e1948b))
+
 ## [3.46.8](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.7...blueprint-plugin-v3.46.8) (2026-10-09)
 
 
