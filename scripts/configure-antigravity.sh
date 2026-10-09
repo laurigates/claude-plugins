@@ -60,18 +60,20 @@ for p in sorted(repo_root.glob("*-plugin")):
     if skills_dir.is_dir():
         marketplace_paths.append(str(skills_dir.resolve()))
 
+# A skills.json this script cannot read is left untouched and the run stops:
+# resetting it would delete the user's own skill registrations.
 current_data = {"entries": []}
 if skills_json_path.is_file():
     try:
         current_data = json.loads(skills_json_path.read_text(encoding="utf-8"))
-        if not isinstance(current_data, dict):
-            current_data = {"entries": []}
-    except Exception:
-        current_data = {"entries": []}
+    except ValueError as exc:
+        sys.exit(f"error: {skills_json_path} is not valid JSON ({exc}); fix or move it, then re-run")
+    if not isinstance(current_data, dict):
+        sys.exit(f"error: {skills_json_path} is not a JSON object; fix or move it, then re-run")
 
 existing_entries = current_data.get("entries", [])
 if not isinstance(existing_entries, list):
-    existing_entries = []
+    sys.exit(f"error: {skills_json_path} has an `entries` value that is not a list; fix or move it, then re-run")
 
 mp_set = set(marketplace_paths)
 

@@ -11,11 +11,16 @@
 #   D. running with --remove cleanly removes only this repo's entries and preserves
 #      user-authored entries
 #   E. both argument orders (target then --remove, or --remove then target) work
+#   F. an unparseable or wrongly-shaped skills.json is left byte-identical and the
+#      run exits non-zero (it may hold the user's own registrations)
+#   G. install-antigravity.sh leaves an unparseable hooks.json byte-identical,
+#      keeps the user's other hook keys, and rejects --agents-only --hooks-only
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$script_dir/../.." && pwd)"
 configure="$repo_root/scripts/configure-antigravity.sh"
+install="$repo_root/scripts/install-antigravity.sh"
 
 pass_count=0
 fail_count=0
@@ -109,6 +114,41 @@ repo_entries = [e for e in entries if isinstance(e, dict) and repo in e.get("pat
 print("true" if len(repo_entries) == 0 else "false")
 PY
 )"
+
+echo "=== TEST F: unreadable skills.json is never rewritten ==="
+for bad in '{"entries":[{"path":"/x"},]}' '[1, 2]' '{"entries":{"path":"/x"}}'; do
+  target_f="$fixture/target_f"
+  rm -rf "$target_f" && mkdir -p "$target_f"
+  printf '%s' "$bad" > "$target_f/skills.json"
+  cp "$target_f/skills.json" "$fixture/skills.before"
+  bash "$configure" "$target_f" >/dev/null 2>&1 && rc_f=0 || rc_f=$?
+  assert "configure exits non-zero on skills.json '$bad'" \
+    "$([ "$rc_f" -ne 0 ] && echo true || echo false)"
+  assert "skills.json '$bad' is left byte-identical" \
+    "$(cmp -s "$target_f/skills.json" "$fixture/skills.before" && echo true || echo false)"
+done
+
+echo "=== TEST G: install never clobbers hooks.json ==="
+target_g="$fixture/target_g"
+mkdir -p "$target_g"
+printf '%s' '{"mine": {"PreToolUse": []},' > "$target_g/hooks.json"
+cp "$target_g/hooks.json" "$fixture/hooks.before"
+bash "$install" "$target_g" --hooks-only >/dev/null 2>&1 && rc_g=0 || rc_g=$?
+assert "install exits non-zero on an unparseable hooks.json" \
+  "$([ "$rc_g" -ne 0 ] && echo true || echo false)"
+assert "unparseable hooks.json is left byte-identical" \
+  "$(cmp -s "$target_g/hooks.json" "$fixture/hooks.before" && echo true || echo false)"
+
+printf '%s' '{"mine": {"PreToolUse": []}}' > "$target_g/hooks.json"
+bash "$install" "$target_g" --hooks-only >/dev/null
+assert "install keeps the user's hook keys and adds claude-safety-hooks" \
+  "$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print("true" if set(d) == {"mine", "claude-safety-hooks"} and d["mine"] == {"PreToolUse": []} else "false")' "$target_g/hooks.json")"
+assert "installed hooks.json addresses the installed runner" \
+  "$(grep -q "$target_g/run-agy-hook.py" "$target_g/hooks.json" && echo true || echo false)"
+
+bash "$install" "$target_g" --agents-only --hooks-only >/dev/null 2>&1 && rc_x=0 || rc_x=$?
+assert "--agents-only --hooks-only together is rejected" \
+  "$([ "$rc_x" -eq 2 ] && echo true || echo false)"
 
 echo ""
 echo "=== SUMMARY ==="

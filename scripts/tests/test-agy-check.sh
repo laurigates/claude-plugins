@@ -36,8 +36,7 @@ trap 'rm -rf "$fixture"' EXIT
 echo "=== TEST A: unconfigured target ==="
 unconfigured="$fixture/empty"
 mkdir -p "$unconfigured"
-out_unconf="$(bash "$check_sh" "$unconfigured" 2>&1)"
-rc_unconf=$?
+out_unconf="$(bash "$check_sh" "$unconfigured" 2>&1)" && rc_unconf=0 || rc_unconf=$?
 
 assert "unconfigured check exits 0" "$([ "$rc_unconf" -eq 0 ] && echo true || echo false)"
 assert "reports header and footer" \
@@ -55,8 +54,7 @@ mkdir -p "$configured"
 bash "$configure_sh" "$configured" >/dev/null
 bash "$install_sh" "$configured" >/dev/null
 
-out_conf="$(bash "$check_sh" "$configured" 2>&1)"
-rc_conf=$?
+out_conf="$(bash "$check_sh" "$configured" 2>&1)" && rc_conf=0 || rc_conf=$?
 
 assert "configured check exits 0" "$([ "$rc_conf" -eq 0 ] && echo true || echo false)"
 assert "reports SKILLS_JSON=configured with marketplace entries" \

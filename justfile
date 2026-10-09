@@ -576,7 +576,8 @@ agy-check target=agy_config:
 
 # End-to-end setup: register skills in-place, install subagents and safety hooks
 [group: "antigravity"]
-setup-antigravity target=agy_config: (configure-antigravity target) (install-antigravity-agents target) (install-antigravity-hooks target)
+setup-antigravity target=agy_config: (configure-antigravity target)
+    ./scripts/install-antigravity.sh "{{target}}"
     @echo ""
     @echo "Antigravity CLI setup complete!"
     @echo "Next steps:"

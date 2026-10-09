@@ -134,7 +134,7 @@ gh pr create --title "feat(git-plugin): add new workflow"
 
 ## Local-model export
 
-Run this marketplace's skills inside local-model coding agents. Two targets, one mechanism (the adapter):
+Run this marketplace's skills inside other coding agents: two local-model harnesses through the adapter, and Antigravity CLI through in-place `skills.json` registration (not an adapter):
 
 | Target | Source of truth | Doc | Recipes |
 |--------|-----------------|-----|---------|
@@ -142,7 +142,7 @@ Run this marketplace's skills inside local-model coding agents. Two targets, one
 | **OpenCode** — adapter (ADR-0022) | `adapters/opencode/` binding | [`adapters/README.md`](adapters/README.md), [`docs/opencode-export.md`](docs/opencode-export.md) | `just oc-adapter-check`, `oc-adapter-register`, `oc-adapter-unregister` (group `adapters`); `export-opencode`, `install-opencode`, `setup-opencode` (group `opencode`) |
 | **Antigravity CLI** (`agy`) | in-place `skills.json` + agent/hook export | [`docs/antigravity-export.md`](docs/antigravity-export.md) | `just agy-check`, `configure-antigravity`, `install-antigravity-agents`, `install-antigravity-hooks`, `setup-antigravity` (group `antigravity`) |
 
-Foreign harnesses run this marketplace's skills, subagents, and hooks without modifying the canonical sources. pi and OpenCode consume skills via the runtime adapter (`adapters/`, ADR-0022); Antigravity CLI discovers skills in place via `skills.json` with native progressive disclosure. All three project subagents and safety hooks to their native configuration targets.
+pi and OpenCode load Claude Code `SKILL.md` unmodified but neither **budgets** the skill listing: pi costs ~111 tok/skill and OpenCode ~88 (measured 2026-08-24 — ~34,000 standing tokens for 382 skills), both uncapped. The **adapter** (ADR-0022) closes that gap for each: a `search_skills` pull tool + per-turn ranked top-k push injection reaching all ~400 skills at ~600 standing tokens — see `adapters/README.md`. Antigravity's standing skill-listing cost has not been measured.
 
 Both cutovers are done. pi's curated tier installer (`pi/tiers.yaml` + `scripts/install-pi.sh`, ~9,900 standing tokens over ~95 skills) was removed in #2093; OpenCode's rulesync export was retired in #2094, once its own token calibration landed beside the retrieval gate frozen at `main_hit_at_k_min = 0.57` on 2026-07-22 (`adapters/CUTOVER.md` §1 and §8). `just export-opencode` survives for the two surfaces the adapter does not cover — **subagents** (OpenCode does not auto-load `~/.claude/agents/`) and **hooks** (OpenCode has no hook surface at all).
 

@@ -202,8 +202,7 @@ assert "skipped count is 2 in report" \
 echo "=== TEST G: full-corpus export against repo ==="
 repo_out="$(mktemp -d)"
 trap 'rm -rf "$fixture" "$repo_out"' EXIT
-full_export="$(python3 "$exporter" "$repo_root" "$repo_out" 2>&1)"
-full_rc=$?
+full_export="$(python3 "$exporter" "$repo_root" "$repo_out" 2>&1)" && full_rc=0 || full_rc=$?
 
 assert "full repo agent export exits 0" \
   "$([ "$full_rc" -eq 0 ] && echo true || echo false)"

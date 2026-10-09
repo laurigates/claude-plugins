@@ -32,6 +32,11 @@ for arg in "$@"; do
     esac
 done
 
+if [ "$install_agents" -eq 0 ] && [ "$install_hooks" -eq 0 ]; then
+    echo "--agents-only and --hooks-only are mutually exclusive" >&2
+    exit 2
+fi
+
 install_target="${install_target:-$HOME/.gemini/config}"
 
 # Expand leading ~
@@ -47,7 +52,18 @@ echo "INSTALL_HOOKS=$install_hooks"
 install_tmp="$(mktemp -d)"
 trap 'rm -rf "$install_tmp"' EXIT
 
-"$install_script_dir/export-antigravity.sh" "$install_tmp" >/dev/null
+# export-antigravity.sh exits 0 on STATUS=WARN, so read its STATUS line: a
+# skipped agent or a failed hook generation must not install as success.
+install_export_out="$("$install_script_dir/export-antigravity.sh" "$install_tmp" 2>&1)" || true
+if ! printf '%s\n' "$install_export_out" | grep -qx 'STATUS=OK'; then
+    printf '%s\n' "$install_export_out" >&2
+    echo "STATUS=ERROR"
+    echo "ISSUE_COUNT=1"
+    echo "ISSUES:"
+    echo "  - SEVERITY=ERROR TYPE=export_failed MSG=export-antigravity.sh did not report STATUS=OK (output above); nothing installed"
+    echo "=== END ANTIGRAVITY INSTALL ==="
+    exit 1
+fi
 
 installed_agents_count=0
 installed_hooks_count=0
@@ -67,36 +83,40 @@ fi
 if [ "$install_hooks" -eq 1 ] && [ -f "$install_tmp/hooks.json" ]; then
     mkdir -p "$install_target"
 
-    # Merge hooks.json if one already exists
-    if [ -f "$install_target/hooks.json" ]; then
-        python3 - "$install_target/hooks.json" "$install_tmp/hooks.json" <<'PY'
+    # Merge our hook entry into hooks.json. Only the `claude-safety-hooks` key
+    # is ours; every other key is preserved as-is. A file that does not parse,
+    # or is not a JSON object, is left untouched and the install stops: it may
+    # hold the user's own hooks. The runner path is rewritten from the export's
+    # temp dir to the install target.
+    python3 - "$install_target/hooks.json" "$install_tmp/hooks.json" "$install_target/run-agy-hook.py" <<'PY'
 import json
+import shlex
 import sys
 from pathlib import Path
 
 target_path = Path(sys.argv[1])
 src_path = Path(sys.argv[2])
+runner = str(Path(sys.argv[3]).resolve())
+KEY = "claude-safety-hooks"
 
-try:
-    target_data = json.loads(target_path.read_text(encoding="utf-8"))
-except Exception:
-    target_data = {}
+target_data = {}
+if target_path.is_file():
+    try:
+        target_data = json.loads(target_path.read_text(encoding="utf-8"))
+    except ValueError as exc:
+        sys.exit(f"error: {target_path} is not valid JSON ({exc}); fix or move it, then re-run")
+    if not isinstance(target_data, dict):
+        sys.exit(f"error: {target_path} is not a JSON object; fix or move it, then re-run")
 
-try:
-    src_data = json.loads(src_path.read_text(encoding="utf-8"))
-except Exception:
-    src_data = {}
+ours = json.loads(src_path.read_text(encoding="utf-8"))[KEY]
+for groups in ours.values():
+    for group in groups:
+        for hook in group.get("hooks", []):
+            hook["command"] = f"python3 -u {shlex.quote(runner)} pre-tool-use"
 
-if not isinstance(target_data, dict):
-    target_data = {}
-
-# Merge top-level hook objects
-target_data.update(src_data)
+target_data[KEY] = ours
 target_path.write_text(json.dumps(target_data, indent=2) + "\n", encoding="utf-8")
 PY
-    else
-        cp "$install_tmp/hooks.json" "$install_target/hooks.json"
-    fi
 
     # Copy hook runner scripts and referenced script directories
     cp "$install_tmp/run-agy-hook.py" "$install_target/run-agy-hook.py"
