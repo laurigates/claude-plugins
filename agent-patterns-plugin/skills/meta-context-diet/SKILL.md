@@ -57,6 +57,8 @@ When `scope-path` is `.` (or names the user-global tree), also `Glob(pattern="$H
 
 For each file, record its size (`wc -c`, est. tokens ≈ chars/4 — same proxy as `skill-quality.md`) and, for `CLAUDE.md`, treat each `##` section as a separately-classifiable unit. Path-scoped rules already pay only on matching turns — flag them only if they are *also* intent-shaped (a better skill) or duplicate a loaded plugin skill.
 
+Then run the **consumer sweep** in [references/consumer-sweep.md](references/consumer-sweep.md) once per candidate — a whole-tree `Grep` for the rule's file name plus a check for indexers and non-Claude agent entry points (`AGENTS.md`, `.github/copilot-instructions.md`, anything globbing `.claude/rules`) — and record each candidate's path consumers. Step 2 needs them to choose between Promote and a `docs/` move.
+
 ### 2. Classify every unit against the diet rubric
 
 For each rule file or `CLAUDE.md` section, assign exactly one disposition. The deciding question is **"must this be true on every turn regardless of what the user asked?"**
@@ -64,7 +66,7 @@ For each rule file or `CLAUDE.md` section, assign exactly one disposition. The d
 | Disposition | The unit is… | Signal |
 |---|---|---|
 | **Keep — hard invariant** | An always-respected constraint whose violation is a bug even when unmentioned (security boundaries, "never force-push", commit-format that drives release automation, destructive-op guards) | Imperative, unconditional, cheap to keep; the cost of *missing* it is high |
-| **Keep but lean** | A hard invariant wrapped in explanation, examples, or tables that belong in a linked doc/REFERENCE — or in `docs/<topic>.md` when an indexer or a non-Claude agent reads rule and doc paths | The invariant is one sentence; the file is 200 lines |
+| **Keep but lean** | A hard invariant wrapped in explanation, examples, or tables that belong in a linked doc/REFERENCE — or in `docs/<topic>.md` when the Step 1 sweep found an indexer or a non-Claude agent reading the rule's path (prefer this over Promote then) | The invariant is one sentence; the file is 200 lines |
 | **Path-scope** | Always-true *only when working on a specific file shape* (a language, a config format, a directory) | Advice keyed to "when editing X"; currently unscoped so it loads on every turn | 
 | **Promote to skill** | A **procedure/workflow triggered by intent** — steps you run *when* doing a task, not a constraint you hold *while* doing anything | Reads as "to do X: step 1…step N"; has a clear trigger ("when releasing", "when the build fails"); rarely relevant per-turn but heavy when present |
 | **Consolidate** | Duplicates another rule, a loaded plugin skill, or upstream `~/.claude/rules` | The same guidance exists elsewhere already paid for — **and that copy is current**, not a stale twin of the text being cut |
@@ -80,10 +82,10 @@ Before proposing a promotion, draft its skill home + name, an auto-triggering de
 
 For each candidate, present:
 
-1. The file/section and its size (chars + est. tokens).
+1. The file/section, its size (chars + est. tokens), and the path consumers the Step 1 sweep found.
 2. The recommended disposition with a one-sentence justification.
 3. For promote-to-skill: the drafted skill home, name, and description.
-4. The disposition menu via `AskUserQuestion` (Keep / Lean / Path-scope / Promote-to-skill / Consolidate / Drop / Skip).
+4. An `AskUserQuestion` with at most 4 options: the recommended disposition first, then the 3 likeliest alternates from Keep / Lean / Lean-to-pointer / Path-scope / Promote-to-skill / Consolidate / Drop / Skip. The built-in "Other" answer reaches the rest.
 
 Only proceed on explicit approval. Order the prompts by impact (largest always-loaded char count first) so the biggest wins surface early.
 
@@ -91,27 +93,21 @@ The confirmation shape depends on **how lossy the disposition is**, not on conve
 
 | Disposition class | Confirmation | Why |
 |---|---|---|
-| **Non-destructive** — Keep-invariant, Keep-but-lean, Path-scope | Batchable (see below) | The guidance survives in place — leaning trims explanation, path-scoping only narrows *when* it loads. Nothing is removed from the always-loaded surface's meaning. |
-| **Destructive / ambiguous** — Drop, Consolidate-that-deletes, Promote-to-skill | **One candidate, one question** — up to 4 single-candidate questions may share one `AskUserQuestion` call | Each removes guidance from an always-loaded file: Drop deletes it, Consolidate-that-deletes replaces it with a pointer, Promote-to-skill moves the body off the every-turn surface. A wrong call degrades every downstream turn, so the user confirms each individually. |
+| **Non-destructive** — Keep-invariant, Keep-but-lean that keeps the invariant in the rule, Path-scope | Batchable (see below) | The guidance survives in place — leaning trims explanation, path-scoping only narrows *when* it loads. Nothing is removed from the always-loaded surface's meaning. |
+| **Destructive / ambiguous** — Drop, Consolidate-that-deletes, Promote-to-skill, Lean-to-pointer (a `docs/` move that leaves only a pointer) | **One candidate, one question** — up to 4 single-candidate questions may share one `AskUserQuestion` call | Each removes guidance from an always-loaded file: Drop deletes it, Consolidate-that-deletes and Lean-to-pointer replace it with a pointer, Promote-to-skill moves the body off the every-turn surface. A wrong call degrades every downstream turn, so the user confirms each individually. |
 
 #### Batch-approval mode for large surfaces
 
-At ~15+ candidates, batch only the non-destructive tier, per [references/batch-approval.md](references/batch-approval.md). Drop, Consolidate-that-deletes, and Promote-to-skill are never batched.
+At ~15+ candidates, batch only the non-destructive tier, per [references/batch-approval.md](references/batch-approval.md). Drop, Consolidate-that-deletes, Promote-to-skill, and Lean-to-pointer are never batched.
 
 ### 5. Execute the approved disposition
 
-**Sweep every consumer of the rule path before any Promote, Consolidate, or Drop.** An inbound-link check is not enough: indexers, agent entry points, and code comments read the path without linking to it.
-
-1. `Grep` the rule's file name (with and without `.md`) across the whole tree, hidden paths included and `.git` excluded — the shell equivalent is `rg -n '<rule-file-name>' --hidden -g '!.git' .`. Search everywhere, not only `.claude/` and docs: code comments in `.tf`, `.yaml`, or `.js` files cite rule paths too.
-2. Check for indexers and non-Claude agent entry points: `AGENTS.md`, `.github/copilot-instructions.md`, and any script, bot, or config that globs `.claude/rules` (a curriculum or search indexer built from `.claude/rules/*.md` and `docs/*.md` but not skill directories).
-3. Repoint every hit in the same change, or pick a disposition that keeps the path alive.
-
-**Prefer moving to `docs/` over Promote when the sweep finds a path consumer.** A promoted skill drops out of an indexer that never scans skill directories, and a non-Claude agent pointed at the rule by `AGENTS.md` cannot load a skill. Moving the body to `docs/<topic>.md` keeps it indexed and readable: lean the rule to its invariant (or a one-line pointer) and link the doc. A move that takes the whole body off the every-turn surface keeps Promote's per-candidate confirmation.
+**Before any Promote, Consolidate, Drop, or `docs/` move, re-run the consumer `Grep`** from [references/consumer-sweep.md](references/consumer-sweep.md) and repoint every hit in the same change. If a new hit makes the approved disposition wrong, re-confirm that candidate with a single-candidate `AskUserQuestion` before acting — never switch an approved disposition on the sweep alone.
 
 | Disposition | Mechanics |
 |---|---|
 | Keep — hard invariant | No change. Optionally note why it stays in the report. |
-| Keep but lean | `Edit` the rule to the invariant + a link; move examples/tables to a co-located doc, the rule's own `REFERENCE`-style sidecar, or `docs/<topic>.md` (the target when the consumer sweep found an indexer or a non-Claude agent). Do not change the invariant's wording. |
+| Keep but lean | `Edit` the rule to the invariant + a link; move examples/tables to a co-located doc, the rule's own `REFERENCE`-style sidecar, or `docs/<topic>.md` (the target when the consumer sweep found an indexer or a non-Claude agent). Do not change the invariant's wording. Lean-to-pointer, approved per candidate, also replaces the invariant with a one-line pointer at the doc. |
 | Path-scope | `Edit` the rule's frontmatter to add a `paths:` glob so it loads only on matching turns. Verify the glob matches the directory shape the rule actually targets. |
 | Promote to skill | Scaffold `<plugin>/skills/<name>/SKILL.md` with the drafted frontmatter + imperative body; move reference material into the new skill's `REFERENCE.md`; trim the source rule to a one-line pointer (or delete it if nothing remains and nothing references it). Then update the plugin metadata per the **Plugin Lifecycle** in `CLAUDE.md` (README skills table; no `marketplace.json`/release-config edits — those are plugin-scoped, not skill-scoped, per `skill-consolidation.md`). Run `/reload-skills` so the new skill is invocable immediately. |
 | Consolidate | **First read the destination and confirm it is current** — drift runs both ways, so where the always-loaded copy is the *fresher* one, fix the destination (or consolidate in the other direction) before pointing at it. Then `Edit` the source to a pointer at the canonical owner **by `plugin:skill` name** (never a cross-plugin file path — see `skill-consolidation.md`); or delete the redundant rule if a loaded plugin skill already covers it. |
