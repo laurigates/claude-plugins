@@ -121,24 +121,17 @@ If either fails, skip GitHub-related branches in later steps.
 
 ### Step 3: Duplicate check by bpid
 
-If `bpid:` was given, run parallel-safe and constrain to the resolved
-project (`$PROJECT`, from Parameters) so a matching `bpid` in another
-repo's queue is not surfaced as a false-positive duplicate:
+If `bpid:` was given, run this parallel-safe check, scoped to the resolved
+project (`$PROJECT`, from Parameters):
 
 ```bash
 task bpid:"$BPID" export | jq --arg p "$PROJECT" --arg b "$BPID" '.[] | select(.bpid == $b and (.project // "") == $p) | {id, uuid, description, status}'
 ```
 
-Both values are matched exactly in `jq` because taskwarrior's `attr:value`
-filters are prefix matches: `project:myrepo` also returns tasks in `myrepo-docs`
-and `myrepo.sub`, and `bpid:WO-012` also returns `WO-0123` — see
-[references/project-slug-verification.md](references/project-slug-verification.md).
-With `--no-project`, `$PROJECT` is empty and only project-less tasks match.
-Report the `uuid` with any match, so a later update addresses the task by it.
+Use `export`, never `list`. The reasons, the exact `jq` match, and
+`--no-project`: [quick-reference § Exact matching](references/quick-reference.md#exact-matching-in-the-bpid-duplicate-check).
 
-Never use `task bpid:"$BPID" list` — it exits 1 on empty result and cancels sibling tool calls in parallel batches (see `.claude/rules/parallel-safe-queries.md`).
-
-If a matching open task exists, report the ID and ask whether to update instead of re-add.
+If a matching open task exists, report its ID and `uuid` and ask whether to update instead of re-add.
 
 ### Step 4: Optionally pre-fill from a GitHub issue
 
