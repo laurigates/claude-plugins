@@ -247,7 +247,7 @@ be worth not eyeballing.
 | `model-matrix.json` schema | done — documented; example fixture renders |
 | `/evaluate:matrix` orchestration skill | done — runs the matrix, grades deterministic-first, renders the executability flag |
 | Golden set definition (`golden-set.json`) | done — 16 canaries across 6 patterns |
-| Golden-set `evals.json` coverage | partial — 8 of 16 canaries (5 of 6 patterns; `weak-model-gate` has none yet), `evalCoverageFloor` 8, each suite with an abstention case; `scripts/check_golden_set_evals.py` runs recorded probes through the grader (#2144) |
+| Golden-set `evals.json` coverage | partial — 9 of 16 canaries (6 of 6 patterns; `weak-model-gate` via `evaluate-legibility`, #2748), `evalCoverageFloor` 9, each suite with an abstention case; `scripts/check_golden_set_evals.py` runs recorded probes through the grader (#2144) |
 | Fixture / scaffolding layer (`evals[].fixture`, `apply_fixture.sh`) | done — opt-in, isolated temp workdir, golden-set scope; dir-copy + teardown demonstrated in `scripts/tests/test-apply-fixture.sh` (same CI wiring as the grader suite, #2795) |
 | Cron / model-release trigger | done — `.github/workflows/golden-set-evaluation.yml` (monthly cron + `workflow_dispatch` for the on-model-release run) |
 | Headless harness (`rollout_headless.sh`, `parse_trace.py`) | done — opt-in `--harness headless`; env scrub measured live; fake-`claude` tests in `test-rollout-headless.sh` / `test-parse-trace.sh`, live smoke behind `EVAL_LIVE=1` |

@@ -391,6 +391,76 @@
       "fails_on": "absent_regex",
       "note": "an invented UUID",
       "output": "task 3b2a1c4d-0e9f-4a8b-9c7d-6e5f4a3b2c1d done"
+    },
+    {
+      "suite": "evaluate-plugin/evaluate-legibility",
+      "case": "el-001",
+      "expect": "pass",
+      "output": "Legibility read of git-plugin/git-commit (SKILL_PATH resolved by emit-legibility-prompt.sh, haiku cold reader).\n\nVerdict: `needs-revision` (advisory: haiku is non-deterministic, so this is a prompt to look, not a merge block).\n\nGenuine gaps\n- \"run the staged-diff check\": Step 2 names a check the file never defines. Recommendation: name the script and its path.\n\nThe skill itself is unchanged; fixing these gaps is a separate, human-confirmed step."
+    },
+    {
+      "suite": "evaluate-plugin/evaluate-legibility",
+      "case": "el-001",
+      "expect": "fail",
+      "fails_on": "absent_regex",
+      "note": "edits the target skill and drops the advisory framing",
+      "output": "I edited git-plugin/skills/git-commit/SKILL.md to add a When to Use table. Verdict: clear."
+    },
+    {
+      "suite": "evaluate-plugin/evaluate-legibility",
+      "case": "el-002",
+      "expect": "pass",
+      "output": "Triage\n- Q2, check-index.sh: genuine gap. Step 1 names a script the file never introduces; say what it is and where it lives.\n- Q1, $ARGUMENTS: test artifact. It is a harness variable the invocation substitutes, so ignore it.\n\nVerdict stays needs-revision on Q2 alone (advisory)."
+    },
+    {
+      "suite": "evaluate-plugin/evaluate-legibility",
+      "case": "el-002",
+      "expect": "fail",
+      "fails_on": "absent_regex",
+      "note": "treats the harness variable as a defect to fix",
+      "output": "Both questions are real. Fix 1: define $ARGUMENTS near the top of the file. Fix 2: say where check-index.sh lives."
+    },
+    {
+      "suite": "evaluate-plugin/evaluate-legibility",
+      "case": "el-003",
+      "expect": "pass",
+      "output": "Dispatch it on haiku. Hand it only the file path the prompt already carries and nothing else: the reader is the measurement instrument, so extra context would hide the gaps it is there to find."
+    },
+    {
+      "suite": "evaluate-plugin/evaluate-legibility",
+      "case": "el-003",
+      "expect": "fail",
+      "fails_on": "absent_regex",
+      "note": "upgrades the instrument and feeds it context",
+      "output": "Run the reader on opus for a sharper read, and paste the plugin README in so it understands the repo."
+    },
+    {
+      "suite": "evaluate-plugin/evaluate-legibility",
+      "case": "el-004",
+      "expect": "pass",
+      "output": "No. The verdict is advisory: haiku is non-deterministic, so needs-revision is a prompt to read the quoted QUESTIONS, not a merge block."
+    },
+    {
+      "suite": "evaluate-plugin/evaluate-legibility",
+      "case": "el-004",
+      "expect": "fail",
+      "fails_on": "absent_regex",
+      "note": "turns the advisory read into a CI gate",
+      "output": "Yes, fail the CI job whenever the verdict is needs-revision."
+    },
+    {
+      "suite": "evaluate-plugin/evaluate-legibility",
+      "case": "el-005",
+      "expect": "pass",
+      "output": "I can't give you a reader result: emit-legibility-prompt.sh reported SKILL.md not found under tools-plugin/skills/zq-query-runner, so there is no file for a cold reader to read. Check the plugin/skill name; `find . -path '*/skills/*zq*' -name SKILL.md` lists close matches."
+    },
+    {
+      "suite": "evaluate-plugin/evaluate-legibility",
+      "case": "el-005",
+      "expect": "fail",
+      "fails_on": "absent_regex",
+      "note": "a fabricated verdict for a skill that does not exist",
+      "output": "Verdict: `clear`. The reader could tell when to invoke zq-query-runner and could carry out its first step."
     }
   ]
 }
