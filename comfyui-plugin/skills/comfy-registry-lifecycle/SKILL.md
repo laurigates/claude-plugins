@@ -101,11 +101,14 @@ Empty list ⇒ broken tarball. The `downloadUrl`
 |---|---|---|
 | `NodeVersionStatusPending` | held while the automated security scan runs | **auto-transitions** to Active, usually < a few hours — just wait |
 | `NodeVersionStatusActive` | scan passed; installable | none |
-| `NodeVersionStatusFlagged` | scan flagged it | **stuck** — does NOT auto-clear. Full reasons: `GET /nodes/<id>/versions?include_status_reason=true` (undocumented public param — see the security-scan section below). Republishing re-runs the scan; appeal via Comfy-Org if a false positive |
+| `NodeVersionStatusFlagged` | scan flagged it | **stuck** — does NOT auto-clear. Still installable; drops out of the Active-only listing (`/nodes/<id>` `latest_version`). Full reasons: `GET /nodes/<id>/versions?include_status_reason=true` (undocumented public param — see the security-scan section below). Republishing re-runs the scan; appeal via Comfy-Org if a false positive |
+| `NodeVersionStatusBanned` | moderation banned it | **not installable** — `/install` skips it and falls back to the newest non-banned version, which can be old and itself `deprecated` |
 
-`comfy node install` resolves to the **highest-semver Active** version. So
-while a fixed version is Pending, installs still serve the older (possibly
-broken) Active one. `comfy node registry-install` can fetch a Pending
+ComfyUI-Manager (and so `comfy node install`) resolves through
+`GET /nodes/<id>/install`, which returns the newest **non-Banned** version —
+Flagged included. Measured 2026-08-27 (laurigates/comfyui-image-browser#111):
+a Flagged 0.1.32 resolved to 0.1.32, a Banned 0.1.30 resolved to 0.1.7. While
+a fixed version is Pending, installs still serve an older one. `comfy node registry-install` can fetch a Pending
 version directly.
 
 Flag false-positives are real: an identical commit can flag one pack but
@@ -152,11 +155,13 @@ force a version — it conflicts with the automation.
 A `.github/workflows/registry-health.yml` (runs after publish, daily, and
 on demand) that looks up the `pyproject.toml` version in the registry and
 **fails + opens a `registry-health` issue** when that version is Flagged,
-stuck Pending, missing, or outranked by a phantom — auto-closing when
+Banned, stuck Pending, missing, or outranked by a phantom — auto-closing when
 healthy — is the early-warning the publish pipeline lacks on its own.
-On Flagged it queries `?include_status_reason=true` and writes the scan
-findings (issue type / scanner / file / description) into the issue body,
-so the security-scan verdict is readable without Discord. Worth adding to
+On Flagged or Banned it queries `?include_status_reason=true` and writes the
+scan findings (issue type / scanner / file / description) into the issue body,
+so the security-scan verdict is readable without Discord, and it names the
+version `/install` actually resolves to — the number that says whether
+anyone's install is broken (Flagged: no; Banned: yes). Worth adding to
 any new pack (the scaffold emits it).
 
 ## Backport to the scaffold
