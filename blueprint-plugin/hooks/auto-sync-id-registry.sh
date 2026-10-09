@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# PostToolUse hook - auto-syncs id_registry in manifest after document writes
-# Fires after Write/Edit to docs/{prds,adrs,prps}/** and docs/blueprint/work-orders/**
+# PostToolUse handler - auto-syncs id_registry in manifest after document writes
+# Called by blueprint-doc-change.sh for each changed docs/** path (Write, Edit, or
+# a Bash command's bashEditDiff); acts on docs/{prds,adrs,prps}/*.md and
+# docs/blueprint/work-orders/*.md.
 # Updates manifest.json id_registry so /blueprint:sync-ids is no longer needed for routine use
 
 set -euo pipefail
@@ -17,6 +19,18 @@ INPUT=$(cat)
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
 
 # If no file path, nothing to do
+if [ -z "$FILE_PATH" ]; then
+    exit 0
+fi
+
+# Write/Edit payloads carry an absolute file_path; the checks below are
+# project-relative. Resolve from the project root.
+HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091  # lib/doc-paths.sh resolves at runtime from HOOK_DIR
+. "${HOOK_DIR}/lib/doc-paths.sh"
+ROOT=$(blueprint_project_root) || exit 0
+cd "$ROOT" || exit 0
+FILE_PATH=$(blueprint_relpath "$FILE_PATH" "$ROOT")
 if [ -z "$FILE_PATH" ]; then
     exit 0
 fi
@@ -69,6 +83,19 @@ if jq -e --arg id "$DOC_ID" '.id_registry.documents[$id]' "$MANIFEST" >/dev/null
     # If no title in frontmatter, try first heading
     if [ -z "$DOC_TITLE" ]; then
         DOC_TITLE=$(grep -m1 "^# " "$FILE_PATH" | sed 's/^# //' | tr -d '\r' || true)
+    fi
+
+    # Most edits change the body, not the registered fields. jq re-serialises
+    # the whole manifest, so writing anyway would reformat a hand-edited file
+    # (expanding inline arrays) on every document edit.
+    if jq -e --arg id "$DOC_ID" \
+          --arg path "$FILE_PATH" \
+          --arg status "${DOC_STATUS:-unknown}" \
+          --arg title "${DOC_TITLE:-untitled}" \
+          '.id_registry.documents[$id] as $d
+           | $d.path == $path and $d.status == $status and $d.title == $title' \
+          "$MANIFEST" >/dev/null 2>&1; then
+        exit 0
     fi
 
     jq --arg id "$DOC_ID" \

@@ -2,7 +2,7 @@
 id: ADR-0020
 date: 2026-07-05
 created: 2026-07-05
-modified: 2026-07-18
+modified: 2026-10-09
 status: Accepted
 deciders: claude-plugins team
 domain: automation
@@ -90,6 +90,15 @@ per `.claude/rules/drift-detection-triggering.md`) runs it and emits one drift
 finding per due agent task into the existing aggregator pipe. `on-change` tasks
 are event-driven (PostToolUse hooks), never runner-driven; `on-demand` tasks are
 never due.
+
+> **Amended 2026-10-09.** The level-1 rung never ran in a consumer repo: the
+> SessionStart probe could not find `drift-protocol.sh` in the versioned plugin
+> cache, and the PostToolUse hooks used path matchers that never fire. Fixing
+> both exposed a third gap — Claude Code edits files through Bash in auto mode,
+> and a Write/Edit hook never sees those edits. A **deterministic** `on-change`
+> task is therefore also reconciled on every runner pass (`STATE=reconcile`),
+> writing the manifest only when the result differs; agent-judgment `on-change`
+> tasks stay event-driven.
 
 ### The draft-issue side channel (level 2)
 
