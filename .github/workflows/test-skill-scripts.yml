@@ -2,8 +2,9 @@ name: "Test: Skill scripts"
 
 # Runs the skill-local regression tests that ship next to a skill's extracted
 # scripts (**/skills/**/scripts/tests/test-*.sh), the plugin hook regression
-# suites (*/hooks/test-*.sh — bash-antipatterns, branch-protection, …), AND the
-# repo-root guard self-tests (scripts/tests/test-*.sh, #2333), matching what
+# suites (*/hooks/test-*.sh — bash-antipatterns, branch-protection, …), the
+# repo-root guard self-tests (scripts/tests/test-*.sh, #2333), AND the
+# experiment harness self-tests (experiments/*/tests/test-*.sh, #2816), matching what
 # scripts/run-skill-script-tests.sh discovers. Mirrors the per-path-trigger
 # shape of plugin-enablement-drift.yml so it fires only when skill scripts, hook
 # scripts, generator templates, or the runner itself change — independent of
@@ -40,6 +41,15 @@ on:
       # plugin-pr-checks.yml is the primary signal; this makes the self-test
       # re-run on the same change rather than only when the guard is edited.
       - '.github/ISSUE_TEMPLATE/**'
+      # The runner discovers `experiments/*/tests/test-*.sh` and
+      # `experiments/*/scripts/tests/test-*.sh` too (#2816), so a PR changing only
+      # an experiment harness must fire this workflow to run its self-test.
+      - 'experiments/**'
+      # test-grade-deterministic.sh reads the grader agent prompt and the skills'
+      # evals.json files, which no other entry here matches. Without these, a PR
+      # editing only eval-grader.md ran the suite in pre-commit but not in CI (#2890).
+      - 'evaluate-plugin/agents/**'
+      - '**/evals.json'
       - '*-plugin/hooks.json'
       - 'justfile'
       - '.github/workflows/test-skill-scripts.yml'
@@ -53,6 +63,9 @@ on:
       - '*-plugin/templates/**'
       - 'scripts/**'
       - '.github/ISSUE_TEMPLATE/**'
+      - 'experiments/**'
+      - 'evaluate-plugin/agents/**'
+      - '**/evals.json'
 
 concurrency:
   group: test-skill-scripts-${{ github.event.pull_request.number || github.ref }}
