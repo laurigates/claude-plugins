@@ -10,19 +10,26 @@ Automatically synchronize the feature tracker (`docs/blueprint/feature-tracker.j
 
 ## Trigger
 
+`hooks/blueprint-doc-change.sh` calls `sync-feature-tracker.sh` for every
+changed `docs/**` path. The dispatcher is registered as:
+
 ```json
 {
-  "matcher": "Write(docs/**)|Edit(docs/**)",
+  "matcher": "Write|Edit|Bash",
   "hooks": [
     {
       "type": "command",
-      "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/sync-feature-tracker.sh",
-      "timeout": 5000,
-      "continueOnError": true
+      "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/blueprint-doc-change.sh\"",
+      "timeout": 30
     }
   ]
 }
 ```
+
+The plan's original `"matcher": "Write(docs/**)|Edit(docs/**)"` never fired: a
+matcher is tested against the tool name only, so that value is an invalid regex.
+The dispatcher filters paths itself, and also reads
+`tool_response.bashEditDiff.changedFiles`, so edits made through Bash count too.
 
 **Rationale for trigger scope**: "On any docs/* change" - broader than just PRPs because:
 - PRDs may add new feature codes

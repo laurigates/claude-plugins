@@ -174,6 +174,7 @@ jobs:
             --only 'scripts/tests/test-check-delegation-reachability.sh' \
             --only 'scripts/tests/test-check-evals-abstention.sh' \
             --only 'scripts/tests/test-check-hook-cue-skill-refs.sh' \
+            --only 'scripts/tests/test-check-hook-matchers.sh' \
             --only 'scripts/tests/test-check-issue-template-inheritance.sh' \
             --only 'scripts/tests/test-check-loop-integrity.sh' \
             --only 'scripts/tests/test-check-plugin-root-quoting.sh' \
@@ -432,6 +433,13 @@ jobs:
         # root is word-split when the install path holds a space. Whole-repo
         # invariant, always-on; the self-test step above proves the guard first.
         run: bash scripts/check-plugin-root-quoting.sh
+
+      - name: Check plugin hook matchers are tool-name filters
+        # A matcher is tested against the tool NAME only, so permission-rule
+        # syntax such as `Write(docs/adrs/**)` is an invalid regex that never
+        # fires (17 blueprint-plugin hooks never ran). Whole-repo invariant,
+        # always-on; the self-test step above proves the guard first.
+        run: bash scripts/check-hook-matchers.sh
 
       - name: Check skill markdown points at anchors, not directions
         # A "see above" in a reference file names nothing: the file is read out
