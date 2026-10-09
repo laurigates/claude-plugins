@@ -108,6 +108,16 @@ repos:
         files: '(^[^/]+-plugin/(skills|agents|\.claude-plugin)/|^README\.md$|^docs/PLUGIN-MAP\.md$|^docs/diagrams/plugin-relationships\.(d2|svg)$|^scripts/check-docs-index\.sh$)'
         pass_filenames: false
         verbose: true
+      - id: generate-catalog
+        name: docs/CATALOG.md is regenerated from the marketplace
+        # A fixer, like a formatter: it rewrites docs/CATALOG.md, and pre-commit
+        # fails the commit when the file changed so the regenerated catalog is
+        # staged with the skill/plugin change that moved it. CI runs the same
+        # script with --check (plugin-pr-checks.yml "Check catalog is current").
+        entry: python3 scripts/generate-catalog.py
+        language: system
+        files: '(^[^/]+-plugin/(skills|agents)/|^\.claude-plugin/marketplace\.json$|^docs/CATALOG\.md$|^scripts/generate-catalog\.py$)'
+        pass_filenames: false
       - id: audit-skill-descriptions
         name: audit skill descriptions for auto-invocation
         entry: python3 ./scripts/audit-skill-descriptions.py --strict-all
@@ -970,6 +980,18 @@ repos:
         language: system
         files: '^scripts/(check-plugin-root-quoting\.sh|tests/test-check-plugin-root-quoting\.sh)$'
         pass_filenames: false
+      - id: check-hook-matchers
+        name: plugin hook matchers are tool-name filters, not permission-rule syntax
+        entry: bash ./scripts/check-hook-matchers.sh
+        language: system
+        files: '([^/]*-plugin/(hooks\.json|hooks/hooks\.json|\.claude-plugin/plugin\.json)|^scripts/check-hook-matchers\.sh)$'
+        pass_filenames: false
+      - id: test-check-hook-matchers
+        name: hook matcher guard regression (permission-rule and invalid-regex matchers flagged, empty tree errors)
+        entry: bash ./scripts/tests/test-check-hook-matchers.sh
+        language: system
+        files: '^scripts/(check-hook-matchers\.sh|tests/test-check-hook-matchers\.sh)$'
+        pass_filenames: false
       - id: check-positional-references
         name: skill markdown points at anchors, not directions (reference files strict, SKILL.md ratcheted)
         entry: bash ./scripts/check-positional-references.sh
@@ -1017,8 +1039,8 @@ repos:
         language: system
         files: '^hooks-plugin/hooks/(test-bash-antipatterns\.sh|test-bash-antipatterns-git-env-isolation\.sh)$'
         pass_filenames: false
-      # The remaining hooks-plugin suites below. All 13 `hooks-plugin/hooks/test-*.sh`
-      # files are ALREADY run in CI — `scripts/run-skill-script-tests.sh` discovers them
+      # The remaining hooks-plugin suites below. Every `hooks-plugin/hooks/test-*.sh`
+      # file is ALREADY run in CI — `scripts/run-skill-script-tests.sh` discovers it
       # via its `*/hooks/test-*.sh` glob, and `.github/workflows/test-skill-scripts.yml`
       # fires on `*-plugin/hooks/**`. What they lacked was a LOCAL pre-commit trigger, so
       # editing a hook gave no feedback until CI. These entries close that gap, matching
