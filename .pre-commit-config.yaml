@@ -1039,8 +1039,8 @@ repos:
         language: system
         files: '^hooks-plugin/hooks/(test-bash-antipatterns\.sh|test-bash-antipatterns-git-env-isolation\.sh)$'
         pass_filenames: false
-      # The remaining hooks-plugin suites below. All 13 `hooks-plugin/hooks/test-*.sh`
-      # files are ALREADY run in CI — `scripts/run-skill-script-tests.sh` discovers them
+      # The remaining hooks-plugin suites below. Every `hooks-plugin/hooks/test-*.sh`
+      # file is ALREADY run in CI — `scripts/run-skill-script-tests.sh` discovers it
       # via its `*/hooks/test-*.sh` glob, and `.github/workflows/test-skill-scripts.yml`
       # fires on `*-plugin/hooks/**`. What they lacked was a LOCAL pre-commit trigger, so
       # editing a hook gave no feedback until CI. These entries close that gap, matching

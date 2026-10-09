@@ -19,6 +19,16 @@
 #     guard at `scripts/check-*.sh` had a self-test the runner never picked up,
 #     so it got no CI signal unless someone hand-wired a step into
 #     plugin-pr-checks.yml — three guards shipped that way (#2219, #2221, #2333).
+#   - `./experiments/*/tests/test-*.sh` and `./experiments/*/scripts/tests/test-*.sh`
+#     — the self-tests of the repo-root experiment harnesses (#2816). Anchored
+#     at the scan root for the same reason as `./scripts/tests/`. find's `-path`
+#     `*` also matches `/`, so the first glob already reaches the second shape;
+#     the second is spelled out so a reader sees both layouts are intended.
+#
+# Discovery wants the hyphenated `test-*.sh` name: an underscore-named
+# `test_*.sh` suite matches none of the globs and runs nowhere. The class guard
+# in scripts/tests/test-run-skill-script-tests.sh fails on any tracked test
+# these globs miss that is not on its explicit allowlist (#2890).
 #
 # Deliberate overlap, not an oversight: 27 of the 44 repo-root tests ALSO run as
 # their own hand-wired step in `plugin-pr-checks.yml` (paired with the matching
@@ -85,7 +95,7 @@
 # distinguishable from a discovery collapse. An UNSCOPED empty corpus keeps its
 # greenfield-safe WARN (see above) — that contract is unchanged.
 #
-# Usage: bash scripts/run-skill-script-tests.sh [--root <dir>] [--required-file <path>] [--only <glob>]...
+# Usage: bash scripts/run-skill-script-tests.sh [--root <dir>] [--required-file <path>] [--only <glob>]... [--list]
 #
 # Exit codes: 0 = OK or WARN, 1 = ERROR (a failure, a required-test violation,
 #             or a --only that matched nothing), 2 = unknown argument, an empty
@@ -95,7 +105,7 @@ set -uo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: bash scripts/run-skill-script-tests.sh [--root <dir>] [--required-file <path>] [--only <glob>]...
+Usage: bash scripts/run-skill-script-tests.sh [--root <dir>] [--required-file <path>] [--only <glob>]... [--list]
 
   --root <dir>            Directory to discover tests under (default: .)
   --required-file <path>  Manifest of tests that must not SKIP
@@ -106,6 +116,9 @@ Usage: bash scripts/run-skill-script-tests.sh [--root <dir>] [--required-file <p
                           `*` crosses `/`. A required test outside the scope is
                           DEFERRED, not skipped — see REQUIRED_OUT_OF_SCOPE=.
                           A glob matching nothing is an ERROR, never a pass.
+  --list                  Print every discovered test (repo-relative, one per
+                          line, before --only scoping) and exit 0 without
+                          running any of them.
 EOF
 }
 
@@ -113,6 +126,7 @@ root_dir="."
 required_file=""
 required_file_given=0
 scope_patterns=()
+list_only=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -128,6 +142,8 @@ while [ $# -gt 0 ]; do
       # rather than as the argument error it actually is. Reject it up front.
       [ -n "$2" ] || { echo "run-skill-script-tests.sh: --only needs a non-empty glob" >&2; exit 2; }
       scope_patterns+=("$2"); shift 2 ;;
+    --list)
+      list_only=1; shift ;;
     -h|--help)
       usage; exit 0 ;;
     *)
@@ -161,6 +177,39 @@ norm_path() {
   printf '%s' "${p#./}"
 }
 
+# Prune `.claude/worktrees/` (sibling agent clones of the whole repo, #1492) so
+# we don't run the same test many times over from worktree copies.
+#
+# Discovery runs from INSIDE the root against RELATIVE paths (#2219). With an
+# absolute base, the bare `*/.claude/worktrees/*` prune fires on the whole tree
+# whenever the root is ITSELF an agent worktree — its own path contains
+# `/.claude/worktrees/`, so every descendant matches, the scan root is pruned
+# entirely, and the runner reports TOTAL=0 having discovered nothing. Since
+# worktree-isolated subagents are this repo's normal way of doing plugin work,
+# that made an agent's own local `--root "$PWD"` verification structurally
+# incapable of finding a test. Relative paths make the root `.`, so its absolute
+# prefix cannot match while worktree copies nested ANYWHERE below it still prune
+# correctly. Same fix, and same reasoning, as scripts/check-agent-model.sh and
+# scripts/check-subagent-types.sh.
+discover_tests() {
+  (cd "$root_abs" && find . \
+    -path '*/.claude/worktrees/*' -prune -o \
+    \( -path '*/skills/*/scripts/tests/test-*.sh' -o -path '*-plugin/scripts/tests/test-*.sh' -o -path '*/hooks/test-*.sh' -o -path './scripts/tests/test-*.sh' \
+       -o -path './experiments/*/tests/test-*.sh' -o -path './experiments/*/scripts/tests/test-*.sh' \) \
+    -type f -print0 | sort -z)
+}
+
+# --list: print every discovered test, repo-relative, one per line, and run
+# nothing. It reads the same `discover_tests` the run loop uses, so a caller
+# auditing coverage (the class guard in test-run-skill-script-tests.sh, #2890)
+# sees exactly what a run would execute rather than a hand-copied glob list.
+if [ "$list_only" -eq 1 ]; then
+  while IFS= read -r -d '' test_file; do
+    printf '%s\n' "$(norm_path "$test_file")"
+  done < <(discover_tests)
+  exit 0
+fi
+
 # A run counts as SKIPPED when it exited 0 and every non-empty, non-indented
 # line it produced is a SKIP notice. Indented lines are continuation detail
 # (`      Install: npm install -g @ast-grep/cli`), so they do not disqualify a
@@ -170,7 +219,9 @@ is_skipped_log() {
   local log="$1"
   grep -qE '^SKIP([: ]|$)' "$log" || return 1
   # Any non-indented line that is NOT a SKIP notice disqualifies the skip.
-  if grep -E '^[^[:space:]]' "$log" | grep -qvE '^SKIP([: ]|$)'; then
+  # No -q on the reader end: an early exit would SIGPIPE the producer under
+  # pipefail and turn a real run into a reported skip.
+  if grep -E '^[^[:space:]]' "$log" | grep -vE '^SKIP([: ]|$)' >/dev/null; then
     return 1
   fi
   return 0
@@ -216,7 +267,7 @@ in_scope() {
     case "$candidate" in
       $pattern)
         if [ "$scope_record_hits" -eq 1 ]; then
-          scope_hits[$i]=$(( ${scope_hits[$i]} + 1 ))
+          scope_hits[i]=$(( scope_hits[i] + 1 ))
         fi
         hit=0 ;;
     esac
@@ -246,20 +297,6 @@ seen_required=""
 issues=""
 skip_list=""
 
-# Prune `.claude/worktrees/` (sibling agent clones of the whole repo, #1492) so
-# we don't run the same test many times over from worktree copies.
-#
-# Discovery runs from INSIDE the root against RELATIVE paths (#2219). With an
-# absolute base, the bare `*/.claude/worktrees/*` prune fires on the whole tree
-# whenever the root is ITSELF an agent worktree — its own path contains
-# `/.claude/worktrees/`, so every descendant matches, the scan root is pruned
-# entirely, and the runner reports TOTAL=0 having discovered nothing. Since
-# worktree-isolated subagents are this repo's normal way of doing plugin work,
-# that made an agent's own local `--root "$PWD"` verification structurally
-# incapable of finding a test. Relative paths make the root `.`, so its absolute
-# prefix cannot match while worktree copies nested ANYWHERE below it still prune
-# correctly. Same fix, and same reasoning, as scripts/check-agent-model.sh and
-# scripts/check-subagent-types.sh.
 while IFS= read -r -d '' test_file; do
   rel="$(norm_path "$test_file")"
   discovered=$((discovered + 1))
@@ -299,10 +336,7 @@ while IFS= read -r -d '' test_file; do
     seen_required="${seen_required}${rel}"$'\n'
   fi
   rm -f "$log_file"
-done < <(cd "$root_abs" && find . \
-  -path '*/.claude/worktrees/*' -prune -o \
-  \( -path '*/skills/*/scripts/tests/test-*.sh' -o -path '*-plugin/scripts/tests/test-*.sh' -o -path '*/hooks/test-*.sh' -o -path './scripts/tests/test-*.sh' \) \
-  -type f -print0 | sort -z)
+done < <(discover_tests)
 
 # A manifest entry that matched no discovered test is drift — the guard would
 # silently stop guarding that path (the allowlist-drift class).
@@ -320,7 +354,10 @@ for entry in ${required_tests[@]+"${required_tests[@]}"}; do
     continue
   fi
   required_in_scope=$((required_in_scope + 1))
-  if ! printf '%s' "$seen_required" | grep -qxF "$entry"; then
+  # A here-string, not `printf | grep -q`: under pipefail, grep -q exiting on
+  # an early match SIGPIPEs printf, the pipeline returns 141, and a required
+  # test that ran and passed is reported `required_test_missing`.
+  if ! grep -qxF -- "$entry" <<< "$seen_required"; then
     required_violations=$((required_violations + 1))
     issues="${issues}  - SEVERITY=ERROR TYPE=required_test_missing TEST=${entry}\n"
   fi
