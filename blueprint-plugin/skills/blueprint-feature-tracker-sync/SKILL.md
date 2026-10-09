@@ -1,6 +1,6 @@
 ---
 created: 2026-01-02
-modified: 2026-07-27
+modified: 2026-10-09
 reviewed: 2026-07-27
 description: Sync feature tracker with TODO.md, taskwarrior sidecars, and PRDs. Use when reconciling TODO.md vs tracker, draining WO entries, or recalculating stats.
 allowed-tools: Read, Write, Bash, Glob, AskUserQuestion
@@ -75,7 +75,8 @@ bash "${CLAUDE_SKILL_DIR}/scripts/blueprint-feature-tracker-sync.sh" --home-dir 
 
 Parse `STATUS=` and `ISSUES:` from the output. `STATUS=ERROR` means the tracker
 is missing (`tracker_missing` → report "Feature tracking not enabled; run
-`/blueprint:init`") or invalid JSON. `SIDECAR=true` means the taskwarrior-sidecar
+`/blueprint:init`"), invalid JSON, or unprocessable: report `REASON=` and stop
+([shapes](references/sync-core.md#both-features-shapes)). `SIDECAR=true` means the taskwarrior-sidecar
 convention is in use — also probe for live taskwarrior linkage (any task with a
 `bpid` matching a project blueprint ID) via the parallel-safe `export | jq`
 idiom (`task bpid.any: status:any export | jq 'length'`, never `task list`; see
