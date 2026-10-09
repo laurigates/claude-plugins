@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.11](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.10...comfyui-plugin-v1.13.11) (2026-10-09)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** separate Banned from Flagged in the registry-health template ([#2965](https://github.com/laurigates/claude-plugins/issues/2965)) ([db26601](https://github.com/laurigates/claude-plugins/commit/db26601cd2ac921fb57c2306d581f69a337c7a3f))
+
 ## [1.13.10](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.9...comfyui-plugin-v1.13.10) (2026-10-07)
 
 
