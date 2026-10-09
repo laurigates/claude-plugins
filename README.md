@@ -4,7 +4,8 @@
 
 A curated collection of 44 Claude Code plugins providing 400+ skills and 21 agents for development workflows.
 
-The same skills, subagents and safety hooks also run in **OpenCode** and **pi**.
+The same skills, subagents and safety hooks also run in **OpenCode**, **pi** and
+**Antigravity CLI**.
 Skills are read in place from a checkout of this repo, so a skill edit reaches
 every harness without a copy step; subagents and hooks are exported to each
 tool's own format. Browse everything in the [plugin catalog](docs/CATALOG.md).
@@ -16,6 +17,7 @@ tool's own format. Browse everything in the [plugin catalog](docs/CATALOG.md).
 | [Claude Code](#claude-code) | Native plugin marketplace | Native | Native |
 | [OpenCode](#opencode) | Skill adapter: a `search_skills` tool plus the top 5 matches injected each turn | Exported to OpenCode's agent format | Exported as OpenCode JS plugins |
 | [pi](#pi) | Skill adapter (same as OpenCode) | Exported for `@tintinweb/pi-subagents` | Run by a generated pi extension |
+| [Antigravity CLI](#antigravity-cli) | Plugin skill dirs registered in place in `skills.json` | Exported to `agents/<name>/agent.md` | Run by a generated `hooks.json` runner |
 
 OpenCode and pi both read `SKILL.md` unmodified, but neither budgets its skill
 listing: listing 382 skills natively measured ~34,000 tokens of context on
@@ -65,6 +67,22 @@ just setup-pi
 subagents and the safety-hook extension, and prints the steps to serve a local
 model. `just pi-adapter-unregister` reverses the registration. Details:
 [docs/pi-export.md](docs/pi-export.md).
+
+### Antigravity CLI
+
+Needs a clone of this repo, [just](https://just.systems) and Python 3:
+
+```bash
+git clone https://github.com/laurigates/claude-plugins && cd claude-plugins
+just setup-antigravity
+```
+
+`setup-antigravity` adds each plugin's `skills/` directory to
+`~/.gemini/config/skills.json`, and installs the subagents and the safety-hook
+runner into `~/.gemini/config`. Existing entries in `skills.json` and
+`hooks.json` are kept. `just unconfigure-antigravity` removes the skill
+registrations, and `just agy-check` reports what is installed. Details:
+[docs/antigravity-export.md](docs/antigravity-export.md).
 
 ## Getting Started
 
