@@ -191,23 +191,23 @@ bash blueprint-plugin/hooks/test-blueprint-structural-cue.sh   # one suite
 ```
 
 > **ShellSpec was the original plan and it never ran.** The BDD specs under
-> `hooks/spec/` (`validate_{adr,prd,prp}_frontmatter_spec.sh`,
-> `check_prp_readiness_spec.sh`) are **aspirational**: `shellspec` is not
-> installed, not in CI, not in any `just` recipe, and `spec/` matches no glob in
+> `hooks/spec/` were **aspirational**: `shellspec` is not installed, not in CI,
+> not in any `just` recipe, and `spec/` matches no glob in
 > `run-skill-script-tests.sh`. That is not a cosmetic gap — a never-executed suite
 > is worse than none, because it reads as coverage. `spec/blueprint_structural_cue_spec.sh`
 > asserted `output should include updatedToolOutput` and thereby **pinned a broken
 > output shape** while the hook it "covered" was a silent no-op for weeks; it was
 > retired under issue #2275 and replaced by `hooks/test-blueprint-structural-cue.sh`.
-> The four surviving specs are dormant documentation of intent. Port them to
-> `hooks/test-*.sh` before treating any of them as a guard
-> (`.claude/rules/regression-testing.md`).
+> The last four were removed when the hooks they described were rewired:
+> `check_prp_readiness_spec.sh` was ported to `hooks/test-check-prp-readiness.sh`,
+> and the three `validate_*_frontmatter_spec.sh` specs went with the PreToolUse
+> validators they covered (validation now runs through `validate-frontmatter.sh`,
+> pinned by `scripts/tests/test-check-schema.sh`).
 
 ### Test Fixtures
 
 The frontmatter-validator documents under `hooks/spec/fixtures/` are still on
-disk and still valid inputs — but they are only reachable by the dormant
-ShellSpec suites above. A ported suite may reuse them by path; a new one should
+disk and still valid inputs — but no suite reads them any more. A ported suite may reuse them by path; a new one should
 create its fixtures in a `mktemp -d` scratch tree, as
 `test-blueprint-structural-cue.sh` does, so the suite is self-contained.
 
@@ -220,19 +220,27 @@ create its fixtures in a `mktemp -d` scratch tree, as
 
 ## Hook Priority and Implementation
 
-### P0 - Critical (Implement Now)
+The **Trigger** column is written in permission-rule notation for readability.
+It is not a `matcher` value: a matcher is tested against the tool name only, so
+`"matcher": "Write(docs/adrs/**)"` is an invalid regex that never fires — the
+state every path-scoped blueprint hook shipped in. Implement a path trigger with
+a tool-name matcher plus either the handler's `if` field or a filter in the
+script; for document edits, extend `hooks/blueprint-doc-change.sh`, which also
+sees Bash edits. `scripts/check-hook-matchers.sh` rejects the notation in
+`hooks.json`.
+
+### P0 - Critical (Implemented)
 
 | Hook | Trigger | Action |
 |------|---------|--------|
-| PRP Frontmatter Validation | `Write(docs/prps/**)` | Block on invalid |
-| ADR Frontmatter Validation | `Write(docs/adrs/**)` | Block on invalid |
-| Execution Readiness Gate | `Skill(prp-execute)` | Block if not ready |
+| PRD/PRP/ADR Schema Check | `Write\|Edit\|Bash` → `docs/{prds,prps,adrs}/*.md` | Warn via PostToolUse `additionalContext`; the `blueprint-doc-schemas` pre-commit hook blocks the commit |
+| Execution Readiness Gate | `Skill` → `prp-execute` (filtered in the script) | Block if not ready |
 
-### P1 - Important (Plan)
+### P1 - Important
 
 | Hook | Trigger | Action |
 |------|---------|--------|
-| Feature Tracker Auto-Sync | `Write(docs/**)`, `Edit(docs/**)` | Sync feature-tracker.json |
+| Feature Tracker Auto-Sync (implemented) | `Write\|Edit\|Bash` → `docs/**` | Sync feature-tracker.json |
 | Stale Content Detection | `Read(docs/blueprint/ai_docs/**)` | Warn if > 90 days old |
 
 ### P2 - Nice to Have (Plan)
