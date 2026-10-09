@@ -21,8 +21,12 @@ container-build.yml Checks:
   Permissions           Explicit        [PASS | MISSING]
 
 release-please.yml Checks:
-  Action version        v4              [PASS | OUTDATED]
+  Action version        v5              [PASS | OUTDATED]
   Token                 MY_RELEASE...   [PASS | WRONG TOKEN]
+
+Renovate:
+  Owner                 laurigates      [App-covered | not covered]
+  Per-repo workflow     renovate.yml    [PASS (absent) | WARN duplicate Renovate identity]
 
 Missing Workflows:
   - test.yml (recommended for frontend projects)
@@ -179,6 +183,12 @@ jobs:
 ```
 
 ## Renovate Caller Workflow Template
+
+Only for a repo whose org the account-wide `laurigates-renovate` App does not
+cover, such as `ForumViriumHelsinki`. A `laurigates/*` repo gets Renovate from
+the App, and adding this caller there creates a duplicate Renovate identity: a
+second dependency dashboard and a second runner contending on the same
+`renovate/*` branches.
 
 ```yaml
 name: Renovate

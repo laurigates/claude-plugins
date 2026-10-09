@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-09-23
+modified: 2026-10-09
 reviewed: 2026-06-03
 description: "Whole-repo audit of .github/workflows/ — baseline workflows the project type is missing, and stale action pins. Use when reviewing a repo's CI as a set or bumping outdated action versions."
-allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"
 name: configure-workflows
@@ -58,7 +58,7 @@ Verify latest versions before reporting outdated actions:
 6. `docker/login-action` - [releases](https://github.com/docker/login-action/releases)
 7. `docker/metadata-action` - [releases](https://github.com/docker/metadata-action/releases)
 8. `reproducible-containers/buildkit-cache-dance` - [releases](https://github.com/reproducible-containers/buildkit-cache-dance/releases)
-9. `google-github-actions/release-please-action` - [releases](https://github.com/google-github-actions/release-please-action/releases)
+9. `googleapis/release-please-action` - [releases](https://github.com/googleapis/release-please-action/releases)
 
 Use WebSearch or WebFetch to verify current versions.
 
@@ -66,15 +66,18 @@ Use WebSearch or WebFetch to verify current versions.
 
 1. Check for `.github/workflows/` directory
 2. List all workflow files (*.yml, *.yaml)
-3. Categorize workflows by purpose (container build, test, release)
+3. Categorize workflows by purpose (container build, test, release, renovate)
+4. Read the repo owner from `git remote get-url origin`. An owner of `laurigates` means the account-wide `laurigates-renovate` App autodiscovers the repo and already runs Renovate for it
 
 Determine required workflows based on project type:
 
 | Project Type | Required Workflows |
 |--------------|-------------------|
-| Frontend | container-build, release-please, renovate (optional: claude-auto-fix) |
-| Python | container-build, release-please, test, renovate (optional: claude-auto-fix) |
-| Infrastructure | release-please, renovate (optional: docs, claude-auto-fix) |
+| Frontend | container-build, release-please (optional: claude-auto-fix) |
+| Python | container-build, release-please, test (optional: claude-auto-fix) |
+| Infrastructure | release-please (optional: docs, claude-auto-fix) |
+
+Renovate is not a per-project-type requirement; where it runs depends on the repo owner (see the Renovate Workflow Checks table). A repo the `laurigates-renovate` App covers needs no Renovate workflow at all. A repo in an org the App does not cover gets the reusable Renovate caller from [REFERENCE.md](REFERENCE.md).
 
 ### Step 3: Analyze workflow compliance
 
@@ -101,7 +104,7 @@ Determine required workflows based on project type:
 
 | Check | Standard | Severity |
 |-------|----------|----------|
-| Action version | v4 | WARN if older |
+| Action version | v5 | WARN if older |
 | Token | MY_RELEASE_PLEASE_TOKEN | WARN if GITHUB_TOKEN |
 | Permissions | contents: write, pull-requests: write | FAIL if missing |
 
@@ -115,6 +118,17 @@ Determine required workflows based on project type:
 | Coverage | Coverage upload | INFO |
 
 **Renovate Workflow Checks:**
+
+Decide coverage first, from the owner read in Step 2:
+
+| Repo owner | Per-repo Renovate workflow | Verdict |
+|------------|----------------------------|---------|
+| `laurigates` (App-covered) | Absent | PASS — the `laurigates-renovate` App runs Renovate |
+| `laurigates` (App-covered) | Present (`renovatebot/github-action` or a reusable Renovate caller) | WARN: duplicate Renovate identity — two dependency dashboards contend on the same `renovate/*` branches; recommend removing the workflow |
+| Any other org | Absent | INFO — recommend the reusable caller |
+| Any other org | Present | Run the per-repo checks |
+
+Per-repo checks, only for a repo the App does not cover:
 
 | Check | Standard | Severity |
 |-------|----------|----------|
@@ -148,6 +162,7 @@ For the report format, see [REFERENCE.md](REFERENCE.md).
 2. **Outdated actions**: Update version numbers
 3. **Missing multi-platform**: Add platforms to build-push
 4. **Missing caching**: Add GHA cache configuration
+5. **Duplicate Renovate identity**: Delete the per-repo Renovate workflow only after the user confirms, since `--fix` never removes a workflow on its own
 
 For standard templates (container build, test workflow), see [REFERENCE.md](REFERENCE.md).
 

@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-09-28
+modified: 2026-10-09
 reviewed: 2026-06-24
 description: "release-please workflow file, manifest, and config for a single-package repo — setup and compliance audit. Use when adding release-please or upgrading release-please-action."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -68,7 +68,9 @@ Determine appropriate release-type from detected package files:
 ### Step 3: Analyze compliance
 
 **Workflow file checks**:
-- Action version: `googleapis/release-please-action@v4`
+- Action version: `googleapis/release-please-action@v5` (the portfolio
+  standard; v5's only breaking change is the node24 runtime, so a v4 workflow
+  upgrades without input changes)
 - Token: Uses a non-`GITHUB_TOKEN` release token. Accept **either** pattern:
   - **GitHub App token (preferred)** — `actions/create-github-app-token` mints
     a token from `app-id: ${{ vars.RELEASE_PLEASE_APP_ID }}` /
@@ -99,7 +101,7 @@ For the report format, see [REFERENCE.md](REFERENCE.md).
 1. **Missing workflow**: Create from standard template
 2. **Missing config**: Create with detected release-type
 3. **Missing manifest**: Create with initial version `0.0.0`
-4. **Outdated action**: Update to v4
+4. **Outdated action**: Update to v5
 5. **Wrong token**: Use the GitHub App-token pattern (preferred) or
    `MY_RELEASE_PLEASE_TOKEN` — never `GITHUB_TOKEN`. A workflow already on
    `create-github-app-token` is compliant; leave it as-is.

@@ -78,6 +78,10 @@ root="$tmp/root"
 mkdir -p "$root/scripts" "$root/.claude-plugin"
 cp "$REPO_ROOT/scripts/plugin-compliance-check.sh" "$root/scripts/"
 cp "$REPO_ROOT/scripts/audit-skill-descriptions.py" "$root/scripts/"
+# The configure-pre-commit default_stages check (#2824) parses fences with the
+# shared markdown helper, resolved relative to the repo root the script cd's to.
+mkdir -p "$root/scripts/lib"
+cp "$REPO_ROOT/scripts/lib/extract-md-elements.py" "$root/scripts/lib/"
 
 PLUGIN="fixture-plugin"
 
@@ -671,6 +675,190 @@ assert_absent "denylist: a blockquoted mention in a sidecar is not flagged" \
   "$out_sbq" "_get uuid"
 
 rm -rf "${root:?}/$PLUGIN/skills/sidecarban"
+
+# ---------------------------------------------------------------------------
+# configure-* portfolio standards (#2757, #2745, #2824).
+#
+# check_skill_body() keys each rule off the skill directory's basename, so the
+# fixtures carry the real skill names. Each rule gets a red fixture (the
+# pre-fix shape), a green one (the fix), and a guard case that a shallow grep
+# would get wrong.
+# ---------------------------------------------------------------------------
+
+# make_named_skill <name> <body> [reference-md]
+make_named_skill() {
+  local dir="$root/$PLUGIN/skills/$1"
+  rm -rf "$dir"
+  mkdir -p "$dir"
+  {
+    printf -- '---\n'
+    printf 'name: %s\n' "$1"
+    printf 'description: Fixture %s. Use when exercising the compliance self-test.\n' "$1"
+    printf 'allowed-tools: Read\n'
+    printf 'created: 2026-10-09\n'
+    printf 'modified: 2026-10-09\n'
+    printf 'reviewed: 2026-10-09\n'
+    printf -- '---\n\n'
+    printf '# Fixture %s\n\n' "$1"
+    printf '%s\n' "$2"
+    [ -n "${3:-}" ] && printf '\nSee [REFERENCE.md](REFERENCE.md).\n'
+  } > "$dir/SKILL.md"
+  if [ -n "${3:-}" ]; then
+    printf '%s\n' "$3" > "$dir/REFERENCE.md"
+  fi
+}
+
+# --- (a) configure-release-please: @v5 is the standard (#2757) --------------
+RP_TOKENS='Token: `create-github-app-token` reading `RELEASE_PLEASE_APP_ID`.'
+RP_REF_V4='```yaml
+steps:
+  - uses: googleapis/release-please-action@v4
+```'
+RP_REF_V5='```yaml
+steps:
+  - uses: googleapis/release-please-action@v5
+```'
+
+make_named_skill configure-release-please "- Action version: \`googleapis/release-please-action@v4\`
+$RP_TOKENS" "$RP_REF_V4"
+run_check; out_rp4="$OUT"; rc_rp4="$RC"
+assert_eq "release-please: a @v4 standard exits 1" "$rc_rp4" "1"
+assert_contains "release-please: a missing @v5 standard is named" \
+  "$out_rp4" "SKILL.md must name 'googleapis/release-please-action@v5'"
+assert_contains "release-please: a @v4 ref is flagged" \
+  "$out_rp4" "still sets release-please-action older than @v5"
+
+# Guard: SKILL.md fixed but the sidecar template still on @v4 — the mixed state
+# REFERENCE.md was in when #2757 was filed — must still fail.
+make_named_skill configure-release-please "- Action version: \`googleapis/release-please-action@v5\`
+$RP_TOKENS" "$RP_REF_V4"
+run_check; out_rpmix="$OUT"; rc_rpmix="$RC"
+assert_eq "release-please: a @v4 template left in REFERENCE.md exits 1" "$rc_rpmix" "1"
+assert_contains "release-please: the sidecar @v4 template is flagged" \
+  "$out_rpmix" "still sets release-please-action older than @v5"
+
+make_named_skill configure-release-please "- Action version: \`googleapis/release-please-action@v5\`
+$RP_TOKENS" "$RP_REF_V5"
+run_check; out_rp5="$OUT"; rc_rp5="$RC"
+assert_eq "release-please: the @v5 standard exits 0" "$rc_rp5" "0"
+assert_absent "release-please: the @v5 standard raises no #2757 issue" "$out_rp5" "#2757"
+rm -rf "${root:?}/$PLUGIN/skills/configure-release-please"
+
+# --- (b) configure-workflows: Renovate is App-covered (#2745) ---------------
+CW_TABLE_OLD='| Project Type | Required Workflows |
+|--------------|-------------------|
+| Frontend | container-build, release-please, renovate (optional: claude-auto-fix) |
+| Infrastructure | release-please, renovate |'
+CW_TABLE_NEW='| Project Type | Required Workflows |
+|--------------|-------------------|
+| Frontend | container-build, release-please (optional: claude-auto-fix) |
+| Infrastructure | release-please |'
+CW_COVERAGE='A repo the `laurigates-renovate` App covers with a per-repo runner: WARN: duplicate Renovate identity.'
+CW_RP_V5='| Check | Standard | Severity |
+|-------|----------|----------|
+| Action version | v5 | WARN if older |'
+
+make_named_skill configure-workflows "$CW_TABLE_OLD
+
+| Check | Standard | Severity |
+|-------|----------|----------|
+| Action version | v4 | WARN if older |"
+run_check; out_cwold="$OUT"; rc_cwold="$RC"
+assert_eq "workflows: the pre-fix skill exits 1" "$rc_cwold" "1"
+assert_contains "workflows: the missing App-coverage token is named" \
+  "$out_cwold" "must retain the Renovate App-coverage token 'laurigates-renovate'"
+assert_contains "workflows: the missing duplicate-identity verdict is named" \
+  "$out_cwold" "must retain the Renovate App-coverage token 'duplicate Renovate identity'"
+assert_contains "workflows: renovate as a required workflow is flagged" \
+  "$out_cwold" "the Required Workflows table lists renovate unconditionally"
+assert_contains "workflows: a v4 release-please row is flagged" \
+  "$out_cwold" "Release Please Workflow Checks row must require action v5"
+
+# Guard: the tokens alone do not clear the table finding — renovate still listed
+# in the project-type rows must keep failing.
+make_named_skill configure-workflows "$CW_TABLE_OLD
+
+$CW_COVERAGE
+
+$CW_RP_V5"
+run_check; out_cwtok="$OUT"; rc_cwtok="$RC"
+assert_eq "workflows: tokens with renovate still required exits 1" "$rc_cwtok" "1"
+assert_contains "workflows: the table finding survives the tokens" \
+  "$out_cwtok" "the Required Workflows table lists renovate unconditionally"
+
+# Guard: renovate named OUTSIDE the table (the scoped-caller prose) is fine.
+make_named_skill configure-workflows "$CW_TABLE_NEW
+
+$CW_COVERAGE A renovate caller is only for orgs the App does not cover.
+
+$CW_RP_V5"
+run_check; out_cwnew="$OUT"; rc_cwnew="$RC"
+assert_eq "workflows: the fixed skill exits 0" "$rc_cwnew" "0"
+assert_absent "workflows: the fixed skill raises no #2745 issue" "$out_cwnew" "#2745"
+assert_absent "workflows: the fixed skill raises no #2757 issue" "$out_cwnew" "#2757"
+rm -rf "${root:?}/$PLUGIN/skills/configure-workflows"
+
+# --- (c) configure-pre-commit: default_stages beside commit-msg (#2824) -----
+PC_BLOCK_NO_STAGES='```yaml
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+
+repos: []
+```'
+PC_INLINE_NO_STAGES='```yaml
+default_install_hook_types: [pre-commit, commit-msg]
+repos: []
+```'
+PC_BLOCK_STAGES='```yaml
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+default_stages: [pre-commit]
+
+repos: []
+```'
+PC_PRECOMMIT_ONLY='```yaml
+default_install_hook_types:
+  - pre-commit
+
+repos: []
+```'
+PC_BASH_MENTION='```bash
+echo "default_install_hook_types: [pre-commit, commit-msg]"
+```'
+
+make_named_skill configure-pre-commit "Body." "$PC_BLOCK_NO_STAGES"
+run_check; out_pcblock="$OUT"; rc_pcblock="$RC"
+assert_eq "pre-commit: commit-msg without default_stages exits 1" "$rc_pcblock" "1"
+assert_contains "pre-commit: the offending fence is named by file and line" \
+  "$out_pcblock" "YAML fence at ${PLUGIN}/skills/configure-pre-commit/REFERENCE.md:1 installs commit-msg"
+
+# Guard: the inline-list spelling is the same config and must fail too.
+make_named_skill configure-pre-commit "Body." "$PC_INLINE_NO_STAGES"
+run_check; out_pcinline="$OUT"; rc_pcinline="$RC"
+assert_eq "pre-commit: inline [.., commit-msg] without default_stages exits 1" "$rc_pcinline" "1"
+assert_contains "pre-commit: the inline-list fence is flagged" \
+  "$out_pcinline" "sets no default_stages"
+
+# Guard: a fence in SKILL.md itself is checked, not only the sidecar.
+make_named_skill configure-pre-commit "$PC_BLOCK_NO_STAGES"
+run_check; out_pcskill="$OUT"; rc_pcskill="$RC"
+assert_eq "pre-commit: an offending fence in SKILL.md exits 1" "$rc_pcskill" "1"
+assert_contains "pre-commit: the SKILL.md fence is named" \
+  "$out_pcskill" "YAML fence at ${PLUGIN}/skills/configure-pre-commit/SKILL.md:"
+
+# The fix, plus two shapes that must stay clean: a config installing only the
+# pre-commit type, and a non-YAML fence that merely mentions the key.
+make_named_skill configure-pre-commit "Body.
+
+$PC_BASH_MENTION" "$PC_BLOCK_STAGES
+
+$PC_PRECOMMIT_ONLY"
+run_check; out_pcfix="$OUT"; rc_pcfix="$RC"
+assert_eq "pre-commit: default_stages beside commit-msg exits 0" "$rc_pcfix" "0"
+assert_absent "pre-commit: the fixed skill raises no #2824 issue" "$out_pcfix" "#2824"
+rm -rf "${root:?}/$PLUGIN/skills/configure-pre-commit"
 
 echo "---"
 echo "passed: $pass, failed: $fail"

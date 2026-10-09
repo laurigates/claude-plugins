@@ -30,6 +30,7 @@ Required hooks for frontend applications:
 default_install_hook_types:
   - pre-commit
   - commit-msg
+default_stages: [pre-commit]
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -74,6 +75,7 @@ Required hooks for infrastructure (Terraform, Helm, ArgoCD):
 default_install_hook_types:
   - pre-commit
   - commit-msg
+default_stages: [pre-commit]
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -128,6 +130,7 @@ Required hooks for Python projects:
 default_install_hook_types:
   - pre-commit
   - commit-msg
+default_stages: [pre-commit]
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -178,6 +181,11 @@ Every repository MUST have these hooks:
 2. **conventional-pre-commit** (v4.4.0+)
    - `conventional-pre-commit` in `commit-msg` stage
 
+3. **Hook-type settings**
+   - `default_install_hook_types` lists `pre-commit` and `commit-msg`
+   - `default_stages: [pre-commit]` is set whenever `commit-msg` is installed
+     (WARN when missing: every file hook runs twice per commit)
+
 ### Status Levels
 
 | Status | Meaning |
@@ -221,15 +229,25 @@ No special exclusions needed for standard Python projects.
 After configuring `.pre-commit-config.yaml`:
 
 ```bash
-pre-commit install
-pre-commit install --hook-type commit-msg
-```
-
-Or simply:
-
-```bash
 pre-commit install --install-hooks
 ```
+
+`default_install_hook_types` makes that one command install both the
+`pre-commit` and `commit-msg` hook types; `--install-hooks` also builds the hook
+environments up front. Without `default_install_hook_types`, plain
+`pre-commit install` installs only the `pre-commit` type and commit-msg hooks
+never run.
+
+### Why `default_stages: [pre-commit]`
+
+A hook with no `stages` key runs at every installed stage. Once the
+`commit-msg` type is installed, every file hook (whitespace fixers,
+`check-yaml`, `gitleaks`, …) runs twice per commit, once at pre-commit and again
+at commit-msg, which doubles the time and prints the hook list twice.
+`default_stages: [pre-commit]` confines unstaged hooks to the pre-commit stage;
+the message hooks keep their explicit `stages: [commit-msg]`. Write it whenever
+`commit-msg` is among the installed hook types (observed with pre-commit 4.6.2
+and pre-commit-hooks v6.0.0, #2824).
 
 ## Updating
 
