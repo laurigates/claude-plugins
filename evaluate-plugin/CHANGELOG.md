@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.3](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.17.2...evaluate-plugin-v1.17.3) (2026-10-09)
+
+
+### Bug Fixes
+
+* **hooks-plugin,blueprint-plugin,configure-plugin,evaluate-plugin,git-plugin,health-plugin,taskwarrior-plugin:** find drift-protocol.sh in the versioned plugin cache ([#2997](https://github.com/laurigates/claude-plugins/issues/2997)) ([45f8cf5](https://github.com/laurigates/claude-plugins/commit/45f8cf5534c8e00e5baadabb5c5f6fa5ec714206))
+
 ## [1.17.2](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.17.1...evaluate-plugin-v1.17.2) (2026-10-07)
 
 
