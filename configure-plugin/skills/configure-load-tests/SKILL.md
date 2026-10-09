@@ -56,7 +56,7 @@ Execute this load testing configuration check:
 
 ### Step 1: Detect existing load testing infrastructure
 
-Read the context values above and identify:
+Read the values in [Context](#context) and identify:
 
 | Indicator | Component | Status |
 |-----------|-----------|--------|
