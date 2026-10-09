@@ -108,7 +108,7 @@ if [ -d "$workflow_dir" ]; then
     rest="${line#*:}"
     rel="${file#"$proj_dir"/}"
     # Pinned form: .../actionlint@vX.Y.Z  (also accept a bare X.Y.Z)
-    if printf '%s' "$rest" | grep -qE 'actionlint[^[:space:]]*@v?[0-9]+\.[0-9]+\.[0-9]+'; then
+    if grep -qE 'actionlint[^[:space:]]*@v?[0-9]+\.[0-9]+\.[0-9]+' <<<"$rest"; then
       pin="$(printf '%s' "$rest" | grep -oE 'actionlint[^[:space:]]*@v?[0-9]+\.[0-9]+\.[0-9]+' | grep -oE 'v?[0-9]+\.[0-9]+\.[0-9]+$' | head -1)"
       # Normalise to a leading `v` so `v1.7.12` and `1.7.12` compare equal.
       case "$pin" in v*) : ;; *) pin="v$pin" ;; esac
