@@ -105,6 +105,14 @@ COMFY_FRONTEND_TYPES_VERSION = "~1.45.0"
 # widget/gesture variants test pure helpers under the node environment and don't
 # need it. See issue #1806.
 JSDOM_VERSION = "^29.0.0"
+# The bun that builds web/dist, read by every setup-bun step via
+# `bun-version-file: .bun-version`. web/dist is committed and CI diffs it
+# against a fresh build, so the bundler must be pinned: 1.3.14 -> 1.4.2
+# renamed bundled identifiers (`idx2` -> `idx`), and an unpinned setup-bun
+# failed the typecheck-build job on every PR across the fleet the day the
+# runner picked up the new release. Renovate's bun-version manager bumps
+# the file; whoever lands the bump rebuilds web/dist in the same commit.
+BUN_VERSION = "1.4.2"
 
 
 # --------------------------------------------------------------------------- #
@@ -1908,6 +1916,13 @@ jobs:
       - uses: actions/checkout@v6
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
+        with:
+          # web/dist is committed and the step below diffs it against this
+          # job's build, so the bundler must be the one that produced it: bun's
+          # output changes between releases (1.3.14 -> 1.4.2 renamed bundled
+          # identifiers), and an unpinned setup-bun fails every PR the day a new
+          # bun ships. Bump .bun-version and rebuild web/dist in the same commit.
+          bun-version-file: .bun-version
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - name: Typecheck
@@ -1940,6 +1955,8 @@ jobs:
       - uses: actions/checkout@v6
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - name: Run Vitest
@@ -1980,6 +1997,8 @@ jobs:
         uses: actions/checkout@v6
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
       - name: Install dependencies and build frontend
         run: |
           bun install --frozen-lockfile
@@ -2247,6 +2266,7 @@ biome.json
 knip.json
 vitest.config.js
 package.json
+.bun-version
 bun.lock
 uv.lock
 pylock.toml
@@ -2863,6 +2883,7 @@ def build_file_map(
 
     # Shared pinned versions injected into every templated config.
     ctx["BIOME_VERSION"] = BIOME_VERSION
+    ctx["BUN_VERSION"] = BUN_VERSION
     ctx["COMFY_FRONTEND_TYPES_VERSION"] = COMFY_FRONTEND_TYPES_VERSION
     ctx["MODAL_KIT_PKG"] = MODAL_KIT_PKG
 
@@ -3187,6 +3208,7 @@ def build_file_map(
         "knip.json": KNIP_JSON,
         "tsconfig.json": TSCONFIG,
         "package.json": PACKAGE_JSON,
+        ".bun-version": "@@BUN_VERSION@@\n",
         "vitest.config.js": VITEST_CONFIG,
         ".pre-commit-config.yaml": PRE_COMMIT,
         ".gitignore": GITIGNORE,
