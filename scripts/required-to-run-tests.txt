@@ -135,6 +135,11 @@ hooks-plugin/hooks/test-no-calendar-estimates.sh
 # has node, so a skip here means the runtime half silently stopped running.
 scripts/tests/test-export-pi-hooks.sh
 
+# The Antigravity subagent export test's only skip is "PyYAML not available".
+# The runner's system python3 ships PyYAML (the suite PASSes in CI rather than
+# skipping), so a skip here means the agent-projection gate stopped running.
+scripts/tests/test-export-antigravity-agents.sh
+
 # Stubs gh on PATH and replays verbatim excerpts of three real run logs -- no
 # network, no credentials, no skip branch -- so a SKIP here can only mean the
 # file stopped being discovered. Its case L executes the model audit's own
