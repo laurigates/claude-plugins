@@ -17,6 +17,16 @@ URL_TIMEOUT=5
 # Read the JSON input from stdin
 INPUT=$(cat)
 
+# hooks.json registers this on `"matcher": "Skill"`: a matcher sees only the
+# tool name, and a hook `if` condition does not match Skill specifiers (checked
+# on Claude Code 2.1.295 — neither `Skill(name)` nor `Skill(skill:name*)` fired).
+# So the skill filter lives here; every other skill passes untouched.
+SKILL_NAME=$(echo "$INPUT" | jq -r '.tool_input.skill // empty')
+case "${SKILL_NAME##*:}" in
+    prp-execute|blueprint-prp-execute) ;;
+    *) exit 0 ;;
+esac
+
 # Extract skill arguments (prp-name)
 SKILL_ARGS=$(echo "$INPUT" | jq -r '.tool_input.args // empty')
 
