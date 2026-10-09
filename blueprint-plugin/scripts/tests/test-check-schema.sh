@@ -4,8 +4,9 @@
 # exit 0, so the || branch only runs on a real failure). Must sit before the
 # first command — see .claude/rules/shell-scripting.md.
 #
-# Regression tests for check-schema.py and the three validate-*-frontmatter.sh
-# hooks it backs — the schema/hook reconciliation.
+# Regression tests for check-schema.py and hooks/validate-frontmatter.sh, the
+# file-mode caller the PostToolUse dispatcher and the pre-commit hook share —
+# the schema/hook reconciliation.
 #
 # Auto-discovered by scripts/run-skill-script-tests.sh via
 # *-plugin/scripts/tests/test-*.sh.
@@ -20,11 +21,12 @@
 #      RAISED on the hyphen spelling and that the underscore spelling is
 #      called out rather than silently ignored.
 #
-#   2. All three hooks read `.tool_input.content`, which Edit does not carry
-#      (it sends old_string/new_string). Every Edit to a PRD/ADR/PRP therefore
-#      skipped validation ENTIRELY while exiting 0 — indistinguishable from a
-#      clean document. Pinned by feeding a real Edit payload that introduces a
-#      violation and requiring exit 2.
+#   2. All three former PreToolUse hooks read `.tool_input.content`, which Edit
+#      does not carry (it sends old_string/new_string). Every Edit to a
+#      PRD/ADR/PRP therefore skipped validation ENTIRELY while exiting 0 —
+#      indistinguishable from a clean document. Pinned by feeding a real Edit
+#      payload to check-schema.py --hook and requiring exit 2. (The hooks now
+#      validate the file on disk after the edit; --hook mode stays supported.)
 #
 #   3. Not one ADR in this repo had frontmatter at line 1 (every block sat
 #      below the H1), so no standard YAML parser could read them. Pinned by
@@ -154,7 +156,7 @@ good_adr "$WORK/edit.md"
 payload="$(jq -n --arg f "$WORK/edit.md" \
     '{tool_name:"Edit",tool_input:{file_path:$f,old_string:"status: Accepted",new_string:"status: Bogus"}}')"
 edit_rc=0
-printf '%s' "$payload" | bash "${HOOK_DIR}/validate-adr-frontmatter.sh" >/dev/null 2>&1 || edit_rc=$?
+printf '%s' "$payload" | uv run --quiet --script "$CHECKER" --kind adr --hook >/dev/null 2>&1 || edit_rc=$?
 [ "$edit_rc" -eq 2 ] \
     && ok "defect 2: an Edit introducing a violation is blocked (exit 2)" \
     || notok "defect 2: an Edit introducing a violation must exit 2 -- got $edit_rc"
@@ -163,7 +165,7 @@ printf '%s' "$payload" | bash "${HOOK_DIR}/validate-adr-frontmatter.sh" >/dev/nu
 payload="$(jq -n --arg f "$WORK/edit.md" \
     '{tool_name:"Edit",tool_input:{file_path:$f,old_string:"status: Accepted",new_string:"status: Proposed"}}')"
 edit_rc=0
-printf '%s' "$payload" | bash "${HOOK_DIR}/validate-adr-frontmatter.sh" >/dev/null 2>&1 || edit_rc=$?
+printf '%s' "$payload" | uv run --quiet --script "$CHECKER" --kind adr --hook >/dev/null 2>&1 || edit_rc=$?
 [ "$edit_rc" -eq 0 ] \
     && ok "defect 2: a benign Edit still passes" \
     || notok "defect 2: a benign Edit must exit 0 -- got $edit_rc"
@@ -172,7 +174,7 @@ printf '%s' "$payload" | bash "${HOOK_DIR}/validate-adr-frontmatter.sh" >/dev/nu
 payload="$(jq -n --arg f "$WORK/edit.md" \
     '{tool_name:"Edit",tool_input:{file_path:$f,old_string:"nowhere-in-this-file",new_string:"x"}}')"
 edit_rc=0
-printf '%s' "$payload" | bash "${HOOK_DIR}/validate-adr-frontmatter.sh" >/dev/null 2>&1 || edit_rc=$?
+printf '%s' "$payload" | uv run --quiet --script "$CHECKER" --kind adr --hook >/dev/null 2>&1 || edit_rc=$?
 [ "$edit_rc" -eq 0 ] \
     && ok "defect 2: an unreconstructable Edit fails open" \
     || notok "defect 2: an unreconstructable Edit must fail open -- got $edit_rc"
@@ -250,18 +252,81 @@ out="$(run adr "$WORK/badstatus.md")"
 # The hooks declare no field list — the whole point of the reconciliation.
 # A regrown enum / id regex / required-field list here is the regression.
 # ==========================================================================
-for kind in adr prd prp; do
-    hook="${HOOK_DIR}/validate-${kind}-frontmatter.sh"
+for hook in "${HOOK_DIR}/validate-frontmatter.sh" "${HOOK_DIR}/blueprint-doc-change.sh"; do
     if grep -Eq 'check_required_field|Valid values:|\^(ADR|PRD|PRP)-\[0-9\]' "$hook"; then
-        notok "no field lists: ${kind} hook regrew a field list"
+        notok "no field lists: $(basename "$hook") regrew a field list"
     else
-        ok "no field lists: ${kind} hook declares none"
+        ok "no field lists: $(basename "$hook") declares none"
     fi
 done
 
 grep -q 'check-schema.py' "${HOOK_DIR}/validate-frontmatter.sh" \
     && ok "no field lists: the shared hook delegates to the validator" \
     || notok "no field lists: the shared hook must call check-schema.py"
+
+# ==========================================================================
+# validate-frontmatter.sh file mode — the PostToolUse dispatcher and the
+# blueprint-doc-schemas pre-commit hook both call it with paths.
+# ==========================================================================
+VALIDATE="${HOOK_DIR}/validate-frontmatter.sh"
+mkdir -p "$WORK/proj/docs/adrs"
+cp "$WORK/good.md" "$WORK/proj/docs/adrs/0001-good.md"
+sed 's/^status: Accepted/status: Bogus/' "$WORK/good.md" > "$WORK/proj/docs/adrs/0002-bad.md"
+printf '# ADR index\n\n| ADR | Title |\n' > "$WORK/proj/docs/adrs/README.md"
+
+out="$(cd "$WORK/proj" && bash "$VALIDATE" --strict docs/adrs/0001-good.md docs/adrs/README.md 2>&1)"; rc=$?
+[ "$rc" -eq 0 ] && [ -z "$out" ] \
+    && ok "file mode: a valid ADR and the README index pass silently" \
+    || notok "file mode: a valid ADR and README must pass silently -- rc=$rc out=$out"
+
+out="$(cd "$WORK/proj" && bash "$VALIDATE" --strict docs/adrs/0001-good.md docs/adrs/0002-bad.md 2>&1)"; rc=$?
+[ "$rc" -eq 1 ] && has_issue "$out" "DOCUMENT=docs/adrs/0002-bad.md" && has_issue "$out" "SEVERITY=ERROR" \
+    && ok "file mode: an invalid ADR fails with exit 1 and names the document" \
+    || notok "file mode: an invalid ADR must exit 1 naming it -- rc=$rc out=$out"
+
+out="$(cd "$WORK/proj" && bash "$VALIDATE" docs/prds/missing.md src/app.ts 2>&1)"; rc=$?
+[ "$rc" -eq 0 ] && [ -z "$out" ] \
+    && ok "file mode: non-blueprint and missing paths are skipped" \
+    || notok "file mode: non-blueprint and missing paths must be skipped -- rc=$rc out=$out"
+
+if PATH=/usr/bin:/bin command -v uv >/dev/null 2>&1; then
+    printf 'SKIP - uv is on /usr/bin:/bin, cannot simulate its absence\n'
+else
+    out="$(cd "$WORK/proj" && PATH=/usr/bin:/bin bash "$VALIDATE" --strict docs/adrs/0001-good.md 2>&1)"; rc=$?
+    [ "$rc" -eq 1 ] && has_issue "$out" "needs uv" \
+        && ok "file mode: --strict without uv fails closed instead of passing on a degraded validator" \
+        || notok "file mode: --strict without uv must fail closed -- rc=$rc out=$out"
+fi
+
+# The published pre-commit hook must call that same entry point in --strict
+# mode, and select documents (not their README index) — a typo here passes
+# every consumer commit silently.
+REPO_ROOT="$(cd "${PLUGIN_DIR}/.." && pwd)"
+manifest_check="$(uv run --quiet --with pyyaml python3 - "$REPO_ROOT/.pre-commit-hooks.yaml" <<'PY' 2>&1
+import os, re, sys, yaml
+hooks = {h["id"]: h for h in yaml.safe_load(open(sys.argv[1]))}
+h = hooks.get("blueprint-doc-schemas")
+if not h:
+    sys.exit("missing hook id blueprint-doc-schemas")
+script, *args = h["entry"].split()
+root = os.path.dirname(sys.argv[1])
+if not os.access(os.path.join(root, script), os.X_OK):
+    sys.exit(f"entry {script} is not an executable file")
+if args != ["--strict"]:
+    sys.exit(f"entry must pass exactly --strict, got {args}")
+def selected(path):
+    return re.search(h["files"], path) and not re.search(h.get("exclude", "^$"), path)
+for path, want in [("docs/adrs/0001-x.md", True), ("docs/prds/x.md", True),
+                   ("docs/prps/x.md", True), ("docs/adrs/README.md", False),
+                   ("docs/blueprint/manifest.json", False), ("src/docs/adrs/x.md", False)]:
+    if bool(selected(path)) != want:
+        sys.exit(f"files/exclude select {path}: {not want}, want {want}")
+print("MANIFEST_OK")
+PY
+)"
+has_issue "$manifest_check" "MANIFEST_OK" \
+    && ok "pre-commit: blueprint-doc-schemas calls validate-frontmatter.sh --strict on docs, not READMEs" \
+    || notok "pre-commit: .pre-commit-hooks.yaml blueprint-doc-schemas is miswired -- $manifest_check"
 
 # ==========================================================================
 # Schemas agree with each other on the shared cross-reference patterns.

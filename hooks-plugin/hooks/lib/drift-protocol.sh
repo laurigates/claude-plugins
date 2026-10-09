@@ -31,8 +31,11 @@
 #   #!/usr/bin/env bash
 #   set -uo pipefail
 #   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-#   # shellcheck source=../../hooks-plugin/hooks/lib/drift-protocol.sh
-#   . "${SCRIPT_DIR}/../../hooks-plugin/hooks/lib/drift-protocol.sh"
+#   # Copy the "drift-protocol resolver" block from an existing probe
+#   # (e.g. git-plugin/hooks/git-drift-probe.sh). A plain
+#   # ${SCRIPT_DIR}/../../hooks-plugin path only exists in a checkout; installed
+#   # plugins sit under cache/<mkt>/<plugin>/<version>/, where it finds nothing.
+#   # scripts/tests/test-drift-probe-lib-resolution.sh checks every copy.
 #   drift_init "blueprint-plugin"   # parses stdin, sets DRIFT_SID / DRIFT_CWD, prepares signal dir
 #   drift_no_op_if_missing "docs/blueprint/manifest.json"
 #   drift_add_finding warn format_version_drift "manifest 3.2 < plugin 3.3" "/blueprint:upgrade"
