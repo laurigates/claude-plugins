@@ -31,3 +31,10 @@ before blaming either the code or the platform.
 > run `35730697939` with `subtype: "success"`, `is_error: true`, `num_turns: 5`,
 > `permission_denials_count: 0`, no `Found N` line and no `result` string. A
 > rerun of the same commit passed.
+
+The same incident is the evidence for SKILL.md § No history at all:
+
+> Evidence (2026-09-22, thelma#1524): `a11y-wcag.yml` had exactly one run in
+> its history, the failing one. The rerun passed, and the changed components
+> already carried `aria-label`, `aria-hidden` and `sr-only`, so a genuine
+> Level A finding was implausible.

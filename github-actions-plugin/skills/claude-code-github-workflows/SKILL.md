@@ -132,65 +132,11 @@ comma-separated list) on workflows where bot PRs are the point, e.g.
 dependency audits triggered by lockfile changes. Re-running a failed run does
 not help: the replay keeps the original bot `sender`.
 
-The same refusal hits a PR that a workflow pushed to with `github.token`: the
-next run's `actor` is `github-actions[bot]`, GitHub holds it for approval, and
-the approved attempt still fails here because `actor` stays the bot. The action
-strips a trailing `[bot]` before comparing, so `allowed_bots: "github-actions"`
-admits it; so does pushing with a PAT or App token instead. To recognise and
-count these refusals in a repo's failed runs, see
-`github-actions-plugin:ai-review-max-turns` (Cause 5, bot-actor refusal).
-
-### A changed workflow can't be tested from a branch
-
-When a `workflow_dispatch` runs a workflow file whose content differs from the
-default branch's copy, the action exits before the agent starts:
-
-```
-Workflow validation failed. The workflow file must exist and have identical content to the version on the repository's default branch.
-```
-
-The step still reports **success**. Every later step then runs against no
-output, and an `if: failure()` notifier fires on whichever step trips over the
-gap: two branch runs of a fixed workflow each opened a spurious "summary
-failed" issue. `steps.<id>.outputs.execution_file` is empty on such a run, so
-gate the steps that consume the agent's output on it, and verify a workflow
-change after merge with `gh workflow run <file>.yml` on the default branch, not
-from the feature branch:
-
-```yaml
-- name: Publish the summary
-  if: steps.claude.outputs.execution_file != ''
-```
-
-### Denials are a count
-
-The printed result carries `permission_denials_count`, not the denied calls.
-The full transcript, denials included, is written to
-`$RUNNER_TEMP/claude-execution-output.json`. Read it with a fallback to that
-fixed path, because `execution_file` can be empty (the validation skip leaves
-it unset), and upload it so a run's tool calls stay readable afterwards:
-
-```yaml
-- name: Upload the execution log
-  if: always()
-  uses: actions/upload-artifact@v7
-  with:
-    name: claude-execution-output
-    path: ${{ steps.claude.outputs.execution_file || format('{0}/claude-execution-output.json', runner.temp) }}
-    if-no-files-found: ignore
-
-- name: List denied tool calls
-  if: always()
-  env:
-    EXEC_FILE: ${{ steps.claude.outputs.execution_file || format('{0}/claude-execution-output.json', runner.temp) }}
-  run: |
-    [ -f "$EXEC_FILE" ] || { echo "no execution file"; exit 0; }
-    jq -r '.[] | select(.type == "result") | .permission_denials[]?
-      | "\(.tool_name) \(.tool_input | tostring | .[0:160])"' "$EXEC_FILE"
-```
-
-A run can finish green with several denials and no published output; that mode
-is in [REFERENCE.md](REFERENCE.md) § The family (green but unpublished).
+A PR a workflow pushed to with `github.token` meets the same refusal
+(`allowed_bots: "github-actions"` admits it). That case, a changed workflow
+dispatched from a branch that skips the agent yet reports success, and denials
+reported only as a count are detailed in [REFERENCE.md](REFERENCE.md) § More
+claude-code-action v1 gotchas.
 
 ### Deprecated inputs (removed in a future version)
 
@@ -261,42 +207,11 @@ jobs:
 
 ## Repository Configuration
 
-### CLAUDE.md Example
+### CLAUDE.md
 
-Create `CLAUDE.md` in repository root to define coding standards:
-
-```markdown
-# Repository Guidelines for Claude Code
-
-## Code Standards
-- Use TypeScript strict mode
-- Follow Airbnb style guide
-- Maintain 90%+ test coverage
-- Document all public APIs
-
-## Development Workflow
-- Run tests before committing: `npm test`
-- Format with Prettier: `npm run format`
-- Lint with ESLint: `npm run lint`
-
-## Commit Messages
-Follow Conventional Commits:
-- feat: New features
-- fix: Bug fixes
-- docs: Documentation changes
-- refactor: Code refactoring
-
-## Testing Requirements
-- Unit tests for all functions
-- Integration tests for APIs
-- E2E tests for critical flows
-
-## Security
-- Never commit secrets
-- Validate all user inputs
-- Use parameterized queries
-- Follow OWASP guidelines
-```
+Create `CLAUDE.md` in repository root to define coding standards; a starter
+covering code standards, workflow, commit messages, testing and security is in
+[REFERENCE.md](REFERENCE.md) § A starter CLAUDE.md.
 
 ## Quick Setup
 

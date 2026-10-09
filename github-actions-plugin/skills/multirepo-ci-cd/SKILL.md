@@ -13,6 +13,13 @@ Org-agnostic lessons for working across a portfolio of repos that share
 reusable workflows. The org-specific workflow catalogs live in the child rules
 (`*/.claude/rules/ci-cd-workflows.md`).
 
+## When to Use This Skill
+
+| Use this skill when... | Use something else when... |
+|---|---|
+| Diagnosing a red check, or rolling a shared `reusable-*.yml` out, across a multi-repo portfolio | The red check is a Claude-powered AI review that failed or flaked → `github-actions-plugin:ai-review-max-turns` |
+| Re-triggering a PR after a `@main` reusable-workflow fix | |
+
 ## Diagnosing a CI Failure — Fetch First
 
 Before investigating why a workflow failed, `git fetch` and compare local

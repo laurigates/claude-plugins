@@ -82,7 +82,7 @@ All four look like a normal red or green tick:
 | Never ran | pass | path filter or disabled workflow skipped it | `github-actions-plugin:ai-review-max-turns` § a check that never ran |
 | Red but unreadable | fail, no detail | a real finding it had no permission to publish | `github-actions-plugin:ai-review-max-turns` Cause 3 |
 | Posted but unparseable | fail, "result discarded" | the result is published and correct | this section |
-| Green but unpublished | pass | the agent was told to publish its own output (`git commit`/`git push`, a wiki or comment write), its calls were denied, and nothing reached the destination | this section; SKILL.md § Denials are a count |
+| Green but unpublished | pass | the agent was told to publish its own output (`git commit`/`git push`, a wiki or comment write), its calls were denied, and nothing reached the destination | this section; § Denials are a count |
 
 Green but unpublished is the quietest of the four, because nothing about the run
 is red. The `permission_denials_count` in the result is the only trace, and it
@@ -122,3 +122,108 @@ runaway-loop notes in `ai-review-max-turns` REFERENCE.md).
   principle; this is its CI-parsing instance
 - `github-actions-plugin:release-artifact-verification` — same law after the
   fact: go look at the artifact rather than trusting the pipeline's account of it
+
+## More claude-code-action v1 gotchas
+
+Detail for the pointer in SKILL.md § claude-code-action v1 Gotchas. Each one
+leaves a run that looks normal from the check alone.
+
+### A `github.token` push meets the bot refusal
+
+SKILL.md § Bots are blocked by default covers the `allowed_bots` input itself.
+The same refusal hits a PR that a workflow pushed to with `github.token`: the
+next run's `actor` is `github-actions[bot]`, GitHub holds it for approval, and
+the approved attempt still fails here because `actor` stays the bot. The action
+strips a trailing `[bot]` before comparing, so `allowed_bots: "github-actions"`
+admits it; so does pushing with a PAT or App token instead. To recognise and
+count these refusals in a repo's failed runs, see
+`github-actions-plugin:ai-review-max-turns` (Cause 5, bot-actor refusal).
+
+### A changed workflow can't be tested from a branch
+
+When a `workflow_dispatch` runs a workflow file whose content differs from the
+default branch's copy, the action exits before the agent starts:
+
+```
+Workflow validation failed. The workflow file must exist and have identical content to the version on the repository's default branch.
+```
+
+The step still reports **success**. Every later step then runs against no
+output, and an `if: failure()` notifier fires on whichever step trips over the
+gap: two branch runs of a fixed workflow each opened a spurious "summary
+failed" issue. `steps.<id>.outputs.execution_file` is empty on such a run, so
+gate the steps that consume the agent's output on it, and verify a workflow
+change after merge with `gh workflow run <file>.yml` on the default branch, not
+from the feature branch:
+
+```yaml
+- name: Publish the summary
+  if: steps.claude.outputs.execution_file != ''
+```
+
+### Denials are a count
+
+The printed result carries `permission_denials_count`, not the denied calls.
+The full transcript, denials included, is written to
+`$RUNNER_TEMP/claude-execution-output.json`. Read it with a fallback to that
+fixed path, because `execution_file` can be empty (the validation skip leaves
+it unset), and upload it so a run's tool calls stay readable afterwards:
+
+```yaml
+- name: Upload the execution log
+  if: always()
+  uses: actions/upload-artifact@v7
+  with:
+    name: claude-execution-output
+    path: ${{ steps.claude.outputs.execution_file || format('{0}/claude-execution-output.json', runner.temp) }}
+    if-no-files-found: ignore
+
+- name: List denied tool calls
+  if: always()
+  env:
+    EXEC_FILE: ${{ steps.claude.outputs.execution_file || format('{0}/claude-execution-output.json', runner.temp) }}
+  run: |
+    [ -f "$EXEC_FILE" ] || { echo "no execution file"; exit 0; }
+    jq -r '.[] | select(.type == "result") | .permission_denials[]?
+      | "\(.tool_name) \(.tool_input | tostring | .[0:160])"' "$EXEC_FILE"
+```
+
+A run can finish green with several denials and no published output; that mode
+is in § The family (green but unpublished).
+
+## A starter CLAUDE.md
+
+Create `CLAUDE.md` in repository root to define coding standards:
+
+```markdown
+# Repository Guidelines for Claude Code
+
+## Code Standards
+- Use TypeScript strict mode
+- Follow Airbnb style guide
+- Maintain 90%+ test coverage
+- Document all public APIs
+
+## Development Workflow
+- Run tests before committing: `npm test`
+- Format with Prettier: `npm run format`
+- Lint with ESLint: `npm run lint`
+
+## Commit Messages
+Follow Conventional Commits:
+- feat: New features
+- fix: Bug fixes
+- docs: Documentation changes
+- refactor: Code refactoring
+
+## Testing Requirements
+- Unit tests for all functions
+- Integration tests for APIs
+- E2E tests for critical flows
+
+## Security
+- Never commit secrets
+- Validate all user inputs
+- Use parameterized queries
+- Follow OWASP guidelines
+```

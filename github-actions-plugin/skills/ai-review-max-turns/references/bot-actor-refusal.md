@@ -15,7 +15,9 @@ Action failed with error: Workflow initiated by non-human actor: github-actions 
 None of the other four rows can match it, because every one of them reads the
 result of a run that happened. This one has **no execution file, no `is_error`,
 no `subtype` and no `num_turns`**. A triage that greps for those finds nothing
-and is tempted to call the red unexplained.
+and is tempted to call the red unexplained. The `subtype` + `is_error`
+discriminator in SKILL.md therefore applies only once Claude ran: rule out the
+`non-human actor` line before reading it.
 
 ### The signature
 
