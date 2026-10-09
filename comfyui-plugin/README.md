@@ -126,7 +126,9 @@ python3 scripts/check-fleet-drift.py --pack comfyui-X   # scope to one pack
 It derives the comparable file set by importing the generator (never a
 hand-copied list), and reads per-file authority from `fleet-policy.toml`:
 `managed` (byte-identity; drift is an ERROR), `seed` (pack-owned; never
-compared), `shared` (the fleet leads and the template back-ports), and `block`
+compared), `shared` (the fleet leads and the template back-ports — but only
+from a strict majority of packs; a plurality is reported as `SHARED_SPLIT`,
+with no direction implied), and `block`
 (a named section of a placeholder-carrying template — the justfile's `Assets`
 recipe). Output follows the `STATUS=` / `ISSUE_COUNT=` convention; a template
 with no policy entry is itself an ERROR, so the manifest cannot fall behind the

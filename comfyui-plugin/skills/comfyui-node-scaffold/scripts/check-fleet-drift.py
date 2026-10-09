@@ -283,6 +283,7 @@ def emit_issue_body(
     block_drift: list[str],
     shared_minority: list[str],
     backport: list[str],
+    shared_split: list[str],
     unclassified: list[str],
     issue_count: int,
 ) -> None:
@@ -329,8 +330,27 @@ def emit_issue_body(
             print(f"- `{rel}` — the fleet majority differs from the template")
         print()
 
+    if shared_split:
+        print("## `shared`: no fleet majority, direction undecided (WARN)\n")
+        print(
+            "The largest group of identical bodies is not a strict majority of the "
+            "swept packs, so it is one faction rather than a fleet consensus. "
+            "Neither a back-port nor a pack sync is implied: compare the groups "
+            "and decide which body is canonical.\n"
+        )
+        for row in shared_split:
+            rel, largest, total = row.split("|")
+            print(
+                f"- `{rel}` — largest group {largest.split('=')[1]} of "
+                f"{total.split('=')[1]} packs"
+            )
+        print()
+
     if shared_minority:
-        print("## `shared`: a pack differs from the fleet majority (WARN)\n")
+        print(
+            "## `shared`: a pack differs from the fleet majority "
+            "(under a split, the largest group) (WARN)\n"
+        )
         print("| File | Packs |\n| --- | --- |")
         for rel, names in sorted(_group(shared_minority).items()):
             print(f"| `{rel}` | {', '.join(sorted(names))} |")
@@ -401,6 +421,7 @@ def main(argv: list[str] | None = None) -> int:
     managed_drift: list[str] = []
     shared_minority: list[str] = []
     backport: list[str] = []
+    shared_split: list[str] = []
     block_drift: list[str] = []
     files_compared = 0
 
@@ -425,16 +446,27 @@ def main(argv: list[str] | None = None) -> int:
         if policy[rel]["policy"] != "shared":
             continue
         ranked = sorted(groups.items(), key=lambda kv: (-len(kv[1]), kv[0]))
-        majority_body, majority_packs = ranked[0]
+        largest_body, largest_packs = ranked[0]
+        # Per-pack divergence stays visible whether or not the fleet has a
+        # majority: under a split, `majority=` is the size of the largest group.
         for body, names in ranked[1:]:
             for name in names:
                 shared_minority.append(
-                    f"{name}|{rel}|majority={len(majority_packs)}|minority={len(names)}"
+                    f"{name}|{rel}|majority={len(largest_packs)}|minority={len(names)}"
                 )
-        if majority_body != templates[rel]:
-            backport.append(
-                f"{rel}|fleet_majority={len(majority_packs)}|of={len(packs)}"
-            )
+        # BACKPORT tells a reader to move the template to the fleet's body, so
+        # it needs a fleet CONSENSUS: a strict majority of the swept packs. The
+        # largest group alone is only a plurality — 6 of 13 packs carrying a
+        # pre-#1528 leftover is one faction, not the fleet (#2756) — and a
+        # back-port from it would regress the template. A split fleet is still
+        # reported, as SHARED_SPLIT, which prescribes no direction.
+        if len(largest_packs) * 2 > len(packs):
+            if largest_body != templates[rel]:
+                backport.append(
+                    f"{rel}|fleet_majority={len(largest_packs)}|of={len(packs)}"
+                )
+        else:
+            shared_split.append(f"{rel}|largest={len(largest_packs)}|of={len(packs)}")
 
     # --- block policy, rendered per pack -------------------------------------
     for rel, entry in sorted(policy.items()):
@@ -514,7 +546,9 @@ def main(argv: list[str] | None = None) -> int:
         + len(subfamily_mismatch)
         + len(unclassified_packs)
     )
-    warnings = len(shared_minority) + len(backport) + len(stale_entries)
+    warnings = (
+        len(shared_minority) + len(backport) + len(shared_split) + len(stale_entries)
+    )
     issue_count = errors + warnings
 
     if not packs:
@@ -533,6 +567,7 @@ def main(argv: list[str] | None = None) -> int:
             block_drift=block_drift,
             shared_minority=shared_minority,
             backport=backport,
+            shared_split=shared_split,
             unclassified=unclassified,
             issue_count=issue_count,
         )
@@ -552,6 +587,7 @@ def main(argv: list[str] | None = None) -> int:
     out(f"BLOCK_DRIFT_COUNT={len(block_drift)}")
     out(f"SHARED_MINORITY_COUNT={len(shared_minority)}")
     out(f"BACKPORT_SIGNAL_COUNT={len(backport)}")
+    out(f"SHARED_SPLIT_COUNT={len(shared_split)}")
     out(f"UNCLASSIFIED_TEMPLATE_COUNT={len(unclassified)}")
     out(f"STALE_POLICY_ENTRY_COUNT={len(stale_entries)}")
     out(f"SUBFAMILY_MISMATCH_COUNT={len(subfamily_mismatch)}")
@@ -588,7 +624,10 @@ def main(argv: list[str] | None = None) -> int:
 
     if shared_minority:
         out("")
-        out("--- shared: pack differs from the fleet majority (WARN) ---")
+        out(
+            "--- shared: pack differs from the fleet majority "
+            "(under a split, the largest group) (WARN) ---"
+        )
         for row in shared_minority:
             out(f"SHARED_MINORITY={row}")
 
@@ -597,6 +636,15 @@ def main(argv: list[str] | None = None) -> int:
         out("--- shared: fleet leads, template should back-port (WARN) ---")
         for row in backport:
             out(f"BACKPORT={row}")
+
+    if shared_split:
+        out("")
+        out(
+            "--- shared: no strict fleet majority; a human picks the canonical "
+            "body (WARN) ---"
+        )
+        for row in shared_split:
+            out(f"SHARED_SPLIT={row}")
 
     if stale_entries:
         out("")
