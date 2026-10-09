@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "blueprint-plugin/adr.schema.json",
   "title": "Architecture Decision Record",
-  "description": "The single source of truth for ADR structure. hooks/validate-adr-frontmatter.sh is a thin caller of scripts/check-schema.py against this file and declares no field list of its own; scripts/tests/test-check-schema.sh fails if it grows one (its `no field lists:` assertions). The validated object is built by check-schema.py: `frontmatter` is the parsed line-1 YAML block, `sections` maps each `## ` heading text to its ordinal.",
+  "description": "The single source of truth for ADR structure. hooks/validate-frontmatter.sh is a thin caller of scripts/check-schema.py against this file and declares no field list of its own; scripts/tests/test-check-schema.sh fails if it grows one (its `no field lists:` assertions). The validated object is built by check-schema.py: `frontmatter` is the parsed line-1 YAML block, `sections` maps each `## ` heading text to its ordinal.",
   "x-blueprint-doc-kind": "adr",
   "x-blueprint-path-glob": "docs/adrs/**",
   "type": "object",
