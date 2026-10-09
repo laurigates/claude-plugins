@@ -19,20 +19,32 @@
 #     quote with a MISSING node), the parse has no ERROR node and exactly one
 #     `command` node, and nothing
 #     outside that node but whitespace and comments (so no list, pipeline,
-#     redirection, heredoc, substitution, subshell, loop or second statement);
+#     trailing redirection, heredoc, subshell, loop or second statement);
+#   - the parse has no substitution, expansion, file redirect or herestring
+#     ANYWHERE, including inside the node: tree-sitter puts a LEADING redirect
+#     (`>f kubectl apply …`) inside the command node, and a redirect-only
+#     `$(>f)` or `<(>f)` has no inner command node to count (#2887);
+#   - the node's text has none of $ ` { < > * ? [ (an expansion, substitution,
+#     redirection, brace expansion or glob can become a flag, a `--` or a file
+#     write that the parse does not show);
 #   - its command_name is literally `kubectl` and the very next word is
 #     literally apply, delete or patch;
-#   - `--dry-run` appears nowhere in that node's own text (a comment after the
-#     node does not count), and no word in it is `--` once quotes and
-#     backslashes are dropped (it would end option parsing).
+#   - once quotes and backslashes are dropped and `_` reads as `-` (kubectl's
+#     flag normalizer), no word contains --dry-run (so the --dry-run=none
+#     bypass, --dry_run=none and --dry-r''un=none all count; a comment after
+#     the node does not), no word is `--` (it would end option parsing), and
+#     no word is --raw (kubectl sends the raw request before it reads
+#     --dry-run) or a --profile / --cache-dir flag (a dry run still writes
+#     those files);
+#   - the node's last word is not a flag without `=`: it may take a value,
+#     and would swallow the injected trailing --dry-run=client as that value.
 # The flag is inserted at the END of the node (inside its byte range, so before
-# any trailing comment): kubectl takes the last --dry-run, so it beats an
-# override the text check misses (--dry_run=none, --dry-r''un=none). A second
-# copy goes right after the verb, in case an unseen `--` (e.g. ${X:---}) turns
-# the trailing one into a positional argument. In every other case, and whenever
-# ast-grep is missing, fails, or answers something unexpected, the hook emits
-# nothing and exits 0: no allow, no rewrite — the command goes through the
-# user's normal permission flow as written. Deferring beats guessing.
+# any trailing comment) and again right after the verb: kubectl takes the last
+# --dry-run, and the after-verb copy still holds if the trailing one were ever
+# read as a positional argument. In every other case, and whenever ast-grep is
+# missing, fails, or answers something unexpected, the hook emits nothing and
+# exits 0: no allow, no rewrite — the command goes through the user's normal
+# permission flow as written. Deferring beats guessing.
 #
 # Self-contained on purpose: plugins ship independently, so nothing here is
 # sourced from hooks-plugin/hooks/lib.
@@ -81,6 +93,30 @@ id: name
 language: bash
 rule: { kind: command_name }
 ---
+id: csub
+language: bash
+rule: { kind: command_substitution }
+---
+id: psub
+language: bash
+rule: { kind: process_substitution }
+---
+id: exp
+language: bash
+rule: { kind: expansion }
+---
+id: sexp
+language: bash
+rule: { kind: simple_expansion }
+---
+id: fredir
+language: bash
+rule: { kind: file_redirect }
+---
+id: hstr
+language: bash
+rule: { kind: herestring_redirect }
+---
 id: word
 language: bash
 rule:
@@ -103,7 +139,7 @@ NAME_END=-1
 NAME_COUNT=0
 VERB_END=-1
 COVERED=()
-LINE_RE='^(0|[1-9][0-9]*) (0|[1-9][0-9]*) (cmd|err|cmt|name|word)$'
+LINE_RE='^(0|[1-9][0-9]*) (0|[1-9][0-9]*) (cmd|err|cmt|name|word|csub|psub|exp|sexp|fredir|hstr)$'
 while IFS= read -r line; do
     # Anything but a well-formed node line: distrust the whole answer.
     [[ $line =~ $LINE_RE ]] || exit 0
@@ -111,7 +147,9 @@ while IFS= read -r line; do
     end=${BASH_REMATCH[2]}
     if [ "$end" -gt "${#COMMAND}" ] || [ "$start" -gt "$end" ]; then exit 0; fi
     case ${BASH_REMATCH[3]} in
-        err) exit 0 ;;
+        # A substitution, expansion, file redirect or herestring anywhere (a
+        # leading redirect sits INSIDE the command node): defer (#2887).
+        err | csub | psub | exp | sexp | fredir | hstr) exit 0 ;;
         cmd)
             CMD_COUNT=$((CMD_COUNT + 1))
             CMD_START=$start
@@ -153,25 +191,47 @@ done < <(printf '%s\n' "${COVERED[@]}" | sort -n -k1,1)
 REST+=${COMMAND:pos}
 [[ $REST =~ ^[[:space:]]*$ ]] || exit 0
 
-# The node's own --dry-run (including the --dry-run=none bypass): leave it alone.
 NODE_TEXT=${COMMAND:CMD_START:CMD_END-CMD_START}
+
+# Any expansion, substitution, redirection, brace expansion or glob in the node
+# can become a flag, a `--` or a file write the parse does not show ($'--',
+# {-,}-, ${X:-`cmd`}, *.yaml): defer to the user (#2887).
 case $NODE_TEXT in
-    *--dry-run*) exit 0 ;;
+    *[\$\`\{\<\>*?[]*) exit 0 ;;
 esac
 
-# An argument that is `--` once quotes and backslashes go ends option parsing,
-# so a flag after it is a positional name, not --dry-run: defer to the user.
+# Word by word, once quotes and backslashes go and `_` reads as `-` (kubectl's
+# flag normalizer maps --dry_run to --dry-run):
+#   - any --dry-run (the --dry-run=none bypass, --dry_run=none, --dry-r''un):
+#     the node already says what it wants, so leave it alone;
+#   - `--` ends option parsing, so a flag after it is a positional name;
+#   - --raw sends the request before kubectl reads --dry-run (a real DELETE);
+#   - --profile / --profile-output / --cache-dir write files even in a dry run.
 read -r -d '' -a NODE_WORDS <<<"$NODE_TEXT" || true
 for word in "${NODE_WORDS[@]}"; do
     stripped=${word//[\'\"\\]/}
-    if [ "$stripped" = "--" ]; then exit 0; fi
+    flag=${stripped//_/-}
+    case $flag in
+        *--dry-run*) exit 0 ;;
+        -- | --raw | --raw=* | --profile* | --cache-dir*) exit 0 ;;
+    esac
 done
 
+# A trailing flag without `=` may take a value, and would swallow the injected
+# trailing --dry-run=client as that value (--cache-dir, --as, -o): defer.
+if [ "${#NODE_WORDS[@]}" -gt 0 ]; then
+    last=${NODE_WORDS[${#NODE_WORDS[@]}-1]}
+    last=${last//[\'\"\\]/}
+    case $last in
+        -*=*) ;;
+        -*) exit 0 ;;
+    esac
+fi
+
 # The flag goes at the END of the node, where kubectl's last-value-wins makes
-# it beat a --dry-run override the text check above cannot see (--dry_run=none,
-# --dry-r''un=none, --dry-${X:-run}=none, …). It also goes right after the
-# verb, so it still applies if a `--` the word check above cannot see (an
-# expansion such as ${X:---}) turns the trailing copy into a positional arg.
+# it beat any --dry-run override the word check could still miss, and right
+# after the verb, so it still applies if the trailing copy were ever read as a
+# positional argument.
 UPDATED="${COMMAND:0:VERB_END} --dry-run=client${COMMAND:VERB_END:CMD_END-VERB_END}"
 if [ "$VERB_END" -lt "$CMD_END" ]; then UPDATED+=" --dry-run=client"; fi
 UPDATED+=${COMMAND:CMD_END}
