@@ -142,11 +142,7 @@ Every agent prompt must declare:
 - **No borrowed authority**: a brief never speaks as the user or asserts
   approvals not given this session (system card: fabricated user quotes
   were observed).
-- **Scope authority per stage**: merge/publish authorization goes only to the
-  stage that owns it; a build stage's brief says "stop at PR opened; do not
-  merge" (#2902, [rationale](references/brief-templates.md#stage-authority-in-multi-stage-pipelines)).
-- **No forward references**: every stage's brief carries the user's decisions
-  verbatim — a downstream stage cannot read an upstream stage's prompt.
+- **Scope authority per stage**: [#2902](references/brief-templates.md#stage-authority-in-multi-stage-pipelines).
 
 These budgets prevent the "agent hit context limits" and "prompt too long"
 failure modes — without them an agent exhausts its window on exploration and
@@ -172,7 +168,7 @@ it alone, or pre-compute its artefacts so downstream agents are read-only. See
 `exclusive-lock-dispatch`.
 
 **Refactor briefs.** For bulk content rewrites, use the per-step / PRECIOUS /
-per-file-cap shape — see [references/brief-templates.md → Refactor-brief template](references/brief-templates.md#refactor-brief-template).
+per-file-cap shape — see [Refactor-brief template](references/brief-templates.md#refactor-brief-template).
 
 ### 3. Return Contract (mandatory structured summary)
 
@@ -189,7 +185,7 @@ for the failure-mode → schema-field rationale, see
 Orchestrator edits needed must be **verbatim patches, not prose** (literal CMake
 blocks, full justfile recipes, literal doc paragraphs), and the agent writes the
 final prose for any docs update its slice requires. See
-[references/brief-templates.md → Verbatim patches](references/brief-templates.md#verbatim-patches--detail-and-rationale).
+[Verbatim patches](references/brief-templates.md#verbatim-patches--detail-and-rationale).
 
 #### Loud-failure contract (never surrender silently)
 
@@ -234,7 +230,7 @@ shifting validation from commit-time to edit-time.
 
 Treating the script as advisory defeats the purpose — the regression lands in
 the agent's diff and the agent already has the context to fix it. See
-[references/brief-templates.md → Bulk-edit self-verification](references/brief-templates.md#bulk-edit-self-verification--worked-example)
+[Bulk-edit self-verification](references/brief-templates.md#bulk-edit-self-verification--worked-example)
 and `.claude/rules/regression-testing.md`.
 
 **Closed-list mechanical batches need a completion manifest, not just a
@@ -246,7 +242,7 @@ optimistic summary reads as success even when the batch fell short (issue
 [#1601](https://github.com/laurigates/claude-plugins/issues/1601): a ~23-symbol
 batch completed only ~5, invisible until `knip` was re-run). Cap the per-agent
 batch so an early stop costs little. See
-[references/brief-templates.md → Refactor-brief template](references/brief-templates.md#refactor-brief-template).
+[Refactor-brief template](references/brief-templates.md#refactor-brief-template).
 
 ### 5. Reviewer-agent verification (verify-then-fix)
 
@@ -259,7 +255,7 @@ inline or dispatch a follow-up worker — do not close on the worker's self-clai
 
 **Self-author guard for `gh pr` flows**: `gh pr review --reviewer <user>` returns
 HTTP 422 when the target is the PR author; brief reviewers to post inline
-comments instead. See [references/brief-templates.md → Reviewer-agent verification](references/brief-templates.md#reviewer-agent-verification--evidence).
+comments instead. See [Reviewer-agent verification](references/brief-templates.md#reviewer-agent-verification--evidence).
 
 ## Who Pushes?
 
@@ -405,8 +401,7 @@ also dodges the burst rate limit), checking for an already-open PR first
 - [ ] Each prompt includes file/read/output budgets
 - [ ] Each prompt includes the Return Contract schema verbatim
 - [ ] Each prompt mandates the loud-failure contract (no one-word surrenders)
-- [ ] Agents authorized to push their own commits (unless sandbox/dependency exception) — push, not merge
-- [ ] Merge/publish authority only in the owning stage's brief; build stages told "do not merge"
+- [ ] Agents authorized to push their own commits (unless sandbox/dependency exception)
 - [ ] Every returned summary parsed; missing returns treated as stalls
 
 ### Common Mistakes
