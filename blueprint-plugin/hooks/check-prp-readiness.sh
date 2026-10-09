@@ -98,7 +98,7 @@ fi
 # Check for required sections
 check_section() {
     local section="$1"
-    if ! echo "$PRP_CONTENT" | grep -q "^## ${section}"; then
+    if ! grep -q "^## ${section}" <<<"$PRP_CONTENT"; then
         block "ERROR: PRP missing required section: ## ${section}"
     fi
 }
