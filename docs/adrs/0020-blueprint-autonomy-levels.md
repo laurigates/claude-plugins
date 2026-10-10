@@ -112,9 +112,10 @@ never due.
 
 ### The draft-issue side channel (level 2)
 
-Automation never invokes `/blueprint:work-order` — `disable-model-invocation:
-true` stays on it (and on `/blueprint:prp-execute`) permanently *(flag removed
-by ADR-0024; the draft-only policy stands)*. Instead, the
+Automation never invokes `/blueprint:work-order`. As accepted,
+`disable-model-invocation: true` was to stay on it (and on
+`/blueprint:prp-execute`) permanently; ADR-0024 removed the flag and kept this
+draft-only policy, which the autopilot/autorun prompts now enforce. Instead, the
 level-2 `blueprint-autopilot` skill scans ready PRPs (confidence ≥ 9, via
 `confidence-scoring`) that lack a work order and files GitHub issues labeled
 `work-order-draft` carrying the full WO packet (or local files under

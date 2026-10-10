@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-10-09
+modified: 2026-10-10
 reviewed: 2026-04-25
 description: Create a work-order for isolated subagent execution, optionally linked to a GitHub issue. Use when breaking a PRP into delegatable tasks or spawning from an issue.
 args: "[--no-publish] [--from-issue N]"
@@ -221,6 +221,16 @@ Ask with the prompt in [references/next-action-prompt.md](references/next-action
 - "Create another work-order" → Run `/blueprint:work-order` again
 - "Delegate to subagent" → Provide handoff instructions for subagent execution
 - "I'm done" → Exit
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Read a draft issue | `gh issue view N --json number,title,body,labels,state` |
+| Promote a draft (label swap) | `gh issue edit N --remove-label work-order-draft --add-label work-order` |
+| Link the WO on the issue | `gh issue comment N --body-file -` |
+| Publish a new WO issue | `gh issue create --title "[WO-NNN] ..." --body-file <wo.md> --label work-order` |
+| List open work orders | `gh issue list --label work-order --state open --limit 100 --json number,title` |
 
 ## Key Principles
 
