@@ -247,19 +247,26 @@ per-command with `--kube-context`, or in `skaffold.yaml` via `deploy.kubeContext
 The `inject-kubectl-dry-run.sh` PreToolUse hook rewrites a lone
 `kubectl apply|delete|patch …` to carry `--dry-run=client` and allows it, so
 the first run shows what would change. Re-run with `--dry-run=none` to apply
-for real; a kubectl call that already carries any `--dry-run` is left alone.
+for real; a kubectl call that already carries any `--dry-run` (also spelled
+`--dry_run`, or split by quotes or a line continuation as in `--dry-r''un`)
+is left alone.
 
-The decision is made on the `ast-grep --lang bash` parse (issue #2734). The
-flag goes at the end of the kubectl command node, because kubectl uses the last
-`--dry-run` it sees, so the flag beats any earlier override that the text check
-does not catch, such as `--dry_run=none`. A second copy goes right after the
-verb, in case an unseen `--` turns the trailing one into a positional argument:
+The decision is made on the `ast-grep --lang bash` parse (issues #2734, #2887).
+The hook allows only a single kubectl call whose words it can read in full,
+after joining line continuations the way bash does; everything else goes to
+your normal permission flow.
+The flag goes at the end of the kubectl command node, because kubectl uses the
+last `--dry-run` it sees, and a second copy goes right after the verb:
 
 | Command shape | Result |
 |---------------|--------|
 | One simple `kubectl apply\|delete\|patch` command, optionally with a trailing comment | Rewritten (`kubectl apply --dry-run=client -f x.yaml --dry-run=client # note`) and allowed |
 | The command has a `--` argument (also when quoted, as in `'--'` or `\--`), which ends option parsing | **No output** |
-| Anything beyond one simple command — `&&`, `;`, a pipe, a redirect, a heredoc, a substitution, a subshell or loop | **No output**: not rewritten, not allowed — your normal permission flow decides |
+| Anything beyond one simple command — `&&`, `;`, a pipe, a redirect (leading or trailing), a heredoc, a herestring, a substitution, a subshell or loop | **No output**: not rewritten, not allowed — your normal permission flow decides |
+| Any `$`, backtick, `{`, `<`, `>`, `*`, `?` or `[` in the kubectl command — an expansion, substitution, brace expansion or glob, and also a JSON patch such as `-p '{"spec":…}'` | **No output** |
+| `--raw` (kubectl sends the raw request before it reads `--dry-run`), `--profile…` or `--cache-dir` (a dry run still writes those files), also when split by a line continuation (`--ra\` then `w` on the next line) | **No output** |
+| An environment assignment before `kubectl` other than `KUBECONFIG=…`, such as `PATH=…` or `LD_PRELOAD=…`, which can run another binary or library | **No output** |
+| The last word is a flag without `=`, such as `-o` or `--as`, which would take the injected flag as its value | **No output** |
 | `kubectl apply` only in quoted text, a heredoc body, or `bash -c "…"` | Not a kubectl node, so not rewritten |
 | `ast-grep` missing or failing, a parse ERROR, or an unterminated quote | **No output** |
 
