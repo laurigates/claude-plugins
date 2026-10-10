@@ -1751,7 +1751,7 @@ printf 'tmp/\n' > "$IGN_REPO/.gitignore"
 
 TRK_REPO=$(new_tmp_repo)
 [ -n "$TRK_REPO" ] && [ -d "$TRK_REPO" ] || { echo "FATAL: invalid sandbox dir '$TRK_REPO'" >&2; exit 1; }
-git -C "$TRK_REPO" add tmp/a.txt
+git -C "$TRK_REPO" add -f tmp/a.txt
 git -C "$TRK_REPO" commit -q -m init
 
 FORCED_REPO=$(new_tmp_repo)
