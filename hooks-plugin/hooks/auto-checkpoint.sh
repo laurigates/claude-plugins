@@ -51,17 +51,17 @@ create_checkpoint() {
       # through to the store, matching the original behaviour exactly.
       prev_msg=$(git stash list --format='%gs' 2>/dev/null | sed -n '1p' || true)
       case "$prev_msg" in
-        "auto-checkpoint before "*)
-          new_tree=$(git rev-parse --quiet --verify "${commit}^{tree}" 2>/dev/null || true)
-          old_tree=$(git rev-parse --quiet --verify 'stash@{0}^{tree}' 2>/dev/null || true)
-          if [ -n "$new_tree" ] && [ "$new_tree" = "$old_tree" ]; then
-            # Quiet by design: a skipped checkpoint is not user-actionable
-            # (nothing is wrong; the protection is already in place), and
-            # stderr from a PreToolUse hook reaches the agent's context for
-            # every command in a loop — the exact noise this hook fights.
-            return 0
-          fi
-          ;;
+      "auto-checkpoint before "*)
+        new_tree=$(git rev-parse --quiet --verify "${commit}^{tree}" 2>/dev/null || true)
+        old_tree=$(git rev-parse --quiet --verify 'stash@{0}^{tree}' 2>/dev/null || true)
+        if [ -n "$new_tree" ] && [ "$new_tree" = "$old_tree" ]; then
+          # Quiet by design: a skipped checkpoint is not user-actionable
+          # (nothing is wrong; the protection is already in place), and
+          # stderr from a PreToolUse hook reaches the agent's context for
+          # every command in a loop — the exact noise this hook fights.
+          return 0
+        fi
+        ;;
       esac
       if git stash store -m "auto-checkpoint before ${reason} (${timestamp})" "$commit" 2>/dev/null; then
         echo "Created checkpoint stash before ${reason}. Recover with: git stash list" >&2
@@ -91,8 +91,8 @@ if echo "$COMMAND" | grep -Eq 'git\s+restore\s+' && ! echo "$COMMAND" | grep -q 
 fi
 
 # rm -rf with multiple files or directories (not just build artifacts)
-if echo "$COMMAND" | grep -Eq 'rm\s+(-rf|-fr)\s+' && \
-   ! echo "$COMMAND" | grep -Eq 'rm\s+(-rf|-fr)\s+(node_modules|dist|build|\.next|\.cache|__pycache__|\.pytest_cache|target|\.build)\b'; then
+if echo "$COMMAND" | grep -Eq 'rm\s+(-rf|-fr)\s+' &&
+  ! echo "$COMMAND" | grep -Eq 'rm\s+(-rf|-fr)\s+(node_modules|dist|build|\.next|\.cache|__pycache__|\.pytest_cache|target|\.build)\b'; then
   create_checkpoint "rm -rf"
   exit 0
 fi
