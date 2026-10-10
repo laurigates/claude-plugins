@@ -47,7 +47,7 @@ assert() {
 }
 
 field() { printf '%s\n' "$1" | grep -m1 "^$2=" | cut -d= -f2; }
-contains() { printf '%s' "$1" | grep -q "$2" && echo true || echo false; }
+contains() { grep -q "$2" <<<"$1" && echo true || echo false; }
 
 echo "=== TEST A: real repo is ERROR-free ==="
 real_out="$(bash "$checker" --project-dir "$repo_root")"

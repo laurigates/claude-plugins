@@ -47,7 +47,7 @@ assert() {
   fi
 }
 
-contains() { printf '%s' "$1" | grep -qF -- "$2" && echo true || echo false; }
+contains() { grep -qF -- "$2" <<<"$1" && echo true || echo false; }
 lacks() { [ "$(contains "$1" "$2")" = "false" ] && echo true || echo false; }
 
 # make_skill <path> <body>

@@ -120,7 +120,7 @@ echo ""
 echo "corruption guard: file content never echoed back:"
 BSC_SENTINEL='export const SENTINEL_CONTENT_MARKER = 1;'
 BSC_OUT_SENTINEL="$(bsc_run "$(bsc_payload Write src/sentinel.ts '' "$BSC_SENTINEL" sentinel-1)")"
-if printf '%s' "$BSC_OUT_SENTINEL" | grep -qF "SENTINEL_CONTENT_MARKER"; then
+if grep -qF "SENTINEL_CONTENT_MARKER" <<<"$BSC_OUT_SENTINEL"; then
     bsc_fail "file content leaked into hook output; got: $BSC_OUT_SENTINEL"
 else
     bsc_pass "file content does not appear anywhere in the hook output"

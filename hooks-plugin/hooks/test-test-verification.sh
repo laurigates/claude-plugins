@@ -91,7 +91,7 @@ assert_exit() {
 
 assert_contains() {
     local desc="$1" pattern="$2" actual="$3"
-    if echo "$actual" | grep -q "$pattern"; then
+    if grep -q "$pattern" <<<"$actual"; then
         printf "  PASS: %s\n" "$desc"
         PASS=$((PASS + 1))
     else
@@ -102,7 +102,7 @@ assert_contains() {
 
 assert_not_contains() {
     local desc="$1" pattern="$2" actual="$3"
-    if echo "$actual" | grep -q "$pattern"; then
+    if grep -q "$pattern" <<<"$actual"; then
         printf "  FAIL: %s (found forbidden '%s' in: %s)\n" "$desc" "$pattern" "$actual"
         FAIL=$((FAIL + 1))
     else

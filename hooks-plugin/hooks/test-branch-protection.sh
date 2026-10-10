@@ -92,7 +92,7 @@ assert_deny() {
   shift 2
   local out
   out=$(run_hook "$cmd_str" "$@")
-  if echo "$out" | grep -q '"permissionDecision":"deny"'; then
+  if grep -q '"permissionDecision":"deny"' <<<"$out"; then
     printf "  PASS: %s\n" "$desc"
     PASS=$((PASS + 1))
   else
@@ -268,7 +268,7 @@ assert_cwd_deny() {
   local desc="$1" cmd_str="$2" cwd_val="$3"
   local out
   out=$(run_hook_cwd "$cmd_str" "$cwd_val")
-  if echo "$out" | grep -q '"permissionDecision":"deny"'; then
+  if grep -q '"permissionDecision":"deny"' <<<"$out"; then
     printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
   else
     printf "  FAIL: %s\n        expected deny, got: %s\n" "$desc" "${out:-<empty>}"; FAIL=$((FAIL + 1))
@@ -452,7 +452,7 @@ fi
 # The same command in default mode (explicit) must still be denied — the gate
 # is auto-specific, not a blanket disable.
 out=$(run_hook_mode "git commit -m 'feat: x'" "default")
-if echo "$out" | grep -q '"permissionDecision":"deny"'; then
+if grep -q '"permissionDecision":"deny"' <<<"$out"; then
   printf "  PASS: %s\n" "git commit on main is still denied under permission_mode=default"
   PASS=$((PASS + 1))
 else

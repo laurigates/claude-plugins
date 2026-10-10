@@ -103,23 +103,23 @@ else
     && pass "check mode: exits 1 with issues" \
     || fail "check mode: expected exit 1, got $rc1. Output: $out1"
 
-  echo "$out1" | grep -q "Plugin 'valid-plugin' missing from release-please-config.json" \
+  grep -q "Plugin 'valid-plugin' missing from release-please-config.json" <<<"$out1" \
     && pass "check mode: identifies missing release-please-config entry" \
     || fail "check mode: failed to identify missing release-please-config entry"
 
-  echo "$out1" | grep -q "Orphaned entry 'orphaned-plugin' in release-please-config.json" \
+  grep -q "Orphaned entry 'orphaned-plugin' in release-please-config.json" <<<"$out1" \
     && pass "check mode: identifies orphaned release-please-config entry" \
     || fail "check mode: failed to identify orphaned release-please-config entry"
 
-  echo "$out1" | grep -q "Plugin 'valid-plugin' missing from .release-please-manifest.json" \
+  grep -q "Plugin 'valid-plugin' missing from .release-please-manifest.json" <<<"$out1" \
     && pass "check mode: identifies missing manifest entry" \
     || fail "check mode: failed to identify missing manifest entry"
 
-  echo "$out1" | grep -q "Plugin 'valid-plugin' missing from .claude-plugin/marketplace.json" \
+  grep -q "Plugin 'valid-plugin' missing from .claude-plugin/marketplace.json" <<<"$out1" \
     && pass "check mode: identifies missing marketplace entry" \
     || fail "check mode: failed to identify missing marketplace entry"
 
-  echo "$out1" | grep -q "Version mismatch for 'mismatch-plugin': manifest=1.0.0, marketplace=1.5.0" \
+  grep -q "Version mismatch for 'mismatch-plugin': manifest=1.0.0, marketplace=1.5.0" <<<"$out1" \
     && pass "check mode: identifies version mismatch" \
     || fail "check mode: failed to identify version mismatch. Output: $out1"
 
@@ -196,7 +196,7 @@ print("%s|%s|%s" % (a.get("name","") if isinstance(a,dict) else "", a.get("url",
     && pass "idempotency: exits 0 with no issues after fix" \
     || fail "idempotency: expected exit 0, got $rc3. Output: $out3"
 
-  echo "$out3" | grep -q "All plugin configurations are in sync!" \
+  grep -q "All plugin configurations are in sync!" <<<"$out3" \
     && pass "idempotency: reports all in sync" \
     || fail "idempotency: failed to report all in sync. Output: $out3"
 
