@@ -1,6 +1,6 @@
 ---
 created: 2026-01-15
-modified: 2026-07-26
+modified: 2026-10-09
 reviewed: 2026-07-26
 description: Validate ADR relationships, domain consistency, and duplicate ADR numbers. Use when auditing ADRs before release, finding broken supersedes/extends links, cycles, or number collisions.
 args: "[--report-only]"
@@ -82,13 +82,14 @@ deterministic guard:
 bash ${CLAUDE_SKILL_DIR}/scripts/check-adr-numbers.sh --project-dir "$(pwd)"
 ```
 
-It emits the structured `STATUS=` / `ISSUE_COUNT=` convention and reports four
+It emits `STATUS=` / `REASON=` / `ISSUE_COUNT=` and reports these
 classes (see [REFERENCE.md](REFERENCE.md#validation-rules)):
 
-- `duplicate_adr_number` (ERROR) — two files claim the same number, by `NNNN-title.md` **filename** or by a frontmatter `id: ADR-NNNN` claim. The message names the source (`basename` / `frontmatter`), so a claim from a file with no number in its name is legible.
+- `duplicate_adr_number` (ERROR) — two files claim the same number, by `NNNN-` / `ADR-NNN-` **filename** or frontmatter `id: ADR-NNNN`. The message names the source (`basename` / `frontmatter`).
 - `adr_number_collision` (ERROR) — a working-tree ADR claims a number a **different** file already holds on the base ref (`origin/main`) — the pre-merge parallel-PR case, caught before the second PR merges.
 - `adr_registry_mismatch` (ERROR) — a file claims `ADR-NNNN` but the manifest `id_registry` maps that number to a different path. The registry is the only arbiter resolving id → path unambiguously: two files can both *say* `ADR-0016`, only one can be registered. Silent with no manifest / no `id_registry`.
 - `adr_missing_index_row` (WARN) — an ADR is missing from the directory's README index (how the `0038` collision went unnoticed for a week). Repair via Step 2c instead of re-warning.
+- `adr_dir_unrecognized_naming` (WARN) — no ADR number recognised (#2822).
 
 **Multiple ADR directories** (issue #2129): the guard scans a directory *set* —
 the real ADR-0016 collision had its claimants in `docs/adrs/` and
