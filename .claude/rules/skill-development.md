@@ -1,6 +1,6 @@
 ---
 created: 2025-12-20
-modified: 2026-09-28
+modified: 2026-10-10
 reviewed: 2026-09-16
 paths:
   - "**/skills/**"
@@ -181,6 +181,7 @@ Skills inherit the user's active model by default. Tag a skill with `model:` onl
 |-----|---------|----------|
 | `model: opus` | Deep reasoning, multi-file orchestration, security review, architecture, long agentic chains | Skills that spawn many subagents, security audits, complex refactors, ADR/PRD synthesis |
 | `model: sonnet` | Mechanical / high-volume work that **Sonnet at low effort** can genuinely complete | CLI tool wrappers (fd, rg, jq), formatters, status checks, single-file lookups |
+| `model: haiku` + `effort: low` | A **report, listing, or user-driven terminal task** whose output ends the turn, with no `AskUserQuestion` | Script-backed status rollups, read-only listings, one-command wrappers the user types |
 | _(unset)_ | Everything in the middle | Default — inherits the user's active model |
 
 `model:` also accepts `fable` and `inherit` (Claude Code 2.1.255+). `inherit` is identical to leaving the field unset; `fable` is a turn-scoped override worth tagging only on a skill whose work is genuinely long-horizon or verification-heavy — otherwise the session model decides.
@@ -191,7 +192,10 @@ Skills inherit the user's active model by default. Tag a skill with `model:` onl
 
 **Hard constraints:**
 
-- **Do NOT use `model: haiku`.** Haiku 4.5 does not reliably format `AskUserQuestion` tool calls (fixed-forward in the lint check `check_skill_frontmatter()`), and the cost savings vs Sonnet are modest for the quality risk. Treat Sonnet as the floor.
+- **`model: haiku` only within its two limits.** The alias resolves to Haiku 5.5 since Claude Code 2.1.293, which supports `effort` and is an auto-mode model. The 2026-10 re-evaluation (`docs/audits/haiku-5.5-reevaluation-2026-10-10.md`) found two hazards, both enforced by `check_skill_frontmatter()`, which also requires an explicit `effort` beside `model: haiku` (Haiku 5.5 defaults to `medium`):
+  - **No `AskUserQuestion`.** Haiku 4.5 skills got empty prompts back (#881), and that has not been re-measured on 5.5.
+  - **No `user-invocable: false` without `context: fork`.** The override "applies for the rest of the current turn", so a skill only the model loads hands the work that loaded it to Haiku: an implementation after `git-branch-naming`, a fix loop after a test run. With `context: fork` the value sets only the fork's model. The lint cannot see the softer version of this: a user-invocable skill the model also calls mid-task (`code-lint` in a fix loop, `bun-add` before implementing). Judge that in review, and leave `model:` unset when the skill is a step inside larger work.
+- **Haiku's price advantage is smaller in Claude Code than on paper.** Its $0.10/$0.50 rate applies to prompts up to 100k tokens, and a session in this portfolio starts at about 127k (CLAUDE.md, rules, the skill listing, tool schemas), so it bills at $0.50/$2.50 — about a quarter of Sonnet ($2/$10 for both Sonnet 5, which the `sonnet` alias resolves to, and Sonnet 5.5), not a twentieth.
 - **Do NOT tag the middle.** If you can't articulate why the skill needs Opus or why Sonnet is enough, leave `model:` unset and let inheritance decide.
 - The `model:` field is also supported in agent definitions (see `.claude/rules/agent-development.md`).
 

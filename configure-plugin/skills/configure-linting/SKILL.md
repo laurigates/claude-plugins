@@ -53,7 +53,7 @@ Execute this linting configuration check:
 
 ### Step 1: Detect project language and existing linters
 
-Read the context values above and determine:
+Read the values in [Context](#context) and determine:
 
 | Indicator | Language | Detected Linter |
 |-----------|----------|-----------------|

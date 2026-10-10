@@ -109,7 +109,8 @@ jobs:
           # This is the level-2 /blueprint:autopilot pass, run out-of-band. Due
           # tasks come pre-computed above (${{ steps.due.outputs.due }}). Draft
           # work-order proposals are labeled work-order-draft and deduped —
-          # never promoted here (that stays the human /blueprint:work-order act).
+          # never promoted here (promotion is a reviewed /blueprint:work-order
+          # --from-issue run or a work-order-approved label; ADR-0024).
           prompt: |
             Run the blueprint autopilot pass for autonomy level 3, quietly.
 
@@ -122,7 +123,8 @@ jobs:
             - feature-tracker-sync -> apply only drain-evidence-backed completions
             - story-audit      -> write only its dated artifact under docs/blueprint/audits/
             Never AskUserQuestion; never invoke /blueprint:work-order or
-            /blueprint:prp-execute (both human-only).
+            /blueprint:prp-execute (this pass only drafts; committing a work
+            order or executing a PRP is a reviewed step outside it).
 
             Then draft work-order PROPOSALS for ready PRPs (confidence >= 9) that
             lack a work order: file a GitHub issue titled
