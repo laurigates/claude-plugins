@@ -1,6 +1,6 @@
 # meta-context-diet — Batch-Approval Mode for Large Surfaces
 
-Moved verbatim from [SKILL.md](../SKILL.md) (Step 4). Open when the audit has
+Detail for [SKILL.md](../SKILL.md) Step 4. Open when the audit has
 roughly 15 or more candidates, when building a candidate's question, or for why
 the two disposition classes confirm differently.
 

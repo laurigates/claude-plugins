@@ -17,7 +17,9 @@ Drop, or `docs/` move that only repoints markdown links silently breaks them.
 1. **`Grep` the rule's file name** — with and without `.md` — across the whole
    tree, hidden paths included and `.git` excluded. Search everywhere, not only
    `.claude/` and docs: code comments in `.tf`, `.yaml`, or `.js` files cite rule
-   paths too.
+   paths too. For a `CLAUDE.md` `##` section candidate there is no file name
+   to grep: grep the heading text, its anchor slug (e.g. `#git-workflow`), and
+   `CLAUDE.md § <heading>` / `CLAUDE.md §<heading>` citations instead.
 2. **Check for indexers and non-Claude agent entry points**: `AGENTS.md`,
    `.github/copilot-instructions.md`, and any script, bot, or config that globs
    `.claude/rules` — for example a curriculum or search indexer built from

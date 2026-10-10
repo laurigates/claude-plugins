@@ -1,9 +1,9 @@
 ---
 created: 2026-06-16
-modified: 2026-10-09
+modified: 2026-10-10
 compatibility: claude-code
 reviewed: 2026-07-08
-allowed-tools: Glob, Grep, Read, Edit, Write, Bash(git status *), Bash(git diff *), Bash(git add *), Bash(git commit *), Bash(wc *), Bash(ls *), AskUserQuestion, TodoWrite
+allowed-tools: Glob, Grep, Read, Edit, Write, Bash(git status *), Bash(git diff *), Bash(git add *), Bash(git commit *), Bash(git switch *), Bash(wc *), Bash(ls *), AskUserQuestion, TodoWrite
 model: opus
 description: Audit CLAUDE.md and .claude/rules for always-loaded content that should become an on-demand skill. Use when CLAUDE.md feels bloated, trimming context, or promoting a rule into a skill.
 args: "[scope-path]"
@@ -67,6 +67,7 @@ For each rule file or `CLAUDE.md` section, assign exactly one disposition. The d
 |---|---|---|
 | **Keep — hard invariant** | An always-respected constraint whose violation is a bug even when unmentioned (security boundaries, "never force-push", commit-format that drives release automation, destructive-op guards) | Imperative, unconditional, cheap to keep; the cost of *missing* it is high |
 | **Keep but lean** | A hard invariant wrapped in explanation, examples, or tables that belong in a linked doc/REFERENCE, or `docs/<topic>.md` on a sweep path consumer | The invariant is one sentence; the file is 200 lines |
+| **Lean-to-pointer** | Keep-but-lean's destructive shape: the body moves to `docs/<topic>.md` and the rule keeps only a one-line pointer, no invariant | A sweep path consumer rules out Promote, and no line must hold every turn — confirmed per candidate at Step 4 |
 | **Path-scope** | Always-true *only when working on a specific file shape* (a language, a config format, a directory) | Advice keyed to "when editing X"; currently unscoped so it loads on every turn | 
 | **Promote to skill** | A **procedure/workflow triggered by intent** — steps you run *when* doing a task, not a constraint you hold *while* doing anything | Reads as "to do X: step 1…step N"; has a clear trigger ("when releasing", "when the build fails"); rarely relevant per-turn but heavy when present |
 | **Consolidate** | Duplicates another rule, a loaded plugin skill, or upstream `~/.claude/rules` | The same guidance exists elsewhere already paid for — **and that copy is current**, not a stale twin of the text being cut |
