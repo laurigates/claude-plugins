@@ -49,9 +49,9 @@
 # genuinely created during the session is still reported, in the SessionStart
 # repo, in a repo entered later, and through a linked worktree.
 #
-# Three further filters keep the block SATISFIABLE (issue #2686). A Stop hook
-# that cannot be cleared teaches the agent to ignore it, which is strictly
-# worse than a hook that never fires:
+# Four further filters keep the block SATISFIABLE (issues #2686, #2735). A
+# Stop hook that cannot be cleared teaches the agent to ignore it, which is
+# strictly worse than a hook that never fires:
 #
 #   4. Redundancy. A stash whose tree already equals the working tree holds
 #      nothing the tree does not, so reporting it is pure noise. That is the
@@ -76,10 +76,30 @@
 #      mutation the session made on purpose. Checkpoint entries are worded
 #      "verify …, then git stash drop"; hand-made stashes keep `pop`.
 #
-# Both new filters fail toward REPORTING: an unreadable `.reported` file or an
-# errored `git diff` leaves the stash in the report. Silence is the safe
-# degradation for a false ALARM (defences 1-3); reporting is the safe
-# degradation for information LOSS.
+#   7. Committed content (#2735, split out of #2652). A stash whose tree is
+#      already present among the trees of commits reachable from HEAD, the
+#      local branches, the remote refs and the tags holds nothing that is not
+#      recoverable from the history itself — the exact shape the #2652 thread
+#      records: checkpoints taken before a deletion whose files then landed
+#      in commits (`637f3c8a`, `ddd852ff`). Reporting one blocks Stop on work
+#      that already exists on a branch, and an agent under auto mode cannot
+#      drop it (the classifier refuses `git stash drop` as irreversible
+#      destruction). The scan is bounded twice, both bounds fail toward
+#      reporting: commits are limited to those CREATED SINCE THE SESSION
+#      START (an older bound would be a lie that suppresses; a missing bound
+#      disables the filter entirely), and to a fixed max-count so a large
+#      repo cannot stretch the Stop timeout. Refs/stash is deliberately
+#      EXCLUDED from the walk (`--branches --remotes --tags` + HEAD, not
+#      `--all`): with stash refs included every stash would trivially
+#      suppress its own and its neighbours' trees, including the case where
+#      the only other copy sits in another stash the user later drops. The
+#      3rd-parent guard from filter 4 applies here too: a tracked-tree match
+#      says nothing about a `push -u` stash's untracked payload.
+#
+# All new filters fail toward REPORTING: an unreadable `.reported` file, an
+# errored `git diff` or any failure in the committed-content walk leaves the
+# stash in the report. Silence is the safe degradation for a false ALARM
+# (defences 1-3); reporting is the safe degradation for information LOSS.
 #
 # Opt out entirely with CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER=1, matching the
 # convention in repo-deletion-safety.sh and its ten siblings.
@@ -87,23 +107,23 @@ set -euo pipefail
 
 # Opt out (#2686). Checked first so a disabled hook costs nothing.
 if [ "${CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER:-}" = "1" ]; then
-    exit 0
+  exit 0
 fi
 
 # Stable per-namespace filename. MUST stay byte-identical to the copy in
 # git-stash-session-init.sh — the two scripts have to agree on where a repo's
 # baseline lives.
 repo_key() {
-    local root="$1" key=""
-    if command -v shasum >/dev/null 2>&1; then
-        key=$(printf '%s' "$root" | shasum -a 256 2>/dev/null | cut -d' ' -f1)
-    elif command -v sha256sum >/dev/null 2>&1; then
-        key=$(printf '%s' "$root" | sha256sum 2>/dev/null | cut -d' ' -f1)
-    fi
-    if [ -z "$key" ]; then
-        key=$(printf '%s' "$root" | tr -c 'a-zA-Z0-9_-' '_')
-    fi
-    printf '%s' "${key:0:64}"
+  local root="$1" key=""
+  if command -v shasum >/dev/null 2>&1; then
+    key=$(printf '%s' "$root" | shasum -a 256 2>/dev/null | cut -d' ' -f1)
+  elif command -v sha256sum >/dev/null 2>&1; then
+    key=$(printf '%s' "$root" | sha256sum 2>/dev/null | cut -d' ' -f1)
+  fi
+  if [ -z "$key" ]; then
+    key=$(printf '%s' "$root" | tr -c 'a-zA-Z0-9_-' '_')
+  fi
+  printf '%s' "${key:0:64}"
 }
 
 # Absolute, symlink-resolved path of the git COMMON dir — the directory that
@@ -111,30 +131,30 @@ repo_key() {
 # which is what makes one stash namespace map to one baseline. MUST stay
 # byte-identical to the copy in git-stash-session-init.sh.
 stash_namespace() { # stash_namespace <cwd>
-    local cwd="$1" gcd=""
-    gcd=$(git -C "$cwd" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
-    if [ -z "$gcd" ]; then
-        # git < 2.31 has no --path-format; the bare form is relative to <cwd>.
-        gcd=$(git -C "$cwd" rev-parse --git-common-dir 2>/dev/null || true)
-        case "$gcd" in
-            ''|/*) ;;
-            *) gcd="$cwd/$gcd" ;;
-        esac
-    fi
-    if [ -z "$gcd" ]; then
-        return 0
-    fi
-    (cd "$gcd" 2>/dev/null && pwd -P) || printf '%s' "$gcd"
+  local cwd="$1" gcd=""
+  gcd=$(git -C "$cwd" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
+  if [ -z "$gcd" ]; then
+    # git < 2.31 has no --path-format; the bare form is relative to <cwd>.
+    gcd=$(git -C "$cwd" rev-parse --git-common-dir 2>/dev/null || true)
+    case "$gcd" in
+    '' | /*) ;;
+    *) gcd="$cwd/$gcd" ;;
+    esac
+  fi
+  if [ -z "$gcd" ]; then
+    return 0
+  fi
+  (cd "$gcd" 2>/dev/null && pwd -P) || printf '%s' "$gcd"
 }
 
 # Portable mtime in epoch seconds (GNU stat, then BSD stat, then 0).
 file_mtime() {
-    local mt
-    mt=$(stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null || echo 0)
-    case "$mt" in
-        ''|*[!0-9]*) printf '0' ;;
-        *) printf '%s' "$mt" ;;
-    esac
+  local mt
+  mt=$(stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null || echo 0)
+  case "$mt" in
+  '' | *[!0-9]*) printf '0' ;;
+  *) printf '%s' "$mt" ;;
+  esac
 }
 
 # True when the stash commit's tree already equals the working tree, i.e. the
@@ -150,10 +170,29 @@ file_mtime() {
 # Any git failure returns non-zero, i.e. "not redundant", so an odd repo state
 # degrades to reporting rather than to silent information loss.
 stash_is_redundant() { # stash_is_redundant <cwd> <stash-sha>
-    if git -C "$1" rev-parse --verify --quiet "$2^3" >/dev/null 2>&1; then
-        return 1
-    fi
-    git -C "$1" diff --quiet "$2" -- >/dev/null 2>&1
+  if git -C "$1" rev-parse --verify --quiet "$2^3" >/dev/null 2>&1; then
+    return 1
+  fi
+  git -C "$1" diff --quiet "$2" -- >/dev/null 2>&1
+}
+
+# Trees of commits whose content this session could not have added anything
+# to (#2735, filter 7): HEAD, the local branches, the remote refs and the
+# tags — NOT --all, which walks refs/stash and would let stashes suppress one
+# another (see the header). Bounded by the session start (filter 3's bound, so
+# the first observation is authoritative for THIS session) and by max-count,
+# so neither a long session nor a huge repo can stretch the 10s Stop budget.
+# A prune that misses an eligible commit costs a report, never a silence.
+#
+# An errored walk yields nothing; an EMPTY index leaves the caller's fixed-
+# string comparison unmatched, so the stash is REPORTED and a repo where git
+# log fails behaves exactly as it did before this filter existed.
+STASH_DEDUP_MAX_COMMITS=2000
+committed_trees() { # committed_trees <cwd> <bound-epoch>
+  git -C "$1" log --max-count="$STASH_DEDUP_MAX_COMMITS" \
+    HEAD --branches --remotes --tags --format='%T %ct' 2>/dev/null |
+    awk -v b="$2" '!seen[$1]++ && (b == 0 || ($2 + 0) >= b + 0) { print $1 }' ||
+    true
 }
 
 # Read JSON input from stdin and extract fields
@@ -166,23 +205,23 @@ STOP_HOOK_ACTIVE=$(echo "$INPUT" | jq -r '.stop_hook_active // false')
 # When Claude is already acting on a previous stop hook's feedback,
 # do not block again
 if [ "$STOP_HOOK_ACTIVE" = "true" ]; then
-    exit 0
+  exit 0
 fi
 
 # Guard: no working directory provided
 if [ -z "$CWD" ]; then
-    exit 0
+  exit 0
 fi
 
 # Guard: not a git repository
 if ! git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1; then
-    exit 0
+  exit 0
 fi
 
 # Sanitize session_id (keep only alnum, hyphens, underscores)
 SESSION_ID=$(echo "$SESSION_ID" | tr -cd 'a-zA-Z0-9_-')
 if [ -z "$SESSION_ID" ]; then
-    exit 0
+  exit 0
 fi
 
 # Resolve the stash namespace the stashes actually belong to. This is the key
@@ -190,7 +229,7 @@ fi
 # SessionStart cwd, and not the worktree toplevel (defence 1).
 STASH_ROOT=$(stash_namespace "$CWD")
 if [ -z "$STASH_ROOT" ]; then
-    exit 0
+  exit 0
 fi
 # Only used to name the location in the message the user reads.
 REPO_ROOT=$(git -C "$CWD" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$CWD")
@@ -209,53 +248,53 @@ CURRENT_STASHES=$(git -C "$CWD" stash list --format='%H|%gd|%ct|%gs' 2>/dev/null
 SESSION_START=$(file_mtime "${SESSION_BASELINE_DIR}/.session-start")
 
 if [ -f "$BASELINE_FILE" ] && [ ! -s "$BASELINE_FILE" ]; then
-    # Defence 2: present but 0 bytes. Every baseline this hook family writes
-    # carries a `# <namespace>` header, so a repo that legitimately had no
-    # stashes still yields a non-empty file. An empty one therefore means the
-    # capture failed or predates #2306 — the state is UNKNOWN, so treat
-    # everything present as pre-existing and say nothing this Stop.
-    {
-        printf '# %s\n' "$STASH_ROOT"
-        printf '%s\n' "$CURRENT_STASHES" | cut -d'|' -f1 | grep -v '^$' || true
-    } > "$BASELINE_FILE" 2>/dev/null || true
-    exit 0
+  # Defence 2: present but 0 bytes. Every baseline this hook family writes
+  # carries a `# <namespace>` header, so a repo that legitimately had no
+  # stashes still yields a non-empty file. An empty one therefore means the
+  # capture failed or predates #2306 — the state is UNKNOWN, so treat
+  # everything present as pre-existing and say nothing this Stop.
+  {
+    printf '# %s\n' "$STASH_ROOT"
+    printf '%s\n' "$CURRENT_STASHES" | cut -d'|' -f1 | grep -v '^$' || true
+  } >"$BASELINE_FILE" 2>/dev/null || true
+  exit 0
 fi
 
 if [ ! -f "$BASELINE_FILE" ]; then
-    # Defence 1: first time this session has observed this stash namespace.
-    # Record what was already here — bounded by the session start, so a stash
-    # the session itself created is NOT absorbed into the baseline — then fall
-    # through and judge the remainder normally. Without a session-start bound
-    # the only safe reading is that everything present is pre-existing, which
-    # degrades this namespace to silence.
-    mkdir -p "$SESSION_BASELINE_DIR" 2>/dev/null || true
-    {
-        printf '# %s\n' "$STASH_ROOT"
-        printf '%s\n' "$CURRENT_STASHES" | awk -F'|' -v s="$SESSION_START" '
+  # Defence 1: first time this session has observed this stash namespace.
+  # Record what was already here — bounded by the session start, so a stash
+  # the session itself created is NOT absorbed into the baseline — then fall
+  # through and judge the remainder normally. Without a session-start bound
+  # the only safe reading is that everything present is pre-existing, which
+  # degrades this namespace to silence.
+  mkdir -p "$SESSION_BASELINE_DIR" 2>/dev/null || true
+  {
+    printf '# %s\n' "$STASH_ROOT"
+    printf '%s\n' "$CURRENT_STASHES" | awk -F'|' -v s="$SESSION_START" '
             $1 == "" { next }
             s > 0 && $3 ~ /^[0-9]+$/ && $3 + 0 >= s + 0 { next }
             { print $1 }
         '
-    } > "$BASELINE_FILE" 2>/dev/null || true
-    if [ ! -s "$BASELINE_FILE" ]; then
-        # The capture could not be written (read-only baseline dir, full disk).
-        # A successful one always contains at least the header, so an unwritten
-        # or empty file here means this session has NO record of the namespace
-        # and no bound derived from it — there is no basis for any claim.
-        exit 0
-    fi
-    if [ "$SESSION_START" -eq 0 ]; then
-        # No marker and no prior observation: the capture we just made is the
-        # earliest bound available. It suppresses every stash present right now.
-        SESSION_START=$(file_mtime "$BASELINE_FILE")
-    fi
+  } >"$BASELINE_FILE" 2>/dev/null || true
+  if [ ! -s "$BASELINE_FILE" ]; then
+    # The capture could not be written (read-only baseline dir, full disk).
+    # A successful one always contains at least the header, so an unwritten
+    # or empty file here means this session has NO record of the namespace
+    # and no bound derived from it — there is no basis for any claim.
+    exit 0
+  fi
+  if [ "$SESSION_START" -eq 0 ]; then
+    # No marker and no prior observation: the capture we just made is the
+    # earliest bound available. It suppresses every stash present right now.
+    SESSION_START=$(file_mtime "$BASELINE_FILE")
+  fi
 fi
 
 # Fast path: nothing to report. Runs AFTER the capture so that entering a
 # stash-free repo still establishes its baseline (and, with no `.session-start`
 # marker, the session-start bound) before any stash exists there.
 if [ -z "$CURRENT_STASHES" ]; then
-    exit 0
+  exit 0
 fi
 
 BASELINE_HASHES=$(cat "$BASELINE_FILE" 2>/dev/null || true)
@@ -263,8 +302,17 @@ BASELINE_HASHES=$(cat "$BASELINE_FILE" 2>/dev/null || true)
 # stash rather than swallowing it — the conservative direction for this filter.
 REPORTED_HASHES=$(cat "$REPORTED_FILE" 2>/dev/null || true)
 if [ "$SESSION_START" -eq 0 ]; then
-    SESSION_START=$(file_mtime "$BASELINE_FILE")
+  SESSION_START=$(file_mtime "$BASELINE_FILE")
 fi
+
+# Filter 7's index (#2735), built once per Stop and shared by every stash.
+# "Unknown bound" (no marker, no prior observation) leaves SESSION_START at 0,
+# and committed_trees treats a 0 bound as "no epoch bound": the max-count cap
+# alone bounds the walk, and the filter stays available rather than
+# disappearing for exactly the sessions that lack a marker. On untracked-only
+# repos, `--branches --remotes --tags` can legitimately find no refs and walk
+# only what HEAD reaches — same intent as today, just cheaper.
+COMMITTED_TREES=$(committed_trees "$CWD" "$SESSION_START")
 
 # Compare: find stashes whose hashes are NOT in the baseline
 NOW=$(date +%s)
@@ -277,67 +325,78 @@ REPORTED_NOW=""
 HAS_CHECKPOINT=0
 
 while IFS='|' read -r hash ref ts subject; do
-    [ -z "$hash" ] && continue
-    [ -z "$ts" ] && continue
-    # A non-numeric timestamp cannot be reasoned about; skip rather than guess.
-    case "$ts" in
-        *[!0-9]*) continue ;;
-    esac
+  [ -z "$hash" ] && continue
+  [ -z "$ts" ] && continue
+  # A non-numeric timestamp cannot be reasoned about; skip rather than guess.
+  case "$ts" in
+  *[!0-9]*) continue ;;
+  esac
 
-    # Skip stashes that existed at session start (in the baseline)
-    if [ -n "$BASELINE_HASHES" ] && echo "$BASELINE_HASHES" | grep -qF "$hash" 2>/dev/null; then
-        continue
-    fi
+  # Skip stashes that existed at session start (in the baseline)
+  if [ -n "$BASELINE_HASHES" ] && grep -qF "$hash" <<<"$BASELINE_HASHES" 2>/dev/null; then
+    continue
+  fi
 
-    # Defence 3: a stash created before this session began cannot be a session
-    # stash, regardless of what the baseline does or does not contain.
-    if [ "$SESSION_START" -gt 0 ] && [ "$ts" -lt "$SESSION_START" ]; then
-        continue
-    fi
+  # Defence 3: a stash created before this session began cannot be a session
+  # stash, regardless of what the baseline does or does not contain.
+  if [ "$SESSION_START" -gt 0 ] && [ "$ts" -lt "$SESSION_START" ]; then
+    continue
+  fi
 
-    # Filter 5: already surfaced to the user earlier in this session. Reviewing
-    # a stash and keeping it deliberately must clear the block; only deleting
-    # the stash used to, which made the block unsatisfiable (#2686).
-    if [ -n "$REPORTED_HASHES" ] && printf '%s\n' "$REPORTED_HASHES" | grep -qF "$hash" 2>/dev/null; then
-        continue
-    fi
+  # Filter 5: already surfaced to the user earlier in this session. Reviewing
+  # a stash and keeping it deliberately must clear the block; only deleting
+  # the stash used to, which made the block unsatisfiable (#2686).
+  if [ -n "$REPORTED_HASHES" ] && grep -qF "$hash" <<<"$REPORTED_HASHES" 2>/dev/null; then
+    continue
+  fi
 
-    # Filter 4: nothing to recover. Runs LAST of the filters because it is the
-    # only one that costs a tree comparison (this hook's Stop timeout is 10s).
-    if stash_is_redundant "$CWD" "$hash"; then
-        continue
-    fi
+  # Filter 4: nothing to recover. Runs LAST of the filters because it is the
+  # only one that costs a tree comparison (this hook's Stop timeout is 10s).
+  if stash_is_redundant "$CWD" "$hash"; then
+    continue
+  fi
 
-    # This is a new stash created during the session
+  STASH_TREE=$(git -C "$CWD" rev-parse --quiet --verify "$hash^{tree}" 2>/dev/null || true)
+
+  # Filter 7 (#2735): the same, for content already committed on a branch —
+  # a checkpoint taken before a deletion whose files then landed in commits.
+  # When the tree hash cannot be resolved, or the index is EMPTY (an errored
+  # walk, a repo with no eligible refs and no commits), the comparison cannot
+  # match and the stash is REPORTED, consistent with this filter's fail-
+  # toward-reporting contract. A NON-EMPTY index only suppresses trees
+  # actually present in it, so a walk that stopped early (the max-count cap)
+  # can only over-report, never under-report.
+  if ! grep -qFx "$STASH_TREE" <<<"$COMMITTED_TREES"; then
     NEW_COUNT=$((NEW_COUNT + 1))
     AGE=$((NOW - ts))
     HOURS=$((AGE / 3600))
-    MINS=$(( (AGE % 3600) / 60 ))
+    MINS=$(((AGE % 3600) / 60))
     if [ "$HOURS" -gt 0 ]; then
-        AGE_STR="${HOURS}h ${MINS}m ago"
+      AGE_STR="${HOURS}h ${MINS}m ago"
     else
-        AGE_STR="${MINS}m ago"
+      AGE_STR="${MINS}m ago"
     fi
     # Filter 6: `pop` is wrong for a checkpoint this hook family made itself.
     # auto-checkpoint.sh writes its message through `git stash store -m`, which
     # stores it verbatim; `git stash push -m` would prefix "On <branch>: ".
     # Match both so the wording survives a change of mechanism.
     case "$subject" in
-        "auto-checkpoint before "*|*": auto-checkpoint before "*)
-            ACTION="verify against the working tree, then git stash drop"
-            HAS_CHECKPOINT=1
-            ;;
-        *)
-            ACTION="git stash pop"
-            ;;
+    "auto-checkpoint before "* | *": auto-checkpoint before "*)
+      ACTION="verify against the working tree, then git stash drop"
+      HAS_CHECKPOINT=1
+      ;;
+    *)
+      ACTION="git stash pop"
+      ;;
     esac
     NEW_STASHES="${NEW_STASHES}  ${ref} (${AGE_STR}): ${subject} → ${ACTION}\n"
     REPORTED_NOW="${REPORTED_NOW}${hash}"$'\n'
-done <<< "$CURRENT_STASHES"
+  fi
+done <<<"$CURRENT_STASHES"
 
 # No new stashes → exit silently
 if [ "$NEW_COUNT" -eq 0 ]; then
-    exit 0
+  exit 0
 fi
 
 # Remember what is about to be reported so the next Stop does not re-block on
@@ -346,17 +405,17 @@ fi
 # the user has not seen. The braces put the redirection failure itself inside
 # the suppressed group.
 if [ -n "$REPORTED_NOW" ]; then
-    { printf '%s' "$REPORTED_NOW" >> "$REPORTED_FILE"; } 2>/dev/null || true
+  { printf '%s' "$REPORTED_NOW" >>"$REPORTED_FILE"; } 2>/dev/null || true
 fi
 
 # Build the reason message for new session stashes only
 REASON="Found ${NEW_COUNT} git stash(es) created during this session in ${REPO_ROOT}. Review before exiting:\n"
 if [ "$HAS_CHECKPOINT" -eq 1 ]; then
-    # At least one entry is an auto-checkpoint, for which "pop or apply" is the
-    # wrong instruction; each line carries its own verb instead.
-    REASON="${REASON}\nSession stashes — review each one:\n${NEW_STASHES}"
+  # At least one entry is an auto-checkpoint, for which "pop or apply" is the
+  # wrong instruction; each line carries its own verb instead.
+  REASON="${REASON}\nSession stashes — review each one:\n${NEW_STASHES}"
 else
-    REASON="${REASON}\nSession stashes — pop or apply them:\n${NEW_STASHES}"
+  REASON="${REASON}\nSession stashes — pop or apply them:\n${NEW_STASHES}"
 fi
 REASON="${REASON}\nRun 'git stash list' to inspect, or 'git stash show -p stash@{N}' to review contents."
 REASON="${REASON}\nEach stash is reported once per session, so reviewing and keeping one clears this block. Set CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER=1 to silence the hook entirely."

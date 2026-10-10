@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.13.12](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.11...comfyui-plugin-v1.13.12) (2026-10-10)
+
+
+### Bug Fixes
+
+* **scripts:** sweep printf|echo "$var" | grep -q from every pipefail suite and widen lint Check 6 ([#2996](https://github.com/laurigates/claude-plugins/issues/2996)) ([32f124d](https://github.com/laurigates/claude-plugins/commit/32f124d41f428967305ef6beb564fd8ebc1f3279))
+
+## [1.13.11](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.10...comfyui-plugin-v1.13.11) (2026-10-09)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** separate Banned from Flagged in the registry-health template ([#2965](https://github.com/laurigates/claude-plugins/issues/2965)) ([db26601](https://github.com/laurigates/claude-plugins/commit/db26601cd2ac921fb57c2306d581f69a337c7a3f))
+
 ## [1.13.10](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.9...comfyui-plugin-v1.13.10) (2026-10-07)
 
 

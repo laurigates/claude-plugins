@@ -24,9 +24,9 @@ printf '{}' > "${biome_proj}/package.json"
 printf '{"formatter":{"enabled":true}}' > "${biome_proj}/biome.json"
 
 out1="$(bash "$check_script" --home-dir "$HOME" --project-dir "$biome_proj")"
-echo "$out1" | grep -q "^BIOME=true$" || fail "expected BIOME=true:\n$out1"
-echo "$out1" | grep -q "^RECOMMENDATION=configured$" || fail "expected RECOMMENDATION=configured:\n$out1"
-echo "$out1" | grep -q "^STATUS=OK$" || fail "expected STATUS=OK with biome configured:\n$out1"
+grep -q "^BIOME=true$" <<<"$out1" || fail "expected BIOME=true:\n$out1"
+grep -q "^RECOMMENDATION=configured$" <<<"$out1" || fail "expected RECOMMENDATION=configured:\n$out1"
+grep -q "^STATUS=OK$" <<<"$out1" || fail "expected STATUS=OK with biome configured:\n$out1"
 pass "biome.json detected and recommends configured"
 rm -rf "$biome_proj"
 
@@ -35,9 +35,9 @@ rm -rf "$biome_proj"
 # -----------------------------------------------------------------------------
 bare="$(mktemp -d)"
 out2="$(bash "$check_script" --home-dir "$HOME" --project-dir "$bare")"
-echo "$out2" | grep -q "^BIOME=false$" || fail "expected BIOME=false:\n$out2"
-echo "$out2" | grep -q "^RECOMMENDATION=setup$" || fail "expected RECOMMENDATION=setup for bare project:\n$out2"
-echo "$out2" | grep -q "^STATUS=WARN$" || fail "expected STATUS=WARN for bare project:\n$out2"
+grep -q "^BIOME=false$" <<<"$out2" || fail "expected BIOME=false:\n$out2"
+grep -q "^RECOMMENDATION=setup$" <<<"$out2" || fail "expected RECOMMENDATION=setup for bare project:\n$out2"
+grep -q "^STATUS=WARN$" <<<"$out2" || fail "expected STATUS=WARN for bare project:\n$out2"
 pass "bare project recommends setup"
 rm -rf "$bare"
 
@@ -48,8 +48,8 @@ legacy="$(mktemp -d)"
 printf '{}' > "${legacy}/package.json"
 printf '{}' > "${legacy}/.prettierrc"
 out3="$(bash "$check_script" --home-dir "$HOME" --project-dir "$legacy")"
-echo "$out3" | grep -q "^PRETTIER=true$" || fail "expected PRETTIER=true:\n$out3"
-echo "$out3" | grep -q "^RECOMMENDATION=migrate$" || fail "expected RECOMMENDATION=migrate for prettier-only:\n$out3"
+grep -q "^PRETTIER=true$" <<<"$out3" || fail "expected PRETTIER=true:\n$out3"
+grep -q "^RECOMMENDATION=migrate$" <<<"$out3" || fail "expected RECOMMENDATION=migrate for prettier-only:\n$out3"
 pass "legacy prettier-only project recommends migrate"
 rm -rf "$legacy"
 
@@ -84,7 +84,7 @@ run_probe() { # $1 = project dir; stdout returned, stderr captured to $probe_err
 }
 
 assert_ci_format() { # $1 = expected true|false, $2 = output, $3 = label
-  printf '%s\n' "$2" | grep -q "^CI_FORMAT=$1$" \
+  grep -q "^CI_FORMAT=$1$" <<<"$2" \
     || fail "expected CI_FORMAT=$1 for $3:\n$2"
   pass "CI_FORMAT=$1 — $3"
 }
@@ -158,7 +158,7 @@ while IFS='|' read -r label pkg; do
   assert_ci_format false "$out" "$label"
   [ "$status" -eq 0 ] || fail "expected exit 0 for $label (got $status)"
   [ -s "$probe_err" ] && fail "expected empty stderr for $label:\n$(cat "$probe_err")"
-  printf '%s\n' "$out" | grep -q "^=== END CONFIGURE FORMATTING ===$" \
+  grep -q "^=== END CONFIGURE FORMATTING ===$" <<<"$out" \
     || fail "expected complete structured output for $label:\n$out"
   pass "clean degradation — $label"
   rm -rf "$proj"
