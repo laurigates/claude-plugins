@@ -3,7 +3,7 @@ name: git-merge-hazards
 description: Traps in GitHub's merge machinery. Use when merging a PR, merging a stacked or serial PR chain, auditing whether a branch really landed, or merging over red CI.
 allowed-tools: Read, Grep, Glob, Bash(gh pr *), Bash(gh issue *), Bash(gh api *), Bash(git cherry *), Bash(git merge-tree *), Bash(git rev-parse *), Bash(git log *), Bash(git reflog *), Bash(git rebase *), Bash(git push *), Bash(git fetch *), Bash(just *), Bash(bash *), TodoWrite
 created: 2026-08-19
-modified: 2026-10-07
+modified: 2026-10-09
 reviewed: 2026-08-21
 ---
 
@@ -17,28 +17,27 @@ reviewed: 2026-08-21
 | Deciding whether a red PR can merge (§4) | Deciding whether a red AI-review check is a real finding → `github-actions-plugin:ai-review-max-turns` |
 | Merging an ad-hoc stacked chain (§2, §3) | Release-please PRs are piling up or conflicting → `git-plugin:release-please-pr-workflow` |
 
-Read before merging a PR, merging a stacked PR chain, auditing whether a branch
-really landed, or merging over red CI. The body below is the verbatim text of
-the promoted `~/.claude/rules/pr-merge-hazards.md` rule.
+The numbered sections are the verbatim text of the promoted
+`~/.claude/rules/pr-merge-hazards.md` rule.
 
 Notes that are *not* part of that body:
 
-- The `## Agentic Optimizations` table at the end is this skill's own command
-  index, not rule text. Leave it out when syncing with `pr-merge-hazards.md`.
-- §3 and §5's two follow-on subsections were moved verbatim into `references/`
-  for size; they are still rule text when syncing with `pr-merge-hazards.md`.
-- §6 is skill-only: it is not part of `pr-merge-hazards.md`.
+- The `## Agentic Optimizations` table is this skill's own command index;
+  leave it out when syncing with `pr-merge-hazards.md`.
+- §3 and §5's follow-on subsections moved verbatim into `references/`; they
+  are still rule text when syncing.
+- §6 and §4's merge-endpoint pointer are skill-only, not in `pr-merge-hazards.md`.
 
-- Two gates below — §1's merged-ness authority order and the whole of §4 — are
-  also reproduced verbatim in the `pr-merge-hazards.md` stub, because they are
+- Two gates — §1's merged-ness authority order and §4 (minus its skill-only
+  merge-endpoint pointer) — are also reproduced verbatim in the `pr-merge-hazards.md` stub, because they are
   read *while* the decision is being made. Edit both copies together.
-- §1 overlaps `git-plugin:deadbranch` Step 1.5 ("Reclassify squash-merged
-  branches"), which carries the same three signals scoped to branch cleanup.
+- §1 overlaps `git-plugin:deadbranch` Step 1.5, which carries the same three
+  signals scoped to branch cleanup.
 - §2 and §3 describe **ad-hoc** chains — PRs whose base is another PR's branch.
   A stack **registered with GitHub** (`gh stack`) retargets its upper PRs
   itself on merge, so the auto-close hazard and the manual retarget/rebase
   ordering do not apply there. See `git-plugin:git-stacked-prs`.
-- The two encoded recipes cited in §1 and §2 below are the author's own (a
+- The two encoded recipes cited in §1 and §2 are the author's own (a
   `just -g` recipe in `laurigates/dotfiles`, and a sweep script in
   `laurigates/claude-plugins`), not commands a plugin consumer already has.
   Read the authority ladder in §1 as the instruction; the recipe is a
@@ -117,6 +116,8 @@ a compile) **and** the same check already failing on `main`. Either alone is a
 guess — and a stale-green `main` lies, so check `createdAt` (2026-07: a "green"
 run was 21 days old; main hadn't compiled for three weeks).
 
+A `500` from the merge call may be GitHub, not the PR: run the stale-SHA control in
+[references/merge-endpoint-failures.md](references/merge-endpoint-failures.md) before changing the PR.
 
 ## 5. A **negated** closing keyword still closes the issue
 

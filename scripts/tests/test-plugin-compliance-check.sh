@@ -667,6 +667,55 @@ assert_absent "denylist: a blockquoted mention in a sidecar is not flagged" \
 
 rm -rf "${root:?}/$PLUGIN/skills/sidecarban"
 
+# ============================================================================
+# git-plugin scope-required pin covers git-pr (issue #2774)
+#
+# The pin in check_skill_body() keys off plugin == git-plugin AND the skill
+# name, so the fixture plugin is renamed to git-plugin for this section and the
+# sandbox metadata is rewritten to match. git-pr is one of the three names #2774
+# added beside git-commit / github-pr-title; a body that shows the
+# `type(scope)` template but never says the scope is required must FAIL, and the
+# same body carrying the sentence must PASS clean.
+# ============================================================================
+write_plugin_metadata() {
+  write_marketplace "$CLEAN_META"
+  cat > "$root/release-please-config.json" <<JSON
+{
+  "packages": {
+    "${PLUGIN}": {
+      "component": "${PLUGIN}",
+      "release-type": "simple"
+    }
+  }
+}
+JSON
+  printf '{\n  "%s": "1.0.0"\n}\n' "$PLUGIN" > "$root/.release-please-manifest.json"
+  mkdir -p "$root/$PLUGIN/.claude-plugin"
+  write_manifest "$CLEAN_META"
+  printf '# %s\n\nFixture.\n' "$PLUGIN" > "$root/$PLUGIN/README.md"
+}
+PLUGIN_SAVED="$PLUGIN"
+PLUGIN="git-plugin"
+write_plugin_metadata
+
+make_skill git-pr with
+printf '\n## PR Title Format\n\n```\n<type>(<scope>): <subject>\n```\n' \
+  >> "$root/$PLUGIN/skills/git-pr/SKILL.md"
+run_check; out_scope_missing="$OUT"; rc_scope_missing="$RC"
+assert_eq "scope pin: git-pr without the sentence exits 1" "$rc_scope_missing" "1"
+assert_contains "scope pin: git-pr without the sentence is flagged ❌" \
+  "$out_scope_missing" "❌ git-plugin/git-pr: SKILL.md must state 'The scope is required'"
+
+printf '\n**The scope is required.** Write `type(scope): …`.\n' \
+  >> "$root/$PLUGIN/skills/git-pr/SKILL.md"
+run_check; out_scope_ok="$OUT"; rc_scope_ok="$RC"
+assert_eq "scope pin: git-pr with the sentence exits 0" "$rc_scope_ok" "0"
+assert_absent "scope pin: git-pr with the sentence raises no scope issue" \
+  "$out_scope_ok" "must state 'The scope is required'"
+
+rm -rf "${root:?}/git-plugin"
+PLUGIN="$PLUGIN_SAVED"
+write_plugin_metadata
 # ---------------------------------------------------------------------------
 # configure-* portfolio standards (#2757, #2745, #2824).
 #
