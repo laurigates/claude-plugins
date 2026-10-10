@@ -36,8 +36,8 @@ assert() {
     fail_count=$((fail_count + 1))
   fi
 }
-contains() { printf '%s' "$1" | grep -q -- "$2" && echo true || echo false; }
-lacks() { printf '%s' "$1" | grep -q -- "$2" && echo false || echo true; }
+contains() { grep -q -- "$2" <<<"$1" && echo true || echo false; }
+lacks() { grep -q -- "$2" <<<"$1" && echo false || echo true; }
 
 # The stub prints $GH_STUB_JSON for `gh issue list`, records its argv, and exits
 # $GH_STUB_RC. Anything else is an unexpected call and fails loudly.
