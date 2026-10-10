@@ -165,6 +165,8 @@ assert_lint "test-*.sh fixtures are skipped by the sed check" "0 0 0" "$d11"
 #    (#2959). grep -q exits on its first match, the writer takes SIGPIPE, and
 #    pipefail reports a hit as a miss. Scope is any *.sh directly inside a
 #    tests/ directory, plus <plugin>/hooks/test-*.sh, that enables pipefail.
+#    pipefail reports a hit as a miss. Scope is scripts/tests/*.sh and
+#    <plugin>/hooks/test-*.sh that enable pipefail.
 
 # 12. Positive: the exact line-77 shape from test-lint-package-references.sh,
 #     plus an `echo | grep -qx` in a hook suite -> one ERROR each, exit 1.
