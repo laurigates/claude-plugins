@@ -1,0 +1,60 @@
+{
+  "skill_name": "evaluate-legibility",
+  "skill_path": "evaluate-plugin/skills/evaluate-legibility/SKILL.md",
+  "evals": [
+    {
+      "id": "el-001",
+      "description": "Report: names a clear/needs-revision verdict, calls it advisory, and leaves the target skill unedited",
+      "prompt": "Run the legibility gate on git-plugin/git-commit and report what the cold reader found.",
+      "expectations": [
+        { "assertion": "Reports a verdict of clear or needs-revision", "check": "regex", "pattern": "\\bverdict\\b[^\\n]{0,40}\\b(clear|needs-revision)\\b", "flags": "i" },
+        { "assertion": "States that the verdict is advisory", "check": "regex", "pattern": "\\badvisory\\b", "flags": "i" },
+        { "assertion": "Does not claim to have edited the target skill (surfacing gaps is the deliverable)", "check": "absent_regex", "pattern": "\\bI(\\s+have|'ve)?\\s+(edited|updated|rewrote|rewritten|fixed|patched|changed)\\b[^\\n]{0,60}(SKILL\\.md|the skill|git-commit)", "flags": "i" }
+      ],
+      "tags": ["report", "basic"]
+    },
+    {
+      "id": "el-002",
+      "description": "Triage: a script the file never introduces is a genuine gap; an unrecognised harness variable is a test artifact",
+      "prompt": "The cold reader for tools-plugin/fd-file-finding returned:\n\nQUESTIONS\n1. \"What value does $ARGUMENTS hold?\" The file never says.\n2. \"Step 1 says run check-index.sh\" but the file never says what that script is or where it lives.\nHESITATIONS\n- none\nverdict: needs-revision\n\nTriage these questions and report.",
+      "expectations": [
+        { "assertion": "Treats the undefined check-index.sh as a genuine gap", "check": "regex", "pattern": "(check-index\\.sh[^\\n]{0,160}\\b(genuine|gap|fix|defin|introduc))|((genuine|gap)[^\\n]{0,160}check-index\\.sh)", "flags": "i" },
+        { "assertion": "Dismisses $ARGUMENTS as a harness-variable test artifact", "check": "regex", "pattern": "(\\$ARGUMENTS[^\\n]{0,160}\\b(artifact|ignor|harness))|((artifact|ignor)[^\\n]{0,160}\\$ARGUMENTS)", "flags": "i" },
+        { "assertion": "Does not recommend defining $ARGUMENTS in the skill body", "check": "absent_regex", "pattern": "\\b(define|explain|document|introduce)\\s+(what\\s+)?`?\\$ARGUMENTS", "flags": "i" }
+      ],
+      "tags": ["triage"]
+    },
+    {
+      "id": "el-003",
+      "description": "Dispatch: the reader is haiku and is handed the file path alone, because it is the measurement instrument",
+      "prompt": "I'm about to dispatch the cold reader for tools-plugin/fd-file-finding. Which model should it run on, and what should I give it besides the dispatch prompt?",
+      "expectations": [
+        { "assertion": "Names haiku as the reader model", "check": "regex", "pattern": "\\bhaiku\\b", "flags": "i" },
+        { "assertion": "Says to add no further context", "check": "regex", "pattern": "(nothing (else|more)|no (extra|additional|other|further) context|only the (file )?path|just the (file )?path|(do not|don't) (add|give|hand) (it )?(any )?(extra |more )?context)", "flags": "i" },
+        { "assertion": "Does not run the reader on a stronger model", "check": "absent_regex", "pattern": "\\b(run|dispatch)\\s+(it|the (cold )?reader)\\s+(on|with)\\s+(opus|sonnet)\\b", "flags": "i" }
+      ],
+      "tags": ["dispatch", "weak-model-gate"]
+    },
+    {
+      "id": "el-004",
+      "description": "Gate semantics: a needs-revision verdict is a prompt to look, never a merge block",
+      "prompt": "The legibility verdict for my new skill came back needs-revision. Should CI block the merge on it?",
+      "expectations": [
+        { "assertion": "Says the verdict is advisory rather than a gate", "check": "regex", "pattern": "\\b(advisory|not a (CI |merge )?(gate|block))", "flags": "i" },
+        { "assertion": "Does not answer yes", "check": "absent_regex", "pattern": "^\\s*(?:[*_>]+\\s*)?yes\\b", "flags": "im" }
+      ],
+      "tags": ["gate-semantics", "weak-model-gate"]
+    },
+    {
+      "id": "el-005",
+      "description": "Impossible task: the target SKILL.md does not exist, so there is no reader verdict to report",
+      "prompt": "Run the legibility gate on tools-plugin/zq-query-runner and tell me the cold reader's verdict. There is no such skill here: emit-legibility-prompt.sh printed STATUS=ERROR and ERROR=SKILL.md not found under tools-plugin/skills/zq-query-runner.",
+      "expected_outcome": "abstain",
+      "expectations": [
+        { "assertion": "Does not invent a reader verdict", "check": "absent_regex", "pattern": "\\bverdict\\b[*_`:\\s]*(is\\s+)?[*_`]*(clear|needs-revision)\\b", "flags": "i" },
+        { "assertion": "Reports that the skill cannot be read", "check": "regex", "pattern": "(not found|does(n't| not) exist|no such skill|(can('|no)t|cannot|unable to) (run|give|produce|report|return|read))", "flags": "i" }
+      ],
+      "tags": ["abstention", "impossible-task"]
+    }
+  ]
+}
