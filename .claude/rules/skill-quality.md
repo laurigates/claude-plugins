@@ -1,6 +1,6 @@
 ---
 created: 2026-03-02
-modified: 2026-10-07
+modified: 2026-10-10
 reviewed: 2026-09-02
 paths:
   - "**/skills/**"
@@ -181,7 +181,7 @@ Skills inherit the user's active model by default. Set `model:` only at the **ex
 | `sonnet` | Only when measured: Sonnet at low effort has been shown to suffice for this skill (`skill-evaluation.md` Tier 2) |
 | _(unset)_ | Everything in the middle — let the user's active model decide |
 
-**Sonnet is the floor.** `model: haiku` is disallowed: Haiku 4.5 does not reliably format `AskUserQuestion` tool calls and the cost savings vs Sonnet are modest for the quality risk. The lint check in `plugin-compliance-check.sh` errors on `model: haiku`.
+`model: haiku` (Haiku 5.5) with `effort: low` fits a report, listing, or user-driven terminal skill whose output ends the turn. `plugin-compliance-check.sh` errors on haiku with `AskUserQuestion`, and on haiku on a `user-invocable: false` skill without `context: fork`. See `skill-development.md` for why.
 
 ## Supporting Files Pattern
 
@@ -275,7 +275,7 @@ When reviewing skill/command changes:
 - [ ] Has "Agentic Optimizations" table (optional; keep where the commands are the payload)
 - [ ] Description matches user intents (not just tool jargon)
 - [ ] Description ≤ 150 chars with trigger keywords in the first ~120 chars (see "Description Length and the Listing Budget")
-- [ ] Model/effort selection follows the extremes-only rule (`opus` for deep reasoning, `effort: low` for mechanical tasks, both unset otherwise; never `haiku`)
+- [ ] Model/effort selection follows the extremes-only rule (`opus` for deep reasoning, `effort: low` for mechanical tasks, both unset otherwise; `haiku` only on a turn-ending report/listing skill)
 - [ ] Reference material extracted to REFERENCE.md if needed
 - [ ] Supporting files referenced with markdown links
 - [ ] No duplicate content with sibling skills

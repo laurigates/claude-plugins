@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.46.12](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.11...blueprint-plugin-v3.46.12) (2026-10-10)
+
+
+### Bug Fixes
+
+* **scripts:** sweep printf|echo "$var" | grep -q from every pipefail suite and widen lint Check 6 ([#2996](https://github.com/laurigates/claude-plugins/issues/2996)) ([32f124d](https://github.com/laurigates/claude-plugins/commit/32f124d41f428967305ef6beb564fd8ebc1f3279))
+
 ## [3.46.11](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.10...blueprint-plugin-v3.46.11) (2026-10-10)
 
 

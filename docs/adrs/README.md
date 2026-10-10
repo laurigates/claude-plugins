@@ -37,6 +37,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 | [0021](0021-open-knowledge-format-mapping-not-adopted.md) | Do Not Adopt the Open Knowledge Format (OKF) for Skills; Record Substrate Convergence | Proposed | 2026-07 |
 | [0022](0022-adapter-over-export-for-foreign-harnesses.md) | Adapter over Export — Runtime Skill Discovery for Foreign Harnesses | Accepted | 2026-07 |
 | [0023](0023-adr-required-sections-narrowed.md) | ADR Required Sections Narrowed to Context, Decision, Consequences | Accepted | 2026-09 |
+| [0024](0024-blueprint-work-order-model-invocable.md) | Make `/blueprint:work-order` and `/blueprint:prp-execute` Model-Invocable (partially supersedes 0020) | Accepted | 2026-10 |
 
 ## Categories
 
@@ -60,7 +61,8 @@ This repository was created by migrating Claude Code plugin configurations from 
 - ADR-0010: Proactive Document Detection
 - ADR-0011: Blueprint State in docs/ Directory
 - ADR-0012: Blog Plugin for Project Documentation
-- ADR-0020: Blueprint Autonomy Levels
+- ADR-0020: Blueprint Autonomy Levels (partially superseded by ADR-0024)
+- ADR-0024: Make `/blueprint:work-order` and `/blueprint:prp-execute` Model-Invocable
 
 ### CI/CD & Infrastructure
 - ADR-0014: Reusable GitHub Workflows in Plugin Repository (Superseded)

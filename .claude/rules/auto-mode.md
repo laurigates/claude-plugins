@@ -1,6 +1,6 @@
 ---
 created: 2026-04-29
-modified: 2026-09-28
+modified: 2026-10-10
 reviewed: 2026-09-16
 paths:
   - "**/skills/**"
@@ -24,7 +24,7 @@ Auto mode is conditional on every row of this table. If any row is unmet, auto m
 |-------------|-------|
 | Claude Code version | `v2.1.83` or later for auto mode |
 | Plan | All plans |
-| Model | Anthropic API / Claude Platform on AWS: Opus 4.6 or later, Sonnet 4.6 or later, or any Fable model. Bedrock / Google Agent Platform / Microsoft Foundry / apps-gateway: Sonnet 5, Opus 4.7 or later, or any Fable model. Haiku and older models unsupported on every provider |
+| Model | Anthropic API / Claude Platform on AWS: Opus 4.6 or later, Sonnet 4.6 or later, Haiku 5.5, or any Fable model. Bedrock / Google Agent Platform / Microsoft Foundry / apps-gateway: Sonnet 5, Opus 4.7 or later, Haiku 5.5 (Claude Code 2.1.293+), or any Fable model. Haiku 4.5 and older models are unsupported on every provider |
 | Provider | Anthropic API, Claude Platform on AWS, Amazon Bedrock, Google Cloud Agent Platform, Microsoft Foundry, signed-in Claude apps gateway |
 | Admin | On Team / Enterprise, available by default; admins can disable via `permissions.disableAutoMode` in managed settings |
 

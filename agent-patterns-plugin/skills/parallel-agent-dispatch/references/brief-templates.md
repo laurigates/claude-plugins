@@ -1,9 +1,10 @@
 # Parallel Agent Dispatch — Brief Templates and Verification
 
 Templates and evidence for writing a *brief*: the refactor/bulk-edit brief
-shape, the completion manifest, the verbatim-patch discipline for what the
-orchestrator must paste, and the two verification passes (the agent's own,
-and a separate reviewer's). Entry point: [`../SKILL.md`](../SKILL.md)
+shape and its context-budget clause, the completion manifest, the
+verbatim-patch discipline for what the orchestrator must paste, stage
+authority in multi-stage pipelines, and the two verification passes (the
+agent's own, and a separate reviewer's). Entry point: [`../SKILL.md`](../SKILL.md)
 § Scope Budget / § Agent self-verification / § Reviewer-agent verification.
 
 ## Refactor-brief template
@@ -30,9 +31,31 @@ manifest enumerating each item you actually completed, one
 `VERB: <item> (<location>)` line per item, plus `ASSIGNED: N` /
 `COMPLETED: M`. The orchestrator diffs it against the assignment.
 
+**Budget**: finish well within your context window. If the scope
+grows past what you can finish without compacting, stop and return the
+Return Contract now: `status: partial`, `Scope delivered`, `Deferred /
+skipped`, files touched (`commits` + `worktree`), and the next step in
+`Orchestrator action needed`. Budget overrides the Final step: on an
+early stop, run the regression script once, report its result in the
+Return Contract, and do not loop.
+
 **Final step**: run `<repo regression script>`; loop until exit 0
 before emitting the Return Contract.
 ```
+
+The **Budget** clause bounds the agent by task size, because no agent
+frontmatter field caps a subagent's context or tunes its compaction
+(`.claude/rules/agent-runtime.md` § Subagent context budget). It reuses the
+Return Contract fields from [dispatch-contract.md](dispatch-contract.md) as the
+state packet and adds none. Scope each brief to finish well under half the
+window, and check the returned packet against the branch and diff rather than
+trusting it.
+
+> Evidence: `experiments/subagent-compaction/README.md` (#2818) — one
+> 200k-window subagent auto-compacted at ~75% and returned its compaction
+> summary as a false completion report. Whether 1M-window subagents compact
+> and resume correctly (Q1–Q2 there) is still open, and the clause's own
+> effect is unmeasured. The report check costs almost nothing either way.
 
 > Evidence: issue [#1279](https://github.com/laurigates/claude-plugins/issues/1279)
 > — six agents, 41 plugins, cleanest batch hit 28.9% reduction with zero
@@ -124,3 +147,34 @@ permission to run the script and the requirement to clear it.
 > — three parallel-dispatch rounds; verify-then-fix caught a "ready to
 > merge" claim where helm-template did not confirm the hypothesis, and
 > the self-author guard prevented HTTP 422 across every fix PR.
+
+## Stage authority in multi-stage pipelines
+
+When a pipeline separates build from verify (implement → review → merge),
+authority is scoped per stage, and every brief stands on its own.
+
+- **Scope authority per stage.** Merge or publish authorization goes only into
+  the brief of the stage that owns it. Every build stage's brief ends with an
+  explicit stop: "stop at PR opened; do not merge". Being authorized at all is
+  enough for a capable agent to use the authorization at its first chance, and
+  a missing prohibition reads as permission. A shared constraints block pasted
+  into every brief is the usual way merge authority leaks into a build stage.
+- **No forward references.** Every brief, the review stage's included, carries
+  the user's decisions verbatim. A downstream stage cannot read an upstream
+  stage's prompt, so a brief that cites "the decision the user made" without
+  quoting it hands the reviewer nothing to review against. Authority grants
+  (merge/publish) are the exception: quote them only in the owning stage's
+  brief, and in build-stage briefs replace them with the explicit stop.
+
+Push authority is separate from merge authority: agents push their own commits
+in the normal case (SKILL.md § Who Pushes?), and pushing a branch or opening a
+PR never implies merging it.
+
+> Evidence: issue [#2902](https://github.com/laurigates/claude-plugins/issues/2902)
+> — an implement → review Workflow over four issues in
+> laurigates/mcu-tinkering-lab put "implement, review, fix and merge with no
+> further asks" in one constraints block shared by every stage. Three of the
+> four implement agents merged their own PRs (#701, #702, #708) on green CI
+> before their review stage started, so the reviews ran post-merge and a
+> confirmed fix needed a follow-up PR (#705). The review prompt also cited a
+> user decision it never included, which the #700 reviewer flagged as missing.

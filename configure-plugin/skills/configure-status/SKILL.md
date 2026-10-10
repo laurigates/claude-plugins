@@ -1,12 +1,14 @@
 ---
 created: 2025-12-16
-modified: 2026-07-05
+modified: 2026-10-10
 reviewed: 2026-07-05
 description: "Infrastructure compliance status (read-only). Use when checking overall compliance, generating a report, or reviewing project health without making changes."
 allowed-tools: Glob, Grep, Read, TodoWrite, Bash(bash *)
 args: "[--verbose]"
 argument-hint: "[--verbose]"
 name: configure-status
+model: haiku
+effort: low
 ---
 
 # /configure:status
@@ -74,7 +76,7 @@ bash "${CLAUDE_SKILL_DIR}/../<name>/scripts/<name>.sh" --project-dir "$(pwd)"
 ```
 
 For `HAS_SCRIPT=false` components, assess presence from the file-presence
-table in [REFERENCE.md](REFERENCE.md) using the Context probes above. Never
+table in [REFERENCE.md](REFERENCE.md) using the probes in [Context](#context). Never
 re-derive the component list by hand — new detection scripts automatically
 improve this skill via the manifest.
 

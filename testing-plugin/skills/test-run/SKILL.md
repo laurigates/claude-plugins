@@ -35,7 +35,7 @@ name: test-run
 
 **Delegate this task to the `test-runner` agent.**
 
-Use the Agent tool with `subagent_type: testing-plugin:test-runner` to run tests with the appropriate framework. Pass all the context gathered above and the parsed parameters to the agent.
+Use the Agent tool with `subagent_type: testing-plugin:test-runner` to run tests with the appropriate framework. Pass all the context gathered in [Context](#context) and the parsed parameters to the agent.
 
 The test-runner agent should:
 
@@ -72,7 +72,7 @@ The test-runner agent should:
    - If slow: optimization suggestions
 
 Provide the agent with:
-- All context from the section above
+- All context from [Context](#context)
 - The parsed parameters (pattern, --coverage, --watch)
 - Any specific test configuration detected
 

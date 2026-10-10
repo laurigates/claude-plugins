@@ -213,6 +213,25 @@ require_marker "$dispatch_skill" "completion manifest" "the manifest language in
 require_marker "$brief_templates_md" "#1601" "the completion-manifest reference (issue #1601)"
 require_marker "$brief_templates_md" "Completion manifest" "the manifest line in the refactor-brief template (issue #1601)"
 
+# Regression #2818: no agent frontmatter field caps a subagent's context, so a
+# brief copied from the refactor-brief template must carry its own exit rule —
+# one observed subagent compacted mid-task and returned its compaction summary
+# as a false completion report. The template's **Budget** clause tells the agent
+# to stop before compacting and return the Return Contract as a state packet.
+# Pin the clause literal so a bulk edit cannot silently drop it.
+require_marker "$brief_templates_md" "**Budget**: finish well within your context window" \
+  "the context-budget clause in the refactor-brief template (issue #2818)"
+
+# Regression #2902: one constraints block carrying merge authorization was
+# pasted into every stage of an implement -> review pipeline, and three of four
+# implement agents merged their own PRs before review. The fix scopes authority
+# per stage: build stages are told to stop at PR opened. Pin the prohibition
+# literal in the reference that owns the rationale and in the SKILL.md bullet.
+require_marker "$brief_templates_md" "stop at PR opened; do not merge" \
+  "the per-stage merge-authority prohibition (issue #2902)"
+require_marker "$dispatch_skill" "Scope authority per stage" \
+  "the per-stage authority bullet in Scope Budget (issue #2902)"
+
 # Regression #1969: an isolation:"worktree" dispatch creates a fresh worktree
 # with an AUTO-GENERATED branch name; when the agent later RENAMES onto a fixed
 # conventional target name already checked out by a concurrent session's
