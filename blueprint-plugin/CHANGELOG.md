@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.47.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.47.1...blueprint-plugin-v3.47.2) (2026-10-10)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** recognise ADR-NNN-title.md naming and registry drift in the ADR and ID checks ([#2980](https://github.com/laurigates/claude-plugins/issues/2980)) ([da62647](https://github.com/laurigates/claude-plugins/commit/da626474d4cbfca6c8c7ceacf2b107a227231d7d))
+
 ## [3.47.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.47.0...blueprint-plugin-v3.47.1) (2026-10-10)
 
 
