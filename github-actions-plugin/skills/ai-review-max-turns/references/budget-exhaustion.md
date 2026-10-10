@@ -1,6 +1,6 @@
 # AI Review — Cause 1: Budget Exhaustion
 
-Detail for the first row of the four-causes table in [SKILL.md](../SKILL.md).
+Detail for the first row of the five-causes table in [SKILL.md](../SKILL.md).
 
 ## Cause 1 — budget exhaustion (`error_max_turns`)
 
@@ -45,3 +45,12 @@ different subset of the AI jobs before the turn cap each time.
   `file-patterns`, gate on `max-diff-lines`, or have `error_max_turns` post a
   neutral continuation status instead of a hard fail. Tracked in
   `ForumViriumHelsinki/.github#79`.
+
+### When it bites
+
+- Any PR large enough that a per-file AI reviewer can't finish in its turn
+  budget — refactors, new-feature slices, multi-file guards (the rotating-failure
+  example in § The tell was 16 files).
+- Repos that later mark these AI checks **required** — there, the flake
+  *does* wedge the merge, which makes raising `max_turns` urgent rather than
+  cosmetic.
