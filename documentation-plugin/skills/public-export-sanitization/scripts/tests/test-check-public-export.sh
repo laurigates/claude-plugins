@@ -75,5 +75,40 @@ expect "D2: broken link flagged under --repo-root" 1 'broken link -> gone.md' --
 out="$(bash "$CHECK" --repo-root "$SANDBOX/repo" "$SANDBOX/repo/export" 2>&1)"
 if grep -q 'escapes boundary' <<<"$out"; then bad "D3: sibling link allowed under --repo-root"; else ok "D3: sibling link allowed under --repo-root"; fi
 
+# --- E: dot-directories are scanned; .git/ is not (#2820) ---------------------
+# rg skips hidden paths unless --hidden, so a hit that lives only under
+# .claude/ or .github/ used to come back "clean".
+mkdir -p "$SANDBOX/dotdir/.claude/rules" "$SANDBOX/dotdir/.github/workflows"
+printf 'Runs as deployer@acme-prod.iam.gserviceaccount.com.\n' > "$SANDBOX/dotdir/.claude/rules/infra.md"
+expect "E1: hit under .claude/rules/ is flagged" 1 'GCP service-account email' -- --no-links "$SANDBOX/dotdir"
+printf 'path: /home/alice/ci\n' > "$SANDBOX/dotdir/.github/workflows/ci.yml"
+expect "E2: hit under .github/ is flagged" 1 '\.github/workflows/ci\.yml' -- --no-links "$SANDBOX/dotdir"
+mkdir -p "$SANDBOX/gitdir/.git"
+printf 'project 123456789012\n' > "$SANDBOX/gitdir/.git/config"
+printf '# Clean\n' > "$SANDBOX/gitdir/doc.md"
+expect "E3: .git/ internals are not scanned" 0 'clean' -- --no-links "$SANDBOX/gitdir"
+# The link scan honours the same .git/ skip as the rg scans.
+printf 'See [x](../../outside.md).\n' > "$SANDBOX/gitdir/.git/x.md"
+expect "E4: .git/ is skipped by the link scan too" 0 'clean' -- "$SANDBOX/gitdir"
+
+# --- F: --names comment syntax (#2820) -----------------------------------------
+# Only a bare '#' or '#'+whitespace starts a comment; '#13280' is a literal entry.
+mkdir -p "$SANDBOX/names"
+printf 'Fixed in PR #13280 by the platform team.\n' > "$SANDBOX/names/doc.md"
+printf '#13280\n' > "$SANDBOX/hash.names"
+expect "F1: '#'-prefixed names entry is matched" 1 'Personal name: #13280' -- --no-links --names "$SANDBOX/hash.names" "$SANDBOX/names"
+printf '# platform\n  #\n\n' > "$SANDBOX/comment.names"
+expect "F2: '# comment' and bare '#' lines are ignored" 0 'clean' -- --no-links --names "$SANDBOX/comment.names" "$SANDBOX/names"
+printf '# authors\nplatform team\n' > "$SANDBOX/mixed.names"
+expect "F3: entry after a comment line still matches" 1 'Personal name: platform team' -- --no-links --names "$SANDBOX/mixed.names" "$SANDBOX/names"
+# A trailing '<ws># ...' is stripped, so an inline-commented entry still matches.
+printf 'platform team  # owners\n' > "$SANDBOX/inline.names"
+expect "F4: inline '# comment' tail is stripped" 1 'Personal name: platform team  \(' -- --no-links --names "$SANDBOX/inline.names" "$SANDBOX/names"
+# Names scan reaches dot-directories, and an unterminated final line is read.
+mkdir -p "$SANDBOX/names/.claude"
+printf 'Reviewed by Bob Jones.\n' > "$SANDBOX/names/.claude/r.md"
+printf 'Bob Jones' > "$SANDBOX/nonl.names"
+expect "F5: no-newline names entry matches under .claude/" 1 'Personal name: Bob Jones' -- --no-links --names "$SANDBOX/nonl.names" "$SANDBOX/names"
+
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [[ "$fail" -eq 0 ]]
