@@ -509,7 +509,7 @@
       "name": "kubernetes-plugin",
       "source": "./kubernetes-plugin",
       "description": "Kubernetes and Helm operations - deployments, charts, releases",
-      "version": "1.9.3",
+      "version": "1.9.4",
       "author": {
         "name": "Lauri Gates"
       },
