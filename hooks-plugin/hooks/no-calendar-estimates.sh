@@ -7,18 +7,24 @@
 # first detection; the agent revises; the stop_hook_active guard accepts the
 # revised response silently. The reason text carries the positive guidance
 # inline so it ships self-contained with the plugin — consumers don't need a
-# separate .claude/rules/ file. That guidance has two branches: agent *effort*
+# separate .claude/rules/ file. That guidance has three branches: agent *effort*
 # restates in tokens / effort tier / tool calls; external machine work the agent
 # *measured* (a CI run, build, model download, render, long test suite) really
 # is wall-clock and restates as rate x quantity with the measurement named
-# (#2574). The matcher stays deliberately broad *semantically* — it still fires
+# (#2574); and a wait on external events with no measured rate (production
+# traffic, scheduled jobs, human actions) restates as the number of events
+# needed and what triggers them (#2901). The matcher stays deliberately broad
+# *semantically* — it still fires
 # on a measured rate, and the message tells the reader how to phrase it honestly
 # rather than offering only units that cannot express it. #2654 narrowed it
 # *syntactically* only: the number must sit next to a word-bounded time unit, so
 # currency rates ("roughly €20 a year") and day counts whose unit is four words
-# away ("take 16 weekdays off a year") stop matching. Which of the two branches is
+# away ("take 16 weekdays off a year") stop matching. Which of the two messages is
 # emitted is chosen per block (#2650): a measured rate in the matched text leads
-# with rate x quantity; everything else keeps the generic effort-unit message.
+# with rate x quantity; everything else gets the generic message, which carries
+# all three branches. The external-event branch (#2901) is guidance only — no
+# matcher change, and no detector of its own, since "waiting on events" has no
+# reliable surface form; the measured-rate message points at it too.
 #
 # Match scope (#2650): only the text the *main* agent actually ended its turn
 # with. Subagent/sidechain entries share the transcript file, and one assistant
@@ -166,11 +172,11 @@ PATTERN_RATE_UNIT="[0-9]+(\.[0-9]+)?[[:space:]]*(s|ms|sec|secs|second|seconds|mi
 PATTERN_MEASUREMENT="(measured|measurement|median|average|benchmarked|observed|sampled|throughput)"
 
 if grep -qiE "$PATTERN_FUTURE|$PATTERN_MARKER" <<<"$LAST_RESPONSE"; then
-    REASON="Avoid quoting AI work in calendar time (hours, days, weeks, months) — it does not map to agent effort and consistently misleads. Restate the estimate as tokens consumed, effort tier (low / medium / high / xhigh / max), tool-call count, or files / lines to touch. Exception: external machine work you measured rather than paced yourself (a CI run, a build, a model download, a render, a long test suite) genuinely is wall-clock — state it as rate × quantity with the measurement named, e.g. \"3870 frames at a measured 1.0 s/frame, so about 65 minutes\"."
+    REASON="Avoid quoting AI work in calendar time (hours, days, weeks, months) — it does not map to agent effort and consistently misleads. Restate the estimate as tokens consumed, effort tier (low / medium / high / xhigh / max), tool-call count, or files / lines to touch. Exception: external machine work you measured rather than paced yourself (a CI run, a build, a model download, a render, a long test suite) genuinely is wall-clock — state it as rate × quantity with the measurement named, e.g. \"3870 frames at a measured 1.0 s/frame, so about 65 minutes\". Waiting on external events with no measured rate (production traffic, scheduled jobs, human actions): state how many events are needed and what triggers them (e.g. \"3–5 production runs; triggering them manually gets there sooner\"), not a calendar span."
 
     if grep -qiE "$PATTERN_RATE_UNIT" <<<"$LAST_RESPONSE" \
         && grep -qiE "$PATTERN_MEASUREMENT" <<<"$LAST_RESPONSE"; then
-        REASON="That names a measured rate, so it reads as external machine work you measured rather than paced yourself (a CI run, a build, a model download, a render, a long test suite). Wall-clock is the honest unit for that — keep it, but state it as rate × quantity with the measurement named, e.g. \"3870 frames at a measured 1.0 s/frame, so about 65 minutes\". A bare total hides whether the time is the hardware's or yours. If part of the figure is your own work rather than the machine's, restate that part as tokens consumed, tool-call count, or files / lines to touch."
+        REASON="That names a measured rate, so it reads as external machine work you measured rather than paced yourself (a CI run, a build, a model download, a render, a long test suite). Wall-clock is the honest unit for that — keep it, but state it as rate × quantity with the measurement named, e.g. \"3870 frames at a measured 1.0 s/frame, so about 65 minutes\". A bare total hides whether the time is the hardware's or yours. If part of the figure is your own work rather than the machine's, restate that part as tokens consumed, tool-call count, or files / lines to touch. If the wait is on external events rather than machine work you measured, state how many events are needed and what triggers them, not a calendar span."
     fi
 
     # shellcheck disable=SC2016  # jq expression, not shell expansion
