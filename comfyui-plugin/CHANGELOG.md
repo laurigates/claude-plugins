@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.14...comfyui-plugin-v1.14.0) (2026-10-10)
+
+
+### Features
+
+* **configure-plugin:** adopt release-please-action v5, scope the Renovate runner requirement, and emit default_stages ([#2985](https://github.com/laurigates/claude-plugins/issues/2985)) ([82ce48a](https://github.com/laurigates/claude-plugins/commit/82ce48a69f940ef4d252e096b05c89e4fe38f73f))
+
 ## [1.13.14](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.13...comfyui-plugin-v1.13.14) (2026-10-10)
 
 

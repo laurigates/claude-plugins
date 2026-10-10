@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/laurigates/claude-plugins/compare/foundryvtt-plugin-v1.3.5...foundryvtt-plugin-v1.4.0) (2026-10-10)
+
+
+### Features
+
+* **configure-plugin:** adopt release-please-action v5, scope the Renovate runner requirement, and emit default_stages ([#2985](https://github.com/laurigates/claude-plugins/issues/2985)) ([82ce48a](https://github.com/laurigates/claude-plugins/commit/82ce48a69f940ef4d252e096b05c89e4fe38f73f))
+
 ## [1.3.5](https://github.com/laurigates/claude-plugins/compare/foundryvtt-plugin-v1.3.4...foundryvtt-plugin-v1.3.5) (2026-10-10)
 
 
