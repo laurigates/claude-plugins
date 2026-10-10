@@ -4,9 +4,11 @@ args: "[repo|org:orgname]"
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(bash *), Read, TodoWrite
 argument-hint: Repo (owner/name), org:orgname for org-wide, or empty for current repo
 created: 2025-01-30
-modified: 2026-06-18
+modified: 2026-10-10
 reviewed: 2026-04-25
 name: finops-caches
+model: haiku
+effort: low
 ---
 
 # /finops:caches

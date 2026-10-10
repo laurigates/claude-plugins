@@ -4,9 +4,11 @@ args: "[package]"
 argument-hint: "Optional package name to check specific dependency"
 allowed-tools: Bash, Read
 created: 2025-12-20
-modified: 2026-05-09
+modified: 2026-10-10
 reviewed: 2026-04-25
 name: bun-outdated
+model: haiku
+effort: low
 ---
 
 # /bun:outdated

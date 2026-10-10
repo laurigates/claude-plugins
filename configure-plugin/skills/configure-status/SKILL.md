@@ -1,12 +1,14 @@
 ---
 created: 2025-12-16
-modified: 2026-07-05
+modified: 2026-10-10
 reviewed: 2026-07-05
 description: "Infrastructure compliance status (read-only). Use when checking overall compliance, generating a report, or reviewing project health without making changes."
 allowed-tools: Glob, Grep, Read, TodoWrite, Bash(bash *)
 args: "[--verbose]"
 argument-hint: "[--verbose]"
 name: configure-status
+model: haiku
+effort: low
 ---
 
 # /configure:status
