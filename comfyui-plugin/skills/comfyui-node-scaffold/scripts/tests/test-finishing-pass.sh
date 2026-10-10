@@ -744,8 +744,8 @@ check "18b: clear-autorelease forwards label and dry_run" "yes" \
 # 18c. .gitattributes: the direction the fleet does NOT lead. All 13 packs ship
 #      bun.lock and none has package-lock.json, yet 6/13 still carry the
 #      pre-#1528 `package-lock.json linguist-generated` line, so check-fleet-drift
-#      reports that plurality as a BACKPORT. Back-porting it would regress the
-#      template; this pins the correct line against that tempting "fix".
+#      reports that plurality as a SHARED_SPLIT (a plurality, not a consensus;
+#      #2756). Back-porting it would regress the template; this pins the correct line against that tempting "fix".
 check "18c: .gitattributes marks bun.lock generated" "yes" \
     "$(grep -qxF 'bun.lock linguist-generated=true' "$FB_GA" && echo yes || echo no)"
 check "18c: .gitattributes carries no stale package-lock.json line" "no" \
