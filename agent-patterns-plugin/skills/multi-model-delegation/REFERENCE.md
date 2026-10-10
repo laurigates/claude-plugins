@@ -1,8 +1,9 @@
 # Multi-Model Delegation - Reference
 
 Edge-case mechanics for consulting foreign models: diagnosing an empty
-deferred-tool lookup, and driving the OpenCode Go gateway directly when PAL's
-MCP server is unreachable.
+deferred-tool lookup, reading a single-model review from a PAL workflow tool,
+and driving the OpenCode Go gateway directly when PAL's MCP server is
+unreachable.
 
 ## `No matching deferred tools found` has two causes
 
@@ -19,6 +20,41 @@ misleads: **keep stdin open until the response arrives.**
 `subprocess.run(..., input=...)` closes stdin after writing, so the server shuts
 down mid-call and returns an empty result that looks exactly like a hung or
 non-responding model rather than a transport error.
+
+## Single-model review through PAL workflow tools
+
+PAL's step-based workflow tools (`codereview`, `precommit`, `debug`, and the
+others built the same way) send the caller's own step-2 `findings` and
+`issues_found` to the expert model along with the files. The expert reads your
+conclusions before it reads the code, so its analysis is anchored on them.
+
+- **Expert agreement under `codereview`/`precommit`/`debug` is not
+  corroboration.** Most of what the expert returns restates your step-2 notes,
+  often at a higher severity. Count it as an echo, never as a second opinion.
+- **When an independent opinion is the point, withhold your conclusions.** Keep
+  step 2 to the scope and the file list, with no findings, or call `chat` with
+  the files attached and a neutral question ("review this diff for defects").
+  Compare its findings with your own afterwards — the disagreement is the
+  payload, as in a multi-model consult.
+- **Verify every finding the expert adds on its own against the code** before
+  acting on it, as the user-global CLAUDE.md's PR-review guidance already
+  requires for any delegated review.
+
+Evidence: `laurigates/pal-mcp-server` PRs
+[#167](https://github.com/laurigates/pal-mcp-server/pull/167),
+[#168](https://github.com/laurigates/pal-mcp-server/pull/168) and
+[#169](https://github.com/laurigates/pal-mcp-server/pull/169) (2026-10-07), one
+`codereview` each with the caller's pre-review written into step 2. Nearly
+every expert finding restated a step-2 observation. The findings it added
+itself mostly failed verification: a "HIGH: sync I/O blocks the event loop"
+measured at 3.4–167 ms and was downgraded to low; a suggested fix used an SDK
+constant that does not exist in the installed version; a Docker failure was
+impossible because `.dockerignore` keeps `.env` out of the image; an escaping
+bug was in a cell that was already escaped. The files did reach the expert —
+the server log shows 5 files embedded even though the response reported
+`files_embedded: 0` (filed as
+[pal#178](https://github.com/laurigates/pal-mcp-server/issues/178)) — so the
+misses were anchoring, not missing context.
 
 ## Calling the OpenCode Go Gateway Directly
 
