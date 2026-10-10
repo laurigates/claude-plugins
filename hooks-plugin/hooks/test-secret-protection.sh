@@ -339,6 +339,78 @@ assert_message_framing \
     "bare 'env' block message points to handling-blocked-hooks.md" \
     "env"
 
+# ── every block message carries its own guidance (#2727) ─────────────────────
+# All eight messages open with `BLOCKED:`, so scripts/check-hook-message-pins.sh
+# cannot tell them apart by headline tag. Each is pinned by a token only that
+# message carries; the `hook-message-pin:` lines declare those tokens to the
+# guard, which fails when a token matches no message, matches two, or is
+# asserted nowhere. Replacing any single message with `block "blocked"` turns
+# this suite red. The five path messages fire only on the Read/Edit/Write path
+# (check_sensitive_path); a Bash read goes to the reader-verb message instead.
+echo ""
+echo "every block message carries its own guidance (#2727):"
+
+assert_stderr_contains_json() {
+    local desc="$1" needle="$2" json="$3" out
+    out=$(printf '%s' "$json" | bash "$HOOK" 2>&1 >/dev/null || true)
+    if grep -qF -- "$needle" <<<"$out"; then
+        printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (stderr missing literal: %s)\n        got: %s\n" "$desc" "$needle" "${out:-<empty>}"; FAIL=$((FAIL + 1))
+    fi
+}
+
+read_json() { jq -nc --arg p "$1" '{tool_name:"Read",tool_input:{file_path:$p}}'; }
+bash_json() { jq -nc --arg cmd "$1" '{tool_name:"Bash",tool_input:{command:$cmd}}'; }
+
+# hook-message-pin: Use .env.example for templates
+assert_stderr_contains_json \
+    "Read of .env names the template alternative (#2727)" \
+    "Use .env.example for templates" \
+    "$(read_json "/repo/${env_token}")"
+
+# hook-message-pin: Access to SSH key/config
+assert_stderr_contains_json \
+    "Read of an SSH key names the SSH key/config class (#2727)" \
+    "Access to SSH key/config" \
+    "$(read_json "/home/u/.ssh/id_rsa")"
+
+# hook-message-pin: Access to cloud credentials
+assert_stderr_contains_json \
+    "Read of ~/.aws/credentials names the cloud-credentials class (#2727)" \
+    "Access to cloud credentials" \
+    "$(read_json "/home/u/.aws/credentials")"
+
+# hook-message-pin: Access to credential file
+assert_stderr_contains_json \
+    "Read of credentials.json names the credential-file class (#2727)" \
+    "Access to credential file" \
+    "$(read_json "/repo/credentials.json")"
+
+# hook-message-pin: Access to private key file
+assert_stderr_contains_json \
+    "Read of a .key file names the private-key class (#2727)" \
+    "Access to private key file" \
+    "$(read_json "/repo/server.key")"
+
+# hook-message-pin: Use the application's configuration system instead of echoing secrets
+assert_stderr_contains_json \
+    "echo of a secret variable names the configuration-system alternative (#2727)" \
+    "Use the application's configuration system instead of echoing secrets" \
+    "$(bash_json "echo \"API_TOKEN=\$API_TOKEN\"")"
+
+# hook-message-pin: Use 'printenv VAR_NAME' for specific non-sensitive variables
+assert_stderr_contains_json \
+    "bare env dump names printenv VAR_NAME as the alternative (#2727)" \
+    "Use 'printenv VAR_NAME' for specific non-sensitive variables" \
+    "$(bash_json "env")"
+
+# hook-message-pin: Command accesses a sensitive file matching
+assert_stderr_contains_json \
+    "Bash read of .env names the matched pattern (#2727)" \
+    "Command accesses a sensitive file matching" \
+    "$(bash_json "cat ${env_token}")"
+
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
