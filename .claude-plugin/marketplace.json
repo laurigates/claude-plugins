@@ -392,7 +392,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.60.7",
+      "version": "2.61.0",
       "author": {
         "name": "Lauri Gates"
       },
