@@ -109,7 +109,7 @@ fi
 
 # Wind-down signal in the last 3 genuine user messages
 recent=$(printf '%s\n' "$user_lines" | tail -3)
-if ! echo "$recent" | grep -Eiq '\b(wrap up|wrap this|wrap the session|done for (today|now|the day)|calling it|good night|signing off|end of day|gotta go|heading out|i.?m done|thats it for|that.?s it for)\b'; then
+if ! grep -Eiq '\b(wrap up|wrap this|wrap the session|done for (today|now|the day)|calling it|good night|signing off|end of day|gotta go|heading out|i.?m done|thats it for|that.?s it for)\b' <<<"$recent"; then
     exit 0
 fi
 

@@ -47,7 +47,7 @@ on its `VERDICT`.
 
 ### Step 1: Run one test cycle
 
-Invoke the driver (auto-detects the test command from the project markers above:
+Invoke the driver (auto-detects the test command from the project markers in [Context](#context):
 `package.json` test script, `pytest`/`pyproject.toml`, `cargo test`, `go test`,
 or a `Makefile` `test:` target):
 

@@ -102,8 +102,9 @@ load-bearing control.
 level 3) → `deterministic` (run `blueprint-autorun.sh`, open a PR for the
 manifest writeback — never push to the default branch) + `agent-tasks` (a fresh
 `claude-code-action` runs due agent-judgment tasks and drafts `work-order-draft`
-proposal issues, deduped and capped, promotion stays the human
-`/blueprint:work-order --from-issue N` act).
+proposal issues, deduped and capped. It never promotes a draft: promotion is a
+reviewed `/blueprint:work-order --from-issue N` run, or the
+`work-order-approved` label that starts the executor).
 
 **`Blueprint: Execute approved work order`** (`issues: labeled`,
 `work-order-approved`): `gate` (label + level-3 + `auto_execute` + budget +
@@ -117,4 +118,4 @@ on `blueprint/wo-<N>`, open a PR `Fixes #N`, post state-packet comments) →
 - `.claude/rules/github-actions-security.md` — the least-privilege + injection baseline
 - `.claude/rules/workflow-model-effort.md` — the `--model opus` + explicit `--effort` standard
 - `blueprint-plugin:blueprint-autopilot` — the level-2 in-session executor this extends
-- `blueprint-plugin:blueprint-work-order` — the human-only WO promotion (`--from-issue N`)
+- `blueprint-plugin:blueprint-work-order` — the reviewed WO promotion step (`--from-issue N`); model-invocable since ADR-0024, while the scheduled pass still only drafts

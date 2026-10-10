@@ -199,7 +199,7 @@ if [ "$AGENT_PROMPT_COUNT" -eq 1 ]; then
 else
     declare -a marked=()
     for i in "${!idx_list[@]}"; do
-        if printf '%s' "${msg_list[$i]}" | grep -Eqi -- "$VERIFIER_MARKER"; then
+        if grep -Eqi -- "$VERIFIER_MARKER" <<<"${msg_list[$i]}"; then
             marked+=("$i")
         fi
     done

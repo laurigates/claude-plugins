@@ -11,9 +11,19 @@ relates-to:
   - ADR-0011
   - ADR-0016
   - ADR-0017
+  - ADR-0024  # partially supersedes this ADR: work-order and prp-execute are model-invocable
 ---
 
 # ADR-0020: Blueprint Autonomy Levels — Ambient Operations via a Manifest-Gated Level Model
+
+> **Partially superseded by [ADR-0024](0024-blueprint-work-order-model-invocable.md)
+> (2026-10-09).** `/blueprint:work-order` and `/blueprint:prp-execute` no longer
+> carry `disable-model-invocation: true`. The "permanently gated" clause in
+> § The draft-issue side channel, the "human-only *by design*" framing in
+> § Context, and the flag half of option 4's rejection no longer apply.
+> Everything else stands: the level model, the draft-only automation policy
+> (now stated in the automating skills rather than enforced by the flag), and
+> the safety rails.
 
 ## Context
 
@@ -102,8 +112,10 @@ never due.
 
 ### The draft-issue side channel (level 2)
 
-Automation never invokes `/blueprint:work-order` — `disable-model-invocation:
-true` stays on it (and on `/blueprint:prp-execute`) permanently. Instead, the
+Automation never invokes `/blueprint:work-order`. As accepted,
+`disable-model-invocation: true` was to stay on it (and on
+`/blueprint:prp-execute`) permanently; ADR-0024 removed the flag and kept this
+draft-only policy, which the autopilot/autorun prompts now enforce. Instead, the
 level-2 `blueprint-autopilot` skill scans ready PRPs (confidence ≥ 9, via
 `confidence-scoring`) that lack a work order and files GitHub issues labeled
 `work-order-draft` carrying the full WO packet (or local files under

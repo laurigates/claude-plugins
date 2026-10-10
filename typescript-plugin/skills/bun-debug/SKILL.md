@@ -4,9 +4,11 @@ args: <file> [--brk] [--wait] [--port=<port>]
 allowed-tools: Bash, Read
 argument-hint: <script.ts> [--brk] [--wait] [--port=9229]
 created: 2026-01-22
-modified: 2026-05-09
+modified: 2026-10-10
 reviewed: 2026-04-25
 name: bun-debug
+model: haiku
+effort: low
 ---
 
 # /bun:debug

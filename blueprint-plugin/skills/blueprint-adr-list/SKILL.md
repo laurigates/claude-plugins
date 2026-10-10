@@ -1,11 +1,12 @@
 ---
 created: 2026-01-29
-modified: 2026-05-04
+modified: 2026-10-10
 reviewed: 2026-04-25
 description: List ADRs as a markdown table with title, status, date, domain. Use when generating an ADR index, auditing ADR status, or reviewing all architecture decisions.
 allowed-tools: Bash, Glob
-model: sonnet
+model: haiku
 name: blueprint-adr-list
+effort: low
 ---
 
 List Architecture Decision Records dynamically from the filesystem.
