@@ -66,10 +66,10 @@ make_skill foo-standards
 write_manifest
 
 out1="$(bash "$lister" --manifest "${sandbox}/components.yaml" --skills-dir "${sandbox}/skills")"
-echo "$out1" | grep -q "^COMPONENT=configure-foo DOMAIN=alpha HAS_SCRIPT=true TYPES=all$" || fail "expected configure-foo row with script+domain:\n$out1"
-echo "$out1" | grep -q "^COMPONENT=configure-bar DOMAIN=beta HAS_SCRIPT=false TYPES=python$" || fail "expected configure-bar row:\n$out1"
-echo "$out1" | grep -q "^COMPONENT_COUNT=2$" || fail "expected COMPONENT_COUNT=2:\n$out1"
-echo "$out1" | grep -q "^STATUS=OK$" || fail "expected STATUS=OK for clean fixture:\n$out1"
+grep -q "^COMPONENT=configure-foo DOMAIN=alpha HAS_SCRIPT=true TYPES=all$" <<<"$out1" || fail "expected configure-foo row with script+domain:\n$out1"
+grep -q "^COMPONENT=configure-bar DOMAIN=beta HAS_SCRIPT=false TYPES=python$" <<<"$out1" || fail "expected configure-bar row:\n$out1"
+grep -q "^COMPONENT_COUNT=2$" <<<"$out1" || fail "expected COMPONENT_COUNT=2:\n$out1"
+grep -q "^STATUS=OK$" <<<"$out1" || fail "expected STATUS=OK for clean fixture:\n$out1"
 pass "clean manifest lists components with STATUS=OK"
 
 # -----------------------------------------------------------------------------
@@ -78,7 +78,7 @@ pass "clean manifest lists components with STATUS=OK"
 rm -rf "${sandbox}/skills/configure-bar"
 out2="$(bash "$lister" --manifest "${sandbox}/components.yaml" --skills-dir "${sandbox}/skills")" && rc2=0 || rc2=$?
 [ "$rc2" -ne 0 ] || fail "expected non-zero exit when a manifest entry is missing on disk"
-echo "$out2" | grep -q "TYPE=missing_on_disk" || fail "expected missing_on_disk issue:\n$out2"
+grep -q "TYPE=missing_on_disk" <<<"$out2" || fail "expected missing_on_disk issue:\n$out2"
 pass "manifest entry missing on disk raises ERROR"
 make_skill configure-bar
 
@@ -88,8 +88,8 @@ make_skill configure-bar
 make_skill configure-orphan
 out3="$(bash "$lister" --manifest "${sandbox}/components.yaml" --skills-dir "${sandbox}/skills")" && rc3=0 || rc3=$?
 [ "$rc3" -ne 0 ] || fail "expected non-zero exit for an unlisted on-disk skill"
-echo "$out3" | grep -q "TYPE=unlisted_skill" || fail "expected unlisted_skill issue:\n$out3"
-echo "$out3" | grep -q "configure-orphan" || fail "expected the orphan skill named:\n$out3"
+grep -q "TYPE=unlisted_skill" <<<"$out3" || fail "expected unlisted_skill issue:\n$out3"
+grep -q "configure-orphan" <<<"$out3" || fail "expected the orphan skill named:\n$out3"
 pass "unlisted on-disk skill raises ERROR"
 rm -rf "${sandbox}/skills/configure-orphan"
 
@@ -97,8 +97,8 @@ rm -rf "${sandbox}/skills/configure-orphan"
 # Case 4: --domain filters component rows
 # -----------------------------------------------------------------------------
 out4="$(bash "$lister" --manifest "${sandbox}/components.yaml" --skills-dir "${sandbox}/skills" --domain alpha)"
-echo "$out4" | grep -q "^COMPONENT=configure-foo " || fail "expected configure-foo under --domain alpha:\n$out4"
-if echo "$out4" | grep -q "^COMPONENT=configure-bar "; then
+grep -q "^COMPONENT=configure-foo " <<<"$out4" || fail "expected configure-foo under --domain alpha:\n$out4"
+if grep -q "^COMPONENT=configure-bar " <<<"$out4"; then
   fail "did not expect configure-bar under --domain alpha:\n$out4"
 fi
 pass "--domain filters component rows"

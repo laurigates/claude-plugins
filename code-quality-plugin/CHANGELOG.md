@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.27.5](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.27.4...code-quality-plugin-v1.27.5) (2026-10-10)
+
+
+### Bug Fixes
+
+* **scripts:** read captured output from here-strings so grep -q cannot SIGPIPE a pipefail test ([#2992](https://github.com/laurigates/claude-plugins/issues/2992)) ([2e2865c](https://github.com/laurigates/claude-plugins/commit/2e2865c782f1b712c064b06ef8d871f2b1a1caa6))
+
 ## [1.27.4](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.27.3...code-quality-plugin-v1.27.4) (2026-10-07)
 
 

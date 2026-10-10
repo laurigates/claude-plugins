@@ -88,31 +88,31 @@ fi
 
 # Signal 2: a public-API / export line in the edit payload (JS/TS/Rust/Python).
 if [ "$is_code_file" -eq 1 ] && [ "$is_structural" -eq 0 ] && \
-    printf '%s' "$payload" | grep -Eq '(export |export default|module\.exports|^[+[:space:]]*pub |def __all__)'; then
+    grep -Eq '(export |export default|module\.exports|^[+[:space:]]*pub |def __all__)' <<<"$payload"; then
     is_structural=1
 fi
 
 # Signal 3: TypeScript exported interface or type declaration.
 if [ "$is_code_file" -eq 1 ] && [ "$is_structural" -eq 0 ] && \
-    printf '%s' "$payload" | grep -Eq 'export (interface|type) [A-Z]'; then
+    grep -Eq 'export (interface|type) [A-Z]' <<<"$payload"; then
     is_structural=1
 fi
 
 # Signal 4: Go exported struct / interface declaration.
 if [ "$is_code_file" -eq 1 ] && [ "$is_structural" -eq 0 ] && \
-    printf '%s' "$payload" | grep -Eq 'type [A-Z][A-Za-z0-9_]* (struct|interface) \{'; then
+    grep -Eq 'type [A-Z][A-Za-z0-9_]* (struct|interface) \{' <<<"$payload"; then
     is_structural=1
 fi
 
 # Signal 5: Rust public struct / enum / trait declaration.
 if [ "$is_code_file" -eq 1 ] && [ "$is_structural" -eq 0 ] && \
-    printf '%s' "$payload" | grep -Eq '^[+[:space:]]*(pub|pub\(crate\)) (struct|enum|trait) [A-Z]'; then
+    grep -Eq '^[+[:space:]]*(pub|pub\(crate\)) (struct|enum|trait) [A-Z]' <<<"$payload"; then
     is_structural=1
 fi
 
 # Signal 6: route / handler registration (web framework public API).
 if [ "$is_code_file" -eq 1 ] && [ "$is_structural" -eq 0 ] && \
-    printf '%s' "$payload" | grep -Eq '(app\.(get|post|put|patch|delete|use)\(|router\.(get|post|put|patch|delete|use)\(|@app\.route\(|addRoute\()'; then
+    grep -Eq '(app\.(get|post|put|patch|delete|use)\(|router\.(get|post|put|patch|delete|use)\(|@app\.route\(|addRoute\()' <<<"$payload"; then
     is_structural=1
 fi
 

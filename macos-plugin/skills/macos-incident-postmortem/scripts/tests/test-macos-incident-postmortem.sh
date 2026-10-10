@@ -69,28 +69,28 @@ out1="$(MACOS_PM_UNAME=Linux \
 rc1=$?
 
 [ "$rc1" -eq 0 ] || fail "reboot case should exit 0 (WARN on non-darwin), got rc=$rc1:\n$out1"
-echo "$out1" | grep -q "^CLASSIFICATION=REBOOT_PANIC$" \
+grep -q "^CLASSIFICATION=REBOOT_PANIC$" <<<"$out1" \
   || fail "expected CLASSIFICATION=REBOOT_PANIC, got:\n$out1"
-echo "$out1" | grep -q "^PANIC_COUNT=1$" \
+grep -q "^PANIC_COUNT=1$" <<<"$out1" \
   || fail "expected PANIC_COUNT=1, got:\n$out1"
-echo "$out1" | grep -q "^CPU_RESOURCE_COUNT=3$" \
+grep -q "^CPU_RESOURCE_COUNT=3$" <<<"$out1" \
   || fail "expected CPU_RESOURCE_COUNT=3, got:\n$out1"
-echo "$out1" | grep -q "^JETSAM_COUNT=1$" \
+grep -q "^JETSAM_COUNT=1$" <<<"$out1" \
   || fail "expected JETSAM_COUNT=1, got:\n$out1"
-echo "$out1" | grep -q "^CRASH_COUNT=1$" \
+grep -q "^CRASH_COUNT=1$" <<<"$out1" \
   || fail "expected CRASH_COUNT=1, got:\n$out1"
-echo "$out1" | grep -q "^STATUS=" \
+grep -q "^STATUS=" <<<"$out1" \
   || fail "expected a STATUS= line, got:\n$out1"
 # CPU offender histogram: the top offender 'hungdaemon2'/'hungdaemon' each have 1
 # — assert the histogram block exists and lists a known offender.
-echo "$out1" | grep -q "^CPU_OFFENDERS:$" \
+grep -q "^CPU_OFFENDERS:$" <<<"$out1" \
   || fail "expected CPU_OFFENDERS histogram block, got:\n$out1"
-echo "$out1" | grep -q "PROC=coreaudiod COUNT=1" \
+grep -q "PROC=coreaudiod COUNT=1" <<<"$out1" \
   || fail "expected coreaudiod offender row, got:\n$out1"
 # Jetsam victims histogram lists Safari and Mail.
-echo "$out1" | grep -q "^JETSAM_VICTIMS:$" \
+grep -q "^JETSAM_VICTIMS:$" <<<"$out1" \
   || fail "expected JETSAM_VICTIMS histogram block, got:\n$out1"
-echo "$out1" | grep -q "PROC=Safari COUNT=1" \
+grep -q "PROC=Safari COUNT=1" <<<"$out1" \
   || fail "expected Safari jetsam victim row, got:\n$out1"
 pass "planted reboot fixture classifies REBOOT_PANIC with correct counts/histograms"
 
@@ -112,13 +112,13 @@ out2="$(MACOS_PM_UNAME=Linux \
 rc2=$?
 
 [ "$rc2" -eq 0 ] || fail "hang case should exit 0, got rc=$rc2:\n$out2"
-echo "$out2" | grep -q "^CLASSIFICATION=HANG_UI$" \
+grep -q "^CLASSIFICATION=HANG_UI$" <<<"$out2" \
   || fail "expected CLASSIFICATION=HANG_UI, got:\n$out2"
-echo "$out2" | grep -q "^HANG_COUNT=1$" \
+grep -q "^HANG_COUNT=1$" <<<"$out2" \
   || fail "expected HANG_COUNT=1, got:\n$out2"
-echo "$out2" | grep -q "^SPINDUMP_COUNT=1$" \
+grep -q "^SPINDUMP_COUNT=1$" <<<"$out2" \
   || fail "expected SPINDUMP_COUNT=1, got:\n$out2"
-echo "$out2" | grep -q "^PANIC_COUNT=0$" \
+grep -q "^PANIC_COUNT=0$" <<<"$out2" \
   || fail "expected PANIC_COUNT=0 in hang case, got:\n$out2"
 pass "planted hang fixture classifies HANG_UI with correct counts"
 
@@ -132,15 +132,15 @@ out3="$(MACOS_PM_UNAME=Linux \
 rc3=$?
 
 [ "$rc3" -eq 0 ] || fail "missing-dir case should exit 0 (WARN, not ERROR), got rc=$rc3:\n$out3"
-echo "$out3" | grep -q "^REPORTS_DIRS_PRESENT=0$" \
+grep -q "^REPORTS_DIRS_PRESENT=0$" <<<"$out3" \
   || fail "expected REPORTS_DIRS_PRESENT=0 for missing dir, got:\n$out3"
-echo "$out3" | grep -q "^REPORT_COUNT=0$" \
+grep -q "^REPORT_COUNT=0$" <<<"$out3" \
   || fail "expected REPORT_COUNT=0 for missing dir, got:\n$out3"
-echo "$out3" | grep -q "^STATUS=WARN$" \
+grep -q "^STATUS=WARN$" <<<"$out3" \
   || fail "expected STATUS=WARN for missing reports dir, got:\n$out3"
-echo "$out3" | grep -q "TYPE=no_reports_dir" \
+grep -q "TYPE=no_reports_dir" <<<"$out3" \
   || fail "expected a no_reports_dir issue row, got:\n$out3"
-echo "$out3" | grep -q "=== END MACOS INCIDENT POSTMORTEM ===" \
+grep -q "=== END MACOS INCIDENT POSTMORTEM ===" <<<"$out3" \
   || fail "expected closing section delimiter, got:\n$out3"
 pass "missing reports dir degrades gracefully with STATUS=WARN, no crash"
 
@@ -153,7 +153,7 @@ out4="$(MACOS_PM_UNAME=Linux \
 rc4=$?
 
 [ "$rc4" -eq 0 ] || fail "no-incident-epoch case should exit 0, got rc=$rc4:\n$out4"
-echo "$out4" | grep -q "^CLASSIFICATION=UNKNOWN$" \
+grep -q "^CLASSIFICATION=UNKNOWN$" <<<"$out4" \
   || fail "expected CLASSIFICATION=UNKNOWN without incident epoch, got:\n$out4"
 pass "without incident epoch the classifier reports UNKNOWN rather than guessing"
 
