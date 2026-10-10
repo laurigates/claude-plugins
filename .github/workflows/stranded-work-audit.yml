@@ -64,4 +64,5 @@ jobs:
           description: Commits stranded on a branch that never reached the default branch
           script: bash scripts/check-stranded-work.sh --issue-body --min-age-days "$MIN_AGE_DAYS"
           title: 'Stranded work: branches that never reached main ({date})'
+          title-prefix: 'Stranded work:'
           assignee: laurigates

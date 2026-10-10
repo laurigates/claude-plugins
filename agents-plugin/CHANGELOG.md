@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.4](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.14.3...agents-plugin-v1.14.4) (2026-10-10)
+
+
+### Bug Fixes
+
+* **agents-plugin:** drop the inert context: fork key, use tools: in agent examples, and make the pi model pin explicit ([#2969](https://github.com/laurigates/claude-plugins/issues/2969)) ([4b120a7](https://github.com/laurigates/claude-plugins/commit/4b120a76e3eb9d8d5859b8fcf44aec9a25f9d710))
+
 ## [1.14.3](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.14.2...agents-plugin-v1.14.3) (2026-09-24)
 
 
