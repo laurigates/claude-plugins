@@ -23,7 +23,7 @@
 #
 # Progress keys (issue #2904), per fetched issue:
 #   ISSUE_<n>_CHECKBOXES       <done>/<total> task-list boxes in the body (fenced
-#                              code skipped); 0/0 when there are none
+#                              code and HTML comments skipped); 0/0 when there are none
 #   ISSUE_<n>_SUBISSUES        <completed>/<total> from subIssuesSummary, or unknown
 #   ISSUE_<n>_MERGED_PRS       <owner/repo>#<num>[*],... merged PRs that reference
 #                              the issue (cross-repo included); `*` = the PR closes
@@ -295,21 +295,6 @@ if [ "$triage_type" != "prs" ]; then
   echo "ISSUES_TOTAL=${issues_open_total}"
   echo "ISSUES_TRUNCATED=${issues_truncated}"
 
-  # Per-issue: number, age, referenced PR numbers (closing-keyword candidates),
-  # comment count, and the title (issue #2480). The title comes free from the
-  # `gh issue list --json` call above, and without it the collector's own output
-  # is unreadable — an issue number plus an age does not say what the issue *is*,
-  # so triage had to make a second full pass just to recover titles.
-  #
-  # The title is sanitized (tabs/CRs/newlines → spaces) so it can never break the
-  # TSV row or the line-oriented KEY=VALUE contract, and is emitted last so it is
-  # the `read` remainder field. Format mirrors session-survey.sh's ISSUE_<n>_TITLE.
-  #
-  # Empty fields are emitted as the literal `none` for the same reason the PR
-  # section does it: `read` with a tab IFS collapses consecutive tabs (tab is
-  # IFS-whitespace), so an empty refs field silently shifted every later column
-  # — before this guard, an issue with no `#N` references reported the comment
-  # count as its REFS and an empty COMMENTS.
   # Progress map (issue #2904), keyed by issue number: sub-issue ratio, merged
   # PRs, and whether any merged PR closes the issue. A merged PR is one with
   # mergedAt set or state MERGED; `*` marks a closing link, either a
@@ -359,17 +344,35 @@ if [ "$triage_type" != "prs" ]; then
         ([ $merged[] | select(.xclose or .linked) ] | length > 0 | tostring)
       ] | @tsv' 2>/dev/null)
 
+  # Per-issue: number, age, referenced PR numbers (closing-keyword candidates),
+  # comment count, and the title (issue #2480). The title comes free from the
+  # `gh issue list --json` call above, and without it the collector's own output
+  # is unreadable — an issue number plus an age does not say what the issue *is*,
+  # so triage had to make a second full pass just to recover titles.
+  #
+  # The title is sanitized (tabs/CRs/newlines → spaces) so it can never break the
+  # TSV row or the line-oriented KEY=VALUE contract, and is emitted last so it is
+  # the `read` remainder field. Format mirrors session-survey.sh's ISSUE_<n>_TITLE.
+  #
+  # Empty fields are emitted as the literal `none` for the same reason the PR
+  # section does it: `read` with a tab IFS collapses consecutive tabs (tab is
+  # IFS-whitespace), so an empty refs field silently shifted every later column
+  # — before this guard, an issue with no `#N` references reported the comment
+  # count as its REFS and an empty COMMENTS.
   echo "$issues_json" | jq -r '
     # Task-list boxes as "<done>/<total>" (issue #2904). A box is a list item
-    # (-, *, + or 1./1)) whose text opens with [ ], [x] or [X]. Lines inside a
-    # ``` or ~~~ fence are skipped: a fence closes on a line of the same
-    # character at least as long as the opener.
+    # (-, *, + or 1./1)) whose text opens with [ ], [x] or [X]. HTML comments
+    # (issue-template boilerplate) are stripped first. Lines inside a ``` or ~~~
+    # fence are skipped: a fence closes on a line of the same character, at
+    # least as long as the opener, with nothing after it (CommonMark: a closing
+    # fence carries no info string, so ```bash inside a fence is content).
     def checkbox_ratio:
-      (. // "") | gsub("\r"; "") | split("\n")
+      (. // "") | gsub("\r"; "") | gsub("(?s)<!--.*?-->"; "") | split("\n")
       | reduce .[] as $line ({fence: null, done: 0, total: 0};
           ([ $line | capture("^ {0,3}(?<f>`{3,}|~{3,})") | .f ] | first) as $marker
           | if .fence != null then
               (if $marker != null and ($marker[0:1] == .fence[0:1]) and (($marker | length) >= (.fence | length))
+                    and ($line | test("^ {0,3}(`{3,}|~{3,})\\s*$"))
                  then .fence = null else . end)
             elif $marker != null then .fence = $marker
             elif ($line | test("^\\s*(?:[-*+]|[0-9]+[.)])\\s+\\[[ xX]\\](?:\\s|$)")) then

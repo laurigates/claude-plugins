@@ -559,7 +559,11 @@ cat > "$prog_issues" <<'JSON'
   {"number":108,"title":"sub-issues partial","updatedAt":"2026-06-09T00:00:00Z","comments":[],"body":""},
   {"number":109,"title":"sidebar-linked merged PR","updatedAt":"2026-06-09T00:00:00Z","comments":[],"body":""},
   {"number":110,"title":"sidebar link removed","updatedAt":"2026-06-09T00:00:00Z","comments":[],"body":""},
-  {"number":111,"title":"absent from progress","updatedAt":"2026-06-09T00:00:00Z","comments":[],"body":""}
+  {"number":111,"title":"absent from progress","updatedAt":"2026-06-09T00:00:00Z","comments":[],"body":""},
+  {"number":112,"title":"info-string fence line inside a fence","updatedAt":"2026-06-09T00:00:00Z","comments":[],
+   "body":"```\n- [x] in\n```bash\n- [x] after\n```\n- [ ] real"},
+  {"number":113,"title":"boxes inside an HTML comment","updatedAt":"2026-06-09T00:00:00Z","comments":[],
+   "body":"- [x] real\n<!--\n- [ ] template box\n- [x] template tick\n-->\n<!-- - [ ] inline -->"}
 ]
 JSON
 export GIT_TRIAGE_ISSUES_FIXTURE="$prog_issues"
@@ -604,6 +608,16 @@ assert_line "$prog_out" "ISSUE_102_CHECKBOXES=2/2" "#2904 (fenced decoy)"
 assert_line "$prog_out" "ISSUE_102_CLOSE_CANDIDATE=true" "#2904 (fenced decoy)"
 assert_line "$prog_out" "ISSUE_103_CHECKBOXES=0/0" "#2904 (no boxes)"
 pass "#2904: CHECKBOXES counts ticked/total task-list boxes and skips fenced decoys"
+
+# A fence line with an info string (```bash) inside a fence is content, not a
+# closer (CommonMark), so the real unticked box after the fence still counts.
+assert_line "$prog_out" "ISSUE_112_CHECKBOXES=0/1" "#2904 (info-string fence line)"
+assert_line "$prog_out" "ISSUE_112_CLOSE_CANDIDATE=false" "#2904 (info-string fence line)"
+pass "#2904: a fence line carrying an info string does not close an open fence"
+
+# Boxes inside <!-- --> (issue-template boilerplate) are not counted.
+assert_line "$prog_out" "ISSUE_113_CHECKBOXES=1/1" "#2904 (HTML comment)"
+pass "#2904: task-list boxes inside HTML comments are not counted"
 
 # Merged PR with a closing keyword: starred, and a close candidate.
 assert_line "$prog_out" "ISSUE_103_MERGED_PRS=acme/widgets#50*" "#2904 (closing PR)"

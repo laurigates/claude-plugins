@@ -20,9 +20,11 @@ reference.
 
 A box is a list item (`-`, `*`, `+`, or `1.`/`1)`) whose text starts with
 `[ ]`, `[x]`, or `[X]`. Boxes inside a fenced code block (a ```` ``` ```` or
-`~~~` fence, closed by a fence of the same character at least as long) are not
+`~~~` fence, closed by a fence of the same character at least as long with
+nothing after it, so a ```` ```bash ```` line inside a fence is content) are not
 counted, so a body that quotes a checklist template does not read as progress.
-A `[ ]` in running text is not a box.
+Boxes inside HTML comments (`<!-- -->`, typically issue-template boilerplate)
+are not counted either. A `[ ]` in running text is not a box.
 
 ### The progress query
 
@@ -33,7 +35,8 @@ which is the order `gh issue list` uses. Per issue it asks for
 `CROSS_REFERENCED_EVENT`, `CONNECTED_EVENT`, and `DISCONNECTED_EVENT`. For each
 pull request it reads `number`, `state`, `mergedAt`, and
 `repository { nameWithOwner }`, and for a cross-reference it also reads
-`willCloseTarget`.
+`willCloseTarget`. The walk is capped at 20 pages (1000 issues); with
+`--batch` above 1000, later issues read `SUBISSUES`/`MERGED_PRS=unknown`.
 
 - **Merged only.** A PR is listed when `mergedAt` is set or `state` is
   `MERGED`. Open and closed-unmerged PRs are left out, even when they would
@@ -45,7 +48,7 @@ pull request it reads `number`, `state`, `mergedAt`, and
   Development-sidebar `ConnectedEvent` that no later `DisconnectedEvent` undid.
 - **`unknown`, never zero.** When the query fails, returns errors (for example,
   on a GitHub Enterprise Server without sub-issues), or does not include an
-  issue, that issue's `SUBISSUES` and `MERGED_PRS` read `unknown`. The script
+  issue (including one past the 1000-issue cap), that issue's `SUBISSUES` and `MERGED_PRS` read `unknown`. The script
   still exits 0, and `CHECKBOXES` is computed as usual.
 
 Tests feed canned page responses through `GIT_TRIAGE_PROGRESS_FIXTURE` (one or
