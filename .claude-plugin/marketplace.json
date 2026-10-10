@@ -423,7 +423,7 @@
       "name": "github-actions-plugin",
       "source": "./github-actions-plugin",
       "description": "GitHub Actions CI/CD - workflows, authentication, inspection, auto-fix",
-      "version": "1.13.3",
+      "version": "1.13.4",
       "author": {
         "name": "Lauri Gates"
       },
