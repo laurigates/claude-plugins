@@ -733,6 +733,24 @@ assert "V: a comprehension target and a later rebinding leave x's flags in place
   "$(eq "$(flags_in "$out" "SUBCOMMAND  x")" "--a --b")"
 assert "V: nothing is marked UNTRACED" "$(lacks "$out" "UNTRACED")"
 
+# -- X: add_parser(help=None) prints no marker, matching add_argument --------
+# The add_parser help fallback treated every unresolved value as "not a
+# literal and not a resolvable name", so help=None -- argparse's own "no help"
+# -- got a misleading marker line while add_argument(help=None) printed nothing.
+cat >"$tmp/scope/scripts/x_none.py" <<'PYEOF'
+import argparse
+def main():
+    ap = argparse.ArgumentParser()
+    sub = ap.add_subparsers()
+    p = sub.add_parser("run", help=None)
+    p.add_argument("--a", help=None)
+PYEOF
+out="$(scan x_none.py)"
+assert "X: the help=None subcommand is still listed with its flag" \
+  "$(eq "$(flags_in "$out" "SUBCOMMAND  run")" "--a")"
+assert "X: help=None on add_parser prints no unresolved-name marker" \
+  "$(lacks "$out" "not a resolvable name")"
+
 # -- W: a recipe that runs a shell script gets no argparse --help hint --------
 # print_flags reports a .sh as "not argparse" and returns 0, and show() then
 # went on to print "Argparse's own text ... just <recipe> --help" -- a command

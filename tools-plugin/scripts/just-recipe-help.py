@@ -611,6 +611,14 @@ def scan_arguments(path):
                         # subcommand help printed NO description, and a
                         # subcommand's one line is the only thing describing it.
                         if k.arg == "help":
+                            if (
+                                isinstance(k.value, ast.Constant)
+                                and k.value.value is None
+                            ):
+                                # help=None means "no help", as it does for
+                                # add_argument (render_argument prints
+                                # nothing) -- not an unresolvable value.
+                                continue
                             shown = _help_display(k.value, constants)
                             if shown is None and isinstance(k.value, ast.Name):
                                 # The same constants map add_argument's
