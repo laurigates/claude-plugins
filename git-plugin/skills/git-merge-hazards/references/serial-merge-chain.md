@@ -67,7 +67,7 @@ gh pr merge "$n" --squash --match-head-commit "$head"
    every touched directory, so each one matches the tree you verified.
 
 ```bash
-git fetch origin "pull/${n}/head" && git branch "pr-${n}" FETCH_HEAD
+git fetch origin "pull/${n}/head:refs/remotes/pr/${n}"
 git show --binary --format= "$sha" | git apply -R
 git diff "${sha}^" -- "$dir"    # must print nothing
 ```

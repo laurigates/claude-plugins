@@ -489,22 +489,23 @@ run_license_check; rc_f_lo="$RC"
 assert_eq "restored fixture exits 0 (license-only)" "$rc_f_lo" "0"
 
 # ============================================================================
-# references/ link integrity (issue #2700)
+# references/ reachability (issue #2700)
 #
 # A skill split into references/ (.claude/rules/skill-quality.md §
 # "references/ — a multi-file split for large skills") reaches its detail only
-# through relative links, and nothing else resolves them. Two failures are
-# silent: a renamed or deleted reference file leaves SKILL.md pointing at
-# nothing (the agent opens a missing file mid-procedure), and a reference file
-# that no entry point names is never loaded at all.
+# through links from SKILL.md or the REFERENCE.md index. A reference file that
+# no entry point names is never loaded at all, and nothing else checks that.
 #
-# THE SEMANTIC INVARIANTS UNDER TEST:
-#   forward — every `](references/<f>)` link in SKILL.md or REFERENCE.md, outside
-#             fenced code, names a file that exists (an `#anchor` suffix is
-#             stripped before the lookup);
+# THE SEMANTIC INVARIANT UNDER TEST:
 #   reverse — every references/*.md is named from SKILL.md or REFERENCE.md.
-# Both are asserted on the ❌ line AND the exit code, and a clean split is
-# pinned to exit 0 so the guard cannot pass by flagging everything.
+# It is asserted on the ❌ line AND the exit code, and a clean split is pinned
+# to exit 0 so the guard cannot pass by flagging everything.
+#
+# The forward direction (a link naming a references/ file that does not exist)
+# moved to scripts/check-skill-xrefs.py in issue #2952, so a broken link is
+# reported once. Its regression cases live in
+# scripts/tests/test-check-skill-xrefs.sh; the cases here pin that this script
+# no longer reports it.
 # ============================================================================
 
 make_refs_skill() {
@@ -543,33 +544,23 @@ run_check; out_refs_ok="$OUT"; rc_refs_ok="$RC"
 assert_eq "clean references/ split exits 0" "$rc_refs_ok" "0"
 assert_absent "clean references/ split raises no #2700 finding" "$out_refs_ok" "#2700"
 
-# --- forward: a link to a reference file that does not exist ----------------
+# --- forward is owned by check-skill-xrefs.py (#2952): no duplicate report ---
 make_refs_skill \
   'See [present](references/present.md) and [other](references/other.md).' \
   'See [gone](references/missing.md#step-3) for the moved step.'
 run_check; out_refs_dead="$OUT"; rc_refs_dead="$RC"
-assert_eq "dead references/ link exits 1" "$rc_refs_dead" "1"
-assert_contains "dead references/ link is flagged ❌ by target" \
-  "$out_refs_dead" "❌ ${PLUGIN}/refsplit: links references/missing.md, which does not exist"
+assert_eq "dead references/ link in SKILL.md is not this script's finding (exits 0)" "$rc_refs_dead" "0"
+assert_absent "dead references/ link in SKILL.md raises no #2700 line" \
+  "$out_refs_dead" "#2700"
 
-# --- forward: the dead link is also caught when only REFERENCE.md carries it -
 make_refs_skill 'See [present](references/present.md) and [other](references/other.md).'
 printf -- '- [gone](references/index-only-missing.md)\n' > "$root/$PLUGIN/skills/refsplit/REFERENCE.md"
 run_check; out_refs_dead_idx="$OUT"; rc_refs_dead_idx="$RC"
-assert_eq "dead link in REFERENCE.md exits 1" "$rc_refs_dead_idx" "1"
-assert_contains "dead link in REFERENCE.md is flagged ❌ by target" \
-  "$out_refs_dead_idx" "links references/index-only-missing.md, which does not exist"
-
-# --- forward: a link inside fenced code is an example, not a link -----------
-make_refs_skill \
-  'See [present](references/present.md) and [other](references/other.md).' \
-  '```markdown' \
-  'See [example](references/illustrative-only.md).' \
-  '```'
-run_check; out_refs_fence="$OUT"; rc_refs_fence="$RC"
-assert_eq "references/ link inside fenced code exits 0" "$rc_refs_fence" "0"
-assert_absent "references/ link inside fenced code is not flagged" \
-  "$out_refs_fence" "illustrative-only.md"
+assert_eq "dead references/ link in REFERENCE.md is not this script's finding (exits 0)" "$rc_refs_dead_idx" "0"
+assert_absent "dead references/ link in REFERENCE.md raises no #2700 line" \
+  "$out_refs_dead_idx" "#2700"
+assert_absent "dead references/ link in REFERENCE.md is not named by this script" \
+  "$out_refs_dead_idx" "index-only-missing.md"
 
 # --- reverse: a reference file nothing names is unreachable -----------------
 make_refs_skill 'See [present](references/present.md) only.'
