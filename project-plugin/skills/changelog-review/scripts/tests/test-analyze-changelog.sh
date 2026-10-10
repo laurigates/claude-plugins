@@ -65,7 +65,7 @@ assert_eq() {
 
 assert_contains() {
   local desc="$1" needle="$2"
-  if echo "$OUT" | grep -qF "$needle"; then
+  if grep -qF "$needle" <<<"$OUT"; then
     printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
   else
     printf "  FAIL: %s (output missing: %s)\n" "$desc" "$needle"; FAIL=$((FAIL + 1))
@@ -74,7 +74,7 @@ assert_contains() {
 
 assert_absent() {
   local desc="$1" needle="$2"
-  if echo "$OUT" | grep -qF "$needle"; then
+  if grep -qF "$needle" <<<"$OUT"; then
     printf "  FAIL: %s (output unexpectedly contains: %s)\n" "$desc" "$needle"; FAIL=$((FAIL + 1))
   else
     printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))

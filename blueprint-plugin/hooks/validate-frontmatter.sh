@@ -85,7 +85,7 @@ for doc in "$@"; do
 
     out=$(run_checker --kind "$kind" --file "$doc" 2>&1)
     doc_rc=$?
-    if ! printf '%s\n' "$out" | grep -q '^STATUS=OK$'; then
+    if ! grep -q '^STATUS=OK$' <<<"$out"; then
         printf '%s\n' "$out"
     fi
     [ "$doc_rc" -eq 0 ] || rc=1

@@ -73,7 +73,7 @@ out="$(bash "$triage_script" --type prs --days-stale-pr 30)"
 
 assert_cat() {
   local num="$1" want="$2"
-  echo "$out" | grep -q "^PR_${num}_CATEGORY=${want}$" \
+  grep -q "^PR_${num}_CATEGORY=${want}$" <<<"$out" \
     || fail "PR #${num} expected category=${want}, got:\n$(echo "$out" | grep "^PR_${num}_CATEGORY=")"
 }
 
@@ -96,7 +96,7 @@ assert_cat 6 changes-requested
 pass "CHANGES_REQUESTED PR categorized as changes-requested"
 
 # Closing-keyword extraction on PR #4 should find #300 (Resolves) but NOT #301 (Related).
-echo "$out" | grep -q "^PR_4_CLOSES=#300$" \
+grep -q "^PR_4_CLOSES=#300$" <<<"$out" \
   || fail "PR #4 closing keywords expected '#300', got:\n$(echo "$out" | grep '^PR_4_CLOSES=')"
 pass "closing-keyword extraction finds Resolves #300, excludes Related #301"
 
@@ -107,10 +107,10 @@ pr6_age=$(echo "$out" | grep "^PR_6_AGE_DAYS=" | cut -d= -f2)
 pass "age computed from updatedAt (PR #6 = ${pr6_age}d > 30)"
 
 # Trailer invariants.
-echo "$out" | grep -q "^=== GIT TRIAGE ===$" || fail "missing section header"
-echo "$out" | grep -q "^=== END GIT TRIAGE ===$" || fail "missing section footer"
-echo "$out" | grep -q "^STATUS=" || fail "missing STATUS trailer"
-echo "$out" | grep -q "^ISSUE_COUNT=" || fail "missing ISSUE_COUNT trailer"
+grep -q "^=== GIT TRIAGE ===$" <<<"$out" || fail "missing section header"
+grep -q "^=== END GIT TRIAGE ===$" <<<"$out" || fail "missing section footer"
+grep -q "^STATUS=" <<<"$out" || fail "missing STATUS trailer"
+grep -q "^ISSUE_COUNT=" <<<"$out" || fail "missing ISSUE_COUNT trailer"
 pass "structured-output trailers present"
 
 # -----------------------------------------------------------------------------
@@ -133,13 +133,13 @@ export GIT_TRIAGE_ISSUES_FIXTURE="$issues_fixture"
 
 iout="$(bash "$triage_script" --type issues --days-stale-issue 90)"
 
-echo "$iout" | grep -q "^ISSUE_42_STALE_CANDIDATE=true$" \
+grep -q "^ISSUE_42_STALE_CANDIDATE=true$" <<<"$iout" \
   || fail "issue #42 (>1yr old) expected STALE_CANDIDATE=true, got:\n$(echo "$iout" | grep '^ISSUE_42_STALE')"
-echo "$iout" | grep -q "^ISSUE_13_STALE_CANDIDATE=false$" \
+grep -q "^ISSUE_13_STALE_CANDIDATE=false$" <<<"$iout" \
   || fail "issue #13 (fresh) expected STALE_CANDIDATE=false, got:\n$(echo "$iout" | grep '^ISSUE_13_STALE')"
 pass "issue stale-candidate flag tracks age vs --days-stale-issue"
 
-echo "$iout" | grep -q "^ISSUE_42_REFS=#99$" \
+grep -q "^ISSUE_42_REFS=#99$" <<<"$iout" \
   || fail "issue #42 expected REFS=#99, got:\n$(echo "$iout" | grep '^ISSUE_42_REFS')"
 pass "issue referenced-PR extraction finds #99"
 
@@ -170,13 +170,13 @@ JSON
 export GIT_TRIAGE_ISSUES_FIXTURE="$titles_fixture"
 tout="$(bash "$triage_script" --type issues --days-stale-issue 90)"
 
-echo "$tout" | grep -q "^ISSUE_78_TITLE=refactor collector$" \
+grep -q "^ISSUE_78_TITLE=refactor collector$" <<<"$tout" \
   || fail "#2480: issue #78 expected TITLE=refactor collector, got:\n$(echo "$tout" | grep '^ISSUE_78_TITLE')"
 pass "#2480: issue title emitted as ISSUE_<n>_TITLE"
 
 # Tab sanitized to a space; the rest of the title survives verbatim on one line.
 # shellcheck disable=SC2016  # the backticks are literal title text in the fixture
-echo "$tout" | grep -q '^ISSUE_77_TITLE=fix(x): KEY=VALUE `--flag` breaks$' \
+grep -q '^ISSUE_77_TITLE=fix(x): KEY=VALUE `--flag` breaks$' <<<"$tout" \
   || fail "#2480: issue #77 title expected tab-sanitized and intact, got:\n$(echo "$tout" | grep '^ISSUE_77_TITLE')"
 pass "#2480: tabs in a title are sanitized, KEY=VALUE line stays single-line"
 
@@ -188,14 +188,14 @@ pass "#2480: one TITLE line per fetched issue"
 
 # Column-shift guard: an issue with no references reports REFS=none and its
 # real comment count, not the count-as-refs / empty-comments shift.
-echo "$tout" | grep -q "^ISSUE_77_REFS=none$" \
+grep -q "^ISSUE_77_REFS=none$" <<<"$tout" \
   || fail "#2480: issue #77 (no refs) expected REFS=none, got:\n$(echo "$tout" | grep '^ISSUE_77_REFS')"
-echo "$tout" | grep -q "^ISSUE_77_COMMENTS=2$" \
+grep -q "^ISSUE_77_COMMENTS=2$" <<<"$tout" \
   || fail "#2480: issue #77 expected COMMENTS=2 (empty refs must not shift columns), got:\n$(echo "$tout" | grep '^ISSUE_77_COMMENTS')"
 pass "#2480: empty refs field does not shift the COMMENTS/TITLE columns"
 
 # Refs extraction still works alongside the new column.
-echo "$tout" | grep -q "^ISSUE_78_REFS=#99$" \
+grep -q "^ISSUE_78_REFS=#99$" <<<"$tout" \
   || fail "#2480: issue #78 expected REFS=#99, got:\n$(echo "$tout" | grep '^ISSUE_78_REFS')"
 pass "#2480: referenced-PR extraction unaffected by the title column"
 
@@ -225,27 +225,27 @@ export GIT_TRIAGE_PRS_FIXTURE="$prs1627_fixture"
 rout="$(bash "$triage_script" --type prs --days-stale-pr 30)"
 
 # WORST_CHECK must hold a real conclusion enum, never PR body text.
-echo "$rout" | grep -q "^PR_1202_WORST_CHECK=SUCCESS$" \
+grep -q "^PR_1202_WORST_CHECK=SUCCESS$" <<<"$rout" \
   || fail "PR #1202 WORST_CHECK expected SUCCESS (body must not bleed into the enum), got:\n$(echo "$rout" | grep '^PR_1202_WORST_CHECK=')"
 pass "#1627: multi-line body does not shift WORST_CHECK column"
 
 # REVIEW must be the normalized null, never the worst-check conclusion.
-echo "$rout" | grep -q "^PR_1202_REVIEW=null$" \
+grep -q "^PR_1202_REVIEW=null$" <<<"$rout" \
   || fail "PR #1202 REVIEW expected null (empty-string normalized), got:\n$(echo "$rout" | grep '^PR_1202_REVIEW=')"
 pass "#1627: empty-string reviewDecision normalized to null"
 
 # With clean columns the PR categorizes correctly instead of uncategorized.
-echo "$rout" | grep -q "^PR_1202_CATEGORY=awaiting-review$" \
+grep -q "^PR_1202_CATEGORY=awaiting-review$" <<<"$rout" \
   || fail "PR #1202 expected category=awaiting-review, got:\n$(echo "$rout" | grep '^PR_1202_CATEGORY=')"
 pass "#1627: passing no-review bot PR categorizes as awaiting-review (not uncategorized)"
 
 # Closing keywords still extracted from the multi-line body, in its own pass.
-echo "$rout" | grep -q "^PR_1202_CLOSES=#4242,#4243$" \
+grep -q "^PR_1202_CLOSES=#4242,#4243$" <<<"$rout" \
   || fail "PR #1202 CLOSES expected '#4242,#4243', got:\n$(echo "$rout" | grep '^PR_1202_CLOSES=')"
 pass "#1627: closing-keyword extraction survives the separate-pass refactor"
 
 # The body itself must never appear verbatim in the KEY=VALUE output.
-if echo "$rout" | grep -q "Bumps foo from"; then
+if grep -q "Bumps foo from" <<<"$rout"; then
   fail "#1627: PR body leaked into the structured output"
 fi
 pass "#1627: PR body never leaks into KEY=VALUE output"
@@ -293,28 +293,28 @@ export GIT_TRIAGE_PRS_FIXTURE="$prs1628_fixture"
 sout="$(bash "$triage_script" --type prs --days-stale-pr 30)"
 
 # Exactly one systematic-failure group is emitted.
-echo "$sout" | grep -q "^SYSTEMATIC_FAILURE_COUNT=1$" \
+grep -q "^SYSTEMATIC_FAILURE_COUNT=1$" <<<"$sout" \
   || fail "#1628 expected SYSTEMATIC_FAILURE_COUNT=1, got:\n$(echo "$sout" | grep '^SYSTEMATIC_FAILURE_COUNT=')"
 pass "#1628: exactly one systematic-failure group emitted"
 
 # The group lists the three bot PRs with the shared signature.
-echo "$sout" | grep -q "^SYSTEMATIC_FAILURE_1_PRS=#1202,#1203,#1204$" \
+grep -q "^SYSTEMATIC_FAILURE_1_PRS=#1202,#1203,#1204$" <<<"$sout" \
   || fail "#1628 expected grouped PRs '#1202,#1203,#1204', got:\n$(echo "$sout" | grep '^SYSTEMATIC_FAILURE_1_PRS=')"
 pass "#1628: the three bot PRs sharing a signature are grouped (order-independent)"
 
 # The signature is the sorted, |-joined failing-check names.
-echo "$sout" | grep -q "^SYSTEMATIC_FAILURE_1_SIGNATURE=Lint|Type Check|Unit Tests$" \
+grep -q "^SYSTEMATIC_FAILURE_1_SIGNATURE=Lint|Type Check|Unit Tests$" <<<"$sout" \
   || fail "#1628 expected signature 'Lint|Type Check|Unit Tests', got:\n$(echo "$sout" | grep '^SYSTEMATIC_FAILURE_1_SIGNATURE=')"
 pass "#1628: signature is the sorted |-joined failing-check names"
 
 # A human-authored PR with the SAME signature is not folded into the bot group.
-if echo "$sout" | grep -q "#1300"; then
+if grep -q "#1300" <<<"$sout"; then
   fail "#1628: human-authored PR #1300 must not be grouped as a systematic bot failure"
 fi
 pass "#1628: human-authored PR with the same signature is excluded"
 
 # A bot PR whose signature is unique (count 1) is not grouped.
-if echo "$sout" | grep -q "#1301"; then
+if grep -q "#1301" <<<"$sout"; then
   fail "#1628: solo-signature bot PR #1301 must not be grouped (count 1)"
 fi
 pass "#1628: solo-signature bot PR is excluded (needs >=2 to be systematic)"

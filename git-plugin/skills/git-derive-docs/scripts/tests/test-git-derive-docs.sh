@@ -57,34 +57,34 @@ commit "chore(deps): upgrade typescript" "package.json"
 out="$(bash "$derive_script" --project-dir "$repo" --depth 50)"
 
 # Commit-convention tallies.
-echo "$out" | grep -q "^CONV_feat=3$" \
+grep -q "^CONV_feat=3$" <<<"$out" \
   || fail "expected CONV_feat=3, got:\n$(echo "$out" | grep '^CONV_feat=')"
 pass "feat commit-convention frequency tallied (3)"
 
-echo "$out" | grep -q "^CONV_fix=2$" \
+grep -q "^CONV_fix=2$" <<<"$out" \
   || fail "expected CONV_fix=2, got:\n$(echo "$out" | grep '^CONV_fix=')"
 pass "fix commit-convention frequency tallied (2)"
 
-echo "$out" | grep -q "^CONV_docs=1$" \
+grep -q "^CONV_docs=1$" <<<"$out" \
   || fail "expected CONV_docs=1, got:\n$(echo "$out" | grep '^CONV_docs=')"
-echo "$out" | grep -q "^CONV_refactor=1$" \
+grep -q "^CONV_refactor=1$" <<<"$out" \
   || fail "expected CONV_refactor=1, got:\n$(echo "$out" | grep '^CONV_refactor=')"
-echo "$out" | grep -q "^CONV_chore=1$" \
+grep -q "^CONV_chore=1$" <<<"$out" \
   || fail "expected CONV_chore=1, got:\n$(echo "$out" | grep '^CONV_chore=')"
 pass "docs/refactor/chore conventions each tallied (1 each)"
 
 # File-naming aggregation: src/api touched most → should appear as a DIR_ entry.
-echo "$out" | grep -qE "^DIR_[0-9]+=src/api$" \
+grep -qE "^DIR_[0-9]+=src/api$" <<<"$out" \
   || fail "expected a DIR_ entry for src/api, got:\n$(echo "$out" | grep '^DIR_')"
 pass "file-naming aggregation surfaces top directory (src/api)"
 
 # Extension distribution: .ts is the dominant added extension.
-echo "$out" | grep -qE "^EXT_ts=[0-9]+$" \
+grep -qE "^EXT_ts=[0-9]+$" <<<"$out" \
   || fail "expected EXT_ts entry, got:\n$(echo "$out" | grep '^EXT_')"
 pass "added-file extension distribution surfaces .ts"
 
 # Dependency + migration signals.
-echo "$out" | grep -q "^DEP_MANIFEST_COMMITS=1$" \
+grep -q "^DEP_MANIFEST_COMMITS=1$" <<<"$out" \
   || fail "expected DEP_MANIFEST_COMMITS=1, got:\n$(echo "$out" | grep '^DEP_MANIFEST_COMMITS=')"
 pass "dependency-manifest commit detected (package.json)"
 
@@ -94,10 +94,10 @@ migration=$(echo "$out" | grep "^MIGRATION_COMMITS=" | cut -d= -f2)
 pass "migration/upgrade language detected (${migration} commits)"
 
 # Trailer invariants.
-echo "$out" | grep -q "^=== GIT DERIVE DOCS ===$" || fail "missing section header"
-echo "$out" | grep -q "^=== END GIT DERIVE DOCS ===$" || fail "missing section footer"
-echo "$out" | grep -q "^STATUS=OK$" || fail "expected STATUS=OK"
-echo "$out" | grep -q "^ISSUE_COUNT=0$" || fail "expected ISSUE_COUNT=0"
+grep -q "^=== GIT DERIVE DOCS ===$" <<<"$out" || fail "missing section header"
+grep -q "^=== END GIT DERIVE DOCS ===$" <<<"$out" || fail "missing section footer"
+grep -q "^STATUS=OK$" <<<"$out" || fail "expected STATUS=OK"
+grep -q "^ISSUE_COUNT=0$" <<<"$out" || fail "expected ISSUE_COUNT=0"
 pass "structured-output trailers present, STATUS=OK"
 
 # Non-repo path errors cleanly.
@@ -105,7 +105,7 @@ nonrepo="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
 nrout="$(bash "$derive_script" --project-dir "$nonrepo" 2>&1)"
 nrcode=$?
 rm -rf "$nonrepo"
-echo "$nrout" | grep -q "^GIT_REPO=false$" \
+grep -q "^GIT_REPO=false$" <<<"$nrout" \
   || fail "expected GIT_REPO=false on non-repo path, got:\n$nrout"
 [ "$nrcode" -ne 0 ] || fail "expected non-zero exit on non-repo path"
 pass "non-repo path reports GIT_REPO=false and exits non-zero"

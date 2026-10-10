@@ -198,7 +198,7 @@ check "baseline: no --plugin-dir in argv" "no" "$(has_line "$log" "$(printf 'ARG
 # (i) the fixture fires SessionStart/PreToolUse hooks; with no plugin declaring
 # them they are foreign and must surface, not be hidden.
 check "baseline: foreign hooks WARN" "WARN" "$(field "$out" STATUS)"
-check "baseline: foreign_hook issue" "yes" "$(printf '%s\n' "$out" | grep -q 'TYPE=foreign_hook' && echo yes || echo no)"
+check "baseline: foreign_hook issue" "yes" "$(grep -q 'TYPE=foreign_hook' <<<"$out" && echo yes || echo no)"
 check "baseline: REASON names it" "yes" "$(field "$out" REASON | grep -q '^foreign_hook: ' && echo yes || echo no)"
 
 echo "=== TEST: (j) the prompt goes on stdin; a dash-leading prompt is not an option ==="
@@ -270,7 +270,7 @@ out="$(EVAL_ALLOW_UNCAPPED=1 PATH="$bin:$PATH" bash "$rollout" --run-dir "$run_d
 check "uncapped: exit 0" "0" "$?"
 check "uncapped: no --max-budget-usd in argv" "no" "$(has_line "$log" "$(printf 'ARG\t--max-budget-usd')")"
 check "uncapped: WARN" "WARN" "$(field "$out" STATUS)"
-check "uncapped: issue" "yes" "$(printf '%s\n' "$out" | grep -q 'TYPE=uncapped' && echo yes || echo no)"
+check "uncapped: issue" "yes" "$(grep -q 'TYPE=uncapped' <<<"$out" && echo yes || echo no)"
 
 echo "=== TEST: --prompt-file, --model, --effort, --max-turns, --allowed-tools, default permission ==="
 new_dirs
@@ -297,7 +297,7 @@ make_claude "FAKE_CLAUDE_FIXTURE=$fixtures/stream-skill-commit.jsonl"
 new_dirs
 truncate -s 5M "$workdir/sparse.bin"
 run --run-dir "$run_dir" --workdir "$workdir" --prompt p --plugin-dir "$plugin" --max-budget-usd 0.05 --snapshot-max-mb 1
-check "sparse: snapshot skipped" "yes" "$(printf '%s\n' "$out" | grep -q 'TYPE=snapshot_skipped' && echo yes || echo no)"
+check "sparse: snapshot skipped" "yes" "$(grep -q 'TYPE=snapshot_skipped' <<<"$out" && echo yes || echo no)"
 check "sparse: no workspace" "" "$(field "$out" WORKSPACE)"
 
 echo "=== TEST: --stop-on-skill kills the child at the first Skill tool_use ==="
@@ -350,7 +350,7 @@ new_dirs
 run --run-dir "$run_dir" --workdir "$workdir" --prompt p --plugin-dir "$plugin" --max-budget-usd 0.05 --max-turns 2
 check "max-turns: exit 0" "0" "$rc"
 check "max-turns: WARN" "WARN" "$(field "$out" STATUS)"
-check "max-turns: issue" "yes" "$(printf '%s\n' "$out" | grep -q 'TYPE=max_turns_rejected' && echo yes || echo no)"
+check "max-turns: issue" "yes" "$(grep -q 'TYPE=max_turns_rejected' <<<"$out" && echo yes || echo no)"
 check "max-turns: two invocations" "2" "$(grep -c '^=== INVOCATION ===' "$log")"
 check "max-turns: completed on retry" "completed" "$(field "$out" STOP_REASON)"
 check "max-turns: meta records rejection" "false" "$(jq -r .max_turns_accepted "$run_dir/rollout-meta.json")"
@@ -373,7 +373,7 @@ run --run-dir "$run_dir" --workdir "$workdir" --prompt p --plugin-dir "$plugin" 
 check "passthrough: exit 0" "0" "$rc"
 check "passthrough: FOO_PASS reaches the child" "yes" "$(has_line "$log" "$(printf 'ENV\tFOO_PASS=foo-pass-value')")"
 check "passthrough: session var still scrubbed" "no" "$(has_line "$log" "$(printf 'ENV\tCLAUDE_CODE_SESSION_ID=')")"
-check "passthrough: WARN passthrough_denied" "yes" "$(printf '%s\n' "$out" | grep -q 'TYPE=passthrough_denied' && echo yes || echo no)"
+check "passthrough: WARN passthrough_denied" "yes" "$(grep -q 'TYPE=passthrough_denied' <<<"$out" && echo yes || echo no)"
 check "passthrough: meta lists the name" '["FOO_PASS"]' "$(jq -c .passthrough_env_names "$run_dir/rollout-meta.json")"
 check "passthrough: meta never stores the value" "no" "$(has_line "$run_dir/rollout-meta.json" "foo-pass-value")"
 
@@ -426,7 +426,7 @@ out="$(CLAUDE_CODE_SESSION_ID=11111111-2222-4333-8444-555555555555 PATH="$bin:$P
   --run-dir "$run_dir" --workdir "$workdir" --prompt p --plugin-dir "$plugin" --max-budget-usd 0.05 2>/dev/null)"
 check "session leak: exit 0" "0" "$?"
 check "session leak: WARN" "WARN" "$(field "$out" STATUS)"
-check "session leak: issue" "yes" "$(printf '%s\n' "$out" | grep -q 'TYPE=session_id_leak' && echo yes || echo no)"
+check "session leak: issue" "yes" "$(grep -q 'TYPE=session_id_leak' <<<"$out" && echo yes || echo no)"
 
 echo "=== TEST: (h) clean-mode auth failure is an ERROR, never an inherit retry ==="
 make_claude "FAKE_CLAUDE_FIXTURE=$fixtures/stream-skill-commit.jsonl" "FAKE_CLAUDE_AUTH_MARKER=FAKE_INHERIT_ONLY"
@@ -438,8 +438,8 @@ check "auth: exit 1" "1" "$rc"
 check "auth: STATUS=ERROR" "ERROR" "$(field "$out" STATUS)"
 check "auth: ENV_MODE stays clean" "clean" "$(field "$out" ENV_MODE)"
 check "auth: one invocation, no retry" "1" "$(grep -c '^=== INVOCATION ===' "$log")"
-check "auth: TYPE=auth_failed" "yes" "$(printf '%s\n' "$out" | grep -q 'TYPE=auth_failed' && echo yes || echo no)"
-check "auth: no env_fallback_inherit" "no" "$(printf '%s\n' "$out" | grep -q 'env_fallback_inherit' && echo yes || echo no)"
+check "auth: TYPE=auth_failed" "yes" "$(grep -q 'TYPE=auth_failed' <<<"$out" && echo yes || echo no)"
+check "auth: no env_fallback_inherit" "no" "$(grep -q 'env_fallback_inherit' <<<"$out" && echo yes || echo no)"
 check "auth: credentials never reached a child" "no" "$(has_line "$log" "$(printf 'ENV\tGH_TOKEN=')")"
 check "auth: bypass child never saw the real HOME" "no" "$(has_line "$log" "$(printf 'ENV\tHOME=%s' "$real_home")")"
 

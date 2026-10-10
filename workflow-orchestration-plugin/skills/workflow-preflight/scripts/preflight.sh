@@ -183,8 +183,8 @@ echo "BRANCH_MATCHES=${branch_matches}"
 has_merged_pr=false
 has_open_pr=false
 if [ "$existing_prs" != "none" ]; then
-  printf '%s\n' "$existing_prs" | grep -q ':MERGED:' && has_merged_pr=true
-  printf '%s\n' "$existing_prs" | grep -q ':OPEN:' && has_open_pr=true
+  grep -q ':MERGED:' <<<"$existing_prs" && has_merged_pr=true
+  grep -q ':OPEN:' <<<"$existing_prs" && has_open_pr=true
 fi
 
 issue_count=0
