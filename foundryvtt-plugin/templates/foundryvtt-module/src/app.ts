@@ -37,11 +37,8 @@ export class {{ module_id | pascal_case }}App extends HandlebarsApplicationMixin
   }
 
   // Declared `static`, but the framework rebinds `this` to the live instance.
-  static async #onRefresh(
-    this: {{ module_id | pascal_case }}App,
-    _event: Event,
-    _target: HTMLElement,
-  ): Promise<void> {
+  // The framework also passes (event, target); this handler needs neither.
+  static async #onRefresh(this: {{ module_id | pascal_case }}App): Promise<void> {
     await this.render();
   }
 }

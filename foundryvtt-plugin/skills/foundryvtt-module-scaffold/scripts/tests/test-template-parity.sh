@@ -130,6 +130,32 @@ for variant in basic app libwrapper; do
         "$variant" acme "A Dev" 13 13.348
 done
 
+echo "=== TIMEZONE (local date differs from UTC date) ==="
+
+# Both generators stamp today's date into the ADR and the LICENSE year.
+# cargo-generate's `system::date()` is UTC; scaffold.py once read the LOCAL
+# date, so parity broke every night in any zone east or west of UTC (#2804) —
+# and CI, running in UTC, never saw it. Kiritimati (UTC+14) and Etc/GMT+12
+# (UTC-12) are 26 hours apart, so at any hour at least one of them is on a
+# different calendar day from UTC; running the comparison under both pins the
+# fix regardless of when the test runs.
+#
+# Guard integrity: without tzdata both names silently fall back to UTC and the
+# two runs below would pass vacuously. The pair always resolves to different
+# dates when the zones are real.
+check "TZ pair resolves to different local dates (tzdata present)" "differ" \
+    "$([ "$(TZ=Pacific/Kiritimati date +%F)" != "$(TZ=Etc/GMT+12 date +%F)" ] && echo differ || echo same)"
+
+had_tz="${TZ+set}"
+saved_tz="${TZ-}"
+for tz in Pacific/Kiritimati Etc/GMT+12; do
+    export TZ="$tz"
+    compare "tz-${tz//\//-}" \
+        foundryvtt-parity-probe "Parity Probe" "A parity probe module." \
+        basic laurigates "Lauri Gates" 12 13
+done
+if [ -n "$had_tz" ]; then export TZ="$saved_tz"; else unset TZ; fi
+
 echo "=== NAME HANDLING ==="
 
 # A repo name outside the workspace convention warns and falls back to the full

@@ -1,6 +1,6 @@
 ---
 created: 2026-06-26
-modified: 2026-09-23
+modified: 2026-10-09
 reviewed: 2026-07-30
 name: foundryvtt-module-scaffold
 description: >-
@@ -178,6 +178,7 @@ chains scaffold → `gh repo create` → seed `main` → the gitops PR.
 | Gate the finishing pass (machine verdict) | `python3 ${CLAUDE_SKILL_DIR}/scaffold.py --verify foundryvtt-X` |
 | Check the pilot still matches scaffold.py | `bash ${CLAUDE_SKILL_DIR}/scripts/tests/test-template-parity.sh` |
 | Prove the finishing-pass gate still fires | `bash ${CLAUDE_SKILL_DIR}/scripts/tests/test-manifest-invariants.sh` |
+| Prove the app variant passes biome at any module-id length | `bash ${CLAUDE_SKILL_DIR}/scripts/tests/test-app-biome-format.sh` |
 
 ## Notes & deferrals
 
