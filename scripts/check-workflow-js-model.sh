@@ -141,10 +141,25 @@
 # visible in the diff) and it is never silent — every exemption is counted in
 # EXEMPTED_CALLS= and itemised in the EXEMPTIONS: block.
 #
-# An exempted call is also exempt from `missing_effort`: haiku supports no
-# `effort` at all (`.claude/rules/workflow-model-effort.md` § "Haiku supports no
-# --effort"), so requiring one would make a compliant cold reader impossible to
-# write. An effort that IS present is still validated against the tier list.
+# A cold-read exemption is also exempt from `missing_effort`, so a cold reader
+# written before Haiku had an effort lever stays compliant. An effort that IS
+# present is still validated against the tier list.
+#
+# THE HAIKU STAGE (Haiku 5.5, 2026-10 re-evaluation)
+# The `haiku` alias resolves to Haiku 5.5 since Claude Code 2.1.293, the first
+# Haiku with an effort setting. A mechanical stage (verbatim extraction,
+# closed-enum classification, a script-runner) may run on it when BOTH hold:
+#
+#   1. `opts.model` is the literal 'haiku', and
+#   2. `opts.effort` is a literal from the tier list.
+#
+# The explicit effort is the declaration: it is what Haiku 4.5 could not carry,
+# and it keeps the stage's cost choice ours rather than the model default's. A
+# haiku call with no effort is NOT exempt and ERRORs as `missing_effort`. Like the
+# cold-read case, every haiku stage is counted in EXEMPTED_CALLS= and itemised as
+# `TYPE=haiku_stage`. Which stages qualify is judged in review against
+# `.claude/rules/agent-development.md` § "Model Selection for Agents"; this guard
+# only keeps the choice visible. `sonnet` is still an ERROR everywhere.
 #
 # EMPTY CORPUS
 # Zero bundled `.js` files is the CURRENT state of this repo and is reported as
@@ -185,9 +200,11 @@ section carries the literal "not a script to run verbatim" and an
 "**Agent budget:** ..." the scale estimator agrees with (an integer when every
 agent() site is counted, a per-item formula when some are not).
 
-One exemption: a call whose opts.label starts with coldread/recoldread AND whose
-opts.model is 'haiku' is the sanctioned measurement instrument, not a delegate.
-Exemptions are counted in EXEMPTED_CALLS= and itemised under EXEMPTIONS:.
+Two exemptions: a call whose opts.label starts with coldread/recoldread AND whose
+opts.model is 'haiku' is the sanctioned measurement instrument, not a delegate;
+and a call whose opts.model is 'haiku' with an explicit valid opts.effort is a
+Haiku 5.5 stage. Exemptions are counted in EXEMPTED_CALLS= and itemised under
+EXEMPTIONS:.
 
 See .claude/rules/workflow-model-effort.md and .claude/rules/workflow-vs-skill.md.
 USAGE
@@ -606,21 +623,28 @@ for js in "${js_files[@]+"${js_files[@]}"}"; do
         if [ "$coldread" = "yes" ] && [ "$model" = "haiku" ]; then
             exempt=1
             add_exemption "TYPE=coldread_haiku FILE=$rel LINE=$call_line LABEL=$call_label MODEL=$model MSG=sanctioned cold-read measurement instrument (agent-and-tool-selection.md)"
+        elif [ "$model" = "haiku" ] && [[ " $VALID_EFFORTS " == *" $effort "* ]]; then
+            # A Haiku 5.5 stage: the literal model plus an explicit valid effort.
+            exempt=1
+            add_exemption "TYPE=haiku_stage FILE=$rel LINE=$call_line LABEL=$call_label MODEL=$model EFFORT=$effort MSG=Haiku 5.5 stage with explicit effort (agent-development.md § Model Selection for Agents)"
         fi
 
         if [ "$exempt" -eq 0 ]; then
             case "$model" in
                 opus) : ;;
+                # Not exempt, so the effort is absent, dynamic or invalid; the
+                # effort check below names that cause, so don't double-report.
+                haiku) : ;;
                 -)    add_warn  "TYPE=missing_model FILE=$rel LINE=$call_line MSG=agent() omits opts.model (inherits the session model; prefer an explicit opus)" ;;
                 '?')  add_warn  "TYPE=dynamic_model FILE=$rel LINE=$call_line MSG=opts.model is an expression — cannot verify it resolves to opus" ;;
-                *)    add_error "TYPE=non_opus_model FILE=$rel LINE=$call_line MODEL=$model MSG=must be opus (effort, not model, is the cost lever; only a cold-read-labelled haiku reader is exempt — see #2216)" ;;
+                *)    add_error "TYPE=non_opus_model FILE=$rel LINE=$call_line MODEL=$model MSG=must be opus, or haiku with an explicit effort (a cold-read-labelled haiku reader needs none — see #2216)" ;;
             esac
         fi
 
         case "$effort" in
             # An exempted haiku reader has no effort lever to forfeit, so an
             # absent effort is not an error there. A PRESENT one is still tiered.
-            -)   [ "$exempt" -eq 1 ] || add_error "TYPE=missing_effort FILE=$rel LINE=$call_line MSG=agent() needs an explicit opts.effort (opus defaults to high; the savings are forfeited)" ;;
+            -)   [ "$exempt" -eq 1 ] || add_error "TYPE=missing_effort FILE=$rel LINE=$call_line MSG=agent() needs an explicit opts.effort (the model default is not our pick; a haiku stage is only exempt with one)" ;;
             '?') add_warn  "TYPE=dynamic_effort FILE=$rel LINE=$call_line MSG=opts.effort is an expression — cannot verify it is a valid tier" ;;
             *)
                 case " $VALID_EFFORTS " in

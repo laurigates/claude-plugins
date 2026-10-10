@@ -258,8 +258,8 @@ check_skill_frontmatter() {
     fm_reviewed=$(extract_field "$skill_file" "reviewed")
 
     local missing_recommended=()
-    # Note: `model` may be set to `opus` or `sonnet` at the extremes; haiku is
-    # disallowed for any skill (see check below). See
+    # Note: `model` may be set to `opus` or `sonnet` at the extremes, and to
+    # `haiku` only within the limits checked below. See
     # .claude/rules/skill-development.md ("Model Selection") for policy.
     [ -z "$fm_created" ] && missing_recommended+=("created")
     [ -z "$fm_modified" ] && missing_recommended+=("modified")
@@ -280,12 +280,26 @@ check_skill_frontmatter() {
       has_warnings=true
     fi
 
-    # Regression: model: haiku breaks AskUserQuestion (PR #879) and the cost
-    # savings vs Sonnet do not justify the quality risk for non-interactive
-    # skills either. Sonnet is the floor — see .claude/rules/skill-development.md.
+    # model: haiku (Haiku 5.5 since Claude Code 2.1.293) is allowed only where
+    # neither measured hazard applies — see .claude/rules/skill-development.md:
+    #   1. Regression (#879/#881): a haiku skill's AskUserQuestion prompts came
+    #      back empty. Never re-measured on Haiku 5.5, so the pair stays banned.
+    #   2. A skill's `model:` lasts for the rest of the TURN, so a skill only
+    #      the model can load (user-invocable: false) hands whatever work loaded
+    #      it to Haiku. With `context: fork` the override sets only the fork's
+    #      model, so the leak does not apply there.
     if [ "$fm_model" = "haiku" ]; then
-      issues+=("❌ ${plugin}/${skill_name}: model: haiku is disallowed — use sonnet (floor) or opus")
-      has_errors=true
+      local fm_user_invocable fm_context
+      fm_user_invocable=$(extract_field "$skill_file" "user-invocable")
+      fm_context=$(extract_field "$skill_file" "context")
+      if grep -q 'AskUserQuestion' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: model: haiku with AskUserQuestion is disallowed — prompts came back empty on Haiku (#881), not re-measured on 5.5")
+        has_errors=true
+      fi
+      if [ "$fm_user_invocable" = "false" ] && [ "$fm_context" != "fork" ]; then
+        issues+=("❌ ${plugin}/${skill_name}: model: haiku on a user-invocable: false skill hands the rest of the loading turn to Haiku — use context: fork or leave model unset")
+        has_errors=true
+      fi
     fi
 
     # Regression: unquoted args:/argument-hint: values that contain `[ ... ]`

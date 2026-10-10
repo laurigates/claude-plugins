@@ -1,6 +1,6 @@
 ---
 created: 2026-02-25
-modified: 2026-10-04
+modified: 2026-10-10
 reviewed: 2026-09-23
 paths:
   - "**/agents/**"
@@ -89,7 +89,7 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
 |-------|------|----------|-------------|
 | `name` | string | Yes | Agent identifier (kebab-case); `:` is rejected (2.1.218) — reserved for plugin namespacing (`plugin:agent-name`) |
 | `description` | string | Yes | Purpose and use cases for agent selection |
-| `model` | string | Yes | `opus`, `sonnet`, `haiku`, `fable` (2.1.255+), `inherit`, or a full model ID (e.g. `claude-fable-5-1`). Aliases resolve to the current generation (`opus` → Opus 5.5, `sonnet` → Sonnet 5, `haiku` → Haiku 4.5, `fable` → Fable 5.1). Full IDs honoured since 2.1.74 |
+| `model` | string | Yes | `opus`, `sonnet`, `haiku`, `fable` (2.1.255+), `inherit`, or a full model ID (e.g. `claude-fable-5-1`). Aliases resolve to the current generation (`opus` → Opus 5.5, `sonnet` → Sonnet 5, `haiku` → Haiku 5.5 since 2.1.293, `fable` → Fable 5.1). Full IDs honoured since 2.1.74 |
 | `effort` | string | No | `low`, `medium`, `high`, `xhigh`, or `max` (2.1.251+) — overrides the session effort while this agent runs; default inherits. This is the per-agent cost lever the Model Selection section refers to |
 | `tools` | comma-list | Yes | Tools the agent can use; use `Agent(name)` to restrict spawnable subagents |
 | `isolation` | string | No | `worktree` to run agent in an isolated git worktree |
@@ -170,7 +170,8 @@ Distinct from nesting depth above, Claude Code also caps how many subagents may 
 |-------|---------|
 | `opus` | **Default for all subagents** — reasoning, review, debugging, refactoring, *and* mechanical/high-volume work (dial `effort` down for the latter rather than downgrading the model) |
 | `fable` | Sanctioned for the hardest delegated reasoning (long-horizon, multi-file, adversarial verification). Accepted by `scripts/check-agent-model.sh`. Not the default: no plan defaults to Fable and it costs 2.5x Opus 5.5 per token |
-| `sonnet` / `haiku` | Avoid for subagents. The one sanctioned exception is the `agent-patterns-plugin:cold-read-gate` haiku reader, where a low-capability model is the *measurement instrument*, not a delegate. |
+| `sonnet` | Avoid for subagents. |
+| `haiku` | Not in agent frontmatter yet. Two uses are sanctioned. The `agent-patterns-plugin:cold-read-gate` reader is a *measurement instrument*, not a delegate. And since Haiku 5.5, a **workflow `agent()` stage** may run on it when it is mechanical (verbatim extraction, closed-enum classification, a script runner) and its output feeds an Opus stage that would notice a bad one. It must set an explicit `effort`, which `scripts/check-workflow-js-model.sh` enforces. The 2026-10 re-evaluation (`docs/audits/haiku-5.5-reevaluation-2026-10-10.md`) left the two nearest agent candidates, `search-replace` and `test-runner`, as needs-test: a closing check that passes does not prove the edits or the summary are right. |
 
 `model: opus` remains the committed floor for plugin agents (portable: every plan has Opus). `inherit` is not used for plugin agents because it would also inherit Sonnet/Haiku sessions below the floor. `effort:` frontmatter is the cost lever; use `effort: low` for mechanical/high-volume agents.
 
@@ -326,7 +327,7 @@ claude --agents '{"my-agent": {"description": "...", "prompt": "...", "tools": [
 
 - [ ] Agent name is kebab-case
 - [ ] `description` matches real user intents (not just tool jargon)
-- [ ] `model: opus` (the default for all subagents — `effort` is the cost lever, not the model; see Model Selection for Agents). The only sanctioned non-Opus subagent is the cold-read-gate haiku reader.
+- [ ] `model: opus` (the default for all subagents — `effort` is the cost lever, not the model; see Model Selection for Agents). Non-Opus subagents are limited to the cold-read-gate haiku reader and haiku workflow stages with an explicit effort.
 - [ ] `tools` uses principle of least privilege
 - [ ] Granular `Bash(command *)` patterns used instead of bare `Bash`
 - [ ] Frontmatter uses only documented subagent fields — no skill fields such as `context:` or `allowed-tools:` (`scripts/check-agent-frontmatter-keys.sh`)
