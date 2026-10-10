@@ -554,6 +554,8 @@ printf -- '- [gone](references/index-only-missing.md)\n' > "$root/$PLUGIN/skills
 run_check; out_refs_dead_idx="$OUT"; rc_refs_dead_idx="$RC"
 assert_eq "dead references/ link in REFERENCE.md is not this script's finding (exits 0)" "$rc_refs_dead_idx" "0"
 assert_absent "dead references/ link in REFERENCE.md raises no #2700 line" \
+  "$out_refs_dead_idx" "#2700"
+assert_absent "dead references/ link in REFERENCE.md is not named by this script" \
   "$out_refs_dead_idx" "index-only-missing.md"
 
 # --- reverse: a reference file nothing names is unreachable -----------------
