@@ -1,7 +1,8 @@
 # task-add — Tags, Fields, and Command Quick Reference
 
 Open this when choosing tags or fields for `task add`, naming a new tag, or
-looking up the agent-friendly command forms.
+looking up the agent-friendly command forms, or checking why the bpid duplicate
+check matches exactly.
 
 ## Tag naming gotcha
 
@@ -20,10 +21,27 @@ looking up the agent-friendly command forms.
 | Context | Command |
 |---------|---------|
 | Capture stable UUID after add | `task +LATEST uuids` |
-| Duplicate check by bpid (scoped to the project, per Step 3) | `task project:myrepo bpid:WO-012 export \| jq '.[] \| {id, status}'` |
+| Duplicate check by bpid (exact bpid and project, per Step 3) | `task bpid:WO-012 export \| jq --arg p myrepo --arg b WO-012 '.[] \| select(.bpid == $b and (.project // "") == $p) \| {id, uuid, status}'` |
 | Pre-fill from issue | `gh issue view 145 --json number,title,body,labels` |
 | Next ready (unblocked + scheduled-due) | `task status:pending +READY export \| jq '.[:3]'` |
 | Skip empty filter exit | Always use `export \| jq`, never `list` |
+
+## Exact matching in the bpid duplicate check
+
+SKILL.md Step 3 runs the duplicate check by bpid with `task bpid:"$BPID" export`
+piped to a `jq` filter on the resolved project (`$PROJECT`), so a matching
+`bpid` in another repo's queue is not surfaced as a false-positive duplicate.
+
+- **Both values are matched exactly in `jq`** because taskwarrior's `attr:value`
+  filters are prefix matches: `project:myrepo` also returns tasks in
+  `myrepo-docs` and `myrepo.sub`, and `bpid:WO-012` also returns `WO-0123` —
+  see [project-slug-verification.md](project-slug-verification.md).
+- **`--no-project`**: `$PROJECT` is empty, so only project-less tasks match.
+- **Report the `uuid`** with any match, so a later update addresses the task by
+  it (`.claude/rules/task-id-stability.md`).
+- **`export`, never `list`**: `task bpid:"$BPID" list` exits 1 on an empty result
+  and cancels sibling tool calls in parallel batches
+  (`.claude/rules/parallel-safe-queries.md`).
 
 ## Quick Reference
 
