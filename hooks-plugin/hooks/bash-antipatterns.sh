@@ -259,6 +259,10 @@ if [ -n "$ASTGREP" ]; then
     #    scratch path (/tmp, /private/tmp, /var/folders) — scratch edits are fine.
     #  - task-output-read: cat/head/tail of a `.output`/`/tasks/` path, whole-command.
     #
+    # The write rules see only literal paths. A `cd`/variable scratch context, a
+    # `mktemp -d` dir (#2892) and a git-ignored project tmp/ (#2837) are exempted
+    # at the consumption site, where shell state is visible.
+    #
     # SOLE-STATEMENT GATE on the three READ rules (issue #2148).
     #
     # The three read detectors fire only when the read IS the whole command:
@@ -390,7 +394,10 @@ SGRULES
 )
 
     # Fail open: any ast-grep/jq error yields an empty match set (no nudge).
-    AST_IDS=$(printf '%s' "$COMMAND" | "$ASTGREP" scan --inline-rules "$AST_RULES" --stdin --json=compact 2>/dev/null | jq -r '.[].ruleId' 2>/dev/null | sort -u) || AST_IDS=""
+    # The JSON is kept (not only the rule ids) because the project-tmp/ exemption
+    # below reads each echo/printf match's redirect destination from it (#2837).
+    AST_JSON=$(printf '%s' "$COMMAND" | "$ASTGREP" scan --inline-rules "$AST_RULES" --stdin --json=compact 2>/dev/null) || AST_JSON="[]"
+    AST_IDS=$(printf '%s' "$AST_JSON" | jq -r '.[].ruleId' 2>/dev/null | sort -u) || AST_IDS=""
 
     ast_matched() { grep -qx "$1" <<<"$AST_IDS"; }
 
@@ -428,14 +435,6 @@ Pipelines (head file | …) and compound commands (ls d/; head -20 f) are allowe
 See .claude/rules/bash-tool-replacements.md for the full table."
     fi
 
-    if ast_matched "cat-write"; then
-        block "REMINDER: Use the Write tool instead of 'cat > file' to create files. The Write tool is the proper way to write file contents."
-    fi
-
-    if ast_matched "echo-printf-write"; then
-        block "REMINDER: Use the Write tool instead of 'echo/printf > file' to create files. The Write tool properly handles file creation and provides better error handling. (Writes to scratch files under /tmp are allowed.)"
-    fi
-
     # SCRATCH-CONTEXT EXEMPTION (issue: W34 friction §Signal C).
     #
     # The `sed-inplace` AST rule's own scratch exemption requires the scratch path
@@ -469,13 +468,158 @@ See .claude/rules/bash-tool-replacements.md for the full table."
     # would have wrongly exempted. The variable branch keeps its trailing slash:
     # a variable value is consumed as `"$SP/f.py"`, so the slash is part of the
     # shape it matches.
+    #
+    # `mktemp -d` IS a scratch dir (#2892). `T=$(mktemp -d); cd $T` and
+    # `cd "$(mktemp -d)"` are the canonical way to get one, but the value is a
+    # command substitution, not a literal /tmp path, so neither branch above saw
+    # it. Both branches also accept a value that opens with `$(mktemp … -d …)`
+    # (`-d` alone, clustered as `-dt`, or `--directory`). A `mktemp` WITHOUT `-d`
+    # makes a file, not a directory, and grants nothing.
+    #
+    # The predicate guards all three WRITE detectors (#2892). It used to guard only
+    # `sed-inplace`, so a relative `echo a > f` after `cd /tmp/x;` blocked while
+    # the identical `sed -i` was allowed.
+    #
+    # Accepted trade-off: the predicate is decided for the WHOLE command, not per
+    # write. A scratch `cd` or assignment anywhere exempts every write in the
+    # command, including `T=$(mktemp -d); echo x > src/main.py`, where nothing
+    # uses `$T`. `sed -i` has carried this since W34; this is a style nudge, and
+    # a per-destination check would need the hook to model shell state. The
+    # test suite pins the behaviour so a change to it is deliberate.
+    SCRATCH_PREFIX_RE='((/private)?/tmp|/var/folders)'
+    MKTEMP_D_RE='\$\(mktemp([[:space:]]+[^[:space:])]+)*[[:space:]]+(-[A-Za-z]*d[A-Za-z]*|--directory)([[:space:]]|\))'
     scratch_ctx() {
-        grep -Eq '(^|[;&|])[[:space:]]*cd[[:space:]]+"?((/private)?/tmp|/var/folders)(/|"|$|[[:space:]]|[;&|])' <<<"$COMMAND_SHELL_ONLY" || \
-        grep -Eq '(^|[[:space:];&|])[A-Za-z_][A-Za-z0-9_]*="?((/private)?/tmp/|/var/folders/)' <<<"$COMMAND_SHELL_ONLY"
+        grep -Eq "(^|[;&|])[[:space:]]*cd[[:space:]]+\"?(${SCRATCH_PREFIX_RE}(/|\"|\$|[[:space:]]|[;&|])|${MKTEMP_D_RE})" <<<"$COMMAND_SHELL_ONLY" || \
+        grep -Eq "(^|[[:space:];&|])[A-Za-z_][A-Za-z0-9_]*=\"?(${SCRATCH_PREFIX_RE}/|${MKTEMP_D_RE})" <<<"$COMMAND_SHELL_ONLY"
     }
 
-    if ast_matched "sed-inplace" && ! scratch_ctx; then
-        block "REMINDER: Use the Edit tool instead of 'sed -i' to modify files. The Edit tool provides safer, more precise string replacements with proper error handling. (In-place edits of scratch files under /tmp are allowed.)"
+    # PROJECT tmp/ EXEMPTION (#2837).
+    #
+    # The user-global rules send scratch output to the project's `tmp/` (listed
+    # in `.git/info/exclude`), so an agent that follows them writes `tmp/x.txt`
+    # and was blocked. A destination counts as scratch when ALL of these hold:
+    #   - it is a literal path starting `tmp/` or `./tmp/` (no expansion, no
+    #     glob or brace characters, no `..`)
+    #   - the command never changes directory (`cd`/`pushd`/`popd`, in any
+    #     position), so `tmp/` resolves
+    #     against the hook input's `.cwd`, the directory git is asked about
+    #   - `git -C "$cwd" check-ignore -q` succeeds. A tracked `tmp/` is not
+    #     ignored (check-ignore skips tracked paths), so it keeps blocking.
+    # EVERY destination of the detector must pass: one repo file among them keeps
+    # the block. Any failure (no `.cwd`, not a repo, git missing, a parse the
+    # helpers cannot read) leaves the block in place.
+    HOOK_CWD=$(printf '%s' "$INPUT" | jq -r '.cwd // empty' 2>/dev/null) || HOOK_CWD=""
+    PROJECT_TMP_RE='^(\./)?tmp/[^/]'
+    DOTDOT_RE='(^|/)\.\.(/|$)'
+
+    project_tmp_path() {
+        local p="$1"
+        case "$p" in
+            \'*\') p="${p#\'}"; p="${p%\'}" ;;
+            \"*\") p="${p#\"}"; p="${p%\"}" ;;
+        esac
+        # Quotes, expansions, and glob/brace characters: the shell, not this
+        # literal, decides the file written, and check-ignore on the literal
+        # says nothing about a tracked file the glob expands to.
+        case "$p" in
+            *[\"\'\$\`\\]*|*\**|*\?*|*\[*|*\{*) return 1 ;;
+        esac
+        [[ "$p" =~ $PROJECT_TMP_RE ]] || return 1
+        [[ "$p" =~ $DOTDOT_RE ]] && return 1
+        env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_COMMON_DIR \
+            git -C "$HOOK_CWD" check-ignore -q -- "$p" 2>/dev/null
+    }
+
+    # Reads candidate paths on stdin, one per line. True only for a non-empty
+    # list whose every entry is a git-ignored project tmp/ path.
+    all_project_tmp() {
+        local p n=0
+        while IFS= read -r p; do
+            n=$((n + 1))
+            project_tmp_path "$p" || return 1
+        done
+        [ "$n" -gt 0 ]
+    }
+
+    # A `cd`/`pushd`/`popd` WORD anywhere voids the exemption, not only one at
+    # a statement start: `builtin cd`, `command cd`, `if cd x; then`, `{ cd x;`
+    # all change directory too. Over-matching (a `cd` inside a quoted argument)
+    # only keeps the block, which is the safe direction.
+    project_tmp_allowed() {
+        [ -n "$HOOK_CWD" ] && [ -d "$HOOK_CWD" ] || return 1
+        ! grep -Eq '(^|[^[:alnum:]_./-])(cd|pushd|popd)([^[:alnum:]_./-]|$)' <<<"$COMMAND_SHELL_ONLY"
+    }
+
+    # Each echo-printf-write match is a file_redirect node whose destination is
+    # a `word`; dropping the operator (`>`, `>>`, `2>`, `&>`, `>|`) leaves it.
+    echo_write_dests() {
+        jq -r '.[] | select(.ruleId == "echo-printf-write") | .text' <<<"$AST_JSON" 2>/dev/null |
+            sed -E 's/^[0-9]*(&>>|&>|>>|>\||>)[[:space:]]*//'
+    }
+
+    # Each sed-inplace match is a whole `sed` command. Re-parse it with a
+    # `sed $$$ARGS` pattern to get its argument nodes, then drop flags, the
+    # script (first positional, unless `-e`/`-f` supplied it), and the empty
+    # BSD backup suffix. What remains are the files being rewritten. A match the
+    # pattern cannot re-read prints the sentinel `?`, which is never a tmp/ path.
+    sed_inplace_operands() {
+        local text args_json arg rest ch script skip dd i
+        local -a args positional
+        while IFS= read -r text; do
+            text=$(jq -r '.' <<<"$text" 2>/dev/null) || { echo "?"; continue; }
+            # shellcheck disable=SC2016  # `$$$ARGS` is an ast-grep metavariable, not a shell expansion
+            args_json=$(printf '%s' "$text" | "$ASTGREP" run --lang bash -p 'sed $$$ARGS' --stdin --json=compact 2>/dev/null |
+                jq -c 'if length == 1 then [.[0].metaVariables.multi.ARGS[]?.text] else empty end' 2>/dev/null) || args_json=""
+            [ -n "$args_json" ] || { echo "?"; continue; }
+            mapfile -t args < <(jq -r '.[] | gsub("\n"; " ")' <<<"$args_json")
+            positional=(); script=0; skip=0; dd=0
+            for arg in "${args[@]}"; do
+                if [ "$skip" -eq 1 ]; then skip=0; continue; fi
+                if [ "$dd" -eq 1 ]; then positional+=("$arg"); continue; fi
+                case "$arg" in
+                    "''"|'""') continue ;;
+                    --) dd=1; continue ;;
+                    --expression|--file) script=1; skip=1; continue ;;
+                    --expression=*|--file=*) script=1; continue ;;
+                    --*) continue ;;
+                    -?*)
+                        # Short cluster: `i` takes the rest as its suffix; `e`/`f`
+                        # take the rest, or the next argument, as the script.
+                        rest="${arg#-}"
+                        for ((i = 0; i < ${#rest}; i++)); do
+                            ch="${rest:i:1}"
+                            case "$ch" in
+                                i) break ;;
+                                e|f|l)
+                                    [ "$ch" = "l" ] || script=1
+                                    [ -n "${rest:i+1}" ] || skip=1
+                                    break ;;
+                            esac
+                        done
+                        continue ;;
+                esac
+                positional+=("$arg")
+            done
+            if [ "$script" -eq 0 ]; then
+                positional=("${positional[@]:1}")
+            fi
+            [ "${#positional[@]}" -gt 0 ] || { echo "?"; continue; }
+            printf '%s\n' "${positional[@]}"
+        done < <(jq -c '.[] | select(.ruleId == "sed-inplace") | .text' <<<"$AST_JSON" 2>/dev/null)
+    }
+
+    if ast_matched "cat-write" && ! scratch_ctx; then
+        block "REMINDER: Use the Write tool instead of 'cat > file' to create files. The Write tool is the proper way to write file contents."
+    fi
+
+    if ast_matched "echo-printf-write" && ! scratch_ctx && \
+       ! { project_tmp_allowed && echo_write_dests | all_project_tmp; }; then
+        block "REMINDER: Use the Write tool instead of 'echo/printf > file' to create files. The Write tool properly handles file creation and provides better error handling. (Writes under /tmp, into a mktemp -d scratch dir, or into a git-ignored project tmp/ are allowed.)"
+    fi
+
+    if ast_matched "sed-inplace" && ! scratch_ctx && \
+       ! { project_tmp_allowed && sed_inplace_operands | all_project_tmp; }; then
+        block "REMINDER: Use the Edit tool instead of 'sed -i' to modify files. The Edit tool provides safer, more precise string replacements with proper error handling. (In-place edits under /tmp, in a mktemp -d scratch dir, or in a git-ignored project tmp/ are allowed.)"
     fi
 fi
 
