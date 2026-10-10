@@ -76,7 +76,7 @@ bash "${CLAUDE_SKILL_DIR}/../<name>/scripts/<name>.sh" --project-dir "$(pwd)"
 ```
 
 For `HAS_SCRIPT=false` components, assess presence from the file-presence
-table in [REFERENCE.md](REFERENCE.md) using the Context probes above. Never
+table in [REFERENCE.md](REFERENCE.md) using the probes in [Context](#context). Never
 re-derive the component list by hand — new detection scripts automatically
 improve this skill via the manifest.
 

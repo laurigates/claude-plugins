@@ -45,7 +45,7 @@ Detect project stack:
 
 ### Step 1: Detect project stack
 
-Identify all languages and tooling from the context above.
+Identify all languages and tooling from the values in [Context](#context).
 
 **Language detection:**
 

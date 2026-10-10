@@ -37,7 +37,7 @@ context: fork
 
 **Delegate this task to the `agents-plugin:docs` agent.**
 
-Use the Agent tool with `subagent_type: agents-plugin:docs` to generate or update project documentation. Pass all the context gathered above and the parsed parameters to the agent.
+Use the Agent tool with `subagent_type: agents-plugin:docs` to generate or update project documentation. Pass all the context gathered in [Context](#context) and the parsed parameters to the agent.
 
 The docs agent should:
 
@@ -82,7 +82,7 @@ The docs agent should:
    - Suggested improvements
 
 Provide the agent with:
-- All context from the section above
+- All context from [Context](#context)
 - The parsed parameters
 - Detected documentation framework (if any)
 

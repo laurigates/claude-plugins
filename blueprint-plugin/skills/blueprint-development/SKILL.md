@@ -37,7 +37,7 @@ Execute the complete Blueprint Development setup and rule generation workflow:
 
 ### Step 1: Verify project readiness
 
-Check context values above:
+Check the values in [Context](#context):
 
 1. If Blueprint initialized = "NO" → Error: "Blueprint not initialized. Run `/blueprint:init` first"
 2. If PRDs present = "0" → Error: "No PRDs found. Create at least one PRD in `docs/prds/` before generating rules"
