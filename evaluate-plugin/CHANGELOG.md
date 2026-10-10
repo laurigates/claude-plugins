@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.6](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.17.5...evaluate-plugin-v1.17.6) (2026-10-10)
+
+
+### Bug Fixes
+
+* **evaluate-plugin:** fail apply_fixture on malformed fixture JSON and add a weak-model-gate golden-set suite ([#2974](https://github.com/laurigates/claude-plugins/issues/2974)) ([87ffed0](https://github.com/laurigates/claude-plugins/commit/87ffed035e301e218a4b2f626a850c26df6df5ce))
+
 ## [1.17.5](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.17.4...evaluate-plugin-v1.17.5) (2026-10-10)
 
 
