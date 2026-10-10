@@ -1465,6 +1465,27 @@ check_skill_body() {
         issues+=("❌ ${plugin}/${skill_name}: SKILL.md or a sidecar restates the retired claim that is_error separates a run that died from one that finished — a completed run can report is_error: true (issue #2718)")
         has_errors=true
       fi
+      # Two further causes that leave the subtype/is_error discriminator
+      # nothing to read, or that it reads correctly while missing the waste:
+      #   (c) 'non-human actor' — claude-code-action refuses a run whose actor
+      #       is a bot BEFORE Claude starts: no execution file, no is_error, no
+      #       num_turns. A github.token push makes the next run's actor
+      #       github-actions[bot]; the maintainer-approved attempt 2 keeps it.
+      #       10 of 21 failed a11y reviews on ForumViriumHelsinki/thelma over
+      #       90 days were this refusal (issue #2865).
+      #   (d) '.claude-pr/' — on a PR that edits .claude/ or CLAUDE.md the
+      #       action restores those paths from origin/<base> and parks the PR's
+      #       copies in .claude-pr/, so Read disagrees with HEAD and an
+      #       unwarned agent burns turns reconciling them; ~14 of 40 turns on
+      #       one overrun went there (issue #2858).
+      # Both tokens live on the SKILL.md page the agent lands on, beside the
+      # Cause 5 row and the Cause 2 pointer.
+      for token in 'non-human actor' '.claude-pr/'; do
+        if ! grep -qF -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain token '${token}' (a bot-actor refusal fails before Claude runs, issue #2865; the base-branch config restore parks a PR's .claude/ edits in .claude-pr/, issue #2858)")
+          has_errors=true
+        fi
+      done
     fi
 
     # Regression: claude-security-settings must warn that flag-scoped deny rules
