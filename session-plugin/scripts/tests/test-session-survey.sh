@@ -33,7 +33,7 @@ check() {
 }
 check_absent() {
   local label="$1" haystack="$2" needle="$3"
-  if printf '%s' "$haystack" | grep -qF "$needle"; then
+  if grep -qF "$needle" <<<"$haystack"; then
     fail=$((fail + 1))
     echo "FAIL: $label (unexpected: $needle)"
   else
@@ -64,7 +64,7 @@ check_lt() {
 # neighbouring row instead of the key under test (the #2219 lesson).
 check_line() {
   local label="$1" haystack="$2" needle="$3"
-  if printf '%s\n' "$haystack" | grep -qxF "$needle"; then
+  if grep -qxF "$needle" <<<"$haystack"; then
     pass=$((pass + 1))
   else
     fail=$((fail + 1))

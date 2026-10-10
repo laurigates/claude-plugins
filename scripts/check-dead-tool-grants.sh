@@ -87,7 +87,7 @@ while IFS= read -r f; do
       [ -n "$name" ] || continue
       # Word-boundaried without \b, which is GNU-only (shell-scripting.md):
       # a grant entry is delimited by list punctuation or a backtick.
-      if printf '%s' "$line" | grep -qE "(^|[,\` ])${name}([,\` ]|$)"; then
+      if grep -qE "(^|[,\` ])${name}([,\` ]|$)" <<<"$line"; then
         issue_count=$((issue_count + 1))
         findings="${findings}  - SEVERITY=ERROR TYPE=dead_tool_grant FILE=${f#./} TOOL=${name} FIX=${succ} MSG=${why}
 "

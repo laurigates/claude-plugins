@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.22.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.21.3...testing-plugin-v3.22.0) (2026-10-10)
+
+
+### Features
+
+* **testing-plugin:** document WebGL apps in GPU-less CI for playwright-testing ([#3003](https://github.com/laurigates/claude-plugins/issues/3003)) ([5e9c84c](https://github.com/laurigates/claude-plugins/commit/5e9c84cf9904a015b1c0d1e5fa60776f8c9be362))
+
 ## [3.21.3](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.21.2...testing-plugin-v3.21.3) (2026-10-07)
 
 

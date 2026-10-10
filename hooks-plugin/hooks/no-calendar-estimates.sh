@@ -165,11 +165,11 @@ PATTERN_MARKER="(ETA|estimate|estimated|estimating|expect|expects|expected|appro
 PATTERN_RATE_UNIT="[0-9]+(\.[0-9]+)?[[:space:]]*(s|ms|sec|secs|second|seconds|min|mins|minute|minutes|h|hr|hrs|hour|hours)[[:space:]]*(/|per[[:space:]])[[:space:]]*[a-z]"
 PATTERN_MEASUREMENT="(measured|measurement|median|average|benchmarked|observed|sampled|throughput)"
 
-if echo "$LAST_RESPONSE" | grep -qiE "$PATTERN_FUTURE|$PATTERN_MARKER"; then
+if grep -qiE "$PATTERN_FUTURE|$PATTERN_MARKER" <<<"$LAST_RESPONSE"; then
     REASON="Avoid quoting AI work in calendar time (hours, days, weeks, months) — it does not map to agent effort and consistently misleads. Restate the estimate as tokens consumed, effort tier (low / medium / high / xhigh / max), tool-call count, or files / lines to touch. Exception: external machine work you measured rather than paced yourself (a CI run, a build, a model download, a render, a long test suite) genuinely is wall-clock — state it as rate × quantity with the measurement named, e.g. \"3870 frames at a measured 1.0 s/frame, so about 65 minutes\"."
 
-    if echo "$LAST_RESPONSE" | grep -qiE "$PATTERN_RATE_UNIT" \
-        && echo "$LAST_RESPONSE" | grep -qiE "$PATTERN_MEASUREMENT"; then
+    if grep -qiE "$PATTERN_RATE_UNIT" <<<"$LAST_RESPONSE" \
+        && grep -qiE "$PATTERN_MEASUREMENT" <<<"$LAST_RESPONSE"; then
         REASON="That names a measured rate, so it reads as external machine work you measured rather than paced yourself (a CI run, a build, a model download, a render, a long test suite). Wall-clock is the honest unit for that — keep it, but state it as rate × quantity with the measurement named, e.g. \"3870 frames at a measured 1.0 s/frame, so about 65 minutes\". A bare total hides whether the time is the hardware's or yours. If part of the figure is your own work rather than the machine's, restate that part as tokens consumed, tool-call count, or files / lines to touch."
     fi
 

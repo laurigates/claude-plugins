@@ -66,7 +66,7 @@ present_udas=$(task _udas 2>/dev/null || true)
 uda_missing=()
 for spec in "${uda_specs[@]}"; do
   uda_name="${spec%%	*}"
-  if printf '%s\n' "$present_udas" | grep -qx "$uda_name"; then
+  if grep -qx "$uda_name" <<<"$present_udas"; then
     continue
   fi
   uda_missing+=("$spec")

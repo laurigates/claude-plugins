@@ -30,14 +30,14 @@ printf 'repos:\n  - repo: https://github.com/gitleaks/gitleaks\n' > "${full}/.pr
 printf '# Security Policy\n' > "${full}/SECURITY.md"
 
 out1="$(bash "$check_script" --home-dir "$HOME" --project-dir "$full")"
-echo "$out1" | grep -q "^DEPENDABOT=true$" || fail "expected DEPENDABOT=true:\n$out1"
-echo "$out1" | grep -q "^CODEQL=true$" || fail "expected CODEQL=true:\n$out1"
-echo "$out1" | grep -q "^GITLEAKS_CONFIG=true$" || fail "expected GITLEAKS_CONFIG=true:\n$out1"
-echo "$out1" | grep -q "^SECURITY_POLICY=true$" || fail "expected SECURITY_POLICY=true:\n$out1"
-echo "$out1" | grep -q "^PRE_COMMIT_GITLEAKS=true$" || fail "expected PRE_COMMIT_GITLEAKS=true:\n$out1"
-echo "$out1" | grep -q "^SECURITY_LAYERS_PRESENT=3$" || fail "expected SECURITY_LAYERS_PRESENT=3:\n$out1"
-echo "$out1" | grep -q "^STATUS=OK$" || fail "expected STATUS=OK for fully-configured project:\n$out1"
-echo "$out1" | grep -q "^LANG_JS=true$" || fail "expected LANG_JS=true:\n$out1"
+grep -q "^DEPENDABOT=true$" <<<"$out1" || fail "expected DEPENDABOT=true:\n$out1"
+grep -q "^CODEQL=true$" <<<"$out1" || fail "expected CODEQL=true:\n$out1"
+grep -q "^GITLEAKS_CONFIG=true$" <<<"$out1" || fail "expected GITLEAKS_CONFIG=true:\n$out1"
+grep -q "^SECURITY_POLICY=true$" <<<"$out1" || fail "expected SECURITY_POLICY=true:\n$out1"
+grep -q "^PRE_COMMIT_GITLEAKS=true$" <<<"$out1" || fail "expected PRE_COMMIT_GITLEAKS=true:\n$out1"
+grep -q "^SECURITY_LAYERS_PRESENT=3$" <<<"$out1" || fail "expected SECURITY_LAYERS_PRESENT=3:\n$out1"
+grep -q "^STATUS=OK$" <<<"$out1" || fail "expected STATUS=OK for fully-configured project:\n$out1"
+grep -q "^LANG_JS=true$" <<<"$out1" || fail "expected LANG_JS=true:\n$out1"
 pass "fully-configured project reports all security layers present and STATUS=OK"
 rm -rf "$full"
 
@@ -46,19 +46,19 @@ rm -rf "$full"
 # -----------------------------------------------------------------------------
 bare="$(mktemp -d)" || { fail "mktemp -d failed"; }
 out2="$(bash "$check_script" --home-dir "$HOME" --project-dir "$bare")"
-echo "$out2" | grep -q "^DEPENDABOT=false$" || fail "expected DEPENDABOT=false:\n$out2"
-echo "$out2" | grep -q "^CODEQL=false$" || fail "expected CODEQL=false:\n$out2"
-echo "$out2" | grep -q "^GITLEAKS_CONFIG=false$" || fail "expected GITLEAKS_CONFIG=false:\n$out2"
-echo "$out2" | grep -q "^SECURITY_POLICY=false$" || fail "expected SECURITY_POLICY=false:\n$out2"
-echo "$out2" | grep -q "^SECURITY_LAYERS_PRESENT=0$" || fail "expected SECURITY_LAYERS_PRESENT=0:\n$out2"
-echo "$out2" | grep -q "^STATUS=WARN$" || fail "expected STATUS=WARN for bare project:\n$out2"
-echo "$out2" | grep -q "^ISSUE_COUNT=4$" || fail "expected ISSUE_COUNT=4 for bare project:\n$out2"
+grep -q "^DEPENDABOT=false$" <<<"$out2" || fail "expected DEPENDABOT=false:\n$out2"
+grep -q "^CODEQL=false$" <<<"$out2" || fail "expected CODEQL=false:\n$out2"
+grep -q "^GITLEAKS_CONFIG=false$" <<<"$out2" || fail "expected GITLEAKS_CONFIG=false:\n$out2"
+grep -q "^SECURITY_POLICY=false$" <<<"$out2" || fail "expected SECURITY_POLICY=false:\n$out2"
+grep -q "^SECURITY_LAYERS_PRESENT=0$" <<<"$out2" || fail "expected SECURITY_LAYERS_PRESENT=0:\n$out2"
+grep -q "^STATUS=WARN$" <<<"$out2" || fail "expected STATUS=WARN for bare project:\n$out2"
+grep -q "^ISSUE_COUNT=4$" <<<"$out2" || fail "expected ISSUE_COUNT=4 for bare project:\n$out2"
 # Guard integrity for the Renovate cases below: a project with NEITHER tool must
 # still warn. Without this, a script that never warns passes every case in the
 # "no warning" direction.
-echo "$out2" | grep -q "^RENOVATE=false$" || fail "expected RENOVATE=false:\n$out2"
-echo "$out2" | grep -q "^DEPENDENCY_AUTOMATION=false$" || fail "expected DEPENDENCY_AUTOMATION=false:\n$out2"
-echo "$out2" | grep -q "TYPE=missing_dependency_automation" \
+grep -q "^RENOVATE=false$" <<<"$out2" || fail "expected RENOVATE=false:\n$out2"
+grep -q "^DEPENDENCY_AUTOMATION=false$" <<<"$out2" || fail "expected DEPENDENCY_AUTOMATION=false:\n$out2"
+grep -q "TYPE=missing_dependency_automation" <<<"$out2" \
   || fail "expected the dependency-automation warning for a bare project:\n$out2"
 pass "bare project reports all security layers missing and STATUS=WARN"
 rm -rf "$bare"
@@ -75,24 +75,24 @@ assert_renovate_only() {
   # $1 = fixture dir, $2 = human label for the config form under test
   local ro_dir="$1" ro_label="$2" ro_out
   ro_out="$(bash "$check_script" --home-dir "$HOME" --project-dir "$ro_dir")"
-  echo "$ro_out" | grep -q "^RENOVATE=true$" \
+  grep -q "^RENOVATE=true$" <<<"$ro_out" \
     || fail "expected RENOVATE=true for $ro_label:\n$ro_out"
-  echo "$ro_out" | grep -q "^DEPENDABOT=false$" \
+  grep -q "^DEPENDABOT=false$" <<<"$ro_out" \
     || fail "expected DEPENDABOT=false for $ro_label:\n$ro_out"
-  echo "$ro_out" | grep -q "^DEPENDENCY_AUTOMATION=true$" \
+  grep -q "^DEPENDENCY_AUTOMATION=true$" <<<"$ro_out" \
     || fail "expected DEPENDENCY_AUTOMATION=true for $ro_label:\n$ro_out"
   # The layer is counted even though Dependabot is absent.
-  echo "$ro_out" | grep -q "^SECURITY_LAYERS_PRESENT=1$" \
+  grep -q "^SECURITY_LAYERS_PRESENT=1$" <<<"$ro_out" \
     || fail "expected SECURITY_LAYERS_PRESENT=1 for $ro_label:\n$ro_out"
   # ...and no warning is raised about it.
-  if echo "$ro_out" | grep -q "TYPE=missing_dependency_automation"; then
+  if grep -q "TYPE=missing_dependency_automation" <<<"$ro_out"; then
     fail "dependency-automation warning must be ABSENT for $ro_label:\n$ro_out"
   fi
-  if echo "$ro_out" | grep -q "missing_dependabot"; then
+  if grep -q "missing_dependabot" <<<"$ro_out"; then
     fail "the retired missing_dependabot token must not reappear for $ro_label:\n$ro_out"
   fi
   # Only the three genuinely-missing layers remain (sast, secrets, policy).
-  echo "$ro_out" | grep -q "^ISSUE_COUNT=3$" \
+  grep -q "^ISSUE_COUNT=3$" <<<"$ro_out" \
     || fail "expected ISSUE_COUNT=3 for $ro_label:\n$ro_out"
 }
 
@@ -122,13 +122,13 @@ rm -rf "$ren_pkg"
 no_ren_pkg="$(mktemp -d)" || { fail "mktemp -d failed"; }
 printf '{"name":"demo","devDependencies":{"renovate":"^41.0.0"}}\n' > "${no_ren_pkg}/package.json"
 out_nrp="$(bash "$check_script" --home-dir "$HOME" --project-dir "$no_ren_pkg")"
-echo "$out_nrp" | grep -q "^LANG_JS=true$" \
+grep -q "^LANG_JS=true$" <<<"$out_nrp" \
   || fail "fixture invalid: package.json should be detected:\n$out_nrp"
-echo "$out_nrp" | grep -q "^RENOVATE=false$" \
+grep -q "^RENOVATE=false$" <<<"$out_nrp" \
   || fail "package.json without a top-level renovate key must not count as Renovate:\n$out_nrp"
-echo "$out_nrp" | grep -q "^DEPENDENCY_AUTOMATION=false$" \
+grep -q "^DEPENDENCY_AUTOMATION=false$" <<<"$out_nrp" \
   || fail "expected DEPENDENCY_AUTOMATION=false:\n$out_nrp"
-echo "$out_nrp" | grep -q "TYPE=missing_dependency_automation" \
+grep -q "TYPE=missing_dependency_automation" <<<"$out_nrp" \
   || fail "expected the dependency-automation warning:\n$out_nrp"
 rm -rf "$no_ren_pkg"
 
@@ -137,13 +137,13 @@ dep_only="$(mktemp -d)" || { fail "mktemp -d failed"; }
 mkdir -p "${dep_only}/.github"
 printf 'version: 2\nupdates: []\n' > "${dep_only}/.github/dependabot.yml"
 out_do="$(bash "$check_script" --home-dir "$HOME" --project-dir "$dep_only")"
-echo "$out_do" | grep -q "^DEPENDABOT=true$" || fail "expected DEPENDABOT=true:\n$out_do"
-echo "$out_do" | grep -q "^RENOVATE=false$" || fail "expected RENOVATE=false:\n$out_do"
-echo "$out_do" | grep -q "^DEPENDENCY_AUTOMATION=true$" \
+grep -q "^DEPENDABOT=true$" <<<"$out_do" || fail "expected DEPENDABOT=true:\n$out_do"
+grep -q "^RENOVATE=false$" <<<"$out_do" || fail "expected RENOVATE=false:\n$out_do"
+grep -q "^DEPENDENCY_AUTOMATION=true$" <<<"$out_do" \
   || fail "Dependabot alone must still satisfy the layer:\n$out_do"
-echo "$out_do" | grep -q "^SECURITY_LAYERS_PRESENT=1$" \
+grep -q "^SECURITY_LAYERS_PRESENT=1$" <<<"$out_do" \
   || fail "expected SECURITY_LAYERS_PRESENT=1 for a Dependabot-only project:\n$out_do"
-if echo "$out_do" | grep -q "TYPE=missing_dependency_automation"; then
+if grep -q "TYPE=missing_dependency_automation" <<<"$out_do"; then
   fail "dependency-automation warning must be ABSENT for a Dependabot-only project:\n$out_do"
 fi
 rm -rf "$dep_only"
@@ -276,9 +276,9 @@ run_sast_case() {
 assert_sast_warns() {
   # $1 = label. The pre-probe behaviour is the FLOOR: anything short of a
   # definitive "no" must keep raising the WARN.
-  echo "$sast_out" | grep -q "TYPE=missing_sast" \
+  grep -q "TYPE=missing_sast" <<<"$sast_out" \
     || fail "expected the missing_sast WARN to survive for $1:\n$sast_out"
-  if echo "$sast_out" | grep -q "TYPE=sast_unavailable"; then
+  if grep -q "TYPE=sast_unavailable" <<<"$sast_out"; then
     fail "sast_unavailable must be ABSENT for $1:\n$sast_out"
   fi
 }
@@ -289,12 +289,12 @@ assert_sast_warns() {
 sast_a="$(mktemp -d)" || { fail "mktemp -d failed"; }
 make_repo "$sast_a" "https://github.com/acme/demo.git"
 run_sast_case "$sast_a" GH_STUB_OUT='true enabled'
-echo "$sast_out" | grep -q "^CODEQL_AVAILABLE=yes$" \
+grep -q "^CODEQL_AVAILABLE=yes$" <<<"$sast_out" \
   || fail "expected CODEQL_AVAILABLE=yes for an enabled private repo:\n$sast_out"
-echo "$sast_out" | grep -q "^CODEQL_AVAILABILITY_REASON=code-security-enabled$" \
+grep -q "^CODEQL_AVAILABILITY_REASON=code-security-enabled$" <<<"$sast_out" \
   || fail "expected reason=code-security-enabled:\n$sast_out"
 assert_sast_warns "code security enabled"
-echo "$sast_out" | grep -q "^STATUS=WARN$" || fail "expected STATUS=WARN:\n$sast_out"
+grep -q "^STATUS=WARN$" <<<"$sast_out" || fail "expected STATUS=WARN:\n$sast_out"
 # Non-vacuity: the probe genuinely ran and hit the documented endpoint.
 grep -q 'repos/{owner}/{repo}' "$sast_log" \
   || fail "expected the probe to call gh api repos/{owner}/{repo}: $(cat "$sast_log")"
@@ -305,14 +305,14 @@ rm -rf "$sast_a"
 sast_b="$(mktemp -d)" || { fail "mktemp -d failed"; }
 make_repo "$sast_b" "https://github.com/acme/demo.git"
 run_sast_case "$sast_b" GH_STUB_OUT='true disabled'
-echo "$sast_out" | grep -q "^CODEQL_AVAILABLE=no$" \
+grep -q "^CODEQL_AVAILABLE=no$" <<<"$sast_out" \
   || fail "expected CODEQL_AVAILABLE=no for a disabled private repo:\n$sast_out"
-echo "$sast_out" | grep -q "^CODEQL_AVAILABILITY_REASON=code-security-disabled$" \
+grep -q "^CODEQL_AVAILABILITY_REASON=code-security-disabled$" <<<"$sast_out" \
   || fail "expected reason=code-security-disabled:\n$sast_out"
-if echo "$sast_out" | grep -q "TYPE=missing_sast"; then
+if grep -q "TYPE=missing_sast" <<<"$sast_out"; then
   fail "missing_sast must NOT be raised where CodeQL cannot run:\n$sast_out"
 fi
-echo "$sast_out" | grep -q "SEVERITY=INFO TYPE=sast_unavailable" \
+grep -q "SEVERITY=INFO TYPE=sast_unavailable" <<<"$sast_out" \
   || fail "expected an INFO sast_unavailable row:\n$sast_out"
 # The downgraded row must state the cause, not go silent (issue #2498).
 echo "$sast_out" | grep "TYPE=sast_unavailable" | grep -q "code-security-disabled" \
@@ -333,9 +333,9 @@ rm -rf "$sast_b"
 sast_c="$(mktemp -d)" || { fail "mktemp -d failed"; }
 make_repo "$sast_c" "https://github.com/acme/demo.git"
 run_sast_case "$sast_c" GH_STUB_OUT='false '
-echo "$sast_out" | grep -q "^CODEQL_AVAILABLE=yes$" \
+grep -q "^CODEQL_AVAILABLE=yes$" <<<"$sast_out" \
   || fail "expected CODEQL_AVAILABLE=yes for a public repo:\n$sast_out"
-echo "$sast_out" | grep -q "^CODEQL_AVAILABILITY_REASON=public-repo$" \
+grep -q "^CODEQL_AVAILABILITY_REASON=public-repo$" <<<"$sast_out" \
   || fail "expected reason=public-repo:\n$sast_out"
 assert_sast_warns "public repo"
 rm -rf "$sast_c"
@@ -344,9 +344,9 @@ rm -rf "$sast_c"
 sast_d="$(mktemp -d)" || { fail "mktemp -d failed"; }
 make_repo "$sast_d" "https://github.com/acme/demo.git"
 run_sast_case "$sast_d" GH_STUB_OUT='true '
-echo "$sast_out" | grep -q "^CODEQL_AVAILABLE=unknown$" \
+grep -q "^CODEQL_AVAILABLE=unknown$" <<<"$sast_out" \
   || fail "expected CODEQL_AVAILABLE=unknown when the status field is absent:\n$sast_out"
-echo "$sast_out" | grep -q "^CODEQL_AVAILABILITY_REASON=status-field-absent$" \
+grep -q "^CODEQL_AVAILABILITY_REASON=status-field-absent$" <<<"$sast_out" \
   || fail "expected reason=status-field-absent:\n$sast_out"
 assert_sast_warns "absent security_and_analysis field"
 rm -rf "$sast_d"
@@ -357,12 +357,12 @@ sast_e="$(mktemp -d)" || { fail "mktemp -d failed"; }
 make_repo "$sast_e" "https://github.com/acme/demo.git"
 run_sast_case "$sast_e" GH_STUB_RC=1 \
   GH_STUB_ERR='gh: To use GitHub CLI in a GitHub Actions workflow, set the GH_TOKEN environment variable. Try authenticating with: gh auth login'
-echo "$sast_out" | grep -q "^CODEQL_AVAILABLE=unknown$" \
+grep -q "^CODEQL_AVAILABLE=unknown$" <<<"$sast_out" \
   || fail "expected CODEQL_AVAILABLE=unknown for unauthenticated gh:\n$sast_out"
-echo "$sast_out" | grep -q "^CODEQL_AVAILABILITY_REASON=gh-unauthenticated$" \
+grep -q "^CODEQL_AVAILABILITY_REASON=gh-unauthenticated$" <<<"$sast_out" \
   || fail "expected reason=gh-unauthenticated:\n$sast_out"
 assert_sast_warns "unauthenticated gh"
-echo "$sast_out" | grep -q "^STATUS=WARN$" || fail "expected STATUS=WARN:\n$sast_out"
+grep -q "^STATUS=WARN$" <<<"$sast_out" || fail "expected STATUS=WARN:\n$sast_out"
 rm -rf "$sast_e"
 
 # 4f — OPT-OUT: the documented escape hatch skips the probe entirely and keeps
@@ -370,7 +370,7 @@ rm -rf "$sast_e"
 sast_f="$(mktemp -d)" || { fail "mktemp -d failed"; }
 make_repo "$sast_f" "https://github.com/acme/demo.git"
 run_sast_case "$sast_f" CONFIGURE_SECURITY_NO_GHAS_PROBE=1 GH_STUB_OUT='true disabled'
-echo "$sast_out" | grep -q "^CODEQL_AVAILABILITY_REASON=opt-out$" \
+grep -q "^CODEQL_AVAILABILITY_REASON=opt-out$" <<<"$sast_out" \
   || fail "expected reason=opt-out:\n$sast_out"
 assert_sast_warns "probe opted out"
 [ -s "$sast_log" ] && fail "the opt-out must invoke no gh call: $(cat "$sast_log")"
@@ -384,8 +384,8 @@ mkdir -p "${sast_g}/.github/workflows"
 printf 'name: CodeQL\njobs:\n  analyze:\n    steps:\n      - uses: github/codeql-action/analyze@v3\n' \
   > "${sast_g}/.github/workflows/codeql.yml"
 run_sast_case "$sast_g" GH_STUB_OUT='true disabled'
-echo "$sast_out" | grep -q "^CODEQL=true$" || fail "fixture invalid: CODEQL should be true:\n$sast_out"
-echo "$sast_out" | grep -q "^CODEQL_AVAILABILITY_REASON=not-probed$" \
+grep -q "^CODEQL=true$" <<<"$sast_out" || fail "fixture invalid: CODEQL should be true:\n$sast_out"
+grep -q "^CODEQL_AVAILABILITY_REASON=not-probed$" <<<"$sast_out" \
   || fail "a configured repo must not be probed:\n$sast_out"
 [ -s "$sast_log" ] && fail "a configured repo must invoke no gh call: $(cat "$sast_log")"
 rm -rf "$sast_g"
@@ -394,7 +394,7 @@ rm -rf "$sast_g"
 sast_h="$(mktemp -d)" || { fail "mktemp -d failed"; }
 make_repo "$sast_h" ""
 run_sast_case "$sast_h" GH_STUB_OUT='true disabled'
-echo "$sast_out" | grep -q "^CODEQL_AVAILABILITY_REASON=no-remote$" \
+grep -q "^CODEQL_AVAILABILITY_REASON=no-remote$" <<<"$sast_out" \
   || fail "expected reason=no-remote:\n$sast_out"
 assert_sast_warns "repo with no remote"
 [ -s "$sast_log" ] && fail "a remote-less repo must invoke no gh call: $(cat "$sast_log")"
@@ -403,7 +403,7 @@ rm -rf "$sast_h"
 sast_i="$(mktemp -d)" || { fail "mktemp -d failed"; }
 make_repo "$sast_i" "https://gitlab.com/acme/demo.git"
 run_sast_case "$sast_i" GH_STUB_OUT='true disabled'
-echo "$sast_out" | grep -q "^CODEQL_AVAILABILITY_REASON=not-github$" \
+grep -q "^CODEQL_AVAILABILITY_REASON=not-github$" <<<"$sast_out" \
   || fail "expected reason=not-github:\n$sast_out"
 assert_sast_warns "non-GitHub remote"
 [ -s "$sast_log" ] && fail "a non-GitHub remote must invoke no gh call: $(cat "$sast_log")"
@@ -417,11 +417,11 @@ printf '{"extends":["config:recommended"]}\n' > "${sast_j}/renovate.json"
 printf '[allowlist]\n' > "${sast_j}/.gitleaks.toml"
 printf '# Security Policy\n' > "${sast_j}/SECURITY.md"
 run_sast_case "$sast_j" GH_STUB_OUT='true disabled'
-echo "$sast_out" | grep -q "^STATUS=OK$" \
+grep -q "^STATUS=OK$" <<<"$sast_out" \
   || fail "expected STATUS=OK when the only missing layer cannot be adopted:\n$sast_out"
-echo "$sast_out" | grep -q "^ISSUE_COUNT=1$" \
+grep -q "^ISSUE_COUNT=1$" <<<"$sast_out" \
   || fail "expected ISSUE_COUNT=1 (the INFO row alone):\n$sast_out"
-if echo "$sast_out" | grep -q "SEVERITY=WARN"; then
+if grep -q "SEVERITY=WARN" <<<"$sast_out"; then
   fail "no WARN row should remain:\n$sast_out"
 fi
 [ "$sast_rc" -eq 0 ] || fail "expected exit 0, got $sast_rc"

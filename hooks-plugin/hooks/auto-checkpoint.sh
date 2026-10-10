@@ -73,32 +73,32 @@ create_checkpoint() {
 # Detect destructive operations and checkpoint before allowing them
 
 # git reset (any form)
-if echo "$COMMAND" | grep -Eq '^\s*git\s+reset\b'; then
+if grep -Eq '^\s*git\s+reset\b' <<<"$COMMAND"; then
   create_checkpoint "git reset"
   exit 0
 fi
 
 # git checkout -- <files> (discarding changes)
-if echo "$COMMAND" | grep -Eq 'git\s+checkout\s+--\s+'; then
+if grep -Eq 'git\s+checkout\s+--\s+' <<<"$COMMAND"; then
   create_checkpoint "git checkout file restore"
   exit 0
 fi
 
 # git restore (discarding changes)
-if echo "$COMMAND" | grep -Eq 'git\s+restore\s+' && ! echo "$COMMAND" | grep -q -- '--staged'; then
+if grep -Eq 'git\s+restore\s+' <<<"$COMMAND" && ! grep -q -- '--staged' <<<"$COMMAND"; then
   create_checkpoint "git restore"
   exit 0
 fi
 
 # rm -rf with multiple files or directories (not just build artifacts)
-if echo "$COMMAND" | grep -Eq 'rm\s+(-rf|-fr)\s+' &&
-  ! echo "$COMMAND" | grep -Eq 'rm\s+(-rf|-fr)\s+(node_modules|dist|build|\.next|\.cache|__pycache__|\.pytest_cache|target|\.build)\b'; then
+if grep -Eq 'rm\s+(-rf|-fr)\s+' <<<"$COMMAND" &&
+  ! grep -Eq 'rm\s+(-rf|-fr)\s+(node_modules|dist|build|\.next|\.cache|__pycache__|\.pytest_cache|target|\.build)\b' <<<"$COMMAND"; then
   create_checkpoint "rm -rf"
   exit 0
 fi
 
 # git clean (removes untracked files)
-if echo "$COMMAND" | grep -Eq 'git\s+clean\s+-[a-z]*f'; then
+if grep -Eq 'git\s+clean\s+-[a-z]*f' <<<"$COMMAND"; then
   create_checkpoint "git clean"
   exit 0
 fi

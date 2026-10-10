@@ -333,7 +333,7 @@ while IFS='|' read -r hash ref ts subject; do
   esac
 
   # Skip stashes that existed at session start (in the baseline)
-  if [ -n "$BASELINE_HASHES" ] && echo "$BASELINE_HASHES" | grep -qF "$hash" 2>/dev/null; then
+  if [ -n "$BASELINE_HASHES" ] && grep -qF "$hash" <<<"$BASELINE_HASHES" 2>/dev/null; then
     continue
   fi
 
@@ -346,7 +346,7 @@ while IFS='|' read -r hash ref ts subject; do
   # Filter 5: already surfaced to the user earlier in this session. Reviewing
   # a stash and keeping it deliberately must clear the block; only deleting
   # the stash used to, which made the block unsatisfiable (#2686).
-  if [ -n "$REPORTED_HASHES" ] && printf '%s\n' "$REPORTED_HASHES" | grep -qF "$hash" 2>/dev/null; then
+  if [ -n "$REPORTED_HASHES" ] && grep -qF "$hash" <<<"$REPORTED_HASHES" 2>/dev/null; then
     continue
   fi
 
@@ -366,7 +366,7 @@ while IFS='|' read -r hash ref ts subject; do
   # toward-reporting contract. A NON-EMPTY index only suppresses trees
   # actually present in it, so a walk that stopped early (the max-count cap)
   # can only over-report, never under-report.
-  if ! printf '%s\n' "$COMMITTED_TREES" | grep -qFx "$STASH_TREE"; then
+  if ! grep -qFx "$STASH_TREE" <<<"$COMMITTED_TREES"; then
     NEW_COUNT=$((NEW_COUNT + 1))
     AGE=$((NOW - ts))
     HOURS=$((AGE / 3600))

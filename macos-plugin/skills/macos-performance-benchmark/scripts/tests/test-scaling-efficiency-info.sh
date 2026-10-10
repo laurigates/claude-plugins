@@ -47,8 +47,8 @@ tsv_rows() { awk -F'\t' -v s="$2" '$1 == s' "${1}/summary.tsv" 2>/dev/null | wc 
 # 336 / (100 * 14) = 24% — the value the issue measured on a real 10P+4E Mac.
 asym_dir="$SANDBOX/asymmetric"
 out="$(emit_in_sandbox "$asym_dir" 'report_scaling 336 100 14')"
-check "asymmetric 24% is reported"            "printf '%s' \"\$out\" | grep -q '24%'"
-check "asymmetric 24% is emitted as INFO"     "printf '%s' \"\$out\" | grep -q '\\[INFO\\]'"
+check "asymmetric 24% is reported"            "grep -q '24%' <<<\"\$out\""
+check "asymmetric 24% is emitted as INFO"     "grep -q '\\[INFO\\]' <<<\"\$out\""
 check "asymmetric 24% writes exactly one row" "[ \"\$(awk 'END{print NR}' '$asym_dir/summary.tsv')\" = 1 ]"
 check "asymmetric 24% row is INFO"            "[ \"\$(tsv_rows '$asym_dir' INFO)\" = 1 ]"
 check "asymmetric 24% emits no WARN"          "[ \"\$(tsv_rows '$asym_dir' WARN)\" = 0 ]"
@@ -78,7 +78,7 @@ check "control: emitters do write PASS rows" "[ \"\$(tsv_rows '$ctrl_dir' PASS)\
 degen_dir="$SANDBOX/degenerate"
 out="$(emit_in_sandbox "$degen_dir" 'report_scaling "" 100 14; report_scaling 336 0 14; report_scaling 336 abc 14')"
 check "degenerate inputs emit nothing"       "[ -d '$degen_dir' ] && [ ! -s '$degen_dir/summary.tsv' ]"
-check "degenerate inputs raise no bash error" "! printf '%s' \"\$out\" | grep -qiE 'unbound variable|syntax error'"
+check "degenerate inputs raise no bash error" "! grep -qiE 'unbound variable|syntax error' <<<\"\$out\""
 
 # ── 5. The removed floor stays removed ────────────────────────────────────────
 check "config.sh defines no SCALING_WARN_PCT" \

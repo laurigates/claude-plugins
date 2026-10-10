@@ -192,7 +192,7 @@ blocking_uuids=$(task "${proj_filter[@]}" status:pending +BLOCKING export 2>/dev
   | jq -r '.[].uuid' 2>/dev/null || true)
 
 is_blocking() {
-  printf '%s\n' "$blocking_uuids" | grep -qx "$1"
+  grep -qx "$1" <<<"$blocking_uuids"
 }
 
 # --- Cache upstream state per ref -----------------------------------------
@@ -292,8 +292,8 @@ while [ "$i" -lt "$task_count" ]; do
     # Every ref resolved stale. Aggregate: an ambiguous pr-closed dominates
     # (kept out of the bounded auto-apply set); else pr-merged if any PR merged;
     # else issue-closed.
-    if printf '%s\n' "${components[@]}" | grep -qx 'pr-closed'; then verdict="pr-closed"
-    elif printf '%s\n' "${components[@]}" | grep -qx 'pr-merged'; then verdict="pr-merged"
+    if grep -qx 'pr-closed' <<<"$(printf '%s\n' "${components[@]}")"; then verdict="pr-closed"
+    elif grep -qx 'pr-merged' <<<"$(printf '%s\n' "${components[@]}")"; then verdict="pr-merged"
     else verdict="issue-closed"; fi
     if [ "${#reasons[@]}" -eq 1 ]; then
       reason="${reasons[0]}"
