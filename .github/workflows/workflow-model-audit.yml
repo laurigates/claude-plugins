@@ -68,6 +68,9 @@ jobs:
         uses: ./.github/actions/script-to-issue
         with:
           label: workflow-model-audit
+          # The title this job's Claude prompt files. Without it, any open issue that
+          # merely carries this label for routing switches the audit off (#2729).
+          title-prefix: 'Workflow model/effort audit:'
           force: 'false'
 
       - name: Pre-compute deterministic data
