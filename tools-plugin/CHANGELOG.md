@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.13.4](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.13.3...tools-plugin-v2.13.4) (2026-10-10)
+
+
+### Bug Fixes
+
+* **tools-plugin:** port recipe-help's scope fixes from the lab copy ([#3012](https://github.com/laurigates/claude-plugins/issues/3012)) ([c3fb9e0](https://github.com/laurigates/claude-plugins/commit/c3fb9e02ebeaf434273bc397e6a8d6556f42ce14))
+
+
+### Performance
+
+* **skills:** allow Haiku 5.5 within measured limits and run mechanical skills on it ([#3019](https://github.com/laurigates/claude-plugins/issues/3019)) ([21a20f2](https://github.com/laurigates/claude-plugins/commit/21a20f2c8157bdc22ed9ed2d9fb608c9d9136230))
+
+
+### Documentation
+
+* **skills:** point Context-block references at the Context anchor and lower the positional baseline ([#2973](https://github.com/laurigates/claude-plugins/issues/2973)) ([921b3be](https://github.com/laurigates/claude-plugins/commit/921b3be483a0e8f5cc709dc0369eb659b599bbeb))
+
 ## [2.13.3](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.13.2...tools-plugin-v2.13.3) (2026-10-10)
 
 
