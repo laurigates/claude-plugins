@@ -55,7 +55,7 @@ trap 'rm -rf "$install_tmp"' EXIT
 # export-antigravity.sh exits 0 on STATUS=WARN, so read its STATUS line: a
 # skipped agent or a failed hook generation must not install as success.
 install_export_out="$("$install_script_dir/export-antigravity.sh" "$install_tmp" 2>&1)" || true
-if ! printf '%s\n' "$install_export_out" | grep -qx 'STATUS=OK'; then
+if ! grep -qx 'STATUS=OK' <<<"$install_export_out"; then
     printf '%s\n' "$install_export_out" >&2
     echo "STATUS=ERROR"
     echo "ISSUE_COUNT=1"
