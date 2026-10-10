@@ -179,20 +179,20 @@ out3="$(bash "$audit_script" --home-dir "$home" --project-dir "$proj3")"
 rc3=$?
 
 # ADR-NNN-title.md files are examined, from docs/adr/, with a frontmatter fallback.
-echo "$out3" | grep -q "^ADR_DIR=docs/adr$" \
+grep -q "^ADR_DIR=docs/adr$" <<<"$out3" \
   || fail "expected ADR_DIR=docs/adr (docs/adrs absent), got:\n$out3"
-echo "$out3" | grep -q "^ADR_WITH_ID=3$" \
+grep -q "^ADR_WITH_ID=3$" <<<"$out3" \
   || fail "expected ADR_WITH_ID=3 (ADR-001, ADR-003, frontmatter-only ADR-004), got:\n$out3"
-echo "$out3" | grep -q "^ADR_NEEDS_ID=1$" \
+grep -q "^ADR_NEEDS_ID=1$" <<<"$out3" \
   || fail "expected ADR_NEEDS_ID=1 for the id-less ADR-002, got:\n$out3"
-echo "$out3" | grep -q "TYPE=needs_id .*ADR-002-analysis-workspace.md KIND=ADR EXPECTED=ADR-002" \
+grep -q "TYPE=needs_id .*ADR-002-analysis-workspace.md KIND=ADR EXPECTED=ADR-002" <<<"$out3" \
   || fail "expected needs_id EXPECTED=ADR-002 derived from the ADR-NNN- filename, got:\n$out3"
-echo "$out3" | grep -q "^ADR_FRONTMATTER_ONLY=1$" \
+grep -q "^ADR_FRONTMATTER_ONLY=1$" <<<"$out3" \
   || fail "expected ADR_FRONTMATTER_ONLY=1, got:\n$out3"
 pass "ADR-NNN-title.md basenames are examined, with a frontmatter-id fallback"
 
 # Duplicate PRP-010.
-echo "$out3" | grep -q "^DUPLICATE_IDS=1$" \
+grep -q "^DUPLICATE_IDS=1$" <<<"$out3" \
   || fail "expected DUPLICATE_IDS=1, got:\n$out3"
 echo "$out3" | grep "TYPE=duplicate_id KIND=PRP ID=PRP-010" | grep "gemini-embedding-2-evaluation.md" \
   | grep -q "theme-curation-consolidation.md" \
@@ -200,45 +200,45 @@ echo "$out3" | grep "TYPE=duplicate_id KIND=PRP ID=PRP-010" | grep "gemini-embed
 pass "duplicate frontmatter id within a kind is an ERROR naming both docs"
 
 # Swapped registry pair: both docs flagged.
-echo "$out3" | grep -q "^REGISTRY_PRESENT=true$" \
+grep -q "^REGISTRY_PRESENT=true$" <<<"$out3" \
   || fail "expected REGISTRY_PRESENT=true, got:\n$out3"
-echo "$out3" | grep -q "^REGISTRY_ID_PATH_MISMATCH=2$" \
+grep -q "^REGISTRY_ID_PATH_MISMATCH=2$" <<<"$out3" \
   || fail "expected REGISTRY_ID_PATH_MISMATCH=2 for the swapped pair, got:\n$out3"
-echo "$out3" | grep -q "SEVERITY=ERROR TYPE=id_path_mismatch DOC=docs/prps/openfeature-integration-prp.md HAS=PRP-008 REGISTRY=PRP-009" \
+grep -q "SEVERITY=ERROR TYPE=id_path_mismatch DOC=docs/prps/openfeature-integration-prp.md HAS=PRP-008 REGISTRY=PRP-009" <<<"$out3" \
   || fail "expected id_path_mismatch for openfeature (HAS=PRP-008 REGISTRY=PRP-009), got:\n$out3"
-echo "$out3" | grep -q "SEVERITY=ERROR TYPE=id_path_mismatch DOC=docs/prps/hierarchy-aware-duplicate-detection.md HAS=PRP-009 REGISTRY=PRP-008" \
+grep -q "SEVERITY=ERROR TYPE=id_path_mismatch DOC=docs/prps/hierarchy-aware-duplicate-detection.md HAS=PRP-009 REGISTRY=PRP-008" <<<"$out3" \
   || fail "expected id_path_mismatch for hierarchy (HAS=PRP-009 REGISTRY=PRP-008), got:\n$out3"
 pass "a swapped registry id<->path pair is an ERROR on both docs"
 
 # Unregistered documents: ADR-003, ADR-004 and both PRP-010 docs.
-echo "$out3" | grep -q "^REGISTRY_UNREGISTERED=4$" \
+grep -q "^REGISTRY_UNREGISTERED=4$" <<<"$out3" \
   || fail "expected REGISTRY_UNREGISTERED=4, got:\n$out3"
-echo "$out3" | grep -q "SEVERITY=WARN TYPE=unregistered DOC=docs/adr/ADR-003-tiles.md KIND=ADR ID=ADR-003" \
+grep -q "SEVERITY=WARN TYPE=unregistered DOC=docs/adr/ADR-003-tiles.md KIND=ADR ID=ADR-003" <<<"$out3" \
   || fail "expected ADR-003 reported unregistered, got:\n$out3"
 echo "$out3" | grep "TYPE=unregistered" | grep -qE "ADR-001-progressive-rendering|discovery.md" \
   && fail "registered documents must not be reported unregistered:\n$out3"
 pass "documents on disk but absent from id_registry are WARN unregistered"
 
 # Registry path missing on disk.
-echo "$out3" | grep -q "SEVERITY=ERROR TYPE=registry_path_missing ID=PRP-011 PATH=docs/prps/removed-long-ago.md" \
+grep -q "SEVERITY=ERROR TYPE=registry_path_missing ID=PRP-011 PATH=docs/prps/removed-long-ago.md" <<<"$out3" \
   || fail "expected registry_path_missing for PRP-011, got:\n$out3"
 pass "a registry path missing on disk is an ERROR"
 
 # Stale counters: last_adr=2 < ADR-004, last_prp=9 < PRP-010; last_prd=1 is current.
-echo "$out3" | grep -q "^COUNTER_STALE=2$" \
+grep -q "^COUNTER_STALE=2$" <<<"$out3" \
   || fail "expected COUNTER_STALE=2, got:\n$out3"
-echo "$out3" | grep -q "TYPE=counter_stale COUNTER=last_adr VALUE=2 MAX_ON_DISK=ADR-4" \
+grep -q "TYPE=counter_stale COUNTER=last_adr VALUE=2 MAX_ON_DISK=ADR-4" <<<"$out3" \
   || fail "expected counter_stale for last_adr, got:\n$out3"
-echo "$out3" | grep -q "TYPE=counter_stale COUNTER=last_prp VALUE=9 MAX_ON_DISK=PRP-10" \
+grep -q "TYPE=counter_stale COUNTER=last_prp VALUE=9 MAX_ON_DISK=PRP-10" <<<"$out3" \
   || fail "expected counter_stale for last_prp, got:\n$out3"
-echo "$out3" | grep -q "COUNTER=last_prd" \
+grep -q "COUNTER=last_prd" <<<"$out3" \
   && fail "last_prd=1 equals the highest PRD on disk and must not be stale:\n$out3"
 pass "last_* counters below the highest id on disk are WARN counter_stale"
 
 # Roll-up: ERROR, exit 1, REASON= naming the first ERROR finding.
-echo "$out3" | grep -q "^STATUS=ERROR$" || fail "expected STATUS=ERROR, got:\n$out3"
+grep -q "^STATUS=ERROR$" <<<"$out3" || fail "expected STATUS=ERROR, got:\n$out3"
 [ "$rc3" -eq 1 ] || fail "expected exit 1 on ERROR, got $rc3"
-echo "$out3" | grep -q "^REASON=duplicate_id: KIND=PRP ID=PRP-010" \
+grep -q "^REASON=duplicate_id: KIND=PRP ID=PRP-010" <<<"$out3" \
   || fail "expected REASON=duplicate_id: ..., got:\n$out3"
 pass "thelma-shaped tree rolls up to STATUS=ERROR with a REASON="
 validate_contract "thelma-shaped tree" "$out3"
@@ -260,15 +260,15 @@ for manifest_body in \
   out4="$(bash "$audit_script" --home-dir "$home" --project-dir "$proj4" 2>&1)"
   rc4=$?
   [ "$rc4" -eq 0 ] || fail "absent registry must exit 0 (manifest: $manifest_body), got $rc4:\n$out4"
-  echo "$out4" | grep -q "^REGISTRY_PRESENT=false$" \
+  grep -q "^REGISTRY_PRESENT=false$" <<<"$out4" \
     || fail "expected REGISTRY_PRESENT=false (manifest: $manifest_body), got:\n$out4"
-  echo "$out4" | grep -qE "TYPE=(unregistered|counter_stale|id_path_mismatch|registry_path_missing)" \
+  grep -qE "TYPE=(unregistered|counter_stale|id_path_mismatch|registry_path_missing)" <<<"$out4" \
     && fail "absent registry must emit no registry rows (manifest: $manifest_body):\n$out4"
-  echo "$out4" | grep -q "^STATUS=OK$" \
+  grep -q "^STATUS=OK$" <<<"$out4" \
     || fail "expected STATUS=OK with no registry (manifest: $manifest_body), got:\n$out4"
-  echo "$out4" | grep -q "^ADR_WITH_ID=2$" \
+  grep -q "^ADR_WITH_ID=2$" <<<"$out4" \
     || fail "expected both ADR namings counted (manifest: $manifest_body), got:\n$out4"
-  echo "$out4" | grep -qiE "jq: error|null \(null\)" \
+  grep -qiE "jq: error|null \(null\)" <<<"$out4" \
     && fail "a null registry must not surface a jq error (manifest: $manifest_body):\n$out4"
 done
 pass "absent or null id_registry/documents: REGISTRY_PRESENT=false, no registry rows, exit 0"
