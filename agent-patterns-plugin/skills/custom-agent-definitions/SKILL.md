@@ -4,7 +4,7 @@ description: Write and configure custom agent definitions in Claude Code agents/
 user-invocable: false
 allowed-tools: Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-09-23
+modified: 2026-10-09
 compatibility: claude-code
 reviewed: 2026-09-23
 ---
@@ -22,7 +22,7 @@ complete security auditor, plugin layout, common patterns), see
 | Use this skill when... | Use agent-teams instead when... |
 |---|---|
 | Authoring a new `.md` agent definition file in `.claude/agents/` | Spawning multiple already-defined agents that coordinate as a team |
-| Configuring a single agent's `model`, `allowed-tools`, or `isolation` | Setting up a lead/teammate architecture with a shared task list |
+| Configuring a single agent's `model`, `tools`, or `isolation` | Setting up a lead/teammate architecture with a shared task list |
 | Constraining tool access for a specialised read-only or write-restricted agent | Sequencing parallel work across worktrees (see parallel-agent-dispatch) |
 | Writing the system prompt that defines what one agent does | Auditing existing agent definitions for security (see meta-audit) |
 
@@ -38,7 +38,7 @@ isolation settings. They are defined in `.claude/agents/` or via plugin
 name: my-custom-agent
 description: What this agent does
 model: sonnet
-allowed-tools: Bash, Read, Grep, Glob
+tools: Bash, Read, Grep, Glob
 ---
 
 # Agent System Prompt
@@ -64,15 +64,17 @@ new subagent. On an agent it is not a documented field, and Claude Code ignores
 it without an error. See [REFERENCE.md → Isolated research agent](REFERENCE.md#isolated-research-agent)
 and `.claude/rules/agent-development.md` § Context Isolation.
 
-### Tool Access (allowed vs disallowed)
+### Tool Access (`tools` vs `disallowedTools`)
 
 | Field | Purpose | Behavior |
 |-------|---------|----------|
-| `allowed-tools` | Whitelist of permitted tools | Agent can ONLY use these tools |
+| `tools` | Whitelist of permitted tools | Agent can ONLY use these tools |
 | `disallowedTools` | Blacklist of forbidden tools | Agent can use all tools EXCEPT these |
 
 Use `disallowedTools` for read-only agents, restricting dangerous capabilities,
 and sandboxing. The two combine — an explicit whitelist plus a safety blacklist.
+`allowed-tools` is the **skill** spelling of the whitelist: on an agent Claude
+Code ignores it without an error, so the agent keeps every tool.
 See [REFERENCE.md → Read-only explorer](REFERENCE.md#read-only-explorer-disallowedtools).
 
 ### Agent Field for Delegation
@@ -106,7 +108,7 @@ agent: security-auditor
 
 1. **Principle of least privilege** — grant only the tools the agent needs.
 2. **Rely on default isolation** — a named agent never sees the caller's conversation, so exploratory work stays out of the main context without any field. Only documented agent fields take effect; an unrecognized key, such as a skill's `context:`, is ignored without an error.
-3. **Combine allowed + disallowed** — explicit whitelist with a safety blacklist.
+3. **Combine `tools` + `disallowedTools`** — explicit whitelist with a safety blacklist.
 4. **Clear descriptions** — describe what the agent does and its boundaries.
 5. **Model and effort** — `model: opus` is the floor for any agent whose output
    re-enters the main loop (a weaker delegate degrades everything downstream;
@@ -153,7 +155,7 @@ Worked YAML for each practice is in [REFERENCE.md → Best-practice snippets](RE
 
 | Pattern | Fields |
 |---------|--------|
-| Whitelist only | `allowed-tools: Tool1, Tool2` |
+| Whitelist only | `tools: Tool1, Tool2` |
 | Blacklist only | `disallowedTools: Tool1, Tool2` |
 | Combined | Both fields specified |
 
