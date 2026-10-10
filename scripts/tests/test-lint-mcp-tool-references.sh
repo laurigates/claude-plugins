@@ -114,19 +114,19 @@ Run `mcp__pal__listmodels` once at the start of the consult.
 EOF
 run_fixture "$fx"
 out="$FIXTURE_OUT"
-if [ "$FIXTURE_EXIT" -eq 1 ] && printf '%s' "$out" | grep -q 'multi-model-delegation/SKILL.md'; then
+if [ "$FIXTURE_EXIT" -eq 1 ] && grep -q 'multi-model-delegation/SKILL.md' <<<"$out"; then
   ok "bare mcp__pal__ prefix in a scoped skill body is flagged"
 else
   bad "bare mcp__pal__ prefix in a scoped skill body is flagged" "exit=$FIXTURE_EXIT
 $out"
 fi
-if printf '%s' "$out" | grep -q 'pal-mcp-server'; then
+if grep -q 'pal-mcp-server' <<<"$out"; then
   ok "the finding names the derived-prefix fix"
 else
   bad "the finding names the derived-prefix fix" "$out"
 fi
 # Message wording is pinned so a gratuitous reword is a deliberate, tested act.
-if printf '%s' "$out" | grep -qF 'Tool:  mcp__pal__ (not exposed by its MCP server)'; then
+if grep -qF 'Tool:  mcp__pal__ (not exposed by its MCP server)' <<<"$out"; then
   ok "the ERROR block's Tool: line keeps its wording"
 else
   bad "the ERROR block's Tool: line keeps its wording" "$out"
@@ -236,7 +236,7 @@ printf 'Call `mcp__pal__thinkdeep` for the deep dig.\n' \
   >"$fx/demo-plugin/skills/multi-model-delegation/REFERENCE.md"
 run_fixture "$fx"
 out="$FIXTURE_OUT"
-if [ "$FIXTURE_EXIT" -eq 1 ] && printf '%s' "$out" | grep -q 'REFERENCE.md'; then
+if [ "$FIXTURE_EXIT" -eq 1 ] && grep -q 'REFERENCE.md' <<<"$out"; then
   ok "REFERENCE.md sidecars are scanned"
 else
   bad "REFERENCE.md sidecars are scanned" "exit=$FIXTURE_EXIT
@@ -258,7 +258,7 @@ printf 'Call `mcp__pal__thinkdeep` for the deep dig.\n' \
   >"$fx/demo-plugin/skills/multi-model-delegation/references/tools.md"
 run_fixture "$fx"
 out="$FIXTURE_OUT"
-if [ "$FIXTURE_EXIT" -eq 1 ] && printf '%s' "$out" | grep -q 'references/tools.md'; then
+if [ "$FIXTURE_EXIT" -eq 1 ] && grep -q 'references/tools.md' <<<"$out"; then
   ok "references/*.md sidecars are scanned (path-scoped entry)"
 else
   bad "references/*.md sidecars are scanned (path-scoped entry)" "exit=$FIXTURE_EXIT
@@ -274,7 +274,7 @@ printf 'Resolve it with `mcp__github__resolve_review_thread`.\n' \
   >"$fx/demo-plugin/skills/other-demo/references/resolution.md"
 run_fixture "$fx"
 out="$FIXTURE_OUT"
-if [ "$FIXTURE_EXIT" -eq 1 ] && printf '%s' "$out" | grep -q 'other-demo/references/resolution.md'; then
+if [ "$FIXTURE_EXIT" -eq 1 ] && grep -q 'other-demo/references/resolution.md' <<<"$out"; then
   ok "references/*.md sidecars are scanned (unconditional entry)"
 else
   bad "references/*.md sidecars are scanned (unconditional entry)" "exit=$FIXTURE_EXIT
@@ -296,7 +296,7 @@ cat >"$fx/demo-plugin/skills/multi-model-delegation/workflows/demo.workflow.js" 
 EOF
 run_fixture "$fx"
 out="$FIXTURE_OUT"
-if [ "$FIXTURE_EXIT" -eq 1 ] && printf '%s' "$out" | grep -q 'demo.workflow.js'; then
+if [ "$FIXTURE_EXIT" -eq 1 ] && grep -q 'demo.workflow.js' <<<"$out"; then
   ok "bundled *.workflow.js files are scanned"
 else
   bad "bundled *.workflow.js files are scanned" "exit=$FIXTURE_EXIT
@@ -319,7 +319,7 @@ Resolve the thread with `mcp__github__resolve_review_thread`.
 EOF
 run_fixture "$fx"
 out="$FIXTURE_OUT"
-if [ "$FIXTURE_EXIT" -eq 1 ] && printf '%s' "$out" | grep -q 'resolveReviewThread'; then
+if [ "$FIXTURE_EXIT" -eq 1 ] && grep -q 'resolveReviewThread' <<<"$out"; then
   ok "the pre-existing #1429 denylist entry still fires with its fix text"
 else
   bad "the pre-existing #1429 denylist entry still fires with its fix text" "exit=$FIXTURE_EXIT
@@ -334,7 +334,7 @@ fi
 # ---------------------------------------------------------------------------
 run_fixture_from "$fx" "/"
 out="$FIXTURE_OUT"
-if [ "$FIXTURE_EXIT" -eq 1 ] && printf '%s' "$out" | grep -q 'other-demo/SKILL.md'; then
+if [ "$FIXTURE_EXIT" -eq 1 ] && grep -q 'other-demo/SKILL.md' <<<"$out"; then
   ok "the same defect is detected when run from an unrelated cwd"
 else
   bad "the same defect is detected when run from an unrelated cwd" "exit=$FIXTURE_EXIT
@@ -429,12 +429,12 @@ cp "$fx/dist/opencode/skills/multi-model-delegation/SKILL.md" \
    "$fx/demo-plugin/skills/multi-model-delegation/SKILL.md"
 run_fixture "$fx"
 out="$FIXTURE_OUT"
-if printf '%s' "$out" | grep -q 'dist/'; then
+if grep -q 'dist/' <<<"$out"; then
   bad "a dist/ copy is not scanned" "$out"
 else
   ok "a dist/ copy is not scanned"
 fi
-if [ "$FIXTURE_EXIT" -eq 1 ] && printf '%s' "$out" | grep -q 'demo-plugin/skills/multi-model-delegation/SKILL.md'; then
+if [ "$FIXTURE_EXIT" -eq 1 ] && grep -q 'demo-plugin/skills/multi-model-delegation/SKILL.md' <<<"$out"; then
   ok "the real-path copy of the same defect is still flagged"
 else
   bad "the real-path copy of the same defect is still flagged" "exit=$FIXTURE_EXIT

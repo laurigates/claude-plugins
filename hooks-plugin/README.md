@@ -323,6 +323,7 @@ A PreToolUse hook that creates a git stash checkpoint before destructive operati
 | `git restore` (non-staged) | Named stash with timestamp |
 | `rm -rf` (non-build-artifact) | Named stash with timestamp |
 | `git clean -f` | Named stash with timestamp |
+| Destructive command whose tree matches `stash@{0}` (an `auto-checkpoint before …` entry) | Skipped — the protecting checkpoint already holds this content (#2736) |
 
 Skips checkpointing for build artifact removal (node_modules, dist, build, .next, etc.).
 

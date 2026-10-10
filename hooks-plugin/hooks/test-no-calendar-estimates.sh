@@ -72,7 +72,7 @@ assert_blocks_file() {
     local desc="$1" transcript="$2"
     local out
     out=$(run_hook_output "$transcript")
-    if echo "$out" | grep -q '"decision": "block"'; then
+    if grep -q '"decision": "block"' <<<"$out"; then
         printf "  PASS: %s\n" "$desc"
         PASS=$((PASS + 1))
     else
@@ -117,7 +117,7 @@ assert_blocks() {
     make_transcript "$text" "$t"
     local out
     out=$(run_hook_output "$t")
-    if echo "$out" | grep -q '"decision": "block"'; then
+    if grep -q '"decision": "block"' <<<"$out"; then
         printf "  PASS: %s\n" "$desc"
         PASS=$((PASS + 1))
     else
@@ -284,7 +284,7 @@ t="$TMPDIR/transcript-reason.jsonl"
 make_transcript "Would take about 3 hours" "$t"
 out=$(run_hook_output "$t")
 for token in "tokens" "effort tier" "xhigh" "tool-call count"; do
-    if echo "$out" | grep -q "$token"; then
+    if grep -q "$token" <<<"$out"; then
         printf "  PASS: reason mentions '%s'\n" "$token"
         PASS=$((PASS + 1))
     else
@@ -297,7 +297,7 @@ done
 # remaining-context figure — that is exactly the countdown signal that
 # invites context anxiety (see hooks-plugin/README.md's "Behavior Fit"
 # section for this hook).
-if echo "$out" | grep -q "context-window"; then
+if grep -q "context-window" <<<"$out"; then
     printf "  FAIL: reason still asks for a remaining-context figure\n"
     FAIL=$((FAIL + 1))
 else
@@ -312,7 +312,7 @@ fi
 echo ""
 echo "block reason names the external-machine-work case (#2574):"
 for token in "external" "measured" "rate" "render" "CI run"; do
-    if echo "$out" | grep -q "$token"; then
+    if grep -q "$token" <<<"$out"; then
         printf "  PASS: reason mentions '%s'\n" "$token"
         PASS=$((PASS + 1))
     else
@@ -344,7 +344,7 @@ t="$TMPDIR/transcript-external-events.jsonl"
 make_transcript "Data accumulates only from runs after the deploy, so it may take a few days to have enough." "$t"
 events_out=$(run_hook_output "$t")
 
-if echo "$events_out" | grep -q '"decision": "block"'; then
+if grep -q '"decision": "block"' <<<"$events_out"; then
     printf "  PASS: external-event wait still blocks (matcher unchanged)\n"
     PASS=$((PASS + 1))
 else
@@ -353,7 +353,7 @@ else
 fi
 
 for token in "external events" "how many events" "what triggers them"; do
-    if echo "$events_out" | grep -qF "$token"; then
+    if grep -qF "$token" <<<"$events_out"; then
         printf "  PASS: reason mentions '%s'\n" "$token"
         PASS=$((PASS + 1))
     else
@@ -382,7 +382,7 @@ t="$TMPDIR/transcript-measured.jsonl"
 make_transcript "34 GPU renders at a measured 81 s/render, so roughly 35 minutes." "$t"
 measured_out=$(run_hook_output "$t")
 
-if echo "$measured_out" | grep -q '"decision": "block"'; then
+if grep -q '"decision": "block"' <<<"$measured_out"; then
     printf "  PASS: measured-rate estimate still blocks\n"
     PASS=$((PASS + 1))
 else
@@ -391,7 +391,7 @@ else
 fi
 
 for token in "measured rate" "rate × quantity" "external machine work" "how many events"; do
-    if echo "$measured_out" | grep -qF "$token"; then
+    if grep -qF "$token" <<<"$measured_out"; then
         printf "  PASS: measured-rate reason mentions '%s'\n" "$token"
         PASS=$((PASS + 1))
     else
@@ -402,7 +402,7 @@ done
 
 # The units that cannot express a render queue must not lead the message.
 for token in "effort tier" "xhigh"; do
-    if echo "$measured_out" | grep -qF "$token"; then
+    if grep -qF "$token" <<<"$measured_out"; then
         printf "  FAIL: measured-rate reason still offers '%s' (output: %s)\n" "$token" "$measured_out"
         FAIL=$((FAIL + 1))
     else
@@ -416,7 +416,7 @@ done
 t="$TMPDIR/transcript-generic.jsonl"
 make_transcript "Would take about 3 hours" "$t"
 generic_out=$(run_hook_output "$t")
-if echo "$generic_out" | grep -qF "effort tier" && ! echo "$generic_out" | grep -qF "That names a measured rate"; then
+if grep -qF "effort tier" <<<"$generic_out" && ! grep -qF "That names a measured rate" <<<"$generic_out"; then
     printf "  PASS: estimate without a measured rate keeps the generic effort-unit reason\n"
     PASS=$((PASS + 1))
 else

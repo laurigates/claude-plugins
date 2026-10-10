@@ -384,6 +384,7 @@ A Stop hook that checks for git stashes **created during the current session**. 
 | Session stash whose tree equals the working tree | Silent exit — nothing to recover (#2686) |
 | Session stash already reported this session | Silent exit — the block is clearable by review, not only by deletion (#2686) |
 | `git stash push -u` stash with an untracked payload | Always reported, even when its tracked tree matches (#2686) |
+| Session stash whose tree matches a commit reachable from a branch or remote ref | Silent exit — recoverable from history (#2735) |
 | Only pre-existing stashes | Silent exit (no block) |
 | No stashes at all | Silent exit |
 | No baseline file | Silent exit (avoids false positives) |
@@ -402,11 +403,21 @@ A Stop hook that checks for git stashes **created during the current session**. 
 7. Filters out stashes created **before** the session start
 8. Filters out stashes whose hashes are in the sibling `<baseline>.reported` file — this session has already surfaced them
 9. Filters out **redundant** stashes: `git diff --quiet <stash-sha>` exits 0, i.e. the stash's tree already equals the working tree. A stash with a 3rd parent (untracked payload, only `git stash push -u`) is never judged this way, because `git diff` cannot see that payload
-10. Appends the surviving hashes to `<baseline>.reported`, then outputs `{"decision": "block", "reason": "..."}`
-11. Claude sees the list of session stashes, each with a verb chosen by provenance: `git stash pop` for a hand-made stash, "verify …, then `git stash drop`" for an `auto-checkpoint before …` one
+10. Filters out stashes whose tree matches a commit already reachable from
+    HEAD, the local branches, the remote refs or the tags (#2735) — the #2652
+    shape of a checkpoint taken before a deletion whose files later landed on
+    a branch. The walk is bounded twice, both toward reporting: commits older
+    than the session start are excluded (the filter never suppresses on the
+    strength of a history it did not observe this session), and the walk is
+    capped (2,000 commits) so a large repo cannot stretch the Stop timeout; a
+    walk that stops early can only fail to suppress, never silence. `refs/stash` is deliberately NOT part of the walk — with it
+    included, every stash would trivially suppress itself and its neighbours'
+    trees; a 3rd-parent stash is exempt here for the same reason as in step 9
+11. Appends the surviving hashes to `<baseline>.reported`, then outputs `{"decision": "block", "reason": "..."}`
+12. Claude sees the list of session stashes, each with a verb chosen by provenance: `git stash pop` for a hand-made stash, "verify …, then `git stash drop`" for an `auto-checkpoint before …` one
 
 The filter order is deliberate: the cheap hash and timestamp comparisons run
-first, so the one filter that costs a tree comparison runs only for stashes that
+first, so the two filters that cost git object reads run only for stashes that
 survived everything else (the Stop timeout is 10s).
 
 ### Edge Cases
