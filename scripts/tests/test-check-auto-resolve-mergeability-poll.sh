@@ -11,6 +11,8 @@
 #   D. a fixture that inspects UNKNOWN but never waits exits 1 (no_wait)
 #   E. an UNBOUNDED poll (UNKNOWN + sleep, no deadline) exits 1 (unbounded_poll)
 #   F. a missing workflow file exits 1 (missing_workflow)
+# shellcheck disable=SC2016  # file-level: workflow fixtures are literal YAML/shell
+#                            # text, single-quoted so $(...) must NOT expand here
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -29,7 +31,7 @@ assert() {
   fi
 }
 
-contains() { printf '%s' "$1" | grep -q -- "$2" && echo true || echo false; }
+contains() { grep -q -- "$2" <<<"$1" && echo true || echo false; }
 
 # write_workflow <project-dir> <find-step-run-body>
 write_workflow() {
