@@ -34,6 +34,16 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 | `chmod 777` | Use restrictive permissions (755, 644, 600) |
 | Write to block device | Blocked unconditionally |
 
+The three write rows share one scratch context: a `cd` into `/tmp`, a variable
+holding a `/tmp` path, or a `mktemp -d` dir (`T=$(mktemp -d)`,
+`cd "$(mktemp -d)"`) exempts the write (#2892). The context is decided for the
+whole command, so such an assignment exempts every write in it, including a
+write to a repo path that never uses the variable; `sed -i` has carried the
+same trade-off since W34. `echo`/`printf > file` and `sed -i` also pass when
+every destination is a literal `tmp/` or `./tmp/` path (no glob) that
+`git -C <cwd> check-ignore` reports ignored, and the command contains no
+`cd`/`pushd`/`popd`. A tracked `tmp/` still blocks (#2837).
+
 The read/write detectors (`cat`/`head`/`tail`, `echo`/`printf`/`cat` writes,
 `sed -i`, task-output reads) are classified **structurally** via
 `ast-grep --lang bash` — a real parse distinguishes a command from a
