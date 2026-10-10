@@ -107,12 +107,22 @@ elif command -v npx >/dev/null 2>&1; then
     runner=(npx --yes "@biomejs/biome@${BIOME_VERSION}")
 fi
 
+# GNU `timeout` is absent on stock macOS (coreutils ships it as `gtimeout`).
+# Resolve a wrapper once; with neither, run unbounded rather than letting a
+# 127 from the missing binary masquerade as an offline SKIP.
+to=()
+if command -v timeout >/dev/null 2>&1; then
+    to=(timeout 180)
+elif command -v gtimeout >/dev/null 2>&1; then
+    to=(gtimeout 180)
+fi
+
 biome_ready=no
 if [ "${#runner[@]}" -eq 0 ]; then
     echo "SKIP: biome half — neither bunx nor npx is available" >&2
 elif [ -z "$BIOME_VERSION" ]; then
     echo "SKIP: biome half — BIOME_VERSION not found" >&2
-elif ! (cd "$WORK" && timeout 180 "${runner[@]}" --version >"${WORK}/biome-version.log" 2>&1); then
+elif ! (cd "$WORK" && "${to[@]}" "${runner[@]}" --version >"${WORK}/biome-version.log" 2>&1); then
     echo "SKIP: biome half — @biomejs/biome@${BIOME_VERSION} could not be fetched or run (offline?)" >&2
 else
     biome_ready=yes
@@ -123,7 +133,7 @@ if [ "$biome_ready" = yes ]; then
         module_dir="${WORK}/${name}/${name}"
         [ -f "${module_dir}/src/app.ts" ] || continue
         rc=0
-        (cd "$module_dir" && timeout 180 "${runner[@]}" check src/app.ts) \
+        (cd "$module_dir" && "${to[@]}" "${runner[@]}" check src/app.ts) \
             >"${WORK}/${name}-biome.log" 2>&1 || rc=$?
         check "${name}: biome ${BIOME_VERSION} check src/app.ts exits 0" "0" "$rc"
         [ "$rc" -eq 0 ] || tail -20 "${WORK}/${name}-biome.log" >&2
