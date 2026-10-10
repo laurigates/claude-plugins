@@ -195,12 +195,13 @@ assert_eq "$scope_line" "SCOPE=$corpus_count" "A3c every scoped path resolved to
 assert_contains "$out" "SCOPE_IS_REPO_WIDE=true" "A5 audit set declared as repo-wide"
 # A suppressed finding must never be indistinguishable from no finding, so the
 # counter is emitted even at 0 and the declared set is itemised (#2219/#2255).
-allow_line="$(key_of "$out" ALLOWLISTED)"
-assert_eq "$allow_line" "ALLOWLISTED=${allow_line#ALLOWLISTED=}" "A6 real repo reports an allowlist count"
-if [ "${allow_line#ALLOWLISTED=}" -gt 0 ] 2>/dev/null; then
-  assert_contains "$out" "ALLOWLISTED_DELEGATIONS:" "A6b declared residuals are itemised"
-  assert_contains "$out" "OWNER=#2483" "A6c each residual names its owning issue"
-fi
+# Since #2592 / ADR-0024 un-gated `blueprint-work-order` and
+# `blueprint-prp-execute`, nothing is declared: the real repo is clean with
+# NOTHING suppressed. A residual re-declared in DELEGATION_ALLOWLIST_DEFAULT
+# turns A6 red, so a new declaration has to be argued in review, not slipped in.
+assert_eq "$(key_of "$out" ALLOWLISTED)" "ALLOWLISTED=0" "A6 real repo suppresses nothing (#2592)"
+assert_lacks "$out" "ALLOWLISTED_DELEGATIONS:" "A6b no declared residual is itemised"
+assert_lacks "$out" "TYPE=stale_allowlist_entry" "A6c no stale declaration is left behind"
 
 echo "TEST B: imperative delegation to a GATED sibling is an ERROR"
 fx="$tmp_root/b"; build_fixture "$fx" gated "Execution" "$IMPERATIVE"
@@ -423,7 +424,8 @@ echo "TEST M: teaching the invariant is not delegating (issue #2483)"
 # Class C — the most important exemption. The unit below states the guard's OWN
 # rule correctly AND forbids the invocation; flagging it makes the guard red on
 # correct content, which is how a guard gets disabled. Text is the verbatim
-# `blueprint-autopilot` shape, wrapped exactly as it ships.
+# `blueprint-autopilot` shape the class was measured on, wrapped exactly as it
+# shipped before ADR-0024 (#2592) un-gated that sibling and rewrote the line.
 fx="$tmp_root/m-teach"; mk_sibling "$fx" demo-feedback gated
 mk_watch "$fx" open <<'EOF'
 # /demo:watch
@@ -656,21 +658,26 @@ out="$(CHECK_DELEGATION_SCOPE="demo-plugin/skills/demo-watch/SKILL.md" \
 assert_contains "$out" "STATUS=OK" "P5 an out-of-scope key is not judged stale"
 assert_eq "$rc" "0" "P5b exit 0"
 
-# The allowlist seam uses `${VAR-default}`, not `${VAR:-default}`, so an
-# explicitly EMPTY value means "no declared residuals" and is distinct from an
-# unset one (the #2521 lesson). That is the documented way to see the raw
-# residual set, so both halves are pinned on ONE fixture — a fixture at a path
-# the SHIPPED default declares, since anywhere else the two operators agree and
-# the case would pin nothing.
+# The #2483 residuals were settled by un-gating (#2592 / ADR-0024), so the
+# shipped DELEGATION_ALLOWLIST_DEFAULT is EMPTY. These cases therefore declare
+# their key through the CHECK_DELEGATION_ALLOWLIST seam, or through a SEEDED
+# COPY of the checker, never through the shipped default. One fixture serves
+# all of them: a skill at a real blueprint path delegating to a GATED fixture
+# `blueprint-work-order`, which is exactly the shape the old default declared.
 fx="$tmp_root/p-seam"
 declared_file="blueprint-plugin/skills/confidence-scoring/SKILL.md"
+declared_key="$declared_file|/blueprint:work-order"
 mkdir -p "$fx/blueprint-plugin/skills/confidence-scoring" \
          "$fx/blueprint-plugin/skills/blueprint-work-order"
-{
-  printf -- '---\nname: blueprint-work-order\ndisable-model-invocation: true\n'
-  printf 'description: "Create a work-order. Use when delegating a task."\n---\n\n'
-  printf '# /blueprint:work-order\n'
-} > "$fx/blueprint-plugin/skills/blueprint-work-order/SKILL.md"
+write_work_order() {
+  {
+    printf -- '---\nname: blueprint-work-order\n'
+    [ "$1" = "gated" ] && printf 'disable-model-invocation: true\n'
+    printf 'description: "Create a work-order. Use when delegating a task."\n---\n\n'
+    printf '# /blueprint:work-order\n'
+  } > "$fx/blueprint-plugin/skills/blueprint-work-order/SKILL.md"
+}
+write_work_order gated
 {
   printf -- '---\nname: confidence-scoring\n'
   printf 'description: "Score a PRP. Use when assessing readiness."\n---\n\n'
@@ -678,24 +685,68 @@ mkdir -p "$fx/blueprint-plugin/skills/confidence-scoring" \
   printf 'Address it via `/blueprint:work-order` (the canonical engine).\n'
 } > "$fx/$declared_file"
 
-# Unset seam: the shipped default is in force, so the declared residual is
-# suppressed. This half also proves DELEGATION_ALLOWLIST_DEFAULT is loaded at
-# all — without it the empty-seam half below would hold for a default that was
-# never read.
-out="$(CHECK_DELEGATION_SCOPE="$declared_file" bash "$checker" --project-dir "$fx" 2>&1)"; rc=$?
-assert_contains "$out" "STATUS=OK" "P6 the shipped default suppresses its declared residual"
-assert_eq "$(key_of "$out" ALLOWLISTED)" "ALLOWLISTED=1" "P6b the shipped default is loaded"
+# Seeded seam: the key, declared through CHECK_DELEGATION_ALLOWLIST, suppresses
+# its residual, and the suppression is counted.
+out="$(CHECK_DELEGATION_SCOPE="$declared_file" \
+  CHECK_DELEGATION_ALLOWLIST="$declared_key" bash "$checker" --project-dir "$fx" 2>&1)"; rc=$?
+assert_contains "$out" "STATUS=OK" "P6 a seam-declared key suppresses its residual"
+assert_eq "$(key_of "$out" ALLOWLISTED)" "ALLOWLISTED=1" "P6b the seam-declared key is counted"
 assert_eq "$rc" "0" "P6c exit 0"
 
 # Empty seam: set-but-empty means "declare nothing", so the SAME reference
-# ERRORs. Under `${VAR:-default}` this case would be indistinguishable from the
-# unset one and would silently pin nothing.
+# ERRORs and an empty list has nothing to go stale.
 out="$(CHECK_DELEGATION_SCOPE="$declared_file" \
   CHECK_DELEGATION_ALLOWLIST='' bash "$checker" --project-dir "$fx" 2>&1)"; rc=$?
 assert_contains "$out" "STATUS=ERROR" "P7 an empty seam declares nothing"
 assert_eq "$(key_of "$out" ALLOWLISTED)" "ALLOWLISTED=0" "P7b nothing is suppressed"
 assert_lacks "$out" "TYPE=stale_allowlist_entry" "P7c an empty list has no stale keys"
 assert_eq "$rc" "1" "P7d exit 1"
+
+# Unset seam on the SHIPPED checker: the default is empty (#2592), so the key
+# the old default carried no longer suppresses anything. Restoring any entry
+# for this path to DELEGATION_ALLOWLIST_DEFAULT turns this red.
+out="$(CHECK_DELEGATION_SCOPE="$declared_file" bash "$checker" --project-dir "$fx" 2>&1)"; rc=$?
+assert_contains "$out" "STATUS=ERROR" "P8 the shipped default declares nothing (#2592)"
+assert_eq "$(key_of "$out" ALLOWLISTED)" "ALLOWLISTED=0" "P8b the shipped default suppresses nothing"
+assert_eq "$rc" "1" "P8c exit 1"
+
+# The seam uses `${VAR-default}`, not `${VAR:-default}`, so an explicitly EMPTY
+# value is distinct from an unset one (the #2521 lesson). With an empty shipped
+# default the two operators agree, so the distinction is pinned on a COPY of the
+# checker whose one-line default is seeded with the declared key.
+seeded="$tmp_root/check-delegation-reachability.seeded.sh"
+sed "s#^DELEGATION_ALLOWLIST_DEFAULT=\"\"\$#DELEGATION_ALLOWLIST_DEFAULT=\"$declared_key\"#" \
+  "$checker" > "$seeded"
+if grep -qF "DELEGATION_ALLOWLIST_DEFAULT=\"$declared_key\"" "$seeded"; then
+  ok "P9 the seeded copy carries the declared key"
+else
+  bad "P9 the seeded copy carries the declared key (the one-line empty default moved or changed shape)"
+fi
+# Unset seam: the seeded default is loaded, so the residual is suppressed. This
+# half proves a default is read at all — without it the empty-seam half (P9e)
+# would hold for a default that was never loaded.
+out="$(CHECK_DELEGATION_SCOPE="$declared_file" bash "$seeded" --project-dir "$fx" 2>&1)"; rc=$?
+assert_contains "$out" "STATUS=OK" "P9b an unset seam loads the seeded default"
+assert_eq "$(key_of "$out" ALLOWLISTED)" "ALLOWLISTED=1" "P9c the seeded default is counted"
+assert_eq "$rc" "0" "P9d exit 0"
+# Empty seam over a NON-empty default: still "declare nothing".
+out="$(CHECK_DELEGATION_SCOPE="$declared_file" \
+  CHECK_DELEGATION_ALLOWLIST='' bash "$seeded" --project-dir "$fx" 2>&1)"; rc=$?
+assert_contains "$out" "STATUS=ERROR" "P9e an empty seam overrides a non-empty default"
+assert_eq "$(key_of "$out" ALLOWLISTED)" "ALLOWLISTED=0" "P9f nothing is suppressed"
+assert_eq "$rc" "1" "P9g exit 1"
+
+# The #2592 shape: once the sibling is UN-GATED, the reference is a reachable
+# delegation, so a key still declaring it matches nothing and must be caught as
+# stale — otherwise it would linger and suppress a future finding silently.
+write_work_order open
+out="$(CHECK_DELEGATION_SCOPE="$declared_file" \
+  CHECK_DELEGATION_ALLOWLIST="$declared_key" bash "$checker" --project-dir "$fx" 2>&1)"; rc=$?
+assert_contains "$out" "STATUS=ERROR" "P10 a key left behind after un-gating is an ERROR"
+assert_contains "$out" "TYPE=stale_allowlist_entry" "P10b names the stale finding"
+assert_contains "$out" "KEY=$declared_key" "P10c names the stale key"
+assert_lacks "$out" "TYPE=unreachable_delegation" "P10d the un-gated reference itself is clean"
+assert_eq "$rc" "1" "P10e exit 1"
 
 echo "TEST Q: sidecars (references/*.md, REFERENCE.md) are judged with their skill"
 # The 2026-10 split moved skill content into `references/*.md`. Read only

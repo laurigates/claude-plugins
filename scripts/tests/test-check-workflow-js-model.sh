@@ -26,7 +26,9 @@
 #   L. The sanctioned cold-read haiku exemption (issue #2216) — and, weighted
 #      much harder, that the carve-out stays NARROW: it needs the declaring
 #      label AND the literal 'haiku', it never spreads to a sibling call in the
-#      same file, and it is counted rather than silent.
+#      same file, and it is counted rather than silent. L4/L5/L7-L9 pin the
+#      Haiku 5.5 stage: haiku passes only with an explicit valid effort, is
+#      itemised as haiku_stage, and the carve-out never extends to sonnet.
 #   M. The framing literal `not a script to run verbatim` (issue #2164) — the
 #      passing case, the failing case, that the assertion is SECTION-scoped
 #      (a mention elsewhere in the file does not satisfy it), and that an
@@ -353,25 +355,58 @@ check "L3: mislabelled sonnet still ERRORs" "1" "$(printf '%s\n' "$o" | grep -c 
 check "L3: mislabelled sonnet not exempted" "0" "$(field "$o" EXEMPTED_CALLS)"
 check "L3: --strict exit 1"                 "1" "$(run "$root" --strict)"
 
-# L4. A haiku call WITHOUT a cold-read label is still an ERROR: haiku alone is
-# not the exemption — the label is what declares the measurement-instrument role.
+# L4. A haiku call WITHOUT a cold-read label AND without an effort is still an
+# ERROR: outside the instrument role, the explicit effort is what declares a
+# Haiku 5.5 stage. It is reported as the missing effort, not as a model error.
 root=$(mk_root L4)
 d=$(mk_skill "$root" demo-plugin demo-skill)
-mk_js "$d" audit.workflow.js haiku low
+mk_js "$d" audit.workflow.js haiku ""
 o=$(out "$root")
-check "L4: unlabelled haiku still ERRORs"  "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=non_opus_model')"
-check "L4: unlabelled haiku not exempted"  "0" "$(field "$o" EXEMPTED_CALLS)"
+check "L4: effortless haiku ERRORs"        "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=missing_effort')"
+check "L4: no double-reported model error" "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=non_opus_model')"
+check "L4: effortless haiku not exempted"  "0" "$(field "$o" EXEMPTED_CALLS)"
 check "L4: --strict exit 1"                "1" "$(run "$root" --strict)"
 
 # L5. The label must DECLARE the role, not merely contain the word: a label that
-# only mentions cold-read late ("quoted-coldread") does not qualify.
+# only mentions cold-read late ("not-a-coldread") does not earn the cold-read
+# exemption. With an effort it is a haiku stage instead, and typed as one.
 root=$(mk_root L5)
 d=$(mk_skill "$root" demo-plugin demo-skill)
 printf 'export default async function ({ agent }) {\n  return await agent(P, {label:%s, model:%s, effort:%s});\n}\n' \
     '"not-a-coldread"' "'haiku'" "'low'" > "$d/workflows/audit.workflow.js"
 o=$(out "$root")
-check "L5: non-leading match not exempted" "0" "$(field "$o" EXEMPTED_CALLS)"
-check "L5: non-leading match still ERRORs" "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=non_opus_model')"
+check "L5: non-leading match not coldread" "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=coldread_haiku')"
+check "L5: typed as a haiku stage"         "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=haiku_stage')"
+
+# L7. A Haiku 5.5 stage: literal haiku + explicit valid effort passes, and is
+# counted and itemised rather than silent.
+root=$(mk_root L7)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_js "$d" audit.workflow.js haiku low
+o=$(out "$root")
+check "L7: haiku stage STATUS=OK"          "OK" "$(field "$o" STATUS)"
+check "L7: haiku stage --strict exit 0"    "0"  "$(run "$root" --strict)"
+check "L7: haiku stage parsed"             "1"  "$(field "$o" AGENT_CALLS)"
+check "L7: haiku stage counted"            "1"  "$(field "$o" EXEMPTED_CALLS)"
+check "L7: haiku stage itemised"           "1"  "$(printf '%s\n' "$o" | grep -c 'TYPE=haiku_stage.*EFFORT=low')"
+
+# L8. The haiku-stage carve-out tiers the effort: an invalid one is not a
+# declaration, so the call is neither exempt nor silently accepted.
+root=$(mk_root L8)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_js "$d" audit.workflow.js haiku turbo
+o=$(out "$root")
+check "L8: invalid effort ERRORs"          "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=invalid_effort')"
+check "L8: invalid effort not exempted"    "0" "$(field "$o" EXEMPTED_CALLS)"
+check "L8: --strict exit 1"                "1" "$(run "$root" --strict)"
+
+# L9. The carve-out is haiku-only: sonnet with an explicit effort still ERRORs.
+root=$(mk_root L9)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_js "$d" audit.workflow.js sonnet low
+o=$(out "$root")
+check "L9: sonnet+effort still ERRORs"     "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=non_opus_model')"
+check "L9: sonnet+effort not exempted"     "0" "$(field "$o" EXEMPTED_CALLS)"
 
 # L6. An exempted call with a PRESENT but invalid effort is still tiered — the
 # carve-out covers the model check and an ABSENT effort, nothing more.

@@ -92,12 +92,12 @@ compute_skill_signals() {
   # on ~200 skills, because nearly every description prose contains "check",
   # "validate", "detect"; the name is the precise signal.)
   verb_hit=0
-  printf '%s' "$skill_name" | grep -qiE "($FUNNEL_VERB_RE)" && verb_hit=1
+  grep -qiE "($FUNNEL_VERB_RE)" <<<"$skill_name" && verb_hit=1
   # ref_style scans the frontmatter description — awk, not head/sed (planning-shell
   # portability, ADR-0016 environment note).
   frontmatter=$(awk 'NR==1&&/^---/{f=1;next} f&&/^---/{exit} f{print}' "$skill_file" 2>/dev/null)
   ref_style=0
-  printf '%s' "$frontmatter" | grep -qE "$FUNNEL_REF_RE" && ref_style=1
+  grep -qE "$FUNNEL_REF_RE" <<<"$frontmatter" && ref_style=1
 
   echo "$bash_blocks $bash_commands $phases $context_patterns $line_count $score $ask $data_pipes $verb_hit $ref_style"
 }

@@ -1,21 +1,30 @@
 #!/usr/bin/env bash
-# Regression test for issue #1906: story-reconcile / story-audit referenced
-# `/blueprint:work-order` in a way that read as "invoke it via the Skill tool".
+# Regression test for the story-reconcile / story-audit work-order handoff.
 #
-# Root cause: `blueprint-work-order` carries `disable-model-invocation: true`,
-# so it never appears in the model's skill list and cannot be invoked via the
-# Skill tool — the model can only SURFACE it for the user to run. A reporter
-# searched the list, misread the reference as "skill doesn't exist", and stalled.
+# History:
+#   * Issue #1906: `blueprint-work-order` carried `disable-model-invocation:
+#     true`, so it was missing from the model's skill listing. A reporter
+#     searched the listing, read the handoff's `/blueprint:work-order` reference
+#     as "skill doesn't exist", and stalled. The #1906 fix reworded both handoff
+#     steps to say the command was user-invocable and must be surfaced to the
+#     user rather than invoked via the Skill tool.
+#   * Issue #2592 / ADR-0024: the gate was removed from `blueprint-work-order`
+#     (and `blueprint-prp-execute`), so the skill is in the listing and the
+#     handoff now runs it directly once the user picks the option. The #1906
+#     "surface it, don't Skill-invoke it" wording became wrong and was removed.
 #
-# The fix reworded both handoff steps to make clear the command is
-# user-invocable and must be surfaced, not Skill-tool-invoked. This test pins
-# two semantic invariants against a future bulk edit (including this issue's own
-# preliminary hint, which wrongly wanted the ref repointed to a different skill):
+# Invariants pinned against a future bulk edit:
 #
 #   1. Both handoff steps still reference the CORRECT command
-#      `/blueprint:work-order` (not repointed to blueprint-prp-create/anything).
-#   2. Each handoff step carries the clarifying `user-invocable` token so the
-#      "surface it, don't Skill-invoke it" intent survives.
+#      `/blueprint:work-order` (not repointed to blueprint-prp-create or
+#      anything else — #1906's own preliminary hint wanted that repoint).
+#   2. Neither handoff step still carries the gate-era "don't invoke it via the
+#      Skill tool" / "user-invocable command" clause (#2592): it would tell the
+#      model not to run a skill it can now reach.
+#   3. `blueprint-work-order` itself is model-invocable — its frontmatter has
+#      no `disable-model-invocation: true`. The handoff tells the agent to run
+#      the skill, so re-gating it would turn both handoffs into unreachable
+#      delegations; re-gating needs a new ADR and a rewrite of these lines.
 #
 # Exit 0 on success, non-zero on failure.
 
@@ -24,12 +33,14 @@ set -uo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 reconcile_skill="${script_dir}/../../SKILL.md"
 audit_skill="${script_dir}/../../../blueprint-story-audit/SKILL.md"
+work_order_skill="${script_dir}/../../../blueprint-work-order/SKILL.md"
 
 fail() { echo "FAIL: $1" >&2; exit 1; }
 pass() { echo "PASS: $1"; }
 
-[ -f "$reconcile_skill" ] || fail "story-reconcile SKILL.md not found at $reconcile_skill"
-[ -f "$audit_skill" ]     || fail "story-audit SKILL.md not found at $audit_skill"
+[ -f "$reconcile_skill" ]  || fail "story-reconcile SKILL.md not found at $reconcile_skill"
+[ -f "$audit_skill" ]      || fail "story-audit SKILL.md not found at $audit_skill"
+[ -f "$work_order_skill" ] || fail "work-order SKILL.md not found at $work_order_skill"
 
 # The single line in each skill that hands off the work-order follow-on action.
 # story-reconcile Step 9: "Open work-orders for ..." ; story-audit Step 8:
@@ -51,16 +62,24 @@ case "$audit_handoff" in
   *) fail "story-audit handoff no longer references /blueprint:work-order: $audit_handoff" ;;
 esac
 
-# Invariant 2: the handoff clarifies the command is user-invocable / surfaced,
-# not Skill-tool-invoked (the #1906 fix). Match case-insensitively on the
-# hyphenated token so a rewording of the surrounding prose still passes.
-case "${reconcile_handoff,,}" in
-  *user-invocable*) pass "story-reconcile handoff clarifies user-invocable" ;;
-  *) fail "story-reconcile handoff missing 'user-invocable' clarification (#1906): $reconcile_handoff" ;;
-esac
-case "${audit_handoff,,}" in
-  *user-invocable*) pass "story-audit handoff clarifies user-invocable" ;;
-  *) fail "story-audit handoff missing 'user-invocable' clarification (#1906): $audit_handoff" ;;
-esac
+# Invariant 2: the gate-era clause is gone (#2592). Matched case-insensitively
+# on its two load-bearing phrases so a light rewording is still caught.
+for pair in "story-reconcile|$reconcile_handoff" "story-audit|$audit_handoff"; do
+  label="${pair%%|*}"
+  handoff="${pair#*|}"
+  case "${handoff,,}" in
+    *"don't invoke it via the skill tool"*|*"do not invoke it via the skill tool"*|*"user-invocable command"*)
+      fail "$label handoff still carries the gate-era 'surface it, don't Skill-invoke it' clause (#2592 / ADR-0024): $handoff" ;;
+    *) pass "$label handoff no longer claims /blueprint:work-order is unreachable" ;;
+  esac
+done
 
-echo "OK: work-order handoff invariants hold (#1906)"
+# Invariant 3: the skill the handoffs run is model-invocable (ADR-0024). Read
+# only the frontmatter block, so prose that mentions the flag cannot trip it.
+gated="$(awk 'NR==1 && /^---$/ {fm=1; next} fm && /^---$/ {exit} fm && /^disable-model-invocation:[[:space:]]*true/ {print "yes"}' "$work_order_skill")"
+if [ -n "$gated" ]; then
+  fail "blueprint-work-order carries disable-model-invocation: true, but both handoffs tell the agent to run it (ADR-0024 / #2592)"
+fi
+pass "blueprint-work-order is model-invocable (ADR-0024)"
+
+echo "OK: work-order handoff invariants hold (#1906, #2592)"

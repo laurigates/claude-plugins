@@ -37,7 +37,7 @@ context: fork
 
 **Delegate this task to the `test-runner` agent.**
 
-Use the Agent tool with `subagent_type: testing-plugin:test-runner` to run the complete test suite. Pass all the context gathered above and specify **All Tiers** execution.
+Use the Agent tool with `subagent_type: testing-plugin:test-runner` to run the complete test suite. Pass all the context gathered in [Context](#context) and specify **All Tiers** execution.
 
 The test-runner agent should:
 
@@ -80,7 +80,7 @@ The test-runner agent should:
    - Coverage gaps: Use `/test:consult coverage`
 
 Provide the agent with:
-- All context from the section above
+- All context from [Context](#context)
 - The parsed parameters
 - **Explicit instruction**: Run all tiers in order
 

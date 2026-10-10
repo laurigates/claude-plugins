@@ -68,9 +68,9 @@ git -C "$proj" commit -q -m "feat(login): implement login"
 out="$(bash "$sync_script" --home-dir "$home" --project-dir "$proj")"
 
 # Invariant 1: the not_started feature with existing evidence is backfilled up.
-echo "$out" | grep -q "^EVIDENCE_FLIPPED=1$" \
+grep -q "^EVIDENCE_FLIPPED=1$" <<<"$out" \
   || fail "expected EVIDENCE_FLIPPED=1, got:\n$out"
-echo "$out" | grep -q "TYPE=status_inferred FR=FR-001 FROM=not_started TO=complete" \
+grep -q "TYPE=status_inferred FR=FR-001 FROM=not_started TO=complete" <<<"$out" \
   || fail "expected FR-001 inferred not_started->complete, got:\n$out"
 pass "implemented-evidence backfills not_started feature up to complete"
 
@@ -90,18 +90,18 @@ fr2_status="$(jq -r '.features[] | select(.id=="FR-002") | .status' \
   "${proj}/docs/blueprint/feature-tracker.json")"
 [ "$fr2_status" = "in_progress" ] \
   || fail "never-downgrade guard failed: FR-002 should stay in_progress, got $fr2_status"
-echo "$out" | grep -q "FR=FR-002" \
+grep -q "FR=FR-002" <<<"$out" \
   && fail "FR-002 must not be flipped (never-downgrade), but appears in issues:\n$out"
 pass "never-downgrade guard keeps a higher status from being lowered"
 
 # Invariant 4: statistics rollup reflects the backfilled state.
-echo "$out" | grep -q "^STAT_COMPLETE=1$" \
+grep -q "^STAT_COMPLETE=1$" <<<"$out" \
   || fail "expected STAT_COMPLETE=1, got:\n$out"
-echo "$out" | grep -q "^STAT_IN_PROGRESS=1$" \
+grep -q "^STAT_IN_PROGRESS=1$" <<<"$out" \
   || fail "expected STAT_IN_PROGRESS=1, got:\n$out"
-echo "$out" | grep -q "^FEATURES_TOTAL=2$" \
+grep -q "^FEATURES_TOTAL=2$" <<<"$out" \
   || fail "expected FEATURES_TOTAL=2, got:\n$out"
-echo "$out" | grep -q "^COMPLETION_PERCENTAGE=50$" \
+grep -q "^COMPLETION_PERCENTAGE=50$" <<<"$out" \
   || fail "expected COMPLETION_PERCENTAGE=50, got:\n$out"
 pass "statistics rollup counts the backfilled state"
 
