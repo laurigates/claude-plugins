@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.61.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.61.0...git-plugin-v2.61.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* **scripts:** stop flagging git refspecs as slash commands and drop the duplicate [#2700](https://github.com/laurigates/claude-plugins/issues/2700) forward-link check ([#2981](https://github.com/laurigates/claude-plugins/issues/2981)) ([6a3c595](https://github.com/laurigates/claude-plugins/commit/6a3c5953d2e83e74b10b9e5f1dd067675e983c76))
+
 ## [2.61.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.60.7...git-plugin-v2.61.0) (2026-10-10)
 
 
