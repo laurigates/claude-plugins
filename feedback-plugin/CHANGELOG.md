@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.12.9...feedback-plugin-v1.13.0) (2026-10-10)
+
+
+### Features
+
+* **hooks-plugin:** add an external-event restatement branch to no-calendar-estimates ([#2967](https://github.com/laurigates/claude-plugins/issues/2967)) ([8dd344d](https://github.com/laurigates/claude-plugins/commit/8dd344d1e049ab667948427a410860f2db8add25))
+
 ## [1.12.9](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.12.8...feedback-plugin-v1.12.9) (2026-10-10)
 
 
