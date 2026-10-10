@@ -196,7 +196,7 @@ check "malformed: exit code" "1" "$bad_rc"
 check "malformed: status" "ERROR" "$(field "$bad_out" STATUS)"
 check "malformed: not applied" "false" "$(field "$bad_out" FIXTURE_APPLIED)"
 check "malformed: reason" "fixture JSON does not parse" "$(field "$bad_out" ERROR)"
-if printf '%s\n' "$bad_out" | grep -q "^WORKDIR="; then
+if grep -q "^WORKDIR=" <<<"$bad_out"; then
   echo "FAIL: malformed fixture emitted a WORKDIR" >&2; fail_count=$((fail_count + 1))
 else
   pass_count=$((pass_count + 1))
