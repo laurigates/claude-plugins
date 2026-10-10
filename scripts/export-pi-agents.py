@@ -38,24 +38,36 @@ Tool mapping (`pi` 0.84.1: `BUILTIN_TOOL_NAMES` = `createCodingTools` +
     skills: [a, b] -> skills: a, b           (both preload into the agent's prompt)
     "*" / all -> "*"   none / "" -> none
 
-Two source fields are deliberately **not** mapped, and are reported instead:
-`context:` (10 agents), and any future unknown field, which lands in
-`DROPPED_KEYS=` rather than vanishing. Dropping `context:` is correct because
-there is nothing to project (#2646): it is a SKILL frontmatter field, absent
-from Claude Code's subagent frontmatter table, and Claude Code ignores it on an
-agent without an error — a live probe measured it inert (agents with and
-without it returned bit-identical subagent_tokens, both blind to the parent
-turn). A Claude Code named agent therefore always starts without the parent's
-conversation, which is also what a pi subagent does by default. Mapping it to
-pi's `inherit_context: true` would give the exported agent the parent's
-conversation — the behaviour of Claude Code's runtime `fork` subagent type,
-which the key never had. The key stays reported, not silently dropped, so its
-removal from the sources (#2722) is visible in the export.
+Any source field outside the mapped set is deliberately **not** mapped and
+lands in `DROPPED_KEYS=` rather than vanishing. `context:` is the case this was
+built for (#2646): it is a SKILL frontmatter field, absent from Claude Code's
+subagent frontmatter table, and Claude Code ignores it on an agent without an
+error — a live probe measured it inert (agents with and without it returned
+bit-identical subagent_tokens, both blind to the parent turn). #2722 removed it
+from every marketplace agent, so the corpus reports no `DROPPED_KEYS=` today;
+an agent that regains it is reported, never projected. A Claude Code named
+agent always starts without the parent's conversation, which is also what a pi
+subagent does by default. Mapping `context:` to pi's `inherit_context: true`
+would give the exported agent the parent's conversation — the behaviour of
+Claude Code's runtime `fork` subagent type, which the key never had.
 
-Usage: export-pi-agents.py <repo-root> <out-dir>
+The `model:` pin is a Claude Code decision (every marketplace agent pins
+`opus`), and pi can honour it only when a provider that resolves the alias is
+configured. On a local-model-only pi setup nothing resolves it, so pi reports
+`(unavailable, fallback: inherit)` on every dispatch (#2649). `--model` chooses:
+
+  preserve   (default) emit the source pin verbatim — no behaviour change
+  inherit    emit NO `model:` key at all, which is how pi spells "run on the
+             session's model"; an empty `model:` would read as a null value
+  <model>    replace the pin on every exported agent with this pi model id
+             (an alias such as `sonnet`, or `<provider>/<id>`)
+
+Usage: export-pi-agents.py [--model=preserve|inherit|<model>] <repo-root> <out-dir>
 Emits <out-dir>/agents/<name>.md plus a KEY=VALUE report.
 """
 
+import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -101,6 +113,15 @@ MAPPED_KEYS = (
     "skills",
 )
 IGNORED_KEYS = ("created", "modified", "reviewed")
+
+# `--model` modes; any other value is a model id that replaces the pin. The id
+# pattern admits aliases (`sonnet`) and pi's `<provider>/<id>` form, and refuses
+# whitespace, quotes, and YAML flow characters, so the emitted header stays a
+# plain scalar and a typo such as `--model ''` fails instead of exporting
+# twenty-one agents with an empty pin.
+MODEL_PRESERVE = "preserve"
+MODEL_INHERIT = "inherit"
+MODEL_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:/@+-]*")
 
 
 def split_frontmatter(text: str) -> tuple[dict, str]:
@@ -194,8 +215,28 @@ def translate_tools(raw: object) -> tuple[list[str], list[str], list[str], int]:
     return builtins, nested, dropped, widened
 
 
+def model_mode(value: str) -> str:
+    """argparse type for `--model`: a mode name, or a model id that replaces the pin."""
+    if value.lower() in (MODEL_PRESERVE, MODEL_INHERIT) and value not in (
+        MODEL_PRESERVE,
+        MODEL_INHERIT,
+    ):
+        # A wrong-case mode name would otherwise fullmatch MODEL_ID_RE and be
+        # written as a literal `model: PRESERVE` pin on every agent.
+        raise argparse.ArgumentTypeError(
+            f"invalid --model {value!r}: mode names are lowercase; "
+            f"did you mean {value.lower()!r}?"
+        )
+    if value in (MODEL_PRESERVE, MODEL_INHERIT) or MODEL_ID_RE.fullmatch(value):
+        return value
+    raise argparse.ArgumentTypeError(
+        f"invalid --model {value!r}: expected {MODEL_PRESERVE}, {MODEL_INHERIT}, "
+        "or a model id such as sonnet or <provider>/<id>"
+    )
+
+
 def render(
-    front: dict, body: str, fallback_name: str
+    front: dict, body: str, fallback_name: str, model: str = MODEL_PRESERVE
 ) -> tuple[str, int, list[str], list[str], bool]:
     """Return (file text, widened_bash count, dropped tools, builtins, has_nesting)."""
     out: dict = {}
@@ -205,9 +246,19 @@ def render(
     # header depend on the reader's folding support — pi shows this string in its
     # agent listing, so one line is both cleaner and safer.
     out["description"] = " ".join(str(front["description"]).split())
-    for key in ("color", "model", "thinking"):
-        if front.get(key):
-            out[key] = front[key]
+    if front.get("color"):
+        out["color"] = front["color"]
+    # `inherit` omits the key outright: pi reads an absent `model:` as "run on
+    # the session's model", while `model:` with a null value is a different
+    # input. An explicit model id is applied to every agent, pinned or not, so
+    # the exported set runs on one model.
+    if model == MODEL_PRESERVE:
+        if front.get("model"):
+            out["model"] = front["model"]
+    elif model != MODEL_INHERIT:
+        out["model"] = model
+    if front.get("thinking"):
+        out["thinking"] = front["thinking"]
     if front.get("maxTurns") is not None:
         # pi's spelling; `maxTurns` would be ignored as an unknown key.
         out["max_turns"] = int(front["maxTurns"])
@@ -252,7 +303,7 @@ def render(
     )
 
 
-def main(repo_root: Path, out_dir: Path) -> int:
+def main(repo_root: Path, out_dir: Path, model: str = MODEL_PRESERVE) -> int:
     agents_out = out_dir / "agents"
     agents_out.mkdir(parents=True, exist_ok=True)
 
@@ -274,7 +325,7 @@ def main(repo_root: Path, out_dir: Path) -> int:
             # Rendered inside the try: one malformed agent must be SKIPPED and
             # reported, never a traceback that aborts the other 20.
             text, widened, dropped, builtins, has_nesting = render(
-                front, body, src.stem
+                front, body, src.stem, model
             )
         except (ValueError, TypeError, yaml.YAMLError) as exc:
             skipped.append(f"{rel}: {exc}")
@@ -282,7 +333,9 @@ def main(repo_root: Path, out_dir: Path) -> int:
         (agents_out / src.name).write_text(text, encoding="utf-8")
         written += 1
         widened_total += widened
-        if front.get("model"):
+        # Counted from what is EMITTED (the same rule `render` applies), so
+        # `inherit` reports MODEL_PINS=0 rather than the source's count.
+        if model != MODEL_INHERIT and (model != MODEL_PRESERVE or front.get("model")):
             model_pins += 1
         if has_nesting:
             nested_total += 1
@@ -311,6 +364,7 @@ def main(repo_root: Path, out_dir: Path) -> int:
     print(f"SOURCE_AGENTS={len(sources)}")
     print(f"OUTPUT_AGENTS={written}")
     print(f"SKIPPED_AGENTS={len(skipped)}")
+    print(f"MODEL_MODE={model}")
     print(f"MODEL_PINS={model_pins}")
     print(f"AGENTS_WITH_NESTING={nested_total}")
     print(f"WIDENED_BASH={widened_total}")
@@ -333,7 +387,19 @@ def main(repo_root: Path, out_dir: Path) -> int:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("usage: export-pi-agents.py <repo-root> <out-dir>", file=sys.stderr)
-        sys.exit(2)
-    sys.exit(main(Path(sys.argv[1]).resolve(), Path(sys.argv[2]).resolve()))
+    parser = argparse.ArgumentParser(
+        description="Project marketplace subagents into pi-subagents' agent format."
+    )
+    parser.add_argument("repo_root", type=Path, help="marketplace repository root")
+    parser.add_argument(
+        "out_dir", type=Path, help="output dir; agents land in <out-dir>/agents/"
+    )
+    parser.add_argument(
+        "--model",
+        type=model_mode,
+        default=MODEL_PRESERVE,
+        help="preserve (default): emit the source pin; inherit: emit no model key; "
+        "any other value: a model id that replaces the pin on every agent",
+    )
+    args = parser.parse_args()
+    sys.exit(main(args.repo_root.resolve(), args.out_dir.resolve(), args.model))

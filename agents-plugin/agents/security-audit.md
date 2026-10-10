@@ -4,10 +4,9 @@ model: opus
 color: "#D32F2F"
 description: Security vulnerability analysis. Scans code for OWASP top 10, secrets exposure, injection risks, auth flaws, and insecure configurations. Use proactively when reviewing security-sensitive code.
 tools: Glob, Grep, Read, Bash(semgrep *), Bash(bandit *), Bash(trufflehog *), Bash(gitleaks *), Bash(npm audit *), Bash(snyk *), Bash(git status *), Bash(git diff *), Bash(git log *), TodoWrite
-context: fork
 maxTurns: 25
 created: 2026-01-24
-modified: 2026-05-07
+modified: 2026-10-09
 reviewed: 2026-03-09
 ---
 
