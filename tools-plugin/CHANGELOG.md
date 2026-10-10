@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.13.3](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.13.2...tools-plugin-v2.13.3) (2026-10-10)
+
+
+### Bug Fixes
+
+* **scripts:** sweep printf|echo "$var" | grep -q from every pipefail suite and widen lint Check 6 ([#2996](https://github.com/laurigates/claude-plugins/issues/2996)) ([32f124d](https://github.com/laurigates/claude-plugins/commit/32f124d41f428967305ef6beb564fd8ebc1f3279))
+
 ## [2.13.2](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.13.1...tools-plugin-v2.13.2) (2026-10-07)
 
 
