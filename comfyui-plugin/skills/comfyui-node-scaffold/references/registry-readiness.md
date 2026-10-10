@@ -55,9 +55,10 @@ The generated `publish.yml` builds `web/dist/` then publishes via
 
 - **Active vs Flagged is a pointer.** The registry serves one *Active* version
   per node; publishing moves that pointer to the new version. A version that gets
-  **Flagged** (review) stays in the registry but is no longer the Active target —
-  installs fall back to the last Active version. Publishing a fresh good version
-  re-points Active forward.
+  **Flagged** (review) stays in the registry and stays installable — `/install`
+  returns the newest non-Banned version — but drops out of the Active-only
+  listing (`latest_version`). Only a **Banned** version makes installs fall back
+  to an older one. Publishing a fresh good version re-points Active forward.
 - **Flags fire on ANY finding, even info severity.** Full reasons are on the
   public API via `GET /nodes/<id>/versions?include_status_reason=true`
   (notifications otherwise post to the Comfy Org Discord

@@ -209,7 +209,7 @@ f1_summary="$(summary_line_of "$f1_report")"
 assert "fixture 1: summary carries a 'Stale skills' metric row" \
   "$([ -n "$f1_summary" ] && echo true || echo false)"
 assert "fixture 1: summary metric names the \`modified:\` field it measures" \
-  "$(printf '%s' "$f1_summary" | grep -qF 'modified:' && echo true || echo false)"
+  "$(grep -qF 'modified:' <<<"$f1_summary" && echo true || echo false)"
 assert "fixture 1: summary counts exactly the 5 stale skills" \
   "$([ "$(stale_count_of "$f1_report")" -eq 5 ] && echo true || echo false)"
 assert "fixture 1: the fresh skill is not counted as stale" \
@@ -246,11 +246,11 @@ f1_recs="$(recommendations_of "$f1_report")"
 assert "fixture 1: Recommendations section is present" \
   "$([ -n "$f1_recs" ] && echo true || echo false)"
 assert "fixture 1: Recommendations do not order 'update \`modified\` date'" \
-  "$(printf '%s' "$f1_recs" | grep -qF 'update `modified` date' && echo false || echo true)"
+  "$(grep -qF 'update `modified` date' <<<"$f1_recs" && echo false || echo true)"
 assert "fixture 1: the recommendation names the tail count (2), not the >90d total" \
-  "$(printf '%s' "$f1_recs" | grep -qF 'Review the 2 skill(s)' && echo true || echo false)"
+  "$(grep -qF 'Review the 2 skill(s)' <<<"$f1_recs" && echo true || echo false)"
 assert "fixture 1: the recommendation names the dominant cohort as one event" \
-  "$(printf '%s' "$f1_recs" | grep -qF "$DATE_MID cohort (3 skills sharing one" && echo true || echo false)"
+  "$(grep -qF "$DATE_MID cohort (3 skills sharing one" <<<"$f1_recs" && echo true || echo false)"
 
 [ "$fail_count" -eq "$f1_before" ] || dump_on_failure "$f1"
 

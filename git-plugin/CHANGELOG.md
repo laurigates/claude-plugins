@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.60.7](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.60.6...git-plugin-v2.60.7) (2026-10-10)
+
+
+### Bug Fixes
+
+* **scripts:** sweep printf|echo "$var" | grep -q from every pipefail suite and widen lint Check 6 ([#2996](https://github.com/laurigates/claude-plugins/issues/2996)) ([32f124d](https://github.com/laurigates/claude-plugins/commit/32f124d41f428967305ef6beb564fd8ebc1f3279))
+
+## [2.60.6](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.60.5...git-plugin-v2.60.6) (2026-10-09)
+
+
+### Bug Fixes
+
+* **hooks-plugin,blueprint-plugin,configure-plugin,evaluate-plugin,git-plugin,health-plugin,taskwarrior-plugin:** find drift-protocol.sh in the versioned plugin cache ([#2997](https://github.com/laurigates/claude-plugins/issues/2997)) ([45f8cf5](https://github.com/laurigates/claude-plugins/commit/45f8cf5534c8e00e5baadabb5c5f6fa5ec714206))
+
 ## [2.60.5](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.60.4...git-plugin-v2.60.5) (2026-10-08)
 
 

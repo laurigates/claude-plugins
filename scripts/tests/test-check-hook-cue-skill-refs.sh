@@ -62,12 +62,12 @@ if [ "$(field "$OUT_A" ISSUE_COUNT)" = "2" ] && [ "$(field "$OUT_A" STATUS)" = "
 else
   fail "(a) expected ISSUE_COUNT=2 / STATUS=ERROR; got: $OUT_A"
 fi
-if printf '%s' "$OUT_A" | grep -q 'ID=code-quality:code-lint FIX=code-quality-plugin:code-lint'; then
+if grep -q 'ID=code-quality:code-lint FIX=code-quality-plugin:code-lint' <<<"$OUT_A"; then
   pass "(a) names code-quality-plugin:code-lint as the copy-pasteable fix"
 else
   fail "(a) expected FIX=code-quality-plugin:code-lint; got: $OUT_A"
 fi
-if printf '%s' "$OUT_A" | grep -q 'ID=evaluate:evaluate-skill FIX=evaluate-plugin:evaluate-skill'; then
+if grep -q 'ID=evaluate:evaluate-skill FIX=evaluate-plugin:evaluate-skill' <<<"$OUT_A"; then
   pass "(a) names evaluate-plugin:evaluate-skill as the copy-pasteable fix"
 else
   fail "(a) expected FIX=evaluate-plugin:evaluate-skill; got: $OUT_A"
@@ -157,7 +157,7 @@ else
   fail "(e) expected rc=0 / STATUS=OK; got rc=$RC_E: $OUT_E"
 fi
 if [ "$(field "$OUT_E" ADVISORY_ISSUE_COUNT)" = "1" ] &&
-   printf '%s' "$OUT_E" | grep -q 'FILE=other-plugin/hooks/probe.sh UNRESOLVABLE=1'; then
+   grep -q 'FILE=other-plugin/hooks/probe.sh UNRESOLVABLE=1' <<<"$OUT_E"; then
   pass "(e) the out-of-scope instance is reported under ADVISORY, not hidden"
 else
   fail "(e) expected ADVISORY_ISSUE_COUNT=1 naming other-plugin/hooks/probe.sh; got: $OUT_E"
@@ -176,7 +176,7 @@ cat > "$TREE_F/code-quality-plugin/hooks/cue.sh" <<'EOF'
 echo "[code-quality] Run /code-quality:code-lint."
 EOF
 OUT_F="$(run_guard "$TREE_F")"; RC_F=$?
-if [ "$RC_F" -ne 0 ] && printf '%s' "$OUT_F" | grep -q 'TYPE=broken_walk'; then
+if [ "$RC_F" -ne 0 ] && grep -q 'TYPE=broken_walk' <<<"$OUT_F"; then
   pass "(f) empty ground truth fails loudly (broken_walk)"
 else
   fail "(f) expected non-zero exit with TYPE=broken_walk; got rc=$RC_F: $OUT_F"
@@ -226,7 +226,7 @@ if [ "$(field "$OUT_I" REFS_CHECKED)" -ge 1 ] && [ "$(field "$OUT_I" COMMENTS_SK
 else
   fail "(i) expected REFS_CHECKED>=1 / COMMENTS_SKIPPED=0; got: $OUT_I"
 fi
-if printf '%s' "$OUT_I" | grep -q 'LINE=3 ID=code-quality:code-lint FIX=code-quality-plugin:code-lint'; then
+if grep -q 'LINE=3 ID=code-quality:code-lint FIX=code-quality-plugin:code-lint' <<<"$OUT_I"; then
   pass "(i) reports the indented line by number with the resolvable fix"
 else
   fail "(i) expected LINE=3 with FIX=code-quality-plugin:code-lint; got: $OUT_I"

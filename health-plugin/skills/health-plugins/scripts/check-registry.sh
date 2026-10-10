@@ -157,7 +157,7 @@ ${mp_plugins}"
     fi
 
     # Present in any known marketplace?
-    if [ -n "$marketplace_names" ] && printf '%s\n' "$marketplace_names" | grep -Fxq "$plugin_name"; then
+    if [ -n "$marketplace_names" ] && grep -Fxq "$plugin_name" <<<"$marketplace_names"; then
       issues_list="${issues_list}  - SEVERITY=WARN TYPE=enabled_not_installed PLUGIN=${enabled_key}\n"
       issue_count=$((issue_count + 1))
       [ "$check_status" = "OK" ] && check_status="WARN"

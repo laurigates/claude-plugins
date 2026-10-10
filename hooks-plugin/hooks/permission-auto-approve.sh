@@ -70,13 +70,13 @@ fi
 
 # Destructive filesystem operations on root or home
 # shellcheck disable=SC2016  # $HOME is a grep pattern, not shell expansion
-if echo "$COMMAND" | grep -Eq 'rm\s+(-rf|-fr)\s+(/|~/|\$HOME)'; then
+if grep -Eq 'rm\s+(-rf|-fr)\s+(/|~/|\$HOME)' <<<"$COMMAND"; then
   echo '{"decision": "deny", "reason": "Destructive operation on root or home directory"}'
   exit 0
 fi
 
 # Force push to protected branches
-if echo "$COMMAND" | grep -Eq 'git\s+push\s+.*--force.*\s(main|master)\b'; then
+if grep -Eq 'git\s+push\s+.*--force.*\s(main|master)\b' <<<"$COMMAND"; then
   echo '{"decision": "deny", "reason": "Force push to protected branch"}'
   exit 0
 fi
@@ -87,16 +87,16 @@ fi
 approve_reason() {
   local node=$1
   # Read-only git operations
-  if printf '%s\n' "$node" | grep -Eq '^\s*git\s+(status|log|diff|branch|remote|show|blame|shortlog|describe|ls-files|rev-parse|rev-list)'; then
+  if grep -Eq '^\s*git\s+(status|log|diff|branch|remote|show|blame|shortlog|describe|ls-files|rev-parse|rev-list)' <<<"$node"; then
     echo "Read-only git operation"
   # Test runners (read-only, fail-fast)
-  elif printf '%s\n' "$node" | grep -Eq '^\s*(npm\s+test|npx\s+(vitest|jest)|bun\s+test|pytest|cargo\s+test|go\s+test|make\s+test)'; then
+  elif grep -Eq '^\s*(npm\s+test|npx\s+(vitest|jest)|bun\s+test|pytest|cargo\s+test|go\s+test|make\s+test)' <<<"$node"; then
     echo "Test execution"
   # Linters and formatters (read-only check mode)
-  elif printf '%s\n' "$node" | grep -Eq '^\s*(npx\s+(biome|eslint|prettier)|bun\s+run\s+(lint|check|format)|ruff\s+check|mypy|tsc\s+--noEmit)'; then
+  elif grep -Eq '^\s*(npx\s+(biome|eslint|prettier)|bun\s+run\s+(lint|check|format)|ruff\s+check|mypy|tsc\s+--noEmit)' <<<"$node"; then
     echo "Linter/formatter check"
   # gh CLI read operations
-  elif printf '%s\n' "$node" | grep -Eq '^\s*gh\s+(pr\s+(view|checks|list|diff)|issue\s+(view|list)|run\s+(view|list))'; then
+  elif grep -Eq '^\s*gh\s+(pr\s+(view|checks|list|diff)|issue\s+(view|list)|run\s+(view|list))' <<<"$node"; then
     echo "GitHub CLI read operation"
   else
     return 1

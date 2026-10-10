@@ -2,7 +2,7 @@
 id: ADR-0020
 date: 2026-07-05
 created: 2026-07-05
-modified: 2026-07-18
+modified: 2026-10-09
 status: Accepted
 deciders: claude-plugins team
 domain: automation
@@ -11,9 +11,19 @@ relates-to:
   - ADR-0011
   - ADR-0016
   - ADR-0017
+  - ADR-0024  # partially supersedes this ADR: work-order and prp-execute are model-invocable
 ---
 
 # ADR-0020: Blueprint Autonomy Levels — Ambient Operations via a Manifest-Gated Level Model
+
+> **Partially superseded by [ADR-0024](0024-blueprint-work-order-model-invocable.md)
+> (2026-10-09).** `/blueprint:work-order` and `/blueprint:prp-execute` no longer
+> carry `disable-model-invocation: true`. The "permanently gated" clause in
+> § The draft-issue side channel, the "human-only *by design*" framing in
+> § Context, and the flag half of option 4's rejection no longer apply.
+> Everything else stands: the level model, the draft-only automation policy
+> (now stated in the automating skills rather than enforced by the flag), and
+> the safety rails.
 
 ## Context
 
@@ -91,10 +101,21 @@ finding per due agent task into the existing aggregator pipe. `on-change` tasks
 are event-driven (PostToolUse hooks), never runner-driven; `on-demand` tasks are
 never due.
 
+> **Amended 2026-10-09.** The level-1 rung never ran in a consumer repo: the
+> SessionStart probe could not find `drift-protocol.sh` in the versioned plugin
+> cache, and the PostToolUse hooks used path matchers that never fire. Fixing
+> both exposed a third gap — Claude Code edits files through Bash in auto mode,
+> and a Write/Edit hook never sees those edits. A **deterministic** `on-change`
+> task is therefore also reconciled on every runner pass (`STATE=reconcile`),
+> writing the manifest only when the result differs; agent-judgment `on-change`
+> tasks stay event-driven.
+
 ### The draft-issue side channel (level 2)
 
-Automation never invokes `/blueprint:work-order` — `disable-model-invocation:
-true` stays on it (and on `/blueprint:prp-execute`) permanently. Instead, the
+Automation never invokes `/blueprint:work-order`. As accepted,
+`disable-model-invocation: true` was to stay on it (and on
+`/blueprint:prp-execute`) permanently; ADR-0024 removed the flag and kept this
+draft-only policy, which the autopilot/autorun prompts now enforce. Instead, the
 level-2 `blueprint-autopilot` skill scans ready PRPs (confidence ≥ 9, via
 `confidence-scoring`) that lack a work order and files GitHub issues labeled
 `work-order-draft` carrying the full WO packet (or local files under

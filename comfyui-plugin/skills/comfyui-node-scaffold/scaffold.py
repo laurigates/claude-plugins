@@ -105,6 +105,14 @@ COMFY_FRONTEND_TYPES_VERSION = "~1.45.0"
 # widget/gesture variants test pure helpers under the node environment and don't
 # need it. See issue #1806.
 JSDOM_VERSION = "^29.0.0"
+# The bun that builds web/dist, read by every setup-bun step via
+# `bun-version-file: .bun-version`. web/dist is committed and CI diffs it
+# against a fresh build, so the bundler must be pinned: 1.3.14 -> 1.4.2
+# renamed bundled identifiers (`idx2` -> `idx`), and an unpinned setup-bun
+# failed the typecheck-build job on every PR across the fleet the day the
+# runner picked up the new release. Renovate's bun-version manager bumps
+# the file; whoever lands the bump rebuilds web/dist in the same commit.
+BUN_VERSION = "1.4.2"
 
 
 # --------------------------------------------------------------------------- #
@@ -1574,9 +1582,11 @@ def test_node_mappings_exported():
 TEST_PUBLISH_HYGIENE = r'''"""Registry-tarball hygiene guard.
 
 The Comfy Registry security scan flags a node version on ANY finding —
-even info severity — and a Flagged version is not served to installers
-(see Comfy-Org/registry-backend#180, Comfy-Org/ComfyUI-Manager#2927).
-Every shipped file is scan surface.
+even info severity (see Comfy-Org/registry-backend#180,
+Comfy-Org/ComfyUI-Manager#2927). A Flagged version still installs but drops
+out of the registry's Active-only listing; a Banned one is skipped by
+installs (laurigates/comfyui-image-browser#111). Every shipped file is scan
+surface.
 
 comfy-cli builds node.zip as: git-tracked files - .comfyignore matches,
 with [tool.comfy] includes force-kept (see comfy_cli/file_utils.py
@@ -1906,6 +1916,13 @@ jobs:
       - uses: actions/checkout@v6
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
+        with:
+          # web/dist is committed and the step below diffs it against this
+          # job's build, so the bundler must be the one that produced it: bun's
+          # output changes between releases (1.3.14 -> 1.4.2 renamed bundled
+          # identifiers), and an unpinned setup-bun fails every PR the day a new
+          # bun ships. Bump .bun-version and rebuild web/dist in the same commit.
+          bun-version-file: .bun-version
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - name: Typecheck
@@ -1938,6 +1955,8 @@ jobs:
       - uses: actions/checkout@v6
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - name: Run Vitest
@@ -1978,6 +1997,8 @@ jobs:
         uses: actions/checkout@v6
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
       - name: Install dependencies and build frontend
         run: |
           bun install --frozen-lockfile
@@ -2245,6 +2266,7 @@ biome.json
 knip.json
 vitest.config.js
 package.json
+.bun-version
 bun.lock
 uv.lock
 pylock.toml
@@ -2583,9 +2605,14 @@ BANNER_SVG = """\
 </svg>
 """
 
-# Registry health monitor — flags a pack whose Active registry version has been
-# Flagged (falls back to the previous Active version on install). Mirrors the
-# sibling packs' registry-health.yml.
+# Registry health monitor — flags a pack whose declared registry version is
+# Flagged, Banned, stuck Pending, or missing. Flagged and Banned have different
+# consequences: the registry's /install resolver returns the newest NON-BANNED
+# version, so a Flagged version still installs (it only drops out of the
+# Active-only listing), while a Banned one is skipped and installs fall back to
+# an older version (laurigates/comfyui-image-browser#111). Both report the
+# version /install actually resolves to. Mirrors the sibling packs'
+# registry-health.yml; scripts/tests/test-registry-health.sh executes the step.
 #
 # The Pending guard before the `gh issue close` block is load-bearing: the
 # registry scan is async, so a run triggered right after Publish sees
@@ -2601,10 +2628,12 @@ REGISTRY_HEALTH_YML = r"""name: Registry health
 #
 # Two visible outputs:
 #   1. A commit status "Comfy Registry / scan" on the release commit — the
-#      registry verdict shows up as a check (green Active / red Flagged /
-#      yellow pending) next to CI in the Actions + commit UI.
+#      registry verdict shows up as a check (green Active / red Flagged or
+#      Banned / yellow pending) next to CI in the Actions + commit UI.
 #   2. A tracking issue (label registry-health) opened/updated when the version
-#      is Flagged, stuck Pending, or missing, and closed once it goes Active.
+#      is Flagged, Banned, stuck Pending, or missing, and closed once it goes
+#      Active. Flagged and Banned issues name the version /install resolves to:
+#      Flagged still installs, Banned falls back to an older version.
 #
 # The registry security scan is async: a freshly published version is Pending
 # for a while before it flips to Active or Flagged. So a run triggered right
@@ -2701,21 +2730,48 @@ jobs:
               "" \
               "The publish either failed, is still uploading, or release-please hasn't cut it yet." \
               "Check the publish workflow and ${dash}." > "$body"
-          elif [ "$status" = "NodeVersionStatusFlagged" ]; then
-            problem="flagged"
+          elif [ "$status" = "NodeVersionStatusFlagged" ] || [ "$status" = "NodeVersionStatusBanned" ]; then
             findings=$(jq -r --arg v "$ver" '.[] | select(.version==$v) | .status_reason // ""
               | (fromjson? // .)
               | if type=="array" then
                   map("  - `\(.issue_type // .error_type // .type // "?")` (\(.scanner // "?")) in `\(.file_path // .path // "?")`: \(.description // "" | tostring | .[0:200])")
                   | join("\n")
                 else "  - \(tostring | .[0:400])" end' versions.json)
-            printf '%s\n' \
-              "Declared version **\`${ver}\`** is **Flagged** by Comfy-Org registry moderation." \
-              "" \
-              "- Clean installs resolve to an older version until this clears." \
-              "- Scan findings (\`include_status_reason=true\`):" \
-              "${findings:-  - (none reported)}" \
-              "- If a false positive, request re-review via Comfy-Org (registry-backend#180); a new publish re-runs the scan." > "$body"
+            # What a clean install actually gets. /install returns the newest
+            # NON-BANNED version: Flagged still installs, Banned falls back —
+            # possibly to a very old, itself-deprecated version.
+            install_json=$(curl -fsS "https://api.comfy.org/nodes/${node_id}/install" 2>/dev/null) || install_json=""
+            resolved=$(jq -r '.version // empty' <<<"$install_json" 2>/dev/null) || resolved=""
+            resolved_note=$(jq -r 'if .deprecated == true then " (itself marked `deprecated`)" else "" end' <<<"$install_json" 2>/dev/null) || resolved_note=""
+            if [ -n "$resolved" ]; then
+              installs="\`/install\` resolves to **\`${resolved}\`**${resolved_note}"
+            else
+              installs="the version \`/install\` resolves to could not be read (request failed)"
+            fi
+            listing=""
+            if [ "$status" = "NodeVersionStatusBanned" ]; then
+              problem="banned"
+              impact="- Clean installs skip a Banned version and fall back to the newest non-banned one: ${installs}. The fallback can be much older than \`${ver}\`."
+              header="Declared version **\`${ver}\`** is **Banned** by Comfy-Org registry moderation."
+            else
+              problem="flagged"
+              listed=$(curl -fsS "https://api.comfy.org/nodes/${node_id}" 2>/dev/null | jq -r '.latest_version.version // empty' 2>/dev/null) || listed=""
+              if [ "$resolved" = "$ver" ]; then
+                impact="- Installs are unaffected (Flagged is not Banned): ${installs}, the flagged version itself."
+              else
+                impact="- Flagged is not Banned, so installs are not blocked by this status: ${installs}."
+              fi
+              listing="- Discoverability is affected: the registry listing's \`latest_version\` counts only Active versions, so it shows **\`${listed:-none}\`** rather than \`${ver}\`."
+              header="Declared version **\`${ver}\`** is **Flagged** by Comfy-Org registry moderation."
+            fi
+            {
+              printf '%s\n' "$header" "" "$impact"
+              [ -z "$listing" ] || printf '%s\n' "$listing"
+              printf '%s\n' \
+                "- Scan findings (\`include_status_reason=true\`):" \
+                "${findings:-  - (none reported)}" \
+                "- If a false positive, request re-review via Comfy-Org (registry-backend#180); a new publish re-runs the scan."
+            } > "$body"
           elif [ "$status" = "NodeVersionStatusPending" ]; then
             age_h=$(( ( $(date -u +%s) - $(date -u -d "$created" +%s) ) / 3600 ))
             if [ "$age_h" -ge "${PENDING_GRACE_HOURS}" ]; then
@@ -2827,6 +2883,7 @@ def build_file_map(
 
     # Shared pinned versions injected into every templated config.
     ctx["BIOME_VERSION"] = BIOME_VERSION
+    ctx["BUN_VERSION"] = BUN_VERSION
     ctx["COMFY_FRONTEND_TYPES_VERSION"] = COMFY_FRONTEND_TYPES_VERSION
     ctx["MODAL_KIT_PKG"] = MODAL_KIT_PKG
 
@@ -3151,6 +3208,7 @@ def build_file_map(
         "knip.json": KNIP_JSON,
         "tsconfig.json": TSCONFIG,
         "package.json": PACKAGE_JSON,
+        ".bun-version": "@@BUN_VERSION@@\n",
         "vitest.config.js": VITEST_CONFIG,
         ".pre-commit-config.yaml": PRE_COMMIT,
         ".gitignore": GITIGNORE,

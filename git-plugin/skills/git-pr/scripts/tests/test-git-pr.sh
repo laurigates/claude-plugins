@@ -59,13 +59,13 @@ export GIT_PR_DEPENDENTS_FIXTURE="${work}/nodeps.json"
 echo "[]" > "$GIT_PR_DEPENDENTS_FIXTURE"
 
 out1="$(bash "$pr_script" --project-dir "$repo" --base origin/main)"
-echo "$out1" | grep -q "^EXISTING_PR=none$" \
+grep -q "^EXISTING_PR=none$" <<<"$out1" \
   || fail "fresh branch expected EXISTING_PR=none, got:\n$(echo "$out1" | grep '^EXISTING_PR')"
-echo "$out1" | grep -q "^AHEAD_COUNT=2$" \
+grep -q "^AHEAD_COUNT=2$" <<<"$out1" \
   || fail "expected AHEAD_COUNT=2, got:\n$(echo "$out1" | grep '^AHEAD_COUNT')"
-echo "$out1" | grep -q "^PR_READY=true$" \
+grep -q "^PR_READY=true$" <<<"$out1" \
   || fail "expected PR_READY=true (2 commits ahead), got:\n$(echo "$out1" | grep '^PR_READY')"
-echo "$out1" | grep -q "^STACK_PARENT=false$" \
+grep -q "^STACK_PARENT=false$" <<<"$out1" \
   || fail "expected STACK_PARENT=false with empty dependents, got:\n$(echo "$out1" | grep '^STACK_PARENT')"
 pass "fresh branch: no existing PR, ahead-count 2, PR_READY=true, not a stack parent"
 
@@ -76,9 +76,9 @@ echo '{"number":77,"state":"OPEN"}' > "${work}/existing.json"
 export GIT_PR_EXISTING_PR_FIXTURE="${work}/existing.json"
 
 out2="$(bash "$pr_script" --project-dir "$repo" --base origin/main)"
-echo "$out2" | grep -q "^EXISTING_PR=77$" \
+grep -q "^EXISTING_PR=77$" <<<"$out2" \
   || fail "expected EXISTING_PR=77, got:\n$(echo "$out2" | grep '^EXISTING_PR')"
-echo "$out2" | grep -q "^EXISTING_PR_STATE=OPEN$" \
+grep -q "^EXISTING_PR_STATE=OPEN$" <<<"$out2" \
   || fail "expected EXISTING_PR_STATE=OPEN, got:\n$(echo "$out2" | grep '^EXISTING_PR_STATE')"
 pass "branch with existing PR detected (#77, state via 'state' field not 'merged')"
 
@@ -91,11 +91,11 @@ JSON
 export GIT_PR_DEPENDENTS_FIXTURE="${work}/deps.json"
 
 out3="$(bash "$pr_script" --project-dir "$repo" --base origin/main)"
-echo "$out3" | grep -q "^DEPENDENT_COUNT=1$" \
+grep -q "^DEPENDENT_COUNT=1$" <<<"$out3" \
   || fail "expected DEPENDENT_COUNT=1, got:\n$(echo "$out3" | grep '^DEPENDENT_COUNT')"
-echo "$out3" | grep -q "^STACK_PARENT=true$" \
+grep -q "^STACK_PARENT=true$" <<<"$out3" \
   || fail "expected STACK_PARENT=true, got:\n$(echo "$out3" | grep '^STACK_PARENT')"
-echo "$out3" | grep -q "DEPENDENT_PR=88 HEAD=feature/child" \
+grep -q "DEPENDENT_PR=88 HEAD=feature/child" <<<"$out3" \
   || fail "expected dependent PR #88 listed, got:\n$(echo "$out3" | grep '^DEPENDENT_PR')"
 pass "stacked-PR scan flags STACK_PARENT=true and lists dependent #88"
 
@@ -114,17 +114,17 @@ Related: #3
 MD
 
 out4="$(bash "$pr_script" --project-dir "$repo" --base origin/main --body-file "${work}/body.md")"
-echo "$out4" | grep -q "^BODY_NOT_AUTOCLOSING=#3$" \
+grep -q "^BODY_NOT_AUTOCLOSING=#3$" <<<"$out4" \
   || fail "expected BODY_NOT_AUTOCLOSING=#3, got:\n$(echo "$out4" | grep '^BODY_NOT_AUTOCLOSING')"
-echo "$out4" | grep -qE "^BODY_CLOSING=#1,#2$" \
+grep -qE "^BODY_CLOSING=#1,#2$" <<<"$out4" \
   || fail "expected BODY_CLOSING=#1,#2, got:\n$(echo "$out4" | grep '^BODY_CLOSING')"
 pass "closing-keyword audit: #1/#2 auto-close, #3 (Related) flagged not-auto-closing"
 
 # Trailer invariants.
-echo "$out4" | grep -q "^=== GIT PR ===$" || fail "missing section header"
-echo "$out4" | grep -q "^=== END GIT PR ===$" || fail "missing section footer"
-echo "$out4" | grep -q "^STATUS=" || fail "missing STATUS trailer"
-echo "$out4" | grep -q "^ISSUE_COUNT=" || fail "missing ISSUE_COUNT trailer"
+grep -q "^=== GIT PR ===$" <<<"$out4" || fail "missing section header"
+grep -q "^=== END GIT PR ===$" <<<"$out4" || fail "missing section footer"
+grep -q "^STATUS=" <<<"$out4" || fail "missing STATUS trailer"
+grep -q "^ISSUE_COUNT=" <<<"$out4" || fail "missing ISSUE_COUNT trailer"
 pass "structured-output trailers present"
 
 echo "ALL TESTS PASSED"
