@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.4](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.9.3...kubernetes-plugin-v1.9.4) (2026-10-10)
+
+
+### Bug Fixes
+
+* **kubernetes-plugin:** stop the kubectl dry-run injector approving commands it cannot vouch for ([#2983](https://github.com/laurigates/claude-plugins/issues/2983)) ([49ed0ba](https://github.com/laurigates/claude-plugins/commit/49ed0baabe6915d6898b9585cbebef4591198098))
+
 ## [1.9.3](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.9.2...kubernetes-plugin-v1.9.3) (2026-10-10)
 
 

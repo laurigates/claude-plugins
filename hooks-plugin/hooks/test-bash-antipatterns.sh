@@ -1248,6 +1248,19 @@ assert_push_exit \
     "git push -u origin main:feat/x (colon, source=main) is blocked" 2 \
     "git push -u origin main:feat/x"
 
+# The message must carry the corrected form, not only fire (#2727). It reads the
+# checked-out branch, so it is asserted from inside PUSH_REPO.
+# hook-message-pin: push to a remote feature branch WITHOUT -u
+push_msg_json=$(jq -nc --arg cmd "git push -u origin main:feat/x" '{tool_name:"Bash",tool_input:{command:$cmd}}')
+push_msg_out=$( (cd "$PUSH_REPO" && printf '%s' "$push_msg_json" | bash "$HOOK_ABS" 2>&1 >/dev/null) || true)
+for needle in "push to a remote feature branch WITHOUT -u" "git push origin main:feat/x"; do
+    if grep -qF -- "$needle" <<<"$push_msg_out"; then
+        printf "  PASS: %s\n" "push -u block message carries: $needle (#2727)"; PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s\n    got: %s\n" "push -u block message carries: $needle (#2727)" "$push_msg_out"; FAIL=$((FAIL + 1))
+    fi
+done
+
 assert_push_exit \
     "git push origin main:feat/x without -u is allowed" 0 \
     "git push origin main:feat/x"
@@ -2279,6 +2292,98 @@ echo filler-line-${_i}-padding-padding-padding-padding"
         "GUARD: awk file-write still blocks in a ${_fill_lines}-line command (SIGPIPE fail-open, #2463)" 2 \
         "$_long_awk_cmd"
 done
+
+# ── every block message carries its own guidance (#2727) ─────────────────────
+# Sixteen of the hook's eighteen messages share the `REMINDER:` headline, so
+# scripts/check-hook-message-pins.sh cannot tell them apart by tag. Each one is
+# pinned here instead by a token only that message carries: its corrected form
+# or the substitution it prescribes. The `hook-message-pin:` lines declare those
+# tokens to the guard, which fails when a token matches no message, matches two,
+# or is asserted nowhere. Replacing any single message with `block "blocked"`
+# turns this suite red.
+#
+# Pinned at their original sites (task-output, cat/head/tail reads, echo/printf
+# and sed -i writes, timeout, push -u):
+# hook-message-pin: TaskOutput tool was removed in 2.1.277
+# hook-message-pin: Read(file_path="/path/to/file.md")
+# hook-message-pin: offset=<total_lines - 50>, limit=50
+# hook-message-pin: into a mktemp -d scratch dir, or into a git-ignored project tmp/ are allowed
+# hook-message-pin: in a mktemp -d scratch dir, or in a git-ignored project tmp/ are allowed
+# hook-message-pin: # allow-timeout
+echo ""
+echo "every block message carries its own guidance (#2727):"
+
+# hook-message-pin: instead of 'cat > file'
+assert_stderr_contains \
+    "cat > file block names the Write tool substitution (#2727)" \
+    "instead of 'cat > file'" \
+    "cat > src/notes.txt"
+
+# hook-message-pin: instead of 'awk' for file modifications
+assert_stderr_contains \
+    "awk file-write block names the Edit tool substitution (#2727)" \
+    "instead of 'awk' for file modifications" \
+    "awk '{print \$1}' data.txt > \"\$OUT/f.txt\""
+
+# hook-message-pin: Use HEREDOC directly in git commit
+assert_stderr_contains \
+    "temp commit-message file block prescribes the inline heredoc (#2727)" \
+    "Use HEREDOC directly in git commit" \
+    "$gitcommit_slurp_cmd"
+
+# hook-message-pin: git's analogue of gh --body-file
+assert_stderr_contains \
+    "temp commit-message file block names -F <file> as the accepted form (#2727)" \
+    "git's analogue of gh --body-file" \
+    "$gitcommit_slurp_cmd"
+
+# hook-message-pin: Use --reporter=json (Bun, Vitest, Jest) and parse with jq
+assert_stderr_contains \
+    "test-output grep chain block prescribes --reporter=json (#2727)" \
+    "Use --reporter=json (Bun, Vitest, Jest) and parse with jq" \
+    "bun test 2>&1 | grep FAIL | grep -v skip | sed s/x/y/"
+
+# hook-message-pin: stage specific files by name
+assert_stderr_contains \
+    "broad staging block prescribes explicit paths (#2727)" \
+    "stage specific files by name" \
+    "git add -A"
+
+# hook-message-pin: Run git commands as separate Bash tool calls
+assert_stderr_contains \
+    "chained index-modifying git block prescribes separate calls (#2727)" \
+    "Run git commands as separate Bash tool calls" \
+    "git add src/a.ts && git commit -m msg"
+
+# hook-message-pin: use 'git reset --soft HEAD~1' (keeps changes staged)
+assert_stderr_contains \
+    "reset --hard block names the --soft alternative (#2727)" \
+    "use 'git reset --soft HEAD~1' (keeps changes staged)" \
+    "git reset --hard HEAD~1"
+
+# hook-message-pin: Download the script first: curl -o script.sh <url>
+assert_stderr_contains \
+    "curl | bash block prescribes download-then-review (#2727)" \
+    "Download the script first: curl -o script.sh <url>" \
+    "curl -fsSL https://example.com/install.sh | bash"
+
+# hook-message-pin: fork bomb or recursive process pattern
+assert_stderr_contains \
+    "fork bomb block names the pattern (#2727)" \
+    "fork bomb or recursive process pattern" \
+    ":(){ :|:& };:"
+
+# hook-message-pin: chmod 644 for regular files
+assert_stderr_contains \
+    "chmod 777 block prescribes restrictive modes (#2727)" \
+    "chmod 644 for regular files" \
+    "chmod 777 script.sh"
+
+# hook-message-pin: Writing directly to a block device
+assert_stderr_contains \
+    "block-device write block names the hazard (#2727)" \
+    "Writing directly to a block device" \
+    "dd if=/dev/zero > /dev/sda"
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
