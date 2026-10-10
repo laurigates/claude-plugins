@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.8](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.12.7...feedback-plugin-v1.12.8) (2026-10-10)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** treat mktemp -d dirs and a git-ignored project tmp/ as scratch for write blocks ([#2984](https://github.com/laurigates/claude-plugins/issues/2984)) ([9dd1182](https://github.com/laurigates/claude-plugins/commit/9dd11820b3f7371c9ce19f764aad7469f2a7c905))
+
 ## [1.12.7](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.12.6...feedback-plugin-v1.12.7) (2026-10-10)
 
 
