@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.12.7](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.12.6...hooks-plugin-v2.12.7) (2026-10-10)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** auto-checkpoint skips a store identical to the previous one ([#3010](https://github.com/laurigates/claude-plugins/issues/3010)) ([29bf9cc](https://github.com/laurigates/claude-plugins/commit/29bf9cc0f7d9f330bf8ad93234e5f280c114452d))
+
 ## [2.12.6](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.12.5...hooks-plugin-v2.12.6) (2026-10-09)
 
 
