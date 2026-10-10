@@ -332,7 +332,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.12.7",
+      "version": "1.12.8",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -488,7 +488,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.12.10",
+      "version": "2.12.11",
       "author": {
         "name": "Lauri Gates"
       },
