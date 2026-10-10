@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-14
+modified: 2026-10-09
 reviewed: 2026-05-14
 name: git-commit-workflow
 description: "Conventional commit format, staging, and message conventions. Use when writing commit messages, staging files, grouping changes, or auto-detecting linked issues."
@@ -56,6 +56,8 @@ type(scope): description
 [optional footer(s)]
 ```
 
+**The scope is required.** Write `type(scope): …` — `docs(readme): update install steps`, never a bare `docs: update install steps`. The Conventional Commits spec lets you omit the scope; this house convention does not (`.claude/rules/conventional-commits.md`). Take it from the component or plugin the change touches.
+
 For footer/trailer patterns (Co-authored-by, BREAKING CHANGE, Release-As), see **git-commit-trailers** skill.
 
 ### Commit Types
@@ -73,7 +75,7 @@ For footer/trailer patterns (Co-authored-by, BREAKING CHANGE, Release-As), see *
 ### Examples
 
 ```bash
-# Feature with scope
+# Feature
 git commit -m "feat(auth): implement OAuth2 integration"
 
 # Bug fix with body

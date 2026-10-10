@@ -1,6 +1,6 @@
 ---
 created: 2026-01-21
-modified: 2026-06-10
+modified: 2026-10-09
 reviewed: 2026-06-10
 name: git-pr
 description: Create pull requests with descriptions, labels, and issue references. Use when user says "create PR", "open pull request", or "submit for review". From pushed branches.
@@ -152,16 +152,17 @@ those should not appear in the warning if you re-run the check.
 
 ## PR Title Format
 
-Use conventional commits format (see `github-pr-title` skill):
+Use conventional commit format (`github-pr-title`):
 
 ```
 <type>(<scope>): <subject>
 ```
 
+**The scope is required.** Write `type(scope): …` — `docs(readme): update install steps`, never a bare `docs: update install steps`. The Conventional Commits spec lets you omit the scope; this house convention does not (`.claude/rules/conventional-commits.md`). Take it from the component or plugin the change touches.
+
 Examples:
 - `feat(auth): add OAuth2 support`
 - `fix(api): handle null response`
-- `docs(readme): update installation`
 
 ## PR Options
 

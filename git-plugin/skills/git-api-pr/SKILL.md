@@ -6,7 +6,7 @@ allowed-tools: Bash(gh api *), Bash(gh pr *), Bash(gh repo *), Bash(base64 *), B
 argument-hint: '<files...> --title "type(scope): description"'
 disable-model-invocation: true
 created: 2026-02-15
-modified: 2026-06-18
+modified: 2026-10-09
 reviewed: 2026-04-29
 ---
 
@@ -40,6 +40,8 @@ Parse these from `$ARGUMENTS`:
 | `--body <text>` | No | PR body/description |
 | `--draft` | No | Create as draft PR |
 | `--delete` | No | Delete the specified files instead of updating them |
+
+**The scope is required.** Write `type(scope): …` — `docs(readme): update install steps`, never a bare `docs: update install steps`. The Conventional Commits spec lets you omit the scope; this house convention does not (`.claude/rules/conventional-commits.md`). Take it from the component or plugin the change touches. A `--title` with no scope breaks this convention, so add one before creating the PR.
 
 ## Execution
 
@@ -198,12 +200,12 @@ Remove any temp files created during execution.
 
 | Context | Command |
 |---------|---------|
-| Single file fix | `/git:api-pr file.ts --title "fix: typo"` |
-| Multi-file fix | `/git:api-pr a.ts b.ts --title "fix: update configs"` |
-| Draft PR | `/git:api-pr file.ts --title "feat: wip" --draft` |
-| Custom branch | `/git:api-pr file.ts --title "fix: desc" --branch hotfix/issue-123` |
-| Delete file | `/git:api-pr old-file.ts --title "chore: remove deprecated" --delete` |
-| Non-default base | `/git:api-pr file.ts --title "fix: desc" --base develop` |
+| Single file fix | `/git:api-pr file.ts --title "fix(docs): correct typo"` |
+| Multi-file fix | `/git:api-pr a.ts b.ts --title "fix(config): update settings"` |
+| Draft PR | `/git:api-pr file.ts --title "feat(api): add endpoint" --draft` |
+| Custom branch | `/git:api-pr file.ts --title "fix(api): handle null response" --branch hotfix/issue-123` |
+| Delete file | `/git:api-pr old-file.ts --title "chore(scripts): remove deprecated helper" --delete` |
+| Non-default base | `/git:api-pr file.ts --title "fix(api): handle null response" --base develop` |
 
 ## See Also
 
