@@ -4,10 +4,9 @@ model: opus
 color: "#FF9800"
 description: Dependency vulnerability and freshness audit. Scans for outdated packages, known CVEs, and license issues across package ecosystems. Use when checking dependency health.
 tools: Glob, Grep, Read, Bash(npm audit *), Bash(npm outdated *), Bash(npm ls *), Bash(yarn audit *), Bash(bun pm *), Bash(pip-audit *), Bash(pip list *), Bash(cargo audit *), Bash(snyk *), Bash(git status *), TodoWrite
-context: fork
 maxTurns: 15
 created: 2026-01-24
-modified: 2026-06-18
+modified: 2026-10-09
 reviewed: 2026-06-18
 ---
 

@@ -7,10 +7,9 @@ description: |
   transcripts and outputs to determine pass/fail with cited evidence.
   Use as a subagent from evaluation orchestration skills.
 tools: Read, Glob, Grep, Bash(cat *), Bash(jq *), Bash(wc *), Bash(find *), TodoWrite
-context: fork
 maxTurns: 15
 created: 2026-03-04
-modified: 2026-09-23
+modified: 2026-10-09
 reviewed: 2026-03-09
 ---
 

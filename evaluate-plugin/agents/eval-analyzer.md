@@ -7,10 +7,9 @@ description: |
   opportunities. Operates in comparison mode (with-skill vs baseline) or
   benchmark mode (trends across runs). Use after grading to generate suggestions.
 tools: Read, Glob, Grep, Bash(cat *), Bash(jq *), Bash(find *), TodoWrite
-context: fork
 maxTurns: 20
 created: 2026-03-04
-modified: 2026-05-07
+modified: 2026-10-09
 reviewed: 2026-03-09
 ---
 

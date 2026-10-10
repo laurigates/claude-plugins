@@ -286,6 +286,7 @@ the recipes are standalone too:
 just export-pi-agents              # -> dist/pi/agents/*.md (source read-only, output reproducible)
 just install-pi-agents             # -> ~/.pi/agent/agents/   (additive, global scope)
 just install-pi-agents .pi/agents  # -> project scope, which overrides global
+just install-pi-agents ~/.pi/agent/agents inherit   # local-model-only pi: drop the model pin
 ```
 
 `install-pi-agents` self-skips with a hint when `@tintinweb/pi-subagents` is not
@@ -307,21 +308,54 @@ rename (`maxTurns` → `max_turns`) rather than a loss:
 | `Bash(cmd *)` | `bash` | **scope dropped** — see below |
 | `Agent(a, b)` | `allowed_subagents: a, b` | nesting; default-off and separate from `tools:` |
 | `skills: [a, b]` | `skills: a, b` | both preload; pi's list form also drops the inherited rest |
-| `model`, `color`, `thinking`, `maxTurns` | same, `max_turns` | `model: opus` resolves fuzzily in pi; a provider without it reports `(unavailable, fallback: inherit)` |
+| `model` | `model`, per `--model` | `preserve` (default) emits the source `model: opus`; `inherit` emits no `model:` key; any other value replaces the pin on every agent — see [The model pin](#the-model-pin) |
+| `color`, `thinking`, `maxTurns` | same, `max_turns` | |
 | `TodoWrite`, `TaskOutput`, `WebFetch`, `WebSearch` | *dropped* | no pi built-in exists |
-| `context: fork` | *dropped* | a skill field that Claude Code ignores on an agent (#2646), so there is no behaviour to carry over; `inherit_context:` would hand the pi agent the parent conversation, which the source agent never had |
+| `context: fork` | *dropped* | a skill field that Claude Code ignores on an agent (#2646), removed from every marketplace agent (#2722); an agent that regains it is reported under `DROPPED_KEYS=`, because `inherit_context:` would hand the pi agent the parent conversation, which the source agent never had |
 
 The exporter reports rather than silently adjusts. On the corpus today it prints
 `WIDENED_BASH=142` (every scoped `Bash(git diff *)` grant becomes an unscoped
 `bash`, because pi's `tools:` is a name-only allowlist — that is a **privilege
 widening**, and a property of the target schema, not something this repo can
-narrow), `MODEL_PINS=21`, `AGENTS_WITH_NESTING=1`, and `DROPPED_TOOLS=` /
-`DROPPED_KEYS=` naming each loss per agent.
+narrow), `MODEL_MODE=preserve` with `MODEL_PINS=21` (the count of emitted
+pins), `AGENTS_WITH_NESTING=1`, and `DROPPED_TOOLS=` / `DROPPED_KEYS=` naming
+each loss per agent.
 
 `WebFetch`/`WebSearch` *can* be reached as `ext:pi-web-search/web_search`, but a
 single `ext:` entry flips pi's extension tools into explicit-allowlist mode — the
 agent would silently lose everything else the adapter exposes, `search_skills`
 among it — so it is left to a human as an opt-in rather than applied here.
+
+### The model pin
+
+Every marketplace agent pins `model: opus`. That is a Claude Code decision
+(`.claude/rules/agent-development.md` § Model Selection), and pi honours it only
+when a configured provider resolves the alias. On a **local-model-only** pi —
+the mlx_lm.server / ollama setup this page is about — nothing resolves it, so pi
+marks every dispatch `(unavailable, fallback: inherit)` and runs the agent on
+the parent's model anyway. The pin is inert there, and the fallback notice is
+noise on exactly the runs where the question is how the local model behaves
+(#2649).
+
+The exporter's `--model` flag (the `model` parameter of both recipes) picks the
+behaviour:
+
+| `--model` | Emitted | Use when |
+|---|---|---|
+| `preserve` (default) | the source `model:` verbatim | pi has a provider that resolves `opus` |
+| `inherit` | no `model:` key at all — pi's spelling of "run on the session model"; an empty `model:` would be a null value, which pi reads differently | a local-model-only pi |
+| `<model>` | `model: <model>` on every agent, pinned or not | every agent should run on one named pi model (`sonnet`, `mlx-local/<id>`) |
+
+```
+just export-pi-agents dist/pi inherit
+python3 scripts/export-pi-agents.py --model=inherit . dist/pi
+```
+
+The report prints `MODEL_MODE=` and counts emitted pins in `MODEL_PINS=`, so
+`inherit` reads `MODEL_PINS=0`. An empty value or one with whitespace exits 2
+before anything is written. The default stays `preserve` so nobody loses the
+pin without asking; whether a small local quant does better or worse than the
+parent's model on these agents is unmeasured.
 
 ### Verifying it landed
 
