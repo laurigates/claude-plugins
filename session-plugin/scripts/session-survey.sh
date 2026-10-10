@@ -695,13 +695,71 @@ fi
 #
 # Assumes Taskwarrior 3.x, where a started (+ACTIVE) task is always
 # status:pending, so this snapshot is a superset of the old `+ACTIVE export`.
+#
+# TASK_AVAILABLE says only that the binary is on PATH. Whether the STORE was
+# read is a separate question (#2832): a `data.location` naming a missing or
+# read-only path makes `task export` fail, and folding that failure into `[]`
+# reported an unreadable store as a confident empty queue. The export's exit
+# status and stderr are therefore kept and collapsed into TASK_STORE_REACHABLE /
+# TASK_FAIL_REASON / TASK_FAIL_DETAIL — the shape GH_READY / GH_FAIL_REASON /
+# GH_FAIL_DETAIL give GitHub (#2425).
 # ---------------------------------------------------------------------------
 task_available=false
+# Why the store was not read: no-cli | read-only | store-unreachable | unknown.
+# Present only when TASK_STORE_REACHABLE=false.
+task_store_reachable=false
+task_fail_reason="no-cli"
+task_fail_detail=""
 all_tasks_json="[]"
+
+# Classify a failed export from its first stderr line. `read-only` is tested
+# first: the canonical case (#2832) — a synced `.taskrc` naming another host's
+# path on a read-only mount — ALSO says "Cannot create directory", and its
+# remedy differs (point `rc.data.location` at a writable store rather than
+# create a directory). Matching uses a here-string, never a pipe (the #1744
+# SIGPIPE race).
+task_classify() {
+  local err="$1"
+  if grep -Eqi 'read-only file system|os error 30|readonly database|EROFS' <<<"$err"; then
+    printf '%s' "read-only"
+  elif grep -Eqi 'database error|cannot (create|open|read)|no such file|os error [0-9]+|permission denied|unable to open|data\.location|not a directory|database is locked' <<<"$err"; then
+    printf '%s' "store-unreachable"
+  else
+    printf '%s' "unknown"
+  fi
+}
+
 if have "$task_bin"; then
   task_available=true
-  all_tasks_json=$("$task_bin" '(status:pending or +ACTIVE)' export 2>/dev/null || echo "[]")
+  task_rc=0
+  task_err=""
+  task_err_file="$(mktemp 2>/dev/null)" || task_err_file=""
+  if [ -n "$task_err_file" ] && [ -f "$task_err_file" ]; then
+    all_tasks_json=$("$task_bin" '(status:pending or +ACTIVE)' export 2>"$task_err_file") || task_rc=$?
+    # First non-blank stderr line, sanitised for the KEY=VALUE contract: a
+    # control character would break the row, an unbounded one swamp the digest.
+    task_err=$(grep -m1 -v '^[[:space:]]*$' "$task_err_file" 2>/dev/null \
+      | tr -d '\000-\010\013-\037' | cut -c1-200)
+    rm -f "$task_err_file"
+  else
+    all_tasks_json=$("$task_bin" '(status:pending or +ACTIVE)' export 2>/dev/null) || task_rc=$?
+  fi
   [ -n "$all_tasks_json" ] || all_tasks_json="[]"
+  # Output that is not a JSON array is a failed read too: an exit-0 export that
+  # printed an error to stdout must not be scoped as if it held tasks.
+  if [ "$task_rc" -eq 0 ] && have jq \
+     && ! printf '%s' "$all_tasks_json" | jq -e 'type == "array"' >/dev/null 2>&1; then
+    task_rc=1
+    [ -n "$task_err" ] || task_err="task export printed non-JSON output"
+  fi
+  if [ "$task_rc" -eq 0 ]; then
+    task_store_reachable=true
+    task_fail_reason=""
+  else
+    all_tasks_json="[]"
+    task_fail_reason="$(task_classify "$task_err")"
+    task_fail_detail="$task_err"
+  fi
 fi
 
 # Scope the snapshot to a project the way `task project:<p>` would: taskwarrior
@@ -747,6 +805,11 @@ prefix_sibling_tasks=0
 
 if [ "$task_available" = false ]; then
   task_scope="none"
+  project_confidence="low"
+elif [ "$task_store_reachable" = false ]; then
+  # The binary ran but the store was never read (#2832): every count below
+  # would be a fabricated zero, so none of them may be confident.
+  task_scope="unknown"
   project_confidence="low"
 elif ! have jq; then
   # No jq means no scoping at all — never report a confident zero.
@@ -1208,6 +1271,9 @@ if [ "$summary_mode" = true ]; then
   echo "DETECTION=${detection}"
   echo "TASK_SCOPE=${task_scope}"
   echo "PROJECT_CONFIDENCE=${project_confidence}"
+  echo "TASK_STORE_REACHABLE=${task_store_reachable}"
+  [ -n "$task_fail_reason" ] && echo "TASK_FAIL_REASON=${task_fail_reason}"
+  [ -n "$task_fail_detail" ] && echo "TASK_FAIL_DETAIL=${task_fail_detail}"
   [ -n "$project_resolved" ] && echo "PROJECT_RESOLVED=${project_resolved}"
   [ -n "$project_ambiguous" ] && echo "PROJECT_AMBIGUOUS=${project_ambiguous}"
   [ -n "$project_ambiguous" ] && echo "PROJECT_AMBIGUOUS_TASKS=${project_ambiguous_tasks}"
@@ -1277,6 +1343,11 @@ echo "=== END GIT ==="
 
 echo "=== TASKWARRIOR ==="
 echo "TASK_AVAILABLE=${task_available}"
+# Whether the store was actually READ (#2832). `false` makes every count in
+# this section unqueried, never empty; TASK_FAIL_REASON says why.
+echo "TASK_STORE_REACHABLE=${task_store_reachable}"
+[ -n "$task_fail_reason" ] && echo "TASK_FAIL_REASON=${task_fail_reason}"
+[ -n "$task_fail_detail" ] && echo "TASK_FAIL_DETAIL=${task_fail_detail}"
 echo "OPEN_TASKS=${open_tasks}"
 # The slug ALONE, without its `.` subprojects — OPEN_TASKS' exact-equality half.
 echo "PROJECT_EXACT_TASKS=${project_exact_tasks}"

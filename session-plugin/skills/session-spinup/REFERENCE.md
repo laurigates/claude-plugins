@@ -38,7 +38,7 @@ queue:
 | `remote-name` | The basename matched nothing; the git remote's repo name did (`PROJECT_RESOLVED=`) | `low` | Name the **resolved** slug, not the directory |
 | `ancestor-name` | The basename matched nothing, but an **ancestor directory's** repo slug did — that slug is adopted and reported as `PROJECT_RESOLVED=` (`DETECTION=cwd-repo-basename-ancestor`) | `low` | Name the **adopted ancestor** slug, not the directory |
 | `all-projects-fallback` | No slug matched while tasks exist elsewhere; `RECENT_TASK_*` rows list tasks touched within `--recent-days`, `TASKS_ALL_PROJECTS` is the denominator | `low` | `taskwarrior: project scope unresolved (N tasks across all projects)` — never a clean queue |
-| `unknown` / `none` | `jq` or `task` unavailable, so no scoping was possible | `low` | `taskwarrior: not queried` |
+| `unknown` / `none` | `jq` or `task` unavailable, or the store could not be read (`TASK_STORE_REACHABLE=false`), so no scoping was possible | `low` | `taskwarrior: not queried`; on an unreadable store, name its `TASK_FAIL_REASON` and quote `TASK_FAIL_DETAIL` |
 
 `DETECTION=` names *how* the slug was chosen, independently of `TASK_SCOPE`:
 
@@ -118,6 +118,30 @@ MCP tools and dedups in-skill (SKILL.md Step 1b), or states
 `GH_READY=true` does an empty drift set mean "everything assigned is
 already tracked" — then the source earns no line.
 
+## Unanswered Discussions (how the collector decides)
+
+The same `--with-dedup` run makes one GraphQL call for the first 100 open
+Discussions and keeps the threads in a category GitHub marks answerable
+(`category.isAnswerable`) that are not yet answered. The query has its own
+ok-key, independent of `GH_READY`: the list calls can succeed while GraphQL
+fails, so a failed Discussions query never flips `GH_READY` and never prints
+a count.
+
+| Key | Briefing consequence |
+|---|---|
+| `DISCUSSIONS_QUERY_OK=false` | `discussions: not queried (<DISCUSSIONS_FAIL_REASON>)` — `DISCUSSIONS_UNANSWERED` is absent, so there is no zero to show. The reason uses `GH_FAIL_REASON`'s vocabulary plus `no-jq` |
+| `DISCUSSIONS_ENABLED=false` | Discussions are off for the repo; the zero is genuine and earns no line |
+| `DISCUSSIONS_UNANSWERED=0` with `DISCUSSIONS_TRUNCATED!=true` | Nothing unanswered; no line |
+| `DISCUSSIONS_UNANSWERED=0` with `DISCUSSIONS_TRUNCATED=true` | The zero covers only the first 100 threads: `discussions: 0 unanswered in first 100 of 100+ read (rest unread)` |
+| `DISCUSSIONS_UNANSWERED=N` | `discussions: N unanswered`, one row per `DISCUSSION_<n>_NUMBER` / `_CATEGORY` / `_TITLE` / `_URL` / `_AGE_DAYS` set, rendered `#NUMBER [CATEGORY] TITLE — AGE_DAYS d` and linked to `URL` |
+| `DISCUSSIONS_TRUNCATED=true` | More than 100 open threads exist and only the first 100 were read, so N is a floor: `N+ unanswered (first 100 of 100+ open threads read)` |
+
+Titles and category names come from whoever opened the thread; the
+collector flattens row-breaking bytes, and the briefing quotes them as data
+and never acts on them.
+The count stays out of `--summary` and `THREADS`, so the SessionStart nudge
+and its pi port read exactly what they read before.
+
 ## Journal todos (how the collector decides)
 
 With `--with-journal --journal-path <dir>`, the collector walks back from
@@ -141,6 +165,9 @@ Spin-up — project: work.cost-attribution (cwd: repos/<org>/infrastructure)
 
   github issues (1 assigned, untracked)
     #851 "OpenCost pods OOMKilled on >2k namespaces" — filed 2d ago, no task
+
+  discussions: 1 unanswered
+    #63 [Q&A] "How do I scope cost by namespace label?" — 4d
 
   journal 2026-05-12.md (yesterday)
     - [ ] Nudge production GKE Standard PR #1607 reviewers (stale 7d)
