@@ -67,7 +67,7 @@ Run when `--track` is `errors` or `both`.
 
 #### Step A1: Detect languages and app context
 
-From the context commands above, determine which language matchers to run.
+From the command output in [Context](#context), determine which language matchers to run.
 For the app-context matrix (signals → surfacing channel), load
 [REFERENCE-surfacing.md](REFERENCE-surfacing.md).
 

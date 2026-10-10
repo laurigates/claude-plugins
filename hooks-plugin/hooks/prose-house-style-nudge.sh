@@ -68,7 +68,7 @@ case "$TOOL_NAME" in
         ;;
     Bash)
         command=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
-        echo "$command" | grep -Eq 'gh (pr|issue) create' || exit 0
+        grep -Eq 'gh (pr|issue) create' <<<"$command" || exit 0
         kind="ticket"
         # Only a --body-file draft is on disk and checkable. An inline --body is
         # already sent by the time PostToolUse fires, and a heredoc body has no

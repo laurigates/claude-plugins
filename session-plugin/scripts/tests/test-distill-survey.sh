@@ -15,7 +15,7 @@ pass=0
 fail=0
 check() {
   local label="$1" haystack="$2" needle="$3"
-  if printf '%s' "$haystack" | grep -qF -e "$needle"; then
+  if grep -qF -e "$needle" <<<"$haystack"; then
     pass=$((pass + 1))
   else
     fail=$((fail + 1))
@@ -25,7 +25,7 @@ check() {
 }
 check_absent() {
   local label="$1" haystack="$2" needle="$3"
-  if printf '%s' "$haystack" | grep -qF -e "$needle"; then
+  if grep -qF -e "$needle" <<<"$haystack"; then
     fail=$((fail + 1))
     echo "FAIL: $label (unexpected: $needle)"
   else

@@ -433,6 +433,44 @@ playwright:
     expire_in: 1 week
 ```
 
+## WebGL Apps in GPU-less CI
+
+GitHub-hosted runners have no GPU. A WebGL app (CesiumJS, three.js, MapLibre) renders there on SwiftShader, Chrome's CPU rasterizer, and the defaults are fragile.
+
+### Force the renderer explicitly
+
+On current Chrome (155), `--disable-gpu` alone leaves **no WebGL at all**: the automatic SwiftShader fallback is deprecated, so the app's 3D view never starts and anything measured afterwards (scores, timings, screenshots) describes a page without it. Opt in explicitly:
+
+| Flag | Why |
+|---|---|
+| `--use-gl=angle --use-angle=swiftshader` | WebGL on SwiftShader |
+| `--enable-unsafe-swiftshader` | The opt-in Chromium documents for the deprecated fallback |
+| `--disable-gpu-compositing` | Keeps page compositing on the CPU. Composited through SwiftShader, DOM paints queue behind WebGL frames in the GPU process (measured: LCP 9 s vs 2.9 s) |
+
+```ts
+// playwright.config.ts
+use: {
+  launchOptions: {
+    args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-gpu-compositing'],
+  },
+},
+```
+
+Verify the renderer from inside the page rather than trusting the config: read `UNMASKED_RENDERER_WEBGL` from `WEBGL_debug_renderer_info`, and fail the run when it is missing or unexpected. Locally SwiftShader uses its LLVM backend; on Linux CI it reports `SwiftShader Device (Subzero)` and is several times slower, so local and CI timings are separate series.
+
+### Lighthouse CI: `chromeFlags` must be a string
+
+lhci 0.15 builds the flag string as `chromeFlags + ' --headless=new'`. An array in `lighthouserc` `settings.chromeFlags` is therefore comma-joined into **one bogus switch, and no flag applies**: Chrome silently uses the host GPU locally and its own default on CI. Pass one space-separated string (`[...].join(' ')`) and pin that with a test. To prove the renderer inside Lighthouse, have the app emit `performance.mark('<name> renderer=<UNMASKED_RENDERER>')`. The mark shows up in the `user-timings` audit without affecting any score, so a script can check every `lhr-*.json`.
+
+### Software frames can starve loading
+
+At ~140 ms (local) to ~500 ms (CI) per frame, a render loop that redraws while tiles stream in keeps the main thread busy and slows the loading that would let it stop. TBT and TTI then measure the rasterizer, not the app, and the run can hit Lighthouse's load timeout. In a CesiumJS measurement:
+
+- `resolutionScale` 0.5 and MSAA off changed per-frame cost by under 15% locally (cost is per draw call, not per pixel), though on CI's slower backend half resolution did cut TBT from 33 s to 8 s.
+- A frame-rate cap (`viewer.targetFrameRate`) broke the cycle, but **only below 1 / frame-cost**: on CI 2 fps changed nothing (frames already took ~500 ms) and 0.5 fps cut TBT from 33 s to 1.9 s.
+
+Apply such a cap only in the CI measurement build, record it alongside the renderer, and treat the resulting performance numbers as a CI-to-CI trend, not as what users with a GPU see.
+
 ## Best Practices
 
 ### Use Built-in Locators

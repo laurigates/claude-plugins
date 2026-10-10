@@ -47,7 +47,7 @@ echo "=== TEST: .claude/worktrees/ copies are pruned, not counted (#1548) ==="
 assert_eq "TOTAL_SKILLS counts only the real skill (worktree clone pruned)" \
   "1" "$(field TOTAL_SKILLS)"
 
-if echo "$OUT" | grep -q '/.claude/worktrees/'; then
+if grep -q '/.claude/worktrees/' <<<"$OUT"; then
   printf "  FAIL: no .claude/worktrees/ path leaks into output\n"; FAIL=$((FAIL + 1))
 else
   printf "  PASS: no .claude/worktrees/ path leaks into output\n"; PASS=$((PASS + 1))

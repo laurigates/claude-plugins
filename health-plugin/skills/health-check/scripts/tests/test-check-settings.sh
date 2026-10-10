@@ -38,9 +38,9 @@ mkdir -p "${proj1}/tooling/.claude"
 printf '{"permissions":{"allow":["Bash(git status *)"]}}' > "${proj1}/tooling/.claude/settings.json"
 
 out1="$(bash "$check_script" --home-dir "$home_dir" --project-dir "$proj1")"
-echo "$out1" | grep -q "PROJECT_DIR_RESOLVED=${proj1}/tooling" \
+grep -q "PROJECT_DIR_RESOLVED=${proj1}/tooling" <<<"$out1" \
   || fail "expected PROJECT_DIR_RESOLVED=${proj1}/tooling, got:\n$out1"
-echo "$out1" | grep -q "^PROJECT_SETTINGS=OK$" \
+grep -q "^PROJECT_SETTINGS=OK$" <<<"$out1" \
   || fail "expected PROJECT_SETTINGS=OK after resolving nested config, got:\n$out1"
 pass "single nested config resolves project_dir and validates its settings"
 rm -rf "$proj1"
@@ -54,11 +54,11 @@ printf '{}' > "${proj2}/a/.claude/settings.json"
 printf '{}' > "${proj2}/b/.claude/settings.json"
 
 out2="$(bash "$check_script" --home-dir "$home_dir" --project-dir "$proj2")"
-echo "$out2" | grep -q "^PROJECT_DIR_HINT=" \
+grep -q "^PROJECT_DIR_HINT=" <<<"$out2" \
   || fail "expected PROJECT_DIR_HINT= with multiple nested configs, got:\n$out2"
-echo "$out2" | grep -q "PROJECT_DIR_RESOLVED=" \
+grep -q "PROJECT_DIR_RESOLVED=" <<<"$out2" \
   && fail "must not resolve project_dir when multiple nested configs exist:\n$out2"
-echo "$out2" | grep -q "^PROJECT_SETTINGS=MISSING$" \
+grep -q "^PROJECT_SETTINGS=MISSING$" <<<"$out2" \
   || fail "expected PROJECT_SETTINGS=MISSING with ambiguous nested configs, got:\n$out2"
 pass "multiple nested configs emit hint and keep MISSING behavior"
 rm -rf "$proj2"
@@ -72,9 +72,9 @@ printf '{}' > "${proj3}/.claude/settings.json"
 printf '{}' > "${proj3}/nested/.claude/settings.json"
 
 out3="$(bash "$check_script" --home-dir "$home_dir" --project-dir "$proj3")"
-echo "$out3" | grep -qE "PROJECT_DIR_(RESOLVED|HINT)=" \
+grep -qE "PROJECT_DIR_(RESOLVED|HINT)=" <<<"$out3" \
   && fail "must not resolve/hint when root has its own .claude/:\n$out3"
-echo "$out3" | grep -q "^PROJECT_SETTINGS=OK$" \
+grep -q "^PROJECT_SETTINGS=OK$" <<<"$out3" \
   || fail "expected PROJECT_SETTINGS=OK from root config, got:\n$out3"
 pass "root config present takes precedence over nested config"
 rm -rf "$proj3"
@@ -84,9 +84,9 @@ rm -rf "$proj3"
 # -----------------------------------------------------------------------------
 proj4="$(mktemp -d)"
 out4="$(bash "$check_script" --home-dir "$home_dir" --project-dir "$proj4")"
-echo "$out4" | grep -qE "PROJECT_DIR_(RESOLVED|HINT)=" \
+grep -qE "PROJECT_DIR_(RESOLVED|HINT)=" <<<"$out4" \
   && fail "must not emit resolution/hint when no config exists anywhere:\n$out4"
-echo "$out4" | grep -q "^PROJECT_SETTINGS=MISSING$" \
+grep -q "^PROJECT_SETTINGS=MISSING$" <<<"$out4" \
   || fail "expected PROJECT_SETTINGS=MISSING when no config exists, got:\n$out4"
 pass "no config anywhere stays MISSING without spurious hint"
 rm -rf "$proj4"

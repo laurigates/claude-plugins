@@ -1,6 +1,6 @@
 ---
 created: 2026-05-30
-modified: 2026-10-05
+modified: 2026-10-10
 reviewed: 2026-09-02
 paths:
   - "**/skills/**"
@@ -61,7 +61,7 @@ Two derived signals:
 
 - **Portability** — a skill that scores ≥20 points higher on opus than haiku
   leans on reasoning the cheap model lacks. Simplify the skill, or pin `model:`
-  in its frontmatter (never `haiku` — see `skill-development.md`).
+  in its frontmatter (see `skill-development.md` for when `haiku` is allowed).
 - **Drift on a new model** — store each matrix run; on a model release, re-run
   the golden set and diff the delta column. A canary whose delta collapsed is
   the trigger to audit: either the new model does it unaided (redundant) or does

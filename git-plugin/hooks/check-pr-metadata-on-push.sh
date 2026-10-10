@@ -26,7 +26,7 @@ CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
 
 # Guard: only for git push commands
 if [ -z "$COMMAND" ]; then exit 0; fi
-if ! echo "$COMMAND" | grep -qE '(^|\s|&&\s*|;\s*)git\s+push\b'; then exit 0; fi
+if ! grep -qE '(^|\s|&&\s*|;\s*)git\s+push\b' <<<"$COMMAND"; then exit 0; fi
 
 # Guard: branch deletions carry nothing to reconcile (issue #2351).
 # `git push origin --delete <b>`, `git push origin -d <b>`, and the
