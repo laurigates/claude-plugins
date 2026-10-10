@@ -54,7 +54,7 @@ assert() {
 }
 
 is_true() { [ "$1" = "true" ] && echo true || echo false; }
-contains() { printf '%s' "$1" | grep -qF -- "$2" && echo true || echo false; }
+contains() { grep -qF -- "$2" <<<"$1" && echo true || echo false; }
 lacks() { [ "$(contains "$1" "$2")" = false ] && echo true || echo false; }
 # The runtime half of the structured-output contract (#2691): one canonical
 # STATUS=, REASON= present iff non-OK, ISSUE_COUNT= equal to the ISSUES: rows.

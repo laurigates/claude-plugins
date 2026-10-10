@@ -6,6 +6,8 @@
 # skills/agents/.claude-plugin change without that plugin's README.md being
 # staged in the same commit, and stays silent otherwise. Uses the
 # PLUGIN_README_CURRENCY_STAGED test seam so it never touches git state.
+# shellcheck disable=SC2015  # file-level: `[ -n ] && [ -d ] || { exit }` sandbox
+#                            # guard is a deliberate idiom here (see shell-scripting.md)
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "$0")/.." && pwd)"
@@ -24,12 +26,12 @@ run() {
 
 assert_has() {
   # assert_has <desc> <text> <needle>
-  if printf '%s' "$2" | grep -q -- "$3"; then ok "$1"; else ko "$1"; fi
+  if grep -q -- "$3" <<<"$2"; then ok "$1"; else ko "$1"; fi
 }
 
 assert_lacks() {
   # assert_lacks <desc> <text> <needle>
-  if printf '%s' "$2" | grep -q -- "$3"; then ko "$1"; else ok "$1"; fi
+  if grep -q -- "$3" <<<"$2"; then ko "$1"; else ok "$1"; fi
 }
 
 assert_exit0() {
