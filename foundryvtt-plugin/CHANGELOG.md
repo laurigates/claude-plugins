@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.5](https://github.com/laurigates/claude-plugins/compare/foundryvtt-plugin-v1.3.4...foundryvtt-plugin-v1.3.5) (2026-10-10)
+
+
+### Bug Fixes
+
+* **foundryvtt-plugin:** use UTC dates and a biome-stable #onRefresh signature in the module scaffold ([#2968](https://github.com/laurigates/claude-plugins/issues/2968)) ([54e788e](https://github.com/laurigates/claude-plugins/commit/54e788e4c304da767a52fd386dd6bdab32b2d299))
+
 ## [1.3.4](https://github.com/laurigates/claude-plugins/compare/foundryvtt-plugin-v1.3.3...foundryvtt-plugin-v1.3.4) (2026-10-07)
 
 
