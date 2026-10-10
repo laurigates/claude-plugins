@@ -107,7 +107,7 @@ report() {
 
 # A. hardcoded-file grep → FAIL + --strict exits 1
 arep="$(report skills/bad-grep/SKILL.md)"
-echo "$arep" | grep -q '^FAIL=1$' && a_fail=true || a_fail=false
+grep -q '^FAIL=1$' <<<"$arep" && a_fail=true || a_fail=false
 assert "A: hardcoded-file grep is reported FAIL" "$a_fail"
 bash "$harness" --repo-root "$workdir" --files "$workdir/skills/bad-grep/SKILL.md" --strict >/dev/null 2>&1
 [ $? -eq 1 ] && a_strict=true || a_strict=false
@@ -115,37 +115,37 @@ assert "A: --strict exits 1 on a FAIL" "$a_strict"
 
 # B. robust find -exec grep → no FAIL, exit 0
 brep="$(report skills/good-find/SKILL.md)"
-echo "$brep" | grep -q '^FAIL=0$' && echo "$brep" | grep -q '^STATUS=OK$' && b_ok=true || b_ok=false
+grep -q '^FAIL=0$' <<<"$brep" && grep -q '^STATUS=OK$' <<<"$brep" && b_ok=true || b_ok=false
 assert "B: find -exec grep form PASSes (FAIL=0, STATUS=OK)" "$b_ok"
 
 # C. missing tool → ENV_MISSING, not FAIL
 crep="$(report skills/env-tool/SKILL.md)"
-echo "$crep" | grep -q '^ENV_MISSING=1$' && echo "$crep" | grep -q '^FAIL=0$' && c_ok=true || c_ok=false
+grep -q '^ENV_MISSING=1$' <<<"$crep" && grep -q '^FAIL=0$' <<<"$crep" && c_ok=true || c_ok=false
 assert "C: missing tool is ENV_MISSING, not FAIL" "$c_ok"
 
 # D. find against a missing subdir → FAIL
 drep="$(report skills/missing-dir/SKILL.md)"
-echo "$drep" | grep -q '^FAIL=1$' && d_ok=true || d_ok=false
+grep -q '^FAIL=1$' <<<"$drep" && d_ok=true || d_ok=false
 assert "D: find against a missing subdir is FAIL (#1482 class)" "$d_ok"
 
 # E. git history commands PASS (sandbox has a commit)
 erep="$(report skills/git-history/SKILL.md)"
-echo "$erep" | grep -q '^FAIL=0$' && echo "$erep" | grep -q '^PASS=2$' && e_ok=true || e_ok=false
+grep -q '^FAIL=0$' <<<"$erep" && grep -q '^PASS=2$' <<<"$erep" && e_ok=true || e_ok=false
 assert "E: git history commands PASS in the one-commit sandbox" "$e_ok"
 
 # F. fenced + table `!`backtick`` occurrences are NOT extracted (verbose so the
 #    non-FAIL kinds are visible in the report). A buggy harness yields
 #    UNPARSEABLE>=1 (table row) and/or ENV_MISSING>=1 (fenced gh command).
 frep="$(bash "$harness" --repo-root "$workdir" --files "$workdir/skills/fence-table/SKILL.md" --verbose 2>/dev/null)"
-echo "$frep" | grep -q '^PASS=0$' \
-  && echo "$frep" | grep -q '^FAIL=0$' \
-  && echo "$frep" | grep -q '^UNPARSEABLE=0$' \
-  && echo "$frep" | grep -q '^ENV_MISSING=0$' && f_ok=true || f_ok=false
+grep -q '^PASS=0$' <<<"$frep" \
+  && grep -q '^FAIL=0$' <<<"$frep" \
+  && grep -q '^UNPARSEABLE=0$' <<<"$frep" \
+  && grep -q '^ENV_MISSING=0$' <<<"$frep" && f_ok=true || f_ok=false
 assert "F: fenced/table !\`backtick\` is skipped, not executed (#1744)" "$f_ok"
 
 # G. the classification path emits no broken-pipe noise on harness stderr.
 gerr="$(bash "$harness" --repo-root "$workdir" --files "$workdir/skills/bad-grep/SKILL.md" 2>&1 >/dev/null)"
-echo "$gerr" | grep -q 'Broken pipe' && g_ok=false || g_ok=true
+grep -q 'Broken pipe' <<<"$gerr" && g_ok=false || g_ok=true
 assert "G: no 'write error: Broken pipe' on harness stderr (#1744)" "$g_ok"
 
 echo "----"

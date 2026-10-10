@@ -38,7 +38,7 @@ assert() {
   fi
 }
 
-contains() { printf '%s' "$1" | grep -q -- "$2" && echo true || echo false; }
+contains() { grep -q -- "$2" <<<"$1" && echo true || echo false; }
 
 # make_agent <path> — minimal agent .md so the inventory picks it up.
 make_agent() {

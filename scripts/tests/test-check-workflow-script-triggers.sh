@@ -25,7 +25,7 @@ assert() {
 }
 
 is_true() { [ "$1" = "true" ] && echo true || echo false; }
-contains() { printf '%s' "$1" | grep -q -- "$2" && echo true || echo false; }
+contains() { grep -q -- "$2" <<<"$1" && echo true || echo false; }
 
 fx="$(mktemp -d)"
 [ -n "$fx" ] || { echo "mktemp failed" >&2; exit 1; }
