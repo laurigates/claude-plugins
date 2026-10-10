@@ -50,7 +50,7 @@ command=$(printf '%s' "$input_json" | jq -r '.tool_input.command // empty')
 # first `git push` segment, so positional parsing below sees only its own args.
 push_segment=""
 while IFS= read -r segment; do
-  if printf '%s' "$segment" | grep -Eq '^[[:space:]]*git[[:space:]]+push([[:space:]]|$)'; then
+  if grep -Eq '^[[:space:]]*git[[:space:]]+push([[:space:]]|$)' <<<"$segment"; then
     push_segment="$segment"
     break
   fi
@@ -143,7 +143,7 @@ fi
 # rewriting a commit, so it stays a human decision
 # (`.claude/rules/handling-blocked-hooks.md` — do not self-serve a bypass).
 last_commit_msg=$(git log -1 --pretty=%B 2>/dev/null || echo "")
-if printf '%s' "$last_commit_msg" | grep -q '\[force-push-ok\]'; then
+if grep -q '\[force-push-ok\]' <<<"$last_commit_msg"; then
   exit 0
 fi
 

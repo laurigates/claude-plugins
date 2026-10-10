@@ -5,8 +5,10 @@ allowed-tools: Bash(test *), Read, Glob, Grep
 args: "[--format <type>]"
 argument-hint: ""
 created: 2026-03-15
-modified: 2026-05-09
+modified: 2026-10-10
 reviewed: 2026-03-15
+model: haiku
+effort: low
 ---
 
 # /attributes:dashboard

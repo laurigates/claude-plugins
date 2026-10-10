@@ -325,10 +325,11 @@ schedule interval has elapsed since `last_completed_at` (written back with
 reconciled on every run, because the on-change signal misses edits made outside
 Claude Code and Bash edits outside the recorded change list. A reconcile that
 changes nothing leaves the manifest byte-identical. `on-demand` tasks never
-auto-run. Work-order creation
-stays human-only at every level — automation may at most *draft* proposals
-(GitHub issues labeled `work-order-draft`) that a human promotes via
-`/blueprint:work-order --from-issue N`.
+auto-run. At every level, ambient automation may at most *draft* work-order
+proposals (GitHub issues labeled `work-order-draft`); promotion is a separate,
+reviewed `/blueprint:work-order --from-issue N` run. `/blueprint:work-order` and
+`/blueprint:prp-execute` are model-invocable (ADR-0024), so a user can also
+ask the agent to create a work order or execute a PRP directly.
 
 ```bash
 # Dry-run the due-ness computation (no execution, no writeback)

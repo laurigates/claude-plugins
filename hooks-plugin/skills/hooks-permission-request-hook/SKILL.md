@@ -61,7 +61,7 @@ Execute this workflow:
 
 ### Step 1: Detect project stack
 
-Identify languages and tooling from the context above.
+Identify languages and tooling from the values in [Context](#context).
 
 **Language detection:**
 

@@ -234,7 +234,7 @@ if jq -e 'has("mcpServers") or has("projects")' "$runtime_file" >/dev/null 2>&1;
     case "$mcp_name" in
       plugin:*:*)
         bare="${mcp_name##*:}"
-        if echo "$all_names" | grep -qxF "$bare"; then
+        if grep -qxF "$bare" <<<"$all_names"; then
           duplicate_mcp=$((duplicate_mcp + 1))
           if [ "$verbose_mode" = true ]; then
             issues_list="${issues_list}  - SEVERITY=WARN TYPE=duplicate_mcp BARE=${bare} NAMESPACED=${mcp_name}\n"

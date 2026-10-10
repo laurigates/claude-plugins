@@ -5,8 +5,10 @@ args: "[mode]"
 argument-hint: mode — diagnose | bench | full | report (default full)
 allowed-tools: Bash(bash *), Bash(uname *), Bash(sudo bash *), Read, Grep, Glob
 created: 2026-07-03
-modified: 2026-08-07
+modified: 2026-10-10
 reviewed: 2026-08-07
+model: haiku
+effort: low
 ---
 
 # macOS Performance Benchmark (Apple Silicon)

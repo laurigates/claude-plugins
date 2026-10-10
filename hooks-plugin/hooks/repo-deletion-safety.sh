@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1003,SC2088  # file-level: '\' is a literal backslash in
+#   the quote scanner, and '~'/'~/'* match a literal leading tilde before it is
+#   expanded by hand (see shell-scripting.md § Suppressing shellcheck findings)
 # PreToolUse hook for the Bash tool — blocks `rm -rf` on a git repository whose
 # history exists nowhere else.
 #
@@ -113,7 +116,7 @@ esac
 # Cheap pre-filter: an `rm` with at least one flag, optionally behind
 # sudo/command or leading VAR=value assignments, at a statement boundary.
 PREFILTER_RE='(^|[;&|(]|&&|\|\||[[:space:]])(sudo[[:space:]]+|command[[:space:]]+|[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*rm[[:space:]]+-'
-printf '%s' "$COMMAND" | grep -Eq "$PREFILTER_RE" || exit 0
+grep -Eq "$PREFILTER_RE" <<<"$COMMAND" || exit 0
 
 block() {
     echo "$1" >&2

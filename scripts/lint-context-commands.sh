@@ -179,7 +179,7 @@ while IFS= read -r match; do
   gh_file="${match%%:*}"; match="${match#*:}"
   gh_line="${match%%:*}"; gh_content="${match#*:}"
   # Skip if command explicitly targets a repo (-R works without a local remote)
-  if printf '%s' "$gh_content" | grep -q -- '-R '; then
+  if grep -q -- '-R ' <<<"$gh_content"; then
     continue
   fi
   report ERROR \

@@ -261,7 +261,9 @@ const inv = await agent(INVENTORY_PROMPT(plugin), {
   label: 'inventory',
   phase: 'Discover',
   schema: INVENTORY_SCHEMA,
-  model: 'opus',
+  // Runs one script and joins two path lists: Haiku 5.5
+  // (haiku-5.5-reevaluation-2026-10-10.md).
+  model: 'haiku',
   effort: 'low',
 })
 
