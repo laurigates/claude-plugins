@@ -40,13 +40,13 @@ out_unconf="$(bash "$check_sh" "$unconfigured" 2>&1)" && rc_unconf=0 || rc_uncon
 
 assert "unconfigured check exits 0" "$([ "$rc_unconf" -eq 0 ] && echo true || echo false)"
 assert "reports header and footer" \
-  "$(echo "$out_unconf" | grep -q '=== ANTIGRAVITY PREREQS ===' && echo "$out_unconf" | grep -q '=== END ANTIGRAVITY PREREQS ===' && echo true || echo false)"
+  "$(grep -q '=== ANTIGRAVITY PREREQS ===' <<<"$out_unconf" && grep -q '=== END ANTIGRAVITY PREREQS ===' <<<"$out_unconf" && echo true || echo false)"
 assert "reports SKILLS_JSON=MISSING" \
-  "$(echo "$out_unconf" | grep -q 'SKILLS_JSON=MISSING' && echo true || echo false)"
+  "$(grep -q 'SKILLS_JSON=MISSING' <<<"$out_unconf" && echo true || echo false)"
 assert "reports AGENTS=MISSING" \
-  "$(echo "$out_unconf" | grep -q 'AGENTS=MISSING' && echo true || echo false)"
+  "$(grep -q 'AGENTS=MISSING' <<<"$out_unconf" && echo true || echo false)"
 assert "reports HOOKS=MISSING" \
-  "$(echo "$out_unconf" | grep -q 'HOOKS=MISSING' && echo true || echo false)"
+  "$(grep -q 'HOOKS=MISSING' <<<"$out_unconf" && echo true || echo false)"
 
 echo "=== TEST B/C: configured target ==="
 configured="$fixture/configured"
@@ -58,11 +58,11 @@ out_conf="$(bash "$check_sh" "$configured" 2>&1)" && rc_conf=0 || rc_conf=$?
 
 assert "configured check exits 0" "$([ "$rc_conf" -eq 0 ] && echo true || echo false)"
 assert "reports SKILLS_JSON=configured with marketplace entries" \
-  "$(echo "$out_conf" | grep -qE 'SKILLS_JSON=configured \([1-9][0-9]* marketplace entries\)' && echo true || echo false)"
+  "$(grep -qE 'SKILLS_JSON=configured \([1-9][0-9]* marketplace entries\)' <<<"$out_conf" && echo true || echo false)"
 assert "reports AGENTS installed" \
-  "$(echo "$out_conf" | grep -qE 'AGENTS=[1-9][0-9]* installed' && echo true || echo false)"
+  "$(grep -qE 'AGENTS=[1-9][0-9]* installed' <<<"$out_conf" && echo true || echo false)"
 assert "reports HOOKS present with safety hook scripts" \
-  "$(echo "$out_conf" | grep -qE 'HOOKS=present \([1-9][0-9]* safety hook scripts' && echo true || echo false)"
+  "$(grep -qE 'HOOKS=present \([1-9][0-9]* safety hook scripts' <<<"$out_conf" && echo true || echo false)"
 
 echo "=== TEST D: justfile recipe coverage ==="
 assert "justfile contains [group: \"antigravity\"]" \
