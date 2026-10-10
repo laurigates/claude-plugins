@@ -23,6 +23,11 @@
 #      the shared `validation` manifest block (issue #2128, via
 #      ../../../scripts/get-validation-config.sh) — one config surface, not two.
 #
+# Issue #2822: `ADR-NNN-title.md` basenames are recognised (an optional
+# case-insensitive `ADR[-_]?` prefix), and an ADR directory that holds markdown
+# files but yields no ADR is a WARN `adr_dir_unrecognized_naming` instead of a
+# vacuous STATUS=OK on ADR_COUNT=0.
+#
 # It reports four classes:
 #   1. duplicate_adr_number  — two files (in any scanned directory) claim the
 #      same number, by basename or by frontmatter id.                    ERROR
@@ -172,11 +177,16 @@ emit "ADR_DIRS=$adr_dirs_joined"
 emit "ADR_DIR_COUNT=${#adr_abs[@]}"
 
 # --- Number derivation --------------------------------------------------------
-# Normalize a "NNNN-title.md" basename to a bare integer, or empty if the file
-# does not lead with a number (README.md, validation-report.md, templates).
+# Normalize a "NNNN-title.md" or "ADR-NNN-title.md" basename to a bare integer,
+# or empty if the file does not lead with a number (README.md,
+# validation-report.md, templates). Issue #2822: the `ADR-NNN-` naming matched
+# neither the basename nor a frontmatter id, so a repo using it counted
+# ADR_COUNT=0 and still reported STATUS=OK. The optional case-insensitive
+# `ADR[-_]?` prefix is the same regex generate-adr-index.sh uses: the two
+# scripts must agree on which files are ADRs.
 adr_number() {
   local base="$1" num
-  num="$(printf '%s' "$base" | sed -nE 's/^0*([0-9]+)[-_].*/\1/p')"
+  num="$(printf '%s' "$base" | sed -nE 's/^([Aa][Dd][Rr][-_]?)?0*([0-9]+)[-_].*/\2/p')"
   [ -n "$num" ] && printf '%d' "$((10#$num))"
 }
 
@@ -212,13 +222,22 @@ add_claims() {
   return 0
 }
 
+# Directories that hold markdown files but yield no ADR at all (issue #2822).
+# Rows are "dir-rel<TAB>count-of-non-index-markdown-files".
+unrecognized_dirs=""
+
 for i in "${!adr_abs[@]}"; do
   dir_abs="${adr_abs[$i]}"
   dir_rel="${adr_rels[$i]}"
   dir_count=0
+  dir_md_count=0
   for f in "$dir_abs"/*.md; do
     [ -e "$f" ] || continue
     base="$(basename "$f")"
+    case "$base" in
+      [Rr][Ee][Aa][Dd][Mm][Ee].md|[Ii][Nn][Dd][Ee][Xx].md) ;;
+      *) dir_md_count=$((dir_md_count + 1)) ;;
+    esac
     bnum="$(adr_number "$base")"
     fnum="$(adr_number_from_frontmatter "$f")"
     [ -n "$bnum" ] || [ -n "$fnum" ] || continue
@@ -231,6 +250,9 @@ for i in "${!adr_abs[@]}"; do
   done
   emit "ADR_DIR_$((i + 1))=$dir_rel"
   emit "ADR_DIR_$((i + 1))_COUNT=$dir_count"
+  if [ "$dir_count" -eq 0 ] && [ "$dir_md_count" -gt 0 ]; then
+    unrecognized_dirs="${unrecognized_dirs}${dir_rel}"$'\t'"${dir_md_count}"$'\n'
+  fi
 done
 
 emit "ADR_COUNT=$adr_count"
@@ -247,6 +269,15 @@ add_issue() { # severity type msg
   [ "$1" = "ERROR" ] && has_error=1
   return 0
 }
+
+# --- Check 0: an ADR directory whose naming nothing recognises ---------------
+# "Found nothing" is a signal, not a pass (issue #2822): markdown files that
+# yield zero ADRs mean a naming scheme this script cannot read, and every later
+# check would then pass on an empty set.
+while IFS=$'\t' read -r u_dir u_md; do
+  [ -n "${u_dir:-}" ] || continue
+  add_issue WARN adr_dir_unrecognized_naming "$u_dir holds $u_md markdown file(s) but no ADR number was recognised (expected NNNN-title.md, ADR-NNN-title.md or frontmatter id: ADR-NNNN)"
+done < <(printf '%s' "$unrecognized_dirs")
 
 # --- Check 1: duplicate numbers within the working tree -----------------------
 dup_numbers="$(printf '%s' "$wt_rows" | awk -F'\t' 'NF==3 && !seen[$1"\t"$2]++ {c[$1]++} END{for(n in c) if(c[n]>1) print n}' | sort -n)"
@@ -397,6 +428,21 @@ else
   audit_status="OK"
 fi
 emit "STATUS=$audit_status"
+# REASON= on the non-OK path (.claude/rules/structured-script-output.md): the
+# first finding at the reported severity as "<TYPE>: <MSG>", plus " (+N more)".
+if [ "$audit_status" != "OK" ]; then
+  reason="$(printf '%s' "$issues" | awk -v sev="$audit_status" '
+    index($0, "SEVERITY=" sev " ") && first == "" {
+      line = $0
+      sub(/^[[:space:]]*- SEVERITY=[A-Z]+ TYPE=/, "", line)
+      sub(/ MSG=/, ": ", line)
+      first = line
+    }
+    END { print first }' | tr -s '[:space:]' ' ' | cut -c1-180)"
+  reason="${reason% }"
+  [ "$issue_count" -gt 1 ] && reason="$reason (+$((issue_count - 1)) more)"
+  emit "REASON=$reason"
+fi
 emit "ISSUE_COUNT=$issue_count"
 if [ "$issue_count" -gt 0 ]; then
   emit "ISSUES:"
