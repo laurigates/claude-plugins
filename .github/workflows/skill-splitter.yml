@@ -271,8 +271,9 @@ jobs:
                - Link each new file from the point in SKILL.md where a reader would
                  need it, saying when to read it:
                  `For [what it covers], see [references/<topic>.md](references/<topic>.md).`
-               - Every link must resolve; the compliance check enforces link
-                 integrity (issue #2700).
+               - Every link must resolve (`scripts/check-skill-xrefs.py`), and
+                 every new file must be linked; the compliance check fails on a
+                 references/ file nothing names (issue #2700).
                - Rewrite positional pointers ("see above", "the table below",
                  "the preceding section") in the moved text, and in SKILL.md text
                  that pointed at what moved, to a named anchor or a file link —
