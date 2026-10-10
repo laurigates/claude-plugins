@@ -180,13 +180,7 @@ for script in $SCRIPTS; do
     # to the next WORD are skipped (hooks-plugin/hooks/bash-antipatterns.sh had
     # one); and the shape inside a string run by eval (`check "..." "printf
     # '%s' \"\$out\" | grep -q x"`) has escaped quotes and is not matched.
-    #
-    # Pending: scripts/tests/test-run-skill-script-tests.sh is converted by PR
-    # #2989 (left out of the #2959 sweep to avoid a merge conflict). Delete this
-    # exemption once #2989 is on main.
-    PIPE_GREP_Q_PENDING="scripts/tests/test-run-skill-script-tests.sh"
     if [[ "$REL_PATH" =~ (^|/)tests/[^/]+\.sh$|^[^/]+/hooks/test-[^/]+\.sh$ ]] \
-        && [ "$REL_PATH" != "$PIPE_GREP_Q_PENDING" ] \
         && grep -qE '^[[:space:]]*set[[:space:]].*pipefail' "$script"; then
         PIPE_GREP_Q_LINES=$(awk '
             BEGIN {
