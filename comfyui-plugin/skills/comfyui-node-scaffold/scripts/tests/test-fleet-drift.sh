@@ -23,7 +23,8 @@
 #   4.  a `shared` file mutated IDENTICALLY in every pack -> reported as a
 #       BACKPORT signal (template should catch up), NOT as a pack defect, and
 #       WARN/exit 0 rather than ERROR
-#   4b. a `shared` file mutated in ONE pack only -> SHARED_MINORITY on that pack
+#   4b. a `shared` file mutated in ONE pack only -> SHARED_MINORITY on that pack;
+#       with two packs that is a 1/1 tie, so SHARED_SPLIT and no BACKPORT
 #   5.  an unknown argument -> exit 2, nothing scanned
 #   6.  a missing fleet root -> STATUS=OK, exit 0 (a checker that errors on an
 #       empty corpus gets disabled)
@@ -32,6 +33,13 @@
 #   8.  a template with no fleet-policy.toml entry -> ERROR (the manifest cannot
 #       silently fall behind the scaffold)
 #   9.  the justfile `Assets` block mutated -> BLOCK_DRIFT (the original bug)
+#   11. sub-family accent: icon/banner/declared agreement
+#   12. secondary accents are not read as a sub-family
+#   13. a pack absent from [subfamily] -> ERROR
+#   14. a 13-pack fleet (#2756): a 6/13 plurality that differs from the
+#       template -> exactly one SHARED_SPLIT and NO BACKPORT; a 7/13 majority
+#       -> BACKPORT and no split; a 4/13 plurality that matches the template
+#       -> still a SHARED_SPLIT
 #
 # Requires python3 (>= 3.11 for tomllib); SKIPs cleanly when unavailable.
 
@@ -228,6 +236,7 @@ check "4: the back-port row names .gitignore" "1" \
     "$(grep -c '^BACKPORT=\.gitignore|' "$OUT")"
 check "4: no pack is blamed for the fleet consensus" "0" \
     "$(field "$OUT" SHARED_MINORITY_COUNT)"
+check "4: a 2/2 consensus is not a split" "0" "$(field "$OUT" SHARED_SPLIT_COUNT)"
 check "4: a shared file is never managed drift" "0" \
     "$(field "$OUT" MANAGED_DRIFT_COUNT)"
 
@@ -238,6 +247,14 @@ rc="$(run_checker "$OUT")"
 check "4b: minority divergence exits 0" "0" "$rc"
 minority_rows="$(grep -c '^SHARED_MINORITY=.*|\.gitignore|' "$OUT")"
 check "4b: exactly one pack is flagged as the minority" "1" "$minority_rows"
+# With two packs, one diverging leaves a 1/1 tie: no strict majority, so the
+# fleet is reported as split and NO back-port is prescribed (#2756).
+check "4b: a 1/1 tie is a split, not a back-port" "0" \
+    "$(field "$OUT" BACKPORT_SIGNAL_COUNT)"
+check "4b: the tie is reported as exactly one SHARED_SPLIT" "1" \
+    "$(field "$OUT" SHARED_SPLIT_COUNT)"
+check "4b: the split row names .gitignore, its largest group and the fleet size" "1" \
+    "$(grep -c '^SHARED_SPLIT=\.gitignore|largest=1|of=2$' "$OUT")"
 # Restore the fleet-consensus state, then the pristine state.
 python3 - "$PACK1" "$PACK2" <<'PY'
 import sys
@@ -421,6 +438,106 @@ check "13: undeclared packs are counted" "2" "$(field "$OUT" UNCLASSIFIED_PACK_C
 check "13: it exits 1" "1" "$rc"
 check "13: the row names the pack" "1" \
     "$(grep -c '^UNCLASSIFIED_PACK=comfyui-fixture-one$' "$OUT")"
+
+# --------------------------------------------------------------------------- #
+# 14: a plurality is not a fleet majority (#2756)
+# --------------------------------------------------------------------------- #
+# The live fleet has 13 packs. On 2026-09-23 the largest identical-body group
+# for .gitignore and .gitattributes was 6 of them, and the checker reported it
+# as `BACKPORT=…|fleet_majority=6|of=13` — an instruction to regress the
+# template to one faction's file. Rebuild that shape with 13 scaffolded packs.
+FLEET13="${WORK}/fleet13"
+mkdir -p "$FLEET13"
+POLICY13="${WORK}/fleet-policy-13.toml"
+cat "$POLICY" >"$POLICY13"
+for i in 01 02 03 04 05 06 07 08 09 10 11 12 13; do
+    python3 "$SCAFFOLD" \
+        --name "comfyui-fleet-${i}" --display "Fleet ${i}" \
+        --desc "Fixture pack for the drift test." --tagline "Fixture pack" \
+        --variant frontend --widgets seed --dir "$FLEET13" >/dev/null 2>&1 || {
+        echo "FAIL: could not scaffold comfyui-fleet-${i}" >&2
+        exit 1
+    }
+    printf 'comfyui-fleet-%s = "touch"\n' "$i" >>"$POLICY13"
+done
+PRISTINE_GITIGNORE="${WORK}/pristine.gitignore"
+cp "${FLEET13}/comfyui-fleet-01/.gitignore" "$PRISTINE_GITIGNORE"
+
+# shape_gitignore <variant per pack, 13 words>: `t` keeps the template body,
+# any other word appends a marker naming it, so equal words = identical bodies.
+shape_gitignore() {
+    local i=0 variant
+    for variant in "$@"; do
+        i=$((i + 1))
+        local target
+        target="${FLEET13}/comfyui-fleet-$(printf '%02d' "$i")/.gitignore"
+        cp "$PRISTINE_GITIGNORE" "$target"
+        if [ "$variant" != "t" ]; then
+            printf '\n# variant %s\n' "$variant" >>"$target"
+        fi
+    done
+}
+
+run_checker13() { # run_checker13 <outfile>
+    python3 "$CHECKER" --fleet-root "$FLEET13" --policy "$POLICY13" \
+        >"$1" 2>"${1}.err"
+    echo "$?"
+}
+
+# 14a. The live shape: 6 packs share a non-template body, 4 match the template,
+# 3 each carry their own body. Largest group 6 of 13 — a plurality.
+shape_gitignore a a a a a a t t t t b c d
+OUT="${WORK}/out14a.txt"
+rc="$(run_checker13 "$OUT")"
+check "14a: the 13-pack fixture fleet is fully discovered" "13" \
+    "$(field "$OUT" PACK_COUNT)"
+check "14a: a 6/13 plurality exits 0 (WARN, not ERROR)" "0" "$rc"
+check "14a: a 6/13 plurality STATUS=WARN" "WARN" "$(field "$OUT" STATUS)"
+check "14a: a 6/13 plurality prescribes NO back-port" "0" \
+    "$(field "$OUT" BACKPORT_SIGNAL_COUNT)"
+check "14a: no BACKPORT row is emitted at all" "0" "$(grep -c '^BACKPORT=' "$OUT")"
+check "14a: it is reported as exactly one SHARED_SPLIT" "1" \
+    "$(field "$OUT" SHARED_SPLIT_COUNT)"
+check "14a: the split row carries the plurality size and the fleet size" "1" \
+    "$(grep -c '^SHARED_SPLIT=\.gitignore|largest=6|of=13$' "$OUT")"
+# Per-pack divergence stays visible under a split: the 7 packs outside the
+# largest group are each still a SHARED_MINORITY row.
+check "14a: the 7 packs outside the plurality are still minority rows" "7" \
+    "$(grep -c '^SHARED_MINORITY=.*|\.gitignore|majority=6|' "$OUT")"
+
+# 14b. One more pack joins: 7 of 13 is a strict majority, so the fleet leads
+# and the template should back-port.
+shape_gitignore a a a a a a a t t t t t t
+OUT="${WORK}/out14b.txt"
+rc="$(run_checker13 "$OUT")"
+check "14b: a 7/13 majority exits 0" "0" "$rc"
+check "14b: a 7/13 majority is a back-port signal" "1" \
+    "$(field "$OUT" BACKPORT_SIGNAL_COUNT)"
+check "14b: the back-port row carries the majority and the fleet size" "1" \
+    "$(grep -c '^BACKPORT=\.gitignore|fleet_majority=7|of=13$' "$OUT")"
+check "14b: a strict majority is not a split" "0" \
+    "$(field "$OUT" SHARED_SPLIT_COUNT)"
+
+# 14c. A plurality that MATCHES the template is still a split fleet: the
+# template agreeing with the largest faction does not make it a consensus.
+shape_gitignore t t t t a a a b b b c c c
+OUT="${WORK}/out14c.txt"
+rc="$(run_checker13 "$OUT")"
+check "14c: a template-matching 4/13 plurality is not a back-port" "0" \
+    "$(field "$OUT" BACKPORT_SIGNAL_COUNT)"
+check "14c: it is still reported as a split" "1" \
+    "$(grep -c '^SHARED_SPLIT=\.gitignore|largest=4|of=13$' "$OUT")"
+
+# 14d. The issue body names the split without prescribing a direction.
+OUT="${WORK}/out14d.md"
+python3 "$CHECKER" --fleet-root "$FLEET13" --policy "$POLICY13" --issue-body \
+    >"$OUT" 2>"${OUT}.err"
+check "14d: the issue body has a split section" "1" \
+    "$(grep -cxF "## \`shared\`: no fleet majority, direction undecided (WARN)" "$OUT")"
+check "14d: the issue body names the split file and its largest group" "1" \
+    "$(grep -cxF -e "- \`.gitignore\` — largest group 4 of 13 packs" "$OUT")"
+check "14d: the issue body carries no back-port section for a split" "0" \
+    "$(grep -c 'template should back-port' "$OUT")"
 
 
 printf '\n%s: %d passed, %d failed\n' "$(basename "$0")" "$pass" "$fail"
