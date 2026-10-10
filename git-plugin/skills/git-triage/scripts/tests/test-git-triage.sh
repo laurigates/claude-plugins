@@ -488,7 +488,18 @@ cat > "${stub_dir}/gh" <<'STUB'
 printf '%s\n' "$*" >> "${GH_STUB_LOG:?}"
 case "$1 $2" in
   "issue list"|"pr list") printf '[]\n' ;;
-  "api graphql") printf '{"data":{"repository":{"issues":{"totalCount":4242},"pullRequests":{"totalCount":17}}}}\n' ;;
+  "api graphql")
+    case "$*" in
+      # Progress query (#2904): two pages, so the hand-rolled pagination runs live.
+      *subIssuesSummary*)
+        case "$*" in
+          *cursor=PAGE2*)
+            printf '%s\n' '{"data":{"repository":{"issues":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"number":8,"subIssuesSummary":{"total":2,"completed":2},"timelineItems":{"nodes":[]}}]}}}}' ;;
+          *)
+            printf '%s\n' '{"data":{"repository":{"issues":{"pageInfo":{"hasNextPage":true,"endCursor":"PAGE2"},"nodes":[{"number":7,"subIssuesSummary":{"total":0,"completed":0},"timelineItems":{"nodes":[{"__typename":"CrossReferencedEvent","willCloseTarget":true,"source":{"__typename":"PullRequest","number":70,"state":"MERGED","mergedAt":"2026-06-01T00:00:00Z","repository":{"nameWithOwner":"acme/widgets"}}}]}}]}}}}' ;;
+        esac ;;
+      *) printf '{"data":{"repository":{"issues":{"totalCount":4242},"pullRequests":{"totalCount":17}}}}\n' ;;
+    esac ;;
   *) exit 1 ;;
 esac
 STUB
@@ -514,7 +525,8 @@ grep -qF 'issues(states:OPEN){totalCount}' "$live_log" \
   || fail "#2714 (live --repo): the count query must ask issues(states:OPEN){totalCount}"
 grep -qF 'pullRequests(states:OPEN){totalCount}' "$live_log" \
   || fail "#2714 (live --repo): the count query must ask pullRequests(states:OPEN){totalCount}"
-[ "$(grep -c '^api graphql' "$live_log")" -eq 1 ] \
+# The progress query (#2904) is a separate call; only count-query calls count here.
+[ "$(grep '^api graphql' "$live_log" | grep -c 'totalCount')" -eq 1 ] \
   || fail "#2714 (live --repo): both totals must come from ONE graphql call"
 pass "#2714 (live): --repo owner/name drives one graphql count query for both halves"
 
@@ -524,5 +536,177 @@ assert_line "$live_out2" "ISSUES_TOTAL=4242" "#2714 (live cwd)"
 grep -qF 'api graphql -F owner={owner} -F name={repo}' "$live_log2" \
   || fail "#2714 (live cwd): without --repo the query must use gh's {owner}/{repo} placeholders, got: $(grep '^api' "$live_log2")"
 pass "#2714 (live): without --repo the count query resolves the cwd repo via {owner}/{repo}"
+
+# -----------------------------------------------------------------------------
+# Issue #2904: per-issue progress keys. CHECKBOXES comes from the body already
+# fetched; SUBISSUES / MERGED_PRS come from one paginated GraphQL progress query
+# (fixture seam: GIT_TRIAGE_PROGRESS_FIXTURE, one or more page responses);
+# CLOSE_CANDIDATE is true when any one signal is complete.
+# -----------------------------------------------------------------------------
+unset GIT_TRIAGE_COUNTS_FIXTURE GIT_TRIAGE_PRS_FIXTURE
+prog_issues="${work_dir}/progress-issues.json"
+cat > "$prog_issues" <<'JSON'
+[
+  {"number":101,"title":"partial boxes","updatedAt":"2026-06-09T00:00:00Z","comments":[],
+   "body":"Plan\r\n- [x] one\r\n- [X] two\r\n* [ ] three\r\n```md\r\n- [x] fenced decoy\r\n```\r\nend"},
+  {"number":102,"title":"all ticked, fenced decoys","updatedAt":"2026-06-09T00:00:00Z","comments":[],
+   "body":"- [x] a\n1. [x] b\n```\n- [ ] backtick decoy\n~~~\n- [ ] still inside the backtick fence\n```\n~~~~ text\n- [ ] tilde decoy\n~~~~\nnot a box: [ ] inline"},
+  {"number":103,"title":"merged closing PR","updatedAt":"2026-06-09T00:00:00Z","comments":[],"body":"no boxes"},
+  {"number":104,"title":"merged referencing PR","updatedAt":"2026-06-09T00:00:00Z","comments":[],"body":""},
+  {"number":105,"title":"open PR only","updatedAt":"2026-06-09T00:00:00Z","comments":[],"body":""},
+  {"number":106,"title":"cross-repo PR","updatedAt":"2026-06-09T00:00:00Z","comments":[],"body":""},
+  {"number":107,"title":"sub-issues done","updatedAt":"2026-06-09T00:00:00Z","comments":[],"body":""},
+  {"number":108,"title":"sub-issues partial","updatedAt":"2026-06-09T00:00:00Z","comments":[],"body":""},
+  {"number":109,"title":"sidebar-linked merged PR","updatedAt":"2026-06-09T00:00:00Z","comments":[],"body":""},
+  {"number":110,"title":"sidebar link removed","updatedAt":"2026-06-09T00:00:00Z","comments":[],"body":""},
+  {"number":111,"title":"absent from progress","updatedAt":"2026-06-09T00:00:00Z","comments":[],"body":""},
+  {"number":112,"title":"info-string fence line inside a fence","updatedAt":"2026-06-09T00:00:00Z","comments":[],
+   "body":"```\n- [x] in\n```bash\n- [x] after\n```\n- [ ] real"},
+  {"number":113,"title":"boxes inside an HTML comment","updatedAt":"2026-06-09T00:00:00Z","comments":[],
+   "body":"- [x] real\n<!--\n- [ ] template box\n- [x] template tick\n-->\n<!-- - [ ] inline -->"}
+]
+JSON
+export GIT_TRIAGE_ISSUES_FIXTURE="$prog_issues"
+
+# Two page responses, concatenated the way the live loop prints them.
+prog_pages="${work_dir}/progress-pages.json"
+cat > "$prog_pages" <<'JSON'
+{"data":{"repository":{"issues":{"pageInfo":{"hasNextPage":true,"endCursor":"c1"},"nodes":[
+  {"number":101,"subIssuesSummary":{"total":0,"completed":0},"timelineItems":{"nodes":[]}},
+  {"number":102,"subIssuesSummary":{"total":0,"completed":0},"timelineItems":{"nodes":[]}},
+  {"number":103,"subIssuesSummary":{"total":0,"completed":0},"timelineItems":{"nodes":[
+    {"__typename":"CrossReferencedEvent","willCloseTarget":true,"source":{"__typename":"PullRequest","number":50,"state":"MERGED","mergedAt":"2026-06-01T00:00:00Z","repository":{"nameWithOwner":"acme/widgets"}}}]}},
+  {"number":104,"subIssuesSummary":{"total":0,"completed":0},"timelineItems":{"nodes":[
+    {"__typename":"CrossReferencedEvent","willCloseTarget":false,"source":{"__typename":"PullRequest","number":51,"state":"MERGED","mergedAt":"2026-06-01T00:00:00Z","repository":{"nameWithOwner":"acme/widgets"}}},
+    {"__typename":"CrossReferencedEvent","willCloseTarget":false,"source":{"__typename":"Issue"}}]}},
+  {"number":105,"subIssuesSummary":{"total":0,"completed":0},"timelineItems":{"nodes":[
+    {"__typename":"CrossReferencedEvent","willCloseTarget":true,"source":{"__typename":"PullRequest","number":52,"state":"OPEN","mergedAt":null,"repository":{"nameWithOwner":"acme/widgets"}}},
+    {"__typename":"CrossReferencedEvent","willCloseTarget":true,"source":{"__typename":"PullRequest","number":53,"state":"CLOSED","mergedAt":null,"repository":{"nameWithOwner":"acme/widgets"}}}]}}
+]}}}}
+{"data":{"repository":{"issues":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[
+  {"number":106,"subIssuesSummary":{"total":0,"completed":0},"timelineItems":{"nodes":[
+    {"__typename":"CrossReferencedEvent","willCloseTarget":false,"source":{"__typename":"PullRequest","number":9,"state":"MERGED","mergedAt":"2026-05-01T00:00:00Z","repository":{"nameWithOwner":"other/lib"}}},
+    {"__typename":"CrossReferencedEvent","willCloseTarget":false,"source":{"__typename":"PullRequest","number":60,"state":"MERGED","mergedAt":"2026-05-02T00:00:00Z","repository":{"nameWithOwner":"acme/widgets"}}}]}},
+  {"number":107,"subIssuesSummary":{"total":3,"completed":3},"timelineItems":{"nodes":[]}},
+  {"number":108,"subIssuesSummary":{"total":3,"completed":1},"timelineItems":{"nodes":[]}},
+  {"number":109,"subIssuesSummary":{"total":0,"completed":0},"timelineItems":{"nodes":[
+    {"__typename":"ConnectedEvent","subject":{"__typename":"PullRequest","number":61,"state":"MERGED","mergedAt":"2026-06-02T00:00:00Z","repository":{"nameWithOwner":"acme/widgets"}}}]}},
+  {"number":110,"subIssuesSummary":{"total":0,"completed":0},"timelineItems":{"nodes":[
+    {"__typename":"ConnectedEvent","subject":{"__typename":"PullRequest","number":62,"state":"MERGED","mergedAt":"2026-06-02T00:00:00Z","repository":{"nameWithOwner":"acme/widgets"}}},
+    {"__typename":"DisconnectedEvent","subject":{"__typename":"PullRequest","number":62,"repository":{"nameWithOwner":"acme/widgets"}}}]}}
+]}}}}
+JSON
+export GIT_TRIAGE_PROGRESS_FIXTURE="$prog_pages"
+prog_out="$(bash "$triage_script" --type issues --batch 20)"
+prog_rc=$?
+[ "$prog_rc" -eq 0 ] || fail "#2904: progress run must exit 0, got $prog_rc"
+
+# Checkbox parse: \r\n bodies, x/X, * and 1. markers; fenced boxes are ignored.
+assert_line "$prog_out" "ISSUE_101_CHECKBOXES=2/3" "#2904 (checkbox parse)"
+assert_line "$prog_out" "ISSUE_101_CLOSE_CANDIDATE=false" "#2904 (checkbox parse)"
+assert_line "$prog_out" "ISSUE_102_CHECKBOXES=2/2" "#2904 (fenced decoy)"
+assert_line "$prog_out" "ISSUE_102_CLOSE_CANDIDATE=true" "#2904 (fenced decoy)"
+assert_line "$prog_out" "ISSUE_103_CHECKBOXES=0/0" "#2904 (no boxes)"
+pass "#2904: CHECKBOXES counts ticked/total task-list boxes and skips fenced decoys"
+
+# A fence line with an info string (```bash) inside a fence is content, not a
+# closer (CommonMark), so the real unticked box after the fence still counts.
+assert_line "$prog_out" "ISSUE_112_CHECKBOXES=0/1" "#2904 (info-string fence line)"
+assert_line "$prog_out" "ISSUE_112_CLOSE_CANDIDATE=false" "#2904 (info-string fence line)"
+pass "#2904: a fence line carrying an info string does not close an open fence"
+
+# Boxes inside <!-- --> (issue-template boilerplate) are not counted.
+assert_line "$prog_out" "ISSUE_113_CHECKBOXES=1/1" "#2904 (HTML comment)"
+pass "#2904: task-list boxes inside HTML comments are not counted"
+
+# Merged PR with a closing keyword: starred, and a close candidate.
+assert_line "$prog_out" "ISSUE_103_MERGED_PRS=acme/widgets#50*" "#2904 (closing PR)"
+assert_line "$prog_out" "ISSUE_103_CLOSE_CANDIDATE=true" "#2904 (closing PR)"
+pass "#2904: a merged PR with willCloseTarget is starred and sets CLOSE_CANDIDATE=true"
+
+# Merged PR without one: evidence only, never a close signal.
+assert_line "$prog_out" "ISSUE_104_MERGED_PRS=acme/widgets#51" "#2904 (referencing PR)"
+assert_line "$prog_out" "ISSUE_104_CLOSE_CANDIDATE=false" "#2904 (referencing PR)"
+pass "#2904: a merged PR without a closing keyword is listed unstarred, CLOSE_CANDIDATE=false"
+
+# Open and closed-unmerged PRs are excluded, even with willCloseTarget.
+assert_line "$prog_out" "ISSUE_105_MERGED_PRS=none" "#2904 (open PR)"
+assert_line "$prog_out" "ISSUE_105_CLOSE_CANDIDATE=false" "#2904 (open PR)"
+pass "#2904: open and closed-unmerged PRs are excluded from MERGED_PRS"
+
+# Cross-repo PRs are included, qualified by their own repository.
+assert_line "$prog_out" "ISSUE_106_MERGED_PRS=acme/widgets#60,other/lib#9" "#2904 (cross-repo)"
+assert_line "$prog_out" "ISSUE_106_CLOSE_CANDIDATE=false" "#2904 (cross-repo)"
+pass "#2904: cross-repo merged PRs are listed as <owner/repo>#<num>"
+
+assert_line "$prog_out" "ISSUE_107_SUBISSUES=3/3" "#2904 (sub-issues)"
+assert_line "$prog_out" "ISSUE_107_CLOSE_CANDIDATE=true" "#2904 (sub-issues)"
+assert_line "$prog_out" "ISSUE_108_SUBISSUES=1/3" "#2904 (sub-issues partial)"
+assert_line "$prog_out" "ISSUE_108_CLOSE_CANDIDATE=false" "#2904 (sub-issues partial)"
+assert_line "$prog_out" "ISSUE_101_SUBISSUES=0/0" "#2904 (no sub-issues)"
+pass "#2904: SUBISSUES reports completed/total; all complete sets CLOSE_CANDIDATE=true"
+
+assert_line "$prog_out" "ISSUE_109_MERGED_PRS=acme/widgets#61*" "#2904 (sidebar link)"
+assert_line "$prog_out" "ISSUE_109_CLOSE_CANDIDATE=true" "#2904 (sidebar link)"
+assert_line "$prog_out" "ISSUE_110_MERGED_PRS=acme/widgets#62" "#2904 (link removed)"
+assert_line "$prog_out" "ISSUE_110_CLOSE_CANDIDATE=false" "#2904 (link removed)"
+pass "#2904: a Development-sidebar link closes; a later DisconnectedEvent undoes it"
+
+# An issue the progress query did not return reads unknown, not zero.
+assert_line "$prog_out" "ISSUE_111_SUBISSUES=unknown" "#2904 (absent)"
+assert_line "$prog_out" "ISSUE_111_MERGED_PRS=unknown" "#2904 (absent)"
+assert_line "$prog_out" "ISSUE_111_CHECKBOXES=0/0" "#2904 (absent)"
+assert_line "$prog_out" "ISSUE_111_CLOSE_CANDIDATE=false" "#2904 (absent)"
+assert_line "$prog_out" "STATUS=OK" "#2904"
+pass "#2904: an issue missing from the progress result reads SUBISSUES/MERGED_PRS=unknown"
+
+# Empty, error, and garbage progress results all exit 0 with unknown values.
+printf '%s\n' '{"data":{"repository":{"issues":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}}' \
+  > "${work_dir}/progress-empty.json"
+printf '%s\n' '{"data":null,"errors":[{"message":"Field '"'"'subIssuesSummary'"'"' doesn'"'"'t exist on type '"'"'Issue'"'"'"}]}' \
+  > "${work_dir}/progress-error.json"
+: > "${work_dir}/progress-blank.json"
+printf 'not json\n' > "${work_dir}/progress-garbage.json"
+for prog_case in empty error blank garbage; do
+  export GIT_TRIAGE_PROGRESS_FIXTURE="${work_dir}/progress-${prog_case}.json"
+  empty_out="$(bash "$triage_script" --type issues --batch 20)"
+  empty_rc=$?
+  [ "$empty_rc" -eq 0 ] || fail "#2904 (${prog_case} graphql): must exit 0, got $empty_rc"
+  assert_line "$empty_out" "ISSUE_103_SUBISSUES=unknown" "#2904 (${prog_case} graphql)"
+  assert_line "$empty_out" "ISSUE_103_MERGED_PRS=unknown" "#2904 (${prog_case} graphql)"
+  assert_line "$empty_out" "ISSUE_102_CLOSE_CANDIDATE=true" "#2904 (${prog_case} graphql: checkboxes still count)"
+  assert_line "$empty_out" "STATUS=OK" "#2904 (${prog_case} graphql)"
+done
+pass "#2904: an empty, error, blank, or non-JSON progress result exits 0 and reads unknown"
+
+# --type prs never runs the progress query or emits the keys.
+unset GIT_TRIAGE_PROGRESS_FIXTURE
+prs_only_out="$(bash "$triage_script" --type prs)"
+refute_key "$prs_only_out" ISSUE_103_MERGED_PRS "#2904 (--type prs)"
+pass "#2904: --type prs emits no progress keys"
+
+# Live path: the stub serves two progress pages (cursor PAGE2 on the second), so
+# the query's fields and the hand-rolled pagination are both pinned.
+live_prog_issues="${work_dir}/live-progress-issues.json"
+printf '%s\n' '[{"number":7,"title":"a","updatedAt":"2026-06-09T00:00:00Z","comments":[],"body":""},{"number":8,"title":"b","updatedAt":"2026-06-09T00:00:00Z","comments":[],"body":""}]' \
+  > "$live_prog_issues"
+live_prog_log="${work_dir}/gh-live-progress.log"
+live_prog_out="$(env -u GIT_TRIAGE_NO_FETCH -u GIT_TRIAGE_PRS_FIXTURE -u GIT_TRIAGE_COUNTS_FIXTURE \
+  -u GIT_TRIAGE_PROGRESS_FIXTURE GIT_TRIAGE_ISSUES_FIXTURE="$live_prog_issues" \
+  PATH="${stub_dir}:$PATH" GH_STUB_LOG="$live_prog_log" \
+  bash "$triage_script" --type issues --repo acme/widgets --batch 10)"
+assert_line "$live_prog_out" "ISSUE_7_MERGED_PRS=acme/widgets#70*" "#2904 (live)"
+assert_line "$live_prog_out" "ISSUE_7_CLOSE_CANDIDATE=true" "#2904 (live)"
+assert_line "$live_prog_out" "ISSUE_8_SUBISSUES=2/2" "#2904 (live page 2)"
+[ "$(grep -c 'subIssuesSummary' "$live_prog_log")" -eq 2 ] \
+  || fail "#2904 (live): expected 2 paginated progress calls, got: $(grep -c 'subIssuesSummary' "$live_prog_log")"
+grep 'subIssuesSummary' "$live_prog_log" | grep -q 'cursor=PAGE2' \
+  || fail "#2904 (live): the second page must pass the first page's endCursor"
+for prog_field in 'subIssuesSummary{total completed}' 'CROSS_REFERENCED_EVENT' 'CONNECTED_EVENT' \
+    'willCloseTarget' 'mergedAt' 'nameWithOwner' 'pageInfo{hasNextPage endCursor}' '-f owner=acme -f name=widgets'; do
+  grep 'subIssuesSummary' "$live_prog_log" | grep -qF -- "$prog_field" \
+    || fail "#2904 (live): the progress query must carry '$prog_field'"
+done
+pass "#2904 (live): one paginated progress query follows endCursor and asks the camelCase fields"
 
 echo "ALL TESTS PASSED"

@@ -5,7 +5,7 @@ args: "[--type issues|prs|both] [--batch N] [--repo owner/name] [--days-stale-is
 argument-hint: "--type both --batch 10 (defaults: days-stale-issue=90, days-stale-pr=30, current repo)"
 allowed-tools: Bash(bash *), Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git log *), Bash(rg *), Read, Grep, Glob, AskUserQuestion
 created: 2026-04-22
-modified: 2026-10-06
+modified: 2026-10-09
 reviewed: 2026-09-23
 ---
 
@@ -56,15 +56,14 @@ Execute this triage workflow:
 Run the data-gathering script. It fetches issue/PR batches, computes age in days
 per item, categorizes each PR via the pure first-match table (over `isDraft`,
 `mergeable`, `mergeStateStatus`, `reviewDecision`, and `statusCheckRollup[].conclusion`),
-flags stale-candidate issues, carries each issue's title through so the output
-is readable without a second `gh issue list` pass, and extracts each PR's
-closing keywords:
+flags stale-candidate issues, carries each issue's title, reports per-issue
+progress, and extracts each PR's closing keywords:
 
 ```bash
 bash "${CLAUDE_SKILL_DIR}/scripts/git-triage.sh" --home-dir "$HOME" --project-dir "$(pwd)" --type "$TYPE" --batch "$BATCH" --days-stale-issue "$STALE_ISSUE" --days-stale-pr "$STALE_PR"
 ```
 
-Read the coverage keys first — they say what the batch actually covers:
+Read the coverage keys first:
 
 | Key | Meaning |
 |-----|---------|
@@ -79,8 +78,7 @@ leaves out the oldest items, which are exactly the stale candidates. When
 `TRUNCATED=true`, say "triaged N of M" wherever the report states a count, and
 re-run with `--batch` set to the `_TOTAL` value for a full sweep. When
 `TRUNCATED=unknown`, report the coverage as unverified rather than complete.
-`--oldest-first` reorders only the fetched batch; it never changes which items
-were fetched.
+`--oldest-first` reorders only the fetched batch.
 
 `STATUS=`, `ISSUE_COUNT=`, and the `ISSUES:` block are the collector's own
 diagnostics (for example, a fetch that returned non-JSON), not GitHub issues:
@@ -90,7 +88,7 @@ rows (present only when `ISSUE_COUNT` is above 0) for why.
 
 Per item it emits
 `ISSUE_<n>_TITLE` / `ISSUE_<n>_AGE_DAYS` / `ISSUE_<n>_REFS` /
-`ISSUE_<n>_COMMENTS` / `ISSUE_<n>_STALE_CANDIDATE` and
+`ISSUE_<n>_COMMENTS` / `ISSUE_<n>_STALE_CANDIDATE`, the Step 2 progress keys, and
 `PR_<n>_CATEGORY` / `PR_<n>_AGE_DAYS` / `PR_<n>_CLOSES` (plus the underlying
 enum fields). It also rolls up `SYSTEMATIC_FAILURE_*` groups (see Step 4).
 If `--repo` was provided, pass it through; the script reads the
@@ -103,13 +101,17 @@ Task-tool availability), otherwise as a checklist you keep in the response.
 
 For each open issue in parallel (batch reads), gather evidence:
 
-1. Extract referenced PR numbers from title, body, and comments (regex `#(\d+)`).
-2. Check status of each referenced PR:
+1. Read the progress keys first ([REFERENCE.md](REFERENCE.md#per-issue-progress-keys)):
+   `ISSUE_<n>_CHECKBOXES` / `_SUBISSUES` (done/total), `_MERGED_PRS` (`*` =
+   closes the issue), `_CLOSE_CANDIDATE` (a hint to verify). A merged PR
+   **without** `*` is evidence, not a close signal: it may only reference the
+   issue, so read what it changed.
+2. For PRs those keys miss (`#N` in a comment, `MERGED_PRS=unknown`),
+   extract `#(\d+)` from title, body, and comments, and check each:
    ```bash
    gh pr view <n> --repo $REPO --json number,state,mergedAt,title
    ```
-3. Search the codebase for concrete nouns in the issue (file paths, function names, resource names, command names) using Grep. Evidence that described artefacts exist (or no longer exist) feeds the categorization.
-4. Compute age in days from `updatedAt`.
+3. Search the codebase for concrete nouns in the issue (file paths, functions, resources, commands) using Grep. Evidence that described artefacts exist (or no longer exist) feeds the categorization.
 
 ### Step 3: Categorize each issue
 
