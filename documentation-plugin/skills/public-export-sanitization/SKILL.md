@@ -66,8 +66,9 @@ Two modes:
 
 Other options: `--names <file>` (personal names, which can't be regex'd; seed
 the list from the source's git authors and access grants; one literal entry per
-line, and only a bare `#` or `# ` plus text is a comment, so `#1234` flags that
-PR or issue number), `--allow <regex>`
+line; only a bare `#` or `#` followed by whitespace is a comment line, and a
+trailing whitespace-`#`-whitespace tail such as `Alice Smith  # author` is a
+trailing comment, so `#1234` still flags that PR or issue number), `--allow <regex>`
 (dismiss a known-benign hit, such as a CSS class that shares a project-id
 prefix; check the regex does not also hide real ids), `--no-links`, `-q`.
 

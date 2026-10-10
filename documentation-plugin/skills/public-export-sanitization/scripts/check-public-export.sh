@@ -29,7 +29,10 @@
 #                    leading whitespace, it is a bare '#' or '#' followed by
 #                    whitespace ("# authors from git log"). Any other '#' is
 #                    part of the entry, so "#1234" flags a PR/issue number and
-#                    "C#" stays "C#". Names can't be regex'd reliably, so seed
+#                    "C#" stays "C#". A trailing "<space># ..." (whitespace,
+#                    '#', then whitespace or end of line) is a trailing
+#                    comment: "Alice Smith  # author" flags "Alice Smith".
+#                    Names can't be regex'd reliably, so seed
 #                    this per export from the source's git authors / RBAC.
 #   --allow REGEX    Dismiss findings matching REGEX (repeatable). Use for
 #                    known-benign hits, e.g. a diagram CSS class that shares a
@@ -149,6 +152,11 @@ done
 if [[ -n "$NAMES_FILE" ]]; then
   [[ -f "$NAMES_FILE" ]] || { echo "error: --names file not found: $NAMES_FILE" >&2; exit 2; }
   while IFS= read -r name || [[ -n "$name" ]]; do
+    # Strip a trailing comment first: whitespace, '#', then whitespace or end
+    # of line ("Alice Smith  # author" -> "Alice Smith"). '#1234', 'PR #1234'
+    # and 'C#' have no whitespace after the '#' and are kept. Without this an
+    # inline-commented entry is searched whole and silently matches nothing.
+    name="$(printf '%s' "$name" | sed -E 's/[[:space:]]+#([[:space:]].*)?$//')"
     name="$(printf '%s' "$name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
     [[ -n "$name" ]] || continue
     # Comment = bare '#' or '#' + whitespace. Any other '#' belongs to the
@@ -169,7 +177,8 @@ import os, re
 scan = os.path.realpath(os.environ["SCAN"])
 boundary = os.path.realpath(os.environ["BOUNDARY"])
 hits = []
-for dirpath, _, files in os.walk(scan):
+for dirpath, dirs, files in os.walk(scan):
+    dirs[:] = [d for d in dirs if d != ".git"]  # only .git/ is skipped
     for fn in files:
         if not fn.endswith(".md"):
             continue

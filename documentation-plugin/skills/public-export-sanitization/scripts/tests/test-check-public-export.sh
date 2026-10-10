@@ -87,6 +87,9 @@ mkdir -p "$SANDBOX/gitdir/.git"
 printf 'project 123456789012\n' > "$SANDBOX/gitdir/.git/config"
 printf '# Clean\n' > "$SANDBOX/gitdir/doc.md"
 expect "E3: .git/ internals are not scanned" 0 'clean' -- --no-links "$SANDBOX/gitdir"
+# The link scan honours the same .git/ skip as the rg scans.
+printf 'See [x](../../outside.md).\n' > "$SANDBOX/gitdir/.git/x.md"
+expect "E4: .git/ is skipped by the link scan too" 0 'clean' -- "$SANDBOX/gitdir"
 
 # --- F: --names comment syntax (#2820) -----------------------------------------
 # Only a bare '#' or '#'+whitespace starts a comment; '#13280' is a literal entry.
@@ -98,6 +101,14 @@ printf '# platform\n  #\n\n' > "$SANDBOX/comment.names"
 expect "F2: '# comment' and bare '#' lines are ignored" 0 'clean' -- --no-links --names "$SANDBOX/comment.names" "$SANDBOX/names"
 printf '# authors\nplatform team\n' > "$SANDBOX/mixed.names"
 expect "F3: entry after a comment line still matches" 1 'Personal name: platform team' -- --no-links --names "$SANDBOX/mixed.names" "$SANDBOX/names"
+# A trailing '<ws># ...' is stripped, so an inline-commented entry still matches.
+printf 'platform team  # owners\n' > "$SANDBOX/inline.names"
+expect "F4: inline '# comment' tail is stripped" 1 'Personal name: platform team  \(' -- --no-links --names "$SANDBOX/inline.names" "$SANDBOX/names"
+# Names scan reaches dot-directories, and an unterminated final line is read.
+mkdir -p "$SANDBOX/names/.claude"
+printf 'Reviewed by Bob Jones.\n' > "$SANDBOX/names/.claude/r.md"
+printf 'Bob Jones' > "$SANDBOX/nonl.names"
+expect "F5: no-newline names entry matches under .claude/" 1 'Personal name: Bob Jones' -- --no-links --names "$SANDBOX/nonl.names" "$SANDBOX/names"
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [[ "$fail" -eq 0 ]]
