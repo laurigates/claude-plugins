@@ -45,7 +45,7 @@ This command adds a version display to your application with:
 
 ## Tech Stack Detection
 
-Detect the project's tech stack from the context above:
+Detect the project's tech stack from the values in [Context](#context):
 
 1. **Framework**:
    - Next.js: `next.config.js` or `next.config.mjs` or `next.config.ts`

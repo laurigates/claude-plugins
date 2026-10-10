@@ -48,7 +48,7 @@ Run this install:
 
 ### Step 1: Detect the package manager
 
-Read the `Lock files` and `Package files` lines from Context above. **Lock files
+Read the `Lock files` and `Package files` lines in [Context](#context). **Lock files
 win** — they name the manager that actually produced the current install; a
 manifest alone only narrows the ecosystem.
 

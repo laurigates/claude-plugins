@@ -49,7 +49,7 @@ Execute this end-to-end repository configuration workflow:
 
 ### Step 1: Detect project stack
 
-Identify the stack from the context above. Produce a brief summary:
+Identify the stack from the values in [Context](#context). Produce a brief summary:
 
 ```
 Stack detected:

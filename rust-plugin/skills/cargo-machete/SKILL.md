@@ -35,7 +35,7 @@ Execute this unused dependency analysis:
 
 ### Step 1: Verify installation
 
-Check if cargo-machete is installed (see Context above). If not installed, install it:
+Check if cargo-machete is installed (see [Context](#context)). If not installed, install it:
 
 ```bash
 cargo install cargo-machete
