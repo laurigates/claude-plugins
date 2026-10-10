@@ -24,9 +24,14 @@ discriminator in SKILL.md therefore applies only once Claude ran: rule out the
 | Field | Value |
 |---|---|
 | Step log | `non-human actor: <name> (type: Bot)` |
-| `run_attempt` | 2 or more |
-| `actor` vs `triggering_actor` | different: `actor` is the bot, `triggering_actor` is the maintainer who approved |
+| `run_attempt` | 2 or more after a `github.token` push that a maintainer approved; 1 for a PR a bot authored (Renovate, Dependabot, release-please) |
+| `actor` vs `triggering_actor` | `github.token`-push case: different, `actor` is the bot and `triggering_actor` is the maintainer who approved; bot-authored PR: the same bot |
 | Execution file / `num_turns` | absent |
+
+The `non-human actor` log line is the discriminator on its own. The
+`run_attempt` and `actor` rows only describe the `github.token`-push variant, so
+an attempt-1 run with `actor` equal to `triggering_actor` does not rule Cause 5
+out.
 
 ```sh
 gh run view <run-id> -R <o>/<r> --json attempt,event,headSha \

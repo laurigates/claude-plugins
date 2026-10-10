@@ -35,7 +35,7 @@ as another is the whole hazard:
 | **Turn-ceiling overrun** — the run *finished*, the wrapper failed the job | `is_error: false`, `subtype: "success"`, **no** `Found N` line, and `##[error]Claude reported a successful result after N turns, exceeding the configured maximum of M` | Ignore the failure; the scan completed and found nothing |
 | **A real finding it could not publish** | `is_error: false`, `subtype: "success"`, a `::error::Found N …` line, **and no PR comment** | Investigate the code by hand — the check found something |
 | **Result flagged errored despite completing** | `subtype: "success"` **and** `is_error: true`, low `num_turns`, 0 denials, no `Found N` line, no `result` string | Rerun the identical commit once; a pass means it was infra |
-| **Bot-actor refusal** — the action refused to start Claude | No execution file, no `is_error`, no `num_turns`; the log says `non-human actor: <name> (type: Bot)`; `run_attempt` ≥ 2 with `actor` ≠ `triggering_actor` | Ignore the failure; fix the workflow with `allowed_bots`, or push with a PAT or App token |
+| **Bot-actor refusal** — the action refused to start Claude | No execution file, no `is_error`, no `num_turns`; the log says `non-human actor: <name> (type: Bot)`; when a workflow pushed with `github.token`, also `run_attempt` ≥ 2 with `actor` ≠ `triggering_actor` | Ignore the failure; fix the workflow with `allowed_bots`, or push with a PAT or App token |
 
 > **The law: the red X is never the discriminator, and neither is `is_error`
 > on its own.** Rule out Cause 5 first: a refused run has nothing to read. Then
