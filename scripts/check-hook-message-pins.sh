@@ -29,12 +29,27 @@
 #     upper-case `WORD WORD:`, e.g. `KUBECTL SAFETY:`) is unique within its hook
 #     does not have that tag on any non-comment line of the suite.
 #
+# DECLARED PINS (issue #2727) — a suite can name, per message, a token the
+# headline tag cannot supply, with a comment line:
+#
+#     # hook-message-pin: <token>
+#
+# The token is matched as a fixed string against each block message's full
+# literal text (every line of it, with `\"`, `\$`, `\\` and `` \` `` unescaped;
+# `$VAR` expansions stay as written). ENFORCED for every declaration:
+#   * declared_pin_unmatched — the token occurs in no block message of the
+#     paired hook (the message was reworded or removed; the pin is stale).
+#   * declared_pin_ambiguous — the token occurs in more than one block message,
+#     so it cannot say which one it pins.
+#   * declared_pin_unasserted — no non-comment suite line carries the token.
+# A message whose headline tag is unique is checked by tag; any other message
+# is checked when exactly one declaration names it.
+#
 # REPORTED, NOT ENFORCED — messages whose headline tag is shared with another
-# block in the same hook (`REMINDER:` ×16 in bash-antipatterns.sh), or that have
-# no tag at all, cannot be told apart by a literal token, so the guard does not
-# claim to have checked them. They are counted in MESSAGES_UNCHECKED and listed
-# per suite under UNCHECKED, so the gap stays visible rather than passing as
-# covered.
+# block in the same hook, or that have no tag at all, and that no declared pin
+# names, cannot be told apart by a literal token, so the guard does not claim to
+# have checked them. They are counted in MESSAGES_UNCHECKED and listed per suite
+# under UNCHECKED, so the gap stays visible rather than passing as covered.
 #
 # This is a tripwire, not a proof: a tag in a test description string satisfies
 # message_unpinned without an assertion reading it. The suites' own assertions,
@@ -132,6 +147,45 @@ captures_hook_stderr() {
   return 1
 }
 
+# The full literal text of each block() message, one per output line, in hook
+# order. $2 is the comma-separated list of line numbers the block_lines grep
+# found, so both views index the same calls. A message runs from `block "` to
+# the first unescaped `"`, across lines; backslash escapes are resolved as bash
+# resolves them inside double quotes (the backslash goes only before " $ \ and
+# `; `\n` stays `\n`) and each
+# embedded newline becomes \037, which no declared token (a single line) holds.
+block_message_texts() { # $1 = hook file, $2 = line numbers
+  awk -v want="$2" '
+    BEGIN {
+      n = split(want, w, ",")
+      for (i = 1; i <= n; i++) target[w[i]] = 1
+      re = "(^[[:space:]]*|[;&|)][[:space:]]*|(^|[[:space:]])(then|else|do)[[:space:]]+)block \""
+    }
+    function scan(s,    i, c) {
+      for (i = 1; i <= length(s); i++) {
+        c = substr(s, i, 1)
+        # Bash double quotes drop the backslash only before " $ \ and `;
+        # before anything else (\n, \t) the backslash stays literal.
+        if (esc) { msg = msg (index("\"$`\\", c) ? "" : "\\") c; esc = 0; continue }
+        if (c == "\\") { esc = 1; continue }
+        if (c == "\"") { print msg; inmsg = 0; return }
+        msg = msg c
+      }
+      # The literal continues on the next line; a trailing backslash is a
+      # line continuation inside double quotes and joins the lines.
+      if (esc) { esc = 0 } else { msg = msg "\037" }
+    }
+    {
+      if (inmsg) { scan($0); next }
+      if ((NR "") in target && match($0, re)) {
+        inmsg = 1; esc = 0; msg = ""
+        scan(substr($0, RSTART + RLENGTH))
+      }
+    }
+    END { if (inmsg) print msg }
+  ' "$1"
+}
+
 suites_scanned=0
 suites_unpaired=0
 blocking_suites=0
@@ -185,6 +239,42 @@ while IFS= read -r -d '' suite; do
   n_blocks=${#line_nos[@]}
   block_messages=$((block_messages + n_blocks))
 
+  # Declared pins: resolve each to the one message it names (#2727).
+  pinned=()
+  declared="$(sed -nE 's/^[[:space:]]*#[[:space:]]*hook-message-pin:[[:space:]]*//p' "$suite" \
+    | sed -E 's/[[:space:]]+$//' | grep -v '^$' || true)"
+  if [ -n "$declared" ]; then
+    texts=()
+    mapfile -t texts < <(block_message_texts "$hook" "$(IFS=,; echo "${line_nos[*]}")")
+    if [ "${#texts[@]}" -ne "$n_blocks" ]; then
+      issues+=("  - SEVERITY=ERROR TYPE=declared_pin_unparsed SUITE=${suite_rel} HOOK=${hook_rel} MSG=read ${#texts[@]} block message literals for ${n_blocks} block calls, so declared pins cannot be matched; keep each block() message a single double-quoted literal")
+      issue_count=$((issue_count + 1))
+    else
+      while IFS= read -r token; do
+        hits=()
+        for i in "${!texts[@]}"; do
+          case "${texts[$i]}" in *"$token"*) hits+=("$i") ;; esac
+        done
+        if [ "${#hits[@]}" -eq 0 ]; then
+          issues+=("  - SEVERITY=ERROR TYPE=declared_pin_unmatched SUITE=${suite_rel} HOOK=${hook_rel} TOKEN=\"${token}\" MSG=no block message in the hook contains this declared token; the message was reworded or removed, so update or drop the declaration")
+          issue_count=$((issue_count + 1))
+          continue
+        fi
+        if [ "${#hits[@]}" -gt 1 ]; then
+          issues+=("  - SEVERITY=ERROR TYPE=declared_pin_ambiguous SUITE=${suite_rel} HOOK=${hook_rel} TOKEN=\"${token}\" MSG=the declared token occurs in ${#hits[@]} block messages; declare a token distinctive to one message")
+          issue_count=$((issue_count + 1))
+          continue
+        fi
+        # The message is judged by its declaration from here on, pass or fail.
+        pinned[hits[0]]=1
+        if ! grep -qF -- "$token" <<<"$suite_lines"; then
+          issues+=("  - SEVERITY=ERROR TYPE=declared_pin_unasserted SUITE=${suite_rel} HOOK=${hook_rel}:${line_nos[${hits[0]}]} TOKEN=\"${token}\" MSG=no non-comment suite line carries the declared token; assert it, e.g. grep -qF \"${token}\" on the captured stderr")
+          issue_count=$((issue_count + 1))
+        fi
+      done <<<"$declared"
+    fi
+  fi
+
   if [ "$captures" -eq 0 ]; then
     issues+=("  - SEVERITY=ERROR TYPE=output_never_captured SUITE=${suite_rel} HOOK=${hook_rel} BLOCKS=${n_blocks} MSG=no line runs the hook with stderr kept, so no block message is asserted; capture it with out=\$(printf '%s' \"\$json\" | bash \"\$HOOK\" 2>&1 >/dev/null || true) and grep -qF the message")
     issue_count=$((issue_count + 1))
@@ -200,7 +290,11 @@ while IFS= read -r -d '' suite; do
       done
     fi
     if [ -z "$tag" ] || [ "$uses" -gt 1 ]; then
-      suite_unchecked=$((suite_unchecked + 1))
+      if [ -n "${pinned[$i]:-}" ]; then
+        messages_checked=$((messages_checked + 1))
+      else
+        suite_unchecked=$((suite_unchecked + 1))
+      fi
       continue
     fi
     messages_checked=$((messages_checked + 1))
