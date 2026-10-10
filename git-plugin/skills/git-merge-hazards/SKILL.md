@@ -28,8 +28,8 @@ Notes that are *not* part of that body:
   are still rule text when syncing.
 - §6 and §4's merge-endpoint pointer are skill-only, not in `pr-merge-hazards.md`.
 
-- Two gates — §1's merged-ness authority order and the whole of §4 — are
-  also reproduced verbatim in the `pr-merge-hazards.md` stub, because they are
+- Two gates — §1's merged-ness authority order and §4 (minus its skill-only
+  merge-endpoint pointer) — are also reproduced verbatim in the `pr-merge-hazards.md` stub, because they are
   read *while* the decision is being made. Edit both copies together.
 - §1 overlaps `git-plugin:deadbranch` Step 1.5, which carries the same three
   signals scoped to branch cleanup.

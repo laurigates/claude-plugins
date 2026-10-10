@@ -20,12 +20,13 @@ gh api -X PUT "repos/{owner}/{repo}/pulls/<n>/merge" \
 
 `gh api` fills `{owner}` and `{repo}` from the current repository. The probe can
 target the PR that failed or any other open PR: a SHA that matches no head
-cannot merge anything.
+cannot merge anything. Prefer probing the failing PR itself, so a `405`
+describes that PR rather than another one.
 
 | Control returns | Reading | Action |
 |---|---|---|
 | `409` | The endpoint is up and validating | The failure is specific to the PR. Read `mergeStateStatus`, required checks and conflicts (§4) |
-| `405` | The endpoint is up; the PR is not mergeable | Same: the PR is the problem, not GitHub |
+| `405` | The endpoint is up and validating (the *probed* PR is not mergeable) | Same as `409`: the failure is specific to the PR that failed, not GitHub |
 | `500` / `502`, empty body | The endpoint fails before it validates anything | GitHub-side. Wait and retry later; **do not change the PR** |
 
 ## Why not change the PR
