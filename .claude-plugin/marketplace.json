@@ -296,7 +296,7 @@
       "name": "documentation-plugin",
       "source": "./documentation-plugin",
       "description": "Documentation generation - API docs, README, LaTeX PDF conversion",
-      "version": "1.13.2",
+      "version": "1.13.3",
       "author": {
         "name": "Lauri Gates"
       },

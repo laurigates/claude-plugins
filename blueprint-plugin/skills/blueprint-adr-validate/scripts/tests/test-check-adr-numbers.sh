@@ -354,6 +354,80 @@ if grep -q 'TYPE=adr_number_collision' <<<"$out" \
 else bad "M: expected a base-ref collision in project-dir-relative paths"; echo "$out"; fi
 rm -rf "$M_SANDBOX"
 
+# ==============================================================================
+# Issue #2822 — `ADR-NNN-title.md` naming gave ADR_COUNT=0 and a vacuous OK.
+# ==============================================================================
+
+# The structured-output validator lives at the repo root; a plugin installed on
+# its own does not ship it, so the contract assertion runs only when present.
+CONTRACT="$SCRIPT_DIR/../../../../../scripts/check-structured-output-contract.sh"
+validate_contract() { # <label> <output>
+  [ -f "$CONTRACT" ] || return 0
+  if printf '%s\n' "$2" | bash "$CONTRACT" --validate - >/dev/null 2>&1; then
+    ok "$1: output satisfies the structured-output contract"
+  else
+    bad "$1: output violates the structured-output contract"
+    printf '%s\n' "$2" | bash "$CONTRACT" --validate - 2>&1
+  fi
+}
+
+# --- TEST N: ADR-NNN-title.md files are counted (the reported repo shape) -------
+N_SANDBOX="$(new_sandbox)" || { echo "mktemp failed"; exit 1; }
+[ -n "$N_SANDBOX" ] || { echo "mktemp failed"; exit 1; }
+mkdir -p "$N_SANDBOX/docs/adr"
+printf '# ADR-001: Progressive rendering\n\nstatus: Accepted\n' > "$N_SANDBOX/docs/adr/ADR-001-progressive-rendering.md"
+printf '# ADR-002: Analysis workspace\n\nstatus: Accepted\n' > "$N_SANDBOX/docs/adr/ADR-002-analysis-workspace.md"
+printf '# ADRs\n- [ADR-001](ADR-001-progressive-rendering.md)\n- [ADR-002](ADR-002-analysis-workspace.md)\n' \
+  > "$N_SANDBOX/docs/adr/README.md"
+out="$(bash "$CHECK" --project-dir "$N_SANDBOX" --base-ref does-not-exist 2>/dev/null)"; rc=$?
+if grep -q '^ADR_DIR=docs/adr$' <<<"$out" && grep -q '^ADR_COUNT=2$' <<<"$out" \
+   && grep -q '^STATUS=OK$' <<<"$out" && [ "$rc" -eq 0 ]; then
+  ok "N: ADR-NNN-title.md basenames are counted (ADR_COUNT=2)"
+else bad "N: expected ADR-NNN-title.md files to be counted"; echo "$out"; fi
+validate_contract "N" "$out"
+
+# --- TEST O: ADR-001 and 0001 claim the same number → duplicate ERROR ----------
+printf '# ADR-0001: Same number, other naming\n' > "$N_SANDBOX/docs/adr/0001-other-naming.md"
+printf -- '- [ADR-0001](0001-other-naming.md)\n' >> "$N_SANDBOX/docs/adr/README.md"
+out="$(bash "$CHECK" --project-dir "$N_SANDBOX" --base-ref does-not-exist 2>/dev/null)"; rc=$?
+if grep -q 'TYPE=duplicate_adr_number MSG=ADR number 1 claimed by multiple files' <<<"$out" \
+   && grep -q 'docs/adr/ADR-001-progressive-rendering.md' <<<"$out" \
+   && grep -q 'docs/adr/0001-other-naming.md' <<<"$out" \
+   && grep -q '^STATUS=ERROR$' <<<"$out" && [ "$rc" -eq 1 ]; then
+  ok "O: ADR-001-*.md and 0001-*.md collide as the same number (ERROR)"
+else bad "O: expected a duplicate_adr_number across the two namings"; echo "$out"; fi
+if grep -q '^REASON=duplicate_adr_number: ADR number 1 claimed by multiple files' <<<"$out"; then
+  ok "O: REASON= names the first ERROR finding"
+else bad "O: expected REASON=duplicate_adr_number: ..."; echo "$out"; fi
+validate_contract "O" "$out"
+rm -rf "$N_SANDBOX"
+
+# --- TEST P: markdown files in an unknown naming → WARN, not a vacuous OK ------
+P_SANDBOX="$(new_sandbox)" || { echo "mktemp failed"; exit 1; }
+[ -n "$P_SANDBOX" ] || { echo "mktemp failed"; exit 1; }
+mkdir -p "$P_SANDBOX/docs/adrs"
+printf '# Decision: use tiles\n' > "$P_SANDBOX/docs/adrs/decision-use-tiles.md"
+printf '# Decision: drop IE\n' > "$P_SANDBOX/docs/adrs/decision-drop-ie.md"
+printf '# ADRs\n' > "$P_SANDBOX/docs/adrs/README.md"
+out="$(bash "$CHECK" --project-dir "$P_SANDBOX" --base-ref does-not-exist 2>/dev/null)"; rc=$?
+if grep -q '^ADR_COUNT=0$' <<<"$out" \
+   && grep -q 'SEVERITY=WARN TYPE=adr_dir_unrecognized_naming MSG=docs/adrs holds 2 markdown file(s)' <<<"$out" \
+   && grep -q '^STATUS=WARN$' <<<"$out" \
+   && grep -q '^REASON=adr_dir_unrecognized_naming: docs/adrs holds 2 markdown file(s)' <<<"$out" \
+   && [ "$rc" -eq 0 ]; then
+  ok "P: unrecognised ADR naming → WARN adr_dir_unrecognized_naming with REASON=, exit 0"
+else bad "P: expected WARN adr_dir_unrecognized_naming instead of a vacuous OK"; echo "$out"; fi
+validate_contract "P" "$out"
+# A directory holding ONLY its README is genuinely empty, not unrecognised.
+rm -f "$P_SANDBOX/docs/adrs/decision-use-tiles.md" "$P_SANDBOX/docs/adrs/decision-drop-ie.md"
+out="$(bash "$CHECK" --project-dir "$P_SANDBOX" --base-ref does-not-exist 2>/dev/null)"; rc=$?
+if grep -q '^STATUS=OK$' <<<"$out" && ! grep -q 'adr_dir_unrecognized_naming' <<<"$out" \
+   && ! grep -q '^REASON=' <<<"$out" && [ "$rc" -eq 0 ]; then
+  ok "P: a README-only ADR directory stays a silent OK (no REASON=)"
+else bad "P: README-only directory must not warn"; echo "$out"; fi
+validate_contract "P-empty" "$out"
+rm -rf "$P_SANDBOX"
+
 echo "---"
 echo "PASS=$pass FAIL=$fail"
 [ "$fail" -eq 0 ]
