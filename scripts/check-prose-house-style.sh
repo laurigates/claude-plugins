@@ -197,7 +197,7 @@ if command -v vale >/dev/null 2>&1 && [ -f "$CONTROL" ] && [ -d "$HOUSE" ]; then
         rule="$(basename "$yml" .yml)"
         # MeanSentenceLength is a metric rule over the whole file; it reports
         # under the same House.<name> label, so no special case is needed.
-        if printf '%s\n' "$control_out" | grep -qF "House.$rule"; then
+        if grep -qF "House.$rule" <<<"$control_out"; then
             fired=$((fired + 1))
         else
             fail "SEVERITY=ERROR FILE=${yml#"$ROOT_DIR"/} MSG=rule fires on nothing in the control fixture; it may be silently broken (check raw: concatenation and tokens: word boundaries)"
