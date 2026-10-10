@@ -13,6 +13,8 @@
 #    transcripts lacking either marker keep their previous behaviour (#2650).
 #  - Leads with rate x quantity, not the effort-unit list, when the blocked
 #    text names a measured rate (#2650).
+#  - Names the external-event case (event count + trigger, not a calendar span)
+#    for waits on outside events with no measured rate (#2901).
 #
 # Run: bash hooks-plugin/hooks/test-no-calendar-estimates.sh
 # Exit 0 = all tests pass, Exit 1 = failures
@@ -178,6 +180,7 @@ assert_blocks "would take roughly 5 minutes"        "Refactoring this would take
 assert_blocks "will need 30 minutes"                "We'll need 30 minutes to refactor the loader."
 assert_blocks "going to require 2 days"             "This is going to require 2 days of work."
 assert_blocks "could take a few weeks"              "Migrating could take a few weeks if we hit edge cases."
+assert_blocks "may take a few days to have enough"  "It may take a few days to have enough runs."
 
 # ── explicit estimate markers SHOULD block ────────────────────────────────────
 echo ""
@@ -328,6 +331,45 @@ else
     FAIL=$((FAIL + 1))
 fi
 
+# ── reason names the external-event case (issue #2901) ────────────────────────
+# A wait on outside events (production runs people trigger, scheduled jobs,
+# human actions) is neither agent effort nor measured machine work: tokens and
+# effort tier do not describe it, and rate x quantity needs a rate that does
+# not exist. The reporter's blocked text must still block (the matcher is
+# unchanged), and the reason must offer the third form — how many events are
+# needed and what triggers them — or the block is a dead end.
+echo ""
+echo "block reason names the external-event case (#2901):"
+t="$TMPDIR/transcript-external-events.jsonl"
+make_transcript "Data accumulates only from runs after the deploy, so it may take a few days to have enough." "$t"
+events_out=$(run_hook_output "$t")
+
+if grep -q '"decision": "block"' <<<"$events_out"; then
+    printf "  PASS: external-event wait still blocks (matcher unchanged)\n"
+    PASS=$((PASS + 1))
+else
+    printf "  FAIL: external-event wait no longer blocks (output: %s)\n" "$events_out"
+    FAIL=$((FAIL + 1))
+fi
+
+for token in "external events" "how many events" "what triggers them"; do
+    if grep -qF "$token" <<<"$events_out"; then
+        printf "  PASS: reason mentions '%s'\n" "$token"
+        PASS=$((PASS + 1))
+    else
+        printf "  FAIL: reason missing '%s' (output: %s)\n" "$token" "$events_out"
+        FAIL=$((FAIL + 1))
+    fi
+done
+
+if echo "$events_out" | jq -e '.decision == "block" and (.reason | test("how many events"))' >/dev/null 2>&1; then
+    printf "  PASS: external-event block parses as valid JSON carrying the event-count guidance\n"
+    PASS=$((PASS + 1))
+else
+    printf "  FAIL: external-event block is not valid JSON with the event-count guidance (output: %s)\n" "$events_out"
+    FAIL=$((FAIL + 1))
+fi
+
 # ── reason branches on a measured rate (issue #2650) ──────────────────────────
 # "Restate as tokens / effort tier" cannot express a render queue. When the
 # blocked text names a measured rate, the message must LEAD with rate x quantity
@@ -348,7 +390,7 @@ else
     FAIL=$((FAIL + 1))
 fi
 
-for token in "measured rate" "rate × quantity" "external machine work"; do
+for token in "measured rate" "rate × quantity" "external machine work" "how many events"; do
     if grep -qF "$token" <<<"$measured_out"; then
         printf "  PASS: measured-rate reason mentions '%s'\n" "$token"
         PASS=$((PASS + 1))
