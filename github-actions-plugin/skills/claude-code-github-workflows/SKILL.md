@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-09-24
+modified: 2026-10-09
 reviewed: 2026-09-02
 name: claude-code-github-workflows
 description: "Claude Code GitHub Actions workflow patterns — PR reviews, issue triage, CI/CD integration. Use when creating or modifying workflows that integrate Claude Code."
@@ -132,6 +132,12 @@ comma-separated list) on workflows where bot PRs are the point, e.g.
 dependency audits triggered by lockfile changes. Re-running a failed run does
 not help: the replay keeps the original bot `sender`.
 
+A PR a workflow pushed to with `github.token` meets the same refusal
+(`allowed_bots: "github-actions"` admits it). That case, a changed workflow
+dispatched from a branch that skips the agent yet reports success, and denials
+reported only as a count are detailed in [REFERENCE.md](REFERENCE.md) § More
+claude-code-action v1 gotchas.
+
 ### Deprecated inputs (removed in a future version)
 
 `direct_prompt`, `override_prompt`, `custom_instructions`, `max_turns`,
@@ -201,42 +207,11 @@ jobs:
 
 ## Repository Configuration
 
-### CLAUDE.md Example
+### CLAUDE.md
 
-Create `CLAUDE.md` in repository root to define coding standards:
-
-```markdown
-# Repository Guidelines for Claude Code
-
-## Code Standards
-- Use TypeScript strict mode
-- Follow Airbnb style guide
-- Maintain 90%+ test coverage
-- Document all public APIs
-
-## Development Workflow
-- Run tests before committing: `npm test`
-- Format with Prettier: `npm run format`
-- Lint with ESLint: `npm run lint`
-
-## Commit Messages
-Follow Conventional Commits:
-- feat: New features
-- fix: Bug fixes
-- docs: Documentation changes
-- refactor: Code refactoring
-
-## Testing Requirements
-- Unit tests for all functions
-- Integration tests for APIs
-- E2E tests for critical flows
-
-## Security
-- Never commit secrets
-- Validate all user inputs
-- Use parameterized queries
-- Follow OWASP guidelines
-```
+Create `CLAUDE.md` in repository root to define coding standards; a starter
+covering code standards, workflow, commit messages, testing and security is in
+[REFERENCE.md](REFERENCE.md) § A starter CLAUDE.md.
 
 ## Quick Setup
 
