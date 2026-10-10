@@ -39,32 +39,32 @@ check_sensitive_path() {
   [ -z "$target" ] && return 0
 
   # .env files (but allow .env.example, .env.sample, .env.template)
-  if echo "$target" | grep -Eq '(^|/)\.env($|\.[^(example|sample|template)])' && \
-     ! echo "$target" | grep -Eq '\.(example|sample|template)$'; then
+  if grep -Eq '(^|/)\.env($|\.[^(example|sample|template)])' <<<"$target" && \
+     ! grep -Eq '\.(example|sample|template)$' <<<"$target"; then
     block "BLOCKED: Access to .env file '$target' denied. These files contain secrets.
 Use .env.example for templates. ${OVERRIDE_NOTE}"
   fi
 
   # SSH private keys
-  if echo "$target" | grep -Eq '(^|/)(\.ssh/(id_|config|known_hosts|authorized_keys)|.*\.pem$|.*_rsa$|.*_ed25519$|.*_ecdsa$)'; then
+  if grep -Eq '(^|/)(\.ssh/(id_|config|known_hosts|authorized_keys)|.*\.pem$|.*_rsa$|.*_ed25519$|.*_ecdsa$)' <<<"$target"; then
     block "BLOCKED: Access to SSH key/config '$target' denied. These are sensitive credentials.
 ${OVERRIDE_NOTE}"
   fi
 
   # Cloud credential files
-  if echo "$target" | grep -Eq '(^|/)(\.aws/credentials|\.config/gcloud/|\.kube/config|\.docker/config\.json)'; then
+  if grep -Eq '(^|/)(\.aws/credentials|\.config/gcloud/|\.kube/config|\.docker/config\.json)' <<<"$target"; then
     block "BLOCKED: Access to cloud credentials '$target' denied.
 ${OVERRIDE_NOTE}"
   fi
 
   # Generic credential/secret files
-  if echo "$target" | grep -Eq '(^|/)(credentials\.json|secrets\.json|service[_-]account.*\.json|.*\.keystore|.*\.jks|.*\.p12|.*\.pfx)$'; then
+  if grep -Eq '(^|/)(credentials\.json|secrets\.json|service[_-]account.*\.json|.*\.keystore|.*\.jks|.*\.p12|.*\.pfx)$' <<<"$target"; then
     block "BLOCKED: Access to credential file '$target' denied.
 ${OVERRIDE_NOTE}"
   fi
 
   # Private key files
-  if echo "$target" | grep -Eq '\.(key|privkey)$'; then
+  if grep -Eq '\.(key|privkey)$' <<<"$target"; then
     block "BLOCKED: Access to private key file '$target' denied.
 ${OVERRIDE_NOTE}"
   fi
@@ -90,14 +90,14 @@ if [ "$TOOL_NAME" = "Bash" ] && [ -n "$COMMAND" ]; then
   # (issue #1580). Public config names ($..._HOST, $..._URL, $..._ENDPOINT) are
   # no longer caught; genuine $..._KEY/_SECRET/_TOKEN/_PASSWORD references are.
   # shellcheck disable=SC2016  # $... is a grep pattern, not shell expansion
-  if echo "$COMMAND" | grep -Eq '(echo|printf|cat|env|printenv|export)[^|]*\$\{?[A-Za-z0-9_]*_(KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTH)[Ss]?\b'; then
+  if grep -Eq '(echo|printf|cat|env|printenv|export)[^|]*\$\{?[A-Za-z0-9_]*_(KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTH)[Ss]?\b' <<<"$COMMAND"; then
     block "BLOCKED: Command may expose secret environment variables.
 Use the application's configuration system instead of echoing secrets.
 ${OVERRIDE_NOTE}"
   fi
 
   # Block printenv/env for full environment dump
-  if echo "$COMMAND" | grep -Eq '^\s*(printenv|env)\s*$'; then
+  if grep -Eq '^\s*(printenv|env)\s*$' <<<"$COMMAND"; then
     block "BLOCKED: Dumping the full environment may expose secrets.
 Use 'printenv VAR_NAME' for specific non-sensitive variables instead.
 ${OVERRIDE_NOTE}"

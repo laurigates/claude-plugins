@@ -97,7 +97,7 @@ check "(b) NUM_CASES counts .evals (3), not .cases (1)" "3" "$(field "$fx_out" N
 
 print_out="$(cd "$sandbox" && bash "$inspect" --plugin demo-plugin --skill with-evals --print-evals)"
 check "(b) --print-evals emits the === EVALS === block" "yes" \
-  "$(printf '%s\n' "$print_out" | grep -q '^=== EVALS ===$' && echo yes || echo no)"
+  "$(grep -q '^=== EVALS ===$' <<<"$print_out" && echo yes || echo no)"
 
 echo "=== TEST: a skill without evals.json ==="
 ne_out="$(cd "$sandbox" && bash "$inspect" --plugin demo-plugin --skill no-evals)"
@@ -114,7 +114,7 @@ check "(d) SKILLS_DIR_EXISTS=true" "true" "$(field "$m1_out" SKILLS_DIR_EXISTS)"
 check "(d) SKILL_COUNT matches the SKILL.md glob" "$expected_skills" "$(field "$m1_out" SKILL_COUNT)"
 check "(d) EVALS_COUNT matches the evals.json glob" "$expected_evals" "$(field "$m1_out" EVALS_COUNT)"
 check "(d) git-commit/evals.json is listed under === EVALS ===" "yes" \
-  "$(printf '%s\n' "$m1_out" | grep -q 'git-commit/evals.json$' && echo yes || echo no)"
+  "$(grep -q 'git-commit/evals.json$' <<<"$m1_out" && echo yes || echo no)"
 
 echo "=== TEST: mode 1 on a skill dir fails (the old matrix invocation) ==="
 bad_out="$(cd "$repo_root" && bash "$inspect" --plugin-dir git-plugin/skills/git-commit)"
