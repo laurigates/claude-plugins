@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite, mcp__pal-mcp-server__listmodels, mcp__pal-mcp-server__chat, mcp__pal-mcp-server__consensus, mcp__pal-mcp-server__thinkdeep
 model: opus
 created: 2026-07-17
-modified: 2026-10-07
+modified: 2026-10-09
 reviewed: 2026-08-21
 ---
 
@@ -137,6 +137,7 @@ When Step 5 refutes a claim, ask why the test suite could not answer it, then ad
 | Open design decision with a wide solution space and no conventional default — scoring models, architecture splits, API shape, migration strategy | Anything with a conventional default: pick it, state it, proceed |
 | Genuinely underdetermined trade-offs where an independent draw adds information | A lookup or doc read answers it |
 | | Seeking agreement on a decision already made — a model asked to validate **will** validate; you pay for confirmation, not information |
+| An independent single-model review: `chat` with the files and a neutral question | Reading a PAL `codereview`/`precommit`/`debug` expert's agreement as corroboration — it is anchored on your step-2 findings ([REFERENCE.md](REFERENCE.md#single-model-review-through-pal-workflow-tools)) |
 
 ## PAL Mechanics That Bite
 
