@@ -1,6 +1,6 @@
 ---
 created: 2026-01-20
-modified: 2026-07-05
+modified: 2026-10-09
 reviewed: 2026-06-10
 description: Scan blueprint docs and assign missing PRD/ADR/PRP/WO IDs. Use when assigning IDs to docs; --dry-run to preview, --link-issues to create GitHub issues for orphans.
 args: "[--dry-run] [--link-issues]"
@@ -74,10 +74,12 @@ If not, initialize it:
 ### Step 2: Run the read-only ID audit
 
 Run the helper. It owns the read-only scan: frontmatter `id:` extraction across
-PRDs/ADRs/PRPs/work-orders, deriving the expected `ADR-NNNN` / `WO-NNN` from each
+PRDs/ADRs/PRPs/work-orders, deriving the expected ADR / `WO-NNN` id from each
 filename, flagging `NEEDS_ID` (no id) and `id_mismatch` (frontmatter id disagrees
-with the filename-derived expectation), and building the reverse `github_issues`
-index from the manifest registry:
+with the filename-derived expectation), checking ids against the manifest
+`id_registry`, and building the reverse `github_issues` index from it. ADRs come
+from `docs/adrs/`, else `docs/adr/`, named `NNNN-title.md` or `ADR-NNN-title.md`
+(else the frontmatter `id:` alone):
 
 ```bash
 bash "${CLAUDE_SKILL_DIR}/scripts/blueprint-sync-ids.sh" --home-dir "$HOME" --project-dir "$(pwd)"
@@ -91,9 +93,25 @@ Parse `STATUS=` and `ISSUES:` from the output:
 - `ADR_MISMATCH` / `WO_MISMATCH` and the `id_mismatch` issues (`HAS=` vs
   `EXPECTED=`) are documents whose frontmatter id disagrees with their filename
   — reconcile these in Step 7, never silently. `STATUS=ERROR` indicates at least
-  one mismatch.
+  one mismatch, duplicate, or registry conflict.
+- `ADR_DIR` is the ADR directory scanned (`none` if absent);
+  `ADR_FRONTMATTER_ONLY` counts ADRs numbered only in frontmatter.
+- `DUPLICATE_IDS` / `duplicate_id` (ERROR, `KIND=` `ID=` `DOCS=`): two documents
+  of one kind share a frontmatter id. Renumber one before assigning anything.
+- `REGISTRY_PRESENT` is `true` only when the manifest has `id_registry` with a
+  `documents` map; when `false`, every registry check is skipped (counts `0`).
+  - `REGISTRY_UNREGISTERED` / `unregistered` (WARN): the id is not in
+    `documents`. Add it in Step 7.
+  - `REGISTRY_ID_PATH_MISMATCH` / `id_path_mismatch` (ERROR): the registry holds
+    this path under another id (`REGISTRY=`) or this id under another path
+    (`REGISTRY_PATH=`). A swapped pair is two rows.
+  - `REGISTRY_PATH_MISSING` / `registry_path_missing` (ERROR): a `documents`
+    `path` not on disk.
+  - `COUNTER_STALE` / `counter_stale` (WARN): a `last_*` counter is below the
+    highest id of its kind on disk (`MAX_ON_DISK=`). Raise it before Step 7.
 - `GH_ISSUE_MAPPINGS` and `MANIFEST_PRESENT` summarise the reverse-index build
   (Step 9 detail below).
+- On WARN/ERROR, `REASON=` names the first finding as `<type>: <detail>`.
 
 The audit is read-only; it makes no edits. Surface its counts as the Step 6
 report and proceed to the mutating steps.
@@ -112,7 +130,7 @@ For each document needing an ID:
 4. Update manifest: increment `last_prd`, add to `documents`
 
 **ADRs**:
-1. Derive ID from filename: `0003-title.md` → `ADR-0003`
+1. Derive ID from filename: `0003-title.md` → `ADR-0003`, `ADR-003-title.md` → `ADR-003`
 2. Insert into frontmatter
 3. Add to manifest `documents`
 

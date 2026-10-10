@@ -195,6 +195,19 @@ if [ "$rc" -eq 0 ] && grep -q '^ADR_DIR_1_STATE=no_adrs$' <<<"$out" \
   ok "H: ADR-less directory → no_adrs, silent OK"
 else bad "H: expected no_adrs OK, got rc=$rc"; echo "$out"; fi
 
+# --- TEST J: ADR-NNN-title.md files are indexed (issue #2822) -----------------
+J_DIR="docs/adr"
+mkdir -p "$SANDBOX/$J_DIR"
+printf '# ADR-001: Progressive rendering\n' > "$SANDBOX/$J_DIR/ADR-001-progressive-rendering.md"
+printf '# ADR-002: Analysis workspace\n' > "$SANDBOX/$J_DIR/ADR-002-analysis-workspace.md"
+out="$(bash "$GEN" --project-dir "$SANDBOX" --adr-dir "$J_DIR")"; rc=$?
+if [ "$rc" -eq 0 ] && grep -q '^ADR_DIR_1_ADR_COUNT=2$' <<<"$out" \
+   && grep -q '^ADR_DIR_1_STATE=index_created$' <<<"$out" \
+   && grep -qF '| [ADR-0001](ADR-001-progressive-rendering.md) | Progressive rendering |' "$SANDBOX/$J_DIR/README.md" \
+   && grep -qF '| [ADR-0002](ADR-002-analysis-workspace.md) | Analysis workspace |' "$SANDBOX/$J_DIR/README.md"; then
+  ok "J: ADR-NNN-title.md basenames get index rows"
+else bad "J: expected rows for the ADR-NNN-title.md files"; echo "$out"; cat "$SANDBOX/$J_DIR/README.md" 2>/dev/null; fi
+
 # --- TEST I: unknown argument is rejected, not swallowed ----------------------
 bash "$GEN" --project-dir "$SANDBOX" --checks >/dev/null 2>&1; rc=$?
 if [ "$rc" -eq 2 ]; then ok "I: unknown argument rejected (exit 2)"; else bad "I: expected exit 2, got $rc"; fi
