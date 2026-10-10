@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.14.8](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.14.7...taskwarrior-plugin-v1.14.8) (2026-10-10)
+
+
+### Bug Fixes
+
+* **taskwarrior-plugin:** match the task-add duplicate check on the exact project ([#2986](https://github.com/laurigates/claude-plugins/issues/2986)) ([0535079](https://github.com/laurigates/claude-plugins/commit/05350795de44ca8df68742171e2a091bcb4f4155))
+
+## [1.14.7](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.14.6...taskwarrior-plugin-v1.14.7) (2026-10-10)
+
+
+### Bug Fixes
+
+* **scripts:** sweep printf|echo "$var" | grep -q from every pipefail suite and widen lint Check 6 ([#2996](https://github.com/laurigates/claude-plugins/issues/2996)) ([32f124d](https://github.com/laurigates/claude-plugins/commit/32f124d41f428967305ef6beb564fd8ebc1f3279))
+
 ## [1.14.6](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.14.5...taskwarrior-plugin-v1.14.6) (2026-10-09)
 
 

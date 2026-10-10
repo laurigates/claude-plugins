@@ -1,5 +1,33 @@
 # Changelog
 
+## [2.12.11](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.12.10...hooks-plugin-v2.12.11) (2026-10-10)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** treat mktemp -d dirs and a git-ignored project tmp/ as scratch for write blocks ([#2984](https://github.com/laurigates/claude-plugins/issues/2984)) ([9dd1182](https://github.com/laurigates/claude-plugins/commit/9dd11820b3f7371c9ce19f764aad7469f2a7c905))
+
+## [2.12.10](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.12.9...hooks-plugin-v2.12.10) (2026-10-10)
+
+
+### Documentation
+
+* **skills:** point Context-block references at the Context anchor and lower the positional baseline ([#2973](https://github.com/laurigates/claude-plugins/issues/2973)) ([921b3be](https://github.com/laurigates/claude-plugins/commit/921b3be483a0e8f5cc709dc0369eb659b599bbeb))
+
+## [2.12.9](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.12.8...hooks-plugin-v2.12.9) (2026-10-10)
+
+
+### Bug Fixes
+
+* **scripts:** sweep printf|echo "$var" | grep -q from every pipefail suite and widen lint Check 6 ([#2996](https://github.com/laurigates/claude-plugins/issues/2996)) ([32f124d](https://github.com/laurigates/claude-plugins/commit/32f124d41f428967305ef6beb564fd8ebc1f3279))
+
+## [2.12.8](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.12.7...hooks-plugin-v2.12.8) (2026-10-10)
+
+
+### Bug Fixes
+
+* **scripts:** read captured output from here-strings so grep -q cannot SIGPIPE a pipefail test ([#2992](https://github.com/laurigates/claude-plugins/issues/2992)) ([2e2865c](https://github.com/laurigates/claude-plugins/commit/2e2865c782f1b712c064b06ef8d871f2b1a1caa6))
+
 ## [2.12.7](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.12.6...hooks-plugin-v2.12.7) (2026-10-10)
 
 

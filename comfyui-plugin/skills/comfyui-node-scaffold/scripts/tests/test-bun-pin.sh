@@ -81,7 +81,7 @@ for variant in frontend backend gesture shim; do
     P="$WORK/$name"
 
     ver="$(tr -d '\n' < "$P/.bun-version" 2>/dev/null || echo MISSING)"
-    if printf '%s' "$ver" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+    if grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' <<<"$ver"; then
         check "$variant: .bun-version holds x.y.z" "ok" "ok"
     else
         check "$variant: .bun-version holds x.y.z" "ok" "$ver"

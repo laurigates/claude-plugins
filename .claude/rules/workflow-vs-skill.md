@@ -1,6 +1,6 @@
 ---
 created: 2026-07-29
-modified: 2026-09-16
+modified: 2026-10-10
 reviewed: 2026-09-16
 paths:
   - "*/skills/**/workflows/*.js"
@@ -233,7 +233,8 @@ Two clauses every template that dispatches `isolation:'worktree'` agents must
   `.pre-commit-config.yaml` and `plugin-pr-checks.yml`. It is the only gate that
   sees a bundled `.js` at all, and it asserts the mechanically checkable half of
   this rule: every `agent()` call pins an opus model (or inherits — never
-  `sonnet`/`haiku`) and an explicit valid `effort`; the file is named
+  `sonnet`; `haiku` only as a cold-read reader or a stage with an explicit
+  effort) and an explicit valid `effort`; the file is named
   `<purpose>.workflow.js`; it is reachable from a sibling
   `## Workflow harness (template)` section that names it; and a template
   dispatching `isolation:'worktree'` agents carries the two clauses above.

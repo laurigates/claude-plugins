@@ -31,7 +31,7 @@ name: code-refactor
 
 **Delegate this task to the `agents-plugin:refactor` agent.**
 
-Use the Agent tool with `subagent_type: agents-plugin:refactor` to refactor the specified code. Pass all the context gathered above to the agent.
+Use the Agent tool with `subagent_type: agents-plugin:refactor` to refactor the specified code. Pass all the context gathered in [Context](#context) to the agent.
 
 The refactor agent should:
 

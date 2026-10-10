@@ -33,7 +33,7 @@ check() {
 }
 check_absent() {
   local label="$1" haystack="$2" needle="$3"
-  if printf '%s' "$haystack" | grep -qF "$needle"; then
+  if grep -qF "$needle" <<<"$haystack"; then
     fail=$((fail + 1))
     echo "FAIL: $label (unexpected: $needle)"
   else
@@ -64,7 +64,7 @@ check_lt() {
 # neighbouring row instead of the key under test (the #2219 lesson).
 check_line() {
   local label="$1" haystack="$2" needle="$3"
-  if printf '%s\n' "$haystack" | grep -qxF "$needle"; then
+  if grep -qxF "$needle" <<<"$haystack"; then
     pass=$((pass + 1))
   else
     fail=$((fail + 1))
@@ -2362,6 +2362,143 @@ check "AQ7: the README documents DISCUSSIONS_QUERY_OK" "$README_DOC" "DISCUSSION
 check "AQ7: the README documents DISCUSSIONS_UNANSWERED" "$README_DOC" "DISCUSSIONS_UNANSWERED"
 
 unset GH_DISCUSSION_FIXTURE
+
+# ============================================================================
+# TEST AR: an unreachable task store is unqueried, never an empty queue (#2832)
+#
+# On a host whose `.taskrc` names another machine's `data.location` (a path on a
+# read-only mount), `task export` exits non-zero with "Task Database Error". The
+# collector used to fold that into `[]` and report OPEN_TASKS=0 with
+# PROJECT_CONFIDENCE=high, so session-end skipped the taskwarrior pass on a
+# store holding 13 pending tasks. The stub replays that stderr verbatim. Like
+# the shared stubs, it FAILS any call it does not model (#2569), so a new task
+# call in the collector cannot pass unexercised.
+# ============================================================================
+AR_STUB="$SANDBOX/stub-task-unreachable"
+cat > "$AR_STUB" <<'ARSTUB'
+#!/usr/bin/env bash
+args="$*"
+if [ -n "${TASK_ARGV_LOG:-}" ]; then printf '%s\n' "$args" >> "$TASK_ARGV_LOG"; fi
+case "$args" in
+  "(status:pending or +ACTIVE) export")
+    case "${AR_MODE:-readonly}" in
+      readonly)
+        echo 'Task Database Error: Cannot create directory "/Users/lgates/.task": Read-only file system (os error 30)' >&2
+        exit 1 ;;
+      missing)
+        echo 'Task Database Error: unable to open database file' >&2
+        exit 1 ;;
+      opaque)
+        echo 'something nobody anticipated' >&2
+        exit 2 ;;
+      multiline)
+        printf '\n  \nfirst\tline\033[0m %s\nsecond line\n' "$(printf 'x%.0s' $(seq 1 400))" >&2
+        exit 1 ;;
+      nonjson)
+        echo 'Configuration override rc.data.location ignored' ;;
+      *) echo "task stub: unmodelled AR_MODE=$AR_MODE" >&2; exit 99 ;;
+    esac
+    ;;
+  *) echo "task stub: unexpected argv: $args" >&2; exit 1 ;;
+esac
+ARSTUB
+chmod +x "$AR_STUB"
+
+# Fixture validity: the stub really fails the export, and really fails an
+# unmodelled call instead of answering it.
+ar_err=$(export AR_MODE=readonly; "$AR_STUB" '(status:pending or +ACTIVE)' export 2>&1 >/dev/null); ar_rc=$?
+check_eq "AR0: fixture — the stub's export exits non-zero" "$ar_rc" "1"
+check "AR0: fixture — the stub writes taskwarrior's database error" "$ar_err" "Task Database Error"
+"$AR_STUB" _projects >/dev/null 2>&1; ar_rc=$?
+check_eq "AR0: fixture — the stub fails an unknown call" "$ar_rc" "1"
+AR_MODE=bogus "$AR_STUB" '(status:pending or +ACTIVE)' export >/dev/null 2>&1; ar_rc=$?
+check_eq "AR0: fixture — the stub fails an unmodelled AR_MODE" "$ar_rc" "99"
+
+ar_run() {  # $1 = AR_MODE, rest = collector args
+  local mode="$1"; shift
+  AR_MODE="$mode" SESSION_SURVEY_TASK_BIN="$AR_STUB" SESSION_SURVEY_GH_BIN=/nonexistent/gh \
+    bash "$COLLECTOR" --project-dir "$REPO" "$@"
+}
+tw_of() { printf '%s' "$1" | sed -n '/=== TASKWARRIOR ===/,/=== END TASKWARRIOR ===/p'; }
+
+# AR1: the incident shape, with a user-asserted --project — the case that keeps
+# a confident zero on a healthy store, and so the one that hid the failure.
+AR_ARGV="$SANDBOX/ar-argv.log"
+: > "$AR_ARGV"
+out=$(TASK_ARGV_LOG="$AR_ARGV" ar_run readonly --project demo)
+rc=$?
+tw=$(tw_of "$out")
+check_eq "AR1: exits 0 on an unreachable store" "$rc" "0"
+check_line "AR1: the binary is still reported present" "$tw" "TASK_AVAILABLE=true"
+check_line "AR1: the store is reported unreachable" "$tw" "TASK_STORE_REACHABLE=false"
+check_line "AR1: read-only mount classified" "$tw" "TASK_FAIL_REASON=read-only"
+check "AR1: the detail names the path taskwarrior tried" "$tw" \
+  'TASK_FAIL_DETAIL=Task Database Error: Cannot create directory "/Users/lgates/.task"'
+check_line "AR1: scope is unknown, not project" "$tw" "TASK_SCOPE=unknown"
+check_line "AR1: confidence is low even under --project" "$tw" "PROJECT_CONFIDENCE=low"
+check_absent "AR1: no high-confidence zero anywhere" "$out" "PROJECT_CONFIDENCE=high"
+check_line "AR1: OPEN_TASKS stays an integer for arithmetic" "$tw" "OPEN_TASKS=0"
+check_count_line "AR1: the collector made only the export call" \
+  "$(cat "$AR_ARGV")" '.' "1"
+
+# AR2: the same keys reach the summary block the nudge hooks read.
+out=$(ar_run readonly --project demo --summary)
+check_line "AR2: summary reports the store unreachable" "$out" "TASK_STORE_REACHABLE=false"
+check_line "AR2: summary carries the reason" "$out" "TASK_FAIL_REASON=read-only"
+check "AR2: summary carries the detail" "$out" "TASK_FAIL_DETAIL=Task Database Error"
+check_line "AR2: summary confidence is low" "$out" "PROJECT_CONFIDENCE=low"
+check_line "AR2: summary scope is unknown" "$out" "TASK_SCOPE=unknown"
+check_absent "AR2: summary has no high-confidence zero" "$out" "PROJECT_CONFIDENCE=high"
+
+# AR3: without --project (the basename guess) the verdict is the same.
+out=$(ar_run readonly)
+check_line "AR3: detected slug — store unreachable" "$out" "TASK_STORE_REACHABLE=false"
+check_line "AR3: detected slug — confidence low" "$(tw_of "$out")" "PROJECT_CONFIDENCE=low"
+
+# AR4: the other classifications.
+out=$(tw_of "$(ar_run missing --project demo)")
+check_line "AR4: an unopenable database is store-unreachable" "$out" "TASK_FAIL_REASON=store-unreachable"
+out=$(tw_of "$(ar_run opaque --project demo)")
+check_line "AR4: an unrecognised error is unknown" "$out" "TASK_FAIL_REASON=unknown"
+check_line "AR4: unknown still carries its detail" "$out" "TASK_FAIL_DETAIL=something nobody anticipated"
+check_line "AR4: unknown still lowers confidence" "$out" "PROJECT_CONFIDENCE=low"
+
+# AR5: an exit-0 export whose stdout is not a JSON array is a failed read too.
+out=$(tw_of "$(ar_run nonjson --project demo)")
+check_line "AR5: non-JSON export output is unreachable" "$out" "TASK_STORE_REACHABLE=false"
+check_line "AR5: non-JSON export output lowers confidence" "$out" "PROJECT_CONFIDENCE=low"
+
+# AR6: the detail is one bounded, control-free row (structured-script-output.md).
+out=$(tw_of "$(ar_run multiline --project demo)")
+check_count_line "AR6: exactly one TASK_FAIL_DETAIL row" "$out" '^TASK_FAIL_DETAIL=' "1"
+ar_detail=$(printf '%s\n' "$out" | grep -m1 '^TASK_FAIL_DETAIL=' | cut -d= -f2-)
+check_le "AR6: the detail is at most 200 characters" "${#ar_detail}" 200
+check "AR6: the detail is the first non-blank stderr line" "$ar_detail" "first"
+check_absent "AR6: the second stderr line is not emitted" "$out" "second line"
+check_eq "AR6: no escape byte survives" "$(printf '%s' "$ar_detail" | tr -d '\033')" "$ar_detail"
+
+# AR7 (guard integrity): a healthy store is reachable and carries no reason.
+out=$(SESSION_SURVEY_GH_BIN=/nonexistent/gh TASK_ALL_FIXTURE=/dev/null run)
+tw=$(tw_of "$out")
+check_line "AR7: a healthy store is reachable" "$tw" "TASK_STORE_REACHABLE=true"
+check_absent "AR7: a healthy store has no fail reason" "$tw" "TASK_FAIL_REASON="
+check_line "AR7: a healthy --project zero keeps its confidence" "$tw" "PROJECT_CONFIDENCE=high"
+
+# AR8: an absent binary reads the same way, with its own reason.
+out=$(SESSION_SURVEY_TASK_BIN=/nonexistent/task SESSION_SURVEY_GH_BIN=/nonexistent/gh run --summary)
+check_line "AR8: absent binary — store unreachable" "$out" "TASK_STORE_REACHABLE=false"
+check_line "AR8: absent binary — reason no-cli" "$out" "TASK_FAIL_REASON=no-cli"
+
+# AR9: the consumers say what to do with the key. session-end's qualify gate is
+# what silently skipped the taskwarrior pass in #2832.
+README_DOC=$(cat "$SCRIPT_DIR/../../README.md" 2>/dev/null)
+check "AR9: the README documents TASK_STORE_REACHABLE" "$README_DOC" "TASK_STORE_REACHABLE"
+check "AR9: the README documents TASK_FAIL_REASON" "$README_DOC" "TASK_FAIL_REASON"
+END_DOC=$(cat "$SCRIPT_DIR/../../skills/session-end/SKILL.md" 2>/dev/null)
+check "AR9: session-end gates taskwarrior sync on a reachable store" "$END_DOC" \
+  "TASK_STORE_REACHABLE=true"
+check "AR9: session-end renders an unreachable store as not queried" "$END_DOC" \
+  "taskwarrior: not queried (<TASK_FAIL_REASON>)"
 
 # ============================================================================
 # TEST AN: check()'s own harness must not race on SIGPIPE (#2452)

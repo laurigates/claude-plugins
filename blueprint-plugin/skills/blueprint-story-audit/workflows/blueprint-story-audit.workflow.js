@@ -297,6 +297,8 @@ dropping it. Read-only.`,
 prdId, storyId (or section), the verbatim user-visible behaviour, and any linked
 deps. Also list every "Known Drift" or status-marked entry verbatim under
 knownDrift. Do not infer — only extract. Read-only.`,
+          // Stays on opus: a story this lane omits never reaches the join, so the
+          // opus stages cannot notice the drop (haiku-5.5-reevaluation-2026-10-10.md).
           { label: `story:${p}`, phase: 'discover', schema: storyS, model: 'opus', effort: 'low' },
         ),
       ),
@@ -391,6 +393,8 @@ each as "bug-report" (the comment describes behaviour that is broken) or
 evidence and comment fields verbatim. Do not file issues.
 
 ${JSON.stringify(skips)}`,
+      // Stays on opus: a bug misfiled as not-yet-implemented never reaches
+      // compose, so no later stage can catch it (haiku-5.5-reevaluation-2026-10-10.md).
       { label: 'bug-triage', phase: 'triage', schema: bugS, model: 'opus', effort: 'low' },
     )
   : { bugs: [] };

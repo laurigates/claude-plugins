@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.3.4](https://github.com/laurigates/claude-plugins/compare/codebase-attributes-plugin-v1.3.3...codebase-attributes-plugin-v1.3.4) (2026-10-10)
+
+
+### Performance
+
+* **skills:** allow Haiku 5.5 within measured limits and run mechanical skills on it ([#3019](https://github.com/laurigates/claude-plugins/issues/3019)) ([21a20f2](https://github.com/laurigates/claude-plugins/commit/21a20f2c8157bdc22ed9ed2d9fb608c9d9136230))
+
+## [1.3.3](https://github.com/laurigates/claude-plugins/compare/codebase-attributes-plugin-v1.3.2...codebase-attributes-plugin-v1.3.3) (2026-10-10)
+
+
+### Bug Fixes
+
+* **scripts:** read captured output from here-strings so grep -q cannot SIGPIPE a pipefail test ([#2992](https://github.com/laurigates/claude-plugins/issues/2992)) ([2e2865c](https://github.com/laurigates/claude-plugins/commit/2e2865c782f1b712c064b06ef8d871f2b1a1caa6))
+
 ## [1.3.2](https://github.com/laurigates/claude-plugins/compare/codebase-attributes-plugin-v1.3.1...codebase-attributes-plugin-v1.3.2) (2026-09-28)
 
 

@@ -162,8 +162,8 @@ jobs:
 
             ### 2. Model Appropriateness
             - Read both `model` and `effort` from frontmatter of flagged skills
-            - `model` is normally unset (inherits) or `opus`; `fable` and `inherit` are valid values — judge `fable` against `.claude/rules/skill-development.md`. `effort` (`low|medium|high|xhigh|max`, inherits when unset) is the cost lever — flag values outside that set and mismatches with the skill's job shape (mechanical skill at `xhigh`, judgment-heavy skill at `low`). Never `haiku` (it can't format AskUserQuestion and supports no effort).
-            - Flag any skill pinned to `haiku`, or to `sonnet` without a clear reason
+            - `model` is normally unset (inherits) or `opus`; `fable` and `inherit` are valid values — judge `fable` against `.claude/rules/skill-development.md`. `effort` (`low|medium|high|xhigh|max`, inherits when unset) is the cost lever — flag values outside that set and mismatches with the skill's job shape (mechanical skill at `xhigh`, judgment-heavy skill at `low`). `haiku` is valid only on a report, listing, or user-driven terminal skill whose output ends the turn (see `.claude/rules/skill-development.md`).
+            - Flag a skill pinned to `haiku` that the model calls mid-task (the override lasts the rest of the turn), or pinned to `sonnet` without a clear reason
 
             ### 3. Description Quality
             - Read `description` field from flagged skills

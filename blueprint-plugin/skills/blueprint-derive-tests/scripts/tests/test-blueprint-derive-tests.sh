@@ -52,27 +52,27 @@ git -C "$proj" commit -q -m "fix(parser): correct boundary"
 out="$(bash "$analyze_script" --home-dir "$home" --project-dir "$proj")"
 
 # Invariant 1: the untested fix is a CRITICAL gap.
-echo "$out" | grep -q "^GAPS_CRITICAL=1$" \
+grep -q "^GAPS_CRITICAL=1$" <<<"$out" \
   || fail "expected GAPS_CRITICAL=1 (the untested fix), got:\n$out"
-echo "$out" | grep -q "TYPE=coverage_gap.*TYPE=fix SEVERITY=CRITICAL" \
+grep -q "TYPE=coverage_gap.*TYPE=fix SEVERITY=CRITICAL" <<<"$out" \
   || fail "expected a CRITICAL coverage_gap issue for the fix, got:\n$out"
 pass "untested fix commit is classified a CRITICAL coverage gap"
 
 # Invariant 2: the feat shipping a test is COVERED, not a MEDIUM gap.
-echo "$out" | grep -q "^GAPS_MEDIUM=0$" \
+grep -q "^GAPS_MEDIUM=0$" <<<"$out" \
   || fail "expected GAPS_MEDIUM=0 (the feat shipped a test), got:\n$out"
-echo "$out" | grep -q "^COVERED_COMMITS=2$" \
+grep -q "^COVERED_COMMITS=2$" <<<"$out" \
   || fail "expected COVERED_COMMITS=2 (feat+fix that shipped tests), got:\n$out"
 pass "commits shipping inline tests are COVERED, not gaps"
 
 # Invariant 3: counts and overall status reflect one critical gap.
-echo "$out" | grep -q "^FIX_COMMITS=2$" \
+grep -q "^FIX_COMMITS=2$" <<<"$out" \
   || fail "expected FIX_COMMITS=2, got:\n$out"
-echo "$out" | grep -q "^FEAT_COMMITS=1$" \
+grep -q "^FEAT_COMMITS=1$" <<<"$out" \
   || fail "expected FEAT_COMMITS=1, got:\n$out"
-echo "$out" | grep -q "^GAPS_TOTAL=1$" \
+grep -q "^GAPS_TOTAL=1$" <<<"$out" \
   || fail "expected GAPS_TOTAL=1, got:\n$out"
-echo "$out" | grep -q "^STATUS=ERROR$" \
+grep -q "^STATUS=ERROR$" <<<"$out" \
   || fail "expected STATUS=ERROR (a critical gap present), got:\n$out"
 pass "commit classification counts and STATUS reflect the single critical gap"
 
@@ -88,9 +88,9 @@ git -C "$proj2" add lib.js lib.test.js
 git -C "$proj2" commit -q -m "fix(core): tested fix"
 out2="$(bash "$analyze_script" --home-dir "$home" --project-dir "$proj2")"
 rc2=$?
-echo "$out2" | grep -q "^GAPS_TOTAL=0$" \
+grep -q "^GAPS_TOTAL=0$" <<<"$out2" \
   || fail "expected GAPS_TOTAL=0 for a fully-tested repo, got:\n$out2"
-echo "$out2" | grep -q "^STATUS=OK$" \
+grep -q "^STATUS=OK$" <<<"$out2" \
   || fail "expected STATUS=OK for a fully-tested repo, got:\n$out2"
 [ "$rc2" -eq 0 ] || fail "expected exit 0 for a fully-tested repo, got $rc2"
 rm -rf "$proj2"

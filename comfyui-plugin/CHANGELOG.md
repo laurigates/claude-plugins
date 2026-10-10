@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.13.13](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.12...comfyui-plugin-v1.13.13) (2026-10-10)
+
+
+### Performance
+
+* **skills:** allow Haiku 5.5 within measured limits and run mechanical skills on it ([#3019](https://github.com/laurigates/claude-plugins/issues/3019)) ([21a20f2](https://github.com/laurigates/claude-plugins/commit/21a20f2c8157bdc22ed9ed2d9fb608c9d9136230))
+
+## [1.13.12](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.11...comfyui-plugin-v1.13.12) (2026-10-10)
+
+
+### Bug Fixes
+
+* **scripts:** sweep printf|echo "$var" | grep -q from every pipefail suite and widen lint Check 6 ([#2996](https://github.com/laurigates/claude-plugins/issues/2996)) ([32f124d](https://github.com/laurigates/claude-plugins/commit/32f124d41f428967305ef6beb564fd8ebc1f3279))
+
 ## [1.13.11](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.10...comfyui-plugin-v1.13.11) (2026-10-09)
 
 

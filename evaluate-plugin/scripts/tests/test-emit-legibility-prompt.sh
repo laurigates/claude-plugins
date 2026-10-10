@@ -27,7 +27,7 @@ check() {
 
 contains() {
   # contains <description> <haystack> <needle>
-  if printf '%s' "$2" | grep -qF -- "$3"; then
+  if grep -qF -- "$3" <<<"$2"; then
     pass_count=$((pass_count + 1))
   else
     echo "FAIL: $1 (output missing '$3')" >&2

@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.4.4](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.4.3...finops-plugin-v1.4.4) (2026-10-10)
+
+
+### Performance
+
+* **skills:** allow Haiku 5.5 within measured limits and run mechanical skills on it ([#3019](https://github.com/laurigates/claude-plugins/issues/3019)) ([21a20f2](https://github.com/laurigates/claude-plugins/commit/21a20f2c8157bdc22ed9ed2d9fb608c9d9136230))
+
+
+### Documentation
+
+* **skills:** point Context-block references at the Context anchor and lower the positional baseline ([#2973](https://github.com/laurigates/claude-plugins/issues/2973)) ([921b3be](https://github.com/laurigates/claude-plugins/commit/921b3be483a0e8f5cc709dc0369eb659b599bbeb))
+
+## [1.4.3](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.4.2...finops-plugin-v1.4.3) (2026-10-10)
+
+
+### Bug Fixes
+
+* **scripts:** sweep printf|echo "$var" | grep -q from every pipefail suite and widen lint Check 6 ([#2996](https://github.com/laurigates/claude-plugins/issues/2996)) ([32f124d](https://github.com/laurigates/claude-plugins/commit/32f124d41f428967305ef6beb564fd8ebc1f3279))
+
 ## [1.4.2](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.4.1...finops-plugin-v1.4.2) (2026-09-26)
 
 
