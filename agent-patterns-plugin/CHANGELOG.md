@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.50.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.50.0...agent-patterns-plugin-v2.50.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* **agent-patterns-plugin:** meta-context-diet consumer sweep and commit deferral, PAL anchoring and stdio smoke-test notes ([#2978](https://github.com/laurigates/claude-plugins/issues/2978)) ([bdef313](https://github.com/laurigates/claude-plugins/commit/bdef313ee3da9be6caa6ee36bd399650513aaf0c))
+
 ## [2.50.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.49.4...agent-patterns-plugin-v2.50.0) (2026-10-10)
 
 
