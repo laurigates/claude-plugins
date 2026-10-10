@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.4](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.13.3...github-actions-plugin-v1.13.4) (2026-10-10)
+
+
+### Bug Fixes
+
+* **github-actions-plugin:** cover bot-actor refusals, base-branch config restore and green-but-unpublished runs ([#2970](https://github.com/laurigates/claude-plugins/issues/2970)) ([9d5e7f6](https://github.com/laurigates/claude-plugins/commit/9d5e7f68847e55494057bfbbdc52643ad5c283f4))
+
 ## [1.13.3](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.13.2...github-actions-plugin-v1.13.3) (2026-10-07)
 
 
