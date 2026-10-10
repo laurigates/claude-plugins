@@ -45,9 +45,9 @@ EOF
 
 fail=0
 out=""
-has() { printf '%s\n' "$out" | grep -qx "$1"; }
+has() { grep -qx "$1" <<<"$out"; }
 expect() { if has "$1"; then echo "PASS $1"; else echo "FAIL $1"; fail=1; fi; }
-absent() { if printf '%s\n' "$out" | grep -q "$1"; then echo "FAIL absent $1"; fail=1; else echo "PASS absent $1"; fi; }
+absent() { if grep -q "$1" <<<"$out"; then echo "FAIL absent $1"; fail=1; else echo "PASS absent $1"; fi; }
 run() { out="$(bash "$analyze" "$1" "$tmp/sentinels.txt" || true)"; }
 
 # --- 1. Baseline: subagent report scored, compaction counted -----------------

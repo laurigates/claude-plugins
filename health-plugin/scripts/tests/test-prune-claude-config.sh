@@ -65,7 +65,7 @@ out="$(python3 "$PRUNER" --config "$cfg" --drop-legacy-history)" || fail "drop r
 [ "$(jq -r --arg l "$live" '.projects[$l].allowedTools[0]' "$cfg")" = "Read" ] \
   || fail "other project fields lost:\n$(cat "$cfg")"
 [ "$(jq -r '.mcpServers.keep.command' "$cfg")" = "x" ] || fail "mcpServers modified"
-echo "$out" | grep -q "2 legacy prompt-history entries" || fail "summary missing legacy count:\n$out"
+grep -q "2 legacy prompt-history entries" <<<"$out" || fail "summary missing legacy count:\n$out"
 pass "--drop-legacy-history removes only projects[*].history"
 
 # Case 4: history.jsonl untouched

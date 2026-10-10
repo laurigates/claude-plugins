@@ -1,6 +1,6 @@
 ---
 created: 2026-02-27
-modified: 2026-09-20
+modified: 2026-10-10
 reviewed: 2026-09-16
 paths:
   - "**/skills/**"
@@ -58,7 +58,7 @@ By default a forked skill now runs in the background (2.1.218) — the caller ge
 
 ## Model Constraint
 
-`model: haiku` is disallowed for any skill — see `.claude/rules/skill-development.md` ("Model Selection"). Sonnet is the floor; set `model: opus` or `model: sonnet` only at the extremes, otherwise leave `model:` unset to inherit.
+Set `model:` only at the extremes, otherwise leave it unset to inherit — see `.claude/rules/skill-development.md` ("Model Selection"). With `context: fork`, a skill's `model:` sets the forked subagent's model, not the main session's. That makes fork the shape that lets a `user-invocable: false` skill use `model: haiku`: without fork, the override would last the rest of the loading turn.
 
 ## Decision Table
 
@@ -93,7 +93,7 @@ script-decidable cap constant, or a set a shell script enumerates?
 - [ ] Does the skill use `Task`, multi-file reads, or web research? If yes, **add** `agent: general-purpose`.
 - [ ] Does the skill produce a self-contained verbose artifact **without** parallel fan-out? If yes, **add** `context: fork` (now works for plugins per #16803). Remember it now runs in the background by default (2.1.218) — add `background: false` if the caller needs the result synchronously.
 - [ ] Does the skill fan out **parallel** subagents at an **unbounded or caller-chosen** width (`--parallel N`, one agent per query hit, a count the design invents)? If yes, **omit** `context: fork` — the concurrent-subagent rate-limit cascade still applies on a 1M-context session (every Fable 5.1 session, or any `[1m]` session). A **statically bounded** fan-out keeps `fork`; name the bound where a reader can check it.
-- [ ] Set `model:` only at the extremes (`opus` for deep reasoning, `sonnet` for mechanical work). Never `haiku`.
+- [ ] Set `model:` only at the extremes (`opus` for deep reasoning, `sonnet` or `haiku` for mechanical work — `haiku` within the limits in `skill-development.md`).
 - [ ] Update `modified:` date when adding these fields.
 
 ## Upstream Issues to Track

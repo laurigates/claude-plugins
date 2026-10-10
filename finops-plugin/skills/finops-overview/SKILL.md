@@ -4,9 +4,11 @@ args: "[org]"
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(gh workflow *), Bash(bash *), Read, TodoWrite
 argument-hint: Optional org name (defaults to current repo's org)
 created: 2025-01-30
-modified: 2026-06-18
+modified: 2026-10-10
 reviewed: 2026-04-25
 name: finops-overview
+model: haiku
+effort: low
 ---
 
 # /finops:overview

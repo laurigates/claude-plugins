@@ -174,11 +174,11 @@ assert "scanner exits 0 without --strict" "$scan_status" "0"
 
 # 3. FORMAT — the structured-script-output contract.
 assert_true "emits section header" \
-  "$(printf '%s' "$out" | grep -qF '=== CONTEXT ENGINEERING ===' && echo true || echo false)"
+  "$(grep -qF '=== CONTEXT ENGINEERING ===' <<<"$out" && echo true || echo false)"
 assert_true "emits section footer" \
-  "$(printf '%s' "$out" | grep -qF '=== END CONTEXT ENGINEERING ===' && echo true || echo false)"
-assert_true "emits STATUS" "$(printf '%s' "$out" | grep -qE '^STATUS=(OK|WARN|ERROR)$' && echo true || echo false)"
-assert_true "emits ISSUE_COUNT" "$(printf '%s' "$out" | grep -qE '^ISSUE_COUNT=[0-9]+$' && echo true || echo false)"
+  "$(grep -qF '=== END CONTEXT ENGINEERING ===' <<<"$out" && echo true || echo false)"
+assert_true "emits STATUS" "$(grep -qE '^STATUS=(OK|WARN|ERROR)$' <<<"$out" && echo true || echo false)"
+assert_true "emits ISSUE_COUNT" "$(grep -qE '^ISSUE_COUNT=[0-9]+$' <<<"$out" && echo true || echo false)"
 
 # 2. PROXY DRIFT — each dimension must report the fixture's known properties.
 assert "counts both fixture skills" "$(value_of "$out" SKILL_COUNT)" "2"
@@ -265,7 +265,7 @@ assert "portfolio counts both repos" "$(value_of "$pf_out" C5_PORTFOLIO_REPOS)" 
 assert "portfolio sums the two surfaces" \
   "$(value_of "$pf_out" C5_PORTFOLIO_ALWAYS_LOADED_CHARS)" "$((primary_c5 + 500))"
 assert_true "portfolio emits a per-repo breakdown line for the --also repo" \
-  "$(printf '%s' "$pf_out" | grep -qE "^  - REPO=$(basename "$fixture2") CHARS=500 " && echo true || echo false)"
+  "$(grep -qE "^  - REPO=$(basename "$fixture2") CHARS=500 " <<<"$pf_out" && echo true || echo false)"
 
 # Order-independence: the determinism contract must survive --also being passed
 # in any order, or two CI runs of an unchanged tree disagree. Needs a THIRD repo
@@ -320,7 +320,7 @@ split_out="$("$scanner" --project-dir "$fixture" --also "$fixture2" \
   --always-loaded-budget 999999 --portfolio-budget 10 --max-issues 0 2>&1)"
 assert "per-repo pass + portfolio fail yields ERROR" "$(value_of "$split_out" STATUS)" "ERROR"
 assert_true "portfolio ERROR names the offending repos" \
-  "$(printf '%s' "$split_out" | grep -qE 'TYPE=portfolio_always_loaded_over_budget.*'"$(basename "$fixture2")"'=500' && echo true || echo false)"
+  "$(grep -qE 'TYPE=portfolio_always_loaded_over_budget.*'"$(basename "$fixture2")"'=500' <<<"$split_out" && echo true || echo false)"
 
 # ERROR must outrank WARNs in the listing: --max-issues could otherwise truncate
 # away the only line explaining why STATUS=ERROR.
@@ -340,7 +340,7 @@ assert "--also on a missing path exits 1" "$?" "1"
 # Without --also the portfolio keys must be absent entirely (no behaviour change
 # for every existing caller).
 assert_true "no --also means no portfolio keys" \
-  "$(printf '%s' "$out" | grep -qE '^C5_PORTFOLIO' && echo false || echo true)"
+  "$(grep -qE '^C5_PORTFOLIO' <<<"$out" && echo false || echo true)"
 
 # --- per-rule size ceiling (#2667) -------------------------------------------
 # The always-loaded budget above sums UNSCOPED rules only, so a path-scoped rule
@@ -369,9 +369,9 @@ ceil_out="$("$scanner" --project-dir "$ceiling_fixture" --max-issues 0 2>&1)"
 assert "oversized path-scoped rule is an ERROR at the default ceiling" \
   "$(value_of "$ceil_out" STATUS)" "ERROR"
 assert_true "the ERROR names the oversized rule and the ceiling type" \
-  "$(printf '%s' "$ceil_out" | grep -qE 'SEVERITY=ERROR DIM=C5 TYPE=rule_over_size_ceiling UNIT=\.claude/rules/huge-scoped\.md ' && echo true || echo false)"
+  "$(grep -qE 'SEVERITY=ERROR DIM=C5 TYPE=rule_over_size_ceiling UNIT=\.claude/rules/huge-scoped\.md ' <<<"$ceil_out" && echo true || echo false)"
 assert_true "the small scoped rule is not flagged" \
-  "$(printf '%s' "$ceil_out" | grep -q 'UNIT=\.claude/rules/small-scoped\.md' && echo false || echo true)"
+  "$(grep -q 'UNIT=\.claude/rules/small-scoped\.md' <<<"$ceil_out" && echo false || echo true)"
 assert "exactly one rule is over the ceiling" \
   "$(value_of "$ceil_out" C5_RULES_OVER_CEILING)" "1"
 assert "the default ceiling is reported" \
@@ -392,7 +392,7 @@ assert "--strict exits 0 when every rule is under the ceiling" "$?" "0"
 # Scoping is irrelevant to the ceiling: an UNSCOPED rule over it is flagged too.
 under_budget_out="$("$scanner" --project-dir "$fixture" --rule-size-ceiling 10 --always-loaded-budget 999999 --max-issues 0 2>&1)"
 assert_true "an unscoped rule over the ceiling is flagged as well" \
-  "$(printf '%s' "$under_budget_out" | grep -qE 'TYPE=rule_over_size_ceiling UNIT=\.claude/rules/procedural-unscoped\.md ' && echo true || echo false)"
+  "$(grep -qE 'TYPE=rule_over_size_ceiling UNIT=\.claude/rules/procedural-unscoped\.md ' <<<"$under_budget_out" && echo true || echo false)"
 
 echo "PASS=$pass_count FAIL=$fail_count"
 [ "$fail_count" -eq 0 ]

@@ -5,9 +5,11 @@ args: <plugin/skill-name | plugin-name> [--latest] [--history] [--compare]
 allowed-tools: Read, Glob, Grep, Bash(cat *), Bash(jq *), Bash(find *), Bash(ls *), TodoWrite
 argument-hint: "git-plugin/git-commit [--latest] | git-plugin [--history]"
 created: 2026-03-04
-modified: 2026-07-18
+modified: 2026-10-10
 compatibility: claude-code
 reviewed: 2026-03-04
+model: haiku
+effort: low
 ---
 
 # /evaluate:report

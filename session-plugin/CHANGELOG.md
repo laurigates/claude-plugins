@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.13.6](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.13.5...session-plugin-v1.13.6) (2026-10-10)
+
+
+### Bug Fixes
+
+* **scripts:** sweep printf|echo "$var" | grep -q from every pipefail suite and widen lint Check 6 ([#2996](https://github.com/laurigates/claude-plugins/issues/2996)) ([32f124d](https://github.com/laurigates/claude-plugins/commit/32f124d41f428967305ef6beb564fd8ebc1f3279))
+
+## [1.13.5](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.13.4...session-plugin-v1.13.5) (2026-10-10)
+
+
+### Bug Fixes
+
+* **scripts:** read captured output from here-strings so grep -q cannot SIGPIPE a pipefail test ([#2992](https://github.com/laurigates/claude-plugins/issues/2992)) ([2e2865c](https://github.com/laurigates/claude-plugins/commit/2e2865c782f1b712c064b06ef8d871f2b1a1caa6))
+
 ## [1.13.4](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.13.3...session-plugin-v1.13.4) (2026-10-07)
 
 

@@ -145,8 +145,12 @@ if printf '%s' "$out" | grep -qF "$rel"; then   # Wrong under pipefail: flaky
 if grep -qF "$rel" <<<"$out"; then              # Right
 ```
 
-`scripts/lint-shell-scripts.sh` Check 6 errors on the first form in any
-`scripts/tests/*.sh` or `<plugin>/hooks/test-*.sh` that enables `pipefail`.
+`scripts/lint-shell-scripts.sh` Check 6 errors on the first form in any test
+suite that enables `pipefail`: a `*.sh` directly inside a `tests/` directory
+(`scripts/tests/`, `<plugin>/scripts/tests/`,
+`<plugin>/skills/<skill>/scripts/tests/`, `experiments/<x>/tests/`) or a
+`<plugin>/hooks/test-*.sh`. Non-test scripts are not linted for it, but take the
+same fix: in a hook, the race turns a block into a silent pass.
 
 #### `set -e` + `OUT=$(cmd-that-exits-nonzero)` aborts *before* the next line
 
