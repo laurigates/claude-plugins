@@ -705,22 +705,22 @@ fi
 CQ_Q1_REASON="$(echo "$CQ_OUT_Q1" | jq -r '.reason')"
 CQ_Q2_REASON="$(echo "$CQ_OUT_Q2" | jq -r '.reason')"
 
-if printf '%s' "$CQ_Q1_REASON" | grep -q -- "/code-quality-plugin:code-lint"; then
+if grep -q -- "/code-quality-plugin:code-lint" <<<"$CQ_Q1_REASON"; then
   cq_pass "(q) non-skill cue names /code-quality-plugin:code-lint"
 else
   cq_fail "(q) non-skill cue should name /code-quality-plugin:code-lint; got: $CQ_Q1_REASON"
 fi
-if printf '%s' "$CQ_Q1_REASON" | grep -q -- "/code-quality:code-lint"; then
+if grep -q -- "/code-quality:code-lint" <<<"$CQ_Q1_REASON"; then
   cq_fail "(q) non-skill cue still carries the unresolvable /code-quality:code-lint; got: $CQ_Q1_REASON"
 else
   cq_pass "(q) non-skill cue omits the unresolvable /code-quality:code-lint"
 fi
-if printf '%s' "$CQ_Q2_REASON" | grep -q -- "/evaluate-plugin:evaluate-skill"; then
+if grep -q -- "/evaluate-plugin:evaluate-skill" <<<"$CQ_Q2_REASON"; then
   cq_pass "(q) skills/ cue names /evaluate-plugin:evaluate-skill"
 else
   cq_fail "(q) skills/ cue should name /evaluate-plugin:evaluate-skill; got: $CQ_Q2_REASON"
 fi
-if printf '%s' "$CQ_Q2_REASON" | grep -q -- "/evaluate:evaluate-skill"; then
+if grep -q -- "/evaluate:evaluate-skill" <<<"$CQ_Q2_REASON"; then
   cq_fail "(q) skills/ cue still carries the unresolvable /evaluate:evaluate-skill; got: $CQ_Q2_REASON"
 else
   cq_pass "(q) skills/ cue omits the unresolvable /evaluate:evaluate-skill"

@@ -36,7 +36,7 @@ ko() { echo "FAIL: $1"; fail=$((fail + 1)); }
 
 # assert_has <desc> <text> <needle>
 assert_has() {
-  if printf '%s' "$2" | grep -q -- "$3"; then ok "$1"; else ko "$1"; fi
+  if grep -q -- "$3" <<<"$2"; then ok "$1"; else ko "$1"; fi
 }
 
 # Cross-platform date → epoch seconds. MUST mirror the check script's helper —
