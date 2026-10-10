@@ -55,14 +55,14 @@ if [ -f "ruff.toml" ] || [ -f ".ruff.toml" ] || ([ -f "pyproject.toml" ] && grep
 fi
 
 # Python: Black (if no ruff)
-if [ -f "pyproject.toml" ] && grep -q "\[tool.black\]" pyproject.toml 2>/dev/null && ! printf '%s\n' "${DETECTED_LINTERS[@]}" | grep -q "ruff"; then
+if [ -f "pyproject.toml" ] && grep -q "\[tool.black\]" pyproject.toml 2>/dev/null && ! grep -q "ruff" <<<"$(printf '%s\n' "${DETECTED_LINTERS[@]}")"; then
   DETECTED_LINTERS+=("black")
   FIX_COMMANDS+=("black .")
   CHECK_COMMANDS+=("black --check .")
 fi
 
 # Python: isort (if no ruff)
-if [ -f "pyproject.toml" ] && grep -q "\[tool.isort\]" pyproject.toml 2>/dev/null && ! printf '%s\n' "${DETECTED_LINTERS[@]}" | grep -q "ruff"; then
+if [ -f "pyproject.toml" ] && grep -q "\[tool.isort\]" pyproject.toml 2>/dev/null && ! grep -q "ruff" <<<"$(printf '%s\n' "${DETECTED_LINTERS[@]}")"; then
   DETECTED_LINTERS+=("isort")
   FIX_COMMANDS+=("isort .")
   CHECK_COMMANDS+=("isort --check-only .")

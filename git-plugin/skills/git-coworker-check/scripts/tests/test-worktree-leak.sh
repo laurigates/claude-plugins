@@ -23,7 +23,7 @@ assert_contains() {
   local label="$1"
   local out="$2"
   local needle="$3"
-  if printf '%s\n' "$out" | grep -qF -- "$needle"; then
+  if grep -qF -- "$needle" <<<"$out"; then
     printf 'PASS %s\n' "$label"
     pass=$((pass + 1))
   else
@@ -37,7 +37,7 @@ assert_not_contains() {
   local label="$1"
   local out="$2"
   local needle="$3"
-  if printf '%s\n' "$out" | grep -qF -- "$needle"; then
+  if grep -qF -- "$needle" <<<"$out"; then
     printf 'FAIL %s: expected output to NOT contain %s\n' "$label" "$needle"
     printf -- '--- output ---\n%s\n--- end ---\n' "$out"
     fail=$((fail + 1))

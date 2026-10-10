@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.7](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.12.6...feedback-plugin-v1.12.7) (2026-10-10)
+
+
+### Bug Fixes
+
+* **scripts:** sweep printf|echo "$var" | grep -q from every pipefail suite and widen lint Check 6 ([#2996](https://github.com/laurigates/claude-plugins/issues/2996)) ([32f124d](https://github.com/laurigates/claude-plugins/commit/32f124d41f428967305ef6beb564fd8ebc1f3279))
+
 ## [1.12.6](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.12.5...feedback-plugin-v1.12.6) (2026-10-07)
 
 

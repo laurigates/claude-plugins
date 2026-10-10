@@ -70,7 +70,7 @@ noop_out="$("$apply" --repo-root "$repo_root")"
 check "noop: applied" "false" "$(field "$noop_out" FIXTURE_APPLIED)"
 check "noop: status" "OK" "$(field "$noop_out" STATUS)"
 # No WORKDIR line at all.
-if printf '%s\n' "$noop_out" | grep -q "^WORKDIR="; then
+if grep -q "^WORKDIR=" <<<"$noop_out"; then
   echo "FAIL: no-fixture run emitted a WORKDIR" >&2; fail_count=$((fail_count + 1))
 else
   pass_count=$((pass_count + 1))
@@ -169,13 +169,13 @@ missing_fixture='{"dir":"fixtures/does-not-exist"}'
 missing_out="$("$apply" --fixture "$missing_fixture" --repo-root "$tmpl_root")"
 check "missing dir: status" "ERROR" "$(field "$missing_out" STATUS)"
 check "missing dir: not applied" "false" "$(field "$missing_out" FIXTURE_APPLIED)"
-if printf '%s\n' "$missing_out" | grep -q "^ERROR=fixture.dir not found:"; then
+if grep -q "^ERROR=fixture.dir not found:" <<<"$missing_out"; then
   pass_count=$((pass_count + 1))
 else
   echo "FAIL: missing fixture.dir did not report the unresolved path" >&2; fail_count=$((fail_count + 1))
 fi
 # No WORKDIR is emitted, and no orphan temp dir is left behind.
-if printf '%s\n' "$missing_out" | grep -q "^WORKDIR="; then
+if grep -q "^WORKDIR=" <<<"$missing_out"; then
   echo "FAIL: failed dir copy still emitted a WORKDIR" >&2; fail_count=$((fail_count + 1))
 else
   pass_count=$((pass_count + 1))
