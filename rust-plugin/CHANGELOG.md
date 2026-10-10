@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.2](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.7.1...rust-plugin-v1.7.2) (2026-10-10)
+
+
+### Documentation
+
+* **skills:** point Context-block references at the Context anchor and lower the positional baseline ([#2973](https://github.com/laurigates/claude-plugins/issues/2973)) ([921b3be](https://github.com/laurigates/claude-plugins/commit/921b3be483a0e8f5cc709dc0369eb659b599bbeb))
+
 ## [1.7.1](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.7.0...rust-plugin-v1.7.1) (2026-09-03)
 
 
