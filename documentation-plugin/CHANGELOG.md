@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.3](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.13.2...documentation-plugin-v1.13.3) (2026-10-10)
+
+
+### Bug Fixes
+
+* **documentation-plugin:** scan dot-directories and keep #-prefixed names in check-public-export ([#2979](https://github.com/laurigates/claude-plugins/issues/2979)) ([322048f](https://github.com/laurigates/claude-plugins/commit/322048f9374ef04eaca1b8d710dc5307aadded4d))
+
 ## [1.13.2](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.13.1...documentation-plugin-v1.13.2) (2026-10-10)
 
 
