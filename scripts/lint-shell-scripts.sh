@@ -8,6 +8,9 @@
 # 4. Variable naming: TOOL_NAME not TOOL for tool name extraction
 # 5. Portable in-place sed: neither the BSD-only nor the GNU-only spelling
 #    of an in-place edit, since these scripts run on macOS and on CI runners
+# 6. No `printf|echo "$var" | grep -q` in a pipefail test suite: grep -q exits
+#    on its first match, the writer takes SIGPIPE, and pipefail reports a hit
+#    as a miss (#2959). Use a here-string: grep -q PATTERN <<<"$var"
 #
 # Usage: bash scripts/lint-shell-scripts.sh [--fix] [ROOT_DIR]
 #        --fix      auto-fix shebang issues (other issues require manual fixes)
@@ -68,7 +71,7 @@ for script in $SCRIPTS; do
     REL_PATH="${script#"$ROOT_DIR"/}"
 
     # Skip ShellSpec test files — framework manages execution environment
-    if echo "$REL_PATH" | grep -qE '/spec/.*_spec\.sh$|/spec/spec_helper\.sh$'; then
+    if grep -qE '/spec/.*_spec\.sh$|/spec/spec_helper\.sh$' <<<"$REL_PATH"; then
         continue
     fi
 
@@ -92,7 +95,7 @@ for script in $SCRIPTS; do
     # --- Check 2: Error handling flags ---
     if ! grep -qE '^set -[a-z]*[euo]' "$script"; then
         # Distinguish hook scripts (which must have set flags) from other scripts
-        if echo "$REL_PATH" | grep -qE '/hooks/'; then
+        if grep -qE '/hooks/' <<<"$REL_PATH"; then
             error "$REL_PATH: Missing 'set -euo pipefail' (or documented variant)"
         else
             warn "$REL_PATH: Missing 'set -euo pipefail' (recommended)"
@@ -100,7 +103,7 @@ for script in $SCRIPTS; do
     fi
 
     # --- Check 3: Block function consistency (hook scripts only) ---
-    if echo "$REL_PATH" | grep -qE '/hooks/'; then
+    if grep -qE '/hooks/' <<<"$REL_PATH"; then
         # Check for non-standard block function names
         if grep -qE '^block_(with_reminder|error)\(\)' "$script"; then
             FUNC_NAME=$(grep -oE 'block_(with_reminder|error)' "$script" | head -1)
@@ -140,14 +143,83 @@ for script in $SCRIPTS; do
     #
     # test-*.sh is skipped wholesale: this repo's hook tests carry both
     # spellings as fixture STRINGS, which are data rather than commands.
-    if ! echo "$REL_PATH" | grep -qE '(^|/)test-[^/]*\.sh$'; then
+    if ! grep -qE '(^|/)test-[^/]*\.sh$' <<<"$REL_PATH"; then
         SED_CODE=$(grep -vE '^[[:space:]]*#' "$script" | grep -v 'portable-sed-ok' || true)
-        if echo "$SED_CODE" | grep -qE "sed( +-[a-zA-Z.]+)* +-i +''"; then
+        if grep -qE "sed( +-[a-zA-Z.]+)* +-i +''" <<<"$SED_CODE"; then
             error "$REL_PATH: BSD-only in-place sed (empty suffix) — GNU sed exits 2 without editing. Attach the suffix: sed -i.bak ... then rm the backup"
         fi
-        if echo "$SED_CODE" | grep -qE "sed( +-[a-zA-Z.]+)* +-i +['\"][^'\"]"; then
+        if grep -qE "sed( +-[a-zA-Z.]+)* +-i +['\"][^'\"]" <<<"$SED_CODE"; then
             error "$REL_PATH: GNU-only in-place sed (detached script) — BSD sed eats the script as a backup suffix. Attach the suffix: sed -i.bak ... then rm the backup"
         fi
+    fi
+
+    # --- Check 6: printf/echo of a variable piped into grep -q under pipefail ---
+    # `printf '%s' "$out" | grep -qF "$x"` races. bash's printf/echo write a
+    # large value in several chunks; grep -q exits on its first match, so the
+    # next chunk hits a closed pipe (EPIPE / SIGPIPE), and pipefail reports the
+    # pipeline as failed even though grep matched. A correct detection reads as
+    # a miss, intermittently. Regression: test-lint-package-references.sh
+    # ("line 77: printf: write error: Broken pipe", PR #2982, issue #2959).
+    # The fix is a here-string, which has no writer process to kill:
+    #     grep -qF "$x" <<<"$out"
+    #
+    # Scope: test suites, and only when the file enables pipefail. A suite is
+    # any *.sh directly inside a tests/ directory at any depth (scripts/tests,
+    # <plugin>/scripts/tests, <plugin>/skills/<skill>/scripts/tests,
+    # experiments/<x>/[scripts/]tests) or a <plugin>/hooks/test-*.sh. Files in
+    # tests/fixtures/ or tests/live/ are not suites. Heredoc bodies (fixture
+    # scripts written to disk) and comment lines are skipped. A producer that
+    # is a real command (`cmd | grep -q`) is left alone: only a printf/echo of
+    # a quoted "$..." expansion is flagged. The -q flag must sit in grep's own
+    # words: an unbalanced `)` ends them, so `"$(echo "$x" | grep -c p)" -eq 1`
+    # (-c reads all input, no early exit) is not mistaken for -q, while a
+    # balanced group in a pattern (`grep -E "(a)" -q`) is read through.
+    #
+    # Known blind spots (this is a line scanner, not a shell parser): a `<<WORD`
+    # inside a multi-line quoted string is taken for a heredoc and the lines up
+    # to the next WORD are skipped (hooks-plugin/hooks/bash-antipatterns.sh had
+    # one); and the shape inside a string run by eval (`check "..." "printf
+    # '%s' \"\$out\" | grep -q x"`) has escaped quotes and is not matched.
+    if [[ "$REL_PATH" =~ (^|/)tests/[^/]+\.sh$|^[^/]+/hooks/test-[^/]+\.sh$ ]] \
+        && grep -qE '^[[:space:]]*set[[:space:]].*pipefail' "$script"; then
+        PIPE_GREP_Q_LINES=$(awk '
+            BEGIN {
+                # \042 = double quote, \047 = single quote (octal escapes keep
+                # this program inside the shell single quotes).
+                prod = "(^|[^[:alnum:]_-])(printf[[:space:]]+(\042[^\042]*\042[[:space:]]+)?[^|\042]*|echo[[:space:]]+)\042\\$[^|]*\\|[[:space:]]*grep[[:space:]]"
+                qflag = "^([^|;&()]|\\([^()|;&]*\\))*[[:space:]](-[[:alpha:]]*q[[:alpha:]]*|--quiet|--silent)([[:space:]]|$)"
+                hdre = "<<-?[[:space:]]*[\042\047]?[A-Za-z_][A-Za-z0-9_]*"
+                hd = ""
+            }
+            hd != "" {
+                body = $0
+                if (hdtab) sub(/^\t+/, "", body)
+                if (body == hd) hd = ""
+                next
+            }
+            /^[[:space:]]*#/ { next }
+            {
+                if (match($0, prod)) {
+                    rest = " " substr($0, RSTART + RLENGTH)
+                    if (rest ~ qflag) print NR
+                }
+                s = $0
+                while (match(s, hdre)) {
+                    if (RSTART == 1 || substr(s, RSTART - 1, 1) != "<") {
+                        tok = substr(s, RSTART, RLENGTH)
+                        hdtab = (substr(tok, 3, 1) == "-")
+                        sub(/^<<-?[[:space:]]*/, "", tok)
+                        gsub(/[\042\047]/, "", tok)
+                        hd = tok
+                        break
+                    }
+                    s = substr(s, RSTART + RLENGTH)
+                }
+            }
+        ' "$script")
+        for lineno in $PIPE_GREP_Q_LINES; do
+            error "$REL_PATH:$lineno: printf/echo of a variable piped into grep -q under pipefail — grep -q exits on its first match, the writer takes SIGPIPE, and pipefail turns a hit into a miss (#2959). Use a here-string: grep -q PATTERN <<<\"\$var\""
+        done
     fi
 done
 

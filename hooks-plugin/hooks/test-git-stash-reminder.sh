@@ -232,7 +232,7 @@ run_stop() {
     "$cwd" "$SESSION_ID" "$active" |
     bash "$HOOK" 2>/dev/null || true)
   LAST_REASON=$(printf '%s' "$out" | jq -r '.reason // empty' 2>/dev/null || true)
-  if printf '%s' "$out" | grep -q '"decision": *"block"'; then
+  if grep -q '"decision": *"block"' <<<"$out"; then
     LAST_VERDICT=REPORT
   else
     LAST_VERDICT=SILENT

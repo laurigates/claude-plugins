@@ -120,7 +120,7 @@ ${mp_plugins}"
       continue
     fi
     # Keep if present in any known marketplace (still installable).
-    if [ -n "$marketplace_names" ] && printf '%s\n' "$marketplace_names" | grep -Fxq "$plugin_name"; then
+    if [ -n "$marketplace_names" ] && grep -Fxq "$plugin_name" <<<"$marketplace_names"; then
       continue
     fi
     stale_enabled_keys+=("$enabled_key")

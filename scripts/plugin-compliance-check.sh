@@ -178,7 +178,7 @@ check_plugin_json() {
     return 2
   fi
 
-  if ! echo "$plugin_name" | grep -qE '^[a-z][a-z0-9-]*$'; then
+  if ! grep -qE '^[a-z][a-z0-9-]*$' <<<"$plugin_name"; then
     issues+=("❌ ${plugin}: plugin.json name '${plugin_name}' not in kebab-case format")
     return 2
   fi
@@ -1817,7 +1817,7 @@ check_bash_patterns() {
     local util_count=0
     local util_list=""
     for util in test jq head tail cat cp mkdir chmod wc date; do
-      if echo "$fm_allowed_tools" | grep -qE "Bash\(${util} "; then
+      if grep -qE "Bash\(${util} " <<<"$fm_allowed_tools"; then
         util_count=$((util_count + 1))
         util_list="${util_list:+${util_list}, }${util}"
       fi

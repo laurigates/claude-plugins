@@ -392,7 +392,7 @@ SGRULES
     # Fail open: any ast-grep/jq error yields an empty match set (no nudge).
     AST_IDS=$(printf '%s' "$COMMAND" | "$ASTGREP" scan --inline-rules "$AST_RULES" --stdin --json=compact 2>/dev/null | jq -r '.[].ruleId' 2>/dev/null | sort -u) || AST_IDS=""
 
-    ast_matched() { printf '%s\n' "$AST_IDS" | grep -qx "$1"; }
+    ast_matched() { grep -qx "$1" <<<"$AST_IDS"; }
 
     # Priority = the original detector order, with the more-specific task-output
     # message ahead of the generic cat read (both would match a `.output` read).
@@ -470,8 +470,8 @@ See .claude/rules/bash-tool-replacements.md for the full table."
     # a variable value is consumed as `"$SP/f.py"`, so the slash is part of the
     # shape it matches.
     scratch_ctx() {
-        echo "$COMMAND_SHELL_ONLY" | grep -Eq '(^|[;&|])[[:space:]]*cd[[:space:]]+"?((/private)?/tmp|/var/folders)(/|"|$|[[:space:]]|[;&|])' || \
-        echo "$COMMAND_SHELL_ONLY" | grep -Eq '(^|[[:space:];&|])[A-Za-z_][A-Za-z0-9_]*="?((/private)?/tmp/|/var/folders/)'
+        grep -Eq '(^|[;&|])[[:space:]]*cd[[:space:]]+"?((/private)?/tmp|/var/folders)(/|"|$|[[:space:]]|[;&|])' <<<"$COMMAND_SHELL_ONLY" || \
+        grep -Eq '(^|[[:space:];&|])[A-Za-z_][A-Za-z0-9_]*="?((/private)?/tmp/|/var/folders/)' <<<"$COMMAND_SHELL_ONLY"
     }
 
     if ast_matched "sed-inplace" && ! scratch_ctx; then
@@ -591,11 +591,11 @@ commit_message_file_flag() {
     grep -Eq 'git[[:space:]]+(commit|tag)[^;&|()`]*[[:space:]](-F|--file)([[:space:]=]|$)' <<<"$masked"
 }
 
-if echo "$COMMAND" | grep -Eq 'git\s+(commit|tag)\b' && \
-   echo "$COMMAND" | grep -Eq '(feat|fix|docs|refactor|test|chore|perf|ci)(\(.+\))?[!:]' && \
+if grep -Eq 'git\s+(commit|tag)\b' <<<"$COMMAND" && \
+   grep -Eq '(feat|fix|docs|refactor|test|chore|perf|ci)(\(.+\))?[!:]' <<<"$COMMAND" && \
    ! commit_message_file_flag && \
-   { echo "$COMMAND" | grep -Eq 'cat\s*>\s*[^|]*commit' || \
-     echo "$COMMAND" | grep -Eq "(cat|echo|printf)\s*>\s*/tmp/.*<<.*EOF"; }; then
+   { grep -Eq 'cat\s*>\s*[^|]*commit' <<<"$COMMAND" || \
+     grep -Eq "(cat|echo|printf)\s*>\s*/tmp/.*<<.*EOF" <<<"$COMMAND"; }; then
     block "REMINDER: Use HEREDOC directly in git commit:
 
 git commit -m \"\$(cat <<'EOF'
@@ -628,8 +628,8 @@ fi
 # quoting a `timeout N cmd` example — is not read as a wrapper (issue #2431).
 # The escape hatch reads COMMAND_NO_HEREDOC (comments intact) because
 # COMMAND_SHELL_ONLY has already had `# allow-timeout` stripped.
-if echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*timeout\s+' && \
-   ! echo "$COMMAND_NO_HEREDOC" | grep -Eq '#[[:space:]]*allow-timeout\b'; then
+if grep -Eq '^\s*timeout\s+' <<<"$COMMAND_SHELL_ONLY" && \
+   ! grep -Eq '#[[:space:]]*allow-timeout\b' <<<"$COMMAND_NO_HEREDOC"; then
     block "REMINDER: The 'timeout' command is usually unnecessary - the Bash tool has its own timeout parameter. Human approval time typically exceeds any timeout value anyway. Remove the timeout wrapper and use the command directly.
 
 If the wrapped process genuinely never exits on its own (a REPL, a stdio
@@ -706,7 +706,7 @@ fi
 # unrelated `ls logs/` does not match.
 LOG_STREAM_RE='\b(journalctl|stern)\b|\b(kubectl|oc|docker|podman|nerdctl|nomad|heroku|gcloud|crictl|flyctl|fly|k)\b[^|]*[[:space:]]logs\b'
 IS_LOG_STREAM=false
-if echo "$COMMAND_SHELL_ONLY" | grep -Eq "$LOG_STREAM_RE"; then
+if grep -Eq "$LOG_STREAM_RE" <<<"$COMMAND_SHELL_ONLY"; then
     IS_LOG_STREAM=true
 fi
 
@@ -750,14 +750,14 @@ TEST_OUTPUT_SOURCE_RE='\.output|/tasks/|\b(pytest|vitest|jest|mocha|ava|rspec|ph
 # pattern's own `|` (e.g. grep -n 'app-id|fail-fast' file.yml) cutting the scan
 # short before the file operand.
 IS_SOURCE_FILE_GREP=false
-if echo "$COMMAND_NO_STRINGS" | grep -Eq '(grep|rg)\b[^|;&]*\.(yml|yaml|md|json|ts|tsx|js|py|tf|toml|sh|rs|go)\b'; then
+if grep -Eq '(grep|rg)\b[^|;&]*\.(yml|yaml|md|json|ts|tsx|js|py|tf|toml|sh|rs|go)\b' <<<"$COMMAND_NO_STRINGS"; then
     IS_SOURCE_FILE_GREP=true
 fi
 
 if [ "$IS_LOG_STREAM" = false ] && \
    [ "$IS_SOURCE_FILE_GREP" = false ] && \
-   echo "$COMMAND" | grep -Eq 'grep.*\|.*grep.*\|.*(sed|cut|awk)' && \
-   echo "$COMMAND" | grep -Eq "$TEST_OUTPUT_SOURCE_RE"; then
+   grep -Eq 'grep.*\|.*grep.*\|.*(sed|cut|awk)' <<<"$COMMAND" && \
+   grep -Eq "$TEST_OUTPUT_SOURCE_RE" <<<"$COMMAND"; then
     block "REMINDER: Parsing test output with grep chains is fragile. Better alternatives:
 - Use --reporter=json (Bun, Vitest, Jest) and parse with jq
 - Use --reporter=junit for CI-style XML output
@@ -773,7 +773,7 @@ fi
 # a heredoc-body line reading "git add -A is discouraged because…" — prose in a
 # commit message or issue body — was blocked as if it staged anything. A genuine
 # `git add -A` on its own line of a multi-line command is still caught.
-if echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*git\s+(.+\s+)?add\s+(-A|--all|\.(\s|$))'; then
+if grep -Eq '^\s*git\s+(.+\s+)?add\s+(-A|--all|\.(\s|$))' <<<"$COMMAND_SHELL_ONLY"; then
     block "REMINDER: Avoid broad staging commands like 'git add -A', 'git add --all', or 'git add .'.
 These can accidentally include sensitive files (.env, credentials) or large binaries.
 
@@ -802,7 +802,7 @@ fi
 # This is a reminder about index.lock races, not a security control, so stripping
 # quoted strings cannot create a dangerous bypass.
 INDEX_MODIFYING='(add|commit|rm|mv|reset)'
-if echo "$COMMAND_NO_STRINGS" | grep -Eq "git\\s+${INDEX_MODIFYING}\\b.*&&.*git\\s+${INDEX_MODIFYING}\\b"; then
+if grep -Eq "git\\s+${INDEX_MODIFYING}\\b.*&&.*git\\s+${INDEX_MODIFYING}\\b" <<<"$COMMAND_NO_STRINGS"; then
     block "REMINDER: Chaining git commands with '&&' can cause index.lock race conditions.
 The lock file from an index-modifying command (add, commit, rm, mv, reset) may not be
 released before the next command tries to acquire it.
@@ -826,8 +826,8 @@ fi
 # "any `<<` anywhere exempts" clause is kept as-is on the raw command: it is the
 # pre-existing (looser) behaviour and narrowing it here would silently widen the
 # block, which is out of scope for a false-positive fix.
-if echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*git\s+reset\s+--hard' && \
-   ! echo "$COMMAND" | grep -Eq '<<'; then
+if grep -Eq '^\s*git\s+reset\s+--hard' <<<"$COMMAND_SHELL_ONLY" && \
+   ! grep -Eq '<<' <<<"$COMMAND"; then
     block "REMINDER: 'git reset --hard' is destructive and usually unnecessary.
 
 COMMON SCENARIO - Accidentally committed to main, then pushed to a PR branch:
@@ -867,9 +867,9 @@ fi
 # `set -e`, a `PUSH_REFSPEC=$(… grep -oE …)` that finds nothing exits non-zero
 # and aborts the hook, so a guard matching a view the extraction doesn't would
 # turn a false positive into a hook crash.
-if echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*git\s+push\b' && \
-   echo "$COMMAND_SHELL_ONLY" | grep -Eq '(\s-[a-zA-Z]*u[a-zA-Z]*\b|--set-upstream\b)' && \
-   echo "$COMMAND_SHELL_ONLY" | grep -Eq '\sorigin\s+[a-zA-Z0-9._/@-]+:[a-zA-Z0-9._/-]+'; then
+if grep -Eq '^\s*git\s+push\b' <<<"$COMMAND_SHELL_ONLY" && \
+   grep -Eq '(\s-[a-zA-Z]*u[a-zA-Z]*\b|--set-upstream\b)' <<<"$COMMAND_SHELL_ONLY" && \
+   grep -Eq '\sorigin\s+[a-zA-Z0-9._/@-]+:[a-zA-Z0-9._/-]+' <<<"$COMMAND_SHELL_ONLY"; then
     PUSH_REFSPEC=$(echo "$COMMAND_SHELL_ONLY" | grep -oE 'origin\s+[a-zA-Z0-9._/@-]+:[a-zA-Z0-9._/-]+' | awk '{print $2}')
     PUSH_SRC=${PUSH_REFSPEC%%:*}
     PUSH_DST=${PUSH_REFSPEC#*:}
@@ -888,7 +888,7 @@ The -u flag is only correct when local and remote branch names match:
 fi
 
 # Check for piped execution from network (curl/wget piped to shell)
-if echo "$COMMAND" | grep -Eq '(curl|wget)\s+.*\|\s*(bash|sh|zsh|sudo)'; then
+if grep -Eq '(curl|wget)\s+.*\|\s*(bash|sh|zsh|sudo)' <<<"$COMMAND"; then
     block "REMINDER: Piping network content directly to a shell is dangerous.
 Instead:
 1. Download the script first: curl -o script.sh <url>
@@ -899,14 +899,14 @@ This prevents executing untrusted code blindly."
 fi
 
 # Check for fork bombs and similar recursive patterns
-if echo "$COMMAND" | grep -Eq ':\(\)\s*\{.*\|.*&\s*\}\s*;' || \
-   echo "$COMMAND" | grep -Eq 'bomb\(\)\s*\{.*bomb.*bomb' || \
-   echo "$COMMAND" | grep -Eq '\bwhile\s+true.*fork\b'; then
+if grep -Eq ':\(\)\s*\{.*\|.*&\s*\}\s*;' <<<"$COMMAND" || \
+   grep -Eq 'bomb\(\)\s*\{.*bomb.*bomb' <<<"$COMMAND" || \
+   grep -Eq '\bwhile\s+true.*fork\b' <<<"$COMMAND"; then
     block "REMINDER: This command contains a fork bomb or recursive process pattern that will consume all system resources."
 fi
 
 # Check for chmod 777 (overly permissive)
-if echo "$COMMAND" | grep -Eq 'chmod\s+(-R\s+)?777\b'; then
+if grep -Eq 'chmod\s+(-R\s+)?777\b' <<<"$COMMAND"; then
     block "REMINDER: 'chmod 777' grants read/write/execute to everyone — this is a security risk.
 Use more restrictive permissions:
 - chmod 755 for directories and executables (owner: rwx, others: rx)
@@ -915,7 +915,7 @@ Use more restrictive permissions:
 fi
 
 # Check for writes to block devices
-if echo "$COMMAND" | grep -Eq '>\s*/dev/(sd|hd|nvme|vd|xvd)[a-z]'; then
+if grep -Eq '>\s*/dev/(sd|hd|nvme|vd|xvd)[a-z]' <<<"$COMMAND"; then
     block "REMINDER: Writing directly to a block device will destroy the filesystem. This is almost certainly not what you want."
 fi
 

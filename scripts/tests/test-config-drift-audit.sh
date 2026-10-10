@@ -41,7 +41,7 @@ assert() {
     fail_count=$((fail_count + 1))
   fi
 }
-has_line() { printf '%s\n' "$1" | grep -qxF -- "$2" && echo true || echo false; }
+has_line() { grep -qxF -- "$2" <<<"$1" && echo true || echo false; }
 contains() { grep -qF -- "$2" "$1" 2>/dev/null && echo true || echo false; }
 lacks_file() { [ ! -e "$1" ] && echo true || echo false; }
 rc_is() { [ "$1" -eq "$2" ] && echo true || echo false; }

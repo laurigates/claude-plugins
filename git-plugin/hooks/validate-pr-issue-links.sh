@@ -25,7 +25,7 @@ CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
 
 # Guard: only for gh pr create commands
 if [ -z "$COMMAND" ]; then exit 0; fi
-if ! echo "$COMMAND" | grep -qE '(^|\s)gh\s+pr\s+create'; then exit 0; fi
+if ! grep -qE '(^|\s)gh\s+pr\s+create' <<<"$COMMAND"; then exit 0; fi
 
 # Extract body content from --body-file / -F (preferred pattern for multi-line
 # bodies). gh accepts the long form (--body-file <path> or --body-file=<path>)
@@ -35,7 +35,7 @@ if ! echo "$COMMAND" | grep -qE '(^|\s)gh\s+pr\s+create'; then exit 0; fi
 BODY=""
 BODY_FILE=""
 BODY_FILE_SPECIFIED=false
-if echo "$COMMAND" | grep -qE '(^|[[:space:]])(--body-file([= ]|$)|-F)'; then
+if grep -qE '(^|[[:space:]])(--body-file([= ]|$)|-F)' <<<"$COMMAND"; then
     BODY_FILE_SPECIFIED=true
     BODY_FILE=$(echo "$COMMAND" | perl -ne 'if (/(?:--body-file[= ]|-F[= ]?)(\S+)/) { print $1; exit; }' 2>/dev/null || true)
     # "-" is the stdin sentinel and cannot be resolved at PreToolUse time.
@@ -46,7 +46,7 @@ fi
 
 # Fall back to inline --body argument (single-quoted, then double-quoted)
 # Uses -0777 to slurp entire input so multi-line body content is matched correctly
-if [ -z "$BODY" ] && echo "$COMMAND" | grep -qE '\-\-body\b'; then
+if [ -z "$BODY" ] && grep -qE '\-\-body\b' <<<"$COMMAND"; then
     BODY=$(echo "$COMMAND" | perl -0777 -ne "if (/--body '([^']*)'/) { print \$1; }" 2>/dev/null || true)
     if [ -z "$BODY" ]; then
         BODY=$(echo "$COMMAND" | perl -0777 -ne 'if (/--body "([^"]*)"/) { print $1; }' 2>/dev/null || true)
@@ -54,7 +54,7 @@ if [ -z "$BODY" ] && echo "$COMMAND" | grep -qE '\-\-body\b'; then
 fi
 
 # Body already has closing keywords — allow
-if [ -n "$BODY" ] && echo "$BODY" | grep -qiE '\b(closes?|fixes?|resolves?)[: ]+#[0-9]+'; then
+if [ -n "$BODY" ] && grep -qiE '\b(closes?|fixes?|resolves?)[: ]+#[0-9]+' <<<"$BODY"; then
     exit 0
 fi
 
@@ -76,7 +76,7 @@ fi
 # the \b anchor. Unescaping restores the boundary without weakening the regex
 # (which still guards against suffix words like "prefixes"/"discloses").
 COMMAND_UNESCAPED=$(printf '%s' "$COMMAND" | sed 's/\\[nrt]/ /g')
-if echo "$COMMAND_UNESCAPED" | grep -qiE '\b(closes?|fixes?|resolves?)[: ]+#[0-9]+'; then
+if grep -qiE '\b(closes?|fixes?|resolves?)[: ]+#[0-9]+' <<<"$COMMAND_UNESCAPED"; then
     exit 0
 fi
 
