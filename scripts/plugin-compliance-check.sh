@@ -1532,9 +1532,17 @@ check_skill_body() {
     # without saying so — github-pr-title called it "Optional" — and on the
     # golden-set sweep opus WITH git-commit loaded wrote a scopeless
     # `docs: ...` subject while its own no-skill baseline wrote `docs(readme):`.
-    if { [ "$skill_name" = "git-commit" ] || [ "$skill_name" = "github-pr-title" ]; } && [ "$plugin" = "git-plugin" ]; then
+    # #2774 extended the pin to the three other git-plugin skills that show a
+    # `type(scope)` template (git-commit-workflow, git-pr, git-api-pr) — outside
+    # the canary set, so the #2690 fix had left them stating no requirement.
+    local scope_pinned
+    case "$skill_name" in
+      git-commit|github-pr-title|git-commit-workflow|git-pr|git-api-pr) scope_pinned=true ;;
+      *) scope_pinned=false ;;
+    esac
+    if [ "$scope_pinned" = true ] && [ "$plugin" = "git-plugin" ]; then
       if ! grep -qF 'The scope is required' "$skill_file"; then
-        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must state 'The scope is required' (house convention is type(scope): subject — #2667)")
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must state 'The scope is required' (house convention is type(scope): subject — #2667, #2774)")
         has_errors=true
       fi
     fi
