@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.4](https://github.com/laurigates/claude-plugins/compare/codebase-attributes-plugin-v1.3.3...codebase-attributes-plugin-v1.3.4) (2026-10-10)
+
+
+### Performance
+
+* **skills:** allow Haiku 5.5 within measured limits and run mechanical skills on it ([#3019](https://github.com/laurigates/claude-plugins/issues/3019)) ([21a20f2](https://github.com/laurigates/claude-plugins/commit/21a20f2c8157bdc22ed9ed2d9fb608c9d9136230))
+
 ## [1.3.3](https://github.com/laurigates/claude-plugins/compare/codebase-attributes-plugin-v1.3.2...codebase-attributes-plugin-v1.3.3) (2026-10-10)
 
 

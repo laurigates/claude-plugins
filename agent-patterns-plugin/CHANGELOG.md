@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.50.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.49.4...agent-patterns-plugin-v2.50.0) (2026-10-10)
+
+
+### Features
+
+* **agent-patterns-plugin:** scope merge authority per stage and add a context-budget clause to dispatch briefs ([#2990](https://github.com/laurigates/claude-plugins/issues/2990)) ([0f099b3](https://github.com/laurigates/claude-plugins/commit/0f099b3200a2edcf31b4dd1844ddb04f5b3e2527))
+
 ## [2.49.4](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.49.3...agent-patterns-plugin-v2.49.4) (2026-10-07)
 
 
