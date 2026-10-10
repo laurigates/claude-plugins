@@ -371,7 +371,7 @@
       "name": "foundryvtt-plugin",
       "source": "./foundryvtt-plugin",
       "description": "FoundryVTT module lifecycle - scaffold a v13 module (Vite + TS + bun), create + seed the repo, open the gitops adoption PR",
-      "version": "1.3.4",
+      "version": "1.3.5",
       "author": {
         "name": "Lauri Gates"
       },
