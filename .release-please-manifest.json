@@ -35,7 +35,7 @@
   "prose-plugin": "1.4.2",
   "python-plugin": "1.5.9",
   "rust-plugin": "1.7.2",
-  "taskwarrior-plugin": "1.14.7",
+  "taskwarrior-plugin": "1.14.8",
   "terraform-plugin": "1.7.9",
   "testing-plugin": "3.22.1",
   "tools-plugin": "2.13.4",
