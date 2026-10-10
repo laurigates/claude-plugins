@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.38.3](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.38.2...configure-plugin-v1.38.3) (2026-10-10)
+
+
+### Performance
+
+* **skills:** allow Haiku 5.5 within measured limits and run mechanical skills on it ([#3019](https://github.com/laurigates/claude-plugins/issues/3019)) ([21a20f2](https://github.com/laurigates/claude-plugins/commit/21a20f2c8157bdc22ed9ed2d9fb608c9d9136230))
+
+
+### Documentation
+
+* **skills:** point Context-block references at the Context anchor and lower the positional baseline ([#2973](https://github.com/laurigates/claude-plugins/issues/2973)) ([921b3be](https://github.com/laurigates/claude-plugins/commit/921b3be483a0e8f5cc709dc0369eb659b599bbeb))
+
 ## [1.38.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.38.1...configure-plugin-v1.38.2) (2026-10-10)
 
 
