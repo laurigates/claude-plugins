@@ -81,9 +81,9 @@ JSON
 out_a="$(WORKFLOW_PREFLIGHT_NO_FETCH=1 WORKFLOW_PREFLIGHT_FIXTURE="$fix_a" \
   bash "$preflight_script" --home-dir "$home_dir" --project-dir "$work_a" --issue 42)"
 
-echo "$out_a" | grep -q "^EXISTING_PR_STATE=OPEN$" \
+grep -q "^EXISTING_PR_STATE=OPEN$" <<<"$out_a" \
   || fail "(a) expected EXISTING_PR_STATE=OPEN, got:\n$out_a"
-echo "$out_a" | grep -q "^RECOMMENDATION=Open PR #99 exists - continue on that branch or start fresh" \
+grep -q "^RECOMMENDATION=Open PR #99 exists - continue on that branch or start fresh" <<<"$out_a" \
   || fail "(a) expected continue-or-start-fresh recommendation, got:\n$out_a"
 pass "(a) open PR + clean tree -> continue-or-start-fresh"
 rm -rf "$root_a" "$fix_a"
@@ -106,9 +106,9 @@ git -C "$work_b" checkout -q feature/issue-42
 out_b="$(WORKFLOW_PREFLIGHT_NO_FETCH=1 \
   bash "$preflight_script" --home-dir "$home_dir" --project-dir "$work_b")"
 
-echo "$out_b" | grep -q "^CONFLICTS_DETECTED=true$" \
+grep -q "^CONFLICTS_DETECTED=true$" <<<"$out_b" \
   || fail "(b) expected CONFLICTS_DETECTED=true, got:\n$out_b"
-echo "$out_b" | grep -q "^RECOMMENDATION=Resolve conflicts with origin/main" \
+grep -q "^RECOMMENDATION=Resolve conflicts with origin/main" <<<"$out_b" \
   || fail "(b) expected resolve-conflicts recommendation, got:\n$out_b"
 pass "(b) conflicts detected -> resolve-conflicts"
 rm -rf "$root_b"
@@ -126,11 +126,11 @@ printf 'base\nfeature line\nuncommitted change\n' > "${work_c}/file.txt"
 out_c="$(WORKFLOW_PREFLIGHT_NO_FETCH=1 \
   bash "$preflight_script" --home-dir "$home_dir" --project-dir "$work_c")"
 
-echo "$out_c" | grep -q "^UNCOMMITTED_CHANGES=true$" \
+grep -q "^UNCOMMITTED_CHANGES=true$" <<<"$out_c" \
   || fail "(c) expected UNCOMMITTED_CHANGES=true, got:\n$out_c"
-echo "$out_c" | grep -qE "^STASH_COUNT=[1-9]" \
+grep -qE "^STASH_COUNT=[1-9]" <<<"$out_c" \
   || fail "(c) expected STASH_COUNT>=1, got:\n$out_c"
-echo "$out_c" | grep -q "^RECOMMENDATION=Commit or stash uncommitted changes before branching$" \
+grep -q "^RECOMMENDATION=Commit or stash uncommitted changes before branching$" <<<"$out_c" \
   || fail "(c) expected commit-or-stash recommendation, got:\n$out_c"
 pass "(c) uncommitted + stash present -> commit-or-stash"
 rm -rf "$root_c"
@@ -146,15 +146,15 @@ git -C "$work_d" checkout -q main
 out_d="$(WORKFLOW_PREFLIGHT_NO_FETCH=1 \
   bash "$preflight_script" --home-dir "$home_dir" --project-dir "$work_d")"
 
-echo "$out_d" | grep -q "^EXISTING_PR_STATE=NONE$" \
+grep -q "^EXISTING_PR_STATE=NONE$" <<<"$out_d" \
   || fail "(d) expected EXISTING_PR_STATE=NONE, got:\n$out_d"
-echo "$out_d" | grep -q "^UNCOMMITTED_CHANGES=false$" \
+grep -q "^UNCOMMITTED_CHANGES=false$" <<<"$out_d" \
   || fail "(d) expected clean tree, got:\n$out_d"
-echo "$out_d" | grep -q "^CONFLICTS_DETECTED=false$" \
+grep -q "^CONFLICTS_DETECTED=false$" <<<"$out_d" \
   || fail "(d) expected no conflicts, got:\n$out_d"
-echo "$out_d" | grep -q "^RECOMMENDATION=Ready to proceed$" \
+grep -q "^RECOMMENDATION=Ready to proceed$" <<<"$out_d" \
   || fail "(d) expected ready-to-proceed recommendation, got:\n$out_d"
-echo "$out_d" | grep -q "^STATUS=OK$" \
+grep -q "^STATUS=OK$" <<<"$out_d" \
   || fail "(d) expected STATUS=OK on a clean fresh tree, got:\n$out_d"
 pass "(d) fresh branch, no PR, clean -> ready-to-proceed"
 rm -rf "$root_d"

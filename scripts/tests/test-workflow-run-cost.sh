@@ -38,11 +38,11 @@ assert() {
 }
 # Single-line needles only: grep -F splits a multi-line pattern into one
 # pattern per line, and an empty line matches everything.
-contains() { printf '%s' "$1" | grep -qF -- "$2" && echo true || echo false; }
-lacks()    { printf '%s' "$1" | grep -qF -- "$2" && echo false || echo true; }
+contains() { grep -qF -- "$2" <<<"$1" && echo true || echo false; }
+lacks()    { grep -qF -- "$2" <<<"$1" && echo false || echo true; }
 # has_line: a WHOLE-line match, so the header's MAX_TURNS= is not satisfied by
 # a row's "MAX_TURNS=60 NEAR_CAP=..." and NEAR_CAP_RUNS=2 by no other key.
-has_line() { printf '%s\n' "$1" | grep -qxF -- "$2" && echo true || echo false; }
+has_line() { grep -qxF -- "$2" <<<"$1" && echo true || echo false; }
 
 for f in "$SUBJECT" "$GOLDEN" "$OVER" "$NOACCT"; do
   [ -f "$f" ] || { echo "FAIL: missing $f" >&2; fail=$((fail + 1)); }

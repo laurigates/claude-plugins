@@ -57,15 +57,14 @@ flowchart TD
     EX -.->|idempotent<br/>check state| LIST
     EX -.->|format drift| UPG
 
-    subgraph VALID["Validation hooks (PreToolUse)"]
+    subgraph VALID["Validation hooks"]
         direction TB
-        VA[validate-adr-frontmatter.sh]
-        VP[validate-prp-frontmatter.sh]
-        CR[check-prp-readiness.sh<br/>confidence >= 7/10]
+        VA[validate-frontmatter.sh<br/>PostToolUse warn + pre-commit]
+        CR[check-prp-readiness.sh<br/>PreToolUse, confidence >= 7/10]
     end
 
-    ADR -.->|on Write/Edit| VA
-    PRP -.->|on Write/Edit| VP
+    ADR -.->|on Write/Edit/Bash| VA
+    PRP -.->|on Write/Edit/Bash| VA
     RUN -.->|on Skill invoke| CR
 
     classDef router fill:#4a9eff,stroke:#1a6ecc,color:#fff
@@ -74,7 +73,7 @@ flowchart TD
     classDef prompt fill:#dda0dd,stroke:#8b5a8b,color:#000
 
     class EX router
-    class DPL,DR,DT,LIST,VA,VP,CR,SA check
+    class DPL,DR,DT,LIST,VA,CR,SA check
     class INIT,PRD,ADR,PRP,WO,RUN,TRACK,SID,SYNC,PROM,UPG,SR fix
 ```
 
@@ -107,5 +106,5 @@ Dotted arrows are optional side-paths and cross-cutting concerns.
 | Cross-cutting: listing/status | `blueprint-docs-list`, `blueprint-adr-list`, `blueprint-status` |
 | Cross-cutting: migration | `blueprint-upgrade`, `blueprint-migration`, `blueprint-workspace-scan` |
 | Cross-cutting: docs hygiene | `blueprint-docs-currency` (advisory: same-commit code+docs landing) |
-| Validation | `validate-prp-frontmatter.sh`, `validate-adr-frontmatter.sh`, `check-prp-readiness.sh` |
+| Validation | `validate-frontmatter.sh` (via `blueprint-doc-change.sh` and the `blueprint-doc-schemas` pre-commit hook), `check-prp-readiness.sh` |
 | Story-audit loop | `blueprint-story-audit` (read-only audit), `blueprint-story-reconcile` (PRD-only mutate) |

@@ -1,6 +1,6 @@
 ---
 created: 2026-01-18
-modified: 2026-08-08
+modified: 2026-10-09
 reviewed: 2026-08-08
 requires: bash 5+
 paths:
@@ -131,6 +131,26 @@ This is distinct from hook scripts, which *should* fail fast — the rule is
 **match the flags to the script's job**: fail-fast tools want `-e`; a diagnostic
 that emits its own PASS/WARN/FAIL per section wants to run every section, so drop
 `-e`/`pipefail` and guard only unset vars.
+
+#### `pipefail` + `printf "$var" | grep -q` turns a hit into a miss
+
+The same SIGPIPE, inverted: `grep -q` exits on its **first match**, so the
+`printf`/`echo` feeding it gets a closed pipe on its next write, and `pipefail`
+reports the pipeline as failed. The assertion reads a correct match as a miss,
+intermittently (#2959: `printf: write error: Broken pipe`). Read the captured
+value from a here-string, which has no writer process:
+
+```bash
+if printf '%s' "$out" | grep -qF "$rel"; then   # Wrong under pipefail: flaky
+if grep -qF "$rel" <<<"$out"; then              # Right
+```
+
+`scripts/lint-shell-scripts.sh` Check 6 errors on the first form in any test
+suite that enables `pipefail`: a `*.sh` directly inside a `tests/` directory
+(`scripts/tests/`, `<plugin>/scripts/tests/`,
+`<plugin>/skills/<skill>/scripts/tests/`, `experiments/<x>/tests/`) or a
+`<plugin>/hooks/test-*.sh`. Non-test scripts are not linted for it, but take the
+same fix: in a hook, the race turns a block into a silent pass.
 
 #### `set -e` + `OUT=$(cmd-that-exits-nonzero)` aborts *before* the next line
 

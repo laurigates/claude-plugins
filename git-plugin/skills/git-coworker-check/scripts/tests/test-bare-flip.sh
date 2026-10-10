@@ -11,7 +11,7 @@
 # raise `bare_flip_suspected` so a session can notice the corruption and recover
 # instead of misreading the cascade of git failures as its own fault.
 #
-# Run: bash git-plugin/skills/git-coworker-check/scripts/tests/test_bare_flip.sh
+# Run: bash git-plugin/skills/git-coworker-check/scripts/tests/test-bare-flip.sh
 
 set -uo pipefail
 
@@ -24,7 +24,7 @@ assert_contains() {
   local label="$1"
   local out="$2"
   local needle="$3"
-  if printf '%s\n' "$out" | grep -qF -- "$needle"; then
+  if grep -qF -- "$needle" <<<"$out"; then
     printf 'PASS %s\n' "$label"
     pass=$((pass + 1))
   else
@@ -38,7 +38,7 @@ assert_not_contains() {
   local label="$1"
   local out="$2"
   local needle="$3"
-  if printf '%s\n' "$out" | grep -qF -- "$needle"; then
+  if grep -qF -- "$needle" <<<"$out"; then
     printf 'FAIL %s: expected output to NOT contain %s\n' "$label" "$needle"
     printf -- '--- output ---\n%s\n--- end ---\n' "$out"
     fail=$((fail + 1))

@@ -321,7 +321,11 @@ The runner implements the `task_registry` `auto_run`/`schedule` contract:
 a task runs only when `enabled: true` **and** `auto_run: true` **and** its
 schedule interval has elapsed since `last_completed_at` (written back with
 `last_result` and `stats.runs`). `on-change` tasks are event-driven
-(PostToolUse hooks) and `on-demand` tasks never auto-run. Work-order creation
+(PostToolUse hooks); a deterministic `on-change` task (`sync-ids`) is also
+reconciled on every run, because the on-change signal misses edits made outside
+Claude Code and Bash edits outside the recorded change list. A reconcile that
+changes nothing leaves the manifest byte-identical. `on-demand` tasks never
+auto-run. Work-order creation
 stays human-only at every level — automation may at most *draft* proposals
 (GitHub issues labeled `work-order-draft`) that a human promotes via
 `/blueprint:work-order --from-issue N`.
@@ -347,16 +351,17 @@ the ADR schema spelled the back-reference `superseded_by` while the hook read
 
 | Schema | Required frontmatter | Required sections |
 |---|---|---|
-| [`adr.schema.json`](schemas/adr.schema.json) | `id` (`ADR-NNNN`), `status`, `created`, `modified` | Context, Decision, Consequences — ADR-0023 dropped `Options Considered` and `Related ADRs` to optional, and **nothing enforces them**: `/blueprint:adr-validate` checks relationships and numbering, not sections |
+| [`adr.schema.json`](schemas/adr.schema.json) | `id` (`ADR-NNN` or `ADR-NNNN`, three or more digits), `status`, `created`, `modified` | Context, Decision, Consequences — ADR-0023 dropped `Options Considered` and `Related ADRs` to optional, and **nothing enforces them**: `/blueprint:adr-validate` checks relationships and numbering, not sections |
 | [`prd.schema.json`](schemas/prd.schema.json) | `id` (`PRD-NNN`), `status`, `created`, `modified` | none — the template governs structure |
 | [`prp.schema.json`](schemas/prp.schema.json) | `id` (`PRP-NNN`), `status`, `created`, `modified`, `reviewed`, `confidence`, `domain` | Context Framing, AI Documentation, Implementation Blueprint, Test Strategy, Validation Gates, Success Criteria |
 
 `scripts/check-schema.py` is the one engine. It projects a markdown document
 into `{frontmatter, sections}` so *section* requirements live in the schema too,
 rather than in a grep loop, and validates plain JSON (the feature tracker) with
-`--json-file`. The three `validate-*-frontmatter.sh` hooks are thin wrappers
-over `validate-frontmatter.sh` and declare no field list;
-`scripts/tests/test-check-schema.sh` fails the build if one reappears.
+`--json-file`. `hooks/validate-frontmatter.sh` is its one caller, used by the
+PostToolUse dispatcher and the `blueprint-doc-schemas` pre-commit hook, and
+declares no field list; `scripts/tests/test-check-schema.sh` fails the build if
+one reappears.
 
 **Frontmatter must start at line 1.** The pre-reconciliation extraction accepted
 a `---` block anywhere in the file, and every ADR in this repo put its metadata
@@ -574,21 +579,53 @@ renamed, or deleted.
 
 ## Hooks
 
-### Validation Hooks (command)
+### Document Hooks (command)
 
-| Hook | Event | Target | Purpose |
-|------|-------|--------|---------|
-| `validate-prp-frontmatter.sh` | PreToolUse | `Write\|Edit(docs/prps/**)` | Structural validation of PRP frontmatter |
-| `validate-adr-frontmatter.sh` | PreToolUse | `Write\|Edit(docs/adrs/**)` | Structural validation of ADR frontmatter |
-| `check-prp-readiness.sh` | PreToolUse | `Skill(prp-execute)` | Confidence score, required sections, file references |
+| Hook | Event | Matcher | Purpose |
+|------|-------|---------|---------|
+| `blueprint-doc-change.sh` | PostToolUse | `Write\|Edit\|Bash` | Dispatcher: for every changed `docs/**` path, refresh the `id_registry` entry (`auto-sync-id-registry.sh`), refresh the feature tracker (`sync-feature-tracker.sh`, autonomy ≥ 1), and schema-check PRD/ADR/PRP documents (`validate-frontmatter.sh`) |
+| `check-prp-readiness.sh` | PreToolUse | `Skill` | Blocks `/blueprint:prp-execute` on a PRP below confidence 7/10, with missing sections, or with broken references; every other skill passes |
 
-### Quality Hooks (agent)
+**Why one dispatcher.** A hook `matcher` is tested against the tool *name*
+only. The former `Write(docs/adrs/**)`-style matchers were invalid regular
+expressions that never fired, so none of these hooks had ever run; and a
+`Write|Edit` hook never sees an edit made through Bash, which is how Claude
+Code edits files in auto mode. The dispatcher reads the changed paths from
+either payload — `tool_input.file_path` for Write/Edit, or
+`tool_response.bashEditDiff.changedFiles` for Bash (Claude Code 2.1.269+,
+best-effort) — and filters them itself. `scripts/check-hook-matchers.sh` keeps
+permission-rule syntax out of every plugin's matchers.
 
-| Hook | Event | Target | Purpose |
-|------|-------|--------|---------|
-| PRP Content Quality | PreToolUse | `Skill(prp-execute)` | LLM-powered evaluation of PRP content quality before execution |
+**Schema checks warn; the commit gate is pre-commit.** A schema ERROR in a
+document just written comes back to Claude as PostToolUse `additionalContext`.
+It does not block: the edit has already happened, and a PreToolUse block never
+sees a Bash edit. The `blueprint-doc-schemas` hook in this repository's
+`.pre-commit-hooks.yaml` fails the commit instead. Add it to a consumer repo's
+`.pre-commit-config.yaml` (it needs `uv` on `PATH`, and fails rather than pass
+when `uv` is missing):
 
-The PRP content quality agent hook runs alongside the structural command hook. The command hook validates structure (confidence >= 7/10, required sections, file references). The agent hook evaluates content quality (specificity of requirements, testability of acceptance criteria, edge case coverage).
+```yaml
+- repo: https://github.com/laurigates/claude-plugins
+  rev: blueprint-plugin-vX.Y.Z
+  hooks:
+    - id: blueprint-doc-schemas
+```
+
+pre-commit checks only the staged files, so a repository whose existing
+documents predate the schemas fails on the first commit that touches each one.
+Run `pre-commit run blueprint-doc-schemas --all-files` before adopting it to
+see the backlog.
+
+**Misses are reconciled at session start.** The Bash change list can miss a
+file (git-ignored paths are never listed, and other permission modes record it
+only with `bashEditDiffEnabled`). At `automation.autonomy_level` ≥ 1 the
+SessionStart autorun re-registers every document, writing the manifest only
+when the registry actually changed.
+
+The former PRP content-quality **agent** hook is gone. It was registered on
+`Skill(prp-execute)` and never ran; on the bare `Skill` matcher it would start an
+agent for every skill call, and a hook `if` condition does not match Skill
+specifiers.
 
 ### Behavioral Cues (command)
 
@@ -596,7 +633,7 @@ The PRP content quality agent hook runs alongside the structural command hook. T
 |------|-------|--------|---------|
 | `blueprint-structural-cue.sh` | PostToolUse | `Write` / `Edit` | Once-per-session cue to check blueprint context after an architecture-affecting edit |
 
-Implements the first worked example from [ADR-0017](../docs/adrs/0017-hook-based-behavioral-cues-for-plugin-utilization.md). When an `Edit`/`Write` touches a plugin/marketplace manifest or adds a public-API (`export`/`pub`) line, the hook emits a one-line cue suggesting `/blueprint:derive-plans` or `/blueprint:adr-validate`. It is a cue, not a gate: the edit has already happened, and to bound transcript-replay cost it fires **at most once per session** (keyed on `~/.cache/blueprint-structural-cue/<session_id>`). Edits under `docs/adrs/**` and `docs/prds/**` are excluded — the validation hooks above already cover those. Active by default; set `BLUEPRINT_SKIP_HOOKS=1` to disable.
+Implements the first worked example from [ADR-0017](../docs/adrs/0017-hook-based-behavioral-cues-for-plugin-utilization.md). When an `Edit`/`Write` touches a plugin/marketplace manifest or adds a public-API (`export`/`pub`) line, the hook emits a one-line cue suggesting `/blueprint:derive-plans` or `/blueprint:adr-validate`. It is a cue, not a gate: the edit has already happened, and to bound transcript-replay cost it fires **at most once per session** (keyed on `~/.cache/blueprint-structural-cue/<session_id>`). Edits under `docs/adrs/**` and `docs/prds/**` are excluded — the document hooks above already cover those. Active by default; set `BLUEPRINT_SKIP_HOOKS=1` to disable.
 
 **Scope of the code-shaped signals (issue #2336).** The payload-grep signals (export lines, TS `export interface`/`type`, exported Go/Rust types, route registration) apply **only to source-code extensions** — `js jsx mjs cjs ts tsx mts cts rs py pyi go`. Without that guard they fired on prose: an English sentence containing "export " tripped the public-API cue in a Markdown file, and `^[+[:space:]]*pub ` matches a list item beginning with the word "pub". The path/basename signals (manifests, `*.proto`, `*.graphql`, `schema.prisma`, `openapi.*`) stay extension-free — they identify themselves. The hook also exits early for files in the harness's per-session scratch tree (`/tmp/claude-*/…`, `/private/tmp/claude-*/…`, `/var/folders/*/claude-*/…`), where `/blueprint:derive-plans` can never be actionable; a plain `/tmp/foo.ts` still gets the cue.
 

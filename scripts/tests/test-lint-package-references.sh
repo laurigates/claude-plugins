@@ -74,7 +74,9 @@ run_case() {
 
   case "$expect" in
     flag)
-      if [ "$status" -ne 0 ] && printf '%s' "$out" | grep -qF "$rel"; then
+      # Here-string, not `printf | grep -q`: grep -q exits on the first match,
+      # printf takes SIGPIPE, and pipefail turns a hit into a flaky miss.
+      if [ "$status" -ne 0 ] && grep -qF "$rel" <<<"$out"; then
         ok "$label"
       else
         bad "$label" "expected a finding naming $rel, linter exited $status: $out"

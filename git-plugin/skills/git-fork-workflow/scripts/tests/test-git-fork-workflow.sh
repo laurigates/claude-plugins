@@ -51,9 +51,9 @@ r1="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }; make_repo "$r1"
 set_ref "$r1" upstream/main
 set_ref "$r1" origin/main
 out1="$(bash "$fork_script" --project-dir "$r1")"
-echo "$out1" | grep -q "^BEHIND=0$" || fail "case1 expected BEHIND=0, got:\n$out1"
-echo "$out1" | grep -q "^AHEAD=0$" || fail "case1 expected AHEAD=0, got:\n$out1"
-echo "$out1" | grep -q "^RECOMMENDED_STRATEGY=in-sync$" \
+grep -q "^BEHIND=0$" <<<"$out1" || fail "case1 expected BEHIND=0, got:\n$out1"
+grep -q "^AHEAD=0$" <<<"$out1" || fail "case1 expected AHEAD=0, got:\n$out1"
+grep -q "^RECOMMENDED_STRATEGY=in-sync$" <<<"$out1" \
   || fail "case1 expected in-sync, got:\n$(echo "$out1" | grep STRATEGY)"
 pass "in-sync fork (0 behind, 0 ahead) recommends in-sync"
 rm -rf "$r1"
@@ -66,9 +66,9 @@ set_ref "$r2" upstream/main   # upstream pinned at base
 echo "fork-work" > "$r2/fork.txt"; git -C "$r2" add fork.txt; git -C "$r2" commit -q -m "feat: fork only"
 set_ref "$r2" origin/main     # origin one ahead of upstream
 out2="$(bash "$fork_script" --project-dir "$r2")"
-echo "$out2" | grep -q "^BEHIND=0$" || fail "case2 expected BEHIND=0, got:\n$out2"
-echo "$out2" | grep -q "^AHEAD=1$" || fail "case2 expected AHEAD=1, got:\n$out2"
-echo "$out2" | grep -q "^RECOMMENDED_STRATEGY=ahead-only$" \
+grep -q "^BEHIND=0$" <<<"$out2" || fail "case2 expected BEHIND=0, got:\n$out2"
+grep -q "^AHEAD=1$" <<<"$out2" || fail "case2 expected AHEAD=1, got:\n$out2"
+grep -q "^RECOMMENDED_STRATEGY=ahead-only$" <<<"$out2" \
   || fail "case2 expected ahead-only, got:\n$(echo "$out2" | grep STRATEGY)"
 pass "ahead-only fork (0 behind, 1 ahead) recommends ahead-only"
 rm -rf "$r2"
@@ -81,9 +81,9 @@ set_ref "$r3" origin/main     # origin pinned at base
 echo "up-work" > "$r3/up.txt"; git -C "$r3" add up.txt; git -C "$r3" commit -q -m "upstream new"
 set_ref "$r3" upstream/main   # upstream one ahead of origin
 out3="$(bash "$fork_script" --project-dir "$r3")"
-echo "$out3" | grep -q "^BEHIND=1$" || fail "case3 expected BEHIND=1, got:\n$out3"
-echo "$out3" | grep -q "^AHEAD=0$" || fail "case3 expected AHEAD=0, got:\n$out3"
-echo "$out3" | grep -q "^RECOMMENDED_STRATEGY=fast-forward$" \
+grep -q "^BEHIND=1$" <<<"$out3" || fail "case3 expected BEHIND=1, got:\n$out3"
+grep -q "^AHEAD=0$" <<<"$out3" || fail "case3 expected AHEAD=0, got:\n$out3"
+grep -q "^RECOMMENDED_STRATEGY=fast-forward$" <<<"$out3" \
   || fail "case3 expected fast-forward, got:\n$(echo "$out3" | grep STRATEGY)"
 pass "behind-only fork (1 behind, 0 ahead) recommends fast-forward"
 rm -rf "$r3"
@@ -100,9 +100,9 @@ git -C "$r4" reset -q --hard HEAD~1
 echo "fork" > "$r4/fork.txt"; git -C "$r4" add fork.txt; git -C "$r4" commit -q -m "fork new"
 set_ref "$r4" origin/main
 out4="$(bash "$fork_script" --project-dir "$r4")"
-echo "$out4" | grep -q "^BEHIND=1$" || fail "case4 expected BEHIND=1, got:\n$out4"
-echo "$out4" | grep -q "^AHEAD=1$" || fail "case4 expected AHEAD=1, got:\n$out4"
-echo "$out4" | grep -q "^RECOMMENDED_STRATEGY=rebase$" \
+grep -q "^BEHIND=1$" <<<"$out4" || fail "case4 expected BEHIND=1, got:\n$out4"
+grep -q "^AHEAD=1$" <<<"$out4" || fail "case4 expected AHEAD=1, got:\n$out4"
+grep -q "^RECOMMENDED_STRATEGY=rebase$" <<<"$out4" \
   || fail "case4 expected rebase, got:\n$(echo "$out4" | grep STRATEGY)"
 pass "diverged fork (1 behind, 1 ahead) recommends rebase"
 rm -rf "$r4"
@@ -116,17 +116,17 @@ git -C "$r5" config user.email "t@e.com"; git -C "$r5" config user.name "T"
 git -C "$r5" config commit.gpgsign false
 echo x > "$r5/x"; git -C "$r5" add x; git -C "$r5" commit -q -m "base"
 out5="$(bash "$fork_script" --project-dir "$r5")"
-echo "$out5" | grep -q "^IS_FORK=false$" || fail "case5 expected IS_FORK=false, got:\n$out5"
-echo "$out5" | grep -q "^RECOMMENDED_STRATEGY=not-a-fork$" \
+grep -q "^IS_FORK=false$" <<<"$out5" || fail "case5 expected IS_FORK=false, got:\n$out5"
+grep -q "^RECOMMENDED_STRATEGY=not-a-fork$" <<<"$out5" \
   || fail "case5 expected not-a-fork, got:\n$(echo "$out5" | grep STRATEGY)"
 pass "repo without upstream remote reports IS_FORK=false / not-a-fork"
 rm -rf "$r5"
 
 # Trailer invariants on a representative run.
-echo "$out2" | grep -q "^=== GIT FORK WORKFLOW ===$" || fail "missing section header"
-echo "$out2" | grep -q "^=== END GIT FORK WORKFLOW ===$" || fail "missing section footer"
-echo "$out2" | grep -q "^STATUS=" || fail "missing STATUS trailer"
-echo "$out2" | grep -q "^ISSUE_COUNT=" || fail "missing ISSUE_COUNT trailer"
+grep -q "^=== GIT FORK WORKFLOW ===$" <<<"$out2" || fail "missing section header"
+grep -q "^=== END GIT FORK WORKFLOW ===$" <<<"$out2" || fail "missing section footer"
+grep -q "^STATUS=" <<<"$out2" || fail "missing STATUS trailer"
+grep -q "^ISSUE_COUNT=" <<<"$out2" || fail "missing ISSUE_COUNT trailer"
 pass "structured-output trailers present"
 
 echo "ALL TESTS PASSED"

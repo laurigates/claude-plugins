@@ -1,5 +1,40 @@
 # Changelog
 
+## [3.46.12](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.11...blueprint-plugin-v3.46.12) (2026-10-10)
+
+
+### Bug Fixes
+
+* **scripts:** sweep printf|echo "$var" | grep -q from every pipefail suite and widen lint Check 6 ([#2996](https://github.com/laurigates/claude-plugins/issues/2996)) ([32f124d](https://github.com/laurigates/claude-plugins/commit/32f124d41f428967305ef6beb564fd8ebc1f3279))
+
+## [3.46.11](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.10...blueprint-plugin-v3.46.11) (2026-10-10)
+
+
+### Bug Fixes
+
+* **scripts:** read captured output from here-strings so grep -q cannot SIGPIPE a pipefail test ([#2992](https://github.com/laurigates/claude-plugins/issues/2992)) ([2e2865c](https://github.com/laurigates/claude-plugins/commit/2e2865c782f1b712c064b06ef8d871f2b1a1caa6))
+
+## [3.46.10](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.9...blueprint-plugin-v3.46.10) (2026-10-10)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** accept three-digit ADR ids in adr.schema.json ([#3007](https://github.com/laurigates/claude-plugins/issues/3007)) ([eaf8687](https://github.com/laurigates/claude-plugins/commit/eaf8687cb5e7d4d044110008884bc0c326094732)), closes [#3000](https://github.com/laurigates/claude-plugins/issues/3000)
+
+## [3.46.9](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.8...blueprint-plugin-v3.46.9) (2026-10-09)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** fire document hooks for absolute paths and Bash edits ([#2999](https://github.com/laurigates/claude-plugins/issues/2999)) ([0c32046](https://github.com/laurigates/claude-plugins/commit/0c32046bcae2a15cf6970f9fb7dfef95e6e1948b))
+
+## [3.46.8](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.7...blueprint-plugin-v3.46.8) (2026-10-09)
+
+
+### Bug Fixes
+
+* **hooks-plugin,blueprint-plugin,configure-plugin,evaluate-plugin,git-plugin,health-plugin,taskwarrior-plugin:** find drift-protocol.sh in the versioned plugin cache ([#2997](https://github.com/laurigates/claude-plugins/issues/2997)) ([45f8cf5](https://github.com/laurigates/claude-plugins/commit/45f8cf5534c8e00e5baadabb5c5f6fa5ec714206))
+
 ## [3.46.7](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.6...blueprint-plugin-v3.46.7) (2026-10-07)
 
 

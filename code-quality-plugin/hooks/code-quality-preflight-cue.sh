@@ -213,7 +213,7 @@ case "$cq_base_name" in
     *)                 cq_symbol_re='^[+-]?[[:space:]]*(export |export default|module\.exports|pub |public |def |class |func )' ;;
 esac
 if [ "$cq_is_structural" -eq 0 ] && \
-    printf '%s' "$cq_payload" | grep -Eq "$cq_symbol_re"; then
+    grep -Eq "$cq_symbol_re" <<<"$cq_payload"; then
     cq_is_structural=1
 fi
 

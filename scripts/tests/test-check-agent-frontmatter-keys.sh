@@ -168,7 +168,7 @@ t="$(new_tree c)"; write_agent "$t" demo-plugin worker "$CLEAN_FM
 context: fork"
 out="$(run "$t")"; rc=$?
 assert "C: context: fork exits 1" "$([ "$rc" -eq 1 ] && echo true || echo false)"
-assert "C: REASON= names the worst finding" "$(printf '%s\n' "$out" | grep -qE '^REASON=skill_only_key: .{1,}$' && echo true || echo false)"
+assert "C: REASON= names the worst finding" "$(grep -qE '^REASON=skill_only_key: .{1,}$' <<<"$out" && echo true || echo false)"
 assert "C: context: fork is reported as a skill-only key" \
   "$(has_text "$out" "TYPE=skill_only_key FILE=demo-plugin/agents/worker.md KEY=context ")"
 assert "C: the message points at the runtime fork subagent type" \

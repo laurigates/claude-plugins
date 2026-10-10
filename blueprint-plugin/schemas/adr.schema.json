@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "blueprint-plugin/adr.schema.json",
   "title": "Architecture Decision Record",
-  "description": "The single source of truth for ADR structure. hooks/validate-adr-frontmatter.sh is a thin caller of scripts/check-schema.py against this file and declares no field list of its own; scripts/tests/test-check-schema.sh fails if it grows one (its `no field lists:` assertions). The validated object is built by check-schema.py: `frontmatter` is the parsed line-1 YAML block, `sections` maps each `## ` heading text to its ordinal.",
+  "description": "The single source of truth for ADR structure. hooks/validate-frontmatter.sh is a thin caller of scripts/check-schema.py against this file and declares no field list of its own; scripts/tests/test-check-schema.sh fails if it grows one (its `no field lists:` assertions). The validated object is built by check-schema.py: `frontmatter` is the parsed line-1 YAML block, `sections` maps each `## ` heading text to its ordinal.",
   "x-blueprint-doc-kind": "adr",
   "x-blueprint-path-glob": "docs/adrs/**",
   "type": "object",
@@ -25,8 +25,8 @@
       "properties": {
         "id": {
           "type": "string",
-          "pattern": "^ADR-[0-9]{4,}$",
-          "description": "Document ID (ADR-NNNN). Assigned by /blueprint:sync-ids when missing."
+          "pattern": "^ADR-[0-9]{3,}$",
+          "description": "Document ID, three or more digits (ADR-NNN or ADR-NNNN; /blueprint:sync-ids assigns ADR-NNNN when missing). Accepts the same id form as relates-to and as the ADR scripts, which match ADR-NNN-title.md filenames."
         },
         "status": {
           "type": "string",
@@ -92,12 +92,12 @@
         },
         "supersedes": {
           "type": "string",
-          "pattern": "^ADR-[0-9]{4,}$",
+          "pattern": "^ADR-[0-9]{3,}$",
           "description": "ADR this decision replaces. The target must carry the reciprocal `superseded-by`."
         },
         "superseded-by": {
           "type": "string",
-          "pattern": "^ADR-[0-9]{4,}$",
+          "pattern": "^ADR-[0-9]{3,}$",
           "description": "ADR that replaced this decision. Hyphenated to match relates-to / github-issues, which auto-sync-id-registry.sh already parses. The underscore spelling `superseded_by` was the schema's form until the SSOT reconciliation and is rejected below."
         },
         "superseded_by": {
@@ -107,7 +107,7 @@
         },
         "extends": {
           "type": "string",
-          "pattern": "^ADR-[0-9]{4,}$",
+          "pattern": "^ADR-[0-9]{3,}$",
           "description": "ADR this decision builds upon without replacing"
         },
         "relates-to": {

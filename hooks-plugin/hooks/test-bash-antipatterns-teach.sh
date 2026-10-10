@@ -70,7 +70,7 @@ assert_emits() {
         FAIL=$((FAIL + 1))
         return
     fi
-    if echo "$body" | grep -qF "$needle"; then
+    if grep -qF "$needle" <<<"$body"; then
         printf "  PASS: %s\n" "$desc"
         PASS=$((PASS + 1))
     else

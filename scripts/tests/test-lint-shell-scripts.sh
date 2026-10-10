@@ -161,6 +161,131 @@ sed -i '' "s/a/b/" f.txt
 EOF
 assert_lint "test-*.sh fixtures are skipped by the sed check" "0 0 0" "$d11"
 
+# 12-17. Check 6: printf/echo of a variable piped into grep -q under pipefail
+#    (#2959). grep -q exits on its first match, the writer takes SIGPIPE, and
+#    pipefail reports a hit as a miss. Scope is any *.sh directly inside a
+#    tests/ directory, plus <plugin>/hooks/test-*.sh, that enables pipefail.
+
+# 12. Positive: the exact line-77 shape from test-lint-package-references.sh,
+#     plus an `echo | grep -qx` in a hook suite -> one ERROR each, exit 1.
+d12="$WORK/pipe-grep-q"; mkdir -p "$d12/scripts/tests" "$d12/demo-plugin/hooks"
+cat > "$d12/scripts/tests/test-demo.sh" <<'EOF'
+#!/usr/bin/env bash
+set -uo pipefail
+out="$(./linter 2>&1)"; status=$?
+if [ "$status" -ne 0 ] && printf '%s' "$out" | grep -qF "$rel"; then echo ok; fi
+EOF
+cat > "$d12/demo-plugin/hooks/test-demo-hook.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+out="$(./hook)"
+echo "$out" | grep -qx "STATUS=OK" || exit 1
+EOF
+assert_lint "printf/echo \"\$var\" | grep -q in a pipefail suite is an error" "2 0 1" "$d12"
+
+# 13. Negative: the here-string fix, a real-command producer, and a comment
+#     that merely names the hazard all pass clean.
+d13="$WORK/herestring"; mkdir -p "$d13/scripts/tests"
+cat > "$d13/scripts/tests/test-demo.sh" <<'EOF'
+#!/usr/bin/env bash
+set -uo pipefail
+# Here-string, not `printf '%s' "$out" | grep -q`: see #2959.
+out="$(./linter 2>&1)"
+if grep -qF "$rel" <<<"$out"; then echo ok; fi
+if ./linter | grep -q "STATUS=OK"; then echo ok; fi
+printf '%s\n' "$out" | grep -c "x" || true
+EOF
+assert_lint "here-string, real-command producer, and comments pass clean" "0 0 0" "$d13"
+
+# 14. Negative: the shape inside a heredoc body is fixture DATA written to
+#     another file, not a command of this suite.
+d14="$WORK/heredoc-body"; mkdir -p "$d14/demo-plugin/hooks"
+cat > "$d14/demo-plugin/hooks/test-demo-hook.sh" <<'OUTER'
+#!/usr/bin/env bash
+set -euo pipefail
+cat > "$WORK/fixture-hook.sh" <<'EOF'
+INPUT=$(cat)
+if echo "$INPUT" | grep -q kubectl; then exit 2; fi
+EOF
+echo done
+OUTER
+assert_lint "the shape inside a heredoc fixture body is not flagged" "0 0 0" "$d14"
+
+# 15. Negative: without pipefail the pipeline's status is grep's, so no race.
+d15="$WORK/no-pipefail"; mkdir -p "$d15/scripts/tests"
+cat > "$d15/scripts/tests/test-demo.sh" <<'EOF'
+#!/usr/bin/env bash
+set -u
+printf '%s' "$out" | grep -q "x" && echo hit
+EOF
+assert_lint "no pipefail -> not flagged" "0 0 0" "$d15"
+
+# 16. Negative: out of scope (not a scripts/tests or hooks/test-* suite).
+d16="$WORK/out-of-scope"; mkdir -p "$d16/scripts"
+cat > "$d16/scripts/check-demo.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s' "$out" | grep -q "x" && echo hit
+EOF
+assert_lint "a non-test script is out of Check 6 scope" "0 0 0" "$d16"
+
+# 17. Empty tree: nothing to scan -> clean, exit 0.
+d17="$WORK/empty"; mkdir -p "$d17"
+assert_lint "empty tree passes clean" "0 0 0" "$d17"
+
+# 18. Positive: the widened scope. A per-skill suite, a plugin-level suite and
+#     an experiment suite each carry the shape -> one ERROR each, exit 1. The
+#     experiment suite adds a -q placed after a pattern holding a balanced
+#     `(...)` group, which must still read as -q (4 errors in all).
+d18="$WORK/wide-scope"
+mkdir -p "$d18/demo-plugin/skills/demo-skill/scripts/tests" \
+  "$d18/demo-plugin/scripts/tests" "$d18/experiments/demo/tests"
+cat > "$d18/demo-plugin/skills/demo-skill/scripts/tests/test-demo-skill.sh" <<'EOF'
+#!/usr/bin/env bash
+set -uo pipefail
+out=$(bash ../demo.sh)
+echo "$out" | grep -q "^STATUS=OK$" || echo "FAIL"
+EOF
+cat > "$d18/demo-plugin/scripts/tests/test-demo-plugin.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+out=$(bash ../demo.sh)
+if printf '%s\n' "$out" | grep -qF -- "needle"; then echo ok; fi
+EOF
+cat > "$d18/experiments/demo/tests/test-demo-exp.sh" <<'EOF'
+#!/usr/bin/env bash
+set -uo pipefail
+out=$(bash ../demo.sh)
+assert "$(printf '%s' "$out" | grep -qE 'x' && echo true || echo false)"
+echo "$out" | grep -E "^(OK)$" -q || echo "FAIL"
+EOF
+assert_lint "printf/echo | grep -q in skill, plugin and experiment suites is an error" "4 0 1" "$d18"
+
+# 19. Negative: in the widened scope, the here-string fix and a `grep -c`
+#     inside $(...) followed by `-eq` both pass (the `)` ends grep's words, so
+#     -eq is not read as -q), and a non-suite script beside the suites (a
+#     tests/fixtures/ file, a skill's own scripts/) is out of scope.
+d19="$WORK/wide-scope-clean"
+mkdir -p "$d19/demo-plugin/skills/demo-skill/scripts/tests/fixtures"
+cat > "$d19/demo-plugin/skills/demo-skill/scripts/tests/test-demo-skill.sh" <<'EOF'
+#!/usr/bin/env bash
+set -uo pipefail
+out=$(bash ../demo.sh)
+grep -q "^STATUS=OK$" <<<"$out" || echo "FAIL"
+[ "$(echo "$out" | grep -c '^LINE=')" -eq 1 ] || echo "FAIL"
+EOF
+cat > "$d19/demo-plugin/skills/demo-skill/scripts/tests/fixtures/bad.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+echo "$1" | grep -q "x" && echo hit
+EOF
+cat > "$d19/demo-plugin/skills/demo-skill/scripts/demo.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+echo "$1" | grep -q "x" && echo hit
+EOF
+assert_lint "here-string, grep -c ... -eq, fixtures/ and non-suite scripts pass clean" "0 0 0" "$d19"
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ] && exit 0 || exit 1

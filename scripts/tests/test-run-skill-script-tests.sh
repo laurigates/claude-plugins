@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Regression test for scripts/run-skill-script-tests.sh (issues #2221, #2219).
+# Regression test for scripts/run-skill-script-tests.sh (issues #2221, #2219,
+# #2333, #2816, #2890).
 #
 # #2221 — the runner printed `PASS=<file>` for a test that SKIPped, so a
 # gate whose dependency was absent on the runner was indistinguishable, in the
@@ -41,8 +42,11 @@ check() { # check <description> <expected> <actual>
     fi
 }
 
+# The haystack goes in as a here-string, not `printf | grep -q`: with pipefail,
+# grep -q exiting on an early match SIGPIPEs printf on a multi-KB haystack (the
+# repository-wide --list output in CASE 18) and the match reads as a miss.
 check_contains() { # check_contains <description> <needle> <haystack>
-    if printf '%s' "$3" | grep -qF -- "$2"; then
+    if grep -qF -- "$2" <<< "$3"; then
         pass=$((pass + 1))
     else
         fail=$((fail + 1))
@@ -51,7 +55,7 @@ check_contains() { # check_contains <description> <needle> <haystack>
 }
 
 check_absent() { # check_absent <description> <needle> <haystack>
-    if printf '%s' "$3" | grep -qF -- "$2"; then
+    if grep -qF -- "$2" <<< "$3"; then
         fail=$((fail + 1))
         printf 'FAIL: %s\n  expected NOT to contain: %s\n' "$1" "$2" >&2
     else
@@ -779,6 +783,206 @@ check "case 16: the skipping test is still classified as a skip" "SKIPPED=1" \
     "$(printf '%s\n' "$out" | grep -m1 '^SKIPPED=')"
 check "case 16: and the passing ones still pass" "PASSED=4" \
     "$(printf '%s\n' "$out" | grep -m1 '^PASSED=')"
+
+# ---------------------------------------------------------------------------
+# CASE 17 — `experiments/*` self-tests are discovered (#2816)
+#
+# The experiment harnesses at the repo root (experiments/subagent-compaction,
+# experiments/skill-catalog-routing) ship self-tests in two layouts:
+# `experiments/<name>/tests/` and `experiments/<name>/scripts/tests/`. No
+# discovery glob reached either, so 60-odd assertions never ran in CI. The globs
+# are ANCHORED at the scan root, like `./scripts/tests/`, and the decoy below
+# holds that anchor: an `experiments/` nested under some other directory is not
+# the repo-root one and must stay undiscovered.
+# ---------------------------------------------------------------------------
+EXPROOT="${WORK}/exp-tree"
+
+write_test "${EXPROOT}/experiments/x/tests/test-ok.sh" 'echo "PASSED=1"' 'exit 0'
+write_test "${EXPROOT}/experiments/y/scripts/tests/test-ok.sh" 'echo "PASSED=1"' 'exit 0'
+# Anchor guard. `tools/` is not a `*-plugin` dir and holds no `skills/` or
+# `hooks/`, so no other glob can claim the decoy either.
+write_test "${EXPROOT}/tools/experiments/x/tests/test-decoy.sh" 'echo "PASSED=1"' 'exit 0'
+# Positive control: the pre-existing globs keep working beside the new ones.
+write_test "${EXPROOT}/demo-plugin/skills/alpha/scripts/tests/test-skill-local.sh" \
+    'echo "PASSED=1"' 'exit 0'
+
+out="$(bash "$RUNNER" --root "$EXPROOT" 2>&1)"
+rc=$?
+
+check_contains "case 17: experiments/<name>/tests/test-*.sh is discovered and run" \
+    "PASS=./experiments/x/tests/test-ok.sh" "$out"
+check_contains "case 17: experiments/<name>/scripts/tests/test-*.sh is discovered and run" \
+    "PASS=./experiments/y/scripts/tests/test-ok.sh" "$out"
+check_absent "case 17: the glob is anchored — a nested experiments/ is not swallowed" \
+    "test-decoy.sh" "$out"
+# 2 experiments + 1 skill-local, and NOT the decoy.
+check "case 17: TOTAL counts both experiment layouts and excludes the decoy" "TOTAL=3" \
+    "$(printf '%s\n' "$out" | grep -m1 '^TOTAL=')"
+check "case 17: run is clean" "0" "$rc"
+
+# ---------------------------------------------------------------------------
+# CASE 18 — class guard: every tracked test is discovered or allowlisted (#2890)
+#
+# A test that exists but that no runner picks up gives false assurance. The
+# class has shipped repeatedly: repo-root scripts/tests/ (#2333), the grader
+# suite (#2795), experiments/*/tests (#2816), and two underscore-named
+# git-coworker-check suites (`test_bare_flip.sh`, `test_worktree_leak.sh`) that
+# match no `test-*.sh` glob and ran nowhere (#2890).
+#
+# The guard lists every TRACKED `*/tests/*.sh` and `*/hooks/test*.sh`, removes
+# what the runner discovers (read through `--list`, the runner's own discovery
+# function, not a copy of its globs), removes the allowlist below, and fails on
+# anything left. To clear a violation, rename the file to `test-*.sh` in a
+# discovered directory or teach the runner the new layout. The allowlist is for
+# files that are not tests at all, or that must not run unattended. Never add a
+# real test to it to turn the guard green.
+# ---------------------------------------------------------------------------
+UNDISCOVERED_ALLOWLIST=(
+    # Paid live run: drives an authenticated `claude` CLI against the real API.
+    "evaluate-plugin/scripts/tests/live/smoke-headless.sh"
+    # Fixture helper: a stub `claude` binary the evaluate-plugin suites put on PATH.
+    "evaluate-plugin/scripts/tests/fixtures/fake-claude.sh"
+    # Comparison helper sourced by the health-plugin suites, not a test itself.
+    "health-plugin/scripts/tests/compare-ref-output.sh"
+)
+
+is_allowlisted() {
+    local candidate="$1" entry
+    for entry in "${UNDISCOVERED_ALLOWLIST[@]}"; do
+        [ "$entry" = "$candidate" ] && return 0
+    done
+    return 1
+}
+
+# undiscovered_tests <root> — print each tracked test-shaped file under <root>
+# that the runner does not discover and the allowlist does not name. Returns 2
+# when <root> cannot be listed, so an unreadable tree never reads as clean.
+#
+# Membership is an associative-array lookup, not `printf "$list" | grep -q`:
+# under `pipefail`, grep -q exits on an early match, printf takes SIGPIPE, and
+# the pipeline returns 141, so a discovered file would intermittently read as
+# undiscovered on a list as long as the repository's.
+undiscovered_tests() {
+    local root="$1" tracked discovered f
+    local -A is_discovered=()
+    tracked="$(git -C "$root" ls-files -- '*/tests/*.sh' '*/hooks/test*.sh')" || return 2
+    discovered="$(bash "$RUNNER" --root "$root" --list)" || return 2
+    while IFS= read -r f; do
+        [ -n "$f" ] && is_discovered["$f"]=1
+    done <<< "$discovered"
+    while IFS= read -r f; do
+        [ -n "$f" ] || continue
+        [ -n "${is_discovered[$f]:-}" ] && continue
+        is_allowlisted "$f" && continue
+        printf '%s\n' "$f"
+    done <<< "$tracked"
+    return 0
+}
+
+GUARDROOT="${WORK}/guard-tree"
+mkdir -p "$GUARDROOT"
+if [ ! -d "$GUARDROOT" ]; then
+    echo "FAIL: bad guard fixture dir" >&2
+    exit 1
+fi
+git -C "$GUARDROOT" init -q
+
+# Discovered → not reported.
+write_test "${GUARDROOT}/demo-plugin/skills/alpha/scripts/tests/test-good.sh" 'exit 0'
+write_test "${GUARDROOT}/demo-plugin/hooks/test-good-hook.sh" 'exit 0'
+# The two experiments layouts → discovered only while the #2816 globs exist.
+write_test "${GUARDROOT}/experiments/x/tests/test-exp.sh" 'exit 0'
+write_test "${GUARDROOT}/experiments/y/scripts/tests/test-exp.sh" 'exit 0'
+# Underscore-named suites → reported, in a skill dir and in a hooks dir.
+write_test "${GUARDROOT}/demo-plugin/skills/alpha/scripts/tests/test_under.sh" 'exit 0'
+write_test "${GUARDROOT}/demo-plugin/hooks/test_under_hook.sh" 'exit 0'
+# Allowlisted helper → not reported.
+write_test "${GUARDROOT}/evaluate-plugin/scripts/tests/fixtures/fake-claude.sh" 'exit 0'
+git -C "$GUARDROOT" add -- demo-plugin experiments evaluate-plugin
+# Untracked → not reported: the guard audits the committed corpus only.
+write_test "${GUARDROOT}/demo-plugin/skills/alpha/scripts/tests/test_untracked.sh" 'exit 0'
+
+guard_out="$(undiscovered_tests "$GUARDROOT")"
+guard_rc=$?
+
+check "case 18: the guard lists the fixture tree" "0" "$guard_rc"
+check "case 18: exactly the underscore-named suites are reported" \
+    "demo-plugin/hooks/test_under_hook.sh demo-plugin/skills/alpha/scripts/tests/test_under.sh" \
+    "$(printf '%s\n' "$guard_out" | sort | tr '\n' ' ' | sed 's/ $//')"
+check_absent "case 18: an experiments/<name>/tests suite is discovered, not reported" \
+    "experiments/x/tests/test-exp.sh" "$guard_out"
+check_absent "case 18: an experiments/<name>/scripts/tests suite is discovered, not reported" \
+    "experiments/y/scripts/tests/test-exp.sh" "$guard_out"
+check_absent "case 18: an allowlisted helper is not reported" "fake-claude.sh" "$guard_out"
+check_absent "case 18: an untracked file is not reported" "test_untracked.sh" "$guard_out"
+check_absent "case 18: a discovered skill-local test is not reported" "test-good.sh" "$guard_out"
+
+# The real repository: nothing may be undiscovered outside the allowlist, and
+# every allowlist entry must still be tracked AND still undiscovered, so the
+# list can only shrink as files move into discovery or are deleted.
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+if git -C "$REPO_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    repo_out="$(undiscovered_tests "$REPO_ROOT")"
+    repo_rc=$?
+    check "case 18: the repository's tracked tests can be listed" "0" "$repo_rc"
+    check "case 18: every tracked test in the repository is discovered or allowlisted" \
+        "" "$repo_out"
+    repo_discovered="$(bash "$RUNNER" --root "$REPO_ROOT" --list)"
+    for entry in "${UNDISCOVERED_ALLOWLIST[@]}"; do
+        check "case 18: allowlist entry is still tracked: ${entry}" "$entry" \
+            "$(git -C "$REPO_ROOT" ls-files -- "$entry")"
+        check_absent "case 18: allowlist entry is not discovered (else drop it): ${entry}" \
+            "$entry" "$repo_discovered"
+    done
+    # Coverage the issue named explicitly: the grader suite whose inputs now
+    # trigger the workflow, and the renamed coworker-check suites.
+    check_contains "case 18: the grader suite is discovered" \
+        "evaluate-plugin/scripts/tests/test-grade-deterministic.sh" "$repo_discovered"
+    check_contains "case 18: the bare-flip suite is discovered" \
+        "git-plugin/skills/git-coworker-check/scripts/tests/test-bare-flip.sh" "$repo_discovered"
+    check_contains "case 18: the worktree-leak suite is discovered" \
+        "git-plugin/skills/git-coworker-check/scripts/tests/test-worktree-leak.sh" "$repo_discovered"
+else
+    echo "SKIP: case 18 repository half — ${REPO_ROOT} is not a git work tree"
+fi
+
+# --list runs nothing: a failing test in the tree must not affect its exit.
+LISTROOT="${WORK}/list-tree"
+write_test "${LISTROOT}/scripts/tests/test-would-fail.sh" 'echo "boom"' 'exit 1'
+out="$(bash "$RUNNER" --root "$LISTROOT" --list 2>&1)"
+rc=$?
+check "case 18: --list exits 0 without running tests" "0" "$rc"
+check "case 18: --list prints repo-relative paths only" \
+    "scripts/tests/test-would-fail.sh" "$out"
+
+# ---------------------------------------------------------------------------
+# CASE 19 — a large required manifest is matched without SIGPIPE
+#
+# The runner checked each manifest entry with `printf "$seen" | grep -qxF`.
+# Under pipefail, grep -q exits on its first match while printf is still
+# writing; printf takes SIGPIPE, the pipeline returns 141, and a required test
+# that ran and PASSED was reported `required_test_missing`. It surfaced as a
+# spurious ERROR on a full local run. Here the seen-list is planted well past a
+# pipe buffer (64 KiB) so the race is not a race: the earliest-sorting entry
+# matches in the first chunk while printf still holds most of the list.
+# ---------------------------------------------------------------------------
+BIGROOT="${WORK}/big-manifest"
+REQ_BIG="${WORK}/required-big.txt"
+: > "$REQ_BIG"
+long_stem="$(printf 'x%.0s' $(seq 1 220))"
+for n in $(seq 100 499); do
+    rel="scripts/tests/test-${long_stem}-${n}.sh"
+    write_test "${BIGROOT}/${rel}" 'echo "PASSED=1"' 'exit 0'
+    echo "$rel" >> "$REQ_BIG"
+done
+
+out="$(bash "$RUNNER" --root "$BIGROOT" --required-file "$REQ_BIG" 2>&1)"
+rc=$?
+check "case 19: every planted required test passes" "PASSED=400" \
+    "$(printf '%s\n' "$out" | grep -m1 '^PASSED=')"
+check_absent "case 19: no passing required test is reported missing" \
+    "required_test_missing" "$out"
+check "case 19: the run is clean" "0" "$rc"
 
 echo "=== SUMMARY ==="
 echo "PASS_COUNT=${pass}"
