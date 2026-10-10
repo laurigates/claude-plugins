@@ -22,7 +22,7 @@
 #              generated one (CI gate). "Markers absent" and "no index file" are
 #              reported as DISTINCT non-fatal states, never as a spurious diff.
 #
-# A number is taken from the `NNNN-title.md` basename OR a frontmatter
+# A number is taken from the `NNNN-title.md` / `ADR-NNN-title.md` basename OR a frontmatter
 # `id: ADR-NNNN` claim, matching check-adr-numbers.sh's widened collection — so
 # an ADR that names its number only in frontmatter still gets an index row.
 #
@@ -161,9 +161,11 @@ fm_field() { # <file> <field>
   head -50 "$1" | grep -m1 -i "^$2:" | sed 's/^[^:]*:[[:space:]]*//' | tr -d '\r'
 }
 
+# Accepts "NNNN-title.md" and "ADR-NNN-title.md" (issue #2822). Same regex as
+# check-adr-numbers.sh's adr_number(): the two must agree on which files are ADRs.
 adr_number() { # <basename>
   local base="$1" num
-  num="$(printf '%s' "$base" | sed -nE 's/^0*([0-9]+)[-_].*/\1/p')"
+  num="$(printf '%s' "$base" | sed -nE 's/^([Aa][Dd][Rr][-_]?)?0*([0-9]+)[-_].*/\2/p')"
   [ -n "$num" ] && printf '%d' "$((10#$num))"
 }
 
