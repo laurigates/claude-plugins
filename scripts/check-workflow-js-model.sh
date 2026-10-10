@@ -642,8 +642,9 @@ for js in "${js_files[@]+"${js_files[@]}"}"; do
         fi
 
         case "$effort" in
-            # An exempted haiku reader has no effort lever to forfeit, so an
-            # absent effort is not an error there. A PRESENT one is still tiered.
+            # Only a cold-read exemption can reach here with no effort (a haiku
+            # stage is exempt only with one), and it is not an error there. A
+            # PRESENT effort is still tiered.
             -)   [ "$exempt" -eq 1 ] || add_error "TYPE=missing_effort FILE=$rel LINE=$call_line MSG=agent() needs an explicit opts.effort (the model default is not our pick; a haiku stage is only exempt with one)" ;;
             '?') add_warn  "TYPE=dynamic_effort FILE=$rel LINE=$call_line MSG=opts.effort is an expression — cannot verify it is a valid tier" ;;
             *)
