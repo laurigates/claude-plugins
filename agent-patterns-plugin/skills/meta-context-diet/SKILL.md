@@ -1,9 +1,9 @@
 ---
 created: 2026-06-16
-modified: 2026-10-07
+modified: 2026-10-10
 compatibility: claude-code
 reviewed: 2026-07-08
-allowed-tools: Glob, Read, Edit, Write, Bash(git status *), Bash(git diff *), Bash(wc *), Bash(ls *), AskUserQuestion, TodoWrite
+allowed-tools: Glob, Grep, Read, Edit, Write, Bash(git status *), Bash(git diff *), Bash(git add *), Bash(git commit *), Bash(git switch *), Bash(wc *), Bash(ls *), AskUserQuestion, TodoWrite
 model: opus
 description: Audit CLAUDE.md and .claude/rules for always-loaded content that should become an on-demand skill. Use when CLAUDE.md feels bloated, trimming context, or promoting a rule into a skill.
 args: "[scope-path]"
@@ -57,6 +57,8 @@ When `scope-path` is `.` (or names the user-global tree), also `Glob(pattern="$H
 
 For each file, record its size (`wc -c`, est. tokens ≈ chars/4 — same proxy as `skill-quality.md`) and, for `CLAUDE.md`, treat each `##` section as a separately-classifiable unit. Path-scoped rules already pay only on matching turns — flag them only if they are *also* intent-shaped (a better skill) or duplicate a loaded plugin skill.
 
+Then run the [consumer sweep](references/consumer-sweep.md) per candidate and record its path consumers; Step 2 uses them to choose Promote or a `docs/` move.
+
 ### 2. Classify every unit against the diet rubric
 
 For each rule file or `CLAUDE.md` section, assign exactly one disposition. The deciding question is **"must this be true on every turn regardless of what the user asked?"**
@@ -64,7 +66,8 @@ For each rule file or `CLAUDE.md` section, assign exactly one disposition. The d
 | Disposition | The unit is… | Signal |
 |---|---|---|
 | **Keep — hard invariant** | An always-respected constraint whose violation is a bug even when unmentioned (security boundaries, "never force-push", commit-format that drives release automation, destructive-op guards) | Imperative, unconditional, cheap to keep; the cost of *missing* it is high |
-| **Keep but lean** | A hard invariant wrapped in explanation, examples, or tables that belong in a linked doc/REFERENCE | The invariant is one sentence; the file is 200 lines |
+| **Keep but lean** | A hard invariant wrapped in explanation, examples, or tables that belong in a linked doc/REFERENCE, or `docs/<topic>.md` on a sweep path consumer | The invariant is one sentence; the file is 200 lines |
+| **Lean-to-pointer** | Keep-but-lean's destructive shape: the body moves to `docs/<topic>.md` and the rule keeps only a one-line pointer, no invariant | A sweep path consumer rules out Promote, and no line must hold every turn — confirmed per candidate at Step 4 |
 | **Path-scope** | Always-true *only when working on a specific file shape* (a language, a config format, a directory) | Advice keyed to "when editing X"; currently unscoped so it loads on every turn | 
 | **Promote to skill** | A **procedure/workflow triggered by intent** — steps you run *when* doing a task, not a constraint you hold *while* doing anything | Reads as "to do X: step 1…step N"; has a clear trigger ("when releasing", "when the build fails"); rarely relevant per-turn but heavy when present |
 | **Consolidate** | Duplicates another rule, a loaded plugin skill, or upstream `~/.claude/rules` | The same guidance exists elsewhere already paid for — **and that copy is current**, not a stale twin of the text being cut |
@@ -80,42 +83,42 @@ Before proposing a promotion, draft its skill home + name, an auto-triggering de
 
 For each candidate, present:
 
-1. The file/section and its size (chars + est. tokens).
+1. The file/section, its size (chars + est. tokens), and its Step 1 path consumers.
 2. The recommended disposition with a one-sentence justification.
 3. For promote-to-skill: the drafted skill home, name, and description.
-4. The disposition menu via `AskUserQuestion` (Keep / Lean / Path-scope / Promote-to-skill / Consolidate / Drop / Skip).
+4. An `AskUserQuestion` of at most 4 options, recommended disposition first — menu in [batch-approval.md](references/batch-approval.md#the-per-candidate-question).
 
 Only proceed on explicit approval. Order the prompts by impact (largest always-loaded char count first) so the biggest wins surface early.
 
-The confirmation shape depends on **how lossy the disposition is**, not on convenience:
+The confirmation shape depends on **how lossy the disposition is** (why: [batch-approval.md](references/batch-approval.md#why-the-tiers-confirm-differently)):
 
-| Disposition class | Confirmation | Why |
-|---|---|---|
-| **Non-destructive** — Keep-invariant, Keep-but-lean, Path-scope | Batchable (see below) | The guidance survives in place — leaning trims explanation, path-scoping only narrows *when* it loads. Nothing is removed from the always-loaded surface's meaning. |
-| **Destructive / ambiguous** — Drop, Consolidate-that-deletes, Promote-to-skill | **One candidate, one `AskUserQuestion`** | Each removes guidance from an always-loaded file: Drop deletes it, Consolidate-that-deletes replaces it with a pointer, Promote-to-skill moves the body off the every-turn surface. A wrong call degrades every downstream turn, so the user confirms each individually. |
+| Disposition class | Confirmation |
+|---|---|
+| **Non-destructive** — Keep-invariant, Keep-but-lean that keeps the invariant, Path-scope | Batchable |
+| **Destructive** — Drop, Consolidate-that-deletes, Promote-to-skill, Lean-to-pointer | **One candidate, one question**; up to 4 may share one call |
 
 #### Batch-approval mode for large surfaces
 
-At ~15+ candidates, batch only the non-destructive tier, per [references/batch-approval.md](references/batch-approval.md). Drop, Consolidate-that-deletes, and Promote-to-skill are never batched.
+At ~15+ candidates, batch only the non-destructive tier per [batch-approval.md](references/batch-approval.md).
 
 ### 5. Execute the approved disposition
+
+**Before any Promote, Consolidate, Drop, or `docs/` move, re-run the consumer `Grep`**, repoint every hit in the same change, and re-confirm a candidate the hit makes wrong ([consumer-sweep.md](references/consumer-sweep.md#a-step-5-hit-that-changes-the-approved-disposition)).
 
 | Disposition | Mechanics |
 |---|---|
 | Keep — hard invariant | No change. Optionally note why it stays in the report. |
-| Keep but lean | `Edit` the rule to the invariant + a link; move examples/tables to a co-located doc or the rule's own `REFERENCE`-style sidecar. Do not change the invariant's wording. |
+| Keep but lean | `Edit` the rule to the invariant + a link; move examples/tables to a co-located doc, the rule's own `REFERENCE`-style sidecar, or `docs/<topic>.md` (on a path consumer). Keep the invariant's wording; Lean-to-pointer replaces it with a one-line pointer. |
 | Path-scope | `Edit` the rule's frontmatter to add a `paths:` glob so it loads only on matching turns. Verify the glob matches the directory shape the rule actually targets. |
 | Promote to skill | Scaffold `<plugin>/skills/<name>/SKILL.md` with the drafted frontmatter + imperative body; move reference material into the new skill's `REFERENCE.md`; trim the source rule to a one-line pointer (or delete it if nothing remains and nothing references it). Then update the plugin metadata per the **Plugin Lifecycle** in `CLAUDE.md` (README skills table; no `marketplace.json`/release-config edits — those are plugin-scoped, not skill-scoped, per `skill-consolidation.md`). Run `/reload-skills` so the new skill is invocable immediately. |
-| Consolidate | **First read the destination and confirm it is current** — drift runs both ways, so where the always-loaded copy is the *fresher* one, fix the destination (or consolidate in the other direction) before pointing at it. Then `Edit` the source to a pointer at the canonical owner **by `plugin:skill` name** (never a cross-plugin file path — see `skill-consolidation.md`); or delete the redundant rule if a loaded plugin skill already covers it. |
+| Consolidate | **First read the destination and confirm it is current** — drift runs both ways, so where the always-loaded copy is the *fresher* one, fix the destination (or consolidate in the other direction) before pointing at it ([evidence](references/anti-patterns.md#notes)). Then `Edit` the source to a pointer at the canonical owner **by `plugin:skill` name** (never a cross-plugin file path — see `skill-consolidation.md`); or delete the redundant rule if a loaded plugin skill already covers it. |
 | Drop | Delete the stale file. |
 
-Evidence for the Consolidate check: in [`laurigates/loractl` #167](https://github.com/laurigates/loractl/pull/167) the pointer target still described a landed feature as a pending follow-up while the `CLAUDE.md` section being cut was correct, so consolidating without reading the destination first would have replaced the accurate copy with a pointer at the stale one.
-
-After every write, run `git status` so the user sees exactly what changed before any commit. **Do not commit** — leave a clean tree the user can review and split. When promoting *out of* a `CLAUDE.md` or rule that lives in a chezmoi-managed tree (`~/.claude/`), surface that the source is chezmoi-managed so the edit lands in the source, not the target.
+After every write, run `git status` so the user sees what changed. **Commit policy** ([report-format.md](references/report-format.md#commit-policy)): if the user's or project's policy says commit, commit approved changes per concern with explicit `git add <paths>` + `git commit`; if silent or no, leave the tree uncommitted. When promoting *out of* a `CLAUDE.md` or rule that lives in a chezmoi-managed tree (`~/.claude/`), surface that the source is chezmoi-managed so the edit lands in the source, not the target.
 
 ### 6. Report
 
-Emit the final table, net every-turn saving, and next step in the format in [references/report-format.md](references/report-format.md). This skill does **not** commit.
+Emit the final table, net every-turn saving, and commit outcome per [report-format.md](references/report-format.md).
 
 ## Anti-patterns and notes
 

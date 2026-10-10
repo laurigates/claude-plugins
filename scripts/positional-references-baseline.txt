@@ -6,7 +6,6 @@ agent-patterns-plugin/skills/execution-grounded-review/SKILL.md	1
 agent-patterns-plugin/skills/expose-tunable-knob/SKILL.md	1
 agent-patterns-plugin/skills/harness-tool-errors/SKILL.md	2
 agent-patterns-plugin/skills/mcp-server-authoring/SKILL.md	1
-agent-patterns-plugin/skills/meta-context-diet/SKILL.md	1
 agent-patterns-plugin/skills/multi-model-delegation/SKILL.md	2
 agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md	6
 agent-patterns-plugin/skills/probe-input-integrity/SKILL.md	3
