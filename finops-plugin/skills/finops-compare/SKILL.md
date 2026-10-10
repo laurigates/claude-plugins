@@ -4,9 +4,11 @@ args: "<org> [repo1 repo2 ...] [--limit N]"
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(bash *), Read, TodoWrite
 argument-hint: Org name required, optional repo list, --limit for auto-discovery
 created: 2025-01-30
-modified: 2026-04-25
+modified: 2026-10-10
 reviewed: 2026-04-25
 name: finops-compare
+model: haiku
+effort: low
 ---
 
 # /finops:compare

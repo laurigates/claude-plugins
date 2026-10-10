@@ -62,7 +62,7 @@ the detector reports no linters found.
 
 ### Step 1: Detect the project language
 
-Read the `Package files` line from Context above (or `ls` the target directory)
+Read the `Package files` line in [Context](#context) (or `ls` the target directory)
 and map each marker file to a language. **The signals are the marker files — do
 not guess from file extensions or the repo name.**
 

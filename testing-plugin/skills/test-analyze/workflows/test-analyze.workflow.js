@@ -147,7 +147,9 @@ const parsed = await agent(
    severity MUST be one of: ${SEVERITIES.join(', ')}.
    A failure that fits no category goes to unroutable[] with a stated reason —
    do NOT force it into the nearest-looking category.`,
-  { label: 'parse', schema: RoutedFailuresSchema, model: 'opus', effort: 'medium' },
+  // Schema-forced enum routing with an unroutable[] escape: Haiku 5.5 at medium,
+  // since severity is a judgement (haiku-5.5-reevaluation-2026-10-10.md).
+  { label: 'parse', schema: RoutedFailuresSchema, model: 'haiku', effort: 'medium' },
 );
 
 const failures = (parsed && parsed.failures) || [];

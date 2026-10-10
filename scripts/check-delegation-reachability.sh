@@ -34,10 +34,13 @@
 #   C. TEACHING THE INVARIANT. A unit that states the sibling is gated,
 #      human-only, or must not be invoked is stating this guard's OWN rule
 #      correctly — flagging it would make the guard red on correct content,
-#      which is how a guard gets disabled. `blueprint-autopilot` line 82
-#      ("Work-order **creation stays human-only** (`/blueprint:work-order`
-#      keeps `disable-model-invocation: true` — never invoke it from
-#      autopilot)") is the canonical case. See GATED_STATEMENT_RE.
+#      which is how a guard gets disabled. The class was measured on
+#      `blueprint-autopilot`'s "Work-order creation stays human-only
+#      (`/blueprint:work-order` keeps `disable-model-invocation: true` — never
+#      invoke it from autopilot)". ADR-0024 (#2592) later un-gated that sibling
+#      and the sentence was rewritten, so it no longer reaches this class; the
+#      class still covers every sentence that states a LIVE gate, such as the
+#      `/git:pr-feedback` rows in git-plugin. See GATED_STATEMENT_RE.
 #   D. A HEADING LINE. An ATX heading (`#`-prefixed) names a section; it is a
 #      label, not an instruction to act. `document-linking` line 402 is the
 #      literal H3 `### /blueprint:work-order`, flagged for titling the section
@@ -117,6 +120,18 @@
 #   * `<file>` is the OWNING SKILL.md even when the reference sits in one of its
 #     sidecars, so moving declared text into `references/` keeps it declared.
 #
+# The residuals were settled by un-gating (issue #2592, ADR-0024)
+# ---------------------------------------------------------------
+# The repo owner chose to un-gate the sibling: `blueprint-work-order` and
+# `blueprint-prp-execute` lost `disable-model-invocation: true`, so every
+# declared reference became a reachable delegation, every key matched nothing,
+# and all nine keys (17 suppressed findings by then, sidecars included) were
+# deleted. DELEGATION_ALLOWLIST_DEFAULT is now EMPTY and the real-repo run
+# reports `ALLOWLISTED=0 STATUS=OK`. The allowlist machinery stays, unused, so
+# a future residual can be declared the same visible way; the regression test
+# pins it through the CHECK_DELEGATION_ALLOWLIST seam and a seeded copy of
+# this script rather than through the shipped default.
+#
 # Usage:
 #   bash scripts/check-delegation-reachability.sh [--project-dir <path>]
 #
@@ -138,20 +153,17 @@
 
 set -uo pipefail
 
-# Residuals declared by issue #2483, keyed `<file>|<ref>`. Each is a reference a
-# maintainer must adjudicate (reword into the recommendation form, or un-gate
-# the sibling); until then it is suppressed EXPLICITLY rather than by narrowing
-# the scope, and reported through ALLOWLISTED=. Remove an entry the moment its
-# reference is settled — a key matching nothing is an ERROR, not a no-op.
-DELEGATION_ALLOWLIST_DEFAULT="blueprint-plugin/skills/blueprint-autopilot/SKILL.md|/blueprint:work-order
-blueprint-plugin/skills/blueprint-development/SKILL.md|/blueprint:work-order
-blueprint-plugin/skills/blueprint-execute/SKILL.md|/blueprint:prp-execute
-blueprint-plugin/skills/blueprint-prp-create/SKILL.md|/blueprint:prp-execute
-blueprint-plugin/skills/blueprint-prp-create/SKILL.md|/blueprint:work-order
-blueprint-plugin/skills/blueprint-prp-execute/SKILL.md|/blueprint:work-order
-blueprint-plugin/skills/blueprint-story-reconcile/SKILL.md|/blueprint:work-order
-blueprint-plugin/skills/confidence-scoring/SKILL.md|/blueprint:work-order
-blueprint-plugin/skills/document-detection/SKILL.md|/blueprint:prp-execute"
+# Declared residuals, keyed `<file>|<ref>`, newline- or space-separated. Each
+# would be a reference a maintainer must adjudicate (reword into the
+# recommendation form, or un-gate the sibling); until then it is suppressed
+# EXPLICITLY rather than by narrowing the scope, and reported through
+# ALLOWLISTED=. Remove an entry the moment its reference is settled — a key
+# matching nothing is an ERROR, not a no-op.
+#
+# EMPTY since issue #2592 / ADR-0024 settled the #2483 residuals. Keep this
+# assignment on one line: the regression test seeds a copy of this script by
+# rewriting exactly this line.
+DELEGATION_ALLOWLIST_DEFAULT=""
 
 proj_dir=""
 while [ $# -gt 0 ]; do
@@ -343,7 +355,9 @@ USER_REFERRAL_RE='(recommend|suggest)[a-z]*[^a-z]+(that[[:space:]]+)?the[[:space
 # ("promotion stays the human `/blueprint:work-order --from-issue N` act") and
 # the v3.3->v3.4 migration ("the committing act stays with the human-invoked
 # `/blueprint:work-order`") both state the gate, naming the human as the only
-# actor.
+# actor. Both sentences were rewritten when ADR-0024 (#2592) un-gated that
+# sibling; the two spellings stay, because they still describe a live gate
+# wherever one exists.
 GATED_STATEMENT_RE='never[[:space:]]+(invoke|call|run|use|dispatch|delegate)|(do[[:space:]]+not|does[[:space:]]+not|don.t|must[[:space:]]+not|may[[:space:]]+not|cannot|can.t|is[[:space:]]+not|are[[:space:]]+not)[[:space:]]+(be[[:space:]]+)?(invoke|invoked|invocable|call|called|run|reach|reachable|dispatch|delegated)|disable-model-invocation|human-only|human[[:space:]]+only|human-invoked|stays[[:space:]]+(with[[:space:]]+)?the[[:space:]]+human|model[[:space:]]+cannot[[:space:]]+reach|unreachable[[:space:]]+from[[:space:]]+the[[:space:]]+model'
 
 files_scanned=0

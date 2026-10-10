@@ -34,7 +34,7 @@ name: test-quick
 
 **Delegate this task to the `test-runner` agent.**
 
-Use the Agent tool with `subagent_type: testing-plugin:test-runner` to run fast unit tests only. Pass all the context gathered above and specify **Tier 1 (unit tests)** execution.
+Use the Agent tool with `subagent_type: testing-plugin:test-runner` to run fast unit tests only. Pass all the context gathered in [Context](#context) and specify **Tier 1 (unit tests)** execution.
 
 The test-runner agent should:
 
@@ -69,7 +69,7 @@ The test-runner agent should:
    - If > 30s: Suggest `/test:consult` for optimization
 
 Provide the agent with:
-- All context from the section above
+- All context from [Context](#context)
 - The parsed parameters
 - **Explicit instruction**: Tier 1 only, skip slow tests
 
