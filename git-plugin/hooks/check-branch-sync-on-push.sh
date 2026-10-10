@@ -53,7 +53,7 @@ SESSION_ID=$(printf '%s' "$INPUT" | jq -r '.session_id // "nosession"')
 
 # Guard: only for git commit / git push commands.
 if [ -z "$COMMAND" ]; then exit 0; fi
-if ! printf '%s' "$COMMAND" | grep -qE '(^|[[:space:]]|&&[[:space:]]*|;[[:space:]]*)git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+(commit|push)\b'; then
+if ! grep -qE '(^|[[:space:]]|&&[[:space:]]*|;[[:space:]]*)git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+(commit|push)\b' <<<"$COMMAND"; then
     exit 0
 fi
 
@@ -72,7 +72,7 @@ command -v gh >/dev/null 2>&1 || exit 0
 
 # Is this a push (as opposed to a commit)? Only a push carries a refspec.
 IS_PUSH=0
-if printf '%s' "$COMMAND" | grep -qE '(^|[[:space:]]|&&[[:space:]]*|;[[:space:]]*)git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+push\b'; then
+if grep -qE '(^|[[:space:]]|&&[[:space:]]*|;[[:space:]]*)git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+push\b' <<<"$COMMAND"; then
     IS_PUSH=1
 fi
 

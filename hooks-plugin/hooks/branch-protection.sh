@@ -115,7 +115,7 @@ mapfile -t CLAUSES < <(split_clauses "$COMMAND")
 
 GIT_CLAUSES=()
 for c in "${CLAUSES[@]}"; do
-  if echo "$c" | grep -Eq "$GIT_CLAUSE_RE"; then
+  if grep -Eq "$GIT_CLAUSE_RE" <<<"$c"; then
     GIT_CLAUSES+=("$c")
   fi
 done
@@ -231,7 +231,7 @@ for GIT_CLAUSE in "${GIT_CLAUSES[@]}"; do
     status|diff|log|show|branch|remote|fetch|pull|stash|tag|blame|shortlog|describe|ls-files|ls-tree|rev-parse|rev-list|name-rev|reflog)
       # Allow stash list but guard stash pop/apply/drop
       if [ "$GIT_SUBCMD" = "stash" ]; then
-        if echo "$GIT_CLAUSE" | grep -Eq 'stash\s+(pop|apply|drop|clear)'; then
+        if grep -Eq 'stash\s+(pop|apply|drop|clear)' <<<"$GIT_CLAUSE"; then
           STASH_OP=$(echo "$GIT_CLAUSE" | grep -oE '(pop|apply|drop|clear)' | head -1 || true)
           record_deny "You're on '${CURRENT_BRANCH}'. Switch to a feature branch before 'git stash ${STASH_OP}' (git switch -c feature/your-change), or delegate this command to the user per .claude/rules/handling-blocked-hooks.md. If this repo uses main-branch-dev, ask the user to export CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 in their shell."
         fi
@@ -251,7 +251,7 @@ for GIT_CLAUSE in "${GIT_CLAUSES[@]}"; do
     push)
       PUSH_ALLOWED=0
       # Allow push to specific remote branch via explicit refspec
-      if echo "$GIT_CLAUSE" | grep -q ':'; then
+      if grep -q ':' <<<"$GIT_CLAUSE"; then
         PUSH_ALLOWED=1
       fi
       # Allow a push that explicitly names a non-protected branch as its target,

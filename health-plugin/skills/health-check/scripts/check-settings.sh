@@ -123,7 +123,7 @@ for sf in "$user_settings" "$project_settings"; do
 
     if [ -n "$allow_patterns" ] && [ -n "$deny_patterns" ]; then
       while IFS= read -r pattern; do
-        if echo "$deny_patterns" | grep -qxF "$pattern"; then
+        if grep -qxF "$pattern" <<<"$deny_patterns"; then
           issues_list="${issues_list}  - SEVERITY=WARN TYPE=permission_conflict FILE=${sf} PATTERN=${pattern}\n"
           issue_count=$((issue_count + 1))
           [ "$check_status" = "OK" ] && check_status="WARN"
