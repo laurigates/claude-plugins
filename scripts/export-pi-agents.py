@@ -217,6 +217,16 @@ def translate_tools(raw: object) -> tuple[list[str], list[str], list[str], int]:
 
 def model_mode(value: str) -> str:
     """argparse type for `--model`: a mode name, or a model id that replaces the pin."""
+    if value.lower() in (MODEL_PRESERVE, MODEL_INHERIT) and value not in (
+        MODEL_PRESERVE,
+        MODEL_INHERIT,
+    ):
+        # A wrong-case mode name would otherwise fullmatch MODEL_ID_RE and be
+        # written as a literal `model: PRESERVE` pin on every agent.
+        raise argparse.ArgumentTypeError(
+            f"invalid --model {value!r}: mode names are lowercase; "
+            f"did you mean {value.lower()!r}?"
+        )
     if value in (MODEL_PRESERVE, MODEL_INHERIT) or MODEL_ID_RE.fullmatch(value):
         return value
     raise argparse.ArgumentTypeError(

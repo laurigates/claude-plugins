@@ -19,7 +19,7 @@
 #   H. every emitted tool name is one of pi's 7 built-ins (the schema contract)
 #   I. the justfile recipes exist, are additive, and the export has no network step
 #   J. --model (#2649): preserve (default) emits the source pin, inherit emits NO
-#      `model:` key at all, a model id replaces the pin, a bad value exits non-zero,
+#      `model:` key at all, a model id replaces the pin, a bad value (incl. a wrong-case mode name) exits non-zero,
 #      and the justfile threads the mode through both recipes
 set -uo pipefail
 
@@ -306,6 +306,12 @@ assert "an empty --model is rejected non-zero (exit 2)" \
   "$([ "$bad_rc" -eq 2 ] && echo true || echo false)"
 python3 "$exporter" --model 'two words' "$fixture/src" "$fixture/out-bad" >/dev/null 2>&1; bad_rc=$?
 assert "a --model with whitespace is rejected non-zero (exit 2)" \
+  "$([ "$bad_rc" -eq 2 ] && echo true || echo false)"
+python3 "$exporter" --model PRESERVE "$fixture/src" "$fixture/out-bad" >/dev/null 2>&1; bad_rc=$?
+assert "a wrong-case mode name (--model PRESERVE) is rejected non-zero (exit 2)" \
+  "$([ "$bad_rc" -eq 2 ] && echo true || echo false)"
+python3 "$exporter" --model Inherit "$fixture/src" "$fixture/out-bad" >/dev/null 2>&1; bad_rc=$?
+assert "a wrong-case mode name (--model Inherit) is rejected non-zero (exit 2)" \
   "$([ "$bad_rc" -eq 2 ] && echo true || echo false)"
 assert "a rejected --model writes nothing" \
   "$([ ! -e "$fixture/out-bad" ] && echo true || echo false)"
