@@ -47,7 +47,7 @@ assert() {
   fi
 }
 
-contains() { printf '%s' "$1" | grep -q -- "$2" && echo true || echo false; }
+contains() { grep -q -- "$2" <<<"$1" && echo true || echo false; }
 # has_line <text> <KEY=VALUE> — whole-line match. A substring match lets a
 # sibling key satisfy an assertion (`TABLE_ROWS=1` inside `MISSING_TABLE_ROWS=1`,
 # the #2297 anchoring lesson), so every new KEY=VALUE assertion is anchored.

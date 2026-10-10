@@ -107,13 +107,13 @@ else
 fi
 
 stash_list=$(git -C "$SANDBOX" stash list)
-if echo "$stash_list" | grep -q "auto-checkpoint before rm -rf"; then
+if grep -q "auto-checkpoint before rm -rf" <<<"$stash_list"; then
   pass "rm -rf creates checkpoint stash in git stash list"
 else
   fail "rm -rf creates checkpoint stash in git stash list" "stash list was: '$stash_list'"
 fi
 
-if echo "$stderr_out" | grep -q "Created checkpoint stash before rm -rf"; then
+if grep -q "Created checkpoint stash before rm -rf" <<<"$stderr_out"; then
   pass "rm -rf prints checkpoint notice on stderr"
 else
   fail "rm -rf prints checkpoint notice on stderr" "stderr was: '$stderr_out'"
