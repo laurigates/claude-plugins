@@ -390,6 +390,49 @@ PY
 # Check 3: Skill body integrity
 # Regression: git-pr-feedback had 'name: fieldname' + '---' entries scattered in body,
 # which render as accidental setext H2 headings in markdown (PR #799).
+# Reads extract-md-elements.py `fence` + `fence_line` TSV rows on stdin and
+# prints `<file>:<fence-start-line>` for each YAML fence whose top-level
+# default_install_hook_types lists commit-msg (inline `[...]` or a `- item`
+# block list) but which sets no top-level default_stages (issue #2824).
+# `read -d ''` rather than a heredoc-fed `python3 -`: stdin carries the rows.
+IFS= read -r -d '' PRECOMMIT_STAGES_PY <<'PY' || true
+import re
+import sys
+
+fences = []
+lines = {}
+for raw in sys.stdin:
+    parts = raw.rstrip("\n").split("\t")
+    if parts[0] == "fence" and len(parts) >= 5:
+        fences.append((parts[1], int(parts[2]), int(parts[3]), parts[4].strip().lower()))
+    elif parts[0] == "fence_line" and len(parts) >= 4:
+        lines.setdefault(parts[1], []).append((int(parts[2]), parts[4] if len(parts) > 4 else ""))
+
+for path, start, end, lang in sorted(fences):
+    if lang not in ("yaml", "yml"):
+        continue
+    body = [text for num, text in sorted(lines.get(path, [])) if start < num < end]
+    hook_types = []
+    has_stages = False
+    for idx, text in enumerate(body):
+        if re.match(r"default_stages\s*:", text):
+            has_stages = True
+        match = re.match(r"default_install_hook_types\s*:\s*(.*)$", text)
+        if not match:
+            continue
+        rest = match.group(1).split("#", 1)[0].strip()
+        if rest.startswith("["):
+            hook_types += [item.strip() for item in rest.strip("[]").split(",")]
+            continue
+        for follow in body[idx + 1:]:
+            item = re.match(r"\s+-\s*([^\s#]+)", follow)
+            if not item:
+                break
+            hook_types.append(item.group(1))
+    if "commit-msg" in hook_types and not has_stages:
+        print(f"{path}:{start}")
+PY
+
 check_skill_body() {
   local plugin="$1"
   local skills_dir="${plugin}/skills"
@@ -1737,6 +1780,79 @@ check_skill_body() {
           has_errors=true
         fi
       done
+      # Regression: the compliance standard said `release-please-action@v4`
+      # while the ComfyUI scaffold emitted @v5 (#2494), so every freshly
+      # generated pack read as out of compliance, and REFERENCE.md mixed both
+      # refs (issue #2757). v5 is the portfolio standard. The invariant is
+      # two-sided: SKILL.md names the @v5 ref, and no template or upgrade step
+      # in SKILL.md or a sidecar still points at an older major.
+      if ! grep -qF 'googleapis/release-please-action@v5' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must name 'googleapis/release-please-action@v5' as the action standard (issue #2757)")
+        has_errors=true
+      fi
+      if grep -qE '(release-please-action@|Update to )v[1-4]([^0-9]|$)' <<<"$skill_corpus_unquoted"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md or a sidecar still sets release-please-action older than @v5 — v5 is the portfolio standard (issue #2757)")
+        has_errors=true
+      fi
+    fi
+
+    # Regression: configure-workflows listed `renovate` as a required per-repo
+    # workflow for every project type and checked a per-repo
+    # renovatebot/github-action runner, so following it added a second Renovate
+    # identity to repos the account-wide laurigates-renovate App already
+    # autodiscovers: two dependency dashboards contending on the same
+    # renovate/* branches (issue #2745). The invariant: the skill names the App
+    # (coverage is decided by owner), flags a per-repo runner in a covered repo
+    # as a duplicate identity, and the project-type Required Workflows table no
+    # longer lists renovate at all. Its release-please row also tracks the v5
+    # standard (issue #2757).
+    if [ "$skill_name" = "configure-workflows" ]; then
+      for token in 'laurigates-renovate' 'duplicate Renovate identity'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain the Renovate App-coverage token '${token}' (issue #2745)")
+          has_errors=true
+        fi
+      done
+      local required_renovate
+      required_renovate=$(awk '
+        /^\|[[:space:]]*Project Type[[:space:]]*\|[[:space:]]*Required Workflows/ { in_tbl = 1; next }
+        in_tbl && /^\|/ { if (tolower($0) ~ /renovate/) print FNR; next }
+        in_tbl { in_tbl = 0 }
+      ' "$skill_file")
+      if [ -n "$required_renovate" ]; then
+        issues+=("❌ ${plugin}/${skill_name}: the Required Workflows table lists renovate unconditionally (line $(tr '\n' ' ' <<<"$required_renovate" | sed 's/ $//')) — the laurigates-renovate App covers laurigates repos (issue #2745)")
+        has_errors=true
+      fi
+      if grep -qE '^\|[[:space:]]*Action version[[:space:]]*\|[[:space:]]*v[1-4][[:space:]]*\|' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: the Release Please Workflow Checks row must require action v5 (issue #2757)")
+        has_errors=true
+      fi
+    fi
+
+    # Regression: configure-pre-commit wrote
+    # `default_install_hook_types: [pre-commit, commit-msg]` with no
+    # `default_stages`, so every hook without a `stages` key ran at BOTH
+    # installed stages and each commit printed the whole hook list twice
+    # (issue #2824). The invariant: every YAML fence in SKILL.md or a sidecar
+    # that installs commit-msg through default_install_hook_types also sets
+    # default_stages. Fences come from scripts/lib/extract-md-elements.py (a
+    # real markdown parse, not a hand-rolled ``` toggle, #2009); without uv the
+    # check cannot run, and that is reported rather than passed.
+    if [ "$skill_name" = "configure-pre-commit" ]; then
+      local pc_missing pc_hit
+      if ! command -v uv >/dev/null 2>&1; then
+        issues+=("❌ ${plugin}/${skill_name}: cannot verify default_stages — 'uv' is not on PATH (fence detection uses scripts/lib/extract-md-elements.py) (issue #2824)")
+        has_errors=true
+      elif ! pc_missing=$(uv run --quiet scripts/lib/extract-md-elements.py --types fence,fence_line "${skill_corpus[@]}" 2>/dev/null \
+                          | python3 -c "$PRECOMMIT_STAGES_PY"); then
+        issues+=("❌ ${plugin}/${skill_name}: default_stages check failed to extract YAML fences (issue #2824)")
+        has_errors=true
+      elif [ -n "$pc_missing" ]; then
+        while IFS= read -r pc_hit; do
+          issues+=("❌ ${plugin}/${skill_name}: YAML fence at ${pc_hit} installs commit-msg via default_install_hook_types but sets no default_stages — every file hook runs twice per commit (issue #2824)")
+        done <<<"$pc_missing"
+        has_errors=true
+      fi
     fi
 
     # Regression: hooks-session-end-issue-hook's own Stop hook depends entirely

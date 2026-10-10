@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-09-23
+modified: 2026-10-09
 reviewed: 2026-07-05
 description: "Set up .pre-commit-config.yaml: hooks for the project type at current revs. Use when installing pre-commit in a repo, auditing stale hook revs, or migrating to pre-commit."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -76,6 +76,7 @@ Compare existing configuration against the project standards in [REFERENCE.md](R
 **Required Base Hooks (All Projects):**
 - `pre-commit-hooks` v5.0.0+ with: trailing-whitespace, end-of-file-fixer, check-yaml, check-json, check-merge-conflict, check-added-large-files
 - `conventional-pre-commit` v4.3.0+ with commit-msg stage
+- `default_install_hook_types` listing `pre-commit` and `commit-msg`, plus `default_stages: [pre-commit]` whenever `commit-msg` is installed. Flag a missing `default_stages` as WARN: without it every unstaged file hook runs at both installed stages, so each commit runs the hook list twice
 
 **Frontend-specific:**
 - `biome` (pre-commit) v0.4.0+
@@ -104,6 +105,10 @@ Config File: .pre-commit-config.yaml ([found|missing])
 Hook Status:
   [hook-name]     [version]   [PASS|WARN|FAIL] ([details])
 
+Hook Types:
+  default_install_hook_types  [pre-commit, commit-msg]  [PASS|FAIL]
+  default_stages              [pre-commit]              [PASS|WARN] (missing: file hooks run twice per commit)
+
 Outdated Hooks:
   - [hook]: [current] -> [standard]
 
@@ -117,9 +122,9 @@ If `--fix` flag is set or user confirms:
 1. **Missing config file**: Create from standard template for detected project type
 2. **Missing hooks**: Add required hooks with standard versions
 3. **Outdated versions**: Update `rev:` values to standard versions
-4. **Missing hook types**: Add `default_install_hook_types` with `pre-commit` and `commit-msg`
+4. **Missing hook types**: Add `default_install_hook_types` with `pre-commit` and `commit-msg`, and `default_stages: [pre-commit]` beside it. Keep the explicit `stages: [commit-msg]` on conventional-pre-commit or commitizen hooks
 
-After modification, run `pre-commit install --install-hooks` to install hooks.
+After modification, run `pre-commit install --install-hooks`. `default_install_hook_types` makes that one command install both hook types; see [REFERENCE.md](REFERENCE.md) for why `default_stages` is needed.
 
 ### Step 7: Update standards tracking
 

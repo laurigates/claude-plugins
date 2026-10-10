@@ -126,7 +126,7 @@ reason = "Registry publish pipeline, incl. the SHA-pinned publish-node-action. D
 
 [files.".github/workflows/release-please.yml"]
 policy = "shared"
-reason = "Measured 2026-07-30: all 13 packs were ahead of the template (ubuntu-slim + release-please-action@v5). Template->pack sync would have reverted a deliberate 3x-cheaper runner across the whole fleet, so the template took the back-port instead (#2494, 2026-09-23: 13/13 packs on ubuntu-slim, 9/13 on @v5; the 4 still on @v4 surface as SHARED_MINORITY). Whether @v5 is the portfolio standard is #2757."
+reason = "Measured 2026-07-30: all 13 packs were ahead of the template (ubuntu-slim + release-please-action@v5). Template->pack sync would have reverted a deliberate 3x-cheaper runner across the whole fleet, so the template took the back-port instead (#2494, 2026-09-23: 13/13 packs on ubuntu-slim, 9/13 on @v5; the 4 still on @v4 surface as SHARED_MINORITY). @v5 is the portfolio standard (#2757): configure-release-please checks for it, so the 4 @v4 packs lag the standard."
 
 [files.".gitignore"]
 policy = "shared"

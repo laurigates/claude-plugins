@@ -24,7 +24,7 @@ jobs:
         with:
           app-id: {% raw %}${{ vars.RELEASE_PLEASE_APP_ID }}{% endraw %}
           private-key: {% raw %}${{ secrets.RELEASE_PLEASE_PRIVATE_KEY }}{% endraw %}
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         id: release
         with:
           token: {% raw %}${{ steps.app-token.outputs.token }}{% endraw %}

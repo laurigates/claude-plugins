@@ -58,7 +58,7 @@ jobs:
         with:
           app-id: ${{ vars.RELEASE_PLEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_PLEASE_PRIVATE_KEY }}
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         with:
           token: ${{ steps.app-token.outputs.token }}
 ```
@@ -181,7 +181,10 @@ to switch to `MY_RELEASE_PLEASE_TOKEN`.
 | FAIL | Missing required files or invalid configuration |
 
 1. **Workflow**: action version v5 (warn if older); token from a secret,
-   never hardcoded; triggers on `push` to `main`
+   never hardcoded; triggers on `push` to `main`. v5's one breaking change
+   (5.0.0, 2026-04-22) is the move to the node24 runtime: inputs and outputs
+   are unchanged, so `@v4` → `@v5` is a ref bump, but a self-hosted runner
+   must be new enough to run node24 actions.
 2. **Config**: valid release-type (`node`, `python`, `helm`, `simple`);
    changelog-sections include at least `feat` and `fix`
 3. **Manifest**: valid JSON; packages match the config

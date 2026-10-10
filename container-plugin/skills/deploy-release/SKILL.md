@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-10-09
 reviewed: 2026-04-25
 allowed-tools: Read, Write, Edit, Bash(git *), Bash(gh release *), Bash(gh pr *), TodoWrite
 args: <version> [--draft] [--prerelease]
@@ -135,7 +135,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
