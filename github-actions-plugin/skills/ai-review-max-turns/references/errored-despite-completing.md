@@ -1,6 +1,6 @@
 # AI Review — Cause 4: Result Flagged Errored Despite Completing
 
-Detail for the fourth row of the four-causes table in [SKILL.md](../SKILL.md).
+Detail for the fourth row of the five-causes table in [SKILL.md](../SKILL.md).
 
 ## Cause 4 — a result flagged errored despite completing
 
@@ -12,7 +12,7 @@ and the wrapper failed the job on that combination alone:
 ##[error]Action failed with error: Claude execution failed: result is_error:true
 ```
 
-It matches none of the other three rows. The `subtype` is `success`, so the run
+It matches none of the other four rows. The `subtype` is `success`, so the run
 did not die on its turn budget, and five turns is nowhere near a ceiling. There
 is no `Found N` line, `permission_denials_count` is 0, the publish step logs
 `No buffered inline comments`, and the PR carries no comment, so no finding is
@@ -31,3 +31,10 @@ before blaming either the code or the platform.
 > run `35730697939` with `subtype: "success"`, `is_error: true`, `num_turns: 5`,
 > `permission_denials_count: 0`, no `Found N` line and no `result` string. A
 > rerun of the same commit passed.
+
+The same incident is the evidence for SKILL.md § No history at all:
+
+> Evidence (2026-09-22, thelma#1524): `a11y-wcag.yml` had exactly one run in
+> its history, the failing one. The rerun passed, and the changed components
+> already carried `aria-label`, `aria-hidden` and `sr-only`, so a genuine
+> Level A finding was implausible.

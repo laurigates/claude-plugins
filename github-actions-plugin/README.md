@@ -27,6 +27,7 @@ All skills are located in the `skills/` directory:
   - Custom trigger configurations
   - Path-filtered reviews
   - External contributor handling
+  - Action gotchas: branch-dispatch validation skip that reports success, denials reported only as a count, bot-actor refusal after a `github.token` push
 
 - **github-actions-auth-security** - Authentication and security
   - Anthropic Direct API configuration
@@ -86,8 +87,9 @@ All skills are located in the `skills/` directory:
   - Why a re-run replays the stale `@main` reusable workflow, and how to force a fresh event instead
 
 - **ai-review-max-turns** - Triaging a red Claude-powered review check
-  - Four causes with opposite responses: budget exhaustion, turn-ceiling overrun, an unpublishable real finding, a completed run flagged `is_error: true`
-  - `subtype` and `is_error` together, then the finding count, as the discriminator — never the red X
+  - Five causes with opposite responses: budget exhaustion, turn-ceiling overrun, an unpublishable real finding, a completed run flagged `is_error: true`, and a bot-actor refusal before Claude starts
+  - `subtype` and `is_error` together, then the finding count, as the discriminator once Claude ran — never the red X
+  - Where a turn-ceiling overrun's turns went: the execution-file tool-call listing, and the base-branch config restore that hides a PR's `.claude/` edits in `.claude-pr/`
   - The rotating-failure-set tell for budget exhaustion
   - Why a check skipped by its `file-patterns` filter reports `pass` and is not a control
   - A workflow with ≤1 historical run has no baseline, so rerunning the identical commit becomes the primary discriminator
