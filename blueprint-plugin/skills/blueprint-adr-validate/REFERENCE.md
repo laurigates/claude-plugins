@@ -34,9 +34,10 @@ emits the `=== ADR NUMBER AUDIT ===` / `STATUS=` / `ISSUE_COUNT=` convention.
 
 | Type | Severity | Meaning |
 |------|----------|---------|
-| `duplicate_adr_number` | ERROR | Two files in the working tree lead with the same `NNNN-`. |
+| `duplicate_adr_number` | ERROR | Two files in the working tree lead with the same `NNNN-` or `ADR-NNN-` number (`ADR-001-x.md` and `0001-y.md` collide). |
 | `adr_number_collision` | ERROR | A working-tree ADR's number is already held by a **different** filename on the base ref (`origin/main`) — the pre-merge parallel-PR case. |
 | `adr_missing_index_row` | WARN | An ADR file is not referenced from the ADR directory's `README.md` index. |
+| `adr_dir_unrecognized_naming` | WARN | An ADR directory holds markdown files besides `README.md` / `index.md`, but none yields an ADR number (issue #2822). |
 
 It resolves the ADR directory as `docs/adrs/` (blueprint canonical) or
 `docs/adr/`, degrades to `STATUS=OK` when neither exists, and skips the base-ref
