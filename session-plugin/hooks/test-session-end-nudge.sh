@@ -74,7 +74,7 @@ run_hook_output() {
 
 assert_contains() {
     local desc="$1" pattern="$2" actual="$3"
-    if echo "$actual" | grep -q "$pattern"; then
+    if grep -q "$pattern" <<<"$actual"; then
         printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
     else
         printf "  FAIL: %s (expected '%s' in: %s)\n" "$desc" "$pattern" "$actual"; FAIL=$((FAIL + 1))
@@ -83,7 +83,7 @@ assert_contains() {
 
 assert_silent() {
     local desc="$1" actual="$2"
-    if echo "$actual" | grep -q '"decision"'; then
+    if grep -q '"decision"' <<<"$actual"; then
         printf "  FAIL: %s (hook emitted: %s)\n" "$desc" "$actual"; FAIL=$((FAIL + 1))
     else
         printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
@@ -240,7 +240,7 @@ assert_contains "empty task list → hook still fires" '"decision":"block"' "$ou
 # tasks anywhere) must not include the taskwarrior sync cue at all — the
 # counter-control proving the low-confidence handling below doesn't fire
 # unconditionally.
-if echo "$output" | grep -q 'taskwarrior'; then
+if grep -q 'taskwarrior' <<<"$output"; then
     printf "  FAIL: confidently-empty store should NOT include the taskwarrior sync cue\n"; FAIL=$((FAIL + 1))
 else
     printf "  PASS: confidently-empty store does NOT include the taskwarrior sync cue\n"; PASS=$((PASS + 1))

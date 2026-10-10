@@ -30,10 +30,10 @@ assert() {
 
 # Whole-line match for KEY=VALUE rows: an unanchored `CRONS_PARSED=1` would also
 # be satisfied by `CRONS_PARSED=12` (the #2297 anchoring lesson).
-has_line() { printf '%s\n' "$1" | grep -qxF -- "$2" && echo true || echo false; }
-lacks_line() { printf '%s\n' "$1" | grep -qxF -- "$2" && echo false || echo true; }
-contains() { printf '%s' "$1" | grep -qF -- "$2" && echo true || echo false; }
-lacks() { printf '%s' "$1" | grep -qF -- "$2" && echo false || echo true; }
+has_line() { grep -qxF -- "$2" <<<"$1" && echo true || echo false; }
+lacks_line() { grep -qxF -- "$2" <<<"$1" && echo false || echo true; }
+contains() { grep -qF -- "$2" <<<"$1" && echo true || echo false; }
+lacks() { grep -qF -- "$2" <<<"$1" && echo false || echo true; }
 rc_is() { [ "$1" -eq "$2" ] && echo true || echo false; }
 
 fx="$(mktemp -d)"
@@ -77,7 +77,7 @@ mkwf "$b" config-drift-audit.yml '53 9 * * 1'
 out="$(bash "$checker" --project-dir "$b" --strict 2>&1)"; rc=$?
 assert "B: collision exits 1 under --strict" "$(rc_is "$rc" 1)"
 assert "B: collision reports STATUS=ERROR" "$(has_line "$out" 'STATUS=ERROR')"
-assert "B: REASON= names the collision" "$(printf '%s\n' "$out" | grep -qE '^REASON=cron_collision: ' && echo true || echo false)"
+assert "B: REASON= names the collision" "$(grep -qE '^REASON=cron_collision: ' <<<"$out" && echo true || echo false)"
 assert "B: collision is typed cron_collision" "$(contains "$out" 'TYPE=cron_collision')"
 assert "B: collision names the hourly workflow" "$(contains "$out" 'fix-release-conflicts.yml[23,53 * * * *]')"
 assert "B: collision names the new workflow" "$(contains "$out" 'config-drift-audit.yml[53 9 * * 1]')"
@@ -182,7 +182,7 @@ out="$(bash "$checker" --project-dir "$h" --strict 2>&1)"; rc=$?
 assert "H: a :00 cron alone exits 0 under --strict" "$(rc_is "$rc" 0)"
 assert "H: a :00 cron is reported as top_of_hour" "$(contains "$out" 'TYPE=top_of_hour')"
 assert "H: a :00 cron makes STATUS=WARN" "$(has_line "$out" 'STATUS=WARN')"
-assert "H: REASON= names the WARN finding" "$(printf '%s\n' "$out" | grep -qE '^REASON=top_of_hour: ' && echo true || echo false)"
+assert "H: REASON= names the WARN finding" "$(grep -qE '^REASON=top_of_hour: ' <<<"$out" && echo true || echo false)"
 
 # --- TEST I: two entries in ONE workflow can collide too ----------------------
 echo "=== TEST I: same-workflow overlap, and Sunday spelled 0 and 7 ==="

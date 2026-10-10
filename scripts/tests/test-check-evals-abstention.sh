@@ -23,8 +23,8 @@ pass=0; fail=0
 assert() { if [ "$2" = "true" ]; then pass=$((pass+1)); else echo "FAIL: $1" >&2; fail=$((fail+1)); fi; }
 # Whole-line match for KEY=VALUE: an unanchored `SCANNED=1` is satisfied by any
 # `*_SCANNED=1` sibling key (the #2297 anchoring lesson).
-has_line() { printf '%s\n' "$1" | grep -qxF -- "$2" && echo true || echo false; }
-has() { printf '%s' "$1" | grep -qF -- "$2" && echo true || echo false; }
+has_line() { grep -qxF -- "$2" <<<"$1" && echo true || echo false; }
+has() { grep -qF -- "$2" <<<"$1" && echo true || echo false; }
 rc_is() { [ "$1" -eq "$2" ] && echo true || echo false; }
 
 fx="$(mktemp -d)"; [ -n "$fx" ] || { echo "mktemp failed" >&2; exit 1; }
@@ -57,7 +57,7 @@ put "$fx/b" p-plugin/skills/s '{"evals":[{"id":"b-001","expectations":["x"]}]}'
 out="$(bash "$CHECK" --project-dir "$fx/b" 2>&1)"; rc=$?
 assert "B exits 1" "$(rc_is $rc 1)"
 assert "B names no_abstention_case" "$(has "$out" 'TYPE=no_abstention_case')"
-assert "B REASON= names the first finding" "$(printf '%s\n' "$out" | grep -qE '^REASON=no_abstention_case: .+' && echo true || echo false)"
+assert "B REASON= names the first finding" "$(grep -qE '^REASON=no_abstention_case: .+' <<<"$out" && echo true || echo false)"
 assert "B names the file" "$(has "$out" 'FILE=p-plugin/skills/s/evals.json')"
 
 # --- C: an abstain case with no fabrication detector fails -------------------
