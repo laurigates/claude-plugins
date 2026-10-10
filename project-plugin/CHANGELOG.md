@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.11](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.21.10...project-plugin-v1.21.11) (2026-10-10)
+
+
+### Documentation
+
+* **skills:** point Context-block references at the Context anchor and lower the positional baseline ([#2973](https://github.com/laurigates/claude-plugins/issues/2973)) ([921b3be](https://github.com/laurigates/claude-plugins/commit/921b3be483a0e8f5cc709dc0369eb659b599bbeb))
+
 ## [1.21.10](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.21.9...project-plugin-v1.21.10) (2026-10-10)
 
 
