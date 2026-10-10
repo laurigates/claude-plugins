@@ -2396,6 +2396,7 @@ case "$args" in
         exit 1 ;;
       nonjson)
         echo 'Configuration override rc.data.location ignored' ;;
+      *) echo "task stub: unmodelled AR_MODE=$AR_MODE" >&2; exit 99 ;;
     esac
     ;;
   *) echo "task stub: unexpected argv: $args" >&2; exit 1 ;;
@@ -2410,6 +2411,8 @@ check_eq "AR0: fixture — the stub's export exits non-zero" "$ar_rc" "1"
 check "AR0: fixture — the stub writes taskwarrior's database error" "$ar_err" "Task Database Error"
 "$AR_STUB" _projects >/dev/null 2>&1; ar_rc=$?
 check_eq "AR0: fixture — the stub fails an unknown call" "$ar_rc" "1"
+AR_MODE=bogus "$AR_STUB" '(status:pending or +ACTIVE)' export >/dev/null 2>&1; ar_rc=$?
+check_eq "AR0: fixture — the stub fails an unmodelled AR_MODE" "$ar_rc" "99"
 
 ar_run() {  # $1 = AR_MODE, rest = collector args
   local mode="$1"; shift

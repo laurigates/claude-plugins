@@ -720,6 +720,25 @@ check_skill_body() {
         issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain 'workflow-verify-before-filing' (upstream candidate file-now gate survives at the orchestrated bookend)")
         has_errors=true
       fi
+      # Regression (PR #2987 review): the "taskwarrior: not queried" rule must be
+      # gated on TASK_AVAILABLE=true. Ungated, every user without a task binary
+      # (TASK_FAIL_REASON=no-cli) got a "not queried (no-cli)" line at every
+      # session-end.
+      if grep -q "not queried (<TASK_FAIL_REASON>)" "$skill_file" \
+        && ! grep -q 'When `TASK_AVAILABLE=true` and `TASK_STORE_REACHABLE=false`' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: the taskwarrior 'not queried' rule must be gated on 'When \`TASK_AVAILABLE=true\` and \`TASK_STORE_REACHABLE=false\`' (no-cli users skip silently)")
+        has_errors=true
+      fi
+    fi
+
+    # Regression (PR #2987 review): session-spinup must not hide a truncated
+    # zero. DISCUSSIONS_UNANSWERED=0 with DISCUSSIONS_TRUNCATED=true is a floor
+    # over the first 100 threads, not a clean queue.
+    if [ "$skill_name" = "session-spinup" ] && grep -q "DISCUSSIONS_UNANSWERED=0" "$skill_file"; then
+      if ! grep -q 'DISCUSSIONS_UNANSWERED=0` with `DISCUSSIONS_TRUNCATED=true' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must render DISCUSSIONS_UNANSWERED=0 with DISCUSSIONS_TRUNCATED=true as a partial read, not 'no line'")
+        has_errors=true
+      fi
     fi
 
     # Regression: session-end and session-wrap both read the collector's

@@ -281,8 +281,10 @@ that failure used to read as a confident empty queue:
 | `TASK_FAIL_REASON` | present when `false`: `read-only` (the store sits on a read-only mount — point `rc.data.location` at a writable store), `store-unreachable` (the path is missing or unopenable), `no-cli` (no `task` binary), or `unknown` |
 | `TASK_FAIL_DETAIL` | the first non-blank line of `task`'s stderr, sanitised to one row of at most 200 characters |
 
-When the store is unreachable, `TASK_SCOPE=unknown` and `PROJECT_CONFIDENCE=low`
-even under `--project`, so `OPEN_TASKS=0` reads as unqueried rather than empty.
+When the `task` binary is present but the store is unreachable, `TASK_SCOPE=unknown`
+and `PROJECT_CONFIDENCE=low` even under `--project`, so `OPEN_TASKS=0` reads as
+unqueried rather than empty; with no `task` binary (`TASK_FAIL_REASON=no-cli`),
+`TASK_SCOPE=none`.
 
 `DETECTION=` reports how the slug was chosen, independently of `TASK_SCOPE`:
 

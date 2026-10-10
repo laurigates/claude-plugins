@@ -131,7 +131,8 @@ a count.
 |---|---|
 | `DISCUSSIONS_QUERY_OK=false` | `discussions: not queried (<DISCUSSIONS_FAIL_REASON>)` — `DISCUSSIONS_UNANSWERED` is absent, so there is no zero to show. The reason uses `GH_FAIL_REASON`'s vocabulary plus `no-jq` |
 | `DISCUSSIONS_ENABLED=false` | Discussions are off for the repo; the zero is genuine and earns no line |
-| `DISCUSSIONS_UNANSWERED=0` | Nothing unanswered; no line |
+| `DISCUSSIONS_UNANSWERED=0` with `DISCUSSIONS_TRUNCATED!=true` | Nothing unanswered; no line |
+| `DISCUSSIONS_UNANSWERED=0` with `DISCUSSIONS_TRUNCATED=true` | The zero covers only the first 100 threads: `discussions: 0 unanswered in first 100 of 100+ read (rest unread)` |
 | `DISCUSSIONS_UNANSWERED=N` | `discussions: N unanswered`, one row per `DISCUSSION_<n>_NUMBER` / `_CATEGORY` / `_TITLE` / `_URL` / `_AGE_DAYS` set, rendered `#NUMBER [CATEGORY] TITLE — AGE_DAYS d` and linked to `URL` |
 | `DISCUSSIONS_TRUNCATED=true` | More than 100 open threads exist and only the first 100 were read, so N is a floor: `N+ unanswered (first 100 of 100+ open threads read)` |
 
