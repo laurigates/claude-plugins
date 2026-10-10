@@ -41,15 +41,15 @@ cat > "${full}/.mcp.json" <<'JSON'
 JSON
 
 out1="$(MCP_CONFIG_PATH="${full}/.mcp.json" bash "$check_script" --home-dir "$HOME" --project-dir "$full")"
-echo "$out1" | grep -q "^PLAYWRIGHT_CONFIG=true$" || fail "expected PLAYWRIGHT_CONFIG=true:\n$out1"
-echo "$out1" | grep -q "^PLAYWRIGHT_DEP=true$" || fail "expected PLAYWRIGHT_DEP=true:\n$out1"
-echo "$out1" | grep -q "^AXE_CORE_DEP=true$" || fail "expected AXE_CORE_DEP=true:\n$out1"
-echo "$out1" | grep -q "^E2E_DIR=true$" || fail "expected E2E_DIR=true:\n$out1"
-echo "$out1" | grep -q "^VISUAL_SNAPSHOTS=true$" || fail "expected VISUAL_SNAPSHOTS=true:\n$out1"
-echo "$out1" | grep -q "^E2E_WORKFLOW=true$" || fail "expected E2E_WORKFLOW=true:\n$out1"
-echo "$out1" | grep -q "^PLAYWRIGHT_MCP=true$" || fail "expected PLAYWRIGHT_MCP=true:\n$out1"
-echo "$out1" | grep -q "^PLAYWRIGHT_DETECTED=true$" || fail "expected PLAYWRIGHT_DETECTED=true:\n$out1"
-echo "$out1" | grep -q "^STATUS=OK$" || fail "expected STATUS=OK for configured project:\n$out1"
+grep -q "^PLAYWRIGHT_CONFIG=true$" <<<"$out1" || fail "expected PLAYWRIGHT_CONFIG=true:\n$out1"
+grep -q "^PLAYWRIGHT_DEP=true$" <<<"$out1" || fail "expected PLAYWRIGHT_DEP=true:\n$out1"
+grep -q "^AXE_CORE_DEP=true$" <<<"$out1" || fail "expected AXE_CORE_DEP=true:\n$out1"
+grep -q "^E2E_DIR=true$" <<<"$out1" || fail "expected E2E_DIR=true:\n$out1"
+grep -q "^VISUAL_SNAPSHOTS=true$" <<<"$out1" || fail "expected VISUAL_SNAPSHOTS=true:\n$out1"
+grep -q "^E2E_WORKFLOW=true$" <<<"$out1" || fail "expected E2E_WORKFLOW=true:\n$out1"
+grep -q "^PLAYWRIGHT_MCP=true$" <<<"$out1" || fail "expected PLAYWRIGHT_MCP=true:\n$out1"
+grep -q "^PLAYWRIGHT_DETECTED=true$" <<<"$out1" || fail "expected PLAYWRIGHT_DETECTED=true:\n$out1"
+grep -q "^STATUS=OK$" <<<"$out1" || fail "expected STATUS=OK for configured project:\n$out1"
 pass "configured project detects playwright config, deps, e2e dir, snapshots, workflow, and MCP"
 rm -rf "$full"
 
@@ -58,12 +58,12 @@ rm -rf "$full"
 # -----------------------------------------------------------------------------
 bare="$(mktemp -d)"
 out2="$(MCP_CONFIG_PATH="${bare}/.mcp.json" bash "$check_script" --home-dir "$HOME" --project-dir "$bare")"
-echo "$out2" | grep -q "^PLAYWRIGHT_CONFIG=false$" || fail "expected PLAYWRIGHT_CONFIG=false:\n$out2"
-echo "$out2" | grep -q "^PLAYWRIGHT_DEP=false$" || fail "expected PLAYWRIGHT_DEP=false:\n$out2"
-echo "$out2" | grep -q "^E2E_DIR=false$" || fail "expected E2E_DIR=false:\n$out2"
-echo "$out2" | grep -q "^PLAYWRIGHT_MCP=false$" || fail "expected PLAYWRIGHT_MCP=false:\n$out2"
-echo "$out2" | grep -q "^PLAYWRIGHT_DETECTED=false$" || fail "expected PLAYWRIGHT_DETECTED=false:\n$out2"
-echo "$out2" | grep -q "^STATUS=WARN$" || fail "expected STATUS=WARN for bare project:\n$out2"
+grep -q "^PLAYWRIGHT_CONFIG=false$" <<<"$out2" || fail "expected PLAYWRIGHT_CONFIG=false:\n$out2"
+grep -q "^PLAYWRIGHT_DEP=false$" <<<"$out2" || fail "expected PLAYWRIGHT_DEP=false:\n$out2"
+grep -q "^E2E_DIR=false$" <<<"$out2" || fail "expected E2E_DIR=false:\n$out2"
+grep -q "^PLAYWRIGHT_MCP=false$" <<<"$out2" || fail "expected PLAYWRIGHT_MCP=false:\n$out2"
+grep -q "^PLAYWRIGHT_DETECTED=false$" <<<"$out2" || fail "expected PLAYWRIGHT_DETECTED=false:\n$out2"
+grep -q "^STATUS=WARN$" <<<"$out2" || fail "expected STATUS=WARN for bare project:\n$out2"
 pass "bare project detects no UX testing infrastructure and reports STATUS=WARN"
 rm -rf "$bare"
 
@@ -89,7 +89,7 @@ bun_lockfile_case() {
     printf '# fixture lockfile\n' > "${blf_dir}/${blf_name}"
   done
   blf_out="$(MCP_CONFIG_PATH="${blf_dir}/.mcp.json" bash "$check_script" --home-dir "$HOME" --project-dir "$blf_dir")"
-  echo "$blf_out" | grep -q "^BUN_LOCKFILE=${blf_expect}\$" \
+  grep -q "^BUN_LOCKFILE=${blf_expect}\$" <<<"$blf_out" \
     || fail "expected BUN_LOCKFILE=${blf_expect} for ${blf_label}:\n$blf_out"
   # The KEY=VALUE contract requires exactly one BUN_LOCKFILE row.
   [ "$(echo "$blf_out" | grep -c '^BUN_LOCKFILE=')" -eq 1 ] \

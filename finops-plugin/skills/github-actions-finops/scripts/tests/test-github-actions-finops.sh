@@ -86,37 +86,37 @@ planted="${fixtures_dir}/planted.json"
 
 run_script "$planted"; out1="$SCRIPT_OUT"; rc1=$LAST_RC
 [ "$rc1" -eq 0 ] || fail "planted-waste run exited $rc1 (expected 0 for WARN):\n$out1"
-echo "$out1" | grep -q "^STATUS=WARN$" \
+grep -q "^STATUS=WARN$" <<<"$out1" \
   || fail "expected STATUS=WARN on planted waste, got:\n$out1"
-echo "$out1" | grep -q "^SKIPPED_RUNS=6$" \
+grep -q "^SKIPPED_RUNS=6$" <<<"$out1" \
   || fail "expected SKIPPED_RUNS=6, got:\n$out1"
-echo "$out1" | grep -q "^BOT_TRIGGERED_RUNS=2$" \
+grep -q "^BOT_TRIGGERED_RUNS=2$" <<<"$out1" \
   || fail "expected BOT_TRIGGERED_RUNS=2, got:\n$out1"
-echo "$out1" | grep -q "^HIGH_FREQUENCY_WORKFLOWS=1$" \
+grep -q "^HIGH_FREQUENCY_WORKFLOWS=1$" <<<"$out1" \
   || fail "expected HIGH_FREQUENCY_WORKFLOWS=1, got:\n$out1"
-echo "$out1" | grep -q "TYPE=skipped_runs" \
+grep -q "TYPE=skipped_runs" <<<"$out1" \
   || fail "expected a skipped_runs issue, got:\n$out1"
-echo "$out1" | grep -q "TYPE=bot_triggered" \
+grep -q "TYPE=bot_triggered" <<<"$out1" \
   || fail "expected a bot_triggered issue, got:\n$out1"
-echo "$out1" | grep -q "TYPE=high_frequency" \
+grep -q "TYPE=high_frequency" <<<"$out1" \
   || fail "expected a high_frequency issue, got:\n$out1"
-echo "$out1" | grep -q "^ISSUE_COUNT=3$" \
+grep -q "^ISSUE_COUNT=3$" <<<"$out1" \
   || fail "expected ISSUE_COUNT=3, got:\n$out1"
-echo "$out1" | grep -q "^BILLING_AVAILABLE=true$" \
+grep -q "^BILLING_AVAILABLE=true$" <<<"$out1" \
   || fail "expected BILLING_AVAILABLE=true from fixture billing, got:\n$out1"
-echo "$out1" | grep -q "^BILLING_MINUTES=1500$" \
+grep -q "^BILLING_MINUTES=1500$" <<<"$out1" \
   || fail "expected BILLING_MINUTES=1500 (1000+500 actions rows, packages row excluded), got:\n$out1"
 # net != gross is the load-bearing pair: summing grossAmount into the spend
 # figure is the exact mistake that makes a free public repo look expensive.
-echo "$out1" | grep -q "^BILLING_NET_USD=6$" \
+grep -q "^BILLING_NET_USD=6$" <<<"$out1" \
   || fail "expected BILLING_NET_USD=6 (public-repo row is fully discounted), got:\n$out1"
-echo "$out1" | grep -q "^BILLING_GROSS_USD=12$" \
+grep -q "^BILLING_GROSS_USD=12$" <<<"$out1" \
   || fail "expected BILLING_GROSS_USD=12 (exposure before discount), got:\n$out1"
 # The packages row must not leak into an Actions-minutes total.
-echo "$out1" | grep -q "^BILLING_MINUTES=1599$" \
+grep -q "^BILLING_MINUTES=1599$" <<<"$out1" \
   && fail "packages row leaked into BILLING_MINUTES, got:\n$out1"
 # duration: noisy.yml has 51×300s = 15300s, dominates calm.yml (120s)
-echo "$out1" | grep -q "^WORKFLOW_DURATION_SECONDS=noisy.yml|15300$" \
+grep -q "^WORKFLOW_DURATION_SECONDS=noisy.yml|15300$" <<<"$out1" \
   || fail "expected noisy.yml duration 15300s, got:\n$out1"
 pass "planted waste yields STATUS=WARN, correct counts, three fix suggestions, billing + duration"
 
@@ -137,19 +137,19 @@ JSON
 
 run_script "$clean"; out2="$SCRIPT_OUT"; rc2=$LAST_RC
 [ "$rc2" -eq 0 ] || fail "clean run exited $rc2 (expected 0):\n$out2"
-echo "$out2" | grep -q "^STATUS=OK$" \
+grep -q "^STATUS=OK$" <<<"$out2" \
   || fail "expected STATUS=OK on clean data, got:\n$out2"
-echo "$out2" | grep -q "^SKIPPED_RUNS=0$" \
+grep -q "^SKIPPED_RUNS=0$" <<<"$out2" \
   || fail "expected SKIPPED_RUNS=0, got:\n$out2"
-echo "$out2" | grep -q "^BOT_TRIGGERED_RUNS=0$" \
+grep -q "^BOT_TRIGGERED_RUNS=0$" <<<"$out2" \
   || fail "expected BOT_TRIGGERED_RUNS=0, got:\n$out2"
-echo "$out2" | grep -q "^HIGH_FREQUENCY_WORKFLOWS=0$" \
+grep -q "^HIGH_FREQUENCY_WORKFLOWS=0$" <<<"$out2" \
   || fail "expected HIGH_FREQUENCY_WORKFLOWS=0, got:\n$out2"
-echo "$out2" | grep -q "^ISSUE_COUNT=0$" \
+grep -q "^ISSUE_COUNT=0$" <<<"$out2" \
   || fail "expected ISSUE_COUNT=0, got:\n$out2"
-echo "$out2" | grep -q "^ISSUES:$" \
+grep -q "^ISSUES:$" <<<"$out2" \
   && fail "expected no ISSUES block on clean data, got:\n$out2"
-echo "$out2" | grep -q "^BILLING_AVAILABLE=false$" \
+grep -q "^BILLING_AVAILABLE=false$" <<<"$out2" \
   || fail "expected BILLING_AVAILABLE=false when fixture omits billing, got:\n$out2"
 pass "clean data yields STATUS=OK, zero counts, no issues, no billing"
 
@@ -162,13 +162,13 @@ echo '{"workflow_runs": []}' > "$empty"
 
 run_script "$empty"; out3="$SCRIPT_OUT"; rc3=$LAST_RC
 [ "$rc3" -eq 0 ] || fail "empty run exited $rc3 (expected 0):\n$out3"
-echo "$out3" | grep -q "^STATUS=OK$" \
+grep -q "^STATUS=OK$" <<<"$out3" \
   || fail "expected STATUS=OK on empty payload, got:\n$out3"
-echo "$out3" | grep -q "^TOTAL_RUNS=0$" \
+grep -q "^TOTAL_RUNS=0$" <<<"$out3" \
   || fail "expected TOTAL_RUNS=0, got:\n$out3"
-echo "$out3" | grep -q "^SKIPPED_PERCENT=0$" \
+grep -q "^SKIPPED_PERCENT=0$" <<<"$out3" \
   || fail "expected SKIPPED_PERCENT=0 (no divide-by-zero), got:\n$out3"
-echo "$out3" | grep -q "^ISSUE_COUNT=0$" \
+grep -q "^ISSUE_COUNT=0$" <<<"$out3" \
   || fail "expected ISSUE_COUNT=0 on empty payload, got:\n$out3"
 pass "empty payload degrades gracefully without crash or divide-by-zero"
 
@@ -177,18 +177,18 @@ pass "empty payload degrades gracefully without crash or divide-by-zero"
 # -----------------------------------------------------------------------------
 run_script "${fixtures_dir}/does-not-exist.json"; out4="$SCRIPT_OUT"; rc4=$LAST_RC
 [ "$rc4" -eq 1 ] || fail "missing-fixture run exited $rc4 (expected 1):\n$out4"
-echo "$out4" | grep -q "^STATUS=ERROR$" \
+grep -q "^STATUS=ERROR$" <<<"$out4" \
   || fail "expected STATUS=ERROR on missing fixture, got:\n$out4"
-echo "$out4" | grep -q "TYPE=fixture_missing" \
+grep -q "TYPE=fixture_missing" <<<"$out4" \
   || fail "expected a fixture_missing issue, got:\n$out4"
 pass "missing fixture yields STATUS=ERROR and exit 1"
 
 # -----------------------------------------------------------------------------
 # Case 5: section delimiters present and balanced.
 # -----------------------------------------------------------------------------
-echo "$out2" | grep -q "^=== GITHUB ACTIONS FINOPS ===$" \
+grep -q "^=== GITHUB ACTIONS FINOPS ===$" <<<"$out2" \
   || fail "expected opening section header, got:\n$out2"
-echo "$out2" | grep -q "^=== END GITHUB ACTIONS FINOPS ===$" \
+grep -q "^=== END GITHUB ACTIONS FINOPS ===$" <<<"$out2" \
   || fail "expected closing section footer, got:\n$out2"
 pass "structured-output section delimiters present"
 

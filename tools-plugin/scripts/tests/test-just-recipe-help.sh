@@ -44,7 +44,7 @@ assert() {
   fi
 }
 
-contains() { printf '%s' "$1" | grep -q -- "$2" && echo true || echo false; }
+contains() { grep -q -- "$2" <<<"$1" && echo true || echo false; }
 
 tmp="$(mktemp -d)"
 # mktemp can fail; an empty $tmp would make every path below resolve to / .
@@ -208,7 +208,7 @@ assert "H: a dynamically-named flag is refused, not partially listed" \
 assert "H: and the refusal exits 3" \
   "$([ "$dyn_rc" = "3" ] && echo true || echo false)"
 assert "H: no partial flag list is printed alongside the refusal" \
-  "$(printf '%s' "$dyn_out" | grep -q -- '--readable' && echo false || echo true)"
+  "$(grep -q -- '--readable' <<<"$dyn_out" && echo false || echo true)"
 
 # ------------- J: an indirect help= is resolved or named, but never dropped
 # `help=SOME_CONSTANT` used to print the flag bare, indistinguishable from a
@@ -251,7 +251,7 @@ marker_count="$(printf '%s' "$ind_out" | grep -c 'not a literal')"
 assert "J: only the opaque flag falls back to the marker (got $marker_count)" \
   "$([ "$marker_count" = "1" ] && echo true || echo false)"
 assert "J: the f-string's text is rendered, not its source expression" \
-  "$(printf '%s' "$ind_out" | grep -q "f'cap at" && echo false || echo true)"
+  "$(grep -q "f'cap at" <<<"$ind_out" && echo false || echo true)"
 assert "J: with the interpolation left as a visible placeholder" \
   "$(contains "$ind_out" "cap at {LIMIT} items")"
 assert "J: a concatenation keeps its literal half" \
@@ -259,7 +259,7 @@ assert "J: a concatenation keeps its literal half" \
 assert "J: an indirect help= is not an unreadable flag NAME, so no refusal" \
   "$([ "$ind_rc" = "0" ] && echo true || echo false)"
 assert "J: and it did not silently become a refusal either" \
-  "$(printf '%s' "$ind_out" | grep -q 'REFUSING' && echo false || echo true)"
+  "$(grep -q 'REFUSING' <<<"$ind_out" && echo false || echo true)"
 
 # ---- K: a flag is filed under the parser it was CALLED on, not the last one
 # Source order files `--x` under whichever parser was declared most recently;
@@ -316,7 +316,7 @@ assert "K: --x is filed under run, not under the last-declared parser" \
   "$(contains "$(block run)" "\-\-x")"
 assert "K: --y is filed under last" "$(contains "$(block last)" "\-\-y")"
 assert "K: the flagless subcommand in between accepts nothing" \
-  "$(printf '%s' "$(block status)" | grep -q -- '--' && echo false || echo true)"
+  "$(grep -q -- '--' <<<"$(block status)" && echo false || echo true)"
 assert "K: and says so rather than printing an empty section" \
   "$(contains "$(block status)" "no flags of its own")"
 assert "K: an add_argument inside an except handler is seen at all" \
@@ -330,7 +330,7 @@ assert "K: an add_argument inside a match arm is seen (ast.Match uses cases)" \
 # A stale `parsers` entry OUTRANKS the cursor, so a name rebound by a call this
 # scan does not recognise must forget its old parser rather than keep it.
 assert "K: a rebound name does not file its flags under the old subcommand" \
-  "$(printf '%s' "$(block run)" | grep -q -- '\-\-stale' && echo false || echo true)"
+  "$(grep -q -- '\-\-stale' <<<"$(block run)" && echo false || echo true)"
 
 # ------------------------- I: a flagless subcommand is still listed by name
 wrapped_out="$(cd "$tmp/good" && python3 "$helper" wrapped 2>&1)"
@@ -361,7 +361,7 @@ SHEOF
 sh_out="$(cd "$tmp/good" && python3 "$helper" plain.sh 2>&1)"
 py_out="$(cd "$tmp/good" && python3 "$helper" doc_example.py 2>&1)"
 assert "L: a shell script is not reported as broken Python" \
-  "$(printf '%s' "$sh_out" | grep -q 'does not parse' && echo false || echo true)"
+  "$(grep -q 'does not parse' <<<"$sh_out" && echo false || echo true)"
 assert "L: and says what it actually is" \
   "$(contains "$sh_out" "is a shell script, not argparse")"
 assert "L: a Python script still gets its NOTES section" \

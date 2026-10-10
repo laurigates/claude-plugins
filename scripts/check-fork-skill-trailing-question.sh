@@ -84,7 +84,7 @@ for skill_file in "${skill_files[@]}"; do
 
   # Only skills that declare `context: fork` in frontmatter are in scope.
   frontmatter="$(awk '/^---$/{n++; next} n==1' "$skill_file")"
-  if ! printf '%s\n' "$frontmatter" | grep -qE '^context:[[:space:]]*fork[[:space:]]*$'; then
+  if ! grep -qE '^context:[[:space:]]*fork[[:space:]]*$' <<<"$frontmatter"; then
     continue
   fi
   checked=$((checked + 1))
@@ -96,7 +96,7 @@ for skill_file in "${skill_files[@]}"; do
     END { print last }
   ' "$skill_file")"
 
-  if printf '%s' "$last_line" | grep -qiE "$QUESTION_RE"; then
+  if grep -qiE "$QUESTION_RE" <<<"$last_line"; then
     errors=$((errors + 1))
     echo "❌ ${skill_file}: context: fork skill ends its body with a user-directed confirmation question — there is no channel back to the user in a forked subagent"
     echo "   Last line: ${last_line}"
