@@ -829,6 +829,33 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: meta-context-diet's dispositions must stay choosable and its
+    # commit path must stay runnable (PR #2978 review). Lean-to-pointer is named
+    # as a destructive disposition at Step 4/5, so the Step 2 rubric must carry
+    # a row for it; the commit policy must branch off the default branch first
+    # (branch-protection.sh blocks commits on main) with a matching
+    # `git switch` grant; the consumer sweep must define how to grep a
+    # CLAUDE.md `##` section, which has no file name of its own.
+    if [ "$skill_name" = "meta-context-diet" ]; then
+      mcd_dir="$(dirname "$skill_file")"
+      if ! grep -q '^| \*\*Lean-to-pointer\*\* |' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md Step 2 rubric must have a Lean-to-pointer row (PR #2978)")
+        has_errors=true
+      fi
+      if ! grep -q '^allowed-tools:.*Bash(git switch \*)' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: allowed-tools must grant Bash(git switch *) for branch-before-commit (PR #2978)")
+        has_errors=true
+      fi
+      if ! grep -q 'never commit on main/master' "$mcd_dir/references/report-format.md" 2>/dev/null; then
+        issues+=("❌ ${plugin}/${skill_name}: references/report-format.md commit policy must branch first, never commit on main/master (PR #2978)")
+        has_errors=true
+      fi
+      if ! grep -q 'anchor slug' "$mcd_dir/references/consumer-sweep.md" 2>/dev/null; then
+        issues+=("❌ ${plugin}/${skill_name}: references/consumer-sweep.md must define the sweep for CLAUDE.md section candidates (PR #2978)")
+        has_errors=true
+      fi
+    fi
+
     # Regression: blueprint-adr-validate must retain the ADR-number collision
     # guard (issue #1585). ADR numbers are claimed at merge time, so two
     # parallel ADR PRs can pick the same number and both land (the FVH #2015

@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.61.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.60.7...git-plugin-v2.61.0) (2026-10-10)
+
+
+### Features
+
+* **git-plugin:** report checkbox, sub-issue and merged-PR progress per issue in git-triage ([#2977](https://github.com/laurigates/claude-plugins/issues/2977)) ([746085c](https://github.com/laurigates/claude-plugins/commit/746085ca762e66a369c43373e50e1d8724d43566))
+
 ## [2.60.7](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.60.6...git-plugin-v2.60.7) (2026-10-10)
 
 
