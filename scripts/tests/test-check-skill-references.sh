@@ -325,7 +325,7 @@ cp "$linter" "$empty/scripts/check-skill-references.sh"
 chmod +x "$empty/scripts/check-skill-references.sh"
 out="$("$empty/scripts/check-skill-references.sh" 2>&1)"
 status=$?
-if [ "$status" -ne 0 ] && printf '%s' "$out" | grep -q 'discovery walk is broken'; then
+if [ "$status" -ne 0 ] && grep -q 'discovery walk is broken' <<<"$out"; then
   ok "empty ground truth fails loudly instead of passing vacuously"
 else
   bad "empty ground truth" "expected exit!=0 naming a broken walk, got $status: $out"
