@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.46.11](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.10...blueprint-plugin-v3.46.11) (2026-10-10)
+
+
+### Bug Fixes
+
+* **scripts:** read captured output from here-strings so grep -q cannot SIGPIPE a pipefail test ([#2992](https://github.com/laurigates/claude-plugins/issues/2992)) ([2e2865c](https://github.com/laurigates/claude-plugins/commit/2e2865c782f1b712c064b06ef8d871f2b1a1caa6))
+
 ## [3.46.10](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.9...blueprint-plugin-v3.46.10) (2026-10-10)
 
 
