@@ -92,7 +92,8 @@ inputs:
 outputs:
   exists:
     description: >-
-      'true' when an open issue already carries `label`. Guard-only callers gate
+      'true' when an open issue carries `label` (and, when `title-prefix` is
+      set, has a title starting with that prefix). Guard-only callers gate
       their own steps on this.
     value: ${{ steps.guard.outputs.exists }}
   matched:
