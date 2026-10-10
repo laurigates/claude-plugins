@@ -365,6 +365,25 @@ has "$OUT" 'TYPE=declared_pin_ambiguous SUITE=s-plugin/hooks/test-style.sh HOOK=
   && pass "(q) reports the ambiguous declaration" \
   || fail "(q) expected declared_pin_ambiguous: $OUT"
 
+# --- (r) a backslash before a non-special char stays literal, as in bash ---
+echo "--- Test (r): a backslash-n inside a block message keeps its backslash (#2727) ---"
+TREE="$TMP_ROOT/r"
+mkdir -p "$TREE/s-plugin/hooks"
+cat > "$TREE/s-plugin/hooks/style.sh" <<'EOF'
+#!/usr/bin/env bash
+block() { echo "$1" >&2; exit 2; }
+IN=$(cat)
+case "$IN" in *awk*) block "REMINDER: split with printf 'a\nb' and quote \"x\"." ;; esac
+case "$IN" in *env*) block "REMINDER: name one variable." ;; esac
+EOF
+write_declared_suite "$TREE/s-plugin/hooks" \
+  "# hook-message-pin: printf 'a\\nb' and quote" \
+  "pin awk \"printf 'a\\nb' and quote\"" \
+  "# hook-message-pin: name one variable" \
+  'pin env "name one variable"'
+OUT="$(run_guard "$TREE")"; RC=$?
+expect "(r) verdict" "$OUT" "$RC" 0 STATUS=OK ISSUE_COUNT=0 BLOCK_MESSAGES=2 MESSAGES_CHECKED=2 MESSAGES_UNCHECKED=0
+
 # --- (m) the real repository is clean and the scan is non-vacuous ---
 echo "--- Test (m): the repository's own hook suites pass ---"
 OUT="$(run_guard "$REPO_ROOT")"; RC=$?

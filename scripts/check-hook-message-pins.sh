@@ -150,7 +150,9 @@ captures_hook_stderr() {
 # The full literal text of each block() message, one per output line, in hook
 # order. $2 is the comma-separated list of line numbers the block_lines grep
 # found, so both views index the same calls. A message runs from `block "` to
-# the first unescaped `"`, across lines; backslash escapes are resolved and each
+# the first unescaped `"`, across lines; backslash escapes are resolved as bash
+# resolves them inside double quotes (the backslash goes only before " $ \ and
+# `; `\n` stays `\n`) and each
 # embedded newline becomes \037, which no declared token (a single line) holds.
 block_message_texts() { # $1 = hook file, $2 = line numbers
   awk -v want="$2" '
@@ -162,7 +164,9 @@ block_message_texts() { # $1 = hook file, $2 = line numbers
     function scan(s,    i, c) {
       for (i = 1; i <= length(s); i++) {
         c = substr(s, i, 1)
-        if (esc) { msg = msg c; esc = 0; continue }
+        # Bash double quotes drop the backslash only before " $ \ and `;
+        # before anything else (\n, \t) the backslash stays literal.
+        if (esc) { msg = msg (index("\"$`\\", c) ? "" : "\\") c; esc = 0; continue }
         if (c == "\\") { esc = 1; continue }
         if (c == "\"") { print msg; inmsg = 0; return }
         msg = msg c
