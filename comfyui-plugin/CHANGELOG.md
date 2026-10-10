@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.14](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.13...comfyui-plugin-v1.13.14) (2026-10-10)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** report a shared-file plurality as SHARED_SPLIT, not a fleet majority ([#2971](https://github.com/laurigates/claude-plugins/issues/2971)) ([5194f59](https://github.com/laurigates/claude-plugins/commit/5194f59d629ed8fa518df472ab542366c35e037b))
+
 ## [1.13.13](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.12...comfyui-plugin-v1.13.13) (2026-10-10)
 
 
