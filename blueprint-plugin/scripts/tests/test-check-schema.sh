@@ -339,6 +339,33 @@ done | sort -u | wc -l | tr -d ' ')"
     && ok "schema parity: relates-to uses one pattern across all three" \
     || notok "schema parity: relates-to patterns diverged across schemas"
 
+# ADR ids: three or more digits, everywhere an ADR is referenced (#3000). The
+# id/supersedes/superseded-by/extends fields once required four while
+# relates-to accepted three, and the ADR scripts accept ADR-NNN-title.md, so a
+# repo the scripts called valid failed the schema on every ADR.
+adr_ref_patterns="$(jq -r '.properties.frontmatter.properties
+    | [.id, .supersedes, .["superseded-by"], .extends] | map(.pattern) | unique | join(" ")' \
+    "${SCHEMA_DIR}/adr.schema.json")"
+relates_adr_digits="$(jq -r '.properties.frontmatter.properties["relates-to"].items.pattern' \
+    "${SCHEMA_DIR}/adr.schema.json" | sed -E 's/.*-(\[0-9\][^$]*)\$$/\1/')"
+[ "$adr_ref_patterns" = "^ADR-${relates_adr_digits}\$" ] \
+    && ok "schema parity: id/supersedes/superseded-by/extends accept the ADR form relates-to accepts" \
+    || notok "schema parity: ADR reference patterns ($adr_ref_patterns) differ from relates-to ($relates_adr_digits)"
+
+awk '{print} /^status: Accepted$/ {print "supersedes: ADR-031"}' "$WORK/good.md" \
+    | sed 's/^id: ADR-0099$/id: ADR-001/' > "$WORK/three-digit.md"
+out="$(run adr "$WORK/three-digit.md")"
+! has_issue "$out" "AT=/frontmatter/id " && ! has_issue "$out" "AT=/frontmatter/supersedes " \
+    && has_issue "$out" "STATUS=OK" \
+    && ok "ADR ids: ADR-001 with supersedes ADR-031 validates clean" \
+    || notok "ADR ids: a three-digit id and supersedes must validate -- got: $out"
+
+sed 's/^id: ADR-0099$/id: ADR-01/' "$WORK/good.md" > "$WORK/two-digit.md"
+out="$(run adr "$WORK/two-digit.md")"
+[ "$(severity_of "$out" "/frontmatter/id")" = "ERROR" ] \
+    && ok "ADR ids: a two-digit id is still an ERROR" \
+    || notok "ADR ids: ADR-01 must still ERROR -- got: $out"
+
 for s in adr prd prp; do
     jq -e '.properties.sections and .properties.frontmatter' "${SCHEMA_DIR}/${s}.schema.json" >/dev/null 2>&1 \
         && ok "schema parity: ${s} projects both frontmatter and sections" \
