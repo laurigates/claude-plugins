@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.61.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.61.1...git-plugin-v2.61.2) (2026-10-10)
+
+
+### Bug Fixes
+
+* **git-plugin:** state the required commit scope in three more skills and document the merge-endpoint 500 control ([#2976](https://github.com/laurigates/claude-plugins/issues/2976)) ([59c5b87](https://github.com/laurigates/claude-plugins/commit/59c5b87d315ee4d5368b6a26c599a9b4e933de50))
+
 ## [2.61.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.61.0...git-plugin-v2.61.1) (2026-10-10)
 
 

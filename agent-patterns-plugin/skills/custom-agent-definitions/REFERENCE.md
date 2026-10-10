@@ -12,7 +12,7 @@ snippets.
 name: research-agent
 description: Research questions without modifying main context
 model: opus
-allowed-tools: WebSearch, WebFetch, Read
+tools: WebSearch, WebFetch, Read
 ---
 
 # Research Agent
@@ -39,7 +39,7 @@ name: read-only-explorer
 description: Explore codebase without modifications
 model: opus
 effort: low  # mechanical exploration — effort, not model, is the cost lever
-allowed-tools: Bash, Read, Grep, Glob
+tools: Bash, Read, Grep, Glob
 disallowedTools: Write, Edit, NotebookEdit
 ---
 
@@ -59,7 +59,7 @@ specific tasks, security-sensitive contexts.
 name: security-auditor
 description: Security-focused code review agent
 model: opus
-allowed-tools: Read, Grep, Glob, WebSearch, TodoWrite
+tools: Read, Grep, Glob, WebSearch, TodoWrite
 disallowedTools: Bash, Write, Edit
 created: 2026-01-20
 modified: 2026-01-20
@@ -127,28 +127,28 @@ The delegation system matches tasks to appropriate custom agents.
 ### Read-only research agent
 
 ```yaml
-allowed-tools: Read, Grep, Glob, WebSearch, WebFetch
+tools: Read, Grep, Glob, WebSearch, WebFetch
 disallowedTools: Bash, Write, Edit
 ```
 
 ### Safe code executor
 
 ```yaml
-allowed-tools: Bash, Read
+tools: Bash, Read
 disallowedTools: Write, Edit
 ```
 
 ### Documentation writer
 
 ```yaml
-allowed-tools: Read, Write, Edit, Grep, Glob
+tools: Read, Write, Edit, Grep, Glob
 disallowedTools: Bash
 ```
 
 ### Full-power developer
 
 ```yaml
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
+tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 ```
 
 ## Best-practice snippets
@@ -157,16 +157,16 @@ Principle of least privilege — grant only the tools the agent needs:
 
 ```yaml
 # Good: Minimal tools for the task
-allowed-tools: Read, Grep, Glob
+tools: Read, Grep, Glob
 
 # Avoid: Overly permissive
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob, WebSearch, WebFetch
+tools: Bash, Read, Write, Edit, Grep, Glob, WebSearch, WebFetch
 ```
 
 Combine an explicit whitelist with a safety blacklist:
 
 ```yaml
-allowed-tools: Bash, Read, Grep
+tools: Bash, Read, Grep
 disallowedTools: Write, Edit
 ```
 
