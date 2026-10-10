@@ -197,6 +197,17 @@ run_case "an out-of-repo rule target is external, not dead" clean \
 run_case "detects a relative link to a missing file" flag:dead-relative-link \
   "$user/references/links.md" 'See [gone](gone.md).'
 
+# The forward half of the #2700 references/ check moved here (#2952): a split
+# skill's link to a references/ file that no longer exists, from either entry
+# point, is this checker's finding and no one else's.
+run_case "detects a SKILL.md link to a missing references/ file" flag:dead-relative-link \
+  "demo-plugin/skills/split-skill/SKILL.md" 'See [recipes](references/x.md#step-3) for the moved step.'
+
+run_case "detects a REFERENCE.md index link to a missing references/ file" flag:dead-relative-link \
+  "$user/REFERENCE.md" '| Path | File |
+|---|---|
+| recovery | [references/x.md](references/x.md) |'
+
 run_case "detects a rules link one level too shallow from a skill dir" flag:dead-relative-link \
   "$user/REFERENCE.md" 'See [rule](../../.claude/rules/demo-rule.md).'
 

@@ -103,8 +103,12 @@ id_re='[^A-Za-z0-9_-][a-z][a-z0-9-]*-plugin:[a-z0-9-]+'
 #     `oven/bun:1-debian`) or a ref path (`origin/main:openapi.yaml`)
 #   * `.` / `~` / `$` — relative and variable paths (`./myapp:main`)
 #   * `:` — a container volume mount (`-v ./x:/data:ro`)
+#   * `}` / `>` — a variable or placeholder path segment closing just before
+#     the slash, as in the refspec `pull/${n}/head:refs/remotes/pr/${n}` or
+#     the prose form `<n>/head:refs` (#2956). Fenced code is still scanned: a
+#     real `/ns:name` inside a fence is an instruction to run it.
 # The NAME must start with a letter, which also rejects `/x:8080`-style ports.
-slash_re='[^A-Za-z0-9_/.~:$-]/[a-z][a-z0-9-]*:[a-z][a-z0-9-]*'
+slash_re='[^A-Za-z0-9_/.~:$}>-]/[a-z][a-z0-9-]*:[a-z][a-z0-9-]*'
 
 # Enter the scan root before discovery so the relative paths `find .` emits
 # resolve for the reads below too. A discovery subshell that cd'd while the
