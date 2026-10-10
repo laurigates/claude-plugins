@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.47.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.47.0...blueprint-plugin-v3.47.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** handle object-shaped features in feature-tracker sync and stop reporting OK on failure ([#2982](https://github.com/laurigates/claude-plugins/issues/2982)) ([0755216](https://github.com/laurigates/claude-plugins/commit/0755216ca8ba6ca9b6305d5e47b2aa2b36958d2a))
+
 ## [3.47.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.12...blueprint-plugin-v3.47.0) (2026-10-10)
 
 
