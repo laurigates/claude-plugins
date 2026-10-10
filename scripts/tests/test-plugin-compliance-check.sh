@@ -680,7 +680,7 @@ rm -rf "${root:?}/$PLUGIN/skills/sidecarban"
 make_haiku_skill() {
   make_skill "$1" with
   local f="$root/$PLUGIN/skills/$1/SKILL.md"
-  awk -v extra="model: haiku\neffort: low\n$2" \
+  awk -v extra="model: haiku\n${HAIKU_EFFORT_LINE-effort: low\n}$2" \
     'NR > 1 && /^---$/ && !done { printf "%s", extra; done = 1 } { print }' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
   [ -n "${3:-}" ] && printf '%s\n' "$3" >> "$f"
   return 0
@@ -711,6 +711,20 @@ run_check; out_hkf="$OUT"; rc_hkf="$RC"
 assert_eq "haiku: user-invocable: false WITH context: fork exits 0" "$rc_hkf" "0"
 assert_absent "haiku: a forked reference skill is not flagged" "$out_hkf" "model: haiku"
 rm -rf "${root:?}/$PLUGIN/skills/haikufork"
+
+# Haiku 5.5 defaults to effort medium; a haiku skill must pin one (PR #3019).
+HAIKU_EFFORT_LINE="" make_haiku_skill haikunoeffort ""
+run_check; out_hkn="$OUT"; rc_hkn="$RC"
+assert_eq "haiku: haiku with no effort exits 1" "$rc_hkn" "1"
+assert_contains "haiku: the missing effort is named" \
+  "$out_hkn" "haikunoeffort: model: haiku requires an explicit effort"
+rm -rf "${root:?}/$PLUGIN/skills/haikunoeffort"
+
+HAIKU_EFFORT_LINE="effort: medium\n" make_haiku_skill haikumedium ""
+run_check; out_hkm="$OUT"; rc_hkm="$RC"
+assert_eq "haiku: haiku with an explicit non-low effort exits 0" "$rc_hkm" "0"
+assert_absent "haiku: an explicit effort raises no haiku issue" "$out_hkm" "model: haiku"
+rm -rf "${root:?}/$PLUGIN/skills/haikumedium"
 
 echo "---"
 echo "passed: $pass, failed: $fail"

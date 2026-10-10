@@ -288,10 +288,21 @@ check_skill_frontmatter() {
     #      the model can load (user-invocable: false) hands whatever work loaded
     #      it to Haiku. With `context: fork` the override sets only the fork's
     #      model, so the leak does not apply there.
+    #   3. Haiku 5.5 defaults to effort `medium`; the Model Selection table pairs
+    #      `model: haiku` with an explicit effort, as check-workflow-js-model.sh
+    #      requires for haiku workflow stages (PR #3019 review).
     if [ "$fm_model" = "haiku" ]; then
-      local fm_user_invocable fm_context
+      local fm_user_invocable fm_context fm_effort
       fm_user_invocable=$(extract_field "$skill_file" "user-invocable")
       fm_context=$(extract_field "$skill_file" "context")
+      fm_effort=$(extract_field "$skill_file" "effort")
+      case "$fm_effort" in
+        low|medium|high|xhigh|max) ;;
+        *)
+          issues+=("❌ ${plugin}/${skill_name}: model: haiku requires an explicit effort (low|medium|high|xhigh|max) — see skill-development.md Model Selection")
+          has_errors=true
+          ;;
+      esac
       if grep -q 'AskUserQuestion' "$skill_file"; then
         issues+=("❌ ${plugin}/${skill_name}: model: haiku with AskUserQuestion is disallowed — prompts came back empty on Haiku (#881), not re-measured on 5.5")
         has_errors=true

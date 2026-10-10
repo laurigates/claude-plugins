@@ -192,10 +192,10 @@ Skills inherit the user's active model by default. Tag a skill with `model:` onl
 
 **Hard constraints:**
 
-- **`model: haiku` only within its two limits.** The alias resolves to Haiku 5.5 since Claude Code 2.1.293, which supports `effort` and is an auto-mode model. The 2026-10 re-evaluation (`docs/audits/haiku-5.5-reevaluation-2026-10-10.md`) found two hazards, both enforced by `check_skill_frontmatter()`:
+- **`model: haiku` only within its two limits.** The alias resolves to Haiku 5.5 since Claude Code 2.1.293, which supports `effort` and is an auto-mode model. The 2026-10 re-evaluation (`docs/audits/haiku-5.5-reevaluation-2026-10-10.md`) found two hazards, both enforced by `check_skill_frontmatter()`, which also requires an explicit `effort` beside `model: haiku` (Haiku 5.5 defaults to `medium`):
   - **No `AskUserQuestion`.** Haiku 4.5 skills got empty prompts back (#881), and that has not been re-measured on 5.5.
   - **No `user-invocable: false` without `context: fork`.** The override "applies for the rest of the current turn", so a skill only the model loads hands the work that loaded it to Haiku: an implementation after `git-branch-naming`, a fix loop after a test run. With `context: fork` the value sets only the fork's model. The lint cannot see the softer version of this: a user-invocable skill the model also calls mid-task (`code-lint` in a fix loop, `bun-add` before implementing). Judge that in review, and leave `model:` unset when the skill is a step inside larger work.
-- **Haiku's price advantage is smaller in Claude Code than on paper.** Its $0.10/$0.50 rate applies to prompts up to 100k tokens, and a session in this portfolio starts at about 127k (CLAUDE.md, rules, the skill listing, tool schemas), so it bills at $0.50/$2.50 — about a quarter of Sonnet 5.5, not a twentieth.
+- **Haiku's price advantage is smaller in Claude Code than on paper.** Its $0.10/$0.50 rate applies to prompts up to 100k tokens, and a session in this portfolio starts at about 127k (CLAUDE.md, rules, the skill listing, tool schemas), so it bills at $0.50/$2.50 — about a quarter of Sonnet ($2/$10 for both Sonnet 5, which the `sonnet` alias resolves to, and Sonnet 5.5), not a twentieth.
 - **Do NOT tag the middle.** If you can't articulate why the skill needs Opus or why Sonnet is enough, leave `model:` unset and let inheritance decide.
 - The `model:` field is also supported in agent definitions (see `.claude/rules/agent-development.md`).
 

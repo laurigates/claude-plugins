@@ -63,7 +63,7 @@ A `Workflow` with 22 agents (run `wf_20b77947-17f`):
 | | Haiku classifier | After Opus verification | Applied |
 |---|---|---|---|
 | `haiku` (whole artefact) | 84 | 35 | 14 skills |
-| `haiku-stage` | 13 | 8 | 3 workflow stages |
+| `haiku-stage` | 13 | 8 | 2 workflow stages (2 more reverted in review) |
 | `needs-test` | 107 | 88 | 0 |
 | `keep` | 320 | 122 of the verified set | — |
 
@@ -163,9 +163,16 @@ Opus stage, and each sets an explicit effort, which
 
 | Harness | Stage(s) | Effort | Why it holds |
 |---|---|---|---|
-| `blueprint-plugin:blueprint-story-audit` | `story:<prd>` lanes, `bug-triage` | low | Verbatim extraction ("Do not infer — only extract") and a two-value closed enum over verbatim comments. `test:<root>` lanes stay on opus: a miscount there becomes a false tier-1 "zero tests" gap. |
 | `evaluate-plugin:evaluate-plugin-batch` | `inventory` | low | Runs one script and joins two path lists into a boolean. A script would be cheaper still (follow-up). |
 | `testing-plugin:test-analyze` | `parse` | medium | Classification into a schema-forced enum with an `unroutable[]` escape. Medium rather than low because severity is a judgement and a misroute has no downstream check. |
+
+`blueprint-plugin:blueprint-story-audit`'s `story:<prd>` lanes and
+`bug-triage` were moved to haiku and then reverted to `opus`/`low` in review.
+Both fail by omission: a story the extraction lane drops never enters the join,
+and a bug triaged as not-yet-implemented never reaches compose. The Opus stages
+downstream only see what these stages return, so they cannot notice either
+miss, and the "feeds an Opus stage that would notice a bad one" condition does
+not hold.
 
 These verifier-confirmed stages were not applied, because the verifier
 attached a measurement first: `evaluate-skill` (preflight and headless runner),
