@@ -94,6 +94,37 @@ bunx -y @upstash/context7-mcp  # Should start without error
 jq empty .mcp.json && echo "JSON is valid" || echo "JSON syntax error"
 ```
 
+#### Smoke-testing a stdio server by hand
+
+Keep stdin open until every response you need has arrived. A stdio server reads
+JSON-RPC from stdin and shuts down at EOF, so a burst pipe —
+`printf '%s\n' '<initialize>' '<initialized>' '<tools/list>' | server` — closes
+input right after the last write. The `initialize` reply usually makes it back;
+the `tools/list` reply often does not, or comes back with **0 tools**, because
+the server was already exiting when it got there.
+
+Hold input open with a `sleep` between and after the messages:
+
+```bash
+INIT='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}'
+INITED='{"jsonrpc":"2.0","method":"notifications/initialized"}'
+LIST='{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
+
+{ printf '%s\n' "$INIT" "$INITED"; sleep 3; printf '%s\n' "$LIST"; sleep 8; } \
+  | uvx <server-package> --transport stdio
+```
+
+Lengthen the trailing `sleep` for a slow-starting server, or read responses one
+at a time from a client that keeps the pipe open.
+
+A 0-tool `tools/list`, or a request that never gets a response, after a burst
+`printf … |` pipe proves nothing about the server. Re-run with input held open
+before concluding it exposes no tools. Observed 2026-10-05: a server that
+returned 0 tools to the burst pipe listed all 24 when stdin was held open
+(laurigates/mcu-tinkering-lab#711). This is the false-negative shape catalogued
+in `agent-patterns-plugin:tool-result-traps` — an empty result read as an
+absent one.
+
 ### Missing environment variables
 
 ```bash
