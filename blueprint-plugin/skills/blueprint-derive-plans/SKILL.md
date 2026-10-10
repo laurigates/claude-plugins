@@ -52,7 +52,7 @@ Execute this retroactive documentation generation workflow:
 
 ### Step 1: Verify prerequisites
 
-Check context values above:
+Check the values in [Context](#context):
 
 1. If git repository = "NO" → Error: "This directory is not a git repository. Run from project root."
 2. If total commits = "0" → Error: "Repository has no commit history"

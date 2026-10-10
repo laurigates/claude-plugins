@@ -8,9 +8,9 @@
 # an Opus-class model at low effort beat a Sonnet-class model at high effort on
 # both quality and token efficiency when measured (Opus 4.8 vs Sonnet 4.6; the
 # `opus`/`sonnet` aliases resolve to Opus 5.5 / Sonnet 5, so re-measure the exact
-# spread), so `effort`, not `model`, is the cost lever. Haiku supports
-# no effort at all, so it cannot access that lever — haiku → opus --effort low
-# is the natural replacement. The Opus default effort differs by model and has
+# spread), so `effort`, not `model`, is the cost lever. Haiku 5.5 now has an
+# effort setting, but no workflow here has been measured on it yet, so haiku
+# stays rejected until a replay passes (workflow-model-effort.md). The Opus default effort differs by model and has
 # moved between releases, so effort MUST be explicit or the savings are forfeited. See
 # `.claude/rules/workflow-model-effort.md` and `.claude/rules/agent-development.md`
 # (§ "Model Selection for Agents") for the sibling agent standard.
@@ -287,7 +287,7 @@ if [ "$issue_count" -gt 0 ]; then
   if [ "$model_issue_count" -gt 0 ]; then
     echo "Every Claude workflow must pin '--model opus' and set an explicit '--effort'" >&2
     echo "level — effort, not model, is the cost lever, and the opus default varies by model." >&2
-    echo "Haiku supports no effort at all. See .claude/rules/workflow-model-effort.md." >&2
+    echo "Haiku stays off workflows until a replay passes. See .claude/rules/workflow-model-effort.md." >&2
   fi
   if [ "$issue_count" -gt "$model_issue_count" ]; then
     echo "Every invoking workflow needs a row in the canonical per-workflow table of" >&2
