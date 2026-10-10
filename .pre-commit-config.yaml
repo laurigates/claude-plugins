@@ -158,7 +158,7 @@ repos:
         name: agent frontmatter uses only fields Claude Code reads (#2646)
         entry: ./scripts/check-agent-frontmatter-keys.sh
         language: script
-        files: '(/agents/.*\.md|^scripts/check-agent-frontmatter-keys\.sh)$'
+        files: '(/agents/.*\.md|^agent-patterns-plugin/skills/custom-agent-definitions/(SKILL|REFERENCE)\.md|^scripts/(check-agent-frontmatter-keys\.sh|lib/extract-md-elements\.py))$'
         pass_filenames: false
       - id: test-check-agent-frontmatter-keys
         name: agent frontmatter keys guard regression (#2646)

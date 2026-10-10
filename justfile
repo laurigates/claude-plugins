@@ -436,22 +436,28 @@ serve-pi-model:
 # `.claude/agents/`, so all 21 marketplace agents stay invisible until projected
 # into pi-subagents' frontmatter (#2633). Skills are NOT exported — the adapter
 # serves those (ADR-0022). See docs/pi-export.md § Subagents.
+# `model` (#2649): preserve (default) keeps each agent's `model: opus`; inherit
+# drops the key so a local-model-only pi runs agents on the session model
+# instead of reporting `(unavailable, fallback: inherit)` on every dispatch; any
+# other value is a pi model id applied to every agent.
 # Project marketplace subagents into pi-subagents' agent format (output: dist/pi)
 [group: "pi"]
-export-pi-agents out="dist/pi":
+export-pi-agents out="dist/pi" model="preserve":
     #!/usr/bin/env bash
     set -euo pipefail
     out="{{out}}"
     case "$out" in /*) ;; *) out="{{justfile_directory()}}/$out" ;; esac
-    python3 "{{justfile_directory()}}/scripts/export-pi-agents.py" "{{justfile_directory()}}" "$out"
+    python3 "{{justfile_directory()}}/scripts/export-pi-agents.py" \
+        --model={{quote(model)}} "{{justfile_directory()}}" "$out"
 
 # Additive: agents you wrote yourself under <target> are preserved — never an
 # rm -rf of a shared directory. No-op with a hint when @tintinweb/pi-subagents is
 # absent, because pi ignores .pi/agents/ entirely without it: installing anyway
 # would look like it worked and change nothing.
+# `model` is the same switch as export-pi-agents: preserve | inherit | <model>.
 # Install exported subagents into a pi agents dir (default: global)
 [group: "pi"]
-install-pi-agents target=pi_agents_dir:
+install-pi-agents target=pi_agents_dir model="preserve":
     #!/usr/bin/env bash
     set -euo pipefail
     target="{{target}}"
@@ -468,7 +474,7 @@ install-pi-agents target=pi_agents_dir:
     tmp="$(mktemp -d)"
     trap 'rm -rf "$tmp"' EXIT
     python3 "{{justfile_directory()}}/scripts/export-pi-agents.py" \
-        "{{justfile_directory()}}" "$tmp" >/dev/null
+        --model={{quote(model)}} "{{justfile_directory()}}" "$tmp" >/dev/null
     mkdir -p "$target"
     cp "$tmp"/agents/*.md "$target/"
     echo "installed $(find "$target" -maxdepth 1 -name '*.md' | wc -l | tr -d ' ') subagent file(s) in $target"

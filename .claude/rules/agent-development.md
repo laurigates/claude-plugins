@@ -108,7 +108,7 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
 | `modified` | date | Recommended | Last substantive change |
 | `reviewed` | date | Recommended | Last verified against current docs |
 
-Claude Code ignores an agent frontmatter key it does not recognize, without an error ([sub-agents.md § Supported frontmatter fields](https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields)). That includes the skill-only fields `context`, `agent`, and `allowed-tools`, which read as if they configure the agent and do nothing on one. `scripts/check-agent-frontmatter-keys.sh` fails on any key outside the documented set plus the three lifecycle dates above.
+Claude Code ignores an agent frontmatter key it does not recognize, without an error ([sub-agents.md § Supported frontmatter fields](https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields)). That includes the skill-only fields `context`, `agent`, and `allowed-tools`, which read as if they configure the agent and do nothing on one. `scripts/check-agent-frontmatter-keys.sh` fails on any key outside the documented set plus the three lifecycle dates above. It also scans the fenced YAML examples in the docs listed in its `AGENT_EXAMPLE_DOCS` (the custom-agent-definitions skill) and fails on a skill-only key such as `allowed-tools:` in an agent-shaped fence (#2723).
 
 ### `tools` vs `allowed-tools`
 

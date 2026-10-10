@@ -2,7 +2,8 @@
 # Verify every plugin agent's top-level frontmatter keys are fields Claude Code
 # actually reads on a subagent definition.
 #
-# Background (#2646): ten plugin agents declared `context: fork`, and
+# Background (#2646): ten plugin agents declared `context: fork` (removed in
+# #2722), and
 # .claude/rules/agent-development.md documented it as an agent field meaning
 # "isolated context". It is a SKILL frontmatter field
 # (code.claude.com/docs/en/skills.md § Run skills in a subagent). The subagent
@@ -33,10 +34,22 @@
 #   curl -sSL https://code.claude.com/docs/en/sub-agents.md -o /tmp/sub-agents.md
 #   bash scripts/check-agent-frontmatter-keys.sh --docs-file /tmp/sub-agents.md
 #
-# Declared residuals: the ten `context` keys predate this guard. They are
-# declared below, counted (ALLOWLISTED=), and itemised, and a declared entry
-# that matches nothing is itself an ERROR (stale_allowlist_entry) — so the list
-# can only shrink. Issue #2722 removes them; delete the entries in that change.
+# Declared residuals: a key that predates this guard can be declared below,
+# counted (ALLOWLISTED=), and itemised, and a declared entry that matches
+# nothing is itself an ERROR (stale_allowlist_entry) — so the list can only
+# shrink. The ten `context` keys it was seeded with were removed in #2722, which
+# left the list EMPTY; keep it that way and fix a new key instead of declaring it.
+#
+# Fenced agent examples (#2723): the same silence reaches an agent written FROM
+# a documentation example. custom-agent-definitions taught agents the skill
+# field `allowed-tools:`, so an agent copied from it carried no restriction and
+# inherited every tool. Each file in AGENT_EXAMPLE_DOCS is therefore scanned
+# too: a YAML (or unlabeled) fence whose column-0 keys include a skill-only
+# tool field (`allowed-tools`, `disallowed-tools`) is an ERROR
+# (example_skill_only_key) unless the fence also carries a skill-distinctive key
+# (`user-invocable`, `argument-hint`, …), which marks a deliberate SKILL
+# frontmatter example. Fence structure comes from scripts/lib/extract-md-elements.py
+# (tree-sitter, via `uv run`), never a hand-rolled ``` toggle (#2009).
 #
 # Usage:
 #   bash scripts/check-agent-frontmatter-keys.sh [--project-dir <path>] [--docs-file <path>]
@@ -70,20 +83,30 @@ SKILL_ONLY_FIELDS=(
   license compatibility
 )
 
-# Declared residuals, `<repo-relative path>|<key>`. Owner: #2722.
-AGENT_KEY_RESIDUALS=(
-  "agents-plugin/agents/attribute-router.md|context"
-  "agents-plugin/agents/dependency-audit.md|context"
-  "agents-plugin/agents/performance.md|context"
-  "agents-plugin/agents/research.md|context"
-  "agents-plugin/agents/review.md|context"
-  "agents-plugin/agents/security-audit.md|context"
-  "evaluate-plugin/agents/eval-analyzer.md|context"
-  "evaluate-plugin/agents/eval-comparator.md|context"
-  "evaluate-plugin/agents/eval-grader.md|context"
-  "feedback-plugin/agents/friction-learner.md|context"
-)
+# Declared residuals, `<repo-relative path>|<key>`. Empty since #2722 removed
+# the ten `context` keys; an entry added here must name its owning issue in
+# RESIDUAL_OWNER.
+AGENT_KEY_RESIDUALS=()
 RESIDUAL_OWNER="#2722"
+
+# Documentation whose fenced YAML teaches agent frontmatter (#2723),
+# repo-relative. A listed file that is missing while its plugin directory exists
+# is an ERROR (example_doc_missing): a rename must not silently retire the scan.
+AGENT_EXAMPLE_DOCS=(
+  "agent-patterns-plugin/skills/custom-agent-definitions/SKILL.md"
+  "agent-patterns-plugin/skills/custom-agent-definitions/REFERENCE.md"
+)
+
+# Skill-only tool fields an agent example must not use (the agent spellings are
+# `tools:` and `disallowedTools:`).
+EXAMPLE_FORBIDDEN_KEYS=(allowed-tools disallowed-tools)
+
+# Keys that only a SKILL's frontmatter carries. A fence holding one of them is a
+# skill example, where `allowed-tools:` is the correct field.
+EXAMPLE_SKILL_MARKERS=(
+  user-invocable argument-hint arguments disable-model-invocation when_to_use
+  paths shell
+)
 
 # Test seam: when CHECK_AGENT_FRONTMATTER_KEYS_ALLOWLIST is SET — including set
 # to the empty string — it REPLACES the declared list, so fixture runs are
@@ -116,6 +139,12 @@ done
 if [ -z "$proj_dir" ]; then
   proj_dir="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 fi
+
+# The markdown parser resolves relative to THIS SCRIPT, never to --project-dir:
+# a fixture tree has no scripts/lib/, and a helper resolved against it would
+# silently disappear.
+script_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+helper="$script_self_dir/lib/extract-md-elements.py"
 
 issues=()
 has_error=false
@@ -299,6 +328,74 @@ for entry in ${AGENT_KEY_RESIDUALS[@]+"${AGENT_KEY_RESIDUALS[@]}"}; do
   fi
 done
 
+# --- Fenced agent examples (#2723) ----------------------------------------------
+# An agent copied from a documentation example inherits that example's keys, so
+# a skill-only tool field in an agent-shaped fence is the same silent no-op one
+# step earlier. See the header for the classification.
+example_docs=()
+example_fences_checked=0
+for doc in ${AGENT_EXAMPLE_DOCS[@]+"${AGENT_EXAMPLE_DOCS[@]}"}; do
+  if [ -f "$doc" ]; then
+    example_docs+=("$doc")
+  elif [ -d "${doc%%/*}" ]; then
+    add_issue ERROR "TYPE=example_doc_missing FILE=$doc MSG=listed in AGENT_EXAMPLE_DOCS but absent while its plugin exists; update the list to the file's new path so the fenced-example scan keeps running"
+  fi
+done
+if [ ${#example_docs[@]} -gt 0 ]; then
+  if ! command -v uv >/dev/null 2>&1; then
+    add_issue ERROR "TYPE=md_parser_unavailable MSG='uv' not found on PATH; the fenced agent examples cannot be parsed (scripts/lib/extract-md-elements.py)"
+  elif ! fence_rows="$(uv run --quiet "$helper" --types fence,fence_line "${example_docs[@]}" 2>/dev/null)"; then
+    add_issue ERROR "TYPE=md_parser_failed MSG=scripts/lib/extract-md-elements.py exited non-zero; the fenced agent examples were not checked"
+  else
+    while IFS=$'\t' read -r row_kind row_file row_line row_key; do
+      case "$row_kind" in
+        FENCES) example_fences_checked="$row_file" ;;
+        HIT)
+          add_issue ERROR "TYPE=example_skill_only_key FILE=$row_file LINE=$row_line KEY=$row_key MSG=an agent written from this fenced example gets no effect from it: $(skill_only_msg "$row_key")"
+          ;;
+      esac
+    done < <(
+      awk -F '\t' \
+        -v forbidden="${EXAMPLE_FORBIDDEN_KEYS[*]}" \
+        -v markers="${EXAMPLE_SKILL_MARKERS[*]}" '
+        BEGIN {
+          n = split(forbidden, fa, " "); for (i = 1; i <= n; i++) is_forbidden[fa[i]] = 1
+          n = split(markers, ma, " "); for (i = 1; i <= n; i++) is_marker[ma[i]] = 1
+        }
+        $1 == "fence" {
+          nf++; ffile[nf] = $2; fstart[nf] = $3 + 0; fend[nf] = $4 + 0; flang[nf] = tolower($5)
+          next
+        }
+        $1 == "fence_line" {
+          nl++; lfile[nl] = $2; lline[nl] = $3 + 0; ltext[nl] = $5
+          next
+        }
+        END {
+          for (l = 1; l <= nl; l++) {
+            if (ltext[l] !~ /^[A-Za-z_][A-Za-z0-9_.-]*[ \t]*:/) continue
+            key = ltext[l]; sub(/[ \t]*:.*$/, "", key)
+            for (k = 1; k <= nf; k++) {
+              if (ffile[k] != lfile[l] || lline[l] <= fstart[k] || lline[l] >= fend[k]) continue
+              if (is_marker[key]) skill_fence[k] = 1
+              if (is_forbidden[key]) { hits[k] = hits[k] lfile[l] "\t" lline[l] "\t" key "\n" }
+              break
+            }
+          }
+          checked = 0
+          for (k = 1; k <= nf; k++) {
+            if (flang[k] != "" && flang[k] != "yaml" && flang[k] != "yml") continue
+            checked++
+            if (skill_fence[k] || hits[k] == "") continue
+            m = split(hits[k], rows, "\n")
+            for (r = 1; r <= m; r++) if (rows[r] != "") print "HIT\t" rows[r]
+          }
+          print "FENCES\t" checked
+        }
+      ' <<<"$fence_rows" | LC_ALL=C sort -t $'\t' -k2,2 -k3,3n
+    )
+  fi
+fi
+
 # Distinguish "nothing to check" from "the scan misfired" (#2219).
 scanned_empty=false
 if [ "$scanned" -eq 0 ]; then
@@ -325,6 +422,8 @@ echo "AGENT_FILES_SCANNED=$scanned"
 echo "KEYS_CHECKED=$keys_checked"
 echo "SCANNED_EMPTY=$scanned_empty"
 echo "ALLOWLISTED=$allowlisted"
+echo "EXAMPLE_DOCS_SCANNED=${#example_docs[@]}"
+echo "EXAMPLE_FENCES_CHECKED=$example_fences_checked"
 echo "STATUS=$item_status"
 # REASON= names the worst finding on the non-OK path only
 # (.claude/rules/structured-script-output.md, #2691).
