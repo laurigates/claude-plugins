@@ -178,7 +178,7 @@ check_plugin_json() {
     return 2
   fi
 
-  if ! echo "$plugin_name" | grep -qE '^[a-z][a-z0-9-]*$'; then
+  if ! grep -qE '^[a-z][a-z0-9-]*$' <<<"$plugin_name"; then
     issues+=("❌ ${plugin}: plugin.json name '${plugin_name}' not in kebab-case format")
     return 2
   fi
@@ -258,8 +258,8 @@ check_skill_frontmatter() {
     fm_reviewed=$(extract_field "$skill_file" "reviewed")
 
     local missing_recommended=()
-    # Note: `model` may be set to `opus` or `sonnet` at the extremes; haiku is
-    # disallowed for any skill (see check below). See
+    # Note: `model` may be set to `opus` or `sonnet` at the extremes, and to
+    # `haiku` only within the limits checked below. See
     # .claude/rules/skill-development.md ("Model Selection") for policy.
     [ -z "$fm_created" ] && missing_recommended+=("created")
     [ -z "$fm_modified" ] && missing_recommended+=("modified")
@@ -280,12 +280,37 @@ check_skill_frontmatter() {
       has_warnings=true
     fi
 
-    # Regression: model: haiku breaks AskUserQuestion (PR #879) and the cost
-    # savings vs Sonnet do not justify the quality risk for non-interactive
-    # skills either. Sonnet is the floor — see .claude/rules/skill-development.md.
+    # model: haiku (Haiku 5.5 since Claude Code 2.1.293) is allowed only where
+    # neither measured hazard applies — see .claude/rules/skill-development.md:
+    #   1. Regression (#879/#881): a haiku skill's AskUserQuestion prompts came
+    #      back empty. Never re-measured on Haiku 5.5, so the pair stays banned.
+    #   2. A skill's `model:` lasts for the rest of the TURN, so a skill only
+    #      the model can load (user-invocable: false) hands whatever work loaded
+    #      it to Haiku. With `context: fork` the override sets only the fork's
+    #      model, so the leak does not apply there.
+    #   3. Haiku 5.5 defaults to effort `medium`; the Model Selection table pairs
+    #      `model: haiku` with an explicit effort, as check-workflow-js-model.sh
+    #      requires for haiku workflow stages (PR #3019 review).
     if [ "$fm_model" = "haiku" ]; then
-      issues+=("❌ ${plugin}/${skill_name}: model: haiku is disallowed — use sonnet (floor) or opus")
-      has_errors=true
+      local fm_user_invocable fm_context fm_effort
+      fm_user_invocable=$(extract_field "$skill_file" "user-invocable")
+      fm_context=$(extract_field "$skill_file" "context")
+      fm_effort=$(extract_field "$skill_file" "effort")
+      case "$fm_effort" in
+        low|medium|high|xhigh|max) ;;
+        *)
+          issues+=("❌ ${plugin}/${skill_name}: model: haiku requires an explicit effort (low|medium|high|xhigh|max) — see skill-development.md Model Selection")
+          has_errors=true
+          ;;
+      esac
+      if grep -q 'AskUserQuestion' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: model: haiku with AskUserQuestion is disallowed — prompts came back empty on Haiku (#881), not re-measured on 5.5")
+        has_errors=true
+      fi
+      if [ "$fm_user_invocable" = "false" ] && [ "$fm_context" != "fork" ]; then
+        issues+=("❌ ${plugin}/${skill_name}: model: haiku on a user-invocable: false skill hands the rest of the loading turn to Haiku — use context: fork or leave model unset")
+        has_errors=true
+      fi
     fi
 
     # Regression: unquoted args:/argument-hint: values that contain `[ ... ]`
@@ -1919,7 +1944,7 @@ check_bash_patterns() {
     local util_count=0
     local util_list=""
     for util in test jq head tail cat cp mkdir chmod wc date; do
-      if echo "$fm_allowed_tools" | grep -qE "Bash\(${util} "; then
+      if grep -qE "Bash\(${util} " <<<"$fm_allowed_tools"; then
         util_count=$((util_count + 1))
         util_list="${util_list:+${util_list}, }${util}"
       fi

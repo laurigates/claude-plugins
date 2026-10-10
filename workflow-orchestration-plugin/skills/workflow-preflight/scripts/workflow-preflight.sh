@@ -154,7 +154,7 @@ if [ -n "$base_ref" ]; then
     merge_out="$(git_cmd merge-tree "$merge_base" HEAD "$base_ref" 2>/dev/null || true)"
     # merge-tree (the trivial three-arg form) emits "changed in both" + "<<<<<<<"
     # conflict markers when a path conflicts.
-    if printf '%s\n' "$merge_out" | grep -q '^<<<<<<<\|changed in both'; then
+    if grep -q '^<<<<<<<\|changed in both' <<<"$merge_out"; then
       conflicts_detected=true
     fi
   fi

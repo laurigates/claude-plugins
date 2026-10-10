@@ -3,7 +3,7 @@ name: blueprint-autopilot
 description: Run due blueprint maintenance ambiently at autonomy level 2+. Use when a drift nudge reports blueprint tasks due or suggests /blueprint:autopilot.
 allowed-tools: Read, Glob, Grep, Bash, Task
 created: 2026-07-05
-modified: 2026-09-02
+modified: 2026-10-09
 reviewed: 2026-09-02
 ---
 
@@ -81,9 +81,10 @@ NOT update `last_completed_at` (the task stays due).
 ### Step 3: Work-order auto-draft (only when `WO_AUTO_DRAFT=true`)
 
 Skip this step entirely unless the Context config shows `WO_AUTO_DRAFT=true`.
-Work-order **creation stays human-only** (`/blueprint:work-order` keeps
-`disable-model-invocation: true` — never invoke it from autopilot). Autopilot
-may only file *proposals*:
+Autopilot files *proposals* and leaves promotion to a reviewed step: turning a
+draft into a real work order is a separate `/blueprint:work-order --from-issue
+N` run, taken once someone has reviewed the draft (ADR-0024 keeps this
+draft-only policy while making the command itself model-invocable):
 
 1. **Find ready PRPs**: scan `docs/prps/*.md` frontmatter for
    `confidence: 9` or higher (the `confidence-scoring` bar for delegation).
@@ -122,8 +123,10 @@ If nothing was due and nothing drafted:
 ## Guardrails
 
 - Never `AskUserQuestion`; never end on a question. Autopilot is fire-and-report.
-- Never invoke `/blueprint:work-order` or `/blueprint:prp-execute` (human-only
-  by design; the draft-issue side channel is the only WO surface here).
+- Autopilot does not run `/blueprint:work-order` or `/blueprint:prp-execute`
+  itself: the draft-issue side channel is its only work-order surface, so
+  committing a work order or executing a PRP stays a reviewed step outside
+  the ambient pass (ADR-0020 draft-only policy, kept by ADR-0024).
 - Bounded per pass: ≤ 2 agent tasks, ≤ 2 drafts, draft cap 5 open issues — no
   loops, no self-continuation (see `.claude/rules/loop-integrity.md`).
 - `enabled: false` tasks never run regardless of level.

@@ -72,30 +72,30 @@ JSON
 out="$(bash "$audit_script" --home-dir "$home" --project-dir "$proj")"
 
 # Invariant 1: the planted MISMATCH is flagged AND drives STATUS=ERROR.
-echo "$out" | grep -q "^ADR_MISMATCH=1$" \
+grep -q "^ADR_MISMATCH=1$" <<<"$out" \
   || fail "expected ADR_MISMATCH=1, got:\n$out"
-echo "$out" | grep -q "TYPE=id_mismatch.*HAS=ADR-0007 EXPECTED=ADR-0009" \
+grep -q "TYPE=id_mismatch.*HAS=ADR-0007 EXPECTED=ADR-0009" <<<"$out" \
   || fail "expected an id_mismatch issue (HAS=ADR-0007 EXPECTED=ADR-0009), got:\n$out"
-echo "$out" | grep -q "^STATUS=ERROR$" \
+grep -q "^STATUS=ERROR$" <<<"$out" \
   || fail "expected STATUS=ERROR with a mismatch present, got:\n$out"
 pass "mismatched ADR id is flagged and drives STATUS=ERROR"
 
 # Invariant 2: the matching ADR id passes (counted, not flagged).
-echo "$out" | grep -q "^ADR_WITH_ID=1$" \
+grep -q "^ADR_WITH_ID=1$" <<<"$out" \
   || fail "expected ADR_WITH_ID=1 for the matching ADR, got:\n$out"
-echo "$out" | grep -q "0008-session-storage.md" \
+grep -q "0008-session-storage.md" <<<"$out" \
   && fail "the matching ADR (0008) must not appear in any issue line:\n$out"
 pass "matching ADR id passes without an issue"
 
 # Invariant 3: the id-less PRD is NEEDS_ID.
-echo "$out" | grep -q "^PRD_NEEDS_ID=1$" \
+grep -q "^PRD_NEEDS_ID=1$" <<<"$out" \
   || fail "expected PRD_NEEDS_ID=1 for the id-less PRD, got:\n$out"
 pass "PRD missing an id is reported as NEEDS_ID"
 
 # Invariant 4: the reverse github_issues index groups by issue (42, 45 -> 2).
-echo "$out" | grep -q "^GH_ISSUE_MAPPINGS=2$" \
+grep -q "^GH_ISSUE_MAPPINGS=2$" <<<"$out" \
   || fail "expected GH_ISSUE_MAPPINGS=2 (issues 42 and 45), got:\n$out"
-echo "$out" | grep -q "^MANIFEST_PRESENT=true$" \
+grep -q "^MANIFEST_PRESENT=true$" <<<"$out" \
   || fail "expected MANIFEST_PRESENT=true, got:\n$out"
 pass "reverse github_issues index built from manifest registry"
 
@@ -110,7 +110,7 @@ id: ADR-0001
 MD
 out2="$(bash "$audit_script" --home-dir "$home" --project-dir "$proj2")"
 rc2=$?
-echo "$out2" | grep -q "^STATUS=OK$" \
+grep -q "^STATUS=OK$" <<<"$out2" \
   || fail "expected STATUS=OK for a clean tree, got:\n$out2"
 [ "$rc2" -eq 0 ] || fail "expected exit 0 for a clean tree, got $rc2"
 rm -rf "$proj2"

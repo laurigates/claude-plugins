@@ -51,13 +51,13 @@ out1="$(CODE_DEP_AUDIT_FIXTURE="${fixtures}/vuln.json" \
 rc1=$?
 set -e
 [ "$rc1" -eq 1 ] || fail "planted critical+high vuln must exit 1, got $rc1:\n$out1"
-echo "$out1" | grep -q "^ECOSYSTEM=js$" \
+grep -q "^ECOSYSTEM=js$" <<<"$out1" \
   || fail "expected ECOSYSTEM=js from package.json, got:\n$out1"
-echo "$out1" | grep -q "^STATUS=ERROR$" \
+grep -q "^STATUS=ERROR$" <<<"$out1" \
   || fail "expected STATUS=ERROR for critical/high vulns, got:\n$out1"
-echo "$out1" | grep -q "^VULN_CRITICAL=2$" \
+grep -q "^VULN_CRITICAL=2$" <<<"$out1" \
   || fail "expected VULN_CRITICAL=2, got:\n$out1"
-echo "$out1" | grep -q "^VULN_HIGH=1$" \
+grep -q "^VULN_HIGH=1$" <<<"$out1" \
   || fail "expected VULN_HIGH=1, got:\n$out1"
 pass "planted critical+high vuln yields STATUS=ERROR with correct severity counts"
 rm -rf "$proj1"
@@ -79,13 +79,13 @@ out2="$(CODE_DEP_AUDIT_FIXTURE="${fixtures}/warn.json" \
 rc2=$?
 set -e
 [ "$rc2" -eq 0 ] || fail "medium/low/outdated only must exit 0, got $rc2:\n$out2"
-echo "$out2" | grep -q "^ECOSYSTEM=python$" \
+grep -q "^ECOSYSTEM=python$" <<<"$out2" \
   || fail "expected ECOSYSTEM=python from requirements.txt, got:\n$out2"
-echo "$out2" | grep -q "^STATUS=WARN$" \
+grep -q "^STATUS=WARN$" <<<"$out2" \
   || fail "expected STATUS=WARN for medium/low/outdated, got:\n$out2"
-echo "$out2" | grep -q "^VULN_MEDIUM=3$" \
+grep -q "^VULN_MEDIUM=3$" <<<"$out2" \
   || fail "expected VULN_MEDIUM=3, got:\n$out2"
-echo "$out2" | grep -q "^OUTDATED_COUNT=7$" \
+grep -q "^OUTDATED_COUNT=7$" <<<"$out2" \
   || fail "expected OUTDATED_COUNT=7, got:\n$out2"
 pass "medium/low + outdated yields STATUS=WARN with correct behind count"
 rm -rf "$proj2"
@@ -111,15 +111,15 @@ out3="$(CODE_DEP_AUDIT_FIXTURE="${fixtures}/license.json" \
 rc3=$?
 set -e
 [ "$rc3" -eq 0 ] || fail "license-only WARN must exit 0, got $rc3:\n$out3"
-echo "$out3" | grep -q "^ECOSYSTEM=rust$" \
+grep -q "^ECOSYSTEM=rust$" <<<"$out3" \
   || fail "expected ECOSYSTEM=rust from Cargo.toml, got:\n$out3"
-echo "$out3" | grep -q "^STATUS=WARN$" \
+grep -q "^STATUS=WARN$" <<<"$out3" \
   || fail "expected STATUS=WARN for problematic licenses, got:\n$out3"
-echo "$out3" | grep -q "^LICENSE_ISSUES=2$" \
+grep -q "^LICENSE_ISSUES=2$" <<<"$out3" \
   || fail "expected LICENSE_ISSUES=2 (GPL + AGPL, MIT clean), got:\n$out3"
-echo "$out3" | grep -q "copyleft-pkg=GPL-3.0" \
+grep -q "copyleft-pkg=GPL-3.0" <<<"$out3" \
   || fail "expected GPL package flagged by name, got:\n$out3"
-echo "$out3" | grep -q "strong-copyleft=AGPL-3.0" \
+grep -q "strong-copyleft=AGPL-3.0" <<<"$out3" \
   || fail "expected AGPL package flagged by name, got:\n$out3"
 pass "GPL/AGPL licenses flagged (count=2), MIT not flagged"
 rm -rf "$proj3"
@@ -141,15 +141,15 @@ out4="$(CODE_DEP_AUDIT_FIXTURE="${fixtures}/clean.json" \
 rc4=$?
 set -e
 [ "$rc4" -eq 0 ] || fail "clean fixture must exit 0, got $rc4:\n$out4"
-echo "$out4" | grep -q "^ECOSYSTEM=go$" \
+grep -q "^ECOSYSTEM=go$" <<<"$out4" \
   || fail "expected ECOSYSTEM=go from go.mod, got:\n$out4"
-echo "$out4" | grep -q "^STATUS=OK$" \
+grep -q "^STATUS=OK$" <<<"$out4" \
   || fail "expected STATUS=OK for clean deps, got:\n$out4"
-echo "$out4" | grep -q "^ISSUE_COUNT=0$" \
+grep -q "^ISSUE_COUNT=0$" <<<"$out4" \
   || fail "expected ISSUE_COUNT=0 for clean deps, got:\n$out4"
-echo "$out4" | grep -q "^VULN_TOTAL=0$" \
+grep -q "^VULN_TOTAL=0$" <<<"$out4" \
   || fail "expected VULN_TOTAL=0, got:\n$out4"
-echo "$out4" | grep -q "^LICENSE_ISSUES=0$" \
+grep -q "^LICENSE_ISSUES=0$" <<<"$out4" \
   || fail "expected LICENSE_ISSUES=0, got:\n$out4"
 pass "clean fixture yields STATUS=OK and zero counts"
 rm -rf "$proj4"
@@ -163,9 +163,9 @@ out5="$(bash "$audit_script" --home-dir "$home_dir" --project-dir "$proj5")"
 rc5=$?
 set -e
 [ "$rc5" -eq 0 ] || fail "no-ecosystem must exit 0, got $rc5:\n$out5"
-echo "$out5" | grep -q "^ECOSYSTEM=none$" \
+grep -q "^ECOSYSTEM=none$" <<<"$out5" \
   || fail "expected ECOSYSTEM=none when no manifest present, got:\n$out5"
-echo "$out5" | grep -q "^STATUS=OK$" \
+grep -q "^STATUS=OK$" <<<"$out5" \
   || fail "expected STATUS=OK when no ecosystem detected, got:\n$out5"
 pass "no recognized ecosystem degrades gracefully to STATUS=OK"
 rm -rf "$proj5"
@@ -182,16 +182,16 @@ out6="$(CODE_DEP_AUDIT_FIXTURE="${fixtures}/empty.json" \
   bash "$audit_script" --home-dir "$home_dir" --project-dir "$proj6")"
 rc6=$?
 set -e
-echo "$out6" | grep -q "^=== END CODE DEP AUDIT ===$" \
+grep -q "^=== END CODE DEP AUDIT ===$" <<<"$out6" \
   || fail "empty seam input must still emit a closed section, got:\n$out6"
-echo "$out6" | grep -q "^STATUS=" \
+grep -q "^STATUS=" <<<"$out6" \
   || fail "empty seam input must still emit a STATUS line, got:\n$out6"
 # Empty seam input means "no audit data gathered" → no issues to roll up.
 # Graceful handling is a clean STATUS=OK / exit 0, not a crash.
 [ "$rc6" -eq 0 ] || fail "empty seam input should degrade gracefully (exit 0), got $rc6:\n$out6"
-echo "$out6" | grep -q "^STATUS=OK$" \
+grep -q "^STATUS=OK$" <<<"$out6" \
   || fail "expected STATUS=OK for empty seam input, got:\n$out6"
-echo "$out6" | grep -q "^ISSUE_COUNT=0$" \
+grep -q "^ISSUE_COUNT=0$" <<<"$out6" \
   || fail "expected ISSUE_COUNT=0 for empty seam input, got:\n$out6"
 pass "empty seam input degrades gracefully (no audit data → STATUS=OK), no crash"
 rm -rf "$proj6"
@@ -209,9 +209,9 @@ out7="$(CODE_DEP_AUDIT_FIXTURE="${fixtures}/broken.json" \
 rc7=$?
 set -e
 [ "$rc7" -eq 1 ] || fail "malformed JSON should ERROR (exit 1), got $rc7:\n$out7"
-echo "$out7" | grep -q "^AUDIT_JSON_VALID=false$" \
+grep -q "^AUDIT_JSON_VALID=false$" <<<"$out7" \
   || fail "expected AUDIT_JSON_VALID=false for malformed JSON, got:\n$out7"
-echo "$out7" | grep -q "^STATUS=ERROR$" \
+grep -q "^STATUS=ERROR$" <<<"$out7" \
   || fail "expected STATUS=ERROR for malformed JSON, got:\n$out7"
 pass "malformed JSON seam input fails loudly (STATUS=ERROR, exit 1)"
 rm -rf "$proj7"
@@ -234,7 +234,7 @@ for bun_lockfile in bun.lock bun.lockb; do
   rc8=$?
   set -e
   [ "$rc8" -eq 0 ] || fail "${bun_lockfile}-only project must exit 0, got $rc8:\n$out8"
-  echo "$out8" | grep -q "^ECOSYSTEM=js$" \
+  grep -q "^ECOSYSTEM=js$" <<<"$out8" \
     || fail "expected ECOSYSTEM=js from ${bun_lockfile}, got:\n$out8"
   pass "${bun_lockfile} alone detects ECOSYSTEM=js"
   rm -rf "$proj8"

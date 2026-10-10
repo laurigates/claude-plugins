@@ -71,7 +71,7 @@ for script in $SCRIPTS; do
     REL_PATH="${script#"$ROOT_DIR"/}"
 
     # Skip ShellSpec test files — framework manages execution environment
-    if echo "$REL_PATH" | grep -qE '/spec/.*_spec\.sh$|/spec/spec_helper\.sh$'; then
+    if grep -qE '/spec/.*_spec\.sh$|/spec/spec_helper\.sh$' <<<"$REL_PATH"; then
         continue
     fi
 
@@ -95,7 +95,7 @@ for script in $SCRIPTS; do
     # --- Check 2: Error handling flags ---
     if ! grep -qE '^set -[a-z]*[euo]' "$script"; then
         # Distinguish hook scripts (which must have set flags) from other scripts
-        if echo "$REL_PATH" | grep -qE '/hooks/'; then
+        if grep -qE '/hooks/' <<<"$REL_PATH"; then
             error "$REL_PATH: Missing 'set -euo pipefail' (or documented variant)"
         else
             warn "$REL_PATH: Missing 'set -euo pipefail' (recommended)"
@@ -103,7 +103,7 @@ for script in $SCRIPTS; do
     fi
 
     # --- Check 3: Block function consistency (hook scripts only) ---
-    if echo "$REL_PATH" | grep -qE '/hooks/'; then
+    if grep -qE '/hooks/' <<<"$REL_PATH"; then
         # Check for non-standard block function names
         if grep -qE '^block_(with_reminder|error)\(\)' "$script"; then
             FUNC_NAME=$(grep -oE 'block_(with_reminder|error)' "$script" | head -1)
@@ -143,12 +143,12 @@ for script in $SCRIPTS; do
     #
     # test-*.sh is skipped wholesale: this repo's hook tests carry both
     # spellings as fixture STRINGS, which are data rather than commands.
-    if ! echo "$REL_PATH" | grep -qE '(^|/)test-[^/]*\.sh$'; then
+    if ! grep -qE '(^|/)test-[^/]*\.sh$' <<<"$REL_PATH"; then
         SED_CODE=$(grep -vE '^[[:space:]]*#' "$script" | grep -v 'portable-sed-ok' || true)
-        if echo "$SED_CODE" | grep -qE "sed( +-[a-zA-Z.]+)* +-i +''"; then
+        if grep -qE "sed( +-[a-zA-Z.]+)* +-i +''" <<<"$SED_CODE"; then
             error "$REL_PATH: BSD-only in-place sed (empty suffix) — GNU sed exits 2 without editing. Attach the suffix: sed -i.bak ... then rm the backup"
         fi
-        if echo "$SED_CODE" | grep -qE "sed( +-[a-zA-Z.]+)* +-i +['\"][^'\"]"; then
+        if grep -qE "sed( +-[a-zA-Z.]+)* +-i +['\"][^'\"]" <<<"$SED_CODE"; then
             error "$REL_PATH: GNU-only in-place sed (detached script) — BSD sed eats the script as a backup suffix. Attach the suffix: sed -i.bak ... then rm the backup"
         fi
     fi
@@ -163,25 +163,31 @@ for script in $SCRIPTS; do
     # The fix is a here-string, which has no writer process to kill:
     #     grep -qF "$x" <<<"$out"
     #
-    # Scope: the test suites swept in #2959 (scripts/tests/*.sh and
-    # <plugin>/hooks/test-*.sh), and only when the file enables pipefail.
-    # Heredoc bodies (fixture scripts written to disk) and comment lines are
-    # skipped. A producer that is a real command (`cmd | grep -q`) is left
-    # alone: only a printf/echo of a quoted "$..." expansion is flagged.
+    # Scope: test suites, and only when the file enables pipefail. A suite is
+    # any *.sh directly inside a tests/ directory at any depth (scripts/tests,
+    # <plugin>/scripts/tests, <plugin>/skills/<skill>/scripts/tests,
+    # experiments/<x>/[scripts/]tests) or a <plugin>/hooks/test-*.sh. Files in
+    # tests/fixtures/ or tests/live/ are not suites. Heredoc bodies (fixture
+    # scripts written to disk) and comment lines are skipped. A producer that
+    # is a real command (`cmd | grep -q`) is left alone: only a printf/echo of
+    # a quoted "$..." expansion is flagged. The -q flag must sit in grep's own
+    # words: an unbalanced `)` ends them, so `"$(echo "$x" | grep -c p)" -eq 1`
+    # (-c reads all input, no early exit) is not mistaken for -q, while a
+    # balanced group in a pattern (`grep -E "(a)" -q`) is read through.
     #
-    # Pending: scripts/tests/test-run-skill-script-tests.sh is converted by PR
-    # #2989 (left out of the #2959 sweep to avoid a merge conflict). Delete this
-    # exemption once #2989 is on main.
-    PIPE_GREP_Q_PENDING="scripts/tests/test-run-skill-script-tests.sh"
-    if [[ "$REL_PATH" =~ ^(scripts/tests/[^/]+|[^/]+/hooks/test-[^/]+)\.sh$ ]] \
-        && [ "$REL_PATH" != "$PIPE_GREP_Q_PENDING" ] \
+    # Known blind spots (this is a line scanner, not a shell parser): a `<<WORD`
+    # inside a multi-line quoted string is taken for a heredoc and the lines up
+    # to the next WORD are skipped (hooks-plugin/hooks/bash-antipatterns.sh had
+    # one); and the shape inside a string run by eval (`check "..." "printf
+    # '%s' \"\$out\" | grep -q x"`) has escaped quotes and is not matched.
+    if [[ "$REL_PATH" =~ (^|/)tests/[^/]+\.sh$|^[^/]+/hooks/test-[^/]+\.sh$ ]] \
         && grep -qE '^[[:space:]]*set[[:space:]].*pipefail' "$script"; then
         PIPE_GREP_Q_LINES=$(awk '
             BEGIN {
                 # \042 = double quote, \047 = single quote (octal escapes keep
                 # this program inside the shell single quotes).
                 prod = "(^|[^[:alnum:]_-])(printf[[:space:]]+(\042[^\042]*\042[[:space:]]+)?[^|\042]*|echo[[:space:]]+)\042\\$[^|]*\\|[[:space:]]*grep[[:space:]]"
-                qflag = "^[^|;&]*[[:space:]](-[[:alpha:]]*q[[:alpha:]]*|--quiet|--silent)([[:space:]]|$)"
+                qflag = "^([^|;&()]|\\([^()|;&]*\\))*[[:space:]](-[[:alpha:]]*q[[:alpha:]]*|--quiet|--silent)([[:space:]]|$)"
                 hdre = "<<-?[[:space:]]*[\042\047]?[A-Za-z_][A-Za-z0-9_]*"
                 hd = ""
             }

@@ -146,6 +146,8 @@ await page.locator('.card').filter({ hasText: 'Product' }).getByRole('button').c
 
 For detailed examples, advanced patterns, and best practices, see [REFERENCE.md](REFERENCE.md).
 
+Testing a WebGL app (CesiumJS, three.js, MapLibre) on a GPU-less CI runner: see [WebGL Apps in GPU-less CI](REFERENCE.md#webgl-apps-in-gpu-less-ci) for the SwiftShader flags, the lhci `chromeFlags` string trap, and frame-rate capping.
+
 ## References
 
 - Official docs: https://playwright.dev

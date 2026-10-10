@@ -121,9 +121,9 @@ while read -r ref; do
   [ -n "$ref" ] || continue
   # /configure:X maps to skill dir configure-X, except dirs that already
   # carry their full name (config-sync).
-  if printf '%s\n' "$manifest_names" | grep -qx "configure-${ref}"; then continue; fi
-  if printf '%s\n' "$manifest_names" | grep -qx "$ref"; then continue; fi
-  if printf '%s\n' "$manifest_names" | grep -qx "config-${ref}"; then continue; fi
+  if grep -qx "configure-${ref}" <<<"$manifest_names"; then continue; fi
+  if grep -qx "$ref" <<<"$manifest_names"; then continue; fi
+  if grep -qx "config-${ref}" <<<"$manifest_names"; then continue; fi
   add_issue "ERROR" "skill_ref_unresolved" "configure-all (SKILL.md or a sidecar) references /configure:${ref} which is not in components.yaml"
   unresolved=$((unresolved + 1))
 done <<< "$skill_refs"
@@ -136,7 +136,7 @@ flow_names="$(grep -oE '`[a-z][a-z0-9-]*`' "$flow_md" | tr -d "\`" | sort -u)"
 flow_missing=0
 while read -r comp; do
   [ -n "$comp" ] || continue
-  if ! printf '%s\n' "$flow_names" | grep -qx "$comp"; then
+  if ! grep -qx "$comp" <<<"$flow_names"; then
     add_issue "ERROR" "flow_missing_component" "docs/flow.md mapping table does not name ${comp}"
     flow_missing=$((flow_missing + 1))
   fi
@@ -149,7 +149,7 @@ while read -r fname; do
     configure-*|config-sync|*-standards|ci-workflows|claude-security-settings|openfeature|go-feature-flag|multi-repo-discipline) ;;
     *) continue ;;
   esac
-  if ! printf '%s\n' "$manifest_names" | grep -qx "$fname"; then
+  if ! grep -qx "$fname" <<<"$manifest_names"; then
     add_issue "ERROR" "flow_dangling_skill" "docs/flow.md names ${fname} which is not in components.yaml"
     flow_dangling=$((flow_dangling + 1))
   fi
