@@ -25,8 +25,8 @@
       "properties": {
         "id": {
           "type": "string",
-          "pattern": "^ADR-[0-9]{4,}$",
-          "description": "Document ID (ADR-NNNN). Assigned by /blueprint:sync-ids when missing."
+          "pattern": "^ADR-[0-9]{3,}$",
+          "description": "Document ID, three or more digits (ADR-NNN or ADR-NNNN; /blueprint:sync-ids assigns ADR-NNNN when missing). Accepts the same id form as relates-to and as the ADR scripts, which match ADR-NNN-title.md filenames."
         },
         "status": {
           "type": "string",
@@ -92,12 +92,12 @@
         },
         "supersedes": {
           "type": "string",
-          "pattern": "^ADR-[0-9]{4,}$",
+          "pattern": "^ADR-[0-9]{3,}$",
           "description": "ADR this decision replaces. The target must carry the reciprocal `superseded-by`."
         },
         "superseded-by": {
           "type": "string",
-          "pattern": "^ADR-[0-9]{4,}$",
+          "pattern": "^ADR-[0-9]{3,}$",
           "description": "ADR that replaced this decision. Hyphenated to match relates-to / github-issues, which auto-sync-id-registry.sh already parses. The underscore spelling `superseded_by` was the schema's form until the SSOT reconciliation and is rejected below."
         },
         "superseded_by": {
@@ -107,7 +107,7 @@
         },
         "extends": {
           "type": "string",
-          "pattern": "^ADR-[0-9]{4,}$",
+          "pattern": "^ADR-[0-9]{3,}$",
           "description": "ADR this decision builds upon without replacing"
         },
         "relates-to": {

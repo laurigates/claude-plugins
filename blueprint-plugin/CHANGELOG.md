@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.46.10](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.9...blueprint-plugin-v3.46.10) (2026-10-10)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** accept three-digit ADR ids in adr.schema.json ([#3007](https://github.com/laurigates/claude-plugins/issues/3007)) ([eaf8687](https://github.com/laurigates/claude-plugins/commit/eaf8687cb5e7d4d044110008884bc0c326094732)), closes [#3000](https://github.com/laurigates/claude-plugins/issues/3000)
+
 ## [3.46.9](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.46.8...blueprint-plugin-v3.46.9) (2026-10-09)
 
 

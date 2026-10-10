@@ -692,7 +692,7 @@ assert_stderr_contains() {
     json=$(jq -nc --arg cmd "$cmd" '{tool_name:"Bash",tool_input:{command:$cmd}}')
     local stderr_out
     stderr_out=$(printf '%s' "$json" | bash "$HOOK" 2>&1 >/dev/null || true)
-    if echo "$stderr_out" | grep -qF "$needle"; then
+    if grep -qF "$needle" <<<"$stderr_out"; then
         printf "  PASS: %s\n" "$desc"
         PASS=$((PASS + 1))
     else

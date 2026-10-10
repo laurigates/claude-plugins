@@ -352,7 +352,7 @@ the ADR schema spelled the back-reference `superseded_by` while the hook read
 
 | Schema | Required frontmatter | Required sections |
 |---|---|---|
-| [`adr.schema.json`](schemas/adr.schema.json) | `id` (`ADR-NNNN`), `status`, `created`, `modified` | Context, Decision, Consequences — ADR-0023 dropped `Options Considered` and `Related ADRs` to optional, and **nothing enforces them**: `/blueprint:adr-validate` checks relationships and numbering, not sections |
+| [`adr.schema.json`](schemas/adr.schema.json) | `id` (`ADR-NNN` or `ADR-NNNN`, three or more digits), `status`, `created`, `modified` | Context, Decision, Consequences — ADR-0023 dropped `Options Considered` and `Related ADRs` to optional, and **nothing enforces them**: `/blueprint:adr-validate` checks relationships and numbering, not sections |
 | [`prd.schema.json`](schemas/prd.schema.json) | `id` (`PRD-NNN`), `status`, `created`, `modified` | none — the template governs structure |
 | [`prp.schema.json`](schemas/prp.schema.json) | `id` (`PRP-NNN`), `status`, `created`, `modified`, `reviewed`, `confidence`, `domain` | Context Framing, AI Documentation, Implementation Blueprint, Test Strategy, Validation Gates, Success Criteria |
 
