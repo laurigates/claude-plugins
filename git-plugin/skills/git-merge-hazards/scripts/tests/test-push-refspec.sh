@@ -165,6 +165,33 @@ check "verbatim prescribed command succeeds for a branch absent from the remote"
 check "verbatim prescribed command created the branch at the pushed sha" "$sha" \
     "$(g -C "$sandbox/origin" rev-parse refs/heads/feat/lease-full 2>/dev/null)"
 
+# 5. A lease value must be a full SHA (#2963). An abbreviation the local object
+#    store cannot resolve fails to PARSE, so the push dies before it reaches the
+#    remote; a full 40-hex SHA parses even when the object is absent locally.
+#    The full-but-wrong lease is still refused — as a stale lease, which is the
+#    lease doing its job — so the assertion is on the parse error, not the rc.
+unknown_full="1234567890abcdef1234567890abcdef12345678"
+lease_bad_short_out="$(g -C "$sandbox/work" push --force-with-lease="refs/heads/feat/lease-full:${unknown_full:0:7}" origin "${sha2}:refs/heads/feat/lease-full" 2>&1)"
+case "$lease_bad_short_out" in
+    *"cannot parse expected object name"*) short_lease_msg=present ;;
+    *) short_lease_msg=absent ;;
+esac
+check "a short lease SHA absent from the object store fails to parse" "present" "$short_lease_msg"
+
+lease_bad_full_out="$(g -C "$sandbox/work" push --force-with-lease="refs/heads/feat/lease-full:${unknown_full}" origin "${sha2}:refs/heads/feat/lease-full" 2>&1)"
+case "$lease_bad_full_out" in
+    *"cannot parse"*) full_lease_msg=present ;;
+    *) full_lease_msg=absent ;;
+esac
+check "a full 40-hex lease SHA parses even when the object is absent" "absent" "$full_lease_msg"
+
+lease="$(g -C "$sandbox/origin" rev-parse refs/heads/feat/lease-full)" \
+    || { echo "FAIL: setup step failed (rev-parse lease)" >&2; exit 1; }
+g -C "$sandbox/work" push -q --force-with-lease="refs/heads/feat/lease-full:${lease}" origin "${sha2}:refs/heads/feat/lease-full" 2>/dev/null
+lease_ok_rc=$?
+check "a full lease SHA resolved with rev-parse lets the push through" \
+    "zero" "$([ "$lease_ok_rc" -eq 0 ] && echo zero || echo nonzero)"
+
 # ---------------------------------------------------------------------------
 # Part 2 — the SKILL.md prescribes the form git accepts
 # ---------------------------------------------------------------------------

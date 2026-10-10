@@ -46,6 +46,13 @@ claude-plugins #1979→#1987):
   reason about. It compounds with the **Brace that variable** rule rather than
   replacing it: `"$sha:refs/heads/x"` is the `:r` word-modifier row in that
   table — unbraced, zsh silently sends `<sha>efs/heads/x`.
+- **Pin a lease to a full 40-hex SHA, never a short one.**
+  `--force-with-lease=<ref>:<short>` fails with `cannot parse expected object
+  name` when the abbreviation is not in the local object store or is ambiguous,
+  so the push is refused before it reaches the remote. A full 40-hex SHA always
+  parses, because git reads it as an object name without looking it up. Resolve
+  it first: `lease=$(git rev-parse origin/<branch>)`, then
+  `git push --force-with-lease="refs/heads/<branch>:${lease}" origin "${sha}:refs/heads/<branch>"`.
 - **An empty-diff force-push auto-closes the PR — and a closed PR whose *head*
   moved after closing cannot be reopened.** Sibling of #2's
   base-branch-deleted variant. GitHub saw the branch == main, closed the PR,
