@@ -865,6 +865,11 @@ def show(recipe, justfile, variables, prefix):
     rc = print_flags(path, path.name)
     if rc:
         return rc
+    if path.suffix != ".py":
+        # print_flags has already said this is not argparse. The --help line
+        # below would point at an argparse that does not exist: `--help` is
+        # handed to the shell script, or to just itself.
+        return 0
 
     # Spell out the required positionals: without them just refuses the call
     # before the script is reached, which is half of why this tool exists.

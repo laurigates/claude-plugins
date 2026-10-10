@@ -37,7 +37,7 @@
 #      annotated construction is traced (R); an argument group follows its
 #      receiver (S); a refused subcommand help= is named (T); the [private]
 #      attribute alone hides a recipe (U); a binding is forgotten only where
-#      it runs (V)
+#      it runs (V); a recipe running a .sh gets no argparse --help hint (W)
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -732,6 +732,24 @@ out="$(scan v_nested.py)"
 assert "V: a comprehension target and a later rebinding leave x's flags in place" \
   "$(eq "$(flags_in "$out" "SUBCOMMAND  x")" "--a --b")"
 assert "V: nothing is marked UNTRACED" "$(lacks "$out" "UNTRACED")"
+
+# -- W: a recipe that runs a shell script gets no argparse --help hint --------
+# print_flags reports a .sh as "not argparse" and returns 0, and show() then
+# went on to print "Argparse's own text ... just <recipe> --help" -- a command
+# that does not reach any argparse at all. Found by running this helper over
+# lab/justfile in laurigates/comfyui-nodes, whose `torch-update` runs a .sh.
+mkdir -p "$tmp/shrecipe"
+cat >"$tmp/shrecipe/justfile" <<'JUSTFILE'
+# Reinstall the stack.
+reinstall:
+    "{{source_directory()}}/update_stack.sh"
+JUSTFILE
+printf '#!/usr/bin/env bash\necho hi\n' >"$tmp/shrecipe/update_stack.sh"
+sh_recipe_out="$(cd "$tmp/shrecipe" && python3 "$helper" reinstall 2>&1)"
+assert "W: the recipe's shell script is found and named" \
+  "$(has "$sh_recipe_out" "update_stack.sh is a shell script, not argparse")"
+assert "W: no argparse --help hint is printed for a shell script" \
+  "$(lacks "$sh_recipe_out" "Argparse's own text")"
 
 # ---------------------------------------------------------------- summary
 echo "PASSED=$pass_count FAILED=$fail_count"
