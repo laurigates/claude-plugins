@@ -37,7 +37,7 @@
   "rust-plugin": "1.7.1",
   "taskwarrior-plugin": "1.14.7",
   "terraform-plugin": "1.7.9",
-  "testing-plugin": "3.21.3",
+  "testing-plugin": "3.22.0",
   "tools-plugin": "2.13.3",
   "typescript-plugin": "1.10.1",
   "session-plugin": "1.13.6",
