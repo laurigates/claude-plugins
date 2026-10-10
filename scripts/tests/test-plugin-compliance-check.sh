@@ -859,6 +859,55 @@ run_check; out_pcfix="$OUT"; rc_pcfix="$RC"
 assert_eq "pre-commit: default_stages beside commit-msg exits 0" "$rc_pcfix" "0"
 assert_absent "pre-commit: the fixed skill raises no #2824 issue" "$out_pcfix" "#2824"
 rm -rf "${root:?}/$PLUGIN/skills/configure-pre-commit"
+# Issues #2865 / #2858: ai-review-max-turns must keep the bot-actor refusal
+# ('non-human actor') and the base-branch config restore ('.claude-pr/') on
+# its SKILL.md page.
+#
+# THE SEMANTIC INVARIANT UNDER TEST: the block is scoped to
+# github-actions-plugin/ai-review-max-turns, so the sandbox is re-pointed at
+# that plugin name and carries a copy of the REAL skill directory. The real
+# skill exits 0 (so the guard is satisfiable by the shipped text), and the
+# same copy with either token removed exits 1 naming that token. Mutating the
+# real file rather than a synthetic fixture is what proves the pin reads the
+# page an agent lands on.
+FIXTURE_PLUGIN="$PLUGIN"
+PLUGIN="github-actions-plugin"
+mkdir -p "$root/$PLUGIN/.claude-plugin" "$root/$PLUGIN/skills"
+write_marketplace "$CLEAN_META"
+write_manifest "$CLEAN_META"
+printf '{\n  "packages": {\n    "%s": {\n      "component": "%s",\n      "release-type": "simple"\n    }\n  }\n}\n' \
+  "$PLUGIN" "$PLUGIN" > "$root/release-please-config.json"
+printf '{\n  "%s": "1.0.0"\n}\n' "$PLUGIN" > "$root/.release-please-manifest.json"
+printf '# %s\n\nFixture.\n' "$PLUGIN" > "$root/$PLUGIN/README.md"
+cp -R "$REPO_ROOT/github-actions-plugin/skills/ai-review-max-turns" "$root/$PLUGIN/skills/"
+armt="$root/$PLUGIN/skills/ai-review-max-turns/SKILL.md"
+cp "$armt" "$tmp/armt.orig"
+
+run_check; out_armt="$OUT"; rc_armt="$RC"
+assert_eq "ai-review-max-turns: the shipped SKILL.md exits 0" "$rc_armt" "0"
+assert_absent "ai-review-max-turns: the shipped SKILL.md raises no token issue" \
+  "$out_armt" "ai-review-max-turns: SKILL.md must retain token"
+
+for armt_token in 'non-human actor' '.claude-pr/'; do
+  python3 - "$tmp/armt.orig" "$armt" "$armt_token" <<'PY'
+import sys
+src, dst, token = sys.argv[1:4]
+text = open(src, encoding="utf-8").read()
+assert token in text, f"fixture precondition: {token!r} not in the shipped SKILL.md"
+open(dst, "w", encoding="utf-8").write(text.replace(token, "REDACTED"))
+PY
+  run_check; out_armt_red="$OUT"; rc_armt_red="$RC"
+  assert_eq "ai-review-max-turns: dropping '${armt_token}' exits 1" "$rc_armt_red" "1"
+  assert_contains "ai-review-max-turns: dropping '${armt_token}' names the token" \
+    "$out_armt_red" "SKILL.md must retain token '${armt_token}'"
+done
+
+rm -rf "${root:?}/$PLUGIN"
+PLUGIN="$FIXTURE_PLUGIN"
+write_marketplace "$CLEAN_META"
+printf '{\n  "packages": {\n    "%s": {\n      "component": "%s",\n      "release-type": "simple"\n    }\n  }\n}\n' \
+  "$PLUGIN" "$PLUGIN" > "$root/release-please-config.json"
+printf '{\n  "%s": "1.0.0"\n}\n' "$PLUGIN" > "$root/.release-please-manifest.json"
 # --- model: haiku limits (Haiku 5.5 re-evaluation, 2026-10) ------------------
 # Haiku is allowed except where one of two measured hazards applies, and each
 # hazard is paired with the allowed case beside it so the suite fails both a
