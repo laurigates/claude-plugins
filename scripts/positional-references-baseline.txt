@@ -95,7 +95,7 @@ obsidian-plugin/skills/vault-tags/SKILL.md	4
 obsidian-plugin/skills/vault-wikilinks/SKILL.md	3
 project-plugin/skills/changelog-review/SKILL.md	2
 project-plugin/skills/project-init/SKILL.md	1
-project-plugin/skills/project-test-loop/SKILL.md	2
+project-plugin/skills/project-test-loop/SKILL.md	1
 prose-plugin/skills/prose-distill/SKILL.md	1
 python-plugin/skills/python-code-quality/SKILL.md	1
 rust-plugin/skills/cargo-generate/SKILL.md	1
