@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.2](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.10.1...typescript-plugin-v1.10.2) (2026-10-10)
+
+
+### Performance
+
+* **skills:** allow Haiku 5.5 within measured limits and run mechanical skills on it ([#3019](https://github.com/laurigates/claude-plugins/issues/3019)) ([21a20f2](https://github.com/laurigates/claude-plugins/commit/21a20f2c8157bdc22ed9ed2d9fb608c9d9136230))
+
 ## [1.10.1](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.10.0...typescript-plugin-v1.10.1) (2026-10-07)
 
 
