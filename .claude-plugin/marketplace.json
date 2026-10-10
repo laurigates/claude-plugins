@@ -822,7 +822,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.21.3",
+      "version": "3.22.0",
       "author": {
         "name": "Lauri Gates"
       },
