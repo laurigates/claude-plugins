@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.27.7](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.27.6...code-quality-plugin-v1.27.7) (2026-10-10)
+
+
+### Documentation
+
+* **skills:** point Context-block references at the Context anchor and lower the positional baseline ([#2973](https://github.com/laurigates/claude-plugins/issues/2973)) ([921b3be](https://github.com/laurigates/claude-plugins/commit/921b3be483a0e8f5cc709dc0369eb659b599bbeb))
+
 ## [1.27.6](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.27.5...code-quality-plugin-v1.27.6) (2026-10-10)
 
 
