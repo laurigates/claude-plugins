@@ -122,7 +122,7 @@ If either fails, skip GitHub-related branches in later steps.
 ### Step 3: Duplicate check by bpid
 
 If `bpid:` was given, run this parallel-safe check, scoped to the resolved
-project (`$PROJECT`, from Parameters):
+project (`$PROJECT`: the name from Project resolution, empty for `--no-project`):
 
 ```bash
 task bpid:"$BPID" export | jq --arg p "$PROJECT" --arg b "$BPID" '.[] | select(.bpid == $b and (.project // "") == $p) | {id, uuid, description, status}'

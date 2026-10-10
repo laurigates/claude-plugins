@@ -23,7 +23,7 @@
 #   3. the documented command DOES return a real duplicate in `myrepo` (so a
 #      command that always prints nothing cannot pass), with its uuid
 #   4. with `--no-project` (empty $PROJECT) it matches a project-less task only
-#   5. control + check for bpid: `bpid:WO-012` returns a `WO-0123` task, and
+#   5. control + check for bpid: `bpid:WO-234` returns a `WO-2340` task, and
 #      the documented command does not
 #
 # Requires the real `task` CLI; SKIPs cleanly when taskwarrior is unavailable so
@@ -126,8 +126,8 @@ tw add "sibling with same bpid" project:myrepo-docs bpid:WO-099
 check "SKILL.md: empty \$PROJECT matches the project-less task only" \
     "1" "$(run_doc "$skill_cmd" "" WO-099 | count_rows)"
 
-# 5. bpid is matched exactly too: a WO-0123 task in myrepo is not a duplicate
-#    of WO-012 (fresh bpid pair so earlier fixtures don't interfere).
+# 5. bpid is matched exactly too: a WO-2340 task in myrepo is not a duplicate
+#    of WO-234 (fresh bpid pair so earlier fixtures don't interfere).
 tw add "longer work-order id" project:myrepo bpid:WO-2340
 bpid_prefix_hits="$(task bpid:WO-234 export 2>/dev/null | jq 'length')"
 check "control: 'bpid:WO-234' prefix-matches WO-2340" "1" "${bpid_prefix_hits:-empty}"
