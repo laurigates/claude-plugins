@@ -297,7 +297,8 @@ dropping it. Read-only.`,
 prdId, storyId (or section), the verbatim user-visible behaviour, and any linked
 deps. Also list every "Known Drift" or status-marked entry verbatim under
 knownDrift. Do not infer — only extract. Read-only.`,
-          { label: `story:${p}`, phase: 'discover', schema: storyS, model: 'opus', effort: 'low' },
+          // Verbatim extraction: Haiku 5.5 (haiku-5.5-reevaluation-2026-10-10.md).
+          { label: `story:${p}`, phase: 'discover', schema: storyS, model: 'haiku', effort: 'low' },
         ),
       ),
     ),
@@ -391,7 +392,8 @@ each as "bug-report" (the comment describes behaviour that is broken) or
 evidence and comment fields verbatim. Do not file issues.
 
 ${JSON.stringify(skips)}`,
-      { label: 'bug-triage', phase: 'triage', schema: bugS, model: 'opus', effort: 'low' },
+      // Two-value closed enum over verbatim comments: Haiku 5.5.
+      { label: 'bug-triage', phase: 'triage', schema: bugS, model: 'haiku', effort: 'low' },
     )
   : { bugs: [] };
 
