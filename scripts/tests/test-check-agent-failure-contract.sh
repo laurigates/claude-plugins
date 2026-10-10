@@ -36,6 +36,17 @@
 #   W. agent-development.md regaining the retired "sees parent history" claim → exit 1
 #   X. agent-development.md regaining the retired `context` field-table row → exit 1
 #   Y. custom-agent-definitions SKILL.md regaining the `context` mode row → exit 1
+#   Z1. references/brief-templates.md missing the **Budget** clause → exit 1
+#   Z2. references/brief-templates.md missing "do not merge" stage authority → exit 1
+#   Z3. parallel-agent-dispatch SKILL.md missing "Scope authority per stage" → exit 1
+#
+# Issue #2818: the refactor-brief template's **Budget** clause is the only
+# per-agent context bound a copied brief carries (no frontmatter field caps a
+# subagent's context). Guard Z1 keeps it from being silently dropped.
+#
+# Issue #2902: merge authorization in a shared constraints block let build-stage
+# agents merge before review. Guards Z2/Z3 keep the per-stage prohibition in
+# the reference that owns the rationale and the SKILL.md bullet that points at it.
 #
 # Issue #1868: Workflow({resumeFromRunId}) re-runs an already-succeeded
 # isolation:"worktree" agent instead of returning its cached result, re-firing
@@ -379,5 +390,29 @@ assert "Y: custom-agent-definitions SKILL.md regaining the context-mode row fail
   "$([ "$(run_fixture "$fx_y")" -eq 1 ] && echo true || echo false)"
 rm -rf "$fx_y"
 
-echo "check-agent-failure-contract (#1601/#1868/#2039/#2143/#2447/#2614/#2646): ${pass_count} passed, ${fail_count} failed"
+# --- Guard Z1: brief-templates.md missing the **Budget** clause (#2818) ---
+fx_z1="$(mktemp -d)"
+build_fixture "$fx_z1"
+strip_marker "$fx_z1/agent-patterns-plugin/skills/parallel-agent-dispatch/references/brief-templates.md" "**Budget**: finish well within your context window"
+assert "Z1: brief-templates.md missing the Budget clause fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_z1")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_z1"
+
+# --- Guard Z2: brief-templates.md missing the per-stage "do not merge" (#2902) ---
+fx_z2="$(mktemp -d)"
+build_fixture "$fx_z2"
+strip_marker "$fx_z2/agent-patterns-plugin/skills/parallel-agent-dispatch/references/brief-templates.md" "stop at PR opened; do not merge"
+assert "Z2: brief-templates.md missing the stage-authority prohibition fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_z2")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_z2"
+
+# --- Guard Z3: SKILL.md missing the "Scope authority per stage" bullet (#2902) ---
+fx_z3="$(mktemp -d)"
+build_fixture "$fx_z3"
+strip_marker "$fx_z3/agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md" "Scope authority per stage"
+assert "Z3: dispatch SKILL.md missing the per-stage authority bullet fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_z3")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_z3"
+
+echo "check-agent-failure-contract (#1601/#1868/#2039/#2143/#2447/#2614/#2646/#2818/#2902): ${pass_count} passed, ${fail_count} failed"
 [ "$fail_count" -eq 0 ]

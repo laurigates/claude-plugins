@@ -57,7 +57,7 @@ Execute this legibility gate:
 
 ### Step 1: Resolve the prompt
 
-The Context block above ran `emit-legibility-prompt.sh`, which resolved the
+The [Context](#context) block ran `emit-legibility-prompt.sh`, which resolved the
 target `SKILL.md` absolute path and emitted the cold-reader dispatch prompt
 between `=== PROMPT ===` and `=== END PROMPT ===`.
 

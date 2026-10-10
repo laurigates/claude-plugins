@@ -258,8 +258,8 @@ check_skill_frontmatter() {
     fm_reviewed=$(extract_field "$skill_file" "reviewed")
 
     local missing_recommended=()
-    # Note: `model` may be set to `opus` or `sonnet` at the extremes; haiku is
-    # disallowed for any skill (see check below). See
+    # Note: `model` may be set to `opus` or `sonnet` at the extremes, and to
+    # `haiku` only within the limits checked below. See
     # .claude/rules/skill-development.md ("Model Selection") for policy.
     [ -z "$fm_created" ] && missing_recommended+=("created")
     [ -z "$fm_modified" ] && missing_recommended+=("modified")
@@ -280,12 +280,37 @@ check_skill_frontmatter() {
       has_warnings=true
     fi
 
-    # Regression: model: haiku breaks AskUserQuestion (PR #879) and the cost
-    # savings vs Sonnet do not justify the quality risk for non-interactive
-    # skills either. Sonnet is the floor — see .claude/rules/skill-development.md.
+    # model: haiku (Haiku 5.5 since Claude Code 2.1.293) is allowed only where
+    # neither measured hazard applies — see .claude/rules/skill-development.md:
+    #   1. Regression (#879/#881): a haiku skill's AskUserQuestion prompts came
+    #      back empty. Never re-measured on Haiku 5.5, so the pair stays banned.
+    #   2. A skill's `model:` lasts for the rest of the TURN, so a skill only
+    #      the model can load (user-invocable: false) hands whatever work loaded
+    #      it to Haiku. With `context: fork` the override sets only the fork's
+    #      model, so the leak does not apply there.
+    #   3. Haiku 5.5 defaults to effort `medium`; the Model Selection table pairs
+    #      `model: haiku` with an explicit effort, as check-workflow-js-model.sh
+    #      requires for haiku workflow stages (PR #3019 review).
     if [ "$fm_model" = "haiku" ]; then
-      issues+=("❌ ${plugin}/${skill_name}: model: haiku is disallowed — use sonnet (floor) or opus")
-      has_errors=true
+      local fm_user_invocable fm_context fm_effort
+      fm_user_invocable=$(extract_field "$skill_file" "user-invocable")
+      fm_context=$(extract_field "$skill_file" "context")
+      fm_effort=$(extract_field "$skill_file" "effort")
+      case "$fm_effort" in
+        low|medium|high|xhigh|max) ;;
+        *)
+          issues+=("❌ ${plugin}/${skill_name}: model: haiku requires an explicit effort (low|medium|high|xhigh|max) — see skill-development.md Model Selection")
+          has_errors=true
+          ;;
+      esac
+      if grep -q 'AskUserQuestion' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: model: haiku with AskUserQuestion is disallowed — prompts came back empty on Haiku (#881), not re-measured on 5.5")
+        has_errors=true
+      fi
+      if [ "$fm_user_invocable" = "false" ] && [ "$fm_context" != "fork" ]; then
+        issues+=("❌ ${plugin}/${skill_name}: model: haiku on a user-invocable: false skill hands the rest of the loading turn to Haiku — use context: fork or leave model unset")
+        has_errors=true
+      fi
     fi
 
     # Regression: unquoted args:/argument-hint: values that contain `[ ... ]`
@@ -718,6 +743,25 @@ check_skill_body() {
     if [ "$skill_name" = "session-end" ]; then
       if ! grep -q -- "workflow-verify-before-filing" "$skill_file"; then
         issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain 'workflow-verify-before-filing' (upstream candidate file-now gate survives at the orchestrated bookend)")
+        has_errors=true
+      fi
+      # Regression (PR #2987 review): the "taskwarrior: not queried" rule must be
+      # gated on TASK_AVAILABLE=true. Ungated, every user without a task binary
+      # (TASK_FAIL_REASON=no-cli) got a "not queried (no-cli)" line at every
+      # session-end.
+      if grep -q "not queried (<TASK_FAIL_REASON>)" "$skill_file" \
+        && ! grep -q 'When `TASK_AVAILABLE=true` and `TASK_STORE_REACHABLE=false`' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: the taskwarrior 'not queried' rule must be gated on 'When \`TASK_AVAILABLE=true\` and \`TASK_STORE_REACHABLE=false\`' (no-cli users skip silently)")
+        has_errors=true
+      fi
+    fi
+
+    # Regression (PR #2987 review): session-spinup must not hide a truncated
+    # zero. DISCUSSIONS_UNANSWERED=0 with DISCUSSIONS_TRUNCATED=true is a floor
+    # over the first 100 threads, not a clean queue.
+    if [ "$skill_name" = "session-spinup" ] && grep -q "DISCUSSIONS_UNANSWERED=0" "$skill_file"; then
+      if ! grep -q 'DISCUSSIONS_UNANSWERED=0` with `DISCUSSIONS_TRUNCATED=true' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must render DISCUSSIONS_UNANSWERED=0 with DISCUSSIONS_TRUNCATED=true as a partial read, not 'no line'")
         has_errors=true
       fi
     fi
