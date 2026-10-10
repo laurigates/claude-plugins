@@ -5,7 +5,7 @@ args: "[description] [project:<name>] [--no-project] [due:<date>] [scheduled:<da
 allowed-tools: Bash(task *), Bash(jq *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh issue *), Bash(gh api *), Bash(bash *), Read, TodoWrite
 argument-hint: short task description
 created: 2026-04-24
-modified: 2026-08-19
+modified: 2026-10-09
 reviewed: 2026-08-19
 ---
 
@@ -121,17 +121,17 @@ If either fails, skip GitHub-related branches in later steps.
 
 ### Step 3: Duplicate check by bpid
 
-If `bpid:` was given, run parallel-safe and constrain to the resolved
-project so a matching `bpid` in another repo's queue is not surfaced as
-a false-positive duplicate:
+If `bpid:` was given, run this parallel-safe check, scoped to the resolved
+project (`$PROJECT`: the name from Project resolution, empty for `--no-project`):
 
 ```bash
-task project:myrepo bpid:"$BPID" export | jq '.[] | {id, description, status}'
+task bpid:"$BPID" export | jq --arg p "$PROJECT" --arg b "$BPID" '.[] | select(.bpid == $b and (.project // "") == $p) | {id, uuid, description, status}'
 ```
 
-Never use `task bpid:"$BPID" list` — it exits 1 on empty result and cancels sibling tool calls in parallel batches (see `.claude/rules/parallel-safe-queries.md`).
+Use `export`, never `list`. The reasons, the exact `jq` match, and
+`--no-project`: [quick-reference § Exact matching](references/quick-reference.md#exact-matching-in-the-bpid-duplicate-check).
 
-If a matching open task exists, report the ID and ask whether to update instead of re-add.
+If a matching open task exists, report its ID and `uuid` and ask whether to update instead of re-add.
 
 ### Step 4: Optionally pre-fill from a GitHub issue
 
