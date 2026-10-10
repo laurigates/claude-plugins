@@ -19,6 +19,10 @@
 #       external-resource teardown is for), and the workdir is then removed.
 #   (g) a `fixture.dir` that does not exist is a loud ERROR, not a silent
 #       empty workdir — and it leaves no orphan temp dir behind.
+#
+# (h) a fixture whose JSON does not parse is a loud ERROR (exit 1), in both
+#     apply and teardown mode, rather than the "no fixture" no-op (#2915) — and
+#     so is an `--fixture @file` whose file is missing or unreadable.
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -181,6 +185,61 @@ else
   pass_count=$((pass_count + 1))
 fi
 rm -rf "$tmpl_root"
+
+echo "=== TEST: a fixture whose JSON does not parse is a loud error (#2915) ==="
+# A truncated / mis-quoted fixture used to read as "no fixture" and report
+# STATUS=OK, so the eval silently ran without its workdir.
+bad_fixture='{"setup": ["echo hi"'
+bad_out="$("$apply" --fixture "$bad_fixture" --repo-root "$repo_root")"
+bad_rc=$?
+check "malformed: exit code" "1" "$bad_rc"
+check "malformed: status" "ERROR" "$(field "$bad_out" STATUS)"
+check "malformed: not applied" "false" "$(field "$bad_out" FIXTURE_APPLIED)"
+check "malformed: reason" "fixture JSON does not parse" "$(field "$bad_out" ERROR)"
+if grep -q "^WORKDIR=" <<<"$bad_out"; then
+  echo "FAIL: malformed fixture emitted a WORKDIR" >&2; fail_count=$((fail_count + 1))
+else
+  pass_count=$((pass_count + 1))
+fi
+# A non-object value parses but is still not a fixture.
+nonobj_out="$("$apply" --fixture '["echo hi"]' --repo-root "$repo_root")"
+check "non-object: status" "ERROR" "$(field "$nonobj_out" STATUS)"
+# `null` stays a no-op alongside the empty value and `{}` tested above.
+null_out="$("$apply" --fixture 'null' --repo-root "$repo_root")"
+check "null: status" "OK" "$(field "$null_out" STATUS)"
+check "null: applied" "false" "$(field "$null_out" FIXTURE_APPLIED)"
+# Teardown validates too: a malformed fixture would skip its teardown commands,
+# so it errors and leaves the workdir for a corrected re-run.
+bad_td_dir="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
+bad_td_out="$("$apply" --teardown "$bad_td_dir" --fixture '{"teardown": ["echo bye"')"
+bad_td_rc=$?
+check "malformed teardown: exit code" "1" "$bad_td_rc"
+check "malformed teardown: status" "ERROR" "$(field "$bad_td_out" STATUS)"
+check "malformed teardown: reason" "fixture JSON does not parse" "$(field "$bad_td_out" ERROR)"
+if [ -d "$bad_td_dir" ]; then pass_count=$((pass_count + 1)); else echo "FAIL: malformed teardown removed the workdir" >&2; fail_count=$((fail_count + 1)); fi
+rm -rf "$bad_td_dir"
+# An `@file` that is missing or unreadable is also loud, not the no-op: the
+# `cat … 2>/dev/null` read used to come back empty and fall through to STATUS=OK.
+nofile="/nonexistent-fixture-$$.json"
+nofile_out="$("$apply" --fixture "@$nofile" --repo-root "$repo_root")"
+nofile_rc=$?
+check "unreadable @file: exit code" "1" "$nofile_rc"
+check "unreadable @file: status" "ERROR" "$(field "$nofile_out" STATUS)"
+check "unreadable @file: not applied" "false" "$(field "$nofile_out" FIXTURE_APPLIED)"
+check "unreadable @file: reason" "fixture file not readable: $nofile" "$(field "$nofile_out" ERROR)"
+nofile_td_dir="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
+nofile_td_out="$("$apply" --teardown "$nofile_td_dir" --fixture "@$nofile")"
+nofile_td_rc=$?
+check "unreadable @file teardown: exit code" "1" "$nofile_td_rc"
+check "unreadable @file teardown: status" "ERROR" "$(field "$nofile_td_out" STATUS)"
+if [ -d "$nofile_td_dir" ]; then pass_count=$((pass_count + 1)); else echo "FAIL: unreadable-@file teardown removed the workdir" >&2; fail_count=$((fail_count + 1)); fi
+rm -rf "$nofile_td_dir"
+# A readable @file still works (the happy path of the same branch).
+okfile="$(mktemp)" || { echo "mktemp failed" >&2; exit 1; }
+printf '{}' > "$okfile"
+okfile_out="$("$apply" --fixture "@$okfile" --repo-root "$repo_root")"
+check "readable @file: status" "OK" "$(field "$okfile_out" STATUS)"
+rm -f "$okfile"
 
 echo ""
 echo "=== SUMMARY ==="
