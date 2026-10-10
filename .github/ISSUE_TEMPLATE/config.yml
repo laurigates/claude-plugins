@@ -10,4 +10,6 @@ contact_links:
     about: Report security issues privately — do not use public issues
   - name: Question or Discussion
     url: https://github.com/laurigates/claude-plugins/discussions/categories/q-a
-    about: Ask how something works or how to use a skill — issues are the work backlog
+    # @claude does not answer in Discussions: claude-code-action rejects the
+    # discussion events (see the `on:` block in .github/workflows/claude.yml, #2759).
+    about: Ask how something works or how to use a skill — issues are the work backlog. @claude answers only in issues and pull requests, not in Discussions

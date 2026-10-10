@@ -1,5 +1,14 @@
 name: "Claude: @mentions"
 
+# `discussion` / `discussion_comment` are deliberately absent (#2759): an
+# @claude mention in a Discussion thread is not answered. claude-code-action@v1
+# accepts a closed list of events (ENTITY_EVENT_NAMES and AUTOMATION_EVENT_NAMES
+# in its src/github/context.ts) and throws "Unsupported event type" on anything
+# else, before its permission and trigger checks. Adding the trigger would turn
+# every Discussion comment into a failed run, and tag mode has no surface to post
+# its tracking comment on a Discussion anyway. The issue chooser
+# (.github/ISSUE_TEMPLATE/config.yml) tells askers @claude answers only in issues
+# and PRs. Revisit if the action adds discussion_comment to ENTITY_EVENT_NAMES.
 on:
   issue_comment:
     types: [created]

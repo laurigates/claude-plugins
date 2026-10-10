@@ -52,6 +52,11 @@ on:
       - '**/evals.json'
       - '*-plugin/hooks.json'
       - 'justfile'
+      # Case I of scripts/tests/test-script-to-issue-guard.sh reads the
+      # action's script wiring and workflow-model-audit's prefix/--title, so a
+      # PR touching only either file must still run it.
+      - '.github/actions/script-to-issue/**'
+      - '.github/workflows/workflow-model-audit.yml'
       - '.github/workflows/test-skill-scripts.yml'
   push:
     branches: [main]
@@ -66,6 +71,8 @@ on:
       - 'experiments/**'
       - 'evaluate-plugin/agents/**'
       - '**/evals.json'
+      - '.github/actions/script-to-issue/**'
+      - '.github/workflows/workflow-model-audit.yml'
 
 concurrency:
   group: test-skill-scripts-${{ github.event.pull_request.number || github.ref }}
