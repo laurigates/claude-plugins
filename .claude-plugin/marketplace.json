@@ -28,7 +28,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.50.1",
+      "version": "2.50.2",
       "author": {
         "name": "Lauri Gates"
       },
@@ -47,7 +47,7 @@
       "name": "agents-plugin",
       "source": "./agents-plugin",
       "description": "Task-focused agents with teammate and subagent role guidance for test, review, debug, docs, CI, security, refactoring, research, and performance",
-      "version": "1.14.3",
+      "version": "1.14.4",
       "author": {
         "name": "Lauri Gates"
       },
@@ -313,7 +313,7 @@
       "name": "evaluate-plugin",
       "source": "./evaluate-plugin",
       "description": "Skill evaluation and benchmarking - test skill effectiveness with behavioral eval cases, grade results, and track quality improvements",
-      "version": "1.17.6",
+      "version": "1.17.7",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -332,7 +332,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.12.8",
+      "version": "1.12.9",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
