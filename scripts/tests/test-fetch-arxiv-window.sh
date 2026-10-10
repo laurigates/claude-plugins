@@ -23,8 +23,8 @@ assert() {
   if [ "$2" = "true" ]; then pass=$((pass+1)); else
     echo "FAIL: $1" >&2; fail=$((fail+1)); fi
 }
-contains() { printf '%s' "$1" | grep -qF -- "$2" && echo true || echo false; }
-matches()  { printf '%s' "$1" | grep -qE -- "$2" && echo true || echo false; }
+contains() { grep -qF -- "$2" <<<"$1" && echo true || echo false; }
+matches()  { grep -qE -- "$2" <<<"$1" && echo true || echo false; }
 
 fx="$(mktemp -d)"; [ -n "$fx" ] || { echo "mktemp failed" >&2; exit 1; }
 trap 'rm -rf "$fx"' EXIT

@@ -98,7 +98,7 @@ MD
 # -----------------------------------------------------------------------------
 build_fixture
 outA="$(bash "$guard" --strict --root "$sandbox")" || fail "expected exit 0 on clean fixture:\n$outA"
-echo "$outA" | grep -q "^STATUS=OK$" || fail "expected STATUS=OK on clean fixture:\n$outA"
+grep -q "^STATUS=OK$" <<<"$outA" || fail "expected STATUS=OK on clean fixture:\n$outA"
 pass "clean fixture passes"
 
 # -----------------------------------------------------------------------------
@@ -107,7 +107,7 @@ pass "clean fixture passes"
 build_fixture
 printf 'Also run `/configure:ghost --check-only`.\n' >> "${sandbox}/configure-plugin/skills/configure-all/SKILL.md"
 outB="$(bash "$guard" --strict --root "$sandbox")" && fail "expected failure for unresolved /configure:ghost"
-echo "$outB" | grep -q "TYPE=skill_ref_unresolved" || fail "expected skill_ref_unresolved issue:\n$outB"
+grep -q "TYPE=skill_ref_unresolved" <<<"$outB" || fail "expected skill_ref_unresolved issue:\n$outB"
 pass "unresolved /configure: literal in configure-all/SKILL.md fails"
 
 # -----------------------------------------------------------------------------
@@ -119,8 +119,8 @@ build_fixture
 mkdir -p "${sandbox}/configure-plugin/skills/configure-all/references"
 printf 'Also run `/configure:ghost --check-only`.\n' > "${sandbox}/configure-plugin/skills/configure-all/references/flags.md"
 outB2="$(bash "$guard" --strict --root "$sandbox")" && fail "expected failure for unresolved /configure:ghost in references/"
-echo "$outB2" | grep -q "TYPE=skill_ref_unresolved" || fail "expected skill_ref_unresolved issue from references/:\n$outB2"
-echo "$outB2" | grep -q "^SKILL_FILES_READ=2$" || fail "expected SKILL.md + 1 sidecar read:\n$outB2"
+grep -q "TYPE=skill_ref_unresolved" <<<"$outB2" || fail "expected skill_ref_unresolved issue from references/:\n$outB2"
+grep -q "^SKILL_FILES_READ=2$" <<<"$outB2" || fail "expected SKILL.md + 1 sidecar read:\n$outB2"
 pass "unresolved /configure: literal in a configure-all references/*.md sidecar fails"
 
 # -----------------------------------------------------------------------------
@@ -129,7 +129,7 @@ pass "unresolved /configure: literal in a configure-all references/*.md sidecar 
 build_fixture
 sed -i.bak 's/`configure-bar`//' "${sandbox}/configure-plugin/docs/flow.md" && rm -f "${sandbox}/configure-plugin/docs/flow.md.bak"
 outC="$(bash "$guard" --strict --root "$sandbox")" && fail "expected failure when flow.md omits configure-bar"
-echo "$outC" | grep -q "TYPE=flow_missing_component" || fail "expected flow_missing_component issue:\n$outC"
+grep -q "TYPE=flow_missing_component" <<<"$outC" || fail "expected flow_missing_component issue:\n$outC"
 pass "flow.md missing a component fails"
 
 # -----------------------------------------------------------------------------
@@ -138,7 +138,7 @@ pass "flow.md missing a component fails"
 build_fixture
 printf '| Ghost | `configure-ghost` | |\n' >> "${sandbox}/configure-plugin/docs/flow.md"
 outD="$(bash "$guard" --strict --root "$sandbox")" && fail "expected failure for dangling configure-ghost in flow.md"
-echo "$outD" | grep -q "TYPE=flow_dangling_skill" || fail "expected flow_dangling_skill issue:\n$outD"
+grep -q "TYPE=flow_dangling_skill" <<<"$outD" || fail "expected flow_dangling_skill issue:\n$outD"
 pass "flow.md dangling skill fails"
 
 # -----------------------------------------------------------------------------
@@ -147,7 +147,7 @@ pass "flow.md dangling skill fails"
 build_fixture
 sed -i.bak '/configure-bar/d' "${sandbox}/configure-plugin/README.md" && rm -f "${sandbox}/configure-plugin/README.md.bak"
 outE="$(bash "$guard" --strict --root "$sandbox")" && fail "expected failure when README omits configure-bar"
-echo "$outE" | grep -q "TYPE=readme_missing_skill" || fail "expected readme_missing_skill issue:\n$outE"
+grep -q "TYPE=readme_missing_skill" <<<"$outE" || fail "expected readme_missing_skill issue:\n$outE"
 pass "README missing a skill fails"
 
 # -----------------------------------------------------------------------------
@@ -157,7 +157,7 @@ build_fixture
 mkdir -p "${sandbox}/configure-plugin/skills/configure-orphan"
 printf -- '---\nname: configure-orphan\n---\n' > "${sandbox}/configure-plugin/skills/configure-orphan/SKILL.md"
 outF="$(bash "$guard" --strict --root "$sandbox")" && fail "expected failure for on-disk skill missing from manifest"
-echo "$outF" | grep -q "TYPE=manifest_disk_drift" || fail "expected manifest_disk_drift issue:\n$outF"
+grep -q "TYPE=manifest_disk_drift" <<<"$outF" || fail "expected manifest_disk_drift issue:\n$outF"
 pass "on-disk skill absent from manifest fails"
 
 echo "ALL TESTS PASSED"
