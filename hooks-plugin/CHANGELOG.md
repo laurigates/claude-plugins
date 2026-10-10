@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.12.6](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.12.5...hooks-plugin-v2.12.6) (2026-10-09)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** reminder skips a stash whose content is already committed ([#3008](https://github.com/laurigates/claude-plugins/issues/3008)) ([271d636](https://github.com/laurigates/claude-plugins/commit/271d636c4a6adcb45f3127b64f1c46ba41fd849c))
+
 ## [2.12.5](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.12.4...hooks-plugin-v2.12.5) (2026-10-09)
 
 

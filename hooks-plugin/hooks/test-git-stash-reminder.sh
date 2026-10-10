@@ -77,7 +77,7 @@ set -euo pipefail
 # exported GIT_DIR overrides `git -C`, which is how a test suite corrupts the
 # shared checkout it runs inside (issue #1745).
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
-      GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX
+  GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX
 
 HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
 HOOK="${STASH_REMINDER_HOOK:-$HOOK_DIR/git-stash-reminder.sh}"
@@ -85,13 +85,16 @@ INIT_HOOK="${STASH_SESSION_INIT_HOOK:-$HOOK_DIR/git-stash-session-init.sh}"
 PASS=0
 FAIL=0
 
-SANDBOX=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
+SANDBOX=$(mktemp -d) || {
+  echo "mktemp -d failed" >&2
+  exit 1
+}
 # Guard the sandbox explicitly: an empty value would make every `git -C "$…"`
 # below fall back to the CWD and re-init the real repo (issue #1692, enforced
 # by scripts/check-git-sandbox-guards.sh).
 if [ -z "$SANDBOX" ] || [ ! -d "$SANDBOX" ]; then
-    echo "bad sandbox dir" >&2
-    exit 1
+  echo "bad sandbox dir" >&2
+  exit 1
 fi
 
 # Unique per run so that pointing CLAUDE_STASH_BASELINE_DIR at the real
@@ -102,11 +105,11 @@ BASELINES="${CLAUDE_STASH_BASELINE_DIR:-$SANDBOX/baselines}"
 export CLAUDE_STASH_BASELINE_DIR="$BASELINES"
 
 cleanup() {
-    rm -rf "$SANDBOX"
-    rm -rf "${BASELINES:?}/${SESSION_ID}.d"
-    rm -f "${BASELINES:?}/${SESSION_ID}"
-    # Written by git-stash-session-init.sh; its path is not env-overridable.
-    rm -f "/tmp/claude-test-baselines/${SESSION_ID}"
+  rm -rf "$SANDBOX"
+  rm -rf "${BASELINES:?}/${SESSION_ID}.d"
+  rm -f "${BASELINES:?}/${SESSION_ID}"
+  # Written by git-stash-session-init.sh; its path is not env-overridable.
+  rm -f "/tmp/claude-test-baselines/${SESSION_ID}"
 }
 trap cleanup EXIT
 
@@ -114,60 +117,60 @@ trap cleanup EXIT
 OLD_EPOCH=1743422400
 # An hour ahead of now, so the age filter provably cannot be what suppresses a
 # stash. Used to isolate the baseline guards from the age guard.
-FUTURE_EPOCH=$(( $(date +%s) + 3600 ))
+FUTURE_EPOCH=$(($(date +%s) + 3600))
 
 # ---- repo fixtures -------------------------------------------------------
 mkrepo() { # mkrepo <dir>
-    local dir="$1"
-    mkdir -p "$dir"
-    git -C "$dir" init -q -b main
-    git -C "$dir" config user.email "test@example.com"
-    git -C "$dir" config user.name "test"
-    git -C "$dir" config commit.gpgsign false
-    printf 'seed\n' > "$dir/file.txt"
-    git -C "$dir" add file.txt
-    git -C "$dir" commit -q -m init
+  local dir="$1"
+  mkdir -p "$dir"
+  git -C "$dir" init -q -b main
+  git -C "$dir" config user.email "test@example.com"
+  git -C "$dir" config user.name "test"
+  git -C "$dir" config commit.gpgsign false
+  printf 'seed\n' >"$dir/file.txt"
+  git -C "$dir" add file.txt
+  git -C "$dir" commit -q -m init
 }
 
 make_stash() { # make_stash <dir> <message> [epoch]
-    local dir="$1" msg="$2" epoch="${3:-}"
-    printf '%s\n' "$msg" > "$dir/file.txt"
-    if [ -n "$epoch" ]; then
-        # Git accepts a raw `@<epoch> <tz>` date, which needs no GNU/BSD
-        # `date` flag juggling and is deterministic.
-        GIT_AUTHOR_DATE="@$epoch +0000" GIT_COMMITTER_DATE="@$epoch +0000" \
-            git -C "$dir" stash push -q -m "$msg"
-    else
-        git -C "$dir" stash push -q -m "$msg"
-    fi
+  local dir="$1" msg="$2" epoch="${3:-}"
+  printf '%s\n' "$msg" >"$dir/file.txt"
+  if [ -n "$epoch" ]; then
+    # Git accepts a raw `@<epoch> <tz>` date, which needs no GNU/BSD
+    # `date` flag juggling and is deterministic.
+    GIT_AUTHOR_DATE="@$epoch +0000" GIT_COMMITTER_DATE="@$epoch +0000" \
+      git -C "$dir" stash push -q -m "$msg"
+  else
+    git -C "$dir" stash push -q -m "$msg"
+  fi
 }
 
 # The redundant shape #2686 is about: auto-checkpoint.sh stores a stash with
 # `git stash create` + `git stash store`, which — unlike `git stash push` —
 # leaves the working tree alone, so the stash's tree EQUALS the working tree.
 make_checkpoint() { # make_checkpoint <dir> <message>
-    local dir="$1" msg="$2" commit=""
-    printf '%s\n' "$msg" > "$dir/file.txt"
-    commit=$(git -C "$dir" stash create --include-untracked)
-    git -C "$dir" stash store -m "$msg" "$commit"
+  local dir="$1" msg="$2" commit=""
+  printf '%s\n' "$msg" >"$dir/file.txt"
+  commit=$(git -C "$dir" stash create --include-untracked)
+  git -C "$dir" stash store -m "$msg" "$commit"
 }
 
 reset_tree() { # reset_tree <dir> — back to HEAD, minus this suite's untracked files
-    git -C "$1" checkout -q -- . 2>/dev/null || true
-    rm -f "$1/untracked.txt"
+  git -C "$1" checkout -q -- . 2>/dev/null || true
+  rm -f "$1/untracked.txt"
 }
 
 # Run a command for its exit code without letting `set -e` abort the suite, so
 # a premise assertion can report a FAILING probe instead of vanishing.
 probe_rc() { # probe_rc <command...>
-    local rc=0
-    "$@" >/dev/null 2>&1 || rc=$?
-    printf '%s' "$rc"
+  local rc=0
+  "$@" >/dev/null 2>&1 || rc=$?
+  printf '%s' "$rc"
 }
 
-REPO_A="$SANDBOX/repo-a"      # the repo the session starts in
-REPO_B="$SANDBOX/repo-b"      # a separate repo the cwd moves into later
-REPO_C="$SANDBOX/repo-c"      # a third repo, entered while it is stash-free
+REPO_A="$SANDBOX/repo-a"       # the repo the session starts in
+REPO_B="$SANDBOX/repo-b"       # a separate repo the cwd moves into later
+REPO_C="$SANDBOX/repo-c"       # a third repo, entered while it is stash-free
 REPO_A_WT="$SANDBOX/repo-a-wt" # a LINKED WORKTREE of repo A
 mkrepo "$REPO_A"
 mkrepo "$REPO_B"
@@ -186,8 +189,8 @@ make_stash "$REPO_B" "old work from 2025" "$OLD_EPOCH"
 # These helpers touch BOTH the per-(session,repo) layout and the pre-#2306 flat
 # layout, so the same suite drives a fixed hook and a pre-fix one.
 reset_baselines() {
-    rm -rf "${BASELINES:?}/${SESSION_ID}.d"
-    rm -f "${BASELINES:?}/${SESSION_ID}"
+  rm -rf "${BASELINES:?}/${SESSION_ID}.d"
+  rm -f "${BASELINES:?}/${SESSION_ID}"
 }
 
 # Clear the #2686 report-once memory WITHOUT disturbing the #2306 baselines.
@@ -195,23 +198,23 @@ reset_baselines() {
 # baseline/age guard still holds across Stops; the memory would otherwise
 # silence the second Stop and mask whatever those assertions actually test.
 forget_reported() {
-    find "${BASELINES:?}/${SESSION_ID}.d" -name '*.reported' -delete 2>/dev/null || true
+  find "${BASELINES:?}/${SESSION_ID}.d" -name '*.reported' -delete 2>/dev/null || true
 }
 
 empty_all_baselines() { # truncate every baseline to 0 bytes, keep the marker
-    if [ -f "${BASELINES}/${SESSION_ID}" ]; then
-        : > "${BASELINES}/${SESSION_ID}"
-    fi
-    if [ -d "${BASELINES}/${SESSION_ID}.d" ]; then
-        find "${BASELINES}/${SESSION_ID}.d" -type f ! -name '.session-start' \
-            -exec sh -c ': > "$1"' _ {} \;
-    fi
+  if [ -f "${BASELINES}/${SESSION_ID}" ]; then
+    : >"${BASELINES}/${SESSION_ID}"
+  fi
+  if [ -d "${BASELINES}/${SESSION_ID}.d" ]; then
+    find "${BASELINES}/${SESSION_ID}.d" -type f ! -name '.session-start' \
+      -exec sh -c ': > "$1"' _ {} \;
+  fi
 }
 
 # ---- harness -------------------------------------------------------------
 run_init() { # run_init <cwd>
-    printf '{"cwd":"%s","session_id":"%s"}' "$1" "$SESSION_ID" \
-        | bash "$INIT_HOOK" >/dev/null 2>&1 || true
+  printf '{"cwd":"%s","session_id":"%s"}' "$1" "$SESSION_ID" |
+    bash "$INIT_HOOK" >/dev/null 2>&1 || true
 }
 
 # run_stop <cwd> [stop_hook_active] → prints REPORT/SILENT, sets $LAST_REASON.
@@ -224,34 +227,51 @@ run_init() { # run_init <cwd>
 LAST_REASON=""
 LAST_VERDICT=""
 run_stop() {
-    local cwd="$1" active="${2:-false}" out
-    out=$(printf '{"cwd":"%s","session_id":"%s","stop_hook_active":%s}' \
-              "$cwd" "$SESSION_ID" "$active" \
-          | bash "$HOOK" 2>/dev/null || true)
-    LAST_REASON=$(printf '%s' "$out" | jq -r '.reason // empty' 2>/dev/null || true)
-    if grep -q '"decision": *"block"' <<<"$out"; then
-        LAST_VERDICT=REPORT
-    else
-        LAST_VERDICT=SILENT
-    fi
-    echo "$LAST_VERDICT"
+  local cwd="$1" active="${2:-false}" out
+  out=$(printf '{"cwd":"%s","session_id":"%s","stop_hook_active":%s}' \
+    "$cwd" "$SESSION_ID" "$active" |
+    bash "$HOOK" 2>/dev/null || true)
+  LAST_REASON=$(printf '%s' "$out" | jq -r '.reason // empty' 2>/dev/null || true)
+  if grep -q '"decision": *"block"' <<<"$out"; then
+    LAST_VERDICT=REPORT
+  else
+    LAST_VERDICT=SILENT
+  fi
+  echo "$LAST_VERDICT"
 }
 
 ck() { # ck <desc> <expected> <actual>
-    if [ "$2" = "$3" ]; then printf '  ok   %s\n' "$1"; PASS=$((PASS + 1))
-    else printf '  FAIL %s — expected %s got %s\n' "$1" "$2" "$3"; FAIL=$((FAIL + 1)); fi
+  if [ "$2" = "$3" ]; then
+    printf '  ok   %s\n' "$1"
+    PASS=$((PASS + 1))
+  else
+    printf '  FAIL %s — expected %s got %s\n' "$1" "$2" "$3"
+    FAIL=$((FAIL + 1))
+  fi
 }
 ck_reason() { # ck_reason <desc> <substring>
-    case "$LAST_REASON" in
-        *"$2"*) printf '  ok   %s\n' "$1"; PASS=$((PASS + 1)) ;;
-        *) printf '  FAIL %s — reason lacked %s\n' "$1" "$2"; FAIL=$((FAIL + 1)) ;;
-    esac
+  case "$LAST_REASON" in
+  *"$2"*)
+    printf '  ok   %s\n' "$1"
+    PASS=$((PASS + 1))
+    ;;
+  *)
+    printf '  FAIL %s — reason lacked %s\n' "$1" "$2"
+    FAIL=$((FAIL + 1))
+    ;;
+  esac
 }
 ck_reason_lacks() { # ck_reason_lacks <desc> <substring>
-    case "$LAST_REASON" in
-        *"$2"*) printf '  FAIL %s — reason wrongly named %s\n' "$1" "$2"; FAIL=$((FAIL + 1)) ;;
-        *) printf '  ok   %s\n' "$1"; PASS=$((PASS + 1)) ;;
-    esac
+  case "$LAST_REASON" in
+  *"$2"*)
+    printf '  FAIL %s — reason wrongly named %s\n' "$1" "$2"
+    FAIL=$((FAIL + 1))
+    ;;
+  *)
+    printf '  ok   %s\n' "$1"
+    PASS=$((PASS + 1))
+    ;;
+  esac
 }
 
 echo "== #2306: cwd moved into a DIFFERENT repo with a pre-existing stash =="
@@ -261,13 +281,13 @@ echo "== #2306: cwd moved into a DIFFERENT repo with a pre-existing stash =="
 reset_baselines
 git -C "$REPO_A" stash clear
 run_init "$REPO_A"
-ck "first Stop in an unseen repo is silent"  SILENT "$(run_stop "$REPO_B")"
-ck "and the next Stop there is silent too"   SILENT "$(run_stop "$REPO_B")"
+ck "first Stop in an unseen repo is silent" SILENT "$(run_stop "$REPO_B")"
+ck "and the next Stop there is silent too" SILENT "$(run_stop "$REPO_B")"
 
 echo "== an absent baseline and no session marker stay silent =="
 reset_baselines
-ck "no baseline at all → silent"                  SILENT "$(run_stop "$REPO_B")"
-ck "capture-on-first-Stop keeps it silent after"  SILENT "$(run_stop "$REPO_B")"
+ck "no baseline at all → silent" SILENT "$(run_stop "$REPO_B")"
+ck "capture-on-first-Stop keeps it silent after" SILENT "$(run_stop "$REPO_B")"
 
 echo "== the baseline is keyed per (session, REPO), not per session =="
 # Repo A's stash is dated in the FUTURE, so the age filter provably cannot be
@@ -280,8 +300,8 @@ make_stash "$REPO_A" "repo-a pre-existing" "$FUTURE_EPOCH"
 make_stash "$REPO_B" "repo-b old work" "$OLD_EPOCH"
 run_init "$REPO_A"
 ck "control: repo A's stash is suppressed by repo A's baseline" SILENT "$(run_stop "$REPO_A")"
-ck "repo B's pre-session stash is judged against repo B"        SILENT "$(run_stop "$REPO_B")"
-ck "capturing repo B leaves repo A's baseline intact"           SILENT "$(run_stop "$REPO_A")"
+ck "repo B's pre-session stash is judged against repo B" SILENT "$(run_stop "$REPO_B")"
+ck "capturing repo B leaves repo A's baseline intact" SILENT "$(run_stop "$REPO_A")"
 
 echo "== an EMPTY baseline file is UNKNOWN, not 'every stash is new' =="
 # The stash here is dated in the FUTURE so the age filter provably cannot be
@@ -294,14 +314,14 @@ run_init "$REPO_A"
 # against a hook that suppresses everything unconditionally.
 ck "control: a populated baseline suppresses it" SILENT "$(run_stop "$REPO_A")"
 empty_all_baselines
-ck "0-byte baseline → silent"                    SILENT "$(run_stop "$REPO_A")"
+ck "0-byte baseline → silent" SILENT "$(run_stop "$REPO_A")"
 
 echo "== the pre-#2306 legacy FLAT baseline degrades to silence =="
 reset_baselines
 git -C "$REPO_A" stash clear
 make_stash "$REPO_A" "future-dated pre-existing stash" "$FUTURE_EPOCH"
 mkdir -p "$BASELINES"
-: > "${BASELINES}/${SESSION_ID}"   # flat, 0 bytes — the shape observed in #2306
+: >"${BASELINES}/${SESSION_ID}" # flat, 0 bytes — the shape observed in #2306
 ck "legacy flat baseline → silent" SILENT "$(run_stop "$REPO_A")"
 
 echo "== a stash created DURING the session is still reported =="
@@ -312,9 +332,9 @@ run_init "$REPO_A"
 make_stash "$REPO_A" "session work"
 # Called directly (not in $()) so $LAST_REASON survives for ck_reason.
 run_stop "$REPO_A" >/dev/null
-ck "session stash is reported"                REPORT "$LAST_VERDICT"
-ck_reason       "names the session stash"     "session work"
-ck_reason       "counts exactly one"          "Found 1 git stash"
+ck "session stash is reported" REPORT "$LAST_VERDICT"
+ck_reason "names the session stash" "session work"
+ck_reason "counts exactly one" "Found 1 git stash"
 ck_reason_lacks "does not name the old stash" "ancient work"
 
 echo "== a repo that was STASH-FREE at SessionStart still reports (header gate) =="
@@ -327,10 +347,10 @@ git -C "$REPO_A" stash clear
 run_init "$REPO_A"
 make_stash "$REPO_A" "session work in a clean repo"
 run_stop "$REPO_A" >/dev/null
-ck "clean-at-start repo: session stash reported"     REPORT "$LAST_VERDICT"
-ck_reason "names it"                                 "session work in a clean repo"
-forget_reported   # under test here is the header gate, not #2686's memory
-ck "and it is still reported on the next Stop"       REPORT "$(run_stop "$REPO_A")"
+ck "clean-at-start repo: session stash reported" REPORT "$LAST_VERDICT"
+ck_reason "names it" "session work in a clean repo"
+forget_reported # under test here is the header gate, not #2686's memory
+ck "and it is still reported on the next Stop" REPORT "$(run_stop "$REPO_A")"
 
 echo "== a genuine session stash in a repo entered AFTER SessionStart =="
 # The moved-cwd case in its TRUE-positive direction. Same fixture shape as the
@@ -343,9 +363,9 @@ run_init "$REPO_A"
 make_stash "$REPO_B" "session work in repo B"
 run_stop "$REPO_B" >/dev/null
 ck "first Stop in a newly-entered repo reports it" REPORT "$LAST_VERDICT"
-ck_reason "names the repo-B session stash"         "session work in repo B"
-forget_reported   # as above: the baseline capture is under test, not the memory
-ck "still reported on the next Stop there"         REPORT "$(run_stop "$REPO_B")"
+ck_reason "names the repo-B session stash" "session work in repo B"
+forget_reported # as above: the baseline capture is under test, not the memory
+ck "still reported on the next Stop there" REPORT "$(run_stop "$REPO_B")"
 
 echo "== entering a stash-free repo establishes its bound (no marker) =="
 # No SessionStart hook ran at all — the plugin was installed mid-session, so
@@ -359,7 +379,7 @@ ck "stash-free repo with no marker → silent" SILENT "$(run_stop "$REPO_C")"
 make_stash "$REPO_C" "work after first observation"
 run_stop "$REPO_C" >/dev/null
 ck "a stash created after that observation is reported" REPORT "$LAST_VERDICT"
-ck_reason "names it"                                    "work after first observation"
+ck_reason "names it" "work after first observation"
 
 echo "== linked worktrees share one stash namespace =="
 ck "premise: refs/stash is visible from the linked worktree" 1 "$WT_SHARED"
@@ -372,7 +392,7 @@ git -C "$REPO_A" stash clear
 make_stash "$REPO_A" "shared pre-existing" "$FUTURE_EPOCH"
 run_init "$REPO_A"
 ck "control: suppressed via the main checkout" SILENT "$(run_stop "$REPO_A")"
-ck "suppressed via a linked worktree too"      SILENT "$(run_stop "$REPO_A_WT")"
+ck "suppressed via a linked worktree too" SILENT "$(run_stop "$REPO_A_WT")"
 # Reporting direction: SessionStart seen only from the worktree, stash made in
 # the main checkout. Both halves must agree on the key, in both directions.
 reset_baselines
@@ -391,9 +411,9 @@ git -C "$REPO_B" stash clear
 run_init "$REPO_A"
 make_stash "$REPO_A" "real session work"
 ck "reported before any re-fire" REPORT "$(run_stop "$REPO_A")"
-sleep 1   # so a re-stamped marker would provably move the bound forward
+sleep 1 # so a re-stamped marker would provably move the bound forward
 run_init "$REPO_B"
-forget_reported   # the age bound is under test here, not #2686's memory
+forget_reported # the age bound is under test here, not #2686's memory
 ck "still reported after a re-fire in another repo" REPORT "$(run_stop "$REPO_A")"
 sleep 1
 run_init "$REPO_A"
@@ -414,7 +434,7 @@ git -C "$REPO_A" stash clear
 run_init "$REPO_A"
 make_stash "$REPO_A" "session work"
 ck "stop_hook_active suppresses the block" SILENT "$(run_stop "$REPO_A" true)"
-ck "non-git cwd is silent"                 SILENT "$(run_stop "$SANDBOX")"
+ck "non-git cwd is silent" SILENT "$(run_stop "$SANDBOX")"
 
 echo "== #2686: a checkpoint whose tree equals the working tree is not reported =="
 # The exact shape the issue reports: `auto-checkpoint before rm -rf (…)` whose
@@ -425,15 +445,15 @@ git -C "$REPO_A" stash clear
 reset_tree "$REPO_A"
 run_init "$REPO_A"
 make_checkpoint "$REPO_A" "auto-checkpoint before rm -rf (probe)"
-ck "redundant checkpoint → silent"            SILENT "$(run_stop "$REPO_A")"
-ck "and still silent on the next Stop"        SILENT "$(run_stop "$REPO_A")"
+ck "redundant checkpoint → silent" SILENT "$(run_stop "$REPO_A")"
+ck "and still silent on the next Stop" SILENT "$(run_stop "$REPO_A")"
 # Twin: suppression is a property of the TREE, not of the word
 # "auto-checkpoint". The same stash becomes information-bearing the moment the
 # working tree moves away from it.
-printf 'diverged\n' > "$REPO_A/file.txt"
+printf 'diverged\n' >"$REPO_A/file.txt"
 run_stop "$REPO_A" >/dev/null
 ck "the SAME stash is reported once the tree diverges" REPORT "$LAST_VERDICT"
-ck_reason "names it"                          "auto-checkpoint before rm -rf (probe)"
+ck_reason "names it" "auto-checkpoint before rm -rf (probe)"
 reset_tree "$REPO_A"
 
 echo "== #2686: a -u stash's untracked payload is never called redundant =="
@@ -445,16 +465,16 @@ reset_baselines
 git -C "$REPO_A" stash clear
 reset_tree "$REPO_A"
 run_init "$REPO_A"
-printf 'unrecoverable\n' > "$REPO_A/untracked.txt"
+printf 'unrecoverable\n' >"$REPO_A/untracked.txt"
 git -C "$REPO_A" stash push -u -q -m "hand work with an untracked file"
 U_STASH=$(git -C "$REPO_A" stash list --format='%H' | head -1)
 ck "premise: the -u stash has a 3rd parent" \
-   0 "$(probe_rc git -C "$REPO_A" rev-parse --verify --quiet "${U_STASH}^3")"
+  0 "$(probe_rc git -C "$REPO_A" rev-parse --verify --quiet "${U_STASH}^3")"
 ck "premise: its TRACKED tree already matches the working tree" \
-   0 "$(probe_rc git -C "$REPO_A" diff --quiet "$U_STASH" --)"
+  0 "$(probe_rc git -C "$REPO_A" diff --quiet "$U_STASH" --)"
 run_stop "$REPO_A" >/dev/null
-ck "untracked payload keeps it reported"   REPORT "$LAST_VERDICT"
-ck_reason "names it"                       "hand work with an untracked file"
+ck "untracked payload keeps it reported" REPORT "$LAST_VERDICT"
+ck_reason "names it" "hand work with an untracked file"
 git -C "$REPO_A" stash clear
 reset_tree "$REPO_A"
 
@@ -464,18 +484,18 @@ git -C "$REPO_A" stash clear
 reset_tree "$REPO_A"
 run_init "$REPO_A"
 make_stash "$REPO_A" "first session stash"
-ck "first Stop reports it"             REPORT "$(run_stop "$REPO_A")"
-ck "the next Stop does NOT re-block"   SILENT "$(run_stop "$REPO_A")"
+ck "first Stop reports it" REPORT "$(run_stop "$REPO_A")"
+ck "the next Stop does NOT re-block" SILENT "$(run_stop "$REPO_A")"
 # Twin: the memory must not degenerate into blanket silence. A second, DISTINCT
 # stash still has to reach the user — and the already-reported one must not be
 # repeated alongside it.
 make_stash "$REPO_A" "second session stash"
 run_stop "$REPO_A" >/dev/null
-ck "a second, distinct stash is still reported"    REPORT "$LAST_VERDICT"
-ck_reason       "names the new one"                "second session stash"
+ck "a second, distinct stash is still reported" REPORT "$LAST_VERDICT"
+ck_reason "names the new one" "second session stash"
 ck_reason_lacks "does not repeat the reported one" "first session stash"
-ck_reason       "counts only the unreported one"   "Found 1 git stash"
-ck "and that one is not repeated either"           SILENT "$(run_stop "$REPO_A")"
+ck_reason "counts only the unreported one" "Found 1 git stash"
+ck "and that one is not repeated either" SILENT "$(run_stop "$REPO_A")"
 
 echo "== #2686: the remedy is worded by stash provenance =="
 # A checkpoint-shaped stash that is NOT redundant (the tree is restored after
@@ -488,10 +508,10 @@ make_checkpoint "$REPO_A" "auto-checkpoint before git checkout file restore"
 reset_tree "$REPO_A"
 run_stop "$REPO_A" >/dev/null
 ck "checkpoint stash is reported once the tree is restored" REPORT "$LAST_VERDICT"
-ck_reason       "prescribes drop"             "then git stash drop"
-ck_reason_lacks "does not prescribe pop"      "→ git stash pop"
-ck_reason       "heads the list neutrally"    "review each one"
-ck_reason_lacks "does not head it with pop"   "pop or apply them"
+ck_reason "prescribes drop" "then git stash drop"
+ck_reason_lacks "does not prescribe pop" "→ git stash pop"
+ck_reason "heads the list neutrally" "review each one"
+ck_reason_lacks "does not head it with pop" "pop or apply them"
 # Inverse: a hand-made stash keeps the pop wording, so the fix cannot be a
 # blanket rewrite of the verb.
 reset_baselines
@@ -500,10 +520,10 @@ reset_tree "$REPO_A"
 run_init "$REPO_A"
 make_stash "$REPO_A" "hand-made work"
 run_stop "$REPO_A" >/dev/null
-ck "hand-made stash is reported"              REPORT "$LAST_VERDICT"
-ck_reason       "keeps the pop wording"       "→ git stash pop"
-ck_reason_lacks "does not prescribe drop"     "git stash drop"
-ck_reason       "heads the list with pop"     "pop or apply them"
+ck "hand-made stash is reported" REPORT "$LAST_VERDICT"
+ck_reason "keeps the pop wording" "→ git stash pop"
+ck_reason_lacks "does not prescribe drop" "git stash drop"
+ck_reason "heads the list with pop" "pop or apply them"
 
 echo "== #2686: CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER silences the hook =="
 reset_baselines
@@ -514,12 +534,114 @@ make_stash "$REPO_A" "work the opt-out must hide"
 ck "control: reported with the var unset" REPORT "$(run_stop "$REPO_A")"
 forget_reported
 export CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER=1
-ck "opt-out → silent"                     SILENT "$(run_stop "$REPO_A")"
+ck "opt-out → silent" SILENT "$(run_stop "$REPO_A")"
 # Only the literal "1" disables it, so a stray empty/0 value cannot silently
 # turn the guard off for a whole session.
 export CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER=0
 ck "a value other than 1 does not disable" REPORT "$(run_stop "$REPO_A")"
 unset CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER
+
+echo "== #2735: a stash whose content is already committed on a branch → silent =="
+# The #2652 shape (a checkpoint taken while work was uncommitted, whose files
+# later land in a commit on some branch), staged as three steps so only filter
+# 7 can explain the verdict: (1) content X exists only as uncommitted working-
+# tree work; (2) an auto-checkpoint snapshots X — via the create+store pair the
+# hook itself uses, so the working tree is untouched; (3) X lands in a commit
+# on a branch and the working tree moves away from it (the session keeps
+# working on something else). After step 3 the stash's tree equals a COMMIT's
+# tree, not the working tree's, so filter 4 is provably open and the committed-
+# content index must decide. This is the exact case that blocked Stop forever:
+# auto mode refuses `git stash drop` as irreversible, so the recorded stashes
+# were cleared only by hand.
+reset_baselines
+git -C "$REPO_A" stash clear
+reset_tree "$REPO_A"
+run_init "$REPO_A"
+printf 'committed-elsewhere work\n' >"$REPO_A/file.txt"
+CK_SHA=$(git -C "$REPO_A" stash create) # create leaves the worktree alone
+ck "premise: the snapshot exists" 0 "$(probe_rc test -n "$CK_SHA")"
+git -C "$REPO_A" stash store -m "auto-checkpoint before git clean -fd (probe)" "$CK_SHA" 2>/dev/null
+# X lands on a branch; the checkout then leaves X's content behind.
+git -C "$REPO_A" switch -q -c landed 2>/dev/null
+git -C "$REPO_A" add file.txt
+git -C "$REPO_A" commit -q -m landed 2>/dev/null
+git -C "$REPO_A" switch -q main 2>/dev/null
+ck "premise: the committed tree IS the stash's tree" \
+  "$(git -C "$REPO_A" rev-parse 'landed^{tree}')" "$(git -C "$REPO_A" rev-parse 'stash@{0}^{tree}')"
+ck "premise: filter 4 is open (tree ≠ working tree)" \
+  1 "$(probe_rc git -C "$REPO_A" diff --quiet 'stash@{0}' --)"
+run_stop "$REPO_A" >/dev/null
+ck "committed content → silent" SILENT "$LAST_VERDICT"
+ck "and stays silent on the next Stop" SILENT "$(run_stop "$REPO_A")"
+git -C "$REPO_A" stash clear
+git -C "$REPO_A" branch -D landed >/dev/null 2>&1 || true
+reset_tree "$REPO_A"
+
+# Twin: the filter is a property of the TREE, not of the phrase. A hand-made
+# stash whose content exists only in the working tree has to keep reporting,
+# even though its message is as innocuous as the suppressed one's.
+make_stash "$REPO_A" "hand work, not committed anywhere"
+run_stop "$REPO_A" >/dev/null
+ck "content existing nowhere else → reported" REPORT "$LAST_VERDICT"
+ck_reason "names it" "hand work, not committed anywhere"
+git -C "$REPO_A" stash clear
+reset_tree "$REPO_A"
+
+# Twin: a `push -u` stash whose TRACKED tree is already committed but whose
+# untracked payload is not — the 3rd-parent guard must survive this filter
+# too, or #2610's untracked content could be silenced as "already committed".
+printf 'untracked payload\n' >"$REPO_A/untracked.txt"
+git -C "$REPO_A" stash push -u -q -m "hand work with an untracked file"
+U_STASH=$(git -C "$REPO_A" stash list --format='%H' | head -n 1)
+ck "premise: the -u stash has a 3rd parent" \
+  0 "$(probe_rc git -C "$REPO_A" rev-parse --verify --quiet "${U_STASH}^3")"
+ck "premise: its TRACKED tree is already committed" \
+  0 "$(probe_rc git -C "$REPO_A" diff --quiet "${U_STASH}^" "${U_STASH}" --)"
+run_stop "$REPO_A" >/dev/null
+ck "untracked payload keeps it reported" REPORT "$LAST_VERDICT"
+ck_reason "names it" "hand work with an untracked file"
+git -C "$REPO_A" stash clear
+reset_tree "$REPO_A"
+
+# Boundary: the walk's epoch bound is the session start, so content committed
+# BEFORE the session began — in a repo the session entered mid-flight — is
+# invisible to the filter and still reported. That is the deliberate cost of
+# bounding: the filter may never suppress on the strength of commits it did
+# not observe this session. (Pinned so the bound cannot be silently widened
+# into a whole-history walk.)
+reset_baselines
+git -C "$REPO_A" stash clear
+reset_tree "$REPO_A"
+# The landing commit is dated 10s before "now", so no 1-second-granularity
+# race can pull it inside the session-start bound taken when run_init stamps
+# the marker below.
+PRE_DATE=$(($(date +%s) - 10))
+printf 'pre-bound work\n' >"$REPO_A/file.txt"
+git -C "$REPO_A" switch -q -c stale 2>/dev/null
+git -C "$REPO_A" add file.txt
+GIT_AUTHOR_DATE="@$PRE_DATE +0000" GIT_COMMITTER_DATE="@$PRE_DATE +0000" \
+  git -C "$REPO_A" commit -q -m "landed before the session" 2>/dev/null
+PRE_TREE=$(git -C "$REPO_A" rev-parse 'stale^{tree}')
+git -C "$REPO_A" switch -q main 2>/dev/null
+reset_tree "$REPO_A"
+run_init "$REPO_A"
+# Recreate the same content in the working tree and checkpoint it (again the
+# worktree-preserving create+store pair), then move the working tree back to
+# main's clean state — so filter 4 is open and the epoch bound is the only
+# thing standing between this stash and a report.
+printf 'pre-bound work\n' >"$REPO_A/file.txt"
+CK_PRE=$(git -C "$REPO_A" stash create)
+git -C "$REPO_A" stash store -m "auto-checkpoint before git clean -fd (pre-bound)" "$CK_PRE" 2>/dev/null
+git -C "$REPO_A" checkout -q -- file.txt 2>/dev/null
+ck "premise: same tree as a pre-bound commit" \
+  "$PRE_TREE" "$(git -C "$REPO_A" rev-parse 'stash@{0}^{tree}')"
+ck "premise: filter 4 is open" \
+  1 "$(probe_rc git -C "$REPO_A" diff --quiet 'stash@{0}' --)"
+run_stop "$REPO_A" >/dev/null
+ck "content committed before the bound → reported" REPORT "$LAST_VERDICT"
+git -C "$REPO_A" stash clear
+git -C "$REPO_A" branch -D stale >/dev/null 2>&1 || true
+reset_tree "$REPO_A"
 
 echo
 printf '%s passed, %s failed\n' "$PASS" "$FAIL"
