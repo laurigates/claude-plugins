@@ -43,7 +43,7 @@ expect() {
         fail "$1 (STATUS=$status, want $3)"
         return
     fi
-    if [ -n "${4:-}" ] && ! printf '%s\n' "$out" | grep -q "TYPE=$4 "; then
+    if [ -n "${4:-}" ] && ! grep -q "TYPE=$4 " <<<"$out"; then
         fail "$1 (no TYPE=$4 in output)"
         return
     fi

@@ -122,7 +122,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking",
-      "version": "3.46.9",
+      "version": "3.46.10",
       "author": {
         "name": "Lauri Gates"
       },
@@ -488,7 +488,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.12.5",
+      "version": "2.12.7",
       "author": {
         "name": "Lauri Gates"
       },

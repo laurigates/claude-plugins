@@ -119,7 +119,7 @@ run() {
     local json="$1" out
     out=$(printf '%s' "$json" | PATH="$TMPDIR/bin:$PATH" bash "$HOOK" 2>/dev/null || true)
     LAST_REASON=$(printf '%s' "$out" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null || true)
-    if printf '%s' "$out" | grep -q '"permissionDecision":"deny"'; then LAST_VERDICT=DENY; else LAST_VERDICT=ALLOW; fi
+    if grep -q '"permissionDecision":"deny"' <<<"$out"; then LAST_VERDICT=DENY; else LAST_VERDICT=ALLOW; fi
     echo "$LAST_VERDICT"
 }
 
@@ -235,7 +235,7 @@ bash_json_in() { # bash_json_in <cwd> <command>
 run_hook_in() {
     local out
     out=$(bash_json_in "$2" "$3" | HOME="$WS" PATH="$TMPDIR/bin:$PATH" bash "$1" 2>/dev/null || true)
-    if printf '%s' "$out" | grep -q '"permissionDecision":"deny"'; then echo DENY; else echo ALLOW; fi
+    if grep -q '"permissionDecision":"deny"' <<<"$out"; then echo DENY; else echo ALLOW; fi
 }
 
 # The corpus. Tab-separated: session cwd key (`.` = the workspace root, not a

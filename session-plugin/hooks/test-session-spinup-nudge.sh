@@ -63,7 +63,7 @@ chmod +x "$GH_STUB_DIR/gh"
 
 assert_contains() {
     local desc="$1" pattern="$2" actual="$3"
-    if echo "$actual" | grep -q "$pattern"; then
+    if grep -q "$pattern" <<<"$actual"; then
         printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
     else
         printf "  FAIL: %s (expected '%s' in: %s)\n" "$desc" "$pattern" "$actual"; FAIL=$((FAIL + 1))
@@ -99,7 +99,7 @@ output=$(run_hook_output "sp-dirty" "$REPO_DIRTY" "startup")
 assert_contains "dirty tree emits additionalContext" 'additionalContext' "$output"
 assert_contains "context references session-plugin:session-spinup" 'session-plugin:session-spinup' "$output"
 assert_contains "context mentions uncommitted changes" 'uncommitted changes' "$output"
-if echo "$output" | grep -q '"decision"'; then
+if grep -q '"decision"' <<<"$output"; then
     printf "  FAIL: spinup nudge must not emit a decision/block\n"; FAIL=$((FAIL + 1))
 else
     printf "  PASS: spinup nudge does not block\n"; PASS=$((PASS + 1))

@@ -8,6 +8,9 @@
 # 4. Variable naming: TOOL_NAME not TOOL for tool name extraction
 # 5. Portable in-place sed: neither the BSD-only nor the GNU-only spelling
 #    of an in-place edit, since these scripts run on macOS and on CI runners
+# 6. No `printf|echo "$var" | grep -q` in a pipefail test suite: grep -q exits
+#    on its first match, the writer takes SIGPIPE, and pipefail reports a hit
+#    as a miss (#2959). Use a here-string: grep -q PATTERN <<<"$var"
 #
 # Usage: bash scripts/lint-shell-scripts.sh [--fix] [ROOT_DIR]
 #        --fix      auto-fix shebang issues (other issues require manual fixes)
@@ -148,6 +151,69 @@ for script in $SCRIPTS; do
         if echo "$SED_CODE" | grep -qE "sed( +-[a-zA-Z.]+)* +-i +['\"][^'\"]"; then
             error "$REL_PATH: GNU-only in-place sed (detached script) — BSD sed eats the script as a backup suffix. Attach the suffix: sed -i.bak ... then rm the backup"
         fi
+    fi
+
+    # --- Check 6: printf/echo of a variable piped into grep -q under pipefail ---
+    # `printf '%s' "$out" | grep -qF "$x"` races. bash's printf/echo write a
+    # large value in several chunks; grep -q exits on its first match, so the
+    # next chunk hits a closed pipe (EPIPE / SIGPIPE), and pipefail reports the
+    # pipeline as failed even though grep matched. A correct detection reads as
+    # a miss, intermittently. Regression: test-lint-package-references.sh
+    # ("line 77: printf: write error: Broken pipe", PR #2982, issue #2959).
+    # The fix is a here-string, which has no writer process to kill:
+    #     grep -qF "$x" <<<"$out"
+    #
+    # Scope: the test suites swept in #2959 (scripts/tests/*.sh and
+    # <plugin>/hooks/test-*.sh), and only when the file enables pipefail.
+    # Heredoc bodies (fixture scripts written to disk) and comment lines are
+    # skipped. A producer that is a real command (`cmd | grep -q`) is left
+    # alone: only a printf/echo of a quoted "$..." expansion is flagged.
+    #
+    # Pending: scripts/tests/test-run-skill-script-tests.sh is converted by PR
+    # #2989 (left out of the #2959 sweep to avoid a merge conflict). Delete this
+    # exemption once #2989 is on main.
+    PIPE_GREP_Q_PENDING="scripts/tests/test-run-skill-script-tests.sh"
+    if [[ "$REL_PATH" =~ ^(scripts/tests/[^/]+|[^/]+/hooks/test-[^/]+)\.sh$ ]] \
+        && [ "$REL_PATH" != "$PIPE_GREP_Q_PENDING" ] \
+        && grep -qE '^[[:space:]]*set[[:space:]].*pipefail' "$script"; then
+        PIPE_GREP_Q_LINES=$(awk '
+            BEGIN {
+                # \042 = double quote, \047 = single quote (octal escapes keep
+                # this program inside the shell single quotes).
+                prod = "(^|[^[:alnum:]_-])(printf[[:space:]]+(\042[^\042]*\042[[:space:]]+)?[^|\042]*|echo[[:space:]]+)\042\\$[^|]*\\|[[:space:]]*grep[[:space:]]"
+                qflag = "^[^|;&]*[[:space:]](-[[:alpha:]]*q[[:alpha:]]*|--quiet|--silent)([[:space:]]|$)"
+                hdre = "<<-?[[:space:]]*[\042\047]?[A-Za-z_][A-Za-z0-9_]*"
+                hd = ""
+            }
+            hd != "" {
+                body = $0
+                if (hdtab) sub(/^\t+/, "", body)
+                if (body == hd) hd = ""
+                next
+            }
+            /^[[:space:]]*#/ { next }
+            {
+                if (match($0, prod)) {
+                    rest = " " substr($0, RSTART + RLENGTH)
+                    if (rest ~ qflag) print NR
+                }
+                s = $0
+                while (match(s, hdre)) {
+                    if (RSTART == 1 || substr(s, RSTART - 1, 1) != "<") {
+                        tok = substr(s, RSTART, RLENGTH)
+                        hdtab = (substr(tok, 3, 1) == "-")
+                        sub(/^<<-?[[:space:]]*/, "", tok)
+                        gsub(/[\042\047]/, "", tok)
+                        hd = tok
+                        break
+                    }
+                    s = substr(s, RSTART + RLENGTH)
+                }
+            }
+        ' "$script")
+        for lineno in $PIPE_GREP_Q_LINES; do
+            error "$REL_PATH:$lineno: printf/echo of a variable piped into grep -q under pipefail — grep -q exits on its first match, the writer takes SIGPIPE, and pipefail turns a hit into a miss (#2959). Use a here-string: grep -q PATTERN <<<\"\$var\""
+        done
     fi
 done
 
