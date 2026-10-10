@@ -142,7 +142,7 @@ Every agent prompt must declare:
 - **No borrowed authority**: a brief never speaks as the user or asserts
   approvals not given this session (system card: fabricated user quotes
   were observed).
-- **Scope authority per stage**: [#2902](references/brief-templates.md#stage-authority-in-multi-stage-pipelines).
+- **Scope authority per stage**: merge/publish authority goes only in the owning stage's brief; build-stage briefs end "stop at PR opened; do not merge". Each brief quotes the user's decisions verbatim and has no forward references ([stage authority](references/brief-templates.md#stage-authority-in-multi-stage-pipelines), [#2902](https://github.com/laurigates/claude-plugins/issues/2902)).
 
 These budgets prevent the "agent hit context limits" and "prompt too long"
 failure modes — without them an agent exhausts its window on exploration and

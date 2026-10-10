@@ -35,7 +35,9 @@ manifest enumerating each item you actually completed, one
 grows past what you can finish without compacting, stop and return the
 Return Contract now: `status: partial`, `Scope delivered`, `Deferred /
 skipped`, files touched (`commits` + `worktree`), and the next step in
-`Orchestrator action needed`.
+`Orchestrator action needed`. Budget overrides the Final step: on an
+early stop, run the regression script once, report its result in the
+Return Contract, and do not loop.
 
 **Final step**: run `<repo regression script>`; loop until exit 0
 before emitting the Return Contract.
@@ -51,9 +53,9 @@ trusting it.
 
 > Evidence: `experiments/subagent-compaction/README.md` (#2818) — one
 > 200k-window subagent auto-compacted at ~75% and returned its compaction
-> summary as a false completion report. Whether the clause measurably changes
-> behaviour on 1M-window models is still open there; the report check costs
-> almost nothing either way.
+> summary as a false completion report. Whether 1M-window subagents compact
+> and resume correctly (Q1–Q2 there) is still open, and the clause's own
+> effect is unmeasured. The report check costs almost nothing either way.
 
 > Evidence: issue [#1279](https://github.com/laurigates/claude-plugins/issues/1279)
 > — six agents, 41 plugins, cleanest batch hit 28.9% reduction with zero
@@ -160,7 +162,9 @@ authority is scoped per stage, and every brief stands on its own.
 - **No forward references.** Every brief, the review stage's included, carries
   the user's decisions verbatim. A downstream stage cannot read an upstream
   stage's prompt, so a brief that cites "the decision the user made" without
-  quoting it hands the reviewer nothing to review against.
+  quoting it hands the reviewer nothing to review against. Authority grants
+  (merge/publish) are the exception: quote them only in the owning stage's
+  brief, and in build-stage briefs replace them with the explicit stop.
 
 Push authority is separate from merge authority: agents push their own commits
 in the normal case (SKILL.md § Who Pushes?), and pushing a branch or opening a
