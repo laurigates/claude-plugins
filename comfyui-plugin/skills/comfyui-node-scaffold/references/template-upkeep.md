@@ -41,6 +41,21 @@ and `block` (a named `##########` section of a placeholder-carrying template —
 the justfile's `Assets` recipe, whose stale copy silently distorted banner
 artwork in one pack for months).
 
+A `shared` file is grouped by identical body across the swept packs, and the
+largest group decides which row it gets:
+
+| Row | When | What it asks of a reader |
+|-----|------|--------------------------|
+| `BACKPORT=<file>\|fleet_majority=<n>\|of=<m>` | The largest group is a **strict majority** (`n * 2 > m`) and differs from the template | The fleet leads: consider back-porting its body into the template |
+| `SHARED_SPLIT=<file>\|largest=<n>\|of=<m>` | The largest group is only a **plurality** (`n * 2 <= m`), whether or not it matches the template | No direction is implied: compare the groups and decide which body is canonical |
+| `SHARED_MINORITY=<pack>\|<file>\|majority=<n>\|minority=<k>` | A pack sits outside the largest group (emitted under a split too, where `majority=` is the largest group's size) | That pack differs from its siblings |
+
+`SHARED_SPLIT_COUNT=` sits beside `BACKPORT_SIGNAL_COUNT=` in the summary, and
+every row is a WARN. The threshold exists because a plurality is one faction,
+not the fleet: on 2026-09-23 a 6-of-13 group carrying a pre-#1528
+`package-lock.json` line was reported as the fleet majority, and following that
+`BACKPORT` would have regressed the template (#2756).
+
 **It reports; it never writes to a pack.** Drift is *bidirectional*: all 13
 packs were ahead of the template on `release-please.yml` (`ubuntu-slim` +
 `release-please-action@v5`) until #2494 back-ported it, the template is ahead
