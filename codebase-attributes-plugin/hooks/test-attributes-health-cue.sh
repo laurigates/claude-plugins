@@ -77,7 +77,7 @@ run_hook_output() {
 
 assert_contains() {
     local desc="$1" pattern="$2" actual="$3"
-    if echo "$actual" | grep -q "$pattern"; then
+    if grep -q "$pattern" <<<"$actual"; then
         printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
     else
         printf "  FAIL: %s (expected '%s' in: %s)\n" "$desc" "$pattern" "$actual"; FAIL=$((FAIL + 1))
@@ -129,7 +129,7 @@ assert_contains "context mentions attributes-route" 'codebase-attributes-plugin:
 assert_contains "context mentions attributes-dashboard" 'codebase-attributes-plugin:attributes-dashboard' "$output"
 assert_contains "context mentions highest severity (critical)" 'critical' "$output"
 assert_contains "context mentions worst category (security)" 'security' "$output"
-if echo "$output" | grep -q '"decision"'; then
+if grep -q '"decision"' <<<"$output"; then
     printf "  FAIL: cue must not emit a decision/block\n"; FAIL=$((FAIL + 1))
 else
     printf "  PASS: cue does not block\n"; PASS=$((PASS + 1))

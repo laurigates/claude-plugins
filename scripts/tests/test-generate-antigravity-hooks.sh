@@ -68,7 +68,7 @@ gen_out="$(python3 "$generator" "$repo_root" "$fixture/out" 2>&1)" && gen_rc=0 |
 
 assert "generator exits 0" "$([ "$gen_rc" -eq 0 ] && echo true || echo false)"
 assert "generator reports exported hooks" \
-  "$(echo "$gen_out" | grep -qE 'EXPORTED_HOOKS=[1-9]' && echo true || echo false)"
+  "$(grep -qE 'EXPORTED_HOOKS=[1-9]' <<<"$gen_out" && echo true || echo false)"
 assert "hooks.json exists" "$([ -f "$fixture/out/hooks.json" ] && echo true || echo false)"
 assert "run-agy-hook.py exists and is executable" \
   "$([ -x "$fixture/out/run-agy-hook.py" ] && echo true || echo false)"

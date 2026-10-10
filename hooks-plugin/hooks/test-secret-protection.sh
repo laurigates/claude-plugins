@@ -272,7 +272,7 @@ assert_matched_text() {
     local json out
     json=$(jq -nc --arg cmd "$cmd" '{tool_name:"Bash",tool_input:{command:$cmd}}')
     out=$(printf '%s' "$json" | bash "$HOOK" 2>&1 || true)
-    if echo "$out" | grep -qF "matched: '${expected}'"; then
+    if grep -qF "matched: '${expected}'" <<<"$out"; then
         printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
     else
         printf "  FAIL: %s (message was: %s)\n" "$desc" "$(echo "$out" | head -1)"; FAIL=$((FAIL + 1))
@@ -320,7 +320,7 @@ assert_message_framing() {
     local json out
     json=$(jq -nc --arg cmd "$cmd" '{tool_name:"Bash",tool_input:{command:$cmd}}')
     out=$(printf '%s' "$json" | bash "$HOOK" 2>&1 >/dev/null || true)
-    if echo "$out" | grep -q 'handling-blocked-hooks.md' && ! echo "$out" | grep -q 'to override'; then
+    if grep -q 'handling-blocked-hooks.md' <<<"$out" && ! grep -q 'to override' <<<"$out"; then
         printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
     else
         printf "  FAIL: %s\n        got: %s\n" "$desc" "${out:-<empty>}"; FAIL=$((FAIL + 1))
