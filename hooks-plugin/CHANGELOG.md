@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.12.11](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.12.10...hooks-plugin-v2.12.11) (2026-10-10)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** treat mktemp -d dirs and a git-ignored project tmp/ as scratch for write blocks ([#2984](https://github.com/laurigates/claude-plugins/issues/2984)) ([9dd1182](https://github.com/laurigates/claude-plugins/commit/9dd11820b3f7371c9ce19f764aad7469f2a7c905))
+
 ## [2.12.10](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.12.9...hooks-plugin-v2.12.10) (2026-10-10)
 
 
