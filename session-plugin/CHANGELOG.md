@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.7](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.13.6...session-plugin-v1.13.7) (2026-10-10)
+
+
+### Bug Fixes
+
+* **session-plugin:** report an unreachable task store and surface unanswered Discussions in spinup ([#2987](https://github.com/laurigates/claude-plugins/issues/2987)) ([3364bda](https://github.com/laurigates/claude-plugins/commit/3364bda1f591b5411395690e87840dcd41d28e10))
+
 ## [1.13.6](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.13.5...session-plugin-v1.13.6) (2026-10-10)
 
 
