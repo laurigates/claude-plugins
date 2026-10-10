@@ -31,7 +31,8 @@
 #   === END APPLY FIXTURE ===
 #
 # An absent --fixture, `null` or `{}` is the no-fixture no-op. A value that does
-# not parse, or is not an object, is STATUS=ERROR with exit 1 in both modes.
+# not parse, is not an object, or names an `@file` that cannot be read is
+# STATUS=ERROR with exit 1 in both modes.
 
 set -uo pipefail
 
@@ -51,8 +52,16 @@ done
 
 # Resolve --fixture into JSON text. Empty / "null" / "{}" all mean "no fixture".
 fixture_json="${fixture_arg}"
+fixture_unreadable=""
 case "$fixture_arg" in
-  @*) fixture_json="$(cat "${fixture_arg#@}" 2>/dev/null)" ;;
+  @*)
+    # A missing/unreadable @file must not collapse into "no fixture" (#2915).
+    if [ -f "${fixture_arg#@}" ] && [ -r "${fixture_arg#@}" ]; then
+      fixture_json="$(cat "${fixture_arg#@}")"
+    else
+      fixture_unreadable="${fixture_arg#@}"
+    fi
+    ;;
 esac
 [ -z "$fixture_json" ] && fixture_json="null"
 
@@ -61,8 +70,12 @@ esac
 # truncated or mis-quoted fixture fell into the "no fixture" back-compat path
 # and reported STATUS=OK — the eval then ran without the workdir it expected.
 # Only an empty value, `null` or `{}` is "no fixture"; anything else must be
-# exactly one JSON object. Prints the ERROR= reason and returns 1 on a bad value.
+# exactly one JSON object, and an `@file` must be readable. Prints the ERROR= reason and returns 1 on a bad value.
 validate_fixture() {
+  if [ -n "$fixture_unreadable" ]; then
+    echo "ERROR=fixture file not readable: ${fixture_unreadable}"
+    return 1
+  fi
   if ! printf '%s' "$fixture_json" | jq -e -s 'length == 1' >/dev/null 2>&1; then
     echo "ERROR=fixture JSON does not parse"
     return 1

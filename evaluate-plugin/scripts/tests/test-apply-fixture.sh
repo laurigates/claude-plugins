@@ -21,7 +21,8 @@
 #       empty workdir — and it leaves no orphan temp dir behind.
 #
 # (h) a fixture whose JSON does not parse is a loud ERROR (exit 1), in both
-#     apply and teardown mode, rather than the "no fixture" no-op (#2915).
+#     apply and teardown mode, rather than the "no fixture" no-op (#2915) — and
+#     so is an `--fixture @file` whose file is missing or unreadable.
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -217,6 +218,28 @@ check "malformed teardown: status" "ERROR" "$(field "$bad_td_out" STATUS)"
 check "malformed teardown: reason" "fixture JSON does not parse" "$(field "$bad_td_out" ERROR)"
 if [ -d "$bad_td_dir" ]; then pass_count=$((pass_count + 1)); else echo "FAIL: malformed teardown removed the workdir" >&2; fail_count=$((fail_count + 1)); fi
 rm -rf "$bad_td_dir"
+# An `@file` that is missing or unreadable is also loud, not the no-op: the
+# `cat … 2>/dev/null` read used to come back empty and fall through to STATUS=OK.
+nofile="/nonexistent-fixture-$$.json"
+nofile_out="$("$apply" --fixture "@$nofile" --repo-root "$repo_root")"
+nofile_rc=$?
+check "unreadable @file: exit code" "1" "$nofile_rc"
+check "unreadable @file: status" "ERROR" "$(field "$nofile_out" STATUS)"
+check "unreadable @file: not applied" "false" "$(field "$nofile_out" FIXTURE_APPLIED)"
+check "unreadable @file: reason" "fixture file not readable: $nofile" "$(field "$nofile_out" ERROR)"
+nofile_td_dir="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
+nofile_td_out="$("$apply" --teardown "$nofile_td_dir" --fixture "@$nofile")"
+nofile_td_rc=$?
+check "unreadable @file teardown: exit code" "1" "$nofile_td_rc"
+check "unreadable @file teardown: status" "ERROR" "$(field "$nofile_td_out" STATUS)"
+if [ -d "$nofile_td_dir" ]; then pass_count=$((pass_count + 1)); else echo "FAIL: unreadable-@file teardown removed the workdir" >&2; fail_count=$((fail_count + 1)); fi
+rm -rf "$nofile_td_dir"
+# A readable @file still works (the happy path of the same branch).
+okfile="$(mktemp)" || { echo "mktemp failed" >&2; exit 1; }
+printf '{}' > "$okfile"
+okfile_out="$("$apply" --fixture "@$okfile" --repo-root "$repo_root")"
+check "readable @file: status" "OK" "$(field "$okfile_out" STATUS)"
+rm -f "$okfile"
 
 echo ""
 echo "=== SUMMARY ==="

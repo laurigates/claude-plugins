@@ -69,8 +69,9 @@ today, and `grade_deterministic.py` is unaffected (it reads only
 since `setup` is arbitrary shell — see `.claude/rules/sandbox-guidance.md`).
 `dir` is resolved against the repository root (`--repo-root`, default the
 current directory), not against the `evals.json`. Only an absent value, `null`
-or `{}` means "no fixture"; a fixture whose JSON does not parse, or that is not
-an object, is `STATUS=ERROR` with exit 1 in both modes, so a mis-quoted
+or `{}` means "no fixture"; a fixture whose JSON does not parse, that is not
+an object, or whose `--fixture @file` is missing or unreadable, is
+`STATUS=ERROR` with exit 1 in both modes, so a mis-quoted
 `--fixture` cannot silently run the eval without its workdir (#2915). Scope
 `fixture` blocks to the golden-set canaries (`golden-set.json`).
 
