@@ -101,7 +101,7 @@ case "$TOOL_NAME" in
     # somewhere in the text", which is NOT the same as "this command merges".
     # DETECT below is what actually decides. Anything the structural pass can
     # match must also match here, or it would never be reached.
-    if ! printf '%s' "$COMMAND" | grep -Eq 'gh[[:space:]]+pr[[:space:]]+merge|pulls/[^/[:space:]]+/merge'; then
+    if ! grep -Eq 'gh[[:space:]]+pr[[:space:]]+merge|pulls/[^/[:space:]]+/merge' <<<"$COMMAND"; then
       exit 0
     fi
 
@@ -383,7 +383,7 @@ case "$TOOL_NAME" in
         # comment above the TRUNCATED marker) — mark it so PR_SELECTOR/PR_REPO,
         # however they parse out below, are treated as unresolved rather than
         # as clean values that happen to be short.
-        if printf '%s\n' "$DETECT" | grep -q '^TRUNCATED=1$'; then TRUNC_MARK='`'; fi
+        if grep -q '^TRUNCATED=1$' <<<"$DETECT"; then TRUNC_MARK='`'; fi
         # Passed via the environment, not `awk -v`: -v applies backslash escape
         # processing to the value, which would mangle a command containing one.
         PARSED=$(SEG="$MERGE_SEG" MSEG="$MERGE_MSEG" awk '
@@ -490,8 +490,8 @@ case "$TOOL_NAME" in
             if [[ "$CD_REST" =~ $CD_LITERAL_RE ]] \
                && ! [[ "$CD_REST" =~ $CD_REPOFLAG_RE ]] \
                && ! [[ "$CD_REST" =~ $CD_BG_RE ]] \
-               && ! printf '%s' "$CD_REST" | grep -Eq '(^|[^A-Za-z0-9_])(cd|pushd|popd)([^A-Za-z0-9_]|$)|GH_REPO' \
-               && ! printf '%s' "$CD_AFTER_MERGE" | grep -Eq 'gh[[:space:]]+pr[[:space:]]+merge|pulls/[^/[:space:]]+/merge'; then
+               && ! grep -Eq '(^|[^A-Za-z0-9_])(cd|pushd|popd)([^A-Za-z0-9_]|$)|GH_REPO' <<<"$CD_REST" \
+               && ! grep -Eq 'gh[[:space:]]+pr[[:space:]]+merge|pulls/[^/[:space:]]+/merge' <<<"$CD_AFTER_MERGE"; then
               CD_BASE="$HOOK_CWD"
               case "$CD_WORD" in
                 /*) CD_BASE="/" ;;

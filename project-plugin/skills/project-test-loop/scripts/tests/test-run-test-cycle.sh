@@ -38,7 +38,7 @@ trap 'rm -rf "$proj"' EXIT
 sf="$(mktemp -u)"
 out="$(bash "$driver" --test-cmd "true" --project-dir "$proj" --state-file "$sf")"
 [ "$(verdict_of "$out")" = "GREEN" ] || fail "green suite should yield GREEN, got:\n$out"
-echo "$out" | grep -q "^STATUS=OK$" || fail "green suite should be STATUS=OK, got:\n$out"
+grep -q "^STATUS=OK$" <<<"$out" || fail "green suite should be STATUS=OK, got:\n$out"
 [ -f "$sf" ] && fail "green suite must reset state file, but it still exists"
 pass "green suite → GREEN and resets state"
 
@@ -48,7 +48,7 @@ pass "green suite → GREEN and resets state"
 sf="$(mktemp -u)"
 out="$(bash "$driver" --test-cmd "echo fail-A; false" --project-dir "$proj" --state-file "$sf" --max-cycles 5)"
 [ "$(verdict_of "$out")" = "CONTINUE" ] || fail "first failing cycle under cap should be CONTINUE, got:\n$out"
-echo "$out" | grep -q "^CYCLE=1$" || fail "first cycle should report CYCLE=1, got:\n$out"
+grep -q "^CYCLE=1$" <<<"$out" || fail "first cycle should report CYCLE=1, got:\n$out"
 rm -f "$sf"
 pass "failing suite under cap → CONTINUE"
 
@@ -63,7 +63,7 @@ for n in 1 2 3; do
   v="$(verdict_of "$out")"
 done
 [ "$v" = "CAP_REACHED" ] || fail "3rd cycle at --max-cycles 3 should be CAP_REACHED, got:\n$out"
-echo "$out" | grep -q "^CYCLE=3$" || fail "cap verdict should report CYCLE=3, got:\n$out"
+grep -q "^CYCLE=3$" <<<"$out" || fail "cap verdict should report CYCLE=3, got:\n$out"
 rm -f "$sf"
 pass "cycle == --max-cycles → CAP_REACHED"
 
@@ -101,7 +101,7 @@ mk="$(mktemp -d)"
 printf 'test:\n\t@true\n' > "$mk/Makefile"
 sf="$(mktemp -u)"
 out="$(bash "$driver" --project-dir "$mk" --state-file "$sf")"
-echo "$out" | grep -q "^TEST_COMMAND=make test$" || fail "Makefile test target should detect 'make test', got:\n$out"
+grep -q "^TEST_COMMAND=make test$" <<<"$out" || fail "Makefile test target should detect 'make test', got:\n$out"
 rm -rf "$mk"; rm -f "$sf"
 pass "Makefile test target detected as 'make test'"
 

@@ -54,7 +54,7 @@ Execute this plugin relevance audit:
 
 ### Step 1: Detect the project technology stack
 
-Analyze project files from the context above to determine the technology stack. Match indicators against the tech stack mapping in [REFERENCE.md](REFERENCE.md).
+Analyze project files from the values in [Context](#context) to determine the technology stack. Match indicators against the tech stack mapping in [REFERENCE.md](REFERENCE.md).
 
 ### Step 2: Retrieve available plugins
 

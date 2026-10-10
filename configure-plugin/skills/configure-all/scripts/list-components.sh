@@ -134,7 +134,7 @@ if [ -z "$filter_domain" ]; then
   for skill_path in "${skills_dir}"/*/SKILL.md; do
     [ -f "$skill_path" ] || continue
     sdir="$(basename "$(dirname "$skill_path")")"
-    if ! printf '%s\n' "$all_manifest_names" | grep -qx "$sdir"; then
+    if ! grep -qx "$sdir" <<<"$all_manifest_names"; then
       add_issue "ERROR" "unlisted_skill" "skills/${sdir} exists on disk but is not in components.yaml"
     fi
   done

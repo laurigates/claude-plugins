@@ -60,8 +60,8 @@ check_model_effort() { # check_model_effort <file> <label>
     local invocations=0
     while IFS= read -r line; do
         invocations=$((invocations + 1))
-        printf '%s' "$line" | grep -qF -- "--model opus" || add "$label: a claude_args line lacks '--model opus'"
-        printf '%s' "$line" | grep -qE -- "--effort[= ]+[a-z]+" || add "$label: a claude_args line lacks an explicit '--effort'"
+        grep -qF -- "--model opus" <<<"$line" || add "$label: a claude_args line lacks '--model opus'"
+        grep -qE -- "--effort[= ]+[a-z]+" <<<"$line" || add "$label: a claude_args line lacks an explicit '--effort'"
     done < <(grep -E '^\s*claude_args:' "$f")
     [ "$invocations" -gt 0 ] || add "$label: no claude_args invocation found (expected claude-code-action steps)"
 }

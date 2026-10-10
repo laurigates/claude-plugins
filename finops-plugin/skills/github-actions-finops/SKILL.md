@@ -34,7 +34,7 @@ Execute this GitHub Actions FinOps analysis:
 
 ### Step 1: Determine scope
 
-Read the Context values above. Parse `$OWNER` and `$REPO` from the current repo URL (e.g., `https://github.com/OWNER/REPO.git`). Run `gh api repos/$OWNER/$REPO --jq '.owner.type'` to determine if the owner is an "Organization" or "User". If Organization, set `$GITHUB_ORG` to the repo owner for org-level billing queries.
+Read the values in [Context](#context). Parse `$OWNER` and `$REPO` from the current repo URL (e.g., `https://github.com/OWNER/REPO.git`). Run `gh api repos/$OWNER/$REPO --jq '.owner.type'` to determine if the owner is an "Organization" or "User". If Organization, set `$GITHUB_ORG` to the repo owner for org-level billing queries.
 
 If no repo context is available, ask the user for the target organization or repository.
 
