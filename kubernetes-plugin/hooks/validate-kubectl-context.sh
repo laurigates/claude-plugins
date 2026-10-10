@@ -56,7 +56,7 @@ strip_heredocs() {
         if [ "$in_heredoc" -eq 0 ]; then
             printf '%s\n' "$line"
             # Detect heredoc start: <<, <<-, with optional quoting around marker
-            if printf '%s' "$line" | grep -qF '<<'; then
+            if grep -qF '<<' <<<"$line"; then
                 marker=$(printf '%s' "$line" | sed 's/.*<<[^A-Za-z_]*//' | grep -oE '^[A-Za-z_][A-Za-z_0-9]*')
                 [ -n "$marker" ] && in_heredoc=1
             fi
@@ -109,7 +109,7 @@ COMMAND_CLEAN=$(printf '%s\n' "$COMMAND" | strip_heredocs | strip_quoted_strings
 # and blocked. Anchoring on command position eliminates that false-positive
 # while still catching env-prefixed and sudo-prefixed invocations.
 is_invocation() {
-    printf '%s\n' "$COMMAND_CLEAN" | grep -Eq \
+    grep -Eq <<<"$COMMAND_CLEAN" \
         "(^|[;&|(])[[:space:]]*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+|(sudo|time|env|command|exec|nice|nohup)[[:space:]]+)*$1[[:space:]]"
 }
 
@@ -121,12 +121,12 @@ SAFE_KUBECTL_SUBCOMMANDS="config|version|api-resources|api-versions|explain|comp
 if is_invocation kubectl; then
 
     # Allow safe commands that don't need context
-    if echo "$COMMAND_CLEAN" | grep -Eq "kubectl\s+($SAFE_KUBECTL_SUBCOMMANDS)"; then
+    if grep -Eq "kubectl\s+($SAFE_KUBECTL_SUBCOMMANDS)" <<<"$COMMAND_CLEAN"; then
         exit 0
     fi
 
     # Check if --context is specified (short form -c is not standard for kubectl)
-    if ! echo "$COMMAND_CLEAN" | grep -Eq '\s--context[= ]'; then
+    if ! grep -Eq '\s--context[= ]' <<<"$COMMAND_CLEAN"; then
         block "KUBECTL SAFETY: Missing --context flag.
 
 Always specify the Kubernetes context explicitly to avoid operating on the wrong cluster:
@@ -157,12 +157,12 @@ if is_invocation helm; then
     SAFE_HELM_SUBCOMMANDS="version|completion|env|repo|search|show|inspect|plugin|create|package|template|pull|fetch|lint|verify|dependency|registry|push"
 
     # Allow safe commands
-    if echo "$COMMAND_CLEAN" | grep -Eq "helm\s+($SAFE_HELM_SUBCOMMANDS)"; then
+    if grep -Eq "helm\s+($SAFE_HELM_SUBCOMMANDS)" <<<"$COMMAND_CLEAN"; then
         exit 0
     fi
 
     # Check if --kube-context is specified (helm uses --kube-context, not --context)
-    if ! echo "$COMMAND_CLEAN" | grep -Eq '\s--kube-context[= ]'; then
+    if ! grep -Eq '\s--kube-context[= ]' <<<"$COMMAND_CLEAN"; then
         block "HELM SAFETY: Missing --kube-context flag.
 
 Always specify the Kubernetes context explicitly to avoid operating on the wrong cluster:
@@ -196,12 +196,12 @@ if is_invocation skaffold; then
     SAFE_SKAFFOLD_SUBCOMMANDS="build|render|diagnose|init|fix|schema|config|completion|version|filter|inspect|credits|survey|test|options|help|lsp|apiserver"
 
     # Allow safe commands
-    if echo "$COMMAND_CLEAN" | grep -Eq "skaffold\s+($SAFE_SKAFFOLD_SUBCOMMANDS)"; then
+    if grep -Eq "skaffold\s+($SAFE_SKAFFOLD_SUBCOMMANDS)" <<<"$COMMAND_CLEAN"; then
         exit 0
     fi
 
     # Check if --kube-context is specified (skaffold uses --kube-context, like helm)
-    if ! echo "$COMMAND_CLEAN" | grep -Eq '\s--kube-context[= ]'; then
+    if ! grep -Eq '\s--kube-context[= ]' <<<"$COMMAND_CLEAN"; then
         block "SKAFFOLD SAFETY: Missing --kube-context flag.
 
 skaffold deploys to the CURRENT kubectl context by default, which can silently

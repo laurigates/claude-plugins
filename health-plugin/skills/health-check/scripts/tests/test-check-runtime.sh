@@ -32,10 +32,10 @@ tmp_root="$(mktemp -d)"
 trap 'rm -rf "$tmp_root"' EXIT
 
 expect() {  # $1 = output, $2 = anchored regex, $3 = label
-  echo "$1" | grep -qE "$2" || fail "$3: expected /$2/ in:\n$1"
+  grep -qE "$2" <<<"$1" || fail "$3: expected /$2/ in:\n$1"
 }
 reject() {  # $1 = output, $2 = regex, $3 = label
-  echo "$1" | grep -qE "$2" && fail "$3: did not expect /$2/ in:\n$1"
+  grep -qE "$2" <<<"$1" && fail "$3: did not expect /$2/ in:\n$1"
   return 0
 }
 

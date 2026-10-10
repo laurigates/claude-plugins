@@ -721,6 +721,59 @@ assert_absent "scope pin: git-pr with the sentence raises no scope issue" \
 rm -rf "${root:?}/git-plugin"
 PLUGIN="$PLUGIN_SAVED"
 write_plugin_metadata
+# --- model: haiku limits (Haiku 5.5 re-evaluation, 2026-10) ------------------
+# Haiku is allowed except where one of two measured hazards applies, and each
+# hazard is paired with the allowed case beside it so the suite fails both a
+# lint that still bans all haiku and one that bans none.
+# make_haiku_skill <name> <extra-frontmatter-lines> [body-line]
+make_haiku_skill() {
+  make_skill "$1" with
+  local f="$root/$PLUGIN/skills/$1/SKILL.md"
+  awk -v extra="model: haiku\n${HAIKU_EFFORT_LINE-effort: low\n}$2" \
+    'NR > 1 && /^---$/ && !done { printf "%s", extra; done = 1 } { print }' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+  [ -n "${3:-}" ] && printf '%s\n' "$3" >> "$f"
+  return 0
+}
+
+make_haiku_skill haikuok ""
+run_check; out_hk="$OUT"; rc_hk="$RC"
+assert_eq "haiku: a user-invocable skill with no AskUserQuestion exits 0" "$rc_hk" "0"
+assert_absent "haiku: the allowed case raises no haiku issue" "$out_hk" "model: haiku"
+rm -rf "${root:?}/$PLUGIN/skills/haikuok"
+
+make_haiku_skill haikuask "" "Confirm with AskUserQuestion before writing."
+run_check; out_hka="$OUT"; rc_hka="$RC"
+assert_eq "haiku: haiku + AskUserQuestion exits 1" "$rc_hka" "1"
+assert_contains "haiku: haiku + AskUserQuestion is named (#881)" \
+  "$out_hka" "haikuask: model: haiku with AskUserQuestion is disallowed"
+rm -rf "${root:?}/$PLUGIN/skills/haikuask"
+
+make_haiku_skill haikuref "user-invocable: false\n"
+run_check; out_hkr="$OUT"; rc_hkr="$RC"
+assert_eq "haiku: user-invocable: false without fork exits 1" "$rc_hkr" "1"
+assert_contains "haiku: the turn-scope leak is named" \
+  "$out_hkr" "haikuref: model: haiku on a user-invocable: false skill"
+rm -rf "${root:?}/$PLUGIN/skills/haikuref"
+
+make_haiku_skill haikufork "user-invocable: false\ncontext: fork\n"
+run_check; out_hkf="$OUT"; rc_hkf="$RC"
+assert_eq "haiku: user-invocable: false WITH context: fork exits 0" "$rc_hkf" "0"
+assert_absent "haiku: a forked reference skill is not flagged" "$out_hkf" "model: haiku"
+rm -rf "${root:?}/$PLUGIN/skills/haikufork"
+
+# Haiku 5.5 defaults to effort medium; a haiku skill must pin one (PR #3019).
+HAIKU_EFFORT_LINE="" make_haiku_skill haikunoeffort ""
+run_check; out_hkn="$OUT"; rc_hkn="$RC"
+assert_eq "haiku: haiku with no effort exits 1" "$rc_hkn" "1"
+assert_contains "haiku: the missing effort is named" \
+  "$out_hkn" "haikunoeffort: model: haiku requires an explicit effort"
+rm -rf "${root:?}/$PLUGIN/skills/haikunoeffort"
+
+HAIKU_EFFORT_LINE="effort: medium\n" make_haiku_skill haikumedium ""
+run_check; out_hkm="$OUT"; rc_hkm="$RC"
+assert_eq "haiku: haiku with an explicit non-low effort exits 0" "$rc_hkm" "0"
+assert_absent "haiku: an explicit effort raises no haiku issue" "$out_hkm" "model: haiku"
+rm -rf "${root:?}/$PLUGIN/skills/haikumedium"
 
 echo "---"
 echo "passed: $pass, failed: $fail"

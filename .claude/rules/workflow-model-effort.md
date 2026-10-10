@@ -1,6 +1,6 @@
 ---
 created: 2026-06-22
-modified: 2026-09-28
+modified: 2026-10-10
 reviewed: 2026-09-16
 paths:
   - ".github/workflows/**"
@@ -37,8 +37,16 @@ workflows is purely **cost-economics**, which still holds:
   generations — the economics and their re-verification live in
   skill-development.md § Model Selection; the monthly audit below is what
   checks the picks still hold.
-- **Haiku supports no `--effort` at all** — it cannot access the cost lever.
-  `haiku → opus --effort low` is the natural replacement, not a downgrade.
+- **Haiku stays off workflows until a candidate is measured.** The original
+  reason, that Haiku had no `--effort`, ended with Haiku 5.5 (the `haiku`
+  alias since 2.1.293). The 2026-10 re-evaluation
+  (`docs/audits/haiku-5.5-reevaluation-2026-10-10.md`) rated every invoking
+  workflow here *keep* or *needs-test*. The nearest candidates are
+  `plugin-pr-checks`, `release-pr-doc-audit`, `scheduled-audits`,
+  `research-radar` and `skill-splitter`. Each needs a replayed run against the
+  opus output, and two of them gate a required check, where a weaker model's
+  `error_max_turns` fails the PR. Lift the guard per workflow when a replay
+  passes, not before.
 
 This is the same conclusion as the agent migration (PR #1691), reached by a
 narrower path. State it plainly when editing: we are not claiming workflows

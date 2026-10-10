@@ -69,17 +69,17 @@ mkdir -p "${home_a}/ws/child"
 write_two_servers "${home_a}/ws/.mcp.json"
 
 out_a="$(bash "$check_script" --home-dir "$home_a" --project-dir "${home_a}/ws/child")"
-echo "$out_a" | grep -q "^MCP_CONFIGURED=true$" \
+grep -q "^MCP_CONFIGURED=true$" <<<"$out_a" \
   || fail "parent-only layout must report MCP_CONFIGURED=true, got:\n$out_a"
-echo "$out_a" | grep -q "^SERVER_COUNT=2$" \
+grep -q "^SERVER_COUNT=2$" <<<"$out_a" \
   || fail "parent-only layout must report SERVER_COUNT=2, got:\n$out_a"
-echo "$out_a" | grep -q "^STATUS=N_A$" \
+grep -q "^STATUS=N_A$" <<<"$out_a" \
   && fail "parent-only layout must not report STATUS=N_A:\n$out_a"
-echo "$out_a" | grep -q "SERVER: name=podio-mcp file=${home_a}/ws/.mcp.json" \
+grep -q "SERVER: name=podio-mcp file=${home_a}/ws/.mcp.json" <<<"$out_a" \
   || fail "expected podio-mcp attributed to ${home_a}/ws/.mcp.json, got:\n$out_a"
-echo "$out_a" | grep -q "SERVER: name=github file=${home_a}/ws/.mcp.json" \
+grep -q "SERVER: name=github file=${home_a}/ws/.mcp.json" <<<"$out_a" \
   || fail "expected github attributed to ${home_a}/ws/.mcp.json, got:\n$out_a"
-echo "$out_a" | grep -q "^MCP_SOURCE_COUNT=[1-9]" \
+grep -q "^MCP_SOURCE_COUNT=[1-9]" <<<"$out_a" \
   || fail "expected a non-zero MCP_SOURCE_COUNT denominator, got:\n$out_a"
 pass "ancestor .mcp.json is discovered and each server reports its source file"
 
@@ -90,11 +90,11 @@ home_b="$(new_home home_b)"
 mkdir -p "${home_b}/ws/child"
 
 out_b="$(bash "$check_script" --home-dir "$home_b" --project-dir "${home_b}/ws/child")"
-echo "$out_b" | grep -q "^SERVER_COUNT=0$" \
+grep -q "^SERVER_COUNT=0$" <<<"$out_b" \
   || fail "no config anywhere must report SERVER_COUNT=0, got:\n$out_b"
-echo "$out_b" | grep -q "^STATUS=N_A$" \
+grep -q "^STATUS=N_A$" <<<"$out_b" \
   || fail "no config anywhere must report STATUS=N_A, got:\n$out_b"
-echo "$out_b" | grep -q "^MCP_CONFIGURED=false$" \
+grep -q "^MCP_CONFIGURED=false$" <<<"$out_b" \
   || fail "no config anywhere must report MCP_CONFIGURED=false, got:\n$out_b"
 pass "walk does not invent servers when no .mcp.json exists"
 
@@ -106,9 +106,9 @@ mkdir -p "${home_c}/ws/child"
 write_two_servers "${home_c}/ws/child/.mcp.json"
 
 out_c="$(bash "$check_script" --home-dir "$home_c" --project-dir "${home_c}/ws/child")"
-echo "$out_c" | grep -q "^SERVER_COUNT=2$" \
+grep -q "^SERVER_COUNT=2$" <<<"$out_c" \
   || fail "project-level config must still report SERVER_COUNT=2, got:\n$out_c"
-echo "$out_c" | grep -q "SERVER: name=github file=${home_c}/ws/child/.mcp.json" \
+grep -q "SERVER: name=github file=${home_c}/ws/child/.mcp.json" <<<"$out_c" \
   || fail "expected github attributed to the project file, got:\n$out_c"
 pass "project-level .mcp.json keeps working and reports the project file"
 
@@ -120,9 +120,9 @@ mkdir -p "${home_d}/ws/child"
 write_two_servers "${home_d}/.mcp.json"
 
 out_d="$(bash "$check_script" --home-dir "$home_d" --project-dir "${home_d}/ws/child")"
-echo "$out_d" | grep -q "^SERVER_COUNT=2$" \
+grep -q "^SERVER_COUNT=2$" <<<"$out_d" \
   || fail "home-level config must still report SERVER_COUNT=2, got:\n$out_d"
-echo "$out_d" | grep -q "SERVER: name=github file=${home_d}/.mcp.json" \
+grep -q "SERVER: name=github file=${home_d}/.mcp.json" <<<"$out_d" \
   || fail "expected github attributed to the home file, got:\n$out_d"
 pass "home-level .mcp.json remains covered by the walk"
 
@@ -138,11 +138,11 @@ cat > "${home_e}/ws/child/.mcp.json" <<'JSON'
 JSON
 
 out_e="$(bash "$check_script" --home-dir "$home_e" --project-dir "${home_e}/ws/child")"
-echo "$out_e" | grep -q "^SERVER_COUNT=2$" \
+grep -q "^SERVER_COUNT=2$" <<<"$out_e" \
   || fail "duplicate server name must be counted once (expected 2), got:\n$out_e"
-echo "$out_e" | grep -q "SERVER: name=github file=${home_e}/ws/child/.mcp.json" \
+grep -q "SERVER: name=github file=${home_e}/ws/child/.mcp.json" <<<"$out_e" \
   || fail "nearest file must own the duplicated server name, got:\n$out_e"
-echo "$out_e" | grep -q "SERVER_SHADOWED: name=github file=${home_e}/ws/.mcp.json shadowed_by=${home_e}/ws/child/.mcp.json" \
+grep -q "SERVER_SHADOWED: name=github file=${home_e}/ws/.mcp.json shadowed_by=${home_e}/ws/child/.mcp.json" <<<"$out_e" \
   || fail "expected a SERVER_SHADOWED line naming the outer file, got:\n$out_e"
 pass "duplicate server names are counted once and the shadowed copy is reported"
 
@@ -155,9 +155,9 @@ mkdir -p "${home_f}/ws/child"
 write_two_servers "${above_f}/.mcp.json"
 
 out_f="$(bash "$check_script" --home-dir "$home_f" --project-dir "${home_f}/ws/child")"
-echo "$out_f" | grep -q "FILE=${above_f}/.mcp.json" \
+grep -q "FILE=${above_f}/.mcp.json" <<<"$out_f" \
   && fail "walk must stop at --home-dir and not read ${above_f}/.mcp.json:\n$out_f"
-echo "$out_f" | grep -q "^SERVER_COUNT=0$" \
+grep -q "^SERVER_COUNT=0$" <<<"$out_f" \
   || fail "config above --home-dir must not be counted, got:\n$out_f"
 pass "walk stops at --home-dir"
 
@@ -174,11 +174,11 @@ mkdir -p "${home_g}/ws/child"
 printf '{ "mcpServers": ' > "${home_g}/ws/.mcp.json"
 
 out_g="$(bash "$check_script" --home-dir "$home_g" --project-dir "${home_g}/ws/child")"
-echo "$out_g" | grep -q "FILE=${home_g}/ws/.mcp.json EXISTS=true" \
+grep -q "FILE=${home_g}/ws/.mcp.json EXISTS=true" <<<"$out_g" \
   || fail "ancestor file must be read by the walk, got:\n$out_g"
-echo "$out_g" | grep -q "SEVERITY=ERROR TYPE=invalid_json FILE=${home_g}/ws/.mcp.json" \
+grep -q "SEVERITY=ERROR TYPE=invalid_json FILE=${home_g}/ws/.mcp.json" <<<"$out_g" \
   || fail "expected invalid_json issue naming the ancestor file, got:\n$out_g"
-echo "$out_g" | grep -q "^ISSUE_COUNT=1$" \
+grep -q "^ISSUE_COUNT=1$" <<<"$out_g" \
   || fail "expected ISSUE_COUNT=1 for the malformed ancestor file, got:\n$out_g"
 pass "ancestor files are validated like project and home files"
 

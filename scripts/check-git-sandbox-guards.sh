@@ -84,12 +84,12 @@ for script in "${scripts[@]}"; do
         [ -n "$var" ] || continue
 
         # Guard on the assignment line itself?
-        if printf '%s\n' "$content" | grep -Eq '\|\|[[:space:]]*(\{|exit|return)'; then
+        if grep -Eq '\|\|[[:space:]]*(\{|exit|return)' <<<"$content"; then
             continue
         fi
         # Guard on the next two lines?
         nextlines=$(sed -n "$((lineno + 1)),$((lineno + 2))p" "$script")
-        if printf '%s\n' "$nextlines" | grep -Eq "\[[[:space:]]+-[nd][[:space:]]+\"?\\\$(\{)?$var(\})?\"?[[:space:]]"; then
+        if grep -Eq "\[[[:space:]]+-[nd][[:space:]]+\"?\\\$(\{)?$var(\})?\"?[[:space:]]" <<<"$nextlines"; then
             continue
         fi
 
