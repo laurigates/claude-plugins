@@ -92,17 +92,17 @@ hint_key=""
 
 # cat file (not in pipeline, not heredoc)
 if [ -z "$hint" ] && \
-   echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*cat\s+[^|><]' && \
-   ! echo "$COMMAND_SHELL_ONLY" | grep -Eq '<<|cat\s*>' && \
-   ! echo "$COMMAND_SHELL_ONLY" | grep -q '|'; then
+   grep -Eq '^\s*cat\s+[^|><]' <<<"$COMMAND_SHELL_ONLY" && \
+   ! grep -Eq '<<|cat\s*>' <<<"$COMMAND_SHELL_ONLY" && \
+   ! grep -q '|' <<<"$COMMAND_SHELL_ONLY"; then
     hint="Use the Read tool instead of 'cat' to read files. Read returns line-numbered content and respects token budgets."
     hint_key="read-cat"
 fi
 
 # head/tail file (not in pipeline)
 if [ -z "$hint" ] && \
-   echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*(head|tail)\s+(-[0-9n]+\s+)?[^|]' && \
-   ! echo "$COMMAND_SHELL_ONLY" | grep -q '|'; then
+   grep -Eq '^\s*(head|tail)\s+(-[0-9n]+\s+)?[^|]' <<<"$COMMAND_SHELL_ONLY" && \
+   ! grep -q '|' <<<"$COMMAND_SHELL_ONLY"; then
     hint="Use the Read tool with offset/limit parameters instead of 'head' or 'tail'. Example: Read with offset=100, limit=50."
     hint_key="read-headtail"
 fi
@@ -112,8 +112,8 @@ fi
 # delete, so the Glob hint is useless for a delete action (issue #1671). -exec/-ok
 # are intentionally not exempt (arbitrary command execution).
 if [ -z "$hint" ] && \
-   echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*find\s+' && \
-   ! echo "$COMMAND_SHELL_ONLY" | grep -Eq 'find\s+.*(-maxdepth|-mindepth|-type\s|-print0|-delete\b)'; then
+   grep -Eq '^\s*find\s+' <<<"$COMMAND_SHELL_ONLY" && \
+   ! grep -Eq 'find\s+.*(-maxdepth|-mindepth|-type\s|-print0|-delete\b)' <<<"$COMMAND_SHELL_ONLY"; then
     hint="Use the Glob tool for filename matching. Example: Glob(pattern=\"**/*.ts\") instead of 'find . -name \"*.ts\"'. Keep 'find' only when you need -maxdepth/-type d/-print0, or a -delete action."
     hint_key="glob-find"
 fi
@@ -122,17 +122,17 @@ fi
 # Mirrors bash-antipatterns.sh: file-list/count modes (-l, -c, -L) are filters,
 # not codebase searches the Grep tool replaces (issue #1592).
 if [ -z "$hint" ] && \
-   echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*(grep|rg)\s+' && \
-   ! echo "$COMMAND_SHELL_ONLY" | grep -q '|' && \
-   ! echo "$COMMAND_SHELL_ONLY" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*q[a-zA-Z]*(\s|$)|--quiet(\s|$))' && \
-   ! echo "$COMMAND_SHELL_ONLY" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*[lcL][a-zA-Z]*(\s|$)|--count(\s|$)|--files-with-matches(\s|$)|--files-without-match(\s|$))'; then
+   grep -Eq '^\s*(grep|rg)\s+' <<<"$COMMAND_SHELL_ONLY" && \
+   ! grep -q '|' <<<"$COMMAND_SHELL_ONLY" && \
+   ! grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*q[a-zA-Z]*(\s|$)|--quiet(\s|$))' <<<"$COMMAND_SHELL_ONLY" && \
+   ! grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*[lcL][a-zA-Z]*(\s|$)|--count(\s|$)|--files-with-matches(\s|$)|--files-without-match(\s|$))' <<<"$COMMAND_SHELL_ONLY"; then
     hint="Use the Grep tool for codebase searches. Example: Grep(pattern=\"foo\", path=\"src\", -n=true). Keep grep/rg for pipelines, boolean -q checks, or -l/-c filter modes."
     hint_key="grep"
 fi
 
 # ls with a glob
 if [ -z "$hint" ] && \
-   echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*ls\s+.*\*'; then
+   grep -Eq '^\s*ls\s+.*\*' <<<"$COMMAND_SHELL_ONLY"; then
     hint="Use the Glob tool for pattern-based file listing - it returns paths sorted by modification time and handles large directories better."
     hint_key="glob-ls"
 fi
@@ -159,10 +159,10 @@ if [ -z "$hint" ]; then
         seg_pipes=$(printf '%s' "$seg" | tr -cd '|' | wc -c | tr -d ' ')
         [ "$seg_pipes" -ge 5 ] || continue
         seg_head=false
-        if printf '%s\n' "$seg" | grep -Eq '\b(cat|echo|printf)[[:space:]][^|]*\|'; then
+        if grep -Eq '\b(cat|echo|printf)[[:space:]][^|]*\|' <<<"$seg"; then
             seg_head=true
-        elif ! printf '%s\n' "$seg" | grep -Eq "$TEACH_LOG_STREAM_RE" && \
-             printf '%s\n' "$seg" | grep -Eq 'grep\b[^|]*\|[^|]*grep\b'; then
+        elif ! grep -Eq "$TEACH_LOG_STREAM_RE" <<<"$seg" && \
+             grep -Eq 'grep\b[^|]*\|[^|]*grep\b' <<<"$seg"; then
             seg_head=true
         fi
         if [ "$seg_head" = true ] && [ "$seg_pipes" -gt "$PIPE_MAX" ]; then

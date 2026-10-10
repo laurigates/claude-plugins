@@ -71,7 +71,7 @@ extract_section() {
 # require_in_section <file> <section-body> <grep-pattern> <human-description>
 require_in_section() {
   local file="$1" body="$2" pattern="$3" desc="$4"
-  if ! printf '%s\n' "$body" | grep -qF -- "$pattern"; then
+  if ! grep -qF -- "$pattern" <<<"$body"; then
     echo "❌ $file: missing $desc" >&2
     errors=$((errors + 1))
     return 1

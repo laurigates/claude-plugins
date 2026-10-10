@@ -126,9 +126,9 @@ g_err=$(PATH="${BIN}:$PATH" bash "$RECONCILE" --all --apply --only-verdictz=pr-m
 g_exit=$?
 check "G: unknown flag → exit 2" "2" "$g_exit"
 check "G: unknown flag named on stderr" "yes" \
-  "$(printf '%s\n' "$g_err" | grep -q 'unknown argument: --only-verdictz' && echo yes || echo no)"
+  "$(grep -q 'unknown argument: --only-verdictz' <<<"$g_err" && echo yes || echo no)"
 check "G: usage printed on stderr" "yes" \
-  "$(printf '%s\n' "$g_err" | grep -q '^usage: reconcile.sh' && echo yes || echo no)"
+  "$(grep -q '^usage: reconcile.sh' <<<"$g_err" && echo yes || echo no)"
 check "G: nothing imported (no mutation before the reject)" "no" \
   "$([ -s "$IMPORT_CAPTURE" ] && echo yes || echo no)"
 
@@ -177,7 +177,7 @@ check "C: telegram fired" "yes" "$([ -s "$NOTIFY_CAPTURE" ] && echo yes || echo 
 check "C: reconcile invoked WITHOUT --apply (mutates nothing)" "no" \
   "$(grep -qx -- '--apply' "$RC_ARGS" && echo yes || echo no)"
 check "C: per-project breakdown present" "yes" \
-  "$(printf '%s\n' "$out" | grep -q '^PROJECT_BREAKDOWN=.*alpha=' && echo yes || echo no)"
+  "$(grep -q '^PROJECT_BREAKDOWN=.*alpha=' <<<"$out" && echo yes || echo no)"
 
 # --- D: GH_AVAILABLE=false suppresses notification --------------------------
 make_rc_stub false 3
