@@ -2,7 +2,7 @@
 
 > Experimental testing harness lives under experiments/claude-probe/.
 
-A curated collection of 44 Claude Code plugins providing 400+ skills and 21 agents for development workflows.
+A curated collection of 44 Claude Code plugins providing 400+ skills and 22 agents for development workflows.
 
 The same skills, subagents and safety hooks also run in **OpenCode**, **pi** and
 **Antigravity CLI**.

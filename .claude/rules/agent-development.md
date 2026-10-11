@@ -205,6 +205,8 @@ The size matters most on Haiku 5.5. It bills $0.10/$0.50 per Mtok up to 100k pro
 
 `omitClaudeMd` needs Claude Code 2.1.271+ and still loads managed policy files. A missing `tools:` field inherits every tool, skill listing and MCP included. The narrow list does as much work as `omitClaudeMd`.
 
+The shipped instance is `agents-plugin:lean-reader`: Haiku 5.5, `effort: low`, tools limited to Read/Grep/Glob. Point a workflow stage at it with `opts.agentType: 'agents-plugin:lean-reader'`; `testing-plugin:test-analyze`'s `parse` stage is the first user. A stage that needs a shell, like `evaluate-plugin-batch`'s `inventory`, cannot use it. `check-agent-model.sh` keeps lean haiku agents read-only.
+
 ### `context: fork` is a skill field, not an agent field
 
 Three mechanisms share the word "fork", and only the last one hands a subagent the parent's conversation:

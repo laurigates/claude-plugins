@@ -149,7 +149,10 @@ blocks. Both work on plugin agents and through `agentType`, and a schema-forced
 result still worked with only `Read`. The rule
 (`agent-development.md` § Lean subagents) and `check-agent-model.sh` now admit
 `model: haiku` on an agent file only in this shape: `omitClaudeMd: true`,
-`tools` limited to Read/Grep/Glob, and an explicit effort.
+`tools` limited to Read/Grep/Glob, and an explicit effort. That shape ships as
+`agents-plugin:lean-reader`, and `testing-plugin:test-analyze`'s `parse` stage
+is the first user. `evaluate-plugin-batch`'s `inventory` stage stays on the
+default agent, because it runs a script.
 
 The finding reaches beyond Haiku. Every default subagent in this portfolio
 pays the ~121k base, and an Opus delegate whose brief carries the whole job
