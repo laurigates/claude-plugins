@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2015,SC2181  # `[ … ] && ok || notok` assertions: ok() exits 0, so notok only runs on a real miss
 # Regression tests for sync-feature-tracker.sh (ADR-0020 on-change rung;
 # implements docs/hook-plans/p1-feature-tracker-auto-sync.md).
 #
@@ -9,6 +10,9 @@
 #   - per-feature status is never changed; phases[].status never counts as a feature
 #   - writes to the tracker/manifest themselves are self-trigger-guarded
 #   - malformed tracker JSON is left untouched (exit 0)
+#   - FR-NNN ids (object keys or array records) match like FRn / FRn.m (#3001)
+#   - completion_percentage is round(complete/total*1000)/10 and the written
+#     statistics pass blueprint-tracker-check.sh with zero divergence (#3001)
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -157,6 +161,80 @@ rm "$proj/docs/blueprint/feature-tracker.json"
 write_prp "$proj" FR1.1
 run_hook "$proj" "docs/prps/fixture.md" X=1
 [ $? -eq 0 ] && ok "H: missing tracker no-op" || notok "H: missing tracker errored"
+rm -rf "$proj"
+
+# ---- #3001: FR-NNN codes + rounded completion_percentage --------------------
+# The hook used to match only `FR[0-9]` (so FR-001 trackers were a permanent
+# no-op) and wrote floor(complete*100/total), which blueprint-tracker-check.sh
+# reports as statistics_divergence (it expects round(c/t*1000)/10).
+CHECKER="${SCRIPT_DIR}/../scripts/blueprint-tracker-check.sh"
+
+checker_divergence() {
+    # checker_divergence <project_dir> -> STATISTICS_DIVERGENCE_COUNT value,
+    # or "no-stats" when the hook wrote none (a vacuous 0 must not pass).
+    bash "$CHECKER" --project-dir "$1" 2>/dev/null | awk -F= '
+        $1 == "STATISTICS_PRESENT" { present = $2 }
+        $1 == "STATISTICS_DIVERGENCE_COUNT" { count = $2 }
+        END { print (present == "true" ? count : "no-stats") }'
+}
+
+write_tracker() {
+    # write_tracker <project_dir> <jq program building .features>
+    jq -n "{version: \"1.0.0\", last_updated: \"2026-01-01\", project: \"fixture\",
+            source_document: \"REQUIREMENTS.md\",
+            phases: [{id: \"phase-1\", name: \"Phase one\", status: \"in_progress\"}],
+            features: ($2)}" > "$1/docs/blueprint/feature-tracker.json"
+}
+
+# Test I: object-shaped tracker keyed by FR-NNN, 51/52 complete -> 98.1
+proj=$(make_project 1)
+write_tracker "$proj" '[range(1; 53) | {key: ("FR-" + ("00" + tostring | .[-3:])),
+    value: {name: ("Feature " + tostring), phase: "phase-1",
+            status: (if . == 52 then "not_started" else "complete" end)}}] | from_entries'
+write_prp "$proj" FR-001
+run_hook "$proj" "docs/prps/fixture.md" X=1
+[ "$(tracker_last "$proj")" != "2026-01-01" ] && ok "I: FR-NNN frontmatter code matched" || notok "I: FR-NNN code ignored (hook no-op)"
+stats_pct=$(jq -r '.statistics.completion_percentage' "$proj/docs/blueprint/feature-tracker.json")
+[ "$stats_pct" = "98.1" ] && ok "I: 51/52 completion is 98.1" || notok "I: completion=$stats_pct (want 98.1)"
+div=$(checker_divergence "$proj")
+[ "$div" = "0" ] && ok "I: tracker-check sees no statistics_divergence" || notok "I: tracker-check divergence=$div"
+rm -rf "$proj"
+
+# Test J: array-shaped tracker of FR-NNN records, inline citation in prose
+proj=$(make_project 1)
+write_tracker "$proj" '[range(1; 4) | {id: ("FR-" + ("00" + tostring | .[-3:])),
+    name: ("Feature " + tostring), status: (if . == 1 then "complete" else "in_progress" end)}]'
+printf '# Notes\n\nThis implements FR-002 end to end.\n' > "$proj/docs/prps/fixture.md"
+run_hook "$proj" "docs/prps/fixture.md" X=1
+[ "$(tracker_last "$proj")" != "2026-01-01" ] && ok "J: inline FR-NNN in array tracker matched" || notok "J: inline FR-NNN ignored"
+stats_total=$(jq -r '.statistics.total_features' "$proj/docs/blueprint/feature-tracker.json")
+[ "$stats_total" = "3" ] && ok "J: array records counted" || notok "J: total_features=$stats_total (want 3)"
+stats_pct=$(jq -r '.statistics.completion_percentage' "$proj/docs/blueprint/feature-tracker.json")
+[ "$stats_pct" = "33.3" ] && ok "J: 1/3 completion is 33.3" || notok "J: completion=$stats_pct (want 33.3)"
+div=$(checker_divergence "$proj")
+[ "$div" = "0" ] && ok "J: tracker-check sees no statistics_divergence" || notok "J: tracker-check divergence=$div"
+rm -rf "$proj"
+
+# Test K: unknown FR-NNN code still never mutates the tracker
+proj=$(make_project 1)
+write_tracker "$proj" '{"FR-001": {name: "A", phase: "phase-1", status: "complete"}}'
+write_prp "$proj" FR-999
+run_hook "$proj" "docs/prps/fixture.md" X=1
+[ "$(tracker_last "$proj")" = "2026-01-01" ] && ok "K: unknown FR-NNN leaves tracker untouched" || notok "K: tracker mutated for unknown FR-NNN"
+rm -rf "$proj"
+
+# Test L: FRn.m codes (no FR-NNN involved), 2/3 complete -> 66.7, not floor 66
+proj=$(make_project 1)
+write_tracker "$proj" '{FR1: {name: "Cat", features: {
+    "FR1.1": {name: "A", phase: "phase-1", status: "complete"},
+    "FR1.2": {name: "B", phase: "phase-1", status: "complete"},
+    "FR1.3": {name: "C", phase: "phase-1", status: "blocked"}}}}'
+write_prp "$proj" FR1.2
+run_hook "$proj" "docs/prps/fixture.md" X=1
+stats_pct=$(jq -r '.statistics.completion_percentage' "$proj/docs/blueprint/feature-tracker.json")
+[ "$stats_pct" = "66.7" ] && ok "L: 2/3 completion is 66.7" || notok "L: completion=$stats_pct (want 66.7)"
+div=$(checker_divergence "$proj")
+[ "$div" = "0" ] && ok "L: FRn.m tracker agrees with tracker-check" || notok "L: tracker-check divergence=$div"
 rm -rf "$proj"
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
