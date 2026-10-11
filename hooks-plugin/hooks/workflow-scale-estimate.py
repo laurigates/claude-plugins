@@ -54,7 +54,8 @@ that shadows or redefines one (a local `parallel`, a patched
 
 Parsing uses the vendored acorn parser under node (lib/workflow-scale-parse.cjs).
 A syntax error is PARSE_ERROR. A parser that crashes, or times out twice (the
-retry absorbs a cold node start), is ANALYSIS_ERROR, as is an error while
+retry absorbs a cold node start; each attempt is limited to
+WORKFLOW_SCALE_PARSE_TIMEOUT seconds, default 4), is ANALYSIS_ERROR, as is an error while
 walking a parsed script; the guard asks on all three, and when a run of this
 file exits non-zero or prints no VERDICT. Only a machine without node falls
 back to the pre-parser estimator (lib/workflow-scale-estimate-fallback.py),
@@ -86,6 +87,28 @@ LOOPS = {
 NOT_LITERAL = "not a literal array or .slice(0, N)"
 
 
+PARSE_TIMEOUT_DEFAULT = 4.0
+
+
+def parse_timeout() -> float:
+    """Seconds per parser attempt: WORKFLOW_SCALE_PARSE_TIMEOUT, else 4.
+
+    The hook keeps the 4 s default (it sits in front of an interactive tool
+    call). scripts/check-workflow-js-model.sh, a CI guard with no latency
+    budget, raises it so a cold node start on a loaded runner that outlasts
+    two 4 s attempts is not reported as estimator_error (#3005, #2975). A
+    value that is not a positive finite number means the default.
+    """
+    raw = os.environ.get("WORKFLOW_SCALE_PARSE_TIMEOUT", "").strip()
+    try:
+        value = float(raw)
+    except ValueError:
+        return PARSE_TIMEOUT_DEFAULT
+    if not 0 < value < float("inf"):
+        return PARSE_TIMEOUT_DEFAULT
+    return value
+
+
 class ParserUnavailable(Exception):
     """No node: the pre-parser fallback decides."""
 
@@ -102,7 +125,7 @@ def parse(src: str) -> dict:
     opts = {
         "capture_output": True,
         "encoding": "utf-8",
-        "timeout": 4,
+        "timeout": parse_timeout(),
         "check": False,
     }
     # One retry on a timeout: a cold node start on a loaded machine can exceed
