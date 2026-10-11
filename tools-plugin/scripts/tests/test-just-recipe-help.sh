@@ -38,6 +38,8 @@
 #      receiver (S); a refused subcommand help= is named (T); the [private]
 #      attribute alone hides a recipe (U); a binding is forgotten only where
 #      it runs (V); a recipe running a .sh gets no argparse --help hint (W)
+#   Y. an async def's and a keyword-only parameter are forgotten, and a
+#      helper's parameter stops being UNTRACED when the helper ends
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -768,6 +770,48 @@ assert "W: the recipe's shell script is found and named" \
   "$(has "$sh_recipe_out" "update_stack.sh is a shell script, not argparse")"
 assert "W: no argparse --help hint is printed for a shell script" \
   "$(lacks "$sh_recipe_out" "Argparse's own text")"
+
+# -- Y: the parameter forms P and Q do not reach ------------------------------
+# P and Q use a plain `def` with positional parameters, so three parts of the
+# scoping could be deleted with both still green: forgetting an `async def`'s
+# parameters, forgetting a keyword-only parameter, and restoring the UNTRACED
+# set when a function ends. A helper's `p` then either kept the stale mapping
+# (its flags filed under `run`, the last subcommand bound) or outlived the
+# helper (a later, unrelated `parser` receiver reported as its parameter).
+cat >"$tmp/scope/scripts/y_forms.py" <<'PYEOF'
+import argparse
+ap = argparse.ArgumentParser()
+sub = ap.add_subparsers()
+p = sub.add_parser("run")
+p.add_argument("--run-only")
+async def _async_common(p):
+    p.add_argument("--async-flag")
+def _kw_common(*, p):
+    p.add_argument("--kwonly-flag")
+PYEOF
+out="$(scan y_forms.py)"
+assert "Y: run keeps only its own flag" "$(eq "$(flags_in "$out" "SUBCOMMAND  run")" "--run-only")"
+assert "Y: an async def's parameter is marked UNTRACED" \
+  "$(has "$out" "UNTRACED  flags added through \`p\` -- a parameter of _async_common()")"
+assert "Y: a keyword-only parameter is marked UNTRACED" \
+  "$(has "$out" "UNTRACED  flags added through \`p\` -- a parameter of _kw_common()")"
+assert "Y: both helper flags are listed, under UNTRACED headings" \
+  "$(eq "$(flags_in "$out" "$untraced_p")" "--async-flag --kwonly-flag")"
+
+# `parser` is bound only by an import, so nothing in the scan traces it and its
+# flags take the cursor fallback. A helper's parameter of the same name must
+# not still be in force after the helper ends.
+cat >"$tmp/scope/scripts/y_restore.py" <<'PYEOF'
+from cli import parser
+def _add(parser):
+    parser.add_argument("--helper-flag")
+parser.add_argument("--top")
+PYEOF
+out="$(scan y_restore.py)"
+assert "Y: the helper's own flag is marked UNTRACED" \
+  "$(eq "$(flags_in "$out" "UNTRACED  flags added through \`parser\`")" "--helper-flag")"
+assert "Y: a flag added after the helper is not reported as its parameter's" \
+  "$(eq "$(flags_in "$out" "FLAGS  (")" "--top")"
 
 # ---------------------------------------------------------------- summary
 echo "PASSED=$pass_count FAILED=$fail_count"
