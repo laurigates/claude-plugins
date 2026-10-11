@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.47.3](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.47.2...blueprint-plugin-v3.47.3) (2026-10-11)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** match FR-NNN codes and round completion_percentage in sync-feature-tracker ([#3044](https://github.com/laurigates/claude-plugins/issues/3044)) ([4c2cb5b](https://github.com/laurigates/claude-plugins/commit/4c2cb5b8aa80bd1d961356fc65f45d9430a37595)), closes [#3001](https://github.com/laurigates/claude-plugins/issues/3001)
+
 ## [3.47.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.47.1...blueprint-plugin-v3.47.2) (2026-10-10)
 
 
