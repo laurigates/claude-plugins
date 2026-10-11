@@ -359,8 +359,8 @@ A PermissionRequest hook that auto-approves safe operations and auto-denies dang
 
 | Decision | Patterns |
 |----------|----------|
-| Auto-deny (checked first) | `rm -rf /`, force push to main/master — anywhere in the command |
-| Auto-approve | Read-only git, test runners, linters, gh CLI reads — only when **every** command in the line is one of them |
+| Auto-deny (checked first) | Recursive `rm` of `/`, `~` or `$HOME` (`rm -rf /`, `rm -r -f /`, `rm -rf -- /`, `rm -Rf "$HOME"`); force push to main/master (`--force`, `-f`, `--force-with-lease`, a `+main` refspec) — anywhere in the command |
+| Auto-approve | Read-only git, test runners, linters, gh CLI reads — only when **every** command in the line is one of them **and** its arguments pass that rule's argv check |
 | Pass through | Everything else (user decides) |
 
 Approval is decided on an `ast-grep --lang bash` parse, not the raw string
@@ -370,6 +370,22 @@ through. Only plain commands joined by `&&`, `||`, `;`, `|`, `&` or newlines can
 a substitution, process substitution, `$VAR`, subshell, group, loop, conditional, function,
 redirection, heredoc, assignment prefix or comment means no decision. Without ast-grep (or if
 the parse errors or takes over 5 s) the hook never approves; the deny rules still fire.
+
+Each approved command's words are de-quoted the way bash would and checked against its rule
+([#2885](https://github.com/laurigates/claude-plugins/issues/2885),
+[#2886](https://github.com/laurigates/claude-plugins/issues/2886)). The program and subcommand
+must match exactly, so `pytest=1 touch x`, `pytestx`, `npx jest-evil`, `make test-and-deploy` and
+`git statusfoo` get no decision. A command containing `{ } * ? [ ]` gets no decision, since bash
+would expand it into words the hook never saw.
+
+| Rule | Approved | No decision (examples) |
+|------|----------|------------------------|
+| git `status` `log` `diff` `show` `blame` `shortlog` `describe` `ls-files` `rev-parse` `rev-list` | Any arguments but the refused ones | `--output`, `--ext-diff`, `--textconv` |
+| git `branch` | Listing: no arguments, `-a`, `-r`, `-v`, `--list`, `--show-current`, `--contains`, `--merged`, `--format`, … | `-d` `-D` `-m` `-f` `-c` `-u`, `--set-upstream-to`, a bare name (creates a branch) |
+| git `remote` | No arguments, `-v`, `show <name>`, `get-url <name>` | `add`, `set-url`, `remove`, `rename`, `prune`, … |
+| Test runners (`npm test`, `npx vitest`/`jest`, `bun test`, `pytest`, `cargo test`, `go test`, `make test`) | An allowlist of common flags (`-x`, `-k`, `-v`, `--workspace`, `-run`, `-race`, `--nocapture`, …) and paths inside the tree | `-u`/`--updateSnapshot`, `pytest -p`/`-c`/`--basetemp`/`@file`, `go test -exec`/`-o`/`-toolexec`, `cargo test --config`/`-Z`/`--manifest-path`, `npm test --script-shell`, `make test <target>`/`VAR=…`/`-f`, an absolute, `~` or `..` path |
+| Linters (`npx eslint`/`prettier`/`biome`, `bun run lint`/`check`, `ruff check`, `mypy`, `tsc --noEmit`) | Check-mode flags only | `--fix`, `--write`/`-w`, `--apply`, `--unsafe`, `--install-types`, `--config`/`--config-file`, `--outDir`, `bun run format`, `bun run lint:fix` |
+| gh `pr view/checks/list/diff`, `issue view/list`, `run view/list` | Any arguments | Any other verb (`gh pr listx`) |
 
 **Toggle:** `CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO=1`
 

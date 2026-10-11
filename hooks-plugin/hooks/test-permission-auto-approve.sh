@@ -19,6 +19,13 @@
 #      approve.
 #   F. Generated compound probe: approved A + non-approved B over every
 #      separator, both orders: never approve; A + A' still approves.
+#   H. #2885: git branch/remote/diff/log/show bypasses (mutating subcommands,
+#      --output, --ext-diff, quote/brace/glob spellings) get NO decision;
+#      read-only git still approves.
+#   I. #2885: deny rules catch respellings (rm -r -f /, rm -rf -- /,
+#      git push -f origin main, git push origin +main); near-misses do not deny.
+#   J. #2886: runner/linter/gh word boundaries, writer and executor flags,
+#      out-of-tree paths get NO decision; plain invocations still approve.
 #   G. SUBSET differential: everything the new hook approves in this corpus was
 #      approved by the pre-fix hook (pinned commit, embedded verbatim copy for
 #      shallow clones; byte-compared when both exist).
@@ -318,6 +325,251 @@ fi
 for s in "${SEPS[@]}"; do
     expect approve "approved<sep>approved, sep='$(printf '%s' "$s" | tr '\n' '~')'" "git status${s}git log -1"
 done
+
+# expect_each <approve|deny|none> <label prefix> <command>…
+expect_each() {
+    local want=$1 prefix=$2 cmd
+    shift 2
+    for cmd in "$@"; do
+        expect "$want" "$prefix: $cmd" "$cmd"
+    done
+}
+
+# ── H. #2885: the read-only git rule checks argv, not just the subcommand ────
+echo "  == H. #2885 git bypasses: no decision =="
+expect_each none "#2885 git" \
+    'git branch -D release' \
+    'git branch -f release HEAD~3' \
+    'git branch -m foo bar' \
+    'git remote add evil https://x' \
+    'git remote set-url origin https://x' \
+    'git remote remove origin' \
+    'git diff --output=/tmp/pwned' \
+    'git show --output=/home/u/.bashrc HEAD' \
+    'git log --output=/tmp/o' \
+    'git diff --no-index a b --output=/etc/x' \
+    'git diff --ext-diff' \
+    'git diff --textconv' \
+    'git statusfoo' \
+    'git branch "-D" main' \
+    'git diff {--output=/tmp/x,}' \
+    'git diff *'
+# Adversarial respellings found reviewing the fix.
+expect_each none "#2885 git respelled" \
+    'git diff --output /tmp/x' \
+    'git log --out=/tmp/x' \
+    'git show --textconv HEAD' \
+    'git log -p --ext-diff' \
+    "git branch '-'D main" \
+    "git 'branch' -D main" \
+    'git branch newbranch' \
+    'git branch -d release' \
+    'git branch --delete release' \
+    'git branch -avD release' \
+    'git branch -l release' \
+    'git branch --set-upstream-to=origin/x' \
+    'git branch -u origin/x' \
+    'git branch --unset-upstream' \
+    'git branch --edit-description' \
+    'git branch -c a b' \
+    'git branch --contains HEAD -D release' \
+    'git remote -v add evil https://x' \
+    'git remote rename origin evil' \
+    'git remote prune origin' \
+    'git remote update' \
+    'git remote set-head origin -a' \
+    'git remote show -v origin' \
+    'git -C /tmp status' \
+    'git -c core.pager=x log' \
+    'git diff a?' \
+    'git diff [ab]' \
+    'git log "--output=/tmp/x"' \
+    "git diff '--ext-diff'" \
+    'git status	--output=/tmp/x'
+
+echo "  == H. read-only git still approves =="
+expect_each approve "git control" \
+    'git diff' \
+    'git diff --stat HEAD~1' \
+    'git diff --no-ext-diff --no-textconv' \
+    'git log --output-indicator-new=+ -1 -p' \
+    'git branch' \
+    'git branch -a' \
+    'git branch -vv' \
+    'git branch --show-current' \
+    'git branch --list release' \
+    'git branch --contains HEAD' \
+    'git branch --merged main' \
+    'git branch --no-merged=main -r' \
+    'git remote' \
+    'git remote -v' \
+    'git remote show origin' \
+    'git remote get-url --push origin' \
+    'git shortlog -sn' \
+    'git blame README.md' \
+    'git describe --tags' \
+    'git ls-files' \
+    'git rev-list --count HEAD' \
+    "git log --format='%H %s' -3"
+
+# ── I. #2885: deny rules catch respellings ───────────────────────────────────
+echo "  == I. #2885 deny respellings =="
+expect_each deny "#2885 deny" \
+    'rm -r -f /' \
+    'rm -rf -- /' \
+    'git push -f origin main' \
+    'git push origin +main' \
+    'rm -fr ~' \
+    'rm -Rf "$HOME"' \
+    'rm --recursive --force /' \
+    'rm -rf /*' \
+    "rm -rf '~/'" \
+    'sudo rm -rf /' \
+    '/bin/rm -rf ${HOME}/' \
+    'rm -rf --no-preserve-root /' \
+    'git status && rm -r -f /' \
+    'git push --force-with-lease origin main' \
+    'git push -fu origin master' \
+    'git push origin +HEAD:refs/heads/main' \
+    'git push origin feature:main --force' \
+    'git -C . push -f origin main' \
+    'git push --force origin master'
+# Not every rm or push is denied: these stay with the user (no decision).
+expect_each none "#2885 deny control" \
+    'rm -rf ./build' \
+    'rm -r /tmp/x' \
+    'git push -f origin feature' \
+    'git push origin main' \
+    'git push -u origin feat/main-menu'
+
+# ── J. #2886: runner / linter / gh rules check argv ──────────────────────────
+echo "  == J. #2886 runner, linter and gh bypasses: no decision =="
+expect_each none "#2886 word boundary" \
+    'pytest=1 touch /tmp/x' \
+    'mypy=1 rm -rf build' \
+    'pytestx' \
+    'pytest-evil' \
+    'mypyx' \
+    'npx jest-evil' \
+    'npx vitest-evil' \
+    'npx eslint-evil' \
+    'make test-and-deploy' \
+    'make testx' \
+    'cargo testx' \
+    'gh pr listx'
+expect_each none "#2886 writer flags" \
+    'npx eslint --fix .' \
+    'npx prettier --write .' \
+    'npx biome check --write' \
+    'ruff check --fix' \
+    'mypy --install-types --non-interactive' \
+    'tsc --noEmit --outDir x' \
+    'bun run lint:fix' \
+    'bun run format'
+expect_each none "#2886 runner flags" \
+    'go test -exec /tmp/x ./...' \
+    'go test -o /tmp/bin ./...' \
+    'pytest -p evilplugin' \
+    'cargo test --config build.rustc-wrapper="/tmp/x"' \
+    'pytest --basetemp=/' \
+    'npm test -- --updateSnapshot' \
+    "pytest '--basetemp=/'" \
+    'pytest "-p" evil' \
+    'npx eslint {--fix,} .'
+# Adversarial respellings found reviewing the fix.
+expect_each none "#2886 respelled" \
+    'pytest -pevil' \
+    'pytest -xp evil' \
+    'pytest -k x -p evil' \
+    'pytest -k -p evil' \
+    'pytest @args.txt' \
+    'pytest -c evil.ini' \
+    'pytest -W error::evil.Warning' \
+    'pytest --base=/' \
+    'pytest --rootdir=/tmp' \
+    'npm test --script-shell=/tmp/x' \
+    'npm test -- -u' \
+    'npx vitest -u' \
+    'npx vitest --update' \
+    'npx vitest init' \
+    'npx jest --config evil.js' \
+    'npx --yes jest-evil' \
+    'bun test --preload ./x.ts' \
+    'bun test -u' \
+    'go test -toolexec /tmp/x ./...' \
+    'go test -exec=/tmp/x ./...' \
+    'go test --exec /tmp/x ./...' \
+    'go test ./... -args -x' \
+    'cargo test --manifest-path /tmp/x/Cargo.toml' \
+    'cargo test -Zunstable-options' \
+    'cargo test -- --logfile /tmp/x' \
+    'make test SHELL=/tmp/x' \
+    'make test -f evil.mk' \
+    'make test deploy' \
+    'make test -C /tmp' \
+    'make test -j deploy' \
+    'npx eslint -c evil.js .' \
+    'npx eslint --rulesdir x .' \
+    'npx eslint -o out.txt .' \
+    "npx eslint '--fix' ." \
+    'npx prettier -w .' \
+    'npx prettier --plugin=./evil.js --check .' \
+    'npx biome check --apply' \
+    'npx biome check --apply-unsafe' \
+    'npx biome lint --fix --unsafe' \
+    'npx biome migrate --write' \
+    'ruff check --fix-only' \
+    'ruff check --unsafe-fixes --fix' \
+    'ruff check --add-noqa' \
+    'ruff check -o x' \
+    'mypy --config-file evil.ini src' \
+    'mypy --python-executable /tmp/x src' \
+    'mypy --junit-xml /tmp/x src' \
+    'tsc --noEmit --generateTrace /tmp/x' \
+    'tsc --noEmit --build' \
+    'tsc --outDir x --noEmit' \
+    'bun run lint -- --fix' \
+    'bun run check:fix' \
+    'MYPYPATH=x mypy src' \
+    'pytest	-p evil' \
+    'pytest /tmp/evil_test.py' \
+    'pytest ~/evil_test.py' \
+    'pytest tests/../../evil_test.py' \
+    'bun test /tmp/x.test.ts' \
+    'npx vitest run ../other-repo' \
+    'go test /tmp/pkg' \
+    'npm test -- /tmp/x.test.js'
+
+echo "  == J. plain runner, linter and gh invocations still approve =="
+expect_each approve "runner/linter control" \
+    'pytest' \
+    'pytest -xvs tests/test_a.py' \
+    'pytest -k "foo and bar" -q' \
+    'pytest tests/test_x.py::test_y --tb=short' \
+    'pytest --maxfail 1 -rA' \
+    'npm test -- --run' \
+    'npx vitest' \
+    'npx jest' \
+    'npx jest src/a.test.ts --ci' \
+    'bun test --bail' \
+    'cargo test --workspace' \
+    'cargo test -p core -- --nocapture' \
+    'go test -v -race ./...' \
+    'go test -run TestX -count=1 ./pkg' \
+    'npx eslint .' \
+    'npx eslint --max-warnings 0 .' \
+    'npx eslint --fix-dry-run .' \
+    'npx prettier --check .' \
+    'npx biome check' \
+    'npx biome lint src' \
+    'bun run check' \
+    'ruff check --select E501 src' \
+    'mypy --strict src' \
+    'tsc --noEmit -p tsconfig.json' \
+    'gh pr list --state open' \
+    'gh pr diff 12' \
+    'gh issue view 3 --comments' \
+    'gh run list --limit 5'
 
 # ── G. Subset differential against the pre-fix hook ──────────────────────────
 echo "  == G. subset differential: new approvals are a subset of pre-fix approvals =="
