@@ -74,45 +74,68 @@ task_enabled=$(jq -r '.task_registry["feature-tracker-sync"].enabled' "$MANIFEST
 [ "$task_enabled" != "false" ] || exit 0
 
 # Extract feature codes from the changed file: frontmatter `feature-codes:`
-# array plus inline FRn(.m)* references.
+# array plus inline references. Both id styles are recognised (#3001):
+# hierarchical `FR1` / `FR1.2` and zero-padded `FR-001` / `FR-1.2`.
 frontmatter_codes=$(head -50 "$FILE_PATH" | awk '
     /^feature-codes:/ { in_codes = 1; next }
     in_codes && /^[[:space:]]*-/ { gsub(/^[[:space:]]*-[[:space:]]*/, ""); print }
     in_codes && /^[a-z]/ { exit }
 ' | tr -d '\r' || true)
-inline_codes=$(grep -oE 'FR[0-9]+(\.[0-9]+)*' "$FILE_PATH" 2>/dev/null | sort -u || true)
+inline_codes=$(grep -oE 'FR-?[0-9]+(\.[0-9]+)*' "$FILE_PATH" 2>/dev/null | sort -u || true)
 
-all_codes=$(printf '%s\n%s\n' "$frontmatter_codes" "$inline_codes" | grep -E '^FR[0-9]' | sort -u || true)
+all_codes=$(printf '%s\n%s\n' "$frontmatter_codes" "$inline_codes" | grep -E '^FR-?[0-9]' | sort -u || true)
 [ -n "$all_codes" ] || exit 0
 
-# Count how many referenced codes exist in the tracker (top-level FRn
-# categories or nested FRn.m features at any depth).
+# Shared jq definitions, mirroring blueprint-plugin/scripts/blueprint-tracker-check.sh
+# so the hook and the integrity check agree on what a feature is:
+#   norm - canonical FR key (`FR-001` -> `FR1`, `FR-1.2` -> `FR1.2`), the
+#          checker's norm_fr; empty for a non-FR token.
+#   ids  - every id the features collection mints: object keys (FR category
+#          -> nested `features`) or array records' id/code/name.
+#   recs - feature RECORDS: status-bearing objects reached only through
+#          `features` collections, in either shape. phases[] and tasks sit
+#          outside the collection, so they never count.
+# shellcheck disable=SC2016  # jq program text, not a shell expansion
+JQ_DEFS='
+def norm: ascii_upcase
+    | (capture("^FR[-_ ]?0*(?<n>[0-9]+)(?<rest>(\\.[0-9]+)*)$") | "FR\(.n)\(.rest)") // empty;
+def ids: if type == "array" then .[] | objects | (.id // .code // .name // empty) | tostring
+    elif type == "object" then to_entries[] | select(.value | type == "object")
+        | (.key, (.value.features // null | ids))
+    else empty end;
+def recs: (if type == "array" or type == "object" then .[] else empty end)
+    | objects | (select(has("status")), (.features // null | recs));
+'
+
+# Count how many referenced codes exist in the tracker, compared by canonical
+# key so a doc citing `FR-001` matches a tracker minting `FR1` and vice versa.
 codes_json=$(printf '%s\n' "$all_codes" | jq -R -s 'split("\n") | map(select(length > 0))')
-matched=$(jq --argjson codes "$codes_json" '
-    [.. | objects | keys[]? | select(test("^FR[0-9]"))] as $tracked |
-    [$codes[] | select(. as $c | $tracked | index($c))] | length
+matched=$(jq --argjson codes "$codes_json" "${JQ_DEFS}"'
+    [.features // null | ids | norm] as $tracked |
+    [$codes[] | norm | select(. as $c | $tracked | index([$c]))] | unique | length
 ' "$TRACKER" 2>/dev/null || echo 0)
 
 if [ -z "$matched" ] || [ "$matched" = "0" ]; then
     exit 0
 fi
 
-# Refresh last_updated and recompute statistics. Feature objects are the
-# nested objects carrying name+status+phase — the has("phase") filter keeps
-# phases[].status entries out of the counts.
+# Refresh last_updated and recompute statistics over the same record set and
+# with the same completion formula blueprint-tracker-check.sh verifies:
+# round(complete/total*1000)/10, one decimal place (51/52 -> 98.1, 1/2 -> 50).
 today=$(date -u +%Y-%m-%d)
-jq --arg today "$today" '
-    ([.. | objects | select(has("status") and has("phase") and has("name"))]) as $feats |
+jq --arg today "$today" "${JQ_DEFS}"'
+    [.features // null | recs] as $feats |
+    ([$feats[] | select(.status == "complete")] | length) as $done |
     .last_updated = $today |
     .statistics = {
         total_features: ($feats | length),
-        complete: ([$feats[] | select(.status == "complete")] | length),
+        complete: $done,
         partial: ([$feats[] | select(.status == "partial")] | length),
         in_progress: ([$feats[] | select(.status == "in_progress")] | length),
         not_started: ([$feats[] | select(.status == "not_started")] | length),
         blocked: ([$feats[] | select(.status == "blocked")] | length),
         completion_percentage: (if ($feats | length) > 0
-            then (([$feats[] | select(.status == "complete")] | length) * 100 / ($feats | length) | floor)
+            then (($done / ($feats | length)) * 1000 | round) / 10
             else 0 end)
     }
 ' "$TRACKER" > "${TRACKER}.tmp" && mv "${TRACKER}.tmp" "$TRACKER"
