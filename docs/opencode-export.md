@@ -171,7 +171,15 @@ sandbox.
 OpenCode has no Claude Code hook surface, so
 [`scripts/generate-opencode-hook-plugins.py`](../scripts/generate-opencode-hook-plugins.py)
 (issue [#1605](https://github.com/laurigates/claude-plugins/issues/1605))
-projects each plugin's `hooks.json` into an OpenCode JS plugin:
+projects each plugin's hooks into an OpenCode JS plugin. It scans every
+`*-plugin` directory for both declaration sites (issue
+[#2724](https://github.com/laurigates/claude-plugins/issues/2724)): a bare
+`<plugin>/hooks.json`, and the `hooks` value of `.claude-plugin/plugin.json`,
+which is either an inline object (hooks-plugin, feedback-plugin,
+kubernetes-plugin and five SessionStart/Stop-only plugins) or a path such as
+`"./hooks.json"` (read once, not twice). Each `PLUGIN=` line of the export
+output names its `SOURCE=`, and `HOOK_PLUGINS_SCANNED` counts every plugin that
+declares hooks at either site:
 
 ```
 dist/opencode/
@@ -204,8 +212,9 @@ than blocking every matched call.
 
 Regression guard: [`scripts/tests/test-export-opencode-hooks.sh`](../scripts/tests/test-export-opencode-hooks.sh)
 asserts every referenced script resolves, blocking semantics survive, no
-literal `${CLAUDE_PLUGIN_ROOT}` reaches generated code, and prompt hooks stay
-skipped.
+literal `${CLAUDE_PLUGIN_ROOT}` reaches generated code, prompt hooks stay
+skipped, and inline plugin.json hooks and `./hooks.json` pointers are both
+discovered.
 
 ## 3. Serve the model
 
@@ -489,7 +498,7 @@ a brainstorm or an older snippet, check it against this table:
 - [`docs/adrs/0022-adapter-over-export-for-foreign-harnesses.md`](adrs/0022-adapter-over-export-for-foreign-harnesses.md) — why an adapter rather than an export
 - [`scripts/export-opencode.sh`](../scripts/export-opencode.sh) — agent + hook export driver
 - [`scripts/export-opencode-agents.py`](../scripts/export-opencode-agents.py) — subagent projection
-- [`scripts/generate-opencode-hook-plugins.py`](../scripts/generate-opencode-hook-plugins.py) — hooks.json → OpenCode JS plugin generator
+- [`scripts/generate-opencode-hook-plugins.py`](../scripts/generate-opencode-hook-plugins.py) — plugin hooks (hooks.json or inline plugin.json) → OpenCode JS plugin generator
 - [`scripts/tests/test-export-opencode-agents.sh`](../scripts/tests/test-export-opencode-agents.sh) — agent-export + no-skills-tree regression guard
 - [`scripts/tests/test-export-opencode-hooks.sh`](../scripts/tests/test-export-opencode-hooks.sh) — hooks-export regression guard
 - [`scripts/install-opencode.sh`](../scripts/install-opencode.sh) — additive installer
