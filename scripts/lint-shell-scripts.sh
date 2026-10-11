@@ -48,6 +48,77 @@ info() {
     echo "INFO:  $1"
 }
 
+# Check 5 helper for test-*.sh (#2819). Reads shell source on stdin and prints,
+# for every `sed` word at command position, the rest of its line from `sed` on,
+# so the Check 5 regexes see commands and never fixture data. A `sed` is at
+# command position when it is outside single and double quotes (a "$(…)" or
+# `…` substitution inside double quotes counts as outside: it runs), outside a
+# heredoc body, and before an unquoted trailing `#` comment.
+#
+# Line scanner, not a shell parser. Known blind spots: quote state resets at
+# each newline, so a `sed` on the continuation line of a multi-line quoted
+# string reads as a command (a false error, never a silent pass); and a `sed`
+# inside a string handed to eval/bash -c is data here although it runs.
+sed_command_view() {
+    awk '
+        BEGIN {
+            sq = sprintf("%c", 39); hd = ""
+            # \042 = double quote, \047 = single quote (octal escapes keep
+            # this program inside the shell single quotes).
+            hdre = "^<<-?[[:space:]]*[\042\047]?[A-Za-z_][A-Za-z0-9_]*"
+            hdpre = "^<<-?[[:space:]]*[\042\047]?"
+        }
+        hd != "" {
+            body = $0
+            if (hdtab) sub(/^\t+/, "", body)
+            if (body == hd) hd = ""
+            next
+        }
+        {
+            line = $0; n = length(line)
+            # Context stack: N = unquoted, D = double quotes, S = single
+            # quotes, B = backticks. Unquoted "$(" pushes N, ")" pops it.
+            depth = 1; st[1] = "N"; paren[1] = 0
+            for (i = 1; i <= n; i++) {
+                c = substr(line, i, 1); top = st[depth]
+                if (top == "S") { if (c == sq) depth--; continue }
+                if (c == "\\") { i++; continue }
+                if (top == "D") {
+                    if (c == "\"") depth--
+                    else if (substr(line, i, 2) == "$(") { st[++depth] = "N"; paren[depth] = 1; i++ }
+                    else if (c == "`") st[++depth] = "B"
+                    continue
+                }
+                # N or B: shell code.
+                if (top == "B" && c == "`") { depth--; continue }
+                if (c == sq) { st[++depth] = "S"; continue }
+                if (c == "\"") { st[++depth] = "D"; continue }
+                if (c == "`") { st[++depth] = "B"; continue }
+                if (c == "(") { paren[depth]++; continue }
+                if (c == ")") {
+                    if (paren[depth] > 0) paren[depth]--
+                    if (paren[depth] == 0 && depth > 1) depth--
+                    continue
+                }
+                prev = (i == 1) ? " " : substr(line, i - 1, 1)
+                if (c == "#" && prev ~ /[[:space:];&|(]/) break
+                if (c == "<" && substr(line, i, 2) == "<<" && prev != "<" \
+                    && match(substr(line, i), hdre)) {
+                    op = substr(line, i, RLENGTH)
+                    hdtab = (substr(op, 3, 1) == "-")
+                    word = op; sub(hdpre, "", word)
+                    hd = word
+                    i += RLENGTH - 1
+                    continue
+                }
+                if (substr(line, i, 4) ~ /^sed[[:space:]]$/ && prev ~ /[[:space:];&|(`{!]/) {
+                    print substr(line, i)
+                }
+            }
+        }
+    '
+}
+
 # Find all .sh files. Prune (don't descend into) .git, node_modules, vendor,
 # the gitignored dist/ OpenCode export build output, and .claude/worktrees/ agent
 # clones — scanning those re-lints generated output and sibling checkouts
@@ -141,16 +212,22 @@ for script in $SCRIPTS; do
     # portable-sed-ok — the escape hatch for a deliberate try-GNU-then-fall-
     # back-to-BSD pair, which is portable despite containing both spellings.
     #
-    # test-*.sh is skipped wholesale: this repo's hook tests carry both
-    # spellings as fixture STRINGS, which are data rather than commands.
-    if ! grep -qE '(^|/)test-[^/]*\.sh$' <<<"$REL_PATH"; then
-        SED_CODE=$(grep -vE '^[[:space:]]*#' "$script" | grep -v 'portable-sed-ok' || true)
-        if grep -qE "sed( +-[a-zA-Z.]+)* +-i +''" <<<"$SED_CODE"; then
-            error "$REL_PATH: BSD-only in-place sed (empty suffix) — GNU sed exits 2 without editing. Attach the suffix: sed -i.bak ... then rm the backup"
-        fi
-        if grep -qE "sed( +-[a-zA-Z.]+)* +-i +['\"][^'\"]" <<<"$SED_CODE"; then
-            error "$REL_PATH: GNU-only in-place sed (detached script) — BSD sed eats the script as a backup suffix. Attach the suffix: sed -i.bak ... then rm the backup"
-        fi
+    # test-*.sh files are narrowed, not skipped (#2819): this repo's hook tests
+    # carry both spellings as fixture STRINGS, which are data rather than
+    # commands, but a test that RUNS `sed -i "2i …" "$file"` breaks on macOS
+    # like any other script (#2811). For test-*.sh, sed_command_view() keeps
+    # only the text from each `sed` that sits at command position: outside
+    # quotes (or inside a "$(…)"/`…` substitution), outside a heredoc body,
+    # before a trailing comment. Other files keep the whole-line view.
+    SED_CODE=$(grep -vE '^[[:space:]]*#' "$script" | grep -v 'portable-sed-ok' || true)
+    if grep -qE '(^|/)test-[^/]*\.sh$' <<<"$REL_PATH"; then
+        SED_CODE=$(sed_command_view <<<"$SED_CODE")
+    fi
+    if grep -qE "sed( +-[a-zA-Z.]+)* +-i +''" <<<"$SED_CODE"; then
+        error "$REL_PATH: BSD-only in-place sed (empty suffix) — GNU sed exits 2 without editing. Attach the suffix: sed -i.bak ... then rm the backup"
+    fi
+    if grep -qE "sed( +-[a-zA-Z.]+)* +-i +['\"][^'\"]" <<<"$SED_CODE"; then
+        error "$REL_PATH: GNU-only in-place sed (detached script) — BSD sed eats the script as a backup suffix. Attach the suffix: sed -i.bak ... then rm the backup"
     fi
 
     # --- Check 6: printf/echo of a variable piped into grep -q under pipefail ---
