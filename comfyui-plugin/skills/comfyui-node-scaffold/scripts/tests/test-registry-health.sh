@@ -30,6 +30,11 @@
 #                     whether that fallback is deprecated.
 #   4. Banned with /install unreachable -> still banned, body says the
 #                     resolved version could not be read (no empty backticks).
+#   5. Deleted     -> exit 1, failure status "deleted" (never "Active"), body
+#                     says Deleted and names the version /install resolves to
+#                     (#2994: Deleted fell through to "Active in registry").
+#   6. Flagged with no status_reason -> no bare "  - " findings bullet; the
+#                     list says "(none reported)" instead (#2994).
 #
 # Requires python3 and jq; SKIPs cleanly when unavailable.
 
@@ -241,6 +246,39 @@ check "4: still exits 1 when /install fails" "1" "$rc"
 check "4: still reports banned" "banned: v0.1.30" "$(desc)"
 check "4: no empty backticks for the resolved version" "0" "$(body_has '**``**')"
 check "4: says the resolved version could not be read" "1" "$(body_has 'could not be read')"
+
+# --------------------------------------------------------------------------- #
+# 5. Deleted — not installable; must never be reported Active (#2994)
+# --------------------------------------------------------------------------- #
+fixture deleted \
+    '[{"version":"0.2.4","status":"NodeVersionStatusDeleted","createdAt":"2026-09-30T00:00:00Z"},
+      {"version":"0.2.3","status":"NodeVersionStatusActive","createdAt":"2026-09-01T00:00:00Z"}]' \
+    '{"version":"0.2.3","deprecated":false,"status":"NodeVersionStatusActive","createdAt":"2026-09-01T00:00:00Z"}' \
+    '{"latest_version":{"version":"0.2.3"}}'
+CASE_DIR="${WORK}/deleted"
+rc="$(run_case 0.2.4)"
+check "5: Deleted exits 1" "1" "$rc"
+check "5: Deleted sets a failure status (never success/Active)" "failure" "$(state)"
+check "5: the status names the deleted problem" "deleted: v0.2.4" "$(desc)"
+check "5: the body says the version is Deleted" "1" "$(body_has '**Deleted**')"
+check "5: the body names the version /install actually resolves to" "1" \
+    "$(body_has 'resolves to **`0.2.3`**')"
+check "5: the tracking issue is not closed as Active" "0" \
+    "$(grep -q 'issue close' "${CASE_DIR}/log/gh.log" 2>/dev/null && echo 1 || echo 0)"
+
+# --------------------------------------------------------------------------- #
+# 6. Flagged with no status_reason — no bare "  - " findings bullet (#2994)
+# --------------------------------------------------------------------------- #
+fixture flagged-noreason \
+    '[{"version":"0.1.40","status":"NodeVersionStatusFlagged","createdAt":"2026-10-01T00:00:00Z"}]' \
+    '{"version":"0.1.40","deprecated":false,"status":"NodeVersionStatusFlagged","createdAt":"2026-10-01T00:00:00Z"}' \
+    '{"latest_version":null}'
+CASE_DIR="${WORK}/flagged-noreason"
+rc="$(run_case 0.1.40)"
+check "6: Flagged without a reason still exits 1" "1" "$rc"
+check "6: no bare '  - ' bullet in the findings list" "0" \
+    "$(grep -qxE '[[:space:]]*-[[:space:]]*' "${CASE_DIR}/log/body.md" 2>/dev/null && echo 1 || echo 0)"
+check "6: the findings list says none were reported" "1" "$(body_has '(none reported)')"
 
 printf '\n%s: %d passed, %d failed\n' "$(basename "$0")" "$pass" "$fail"
 [ "$fail" -eq 0 ] || exit 1
