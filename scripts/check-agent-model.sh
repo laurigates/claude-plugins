@@ -15,7 +15,8 @@
 # cold-read-gate haiku reader — the measurement instrument, not a delegate
 # (`~/.claude/rules/agent-and-tool-selection.md` § "Sanctioned exception").
 # It is a **skill-inline** `Agent(model: haiku)` dispatch, not an agent `.md`
-# file, so **no agent file is exempt today** and AGENT_MODEL_ALLOWLIST is empty.
+# file, so no agent file needs the allowlist and AGENT_MODEL_ALLOWLIST is empty.
+# (A haiku agent FILE is accepted by the lean-reader rule below, not the list.)
 # The seam below stays for any future measurement-instrument agent file.
 #
 # Sibling guards reached the same exception by their own route: as of issue
@@ -26,7 +27,18 @@
 # unit is a whole agent FILE, so a file-granular allowlist is the right shape
 # here; a call-granular label key is the right shape there.
 #
-# Model floor policy: `opus` is the committed floor for every plugin agent —
+# The lean Haiku reader (Haiku 5.5 re-evaluation, 2026-10): `model: haiku` is
+# accepted on an agent FILE only when all three hold:
+#   1. `omitClaudeMd: true` — the agent takes everything from its brief, so the
+#      ~72k-token CLAUDE.md + rules chain is not loaded;
+#   2. `tools:` lists only Read, Grep and Glob — no Skill tool (the ~33k skill
+#      listing), no MCP schemas, and nothing that edits, runs, or publishes;
+#   3. an explicit `effort:` — Haiku 5.5's cost lever, set rather than inherited.
+# Measured first-request size: ~3k tokens against ~124k for a default subagent.
+# A read-only, context-free reader is the one shape where a weaker model's
+# output re-entering the main loop is checked downstream rather than trusted.
+#
+# Model floor policy: `opus` is the committed floor for every other plugin agent —
 # it is the portable choice (every plan carries Opus; `fable` is no plan's
 # default and costs roughly 2x per token, and has no documented fallback for a
 # consumer without Fable access). `fable` is additionally sanctioned for
@@ -143,8 +155,48 @@ is_allowlisted() {
   return 1
 }
 
+# frontmatter <file> — the YAML between the first two `---` lines.
+frontmatter() {
+  awk 'NR == 1 && $0 == "---" { inside = 1; next } inside && $0 == "---" { exit } inside { print }' "$1" | tr -d '\r'
+}
+
+# agent_tools <file> — the `tools:` entries, one per line, from either the
+# inline comma form (`tools: Read, Grep`) or a YAML list (`tools:` + `- Read`).
+agent_tools() {
+  frontmatter "$1" | awk '
+    /^tools:/ {
+      v = $0; sub(/^tools:[[:space:]]*/, "", v)
+      if (v != "") { gsub(/[][]/, "", v); n = split(v, a, ","); for (i = 1; i <= n; i++) { gsub(/^[[:space:]"]+|[[:space:]"]+$/, "", a[i]); if (a[i] != "") print a[i] }; exit }
+      inlist = 1; next
+    }
+    inlist && /^[[:space:]]*-/ { v = $0; sub(/^[[:space:]]*-[[:space:]]*/, "", v); gsub(/"/, "", v); print v; next }
+    inlist { exit }
+  '
+}
+
+# lean_haiku_problems <file> — empty when the file meets the lean-reader
+# conditions; otherwise one reason per line.
+lean_haiku_problems() {
+  local f="$1" fm tool tools
+  fm="$(frontmatter "$f")"
+  grep -qE '^omitClaudeMd:[[:space:]]*true[[:space:]]*$' <<<"$fm" || echo "needs omitClaudeMd: true"
+  tools="$(agent_tools "$f")"
+  if [ -z "$tools" ]; then
+    echo "needs an explicit tools: list of Read/Grep/Glob (omitted tools inherit everything)"
+  else
+    while IFS= read -r tool; do
+      case "$tool" in
+        Read | Grep | Glob) ;;
+        *) echo "tool '$tool' is outside the read-only set Read/Grep/Glob" ;;
+      esac
+    done <<<"$tools"
+  fi
+  grep -qE '^effort:[[:space:]]*[a-z]+' <<<"$fm" || echo "needs an explicit effort:"
+}
+
 errors=0
 checked=0
+lean_haiku=0
 
 for agent_file in "${agent_files[@]}"; do
   [ -f "$agent_file" ] || continue
@@ -156,8 +208,18 @@ for agent_file in "${agent_files[@]}"; do
 
   agent_model=$(head -20 "$agent_file" | grep -m1 '^model:' | sed 's/^model:[[:space:]]*//' | tr -d '\r' || true)
 
-  if [ "$agent_model" != "opus" ] && [ "$agent_model" != "fable" ]; then
-    echo "❌ $agent_file: model: ${agent_model:-<missing>} (must be opus, or fable for the hardest delegated reasoning; effort is the cost lever — see .claude/rules/agent-development.md)" >&2
+  if [ "$agent_model" = "haiku" ]; then
+    problems="$(lean_haiku_problems "$agent_file")"
+    if [ -n "$problems" ]; then
+      while IFS= read -r p; do
+        echo "❌ $agent_file: model: haiku — $p (haiku is only for a lean read-only reader — see .claude/rules/agent-development.md § Lean subagents)" >&2
+        errors=$((errors + 1))
+      done <<<"$problems"
+    else
+      lean_haiku=$((lean_haiku + 1))
+    fi
+  elif [ "$agent_model" != "opus" ] && [ "$agent_model" != "fable" ]; then
+    echo "❌ $agent_file: model: ${agent_model:-<missing>} (must be opus, fable for the hardest delegated reasoning, or haiku on a lean read-only reader — see .claude/rules/agent-development.md)" >&2
     errors=$((errors + 1))
   fi
 
@@ -187,5 +249,6 @@ if [ $errors -gt 0 ]; then
 fi
 
 echo "AGENT_FILES_SCANNED=$checked"
-echo "All $checked agent files run on opus or fable, with valid effort values. ✅"
+echo "LEAN_HAIKU_AGENTS=$lean_haiku"
+echo "All $checked agent files run on opus or fable (or haiku as a lean read-only reader), with valid effort values. ✅"
 exit 0

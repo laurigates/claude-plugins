@@ -110,9 +110,50 @@ $0.10/$0.50. From the transcripts:
 
 At list prices this is about $4 for the classification and about $24 for the
 verification. That estimate assumes the standard 0.1× cache-read and 1.25×
-cache-write multipliers, the >100k Haiku tier, and Opus 5.5 at $4/$20. In
-Claude Code, Haiku 5.5 costs about a quarter of Sonnet 5.5 and an eighth of
-Opus 5.5 per token, not the twentieth the headline suggests.
+cache-write multipliers, the >100k Haiku tier, and Opus 5.5 at $4/$20. For a
+default subagent, Haiku 5.5 costs about a quarter of Sonnet 5.5 and an eighth
+of Opus 5.5 per token, not the twentieth the headline suggests. About 13M of
+the 15M Haiku cache-read tokens were that base, re-read on every request. A
+lean subagent avoids it; see
+[What a subagent's first request carries](#what-a-subagents-first-request-carries).
+
+## What a subagent's first request carries
+
+Added after the run: a follow-up measurement of where the ~127k comes from and
+how to drop it. Each figure below is the first request of a Haiku 5.5 probe
+subagent given a one-word task, read from its transcript. The baseline is the
+default from this repo; a headless session supplied the breakdown.
+
+| Agent shape | First request |
+|---|---|
+| Default subagent (CLAUDE.md + every inherited tool) | 124,068 |
+| Default workflow `agent()` subagent | 122,674 |
+| Plugin agent with `tools: Read` | 75,309 |
+| `omitClaudeMd: true` | 51,789 |
+| Built-in `Explore` | 50,166 |
+| `omitClaudeMd: true` + `tools: Read`, inline definition | 3,030 |
+| The same, shipped in a plugin | 3,030 |
+| The same, reached through a workflow `agent()` with `agentType` | 2,995 |
+
+Two blocks make up the difference:
+
+- **~72k: the CLAUDE.md and unscoped-rules chain.** That is `~/.claude`,
+  `~/repos`, `~/repos/laurigates` and this repo, about 178k characters. Both
+  probe pairs measure the same gap.
+- **~49k: tool schemas.** A headless session split them: the skill listing is
+  about 33k (it rides on the `Skill` tool), MCP about 6k, and the other
+  built-ins the rest.
+
+`omitClaudeMd` (Claude Code 2.1.271+) and a narrow `tools:` list drop both
+blocks. Both work on plugin agents and through `agentType`, and a schema-forced
+result still worked with only `Read`. The rule
+(`agent-development.md` § Lean subagents) and `check-agent-model.sh` now admit
+`model: haiku` on an agent file only in this shape: `omitClaudeMd: true`,
+`tools` limited to Read/Grep/Glob, and an explicit effort.
+
+The finding reaches beyond Haiku. Every default subagent in this portfolio
+pays the ~121k base, and an Opus delegate whose brief carries the whole job
+can drop it too.
 
 ## Adjudication
 
@@ -414,8 +455,13 @@ pre-existing and do not depend on the model.
   measurement says otherwise.
 - **Replay the five local workflow candidates and the three reusable sonnet
   defaults,** and add an `effort` input to the reusable Claude workflows.
-- **Fixture-sweep `test-runner` and `search-replace`** before any agent
-  frontmatter moves. `check-agent-model.sh` still requires opus.
+- **Fixture-sweep `test-runner` and `search-replace`** before either moves.
+  `check-agent-model.sh` admits haiku only on a lean read-only agent, and both
+  of them edit or run commands.
+- **Lean context for existing readers.** The cold-read readers and other
+  brief-complete delegates still start at ~124k. A cold reader that loads 72k
+  of house rules is arguably not cold. Moving them is a measurement change, so
+  it waits for its own evaluation.
 - **The user-global rule `agent-and-tool-selection.md`** (dotfiles) says to
   re-run its comparison when Haiku 5.5 ships. This sweep is a classification
   comparison, not that rule's graded task comparison, so the global rule is
