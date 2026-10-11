@@ -55,7 +55,8 @@ JSON from PostToolUse containing:
    ```
 
 2. **Extract feature codes from changed file**
-   - Look for patterns: `FR1.1`, `FR2.1.1`, etc.
+   - Look for patterns: `FR1.1`, `FR2.1.1`, and zero-padded `FR-001` / `FR-1.2`
+     (#3001); codes compare by canonical key, so `FR-001` matches `FR1`
    - Parse from frontmatter `feature-codes:` array
    - Parse from inline references
 
@@ -96,7 +97,7 @@ extract_feature_codes() {
 # Extract from inline references
 extract_inline_codes() {
   local file="$1"
-  grep -oE 'FR[0-9]+(\.[0-9]+)*' "$file" | sort -u
+  grep -oE 'FR-?[0-9]+(\.[0-9]+)*' "$file" | sort -u
 }
 ```
 
