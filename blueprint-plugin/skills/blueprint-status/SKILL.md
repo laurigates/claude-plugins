@@ -1,6 +1,6 @@
 ---
 created: 2025-12-17
-modified: 2026-07-27
+modified: 2026-10-11
 reviewed: 2026-07-27
 description: Show blueprint version, config, PRD/ADR/PRP counts, and feature tracker progress. Use when auditing traceability, orphan docs, or stale generated content.
 args: "[--report-only]"
@@ -112,6 +112,13 @@ Display the current blueprint configuration status with three-layer architecture
      and mention the parent in the status report but do NOT trigger a scan.
 
 4. **Check generated content status**:
+   - First detect pre-contract records (issue #2868):
+     ```bash
+     bash "${CLAUDE_SKILL_DIR}/../../scripts/migrate-generated-rules-keys.sh" --dry-run
+     ```
+     On `STATUS=WARN`, report each `key_missing_extension` / `record_missing_hash`
+     issue as a warning (not as missing rules) and recommend `/blueprint:sync`
+     or `/blueprint:upgrade`, which apply the fix.
    - For each generated rule in manifest:
      - Hash current file content
      - Compare with stored `content_hash`

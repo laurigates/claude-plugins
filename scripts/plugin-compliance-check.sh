@@ -931,6 +931,17 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: manifests from blueprint 3.0.0 key generated.rules without
+    # `.md` and carry no content_hash, so /blueprint:sync resolved every rule as
+    # missing and could classify nothing — silently (issue #2868). sync/status
+    # detect it and sync/upgrade fix it via migrate-generated-rules-keys.sh.
+    if [ "$skill_name" = "blueprint-sync" ] || [ "$skill_name" = "blueprint-status" ] || [ "$skill_name" = "blueprint-upgrade" ]; then
+      if ! grep -q "migrate-generated-rules-keys.sh" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must run the generated.rules key migration/detection (migrate-generated-rules-keys.sh) (issue #2868)")
+        has_errors=true
+      fi
+    fi
+
     # Regression: task-reconcile is the only skill that ACTS on the stale-task
     # drift task-status detects. Its load-bearing invariants are (1) a bulk
     # `task import` round-trip for leaf tasks, (2) a default-safe dry-run with an

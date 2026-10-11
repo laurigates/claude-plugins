@@ -32,8 +32,11 @@
 #              Relative, because the registry then survives a change to
 #              `generated_rules_path` (the path lives in `structure`, exactly
 #              once). With the extension, because that is the form
-#              `blueprint-generate-rules` already ships, so no existing manifest
-#              needs migrating.
+#              `blueprint-generate-rules` ships today. Manifests written by
+#              blueprint 3.0.0 (format 3.2.0) DO predate it — extensionless keys
+#              and no `content_hash` (#2868). migrate-generated-rules-keys.sh
+#              detects (`--dry-run`) and re-keys those; /blueprint:sync,
+#              /blueprint:status and /blueprint:upgrade run it.
 #
 #              A consumer resolves a file as "$RULES_DIR/$key" and MUST NOT
 #              append `.md` — doing so yields `development.md.md`, which never

@@ -1,6 +1,6 @@
 ---
 created: 2025-12-17
-modified: 2026-05-09
+modified: 2026-10-11
 reviewed: 2026-05-09
 description: Upgrade blueprint structure to the latest format version. Use when migrating between format versions, enabling monorepo workspaces, or batch upgrading repos.
 args: "[--non-interactive|-y]"
@@ -108,6 +108,14 @@ If a migration step would require any prompt not listed above, **abort the upgra
 3c. **v3.3 → v3.4 migration: Automation block (autonomy levels)**:
 
    Delegate to `skills/blueprint-migration/migrations/v3.3-to-v3.4.md` (summary: [references/v3.3-to-v3.4-summary.md](references/v3.3-to-v3.4-summary.md)). In `$NONINTERACTIVE` mode take the suggested `autonomy_level`, never higher.
+
+3d. **Re-key `generated.rules` lacking `.md`** (any version, #2868) — idempotent, no prompt:
+
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/migrate-generated-rules-keys.sh" --manifest "$MANIFEST"
+   ```
+
+   Report `MIGRATED=` and `ISSUES:` in Step 10.
 
 4. **Display upgrade plan**:
    Print the upgrade plan in [references/upgrade-plan.md](references/upgrade-plan.md).
