@@ -265,16 +265,16 @@ ext	DENY	DENY	-	gh pr merge 5
 session	DENY	DENY	-	cd @WS@/ext && gh pr merge 5
 ext	DENY	DENY	-	cd . && gh pr merge 5
 session	DENY	DENY	-	cd @WS@/own; gh pr merge 5
-own	ALLOW	ALLOW	-	cd @WS@/ext; gh pr merge 5
+own	DENY	ALLOW	NEWDENY	cd @WS@/ext; gh pr merge 5
 session	DENY	DENY	-	cd @WS@/own || exit 1; gh pr merge 5
 session	DENY	DENY	-	cd @WS@/nope || cd @WS@/own && gh pr merge 5
 session	DENY	DENY	-	cd -P @WS@/own && gh pr merge 5
-own	ALLOW	ALLOW	-	cd -P @WS@/ext && gh pr merge 5
+own	DENY	ALLOW	NEWDENY	cd -P @WS@/ext && gh pr merge 5
 session	DENY	DENY	-	cd -L @WS@/own && gh pr merge 5
 session	DENY	DENY	-	cd -- @WS@/own && gh pr merge 5
 session	DENY	DENY	-	cd @WS@/own @WS@/ext && gh pr merge 5
 session	DENY	DENY	-	cd "@WS@/own" && gh pr merge 5
-own	ALLOW	ALLOW	-	cd "@WS@/ext" && gh pr merge 5
+own	DENY	ALLOW	NEWDENY	cd "@WS@/ext" && gh pr merge 5
 session	DENY	DENY	-	cd '@WS@/own' && gh pr merge 5
 session	DENY	DENY	-	cd $D && gh pr merge 5
 session	DENY	DENY	-	cd @WS@/ow? && gh pr merge 5
@@ -284,12 +284,12 @@ session	DENY	DENY	-	cd `echo @WS@/own` && gh pr merge 5
 session	DENY	DENY	-	cd $(echo @WS@/own) && gh pr merge 5
 session	DENY	DENY	-	cd ~root && gh pr merge 5
 session	DENY	DENY	-	cd @WS@/own/l/.. && gh pr merge 5
-own	ALLOW	ALLOW	-	cd @WS@/own/l/.. && gh pr merge 5
+own	DENY	ALLOW	NEWDENY	cd @WS@/own/l/.. && gh pr merge 5
 .	DENY	DENY	-	cd own && gh pr merge 5
 session	DENY	DENY	-	cd @WS@/nope && gh pr merge 5
-own	ALLOW	ALLOW	-	cd @WS@/nope && gh pr merge 5
+own	DENY	ALLOW	NEWDENY	cd @WS@/nope && gh pr merge 5
 session	DENY	DENY	-	pushd @WS@/own && gh pr merge 5
-own	ALLOW	ALLOW	-	pushd @WS@/ext && gh pr merge 5
+own	DENY	ALLOW	NEWDENY	pushd @WS@/ext && gh pr merge 5
 session	DENY	DENY	-	\cd @WS@/own && gh pr merge 5
 session	DENY	DENY	-	command cd @WS@/own && gh pr merge 5
 session	DENY	DENY	-	true && cd @WS@/own && gh pr merge 5
@@ -330,7 +330,7 @@ ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -(Q|R) acme/ext
 ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -^Q acme/ext
 ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -Q# acme/ext
 ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 -~ acme/ext
-own	ALLOW	ALLOW	-	cd @WS@/ext && gh pr merge 5 -?
+own	DENY	ALLOW	NEWDENY	cd @WS@/ext && gh pr merge 5 -?
 ext	DENY	DENY	-	cd @WS@/ext/own2 && gh pr merge 5 > .git/HEAD
 ext	DENY	DENY	-	cd @WS@/ext/own2 && gh pr merge 5 >.git/HEAD
 ext	DENY	DENY	-	cd @WS@/ext/own2 && gh pr merge 5 2>.git/HEAD
@@ -338,8 +338,8 @@ ext	DENY	DENY	-	cd @WS@/ext/own2 && gh pr merge 5 &>.git/HEAD
 ext	DENY	DENY	-	cd @WS@/ext/own2 && gh pr merge 5 >&2
 ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 & git -C @WS@/own remote set-url origin https://github.com/acme/ext.git
 ext	DENY	DENY	-	cd @WS@/own && gh pr merge 5 &
-own	ALLOW	ALLOW	-	cd @WS@/ext && gh pr merge 5 > /dev/null
-own	ALLOW	ALLOW	-	cd @WS@/ext && gh pr merge 5 & true
+own	DENY	ALLOW	NEWDENY	cd @WS@/ext && gh pr merge 5 > /dev/null
+own	DENY	ALLOW	NEWDENY	cd @WS@/ext && gh pr merge 5 & true
 CORPUS
 )
 
@@ -427,6 +427,202 @@ if git -C "$(dirname "$HOOK")" show "$BASE_REF:./external-pr-merge-guard.sh" > "
 else
     printf '  NOTE pre-fix baseline %s not in this clone — relying on the frozen old column\n' "${BASE_REF:0:9}"
 fi
+
+echo "== every merge is checked, and -R/--repo/GH_REPO are read as gh reads them (issue #2889) =="
+# Session cwd is `own` (your PR) unless the row says otherwise; `ext` is the
+# external contributor's repository. Every DENY row was ALLOWED before #2889:
+# the hook checked only the FIRST merge, misread the repo flag, or ignored a
+# directory/remote/GH_REPO change, so it looked up your own PR while gh merged
+# the external one. Tab-separated: cwd key, expected verdict, command.
+# @WS@ → the workspace.
+MERGE_CORPUS=$(cat <<'CORPUS'
+own	DENY	gh pr merge 5 -R acme/ext
+own	DENY	gh pr merge 5 && gh pr merge 5 -R acme/ext
+own	DENY	gh pr merge 5; gh api -X PUT repos/acme/ext/pulls/5/merge
+own	DENY	gh pr merge 5 && "gh" pr merge 5 -R acme/ext
+own	DENY	gh pr merge 5 && g\h pr merge 5 -R acme/ext
+own	DENY	gh pr merge 5 && gh pr "merge" 5 -R acme/ext
+own	DENY	gh pr merge 5 -Racme/ext
+own	DENY	gh pr merge 5 -R=acme/ext
+own	DENY	gh pr merge 5 "-R" acme/ext
+own	DENY	gh pr merge 5 '--repo' acme/ext
+own	DENY	gh pr merge 5 -sRacme/ext
+own	DENY	gh pr merge 5 -sR acme/ext
+own	DENY	gh pr merge 5 --squash -Racme/ext
+own	DENY	gh pr merge 5 -? acme/ext
+own	DENY	gh pr merge 5 $F
+own	DENY	gh pr merge 5 "$F" acme/ext
+own	DENY	gh pr merge 5 {-R,acme/ext}
+own	DENY	gh pr merge 5 -@(R) acme/ext
+own	DENY	GH_REPO=acme/ext gh pr merge 5
+own	DENY	export GH_REPO=acme/ext; gh pr merge 5
+own	DENY	gh pr merge 5 && GH_REPO=acme/ext gh pr merge 5
+own	DENY	env GH_REPO=acme/ext gh pr merge 5
+own	DENY	cd @WS@/ext; gh pr merge 5
+own	DENY	pushd @WS@/ext && gh pr merge 5
+own	DENY	env -C @WS@/ext gh pr merge 5
+own	DENY	GIT_DIR=@WS@/ext/.git gh pr merge 5
+own	DENY	(cd @WS@/ext && gh pr merge 5)
+own	DENY	bash -c 'cd @WS@/ext && gh pr merge 5'
+own	DENY	for d in @WS@/ext; do cd $d; gh pr merge 5; done
+own	DENY	gh pr merge 5 & git remote set-url origin https://github.com/acme/ext.git
+own	DENY	git remote set-url origin https://github.com/acme/ext.git && gh pr merge 5
+own	DENY	gh repo set-default acme/ext && gh pr merge 5
+own	DENY	gh pr checkout 7 && gh pr merge --squash
+own	DENY	gh() { command gh "$@" -R acme/ext; }; gh pr merge 5
+ext/own2	DENY	gh pr merge 5 > .git/HEAD
+own	DENY	gh -R acme/ext pr merge 5
+own	DENY	gh pr -R acme/ext merge 5
+own	DENY	gh --repo=acme/ext pr merge 5
+own	DENY	/usr/bin/gh pr merge 5 -R acme/ext
+own	DENY	$GH pr merge 5
+own	DENY	"sudo" gh pr merge 5 -R acme/ext
+own	DENY	"bash" -c 'gh pr merge 5 -R acme/ext'
+own	DENY	/bin/bash -c 'gh pr merge 5 -R acme/ext'
+own	DENY	bash -c "gh pr merge 5 \"-R\" acme/ext"
+own	DENY	gh pr merge 5 -R acme/own && gh pr merge 6 -R acme/ext
+own	DENY	GH_HOST=ghe.example.invalid gh pr merge 5 -R acme/own
+own	DENY	curl -X PUT "https://api.github.com/repos/acme/ext/pulls/5/merge"
+own	DENY	gh api -X PUT "repos/$R/pulls/5/merge"
+own	DENY	gh api graphql -f query='mutation{mergePullRequest(input:{pullRequestId:"PR_x"}){clientMutationId}}'
+own	DENY	gh api graphql -f query='mutation{enablePullRequestAutoMerge(input:{pullRequestId:"PR_x"}){clientMutationId}}'
+own	DENY	gh api graphql -F query=@m.graphql
+own	DENY	echo "$(gh pr merge 5 -R acme/ext)"
+own	DENY	echo "`gh pr merge 5 -R acme/ext`"
+own	DENY	cat <<EOF@NL@merge it: `gh pr merge 5 -R acme/ext`@NL@EOF
+own	DENY	cat <<EOF@NL@$(gh pr merge 5 -R acme/ext)@NL@EOF
+own	DENY	echo 'gh pr merge 5 -R acme/ext' | bash
+own	DENY	xargs gh pr merge 5 <<< "-R acme/ext"
+own	DENY	watch -n1 'gh pr merge 5 -R acme/ext'
+own	DENY	env -S 'gh pr merge 5 -R acme/ext'
+own	DENY	eval "gh pr merge 5 -R" "acme/ext"
+own	DENY	bash -c "gh pr merge 5 -R "acme/ext
+own	DENY	ssh build-host 'gh pr merge 5'
+own	DENY	V=GH_REPO; export $V=acme/ext; gh pr merge 5
+own	DENY	env "$V" gh pr merge 5
+own	DENY	xargs gh pr merge -R acme/own <<< 5
+own	DENY	GH=gh; $GH api -X PUT repos/acme/ext/pulls/5/merge
+own	DENY	$GH api -X PUT repos/acme/own/pulls/5/merge
+own	DENY	"$GH" api -X PUT "repos/acme/ext/pulls/5/merge"
+own	DENY	$GH api graphql -f query='mutation{mergePullRequest(input:{pullRequestId:"PR_x"}){clientMutationId}}'
+own	DENY	$GH api graphql -f query='query{viewer{login}}'
+own	DENY	$CURL -X PUT https://api.github.com/repos/acme/ext/pulls/5/merge
+own	DENY	sudo $GH api -X PUT repos/acme/ext/pulls/5/merge
+own	DENY	sudo -u "$U" gh pr merge 5 -R acme/ext
+own	ALLOW	sudo -u "$U" gh pr merge 5 -R acme/own
+own	DENY	sudo -u "$U" gh api -X PUT repos/acme/ext/pulls/5/merge
+own	DENY	gh pr merge 5 <<< x@NL@gh pr merge 6 -R acme/ext
+own	DENY	gh pr merge 5 <<<x@NL@gh pr merge 6 -R acme/ext
+own	DENY	cat <<< "x"@NL@gh pr merge 6 -R acme/ext
+own	DENY	cat <<< x@NL@gh api -X PUT repos/acme/ext/pulls/6/merge
+own	ALLOW	gh pr merge 5 <<< x@NL@gh pr merge 6
+own	ALLOW	cat <<< x@NL@gh pr merge 6 -R acme/own
+own	DENY	gh api graphql < q.graphql
+own	DENY	gh api graphql 0<q.graphql
+own	DENY	cat q.graphql | gh api graphql
+own	DENY	gh api graphql <<< "$Q"
+own	DENY	gh api graphql <<'EOF'@NL@{"query":"mutation{mergePullRequest(input:{pullRequestId:\"PR_x\"}){clientMutationId}}"}@NL@EOF
+own	ALLOW	gh api graphql -f query='query{viewer{login}}' < /dev/null
+own	ALLOW	cat <<'EOF'@NL@merge it: `gh pr merge 5 -R acme/ext`@NL@EOF
+own	ALLOW	gh pr merge 5 --squash --body "$(cat <<'EOF'@NL@Merged; see `gh pr merge 6 -R acme/ext` later.@NL@EOF@NL@)"
+own	ALLOW	echo "$(date)" && gh pr merge 5
+own	ALLOW	gh pr merge 5 # -R acme/ext
+own	ALLOW	gh pr merge 5
+own	ALLOW	gh pr merge 5 --squash --delete-branch
+own	ALLOW	gh pr merge 5 -R acme/own
+own	ALLOW	gh pr merge 5 -Racme/own
+own	ALLOW	gh pr merge 5 --repo=acme/own -s
+own	ALLOW	gh pr merge -sRacme/own 5
+own	ALLOW	gh pr merge -s 5 -d
+own	ALLOW	gh -R acme/own pr merge 5
+own	ALLOW	gh pr merge 5 && gh pr merge 6
+own	ALLOW	gh pr merge 5 -R acme/own && gh pr merge 6 -R acme/own
+own	ALLOW	gh pr merge 5 --squash --subject "fix: cd into the remote config dir"
+own	ALLOW	gh pr merge 5 --squash --body "$(printf 'see #12 and $5')"
+own	ALLOW	gh pr merge 5 --squash && git checkout main && git pull
+own	ALLOW	gh pr merge 5 > /dev/null 2>&1
+own	ALLOW	gh pr merge 5 -R acme/own &
+own	ALLOW	bash -c 'gh pr merge 5'
+own	ALLOW	cd @WS@/ext && gh pr merge 5 -R acme/own
+session	ALLOW	cd @WS@/own && gh pr merge 5 --squash
+own	ALLOW	gh pr view 5 --json state,mergedAt
+own	ALLOW	git merge --no-ff main
+own	ALLOW	gh api graphql -f query='query($o: String!){ repository(owner: $o, name: "own") { id } }' -f o=acme
+CORPUS
+)
+while IFS=$'\t' read -r cwdk want cmd; do
+    [ -n "$cwdk" ] || continue
+    cmd=$(expand_ws "$cmd")
+    ck "#2889 [$cwdk] $cmd" "$want" "$(run_hook_in "$HOOK" "$WS/$cwdk" "$cmd")"
+done <<< "$MERGE_CORPUS"
+
+# The verdict alone does not prove the repo flag was READ — a deny can come
+# from a fail-closed path. These pin that gh pr view was asked about the
+# repository gh would actually merge in.
+ck_repo_lookup() { # ck_repo_lookup <command> <expected "pr view" args prefix>
+    local log="$TMPDIR/repo-lookup.log"
+    : > "$log"
+    out=$(bash_json_in "$WS/own" "$1" | STUB_LOG="$log" HOME="$WS" PATH="$TMPDIR/bin:$PATH" bash "$HOOK" 2>/dev/null || true)
+    if grep -qF -- "pr view $2" "$log"; then
+        printf '  ok   %s — looked up %s\n' "$1" "$2"; PASS=$((PASS + 1))
+    else
+        printf '  FAIL %s — never looked up %s\n' "$1" "$2"; FAIL=$((FAIL + 1))
+    fi
+}
+ck_repo_lookup 'gh pr merge 5 && gh pr merge 5 -R acme/ext' '5 --repo acme/ext'
+ck_repo_lookup 'gh pr merge 5 -Racme/ext'                   '5 --repo acme/ext'
+ck_repo_lookup 'gh pr merge 5 -R=acme/ext'                  '5 --repo acme/ext'
+ck_repo_lookup 'gh pr merge 5 "-R" acme/ext'                '5 --repo acme/ext'
+ck_repo_lookup "gh pr merge 5 '--repo' acme/ext"            '5 --repo acme/ext'
+ck_repo_lookup 'gh pr merge 5 -sRacme/ext'                  '5 --repo acme/ext'
+ck_repo_lookup 'gh -R acme/ext pr merge 5'                  '5 --repo acme/ext'
+ck_repo_lookup 'gh pr merge 5; gh api -X PUT repos/acme/ext/pulls/5/merge' '5 --repo acme/ext'
+
+echo "== MCP tool_input cannot forge a record (PR #3054 review) =="
+# owner/repo/pullNumber are interpolated into a \037-separated, newline-ended
+# record. A \037 in `repo` used to cut the record at `acme/own` (your PR), so
+# the hook checked — and allowed — a repository the tool was never asked about.
+mcp_json() { # mcp_json <owner> <repo> <pullNumber> — values are JSON string bodies
+    printf '{"tool_name":"mcp__github__merge_pull_request","cwd":"%s","tool_input":{"owner":"%s","repo":"%s","pullNumber":"%s"}}' \
+        "$WS/own" "$1" "$2" "$3"
+}
+run_mcp() {
+    local out
+    out=$(printf '%s' "$1" | HOME="$WS" PATH="$TMPDIR/bin:$PATH" bash "$HOOK" 2>/dev/null || true)
+    if grep -q '"permissionDecision":"deny"' <<<"$out"; then echo DENY; else echo ALLOW; fi
+}
+ck "MCP control: own repo is allowed"      ALLOW "$(run_mcp "$(mcp_json acme own 5)")"
+ck "MCP control: external repo is denied"  DENY  "$(run_mcp "$(mcp_json acme ext 5)")"
+ck "MCP repo carrying \\037"                DENY  "$(run_mcp "$(mcp_json acme 'own\u001f' 5)")"
+ck "MCP owner carrying \\036"               DENY  "$(run_mcp "$(mcp_json 'acme\u001e' own 5)")"
+ck "MCP repo carrying a newline"           DENY  "$(run_mcp "$(mcp_json acme 'own\nmerge' 5)")"
+ck "MCP pullNumber carrying \\037"          DENY  "$(run_mcp "$(mcp_json acme own '5\u001facme/own')")"
+
+echo "== the hook fails CLOSED when it crashes after a merge is detected (PR #3054 review) =="
+# macOS /bin/bash is 3.2: no mapfile, so the hook died with exit 127 before
+# checking anything — and a hook error is non-blocking, so the merge ran.
+# BASH_ENV runs in the hook's own shell before it starts, so it can take a
+# bash-4+ builtin away (portability) or plant a crash after detection (the
+# EXIT-trap backstop: a crash past the scanner must deny, never allow).
+run_with_env() { # run_with_env <bash-env file> <command>
+    local out
+    out=$(bash_json_in "$WS/own" "$2" | BASH_ENV="$1" HOME="$WS" PATH="$TMPDIR/bin:$PATH" bash "$HOOK" 2>/dev/null || true)
+    if grep -q '"permissionDecision":"deny"' <<<"$out"; then echo DENY; else echo ALLOW; fi
+}
+printf 'enable -n mapfile readarray 2>/dev/null || true\n' > "$TMPDIR/no-mapfile.env"
+ck "no mapfile (bash 3.2): external merge still denied" DENY \
+   "$(run_with_env "$TMPDIR/no-mapfile.env" 'gh pr merge 5 -R acme/ext')"
+ck "no mapfile (bash 3.2): own merge still allowed"     ALLOW \
+   "$(run_with_env "$TMPDIR/no-mapfile.env" 'gh pr merge 5')"
+ck "no mapfile (bash 3.2): no-selector own merge allowed" ALLOW \
+   "$(run_with_env "$TMPDIR/no-mapfile.env" 'gh pr merge --squash')"
+# A readonly ORIG_DIR makes the hook's own assignment to it fatal under set -e,
+# AFTER the scanner has found a merge. Any post-detection crash must deny.
+printf 'readonly ORIG_DIR=/nonexistent\n' > "$TMPDIR/crash.env"
+ck "crash after detection fails closed" DENY \
+   "$(run_with_env "$TMPDIR/crash.env" 'gh pr merge 5')"
+ck "crash env does not affect a non-merge" ALLOW \
+   "$(run_with_env "$TMPDIR/crash.env" 'git status')"
 unset STUB_REPO_AUTHORS STUB_CEILING
 
 echo "== a flag VALUE is not mistaken for the PR selector =="
@@ -598,7 +794,11 @@ ck_lookup "branch selector"         'gh pr merge feat/my-branch --squash' 'feat/
 ck_lookup "branch, leading _"       'gh pr merge _wip --squash'           '_wip'
 ck_lookup "branch with a comma"     'gh pr merge feat/a,b --squash'       'feat/a,b'
 ck_lookup "branch with a percent"   'gh pr merge feat/100%-done --squash' 'feat/100%-done'
-ck_lookup "URL selector"            'gh pr merge https://github.com/laurigates/claude-plugins/pull/2231 --squash' \
+ck_lookup "-s is --squash, a boolean (#2889)" 'gh pr merge -s 2231'          '2231'
+ck_lookup "-m is --merge, a boolean (#2889)"  'gh pr merge -m 2231'          '2231'
+ck_lookup "-A is --author-email (#2889)"      'gh pr merge -A me@x.y 2231'   '2231'
+ck_lookup "-t is --subject (#2889)"           'gh pr merge -t "feat: x" 2231' '2231'
+ck_lookup "URL selector"         'gh pr merge https://github.com/laurigates/claude-plugins/pull/2231 --squash' \
                                     'https://github.com/laurigates/claude-plugins/pull/2231'
 
 echo "== the api merge route is checked however it is called =="
