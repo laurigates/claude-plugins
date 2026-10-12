@@ -2,9 +2,9 @@
 name: dns-tools
 description: DNS resolution and propagation debugging. Use when looking up A/AAAA/MX/TXT records, verifying DNS changes across resolvers, or querying via DoT/DoH.
 user-invocable: false
-allowed-tools: Bash(dig *), Bash(nslookup *), Bash(host *), Bash(whois *), Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(dog *), Bash(dig *), Bash(drill *), Read, Grep, Glob, TodoWrite
 created: 2026-01-01
-modified: 2026-04-25
+modified: 2026-10-12
 reviewed: 2026-04-25
 ---
 

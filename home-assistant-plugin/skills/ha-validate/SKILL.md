@@ -4,7 +4,7 @@ args: "[path]"
 allowed-tools: Bash(python3 *), Bash(docker exec *), Bash(ha *), Read, Grep, Glob
 argument-hint: "Optional path to config directory (defaults to current directory)"
 created: 2025-02-01
-modified: 2026-06-18
+modified: 2026-10-12
 reviewed: 2026-04-25
 name: ha-validate
 ---
@@ -47,6 +47,11 @@ except yaml.YAMLError as e:
     sys.exit(1)
 " \; 2>&1 | head -50
 ```
+
+`yaml.safe_load` does not know Home Assistant's custom tags, so any file
+using `!secret` or `!include` fails here with `could not determine a
+constructor`. That is expected, not a layout fault in the file — see
+[Common Fixes](#common-fixes).
 
 ### 2. Check for Common Issues
 
@@ -123,7 +128,7 @@ Report validation results:
 | Issue | Fix |
 |-------|-----|
 | `found undefined alias` | Add missing entry to secrets.yaml |
-| `could not determine a constructor` | Check YAML indentation |
+| `could not determine a constructor for the tag '!secret'` (or `!include`, `!include_dir_*`, `!input`, `!env_var`) | Not a syntax error: these are Home Assistant custom tags that a plain YAML loader (`yaml.safe_load` in Step 1) does not know. Treat the file as unverified by Step 1 and validate it with HA's own config check (Step 3 `hass --script check_config` or Step 4 `ha core check`) |
 | `duplicate key` | Remove or rename duplicate key |
 | `expected <block end>` | Fix indentation alignment |
 | `mapping values are not allowed` | Add space after colon |
