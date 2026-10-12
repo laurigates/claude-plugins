@@ -200,6 +200,21 @@ else
   printf "  FAIL: %s\n%s\n" "the #2811 shape reports GNU-only in-place sed" "$d11b_out"; FAIL=$((FAIL + 1))
 fi
 
+# 11c. The command view of a portable command-position sed stops where the
+#      command does: at an unquoted trailing `# comment` and at a command
+#      separator. Text past that point is a comment or another command's
+#      data, so a single-platform spelling quoted there is not this sed's
+#      (PR #3050 review).
+d11c="$WORK/sed-test-trailing"; mkdir -p "$d11c"
+cat > "$d11c/test-trailing.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+sed -i.bak 's/a/b/' f  # never write sed -i 's/x/y/' without a suffix
+sed -i.bak 's/a/b/' f; echo "never sed -i '' f"
+sed -i.bak 's/a/b/' f && rm f.bak  # sed -i '' is BSD-only
+EOF
+assert_lint "a trailing comment or next command after a portable sed stays clean" "0 0 0" "$d11c"
+
 # 12-17. Check 6: printf/echo of a variable piped into grep -q under pipefail
 #    (#2959). grep -q exits on its first match, the writer takes SIGPIPE, and
 #    pipefail reports a hit as a miss. Scope is any *.sh directly inside a

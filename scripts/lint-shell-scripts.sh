@@ -49,18 +49,32 @@ info() {
 }
 
 # Check 5 helper for test-*.sh (#2819). Reads shell source on stdin and prints,
-# for every `sed` word at command position, the rest of its line from `sed` on,
-# so the Check 5 regexes see commands and never fixture data. A `sed` is at
-# command position when it is outside single and double quotes (a "$(…)" or
-# `…` substitution inside double quotes counts as outside: it runs), outside a
-# heredoc body, and before an unquoted trailing `#` comment.
+# for every `sed` word at command position, its command segment: the text from
+# `sed` up to the first unquoted `;`, `|`, `&`, closing `)`/backtick of its
+# substitution, trailing `#` comment, or end of line. The Check 5 regexes then
+# see commands and never fixture data, a comment, or a neighbouring command's
+# arguments (PR #3050 review). A `sed` is at command position when it is
+# outside single and double quotes (a "$(…)" or `…` substitution inside double
+# quotes counts as outside: it runs), outside a heredoc body, and before an
+# unquoted trailing `#` comment.
 #
 # Line scanner, not a shell parser. Known blind spots: quote state resets at
 # each newline, so a `sed` on the continuation line of a multi-line quoted
-# string reads as a command (a false error, never a silent pass); and a `sed`
-# inside a string handed to eval/bash -c is data here although it runs.
+# string reads as a command (a false error, never a silent pass); a `sed`
+# inside a string handed to eval/bash -c is data here although it runs; and a
+# case pattern's `)` inside "$(…)" (`out="$(case $x in a) sed -i '' f;; esac)"`)
+# closes the substitution early, so a `sed` in that branch reads as quoted data
+# and passes silently.
 sed_command_view() {
     awk '
+        # Print each pending `sed` at depth >= d, from its start up to (not
+        # including) position stop: the end of its command-position segment.
+        function close_from(d, stop,    k) {
+            for (k = 1; k <= np; k++)
+                if (ps[k] > 0 && pd[k] >= d) {
+                    print substr(line, ps[k], stop - ps[k]); ps[k] = 0
+                }
+        }
         BEGIN {
             sq = sprintf("%c", 39); hd = ""
             # \042 = double quote, \047 = single quote (octal escapes keep
@@ -78,7 +92,7 @@ sed_command_view() {
             line = $0; n = length(line)
             # Context stack: N = unquoted, D = double quotes, S = single
             # quotes, B = backticks. Unquoted "$(" pushes N, ")" pops it.
-            depth = 1; st[1] = "N"; paren[1] = 0
+            depth = 1; st[1] = "N"; paren[1] = 0; np = 0
             for (i = 1; i <= n; i++) {
                 c = substr(line, i, 1); top = st[depth]
                 if (top == "S") { if (c == sq) depth--; continue }
@@ -90,18 +104,19 @@ sed_command_view() {
                     continue
                 }
                 # N or B: shell code.
-                if (top == "B" && c == "`") { depth--; continue }
+                if (top == "B" && c == "`") { close_from(depth, i); depth--; continue }
                 if (c == sq) { st[++depth] = "S"; continue }
                 if (c == "\"") { st[++depth] = "D"; continue }
                 if (c == "`") { st[++depth] = "B"; continue }
                 if (c == "(") { paren[depth]++; continue }
                 if (c == ")") {
                     if (paren[depth] > 0) paren[depth]--
-                    if (paren[depth] == 0 && depth > 1) depth--
+                    if (paren[depth] == 0 && depth > 1) { close_from(depth, i); depth-- }
                     continue
                 }
+                if (c == ";" || c == "|" || c == "&") { close_from(depth, i); continue }
                 prev = (i == 1) ? " " : substr(line, i - 1, 1)
-                if (c == "#" && prev ~ /[[:space:];&|(]/) break
+                if (c == "#" && prev ~ /[[:space:];&|(]/) { close_from(1, i); break }
                 if (c == "<" && substr(line, i, 2) == "<<" && prev != "<" \
                     && match(substr(line, i), hdre)) {
                     op = substr(line, i, RLENGTH)
@@ -112,9 +127,10 @@ sed_command_view() {
                     continue
                 }
                 if (substr(line, i, 4) ~ /^sed[[:space:]]$/ && prev ~ /[[:space:];&|(`{!]/) {
-                    print substr(line, i)
+                    ps[++np] = i; pd[np] = depth
                 }
             }
+            close_from(1, n + 1)
         }
     '
 }
