@@ -151,15 +151,69 @@ sed -i "s/a/b/" f 2>/dev/null || sed -i '' "s/a/b/" f  # portable-sed-ok
 EOF
 assert_lint "portable-sed-ok exempts a deliberate fallback pair" "0 0 0" "$d10"
 
-# 11. test-*.sh carries both spellings as fixture STRINGS (data, not commands),
-#     so the whole file is skipped for this check.
+# 11. test-*.sh carries both spellings as fixture STRINGS (data, not commands).
+#     Only a sed inside a quoted string or a heredoc body is data; one at command
+#     position is a command and is checked (#2819). The old wholesale skip let
+#     `sed -i "2i …" "$file"` in experiments/.../test-ctx-probe.sh pass clean
+#     and die on macOS (#2811).
 d11="$WORK/sed-fixture"; mkdir -p "$d11"
 cat > "$d11/test-thing.sh" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-sed -i '' "s/a/b/" f.txt
+assert_exit \
+    "sed -i '' on a scratch file is allowed" 0 \
+    "sed -i '' 's/a/b/' /tmp/x/gen.conf"
+assert_exit "GUARD: sed -i on a repo file blocks" 2 "sed -i 's/a/b/' src/main.py"
+assert_exit 'single-quoted' 2 'cd /repo && sed -i "s/a/b/" f.py'
+doc_cmd=$(cat <<'OUTER'
+gh issue create --body "$(cat <<'INNER'
+Repro: cd /tmp && sed -i '' 's/a/b/' f.py
+INNER
+)" && sed -i 's/a/b/' src/main.py
+OUTER
+)
+echo done  # sed -i 's/a/b/' f.py in a trailing comment
 EOF
-assert_lint "test-*.sh fixtures are skipped by the sed check" "0 0 0" "$d11"
+assert_lint "test-*.sh fixture strings and heredoc bodies stay clean" "0 0 0" "$d11"
+
+# 11b. The same test-*.sh exemption must NOT cover a sed at command position:
+#      the #2811 shape (GNU-only) and the BSD-only shape are both flagged, also
+#      inside "$(...)" and after a fixture string on the same line.
+d11b="$WORK/sed-test-command"; mkdir -p "$d11b"
+cat > "$d11b/test-probe.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+file=$(mktemp)
+sed -i "2i injected" "$file"
+EOF
+cat > "$d11b/test-other.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+echo "sed -i 's/a/b/' fixture" && sed -i '' 's/a/b/' "$file"
+out="$(sed -i 's/x/y/' "$file")"
+EOF
+assert_lint "test-*.sh sed -i at command position is flagged" "3 0 1" "$d11b"
+d11b_out=$(bash "$LINTER" "$d11b" 2>&1 || true)
+if grep -qF 'test-probe.sh: GNU-only in-place sed' <<<"$d11b_out"; then
+  printf "  PASS: %s\n" "the #2811 shape reports GNU-only in-place sed"; PASS=$((PASS + 1))
+else
+  printf "  FAIL: %s\n%s\n" "the #2811 shape reports GNU-only in-place sed" "$d11b_out"; FAIL=$((FAIL + 1))
+fi
+
+# 11c. The command view of a portable command-position sed stops where the
+#      command does: at an unquoted trailing `# comment` and at a command
+#      separator. Text past that point is a comment or another command's
+#      data, so a single-platform spelling quoted there is not this sed's
+#      (PR #3050 review).
+d11c="$WORK/sed-test-trailing"; mkdir -p "$d11c"
+cat > "$d11c/test-trailing.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+sed -i.bak 's/a/b/' f  # never write sed -i 's/x/y/' without a suffix
+sed -i.bak 's/a/b/' f; echo "never sed -i '' f"
+sed -i.bak 's/a/b/' f && rm f.bak  # sed -i '' is BSD-only
+EOF
+assert_lint "a trailing comment or next command after a portable sed stays clean" "0 0 0" "$d11c"
 
 # 12-17. Check 6: printf/echo of a variable piped into grep -q under pipefail
 #    (#2959). grep -q exits on its first match, the writer takes SIGPIPE, and

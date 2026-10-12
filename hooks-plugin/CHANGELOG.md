@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.13.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.13.0...hooks-plugin-v2.13.1) (2026-10-12)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** check every gh pr merge and resolve -R/--repo/GH_REPO in external-pr-merge-guard ([#3054](https://github.com/laurigates/claude-plugins/issues/3054)) ([039e632](https://github.com/laurigates/claude-plugins/commit/039e632f1ecb1bca3a31dd40d383a156db43258c))
+
 ## [2.13.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.12.11...hooks-plugin-v2.13.0) (2026-10-10)
 
 
