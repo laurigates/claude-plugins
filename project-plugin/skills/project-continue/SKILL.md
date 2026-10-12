@@ -2,9 +2,9 @@
 description: "Next task from the feature tracker and PRDs, then implement it. Use when resuming coding in a blueprint project, picking the next tracker task, or resuming a TDD cycle after a break."
 args: "[--task <id>] [--skip-status]"
 argument-hint: "--task to resume specific task, --skip-status to skip state analysis"
-allowed-tools: Read, Bash(git status *), Bash(git log *), Bash(git branch *), Grep, Glob, Edit, Write
+allowed-tools: Read, Bash(git status *), Bash(git log *), Bash(git branch *), Grep, Glob, Edit, Write, Skill
 created: 2025-12-16
-modified: 2026-08-15
+modified: 2026-10-12
 reviewed: 2026-06-05
 name: project-continue
 ---
@@ -19,7 +19,7 @@ name: project-continue
 | Reading tracker state and then implementing the next task in this repo | Use `session-plugin:session-spinup` instead for a read-only briefing of open tasks, PRs, and journal todos that edits nothing |
 | Picking the next task off the feature tracker after a break | Use project-test-loop instead when the next step is iterating on failing tests |
 | Asking "what's next" in a project with established blueprint state | Use project-init instead when no project structure exists yet |
-| Resuming a TDD session and beginning implementation yourself | Use `/blueprint:execute` instead when you want blueprint to pick and run the next logical blueprint action (derive/sync/work-order) rather than continue coding |
+| Resuming coding yourself — reading state, then implementing the next task in this session | Use `/blueprint:execute` (pick and run the next blueprint action: derive/sync/work-order) or `/blueprint:status` (report blueprint state only) when blueprint, not you, should choose or report the next blueprint action |
 
 Continue project development by analyzing current state and resuming work.
 
@@ -39,16 +39,28 @@ Continue project development by analyzing current state and resuming work.
    git branch --show-current
    ```
 
-2. **Read project context**:
-   - **PRDs**: Read all files in `docs/prds/`
+2. **Read project context** — branch on whether the repo uses blueprint:
+
+   **Blueprint repo** (`docs/blueprint/` exists):
+   - Invoke `/blueprint:status --report-only` via the Skill tool and read
+     its report for phase, feature progress, and pending work-orders.
+   - Do **not** open or parse blueprint's own state files yourself. Their
+     format is owned by blueprint-plugin and migrates under
+     `/blueprint:upgrade`; `/blueprint:status` always reads the current
+     format, while a hand-parse silently reads a stale one (issue #2184).
+   - For ready-to-start features in detail, also invoke
+     `/blueprint:feature-tracker-status`.
+
+   **No blueprint** (no `docs/blueprint/`): skip the blueprint calls
+   entirely and derive the next task from what the repo does have:
+   - PRDs in `docs/prds/`, if present
+   - Issues or TODOs the user points at, and `CLAUDE.md` notes
+   - Plain git state from Step 1 (uncommitted work, recent commits, branch)
+
+   **Either way**:
+   - **PRDs**: Read all files in `docs/prds/` when that directory exists
      * Understand project goals and requirements
      * Identify features and phases
-   - **Feature Tracker**: Read `docs/blueprint/feature-tracker.json` tasks section
-     * Current phase and progress
-     * Completed, in-progress, and pending tasks
-   - **Work Orders**: Check `docs/blueprint/work-orders/`
-     * Recent work-orders (see what's been done)
-     * Pending work-orders (see what's planned)
 
 3. **Analyze state and determine next task**:
 
@@ -58,11 +70,13 @@ Continue project development by analyzing current state and resuming work.
    - Ask user if they want to continue current work or start fresh
 
    **If on clean state**:
-   - Compare feature tracker tasks against PRD requirements
+   - Compare the reported tracker progress (blueprint repos) against PRD requirements
    - Identify next logical task:
-     * Next pending task in feature-tracker.json
+     * Next pending feature reported by `/blueprint:status`
      * Next requirement in PRD
-     * Next work-order to execute
+     * Next pending work-order reported by `/blueprint:status`
+     * Without blueprint: next PRD requirement, else the work-in-progress
+       implied by git state
    - Consider dependencies (start with unblocked tasks first)
 
 4. **Report status before starting**:
@@ -102,16 +116,17 @@ Continue project development by analyzing current state and resuming work.
      * Commit after each RED → GREEN → REFACTOR cycle
      * Reference PRD or issue in commit message
 
-6. **Update feature tracker as you go**:
-   - Mark tasks in-progress
-   - Mark tasks completed
-   - Update next steps
+6. **Update feature tracker as you go** (blueprint repos only):
+   - Invoke `/blueprint:feature-tracker-sync` via the Skill tool after
+     completing a task, rather than hand-editing blueprint state files
+   - Without blueprint, record progress in commit messages and any task
+     tracker the project already uses
 
 **Important**:
 - **Always start with tests** (TDD requirement)
 - **Apply project skills** (architecture, testing, implementation, quality)
 - **Commit incrementally** (after each successful cycle)
-- **Update feature tracker** (keep project state current)
+- **Update feature tracker** via `/blueprint:feature-tracker-sync` in blueprint repos (keep project state current)
 
 **Handling Common Scenarios**:
 
@@ -140,7 +155,7 @@ For large codebases with multiple work fronts, spawn teammates for parallel prog
 
 | Teammate | Focus | Value |
 |----------|-------|-------|
-| Research teammate | Investigate codebase state, PRDs, work-orders | Parallel context gathering |
+| Research teammate | Investigate codebase state, PRDs, the `/blueprint:status` report | Parallel context gathering |
 | Implementation teammate | Begin work on next task from feature tracker | Start implementation immediately |
 
 The research teammate gathers project state while the implementation teammate begins the most obvious next task. This is optional — single-session continuation works for most projects.
