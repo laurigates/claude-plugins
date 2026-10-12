@@ -1,6 +1,6 @@
 ---
 created: 2025-12-17
-modified: 2026-05-09
+modified: 2026-10-12
 reviewed: 2026-05-09
 description: Upgrade blueprint structure to the latest format version. Use when migrating between format versions, enabling monorepo workspaces, or batch upgrading repos.
 args: "[--non-interactive|-y]"
@@ -28,7 +28,7 @@ This command delegates version-specific migration logic to the `blueprint-migrat
 
 Parse `$ARGUMENTS` for flags before running any step:
 
-- `--non-interactive`, `--yes`, `-y`: Skip every `AskUserQuestion` prompt and apply the defaults in the table below. Intended for batch runs across many repos (e.g. looping `/blueprint:upgrade -y` over FVH repos that are already on `main`).
+- `--non-interactive`, `--yes`, `-y`: Skip every `AskUserQuestion` prompt and apply the defaults in the table below. Intended for batch runs across many repos.
 
 Set an internal `$NONINTERACTIVE` flag to `true` when any of those tokens appear in `$ARGUMENTS`; otherwise `false`. Reference this flag at every `AskUserQuestion` call site in the steps below.
 
@@ -73,7 +73,7 @@ If a migration step would require any prompt not listed above, **abort the upgra
    target="3.4.0"
    ```
 
-   **Important**: Store the resolved `$MANIFEST` path. Use it in every `jq` invocation throughout this skill and in all delegated migration steps. This avoids silent failures when the filename differs from what a command hard-codes.
+   **Important**: Use the resolved `$MANIFEST` in every `jq` call here and in delegated migration steps — a hard-coded filename fails silently.
 
    **Version compatibility matrix**:
    | From Version | To Version | Migration Document |
@@ -109,6 +109,14 @@ If a migration step would require any prompt not listed above, **abort the upgra
 
    Delegate to `skills/blueprint-migration/migrations/v3.3-to-v3.4.md` (summary: [references/v3.3-to-v3.4-summary.md](references/v3.3-to-v3.4-summary.md)). In `$NONINTERACTIVE` mode take the suggested `autonomy_level`, never higher.
 
+3d. **Re-key `generated.rules` lacking `.md`** (any version, #2868) — dry-run only; nothing is written before Step 5:
+
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/migrate-generated-rules-keys.sh" --manifest "$MANIFEST" --dry-run
+   ```
+
+   List its `ISSUES:` in the Step 4 plan; Step 6 applies it.
+
 4. **Display upgrade plan**:
    Print the upgrade plan in [references/upgrade-plan.md](references/upgrade-plan.md).
 
@@ -134,6 +142,7 @@ If a migration step would require any prompt not listed above, **abort the upgra
    - For v3.1 → v3.2: Execute inline step 3a above
    - For v3.2 → v3.3: Load `migrations/v3.2-to-v3.3.md` (see step 3b summary)
    - For v3.3 → v3.4: Load `migrations/v3.3-to-v3.4.md` (see step 3c summary)
+   - If step 3d reported findings: re-run its command without `--dry-run`; report `MIGRATED=` and `ISSUES:` in Step 10
    - Execute each step with user confirmation for destructive operations
 
 7. **v1.x → v2.0 migration overview** (from migration document):
