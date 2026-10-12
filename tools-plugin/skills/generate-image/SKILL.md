@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-10-10
+modified: 2026-10-12
 reviewed: 2026-04-25
 description: "Image generation via Gemini 3 Pro Image: aspect ratio, resolution, reference images. Use when creating artwork, product photos, or mockups with AI."
 allowed-tools: Bash, Read, WebFetch
 model: haiku
-args: <prompt> [--aspect <ratio>] [--resolution <size>] [--reference <path>]
+args: <prompt> [--aspect <ratio>] [--resolution <size>] [--reference <path>] [--output <path>]
 disable-model-invocation: true
 name: generate-image
 effort: low
@@ -26,9 +26,12 @@ Generate images using Google's Nano Banana Pro (Gemini 3 Pro Image) model.
 | The output is a photographic or illustrative image | The output is a flowchart, sequence, or architecture diagram |
 | Quality settings (1K/2K/4K) and aspect ratio matter | Diagram-as-code rendering would be more maintainable |
 
-## Arguments
+## Parameters
 
-- **{{arg:1}}** (required): Image description
+Parse these from `$ARGUMENTS`. The prompt is the quoted string (or, if
+unquoted, every token before the first `--` flag):
+
+- **prompt** (required): Image description. If `$ARGUMENTS` is empty, ask the user for one and stop.
 - **--aspect**: Aspect ratio (`1:1`, `2:3`, `3:2`, `3:4`, `4:3`, `4:5`, `5:4`, `9:16`, `16:9`, `21:9`) - default: `16:9`
 - **--resolution**: Image resolution (`1K`, `2K`, `4K`) - default: `2K`
 - **--reference**: Path to reference image (repeatable, max 5)
@@ -55,25 +58,22 @@ If not set, get one from: https://aistudio.google.com/apikey
 
 ## Task Workflow
 
-1. **Parse arguments**:
-   - Extract prompt from {{arg:1}}
-   - Identify aspect ratio, resolution, and reference images
+1. **Parse arguments** from `$ARGUMENTS` (see [Parameters](#parameters)):
+   - Extract the prompt
+   - Read `--aspect` (default `16:9`), `--resolution` (default `2K`),
+     each `--reference <path>` (at most 5), and `--output <path>` if given
 
-2. **Build command**:
+2. **Build and execute the command**, substituting the parsed values for the
+   `<...>` slots. Add one `--reference <path>` per reference image and
+   `--output <path>` only when given:
    ```bash
-   uv run python .claude/scripts/nano_banana_pro.py \
-     "{{arg:1}}" \
-     --aspect {{aspect|default:"16:9"}} \
-     --resolution {{resolution|default:"2K"}} \
-     {{reference_flags}}
+   uv run python .claude/scripts/nano_banana_pro.py "<prompt>" \
+     --aspect <ratio> \
+     --resolution <size> \
+     --reference <path>
    ```
 
-3. **Execute generation**:
-   ```bash
-   uv run python .claude/scripts/nano_banana_pro.py "PROMPT" --aspect RATIO --resolution SIZE
-   ```
-
-4. **Report results**:
+3. **Report results**:
    - Show path to generated image
    - Note any reference images used
    - Offer next steps (regenerate, different aspect, etc.)

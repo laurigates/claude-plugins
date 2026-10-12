@@ -1902,6 +1902,105 @@ check_skill_body() {
         has_errors=true
       fi
     fi
+
+    # Regression (issue #3018): nine pre-existing defects found by the Haiku 5.5
+    # re-evaluation (docs/audits/haiku-5.5-reevaluation-2026-10-10.md
+    # § Incidental defects). One semantic assertion per skill; each message
+    # names the fix so a follow-up agent can self-repair.
+    local hr_allowed hr_tok hr_ungranted
+    hr_allowed=$(grep -m1 '^allowed-tools:' "$skill_file" || true)
+    case "${plugin}/${skill_name}" in
+      git-plugin/git-cli-agentic)
+        # Bulk staging sweeps up a coworker's uncommitted files
+        # (.claude/rules/agent-coworker-detection.md): recommend explicit paths.
+        if grep -Eq '^[[:space:]]*git add (-A|--all|\.)([[:space:]]|$)' <<<"$skill_corpus_unquoted"; then
+          issues+=("❌ ${plugin}/${skill_name}: recommends bulk staging (git add -A / --all / .) — stage explicit paths instead (issue #3018)")
+          has_errors=true
+        fi
+        ;;
+      blueprint-plugin/blueprint-docs-list)
+        # ${var^^} / ${var,,} are bash-4-only; zsh (the Bash tool's shell on
+        # macOS) reports "bad substitution".
+        if grep -Eq '\$\{[A-Za-z_][A-Za-z0-9_]*(\^\^?|,,?)\}' <<<"$skill_corpus_unquoted"; then
+          issues+=("❌ ${plugin}/${skill_name}: uses \${var^^}/\${var,,} case modification (bad substitution in zsh) — use tr '[:lower:]' '[:upper:]' (issue #3018)")
+          has_errors=true
+        fi
+        ;;
+      tools-plugin/generate-image)
+        # Nothing renders {{arg:1}}-style placeholders in a skill body; the
+        # harness substitutes $ARGUMENTS only.
+        if grep -Eq '\{\{[^}]*\}\}' <<<"$skill_corpus_unquoted"; then
+          issues+=("❌ ${plugin}/${skill_name}: ships {{...}} placeholders that nothing renders — parse \$ARGUMENTS instead (issue #3018)")
+          has_errors=true
+        fi
+        if ! grep -qF '$ARGUMENTS' "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must parse its prompt and flags from \$ARGUMENTS (issue #3018)")
+          has_errors=true
+        fi
+        ;;
+      networking-plugin/dns-tools|networking-plugin/network-diagnostics|networking-plugin/network-monitoring)
+        # Every tool the examples run 3+ times (sudo-prefixed counted as
+        # "sudo <tool>") must have a matching Bash(<tool> *) grant; install
+        # commands are exempt. dns-tools granted dig while running dog 37 times.
+        hr_ungranted=""
+        while IFS= read -r hr_tok; do
+          [ -n "$hr_tok" ] || continue
+          if ! grep -qF "Bash(${hr_tok} *)" <<<"$hr_allowed"; then
+            hr_ungranted="${hr_ungranted:+$hr_ungranted, }${hr_tok}"
+          fi
+        done < <(awk '
+          /^[[:space:]]*```/ { inb = !inb; next }
+          inb && NF && $1 !~ /^#/ { t = ($1 == "sudo") ? $1 " " $2 : $1; n[t]++ }
+          END { for (t in n) if (n[t] >= 3) print t }
+        ' "$skill_file" | grep -Ev '^(brew|cargo|pacman|apt|apt-get|sudo setcap|sudo apt|sudo apt-get)$' || true)
+        if [ -n "$hr_ungranted" ]; then
+          issues+=("❌ ${plugin}/${skill_name}: examples run tools allowed-tools does not grant (${hr_ungranted}) — add the narrow Bash(<tool> *) grant (issue #3018)")
+          has_errors=true
+        fi
+        ;;
+      configure-plugin/configure-justfile)
+        # $TOOLS_PLUGIN is defined nowhere; the command ran as /scripts/...
+        if grep -qF '$TOOLS_PLUGIN' <<<"$skill_corpus_unquoted"; then
+          issues+=("❌ ${plugin}/${skill_name}: references undefined \$TOOLS_PLUGIN — locate just-recipe-help.py with find, or use the manual fallback (issue #3018)")
+          has_errors=true
+        fi
+        ;;
+      langchain-plugin/langchain-init)
+        # The skill scaffolds with bun/npm; a uv/pip/python grant cannot run it.
+        if ! grep -qF 'Bash(bun ' <<<"$hr_allowed" || grep -Eq 'Bash\((uv|pip|python)[ )]' <<<"$hr_allowed"; then
+          issues+=("❌ ${plugin}/${skill_name}: allowed-tools must grant the bun/npm commands the skill runs, not uv/pip/python (issue #3018)")
+          has_errors=true
+        fi
+        ;;
+      home-assistant-plugin/ha-validate)
+        # `could not determine a constructor for the tag '!secret'` is a plain
+        # YAML loader meeting HA's custom tags, not an indentation error.
+        if grep -i 'could not determine a constructor' "$skill_file" | grep -qi 'indentation'; then
+          issues+=("❌ ${plugin}/${skill_name}: maps the !secret/!include constructor error to indentation — it is an HA custom tag unknown to a plain YAML loader; validate with hass check_config (issue #3018)")
+          has_errors=true
+        fi
+        ;;
+      testing-plugin/test-report)
+        # The skill has no script behind it, so concrete numbers in its output
+        # template get echoed as if they were the project's results.
+        if grep -Eq '\|[[:space:]]*[0-9]+[[:space:]]*\||\*\*Coverage\*\*: [0-9]|last run: [0-9]' "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: output template ships example numbers — use <placeholders> (issue #3018)")
+          has_errors=true
+        fi
+        if ! grep -qi 'no data' "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must instruct reporting 'no data' when no cached test results exist (issue #3018)")
+          has_errors=true
+        fi
+        ;;
+      terraform-plugin/tfc-run-status)
+        # A `while true` poll never exits on a run parked awaiting a human
+        # (planned, policy_override); bound it with a wall-clock deadline.
+        if grep -Eq 'while[[:space:]]+true' "$skill_file" || ! grep -qF 'DEADLINE' "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: poll loop needs a wall-clock DEADLINE, not 'while true' (issue #3018)")
+          has_errors=true
+        fi
+        ;;
+    esac
   done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
 
   if $has_errors; then

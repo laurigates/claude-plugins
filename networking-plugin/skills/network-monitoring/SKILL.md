@@ -1,11 +1,11 @@
 ---
 created: 2026-01-01
-modified: 2026-04-25
+modified: 2026-10-12
 reviewed: 2026-04-25
 name: network-monitoring
 description: Real-time network traffic and per-process bandwidth monitoring. Use when finding which app consumes bandwidth, inspecting active connections, or capturing traffic samples.
 user-invocable: false
-allowed-tools: Bash(iftop *), Bash(nethogs *), Bash(tcpdump *), Bash(ss *), Bash(netstat *), Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(sudo bandwhich *), Bash(bandwhich *), Bash(getcap *), Read, Grep, Glob, TodoWrite
 ---
 
 # Network Monitoring
