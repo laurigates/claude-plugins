@@ -1,11 +1,11 @@
 ---
 description: Initialize a new LangChain TypeScript project. Use when starting an LLM-powered app, scaffolding an AI agent project, or setting up LangChain from scratch.
 args: "[project-name]"
-allowed-tools: Bash(uv *), Bash(pip *), Bash(python *), Read, Write, Edit
+allowed-tools: Bash(bun init *), Bash(bun add *), Bash(npm init *), Bash(npm install *), Bash(node --version *), Bash(which bun *), Bash(mkdir *), Read, Write, Edit
 argument-hint: my-agent-project
 disable-model-invocation: true
 created: 2026-01-08
-modified: 2026-04-25
+modified: 2026-10-12
 reviewed: 2026-04-25
 name: langchain-init
 ---
@@ -65,6 +65,9 @@ bun add @langchain/openai  # Default model provider
 # Dev dependencies
 bun add -d typescript @types/node tsx
 ```
+
+Without Bun, run the same installs with `npm install` (`npm install -D` for the
+dev dependencies).
 
 ### 4. Create TypeScript Config
 

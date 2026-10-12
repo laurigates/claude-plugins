@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-09-06
+modified: 2026-10-12
 reviewed: 2025-12-16
 description: Check and configure Justfiles with standard recipes. Use when setting up a Justfile, auditing for missing recipes, or migrating from Makefile to Justfile.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
@@ -104,14 +104,15 @@ whose rendered line is a fragment, so a justfile using one-line comments
 correctly comes back clean:
 
 ```bash
-python3 "$TOOLS_PLUGIN/scripts/just-recipe-help.py" --audit
+just_help=$(find ~/.claude/plugins -name just-recipe-help.py -path '*tools-plugin*' -print -quit)
+python3 "$just_help" --audit
 ```
 
 That script ships with a **different plugin** — `tools-plugin`, whose
 `justfile-expert` skill documents the `--list` contract behind it — so there is
-no path from here that is guaranteed to resolve. Locate it with
-`find ~/.claude/plugins -name just-recipe-help.py`, or fall back to the manual
-check: for each recipe whose comment block is more than one line, read its
+no path from here that is guaranteed to resolve; the `find` locates the
+installed copy. If `just_help` comes back empty (tools-plugin not installed),
+skip the script and fall back to the manual check: for each recipe whose comment block is more than one line, read its
 **last** line alone and add a `[doc("one line")]` wherever that line is an
 example, an indented sub-item, or a clause continuing the line above.
 

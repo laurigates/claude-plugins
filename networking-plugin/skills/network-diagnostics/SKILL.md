@@ -1,11 +1,11 @@
 ---
 created: 2026-01-01
-modified: 2026-04-25
+modified: 2026-10-12
 reviewed: 2026-04-25
 name: network-diagnostics
 description: Network connectivity and latency diagnostics. Use when tracing routes, comparing ping latency across endpoints, or inspecting local socket/port usage.
 user-invocable: false
-allowed-tools: Bash(ping *), Bash(traceroute *), Bash(mtr *), Bash(netstat *), Bash(ss *), Bash(ip *), Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(trip *), Bash(gping *), Bash(ss *), Bash(netstat *), Bash(ping *), Bash(traceroute *), Bash(mtr *), Bash(ip *), Read, Grep, Glob, TodoWrite
 ---
 
 # Network Diagnostics

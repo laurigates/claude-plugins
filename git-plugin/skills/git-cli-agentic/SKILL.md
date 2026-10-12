@@ -4,7 +4,7 @@ description: Git commands with porcelain and machine-readable output for agent w
 user-invocable: false
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git remote *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git restore *), Read
 created: 2025-01-16
-modified: 2026-09-24
+modified: 2026-10-12
 reviewed: 2026-04-25
 ---
 
@@ -256,11 +256,12 @@ git remote show origin
 # Stage specific files
 git add path/to/file
 
-# Stage all modified tracked files
-git add -u
+# Stage several files: name each path you changed (bulk staging also
+# sweeps up another agent's uncommitted work in a shared checkout)
+git add src/a.ts src/b.ts tests/a.test.ts
 
-# Stage everything
-git add -A
+# Stage selected hunks of one file
+git add -p path/to/file
 
 # Unstage file
 git restore --staged path/to/file
