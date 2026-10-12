@@ -225,7 +225,7 @@ else
 fi
 
 echo
-echo "== WORKFLOW_SCALE_PARSE_TIMEOUT sets each parser attempt (#3005, #2975) =="
+echo "== CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT sets each parser attempt (#3005, #2975) =="
 # The per-attempt limit: 4 s by default and on any value that is not a positive
 # finite number; scripts/check-workflow-js-model.sh raises it for CI.
 read_timeout() {
@@ -233,21 +233,21 @@ read_timeout() {
 }
 got=$(for v in unset "" 30 0.5 abc 0 -3 nan inf; do
     if [ "$v" = unset ]; then
-        (unset WORKFLOW_SCALE_PARSE_TIMEOUT; read_timeout)
+        (unset CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT; read_timeout)
     else
-        WORKFLOW_SCALE_PARSE_TIMEOUT="$v" read_timeout
+        CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT="$v" read_timeout
     fi
 done | tr '\n' ' ')
 if [ "$got" = "4.0 4.0 30.0 0.5 4.0 4.0 4.0 4.0 4.0 " ]; then ok "parse timeout: default 4, valid values honoured, invalid ones ignored"; else bad "parse timeout values: $got"; fi
 # And the estimator applies it: a 1 s limit gives up on the hanging parser in
 # about 2 s (two attempts), where the 4 s default would take about 8 s.
 start=$SECONDS
-got=$(printf '%s' "$UNBOUNDED_SCRIPT" | WORKFLOW_SCALE_PARSE_TIMEOUT=1 PATH="$STUBS/hang:$PATH" python3 "$ESTIMATOR" 10 | grep -m1 '^VERDICT=')
+got=$(printf '%s' "$UNBOUNDED_SCRIPT" | CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT=1 PATH="$STUBS/hang:$PATH" python3 "$ESTIMATOR" 10 | grep -m1 '^VERDICT=')
 elapsed=$((SECONDS - start))
 if [ "$got" = "VERDICT=ANALYSIS_ERROR" ] && [ "$elapsed" -lt 6 ]; then
-    ok "estimator honours WORKFLOW_SCALE_PARSE_TIMEOUT (${elapsed}s)"
+    ok "estimator honours CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT (${elapsed}s)"
 else
-    bad "WORKFLOW_SCALE_PARSE_TIMEOUT=1: $got after ${elapsed}s"
+    bad "CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT=1: $got after ${elapsed}s"
 fi
 
 echo

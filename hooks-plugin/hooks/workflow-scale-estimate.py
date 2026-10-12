@@ -55,7 +55,7 @@ that shadows or redefines one (a local `parallel`, a patched
 Parsing uses the vendored acorn parser under node (lib/workflow-scale-parse.cjs).
 A syntax error is PARSE_ERROR. A parser that crashes, or times out twice (the
 retry absorbs a cold node start; each attempt is limited to
-WORKFLOW_SCALE_PARSE_TIMEOUT seconds, default 4), is ANALYSIS_ERROR, as is an error while
+CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT seconds, default 4), is ANALYSIS_ERROR, as is an error while
 walking a parsed script; the guard asks on all three, and when a run of this
 file exits non-zero or prints no VERDICT. Only a machine without node falls
 back to the pre-parser estimator (lib/workflow-scale-estimate-fallback.py),
@@ -91,7 +91,7 @@ PARSE_TIMEOUT_DEFAULT = 4.0
 
 
 def parse_timeout() -> float:
-    """Seconds per parser attempt: WORKFLOW_SCALE_PARSE_TIMEOUT, else 4.
+    """Seconds per parser attempt: CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT, else 4.
 
     The hook keeps the 4 s default (it sits in front of an interactive tool
     call). scripts/check-workflow-js-model.sh, a CI guard with no latency
@@ -99,7 +99,7 @@ def parse_timeout() -> float:
     two 4 s attempts is not reported as estimator_error (#3005, #2975). A
     value that is not a positive finite number means the default.
     """
-    raw = os.environ.get("WORKFLOW_SCALE_PARSE_TIMEOUT", "").strip()
+    raw = os.environ.get("CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT", "").strip()
     try:
         value = float(raw)
     except ValueError:

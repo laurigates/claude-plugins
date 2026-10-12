@@ -44,7 +44,7 @@
 
 set -uo pipefail
 # The checker's estimator timeout is its own default (30s) unless a case pins it.
-unset WORKFLOW_SCALE_PARSE_TIMEOUT
+unset CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
@@ -613,14 +613,14 @@ check "N10: crashed parser is estimator_error" "1" "$(printf '%s\n' "$o" | grep 
 printf '#!/usr/bin/env bash\nif [ ! -e "%s" ]; then : > "%s"; exec sleep 5; fi\nexec "%s" "$@"\n' \
     "$STUB/cold/first" "$STUB/cold/first" "$(command -v node)" > "$STUB/cold/node"
 chmod +x "$STUB/cold/node"
-o=$(WORKFLOW_SCALE_PARSE_TIMEOUT=4 PATH="$STUB/cold:$PATH" bash "$CHECK" --project-dir "$root" 2>&1)
+o=$(CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT=4 PATH="$STUB/cold:$PATH" bash "$CHECK" --project-dir "$root" 2>&1)
 check "N11: cold first parse retried, STATUS=OK" "OK" "$(field "$o" STATUS)"
 check "N11: the stub's first call did hang"      "yes" "$([ -e "$STUB/cold/first" ] && echo yes)"
 
 # N12. A cold start slower than the estimator's 4s default on the first TWO
 #      calls (#3005, #2975): the retry alone ran out, so the check reported
 #      estimator_error. The checker has no interactive latency budget and
-#      passes WORKFLOW_SCALE_PARSE_TIMEOUT, so one slow parse still counts.
+#      passes CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT, so one slow parse still counts.
 #      The preload blocks node itself for 5s and then lets the real parser
 #      run, so a timeout kills the process holding the pipe.
 mkdir -p "$STUB/slow"
