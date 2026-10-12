@@ -212,12 +212,25 @@ split_words() {
   return 0
 }
 
+# path_ok <word>: refuses a word naming something outside the working tree or
+# more arguments: an absolute, ~ or .. path (`pytest /tmp/evil_test.py`,
+# `tsc -p ../x`) runs or loads code the repository does not hold, and pytest
+# reads `@file` as more arguments.
+path_ok() {
+  [[ $1 == @* ]] && return 1
+  [[ $1 == [/~]* ]] && return 1
+  [[ $1 =~ (^|/)\.\.(/|$) ]] && return 1
+  return 0
+}
+
 # words_ok <flags-re> <value-flags-re> <positional: yes|no|js> <word>…
 # Each word must be a whole-word match of <flags-re>, a <value-flags-re> flag
 # with its value (`--flag=v`, or `--flag v` when v does not start with -), or
-# a positional argument. A positional never starts with - or @ (pytest reads
-# `@file` as more arguments) and is never an absolute, ~ or .. path; `js` also
-# refuses `init` (vitest scaffolding).
+# a positional argument. Values and positionals both pass path_ok; a value
+# flag such as `-t`/`-k` takes a test-name pattern rather than a path, and one
+# spelled like an absolute path going to the prompt is the safe polarity. Any
+# other word starting with - is refused, however the flag is spelled. `js`
+# also refuses the positional `init` (vitest scaffolding).
 words_ok() {
   local flags_re=$1 value_re=$2 pos=$3 w
   shift 3
@@ -226,18 +239,18 @@ words_ok() {
     shift
     if [[ $w == -* ]]; then
       [[ $w =~ ^($flags_re)$ ]] && continue
-      [[ $w =~ ^($value_re)=. ]] && continue
+      if [[ $w =~ ^($value_re)=. ]]; then
+        path_ok "${w#*=}" || return 1
+        continue
+      fi
       if [[ $w =~ ^($value_re)$ ]] && [ "$#" -gt 0 ] && [[ $1 != -* ]]; then
+        path_ok "$1" || return 1
         shift
         continue
       fi
-      return 1
+      return 1 # an unknown flag, or a value flag without its value
     fi
-    [[ $w == @* ]] && return 1
-    # A path outside the working tree (`pytest /tmp/evil_test.py`,
-    # `bun test ../x`) runs code the repository does not hold.
-    [[ $w == [/~]* ]] && return 1
-    [[ $w =~ (^|/)\.\.(/|$) ]] && return 1
+    path_ok "$w" || return 1
     case $pos in
       yes) ;;
       js) [ "$w" != init ] || return 1 ;;

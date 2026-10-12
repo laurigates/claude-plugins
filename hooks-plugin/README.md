@@ -359,7 +359,7 @@ A PermissionRequest hook that auto-approves safe operations and auto-denies dang
 
 | Decision | Patterns |
 |----------|----------|
-| Auto-deny (checked first) | Recursive `rm` of `/`, `~` or `$HOME` (`rm -rf /`, `rm -r -f /`, `rm -rf -- /`, `rm -Rf "$HOME"`); force push to main/master (`--force`, `-f`, `--force-with-lease`, a `+main` refspec) — anywhere in the command |
+| Auto-deny (checked first) | Recursive `rm` when its target literally spells the filesystem root or home directory (`rm -rf /`, `rm -r -f /`, `rm -rf -- /`, `rm -Rf "$HOME"`); alias spellings (`~+`, `$PWD/..`) fall to the normal prompt; force push to main/master (`--force`, `-f`, `--force-with-lease`, a `+main` refspec) — anywhere in the command |
 | Auto-approve | Read-only git, test runners, linters, gh CLI reads — only when **every** command in the line is one of them **and** its arguments pass that rule's argv check |
 | Pass through | Everything else (user decides) |
 
@@ -377,6 +377,13 @@ Each approved command's words are de-quoted the way bash would and checked again
 must match exactly, so `pytest=1 touch x`, `pytestx`, `npx jest-evil`, `make test-and-deploy` and
 `git statusfoo` get no decision. A command containing `{ } * ? [ ]` gets no decision, since bash
 would expand it into words the hook never saw.
+
+Where a rule takes an allowlist of flags, a flag outside it gets no decision however it is
+spelled (`git remote show --eh origin`), and a value flag's value (`-p v` or `-p=v`) passes the
+same path gates as a positional argument: no absolute, `~`, `..` or `@file` value
+(`tsc --noEmit -p /tmp/x`, `mypy -p /tmp/x`, `pytest --durations /tmp/x`). That includes
+pattern flags such as `-t` and `-k`, whose value is a test name rather than a path; one spelled
+like an absolute path goes to the prompt.
 
 | Rule | Approved | No decision (examples) |
 |------|----------|------------------------|

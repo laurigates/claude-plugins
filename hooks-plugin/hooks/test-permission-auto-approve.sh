@@ -571,6 +571,48 @@ expect_each approve "runner/linter control" \
     'gh issue view 3 --comments' \
     'gh run list --limit 5'
 
+# ── K. PR #3051 review: value-flag values and unknown flags ──────────────────
+# A value flag's value (`-p v` or `-p=v`) passes the same path gates as a
+# positional: no absolute, ~, .. or @file value. `-t`/`-k` take a test-name
+# pattern, not a path, but a pattern spelled like an absolute path going to the
+# prompt is the safe polarity.
+echo "  == K. value-flag values are path-gated; unknown flags refused =="
+expect_each none "value-flag path gate" \
+    'tsc --noEmit -p /tmp/evil-config' \
+    'npx jest -t /tmp/evil' \
+    'pytest --durations /tmp/x' \
+    'mypy -p /tmp/evil' \
+    'tsc --noEmit --project=/tmp/evil' \
+    'tsc --noEmit -p ~/evil' \
+    'tsc --noEmit -p ../evil/tsconfig.json' \
+    'mypy --package=../evil' \
+    'pytest --deselect=/tmp/x' \
+    'pytest --ignore ../x' \
+    'pytest -k @args.txt' \
+    'cargo test -p /tmp/x' \
+    'go test -run /tmp/x ./...' \
+    'npx eslint --ext=~/x .' \
+    'npm test -- -t /tmp/evil'
+# A `-`-prefixed word no flag/value treatment matched is refused.
+expect_each none "unknown flag" \
+    'git remote show --eh origin' \
+    'git remote get-url --eh origin' \
+    'git remote show -n --eh origin' \
+    'pytest --eh' \
+    'tsc --noEmit --eh'
+expect_each approve "value-flag control" \
+    'pytest -k test_foo' \
+    'npx jest -t "adds numbers"' \
+    'tsc --noEmit -p tsconfig.json' \
+    'tsc --noEmit --project=tsconfig.json' \
+    'mypy -p mypkg' \
+    'pytest --durations 5' \
+    'pytest --deselect=tests/test_a.py::test_b' \
+    'cargo test -p core' \
+    'go test -run TestX ./...' \
+    'git remote show -n origin' \
+    'git remote get-url --push origin'
+
 # ── G. Subset differential against the pre-fix hook ──────────────────────────
 echo "  == G. subset differential: new approvals are a subset of pre-fix approvals =="
 BASELINE="$WORK/baseline.sh"
