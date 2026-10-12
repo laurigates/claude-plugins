@@ -69,6 +69,11 @@ if [ -z "$FIXROOT" ] || [ ! -d "$FIXROOT" ]; then
     exit 1
 fi
 trap 'rm -rf "$FIXROOT"' EXIT
+# Canonicalise: the analyzer `.resolve()`s --root, so on macOS (mktemp returns
+# /var/folders/…, a symlink to /private/var/folders/…) its reported paths and
+# the fixture's would disagree on spelling. Resolving once keeps every path
+# assertion below platform-independent (#2949).
+FIXROOT=$(cd -P -- "$FIXROOT" && pwd -P) || { echo "FAIL: cannot resolve $FIXROOT"; exit 1; }
 
 mkdir -p "$FIXROOT/home/.claude/rules"
 mkdir -p "$FIXROOT/proj/repo-a/.claude/rules"

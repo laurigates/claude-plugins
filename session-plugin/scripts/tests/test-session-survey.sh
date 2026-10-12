@@ -1833,7 +1833,7 @@ check_line "AP1: and names the nested checkout it stepped out of" "$out" "GIT_NE
 check_line "AP1: PRS inherits the same scope" "$out" "PRS_SCOPE=workspace-root"
 check_line "AP1: PRS inherits the same confidence" "$out" "PRS_CONFIDENCE=low"
 # PROJECT_DIR is unchanged: it reports where the session stands, not what GIT read.
-check_line "AP1: PROJECT_DIR still reports the session's own cwd" "$out" "PROJECT_DIR=$AP_NESTED"
+check_line "AP1: PROJECT_DIR still reports the session's own cwd" "$out" "PROJECT_DIR=$AP_NESTED"  # mktemp-canonical: ok (PROJECT_DIR echoes --project-dir verbatim)
 # A caveat, never an error — the same posture BEHIND and PROJECT_CONFIDENCE take.
 ap_git_block=$(printf '%s' "$out" | sed -n '/=== GIT ===/,/=== END GIT ===/p')
 check_line "AP1: the GIT section still reports STATUS=OK" "$ap_git_block" "STATUS=OK"
