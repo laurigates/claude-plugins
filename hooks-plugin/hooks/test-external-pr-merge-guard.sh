@@ -501,6 +501,28 @@ own	DENY	ssh build-host 'gh pr merge 5'
 own	DENY	V=GH_REPO; export $V=acme/ext; gh pr merge 5
 own	DENY	env "$V" gh pr merge 5
 own	DENY	xargs gh pr merge -R acme/own <<< 5
+own	DENY	GH=gh; $GH api -X PUT repos/acme/ext/pulls/5/merge
+own	DENY	$GH api -X PUT repos/acme/own/pulls/5/merge
+own	DENY	"$GH" api -X PUT "repos/acme/ext/pulls/5/merge"
+own	DENY	$GH api graphql -f query='mutation{mergePullRequest(input:{pullRequestId:"PR_x"}){clientMutationId}}'
+own	DENY	$GH api graphql -f query='query{viewer{login}}'
+own	DENY	$CURL -X PUT https://api.github.com/repos/acme/ext/pulls/5/merge
+own	DENY	sudo $GH api -X PUT repos/acme/ext/pulls/5/merge
+own	DENY	sudo -u "$U" gh pr merge 5 -R acme/ext
+own	ALLOW	sudo -u "$U" gh pr merge 5 -R acme/own
+own	DENY	sudo -u "$U" gh api -X PUT repos/acme/ext/pulls/5/merge
+own	DENY	gh pr merge 5 <<< x@NL@gh pr merge 6 -R acme/ext
+own	DENY	gh pr merge 5 <<<x@NL@gh pr merge 6 -R acme/ext
+own	DENY	cat <<< "x"@NL@gh pr merge 6 -R acme/ext
+own	DENY	cat <<< x@NL@gh api -X PUT repos/acme/ext/pulls/6/merge
+own	ALLOW	gh pr merge 5 <<< x@NL@gh pr merge 6
+own	ALLOW	cat <<< x@NL@gh pr merge 6 -R acme/own
+own	DENY	gh api graphql < q.graphql
+own	DENY	gh api graphql 0<q.graphql
+own	DENY	cat q.graphql | gh api graphql
+own	DENY	gh api graphql <<< "$Q"
+own	DENY	gh api graphql <<'EOF'@NL@{"query":"mutation{mergePullRequest(input:{pullRequestId:\"PR_x\"}){clientMutationId}}"}@NL@EOF
+own	ALLOW	gh api graphql -f query='query{viewer{login}}' < /dev/null
 own	ALLOW	cat <<'EOF'@NL@merge it: `gh pr merge 5 -R acme/ext`@NL@EOF
 own	ALLOW	gh pr merge 5 --squash --body "$(cat <<'EOF'@NL@Merged; see `gh pr merge 6 -R acme/ext` later.@NL@EOF@NL@)"
 own	ALLOW	echo "$(date)" && gh pr merge 5
@@ -555,6 +577,52 @@ ck_repo_lookup "gh pr merge 5 '--repo' acme/ext"            '5 --repo acme/ext'
 ck_repo_lookup 'gh pr merge 5 -sRacme/ext'                  '5 --repo acme/ext'
 ck_repo_lookup 'gh -R acme/ext pr merge 5'                  '5 --repo acme/ext'
 ck_repo_lookup 'gh pr merge 5; gh api -X PUT repos/acme/ext/pulls/5/merge' '5 --repo acme/ext'
+
+echo "== MCP tool_input cannot forge a record (PR #3054 review) =="
+# owner/repo/pullNumber are interpolated into a \037-separated, newline-ended
+# record. A \037 in `repo` used to cut the record at `acme/own` (your PR), so
+# the hook checked — and allowed — a repository the tool was never asked about.
+mcp_json() { # mcp_json <owner> <repo> <pullNumber> — values are JSON string bodies
+    printf '{"tool_name":"mcp__github__merge_pull_request","cwd":"%s","tool_input":{"owner":"%s","repo":"%s","pullNumber":"%s"}}' \
+        "$WS/own" "$1" "$2" "$3"
+}
+run_mcp() {
+    local out
+    out=$(printf '%s' "$1" | HOME="$WS" PATH="$TMPDIR/bin:$PATH" bash "$HOOK" 2>/dev/null || true)
+    if grep -q '"permissionDecision":"deny"' <<<"$out"; then echo DENY; else echo ALLOW; fi
+}
+ck "MCP control: own repo is allowed"      ALLOW "$(run_mcp "$(mcp_json acme own 5)")"
+ck "MCP control: external repo is denied"  DENY  "$(run_mcp "$(mcp_json acme ext 5)")"
+ck "MCP repo carrying \\037"                DENY  "$(run_mcp "$(mcp_json acme 'own\u001f' 5)")"
+ck "MCP owner carrying \\036"               DENY  "$(run_mcp "$(mcp_json 'acme\u001e' own 5)")"
+ck "MCP repo carrying a newline"           DENY  "$(run_mcp "$(mcp_json acme 'own\nmerge' 5)")"
+ck "MCP pullNumber carrying \\037"          DENY  "$(run_mcp "$(mcp_json acme own '5\u001facme/own')")"
+
+echo "== the hook fails CLOSED when it crashes after a merge is detected (PR #3054 review) =="
+# macOS /bin/bash is 3.2: no mapfile, so the hook died with exit 127 before
+# checking anything — and a hook error is non-blocking, so the merge ran.
+# BASH_ENV runs in the hook's own shell before it starts, so it can take a
+# bash-4+ builtin away (portability) or plant a crash after detection (the
+# EXIT-trap backstop: a crash past the scanner must deny, never allow).
+run_with_env() { # run_with_env <bash-env file> <command>
+    local out
+    out=$(bash_json_in "$WS/own" "$2" | BASH_ENV="$1" HOME="$WS" PATH="$TMPDIR/bin:$PATH" bash "$HOOK" 2>/dev/null || true)
+    if grep -q '"permissionDecision":"deny"' <<<"$out"; then echo DENY; else echo ALLOW; fi
+}
+printf 'enable -n mapfile readarray 2>/dev/null || true\n' > "$TMPDIR/no-mapfile.env"
+ck "no mapfile (bash 3.2): external merge still denied" DENY \
+   "$(run_with_env "$TMPDIR/no-mapfile.env" 'gh pr merge 5 -R acme/ext')"
+ck "no mapfile (bash 3.2): own merge still allowed"     ALLOW \
+   "$(run_with_env "$TMPDIR/no-mapfile.env" 'gh pr merge 5')"
+ck "no mapfile (bash 3.2): no-selector own merge allowed" ALLOW \
+   "$(run_with_env "$TMPDIR/no-mapfile.env" 'gh pr merge --squash')"
+# A readonly ORIG_DIR makes the hook's own assignment to it fatal under set -e,
+# AFTER the scanner has found a merge. Any post-detection crash must deny.
+printf 'readonly ORIG_DIR=/nonexistent\n' > "$TMPDIR/crash.env"
+ck "crash after detection fails closed" DENY \
+   "$(run_with_env "$TMPDIR/crash.env" 'gh pr merge 5')"
+ck "crash env does not affect a non-merge" ALLOW \
+   "$(run_with_env "$TMPDIR/crash.env" 'git status')"
 unset STUB_REPO_AUTHORS STUB_CEILING
 
 echo "== a flag VALUE is not mistaken for the PR selector =="

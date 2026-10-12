@@ -301,14 +301,30 @@ Denied as **unverifiable** (the hook cannot know what gh will receive): an
 argument holding a shell variable or command substitution (`$F`, `"$F"`,
 `$(…)`, backticks; a quoted value of `--body`/`--subject` is fine), an unquoted
 glob, brace or zsh extglob (`-? x`, `{-R,x}`, `-@(R) x`), a variable command
-word (`$GH pr merge`), xargs/parallel (they add arguments at run time), a shell
+word in front of any merge route — `$GH pr merge`, `$GH api …/pulls/N/merge`,
+`$CURL -X PUT …/pulls/N/merge`, and any `$GH api graphql` call —
+xargs/parallel (they add arguments at run time), a shell
 reading its script from a pipe (`echo '…' | bash`), nested shell text whose
 quoting leaves a literal quote or a dangling `-R` (`bash -c "… \"-R\" x"`,
 `eval "… -R" "x"`), a GraphQL merge mutation (it names the PR by node id), a
-GraphQL query read from `@file`/`--input` or a variable, and a REST route whose
-owner/repo/number is not literal (`repos/$R/pulls/5/merge`). Command
-substitutions inside double quotes and inside an unquoted heredoc (`<<EOF`,
-where markdown backticks execute) are scanned as commands.
+GraphQL query read from `@file`/`--input`, a variable, or stdin (a pipe, a
+heredoc, a `<<<` herestring or a `<` redirection other than `/dev/null`), and a
+REST route whose owner/repo/number is not literal (`repos/$R/pulls/5/merge`).
+Command substitutions inside double quotes and inside an unquoted heredoc
+(`<<EOF`, where markdown backticks execute) are scanned as commands; a `<<<`
+herestring is a plain redirection, so the lines after it are still scanned.
+MCP `owner`/`repo`/`pullNumber` values carrying a newline or the hook's
+internal `\036`/`\037` separators are denied.
+
+**Fails closed on its own errors.** A scanner failure denies, and so does any
+crash after a command is recognised as a possible merge (an `EXIT` trap emits the
+deny): a hook error is non-blocking in Claude Code, so dying would let the merge
+run. The hook is kept bash-3.2 clean (no `mapfile`, `declare -A`, `${v,,}`, …)
+because macOS `/bin/bash` is 3.2.
+
+**Not covered:** a `gh` alias defined *before* the command (`gh alias set mm
+'pr merge'`, then `gh mm 5`) and a script or binary that merges internally —
+the hook sees only the command text, not what it calls.
 
 **Which repository the PR is looked up in.** With `--repo`/`-R`, that
 repository. Otherwise the repository of the hook's cwd, with one exception

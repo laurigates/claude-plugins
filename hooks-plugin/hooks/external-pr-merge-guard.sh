@@ -36,8 +36,12 @@
 #     set-default, a gh function, a redirection into .git, a background `&` —
 #     is DENIED as unverifiable, never resolved in the wrong place.
 #   - An argument the shell expands at run time ($var, $(…), backticks, an
-#     unquoted glob/brace/extglob), a variable command word, xargs/parallel,
-#     a piped `| bash`, and GraphQL merge mutations are DENIED as unverifiable.
+#     unquoted glob/brace/extglob), a variable command word in front of any
+#     merge route (`$GH pr merge`, `$GH api …/pulls/N/merge`, `$GH api
+#     graphql`), xargs/parallel, a piped `| bash`, GraphQL merge mutations, and
+#     GraphQL queries fed on stdin are DENIED as unverifiable.
+#   - A crash after a command is recognised as a possible merge DENIES (EXIT
+#     trap) — a hook error is non-blocking, so dying would let the merge run.
 #
 # Deliberately does NOT defer to permission mode "auto" (unlike
 # branch-protection.sh). Auto mode's classifier models destructive-git and
@@ -74,6 +78,20 @@ deny() {
   exit 0
 }
 
+# Fail CLOSED on a crash. Once a tool call may be a merge, any unexpected exit
+# — a bash-4 builtin missing on bash 3.2 (exit 127), an unbound variable, a
+# failed assignment under set -e — would otherwise be a non-blocking hook error
+# and the merge would run unchecked. deny() exits 0, and so does every allow
+# path, so only a crash reaches the deny here. Armed only after the cheap
+# non-merge bail-outs, so a crash cannot block an ordinary command.
+# shellcheck disable=SC2317  # invoked indirectly, as an EXIT trap
+fail_closed_on_crash() {
+  local rc=$?
+  [ "$rc" -eq 0 ] && return 0
+  trap - EXIT
+  deny "Refusing this command: the merge guard hit an internal error (exit ${rc}) while checking it for a PR merge, so it cannot tell whether — or whose PR — it merges. 'Cannot verify' is not 'safe'. Run the merge as a plain command (gh pr merge <number> -R OWNER/REPO), or ask the user."
+}
+
 # ---------------------------------------------------------------------------
 # Work out which PR (if any) this tool call would merge.
 #   PR_SELECTOR — number / URL / branch, or empty to mean "current branch's PR"
@@ -87,9 +105,18 @@ DETECT=""
 
 case "$TOOL_NAME" in
   mcp__github__merge_pull_request)
+    trap fail_closed_on_crash EXIT
     PR_SELECTOR=$(printf '%s' "$INPUT" | jq -r '.tool_input.pullNumber // .tool_input.pull_number // empty')
     OWNER=$(printf '%s' "$INPUT" | jq -r '.tool_input.owner // empty')
     REPO=$(printf '%s' "$INPUT" | jq -r '.tool_input.repo // empty')
+    # These values go into a \037-separated, newline-ended record, exactly as
+    # the Bash command text does, so they get the same anti-forging guard: a
+    # \037 in `repo` would cut the record at a repository the tool was never
+    # asked to merge in (PR #3054 review).
+    case "${PR_SELECTOR}${OWNER}${REPO}" in
+      *$'\036'*|*$'\037'*|*$'\n'*|*$'\r'*)
+        deny "Refusing this merge: its owner, repo or pullNumber contains a control character (newline or \\036/\\037), so this hook cannot check which PR it merges. Pass plain values and retry." ;;
+    esac
     [ -n "$OWNER" ] && [ -n "$REPO" ] && PR_REPO="$OWNER/$REPO"
     DETECT=$(printf 'merge\037%s\037%s\037\037\037' "$PR_SELECTOR" "$PR_REPO")
     ;;
@@ -110,6 +137,7 @@ case "$TOOL_NAME" in
     if ! grep -Eiq 'merge|graphql' <<<"$(tr -d "\"'\\\\" <<<"$COMMAND")"; then
       exit 0
     fi
+    trap fail_closed_on_crash EXIT
 
     # -----------------------------------------------------------------------
     # Structural pass (issue #2307). The old code grepped the raw command text,
@@ -341,26 +369,42 @@ case "$TOOL_NAME" in
       # repo or number is not a plain literal (`repos/$R/pulls/5/merge`,
       # `{owner}/{repo}`) cannot be verified. GraphQL merges name the PR by
       # node id, so they are not resolvable here at all.
-      function api_scan(i0, nt, gpos,   j, txt, qdyn, lt, t, p, found, pp) {
-        txt = ""; qdyn = 0
+      #
+      # dynw: the command word is a variable, so it is not even known to be gh
+      # — every route and every GraphQL call is unverifiable (UNV cmdword).
+      # piped: the statement reads a pipe on stdin. A GraphQL call whose stdin
+      # is a pipe, a heredoc, a herestring or a `<` redirection (other than
+      # /dev/null) may take its query from there, which this hook cannot read.
+      function api_scan(i0, nt, gpos, dynw, piped,   j, txt, qdyn, lt, t, p, found, pp, stdin, rt, skipn) {
+        txt = ""; qdyn = 0; stdin = piped; skipn = 0
         for (j = i0; j <= nt; j++) {
           scan(TO[j]); if (SCOMMENT) break
+          if (skipn) { skipn = 0; if (SV != "/dev/null") stdin = 1 }
+          else if (TM[j] ~ ("^" RED) && TM[j] ~ /^0?</) {
+            if (TM[j] ~ ("^" RED "$")) skipn = 1
+            else { rt = TO[j]; sub("^" RED, "", rt); scan(rt); if (SV != "/dev/null") stdin = 1; scan(TO[j]) }
+          }
           txt = txt " " SV
           if (SDYN && tolower(SV) ~ /query/) qdyn = 1
         }
         lt = tolower(txt)
         if (lt ~ /graphql/) {
-          if (lt ~ /mergepullrequest|enablepullrequestautomerge/) { emit_other("graphql", "", "", "", "mutation", gpos); return }
-          if (txt ~ /(=|[ \t])@/ || lt ~ /--input/) { emit_other("graphql", "", "", "", "file", gpos); return }
-          if (qdyn) { emit_other("graphql", "", "", "", "dyn", gpos); return }
+          if (dynw) { emit_other("graphql", "", "", "", "cmdword", gpos); return 1 }
+          if (lt ~ /mergepullrequest|enablepullrequestautomerge/) { emit_other("graphql", "", "", "", "mutation", gpos); return 1 }
+          if (txt ~ /(=|[ \t])@/ || lt ~ /--input/) { emit_other("graphql", "", "", "", "file", gpos); return 1 }
+          if (stdin) { emit_other("graphql", "", "", "", "stdin", gpos); return 1 }
+          if (qdyn) { emit_other("graphql", "", "", "", "dyn", gpos); return 1 }
         }
+        # Returns how many records it emitted, so a caller probing a variable
+        # command word can tell "reached an API route" from "nothing here".
         t = txt; found = 0
         while (match(t, /repos\/[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\/pulls\/[0-9]+\/merge/)) {
           p = substr(t, RSTART, RLENGTH); split(p, pp, "/")
-          emit_other("api", pp[2] "/" pp[3], pp[5], "", "", gpos)
+          emit_other("api", pp[2] "/" pp[3], pp[5], (dynw ? "cmdword" : ""), "", gpos); found++
           t = substr(t, 1, RSTART - 1) " " substr(t, RSTART + RLENGTH)
         }
-        if (t ~ /pulls\/[^ \t]*\/merge/) emit_other("api", "", "", "apipath", "", gpos)
+        if (t ~ /pulls\/[^ \t]*\/merge/) { emit_other("api", "", "", (dynw ? "cmdword" : "apipath"), "", gpos); found++ }
+        return found
       }
       BEGIN {
         SQ = sprintf("%c", 39); DQ = "\""; BT = sprintf("%c", 96)
@@ -507,7 +551,17 @@ case "$TOOL_NAME" in
             }
             i++; continue
           }
-          if (c == "<" && substr(buf, i + 1, 1) == "<" && substr(buf, i + 2, 1) != "<") {
+          # A `<<<` herestring is a plain redirection: consume all three
+          # characters here. Scanning on char by char re-detected `<<` at the
+          # SECOND `<`, queued a phantom heredoc delimited by the herestring
+          # word, and masked every following line as its body — so
+          # `gh pr merge 5 <<< x` + newline + `gh pr merge 6 -R other/repo`
+          # never checked the second merge (PR #3054 review).
+          if (substr(buf, i, 3) == "<<<") {
+            m = m "<<<"; if (!cw_done) cw = cw "<<<"
+            i += 3; continue
+          }
+          if (c == "<" && substr(buf, i + 1, 1) == "<") {
             j = i + 2; strip = 0
             if (substr(buf, j, 1) == "-") { strip = 1; j++ }
             while (substr(buf, j, 1) == " " || substr(buf, j, 1) == "\t") j++
@@ -608,6 +662,7 @@ case "$TOOL_NAME" in
           # A shell reading its script from a pipe (`echo "…" | bash`) runs text
           # this hook only saw as a quoted argument of something else.
           sepc = (a > 1) ? substr(m, a - 1, 1) : ""; sepp = (a > 2) ? substr(m, a - 2, 1) : ""
+          piped = ((sepc == "|" && sepp != "|") || (sepc == "&" && sepp == "|"))
           if (base(SV) in shcmd && ((sepc == "|" && sepp != "|") || (sepc == "&" && sepp == "|"))) {
             hasc = 0
             for (i = 2; i <= nt; i++) { scan(TO[i]); if (SV ~ /^-[A-Za-z]*c/) hasc = 1 }
@@ -634,8 +689,14 @@ case "$TOOL_NAME" in
                 emit_merge("merge", SEL, REP, UNV, gpos, a, wrapped, trunc)
                 break
               }
-              if (w == "gh" && SUB1 == "api") { api_scan(i, nt, gpos); break }
-            } else if (w in API) { api_scan(i, nt, gpos); break }
+              # A variable command word (`$GH api …`, `$CURL -X PUT …`) can be
+              # gh, curl or anything else, so any merge route or GraphQL call
+              # behind it is unverifiable — it used to emit nothing at all.
+              # It may also be an argument of a wrapper (`sudo -u "$U" gh pr merge
+              # …`), so keep reading past it unless it reached an API route.
+              if (wdyn) { if (api_scan(i, nt, gpos, 1, piped)) break; continue }
+              if (SUB1 == "api") { api_scan(i, nt, gpos, 0, piped); break }
+            } else if (w in API) { api_scan(i, nt, gpos, 0, piped); break }
           }
         }
         if (hasbg) print "BG\0371"
@@ -695,9 +756,20 @@ esac
 #          command substitution), glob (an unquoted glob/brace/extglob),
 #          quote (a literal quote or backslash left after one level of
 #          quoting — nested shell text), cmdword (the command word is a
-#          variable), apipath (a REST route that is not plain literal)
+#          variable — for a pr merge or a REST route alike), apipath (a REST
+#          route that is not plain literal)
+#   EXTRA  graphql only: mutation | file | stdin | dyn | cmdword
 #   FLAGS  ,trunc ,dirchg ,branchchg ,ghrepo ,ghhost ,bg — see check_record
-mapfile -t RECORDS < <(printf '%s' "$DETECT" | grep -v '^$' || true)
+#
+# A plain read loop, not mapfile: macOS /bin/bash is 3.2, which has no mapfile,
+# and the hook dying there with exit 127 is a non-blocking error — the merge
+# would run unchecked (PR #3054 review). Keep this file bash-3.2 clean: no
+# mapfile/readarray, declare -A, ${v,,}/${v^^}, |&, &>>, negative indices, and
+# no bare "${arr[@]}" of a possibly-empty array under set -u.
+RECORDS=()
+while IFS= read -r R_LINE; do
+  if [ -n "$R_LINE" ]; then RECORDS+=("$R_LINE"); fi
+done <<<"$DETECT"
 ORIG_DIR=$(pwd)
 
 # Leading `cd <dir> &&` (issue #2872). An agent in a multi-repo workspace
@@ -808,6 +880,8 @@ check_record() {
   if [ "$kind" = "graphql" ]; then
     case "$extra" in
       file) deny "Refusing this GraphQL call: its query is read from a file or stdin (-F query=@file, --input), which this hook cannot read, and a GraphQL query can merge a PR (mergePullRequest, enablePullRequestAutoMerge). ${NOT_PERMITTED} Inline the query (-f query='…') so it can be checked, or ask the user to run it." ;;
+      stdin) deny "Refusing this GraphQL call: its standard input is a pipe, heredoc, herestring or file redirection, which this hook cannot read, and a GraphQL query fed from there can merge a PR (mergePullRequest, enablePullRequestAutoMerge). ${NOT_PERMITTED} Inline the query (-f query='…') with no stdin redirection so it can be checked, or ask the user to run it." ;;
+      cmdword) deny "Refusing this GraphQL call: the command word is a shell variable or substitution, so this hook cannot tell what it runs or what it sends, and a GraphQL query can merge a PR. ${NOT_PERMITTED} Spell the command literally (gh api graphql -f query='…'), or ask the user to run it." ;;
       dyn)  deny "Refusing this GraphQL call: its query is a shell variable or command substitution, so this hook cannot see whether it merges a PR (mergePullRequest, enablePullRequestAutoMerge). ${NOT_PERMITTED} Inline the query literally (-f query='…'), or ask the user to run it." ;;
       *)    deny "Refusing this GraphQL merge (mergePullRequest / enablePullRequestAutoMerge): it names the PR by node id, so this hook cannot check whose PR it is. ${NOT_PERMITTED} Use gh pr merge <number> -R OWNER/REPO instead, which is checked." ;;
     esac
@@ -827,7 +901,7 @@ check_record() {
     dangling)
       deny "Refusing to merge ${WHAT}: the --repo/-R flag has no value inside the command text this hook can see (it is joined from outside a quoted string, as in eval \"… -R\" \"x\"), so this hook cannot tell which repository gh will merge in. ${NOT_PERMITTED} ${retry}" ;;
     cmdword)
-      deny "Refusing to merge ${WHAT}: the command word is a shell variable or substitution, so this hook cannot tell what it runs or with which flags. ${NOT_PERMITTED} ${retry}" ;;
+      deny "Refusing to merge ${WHAT}: the command word is a shell variable or substitution (\$GH pr merge …, \$GH api …/pulls/N/merge), so this hook cannot tell what it runs or with which flags. ${NOT_PERMITTED} ${retry}" ;;
     apipath)
       deny "Refusing this REST merge: the owner, repository or PR number in its pulls/N/merge route is not a plain literal (a shell variable, or gh's {owner}/{repo} placeholders), so this hook cannot tell whose PR it is. ${NOT_PERMITTED} ${retry}" ;;
   esac
@@ -871,7 +945,7 @@ check_record() {
   [ -n "$PR_REPO" ] && VIEW_ARGS+=(--repo "$PR_REPO")
 
   local meta
-  meta=$(gh pr view "${VIEW_ARGS[@]}" \
+  meta=$(gh pr view ${VIEW_ARGS[@]+"${VIEW_ARGS[@]}"} \
           --json number,title,author,url \
           --jq '[(.number|tostring), .author.login, (.author.is_bot|tostring), .title, .url] | @tsv' \
           </dev/null 2>/dev/null || true)
@@ -928,7 +1002,7 @@ check_record() {
 
   # Which touched paths actually execute something? That is the difference
   # between "a typo fix" and "code that runs in CI or on the operator's machine".
-  risky=$(gh pr view "${VIEW_ARGS[@]}" --json files --jq '.files[].path' </dev/null 2>/dev/null \
+  risky=$(gh pr view ${VIEW_ARGS[@]+"${VIEW_ARGS[@]}"} --json files --jq '.files[].path' </dev/null 2>/dev/null \
     | awk '
         /^\.github\/(workflows|actions)\// { print "    " $0 "  (CI executes this)"; next }
         /\.(sh|bash|zsh)$/                 { print "    " $0 "  (shell)"; next }
@@ -966,7 +1040,7 @@ Do not retry with different flags or a different merge route — this hook check
 # cannot be verified denies the whole command (issue #2889 — only the first
 # merge used to be checked, so `gh pr merge 5 && gh pr merge 5 -R other/repo`
 # merged the second unchecked).
-for rec in "${RECORDS[@]}"; do
+for rec in ${RECORDS[@]+"${RECORDS[@]}"}; do
   [ -n "$rec" ] || continue
   IFS=$'\037' read -r R_KIND R_SEL R_REPO R_UNV R_FLAGS R_EXTRA <<<"$rec"
   check_record "$R_KIND" "$R_SEL" "$R_REPO" "$R_UNV" "$R_FLAGS" "$R_EXTRA"
