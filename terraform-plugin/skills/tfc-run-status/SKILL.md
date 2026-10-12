@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-10-12
 reviewed: 2026-04-25
 name: tfc-run-status
 description: "Terraform Cloud run status with resource counts and actions. Use when polling a run, checking pass/fail, or seeing if it can be applied or canceled. Requires TFE_TOKEN."
@@ -115,8 +115,13 @@ TOKEN="${TFE_TOKEN:?TFE_TOKEN not set}"
 RUN_ID="${1:?Usage: $0 <run-id>}"
 
 FINAL_STATES="applied planned_and_finished planned_and_saved discarded errored canceled force_canceled policy_soft_failed"
+# States that wait on a human (confirm / override); polling cannot advance them
+AWAITING_STATES="planned policy_override"
 
-while true; do
+TIMEOUT_SECS="${TFC_POLL_TIMEOUT:-1800}"   # wall-clock deadline, default 30 min
+DEADLINE=$(( $(date +%s) + TIMEOUT_SECS ))
+
+while [ "$(date +%s)" -lt "$DEADLINE" ]; do
   STATUS=$(curl -sf --header "Authorization: Bearer $TOKEN" \
     "https://app.terraform.io/api/v2/runs/$RUN_ID" | \
     jq -r '.data.attributes.status')
@@ -128,9 +133,20 @@ while true; do
     exit 0
   fi
 
+  if echo "$AWAITING_STATES" | grep -qw "$STATUS"; then
+    echo "Run is waiting for a human action (status: $STATUS) — confirm or override it in Terraform Cloud"
+    exit 0
+  fi
+
   sleep 5
 done
+
+echo "Timed out after ${TIMEOUT_SECS}s; last status: ${STATUS:-unknown}" >&2
+exit 1
 ```
+
+The loop ends on a final state, on a state that only a human can advance, or
+at the deadline (`TFC_POLL_TIMEOUT` seconds, default 1800) — never open-ended.
 
 ## JSON Output
 
