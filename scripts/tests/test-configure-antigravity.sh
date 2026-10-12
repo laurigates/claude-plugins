@@ -34,8 +34,13 @@ assert() {
 }
 
 fixture="$(mktemp -d)"
-[ -n "$fixture" ] || { echo "mktemp failed" >&2; exit 1; }
+if [ -z "$fixture" ] || [ ! -d "$fixture" ]; then echo "mktemp failed" >&2; exit 1; fi
 trap 'rm -rf "$fixture"' EXIT
+# Canonicalise: the installer `.resolve()`s its target, so on macOS (mktemp
+# returns /var/folders/…, a symlink to /private/var/folders/…) hooks.json names
+# the physical runner path and the grep built from the unresolved root never
+# matched (#2949).
+fixture="$(cd -P -- "$fixture" && pwd -P)" || { echo "cannot resolve $fixture" >&2; exit 1; }
 
 echo "=== TEST A: fresh configure ==="
 target_a="$fixture/target_a"
