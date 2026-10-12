@@ -267,7 +267,7 @@ expect_line "V13b: rows reported as none" "$out" "TARGET_ISSUE_ROWS=none"
 printf '%s\n' "$good_err" > "$WORK/block.txt"
 out="$(bash "$GUARD" --validate "$WORK/block.txt" 2>&1)"; rc=$?
 expect_exit "V14: --validate FILE passes" "$rc" 0
-expect_line "V14b: target named" "$out" "TARGET=$WORK/block.txt"
+expect_line "V14b: target named" "$out" "TARGET=$WORK/block.txt"  # mktemp-canonical: ok (TARGET echoes the argument verbatim)
 bash "$GUARD" --validate "$WORK/no-such-file" >/dev/null 2>&1; rc=$?
 expect_exit "V15: unreadable --validate FILE exits 2" "$rc" 2
 

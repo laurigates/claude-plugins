@@ -177,6 +177,7 @@ jobs:
             --only 'scripts/tests/test-check-hook-matchers.sh' \
             --only 'scripts/tests/test-check-issue-template-inheritance.sh' \
             --only 'scripts/tests/test-check-loop-integrity.sh' \
+            --only 'scripts/tests/test-check-mktemp-canonical.sh' \
             --only 'scripts/tests/test-check-plugin-root-quoting.sh' \
             --only 'scripts/tests/test-check-positional-references.sh' \
             --only 'scripts/tests/test-check-prose-house-style.sh' \
@@ -380,6 +381,14 @@ jobs:
         # them with a passing parse. Runs unconditionally like the pairs above —
         # the self-test step above proves the guard before it gates the tree.
         run: bash scripts/check-loop-integrity.sh --strict
+
+      - name: Check path-comparing tests canonicalise their mktemp roots
+        # macOS mktemp returns /var/folders/…, a symlink to /private/var/…, so a
+        # test whose expected path is built from the raw root fails only on
+        # macOS once the code under test reports pwd -P / realpath output —
+        # Linux CI never sees it (#2939, #2949). The self-test step above proves
+        # the guard before it gates the tree.
+        run: bash scripts/check-mktemp-canonical.sh --strict
 
       - name: Check House vale rules still encode communication.md
         # The House style package and positional-tics.py are a DERIVED encoding

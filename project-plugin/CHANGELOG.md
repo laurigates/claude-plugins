@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.12](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.21.11...project-plugin-v1.21.12) (2026-10-12)
+
+
+### Code Refactoring
+
+* **project-plugin:** read blueprint state via /blueprint:status in project-continue ([#3056](https://github.com/laurigates/claude-plugins/issues/3056)) ([e01d959](https://github.com/laurigates/claude-plugins/commit/e01d9599ee12b8f2d39457d4de71b61543a8decf)), closes [#2184](https://github.com/laurigates/claude-plugins/issues/2184)
+
 ## [1.21.11](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.21.10...project-plugin-v1.21.11) (2026-10-10)
 
 
