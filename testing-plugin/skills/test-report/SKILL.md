@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-09-05
+modified: 2026-10-12
 reviewed: 2026-04-25
 allowed-tools: Read, Glob, Bash(git *)
 args: "[--history] [--coverage] [--flaky]"
@@ -50,6 +50,7 @@ Quick status check without re-running tests. Reads cached results from last test
    - Check cache directories
    - Parse last run timestamp
    - Extract pass/fail counts
+   - If no cache location exists, report `no data` (see [Output Format](#output-format)) and stop
 
 2. **Coverage Summary** (if --coverage):
    - Read coverage reports
@@ -68,23 +69,36 @@ Quick status check without re-running tests. Reads cached results from last test
 
 ## Output Format
 
+Fill every `<...>` slot from a file you actually read in Behavior step 1. A
+slot with no backing file is reported as `no data`; never estimate or carry over
+a number.
+
+**When no cached results exist** (none of the locations in
+[Cached Result Locations](#cached-result-locations) is present), print only:
+
 ```
-## Test Status (last run: 5 minutes ago)
+## Test Status: no data
 
-| Tier        | Passed | Failed | Skipped |
-|-------------|--------|--------|---------|
-| Unit        | 45     | 2      | 0       |
-| Integration | 12     | 0      | 1       |
-| E2E         | 8      | 1      | 0       |
+No cached test results found (checked: <locations checked>).
+Run `/test:quick` to produce results.
+```
 
-**Coverage**: 78% (target: 80%)
+Otherwise:
+
+```
+## Test Status (last run: <timestamp from the result file>)
+
+| Tier        | Passed   | Failed   | Skipped   |
+|-------------|----------|----------|-----------|
+| <tier>      | <passed> | <failed> | <skipped> |
+
+**Coverage**: <percent from the coverage report, or "no data"> (target: <target, if configured>)
 
 ### Recent Failures
-- test_user_validation: AssertionError (tests/test_user.py:42)
-- e2e/login.spec.ts: Timeout (line 15)
+- <test id>: <error type> (<file>:<line>)
 
 ### Flaky Tests (if --flaky)
-- test_async_handler: 3 failures in last 10 runs
+- <test id>: <failures> failures in last <runs> runs
 
 ### Suggested Actions
 - Run `/test:quick` to verify current state

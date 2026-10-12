@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.61.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.61.2...git-plugin-v2.61.3) (2026-10-12)
+
+
+### Bug Fixes
+
+* **skills:** fix nine defects from the Haiku 5.5 re-evaluation ([#3057](https://github.com/laurigates/claude-plugins/issues/3057)) ([05ccdc1](https://github.com/laurigates/claude-plugins/commit/05ccdc1f98a55607a1c4ee334310b9283ae65b8a)), closes [#3018](https://github.com/laurigates/claude-plugins/issues/3018)
+
 ## [2.61.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.61.1...git-plugin-v2.61.2) (2026-10-10)
 
 

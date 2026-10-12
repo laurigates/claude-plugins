@@ -26,6 +26,11 @@
 # brace expansion, and --profile / --cache-dir. Each now yields no output, also
 # when a line continuation splits the flag, and so does an environment prefix
 # other than KUBECONFIG=….
+# #2888 pins the forms that were missed: global flags before the verb (the
+# `kubectl --context=X apply` form validate-kubectl-context.sh asks for, checked
+# against that hook's own printed example), `timeout N` / `env KUBECONFIG=…`
+# wrappers (sudo, a path and other env assignments stay silent), and the apply
+# subcommands that reject --dry-run (view-last-applied, edit-last-applied).
 set -uo pipefail
 
 HOOK="$(cd "$(dirname "$0")" && pwd)/inject-kubectl-dry-run.sh"
@@ -224,6 +229,79 @@ assert_silent 'kubectl apply -f x.yaml &&' 'missing node after &&'
 assert_silent 'kubectl apply -f "x.yaml' 'unterminated quote (a MISSING node, not ERROR)'
 assert_silent 'kubectl apply -f ${x' 'unterminated ${'
 assert_silent 'kubectl apply -f `x' 'unterminated backtick'
+
+echo "=== #2888 item 1: kubectl global flags before the verb ==="
+# validate-kubectl-context.sh tells the agent to write `kubectl --context=X
+# <command>`; the checkpoint must fire on that exact form.
+assert_rewrite 'kubectl --context=staging apply -f x.yaml' \
+    "kubectl --context=staging apply $D -f x.yaml $D" '--context=X before the verb'
+assert_rewrite 'kubectl --context staging apply -f x.yaml' \
+    "kubectl --context staging apply $D -f x.yaml $D" '--context X before the verb'
+assert_rewrite 'kubectl -n prod delete pod x' "kubectl -n prod delete $D pod x $D" '-n ns before the verb'
+assert_rewrite 'kubectl --namespace=prod --context=staging patch deploy web -p r.yaml' \
+    "kubectl --namespace=prod --context=staging patch $D deploy web -p r.yaml $D" 'two global flags'
+assert_rewrite 'kubectl --kubeconfig /tmp/k --cluster c --user u apply -f x.yaml' \
+    "kubectl --kubeconfig /tmp/k --cluster c --user u apply $D -f x.yaml $D" '--kubeconfig/--cluster/--user values'
+assert_rewrite 'kubectl -v 6 --request-timeout=30s -s https://k:6443 delete pod x' \
+    "kubectl -v 6 --request-timeout=30s -s https://k:6443 delete $D pod x $D" '-v N, --request-timeout=, -s URL'
+assert_rewrite 'kubectl --as=admin --as-group g --token=t --server=https://k apply -f x.yaml' \
+    "kubectl --as=admin --as-group g --token=t --server=https://k apply $D -f x.yaml $D" '--as/--as-group/--token/--server'
+assert_rewrite 'kubectl --context apply delete pod x' \
+    "kubectl --context apply delete $D pod x $D" 'a context named apply is the value, delete is the verb'
+assert_silent 'kubectl --insecure-skip-tls-verify apply -f x.yaml' 'unknown global flag before the verb'
+assert_silent 'kubectl -nprod apply -f x.yaml' 'attached short value is not modelled'
+assert_silent 'kubectl --context "staging" apply -f x.yaml' 'quoted flag value before the verb'
+assert_silent 'kubectl --context="staging" apply -f x.yaml' 'quoted value glued to the flag is not a bare word'
+assert_silent 'kubectl --context apply' 'valued flag swallows the would-be verb'
+assert_silent 'kubectl -n --context=s apply -f x.yaml' 'a flag is not a flag value'
+assert_silent 'kubectl --context=staging get pods' 'read-only verb after a global flag'
+# Cross-hook: the corrected form validate-kubectl-context.sh prints is rewritten.
+CTX_HOOK="$(dirname "$HOOK")/validate-kubectl-context.sh"
+CTX_EXAMPLE=$(jq -n '{tool_input: {command: "kubectl apply -f deployment.yaml"}}' \
+    | "$BASH" "$CTX_HOOK" 2>&1 >/dev/null | sed -n 's/^[[:space:]]*\(kubectl --context=[^ ]* apply .*\)$/\1/p' | head -1 || true)
+if [ -n "$CTX_EXAMPLE" ]; then
+    assert_rewrite "$CTX_EXAMPLE" "${CTX_EXAMPLE/ apply / apply $D } $D" \
+        'the apply example validate-kubectl-context.sh prints'
+else
+    fail 'validate-kubectl-context.sh printed no `kubectl --context=… apply …` example'
+fi
+
+echo "=== #2888 item 2: wrapper and path invocations ==="
+# timeout DURATION and env KUBECONFIG=… run the same kubectl from PATH, so they
+# are rewritten (restoring the pre-#2880 coverage). sudo escalates, a path can
+# name any binary, and env NAME=… can set PATH= or LD_PRELOAD=: no output.
+assert_rewrite 'timeout 60 kubectl apply -f x.yaml' "timeout 60 kubectl apply $D -f x.yaml $D" 'timeout N'
+assert_rewrite 'timeout 1.5m kubectl --context=s delete pod x' \
+    "timeout 1.5m kubectl --context=s delete $D pod x $D" 'timeout with a unit and a global flag'
+assert_rewrite 'env KUBECONFIG=/tmp/k kubectl apply -f x.yaml' \
+    "env KUBECONFIG=/tmp/k kubectl apply $D -f x.yaml $D" 'env KUBECONFIG=…'
+assert_rewrite 'timeout 60 env kubectl apply -f x.yaml' \
+    "timeout 60 env kubectl apply $D -f x.yaml $D" 'timeout then env'
+assert_silent 'sudo kubectl delete pod x' 'sudo is not a target'
+assert_silent '/usr/local/bin/kubectl apply -f x.yaml' 'a path to kubectl can be any binary'
+assert_silent './kubectl apply -f x.yaml' 'a relative path to kubectl'
+assert_silent 'env K=v kubectl apply -f x.yaml' 'env with a non-KUBECONFIG assignment'
+assert_silent 'K=v kubectl apply -f x.yaml' 'bare non-KUBECONFIG assignment (control, #2887)'
+assert_silent 'env PATH=/tmp/evil kubectl apply -f x.yaml' 'env PATH= can swap the binary'
+assert_silent 'env -i kubectl apply -f x.yaml' 'env with an option'
+assert_silent 'timeout -s KILL 60 kubectl apply -f x.yaml' 'timeout with an option'
+assert_silent 'timeout kubectl apply -f x.yaml' 'timeout without a duration'
+assert_silent 'timeout 60 sudo kubectl apply -f x.yaml' 'timeout then sudo'
+assert_silent 'timeout 60 kubectl get pods' 'read-only verb behind timeout'
+
+echo "=== #2888 item 3: apply subcommands that reject --dry-run ==="
+assert_silent 'kubectl apply view-last-applied deploy/web' 'view-last-applied has no --dry-run'
+assert_silent 'kubectl apply edit-last-applied deploy/web' 'edit-last-applied has no --dry-run'
+assert_silent 'kubectl --context=staging apply view-last-applied deploy/web -o yaml' \
+    'view-last-applied after a global flag'
+assert_silent 'kubectl apply -f x.yaml view-last-applied' 'view-last-applied after a flag (cobra still finds it)'
+assert_rewrite 'kubectl apply set-last-applied -f x.yaml' \
+    "kubectl apply $D set-last-applied -f x.yaml $D" 'set-last-applied accepts --dry-run'
+assert_rewrite 'kubectl delete configmap view-last-applied' \
+    "kubectl delete $D configmap view-last-applied $D" 'the name only matters under apply'
+
+echo "=== #2888 item 4: an unseen -- stays out of reach ==="
+assert_silent 'kubectl delete pod x ${X:---} y' '${X:---} declines (no positional --dry-run=client)'
 
 SANDBOX=$(mktemp -d "${TMPDIR:-/tmp}/kubectl-dry-run-test.XXXXXX") || SANDBOX=""
 if [ -z "$SANDBOX" ] || [ ! -d "$SANDBOX" ]; then

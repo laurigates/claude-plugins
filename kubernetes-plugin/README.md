@@ -261,6 +261,11 @@ last `--dry-run` it sees, and a second copy goes right after the verb:
 | Command shape | Result |
 |---------------|--------|
 | One simple `kubectl apply\|delete\|patch` command, optionally with a trailing comment | Rewritten (`kubectl apply --dry-run=client -f x.yaml --dry-run=client # note`) and allowed |
+| Global flags before the verb, from a bounded list: `--context`, `--kubeconfig`, `-n`/`--namespace`, `--cluster`, `--user`, `--as`, `--as-group`, `--request-timeout`, `-s`/`--server`, `--token`, `-v`, as `--flag=value` or `--flag value` (#2888) | Rewritten — so the `kubectl --context=staging apply -f x.yaml` form that `validate-kubectl-context.sh` asks for gets the checkpoint |
+| Any other flag before the verb, or a quoted flag value there (`--context "staging"`) | **No output** |
+| Behind `timeout DURATION` or `env KUBECONFIG=…` (`timeout 60 kubectl apply …`) | Rewritten |
+| Behind `sudo`, `env` with an option or another assignment, or as a path (`/usr/local/bin/kubectl`, `./kubectl` — any binary can carry that name) | **No output** |
+| `kubectl apply view-last-applied` / `edit-last-applied`, which register no `--dry-run` (`set-last-applied` does and is rewritten) | **No output** |
 | The command has a `--` argument (also when quoted, as in `'--'` or `\--`), which ends option parsing | **No output** |
 | Anything beyond one simple command — `&&`, `;`, a pipe, a redirect (leading or trailing), a heredoc, a herestring, a substitution, a subshell or loop | **No output**: not rewritten, not allowed — your normal permission flow decides |
 | Any `$`, backtick, `{`, `<`, `>`, `*`, `?` or `[` in the kubectl command — an expansion, substitution, brace expansion or glob, and also a JSON patch such as `-p '{"spec":…}'` | **No output** |
