@@ -1,6 +1,6 @@
 ---
 created: 2026-07-07
-modified: 2026-08-14
+modified: 2026-10-12
 reviewed: 2026-07-07
 name: comfy-registry-lifecycle
 description: >-
@@ -103,6 +103,7 @@ Empty list ⇒ broken tarball. The `downloadUrl`
 | `NodeVersionStatusActive` | scan passed; installable | none |
 | `NodeVersionStatusFlagged` | scan flagged it | **stuck** — does NOT auto-clear. Still installable; drops out of the Active-only listing (`/nodes/<id>` `latest_version`). Full reasons: `GET /nodes/<id>/versions?include_status_reason=true` (undocumented public param — see the security-scan section below). Republishing re-runs the scan; appeal via Comfy-Org if a false positive |
 | `NodeVersionStatusBanned` | moderation banned it | **not installable** — `/install` skips it and falls back to the newest non-banned version, which can be old and itself `deprecated` |
+| `NodeVersionStatusDeleted` | removed from the registry | **presumed not installable** — installs are *expected* to fall back like Banned, but that is unverified: no Deleted version is publicly listed to test `/install` against (`GET /versions?statuses=NodeVersionStatusDeleted` returned 0 on 2026-10-12, vs 1,254 Banned). Publish a newer version to supersede it |
 
 ComfyUI-Manager (and so `comfy node install`) resolves through
 `GET /nodes/<id>/install`, which returns the newest **non-Banned** version —
@@ -155,7 +156,7 @@ force a version — it conflicts with the automation.
 A `.github/workflows/registry-health.yml` (runs after publish, daily, and
 on demand) that looks up the `pyproject.toml` version in the registry and
 **fails + opens a `registry-health` issue** when that version is Flagged,
-Banned, stuck Pending, missing, or outranked by a phantom — auto-closing when
+Banned, Deleted, stuck Pending, missing, or outranked by a phantom — auto-closing when
 healthy — is the early-warning the publish pipeline lacks on its own.
 On Flagged or Banned it queries `?include_status_reason=true` and writes the
 scan findings (issue type / scanner / file / description) into the issue body,
