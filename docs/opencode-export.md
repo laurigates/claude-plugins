@@ -171,18 +171,53 @@ sandbox.
 OpenCode has no Claude Code hook surface, so
 [`scripts/generate-opencode-hook-plugins.py`](../scripts/generate-opencode-hook-plugins.py)
 (issue [#1605](https://github.com/laurigates/claude-plugins/issues/1605))
-projects each plugin's `hooks.json` into an OpenCode JS plugin:
+projects each plugin's hooks into an OpenCode JS plugin. It scans every
+`*-plugin` directory for both declaration sites (issue
+[#2724](https://github.com/laurigates/claude-plugins/issues/2724)): a bare
+`<plugin>/hooks.json`, and the `hooks` value of `.claude-plugin/plugin.json`,
+which is either an inline object (hooks-plugin, feedback-plugin,
+kubernetes-plugin and five SessionStart/Stop-only plugins) or a path such as
+`"./hooks.json"` (read once, not twice). Each `PLUGIN=` line of the export
+output names its `SOURCE=`, and `HOOK_PLUGINS_SCANNED` counts every plugin that
+declares hooks at either site:
 
 ```
 dist/opencode/
   plugins/<plugin>-hooks.js            # one OpenCode plugin per hook-bearing plugin
   hook-scripts/<plugin>/hooks/*.sh     # the referenced scripts, copied
+  hook-scripts/<plugin>/hooks/lib/     # helper library, when a script uses it
+  hook-scripts/<plugin>/hooks/<helper> # sibling helpers a script runs by name
 ```
 
 The generated JS resolves its scripts relative to itself
 (`../hook-scripts/<plugin>/`) and exports `CLAUDE_PLUGIN_ROOT` at that root, so
 the scripts run unmodified. The two trees must travel together —
 `install-opencode.sh` copies both.
+
+A script's own dependencies ship with it (PR
+[#3046](https://github.com/laurigates/claude-plugins/pull/3046) review). Most
+hooks source a helper with `|| exit 0` or call it without checking it exists, so
+a missing helper turns the hook into a silent no-op rather than an error. For
+each copied script, and transitively for each helper it pulls in, the
+generator copies:
+
+| Dependency | Detected by | Example |
+|------------|-------------|---------|
+| The plugin's whole `hooks/lib/` | The script mentions `lib/` or a `"lib"` path segment | `bash-antipatterns-teach.sh` → `lib/command-views.sh` |
+| Another plugin's `hooks/lib/` | `<other>-plugin/hooks/lib/` in the script | (same rule as the pi export) |
+| A sibling file in the same `hooks/` dir | Its file name on a non-comment line, and the file exists | `workflow-scale-guard.sh` → `workflow-scale-estimate.py` → `lib/workflow-scale-parse.cjs`; `blueprint-doc-change.sh` → its three dispatch targets |
+
+The two `lib/` rules are the ones
+[`generate-pi-hook-extension.py`](../scripts/generate-pi-hook-extension.py)
+`copy_scripts` uses, so both exports ship the same library tree. Each `PLUGIN=`
+line reports `LIBS=` and `HELPERS=` when it copied any, and the summary adds
+`COPIED_HELPERS=` and `COPIED_LIB_DIRS=`.
+
+A malformed `plugin.json` or `hooks.json` no longer aborts the export: it prints
+`PLUGIN=<name> PARSE-ERROR=<file>: <error>` and the run continues. A `hooks`
+pointer that escapes the plugin dir or names a missing file prints
+`PLUGIN=<name> POINTER-SKIP=<ref> reason=...`. Either one sets `STATUS=WARN`,
+counted in `PARSE_ERRORS=` and `POINTER_SKIPS=`.
 
 | Claude Code | OpenCode | Semantics |
 |-------------|----------|-----------|
@@ -193,7 +228,9 @@ the scripts run unmodified. The two trees must travel together —
 
 Matchers translate too: bare tool names (`Bash` → `bash`), path-scoped forms
 (`Write(docs/prds/**)` → `write` + glob on `filePath`), and `Skill(name)`
-(→ the `skill` tool). Everything that cannot export is reported per plugin on
+(→ the `skill` tool). A bare name with no OpenCode tool (`SlashCommand`,
+`Workflow`) passes through verbatim and never matches; it is reported as a
+`NOTE` line. Everything that cannot export is reported per plugin on
 the export output **and** in the generated file's header comment. A script
 that goes missing at runtime **fails open** (`console.error` + allow) rather
 than blocking every matched call.
@@ -204,8 +241,11 @@ than blocking every matched call.
 
 Regression guard: [`scripts/tests/test-export-opencode-hooks.sh`](../scripts/tests/test-export-opencode-hooks.sh)
 asserts every referenced script resolves, blocking semantics survive, no
-literal `${CLAUDE_PLUGIN_ROOT}` reaches generated code, and prompt hooks stay
-skipped.
+literal `${CLAUDE_PLUGIN_ROOT}` reaches generated code, prompt hooks stay
+skipped, inline plugin.json hooks and `./hooks.json` pointers are both
+discovered, `lib/` and sibling helpers are copied (including hooks-plugin's
+`lib/command-views.sh` and `workflow-scale-estimate.py`), and a malformed
+`plugin.json` is reported without stopping the export.
 
 ## 3. Serve the model
 
@@ -489,7 +529,7 @@ a brainstorm or an older snippet, check it against this table:
 - [`docs/adrs/0022-adapter-over-export-for-foreign-harnesses.md`](adrs/0022-adapter-over-export-for-foreign-harnesses.md) — why an adapter rather than an export
 - [`scripts/export-opencode.sh`](../scripts/export-opencode.sh) — agent + hook export driver
 - [`scripts/export-opencode-agents.py`](../scripts/export-opencode-agents.py) — subagent projection
-- [`scripts/generate-opencode-hook-plugins.py`](../scripts/generate-opencode-hook-plugins.py) — hooks.json → OpenCode JS plugin generator
+- [`scripts/generate-opencode-hook-plugins.py`](../scripts/generate-opencode-hook-plugins.py) — plugin hooks (hooks.json or inline plugin.json) → OpenCode JS plugin generator
 - [`scripts/tests/test-export-opencode-agents.sh`](../scripts/tests/test-export-opencode-agents.sh) — agent-export + no-skills-tree regression guard
 - [`scripts/tests/test-export-opencode-hooks.sh`](../scripts/tests/test-export-opencode-hooks.sh) — hooks-export regression guard
 - [`scripts/install-opencode.sh`](../scripts/install-opencode.sh) — additive installer
