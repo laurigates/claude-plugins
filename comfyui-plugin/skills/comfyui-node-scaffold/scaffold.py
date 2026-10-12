@@ -2611,8 +2611,10 @@ BANNER_SVG = """\
 # NON-BANNED version, so a Flagged version still installs (it only drops out of
 # the Active-only listing), while a Banned one is skipped and installs fall back
 # to an older version (laurigates/comfyui-image-browser#111). A Deleted version
-# is not installable either; it used to fall through to "Active in registry"
-# (#2994). All three report the version /install actually resolves to. Mirrors the sibling packs'
+# used to fall through to "Active in registry" (#2994); installs are expected to
+# fall back to an older version (not yet verified against /install — no Deleted
+# version is publicly listed to test). All three report the version /install
+# actually resolves to. Mirrors the sibling packs'
 # registry-health.yml; scripts/tests/test-registry-health.sh executes the step.
 #
 # The Pending guard before the `gh issue close` block is load-bearing: the
@@ -2634,8 +2636,8 @@ REGISTRY_HEALTH_YML = r"""name: Registry health
 #   2. A tracking issue (label registry-health) opened/updated when the version
 #      is Flagged, Banned, Deleted, stuck Pending, or missing, and closed once it
 #      goes Active. Flagged, Banned and Deleted issues name the version /install
-#      resolves to: Flagged still installs, Banned and Deleted fall back to an
-#      older version.
+#      resolves to: Flagged still installs, Banned falls back to an older
+#      version, and Deleted is expected to (not yet verified against /install).
 #
 # The registry security scan is async: a freshly published version is Pending
 # for a while before it flips to Active or Flagged. So a run triggered right
@@ -2744,8 +2746,9 @@ jobs:
                   | join("\n")
                 else "  - \(tostring | .[0:400])" end' versions.json)
             # What a clean install actually gets. /install returns the newest
-            # NON-BANNED version: Flagged still installs, Banned (and Deleted)
-            # fall back — possibly to a very old, itself-deprecated version.
+            # NON-BANNED version: Flagged still installs, Banned falls back —
+            # possibly to a very old, itself-deprecated version. Deleted is
+            # expected to fall back too (not yet verified against /install).
             install_json=$(curl -fsS "https://api.comfy.org/nodes/${node_id}/install" 2>/dev/null) || install_json=""
             resolved=$(jq -r '.version // empty' <<<"$install_json" 2>/dev/null) || resolved=""
             resolved_note=$(jq -r 'if .deprecated == true then " (itself marked `deprecated`)" else "" end' <<<"$install_json" 2>/dev/null) || resolved_note=""
@@ -2762,7 +2765,7 @@ jobs:
               header="Declared version **\`${ver}\`** is **Banned** by Comfy-Org registry moderation."
             elif [ "$status" = "NodeVersionStatusDeleted" ]; then
               problem="deleted"
-              impact="- A Deleted version is not installable; clean installs fall back to an older one: ${installs}. The fallback can be much older than \`${ver}\`."
+              impact="- Clean installs are expected to fall back to an older version (not yet verified against \`/install\`): ${installs}. The fallback can be much older than \`${ver}\`."
               header="Declared version **\`${ver}\`** is **Deleted** from the Comfy Registry."
               remedy="- Publish a new version (> \`${ver}\`) to supersede it, or check ${dash} if the deletion was unintended."
             else
@@ -2779,10 +2782,14 @@ jobs:
             {
               printf '%s\n' "$header" "" "$impact"
               [ -z "$listing" ] || printf '%s\n' "$listing"
-              printf '%s\n' \
-                "- Scan findings (\`include_status_reason=true\`):" \
-                "${findings:-  - (none reported)}" \
-                "$remedy"
+              # Deletion is not a scan verdict, so a Deleted body has no
+              # findings section — not even "(none reported)".
+              if [ "$problem" != "deleted" ]; then
+                printf '%s\n' \
+                  "- Scan findings (\`include_status_reason=true\`):" \
+                  "${findings:-  - (none reported)}"
+              fi
+              printf '%s\n' "$remedy"
             } > "$body"
           elif [ "$status" = "NodeVersionStatusPending" ]; then
             age_h=$(( ( $(date -u +%s) - $(date -u -d "$created" +%s) ) / 3600 ))
