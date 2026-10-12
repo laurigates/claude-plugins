@@ -440,24 +440,28 @@ serve-pi-model:
 # drops the key so a local-model-only pi runs agents on the session model
 # instead of reporting `(unavailable, fallback: inherit)` on every dispatch; any
 # other value is a pi model id applied to every agent.
+# `model_map` (e.g. opus=prov/large,haiku=prov/small) sends each pinned tier to
+# its own target; agents whose tier is not in the map follow `model`.
 # Project marketplace subagents into pi-subagents' agent format (output: dist/pi)
 [group: "pi"]
-export-pi-agents out="dist/pi" model="preserve":
+export-pi-agents out="dist/pi" model="preserve" model_map="":
     #!/usr/bin/env bash
     set -euo pipefail
     out="{{out}}"
     case "$out" in /*) ;; *) out="{{justfile_directory()}}/$out" ;; esac
+    map_args=()
+    if [ -n {{quote(model_map)}} ]; then map_args=(--model-map={{quote(model_map)}}); fi
     python3 "{{justfile_directory()}}/scripts/export-pi-agents.py" \
-        --model={{quote(model)}} "{{justfile_directory()}}" "$out"
+        --model={{quote(model)}} ${map_args[@]+"${map_args[@]}"} "{{justfile_directory()}}" "$out"
 
 # Additive: agents you wrote yourself under <target> are preserved — never an
 # rm -rf of a shared directory. No-op with a hint when @tintinweb/pi-subagents is
 # absent, because pi ignores .pi/agents/ entirely without it: installing anyway
 # would look like it worked and change nothing.
-# `model` is the same switch as export-pi-agents: preserve | inherit | <model>.
+# `model` and `model_map` are the same switches as export-pi-agents.
 # Install exported subagents into a pi agents dir (default: global)
 [group: "pi"]
-install-pi-agents target=pi_agents_dir model="preserve":
+install-pi-agents target=pi_agents_dir model="preserve" model_map="":
     #!/usr/bin/env bash
     set -euo pipefail
     target="{{target}}"
@@ -473,8 +477,10 @@ install-pi-agents target=pi_agents_dir model="preserve":
     fi
     tmp="$(mktemp -d)"
     trap 'rm -rf "$tmp"' EXIT
+    map_args=()
+    if [ -n {{quote(model_map)}} ]; then map_args=(--model-map={{quote(model_map)}}); fi
     python3 "{{justfile_directory()}}/scripts/export-pi-agents.py" \
-        --model={{quote(model)}} "{{justfile_directory()}}" "$tmp" >/dev/null
+        --model={{quote(model)}} ${map_args[@]+"${map_args[@]}"} "{{justfile_directory()}}" "$tmp" >/dev/null
     mkdir -p "$target"
     cp "$tmp"/agents/*.md "$target/"
     echo "installed $(find "$target" -maxdepth 1 -name '*.md' | wc -l | tr -d ' ') subagent file(s) in $target"
