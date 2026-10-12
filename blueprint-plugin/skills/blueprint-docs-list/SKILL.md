@@ -1,6 +1,6 @@
 ---
 created: 2026-02-06
-modified: 2026-10-10
+modified: 2026-10-12
 reviewed: 2026-04-25
 description: List blueprint documents (ADRs, PRDs, PRPs) with frontmatter metadata. Use when listing docs, auditing statuses, or generating an index for project documentation.
 args: "<type>"
@@ -86,7 +86,8 @@ echo "## Blueprint Documents Summary"
 echo ""
 for doc_type in adrs prds prps; do
   doc_count=$(ls docs/$doc_type/*.md 2>/dev/null | grep -cv 'README.md' || echo 0)
-  echo "### ${doc_type^^}: $doc_count documents"
+  doc_label=$(printf '%s' "$doc_type" | tr '[:lower:]' '[:upper:]')
+  echo "### ${doc_label}: $doc_count documents"
   if [ "$doc_count" -gt 0 ]; then
     for s in Accepted Proposed Deprecated Superseded draft ready approved; do
       sc=$(grep -ril "^status:.*$s\|^$s$" docs/$doc_type/*.md 2>/dev/null | wc -l | tr -d ' ')
