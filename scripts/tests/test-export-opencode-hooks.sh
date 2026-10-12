@@ -159,6 +159,33 @@ JSON
 mkdir -p "$fixture_root/nohooks-plugin/.claude-plugin"
 echo '{"name": "nohooks-plugin"}' > "$fixture_root/nohooks-plugin/.claude-plugin/plugin.json"
 
+# PR #3046 review: a hook script's transitive dependencies — a `lib/` it
+# sources and a sibling helper it runs from its own hooks dir — must ship with
+# it, or the hook silently no-ops under OpenCode (both fail open).
+mkdir -p "$fixture_root/libuser-plugin/hooks/lib"
+cat > "$fixture_root/libuser-plugin/hooks/uses-lib.sh" <<'SH'
+#!/usr/bin/env bash
+. "$(dirname "$0")/lib/x.sh" 2>/dev/null || exit 0
+python3 "$(dirname "$0")/helper.py"
+SH
+echo 'x_fn() { :; }' > "$fixture_root/libuser-plugin/hooks/lib/x.sh"
+echo 'print("ok")' > "$fixture_root/libuser-plugin/hooks/helper.py"
+echo 'unreferenced' > "$fixture_root/libuser-plugin/hooks/unrelated.py"
+cat > "$fixture_root/libuser-plugin/hooks.json" <<'JSON'
+{"hooks": {"PreToolUse": [{"matcher": "Bash|SlashCommand", "hooks": [
+  {"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/uses-lib.sh\""}
+]}]}}
+JSON
+# A malformed plugin.json must be reported, not abort the whole export.
+mkdir -p "$fixture_root/broken-plugin/.claude-plugin"
+echo '{"name": "broken-plugin", "hooks": ' > "$fixture_root/broken-plugin/.claude-plugin/plugin.json"
+# A hooks pointer escaping the plugin dir is skipped with a reason; a pointer
+# to a missing file is reported rather than dropped silently.
+mkdir -p "$fixture_root/escape-plugin/.claude-plugin"
+cat > "$fixture_root/escape-plugin/.claude-plugin/plugin.json" <<'JSON'
+{"name": "escape-plugin", "hooks": ["../synthetic-plugin/hooks.json", "./gone.json"]}
+JSON
+
 fixture_out="$test_tmp/fixture-out"
 fixture_report="$(python3 "$test_generator" "$fixture_root" "$fixture_out")" || {
     echo "FAIL: generator exited non-zero on fixture"
@@ -212,10 +239,39 @@ check "pointer: ./hooks.json pointer read exactly once" \
     grep -q "PLUGIN=pointer-plugin JS=plugins/pointer-plugin-hooks.js EXPORTED=1 SKIPPED=0 SOURCE=hooks.json$" <<<"$fixture_report"
 check_not "nohooks: plugin.json without hooks is not scanned" \
     grep -q "PLUGIN=nohooks-plugin" <<<"$fixture_report"
-check "fixture: scanned count includes inline + pointer plugins" \
-    grep -qx "HOOK_PLUGINS_SCANNED=3" <<<"$fixture_report"
-check "fixture: generated count includes inline + pointer plugins" \
-    grep -qx "HOOK_PLUGINS_GENERATED=3" <<<"$fixture_report"
+check "fixture: scanned count includes inline + pointer + lib plugins" \
+    grep -qx "HOOK_PLUGINS_SCANNED=4" <<<"$fixture_report"
+check "fixture: generated count includes inline + pointer + lib plugins" \
+    grep -qx "HOOK_PLUGINS_GENERATED=4" <<<"$fixture_report"
+
+# PR #3046 review: transitive dependencies are copied, unreferenced files are not.
+check "lib: sourced lib/x.sh copied" \
+    test -f "$fixture_out/hook-scripts/libuser-plugin/hooks/lib/x.sh"
+check "lib: sibling helper.py copied" \
+    test -f "$fixture_out/hook-scripts/libuser-plugin/hooks/helper.py"
+check_not "lib: unreferenced sibling not copied" \
+    test -e "$fixture_out/hook-scripts/libuser-plugin/hooks/unrelated.py"
+check "lib: copied lib and helper reported" \
+    grep -q "PLUGIN=libuser-plugin .*LIBS=libuser-plugin HELPERS=helper.py" <<<"$fixture_report"
+# Malformed plugin.json: reported loudly, export continues (STATUS still printed).
+check "parse-error: malformed plugin.json reported" \
+    grep -q "^PLUGIN=broken-plugin PARSE-ERROR=.claude-plugin/plugin.json: " <<<"$fixture_report"
+check "parse-error: export continues to the summary (STATUS=WARN)" \
+    grep -qx "STATUS=WARN" <<<"$fixture_report"
+check "parse-error: counted in summary" \
+    grep -qx "PARSE_ERRORS=1" <<<"$fixture_report"
+check "pointer: escaping pointer skipped with reason" \
+    grep -q "^PLUGIN=escape-plugin POINTER-SKIP=../synthetic-plugin/hooks.json reason=escapes plugin dir" <<<"$fixture_report"
+check "pointer: missing pointer target reported" \
+    grep -q "^PLUGIN=escape-plugin POINTER-SKIP=./gone.json reason=file not found" <<<"$fixture_report"
+# Unmapped bare tool names (no OpenCode equivalent) still pass through, but the
+# dead entry is reported as a NOTE (stdout and JS header) instead of silently.
+check "unmapped: SlashCommand alternative noted on stdout" \
+    grep -qF "NOTE event=PreToolUse matcher=Bash|SlashCommand reason=no OpenCode tool named SlashCommand (entry kept, never matches)" <<<"$fixture_report"
+check "unmapped: SlashCommand note in JS header" \
+    grep -qF "// Notes:" "$fixture_out/plugins/libuser-plugin-hooks.js"
+check_not "unmapped: mapped-only matcher produces no NOTE" \
+    grep -q "NOTE event=PreToolUse matcher=Bash reason" <<<"$fixture_report"
 
 # --- Real-repo suite -------------------------------------------------------
 repo_out="$test_tmp/repo-out"
@@ -249,6 +305,16 @@ while IFS=: read -r js script; do
         test -f "$repo_out/hook-scripts/$plugin_name/hooks/$script"
 done < <(grep -o '"script": "[^"]*"' "$repo_out"/plugins/*.js \
     | sed 's/"script": "//; s/"$//')
+
+# PR #3046 review: hooks-plugin's transitive dependencies ship with it —
+# bash-antipatterns-teach.sh sources lib/command-views.sh, and
+# workflow-scale-guard.sh runs workflow-scale-estimate.py (which itself loads
+# lib/workflow-scale-parse.cjs and the vendored parser).
+hp_out="$repo_out/hook-scripts/hooks-plugin/hooks"
+check "repo: hooks-plugin lib/command-views.sh copied" test -f "$hp_out/lib/command-views.sh"
+check "repo: hooks-plugin workflow-scale-estimate.py copied" test -f "$hp_out/workflow-scale-estimate.py"
+check "repo: hooks-plugin lib/workflow-scale-parse.cjs copied" test -f "$hp_out/lib/workflow-scale-parse.cjs"
+check "repo: no parse errors on the real repo" grep -qx "PARSE_ERRORS=0" <<<"$repo_report"
 
 # The prompt-type PR-issue-link hook must not leak into the git plugin's
 # executable code (the skip-report comment legitimately cites its matcher).

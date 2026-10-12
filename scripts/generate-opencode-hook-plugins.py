@@ -11,6 +11,11 @@ ${CLAUDE_PLUGIN_ROOT} through literally, and never copied the referenced scripts
   <plugin>/hooks.json                        \\
   <plugin>/.claude-plugin/plugin.json#hooks  >  <out>/plugins/<plugin>-hooks.js
   <plugin>/hooks/*.sh  ->  <out>/hook-scripts/<plugin>/hooks/*.sh  (referenced scripts only)
+  + each copied script's transitive helpers (PR #3046 review): the plugin's
+    hooks/lib/ when a script mentions lib/, any <other>-plugin/hooks/lib/ it
+    reaches across (both as generate-pi-hook-extension.py's copy_scripts), and
+    sibling files in the same hooks/ dir it names (e.g. workflow-scale-guard.sh
+    -> workflow-scale-estimate.py), followed transitively.
 
 Discovery (issue #2724): every `*-plugin` directory is scanned for BOTH
 declaration sites: a bare `<plugin>/hooks.json`, and the `hooks` value of
@@ -34,6 +39,11 @@ Skipped, loudly (reported on stdout and in the generated JS header):
   - command strings not shaped `bash "${CLAUDE_PLUGIN_ROOT}/hooks/<script>.sh"`
     (the unquoted `bash ${CLAUDE_PLUGIN_ROOT}/hooks/<script>.sh` is still
     accepted for back-compat).
+  - matcher alternatives naming a Claude Code tool OpenCode lacks (e.g.
+    `SlashCommand`, `Workflow`): kept verbatim, so they never match; NOTE line.
+  - malformed plugin.json / hooks.json (PARSE-ERROR) and hooks pointers that
+    escape the plugin dir or name a missing file (POINTER-SKIP): reported per
+    plugin, the export continues, and STATUS=WARN.
 
 A missing script at runtime FAILS OPEN (console.error + allow) — deliberately
 NOT the throw-ENOENT-on-every-matched-call failure mode a path-only projection
@@ -64,6 +74,7 @@ CLAUDE_TO_OPENCODE_TOOL = {
     "WebFetch": "webfetch",
     "TodoWrite": "todowrite",
 }
+OPENCODE_TOOLS = set(CLAUDE_TO_OPENCODE_TOOL.values())
 
 # Accepts both `bash ${CLAUDE_PLUGIN_ROOT}/hooks/x.sh` and the quoted
 # `bash "${CLAUDE_PLUGIN_ROOT}/hooks/x.sh"` (the form `claude plugin validate`
@@ -74,6 +85,16 @@ COMMAND_RE = re.compile(
     r'^bash (?P<q>")?\$\{CLAUDE_PLUGIN_ROOT\}/hooks/(?P<script>[A-Za-z0-9._-]+\.sh)(?(q)"|)$'
 )
 MATCHER_WITH_ARG_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\((.*)\)$")
+
+# Transitive-dependency detection for copied hook scripts. LIB_REF_RE is a
+# superset of generate-pi-hook-extension.py's `"/lib/" in text` test (it also
+# catches `os.path.join(HERE, "lib", ...)` and a bare `lib/x` mention);
+# CROSS_PLUGIN_LIB_RE is the pi generator's pattern verbatim. SIBLING_REF_RE
+# collects candidate file names; only those that exist directly in the same
+# plugin's hooks/ dir are copied.
+LIB_REF_RE = re.compile(r"\blib/|[\"']lib[\"']")
+CROSS_PLUGIN_LIB_RE = re.compile(r"([A-Za-z0-9_-]+-plugin)/hooks/lib/")
+SIBLING_REF_RE = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._-]*\.(?:sh|py|cjs|mjs|js)\b")
 
 
 def glob_to_regex(pattern):
@@ -323,9 +344,26 @@ export const {export_name} = async ({{ directory }}) => {{
 """
 
 
+def _load_hooks_json(path, label, problems):
+    """Parse one JSON file; on failure record a PARSE-ERROR and return None."""
+    try:
+        return json.loads(path.read_text())
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as err:
+        problems.append(f"PARSE-ERROR={label}: {err}")
+        return None
+
+
+def _hooks_of(doc):
+    hooks = doc.get("hooks") if isinstance(doc, dict) else None
+    return hooks if isinstance(hooks, dict) else {}
+
+
 def discover_hook_sources(plugin_dir):
-    """Return [(source_label, events_dict)] for every hook declaration site of
-    one plugin; an empty list means the plugin declares no hooks.
+    """Return (sources, problems): sources is [(source_label, events_dict)] for
+    every hook declaration site of one plugin (empty = declares no hooks);
+    problems is a list of `PARSE-ERROR=...` / `POINTER-SKIP=...` report
+    fragments, so one malformed manifest is reported rather than aborting the
+    whole export.
 
     Reads `<plugin>/hooks.json` AND `<plugin>/.claude-plugin/plugin.json#hooks`
     (issue #2724: eight plugins declare hooks inline in plugin.json with no
@@ -335,31 +373,93 @@ def discover_hook_sources(plugin_dir):
     pointer is read once. Mirrors generate-pi-hook-extension.py's discovery.
     """
     sources = []
+    problems = []
     seen = set()
+    plugin_root = plugin_dir.resolve()
     hooks_json = plugin_dir / "hooks.json"
     if hooks_json.is_file():
         seen.add(hooks_json.resolve())
-        sources.append(
-            ("hooks.json", json.loads(hooks_json.read_text()).get("hooks") or {})
-        )
+        doc = _load_hooks_json(hooks_json, "hooks.json", problems)
+        if doc is not None:
+            sources.append(("hooks.json", _hooks_of(doc)))
     plugin_json = plugin_dir / ".claude-plugin" / "plugin.json"
     if not plugin_json.is_file():
-        return sources
-    declared = json.loads(plugin_json.read_text()).get("hooks")
+        return sources, problems
+    manifest = _load_hooks_json(plugin_json, ".claude-plugin/plugin.json", problems)
+    if not isinstance(manifest, dict):
+        return sources, problems
+    declared = manifest.get("hooks")
     if isinstance(declared, dict):
         sources.append(("plugin.json", declared))
-        return sources
+        return sources, problems
     refs = declared if isinstance(declared, list) else [declared]
     for ref in refs:
         if not isinstance(ref, str):
             continue
         target = (plugin_dir / ref).resolve()
-        if target in seen or not target.is_file():
+        try:
+            label = target.relative_to(plugin_root).as_posix()
+        except ValueError:
+            problems.append(f"POINTER-SKIP={ref} reason=escapes plugin dir")
+            continue
+        if target in seen:
+            continue
+        if not target.is_file():
+            problems.append(f"POINTER-SKIP={ref} reason=file not found")
             continue
         seen.add(target)
-        label = target.relative_to(plugin_dir.resolve()).as_posix()
-        sources.append((label, json.loads(target.read_text()).get("hooks") or {}))
-    return sources
+        doc = _load_hooks_json(target, label, problems)
+        if doc is not None:
+            sources.append((label, _hooks_of(doc)))
+    return sources, problems
+
+
+def copy_hook_scripts(repo_root, plugin_dir, scripts, out_dir):
+    """Copy the referenced scripts plus their transitive helpers.
+
+    Returns (libs, helpers): the plugins whose hooks/lib/ was copied, and the
+    sibling helper files pulled in by name. Mirrors the pi generator's
+    copy_scripts lib handling so both exports ship the same dependency tree.
+    """
+    plugin = plugin_dir.name
+    hooks_dir = plugin_dir / "hooks"
+    dst_dir = out_dir / "hook-scripts" / plugin / "hooks"
+    dst_dir.mkdir(parents=True, exist_ok=True)
+
+    queue = sorted(scripts)
+    copied = set(queue)
+    helpers = []
+    libs = set()
+    while queue:
+        name = queue.pop(0)
+        src = hooks_dir / name
+        shutil.copy2(src, dst_dir / name)
+        text = src.read_text(errors="replace")
+        if LIB_REF_RE.search(text) and (hooks_dir / "lib").is_dir():
+            libs.add(plugin)
+        libs.update(
+            p
+            for p in CROSS_PLUGIN_LIB_RE.findall(text)
+            if (repo_root / p / "hooks" / "lib").is_dir()
+        )
+        # Sibling names are read from code lines only: hook headers routinely
+        # cite their test twin or a peer hook in a `#` comment, which is not a
+        # runtime dependency.
+        code = "\n".join(
+            line for line in text.splitlines() if not line.lstrip().startswith("#")
+        )
+        for ref in sorted(set(SIBLING_REF_RE.findall(code))):
+            if ref not in copied and (hooks_dir / ref).is_file():
+                copied.add(ref)
+                helpers.append(ref)
+                queue.append(ref)
+    for lib_plugin in sorted(libs):
+        shutil.copytree(
+            repo_root / lib_plugin / "hooks" / "lib",
+            out_dir / "hook-scripts" / lib_plugin / "hooks" / "lib",
+            dirs_exist_ok=True,
+        )
+    return sorted(libs), sorted(helpers)
 
 
 def source_path(plugin, label):
@@ -369,13 +469,15 @@ def source_path(plugin, label):
     return f"{plugin}/{label}"
 
 
-def process_plugin(plugin_dir, sources, out_dir):
+def process_plugin(repo_root, plugin_dir, sources, out_dir):
     """Returns (exported_count, skipped list of (event, matcher, kind, reason),
-    copied script names)."""
+    notes list of (event, matcher, reason), copied script names, copied lib
+    plugins, copied helper names)."""
     plugin = plugin_dir.name
 
     entries = {"before": [], "after": []}
     skipped = []
+    notes = []
     scripts = set()
 
     events = [item for _, hooks in sources for item in hooks.items()]
@@ -417,6 +519,26 @@ def process_plugin(plugin_dir, sources, out_dir):
                         )
                     )
                     continue
+                # A bare Claude Code tool name OpenCode lacks (SlashCommand,
+                # Workflow) still passes through verbatim, as MCP names do, but
+                # can never match: report it so the dead entry is visible.
+                unmapped = [
+                    a["tool"]
+                    for a in parsed
+                    if a["tool"] is not None
+                    and a["tool"] not in OPENCODE_TOOLS
+                    and not a["tool"].startswith("mcp__")
+                ]
+                if unmapped:
+                    notes.append(
+                        (
+                            event,
+                            matcher,
+                            "no OpenCode tool named "
+                            + "|".join(unmapped)
+                            + " (entry kept, never matches)",
+                        )
+                    )
                 timeout = normalize_timeout(hook.get("timeout", 60))
                 for alt in parsed:
                     entries[slot].append(
@@ -432,21 +554,25 @@ def process_plugin(plugin_dir, sources, out_dir):
 
     exported = len(entries["before"]) + len(entries["after"])
     if exported == 0:
-        return 0, skipped, []
+        return 0, skipped, notes, [], [], []
 
-    scripts_dst = out_dir / "hook-scripts" / plugin / "hooks"
-    scripts_dst.mkdir(parents=True, exist_ok=True)
-    for script in sorted(scripts):
-        shutil.copy2(plugin_dir / "hooks" / script, scripts_dst / script)
+    libs, helpers = copy_hook_scripts(repo_root, plugin_dir, scripts, out_dir)
 
+    lines = ["//"]
+    if libs or helpers:
+        lines.append("// Helpers copied alongside the scripts:")
+        lines.extend(f"//   - {p}/hooks/lib/" for p in libs)
+        lines.extend(f"//   - hooks/{h}" for h in helpers)
+    if notes:
+        lines.append("// Notes:")
+        for event, matcher, reason in notes:
+            lines.append(f"//   - {event} [{matcher}]: {reason}")
     if skipped:
-        lines = ["//", "// Skipped (not exportable to OpenCode):"]
+        lines.append("// Skipped (not exportable to OpenCode):")
         for event, matcher, kind, reason in skipped:
             shown = matcher or '""'
             lines.append(f"//   - {event} [{shown}] type={kind}: {reason}")
-        skip_report = "\n".join(lines)
-    else:
-        skip_report = "//"
+    skip_report = "\n".join(lines)
 
     js = JS_TEMPLATE.format(
         plugin=plugin,
@@ -459,7 +585,7 @@ def process_plugin(plugin_dir, sources, out_dir):
     plugins_dst = out_dir / "plugins"
     plugins_dst.mkdir(parents=True, exist_ok=True)
     (plugins_dst / f"{plugin}-hooks.js").write_text(js)
-    return exported, skipped, sorted(scripts)
+    return exported, skipped, notes, sorted(scripts), libs, helpers
 
 
 def main():
@@ -471,19 +597,32 @@ def main():
 
     print("=== OPENCODE HOOK EXPORT ===")
     generated = total_exported = total_skipped = total_scripts = 0
-    scanned = 0
+    scanned = total_libs = total_helpers = parse_errors = pointer_skips = 0
     for plugin_dir in sorted(p for p in repo_root.glob("*-plugin") if p.is_dir()):
-        sources = discover_hook_sources(plugin_dir)
+        sources, problems = discover_hook_sources(plugin_dir)
+        for problem in problems:
+            print(f"PLUGIN={plugin_dir.name} {problem}")
+        parse_errors += sum(p.startswith("PARSE-ERROR=") for p in problems)
+        pointer_skips += sum(p.startswith("POINTER-SKIP=") for p in problems)
         if not sources:
             continue
         scanned += 1
-        exported, skipped, scripts = process_plugin(plugin_dir, sources, out_dir)
+        exported, skipped, notes, scripts, libs, helpers = process_plugin(
+            repo_root, plugin_dir, sources, out_dir
+        )
         js_path = f"plugins/{plugin_dir.name}-hooks.js" if exported else "-"
+        extra = ""
+        if libs:
+            extra += f" LIBS={','.join(libs)}"
+        if helpers:
+            extra += f" HELPERS={','.join(helpers)}"
         print(
             f"PLUGIN={plugin_dir.name} JS={js_path} "
             f"EXPORTED={exported} SKIPPED={len(skipped)} "
-            f"SOURCE={','.join(label for label, _ in sources)}"
+            f"SOURCE={','.join(label for label, _ in sources)}{extra}"
         )
+        for event, matcher, reason in notes:
+            print(f"  NOTE event={event} matcher={matcher} reason={reason}")
         for event, matcher, kind, reason in skipped:
             shown = matcher if matcher else '""'
             print(f"  SKIP event={event} matcher={shown} type={kind} reason={reason}")
@@ -492,13 +631,19 @@ def main():
         total_exported += exported
         total_skipped += len(skipped)
         total_scripts += len(scripts)
+        total_libs += len(libs)
+        total_helpers += len(helpers)
 
     print(f"HOOK_PLUGINS_SCANNED={scanned}")
     print(f"HOOK_PLUGINS_GENERATED={generated}")
     print(f"EXPORTED_HOOKS={total_exported}")
     print(f"SKIPPED_HOOKS={total_skipped}")
     print(f"COPIED_SCRIPTS={total_scripts}")
-    print("STATUS=OK")
+    print(f"COPIED_HELPERS={total_helpers}")
+    print(f"COPIED_LIB_DIRS={total_libs}")
+    print(f"PARSE_ERRORS={parse_errors}")
+    print(f"POINTER_SKIPS={pointer_skips}")
+    print("STATUS=WARN" if parse_errors or pointer_skips else "STATUS=OK")
     print("=== END OPENCODE HOOK EXPORT ===")
     return 0
 
