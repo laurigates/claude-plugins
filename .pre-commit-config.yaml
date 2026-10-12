@@ -886,6 +886,18 @@ repos:
         language: system
         files: '^scripts/(check-git-sandbox-guards\.sh|tests/test-check-git-sandbox-guards\.sh)$'
         pass_filenames: false
+      - id: check-mktemp-canonical
+        name: path-comparing tests canonicalise their mktemp roots (macOS /private/var, #2949)
+        entry: bash ./scripts/check-mktemp-canonical.sh --strict
+        language: system
+        files: '\.(sh|py)$'
+        pass_filenames: false
+      - id: test-check-mktemp-canonical
+        name: mktemp-canonical guard regression
+        entry: bash ./scripts/tests/test-check-mktemp-canonical.sh
+        language: system
+        files: '^scripts/(check-mktemp-canonical\.sh|tests/test-check-mktemp-canonical\.sh)$'
+        pass_filenames: false
       - id: test-resolve-additive-conflicts
         name: additive-conflict union resolver regression (no-LLM pre-pass)
         entry: bash ./scripts/tests/test-resolve-additive-conflicts.sh
