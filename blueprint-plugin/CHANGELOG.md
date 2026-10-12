@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.47.4](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.47.3...blueprint-plugin-v3.47.4) (2026-10-12)
+
+
+### Bug Fixes
+
+* **skills:** fix nine defects from the Haiku 5.5 re-evaluation ([#3057](https://github.com/laurigates/claude-plugins/issues/3057)) ([05ccdc1](https://github.com/laurigates/claude-plugins/commit/05ccdc1f98a55607a1c4ee334310b9283ae65b8a)), closes [#3018](https://github.com/laurigates/claude-plugins/issues/3018)
+
 ## [3.47.3](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.47.2...blueprint-plugin-v3.47.3) (2026-10-11)
 
 
