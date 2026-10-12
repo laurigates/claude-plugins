@@ -64,19 +64,35 @@ project_dir="."
 manifest=""
 dry_run=false
 
+bad_arg() { # <argument as given>
+    printf 'migrate-generated-rules-keys.sh: unknown argument: %s\n' "$1" >&2
+    usage
+    exit 2
+}
+
+# A flag whose value is empty or missing is an unknown argument, never a silent
+# default: `--project-dir=` root-anchors the rules dir, and a trailing
+# `--manifest` used to `shift 2` past the end (which fails without shifting and
+# loops forever) or fall back to the project manifest — a swallowed argument
+# retargeting which file is written (#2057).
 while [ $# -gt 0 ]; do
     case "$1" in
-        --project-dir)   project_dir="${2:-.}"; shift 2 ;;
-        --project-dir=*) project_dir="${1#*=}"; shift ;;
-        --manifest)      manifest="${2:-}"; shift 2 ;;
-        --manifest=*)    manifest="${1#*=}"; shift ;;
+        --project-dir|--manifest)
+            if [ $# -lt 2 ] || [ -z "$2" ]; then bad_arg "$1 (missing value)"; fi
+            if [ "$1" = "--manifest" ]; then manifest="$2"; else project_dir="$2"; fi
+            shift 2
+            ;;
+        --project-dir=*|--manifest=*)
+            [ -n "${1#*=}" ] || bad_arg "$1 (empty value)"
+            case "$1" in
+                --manifest=*) manifest="${1#*=}" ;;
+                *)            project_dir="${1#*=}" ;;
+            esac
+            shift
+            ;;
         --dry-run)       dry_run=true; shift ;;
         -h|--help)       usage; exit 0 ;;
-        *)
-            printf 'migrate-generated-rules-keys.sh: unknown argument: %s\n' "$1" >&2
-            usage
-            exit 2
-            ;;
+        *)               bad_arg "$1" ;;
     esac
 done
 
@@ -228,10 +244,17 @@ if ! $dry_run && [ "$migrated" -gt 0 ]; then
 fi
 $dry_run && migrated=0
 
+# `${arr[@]+"${arr[@]}"}`, never a bare "${arr[@]}": with `set -u`, bash < 4.4
+# (macOS /bin/bash 3.2) treats an empty array as unbound and aborts — on exactly
+# the clean / no-op paths sync and status run on every repo (PR #3052 review).
+# The issue count comes from the scalar counters, not `${#issues[@]}`, so the
+# empty case never touches an empty array at all.
 if $dry_run; then
-    issues=("${findings[@]}")
+    issues=(${findings[@]+"${findings[@]}"})
+    issue_count=$((n_ext + n_hash + n_unresolved + n_conflict))
 else
-    issues=("${residual[@]}")
+    issues=(${residual[@]+"${residual[@]}"})
+    issue_count=$((n_unresolved + n_conflict))
 fi
 
 printf '=== %s ===\n' "$SECTION"
@@ -250,7 +273,7 @@ fi
 printf 'UNRESOLVED=%d\n' "$n_unresolved"
 printf 'CONFLICTS=%d\n' "$n_conflict"
 printf 'MIGRATED=%d\n' "$migrated"
-if [ "${#issues[@]}" -eq 0 ]; then
+if [ "$issue_count" -eq 0 ]; then
     printf 'STATUS=OK\n'
     printf 'ISSUE_COUNT=0\n'
 else
@@ -259,12 +282,12 @@ else
     first_msg="${first#*MSG=}"
     reason="${first_type}: ${first_msg}"
     reason="${reason:0:180}"
-    [ "${#issues[@]}" -gt 1 ] && reason="${reason} (+$(( ${#issues[@]} - 1 )) more)"
+    [ "$issue_count" -gt 1 ] && reason="${reason} (+$((issue_count - 1)) more)"
     printf 'STATUS=WARN\n'
     printf 'REASON=%s\n' "$reason"
-    printf 'ISSUE_COUNT=%d\n' "${#issues[@]}"
+    printf 'ISSUE_COUNT=%d\n' "$issue_count"
     printf 'ISSUES:\n'
-    for issue in "${issues[@]}"; do
+    for issue in ${issues[@]+"${issues[@]}"}; do
         printf '  - %s\n' "$issue"
     done
 fi
