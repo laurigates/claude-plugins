@@ -1,6 +1,6 @@
 ---
 created: 2025-12-22
-modified: 2026-08-09
+modified: 2026-10-11
 reviewed: 2026-08-09
 description: "Check for stale generated content and offer regeneration or promotion. Use when syncing blueprint after PRD changes, or reconciling .claude/rules/ drift."
 args: "[--dry-run]"
@@ -55,6 +55,25 @@ interactively (explicit intent overrides quiet; see ADR-0020).
    ```
    - Extract `generated.rules` section
    - If no generated content, report "Nothing to sync"
+
+1a. **Detect pre-contract records** (issue #2868):
+
+   Manifests written by blueprint 3.0.0 key `generated.rules` without `.md` and
+   carry no `content_hash`, so Step 2 would report every rule missing. Check first:
+
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/migrate-generated-rules-keys.sh" --dry-run
+   ```
+
+   - `STATUS=OK` → continue to Step 2.
+   - `KEY_MISSING_EXTENSION` or `RECORD_MISSING_HASH` above 0 → WARN in the
+     report with each `key_missing_extension` / `record_missing_hash` issue —
+     never list those rules as missing. With `--dry-run`, stop at the warning
+     and recommend `/blueprint:sync`. Otherwise run the script without
+     `--dry-run`: it re-keys to `<key>.md` and backfills `content_hash` from the
+     current file with `status: "modified"`, never touching the rule files.
+   - `key_unresolved` / `key_conflict` issues → list them for the user; the
+     script leaves those records untouched.
 
 2. **Check each generated rule**:
 
