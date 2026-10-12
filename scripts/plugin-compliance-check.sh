@@ -820,6 +820,27 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: project-continue parsed docs/blueprint/feature-tracker.json
+    # and docs/blueprint/work-orders/ directly (issue #2184). Those formats are
+    # owned by blueprint-plugin and migrate under blueprint-upgrade (v1.x ->
+    # v3.3), so a sibling plugin hand-parsing them silently reads the wrong
+    # shape after an upgrade. The 2026-09-20 decision: read blueprint state via
+    # `/blueprint:status` instead. Semantic invariants: no direct reference to
+    # either blueprint-owned path anywhere in the skill corpus, and the
+    # delegation to `/blueprint:status` survives on the SKILL.md page.
+    if [ "$skill_name" = "project-continue" ]; then
+      for token in "feature-tracker.json" "work-orders/"; do
+        if grep -qF -- "$token" <<<"$skill_corpus_text"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md or a sidecar references '${token}' — read blueprint state via /blueprint:status, never parse blueprint-owned files directly (issue #2184)")
+          has_errors=true
+        fi
+      done
+      if ! grep -qF -- "/blueprint:status" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must delegate blueprint state to '/blueprint:status' (issue #2184)")
+        has_errors=true
+      fi
+    fi
+
     # Regression: session-distill's mechanical substrate is distill-survey.sh —
     # the read-only collector that mines the session transcript for recipe
     # candidates / hot files / process groupings so the skill judges instead of

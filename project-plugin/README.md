@@ -29,11 +29,11 @@ Analyze project state and continue development where you left off.
 
 **Features:**
 - Checks git status, recent commits, current branch
-- Reads project context (PRDs, work overview, work orders)
+- Reads project context: PRDs, plus blueprint state via `/blueprint:status` in blueprint repos (never parses blueprint files directly); falls back to PRDs and git state when there is no `docs/blueprint/`
 - Analyzes state and determines next task
 - Reports project status before starting
 - Begins work following TDD (RED → GREEN → REFACTOR)
-- Updates feature tracker as work progresses
+- Updates the feature tracker via `/blueprint:feature-tracker-sync` in blueprint repos
 
 **Usage:**
 ```bash
