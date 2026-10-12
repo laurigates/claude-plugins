@@ -31,8 +31,15 @@
 #     none of $ ` { < > * ? [ (an expansion, substitution, redirection, brace
 #     expansion or glob can become a flag, a `--` or a file write that the
 #     parse does not show);
-#   - its command_name is literally `kubectl` and the very next word is
-#     literally apply, delete or patch;
+#   - its program is literally `kubectl`, optionally behind `timeout DURATION`
+#     or `env KUBECONFIG=…` (not sudo, not a path, no other env assignment);
+#     between kubectl and the verb sit only bare words from a bounded list of
+#     global flags (--context, --kubeconfig, -n/--namespace, --cluster,
+#     --user, --as, --as-group, --request-timeout, -s/--server, --token, -v,
+#     as --flag=value or --flag value), and the verb is literally apply,
+#     delete or patch (#2888);
+#   - under apply, no word is view-last-applied or edit-last-applied: those
+#     subcommands register no --dry-run and would fail on the rewrite (#2888);
 #   - once lines are joined, quotes and backslashes are dropped and `_` reads
 #     as `-` (kubectl's flag normalizer), no word contains --dry-run (so the
 #     --dry-run=none bypass, --dry_run=none, --dry-r''un=none and
@@ -128,7 +135,7 @@ rule: { kind: variable_assignment }
 id: word
 language: bash
 rule:
-  kind: word
+  any: [ { kind: word }, { kind: number } ]
   inside: { kind: command, stopBy: neighbor }'
 
 PARSED=$(printf '%s' "$COMMAND" \
@@ -143,9 +150,9 @@ NODES=$(jq -r '.[] | "\(.range.byteOffset.start) \(.range.byteOffset.end) \(.rul
 CMD_COUNT=0
 CMD_START=-1
 CMD_END=-1
-NAME_END=-1
 NAME_COUNT=0
-VERB_END=-1
+# The command name and the node's own bare words, in order, as "<start> <end>".
+TOKENS=()
 COVERED=()
 LINE_RE='^(0|[1-9][0-9]*) (0|[1-9][0-9]*) (cmd|err|cmt|name|word|csub|psub|exp|sexp|fredir|hstr|asgn)$'
 while IFS= read -r line; do
@@ -175,25 +182,79 @@ while IFS= read -r line; do
             ;;
         name)
             NAME_COUNT=$((NAME_COUNT + 1))
-            if [ "${COMMAND:start:end-start}" = "kubectl" ]; then NAME_END=$end; fi
+            TOKENS=("$start $end")
             ;;
         word)
-            # The verb: the first word after the name, separated only by blanks.
-            if [ "$NAME_END" -ge 0 ] && [ "$VERB_END" -lt 0 ] && [ "$start" -gt "$NAME_END" ]; then
-                VERB_END=-2
-                gap=${COMMAND:NAME_END:start-NAME_END}
-                case ${COMMAND:start:end-start} in
-                    apply | delete | patch)
-                        if [[ $gap =~ ^[[:blank:]]+$ ]]; then VERB_END=$end; fi
-                        ;;
-                esac
-            fi
+            if [ "${#TOKENS[@]}" -gt 0 ]; then TOKENS+=("$start $end"); fi
             ;;
     esac
 done <<<"$NODES"
 
-# Exactly one non-empty command node whose program is kubectl and verb mutates.
+# Exactly one non-empty command node with one name.
 if [ "$CMD_COUNT" -ne 1 ] || [ "$NAME_COUNT" -ne 1 ] || [ "$CMD_START" -ge "$CMD_END" ]; then exit 0; fi
+
+# Walk the tokens from the name to the verb (#2888). Each step reads the next
+# token, which must be a bare word separated from the previous one by blanks
+# only: a quoted or concatenated argument in between leaves a non-blank gap.
+TOK_I=0
+TOK=""
+TOK_END=-1
+next_token() {
+    local s e
+    [ "$TOK_I" -lt "${#TOKENS[@]}" ] || return 1
+    read -r s e <<<"${TOKENS[TOK_I]}"
+    if [ "$TOK_END" -ge 0 ]; then
+        [[ ${COMMAND:TOK_END:s-TOK_END} =~ ^[[:blank:]]+$ ]] || return 1
+    fi
+    TOK=${COMMAND:s:e-s}
+    TOK_END=$e
+    TOK_I=$((TOK_I + 1))
+}
+
+# Transparent prefixes that run the same kubectl from PATH: `timeout DURATION`
+# (no options) and `env` followed only by KUBECONFIG=… words. sudo, a path to
+# kubectl (any binary can be named kubectl), an env option and any other env
+# assignment (PATH=, LD_PRELOAD=) are not targets: no output.
+next_token || exit 0
+for _ in 1 2 3; do
+    case $TOK in
+        timeout)
+            next_token || exit 0
+            [[ $TOK =~ ^[0-9]+(\.[0-9]+)?[smhd]?$ ]] || exit 0
+            next_token || exit 0
+            ;;
+        env)
+            next_token || exit 0
+            while [[ $TOK == KUBECONFIG=* ]]; do next_token || exit 0; done
+            ;;
+        *) break ;;
+    esac
+done
+[ "$TOK" = "kubectl" ] || exit 0
+
+# kubectl global flags between the name and the verb (#2888):
+# validate-kubectl-context.sh asks for `kubectl --context=X <command>`. A
+# bounded list, as `--flag=value` or `--flag value`; any other word before the
+# verb means no output. A separate value never starts with `-`.
+VERB=""
+VERB_END=-1
+while next_token; do
+    case $TOK in
+        --context=* | --kubeconfig=* | --namespace=* | -n=* | --cluster=* | --user=* | --as=* | \
+            --as-group=* | --request-timeout=* | --server=* | -s=* | --token=* | -v=* | --v=*) ;;
+        --context | --kubeconfig | --namespace | -n | --cluster | --user | --as | --as-group | \
+            --request-timeout | --server | -s | --token | -v | --v)
+            next_token || exit 0
+            case $TOK in -*) exit 0 ;; esac
+            ;;
+        apply | delete | patch)
+            VERB=$TOK
+            VERB_END=$TOK_END
+            break
+            ;;
+        *) exit 0 ;;
+    esac
+done
 if [ "$VERB_END" -lt 0 ] || [ "$VERB_END" -gt "$CMD_END" ]; then exit 0; fi
 
 # Nothing but whitespace outside the command node and comments: no operator,
@@ -237,6 +298,13 @@ for word in "${NODE_WORDS[@]}"; do
         *--dry-run*) exit 0 ;;
         -- | --raw | --raw=* | --profile* | --cache-dir*) exit 0 ;;
     esac
+    # view-last-applied and edit-last-applied register no --dry-run, so the
+    # rewrite would fail with an unknown flag (#2888). cobra finds a
+    # subcommand past flags, so any such word under apply defers;
+    # set-last-applied accepts --dry-run and is rewritten.
+    if [ "$VERB" = "apply" ]; then
+        case $flag in view-last-applied | edit-last-applied) exit 0 ;; esac
+    fi
 done
 
 # A trailing flag without `=` may take a value, and would swallow the injected
