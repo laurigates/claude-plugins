@@ -279,21 +279,75 @@ A public repo attracts drive-by PRs, and merge tooling is built for bulk-merging
 | Any non-merge command | Allowed, immediately |
 
 Covers every merge route: `gh pr merge` (in any flag order, inside a compound
-command, with or without `--repo`), `gh api ... /pulls/N/merge`, and the GitHub
-MCP `merge_pull_request` tool. `--admin` does not bypass it.
+command, with or without `--repo`), `gh api ... /pulls/N/merge` (and `curl`
+on the same route), GraphQL `mergePullRequest` / `enablePullRequestAutoMerge`
+mutations, and the GitHub MCP `merge_pull_request` tool. `--admin` does not
+bypass it. **Every** merge in a command is checked, not just the first
+(issue #2889): `gh pr merge 5 && gh pr merge 5 -R other/repo` checks both,
+and the command is denied if any one is external or unverifiable.
+
+**How the arguments are read.** As gh's flag parser (cobra/pflag) reads them,
+after the shell has removed quotes:
+
+| Spelling | Read as |
+|----------|---------|
+| `-R x`, `--repo x`, `--repo=x`, `-Rx`, `-R=x`, `-sRx`, `-sR x`, `"-R" x`, `'--repo' x` | repository `x` (the last one wins, as in gh) |
+| `gh -R x pr merge 5`, `gh pr -R x merge 5` | repository `x` — gh accepts `-R` before the subcommand |
+| `-s`/`--squash`, `-m`/`--merge`, `-r`/`--rebase`, `-d`/`--delete-branch` | booleans, so `gh pr merge -s 2231` merges 2231 |
+| `-b`/`--body`, `-F`/`--body-file`, `-t`/`--subject`, `-A`/`--author-email`, `--match-head-commit` | take a value, which is never the selector |
+| `"gh" pr merge`, `g\h pr merge`, `/usr/bin/gh pr merge`, `gh pr "merge"` | a merge |
+
+Denied as **unverifiable** (the hook cannot know what gh will receive): an
+argument holding a shell variable or command substitution (`$F`, `"$F"`,
+`$(…)`, backticks; a quoted value of `--body`/`--subject` is fine), an unquoted
+glob, brace or zsh extglob (`-? x`, `{-R,x}`, `-@(R) x`), a variable command
+word in front of any merge route — `$GH pr merge`, `$GH api …/pulls/N/merge`,
+`$CURL -X PUT …/pulls/N/merge`, and any `$GH api graphql` call —
+xargs/parallel (they add arguments at run time), a shell
+reading its script from a pipe (`echo '…' | bash`), nested shell text whose
+quoting leaves a literal quote or a dangling `-R` (`bash -c "… \"-R\" x"`,
+`eval "… -R" "x"`), a GraphQL merge mutation (it names the PR by node id), a
+GraphQL query read from `@file`/`--input`, a variable, or stdin (a pipe, a
+heredoc, a `<<<` herestring or a `<` redirection other than `/dev/null`), and a
+REST route whose owner/repo/number is not literal (`repos/$R/pulls/5/merge`).
+Command substitutions inside double quotes and inside an unquoted heredoc
+(`<<EOF`, where markdown backticks execute) are scanned as commands; a `<<<`
+herestring is a plain redirection, so the lines after it are still scanned.
+MCP `owner`/`repo`/`pullNumber` values carrying a newline or the hook's
+internal `\036`/`\037` separators are denied.
+
+**Fails closed on its own errors.** A scanner failure denies, and so does any
+crash after a command is recognised as a possible merge (an `EXIT` trap emits the
+deny): a hook error is non-blocking in Claude Code, so dying would let the merge
+run. The hook is kept bash-3.2 clean (no `mapfile`, `declare -A`, `${v,,}`, …)
+because macOS `/bin/bash` is 3.2.
+
+**Not covered:** a `gh` alias defined *before* the command (`gh alias set mm
+'pr merge'`, then `gh mm 5`) and a script or binary that merges internally —
+the hook sees only the command text, not what it calls.
 
 **Which repository the PR is looked up in.** With `--repo`/`-R`, that
 repository. Otherwise the repository of the hook's cwd, with one exception
 (issue #2872): when the command is exactly `cd <dir> && gh pr merge …`, the PR
-is looked up in `<dir>`, where the merge actually runs.
+is looked up in `<dir>`, where the merge actually runs. Any *other* way the
+command could change the repository gh resolves before a merge without `-R`
+is denied as unverifiable rather than looked up in the wrong place (issue
+#2889 — these used to fall back to the session cwd, which checked your own PR
+while gh merged someone else's).
 
-| Leading `cd` shape | Looked up in |
-|--------------------|--------------|
-| `cd /abs/path && gh pr merge 5`, also `./…`, `../…`, `~/…` — one plain literal operand, the cd first and the merge second, joined by `&&` | The cd target, if it exists and resolves to the same directory logically and physically |
-| `cd x; gh pr merge`, `cd x \|\| …`, `cd -P x`, `cd "x"`, `cd $X`, a glob or brace, a bare relative name (CDPATH-dependent), `pushd`, a second cd/pushd/popd, `GH_REPO`, or a second merge anywhere in the command; any word after the `&&` starting `-` that contains `R` or `-repo` (`-Racme/x`, `-R=acme/x`, `-sRacme/x`), or any character there outside letters, digits, blanks and `._/:=@%+,-&;` — quotes, backslash, `$`, backtick, braces, globs and extglobs (`"-R" acme/x`, `$FLAGS`, `-? acme/x`, `--re?o acme/x`, `-!(Q) acme/x`, which expand to `-R`/`--repo` when the cd target holds a file of that name), `\|` or a newline — anything that could spell a repo flag the parser misses; a redirection (`> f`, `2>f`, `&>f`, which can truncate the cd target's `.git/HEAD` before gh runs) or a lone backgrounding `&` (the merge would race what follows) — anything that runs before or alongside gh | The session cwd, exactly as before |
+| Before a merge with no `-R` | Result |
+|-----------------------------|--------|
+| `cd /abs/path && gh pr merge 5`, also `./…`, `../…`, `~/…` — one plain literal operand, the cd first and the merge second, joined by `&&`, the only merge in the command | Looked up in the cd target, if it exists and resolves to the same directory logically and physically |
+| Any other cd shape (`cd x; gh pr merge`, `cd x \|\| …`, `cd -P x`, `cd "x"`, `cd $X`, `pushd`, `(cd x && …)`, `bash -c 'cd x && …'`, a cd inside a loop), `env -C`, `sudo -D`, `find -execdir`, `GIT_DIR`/`GIT_WORK_TREE`, `git remote`/`config`/`worktree`/`clone`/`init`, `gh repo set-default`, a `gh` function or alias, `source`/`.`, `ssh`, a redirection into a `.git` path, or a lone backgrounding `&` anywhere in the command | **Denied** — retry with `-R OWNER/REPO` as its own command |
+| `GH_REPO` set inline, exported earlier, or through an environment entry whose name is a variable | **Denied** — gh obeys an explicit `-R` over `GH_REPO`, so name the repo with `-R` |
+| `git checkout`/`switch` or `gh pr checkout`, for a merge with no PR selector | **Denied** — the current-branch PR the hook can see is not the one gh merges |
+| `GH_HOST`, `GH_CONFIG_DIR`, `XDG_CONFIG_HOME` or `HOME` set (even with `-R`) | **Denied** — gh would talk to a different host or account |
 
 When the lookup fails and no `--repo` was given, the denial names the directory
-it resolved the repository from and suggests retrying with `-R OWNER/REPO`.
+it resolved the repository from and suggests retrying with `-R OWNER/REPO`. The
+hazard scan reads the command text before the merge, so a commit message that
+merely says "cd" or "remote" before an un-`-R` merge also denies; `-R` resolves
+it.
 
 The command word is resolved **structurally**, so a merge stays a merge when it
 is reached through:
