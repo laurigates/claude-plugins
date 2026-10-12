@@ -40,6 +40,13 @@ WORK=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 NOGIT_BIN=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 SIM=""
 trap 'rm -rf "$WORK" "$NOGIT_BIN" ${SIM:+"$SIM"}' EXIT
+# Canonicalise: the hook resolves operands with `pwd -P`, so on macOS (mktemp
+# returns /var/folders/…, a symlink to /private/var/folders/…) the "names the
+# blocked path" assertion built from the unresolved root never matched (#2949).
+# Resolved only after the empty/missing guard, so `cd` can never fall back to
+# the real checkout.
+if [ -z "$WORK" ] || [ ! -d "$WORK" ]; then echo "mktemp -d returned no directory" >&2; exit 1; fi
+WORK=$(cd -P -- "$WORK" && pwd -P) || { echo "cannot resolve $WORK" >&2; exit 1; }
 
 mkdir -p "$WORK/home" "$WORK/backups" "$WORK/plain"
 
