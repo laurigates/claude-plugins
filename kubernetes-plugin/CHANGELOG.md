@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.5](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.9.4...kubernetes-plugin-v1.9.5) (2026-10-13)
+
+
+### Bug Fixes
+
+* **kubernetes-plugin:** fire inject-kubectl-dry-run after global flags and skip apply subcommands ([#3049](https://github.com/laurigates/claude-plugins/issues/3049)) ([e1cb00f](https://github.com/laurigates/claude-plugins/commit/e1cb00fee8a5e80de5bb6a4f2feb516987219433)), closes [#2888](https://github.com/laurigates/claude-plugins/issues/2888)
+
 ## [1.9.4](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.9.3...kubernetes-plugin-v1.9.4) (2026-10-10)
 
 
