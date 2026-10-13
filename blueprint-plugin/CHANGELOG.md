@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.47.5](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.47.4...blueprint-plugin-v3.47.5) (2026-10-13)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** migrate and warn on generated.rules keys missing .md ([#3052](https://github.com/laurigates/claude-plugins/issues/3052)) ([39deb6e](https://github.com/laurigates/claude-plugins/commit/39deb6e482d7127254b051717baad6a27992a065))
+
 ## [3.47.4](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.47.3...blueprint-plugin-v3.47.4) (2026-10-12)
 
 

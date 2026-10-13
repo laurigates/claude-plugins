@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.1](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.14.0...comfyui-plugin-v1.14.1) (2026-10-13)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** report Deleted registry versions and skip empty status reasons ([#3053](https://github.com/laurigates/claude-plugins/issues/3053)) ([4a3f9ad](https://github.com/laurigates/claude-plugins/commit/4a3f9ad90844920a3444a777ad371f7ba786599c))
+
 ## [1.14.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.13.14...comfyui-plugin-v1.14.0) (2026-10-10)
 
 

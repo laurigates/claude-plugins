@@ -215,6 +215,20 @@ sed -i.bak 's/a/b/' f && rm f.bak  # sed -i '' is BSD-only
 EOF
 assert_lint "a trailing comment or next command after a portable sed stays clean" "0 0 0" "$d11c"
 
+# 11d. A multibyte character outside quotes (here `→` and `—` in unquoted
+#      text) made macOS awk 20200816 abort the command view with "towc:
+#      multibyte conversion failure", exit 2, and no lint summary. The view
+#      must scan past it and still flag the GNU-only sed on the next line.
+d11d="$WORK/sed-test-multibyte"; mkdir -p "$d11d"
+cat > "$d11d/test-multibyte.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+note=x  # a → b — c
+echo `printf x` → done
+sed -i 's/a/b/' "$file"
+EOF
+assert_lint "a test-*.sh with unquoted multibyte text is scanned, not aborted" "1 0 1" "$d11d"
+
 # 12-17. Check 6: printf/echo of a variable piped into grep -q under pipefail
 #    (#2959). grep -q exits on its first match, the writer takes SIGPIPE, and
 #    pipefail reports a hit as a miss. Scope is any *.sh directly inside a
