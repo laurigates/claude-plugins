@@ -301,9 +301,13 @@ check_agent_budget() {
         return
     fi
     [ "$python_ok" -eq 1 ] || return
-    # The estimator retries a parser timeout once itself (a cold node start on
-    # a loaded CI runner can exceed its 4s limit), so one call is enough here.
-    est=$(python3 "$ESTIMATOR" 1000000 <"$js" 2>/dev/null)
+    # The estimator retries a parser timeout once itself, but a cold node start
+    # on a loaded CI runner can outlast two of the hook's 4s attempts (#3005,
+    # #2975). This check has no interactive latency budget, so it gives each
+    # attempt CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT seconds, 30 unless the caller set
+    # it (the self-test pins 4 to exercise the estimator's own retry, N11).
+    est=$(CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT="${CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT:-30}" \
+        python3 "$ESTIMATOR" 1000000 <"$js" 2>/dev/null)
     verdict=$(sed -n 's/^VERDICT=//p' <<<"$est")
     estimate=$(sed -n 's/^ESTIMATE=//p' <<<"$est")
     loose=$(sed -n 's/^UNBOUNDED=//p' <<<"$est")
