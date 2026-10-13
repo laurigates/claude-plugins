@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.0](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.14.4...agents-plugin-v1.15.0) (2026-10-13)
+
+
+### Features
+
+* **agents-plugin:** lean subagents — document the 124k base and ship a context-free Haiku reader ([#3047](https://github.com/laurigates/claude-plugins/issues/3047)) ([4765455](https://github.com/laurigates/claude-plugins/commit/476545525706e41afa9bc2d57fc79fcc87a62ea8))
+
 ## [1.14.4](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.14.3...agents-plugin-v1.14.4) (2026-10-10)
 
 
