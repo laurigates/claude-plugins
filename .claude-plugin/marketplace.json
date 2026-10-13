@@ -122,7 +122,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking",
-      "version": "3.47.4",
+      "version": "3.47.5",
       "author": {
         "name": "Lauri Gates"
       },
@@ -185,7 +185,7 @@
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
       "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
-      "version": "1.14.0",
+      "version": "1.14.1",
       "author": {
         "name": "Lauri Gates"
       },
@@ -488,7 +488,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.13.1",
+      "version": "2.13.2",
       "author": {
         "name": "Lauri Gates"
       },
@@ -509,7 +509,7 @@
       "name": "kubernetes-plugin",
       "source": "./kubernetes-plugin",
       "description": "Kubernetes and Helm operations - deployments, charts, releases",
-      "version": "1.9.4",
+      "version": "1.9.5",
       "author": {
         "name": "Lauri Gates"
       },
