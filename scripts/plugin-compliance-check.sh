@@ -1060,6 +1060,35 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: git-issue assumed every issue ends in a code change, so a
+    # verification-only issue ("after PR X merges, re-run workflow Y and confirm
+    # Z") cut an unused fix/issue-N branch and had no path to evidence-and-close
+    # (issue #3061). Semantic invariants: SKILL.md routes to the
+    # Verification-Only Flow BEFORE the branch cut (the classification step's
+    # `](#verification-only-flow)` link precedes `git switch -c fix/issue-`),
+    # confirms the prerequisite PR via `mergedAt` (never a `merged` field),
+    # posts evidence with `--body-file`, and closes with `--reason completed`
+    # instead of a `Fixes #N` PR.
+    if [ "$plugin" = "git-plugin" ] && [ "$skill_name" = "git-issue" ]; then
+      local vo_line cut_line vo_token
+      vo_line=$(grep -n -m1 -F '](#verification-only-flow)' "$skill_file" | cut -d: -f1)
+      cut_line=$(grep -n -m1 -F 'git switch -c fix/issue-' "$skill_file" | cut -d: -f1)
+      if [ -z "$vo_line" ] || { [ -n "$cut_line" ] && [ "$vo_line" -gt "$cut_line" ]; }; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must classify verification-only issues and link '](#verification-only-flow)' before the 'git switch -c fix/issue-' branch cut (issue #3061)")
+        has_errors=true
+      fi
+      for vo_token in 'mergedAt' '--body-file' '--reason completed'; do
+        if ! grep -qF -- "$vo_token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: verification-only path must retain '${vo_token}' (prerequisite PR via state/mergedAt, evidence comment via --body-file, close as completed) (issue #3061)")
+          has_errors=true
+        fi
+      done
+      if grep -Eq -- '--json[[:space:]]+([A-Za-z,]*,)?merged([^A-Za-z]|$)' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: queries a nonexistent 'merged' PR field — use 'state,mergedAt' (issue #3061)")
+        has_errors=true
+      fi
+    fi
+
     # Regression: project-refocus accepted no focus directive (args: ""), so a
     # user's "/project:refocus focus on X, ignore Y" was dropped. The fix parses
     # $ARGUMENTS as an optional steering directive that biases Remaining-vs-Stale
