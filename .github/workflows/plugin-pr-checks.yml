@@ -173,6 +173,7 @@ jobs:
             --only 'scripts/tests/test-check-dead-api-endpoints.sh' \
             --only 'scripts/tests/test-check-delegation-reachability.sh' \
             --only 'scripts/tests/test-check-evals-abstention.sh' \
+            --only 'scripts/tests/test-check-git-sandbox-guards.sh' \
             --only 'scripts/tests/test-check-hook-cue-skill-refs.sh' \
             --only 'scripts/tests/test-check-hook-fail-closed.sh' \
             --only 'scripts/tests/test-check-hook-matchers.sh' \
@@ -461,6 +462,14 @@ jobs:
         # non-git cwd, bash 3.2). Whole-repo invariant, always-on; the
         # self-test step above proves the guard first.
         run: bash scripts/check-hook-fail-closed.sh
+
+      - name: Check shell test sandboxes cannot reach the real repo
+        # Two routes into the shared clone: an unguarded empty `mktemp -d`
+        # (#1692), and a hooks-plugin test suite that runs git with GIT_DIR
+        # inherited from pre-commit (#1745 — on 2026-10-13 it flipped
+        # core.bare and renamed a branch onto main). Whole-repo invariant,
+        # always-on; the self-test step above proves the guard first.
+        run: bash scripts/check-git-sandbox-guards.sh --strict
 
       - name: Check skill markdown points at anchors, not directions
         # A "see above" in a reference file names nothing: the file is read out

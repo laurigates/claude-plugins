@@ -13,6 +13,12 @@
 # Exit 0 = all tests pass, Exit 1 = failures
 set -euo pipefail
 
+# Neutralize any inherited git context before building sandbox repos (issue
+# #1745). Under pre-commit, GIT_DIR/GIT_INDEX_FILE point at the real repo and
+# override `git -C`, so sandbox git commands would act on the shared clone.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
+  GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX
+
 HOOK="$(dirname "$0")/task-completeness.sh"
 PASS=0
 FAIL=0
