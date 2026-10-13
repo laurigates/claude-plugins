@@ -81,7 +81,7 @@ fi
 if [ ! -f "$CAP" ]; then
   issues+=("references/key-capabilities.md: not found")
 else
-  cap="$(extract_block "$CAP" "**Module System**" '^\*\*')"
+  cap="$(extract_block "$CAP" "**Module System**" '^[*][*]')"
   require_token "references/key-capabilities.md" "$cap" 'source_directory()' "Module System block does not mention source_directory() (#3060)"
 fi
 
