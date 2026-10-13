@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.13.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.13.1...hooks-plugin-v2.13.2) (2026-10-13)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** close permission-auto-approve bypasses in git, runner, linter and gh rules ([#3051](https://github.com/laurigates/claude-plugins/issues/3051)) ([4e4cdd5](https://github.com/laurigates/claude-plugins/commit/4e4cdd5a3dd36b63e550751559173f728993a95c))
+* **hooks-plugin:** give the CI workflow-model checker a longer estimator parse timeout ([#3045](https://github.com/laurigates/claude-plugins/issues/3045)) ([6de07b9](https://github.com/laurigates/claude-plugins/commit/6de07b96dfceac6d75a2381cc7cb8c3cb1bcd93a))
+
 ## [2.13.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.13.0...hooks-plugin-v2.13.1) (2026-10-12)
 
 
