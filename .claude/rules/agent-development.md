@@ -1,6 +1,6 @@
 ---
 created: 2026-02-25
-modified: 2026-10-10
+modified: 2026-10-13
 reviewed: 2026-09-23
 paths:
   - "**/agents/**"
@@ -87,18 +87,19 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `name` | string | Yes | Agent identifier (kebab-case); `:` is rejected (2.1.218) — reserved for plugin namespacing (`plugin:agent-name`) |
+| `name` | string | Yes | Agent identifier (kebab-case); `:` is rejected (2.1.218) — reserved for plugin namespacing (`plugin:agent-name`); at most 256 characters, a longer name is rejected (2.1.292) |
 | `description` | string | Yes | Purpose and use cases for agent selection |
-| `model` | string | Yes | `opus`, `sonnet`, `haiku`, `fable` (2.1.255+), `inherit`, or a full model ID (e.g. `claude-fable-5-1`). Aliases resolve to the current generation (`opus` → Opus 5.5, `sonnet` → Sonnet 5, `haiku` → Haiku 5.5 since 2.1.293, `fable` → Fable 5.1). Full IDs honoured since 2.1.74 |
+| `model` | string | Yes | `opus`, `sonnet`, `haiku`, `fable` (2.1.255+), `inherit`, or a full model ID (e.g. `claude-fable-5-1`). Aliases resolve to the current generation (`opus` → Opus 5.5, `sonnet` → Sonnet 5.5 on the Anthropic API since 2.1.284, `haiku` → Haiku 5.5 since 2.1.293, `fable` → Fable 5.1). Full IDs honoured since 2.1.74 |
 | `effort` | string | No | `low`, `medium`, `high`, `xhigh`, or `max` (2.1.251+) — overrides the session effort while this agent runs; default inherits. This is the per-agent cost lever the Model Selection section refers to |
 | `tools` | comma-list | Yes | Tools the agent can use; use `Agent(name)` to restrict spawnable subagents |
 | `isolation` | string | No | `worktree` to run agent in an isolated git worktree |
 | `color` | string | No | Hex color for UI display |
-| `permissionMode` | string | No | `default`, `acceptEdits`, `dontAsk`, `bypassPermissions`, or `plan` |
+| `permissionMode` | string | No | `default`, `acceptEdits`, `dontAsk`, `bypassPermissions`, or `plan`. Before 2.1.292, `auto` entered auto mode even where auto mode was unavailable (disabled by settings, circuit breaker, or an unsupported model) |
 | `maxTurns` | number | No | Maximum agentic turns before agent stops |
 | `background` | bool | No | Set `true` to always run as a background task |
 | `memory` | string | No | Persistent memory scope: `user`, `project`, or `local` |
-| `skills` | list | No | Skill names to preload into agent context at startup |
+| `skills` | list | No | Skill names to preload into agent context at startup; at most 32, each once (2.1.295) |
+| `autoCompactWindow` | not stated upstream | No | Auto-compact the subagent earlier than the main conversation's window (2.1.296); also accepted in `--agents` definitions. Not yet in `check-agent-frontmatter-keys.sh`'s `DOCUMENTED_FIELDS`, so an agent using it fails that check until the list is refreshed from the docs |
 | `mcpServers` | list | No | MCP server names or inline configs available to this agent |
 | `hooks` | object | No | Agent-scoped hooks (same schema as settings.json hooks) |
 | `disallowedTools` | comma-list | No | Tools to deny even if in the inherited list |
@@ -108,7 +109,7 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
 | `modified` | date | Recommended | Last substantive change |
 | `reviewed` | date | Recommended | Last verified against current docs |
 
-Claude Code ignores an agent frontmatter key it does not recognize, without an error ([sub-agents.md § Supported frontmatter fields](https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields)). That includes the skill-only fields `context`, `agent`, and `allowed-tools`, which read as if they configure the agent and do nothing on one. `scripts/check-agent-frontmatter-keys.sh` fails on any key outside the documented set plus the three lifecycle dates above. It also scans the fenced YAML examples in the docs listed in its `AGENT_EXAMPLE_DOCS` (the custom-agent-definitions skill) and fails on a skill-only key such as `allowed-tools:` in an agent-shaped fence (#2723).
+Claude Code ignores an agent frontmatter key it does not recognize, without an error ([sub-agents.md § Supported frontmatter fields](https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields)); since 2.1.296, `--debug` names unrecognized fields with a typo hint. That includes the skill-only fields `context`, `agent`, and `allowed-tools`, which read as if they configure the agent and do nothing on one. `scripts/check-agent-frontmatter-keys.sh` fails on any key outside the documented set plus the three lifecycle dates above. It also scans the fenced YAML examples in the docs listed in its `AGENT_EXAMPLE_DOCS` (the custom-agent-definitions skill) and fails on a skill-only key such as `allowed-tools:` in an agent-shaped fence (#2723).
 
 ### `tools` vs `allowed-tools`
 
@@ -219,7 +220,7 @@ Three mechanisms share the word "fork", and only the last one hands a subagent t
 | `context:` in **agent** frontmatter | an `agents/*.md` | Nothing changes. It is absent from the subagent frontmatter table, and Claude Code ignores unrecognized fields without an error. Measured inert in #2646: agents with and without it returned bit-identical `subagent_tokens` (2549), both blind to the parent turn |
 | The runtime `fork` subagent type | the `Agent` call, `subagent_type: "fork"` | The parent's whole conversation, system prompt, tools, and model ([sub-agents.md § Fork the current conversation](https://code.claude.com/docs/en/sub-agents#fork-the-current-conversation)) |
 
-A research agent that should keep verbose output out of the main window needs no field: a named agent already does. For work that needs the conversation so far, dispatch a fork instead of a named agent.
+A research agent that should keep verbose output out of the main window needs no field: a named agent already does. For work that needs the conversation so far, dispatch a fork instead of a named agent. A fork runs under its parent's permission mode (plan, `dontAsk`) and cannot exit plan mode (2.1.285).
 
 > **Runtime behaviour lives in [`agent-runtime.md`](agent-runtime.md):** runtime fork vs named agent, the subagent context budget, worktree isolation and `worktree.baseRef` (gitignored inputs such as `.env` reach a worktree only via `.worktreeinclude` — see `/configure:worktreeinclude`), background execution, dynamic-workflow caveats, `worktree.bgIsolation`, MCP policy for frontmatter servers, and the `claude agents` CLI.
 
@@ -239,7 +240,7 @@ Implement API endpoints. Follow the conventions and patterns from the preloaded 
 ```
 
 Agents do **not** inherit skills from the parent session — they must be listed explicitly.
-> **Note (2.1.133+)**: Subagents can discover project, user, and plugin skills via the `Skill` tool. Skills listed in `skills:` frontmatter are preloaded; the `Skill` tool discovers others on demand.
+> **Note (2.1.133+)**: Subagents can discover project, user, and plugin skills via the `Skill` tool. Skills listed in `skills:` frontmatter are preloaded; the `Skill` tool discovers others on demand. Since 2.1.295 at most 32 listed skills are preloaded, each once; a subagent with the `Skill` tool can still invoke the rest.
 
 ## Persistent Agent Memory
 
@@ -269,7 +270,7 @@ For rules an agent **must not forget** between threads — the friction-mining o
 
 ## Agent Teams (Multi-Agent Collaboration)
 
-Team mechanics — the implicit team (2.1.178), `SendMessage` / `ListAgents` and cross-session messaging, team roles, and when to choose teams over subagents — live in the `agent-patterns-plugin:agent-teams` skill. What stays here is the per-agent body convention:
+Team mechanics — the implicit team (2.1.178), `SendMessage` / `ListAgents` and cross-session messaging, team roles, and when to choose teams over subagents — live in the `agent-patterns-plugin:agent-teams` skill. Before 2.1.288, a plugin-defined agent spawned by name into a team ran with the default prompt, tools, `disallowedTools` and effort instead of its own. What stays here is the per-agent body convention:
 
 ### Team Configuration
 

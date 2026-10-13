@@ -1,6 +1,6 @@
 ---
 created: 2026-07-26
-modified: 2026-09-16
+modified: 2026-10-13
 reviewed: 2026-09-16
 paths:
   - "**/SKILL.md"
@@ -61,7 +61,14 @@ A 1M-context model is not always a 1M-context budget in practice:
 that variable is set session-wide, the always-loaded C5 surface competes
 against a 200K budget even on a 1M-context session;
 `CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1` restores the previous
-per-model-ID behavior.
+per-model-ID behavior. The default Sonnet on the Anthropic API is Sonnet 5.5
+with a 1M window since 2.1.284, and the default Haiku is Haiku 5.5, also 1M,
+since 2.1.293.
+
+Rules symlinked into `.claude/rules` from outside the project, or a symlinked
+`.claude` directory, trigger the external-imports approval prompt since 2.1.284;
+before, they were skipped without the prompt, so a symlinked rule set may only
+now start counting against the always-loaded surface.
 
 ## Authoring rules
 
@@ -71,11 +78,16 @@ unscoped rule is the exception and should say why. If it reads as a procedure
 with a trigger ("when releasing", "before a destructive op"), it is a skill —
 promote it via `agent-patterns-plugin:meta-context-diet`.
 
-**`paths:` fires only when a matching file is EDITED — it cannot scope a rule
+**`paths:` fires only when a matching file is TOUCHED — it cannot scope a rule
 whose hazard fires on a command.** This is the trap that decides most scoping
 calls, and getting it wrong silently disarms a guard while the budget number
-improves. Sort the rule by what triggers its failure, not by what it talks
-about:
+improves. "Touched" means a file access, and the set of accesses has grown: a
+Read always loaded the rule; a Write or Edit that creates or changes a file in
+scope does since 2.1.288; a single-file `cat`, `head`, `tail`, `sed -n` or
+`grep` in Bash does since 2.1.293. A scoped rule's cost is therefore paid on
+any of those accesses, not only on an edit, and a command that runs without
+viewing a matching file (a `git` invocation, a build) still never loads it.
+Sort the rule by what triggers its failure, not by what it talks about:
 
 | The failure happens when you… | Lever | Example |
 |---|---|---|
