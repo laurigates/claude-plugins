@@ -90,7 +90,9 @@ set -uo pipefail
 [ "${CLAUDE_HOOKS_DISABLE_REPO_DELETION_SAFETY:-}" = "1" ] && exit 0
 
 # Degrade silently when a dependency is missing — never fail a user's command
-# because the hook's toolchain is incomplete.
+# because the hook's toolchain is incomplete. The registration sets
+# `"onFailure": "block"` (Claude Code 2.1.295+), so a crash here would block
+# every Bash call; scripts/check-hook-fail-closed.sh runs these exits.
 command -v jq >/dev/null 2>&1 || exit 0
 command -v git >/dev/null 2>&1 || exit 0
 
@@ -428,7 +430,8 @@ check_path() {
 
     # (b) the operand is a PARENT holding repos — bounded scan so a
     # `rm -rf ~/repos` over a large tree cannot blow the hook timeout. If it
-    # does time out, the non-2 exit is non-blocking: fail open, correctly.
+    # does time out, the registration's `"onFailure": "block"` (Claude Code
+    # 2.1.295+) blocks the deletion; older clients let it through.
     while IFS= read -r gd; do
         [ -n "$gd" ] || continue
         root=$(dirname "$gd")

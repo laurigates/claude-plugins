@@ -15,7 +15,15 @@ set -euo pipefail
 # Toggle off
 [ "${CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION:-}" = "1" ] && exit 0
 
+# This hook is registered with `"onFailure": "block"` (Claude Code 2.1.295+)
+# on Read|Edit|Write|Bash: any exit other than 0 or 2 blocks the call, so a
+# crash here would block every file read. Paths where the hook cannot apply
+# exit 0 explicitly — a missing jq, or input jq cannot parse.
+# scripts/check-hook-fail-closed.sh runs each of these paths.
+command -v jq >/dev/null 2>&1 || exit 0
+
 INPUT=$(cat)
+printf '%s' "$INPUT" | jq -e 'type == "object"' >/dev/null 2>&1 || exit 0
 
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')

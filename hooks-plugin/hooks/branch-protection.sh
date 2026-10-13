@@ -34,7 +34,17 @@ set -euo pipefail
 # (not when prefixed inline on the command). See header comment for rationale.
 [ "${CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION:-}" = "1" ] && exit 0
 
+# This hook is registered with `"onFailure": "block"` (Claude Code 2.1.295+):
+# any exit other than 0 or 2 blocks the Bash call it guards, so every path
+# where the hook does not apply must exit 0 explicitly rather than crash —
+# a missing jq or git, input jq cannot parse, a non-git cwd (handled by the
+# empty-branch exit below), and macOS /bin/bash 3.2 (no mapfile; see the
+# clause loop). scripts/check-hook-fail-closed.sh runs each of these paths.
+command -v jq >/dev/null 2>&1 || exit 0
+command -v git >/dev/null 2>&1 || exit 0
+
 INPUT=$(cat)
+printf '%s' "$INPUT" | jq -e 'type == "object"' >/dev/null 2>&1 || exit 0
 
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
@@ -111,14 +121,14 @@ split_clauses() {
 # treated as a git command), and an optional path prefix before `git`.
 GIT_CLAUSE_RE='^[[:space:]]*((sudo|command|exec|nice|nohup|time|env)[[:space:]]+)*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*([^[:space:]]*/)?git[[:space:]]+(-[A-Za-z][[:space:]]+[^[:space:]]+[[:space:]]+)*[a-z-]+'
 
-mapfile -t CLAUSES < <(split_clauses "$COMMAND")
-
+# A plain read loop, not mapfile: macOS /bin/bash is 3.2, which has no
+# mapfile, and with onFailure "block" its exit 127 would block every Bash call.
 GIT_CLAUSES=()
-for c in "${CLAUSES[@]}"; do
+while IFS= read -r c; do
   if grep -Eq "$GIT_CLAUSE_RE" <<<"$c"; then
     GIT_CLAUSES+=("$c")
   fi
-done
+done < <(split_clauses "$COMMAND")
 
 # Only check git commands — no clause in the command looks like a git
 # invocation.

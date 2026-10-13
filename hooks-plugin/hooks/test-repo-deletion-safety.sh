@@ -32,6 +32,13 @@
 #     arrives as /private/var/folders/… and must still be exempt
 set -uo pipefail
 
+# Neutralize any inherited git context before building sandbox repos (issue
+# #1745). Under pre-commit, GIT_DIR/GIT_INDEX_FILE point at the real repo and
+# override `git -C`, so the sandbox `init`/`config` below would flip the shared
+# .git/config to core.bare=true and write a test identity into it.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
+  GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX
+
 HOOK="$(cd "$(dirname "$0")" && pwd)/repo-deletion-safety.sh"
 PASS=0
 FAIL=0
@@ -332,6 +339,7 @@ assert_bounded() { # $1 desc, $2 probe substring, $3 required bound substring
     # Only real invocations: `git -C "$abs" …`. The rendered message quotes the
     # same command names as row labels, and matching those would let a stripped
     # flag hide behind its own documentation.
+    # shellcheck disable=SC2016  # the literal text `"$abs"` is the match target
     line=$(printf '%s\n' "$EMIT_BLOCK_BODY" | grep -F 'git -C "$abs"' | grep -F -- "$probe" | head -1)
     if [ -z "$line" ]; then
         printf "  FAIL: %s (emit_block no longer runs '%s')\n" "$d" "$probe"; FAIL=$((FAIL + 1))

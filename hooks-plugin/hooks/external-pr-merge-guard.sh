@@ -67,7 +67,11 @@ set -euo pipefail
 command -v gh >/dev/null 2>&1 || exit 0
 command -v jq >/dev/null 2>&1 || exit 0
 
+# Registered with `"onFailure": "block"` (Claude Code 2.1.295+), so a crash
+# before the EXIT trap below is armed would block an ordinary command. Input
+# jq cannot parse is not a tool call this hook can judge: exit 0, explicitly.
 INPUT=$(cat)
+printf '%s' "$INPUT" | jq -e 'type == "object"' >/dev/null 2>&1 || exit 0
 TOOL_NAME=$(printf '%s' "$INPUT" | jq -r '.tool_name // empty')
 HOOK_CWD=$(printf '%s' "$INPUT" | jq -r '.cwd // empty')
 
