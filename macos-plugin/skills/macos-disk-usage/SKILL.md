@@ -2,9 +2,9 @@
 name: macos-disk-usage
 description: macOS disk-usage forensics and space recovery on APFS. Use when df reports a disk near-full, hunting what's eating space, reclaiming OrbStack/Docker, or pruning caches and local snapshots.
 user-invocable: false
-allowed-tools: Bash(bash *), Bash(uname *), Bash(df *), Bash(du *), Bash(find *), Bash(diskutil *), Bash(tmutil *), Bash(docker *), Bash(brew *), Bash(go *), Bash(pip *), Bash(uv *), Bash(dust *), Bash(dua *), Bash(gdu *), Bash(ncdu *), Bash(mise *), Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(bash *), Bash(uname *), Bash(df *), Bash(du *), Bash(find *), Bash(diskutil *), Bash(tmutil *), Bash(docker *), Bash(brew *), Bash(go *), Bash(pip *), Bash(uv *), Bash(dust *), Bash(dua *), Bash(gdu *), Bash(ncdu *), Bash(mise *), Bash(git *), Read, Grep, Glob, TodoWrite
 created: 2026-06-21
-modified: 2026-08-04
+modified: 2026-10-13
 reviewed: 2026-08-04
 ---
 
@@ -93,6 +93,16 @@ Two operational notes:
 - **Runtime scales with disk size** — `du` walks every tree, so a full disk can take a minute or two. Bound with `--root <project-dir>` and `--min-mb`; swap in `dust` (Step 3) if you want the walk parallelised.
 - **The catalog is the shared artifact; the scan *output* is machine-specific** — keep it in scratch, never commit it.
 
+### Git-ignored generated artifacts inside repos
+
+The catalog cannot list repo-specific outputs — large model fixtures, re-saved weights, build outputs — that sit git-ignored inside a project. When an `UNKNOWN` line lands inside a repo, list its ignored paths and size them:
+
+```bash
+git -C <repo> ls-files --others --ignored --exclude-standard --directory | sed "s|^|<repo>/|" | tr '\n' '\0' | xargs -0 du -sh 2>/dev/null | sort -h | tail
+```
+
+Trace provenance before deleting: the `.gitignore` comment and the justfile/Makefile recipe that writes the file usually say whether it is downloaded or derived, and how to regenerate it. Drop derived copies first — they regenerate locally, while a downloaded original has to be fetched again.
+
 ## Step 2: The OrbStack / Docker recovery play
 
 OrbStack/Docker is frequently the dominant consumer (100+ GB seen). The VM image (`data.img.raw`) grows but **never shrinks on its own**. The recovery is: prune **inside** the VM, then OrbStack **auto-shrinks** the host image (unlike Docker Desktop, which needs manual reclaim).
@@ -131,7 +141,7 @@ Work top-down — exhaust the safe tier before touching anything that needs a de
 | **Safe / regenerable** | Homebrew downloads | `brew cleanup -s` | Rebuilds on next install |
 | | Go module cache | `go clean -modcache` | Re-downloads on next build |
 | | pip cache | `pip cache purge` | |
-| | uv cache | `uv cache clean` | **Fails with a lock error** if another uv process / active session is running |
+| | uv cache | `uv cache clean` | **Blocks on the cache lock** while any `uvx`/`uv run` process runs, e.g. a `uvx`-launched MCP server — see [troubleshooting](references/troubleshooting.md) before reaching for `--force` |
 | | Playwright / Yarn / node-gyp caches | `rm -rf ~/Library/Caches/{ms-playwright,Yarn,node-gyp}` | Regenerable |
 | **Needs a decision** | Docker images + build cache | `docker system prune -a -f` | OrbStack auto-shrinks host image after |
 | | Local Time Machine snapshots | `sudo tmutil thinlocalsnapshots /` | Loses local restore points |
