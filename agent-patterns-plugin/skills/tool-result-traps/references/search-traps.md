@@ -147,6 +147,19 @@ and it is the sibling that sells it.
 - **Control-test with a name you know is present**, through the byte-identical
   glob. The control is what separates "not there" from "unmatchable".
 
+## Grep / Glob on an unreadable path reported "no matches" (before 2.1.292)
+
+Before Claude Code 2.1.292, the Grep and Glob tools reported **no matches** when
+the file or folder they were given could not be read, so a permission or path
+problem read as a clean negative. 2.1.292 fixed this: the tool now retries once
+or says the path could not be read.
+
+- **On 2.1.292+**, report an unreadable-path message as "could not search
+  <path>", not as "not found".
+- **On an older client, or reading an old transcript**, a "no matches" from
+  Grep/Glob against a single path is not evidence of absence until a control
+  search against a term known to be in that path also returns something.
+
 ## One search tier is not the search universe
 
 A Claude Code skill or command resolves from **three independent tiers**, and
