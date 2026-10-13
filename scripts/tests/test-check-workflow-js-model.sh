@@ -38,9 +38,13 @@
 #      integer terms equal the counted part when some are not; a missing
 #      declaration and an unparseable harness both fail closed, and so do no
 #      node on PATH (the lenient fallback) and a crashing parser (N9-N10),
-#      while a cold first parse that times out is retried (N11).
+#      while a cold first parse that times out is retried (N11) and a cold
+#      start slower than the estimator's 4s default on two calls in a row
+#      still counts under the checker's longer parse timeout (N12).
 
 set -uo pipefail
+# The checker's estimator timeout is its own default (30s) unless a case pins it.
+unset CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
@@ -603,13 +607,36 @@ check "N10: crashed parser is estimator_error" "1" "$(printf '%s\n' "$o" | grep 
 
 # N11. A cold first parse that times out is retried by the estimator, so the
 #      budget is still checked (#2831 CI flake). `exec sleep` so the timeout
-#      kills the sleeper itself rather than leaving it holding the pipe.
+#      kills the sleeper itself rather than leaving it holding the pipe. The
+#      stub's hang prints nothing, so it is pinned to the hook's 4s limit
+#      (the checker's own 30s would wait it out and read a crash).
 printf '#!/usr/bin/env bash\nif [ ! -e "%s" ]; then : > "%s"; exec sleep 5; fi\nexec "%s" "$@"\n' \
     "$STUB/cold/first" "$STUB/cold/first" "$(command -v node)" > "$STUB/cold/node"
 chmod +x "$STUB/cold/node"
-o=$(PATH="$STUB/cold:$PATH" bash "$CHECK" --project-dir "$root" 2>&1)
+o=$(CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT=4 PATH="$STUB/cold:$PATH" bash "$CHECK" --project-dir "$root" 2>&1)
 check "N11: cold first parse retried, STATUS=OK" "OK" "$(field "$o" STATUS)"
 check "N11: the stub's first call did hang"      "yes" "$([ -e "$STUB/cold/first" ] && echo yes)"
+
+# N12. A cold start slower than the estimator's 4s default on the first TWO
+#      calls (#3005, #2975): the retry alone ran out, so the check reported
+#      estimator_error. The checker has no interactive latency budget and
+#      passes CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT, so one slow parse still counts.
+#      The preload blocks node itself for 5s and then lets the real parser
+#      run, so a timeout kills the process holding the pipe.
+mkdir -p "$STUB/slow"
+printf 'Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 5000);\n' > "$STUB/slow/block.cjs"
+REAL_NODE="$(command -v node)"
+cat >"$STUB/slow/node" <<EOF
+#!/usr/bin/env bash
+if [ ! -e "$STUB/slow/call0" ]; then : >"$STUB/slow/call0"; exec "$REAL_NODE" --require "$STUB/slow/block.cjs" "\$@"; fi
+if [ ! -e "$STUB/slow/call1" ]; then : >"$STUB/slow/call1"; exec "$REAL_NODE" --require "$STUB/slow/block.cjs" "\$@"; fi
+exec "$REAL_NODE" "\$@"
+EOF
+chmod +x "$STUB/slow/node"
+o=$(PATH="$STUB/slow:$PATH" bash "$CHECK" --project-dir "$root" 2>&1)
+check "N12: two slow cold parses, STATUS=OK"     "OK" "$(field "$o" STATUS)"
+check "N12: no estimator_error"                  "0" "$(grep -c 'TYPE=estimator_error' <<<"$o")"
+check "N12: the stub's first call was slow"      "yes" "$([ -e "$STUB/slow/call0" ] && echo yes)"
 
 printf '\n%s: %d passed, %d failed\n' "$(basename "$0")" "$pass" "$fail"
 [ "$fail" -eq 0 ]

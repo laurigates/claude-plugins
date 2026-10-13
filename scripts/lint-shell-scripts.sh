@@ -65,8 +65,13 @@ info() {
 # case pattern's `)` inside "$(…)" (`out="$(case $x in a) sed -i '' f;; esac)"`)
 # closes the substitution early, so a `sed` in that branch reads as quoted data
 # and passes silently.
+#
+# LC_ALL=C: the scanner walks bytes. Every delimiter it looks for is ASCII, and
+# no byte of a UTF-8 multibyte sequence is ASCII, so byte mode loses nothing.
+# Under a UTF-8 locale, macOS awk 20200816 aborts ("towc: multibyte conversion
+# failure", exit 2) when a 1- to 4-character substr() splits a multibyte char.
 sed_command_view() {
-    awk '
+    LC_ALL=C awk '
         # Print each pending `sed` at depth >= d, from its start up to (not
         # including) position stop: the end of its command-position segment.
         function close_from(d, stop,    k) {

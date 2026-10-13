@@ -171,7 +171,7 @@ Distinct from nesting depth above, Claude Code also caps how many subagents may 
 | `opus` | **Default for all subagents** — reasoning, review, debugging, refactoring, *and* mechanical/high-volume work (dial `effort` down for the latter rather than downgrading the model) |
 | `fable` | Sanctioned for the hardest delegated reasoning (long-horizon, multi-file, adversarial verification). Accepted by `scripts/check-agent-model.sh`. Not the default: no plan defaults to Fable and it costs 2.5x Opus 5.5 per token |
 | `sonnet` | Avoid for subagents. |
-| `haiku` | Not in agent frontmatter yet. Two uses are sanctioned. The `agent-patterns-plugin:cold-read-gate` reader is a *measurement instrument*, not a delegate. And since Haiku 5.5, a **workflow `agent()` stage** may run on it when it is mechanical (verbatim extraction, closed-enum classification, a script runner) and its output feeds an Opus stage that would notice a bad one. That includes an omission: a stage whose dropped item never reaches a later stage (an extraction lane, a filter or triage that discards) stays on opus, because nothing downstream can see what it left out. It must set an explicit `effort`, which `scripts/check-workflow-js-model.sh` enforces. The 2026-10 re-evaluation (`docs/audits/haiku-5.5-reevaluation-2026-10-10.md`) left the two nearest agent candidates, `search-replace` and `test-runner`, as needs-test: a closing check that passes does not prove the edits or the summary are right. |
+| `haiku` | Three uses are sanctioned. The `agent-patterns-plugin:cold-read-gate` reader is a *measurement instrument*, not a delegate. A **lean read-only agent file** may set `model: haiku` (see [Lean subagents](#lean-subagents-omitclaudemd--a-narrow-tools-list); `scripts/check-agent-model.sh` enforces its shape). A **workflow `agent()` stage** may run on haiku when it is mechanical (verbatim extraction, closed-enum classification, a script runner) and its output feeds an Opus stage that would notice a bad one; it must set an explicit `effort` (`scripts/check-workflow-js-model.sh`). Noticing has to cover omission too. A stage whose dropped item never reaches a later stage (an extraction lane, a filter or triage that discards) stays on opus, because nothing downstream can see what it left out. The 2026-10 re-evaluation (`docs/audits/haiku-5.5-reevaluation-2026-10-10.md`) left the two nearest full-context agent candidates, `search-replace` and `test-runner`, as needs-test: a closing check that passes does not prove the edits or the summary are right. |
 
 `model: opus` remains the committed floor for plugin agents (portable: every plan has Opus). `inherit` is not used for plugin agents because it would also inherit Sonnet/Haiku sessions below the floor. `effort:` frontmatter is the cost lever; use `effort: low` for mechanical/high-volume agents.
 
@@ -184,6 +184,30 @@ On an org account that restricts model choice, an agent's `model: opus` frontmat
 ## Context Isolation
 
 Every named agent is context-isolated by default: it starts in a fresh context window with its own system prompt, the brief the parent writes, the CLAUDE.md hierarchy, a git status snapshot, and any preloaded `skills:` ([sub-agents.md § What loads at startup](https://code.claude.com/docs/en/sub-agents#what-loads-at-startup)). A named agent does not see the parent's conversation history, and no agent frontmatter field changes that. Its tool calls stay out of the parent's context, and only its final result comes back.
+
+### Lean subagents: `omitClaudeMd` + a narrow `tools:` list
+
+A default subagent here starts at ~124k tokens before reading anything, and most of that is context it never uses. Two frontmatter fields remove it. Each row below is a measured first request from Haiku 5.5 probe subagents in this repo (2026-10-10). Both fields work on plugin-shipped agents and through a workflow's `opts.agentType`:
+
+| Agent shape | First request | What it dropped |
+|---|---|---|
+| Default (CLAUDE.md + every inherited tool) | ~124,000 | — |
+| `tools: Read` only | ~75,300 | ~49k of tool schemas: the skill listing (~33k, carried by the `Skill` tool), MCP (~6k), the other built-ins |
+| `omitClaudeMd: true` | ~51,800 | ~72k of CLAUDE.md + unscoped rules (`~/.claude`, `~/repos`, `laurigates`, this repo) |
+| Built-in `Explore` (skips CLAUDE.md by design) | ~50,200 | CLAUDE.md, git status, write tools |
+| `omitClaudeMd: true` + `tools: Read` | **~3,000** | Both |
+
+The size matters most on Haiku 5.5. It bills $0.10/$0.50 per Mtok up to 100k prompt tokens and $0.50/$2.50 above, and a default subagent is past that step on its first request. It also matters on Opus, as context room and cost.
+
+**Use a lean agent when the brief carries the whole job**: a rubric, a file list, an output schema, and a stronger stage or a script that checks the result. Read-and-classify fan-outs, verbatim extraction and closed-enum routing are the fits. The docs say it directly: the main loop still holds the full CLAUDE.md when it reads the result, so restate in the brief only the rule the subagent itself needs.
+
+**Keep the full context for agents that edit, commit, push, open PRs, or act on untrusted text.** The always-loaded rules carry the hazards those jobs hit: explicit-path `git add`, conventional-commit titles, worktree and coworker handling, ignoring hidden instructions in comments. PreToolUse hooks still fire in a lean agent, so the deterministic guards stay. The judgement-level rules go.
+
+`omitClaudeMd` needs Claude Code 2.1.271+ and still loads managed policy files. A missing `tools:` field inherits every tool, skill listing and MCP included. The narrow list does as much work as `omitClaudeMd`.
+
+The shipped instance is `agents-plugin:lean-reader`: Haiku 5.5, `effort: low`, tools limited to Read/Grep/Glob. Point a workflow stage at it with `opts.agentType: 'agents-plugin:lean-reader'`; `testing-plugin:test-analyze`'s `parse` stage is the first user. A stage that needs a shell, like `evaluate-plugin-batch`'s `inventory`, cannot use it. `check-agent-model.sh` keeps lean haiku agents read-only: it also rejects `mcpServers:`, `skills:`, `hooks:` and a second `tools:` key. `check-subagent-types.sh` resolves each quoted `agentType:` literal in a bundled workflow, so renaming the agent fails CI.
+
+Effort on a lean agent: the Agent tool's per-call `effort` overrides the agent file's `effort:` (Claude Code v2.1.292+), and `CLAUDE_CODE_EFFORT_LEVEL` overrides both ([sub-agents docs](https://code.claude.com/docs/en/sub-agents.md), "Choose an effort level"). The docs give no such order for a workflow `agent()`'s `opts.effort`, so a stage that asks for more effort than the file sets may run at the file's level.
 
 ### `context: fork` is a skill field, not an agent field
 
