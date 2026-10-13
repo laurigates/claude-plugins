@@ -35,6 +35,11 @@ Parameter forms, settings, recipe attributes, and the module system, for [SKILL.
 **Module System**
 - **`mod name`**: Declare submodule
 - **`mod name 'path'`**: Custom module path
+- **`mod? name 'path'`**: Optional module, skipped when the file is absent
+- **Module paths**: inside a module, `justfile()` / `justfile_directory()` are the
+  **root** justfile; use `source_file()` / `source_directory()` for paths relative
+  to the module. Test with `just <mod> <recipe>`, not `--justfile` or `cd <mod>`
+  (both make the module the root and hide the difference)
 - **Invocation**: `just module::recipe` or `just module recipe`
 - **`set fallback` is NOT inherited by a module.** The parent may fall through to
   *its* parent, but `just sub::parent-recipe` fails with `justfile does not
