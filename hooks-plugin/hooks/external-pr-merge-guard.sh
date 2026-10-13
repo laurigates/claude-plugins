@@ -41,7 +41,9 @@
 #     graphql`), xargs/parallel, a piped `| bash`, GraphQL merge mutations, and
 #     GraphQL queries fed on stdin are DENIED as unverifiable.
 #   - A crash after a command is recognised as a possible merge DENIES (EXIT
-#     trap) — a hook error is non-blocking, so dying would let the merge run.
+#     trap). Without `onFailure: "block"` (any client before 2.1.295) a hook
+#     error is non-blocking, so dying would let the merge run; the trap keeps
+#     it closed on every client.
 #
 # Deliberately does NOT defer to permission mode "auto" (unlike
 # branch-protection.sh). Auto mode's classifier models destructive-git and
@@ -69,9 +71,10 @@ command -v jq >/dev/null 2>&1 || exit 0
 
 # Registered with `"onFailure": "block"` (Claude Code 2.1.295+), so a crash
 # before the EXIT trap below is armed would block an ordinary command. Input
-# jq cannot parse is not a tool call this hook can judge: exit 0, explicitly.
+# jq cannot parse, or whose tool_input is not an object, is not a tool call
+# this hook can judge: exit 0, explicitly.
 INPUT=$(cat)
-printf '%s' "$INPUT" | jq -e 'type == "object"' >/dev/null 2>&1 || exit 0
+printf '%s' "$INPUT" | jq -e 'type == "object" and ((.tool_input // {}) | type == "object")' >/dev/null 2>&1 || exit 0
 TOOL_NAME=$(printf '%s' "$INPUT" | jq -r '.tool_name // empty')
 HOOK_CWD=$(printf '%s' "$INPUT" | jq -r '.cwd // empty')
 
@@ -84,8 +87,10 @@ deny() {
 
 # Fail CLOSED on a crash. Once a tool call may be a merge, any unexpected exit
 # — a bash-4 builtin missing on bash 3.2 (exit 127), an unbound variable, a
-# failed assignment under set -e — would otherwise be a non-blocking hook error
-# and the merge would run unchecked. deny() exits 0, and so does every allow
+# failed assignment under set -e — is a non-blocking hook error on clients
+# without `onFailure: "block"` (before 2.1.295), and the merge would run
+# unchecked. With the key it blocks, but as an opaque hook error rather than a
+# deny that says why. deny() exits 0, and so does every allow
 # path, so only a crash reaches the deny here. Armed only after the cheap
 # non-merge bail-outs, so a crash cannot block an ordinary command.
 # shellcheck disable=SC2317  # invoked indirectly, as an EXIT trap
@@ -766,8 +771,9 @@ esac
 #   FLAGS  ,trunc ,dirchg ,branchchg ,ghrepo ,ghhost ,bg — see check_record
 #
 # A plain read loop, not mapfile: macOS /bin/bash is 3.2, which has no mapfile,
-# and the hook dying there with exit 127 is a non-blocking error — the merge
-# would run unchecked (PR #3054 review). Keep this file bash-3.2 clean: no
+# and the hook dying there with exit 127 is a non-blocking error on clients
+# without `onFailure: "block"` — the merge would run unchecked (PR #3054
+# review) — and on 2.1.295+ would block every merge-looking command. Keep this file bash-3.2 clean: no
 # mapfile/readarray, declare -A, ${v,,}/${v^^}, |&, &>>, negative indices, and
 # no bare "${arr[@]}" of a possibly-empty array under set -u.
 RECORDS=()

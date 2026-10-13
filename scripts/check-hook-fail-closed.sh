@@ -8,7 +8,9 @@
 # "block", a hook that cannot start, times out, or exits with a code other than
 # 0 or 2 does what exit 2 does on its event: a PreToolUse failure blocks the
 # tool call. That is right for a safety block (a crashed branch guard should
-# not let `git push` to main through) and wrong for a nudge or a logger, where
+# not let `git push` to main through; the exception is a missing jq, or git for
+# branch-protection, where each hook exits 0 by design — see below) and wrong
+# for a nudge or a logger, where
 # a crash would turn a style preference into a hard block on every matching
 # call (.claude/rules/hook-block-vs-nudge.md). It also raises the cost of a
 # crash in the safety hooks themselves: secret-protection matches
@@ -19,13 +21,20 @@
 #    registration of the four safety scripts in hooks-plugin must carry
 #    onFailure "block"; no other entry may; any onFailure value outside
 #    continue|block is an error; each safety script must be registered.
-# 2. Runtime. Each safety script is run on its not-applicable paths and must
-#    exit 0 with stdout that is empty or one JSON object (invalid JSON output
-#    also counts as a failure under onFailure "block"):
-#      unparseable stdin, empty stdin, a JSON array, no jq on PATH, no git on
-#      PATH, a `git commit` in a non-git cwd, an ordinary Read, and the same
-#      `git commit` with mapfile/readarray disabled (macOS /bin/bash 3.2 has
-#      neither). When /bin/bash is older than 4, that case also runs under it.
+# 2. Runtime. Each safety script is run on its not-applicable paths. It must
+#    exit 0, print nothing or one JSON object (invalid JSON output also counts
+#    as a failure under onFailure "block"), and decide nothing (a deny or ask
+#    there is the merge guard's EXIT-trap backstop catching a crash):
+#      early exits: unparseable stdin, empty stdin, a JSON array, a tool_input
+#        that is a string/number/array, no jq on PATH, no git on PATH, an
+#        ordinary Read, a `git commit` in a non-git cwd;
+#      deep allow paths, each past a hook's own prefilter: a commit on a
+#        feature branch and an explicit-refspec push from main (scratch repos),
+#        `rm -rf ./build` of a non-repo dir with the tmp exemption off, a
+#        mention of "gh pr merge", and a merge of the caller's own PR (gh stub).
+#    The non-git-cwd and deep cases also run with mapfile/readarray disabled
+#    (macOS /bin/bash 3.2 has neither) and, when /bin/bash is older than 4,
+#    under it, so a bash-4 builtin is caught on the path that reaches it.
 #
 # Usage: bash scripts/check-hook-fail-closed.sh [--project-dir DIR]
 # Exit:  0 = OK, 1 = ERROR, 2 = usage
@@ -129,13 +138,26 @@ while IFS= read -r line; do
 done <<<"$MANIFEST_OUT"
 [ "$FILES_SCANNED" -gt 0 ] || add_issue nothing_scanned "found no *-plugin hook JSON under $PROJECT_DIR"
 
-# ── 2. Runtime: not-applicable paths exit 0 ──────────────────────────────────
+# ── 2. Runtime: not-applicable paths exit 0 and decide nothing ───────────────
 BASH_BIN="$(command -v bash)"
 WORK="$(mktemp -d)" || { echo "ERROR: mktemp -d failed" >&2; exit 2; }
 if [ -z "$WORK" ] || [ ! -d "$WORK" ]; then echo "ERROR: mktemp -d failed" >&2; exit 2; fi
 trap 'rm -rf "$WORK"' EXIT
 NONGIT="$WORK/not-a-repo"
-mkdir -p "$NONGIT" "$WORK/bin-nojq" "$WORK/bin-nogit"
+FEAT_REPO="$WORK/feat-repo"
+MAIN_REPO="$WORK/main-repo"
+mkdir -p "$NONGIT" "$FEAT_REPO" "$MAIN_REPO" "$WORK/bin-nojq" "$WORK/bin-nogit" "$WORK/bin-stub"
+
+# Scratch repos for the deep cases. GIT_DIR and friends are unset at the top
+# of this script, so `git -C` reaches these directories and nothing else; the
+# identity is passed per command, never written to any config.
+scratch_git() { git -c user.name=fail-closed-check -c user.email=check@example.invalid \
+  -c commit.gpgsign=false "$@" >/dev/null 2>&1; }
+scratch_git -C "$FEAT_REPO" init -q -b feat/x
+scratch_git -C "$FEAT_REPO" commit -q --allow-empty -m one
+scratch_git -C "$MAIN_REPO" init -q -b main
+scratch_git -C "$MAIN_REPO" commit -q --allow-empty -m one
+scratch_git -C "$MAIN_REPO" commit -q --allow-empty -m two
 
 # PATH sandboxes: symlink only the tools a case keeps. Each hook checks its
 # own dependencies with `command -v` before using them, so a short list is
@@ -154,6 +176,19 @@ link_tools "$WORK/bin-nojq" $COMMON_TOOLS git gh
 # shellcheck disable=SC2086
 link_tools "$WORK/bin-nogit" $COMMON_TOOLS jq
 printf 'enable -n mapfile readarray 2>/dev/null || true\n' > "$WORK/no-mapfile.env"
+# A gh stub for the merge guard's deepest allow path: the PR's author is the
+# authenticated user, so the merge is the caller's own and is allowed. No
+# network is touched.
+cat > "$WORK/bin-stub/gh" <<'STUB'
+#!/usr/bin/env bash
+case "$1 $2" in
+  "api user") echo stub-me ;;
+  "pr view") printf '5\tstub-me\tfalse\tstub title\thttps://example.invalid/pull/5\n' ;;
+esac
+exit 0
+STUB
+chmod +x "$WORK/bin-stub/gh"
+[ -x "$WORK/bin-stub/gh" ] || { echo "ERROR: gh stub is not executable" >&2; exit 2; }
 
 bash_input() { # bash_input <command> <cwd>
   jq -nc --arg c "$1" --arg d "$2" \
@@ -164,14 +199,20 @@ COMMIT_INPUT="$(bash_input 'git commit -m x' "$NONGIT")"
 STATUS_INPUT="$(bash_input 'git status' "$NONGIT")"
 
 CASES_RUN=0
+CASE_CWD="$NONGIT"
+CASE_ENV=()
 # run_case <hook-path> <label> <stdin> <path> <bash-env> [<bash-binary>]
+# Runs in $CASE_CWD with the extra VAR=value assignments in CASE_ENV. A
+# not-applicable case must exit 0 AND decide nothing: a deny or ask here is the
+# merge guard's EXIT-trap backstop catching a crash, which blocks just the same.
 run_case() {
   local hook="$1" label="$2" input="$3" path="$4" benv="$5" bin="${6:-$BASH_BIN}"
   local out rc
   CASES_RUN=$((CASES_RUN + 1))
-  out="$(cd "$NONGIT" && printf '%s' "$input" | env -u CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION \
+  out="$(cd "$CASE_CWD" && printf '%s' "$input" | env -u CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION \
       -u CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION -u CLAUDE_HOOKS_DISABLE_REPO_DELETION_SAFETY \
       -u CLAUDE_HOOKS_DISABLE_EXTERNAL_PR_MERGE \
+      ${CASE_ENV[@]+"${CASE_ENV[@]}"} \
       PATH="$path" BASH_ENV="$benv" HOME="$WORK" "$bin" "$hook" 2>/dev/null)"
   rc=$?
   if [ "$rc" -ne 0 ]; then
@@ -182,6 +223,10 @@ run_case() {
     case "$out" in
       "{"*|"["*) add_issue invalid_json_output "$(basename "$hook") case=$label stdout is not one JSON object" ;;
     esac
+    return
+  fi
+  if [ -n "$out" ] && printf '%s' "$out" | jq -e '.hookSpecificOutput.permissionDecision? as $d | $d == "deny" or $d == "ask" or .decision? == "block"' >/dev/null 2>&1; then
+    add_issue not_applicable_decision "$(basename "$hook") case=$label decided $(printf '%s' "$out" | jq -c '.hookSpecificOutput.permissionDecision? // .decision?') on a call it should not touch"
   fi
 }
 
@@ -192,22 +237,54 @@ if [ -x /bin/bash ]; then
   case "$major" in [0-3]) OLD_BASH=/bin/bash ;; esac
 fi
 
+# run_variants <hook> <label> <stdin> <path>: the case under the current bash,
+# with mapfile/readarray disabled, and under /bin/bash 3.x when present, so a
+# bash-4 builtin past a prefilter is caught on the path that reaches it.
+run_variants() {
+  run_case "$1" "$2" "$3" "$4" ""
+  run_case "$1" "$2+no_mapfile" "$3" "$4" "$WORK/no-mapfile.env"
+  if [ -n "$OLD_BASH" ]; then
+    run_case "$1" "$2+bin_bash_3" "$3" "$4" "" "$OLD_BASH"
+  fi
+}
+
 HOOKS_CHECKED=0
 for name in $SAFETY_HOOKS; do
   hook="$PROJECT_DIR/$SAFETY_PLUGIN/hooks/$name"
   [ -f "$hook" ] || { add_issue safety_hook_missing "$SAFETY_PLUGIN/hooks/$name not found"; continue; }
   HOOKS_CHECKED=$((HOOKS_CHECKED + 1))
+
+  # Early exits: input the hook cannot judge, or a dependency it lacks.
+  CASE_CWD="$NONGIT"; CASE_ENV=()
   run_case "$hook" unparseable_stdin 'not json {' "$PATH" ""
   run_case "$hook" empty_stdin '' "$PATH" ""
   run_case "$hook" json_array '[]' "$PATH" ""
+  run_case "$hook" tool_input_string '{"tool_name":"Bash","tool_input":"ls"}' "$PATH" ""
+  run_case "$hook" tool_input_number '{"tool_name":"Read","tool_input":5}' "$PATH" ""
+  run_case "$hook" tool_input_array '{"tool_name":"Bash","tool_input":["ls"]}' "$PATH" ""
   run_case "$hook" no_jq "$STATUS_INPUT" "$WORK/bin-nojq" ""
   run_case "$hook" no_git "$COMMIT_INPUT" "$WORK/bin-nogit" ""
-  run_case "$hook" non_git_cwd "$COMMIT_INPUT" "$PATH" ""
   run_case "$hook" ordinary_read "$READ_INPUT" "$PATH" ""
-  run_case "$hook" no_mapfile "$COMMIT_INPUT" "$PATH" "$WORK/no-mapfile.env"
-  if [ -n "$OLD_BASH" ]; then
-    run_case "$hook" bin_bash_3 "$COMMIT_INPUT" "$PATH" "" "$OLD_BASH"
-  fi
+  run_variants "$hook" non_git_cwd "$COMMIT_INPUT" "$PATH"
+
+  # Deep allow paths: each input passes a hook's own prefilter and reaches its
+  # late logic before the hook decides the call is not its business.
+  #   branch-protection: a commit on a feature branch (past CURRENT_BRANCH), and
+  #     an explicit-refspec push from main (through the whole verdict loop).
+  CASE_CWD="$FEAT_REPO"
+  run_variants "$hook" commit_on_feature_branch "$(bash_input 'git commit -m x' "$FEAT_REPO")" "$PATH"
+  CASE_CWD="$MAIN_REPO"
+  run_variants "$hook" refspec_push_from_main "$(bash_input 'git status && git push origin main:feat/x' "$MAIN_REPO")" "$PATH"
+  #   repo-deletion-safety: an rm -rf of a non-repo directory, with the tmp
+  #     exemption off so the operand reaches the repo-root and parent scans.
+  CASE_CWD="$NONGIT"; CASE_ENV=(CLAUDE_HOOKS_REPO_DELETION_TMP_EXEMPT=0)
+  run_variants "$hook" rm_rf_non_repo "$(bash_input 'rm -rf ./build' "$NONGIT")" "$PATH"
+  CASE_ENV=()
+  #   external-pr-merge-guard: a mention of the phrase (past the prefilter and
+  #     the EXIT trap, through the scanner), and a merge of the caller's own PR
+  #     (through check_record, with a gh stub).
+  run_variants "$hook" merge_phrase_mentioned "$(bash_input 'echo "run gh pr merge 5 later"' "$NONGIT")" "$PATH"
+  run_variants "$hook" own_pr_merge "$(bash_input 'gh pr merge 5 -R acme/own --squash' "$NONGIT")" "$WORK/bin-stub:$PATH"
 done
 
 # ── Report ────────────────────────────────────────────────────────────────────

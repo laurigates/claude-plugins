@@ -131,6 +131,15 @@ expect "a hook calling jq without command -v" "$TMP_ROOT/needsjq" ERROR not_appl
 make_tree "$TMP_ROOT/guarded" "pass" 'command -v jq >/dev/null 2>&1 || exit 0; jq -n . >/dev/null'
 expect "a hook guarding jq with command -v" "$TMP_ROOT/guarded" OK
 
+make_tree "$TMP_ROOT/decides" "pass" \
+  "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"x\"}}'"
+expect "a hook denying a call it should not touch (EXIT-trap backstop)" "$TMP_ROOT/decides" ERROR not_applicable_decision
+
+# A crash only on a deep path: the stub exits 1 when the command is the
+# feature-branch commit, which only the deep cases send from a git repo.
+make_tree "$TMP_ROOT/deep" "pass" 'git rev-parse --abbrev-ref HEAD 2>/dev/null | grep -qx feat/x && exit 1; exit 0'
+expect "a hook crashing only past its prefilter (feature-branch repo)" "$TMP_ROOT/deep" ERROR not_applicable_crash
+
 echo "== the real tree =="
 expect "the repo's own hooks-plugin" "$REPO_ROOT" OK
 

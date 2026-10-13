@@ -18,12 +18,14 @@ set -euo pipefail
 # This hook is registered with `"onFailure": "block"` (Claude Code 2.1.295+)
 # on Read|Edit|Write|Bash: any exit other than 0 or 2 blocks the call, so a
 # crash here would block every file read. Paths where the hook cannot apply
-# exit 0 explicitly — a missing jq, or input jq cannot parse.
+# exit 0 explicitly — input jq cannot parse or whose tool_input is not an
+# object, and a missing jq. The missing-jq exit lets every call through: that
+# is deliberate, because failing closed there would block every Read.
 # scripts/check-hook-fail-closed.sh runs each of these paths.
 command -v jq >/dev/null 2>&1 || exit 0
 
 INPUT=$(cat)
-printf '%s' "$INPUT" | jq -e 'type == "object"' >/dev/null 2>&1 || exit 0
+printf '%s' "$INPUT" | jq -e 'type == "object" and ((.tool_input // {}) | type == "object")' >/dev/null 2>&1 || exit 0
 
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')

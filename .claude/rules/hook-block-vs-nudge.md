@@ -60,9 +60,13 @@ hard block.
 By default a hook that cannot start, times out, or exits with a code other than
 0 or 2 is a non-blocking error, so the action runs unchecked. Claude Code
 2.1.295 added `"onFailure": "block"` on a `command` or `http` hook entry: a
-failure then does what exit 2 does on that event. Older clients ignore the key
-(2.1.294's `claude plugin validate` accepts any value for it), so the hook still
-works there; only the fail-closed behaviour is lost. Set it on a hook whose
+failure then does what exit 2 does on that event. Older clients appear to
+ignore the key: measured 2026-10-13, the 2.1.294 binary's `claude plugin
+validate` accepted it with any value (even `42`) while still rejecting a
+string `timeout`. The hook still runs there; only the fail-closed behaviour is
+lost. A missing dependency stays fail-open by design: with `jq` absent (or
+`git`, for `branch-protection`) the four hooks exit 0, because failing closed
+there would block every Read through `secret-protection`. Set it on a hook whose
 block is earned by the test above: `branch-protection`, `repo-deletion-safety`,
 `external-pr-merge-guard` and `secret-protection` in `hooks-plugin`. Never set
 it on a nudge, a logger, or an advisory guard. A nudge that fails closed turns

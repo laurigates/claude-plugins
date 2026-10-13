@@ -37,14 +37,18 @@ set -euo pipefail
 # This hook is registered with `"onFailure": "block"` (Claude Code 2.1.295+):
 # any exit other than 0 or 2 blocks the Bash call it guards, so every path
 # where the hook does not apply must exit 0 explicitly rather than crash —
-# a missing jq or git, input jq cannot parse, a non-git cwd (handled by the
-# empty-branch exit below), and macOS /bin/bash 3.2 (no mapfile; see the
-# clause loop). scripts/check-hook-fail-closed.sh runs each of these paths.
+# input jq cannot parse or whose tool_input is not an object, a non-git cwd
+# (handled by the empty-branch exit below), and macOS /bin/bash 3.2 (no
+# mapfile; see the clause loop). A missing jq or git also exits 0, so on a
+# machine without them a push to main is NOT blocked: that is deliberate,
+# because failing closed on a missing dependency would block every Bash call
+# (and, in secret-protection, every Read). scripts/check-hook-fail-closed.sh
+# runs each of these paths.
 command -v jq >/dev/null 2>&1 || exit 0
 command -v git >/dev/null 2>&1 || exit 0
 
 INPUT=$(cat)
-printf '%s' "$INPUT" | jq -e 'type == "object"' >/dev/null 2>&1 || exit 0
+printf '%s' "$INPUT" | jq -e 'type == "object" and ((.tool_input // {}) | type == "object")' >/dev/null 2>&1 || exit 0
 
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')

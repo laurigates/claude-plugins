@@ -277,9 +277,13 @@ classify() {
     return 0
 }
 
-# Every finding probe is CAPPED. emit_block runs on the blocking path, and this
-# hook fails OPEN on timeout — an unbounded `rev-list --all --count` over a large
-# object graph would turn an already-decided hard block into a deletion. Each
+# Every finding probe is CAPPED. emit_block runs on the blocking path, and a
+# timeout there loses the decided block: before Claude Code 2.1.295 a timed-out
+# hook was non-blocking, so an unbounded `rev-list --all --count` over a large
+# object graph would turn the hard block into a deletion. With the
+# registration's `"onFailure": "block"` a timeout blocks instead, but
+# the plugin.json `timeout` (5000) is read as seconds, so in practice it
+# does not fire; the units are tracked separately. Each
 # probe below stops at FINDINGS_CAP, so the cost is bounded by the cap rather
 # than by repo size, and a capped value is rendered as "<cap>+".
 FINDINGS_CAP=500
@@ -429,9 +433,11 @@ check_path() {
     fi
 
     # (b) the operand is a PARENT holding repos — bounded scan so a
-    # `rm -rf ~/repos` over a large tree cannot blow the hook timeout. If it
-    # does time out, the registration's `"onFailure": "block"` (Claude Code
-    # 2.1.295+) blocks the deletion; older clients let it through.
+    # `rm -rf ~/repos` over a large tree stays well inside the hook timeout. A
+    # timeout would block under `"onFailure": "block"` (Claude Code 2.1.295+)
+    # and pass on older clients, but the plugin.json `timeout` (5000) is read
+    # as seconds, so in practice it does not fire; the units are tracked
+    # separately.
     while IFS= read -r gd; do
         [ -n "$gd" ] || continue
         root=$(dirname "$gd")
