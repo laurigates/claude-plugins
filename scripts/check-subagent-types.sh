@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Verify every `subagent_type` named in a skill body resolves to an agent that
+# Verify every `subagent_type` named in a skill body, and every quoted
+# `agentType:` literal in a bundled `*.workflow.js`, resolves to an agent that
 # actually exists.
 #
 # Background: a skill that instructs Claude to dispatch
@@ -123,7 +124,7 @@ while IFS= read -r -d '' skill_file; do
 done < <(
   find . -maxdepth 1 -type d -name '*-plugin' -not -name '.claude-plugin' -print0 \
     | xargs -0 -I {} find {} -path '*/.claude/worktrees/*' -prune -o \
-        -path '*/skills/*' -name '*.md' -type f -print0
+        -path '*/skills/*' \( -name '*.md' -o -name '*.workflow.js' \) -type f -print0
 )
 
 errors=0
@@ -132,6 +133,21 @@ refs=0
 files_scanned=0
 error_lines=()
 warn_lines=()
+
+# check_value <rel_path> <value> — classify one named agent type.
+check_value() {
+  local rel_path="$1" value="$2"
+  refs=$((refs + 1))
+  is_exception "$rel_path" "$value" && return 0
+  [ -n "${QUALIFIED_AGENTS[$value]:-}" ] && return 0
+  if [ -n "${BARE_AGENTS[$value]:-}" ]; then
+    warns=$((warns + 1))
+    warn_lines+=("  - SEVERITY=WARN TYPE=unqualified_subagent_type FILE=$rel_path VALUE=$value FIX=${BARE_AGENTS[$value]}:$value")
+    return 0
+  fi
+  errors=$((errors + 1))
+  error_lines+=("  - SEVERITY=ERROR TYPE=unresolvable_subagent_type FILE=$rel_path VALUE=$value MSG=no agents/${value}.md in any plugin")
+}
 
 echo "=== SUBAGENT TYPE RESOLUTION ==="
 echo "AGENT_COUNT=${#QUALIFIED_AGENTS[@]}"
@@ -154,25 +170,18 @@ for skill_file in ${skill_files[@]+"${skill_files[@]}"}; do
     value="${value#"${value%%[![:space:]]*}"}"
     value="${value#\"}"
     [ -n "$value" ] || continue
-    refs=$((refs + 1))
-
-    if is_exception "$rel_path" "$value"; then
-      continue
-    fi
-
-    if [ -n "${QUALIFIED_AGENTS[$value]:-}" ]; then
-      continue
-    fi
-
-    if [ -n "${BARE_AGENTS[$value]:-}" ]; then
-      warns=$((warns + 1))
-      warn_lines+=("  - SEVERITY=WARN TYPE=unqualified_subagent_type FILE=$rel_path VALUE=$value FIX=${BARE_AGENTS[$value]}:$value")
-      continue
-    fi
-
-    errors=$((errors + 1))
-    error_lines+=("  - SEVERITY=ERROR TYPE=unresolvable_subagent_type FILE=$rel_path VALUE=$value MSG=no agents/${value}.md in any plugin")
+    check_value "$rel_path" "$value"
   done < <(grep -oE 'subagent_type"?[[:space:]]*[:=][[:space:]]*"?[A-Za-z][A-Za-z0-9_:.-]*' "$skill_file" 2>/dev/null || true)
+
+  # A workflow stage names its agent with `agentType: '<type>'` in agent()
+  # opts. Only a quoted literal is checked; `agentType: g.at` is computed at
+  # run time and cannot be resolved statically.
+  while IFS= read -r match; do
+    [ -n "$match" ] || continue
+    value="${match##*[\'\"]}"
+    [ -n "$value" ] || continue
+    check_value "$rel_path" "$value"
+  done < <(grep -oE "agentType['\"]?[[:space:]]*:[[:space:]]*['\"][A-Za-z][A-Za-z0-9_:.-]*" "$skill_file" 2>/dev/null || true)
 done
 
 echo "FILES_SCANNED=$files_scanned"
