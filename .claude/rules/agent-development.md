@@ -205,7 +205,9 @@ The size matters most on Haiku 5.5. It bills $0.10/$0.50 per Mtok up to 100k pro
 
 `omitClaudeMd` needs Claude Code 2.1.271+ and still loads managed policy files. A missing `tools:` field inherits every tool, skill listing and MCP included. The narrow list does as much work as `omitClaudeMd`.
 
-The shipped instance is `agents-plugin:lean-reader`: Haiku 5.5, `effort: low`, tools limited to Read/Grep/Glob. Point a workflow stage at it with `opts.agentType: 'agents-plugin:lean-reader'`; `testing-plugin:test-analyze`'s `parse` stage is the first user. A stage that needs a shell, like `evaluate-plugin-batch`'s `inventory`, cannot use it. `check-agent-model.sh` keeps lean haiku agents read-only.
+The shipped instance is `agents-plugin:lean-reader`: Haiku 5.5, `effort: low`, tools limited to Read/Grep/Glob. Point a workflow stage at it with `opts.agentType: 'agents-plugin:lean-reader'`; `testing-plugin:test-analyze`'s `parse` stage is the first user. A stage that needs a shell, like `evaluate-plugin-batch`'s `inventory`, cannot use it. `check-agent-model.sh` keeps lean haiku agents read-only: it also rejects `mcpServers:`, `skills:`, `hooks:` and a second `tools:` key. `check-subagent-types.sh` resolves each quoted `agentType:` literal in a bundled workflow, so renaming the agent fails CI.
+
+Effort on a lean agent: the Agent tool's per-call `effort` overrides the agent file's `effort:` (Claude Code v2.1.292+), and `CLAUDE_CODE_EFFORT_LEVEL` overrides both ([sub-agents docs](https://code.claude.com/docs/en/sub-agents.md), "Choose an effort level"). The docs give no such order for a workflow `agent()`'s `opts.effort`, so a stage that asks for more effort than the file sets may run at the file's level.
 
 ### `context: fork` is a skill field, not an agent field
 

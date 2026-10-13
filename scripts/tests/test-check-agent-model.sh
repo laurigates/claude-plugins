@@ -260,6 +260,20 @@ run "$fx_j"
 assert "missing effort exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
 assert "missing effort is named" "$(contains "$OUT" 'needs an explicit effort:')"
 
+# Keys that hand the agent capability outside Read/Grep/Glob (#3047 review).
+for key_line in "mcpServers: [github]" "skills: [git-commit]" "hooks: {}"; do
+  make_lean "$fx_j/demo-plugin/agents/lean.md" "omitClaudeMd: true" "$(printf 'tools: Read\n%s' "$key_line")" "effort: low"
+  run "$fx_j"
+  assert "a lean haiku agent declaring '${key_line%%:*}:' exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+  assert "the '${key_line%%:*}:' key is named" "$(contains "$OUT" "declares ${key_line%%:*}:")"
+done
+
+# A second tools: key would be the value YAML keeps (last wins).
+make_lean "$fx_j/demo-plugin/agents/lean.md" "omitClaudeMd: true" "$(printf 'tools: Read\ntools: Read, Bash')" "effort: low"
+run "$fx_j"
+assert "a duplicate tools: key exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "the duplicate tools: key is named" "$(contains "$OUT" 'declares tools: more than once')"
+
 # sonnet gets no lean carve-out: the same lean shape on sonnet still fails.
 rm -f "$fx_j/demo-plugin/agents/lean.md"
 make_agent_effort "$fx_j/demo-plugin/agents/lean-sonnet.md" sonnet low

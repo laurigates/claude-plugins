@@ -8,7 +8,7 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of how `attribute-router` deleg
 
 ## Agents
 
-All agents run on **opus** — see [Model Selection](#model-selection).
+Every agent except `lean-reader` runs on **opus**; `lean-reader` runs on haiku — see [Model Selection](#model-selection).
 
 | Agent | Model | Purpose | Team Role |
 |-------|-------|---------|-----------|

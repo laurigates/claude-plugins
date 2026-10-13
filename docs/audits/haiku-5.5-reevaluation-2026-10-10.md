@@ -122,7 +122,10 @@ lean subagent avoids it; see
 Added after the run: a follow-up measurement of where the ~127k comes from and
 how to drop it. Each figure below is the first request of a Haiku 5.5 probe
 subagent given a one-word task, read from its transcript. The baseline is the
-default from this repo; a headless session supplied the breakdown.
+default from this repo; a headless session supplied the breakdown. The two
+numbers have different bases: ~127k is the run's base cache read averaged over
+its 102 requests (about 13M / 102), which carry each agent's brief, while
+124,068 is a one-word probe.
 
 | Agent shape | First request |
 |---|---|

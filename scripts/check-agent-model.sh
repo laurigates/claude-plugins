@@ -32,7 +32,8 @@
 #   1. `omitClaudeMd: true` — the agent takes everything from its brief, so the
 #      ~72k-token CLAUDE.md + rules chain is not loaded;
 #   2. `tools:` lists only Read, Grep and Glob — no Skill tool (the ~33k skill
-#      listing), no MCP schemas, and nothing that edits, runs, or publishes;
+#      listing), no MCP schemas, and nothing that edits, runs, or publishes —
+#      declared once, with no `mcpServers:`, `skills:` or `hooks:` key;
 #   3. an explicit `effort:` — Haiku 5.5's cost lever, set rather than inherited.
 # Measured first-request size: ~3k tokens against ~124k for a default subagent.
 # A read-only, context-free reader is the one shape where a weaker model's
@@ -180,6 +181,15 @@ lean_haiku_problems() {
   local f="$1" fm tool tools
   fm="$(frontmatter "$f")"
   grep -qE '^omitClaudeMd:[[:space:]]*true[[:space:]]*$' <<<"$fm" || echo "needs omitClaudeMd: true"
+  # Each of these hands the agent tools or context outside Read/Grep/Glob:
+  # MCP servers can write and execute, `skills:` preloads skill bodies, and
+  # `hooks:` runs commands on the agent's behalf.
+  for key in mcpServers skills hooks; do
+    grep -qE "^${key}:" <<<"$fm" && echo "declares ${key}:, which a lean read-only reader must not"
+  done
+  # The tools parser reads the first `tools:` line; a second one would be the
+  # value a YAML reader keeps (last wins), so it could widen the list unseen.
+  [ "$(grep -cE '^tools:' <<<"$fm")" -gt 1 ] && echo "declares tools: more than once"
   tools="$(agent_tools "$f")"
   if [ -z "$tools" ]; then
     echo "needs an explicit tools: list of Read/Grep/Glob (omitted tools inherit everything)"
