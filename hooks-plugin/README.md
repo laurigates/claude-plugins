@@ -148,7 +148,8 @@ A PreToolUse hook that blocks access to sensitive files and prevents credential 
 | Environment files | `.env`, `.env.*` (allows `.env.example`, `.env.sample`) |
 | SSH credentials | `.ssh/id_*`, `.pem`, `*_rsa`, `*_ed25519` |
 | Cloud credentials | `.aws/credentials`, `.config/gcloud/`, `.kube/config`, `.docker/config.json` |
-| Credential files | `credentials.json`, `secrets.json`, `*.keystore`, `*.key` |
+| Credential files | `credentials.json`, `secrets.json`, `.api_tokens` (e.g. `~/.api_tokens`), `*.keystore`, `*.key` |
+| Bash reader verbs | `cat`/`head`/`tail`/`less`/`more`/editors (any argument mentioning a protected path), plus `sed`/`awk`/`grep`/`cut`/`perl`/`rg` when the protected path is a standalone file argument — a protected name inside a quoted search pattern or sed script passes. `source`/`.` of a token file is allowed (it loads, not prints) |
 | Env var exposure | Commands that echo `$API_KEY`, `$SECRET`, `$TOKEN`, `$PASSWORD` |
 | Full env dump | Bare `printenv` or `env` commands |
 
