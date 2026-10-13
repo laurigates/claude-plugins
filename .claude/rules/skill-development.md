@@ -1,6 +1,6 @@
 ---
 created: 2025-12-20
-modified: 2026-10-10
+modified: 2026-10-13
 reviewed: 2026-09-16
 paths:
   - "**/skills/**"
@@ -129,8 +129,8 @@ hooks:                                       # Skill-scoped hooks (optional)
 - **`language`**: Specify the primary programming language for the skill. Helps Claude Code select appropriate models/tools.
 - **`agent`**: Specify a custom agent for executing this skill. Overrides default model selection.
 - **`disallowed-tools`** (2.1.152+): Comma-separated list of tools to remove from the model while this skill is active. Complements `allowed-tools` (which grants tools) by subtracting tools — useful for keeping a focused skill from reaching for capabilities it shouldn't use. Also supported on slash commands.
-- **`disable-model-invocation`**: When `true`, the skill content is used as the complete prompt without additional model reasoning. The skill body is passed directly to the model as instructions.
-- **`effort`**: Overrides the session effort level (`low|medium|high|xhigh|max`) while this skill is active; default inherits the session. Set it `low` only on genuinely mechanical wrappers — see Model Selection below.
+- **`disable-model-invocation`**: When `true`, the skill content is used as the complete prompt without additional model reasoning. The skill body is passed directly to the model as instructions. The skill is reserved for the user: the model cannot invoke it through the Skill tool (`scripts/check-delegation-reachability.sh` guards prose that tells it to). A `/name` the **user** types mid-message is announced to Claude as a skill even when gated (2.1.287); before 2.1.292, a compaction summary repeating `/name` let Claude invoke a gated skill.
+- **`effort`**: Overrides the session effort level (`low|medium|high|xhigh|max`) while this skill is active; default inherits the session. Before 2.1.295, a skill's `allowed-tools` and `effort` were dropped when the Skill tool finished before the response stream ended, which denied the skill's Bash commands in `-p` runs — intermittent CI denials on older clients can have this cause. Set it `low` only on genuinely mechanical wrappers — see Model Selection below.
 - **`when_to_use`**: Additional triggering guidance beyond `description`, for a skill whose activation conditions need more than one or two sentences to disambiguate from siblings.
 - **`paths`**: Glob-scoped auto-activation — the skill's guidance is treated as relevant only when a matching file is in scope (see `.claude/rules/context-engineering.md`). Keep brace groups (`{a,b,c}`) modest — a `paths:` value with many brace groups could OOM-kill or stall the CLI at startup before 2.1.217 added a budget bound; the bound caps the blast radius today, but an enormous glob is still wasted startup cost.
 - **`hooks`**: Define hooks that are only active when this skill is loaded. Uses the same schema as settings.json hooks. Agent `Stop` hooks are converted to `SubagentStop` when the agent runs as a subagent.
@@ -150,7 +150,7 @@ Skills support these dynamic variables in content:
 | `$N` | Shorthand for `$ARGUMENTS[N]` (e.g., `$0` first, `$1` second) |
 | `${CLAUDE_SESSION_ID}` | Current session ID — useful for logging and session-specific files |
 | `${CLAUDE_SKILL_DIR}` | Directory containing the skill's `SKILL.md` file — use for bundled scripts |
-| `${CLAUDE_EFFORT}` | Current effort level (`low`, `medium`, `high`, `xhigh`, `max`; `/effort ultracode` reports as `xhigh`) — use for effort-aware behavior |
+| `${CLAUDE_EFFORT}` | Current effort level (`low`, `medium`, `high`, `xhigh`, `max`). Before 2.1.284 ultracode forced `xhigh` and reported as it; since then ultracode is a separate toggle that stays on at any effort level, so presumably this variable no longer reveals it (inferred from the changelog, not tested) — use for effort-aware behavior |
 | `${CLAUDE_PLUGIN_ROOT}` | Root of the loaded plugin (hooks only) |
 
 > **Unmatched positionals render verbatim (2.1.210+)**: An unmatched `$1`/`$2`… placeholder (no argument supplied at that position) renders literally rather than being silently stripped — a skill body written assuming missing positionals vanish will instead show a literal `$2` in output.
@@ -171,6 +171,8 @@ Log to logs/${CLAUDE_SESSION_ID}.log.
 Run helper: !`bash ${CLAUDE_SKILL_DIR}/scripts/helper.sh`
 ```
 
+Since 2.1.290, a `!` shell command containing raw control characters other than tab and newline is refused, with a message showing where they are.
+
 > **Escaping a literal `$` (2.1.163+)**: a `$` immediately before a digit is treated as a positional substitution (`$0`, `$1`, …). To emit a **literal** `$` before a digit in a skill/command body, escape it as `\$` — e.g. write `\$5.00` to render `$5.00` instead of substituting argument 5. Only `$` followed by a digit needs escaping; a `$` before a letter or space is left alone.
 
 ### Model Selection
@@ -188,7 +190,7 @@ Skills inherit the user's active model by default. Tag a skill with `model:` onl
 
 **Why both extremes?** A user defaulting to Opus saves cost when a *genuinely* mechanical skill self-selects Sonnet. A user defaulting to Sonnet (or Haiku) gets reliable results when a complex skill self-selects Opus.
 
-**Opus is often the cheaper default — `effort`, not `model`, is the main cost lever.** Opus at low effort tends to spend far fewer thinking + output tokens than Sonnet at high effort, so for reasoning-shaped work Opus-low can be both better *and* cheaper. That win rides on `effort`, which a skill **can** now pin in frontmatter (`effort: low|medium|high|xhigh|max`; overrides the session effort while the skill is active, default inherits; available levels depend on the model). So the practical translation is: for a genuinely mechanical skill, prefer `effort: low` with `model:` unset over reaching for `model: sonnet`; keep `model: sonnet` for the narrow case where Sonnet at low effort is demonstrably enough. The ≈1.7× premium and the Opus-low-beats-Sonnet-high result were measured on the Opus 4.8 / Sonnet 4.6 generation; `opus`/`sonnet` now resolve to Opus 5.5 / Sonnet 5 (2.1.280) and effort names do not map across generations — treat the heuristic as workload-dependent and confirm per-skill with the cross-model delta harness in [`.claude/rules/skill-evaluation.md`](skill-evaluation.md).
+**Opus is often the cheaper default — `effort`, not `model`, is the main cost lever.** Opus at low effort tends to spend far fewer thinking + output tokens than Sonnet at high effort, so for reasoning-shaped work Opus-low can be both better *and* cheaper. That win rides on `effort`, which a skill **can** now pin in frontmatter (`effort: low|medium|high|xhigh|max`; overrides the session effort while the skill is active, default inherits; available levels depend on the model). So the practical translation is: for a genuinely mechanical skill, prefer `effort: low` with `model:` unset over reaching for `model: sonnet`; keep `model: sonnet` for the narrow case where Sonnet at low effort is demonstrably enough. The ≈1.7× premium and the Opus-low-beats-Sonnet-high result were measured on the Opus 4.8 / Sonnet 4.6 generation; `opus`/`sonnet` now resolve to Opus 5.5 (2.1.280) / Sonnet 5.5 (on the Anthropic API since 2.1.284, $2/$10 per MTok) and effort names do not map across generations — treat the heuristic as workload-dependent and confirm per-skill with the cross-model delta harness in [`.claude/rules/skill-evaluation.md`](skill-evaluation.md).
 
 **Hard constraints:**
 
@@ -234,7 +236,7 @@ When listing `Bash` in `allowed-tools`, prefer narrow `Bash(<command> *)` permis
 
 As of 2.1.147, auto mode no longer suppresses `AskUserQuestion` when a user or skill explicitly relies on it — a skill built around an `AskUserQuestion` prompt keeps working under auto mode.
 
-Under managed `allowManagedPermissionRulesOnly`, a repo, user or `--add-dir` skill's `allowed-tools` no longer pre-approves its own tools (2.1.282); only managed rules grant. A skill that relies on `allowed-tools` will prompt in such an org.
+Under managed `allowManagedPermissionRulesOnly`, a repo, user or `--add-dir` skill's `allowed-tools` no longer pre-approves its own tools (2.1.282); only managed rules grant. A skill that relies on `allowed-tools` will prompt in such an org. Since 2.1.284 the same holds for plugins from marketplaces, claude.ai and npm; only plugins from an official Anthropic source, or a source managed settings vouch for, keep the pre-approval. Before 2.1.292, a skill's `allowed-tools` rule could come back in a later turn after leaving auto or plan mode mid-turn.
 
 See `.claude/rules/agentic-permissions.md` for canonical patterns and `.claude/rules/auto-mode.md` for the full auto-mode model.
 
@@ -283,6 +285,10 @@ Follow this structure for consistency:
 | Tool-focused | `fd-file-finding`, `rg-code-search` |
 | Workflow-focused | `bun-development`, `bun-package-manager` |
 | Framework-focused | `biome-tooling`, `typescript-strict` |
+
+A skill is found by the `name` in its SKILL.md even when the folder name differs, and the listing shows both (2.1.290). A `name` over 256 characters is ignored (2.1.292).
+
+Do not name a skill `verify` unless it is meant to gate commits: since 2.1.286, when project or user skills include one named `verify`, Claude is told to run it right before committing, except for docs-only and tests-only commits. No skill in this marketplace is named `verify`.
 
 ## Skill Granularity
 
