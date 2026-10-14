@@ -82,26 +82,16 @@ bash "${CLAUDE_SKILL_DIR}/scripts/scan-suspects.sh" --root ~/repos --min-mb 1000
 
 Output follows the structured `SUSPECT id=… tier=… size_kb=… cmd="…"` convention, plus a ranked human table and per-tier totals (`TIER_SAFE_KB=…`, `RECLAIMABLE_SAFE=…`). Work the tiers exactly as Step 4 — exhaust `safe` before `decision`, never blind-delete `userdata`.
 
-⚠️ Those totals are `du` sums, so they are an **upper bound** wherever CoW clones apply — notably the `node_modules` / `.venv` suspects, which `uv` and `bun` clone from a global cache. Treat `RECLAIMABLE_*` as "at most this much"; confirm with a `df` delta after acting. See [CoW clones](references/cow-clones.md).
+⚠️ Those totals are `du` sums, so they are an **upper bound** wherever CoW clones apply, e.g. the `node_modules` / `.venv` suspects, which `uv` and `bun` clone from a global cache. Treat `RECLAIMABLE_*` as "at most this much"; confirm with a `df` delta. See [CoW clones](references/cow-clones.md).
 
-**This augments Step 1, it does not replace it.** The scan is pure measurement; the judgment stays with the agent — reading the APFS `Avail`-not-`Capacity %` picture, checking purgeable snapshots when `du` and `df` disagree, and deciding *which* `decision`/`userdata` items to actually remove.
+**This augments Step 1, it does not replace it.** The scan only measures. The agent still reads `Avail` rather than `Capacity %`, checks snapshots when `du` and `df` disagree, and decides *which* `decision`/`userdata` items to remove.
 
-**The `UNKNOWN` lines are the feedback loop.** Any big directory *not* in the catalog is surfaced as `UNKNOWN size_kb=… path=…`. When one recurs, add it to `suspects.tsv` **as a pattern** (never a machine-specific path — this repo is public) and open a PR; the catalog grows from real findings. Catalog columns and placeholders (`{dir}`, `{parent}`) are documented in the file's header.
+**The `UNKNOWN` lines are the feedback loop.** Any big directory *not* in the catalog is surfaced as `UNKNOWN size_kb=… path=…`. When one recurs, add it to `suspects.tsv` **as a pattern** (never a machine-specific path — this repo is public) and open a PR; the catalog grows from real findings. Catalog columns and placeholders (`{dir}`, `{parent}`) are documented in the file's header. An `UNKNOWN` inside a git repo is usually a git-ignored build artifact; size and trace it with [references/repo-artifacts.md](references/repo-artifacts.md).
 
 Two operational notes:
 
-- **Runtime scales with disk size** — `du` walks every tree, so a full disk can take a minute or two. Bound with `--root <project-dir>` and `--min-mb`; swap in `dust` (Step 3) if you want the walk parallelised.
+- **Runtime scales with disk size** — `du` walks every tree, so a full disk can take a minute or two. Bound with `--root <project-dir>` and `--min-mb`; or use `dust` (Step 3) for a parallel walk.
 - **The catalog is the shared artifact; the scan *output* is machine-specific** — keep it in scratch, never commit it.
-
-### Git-ignored generated artifacts inside repos
-
-The catalog cannot list repo-specific outputs — large model fixtures, re-saved weights, build outputs — that sit git-ignored inside a project. When an `UNKNOWN` line lands inside a repo, list its ignored paths and size them:
-
-```bash
-git -C <repo> ls-files --others --ignored --exclude-standard --directory | sed "s|^|<repo>/|" | tr '\n' '\0' | xargs -0 du -sh 2>/dev/null | sort -h | tail
-```
-
-Trace provenance before deleting: the `.gitignore` comment and the justfile/Makefile recipe that writes the file usually say whether it is downloaded or derived, and how to regenerate it. Drop derived copies first — they regenerate locally, while a downloaded original has to be fetched again.
 
 ## Step 2: The OrbStack / Docker recovery play
 
@@ -141,7 +131,7 @@ Work top-down — exhaust the safe tier before touching anything that needs a de
 | **Safe / regenerable** | Homebrew downloads | `brew cleanup -s` | Rebuilds on next install |
 | | Go module cache | `go clean -modcache` | Re-downloads on next build |
 | | pip cache | `pip cache purge` | |
-| | uv cache | `uv cache clean` | **Blocks on the cache lock** while any `uvx`/`uv run` process runs, e.g. a `uvx`-launched MCP server — see [troubleshooting](references/troubleshooting.md) before reaching for `--force` |
+| | uv cache | `uv cache clean` | **Blocks on the lock** while any `uvx`/`uv run` process (e.g. an MCP server) runs — read [troubleshooting](references/troubleshooting.md) before `--force` |
 | | Playwright / Yarn / node-gyp caches | `rm -rf ~/Library/Caches/{ms-playwright,Yarn,node-gyp}` | Regenerable |
 | **Needs a decision** | Docker images + build cache | `docker system prune -a -f` | OrbStack auto-shrinks host image after |
 | | Local Time Machine snapshots | `sudo tmutil thinlocalsnapshots /` | Loses local restore points |
