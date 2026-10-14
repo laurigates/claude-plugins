@@ -24,10 +24,6 @@
 # an inherited GIT_DIR overrides `git -C`. Every `*-plugin/hooks/test-*.sh` suite
 # (any plugin, not just hooks-plugin) that runs git must `unset GIT_DIR …` before
 # its first git command. See "Rule 2" in the loop below.
-# A second rule covers the other route into the real repo (issue #1745): an
-# inherited GIT_DIR overrides `git -C`. Every hooks-plugin/hooks/test-*.sh suite
-# that runs git must `unset GIT_DIR …` before its first git command. See
-# "Rule 2" in the loop below.
 #
 # Python tests are NOT covered: `tempfile.mkdtemp()` / pytest `tmp_path` raise on
 # failure and never yield an empty path, so the shell-specific leak cannot occur.
@@ -81,7 +77,6 @@ for script in "${scripts[@]}"; do
     rel="${script#"$ROOT_DIR"/}"
 
     # Rule 2 (issues #1745, #3080): a plugin hook test suite that runs git must
-    # Rule 2 (issue #1745): a hooks-plugin hook test suite that runs git must
     # unset the inherited GIT_DIR family BEFORE its first git command. Under
     # pre-commit, GIT_DIR/GIT_INDEX_FILE point at the real repo and override
     # `git -C`, so a sandbox `init`/`config`/`branch -m` acts on the shared
@@ -102,21 +97,12 @@ for script in "${scripts[@]}"; do
                 fi
             done
             if [ "$registered" -eq 0 ]; then
-    # renamed a worktree's branch onto `main` (PR #3077). A hook script whose
-    # name happens to start with `test-` (test-verification.sh) is registered in
-    # the plugin manifest and is not a suite, so it is skipped.
-    case "$rel" in
-        hooks-plugin/hooks/test-*.sh)
-            manifest="$ROOT_DIR/hooks-plugin/.claude-plugin/plugin.json"
-            base="$(basename "$script")"
-            if ! { [ -f "$manifest" ] && grep -qF "hooks/$base" "$manifest"; }; then
                 first_git=$(grep -nE "$GIT_EXEC_RE" "$script" 2>/dev/null | head -1 | cut -d: -f1)
                 if [ -n "$first_git" ]; then
                     first_unset=$(grep -nE "$GIT_UNSET_RE" "$script" 2>/dev/null | head -1 | cut -d: -f1)
                     if [ -z "$first_unset" ] || [ "$first_unset" -gt "$first_git" ]; then
                         issue_count=$((issue_count + 1))
                         issues+=("  - SEVERITY=ERROR FILE=$rel LINE=$first_git MSG=hook test suite runs git without first unsetting GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR (issues #1745, #3080)")
-                        issues+=("  - SEVERITY=ERROR FILE=$rel LINE=$first_git MSG=hook test suite runs git without first unsetting GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR (issue #1745)")
                     fi
                 fi
             fi
