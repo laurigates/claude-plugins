@@ -481,6 +481,34 @@ assert_exit \
     "GUARD: git reset && git add (two index writers, neither is commit) still blocks" 2 \
     "git reset HEAD~1 && git add a.ts"
 
+# ── git-chain block message prescribes the single-add form (issue #3042) ─────
+# `git add A && git add B` was 214 events in W41 because the block message said
+# "run git commands as separate calls" without naming the replacement. The block
+# stays (#2349's index.lock rationale) but the message now prescribes
+# `git status --short` -> ONE `git add -- A B C` -> `git commit` as its own call.
+echo ""
+echo "git-chain block message prescribes one git add (#3042):"
+
+CHAIN_JSON=$(jq -nc --arg cmd "git add a.ts && git add b.ts" '{tool_name:"Bash",tool_input:{command:$cmd}}')
+chain_exit=0
+chain_msg=$(printf '%s' "$CHAIN_JSON" | bash "$HOOK" 2>&1) || chain_exit=$?
+if [ "$chain_exit" -eq 2 ]; then
+    printf "  PASS: git add a && git add b still blocks\n"; PASS=$((PASS + 1))
+else
+    printf "  FAIL: git add a && git add b (expected exit 2, got %d)\n" "$chain_exit"; FAIL=$((FAIL + 1))
+fi
+for needle in 'git add -- ' 'git status --short'; do
+    if grep -qF -- "$needle" <<<"$chain_msg"; then
+        printf "  PASS: block message contains '%s'\n" "$needle"; PASS=$((PASS + 1))
+    else
+        printf "  FAIL: block message lacks '%s'\n" "$needle"; FAIL=$((FAIL + 1))
+    fi
+done
+
+assert_exit \
+    "single 'git add -- a b c' (the prescribed form) is allowed" 0 \
+    "git add -- a.ts b.ts c.ts"
+
 # ── heredoc-write-then-feed-CLI regression (issue #1584, #1587) ───────────────
 # Regression: `cat > /tmp/body.md <<EOF ... EOF; gh pr create --body-file ...`
 # was blocked with the git-commit heredoc reminder even though the command runs
@@ -2349,10 +2377,10 @@ assert_stderr_contains \
     "stage specific files by name" \
     "git add -A"
 
-# hook-message-pin: Run git commands as separate Bash tool calls
+# hook-message-pin: one Bash tool call per step
 assert_stderr_contains \
     "chained index-modifying git block prescribes separate calls (#2727)" \
-    "Run git commands as separate Bash tool calls" \
+    "one Bash tool call per step" \
     "git add src/a.ts && git commit -m msg"
 
 # hook-message-pin: use 'git reset --soft HEAD~1' (keeps changes staged)

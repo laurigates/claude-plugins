@@ -950,10 +950,12 @@ if grep -Eq "git\\s+${INDEX_MODIFYING}\\b.*&&.*git\\s+${INDEX_MODIFYING}\\b" <<<
     block "REMINDER: Chaining git commands with '&&' can cause index.lock race conditions.
 The lock file from an index-modifying command (add, commit, rm, mv, reset) may not be
 released before the next command tries to acquire it.
-Instead of: git add . && git commit -m 'msg'
-Run git commands as separate Bash tool calls:
-1. git add src/file.ts
-2. git commit -m 'msg'
+Instead of: git add A && git add B   (or: git add . && git commit -m 'msg')
+Use this sequence, one Bash tool call per step:
+1. git status --short            (confirm which paths are present and changed)
+2. git add -- A B C              (ONE git add for all the confirmed-present paths)
+3. git commit -m 'msg'           (a separate call, never chained to the add)
+Never repeat 'git add' in a chain: list every path in the single 'git add --' call.
 This avoids race conditions and is more reliable.
 This fires only when BOTH chained commands modify the index (add, commit, rm, mv,
 reset). Chaining one of those to a read-only git command — 'git add f && git
