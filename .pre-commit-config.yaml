@@ -992,6 +992,20 @@ repos:
         language: system
         files: '^scripts/(check-plugin-root-quoting\.sh|tests/test-check-plugin-root-quoting\.sh)$'
         pass_filenames: false
+      - id: check-hook-fail-closed
+        name: onFailure "block" only on the safety hooks, which exit 0 when not applicable (2.1.295)
+        entry: bash ./scripts/check-hook-fail-closed.sh
+        language: system
+        # Every hook JSON the guard scans, the four safety hook scripts it runs,
+        # and the guard itself.
+        files: '([^/]*-plugin/(hooks\.json|hooks/hooks\.json|\.claude-plugin/plugin\.json)|^hooks-plugin/hooks/(branch-protection|repo-deletion-safety|external-pr-merge-guard|secret-protection)\.sh|^scripts/check-hook-fail-closed\.sh)$'
+        pass_filenames: false
+      - id: test-check-hook-fail-closed
+        name: hook fail-closed guard regression (missing/extra/invalid key, crashing hook, empty tree errors)
+        entry: bash ./scripts/tests/test-check-hook-fail-closed.sh
+        language: system
+        files: '^scripts/(check-hook-fail-closed\.sh|tests/test-check-hook-fail-closed\.sh)$'
+        pass_filenames: false
       - id: check-hook-matchers
         name: plugin hook matchers are tool-name filters, not permission-rule syntax
         entry: bash ./scripts/check-hook-matchers.sh

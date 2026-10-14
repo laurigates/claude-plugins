@@ -36,6 +36,12 @@
 # because this suite is listed in scripts/required-to-run-tests.txt).
 set -uo pipefail
 
+# Neutralize any inherited git context before building sandbox repos (issue
+# #1745). Under pre-commit, GIT_DIR/GIT_INDEX_FILE point at the real repo and
+# override `git -C`, so sandbox git commands would act on the shared clone.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
+  GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX
+
 HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
 HOOK="${PERMISSION_AUTO_APPROVE_HOOK:-$HOOK_DIR/permission-auto-approve.sh}"
 PINNED_BASELINE_REF=785b0d9802399823dffcda7cfb86f883e2524584
