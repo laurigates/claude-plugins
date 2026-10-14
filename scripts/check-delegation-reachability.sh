@@ -51,6 +51,16 @@
 # `scripts/check-agent-tool-selection.sh` and
 # `scripts/check-branch-containment-guidance.sh` already make.
 #
+# Re-checked 2026-10-13 against Claude Code 2.1.287 and 2.1.292, no logic
+# change. Since 2.1.287 a `/skill` the USER types mid-message is announced to
+# Claude even when it is `disable-model-invocation`. Before 2.1.292 a
+# compaction summary that repeated `/name` let Claude invoke a user-reserved
+# skill. Neither change lets skill PROSE make a gated sibling reachable, and
+# that prose is all this guard reads. A `claude -p` probe on 2.1.296 (haiku,
+# Skill tool only) had `git-plugin:git-pr-sync-check` launch and
+# `git-plugin:git-pr-feedback` refused with "cannot be used with Skill tool
+# due to disable-model-invocation".
+#
 # Gated status is read from the sibling's OWN frontmatter, never from a
 # hardcoded list, so re-flagging (or unflagging) a skill re-decides every
 # reference to it automatically.
