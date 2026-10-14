@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.13.6](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.13.5...tools-plugin-v2.13.6) (2026-10-14)
+
+
+### Bug Fixes
+
+* **tools-plugin:** use source_directory() for module-relative paths in justfile-expert ([#3068](https://github.com/laurigates/claude-plugins/issues/3068)) ([8f04011](https://github.com/laurigates/claude-plugins/commit/8f04011c820299a8afd374efb522a8131a0e4ec7))
+
 ## [2.13.5](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.13.4...tools-plugin-v2.13.5) (2026-10-12)
 
 
