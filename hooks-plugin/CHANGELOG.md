@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.14.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.13.2...hooks-plugin-v2.14.0) (2026-10-14)
+
+
+### Features
+
+* **hooks-plugin:** fail closed on safety hooks; refresh read-block rationale ([#3077](https://github.com/laurigates/claude-plugins/issues/3077)) ([eaf0e4b](https://github.com/laurigates/claude-plugins/commit/eaf0e4b097f85aabef4d37825bd382fe7a8237ba))
+
 ## [2.13.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.13.1...hooks-plugin-v2.13.2) (2026-10-13)
 
 
