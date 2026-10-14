@@ -395,9 +395,11 @@ hash_file := sha256_file('path')
 b3_hash := blake3('content')
 b3_file := blake3_file('path')
 
-# Justfile location
-just_dir := justfile_directory()
-just_path := justfile()
+# File location — pick by which file the path is relative to
+src_dir := source_directory()     # Dir of THIS file (module/import) — use for paths next to the file you're writing
+src_path := source_file()         # Path of THIS file
+just_dir := justfile_directory()  # Dir of the ROOT justfile — use for project-root paths
+just_path := justfile()           # Path of the ROOT justfile, even when evaluated inside a module
 
 # External command execution
 output := shell('echo hello')           # Execute and capture output
@@ -605,6 +607,38 @@ migrate:
 seed:
     python seed.py
 ```
+
+### Optional Modules
+
+```just
+# Silently skipped when the module file is absent (e.g. a gitignored local.just)
+mod? local
+mod? tools 'tools/justfile'
+```
+
+### Paths Inside a Module
+
+Inside a module, `justfile()` and `justfile_directory()` resolve to the **root**
+justfile, not the module's file. For paths relative to the module itself, use
+`source_file()` / `source_directory()`:
+
+| Function | Inside `mod sub` (root at `/repo`) |
+|----------|------------------------------------|
+| `justfile()` | `/repo/justfile` |
+| `justfile_directory()` | `/repo` |
+| `source_file()` | `/repo/sub/justfile` |
+| `source_directory()` | `/repo/sub` |
+
+```just
+# sub/justfile
+config := source_directory() / "config.toml"     # sub/config.toml
+root_lock := justfile_directory() / "uv.lock"    # project root's uv.lock
+```
+
+Test a module recipe the way users run it, `just <mod> <recipe>` (e.g.
+`just sub show`) from the root. `just --justfile sub/justfile show` or
+`cd sub && just show` makes the module the root justfile, so
+`justfile_directory()` then equals `source_directory()` and hides the bug.
 
 ### Module Organization
 

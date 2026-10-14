@@ -151,8 +151,8 @@ assert_exit \
     "f=\$(ls \"\$R/hooks/secret-protection.sh\" || find \"\$R\" -name secret-protection.sh | head -1); grep -nE '\\.env|PATTERN' \"\$f\""
 
 assert_exit \
-    "head README.md && grep -c FOO .env.local (grep is not a reader verb) is allowed" 0 \
-    "head -5 README.md && grep -c FOO .env.local"
+    "head README.md && wc -l .env.local (wc is not a reader verb) is allowed" 0 \
+    "head -5 README.md && wc -l .env.local"
 
 # True-positive controls: a genuine chained/piped read must still be blocked.
 assert_exit \
@@ -306,6 +306,117 @@ assert_exit \
     "cat .env.example; echo done is allowed" 0 \
     "cat ${env_token}.example; echo done"
 
+# ── .api_tokens + sed/awk/grep/cut/perl/rg as file readers (issue #2900) ──────
+# An agent ran `sed -n 's/^export OPENCODE_API_KEY=//p' ~/.api_tokens` and
+# nothing blocked it: `.api_tokens` matched no protected pattern and sed was not
+# a reader verb. The pattern-taking verbs (sed/awk/grep/cut/perl/rg) block only
+# when the protected path is a standalone file *argument* — a `.env` inside a
+# quoted search pattern or sed script is not a read and must still pass.
+echo ""
+echo ".api_tokens is protected; sed/awk/grep/cut/perl/rg file reads are blocked (#2900):"
+
+tok_token="$(printf '.%s' api_tokens)"
+
+assert_exit \
+    "sed -n 's/^export OPENCODE_API_KEY=//p' ~/.api_tokens is blocked" 2 \
+    "sed -n 's/^export OPENCODE_API_KEY=//p' ~/${tok_token}"
+
+assert_exit \
+    "cat ~/.api_tokens is blocked" 2 \
+    "cat ~/${tok_token}"
+
+assert_exit \
+    "cat \$HOME/.api_tokens is blocked" 2 \
+    "cat \$HOME/${tok_token}"
+
+assert_exit \
+    "cat .api_tokens (relative) is blocked" 2 \
+    "cat ${tok_token}"
+
+assert_exit \
+    "grep KEY ~/.api_tokens is blocked" 2 \
+    "grep KEY ~/${tok_token}"
+
+assert_exit \
+    "grep KEY \"\$HOME/.api_tokens\" (quoted path) is blocked" 2 \
+    "grep KEY \"\$HOME/${tok_token}\""
+
+assert_exit \
+    "awk -F= '/OPENCODE/{print \$2}' ~/.api_tokens is blocked" 2 \
+    "awk -F= '/OPENCODE/{print \$2}' ~/${tok_token}"
+
+assert_exit \
+    "cut -d= -f2 ~/.api_tokens is blocked" 2 \
+    "cut -d= -f2 ~/${tok_token}"
+
+assert_exit \
+    "perl -ne 'print if /KEY/' ~/.api_tokens is blocked" 2 \
+    "perl -ne 'print if /KEY/' ~/${tok_token}"
+
+assert_exit \
+    "rg KEY ~/.api_tokens is blocked" 2 \
+    "rg KEY ~/${tok_token}"
+
+assert_exit \
+    "ls; grep KEY < ~/.api_tokens (redirect after ';') is blocked" 2 \
+    "ls; grep KEY < ~/${tok_token}"
+
+assert_exit \
+    "grep -c FOO .env.local (grep is now a reader verb) is blocked" 2 \
+    "grep -c FOO ${env_token}.local"
+
+assert_exit \
+    "sed -n 1p ~/.ssh/id_rsa is blocked" 2 \
+    "sed -n 1p ~/.ssh/id_rsa"
+
+# Sourcing is how the file is meant to be used — it loads the values into the
+# environment without printing them.
+assert_exit \
+    "source ~/.api_tokens is allowed" 0 \
+    "source ~/${tok_token}"
+
+assert_exit \
+    ". ~/.api_tokens is allowed" 0 \
+    ". ~/${tok_token}"
+
+assert_exit \
+    "source ~/.api_tokens && opencode run (sourced, not printed) is allowed" 0 \
+    "source ~/${tok_token} && opencode run"
+
+# False-positive controls: ordinary files, templates, and protected names that
+# appear only inside a search pattern or sed script.
+assert_exit \
+    "grep foo .env.example (template) is allowed" 0 \
+    "grep foo ${env_token}.example"
+
+assert_exit \
+    "grep foo src/file.ts is allowed" 0 \
+    "grep foo src/file.ts"
+
+assert_exit \
+    "sed -n 1p README.md is allowed" 0 \
+    "sed -n 1p README.md"
+
+assert_exit \
+    "grep -rn \".env\" src/ (.env is the search pattern) is allowed" 0 \
+    "grep -rn \"${env_token}\" src/"
+
+assert_exit \
+    "grep -nE '\\.env|PATTERN' file.sh (escaped pattern) is allowed" 0 \
+    "grep -nE '\\${env_token}|PATTERN' file.sh"
+
+assert_exit \
+    "sed -i 's/.env/.env.local/' config.ts (sed script, not a file arg) is allowed" 0 \
+    "sed -i 's/${env_token}/${env_token}.local/' config.ts"
+
+assert_exit \
+    "rg '.api_tokens' docs/ (name in a quoted pattern) is allowed" 0 \
+    "rg '${tok_token}' docs/"
+
+assert_exit \
+    "log --grep .env (a --grep option, not the grep verb) is allowed" 0 \
+    "hg log --grep ${env_token}"
+
 # ── block-message framing: operator-only, not a self-serve bypass ────────────
 # Regression: every block message used to end "Set
 # CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 to override" — phrasing that reads
@@ -410,6 +521,18 @@ assert_stderr_contains_json \
     "Bash read of .env names the matched pattern (#2727)" \
     "Command accesses a sensitive file matching" \
     "$(bash_json "cat ${env_token}")"
+
+# A Bash read of .api_tokens reuses the reader-verb message and a Read of it
+# reuses the credential-file message (#2900): no new message, no new pin token.
+assert_stderr_contains_json \
+    "sed read of ~/.api_tokens names the matched pattern (#2900)" \
+    "Command accesses a sensitive file matching" \
+    "$(bash_json "sed -n 's/^export OPENCODE_API_KEY=//p' ~/${tok_token}")"
+
+assert_stderr_contains_json \
+    "Read of ~/.api_tokens names the credential-file class (#2900)" \
+    "Access to credential file" \
+    "$(read_json "/home/u/${tok_token}")"
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""

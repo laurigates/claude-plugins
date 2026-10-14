@@ -10,7 +10,10 @@
 # If the SKILL.md mtime is newer than every result file in eval-results/, the
 # stored results no longer reflect what the skill currently does.
 #
-# No-ops when no eval-results/ directory exists anywhere in $DRIFT_CWD.
+# No-ops (empty findings) unless $DRIFT_CWD looks like a plugin repo — a root
+# `.claude-plugin/` or `skills/`, or a `*/skills/` or `*/.claude-plugin/` one
+# level down — and when no eval-results/ directory exists under it. The gate
+# keeps the search out of $HOME and arbitrary project roots (issue #3073).
 
 set -uo pipefail
 
@@ -65,10 +68,32 @@ fi
 
 drift_init "evaluate-plugin"
 
+# Gate: eval-results/ lives at <plugin>/skills/<skill>/eval-results (or
+# <plugin>/eval-results), so a cwd with no plugin-repo marker cannot hold one.
+# A few stat calls here replace a depth-5 walk of every session's cwd.
+is_plugin_repo() {
+    local root="$1" marker
+    [ -n "$root" ] && [ -d "$root" ] || return 1
+    if [ -d "${root}/.claude-plugin" ] || [ -d "${root}/skills" ]; then
+        return 0
+    fi
+    for marker in "$root"/*/skills "$root"/*/.claude-plugin; do
+        [ -d "$marker" ] && return 0
+    done
+    return 1
+}
+
+if ! is_plugin_repo "$DRIFT_CWD"; then
+    drift_emit
+    exit 0
+fi
+
 # Discover any eval-results/ directories under the project.
-# Bounded depth so the probe stays cheap on monorepos.
+# Bounded depth so the probe stays cheap on monorepos; node_modules and .git
+# are pruned (not merely filtered from output) so they are never descended.
 mapfile -t result_dirs < <(
-    find "$DRIFT_CWD" -maxdepth 5 -type d -name 'eval-results' -not -path '*/node_modules/*' -not -path '*/.git/*' 2>/dev/null
+    find "$DRIFT_CWD" -maxdepth 5 \( -name node_modules -o -name .git \) -prune \
+        -o -type d -name 'eval-results' -print 2>/dev/null
 )
 
 if [ "${#result_dirs[@]}" -eq 0 ]; then
@@ -78,7 +103,9 @@ fi
 
 mtime_of() {
     # Cross-platform mtime (epoch seconds). Empty on failure.
-    stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null || echo ""
+    # GNU form first: on GNU stat, `-f` means --file-system and succeeds with
+    # multi-line filesystem output, so a BSD-first chain never reached `-c`.
+    stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null || echo ""
 }
 
 stale_count=0
