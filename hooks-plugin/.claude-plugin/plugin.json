@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "hooks-plugin",
-  "version": "2.13.2",
+  "version": "2.14.0",
   "description": "Claude Code hooks for enforcing best practices and workflow automation",
   "author": {
     "name": "Lauri Gates"
@@ -66,12 +66,14 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/branch-protection.sh\"",
-            "timeout": 5000
+            "timeout": 5000,
+            "onFailure": "block"
           },
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/repo-deletion-safety.sh\"",
-            "timeout": 5000
+            "timeout": 5000,
+            "onFailure": "block"
           },
           {
             "type": "command",
@@ -86,7 +88,8 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/external-pr-merge-guard.sh\"",
-            "timeout": 15000
+            "timeout": 15000,
+            "onFailure": "block"
           }
         ]
       },
@@ -106,7 +109,8 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/external-pr-merge-guard.sh\"",
-            "timeout": 15000
+            "timeout": 15000,
+            "onFailure": "block"
           }
         ]
       },
@@ -116,7 +120,8 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/secret-protection.sh\"",
-            "timeout": 5000
+            "timeout": 5000,
+            "onFailure": "block"
           }
         ]
       },

@@ -25,6 +25,12 @@
 # turn the second assertion in each group into a silent "none".
 set -uo pipefail
 
+# Neutralize any inherited git context before building sandbox repos (issue
+# #1745). Under pre-commit, GIT_DIR/GIT_INDEX_FILE point at the real repo and
+# override `git -C`, so sandbox git commands would act on the shared clone.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
+  GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX
+
 HOOK="$(cd "$(dirname "$0")" && pwd)/branch-base-guard.sh"
 PASS=0
 FAIL=0

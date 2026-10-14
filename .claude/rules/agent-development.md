@@ -1,6 +1,6 @@
 ---
 created: 2026-02-25
-modified: 2026-10-10
+modified: 2026-10-13
 reviewed: 2026-09-23
 paths:
   - "**/agents/**"
@@ -87,18 +87,19 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `name` | string | Yes | Agent identifier (kebab-case); `:` is rejected (2.1.218) — reserved for plugin namespacing (`plugin:agent-name`) |
+| `name` | string | Yes | Agent identifier (kebab-case); `:` is rejected (2.1.218) — reserved for plugin namespacing (`plugin:agent-name`); at most 256 characters, a longer name is rejected (2.1.292) |
 | `description` | string | Yes | Purpose and use cases for agent selection |
-| `model` | string | Yes | `opus`, `sonnet`, `haiku`, `fable` (2.1.255+), `inherit`, or a full model ID (e.g. `claude-fable-5-1`). Aliases resolve to the current generation (`opus` → Opus 5.5, `sonnet` → Sonnet 5, `haiku` → Haiku 5.5 since 2.1.293, `fable` → Fable 5.1). Full IDs honoured since 2.1.74 |
+| `model` | string | Yes | `opus`, `sonnet`, `haiku`, `fable` (2.1.255+), `inherit`, or a full model ID (e.g. `claude-fable-5-1`). Aliases resolve to the current generation (`opus` → Opus 5.5, `sonnet` → Sonnet 5.5 on the Anthropic API since 2.1.284, `haiku` → Haiku 5.5 since 2.1.293, `fable` → Fable 5.1). Full IDs honoured since 2.1.74 |
 | `effort` | string | No | `low`, `medium`, `high`, `xhigh`, or `max` (2.1.251+) — overrides the session effort while this agent runs; default inherits. This is the per-agent cost lever the Model Selection section refers to |
 | `tools` | comma-list | Yes | Tools the agent can use; use `Agent(name)` to restrict spawnable subagents |
 | `isolation` | string | No | `worktree` to run agent in an isolated git worktree |
 | `color` | string | No | Hex color for UI display |
-| `permissionMode` | string | No | `default`, `acceptEdits`, `dontAsk`, `bypassPermissions`, or `plan` |
+| `permissionMode` | string | No | `default`, `acceptEdits`, `dontAsk`, `bypassPermissions`, or `plan`. Before 2.1.292, `auto` entered auto mode even where auto mode was unavailable (disabled by settings, circuit breaker, or an unsupported model) |
 | `maxTurns` | number | No | Maximum agentic turns before agent stops |
 | `background` | bool | No | Set `true` to always run as a background task |
 | `memory` | string | No | Persistent memory scope: `user`, `project`, or `local` |
-| `skills` | list | No | Skill names to preload into agent context at startup |
+| `skills` | list | No | Skill names to preload into agent context at startup; at most 32, each once (2.1.295) |
+| `autoCompactWindow` | not stated upstream | No | Auto-compact the subagent earlier than the main conversation's window (2.1.296); also accepted in `--agents` definitions. Not yet in `check-agent-frontmatter-keys.sh`'s `DOCUMENTED_FIELDS`, so an agent using it fails that check until the list is refreshed from the docs |
 | `mcpServers` | list | No | MCP server names or inline configs available to this agent |
 | `hooks` | object | No | Agent-scoped hooks (same schema as settings.json hooks) |
 | `disallowedTools` | comma-list | No | Tools to deny even if in the inherited list |
@@ -108,7 +109,7 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
 | `modified` | date | Recommended | Last substantive change |
 | `reviewed` | date | Recommended | Last verified against current docs |
 
-Claude Code ignores an agent frontmatter key it does not recognize, without an error ([sub-agents.md § Supported frontmatter fields](https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields)). That includes the skill-only fields `context`, `agent`, and `allowed-tools`, which read as if they configure the agent and do nothing on one. `scripts/check-agent-frontmatter-keys.sh` fails on any key outside the documented set plus the three lifecycle dates above. It also scans the fenced YAML examples in the docs listed in its `AGENT_EXAMPLE_DOCS` (the custom-agent-definitions skill) and fails on a skill-only key such as `allowed-tools:` in an agent-shaped fence (#2723).
+Claude Code ignores an agent frontmatter key it does not recognize, without an error ([sub-agents.md § Supported frontmatter fields](https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields)); since 2.1.296, `--debug` names unrecognized fields with a typo hint. That includes the skill-only fields `context`, `agent`, and `allowed-tools`, which read as if they configure the agent and do nothing on one. `scripts/check-agent-frontmatter-keys.sh` fails on any key outside the documented set plus the three lifecycle dates above. It also scans the fenced YAML examples in the docs listed in its `AGENT_EXAMPLE_DOCS` (the custom-agent-definitions skill) and fails on a skill-only key such as `allowed-tools:` in an agent-shaped fence (#2723).
 
 ### `tools` vs `allowed-tools`
 
@@ -171,7 +172,7 @@ Distinct from nesting depth above, Claude Code also caps how many subagents may 
 | `opus` | **Default for all subagents** — reasoning, review, debugging, refactoring, *and* mechanical/high-volume work (dial `effort` down for the latter rather than downgrading the model) |
 | `fable` | Sanctioned for the hardest delegated reasoning (long-horizon, multi-file, adversarial verification). Accepted by `scripts/check-agent-model.sh`. Not the default: no plan defaults to Fable and it costs 2.5x Opus 5.5 per token |
 | `sonnet` | Avoid for subagents. |
-| `haiku` | Not in agent frontmatter yet. Two uses are sanctioned. The `agent-patterns-plugin:cold-read-gate` reader is a *measurement instrument*, not a delegate. And since Haiku 5.5, a **workflow `agent()` stage** may run on it when it is mechanical (verbatim extraction, closed-enum classification, a script runner) and its output feeds an Opus stage that would notice a bad one. That includes an omission: a stage whose dropped item never reaches a later stage (an extraction lane, a filter or triage that discards) stays on opus, because nothing downstream can see what it left out. It must set an explicit `effort`, which `scripts/check-workflow-js-model.sh` enforces. The 2026-10 re-evaluation (`docs/audits/haiku-5.5-reevaluation-2026-10-10.md`) left the two nearest agent candidates, `search-replace` and `test-runner`, as needs-test: a closing check that passes does not prove the edits or the summary are right. |
+| `haiku` | Three uses are sanctioned. The `agent-patterns-plugin:cold-read-gate` reader is a *measurement instrument*, not a delegate. A **lean read-only agent file** may set `model: haiku` (see [Lean subagents](#lean-subagents-omitclaudemd--a-narrow-tools-list); `scripts/check-agent-model.sh` enforces its shape). A **workflow `agent()` stage** may run on haiku when it is mechanical (verbatim extraction, closed-enum classification, a script runner) and its output feeds an Opus stage that would notice a bad one; it must set an explicit `effort` (`scripts/check-workflow-js-model.sh`). Noticing has to cover omission too. A stage whose dropped item never reaches a later stage (an extraction lane, a filter or triage that discards) stays on opus, because nothing downstream can see what it left out. The 2026-10 re-evaluation (`docs/audits/haiku-5.5-reevaluation-2026-10-10.md`) left the two nearest full-context agent candidates, `search-replace` and `test-runner`, as needs-test: a closing check that passes does not prove the edits or the summary are right. |
 
 `model: opus` remains the committed floor for plugin agents (portable: every plan has Opus). `inherit` is not used for plugin agents because it would also inherit Sonnet/Haiku sessions below the floor. `effort:` frontmatter is the cost lever; use `effort: low` for mechanical/high-volume agents.
 
@@ -185,6 +186,30 @@ On an org account that restricts model choice, an agent's `model: opus` frontmat
 
 Every named agent is context-isolated by default: it starts in a fresh context window with its own system prompt, the brief the parent writes, the CLAUDE.md hierarchy, a git status snapshot, and any preloaded `skills:` ([sub-agents.md § What loads at startup](https://code.claude.com/docs/en/sub-agents#what-loads-at-startup)). A named agent does not see the parent's conversation history, and no agent frontmatter field changes that. Its tool calls stay out of the parent's context, and only its final result comes back.
 
+### Lean subagents: `omitClaudeMd` + a narrow `tools:` list
+
+A default subagent here starts at ~124k tokens before reading anything, and most of that is context it never uses. Two frontmatter fields remove it. Each row below is a measured first request from Haiku 5.5 probe subagents in this repo (2026-10-10). Both fields work on plugin-shipped agents and through a workflow's `opts.agentType`:
+
+| Agent shape | First request | What it dropped |
+|---|---|---|
+| Default (CLAUDE.md + every inherited tool) | ~124,000 | — |
+| `tools: Read` only | ~75,300 | ~49k of tool schemas: the skill listing (~33k, carried by the `Skill` tool), MCP (~6k), the other built-ins |
+| `omitClaudeMd: true` | ~51,800 | ~72k of CLAUDE.md + unscoped rules (`~/.claude`, `~/repos`, `laurigates`, this repo) |
+| Built-in `Explore` (skips CLAUDE.md by design) | ~50,200 | CLAUDE.md, git status, write tools |
+| `omitClaudeMd: true` + `tools: Read` | **~3,000** | Both |
+
+The size matters most on Haiku 5.5. It bills $0.10/$0.50 per Mtok up to 100k prompt tokens and $0.50/$2.50 above, and a default subagent is past that step on its first request. It also matters on Opus, as context room and cost.
+
+**Use a lean agent when the brief carries the whole job**: a rubric, a file list, an output schema, and a stronger stage or a script that checks the result. Read-and-classify fan-outs, verbatim extraction and closed-enum routing are the fits. The docs say it directly: the main loop still holds the full CLAUDE.md when it reads the result, so restate in the brief only the rule the subagent itself needs.
+
+**Keep the full context for agents that edit, commit, push, open PRs, or act on untrusted text.** The always-loaded rules carry the hazards those jobs hit: explicit-path `git add`, conventional-commit titles, worktree and coworker handling, ignoring hidden instructions in comments. PreToolUse hooks still fire in a lean agent, so the deterministic guards stay. The judgement-level rules go.
+
+`omitClaudeMd` needs Claude Code 2.1.271+ and still loads managed policy files. A missing `tools:` field inherits every tool, skill listing and MCP included. The narrow list does as much work as `omitClaudeMd`.
+
+The shipped instance is `agents-plugin:lean-reader`: Haiku 5.5, `effort: low`, tools limited to Read/Grep/Glob. Point a workflow stage at it with `opts.agentType: 'agents-plugin:lean-reader'`; `testing-plugin:test-analyze`'s `parse` stage is the first user. A stage that needs a shell, like `evaluate-plugin-batch`'s `inventory`, cannot use it. `check-agent-model.sh` keeps lean haiku agents read-only: it also rejects `mcpServers:`, `skills:`, `hooks:` and a second `tools:` key. `check-subagent-types.sh` resolves each quoted `agentType:` literal in a bundled workflow, so renaming the agent fails CI.
+
+Effort on a lean agent: the Agent tool's per-call `effort` overrides the agent file's `effort:` (Claude Code v2.1.292+), and `CLAUDE_CODE_EFFORT_LEVEL` overrides both ([sub-agents docs](https://code.claude.com/docs/en/sub-agents.md), "Choose an effort level"). The docs give no such order for a workflow `agent()`'s `opts.effort`, so a stage that asks for more effort than the file sets may run at the file's level.
+
 ### `context: fork` is a skill field, not an agent field
 
 Three mechanisms share the word "fork", and only the last one hands a subagent the parent's conversation:
@@ -195,7 +220,7 @@ Three mechanisms share the word "fork", and only the last one hands a subagent t
 | `context:` in **agent** frontmatter | an `agents/*.md` | Nothing changes. It is absent from the subagent frontmatter table, and Claude Code ignores unrecognized fields without an error. Measured inert in #2646: agents with and without it returned bit-identical `subagent_tokens` (2549), both blind to the parent turn |
 | The runtime `fork` subagent type | the `Agent` call, `subagent_type: "fork"` | The parent's whole conversation, system prompt, tools, and model ([sub-agents.md § Fork the current conversation](https://code.claude.com/docs/en/sub-agents#fork-the-current-conversation)) |
 
-A research agent that should keep verbose output out of the main window needs no field: a named agent already does. For work that needs the conversation so far, dispatch a fork instead of a named agent.
+A research agent that should keep verbose output out of the main window needs no field: a named agent already does. For work that needs the conversation so far, dispatch a fork instead of a named agent. A fork runs under its parent's permission mode (plan, `dontAsk`) and cannot exit plan mode (2.1.285).
 
 > **Runtime behaviour lives in [`agent-runtime.md`](agent-runtime.md):** runtime fork vs named agent, the subagent context budget, worktree isolation and `worktree.baseRef` (gitignored inputs such as `.env` reach a worktree only via `.worktreeinclude` — see `/configure:worktreeinclude`), background execution, dynamic-workflow caveats, `worktree.bgIsolation`, MCP policy for frontmatter servers, and the `claude agents` CLI.
 
@@ -215,7 +240,7 @@ Implement API endpoints. Follow the conventions and patterns from the preloaded 
 ```
 
 Agents do **not** inherit skills from the parent session — they must be listed explicitly.
-> **Note (2.1.133+)**: Subagents can discover project, user, and plugin skills via the `Skill` tool. Skills listed in `skills:` frontmatter are preloaded; the `Skill` tool discovers others on demand.
+> **Note (2.1.133+)**: Subagents can discover project, user, and plugin skills via the `Skill` tool. Skills listed in `skills:` frontmatter are preloaded; the `Skill` tool discovers others on demand. Since 2.1.295 at most 32 listed skills are preloaded, each once; a subagent with the `Skill` tool can still invoke the rest.
 
 ## Persistent Agent Memory
 
@@ -245,7 +270,7 @@ For rules an agent **must not forget** between threads — the friction-mining o
 
 ## Agent Teams (Multi-Agent Collaboration)
 
-Team mechanics — the implicit team (2.1.178), `SendMessage` / `ListAgents` and cross-session messaging, team roles, and when to choose teams over subagents — live in the `agent-patterns-plugin:agent-teams` skill. What stays here is the per-agent body convention:
+Team mechanics — the implicit team (2.1.178), `SendMessage` / `ListAgents` and cross-session messaging, team roles, and when to choose teams over subagents — live in the `agent-patterns-plugin:agent-teams` skill. Before 2.1.288, a plugin-defined agent spawned by name into a team ran with the default prompt, tools, `disallowedTools` and effort instead of its own. What stays here is the per-agent body convention:
 
 ### Team Configuration
 

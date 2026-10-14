@@ -4,7 +4,7 @@ args: "<results-path> [--type <test-type>] [--focus <area>]"
 argument-hint: "Path to test results (e.g., ./test-results/), optional --type and --focus filters"
 allowed-tools: Task, Read, Glob, Grep, TodoWrite
 created: 2025-12-16
-modified: 2026-09-26
+modified: 2026-10-11
 reviewed: 2026-09-02
 name: test-analyze
 agent: general-purpose
@@ -72,7 +72,9 @@ not a script to run verbatim.** Read it, then rewrite it for the work in front o
 
 **Adapt freely:** the agent prompts, the severity vocabulary, the result-file globs and
 format hints for your test framework, the `--focus` weighting, and the verification
-command each plan agent is told to emit.
+command each plan agent is told to emit. The parse stage runs on
+`agents-plugin:lean-reader` (Haiku 5.5, no CLAUDE.md, Read/Grep/Glob only), so its
+brief must carry everything it needs. Without `agents-plugin`, drop its `agentType`.
 
 **Preserve across any adaptation:** (a) the fan-out width comes from the `AGENT_FOR`
 table above — one agent per *agent type*, never a prose "for each failure", which is what

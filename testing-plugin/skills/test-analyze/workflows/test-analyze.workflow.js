@@ -148,8 +148,14 @@ const parsed = await agent(
    A failure that fits no category goes to unroutable[] with a stated reason —
    do NOT force it into the nearest-looking category.`,
   // Schema-forced enum routing with an unroutable[] escape: Haiku 5.5 at medium,
-  // since severity is a judgement (haiku-5.5-reevaluation-2026-10-10.md).
-  { label: 'parse', schema: RoutedFailuresSchema, model: 'haiku', effort: 'medium' },
+  // since severity is a judgement (haiku-5.5-reevaluation-2026-10-10.md). The
+  // brief above carries the whole job, so it runs on the lean reader: no
+  // CLAUDE.md, Read/Grep/Glob only, ~3k first request instead of ~123k. Without
+  // agents-plugin installed, drop agentType and the stage runs full-context.
+  // Unverified: whether opts.effort 'medium' beats lean-reader's `effort: low`.
+  // The docs give that order for the Agent tool's per-call effort (v2.1.292+)
+  // but not for a workflow agent(); if the frontmatter wins, this stage runs at low.
+  { label: 'parse', schema: RoutedFailuresSchema, agentType: 'agents-plugin:lean-reader', model: 'haiku', effort: 'medium' },
 );
 
 const failures = (parsed && parsed.failures) || [];

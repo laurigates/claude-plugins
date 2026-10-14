@@ -308,7 +308,7 @@ rename (`maxTurns` → `max_turns`) rather than a loss:
 | `Bash(cmd *)` | `bash` | **scope dropped** — see below |
 | `Agent(a, b)` | `allowed_subagents: a, b` | nesting; default-off and separate from `tools:` |
 | `skills: [a, b]` | `skills: a, b` | both preload; pi's list form also drops the inherited rest |
-| `model` | `model`, per `--model` | `preserve` (default) emits the source `model: opus`; `inherit` emits no `model:` key; any other value replaces the pin on every agent — see [The model pin](#the-model-pin) |
+| `model` | `model`, per `--model` and `--model-map` | `preserve` (default) emits the source `model: opus`; `inherit` emits no `model:` key; any other value replaces the pin on every agent; `--model-map` sends each pinned tier to its own target — see [The model pin](#the-model-pin) |
 | `color`, `thinking`, `maxTurns` | same, `max_turns` | |
 | `TodoWrite`, `TaskOutput`, `WebFetch`, `WebSearch` | *dropped* | no pi built-in exists |
 | `context: fork` | *dropped* | a skill field that Claude Code ignores on an agent (#2646), removed from every marketplace agent (#2722); an agent that regains it is reported under `DROPPED_KEYS=`, because `inherit_context:` would hand the pi agent the parent conversation, which the source agent never had |
@@ -356,6 +356,27 @@ The report prints `MODEL_MODE=` and counts emitted pins in `MODEL_PINS=`, so
 before anything is written. The default stays `preserve` so nobody loses the
 pin without asking; whether a small local quant does better or worse than the
 parent's model on these agents is unmeasured.
+
+`--model-map` (the `model_map` recipe parameter) translates by tier instead of
+replacing every pin. An agent whose source pin names a mapped tier gets that
+tier's target, a pi model id or `inherit`. Every other agent, unpinned ones
+included, follows `--model`. This keeps the cost split the source pins encode,
+for example opus agents on a larger model and haiku agents on a cheaper one:
+
+```
+just install-pi-agents ~/.pi/agent/agents preserve 'opus=opencode-go/glm-5.3,haiku=opencode-go/glm-5.3-flash'
+python3 scripts/export-pi-agents.py --model-map opus=prov/large,haiku=prov/small . dist/pi
+```
+
+The report adds `MODEL_MAP=` and `MODEL_MAP_UNUSED=`, which lists tiers no
+exported agent pins (a typo, or a tier the corpus does not use yet). A missing
+`=`, an empty tier or target, a tier mapped twice, or a `preserve` target exits 2
+before anything is written.
+
+A pinned `model:` also outranks the `model` parameter of pi-subagents' `Agent`
+tool (its `invocation-config.ts`: `agentConfig?.model ?? params.model`). So an
+exported pin keeps subagents off an expensive session model, and a per-call
+override only takes effect on an agent exported without a pin.
 
 ### Verifying it landed
 

@@ -1,6 +1,6 @@
 {
-  "lastCheckedVersion": "2.1.289",
-  "lastCheckedDate": "2026-10-05",
+  "lastCheckedVersion": "2.1.296",
+  "lastCheckedDate": "2026-10-12",
   "rewindNote": "Rewound from 2.1.257 to 2.1.185 on 2026-09-03. The excerpt is sliced from lastCheckedVersion forward, so the pointer must name the last version a review actually covered. 2.1.257 was written by the Fable 5.1 adaptation sweep (docs/audits/fable-5.1-adaptation-2026-09-02.md), whose declared window was 2.1.232-2.1.257 -- it advanced the pointer past 46 versions it never read. The automated changelog review had already gone silent after 2.1.185: 22 successful runs, 13 consecutive filing nothing, last tracking issue #1733 (2026-06-21). The blind spot's confirmed casualty was the subagent nesting ceiling in .claude/rules/agent-development.md, which instructed 5 levels after 2.1.217 disabled nesting by default and 2.1.219 set it to 3. CORRECTED 2026-09-16: that line was already fixed on 2026-09-02 (the file now carries a depth-3 default with a per-version history table); the fix and this note crossed in flight, so the 2.1.241 entry's claim that the rule 'still claims 5 levels' was stale when written. The rewind itself was still correct -- the unread ranges were real, and reviewing them found 6 further stale assertions the pointer had hidden.",
   "knownUnreviewedRanges": [
     {
@@ -30,6 +30,37 @@
   ],
   "changelogUrl": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
   "reviewedChanges": [
+    {
+      "version": "2.1.296",
+      "date": "2026-10-12",
+      "windowed": false,
+      "relevantChanges": [
+        "HIGH: onFailure: \"block\" for command and HTTP hooks - a hook that can't start, times out, or exits unexpectedly blocks the action instead of letting it through (2.1.295); permission rules and safety checks now re-applied after a PreToolUse hook rewrites input (2.1.290); PreToolUse approvals/auto mode bypassing the prompt for UNC-path reads fixed (2.1.292, security)",
+        "HIGH: prompt and agent hooks written as instructions (\"Block commands that...\") were allowing what they should block - fixed (2.1.294); Stop/SubagentStop instruction-phrased prompt hooks judged better (2.1.294)",
+        "HIGH: subagent frontmatter / --agents gain autoCompactWindow (2.1.296); Agent tool gains an effort parameter (2.1.292); subagents preload at most 32 skills from skills, each once (2.1.295); agent names capped at 256 chars (2.1.292)",
+        "HIGH: CLAUDE_CODE_WORKFLOW_SUBAGENT_MODEL runs every workflow agent on one model (2.1.296); Workflow CRLF scripts accepted (2.1.296); forked skills from Workflow subagents now return to the invoking agent (2.1.295); worktree subagents no longer shown the parent's git context (2.1.295)",
+        "HIGH: skills/commands refuse ! shell commands with raw control characters (2.1.290); skill allowed-tools/effort dropped in -p when the Skill tool finished before the stream ended - fixed (2.1.295); skills found by SKILL.md name when folder differs (2.1.290)",
+        "HIGH: --tools/--restricted apply to late-registering built-in tools, deprecated tool names no longer reach tools outside the tool set (2.1.295); Edit/NotebookEdit refuse non-UTF-8 files (2.1.296); Bash checks now prompt for BASH_ARGV0 (2.1.296), rg/git grep shell-expanded wildcards, zsh variable names, more ps forms, pyright (2.1.290)",
+        "HIGH: path-scoped rules and nested CLAUDE.md now load on single-file cat/head/tail/sed -n/grep in Bash, not only Read (2.1.293)",
+        "Permissions/settings scope (2.1.290): declare/typeset/export/readonly prefix deny/ask gap, Read deny on pasted image paths and option-value wildcards, symlinked settings-file edits fixed; CLAUDE_CODE_DISABLE_ATTACHMENTS and Claude in Chrome can no longer be enabled from repo settings",
+        "Auto mode: 2.1.294 reverted the 2.1.281 denial wording; denials no longer suggest classifier-skipping rules (2.1.290); 'Not run' row (2.1.296); self-hosted runner stops passing CCR_AUTO_MODE_* env (2.1.295)",
+        "Hooks misc: --debug logs hook command/plugin/outcome/duration (2.1.296); managed PreToolUse continue:false and managed prompt-hook blocks now end the turn (2.1.296); multi-line async hook JSON honored, FORCE_COLOR=3 leak fixed, CLAUDE_ENV_FILE after /resume (2.1.295); <system-reminder> in hook output escaped (2.1.292); TeammateIdle no longer fires from teammate subagents/forks (2.1.290)",
+        "Plugins: claude plugin install --marketplace <source> (2.1.292); plugin validate README install-line advice and settings-load warnings (2.1.295); gatingHooks in validate --json (2.1.290); constructor/prototype names refused or fixed (2.1.295/2.1.296); Claude Mods APIs keep growing ($.ui.notify, isDeferred, prompt.autocomplete, $.model.complete caching, tool.check agentId/ceiling)",
+        "Sandbox: strict-mode env-prefixed interpreter commands run unprompted (2.1.292); /status+doctor warn when managed settings ignore user allowRead/domains, sandboxed Monitor follows permission rules, git clone short-option exemption fixed (2.1.290)",
+        "MCP: up-front tool description/instructions limit 2,048 -> 4,096 (2.1.296), tool-search descriptions cut at 16,384 (2.1.295); stdio and claude.ai connectors negotiate 2026-07-28 (2.1.292/2.1.295); >128-char tool names left out (2.1.292); ws 16 MiB limit (2.1.295)",
+        "Tools/models: Read allow_large (2.1.296); Grep accepts -l/-c/-r and file_path (2.1.295/2.1.292); Haiku 5.5 default Haiku (2.1.293); WebSearch budget refills 100/hour via CLAUDE_CODE_WEB_SEARCH_REFILLS_PER_HOUR (2.1.290); overloaded-retry and watchdog wait env vars (2.1.292/2.1.295/2.1.296)",
+        "No deprecated identifiers referenced in repo code; remaining bulk of the window is VS Code, Claude Tag, Code Review, cloud-session, apps-gateway, vim-mode, /ultrareview and TUI fixes with no rule impact"
+      ],
+      "actionsRequired": [
+        "See issue #3065 for the rule update plan",
+        "No rule files were edited by this triage run; the tracking issue groups the bullets by file",
+        "Files needing follow-up edits: hooks-reference.md, prompt-agent-hooks.md, agent-development.md, agent-runtime.md, skill-development.md, agentic-permissions.md, auto-mode.md, plugin-structure.md, sandbox-guidance.md, context-engineering.md / bash-tool-replacements.md / workflow-model-effort.md, plus the MCP-facing skills (mcp-management, configure-mcp)",
+        "Top follow-ups: document onFailure: \"block\" (2.1.295) beside the 2.1.288 fail-closed note, autoCompactWindow and the Agent effort parameter (2.1.296/2.1.292), the 32-skill preload cap (2.1.295), CLAUDE_CODE_WORKFLOW_SUBAGENT_MODEL (2.1.296), and the Bash-read trigger for path-scoped rules (2.1.293)",
+        "Do not document reverted states: 2.1.294 reverted the 2.1.281 auto-mode denial wording and the 2.1.290 cloud /loop lost-wakeup notice",
+        "Deprecated-identifier list was empty this run; no deprecations/removals in the window name anything referenced in the repo",
+        "Tracking issue #3065, as read back by the workflow: labels present: changelog-review, maintenance; assignee laurigates present"
+      ]
+    },
     {
       "version": "2.1.289",
       "date": "2026-10-05",

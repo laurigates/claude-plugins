@@ -1,6 +1,6 @@
 ---
 created: 2025-12-23
-modified: 2026-09-28
+modified: 2026-10-13
 reviewed: 2026-09-16
 paths:
   - "**/.claude-plugin/**"
@@ -143,6 +143,8 @@ LSP servers declared via `lspServers` show up in `claude plugin details` and `/p
 > **Note (2.1.221+)**: Plugins also accept a bare string `skills: "."` (not just the array form `["./"]`), and the root-level `SKILL.md` validation error now suggests using the plugin root. `claude plugin validate` (2.1.196+) no longer skips local plugins whose `source` is `"."`, and (2.1.233+) it also checks a bare `.claude/skills` directory and reports any `SKILL.md` whose frontmatter fails to parse.
 
 > **`claude plugin validate` checks (2.1.281, 2.1.283).** It fails `marketplace.json` names Claude Code cannot install, and `outputStyles` / `themes` / `monitors` / `lspServers` paths that are missing or resolve outside the plugin dir (2.1.283). It reports `.mcp.json` entries that would be silently dropped, undeclared `${user_config.*}` references and insecure MCP URLs, and warns on an unquoted `${CLAUDE_PLUGIN_ROOT}` in a shell-form hook (2.1.281). `privacyPolicyUrl` / `supportUrl` are accepted keys. This marketplace passed on 2.1.283 (checked 2026-09-28).
+>
+> Later additions: validate prints a paste-ready install line when a plugin's README has none, without changing the exit code even under `--strict` (2.1.295). Before 2.1.289 it skipped a plugin whose folder also held a marketplace manifest; no plugin folder here holds one, and CI does not run `claude plugin validate` (checked against `plugin-pr-checks.yml`, 2026-10-13), so no result here was affected.
 
 ## Field Validation Rules
 
@@ -162,7 +164,7 @@ api-tester
 code-quality-plugin
 ```
 
-`anthropic-skills` is reserved (2.1.283): skill folders, command files and workflow commands in that namespace do not load, and an MCP server of that name lists no skills or prompts. A marketplace name that imitates a reserved marketplace name is refused (2.1.280).
+`anthropic-skills` is reserved (2.1.283): skill folders, command files and workflow commands in that namespace do not load, and an MCP server of that name lists no skills or prompts. A marketplace name that imitates a reserved marketplace name is refused (2.1.280). An install is refused when its plugin id differs from an installed one only in `.`, `-`, `@` or (macOS, Windows) case (2.1.285).
 
 ## Custom Component Paths
 
@@ -282,10 +284,12 @@ This prevents the previous "I disabled a base plugin and now its dependents fail
 |--------|----------|
 | `github` / `git` | Standard git clone — see § HTTPS Clone Override below for the SSH/HTTPS toggle and LFS skip |
 | `archive` (2.1.224+) | Install from a zip over HTTPS, no git or npm required; `pinDigest: sha256:...` optional |
-| npm (2.1.275+) | Fetched with `npm pack --ignore-scripts` and integrity-verified, so a package's install scripts no longer run |
+| npm (2.1.275+) | Fetched with `npm pack --ignore-scripts` and integrity-verified, so a package's install scripts no longer run. Since 2.1.286 an npm source that is a git repository or folder is refused, and plugin dependencies install only from registry packages |
 | marketplace `command` (2.1.229+) | A local command (e.g. an IDE) prints the plugin directory, re-resolved every session; `mode: "link"` uses the printed path directly |
 
 `headersHelper` on a `url` marketplace or catalog entry (2.1.238+) runs a command that mints HTTP headers (e.g. a short-lived token) for catalog and same-origin archive fetches. A catalog entry's helper runs only on install/update, after its command is shown, gated by a `[y/N]` prompt (`-y` to skip). Helpers run without inherited credential env vars.
+
+`claude plugin install --marketplace <source>` (2.1.292) adds the marketplace if needed, under the same policy checks as `claude plugin marketplace add`, then installs the plugin from it.
 
 > **Note (2.1.195+)**: A plugin enabled solely via project `.claude/settings.json` (rather than an explicit `/plugin install`) requires explicit install consent on every loader path — a project can no longer silently auto-enable a third-party plugin for everyone who opens the repo.
 
@@ -307,6 +311,21 @@ The override applies to clone operations only; existing SSH-cloned plugin checko
 A `github` or `git` plugin marketplace source can set `"skipLfs": true` to skip Git LFS downloads during clone and update. Use it for plugins whose LFS assets aren't needed at runtime, to cut clone time and disk usage.
 
 Since 2.1.274, plugin and marketplace clones leave Git LFS files as pointers by default; `git lfs pull` in the checkout fetches them.
+
+## Mods
+
+Since 2.1.287 a plugin can ship a **mod**: code that hooks deeper Claude Code
+behaviour (UI regions, tool registration, agent spawns, gating hooks on tool
+calls) instead of only adding skills, agents, hooks and MCP servers. Claude Code
+also bundles one, `cc-plugin-you-should-know@builtin`. This marketplace ships no
+mods, so this rule does not document the mod API; the surface changed in most
+releases from 2.1.287 to 2.1.296. If a plugin here adds one, `claude plugin
+validate` lists each hook the mod registers at a gating site and whether it has
+a `.catch` (`gatingHooks` under `--json`, 2.1.290). Read the upstream
+[CHANGELOG](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)
+before writing one. Claude Code's own mod guidance ships in a built-in skill
+named `plugin-authoring` (2.1.290, 2.1.295), the same name as this repo's
+`.claude/skills/plugin-authoring`.
 
 ## Version Management
 

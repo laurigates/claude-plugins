@@ -62,7 +62,16 @@ configured. On a local-model-only pi setup nothing resolves it, so pi reports
   <model>    replace the pin on every exported agent with this pi model id
              (an alias such as `sonnet`, or `<provider>/<id>`)
 
-Usage: export-pi-agents.py [--model=preserve|inherit|<model>] <repo-root> <out-dir>
+`--model-map <tier>=<target>,...` translates by tier instead: an agent whose
+source pin is a mapped tier (`opus`, `haiku`, ...) gets that tier's target, a
+model id or `inherit`. Every other agent, unpinned ones included, falls through
+to `--model`. So `--model-map opus=prov/large,haiku=prov/small` keeps the
+cost split the source pins encode, which a single `--model` id would erase. A
+tier no agent pins is reported in `MODEL_MAP_UNUSED=`, not treated as an error,
+because the map is written for the corpus the user expects to export.
+
+Usage: export-pi-agents.py [--model=preserve|inherit|<model>]
+                           [--model-map <tier>=<target>,...] <repo-root> <out-dir>
 Emits <out-dir>/agents/<name>.md plus a KEY=VALUE report.
 """
 
@@ -235,8 +244,57 @@ def model_mode(value: str) -> str:
     )
 
 
+def model_map_arg(value: str) -> dict[str, str]:
+    """argparse type for `--model-map`: `<tier>=<target>,...` -> {tier: target}.
+
+    A target is `inherit` or a model id. `preserve` is refused: mapping a tier
+    to itself is what leaving it out of the map already does.
+    """
+    mapping: dict[str, str] = {}
+    for entry in value.split(","):
+        tier, sep, target = entry.partition("=")
+        if not sep or not MODEL_ID_RE.fullmatch(tier):
+            raise argparse.ArgumentTypeError(
+                f"invalid --model-map entry {entry!r}: expected <tier>=<target>"
+            )
+        if tier in mapping:
+            raise argparse.ArgumentTypeError(
+                f"invalid --model-map: tier {tier!r} is mapped twice"
+            )
+        if target != MODEL_INHERIT and (
+            target.lower() in (MODEL_PRESERVE, MODEL_INHERIT)
+            or not MODEL_ID_RE.fullmatch(target)
+        ):
+            raise argparse.ArgumentTypeError(
+                f"invalid --model-map target {target!r} for {tier!r}: "
+                f"expected {MODEL_INHERIT} or a model id"
+            )
+        mapping[tier] = target
+    return mapping
+
+
+def emitted_model(
+    source_pin: object, model: str, model_map: dict[str, str]
+) -> str | None:
+    """The `model:` value to emit, or None to omit the key.
+
+    A mapped source pin takes the map's target; everything else takes `--model`.
+    """
+    pin = str(source_pin) if source_pin else None
+    target = model_map.get(pin, model) if pin else model
+    if target == MODEL_PRESERVE:
+        return pin
+    if target == MODEL_INHERIT:
+        return None
+    return target
+
+
 def render(
-    front: dict, body: str, fallback_name: str, model: str = MODEL_PRESERVE
+    front: dict,
+    body: str,
+    fallback_name: str,
+    model: str = MODEL_PRESERVE,
+    model_map: dict[str, str] | None = None,
 ) -> tuple[str, int, list[str], list[str], bool]:
     """Return (file text, widened_bash count, dropped tools, builtins, has_nesting)."""
     out: dict = {}
@@ -250,13 +308,11 @@ def render(
         out["color"] = front["color"]
     # `inherit` omits the key outright: pi reads an absent `model:` as "run on
     # the session's model", while `model:` with a null value is a different
-    # input. An explicit model id is applied to every agent, pinned or not, so
-    # the exported set runs on one model.
-    if model == MODEL_PRESERVE:
-        if front.get("model"):
-            out["model"] = front["model"]
-    elif model != MODEL_INHERIT:
-        out["model"] = model
+    # input. An explicit `--model` id is applied to every agent the map does not
+    # cover, pinned or not.
+    pinned = emitted_model(front.get("model"), model, model_map or {})
+    if pinned is not None:
+        out["model"] = pinned
     if front.get("thinking"):
         out["thinking"] = front["thinking"]
     if front.get("maxTurns") is not None:
@@ -303,7 +359,14 @@ def render(
     )
 
 
-def main(repo_root: Path, out_dir: Path, model: str = MODEL_PRESERVE) -> int:
+def main(
+    repo_root: Path,
+    out_dir: Path,
+    model: str = MODEL_PRESERVE,
+    model_map: dict[str, str] | None = None,
+) -> int:
+    model_map = model_map or {}
+    used_tiers: set[str] = set()
     agents_out = out_dir / "agents"
     agents_out.mkdir(parents=True, exist_ok=True)
 
@@ -325,7 +388,7 @@ def main(repo_root: Path, out_dir: Path, model: str = MODEL_PRESERVE) -> int:
             # Rendered inside the try: one malformed agent must be SKIPPED and
             # reported, never a traceback that aborts the other 20.
             text, widened, dropped, builtins, has_nesting = render(
-                front, body, src.stem, model
+                front, body, src.stem, model, model_map
             )
         except (ValueError, TypeError, yaml.YAMLError) as exc:
             skipped.append(f"{rel}: {exc}")
@@ -335,8 +398,11 @@ def main(repo_root: Path, out_dir: Path, model: str = MODEL_PRESERVE) -> int:
         widened_total += widened
         # Counted from what is EMITTED (the same rule `render` applies), so
         # `inherit` reports MODEL_PINS=0 rather than the source's count.
-        if model != MODEL_INHERIT and (model != MODEL_PRESERVE or front.get("model")):
+        if emitted_model(front.get("model"), model, model_map) is not None:
             model_pins += 1
+        source_pin = front.get("model")
+        if source_pin and str(source_pin) in model_map:
+            used_tiers.add(str(source_pin))
         if has_nesting:
             nested_total += 1
         for tool in dropped:
@@ -365,6 +431,9 @@ def main(repo_root: Path, out_dir: Path, model: str = MODEL_PRESERVE) -> int:
     print(f"OUTPUT_AGENTS={written}")
     print(f"SKIPPED_AGENTS={len(skipped)}")
     print(f"MODEL_MODE={model}")
+    if model_map:
+        print("MODEL_MAP=" + ",".join(f"{k}={v}" for k, v in sorted(model_map.items())))
+        print("MODEL_MAP_UNUSED=" + ",".join(sorted(set(model_map) - used_tiers)))
     print(f"MODEL_PINS={model_pins}")
     print(f"AGENTS_WITH_NESTING={nested_total}")
     print(f"WIDENED_BASH={widened_total}")
@@ -401,5 +470,19 @@ if __name__ == "__main__":
         help="preserve (default): emit the source pin; inherit: emit no model key; "
         "any other value: a model id that replaces the pin on every agent",
     )
+    parser.add_argument(
+        "--model-map",
+        type=model_map_arg,
+        default={},
+        help="<tier>=<target>,...: an agent pinned to a mapped tier gets its target "
+        "(a model id, or inherit); every other agent follows --model",
+    )
     args = parser.parse_args()
-    sys.exit(main(args.repo_root.resolve(), args.out_dir.resolve(), args.model))
+    sys.exit(
+        main(
+            args.repo_root.resolve(),
+            args.out_dir.resolve(),
+            args.model,
+            args.model_map,
+        )
+    )

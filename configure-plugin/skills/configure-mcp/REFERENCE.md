@@ -40,6 +40,13 @@ Use these JSON configurations when adding servers to `.mcp.json`:
 }
 ```
 
+Optional per-server key `alwaysLoad` controls whether a server's tools load up
+front or wait behind tool search. `"alwaysLoad": false` defers **all** of that
+server's tools behind tool search (2.1.287). A tool that sets its own
+`_meta['anthropic/alwaysLoad']` to false stays deferred even when its server is
+set to `alwaysLoad` (2.1.285), so the server-level key cannot force such a tool
+to load.
+
 ## Environment Variable Reference
 
 | Server | Required Variables | Where to Set |

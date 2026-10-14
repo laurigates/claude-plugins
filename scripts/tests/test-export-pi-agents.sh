@@ -21,6 +21,9 @@
 #   J. --model (#2649): preserve (default) emits the source pin, inherit emits NO
 #      `model:` key at all, a model id replaces the pin, a bad value (incl. a wrong-case mode name) exits non-zero,
 #      and the justfile threads the mode through both recipes
+#   K. --model-map: a source pin naming a mapped tier (`opus=prov/x`) takes the
+#      map's target, every other agent falls through to --model, a target of
+#      `inherit` drops the key, unmatched tiers are reported, malformed maps exit 2
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -323,6 +326,74 @@ assert "export-pi-agents recipe takes model=\"preserve\" and passes --model" \
   "$(grep -qE '^export-pi-agents .*model="preserve"' "$justfile" && grep -A 8 '^export-pi-agents' "$justfile" | grep -q -- '--model' && echo true || echo false)"
 assert "install-pi-agents recipe takes model=\"preserve\" and passes --model" \
   "$(grep -qE '^install-pi-agents .*model="preserve"' "$justfile" && grep -A 25 '^install-pi-agents' "$justfile" | grep -q -- '--model' && echo true || echo false)"
+
+echo "=== TEST K: --model-map <tier>=<target>,... ==="
+# A separate source tree, so the pin counts asserted in J stay unchanged.
+tiers="$fixture/src-tiers/tier-plugin/agents"
+mkdir -p "$tiers"
+for spec in big:opus small:haiku mid:sonnet plain:; do
+  agent=${spec%%:*}; pin=${spec#*:}
+  {
+    echo "---"
+    echo "name: $agent"
+    echo "description: The $agent tier agent."
+    [ -n "$pin" ] && echo "model: $pin"
+    echo "tools: Read"
+    echo "---"
+    echo ""
+    echo "# $agent"
+  } > "$tiers/$agent.md"
+done
+
+map_out="$(python3 "$exporter" --model-map opus=prov/large,haiku=prov/small "$fixture/src-tiers" "$fixture/out-map" 2>&1)"; map_rc=$?
+assert "--model-map exits 0" "$([ "$map_rc" -eq 0 ] && echo true || echo false)"
+assert "a mapped opus pin becomes its target" \
+  "$([ "$(fm_model "$fixture/out-map/agents/big.md")" = "prov/large" ] && echo true || echo false)"
+assert "a mapped haiku pin becomes its own target" \
+  "$([ "$(fm_model "$fixture/out-map/agents/small.md")" = "prov/small" ] && echo true || echo false)"
+assert "an unmapped tier falls through to --model (default preserve keeps sonnet)" \
+  "$([ "$(fm_model "$fixture/out-map/agents/mid.md")" = "sonnet" ] && echo true || echo false)"
+assert "an unpinned agent stays unpinned under preserve" \
+  "$([ "$(fm_model "$fixture/out-map/agents/plain.md")" = "__ABSENT__" ] && echo true || echo false)"
+assert "the map is reported sorted, with MODEL_PINS counting emitted pins" \
+  "$(case "$map_out" in *"MODEL_MAP=haiku=prov/small,opus=prov/large"*"MODEL_PINS=3"*) echo true ;; *) echo false ;; esac)"
+assert "a map whose tiers all matched reports an empty MODEL_MAP_UNUSED" \
+  "$(grep -qx 'MODEL_MAP_UNUSED=' <<<"$map_out" && echo true || echo false)"
+
+both_out="$(python3 "$exporter" --model prov/default --model-map opus=prov/large "$fixture/src-tiers" "$fixture/out-both" 2>&1)"
+assert "with --model <id>, the map wins for mapped tiers" \
+  "$([ "$(fm_model "$fixture/out-both/agents/big.md")" = "prov/large" ] && echo true || echo false)"
+assert "with --model <id>, unmapped tiers take --model" \
+  "$([ "$(fm_model "$fixture/out-both/agents/small.md")" = "prov/default" ] && [ "$(fm_model "$fixture/out-both/agents/mid.md")" = "prov/default" ] && echo true || echo false)"
+assert "with --model <id>, unpinned agents take --model" \
+  "$([ "$(fm_model "$fixture/out-both/agents/plain.md")" = "prov/default" ] && echo true || echo false)"
+assert "--model <id> plus a map reports MODEL_PINS=4" \
+  "$(grep -qx 'MODEL_PINS=4' <<<"$both_out" && echo true || echo false)"
+
+python3 "$exporter" --model inherit --model-map haiku=prov/small "$fixture/src-tiers" "$fixture/out-inh" >/dev/null 2>&1
+assert "with --model inherit, a mapped tier still gets its target" \
+  "$([ "$(fm_model "$fixture/out-inh/agents/small.md")" = "prov/small" ] && echo true || echo false)"
+assert "with --model inherit, unmapped tiers lose the key" \
+  "$([ "$(fm_model "$fixture/out-inh/agents/big.md")" = "__ABSENT__" ] && echo true || echo false)"
+
+drop_out="$(python3 "$exporter" --model-map opus=inherit,fable=prov/x "$fixture/src-tiers" "$fixture/out-drop" 2>&1)"
+assert "a map target of inherit drops that tier's model key" \
+  "$([ "$(fm_model "$fixture/out-drop/agents/big.md")" = "__ABSENT__" ] && echo true || echo false)"
+assert "a tier no agent pins is reported in MODEL_MAP_UNUSED, not an error" \
+  "$(grep -qx 'MODEL_MAP_UNUSED=fable' <<<"$drop_out" && grep -qx 'STATUS=OK' <<<"$drop_out" && echo true || echo false)"
+
+for bad in 'opus' 'opus=' '=prov/x' 'opus=a,opus=b' 'opus=preserve' 'opus=two words' 'opus=a,,haiku=b' ''; do
+  python3 "$exporter" --model-map "$bad" "$fixture/src-tiers" "$fixture/out-map-bad" >/dev/null 2>&1; bad_rc=$?
+  assert "a malformed --model-map '$bad' is rejected non-zero (exit 2)" \
+    "$([ "$bad_rc" -eq 2 ] && echo true || echo false)"
+done
+assert "a rejected --model-map writes nothing" \
+  "$([ ! -e "$fixture/out-map-bad" ] && echo true || echo false)"
+
+assert "export-pi-agents recipe takes model_map=\"\" and passes --model-map" \
+  "$(grep -qE '^export-pi-agents .*model_map=""' "$justfile" && grep -A 10 '^export-pi-agents' "$justfile" | grep -q -- '--model-map' && echo true || echo false)"
+assert "install-pi-agents recipe takes model_map=\"\" and passes --model-map" \
+  "$(grep -qE '^install-pi-agents .*model_map=""' "$justfile" && grep -A 28 '^install-pi-agents' "$justfile" | grep -q -- '--model-map' && echo true || echo false)"
 
 echo ""
 echo "=== SUMMARY ==="
