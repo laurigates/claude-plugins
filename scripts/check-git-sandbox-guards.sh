@@ -20,6 +20,11 @@
 # next two lines tests `[ -n "$VAR" ]` / `[ -d "$VAR" ]`. An empty value must then
 # abort before any git op runs.
 #
+# A second rule covers the other route into the real repo (issues #1745, #3080):
+# an inherited GIT_DIR overrides `git -C`. Every `*-plugin/hooks/test-*.sh` suite
+# (any plugin, not just hooks-plugin) that runs git must `unset GIT_DIR …` before
+# its first git command. See "Rule 2" in the loop below.
+#
 # Python tests are NOT covered: `tempfile.mkdtemp()` / pytest `tmp_path` raise on
 # failure and never yield an empty path, so the shell-specific leak cannot occur.
 #
@@ -40,6 +45,13 @@ done
 
 issue_count=0
 declare -a issues=()
+
+# Rule 2 patterns. GIT_EXEC_RE matches a line whose COMMAND is git with a
+# repo-touching subcommand (optionally behind `X=$(`, `(`, `$(`, `if`, `!`,
+# `then`, `&&`, `||`), so a git command quoted inside a test-case string is
+# not counted. GIT_UNSET_RE matches an `unset` naming GIT_DIR.
+GIT_EXEC_RE='^[[:space:]]*(([A-Za-z_][A-Za-z0-9_]*=\$\(|\(|\$\(|if|!|then|&&|\|\|)[[:space:]]*)*git[[:space:]]+(-C|init|commit|config|clone|worktree|checkout|switch|branch|add|remote|update-ref|symbolic-ref)([[:space:]]|$)'
+GIT_UNSET_RE='^[[:space:]]*unset[[:space:]].*GIT_DIR([[:space:]]|$)'
 
 # Collect candidate shell scripts (skip vendored / .git / nested agent worktree
 # clones / the gitignored dist/ OpenCode export build output — the worktrees + dist
@@ -63,6 +75,39 @@ mapfile -d '' scripts < <(
 
 for script in "${scripts[@]}"; do
     rel="${script#"$ROOT_DIR"/}"
+
+    # Rule 2 (issues #1745, #3080): a plugin hook test suite that runs git must
+    # unset the inherited GIT_DIR family BEFORE its first git command. Under
+    # pre-commit, GIT_DIR/GIT_INDEX_FILE point at the real repo and override
+    # `git -C`, so a sandbox `init`/`config`/`branch -m` acts on the shared
+    # clone: on 2026-10-13 it flipped core.bare=true, wrote a test identity and
+    # renamed a worktree's branch onto `main` (PR #3077). Scoped to every
+    # `*-plugin/hooks/test-*.sh` (#3080 — the hazard is not hooks-plugin's
+    # alone). A hook script whose name happens to start with `test-`
+    # (hooks-plugin's test-verification.sh) is registered in its plugin's
+    # manifest and is not a suite, so it is skipped.
+    case "$rel" in
+        *-plugin/hooks/test-*.sh)
+            plugin_dir="${rel%%/hooks/*}"
+            base="$(basename "$script")"
+            registered=0
+            for manifest in "$ROOT_DIR/$plugin_dir/.claude-plugin/plugin.json" "$ROOT_DIR/$plugin_dir/hooks/hooks.json"; do
+                if [ -f "$manifest" ] && grep -qF "hooks/$base" "$manifest"; then
+                    registered=1
+                fi
+            done
+            if [ "$registered" -eq 0 ]; then
+                first_git=$(grep -nE "$GIT_EXEC_RE" "$script" 2>/dev/null | head -1 | cut -d: -f1)
+                if [ -n "$first_git" ]; then
+                    first_unset=$(grep -nE "$GIT_UNSET_RE" "$script" 2>/dev/null | head -1 | cut -d: -f1)
+                    if [ -z "$first_unset" ] || [ "$first_unset" -gt "$first_git" ]; then
+                        issue_count=$((issue_count + 1))
+                        issues+=("  - SEVERITY=ERROR FILE=$rel LINE=$first_git MSG=hook test suite runs git without first unsetting GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR (issues #1745, #3080)")
+                    fi
+                fi
+            fi
+            ;;
+    esac
 
     # File-level danger gate: does this script perform a repo-CREATING or
     # repo-TARGETING git op? `git init`/`git clone`/`git worktree add` create a
@@ -112,6 +157,8 @@ if [ "$issue_count" -gt 0 ]; then
     echo "FIX: guard the sandbox dir before any git op, e.g.:"
     echo "  VAR=\$(mktemp -d) || { echo 'mktemp failed' >&2; exit 1; }"
     echo "  [ -n \"\$VAR\" ] && [ -d \"\$VAR\" ] || { echo 'bad sandbox dir' >&2; exit 1; }"
+    echo "For a hook test suite (#1745/#3080), unset inherited git env before the first git command:"
+    echo "  unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX"
 fi
 echo "=== END GIT SANDBOX GUARDS ==="
 
