@@ -10,7 +10,7 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/code-quality-preflight-cue.sh\"",
             "continueOnBlock": true,
-            "timeout": 5000
+            "timeout": 5
           }
         ]
       },
@@ -21,7 +21,7 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/code-quality-preflight-cue.sh\"",
             "continueOnBlock": true,
-            "timeout": 5000
+            "timeout": 5
           }
         ]
       }

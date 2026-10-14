@@ -160,7 +160,7 @@ The command hook default was increased from 60 seconds in Claude Code 2.1.50.
 
 > **Note (2.1.285, 2.1.296)**: A synchronous hook that starts a background process (`some-daemon &`) holding stdout open no longer hangs Claude Code; the hook finishes shortly after its own process exits (2.1.285). To find a slow hook, run with `--debug`: command hooks on tool calls, prompts, SessionStart and Stop log their command, plugin, outcome and duration (2.1.296).
 
-Set timeout explicitly even though the default is now 10 minutes — explicit timeouts document intent:
+Set timeout explicitly even though the default is now 10 minutes — explicit timeouts document intent. The unit is **seconds**; `5000` is 83 minutes, not 5 s, and under `onFailure: "block"` a budget that never fires leaves a safety hook able to hang a session. `scripts/check-hook-timeout-units.sh` fails any plugin hook `timeout` >= 1000 (#3079):
 
 ```json
 {
