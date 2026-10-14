@@ -166,5 +166,67 @@ assert_eq "K1 bad sed: exit 1" "$rc" "1"
 assert_contains "K2 bad sed: TYPE sed_failed" "$out" "sed_failed"
 assert_eq "K3 bad sed: file untouched" "$(content_of "$f")" "$original"
 
+# --- L. an unrunnable gate is an ERROR, never a kill (exit 127 / 126) ---
+f=$(new_target l.txt)
+out=$(bash "$script" "$f" 's/>= 3/>= 4/' -- mutation-check-no-such-command-xyz 2>/dev/null); rc=$?
+assert_eq "L1 gate not found: exit 1" "$rc" "1"
+assert_contains "L2 gate not found: STATUS=ERROR" "$out" "STATUS=ERROR"
+assert_contains "L3 gate not found: TYPE gate_not_runnable" "$out" "gate_not_runnable"
+assert_not_contains "L4 gate not found: no MUTANT verdict" "$out" "MUTANT="
+assert_eq "L5 gate not found: file restored" "$(content_of "$f")" "$original"
+f=$(new_target l2.txt)
+printf 'not executable\n' >"$sandbox/not-exec.sh"
+chmod 644 "$sandbox/not-exec.sh"
+out=$(bash "$script" "$f" 's/>= 3/>= 4/' -- "$sandbox/not-exec.sh" 2>/dev/null); rc=$?
+assert_eq "L6 gate not executable: exit 1" "$rc" "1"
+assert_contains "L7 gate not executable: TYPE gate_not_runnable" "$out" "gate_not_runnable"
+assert_not_contains "L8 gate not executable: no MUTANT verdict" "$out" "MUTANT="
+assert_eq "L9 gate not executable: file restored" "$(content_of "$f")" "$original"
+
+f=$(new_target l3.txt)
+out=$(bash "$script" "$f" 's/>= 3/>= 4/' -- sh -c 'exit 127' 2>/dev/null); rc=$?
+assert_eq "L10 gate exits 127 itself: exit 1" "$rc" "1"
+assert_contains "L11 gate exits 127 itself: TYPE gate_not_runnable" "$out" "gate_not_runnable"
+assert_not_contains "L12 gate exits 127 itself: no MUTANT verdict" "$out" "MUTANT="
+assert_eq "L13 gate exits 127 itself: file restored" "$(content_of "$f")" "$original"
+
+# --- M. an unwritable target is a structured ERROR, not a bare abort ---
+if [ "$(id -u)" -ne 0 ]; then
+  f=$(new_target m.txt)
+  chmod 444 "$f"
+  out=$(bash "$script" "$f" 's/>= 3/>= 4/' -- true 2>/dev/null); rc=$?
+  assert_eq "M1 unwritable target: exit 1" "$rc" "1"
+  assert_contains "M2 unwritable target: STATUS=ERROR" "$out" "STATUS=ERROR"
+  assert_contains "M3 unwritable target: TYPE write_failed" "$out" "write_failed"
+  assert_contains "M4 unwritable target: closing marker present" "$out" "=== END MUTATION CHECK ==="
+  assert_not_contains "M5 unwritable target: no MUTANT verdict" "$out" "MUTANT="
+  assert_eq "M6 unwritable target: content intact" "$(content_of "$f")" "$original"
+  assert_contains "M7 unwritable target: RESTORED=true" "$out" "RESTORED=true"
+fi
+
+# --- N. a signal to the helper also stops the gate's own children ---
+f=$(new_target n.txt)
+n_pids="$sandbox/n.pid"
+bash "$script" "$f" 's/>= 3/>= 4/' -- sh -c 'sleep 30 & echo $! >"$1"; wait' _ "$n_pids" >/dev/null 2>&1 &
+helper_pid=$!
+waited=0
+while [ ! -s "$n_pids" ] && [ "$waited" -lt 100 ]; do sleep 0.1; waited=$((waited + 1)); done
+grandchild=$(cat "$n_pids" 2>/dev/null)
+if [ -n "$grandchild" ] && kill -0 "$grandchild" 2>/dev/null; then
+  ok "N0 precondition: grandchild running while the gate runs"
+else
+  bad "N0 precondition: grandchild running while the gate runs"
+fi
+kill -TERM "$helper_pid" 2>/dev/null
+wait "$helper_pid" 2>/dev/null
+sleep 0.3
+if [ -n "$grandchild" ] && kill -0 "$grandchild" 2>/dev/null; then
+  bad "N1 gate's child is gone after the helper is terminated"
+  kill -KILL "$grandchild" 2>/dev/null
+else
+  ok "N1 gate's child is gone after the helper is terminated"
+fi
+assert_eq "N2 file restored" "$(content_of "$f")" "$original"
+
 printf '%s passed, %s failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

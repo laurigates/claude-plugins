@@ -126,8 +126,14 @@ None was dishonest. Each is the ordinary failure of checking your own work.
   scripts/mutation-check.sh main/thing.c 's/>= 3/>= 4/' -- just test   # MUTANT=killed|survived
   ```
 
-  `MUTANT=killed` means the gate failed on the mutant (the tests have teeth);
-  `MUTANT=survived` means it passed (they pin nothing). In this repo the same call
+  `MUTANT=killed` means the gate ran and failed on the mutant (the tests have
+  teeth); `MUTANT=survived` means it passed (they pin nothing). A gate that cannot
+  start (not found, not executable, or exiting 126/127) is `STATUS=ERROR` with
+  `TYPE=gate_not_runnable` and no `MUTANT=` line. The helper runs no baseline, so
+  run the gate once on the unmutated file first: a gate that is already red reads
+  as `killed` for every mutant. The gate runs in its own process group, and an
+  interrupt signals the group, so a gate that spawns children (`just test`) leaves
+  nothing running against the restored file. In this repo the same call
   is `just mutation-check <path> <sed-expr> -- <gate...>`. The helper exists so a
   probe needs no hand-written `cp` + `sed -i` + `cp` sequence: the `sed-inplace`
   hook blocks that sequence, and the trailing restore is the step that gets

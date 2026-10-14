@@ -25,14 +25,22 @@
 #   MUTANT=killed    gate failed on the mutant: the tests caught it  -> STATUS=OK
 #   MUTANT=survived  gate passed on the mutant: the tests miss it    -> STATUS=WARN
 #
+# "killed" is only meaningful when the gate is green on the unmutated file: this
+# helper does not run a baseline, so confirm that first (a gate that is already
+# red reads as killed for every mutant). A gate that cannot start (exit 126 not
+# executable, 127 not found) is an ERROR, never a kill.
+#
 # Exit codes: 0 = verdict reached (killed or survived), 1 = ERROR (no verdict:
-# no-op mutation, sed failure, interrupted, restore failed), 2 = usage error.
+# no-op mutation, sed failure, write failure, unrunnable gate, interrupted,
+# restore failed), 2 = usage error.
 #
 # Portability: never uses `sed -i` (its flag differs between BSD and GNU sed).
 # The mutant is written to a temp file and copied over the target with `cat >`,
 # which keeps the target's inode, mode and symlink. A gate that reads stdin sees
-# /dev/null. SIGKILL cannot be trapped; the printed SNAPSHOT= path is the
-# recovery copy in that case.
+# /dev/null. The gate runs in its own process group (job control), and an
+# interrupt signals the whole group so a gate that spawns children (`just test`)
+# leaves nothing running against the restored tree. SIGKILL cannot be trapped;
+# the printed SNAPSHOT= path is the recovery copy in that case.
 
 set -euo pipefail
 
@@ -83,6 +91,15 @@ if [ ! -f "$target" ]; then
   exit 1
 fi
 
+# Refuse a gate that cannot start before touching the file. Checked up front as
+# well as via the 126/127 exit below because bash 3.2 reports a failed exec in a
+# background job as exit 1, which would otherwise read as a kill.
+if ! command -v -- "$1" >/dev/null 2>&1; then
+  echo "RESTORED=n/a"
+  emit_error "gate_not_runnable: $1 is not an executable command or file; $target was not touched"
+  exit 1
+fi
+
 work="$(mktemp -d "${TMPDIR:-/tmp}/mutation-check.XXXXXX")"
 snap="$work/snapshot"
 mutant="$work/mutant"
@@ -95,7 +112,9 @@ restored="n/a"
 restore() {
   [ "$armed" = 1 ] || return 0
   armed=0
-  if cp -p "$snap" "$target" && cmp -s "$snap" "$target"; then
+  # Skip the copy when the target already matches (a failed write leaves it
+  # untouched, and cp over a read-only file would fail for no reason).
+  if { cmp -s "$snap" "$target" || cp -p "$snap" "$target"; } && cmp -s "$snap" "$target"; then
     restored=true
     rm -rf "$work"
   else
@@ -106,7 +125,9 @@ restore() {
 on_signal() {
   local name="$1" code="$2"
   if [ -n "$gate_pid" ]; then
-    kill -TERM "$gate_pid" 2>/dev/null || true
+    # Signal the gate's whole process group (job control gave it its own), so
+    # grandchildren die with it; fall back to the gate pid alone.
+    kill -TERM -- "-$gate_pid" 2>/dev/null || kill -TERM "$gate_pid" 2>/dev/null || true
     wait "$gate_pid" 2>/dev/null || true
   fi
   restore
@@ -140,13 +161,22 @@ if cmp -s "$snap" "$mutant"; then
   exit 1
 fi
 
-cat "$mutant" >"$target"
+if ! cat "$mutant" >"$target"; then
+  restore
+  echo "RESTORED=$restored"
+  emit_error "write_failed: could not write the mutant to $target"
+  exit 1
+fi
 
 # Background + wait so a signal to this script is handled while the gate runs
-# (bash defers traps until a foreground child exits).
+# (bash defers traps until a foreground child exits). `set -m` puts the gate in
+# its own process group; stdin is redirected because a job-control background
+# job that reads the terminal would be stopped with SIGTTIN.
 gate_rc=0
-"$@" >&2 &
+set -m
+"$@" >&2 </dev/null &
 gate_pid=$!
+set +m
 wait "$gate_pid" || gate_rc=$?
 gate_pid=""
 
@@ -157,6 +187,11 @@ echo "GATE_EXIT=$gate_rc"
 if [ "$restored" != true ]; then
   echo "SNAPSHOT_KEPT=$snap"
   emit_error "restore_failed: could not restore $target; copy $snap over it"
+  exit 1
+fi
+
+if [ "$gate_rc" -eq 126 ] || [ "$gate_rc" -eq 127 ]; then
+  emit_error "gate_not_runnable: gate exited $gate_rc ($1 is not executable or not found); no verdict"
   exit 1
 fi
 

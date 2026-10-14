@@ -161,10 +161,13 @@ Write the helper's **absolute path** into the brief (a subagent does not know th
 skill directory), plus the gate to run:
 
 ```text
-Prove each new test fails without the fix. For each mutation run
+Prove each new test fails without the fix. First run the gate once on the
+unmutated file and confirm it is green (a gate that is already red reads as
+killed for every mutant). Then, for each mutation run
   <abs path>/mutation-check.sh <file> '<sed-expr>' -- <gate command>
 and record the MUTANT= line. MUTANT=killed is the pass; MUTANT=survived means
-the test pins nothing and goes in the report. Do not run sed -i, and do not
+the test pins nothing and goes in the report; STATUS=ERROR (for example
+gate_not_runnable) is no verdict, so fix the call and rerun. Do not run sed -i, and do not
 restore with git checkout -- (it deletes an uncommitted fix; the helper restores
 from a snapshot). In this repo the same call is: just mutation-check <file>
 '<sed-expr>' -- <gate command>.
