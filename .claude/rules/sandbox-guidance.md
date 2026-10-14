@@ -1,6 +1,6 @@
 ---
 created: 2026-03-03
-modified: 2026-09-28
+modified: 2026-10-13
 reviewed: 2026-09-16
 paths:
   - "**/skills/**"
@@ -190,6 +190,8 @@ The web sandbox base image includes standard language runtimes and system tools 
 | `pre-commit` | `pip install pre-commit` |
 | `unzip` | `apt-get install -y unzip` (needed for `.zip` extractions) |
 
+The GitHub CLI is not guaranteed either. Where it is missing, Claude Code supplies a built-in, REST-only `gh api`: on self-hosted runners with Anthropic-managed git (2.1.287) and in cloud sessions (2.1.288). A refused `gh` subcommand prints its `gh api` equivalent and `--paginate` follows every page (2.1.288). Since 2.1.290 the cloud built-in refuses a non-github.com host set in `GH_HOST`/`GH_REPO`. A remote skill that needs `gh pr`/`gh issue` beyond REST calls should install `gh` in its SessionStart hook or fall back to `gh api`.
+
 ---
 
 ## Environment Variables
@@ -338,6 +340,8 @@ The `autoAllowBashIfSandboxed` setting auto-approves Bash tool calls when the ha
 
 If you previously worked around the gap with explicit `Bash(... $VAR ...)` allow rules, you can remove them.
 
+Three later fixes removed per-run prompts for inline code under sandbox auto-allow: inline scripts (`python3 -c`, `node -e`) containing `=` (2.1.285), heredocs with an unquoted delimiter and a body of plain text and simple `$VAR` references (`python3 <<EOF`, 2.1.288), and a heredoc piped into a command (`cat <<EOF | python3`, 2.1.290). On older clients each of these prompted every run.
+
 ### `sandbox.excludedCommands` Matches Every Part (2.1.277+)
 
 An `excludedCommands` glob exempts a compound Bash command from the sandbox only when every part matches; before 2.1.277 one matching part exempted the whole command. Since 2.1.281 a pattern also matches `git rev-parse --git-dir`, programs named like shell builtins, and commit messages containing `[WIP]` or `#`.
@@ -361,6 +365,8 @@ Setting `NO_COLOR` or `FORCE_COLOR` under `env` in `settings.json` previously al
 `sandbox.ripgrep` (the sandbox's ripgrep binary path) is honored only from user, managed, or `--settings` settings as of 2.1.232 — a project `.claude/settings.json` entry is ignored. The same restriction applies to `sandbox.bwrapPath`/`sandbox.socatPath`, and managed-settings overrides of any of the three now require explicit approval.
 
 An invalid nested value in managed `sandbox` settings fails closed for that value, and the rest of the block still applies (2.1.283).
+
+Since 2.1.285, project settings cannot widen or turn off an admin-required sandbox, replace the proxy behind a managed deny list, extend a strict allowlist, or reopen managed read-denies. A skill's repo `.claude/settings.json` cannot loosen a managed sandbox.
 
 ### Failing Closed When the Sandbox Can't Start — `sandbox.failIfUnavailable` (2.1.83+)
 

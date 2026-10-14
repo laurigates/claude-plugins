@@ -183,6 +183,22 @@ assert "worktree fixture scanned only the real skill" "$(contains "$OUT" 'FILES_
 assert "no .claude/worktrees/ path leaks into output" \
   "$([ "$(contains "$OUT" '.claude/worktrees/')" = "false" ] && echo true || echo false)"
 
+# --- TEST I: workflow agentType literals resolve (#3047 review) --------------
+echo "=== TEST I: a bundled workflow's agentType literal must resolve ==="
+fx_i="$(mktemp -d)"
+[ -n "$fx_i" ] || { echo "mktemp failed" >&2; exit 1; }
+trap 'cleanup; rm -rf "$fx_i"' EXIT
+make_agent "$fx_i/agents-plugin/agents/lean-reader.md"
+make_skill "$fx_i/demo-plugin/skills/thing/workflows/thing.workflow.js" "const a = await agent(p, { label: 'parse', agentType: 'agents-plugin:lean-reader', effort: 'low' })
+const b = await agent(p, { label: 'gone', agentType: \"agents-plugin:renamed-reader\" })
+const c = await agent(p, { label: 'dyn', agentType: g.at })"
+run "$fx_i"
+assert "workflow fixture exits 1 on the unresolvable agentType" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "workflow fixture reports exactly 1 unresolvable" "$(contains "$OUT" 'UNRESOLVABLE=1')"
+assert "workflow fixture names the renamed agent" \
+  "$(contains "$OUT" 'FILE=demo-plugin/skills/thing/workflows/thing.workflow.js VALUE=agents-plugin:renamed-reader')"
+assert "workflow fixture checks the two literals, not the computed g.at" "$(contains "$OUT" 'REFS_CHECKED=2')"
+
 # --- Summary -----------------------------------------------------------------
 echo ""
 echo "Passed: $pass_count  Failed: $fail_count"

@@ -1,6 +1,6 @@
 ---
 created: 2026-06-22
-modified: 2026-10-10
+modified: 2026-10-13
 reviewed: 2026-09-16
 paths:
   - ".github/workflows/**"
@@ -62,7 +62,15 @@ releases, so effort must be set *explicitly* or the pick is not ours (this is
 what the guard's `missing_effort` check enforces). Since 2.1.280 an effort saved
 before `/effort` became per-model no longer applies to new models, and Opus
 4.7/4.8 and Fable 5 no longer hold their launch default over `-p` / settings
-`effortLevel`; an explicit `--effort` flag is unaffected by either.
+`effortLevel`; an explicit `--effort` flag is unaffected by either. Ultracode is
+not an effort level: since 2.1.284 it is a separate toggle (`/effort ultracode
+[on|off]`) that no longer forces `xhigh` and stays on at any effort, so pinning
+`--effort` neither enables nor rules it out.
+
+`CLAUDE_CODE_WORKFLOW_SUBAGENT_MODEL` (2.1.296) runs every agent of a `Workflow`
+tool run on one model while other subagents keep theirs. It applies to
+`Workflow` scripts inside a session, not to the `--model` flag of a
+`.github/workflows` invocation, so `check-workflow-model.sh` does not read it.
 
 An org-level `maxEffortLevel` setting (2.1.267+, top-level or per model under
 `modelSettings`) can cap the effective effort on every provider including

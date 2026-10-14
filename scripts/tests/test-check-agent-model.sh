@@ -14,6 +14,8 @@
 #   H. a `model: fable` agent exits 0 (sanctioned for the hardest delegated work)
 #   I. `effort: low` exits 0; `effort: ultra` exits 1 and names the bad value;
 #      an agent with no `effort:` line exits 0 (the field is optional)
+#   J. a lean haiku reader (omitClaudeMd + Read/Grep/Glob tools + effort) exits
+#      0; dropping any one condition exits 1 and names it; sonnet gets no carve-out
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -202,6 +204,81 @@ rm -f "$fx_i/demo-plugin/agents/bad-effort.md"
 make_agent_effort "$fx_i/demo-plugin/agents/no-effort.md" opus ""
 run "$fx_i"
 assert "no effort: line exits 0 (field is optional)" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+
+# --- TEST J: the lean Haiku reader ---------------------------------------------
+# haiku passes only with omitClaudeMd: true + a Read/Grep/Glob-only tools list +
+# an explicit effort. Each failing case removes exactly one condition from the
+# passing one, so the suite fails both a guard that still bans every haiku agent
+# and one that lets any haiku agent through.
+echo "=== TEST J: lean haiku reader passes; each missing condition fails and is named ==="
+# make_lean <path> <omit-line-or-empty> <tools-block> <effort-line-or-empty>
+make_lean() {
+  local agent_name
+  agent_name="$(basename "$1" .md)"
+  mkdir -p "$(dirname "$1")"
+  {
+    echo "---"
+    echo "name: $agent_name"
+    echo "model: haiku"
+    [ -n "$2" ] && echo "$2"
+    printf '%s\n' "$3"
+    [ -n "$4" ] && echo "$4"
+    echo "description: Fixture agent for the model lint test."
+    echo "---"
+    echo "Fixture body."
+  } > "$1"
+}
+fx_j="$(mktemp -d)"
+[ -n "$fx_j" ] || { echo "mktemp failed" >&2; exit 1; }
+
+make_lean "$fx_j/demo-plugin/agents/lean.md" "omitClaudeMd: true" "tools: Read, Grep, Glob" "effort: low"
+run "$fx_j"
+assert "lean haiku reader exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+assert "lean haiku reader is counted" "$(contains "$OUT" 'LEAN_HAIKU_AGENTS=1')"
+
+make_lean "$fx_j/demo-plugin/agents/lean.md" "omitClaudeMd: true" "$(printf 'tools:\n  - Read\n  - Glob')" "effort: low"
+run "$fx_j"
+assert "YAML-list tools form also passes" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+
+make_lean "$fx_j/demo-plugin/agents/lean.md" "" "tools: Read, Grep, Glob" "effort: low"
+run "$fx_j"
+assert "missing omitClaudeMd exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "missing omitClaudeMd is named" "$(contains "$OUT" 'needs omitClaudeMd: true')"
+
+make_lean "$fx_j/demo-plugin/agents/lean.md" "omitClaudeMd: true" "tools: Read, Edit" "effort: low"
+run "$fx_j"
+assert "a write tool exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "the write tool is named" "$(contains "$OUT" "tool 'Edit' is outside")"
+
+make_lean "$fx_j/demo-plugin/agents/lean.md" "omitClaudeMd: true" "description-placeholder: x" "effort: low"
+run "$fx_j"
+assert "omitted tools exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "omitted tools is named" "$(contains "$OUT" 'needs an explicit tools:')"
+
+make_lean "$fx_j/demo-plugin/agents/lean.md" "omitClaudeMd: true" "tools: Read" ""
+run "$fx_j"
+assert "missing effort exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "missing effort is named" "$(contains "$OUT" 'needs an explicit effort:')"
+
+# Keys that hand the agent capability outside Read/Grep/Glob (#3047 review).
+for key_line in "mcpServers: [github]" "skills: [git-commit]" "hooks: {}"; do
+  make_lean "$fx_j/demo-plugin/agents/lean.md" "omitClaudeMd: true" "$(printf 'tools: Read\n%s' "$key_line")" "effort: low"
+  run "$fx_j"
+  assert "a lean haiku agent declaring '${key_line%%:*}:' exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+  assert "the '${key_line%%:*}:' key is named" "$(contains "$OUT" "declares ${key_line%%:*}:")"
+done
+
+# A second tools: key would be the value YAML keeps (last wins).
+make_lean "$fx_j/demo-plugin/agents/lean.md" "omitClaudeMd: true" "$(printf 'tools: Read\ntools: Read, Bash')" "effort: low"
+run "$fx_j"
+assert "a duplicate tools: key exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "the duplicate tools: key is named" "$(contains "$OUT" 'declares tools: more than once')"
+
+# sonnet gets no lean carve-out: the same lean shape on sonnet still fails.
+rm -f "$fx_j/demo-plugin/agents/lean.md"
+make_agent_effort "$fx_j/demo-plugin/agents/lean-sonnet.md" sonnet low
+run "$fx_j"
+assert "sonnet has no lean carve-out" "$([ "$RC" -eq 1 ] && echo true || echo false)"
 
 # --- Summary -----------------------------------------------------------------
 echo ""

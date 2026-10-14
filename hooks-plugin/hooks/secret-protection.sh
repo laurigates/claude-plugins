@@ -15,7 +15,17 @@ set -euo pipefail
 # Toggle off
 [ "${CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION:-}" = "1" ] && exit 0
 
+# This hook is registered with `"onFailure": "block"` (Claude Code 2.1.295+)
+# on Read|Edit|Write|Bash: any exit other than 0 or 2 blocks the call, so a
+# crash here would block every file read. Paths where the hook cannot apply
+# exit 0 explicitly — input jq cannot parse or whose tool_input is not an
+# object, and a missing jq. The missing-jq exit lets every call through: that
+# is deliberate, because failing closed there would block every Read.
+# scripts/check-hook-fail-closed.sh runs each of these paths.
+command -v jq >/dev/null 2>&1 || exit 0
+
 INPUT=$(cat)
+printf '%s' "$INPUT" | jq -e 'type == "object" and ((.tool_input // {}) | type == "object")' >/dev/null 2>&1 || exit 0
 
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
@@ -58,7 +68,7 @@ ${OVERRIDE_NOTE}"
   fi
 
   # Generic credential/secret files
-  if grep -Eq '(^|/)(credentials\.json|secrets\.json|service[_-]account.*\.json|.*\.keystore|.*\.jks|.*\.p12|.*\.pfx)$' <<<"$target"; then
+  if grep -Eq '(^|/)(credentials\.json|secrets\.json|\.api_tokens|service[_-]account.*\.json|.*\.keystore|.*\.jks|.*\.p12|.*\.pfx)$' <<<"$target"; then
     block "BLOCKED: Access to credential file '$target' denied.
 ${OVERRIDE_NOTE}"
   fi
@@ -136,14 +146,34 @@ ${OVERRIDE_NOTE}"
   # listed explicitly so those reads stay blocked; anything else whose name
   # merely ends in a verb (`multitail`, `lolcat`) is not matched any more.
   reader_verbs='(cat|gcat|zcat|bzcat|xzcat|head|ghead|tail|gtail|less|zless|more|nano|vim|nvim|gvim|mvim|vi|code|read)'
-  for pattern in '\.env\b' '\.ssh/' '\.aws/credentials' '\.kube/config' '\.docker/config\.json' 'credentials\.json' 'secrets\.json'; do
+  #
+  # Filter verbs (issue #2900): sed/awk/grep/cut/perl/rg print a file's
+  # contents as readily as cat — `sed -n 's/^export KEY=//p' ~/.api_tokens`
+  # exfiltrated a key with nothing blocking it. Unlike the verbs above, these
+  # take a *pattern or script* argument that routinely mentions a protected
+  # name (`grep -rn ".env" src/`, `sed 's/.env/.env.local/' f`), so they match
+  # only when the protected name starts a standalone file argument: preceded by
+  # whitespace or `<`, optionally behind a path prefix (`~/`, `$HOME/`,
+  # `src/`). A quoted argument counts only with a path-shaped prefix that
+  # starts at `~`, `$`, `/` or `.` and ends in `/` (`"$HOME/.api_tokens"`):
+  # a bare quoted `".env"` is a search pattern far more often than a path, and
+  # `'s/.env/…/'` is a sed script. The verb's leading boundary also excludes
+  # `-` and `_`, so `--grep` / `my_sed` do not supply the verb.
+  filter_verbs='(sed|gsed|awk|gawk|mawk|nawk|grep|egrep|fgrep|zgrep|rg|cut|perl)'
+  path_prefix="([\"'][~\$/.][^[:space:]|;&'\"<>]*/|[^[:space:]|;&'\"<>]*/)?"
+  for pattern in '\.env\b' '\.ssh/' '\.aws/credentials' '\.kube/config' '\.docker/config\.json' 'credentials\.json' 'secrets\.json' '\.api_tokens\b'; do
     # Capture the matched substrings (verb + path) rather than a bare boolean,
     # so the block message can name what tripped it and the exemption below can
     # inspect the actual path argument. Inspect every match across the command
     # rather than just the first: taking only `head -1` let a real secret read
     # slip past if preceded by an exempted template in a chained command, e.g.
     # `cat .env.example; cat .env` (issue #2611).
-    matches=$(echo "$COMMAND" | grep -oE "(^${reader_verbs}|[^A-Za-z]${reader_verbs})[[:space:]]+[^|;&]*${pattern}[^[:space:]|;&'\"]*" || true)
+    matches=$(
+      {
+        echo "$COMMAND" | grep -oE "(^${reader_verbs}|[^A-Za-z]${reader_verbs})[[:space:]]+[^|;&]*${pattern}[^[:space:]|;&'\"]*" || true
+        echo "$COMMAND" | grep -oE "(^${filter_verbs}|[^A-Za-z0-9_-]${filter_verbs})[[:space:]]+([^|;&]*[[:space:]<])?${path_prefix}${pattern}[^[:space:]|;&'\"]*" || true
+      }
+    )
     [ -z "$matches" ] && continue
 
     while IFS= read -r match; do

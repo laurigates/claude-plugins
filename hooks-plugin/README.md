@@ -148,7 +148,8 @@ A PreToolUse hook that blocks access to sensitive files and prevents credential 
 | Environment files | `.env`, `.env.*` (allows `.env.example`, `.env.sample`) |
 | SSH credentials | `.ssh/id_*`, `.pem`, `*_rsa`, `*_ed25519` |
 | Cloud credentials | `.aws/credentials`, `.config/gcloud/`, `.kube/config`, `.docker/config.json` |
-| Credential files | `credentials.json`, `secrets.json`, `*.keystore`, `*.key` |
+| Credential files | `credentials.json`, `secrets.json`, `.api_tokens` (e.g. `~/.api_tokens`), `*.keystore`, `*.key` |
+| Bash reader verbs | `cat`/`head`/`tail`/`less`/`more`/editors (any argument mentioning a protected path), plus `sed`/`awk`/`grep`/`cut`/`perl`/`rg` when the protected path is a standalone file argument — a protected name inside a quoted search pattern or sed script passes. `source`/`.` of a token file is allowed (it loads, not prints) |
 | Env var exposure | Commands that echo `$API_KEY`, `$SECRET`, `$TOKEN`, `$PASSWORD` |
 | Full env dump | Bare `printenv` or `env` commands |
 
@@ -187,7 +188,7 @@ A PreToolUse hook that blocks `rm -rf` on a git repository whose history exists 
 | Repos under `/tmp`, `/private/tmp`, `/var/folders`, `$TMPDIR` | Allowed by default |
 | A repo with an existing `<basename>-*.tar.*` in the backup dir | Allowed — this is what makes the block self-extinguishing |
 
-The block message reports what the preflight **found** in that repo (commits, uncommitted changes, stashes, local branches — every probe capped, since the hook fails open on timeout) and points at `git-plugin:git-repo-delete-check` for the remediation options; that skill is their single authority, so the message does not restate them (#2454). The one option it keeps verbatim is the tar backup to `$CLAUDE_REPO_BACKUP_DIR`, because writing that tarball is what changes the world state the hook reads, so the retried `rm -rf` succeeds with no override. Fails **open** on unresolvable operands (`$VAR`, `$(…)`, globs, `{}`) and on remote-exec commands; sibling verbs (`git clean -xdff`, `trash`, `mv`, `rmdir`, `shred`, `find … -delete`) are out of scope. Full enumerated gap list in [`hooks/README.md`](hooks/README.md#repo-deletion-safetysh).
+The block message reports what the preflight **found** in that repo (commits, uncommitted changes, stashes, local branches — every probe capped so the hook finishes inside its timeout; on Claude Code 2.1.295+ a timeout blocks the deletion through `onFailure: "block"`, but the configured `timeout` of 5000 is read as seconds, so it does not fire in practice — the units are tracked separately) and points at `git-plugin:git-repo-delete-check` for the remediation options; that skill is their single authority, so the message does not restate them (#2454). The one option it keeps verbatim is the tar backup to `$CLAUDE_REPO_BACKUP_DIR`, because writing that tarball is what changes the world state the hook reads, so the retried `rm -rf` succeeds with no override. Fails **open** on unresolvable operands (`$VAR`, `$(…)`, globs, `{}`) and on remote-exec commands; sibling verbs (`git clean -xdff`, `trash`, `mv`, `rmdir`, `shred`, `find … -delete`) are out of scope. Full enumerated gap list in [`hooks/README.md`](hooks/README.md#repo-deletion-safetysh).
 
 **Toggle:** `export CLAUDE_HOOKS_DISABLE_REPO_DELETION_SAFETY=1` in your shell environment. Like branch protection, a **human-operator** opt-in — an inline `VAR=1 rm -rf …` prefix is intentionally not honored (the statement parser strips leading assignments), so agents cannot self-serve the bypass. Tuning: `CLAUDE_REPO_BACKUP_DIR` (default `$HOME/Backups`), `CLAUDE_HOOKS_REPO_DELETION_TMP_EXEMPT` (default `1`), `CLAUDE_HOOKS_REPO_DELETION_WARN_DIRTY` (default `0`).
 
@@ -318,8 +319,9 @@ internal `\036`/`\037` separators are denied.
 
 **Fails closed on its own errors.** A scanner failure denies, and so does any
 crash after a command is recognised as a possible merge (an `EXIT` trap emits the
-deny): a hook error is non-blocking in Claude Code, so dying would let the merge
-run. The hook is kept bash-3.2 clean (no `mapfile`, `declare -A`, `${v,,}`, …)
+deny). Before Claude Code 2.1.295, and on any client without `onFailure: "block"`,
+a hook error is non-blocking, so dying would let the merge run; the trap keeps
+that closed on every client. The hook is kept bash-3.2 clean (no `mapfile`, `declare -A`, `${v,,}`, …)
 because macOS `/bin/bash` is 3.2.
 
 **Not covered:** a `gh` alias defined *before* the command (`gh alias set mm
@@ -757,4 +759,18 @@ Hooks run synchronously — a slow hook adds latency to every Claude action. Kee
 
 - **0**: Command allowed
 - **2**: Command blocked with reminder (message shown to Claude)
-- **Other**: Non-blocking error (logged in verbose mode)
+- **Other**: Non-blocking error (logged in verbose mode), except on the four
+  safety hooks below
+
+`secret-protection.sh`, `branch-protection.sh`, `repo-deletion-safety.sh` and
+`external-pr-merge-guard.sh` are registered with `"onFailure": "block"`. On
+Claude Code 2.1.295 or later, a crash, a timeout or a script that cannot start
+then blocks the tool call instead of letting it through. Older clients ignore
+the key and treat a failure as non-blocking. A missing dependency is the
+deliberate exception: with `jq` absent (or `git`, for `branch-protection.sh`)
+each of the four exits 0 and lets every call through, because failing closed
+there would block every Read through `secret-protection.sh`. The other hooks keep the default,
+because a style nudge or a logger that fails closed would block ordinary work
+([`.claude/rules/hook-block-vs-nudge.md`](../.claude/rules/hook-block-vs-nudge.md)).
+`scripts/check-hook-fail-closed.sh` keeps the key on exactly these four and
+checks that each exits 0 when it does not apply.

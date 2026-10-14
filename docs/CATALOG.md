@@ -3,14 +3,14 @@
 
 # Plugin Catalog
 
-44 plugins, 442 skills, 21 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
+44 plugins, 442 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
 
 ## AI & Agents
 
 | Plugin | Skills | Agents | Description |
 |--------|-------:|-------:|-------------|
 | [agent-patterns-plugin](../agent-patterns-plugin/) | 24 | 0 | Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns |
-| [agents-plugin](../agents-plugin/) | 1 | 12 | Task-focused agents with teammate and subagent role guidance for test, review, debug, docs, CI, security, refactoring, research, and performance |
+| [agents-plugin](../agents-plugin/) | 1 | 13 | Task-focused agents with teammate and subagent role guidance for test, review, debug, docs, CI, security, refactoring, research, and performance |
 | [langchain-plugin](../langchain-plugin/) | 4 | 0 | LangChain JS/TS development - agents, chains, LangGraph workflows, and Deep Agents patterns |
 | [prompt-engineering-plugin](../prompt-engineering-plugin/) | 1 | 0 | Prompt engineering techniques for accurate, grounded Claude responses — anti-hallucination workflow with citation-backed analysis |
 

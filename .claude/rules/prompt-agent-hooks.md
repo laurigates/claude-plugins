@@ -1,6 +1,6 @@
 ---
 created: 2026-02-27
-modified: 2026-10-09
+modified: 2026-10-13
 reviewed: 2026-09-16
 paths:
   - ".claude/hooks/**"
@@ -204,6 +204,8 @@ Respond with {"ok": true} if [condition met], or {"ok": false, "reason": "what's
 - Vague instructions ("check if things look good")
 - Multiple unrelated checks in one prompt
 - Instructions that require filesystem access (use agent hooks instead)
+
+Before 2.1.294, `prompt` and `agent` hooks phrased as instructions ("Block commands that…") **allowed what they should block**; 2.1.294 also improved how instruction-phrased Stop/SubagentStop `prompt` hooks are judged, so Claude is less likely to stop early. A gate of that shape on an older client failed open without any error, so phrase it as the condition-and-verdict pattern above when older clients must be supported. Prompt hooks also failed on Mantle and on gateways that reject structured outputs until 2.1.288, which added `CLAUDE_CODE_DISABLE_STRUCTURED_OUTPUTS`; `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS` strips the structured-output format from prompt-hook requests since 2.1.287.
 
 ### Agent Hook Prompts
 

@@ -18,6 +18,13 @@
 #     resumes denying once a second commit exists.
 set -euo pipefail
 
+# Neutralize any inherited git context before building sandbox repos (issue
+# #1745). Under pre-commit, GIT_DIR/GIT_INDEX_FILE point at the real repo and
+# override `git -C`, so the sandbox `init`/`config` below would flip the shared
+# .git/config to core.bare=true and write a test identity into it.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
+  GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX
+
 HOOK="$(cd "$(dirname "$0")" && pwd)/branch-protection.sh"
 PASS=0
 FAIL=0
@@ -460,6 +467,21 @@ else
     "git commit on main under default" "${out:-<empty>}"
   FAIL=$((FAIL + 1))
 fi
+
+echo ""
+echo "bash 3.2 (no mapfile) still enforces — onFailure \"block\" (2.1.295):"
+# The clause split used mapfile, which macOS /bin/bash 3.2 lacks: the hook
+# died with exit 127 before checking anything. That was a non-blocking error
+# (the commit ran); under onFailure "block" it blocks every Bash call instead.
+# BASH_ENV runs before the hook and takes the bash-4 builtins away.
+NO_MAPFILE_ENV="$TEST_REPO/.no-mapfile.env"
+printf 'enable -n mapfile readarray 2>/dev/null || true\n' > "$NO_MAPFILE_ENV"
+assert_deny "no mapfile: git commit on main is denied" \
+  "git commit -m 'feat: x'" "BASH_ENV=$NO_MAPFILE_ENV"
+assert_deny "no mapfile: compound cd . && git commit is denied" \
+  "cd . && git commit -m 'feat: x'" "BASH_ENV=$NO_MAPFILE_ENV"
+assert_allow "no mapfile: git status on main is allowed" \
+  "git status" "BASH_ENV=$NO_MAPFILE_ENV"
 
 # ── Summary ─────────────────────────────────────────────────────────────────
 echo ""
