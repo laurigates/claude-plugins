@@ -22,8 +22,8 @@
 #
 # A second rule covers the other route into the real repo (issues #1745, #3080):
 # an inherited GIT_DIR overrides `git -C`. Every `*-plugin/hooks/test-*.sh` suite
-# (any plugin, not just hooks-plugin) that runs git must `unset GIT_DIR …` before
-# its first git command. See "Rule 2" in the loop below.
+# that runs git must `unset GIT_DIR …` before its first git command. See
+# "Rule 2" in the loop below.
 #
 # Python tests are NOT covered: `tempfile.mkdtemp()` / pytest `tmp_path` raise on
 # failure and never yield an empty path, so the shell-specific leak cannot occur.
@@ -81,17 +81,16 @@ for script in "${scripts[@]}"; do
     # pre-commit, GIT_DIR/GIT_INDEX_FILE point at the real repo and override
     # `git -C`, so a sandbox `init`/`config`/`branch -m` acts on the shared
     # clone: on 2026-10-13 it flipped core.bare=true, wrote a test identity and
-    # renamed a worktree's branch onto `main` (PR #3077). Scoped to every
-    # `*-plugin/hooks/test-*.sh` (#3080 — the hazard is not hooks-plugin's
-    # alone). A hook script whose name happens to start with `test-`
-    # (hooks-plugin's test-verification.sh) is registered in its plugin's
-    # manifest and is not a suite, so it is skipped.
+    # renamed a worktree's branch onto `main` (PR #3077). The hazard is not
+    # hooks-plugin's alone, so every plugin's suites are scanned (#3080). A hook
+    # script whose name happens to start with `test-` (test-verification.sh) is
+    # registered in its plugin's manifest and is not a suite, so it is skipped.
     case "$rel" in
         *-plugin/hooks/test-*.sh)
             plugin_dir="${rel%%/hooks/*}"
             base="$(basename "$script")"
             registered=0
-            for manifest in "$ROOT_DIR/$plugin_dir/.claude-plugin/plugin.json" "$ROOT_DIR/$plugin_dir/hooks/hooks.json"; do
+            for manifest in "$ROOT_DIR/$plugin_dir/.claude-plugin/plugin.json" "$ROOT_DIR/$plugin_dir/hooks/hooks.json" "$ROOT_DIR/$plugin_dir/hooks.json"; do
                 if [ -f "$manifest" ] && grep -qF "hooks/$base" "$manifest"; then
                     registered=1
                 fi
@@ -157,8 +156,6 @@ if [ "$issue_count" -gt 0 ]; then
     echo "FIX: guard the sandbox dir before any git op, e.g.:"
     echo "  VAR=\$(mktemp -d) || { echo 'mktemp failed' >&2; exit 1; }"
     echo "  [ -n \"\$VAR\" ] && [ -d \"\$VAR\" ] || { echo 'bad sandbox dir' >&2; exit 1; }"
-    echo "For a hook test suite (#1745/#3080), unset inherited git env before the first git command:"
-    echo "  unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX"
 fi
 echo "=== END GIT SANDBOX GUARDS ==="
 

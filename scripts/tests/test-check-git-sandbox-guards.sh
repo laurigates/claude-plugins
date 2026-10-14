@@ -118,48 +118,60 @@ git -C "$SBX" init -q
 EOF
 assert_count "dist/ build output is pruned (only the non-dist script is flagged)" 1 "$d8"
 
-# Rule 2 (issues #1745, #3080): a `*-plugin/hooks/test-*.sh` suite running git
-# must unset GIT_DIR first — in ANY plugin, not only hooks-plugin. Every fixture
-# here guards its mktemp, so only rule 2 can fire.
-mk_suite() { # mk_suite <root> <plugin> <name> <body>
-  mkdir -p "$1/$2/hooks"
-  printf '#!/usr/bin/env bash\nset -euo pipefail\n%s\n' "$4" > "$1/$2/hooks/$3"
+# Rule 2 (issues #1745, #3080; PR #3077): a *-plugin/hooks/test-*.sh suite running
+# git must unset GIT_DIR first. Every fixture here guards its mktemp, so only
+# rule 2 can fire.
+mk_suite() { # mk_suite <root> <name> <body> [plugin]
+  local plugin="${4:-hooks-plugin}"
+  mkdir -p "$1/$plugin/hooks"
+  printf '#!/usr/bin/env bash\nset -euo pipefail\n%s\n' "$3" > "$1/$plugin/hooks/$2"
 }
 # shellcheck disable=SC2016  # fixture text: the $ is literal script source
 SBX_LINES='SBX=$(mktemp -d) || exit 1
 git -C "$SBX" init -q'
 
-# 9. hooks-plugin suite runs git with no unset → FLAGGED.
-d9="$WORK/r2-missing"; mk_suite "$d9" hooks-plugin test-x.sh "$SBX_LINES"
-assert_count "hooks-plugin suite running git without unset GIT_DIR is flagged" 1 "$d9"
+# 9. Suite runs git with no unset → FLAGGED.
+d9="$WORK/r2-missing"; mk_suite "$d9" test-x.sh "$SBX_LINES"
+assert_count "hook suite running git without unset GIT_DIR is flagged" 1 "$d9"
 
-# 10. The widened scope (#3080): a suite in another plugin is FLAGGED too.
-d10="$WORK/r2-other-plugin"; mk_suite "$d10" session-plugin test-y.sh "$SBX_LINES"
-assert_count "non-hooks-plugin suite running git without unset GIT_DIR is flagged" 1 "$d10"
-
-# 11. Same suite with the unset before the first git command → NOT flagged.
-d11="$WORK/r2-ok"; mk_suite "$d11" session-plugin test-y.sh "unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR
+# 10. Same suite with the unset before the first git command → NOT flagged.
+d10="$WORK/r2-ok"; mk_suite "$d10" test-x.sh "unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR
 $SBX_LINES"
-assert_count "suite with unset GIT_DIR first is not flagged" 0 "$d11"
+assert_count "hook suite with unset GIT_DIR first is not flagged" 0 "$d10"
 
-# 12. Unset placed AFTER the first git command → FLAGGED (too late).
-d12="$WORK/r2-late"; mk_suite "$d12" git-plugin test-z.sh "$SBX_LINES
+# 11. Unset placed AFTER the first git command → FLAGGED (too late).
+d11="$WORK/r2-late"; mk_suite "$d11" test-x.sh "$SBX_LINES
 unset GIT_DIR GIT_WORK_TREE"
-assert_count "unset GIT_DIR after the first git command is flagged" 1 "$d12"
+assert_count "unset GIT_DIR after the first git command is flagged" 1 "$d11"
 
-# 13. A git command only quoted inside a test-case string → NOT flagged.
-d13="$WORK/r2-string"; mk_suite "$d13" kubernetes-plugin test-k.sh 'assert_deny "git commit on main" "git commit -m x"'
-assert_count "git quoted in a test-case string is not flagged" 0 "$d13"
+# 12. A git command only quoted inside a test-case string → NOT flagged.
+d12="$WORK/r2-string"; mk_suite "$d12" test-x.sh 'assert_deny "git commit on main" "git commit -m x"'
+assert_count "git quoted in a test-case string is not flagged" 0 "$d12"
 
-# 14. A hook script named test-*.sh that its plugin's manifest registers → NOT
-#     flagged; a test-*.sh outside */hooks/ → NOT flagged (rule 2 is scoped).
-d14="$WORK/r2-registered"; mk_suite "$d14" hooks-plugin test-verification.sh "$SBX_LINES"
-mkdir -p "$d14/hooks-plugin/.claude-plugin"
+# 13. A hook script named test-*.sh that the manifest registers → NOT flagged;
+#     the same file outside a plugin's hooks/ dir → NOT flagged (rule 2 is scoped).
+d13="$WORK/r2-registered"; mk_suite "$d13" test-verification.sh "$SBX_LINES"
+mkdir -p "$d13/hooks-plugin/.claude-plugin"
 printf '{"hooks":{"TaskCompleted":[{"hooks":[{"type":"command","command":"bash hooks/test-verification.sh"}]}]}}\n' \
-  > "$d14/hooks-plugin/.claude-plugin/plugin.json"
-mkdir -p "$d14/other-plugin/scripts"
-printf '#!/usr/bin/env bash\n%s\n' "$SBX_LINES" > "$d14/other-plugin/scripts/test-y.sh"
-assert_count "registered hook script and out-of-scope test script are not flagged" 0 "$d14"
+  > "$d13/hooks-plugin/.claude-plugin/plugin.json"
+mkdir -p "$d13/other-plugin/scripts"
+printf '#!/usr/bin/env bash\n%s\n' "$SBX_LINES" > "$d13/other-plugin/scripts/test-y.sh"
+assert_count "registered hook script and out-of-scope suite are not flagged" 0 "$d13"
+
+# 14. A suite in a plugin other than hooks-plugin, no unset → FLAGGED (#3080).
+d14="$WORK/r2-other-plugin"; mk_suite "$d14" test-z.sh "$SBX_LINES" session-plugin
+assert_count "non-hooks-plugin suite running git without unset is flagged" 1 "$d14"
+
+# 15. Same plugin, with the unset first → NOT flagged.
+d15="$WORK/r2-other-plugin-ok"; mk_suite "$d15" test-z.sh "unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR
+$SBX_LINES" session-plugin
+assert_count "non-hooks-plugin suite with unset first is not flagged" 0 "$d15"
+
+# 16. A test-*.sh registered as a hook in its plugin's hooks/hooks.json → NOT flagged.
+d16="$WORK/r2-other-registered"; mk_suite "$d16" test-hook.sh "$SBX_LINES" git-plugin
+printf '{"hooks":{"PreToolUse":[{"hooks":[{"type":"command","command":"bash hooks/test-hook.sh"}]}]}}\n' \
+  > "$d16/git-plugin/hooks/hooks.json"
+assert_count "test-*.sh registered in another plugin's hooks.json is not flagged" 0 "$d16"
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

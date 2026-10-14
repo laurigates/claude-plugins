@@ -14,7 +14,6 @@
 # Exit 0 = all tests pass, Exit 1 = failures
 set -euo pipefail
 
-# Neutralize any inherited git context before building sandbox repos (issues #1745, #3080).
 # Neutralize any inherited git context before building sandbox repos (issue
 # #1745). Under pre-commit, GIT_DIR/GIT_INDEX_FILE point at the real repo and
 # override `git -C`, so sandbox git commands would act on the shared clone.
