@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-10-09
+modified: 2026-10-14
 reviewed: 2026-09-16
 name: mcp-management
 description: Install, configure and troubleshoot MCP servers. Use when adding/enabling servers, editing .mcp.json, fixing OAuth, or when a server runs stale code after an upstream fix.
@@ -106,7 +106,7 @@ Quick OAuth triage:
 | Tool call hangs | Long-running MCP tool call | A call running longer than 2 minutes now moves to the background automatically so the session stays usable (2.1.212+); tune or disable with `CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS` |
 | Remote tool call never returns | Server stopped responding mid-call | A remote MCP tool call with no response for 5 minutes now aborts with an error instead of blocking indefinitely (2.1.187+); override with `CLAUDE_CODE_MCP_TOOL_IDLE_TIMEOUT` |
 | 0 tools / no response in a manual stdio test | stdin EOF before the reply — a burst `printf … \| server` pipe closes input and the server exits before it answers | Hold stdin open until every response arrives — [REFERENCE.md → Smoke-testing a stdio server by hand](REFERENCE.md#smoke-testing-a-stdio-server-by-hand) |
-| Server still runs its old args or profile after `.mcp.json` changed mid-session (a `git pull`, an edit) | A stdio server keeps the argv it was spawned with; nothing re-reads the edited file into a running process | Compare the running argv against the file: `ps -Ao lstart,command \| grep '[s]erver-name'` — a start time before the file's mtime (`stat -f %Sm .mcp.json`) is the confirmation. Restart Claude Code (`claude --continue`), then confirm through the server's own self-report (a version/info tool), not the config file |
+| Server still runs its old args or profile after `.mcp.json` changed mid-session (a `git pull`, an edit) | A stdio server keeps the argv it was spawned with; nothing re-reads the edited file into a running process | Compare the running argv against the file: `ps -Ao lstart,command \| grep '[s]erver-name'` — a start time before the file's mtime (`stat -f %Sm .mcp.json` on macOS, `stat -c %y .mcp.json` on Linux) is the confirmation. Restart Claude Code (`claude --continue`), then confirm through the server's own self-report (a version/info tool), not the config file |
 
 MCP diagnostic output never prints resolved secrets (2.1.234+): a scope-conflict
 warning shows the configured `${VAR}` placeholder, and a connection-failure
