@@ -124,6 +124,12 @@ assert_count "dist/ build output is pruned (only the non-dist script is flagged)
 mk_suite() { # mk_suite <root> <plugin> <name> <body>
   mkdir -p "$1/$2/hooks"
   printf '#!/usr/bin/env bash\nset -euo pipefail\n%s\n' "$4" > "$1/$2/hooks/$3"
+# Rule 2 (issue #1745, PR #3077): a hooks-plugin/hooks/test-*.sh suite running
+# git must unset GIT_DIR first. Every fixture here guards its mktemp, so only
+# rule 2 can fire.
+mk_suite() { # mk_suite <root> <name> <body>
+  mkdir -p "$1/hooks-plugin/hooks"
+  printf '#!/usr/bin/env bash\nset -euo pipefail\n%s\n' "$3" > "$1/hooks-plugin/hooks/$2"
 }
 # shellcheck disable=SC2016  # fixture text: the $ is literal script source
 SBX_LINES='SBX=$(mktemp -d) || exit 1
@@ -160,6 +166,33 @@ printf '{"hooks":{"TaskCompleted":[{"hooks":[{"type":"command","command":"bash h
 mkdir -p "$d14/other-plugin/scripts"
 printf '#!/usr/bin/env bash\n%s\n' "$SBX_LINES" > "$d14/other-plugin/scripts/test-y.sh"
 assert_count "registered hook script and out-of-scope test script are not flagged" 0 "$d14"
+# 9. Suite runs git with no unset → FLAGGED.
+d9="$WORK/r2-missing"; mk_suite "$d9" test-x.sh "$SBX_LINES"
+assert_count "hook suite running git without unset GIT_DIR is flagged" 1 "$d9"
+
+# 10. Same suite with the unset before the first git command → NOT flagged.
+d10="$WORK/r2-ok"; mk_suite "$d10" test-x.sh "unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR
+$SBX_LINES"
+assert_count "hook suite with unset GIT_DIR first is not flagged" 0 "$d10"
+
+# 11. Unset placed AFTER the first git command → FLAGGED (too late).
+d11="$WORK/r2-late"; mk_suite "$d11" test-x.sh "$SBX_LINES
+unset GIT_DIR GIT_WORK_TREE"
+assert_count "unset GIT_DIR after the first git command is flagged" 1 "$d11"
+
+# 12. A git command only quoted inside a test-case string → NOT flagged.
+d12="$WORK/r2-string"; mk_suite "$d12" test-x.sh 'assert_deny "git commit on main" "git commit -m x"'
+assert_count "git quoted in a test-case string is not flagged" 0 "$d12"
+
+# 13. A hook script named test-*.sh that the manifest registers → NOT flagged;
+#     the same file outside hooks-plugin/hooks → NOT flagged (rule 2 is scoped).
+d13="$WORK/r2-registered"; mk_suite "$d13" test-verification.sh "$SBX_LINES"
+mkdir -p "$d13/hooks-plugin/.claude-plugin"
+printf '{"hooks":{"TaskCompleted":[{"hooks":[{"type":"command","command":"bash hooks/test-verification.sh"}]}]}}\n' \
+  > "$d13/hooks-plugin/.claude-plugin/plugin.json"
+mkdir -p "$d13/other-plugin/hooks"
+printf '#!/usr/bin/env bash\n%s\n' "$SBX_LINES" > "$d13/other-plugin/hooks/test-y.sh"
+assert_count "registered hook script and out-of-scope suite are not flagged" 0 "$d13"
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
