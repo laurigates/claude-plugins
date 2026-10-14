@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="1280" height="300" viewBox="0 0 1280 300">
+  <defs>
+    <pattern id="dots" width="32" height="32" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.4" fill="#ffffff" fill-opacity="0.05"/>
+    </pattern>
+    <radialGradient id="glow" cx="1126" cy="-30" r="704" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d97757" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#d97757" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1280" height="300" rx="18" fill="#1a1918"/>
+  <rect width="1280" height="300" rx="18" fill="url(#dots)"/>
+  <rect width="1280" height="300" rx="18" fill="url(#glow)"/>
+  <rect x="64" y="56" width="7" height="118" rx="3.5" fill="#d97757"/>
+  <text x="96" y="88" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="24" fill="#8f897f">laurigates /</text>
+  <text x="92" y="162" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="80" font-weight="bold" fill="#f5f1ea" letter-spacing="-1.5">claude-plugins</text>
+  <text x="66" y="214" font-family="'Avenir Next', 'Helvetica Neue', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif" font-size="28" font-weight="500" fill="#cfc8bc">Skills, agents and safety hooks for coding agents</text>
+  <text x="66" y="258" font-family="'Avenir Next', 'Helvetica Neue', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif" font-size="20" font-weight="500" fill="#8f897f">Runs in  <tspan fill="#cfc8bc">Claude Code  ·  OpenCode  ·  pi  ·  Antigravity CLI</tspan></text>
+  <rect x="824.0" y="84" width="58.7" height="36" rx="18.0" fill="#252321" stroke="#3b3834"/><text x="853.4" y="108.1" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="17" fill="#cfc8bc" text-anchor="middle">git</text>
+  <rect x="892.7" y="84" width="89.4" height="36" rx="18.0" fill="#252321" stroke="#3b3834"/><text x="937.4" y="108.1" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="17" fill="#cfc8bc" text-anchor="middle">python</text>
+  <rect x="992.1" y="84" width="68.9" height="36" rx="18.0" fill="#252321" stroke="#3b3834"/><text x="1026.6" y="108.1" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="17" fill="#cfc8bc" text-anchor="middle">rust</text>
+  <rect x="1071.0" y="84" width="130.3" height="36" rx="18.0" fill="#252321" stroke="#3b3834"/><text x="1136.2" y="108.1" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="17" fill="#cfc8bc" text-anchor="middle">typescript</text>
+  <rect x="824.0" y="130" width="120.1" height="36" rx="18.0" fill="#252321" stroke="#3b3834"/><text x="884.1" y="154.1" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="17" fill="#cfc8bc" text-anchor="middle">terraform</text>
+  <rect x="954.1" y="130" width="130.3" height="36" rx="18.0" fill="#252321" stroke="#3b3834"/><text x="1019.3" y="154.1" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="17" fill="#cfc8bc" text-anchor="middle">kubernetes</text>
+  <rect x="1094.4" y="130" width="99.6" height="36" rx="18.0" fill="#252321" stroke="#3b3834"/><text x="1144.3" y="154.1" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="17" fill="#cfc8bc" text-anchor="middle">testing</text>
+  <rect x="824.0" y="176" width="79.2" height="36" rx="18.0" fill="#252321" stroke="#3b3834"/><text x="863.6" y="200.1" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="17" fill="#cfc8bc" text-anchor="middle">hooks</text>
+  <rect x="913.2" y="176" width="120.1" height="36" rx="18.0" fill="#252321" stroke="#3b3834"/><text x="973.2" y="200.1" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="17" fill="#cfc8bc" text-anchor="middle">blueprint</text>
+  <rect x="1043.3" y="176" width="109.9" height="36" rx="18.0" fill="#252321" stroke="#3b3834"/><text x="1098.2" y="200.1" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="17" fill="#cfc8bc" text-anchor="middle">obsidian</text>
+  <text x="1167.1" y="200.1" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="17" fill="#8f897f">+ more</text>
+</svg>
