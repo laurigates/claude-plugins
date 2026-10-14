@@ -45,6 +45,12 @@ lint-taskwarrior-tags:
 catalog:
     python3 scripts/generate-catalog.py
 
+# Render docs/assets: the social-preview PNG, and the README banner with its text
+# outlined so it renders identically whatever fonts the viewer has
+brand-assets:
+    rsvg-convert docs/assets/social-preview.svg -o docs/assets/social-preview.png
+    rsvg-convert -f svg docs/assets/readme-banner.src.svg -o docs/assets/readme-banner.svg
+
 # Channel M scan for the six context-engineering shifts (C1-C6); --strict gates the always-loaded ratchet
 [group: "lint"]
 lint-context-engineering *args:
