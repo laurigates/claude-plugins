@@ -474,6 +474,18 @@ repos:
         language: script
         files: '^obsidian-plugin/skills/(vault-orphans|vault-wikilinks|vault-mocs|vault-tags|vault-stubs|search-discovery)/SKILL\.md$'
         pass_filenames: false
+      - id: check-justfile-module-paths
+        name: justfile-expert distinguishes source_directory() from justfile_directory() in modules (#3060)
+        entry: ./scripts/check-justfile-module-paths.sh
+        language: script
+        files: '^(tools-plugin/skills/justfile-expert/(REFERENCE\.md|references/key-capabilities\.md)|scripts/check-justfile-module-paths\.sh)$'
+        pass_filenames: false
+      - id: check-justfile-module-paths-test
+        name: justfile module-paths check regression
+        entry: ./scripts/tests/test-check-justfile-module-paths.sh
+        language: script
+        files: '^scripts/(check-justfile-module-paths\.sh|tests/test-check-justfile-module-paths\.sh)$'
+        pass_filenames: false
       - id: lint-mcp-tool-references
         name: lint skill files for references to unavailable MCP tools
         entry: ./scripts/lint-mcp-tool-references.sh
