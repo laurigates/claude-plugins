@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-10-13
+modified: 2026-10-14
 reviewed: 2026-09-02
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git fetch *), Bash(git pull *), Bash(git stash *), Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(gh label *), Bash(gh api *), Bash(gh workflow *), Bash(gh run *), Bash(pre-commit *), Read, Edit, Write, Grep, Glob, TodoWrite, AskUserQuestion, Task, mcp__github__create_pull_request, mcp__github__issue_read, mcp__github__list_issues
 description: "GitHub issue to PR end-to-end — branch, TDD implementation, PR — one issue or several in parallel. Use when asked to work on an issue, fix issue #N, or batch-process several."
@@ -121,37 +121,16 @@ surface a sub-70% confidence score to the user rather than guessing.
 4. **Classify the criteria before any branch exists.** Criteria that are
    observations — a run passes, a value appears, a prerequisite PR has landed —
    make the issue **verification-only**: take the
-   [Verification-Only Flow](#verification-only-flow) and cut no branch unless a
-   check fails. Criteria that need a code change (or a mix) continue here.
+   [Verification-Only Flow](references/verification-only.md) — confirm the
+   prerequisite PR via `state,mergedAt`, post evidence with `--body-file`, close
+   with `--reason completed` — and cut no branch unless a check fails. Criteria
+   that need a code change (or a mix) continue here.
 5. **Plan the implementation** approach
 6. **Cut the branch from `origin/main`**: `git switch -c fix/issue-$N origin/main`
 
 Base the branch on `origin/main`, never on local `main` — local `main` may carry
 unpushed commits that would ride into this issue's PR (see
 `git-branch-pr-workflow` § "Branch Comparison: Always Use origin/main").
-
-#### Verification-Only Flow
-
-For an issue classified verification-only, verify first and evidence it on the
-issue; code changes happen only for a failure the check finds.
-
-1. **Confirm preconditions.** For a prerequisite PR:
-   `gh pr view <PR> --json state,mergedAt` — proceed only when `state` is
-   `MERGED`; otherwise report the issue as blocked on that PR and stop.
-2. **Find the targets and observe.** Enumerate each target the criteria name
-   (consumer repos, workflows, environments) and check its current state, then
-   run the check — e.g. `gh workflow run <wf> -R <owner>/<repo>` and
-   `gh run watch <run-id> -R <owner>/<repo> --exit-status`, with a time bound.
-3. **Record step-level evidence.** Write one row per criterion (target, run
-   URL, step, observed result) to a temp file and post it with
-   `gh issue comment $N --body-file <file>`, which keeps run output out of shell
-   quoting.
-4. **Close on verified success**, with the reason stated:
-   `gh issue close $N --reason completed --comment "Verified: <summary> — evidence in the verification comment"`.
-   No PR is involved, so `Fixes #N` does not apply.
-5. **On a failure**, post the failing evidence the same way, then return to
-   Standard Flow item 5: cut the branch and fix through the TDD Workflow; that
-   PR closes the issue with `Fixes #N`.
 
 #### TDD Workflow
 
