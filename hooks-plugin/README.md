@@ -244,6 +244,29 @@ A workflow's agents start after the `Stop` of the turn that launched it, so the 
 
 **Tests:** `bash hooks-plugin/hooks/test-subagent-count-tripwire.sh`.
 
+### context-threshold-nudge.sh
+
+A `PostToolUse` hook that tells the agent when its context has grown past a size threshold. It exists for Claude Haiku 5.5, which is priced by prompt length: a request whose prompt is over 100,000 tokens, cache reads and writes included, pays 5x the input, cache and output rates, and so does every later request until the context shrinks. A Haiku worker or a `/loop` session crosses that line without noticing. Measured 2026-10-15: a bare Haiku session starts at about 35.5K prompt tokens, one in this repo at about 69K, and a fresh subagent at about 24K, before any work.
+
+No hook event carries a token count, so the hook reads the newest assistant `usage` record in the last 500 lines of the transcript and sums `input_tokens`, `cache_creation_input_tokens` and `cache_read_input_tokens`.
+
+| Situation | Behavior |
+|---|---|
+| Model is `claude-haiku-5-5`, `CLAUDE_HOOKS_CONTEXT_THRESHOLDS` unset | Thresholds 80,000 and 95,000 |
+| Any other model, `CLAUDE_HOOKS_CONTEXT_THRESHOLDS` unset | Silent |
+| `CLAUDE_HOOKS_CONTEXT_THRESHOLDS` has a valid entry | Those thresholds, for every model; the 100,000-token price note is added only on Haiku 5.5 |
+| Prompt reaches a threshold above the last one reported | One `additionalContext` message, e.g. `Context check: your last request sent 81,234 prompt tokens, past the 80,000-token warning threshold. ...` |
+| Prompt drops back under the lowest threshold (after `/compact`) | Re-arms; the thresholds report again |
+| Payload carries `agent_id` | Reads `<transcript>/subagents/agent-<id>.jsonl` and keeps separate state, so each subagent is warned about its own context |
+
+It never blocks and always exits 0. State is one small file per session (and per subagent) in `${TMPDIR:-/tmp}/claude-context-threshold-<uid>/`, created mode 700 and used only when it is a real directory owned by the current user.
+
+**Lag:** Claude Code writes the transcript after the request, and the file can trail the live conversation, so the warning usually arrives one or two tool calls after the crossing. The 5,000-token gap between 95,000 and the price threshold absorbs that for ordinary tool results; a single very large read can still overshoot it.
+
+**Toggle:** `export CLAUDE_HOOKS_DISABLE_CONTEXT_THRESHOLD=1`. Tuning: `CLAUDE_HOOKS_CONTEXT_THRESHOLDS` (comma-separated token counts; entries that are not all digits are dropped, and a list with no valid entry means the Haiku defaults).
+
+**Tests:** `bash hooks-plugin/hooks/test-context-threshold-nudge.sh`.
+
 ### branch-base-guard.sh
 
 A PreToolUse hook that nudges before cutting a new branch from a local default branch that is **ahead of its remote** — `git-hazards.md` trap #2: unpushed commits on local `main` ride into the new branch, get bundled into its PR under an unrelated title, and a squash-merge hides them everywhere except the file list.
@@ -686,6 +709,7 @@ Every hook can be individually enabled or disabled via environment variables. Se
 | test-verification.sh | `CLAUDE_HOOKS_DISABLE_TEST_VERIFICATION=1` | Enabled |
 | git-stash-reminder.sh | `CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER=1` | Enabled |
 | subagent-count-tripwire.sh | `CLAUDE_HOOKS_DISABLE_SUBAGENT_COUNT=1` | Enabled |
+| context-threshold-nudge.sh | `CLAUDE_HOOKS_DISABLE_CONTEXT_THRESHOLD=1` | Enabled (silent off Haiku 5.5 unless thresholds are set) |
 | event-logger.sh | `CLAUDE_HOOKS_ENABLE_EVENT_LOGGER=1` | **Disabled** (opt-in) |
 | bash-antipatterns-teach.sh | `CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1` | **Disabled** (opt-in) |
 | no-calendar-estimates.sh | `CLAUDE_HOOKS_ENABLE_CALENDAR_ESTIMATES=1` | **Disabled** (opt-in) |
