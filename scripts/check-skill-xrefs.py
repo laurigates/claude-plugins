@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Resolve the two cross-reference shapes skill prose relies on.
+"""Resolve the cross-reference shapes skill prose relies on.
 
-Two guards, one heading parser:
+Three guards, one heading parser:
 
   citations  `<target> § <Heading>` — a section citation. The cited heading
              must exist in the cited document. Targets: a plugin-qualified
@@ -15,6 +15,24 @@ Two guards, one heading parser:
              a file or directory, and an `#anchor` on a .md target must match a
              heading slug there (GitHub rules: lowercase, punctuation dropped,
              each space a hyphen, `-N` suffix on duplicates).
+  paths      a backticked repo-shaped path in SKILL markdown must exist (#2948).
+             Inline code is not a link, so `comfy-metadata` naming a
+             `scripts/rename_outputs.py` nothing ships passed the link guard.
+
+PATHS is anchored, not exhaustive: most backticked paths in a skill name the
+CONSUMER's files (`src/`, `docs/`, `.github/`, `package.json`), so only a token
+whose first segment is this repo's layout is checked -- a skill subdirectory
+(`references/ scripts/ hooks/ skills/ agents/ templates/ workflows/`), an
+existing `<name>-plugin/`, a `../x.md` hop, or (in a repo-local `.claude/skills/`
+skill only) `.claude/rules|skills/`. It resolves against the file's directory,
+its skill, its plugin, every skill named in backticks earlier in the section,
+and the repo root; `<plugin>/<skill>` (the evaluate-* ID form) resolves to the
+skill. Not checked: a bare name (`REFERENCE.md`) or bare family (`agents/`),
+anything with a placeholder, glob, `~`, leading `/`, `:` or URL, a code span
+used as link text, and a path right after "create/add/write …" (the reader's
+file). A `:N` / `#anchor` suffix is stripped first. Accepted leftovers live in
+scripts/skill-xrefs-paths-baseline.txt (`path<TAB>token`), which may only
+shrink: an entry that stops firing is a `stale-path-baseline` finding.
 
 Why: the 2026-10 SKILL.md split sweep moved prose into references/ files, and
 three skills cite `parallel-agent-dispatch` sections ("§Shared-File Exclusion
@@ -66,7 +84,8 @@ run via `uv`), never a hand-rolled ``` toggle (#2009). An unreadable
 (non-UTF-8) scan file is a finding, not a silent skip.
 
 Usage:
-  check-skill-xrefs.py [--project-dir DIR] [--only citations|links]
+  check-skill-xrefs.py [--project-dir DIR] [--only citations|links|paths]
+                       [--paths-baseline FILE]
   CHECK_SKILL_XREFS_TRACE=1 check-skill-xrefs.py   # one stderr line per citation
 
 Output: KEY=VALUE per .claude/rules/structured-script-output.md.
@@ -747,6 +766,162 @@ def check_links(repo: Repo) -> tuple[list[Finding], dict[str, int]]:
     return findings, stats
 
 
+# --------------------------------------------------------------------------
+# Guard 3: backticked repo paths
+# --------------------------------------------------------------------------
+
+# First path segments that name THIS repo's layout: a plugin's or skill's own
+# subdirectories, and the repo-level .claude/rules|skills trees. Anything else
+# (`src/`, `docs/`, `.github/`, `tests/`, a bare `package.json`) is far more
+# often the consumer project's file than this repo's, so it is not checked.
+SKILL_DIR_SEGMENTS = {
+    "references",
+    "scripts",
+    "hooks",
+    "skills",
+    "agents",
+    "templates",
+    "workflows",
+}
+REPO_RULE_PREFIXES = (".claude/rules/", ".claude/skills/")
+# Placeholders, globs, shell, home/absolute paths, URLs, ranges, IDs.
+NOT_A_PATH_RE = re.compile(r"[\s<>{}*?\[\]$~@=()|\\,'\"…:%!^&+]|\.\.\.|^/|^-|//")
+POSITION_SUFFIX_RE = re.compile(r"(?::\d+(?:[-:]\d+)?|#[\w-]*)$")
+# "Create `scripts/x.sh`", "Create the script at `scripts/x.sh`": the path is
+# one the reader is told to write in their own project, not one this repo ships.
+CREATE_BEFORE_RE = re.compile(
+    r"\b(?:create|add|write|scaffold|generate)s?\b[^`]{0,30}$", re.IGNORECASE
+)
+
+
+def path_candidate(repo: Repo, src: Path, raw: str) -> str | None:
+    """The repo-anchored path a code span names, or None if it is not one."""
+    tok = POSITION_SUFFIX_RE.sub("", raw.strip()).rstrip(".,;")
+    if not tok or NOT_A_PATH_RE.search(tok):
+        return None
+    parts = tok.rstrip("/").split("/")
+    if len(parts) < 2 or not all(parts):
+        return None  # a bare name (`REFERENCE.md`) or a family (`agents/`)
+    first = parts[0]
+    if first in SKILL_DIR_SEGMENTS:
+        return tok
+    if first == ".." and tok.endswith(".md"):
+        return tok  # a hop between skills: `../other-skill/SKILL.md`
+    if (
+        re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*-plugin", first)
+        and (repo.root / first).is_dir()
+    ):
+        return tok
+    # `.claude/rules/x.md` in a PLUGIN skill is as likely the consumer's or the
+    # user's global rule as this repo's; only a repo-local skill means ours.
+    if tok.startswith(REPO_RULE_PREFIXES) and repo.rel(src).startswith(
+        ".claude/skills/"
+    ):
+        return tok
+    return None
+
+
+def load_paths_baseline(path: Path) -> set[tuple[str, str]]:
+    entries: set[tuple[str, str]] = set()
+    for line in read_lines(path) if path.is_file() else []:
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        file_part, _, tok = line.partition("\t")
+        if tok.strip():
+            entries.add((file_part.strip(), tok.strip()))
+    return entries
+
+
+def owner_dirs(repo: Repo, src: Path, section: str) -> list[Path]:
+    """Directories a skill-relative path may be relative to: this file's skill
+    and plugin, plus every skill named in backticks earlier in the section."""
+    dirs: list[Path] = [src.parent]
+    skill = repo.skill_of(src)
+    if skill is not None:
+        dirs += [skill, skill.parent.parent]
+    for m in re.finditer(r"`([^`]+)`", section):
+        t = resolve_token(repo, src, m.group(1), None)
+        if t is not None and t.kind == "files" and t.files:
+            sd = repo.skill_of(t.files[0])
+            if sd is not None:
+                dirs += [sd, sd.parent.parent]
+    return dirs
+
+
+def check_paths(
+    repo: Repo, baseline_path: Path
+) -> tuple[list[Finding], dict[str, int]]:
+    findings: list[Finding] = []
+    stats = {"scanned": 0, "baselined": 0}
+    baseline = load_paths_baseline(baseline_path)
+    used: set[tuple[str, str]] = set()
+    for src in repo.scan_files:
+        if repo.skill_of(src) is None:
+            continue  # skill markdown only; rules and agents name consumer files
+        section_start = 0
+        body = prose_lines(src, read_lines(src))
+        for idx, (lineno, line) in enumerate(body):
+            if ATX_RE.match(line):
+                section_start = idx
+            link_text = [(m.start(2), m.end(2)) for m in INLINE_LINK_RE.finditer(line)]
+            spans = code_spans(line)
+            if not spans:
+                continue
+            section = " ".join(text for _, text in body[section_start : idx + 1])
+            dirs: list[Path] | None = None
+            for s, e in spans:
+                if in_spans(s, link_text):
+                    continue  # `[`x.md`](x.md)`: the link guard owns it
+                ticks = len(line[s:e]) - len(line[s:e].lstrip("`"))
+                tok = path_candidate(repo, src, line[s + ticks : e - ticks])
+                if tok is None:
+                    continue
+                if CREATE_BEFORE_RE.search(line[:s]):
+                    continue  # "Create `scripts/x.sh`": a file the reader writes
+                stats["scanned"] += 1
+                parts = tok.split("/")
+                if (
+                    len(parts) == 2
+                    and parts[0].endswith("-plugin")
+                    and (
+                        repo.root / parts[0] / "skills" / parts[1] / "SKILL.md"
+                    ).is_file()
+                ):
+                    continue  # `git-plugin/git-commit`: the evaluate-* skill ID form
+                bases = [repo.root]
+                if not tok.startswith(".claude/"):
+                    if dirs is None:
+                        dirs = owner_dirs(repo, src, section)
+                    bases = dirs + bases
+                if any((b / tok).exists() for b in bases):
+                    continue
+                key = (repo.rel(src), tok)
+                if key in baseline:
+                    used.add(key)
+                    stats["baselined"] += 1
+                    continue
+                findings.append(
+                    Finding(
+                        repo.rel(src),
+                        lineno,
+                        "dead-backtick-path",
+                        f"`{tok}` resolves to nothing in this skill, its plugin, "
+                        "a skill named earlier in the section, or the repo root",
+                    )
+                )
+    for file_part, tok in sorted(baseline - used):
+        findings.append(
+            Finding(
+                repo.rel(baseline_path),
+                1,
+                "stale-path-baseline",
+                f"{file_part} no longer names an unresolved `{tok}` -- "
+                "delete the entry so the baseline only shrinks",
+            )
+        )
+    return findings, stats
+
+
 def target_rel(repo: Repo, target: Path) -> str:
     try:
         return str(target.relative_to(repo.root))
@@ -797,7 +972,12 @@ def emit(
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     ap.add_argument("--project-dir", default=None)
-    ap.add_argument("--only", choices=["citations", "links"], default=None)
+    ap.add_argument("--only", choices=["citations", "links", "paths"], default=None)
+    ap.add_argument(
+        "--paths-baseline",
+        default=None,
+        help="default: <project-dir>/scripts/skill-xrefs-paths-baseline.txt",
+    )
     args = ap.parse_args(argv)
 
     root = Path(args.project_dir or Path(__file__).resolve().parent.parent).resolve()
@@ -838,6 +1018,27 @@ def main(argv: list[str]) -> int:
             {
                 "FILES_SCANNED": len(repo.scan_files),
                 "LINKS_SCANNED": st["scanned"],
+            },
+            fnd,
+            empty,
+        )
+        failed |= bool(fnd) or bool(empty)
+    if args.only in (None, "paths"):
+        baseline = Path(
+            args.paths_baseline or root / "scripts" / "skill-xrefs-paths-baseline.txt"
+        )
+        fnd, st = (
+            ([], {"scanned": 0, "baselined": 0})
+            if empty
+            else check_paths(repo, baseline.resolve())
+        )
+        fnd = unreadable_findings(repo) + fnd
+        emit(
+            "BACKTICK PATHS",
+            {
+                "FILES_SCANNED": len(repo.scan_files),
+                "PATHS_SCANNED": st["scanned"],
+                "PATHS_BASELINED": st["baselined"],
             },
             fnd,
             empty,
