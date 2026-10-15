@@ -34,7 +34,8 @@
     "branch-base",
     "prose-style",
     "workflow-scale",
-    "subagent-count"
+    "subagent-count",
+    "context-threshold"
   ],
   "hooks": {
     "SessionStart": [
@@ -155,6 +156,11 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/event-logger.sh\"",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/context-threshold-nudge.sh\"",
             "timeout": 5
           }
         ]
