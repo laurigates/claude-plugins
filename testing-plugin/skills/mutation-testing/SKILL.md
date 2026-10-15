@@ -188,6 +188,7 @@ For detailed examples, advanced patterns, and best practices, see [REFERENCE.md]
 
 ## See Also
 
+- [references/triaging-large-survivor-sets.md](references/triaging-large-survivor-sets.md) - Triaging thousands of survivors: cluster by unasserted behaviour, verify claimed source bugs adversarially, gate test writers on a Stryker re-run
 - `vitest-testing` - Unit testing framework
 - `python-testing` - Python pytest testing
 - `test-quality-analysis` - Detecting test smells
