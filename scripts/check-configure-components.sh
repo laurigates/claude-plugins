@@ -44,10 +44,18 @@ echo "=== CONFIGURE COMPONENTS DRIFT ==="
 cc_issue_count=0
 cc_status="OK"
 cc_issues_list=""
+# First finding per severity, as `<TYPE>: <MSG>`, for REASON= (#2760).
+cc_first_error=""
+cc_first_warn=""
 
 add_issue() {
   cc_issues_list="${cc_issues_list}  - SEVERITY=$1 TYPE=$2 MSG=$3\n"
   cc_issue_count=$((cc_issue_count + 1))
+  if [ "$1" = "ERROR" ] && [ -z "$cc_first_error" ]; then
+    cc_first_error="$2: $3"
+  elif [ "$1" = "WARN" ] && [ -z "$cc_first_warn" ]; then
+    cc_first_warn="$2: $3"
+  fi
   if [ "$1" = "ERROR" ]; then
     cc_status="ERROR"
   elif [ "$1" = "WARN" ] && [ "$cc_status" = "OK" ]; then
@@ -57,6 +65,15 @@ add_issue() {
 
 finish() {
   echo "STATUS=${cc_status}"
+  if [ "$cc_status" != "OK" ]; then
+    # REASON= is the first finding at the reported severity, one line, cut to
+    # 180 chars, plus ` (+N more)` (.claude/rules/structured-script-output.md).
+    local cc_reason="$cc_first_warn"
+    [ "$cc_status" = "ERROR" ] && cc_reason="$cc_first_error"
+    cc_reason="$(printf '%s' "$cc_reason" | tr -s '[:space:]' ' ' | cut -c1-180)"
+    [ "$cc_issue_count" -gt 1 ] && cc_reason="${cc_reason} (+$((cc_issue_count - 1)) more)"
+    echo "REASON=${cc_reason}"
+  fi
   echo "ISSUE_COUNT=${cc_issue_count}"
   if [ -n "$cc_issues_list" ]; then
     echo "ISSUES:"

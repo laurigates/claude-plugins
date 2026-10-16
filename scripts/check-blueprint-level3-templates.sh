@@ -130,6 +130,13 @@ echo "ACTIONLINT=$actionlint_status"
 status="OK"
 [ "${#issues[@]}" -gt 0 ] && status="ERROR"
 echo "STATUS=$status"
+if [ "${#issues[@]}" -gt 0 ]; then
+    # REASON= is the first finding (already `<label>: <msg>`), one line, cut to
+    # 180 chars, plus ` (+N more)` (.claude/rules/structured-script-output.md, #2760).
+    reason="$(printf '%s' "${issues[0]}" | tr -s '[:space:]' ' ' | cut -c1-180)"
+    [ "${#issues[@]}" -gt 1 ] && reason="$reason (+$((${#issues[@]} - 1)) more)"
+    echo "REASON=$reason"
+fi
 echo "ISSUE_COUNT=${#issues[@]}"
 if [ "${#issues[@]}" -gt 0 ]; then
     echo "ISSUES:"
