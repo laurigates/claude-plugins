@@ -7,10 +7,10 @@ Navigation guide for 44 plugins and 380+ skills. Start here.
 | Intent | Commands | What happens |
 |--------|----------|--------------|
 | Diagnose setup | `/health:check` | Scans config and (by default) recommends plugins for your stack |
-| New project | `/project:init` then `/blueprint:init` | Scaffolds project, creates PRD |
-| Resume work | `/blueprint:execute` | Analyzes repo state, picks next action, runs it |
+| New project | `/project:init` then `/blueprint:init` | Scaffolds project, then bootstraps `docs/blueprint/` once (manifest, PRD/ADR/PRP dirs) |
+| Resume work | `/blueprint:execute` | Analyzes repo state, picks the one next action, runs it, exits |
 
-`/blueprint:execute` is the single auto-pilot command. It determines what to do next (PRD, ADR, PRP, implement, test, commit) and does it.
+`/blueprint:execute` is the interactive router: each run detects the single most relevant next blueprint action (upgrade, derive docs, regenerate rules, run a ready PRP, a work order, or a tracked task), runs that one action, and exits. Run it again for the next step. Its non-interactive counterpart is `/blueprint:autopilot`, which quietly runs due maintenance tasks at autonomy level 2+.
 
 ## Setup Sequence
 
@@ -218,18 +218,19 @@ Commands organized by workflow phase.
 | **Setup** | `/project:init` | Scaffold new project |
 | **Setup** | `/configure:status` | Check infrastructure compliance |
 | **Setup** | `/configure:all` | Apply all infrastructure standards |
-| **Plan** | `/blueprint:init` | Create PRD for new feature |
-| **Plan** | `/blueprint:execute` | Auto-pilot: determine and run next step |
+| **Plan** | `/blueprint:init` | One-time bootstrap of `docs/blueprint/` (manifest, PRD/ADR/PRP dirs, feature tracking) |
+| **Plan** | `/blueprint:execute` | Router: detect and run the one next blueprint action, then exit |
+| **Code** | `/blueprint:prp-execute` | Implement a ready PRP with TDD and validation gates |
 | **Code** | `/test:run` | Run test suite |
 | **Code** | `/test:quick` | Fast unit tests only |
-| **Code** | `/lint-check` | Run appropriate linter |
+| **Code** | `/code:lint` | Run the project's linters and formatters (auto-detected) |
 | **Ship** | `/git:commit` | Commit with conventional message |
 | **Ship** | `/git:pr` | Create pull request |
 | **Ship** | `/git:fix-pr` | Fix failing PR checks |
-| **Ship** | `/workflow:auto-fix` | Auto-fix CI failures or open issues |
+| **Ship** | `/workflow:dev` | Dev loop: run tests, file issues for failures, TDD-fix on a branch, open PR, watch CI |
 | **Orchestrate** | `/workflow:preflight` | Pre-work validation before starting |
-| **Orchestrate** | `/workflow:parallel-issues` | Process issues in parallel with worktrees |
-| **Orchestrate** | `/workflow:ci-fix` | Fix failing CI across PRs |
+| **Orchestrate** | `/git:issue` | Issue to PR end-to-end; `--parallel` processes several issues at once |
+| **Orchestrate** | `/github:workflow-auto-fix` | Set up a CI workflow that analyzes failures, applies fixes, and files issues |
 | **Orchestrate** | `/workflow:checkpoint-refactor` | Multi-phase refactoring with checkpoints |
 | **Evaluate** | `/evaluate:skill` | Evaluate skill effectiveness with test cases |
 | **Evaluate** | `/evaluate:improve` | Suggest improvements based on eval results |
@@ -240,14 +241,13 @@ The full development loop using plugins:
 
 1. `/health:check` - Verify environment is healthy
 2. `/configure:status` - Check infrastructure standards
-3. `/blueprint:init` - Create PRD for the feature
-4. `/blueprint:execute` - Auto-pilot takes over:
-   - Creates ADR for architectural decisions
-   - Creates PRP (implementation plan)
-   - Implements code changes
-   - Runs tests via testing-plugin
-   - Commits via git-plugin
-   - Creates PR
-5. Loop back to step 4 for the next feature
+3. `/blueprint:init` - One-time bootstrap of `docs/blueprint/` (skip once the manifest exists)
+4. `/blueprint:execute` - Runs the one next blueprint action, then exits. Depending on repo state that is:
+   - Upgrading the manifest or running due maintenance tasks
+   - Deriving PRDs/ADRs from history, or regenerating rules from PRDs
+   - Executing a ready PRP via `/blueprint:prp-execute` (TDD, validation gates, then offers `/git:commit`)
+   - Picking up a pending work order or a tracked feature task
+5. `/git:pr` - Open the pull request for the finished work
+6. Loop back to step 4 for the next action
 
-At any point, run `/blueprint:execute` to resume. It reads repo state and picks up where you left off.
+At any point, run `/blueprint:execute` to resume. It reads repo state and picks up where you left off. At autonomy level 2+, `/blueprint:autopilot` runs the due maintenance tasks without menus and reports in one line.

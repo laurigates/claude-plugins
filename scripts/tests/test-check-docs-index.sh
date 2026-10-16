@@ -28,6 +28,9 @@
 #      directory is flagged (ERROR readme_row_dangling); resolution is EXACT (a
 #      longer directory sharing the prefix is not a match) and namespace-aware (a
 #      legitimate cross-plugin row is NOT flagged) (#2453)
+#   J. only first-cell rows inside CLAUDE.md's `## Rules` section index a rule:
+#      a row stranded under another heading is flagged rule_not_indexed, and a
+#      prose mention elsewhere is NOT flagged rule_table_dangling (#2838 A-5)
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -96,7 +99,7 @@ reviewed: YYYY-MM-DD
 EOF
 
 cat > "$fixture/CLAUDE.md" <<'EOF'
-# Rules
+## Rules
 | Rule | Purpose |
 |------|---------|
 | `.claude/rules/indexed.md` | listed |
@@ -289,7 +292,7 @@ reviewed: 2026-08-21
 # Indexed rule
 EOF
 cat > "$svg_fx/CLAUDE.md" <<'EOF'
-# Rules
+## Rules
 | Rule | Purpose |
 |------|---------|
 | `.claude/rules/indexed.md` | listed |
@@ -374,6 +377,44 @@ assert "README_SKILL_ROWS should count every leading-cell row scanned (4)" \
   "$([ "$(field "$fx_out" README_SKILL_ROWS)" = "4" ] && echo true || echo false)"
 assert "README_ROW_PLUGINS should count the plugin READMEs contributing rows (2)" \
   "$([ "$(field "$fx_out" README_ROW_PLUGINS)" = "2" ] && echo true || echo false)"
+
+echo "=== TEST J: rule rows count only inside the ## Rules section (#2838 A-5) ==="
+# A rule row appended AFTER the Rules table (CLAUDE.md:178-179 before #2838 put
+# two rows under ## Conventions) renders as stray text, not a table row. The old
+# whole-file grep let it satisfy the index; Check 1 must now report it missing.
+# A prose mention of a non-existent rule outside the section is likewise not a
+# table entry, so it must NOT be reported as rule_table_dangling.
+rules_fx="$(mktemp -d)"
+mkdir -p "$rules_fx/.claude/rules"
+for r in in-table stray; do
+  printf -- '---\nreviewed: 2026-10-16\n---\n# %s\n' "$r" > "$rules_fx/.claude/rules/$r.md"
+done
+cat > "$rules_fx/CLAUDE.md" <<'EOF'
+# fixture
+
+## Rules
+
+| Rule | Purpose |
+|------|---------|
+| `.claude/rules/in-table.md` | indexed in the table |
+
+See `.claude/rules/prose-only.md` for nothing in particular.
+
+## Conventions
+
+- a list item
+| `.claude/rules/stray.md` | stray row outside the Rules table |
+EOF
+rules_fx_out="$(bash "$checker" --project-dir "$rules_fx")"
+assert "a rule row outside the ## Rules section should be flagged rule_not_indexed" \
+  "$(contains "$rules_fx_out" "rule_not_indexed.*stray.md")"
+assert "a rule row inside the ## Rules table should NOT be flagged" \
+  "$([ "$(contains "$rules_fx_out" "rule_not_indexed.*in-table.md")" = "false" ] && echo true || echo false)"
+assert "a prose mention outside the Rules table should NOT be flagged rule_table_dangling" \
+  "$([ "$(contains "$rules_fx_out" "rule_table_dangling.*prose-only.md")" = "false" ] && echo true || echo false)"
+assert "RULES_IN_TABLE should count only the in-section row (1)" \
+  "$([ "$(field "$rules_fx_out" RULES_IN_TABLE)" = "1" ] && echo true || echo false)"
+rm -rf "$rules_fx"
 
 echo ""
 echo "=== SUMMARY ==="
