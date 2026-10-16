@@ -10,6 +10,24 @@
 # stdout (decision + presence/absence) rather than exit codes. gh is mocked.
 set -uo pipefail
 
+# Without a working ast-grep the #2737 parsed-trigger sections cannot run. This
+# suite is listed in scripts/required-to-run-tests.txt, so it then re-runs
+# itself with every line indented and ends on ONE unindented SKIP line, which
+# scripts/run-skill-script-tests.sh reports as a skip (an ERROR for a required
+# suite) rather than a pass over the half that matters.
+if [ -z "${PARSED_SUITE_INNER:-}" ] && {
+    [ "${CLAUDE_HOOKS_PARSED_TRIGGER_NO_ASTGREP:-}" = 1 ] ||
+        ! { command -v ast-grep >/dev/null 2>&1 ||
+            { command -v sg >/dev/null 2>&1 && sg --version 2>/dev/null | grep -qi '^ast-grep'; }; }
+}; then
+    suite_rc=0
+    suite_out=$(PARSED_SUITE_INNER=1 bash "$0" "$@" 2>&1) || suite_rc=$?
+    printf '%s\n' "$suite_out" | sed 's/^/  /'
+    [ "$suite_rc" -eq 0 ] || exit "$suite_rc"
+    echo "SKIP: no working ast-grep (or CLAUDE_HOOKS_PARSED_TRIGGER_NO_ASTGREP=1); the #2737 parsed-trigger sections require it"
+    exit 0
+fi
+
 # Neutralize any inherited git context before building sandbox repos (issues #1745, #3080).
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
   GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX

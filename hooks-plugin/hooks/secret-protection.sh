@@ -83,25 +83,37 @@ block() {
 # run it. CLAUDE_HOOKS_SECRET_PROTECTION_NO_ASTGREP=1
 # forces that path (tests). Offsets are bytes (ast-grep reports byte offsets),
 # so the offset arithmetic runs under LC_ALL=C.
+#
+# Three more conditions keep an occurrence from being exempt (review of #2737):
+#
+#   - the allowlisted command itself names a protected file as a FILE argument
+#     (`--body-file .env`, `--template .env`, `-F`, `--file`, `-t`): it reads
+#     and publishes that file, so its text exempts nothing (SP_FILEARG);
+#   - the text is EXPANDED by the shell (a double-quoted argument, or an
+#     unquoted-delimiter heredoc body) and expands a secret-named variable
+#     (`"echo $API_TOKEN"`): the value is published (SP_SECRETVAR). Single-
+#     quoted text and quoted-delimiter heredocs stay exempt;
+#   - an unquoted-delimiter heredoc body holding a backtick: tree-sitter-bash
+#     does not parse a backtick substitution there (`$(…)` it does).
+#
+# The re-check reads COMMAND with every backslash-newline continuation turned
+# into two spaces (SP_VIEW, same byte length so the parser's offsets still
+# line up), so a read the shell joins across lines is seen as one line.
 SP_ALLOW='^(git[ \t]+commit|gh[ \t]+(issue|pr)[ \t]+(create|comment|edit|review|close|reopen|merge))\b'
-SP_STRINGS='
-        - kind: string
-        - kind: raw_string
-        - kind: ansi_c_string
-        - kind: translated_string'
-# tree-sitter-bash does not parse a backtick substitution inside an UNQUOTED
-# heredoc body (`$(…)` it does), so such a body is exempt only when its
-# delimiter is quoted (`<<'EOF'`, `<<"EOF"`, `<<\EOF` — nothing expands) or it
-# holds no backtick at all.
-SP_DOC_SAFE='
-      any:
-        - not: { regex: "`" }
-        - inside: { kind: heredoc_redirect, has: { kind: heredoc_start, regex: "[\"'\''\\\\]" } }'
-SP_RULES="id: n
+SP_FILEARG='(^|\s)(--body-file|--template|--file|-F|-t)(=|\s+)?\S*(\.env|\.ssh/|\.aws/credentials|\.kube/config|\.docker/config\.json|credentials\.json|secrets\.json|\.api_tokens)'
+SP_SECRETVAR='\$\{?[A-Za-z0-9_]*_(KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTH)[Ss]?\b'
+# Placeholders: @CMD@ = an allowlisted command that takes no protected file
+# argument; @SECRETVAR@ = SP_SECRETVAR.
+SP_RULES=$(
+  cat <<'YAML'
+id: n
 language: bash
 rule:
   any:
-    - any:${SP_STRINGS}
+    - kind: string
+    - kind: raw_string
+    - kind: ansi_c_string
+    - kind: translated_string
     - kind: heredoc_body
     - kind: comment
     - kind: command_substitution
@@ -112,37 +124,46 @@ language: bash
 rule:
   any:
     - kind: comment
-    - any:${SP_STRINGS}
+    - any:
+        - kind: raw_string
+        - kind: ansi_c_string
+        - kind: string
+          not: { regex: '@SECRETVAR@' }
+        - kind: translated_string
+          not: { regex: '@SECRETVAR@' }
       inside:
         any:
-          - kind: command
-            regex: '${SP_ALLOW}'
+          - @CMD@
           - kind: concatenation
-            inside: { kind: command, regex: '${SP_ALLOW}' }
-    - kind: heredoc_body${SP_DOC_SAFE}
+            inside: @CMD@
+    - kind: heredoc_body
+      any:
+        - inside: { kind: heredoc_redirect, has: { kind: heredoc_start, regex: "[\"'\\\\]" } }
+        - not:
+            any:
+              - regex: "`"
+              - regex: '@SECRETVAR@'
       inside:
         kind: heredoc_redirect
         inside:
           kind: redirected_statement
           any:
-            - has: { kind: command, regex: '${SP_ALLOW}' }
-            - has: { kind: command, regex: '^cat\$' }
+            - has: @CMD@
+            - has: { kind: command, regex: '^cat$' }
               not: { has: { kind: file_redirect, stopBy: end } }
               inside:
                 kind: command_substitution
                 inside:
                   any:
-                    - kind: command
-                      regex: '${SP_ALLOW}'
+                    - @CMD@
                     - kind: concatenation
-                      inside: { kind: command, regex: '${SP_ALLOW}' }
+                      inside: @CMD@
                     - kind: string
                       inside:
                         any:
-                          - kind: command
-                            regex: '${SP_ALLOW}'
+                          - @CMD@
                           - kind: concatenation
-                            inside: { kind: command, regex: '${SP_ALLOW}' }
+                            inside: @CMD@
 ---
 id: err
 language: bash
@@ -153,8 +174,13 @@ rule:
     - kind: variable_assignment
       regex: '^(PATH|BASH_ENV|ENV)='
     - kind: command
-      regex: '^(alias|unalias|hash|enable|builtin|trap|shopt)\\b'
-"
+      regex: '^(alias|unalias|hash|enable|builtin|trap|shopt)\b'
+YAML
+)
+SP_CMD="{ kind: command, regex: '${SP_ALLOW}', not: { regex: '${SP_FILEARG}' } }"
+SP_RULES=${SP_RULES//@CMD@/"$SP_CMD"}
+SP_RULES=${SP_RULES//@SECRETVAR@/"$SP_SECRETVAR"}
+SP_VIEW=""
 SP_STATE=""     # "" = not built yet, "floor" = exempt nothing, "ready"
 SP_N_START=()
 SP_N_END=()
@@ -208,7 +234,7 @@ sp_offset_exempt() {
 # is a whole-line pattern anchored at the start of the verb's line.
 sp_executed_matches() {
   local LC_ALL=C
-  local verbs=$1 re=$2 bounded=$3 rest=$COMMAND base=0 pre v s line
+  local verbs=$1 re=$2 bounded=$3 rest=$SP_VIEW base=0 pre v s line
   while [[ $rest =~ $verbs ]]; do
     pre=${rest%%"${BASH_REMATCH[0]}"*}
     v=$((base + ${#pre}))
@@ -216,14 +242,14 @@ sp_executed_matches() {
     base=$((v + 1))
     sp_offset_exempt "$v" && continue
     s=$v
-    if [ "$bounded" = 1 ] && [ "$v" -gt 0 ] && [ "${COMMAND:v-1:1}" != $'\n' ]; then s=$((v - 1)); fi
+    if [ "$bounded" = 1 ] && [ "$v" -gt 0 ] && [ "${SP_VIEW:v-1:1}" != $'\n' ]; then s=$((v - 1)); fi
     if [ "$bounded" = 2 ]; then
       # Anchor at the start of the verb's line (a whole-line pattern).
-      pre=${COMMAND:0:v}
+      pre=${SP_VIEW:0:v}
       pre=${pre##*$'\n'}
       s=$((v - ${#pre}))
     fi
-    line=${COMMAND:s}
+    line=${SP_VIEW:s}
     line=${line%%$'\n'*}
     printf '%s\n' "$line" | grep -oE "^(${re})" | head -1 || true
   done
@@ -284,6 +310,13 @@ fi
 
 # Check Bash commands for sensitive file access and credential exposure
 if [ "$TOOL_NAME" = "Bash" ] && [ -n "$COMMAND" ]; then
+  # Every check below reads SP_VIEW: COMMAND with each backslash-newline
+  # continuation joined (two spaces, so byte offsets match the parse of
+  # COMMAND). The shell joins `cat \<newline>.env` into one read; a line-based
+  # regex over the raw text saw neither half (review of #2737). Joining can
+  # only add matches, never remove one.
+  sp_bsnl=$'\\\n'
+  SP_VIEW=${COMMAND//"$sp_bsnl"/  }
   # Block printing environment variables that likely contain secrets.
   # Match an actual variable *reference* whose name ends in a secret-ish suffix:
   # `$VAR_KEY`, `${VAR_TOKEN}`, etc. The name is a contiguous identifier
@@ -300,14 +333,14 @@ if [ "$TOOL_NAME" = "Bash" ] && [ -n "$COMMAND" ]; then
   secret_var_verbs='(echo|printf|cat|env|printenv|export)'
   # shellcheck disable=SC2016  # $... is a grep pattern, not shell expansion
   secret_var_re="${secret_var_verbs}"'[^|]*\$\{?[A-Za-z0-9_]*_(KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTH)[Ss]?\b'
-  if grep -Eq "$secret_var_re" <<<"$COMMAND" && sp_confirm "$secret_var_verbs" "$secret_var_re" 0; then
+  if grep -Eq "$secret_var_re" <<<"$SP_VIEW" && sp_confirm "$secret_var_verbs" "$secret_var_re" 0; then
     block "BLOCKED: Command may expose secret environment variables.
 Use the application's configuration system instead of echoing secrets.
 ${OVERRIDE_NOTE}"
   fi
 
   # Block printenv/env for full environment dump
-  if grep -Eq '^\s*(printenv|env)\s*$' <<<"$COMMAND" &&
+  if grep -Eq '^\s*(printenv|env)\s*$' <<<"$SP_VIEW" &&
     sp_confirm '(printenv|env)' '\s*(printenv|env)\s*$' 2; then
     block "BLOCKED: Dumping the full environment may expose secrets.
 Use 'printenv VAR_NAME' for specific non-sensitive variables instead.
@@ -397,8 +430,8 @@ ${OVERRIDE_NOTE}"
     # `cat .env.example; cat .env` (issue #2611).
     matches=$(
       {
-        echo "$COMMAND" | grep -oE "$reader_re" || true
-        echo "$COMMAND" | grep -oE "$filter_re" || true
+        echo "$SP_VIEW" | grep -oE "$reader_re" || true
+        echo "$SP_VIEW" | grep -oE "$filter_re" || true
       }
     )
     [ -z "$matches" ] && continue

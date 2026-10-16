@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2016  # fixtures are the LITERAL, unexpanded command text a hook receives
+# shellcheck disable=SC2016,SC1003  # fixtures are the LITERAL, unexpanded command text a hook receives (incl. a trailing `\` continuation)
 # Regression tests for secret-protection.sh
 #
 # Run: bash hooks-plugin/hooks/test-secret-protection.sh
@@ -22,6 +22,24 @@
 #     let a real secret read pass undetected if preceded by an exempted template
 #     in a chained command (`cat .env.example; cat .env`) (issue #2611).
 set -euo pipefail
+
+# Without a working ast-grep the #2737 parsed-exemption sections cannot run.
+# This suite is listed in scripts/required-to-run-tests.txt, so it then re-runs
+# itself with every line indented and ends on ONE unindented SKIP line, which
+# scripts/run-skill-script-tests.sh reports as a skip (an ERROR for a required
+# suite) rather than a pass over the half that matters.
+if [ -z "${PARSED_SUITE_INNER:-}" ] && {
+    [ "${CLAUDE_HOOKS_SECRET_PROTECTION_NO_ASTGREP:-}" = 1 ] ||
+        ! { command -v ast-grep >/dev/null 2>&1 ||
+            { command -v sg >/dev/null 2>&1 && sg --version 2>/dev/null | grep -qi '^ast-grep'; }; }
+}; then
+    suite_rc=0
+    suite_out=$(PARSED_SUITE_INNER=1 bash "$0" "$@" 2>&1) || suite_rc=$?
+    printf '%s\n' "$suite_out" | sed 's/^/  /'
+    [ "$suite_rc" -eq 0 ] || exit "$suite_rc"
+    echo "SKIP: no working ast-grep (or CLAUDE_HOOKS_SECRET_PROTECTION_NO_ASTGREP=1); the #2737 parsed-exemption sections require it"
+    exit 0
+fi
 
 # Neutralize any inherited git context before the #2737 differential reads the
 # pre-fix hook with `git show` (issues #1745, #3080).
@@ -635,6 +653,34 @@ else
         'PATH=/tmp/evil:$PATH; git commit -m "cat .env"'
     assert_exit "a \$(cat <<EOF > file) body written for later still blocks" 2 \
         "$(printf '%s\n' "git commit -m \"\$(cat <<'EOF' > /tmp/x.sh" 'cat .env' 'EOF' ')" && sh /tmp/x.sh')"
+    # Review of #2737: the re-check was line-based, so a real read split by a
+    # backslash-newline continuation was invisible to it while the exempt
+    # in-string mention satisfied the first-stage regex — the block was lifted
+    # over a `cat .env` that runs.
+    assert_exit "continuation splitting the real read after an exempt mention still blocks" 2 \
+        "$(printf '%s\n%s\n%s' 'git commit -m "x" \' '  -m "cat .env"; cat \' '.env')"
+    assert_exit "continuation inside the reader command still blocks" 2 \
+        "$(printf '%s\n%s' 'git commit -m "cat .env" && head -5 \' '  .env')"
+    assert_exit "continuation between ; and the reader still blocks" 2 \
+        "$(printf '%s\n%s' 'git commit -m "cat .env"; \' 'cat .env')"
+    assert_exit "continuation with only an exempt mention is still allowed" 0 \
+        "$(printf '%s\n%s' 'git commit -m "x" \' '  -m "docs: cat .env"')"
+    # The block-lifting command itself reading a secret file: no exemption.
+    assert_exit "git commit --template .env beside a mention still blocks" 2 \
+        'git commit -m "note: cat .env" --template .env'
+    assert_exit "git commit --template=.env beside a mention still blocks" 2 \
+        'git commit -m "note: cat .env" --template=.env'
+    assert_exit "gh pr create --body-file .env beside a mention still blocks" 2 \
+        'gh pr create --title "cat .env" --body-file .env'
+    assert_exit "gh pr comment --body-file .env beside a mention still blocks" 2 \
+        'gh pr comment 1 --body "cat .env" --body-file .env'
+    # Expandable exempt text that expands a secret variable publishes it.
+    assert_exit "double-quoted commit message expanding \$API_TOKEN still blocks" 2 \
+        'git commit -m "echo $API_TOKEN"'
+    assert_exit "unquoted heredoc body expanding \${DB_PASSWORD} still blocks" 2 \
+        "$(heredoc 'gh pr comment 1 --body-file - <<EOF' 'echo ${DB_PASSWORD}')"
+    assert_exit "single-quoted commit message naming \$API_TOKEN is allowed" 0 \
+        "git commit -m 'echo \$API_TOKEN'"
     assert_exit "a here-string (not the allowlisted argument shape) still blocks" 2 \
         'gh issue comment 1 --body-file - <<< "cat .env"'
 
@@ -666,6 +712,14 @@ else
         SPELLINGS+=("$(heredoc "bash <<'EOF'" "$r")")
         SPELLINGS+=("$(heredoc 'git commit -F - <<EOF' "\$($r)")")
         SPELLINGS+=("$(heredoc 'gh pr create --title t --body-file - <<EOF' "\`$r\`")")
+        # Backslash-newline continuations (review of #2737), each behind an
+        # exempt mention so the pre-fix hook blocks and the differential bites:
+        # inside the read, before it, and between the mention and the read.
+        split="${r%% *} "$'\\\n'"  ${r#* }"
+        SPELLINGS+=("git commit -m \"see cat .env\"; $split")
+        SPELLINGS+=("git commit -m \"see cat .env\" && "$'\\\n'"$r")
+        SPELLINGS+=("git commit -m \"x\" "$'\\\n'"  -m \"see cat .env\"; $split")
+        SPELLINGS+=("gh pr comment 1 --body 'see cat .env' | "$'\\\n'"  $split")
     done
 
     BASELINE=""

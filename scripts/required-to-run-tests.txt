@@ -47,6 +47,16 @@ hooks-plugin/hooks/test-permission-auto-approve.sh
 # silent without one, so a parser-less run would pass every "no output" row
 # over a hook that no-ops (#2734).
 kubernetes-plugin/hooks/test-inject-kubectl-dry-run.sh
+# The three git-plugin PR/push hooks decide their trigger on parsed command
+# nodes and fall back to the raw-text regex without ast-grep, and
+# secret-protection lifts a regex block only on a clean parse (#2737). Without
+# the parser each suite proves only the fallback half, so it ends on one SKIP
+# line; the quoted-mention rows, spelling probes and pre-fix differentials need
+# ast-grep.
+git-plugin/hooks/test-check-pr-metadata-on-push.sh
+git-plugin/hooks/test-validate-pr-issue-links.sh
+git-plugin/hooks/test-check-branch-sync-on-push.sh
+hooks-plugin/hooks/test-secret-protection.sh
 
 # uv  (workflow: "Set up uv")
 blueprint-plugin/scripts/tests/test-check-manifest-schema.sh
