@@ -43,6 +43,201 @@ block() {
   exit 2
 }
 
+# ── Parsed exemption for the Bash checks (issue #2737) ──────────────────────
+#
+# The Bash checks below match their patterns against the raw command text, so
+# a commit message, a `gh issue comment --body`, a commit-message heredoc or a
+# trailing comment that merely DESCRIBES a secret read (`docs: never cat .env
+# in CI`) was blocked as one.
+#
+# This hook is protective, so the parse may only REMOVE a block, never add one,
+# and every regex below still runs unchanged first. When a regex would block,
+# sp_confirm re-runs the same regex anchored at each occurrence of its verb and
+# keeps the block if ANY occurrence sits in text the shell executes. An
+# occurrence is exempt only when the innermost quoted/heredoc/comment/
+# substitution node around it (tree-sitter-bash, via `ast-grep --lang bash`) is:
+#
+#   - a comment;
+#   - a quoted argument, or heredoc body, of a command whose text starts with
+#     `git commit` or `gh issue|pr <create|comment|edit|review|close|reopen|
+#     merge>` — a CLOSED allowlist of programs that send text somewhere rather
+#     than run it (no leading assignment, wrapper or git global option: `git -c
+#     core.editor=… commit` runs its value);
+#   - the heredoc body of a bare, unredirected `cat` inside a `$(…)` that is
+#     (part of) such an argument — the `git commit -m "$(cat <<'EOF' … EOF)"`
+#     idiom. A `cat <<EOF > f` writes the body somewhere a later command could
+#     run it, so it is not exempt.
+#
+# A `$(…)`, backtick or `<(…)` inside that text is its own innermost node and
+# is never exempt. So is every other program's text: `echo 'cat .env' | bash`,
+# `bash -c`, `eval`, `ssh`, `perl -e 'system(…)'`, `X='cat .env'; eval "$X"`.
+#
+# FAIL TO THE FLOOR: no ast-grep, an ast-grep error, a non-array answer, a
+# parse containing an ERROR node, or a command that could rebind what `git` /
+# `gh` / `cat` mean (a function definition, `alias`, `hash`, `enable`,
+# `builtin`, `trap`, `shopt`, a `PATH=`/`BASH_ENV=`/`ENV=` assignment) exempts
+# nothing, and the regex verdict stands exactly as before this change. What
+# stays out of scope, as for every text-matching gate here: a program that
+# executes text it was handed EARLIER (a commit-msg hook planted to run the
+# message) — the exemption trusts `git commit` and `gh` to send their text, not
+# run it. CLAUDE_HOOKS_SECRET_PROTECTION_NO_ASTGREP=1
+# forces that path (tests). Offsets are bytes (ast-grep reports byte offsets),
+# so the offset arithmetic runs under LC_ALL=C.
+SP_ALLOW='^(git[ \t]+commit|gh[ \t]+(issue|pr)[ \t]+(create|comment|edit|review|close|reopen|merge))\b'
+SP_STRINGS='
+        - kind: string
+        - kind: raw_string
+        - kind: ansi_c_string
+        - kind: translated_string'
+# tree-sitter-bash does not parse a backtick substitution inside an UNQUOTED
+# heredoc body (`$(…)` it does), so such a body is exempt only when its
+# delimiter is quoted (`<<'EOF'`, `<<"EOF"`, `<<\EOF` — nothing expands) or it
+# holds no backtick at all.
+SP_DOC_SAFE='
+      any:
+        - not: { regex: "`" }
+        - inside: { kind: heredoc_redirect, has: { kind: heredoc_start, regex: "[\"'\''\\\\]" } }'
+SP_RULES="id: n
+language: bash
+rule:
+  any:
+    - any:${SP_STRINGS}
+    - kind: heredoc_body
+    - kind: comment
+    - kind: command_substitution
+    - kind: process_substitution
+---
+id: e
+language: bash
+rule:
+  any:
+    - kind: comment
+    - any:${SP_STRINGS}
+      inside:
+        any:
+          - kind: command
+            regex: '${SP_ALLOW}'
+          - kind: concatenation
+            inside: { kind: command, regex: '${SP_ALLOW}' }
+    - kind: heredoc_body${SP_DOC_SAFE}
+      inside:
+        kind: heredoc_redirect
+        inside:
+          kind: redirected_statement
+          any:
+            - has: { kind: command, regex: '${SP_ALLOW}' }
+            - has: { kind: command, regex: '^cat\$' }
+              not: { has: { kind: file_redirect, stopBy: end } }
+              inside:
+                kind: command_substitution
+                inside:
+                  any:
+                    - kind: command
+                      regex: '${SP_ALLOW}'
+                    - kind: concatenation
+                      inside: { kind: command, regex: '${SP_ALLOW}' }
+                    - kind: string
+                      inside:
+                        any:
+                          - kind: command
+                            regex: '${SP_ALLOW}'
+                          - kind: concatenation
+                            inside: { kind: command, regex: '${SP_ALLOW}' }
+---
+id: err
+language: bash
+rule:
+  any:
+    - kind: ERROR
+    - kind: function_definition
+    - kind: variable_assignment
+      regex: '^(PATH|BASH_ENV|ENV)='
+    - kind: command
+      regex: '^(alias|unalias|hash|enable|builtin|trap|shopt)\\b'
+"
+SP_STATE=""     # "" = not built yet, "floor" = exempt nothing, "ready"
+SP_N_START=()
+SP_N_END=()
+SP_EXEMPT=" "   # " start:end start:end … "
+
+sp_build() {
+  local astgrep="" out rows id s e
+  SP_STATE="floor"
+  [ "${CLAUDE_HOOKS_SECRET_PROTECTION_NO_ASTGREP:-}" = "1" ] && return 0
+  # `sg` collides with shadow-utils' sg(1); adopt it only when it is ast-grep (#2451).
+  if command -v ast-grep >/dev/null 2>&1; then
+    astgrep="ast-grep"
+  elif command -v sg >/dev/null 2>&1 && sg --version 2>/dev/null | grep -qi '^ast-grep'; then
+    astgrep="sg"
+  fi
+  [ -n "$astgrep" ] || return 0
+  out=$(printf '%s' "$COMMAND" | "$astgrep" scan --inline-rules "$SP_RULES" --stdin --json=compact 2>/dev/null) || return 0
+  rows=$(printf '%s' "$out" | jq -r 'if type == "array" then .[] | "\(.ruleId) \(.range.byteOffset.start) \(.range.byteOffset.end)" else error end' 2>/dev/null) || return 0
+  while read -r id s e; do
+    case "$id" in
+      err) return 0 ;;
+      n) SP_N_START+=("$s"); SP_N_END+=("$e") ;;
+      e) SP_EXEMPT+="$s:$e " ;;
+    esac
+  done <<<"$rows"
+  SP_STATE="ready"
+}
+
+# Exit 0 when byte offset $1 of COMMAND lies in exempt text (see above).
+sp_offset_exempt() {
+  local off=$1 k best=-1 best_s=-1 best_e=0
+  [ "$SP_STATE" = "ready" ] || return 1
+  for ((k = 0; k < ${#SP_N_START[@]}; k++)); do
+    if [ "${SP_N_START[k]}" -le "$off" ] && [ "$off" -lt "${SP_N_END[k]}" ]; then
+      if [ "${SP_N_START[k]}" -gt "$best_s" ] || { [ "${SP_N_START[k]}" -eq "$best_s" ] && [ "${SP_N_END[k]}" -lt "$best_e" ]; }; then
+        best=$k
+        best_s=${SP_N_START[k]}
+        best_e=${SP_N_END[k]}
+      fi
+    fi
+  done
+  [ "$best" -ge 0 ] || return 1
+  case "$SP_EXEMPT" in *" $best_s:$best_e "*) return 0 ;; esac
+  return 1
+}
+
+# Print, one per line, the match of ERE $2 anchored at each non-exempt
+# occurrence of verb alternation $1 in COMMAND. $3 = 1 when $2 begins with the
+# `(^VERB|[^…]VERB)` boundary alternation, so the anchor sits one byte before
+# the verb (on the boundary character) unless the verb starts a line; 2 when $2
+# is a whole-line pattern anchored at the start of the verb's line.
+sp_executed_matches() {
+  local LC_ALL=C
+  local verbs=$1 re=$2 bounded=$3 rest=$COMMAND base=0 pre v s line
+  while [[ $rest =~ $verbs ]]; do
+    pre=${rest%%"${BASH_REMATCH[0]}"*}
+    v=$((base + ${#pre}))
+    rest=${rest:${#pre}+1}
+    base=$((v + 1))
+    sp_offset_exempt "$v" && continue
+    s=$v
+    if [ "$bounded" = 1 ] && [ "$v" -gt 0 ] && [ "${COMMAND:v-1:1}" != $'\n' ]; then s=$((v - 1)); fi
+    if [ "$bounded" = 2 ]; then
+      # Anchor at the start of the verb's line (a whole-line pattern).
+      pre=${COMMAND:0:v}
+      pre=${pre##*$'\n'}
+      s=$((v - ${#pre}))
+    fi
+    line=${COMMAND:s}
+    line=${line%%$'\n'*}
+    printf '%s\n' "$line" | grep -oE "^(${re})" | head -1 || true
+  done
+}
+
+# A regex has decided to block. Exit 0 to keep the block (parser floor, or an
+# executed occurrence); exit 1 when every occurrence is exempt text.
+# $1 = verb alternation, $2 = the same regex, $3 = bounded flag (above).
+sp_confirm() {
+  [ -n "$SP_STATE" ] || sp_build
+  [ "$SP_STATE" = "ready" ] || return 0
+  [ -n "$(sp_executed_matches "$1" "$2" "$3")" ]
+}
+
 # Sensitive file patterns (applied to Read, Edit, Write file_path and Bash arguments)
 check_sensitive_path() {
   local target="$1"
@@ -99,15 +294,21 @@ if [ "$TOOL_NAME" = "Bash" ] && [ -n "$COMMAND" ]; then
   # contains `_KEY` but is an assignment LHS, not a secret variable reference
   # (issue #1580). Public config names ($..._HOST, $..._URL, $..._ENDPOINT) are
   # no longer caught; genuine $..._KEY/_SECRET/_TOKEN/_PASSWORD references are.
+  #
+  # Each regex below decides first; sp_confirm can only lift a block whose every
+  # verb occurrence is exempt text (#2737, see the parsed-exemption header).
+  secret_var_verbs='(echo|printf|cat|env|printenv|export)'
   # shellcheck disable=SC2016  # $... is a grep pattern, not shell expansion
-  if grep -Eq '(echo|printf|cat|env|printenv|export)[^|]*\$\{?[A-Za-z0-9_]*_(KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTH)[Ss]?\b' <<<"$COMMAND"; then
+  secret_var_re="${secret_var_verbs}"'[^|]*\$\{?[A-Za-z0-9_]*_(KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTH)[Ss]?\b'
+  if grep -Eq "$secret_var_re" <<<"$COMMAND" && sp_confirm "$secret_var_verbs" "$secret_var_re" 0; then
     block "BLOCKED: Command may expose secret environment variables.
 Use the application's configuration system instead of echoing secrets.
 ${OVERRIDE_NOTE}"
   fi
 
   # Block printenv/env for full environment dump
-  if grep -Eq '^\s*(printenv|env)\s*$' <<<"$COMMAND"; then
+  if grep -Eq '^\s*(printenv|env)\s*$' <<<"$COMMAND" &&
+    sp_confirm '(printenv|env)' '\s*(printenv|env)\s*$' 2; then
     block "BLOCKED: Dumping the full environment may expose secrets.
 Use 'printenv VAR_NAME' for specific non-sensitive variables instead.
 ${OVERRIDE_NOTE}"
@@ -161,7 +362,33 @@ ${OVERRIDE_NOTE}"
   # `-` and `_`, so `--grep` / `my_sed` do not supply the verb.
   filter_verbs='(sed|gsed|awk|gawk|mawk|nawk|grep|egrep|fgrep|zgrep|rg|cut|perl)'
   path_prefix="([\"'][~\$/.][^[:space:]|;&'\"<>]*/|[^[:space:]|;&'\"<>]*/)?"
+
+  # Exit 0 when one reader/filter match ($2, for pattern $1) is a real secret
+  # read; exit 1 when it is a template. The template rule:
+  #
+  # .env.example / .env.sample / .env.template are templates committed by
+  # convention, not secrets. check_sensitive_path() already exempts them on
+  # the Read/Edit/Write path; without the same exemption here, `cat
+  # .env.example` was blocked while `Read`ing the identical file was allowed
+  # (issue #2444). Scoped to the .env pattern to mirror check_sensitive_path()
+  # exactly — the other patterns keep no exemption.
+  #
+  # The exemption requires *every* .env token in the matched region to be a
+  # template. Inspecting only the last one would let a real secret hide behind
+  # a template in the same statement (`cat .env .env.example`).
+  match_is_secret() {
+    local env_tokens non_template
+    if [ "$1" = '\.env\b' ]; then
+      env_tokens=$(echo "$2" | grep -oE "${1}[^[:space:]|;&'\"]*" || true)
+      non_template=$(echo "$env_tokens" | grep -vE '\.(example|sample|template)$' || true)
+      [ -n "$env_tokens" ] && [ -z "$non_template" ] && return 1
+    fi
+    return 0
+  }
+
   for pattern in '\.env\b' '\.ssh/' '\.aws/credentials' '\.kube/config' '\.docker/config\.json' 'credentials\.json' 'secrets\.json' '\.api_tokens\b'; do
+    reader_re="(^${reader_verbs}|[^A-Za-z]${reader_verbs})[[:space:]]+[^|;&]*${pattern}[^[:space:]|;&'\"]*"
+    filter_re="(^${filter_verbs}|[^A-Za-z0-9_-]${filter_verbs})[[:space:]]+([^|;&]*[[:space:]<])?${path_prefix}${pattern}[^[:space:]|;&'\"]*"
     # Capture the matched substrings (verb + path) rather than a bare boolean,
     # so the block message can name what tripped it and the exemption below can
     # inspect the actual path argument. Inspect every match across the command
@@ -170,8 +397,8 @@ ${OVERRIDE_NOTE}"
     # `cat .env.example; cat .env` (issue #2611).
     matches=$(
       {
-        echo "$COMMAND" | grep -oE "(^${reader_verbs}|[^A-Za-z]${reader_verbs})[[:space:]]+[^|;&]*${pattern}[^[:space:]|;&'\"]*" || true
-        echo "$COMMAND" | grep -oE "(^${filter_verbs}|[^A-Za-z0-9_-]${filter_verbs})[[:space:]]+([^|;&]*[[:space:]<])?${path_prefix}${pattern}[^[:space:]|;&'\"]*" || true
+        echo "$COMMAND" | grep -oE "$reader_re" || true
+        echo "$COMMAND" | grep -oE "$filter_re" || true
       }
     )
     [ -z "$matches" ] && continue
@@ -182,21 +409,27 @@ ${OVERRIDE_NOTE}"
       # space, `;`, `(`, quote, …); a start-of-line match begins with the verb
       # and is left alone.
       match="${match#[!A-Za-z]}"
+      match_is_secret "$pattern" "$match" || continue
 
-      # .env.example / .env.sample / .env.template are templates committed by
-      # convention, not secrets. check_sensitive_path() already exempts them on
-      # the Read/Edit/Write path; without the same exemption here, `cat
-      # .env.example` was blocked while `Read`ing the identical file was allowed
-      # (issue #2444). Scoped to the .env pattern to mirror check_sensitive_path()
-      # exactly — the other patterns keep no exemption.
-      #
-      # The exemption requires *every* .env token in the matched region to be a
-      # template. Inspecting only the last one would let a real secret hide behind
-      # a template in the same statement (`cat .env .env.example`).
-      if [ "$pattern" = '\.env\b' ]; then
-        env_tokens=$(echo "$match" | grep -oE "${pattern}[^[:space:]|;&'\"]*" || true)
-        non_template=$(echo "$env_tokens" | grep -vE '\.(example|sample|template)$' || true)
-        [ -n "$env_tokens" ] && [ -z "$non_template" ] && continue
+      # The regex says block. Lift it only when every verb occurrence of this
+      # pattern's matches is exempt text (#2737); otherwise name an executed
+      # secret read in the message.
+      [ -n "$SP_STATE" ] || sp_build
+      if [ "$SP_STATE" = "ready" ]; then
+        executed=""
+        while IFS= read -r m; do
+          [ -n "$m" ] || continue
+          m="${m#[!A-Za-z]}"
+          if match_is_secret "$pattern" "$m"; then
+            executed=$m
+            break
+          fi
+        done <<<"$(
+          sp_executed_matches "$reader_verbs" "$reader_re" 1
+          sp_executed_matches "$filter_verbs" "$filter_re" 1
+        )"
+        [ -n "$executed" ] || break
+        match=$executed
       fi
 
       block "BLOCKED: Command accesses a sensitive file matching '${pattern}' (matched: '${match}').

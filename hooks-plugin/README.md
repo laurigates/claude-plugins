@@ -153,6 +153,8 @@ A PreToolUse hook that blocks access to sensitive files and prevents credential 
 | Env var exposure | Commands that echo `$API_KEY`, `$SECRET`, `$TOKEN`, `$PASSWORD` |
 | Full env dump | Bare `printenv` or `env` commands |
 
+The Bash checks match their patterns against the raw command, then — when `ast-grep` is installed — lift a block whose every matching verb sits in text no shell runs: a quoted argument or heredoc body of `git commit` / `gh issue|pr <create|comment|edit|review|close|reopen|merge>`, a `$(cat <<'EOF' … EOF)` body feeding one, or a comment. So `git commit -m "docs: never cat .env in CI"` passes, while `$(cat .env)` or backticks inside that text, any other program's text (`echo 'cat .env' | bash`, `bash -c`, `ssh`, `eval`), and a command that rebinds `git`/`gh` (a function, `alias`, `trap`, `PATH=`) still block. Without `ast-grep`, or on a parse error, the regex verdict stands (#2737).
+
 **Toggle:** `CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1`, honored only when a human operator exports it in their own shell environment — an inline prefix on the blocked command is intentionally not honored, so an agent cannot self-serve the bypass (see `.claude/rules/handling-blocked-hooks.md`).
 
 ### branch-protection.sh

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016  # fixtures are the LITERAL, unexpanded command text a hook receives
 # Regression tests for secret-protection.sh
 #
 # Run: bash hooks-plugin/hooks/test-secret-protection.sh
@@ -21,6 +22,11 @@
 #     let a real secret read pass undetected if preceded by an exempted template
 #     in a chained command (`cat .env.example; cat .env`) (issue #2611).
 set -euo pipefail
+
+# Neutralize any inherited git context before the #2737 differential reads the
+# pre-fix hook with `git show` (issues #1745, #3080).
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
+  GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX
 
 HOOK="$(cd "$(dirname "$0")" && pwd)/secret-protection.sh"
 PASS=0
@@ -533,6 +539,172 @@ assert_stderr_contains_json \
     "Read of ~/.api_tokens names the credential-file class (#2900)" \
     "Access to credential file" \
     "$(read_json "/home/u/${tok_token}")"
+
+# ── Parsed exemption: a quoted mention is not a read (issue #2737) ───────────
+# The reader-verb, secret-variable and env-dump patterns match the raw command
+# text, so a commit message, a `gh issue comment --body`, a commit-message
+# heredoc or a trailing comment that merely DESCRIBES a secret read was blocked
+# as one. This hook is PROTECTIVE, so the parse may only REMOVE a block, and
+# only where the verb sits in text no shell runs: a quoted argument or heredoc
+# body of `git commit` / `gh issue|pr <create|comment|edit|…>` (a closed
+# allowlist), a `$(cat <<'EOF' … EOF)` body feeding one, or a comment. Anything
+# else — a `$(…)` or backtick inside that text, any other program, a shell
+# invoker, an assignment later eval'd, a parse with an ERROR node, no parser —
+# keeps the regex verdict.
+#
+# Then a GENERATED probe of real reads in many executing contexts must all
+# block, and a DIFFERENTIAL runs the same set through the pre-fix hook
+# (`git show <PREFIX_SHA>:…`): a spelling it blocked that this one allows fails.
+echo ""
+echo "parsed exemption: mentions in commit/PR text are allowed, real reads blocked (#2737):"
+PREFIX_SHA=716345bf213793134a30bec2ff68761946aee38d
+HOOK_REL=hooks-plugin/hooks/secret-protection.sh
+
+have_parser() {
+    [ "${CLAUDE_HOOKS_SECRET_PROTECTION_NO_ASTGREP:-}" = 1 ] && return 1
+    command -v ast-grep >/dev/null 2>&1 && return 0
+    command -v sg >/dev/null 2>&1 && sg --version 2>/dev/null | grep -qi '^ast-grep'
+}
+
+sp_verdict() { # $1 = hook path, $2 = command → block (exit 2) / allow (exit 0) / exit<N>
+    local rc=0
+    jq -nc --arg cmd "$2" '{tool_name:"Bash",tool_input:{command:$cmd}}' | bash "$1" >/dev/null 2>&1 || rc=$?
+    case $rc in 2) echo block ;; 0) echo allow ;; *) echo "exit$rc" ;; esac
+}
+
+heredoc() { # $1 = opening line, $2 = body line → a three-line heredoc command
+    printf '%s\n%s\nEOF' "$1" "$2"
+}
+
+if ! have_parser; then
+    printf "  SKIP: parsed-exemption rows, spelling probe and differential (ast-grep not installed)\n"
+else
+    assert_exit "commit message describing a .env read is allowed" 0 \
+        'git commit -m "docs: never cat .env in CI"'
+    assert_exit "gh issue comment --body describing a .env read is allowed" 0 \
+        'gh issue comment 1 --body "repro: cat .env shows the key"'
+    assert_exit "gh pr create --body describing a token-file grep is allowed" 0 \
+        "gh pr create --title t --body 'Before: grep KEY ~/.api_tokens leaked it'"
+    assert_exit "commit heredoc via \$(cat <<'EOF') describing an SSH key read is allowed" 0 \
+        "$(printf '%s\n' "git commit -m \"\$(cat <<'EOF'" 'fix: stop running cat ~/.ssh/id_rsa' 'EOF' ')"')"
+    assert_exit "git commit -F - heredoc mentioning echo \$API_KEY is allowed" 0 \
+        "$(heredoc "git commit -F - <<'EOF'" 'echo $API_KEY was leaking')"
+    assert_exit "git commit -F - heredoc with a bare 'env' line is allowed" 0 \
+        "$(heredoc "git commit -F - <<'EOF'" 'env')"
+    assert_exit "gh pr comment --body-file - heredoc quoting head secrets.json is allowed" 0 \
+        "$(heredoc "gh pr comment 1 --body-file - <<'EOF'" 'Run: head -5 secrets.json')"
+    assert_exit "quoted-delimiter PR-body heredoc with a markdown \`cat .env\` span is allowed" 0 \
+        "$(heredoc "gh pr create --title t --body-file - <<'EOF'" 'Never run `cat .env` in CI')"
+    assert_exit "UNquoted heredoc with a backtick read still blocks (tree-sitter cannot see it)" 2 \
+        "$(heredoc 'gh pr create --title t --body-file - <<EOF' 'Never run `cat .env` in CI')"
+    assert_exit "trailing comment mentioning cat .env is allowed" 0 \
+        'ls -la # do not cat .env here'
+    assert_exit "template read plus a commit message mentioning .env is allowed" 0 \
+        'cat .env.example && git commit -m "cat .env is blocked now"'
+
+    # Controls: an executing construct inside allowlisted text, or the text of
+    # any other program, keeps the block.
+    assert_exit "\$(cat .env) inside a commit message still blocks" 2 \
+        'git commit -m "$(cat .env)"'
+    assert_exit "backticks inside a gh --body still block" 2 \
+        'gh issue comment 1 --body "`cat .env`"'
+    assert_exit "\$(…) inside an unquoted commit heredoc still blocks" 2 \
+        "$(heredoc 'git commit -F - <<EOF' '$(cat .env)')"
+    assert_exit "a real read after a commit still blocks" 2 \
+        'git commit -m "x" && cat .env'
+    assert_exit "echo of the text piped to a shell still blocks" 2 \
+        "echo 'cat .env' | bash"
+    assert_exit "bash -c with a quoted read still blocks" 2 'bash -c "cat .env"'
+    assert_exit "an assignment later eval'd still blocks" 2 "X='cat .env'; eval \"\$X\""
+    assert_exit "perl -e system(...) still blocks" 2 "perl -e 'system(\"cat .env\")'"
+    assert_exit "git -c core.editor=… commit (not the allowlisted shape) still blocks" 2 \
+        "git -c core.editor='cat .env' commit"
+    assert_exit "FOO=1 git commit (not the allowlisted shape) still blocks" 2 \
+        'FOO=1 git commit -m "cat .env"'
+    assert_exit "ssh host 'cat .env' still blocks" 2 "ssh host 'cat .env'"
+    assert_exit "echo \$API_TOKEN after a commit still blocks" 2 \
+        'git commit -m "x"; echo $API_TOKEN'
+    assert_exit "heredoc fed to bash still blocks" 2 "$(heredoc "bash <<'EOF'" 'cat .env')"
+    assert_exit "git rebound as a function: no exemption" 2 \
+        "git() { eval \"\$3\"; }; git commit -m 'cat .env'"
+    assert_exit "git rebound by alias: no exemption" 2 \
+        "$(printf '%s\n%s' "alias git='sh -c'" "git commit -m 'cat .env'")"
+    assert_exit "a DEBUG trap: no exemption" 2 \
+        "trap 'eval \"\$BASH_COMMAND\"' DEBUG; git commit -m 'cat .env'"
+    assert_exit "a PATH assignment: no exemption" 2 \
+        'PATH=/tmp/evil:$PATH; git commit -m "cat .env"'
+    assert_exit "a \$(cat <<EOF > file) body written for later still blocks" 2 \
+        "$(printf '%s\n' "git commit -m \"\$(cat <<'EOF' > /tmp/x.sh" 'cat .env' 'EOF' ')" && sh /tmp/x.sh')"
+    assert_exit "a here-string (not the allowlisted argument shape) still blocks" 2 \
+        'gh issue comment 1 --body-file - <<< "cat .env"'
+
+    # Fail-safe polarity: with the parser suppressed, the regex alone decides.
+    rc=0
+    jq -nc --arg cmd 'git commit -m "docs: never cat .env in CI"' '{tool_name:"Bash",tool_input:{command:$cmd}}' \
+        | CLAUDE_HOOKS_SECRET_PROTECTION_NO_ASTGREP=1 bash "$HOOK" >/dev/null 2>&1 || rc=$?
+    if [ "$rc" -eq 2 ]; then
+        printf "  PASS: no parser: the regex floor still blocks\n"; PASS=$((PASS + 1))
+    else
+        printf "  FAIL: no parser: the regex floor still blocks (got exit %d)\n" "$rc"; FAIL=$((FAIL + 1))
+    fi
+
+    echo ""
+    echo "generated spelling probe + differential vs pre-fix hook (#2737):"
+    READS=('cat .env' 'cat ./.env.local' 'head -5 ~/.ssh/id_rsa' 'tail .aws/credentials'
+        'less secrets.json' 'nvim credentials.json' 'sed -n 1p ~/.api_tokens' 'grep KEY .env'
+        'cut -d= -f2 .env' 'rg TOKEN ~/.api_tokens' 'cat ~/.kube/config' 'zcat .env.gz'
+        'echo $API_TOKEN' 'printf %s ${DB_PASSWORD}' 'awk 1 ~/.docker/config.json')
+    CONTEXTS=('X' 'cd . && X' 'true; X' 'X | wc -l' 'for f in 1; do X; done' '( X )'
+        'out=$(X)' 'echo "$(X)"' 'echo `X`' 'diff <(X) /dev/null' 'sudo X' 'timeout 5 X' 'env -i X'
+        'git commit -m "$(X)"' 'git commit -m "`X`"' 'gh issue comment 1 --body "$(X)"'
+        'git commit -m "msg" && X' 'gh pr comment 1 --body "x"; X' 'xargs -I{} X'
+        'git commit -m msg $(X)' 'if true; then X; fi' 'X # trailing note')
+    SQ_CONTEXTS=("bash -c 'X'" "sh -c 'X'" "ssh host 'X'" "eval 'X'" "watch 'X'" "Y='X'; eval \"\$Y\"")
+    SPELLINGS=()
+    for r in "${READS[@]}"; do
+        for c in "${CONTEXTS[@]}" "${SQ_CONTEXTS[@]}"; do SPELLINGS+=("${c%%X*}$r${c#*X}"); done
+        SPELLINGS+=("$(heredoc "bash <<'EOF'" "$r")")
+        SPELLINGS+=("$(heredoc 'git commit -F - <<EOF' "\$($r)")")
+        SPELLINGS+=("$(heredoc 'gh pr create --title t --body-file - <<EOF' "\`$r\`")")
+    done
+
+    BASELINE=""
+    if git -C "$(dirname "$HOOK")" cat-file -e "$PREFIX_SHA:$HOOK_REL" 2>/dev/null; then
+        BASELINE=$(mktemp) || { echo "mktemp failed" >&2; exit 1; }
+        git -C "$(dirname "$HOOK")" show "$PREFIX_SHA:$HOOK_REL" >"$BASELINE"
+    fi
+    missed=0
+    lost=0
+    base_hits=0
+    for s in "${SPELLINGS[@]}"; do
+        new=$(sp_verdict "$HOOK" "$s")
+        old=""
+        if [ -n "$BASELINE" ]; then old=$(sp_verdict "$BASELINE" "$s"); fi
+        if [ "$old" = block ]; then
+            base_hits=$((base_hits + 1))
+            if [ "$new" != block ]; then
+                lost=$((lost + 1))
+                printf "  FAIL: differential: pre-fix hook blocks, this one does not (%s): %s\n" "$new" "$s"
+            fi
+        fi
+        if [ "$new" != block ]; then missed=$((missed + 1)); fi
+    done
+    [ -n "$BASELINE" ] && rm -f "$BASELINE"
+    if [ -z "$BASELINE" ]; then
+        printf "  SKIP: differential vs pre-fix hook (commit %s not in this clone)\n" "$PREFIX_SHA"
+    elif [ "$base_hits" -lt 200 ]; then
+        printf "  FAIL: differential is vacuous (baseline blocked only %d)\n" "$base_hits"; FAIL=$((FAIL + 1))
+    elif [ "$lost" -eq 0 ]; then
+        printf "  PASS: differential: baseline blocks %d of %d, none lost\n" "$base_hits" "${#SPELLINGS[@]}"; PASS=$((PASS + 1))
+    else
+        FAIL=$((FAIL + 1))
+    fi
+    # Every generated spelling the baseline blocked is a real read in an
+    # executing context; the remainder are reads the regex never matched
+    # (e.g. `watch 'zcat …'`), reported so a shrinking floor is visible.
+    printf "  INFO: %d of %d generated spellings block under this hook\n" \
+        "$(( ${#SPELLINGS[@]} - missed ))" "${#SPELLINGS[@]}"
+fi
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""

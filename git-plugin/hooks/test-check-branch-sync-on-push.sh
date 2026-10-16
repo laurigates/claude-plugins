@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016  # fixtures are the LITERAL, unexpanded command text a hook receives
 # Regression tests for check-branch-sync-on-push.sh
 #
 # Run: bash git-plugin/hooks/test-check-branch-sync-on-push.sh
@@ -260,6 +261,114 @@ if [ "$first_d" = "ask" ] && [ -z "$second" ]; then
     printf "  PASS: first call asks, second call (cached) is silent\n"; PASS=$((PASS + 1))
 else
     printf "  FAIL: cache behaviour (first=%s second=%s)\n" "$first_d" "${second:-empty}"; FAIL=$((FAIL + 1))
+fi
+
+# ── Parsed trigger: a mention is not a commit/push (issue #2737) ──────────────
+# The trigger used to be `git(-C …)? (commit|push)` over the raw command, so a
+# quoted argument, heredoc body or comment that merely MENTIONS one fired the
+# nudge. It is now decided on parsed command nodes. Every row runs against a
+# MERGED PR, so "none" proves the trigger stayed quiet, not a later guard.
+#
+# Then a GENERATED spelling probe must all nudge, and a DIFFERENTIAL runs the
+# same set through the pre-fix hook (`git show <PREFIX_SHA>:…`): a spelling the
+# old hook nudged on that the new one does not fails the suite.
+echo ""
+echo "parsed trigger: quoted/heredoc mentions do not nudge (#2737):"
+PREFIX_SHA=716345bf213793134a30bec2ff68761946aee38d
+HOOK_REL=git-plugin/hooks/check-branch-sync-on-push.sh
+MOCK_PR_JSON=$(jq -n '{number:7,state:"MERGED",mergedAt:"2026-01-01T00:00:00Z",url:"https://x/7"}')
+
+have_parser() {
+    [ "${CLAUDE_HOOKS_PARSED_TRIGGER_NO_ASTGREP:-}" = 1 ] && return 1
+    command -v ast-grep >/dev/null 2>&1 && return 0
+    command -v sg >/dev/null 2>&1 && sg --version 2>/dev/null | grep -qi '^ast-grep'
+}
+
+# $1 = hook path, $2 = command → "ask" or "none" (fresh session id per call).
+sync_verdict() {
+    local out
+    out=$(make_json "$2" | PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" bash "$1" 2>/dev/null)
+    if [ -z "$out" ]; then echo none; else
+        printf '%s' "$out" | jq -r '.hookSpecificOutput.permissionDecision // "none"' 2>/dev/null || echo parse_error
+    fi
+}
+
+if ! have_parser; then
+    printf "  SKIP: parsed-trigger rows, spelling probe and differential (ast-grep not installed)\n"
+else
+    assert_decision "gh issue comment --body mentioning git push" none \
+        "$(make_json 'gh issue comment 1 --body "run git push later"')"
+    assert_decision "git log --grep mentioning git commit" none \
+        "$(make_json 'git log --oneline --grep "then git commit"')"
+    assert_decision "single-quoted echo of a push" none \
+        "$(make_json "echo 'cd repo && git push origin feature'")"
+    assert_decision "heredoc body line starting with git commit" none \
+        "$(make_json "$(printf '%s\n' "cat > notes.md <<'EOF'" 'git commit -m x' 'EOF')")"
+    assert_decision "trailing comment mentioning git push" none \
+        "$(make_json 'git status # then git push origin feature')"
+    assert_decision "real commit whose message mentions gh pr create" ask \
+        "$(make_json 'git commit -m "gh pr create next"')"
+    # The old raw match also set IS_PUSH from the quoted mention, parsed `main"`
+    # as the refspec destination and exited at the default-branch exclusion —
+    # silencing the nudge for a real commit on a merged branch.
+    assert_case "commit message mentioning 'git push origin main' still evaluates HEAD" ask "Branch 'feature'" "" \
+        "$(make_json 'git commit -m "before git push origin main"')"
+    assert_decision "cd x && git push nudges" ask "$(make_json "cd $TMPDIR && git push origin feature")"
+    assert_decision "git -C <dir> push nudges" ask "$(make_json "git -C $TMPDIR push origin feature")"
+    assert_decision "bash -c with a quoted commit script nudges" ask "$(make_json "bash -c 'git commit -m x'")"
+    assert_decision "FOO=1 git commit nudges" ask "$(make_json "GIT_TRACE=0 git commit -m x")"
+
+    echo ""
+    echo "generated spelling probe + differential vs pre-fix hook (#2737):"
+    BASES=("git commit -m x" "git commit --amend --no-edit" "git push" "git push origin feature"
+        "git --no-pager commit -m x" "git -c core.askPass=true push origin feature"
+        "/usr/bin/git push origin feature" "git -C $TMPDIR commit -m x")
+    WRAPPERS=("" "env X=1 " "X=1 " "timeout 5 " "sudo " "command " "nice -n 5 " "nohup " "exec " "time ")
+    CONTEXTS=('X' 'cd . && X' 'true; X' 'X; true' 'true && X' 'false || X' 'X || true'
+        'X 2>&1 | tail -1' 'for d in 1; do X; done' 'if true; then X; fi' '( X )' '{ X; }'
+        $'echo start\nX' 'out=$(X)' 'echo "$(X)"' "bash -c 'X'" "sh -c 'cd . && X'" 'X &'
+        'git add a.txt && X' 'gh issue comment 1 --body "pushing now" && X')
+    SPELLINGS=()
+    for b in "${BASES[@]}"; do
+        for w in "${WRAPPERS[@]}"; do SPELLINGS+=("$w$b"); done
+    done
+    for b in "git commit -m x" "git push origin feature" "git -C $TMPDIR push"; do
+        for c in "${CONTEXTS[@]}"; do SPELLINGS+=("${c%%X*}$b${c#*X}"); done
+    done
+
+    BASELINE=""
+    if git -C "$(dirname "$0")" cat-file -e "$PREFIX_SHA:$HOOK_REL" 2>/dev/null; then
+        BASELINE="$MOCK_BIN/baseline-hook.sh"
+        git -C "$(dirname "$0")" show "$PREFIX_SHA:$HOOK_REL" >"$BASELINE"
+    fi
+    missed=0
+    lost=0
+    base_hits=0
+    for s in "${SPELLINGS[@]}"; do
+        new=$(sync_verdict "$HOOK" "$s")
+        if [ "$new" != ask ]; then
+            missed=$((missed + 1))
+            printf "  FAIL: spelling probe must nudge (got %s): %s\n" "$new" "$s"
+        fi
+        if [ -n "$BASELINE" ] && [ "$(sync_verdict "$BASELINE" "$s")" = ask ]; then
+            base_hits=$((base_hits + 1))
+            if [ "$new" != ask ]; then lost=$((lost + 1)); fi
+        fi
+    done
+    if [ "$missed" -eq 0 ]; then
+        printf "  PASS: all %d generated spellings nudge\n" "${#SPELLINGS[@]}"; PASS=$((PASS + 1))
+    else
+        FAIL=$((FAIL + 1))
+    fi
+    if [ -z "$BASELINE" ]; then
+        printf "  SKIP: differential vs pre-fix hook (commit %s not in this clone)\n" "$PREFIX_SHA"
+    elif [ "$base_hits" -lt 40 ]; then
+        printf "  FAIL: differential is vacuous (baseline nudged on only %d)\n" "$base_hits"; FAIL=$((FAIL + 1))
+    elif [ "$lost" -eq 0 ]; then
+        printf "  PASS: differential: baseline nudges on %d of %d, none lost\n" "$base_hits" "${#SPELLINGS[@]}"; PASS=$((PASS + 1))
+    else
+        printf "  FAIL: differential: %d spelling(s) the pre-fix hook nudged on are silent\n" "$lost"; FAIL=$((FAIL + 1))
+    fi
 fi
 
 # ── Opt-out env var ───────────────────────────────────────────────────────────
