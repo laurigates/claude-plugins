@@ -58,6 +58,16 @@ on:
       - '.github/actions/script-to-issue/**'
       - '.github/workflows/workflow-model-audit.yml'
       - '.github/workflows/test-skill-scripts.yml'
+      # Case 7 of comfyui-node-scaffold's test-registry-health.sh pins the
+      # install-fallback sentences in these three docs (#2994 follow-up). Without
+      # these entries a PR that only reverts one of them never runs the pin, and
+      # the failure surfaces on the next unrelated PR that touches a scripts/** path.
+      - 'comfyui-plugin/skills/comfy-cli/references/pitfalls.md'
+      - 'comfyui-plugin/skills/comfyui-node-scaffold/references/registry-readiness.md'
+      - 'comfyui-plugin/skills/comfy-registry-lifecycle/SKILL.md'
+      # Cases 1-6 extract REGISTRY_HEALTH_YML from scaffold.py, so a change to that
+      # file alone must run them too.
+      - 'comfyui-plugin/skills/comfyui-node-scaffold/scaffold.py'
   push:
     branches: [main]
     paths:
@@ -73,6 +83,12 @@ on:
       - '**/evals.json'
       - '.github/actions/script-to-issue/**'
       - '.github/workflows/workflow-model-audit.yml'
+      # Mirrors the pull_request list above (see the #2994 note there).
+      - 'comfyui-plugin/skills/comfy-cli/references/pitfalls.md'
+      - 'comfyui-plugin/skills/comfyui-node-scaffold/references/registry-readiness.md'
+      - 'comfyui-plugin/skills/comfy-registry-lifecycle/SKILL.md'
+      # Mirrors the pull_request list above (cases 1-6 read scaffold.py).
+      - 'comfyui-plugin/skills/comfyui-node-scaffold/scaffold.py'
 
 concurrency:
   group: test-skill-scripts-${{ github.event.pull_request.number || github.ref }}
