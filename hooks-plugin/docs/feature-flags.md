@@ -56,6 +56,7 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 | `CLAUDE_HOOKS_DISABLE_TEST_VERIFICATION` | Stop-hook reminder to run tests when code changed | `hooks/test-verification.sh` |
 | `CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER` | Stop-hook reminder about stashes created during the session (#2686) | `hooks/git-stash-reminder.sh` |
 | `CLAUDE_HOOKS_DISABLE_SUBAGENT_COUNT` | Counting subagents at SubagentStart and the Stop `systemMessage` when the session's count crosses the limit or a doubling of it | `hooks/subagent-count-tripwire.sh` |
+| `CLAUDE_HOOKS_DISABLE_CONTEXT_THRESHOLD` | The PostToolUse `additionalContext` telling the agent its prompt has passed a size threshold (80K/95K on Claude Haiku 5.5 by default) | `hooks/context-threshold-nudge.sh` |
 | `CLAUDE_HOOKS_DISABLE_DRIFT_NUDGE` | The consolidated drift-aggregator SessionStart nudge | `hooks/drift-aggregator.sh` |
 | `CLAUDE_HOOKS_DISABLE_README_CURRENCY` | Advisory nudge to update a changed plugin's README.md | `scripts/check-plugin-readme-currency.sh` |
 
@@ -101,6 +102,8 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 | `CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT` | `4` (s) | Seconds per acorn parser attempt in the Workflow estimator (two attempts before `ANALYSIS_ERROR`); a value that is not a positive finite number means `4`. `scripts/check-workflow-js-model.sh` runs the estimator with `30` unless the variable is already set, since a CI guard has no interactive latency budget (#3005, #2975) | `hooks/workflow-scale-estimate.py`, `scripts/check-workflow-js-model.sh` |
 | `CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH` | `8` | Items each runtime-length fan-out is costed at by the no-`node` fallback estimator; with `node` such a fan-out is unbounded and the guard asks | `hooks/workflow-scale-guard.sh` |
 | `CLAUDE_HOOKS_SUBAGENT_COUNT_DIR` | `$TMPDIR/claude-subagent-count-<uid>` | Per-session subagent-count state directory (the test suite points it at a scratch dir). Ignored unless owned by the current user and not a symlink; stale-file cleanup runs only in a directory the hook created | `hooks/subagent-count-tripwire.sh` |
+| `CLAUDE_HOOKS_CONTEXT_THRESHOLDS` | unset (`80000,95000` on Claude Haiku 5.5 only) | Comma-separated prompt-token thresholds; with at least one all-digit entry they apply to every model. Other entries are dropped | `hooks/context-threshold-nudge.sh` |
+| `CLAUDE_HOOKS_CONTEXT_THRESHOLD_DIR` | `$TMPDIR/claude-context-threshold-<uid>` | Per-session (and per-subagent) reported-threshold state (the test suite points it at a scratch dir). Ignored unless owned by the current user and not a symlink | `hooks/context-threshold-nudge.sh` |
 | `CLAUDE_REPO_BACKUP_DIR` | `$HOME/Backups` | Where an existing `<basename>-*.tar.*` clears the repo-deletion block; also the dir named in the block message | `hooks/repo-deletion-safety.sh` |
 | `CLAUDE_TASKWARRIOR_DRIFT_STALE_TTL` | `14400` (s) | Age before a `+ACTIVE` claim counts as stale | `hooks/taskwarrior-drift-probe.sh` |
 | `CLAUDE_TASKWARRIOR_DRIFT_STALE_LIMIT` | `50` | Max stale claims reported | `hooks/taskwarrior-drift-probe.sh` |
