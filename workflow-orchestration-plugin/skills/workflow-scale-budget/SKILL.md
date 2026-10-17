@@ -72,3 +72,11 @@ workflow again, at any scale.
    `workflow-orchestration-plugin:workflow-interrupted-run-recovery`. Summing the raw
    usage lines overstates cache tokens, because one API message is written as several
    lines, so the script keeps only the last line per message id.
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Tally one finished run | `bash "${CLAUDE_SKILL_DIR}/scripts/workflow-run-tally.sh" <wf_run_id>` |
+| Tally every run in a session | `bash "${CLAUDE_SKILL_DIR}/scripts/workflow-run-tally.sh" <session_id>` |
+| Transcripts outside `~/.claude/projects` | `bash "${CLAUDE_SKILL_DIR}/scripts/workflow-run-tally.sh" <id> --projects-dir <dir>` |
