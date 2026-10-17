@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.14.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.13.4...workflow-orchestration-plugin-v1.14.0) (2026-10-17)
+
+
+### Features
+
+* **workflow-orchestration-plugin:** tally a finished Workflow run's agents and tokens ([2aa3f93](https://github.com/laurigates/claude-plugins/commit/2aa3f9328c5c109d07bf18f8fc552d69de7ec02a)), closes [#2783](https://github.com/laurigates/claude-plugins/issues/2783) [#2670](https://github.com/laurigates/claude-plugins/issues/2670)
+
+
+### Documentation
+
+* **workflow-orchestration-plugin:** add an agentic optimizations table to workflow-scale-budget ([cc21e26](https://github.com/laurigates/claude-plugins/commit/cc21e26f1028163beae1b8d9deed0aee80dd5e9c)), closes [#2783](https://github.com/laurigates/claude-plugins/issues/2783)
+
 ## [1.13.4](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.13.3...workflow-orchestration-plugin-v1.13.4) (2026-10-10)
 
 

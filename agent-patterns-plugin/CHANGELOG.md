@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.50.3](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.50.2...agent-patterns-plugin-v2.50.3) (2026-10-13)
+
+
+### Bug Fixes
+
+* **agent-patterns-plugin:** MCP and tool-result facts from Claude Code 2.1.284–2.1.296 ([#3076](https://github.com/laurigates/claude-plugins/issues/3076)) ([453c300](https://github.com/laurigates/claude-plugins/commit/453c300dfbb383d9df6c57bd67053d82abf252fc))
+
 ## [2.50.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.50.1...agent-patterns-plugin-v2.50.2) (2026-10-10)
 
 

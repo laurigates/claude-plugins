@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.8](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.13.7...session-plugin-v1.13.8) (2026-10-17)
+
+
+### Bug Fixes
+
+* **session-plugin:** keep the discussions query out of GH_FAIL_REASON and summary mode ([fb946c1](https://github.com/laurigates/claude-plugins/commit/fb946c1f6b8499dd50a0224e6c916a2fe115e52f)), closes [#2569](https://github.com/laurigates/claude-plugins/issues/2569)
+
 ## [1.13.7](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.13.6...session-plugin-v1.13.7) (2026-10-10)
 
 

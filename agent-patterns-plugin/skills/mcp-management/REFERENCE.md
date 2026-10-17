@@ -55,7 +55,8 @@ Remote MCP servers using HTTP+SSE transport use OAuth 2.1 (Claude Code 2.1.50+):
 When a tool requires elevated permissions not granted in the initial OAuth flow:
 
 1. Server signals that additional scope is required
-2. Claude Code prompts the user to re-authorize with the expanded scope
+2. Claude Code prompts the user to re-authorize with the expanded scope — a
+   re-authenticate prompt raised during the tool call itself (2.1.288)
 3. After re-authorization, the original tool call is retried automatically
 
 ### OAuth discovery caching
@@ -93,6 +94,13 @@ bunx -y @upstash/context7-mcp  # Should start without error
 # Validate JSON syntax
 jq empty .mcp.json && echo "JSON is valid" || echo "JSON syntax error"
 ```
+
+After fixing the cause, `/mcp reconnect all` (interactive terminal, 2.1.284)
+retries every server that failed to connect or needs authentication at once.
+
+A server that connected before 2.1.287 and stops connecting after it: 2.1.287
+added URL prompts from servers on the 2025-11-25 protocol. Add
+`"bareElicitationCapability": true` to that server's MCP config entry.
 
 #### Smoke-testing a stdio server by hand
 
@@ -151,13 +159,16 @@ done
 
 | Symptom | Cause / fix |
 |---------|-------------|
-| Tool description or server instructions cut off | Capped at 2,048 chars; raise with `CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH` (2.1.280) |
+| Tool description or server instructions cut off | Sent up front: capped at 4,096 chars (2.1.296; 2,048 before). Loaded through tool search: cut at 16,384 (2.1.295). Raise with `CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH` (2.1.280) |
+| A server's tools absent from the session's tool list | `alwaysLoad: false` on the server defers all of its tools behind tool search (2.1.287); a tool whose own `_meta['anthropic/alwaysLoad']` is false stays deferred even when its `--mcp-config`, Agent SDK or plugin server is `alwaysLoad` (2.1.285) |
+| One tool missing, MCP error names it | A tool name over 128 characters is left out instead of failing every request (2.1.292) |
+| Server behaves differently after an upgrade, no config change | Stdio servers negotiate protocol 2026-07-28 by default on every install, Bedrock/Vertex/Foundry included (2.1.292); claude.ai connectors too (2.1.295). `MCP_PROTOCOL_NEGOTIATION=legacy` opts out |
 | Server instructions missing from the context budget | `/context` shows MCP server instructions as their own row (2.1.283) |
 | Image returned by a tool needed as a file | Images from MCP tools are also saved to a file (2.1.283) |
 | Same remote server connected twice | Fixed for the same server spelled with different URLs (2.1.281) |
 | Stateless remote server unusable after a brief 404 | Fixed; it recovers (2.1.283) |
 | claude.ai connector ignores `MCP_CONNECT_TIMEOUT_MS` | Set `MCP_CONNECTION_NONBLOCKING=0` (2.1.281) |
-| Server asks the user to open a URL | URL-mode elicitation, supported on 2026-07-28 protocol connections (2.1.281) |
+| Server asks the user to open a URL | URL-mode elicitation, supported on 2026-07-28 protocol connections (2.1.281) and on 2025-11-25 servers (2.1.287) |
 | Progress lost on a backgrounded tool call | Progress notifications are now kept (2.1.283) |
 | Stdio server process left behind at exit | Servers still starting at session end are cleaned up (2.1.283) |
 

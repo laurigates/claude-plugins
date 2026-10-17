@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.15.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.14.0...hooks-plugin-v2.15.0) (2026-10-15)
+
+
+### Features
+
+* **hooks-plugin:** warn the agent when its context nears a size threshold ([#3102](https://github.com/laurigates/claude-plugins/issues/3102)) ([2e8f716](https://github.com/laurigates/claude-plugins/commit/2e8f716ef29cd482fabcfc0686a9da262d69d4ac))
+
+## [2.14.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.13.2...hooks-plugin-v2.14.0) (2026-10-14)
+
+
+### Features
+
+* **hooks-plugin:** fail closed on safety hooks; refresh read-block rationale ([#3077](https://github.com/laurigates/claude-plugins/issues/3077)) ([eaf0e4b](https://github.com/laurigates/claude-plugins/commit/eaf0e4b097f85aabef4d37825bd382fe7a8237ba))
+
 ## [2.13.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.13.1...hooks-plugin-v2.13.2) (2026-10-13)
 
 

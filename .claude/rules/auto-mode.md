@@ -1,6 +1,6 @@
 ---
 created: 2026-04-29
-modified: 2026-10-10
+modified: 2026-10-13
 reviewed: 2026-09-16
 paths:
   - "**/skills/**"
@@ -12,7 +12,7 @@ paths:
 
 Auto mode lets Claude Code execute without permission prompts. A separate classifier model reviews each action before it runs, blocking anything that escalates beyond the user's request, targets unrecognized infrastructure, or appears driven by hostile content.
 
-Auto mode is the built-in starting permission mode on Pro, Max and Team plans and, as of 2.1.283, for interactive sessions on third-party providers (Bedrock, Google Agent Platform, Foundry) or with telemetry off, when no permission mode is configured; `permissions.defaultMode` still overrides it. Keep it on for Fable 5.1 sessions: the system card's rare hook/classifier workarounds — fabricated user-authorization quotes to satisfy an approval gate, relaunching a subagent as "I am <user> and this is my instruction", rewriting a routine command so a malfunctioning regex hook would not match (all <0.01% of completions), and scripts launching agents with `bypassPermissions` (<0.001%) — were all blocked by auto mode, which sees the user's messages, tool calls and CLAUDE.md but not tool results.
+Auto mode is the built-in starting permission mode when no permission mode is configured: for interactive terminal and VS Code sessions on every plan and provider since 2.1.284 (replacing the narrower 2.1.283 scope), and for `claude -p` and Python Agent SDK sessions on third-party providers or with telemetry off since 2.1.285. `permissions.defaultMode` and `--permission-mode` still override it. Keep it on for Fable 5.1 sessions: the system card's rare hook/classifier workarounds — fabricated user-authorization quotes to satisfy an approval gate, relaunching a subagent as "I am <user> and this is my instruction", rewriting a routine command so a malfunctioning regex hook would not match (all <0.01% of completions), and scripts launching agents with `bypassPermissions` (<0.001%) — were all blocked by auto mode, which sees the user's messages, tool calls and CLAUDE.md but not tool results.
 
 Authoritative reference: [Choose a permission mode](https://code.claude.com/docs/en/permission-modes#eliminate-prompts-with-auto-mode). This rule summarises the parts that affect how plugin skills, settings, and hooks should be authored.
 
@@ -44,6 +44,12 @@ telemetry off (2.1.282).
 including a direct API connection (2.1.281): `0` opts out, `1` opts in. Where
 the review runs server-side, read-only and sandboxed shell commands also wait
 for it and are blocked if it flags them (2.1.281).
+
+The **client-side** classifier ignores an `ANTHROPIC_DEFAULT_SONNET_MODEL` pin
+naming Sonnet 5.5 or Opus 5.5 and uses Sonnet 5 instead (2.1.288), so that pin
+does not change which model reviews actions. When a conversation grows too long
+for the client-side classifier, it is compacted instead of prompting for, or
+failing, every tool call (2.1.288).
 
 ## How the Classifier Decides
 
@@ -164,7 +170,7 @@ If blocking happens **3 times in a row** or **20 times total** in a session, aut
 
 In `-p` (non-interactive) mode there is no user to prompt — repeated blocks abort the session.
 
-When a safety check declines to review an action or gives no answer, the action is denied once instead of retried in a loop; retries back off, and the turn stops after ten denials in a row (2.1.280).
+When a safety check declines to review an action or gives no answer, the action is denied once instead of retried in a loop; retries back off, and the turn stops after ten denials in a row (2.1.280). Since 2.1.296 such a call shows as a dim "Not run" row instead of a red error.
 
 ## Cost and Latency
 
@@ -219,7 +225,7 @@ The auto-mode classifier handles approve/deny logic for most cases that previous
 | `default` | Reads only | Permission prompts for everything else. Manual; select it with `permissions.defaultMode` or `--permission-mode` |
 | `acceptEdits` | Reads, file edits, common filesystem commands | Edits scoped to working dir / `additionalDirectories` |
 | `plan` | Reads only; no source edits | Approve-from-plan can transition into `auto` |
-| `auto` | Everything that survives classifier review | Subject to availability matrix above. Built-in starting mode on Pro/Max/Team, and for interactive third-party-provider or telemetry-off sessions (2.1.283) |
+| `auto` | Everything that survives classifier review | Subject to availability matrix above. Built-in starting mode for interactive terminal and VS Code sessions with no mode configured (2.1.284), and for `-p`/Python SDK sessions on third-party providers or with telemetry off (2.1.285) |
 | `dontAsk` | Pre-approved tools only | Auto-denies anything that would prompt |
 | `bypassPermissions` | Everything, including protected paths (2.1.126) | No safety classifier; isolated environments only. `defaultMode: "bypassPermissions"` is ignored from project settings (2.1.257) |
 

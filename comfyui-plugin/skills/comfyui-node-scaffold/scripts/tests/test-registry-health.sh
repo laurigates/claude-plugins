@@ -38,6 +38,18 @@
 #                     verified — no Deleted version is publicly listed to test.
 #   6. Flagged with no status_reason -> no bare "  - " findings bullet; the
 #                     list says "(none reported)" instead (#2994).
+#   7. Docs        -> every doc sentence that says installs fall back and names
+#                     Banned, or gives Banned's install-impact verdict ("Banned:
+#                     yes|no"), also names Deleted (the follow-up to #2994: the
+#                     docs still said only Banned falls back). Units are sentences,
+#                     list items, blockquote lines and paragraphs (a blank line, a
+#                     new list item or blockquote line ends one; a heading is a unit
+#                     of its own), and each table row whole. A status-table row is
+#                     exempt only while its other cells name no other status.
+#                     Semantic: it pins the claim sentence, so a reword passes and
+#                     a sentence that drops Deleted fails. The scan must also exit
+#                     0: a crash in it cannot read as zero offenders. CI runs this
+#                     test on doc changes via test-skill-scripts.yml.
 #
 # Requires python3 and jq; SKIPs cleanly when unavailable.
 
@@ -292,6 +304,165 @@ check "6: no bare '  - ' bullet in the findings list" "0" \
     "$(grep -qxE '[[:space:]]*-[[:space:]]*' "${CASE_DIR}/log/body.md" 2>/dev/null && echo 1 || echo 0)"
 check "6: the scan-findings header is still printed" "1" "$(body_has 'Scan findings')"
 check "6: the findings list says none were reported" "1" "$(body_has '(none reported)')"
+
+# --------------------------------------------------------------------------- #
+# 7. Docs — every sentence that says installs fall back and names Banned, or gives
+#    Banned's install-impact verdict, must also name Deleted. The scaffold's Deleted
+#    arm was fixed in #3053, but the docs still said only Banned falls back (#2994
+#    follow-up). Pinned on the claim sentence: a reword passes, a sentence that names
+#    Banned without Deleted fails.
+# --------------------------------------------------------------------------- #
+DOCS_SCAN="${WORK}/docs-scan.py"
+cat >"$DOCS_SCAN" <<'PY'
+import os, re, sys
+# "installs fall back", "falls back", "falling back", "fall-back", "fell back"
+FALL_BACK = re.compile(r"\bfall(?:s|ing)?[ -]?back\b|\bfell back\b")
+IMPACT = re.compile(r"Banned: (?:yes|no)")   # "(Flagged: no; Banned: yes)" verdict list
+# A status-table row ("| `NodeVersionStatusBanned` | ... |") names its status in the
+# first cell. It is exempt only while its other cells name no status besides that one:
+# a row that also names Banned, Deleted or Flagged makes a claim about that status too.
+STATUS_ROW = re.compile(r"^\s*\|\s*`NodeVersionStatus(\w+)`\s*\|(.*)$")
+# Capitalised on purpose: the lower-case "non-banned" in a Banned row is not a claim.
+# The lookbehind takes the spelling `NodeVersionStatusBanned`: there is no word
+# boundary between "Status" and "Banned", so \b alone would miss it.
+STATUS_WORD = re.compile(r"(?:\b|(?<=NodeVersionStatus))(?:Banned|Deleted|Flagged)\b")
+LIST_ITEM = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s")
+BLOCKQUOTE = re.compile(r"^\s*>")
+HEADING = re.compile(r"^\s*#{1,6}\s")
+
+
+def blocks(lines):
+    """Yield each unit of prose: a paragraph, a list item or a blockquote line (its
+    continuation lines joined), a heading, or one table row. A blank line, or the
+    start of a list item or blockquote line, ends the paragraph before it. A heading
+    ends the paragraph before it and is a unit of its own."""
+    buf = []
+    for line in lines:
+        if not line.strip():
+            if buf:
+                yield " ".join(buf)
+                buf = []
+        elif line.lstrip().startswith("|"):
+            if buf:
+                yield " ".join(buf)
+                buf = []
+            yield line
+        elif HEADING.match(line):
+            if buf:
+                yield " ".join(buf)
+                buf = []
+            yield line
+        else:
+            if (LIST_ITEM.match(line) or BLOCKQUOTE.match(line)) and buf:
+                yield " ".join(buf)
+                buf = []
+            buf.append(line)
+    if buf:
+        yield " ".join(buf)
+
+
+offenders, empty = [], []
+for path in sys.argv[1:]:
+    if not os.path.isfile(path):
+        empty.append(path)
+        continue
+    claims = 0
+    for block in blocks(open(path, encoding="utf-8").read().splitlines()):
+        row = STATUS_ROW.match(block)
+        if row and not (set(STATUS_WORD.findall(row.group(2))) - {row.group(1)}):
+            continue  # names only its own status: exempt
+        if block.lstrip().startswith("|"):
+            units = [block]  # a table row is one unit, never split into sentences
+        else:
+            units = re.split(r"(?<=\.)\s", re.sub(r"\s+", " ", block))
+        for unit in units:
+            text = re.sub(r"\s+", " ", unit).strip()
+            if not text:
+                continue
+            if (FALL_BACK.search(text) and "Banned" in text) or IMPACT.search(text):
+                claims += 1
+                if "Deleted" not in text:
+                    offenders.append(f"{path}: {text[:200]}")
+    if claims == 0:
+        empty.append(path)
+for path in empty:
+    print(f"EMPTY {path}")
+for line in offenders:
+    print(f"OFFENDER {line}")
+PY
+DOCS_PIN_OUT="${WORK}/docs-pin.txt"
+python3 "$DOCS_SCAN" "${SKILL_DIR}/../comfy-cli/references/pitfalls.md" \
+    "${SKILL_DIR}/references/registry-readiness.md" \
+    "${SKILL_DIR}/../comfy-registry-lifecycle/SKILL.md" >"$DOCS_PIN_OUT"
+docs_rc=$?   # the python exit status, read before the next command overwrites $?
+grep '^OFFENDER ' "$DOCS_PIN_OUT" >&2 || true
+docs_offenders=$(grep -c '^OFFENDER ' "$DOCS_PIN_OUT" || true)
+docs_empty=$(grep -c '^EMPTY ' "$DOCS_PIN_OUT" || true)
+check "7: the docs scan runs to completion (a crash must not read as zero offenders)" "0" "$docs_rc"
+check "7: every install-fallback claim in the docs names Deleted beside Banned" "0" "$docs_offenders"
+check "7: each doc file carries at least one install-fallback claim (not vacuous)" "0" "$docs_empty"
+
+# Fixture docs run through the same scan, so each shape the scan must judge is
+# pinned on its own. doc_offenders <name> <markdown> prints the OFFENDER count;
+# a crashed scan prints "scan-crash" so it can never equal an expected 0 or 1.
+doc_offenders() {
+    local f="${WORK}/doc-fixtures/$1.md" out rc
+    mkdir -p "${WORK}/doc-fixtures"
+    printf '%s\n' "$2" >"$f"
+    out="$(python3 "$DOCS_SCAN" "$f")"
+    rc=$?
+    if [ "$rc" -ne 0 ]; then echo "scan-crash"; return; fi
+    grep -c '^OFFENDER ' <<<"$out" || true
+}
+
+# A Flagged status row that also names Banned's fall-back makes a claim about Banned.
+FLAGGED_ROW='| Status | Install impact |
+|---|---|
+| `NodeVersionStatusFlagged` | Still installable; only a Banned version makes installs fall back; |'
+check "7: a Flagged status row naming Banned's fall-back is checked, not exempt" "1" \
+    "$(doc_offenders flagged-row "$FLAGGED_ROW")"
+
+# The spelling `NodeVersionStatusBanned` has no word boundary before "Banned", so a
+# status-word search that relies on \b alone misses it and exempts the row.
+FLAGGED_ROW_SPELLED='| Status | Install impact |
+|---|---|
+| `NodeVersionStatusFlagged` | Still installable; only a `NodeVersionStatusBanned` version makes installs fall back |'
+check "7: a Flagged row naming Banned as NodeVersionStatusBanned is checked, not exempt" "1" \
+    "$(doc_offenders flagged-row-spelled "$FLAGGED_ROW_SPELLED")"
+
+# Consecutive list items without trailing periods are separate units.
+LIST_ITEMS='- Only a **Banned** version makes installs fall back to an older one
+- A **Deleted** version is removed from the listing'
+check "7: list items without trailing periods are separate units" "1" \
+    "$(doc_offenders list-items "$LIST_ITEMS")"
+
+# A blank line ends a paragraph: a Deleted line after it does not excuse Banned.
+BLANK_SPLIT='Only a **Banned** version makes installs fall back to an older one
+
+A **Deleted** version is removed from the listing'
+check "7: a blank line ends a paragraph before the next Deleted line" "1" \
+    "$(doc_offenders blank-line "$BLANK_SPLIT")"
+
+# A heading is a unit of its own: with no blank line after it, its Banned claim must
+# not borrow the paragraph's Deleted.
+HEADING_MERGE='## Only a **Banned** version makes installs fall back
+A **Deleted** version is removed from the listing'
+check "7: a heading with no blank line before the paragraph is its own unit" "1" \
+    "$(doc_offenders heading-merge "$HEADING_MERGE")"
+
+# Consecutive blockquote lines are separate units, as consecutive list items are.
+BLOCKQUOTE_LINES='> Only a **Banned** version makes installs fall back to an older one
+> A **Deleted** version is removed from the listing'
+check "7: consecutive blockquote lines without trailing periods are separate units" "1" \
+    "$(doc_offenders blockquote-lines "$BLOCKQUOTE_LINES")"
+
+# Controls: must pass before and after the fix.
+SAME_SENTENCE='- A **Banned** version makes installs fall back; a **Deleted** version is expected to do the same.'
+check "7: a Banned fall-back claim that names Deleted in its sentence passes" "0" \
+    "$(doc_offenders same-sentence "$SAME_SENTENCE")"
+OWN_STATUS_ROW='| `NodeVersionStatusBanned` | not installable; installs fall back to an older version |'
+check "7: a status row naming only its own status stays exempt" "0" \
+    "$(doc_offenders own-status-row "$OWN_STATUS_ROW")"
 
 printf '\n%s: %d passed, %d failed\n' "$(basename "$0")" "$pass" "$fail"
 [ "$fail" -eq 0 ] || exit 1

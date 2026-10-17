@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/readme-banner.svg" alt="claude-plugins: skills, agents and safety hooks for coding agents. Runs in Claude Code, OpenCode, pi and Antigravity CLI." width="100%">
+</p>
+
 # Claude Plugins
 
 > Experimental testing harness lives under experiments/claude-probe/.
