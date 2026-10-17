@@ -96,6 +96,14 @@ health-plugin/scripts/tests/test-probe-lib.sh
 # it was written to replace.
 git-plugin/skills/git-merge-hazards/scripts/tests/test-push-refspec.sh
 
+# It EXECUTES git through the no-force stacked-merge route's classification and
+# tree-identity gates, including the negative control where the child-tip gate
+# alone passes while main's change is dropped (#2826). A skip would leave that
+# route's safety property unexecuted. It also runs the rollup gate under jq and the
+# body-size band check under python3; the runner ships both, and a missing one fails
+# the run rather than skipping it (the test guards each one at its top).
+git-plugin/skills/git-merge-hazards/scripts/tests/test-no-force-stack.sh
+
 # Runs entirely off committed fixtures -- no gh, no network, no task binary --
 # so there is no environment in which skipping it is legitimate. A skip would
 # mean the fixtures or the checker moved, which is exactly the regression.

@@ -1,6 +1,6 @@
 ---
 created: 2026-06-22
-modified: 2026-10-13
+modified: 2026-10-17
 reviewed: 2026-09-16
 paths:
   - ".github/workflows/**"
@@ -121,7 +121,12 @@ by measured spend. The cost input comes from `scripts/workflow-run-cost.sh`
 `permission_denials_count` from its job log (claude-code-action exposes them
 nowhere else) and flags a run within two turns of the `--max-turns` it ran
 with, or past it. A run whose log has no accounting object reports
-`COST_USD=unknown`, never `0`.
+`COST_USD=unknown`, never `0`, and so does a run whose job list cannot be
+matched to a Claude job or step: it is kept in the sample rather than dropped.
+A run whose job list shows its Claude job, or its Claude step, skipped by its
+own `if:` is counted in `GATED_OFF_RUNS` and left out of the sample, unless its
+log carries accounting: a billed run is never dropped, so the log backstops any
+invocation the job list misreads.
 
 ## Enforcement: classification
 
