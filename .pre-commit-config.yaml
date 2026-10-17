@@ -1030,6 +1030,18 @@ repos:
         language: system
         files: '^scripts/(check-hook-matchers\.sh|tests/test-check-hook-matchers\.sh)$'
         pass_filenames: false
+      - id: check-hook-timeout-units
+        name: plugin hook timeouts are seconds, not milliseconds (>= 1000 flagged)
+        entry: bash ./scripts/check-hook-timeout-units.sh
+        language: system
+        files: '([^/]*-plugin/(hooks\.json|hooks/hooks\.json|\.claude-plugin/plugin\.json)|^scripts/check-hook-timeout-units\.sh)$'
+        pass_filenames: false
+      - id: test-check-hook-timeout-units
+        name: hook timeout units guard regression (ms-scale timeouts flagged, empty tree errors)
+        entry: bash ./scripts/tests/test-check-hook-timeout-units.sh
+        language: system
+        files: '^scripts/(check-hook-timeout-units\.sh|tests/test-check-hook-timeout-units\.sh)$'
+        pass_filenames: false
       - id: check-positional-references
         name: skill markdown points at anchors, not directions (reference files strict, SKILL.md ratcheted)
         entry: bash ./scripts/check-positional-references.sh
