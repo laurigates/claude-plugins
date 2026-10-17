@@ -1,0 +1,101 @@
+compliance	UNKNOWN STEP	﻿2026-10-14T06:57:58.7443083Z Current runner version: '2.337.0'
+compliance	UNKNOWN STEP	2026-10-14T06:57:58.7468783Z ##[group]Runner Image Provisioner
+compliance	UNKNOWN STEP	2026-10-14T06:57:58.7469707Z Hosted Compute Agent
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.5504699Z 
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.5504931Z (one line per changed skill: which checks it passes)
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.5505457Z EOF
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.5505800Z )"
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.5506111Z ```
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.5506295Z 
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.5506747Z Do NOT suggest changes unrelated to skill quality (no code style, no typo fixes).
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.5507515Z Focus ONLY on the quality checklist above.
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.5507729Z 
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.5507823Z Trigger result: true
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.5508267Z Preparing with mode: agent for event: pull_request
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7088638Z Actor type: Bot
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7101417Z ##[error]Action failed with error: Workflow initiated by non-human actor: github-actions (type: Bot). Add bot to allowed_bots list or use '*' to allow all bots.
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7156474Z ##[error]Process completed with exit code 1.
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7163400Z ##[end-action id=review.run;outcome=failure;conclusion=failure;duration_ms=1616]
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7167792Z ##[start-action display=Re-prepend system bin dirs to PATH;id=review.__run_6]
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7172697Z ##[end-action id=review.__run_6;outcome=skipped;conclusion=skipped;duration_ms=0]
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7175140Z ##[start-action display=Cleanup SSH signing key;id=review.__run_7]
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7178093Z ##[end-action id=review.__run_7;outcome=skipped;conclusion=skipped;duration_ms=0]
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7181011Z ##[start-action display=Post buffered inline comments;id=review.__run_8]
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7200073Z ##[group]Run BUN_BIN="${GITHUB_ACTION_PATH}/bin/bun"
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7200448Z [36;1mBUN_BIN="${GITHUB_ACTION_PATH}/bin/bun"[0m
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7200777Z [36;1m[ -x "$BUN_BIN" ] || BUN_BIN="bun"[0m
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7201200Z [36;1m# No --tsconfig-override: see the "Run Claude Code Action" step above.[0m
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7201631Z [36;1m"$BUN_BIN" --no-env-file \[0m
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7201955Z [36;1m  --config="${GITHUB_ACTION_PATH}/bunfig.toml" \[0m
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7202431Z [36;1m  run ${GITHUB_ACTION_PATH}/src/entrypoints/post-buffered-inline-comments.ts[0m
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7265423Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7265793Z env:
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7266049Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7266478Z   CHANGED_FILES: agent-patterns-plugin/skills/mcp-management/SKILL.md
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7269492Z   GITHUB_TOKEN: ***
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7269728Z   REPO_OWNER: laurigates
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7269979Z   REPO_NAME: claude-plugins
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7270381Z   PR_NUMBER: 3067
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7284499Z   ANTHROPIC_API_KEY: 
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7284924Z ##[endgroup]
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7778456Z No buffered inline comments
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7801833Z ##[end-action id=review.__run_8;outcome=success;conclusion=success;duration_ms=61]
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7804413Z ##[start-action display=Revoke app token;id=review.__run_9]
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7847266Z ##[group]Run curl -L \
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7847518Z [36;1mcurl -L \[0m
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7847760Z [36;1m  --connect-timeout 5 \[0m
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7848030Z [36;1m  --max-time 10 \[0m
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7848292Z [36;1m  -X DELETE \[0m
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7848580Z [36;1m  -H "Accept: application/vnd.github+json" \[0m
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7851608Z [36;1m  -H "Authorization: ***" \[0m
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7851949Z [36;1m  -H "X-GitHub-Api-Version: 2022-11-28" \[0m
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7852392Z [36;1m  ${GITHUB_API_URL:-https://api.github.com}/installation/token || true[0m
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7914794Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7915143Z env:
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7915394Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7915825Z   CHANGED_FILES: agent-patterns-plugin/skills/mcp-management/SKILL.md
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.7916214Z ##[endgroup]
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.8046595Z   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.8047409Z                                  Dload  Upload   Total   Spent    Left  Speed
+compliance	UNKNOWN STEP	2026-10-14T07:02:43.8047838Z 
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.0316950Z   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.0318016Z   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.0318948Z   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.0355964Z ##[end-action id=review.__run_9;outcome=success;conclusion=success;duration_ms=255]
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.0784348Z Post job cleanup.
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.0787952Z ##[start-action display=Install Bun;id=__636dfc33-96e1-4155-a298-88e6172f9639.setup-bun]
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.0789922Z ##[end-action id=__636dfc33-96e1-4155-a298-88e6172f9639.setup-bun;outcome=skipped;conclusion=skipped;duration_ms=0]
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.0857134Z Post job cleanup.
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.1743356Z [command]/usr/bin/git version
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.1788745Z git version 2.55.0
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.1836724Z Temporarily overriding HOME='/home/runner/work/_temp/bad2192c-1e95-48ea-9768-f31a3bc0d253' before making global git config changes
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.1837951Z Adding repository directory to the temporary git global config as a safe directory
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.1843263Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/claude-plugins/claude-plugins
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.1877799Z Removing SSH command configuration
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.1885221Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.1921665Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.2184836Z Removing HTTP extra header
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.2188543Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.2222867Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.2511585Z Removing includeIf entries pointing to credentials config files
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.2528697Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.2607960Z includeif.gitdir:/home/runner/work/claude-plugins/claude-plugins/.git.path
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.2609320Z includeif.gitdir:/home/runner/work/claude-plugins/claude-plugins/.git/worktrees/*.path
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.2614419Z includeif.gitdir:/github/workspace/.git.path
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.2615247Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.2617282Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/claude-plugins/claude-plugins/.git.path
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.2636223Z /home/runner/work/_temp/git-credentials-e583cec5-a94e-4921-9a2b-c4bf91d4d10d.config
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.2659964Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/claude-plugins/claude-plugins/.git.path /home/runner/work/_temp/git-credentials-e583cec5-a94e-4921-9a2b-c4bf91d4d10d.config
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.2711529Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/claude-plugins/claude-plugins/.git/worktrees/*.path
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.2751608Z /home/runner/work/_temp/git-credentials-e583cec5-a94e-4921-9a2b-c4bf91d4d10d.config
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.2795239Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/claude-plugins/claude-plugins/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-e583cec5-a94e-4921-9a2b-c4bf91d4d10d.config
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.2865216Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.2893041Z /github/runner_temp/git-credentials-e583cec5-a94e-4921-9a2b-c4bf91d4d10d.config
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.2916142Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-e583cec5-a94e-4921-9a2b-c4bf91d4d10d.config
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.2953304Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.2988048Z /github/runner_temp/git-credentials-e583cec5-a94e-4921-9a2b-c4bf91d4d10d.config
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.2998682Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-e583cec5-a94e-4921-9a2b-c4bf91d4d10d.config
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.3036151Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.3266567Z Removing credentials config '/home/runner/work/_temp/git-credentials-e583cec5-a94e-4921-9a2b-c4bf91d4d10d.config'
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.3407003Z Cleaning up orphan processes
+compliance	UNKNOWN STEP	2026-10-14T07:02:44.3668369Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: astral-sh/setup-uv@v6. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
