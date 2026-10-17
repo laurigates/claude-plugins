@@ -45,16 +45,25 @@ mk_fixture() { # mk_fixture <name>  -> echoes the fixture project dir
 }
 
 run() { bash "$CHECK" --project-dir "$1" >/dev/null 2>&1; echo $?; }
+CONTRACT="${REPO_ROOT}/scripts/check-structured-output-contract.sh"
+valid() { printf '%s\n' "$1" | bash "$CONTRACT" --validate - >/dev/null 2>&1 && echo true || echo false; }
+has() { grep -qF -- "$2" <<<"$1" && echo true || echo false; }
 
 # A. real templates pass
 d=$(mk_fixture A)
 check "A: real templates exit 0" "0" "$(run "$d")"
+out=$(bash "$CHECK" --project-dir "$d" 2>&1)
+check "A: OK output carries no REASON=" "false" "$(has "$out" "REASON=")"
+check "A: OK output satisfies the contract" "true" "$(valid "$out")"
 
 # B. strip --model opus from one autorun invocation
 d=$(mk_fixture B)
 sed -i.bak 's/--model opus --effort medium --max-turns 25/--effort medium --max-turns 25/' \
   "$d/blueprint-plugin/templates/blueprint-autorun.workflow.yml" && rm -f "$d"/blueprint-plugin/templates/*.bak
 check "B: missing --model opus exit 1" "1" "$(run "$d")"
+out=$(bash "$CHECK" --project-dir "$d" 2>&1)
+check "B: REASON= names the first finding" "true" "$(has "$out" "REASON=autorun: a claude_args line lacks '--model opus'")"
+check "B: ERROR output satisfies the contract" "true" "$(valid "$out")"
 
 # C. strip the work-order-approved trigger
 d=$(mk_fixture C)
