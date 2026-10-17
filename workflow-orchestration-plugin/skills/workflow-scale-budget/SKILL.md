@@ -1,9 +1,9 @@
 ---
 name: workflow-scale-budget
-description: Size a Workflow script's agent count before running it — cost per agent, per-item multipliers, theme grouping, re-drive design. Use when authoring or proposing a Workflow fan-out.
-allowed-tools: Read, Grep, Glob, TodoWrite
+description: Size a Workflow script's agent count before running it, or tally a finished run's agents and tokens. Use when authoring or proposing a Workflow fan-out, or asking what a run used.
+allowed-tools: Bash, Read, Grep, Glob, TodoWrite
 created: 2026-09-29
-modified: 2026-10-05
+modified: 2026-10-17
 reviewed: 2026-09-29
 ---
 
@@ -16,6 +16,7 @@ reviewed: 2026-09-29
 | Writing or proposing a `Workflow` script, or estimating its cost | Writing the script's API calls — load the built-in `workflow-authoring` skill |
 | The `hooks-plugin/hooks/workflow-scale-guard.sh` hook asked before a run | Recovering a run already killed mid-flight — use `workflow-orchestration-plugin:workflow-interrupted-run-recovery` |
 | Choosing between per-item and grouped fan-out | Ordering dependent waves — use `workflow-orchestration-plugin:workflow-wave-dispatch` |
+| A Workflow run has finished and you want its realised agent count or tokens | The tally WARNs `agents_without_result` (the run ended, whether killed, failed or completed, with agents unfinished) — use `workflow-orchestration-plugin:workflow-interrupted-run-recovery` |
 
 The hook enforces the bound (PreToolUse on `Workflow`, `ask` when the estimated
 agent count exceeds `CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS`, default 10). The two
@@ -63,3 +64,11 @@ workflow again, at any scale.
    rounds up front, triage the new issues between rounds, and carry the
    low-value ones as backlog. "Clear the plate" is not a stopping condition
    for a loop that refills the plate.
+8. **After a run finishes:** `bash "${CLAUDE_SKILL_DIR}/scripts/workflow-run-tally.sh" <run-id>`
+   tallies its realised agents and tokens from the transcripts. A session id tallies
+   every run in that session, then prints one `WORKFLOW SESSION TALLY` block with the
+   agents and tokens summed across the runs and the worst run status. A WARN with
+   `agents_without_result` means the run ended with agents unfinished: see
+   `workflow-orchestration-plugin:workflow-interrupted-run-recovery`. Summing the raw
+   usage lines overstates cache tokens, because one API message is written as several
+   lines, so the script keeps only the last line per message id.
