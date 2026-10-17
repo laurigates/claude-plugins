@@ -68,6 +68,11 @@ on:
       # Cases 1-6 extract REGISTRY_HEALTH_YML from scaffold.py, so a change to that
       # file alone must run them too.
       - 'comfyui-plugin/skills/comfyui-node-scaffold/scaffold.py'
+      # The no-force stacked-merge suite reads the recipe in references/ and the field rule
+      # in .claude/rules/. Neither matches an entry above, so a PR editing only the recipe
+      # would skip the suite (#2826).
+      - 'git-plugin/skills/git-merge-hazards/**'
+      - '.claude/rules/gh-json-fields.md'
   push:
     branches: [main]
     paths:
@@ -89,6 +94,8 @@ on:
       - 'comfyui-plugin/skills/comfy-registry-lifecycle/SKILL.md'
       # Mirrors the pull_request list above (cases 1-6 read scaffold.py).
       - 'comfyui-plugin/skills/comfyui-node-scaffold/scaffold.py'
+      - 'git-plugin/skills/git-merge-hazards/**'
+      - '.claude/rules/gh-json-fields.md'
 
 concurrency:
   group: test-skill-scripts-${{ github.event.pull_request.number || github.ref }}

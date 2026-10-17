@@ -93,16 +93,20 @@ wall-clock deadline.** Observed 2026-07-30: two such loops burned a 6m40s and a
 
 ### Gating on an expected check *count* is brittle
 
-The companion advice "wait for nothing-pending **and** at least N checks" (see
-`git-plugin:git-merge-hazards`, which carries the CI check-*registration*
-race) guards a real race — zero-pending is trivially true before jobs
-register. But a hardcoded `N` breaks on **path-filtered** workflows: the same
-repo yields 7 checks for a PR touching `*-plugin/**` and 5 for one touching
-only `.claude/rules/**`, so `-ge 6` waits forever on a perfectly green PR.
+The companion advice in `git-plugin:git-merge-hazards` used to gate on "nothing
+pending **and** at least N checks". That guards a real race (zero-pending is
+trivially true before jobs register), but a hardcoded `N` breaks on
+**path-filtered** workflows: the same repo yields 7 checks for a PR touching
+`*-plugin/**` and 5 for one touching only `.claude/rules/**`, so `-ge 6` waits
+forever on a perfectly green PR. The skill now gates on the rollup instead: every
+check `COMPLETED`, every conclusion `SUCCESS`, `SKIPPED` or `NEUTRAL`, the
+head SHA equal to the pushed one, and the same answer on two reads. See
+[stacked-chain-push.md](../../git-plugin/skills/git-merge-hazards/references/stacked-chain-push.md).
 
 Derive the expectation instead of hardcoding it — poll until the check count is
 **stable across two consecutive reads** with nothing pending, and bound the
-whole loop with a deadline.
+whole loop with a deadline. The rollup gate applies the same two-read rule, so a
+second run that registers between the reads is caught.
 
 ## Default list cap: pass `--limit` when counting or verifying state
 
