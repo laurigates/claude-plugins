@@ -162,7 +162,9 @@ for the first 100 open Discussions and `GITHUB_DRIFT` reports those in an
 answerable category that are not yet answered. Answerability is GitHub's own
 `category.isAnswerable`, never a category name, so adding or retiring a
 category needs no change here. The filter is `isAnswered != true` because
-GitHub returns `isAnswered: null` outside answerable categories.
+GitHub returns `isAnswered: null` outside answerable categories. `--summary`
+never makes the call, even with `--with-dedup`, because the summary never
+prints the block.
 
 | Key | Meaning |
 |---|---|
@@ -175,8 +177,9 @@ GitHub returns `isAnswered: null` outside answerable categories.
 
 The query has its own ok-key rather than riding on `GH_READY`: the list calls
 can succeed while GraphQL fails, and a failed query must not print a zero.
-`GH_READY` keys only on the list calls, so a Discussions failure alone never
-flips it or adds a `GH_FAIL_REASON`.
+`GH_READY`, `GH_FAIL_REASON` and `GH_FAIL_DETAIL` come only from the list calls,
+so a Discussions failure never flips or renames them, even when the list calls
+also fail. A failed query reports only through `DISCUSSIONS_FAIL_REASON`.
 
 ### Git state reports both directions
 

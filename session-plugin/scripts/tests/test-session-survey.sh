@@ -162,7 +162,9 @@ chmod +x "$STUB/task"
 # GH_STUB_SLEEP simulates a slow/hung network call; GH_ARGV_LOG records argv.
 # `api graphql` is the Discussions query (#2569): GH_DISCUSSION_FIXTURE serves a
 # response built from the live one, GH_DISCUSSION_FAIL reproduces gh's exit on
-# a GraphQL error while every other call still succeeds.
+# a GraphQL error while every other call still succeeds. GH_DISCUSSION_FAIL_STDERR
+# sets that error's text (AQ8: an `HTTP 403`), and GH_LIST_FAIL makes the issue
+# and PR list calls fail with the given stderr (AQ8: a network error).
 cat > "$STUB/gh" <<'GHSTUB'
 #!/usr/bin/env bash
 args="$*"
@@ -170,8 +172,11 @@ if [ -n "${GH_ARGV_LOG:-}" ]; then printf '%s\n' "$args" >> "$GH_ARGV_LOG"; fi
 if [ -n "${GH_STUB_SLEEP:-}" ]; then sleep "$GH_STUB_SLEEP"; fi
 case "$1 $2" in
   "auth status") exit 0 ;;
-  "issue list")  cat "$GH_ISSUE_FIXTURE" 2>/dev/null || echo "[]" ;;
+  "issue list")
+    if [ -n "${GH_LIST_FAIL:-}" ]; then echo "$GH_LIST_FAIL" >&2; exit 1; fi
+    cat "$GH_ISSUE_FIXTURE" 2>/dev/null || echo "[]" ;;
   "pr list")
+    if [ -n "${GH_LIST_FAIL:-}" ]; then echo "$GH_LIST_FAIL" >&2; exit 1; fi
     case "$args" in
       *--author*) cat "${GH_PR_AUTHOR_FIXTURE:-$GH_PR_FIXTURE}" 2>/dev/null || echo "[]" ;;
       *--head*)   cat "${GH_PR_HEAD_FIXTURE:-$GH_PR_FIXTURE}" 2>/dev/null || echo "[]" ;;
@@ -180,7 +185,7 @@ case "$1 $2" in
     ;;
   "api graphql")
     if [ -n "${GH_DISCUSSION_FAIL:-}" ]; then
-      echo "GraphQL: Something went wrong while executing your query. (repository.discussions)" >&2
+      echo "${GH_DISCUSSION_FAIL_STDERR:-GraphQL: Something went wrong while executing your query. (repository.discussions)}" >&2
       exit 1
     fi
     cat "$GH_DISCUSSION_FIXTURE" 2>/dev/null \
@@ -2361,6 +2366,52 @@ README_DOC=$(cat "$SCRIPT_DIR/../../README.md" 2>/dev/null)
 check "AQ7: the README documents DISCUSSIONS_QUERY_OK" "$README_DOC" "DISCUSSIONS_QUERY_OK"
 check "AQ7: the README documents DISCUSSIONS_UNANSWERED" "$README_DOC" "DISCUSSIONS_UNANSWERED"
 
+# --- AQ8: a Discussions failure never renames the GitHub reason (#2569) ------
+# Both halves fail at once: the list calls die on a network error (api-error),
+# and the GraphQL call answers 403, which classifies as auth. auth outranks
+# api-error, so a rank loop that includes the discussions job reports
+# GH_FAIL_REASON=auth for a failure the list calls actually caused.
+out=$(GH_LIST_FAIL="error connecting to api.github.com" GH_DISCUSSION_FAIL=1 \
+  GH_DISCUSSION_FAIL_STDERR="gh: Resource not accessible by integration (HTTP 403)" \
+  run --with-dedup)
+d=$(drift_of "$out")
+check_line "AQ8a: GitHub is not ready" "$out" "GH_READY=false"
+check_line "AQ8a: the GitHub reason is the list calls' api-error" "$out" "GH_FAIL_REASON=api-error"
+check_absent "AQ8a: and the discussions auth reason does not leak into it" "$out" "GH_FAIL_REASON=auth"
+check_line "AQ8a: the detail is the list call's stderr" "$out" \
+  "GH_FAIL_DETAIL=error connecting to api.github.com"
+check_line "AQ8a: the discussions failure keeps its own reason" "$d" "DISCUSSIONS_FAIL_REASON=auth"
+check_line "AQ8a: and its query is reported failed" "$d" "DISCUSSIONS_QUERY_OK=false"
+
+# Control: the same 403 with the list calls healthy leaves GitHub ready and
+# adds no GH_FAIL_REASON, so the reason AQ8a sees is the list calls' own.
+out=$(GH_DISCUSSION_FAIL=1 \
+  GH_DISCUSSION_FAIL_STDERR="gh: Resource not accessible by integration (HTTP 403)" \
+  run --with-dedup)
+d=$(drift_of "$out")
+check_line "AQ8 control: a 403 on GraphQL alone leaves GitHub ready" "$out" "GH_READY=true"
+check_absent "AQ8 control: and adds no GH_FAIL_REASON" "$out" "GH_FAIL_REASON="
+check_line "AQ8 control: the 403 is still the discussions reason" "$d" "DISCUSSIONS_FAIL_REASON=auth"
+
+# --- AQ9: --summary --with-dedup asks GraphQL for nothing (#2569) -----------
+# The SessionStart nudge runs `--summary --with-dedup`. Summary mode prints no
+# DISCUSSIONS_ key, so the one GraphQL call it used to make bought nothing.
+export GH_ARGV_LOG="$SANDBOX/gh-argv-summary-dedup.log"
+: > "$GH_ARGV_LOG"
+out_sd=$(run --summary --with-dedup)
+argv=$(cat "$GH_ARGV_LOG")
+check_count_line "AQ9: summary with dedup makes no GraphQL call" "$argv" '^api graphql ' 0
+check_count_line "AQ9: and still asks its assigned-issue query" "$argv" '^issue list ' 1
+check_absent "AQ9: and prints no discussions key" "$out_sd" "DISCUSSIONS_"
+check_line "AQ9: the summary still answers GH_READY" "$out_sd" "GH_READY=true"
+
+# Control: the full digest with --with-dedup still makes exactly one call.
+: > "$GH_ARGV_LOG"
+out=$(run --with-dedup)
+argv=$(cat "$GH_ARGV_LOG")
+check_count_line "AQ9 control: full --with-dedup still makes exactly one GraphQL call" "$argv" '^api graphql ' 1
+unset GH_ARGV_LOG
+
 unset GH_DISCUSSION_FIXTURE
 
 # ============================================================================
@@ -2544,6 +2595,54 @@ check_eq "AN: 100 repeated checks against the large haystack never fail" \
   "$an_fail_after" "$an_fail_before"
 check_eq "AN: 100 repeated checks against the large haystack all pass" \
   "$an_pass_after" "$((an_pass_before + 100))"
+
+# ============================================================================
+# TEST AS: the reap path guards every array it expands (bash < 4.4, #2569)
+#
+# Bash 4.3 and earlier abort `"${arr[@]}"` under `set -u` when `arr` is declared
+# but EMPTY. `gh_launched` is empty whenever no gh call was launched (no gh on
+# PATH, or the scratch dir failed). The Discussions filter loop in reap_github
+# expands it, and that loop is length-guarded from the start. origin/main's
+# collector already guarded its own gh_launched expansion, so this guards new
+# code rather than a shipped defect. Bash 5 accepts an empty expansion, so no
+# execution on this host can reproduce the abort; the check is structural
+# instead. Inside reap_github, each "${NAME[@]}" must sit on or after a
+# "${#NAME[@]}" guard.
+#
+# Limits (a line-level heuristic, not a parser):
+#   - A guard counts when it appears anywhere earlier in reap_github, not when
+#     the expansion sits inside the guarded branch.
+#   - Only "${NAME[@]}" is read. "${NAME[*]}", "${!NAME[@]}" and slice forms
+#     are not scanned.
+#   - The safe "${arr[@]+"${arr[@]}"}" idiom is flagged UNGUARDED unless an
+#     earlier "${#arr[@]}" guard exists, so write the length guard instead.
+# ============================================================================
+as_out=$(awk '
+  /^reap_github\(\) \{/ { infn = 1 }
+  infn && /^[[:space:]]*#/ { next }
+  infn {
+    s = $0
+    while (match(s, /\$\{#[A-Za-z_][A-Za-z0-9_]*\[@\]\}/)) {
+      name = substr(s, RSTART + 3, RLENGTH - 7)
+      guard[name] = 1
+      s = substr(s, RSTART + RLENGTH)
+    }
+    s = $0
+    while (match(s, /\$\{[A-Za-z_][A-Za-z0-9_]*\[@\]\}/)) {
+      name = substr(s, RSTART + 2, RLENGTH - 6)
+      status = (name in guard) ? "GUARDED" : "UNGUARDED"
+      print status, name, NR
+      s = substr(s, RSTART + RLENGTH)
+    }
+  }
+  infn && /^\}/ { infn = 0 }
+' "$COLLECTOR")
+as_seen=$(grep -cE '^(GUARDED|UNGUARDED) ' <<<"$as_out" || true)
+check_lt "AS fixture: the scan finds reap_github and reads its array expansions" 0 "${as_seen:-0}"
+as_bad=$(grep -E '^UNGUARDED ' <<<"$as_out" || true)
+check_eq "AS: every array the reap path expands is length-guarded first" "$as_bad" ""
+check_count_line "AS control: the scan reads the guarded gh_pids and gh_list_jobs loops as guarded" \
+  "$as_out" '^GUARDED (gh_pids|gh_list_jobs) ' 2
 
 echo "---"
 echo "PASS=$pass FAIL=$fail"
