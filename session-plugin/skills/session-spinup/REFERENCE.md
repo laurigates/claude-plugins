@@ -120,12 +120,13 @@ already tracked" — then the source earns no line.
 
 ## Unanswered Discussions (how the collector decides)
 
-The same `--with-dedup` run makes one GraphQL call for the first 100 open
-Discussions and keeps the threads in a category GitHub marks answerable
-(`category.isAnswerable`) that are not yet answered. The query has its own
-ok-key, independent of `GH_READY`: the list calls can succeed while GraphQL
-fails, so a failed Discussions query never flips `GH_READY` and never prints
-a count.
+A full `--with-dedup` run (not `--summary`, which never prints the block)
+makes one GraphQL call for the first 100 open Discussions and keeps the
+threads in a category GitHub marks answerable (`category.isAnswerable`)
+that are not yet answered. The query has its own ok-key, independent of
+`GH_READY`: the list calls can succeed while GraphQL fails, so a failed
+Discussions query never flips `GH_READY`, never renames `GH_FAIL_REASON`,
+and never prints a count.
 
 | Key | Briefing consequence |
 |---|---|

@@ -1,9 +1,9 @@
 ---
 name: git-merge-hazards
 description: Traps in GitHub's merge machinery. Use when merging a PR, merging a stacked or serial PR chain, auditing whether a branch really landed, or merging over red CI.
-allowed-tools: Read, Grep, Glob, Bash(gh pr *), Bash(gh issue *), Bash(gh api *), Bash(git cherry *), Bash(git merge-tree *), Bash(git rev-parse *), Bash(git log *), Bash(git reflog *), Bash(git rebase *), Bash(git push *), Bash(git fetch *), Bash(just *), Bash(bash *), TodoWrite
+allowed-tools: Read, Grep, Glob, Bash(gh pr *), Bash(gh issue *), Bash(gh api *), Bash(git cherry *), Bash(git merge-tree *), Bash(git rev-parse *), Bash(git rev-list *), Bash(git log *), Bash(git reflog *), Bash(git rebase *), Bash(git merge *), Bash(git checkout *), Bash(git worktree *), Bash(git diff *), Bash(git add *), Bash(git commit *), Bash(git -C *), Bash(git merge-base *), Bash(grep *), Bash(awk *), Bash(jq *), Bash(git push *), Bash(git fetch *), Bash(git cat-file *), Bash(sleep *), Bash(just *), Bash(bash *), TodoWrite
 created: 2026-08-19
-modified: 2026-10-09
+modified: 2026-10-17
 reviewed: 2026-08-21
 ---
 
@@ -18,30 +18,9 @@ reviewed: 2026-08-21
 | Merging an ad-hoc stacked chain (§2, §3) | Release-please PRs are piling up or conflicting → `git-plugin:release-please-pr-workflow` |
 
 The numbered sections are the verbatim text of the promoted
-`~/.claude/rules/pr-merge-hazards.md` rule.
-
-Notes that are *not* part of that body:
-
-- The `## Agentic Optimizations` table is this skill's own command index;
-  leave it out when syncing with `pr-merge-hazards.md`.
-- §3 and §5's follow-on subsections moved verbatim into `references/`; they
-  are still rule text when syncing.
-- §6 and §4's merge-endpoint pointer are skill-only, not in `pr-merge-hazards.md`.
-
-- Two gates — §1's merged-ness authority order and §4 (minus its skill-only
-  merge-endpoint pointer) — are also reproduced verbatim in the `pr-merge-hazards.md` stub, because they are
-  read *while* the decision is being made. Edit both copies together.
-- §1 overlaps `git-plugin:deadbranch` Step 1.5, which carries the same three
-  signals scoped to branch cleanup.
-- §2 and §3 describe **ad-hoc** chains — PRs whose base is another PR's branch.
-  A stack **registered with GitHub** (`gh stack`) retargets its upper PRs
-  itself on merge, so the auto-close hazard and the manual retarget/rebase
-  ordering do not apply there. See `git-plugin:git-stacked-prs`.
-- The two encoded recipes cited in §1 and §2 are the author's own (a
-  `just -g` recipe in `laurigates/dotfiles`, and a sweep script in
-  `laurigates/claude-plugins`), not commands a plugin consumer already has.
-  Read the authority ladder in §1 as the instruction; the recipe is a
-  convenience, and its REVIEW bucket measured ~90% false positives (#2268).
+`~/.claude/rules/pr-merge-hazards.md` rule. The maintainer notes on what differs
+from that rule, including the skill-only §2 bullets, are in
+[references/sync-notes.md](references/sync-notes.md).
 
 Six traps in GitHub's merge machinery, one law: "PR merged" says nothing about
 *content* — and a red check is not proof of failure. Each: the trap, the
@@ -71,6 +50,8 @@ once `main` drifts the same files.
   keep merge-tree only as a positive-containment shortcut.
 - **Fix**: use the encoded recipe rather than re-deriving: `just -g branch-audit`
   (in `private_dot_config/just/git.just`) prints MERGED vs REVIEW + a paste-ready delete.
+  Its REVIEW bucket measured ~90% false positives (#2268), so a REVIEW line is a
+  question to settle with `gh pr list --state all --head <branch>`, not a verdict.
 - A non-match is "review", **not** proof of unmerged — don't force the count to zero.
 
 ## 2. Merging a stacked base auto-CLOSES the child PR
@@ -79,12 +60,14 @@ When PR B is based on PR A's branch, merging A and deleting its branch
 auto-closes B (GitHub does **not** retarget it), and a closed PR whose base
 branch is gone **cannot be reopened**.
 
+- **Check the base first** (skill-only): `gh pr view <base> --json state,mergeStateStatus,mergeable` before retargeting. Proceed only when `state` is `OPEN` and `mergeable` is `MERGEABLE`; the `mergeStateStatus` values and the `UNKNOWN` wait are in [references/no-force-push-stack.md](references/no-force-push-stack.md#check-the-base-first).
 - **Fix — order matters**: retarget the child **first**, while the base PR is open:
   1. `gh pr edit <child> --base main`
   2. `gh pr merge <base> --squash --delete-branch`
   3. `git rebase --onto origin/main <old-base-tip> <child-branch>` (drops the
      already-squashed base commits) + `git push --force-with-lease`
   4. merge the child.
+- **No-force alternative (skill-only, preferred when the child builds only on its base)**: merge `main` into the child with no force-push, after a classification that decides whether `-X ours` is lossless. Recipe: [references/no-force-push-stack.md](references/no-force-push-stack.md). The rebase path in the Fix steps is the fallback.
 - **If already auto-closed**: the head branch survives — rebase as above,
   `gh pr create` fresh, comment "Superseded by #new" on the closed one.
 - **Nothing tells you this happened.** The auto-close is silent: no failed
@@ -140,9 +123,9 @@ The trap is wider than negation: plain past tense, a markdown-linked cross-repo 
 
 ## 6. A serial merge chain merges commits nobody verified
 
-`gh pr update-branch` re-runs every `pull_request` workflow, so a bot that
-writes to PR branches can push after your review; its commits pass CI and merge
-unread. Before each merge, refuse any non-merge commit newer than your review
+`gh pr update-branch` re-runs every `pull_request` workflow, and a retarget
+(`gh pr edit --base`) can start a bot too, so a bot that writes to PR branches can
+push after your review; its commits pass CI and merge unread. Before each merge, refuse any non-merge commit newer than your review
 timestamp, and merge with `--match-head-commit <sha>`. A PR that changes such a
 bot goes last in the chain. Guard snippet, the `gh --jq --arg` trap and
 recovery: [references/serial-merge-chain.md](references/serial-merge-chain.md).

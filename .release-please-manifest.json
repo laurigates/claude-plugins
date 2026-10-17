@@ -23,7 +23,7 @@
   "github-actions-plugin": "1.13.4",
   "health-plugin": "1.23.3",
   "home-assistant-plugin": "1.4.1",
-  "hooks-plugin": "2.14.0",
+  "hooks-plugin": "2.15.0",
   "kubernetes-plugin": "1.9.5",
   "langchain-plugin": "1.5.10",
   "macos-plugin": "1.9.2",

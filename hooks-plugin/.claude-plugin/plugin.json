@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "hooks-plugin",
-  "version": "2.14.0",
+  "version": "2.15.0",
   "description": "Claude Code hooks for enforcing best practices and workflow automation",
   "author": {
     "name": "Lauri Gates"
@@ -34,7 +34,8 @@
     "branch-base",
     "prose-style",
     "workflow-scale",
-    "subagent-count"
+    "subagent-count",
+    "context-threshold"
   ],
   "hooks": {
     "SessionStart": [
@@ -156,6 +157,11 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/event-logger.sh\"",
             "timeout": 2000
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/context-threshold-nudge.sh\"",
+            "timeout": 5000
           }
         ]
       },

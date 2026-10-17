@@ -675,10 +675,11 @@ if [ -n "$gh_dir" ]; then
       --json number,title,url,updatedAt
   fi
   # Open Discussions (#2569). `gh` has no discussion subcommand, so this is the
-  # one GraphQL call. Only GITHUB_DRIFT prints it, so only --with-dedup asks.
+  # one GraphQL call. Only the full GITHUB_DRIFT block prints it, so it needs
+  # --with-dedup AND not --summary: the summary never prints a DISCUSSIONS_ key.
   # `{owner}`/`{repo}` are gh's own placeholders, resolved from the same
   # checkout remote the list calls above use.
-  if [ "$with_dedup" = true ]; then
+  if [ "$with_dedup" = true ] && [ "$summary_mode" = false ]; then
     gh_job discussions api graphql -F 'owner={owner}' -F 'name={repo}' \
       -f query="$discussions_query"
   fi
@@ -1125,11 +1126,22 @@ reap_github() {
   # failure that still yielded data is not an unqueried GitHub. With no job
   # launched at all the cause is the gh CLI itself, not any one call.
   if [ "$gh_ready" = false ]; then
-    if [ "${#gh_launched[@]}" -eq 0 ]; then
+    # The Discussions job (#2569) is left out of the aggregation: its failure is
+    # DISCUSSIONS_FAIL_REASON's to report. Left in, an `HTTP 403` from GraphQL
+    # ranks above the list calls' api-error and renames the GitHub reason.
+    local -a gh_list_jobs=()
+    # Length-guarded: gh_launched is empty when no gh call was launched, and bash
+    # < 4.4 aborts a bare "${arr[@]}" on an empty array under set -u (#2569).
+    if [ "${#gh_launched[@]}" -gt 0 ]; then
+      for job in "${gh_launched[@]}"; do
+        [ "$job" = discussions ] || gh_list_jobs+=("$job")
+      done
+    fi
+    if [ "${#gh_list_jobs[@]}" -eq 0 ]; then
       gh_fail_reason="no-cli"
     else
       local reason rank best_rank=99
-      for job in "${gh_launched[@]}"; do
+      for job in "${gh_list_jobs[@]}"; do
         reason="$(gh_classify "$job")"
         rank="$(gh_reason_rank "$reason")"
         if [ "$rank" -lt "$best_rank" ] 2>/dev/null; then
@@ -1202,7 +1214,7 @@ reap_github() {
   # query that failed or was never asked must not read as a clean zero. The
   # filter is `isAnswered != true`, not `== false`, because GitHub returns
   # `isAnswered: null` outside answerable categories.
-  if [ "$with_dedup" = true ]; then
+  if [ "$with_dedup" = true ] && [ "$summary_mode" = false ]; then
     local disc_raw=""
     if ! disc_raw=$(gh_read discussions); then
       discussions_fail_reason="$(gh_classify discussions)"

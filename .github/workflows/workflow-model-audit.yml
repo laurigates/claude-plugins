@@ -118,9 +118,9 @@ jobs:
             # alone cannot say which workflow is expensive or which budget is
             # binding. The collector exits 1 only when it cannot list runs;
             # its ERROR block is still data here, so the exit is tolerated.
-            echo "## Measured cost and turn draw (last 3 model-reaching runs per invoking workflow)"
+            echo "## Measured cost and turn draw (last 3 sampled runs per invoking workflow, gated-off runs excluded)"
             echo ""
-            echo "COST_USD=unknown means the run's log carried no accounting object (its Claude step did not run, or the log expired): no data, not zero. NEAR_CAP=true means the run used within 2 turns of the --max-turns it ran with, or went past it."
+            echo "COST_USD=unknown means the run was sampled but no accounting object was read: its log expired, its Claude job printed none, or its job list could not be matched to a Claude job or step, so the run was kept rather than dropped. No data, not zero. A run whose job list shows its Claude job or step skipped is sampled only if its log carries accounting; otherwise it is not sampled and GATED_OFF_RUNS counts it. NEAR_CAP=true means the run used within 2 turns of the --max-turns it ran with, or went past it."
             echo ""
             echo '```'
             for wf in "${invoking[@]}"; do
@@ -275,7 +275,10 @@ jobs:
             workflow's TOTAL_COST_USD), highest first, so the list reflects
             what each workflow costs and not its job shape alone. A workflow
             whose sampled runs are all COST_USD=unknown is unmeasured: say so,
-            and do not rank it as cheap. Name every NEAR_CAP=true run: a run
+            and do not rank it as cheap. RUNS_SAMPLED=0 means unmeasured, and
+            SCAN_TRUNCATED=true means the sample is short, so TOTAL_COST_USD is
+            a lower bound; neither may be ranked as cheap. Name every
+            NEAR_CAP=true run: a run
             within two turns of its --max-turns, or past it, has a binding
             budget. For each, read its CONCLUSION and DENIALS before
             recommending anything, because every denied tool call burns a
