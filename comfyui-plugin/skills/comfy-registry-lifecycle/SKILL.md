@@ -1,6 +1,6 @@
 ---
 created: 2026-07-07
-modified: 2026-10-12
+modified: 2026-10-17
 reviewed: 2026-07-07
 name: comfy-registry-lifecycle
 description: >-
@@ -107,7 +107,8 @@ Empty list ⇒ broken tarball. The `downloadUrl`
 
 ComfyUI-Manager (and so `comfy node install`) resolves through
 `GET /nodes/<id>/install`, which returns the newest **non-Banned** version —
-Flagged included. Measured 2026-08-27 (laurigates/comfyui-image-browser#111):
+Flagged included (a Deleted version is expected to be skipped too, not yet verified
+against `/install`). Measured 2026-08-27 (laurigates/comfyui-image-browser#111):
 a Flagged 0.1.32 resolved to 0.1.32, a Banned 0.1.30 resolved to 0.1.7. While
 a fixed version is Pending, installs still serve an older one. `comfy node registry-install` can fetch a Pending
 version directly.
@@ -158,12 +159,14 @@ on demand) that looks up the `pyproject.toml` version in the registry and
 **fails + opens a `registry-health` issue** when that version is Flagged,
 Banned, Deleted, stuck Pending, missing, or outranked by a phantom — auto-closing when
 healthy — is the early-warning the publish pipeline lacks on its own.
-On Flagged or Banned it queries `?include_status_reason=true` and writes the
-scan findings (issue type / scanner / file / description) into the issue body,
-so the security-scan verdict is readable without Discord, and it names the
-version `/install` actually resolves to — the number that says whether
-anyone's install is broken (Flagged: no; Banned: yes). Worth adding to
-any new pack (the scaffold emits it).
+On Flagged, Banned or Deleted it names the version `/install` actually resolves
+to — the number that says whether anyone's install is broken (Flagged: no;
+Banned: yes; Deleted: expected yes, not yet verified against `/install`). Only
+Flagged and Banned carry scan findings (issue type / scanner / file /
+description, from `?include_status_reason=true`), so the security-scan verdict
+is readable without Discord; a Deleted body has no findings section, because
+deletion is not a scan verdict. Worth adding to any new pack (the scaffold
+emits it).
 
 ## Backport to the scaffold
 

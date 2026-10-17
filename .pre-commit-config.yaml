@@ -474,6 +474,18 @@ repos:
         language: script
         files: '^obsidian-plugin/skills/(vault-orphans|vault-wikilinks|vault-mocs|vault-tags|vault-stubs|search-discovery)/SKILL\.md$'
         pass_filenames: false
+      - id: check-justfile-module-paths
+        name: justfile-expert distinguishes source_directory() from justfile_directory() in modules (#3060)
+        entry: ./scripts/check-justfile-module-paths.sh
+        language: script
+        files: '^(tools-plugin/skills/justfile-expert/(REFERENCE\.md|references/key-capabilities\.md)|scripts/check-justfile-module-paths\.sh)$'
+        pass_filenames: false
+      - id: check-justfile-module-paths-test
+        name: justfile module-paths check regression
+        entry: ./scripts/tests/test-check-justfile-module-paths.sh
+        language: script
+        files: '^scripts/(check-justfile-module-paths\.sh|tests/test-check-justfile-module-paths\.sh)$'
+        pass_filenames: false
       - id: lint-mcp-tool-references
         name: lint skill files for references to unavailable MCP tools
         entry: ./scripts/lint-mcp-tool-references.sh
@@ -991,6 +1003,20 @@ repos:
         entry: bash ./scripts/tests/test-check-plugin-root-quoting.sh
         language: system
         files: '^scripts/(check-plugin-root-quoting\.sh|tests/test-check-plugin-root-quoting\.sh)$'
+        pass_filenames: false
+      - id: check-hook-fail-closed
+        name: onFailure "block" only on the safety hooks, which exit 0 when not applicable (2.1.295)
+        entry: bash ./scripts/check-hook-fail-closed.sh
+        language: system
+        # Every hook JSON the guard scans, the four safety hook scripts it runs,
+        # and the guard itself.
+        files: '([^/]*-plugin/(hooks\.json|hooks/hooks\.json|\.claude-plugin/plugin\.json)|^hooks-plugin/hooks/(branch-protection|repo-deletion-safety|external-pr-merge-guard|secret-protection)\.sh|^scripts/check-hook-fail-closed\.sh)$'
+        pass_filenames: false
+      - id: test-check-hook-fail-closed
+        name: hook fail-closed guard regression (missing/extra/invalid key, crashing hook, empty tree errors)
+        entry: bash ./scripts/tests/test-check-hook-fail-closed.sh
+        language: system
+        files: '^scripts/(check-hook-fail-closed\.sh|tests/test-check-hook-fail-closed\.sh)$'
         pass_filenames: false
       - id: check-hook-matchers
         name: plugin hook matchers are tool-name filters, not permission-rule syntax

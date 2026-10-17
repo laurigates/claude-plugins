@@ -1,6 +1,6 @@
 ---
 created: 2026-02-26
-modified: 2026-10-09
+modified: 2026-10-13
 reviewed: 2026-09-16
 paths:
   - ".claude/hooks/**"
@@ -19,6 +19,8 @@ Comprehensive reference for Claude Code hook events, schemas, and patterns. This
 > **Note (2.1.280)**: `PermissionRequest` no longer runs `type: "agent"` hooks — their answer could never allow or deny the request. Configuring one shows an error pointing to `command` or `http` hooks.
 
 > **Note (2.1.281)**: `claude --bg` asks for workspace trust before running project hooks.
+
+> **Fail-closed (2.1.288, 2.1.295)**: Since 2.1.288, a `PreToolUse` or `PermissionRequest` call is **blocked** when matching its hooks fails or the tool input cannot be serialized to JSON; before, the hook was silently skipped. Every other command and HTTP hook still fails open unless it sets `onFailure: "block"` (2.1.295), which blocks the action when the hook cannot start, times out, or exits with an unexpected code. Set it only on safety hooks: a nudge that fails closed dead-ends work (`.claude/rules/hook-block-vs-nudge.md`). Since 2.1.296, a managed-settings `PreToolUse` hook denying with `"continue": false`, or a managed `prompt` hook that blocks, also ends the turn; before, it refused the call and the turn went on.
 
 ## Hook Events
 
@@ -87,6 +89,7 @@ Comprehensive reference for Claude Code hook events, schemas, and patterns. This
 | `PostModelSwitch` | After a model switch takes effect — block, confirm, or annotate a model switch (2.1.251+) | none |
 | `CwdChanged` | The working directory changes (2.1.83+) | not stated upstream — confirm against code.claude.com/docs |
 | `FileChanged` | A watched file changes on disk (2.1.83+) | not stated upstream — confirm against code.claude.com/docs |
+| `InstructionsLoaded` | A rule or CLAUDE.md file is loaded into context. Since 2.1.288 it carries `agent_id`/`agent_type` when a subagent's file access triggered the load, and `effort` for files loaded on file access | not stated upstream |
 
 > **Note (2.1.83)**: `CwdChanged` and `FileChanged` were added for reactive environment management (e.g. `direnv`). The changelog does not detail their input schema or matcher support beyond the trigger itself.
 
@@ -155,6 +158,8 @@ The command hook default was increased from 60 seconds in Claude Code 2.1.50.
 
 > **Note (2.1.239)**: Remote/web sessions now send keep-alives while a long `SessionStart`/`Setup` hook runs, so the container is no longer idle-reaped mid-hook — relevant to the 300–600s recommendation above.
 
+> **Note (2.1.285, 2.1.296)**: A synchronous hook that starts a background process (`some-daemon &`) holding stdout open no longer hangs Claude Code; the hook finishes shortly after its own process exits (2.1.285). To find a slow hook, run with `--debug`: command hooks on tool calls, prompts, SessionStart and Stop log their command, plugin, outcome and duration (2.1.296).
+
 Set timeout explicitly even though the default is now 10 minutes — explicit timeouts document intent:
 
 ```json
@@ -198,6 +203,8 @@ Command hooks support two invocation forms:
 The exec form (`args: string[]`) spawns the command directly without a shell, so path placeholders like `${CLAUDE_PROJECT_DIR}` are passed as a single argument even when they contain spaces. Prefer the exec form when the only reason to use a shell would be quoting paths.
 
 In the shell form, quote the placeholder: `"command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/<script>.sh\""`. `claude plugin validate` warns on an unquoted `${CLAUDE_PLUGIN_ROOT}` in a shell-form hook, and plugin hook-failure errors name the plugin (2.1.281).
+
+When another enabled plugin has the same name, a plugin's hooks are left out; `/plugin` notes this since 2.1.296.
 
 ---
 
@@ -463,7 +470,7 @@ interruption. See `.claude/rules/hook-block-vs-nudge.md` for whether to gate at
 all, and `feedback-plugin/hooks/check-open-pr.sh` for a worked example of the
 `ask` → `deny` reclassification.
 
-> **Security Note (2.1.72)**: Prior to 2.1.72, returning `"allow"` from a PreToolUse hook could bypass `deny` rules (including enterprise managed settings). This is now fixed — `deny` rules always take precedence.
+> **Security Note (2.1.72)**: Prior to 2.1.72, returning `"allow"` from a PreToolUse hook could bypass `deny` rules (including enterprise managed settings). This is now fixed — `deny` rules always take precedence. Two later gaps in the same family: before 2.1.290 some permission rules and safety checks were not re-applied after a hook rewrote the input with `updatedInput`, and before 2.1.292 a hook `allow` (or auto mode) skipped the prompt for file reads from network (UNC) paths.
 
 Optionally modify the tool input before execution:
 
@@ -665,7 +672,7 @@ As of 2.1.152, `SessionStart` hooks accept two more `hookSpecificOutput` fields:
 { "action": "cancel" }
 ```
 
-Exit code 2 also declines. Return nothing to show dialog to user.
+Exit code 2 also declines. Return nothing to show dialog to user. `{"decision":"block"}` from an Elicitation or ElicitationResult hook declines too; before 2.1.284 it was ignored.
 
 ---
 
@@ -681,6 +688,8 @@ replayed transcript" as deliberately as "never reaches a diff."
 > **Note (2.1.89)**: Hook output over 50K characters is no longer injected into context directly — it's saved to disk and the model sees a file path + preview instead. This caps the worst case of an unbounded hook output blowing up the transcript, but design for the smaller output regardless (see Design guidance below).
 
 > **Note (2.1.280)**: The `hook_execution_complete` OTel event reports output sizes and a count of oversized outputs, so hook output cost can be measured rather than estimated. The `UserPromptSubmit` timeout notice names the hook that timed out.
+
+> **Note (2.1.292, 2.1.295)**: `<system-reminder>` tags written in hook output are escaped before they reach Claude (2.1.292), so a hook cannot pose as a harness reminder. Hooks in background sessions inherited `FORCE_COLOR=3` before 2.1.295, which put color escape codes into the output Claude reads.
 
 ### Which output the model sees (and replays)
 
@@ -962,6 +971,8 @@ Command hooks can run asynchronously with `async: true`. Async hooks fire-and-fo
 Use async hooks for non-blocking side effects like logging, metrics, and notifications where you do not need to gate the operation on the hook result.
 
 > **Note (2.1.75)**: Async hook completion messages are suppressed by default. Use `--verbose` or transcript mode to see them.
+
+> **Note (2.1.295)**: Before 2.1.295, an async hook's JSON output was ignored when printed over several lines, and an async SessionStart hook's unchanged context was re-added on every resume. On older clients, emit async JSON on one line (`jq -c`).
 
 > **Note (2.1.239)**: If the session's working directory is deleted mid-session, hooks no longer fail with `posix_spawn ENOENT` — they now run from the project root or the user's home directory instead.
 

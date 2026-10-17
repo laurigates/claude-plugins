@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.8](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.17.7...evaluate-plugin-v1.17.8) (2026-10-14)
+
+
+### Bug Fixes
+
+* **evaluate-plugin:** gate the drift probe on a plugin-repo marker and bound its timeout ([#3082](https://github.com/laurigates/claude-plugins/issues/3082)) ([6cea9e7](https://github.com/laurigates/claude-plugins/commit/6cea9e7b3456880298c0fbbd5b76d82d712e0015)), closes [#3073](https://github.com/laurigates/claude-plugins/issues/3073)
+
 ## [1.17.7](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.17.6...evaluate-plugin-v1.17.7) (2026-10-10)
 
 

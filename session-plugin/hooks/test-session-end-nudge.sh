@@ -20,6 +20,10 @@
 # Exit 0 = all tests pass, Exit 1 = failures
 set -euo pipefail
 
+# Neutralize any inherited git context before building sandbox repos (issues #1745, #3080).
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
+  GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX
+
 HOOK="$(dirname "$0")/session-end-nudge.sh"
 PASS=0
 FAIL=0

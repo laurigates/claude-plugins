@@ -148,7 +148,8 @@ A PreToolUse hook that blocks access to sensitive files and prevents credential 
 | Environment files | `.env`, `.env.*` (allows `.env.example`, `.env.sample`) |
 | SSH credentials | `.ssh/id_*`, `.pem`, `*_rsa`, `*_ed25519` |
 | Cloud credentials | `.aws/credentials`, `.config/gcloud/`, `.kube/config`, `.docker/config.json` |
-| Credential files | `credentials.json`, `secrets.json`, `*.keystore`, `*.key` |
+| Credential files | `credentials.json`, `secrets.json`, `.api_tokens` (e.g. `~/.api_tokens`), `*.keystore`, `*.key` |
+| Bash reader verbs | `cat`/`head`/`tail`/`less`/`more`/editors (any argument mentioning a protected path), plus `sed`/`awk`/`grep`/`cut`/`perl`/`rg` when the protected path is a standalone file argument — a protected name inside a quoted search pattern or sed script passes. `source`/`.` of a token file is allowed (it loads, not prints) |
 | Env var exposure | Commands that echo `$API_KEY`, `$SECRET`, `$TOKEN`, `$PASSWORD` |
 | Full env dump | Bare `printenv` or `env` commands |
 
@@ -187,7 +188,7 @@ A PreToolUse hook that blocks `rm -rf` on a git repository whose history exists 
 | Repos under `/tmp`, `/private/tmp`, `/var/folders`, `$TMPDIR` | Allowed by default |
 | A repo with an existing `<basename>-*.tar.*` in the backup dir | Allowed — this is what makes the block self-extinguishing |
 
-The block message reports what the preflight **found** in that repo (commits, uncommitted changes, stashes, local branches — every probe capped, since the hook fails open on timeout) and points at `git-plugin:git-repo-delete-check` for the remediation options; that skill is their single authority, so the message does not restate them (#2454). The one option it keeps verbatim is the tar backup to `$CLAUDE_REPO_BACKUP_DIR`, because writing that tarball is what changes the world state the hook reads, so the retried `rm -rf` succeeds with no override. Fails **open** on unresolvable operands (`$VAR`, `$(…)`, globs, `{}`) and on remote-exec commands; sibling verbs (`git clean -xdff`, `trash`, `mv`, `rmdir`, `shred`, `find … -delete`) are out of scope. Full enumerated gap list in [`hooks/README.md`](hooks/README.md#repo-deletion-safetysh).
+The block message reports what the preflight **found** in that repo (commits, uncommitted changes, stashes, local branches — every probe capped so the hook finishes inside its timeout; on Claude Code 2.1.295+ a timeout blocks the deletion through `onFailure: "block"`, but the configured `timeout` of 5000 is read as seconds, so it does not fire in practice — the units are tracked separately) and points at `git-plugin:git-repo-delete-check` for the remediation options; that skill is their single authority, so the message does not restate them (#2454). The one option it keeps verbatim is the tar backup to `$CLAUDE_REPO_BACKUP_DIR`, because writing that tarball is what changes the world state the hook reads, so the retried `rm -rf` succeeds with no override. Fails **open** on unresolvable operands (`$VAR`, `$(…)`, globs, `{}`) and on remote-exec commands; sibling verbs (`git clean -xdff`, `trash`, `mv`, `rmdir`, `shred`, `find … -delete`) are out of scope. Full enumerated gap list in [`hooks/README.md`](hooks/README.md#repo-deletion-safetysh).
 
 **Toggle:** `export CLAUDE_HOOKS_DISABLE_REPO_DELETION_SAFETY=1` in your shell environment. Like branch protection, a **human-operator** opt-in — an inline `VAR=1 rm -rf …` prefix is intentionally not honored (the statement parser strips leading assignments), so agents cannot self-serve the bypass. Tuning: `CLAUDE_REPO_BACKUP_DIR` (default `$HOME/Backups`), `CLAUDE_HOOKS_REPO_DELETION_TMP_EXEMPT` (default `1`), `CLAUDE_HOOKS_REPO_DELETION_WARN_DIRTY` (default `0`).
 
@@ -218,11 +219,11 @@ The ask says how to make a run silent: slice the list in the fan-out itself (`fo
 
 **`ask`, not a block, on purpose.** The failure is not "this workflow is forbidden", it is "nobody was asked". A hard block would make the agent judge whether the scale is justified, which is the judgment that already went wrong; `ask` puts the number in front of the person paying and lets them approve in one keystroke. It is also the only enforcement point: a `SubagentStart` hook fires per agent but cannot stop a workflow's agents from starting.
 
-Estimation runs in [`hooks/workflow-scale-estimate.py`](hooks/workflow-scale-estimate.py), which parses with [acorn](https://github.com/acornjs/acorn) 8.18.0 (MIT, vendored unmodified under `hooks/lib/vendor/acorn/`, run by `hooks/lib/workflow-scale-parse.cjs` under `node`). Its rollup reports `PARSER=acorn`. A parser that crashes or times out twice (the 4 s timeout is retried once, for a cold `node` start), or an error while walking a script that parsed, is `VERDICT=ANALYSIS_ERROR`, and the guard asks. The guard also asks, as `ANALYSIS_ERROR`, when the estimator process exits non-zero or prints no verdict, with or without `node`; the pre-parser guard exited 0 there. Only without `node` does it fall back to the pre-parser regex estimator ([`hooks/lib/workflow-scale-estimate-fallback.py`](hooks/lib/workflow-scale-estimate-fallback.py)) and report `PARSER=fallback`: that estimator costs a runtime-length fan-out at `CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH` items and never reports unbounded, so a machine without `node` counts as it did before this rule, and an exception inside it is `VERDICT=ERROR`, which stays silent as it did then. A script file that is not valid UTF-8 is read with the bad bytes replaced, so it is still parsed, and the rollup is written as UTF-8 whatever the locale, so a latin-1 or ASCII stdout cannot crash the estimator.
+Estimation runs in [`hooks/workflow-scale-estimate.py`](hooks/workflow-scale-estimate.py), which parses with [acorn](https://github.com/acornjs/acorn) 8.18.0 (MIT, vendored unmodified under `hooks/lib/vendor/acorn/`, run by `hooks/lib/workflow-scale-parse.cjs` under `node`). Its rollup reports `PARSER=acorn`. A parser that crashes or times out twice (each attempt gets `CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT` seconds, default 4; a timeout is retried once, for a cold `node` start), or an error while walking a script that parsed, is `VERDICT=ANALYSIS_ERROR`, and the guard asks. The guard also asks, as `ANALYSIS_ERROR`, when the estimator process exits non-zero or prints no verdict, with or without `node`; the pre-parser guard exited 0 there. Only without `node` does it fall back to the pre-parser regex estimator ([`hooks/lib/workflow-scale-estimate-fallback.py`](hooks/lib/workflow-scale-estimate-fallback.py)) and report `PARSER=fallback`: that estimator costs a runtime-length fan-out at `CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH` items and never reports unbounded, so a machine without `node` counts as it did before this rule, and an exception inside it is `VERDICT=ERROR`, which stays silent as it did then. A script file that is not valid UTF-8 is read with the bad bytes replaced, so it is still parsed, and the rollup is written as UTF-8 whatever the locale, so a latin-1 or ASCII stdout cannot crash the estimator.
 
 Bundled workflow templates declare their agent count as `**Agent budget:**` in the skill's framing section; `scripts/check-workflow-js-model.sh` checks it against the same estimator (an integer when every site is counted, a per-item formula such as `2 + 2 x cells` when some are not).
 
-**Toggle:** `export CLAUDE_HOOKS_DISABLE_WORKFLOW_SCALE_GUARD=1`. Tuning: `CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS` (default 10, matching the `medium` guideline; the guard asks when the counted total exceeds it, so a total equal to it is silent, `0` asks on any counted agent, and a value that is not all digits means 10), `CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH` (default 8, read only by the no-`node` fallback). A hook runs as its own process with the session environment, so there is no inline prefix an agent can use to reach these — raising the limit is an operator action.
+**Toggle:** `export CLAUDE_HOOKS_DISABLE_WORKFLOW_SCALE_GUARD=1`. Tuning: `CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS` (default 10, matching the `medium` guideline; the guard asks when the counted total exceeds it, so a total equal to it is silent, `0` asks on any counted agent, and a value that is not all digits means 10), `CLAUDE_HOOKS_WORKFLOW_ASSUMED_WIDTH` (default 8, read only by the no-`node` fallback). `CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT` is the estimator's per-attempt parser timeout in seconds (default 4; a value that is not a positive number means 4). The hook leaves it at 4 to keep the ask fast; `scripts/check-workflow-js-model.sh`, a CI guard with no latency budget, runs the estimator with 30 so a cold `node` start on a loaded runner that outlasts both 4 s attempts is not reported as `estimator_error` (#3005, #2975). A hook runs as its own process with the session environment, so there is no inline prefix an agent can use to reach these — raising the limit is an operator action.
 
 **Tests:** `bash hooks-plugin/hooks/test-workflow-scale-guard.sh` (table-driven: counted shapes stay silent, each unbounded kind asks, over-limit and parse-error ask, the structural guards stay silent, the no-`node` fallback reproduces the pre-parser behaviour, and a crashing or cold-starting parser asks rather than falling back).
 
@@ -242,6 +243,29 @@ A workflow's agents start after the `Stop` of the turn that launched it, so the 
 **Toggle:** `export CLAUDE_HOOKS_DISABLE_SUBAGENT_COUNT=1`. The first threshold is `CLAUDE_HOOKS_WORKFLOW_MAX_AGENTS` (default 10), shared with `workflow-scale-guard.sh`, which reads it differently. Here a count equal to the threshold reports, and `0`, or a value that is not all digits, means 10, since the thresholds double from it. The guard asks only when a script's counted total exceeds the limit, and treats `0` as asking on any counted agent.
 
 **Tests:** `bash hooks-plugin/hooks/test-subagent-count-tripwire.sh`.
+
+### context-threshold-nudge.sh
+
+A `PostToolUse` hook that tells the agent when its context has grown past a size threshold. It exists for Claude Haiku 5.5, which is priced by prompt length: a request whose prompt is over 100,000 tokens, cache reads and writes included, pays 5x the input, cache and output rates, and so does every later request until the context shrinks. A Haiku worker or a `/loop` session crosses that line without noticing. Measured 2026-10-15: a bare Haiku session starts at about 35.5K prompt tokens, one in this repo at about 69K, and a fresh subagent at about 24K, before any work.
+
+No hook event carries a token count, so the hook reads the newest assistant `usage` record in the last 500 lines of the transcript and sums `input_tokens`, `cache_creation_input_tokens` and `cache_read_input_tokens`.
+
+| Situation | Behavior |
+|---|---|
+| Model is `claude-haiku-5-5`, `CLAUDE_HOOKS_CONTEXT_THRESHOLDS` unset | Thresholds 80,000 and 95,000 |
+| Any other model, `CLAUDE_HOOKS_CONTEXT_THRESHOLDS` unset | Silent |
+| `CLAUDE_HOOKS_CONTEXT_THRESHOLDS` has a valid entry | Those thresholds, for every model; the 100,000-token price note is added only on Haiku 5.5 |
+| Prompt reaches a threshold above the last one reported | One `additionalContext` message, e.g. `Context check: your last request sent 81,234 prompt tokens, past the 80,000-token warning threshold. ...` |
+| Prompt drops back under the lowest threshold (after `/compact`) | Re-arms; the thresholds report again |
+| Payload carries `agent_id` | Reads `<transcript>/subagents/agent-<id>.jsonl` and keeps separate state, so each subagent is warned about its own context |
+
+It never blocks and always exits 0. State is one small file per session (and per subagent) in `${TMPDIR:-/tmp}/claude-context-threshold-<uid>/`, created mode 700 and used only when it is a real directory owned by the current user.
+
+**Lag:** Claude Code writes the transcript after the request, and the file can trail the live conversation, so the warning usually arrives one or two tool calls after the crossing. The 5,000-token gap between 95,000 and the price threshold absorbs that for ordinary tool results; a single very large read can still overshoot it.
+
+**Toggle:** `export CLAUDE_HOOKS_DISABLE_CONTEXT_THRESHOLD=1`. Tuning: `CLAUDE_HOOKS_CONTEXT_THRESHOLDS` (comma-separated token counts; entries that are not all digits are dropped, and a list with no valid entry means the Haiku defaults).
+
+**Tests:** `bash hooks-plugin/hooks/test-context-threshold-nudge.sh`.
 
 ### branch-base-guard.sh
 
@@ -318,8 +342,9 @@ internal `\036`/`\037` separators are denied.
 
 **Fails closed on its own errors.** A scanner failure denies, and so does any
 crash after a command is recognised as a possible merge (an `EXIT` trap emits the
-deny): a hook error is non-blocking in Claude Code, so dying would let the merge
-run. The hook is kept bash-3.2 clean (no `mapfile`, `declare -A`, `${v,,}`, …)
+deny). Before Claude Code 2.1.295, and on any client without `onFailure: "block"`,
+a hook error is non-blocking, so dying would let the merge run; the trap keeps
+that closed on every client. The hook is kept bash-3.2 clean (no `mapfile`, `declare -A`, `${v,,}`, …)
 because macOS `/bin/bash` is 3.2.
 
 **Not covered:** a `gh` alias defined *before* the command (`gh alias set mm
@@ -684,6 +709,7 @@ Every hook can be individually enabled or disabled via environment variables. Se
 | test-verification.sh | `CLAUDE_HOOKS_DISABLE_TEST_VERIFICATION=1` | Enabled |
 | git-stash-reminder.sh | `CLAUDE_HOOKS_DISABLE_GIT_STASH_REMINDER=1` | Enabled |
 | subagent-count-tripwire.sh | `CLAUDE_HOOKS_DISABLE_SUBAGENT_COUNT=1` | Enabled |
+| context-threshold-nudge.sh | `CLAUDE_HOOKS_DISABLE_CONTEXT_THRESHOLD=1` | Enabled (silent off Haiku 5.5 unless thresholds are set) |
 | event-logger.sh | `CLAUDE_HOOKS_ENABLE_EVENT_LOGGER=1` | **Disabled** (opt-in) |
 | bash-antipatterns-teach.sh | `CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1` | **Disabled** (opt-in) |
 | no-calendar-estimates.sh | `CLAUDE_HOOKS_ENABLE_CALENDAR_ESTIMATES=1` | **Disabled** (opt-in) |
@@ -757,4 +783,18 @@ Hooks run synchronously — a slow hook adds latency to every Claude action. Kee
 
 - **0**: Command allowed
 - **2**: Command blocked with reminder (message shown to Claude)
-- **Other**: Non-blocking error (logged in verbose mode)
+- **Other**: Non-blocking error (logged in verbose mode), except on the four
+  safety hooks below
+
+`secret-protection.sh`, `branch-protection.sh`, `repo-deletion-safety.sh` and
+`external-pr-merge-guard.sh` are registered with `"onFailure": "block"`. On
+Claude Code 2.1.295 or later, a crash, a timeout or a script that cannot start
+then blocks the tool call instead of letting it through. Older clients ignore
+the key and treat a failure as non-blocking. A missing dependency is the
+deliberate exception: with `jq` absent (or `git`, for `branch-protection.sh`)
+each of the four exits 0 and lets every call through, because failing closed
+there would block every Read through `secret-protection.sh`. The other hooks keep the default,
+because a style nudge or a logger that fails closed would block ordinary work
+([`.claude/rules/hook-block-vs-nudge.md`](../.claude/rules/hook-block-vs-nudge.md)).
+`scripts/check-hook-fail-closed.sh` keeps the key on exactly these four and
+checks that each exits 0 when it does not apply.

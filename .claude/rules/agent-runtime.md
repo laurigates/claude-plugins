@@ -1,6 +1,6 @@
 ---
 created: 2026-10-02
-modified: 2026-10-02
+modified: 2026-10-13
 reviewed: 2026-10-02
 paths:
   - "**/agents/**"
@@ -26,7 +26,7 @@ For filesystem-level isolation, give agents their own git worktree so they work 
 
 > **Note (2.1.157)**: Claude-managed worktrees are left **unlocked** when the agent finishes, so `git worktree remove` / `git worktree prune` can clean them up directly (previously the lock blocked manual cleanup). `EnterWorktree` can also now switch between Claude-managed worktrees mid-session, rather than being a one-way entry.
 
-> **Note (2.1.203–2.1.222, isolation hardening)**: Several releases closed escape vectors where an `isolation: worktree` subagent could still touch the parent checkout: shell commands running in the parent checkout instead of the isolated worktree (2.1.203), git-mutating commands against the main repo checkout (2.1.210), and `git -C` / `--git-dir` / `GIT_DIR` / `GIT_WORK_TREE` redirection out of the isolated worktree (2.1.216). As of 2.1.222, isolation applies to both file edits and Bash in every session type, and isolated sessions can no longer run destructive git commands against the main checkout. Treat isolation as materially more trustworthy on 2.1.222+ than on older installs — see `.claude/rules/agent-coworker-detection.md` § Bare flip for how this narrows that hazard.
+> **Note (2.1.203–2.1.222, isolation hardening)**: Several releases closed escape vectors where an `isolation: worktree` subagent could still touch the parent checkout: shell commands running in the parent checkout instead of the isolated worktree (2.1.203), git-mutating commands against the main repo checkout (2.1.210), and `git -C` / `--git-dir` / `GIT_DIR` / `GIT_WORK_TREE` redirection out of the isolated worktree (2.1.216). As of 2.1.222, isolation applies to both file edits and Bash in every session type, and isolated sessions can no longer run destructive git commands against the main checkout. Treat isolation as materially more trustworthy on 2.1.222+ than on older installs — see `.claude/rules/agent-coworker-detection.md` § Bare flip for how this narrows that hazard. Before 2.1.295, a subagent in its own linked worktree was shown the parent session's git branch, status and recent commits, so its own git context read as the parent's.
 
 **Two ways to enable worktree isolation:**
 
@@ -83,6 +83,8 @@ Agent tool with run_in_background: true
 - Use `TaskStop` to stop a background agent.
 - A subagent's result reaches the main agent under a header marking it as subagent output, indented, so its text cannot pass as the session's own instructions (2.1.277, after 2.1.210 hardened the Agent tool against indirect prompt injection); background notifications between turns arrive inside `<system-reminder>` tags (2.1.234).
 - A subagent cut off by a rate limit or server error returns its partial work to the parent instead of failing silently (2.1.199).
+- A background Bash or PowerShell **command** (not an agent) stops at its `timeout` with `run_in_background`, default 30 min, max 2 h, and Claude is notified (2.1.285). Since 2.1.288 the limit applies only in unattended sessions (`-p`, Agent SDK, CI, cloud), so it still binds every `.github/workflows` run; terminal, desktop and VS Code sessions have none.
+- Under `--bare` (2.1.286), only the MCP servers named on the command line connect, the model gets no system reminders, no background tasks start, and a shell command that reaches its timeout stops instead of moving to the background.
 
 **When to use background execution:**
 - Independent work that doesn't need to block the main session
@@ -104,6 +106,8 @@ Agent tool with run_in_background: true
 ### Dynamic Workflows (`/workflows`, 2.1.154+)
 
 `/workflows` orchestrates work across tens to hundreds of background agents from a single session — a fan-out scale beyond manual `/bg` dispatch. Reach for it when a task decomposes into many independent units that each warrant their own background agent; the framework manages the dispatch and result collection.
+
+`CLAUDE_CODE_WORKFLOW_SUBAGENT_MODEL` (2.1.296) runs every workflow agent on one model while other subagents keep theirs; see `workflow-model-effort.md` for how it interacts with the per-call model. Before 2.1.295, a `context: fork` skill invoked from a Workflow subagent delivered its result to the main conversation instead of the invoking agent.
 
 > **Resume and completion caveats** — `resumeFromRunId` re-runs already-succeeded worktree agents and opens duplicate PRs (#1868); `Workflow` agents are not `SendMessage`-addressable and their worktrees pin branches until a scoped, non-force removal gated on the run's completion notification (#2614). Full mechanics: `agent-patterns-plugin:parallel-agent-dispatch` § "Resuming a workflow: `resumeFromRunId` re-runs succeeded worktree agents" and its `references/worktree-hazards.md` § "Workflow agents are unreachable and their worktrees pin branches"; cleanup scoping in `.claude/rules/agent-coworker-detection.md`.
 

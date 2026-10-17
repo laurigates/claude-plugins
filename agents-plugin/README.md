@@ -8,7 +8,7 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of how `attribute-router` deleg
 
 ## Agents
 
-All agents run on **opus** — see [Model Selection](#model-selection).
+Every agent except `lean-reader` runs on **opus**; `lean-reader` runs on haiku — see [Model Selection](#model-selection).
 
 | Agent | Model | Purpose | Team Role |
 |-------|-------|---------|-----------|
@@ -24,6 +24,7 @@ All agents run on **opus** — see [Model Selection](#model-selection).
 | `research` | opus | API docs, framework evaluation, best practices | Teammate preferred — parallel research alongside implementation |
 | `performance` | opus | Profiling, bottleneck identification, benchmarks | Subagent preferred — verbose profiling isolated |
 | `search-replace` | opus | Cross-platform search and replace | Subagent preferred — focused bounded replacement task |
+| `lean-reader` | haiku | Context-free read-only extraction and classification against a self-contained brief | Subagent — workflow `agentType` for mechanical fan-out stages |
 
 ## Team Roles
 
@@ -38,7 +39,7 @@ Each agent includes a `## Team Configuration` section documenting when to use it
 
 | Best as Teammate | Best as Subagent | Either |
 |------------------|------------------|--------|
-| review, security-audit, research, docs | dependency-audit, performance, search-replace, ci | test, debug, refactor |
+| review, security-audit, research, docs | dependency-audit, performance, search-replace, ci, lean-reader | test, debug, refactor |
 
 ## Design Principles
 
@@ -51,7 +52,9 @@ Each agent includes a `## Team Configuration` section documenting when to use it
 
 ## Model Selection
 
-Every agent runs on **opus**. A subagent's output re-enters the main loop as a tool result, so a weaker delegate quietly degrades everything downstream — and Opus-low beats Sonnet-high on both quality and tokens. So **`effort` (the agent's `effort:` frontmatter, falling back to the session effort), not `model`, is the cost lever**: dial effort down for mechanical agents instead of downgrading the model. The lint `scripts/check-agent-model.sh` enforces this. The sole sanctioned non-Opus subagent is the `agent-patterns-plugin:cold-read-gate` haiku reader, which is a skill-inline dispatch rather than an agent file. See `.claude/rules/agent-development.md` § "Model Selection for Agents".
+Every agent except `lean-reader` runs on **opus**. A subagent's output re-enters the main loop as a tool result, so a weaker delegate quietly degrades everything downstream — and Opus-low beats Sonnet-high on both quality and tokens. So **`effort` (the agent's `effort:` frontmatter, falling back to the session effort), not `model`, is the cost lever**: dial effort down for mechanical agents instead of downgrading the model. The lint `scripts/check-agent-model.sh` enforces this. See `.claude/rules/agent-development.md` § "Model Selection for Agents".
+
+`lean-reader` is the exception, and the guard admits it only in this shape: Haiku 5.5, `omitClaudeMd: true`, tools limited to Read/Grep/Glob, and an explicit effort. Its first request is about 3k tokens. A default subagent starts at about 124k, carrying the CLAUDE.md + rules chain and every tool schema including the skill listing. The lean reader is meant for stages whose brief carries the whole job and whose output a schema or an Opus stage checks. It is not for edits, commands, or anything the main loop acts on unchecked. See `.claude/rules/agent-development.md` § "Lean subagents".
 
 ## Usage
 
@@ -71,4 +74,13 @@ Agents are invoked automatically based on task context or explicitly via agent r
 "How does the Stripe API handle pagination?" → research agent
 "The API endpoint is slow, find the bottleneck" → performance agent
 "Replace oldFunction with newFunction across the codebase" → search-replace agent
+```
+
+In a workflow script, use the lean reader as a stage's `agentType`:
+
+```js
+const parsed = await agent(BRIEF_WITH_RUBRIC_AND_FILES, {
+  label: 'parse', agentType: 'agents-plugin:lean-reader',
+  model: 'haiku', effort: 'medium', schema: SCHEMA,
+})
 ```

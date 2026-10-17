@@ -1,6 +1,6 @@
 ---
 created: 2026-05-11
-modified: 2026-07-10
+modified: 2026-10-13
 reviewed: 2026-07-10
 ---
 
@@ -120,6 +120,13 @@ one-to-one `Read` substitution, so the agent re-attempts a variant and is
 re-blocked. The three read rules now require the read to be the sole statement
 of the parsed program. Full demotion was rejected — the block was never
 problematic at its pre-#2114 scope, and #2114's false-positive fixes all stand.
+
+Two upstream fixes do not change that rationale. Since Claude Code 2.1.293 a
+single-file `cat`/`head`/`tail`/`sed -n`/`grep` in Bash loads path-scoped rules
+and nested CLAUDE.md files the same way `Read` does, and since 2.1.295 a Bash
+`cat` that printed nothing no longer marks the file as read. The block never
+rested on rule loading: it rests on line-numbered output, the token budget and
+the parallel-batch cost, which still favour `Read`.
 
 ## When to reach for `grep` / `rg` in Bash
 

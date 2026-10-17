@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.15.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.14.0...hooks-plugin-v2.15.0) (2026-10-15)
+
+
+### Features
+
+* **hooks-plugin:** warn the agent when its context nears a size threshold ([#3102](https://github.com/laurigates/claude-plugins/issues/3102)) ([2e8f716](https://github.com/laurigates/claude-plugins/commit/2e8f716ef29cd482fabcfc0686a9da262d69d4ac))
+
+## [2.14.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.13.2...hooks-plugin-v2.14.0) (2026-10-14)
+
+
+### Features
+
+* **hooks-plugin:** fail closed on safety hooks; refresh read-block rationale ([#3077](https://github.com/laurigates/claude-plugins/issues/3077)) ([eaf0e4b](https://github.com/laurigates/claude-plugins/commit/eaf0e4b097f85aabef4d37825bd382fe7a8237ba))
+
+## [2.13.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.13.1...hooks-plugin-v2.13.2) (2026-10-13)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** close permission-auto-approve bypasses in git, runner, linter and gh rules ([#3051](https://github.com/laurigates/claude-plugins/issues/3051)) ([4e4cdd5](https://github.com/laurigates/claude-plugins/commit/4e4cdd5a3dd36b63e550751559173f728993a95c))
+* **hooks-plugin:** give the CI workflow-model checker a longer estimator parse timeout ([#3045](https://github.com/laurigates/claude-plugins/issues/3045)) ([6de07b9](https://github.com/laurigates/claude-plugins/commit/6de07b96dfceac6d75a2381cc7cb8c3cb1bcd93a))
+
 ## [2.13.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.13.0...hooks-plugin-v2.13.1) (2026-10-12)
 
 

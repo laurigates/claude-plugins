@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "evaluate-plugin",
-  "version": "1.17.7",
+  "version": "1.17.8",
   "description": "Skill evaluation and benchmarking - test skill effectiveness with behavioral eval cases, grade results, and track quality improvements",
   "author": {
     "name": "Lauri Gates",
@@ -17,7 +17,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/evaluate-drift-probe.sh\"",
-            "timeout": 3000
+            "timeout": 5
           }
         ]
       }

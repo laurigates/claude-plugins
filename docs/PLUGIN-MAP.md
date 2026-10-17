@@ -37,7 +37,7 @@ The development loop: plan, code, commit, ship.
 | git-plugin | 48 + 1 agent | Commits, branches, PRs, issues, forks, worktrees, release-please, merge hazards, issue scoping, upstream-fix and repo-deletion checks |
 | project-plugin | 7 | Project init, modernization, maintenance |
 | session-plugin | 4 | Session bookends: spinup briefing, wrap capture, end orchestrator, distill |
-| agents-plugin | 1 + 12 agents | Task delegation to specialized agents |
+| agents-plugin | 1 + 13 agents | Task delegation to specialized agents |
 
 ### Tier 2 - Quality Gates
 

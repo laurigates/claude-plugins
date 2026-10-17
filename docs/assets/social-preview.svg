@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="1280" height="640" viewBox="0 0 1280 640">
+  <defs>
+    <pattern id="dots" width="32" height="32" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.4" fill="#ffffff" fill-opacity="0.05"/>
+    </pattern>
+    <radialGradient id="glow" cx="1126" cy="-64" r="704" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d97757" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#d97757" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1280" height="640" rx="0" fill="#1a1918"/>
+  <rect width="1280" height="640" rx="0" fill="url(#dots)"/>
+  <rect width="1280" height="640" rx="0" fill="url(#glow)"/>
+  <rect x="80" y="112" width="8" height="150" rx="4" fill="#d97757"/>
+  <text x="116" y="150" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="30" fill="#8f897f">laurigates /</text>
+  <text x="112" y="250" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="100" font-weight="bold" fill="#f5f1ea" letter-spacing="-2">claude-plugins</text>
+  <text x="82" y="322" font-family="'Avenir Next', 'Helvetica Neue', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif" font-size="36" font-weight="500" fill="#cfc8bc">Skills, agents and safety hooks for coding agents</text>
+  <rect x="80" y="360" width="1120" height="76" rx="14" fill="#252321" stroke="#3b3834"/>
+  <circle cx="110" cy="398" r="6" fill="#d97757"/>
+  <text x="132" y="407" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="25" fill="#f5f1ea"><tspan fill="#d97757">$ </tspan>claude plugin marketplace add laurigates/claude-plugins</text>
+  <rect x="80.0" y="470" width="68.1" height="40" rx="20.0" fill="#252321" stroke="#3b3834"/><text x="114.1" y="497.2" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="20" fill="#cfc8bc" text-anchor="middle">git</text>
+  <rect x="160.1" y="470" width="104.2" height="40" rx="20.0" fill="#252321" stroke="#3b3834"/><text x="212.2" y="497.2" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="20" fill="#cfc8bc" text-anchor="middle">python</text>
+  <rect x="276.4" y="470" width="80.2" height="40" rx="20.0" fill="#252321" stroke="#3b3834"/><text x="316.4" y="497.2" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="20" fill="#cfc8bc" text-anchor="middle">rust</text>
+  <rect x="368.5" y="470" width="152.4" height="40" rx="20.0" fill="#252321" stroke="#3b3834"/><text x="444.7" y="497.2" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="20" fill="#cfc8bc" text-anchor="middle">typescript</text>
+  <rect x="532.9" y="470" width="140.4" height="40" rx="20.0" fill="#252321" stroke="#3b3834"/><text x="603.1" y="497.2" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="20" fill="#cfc8bc" text-anchor="middle">terraform</text>
+  <rect x="685.3" y="470" width="152.4" height="40" rx="20.0" fill="#252321" stroke="#3b3834"/><text x="761.5" y="497.2" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="20" fill="#cfc8bc" text-anchor="middle">kubernetes</text>
+  <rect x="849.7" y="470" width="116.3" height="40" rx="20.0" fill="#252321" stroke="#3b3834"/><text x="907.8" y="497.2" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="20" fill="#cfc8bc" text-anchor="middle">testing</text>
+  <text x="982.0" y="497.2" font-family="Menlo, ui-monospace, SFMono-Regular, Consolas, monospace" font-size="20" fill="#8f897f">+ more</text>
+  <line x1="80" y1="548" x2="1200" y2="548" stroke="#3b3834"/>
+  <text x="80" y="592" font-family="'Avenir Next', 'Helvetica Neue', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif" font-size="24" font-weight="500" fill="#8f897f">Runs in  <tspan fill="#cfc8bc">Claude Code  ·  OpenCode  ·  pi  ·  Antigravity CLI</tspan></text>
+</svg>
