@@ -37,8 +37,10 @@ Failure modes of the `comfy` CLI on a systemd-managed install, each with its sym
 - **`NodeVersionStatusFlagged` does NOT auto-clear** (distinct from
   Pending). The scan flagged the version, but it **stays installable**:
   `/nodes/<id>/install` returns the newest non-**Banned** version, Flagged
-  included. Only a `NodeVersionStatusBanned` version makes installs fall
-  back to an older one. Reasons are readable via
+  included (measured for Flagged and Banned; a Deleted version is expected to
+  be skipped too). A `NodeVersionStatusBanned` version makes installs fall back
+  to an older one; a `NodeVersionStatusDeleted` version is expected to do the
+  same, not yet verified against `/install`. Reasons are readable via
   `?include_status_reason=true` on the versions endpoint. Republishing
   re-runs the scan; flags can be false positives (an identical change
   flagged some laurigates packs but not their siblings). Full
