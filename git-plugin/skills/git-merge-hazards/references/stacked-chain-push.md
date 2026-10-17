@@ -1,6 +1,6 @@
 # Stacked-Chain Merges: Push by SHA, Mergeability and CI Races
 
-Moved verbatim from `SKILL.md` §3. Read before any force-push or merge while working down a stacked-PR chain.
+Moved from `SKILL.md` §3; its CI-registration bullet (the rollup gate) diverges from the chezmoi copy, as [sync-notes.md](sync-notes.md) records. Read before any force-push or merge while working down a stacked-PR chain.
 
 ## 3. Stacked-chain merges: push by SHA, never `HEAD:` — and expect auto-close races
 
@@ -65,9 +65,73 @@ claude-plugins #1979→#1987):
   "zero pending checks" can exit **immediately** after a push/`update-branch`:
   zero pending is trivially true before the jobs are registered. Observed
   2026-07: `state=CLEAN` on a **single** check while three CI jobs had not yet
-  appeared — merging there merges untested. Gate on **both** nothing-pending
-  **and** `--jq 'length'` ≥ the expected check count. Same root cause as the
-  **single mergeability read** race: an async field read once, too early.
+  appeared — merging there merges untested. A count of checks does not close the
+  race either. An expected count breaks on path-filtered workflows, whose check
+  set changes with the diff (`.claude/rules/gh-json-fields.md`), and a count gate
+  passed while a second `lint` run for the same head was still registering
+  (ForumViriumHelsinki/.github-private #13, #15, #19). Gate on the rollup, and merge only when all five
+  hold:
+  1. `headRefOid` equals the full SHA you pushed. A read right after a push can
+     return the old tip, and ForumViriumHelsinki/.github-private #17 merged on a pre-push run.
+  2. `statusCheckRollup` is non-empty.
+  3. No entry has a `status` other than `COMPLETED`.
+  4. Every `conclusion` is `SUCCESS`, `SKIPPED` or `NEUTRAL`. Skipped and neutral
+     are not failures (`gh-json-fields.md`), and a SUCCESS-only gate would
+     deadlock on jobs a path filter skipped on purpose. Any other value blocks,
+     including `null` while a job still runs.
+  5. Checks 2 to 4 hold on two reads about 30 seconds apart, with the same number
+     of entries. One completion read cannot close the window before a second run
+     registers. The second read can. The gate loop in the bash block of this rule
+     takes both reads. It stops at the first read that shows the PR is no longer
+     `OPEN`: a PR that merged while you waited keeps reporting its rollup, so a
+     poll without that escape never exits. It also stops at a 30-minute deadline.
+
+  Set `n` to the child's PR number and `sha` to the pushed SHA, then run the loop:
+
+  ```bash
+  deadline=$((SECONDS + 1800))
+  prev=""
+  ok=0
+  while [ "$SECONDS" -lt "$deadline" ]; do
+    snap=$(gh pr view "$n" --json state,headRefOid,statusCheckRollup 2>/dev/null) || snap=""
+    case "$(jq -r '.state // ""' <<<"$snap")" in
+      OPEN) ;;
+      MERGED|CLOSED) break ;;
+      *) prev=""; sleep 30; continue ;;
+    esac
+    if jq -e --arg sha "$sha" '
+        (.headRefOid == $sha)
+        and (.statusCheckRollup | length > 0)
+        and all(.statusCheckRollup[]; (.status // "COMPLETED") == "COMPLETED")
+        and all(.statusCheckRollup[];
+          (.conclusion // .state) as $c | ($c == "SUCCESS" or $c == "SKIPPED" or $c == "NEUTRAL"))' \
+        <<<"$snap" >/dev/null; then
+      count=$(jq '.statusCheckRollup | length' <<<"$snap")
+      if [ -n "$prev" ] && [ "$count" = "$prev" ]; then ok=1; break; fi
+      prev=$count
+    else
+      prev=""
+    fi
+    sleep 30
+  done
+  [ "$ok" -eq 1 ]
+  ```
+
+  The loop can run for 30 minutes, longer than a foreground Bash call allows (2
+  minutes by default, 10 at most). Run the block with `run_in_background: true` and
+  an explicit `timeout` of `2100000` (35 minutes). The default background limit is
+  also 30 minutes, equal to the gate's own deadline, so without a larger `timeout`
+  a gate that never settles ends as a killed task after its last `sleep`, not by the
+  block's own `[ "$ok" -eq 1 ]` exit. Read the exit status when the task finishes:
+  0 means the gate passed, and any other status means do not merge.
+
+  A failed `gh` read never passes: its state is empty, so the loop takes no pass
+  from it and polls again. `SECONDS` is the loop's clock: the block reads it once
+  at its first line, so the 30 minutes run from there. A legacy commit status
+  (`StatusContext`) has no `status`, so the gate reads it as complete, and its
+  `state` stands in for the conclusion: `SUCCESS` passes, while `PENDING`,
+  `FAILURE` and `ERROR` block. Same root cause as the **single mergeability read**
+  race: an async field read once, too early.
 
 - **Check** before every force-push: `git log --oneline origin/main..<sha>` —
   expect *exactly* the child's commits, nothing more, never empty.

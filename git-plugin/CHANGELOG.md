@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.62.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.61.3...git-plugin-v2.62.0) (2026-10-17)
+
+
+### Features
+
+* **git-plugin:** add a no-force stacked-merge path to git-merge-hazards ([3c633c5](https://github.com/laurigates/claude-plugins/commit/3c633c56dd9ba57b2351c926abb8bcdaf2506c81)), closes [#2826](https://github.com/laurigates/claude-plugins/issues/2826)
+
 ## [2.61.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.61.2...git-plugin-v2.61.3) (2026-10-12)
 
 
