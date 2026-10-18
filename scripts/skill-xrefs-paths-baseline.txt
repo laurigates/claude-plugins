@@ -1,0 +1,33 @@
+# Backticked repo-shaped paths in skill markdown that resolve to nothing here,
+# accepted on purpose -- see the BACKTICK PATHS guard in scripts/check-skill-xrefs.py.
+# path<TAB>token. Keyed by file and token, not line, so edits elsewhere in the
+# file do not churn it. An entry that stops firing is a stale-path-baseline
+# finding: delete it, so this list only shrinks. Never add a dead reference to
+# a file this repo should ship -- fix the skill instead.
+#
+# Files in the CONSUMER project that the skill tells the reader to write or
+# that a generated repo contains:
+component-patterns-plugin/skills/components-version-badge/SKILL.md	scripts/parse-changelog.mjs
+configure-plugin/skills/configure-cache-busting/REFERENCE.md	scripts/verify-cache-busting.js
+configure-plugin/skills/configure-security/REFERENCE.md	scripts/audit-dependencies.sh
+foundryvtt-plugin/skills/foundryvtt-module/SKILL.md	templates/app.hbs
+foundryvtt-plugin/skills/foundryvtt-module-scaffold/SKILL.md	templates/app.hbs
+foundryvtt-plugin/skills/foundryvtt-module-scaffold/references/generated-repo.md	templates/app.hbs
+hooks-plugin/skills/hooks-permission-request-hook/SKILL.md	scripts/permission-request.sh
+hooks-plugin/skills/hooks-permission-request-hook/SKILL.md	scripts/test-permission-hook.sh
+hooks-plugin/skills/hooks-session-start-hook/SKILL.md	scripts/claude-session-start.sh
+#
+# Illustrative paths (an example layout, a glob demo, a hypothetical claim):
+agent-patterns-plugin/skills/verify-before-plan/SKILL.md	agents/git-repo-agent/SKILL.md
+documentation-plugin/skills/docs-sync/SKILL.md	skills/git-commit/SKILL.md
+documentation-plugin/skills/docs-sync/SKILL.md	skills/handoffs/SKILL.md
+tools-plugin/skills/rg-code-search/SKILL.md	skills/name/SKILL.md
+#
+# Scripts from the external ComfyUI toolkit these skills were ported from. The
+# plugin does not ship them, so a plugin user cannot run them -- the same class
+# as the `scripts/rename_outputs.py` mention #2942 removed. Needs a maintainer
+# decision (port the scripts or reword the skills); listed so the guard lands.
+comfyui-plugin/skills/comfy-corpus-validation/SKILL.md	scripts/corpus_check.py
+comfyui-plugin/skills/comfy-corpus-validation/SKILL.md	scripts/corpus_probe.py
+comfyui-plugin/skills/comfy-metadata/SKILL.md	scripts/layout_workflow.py
+comfyui-plugin/skills/comfy-workflow-layout/SKILL.md	scripts/layout_workflow.py
