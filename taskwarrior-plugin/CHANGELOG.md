@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.9](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.14.8...taskwarrior-plugin-v1.14.9) (2026-10-18)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** hook timeouts are seconds, not milliseconds ([#3088](https://github.com/laurigates/claude-plugins/issues/3088)) ([64d7fab](https://github.com/laurigates/claude-plugins/commit/64d7fab1ee5205e3f3fb0bedcd234b60e06527ae))
+
 ## [1.14.8](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.14.7...taskwarrior-plugin-v1.14.8) (2026-10-10)
 
 

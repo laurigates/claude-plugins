@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.6](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.9.5...kubernetes-plugin-v1.9.6) (2026-10-18)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** hook timeouts are seconds, not milliseconds ([#3088](https://github.com/laurigates/claude-plugins/issues/3088)) ([64d7fab](https://github.com/laurigates/claude-plugins/commit/64d7fab1ee5205e3f3fb0bedcd234b60e06527ae))
+
 ## [1.9.5](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.9.4...kubernetes-plugin-v1.9.5) (2026-10-13)
 
 
