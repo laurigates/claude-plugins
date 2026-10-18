@@ -177,6 +177,7 @@ jobs:
             --only 'scripts/tests/test-check-hook-cue-skill-refs.sh' \
             --only 'scripts/tests/test-check-hook-fail-closed.sh' \
             --only 'scripts/tests/test-check-hook-matchers.sh' \
+            --only 'scripts/tests/test-check-hook-timeout-units.sh' \
             --only 'scripts/tests/test-check-issue-template-inheritance.sh' \
             --only 'scripts/tests/test-check-loop-integrity.sh' \
             --only 'scripts/tests/test-check-mktemp-canonical.sh' \
@@ -462,6 +463,13 @@ jobs:
         # non-git cwd, bash 3.2). Whole-repo invariant, always-on; the
         # self-test step above proves the guard first.
         run: bash scripts/check-hook-fail-closed.sh
+
+      - name: Check plugin hook timeouts are seconds, not milliseconds
+        # A hook `timeout` is in seconds. Millisecond-looking values (5000 is 83
+        # minutes) never fire, and under onFailure "block" that leaves a safety
+        # hook able to hang a session (#3079). Whole-repo invariant, always-on;
+        # the self-test step above proves the guard first.
+        run: bash scripts/check-hook-timeout-units.sh
 
       - name: Check shell test sandboxes cannot reach the real repo
         # Two routes into the shared clone: an unguarded empty `mktemp -d`
