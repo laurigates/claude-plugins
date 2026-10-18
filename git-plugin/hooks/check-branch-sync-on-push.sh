@@ -52,8 +52,31 @@ CWD=$(printf '%s' "$INPUT" | jq -r '.cwd // empty')
 SESSION_ID=$(printf '%s' "$INPUT" | jq -r '.session_id // "nosession"')
 
 # Guard: only for git commit / git push commands.
+#
+# Decided on parsed command nodes, not on the raw string (#2737): a quoted
+# `--body "run git push later"`, a heredoc body or a trailing comment that
+# merely MENTIONS a commit/push used to fire the nudge — and a commit whose
+# message mentioned `git push origin main` was read as a push to main and went
+# silent at the default-branch exclusion. See lib/parsed-commands.sh. A cheap
+# textual prefilter runs first so most Bash calls never start a parser.
+#
+# Without a usable parser (ast-grep absent or erroring, or the library missing
+# from a partial install) the original raw-text regex decides — this nudge
+# fired everywhere before, so it keeps firing rather than going silent.
 if [ -z "$COMMAND" ]; then exit 0; fi
-if ! grep -qE '(^|[[:space:]]|&&[[:space:]]*|;[[:space:]]*)git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+(commit|push)\b' <<<"$COMMAND"; then
+if ! grep -q 'git' <<<"$COMMAND" || ! grep -qE 'commit|push' <<<"$COMMAND"; then exit 0; fi
+PARSED=0
+IS_PUSH=0
+PC_LIB_MISSING=0
+# shellcheck source=git-plugin/hooks/lib/parsed-commands.sh
+. "$(dirname "$0")/lib/parsed-commands.sh" 2>/dev/null || PC_LIB_MISSING=1
+if [ "$PC_LIB_MISSING" = 0 ] && pc_scan "$COMMAND"; then
+    PARSED=1
+    if ! pc_find_git 'commit|push'; then exit 0; fi
+    for sub in "${PC_HIT_SUB[@]}"; do
+        if [ "$sub" = push ]; then IS_PUSH=1; fi
+    done
+elif ! grep -qE '(^|[[:space:]]|&&[[:space:]]*|;[[:space:]]*)git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+(commit|push)\b' <<<"$COMMAND"; then
     exit 0
 fi
 
@@ -71,8 +94,8 @@ if [ -z "$REPO_DIR" ] || ! git -C "$REPO_DIR" rev-parse --git-dir >/dev/null 2>&
 command -v gh >/dev/null 2>&1 || exit 0
 
 # Is this a push (as opposed to a commit)? Only a push carries a refspec.
-IS_PUSH=0
-if grep -qE '(^|[[:space:]]|&&[[:space:]]*|;[[:space:]]*)git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+push\b' <<<"$COMMAND"; then
+# Parsed above when a parser was usable; the raw-text fallback otherwise.
+if [ "$PARSED" = 0 ] && grep -qE '(^|[[:space:]]|&&[[:space:]]*|;[[:space:]]*)git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+push\b' <<<"$COMMAND"; then
     IS_PUSH=1
 fi
 

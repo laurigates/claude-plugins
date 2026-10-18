@@ -1,9 +1,28 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016  # fixtures are the LITERAL, unexpanded command text a hook receives
 # Regression tests for validate-pr-issue-links.sh
 #
 # Run: bash git-plugin/hooks/test-validate-pr-issue-links.sh
 # Exit 0 = all tests pass, Exit 1 = failures
 set -euo pipefail
+
+# Without a working ast-grep the #2737 parsed-trigger sections cannot run. This
+# suite is listed in scripts/required-to-run-tests.txt, so it then re-runs
+# itself with every line indented and ends on ONE unindented SKIP line, which
+# scripts/run-skill-script-tests.sh reports as a skip (an ERROR for a required
+# suite) rather than a pass over the half that matters.
+if [ -z "${PARSED_SUITE_INNER:-}" ] && {
+    [ "${CLAUDE_HOOKS_PARSED_TRIGGER_NO_ASTGREP:-}" = 1 ] ||
+        ! { command -v ast-grep >/dev/null 2>&1 ||
+            { command -v sg >/dev/null 2>&1 && sg --version 2>/dev/null | grep -qi '^ast-grep'; }; }
+}; then
+    suite_rc=0
+    suite_out=$(PARSED_SUITE_INNER=1 bash "$0" "$@" 2>&1) || suite_rc=$?
+    printf '%s\n' "$suite_out" | sed 's/^/  /'
+    [ "$suite_rc" -eq 0 ] || exit "$suite_rc"
+    echo "SKIP: no working ast-grep (or CLAUDE_HOOKS_PARSED_TRIGGER_NO_ASTGREP=1); the #2737 parsed-trigger sections require it"
+    exit 0
+fi
 
 # Neutralize any inherited git context before building sandbox repos (issues #1745, #3080).
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
@@ -299,6 +318,106 @@ for kw in "Fixes #7" "Closes #3" "Closes #12"; do
         FAIL=$((FAIL + 1))
     fi
 done
+
+# ── Parsed trigger: a mention is not a PR creation (issue #2737) ────────────
+# The trigger used to be `(^|\s)gh\s+pr\s+create` over the raw command, so a
+# commit message, a quoted --body or a heredoc body that merely MENTIONS
+# `gh pr create` ran the whole check — and, on a branch whose commits carry
+# `Closes #42` (this sandbox's HEAD), blocked it. It is now decided on parsed
+# command nodes. "allowed" rows run where a real create WOULD block, so they
+# prove the trigger stayed quiet.
+#
+# Then a GENERATED spelling probe must all block, and a DIFFERENTIAL runs the
+# same set through the pre-fix hook (`git show <PREFIX_SHA>:…`): a spelling the
+# old hook blocked that the new one allows fails the suite.
+echo ""
+echo "parsed trigger: quoted/heredoc mentions of gh pr create do not fire (#2737):"
+PREFIX_SHA=716345bf213793134a30bec2ff68761946aee38d
+HOOK_REL=git-plugin/hooks/validate-pr-issue-links.sh
+
+have_parser() {
+    [ "${CLAUDE_HOOKS_PARSED_TRIGGER_NO_ASTGREP:-}" = 1 ] && return 1
+    command -v ast-grep >/dev/null 2>&1 && return 0
+    command -v sg >/dev/null 2>&1 && sg --version 2>/dev/null | grep -qi '^ast-grep'
+}
+
+link_verdict() { # $1 = hook path, $2 = command → fire (exit 2) / quiet (exit 0) / exit<N>
+    local rc=0
+    make_json "$2" | bash "$1" >/dev/null 2>&1 || rc=$?
+    case $rc in 2) echo fire ;; 0) echo quiet ;; *) echo "exit$rc" ;; esac
+}
+
+if ! have_parser; then
+    printf "  SKIP: parsed-trigger rows, spelling probe and differential (ast-grep not installed)\n"
+else
+    assert_exit "commit message mentioning gh pr create is allowed" 0 \
+        "$(make_json 'git commit -m "docs: then run gh pr create"')"
+    assert_exit "gh issue comment --body mentioning gh pr create is allowed" 0 \
+        "$(make_json 'gh issue comment 1 --body "run gh pr create later"')"
+    assert_exit "heredoc inside \$(…) mentioning gh pr create is allowed" 0 \
+        "$(make_json "$(printf '%s\n' "echo \"\$(cat <<'EOF'" 'then gh pr create --title x' 'EOF' ')"')")"
+    assert_exit "trailing comment mentioning gh pr create is allowed" 0 \
+        "$(make_json 'git status # gh pr create next')"
+    assert_exit "FOO=1 gh pr create --body ... still blocks" 2 \
+        "$(make_json 'FOO=1 gh pr create --title t --body "summary"')"
+    assert_exit "cd x && gh pr create still blocks" 2 \
+        "$(make_json "cd $TMPDIR && gh pr create --title t")"
+    assert_exit "bash -c with a quoted create script still blocks" 2 \
+        "$(make_json "bash -c 'gh pr create --title t'")"
+    assert_exit "gh pr -R <repo> create blocks (persistent flag before create)" 2 \
+        "$(make_json 'gh pr -R o/r create --title t')"
+
+    echo ""
+    echo "generated spelling probe + differential vs pre-fix hook (#2737):"
+    BASES=('gh pr create --title t' 'gh pr create --title t --body "summary"' 'gh pr create --fill'
+        'gh pr create --base main --title "feat: x" --body "no refs"' '/usr/local/bin/gh pr create --title t')
+    WRAPPERS=("" "env X=1 " "X=1 " "timeout 5 " "sudo " "command " "nice -n 5 " "nohup " "exec " "time ")
+    CONTEXTS=('X' 'cd . && X' 'true; X' 'X; true' 'true && X' 'false || X' 'X || true'
+        'X 2>&1 | tail -1' 'for d in 1; do X; done' 'if true; then X; fi' '( X )' '{ X; }'
+        $'echo start\nX' 'out=$(X)' 'echo "$(X)"' "bash -c 'X'" "sh -c 'cd . && X'" 'X &'
+        'git push -u origin feature && X' 'git commit -m "wip: x" && X')
+    SPELLINGS=()
+    for b in "${BASES[@]}"; do
+        for w in "${WRAPPERS[@]}"; do SPELLINGS+=("$w$b"); done
+    done
+    for b in 'gh pr create --title t' 'gh pr create --title t --body "summary"'; do
+        for c in "${CONTEXTS[@]}"; do SPELLINGS+=("${c%%X*}$b${c#*X}"); done
+    done
+
+    BASELINE=""
+    if git -C "$(dirname "$0")" cat-file -e "$PREFIX_SHA:$HOOK_REL" 2>/dev/null; then
+        BASELINE="$TMPDIR/baseline-hook.sh"
+        git -C "$(dirname "$0")" show "$PREFIX_SHA:$HOOK_REL" >"$BASELINE"
+    fi
+    missed=0
+    lost=0
+    base_hits=0
+    for s in "${SPELLINGS[@]}"; do
+        new=$(link_verdict "$HOOK" "$s")
+        if [ "$new" != fire ]; then
+            missed=$((missed + 1))
+            printf "  FAIL: spelling probe must block (got %s): %s\n" "$new" "$s"
+        fi
+        if [ -n "$BASELINE" ] && [ "$(link_verdict "$BASELINE" "$s")" = fire ]; then
+            base_hits=$((base_hits + 1))
+            if [ "$new" != fire ]; then lost=$((lost + 1)); fi
+        fi
+    done
+    if [ "$missed" -eq 0 ]; then
+        printf "  PASS: all %d generated spellings block\n" "${#SPELLINGS[@]}"; PASS=$((PASS + 1))
+    else
+        FAIL=$((FAIL + 1))
+    fi
+    if [ -z "$BASELINE" ]; then
+        printf "  SKIP: differential vs pre-fix hook (commit %s not in this clone)\n" "$PREFIX_SHA"
+    elif [ "$base_hits" -lt 40 ]; then
+        printf "  FAIL: differential is vacuous (baseline blocked only %d)\n" "$base_hits"; FAIL=$((FAIL + 1))
+    elif [ "$lost" -eq 0 ]; then
+        printf "  PASS: differential: baseline blocks %d of %d, none lost\n" "$base_hits" "${#SPELLINGS[@]}"; PASS=$((PASS + 1))
+    else
+        printf "  FAIL: differential: %d spelling(s) the pre-fix hook blocked are allowed\n" "$lost"; FAIL=$((FAIL + 1))
+    fi
+fi
 
 # ── Summary ─────────────────────────────────────────────────────────────────
 echo ""
