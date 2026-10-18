@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-09-03
+modified: 2026-10-15
 reviewed: 2025-12-16
 name: mutation-testing
 description: "Mutation testing with Stryker (TS/JS) and mutmut (Python). Use when finding weak tests that pass on mutated code, or improving test quality through mutation analysis."
@@ -94,6 +94,31 @@ test('applies discount correctly', () => {
   expect(calculateDiscount(50, 10)).toBe(45)
 })
 ```
+
+### Static survivors under the Vitest runner are often false
+
+A **static** mutant mutates code that runs at module load (constant maps, Zod
+schemas). Observed with `@stryker-mutator/vitest-runner` 10.0.0 on Vitest 4.1:
+
+| `ignoreStatic: true` | Effect |
+|----------------------|--------|
+| Skips | Static mutants that **no** test covers |
+| Does not skip | Static mutants some test covers — these run only against the 1-2 tests Stryker attributes coverage to, often unrelated files that imported the module first |
+
+So a static mutant can report Survived although the test that really asserts on
+that code would kill it. One Next.js app: 384 of 766 survivors were `static: true`
+with `testsCompleted` <= 5; excluding them moved the score from 68% to ~79%. A
+static survivor that ran against **many** tests is real (dropping `.trim()` from
+a Zod schema survived 195 tests, and stayed green across all 96 related tests
+when applied by hand). Count the survivors worth reading:
+
+```bash
+jq '[.files[].mutants[] | select(.status=="Survived" and ((.static|not) or .testsCompleted > 5))] | length' reports/mutation/mutation.json
+```
+
+The threshold `5` is a heuristic from that one codebase, not a Stryker-defined
+value. Tie-breaker for a suspicious static survivor: apply the mutation by hand
+and run the related tests — a red suite means the survivor was false.
 
 ## Python (mutmut)
 
