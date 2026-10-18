@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.23.4](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.23.3...health-plugin-v1.23.4) (2026-10-18)
+
+
+### Bug Fixes
+
+* **health-plugin:** skip review_staleness for shallow-boundary dates in config-drift ([#3113](https://github.com/laurigates/claude-plugins/issues/3113)) ([5eae99b](https://github.com/laurigates/claude-plugins/commit/5eae99b29f262342fbfaf49b97a271635d75d41a))
+
 ## [1.23.3](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.23.2...health-plugin-v1.23.3) (2026-10-10)
 
 

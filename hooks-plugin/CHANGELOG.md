@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.15.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.15.1...hooks-plugin-v2.15.2) (2026-10-18)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** decide four hook triggers on parsed commands, not raw text ([#3106](https://github.com/laurigates/claude-plugins/issues/3106)) ([6464253](https://github.com/laurigates/claude-plugins/commit/646425359b9d3f228174c44afd96a3bed571f3e8))
+
 ## [2.15.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.15.0...hooks-plugin-v2.15.1) (2026-10-18)
 
 

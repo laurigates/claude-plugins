@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.51.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.50.4...agent-patterns-plugin-v2.51.0) (2026-10-18)
+
+
+### Features
+
+* **agent-patterns-plugin:** add a mutation-check helper so probes need no raw sed -i ([#3090](https://github.com/laurigates/claude-plugins/issues/3090)) ([f81d380](https://github.com/laurigates/claude-plugins/commit/f81d3801e854962ab4dbebc2308514e5c91f991f))
+
 ## [2.50.4](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.50.3...agent-patterns-plugin-v2.50.4) (2026-10-17)
 
 
