@@ -5,11 +5,6 @@
 # from missing_reason, and reports an ERROR for any entry that now emits REASON=
 # or is no longer a STATUS= emitter, so this list can only shrink. Delete a
 # line in the same commit that migrates the script. Rollout: #2760.
-scripts/check-auto-resolve-mergeability-poll.sh
-scripts/check-blueprint-level3-templates.sh
-scripts/check-branch-containment-guidance.sh
-scripts/check-configure-components.sh
-scripts/check-context-command-execution.sh
 scripts/check-dead-api-endpoints.sh
 scripts/check-dead-tool-grants.sh
 scripts/check-delegation-reachability.sh

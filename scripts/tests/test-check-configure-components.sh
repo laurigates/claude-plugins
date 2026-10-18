@@ -15,6 +15,7 @@ set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 guard="${script_dir}/../check-configure-components.sh"
+contract="${script_dir}/../check-structured-output-contract.sh"
 real_lister="${script_dir}/../../configure-plugin/skills/configure-all/scripts/list-components.sh"
 
 fail() { echo "FAIL: $1" >&2; exit 1; }
@@ -100,6 +101,10 @@ build_fixture
 outA="$(bash "$guard" --strict --root "$sandbox")" || fail "expected exit 0 on clean fixture:\n$outA"
 grep -q "^STATUS=OK$" <<<"$outA" || fail "expected STATUS=OK on clean fixture:\n$outA"
 pass "clean fixture passes"
+grep -q "^REASON=" <<<"$outA" && fail "expected no REASON= on clean fixture:\n$outA"
+printf '%s\n' "$outA" | bash "$contract" --validate - >/dev/null 2>&1 \
+  || fail "clean fixture output violates the structured-output contract:\n$outA"
+pass "clean fixture output carries no REASON= and satisfies the contract"
 
 # -----------------------------------------------------------------------------
 # Case B: hardcoded /configure:X not in manifest → skill_ref_unresolved
@@ -131,6 +136,11 @@ sed -i.bak 's/`configure-bar`//' "${sandbox}/configure-plugin/docs/flow.md" && r
 outC="$(bash "$guard" --strict --root "$sandbox")" && fail "expected failure when flow.md omits configure-bar"
 grep -q "TYPE=flow_missing_component" <<<"$outC" || fail "expected flow_missing_component issue:\n$outC"
 pass "flow.md missing a component fails"
+grep -qxF "REASON=flow_missing_component: docs/flow.md mapping table does not name configure-bar" <<<"$outC" \
+  || fail "expected REASON= naming the first finding (#2760):\n$outC"
+printf '%s\n' "$outC" | bash "$contract" --validate - >/dev/null 2>&1 \
+  || fail "failing output violates the structured-output contract:\n$outC"
+pass "failing output carries REASON= and satisfies the contract"
 
 # -----------------------------------------------------------------------------
 # Case D: flow.md names a skill not in the manifest → flow_dangling_skill

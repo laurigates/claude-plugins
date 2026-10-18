@@ -16,11 +16,14 @@
 #      extracted/executed (#1744 false-positive class)
 #   G. no `printf: write error: Broken pipe` noise on harness stderr — the
 #      classification greps use here-strings, not `printf | grep` (#1744 race)
+#   H. REASON= names the first FAIL on ERROR, is absent on OK, and both reports
+#      satisfy check-structured-output-contract.sh --validate (#2760)
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$script_dir/../.." && pwd)"
 harness="$repo_root/scripts/check-context-command-execution.sh"
+contract="$repo_root/scripts/check-structured-output-contract.sh"
 
 pass_count=0
 fail_count=0
@@ -113,10 +116,23 @@ bash "$harness" --repo-root "$workdir" --files "$workdir/skills/bad-grep/SKILL.m
 [ $? -eq 1 ] && a_strict=true || a_strict=false
 assert "A: --strict exits 1 on a FAIL" "$a_strict"
 
+# H. REASON= on the ERROR path names the first FAIL; the report is contract-valid.
+a_reason="$(grep -m1 '^REASON=' <<<"$arep")"
+grep -q '^REASON=FAIL: [^ ]*/skills/bad-grep/SKILL\.md:5 ' <<<"$a_reason" \
+  && grep -qF 'No such file or directory' <<<"$a_reason" \
+  && h_reason=true || h_reason=false
+assert "H: REASON= names the first FAIL (file:line + stderr)" "$h_reason"
+printf '%s\n' "$arep" | bash "$contract" --validate - >/dev/null 2>&1 && h_valid=true || h_valid=false
+assert "H: ERROR report satisfies the structured-output contract" "$h_valid"
+
 # B. robust find -exec grep → no FAIL, exit 0
 brep="$(report skills/good-find/SKILL.md)"
 grep -q '^FAIL=0$' <<<"$brep" && grep -q '^STATUS=OK$' <<<"$brep" && b_ok=true || b_ok=false
 assert "B: find -exec grep form PASSes (FAIL=0, STATUS=OK)" "$b_ok"
+grep -q '^REASON=' <<<"$brep" && h_ok_reason=false || h_ok_reason=true
+assert "H: OK report carries no REASON=" "$h_ok_reason"
+printf '%s\n' "$brep" | bash "$contract" --validate - >/dev/null 2>&1 && h_ok_valid=true || h_ok_valid=false
+assert "H: OK report satisfies the structured-output contract" "$h_ok_valid"
 
 # C. missing tool → ENV_MISSING, not FAIL
 crep="$(report skills/env-tool/SKILL.md)"
@@ -150,4 +166,4 @@ assert "G: no 'write error: Broken pipe' on harness stderr (#1744)" "$g_ok"
 
 echo "----"
 echo "PASS=$pass_count FAIL=$fail_count"
-[ "$fail_count" -eq 0 ] || exit 1
+if [ "$fail_count" -gt 0 ]; then printf 'A report was:\n%s\n' "$arep" >&2; exit 1; fi
