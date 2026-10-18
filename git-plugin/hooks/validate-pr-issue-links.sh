@@ -24,8 +24,27 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
 
 # Guard: only for gh pr create commands
+#
+# Decided on parsed command nodes, not on the raw string (#2737): a commit
+# message, a quoted `--body "run gh pr create later"` or a heredoc body that
+# merely MENTIONS a PR creation used to run this check — and block, whenever
+# the current branch's commits carry a closing keyword. See
+# lib/parsed-commands.sh. A cheap textual prefilter runs first so most Bash
+# calls never start a parser.
+#
+# Without a usable parser (ast-grep absent or erroring, or the library missing
+# from a partial install) the original raw-text regex decides — this check
+# fired everywhere before, so it keeps firing rather than going silent.
 if [ -z "$COMMAND" ]; then exit 0; fi
-if ! grep -qE '(^|\s)gh\s+pr\s+create' <<<"$COMMAND"; then exit 0; fi
+if ! grep -q 'gh' <<<"$COMMAND" || ! grep -q 'create' <<<"$COMMAND"; then exit 0; fi
+PC_LIB_MISSING=0
+# shellcheck source=git-plugin/hooks/lib/parsed-commands.sh
+. "$(dirname "$0")/lib/parsed-commands.sh" 2>/dev/null || PC_LIB_MISSING=1
+if [ "$PC_LIB_MISSING" = 0 ] && pc_scan "$COMMAND"; then
+    if ! pc_find_gh_pr_create; then exit 0; fi
+elif ! grep -qE '(^|\s)gh\s+pr\s+create' <<<"$COMMAND"; then
+    exit 0
+fi
 
 # Extract body content from --body-file / -F (preferred pattern for multi-line
 # bodies). gh accepts the long form (--body-file <path> or --body-file=<path>)
