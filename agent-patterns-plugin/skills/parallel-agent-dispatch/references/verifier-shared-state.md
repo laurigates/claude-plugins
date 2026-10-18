@@ -85,10 +85,10 @@ the diff.
   start, source mtimes falling inside your run, or several files sharing one
   bulk-restore mtime are all tells. Leftover snapshot files under `/tmp` are the
   loudest.
-- **Restore from a `cp` snapshot, never `git checkout --`** — see section 2,
-  which covers why that deletes an uncommitted fix. The write-side hazard makes
-  it worse: a peer gate may sample the tree during the window when the fix is
-  gone.
+- **Restore from a snapshot, never `git checkout --`** — see section 2, which
+  covers why that deletes an uncommitted fix and names the `mutation-check.sh`
+  helper that snapshots and restores for you. The write-side hazard makes it
+  worse: a peer gate may sample the tree during the window when the fix is gone.
 
 The cheap structural fix is to give the mutating agent its own worktree. It
 costs one command, and it is the only arrangement where the two stages can
@@ -117,13 +117,29 @@ None was dishonest. Each is the ordinary failure of checking your own work.
   uncommitted work it does not undo your mutation — it deletes the fix along with
   it. Every mutation after the first then runs against a tree containing no fix
   at all, goes red for that reason, and reads exactly like a test with teeth.
-  Snapshot once and restore from the copy:
+  Restore from a snapshot taken with the fix in place. Run each mutation through
+  [`scripts/mutation-check.sh`](../scripts/mutation-check.sh), which takes that
+  snapshot, applies the `sed` expression, runs the gate, and restores the file on
+  every exit path (gate pass, gate fail, gate killed, helper interrupted):
 
   ```sh
-  cp main/thing.c "$SNAP"          # once, with the fix in place
-  # mutate, run the suite, then between mutations:
-  cp "$SNAP" main/thing.c
+  scripts/mutation-check.sh main/thing.c 's/>= 3/>= 4/' -- just test   # MUTANT=killed|survived
   ```
+
+  `MUTANT=killed` means the gate ran and failed on the mutant (the tests have
+  teeth); `MUTANT=survived` means it passed (they pin nothing). A gate that cannot
+  start (not found, not executable, or exiting 126/127) is `STATUS=ERROR` with
+  `TYPE=gate_not_runnable` and no `MUTANT=` line. The helper runs no baseline, so
+  run the gate once on the unmutated file first: a gate that is already red reads
+  as `killed` for every mutant. The gate runs in its own process group, and an
+  interrupt signals the group, so a gate that spawns children (`just test`) leaves
+  nothing running against the restored file. In this repo the same call
+  is `just mutation-check <path> <sed-expr> -- <gate...>`. The helper exists so a
+  probe needs no hand-written `cp` + `sed -i` + `cp` sequence: the `sed-inplace`
+  hook blocks that sequence, and the trailing restore is the step that gets
+  skipped when the gate errors out. It never uses `sed -i`, so it behaves the
+  same under BSD and GNU `sed`, and it rejects an expression that changes
+  nothing, because a no-op mutation proves nothing.
 
   Observed 2026-09 (`mcu-tinkering-lab`): a three-mutation run over an uncommitted
   guard reported all three red. Only the first was a real result; the other two
