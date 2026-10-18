@@ -2,8 +2,10 @@
 # Audit top-level documentation maps for mechanical drift (Layer 1 of #1460).
 #
 # Seven zero-false-positive checks:
-#   1. RULES INDEX  — every .claude/rules/*.md appears in the CLAUDE.md Rules
-#      table, and every table entry exists on disk (bidirectional).
+#   1. RULES INDEX  — every .claude/rules/*.md appears as the first cell of a
+#      table row inside the CLAUDE.md `## Rules` section (a row appended under
+#      another heading, or a prose mention, does not count — #2838 A-5),
+#      and every table entry exists on disk (bidirectional).
 #   2. PLUGIN MAPS  — the plugin set agrees across marketplace.json,
 #      release-please-config.json, .release-please-manifest.json, the *-plugin
 #      directories on disk, and docs/PLUGIN-MAP.md.
@@ -96,8 +98,17 @@ add_issue() {
 # --- Check 1: rules index vs disk ---------------------------------------------
 rules_on_disk="$(find "$rules_dir" -maxdepth 1 -name '*.md' -type f 2>/dev/null \
   | sed "s#$rules_dir/##" | sort)"
-rules_in_table="$(grep -oE '\.claude/rules/[a-z0-9-]+\.md' "$claude_md" 2>/dev/null \
-  | sed 's#.claude/rules/##' | sort -u)"
+# Only the FIRST cell of table rows inside the `## Rules` section counts. A
+# whole-file grep let a row appended after the table (it renders as stray text
+# under another heading) or a prose mention satisfy the index (#2838 A-5).
+rules_in_table="$(awk '
+    /^## / { in_rules = ($0 ~ /^## Rules[ \t]*$/); next }
+    in_rules && /^\|/ {
+      split($0, cells, "|")
+      if (match(cells[2], /\.claude\/rules\/[a-z0-9-]+\.md/))
+        print substr(cells[2], RSTART + 14, RLENGTH - 14)
+    }
+  ' "$claude_md" 2>/dev/null | sort -u)"
 
 missing_from_table="$(comm -23 <(printf '%s\n' "$rules_on_disk") <(printf '%s\n' "$rules_in_table"))"
 missing_from_disk="$(comm -13 <(printf '%s\n' "$rules_on_disk") <(printf '%s\n' "$rules_in_table"))"
