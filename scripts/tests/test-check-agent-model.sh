@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # Regression test for scripts/check-agent-model.sh
 # (.claude/rules/agent-development.md § "Model Selection for Agents" — the
-#  opus-floor, fable-sanctioned standard for plugin agents).
+#  task-shape tiers for plugin agents, #3116).
 #
 # Guards:
-#   A. the real repo stays clean — every agent is on opus, so the check exits 0
+#   A. the real repo stays clean — every agent declares a tier model, so the check exits 0
 #   B. an all-opus fixture tree exits 0
 #   C. a `model: haiku` agent exits 1 and names the offending file
-#   D. a `model: sonnet` agent exits 1 and names the offending file
+#   D. `model: sonnet` WITHOUT `effort:` exits 1 and names the file; with an
+#      explicit `effort:` it exits 0 and is counted in SONNET_AGENTS;
+#      `model: inherit` exits 1 (the pick must be explicit); an invalid effort
+#      past line 20 still fails; a CRLF file is parsed
 #   E. an allowlisted file is honored (via the CHECK_AGENT_MODEL_ALLOWLIST seam)
 #   F. agent worktree copies under .claude/worktrees/ are pruned, not scanned
 #      (#1492 parity)
@@ -15,7 +18,8 @@
 #   I. `effort: low` exits 0; `effort: ultra` exits 1 and names the bad value;
 #      an agent with no `effort:` line exits 0 (the field is optional)
 #   J. a lean haiku reader (omitClaudeMd + Read/Grep/Glob tools + effort) exits
-#      0; dropping any one condition exits 1 and names it; sonnet gets no carve-out
+#      0; dropping any one condition exits 1 and names it; a sonnet agent passes
+#      on its own tier, never as a lean-haiku exemption
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -97,7 +101,7 @@ make_agent "$fx_b/demo-plugin/agents/good.md" opus
 make_agent "$fx_b/other-plugin/agents/also-good.md" opus
 run "$fx_b"
 assert "all-opus fixture exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
-assert "all-opus fixture reports 2 checked" "$(contains "$OUT" 'All 2 agent files run on opus')"
+assert "all-opus fixture reports 2 checked" "$(contains "$OUT" 'All 2 agent files declare a tier model')"
 
 # --- TEST C: a model: haiku agent --------------------------------------------
 echo "=== TEST C: model: haiku agent exits 1 and is named ==="
@@ -110,13 +114,39 @@ assert "haiku fixture names the offending file" "$(contains "$OUT" 'agents/bad.m
 assert "haiku fixture reports the bad model" "$(contains "$OUT" 'model: haiku')"
 
 # --- TEST D: a model: sonnet agent -------------------------------------------
-echo "=== TEST D: model: sonnet agent exits 1 and is named ==="
+echo "=== TEST D: sonnet needs an explicit effort; inherit is rejected ==="
 fx_d="$(mktemp -d)"
 make_agent "$fx_d/demo-plugin/agents/legacy.md" sonnet
 run "$fx_d"
-assert "sonnet fixture exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
-assert "sonnet fixture names the offending file" "$(contains "$OUT" 'agents/legacy.md')"
-assert "sonnet fixture reports the bad model" "$(contains "$OUT" 'model: sonnet')"
+assert "effortless sonnet exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "effortless sonnet names the offending file" "$(contains "$OUT" 'agents/legacy.md')"
+assert "effortless sonnet names the missing effort" "$(contains "$OUT" 'model: sonnet needs an explicit effort:')"
+rm -f "$fx_d/demo-plugin/agents/legacy.md"
+make_agent_effort "$fx_d/demo-plugin/agents/bounded.md" sonnet low
+run "$fx_d"
+assert "sonnet + effort exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+assert "sonnet + effort is counted" "$(contains "$OUT" 'SONNET_AGENTS=1')"
+make_agent "$fx_d/demo-plugin/agents/inherits.md" inherit
+run "$fx_d"
+assert "inherit exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "inherit is named" "$(contains "$OUT" 'model: inherit')"
+rm -f "$fx_d/demo-plugin/agents/inherits.md"
+# An invalid effort past line 20 is still validated: the sonnet check reads the
+# whole frontmatter, so a head -20 effort read would let it pass unchecked.
+{
+  echo "---"; echo "name: deep"; echo "model: sonnet"
+  for i in $(seq 1 20); do echo "pad$i: x"; done
+  echo "effort: bogus"; echo "---"; echo "Fixture body."
+} > "$fx_d/demo-plugin/agents/deep.md"
+run "$fx_d"
+assert "late invalid effort exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "late invalid effort is named" "$(contains "$OUT" 'effort: bogus')"
+rm -f "$fx_d/demo-plugin/agents/deep.md"
+# A CRLF agent file is parsed, not skipped as frontmatter-less.
+make_agent_effort "$fx_d/demo-plugin/agents/crlf.md" sonnet low
+sed 's/$/\r/' "$fx_d/demo-plugin/agents/crlf.md" > "$fx_d/crlf.tmp" && mv "$fx_d/crlf.tmp" "$fx_d/demo-plugin/agents/crlf.md"
+run "$fx_d"
+assert "CRLF sonnet + effort exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
 
 # --- TEST E: an allowlisted file is honored ----------------------------------
 echo "=== TEST E: allowlisted file is honored ==="
@@ -139,7 +169,7 @@ make_agent "$fx_f/demo-plugin/.claude/worktrees/agent-deadbeef/agents/leaked.md"
 make_agent "$fx_f/.claude/worktrees/agent-cafef00d/demo-plugin/agents/leaked2.md" haiku
 run "$fx_f"
 assert "worktree fixture exits 0 (copies pruned)" "$([ "$RC" -eq 0 ] && echo true || echo false)"
-assert "worktree fixture reports only the 1 real agent" "$(contains "$OUT" 'All 1 agent files run on opus')"
+assert "worktree fixture reports only the 1 real agent" "$(contains "$OUT" 'All 1 agent files declare a tier model')"
 assert "no .claude/worktrees/ path leaks into output" "$([ "$(contains "$OUT" '.claude/worktrees/')" = "false" ] && echo true || echo false)"
 
 # --- TEST G: the scan ROOT is itself a worktree (#2219) ----------------------
@@ -274,11 +304,12 @@ run "$fx_j"
 assert "a duplicate tools: key exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
 assert "the duplicate tools: key is named" "$(contains "$OUT" 'declares tools: more than once')"
 
-# sonnet gets no lean carve-out: the same lean shape on sonnet still fails.
+# A sonnet agent passes on its own tier, never as a lean-haiku exemption.
 rm -f "$fx_j/demo-plugin/agents/lean.md"
 make_agent_effort "$fx_j/demo-plugin/agents/lean-sonnet.md" sonnet low
 run "$fx_j"
-assert "sonnet has no lean carve-out" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "sonnet + effort passes on its own tier" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+assert "sonnet is not counted as lean haiku" "$(contains "$OUT" 'LEAN_HAIKU_AGENTS=0')"
 
 # --- Summary -----------------------------------------------------------------
 echo ""

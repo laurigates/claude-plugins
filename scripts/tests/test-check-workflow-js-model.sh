@@ -12,7 +12,8 @@
 #   A. empty corpus                       → STATUS=OK, exit 0 (plain AND --strict)
 #   B. compliant harness                  → STATUS=OK, exit 0
 #   C. missing effort                     → ERROR, --strict exit 1, plain exit 0
-#   D. non-opus model (sonnet)            → ERROR non_opus_model
+#   D. tier models (sonnet, fable) + effort → OK; an off-tier model → ERROR
+#      disallowed_model (#3116)
 #   E. unknown argument                   → exit 2, usage on stderr, no scan
 #   F. .claude/worktrees/ copy pruned     → not double-counted, path never leaks
 #   G. orphan .js (no framing section)    → ERROR unreachable_workflow
@@ -28,7 +29,8 @@
 #      label AND the literal 'haiku', it never spreads to a sibling call in the
 #      same file, and it is counted rather than silent. L4/L5/L7-L9 pin the
 #      Haiku 5.5 stage: haiku passes only with an explicit valid effort, is
-#      itemised as haiku_stage, and the carve-out never extends to sonnet.
+#      itemised as haiku_stage, and the carve-out never extends to sonnet
+#      (a sonnet stage passes on its own tier, never as an exemption).
 #   M. The framing literal `not a script to run verbatim` (issue #2164) — the
 #      passing case, the failing case, that the assertion is SECTION-scoped
 #      (a mention elsewhere in the file does not satisfy it), and that an
@@ -177,16 +179,32 @@ check "C: missing effort --strict exit 1" "1"     "$(run "$root" --strict)"
 check "C: missing effort plain exit 0"    "0"     "$(run "$root")"
 
 # ---------------------------------------------------------------------------
-# D. Non-opus model.
+# D. Tier models pass with an explicit effort; an off-tier model ERRORs.
 # ---------------------------------------------------------------------------
-root=$(mk_root D)
+for m in sonnet fable; do
+    root=$(mk_root "D-$m")
+    d=$(mk_skill "$root" demo-plugin demo-skill)
+    mk_js "$d" audit.workflow.js "$m" low
+    o=$(out "$root")
+    check "D: $m+effort STATUS=OK"        "OK" "$(field "$o" STATUS)"
+    check "D: $m+effort parsed"           "1"  "$(field "$o" AGENT_CALLS)"
+    check "D: $m+effort not an exemption" "0"  "$(field "$o" EXEMPTED_CALLS)"
+    check "D: $m+effort --strict exit 0"  "0"  "$(run "$root" --strict)"
+done
+root=$(mk_root D-off)
 d=$(mk_skill "$root" demo-plugin demo-skill)
-mk_js "$d" audit.workflow.js sonnet low
+mk_js "$d" audit.workflow.js inherit low
 o=$(out "$root")
-check "D: sonnet STATUS=ERROR"          "ERROR" "$(field "$o" STATUS)"
-check "D: sonnet typed non_opus_model"  "1"     "$(printf '%s\n' "$o" | grep -c 'TYPE=non_opus_model')"
-check "D: sonnet names the model"       "1"     "$(printf '%s\n' "$o" | grep -c 'MODEL=sonnet')"
-check "D: sonnet --strict exit 1"       "1"     "$(run "$root" --strict)"
+check "D: off-tier STATUS=ERROR"          "ERROR" "$(field "$o" STATUS)"
+check "D: off-tier typed disallowed_model" "1"    "$(printf '%s\n' "$o" | grep -c 'TYPE=disallowed_model')"
+check "D: off-tier names the model"       "1"     "$(printf '%s\n' "$o" | grep -c 'MODEL=inherit')"
+check "D: off-tier --strict exit 1"       "1"     "$(run "$root" --strict)"
+root=$(mk_root D-noeff)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_js "$d" audit.workflow.js sonnet ""
+o=$(out "$root")
+check "D: effortless sonnet ERRORs"       "1"     "$(printf '%s\n' "$o" | grep -c 'TYPE=missing_effort')"
+check "D: effortless sonnet --strict exit 1" "1"  "$(run "$root" --strict)"
 
 # ---------------------------------------------------------------------------
 # E. Unknown argument → exit 2 with usage, and nothing scanned (#2057).
@@ -275,22 +293,22 @@ check "J: framing literal kept → no framing finding" "0" "$(printf '%s\n' "$o"
 # ---------------------------------------------------------------------------
 # K (part 2). GUARD INTEGRITY — agent() text inside a comment or a template
 # literal is not a call site. A parser that matched raw text would report
-# AGENT_CALLS=3 and flag two phantom sonnet violations here.
+# AGENT_CALLS=3 and flag two phantom off-tier models here.
 # ---------------------------------------------------------------------------
 root=$(mk_root K)
 d=$(mk_skill "$root" demo-plugin demo-skill)
 cat > "$d/workflows/audit.workflow.js" <<'JS'
 export default async function ({ agent }) {
-  // Never write agent(prompt, {model:'sonnet'}) — opus only.
+  // Never write agent(prompt, {model:'inherit'}) — pick a tier.
   /* Also not a call: agent(p, {model:'haiku'}) */
-  const brief = `Do not literally run agent(x, {model:'sonnet'}) yourself.`;
+  const brief = `Do not literally run agent(x, {model:'inherit'}) yourself.`;
   return await agent(brief, { label:'audit', model:'opus', effort:'medium' });
 }
 JS
 o=$(out "$root")
 check "K: only the real call is parsed"   "1"  "$(field "$o" AGENT_CALLS)"
 check "K: comment/template text is clean" "OK" "$(field "$o" STATUS)"
-check "K: no phantom non_opus_model"      "0"  "$(printf '%s\n' "$o" | grep -c 'TYPE=non_opus_model')"
+check "K: no phantom disallowed_model"    "0"  "$(printf '%s\n' "$o" | grep -c 'TYPE=disallowed_model')"
 
 # ---------------------------------------------------------------------------
 # L. The sanctioned cold-read haiku exemption (issue #2216).
@@ -313,7 +331,7 @@ export default async function ({ agent }) {
 }
 JS
 o=$(out "$root")
-check "L1: cold reader raises no non_opus_model" "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=non_opus_model')"
+check "L1: cold reader raises no disallowed_model" "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=disallowed_model')"
 check "L1: cold reader raises no missing_effort" "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=missing_effort')"
 check "L1: cold reader STATUS=OK"                "OK" "$(field "$o" STATUS)"
 check "L1: cold reader ERROR_COUNT=0"            "0"  "$(field "$o" ERROR_COUNT)"
@@ -327,35 +345,36 @@ check "L1: EXEMPTIONS block present"             "1"  "$(printf '%s\n' "$o" | gr
 check "L1: exemption names the label"            "1"  "$(printf '%s\n' "$o" | grep -c 'LABEL=coldread:')"
 check "L1: exemption typed coldread_haiku"       "2"  "$(printf '%s\n' "$o" | grep -c 'TYPE=coldread_haiku')"
 
-# L2. GUARD INTEGRITY, the load-bearing case: a `sonnet` planner sitting BESIDE
-# the cold reader in the SAME file must still ERROR. This is precisely what a
-# file-granular allowlist (option 2 in #2216) would have silently permitted.
+# L2. GUARD INTEGRITY, the load-bearing case: an effortless `sonnet` planner
+# sitting BESIDE the cold reader in the SAME file must still ERROR. A
+# file-granular allowlist (option 2 in #2216) would have exempted it from
+# missing_effort along with the reader.
 root=$(mk_root L2)
 d=$(mk_skill "$root" demo-plugin demo-skill)
 cat > "$d/workflows/audit.workflow.js" <<'JS'
 export default async function ({ agent }) {
-  const plan = await agent(PLAN_PROMPT, {label:'plan', model:'sonnet', effort:'low'})
+  const plan = await agent(PLAN_PROMPT, {label:'plan', model:'sonnet'})
   const cold = await agent(COLDREAD_PROMPT(plan),
     {label:`coldread:${plan.id}`, phase:'ColdRead', model:'haiku'})
   return [plan, cold]
 }
 JS
 o=$(out "$root")
-check "L2: sibling sonnet still ERRORs"    "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=non_opus_model')"
-check "L2: sibling sonnet named"           "1" "$(printf '%s\n' "$o" | grep -c 'MODEL=sonnet')"
+check "L2: sibling sonnet still ERRORs"    "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=missing_effort')"
+check "L2: no phantom model error"         "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=disallowed_model')"
 check "L2: STATUS=ERROR"                   "ERROR" "$(field "$o" STATUS)"
 check "L2: --strict exit 1"                "1" "$(run "$root" --strict)"
 check "L2: exemption stays call-scoped"    "1" "$(field "$o" EXEMPTED_CALLS)"
 
-# L3. A `sonnet` call that LABELS ITSELF cold-read is still an ERROR: the
-# exemption needs the declaring label AND the literal 'haiku', so a mislabel
-# can never buy a blanket bypass — only the one documented model.
+# L3. A `sonnet` call that LABELS ITSELF cold-read is an ordinary sonnet stage:
+# the exemption needs the declaring label AND the literal 'haiku', so a mislabel
+# cannot buy the effort exemption — without an effort it still ERRORs.
 root=$(mk_root L3)
 d=$(mk_skill "$root" demo-plugin demo-skill)
-printf 'export default async function ({ agent }) {\n  return await agent(P, {label:%s, model:%s, effort:%s});\n}\n' \
-    "'coldread:x'" "'sonnet'" "'low'" > "$d/workflows/audit.workflow.js"
+printf 'export default async function ({ agent }) {\n  return await agent(P, {label:%s, model:%s});\n}\n' \
+    "'coldread:x'" "'sonnet'" > "$d/workflows/audit.workflow.js"
 o=$(out "$root")
-check "L3: mislabelled sonnet still ERRORs" "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=non_opus_model')"
+check "L3: mislabelled sonnet still ERRORs" "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=missing_effort')"
 check "L3: mislabelled sonnet not exempted" "0" "$(field "$o" EXEMPTED_CALLS)"
 check "L3: --strict exit 1"                 "1" "$(run "$root" --strict)"
 
@@ -367,7 +386,7 @@ d=$(mk_skill "$root" demo-plugin demo-skill)
 mk_js "$d" audit.workflow.js haiku ""
 o=$(out "$root")
 check "L4: effortless haiku ERRORs"        "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=missing_effort')"
-check "L4: no double-reported model error" "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=non_opus_model')"
+check "L4: no double-reported model error" "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=disallowed_model')"
 check "L4: effortless haiku not exempted"  "0" "$(field "$o" EXEMPTED_CALLS)"
 check "L4: --strict exit 1"                "1" "$(run "$root" --strict)"
 
@@ -404,12 +423,13 @@ check "L8: invalid effort ERRORs"          "1" "$(printf '%s\n' "$o" | grep -c '
 check "L8: invalid effort not exempted"    "0" "$(field "$o" EXEMPTED_CALLS)"
 check "L8: --strict exit 1"                "1" "$(run "$root" --strict)"
 
-# L9. The carve-out is haiku-only: sonnet with an explicit effort still ERRORs.
+# L9. The carve-out is haiku-only: sonnet with an explicit effort passes on its
+# own tier and is never counted as an exemption.
 root=$(mk_root L9)
 d=$(mk_skill "$root" demo-plugin demo-skill)
 mk_js "$d" audit.workflow.js sonnet low
 o=$(out "$root")
-check "L9: sonnet+effort still ERRORs"     "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=non_opus_model')"
+check "L9: sonnet+effort passes"           "OK" "$(field "$o" STATUS)"
 check "L9: sonnet+effort not exempted"     "0" "$(field "$o" EXEMPTED_CALLS)"
 
 # L6. An exempted call with a PRESENT but invalid effort is still tiered — the
@@ -420,7 +440,7 @@ printf 'export default async function ({ agent }) {\n  return await agent(P, {la
     "'coldread:x'" "'haiku'" "'turbo'" > "$d/workflows/audit.workflow.js"
 o=$(out "$root")
 check "L6: exempted call still tiers effort" "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=invalid_effort')"
-check "L6: exempted call has no model error" "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=non_opus_model')"
+check "L6: exempted call has no model error" "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=disallowed_model')"
 check "L6: still exempted"                   "1" "$(field "$o" EXEMPTED_CALLS)"
 
 # ---------------------------------------------------------------------------

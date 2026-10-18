@@ -339,9 +339,9 @@ jobs:
         # above proving it before it gates the tree is the whole point.
         run: bash scripts/check-taskcompleted-verification.sh --strict
 
-      - name: Check every Claude workflow pins opus + effort
-        # Whole-repo invariant (every Claude workflow must pin opus + explicit
-        # effort). Runs unconditionally like the agent-model pair above — the
+      - name: Check every Claude workflow pins an allowed model + effort
+        # Whole-repo invariant (every Claude workflow must pin opus, fable or
+        # sonnet + explicit effort). Runs unconditionally like the agent-model pair above — the
         # self-test step above proves the guard before it gates the tree.
         run: bash scripts/check-workflow-model.sh
 

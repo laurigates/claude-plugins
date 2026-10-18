@@ -4,7 +4,7 @@ description: Write and configure custom agent definitions in Claude Code agents/
 user-invocable: false
 allowed-tools: Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-10-09
+modified: 2026-10-18
 compatibility: claude-code
 reviewed: 2026-09-23
 ---
@@ -38,6 +38,7 @@ isolation settings. They are defined in `.claude/agents/` or via plugin
 name: my-custom-agent
 description: What this agent does
 model: sonnet
+effort: low
 tools: Bash, Read, Grep, Glob
 ---
 
@@ -110,15 +111,16 @@ agent: security-auditor
 2. **Rely on default isolation** — a named agent never sees the caller's conversation, so exploratory work stays out of the main context without any field. Only documented agent fields take effect; an unrecognized key, such as a skill's `context:`, is ignored without an error.
 3. **Combine `tools` + `disallowedTools`** — explicit whitelist with a safety blacklist.
 4. **Clear descriptions** — describe what the agent does and its boundaries.
-5. **Model and effort** — `model: opus` is the floor for any agent whose output
-   re-enters the main loop (a weaker delegate degrades everything downstream;
-   `scripts/check-agent-model.sh` enforces it for plugin agents). `fable` is
-   sanctioned for the hardest delegated reasoning. Tune cost with `effort:`
-   (`low` for mechanical work), not by downgrading the model. The one
-   exception is the `cold-read-gate` haiku reader, which is a measurement
-   instrument, not a delegate. See `.claude/rules/agent-development.md` §
-   "Model Selection for Agents" (repo) and
-   `~/.claude/rules/agent-and-tool-selection.md` (user-global).
+5. **Model and effort** — pick the model by task shape. `opus` is the default
+   for judgement work (review, debugging, multi-file edits, untrusted input).
+   `fable` is for the hardest delegated reasoning. `sonnet` with an explicit
+   `effort:` fits bounded work whose done check fits in one sentence and whose
+   wrong answer is cheap to catch. `haiku` fits a lean read-only reader whose
+   output a stronger stage checks. An agent's output re-enters the main loop,
+   so a weaker model's output needs that check; escalate a miss to `opus`
+   rather than retrying on the same model. `scripts/check-agent-model.sh`
+   enforces the shape for plugin agents. See `.claude/rules/agent-development.md`
+   § "Model Selection for Agents".
 6. **Report failures loudly** — a dispatched agent that hits a wall must say so
    in its final message, never a one-word summary like `Terminal.` / `Done.` /
    `Stopped.` On a blocker it should commit and push its in-progress work, open a

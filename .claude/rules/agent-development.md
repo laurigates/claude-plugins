@@ -1,6 +1,6 @@
 ---
 created: 2026-02-25
-modified: 2026-10-13
+modified: 2026-10-18
 reviewed: 2026-09-23
 paths:
   - "**/agents/**"
@@ -165,16 +165,27 @@ Distinct from nesting depth above, Claude Code also caps how many subagents may 
 
 ## Model Selection for Agents
 
-**Default to `model: opus` for every plugin agent.** A subagent's output feeds back into the main loop as a tool result, so a weaker delegate quietly degrades everything downstream. Measured on the Opus 4.8 / Sonnet 4.6 generation, Opus at *low* effort beat Sonnet at *high* effort on both quality and token efficiency, so **`effort`, not `model`, is the cost lever** for delegated work. The `opus` / `sonnet` aliases resolve to Opus 5.5 (2.1.280) / Sonnet 5, and effort level names do not map across model generations — re-run the `skill-evaluation.md` Tier 2 sweep before changing an agent's effort on the strength of the old figure. This matches the user-global standard in `~/.claude/rules/agent-and-tool-selection.md` ("Opus Is the Floor for Subagents and Agent Teams").
+**Pick the model by task shape, and make the pick explicit.** The working premise is that on the 5.5 generation Sonnet and Haiku are close enough to Opus on bounded work that a blanket Opus minimum overpays for it. The old minimum rested on Opus at low effort beating Sonnet at high effort, measured on Opus 4.8 / Sonnet 4.6 and not re-measured on 5.5 (#3116 calibrates the tiers below). The concern behind it stays: a subagent's output re-enters the main loop as a tool result, so a weaker model's output needs a check that a wrong answer cannot pass. The tiers encode where that check exists.
 
-| Model | Use For |
-|-------|---------|
-| `opus` | **Default for all subagents** — reasoning, review, debugging, refactoring, *and* mechanical/high-volume work (dial `effort` down for the latter rather than downgrading the model) |
-| `fable` | Sanctioned for the hardest delegated reasoning (long-horizon, multi-file, adversarial verification). Accepted by `scripts/check-agent-model.sh`. Not the default: no plan defaults to Fable and it costs 2.5x Opus 5.5 per token |
-| `sonnet` | Avoid for subagents. |
-| `haiku` | Three uses are sanctioned. The `agent-patterns-plugin:cold-read-gate` reader is a *measurement instrument*, not a delegate. A **lean read-only agent file** may set `model: haiku` (see [Lean subagents](#lean-subagents-omitclaudemd--a-narrow-tools-list); `scripts/check-agent-model.sh` enforces its shape). A **workflow `agent()` stage** may run on haiku when it is mechanical (verbatim extraction, closed-enum classification, a script runner) and its output feeds an Opus stage that would notice a bad one; it must set an explicit `effort` (`scripts/check-workflow-js-model.sh`). Noticing has to cover omission too. A stage whose dropped item never reaches a later stage (an extraction lane, a filter or triage that discards) stays on opus, because nothing downstream can see what it left out. The 2026-10 re-evaluation (`docs/audits/haiku-5.5-reevaluation-2026-10-10.md`) left the two nearest full-context agent candidates, `search-replace` and `test-runner`, as needs-test: a closing check that passes does not prove the edits or the summary are right. |
+| Tier | Model | Fits | Requirement |
+|------|-------|------|-------------|
+| Judgement | `opus` (default) | Review, debugging, design, multi-file edits, adversarial verification, acting on untrusted text, and any output nothing downstream checks | `effort:` optional (inherits) |
+| Hardest | `fable` | Long-horizon, multi-file or adversarial reasoning where Opus falls short. No plan defaults to Fable and it costs 2.5x Opus 5.5 per token | `effort:` optional |
+| Bounded | `sonnet` | One file or function, a known fix, a rename, a lookup, a format change, a checklist with a pass/fail check. The test: the done check fits in one sentence, and a wrong answer is cheap to catch (a test, a script, a stronger stage) | Explicit `effort:` |
+| Mechanical | `haiku` | Verbatim extraction, closed-enum classification, a script runner, whose output a stronger stage or a script checks | See below |
 
-`model: opus` remains the committed floor for plugin agents (portable: every plan has Opus). `inherit` is not used for plugin agents because it would also inherit Sonnet/Haiku sessions below the floor. `effort:` frontmatter is the cost lever; use `effort: low` for mechanical/high-volume agents.
+**Escalate, do not retry.** Sonnet or Haiku output that misses its check goes again on `opus`, not on the same model.
+
+**Haiku stays narrower than Sonnet.** The 2026-10 re-evaluation (`docs/audits/haiku-5.5-reevaluation-2026-10-10.md`) measured Haiku 5.5 directly: it read files reliably, but only 46% of its judgement calls held under Opus verification. Its sanctioned uses:
+
+- The `agent-patterns-plugin:cold-read-gate` reader, a *measurement instrument*, not a delegate.
+- A **lean read-only agent file** (see [Lean subagents](#lean-subagents-omitclaudemd--a-narrow-tools-list); `scripts/check-agent-model.sh` enforces its shape).
+- A **workflow `agent()` stage** that is mechanical and feeds a stronger stage or a script that would notice a bad result, with an explicit `effort` (`scripts/check-workflow-js-model.sh`). Noticing has to cover omission too: a stage whose dropped item never reaches a later stage (an extraction lane, a filter or triage that discards) stays on a stronger model, because nothing downstream can see what it left out.
+- `.github/workflows` invocations only per workflow, after a replay passes (`workflow-model-effort.md`).
+
+**Existing agents keep `model: opus`.** Moving one down a tier is a per-agent change backed by a Tier 2 matrix run or a replay against its opus output (`skill-evaluation.md`); the 2026-10 audit left `search-replace` and `test-runner` as needs-test. `effort:` remains a cost lever within any tier: `effort: low` for mechanical work on the model you picked.
+
+**`inherit` is not used for plugin agents.** It hides the pick and ties the agent's quality and cost to whatever session calls it. `scripts/check-agent-model.sh` accepts `opus`, `fable`, `sonnet` with an explicit `effort:`, and `haiku` in the lean-reader shape.
 
 **Resolution order (2.1.251+):** per-spawn `Agent(model: …)` > agent frontmatter `model:` > `CLAUDE_CODE_SUBAGENT_MODEL` > the main session model. `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` (2.1.257) overrides all of these, so a frontmatter `model: opus` is a default, not a guarantee, when a user or CI environment sets the force variable; `scripts/check-agent-model.sh` checks the frontmatter only. The model actually used is reported in the `SubagentStart` hook's `subagent_model` field (`.claude/rules/hooks-reference.md`).
 

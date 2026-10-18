@@ -11,7 +11,7 @@
 #   scripts/lint-shell-scripts.sh     -name '*.sh'                   → no
 #   .pre-commit-config.yaml           62 hook ids, zero JS linter    → no
 #
-# So a bundled harness calling `agent(prompt, {model:'sonnet'})`, or omitting
+# So a bundled harness calling `agent(prompt, {model:'inherit'})`, or omitting
 # `effort` entirely, passes every gate in the repo. This guard is the sibling of
 # scripts/check-blueprint-level3-templates.sh, which exists for exactly the same
 # reason (templates living outside the directories the normal linters scan).
@@ -19,16 +19,18 @@
 # WHAT IT ASSERTS
 #
 #   Per `agent()` call in a bundled workflow script:
-#     ERROR non_opus_model   opts.model is present and is not 'opus' (except the
-#                            sanctioned cold-read haiku reader — see "THE ONE
-#                            SANCTIONED EXCEPTION" below)
+#     ERROR disallowed_model opts.model is present and is not one of the tier
+#                            models 'opus', 'fable' or 'sonnet' (except a haiku
+#                            call — see "THE ONE SANCTIONED EXCEPTION" and "THE
+#                            HAIKU STAGE" below)
 #     WARN  missing_model    opts.model is absent (the call inherits the session
 #                            model — acceptable per issue #2210, but the repo
-#                            standard is an explicit opus, so it is surfaced;
+#                            standard is an explicit tier, so it is surfaced;
 #                            see "The model-omission question" below)
-#     ERROR missing_effort   opts.effort is absent (opus defaults to `high`, so
-#                            the cost lever is forfeited unless effort is
-#                            explicit — .claude/rules/workflow-model-effort.md)
+#     ERROR missing_effort   opts.effort is absent (the default effort differs
+#                            by model and release, so the pick is not ours
+#                            unless effort is explicit —
+#                            .claude/rules/workflow-model-effort.md)
 #     ERROR invalid_effort   opts.effort is not one of: low medium high xhigh max
 #     WARN  dynamic_model / dynamic_effort — the value is an expression, not a
 #                            string literal, so it cannot be verified statically
@@ -105,9 +107,9 @@
 # justification is cost-economics for TOP-LEVEL invocations and explicitly does
 # not apply to subagents. An `agent()` call inside a harness IS a subagent, so the
 # governing text is `.claude/rules/agent-development.md` § "Model Selection for
-# Agents" (default to opus; avoid sonnet/haiku) plus the user-global always-Opus
-# standard. Issue #2210 scopes omission as "acceptable — inherits the session
-# model". This guard encodes both: omission is NOT an error (issue #2210), but it
+# Agents" (task-shape tiers: opus by default, sonnet for bounded and checkable
+# stages, haiku for mechanical ones; make the pick explicit). Issue #2210 scopes
+# omission as "acceptable — inherits the session model". This guard encodes both: omission is NOT an error (issue #2210), but it
 # IS surfaced as a WARN so the drift is visible. WARN keeps STATUS non-OK while
 # still exiting 0, per .claude/rules/structured-script-output.md.
 #
@@ -130,13 +132,14 @@
 #
 # Why keyed on the LABEL and not the file: a harness has exactly one cold-read
 # stage, so a file-granular allowlist (the shape `check-agent-model.sh` uses for
-# agent .md FILES) would silently also permit a `sonnet` planner sitting beside
-# the cold reader in the same harness. The label is self-documenting at the call
-# site and needs no external list to drift.
+# agent .md FILES) would silently also exempt every other call in the same
+# harness, including from `missing_effort`. The label is self-documenting at the
+# call site and needs no external list to drift.
 #
-# Why 'haiku' and not "any non-opus": the sanctioned instrument IS haiku. A call
-# that labels itself `coldread:` but runs `sonnet` still ERRORs — mislabelling
-# cannot buy a blanket bypass, only the one documented model. What a deliberate
+# Why 'haiku' and not "any model": the sanctioned instrument IS haiku. A call
+# that labels itself `coldread:` but runs `sonnet` is an ordinary sonnet stage
+# and still needs an explicit effort — mislabelling cannot buy a bypass, only
+# the one documented model. What a deliberate
 # mislabel CAN buy is haiku on a non-instrument call; that is accepted (it is
 # visible in the diff) and it is never silent — every exemption is counted in
 # EXEMPTED_CALLS= and itemised in the EXEMPTIONS: block.
@@ -159,7 +162,13 @@
 # cold-read case, every haiku stage is counted in EXEMPTED_CALLS= and itemised as
 # `TYPE=haiku_stage`. Which stages qualify is judged in review against
 # `.claude/rules/agent-development.md` § "Model Selection for Agents"; this guard
-# only keeps the choice visible. `sonnet` is still an ERROR everywhere.
+# only keeps the choice visible.
+#
+# THE SONNET STAGE (5.5 tiers, #3116)
+# `sonnet` is the bounded tier: a stage whose done check fits in one sentence
+# and whose wrong answer is cheap to catch. It needs no exemption — like `opus`
+# and `fable` it passes the model check, and like them it needs an explicit
+# effort. Which stages qualify is judged in review.
 #
 # EMPTY CORPUS
 # Zero bundled `.js` files is the CURRENT state of this repo and is reported as
@@ -194,8 +203,8 @@ Usage: check-workflow-js-model.sh [--strict] [--project-dir DIR]
   -h, --help        show this message
 
 Guards bundled dynamic-workflow harnesses (*/skills/*/workflows/*.workflow.js):
-every agent() call pins an opus (or inherited) model and an explicit valid
-effort, and every harness is reachable from a sibling SKILL.md whose framing
+every agent() call pins an opus, fable or sonnet (or inherited) model and an
+explicit valid effort, and every harness is reachable from a sibling SKILL.md whose framing
 section carries the literal "not a script to run verbatim" and an
 "**Agent budget:** ..." the scale estimator agrees with (an integer when every
 agent() site is counted, a per-item formula when some are not).
@@ -622,7 +631,7 @@ for js in "${js_files[@]+"${js_files[@]}"}"; do
         # The one sanctioned carve-out (#2216): a cold-read-labelled haiku call
         # is the measurement instrument, not a delegate. Narrow by construction —
         # it needs BOTH the declaring label AND the literal 'haiku', so a
-        # mislabelled sonnet planner beside it in the same file still ERRORs.
+        # mislabelled sonnet call is an ordinary sonnet stage that still needs effort.
         exempt=0
         if [ "$coldread" = "yes" ] && [ "$model" = "haiku" ]; then
             exempt=1
@@ -635,13 +644,13 @@ for js in "${js_files[@]+"${js_files[@]}"}"; do
 
         if [ "$exempt" -eq 0 ]; then
             case "$model" in
-                opus) : ;;
+                opus|fable|sonnet) : ;;
                 # Not exempt, so the effort is absent, dynamic or invalid; the
                 # effort check below names that cause, so don't double-report.
                 haiku) : ;;
-                -)    add_warn  "TYPE=missing_model FILE=$rel LINE=$call_line MSG=agent() omits opts.model (inherits the session model; prefer an explicit opus)" ;;
-                '?')  add_warn  "TYPE=dynamic_model FILE=$rel LINE=$call_line MSG=opts.model is an expression — cannot verify it resolves to opus" ;;
-                *)    add_error "TYPE=non_opus_model FILE=$rel LINE=$call_line MODEL=$model MSG=must be opus, or haiku with an explicit effort (a cold-read-labelled haiku reader needs none — see #2216)" ;;
+                -)    add_warn  "TYPE=missing_model FILE=$rel LINE=$call_line MSG=agent() omits opts.model (inherits the session model; make the tier explicit)" ;;
+                '?')  add_warn  "TYPE=dynamic_model FILE=$rel LINE=$call_line MSG=opts.model is an expression — cannot verify it resolves to a tier model" ;;
+                *)    add_error "TYPE=disallowed_model FILE=$rel LINE=$call_line MODEL=$model MSG=must be opus, fable or sonnet, or haiku with an explicit effort (a cold-read-labelled haiku reader needs none — see #2216)" ;;
             esac
         fi
 
@@ -705,7 +714,8 @@ if [ "$error_count" -gt 0 ]; then
     {
         echo ""
         echo "Found $error_count error(s) across $files_scanned bundled workflow script(s)."
-        echo "Every agent() call pins an opus model (or inherits) and an explicit valid"
+        echo "Every agent() call pins a tier model (opus, fable, sonnet, or a haiku stage)"
+        echo "or inherits, with an explicit valid"
         echo "--effort tier, and every harness is reachable from its sibling SKILL.md."
         echo "See .claude/rules/workflow-model-effort.md and .claude/rules/workflow-vs-skill.md."
     } >&2
