@@ -28,7 +28,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.50.4",
+      "version": "2.51.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -392,7 +392,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.63.0",
+      "version": "2.63.1",
       "author": {
         "name": "Lauri Gates"
       },
@@ -442,7 +442,7 @@
       "name": "health-plugin",
       "source": "./health-plugin",
       "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
-      "version": "1.23.3",
+      "version": "1.23.4",
       "author": {
         "name": "Lauri Gates"
       },
@@ -488,7 +488,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.15.1",
+      "version": "2.15.2",
       "author": {
         "name": "Lauri Gates"
       },
