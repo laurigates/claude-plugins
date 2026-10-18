@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.3](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.9.2...macos-plugin-v1.9.3) (2026-10-18)
+
+
+### Bug Fixes
+
+* **macos-plugin:** scope disk-usage cleanup commands and catalog agent worktrees ([#3078](https://github.com/laurigates/claude-plugins/issues/3078)) ([66ab8e3](https://github.com/laurigates/claude-plugins/commit/66ab8e3037366d53e81684c3182e8df9ddfd7670))
+
 ## [1.9.2](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.9.1...macos-plugin-v1.9.2) (2026-10-10)
 
 
