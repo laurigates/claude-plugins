@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.50.4](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.50.3...agent-patterns-plugin-v2.50.4) (2026-10-17)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** diagnose an MCP server running stale argv after a config edit ([#3067](https://github.com/laurigates/claude-plugins/issues/3067)) ([82943bb](https://github.com/laurigates/claude-plugins/commit/82943bb08083effb641d1969cf5393cd577d2449))
+
 ## [2.50.3](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.50.2...agent-patterns-plugin-v2.50.3) (2026-10-13)
 
 

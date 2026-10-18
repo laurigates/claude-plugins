@@ -12,6 +12,10 @@
 #   links      every relative markdown link, `#anchor` included, must resolve.
 #              The motivating defect: `hooks-configuration` linked
 #              `../../.claude/rules/hooks-reference.md`, one level too shallow.
+#   paths      a backticked repo-shaped path in skill markdown must resolve
+#              (#2948). The motivating defect: `comfy-metadata` named
+#              `scripts/rename_outputs.py`, which nothing ships; inline code is
+#              not a link, so the link guard never looked.
 #
 # SEMANTIC, not syntactic: every case EXECUTES the real script against a
 # planted fixture tree and asserts on its verdict and finding TYPE. A checker
@@ -250,6 +254,80 @@ run_case "a link inside inline code is exempt" clean \
 run_case "external URLs and templated placeholders are exempt" clean \
   "$user/REFERENCE.md" 'See [x](https://example.com/a.md) and [y]({{url}}).'
 
+# --- backticked paths: detection (#2948) ------------------------------------
+# The control: comfy-metadata named `scripts/rename_outputs.py`, which no
+# skill, plugin or repo directory ships. Inline code is not a link, so the
+# link guard never saw it.
+run_case "control: the comfy-metadata dead script mention is flagged" flag:dead-backtick-path \
+  "$user/REFERENCE.md" '- `comfy-workflow-layout` — once you have extracted a workflow, run it through `scripts/rename_outputs.py` to tidy it.'
+
+run_case "detects a dead skill-relative references/ path" flag:dead-backtick-path \
+  "$user/REFERENCE.md" 'The recipes live in `references/gone.md`.'
+
+run_case "detects a dead plugin-rooted path" flag:dead-backtick-path \
+  "$user/REFERENCE.md" 'Read `demo-plugin/skills/no-such-skill/SKILL.md` first.'
+
+run_case "detects a dead ../ hop to a sibling skill file" flag:dead-backtick-path \
+  "$user/REFERENCE.md" 'See `../owner-skill/references/gone.md`.'
+
+run_case "a :line suffix does not hide a dead path" flag:dead-backtick-path \
+  "$user/REFERENCE.md" 'The bug is at `scripts/gone.sh:12`.'
+
+run_case "detects a dead .claude/rules path in a repo-local skill" flag:dead-backtick-path \
+  ".claude/skills/local-skill/SKILL.md" '---
+name: local-skill
+---
+
+Per `.claude/rules/comfy-registry-publishing.md`, publish with care.'
+
+# --- backticked paths: resolution -------------------------------------------
+run_case "a live plugin-rooted path resolves" clean \
+  "$user/REFERENCE.md" 'Read `demo-plugin/skills/owner-skill/references/recovery.md`.'
+
+run_case "a references/ path resolves inside a skill named earlier in the section" clean \
+  "$user/REFERENCE.md" 'See `owner-skill` and its `references/recovery.md`.'
+
+run_case "a live ../ hop resolves" clean \
+  "$user/REFERENCE.md" 'See `../owner-skill/SKILL.md`.'
+
+run_case "the plugin/skill ID form resolves to the skill" clean \
+  "$user/REFERENCE.md" 'Run the matrix for `demo-plugin/owner-skill` only.'
+
+# --- backticked paths: exemptions -------------------------------------------
+run_case "placeholders, globs, home/absolute paths and URLs are not checked" clean \
+  "$user/REFERENCE.md" 'Use `<plugin>/skills/<name>/SKILL.md`, `references/{topic}.md`, `skills/*/SKILL.md`, `~/.claude/rules/x.md`, `/etc/scripts/x.sh` and `https://example.com/scripts/x.py`.'
+
+run_case "consumer-project paths and bare filenames are not checked" clean \
+  "$user/REFERENCE.md" 'Edit `src/index.ts`, `docs/adr/0001.md`, `.github/workflows/ci.yml`, `package.json` and `REFERENCE.md`.'
+
+run_case "a family name with no file part is not checked" clean \
+  "$user/REFERENCE.md" 'Agents live in `agents/` and hooks in `hooks/`.'
+
+run_case "a .claude/rules path in a PLUGIN skill is not checked" clean \
+  "$user/REFERENCE.md" 'Your project may carry `.claude/rules/house-style.md`.'
+
+run_case "a path the reader is told to create is not checked" clean \
+  "$user/REFERENCE.md" 'Create the script at `scripts/setup-hook.sh` and make it executable.'
+
+run_case "a backticked path inside fenced code is exempt" clean \
+  "$user/REFERENCE.md" '```bash
+bash `scripts/gone.sh`
+bash scripts/gone.sh
+```'
+
+run_case "a code span used as link text is the link guard's business" clean \
+  "$user/REFERENCE.md" 'See [`references/gone.md`](https://example.com/gone).'
+
+# --- backticked paths: baseline ratchet -------------------------------------
+mkdir -p "$fixture/scripts"
+printf '# comment\n%s\treferences/gone.md\n' "$user/REFERENCE.md" \
+  >"$fixture/scripts/skill-xrefs-paths-baseline.txt"
+run_case "a baselined dead path is accepted" clean \
+  "$user/REFERENCE.md" 'The recipes live in `references/gone.md`.'
+run_case "a baseline entry that no longer fires is stale" flag:stale-path-baseline \
+  "$user/REFERENCE.md" 'Nothing dead here.'
+rm -f "$fixture/scripts/skill-xrefs-paths-baseline.txt"
+
 # --- unreadable input is a finding ------------------------------------------
 printf 'bad \xff byte\n' >"$fixture/$user/REFERENCE.md"
 out="$(python3 "$checker" --project-dir "$fixture" 2>&1)"
@@ -285,8 +363,8 @@ else
 fi
 
 # --- structured-output contract, failing and passing blocks -----------------
-printf 'See `owner-skill` § Nonexistent and [x](gone.md).\n' >"$fixture/$user/REFERENCE.md"
-for only in citations links; do
+printf 'See `owner-skill` § Nonexistent and [x](gone.md) and `references/gone.md`.\n' >"$fixture/$user/REFERENCE.md"
+for only in citations links paths; do
   block="$(python3 "$checker" --project-dir "$fixture" --only "$only" 2>/dev/null)"
   if printf '%s\n' "$block" | bash "$contract" --validate >/dev/null 2>&1; then
     ok "failing --only $only block satisfies the STATUS/REASON/ISSUE_COUNT contract"
@@ -295,7 +373,7 @@ for only in citations links; do
   fi
 done
 rm -f "$fixture/$user/REFERENCE.md"
-for only in citations links; do
+for only in citations links paths; do
   block="$(python3 "$checker" --project-dir "$fixture" --only "$only" 2>/dev/null)"
   if printf '%s\n' "$block" | bash "$contract" --validate >/dev/null 2>&1; then
     ok "passing --only $only block satisfies the contract"
