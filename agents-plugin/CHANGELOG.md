@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.1](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.16.0...agents-plugin-v1.16.1) (2026-10-18)
+
+
+### Bug Fixes
+
+* **agents-plugin:** audit agents against model tiers, not always-Opus ([#3119](https://github.com/laurigates/claude-plugins/issues/3119)) ([afa58a3](https://github.com/laurigates/claude-plugins/commit/afa58a35aef44c0d35bc0b5a142220801824a14b)), closes [#3116](https://github.com/laurigates/claude-plugins/issues/3116)
+
 ## [1.16.0](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.15.0...agents-plugin-v1.16.0) (2026-10-18)
 
 
