@@ -1,5 +1,5 @@
 ---
-description: Audit plugins for sub-agent opportunities — verbose skills, coverage gaps, over-permissions. Use when reviewing where sub-agents would help or auditing agents against the always-Opus standard.
+description: Audit plugins for sub-agent opportunities — verbose skills, coverage gaps, over-permissions. Use when reviewing where sub-agents would help or auditing agents' model tiers.
 args: "[--focus <plugin-name>]"
 allowed-tools: Glob, Grep, Read, Bash(ls *), Bash(wc *), TodoWrite
 model: opus
@@ -23,7 +23,7 @@ Analyze the plugin collection to identify where sub-agents would improve workflo
 |---|---|
 | Auditing the whole plugin collection for sub-agent opportunities (verbose-output skills, model mismatches, tool over-permissions) | Auditing a single agent's frontmatter, tool list, and prompt completeness — use `agent-patterns-plugin:meta-audit` |
 | Mapping delegation gaps and producing a list of proposed new agents | Authoring the new agent file from that proposal — use `agent-patterns-plugin:custom-agent-definitions` |
-| Confirming every agent runs on Opus (the always-Opus standard) | Configuring an agent's hooks, permissions, or settings.json wiring — use `hooks-plugin:hooks-configuration` |
+| Checking each agent's model fits its task-shape tier | Configuring an agent's hooks, permissions, or settings.json wiring — use `hooks-plugin:hooks-configuration` |
 | Focusing the analysis on a single plugin's skills (`--focus <plugin>`) | Coordinating multiple agents at runtime — use `agent-patterns-plugin:agent-teams` or `parallel-agent-dispatch` |
 
 ## Agentic Optimizations
@@ -94,19 +94,20 @@ Pick the model by task shape (`.claude/rules/agent-development.md` § "Model Sel
 
 | Audit finding | Recommendation |
 |---------------|----------------|
-| Agent file declares `model: opus` | OK — no change |
-| Agent file declares `sonnet` / `haiku` / any non-opus | Flag it — recommend `model: opus`, and note that mechanical agents tune `effort` down instead |
-| Agent file omits `model:` | Flag it — agents require an explicit `model: opus` |
+| Agent file declares `model: opus` or `fable` | OK — no change |
+| Agent file declares `sonnet` with an explicit `effort:`, and its Scope is bounded and checked | OK — no change |
+| Agent file declares `sonnet` for judgement work (review, audit, multi-file edits, untrusted input) | Flag it — recommend `model: opus` |
+| Agent file declares `haiku` outside the lean read-only shape, or `inherit`, or omits `model:` | Flag it — the lint rejects these; recommend an explicit tier |
 | Agent file's Scope describes mechanical/high-volume work but sets no `effort:` | Recommend `effort: low` (advisory — not lint-enforced) |
 
-The sole sanctioned non-Opus subagent is the `agent-patterns-plugin:cold-read-gate` haiku reader, which is a **skill-inline** `Agent(model: haiku)` dispatch (the measurement instrument), **not** an agent file — so no `*/agents/*.md` is exempt. The `scripts/check-agent-model.sh` lint enforces this; see `.claude/rules/agent-development.md` § "Model Selection for Agents".
+`scripts/check-agent-model.sh` enforces the tier shapes: `sonnet` needs an explicit `effort:`, and `haiku` is accepted only as a lean read-only reader (`omitClaudeMd: true`, Read/Grep/Glob tools, explicit effort). Whether an agent's job fits its tier is this audit's judgement, not the lint's; see `.claude/rules/agent-development.md` § "Model Selection for Agents".
 
 ### Step 3: Gap Analysis
 
 Compare identified opportunities against existing agents:
 
 1. **Missing agents**: Skills that have no corresponding agent
-2. **Non-opus agents**: Any agent file not on `model: opus` (always-Opus standard)
+2. **Tier mismatches**: An agent whose model does not fit its task shape (judgement work below `opus`, or a tier shape the lint rejects)
 3. **Tool over-permissions**: Agents with tools they don't need
 4. **Consolidation opportunities**: Multiple agents that could be merged
 5. **Delegation mapping**: Check if `/delegate` references agents that don't exist
@@ -118,7 +119,7 @@ For each recommended new agent, specify:
 ```markdown
 ### Proposed: <agent-name>
 
-- **Model**: opus (always; tune `effort` down for mechanical agents, never the model)
+- **Model**: <tier> — `opus` by default; `sonnet` + explicit `effort:` only for bounded, checked work
 - **Covers plugins**: <list>
 - **Context value**: <what verbose output it isolates>
 - **Tools**: <minimal set>
@@ -132,8 +133,8 @@ For model/tool corrections to existing agents:
 ```markdown
 ### Fix: <agent-name>
 
-- **Current model**: <non-opus> → **Recommended**: opus (then dial `effort` down if mechanical)
-- **Reason**: <why the change improves things — e.g. restores the always-Opus standard>
+- **Current model**: <model> → **Recommended**: <tier>
+- **Reason**: <why the tier fits the task shape — e.g. judgement work moved back to opus>
 ```
 
 ### Step 5: Implementation Check
@@ -141,7 +142,7 @@ For model/tool corrections to existing agents:
 If new agents are recommended, check:
 - [ ] Agent name doesn't conflict with existing
 - [ ] Agent fills a gap referenced by `/delegate` command
-- [ ] Model is `opus` (always-Opus standard; `effort` is the cost lever, not the model)
+- [ ] Model fits the task-shape tier (`opus` by default; `sonnet` + explicit `effort:` only for bounded, checked work)
 - [ ] Tool set is minimal (principle of least privilege)
 - [ ] Agent has clear "does / does NOT do" boundaries
 
