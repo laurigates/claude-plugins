@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.10.0](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.9.6...kubernetes-plugin-v1.10.0) (2026-10-18)
+
+
+### Features
+
+* **documentation-plugin:** add public-export-sanitization; fold generic lessons into seven skills ([#2810](https://github.com/laurigates/claude-plugins/issues/2810)) ([b82ba11](https://github.com/laurigates/claude-plugins/commit/b82ba11afcb46a9055e6d83ca9a0d3da110d2068))
+
+
+### Bug Fixes
+
+* **ci:** restore four scheduled-audit signals that were reporting nothing, or nonsense ([#2576](https://github.com/laurigates/claude-plugins/issues/2576)) ([de4337c](https://github.com/laurigates/claude-plugins/commit/de4337c7776ba7531cbe923fe016df78ef9b7e8c))
+* **hooks-plugin,kubernetes-plugin:** decide allow-side hooks on parsed command nodes ([#2880](https://github.com/laurigates/claude-plugins/issues/2880)) ([ae46358](https://github.com/laurigates/claude-plugins/commit/ae46358514b48ef7444dc3ff23e3f7ef0aac71d5))
+* **hooks-plugin:** hook timeouts are seconds, not milliseconds ([#3088](https://github.com/laurigates/claude-plugins/issues/3088)) ([64d7fab](https://github.com/laurigates/claude-plugins/commit/64d7fab1ee5205e3f3fb0bedcd234b60e06527ae))
+* **kubernetes-plugin:** fire inject-kubectl-dry-run after global flags and skip apply subcommands ([#3049](https://github.com/laurigates/claude-plugins/issues/3049)) ([e1cb00f](https://github.com/laurigates/claude-plugins/commit/e1cb00fee8a5e80de5bb6a4f2feb516987219433)), closes [#2888](https://github.com/laurigates/claude-plugins/issues/2888)
+* **kubernetes-plugin:** stop the kubectl dry-run injector approving commands it cannot vouch for ([#2983](https://github.com/laurigates/claude-plugins/issues/2983)) ([49ed0ba](https://github.com/laurigates/claude-plugins/commit/49ed0baabe6915d6898b9585cbebef4591198098))
+* **plugins:** quote CLAUDE_PLUGIN_ROOT in hook commands; apply 2.1.279-2.1.283 changelog review ([#2854](https://github.com/laurigates/claude-plugins/issues/2854)) ([3e15bf9](https://github.com/laurigates/claude-plugins/commit/3e15bf961986c0f475785fbac9b777d4f6ec4995))
+* **scripts:** sweep printf|echo "$var" | grep -q from every pipefail suite and widen lint Check 6 ([#2996](https://github.com/laurigates/claude-plugins/issues/2996)) ([32f124d](https://github.com/laurigates/claude-plugins/commit/32f124d41f428967305ef6beb564fd8ebc1f3279))
+
 ## [1.9.6](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.9.5...kubernetes-plugin-v1.9.6) (2026-10-18)
 
 

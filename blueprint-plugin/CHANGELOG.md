@@ -1,5 +1,56 @@
 # Changelog
 
+## [3.48.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.47.6...blueprint-plugin-v3.48.0) (2026-10-18)
+
+
+### Features
+
+* **blueprint-plugin:** add a bounded doc dependency sweep to blueprint-docs-currency ([#2781](https://github.com/laurigates/claude-plugins/issues/2781)) ([6b890f1](https://github.com/laurigates/claude-plugins/commit/6b890f1651f6fc47cfd171789d873d252eb6ea2f))
+* **blueprint-plugin:** make the JSON Schemas the single source of truth for document structure ([#2440](https://github.com/laurigates/claude-plugins/issues/2440)) ([98abdb1](https://github.com/laurigates/claude-plugins/commit/98abdb1856d6aacec827148a9ff42d7fd4554bb9)), closes [#2136](https://github.com/laurigates/claude-plugins/issues/2136)
+* **blueprint-plugin:** make work-order and prp-execute model-invocable (ADR-0024) ([#2988](https://github.com/laurigates/claude-plugins/issues/2988)) ([85cdcbc](https://github.com/laurigates/claude-plugins/commit/85cdcbc4e30134946ff99636417a4c6a3767cdd0))
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** accept three-digit ADR ids in adr.schema.json ([#3007](https://github.com/laurigates/claude-plugins/issues/3007)) ([eaf8687](https://github.com/laurigates/claude-plugins/commit/eaf8687cb5e7d4d044110008884bc0c326094732)), closes [#3000](https://github.com/laurigates/claude-plugins/issues/3000)
+* **blueprint-plugin:** fire document hooks for absolute paths and Bash edits ([#2999](https://github.com/laurigates/claude-plugins/issues/2999)) ([0c32046](https://github.com/laurigates/claude-plugins/commit/0c32046bcae2a15cf6970f9fb7dfef95e6e1948b))
+* **blueprint-plugin:** handle object-shaped features in feature-tracker sync and stop reporting OK on failure ([#2982](https://github.com/laurigates/claude-plugins/issues/2982)) ([0755216](https://github.com/laurigates/claude-plugins/commit/0755216ca8ba6ca9b6305d5e47b2aa2b36958d2a))
+* **blueprint-plugin:** match FR-NNN codes and round completion_percentage in sync-feature-tracker ([#3044](https://github.com/laurigates/claude-plugins/issues/3044)) ([4c2cb5b](https://github.com/laurigates/claude-plugins/commit/4c2cb5b8aa80bd1d961356fc65f45d9430a37595)), closes [#3001](https://github.com/laurigates/claude-plugins/issues/3001)
+* **blueprint-plugin:** migrate and warn on generated.rules keys missing .md ([#3052](https://github.com/laurigates/claude-plugins/issues/3052)) ([39deb6e](https://github.com/laurigates/claude-plugins/commit/39deb6e482d7127254b051717baad6a27992a065))
+* **blueprint-plugin:** narrow ADR required sections to Context/Decision/Consequences ([9f79205](https://github.com/laurigates/claude-plugins/commit/9f79205528da61e9f43db9bf7e771e976f9d517c)), closes [#2446](https://github.com/laurigates/claude-plugins/issues/2446)
+* **blueprint-plugin:** recognise ADR-NNN-title.md naming and registry drift in the ADR and ID checks ([#2980](https://github.com/laurigates/claude-plugins/issues/2980)) ([da62647](https://github.com/laurigates/claude-plugins/commit/da626474d4cbfca6c8c7ceacf2b107a227231d7d))
+* **blueprint-plugin:** stop claiming an enforced five-section ceiling ([097c9a0](https://github.com/laurigates/claude-plugins/commit/097c9a0e022332e17bad9e963be548bd44cd2be2)), closes [#2446](https://github.com/laurigates/claude-plugins/issues/2446)
+* **hooks-plugin,blueprint-plugin,configure-plugin,evaluate-plugin,git-plugin,health-plugin,taskwarrior-plugin:** find drift-protocol.sh in the versioned plugin cache ([#2997](https://github.com/laurigates/claude-plugins/issues/2997)) ([45f8cf5](https://github.com/laurigates/claude-plugins/commit/45f8cf5534c8e00e5baadabb5c5f6fa5ec714206))
+* **hooks-plugin:** hook timeouts are seconds, not milliseconds ([#3088](https://github.com/laurigates/claude-plugins/issues/3088)) ([64d7fab](https://github.com/laurigates/claude-plugins/commit/64d7fab1ee5205e3f3fb0bedcd234b60e06527ae))
+* **hooks-plugin:** replace workflow-scale estimator with a count-or-ask rule ([#2831](https://github.com/laurigates/claude-plugins/issues/2831)) ([4b934fa](https://github.com/laurigates/claude-plugins/commit/4b934fae9b23416182e5d46cbc7aad376091956f))
+* **plugins:** adapt rules, skills, agents, and guards for Claude Fable 5.1 ([#2561](https://github.com/laurigates/claude-plugins/issues/2561)) ([b9e1101](https://github.com/laurigates/claude-plugins/commit/b9e11016b20c42b0ff95c5fef57e98584a4e7c07))
+* **plugins:** quote CLAUDE_PLUGIN_ROOT in hook commands; apply 2.1.279-2.1.283 changelog review ([#2854](https://github.com/laurigates/claude-plugins/issues/2854)) ([3e15bf9](https://github.com/laurigates/claude-plugins/commit/3e15bf961986c0f475785fbac9b777d4f6ec4995))
+* **scripts:** read captured output from here-strings so grep -q cannot SIGPIPE a pipefail test ([#2992](https://github.com/laurigates/claude-plugins/issues/2992)) ([2e2865c](https://github.com/laurigates/claude-plugins/commit/2e2865c782f1b712c064b06ef8d871f2b1a1caa6))
+* **scripts:** sweep printf|echo "$var" | grep -q from every pipefail suite and widen lint Check 6 ([#2996](https://github.com/laurigates/claude-plugins/issues/2996)) ([32f124d](https://github.com/laurigates/claude-plugins/commit/32f124d41f428967305ef6beb564fd8ebc1f3279))
+* **skills:** correct sixteen content defects from the split sweep ([#2940](https://github.com/laurigates/claude-plugins/issues/2940)) ([9008c65](https://github.com/laurigates/claude-plugins/commit/9008c6586c27af680b6ee2afe2e238adbe1b2b00))
+* **skills:** fix nine defects from the Haiku 5.5 re-evaluation ([#3057](https://github.com/laurigates/claude-plugins/issues/3057)) ([05ccdc1](https://github.com/laurigates/claude-plugins/commit/05ccdc1f98a55607a1c4ee334310b9283ae65b8a)), closes [#3018](https://github.com/laurigates/claude-plugins/issues/3018)
+* **skills:** point at anchors, not directions — ratchet + reference-file guard ([#2941](https://github.com/laurigates/claude-plugins/issues/2941)) ([47b65fa](https://github.com/laurigates/claude-plugins/commit/47b65faf0fd141ca5dff9cf435717196e385b115))
+* **skills:** resolve slash commands and read references/ sidecars in content guards ([#2945](https://github.com/laurigates/claude-plugins/issues/2945)) ([3057350](https://github.com/laurigates/claude-plugins/commit/305735016549ce5c66f5b4b9803c61bfec46ec75))
+
+
+### Performance
+
+* **skills:** allow Haiku 5.5 within measured limits and run mechanical skills on it ([#3019](https://github.com/laurigates/claude-plugins/issues/3019)) ([21a20f2](https://github.com/laurigates/claude-plugins/commit/21a20f2c8157bdc22ed9ed2d9fb608c9d9136230))
+
+
+### Code Refactoring
+
+* **blueprint-plugin:** move reference material out of oversized SKILL.md bodies ([#2921](https://github.com/laurigates/claude-plugins/issues/2921)) ([924485e](https://github.com/laurigates/claude-plugins/commit/924485e8403594705b84132c9cba18e296179ed5))
+* **blueprint-plugin:** split blueprint-claude-md's all-inline body into references/ ([#2780](https://github.com/laurigates/claude-plugins/issues/2780)) ([f831af3](https://github.com/laurigates/claude-plugins/commit/f831af38d29d88cb655c4a75d1a9d6da5600430d))
+* **skills:** disambiguate the rules-authoring skill descriptions (cluster 3) ([#2797](https://github.com/laurigates/claude-plugins/issues/2797)) ([b0d7d5d](https://github.com/laurigates/claude-plugins/commit/b0d7d5d10dd93378d6193c51cc521bf4f0066979)), closes [#2244](https://github.com/laurigates/claude-plugins/issues/2244)
+
+
+### Documentation
+
+* repoint promoted-rule references and refresh catalog counts ([e9ad977](https://github.com/laurigates/claude-plugins/commit/e9ad97793e86fd81ba3670ba23d4f9b42ee9ed68)), closes [#353](https://github.com/laurigates/claude-plugins/issues/353)
+* **rules:** split agent-development.md and move teams/SDK detail into skills ([#2884](https://github.com/laurigates/claude-plugins/issues/2884)) ([147ed17](https://github.com/laurigates/claude-plugins/commit/147ed1737bd5d72936c6cc02ad3f3f1c92622abe))
+* **skills:** point Context-block references at the Context anchor and lower the positional baseline ([#2973](https://github.com/laurigates/claude-plugins/issues/2973)) ([921b3be](https://github.com/laurigates/claude-plugins/commit/921b3be483a0e8f5cc709dc0369eb659b599bbeb))
+
 ## [3.47.6](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.47.5...blueprint-plugin-v3.47.6) (2026-10-18)
 
 
