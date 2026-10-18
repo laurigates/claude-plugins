@@ -122,6 +122,11 @@ config-drift-calibrate *args:
 test-skill-scripts:
     ./scripts/run-skill-script-tests.sh
 
+# Mutation probe: mutate a file with a sed expression, run a gate, restore the file, report MUTANT=killed|survived. Usage: just mutation-check [-E] <path> <sed-expr> -- <gate command...>
+[group: "test"]
+mutation-check *args:
+    ./agent-patterns-plugin/skills/parallel-agent-dispatch/scripts/mutation-check.sh "$@"
+
 ####################
 # GitHub
 ####################
