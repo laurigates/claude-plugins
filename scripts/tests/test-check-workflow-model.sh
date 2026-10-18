@@ -8,7 +8,7 @@
 #   A. the real repo stays clean — every invoking workflow pins a model+effort, exit 0
 #   B. an opus+effort claude_args fixture exits 0 and reports the count
 #   C. a `--model haiku` workflow exits 1, names the file, reports the model
-#   D. a `--model sonnet` workflow with explicit effort exits 0 (bounded tier, #3116);
+#   D. a `--model sonnet` or `--model fable` workflow with explicit effort exits 0 (#3116);
 #      sonnet WITHOUT effort still exits 1 (missing_effort)
 #   E. `--model opus` WITHOUT `--effort` exits 1 (missing_effort — the invariant
 #      the agent-model guard does not have)
@@ -179,7 +179,7 @@ assert "real repo table parses to >= 9 rows (got '${a_rows:-none}')" "$([ "${a_r
 # --- TEST B: opus+effort claude_args fixture ---------------------------------
 echo "=== TEST B: opus+effort claude_args exits 0 ==="
 fx_b="$(mktemp -d)"
-trap 'rm -rf "$fx_b" "${fx_c:-}" "${fx_d:-}" "${fx_d2:-}" "${fx_e:-}" "${fx_f:-}" "${fx_g:-}" "${fx_h:-}" "${fx_i:-}" "${fx_j:-}" "${fx_k:-}" "${fx_l:-}"' EXIT
+trap 'rm -rf "$fx_b" "${fx_c:-}" "${fx_d:-}" "${fx_d2:-}" "${fx_d3:-}" "${fx_e:-}" "${fx_f:-}" "${fx_g:-}" "${fx_h:-}" "${fx_i:-}" "${fx_j:-}" "${fx_k:-}" "${fx_l:-}"' EXIT
 make_action_workflow "$fx_b/.github/workflows/good.yml" "--model opus --effort low --max-turns 25"
 run "$fx_b"
 assert "opus+effort fixture exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
@@ -208,6 +208,10 @@ make_action_workflow "$fx_d2/.github/workflows/no-effort.yml" "--model sonnet --
 run "$fx_d2"
 assert "sonnet without effort exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
 assert "sonnet without effort TYPE=missing_effort" "$(contains "$OUT" 'TYPE=missing_effort')"
+fx_d3="$(mktemp -d)"
+make_action_workflow "$fx_d3/.github/workflows/hardest.yml" "--model fable --effort high"
+run "$fx_d3"
+assert "fable+effort fixture exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
 
 # --- TEST E: opus WITHOUT --effort -------------------------------------------
 echo "=== TEST E: opus without --effort exits 1 (missing_effort) ==="
@@ -338,7 +342,7 @@ assert "explicit positional file skips table membership (reported)" "$(has_line 
 # --- TEST N: canonical-table membership (#2630 Rec 2) ------------------------
 echo "=== TEST N: every invoking workflow has a canonical-table row ==="
 fx_n="$(mktemp -d)"
-trap 'rm -rf "$fx_b" "${fx_c:-}" "${fx_d:-}" "${fx_d2:-}" "${fx_e:-}" "${fx_f:-}" "${fx_g:-}" "${fx_h:-}" "${fx_i:-}" "${fx_j:-}" "${fx_k:-}" "${fx_l:-}" "${fx_m:-}" "${fx_n:-}"' EXIT
+trap 'rm -rf "$fx_b" "${fx_c:-}" "${fx_d:-}" "${fx_d2:-}" "${fx_d3:-}" "${fx_e:-}" "${fx_f:-}" "${fx_g:-}" "${fx_h:-}" "${fx_i:-}" "${fx_j:-}" "${fx_k:-}" "${fx_l:-}" "${fx_m:-}" "${fx_n:-}"' EXIT
 make_action_workflow "$fx_n/.github/workflows/good.yml" "--model opus --effort low"
 make_action_workflow "$fx_n/.github/workflows/unlisted.yml" "--model opus --effort medium"
 make_plain_workflow "$fx_n/.github/workflows/plain.yml"

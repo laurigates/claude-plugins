@@ -14,8 +14,8 @@ and a **different justification** spelled out below.
 
 ## The rule
 
-> Every workflow that invokes Claude pins **`--model opus`** or **`--model sonnet`**
-> and sets an **explicit `--effort`** level. No `haiku` until a per-workflow replay
+> Every workflow that invokes Claude pins **`--model opus`**, **`fable`** or
+> **`sonnet`** and sets an **explicit `--effort`** level. No `haiku` until a per-workflow replay
 > passes; no implicit model or effort.
 
 Enforced by `scripts/check-workflow-model.sh` (+ `scripts/tests/test-check-workflow-model.sh`),
@@ -26,8 +26,8 @@ wired into `.pre-commit-config.yaml` and the `Plugin: PR checks` workflow.
 The agent-model standard rests on a contamination argument: a subagent's output
 re-enters the main loop as a tool result, so a weak delegate degrades everything
 downstream. **That argument does not apply here** — a workflow is a *top-level*
-Claude invocation, not a subagent feeding a parent loop. The justification for
-workflows is purely **cost-economics**, which still holds:
+Claude invocation, not a subagent feeding a parent loop. The pick for a
+workflow is a **cost and quality trade**, judged per workflow:
 
 - **Opus by default, Sonnet for bounded jobs.** The earlier opus-only rule
   rested on Opus 4.8 at low effort beating Sonnet 4.6 at high effort on quality
@@ -134,7 +134,7 @@ invocation the job list misreads.
 
 | Class | Detected by | Action |
 |-------|-------------|--------|
-| **Invoking** | `anthropics/claude-code-action` or `npx @anthropic-ai/claude-code` | Assert `--model opus` or `sonnet` + a valid explicit `--effort` |
+| **Invoking** | `anthropics/claude-code-action` or `npx @anthropic-ai/claude-code` | Assert `--model opus`, `fable` or `sonnet` + a valid explicit `--effort` (checked per file, not per step: a workflow with two Claude steps needs a per-step review) |
 | **Reusable-only** | `uses: …/.github/…reusable-*.yml` with no direct invocation | Skip (model is upstream) |
 | **No-invocation** | neither | Skip silently |
 

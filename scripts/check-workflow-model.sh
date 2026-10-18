@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Verify every GitHub Actions workflow that invokes Claude pins `--model opus`
-# or `--model sonnet` and sets an explicit `--effort` level.
+# (or `fable`, or `sonnet`) and sets an explicit `--effort` level.
 #
 # Background: workflows are TOP-LEVEL Claude invocations, not subagents, so the
 # "a weak delegate's output re-enters the main loop" argument (the agent-model
@@ -40,7 +40,7 @@
 #                   discovery is skipped and only these files are checked.
 #
 # Exit codes:
-#   0 - all invoking workflows pin opus or sonnet + an explicit valid effort
+#   0 - all invoking workflows pin opus, fable or sonnet + an explicit valid effort
 #   1 - one or more workflows violate the standard
 #   2 - unknown argument, or --project-dir without a directory
 
@@ -56,7 +56,7 @@ WORKFLOW_MODEL_ALLOWLIST=()
 WORKFLOW_MODEL_ALLOWLIST+=(${CHECK_WORKFLOW_MODEL_ALLOWLIST:-})
 
 VALID_EFFORTS="low medium high xhigh max"
-ALLOWED_MODELS="opus sonnet"
+ALLOWED_MODELS="opus fable sonnet"
 
 # The canonical per-workflow table this guard cross-checks (#2630 Rec 2).
 RULE_FILE_REL=".claude/rules/workflow-model-effort.md"
@@ -111,6 +111,11 @@ else
   shopt -u nullglob
 fi
 
+# Effort is checked per FILE, not per invocation: a file with two Claude steps
+# where only one sets --effort passes. Every invoking workflow here has one
+# Claude step; a multi-step workflow needs a per-step review until this parses
+# steps.
+#
 # extract_flag <file> <model|effort> — emit each flag value found at a genuine
 # invocation site, one per line. Two sites only, so prose that merely *mentions*
 # the flags (e.g. a prompt: block documenting `--model`/`--effort`) never counts:
@@ -205,7 +210,7 @@ for wf in "${workflow_files[@]}"; do
 
   # Model assertions.
   if [ -z "$models" ]; then
-    issues+=("  - SEVERITY=ERROR TYPE=missing_model FILE=$wf_rel MSG=claude invocation has no --model (must pin opus or sonnet)")
+    issues+=("  - SEVERITY=ERROR TYPE=missing_model FILE=$wf_rel MSG=claude invocation has no --model (must pin opus, fable or sonnet)")
     issue_count=$((issue_count + 1))
   else
     while IFS= read -r m; do
@@ -289,7 +294,7 @@ if [ "$issue_count" -gt 0 ]; then
   echo "" >&2
   echo "Found $issue_count workflow model/effort issue(s) (of $invoking invoking workflows)." >&2
   if [ "$model_issue_count" -gt 0 ]; then
-    echo "Every Claude workflow must pin '--model opus' or '--model sonnet' and set an" >&2
+    echo "Every Claude workflow must pin '--model opus', 'fable' or 'sonnet' and set an" >&2
     echo "explicit '--effort' level — the default effort varies by model." >&2
     echo "Haiku stays off workflows until a replay passes. See .claude/rules/workflow-model-effort.md." >&2
   fi
@@ -300,5 +305,5 @@ if [ "$issue_count" -gt 0 ]; then
   exit 1
 fi
 
-echo "All $invoking invoking workflow(s) pin opus or sonnet + explicit effort. ✅"
+echo "All $invoking invoking workflow(s) pin opus, fable or sonnet + explicit effort. ✅"
 exit 0

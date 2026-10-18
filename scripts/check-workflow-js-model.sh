@@ -27,9 +27,10 @@
 #                            model — acceptable per issue #2210, but the repo
 #                            standard is an explicit tier, so it is surfaced;
 #                            see "The model-omission question" below)
-#     ERROR missing_effort   opts.effort is absent (opus defaults to `high`, so
-#                            the cost lever is forfeited unless effort is
-#                            explicit — .claude/rules/workflow-model-effort.md)
+#     ERROR missing_effort   opts.effort is absent (the default effort differs
+#                            by model and release, so the pick is not ours
+#                            unless effort is explicit —
+#                            .claude/rules/workflow-model-effort.md)
 #     ERROR invalid_effort   opts.effort is not one of: low medium high xhigh max
 #     WARN  dynamic_model / dynamic_effort — the value is an expression, not a
 #                            string literal, so it cannot be verified statically

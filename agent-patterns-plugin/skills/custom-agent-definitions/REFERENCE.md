@@ -38,7 +38,7 @@ the conversation so far, dispatch `subagent_type: "fork"` instead.
 name: read-only-explorer
 description: Explore codebase without modifications
 model: opus
-effort: low  # mechanical exploration — effort, not model, is the cost lever
+effort: low  # mechanical exploration — dial effort down on the chosen tier
 tools: Bash, Read, Grep, Glob
 disallowedTools: Write, Edit, NotebookEdit
 ---

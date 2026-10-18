@@ -34,7 +34,7 @@ The harness blocks several common bash idioms — use the dedicated tool instead
 - **Input**: Attribute JSON (from `.claude/attributes.json` or inline in prompt)
 - **Output**: Delegated agent results with summary of addressed findings
 - **Steps**: 5-15, depends on number of findings
-- **Model**: opus (the default tier — see `.claude/rules/agent-development.md` § "Model Selection for Agents"; routing is mechanical, so it is a candidate for a lower tier once #3116 measures it; until then cost is tuned via `effort`, not by downgrading the model)
+- **Model**: opus (the default tier — see `.claude/rules/agent-development.md` § "Model Selection for Agents"; it dispatches agents from audit findings, which is judgement work, so cost is tuned via `effort`)
 
 ## Workflow
 

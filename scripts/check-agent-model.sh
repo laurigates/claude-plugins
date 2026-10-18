@@ -156,7 +156,8 @@ is_allowlisted() {
 
 # frontmatter <file> — the YAML between the first two `---` lines.
 frontmatter() {
-  awk 'NR == 1 && $0 == "---" { inside = 1; next } inside && $0 == "---" { exit } inside { print }' "$1" | tr -d '\r'
+  # Strip CR before the `---` comparison so a CRLF file is read, not skipped.
+  awk '{ sub(/\r$/, "") } NR == 1 && $0 == "---" { inside = 1; next } inside && $0 == "---" { exit } inside { print }' "$1"
 }
 
 # agent_tools <file> — the `tools:` entries, one per line, from either the
@@ -215,7 +216,7 @@ for agent_file in "${agent_files[@]}"; do
     continue
   fi
 
-  agent_model=$(head -20 "$agent_file" | grep -m1 '^model:' | sed 's/^model:[[:space:]]*//' | tr -d '\r' || true)
+  agent_model=$(frontmatter "$agent_file" | grep -m1 '^model:' | sed 's/^model:[[:space:]]*//' || true)
 
   if [ "$agent_model" = "haiku" ]; then
     problems="$(lean_haiku_problems "$agent_file")"
@@ -240,7 +241,9 @@ for agent_file in "${agent_files[@]}"; do
 
   # effort: is optional (absent means the agent inherits the session's
   # effort), but when present it must be one of the five valid tiers.
-  agent_effort=$(head -20 "$agent_file" | grep -m1 '^effort:' | sed 's/^effort:[[:space:]]*//' | tr -d '\r' || true)
+  # Read from the whole frontmatter, the same source as the sonnet and lean
+  # checks: a head -20 cut let an invalid effort on line 21+ pass unvalidated.
+  agent_effort=$(frontmatter "$agent_file" | grep -m1 '^effort:' | sed 's/^effort:[[:space:]]*//' || true)
   if [ -n "$agent_effort" ]; then
     case "$agent_effort" in
       low | medium | high | xhigh | max) ;;

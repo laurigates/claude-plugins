@@ -5,7 +5,7 @@ allowed-tools: Glob, Grep, Read, Bash(ls *), Bash(wc *), TodoWrite
 model: opus
 argument-hint: "analyze all plugins or --focus <plugin-name>"
 created: 2026-01-24
-modified: 2026-09-02
+modified: 2026-10-18
 compatibility: claude-code
 reviewed: 2026-09-02
 name: agents-analyze
@@ -88,9 +88,9 @@ Operations that should be limited to specific tools:
 | No network | Pure code analysis tasks |
 | Limited bash | Tasks that shouldn't execute arbitrary commands |
 
-#### Model: Always Opus
+#### Model: By Task Shape
 
-Every plugin agent runs on `model: opus`. A subagent's output re-enters the main loop as a tool result, so a weaker delegate quietly degrades everything downstream — and Opus-low beats Sonnet-high on both quality and tokens. So **`effort` (the agent's `effort:` frontmatter, falling back to the session effort), not `model`, is the cost lever**: a mechanical agent stays on Opus and dials `effort` down rather than downgrading the model.
+Pick the model by task shape (`.claude/rules/agent-development.md` § "Model Selection for Agents"): `opus` for judgement work, `sonnet` with an explicit `effort:` for bounded work whose done check fits in one sentence, `haiku` only as a lean read-only reader whose output a stronger stage checks. A subagent's output re-enters the main loop as a tool result, so a weaker model's output needs a check. Recommend moving an existing agent off opus only with a measurement behind it; otherwise dial `effort` down on the current model.
 
 | Audit finding | Recommendation |
 |---------------|----------------|

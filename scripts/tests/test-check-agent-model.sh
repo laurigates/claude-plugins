@@ -9,7 +9,8 @@
 #   C. a `model: haiku` agent exits 1 and names the offending file
 #   D. `model: sonnet` WITHOUT `effort:` exits 1 and names the file; with an
 #      explicit `effort:` it exits 0 and is counted in SONNET_AGENTS;
-#      `model: inherit` exits 1 (the pick must be explicit)
+#      `model: inherit` exits 1 (the pick must be explicit); an invalid effort
+#      past line 20 still fails; a CRLF file is parsed
 #   E. an allowlisted file is honored (via the CHECK_AGENT_MODEL_ALLOWLIST seam)
 #   F. agent worktree copies under .claude/worktrees/ are pruned, not scanned
 #      (#1492 parity)
@@ -129,6 +130,23 @@ make_agent "$fx_d/demo-plugin/agents/inherits.md" inherit
 run "$fx_d"
 assert "inherit exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
 assert "inherit is named" "$(contains "$OUT" 'model: inherit')"
+rm -f "$fx_d/demo-plugin/agents/inherits.md"
+# An invalid effort past line 20 is still validated: the sonnet check reads the
+# whole frontmatter, so a head -20 effort read would let it pass unchecked.
+{
+  echo "---"; echo "name: deep"; echo "model: sonnet"
+  for i in $(seq 1 20); do echo "pad$i: x"; done
+  echo "effort: bogus"; echo "---"; echo "Fixture body."
+} > "$fx_d/demo-plugin/agents/deep.md"
+run "$fx_d"
+assert "late invalid effort exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "late invalid effort is named" "$(contains "$OUT" 'effort: bogus')"
+rm -f "$fx_d/demo-plugin/agents/deep.md"
+# A CRLF agent file is parsed, not skipped as frontmatter-less.
+make_agent_effort "$fx_d/demo-plugin/agents/crlf.md" sonnet low
+sed 's/$/\r/' "$fx_d/demo-plugin/agents/crlf.md" > "$fx_d/crlf.tmp" && mv "$fx_d/crlf.tmp" "$fx_d/demo-plugin/agents/crlf.md"
+run "$fx_d"
+assert "CRLF sonnet + effort exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
 
 # --- TEST E: an allowlisted file is honored ----------------------------------
 echo "=== TEST E: allowlisted file is honored ==="

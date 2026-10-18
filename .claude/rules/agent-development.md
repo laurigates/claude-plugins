@@ -165,7 +165,7 @@ Distinct from nesting depth above, Claude Code also caps how many subagents may 
 
 ## Model Selection for Agents
 
-**Pick the model by task shape, and make the pick explicit.** Since the 5.5 generation, Sonnet and Haiku are close enough to Opus on bounded work that a blanket Opus minimum overpays for it. The old minimum rested on Opus at low effort beating Sonnet at high effort, measured on Opus 4.8 / Sonnet 4.6 and not re-measured on 5.5 (#3116 calibrates the tiers below). The concern behind it stays: a subagent's output re-enters the main loop as a tool result, so a weaker model's output needs a check that a wrong answer cannot pass. The tiers encode where that check exists.
+**Pick the model by task shape, and make the pick explicit.** The working premise is that on the 5.5 generation Sonnet and Haiku are close enough to Opus on bounded work that a blanket Opus minimum overpays for it. The old minimum rested on Opus at low effort beating Sonnet at high effort, measured on Opus 4.8 / Sonnet 4.6 and not re-measured on 5.5 (#3116 calibrates the tiers below). The concern behind it stays: a subagent's output re-enters the main loop as a tool result, so a weaker model's output needs a check that a wrong answer cannot pass. The tiers encode where that check exists.
 
 | Tier | Model | Fits | Requirement |
 |------|-------|------|-------------|
@@ -180,7 +180,7 @@ Distinct from nesting depth above, Claude Code also caps how many subagents may 
 
 - The `agent-patterns-plugin:cold-read-gate` reader, a *measurement instrument*, not a delegate.
 - A **lean read-only agent file** (see [Lean subagents](#lean-subagents-omitclaudemd--a-narrow-tools-list); `scripts/check-agent-model.sh` enforces its shape).
-- A **workflow `agent()` stage** that is mechanical and feeds an Opus stage that would notice a bad result, with an explicit `effort` (`scripts/check-workflow-js-model.sh`). Noticing has to cover omission too: a stage whose dropped item never reaches a later stage (an extraction lane, a filter or triage that discards) stays on a stronger model, because nothing downstream can see what it left out.
+- A **workflow `agent()` stage** that is mechanical and feeds a stronger stage or a script that would notice a bad result, with an explicit `effort` (`scripts/check-workflow-js-model.sh`). Noticing has to cover omission too: a stage whose dropped item never reaches a later stage (an extraction lane, a filter or triage that discards) stays on a stronger model, because nothing downstream can see what it left out.
 - `.github/workflows` invocations only per workflow, after a replay passes (`workflow-model-effort.md`).
 
 **Existing agents keep `model: opus`.** Moving one down a tier is a per-agent change backed by a Tier 2 matrix run or a replay against its opus output (`skill-evaluation.md`); the 2026-10 audit left `search-replace` and `test-runner` as needs-test. `effort:` remains a cost lever within any tier: `effort: low` for mechanical work on the model you picked.
