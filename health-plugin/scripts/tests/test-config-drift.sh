@@ -10,7 +10,9 @@
 # Isolation: HOME is redirected to the fixture root, so the suite reads the
 # fixture's ~/.claude/rules and writes its caches there, never the real ones.
 # Every case runs --fast, so the analyzer spawns no git at all and the
-# shared-checkout git hazards (#1692/#1745) cannot arise.
+# shared-checkout git hazards (#1692/#1745) cannot arise -- except TEST 26,
+# whose subject IS the git spawn; it builds its repos inside a guarded mktemp
+# root with git config and the GIT_DIR family neutralised.
 
 set -uo pipefail
 
@@ -2270,8 +2272,8 @@ print("UNGUARDED %s" % (",".join(sorted(k for k in planted | model_only if not g
 PYSWEEP
 out=$(python3 "$FIXROOT/sweep.py" "$ANALYZER" "$PLANTED" "$MODEL_ONLY" 2>&1)
 # FIXTURE VALIDITY: an AST walk that found no kinds satisfies "none uncovered".
-assert_contains "FIXTURE: the kind derivation found every construction site" "$out" "KINDS_N 16"
-assert_contains "FIXTURE: the exemptions were read out of the analyzer"      "$out" "EXEMPT_N 6"
+assert_contains "FIXTURE: the kind derivation found every construction site" "$out" "KINDS_N 17"
+assert_contains "FIXTURE: the exemptions were read out of the analyzer"      "$out" "EXEMPT_N 7"
 assert_contains "no finding kind silently bypasses the waiver mechanism"     "$out" "UNCOVERED NONE"
 assert_contains "no kind is both waivable and declared exempt"               "$out" "OVERLAP NONE"
 assert_contains "the test's tables name no kind the analyzer cannot emit"    "$out" "STALE_TABLE_ROWS NONE"
@@ -2462,6 +2464,105 @@ assert_contains "every committed waiver says why it is not a defect"        "$ou
 assert_contains "every committed path is root-relative (portable to CI)"    "$out" "ABSOLUTE 0"
 assert_contains "no committed entry names a kind that cannot be waived"     "$out" "EXEMPT_KIND 0"
 rm -rf "$SROOT"
+
+echo "TEST 26: a shallow clone's boundary date never feeds review_staleness (#3110)"
+# The regression: in a `--depth 1` clone, `git log -1 -- <file>` answers the
+# BOUNDARY commit's date for every file whose real last change predates the
+# boundary, so a document reviewed the day after its last real edit read as
+# changed years later and fired review_staleness. The date was also cached under
+# `path:hash`, which would have kept serving it after an unshallow.
+#
+# This case is the one place the suite runs WITHOUT --fast: the bug lives in the
+# git spawn that --fast skips. Git is fully isolated -- no global/system config,
+# the GIT_DIR family unset (#1745), every repo inside a guarded mktemp root.
+GROOT=$(mktemp -d)
+if [ -z "$GROOT" ] || [ ! -d "$GROOT" ]; then
+    echo "FAIL: could not create TEST 26 root"
+    exit 1
+fi
+GROOT=$(cd "$GROOT" && pwd -P)
+sg() {  # sandboxed git: no user config, no inherited repo redirection
+    env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_OBJECT_DIRECTORY \
+        -u GIT_COMMON_DIR GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 \
+        git -c user.name=t -c user.email=t@example.invalid -c commit.gpgsign=false \
+        -c core.hooksPath=/dev/null -c init.defaultBranch=main -c protocol.file.allow=always "$@"
+}
+sg_commit_at() {  # sg_commit_at <repo> <iso-date> <msg>
+    GIT_AUTHOR_DATE="$2T12:00:00+00:00" GIT_COMMITTER_DATE="$2T12:00:00+00:00" \
+        sg -C "$1" commit -q -m "$3" >/dev/null 2>&1
+}
+ORIGIN="$GROOT/origin"
+mkdir -p "$ORIGIN/.claude/rules"
+sg init -q "$ORIGIN" >/dev/null 2>&1
+# fresh-doc: last really changed 2020-01-02, reviewed 2020-01-01 -> 1 day, CURRENT.
+printf -- '---\nreviewed: 2020-01-01\n---\n%s\n' "$DUP_BODY" > "$ORIGIN/.claude/rules/fresh-doc.md"
+sg -C "$ORIGIN" add .claude/rules/fresh-doc.md >/dev/null 2>&1
+sg_commit_at "$ORIGIN" 2020-01-02 "old: fresh-doc"
+# stale-doc: really changed 2026-06-01 against reviewed 2020-01-01 -> GENUINELY stale.
+printf -- '---\nreviewed: 2020-01-01\n---\n# Stale Doc\nThe glaze schedule governs the kiln.\n' \
+    > "$ORIGIN/.claude/rules/stale-doc.md"
+printf 'unrelated\n' > "$ORIGIN/unrelated.txt"
+sg -C "$ORIGIN" add .claude/rules/stale-doc.md unrelated.txt >/dev/null 2>&1
+sg_commit_at "$ORIGIN" 2026-06-01 "new: stale-doc + unrelated"
+sg clone -q "file://$ORIGIN" "$GROOT/full" >/dev/null 2>&1
+sg clone -q --depth 1 "file://$ORIGIN" "$GROOT/shallow" >/dev/null 2>&1
+mkdir -p "$GROOT/home-full/.claude/rules" "$GROOT/home-shallow/.claude/rules"
+assert_eq "FIXTURE: the full clone is not shallow" \
+    "$(sg -C "$GROOT/full" rev-parse --is-shallow-repository 2>/dev/null)" "false"
+assert_eq "FIXTURE: the depth-1 clone is shallow" \
+    "$(sg -C "$GROOT/shallow" rev-parse --is-shallow-repository 2>/dev/null)" "true"
+# FIXTURE VALIDITY: the trap is armed -- in the shallow clone, git really does
+# answer the boundary date for the document whose real change was 2020-01-02.
+assert_eq "FIXTURE: shallow git log reports the boundary date for fresh-doc" \
+    "$(sg -C "$GROOT/shallow" log -1 --format=%cs -- .claude/rules/fresh-doc.md 2>/dev/null)" "2026-06-01"
+run_g() {  # run_g <clone> <home> [args...] -- NO --fast: the git spawn is the subject
+    local clone="$1" home="$2"
+    shift 2
+    env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE GIT_CONFIG_GLOBAL=/dev/null \
+        GIT_CONFIG_NOSYSTEM=1 HOME="$home" \
+        python3 "$ANALYZER" --root "$clone" --no-embed "$@" 2>/dev/null
+}
+stale_paths() {  # the basenames review_staleness names, sorted, space-joined
+    printf '%s' "$1" | python3 -c 'import json,os,sys
+d = json.load(sys.stdin)
+print(" ".join(sorted(os.path.basename(p) for f in d["findings"]
+      if f["kind"] == "review_staleness" for p in f["paths"])) or "NONE")' 2>/dev/null || echo ERR
+}
+
+# CONTROL: the full clone behaves exactly as before -- the real stale case is
+# reported, the current one is not, and nothing is said about shallowness.
+out=$(run_g "$GROOT/full" "$GROOT/home-full" --format=json)
+assert_eq "full clone: only the genuinely stale doc is reported" "$(stale_paths "$out")" "stale-doc.md"
+assert_eq "full clone: no shallow_clone warning" "$(count_kind "$out" shallow_clone)" "0"
+
+# THE REGRESSION: no staleness computed from a boundary date.
+out=$(run_g "$GROOT/shallow" "$GROOT/home-shallow" --format=json)
+assert_eq "shallow clone: no review_staleness from a boundary-commit date" \
+    "$(stale_paths "$out")" "NONE"
+assert_eq "shallow clone: exactly one shallow_clone warning" "$(count_kind "$out" shallow_clone)" "1"
+assert_eq "...at warn severity" \
+    "$(printf '%s' "$out" | python3 -c 'import json,sys
+print(",".join(f["severity"] for f in json.load(sys.stdin)["findings"] if f["kind"] == "shallow_clone"))' 2>/dev/null)" "warn"
+# Both docs' last-change commit IS the boundary (a grafted root diffs against
+# nothing, so every file "changed" there), so both dates are unknown.
+assert_contains "...and it carries the skipped-document count" \
+    "$(printf '%s' "$out" | python3 -c 'import json,sys
+print(" ".join(f["summary"] for f in json.load(sys.stdin)["findings"] if f["kind"] == "shallow_clone"))' 2>/dev/null)" "2 document"
+# The cache must not have learned the boundary date: a later unshallow keeps the
+# same content hash, so a cached boundary date would be served forever.
+assert_eq "shallow clone: no boundary date is written to the gitdates cache" \
+    "$(python3 -c 'import json,sys
+from pathlib import Path
+p = Path(sys.argv[1])
+d = json.loads(p.read_text()) if p.is_file() else {}
+print(sum(1 for k in d if "/shallow/" in k))' "$GROOT/home-shallow/.cache/config-drift/gitdates.json" 2>/dev/null)" "0"
+# Text mode surfaces it too, through the same FINDING_<KIND>= counter every
+# other kind uses.
+st=$(run_g "$GROOT/shallow" "$GROOT/home-shallow" --format=status)
+assert_contains "status output carries FINDING_SHALLOW_CLONE=1" "$st" "FINDING_SHALLOW_CLONE=1"
+assert_contains "status output is WARN, not a silent OK" "$st" "STATUS=WARN"
+rm -rf "$GROOT"
+unset -f sg sg_commit_at run_g stale_paths
 
 echo
 echo "=== CONFIG DRIFT TESTS ==="

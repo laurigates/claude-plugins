@@ -1502,9 +1502,9 @@ out=$(python3 "$FIXROOT/mapcover.py" "$ANALYZER" "$HOOK_SRC" 2>&1)
 # kinds" trivially, and a regex that matched no map keys satisfies "no unmapped
 # rows" the same way.
 assert_contains "the semantic-pass kinds are derived from SEMANTIC_KINDS, not assumed" "$out" "ITEM_KINDS rule,skill"
-assert_contains "FIXTURE: the derivation found every construction site" "$out" "DERIVED_N 17"
-assert_contains "FIXTURE: 16 of those kinds are reachable" "$out" "REACHABLE_N 16"
-assert_contains "FIXTURE: the map's keys were actually parsed out of the hook" "$out" "MAPPED_N 16"
+assert_contains "FIXTURE: the derivation found every construction site" "$out" "DERIVED_N 18"
+assert_contains "FIXTURE: 17 of those kinds are reachable" "$out" "REACHABLE_N 17"
+assert_contains "FIXTURE: the map's keys were actually parsed out of the hook" "$out" "MAPPED_N 17"
 assert_absent "every Finding( kind argument was parseable" "$out" "UNPARSEABLE_KIND_ARG"
 assert_contains "CONTROL: a fabricated kind is not reported as mapped" \
     "$out" "CONTROL_FABRICATED_MAPPED False"

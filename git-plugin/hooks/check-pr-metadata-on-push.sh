@@ -26,7 +26,46 @@ CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
 
 # Guard: only for git push commands
 if [ -z "$COMMAND" ]; then exit 0; fi
-if ! grep -qE '(^|\s|&&\s*|;\s*)git\s+push\b' <<<"$COMMAND"; then exit 0; fi
+
+# Decide the trigger on parsed command nodes, not on the raw string (#2737):
+# `gh issue comment --body "run git push later"`, a commit message or a heredoc
+# body that merely MENTIONS a push used to fire the full block. See
+# lib/parsed-commands.sh. Cheap textual prefilter first: every invocation the
+# parser can find spells both words, so most Bash calls never start a parser.
+#
+# PARSED=1 means the parser decided; PUSH_CMD is then the last `git … push`
+# invocation rebuilt from its argument vector (quotes removed, git's global
+# options dropped), and PUSH_DIR its `git -C <dir>`, if any. Without a usable
+# parser (ast-grep absent, erroring, or the library missing from a partial
+# install) the original raw-text regex decides — this is a check that fired
+# everywhere before, so it keeps firing rather than going silent.
+if ! grep -q 'git' <<<"$COMMAND" || ! grep -q 'push' <<<"$COMMAND"; then exit 0; fi
+PARSED=0
+PUSH_CMD=""
+PUSH_DIR=""
+PC_LIB_MISSING=0
+# shellcheck source=git-plugin/hooks/lib/parsed-commands.sh
+. "$(dirname "$0")/lib/parsed-commands.sh" 2>/dev/null || PC_LIB_MISSING=1
+if [ "$PC_LIB_MISSING" = 0 ] && pc_scan "$COMMAND"; then
+    PARSED=1
+    if ! pc_find_git 'push'; then exit 0; fi
+    last=$((${#PC_HIT_SUB[@]} - 1))
+    PUSH_CMD="git push"
+    while IFS= read -r -d "$PC_SEP" arg; do
+        PUSH_CMD+=" $arg"
+    done <<<"${PC_HIT_ARGS[last]}"
+    PUSH_DIR=${PC_HIT_C[last]}
+elif ! grep -qE '(^|\s|&&\s*|;\s*)git\s+push\b' <<<"$COMMAND"; then
+    exit 0
+fi
+
+# `git -C <dir> push` writes the repo at <dir>, not the hook's cwd.
+if [ -n "$PUSH_DIR" ]; then
+    case "$PUSH_DIR" in
+        /*) CWD="$PUSH_DIR" ;;
+        *) [ -n "$CWD" ] && CWD="$CWD/$PUSH_DIR" ;;
+    esac
+fi
 
 # Guard: branch deletions carry nothing to reconcile (issue #2351).
 # `git push origin --delete <b>`, `git push origin -d <b>`, and the
@@ -39,14 +78,19 @@ if ! grep -qE '(^|\s|&&\s*|;\s*)git\s+push\b' <<<"$COMMAND"; then exit 0; fi
 # Scoped to the `git push` segment (the last one, matching the branch
 # detection below) so a `-d` or a leading `:` elsewhere in a chained
 # command — `git push origin feat && rmdir -d /tmp/x` — cannot exempt a
-# real commit push.
-PUSH_SEGMENT=$(printf '%s' "$COMMAND" | perl -ne '
-    next unless /.*(git\s+push\b.*)$/;
-    my $seg = $1;
-    # Trim anything after the push at the next shell separator
-    $seg =~ s/\s*(?:&&|\|\||;|\|).*$//;
-    print $seg;
-' 2>/dev/null || true)
+# real commit push. When parsed, the segment IS that invocation's own
+# argument list.
+if [ "$PARSED" = 1 ]; then
+    PUSH_SEGMENT=$PUSH_CMD
+else
+    PUSH_SEGMENT=$(printf '%s' "$COMMAND" | perl -ne '
+        next unless /.*(git\s+push\b.*)$/;
+        my $seg = $1;
+        # Trim anything after the push at the next shell separator
+        $seg =~ s/\s*(?:&&|\|\||;|\|).*$//;
+        print $seg;
+    ' 2>/dev/null || true)
+fi
 if [ -n "$PUSH_SEGMENT" ] && printf '%s' "$PUSH_SEGMENT" \
     | grep -qE '(^|[[:space:]])(--delete|-d|\+?:[^[:space:]]+)([[:space:]]|$)'; then
     exit 0
@@ -64,7 +108,9 @@ PUSH_BRANCH=""
 
 # Try to extract explicit branch name from command (last non-flag argument after remote)
 # Handles: git push origin branch, git push -u origin branch, git push origin HEAD:branch
-PUSH_BRANCH=$(echo "$COMMAND" | perl -ne '
+# Parsed: read the push invocation itself, so a later quoted mention of
+# `git push` cannot be mistaken for the arguments (#2737).
+PUSH_BRANCH=$(echo "${PUSH_CMD:-$COMMAND}" | perl -ne '
     # Remove git push prefix and flags
     s/.*git\s+push\s+//;
     # Remove common flags

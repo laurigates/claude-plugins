@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016  # fixtures are the LITERAL, unexpanded command text a hook receives
 # Regression tests for check-pr-metadata-on-push.sh
 #
 # Run: bash git-plugin/hooks/test-check-pr-metadata-on-push.sh
@@ -8,6 +9,24 @@
 # and skipped when gh is unavailable. Core guard-clause tests
 # always run since they exit before reaching gh.
 set -euo pipefail
+
+# Without a working ast-grep the #2737 parsed-trigger sections cannot run. This
+# suite is listed in scripts/required-to-run-tests.txt, so it then re-runs
+# itself with every line indented and ends on ONE unindented SKIP line, which
+# scripts/run-skill-script-tests.sh reports as a skip (an ERROR for a required
+# suite) rather than a pass over the half that matters.
+if [ -z "${PARSED_SUITE_INNER:-}" ] && {
+    [ "${CLAUDE_HOOKS_PARSED_TRIGGER_NO_ASTGREP:-}" = 1 ] ||
+        ! { command -v ast-grep >/dev/null 2>&1 ||
+            { command -v sg >/dev/null 2>&1 && sg --version 2>/dev/null | grep -qi '^ast-grep'; }; }
+}; then
+    suite_rc=0
+    suite_out=$(PARSED_SUITE_INNER=1 bash "$0" "$@" 2>&1) || suite_rc=$?
+    printf '%s\n' "$suite_out" | sed 's/^/  /'
+    [ "$suite_rc" -eq 0 ] || exit "$suite_rc"
+    echo "SKIP: no working ast-grep (or CLAUDE_HOOKS_PARSED_TRIGGER_NO_ASTGREP=1); the #2737 parsed-trigger sections require it"
+    exit 0
+fi
 
 # Neutralize any inherited git context before building sandbox repos (issues #1745, #3080).
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
@@ -449,6 +468,152 @@ PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
     assert_stderr_contains "block message says how to get past the check" \
     "To bypass: edit the PR title or body so it reflects the new commit, THEN push." \
     "$MSG_PUSH_JSON"
+
+# ── Parsed trigger: a mention is not a push (issue #2737) ──────────────────
+# The trigger used to be `(^|\s|&&\s*|;\s*)git\s+push\b` over the raw command,
+# so a quoted argument, a heredoc body or a commit message that merely MENTIONS
+# a push fired the full block. It is now decided on parsed command nodes.
+#
+# Every row uses the OPEN, not-updated-since-HEAD PR that blocks a real push,
+# so "allowed" proves the trigger stayed quiet rather than a later guard.
+#
+# Then a GENERATED spelling probe (bases x wrappers, two bases x shell
+# contexts) must all fire, and a DIFFERENTIAL runs the same set through the
+# pre-fix hook (`git show <PREFIX_SHA>:…`): a spelling the old hook blocked
+# that the new one allows fails the suite. Hand-picked spellings alone are how
+# a narrowed trigger silently loses a real invocation.
+echo ""
+echo "parsed trigger: quoted/heredoc mentions of git push do not fire (#2737):"
+
+PREFIX_SHA=716345bf213793134a30bec2ff68761946aee38d
+HOOK_REL=git-plugin/hooks/check-pr-metadata-on-push.sh
+
+have_parser() {
+    [ "${CLAUDE_HOOKS_PARSED_TRIGGER_NO_ASTGREP:-}" = 1 ] && return 1
+    command -v ast-grep >/dev/null 2>&1 && return 0
+    command -v sg >/dev/null 2>&1 && sg --version 2>/dev/null | grep -qi '^ast-grep'
+}
+
+MOCK_PR_JSON=$(jq -n --arg t "$PR_PAST" \
+    '{number:42,title:"feat: x",body:"body",url:"https://example/42",updatedAt:$t,state:"OPEN"}')
+export MOCK_PR_JSON
+
+# $1 = hook path, $2 = command. Prints "fire" (exit 2) or "quiet" (exit 0),
+# or "exit<N>" for anything else.
+verdict() {
+    local rc=0
+    make_json "$2" | PATH="$MOCK_BIN:$PATH" bash "$1" >/dev/null 2>&1 || rc=$?
+    case $rc in
+        2) echo fire ;;
+        0) echo quiet ;;
+        *) echo "exit$rc" ;;
+    esac
+}
+
+expect() { # $1 = fire|quiet, $2 = description, $3 = command
+    local got
+    got=$(verdict "$HOOK" "$3")
+    if [ "$got" = "$1" ]; then
+        printf "  PASS: %s\n" "$2"
+        PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (expected %s, got %s)\n" "$2" "$1" "$got"
+        FAIL=$((FAIL + 1))
+    fi
+}
+
+if ! have_parser; then
+    skip_test "parsed-trigger rows, spelling probe and differential" "ast-grep not installed"
+else
+    expect quiet "gh issue comment --body mentioning git push" \
+        'gh issue comment 1 --body "run git push later"'
+    expect quiet "commit message mentioning git push" \
+        'git commit -m "docs: explain when to git push origin feature"'
+    expect quiet "commit heredoc body mentioning git push" \
+        "$(printf '%s\n' "git commit -F - <<'EOF'" 'then git push origin feature' 'EOF')"
+    expect quiet "heredoc inside \$(…) inside a quoted --body" \
+        "$(printf '%s\n' "gh pr comment 1 --body \"\$(cat <<'EOF'" '; git push origin feature' 'EOF' ')"')"
+    expect quiet "trailing comment mentioning git push" \
+        'git status # then git push origin feature'
+    expect quiet "single-quoted echo of git push" \
+        "echo 'cd repo && git push origin feature'"
+    expect fire "real push after a quoted mention still fires" \
+        'git commit -m "prep for git push" && git push origin feature'
+    expect fire "cd x && git push fires" "cd $TMPDIR && git push origin feature"
+    expect fire "git -C <dir> push fires" "git -C $TMPDIR push origin feature"
+    expect fire "bash -c with a quoted push script fires" "bash -c 'git push origin feature'"
+    expect fire "push inside \$(…) fires" 'out=$(git push origin feature 2>&1)'
+    expect fire "FOO=1 git push fires" "GIT_TRACE=0 git push origin feature"
+
+    # With the parser forced off, the old raw-text match decides (nudge polarity:
+    # keep the regex rather than go silent), false positive included.
+    got=$(make_json 'gh issue comment 1 --body "x; git push later"' \
+        | PATH="$MOCK_BIN:$PATH" CLAUDE_HOOKS_PARSED_TRIGGER_NO_ASTGREP=1 bash "$HOOK" >/dev/null 2>&1 && echo quiet || echo fire)
+    if [ "$got" = fire ]; then
+        printf "  PASS: %s\n" "no parser: raw-text regex still decides"
+        PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (got %s)\n" "no parser: raw-text regex still decides" "$got"
+        FAIL=$((FAIL + 1))
+    fi
+
+    echo ""
+    echo "generated spelling probe + differential vs pre-fix hook (#2737):"
+    BASES=("git push" "git push origin feature" "git push -u origin feature"
+        "git push --force-with-lease origin feature" "git --no-pager push origin feature"
+        "git -c core.askPass=true push origin feature" "/usr/bin/git push origin feature"
+        "git -C $TMPDIR push origin feature")
+    WRAPPERS=("" "env X=1 " "X=1 " "timeout 5 " "sudo " "command " "nice -n 5 " "nohup " "exec " "time ")
+    CONTEXTS=('X' 'cd . && X' 'true; X' 'X; true' 'true && X' 'false || X' 'X || true'
+        'X 2>&1 | tail -1' 'for d in 1; do X; done' 'if true; then X; fi' '( X )' '{ X; }'
+        $'echo start\nX' 'out=$(X)' 'echo "$(X)"' "bash -c 'X'" "sh -c 'cd . && X'" 'X &'
+        'git add a.txt && git commit -m "wip: x" && X' 'gh issue comment 1 --body "pushing now" && X')
+    SPELLINGS=()
+    for b in "${BASES[@]}"; do
+        for w in "${WRAPPERS[@]}"; do SPELLINGS+=("$w$b"); done
+    done
+    for b in "git push origin feature" "git -C $TMPDIR push"; do
+        for c in "${CONTEXTS[@]}"; do SPELLINGS+=("${c%%X*}$b${c#*X}"); done
+    done
+
+    BASELINE=""
+    if git -C "$(dirname "$0")" cat-file -e "$PREFIX_SHA:$HOOK_REL" 2>/dev/null; then
+        BASELINE="$TMPDIR/baseline-hook.sh"
+        git -C "$(dirname "$0")" show "$PREFIX_SHA:$HOOK_REL" >"$BASELINE"
+    fi
+    missed=0
+    lost=0
+    base_hits=0
+    for s in "${SPELLINGS[@]}"; do
+        new=$(verdict "$HOOK" "$s")
+        if [ "$new" != fire ]; then
+            missed=$((missed + 1))
+            printf "  FAIL: spelling probe must fire (got %s): %s\n" "$new" "$s"
+        fi
+        if [ -n "$BASELINE" ] && [ "$(verdict "$BASELINE" "$s")" = fire ]; then
+            base_hits=$((base_hits + 1))
+            if [ "$new" != fire ]; then lost=$((lost + 1)); fi
+        fi
+    done
+    if [ "$missed" -eq 0 ]; then
+        printf "  PASS: all %d generated spellings fire\n" "${#SPELLINGS[@]}"
+        PASS=$((PASS + 1))
+    else
+        FAIL=$((FAIL + 1))
+    fi
+    if [ -z "$BASELINE" ]; then
+        skip_test "differential vs pre-fix hook" "commit $PREFIX_SHA not in this clone"
+    elif [ "$base_hits" -lt 40 ]; then
+        printf "  FAIL: differential is vacuous (baseline fired on only %d)\n" "$base_hits"
+        FAIL=$((FAIL + 1))
+    elif [ "$lost" -eq 0 ]; then
+        printf "  PASS: differential: baseline fires on %d of %d, none lost\n" "$base_hits" "${#SPELLINGS[@]}"
+        PASS=$((PASS + 1))
+    else
+        printf "  FAIL: differential: %d spelling(s) the pre-fix hook blocked are allowed\n" "$lost"
+        FAIL=$((FAIL + 1))
+    fi
+fi
 
 rm -rf "$MOCK_BIN"
 

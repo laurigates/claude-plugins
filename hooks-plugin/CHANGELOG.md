@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.15.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.15.0...hooks-plugin-v2.15.1) (2026-10-18)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** prescribe one git add in the git-chain block message ([#3089](https://github.com/laurigates/claude-plugins/issues/3089)) ([d31159a](https://github.com/laurigates/claude-plugins/commit/d31159a96a8ca0af787a8c7b5fff48519067dbb7)), closes [#3042](https://github.com/laurigates/claude-plugins/issues/3042)
+
 ## [2.15.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.14.0...hooks-plugin-v2.15.0) (2026-10-15)
 
 

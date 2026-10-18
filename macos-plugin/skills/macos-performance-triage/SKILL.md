@@ -1,10 +1,10 @@
 ---
 name: macos-performance-triage
-description: Live macOS/Apple-Silicon performance triage — find what's heating the Mac (hot WindowServer, GPU compositing, a CPU-heavy browser/Electron app) and attribute it to the driving process. Use when fans spin up, the Mac is hot/slow, or WindowServer/an app shows high CPU/GPU.
+description: Live macOS performance triage — attribute heat or high CPU/GPU (WindowServer, a browser/Electron app) to its process. Use when fans spin up, the Mac is hot or slow.
 user-invocable: false
 allowed-tools: Bash(uname *), Bash(ps *), Bash(top *), Bash(pgrep *), Bash(uptime *), Bash(vm_stat*), Bash(sysctl *), Bash(macmon *), Bash(btm *), Bash(sample *), Bash(spindump *), Bash(sudo powermetrics *), Bash(samply *), Bash(hyperfine *), Bash(brew install *), Bash(brew list *), Read, Grep, Glob
 created: 2026-06-30
-modified: 2026-06-30
+modified: 2026-10-14
 reviewed: 2026-06-30
 ---
 

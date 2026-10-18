@@ -21,6 +21,7 @@
 #   --catalog <file>    catalog TSV (default: sibling suspects.tsv)
 #   --min-mb <n>        unclassified-dir reporting threshold (default 500)
 #   --top <n>           rows in the ranked table (default 25)
+#   -h, --help          print usage and exit 0 (unknown arguments exit 2)
 # The macOS-specific suspects are DATA (catalog rows); on Linux they simply don't
 # exist and are skipped, so there is no Darwin guard here (the SKILL enforces it).
 #
@@ -34,6 +35,23 @@ min_mb=500
 top_n=25
 roots=()
 
+usage() {
+  cat <<'USAGE'
+Usage: scan-suspects.sh [--home-dir <path>] [--root <path>]... [--catalog <file>]
+                        [--min-mb <n>] [--top <n>]
+
+Ranked rollup of known disk reclaim targets (suspects.tsv) present on this
+machine, with cleanup command and safety tier, plus big uncatalogued dirs.
+
+  --home-dir <path>   base for catalog `path` targets + default scan root ($HOME)
+  --root <path>       root to scan for build-artifact dirs (repeatable)
+  --catalog <file>    catalog TSV (default: sibling suspects.tsv)
+  --min-mb <n>        unclassified-dir reporting threshold (default 500)
+  --top <n>           rows in the ranked table (default 25)
+  -h, --help          show this help and exit
+USAGE
+}
+
 while [ $# -gt 0 ]; do
   case "$1" in
     --home-dir) home_dir="$2"; shift 2 ;;
@@ -41,7 +59,13 @@ while [ $# -gt 0 ]; do
     --catalog)  catalog="$2"; shift 2 ;;
     --min-mb)   min_mb="$2"; shift 2 ;;
     --top)      top_n="$2"; shift 2 ;;
-    *) shift ;;
+    -h|--help)  usage; exit 0 ;;
+    *)
+      echo "scan-suspects.sh: unknown argument: $1" >&2
+      usage >&2
+      echo "STATUS=ERROR_BAD_ARG"
+      exit 2
+      ;;
   esac
 done
 
@@ -116,9 +140,16 @@ while IFS=$'\t' read -r kind id target marker tier command regen note; do
   [ "$kind" = "dir" ] || continue
   for root in "${roots[@]}"; do
     [ -d "$root" ] || continue
+    # A bare basename matches with -name; a multi-component target
+    # (e.g. .claude/worktrees) matches the path suffix, and {parent} plus the
+    # marker check then refer to the dir containing the whole suffix.
+    case "$target" in
+      */*) find_test=(-path "*/$target") ;;
+      *)   find_test=(-name "$target") ;;
+    esac
     while IFS= read -r d; do
       [ -n "$d" ] || continue
-      parent=$(dirname "$d")
+      parent=${d%/"$target"}
       if [ "$marker" != "-" ] && [ ! -e "$parent/$marker" ]; then
         continue
       fi
@@ -128,7 +159,7 @@ while IFS=$'\t' read -r kind id target marker tier command regen note; do
       cmd=${cmd//\{parent\}/$parent}
       echo "SUSPECT id=$id tier=$tier size_kb=$size path=$d cmd=\"$cmd\""
       record "$size" "$tier" "$id" "$d"
-    done < <(find "$root" -type d -name "$target" -prune -print 2>/dev/null)
+    done < <(find "$root" -type d "${find_test[@]}" -prune -print 2>/dev/null)
   done
 done < "$catalog"
 
