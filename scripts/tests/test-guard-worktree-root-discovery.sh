@@ -164,13 +164,13 @@ assert "check-workflow-js-model: empty corpus stays STATUS=OK" "$(contains_line 
 mkdir -p "$wt/demo-plugin/skills/demo-skill/workflows"
 cat > "$wt/demo-plugin/skills/demo-skill/workflows/demo.workflow.js" <<'EOF'
 export default async function ({ agent }) {
-  await agent("do the thing", { model: 'sonnet', effort: 'low' });
+  await agent("do the thing", { model: 'inherit', effort: 'low' });
 }
 EOF
 out="$(bash "$repo_root/scripts/check-workflow-js-model.sh" --project-dir "$wt" --strict 2>&1)"; rc=$?
 assert "check-workflow-js-model: discovers a .js under a worktree-shaped root" "$(contains_line "$out" 'FILES_SCANNED=1')"
 assert "check-workflow-js-model: no longer reports SCANNED_EMPTY=true" "$(contains_line "$out" 'SCANNED_EMPTY=false')"
-assert "check-workflow-js-model: flags the non-opus model" "$(contains "$out" 'non_opus_model')"
+assert "check-workflow-js-model: flags the off-tier model" "$(contains "$out" 'disallowed_model')"
 assert "check-workflow-js-model: --strict exits 1 on the defect" "$(is_true "$([ $rc -eq 1 ] && echo true)")"
 
 # --- run-skill-script-tests.sh -----------------------------------------------

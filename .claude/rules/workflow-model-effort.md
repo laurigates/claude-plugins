@@ -1,6 +1,6 @@
 ---
 created: 2026-06-22
-modified: 2026-10-17
+modified: 2026-10-18
 reviewed: 2026-09-16
 paths:
   - ".github/workflows/**"
@@ -8,14 +8,15 @@ paths:
 # Workflow Model + Effort
 
 The model/effort standard for every Claude invocation in `.github/workflows/*.yml`.
-The sibling of `agent-development.md` § "Model Selection for Agents" — same model
-(`opus`), different surface (workflow `--model`/`--effort` args, not agent frontmatter),
-and a **deliberately weaker justification** spelled out below.
+The sibling of `agent-development.md` § "Model Selection for Agents" — same task-shape
+tiers, different surface (workflow `--model`/`--effort` args, not agent frontmatter),
+and a **different justification** spelled out below.
 
 ## The rule
 
-> Every workflow that invokes Claude pins **`--model opus`** and sets an
-> **explicit `--effort`** level. No `haiku`/`sonnet`; no implicit effort.
+> Every workflow that invokes Claude pins **`--model opus`** or **`--model sonnet`**
+> and sets an **explicit `--effort`** level. No `haiku` until a per-workflow replay
+> passes; no implicit model or effort.
 
 Enforced by `scripts/check-workflow-model.sh` (+ `scripts/tests/test-check-workflow-model.sh`),
 wired into `.pre-commit-config.yaml` and the `Plugin: PR checks` workflow.
@@ -28,15 +29,15 @@ downstream. **That argument does not apply here** — a workflow is a *top-level
 Claude invocation, not a subagent feeding a parent loop. The justification for
 workflows is purely **cost-economics**, which still holds:
 
-- Measured on the Opus 4.8 / Sonnet 4.6 generation: Opus at *low* effort beat
-  Sonnet at *high* effort on both quality and token efficiency, because the
-  per-token premium (Opus output ≈ 1.7× Sonnet) was outweighed by token
-  *volume*. So `effort`, not `model`, is the cost lever. The `opus` alias
-  resolves to Opus 5.5 since 2.1.280 ($4/$20 per MTok, below Opus 5's $5/$25),
-  and effort names do not carry across
-  generations — the economics and their re-verification live in
-  skill-development.md § Model Selection; the monthly audit below is what
-  checks the picks still hold.
+- **Opus by default, Sonnet for bounded jobs.** The earlier opus-only rule
+  rested on Opus 4.8 at low effort beating Sonnet 4.6 at high effort on quality
+  and tokens. That was never re-measured on Opus 5.5 ($4/$20 per MTok) / Sonnet
+  5.5 ($2/$10), and effort names do not carry across generations (#3116). A
+  workflow whose job is a fixed checklist or a mechanical transformation, with a
+  failure that a required check or a human sees, may run `--model sonnet`.
+  Moving an existing row is a measured change: compare a replayed run against the
+  opus output first, and record the pick in the table below. The monthly audit
+  below is what checks the picks still hold.
 - **Haiku stays off workflows until a candidate is measured.** The original
   reason, that Haiku had no `--effort`, ended with Haiku 5.5 (the `haiku`
   alias since 2.1.293). The 2026-10 re-evaluation
@@ -48,9 +49,8 @@ workflows is purely **cost-economics**, which still holds:
   `error_max_turns` fails the PR. Lift the guard per workflow when a replay
   passes, not before.
 
-This is the same conclusion as the agent migration (PR #1691), reached by a
-narrower path. State it plainly when editing: we are not claiming workflows
-contaminate a main loop.
+State it plainly when editing: we are not claiming workflows contaminate a
+main loop. The tiers are a cost and quality trade, judged per workflow.
 
 ## The `--effort` mechanism
 
@@ -134,11 +134,11 @@ invocation the job list misreads.
 
 | Class | Detected by | Action |
 |-------|-------------|--------|
-| **Invoking** | `anthropics/claude-code-action` or `npx @anthropic-ai/claude-code` | Assert `--model opus` + a valid explicit `--effort` |
+| **Invoking** | `anthropics/claude-code-action` or `npx @anthropic-ai/claude-code` | Assert `--model opus` or `sonnet` + a valid explicit `--effort` |
 | **Reusable-only** | `uses: …/.github/…reusable-*.yml` with no direct invocation | Skip (model is upstream) |
 | **No-invocation** | neither | Skip silently |
 
-Failure types: `missing_model`, `non_opus_model`, `missing_effort`,
+Failure types: `missing_model`, `disallowed_model`, `missing_effort`,
 `invalid_effort`. Output follows `.claude/rules/structured-script-output.md`
 (`=== WORKFLOW MODEL/EFFORT ===` / `STATUS=` / `ISSUE_COUNT=`).
 
@@ -151,8 +151,8 @@ behind).
 
 ## Related
 
-- `.claude/rules/agent-development.md` § "Model Selection for Agents" — the subagent sibling (frontmatter `model: opus`, stronger contamination rationale)
-- `.claude/rules/skill-development.md` — the opus-is-often-cheaper / effort-is-the-cost-lever economics
+- `.claude/rules/agent-development.md` § "Model Selection for Agents" — the subagent sibling (task-shape tiers in agent frontmatter)
+- `.claude/rules/skill-development.md` — when a skill pins `model: sonnet`, and effort as the cost lever within a model
 - `.claude/rules/workflow-naming.md` — the `<Domain>: <Action>` naming for the same workflow surface
 - `.claude/rules/github-actions-security.md` — least-privilege + script-injection baseline for these workflows
 - `.claude/rules/regression-testing.md` — the guard is this migration's regression check

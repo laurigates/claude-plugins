@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
-# Verify every plugin agent .md file declares `model: opus` (or `model: fable`
-# for the hardest delegated reasoning — see the policy note below).
+# Verify every plugin agent .md file declares a task-shape tier model:
+# `opus` (default), `fable` (hardest delegated reasoning), `sonnet` with an
+# explicit `effort:` (bounded, checkable work), or `haiku` in the lean-reader
+# shape (see below).
 #
 # Background: a subagent's output feeds back into the main loop as a tool
-# result, so a weaker delegate quietly degrades everything downstream. `effort` —
-# settable per agent via the `effort:` frontmatter field, or per session — not
-# `model`, is the cost lever for delegated work; the measured basis (re-checked
-# per model generation) lives in `.claude/rules/agent-development.md`
-# (§ "Model Selection for Agents"). This matches the user-global standard in
-# `~/.claude/rules/agent-and-tool-selection.md` ("Always Use Opus for
-# Subagents").
+# result, so a weaker model's output needs a check a wrong answer cannot pass.
+# The tiers in `.claude/rules/agent-development.md` (§ "Model Selection for
+# Agents") encode where that check exists. The old opus-only minimum rested on
+# Opus 4.8 at low effort beating Sonnet 4.6 at high effort, never re-measured on
+# 5.5 (#3116). This guard only checks the shape of the pick; whether an agent's
+# job fits its tier is judged in review.
 #
 # The sole sanctioned non-Opus subagent is the `agent-patterns-plugin`
 # cold-read-gate haiku reader — the measurement instrument, not a delegate
@@ -39,17 +40,14 @@
 # A read-only, context-free reader is the one shape where a weaker model's
 # output re-entering the main loop is checked downstream rather than trusted.
 #
-# Model floor policy: `opus` is the committed floor for every other plugin agent —
-# it is the portable choice (every plan carries Opus; `fable` is no plan's
-# default and costs roughly 2x per token, and has no documented fallback for a
-# consumer without Fable access). `fable` is additionally sanctioned for
-# agents whose job is the hardest delegated reasoning (long-horizon,
-# multi-file, adversarial verification) — this guard accepts it alongside
-# `opus`. `inherit` is not accepted for plugin agents: it would also inherit
-# whatever session model is active, including Sonnet/Haiku sessions below the
-# floor. `effort:` frontmatter (low|medium|high|xhigh|max, default inherits)
-# is the per-agent cost lever — dial it down for mechanical/high-volume agents
-# instead of reaching for a weaker model.
+# Tier policy: `opus` is the default and the portable choice (every plan has
+# it). `fable` is sanctioned for the hardest delegated reasoning (long-horizon,
+# multi-file, adversarial verification); no plan defaults to it and it costs
+# about 2.5x Opus 5.5 per token. `sonnet` is the bounded tier and needs an
+# explicit `effort:`, so the cost and depth pick is ours rather than the
+# model default's. `inherit` is not accepted: it hides the pick and ties the
+# agent to whatever session calls it. `effort:` (low|medium|high|xhigh|max,
+# default inherits) is validated whenever present.
 #
 # Usage:
 #   bash scripts/check-agent-model.sh [--project-dir <path>] [agent.md ...]
@@ -59,7 +57,7 @@
 #                   discovery is skipped and only these files are checked.
 #
 # Exit codes:
-#   0 - all agents run on opus or fable, and every effort: value (if present) is valid
+#   0 - every agent declares a tier model in its required shape, and every effort: value (if present) is valid
 #   1 - one or more agents declare a disallowed model or an invalid effort: value
 
 set -euo pipefail
@@ -207,6 +205,7 @@ lean_haiku_problems() {
 errors=0
 checked=0
 lean_haiku=0
+sonnet=0
 
 for agent_file in "${agent_files[@]}"; do
   [ -f "$agent_file" ] || continue
@@ -228,8 +227,14 @@ for agent_file in "${agent_files[@]}"; do
     else
       lean_haiku=$((lean_haiku + 1))
     fi
+  elif [ "$agent_model" = "sonnet" ]; then
+    sonnet=$((sonnet + 1))
+    if ! frontmatter "$agent_file" | grep -qE '^effort:[[:space:]]*[a-z]+'; then
+      echo "❌ $agent_file: model: sonnet needs an explicit effort: (the bounded tier — see .claude/rules/agent-development.md § Model Selection for Agents)" >&2
+      errors=$((errors + 1))
+    fi
   elif [ "$agent_model" != "opus" ] && [ "$agent_model" != "fable" ]; then
-    echo "❌ $agent_file: model: ${agent_model:-<missing>} (must be opus, fable for the hardest delegated reasoning, or haiku on a lean read-only reader — see .claude/rules/agent-development.md)" >&2
+    echo "❌ $agent_file: model: ${agent_model:-<missing>} (must be opus, fable, sonnet with an explicit effort:, or haiku on a lean read-only reader — see .claude/rules/agent-development.md)" >&2
     errors=$((errors + 1))
   fi
 
@@ -250,15 +255,16 @@ done
 if [ $errors -gt 0 ]; then
   echo "" >&2
   echo "Found $errors problem(s) across agent file(s) (out of $checked checked)." >&2
-  echo "Set 'model: opus' (or 'model: fable' for the hardest delegated reasoning)" >&2
-  echo "on every plugin agent. A subagent's output re-enters the main loop as a" >&2
-  echo "tool result, so a weaker delegate degrades everything downstream. Dial" >&2
-  echo "'effort:' down for mechanical agents instead of reaching for a weaker model." >&2
+  echo "Pick a tier model for every plugin agent: 'opus' (default), 'fable' (hardest" >&2
+  echo "delegated reasoning), 'sonnet' with an explicit 'effort:' (bounded, checkable" >&2
+  echo "work), or 'haiku' as a lean read-only reader. A subagent's output re-enters" >&2
+  echo "the main loop as a tool result, so a weaker model's output needs a check." >&2
   echo "See .claude/rules/agent-development.md § 'Model Selection for Agents'." >&2
   exit 1
 fi
 
 echo "AGENT_FILES_SCANNED=$checked"
 echo "LEAN_HAIKU_AGENTS=$lean_haiku"
-echo "All $checked agent files run on opus or fable (or haiku as a lean read-only reader), with valid effort values. ✅"
+echo "SONNET_AGENTS=$sonnet"
+echo "All $checked agent files declare a tier model in its required shape, with valid effort values. ✅"
 exit 0

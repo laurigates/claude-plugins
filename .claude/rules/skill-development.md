@@ -1,6 +1,6 @@
 ---
 created: 2025-12-20
-modified: 2026-10-13
+modified: 2026-10-18
 reviewed: 2026-09-16
 paths:
   - "**/skills/**"
@@ -182,7 +182,7 @@ Skills inherit the user's active model by default. Tag a skill with `model:` onl
 | Tag | Use for | Examples |
 |-----|---------|----------|
 | `model: opus` | Deep reasoning, multi-file orchestration, security review, architecture, long agentic chains | Skills that spawn many subagents, security audits, complex refactors, ADR/PRD synthesis |
-| `model: sonnet` | Mechanical / high-volume work that **Sonnet at low effort** can genuinely complete | CLI tool wrappers (fd, rg, jq), formatters, status checks, single-file lookups |
+| `model: sonnet` + `effort:` | Bounded, checkable work: the done check fits in one sentence and a wrong answer is cheap to catch | CLI tool wrappers (fd, rg, jq), formatters, status checks, single-file lookups |
 | `model: haiku` + `effort: low` | A **report, listing, or user-driven terminal task** whose output ends the turn, with no `AskUserQuestion` | Script-backed status rollups, read-only listings, one-command wrappers the user types |
 | _(unset)_ | Everything in the middle | Default — inherits the user's active model |
 
@@ -190,7 +190,7 @@ Skills inherit the user's active model by default. Tag a skill with `model:` onl
 
 **Why both extremes?** A user defaulting to Opus saves cost when a *genuinely* mechanical skill self-selects Sonnet. A user defaulting to Sonnet (or Haiku) gets reliable results when a complex skill self-selects Opus.
 
-**Opus is often the cheaper default — `effort`, not `model`, is the main cost lever.** Opus at low effort tends to spend far fewer thinking + output tokens than Sonnet at high effort, so for reasoning-shaped work Opus-low can be both better *and* cheaper. That win rides on `effort`, which a skill **can** now pin in frontmatter (`effort: low|medium|high|xhigh|max`; overrides the session effort while the skill is active, default inherits; available levels depend on the model). So the practical translation is: for a genuinely mechanical skill, prefer `effort: low` with `model:` unset over reaching for `model: sonnet`; keep `model: sonnet` for the narrow case where Sonnet at low effort is demonstrably enough. The ≈1.7× premium and the Opus-low-beats-Sonnet-high result were measured on the Opus 4.8 / Sonnet 4.6 generation; `opus`/`sonnet` now resolve to Opus 5.5 (2.1.280) / Sonnet 5.5 (on the Anthropic API since 2.1.284, $2/$10 per MTok) and effort names do not map across generations — treat the heuristic as workload-dependent and confirm per-skill with the cross-model delta harness in [`.claude/rules/skill-evaluation.md`](skill-evaluation.md).
+**`model: sonnet` is a real option on 5.5, not a narrow exception.** The earlier advice to prefer Opus at low effort over Sonnet rested on Opus 4.8 beating Sonnet 4.6 at high effort on quality and tokens. `opus`/`sonnet` now resolve to Opus 5.5 (2.1.280, $4/$20 per MTok) / Sonnet 5.5 (on the Anthropic API since 2.1.284, $2/$10), that result was never re-measured, and effort names do not map across generations. Tag `model: sonnet` with an explicit `effort:` on a skill whose work is bounded and checkable: the done check fits in one sentence and a wrong answer is cheap to catch. `effort` remains a cost lever within either model. #3116 calibrates the boundary with the cross-model delta harness in [`.claude/rules/skill-evaluation.md`](skill-evaluation.md); confirm per skill there when the call is close. The subagent tiers are in `agent-development.md` § Model Selection for Agents.
 
 **Hard constraints:**
 
@@ -198,7 +198,7 @@ Skills inherit the user's active model by default. Tag a skill with `model:` onl
   - **No `AskUserQuestion`.** Haiku 4.5 skills got empty prompts back (#881), and that has not been re-measured on 5.5.
   - **No `user-invocable: false` without `context: fork`.** The override "applies for the rest of the current turn", so a skill only the model loads hands the work that loaded it to Haiku: an implementation after `git-branch-naming`, a fix loop after a test run. With `context: fork` the value sets only the fork's model. The lint cannot see the softer version of this: a user-invocable skill the model also calls mid-task (`code-lint` in a fix loop, `bun-add` before implementing). Judge that in review, and leave `model:` unset when the skill is a step inside larger work.
 - **A skill pin bills Haiku at its higher tier.** Haiku's $0.10/$0.50 rate applies to prompts up to 100k tokens. A skill's `model:` runs the main session, which carries the same CLAUDE.md and rules chain (~72k), skill listing (~33k) and tool and MCP schemas that put a default subagent at a measured 124,068 tokens (`docs/audits/haiku-5.5-reevaluation-2026-10-10.md`), so a pinned skill bills at $0.50/$2.50. That is about a quarter of Sonnet's price ($2/$10 for both Sonnet 5, which the `sonnet` alias resolves to, and Sonnet 5.5), not a twentieth. Delegated work can get the low tier: a lean subagent (`omitClaudeMd: true` + a narrow `tools:` list) starts at about 3k. See `agent-development.md` § Lean subagents.
-- **Do NOT tag the middle.** If you can't articulate why the skill needs Opus or why Sonnet is enough, leave `model:` unset and let inheritance decide.
+- **Do NOT tag the middle.** If you can't articulate why the skill needs Opus or why its work is bounded enough for Sonnet, leave `model:` unset and let inheritance decide.
 - The `model:` field is also supported in agent definitions (see `.claude/rules/agent-development.md`).
 
 ### Date Fields

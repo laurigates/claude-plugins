@@ -6,7 +6,7 @@ description: Route to specialized agents based on codebase health attributes. Re
 tools: Read, Glob, Grep, Agent(security-audit, test, refactor, debug, performance, review, docs), TodoWrite
 maxTurns: 30
 created: 2026-03-15
-modified: 2026-10-09
+modified: 2026-10-18
 reviewed: 2026-09-02
 ---
 
@@ -34,7 +34,7 @@ The harness blocks several common bash idioms — use the dedicated tool instead
 - **Input**: Attribute JSON (from `.claude/attributes.json` or inline in prompt)
 - **Output**: Delegated agent results with summary of addressed findings
 - **Steps**: 5-15, depends on number of findings
-- **Model**: opus (the subagent floor — see `.claude/rules/agent-development.md` § "Model Selection for Agents"; routing is mechanical, so cost is tuned via `effort`, not by downgrading the model)
+- **Model**: opus (the default tier — see `.claude/rules/agent-development.md` § "Model Selection for Agents"; routing is mechanical, so it is a candidate for a lower tier once #3116 measures it; until then cost is tuned via `effort`, not by downgrading the model)
 
 ## Workflow
 

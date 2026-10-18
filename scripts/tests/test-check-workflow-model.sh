@@ -2,13 +2,14 @@
 # shellcheck disable=SC2016  # literal markdown backticks in rule-table fixtures, never expansions
 # Regression test for scripts/check-workflow-model.sh
 # (.claude/rules/workflow-model-effort.md — every Claude workflow pins
-#  `--model opus` and an explicit `--effort` level).
+#  `--model opus` or `--model sonnet` and an explicit `--effort` level).
 #
 # Guards:
-#   A. the real repo stays clean — every invoking workflow is opus+effort, exit 0
+#   A. the real repo stays clean — every invoking workflow pins a model+effort, exit 0
 #   B. an opus+effort claude_args fixture exits 0 and reports the count
 #   C. a `--model haiku` workflow exits 1, names the file, reports the model
-#   D. a `--model sonnet` workflow exits 1 and names the file
+#   D. a `--model sonnet` workflow with explicit effort exits 0 (bounded tier, #3116);
+#      sonnet WITHOUT effort still exits 1 (missing_effort)
 #   E. `--model opus` WITHOUT `--effort` exits 1 (missing_effort — the invariant
 #      the agent-model guard does not have)
 #   F. CLI/npx form with `--model haiku` exits 1 (second parser path)
@@ -178,7 +179,7 @@ assert "real repo table parses to >= 9 rows (got '${a_rows:-none}')" "$([ "${a_r
 # --- TEST B: opus+effort claude_args fixture ---------------------------------
 echo "=== TEST B: opus+effort claude_args exits 0 ==="
 fx_b="$(mktemp -d)"
-trap 'rm -rf "$fx_b" "${fx_c:-}" "${fx_d:-}" "${fx_e:-}" "${fx_f:-}" "${fx_g:-}" "${fx_h:-}" "${fx_i:-}" "${fx_j:-}" "${fx_k:-}" "${fx_l:-}"' EXIT
+trap 'rm -rf "$fx_b" "${fx_c:-}" "${fx_d:-}" "${fx_d2:-}" "${fx_e:-}" "${fx_f:-}" "${fx_g:-}" "${fx_h:-}" "${fx_i:-}" "${fx_j:-}" "${fx_k:-}" "${fx_l:-}"' EXIT
 make_action_workflow "$fx_b/.github/workflows/good.yml" "--model opus --effort low --max-turns 25"
 run "$fx_b"
 assert "opus+effort fixture exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
@@ -193,16 +194,20 @@ run "$fx_c"
 assert "haiku fixture exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
 assert "haiku fixture names the file" "$(contains "$OUT" 'bad.yml')"
 assert "haiku fixture reports MODEL=haiku" "$(contains "$OUT" 'MODEL=haiku')"
-assert "haiku fixture TYPE=non_opus_model" "$(contains "$OUT" 'TYPE=non_opus_model')"
+assert "haiku fixture TYPE=disallowed_model" "$(contains "$OUT" 'TYPE=disallowed_model')"
 
 # --- TEST D: --model sonnet --------------------------------------------------
-echo "=== TEST D: --model sonnet exits 1 and is named ==="
+echo "=== TEST D: --model sonnet + effort exits 0; sonnet without effort exits 1 ==="
 fx_d="$(mktemp -d)"
-make_action_workflow "$fx_d/.github/workflows/legacy.yml" "--model sonnet --effort medium"
+make_action_workflow "$fx_d/.github/workflows/bounded.yml" "--model sonnet --effort medium"
 run "$fx_d"
-assert "sonnet fixture exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
-assert "sonnet fixture names the file" "$(contains "$OUT" 'legacy.yml')"
-assert "sonnet fixture reports MODEL=sonnet" "$(contains "$OUT" 'MODEL=sonnet')"
+assert "sonnet+effort fixture exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+assert "sonnet+effort raises no disallowed_model" "$([ "$(contains "$OUT" 'TYPE=disallowed_model')" = false ] && echo true || echo false)"
+fx_d2="$(mktemp -d)"
+make_action_workflow "$fx_d2/.github/workflows/no-effort.yml" "--model sonnet --max-turns 25"
+run "$fx_d2"
+assert "sonnet without effort exits 1" "$([ "$RC" -eq 1 ] && echo true || echo false)"
+assert "sonnet without effort TYPE=missing_effort" "$(contains "$OUT" 'TYPE=missing_effort')"
 
 # --- TEST E: opus WITHOUT --effort -------------------------------------------
 echo "=== TEST E: opus without --effort exits 1 (missing_effort) ==="
@@ -333,7 +338,7 @@ assert "explicit positional file skips table membership (reported)" "$(has_line 
 # --- TEST N: canonical-table membership (#2630 Rec 2) ------------------------
 echo "=== TEST N: every invoking workflow has a canonical-table row ==="
 fx_n="$(mktemp -d)"
-trap 'rm -rf "$fx_b" "${fx_c:-}" "${fx_d:-}" "${fx_e:-}" "${fx_f:-}" "${fx_g:-}" "${fx_h:-}" "${fx_i:-}" "${fx_j:-}" "${fx_k:-}" "${fx_l:-}" "${fx_m:-}" "${fx_n:-}"' EXIT
+trap 'rm -rf "$fx_b" "${fx_c:-}" "${fx_d:-}" "${fx_d2:-}" "${fx_e:-}" "${fx_f:-}" "${fx_g:-}" "${fx_h:-}" "${fx_i:-}" "${fx_j:-}" "${fx_k:-}" "${fx_l:-}" "${fx_m:-}" "${fx_n:-}"' EXIT
 make_action_workflow "$fx_n/.github/workflows/good.yml" "--model opus --effort low"
 make_action_workflow "$fx_n/.github/workflows/unlisted.yml" "--model opus --effort medium"
 make_plain_workflow "$fx_n/.github/workflows/plain.yml"

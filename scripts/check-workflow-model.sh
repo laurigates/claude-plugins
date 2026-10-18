@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # Verify every GitHub Actions workflow that invokes Claude pins `--model opus`
-# and sets an explicit `--effort` level.
+# or `--model sonnet` and sets an explicit `--effort` level.
 #
 # Background: workflows are TOP-LEVEL Claude invocations, not subagents, so the
 # "a weak delegate's output re-enters the main loop" argument (the agent-model
-# guard's rationale) does not apply here. The justification is cost-economics:
-# an Opus-class model at low effort beat a Sonnet-class model at high effort on
-# both quality and token efficiency when measured (Opus 4.8 vs Sonnet 4.6; the
-# `opus`/`sonnet` aliases resolve to Opus 5.5 / Sonnet 5, so re-measure the exact
-# spread), so `effort`, not `model`, is the cost lever. Haiku 5.5 now has an
-# effort setting, but no workflow here has been measured on it yet, so haiku
-# stays rejected until a replay passes (workflow-model-effort.md). The Opus default effort differs by model and has
-# moved between releases, so effort MUST be explicit or the savings are forfeited. See
+# guard's rationale) does not apply here. The model pick is a per-workflow cost
+# and quality trade: opus by default, sonnet for bounded jobs whose failure a
+# required check or a human sees. The old opus-only rule rested on Opus 4.8 at
+# low effort beating Sonnet 4.6 at high effort, never re-measured on 5.5 (#3116).
+# Haiku 5.5 has an effort setting, but no workflow here has been measured on it
+# yet, so haiku stays rejected until a replay passes (workflow-model-effort.md).
+# The default effort differs by model and has moved between releases, so effort
+# MUST be explicit or the pick is not ours. See
 # `.claude/rules/workflow-model-effort.md` and `.claude/rules/agent-development.md`
 # (§ "Model Selection for Agents") for the sibling agent standard.
 #
@@ -40,7 +40,7 @@
 #                   discovery is skipped and only these files are checked.
 #
 # Exit codes:
-#   0 - all invoking workflows pin opus + an explicit valid effort
+#   0 - all invoking workflows pin opus or sonnet + an explicit valid effort
 #   1 - one or more workflows violate the standard
 #   2 - unknown argument, or --project-dir without a directory
 
@@ -56,6 +56,7 @@ WORKFLOW_MODEL_ALLOWLIST=()
 WORKFLOW_MODEL_ALLOWLIST+=(${CHECK_WORKFLOW_MODEL_ALLOWLIST:-})
 
 VALID_EFFORTS="low medium high xhigh max"
+ALLOWED_MODELS="opus sonnet"
 
 # The canonical per-workflow table this guard cross-checks (#2630 Rec 2).
 RULE_FILE_REL=".claude/rules/workflow-model-effort.md"
@@ -204,21 +205,24 @@ for wf in "${workflow_files[@]}"; do
 
   # Model assertions.
   if [ -z "$models" ]; then
-    issues+=("  - SEVERITY=ERROR TYPE=missing_model FILE=$wf_rel MSG=claude invocation has no --model (must pin opus)")
+    issues+=("  - SEVERITY=ERROR TYPE=missing_model FILE=$wf_rel MSG=claude invocation has no --model (must pin opus or sonnet)")
     issue_count=$((issue_count + 1))
   else
     while IFS= read -r m; do
       [ -z "$m" ] && continue
-      if [ "$m" != "opus" ]; then
-        issues+=("  - SEVERITY=ERROR TYPE=non_opus_model FILE=$wf_rel MODEL=$m MSG=must be opus (effort is the cost lever)")
-        issue_count=$((issue_count + 1))
-      fi
+      case " $ALLOWED_MODELS " in
+        *" $m "*) : ;;
+        *)
+          issues+=("  - SEVERITY=ERROR TYPE=disallowed_model FILE=$wf_rel MODEL=$m MSG=must be one of: $ALLOWED_MODELS (haiku only after a per-workflow replay)")
+          issue_count=$((issue_count + 1))
+          ;;
+      esac
     done <<< "$models"
   fi
 
   # Effort assertions.
   if [ -z "$efforts" ]; then
-    issues+=("  - SEVERITY=ERROR TYPE=missing_effort FILE=$wf_rel MSG=opus requires explicit --effort (the model default can forfeit savings)")
+    issues+=("  - SEVERITY=ERROR TYPE=missing_effort FILE=$wf_rel MSG=claude invocation needs an explicit --effort (the model default is not our pick)")
     issue_count=$((issue_count + 1))
   else
     while IFS= read -r e; do
@@ -285,8 +289,8 @@ if [ "$issue_count" -gt 0 ]; then
   echo "" >&2
   echo "Found $issue_count workflow model/effort issue(s) (of $invoking invoking workflows)." >&2
   if [ "$model_issue_count" -gt 0 ]; then
-    echo "Every Claude workflow must pin '--model opus' and set an explicit '--effort'" >&2
-    echo "level — effort, not model, is the cost lever, and the opus default varies by model." >&2
+    echo "Every Claude workflow must pin '--model opus' or '--model sonnet' and set an" >&2
+    echo "explicit '--effort' level — the default effort varies by model." >&2
     echo "Haiku stays off workflows until a replay passes. See .claude/rules/workflow-model-effort.md." >&2
   fi
   if [ "$issue_count" -gt "$model_issue_count" ]; then
@@ -296,5 +300,5 @@ if [ "$issue_count" -gt 0 ]; then
   exit 1
 fi
 
-echo "All $invoking invoking workflow(s) pin opus + explicit effort. ✅"
+echo "All $invoking invoking workflow(s) pin opus or sonnet + explicit effort. ✅"
 exit 0
