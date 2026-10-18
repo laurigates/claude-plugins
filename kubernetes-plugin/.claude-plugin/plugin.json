@@ -25,7 +25,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/validate-kubectl-context.sh\"",
-            "timeout": 3000
+            "timeout": 5
           },
           {
             "type": "command",

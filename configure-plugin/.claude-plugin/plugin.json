@@ -16,7 +16,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/configure-drift-probe.sh\"",
-            "timeout": 3000
+            "timeout": 5
           }
         ]
       }

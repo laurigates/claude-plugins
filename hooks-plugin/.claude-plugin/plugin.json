@@ -45,12 +45,12 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/git-stash-session-init.sh\"",
-            "timeout": 5000
+            "timeout": 5
           },
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/drift-aggregator.sh\"",
-            "timeout": 5000
+            "timeout": 5
           }
         ]
       }
@@ -62,34 +62,34 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/bash-antipatterns.sh\"",
-            "timeout": 5000
+            "timeout": 5
           },
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/branch-protection.sh\"",
-            "timeout": 5000,
+            "timeout": 15,
             "onFailure": "block"
           },
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/repo-deletion-safety.sh\"",
-            "timeout": 5000,
+            "timeout": 15,
             "onFailure": "block"
           },
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/branch-base-guard.sh\"",
-            "timeout": 5000
+            "timeout": 5
           },
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/auto-checkpoint.sh\"",
-            "timeout": 5000
+            "timeout": 5
           },
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/external-pr-merge-guard.sh\"",
-            "timeout": 15000,
+            "timeout": 20,
             "onFailure": "block"
           }
         ]
@@ -100,7 +100,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/workflow-scale-guard.sh\"",
-            "timeout": 5000
+            "timeout": 5
           }
         ]
       },
@@ -110,7 +110,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/external-pr-merge-guard.sh\"",
-            "timeout": 15000,
+            "timeout": 20,
             "onFailure": "block"
           }
         ]
@@ -121,7 +121,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/secret-protection.sh\"",
-            "timeout": 5000,
+            "timeout": 5,
             "onFailure": "block"
           }
         ]
@@ -132,7 +132,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/event-logger.sh\"",
-            "timeout": 2000
+            "timeout": 5
           }
         ]
       }
@@ -144,7 +144,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/permission-auto-approve.sh\"",
-            "timeout": 5000
+            "timeout": 5
           }
         ]
       }
@@ -156,12 +156,12 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/event-logger.sh\"",
-            "timeout": 2000
+            "timeout": 5
           },
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/context-threshold-nudge.sh\"",
-            "timeout": 5000
+            "timeout": 5
           }
         ]
       },
@@ -171,7 +171,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/bash-antipatterns-teach.sh\"",
-            "timeout": 5000
+            "timeout": 5
           }
         ]
       },
@@ -181,7 +181,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/prose-house-style-nudge.sh\"",
-            "timeout": 15000
+            "timeout": 5
           }
         ]
       }
@@ -192,23 +192,23 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/git-stash-reminder.sh\"",
-            "timeout": 10000
+            "timeout": 10
           },
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/task-completeness.sh\"",
-            "timeout": 10000,
+            "timeout": 10,
             "statusMessage": "Checking task completeness..."
           },
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/no-calendar-estimates.sh\"",
-            "timeout": 5000
+            "timeout": 5
           },
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/subagent-count-tripwire.sh\"",
-            "timeout": 5000
+            "timeout": 5
           }
         ]
       }
@@ -219,7 +219,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/subagent-count-tripwire.sh\"",
-            "timeout": 5000
+            "timeout": 5
           }
         ]
       }
@@ -242,7 +242,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/test-verification.sh\"",
-            "timeout": 60000,
+            "timeout": 60,
             "statusMessage": "Running fast tests..."
           },
           {
@@ -261,7 +261,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/git-session-cleanup.sh\"",
-            "timeout": 30000
+            "timeout": 30
           }
         ]
       }
