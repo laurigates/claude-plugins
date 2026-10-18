@@ -1,8 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-10-06
+modified: 2026-10-14
 reviewed: 2026-09-02
-allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git fetch *), Bash(git pull *), Bash(git stash *), Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(gh label *), Bash(gh api *), Bash(pre-commit *), Read, Edit, Write, Grep, Glob, TodoWrite, AskUserQuestion, Task, mcp__github__create_pull_request, mcp__github__issue_read, mcp__github__list_issues
+allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git fetch *), Bash(git pull *), Bash(git stash *), Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(gh label *), Bash(gh api *), Bash(gh workflow *), Bash(gh run *), Bash(pre-commit *), Read, Edit, Write, Grep, Glob, TodoWrite, AskUserQuestion, Task, mcp__github__create_pull_request, mcp__github__issue_read, mcp__github__list_issues
 description: "GitHub issue to PR end-to-end — branch, TDD implementation, PR — one issue or several in parallel. Use when asked to work on an issue, fix issue #N, or batch-process several."
 args: "[issues... (number | #N | URL)] [--auto] [--filter <label>] [--limit <n>] [--parallel] [--labels <l1,l2>]"
 argument-hint: "[issues... (number | #N | URL)] [--auto] [--filter <label>] [--limit <n>] [--parallel] [--labels <l1,l2>]"
@@ -41,7 +41,7 @@ Parse these parameters from the command:
 
 ## Your Task
 
-Process GitHub issues using a TDD workflow, cutting each issue's branch **from `origin/main`**.
+Process GitHub issues using a TDD workflow, cutting each issue's branch **from `origin/main`** — except verification-only issues, which are verified and evidenced first (Step 2, item 4).
 
 ---
 
@@ -118,8 +118,15 @@ surface a sub-70% confidence score to the user rather than guessing.
    defers until a condition in the source comes true ("if the list ever grows
    past ten…") becomes a tripwire test in this PR (`testing-plugin:test-tripwire`),
    not an unfinished part left on the issue.
-4. **Plan the implementation** approach
-5. **Cut the branch from `origin/main`**: `git switch -c fix/issue-$N origin/main`
+4. **Classify the criteria before any branch exists.** Criteria that are
+   observations — a run passes, a value appears, a prerequisite PR has landed —
+   make the issue **verification-only**: take the
+   [Verification-Only Flow](references/verification-only.md) — confirm the
+   prerequisite PR via `state,mergedAt`, post evidence with `--body-file`, close
+   with `--reason completed` — and cut no branch unless a check fails. Criteria
+   that need a code change (or a mix) continue here.
+5. **Plan the implementation** approach
+6. **Cut the branch from `origin/main`**: `git switch -c fix/issue-$N origin/main`
 
 Base the branch on `origin/main`, never on local `main` — local `main` may carry
 unpushed commits that would ride into this issue's PR (see

@@ -11,6 +11,8 @@
 #   D. a fixture that inspects UNKNOWN but never waits exits 1 (no_wait)
 #   E. an UNBOUNDED poll (UNKNOWN + sleep, no deadline) exits 1 (unbounded_poll)
 #   F. a missing workflow file exits 1 (missing_workflow)
+#   G. REASON= names the first finding on ERROR, is absent on OK, and both
+#      outputs satisfy check-structured-output-contract.sh --validate (#2760)
 # shellcheck disable=SC2016  # file-level: workflow fixtures are literal YAML/shell
 #                            # text, single-quoted so $(...) must NOT expand here
 set -uo pipefail
@@ -18,6 +20,7 @@ set -uo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$script_dir/../.." && pwd)"
 checker="$repo_root/scripts/check-auto-resolve-mergeability-poll.sh"
+contract="$repo_root/scripts/check-structured-output-contract.sh"
 
 pass_count=0
 fail_count=0
@@ -32,6 +35,8 @@ assert() {
 }
 
 contains() { grep -q -- "$2" <<<"$1" && echo true || echo false; }
+contains_fixed() { grep -qF -- "$2" <<<"$1" && echo true || echo false; }
+valid() { printf '%s\n' "$1" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false; }
 
 # write_workflow <project-dir> <find-step-run-body>
 write_workflow() {
@@ -69,6 +74,8 @@ write_workflow "$d" '          DEADLINE=$(( $(date +%s) + 120 ))
 out="$("$checker" --project-dir "$d" 2>&1)"; rc=$?
 assert "B: bounded poll exits 0" "$([ "$rc" -eq 0 ] && echo true || echo false)"
 assert "B: bounded poll STATUS=OK" "$(contains "$out" "STATUS=OK")"
+assert "G: OK output carries no REASON=" "$([ "$(contains "$out" "^REASON=")" = false ] && echo true || echo false)"
+assert "G: OK output satisfies the contract" "$(valid "$out")"
 
 # C. Single-read regression → fail
 d="$tmp_root/single"
@@ -77,6 +84,9 @@ out="$("$checker" --project-dir "$d" 2>&1)"; rc=$?
 assert "C: single-read exits 1" "$([ "$rc" -eq 1 ] && echo true || echo false)"
 assert "C: single-read reports no_unknown_poll" "$(contains "$out" "no_unknown_poll")"
 assert "C: single-read reports no_wait" "$(contains "$out" "no_wait")"
+assert "G: REASON= names the first finding" "$(contains_fixed "$out" "REASON=no_unknown_poll: find-conflicts must inspect mergeable == UNKNOWN")"
+assert "G: REASON= counts the other findings" "$(contains_fixed "$out" " (+2 more)")"
+assert "G: ERROR output satisfies the contract" "$(valid "$out")"
 
 # D. Inspects UNKNOWN but never waits → fail no_wait
 d="$tmp_root/nowait"

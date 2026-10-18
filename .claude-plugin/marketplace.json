@@ -28,7 +28,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.50.3",
+      "version": "2.50.4",
       "author": {
         "name": "Lauri Gates"
       },
@@ -185,7 +185,7 @@
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
       "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
-      "version": "1.14.1",
+      "version": "1.14.2",
       "author": {
         "name": "Lauri Gates"
       },
@@ -392,7 +392,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.61.3",
+      "version": "2.62.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -743,7 +743,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation",
-      "version": "1.13.7",
+      "version": "1.13.8",
       "author": {
         "name": "Lauri Gates"
       },
@@ -879,7 +879,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - parallel agents, CI pipelines, preflight checks, checkpoint refactoring",
-      "version": "1.13.4",
+      "version": "1.14.0",
       "author": {
         "name": "Lauri Gates"
       },

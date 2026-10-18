@@ -95,6 +95,15 @@ echo "POLLS_UNKNOWN=$polls_unknown"
 echo "HAS_WAIT=$has_wait"
 echo "IS_BOUNDED=$is_bounded"
 echo "STATUS=$status"
+if [ "$issue_count" -gt 0 ]; then
+  # REASON= is the first finding as `<TYPE>: <MSG>`, one line, cut to 180
+  # chars, plus ` (+N more)` (.claude/rules/structured-script-output.md, #2760).
+  first_type="${issues[0]#*TYPE=}"
+  first_type="${first_type%% *}"
+  reason="$(printf '%s: %s' "$first_type" "${issues[0]#*MSG=}" | tr -s '[:space:]' ' ' | cut -c1-180)"
+  [ "$issue_count" -gt 1 ] && reason="$reason (+$((issue_count - 1)) more)"
+  echo "REASON=$reason"
+fi
 echo "ISSUE_COUNT=$issue_count"
 if [ "$issue_count" -gt 0 ]; then
   echo "ISSUES:"
