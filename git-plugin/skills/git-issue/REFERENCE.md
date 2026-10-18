@@ -148,5 +148,6 @@ After processing, report:
 |--------|---------|
 | Issues processed | List of issue numbers |
 | PRs created | PR numbers with links |
+| Issues verified | Verification-only issues closed as completed, with the evidence comment link |
 | Conflicts detected | Issues that were sequentialized |
 | Issues skipped | Low confidence or user choice |

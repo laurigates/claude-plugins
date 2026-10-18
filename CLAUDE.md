@@ -70,6 +70,8 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/task-id-stability.md` | Taskwarrior numeric IDs renumber after every close — resolve the immutable UUID once and mutate by UUID, including *within* a single skill's own multi-step lifecycle, not just across bulk loops |
 | `.claude/rules/generated-fleet-drift.md` | Auditing a generated fleet — divergence is not automatically drift: it is bidirectional (never auto-apply template → instance), an identically-diverging cohort signals intent, and undeclared intent is unauditable |
 | `.claude/rules/plugin-usage-telemetry.md` | `~/.claude.json`'s `pluginUsage.usageCount` counts **hook fires**, so it ranks trigger cadence rather than plugin value — nothing in this repo reads it (incl. `health-check --scope=usage`, which mines transcripts); the delivery signal is the **lowercase-first** `attributionPlugin`/`attributionSkill`/`attributionAgent` |
+| `.claude/rules/drift-detection-triggering.md` | Drift that "needs a sweep" is usually a **triggering** gap, not a logic gap — mount the existing deterministic script on a trigger (event hook for local state, TTL-debounced poll for remote state) instead of rewriting it |
+| `.claude/rules/offload-to-deterministic-substrate.md` | Plugin-authoring deltas of the global law: mechanical, repeatable, verifiable work goes in a script, hook, or structured-output contract the agent invokes — not prose it re-derives each run |
 
 **Auditing these docs:** [`docs/audits/README.md`](docs/audits/README.md) records the Layer 1 (automated, monthly) / Layer 2 (quarterly + milestone-triggered) cadence and holds past findings artifacts.
 
@@ -152,9 +154,9 @@ This repo runs `blueprint-plugin` against itself in a deliberately constrained m
 
 | Task | Status | Why |
 |------|--------|-----|
-| `adr-validate`, `sync-ids`, `feature-tracker-sync` | enabled | Read-leaning workflows that genuinely add value across 16 ADRs / 2 PRDs / 5 PRPs |
+| `adr-validate`, `sync-ids`, `feature-tracker-sync` | enabled | Read-leaning workflows that genuinely add value across this repo's ADRs, PRDs, and PRPs |
 | `story-audit`, `story-reconcile` | enabled | `story-audit` is read-only and writes only its own dated artifact under `docs/blueprint/audits/`. `story-reconcile` mutates PRDs only and confirms each edit interactively. |
-| `derive-plans` (subsumes former `derive-prd`/`derive-adr`), `derive-rules`, `generate-rules`, `claude-md`, `curate-docs` | disabled | Would treat plugin source as project requirements or could overwrite the 18 hand-written rules / hand-curated `CLAUDE.md` |
+| `derive-plans` (subsumes former `derive-prd`/`derive-adr`), `derive-rules`, `generate-rules`, `claude-md`, `curate-docs` | disabled | Would treat plugin source as project requirements or could overwrite the hand-written `.claude/rules/` / hand-curated `CLAUDE.md` |
 
 **Always run `/blueprint:sync-ids` with `--dry-run` first.** Each disabled task carries a `context.disabled_reason` in the manifest — read it before flipping any flag back on.
 
@@ -177,5 +179,3 @@ What keeps dogfooding from publishing the plugin is the `chore` **type** (no bum
 - Plugin names: suffix with `-plugin` (`typescript-plugin`)
 - Use tables for quick reference (flags, options)
 - Include both short and long flag forms where applicable
-| `.claude/rules/drift-detection-triggering.md` | drift detection triggering |
-| `.claude/rules/offload-to-deterministic-substrate.md` | offload to deterministic substrate |
