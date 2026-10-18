@@ -261,6 +261,16 @@ else
     echo "STATUS=OK"
   else
     echo "STATUS=ERROR"
+    # REASON= is the first FAIL as `<KIND>: <MSG>`, one line, cut to 180 chars,
+    # plus ` (+N more)` (.claude/rules/structured-script-output.md, #2760).
+    for i in "${!findings_file[@]}"; do
+      [ "${findings_kind[$i]}" = "FAIL" ] || continue
+      ccx_reason="$(printf 'FAIL: %s:%s exit %s: %s' "${findings_file[$i]}" "${findings_line[$i]}" \
+        "${findings_exit[$i]}" "${findings_err[$i]:-(no stderr)}" | tr -s '[:space:]' ' ' | cut -c1-180)"
+      [ "$fail" -gt 1 ] && ccx_reason="$ccx_reason (+$((fail - 1)) more)"
+      echo "REASON=$ccx_reason"
+      break
+    done
   fi
   echo "ISSUE_COUNT=$issue_count"
   echo "=== END CONTEXT COMMAND EXECUTION ==="

@@ -58,6 +58,15 @@ run_guard() {
   bash "$GUARD" --root "$1" 2>&1
 }
 
+CONTRACT="$REPO_ROOT/scripts/check-structured-output-contract.sh"
+# assert_contract <output> <label>: the block satisfies the structured-output
+# contract (REASON= present and bounded iff STATUS is not OK, #2760).
+assert_contract() {
+  if printf '%s\n' "$1" | bash "$CONTRACT" --validate - >/dev/null 2>&1; then ok "$2"; else
+    ko "$2 (check-structured-output-contract.sh --validate rejected it)"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 echo "TEST A: the real repository is clean, and was actually scanned"
 # ---------------------------------------------------------------------------
@@ -65,6 +74,8 @@ out_a="$(run_guard "$REPO_ROOT")"
 exit_a=$?
 assert_contains "$out_a" "STATUS=OK" "A1 real repo reports STATUS=OK"
 assert_eq "$exit_a" "0" "A2 real repo exits 0"
+assert_not_contains "$out_a" "REASON=" "A5 OK output carries no REASON="
+assert_contract "$out_a" "A6 OK output satisfies the structured-output contract"
 # Guard integrity. An earlier draft pruned '*/.claude/worktrees/*' against
 # ABSOLUTE paths; because this repo's agent worktrees live under that very
 # path, every result was pruned and the guard reported a vacuous OK over ZERO
@@ -112,6 +123,9 @@ assert_contains "$out_b" "TYPE=branch_audit_uncaveated" "B1 uncaveated branch-au
 assert_contains "$out_b" "TYPE=recipe_before_ladder" "B2 recipe presented before the ladder flagged"
 assert_contains "$out_b" "STATUS=ERROR" "B3 STATUS=ERROR"
 assert_eq "$exit_b" "1" "B4 exits 1"
+assert_contains "$out_b" "REASON=branch_audit_uncaveated: names branch-audit without the measured caveat" "B5 REASON= names the first finding"
+assert_contains "$out_b" " (+1 more)" "B6 REASON= counts the other finding"
+assert_contract "$out_b" "B7 ERROR output satisfies the structured-output contract"
 rm -rf "$fx_b"
 
 # ---------------------------------------------------------------------------
