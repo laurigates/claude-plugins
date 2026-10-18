@@ -1,16 +1,17 @@
 # macos-disk-usage usual-suspects catalog. Tab-separated; consumed by scan-suspects.sh.
 # Columns: kind(path|dir)  id  target  marker  tier(safe|decision|userdata)  command  regen  note
 #   path: literal path (relative to --home-dir unless absolute); du'd if it exists.
-#   dir : basename found under --root; counted only if <marker> exists in its parent (- = no marker).
-#   command placeholders: {dir} = matched path, {parent} = its parent dir.
+#   dir : basename found under --root, or a path suffix when it contains / (e.g. .claude/worktrees);
+#         counted only if <marker> exists in its parent - the dir holding the whole suffix (- = no marker).
+#   command placeholders: {dir} = matched path, {parent} = the dir holding the matched basename or suffix.
 # Patterns only - never machine-specific paths (this repo is public).
 kind	id	target	marker	tier	command	regen	note
-path	uv-cache	.cache/uv	-	safe	uv cache clean	re-downloaded on next resolve	fails if a uv process holds the lock
+path	uv-cache	.cache/uv	-	safe	uv cache clean	re-downloaded on next resolve	blocks while any uvx/uv run process (e.g. a uvx MCP server) holds the shared lock; see references/troubleshooting.md before using --force
 path	pip-cache	.cache/pip	-	safe	pip cache purge	re-downloaded	-
-path	pre-commit-cache	.cache/pre-commit	-	safe	pre-commit clean	rebuilt on next hook run	-
-path	hf-cache	.cache/huggingface	-	decision	rm -rf {dir}	re-downloaded from HF, large and slow	relocate via tools-plugin:hf-downloads (HF_HOME)
-path	ollama-models	.ollama/models	-	decision	ollama rm <model>	re-pulled from registry, large	pick per-model, never bulk-delete
-path	bun-store	.bun/install	-	safe	bun pm cache rm	re-fetched on next install	slows next offline install
+path	pre-commit-cache	.cache/pre-commit	-	safe	pre-commit gc	rebuilt on next hook run	gc removes only repos no config references; pre-commit clean wipes all
+path	hf-cache	.cache/huggingface	-	decision	hf cache rm <repo-id> -y	re-downloaded from HF, large and slow	pick per repo from hf cache ls --sort size (ids like model/<org>/<name>); rm -rf wipes every model; relocate via tools-plugin:hf-downloads (HF_HOME)
+path	ollama-models	.ollama/models	-	decision	ollama rm <model>	re-pulled from registry, large	pick per-model, never bulk-delete; compare first: several quantizations of one base model, and the same model also held by another tool (Ollama GGUF vs a Hugging Face MLX copy)
+path	bun-store	.bun/install/cache	-	safe	bun pm cache rm -g	re-fetched on next install	-g is needed outside a project (oven-sh/bun#6382) but undocumented (oven-sh/bun#26427) and exits 1 without global installs; also clears the bunx cache in $TMPDIR; breaks projects using install.globalStore (oven-sh/bun#43665)
 path	npm-cache	.npm/_cacache	-	safe	npm cache clean --force	re-downloaded	-
 path	cargo-registry-cache	.cargo/registry/cache	-	safe	rm -rf {dir}	re-downloaded on next build	-
 path	gradle-caches	.gradle/caches	-	safe	rm -rf {dir}	re-downloaded on next build	-
@@ -25,6 +26,7 @@ path	simulator-caches	Library/Developer/CoreSimulator/Caches	-	decision	xcrun si
 path	orbstack-image	Library/Group Containers/HUAQ24HBR6.dev.orbstack/data/data.img.raw	-	decision	docker system prune -a -f	OrbStack auto-shrinks after in-VM prune	never delete the .raw directly
 path	docker-desktop-vms	Library/Containers/com.docker.docker/Data/vms	-	decision	docker system prune -a -f	manual reclaim on Docker Desktop	-
 path	trash	.Trash	-	userdata	rm -rf {dir}/*	permanent	confirm before emptying
+dir	claude-worktrees	.claude/worktrees	.git	decision	git -C {parent} worktree list	re-created per task by git worktree add	Claude Code agent worktrees; remove only merged-branch ones with git worktree remove <path>, never --force (discards uncommitted work)
 dir	rust-target	target	Cargo.toml	safe	cargo clean --manifest-path {parent}/Cargo.toml	rebuilt on next cargo build	matched only beside a Cargo.toml
 dir	node-modules	node_modules	package.json	safe	rm -rf {dir}	restored by npm/bun/yarn install	-
 dir	py-venv-dot	.venv	-	safe	rm -rf {dir}	recreate via uv venv or python -m venv	skip the active env
