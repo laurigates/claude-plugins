@@ -1,5 +1,60 @@
 # Changelog
 
+## [1.40.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.39.3...configure-plugin-v1.40.0) (2026-10-18)
+
+
+### Features
+
+* **configure-plugin:** adopt release-please-action v5, scope the Renovate runner requirement, and emit default_stages ([#2985](https://github.com/laurigates/claude-plugins/issues/2985)) ([82ce48a](https://github.com/laurigates/claude-plugins/commit/82ce48a69f940ef4d252e096b05c89e4fe38f73f))
+* **health-plugin:** audit history.jsonl and cleanupPeriodDays retention ([#2958](https://github.com/laurigates/claude-plugins/issues/2958)) ([fd73bdd](https://github.com/laurigates/claude-plugins/commit/fd73bddf9b8b7b6fa7714eddff8914bef227642f))
+* **pi:** document the pi extension triad and probe pi-mcp-adapter in pi-adapter-check ([#2799](https://github.com/laurigates/claude-plugins/issues/2799)) ([2ecdd7a](https://github.com/laurigates/claude-plugins/commit/2ecdd7aca8e2d0431246388237ce4f5cd799f272))
+* promote licence-position and workflow-scale rules to skills ([#2860](https://github.com/laurigates/claude-plugins/issues/2860)) ([a6ec7d0](https://github.com/laurigates/claude-plugins/commit/a6ec7d0caefff29b6f46cc76e1c3f5bba064b5c6))
+* **scripts:** resolve every plugin:skill citation against disk ([#2627](https://github.com/laurigates/claude-plugins/issues/2627)) ([3d2747f](https://github.com/laurigates/claude-plugins/commit/3d2747f563c2465d20dd62e2cd92a44d3e6c253a))
+
+
+### Bug Fixes
+
+* **agent-patterns-plugin:** MCP and tool-result facts from Claude Code 2.1.284–2.1.296 ([#3076](https://github.com/laurigates/claude-plugins/issues/3076)) ([453c300](https://github.com/laurigates/claude-plugins/commit/453c300dfbb383d9df6c57bd67053d82abf252fc))
+* **configure-plugin:** accept bun.lock alongside legacy bun.lockb ([#2501](https://github.com/laurigates/claude-plugins/issues/2501)) ([0496a7e](https://github.com/laurigates/claude-plugins/commit/0496a7eff6a4a3c39d698bd1af6fbad1efd77bcc)), closes [#2496](https://github.com/laurigates/claude-plugins/issues/2496)
+* **configure-plugin:** audit what `just --list` renders, not whether a comment exists ([#2617](https://github.com/laurigates/claude-plugins/issues/2617)) ([b6edb62](https://github.com/laurigates/claude-plugins/commit/b6edb62d129f5d6b4f6d3643af268e1e64b61ae1))
+* **configure-plugin:** detect biome check and one level of script indirection for CI_FORMAT ([#2503](https://github.com/laurigates/claude-plugins/issues/2503)) ([b93f041](https://github.com/laurigates/claude-plugins/commit/b93f041dffe6c3019c740452097f3208a4a06c01))
+* **configure-plugin:** detect biome check/ci and one hop of script indirection ([b93f041](https://github.com/laurigates/claude-plugins/commit/b93f041dffe6c3019c740452097f3208a4a06c01)), closes [#2497](https://github.com/laurigates/claude-plugins/issues/2497)
+* **configure-plugin:** drop Vitest coverage.all, pin the denominator with include ([#2844](https://github.com/laurigates/claude-plugins/issues/2844)) ([0709e3b](https://github.com/laurigates/claude-plugins/commit/0709e3bef1af0c0987038fc05b17fcff41089e5d))
+* **configure-plugin:** gate the missing-CodeQL warning on whether CodeQL can run ([#2593](https://github.com/laurigates/claude-plugins/issues/2593)) ([0e55c25](https://github.com/laurigates/claude-plugins/commit/0e55c25cce399fc2df725098f94658ea3a473d76)), closes [#2498](https://github.com/laurigates/claude-plugins/issues/2498)
+* **configure-plugin:** treat Renovate as satisfying the dependency layer ([#2510](https://github.com/laurigates/claude-plugins/issues/2510)) ([9d97471](https://github.com/laurigates/claude-plugins/commit/9d9747184df73214930c37a2ae4973049db7edcf)), closes [#2495](https://github.com/laurigates/claude-plugins/issues/2495)
+* **hooks-plugin,blueprint-plugin,configure-plugin,evaluate-plugin,git-plugin,health-plugin,taskwarrior-plugin:** find drift-protocol.sh in the versioned plugin cache ([#2997](https://github.com/laurigates/claude-plugins/issues/2997)) ([45f8cf5](https://github.com/laurigates/claude-plugins/commit/45f8cf5534c8e00e5baadabb5c5f6fa5ec714206))
+* **hooks-plugin:** hook timeouts are seconds, not milliseconds ([#3088](https://github.com/laurigates/claude-plugins/issues/3088)) ([64d7fab](https://github.com/laurigates/claude-plugins/commit/64d7fab1ee5205e3f3fb0bedcd234b60e06527ae))
+* **hooks-plugin:** replace workflow-scale estimator with a count-or-ask rule ([#2831](https://github.com/laurigates/claude-plugins/issues/2831)) ([4b934fa](https://github.com/laurigates/claude-plugins/commit/4b934fae9b23416182e5d46cbc7aad376091956f))
+* **plugins:** adapt rules, skills, agents, and guards for Claude Fable 5.1 ([#2561](https://github.com/laurigates/claude-plugins/issues/2561)) ([b9e1101](https://github.com/laurigates/claude-plugins/commit/b9e11016b20c42b0ff95c5fef57e98584a4e7c07))
+* **plugins:** quote CLAUDE_PLUGIN_ROOT in hook commands; apply 2.1.279-2.1.283 changelog review ([#2854](https://github.com/laurigates/claude-plugins/issues/2854)) ([3e15bf9](https://github.com/laurigates/claude-plugins/commit/3e15bf961986c0f475785fbac9b777d4f6ec4995))
+* **project-plugin:** catch bare tool removals and retire TaskOutput ([#2752](https://github.com/laurigates/claude-plugins/issues/2752)) ([2e07766](https://github.com/laurigates/claude-plugins/commit/2e07766617d92e8955e9939014e949836b6356ba))
+* **scripts:** sweep printf|echo "$var" | grep -q from every pipefail suite and widen lint Check 6 ([#2996](https://github.com/laurigates/claude-plugins/issues/2996)) ([32f124d](https://github.com/laurigates/claude-plugins/commit/32f124d41f428967305ef6beb564fd8ebc1f3279))
+* **skills:** fix nine defects from the Haiku 5.5 re-evaluation ([#3057](https://github.com/laurigates/claude-plugins/issues/3057)) ([05ccdc1](https://github.com/laurigates/claude-plugins/commit/05ccdc1f98a55607a1c4ee334310b9283ae65b8a)), closes [#3018](https://github.com/laurigates/claude-plugins/issues/3018)
+* **skills:** point at anchors, not directions — ratchet + reference-file guard ([#2941](https://github.com/laurigates/claude-plugins/issues/2941)) ([47b65fa](https://github.com/laurigates/claude-plugins/commit/47b65faf0fd141ca5dff9cf435717196e385b115))
+* **skills:** resolve slash commands and read references/ sidecars in content guards ([#2945](https://github.com/laurigates/claude-plugins/issues/2945)) ([3057350](https://github.com/laurigates/claude-plugins/commit/305735016549ce5c66f5b4b9803c61bfec46ec75))
+
+
+### Performance
+
+* **skills:** allow Haiku 5.5 within measured limits and run mechanical skills on it ([#3019](https://github.com/laurigates/claude-plugins/issues/3019)) ([21a20f2](https://github.com/laurigates/claude-plugins/commit/21a20f2c8157bdc22ed9ed2d9fb608c9d9136230))
+
+
+### Code Refactoring
+
+* **configure-plugin:** disambiguate the workflow skill descriptions (cluster 5) ([#2800](https://github.com/laurigates/claude-plugins/issues/2800)) ([99f5e6e](https://github.com/laurigates/claude-plugins/commit/99f5e6eb26b1c3c96b31331cc0484c5bb8c2e000)), closes [#2244](https://github.com/laurigates/claude-plugins/issues/2244)
+* **configure-plugin:** split oversized skill bodies into references/ ([#2896](https://github.com/laurigates/claude-plugins/issues/2896)) ([b05a664](https://github.com/laurigates/claude-plugins/commit/b05a664ba6212aa7f9c0b9d40fd67f3bbd4e95ed))
+* **health-plugin:** disambiguate the health-check and skill-audit descriptions ([#2801](https://github.com/laurigates/claude-plugins/issues/2801)) ([2276e82](https://github.com/laurigates/claude-plugins/commit/2276e82912efebdb2e535418603108911ed4b4ee)), closes [#2244](https://github.com/laurigates/claude-plugins/issues/2244)
+* **skills:** disambiguate cluster-6 skill descriptions ([#2401](https://github.com/laurigates/claude-plugins/issues/2401)) ([08aee60](https://github.com/laurigates/claude-plugins/commit/08aee609a6308f4e53692229ea1177f69800c5ea)), closes [#2244](https://github.com/laurigates/claude-plugins/issues/2244)
+* **skills:** disambiguate the lint-run and lint-setup skill descriptions (cluster 2) ([#2796](https://github.com/laurigates/claude-plugins/issues/2796)) ([cf92f1c](https://github.com/laurigates/claude-plugins/commit/cf92f1c80410fa66023350a8c0597da45db0a838))
+
+
+### Documentation
+
+* **configure-plugin:** add Agentic Optimizations table to go-feature-flag ([#2905](https://github.com/laurigates/claude-plugins/issues/2905)) ([18fbeb0](https://github.com/laurigates/claude-plugins/commit/18fbeb09b7998ef9da6b1a24371a884ed9e9bb79)), closes [#2894](https://github.com/laurigates/claude-plugins/issues/2894)
+* **configure-plugin:** document .worktreeinclude scope and pattern caveats ([#2894](https://github.com/laurigates/claude-plugins/issues/2894)) ([ef7e0c5](https://github.com/laurigates/claude-plugins/commit/ef7e0c56134cfd879bf4c87d4792398a658afafd))
+* **configure-plugin:** release-please under GitHub immutable releases ([#2846](https://github.com/laurigates/claude-plugins/issues/2846)) ([0f19c19](https://github.com/laurigates/claude-plugins/commit/0f19c19b22a15bf1334783a5427978475b9e33b4))
+* **skills:** point Context-block references at the Context anchor and lower the positional baseline ([#2973](https://github.com/laurigates/claude-plugins/issues/2973)) ([921b3be](https://github.com/laurigates/claude-plugins/commit/921b3be483a0e8f5cc709dc0369eb659b599bbeb))
+
 ## [1.39.3](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.39.2...configure-plugin-v1.39.3) (2026-10-18)
 
 

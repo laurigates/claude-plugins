@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.15.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.14.9...taskwarrior-plugin-v1.15.0) (2026-10-18)
+
+
+### Features
+
+* **taskwarrior-plugin:** fold the project-slug prefix-match trap into task-add ([d26be4b](https://github.com/laurigates/claude-plugins/commit/d26be4bca6990b8b148d43ffe548d0adae8babf2)), closes [#353](https://github.com/laurigates/claude-plugins/issues/353)
+
+
+### Bug Fixes
+
+* **evaluate-plugin:** keep the regression ledger out of eval subagent context ([#2750](https://github.com/laurigates/claude-plugins/issues/2750)) ([ac8a545](https://github.com/laurigates/claude-plugins/commit/ac8a545978f64dd943e889489b9aa8046a5274ac))
+* **hooks-plugin,blueprint-plugin,configure-plugin,evaluate-plugin,git-plugin,health-plugin,taskwarrior-plugin:** find drift-protocol.sh in the versioned plugin cache ([#2997](https://github.com/laurigates/claude-plugins/issues/2997)) ([45f8cf5](https://github.com/laurigates/claude-plugins/commit/45f8cf5534c8e00e5baadabb5c5f6fa5ec714206))
+* **hooks-plugin:** hook timeouts are seconds, not milliseconds ([#3088](https://github.com/laurigates/claude-plugins/issues/3088)) ([64d7fab](https://github.com/laurigates/claude-plugins/commit/64d7fab1ee5205e3f3fb0bedcd234b60e06527ae))
+* **plugins:** quote CLAUDE_PLUGIN_ROOT in hook commands; apply 2.1.279-2.1.283 changelog review ([#2854](https://github.com/laurigates/claude-plugins/issues/2854)) ([3e15bf9](https://github.com/laurigates/claude-plugins/commit/3e15bf961986c0f475785fbac9b777d4f6ec4995))
+* **scripts:** sweep printf|echo "$var" | grep -q from every pipefail suite and widen lint Check 6 ([#2996](https://github.com/laurigates/claude-plugins/issues/2996)) ([32f124d](https://github.com/laurigates/claude-plugins/commit/32f124d41f428967305ef6beb564fd8ebc1f3279))
+* **skills:** correct sixteen content defects from the split sweep ([#2940](https://github.com/laurigates/claude-plugins/issues/2940)) ([9008c65](https://github.com/laurigates/claude-plugins/commit/9008c6586c27af680b6ee2afe2e238adbe1b2b00))
+* **taskwarrior-plugin:** match the task-add duplicate check on the exact project ([#2986](https://github.com/laurigates/claude-plugins/issues/2986)) ([0535079](https://github.com/laurigates/claude-plugins/commit/05350795de44ca8df68742171e2a091bcb4f4155))
+* **taskwarrior-plugin:** prune repo copies from the citation-drift walk ([#2407](https://github.com/laurigates/claude-plugins/issues/2407)) ([616776d](https://github.com/laurigates/claude-plugins/commit/616776da9ec577efde1928c69127cf1dbf60155e))
+
+
+### Code Refactoring
+
+* **skills:** move reference material out of oversized SKILL.md bodies ([#2922](https://github.com/laurigates/claude-plugins/issues/2922)) ([79fd4ae](https://github.com/laurigates/claude-plugins/commit/79fd4ae75f7c9260a71e92b6ecf16e0a735eed6f))
+
+
+### Documentation
+
+* **rules:** lean agent-coworker-detection.md to its always-on invariants ([#2882](https://github.com/laurigates/claude-plugins/issues/2882)) ([3f29b53](https://github.com/laurigates/claude-plugins/commit/3f29b538ed5eee32bfef6ea22bb0f685aeffda1f)), closes [#2140](https://github.com/laurigates/claude-plugins/issues/2140)
+
 ## [1.14.9](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.14.8...taskwarrior-plugin-v1.14.9) (2026-10-18)
 
 

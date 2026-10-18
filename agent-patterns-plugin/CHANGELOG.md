@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.52.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.51.0...agent-patterns-plugin-v2.52.0) (2026-10-18)
+
+
+### Features
+
+* **agent-patterns-plugin:** task-shape model tiers for subagents and workflows ([#3117](https://github.com/laurigates/claude-plugins/issues/3117)) ([60564e3](https://github.com/laurigates/claude-plugins/commit/60564e38b0c6ca302d29dfe89abf549d32ae79fe))
+
 ## [2.51.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.50.4...agent-patterns-plugin-v2.51.0) (2026-10-18)
 
 

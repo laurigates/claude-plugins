@@ -1,5 +1,43 @@
 # Changelog
 
+## [1.28.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.27.8...code-quality-plugin-v1.28.0) (2026-10-18)
+
+
+### Features
+
+* **code-quality-plugin:** add code-scaffold-backport promoted from a user rule ([722eae0](https://github.com/laurigates/claude-plugins/commit/722eae00e904f7e99c8756f3d3fb36423a764c5f)), closes [#353](https://github.com/laurigates/claude-plugins/issues/353)
+* **code-quality-plugin:** cover term-set derivation and exclusion justification in bulk-sweep-classify ([#2486](https://github.com/laurigates/claude-plugins/issues/2486)) ([7d7e569](https://github.com/laurigates/claude-plugins/commit/7d7e569dfdcdfa9029300b413c542cf121fbe44d))
+* promote licence-position and workflow-scale rules to skills ([#2860](https://github.com/laurigates/claude-plugins/issues/2860)) ([a6ec7d0](https://github.com/laurigates/claude-plugins/commit/a6ec7d0caefff29b6f46cc76e1c3f5bba064b5c6))
+* **skills:** wave-2 skill homes for promoted always-loaded rules ([#2814](https://github.com/laurigates/claude-plugins/issues/2814)) ([7896233](https://github.com/laurigates/claude-plugins/commit/7896233c7c6c5663725beff7b3f50778eb15d559))
+
+
+### Bug Fixes
+
+* **ci:** restore four scheduled-audit signals that were reporting nothing, or nonsense ([#2576](https://github.com/laurigates/claude-plugins/issues/2576)) ([de4337c](https://github.com/laurigates/claude-plugins/commit/de4337c7776ba7531cbe923fe016df78ef9b7e8c))
+* **code-quality-plugin:** name resolvable plugin-qualified skill IDs in the preflight cue ([b41251d](https://github.com/laurigates/claude-plugins/commit/b41251d58145e58e67faf7689dd3952e40252f8b)), closes [#2682](https://github.com/laurigates/claude-plugins/issues/2682)
+* **configure-plugin:** accept bun.lock alongside legacy bun.lockb ([#2501](https://github.com/laurigates/claude-plugins/issues/2501)) ([0496a7e](https://github.com/laurigates/claude-plugins/commit/0496a7eff6a4a3c39d698bd1af6fbad1efd77bcc)), closes [#2496](https://github.com/laurigates/claude-plugins/issues/2496)
+* **hooks-plugin:** hook timeouts are seconds, not milliseconds ([#3088](https://github.com/laurigates/claude-plugins/issues/3088)) ([64d7fab](https://github.com/laurigates/claude-plugins/commit/64d7fab1ee5205e3f3fb0bedcd234b60e06527ae))
+* **plugins:** adapt rules, skills, agents, and guards for Claude Fable 5.1 ([#2561](https://github.com/laurigates/claude-plugins/issues/2561)) ([b9e1101](https://github.com/laurigates/claude-plugins/commit/b9e11016b20c42b0ff95c5fef57e98584a4e7c07))
+* **plugins:** quote CLAUDE_PLUGIN_ROOT in hook commands; apply 2.1.279-2.1.283 changelog review ([#2854](https://github.com/laurigates/claude-plugins/issues/2854)) ([3e15bf9](https://github.com/laurigates/claude-plugins/commit/3e15bf961986c0f475785fbac9b777d4f6ec4995))
+* **repo:** close the open review items left on [#2814](https://github.com/laurigates/claude-plugins/issues/2814) ([#2825](https://github.com/laurigates/claude-plugins/issues/2825)) ([8c5ed57](https://github.com/laurigates/claude-plugins/commit/8c5ed574c580b6dedd152a0a395c9cb694bdf8bd))
+* **scripts:** read captured output from here-strings so grep -q cannot SIGPIPE a pipefail test ([#2992](https://github.com/laurigates/claude-plugins/issues/2992)) ([2e2865c](https://github.com/laurigates/claude-plugins/commit/2e2865c782f1b712c064b06ef8d871f2b1a1caa6))
+* **scripts:** sweep printf|echo "$var" | grep -q from every pipefail suite and widen lint Check 6 ([#2996](https://github.com/laurigates/claude-plugins/issues/2996)) ([32f124d](https://github.com/laurigates/claude-plugins/commit/32f124d41f428967305ef6beb564fd8ebc1f3279))
+* **skills:** correct sixteen content defects from the split sweep ([#2940](https://github.com/laurigates/claude-plugins/issues/2940)) ([9008c65](https://github.com/laurigates/claude-plugins/commit/9008c6586c27af680b6ee2afe2e238adbe1b2b00))
+* **skills:** point at anchors, not directions — ratchet + reference-file guard ([#2941](https://github.com/laurigates/claude-plugins/issues/2941)) ([47b65fa](https://github.com/laurigates/claude-plugins/commit/47b65faf0fd141ca5dff9cf435717196e385b115))
+* **skills:** resolve slash commands and read references/ sidecars in content guards ([#2945](https://github.com/laurigates/claude-plugins/issues/2945)) ([3057350](https://github.com/laurigates/claude-plugins/commit/305735016549ce5c66f5b4b9803c61bfec46ec75))
+
+
+### Code Refactoring
+
+* **skills:** disambiguate the lint-run and lint-setup skill descriptions (cluster 2) ([#2796](https://github.com/laurigates/claude-plugins/issues/2796)) ([cf92f1c](https://github.com/laurigates/claude-plugins/commit/cf92f1c80410fa66023350a8c0597da45db0a838))
+* **skills:** move reference material out of oversized SKILL.md bodies ([#2925](https://github.com/laurigates/claude-plugins/issues/2925)) ([90e0e93](https://github.com/laurigates/claude-plugins/commit/90e0e93315e4728630a3c370e4018a4698e2c594))
+
+
+### Documentation
+
+* fix catalog drift after [#2450](https://github.com/laurigates/claude-plugins/issues/2450) and gate it in check-docs-index ([f5e000c](https://github.com/laurigates/claude-plugins/commit/f5e000c8e8532edc0ec0456b594bae753a9e447c)), closes [#2453](https://github.com/laurigates/claude-plugins/issues/2453)
+* **skills:** point Context-block references at the Context anchor and lower the positional baseline ([#2973](https://github.com/laurigates/claude-plugins/issues/2973)) ([921b3be](https://github.com/laurigates/claude-plugins/commit/921b3be483a0e8f5cc709dc0369eb659b599bbeb))
+
 ## [1.27.8](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.27.7...code-quality-plugin-v1.27.8) (2026-10-18)
 
 
