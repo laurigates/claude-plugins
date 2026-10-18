@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import functools
 import json
 import os
 import re
@@ -116,6 +117,7 @@ WAIVER_EXEMPT_KINDS = {
     "agent_discovery_misfire": "the probe misfired; waiving it would hide a broken run",
     "coverage_metric_broken": "the metric failed its own control; waiving it would hide that",
     "semantic_pass_unavailable": "the expensive tier did not run; waiving it would report a pass that never happened",
+    "shallow_clone": "staleness was not evaluated for these files; waiving it would hide a check that never ran",
 }
 
 # A file whose presence DECLARES that the tree it heads is a generator template
@@ -360,7 +362,51 @@ def frontmatter(body: str) -> dict[str, str]:
     return fm
 
 
-def git_last_change(path: Path) -> str | None:
+@functools.lru_cache(maxsize=None)
+def _shallow_boundaries(repo_dir: str) -> frozenset[str]:
+    """The shallow-boundary commit SHAs of the repo containing `repo_dir`.
+
+    Empty for a full clone, for a directory outside any repo, and on any git
+    failure -- every one of which means "no boundary to distrust", i.e. exactly
+    the pre-#3110 behaviour. Memoised per directory: a corpus has ~900 files in
+    far fewer directories, and the answer cannot change within one run.
+    """
+    try:
+        out = subprocess.run(
+            [
+                "git",
+                "-C",
+                repo_dir,
+                "rev-parse",
+                "--is-shallow-repository",
+                "--git-path",
+                "shallow",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        lines = out.stdout.splitlines()
+        if out.returncode != 0 or len(lines) < 2 or lines[0].strip() != "true":
+            return frozenset()
+        # `--git-path` answers relative to the -C directory unless it is absolute.
+        shallow = Path(repo_dir) / lines[1].strip()
+        return frozenset(shallow.read_text().split())
+    except (OSError, subprocess.SubprocessError):
+        return frozenset()
+
+
+def git_last_change(path: Path) -> tuple[str | None, bool]:
+    """`(date, at_shallow_boundary)` for the commit that last touched `path`.
+
+    In a shallow clone, `git log -1 -- <file>` answers the BOUNDARY commit for
+    every file whose real last change predates it: the boundary is a grafted
+    root, so it diffs against nothing and "changes" every file it contains. That
+    date is not the file's last change, it is the clone's depth (#3110). The
+    second element flags it so the caller can treat the date as unknown -- not
+    report staleness from it, and not cache it, since an unshallow keeps the
+    content hash the cache is keyed on. A full clone never sets the flag.
+    """
     try:
         out = subprocess.run(
             [
@@ -369,17 +415,20 @@ def git_last_change(path: Path) -> str | None:
                 str(path.parent),
                 "log",
                 "-1",
-                "--format=%cs",
+                "--format=%H %cs",
                 "--",
                 path.name,
             ],
             capture_output=True,
             text=True,
             timeout=10,
-        ).stdout.strip()
-        return out or None
+        ).stdout.split()
     except (OSError, subprocess.SubprocessError):
-        return None
+        return None, False
+    if len(out) != 2:
+        return None, False
+    commit, date = out
+    return date, commit in _shallow_boundaries(str(path.parent))
 
 
 def changed_since(root: Path, ref: str) -> set[str]:
@@ -950,8 +999,16 @@ def check_review_staleness(
 
     Not a coverage gap on the agent side: the same non-fast run warmed 21 agent
     keys, so all 21 agents WERE evaluated and are genuinely inside STALE_DAYS.
+
+    SHALLOW CLONES (#3110). A last-change date that is a shallow-boundary
+    commit's is the clone depth, not the file's history, so it is treated as
+    unknown: no finding and no cache row. Unlike the `--fast` skip above, this
+    one is NOT silent -- the skipped documents are counted into one aggregate
+    `shallow_clone` warning, because a CI checkout at `--depth 1` would
+    otherwise evaluate nothing while reading as a clean corpus.
     """
     out = []
+    shallow_skipped: list[str] = []
     for it in items:
         rv = it["fm"].get("reviewed")
         if not rv or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", rv):
@@ -960,7 +1017,10 @@ def check_review_staleness(
         if key in cache:
             changed = cache[key]
         elif allow_spawn:
-            changed = git_last_change(Path(it["path"]))
+            changed, at_boundary = git_last_change(Path(it["path"]))
+            if at_boundary:
+                shallow_skipped.append(it["path"])
+                continue
             cache[key] = changed
         else:
             continue
@@ -980,7 +1040,19 @@ def check_review_staleness(
                     gap_days=gap,
                 )
             )
-    return sorted(out, key=lambda x: -x["gap_days"])
+    out.sort(key=lambda x: -x["gap_days"])
+    if shallow_skipped:
+        out.append(
+            Finding(
+                "warn",
+                "shallow_clone",
+                f"{len(shallow_skipped)} document(s) skipped by review_staleness: "
+                "their last change is a shallow-clone boundary commit, so the real "
+                "date is unknown (git fetch --unshallow to evaluate them)",
+                paths=sorted(shallow_skipped),
+            )
+        )
+    return out
 
 
 def always_loaded_docs(docs) -> list[dict]:

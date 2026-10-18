@@ -13,6 +13,13 @@
 #   - The ranked table orders by real size (biggest fixture = rank 1).
 #   - Tier totals separate safe from decision.
 #   - A big dir NOT in the catalog surfaces as UNKNOWN (the feedback loop).
+#   - A multi-component dir target (.claude/worktrees) matches by path suffix
+#     beside its .git marker, {parent} expands to the repo root, and a bare
+#     worktrees/ dir elsewhere is NOT matched.
+#   - Catalog commands that once wiped whole caches stay scoped (hf-cache,
+#     pre-commit-cache, bun-store).
+#   - --help prints usage and exits 0 without scanning; an unknown argument
+#     exits 2 with STATUS=ERROR_BAD_ARG.
 #   - A missing catalog reports STATUS=ERROR_NO_CATALOG and exits non-zero.
 #   - An empty home degrades gracefully (STATUS=OK, no suspects, exit 0).
 # Exit 0 on success ("ALL TESTS PASSED"); non-zero on any failure.
@@ -34,7 +41,8 @@ done
 
 mkfile() { mkdir -p "$(dirname "$1")"; dd if=/dev/zero of="$1" bs=1024 count="$2" 2>/dev/null; }
 
-fx="$(mktemp -d)"
+fx=$(mktemp -d) || { echo 'mktemp failed' >&2; exit 1; }
+if [ -z "$fx" ] || [ ! -d "$fx" ]; then echo 'bad sandbox dir' >&2; exit 1; fi
 trap 'rm -rf "$fx"' EXIT
 
 # --- Plant the fixture home ------------------------------------------------
@@ -50,6 +58,12 @@ mkfile "$fx/repos/webapp/node_modules/dep"  1000   # dir node-modules, tier=safe
 : > "$fx/repos/webapp/package.json"
 # a big dir not in the catalog -> should surface as UNKNOWN
 mkfile "$fx/BigMovies/recording.mov"        4000
+# agent worktrees: <repo>/.claude/worktrees beside a .git marker -> matched
+mkfile "$fx/repos/agentrepo/.claude/worktrees/wt1/file" 1500
+mkdir -p "$fx/repos/agentrepo/.git"
+# a bare worktrees/ dir (no .claude/ parent) -> must NOT match the suffix
+mkfile "$fx/repos/other/worktrees/file"     500
+: > "$fx/repos/other/.git"
 
 out="$(bash "$scan" --home-dir "$fx" --root "$fx" --min-mb 1 --top 25)"
 rc=$?
@@ -91,6 +105,36 @@ pass "tier totals separate safe from decision (safe=$safe_kb decision=$dec_kb)"
 grep -q 'UNKNOWN .*BigMovies' <<<"$out" || fail "uncatalogued BigMovies not surfaced as UNKNOWN"
 pass "uncatalogued big dir surfaced as UNKNOWN (feedback loop)"
 
+wt_line="$(grep 'SUSPECT id=claude-worktrees ' <<<"$out")"
+grep -q 'tier=decision .*path=[^ ]*/repos/agentrepo/\.claude/worktrees ' <<<"$wt_line" \
+  || fail "claude-worktrees not matched as decision at agentrepo/.claude/worktrees"
+grep -qF "cmd=\"git -C $fx/repos/agentrepo worktree list\"" <<<"$wt_line" \
+  || fail "claude-worktrees {parent} should expand to the repo root, got: $wt_line"
+grep -q 'path=[^ ]*/repos/other/worktrees' <<<"$wt_line" \
+  && fail "bare worktrees/ without .claude/ parent was wrongly matched"
+pass "claude-worktrees matched by path suffix beside .git; {parent} = repo root"
+
+# Catalog rows that must stay scoped rather than wipe a whole cache
+cat_cmd() { awk -F'\t' -v id="$1" '$2==id{print $6}' "$catalog"; }
+[ "$(cat_cmd hf-cache)" = "hf cache rm <repo-id> -y" ] || fail "hf-cache should remove per repo, got '$(cat_cmd hf-cache)'"
+[ "$(cat_cmd pre-commit-cache)" = "pre-commit gc" ] || fail "pre-commit-cache should use gc, got '$(cat_cmd pre-commit-cache)'"
+[ "$(cat_cmd bun-store)" = "bun pm cache rm -g" ] || fail "bun-store should use -g, got '$(cat_cmd bun-store)'"
+pass "hf-cache / pre-commit-cache / bun-store commands stay scoped"
+
+# --- --help and unknown arguments -----------------------------------------
+out_help="$(bash "$scan" --help --home-dir "$fx" 2>&1)"
+rc_help=$?
+[ "$rc_help" -eq 0 ] || fail "--help should exit 0, got $rc_help"
+grep -q '^Usage: scan-suspects.sh' <<<"$out_help" || fail "--help should print usage"
+grep -q '^=== MACOS DISK SUSPECTS SCAN' <<<"$out_help" && fail "--help must not run a scan"
+pass "--help prints usage without scanning"
+
+out_bad="$(bash "$scan" --bogus 2>/dev/null)"
+rc_bad=$?
+[ "$rc_bad" -eq 2 ] || fail "unknown argument should exit 2, got $rc_bad"
+grep -q '^STATUS=ERROR_BAD_ARG$' <<<"$out_bad" || fail "unknown argument should report STATUS=ERROR_BAD_ARG"
+pass "unknown argument rejected"
+
 # --- Missing catalog ------------------------------------------------------
 out_nocat="$(bash "$scan" --home-dir "$fx" --catalog "$fx/does-not-exist.tsv" 2>&1)"
 rc_nocat=$?
@@ -99,7 +143,9 @@ grep -q '^STATUS=ERROR_NO_CATALOG$' <<<"$out_nocat" || fail "missing catalog sho
 pass "missing catalog fails loudly"
 
 # --- Empty home degrades gracefully ---------------------------------------
-empty="$(mktemp -d)"; trap 'rm -rf "$fx" "$empty"' EXIT
+empty=$(mktemp -d) || { echo 'mktemp failed' >&2; exit 1; }
+if [ -z "$empty" ] || [ ! -d "$empty" ]; then echo 'bad sandbox dir' >&2; exit 1; fi
+trap 'rm -rf "$fx" "$empty"' EXIT
 out_empty="$(bash "$scan" --home-dir "$empty" --root "$empty" --min-mb 1)"
 rc_empty=$?
 [ "$rc_empty" -eq 0 ] || fail "empty home should exit 0"

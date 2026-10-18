@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.23.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.23.0...testing-plugin-v3.23.1) (2026-10-18)
+
+
+### Documentation
+
+* **testing-plugin:** add a pattern for triaging large mutation survivor sets ([#3100](https://github.com/laurigates/claude-plugins/issues/3100)) ([28cb303](https://github.com/laurigates/claude-plugins/commit/28cb3032b8f1671ab2983a21cbdd9349ccaa926f)), closes [#3096](https://github.com/laurigates/claude-plugins/issues/3096)
+* **testing-plugin:** warn that static survivors under the vitest runner are often false ([#3099](https://github.com/laurigates/claude-plugins/issues/3099)) ([c98767c](https://github.com/laurigates/claude-plugins/commit/c98767c9b46aa4657336229c09a44b1cc1932289)), closes [#3095](https://github.com/laurigates/claude-plugins/issues/3095)
+
 ## [3.23.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.22.2...testing-plugin-v3.23.0) (2026-10-13)
 
 

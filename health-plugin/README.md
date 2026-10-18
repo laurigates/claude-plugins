@@ -105,6 +105,7 @@ one document shape, and each check names the kinds it applies to explicitly:
 | `promotion_candidate` | INFO | rule, claude_md | The same guidance at two scopes with no declared parent — a candidate for `/agent-patterns:meta-promote`. **Semantic tier only** |
 | `always_loaded_budget` | WARN | rule, claude_md | The every-turn surface creeping past its ceiling |
 | `review_staleness` | WARN | all four | An artifact changed after its declared `reviewed:` date |
+| `shallow_clone` | WARN | all four | Documents `review_staleness` skipped because their last-change date is a shallow-clone boundary commit (the clone depth, not the history); unshallow the clone to evaluate them |
 | `frontmatter_coverage` | INFO | rule | Rules with no `reviewed:` date, so staleness cannot be tracked |
 
 `duplicate_claude_md_lexical` is INFO rather than WARN because a CLAUDE.md pair
@@ -181,7 +182,7 @@ a committed, reviewed file at `health-plugin/config-drift-waivers.json`, which
 
 A relative path resolves against `--root`, which is what makes the committed
 file mean the same thing on a CI runner; absolute and `~/` paths are unchanged.
-Six kinds are aggregates or probe-health signals with no file to hash, and are
+Seven kinds are aggregates or probe-health signals with no file to hash, and are
 declared unwaivable in `WAIVER_EXEMPT_KINDS` with their reasons.
 
 Hashes are never written by hand. `--format=waivers` prints a draft entry, hash

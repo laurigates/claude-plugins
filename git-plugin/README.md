@@ -128,6 +128,14 @@ The rule this plugin applies:
 | `check-branch-sync-on-push.sh` | PreToolUse (Bash) | Nudge (`ask`) before `commit`/`push` when the branch is behind origin or its PR is merged/closed. Evaluates the push **refspec destination** (`<sha>:refs/heads/<other>`), not HEAD — falling back to HEAD when the destination is ambiguous (multi-refspec) or still carries a shell metacharacter (`git push -u origin $(git branch --show-current)`), which would otherwise silence the hook; skips the behind-nudge for a force-push lease-pinned to the fetched origin tip (`--force-with-lease=<branch>:<sha>`) and drops the `git pull --rebase` advice on any other force-push (#2672). Cached per session+branch; opt out with `CLAUDE_HOOKS_DISABLE_BRANCH_SYNC=1`, tune TTL with `CLAUDE_HOOKS_BRANCH_SYNC_TTL` |
 | `git-drift-probe.sh` | SessionStart | Surface `pr_merged` / `branch_behind` / `changes_requested` drift on the current branch via the consolidated drift nudge |
 
+The three PreToolUse hooks decide whether the command *runs* `gh pr create`,
+`git push` or `git commit` on parsed command nodes (`ast-grep --lang bash`, via
+`hooks/lib/parsed-commands.sh`), so a quoted argument, heredoc body, commit
+message or comment that only *mentions* one does not fire them; wrappers
+(`env`, `sudo`, `timeout`, `FOO=1`), `git -C <dir>` / git global options,
+`$(…)`, loops and `bash -c '…'` scripts still do (#2737). Without `ast-grep`
+they fall back to the original raw-text match.
+
 The branch-sync hook + probe pair with the `/git:pr-sync-check` skill as the
 PR-branch-sync guard trio — see [`.claude/rules/pr-branch-sync.md`](../.claude/rules/pr-branch-sync.md).
 

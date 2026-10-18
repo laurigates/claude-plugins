@@ -31,4 +31,11 @@ before=$(df -k / | awk 'NR==2{print $4}'); rm -rf <target>; sync
 echo "freed $(( ($(df -k / | awk 'NR==2{print $4}') - before) / 1048576 )) GB"
 ```
 
-Real cost of skipping this: a reclaim sweep summing `du` predicted **68.7 GB** where the `df` delta was **17.7 GB** — a 4× overstatement (2026-08). Clones *are* detectable via `fcntl(F_LOG2PHYS_EXT)` — a clone shares physical device offsets while having a distinct inode, and `stat`/`MetadataExt` carries no clone signal at all — but no general-purpose tool implements it yet ([bootandy/dust#590](https://github.com/bootandy/dust/issues/590)).
+Real cost of skipping this:
+
+| Reclaim | `du` predicted | `df` delta | Overstatement |
+|---------|----------------|------------|---------------|
+| Sweep of caches and build dirs (2026-08) | 68.7 GB | 17.7 GB | ~4× |
+| ~140 merged agent worktrees, each with its own `node_modules`/`.venv` cloned from the global caches (2026-10) | ~82 GB | ~14 GB | ~6× |
+
+Clones *are* detectable via `fcntl(F_LOG2PHYS_EXT)` — a clone shares physical device offsets while having a distinct inode, and `stat`/`MetadataExt` carries no clone signal at all — but no general-purpose tool implements it yet ([bootandy/dust#590](https://github.com/bootandy/dust/issues/590)).

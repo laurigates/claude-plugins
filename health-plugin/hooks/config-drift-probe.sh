@@ -282,6 +282,7 @@ done < <(printf '%s' "$OUT" | jq -r '
      "always_loaded_budget":         "/agent-patterns:meta-context-diet",
      "review_staleness":             "/health:skill-audit",
      "semantic_pass_unavailable":    "/health:check",
+     "shallow_clone":                "/health:check",
      "frontmatter_coverage":         "/agent-patterns:meta-context-diet"}[.kind] // "/health:check";
   [.findings[]]
   | group_by(.kind)
