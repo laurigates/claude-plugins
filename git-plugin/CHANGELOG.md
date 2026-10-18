@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.63.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.62.0...git-plugin-v2.63.0) (2026-10-18)
+
+
+### Features
+
+* **git-plugin:** add a verification-only path to git-issue ([#3071](https://github.com/laurigates/claude-plugins/issues/3071)) ([40d2745](https://github.com/laurigates/claude-plugins/commit/40d27459501794fd2bb57d7f1c6ca79cca2830cc))
+
 ## [2.62.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.61.3...git-plugin-v2.62.0) (2026-10-17)
 
 
