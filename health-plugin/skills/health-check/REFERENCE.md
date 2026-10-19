@@ -58,4 +58,4 @@ Run `/health:check --fix` to fix settings issues.
 | #14202 | Plugin shows "installed" but not active in project | Run `/health:plugins --fix` |
 | Orphaned projectPath | Plugin was installed for deleted project | Run `/health:plugins --fix` |
 | Invalid JSON | Settings file won't load | Validate and fix JSON syntax |
-| Hook timeout | Commands hang or fail silently | Check hook timeout settings |
+| Hook timeout | Commands hang or fail silently | Hook `timeout` is in **seconds**. `check-hooks.sh` reports `high_timeout` above 60 s and `ms_timeout` at 1000 or more (a millisecond figure written as seconds — divide by 1000) |
