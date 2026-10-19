@@ -44,11 +44,11 @@ jobs:
           plugin_marketplaces: |
             https://github.com/laurigates/claude-plugins.git
           plugins: |
-            # suffix matches marketplace `name` in marketplace.json (NOT extraKnownMarketplaces key)
+            # suffix matches marketplace `name` in marketplace.json (same value as the settings.json extraKnownMarketplaces key)
             PLUGINS_LIST
 ```
 
-Replace `PLUGINS_LIST` with the selected plugins in the format `plugin-name@laurigates-claude-plugins`, one per line. The suffix is the marketplace `name` field from `laurigates/claude-plugins/.claude-plugin/marketplace.json` — distinct from the `@claude-plugins` suffix used in `.claude/settings.json` (Step 3).
+Replace `PLUGINS_LIST` with the selected plugins in the format `plugin-name@laurigates-claude-plugins`, one per line. The suffix is the marketplace `name` field from `laurigates/claude-plugins/.claude-plugin/marketplace.json` — the same value as the `extraKnownMarketplaces` key in `.claude/settings.json` (Step 3), so both files use one suffix.
 
 Pin `--model` (an alias — `opus` is the current Opus, `fable` the current Fable) and `--effort` explicitly: the harness default effort is `high` for every model, and effort level names do not map across model generations, so an explicit pin is what makes the cost visible.
 
@@ -91,7 +91,7 @@ jobs:
           plugin_marketplaces: |
             https://github.com/laurigates/claude-plugins.git
           plugins: |
-            # suffix matches marketplace `name` in marketplace.json (NOT extraKnownMarketplaces key)
+            # suffix matches marketplace `name` in marketplace.json (same value as the settings.json extraKnownMarketplaces key)
             code-quality-plugin@laurigates-claude-plugins
             testing-plugin@laurigates-claude-plugins
 ```

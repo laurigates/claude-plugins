@@ -5,14 +5,14 @@ Used by Step 3 (Configure .claude/settings.json) of `/configure:claude-plugins`.
 
 ## Suffix forms
 
-> **Suffix forms — read this before copy-pasting.** The two suffix forms below are not interchangeable. Using the wrong one silently breaks the config:
+> **One suffix, by design.** Both places take their suffix from a different source, and the stanza below sets them to the same value, so every reference is `<plugin>@laurigates-claude-plugins`:
 >
 > | Where | Suffix | Source of the suffix |
 > |---|---|---|
-> | `.claude/settings.json` → `enabledPlugins` (Step 3) | `<plugin>@claude-plugins` | The **`extraKnownMarketplaces` key** in the same stanza |
+> | `.claude/settings.json` → `enabledPlugins` (Step 3) | `<plugin>@laurigates-claude-plugins` | The **`extraKnownMarketplaces` key** in the same stanza |
 > | `.github/workflows/claude*.yml` → `plugins:` (Steps 4–5) | `<plugin>@laurigates-claude-plugins` | The **`name` field** in `laurigates/claude-plugins/.claude-plugin/marketplace.json` |
 >
-> Wrong suffix in `enabledPlugins` → entry silently ignored (marketplace key does not match). Wrong suffix in the workflow `plugins:` block → action rejects the run.
+> **Keep the key equal to the marketplace `name`.** A machine that added the marketplace with `/plugin marketplace add` already knows it as `laurigates-claude-plugins`; Claude Code registers each `extraKnownMarketplaces` key it does not already know, so any other key (the old template used `claude-plugins`) registers the same repo a second time, and that key's `enabledPlugins` entries point at the copy. A suffix that matches no marketplace key is silently ignored; a wrong suffix in the workflow `plugins:` block makes the action reject the run.
 
 ## Why `enabledPlugins` merge semantics matter
 
@@ -49,7 +49,9 @@ Use granular patterns only — do not add `Bash(bash *)` for CLI tools.
 
 ## Full settings.json stanza to merge
 
-The `extraKnownMarketplaces` key (`claude-plugins`) is what each `enabledPlugins` entry's `@claude-plugins` suffix must match. The two stanzas are coupled — changing the key without also changing every suffix silently disables every plugin in `enabledPlugins`.
+The `extraKnownMarketplaces` key (`laurigates-claude-plugins`, equal to the marketplace `name`) is what each `enabledPlugins` entry's `@laurigates-claude-plugins` suffix must match. The two stanzas are coupled — changing the key without also changing every suffix silently disables every plugin in `enabledPlugins`.
+
+If an existing `.claude/settings.json` uses the old `claude-plugins` key, rename the key and every `@claude-plugins` suffix together.
 
 ```json
 {
@@ -64,14 +66,14 @@ The `extraKnownMarketplaces` key (`claude-plugins`) is what each `enabledPlugins
     ]
   },
   "extraKnownMarketplaces": {
-    "claude-plugins": {                                  // marketplace KEY (used by enabledPlugins suffix below)
+    "laurigates-claude-plugins": {                       // marketplace KEY == marketplace name (used by enabledPlugins suffix below)
       "source": { "source": "github", "repo": "laurigates/claude-plugins" },
       "autoUpdate": true
     }
   },
   "enabledPlugins": {
-    "<selected-plugin-1>@claude-plugins": true,          // suffix == extraKnownMarketplaces key, NOT marketplace name
-    "<selected-plugin-2>@claude-plugins": true
+    "<selected-plugin-1>@laurigates-claude-plugins": true, // suffix == extraKnownMarketplaces key
+    "<selected-plugin-2>@laurigates-claude-plugins": true
   }
 }
 ```
@@ -85,7 +87,7 @@ If `.claude/settings.json` already exists, **MERGE** without duplicating entries
 - The `CLAUDE_CODE_OAUTH_TOKEN` secret must be added manually to the repository
 - `extraKnownMarketplaces` in `.claude/settings.json` is the key to surviving ephemeral web sessions — without it, the marketplace is only enrolled via CI
 - **Workflow scaffolding is gated on a git remote.** A repo without a remote cannot run GitHub Actions, so `claude.yml` and `claude-code-review.yml` are skipped by default — writing them would create dormant files that confuse future readers. Override with `--workflows` to pre-stage them before adding a remote.
-- **Two distinct suffix forms** (see the callout at the top of Step 3 for the canonical table):
-  - `enabledPlugins` entries use `<plugin>@claude-plugins` — the `extraKnownMarketplaces` *key*
+- **One suffix in both places** (see [Suffix forms](#suffix-forms)):
+  - `enabledPlugins` entries use `<plugin>@laurigates-claude-plugins` — the `extraKnownMarketplaces` *key*
   - Workflow `plugins:` blocks use `<plugin>@laurigates-claude-plugins` — the marketplace `name` field from `marketplace.json`
-- Mixing the two forms silently breaks the config — `enabledPlugins` entries with the wrong suffix are ignored; workflow `plugins:` entries with the wrong suffix are rejected by the action
+- The two match only because the key is set to the marketplace `name`; a different key silently breaks `enabledPlugins` (entries ignored) or, when the suffixes follow it, registers the marketplace twice
