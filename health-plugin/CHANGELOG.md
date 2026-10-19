@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.23.5](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.23.4...health-plugin-v1.23.5) (2026-10-19)
+
+
+### Bug Fixes
+
+* **health-plugin:** resolve user-global stubs against installed plugin skills ([#3124](https://github.com/laurigates/claude-plugins/issues/3124)) ([ce213b8](https://github.com/laurigates/claude-plugins/commit/ce213b829d24907b6d7f2f3715baab8d30c19bd7))
+
 ## [1.23.4](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.23.3...health-plugin-v1.23.4) (2026-10-18)
 
 
