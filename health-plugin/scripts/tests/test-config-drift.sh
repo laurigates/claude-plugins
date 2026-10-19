@@ -172,6 +172,59 @@ assert_eq "a broken invoke target is still caught despite a resolvable title ter
     "$(count_kind "$out" broken_pointer_stub)" "1"
 rm "$FIXROOT/home/.claude/rules/titled-stuff.md" "$FIXROOT/home/.claude/rules/titled-broken.md"
 
+echo "TEST 4b: a user-global stub resolves against INSTALLED plugin skills"
+# The bug this pins: ~/.claude/rules is read at every root, but skills were
+# found only by walking --root. At a root holding no checkout of the plugin (a
+# dotfiles repo) every stub naming an installed plugin skill was a
+# broken_pointer_stub ERROR and the containment control read 0/N.
+GADGET="$FIXROOT/home/.claude/plugins/cache/mkt/gadget-plugin"
+mkdir -p "$GADGET/1.0.0/skills/gadget-tuning" "$GADGET/0.9.0/skills/gadget-tuning-old"
+cat > "$GADGET/1.0.0/skills/gadget-tuning/SKILL.md" <<'SKILL'
+---
+name: gadget-tuning
+description: Tune gadget resonance across the bench. Use when calibrating gadget resonance.
+---
+# gadget-tuning
+Calibrating gadget resonance requires the bench ledger before adjusting any gadget.
+SKILL
+cp "$GADGET/1.0.0/skills/gadget-tuning/SKILL.md" "$GADGET/0.9.0/skills/gadget-tuning-old/SKILL.md"
+python3 - "$FIXROOT" "$GADGET" <<'PY'
+import json, sys
+r, base = sys.argv[1:3]
+json.dump({"version": 2, "plugins": {"gadget-plugin@mkt": [
+    {"scope": "user", "installPath": f"{base}/1.0.0", "version": "1.0.0"},
+    # A project pin for a DIFFERENT root must not leak into this one.
+    {"scope": "project", "projectPath": f"{r}/elsewhere", "installPath": f"{base}/0.9.0"},
+]}}, open(f"{r}/home/.claude/plugins/installed_plugins.json", "w"))
+PY
+cat > "$FIXROOT/home/.claude/rules/gadget-stuff.md" <<'RULE'
+# Gadget Stuff
+
+Promoted to a skill: invoke `gadget-plugin:gadget-tuning` before calibrating
+gadget resonance.
+RULE
+out=$(run)
+assert_eq "a stub naming a user-installed plugin skill is not flagged" \
+    "$(count_kind "$out" broken_pointer_stub)" "0"
+assert_eq "installed skills are counted apart from walked skills" \
+    "$(count_key "$out" installed_skills) $(count_key "$out" skills)" "1 1"
+cat > "$FIXROOT/home/.claude/rules/gadget-old.md" <<'RULE'
+# Gadget Old
+
+Promoted to a skill: invoke `gadget-plugin:gadget-tuning-old` before calibrating
+gadget resonance.
+RULE
+out=$(run)
+assert_eq "a skill pinned only for another root is still broken" \
+    "$(count_kind "$out" broken_pointer_stub)" "1"
+mv "$FIXROOT/home/.claude/plugins/installed_plugins.json" "$FIXROOT/ip.json"
+out=$(run)
+assert_eq "control: without the registry both gadget stubs are broken" \
+    "$(count_kind "$out" broken_pointer_stub)" "2"
+rm -rf "$FIXROOT/home/.claude/plugins" "$FIXROOT/ip.json" \
+    "$FIXROOT/home/.claude/rules/gadget-stuff.md" "$FIXROOT/home/.claude/rules/gadget-old.md"
+unset GADGET
+
 echo "TEST 5: path-scoped rules are not counted as always-loaded"
 # The bug this pins: `paths:` parses to an EMPTY string value (its globs are on
 # following lines), so a truthiness test silently counts every scoped rule as
