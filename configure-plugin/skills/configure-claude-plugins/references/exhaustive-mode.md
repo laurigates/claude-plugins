@@ -35,26 +35,26 @@ Always-useful baseline (enable unless the user says otherwise): `agents-plugin`,
      ```bash
      gh api repos/laurigates/claude-plugins/contents/.claude-plugin/marketplace.json --jq '.content' | base64 -d | jq -r '.plugins[].name'
      ```
-   - Suffix each name with `@claude-plugins` to match the existing stanza format.
+   - Suffix each name with `@laurigates-claude-plugins` to match the existing stanza format.
 
 2. **Add the official LSP plugins** (`@claude-plugins-official`). The currently shipped names are: `pyright`, `typescript-language-server`, `rust-analyzer`, `gopls`, `swift-language-server`, `clangd`. Mark the LSP that matches the detected stack as `true`, the rest as `false`. If none match (no detectable stack), leave them all `false`.
 
-3. **Compose the map** with all entries, alphabetised within each marketplace block. Suffix `@claude-plugins` matches the `extraKnownMarketplaces` *key* (not the marketplace `name` used in workflows):
+3. **Compose the map** with all entries, alphabetised within each marketplace block. Suffix `@laurigates-claude-plugins` matches the `extraKnownMarketplaces` *key*, which is set to the marketplace `name` so workflows use the same suffix:
 
 ```json
 {
   "enabledPlugins": {
-    "accessibility-plugin@claude-plugins": false,
-    "agent-patterns-plugin@claude-plugins": false,
-    "agents-plugin@claude-plugins": false,
+    "accessibility-plugin@laurigates-claude-plugins": false,
+    "agent-patterns-plugin@laurigates-claude-plugins": false,
+    "agents-plugin@laurigates-claude-plugins": false,
     "...": "...",
-    "code-quality-plugin@claude-plugins": true,
-    "configure-plugin@claude-plugins": true,
-    "git-plugin@claude-plugins": true,
-    "health-plugin@claude-plugins": true,
-    "hooks-plugin@claude-plugins": true,
-    "testing-plugin@claude-plugins": true,
-    "typescript-plugin@claude-plugins": true,
+    "code-quality-plugin@laurigates-claude-plugins": true,
+    "configure-plugin@laurigates-claude-plugins": true,
+    "git-plugin@laurigates-claude-plugins": true,
+    "health-plugin@laurigates-claude-plugins": true,
+    "hooks-plugin@laurigates-claude-plugins": true,
+    "testing-plugin@laurigates-claude-plugins": true,
+    "typescript-plugin@laurigates-claude-plugins": true,
     "...": "...",
 
     "clangd@claude-plugins-official": false,

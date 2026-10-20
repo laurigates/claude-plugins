@@ -551,21 +551,28 @@ check_skill_body() {
       done
     fi
 
-    # Regression: configure-claude-plugins documents two suffix forms
-    # (`@claude-plugins` for settings.json enabledPlugins, `@laurigates-claude-plugins`
-    # for workflow plugins: blocks) that are visually similar but semantically distinct.
-    # See issue #1337: a reader copy-pasting between sections silently produced a
-    # non-functional config because the explanation lived 50 lines away in
-    # "Important Notes". The semantic invariant is that BOTH suffix forms must
-    # carry inline annotation strings near each use — not just a far-away footnote.
+    # Regression: configure-claude-plugins draws its two suffixes from different
+    # sources (settings.json enabledPlugins: the extraKnownMarketplaces key; workflow
+    # plugins: blocks: the marketplace `name`). Issue #1337: the template once used
+    # different values (`claude-plugins` vs `laurigates-claude-plugins`) and a reader
+    # copy-pasting between sections produced a non-functional config. The template now
+    # sets the key equal to the name, so both read `@laurigates-claude-plugins`; a
+    # different key also registers the marketplace a second time on machines that
+    # already know it. Invariants: both sources stay annotated inline, and the
+    # reference stanza never reintroduces the old key or suffix.
     if [ "$skill_name" = "configure-claude-plugins" ]; then
       # The annotations must both exist (proves the two forms are explained inline)
       if ! grep -q "extraKnownMarketplaces key" "$skill_file"; then
-        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must include inline note 'extraKnownMarketplaces key' near @claude-plugins usage (issue #1337)")
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must include inline note 'extraKnownMarketplaces key' near the enabledPlugins suffix (issue #1337)")
         has_errors=true
       fi
       if ! grep -q "marketplace .name. in marketplace.json" "$skill_file"; then
         issues+=("❌ ${plugin}/${skill_name}: SKILL.md must include inline note 'marketplace \`name\` in marketplace.json' near @laurigates-claude-plugins usage (issue #1337)")
+        has_errors=true
+      fi
+      settings_ref="$(dirname "$skill_file")/references/settings-json.md"
+      if grep -qE '"claude-plugins"[[:space:]]*:|@claude-plugins"' "$settings_ref"; then
+        issues+=("❌ ${plugin}/${skill_name}: references/settings-json.md must key the marketplace as \"laurigates-claude-plugins\" (the marketplace name), not \"claude-plugins\" (issue #1337)")
         has_errors=true
       fi
     fi
