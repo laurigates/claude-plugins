@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.23.2](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.23.1...testing-plugin-v3.23.2) (2026-10-20)
+
+
+### Bug Fixes
+
+* **testing-plugin:** run test-tripwire's can-fail check through mutation-check ([#3123](https://github.com/laurigates/claude-plugins/issues/3123)) ([f8246a9](https://github.com/laurigates/claude-plugins/commit/f8246a967b271df73afea7dee4c38026853bbc4b)), closes [#3094](https://github.com/laurigates/claude-plugins/issues/3094)
+
 ## [3.23.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.23.0...testing-plugin-v3.23.1) (2026-10-18)
 
 
