@@ -76,6 +76,9 @@ on:
       # would skip the suite (#2826).
       - 'git-plugin/skills/git-merge-hazards/**'
       - '.claude/rules/gh-json-fields.md'
+      # test-tripwire's test-can-fail-section.sh pins the SKILL.md body (#3094),
+      # which no entry above matches.
+      - 'testing-plugin/skills/test-tripwire/SKILL.md'
   push:
     branches: [main]
     paths:
@@ -99,6 +102,7 @@ on:
       - 'comfyui-plugin/skills/comfyui-node-scaffold/scaffold.py'
       - 'git-plugin/skills/git-merge-hazards/**'
       - '.claude/rules/gh-json-fields.md'
+      - 'testing-plugin/skills/test-tripwire/SKILL.md'
       - '.github/workflows/github-workflow-auto-fix.yml'
 
 concurrency:

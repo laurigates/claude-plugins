@@ -3,7 +3,7 @@ name: test-tripwire
 description: "Tripwire test for an unenforced code assumption. Use when deferring a fix until a list, limit or version changes — a failing test instead of an issue."
 allowed-tools: Read, Edit, Write, Grep, Glob, Bash(git diff *), Bash(git log *), TodoWrite
 created: 2026-10-06
-modified: 2026-10-06
+modified: 2026-10-19
 reviewed: 2026-10-06
 ---
 
@@ -73,20 +73,41 @@ Other shapes the same pattern takes:
 ## Verify It Can Fail
 
 A tripwire that cannot fail is an issue nobody reads in a different place. Break
-the assumption on purpose and watch the test go red:
+the assumption on purpose and watch the test go red.
 
-1. Snapshot the file: `cp src/limits.ts tmp/limits.ts.bak`.
+Run the probe through the `mutation-check.sh` helper that
+`agent-patterns-plugin:parallel-agent-dispatch` ships in its scripts directory
+(call it by its absolute path in the installed plugin). It snapshots the file,
+applies one sed expression, runs your command, and restores the file on every
+exit path, including a failed or interrupted run. A hand-written edit-run-restore
+sequence leaves the file mutated whenever its restore step is skipped, and an
+in-place sed edit is blocked by the `sed-inplace` hook. Without that plugin,
+make the mutation with the Edit tool and revert it with Edit straight after the
+run, before any other step.
+
+1. Run only the tripwire on the unmutated file and confirm it is green. The
+   helper runs no baseline, so a command that is already red would count as a
+   kill.
 2. Mutate the value so the assumption no longer holds (lower the limit below the
-   list length, add a retired code to the active list).
-3. Run only the tripwire. Confirm it fails **on the assertion**, with a message
-   that names both values (`expected 5 to be less than or equal to 4`), not on
-   an import or type error.
-4. Restore from the snapshot (`cp tmp/limits.ts.bak src/limits.ts`), not with
-   `git checkout --`, which also discards uncommitted work in that file. Re-run
-   it green.
+   list length, add a retired code to the active list):
 
-Report the control with the test: the mutation, the failure line, and the
-restored value.
+   ```bash
+   mutation-check.sh <file> '<sed-expr>' -- <tripwire command>
+   mutation-check.sh src/limits.ts 's/LIST_LIMIT = 10/LIST_LIMIT = 4/' -- bunx vitest run src/limits.test.ts -t "fits within LIST_LIMIT"
+   ```
+
+3. Read the verdict from stdout. `MUTANT=killed` means the tripwire can fail.
+   `MUTANT=survived` means it passed with the assumption broken, so it is inert:
+   fix the assertion and probe again. `STATUS=ERROR` is no verdict (a sed
+   expression that changed nothing, a command that could not start); correct
+   the call and rerun.
+4. On a kill, confirm from the test output (the helper sends it to stderr) that
+   the tripwire failed **on the assertion**, with a message that names both
+   values (`expected 5 to be less than or equal to 4`), not on an import or type
+   error. Check `RESTORED=` and re-run the tripwire green.
+
+Report the control with the test: the mutation (the sed expression), the
+failure line, and the restored value.
 
 ## Closing the Issue
 
