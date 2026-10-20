@@ -21,6 +21,12 @@ done
 : "${home_dir:=$HOME}"
 : "${project_dir:=$(pwd)}"
 
+# Hook timeouts are seconds. Above HIGH_TIMEOUT_SECONDS is high_timeout;
+# MS_TIMEOUT_MIN and above is ms_timeout (scripts/check-hook-timeout-units.sh
+# flags `value > 999`, i.e. >= 1000).
+HIGH_TIMEOUT_SECONDS=60
+MS_TIMEOUT_MIN=1000
+
 echo "=== HOOKS CONFIGURATION ==="
 
 issue_count=0
@@ -99,11 +105,19 @@ for settings_file in "${settings_files[@]}"; do
           fi
         fi
 
-        # Flag high timeouts (over 60 seconds)
+        # Hook `timeout` is in SECONDS (Claude Code docs: "Seconds before
+        # canceling"). A value >= MS_TIMEOUT_MIN is almost certainly a
+        # millisecond figure written as seconds (same threshold and TYPE as
+        # scripts/check-hook-timeout-units.sh, #3088); otherwise flag anything
+        # above HIGH_TIMEOUT_SECONDS as high. Non-integer values are skipped.
         if [ "$hook_timeout" != "default" ] && [ "$hook_timeout" != "null" ]; then
-          timeout_ms="${hook_timeout}"
-          if [ "$timeout_ms" -gt 60000 ] 2>/dev/null; then
-            issues_list="${issues_list}  - SEVERITY=WARN TYPE=high_timeout EVENT=${event_name} TIMEOUT=${timeout_ms}ms FILE=${settings_file}\n"
+          timeout_seconds="${hook_timeout}"
+          if [ "$timeout_seconds" -ge "$MS_TIMEOUT_MIN" ] 2>/dev/null; then
+            issues_list="${issues_list}  - SEVERITY=WARN TYPE=ms_timeout EVENT=${event_name} TIMEOUT=${timeout_seconds}s FILE=${settings_file} MSG=hook timeouts are seconds; this reads as milliseconds, divide by 1000\n"
+            issue_count=$((issue_count + 1))
+            [ "$check_status" = "OK" ] && check_status="WARN"
+          elif [ "$timeout_seconds" -gt "$HIGH_TIMEOUT_SECONDS" ] 2>/dev/null; then
+            issues_list="${issues_list}  - SEVERITY=WARN TYPE=high_timeout EVENT=${event_name} TIMEOUT=${timeout_seconds}s FILE=${settings_file}\n"
             issue_count=$((issue_count + 1))
             [ "$check_status" = "OK" ] && check_status="WARN"
           fi
