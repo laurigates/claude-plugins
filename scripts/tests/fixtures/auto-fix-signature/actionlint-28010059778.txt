@@ -1,0 +1,7 @@
+compliance	UNKNOWN STEP	﻿2026-06-23T07:37:12.4407713Z Current runner version: unknown (reconstructed fixture)
+compliance	UNKNOWN STEP	2026-06-23T07:37:12.4407713Z ##[group]Run actionlint -color -shellcheck= -ignore 'property "result" is not defined'
+compliance	UNKNOWN STEP	2026-06-23T07:37:12.4407713Z [36;1mactionlint -color -shellcheck= -ignore 'property "result" is not defined'[0m
+compliance	UNKNOWN STEP	2026-06-23T07:37:12.4407713Z shell: /usr/bin/bash -e {0}
+compliance	UNKNOWN STEP	2026-06-23T07:37:12.4407713Z ##[endgroup]
+compliance	UNKNOWN STEP	2026-06-23T07:37:12.4407713Z /home/runner/work/_temp/1541e410-d047-4155-ab64-9380749fb348.sh: line 1: actionlint: command not found
+compliance	UNKNOWN STEP	2026-06-23T07:37:12.4407713Z ##[error]Process completed with exit code 127.
