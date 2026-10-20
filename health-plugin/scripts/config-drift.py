@@ -59,6 +59,7 @@ from lib.probe import (
 )
 
 HOME_RULES = Path.home() / ".claude" / "rules"
+INSTALLED_PLUGINS = Path.home() / ".claude" / "plugins" / "installed_plugins.json"
 SKIP_PARTS = {"node_modules", "dist", "worktrees", ".git", "__pycache__", "tmp"}
 EMBED_MODEL = "BAAI/bge-small-en-v1.5"
 EMBED_CHARS = 2000
@@ -899,6 +900,69 @@ def collect(root: Path) -> tuple[dict[str, list[dict]], list[str], int, int]:
         "claude_md": claude_mds,
     }
     return corpus, unreadable, templates_excluded, agent_dirs
+
+
+def collect_installed_skills(root: Path, walked: list[dict]) -> list[dict]:
+    """Skills of the plugins the session at `root` actually loads.
+
+    `collect()` reads `~/.claude/rules` at EVERY root but finds skills only by
+    walking `root`. A user-global pointer stub delegates to an installed plugin
+    skill, so at any root that is not a plugin checkout (a dotfiles repo, an
+    app repo) every stub resolved against a corpus of zero plugin skills: 18/18
+    stubs reported broken and the containment control read 0/18, while the same
+    rules were clean at a claude-plugins root.
+
+    The registry is the authority for what loads: `scope == "user"` entries,
+    plus `project`/`local` entries pinned to this root. A skill already found
+    by the walk wins on name, so a plugin checkout does not double-count its
+    own skills. These skills are a RESOLUTION corpus only -- `main()` passes
+    them to the two checks that resolve rules against skills, never to the
+    lexical, staleness or frontmatter checks, which would otherwise report on
+    plugin files that cannot be edited from this root.
+    """
+    try:
+        registry = json.loads(INSTALLED_PLUGINS.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return []
+    except (OSError, json.JSONDecodeError) as e:
+        print(f"config-drift: installed plugins unreadable: {e}", file=sys.stderr)
+        return []
+    here = str(root.resolve())
+    install_paths: set[Path] = set()
+    for entries in (registry.get("plugins") or {}).values():
+        for e in entries or []:
+            scope, path = e.get("scope"), e.get("installPath")
+            if not path:
+                continue
+            if scope == "user" or (
+                scope in ("project", "local") and e.get("projectPath") == here
+            ):
+                install_paths.add(Path(path))
+    seen = {s["name"] for s in walked}
+    out: list[dict] = []
+    for base in sorted(install_paths):
+        for p in sorted(base.glob("skills/*/SKILL.md")):
+            name = p.parent.name
+            if name in seen:
+                continue
+            try:
+                body = p.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            seen.add(name)
+            out.append(
+                _doc(
+                    "skill",
+                    p,
+                    name,
+                    name,
+                    body,
+                    frontmatter(body),
+                    SCOPE_PLUGIN,
+                    always_loaded=False,
+                )
+            )
+    return out
 
 
 # --------------------------------------------------------------------- checks
@@ -1891,11 +1955,14 @@ def main() -> int:
     # The check x kind matrix, guarded explicitly at every call site. Each
     # check's own docstring carries the reason it takes the kinds it takes.
     findings: list[Finding] = []
-    findings += check_stub_integrity(rules, skills, waivers)
+    # Rules resolve against walked + installed skills; see
+    # `collect_installed_skills` for why the installed set goes nowhere else.
+    installed_skills = collect_installed_skills(root, skills)
+    findings += check_stub_integrity(rules, skills + installed_skills, waivers)
     findings += check_budget(rules + claude_mds)
     lexical, lexical_pairs = check_lexical_dupes(corpus, waivers)
     findings += lexical
-    findings += check_rule_covered_by_skill(rules, skills, waivers)
+    findings += check_rule_covered_by_skill(rules, skills + installed_skills, waivers)
     findings += check_frontmatter(rules)
     findings += check_corpus_unreadable(unreadable)
     findings += check_agent_discovery_misfire(agents, agent_dirs)
@@ -2013,6 +2080,9 @@ def main() -> int:
     counts = {
         "rules": len(rules),
         "skills": len(skills),
+        # Resolution-only skills from installed plugins, kept out of `skills`
+        # so SKILLS= still means "walked under --root".
+        "installed_skills": len(installed_skills),
         "agents": len(agents),
         # The DENOMINATOR for AGENTS, emitted EVEN AT 0 for the same reason the
         # exclusion counter below is. `AGENTS=0` alone cannot distinguish "this

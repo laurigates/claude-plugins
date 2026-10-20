@@ -12,9 +12,9 @@ Reached only when `--all` is passed. The orchestrator dispatches one subagent pe
    ```bash
    bash ${CLAUDE_SKILL_DIR}/scripts/list-actionable-prs.sh <owner> <repo>
    ```
-   The script returns a JSON array of open, non-draft PRs with unresolved review threads, failing/errored CI, or `CHANGES_REQUESTED`. Automation-authored PRs (release-please, dependabot, renovate, `*[bot]`, `*-bot`) are excluded by default — dispatching a subagent on one is almost always wrong (no review threads to act on, protected changelog/version files). Pass `--include-automation` to include them, or set `PR_FEEDBACK_AUTOMATION_AUTHORS` to extend the recognised author list. If the array is empty, report `No PRs need attention.` and stop.
+   The script returns a JSON array of open, non-draft PRs with unresolved review threads, failing/errored CI, `CHANGES_REQUESTED`, or **top-level feedback** — a non-empty PR conversation comment or `COMMENTED` review body posted after the PR's latest commit (`topLevelFeedback` counts them; selection keys on presence and recency only, never on parsed severity, and skips the skill's own `Fixed in <sha>`-style replies). Automation-authored PRs (release-please, dependabot, renovate, `*[bot]`, `*-bot`) are excluded by default — dispatching a subagent on one is almost always wrong (no review threads to act on, protected changelog/version files). Pass `--include-automation` to include them, or set `PR_FEEDBACK_AUTOMATION_AUTHORS` to extend the recognised author list. If the array is empty, report `No PRs need attention.` and stop.
 
-3. **Print a compact dispatch table** (number, author, ci, unresolved, reviewDecision, head, title) so the user can see what is about to be processed.
+3. **Print a compact dispatch table** (number, author, ci, unresolved, topLevelFeedback, reviewDecision, head, title) so the user can see what is about to be processed.
 
 4. **`--dry-run` short-circuit**: if `--dry-run` was also passed, additionally print the per-PR subagent prompt that *would* be dispatched (one per row, using the template in [REFERENCE.md](../REFERENCE.md) "Multi-PR Subagent Prompt"), then stop. No subagents spawn, no commits, no pushes.
 
