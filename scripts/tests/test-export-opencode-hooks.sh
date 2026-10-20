@@ -78,7 +78,7 @@ cat > "$fixture_root/synthetic-plugin/hooks.json" <<'JSON'
       {
         "matcher": "Write(docs/adrs/**)",
         "hooks": [
-          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/guard.sh", "timeout": 3000}
+          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/guard.sh", "timeout": 700}
         ]
       },
       {
@@ -213,8 +213,10 @@ check "fixture: unreferenced missing script not copied" \
     bash -c "! test -e '$fixture_out/hook-scripts/synthetic-plugin/hooks/missing.sh'"
 check "fixture: path-glob matcher compiled" \
     grep -q '"pathRe": "\^docs/adrs/\.\*\$"' "$fixture_js"
-check "fixture: ms-intended timeout normalized to seconds" \
-    grep -q '"timeout": 3' "$fixture_js"
+# Issue #3092: timeouts are seconds (guarded by check-hook-timeout-units.sh);
+# a value above 600 must pass through, not be divided by 1000 to 0-1 s.
+check "fixture: 700 s timeout passed through unchanged" \
+    grep -qE '"timeout": 700,?$' "$fixture_js"
 # The skip-report header comment may cite skipped commands verbatim; the
 # invariant is that no placeholder reaches executable (non-comment) code.
 check_not "fixture: no literal CLAUDE_PLUGIN_ROOT placeholder in JS code" \
