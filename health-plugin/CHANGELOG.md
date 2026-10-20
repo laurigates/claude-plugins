@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.23.6](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.23.5...health-plugin-v1.23.6) (2026-10-20)
+
+
+### Bug Fixes
+
+* **health-plugin:** read hook timeouts as seconds in check-hooks.sh ([#3122](https://github.com/laurigates/claude-plugins/issues/3122)) ([12a012d](https://github.com/laurigates/claude-plugins/commit/12a012d1f642229c9a32f5d9b24e64f8e0adfaf3))
+
 ## [1.23.5](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.23.4...health-plugin-v1.23.5) (2026-10-19)
 
 
