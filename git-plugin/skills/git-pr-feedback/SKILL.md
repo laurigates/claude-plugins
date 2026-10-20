@@ -1,6 +1,6 @@
 ---
 created: 2026-01-30
-modified: 2026-09-26
+modified: 2026-10-20
 reviewed: 2026-09-02
 allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh run view *), Bash(gh run list *), Bash(gh api *), Bash(gh repo view *), Bash(gh issue create *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(git fetch *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Bash(bash *), Read, Edit, Write, Grep, Glob, Task, mcp__github__pull_request_read, mcp__github__add_reply_to_pull_request_comment, mcp__github__pull_request_review_write, mcp__github__issue_write
 args: "[pr-number] [--commit] [--push] [--all] [--dry-run] [--limit N] [--include-automation]"
@@ -72,13 +72,13 @@ For feedback categorization, decision trees, commit format, and report templates
       ```bash
       bash ${CLAUDE_SKILL_DIR}/scripts/list-actionable-prs.sh <owner> <repo>
       ```
-      The script emits a JSON array of open, non-draft PRs that have unresolved review threads, failing/errored CI, or `CHANGES_REQUESTED`. Handle the result as follows:
+      The script emits a JSON array of open, non-draft PRs that have unresolved review threads, failing/errored CI, `CHANGES_REQUESTED`, or top-level feedback (a non-empty conversation comment or `COMMENTED` review body newer than the latest commit, counted in `topLevelFeedback`). Handle the result as follows:
 
       | Result | Action |
       |--------|--------|
       | Empty array | Report "No PRs need attention." and stop. |
       | One entry | Use that PR number and continue. |
-      | Multiple entries | Print a compact table (number, author, CI, unresolved, reviewDecision, title) ordered as returned, then stop and instruct the user to re-run `/git:pr-feedback <number>`. Do **not** guess which PR they meant. |
+      | Multiple entries | Print a compact table (number, author, CI, unresolved, topLevelFeedback, reviewDecision, title) ordered as returned, then stop and instruct the user to re-run `/git:pr-feedback <number>`. Do **not** guess which PR they meant. |
 
 3. **Switch to PR branch** if not already on it:
    ```bash

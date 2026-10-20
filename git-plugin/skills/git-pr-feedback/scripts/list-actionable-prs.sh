@@ -3,6 +3,13 @@
 #   - Unresolved (non-outdated) review threads
 #   - Failing or errored CI workflows
 #   - Reviewer requested changes
+#   - Top-level feedback (issue #3129): a non-empty PR conversation comment or
+#     a non-empty COMMENTED review body posted after the PR's latest commit
+#     (commits(last:1).committedDate). Keyed on presence + recency only —
+#     severity is never parsed from the prose. The skill's own SHA-bearing
+#     replies (`Fixed in <sha>`, `Accepted in <sha>`, `Applied a variant in
+#     <sha>`, `Partially addressed in <sha>`) are excluded so a feedback pass
+#     does not re-flag its own output. Reported as `topLevelFeedback`.
 #
 # Automation-authored PRs (release-please, dependabot, renovate, image
 # updaters, etc.) are excluded by default: they never carry human review
@@ -61,8 +68,24 @@ query($owner: String!, $repo: String!) {
         commits(last: 1) {
           nodes {
             commit {
+              committedDate
               statusCheckRollup { state }
             }
+          }
+        }
+        comments(last: 50) {
+          nodes {
+            author { login }
+            body
+            createdAt
+          }
+        }
+        reviews(last: 50, states: [COMMENTED]) {
+          nodes {
+            author { login }
+            state
+            body
+            submittedAt
           }
         }
         reviewThreads(first: 50) {
@@ -76,6 +99,10 @@ query($owner: String!, $repo: String!) {
   }
 }'
 
+# The skill's own SHA-bearing reply templates (REFERENCE.md "Reply Templates").
+# Anchored at body start, so real feedback that merely quotes one still counts.
+own_reply_re='^\s*(Fixed|Accepted|Applied a variant|Partially addressed) in `?[0-9a-f]{7,40}\b'
+
 if [ -n "${PR_FEEDBACK_FIXTURE:-}" ]; then
   raw=$(cat "$PR_FEEDBACK_FIXTURE")
 else
@@ -84,6 +111,7 @@ fi
 
 printf '%s' "$raw" | jq \
   --argjson automation "$automation_json" \
+  --arg ownReply "$own_reply_re" \
   --argjson includeAutomation "$include_automation" '[
   .data.repository.pullRequests.nodes[]
   | . as $pr
@@ -95,7 +123,18 @@ printf '%s' "$raw" | jq \
   | ($pr.commits.nodes[0].commit.statusCheckRollup.state // "PENDING") as $ci
   | (($ci == "FAILURE") or ($ci == "ERROR")) as $ciFailing
   | ($pr.reviewDecision == "CHANGES_REQUESTED") as $changesRequested
-  | select(($ciFailing or ($unresolved > 0) or $changesRequested) and (($pr.isDraft // false) | not))
+  | ($pr.commits.nodes[0].commit.committedDate // "") as $lastCommitAt
+  | (
+      [ ($pr.comments.nodes // [])[] | {body, at: .createdAt} ]
+      + [ ($pr.reviews.nodes // [])[] | select(.state == "COMMENTED") | {body, at: .submittedAt} ]
+      | map(select(
+          ((.body // "") | test("\\S"))
+          and ((.at // "") > $lastCommitAt)
+          and (((.body // "") | test($ownReply)) | not)
+        ))
+      | length
+    ) as $topLevelFeedback
+  | select(($ciFailing or ($unresolved > 0) or $changesRequested or ($topLevelFeedback > 0)) and (($pr.isDraft // false) | not))
   | select($includeAutomation or ($isAutomation | not))
   | {
       number: $pr.number,
@@ -105,6 +144,7 @@ printf '%s' "$raw" | jq \
       head: $pr.headRefName,
       ci: $ci,
       unresolved: $unresolved,
+      topLevelFeedback: $topLevelFeedback,
       reviewDecision: ($pr.reviewDecision // "NONE"),
       updatedAt: $pr.updatedAt
     }

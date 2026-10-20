@@ -66,12 +66,12 @@ Always include: `configure-plugin`, `health-plugin`, `hooks-plugin`.
 
 Create or merge into `.claude/settings.json` (permissions, marketplace enrollment so web sessions retain plugin access, `enabledPlugins`).
 
-> **Suffix forms are not interchangeable.** `enabledPlugins` uses `<plugin>@claude-plugins` (extraKnownMarketplaces key); workflow `plugins:` uses `<plugin>@laurigates-claude-plugins` (marketplace `name` in marketplace.json). Wrong suffix → entry silently ignored / run rejected. Table: [references/settings-json.md](references/settings-json.md#suffix-forms).
+> **One suffix: `@laurigates-claude-plugins`.** `enabledPlugins` takes it from the extraKnownMarketplaces key, workflow `plugins:` from the marketplace `name` in marketplace.json; the stanza sets them equal. Any other key registers the marketplace twice; rename an old `claude-plugins` key and its suffixes together. Details: [references/settings-json.md](references/settings-json.md#suffix-forms).
 
 Pick the mode: the default writes only the recommended plugins as `true` (lean, but globally-toggled plugins leak in); `--exhaustive` pins every marketplace plugin as `true`/`false` (drift-resistant). Rationale and mode table: [references/settings-json.md](references/settings-json.md).
 
 1. **Permissions** — always include the common baseline (`Bash(git:*)`, `Bash(gh:*)`, `Bash(pre-commit:*)`, `Bash(gitleaks:*)`, `Bash(python3:*)`) plus the stack-specific entries for the detected stack. Use granular patterns only — do not add `Bash(bash *)` for CLI tools. Per-stack table: same file.
-2. **Marketplace + `enabledPlugins`** — merge the full stanza from the same file (`extraKnownMarketplaces` key `claude-plugins`, selected plugins as `<plugin>@claude-plugins: true`).
+2. **Marketplace + `enabledPlugins`** — merge the full stanza from the same file (`extraKnownMarketplaces` key `laurigates-claude-plugins`, selected plugins as `<plugin>@laurigates-claude-plugins: true`).
 3. **Exhaustive mode** (`--exhaustive` only) — enumerate both marketplaces, derive each boolean from repo context, preserve existing project values, and show the diff before writing. Signal table, baseline set, LSP list, diff format: [references/exhaustive-mode.md](references/exhaustive-mode.md).
 
 If `.claude/settings.json` already exists, **MERGE** without duplicating entries. Preserve any existing `hooks`, `env`, or other fields.

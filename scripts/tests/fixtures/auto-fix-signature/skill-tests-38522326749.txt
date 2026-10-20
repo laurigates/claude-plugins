@@ -1,0 +1,253 @@
+compliance	UNKNOWN STEP	﻿2026-10-14T06:27:41.1574421Z Current runner version: '2.337.0'
+compliance	UNKNOWN STEP	2026-10-14T06:27:41.1610064Z ##[group]Runner Image Provisioner
+compliance	UNKNOWN STEP	2026-10-14T06:27:41.1611314Z Hosted Compute Agent
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1748215Z ##[group]Run bash scripts/run-skill-script-tests.sh \
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1748703Z [36;1mbash scripts/run-skill-script-tests.sh \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1749224Z [36;1m  --only 'blueprint-plugin/scripts/tests/test-check-generated-rules-registration.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1749869Z [36;1m  --only 'blueprint-plugin/scripts/tests/test-register-generated-rules.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1750406Z [36;1m  --only 'evaluate-plugin/scripts/tests/test-golden-set-evals.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1751103Z [36;1m  --only 'evaluate-plugin/skills/evaluate-context-engineering/scripts/tests/test-check-context-engineering.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1751764Z [36;1m  --only 'scripts/tests/test-agentic-audit-precompute.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1752204Z [36;1m  --only 'scripts/tests/test-blueprint-health-report.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1752653Z [36;1m  --only 'scripts/tests/test-check-agent-failure-contract.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1753157Z [36;1m  --only 'scripts/tests/test-check-agent-frontmatter-keys.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1753598Z [36;1m  --only 'scripts/tests/test-check-agent-model.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1754067Z [36;1m  --only 'scripts/tests/test-check-auto-resolve-mergeability-poll.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1754589Z [36;1m  --only 'scripts/tests/test-check-blueprint-level3-templates.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1755061Z [36;1m  --only 'scripts/tests/test-check-configure-components.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1755530Z [36;1m  --only 'scripts/tests/test-check-context-command-execution.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1756155Z [36;1m  --only 'scripts/tests/test-check-dead-api-endpoints.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1756611Z [36;1m  --only 'scripts/tests/test-check-delegation-reachability.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1757427Z [36;1m  --only 'scripts/tests/test-check-evals-abstention.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1757859Z [36;1m  --only 'scripts/tests/test-check-git-sandbox-guards.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1758297Z [36;1m  --only 'scripts/tests/test-check-hook-cue-skill-refs.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1758722Z [36;1m  --only 'scripts/tests/test-check-hook-fail-closed.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1759136Z [36;1m  --only 'scripts/tests/test-check-hook-matchers.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1759588Z [36;1m  --only 'scripts/tests/test-check-issue-template-inheritance.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1760046Z [36;1m  --only 'scripts/tests/test-check-loop-integrity.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1760461Z [36;1m  --only 'scripts/tests/test-check-mktemp-canonical.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1760892Z [36;1m  --only 'scripts/tests/test-check-plugin-root-quoting.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1761344Z [36;1m  --only 'scripts/tests/test-check-positional-references.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1761796Z [36;1m  --only 'scripts/tests/test-check-prose-house-style.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1762251Z [36;1m  --only 'scripts/tests/test-check-research-radar-grounding.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1762701Z [36;1m  --only 'scripts/tests/test-check-routine-prompt.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1763117Z [36;1m  --only 'scripts/tests/test-check-ruff-version-sync.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1763520Z [36;1m  --only 'scripts/tests/test-check-skill-xrefs.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1763963Z [36;1m  --only 'scripts/tests/test-check-taskcompleted-verification.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1764423Z [36;1m  --only 'scripts/tests/test-check-unused-bash-grant.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1764849Z [36;1m  --only 'scripts/tests/test-check-version-pin-coverage.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1765320Z [36;1m  --only 'scripts/tests/test-check-workflow-cron-collisions.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1765770Z [36;1m  --only 'scripts/tests/test-check-workflow-js-model.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1766174Z [36;1m  --only 'scripts/tests/test-check-workflow-model.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1766608Z [36;1m  --only 'scripts/tests/test-check-workflow-script-triggers.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1767365Z [36;1m  --only 'scripts/tests/test-extract-md-elements.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1767812Z [36;1m  --only 'scripts/tests/test-guard-worktree-root-discovery.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1768256Z [36;1m  --only 'scripts/tests/test-infra-compliance-check.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1768673Z [36;1m  --only 'scripts/tests/test-lint-package-references.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1769079Z [36;1m  --only 'scripts/tests/test-lint-shell-scripts.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1769479Z [36;1m  --only 'scripts/tests/test-plugin-compliance-check.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1769899Z [36;1m  --only 'scripts/tests/test-select-split-candidates.sh' \[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1770306Z [36;1m  --only 'scripts/tests/test-workflow-run-cost.sh'[0m
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1831508Z shell: /usr/bin/bash -e {0}
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1831762Z env:
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1832009Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.1832321Z ##[endgroup]
+compliance	UNKNOWN STEP	2026-10-14T06:27:57.5305009Z === SKILL SCRIPT TESTS ===
+compliance	UNKNOWN STEP	2026-10-14T06:27:58.0574136Z PASS=./blueprint-plugin/scripts/tests/test-check-generated-rules-registration.sh
+compliance	UNKNOWN STEP	2026-10-14T06:27:58.2326494Z PASS=./blueprint-plugin/scripts/tests/test-register-generated-rules.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:07.4613285Z PASS=./evaluate-plugin/scripts/tests/test-golden-set-evals.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:08.7118725Z PASS=./evaluate-plugin/skills/evaluate-context-engineering/scripts/tests/test-check-context-engineering.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:08.9691485Z PASS=./scripts/tests/test-agentic-audit-precompute.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:20.4019738Z PASS=./scripts/tests/test-blueprint-health-report.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:23.3232925Z PASS=./scripts/tests/test-check-agent-failure-contract.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:24.5685691Z PASS=./scripts/tests/test-check-agent-frontmatter-keys.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:25.3552735Z PASS=./scripts/tests/test-check-agent-model.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:25.4306404Z PASS=./scripts/tests/test-check-auto-resolve-mergeability-poll.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:25.6811161Z PASS=./scripts/tests/test-check-blueprint-level3-templates.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:26.2350907Z PASS=./scripts/tests/test-check-configure-components.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:26.8065935Z PASS=./scripts/tests/test-check-context-command-execution.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:26.9701363Z PASS=./scripts/tests/test-check-dead-api-endpoints.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:34.2242492Z PASS=./scripts/tests/test-check-delegation-reachability.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:34.6159466Z PASS=./scripts/tests/test-check-evals-abstention.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:34.6935408Z FAIL=./scripts/tests/test-check-git-sandbox-guards.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:34.6948113Z   | === check-git-sandbox-guards regression tests ===
+compliance	UNKNOWN STEP	2026-10-14T06:29:34.6949803Z   |   FAIL: unguarded mktemp -d + git -C is flagged (expected ISSUE_COUNT=1, got )
+compliance	UNKNOWN STEP	2026-10-14T06:29:34.6950632Z   |   FAIL: guarded mktemp -d (|| exit) is not flagged (expected ISSUE_COUNT=0, got )
+compliance	UNKNOWN STEP	2026-10-14T06:29:34.6951194Z   |   FAIL: guarded mktemp -d ([ -n ] next line) is not flagged (expected ISSUE_COUNT=0, got )
+compliance	UNKNOWN STEP	2026-10-14T06:29:34.6951748Z   |   FAIL: unguarded mktemp (file, no -d) is not flagged (expected ISSUE_COUNT=0, got )
+compliance	UNKNOWN STEP	2026-10-14T06:29:34.6952315Z   |   FAIL: unguarded mktemp -d with no git op is not flagged (expected ISSUE_COUNT=0, got )
+compliance	UNKNOWN STEP	2026-10-14T06:29:34.6952926Z   |   FAIL: unguarded mktemp -d reaching git via a loop var is flagged (expected ISSUE_COUNT=2, got )
+compliance	UNKNOWN STEP	2026-10-14T06:29:34.6953542Z   |   FAIL: unguarded mktemp -d + git init --bare is flagged (expected ISSUE_COUNT=1, got )
+compliance	UNKNOWN STEP	2026-10-14T06:29:34.6954266Z   |   FAIL: dist/ build output is pruned (only the non-dist script is flagged) (expected ISSUE_COUNT=1, got )
+compliance	UNKNOWN STEP	2026-10-14T06:29:34.6955337Z   | /home/runner/work/claude-plugins/claude-plugins/scripts/tests/test-check-git-sandbox-guards.sh: line 200: syntax error: unexpected end of file
+compliance	UNKNOWN STEP	2026-10-14T06:29:35.3207249Z PASS=./scripts/tests/test-check-hook-cue-skill-refs.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:48.6776422Z PASS=./scripts/tests/test-check-hook-fail-closed.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:49.0306209Z PASS=./scripts/tests/test-check-hook-matchers.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:49.3237154Z PASS=./scripts/tests/test-check-issue-template-inheritance.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:50.4160550Z PASS=./scripts/tests/test-check-loop-integrity.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:51.1088038Z PASS=./scripts/tests/test-check-mktemp-canonical.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:52.0173243Z PASS=./scripts/tests/test-check-plugin-root-quoting.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:55.4435693Z PASS=./scripts/tests/test-check-positional-references.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:56.7314906Z PASS=./scripts/tests/test-check-prose-house-style.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:57.1656028Z PASS=./scripts/tests/test-check-research-radar-grounding.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:57.9913211Z PASS=./scripts/tests/test-check-routine-prompt.sh
+compliance	UNKNOWN STEP	2026-10-14T06:29:58.0504606Z PASS=./scripts/tests/test-check-ruff-version-sync.sh
+compliance	UNKNOWN STEP	2026-10-14T06:30:02.6364992Z PASS=./scripts/tests/test-check-skill-xrefs.sh
+compliance	UNKNOWN STEP	2026-10-14T06:30:05.2724522Z PASS=./scripts/tests/test-check-taskcompleted-verification.sh
+compliance	UNKNOWN STEP	2026-10-14T06:30:06.3476206Z PASS=./scripts/tests/test-check-unused-bash-grant.sh
+compliance	UNKNOWN STEP	2026-10-14T06:30:33.3552960Z PASS=./scripts/tests/test-check-version-pin-coverage.sh
+compliance	UNKNOWN STEP	2026-10-14T06:30:34.5266099Z PASS=./scripts/tests/test-check-workflow-cron-collisions.sh
+compliance	UNKNOWN STEP	2026-10-14T06:30:53.5253883Z PASS=./scripts/tests/test-check-workflow-js-model.sh
+compliance	UNKNOWN STEP	2026-10-14T06:30:54.2308373Z PASS=./scripts/tests/test-check-workflow-model.sh
+compliance	UNKNOWN STEP	2026-10-14T06:30:54.8548478Z PASS=./scripts/tests/test-check-workflow-script-triggers.sh
+compliance	UNKNOWN STEP	2026-10-14T06:30:55.0329216Z PASS=./scripts/tests/test-extract-md-elements.sh
+compliance	UNKNOWN STEP	2026-10-14T06:30:55.4100923Z PASS=./scripts/tests/test-guard-worktree-root-discovery.sh
+compliance	UNKNOWN STEP	2026-10-14T06:30:58.8896146Z PASS=./scripts/tests/test-infra-compliance-check.sh
+compliance	UNKNOWN STEP	2026-10-14T06:30:58.9955373Z PASS=./scripts/tests/test-lint-package-references.sh
+compliance	UNKNOWN STEP	2026-10-14T06:30:59.8066158Z PASS=./scripts/tests/test-lint-shell-scripts.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:13.4945524Z PASS=./scripts/tests/test-plugin-compliance-check.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:13.8645071Z PASS=./scripts/tests/test-select-split-candidates.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3471363Z PASS=./scripts/tests/test-workflow-run-cost.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3856376Z DISCOVERED=224
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3858016Z TOTAL=45
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3858825Z PASSED=44
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3859209Z SKIPPED=0
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3859533Z FAILED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3859853Z SCOPED=true
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3860208Z SCOPE_PATTERN_COUNT=45
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3861002Z SCOPE_PATTERN_1=blueprint-plugin/scripts/tests/test-check-generated-rules-registration.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3861869Z SCOPE_PATTERN_1_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3862551Z SCOPE_PATTERN_2=blueprint-plugin/scripts/tests/test-register-generated-rules.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3863322Z SCOPE_PATTERN_2_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3863967Z SCOPE_PATTERN_3=evaluate-plugin/scripts/tests/test-golden-set-evals.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3864661Z SCOPE_PATTERN_3_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3865617Z SCOPE_PATTERN_4=evaluate-plugin/skills/evaluate-context-engineering/scripts/tests/test-check-context-engineering.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3873432Z SCOPE_PATTERN_4_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3874059Z SCOPE_PATTERN_5=scripts/tests/test-agentic-audit-precompute.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3874731Z SCOPE_PATTERN_5_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3875315Z SCOPE_PATTERN_6=scripts/tests/test-blueprint-health-report.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3875943Z SCOPE_PATTERN_6_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3876541Z SCOPE_PATTERN_7=scripts/tests/test-check-agent-failure-contract.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3877601Z SCOPE_PATTERN_7_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3878045Z SCOPE_PATTERN_8=scripts/tests/test-check-agent-frontmatter-keys.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3878445Z SCOPE_PATTERN_8_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3878741Z SCOPE_PATTERN_9=scripts/tests/test-check-agent-model.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3879080Z SCOPE_PATTERN_9_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3879450Z SCOPE_PATTERN_10=scripts/tests/test-check-auto-resolve-mergeability-poll.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3879860Z SCOPE_PATTERN_10_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3880211Z SCOPE_PATTERN_11=scripts/tests/test-check-blueprint-level3-templates.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3880598Z SCOPE_PATTERN_11_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3881138Z SCOPE_PATTERN_12=scripts/tests/test-check-configure-components.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3881515Z SCOPE_PATTERN_12_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3881863Z SCOPE_PATTERN_13=scripts/tests/test-check-context-command-execution.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3882240Z SCOPE_PATTERN_13_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3882558Z SCOPE_PATTERN_14=scripts/tests/test-check-dead-api-endpoints.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3882924Z SCOPE_PATTERN_14_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3883253Z SCOPE_PATTERN_15=scripts/tests/test-check-delegation-reachability.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3883619Z SCOPE_PATTERN_15_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3883930Z SCOPE_PATTERN_16=scripts/tests/test-check-evals-abstention.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3884276Z SCOPE_PATTERN_16_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3884596Z SCOPE_PATTERN_17=scripts/tests/test-check-git-sandbox-guards.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3884950Z SCOPE_PATTERN_17_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3885275Z SCOPE_PATTERN_18=scripts/tests/test-check-hook-cue-skill-refs.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3885627Z SCOPE_PATTERN_18_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3885932Z SCOPE_PATTERN_19=scripts/tests/test-check-hook-fail-closed.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3886301Z SCOPE_PATTERN_19_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3886598Z SCOPE_PATTERN_20=scripts/tests/test-check-hook-matchers.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3887347Z SCOPE_PATTERN_20_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3888017Z SCOPE_PATTERN_21=scripts/tests/test-check-issue-template-inheritance.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3888751Z SCOPE_PATTERN_21_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3889146Z SCOPE_PATTERN_22=scripts/tests/test-check-loop-integrity.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3889504Z SCOPE_PATTERN_22_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3890044Z SCOPE_PATTERN_23=scripts/tests/test-check-mktemp-canonical.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3890404Z SCOPE_PATTERN_23_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3920114Z SCOPE_PATTERN_24=scripts/tests/test-check-plugin-root-quoting.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3920881Z SCOPE_PATTERN_24_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3921523Z SCOPE_PATTERN_25=scripts/tests/test-check-positional-references.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3922137Z SCOPE_PATTERN_25_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3922675Z SCOPE_PATTERN_26=scripts/tests/test-check-prose-house-style.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3923278Z SCOPE_PATTERN_26_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3923646Z SCOPE_PATTERN_27=scripts/tests/test-check-research-radar-grounding.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3924046Z SCOPE_PATTERN_27_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3924367Z SCOPE_PATTERN_28=scripts/tests/test-check-routine-prompt.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3924724Z SCOPE_PATTERN_28_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3925041Z SCOPE_PATTERN_29=scripts/tests/test-check-ruff-version-sync.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3925404Z SCOPE_PATTERN_29_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3925719Z SCOPE_PATTERN_30=scripts/tests/test-check-skill-xrefs.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3926045Z SCOPE_PATTERN_30_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3926394Z SCOPE_PATTERN_31=scripts/tests/test-check-taskcompleted-verification.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3927318Z SCOPE_PATTERN_31_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3927650Z SCOPE_PATTERN_32=scripts/tests/test-check-unused-bash-grant.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3928002Z SCOPE_PATTERN_32_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3928339Z SCOPE_PATTERN_33=scripts/tests/test-check-version-pin-coverage.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3928705Z SCOPE_PATTERN_33_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3929039Z SCOPE_PATTERN_34=scripts/tests/test-check-workflow-cron-collisions.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3929416Z SCOPE_PATTERN_34_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3929722Z SCOPE_PATTERN_35=scripts/tests/test-check-workflow-js-model.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3930061Z SCOPE_PATTERN_35_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3930354Z SCOPE_PATTERN_36=scripts/tests/test-check-workflow-model.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3930693Z SCOPE_PATTERN_36_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3931025Z SCOPE_PATTERN_37=scripts/tests/test-check-workflow-script-triggers.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3931393Z SCOPE_PATTERN_37_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3931684Z SCOPE_PATTERN_38=scripts/tests/test-extract-md-elements.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3932013Z SCOPE_PATTERN_38_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3932336Z SCOPE_PATTERN_39=scripts/tests/test-guard-worktree-root-discovery.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3932898Z SCOPE_PATTERN_39_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3933231Z SCOPE_PATTERN_40=scripts/tests/test-infra-compliance-check.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3933580Z SCOPE_PATTERN_40_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3933892Z SCOPE_PATTERN_41=scripts/tests/test-lint-package-references.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3934234Z SCOPE_PATTERN_41_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3934521Z SCOPE_PATTERN_42=scripts/tests/test-lint-shell-scripts.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3934845Z SCOPE_PATTERN_42_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3935155Z SCOPE_PATTERN_43=scripts/tests/test-plugin-compliance-check.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3935498Z SCOPE_PATTERN_43_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3935796Z SCOPE_PATTERN_44=scripts/tests/test-select-split-candidates.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3936140Z SCOPE_PATTERN_44_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3936425Z SCOPE_PATTERN_45=scripts/tests/test-workflow-run-cost.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3937023Z SCOPE_PATTERN_45_MATCHED=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3937262Z OUT_OF_SCOPE=179
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3937478Z REQUIRED_DECLARED=29
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3937707Z REQUIRED_IN_SCOPE=4
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3937925Z REQUIRED_OUT_OF_SCOPE=25
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3938160Z REQUIRED_VIOLATIONS=0
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3938383Z SCANNED_EMPTY=false
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3938584Z STATUS=ERROR
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3938779Z ISSUE_COUNT=1
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3938965Z ISSUES:
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3939322Z   - SEVERITY=ERROR TYPE=test_failed TEST=scripts/tests/test-check-git-sandbox-guards.sh
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3939771Z === END SKILL SCRIPT TESTS ===
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.3942823Z ##[error]Process completed with exit code 1.
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.4245586Z Post job cleanup.
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.5167786Z [command]/usr/bin/git version
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.5199836Z git version 2.55.0
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.5242416Z Temporarily overriding HOME='/home/runner/work/_temp/f8960bec-f702-461e-90c9-2878312e7af2' before making global git config changes
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.5243875Z Adding repository directory to the temporary git global config as a safe directory
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.5248976Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/claude-plugins/claude-plugins
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.5282713Z Removing SSH command configuration
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.5290260Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.5327168Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.5584468Z Removing HTTP extra header
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.5590875Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.5660835Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.5943184Z Removing includeIf entries pointing to credentials config files
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.5953285Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.5997917Z includeif.gitdir:/home/runner/work/claude-plugins/claude-plugins/.git.path
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.5999538Z includeif.gitdir:/home/runner/work/claude-plugins/claude-plugins/.git/worktrees/*.path
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.6027672Z includeif.gitdir:/github/workspace/.git.path
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.6048048Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.6128482Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/claude-plugins/claude-plugins/.git.path
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.6130073Z /home/runner/work/_temp/git-credentials-2980f6f2-4c17-40f3-a673-faddda7f2926.config
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.6133309Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/claude-plugins/claude-plugins/.git.path /home/runner/work/_temp/git-credentials-2980f6f2-4c17-40f3-a673-faddda7f2926.config
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.6136695Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/claude-plugins/claude-plugins/.git/worktrees/*.path
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.6142013Z /home/runner/work/_temp/git-credentials-2980f6f2-4c17-40f3-a673-faddda7f2926.config
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.6155951Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/claude-plugins/claude-plugins/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-2980f6f2-4c17-40f3-a673-faddda7f2926.config
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.6200196Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.6228176Z /github/runner_temp/git-credentials-2980f6f2-4c17-40f3-a673-faddda7f2926.config
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.6251494Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-2980f6f2-4c17-40f3-a673-faddda7f2926.config
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.6295541Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.6340410Z /github/runner_temp/git-credentials-2980f6f2-4c17-40f3-a673-faddda7f2926.config
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.6347381Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-2980f6f2-4c17-40f3-a673-faddda7f2926.config
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.6392017Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.6643499Z Removing credentials config '/home/runner/work/_temp/git-credentials-2980f6f2-4c17-40f3-a673-faddda7f2926.config'
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.6822219Z Cleaning up orphan processes
+compliance	UNKNOWN STEP	2026-10-14T06:31:14.7130657Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: astral-sh/setup-uv@v6. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

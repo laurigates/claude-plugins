@@ -57,6 +57,9 @@ on:
       # PR touching only either file must still run it.
       - '.github/actions/script-to-issue/**'
       - '.github/workflows/workflow-model-audit.yml'
+      # scripts/tests/test-auto-fix-signature.sh extracts and runs the
+      # signature + issue-lookup step bodies of this workflow (#2744).
+      - '.github/workflows/github-workflow-auto-fix.yml'
       - '.github/workflows/test-skill-scripts.yml'
       # Case 7 of comfyui-node-scaffold's test-registry-health.sh pins the
       # install-fallback sentences in these three docs (#2994 follow-up). Without
@@ -100,6 +103,7 @@ on:
       - 'git-plugin/skills/git-merge-hazards/**'
       - '.claude/rules/gh-json-fields.md'
       - 'testing-plugin/skills/test-tripwire/SKILL.md'
+      - '.github/workflows/github-workflow-auto-fix.yml'
 
 concurrency:
   group: test-skill-scripts-${{ github.event.pull_request.number || github.ref }}

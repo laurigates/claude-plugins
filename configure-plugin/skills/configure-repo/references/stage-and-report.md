@@ -30,7 +30,7 @@ Files staged:
   .github/workflows/claude-code-review.yml  [CREATED | UPDATED | SKIPPED]
 
 Marketplace enrollment:
-  .claude/settings.json → extraKnownMarketplaces.claude-plugins  ✓
+  .claude/settings.json → extraKnownMarketplaces.laurigates-claude-plugins  ✓
   .github/workflows/claude.yml → plugin_marketplaces             ✓
 
 Health check: PASS | WARN (<N> warnings) | FAIL (<N> failures)
