@@ -4,7 +4,7 @@ description: gh CLI commands with JSON output for agent workflows. Use when quer
 user-invocable: false
 allowed-tools: Bash(gh pr *), Bash(gh run *), Bash(gh issue *), Bash(gh repo *), Bash(gh workflow *), Bash(gh api *), Read
 created: 2025-01-16
-modified: 2026-09-24
+modified: 2026-10-20
 reviewed: 2026-04-25
 ---
 
@@ -153,6 +153,8 @@ gh issue view $ISSUE_NUMBER --json number,title,state,labels
 gh issue view $ISSUE_NUMBER --json number,title,state,subIssuesSummary
 ```
 
+**Read a thread with `--json title,body,comments`, not `--comments`.** In a non-TTY context (every agent Bash call), `gh issue view N --comments` prints only the comments, with no title or body. When the issue has zero comments it prints nothing and exits 0, so an empty thread looks like an empty issue (observed on gh 2.102.0, #3125). `gh pr view --comments` likely behaves the same way, but that is unverified.
+
 ### List Issues
 
 ```bash
@@ -226,6 +228,7 @@ gh api repos/{owner}/{repo}/issues --paginate --jq '.[].number'
 | Get failure logs | `gh run view $ID --log-failed` |
 | PR merge status | `gh pr view $N --json mergeable,reviewDecision,statusCheckRollup` |
 | Quick issue list | `gh issue list --json number,title,labels -L 10` |
+| Full issue thread | `gh issue view $N --json title,body,comments` (non-TTY `--comments` omits the body) |
 | Sub-issue progress | `gh issue view $N --json title,subIssuesSummary` |
 | List sub-issues | `gh api repos/{o}/{r}/issues/{N}/sub_issues --jq '.[].number'` |
 | Add sub-issue | `gh api repos/{o}/{r}/issues/{N}/sub_issues -F sub_issue_id=M` |
