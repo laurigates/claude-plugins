@@ -277,7 +277,7 @@ cat > "$fx/extra-plugin/hooks.json" <<'JSON'
         {"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/missing.sh\""}
       ]},
       {"matcher": "Write(docs/adrs/**)", "hooks": [
-        {"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/note.sh\"", "timeout": 3000}
+        {"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/note.sh\"", "timeout": 700}
       ]}
     ],
     "PreCompact": [
@@ -343,8 +343,9 @@ check "fixture: cross-plugin hooks/lib copied" \
     test -f "$ext/hook-scripts/hooks-plugin/hooks/lib/drift-protocol.sh"
 check "fixture: path-glob matcher compiled" \
     grep -q '"pathRe": "\^docs/adrs/\.\*\$"' "$ext/index.ts"
-check "fixture: ms-intended timeout normalized to seconds" \
-    grep -qE '"timeout": 3,?$' "$ext/index.ts"
+# Issue #3092: timeouts are seconds; a value above 600 passes through unchanged.
+check "fixture: 700 s timeout passed through unchanged" \
+    grep -qE '"timeout": 700,?$' "$ext/index.ts"
 
 # (c) no placeholder in executable code.
 check_not "fixture: no literal CLAUDE_PLUGIN_ROOT placeholder in code" \

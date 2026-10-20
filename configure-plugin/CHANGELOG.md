@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.40.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.40.0...configure-plugin-v1.40.1) (2026-10-20)
+
+
+### Bug Fixes
+
+* **configure-plugin:** key the marketplace as laurigates-claude-plugins ([#3132](https://github.com/laurigates/claude-plugins/issues/3132)) ([57f96da](https://github.com/laurigates/claude-plugins/commit/57f96da5b1f9496952e1a6d3518c0738782c56d8))
+
 ## [1.40.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.39.3...configure-plugin-v1.40.0) (2026-10-18)
 
 

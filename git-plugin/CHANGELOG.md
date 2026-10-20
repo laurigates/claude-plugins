@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.63.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.63.1...git-plugin-v2.63.2) (2026-10-20)
+
+
+### Bug Fixes
+
+* **git-plugin:** select PRs with top-level comment or COMMENTED review feedback ([#3135](https://github.com/laurigates/claude-plugins/issues/3135)) ([3cd3724](https://github.com/laurigates/claude-plugins/commit/3cd37240f8bcaaf7868c4cec6feace3cdede8ab4)), closes [#3129](https://github.com/laurigates/claude-plugins/issues/3129)
+
+
+### Documentation
+
+* **git-plugin:** warn that non-TTY gh issue view --comments omits the body ([#3134](https://github.com/laurigates/claude-plugins/issues/3134)) ([bbc6a89](https://github.com/laurigates/claude-plugins/commit/bbc6a8977566072ae6c224e6246a955ce1aaf803)), closes [#3125](https://github.com/laurigates/claude-plugins/issues/3125)
+
 ## [2.63.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.63.0...git-plugin-v2.63.1) (2026-10-18)
 
 

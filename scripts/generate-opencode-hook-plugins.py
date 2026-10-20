@@ -121,13 +121,13 @@ def glob_to_regex(pattern):
 
 
 def normalize_timeout(value):
-    """hooks.json timeouts are seconds, but several manifests carry
-    millisecond-intended values (3000, 5000). Claude Code caps hook timeouts
-    at 600s, so anything above that is treated as milliseconds."""
+    """hooks.json timeouts are seconds and pass through unchanged (floats are
+    truncated to int). A missing, non-numeric, zero or negative value falls
+    back to 60. Millisecond-looking values are kept out of the manifests by
+    scripts/check-hook-timeout-units.sh (fails on any timeout >= 1000), so no
+    unit conversion happens here (#3092)."""
     if not isinstance(value, (int, float)) or value <= 0:
         return 60
-    if value > 600:
-        return max(1, int(value / 1000))
     return int(value)
 
 
