@@ -1,6 +1,6 @@
 {
-  "lastCheckedVersion": "2.1.296",
-  "lastCheckedDate": "2026-10-12",
+  "lastCheckedVersion": "2.1.303",
+  "lastCheckedDate": "2026-10-19",
   "rewindNote": "Rewound from 2.1.257 to 2.1.185 on 2026-09-03. The excerpt is sliced from lastCheckedVersion forward, so the pointer must name the last version a review actually covered. 2.1.257 was written by the Fable 5.1 adaptation sweep (docs/audits/fable-5.1-adaptation-2026-09-02.md), whose declared window was 2.1.232-2.1.257 -- it advanced the pointer past 46 versions it never read. The automated changelog review had already gone silent after 2.1.185: 22 successful runs, 13 consecutive filing nothing, last tracking issue #1733 (2026-06-21). The blind spot's confirmed casualty was the subagent nesting ceiling in .claude/rules/agent-development.md, which instructed 5 levels after 2.1.217 disabled nesting by default and 2.1.219 set it to 3. CORRECTED 2026-09-16: that line was already fixed on 2026-09-02 (the file now carries a depth-3 default with a per-version history table); the fix and this note crossed in flight, so the 2.1.241 entry's claim that the rule 'still claims 5 levels' was stale when written. The rewind itself was still correct -- the unread ranges were real, and reviewing them found 6 further stale assertions the pointer had hidden.",
   "knownUnreviewedRanges": [
     {
@@ -30,6 +30,34 @@
   ],
   "changelogUrl": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
   "reviewedChanges": [
+    {
+      "version": "2.1.303",
+      "date": "2026-10-19",
+      "windowed": false,
+      "relevantChanges": [
+        "HIGH/REVERSAL: claude -p and Agent SDK sessions with no permission mode start in default (not auto) on third-party providers, telemetry off or a fresh install; --permission-mode auto keeps auto (2.1.302) - reverses the 2.1.285 -p/SDK auto default; CLAUDE_CODE_AUTO_MODE_MODEL picks the client-side classifier model (2.1.302)",
+        "HIGH/STALE: fork subagents on by default in -p, Agent SDK, desktop and VS Code (CLAUDE_CODE_FORK_SUBAGENT=0 disables; claude mcp serve never offers them); desktop/VS Code main-conversation subagents always background, a subagent's own Agent calls foreground in -p/SDK/desktop/VS Code (2.1.302). agent-patterns-plugin/skills/custom-agent-definitions/SKILL.md:61 still says fork is off under -p unless =1",
+        "HIGH: MCP allow rules reach only the named server (mcp__a no longer allows a__b or a_; use mcp__<whole name>__*), agent tools: lists likewise, and deny/ask for __-containing server names now apply (2.1.299)",
+        "HIGH: PreToolUse/PermissionRequest updatedInput validated like Claude's input - unknown keys dropped, rejected input denies (2.1.300); plugin hooks fail closed when they cannot be handed the action or answer, 28,000-level nesting cap (2.1.299); Windows shell-less guard hooks no longer fail open (2.1.299); plan mode no longer runs hook-allowed writes (2.1.299)",
+        "HIGH: UserPromptSubmit hooks run before skill/command expansion, so blocking also stops embedded shell; a skill's own frontmatter UserPromptSubmit first runs on the next prompt (2.1.299)",
+        "HIGH: prompt/agent hooks capped at 12 concurrent per event (2.1.302); agent hooks honour model:, alias resolution, and an unavailable model falls back instead of allowing the action (2.1.300)",
+        "Skills: argument fill capped at 64 names x 64 chars (2.1.301); names with hidden/bidi/blank chars or < > not offered (2.1.299); skills relisted after /rewind fixed (2.1.301), /reload-skills re-sends the list (2.1.299)",
+        "Hooks misc: plugin WorktreeCreate/WorktreeRemove run under --worktree (2.1.300); WorktreeCreate worktree with unpushed commits no longer removed without asking (2.1.301); SessionEnd on exit with background command fixed (2.1.300); hook ask prompt names plugin/skill source (2.1.301); Cowork PermissionRequest hooks lose setMode and shell/subagent approval in auto mode (2.1.299/2.1.300)",
+        "Agents/runtime: SendMessage by name after restart (2.1.299); Workflow carried into background sessions resumes via Workflow approval (2.1.300); workflow agents skipping steps after the no-user-authority note fixed (2.1.301); worktree isolation git 2.56 and awk-guard fixes (2.1.302/2.1.299); ScheduleWakeup during background tasks fixed (2.1.299)",
+        "Sandbox: claude remote-control --sandbox/--no-sandbox removed, use sandbox.enabled (2.1.300); --plugin-dir sandbox write escape, macOS symlink denied-path bypass, symlinked allowRead/allowWrite roots and glob-parsing mismatch fixed (2.1.299)",
+        "Plugins/MCP: plugin eval --disallow-tools and API-error scoring (2.1.299); reftable marketplace re-clone fix (2.1.302); MCP redirects not followed for connector proxy (2.1.299), 2026-07-28 default in cloud/RC (2.1.299), schema-rejected tool sent without parameters (2.1.300)",
+        "Context: idle compaction of idle 200K+ conversations before cache expiry, CLAUDE_CODE_IDLE_COMPACT_MIN_TOKENS / idleCompaction:false / /config row (2.1.299/2.1.302); Grep/Glob now error instead of reporting no matches when search fails (2.1.301)",
+        "No deprecated identifiers referenced in repo code (mod Text bold and remote-control --sandbox are unreferenced); remaining bulk of the window is VS Code, Claude Tag, Code Review, cloud-session, Remote Control, vim-mode, self-hosted-runner and TUI fixes"
+      ],
+      "actionsRequired": [
+        "See issue #3130 for the rule update plan",
+        "No rule files were edited by this triage run; the tracking issue groups the bullets by file",
+        "Files needing follow-up edits: hooks-reference.md, prompt-agent-hooks.md, skill-development.md, agent-development.md, agent-runtime.md, agentic-permissions.md (+ auto-mode.md), plugin-structure.md, sandbox-guidance.md, context-engineering.md, plus agent-patterns-plugin custom-agent-definitions and tool-result-traps skills and the MCP-facing skills (mcp-management, configure-mcp)",
+        "Top follow-ups: restate the -p/SDK default permission mode as default on 3P/telemetry-off/fresh installs (2.1.302); fix the stale fork-under--p claim in custom-agent-definitions SKILL.md:61 and residual row 2906:agent-development:11 (2.1.302); document MCP allow-rule server scoping (2.1.299), updatedInput validation (2.1.300) and UserPromptSubmit-before-expansion (2.1.299)",
+        "Deprecated-identifier list was empty this run; the only deprecations/removals in the window (mod Text bold, remote-control --sandbox/--no-sandbox) are not referenced in the repo",
+        "Tracking issue #3130, as read back by the workflow: labels present: changelog-review, maintenance; assignee laurigates present"
+      ]
+    },
     {
       "version": "2.1.296",
       "date": "2026-10-12",

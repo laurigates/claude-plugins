@@ -1,0 +1,6 @@
+compliance	UNKNOWN STEP	﻿2026-04-29T09:10:02.1180934Z Current runner version: unknown (reconstructed fixture)
+compliance	UNKNOWN STEP	2026-04-29T09:10:02.1180934Z ##[group]Run anthropics/claude-code-action@v1
+compliance	UNKNOWN STEP	2026-04-29T09:10:02.1180934Z ##[endgroup]
+compliance	UNKNOWN STEP	2026-04-29T09:10:02.1180934Z App token exchange failed: 401 Unauthorized - Workflow validation failed. The workflow file must exist and have identical content to the version on the repository's default branch.
+compliance	UNKNOWN STEP	2026-04-29T09:10:02.1180934Z ##[error]Action failed with error: Workflow validation failed. The workflow file must exist and have identical content to the version on the repository's default branch. If you're seeing this on a PR when you first add a code review workflow file to your repository, this is normal and you should ignore this error.
+compliance	UNKNOWN STEP	2026-04-29T09:10:02.1180934Z ##[error]Process completed with exit code 1.

@@ -1,0 +1,59 @@
+compliance	UNKNOWN STEP	﻿2026-10-10T10:44:56.0164138Z Current runner version: '2.337.0'
+compliance	UNKNOWN STEP	2026-10-10T10:44:56.0182085Z ##[group]Runner Image Provisioner
+compliance	UNKNOWN STEP	2026-10-10T10:44:56.0182622Z Hosted Compute Agent
+compliance	UNKNOWN STEP	2026-10-10T10:47:14.2048684Z ##[group]Run bash scripts/lint-shell-scripts.sh
+compliance	UNKNOWN STEP	2026-10-10T10:47:14.2048910Z [36;1mbash scripts/lint-shell-scripts.sh[0m
+compliance	UNKNOWN STEP	2026-10-10T10:47:14.2101692Z shell: /usr/bin/bash -e {0}
+compliance	UNKNOWN STEP	2026-10-10T10:47:14.2101855Z env:
+compliance	UNKNOWN STEP	2026-10-10T10:47:14.2102002Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+compliance	UNKNOWN STEP	2026-10-10T10:47:14.2102210Z ##[endgroup]
+compliance	UNKNOWN STEP	2026-10-10T10:47:16.0538971Z WARN:  health-plugin/skills/health-check/scripts/lib/retention.sh: Missing 'set -euo pipefail' (recommended)
+compliance	UNKNOWN STEP	2026-10-10T10:47:16.7275067Z WARN:  macos-plugin/skills/macos-performance-benchmark/scripts/bench/cpu.sh: Missing 'set -euo pipefail' (recommended)
+compliance	UNKNOWN STEP	2026-10-10T10:47:16.7393444Z WARN:  macos-plugin/skills/macos-performance-benchmark/scripts/bench/disk.sh: Missing 'set -euo pipefail' (recommended)
+compliance	UNKNOWN STEP	2026-10-10T10:47:16.7519824Z WARN:  macos-plugin/skills/macos-performance-benchmark/scripts/bench/memory.sh: Missing 'set -euo pipefail' (recommended)
+compliance	UNKNOWN STEP	2026-10-10T10:47:16.7638918Z WARN:  macos-plugin/skills/macos-performance-benchmark/scripts/config.sh: Missing 'set -euo pipefail' (recommended)
+compliance	UNKNOWN STEP	2026-10-10T10:47:16.7758224Z WARN:  macos-plugin/skills/macos-performance-benchmark/scripts/diag/cpu.sh: Missing 'set -euo pipefail' (recommended)
+compliance	UNKNOWN STEP	2026-10-10T10:47:16.7879403Z WARN:  macos-plugin/skills/macos-performance-benchmark/scripts/diag/disk.sh: Missing 'set -euo pipefail' (recommended)
+compliance	UNKNOWN STEP	2026-10-10T10:47:16.8000475Z WARN:  macos-plugin/skills/macos-performance-benchmark/scripts/diag/memory.sh: Missing 'set -euo pipefail' (recommended)
+compliance	UNKNOWN STEP	2026-10-10T10:47:16.8122773Z WARN:  macos-plugin/skills/macos-performance-benchmark/scripts/diag/startup.sh: Missing 'set -euo pipefail' (recommended)
+compliance	UNKNOWN STEP	2026-10-10T10:47:16.8244603Z WARN:  macos-plugin/skills/macos-performance-benchmark/scripts/lib/baseline.sh: Missing 'set -euo pipefail' (recommended)
+compliance	UNKNOWN STEP	2026-10-10T10:47:18.6632238Z ERROR: scripts/tests/test-script-to-issue-guard.sh:39: printf/echo of a variable piped into grep -q under pipefail — grep -q exits on its first match, the writer takes SIGPIPE, and pipefail turns a hit into a miss (#2959). Use a here-string: grep -q PATTERN <<<"$var"
+compliance	UNKNOWN STEP	2026-10-10T10:47:18.6634151Z ERROR: scripts/tests/test-script-to-issue-guard.sh:40: printf/echo of a variable piped into grep -q under pipefail — grep -q exits on its first match, the writer takes SIGPIPE, and pipefail turns a hit into a miss (#2959). Use a here-string: grep -q PATTERN <<<"$var"
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.0536614Z 
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.0537150Z Shell script lint: 2 error(s), 10 warning(s)
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.0537496Z Run with --fix to auto-fix shebang issues.
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.0544610Z ##[error]Process completed with exit code 1.
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.0659357Z Post job cleanup.
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1252863Z [command]/usr/bin/git version
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1281463Z git version 2.55.0
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1313455Z Temporarily overriding HOME='/home/runner/work/_temp/b7727864-e510-43a6-a61e-689dc5e930ba' before making global git config changes
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1313867Z Adding repository directory to the temporary git global config as a safe directory
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1314409Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/claude-plugins/claude-plugins
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1332774Z Removing SSH command configuration
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1337273Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1363762Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1566518Z Removing HTTP extra header
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1571938Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1601735Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1798502Z Removing includeIf entries pointing to credentials config files
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1805505Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1831930Z includeif.gitdir:/home/runner/work/claude-plugins/claude-plugins/.git.path
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1832427Z includeif.gitdir:/home/runner/work/claude-plugins/claude-plugins/.git/worktrees/*.path
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1832830Z includeif.gitdir:/github/workspace/.git.path
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1833160Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1846870Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/claude-plugins/claude-plugins/.git.path
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1861973Z /home/runner/work/_temp/git-credentials-c5510283-99d9-4ac6-bc9f-836d0d9bb793.config
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1869970Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/claude-plugins/claude-plugins/.git.path /home/runner/work/_temp/git-credentials-c5510283-99d9-4ac6-bc9f-836d0d9bb793.config
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1903930Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/claude-plugins/claude-plugins/.git/worktrees/*.path
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1924839Z /home/runner/work/_temp/git-credentials-c5510283-99d9-4ac6-bc9f-836d0d9bb793.config
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1931846Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/claude-plugins/claude-plugins/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-c5510283-99d9-4ac6-bc9f-836d0d9bb793.config
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1961284Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1981421Z /github/runner_temp/git-credentials-c5510283-99d9-4ac6-bc9f-836d0d9bb793.config
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.1986724Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-c5510283-99d9-4ac6-bc9f-836d0d9bb793.config
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.2016553Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.2042667Z /github/runner_temp/git-credentials-c5510283-99d9-4ac6-bc9f-836d0d9bb793.config
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.2047640Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-c5510283-99d9-4ac6-bc9f-836d0d9bb793.config
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.2077406Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.2255941Z Removing credentials config '/home/runner/work/_temp/git-credentials-c5510283-99d9-4ac6-bc9f-836d0d9bb793.config'
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.2380628Z Cleaning up orphan processes
+compliance	UNKNOWN STEP	2026-10-10T10:47:19.2585957Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: astral-sh/setup-uv@v6. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

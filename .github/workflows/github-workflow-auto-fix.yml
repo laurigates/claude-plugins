@@ -99,6 +99,219 @@ jobs:
           RECENT_FIX=$(git log --oneline -5 --format='%s' | grep -cE '^fix(\([^)]*\))?: resolve CI failure' || true)
           echo "recent_fix_count=$RECENT_FIX" >> "$GITHUB_OUTPUT"
 
+      # Fingerprint the failure so a later run can recognise one already filed
+      # (#2744: #1777/#1782 and #1204/#1472/#1495/#1508 were each one root cause
+      # filed as several issues). Deterministic bash + jq over the log saved
+      # above; the agent neither sees nor chooses the signature. Ported from
+      # laurigates/.github reusable-auto-fix.yml (laurigates/.github#68).
+      #
+      # The line it hashes, in order of preference: the first failing
+      # pre-commit hook id; else the first `##[error]` that is not the runner's
+      # generic "Process completed with exit code N"; else the last
+      # exception-shaped line ("...Error: ...") before that exit line; else
+      # (`diag`, added here) the last line before it carrying an ERROR/FATAL
+      # token or "command not found" -- the actionlint duplicates had nothing
+      # but `<script>.sh: line 1: actionlint: command not found`. The
+      # `--log-failed` job/step/timestamp columns are dropped, then run/job
+      # ids, SHAs, `0x` addresses, timestamps, UUIDs, runner paths and the
+      # branch name are normalised out. signature = sha256("<workflow>|<line>")
+      # [0:12]. No line means no signature, which switches dedup off for the run.
+      #
+      # scripts/tests/test-auto-fix-signature.sh runs this body against logs.
+      - name: Compute failure signature
+        id: signature
+        env:
+          CONTEXT_DIR: ${{ steps.context.outputs.context_dir }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+          log="${CONTEXT_DIR}/failure-logs.txt"
+          picked=""
+          if [ -s "$log" ]; then
+            if ! picked="$(jq -Rrs --arg branch "$BRANCH" '
+              def msg:
+                sub("^[^\t]*\t[^\t]*\t"; "")
+                | sub("^\\x{FEFF}"; "")
+                | sub("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z ?"; "")
+                | gsub("\u001b\\[[0-9;]*[A-Za-z]"; "")
+                | gsub("\r"; "");
+              def generic:
+                test("^##\\[error\\](Process completed with exit code [0-9]+|The operation was canceled)\\.?$");
+              # The branch is replaced only as a whole token: a substring
+              # replace would rewrite every "a" for a branch named "a".
+              def norm:
+                (if $branch == "" then .
+                 else gsub("(?<![A-Za-z0-9._-])"
+                           + ($branch | gsub("(?<c>[.+*?(){}$|^\\\\\\[\\]])"; "\\\(.c)"))
+                           + "(?![A-Za-z0-9._-])"; "<branch>")
+                 end)
+                | gsub("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z?"; "<ts>")
+                | gsub("\\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\\b"; "<uuid>")
+                | gsub("/home/runner/work/[^_/\\s][^/\\s]*/[^/\\s]+/"; "")
+                | gsub("(/home/runner|/Users/runner|/tmp|/private/var/folders|/var/folders|/opt/hostedtoolcache|/__w)/[^\\s\\x27\",:)]*"; "<path>")
+                | gsub("\\b0x[0-9a-fA-F]+"; "<addr>")
+                | gsub("\\b[0-9a-f]{7,}\\b"; "<id>")
+                | gsub("\\s+"; " ")
+                | sub("^ "; "")
+                | sub(" $"; "");
+              [splits("\n") | msg] as $l
+              | ($l | length) as $n
+              | (first(range($n) | select($l[.] | generic)) // $n) as $end
+              | (first(range($n) | select($l[.] | test("\\.{3,}Failed$"))) // null) as $hook
+              | (first($l[] | select(startswith("##[error]") and (generic | not))) // null) as $err
+              | (last($l[:$end][] | select(test("(^|[^A-Za-z0-9_])([A-Za-z_][A-Za-z0-9_.]*)?(Error|Exception): "))) // null) as $exc
+              # A bare `STATUS=ERROR` summary names no cause, and hashing it
+              # would merge every failure of the workflow into one issue.
+              | (last($l[:$end][] | select((startswith("##[") | not)
+                  and (test("^\\s*[A-Z_]+=(ERROR|FATAL)\\s*$") | not)
+                  and test("(^|[^A-Za-z])(ERROR|FATAL)([^A-Za-z(]|$)|command not found"))) // null) as $diag
+              | if $hook != null then
+                  ((($l[$hook + 1] // "") | capture("^- hook id: (?<id>\\S+)").id)
+                    // ($l[$hook] | sub("\\s*\\.{3,}Failed$"; "")))
+                  | "hook\tpre-commit hook failed: \(norm)"
+                elif $err != null then "error\t\($err | ltrimstr("##[error]") | norm)"
+                elif $exc != null then "exception\t\($exc | norm)"
+                elif $diag != null then "diag\t\($diag | norm)"
+                else empty
+                end
+            ' "$log")"; then
+              # Fail open: a log jq cannot read switches dedup off for this run
+              # rather than failing the job before the agent ever runs.
+              echo "::warning::Could not compute a failure signature; issue dedup is off for this run."
+              picked=""
+            fi
+          fi
+
+          signature=""
+          src=none
+          line=""
+          if [ -n "$picked" ]; then
+            src="${picked%%$'\t'*}"
+            line="${picked#*$'\t'}"
+            signature="$(printf '%s|%s' "$WORKFLOW_NAME" "$line" | sha256sum | cut -c1-12)"
+          fi
+          {
+            echo "signature=${signature}"
+            echo "source=${src}"
+            # Single-line by construction: norm collapses every whitespace run.
+            echo "line=${line}"
+          } >> "$GITHUB_OUTPUT"
+          echo "Signature: ${signature:-<none, dedup off>} (source: ${src})"
+          # Prefixed, so a line lifted from the failed run can never start with
+          # `::` and be read as a workflow command in this job.
+          echo "Signature input: ${line}"
+
+      # Look for an open issue this failure was already filed as, before the
+      # agent runs. The signature travels in the issue body as a hidden marker,
+      # `<!-- auto-fix-signature: <sig> -->`, so the lookup needs neither a
+      # label nor search: `gh issue list` without --search reads the issue
+      # listing, which shows an issue as soon as it exists, while the search
+      # index lags creation. The oldest matching issue wins and gets a comment
+      # linking this run and quoting the hashed line, so a reader can judge the
+      # grouping. Runs even when the Claude step is skipped below, so a
+      # recurrence is still recorded on the open issue.
+      #
+      # The outcome reaches the prompt as `directive`, which replaces the old
+      # unconditional "create an issue" instruction, and `mode` gates the
+      # `--disallowedTools` deny on the Claude step.
+      - name: Find existing issue for this failure
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SIGNATURE: ${{ steps.signature.outputs.signature }}
+          SIGNATURE_INPUT: ${{ steps.signature.outputs.line }}
+          PR_NUMBER: ${{ steps.context.outputs.pr_number }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+        run: |
+          set -euo pipefail
+          if [ -n "$SIGNATURE" ] && ! [[ "$SIGNATURE" =~ ^[0-9a-f]{12}$ ]]; then
+            echo "::error::unexpected failure signature '${SIGNATURE}'"
+            exit 1
+          fi
+          case "$PR_NUMBER" in ''|*[!0-9]*) PR_NUMBER='' ;; esac
+
+          marker_prefix='<!-- auto-fix-signature: '
+          if ! issues="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 500 --json number,body)" \
+             || ! jq -e 'type == "array"' >/dev/null 2>&1 <<<"$issues"; then
+            echo "::warning::Could not list open issues, so this run cannot match its failure to one already filed."
+            issues='[]'
+          fi
+          match=""
+          if [ -n "$SIGNATURE" ]; then
+            match="$(jq -r --arg m "${marker_prefix}${SIGNATURE} -->" \
+              '[.[] | select((.body // "") | contains($m)) | .number] | min // empty' <<<"$issues")"
+          fi
+
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}"
+          pr_ref=none
+          if [ -n "$PR_NUMBER" ]; then pr_ref="#${PR_NUMBER}"; fi
+          if [ -n "$match" ]; then
+            mode=existing
+            # The hashed line goes in an indented code block, so log text
+            # cannot render as Markdown, @-mention anyone or link an issue.
+            shown="${SIGNATURE_INPUT:-}"
+            shown="${shown:0:300}"
+            # shellcheck disable=SC2016 # the backticks are Markdown code spans
+            body="$(printf 'A failure with the same signature (`%s`) occurred again. The log line it was computed from:\n\n    %s\n\n- Run: %s\n- Workflow: %s\n- Branch: `%s`\n- PR: %s\n' \
+              "$SIGNATURE" "$shown" "$run_url" "$WORKFLOW_NAME" "$BRANCH" "$pr_ref")"
+            if gh issue comment "$match" --repo "$GITHUB_REPOSITORY" --body "$body" >/dev/null; then
+              echo "Matched open issue #${match}; commented with this run."
+            else
+              echo "::warning::Matched open issue #${match} but could not comment on it; no new issue will be filed."
+            fi
+          else
+            mode=create
+          fi
+
+          case "$mode" in
+            existing)
+              directive="$(printf '%s\n' \
+                "Issue #${match} already tracks this failure: its body carries the failure signature of this run (\`${SIGNATURE}\`), and this workflow has already commented on it with a link to this run. Read it first (\`gh issue view ${match} --comments\`); it may already name the cause or the fix." \
+                "" \
+                "1. Do NOT create a new issue." \
+                "2. If your analysis finds something #${match} does not say yet, add it there: \`gh issue comment ${match} --body \"...\"\`")"
+              if [ -n "$PR_NUMBER" ]; then
+                directive+=$'\n'"3. Comment on PR #${PR_NUMBER} linking #${match}: \`gh pr comment ${PR_NUMBER} --body \"...\"\`"
+              fi
+              ;;
+            create)
+              directive="$(printf '%s\n' \
+                "1. Check that no open issue already covers this root cause. The signature lookup found no match, but issues filed before this workflow added signatures carry no marker, so check the titles too: \`gh issue list --state open --limit 100 --json number,title\`" \
+                "   If one describes the same root cause, comment on it with this run's details (\`gh issue comment <number> --body \"...\"\`) and do not create a new issue." \
+                "2. Otherwise create a GitHub issue with detailed analysis:" \
+                "   \`\`\`" \
+                "   gh issue create \\" \
+                "     --title \"CI failure: <brief description of the problem>\" \\" \
+                "     --body \"<detailed analysis with logs, root cause, and suggested manual steps>\" \\" \
+                "     --label \"bug,ci-failure\"" \
+                "   \`\`\`")"
+              # Its own statement, not part of the continued printf above:
+              # scripts/check-workflow-labels.sh folds backslash continuations
+              # into the `gh issue create` line and would read `flag` as a label.
+              directive+=$'\n'"   Note: If the labels don't exist, omit the --label flag and mention the suggested labels in the body."
+              if [ -n "$SIGNATURE" ]; then
+                directive+=$'\n'"$(printf '%s\n' \
+                  "   End the body with the following line, exactly as written and on a line of its own. It is hidden when rendered, and it is how the next run of this workflow finds the issue:" \
+                  "" \
+                  "   <!-- auto-fix-signature: ${SIGNATURE} -->")"
+              fi
+              if [ -n "$PR_NUMBER" ]; then
+                directive+=$'\n'"3. Comment on PR #${PR_NUMBER} linking the created issue: \`gh pr comment ${PR_NUMBER} --body \"...\"\`"
+              fi
+              ;;
+          esac
+
+          {
+            echo "mode=${mode}"
+            echo "issue_number=${match}"
+            echo "directive<<AUTO_FIX_DIRECTIVE_EOF"
+            printf '%s\n' "$directive"
+            echo "AUTO_FIX_DIRECTIVE_EOF"
+          } >> "$GITHUB_OUTPUT"
+
       # Removed the "Check for PR flood guard" step: it could never fire. `head:` is an
       # exact-match search qualifier, so `head:auto-fix/` matched only a branch literally
       # named `auto-fix/` — and this workflow never creates `auto-fix/*` branches anyway,
@@ -122,11 +335,18 @@ jobs:
           # `--model`/`--effort` anchored at line start in a folded scalar.
           # The tool boundary belongs in `--allowedTools` here — `additional_permissions`
           # takes a GitHub permissions MAP, so a tool list passed there is inert.
+          #
+          # When the lookup matched an open issue (mode != create),
+          # `--disallowedTools` denies issue creation outright instead of
+          # relying on the directive alone: deny rules are evaluated before
+          # allow rules, so this beats `Bash(gh issue *)`. `gh issue new` is an
+          # alias of `gh issue create`.
           claude_args: >-
             --model opus
             --effort medium
             --max-turns 30
             --allowedTools "Read,Write,Edit,Grep,Glob,Task,TodoWrite,Bash(git status *),Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git add *),Bash(git commit *),Bash(git push *),Bash(git checkout *),Bash(git branch *),Bash(git config *),Bash(gh pr *),Bash(gh issue *),Bash(gh run *),Bash(python3 *),Bash(bash *)"
+            ${{ steps.existing.outputs.mode != 'create' && '--disallowedTools "Bash(gh issue create *),Bash(gh issue new *)"' || '' }}
           prompt: |
             A GitHub Actions workflow has failed on branch `${{ steps.context.outputs.branch }}`.
             Your job is to analyze the failure, determine if it can be auto-fixed, and either fix it or open an issue.
@@ -188,15 +408,7 @@ jobs:
                ```
 
             ### If NOT auto-fixable:
-            1. Create a GitHub issue with detailed analysis:
-               ```
-               gh issue create \
-                 --title "CI failure: <brief description of the problem>" \
-                 --body "<detailed analysis with logs, root cause, and suggested manual steps>" \
-                 --label "bug,ci-failure"
-               ```
-               Note: If the labels don't exist, omit the --label flag and mention the suggested labels in the body.
-            2. If "Associated PR" above is a number (skip if it is `none`), comment on it linking to the created issue.
+            ${{ steps.existing.outputs.directive }}
 
             ## Important rules
             - Read the project rules in `.claude/rules/` for commit format and code standards

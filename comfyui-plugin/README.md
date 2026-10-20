@@ -68,7 +68,7 @@ marketplace. Add the marketplace, then enable the plugin:
 ```
 
 ```
-/plugin install comfyui-plugin@claude-plugins
+/plugin install comfyui-plugin@laurigates-claude-plugins
 ```
 
 `comfy-node` and `comfyui-node-scaffold` additionally expect `python3` (the
