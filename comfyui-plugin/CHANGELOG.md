@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.3](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.14.2...comfyui-plugin-v1.14.3) (2026-10-20)
+
+
+### Documentation
+
+* **comfyui-plugin:** use the marketplace name in the install command ([#3133](https://github.com/laurigates/claude-plugins/issues/3133)) ([ac63cac](https://github.com/laurigates/claude-plugins/commit/ac63cacffea2729eb3b75f239ebb6fd74747ad6b))
+
 ## [1.14.2](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.14.1...comfyui-plugin-v1.14.2) (2026-10-17)
 
 
