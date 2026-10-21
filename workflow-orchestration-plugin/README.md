@@ -10,7 +10,7 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of the preflight → checkpoint
 
 | Skill | Command | Description |
 |-------|---------|-------------|
-| workflow-preflight | `/workflow:preflight` | Pre-work validation: check remote state, existing PRs, branch conflicts |
+| workflow-preflight | `/workflow:preflight` | Pre-work validation: check remote state, existing PRs, branch conflicts; `--recon` adds gh auth, merge gates and required secrets before an agent wave |
 | workflow-parallel-issues | `/workflow:parallel-issues` | Process multiple GitHub issues in parallel with worktree isolation |
 | workflow-ci-fix-pipeline | `/workflow:ci-fix` | Autonomous CI failure diagnosis and fix across PRs |
 | workflow-checkpoint-refactor | `/workflow:checkpoint-refactor` | Multi-phase refactoring with persistent state across sessions |

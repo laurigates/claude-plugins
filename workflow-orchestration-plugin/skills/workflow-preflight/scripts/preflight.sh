@@ -14,6 +14,13 @@
 # Usage:
 #   bash preflight.sh [--project-dir <path>] [--base <ref>] [--issue <n>]
 #                     [--branch <name>] [--no-fetch]
+#                     [--recon [--home-dir <path>] [--need-secret NAME]...]
+#
+# --recon adds the pre-wave checks for things that stall a fanned-out run at
+# its last step: gh login, permission rules and PreToolUse hooks that gate
+# merge/push/worktree/release, the configured permission mode, and the repo
+# secrets/environments the run needs. Settings files are read from
+# <home-dir>/.claude/ (default $HOME) and <repo>/.claude/.
 #
 # Exit codes: 0 when state was gathered (STATUS=OK or WARN), 1 on ERROR
 # (not a git repository). Network/gh failures degrade gracefully — they never
@@ -26,6 +33,9 @@ base_ref=""
 issue_num=""
 branch_name=""
 do_fetch=true
+do_recon=false
+home_dir=""
+need_secrets=()
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -34,11 +44,15 @@ while [ $# -gt 0 ]; do
     --issue) issue_num="$2"; shift 2 ;;
     --branch) branch_name="$2"; shift 2 ;;
     --no-fetch) do_fetch=false; shift ;;
+    --recon) do_recon=true; shift ;;
+    --home-dir) home_dir="$2"; shift 2 ;;
+    --need-secret) need_secrets+=("$2"); shift 2 ;;
     *) shift ;;
   esac
 done
 
 : "${project_dir:=$(pwd)}"
+: "${home_dir:=$HOME}"
 
 git_in() { git -C "$project_dir" "$@"; }
 
@@ -177,6 +191,78 @@ echo "BRANCH_MATCHES=${branch_matches}"
 
 [ -n "$branch_name" ] && echo "TARGET_BRANCH=${branch_name}"
 
+# --- Pre-wave recon (--recon) ----------------------------------------------
+# Facts only. Which gate needs manual approval is the skill's call.
+recon_blockers=""
+if [ "$do_recon" = true ]; then
+  gh_auth="no-gh"
+  if command -v gh >/dev/null 2>&1; then
+    gh_auth="failed"
+    [ "$gh_available" = true ] && gh_auth="ok"
+  fi
+  echo "GH_AUTH=${gh_auth}"
+  [ "$gh_auth" = "ok" ] || recon_blockers="gh_auth"
+
+  # Lowest to highest precedence, so the last defaultMode found wins.
+  gates=""
+  hooks=""
+  perm_mode="unset"
+  if command -v jq >/dev/null 2>&1; then
+    for f in "${home_dir}/.claude/settings.json" "${repo_root}/.claude/settings.json" \
+      "${repo_root}/.claude/settings.local.json"; do
+      [ -f "$f" ] || continue
+      g=$(jq -r '((.permissions.deny // []) | map("deny:" + .))
+                 + ((.permissions.ask // []) | map("ask:" + .))
+                 | .[] | select(test("merge|push|worktree|release"; "i"))' "$f" 2>/dev/null \
+        | paste -sd';' - || true)
+      [ -n "$g" ] && gates="${gates:+${gates};}${g}"
+      h=$(jq -r '(.hooks.PreToolUse // [])[] | (.hooks // [])[] | .command // empty' "$f" 2>/dev/null \
+        | grep -oE '[A-Za-z0-9_.-]+\.(sh|py|js|ts)' | paste -sd, - || true)
+      [ -n "$h" ] && hooks="${hooks:+${hooks},}${h}"
+      m=$(jq -r '.permissions.defaultMode // empty' "$f" 2>/dev/null || true)
+      [ -n "$m" ] && perm_mode="$m"
+    done
+  else
+    gates="unknown"
+    hooks="unknown"
+    perm_mode="unknown"
+  fi
+  echo "PERMISSION_MODE=${perm_mode}"
+  echo "PERMISSION_GATES=${gates:-none}"
+  echo "PRETOOLUSE_HOOKS=${hooks:-none}"
+
+  secrets="unknown"
+  environments="unknown"
+  if [ "$gh_auth" = "ok" ]; then
+    # gh resolves the repo from cwd, so run it from the repo root.
+    if s=$(cd "$repo_root" && gh secret list --json name --jq '.[].name' 2>/dev/null); then
+      secrets=$(printf '%s\n' "$s" | grep -v '^$' | paste -sd, - || true)
+      : "${secrets:=none}"
+    fi
+    if e=$(cd "$repo_root" && gh api 'repos/{owner}/{repo}/environments' \
+      --jq '.environments[].name' 2>/dev/null); then
+      environments=$(printf '%s\n' "$e" | grep -v '^$' | paste -sd, - || true)
+      : "${environments:=none}"
+    fi
+  fi
+  echo "REPO_SECRETS=${secrets}"
+  echo "ENVIRONMENTS=${environments}"
+
+  if [ "${#need_secrets[@]}" -gt 0 ]; then
+    missing=""
+    if [ "$secrets" = "unknown" ]; then
+      missing="unknown"
+    else
+      for n in "${need_secrets[@]}"; do
+        grep -qxF "$n" <<<"$(tr ',' '\n' <<<"$secrets")" || missing="${missing:+${missing},}${n}"
+      done
+    fi
+    echo "REPO_SECRETS_MISSING=${missing:-none}"
+    [ -n "$missing" ] && recon_blockers="${recon_blockers:+${recon_blockers},}secrets"
+  fi
+  echo "RECON_BLOCKERS=${recon_blockers:-none}"
+fi
+
 # --- Step 5: fixed recommendation decision tree -----------------------------
 # First match wins, ordered by what blocks starting work most decisively.
 # The skill still surfaces every relevant note; this is the headline.
@@ -206,6 +292,11 @@ elif [ "$behind" -gt 0 ]; then
   issue_count=$((issue_count + 1))
 fi
 echo "RECOMMENDATION=${recommendation}"
+
+# Recon blockers raise STATUS but leave the branch-state headline alone.
+if [ -n "$recon_blockers" ]; then
+  issue_count=$((issue_count + $(tr ',' '\n' <<<"$recon_blockers" | grep -c .)))
+fi
 
 if [ "$issue_count" -gt 0 ]; then
   echo "STATUS=WARN"
