@@ -1,0 +1,18 @@
+Resolve GitHub issue #3061 in this repository (you have no GitHub access; the issue text is below). Follow the repository's conventions in CLAUDE.md and .claude/rules/. When done, commit your change locally with a conventional commit message that references the issue. Do not push and do not open a PR.
+
+--- Issue #3061: feedback(git-plugin): git-issue has no path for verification-only issues ---
+## Skill
+`git-plugin/skills/git-issue/SKILL.md`
+## Category
+Enhancement: workflow gap
+## Description
+The skill's Execution Workflow assumes every issue ends in a code change: it cuts `fix/issue-N`, runs RED/GREEN/REFACTOR, commits, and opens a PR. Some issues are verification-only. For example: "after PR X merges, re-run workflow Y in a consumer repo and confirm Z". The deliverable is a run and a recorded result, and a fix only if the check fails. The skill has no step for this, so the agent has to recognise it and depart from the workflow on its own.
+## Evidence
+For a "verify sync-ai-rules end to end after #31 merges" issue in a reusable-workflows repo, the right sequence was:
+1. Confirm the prerequisite PR merged.
+2. Find the consumer repos and check each workflow's `state`.
+3. Dispatch the workflow and watch the run.
+4. Record step-level results on the issue.
+The check found a real failure (PR creation refused for `GITHUB_TOKEN`), and only then did a branch and fix follow. None of that maps onto the skill's steps, and Step 1 of the standard flow would have cut an unused branch.
+## Suggested Action
+Add a branch at the start of Step 2: when the issue's acceptance criteria are observations (a run passes, a value appears) rather than code changes, verify first and record the evidence on the issue, then use the TDD flow only for any failure found. In that case, close the issue on verified success rather than through `Fixes #N`.

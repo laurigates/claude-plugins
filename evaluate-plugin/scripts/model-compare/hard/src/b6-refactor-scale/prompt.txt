@@ -1,0 +1,23 @@
+This is `shipkit`, a small shipping-cost toolkit (Python 3.13, stdlib only).
+Tests: `python3 -m unittest discover -s tests -t .`
+
+Refactor: rename `shipkit.pricing.calc_shipping(weight_kg, zone, express=False)`
+to `quote_shipping(zone, weight_kg, *, service="standard")`:
+- the zone now comes first;
+- the boolean `express` is replaced by a keyword-only `service`, which must be
+  "standard" or "express" (anything else raises ValueError);
+- prices are otherwise computed exactly as before.
+
+Update every use of the old function anywhere in the project - code, dynamic
+references, configuration, documentation and tests - so that nothing in the
+project calls or names it any more. The observable behaviour of every other
+public function, class, CLI and pipeline must stay exactly the same (including
+the public JSON request schema of the API handler, and any extension points
+that subclasses or partners rely on).
+
+Keep `calc_shipping` in `shipkit/pricing.py` as a deprecated alias with its old
+signature: it must emit a DeprecationWarning attributed to the caller's line and
+delegate to the new function. It may stay importable from the `shipkit`
+package but must not be listed in `shipkit.__all__`, which should list the new
+name. Outside `shipkit/pricing.py` and `shipkit/__init__.py`, the old name may
+only appear in documentation that explicitly describes it as deprecated.

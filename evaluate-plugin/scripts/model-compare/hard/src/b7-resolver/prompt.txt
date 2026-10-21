@@ -1,0 +1,5 @@
+Implement the dependency resolver specified in SPEC.md in the stub
+`resolver.py` (Python 3.13, standard library only). sample_registry.json is a
+small example registry you can experiment with. Follow the specification
+exactly - including version ordering, range semantics, the deterministic
+search order and the exact error messages. Write your own tests as needed.

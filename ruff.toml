@@ -7,4 +7,8 @@
 # Deliberately-vulnerable sample code used as input by the security-review
 # skills. Linting or reformatting it would defeat its purpose (and shift the
 # line numbers the fixtures are cited by).
-exclude = ["test-fixtures"]
+# The model-compare hard set is the same kind of input: task fixtures with
+# planted bugs, and grader bodies that only run once make_tasks.py prepends
+# their shared header (so they reference names ruff cannot see). b8's grader
+# also pins line numbers inside its fixture.
+exclude = ["test-fixtures", "evaluate-plugin/scripts/model-compare/hard/src"]

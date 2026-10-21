@@ -1,0 +1,52 @@
+You are working in a small Python inventory service (stdlib only; read README.md
+first - it documents the layering and conventions that this codebase follows).
+Run its tests with `python3 run_tests.py`.
+
+Add cursor pagination and filtering to the two list endpoints,
+`GET /items` (inventory.api.items.list_items) and
+`GET /movements` (inventory.api.movements.list_movements), across all layers.
+
+Response body for both endpoints becomes:
+    {"items": [<serialized rows>], "next_cursor": <string or null>}
+
+Common query parameters (all arrive as strings):
+- limit:  integer from 1 to 100 inclusive, default 20.
+- cursor: an opaque string previously returned as next_cursor by the SAME endpoint.
+  The next page continues right after the last row of the previous page in sort
+  order. Walking pages must stay correct while rows are inserted, archived or
+  deleted between requests: a row is never returned twice, and a row that exists
+  for the whole walk and matches the filters is never skipped.
+  A cursor is only valid together with the same filter values it was issued for
+  (limit may change between pages). A cursor that cannot be decoded, was issued by
+  the other endpoint, or was issued for different filter values is rejected with
+  HTTP 400 and error code "invalid_cursor" (field "cursor"). Model this as a new
+  error type named InvalidCursorError.
+- next_cursor is null exactly when no further matching row exists.
+- Invalid parameter values produce the usual 400 validation error with `field`
+  set to the parameter name.
+
+GET /items
+- Order: created_at ascending, ties broken by id ascending.
+- Filters (all optional, combined with AND):
+  category      exact match
+  min_quantity  integer >= 0; quantity >= min_quantity
+  archived      boolean; default false. false => only non-archived items,
+                true => only archived items
+  q             case-insensitive substring match on name OR sku
+
+GET /movements
+- Order: newest first - created_at descending, ties broken by id descending.
+- Filters (all optional, combined with AND):
+  item_id  integer >= 1 (an id that matches nothing just yields an empty page)
+  kind     one of "in", "out", "adjust"
+  since    ISO 8601 timestamp with offset; only movements with created_at >= since
+
+Service-layer API (keyword arguments accept raw strings or already-typed values):
+    inventory.service.items.list_items(store, *, limit=None, cursor=None,
+        category=None, min_quantity=None, archived=None, q=None) -> Page
+    inventory.service.movements.list_movements(store, *, limit=None, cursor=None,
+        item_id=None, kind=None, since=None) -> Page
+where Page is a dataclass `inventory.models.Page` with fields `items` (list of
+domain objects) and `next_cursor` (str or None).
+
+Keep the existing tests passing and add tests for the new behaviour.

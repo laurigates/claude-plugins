@@ -1,0 +1,11 @@
+Resolve GitHub issue #2994 in this repository (you have no GitHub access; the issue text is below). Scope: fix the scaffold template and its test in this repository only. The final step (rolling out to the 13 external pack repositories) is out of scope for this task; skip it. Follow the repository's conventions in CLAUDE.md and .claude/rules/. When done, commit your change locally with a conventional commit message that references the issue. Do not push and do not open a PR.
+
+--- Issue #2994: comfyui-plugin: registry-health treats Deleted versions as Active ---
+## What
+The scaffold's `REGISTRY_HEALTH_YML` (`comfyui-plugin/skills/comfyui-node-scaffold/scaffold.py`), and so the inlined `registry-health.yml` in every pack, has two remaining defects after #2965:
+1. `NodeVersionStatusDeleted` falls through to `set_status success "Active in registry"`. #2965 fixed the same fall-through for `Banned`.
+2. When `status_reason` is absent, the scan-findings list prints a bare `  - ` line.
+## Why
+(1) closes the tracking issue and reports a deleted version as healthy. (2) is cosmetic.
+## How
+Add a `Deleted` arm alongside Banned/Flagged, and skip the findings bullet when `status_reason` is empty. Extend `test-registry-health.sh` with Deleted and no-reason fixtures, then roll out to the 13 packs as identical `ci(registry-health)` commits (check with `check-fleet-drift.py`).

@@ -1,0 +1,14 @@
+{
+  "pipelines": {
+    "nightly_quotes": [
+      {"op": "calc_shipping_zone", "args": {"country_code": "se"}},
+      {"op": "quote_shipping", "args": {"weight_kg": 2.5, "zone": "NORDIC"}},
+      {"op": "quote_shipping", "args": {"weight_kg": 0.4, "zone": "EU", "service": "express"}},
+      {"op": "zone_rate", "args": {"zone": "WORLD"}}
+    ],
+    "express_audit": [
+      {"op": "quote_shipping", "args": {"weight_kg": 12, "zone": "WORLD", "service": "express"}},
+      {"op": "quote_shipping", "args": {"weight_kg": 1, "zone": "DOMESTIC", "service": "standard"}}
+    ]
+  }
+}

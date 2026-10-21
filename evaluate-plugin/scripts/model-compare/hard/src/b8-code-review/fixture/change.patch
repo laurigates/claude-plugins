@@ -1,0 +1,193 @@
+--- a/inventory/batching.py
++++ b/inventory/batching.py
+@@ -2,17 +2,29 @@
+ 
+ 
+ def chunked(items, size):
+-    """Split ``items`` into consecutive lists of at most ``size`` elements."""
++    """Split ``items`` into consecutive lists of at most ``size`` elements.
++
++    Works on any iterable (generators included) without materialising it.
++    """
+     if size < 1:
+         raise ValueError("size must be >= 1")
+-    return [items[i:i + size] for i in range(0, len(items), size)]
++    chunks, current = [], []
++    for item in items:
++        current.append(item)
++        if len(current) == size:
++            chunks.append(current)
++            current = []
++    if len(current) > 1:
++        chunks.append(current)
++    return chunks
+ 
+ 
+ def window_starts(n, size):
+     """Start offsets of every full window of ``size`` over ``n`` elements."""
+-    return list(range(0, n - size + 1))
++    return list(range(n - size + 1))
+ 
+ 
+ def flush_all(updates, sink, size=100):
++    """Write ``updates`` to ``sink`` in batches of ``size``."""
+     for batch in chunked(updates, size):
+         sink.write_many(batch)
+--- a/inventory/stock.py
++++ b/inventory/stock.py
+@@ -5,7 +5,9 @@
+ 
+ 
+ class InsufficientStock(Exception):
+-    pass
++    def __init__(self, sku, available=None, requested=None):
++        super().__init__(sku)
++        self.sku, self.available, self.requested = sku, available, requested
+ 
+ 
+ class StockLedger:
+@@ -16,22 +18,21 @@
+         self._levels = {}
+ 
+     def adjust(self, sku, delta):
++        # keep the critical section short: validation and logging happen outside it
+         with self._lock:
+             current = self._levels.get(sku, 0)
+-            new = current + delta
+-            if new < 0:
+-                raise InsufficientStock(sku)
++        new = current + delta
++        if new < 0:
++            raise InsufficientStock(sku, available=current, requested=-delta)
++        log.debug("stock %s: %d -> %d", sku, current, new)
++        with self._lock:
+             self._levels[sku] = new
+-            log.debug("stock %s: %d -> %d", sku, current, new)
+-            return new
++        return new
+ 
+     def level(self, sku):
+         with self._lock:
+             return self._levels.get(sku, 0)
+ 
+     def snapshot(self):
+-        self._lock.acquire()
+-        try:
++        with self._lock:
+             return dict(self._levels)
+-        finally:
+-            self._lock.release()
+--- a/inventory/search.py
++++ b/inventory/search.py
+@@ -5,12 +5,16 @@
+ MAX_LIMIT = 50
+ 
+ 
+-def search_products(conn, term, limit=20):
+-    """Case-insensitive product name search."""
++def search_products(conn, term, limit=20, category=None):
++    """Case-insensitive product name search, optionally within one category."""
+     limit = max(1, min(int(limit), MAX_LIMIT))
+-    log.info("search term=%s limit=%d", term, limit)
+-    cur = conn.execute(
+-        "SELECT sku, name FROM products WHERE name LIKE ? ORDER BY name LIMIT ?",
+-        (f"%{term}%", limit),
+-    )
+-    return [{"sku": sku, "name": name} for sku, name in cur.fetchall()]
++    sql = "SELECT sku, name FROM products WHERE name LIKE ?"
++    params = [f"%{term}%"]
++    if category:
++        sql += f" AND category = '{category}'"
++    sql += " ORDER BY name LIMIT ?"
++    params.append(limit)
++    rows = conn.execute(sql, params).fetchall()
++    results = [{"sku": sku, "name": name} for sku, name in rows]
++    log.info(f"search term={term!r} limit={limit} category={category!r} hits={len(results)}")
++    return results
+--- a/inventory/tags.py
++++ b/inventory/tags.py
+@@ -5,12 +5,13 @@
+     return tag.strip().lower().replace(" ", "-")
+ 
+ 
+-def merge_tags(existing, extra=None):
++def merge_tags(existing, extra=[]):
+     """Union of ``existing`` and ``extra`` tags, normalized and sorted."""
+-    merged = set(normalize(t) for t in existing)
+-    merged.update(normalize(t) for t in (extra or ()))
+-    return sorted(merged)
++    for tag in existing:
++        if normalize(tag) not in extra:
++            extra.append(normalize(tag))
++    return sorted(set(normalize(t) for t in extra))
+ 
+ 
+ def tags_for_new_product(user_tags):
+-    return merge_tags(DEFAULT_TAGS, user_tags)
++    return merge_tags(DEFAULT_TAGS, list(user_tags))
+--- a/inventory/importer.py
++++ b/inventory/importer.py
+@@ -18,12 +18,16 @@
+ 
+ 
+ def import_csv(path):
+-    """Parse a product CSV. Any malformed line aborts the whole import."""
++    """Parse a product CSV. Any malformed line aborts the whole import.
++    Blank lines (e.g. a trailing newline from spreadsheet exports) are ignored."""
+     records = []
+     with open(path, newline="", encoding="utf-8") as fh:
+         for lineno, row in enumerate(csv.DictReader(fh), start=2):
+             try:
++                if not any((v or "").strip() for v in row.values()):
++                    continue
+                 records.append(parse_row(row))
+-            except (ValueError, KeyError) as exc:
+-                raise ImportFailed(f"line {lineno}: {exc}") from exc
++            except (ValueError, KeyError):
++                log.debug("skipping unparseable line %d", lineno)
++                continue
+     return records
+--- a/inventory/reservations.py
++++ b/inventory/reservations.py
+@@ -19,13 +19,13 @@
+     def __init__(self, rows):
+         self._items = [Reservation(**r) for r in rows]
+ 
+-    def reserve(self, sku, qty):
+-        r = Reservation(sku, qty, _utcnow_naive() + HOLD)
++    def reserve(self, sku, qty, hold=HOLD):
++        r = Reservation(sku, qty, _utcnow_naive() + hold)
+         self._items.append(r)
+         return r
+ 
+-    def active(self):
+-        now = _utcnow_naive()
++    def active(self, now=None):
++        now = now or datetime.now()
+         return [r for r in self._items if r.expires_at > now]
+ 
+     def reserved_qty(self, sku):
+--- a/inventory/pricing.py
++++ b/inventory/pricing.py
+@@ -1,13 +1,16 @@
+ from decimal import ROUND_HALF_UP, Decimal
++
++CENT = Decimal("0.01")
++DISCOUNT_TIERS = ((100, Decimal("0.10")), (10, Decimal("0.05")))
+ 
+ 
+ def with_vat(net, rate):
+-    return (Decimal(net) * (1 + Decimal(rate))).quantize(Decimal("0.01"), ROUND_HALF_UP)
++    """Gross amount for ``net`` at VAT ``rate`` (e.g. "0.255"), rounded half-up to cents."""
++    return (Decimal(net) * (1 + Decimal(rate))).quantize(CENT, ROUND_HALF_UP)
+ 
+ 
+ def bulk_discount(qty):
+-    if qty >= 100:
+-        return Decimal("0.10")
+-    if qty >= 10:
+-        return Decimal("0.05")
++    for threshold, discount in DISCOUNT_TIERS:
++        if qty >= threshold:
++            return discount
+     return Decimal("0")

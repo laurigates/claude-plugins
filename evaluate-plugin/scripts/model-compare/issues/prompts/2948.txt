@@ -1,0 +1,12 @@
+Resolve GitHub issue #2948 in this repository (you have no GitHub access; the issue text is below). Follow the repository's conventions in CLAUDE.md and .claude/rules/. When done, commit your change locally with a conventional commit message that references the issue. Do not push and do not open a PR.
+
+--- Issue #2948: [Feature] skill-quality: guard backticked repo paths in skill markdown against dead targets ---
+## What
+`scripts/check-skill-xrefs.py` (#2942) resolves markdown links, but a file path written as inline code (`` `scripts/rename_outputs.py` ``) is not a link, so nothing checks it. The split sweep found three such dead mentions by hand:
+- `comfy-metadata` named `scripts/rename_outputs.py`, which does not exist;
+- `release-please-protection` named `patterns.md` and `workflow.md` as plain text;
+- `comfy-cli` pointed at `.claude/rules/comfy-registry-publishing.md`, which is not in this repo.
+## Proposed
+A guard that resolves backticked repo-relative paths in skill markdown: tokens containing a `/` or ending in a known extension, resolved against the skill directory and the repo root. False positives (example paths, placeholders such as `<plugin>/…`, paths on the user's machine) would be calibrated on the real tree.
+## Acceptance
+The guard lands green on main, with a test, and a control that reintroduces one of the three dead mentions and is flagged.

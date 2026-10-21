@@ -1,0 +1,10 @@
+Resolve GitHub issue #3092 in this repository (you have no GitHub access; the issue text is below). Follow the repository's conventions in CLAUDE.md and .claude/rules/. When done, commit your change locally with a conventional commit message that references the issue. Do not push and do not open a PR.
+
+--- Issue #3092: [Chore] scripts: drop the ms heuristic from normalize_timeout in the hook exporters ---
+## What
+`normalize_timeout()` in `scripts/generate-opencode-hook-plugins.py` (lines 123–131) treats any hook timeout above 600 as milliseconds and divides it by 1000. Its docstring says that "several manifests carry millisecond-intended values (3000, 5000)". `scripts/generate-pi-hook-extension.py` and `scripts/generate-antigravity-hooks.py` also call it.
+## Why
+After #3088, no manifest carries a millisecond value, and `scripts/check-hook-timeout-units.sh` fails CI on any value of 1000 or more. The heuristic no longer fires on shipped manifests, and its docstring is wrong. It also means a manifest value between 601 and 999 seconds would be exported as 0–1 s.
+## How
+Drop the ms branch and pass values through unchanged, keeping the existing default for a missing or invalid value. Update the docstring. Re-run the three exporters' tests to confirm the output is unchanged for the current manifests.
+Refs #3079, #3088
