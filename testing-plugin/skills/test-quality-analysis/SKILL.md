@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-02-14
+modified: 2026-10-21
 reviewed: 2025-12-16
 name: test-quality-analysis
-description: "Detect test smells, overmocking, flaky tests, and coverage issues. Use when reviewing tests, improving test quality, or analyzing test effectiveness and reliability."
+description: "Detect test smells, overmocking, flaky tests, coverage gaps, and tests that touch the real HOME or git config. Use when reviewing tests or analyzing test effectiveness and reliability."
 user-invocable: false
 allowed-tools: Bash, Read, Edit, Write, Grep, Glob, TodoWrite
 ---
@@ -43,6 +43,7 @@ Expert knowledge for analyzing and improving test quality - detecting test smell
 | **Slow tests** | Suite > 10s for unit tests | `beforeAll()` for expensive setup; parallelize |
 | **Poor assertions** | `toBeDefined()`, no assertions, mock-only assertions | Specific matchers; assert outputs and state |
 | **Insufficient coverage** | Critical paths untested | 80%+ on business logic; test error paths and boundaries |
+| **Real user environment** | Test spawns git/CLIs or touches config with the developer's `HOME` | Temp `HOME` + `XDG_*_HOME` + `GIT_CONFIG_GLOBAL`; see [Tests That Reach the Real User Environment](#tests-that-reach-the-real-user-environment) |
 
 ## Analysis Tools
 
@@ -112,6 +113,44 @@ describe('calculateDiscount', () => {
   it('no coupon', () => expect(calculateDiscount(100)).toBe(100))
 })
 ```
+
+### Tests That Reach the Real User Environment
+
+A test that spawns `git`, `gh`, or any CLI with a login, or that reads or writes config, credentials or tokens, inherits the developer's real home directory. A cleanup or logout step in such a test can delete the live login. Point every user-level location at a temp dir before the first spawn:
+
+| Variable | Why |
+|----------|-----|
+| `HOME` | `~`, `os.homedir()` (Node) and `Path.home()` resolve from it on POSIX |
+| `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_STATE_HOME`, `XDG_CACHE_HOME` | An exported value is an absolute path and survives a `HOME` change. git reads `$XDG_CONFIG_HOME/git/config`; `gh` keeps `hosts.yml` under it. With `XDG_CONFIG_HOME=~/.config` exported, `HOME=$(mktemp -d) gh auth status` still lists the real account |
+| `GIT_CONFIG_GLOBAL` | Replaces both global files (`~/.gitconfig` and the XDG one). Point it at a file in the temp dir so `git config --global` writes land there |
+| `GIT_CONFIG_NOSYSTEM=1` | Skips the system-level config |
+
+Also unset the `GIT_DIR` family, which overrides `git -C <sandbox>` — see [issue #1745](https://github.com/laurigates/claude-plugins/issues/1745) for the list and why a partial unset is not enough. OS keychains (macOS Keychain, `gh`'s `keyring` store) live outside `HOME`, so a test of login or logout must stub the CLI or credential helper rather than call it.
+
+```python
+# conftest.py
+@pytest.fixture(autouse=True)
+def isolated_home(tmp_path, monkeypatch):
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    for xdg, sub in [("CONFIG", ".config"), ("DATA", ".local/share"),
+                     ("STATE", ".local/state"), ("CACHE", ".cache")]:
+        monkeypatch.setenv(f"XDG_{xdg}_HOME", str(home / sub))
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(home / ".gitconfig"))
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+    for var in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
+                "GIT_COMMON_DIR", "GIT_NAMESPACE", "GIT_PREFIX"):
+        monkeypatch.delenv(var, raising=False)
+```
+
+`monkeypatch` edits `os.environ`, so `subprocess` children inherit it. A path computed at import time (`CONFIG = Path.home() / ".tool"` at module level) was resolved before the fixture ran; patch that constant too, or resolve it lazily.
+
+| Runner | Idiom |
+|--------|-------|
+| Vitest | `vi.stubEnv('HOME', dir)` (and the rest; `vi.stubEnv(name, undefined)` unsets) inside `beforeEach` in a `setupFiles` module. With `unstubEnvs: true` stubs are restored before every test, so a top-level stub would not persist |
+| Bun | Set the variables outside the process (`HOME=$(mktemp -d) bun test`, or in the `package.json` / `justfile` recipe). In Bun 1.4.3, assigning `process.env.HOME` at runtime does not change `os.homedir()` or the default env of `Bun.spawn`; only `node:child_process` sees it |
+| Shell | `TEST_HOME=$(mktemp -d) \|\| exit 1`, then export `HOME`, the four `XDG_*_HOME` variables, `GIT_CONFIG_GLOBAL` and `GIT_CONFIG_NOSYSTEM=1`, and `unset` the `GIT_DIR` family before the first git command. The `\|\| exit 1` guards the empty-`mktemp` case (#1692) |
 
 ## Test Structure (AAA Pattern)
 
