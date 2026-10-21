@@ -4,7 +4,7 @@ description: gh CLI commands with JSON output for agent workflows. Use when quer
 user-invocable: false
 allowed-tools: Bash(gh pr *), Bash(gh run *), Bash(gh issue *), Bash(gh repo *), Bash(gh workflow *), Bash(gh api *), Read
 created: 2025-01-16
-modified: 2026-10-20
+modified: 2026-10-21
 reviewed: 2026-04-25
 ---
 
@@ -235,6 +235,50 @@ gh api repos/{owner}/{repo}/issues --paginate --jq '.[].number'
 | Transfer issue | `gh issue transfer N target-repo` |
 | Create dev branch | `gh issue develop N --checkout` |
 | Workflow trigger | `gh workflow run $NAME` |
+
+## Failed Calls: Exit Code First, Output Second
+
+Three scripts misread a failed `gh` call as an answer (2026-10): a merge chain
+read a 504 as "PR not OPEN", `worktree-audit` parsed a 422 error body as data
+and classified branches with unpushed work as merged, and a retried
+`gh issue create` that had errored after creating the issue filed a duplicate.
+
+**`gh api` error bodies land on stdout, and `--jq` is skipped.** Observed on gh
+2.102.0:
+
+```
+$ gh api repos/cli/cli/pulls/999999999 --jq '.state // "none"'
+{"message":"Not Found","documentation_url":"...","status":"404"}   # stdout, filter not applied
+gh: Not Found (HTTP 404)                                           # stderr; exit 1
+```
+
+`2>/dev/null` hides only the second line, so a script that skips the exit-code
+check parses the error JSON as the result. Test the exit status before using
+the output.
+
+**A 5xx, timeout, or empty output is UNKNOWN state.** Re-query with backoff and
+fail if the state never resolves; never map the failure onto a state value:
+
+```bash
+state=
+for delay in 2 4 8 16; do
+  state=$(gh pr view "$N" --json state --jq .state) && break
+  state=; sleep "$delay"
+done
+[ -n "$state" ] || { echo "PR #$N: state UNKNOWN after retries" >&2; exit 1; }
+```
+
+A 500 from `gh pr merge` has its own control: see `git-merge-hazards`
+([merge-endpoint-failures.md](../git-merge-hazards/references/merge-endpoint-failures.md)).
+
+**After a create errors, look for the object before retrying.** The write can
+succeed server-side while the response is lost. List rather than search, since
+the search index lags new objects:
+
+```bash
+gh issue list --state all -L 5 --json number,title,createdAt   # newest first
+gh pr list --head "$BRANCH" --state all --json number,url
+```
 
 ## Error Handling in Context
 
