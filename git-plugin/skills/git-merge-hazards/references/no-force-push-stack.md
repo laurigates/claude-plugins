@@ -3,6 +3,8 @@
 Detail for the no-force alternative in [§2 of SKILL.md](../SKILL.md#2-merging-a-stacked-base-auto-closes-the-child-pr).
 Open this file when a child PR builds only on its base and `main` may have moved
 since the stack started.
+When the child forked from an older head of its base, or the PR is independent
+of any base, use [delta-apply-stack.md](delta-apply-stack.md) instead.
 
 The route merges `main` into the child without a force-push. Its safety rests on
 one classification. `-X ours` silently drops a change from `main` whenever that

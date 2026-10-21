@@ -10,8 +10,8 @@ the exceptions listed in this file. Read it when syncing that rule.
   rule text when syncing. §3's pointer moved too, but its registration-race text
   diverged (see **Diverged, not yet mirrored: §3's registration race**).
 - Skill-only, not in `pr-merge-hazards.md`: §6, §4's merge-endpoint pointer, and
-  the two §2 bullets **Check the base first** and **No-force alternative**. The
-  chezmoi rule does not carry those two §2 bullets yet. Mirror them there, or the
+  the three §2 bullets **Check the base first**, **No-force alternative** and
+  **Delta-apply**. The chezmoi rule does not carry those three §2 bullets yet. Mirror them there, or the
   next sync removes them from this skill.
 - Skill-only, not in the body of `pr-merge-hazards.md`: §1's REVIEW-bucket sentence,
   the last sentence of the **Fix** bullet (#2268). The chezmoi rule keeps that
