@@ -207,6 +207,7 @@ if [ "$do_recon" = true ]; then
   gates=""
   hooks=""
   perm_mode="unset"
+  perm_source="none"
   if command -v jq >/dev/null 2>&1; then
     for f in "${home_dir}/.claude/settings.json" "${repo_root}/.claude/settings.json" \
       "${repo_root}/.claude/settings.local.json"; do
@@ -220,14 +221,23 @@ if [ "$do_recon" = true ]; then
         | grep -oE '[A-Za-z0-9_.-]+\.(sh|py|js|ts)' | paste -sd, - || true)
       [ -n "$h" ] && hooks="${hooks:+${hooks},}${h}"
       m=$(jq -r '.permissions.defaultMode // empty' "$f" 2>/dev/null || true)
-      [ -n "$m" ] && perm_mode="$m"
+      if [ -n "$m" ]; then
+        perm_mode="$m"
+        case "$f" in
+          "${home_dir}/.claude/settings.json") perm_source="user" ;;
+          *.local.json) perm_source="local" ;;
+          *) perm_source="project" ;;
+        esac
+      fi
     done
   else
     gates="unknown"
     hooks="unknown"
     perm_mode="unknown"
+    perm_source="unknown"
   fi
   echo "PERMISSION_MODE=${perm_mode}"
+  echo "PERMISSION_MODE_SOURCE=${perm_source}"
   echo "PERMISSION_GATES=${gates:-none}"
   echo "PRETOOLUSE_HOOKS=${hooks:-none}"
 

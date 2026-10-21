@@ -161,6 +161,8 @@ chmod +x "$stub_bin/gh"
 [ "$(PATH="$stub_bin:$PATH" gh --version)" = "STUB_GH_SENTINEL" ] || fail "stub gh is not first on PATH"
 
 fake_home="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
+# Physical path, so it prefixes the repo root git reports (/var -> /private/var on macOS).
+fake_home="$(cd "$fake_home" && pwd -P)"
 mkdir -p "$fake_home/.claude"
 cat > "$fake_home/.claude/settings.json" <<'JSON'
 {
@@ -184,6 +186,7 @@ r7="$(make_repo)"
 out7="$(STUB_GH_SECRETS="RELEASE_TOKEN OTHER" STUB_GH_ENVS="production" recon "$r7" --need-secret RELEASE_TOKEN)"
 grep -q "^GH_AUTH=ok$" <<<"$out7"                       || fail "expected GH_AUTH=ok:\n$out7"
 grep -q "^PERMISSION_MODE=auto$" <<<"$out7"             || fail "expected PERMISSION_MODE=auto:\n$out7"
+grep -q "^PERMISSION_MODE_SOURCE=user$" <<<"$out7"      || fail "expected PERMISSION_MODE_SOURCE=user:\n$out7"
 grep -qF "deny:Bash(gh pr merge --admin *)" <<<"$out7"  || fail "expected merge deny rule in PERMISSION_GATES:\n$out7"
 grep -qF "ask:Bash(git push *)" <<<"$out7"              || fail "expected push ask rule in PERMISSION_GATES:\n$out7"
 grep -qF "rm -rf" <<<"$out7"                            && fail "unrelated deny rule leaked into PERMISSION_GATES:\n$out7"
@@ -217,6 +220,18 @@ grep -q "^RECON_BLOCKERS=gh_auth,secrets$" <<<"$out9" || fail "expected gh_auth,
 grep -q "^ISSUE_COUNT=2$" <<<"$out9"                  || fail "expected ISSUE_COUNT=2:\n$out9"
 rm -rf "$r9"
 pass "recon, gh logged out -> gh_auth blocker"
+
+# Case 10: a project file inside the home dir overrides and is labelled project
+r10="$(make_repo)"
+mv "$r10" "$fake_home/repo"
+r10="$fake_home/repo"
+mkdir -p "$r10/.claude"
+printf '{"permissions": {"defaultMode": "plan"}}\n' > "$r10/.claude/settings.json"
+out10="$(recon "$r10")"
+grep -q "^PERMISSION_MODE=plan$" <<<"$out10"           || fail "expected project PERMISSION_MODE=plan:\n$out10"
+grep -q "^PERMISSION_MODE_SOURCE=project$" <<<"$out10" || fail "expected PERMISSION_MODE_SOURCE=project:\n$out10"
+rm -rf "$r10"
+pass "recon, project defaultMode under home dir -> source project"
 
 rm -rf "$stub_bin" "$fake_home"
 

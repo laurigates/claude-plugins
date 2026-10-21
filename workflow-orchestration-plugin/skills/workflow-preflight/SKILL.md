@@ -100,7 +100,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/preflight.sh" --project-dir "$(pwd)" --recon [
 | Key | Act on it |
 |-----|-----------|
 | `GH_AUTH` | Not `ok`: ask the user to run `! gh auth login` before dispatch. Re-run `--recon --no-fetch` before the merge or release step, since a token can expire mid-run |
-| `PERMISSION_MODE` | `auto`, or `unset` (auto is the default): the classifier can refuse merges it reads as unreviewed. Plan for the user to approve or perform merges |
+| `PERMISSION_MODE` / `PERMISSION_MODE_SOURCE` | `permissions.defaultMode` from the user, project and local settings files, and which file set it. `unset` means no file sets it. This is not the session's effective mode: `--permission-mode` and a mid-session toggle override it, managed settings are not read, and `auto`/`bypassPermissions` take effect only from the user file. Under auto mode the classifier can refuse merges it reads as unreviewed, so plan for the user to approve or perform merges |
 | `PERMISSION_GATES` | `deny:`/`ask:` rules matching merge/push/worktree/release. Each `ask:` prompts once per agent |
 | `PRETOOLUSE_HOOKS` | Hook scripts from settings files. Plugin-provided hooks are not listed |
 | `REPO_SECRETS_MISSING` | Repo-level secrets only; org- and environment-scoped secrets are not checked (`ENVIRONMENTS` lists the environments) |
