@@ -179,7 +179,7 @@ Run helper: !`bash ${CLAUDE_SKILL_DIR}/scripts/helper.sh`
 
 Since 2.1.290, a `!` shell command containing raw control characters other than tab and newline is refused, with a message showing where they are.
 
-Since 2.1.301, substitution fills only the first 64 argument names, each up to 64 characters; a skill with more or longer names stalled before. Keep `args:` well inside both. Since 2.1.299, `UserPromptSubmit` hooks run **before** a skill or command expands, so a hook that blocks the prompt also stops the body's `!` shell lines; a skill's own frontmatter `UserPromptSubmit` hook first fires on the prompt *after* the one that invokes it (event order: `hooks-reference.md`). A `!` line no longer runs twice when a newer message interrupts it (2.1.299).
+Since 2.1.301, substitution fills only the first 64 argument names, each up to 64 characters; a skill with more or longer names stalled before. Keep `args:` well inside both. Since 2.1.299, `UserPromptSubmit` hooks run before a skill expands, so they gate its `!` shell lines (detail and the frontmatter-hook caveat: `hooks-reference.md`). A `!` line no longer runs twice when a newer message interrupts it (2.1.299).
 
 > **Escaping a literal `$` (2.1.163+)**: a `$` immediately before a digit is treated as a positional substitution (`$0`, `$1`, …). To emit a **literal** `$` before a digit in a skill/command body, escape it as `\$` — e.g. write `\$5.00` to render `$5.00` instead of substituting argument 5. Only `$` followed by a digit needs escaping; a `$` before a letter or space is left alone.
 

@@ -50,7 +50,7 @@ The #3065 preamble also dates the cloud-session `/loop` wakeup revert to
 | `2906:agent-runtime:1` | Background-command time limit, unattended sessions only | 2.1.285 / 2.1.288 | `agent-runtime.md` § Background Execution |
 | `2906:agent-runtime:5` | `--bare` semantics | 2.1.286 | `agent-runtime.md` § Background Execution |
 | `2906:agentic-permissions:1` | Auto mode is the start mode for interactive sessions | 2.1.284 | `auto-mode.md` intro and mode table; `agentic-permissions.md` mode table |
-| `2906:agentic-permissions:2` | `-p`/SDK on third-party providers or telemetry off start in auto mode | 2.1.285 | same |
+| `2906:agentic-permissions:2` | `-p`/SDK on third-party providers or telemetry off start in auto mode | 2.1.285 | same; reversed by 2.1.302 (#3130): `-p`/SDK start in `default` again, restated in both files |
 | `2906:agentic-permissions:3` | Dangerous `rm` inside `bash -c` | 2.1.288 | `agentic-permissions.md` § Bash Permission-Check Hardening |
 | `2906:agentic-permissions:4` | Dangerous-`rm` safeguard lost with a `~`/wildcard redirect | 2.1.287 | same |
 | `2906:agentic-permissions:5` | Deny/ask missed behind env-var prefix or bare assignment under sandbox auto-allow | 2.1.289 | same |
@@ -60,7 +60,7 @@ The #3065 preamble also dates the cloud-session `/loop` wakeup revert to
 | `2906:agentic-permissions:11` | Whole-tool `Bash` allows prompt for writes to refused files | 2.1.287 | § Bash Permission-Check Hardening |
 | `2906:agentic-permissions:17` | Plugin `allowed-tools` under `allowManagedPermissionRulesOnly` | 2.1.284 | `skill-development.md` § Permission Patterns |
 | `2906:auto-mode:1` | Start mode for interactive sessions | 2.1.284 | `auto-mode.md` |
-| `2906:auto-mode:2` | Start mode for `-p`/SDK on third-party providers | 2.1.285 | `auto-mode.md` |
+| `2906:auto-mode:2` | Start mode for `-p`/SDK on third-party providers | 2.1.285 | `auto-mode.md`; reversed by 2.1.302 (#3130), now `default` unless `--permission-mode auto` |
 | `2906:auto-mode:3` | Long conversation compacted for the client-side classifier | 2.1.288 | `auto-mode.md` § Availability |
 | `2906:auto-mode:4` | Classifier ignores a Sonnet/Opus 5.5 `ANTHROPIC_DEFAULT_SONNET_MODEL` pin | 2.1.288 | same |
 | `2906:plugin-structure:1` | Claude Mods | 2.1.287 | `plugin-structure.md` § Mods (pointer only, by Lauri's decision) |
