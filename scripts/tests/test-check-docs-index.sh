@@ -422,8 +422,10 @@ rm -rf "$rules_fx"
 
 echo "=== TEST K: README skill-table leading cells resolve to a directory (#3149) ==="
 tbl_fx="$(mktemp -d)"
-mkdir -p "$tbl_fx/.claude/rules" "$tbl_fx/zeta-plugin/skills/zeta-real"
+mkdir -p "$tbl_fx/.claude/rules" "$tbl_fx/zeta-plugin/skills/zeta-real" \
+  "$tbl_fx/zeta-plugin/skills/zeta-ground-short"
 printf '# stub\n' > "$tbl_fx/zeta-plugin/skills/zeta-real/SKILL.md"
+printf '# stub\n' > "$tbl_fx/zeta-plugin/skills/zeta-ground-short/SKILL.md"
 cat > "$tbl_fx/zeta-plugin/README.md" <<'EOF2'
 # zeta-plugin
 
@@ -434,6 +436,8 @@ cat > "$tbl_fx/zeta-plugin/README.md" <<'EOF2'
 | zeta-real | `/zeta:real` | exists |
 | `zeta-phantom` | `/zeta:phantom` | no directory |
 | zeta-short | — | shorthand for nothing |
+| ground-short | — | shorthand for the longer zeta-ground-short dir |
+| zeta-ground-short | `/zeta:ground-short` | exists |
 
 ## Planned Skills
 
@@ -452,6 +456,10 @@ assert "a phantom skill-table row should be flagged readme_table_row_dangling" \
   "$(contains "$tbl_out" "readme_table_row_dangling.*zeta-phantom")"
 assert "a shorthand skill-table row should be flagged" \
   "$(contains "$tbl_out" "readme_table_row_dangling.*zeta-short")"
+assert "a shorthand whose longer-named dir exists should be flagged (exact match, not suffix)" \
+  "$(contains "$tbl_out" "readme_table_row_dangling.*lists ground-short ")"
+assert "the full-name row for that dir should NOT be flagged" \
+  "$([ "$(contains "$tbl_out" "readme_table_row_dangling.*lists zeta-ground-short ")" = "false" ] && echo true || echo false)"
 assert "a resolving row should NOT be flagged" \
   "$([ "$(contains "$tbl_out" "readme_table_row_dangling.*zeta-real")" = "false" ] && echo true || echo false)"
 assert "a row under a Planned heading should NOT be flagged" \
@@ -460,8 +468,12 @@ assert "an Agent table should NOT be flagged" \
   "$([ "$(contains "$tbl_out" "zeta-agent")" = "false" ] && echo true || echo false)"
 assert "readme_table_row_dangling must be ERROR so --strict gates it" \
   "$(contains "$tbl_out" "SEVERITY=ERROR TYPE=readme_table_row_dangling")"
-assert "README_TABLE_ROWS should count the 3 scanned rows" \
-  "$([ "$(field "$tbl_out" README_TABLE_ROWS)" = "3" ] && echo true || echo false)"
+assert "README_TABLE_ROWS should count the 5 scanned rows" \
+  "$([ "$(field "$tbl_out" README_TABLE_ROWS)" = "5" ] && echo true || echo false)"
+bash "$checker" --project-dir "$tbl_fx" --strict >/dev/null 2>&1
+strict_rc=$?
+assert "--strict should exit 1 on a phantom skill-table row" \
+  "$([ "$strict_rc" = "1" ] && echo true || echo false)"
 rm -rf "$tbl_fx"
 
 echo ""

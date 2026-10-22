@@ -2,7 +2,7 @@
 # shellcheck disable=SC2016  # Check 7 greps a literal backtick pattern in single quotes (pre-existing; first surfaced when this file was staged for #3149)
 # Audit top-level documentation maps for mechanical drift (Layer 1 of #1460).
 #
-# Seven zero-false-positive checks:
+# Eight zero-false-positive checks:
 #   1. RULES INDEX  — every .claude/rules/*.md appears as the first cell of a
 #      table row inside the CLAUDE.md `## Rules` section (a row appended under
 #      another heading, or a prose mention, does not count — #2838 A-5),
