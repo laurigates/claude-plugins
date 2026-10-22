@@ -47,7 +47,7 @@ TEAMMATE=$(echo "$INPUT" | jq -r '.teammate_name')
 TEAM=$(echo "$INPUT" | jq -r '.team_name')
 
 # Log idle event for team lead awareness
-echo "$(date -Iseconds): Teammate $TEAMMATE is idle in team $TEAM" >> ~/.claude/team-activity.log
+echo "$(date -u +%Y-%m-%dT%H:%M:%SZ): Teammate $TEAMMATE is idle in team $TEAM" >> ~/.claude/team-activity.log
 
 exit 0
 ```
@@ -61,8 +61,8 @@ INPUT=$(cat)
 TASK_TITLE=$(echo "$INPUT" | jq -r '.task_title')
 
 # Run tests if implementation task
-if echo "$TASK_TITLE" | grep -qi 'implement\|add\|fix\|refactor'; then
-  if ! npm test --bail 2>/dev/null; then
+if echo "$TASK_TITLE" | grep -Eqi 'implement|add|fix|refactor'; then
+  if ! npm test -- --bail 2>/dev/null; then
     echo '{"decision": "block", "reason": "Tests must pass before task is accepted. Fix failing tests first."}'
     exit 0
   fi
@@ -81,7 +81,7 @@ CONFIG_KEY=$(echo "$INPUT" | jq -r '.config_key')
 NEW_VALUE=$(echo "$INPUT" | jq -c '.new_value')
 
 # Audit log all config changes
-echo "$(date -Iseconds) | CONFIG | $CONFIG_KEY = $NEW_VALUE" >> ~/.claude/config-audit.log
+echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) | CONFIG | $CONFIG_KEY = $NEW_VALUE" >> ~/.claude/config-audit.log
 
 exit 0
 ```
