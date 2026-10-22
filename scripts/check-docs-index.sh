@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016  # Check 7 greps a literal backtick pattern in single quotes (pre-existing; first surfaced when this file was staged for #3149)
 # Audit top-level documentation maps for mechanical drift (Layer 1 of #1460).
 #
 # Seven zero-false-positive checks:
@@ -47,6 +48,17 @@
 #      deliberately NOT gated: 71 directories corpus-wide are absent from their
 #      plugin README today, so an ERROR there would be red on arrival. Fixing
 #      that backlog is its own task.
+#
+#   8. README SKILL TABLES — in a plugin README table whose first header cell is
+#      `Skill`/`Skills`, a leading cell holding a bare hyphenated skill name
+#      (`workflow-parallel-issues`, optionally backticked) must name a directory
+#      under <plugin>/skills/. Check 7 only sees `/<ns>:<name>` leading cells, so
+#      a table whose leading cell is the bare name and whose command sits in the
+#      second column (#3149: workflow-orchestration listed two skills that never
+#      existed) was invisible. Tables under a heading containing "planned",
+#      "roadmap", "future" or "todo" are exempt - they declare intent, not
+#      presence. EXACT match; a shorthand (`ground-response` for
+#      `prompt-engineering-ground-response`) is a finding. ERROR severity.
 #
 # Emits the structured KEY=value / STATUS= convention
 # (.claude/rules/structured-script-output.md) so scheduled-audits can roll it up.
@@ -398,7 +410,7 @@ done <<< "$disk_set"
 while IFS= read -r p; do
   [ -n "$p" ] || continue
   p_readme="$proj_dir/$p/README.md"
-  [ -f "$p_readme" ] && [ -d "$proj_dir/$p/skills" ] || continue
+  if [ ! -f "$p_readme" ] || [ ! -d "$proj_dir/$p/skills" ]; then continue; fi
 
   rows="$(grep -oE '^\| *`?/[a-z0-9-]+:[a-z0-9-]+`? *\|' "$p_readme" 2>/dev/null \
     | sed -E 's#^\| *`?/([a-z0-9-]+):([a-z0-9-]+)`? *\|$#\1|\2#' | sort -u)"
@@ -430,6 +442,35 @@ while IFS= read -r p; do
         "$p/README.md lists /$row_ns:$row_name but no matching skill directory exists (searched:$cand_plugins)"
     fi
   done <<< "$rows"
+done <<< "$disk_set"
+
+# --- Check 8: plugin README skill-table leading cells resolve to a skill dir ---
+# See header (#3149). Table = contiguous `|` lines; it is a skill table when its
+# first header cell is Skill/Skills. Data rows are the lines after the separator.
+readme_table_rows=0
+while IFS= read -r p; do
+  [ -n "$p" ] || continue
+  p_readme="$proj_dir/$p/README.md"
+  if [ ! -f "$p_readme" ] || [ ! -d "$proj_dir/$p/skills" ]; then continue; fi
+  while IFS= read -r t_name; do
+    [ -n "$t_name" ] || continue
+    readme_table_rows=$((readme_table_rows + 1))
+    if [ ! -d "$proj_dir/$p/skills/$t_name" ]; then
+      add_issue ERROR readme_table_row_dangling \
+        "$p/README.md skill table lists $t_name but $p/skills/$t_name/ does not exist"
+    fi
+  done < <(awk '
+    /^#+ / { planned = (tolower($0) ~ /planned|roadmap|future|todo/); intab = 0; next }
+    /^\|/ {
+      split($0, c, "|"); cell = c[2]
+      gsub(/^[ \t`*]+|[ \t`*]+$/, "", cell)
+      if (!intab) { intab = 1; hdr = (tolower(cell) ~ /^skills?$/); next }
+      if (cell ~ /^[-: ]+$/) next
+      if (hdr && !planned && cell ~ /^[a-z0-9]+(-[a-z0-9]+)+$/) print cell
+      next
+    }
+    { intab = 0 }
+  ' "$p_readme")
 done <<< "$disk_set"
 
 # --- Status -------------------------------------------------------------------
@@ -473,6 +514,7 @@ else
   echo "DIAGRAM_SVG_NODES=$diagram_svg_nodes"
   echo "README_SKILL_ROWS=$readme_skill_rows"
   echo "README_ROW_PLUGINS=$readme_row_plugins"
+  echo "README_TABLE_ROWS=$readme_table_rows"
   echo "RULES_CHECKED=$rules_checked"
   echo "STATUS=$overall_status"
   echo "ISSUE_COUNT=$issue_count"
