@@ -878,7 +878,7 @@
     {
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
-      "description": "Workflow orchestration - parallel agents, CI pipelines, preflight checks, checkpoint refactoring",
+      "description": "Workflow orchestration - preflight checks, checkpoint refactoring, wave dispatch, run recovery and budgeting",
       "version": "1.14.0",
       "author": {
         "name": "Lauri Gates"
@@ -888,7 +888,7 @@
         "workflow",
         "orchestration",
         "parallel-agents",
-        "ci-pipeline",
+        "wave-dispatch",
         "preflight",
         "checkpoint",
         "refactoring",

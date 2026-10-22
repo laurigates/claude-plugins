@@ -1,6 +1,6 @@
 # workflow-orchestration-plugin
 
-Workflow orchestration patterns for parallel agents, CI pipelines, preflight checks, and checkpoint-based refactoring. Addresses common friction in multi-branch operations, permission restrictions, and context limits.
+Workflow orchestration patterns for preflight checks, checkpoint-based refactoring, sequential-wave agent dispatch, and Workflow run recovery and budgeting. Addresses common friction in multi-branch operations, permission restrictions, and context limits.
 
 ## Flow
 
@@ -44,11 +44,10 @@ Large refactors that survive context limits:
 These skills were designed based on analysis of common workflow friction:
 
 1. **Push delegation**: Sub-agents never push directly; the orchestrator handles all push/PR operations sequentially to avoid TLS errors and sandbox blocks
-2. **Worktree isolation**: Parallel agents always work in isolated worktrees to prevent branch conflicts
+2. **Worktree isolation**: Parallel agents work in isolated worktrees to prevent branch conflicts
 3. **Preflight validation**: Check remote state before starting work to avoid redundant effort
 4. **Persistent state**: Large refactors write progress to plan files so work survives context limits and session boundaries
-5. **Error recovery**: Every workflow includes recovery patterns for common failure modes
-6. **Body-file for PRs**: PR bodies are written to temp files to avoid heredoc escaping issues
+5. **Error recovery**: Interrupted `Workflow` runs and failed phases have documented recovery patterns
 
 ## Related Plugins
 
