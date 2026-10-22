@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.9](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.17.8...evaluate-plugin-v1.17.9) (2026-10-22)
+
+
+### Bug Fixes
+
+* **agents:** deliver the report before maxTurns cuts an agent off ([#3158](https://github.com/laurigates/claude-plugins/issues/3158)) ([8dfa0a7](https://github.com/laurigates/claude-plugins/commit/8dfa0a7528bc08825bd4367984e884259cac49d6)), closes [#3152](https://github.com/laurigates/claude-plugins/issues/3152)
+
 ## [1.17.8](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.17.7...evaluate-plugin-v1.17.8) (2026-10-14)
 
 

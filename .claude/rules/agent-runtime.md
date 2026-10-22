@@ -1,6 +1,6 @@
 ---
 created: 2026-10-02
-modified: 2026-10-13
+modified: 2026-10-22
 reviewed: 2026-10-02
 paths:
   - "**/agents/**"
@@ -12,9 +12,9 @@ How a dispatched agent behaves once it runs: fork vs briefed agent, the subagent
 
 ## Dispatch: Context and Isolation
 
-### Runtime fork vs named agent (2.1.232+)
+### Runtime fork vs named agent (2.1.232+; per-surface default 2.1.302)
 
-The `Agent` tool's `subagent_type: "fork"` inherits the parent's full conversation and its prompt cache — no re-briefing, and cache reads on Fable 5.1 cost $0.25/MTok. Fork mode is on by default in interactive sessions since 2.1.232 and off by default under `-p` and in the Agent SDK, where requesting `fork` fails with `Agent type 'fork' not found` unless `CLAUDE_CODE_FORK_SUBAGENT=1` is set ([sub-agents.md § Turn fork mode on or off](https://code.claude.com/docs/en/sub-agents#turn-fork-mode-on-or-off)). A named plugin agent starts cold with only its brief, whatever its frontmatter says. **Default to a briefed agent**; fork only when the task depends on implicit conversation state that costs more to write down than to inherit. A fork of a 400k parent starts with all 400k, stale and abandoned reasoning included; a brief bounds the task and doubles as its hand-off contract. A named agent is also the only choice when the tool boundary (`tools:`), model, or preloaded `skills:` is the point. A fork has read the user's request verbatim; a briefed agent only has the parent's paraphrase, and Fable 5.1 has a slightly higher propensity to distort user intent when briefing subagents (system card §6.2.1) — so a named-agent brief quotes the user's request rather than paraphrasing it.
+The `Agent` tool's `subagent_type: "fork"` inherits the parent's full conversation and its prompt cache — no re-briefing, and cache reads on Fable 5.1 cost $0.25/MTok. Fork mode is on by default in interactive sessions since 2.1.232, and since 2.1.302 also in `-p`, the Agent SDK, the desktop app and VS Code. `CLAUDE_CODE_FORK_SUBAGENT=0` turns it off, after which requesting `fork` fails with `Agent type 'fork' not found`; `claude mcp serve` never offers it ([sub-agents.md § Turn fork mode on or off](https://code.claude.com/docs/en/sub-agents#turn-fork-mode-on-or-off)). Before 2.1.302, `-p` and the SDK needed `CLAUDE_CODE_FORK_SUBAGENT=1`, so a client pinned older than that still fails on `fork` without it. A named plugin agent starts cold with only its brief, whatever its frontmatter says. **Default to a briefed agent**; fork only when the task depends on implicit conversation state that costs more to write down than to inherit. A fork of a 400k parent starts with all 400k, stale and abandoned reasoning included; a brief bounds the task and doubles as its hand-off contract. A named agent is also the only choice when the tool boundary (`tools:`), model, or preloaded `skills:` is the point. A fork has read the user's request verbatim; a briefed agent only has the parent's paraphrase, and Fable 5.1 has a slightly higher propensity to distort user intent when briefing subagents (system card §6.2.1) — so a named-agent brief quotes the user's request rather than paraphrasing it.
 
 ### Subagent context budget
 
@@ -67,7 +67,9 @@ Controls the branch base for `--worktree`, `EnterWorktree`, and agent-isolation 
 | `fresh` (default) | `origin/default-branch` | Unpushed local commits NOT included |
 | `head` | Local `HEAD` | Includes unpushed commits; pre-2.1.133 default |
 
-Set `worktree.baseRef: head` to keep unpushed commits in new worktrees.
+Set `worktree.baseRef: head` to keep unpushed commits in new worktrees. Under `--worktree` in a bare repository the fallback base is the current checkout's HEAD (2.1.300).
+
+> **Note (2.1.299–2.1.302, worktree fixes)**: isolation refused to create or resume worktrees under git 2.56+ when a stray `.git` file points nowhere (fixed 2.1.302). The isolation guard accepted some `awk` programs it should refuse (fixed 2.1.299). Reftable repositories had `--worktree` failures fixed in 2.1.299 and 2.1.300.
 
 ## Background Execution
 
@@ -81,6 +83,7 @@ Agent tool with run_in_background: true
 - The spawn returns immediately; the agent's result is delivered to the main session as a notification when it finishes — the main session does not poll.
 - To block on a specific result before proceeding, spawn with `run_in_background: false`, or `Read` the output file path the spawn result names once its completion notification arrives; the blocking `TaskOutput` tool was removed in 2.1.277.
 - Use `TaskStop` to stop a background agent.
+- Defaults per surface (2.1.302): the main conversation's subagents run in the background by default in the terminal, the desktop app and VS Code (2.1.302 brought desktop and VS Code in line with the terminal). A **subagent's own** `Agent` calls run in the **foreground** by default in `-p`, the SDK, desktop and VS Code, so a nested fan-out there blocks its parent on each call; pass `run_in_background: true` to fan out.
 - A subagent's result reaches the main agent under a header marking it as subagent output, indented, so its text cannot pass as the session's own instructions (2.1.277, after 2.1.210 hardened the Agent tool against indirect prompt injection); background notifications between turns arrive inside `<system-reminder>` tags (2.1.234).
 - A subagent cut off by a rate limit or server error returns its partial work to the parent instead of failing silently (2.1.199).
 - A background Bash or PowerShell **command** (not an agent) stops at its `timeout` with `run_in_background`, default 30 min, max 2 h, and Claude is notified (2.1.285). Since 2.1.288 the limit applies only in unattended sessions (`-p`, Agent SDK, CI, cloud), so it still binds every `.github/workflows` run; terminal, desktop and VS Code sessions have none.
@@ -108,6 +111,8 @@ Agent tool with run_in_background: true
 `/workflows` orchestrates work across tens to hundreds of background agents from a single session — a fan-out scale beyond manual `/bg` dispatch. Reach for it when a task decomposes into many independent units that each warrant their own background agent; the framework manages the dispatch and result collection.
 
 `CLAUDE_CODE_WORKFLOW_SUBAGENT_MODEL` (2.1.296) runs every workflow agent on one model while other subagents keep theirs; see `workflow-model-effort.md` for how it interacts with the per-call model. Before 2.1.295, a `context: fork` skill invoked from a Workflow subagent delivered its result to the main conversation instead of the invoking agent.
+
+A background session resumes a carried workflow through the Workflow tool's approval rather than running it from the handoff file (2.1.300). Fixed in 2.1.301: workflow agents sometimes skipped their step, with the run still reporting success, after reading the harness note that their task text carries no user authority (so a green run does not prove every step ran; check each agent's output), and workflow scripts asked for permission after a Bash `cd`. `ScheduleWakeup` did not fire while a background task ran in SDK, IDE and remote-control sessions before 2.1.299.
 
 > **Resume and completion caveats** — `resumeFromRunId` re-runs already-succeeded worktree agents and opens duplicate PRs (#1868); `Workflow` agents are not `SendMessage`-addressable and their worktrees pin branches until a scoped, non-force removal gated on the run's completion notification (#2614). Full mechanics: `agent-patterns-plugin:parallel-agent-dispatch` § "Resuming a workflow: `resumeFromRunId` re-runs succeeded worktree agents" and its `references/worktree-hazards.md` § "Workflow agents are unreachable and their worktrees pin branches"; cleanup scoping in `.claude/rules/agent-coworker-detection.md`.
 

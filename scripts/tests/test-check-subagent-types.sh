@@ -100,6 +100,15 @@ done
 assert "pre-fix table treats security-audit as WARN, not ERROR" \
   "$(contains "$OUT" 'TYPE=unqualified_subagent_type FILE=testing-plugin/skills/test-analyze/SKILL.md VALUE=security-audit')"
 
+contract="$repo_root/scripts/check-structured-output-contract.sh"
+# assert_contract <label> <output>: block satisfies the structured-output contract (#2760).
+assert_contract() {
+  assert "$1" "$(printf '%s\n' "$2" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false)"
+}
+assert "pre-fix table REASON= names the first error finding" \
+  "$(contains "$OUT" 'REASON=unresolvable_subagent_type: testing-plugin/skills/test-analyze/SKILL.md names code-review (+6 more)')"
+assert_contract "pre-fix (ERROR) output satisfies the structured-output contract" "$OUT"
+
 # --- TEST C: qualified values resolve ----------------------------------------
 echo "=== TEST C: plugin-qualified values pass ==="
 fx_c="$(mktemp -d)"
@@ -116,6 +125,8 @@ run "$fx_c"
 assert "qualified fixture exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
 assert "qualified fixture is STATUS=OK" "$(contains "$OUT" 'STATUS=OK')"
 assert "qualified fixture checked 2 refs" "$(contains "$OUT" 'REFS_CHECKED=2')"
+assert "qualified fixture (OK) carries no REASON=" "$([ "$(contains "$OUT" 'REASON=')" = "false" ] && echo true || echo false)"
+assert_contract "qualified (OK) output satisfies the structured-output contract" "$OUT"
 
 # --- TEST D: bare-but-resolvable is WARN; --strict escalates -----------------
 echo "=== TEST D: bare-but-resolvable is WARN, escalated by --strict ==="
@@ -127,6 +138,9 @@ run "$fx_d"
 assert "bare resolvable exits 0 by default" "$([ "$RC" -eq 0 ] && echo true || echo false)"
 assert "bare resolvable is STATUS=WARN" "$(contains "$OUT" 'STATUS=WARN')"
 assert "bare resolvable suggests the qualified form" "$(contains "$OUT" 'FIX=agents-plugin:review')"
+assert "bare resolvable REASON= names the WARN finding" \
+  "$(contains "$OUT" 'REASON=unqualified_subagent_type: demo-plugin/skills/thing/SKILL.md names review')"
+assert_contract "bare resolvable (WARN) output satisfies the structured-output contract" "$OUT"
 run "$fx_d" --strict
 assert "bare resolvable exits 1 under --strict" "$([ "$RC" -eq 1 ] && echo true || echo false)"
 

@@ -274,7 +274,7 @@ guard_out="$(bash "$checker" --project-dir "$fixture")"
 assert "the same defective pin at a REAL path is still flagged" \
   "$(contains "$guard_out" 'real-plugin/skills/real/SKILL.md')"
 assert "the defective pin is reported exactly once (dist/ twin not counted)" \
-  "$([ "$(printf '%s\n' "$guard_out" | grep -c 'guard/integrity' || true)" -eq 1 ] && echo true || echo false)"
+  "$([ "$(printf '%s\n' "$guard_out" | grep '^  - SEVERITY=' | grep -c 'guard/integrity' || true)" -eq 1 ] && echo true || echo false)"
 assert "FILES_SCANNED grew by exactly 1 (only the real source file)" \
   "$([ "$(field "$guard_out" FILES_SCANNED)" -eq "$((before_scanned_h + 1))" ] && echo true || echo false)"
 assert "still no issue references a dist/ path" \
@@ -687,6 +687,68 @@ assert "this test's trigger ignores an unrelated workflow" \
   "$([ "$(precommit_match '.github/workflows/stranded-work-audit.yml' test-check-version-pin-coverage)" = "false" ] && echo true || echo false)"
 assert "this test's trigger ignores an unrelated script" \
   "$([ "$(precommit_match 'scripts/check-docs-index.sh' test-check-version-pin-coverage)" = "false" ] && echo true || echo false)"
+
+echo "=== TEST R: REASON= on the ERROR path, absent on OK, contract-valid (#2760) ==="
+contract="$repo_root/scripts/check-structured-output-contract.sh"
+r_ok="$(mktemp -d)" || exit 1
+[ -n "$r_ok" ] || { echo "FAIL: mktemp -d returned empty" >&2; exit 1; }
+mkdir -p "$r_ok/demo-plugin/skills/demo"
+cat > "$r_ok/demo-plugin/skills/demo/SKILL.md" <<'EOF'
+# Demo
+
+```yaml
+- uses: actions/checkout@v5
+```
+EOF
+r_pass="$(bash "$checker" --project-dir "$r_ok")"
+rm -rf "$r_ok"
+assert "failing fixture emits one REASON= naming the first ERROR finding" \
+  "$([ "$(grep -c '^REASON=uses_uncovered: ' <<<"$fx_out")" = "1" ] && echo true || echo false)"
+assert "passing control is STATUS=OK" "$([ "$(field "$r_pass" STATUS)" = "OK" ] && echo true || echo false)"
+assert "passing control emits no REASON=" "$(grep -q '^REASON=' <<<"$r_pass" && echo false || echo true)"
+assert "failing output satisfies the structured-output contract" \
+  "$(printf '%s\n' "$fx_out" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false)"
+assert "passing output satisfies the structured-output contract" \
+  "$(printf '%s\n' "$r_pass" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false)"
+# Severity provenance: a WARN-only tree names a WARN finding, and a tree with a WARN
+# BEFORE an ERROR still names the ERROR (the reported severity), not the first row.
+r_warn="$(mktemp -d)" || exit 1
+[ -n "$r_warn" ] || { echo "FAIL: mktemp -d returned empty" >&2; exit 1; }
+mkdir -p "$r_warn/demo-plugin/skills/demo"
+cat > "$r_warn/demo-plugin/skills/demo/SKILL.md" <<'MD'
+# Demo
+
+```yaml
+node-version: 20
+```
+MD
+r_warn_out="$(bash "$checker" --project-dir "$r_warn")"
+# The scan reports rows bottom-block first, so the uses: block goes ABOVE the
+# node-version block to make the WARN row precede the ERROR row in ISSUES:.
+cat > "$r_warn/demo-plugin/skills/demo/SKILL.md" <<'MD'
+# Demo
+
+```yaml
+- uses: foo/bar@1
+```
+
+```yaml
+node-version: 20
+```
+MD
+r_mixed_out="$(bash "$checker" --project-dir "$r_warn")"
+rm -rf "$r_warn"
+assert "mixed fixture precondition: the WARN row precedes the ERROR row" \
+  "$([ "$(grep -m1 '^  - SEVERITY=' <<<"$r_mixed_out" | cut -c1-17)" = "  - SEVERITY=WARN" ] && echo true || echo false)"
+assert "WARN-only fixture is STATUS=WARN" "$([ "$(field "$r_warn_out" STATUS)" = "WARN" ] && echo true || echo false)"
+assert "WARN-only REASON= names the WARN finding" "$(contains "$r_warn_out" '^REASON=runtime_version_unmanaged: ')"
+assert "WARN-only output satisfies the structured-output contract" \
+  "$(printf '%s\n' "$r_warn_out" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false)"
+assert "mixed fixture is STATUS=ERROR" "$([ "$(field "$r_mixed_out" STATUS)" = "ERROR" ] && echo true || echo false)"
+assert "mixed REASON= names the ERROR finding, not the earlier WARN row" \
+  "$(grep -q '^REASON=uses_uncovered: .* (+1 more)$' <<<"$r_mixed_out" && echo true || echo false)"
+assert "mixed output satisfies the structured-output contract" \
+  "$(printf '%s\n' "$r_mixed_out" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false)"
 
 echo ""
 echo "=== SUMMARY ==="

@@ -6,7 +6,7 @@ Prompt engineering techniques for accurate, grounded Claude responses.
 
 | Skill | Command | Purpose |
 |-------|---------|---------|
-| ground-response | `/prompt-engineering:ground-response` | Citation-backed analysis with anti-hallucination workflow |
+| prompt-engineering-ground-response | `/prompt-engineering:ground-response` | Citation-backed analysis with anti-hallucination workflow |
 
 ## ground-response
 

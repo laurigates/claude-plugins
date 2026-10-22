@@ -1,6 +1,6 @@
 ---
 created: 2026-02-25
-modified: 2026-10-18
+modified: 2026-10-22
 reviewed: 2026-09-23
 paths:
   - "**/agents/**"
@@ -95,7 +95,7 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
 | `isolation` | string | No | `worktree` to run agent in an isolated git worktree |
 | `color` | string | No | Hex color for UI display |
 | `permissionMode` | string | No | `default`, `acceptEdits`, `dontAsk`, `bypassPermissions`, or `plan`. Before 2.1.292, `auto` entered auto mode even where auto mode was unavailable (disabled by settings, circuit breaker, or an unsupported model) |
-| `maxTurns` | number | No | Maximum agentic turns before agent stops |
+| `maxTurns` | number | No | Maximum agentic turns before agent stops. The cap ends the run with no report, so an agent that sets it needs a `## Turn Budget` section (stop at about 80%, deliver the report, mark unfinished work Not verified); `scripts/check-agent-turn-budget.sh` enforces it (#3152) |
 | `background` | bool | No | Set `true` to always run as a background task |
 | `memory` | string | No | Persistent memory scope: `user`, `project`, or `local` |
 | `skills` | list | No | Skill names to preload into agent context at startup; at most 32, each once (2.1.295) |
@@ -127,6 +127,8 @@ tools: Agent(worker, researcher), Read, Bash
 ```
 
 This is an allowlist — only `worker` and `researcher` can be spawned. To allow any subagent without restriction, use `Agent` without parentheses. If `Agent` is omitted, the agent cannot spawn any subagents. Every entry of a multi-entry `Agent(a, b)` list is honored as of 2.1.147; earlier releases kept only the last.
+
+Since 2.1.299 a `tools:` entry for an MCP server covers only the server it names, as MCP allow rules do (`agentic-permissions.md`). A server whose normalized name contains `__` must be listed as `mcp__<whole name>__*`; the shorter prefix `mcp__a` no longer matches a server named `a__b` or `a_`.
 
 #### Pin a deliberate roster with the allowlist, not prose
 
@@ -231,7 +233,7 @@ Three mechanisms share the word "fork", and only the last one hands a subagent t
 | `context:` in **agent** frontmatter | an `agents/*.md` | Nothing changes. It is absent from the subagent frontmatter table, and Claude Code ignores unrecognized fields without an error. Measured inert in #2646: agents with and without it returned bit-identical `subagent_tokens` (2549), both blind to the parent turn |
 | The runtime `fork` subagent type | the `Agent` call, `subagent_type: "fork"` | The parent's whole conversation, system prompt, tools, and model ([sub-agents.md § Fork the current conversation](https://code.claude.com/docs/en/sub-agents#fork-the-current-conversation)) |
 
-A research agent that should keep verbose output out of the main window needs no field: a named agent already does. For work that needs the conversation so far, dispatch a fork instead of a named agent. A fork runs under its parent's permission mode (plan, `dontAsk`) and cannot exit plan mode (2.1.285).
+A research agent that should keep verbose output out of the main window needs no field: a named agent already does. For work that needs the conversation so far, dispatch a fork instead of a named agent. A fork runs under its parent's permission mode (plan, `dontAsk`) and cannot exit plan mode (2.1.285). Fork availability per surface (on by default in `-p`, the SDK, desktop and VS Code since 2.1.302; `CLAUDE_CODE_FORK_SUBAGENT=0` turns it off; `claude mcp serve` never offers it) lives in [`agent-runtime.md`](agent-runtime.md) § Runtime fork vs named agent.
 
 > **Runtime behaviour lives in [`agent-runtime.md`](agent-runtime.md):** runtime fork vs named agent, the subagent context budget, worktree isolation and `worktree.baseRef` (gitignored inputs such as `.env` reach a worktree only via `.worktreeinclude` — see `/configure:worktreeinclude`), background execution, dynamic-workflow caveats, `worktree.bgIsolation`, MCP policy for frontmatter servers, and the `claude agents` CLI.
 
@@ -281,7 +283,7 @@ For rules an agent **must not forget** between threads — the friction-mining o
 
 ## Agent Teams (Multi-Agent Collaboration)
 
-Team mechanics — the implicit team (2.1.178), `SendMessage` / `ListAgents` and cross-session messaging, team roles, and when to choose teams over subagents — live in the `agent-patterns-plugin:agent-teams` skill. Before 2.1.288, a plugin-defined agent spawned by name into a team ran with the default prompt, tools, `disallowedTools` and effort instead of its own. What stays here is the per-agent body convention:
+Team mechanics — the implicit team (2.1.178), `SendMessage` / `ListAgents` and cross-session messaging, team roles, and when to choose teams over subagents — live in the `agent-patterns-plugin:agent-teams` skill. Before 2.1.288, a plugin-defined agent spawned by name into a team ran with the default prompt, tools, `disallowedTools` and effort instead of its own. `SendMessage` finds a subagent by name again after a CLI restart and resume (2.1.299); a name given before the last compaction still needs the agent ID. Fixed too: background subagents in auto mode sent their final report twice (2.1.299), and messaged subagents vanished from `/tasks` after finishing (2.1.300). Foreground/background defaults per surface: `agent-runtime.md` § Background Execution. What stays here is the per-agent body convention:
 
 ### Team Configuration
 
@@ -370,6 +372,7 @@ claude --agents '{"my-agent": {"description": "...", "prompt": "...", "tools": [
 - [ ] `isolation: worktree` added if agent needs filesystem-level git isolation
 - [ ] `permissionMode` set if non-default permission behavior is needed
 - [ ] `maxTurns` set if agent should be bounded
+- [ ] `## Turn Budget` section if `maxTurns` is set: names `maxTurns: <N>`, stops investigating at about 80%, delivers the report in the agent's own output format (`scripts/check-agent-turn-budget.sh`)
 - [ ] `memory` scope set if agent needs cross-session persistence
 - [ ] `skills` list populated if agent needs specific domain knowledge preloaded
 - [ ] `## Team Configuration` section documents teammate vs subagent recommendation

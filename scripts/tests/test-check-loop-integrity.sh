@@ -181,6 +181,30 @@ else
   printf "  PASS: --strict exits 1 when issues found\n"; PASS=$((PASS + 1))
 fi
 
+# 6. REASON= on ERROR names the first finding, is absent on OK, and both outputs
+#    satisfy the structured-output contract (#2760).
+CONTRACT="$SCRIPT_DIR/check-structured-output-contract.sh"
+check_true() { # desc, condition-result
+  if [ "$2" = "true" ]; then printf "  PASS: %s\n" "$1"; PASS=$((PASS + 1)); else
+    printf "  FAIL: %s\n" "$1"; FAIL=$((FAIL + 1)); fi
+}
+out_bad="$(bash "$GUARD" "$no_pillar1" 2>&1)"
+out_ok="$(bash "$GUARD" "$clean" 2>&1)"
+grep -qxF 'REASON=.claude/rules/loop-integrity.md: Pillar 1 (independent stop condition) dropped from the rule' <<<"$out_bad" && r=true || r=false
+check_true "ERROR output carries REASON= naming the first finding" "$r"
+two="$WORK/two_findings"; seed_clean "$two"
+grep -v 'independently' "$two/$RULE_REL" > "$two/$RULE_REL.tmp" && mv "$two/$RULE_REL.tmp" "$two/$RULE_REL"
+grep -v 'Verifier result' "$two/$CK_REL" > "$two/$CK_REL.tmp" && mv "$two/$CK_REL.tmp" "$two/$CK_REL"
+out_two="$(bash "$GUARD" "$two" 2>&1)"
+grep -q '^REASON=.* (+[1-9][0-9]* more)$' <<<"$out_two" && r=true || r=false
+check_true "REASON= appends (+N more) when several findings exist" "$r"
+grep -q '^REASON=' <<<"$out_ok" && r=false || r=true
+check_true "OK output carries no REASON=" "$r"
+printf '%s\n' "$out_bad" | bash "$CONTRACT" --validate - >/dev/null 2>&1 && r=true || r=false
+check_true "ERROR output satisfies the structured-output contract" "$r"
+printf '%s\n' "$out_ok" | bash "$CONTRACT" --validate - >/dev/null 2>&1 && r=true || r=false
+check_true "OK output satisfies the structured-output contract" "$r"
+
 echo ""
 echo "PASS=$PASS FAIL=$FAIL"
 [ "$FAIL" -eq 0 ]

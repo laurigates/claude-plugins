@@ -96,8 +96,9 @@ if [ "$truth_count" -eq 0 ]; then
   echo "TRUTH_COUNT=0"
   echo "ISSUE_COUNT=1"
   echo "STATUS=ERROR"
+  echo "REASON=broken_walk: resolved 0 skills/agents on disk"
   echo "ISSUES:"
-  echo "  - SEVERITY=error TYPE=broken_walk MSG=resolved 0 skills/agents on disk"
+  echo "  - SEVERITY=ERROR TYPE=broken_walk MSG=resolved 0 skills/agents on disk"
   echo "=== END HOOK CUE SKILL REFS ==="
   exit 1
 fi
@@ -160,9 +161,9 @@ scan_file() {
       hits=$((hits + 1))
       if [ "$enforced" = "true" ]; then
         if fix="$(suggest "$id")"; then
-          issues+=("  - SEVERITY=error TYPE=unresolvable_cue_skill_id FILE=${file#./} LINE=${line_no} ID=${id} FIX=${fix}")
+          issues+=("  - SEVERITY=ERROR TYPE=unresolvable_cue_skill_id FILE=${file#./} LINE=${line_no} ID=${id} FIX=${fix}")
         else
-          issues+=("  - SEVERITY=error TYPE=unresolvable_cue_skill_id FILE=${file#./} LINE=${line_no} ID=${id} FIX=<no skill or agent matches; check ${id%%:*}-plugin/skills/>")
+          issues+=("  - SEVERITY=ERROR TYPE=unresolvable_cue_skill_id FILE=${file#./} LINE=${line_no} ID=${id} FIX=<no skill or agent matches; check ${id%%:*}-plugin/skills/>")
         fi
         issue_count=$((issue_count + 1))
       else
@@ -213,6 +214,19 @@ fi
 echo "ISSUE_COUNT=$issue_count"
 if [ "$issue_count" -gt 0 ]; then
   echo "STATUS=ERROR"
+  # REASON= is the first finding as `<TYPE>: <FILE>:<LINE> <ID>`, one line, cut
+  # to 180 chars, plus ` (+N more)` (.claude/rules/structured-script-output.md, #2760).
+  first_type="${issues[0]#*TYPE=}"
+  first_type="${first_type%% *}"
+  first_file="${issues[0]#*FILE=}"
+  first_file="${first_file%% *}"
+  first_line="${issues[0]#*LINE=}"
+  first_line="${first_line%% *}"
+  first_id="${issues[0]#*ID=}"
+  first_id="${first_id%% *}"
+  reason="$(printf '%s: %s:%s %s' "$first_type" "$first_file" "$first_line" "$first_id" | tr -s '[:space:]' ' ' | cut -c1-180)"
+  [ "$issue_count" -gt 1 ] && reason="$reason (+$((issue_count - 1)) more)"
+  echo "REASON=$reason"
   echo "ISSUES:"
   printf '%s\n' "${issues[@]}"
 else

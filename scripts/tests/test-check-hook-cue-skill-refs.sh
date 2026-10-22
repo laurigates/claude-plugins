@@ -72,6 +72,15 @@ if grep -q 'ID=evaluate:evaluate-skill FIX=evaluate-plugin:evaluate-skill' <<<"$
 else
   fail "(a) expected FIX=evaluate-plugin:evaluate-skill; got: $OUT_A"
 fi
+CONTRACT="$REPO_ROOT/scripts/check-structured-output-contract.sh"
+valid() { printf '%s\n' "$1" | bash "$CONTRACT" --validate - >/dev/null 2>&1; }
+if grep -qxF 'REASON=unresolvable_cue_skill_id: code-quality-plugin/hooks/cue.sh:2 code-quality:code-lint (+1 more)' <<<"$OUT_A"; then
+  pass "(a) REASON= names the first finding with the (+N more) suffix (#2760)"
+else
+  fail "(a) expected a REASON= naming cue.sh:2 code-quality:code-lint (+1 more); got: $OUT_A"
+fi
+if valid "$OUT_A"; then pass "(a) ERROR output satisfies the structured-output contract"
+else fail "(a) ERROR output violates the structured-output contract: $OUT_A"; fi
 
 # --- (b) the FIXED line is clean, and the scan demonstrably ran ---
 echo "--- Test (b): plugin-qualified cue passes, with a non-vacuous scan ---"
@@ -92,6 +101,11 @@ if [ "$(field "$OUT_B" FILES_SCANNED)" -ge 1 ] && [ "$(field "$OUT_B" REFS_CHECK
   pass "(b) scan is non-vacuous (FILES_SCANNED>=1, REFS_CHECKED>=2)"
 else
   fail "(b) scan looks collapsed; got: $OUT_B"
+fi
+if ! grep -q '^REASON=' <<<"$OUT_B" && valid "$OUT_B"; then
+  pass "(b) OK output carries no REASON= and satisfies the contract"
+else
+  fail "(b) OK output should have no REASON= and be contract-valid: $OUT_B"
 fi
 
 # --- (c) comment lines are skipped and counted ---
@@ -180,6 +194,11 @@ if [ "$RC_F" -ne 0 ] && grep -q 'TYPE=broken_walk' <<<"$OUT_F"; then
   pass "(f) empty ground truth fails loudly (broken_walk)"
 else
   fail "(f) expected non-zero exit with TYPE=broken_walk; got rc=$RC_F: $OUT_F"
+fi
+if grep -qx 'REASON=broken_walk: .*' <<<"$OUT_F" && valid "$OUT_F"; then
+  pass "(f) broken_walk carries REASON= and satisfies the contract"
+else
+  fail "(f) expected REASON=broken_walk and a contract-valid block: $OUT_F"
 fi
 
 # --- (g) a path-like `a/b:c` is not mistaken for a slash command ---

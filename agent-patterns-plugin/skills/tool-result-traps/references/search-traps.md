@@ -147,18 +147,28 @@ and it is the sibling that sells it.
 - **Control-test with a name you know is present**, through the byte-identical
   glob. The control is what separates "not there" from "unmatchable".
 
-## Grep / Glob on an unreadable path reported "no matches" (before 2.1.292)
+## Grep / Glob "no matches" on an unreadable path or a failed search (before 2.1.292 / 2.1.301)
 
 Before Claude Code 2.1.292, the Grep and Glob tools reported **no matches** when
 the file or folder they were given could not be read, so a permission or path
 problem read as a clean negative. 2.1.292 fixed this: the tool now retries once
-or says the path could not be read.
+or says the path could not be read. The same shape survived for a failing search
+program (the `rg` or glob engine itself erroring): until 2.1.301 that too read as
+"no matches"; since 2.1.301 Grep and Glob return an **error** instead.
 
 - **On 2.1.292+**, report an unreadable-path message as "could not search
   <path>", not as "not found".
-- **On an older client, or reading an old transcript**, a "no matches" from
-  Grep/Glob against a single path is not evidence of absence until a control
-  search against a term known to be in that path also returns something.
+- **On 2.1.301+**, an error from Grep/Glob is a failed search, not an empty one:
+  report the error text, never "not found". This removes the failing-program
+  false negative only; the pattern traps in this file still apply to an empty
+  result with no error.
+- **On a client older than 2.1.301, or reading an old transcript**, a "no
+  matches" from Grep/Glob is not evidence of absence until a control search
+  against a term known to be in that path also returns something.
+- **This narrows only the built-in tools.** Through Bash, `rg` exits 1 on no
+  match and 2 on error, and `git grep` exits 1 on no match and 128 on a fatal
+  error; a pipeline that discards the status or
+  stderr (the pipeline traps in rejected-flags.md) still launders a failure into silence.
 
 ## One search tier is not the search universe
 

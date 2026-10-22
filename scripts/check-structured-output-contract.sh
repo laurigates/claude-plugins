@@ -23,15 +23,18 @@
 #     - emit only OK / WARN / ERROR, whether as a literal or through a variable
 #       whose literal assignments are traced in the same file
 #     - emit ISSUE_COUNT=
-#     - emit REASON=, unless listed in scripts/structured-output-reason-pending.txt
-#   The pending list is a ratchet: an entry that now emits REASON=, or is no
-#   longer a STATUS= emitter, is itself an error, so the list only shrinks.
+#     - emit REASON=
+#   The #2760 rollout migrated every emitter, so there is no exemption list: a
+#   new check script without REASON= fails the sweep outright.
 #   Static analysis proves REASON= is emitted somewhere; it cannot prove the
 #   line sits on the non-OK path. That half is --validate's job.
 #
 #   --validate [FILE|-]: check one captured output block against the runtime
 #   contract (single STATUS= line, canonical value, integer ISSUE_COUNT= equal
-#   to the ISSUES: rows, REASON= present and bounded iff STATUS is not OK). The
+#   to the ISSUES: rows, REASON= present and bounded iff STATUS is not OK, and
+#   REASON= provenance: an ISSUES row at the reported severity, the first such
+#   row's TYPE= opening the REASON=, and a ` (+N more)` tail equal to
+#   ISSUE_COUNT-1). The
 #   test twins of the migrated scripts pipe their failing and passing fixture
 #   output through it.
 #
@@ -170,15 +173,6 @@ def emit(title, keys, issues):
 
 def sweep(root, strict):
     os.chdir(root)
-    pending_rel = "scripts/structured-output-reason-pending.txt"
-    pending = []
-    if os.path.isfile(pending_rel):
-        with open(pending_rel, encoding="utf-8") as fh:
-            for raw in fh:
-                entry = raw.split("#", 1)[0].strip()
-                if entry:
-                    pending.append(entry)
-
     # Relative glob from inside the root (#2219): an absolute base under
     # .claude/worktrees/ cannot collapse the scan to nothing.
     scripts_dir = "scripts"
@@ -222,27 +216,58 @@ def sweep(root, strict):
                            "%s emits STATUS=%s; use OK, WARN or ERROR" % (rel, value)))
         if not info["count"]:
             issues.append(("missing_issue_count", "%s emits STATUS= but never ISSUE_COUNT=" % rel))
-        if not info["reason"] and rel not in pending:
+        if not info["reason"]:
             issues.append(("missing_reason",
                            "%s emits STATUS= but never REASON= on its non-OK path" % rel))
-
-    for rel in pending:
-        if rel not in emitters:
-            issues.append(("stale_pending",
-                           "%s is in %s but is not a STATUS= emitter; delete the entry" % (rel, pending_rel)))
-        elif emitters[rel]["reason"]:
-            issues.append(("stale_pending",
-                           "%s now emits REASON=; delete it from %s" % (rel, pending_rel)))
 
     keys = [
         ("SCRIPTS_SCANNED", len(candidates)),
         ("SCANNED_EMPTY", "true" if not candidates else "false"),
         ("STATUS_EMITTERS", len(emitters)),
         ("REASON_EMITTERS", sum(1 for info in emitters.values() if info["reason"])),
-        ("REASON_PENDING", len(pending)),
     ]
     status = emit("STRUCTURED OUTPUT CONTRACT", keys, issues)
     return 1 if (strict and status != "OK") else 0
+
+
+MORE_SUFFIX = re.compile(r" \(\+(\d+) more\)$")
+ROW_SEVERITY = re.compile(r"(?:^|\s)SEVERITY=(\S+)")
+ROW_TYPE = re.compile(r"(?:^|\s)TYPE=(\S+)")
+
+
+def check_reason_provenance(issues, status, count, reason, row_lines):
+    """REASON= must come from the first finding at the REPORTED severity.
+
+    Three drifts a presence-only check cannot see: a WARN status explained by
+    an INFO row (or an ERROR status by a lowercase `error` row), a ` (+N more)`
+    tail that disagrees with ISSUE_COUNT, and a REASON that names a different
+    finding than the first one at that severity.
+    """
+    if count is not None:
+        more = MORE_SUFFIX.search(reason)
+        if count > 1 and (not more or int(more.group(1)) != count - 1):
+            issues.append(("more_suffix_mismatch",
+                           "ISSUE_COUNT=%d needs a ' (+%d more)' tail on REASON=" % (count, count - 1)))
+        elif count <= 1 and more:
+            issues.append(("more_suffix_mismatch",
+                           "ISSUE_COUNT=%d but REASON= claims (+%s more)" % (count, more.group(1))))
+    if not row_lines:
+        return
+    severities = [(ROW_SEVERITY.search(r), r) for r in row_lines]
+    if not any(m for m, _ in severities):
+        return
+    at_status = [r for m, r in severities if m and m.group(1) == status]
+    if not at_status:
+        found = sorted({m.group(1) for m, _ in severities if m})
+        issues.append(("severity_mismatch",
+                       "STATUS=%s but no ISSUES row carries SEVERITY=%s (rows carry %s)"
+                       % (status, status, ",".join(found))))
+        return
+    first_type = ROW_TYPE.search(at_status[0].split(" MSG=", 1)[0])
+    if first_type and not reason.startswith(first_type.group(1) + ":"):
+        issues.append(("reason_wrong_finding",
+                       "REASON= should open with the first %s finding's TYPE=%s"
+                       % (status, first_type.group(1))))
 
 
 def validate(text, target):
@@ -254,12 +279,14 @@ def validate(text, target):
     reasons = [ln[len("REASON="):] for ln in lines if ln.startswith("REASON=")]
 
     rows = None
+    row_lines = []
     for idx, line in enumerate(lines):
         if line.rstrip() == "ISSUES:":
             rows = rows or 0
             nxt = idx + 1
             while nxt < len(lines) and re.match(r"^\s+- ", lines[nxt]):
                 rows += 1
+                row_lines.append(lines[nxt])
                 nxt += 1
 
     status = statuses[0] if len(statuses) == 1 else None
@@ -295,6 +322,9 @@ def validate(text, target):
         elif len(reason) > REASON_MAX:
             issues.append(("reason_too_long",
                            "REASON= is %d characters; the bound is %d" % (len(reason), REASON_MAX)))
+
+    if status in ("WARN", "ERROR") and reasons and reasons[0].strip():
+        check_reason_provenance(issues, status, count, reasons[0], row_lines)
 
     keys = [
         ("TARGET", target),

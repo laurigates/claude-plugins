@@ -44,6 +44,8 @@ assert_ge() {
     if [ "${2:-0}" -ge "$3" ] 2>/dev/null; then ok "$1 ($2)"; else bad "$1" ">=$3" "${2:-<empty>}"; fi
 }
 
+assert_eq_flag() { if [ "$2" = "true" ]; then ok "$1"; else bad "$1" "true" "$2"; fi; }
+
 FIX=$(mktemp -d)
 if [ -z "$FIX" ] || [ ! -d "$FIX" ]; then
     echo "FAIL: no fixture dir"
@@ -67,6 +69,12 @@ assert_exit "--strict exits 1 on a finding" 1 bash "$GUARD" --project-dir "$FIX"
 echo "TEST 2: a plain run reports but does not fail the build"
 assert_exit "non-strict exits 0" 0 bash "$GUARD" --project-dir "$FIX"
 
+# REASON= (#2760): first finding as `<TYPE>: <MSG>`, no REASON= on OK, contract-valid.
+CONTRACT="${SCRIPT_DIR}/../check-structured-output-contract.sh"
+valid() { printf '%s\n' "$1" | bash "$CONTRACT" --validate - >/dev/null 2>&1 && echo true || echo false; }
+assert_contains "REASON= names the first finding" "$out" "REASON=dead_endpoint: ./demo-plugin/skills/thing/scripts/run.sh:2 uses settings/billing/actions"
+assert_eq_flag "ERROR output satisfies the contract" "$(valid "$out")"
+
 echo "TEST 3: teaching the hazard is NOT a finding"
 # Without this, the guard would flag the fix's own explanatory comments, the
 # rule that documents the 410, and its own denylist.
@@ -89,6 +97,8 @@ assert_contains "clean tree reports STATUS=OK" "$out" "STATUS=OK"
 echo "TEST 4: guard integrity — the corpus was actually read"
 # Without this, TEST 3's 'clean' assertions would also pass against a guard
 # that discovered nothing at all.
+assert_lacks "OK output carries no REASON=" "$out" "REASON="
+assert_eq_flag "OK output satisfies the contract" "$(valid "$out")"
 assert_lacks "a non-empty tree is not reported as empty" "$out" "SCANNED_EMPTY=true"
 scanned=$(printf '%s' "$out" | sed -n 's/^FILES_SCANNED=//p')
 assert_ge "fixture files were scanned" "$scanned" 2
@@ -120,6 +130,7 @@ assert_contains "the pre-existing finding is still the only one" "$out" "ISSUE_C
 cp "$FIX/docs/regression-ledger.md" "$FIX/docs/other-notes.md"
 out=$(bash "$GUARD" --project-dir "$FIX" 2>&1)
 assert_contains "the same line elsewhere in docs/ IS reported" "$out" "other-notes.md"
+assert_contains "REASON= counts the other finding" "$out" " (+1 more)"
 assert_contains "and counted" "$out" "ISSUE_COUNT=2"
 rm -rf "$FIX/docs"
 
@@ -135,6 +146,8 @@ echo "TEST 7: a misfired walk is distinguishable from a clean one"
 MISFIRE=$(mktemp -d)
 mkdir -p "$MISFIRE/demo-plugin"
 out=$(bash "$GUARD" --project-dir "$MISFIRE" 2>&1)
+assert_contains "nothing_scanned carries REASON=" "$out" "REASON=nothing_scanned: "
+assert_eq_flag "nothing_scanned output satisfies the contract" "$(valid "$out")"
 assert_contains "plugin dirs but no files is an ERROR, not a clean OK" "$out" "TYPE=nothing_scanned"
 rm -rf "$MISFIRE"
 

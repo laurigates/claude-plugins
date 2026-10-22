@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016
+# SC2016: the backticks and `$` in the README-row regexes are literal pattern text,
+# not expansions.
 # Audit top-level documentation maps for mechanical drift (Layer 1 of #1460).
 #
-# Seven zero-false-positive checks:
+# Eight zero-false-positive checks:
 #   1. RULES INDEX  — every .claude/rules/*.md appears as the first cell of a
 #      table row inside the CLAUDE.md `## Rules` section (a row appended under
 #      another heading, or a prose mention, does not count — #2838 A-5),
@@ -47,6 +50,17 @@
 #      deliberately NOT gated: 71 directories corpus-wide are absent from their
 #      plugin README today, so an ERROR there would be red on arrival. Fixing
 #      that backlog is its own task.
+#
+#   8. README SKILL TABLES — in a plugin README table whose first header cell is
+#      `Skill`/`Skills`, a leading cell holding a bare hyphenated skill name
+#      (`workflow-parallel-issues`, optionally backticked) must name a directory
+#      under <plugin>/skills/. Check 7 only sees `/<ns>:<name>` leading cells, so
+#      a table whose leading cell is the bare name and whose command sits in the
+#      second column (#3149: workflow-orchestration listed two skills that never
+#      existed) was invisible. Tables under a heading containing "planned",
+#      "roadmap", "future" or "todo" are exempt - they declare intent, not
+#      presence. EXACT match; a shorthand (`ground-response` for
+#      `prompt-engineering-ground-response`) is a finding. ERROR severity.
 #
 # Emits the structured KEY=value / STATUS= convention
 # (.claude/rules/structured-script-output.md) so scheduled-audits can roll it up.
@@ -398,7 +412,7 @@ done <<< "$disk_set"
 while IFS= read -r p; do
   [ -n "$p" ] || continue
   p_readme="$proj_dir/$p/README.md"
-  [ -f "$p_readme" ] && [ -d "$proj_dir/$p/skills" ] || continue
+  if [ ! -f "$p_readme" ] || [ ! -d "$proj_dir/$p/skills" ]; then continue; fi
 
   rows="$(grep -oE '^\| *`?/[a-z0-9-]+:[a-z0-9-]+`? *\|' "$p_readme" 2>/dev/null \
     | sed -E 's#^\| *`?/([a-z0-9-]+):([a-z0-9-]+)`? *\|$#\1|\2#' | sort -u)"
@@ -430,6 +444,35 @@ while IFS= read -r p; do
         "$p/README.md lists /$row_ns:$row_name but no matching skill directory exists (searched:$cand_plugins)"
     fi
   done <<< "$rows"
+done <<< "$disk_set"
+
+# --- Check 8: plugin README skill-table leading cells resolve to a skill dir ---
+# See header (#3149). Table = contiguous `|` lines; it is a skill table when its
+# first header cell is Skill/Skills. Data rows are the lines after the separator.
+readme_table_rows=0
+while IFS= read -r p; do
+  [ -n "$p" ] || continue
+  p_readme="$proj_dir/$p/README.md"
+  if [ ! -f "$p_readme" ] || [ ! -d "$proj_dir/$p/skills" ]; then continue; fi
+  while IFS= read -r t_name; do
+    [ -n "$t_name" ] || continue
+    readme_table_rows=$((readme_table_rows + 1))
+    if [ ! -d "$proj_dir/$p/skills/$t_name" ]; then
+      add_issue ERROR readme_table_row_dangling \
+        "$p/README.md skill table lists $t_name but $p/skills/$t_name/ does not exist"
+    fi
+  done < <(awk '
+    /^#+ / { planned = (tolower($0) ~ /planned|roadmap|future|todo/); intab = 0; next }
+    /^\|/ {
+      split($0, c, "|"); cell = c[2]
+      gsub(/^[ \t`*]+|[ \t`*]+$/, "", cell)
+      if (!intab) { intab = 1; hdr = (tolower(cell) ~ /^skills?$/); next }
+      if (cell ~ /^[-: ]+$/) next
+      if (hdr && !planned && cell ~ /^[a-z0-9]+(-[a-z0-9]+)+$/) print cell
+      next
+    }
+    { intab = 0 }
+  ' "$p_readme")
 done <<< "$disk_set"
 
 # --- Status -------------------------------------------------------------------
@@ -473,8 +516,24 @@ else
   echo "DIAGRAM_SVG_NODES=$diagram_svg_nodes"
   echo "README_SKILL_ROWS=$readme_skill_rows"
   echo "README_ROW_PLUGINS=$readme_row_plugins"
+  echo "README_TABLE_ROWS=$readme_table_rows"
   echo "RULES_CHECKED=$rules_checked"
   echo "STATUS=$overall_status"
+  if [ "$overall_status" != "OK" ]; then
+    # REASON= is the first finding at the reported severity as `<TYPE>: <MSG>`,
+    # one line, cut to 180 chars, plus ` (+N more)` when other findings exist
+    # (.claude/rules/structured-script-output.md, #2760).
+    reason=""
+    for line in "${issues[@]}"; do
+      case "$line" in *"SEVERITY=$overall_status "*) ;; *) continue ;; esac
+      [ -z "$reason" ] || continue
+      reason_type="${line#*TYPE=}"
+      reason_type="${reason_type%% *}"
+      reason="$(printf '%s: %s' "$reason_type" "${line#*MSG=}" | tr -s '[:space:]' ' ' | cut -c1-180)"
+    done
+    [ "$issue_count" -gt 1 ] && reason="$reason (+$((issue_count - 1)) more)"
+    echo "REASON=$reason"
+  fi
   echo "ISSUE_COUNT=$issue_count"
   if [ "$issue_count" -gt 0 ]; then
     echo "ISSUES:"

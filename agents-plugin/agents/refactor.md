@@ -6,7 +6,7 @@ description: Code refactoring specialist. Restructures code for improved readabi
 tools: Glob, Grep, Read, Edit, Write, Bash(npm test *), Bash(npm run *), Bash(yarn test *), Bash(bun test *), Bash(pytest *), Bash(vitest *), Bash(cargo test *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(find *), Bash(ls *), Bash(wc *), Bash(rg *), Bash(python3 scripts/audit-skill-descriptions.py *), TodoWrite
 maxTurns: 20
 created: 2026-01-24
-modified: 2026-06-28
+modified: 2026-10-22
 reviewed: 2026-06-28
 ---
 
@@ -170,6 +170,12 @@ already shipped.
 3. **Run tests between steps** - Catch regressions immediately
 4. **Preserve public API** - Don't change function signatures unless asked
 5. **Keep commits atomic** - Each refactoring is one logical change
+
+## Turn Budget
+
+`maxTurns: 20` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 16 of 20), stop transforming and deliver the report in the Output Format below. Commit what is done (see Checkpoint Discipline), report the changes that landed, and put the remainder under **Deferred**. For a closed-list assignment, end with the Completion Manifest and set `status: partial` when `COMPLETED < ASSIGNED`.
+
+**Callers**: this agent has 20 turns. Keep batches within the Batch size in Scope, and split a larger refactor across agents.
 
 ## Output Format
 

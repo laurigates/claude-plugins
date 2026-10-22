@@ -123,6 +123,7 @@ if [ ${#skill_files[@]} -eq 0 ]; then
     echo "UNRENDERED_CONDITIONALS=0"
     echo "PLUGIN_DIRS=${#plugin_dirs[@]}"
     echo "STATUS=ERROR"
+    echo "REASON=nothing_scanned: ${#plugin_dirs[@]} plugin dirs but zero skill files discovered; scan misfired (see #2219)"
     echo "ISSUE_COUNT=1"
     echo "ISSUES:"
     echo "  - SEVERITY=ERROR TYPE=nothing_scanned MSG=${#plugin_dirs[@]} plugin dirs but zero skill files discovered; scan misfired (see #2219)"
@@ -199,6 +200,15 @@ echo "UNRENDERED_CONDITIONALS=$errors"
 
 if [ $errors -gt 0 ]; then
   echo "STATUS=ERROR"
+  # REASON= is the first finding as `<TYPE>: <MSG>`, one line, cut to 180
+  # chars, plus ` (+N more)` (.claude/rules/structured-script-output.md, #2760).
+  first_loc="${error_lines[0]#*FILE=}"
+  first_tok="${first_loc#*TOKEN=}"
+  first_loc="${first_loc%% TOKEN=*}"
+  first_loc="${first_loc// LINE=/:}"
+  reason="$(printf 'unrendered_template_conditional: %s %s' "$first_loc" "$first_tok" | tr -s '[:space:]' ' ' | cut -c1-180)"
+  [ "$errors" -gt 1 ] && reason="$reason (+$((errors - 1)) more)"
+  echo "REASON=$reason"
 else
   echo "STATUS=OK"
 fi
