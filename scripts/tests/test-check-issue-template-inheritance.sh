@@ -195,6 +195,12 @@ assert_line "$out_j" "SECURITY_LINK=missing" "J: commented security URL is not a
 assert_line "$out_j" "QA_LINK=missing" "J: commented Q&A URL is not a link"
 assert_contains "$out_j" "security_link_dropped" "J: security finding raised"
 assert_contains "$out_j" "qa_link_dropped" "J: Q&A finding raised"
+# Two findings: REASON= names the first and counts the other (#2760).
+assert_line "$out_j" "ISSUE_COUNT=2" "J: both findings counted"
+assert_contains "$out_j" "REASON=security_link_dropped: " "J: REASON= names the first finding"
+assert_contains "$out_j" " (+1 more)
+" "J: REASON= ends in (+1 more)"
+assert_eq "$(valid "$out_j")" "true" "J: two-finding output satisfies the structured-output contract"
 # Guard integrity: the same URLs on real `url:` lines must still read present,
 # so the comment strip cannot degrade into never matching anything.
 K="$TMP_ROOT/k"; mkdir -p "$K/.github/ISSUE_TEMPLATE"

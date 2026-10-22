@@ -45,7 +45,7 @@ if [ "$issue_count" -gt 0 ]; then
   echo "REASON=$reason"
   echo "ISSUES:"
   for f in "${offenders[@]}"; do
-    echo "  - SEVERITY=ERROR FILE=$f MSG=rename to SKILL.md (case-sensitive); Claude Code will not load it on a case-sensitive filesystem"
+    echo "  - SEVERITY=ERROR TYPE=non_canonical_skill_filename FILE=$f MSG=rename to SKILL.md (case-sensitive); Claude Code will not load it on a case-sensitive filesystem"
   done
   echo "=== END SKILL FILENAME CASE ==="
   exit 1

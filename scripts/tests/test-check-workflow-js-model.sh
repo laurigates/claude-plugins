@@ -677,14 +677,25 @@ o_warn=$(out "$root")
 check "R: WARN fixture STATUS=WARN"           "WARN"  "$(field "$o_warn" STATUS)"
 check "R: WARN fixture REASON= names the WARN finding" "1" \
     "$(grep -c '^REASON=missing_model: ' <<<"$o_warn")"
+# Mixed: one agent() with no model (WARN missing_model, reported first) and no
+# effort (ERROR missing_effort). STATUS=ERROR, so REASON= must skip the WARN row.
+root=$(mk_root R-mixed)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_js "$d" audit.workflow.js "" ""
+o_mixed=$(out "$root")
+check "R: mixed fixture STATUS=ERROR"        "ERROR" "$(field "$o_mixed" STATUS)"
+check "R: mixed fixture lists the WARN row before the ERROR row" "WARN" \
+    "$(grep -m1 '^  - SEVERITY=' <<<"$o_mixed" | sed 's/^  - SEVERITY=\([A-Z]*\).*/\1/')"
+check "R: mixed REASON= names the ERROR finding, not the earlier WARN row" "1" \
+    "$(grep -c '^REASON=missing_effort: .* (+1 more)$' <<<"$o_mixed")"
 root=$(mk_root R-ok)
 d=$(mk_skill "$root" demo-plugin demo-skill)
 mk_js "$d" audit.workflow.js opus low
 o_ok=$(out "$root")
 check "R: passing fixture STATUS=OK"         "OK" "$(field "$o_ok" STATUS)"
 check "R: passing fixture emits no REASON="  "0" "$(grep -c '^REASON=' <<<"$o_ok")"
-for label in err warn ok; do
-    case "$label" in err) body="$o_err" ;; warn) body="$o_warn" ;; *) body="$o_ok" ;; esac
+for label in err warn mixed ok; do
+    case "$label" in err) body="$o_err" ;; warn) body="$o_warn" ;; mixed) body="$o_mixed" ;; *) body="$o_ok" ;; esac
     rc=0
     printf '%s\n' "$body" | bash "$CONTRACT" --validate - >/dev/null 2>&1 || rc=$?
     check "R: $label output satisfies the structured-output contract" "0" "$rc"

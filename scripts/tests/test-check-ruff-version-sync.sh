@@ -86,6 +86,16 @@ if [[ "$ok_out" == *"REASON="* ]]; then check "matching pins -> no REASON=" "has
 printf '%s\n' "$ok_out" | bash "$CONTRACT" --validate - >/dev/null 2>&1
 check "matching pins -> output satisfies the contract" "$?" "0"
 
+# Two findings (an unpinned invocation AND a skewed pin) -> the (+1 more) tail.
+make_fixture "$tmp_root/two" "v0.4.8" "uvx ruff@0.15.8"
+printf 'jobs:\n  c:\n    steps:\n      - run: uvx ruff check .\n      - run: uvx ruff@0.15.8 check .\n' \
+  > "$tmp_root/two/.github/workflows/plugin-pr-checks.yml"
+two_out="$(bash "$GUARD" --project-dir "$tmp_root/two" 2>&1)"
+check "two findings -> ISSUE_COUNT=2" "$two_out" "ISSUE_COUNT=2"
+check "two findings -> REASON= carries the (+1 more) tail" "$two_out" " (+1 more)"
+printf '%s\n' "$two_out" | bash "$CONTRACT" --validate - >/dev/null 2>&1
+check "two findings -> output satisfies the contract" "$?" "0"
+
 # --- C) unpinned CI invocation ---------------------------------------------
 make_fixture "$tmp_root/unpinned" "v0.15.8" "uvx ruff"
 out="$(bash "$GUARD" --project-dir "$tmp_root/unpinned" --strict 2>&1)"

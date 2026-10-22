@@ -130,6 +130,16 @@ else
     fail "missing flag should emit a contract-valid REASON=: $out"
 fi
 rm -rf "$d"
+# Two undocumented flags -> the REASON= names the first and counts the other.
+d=$(make_project "CLAUDE_HOOKS_ENABLE_SAMPLE" "")
+printf '#!/usr/bin/env bash\n[ "${%s:-}" = "1" ] && exit 0\n' "CLAUDE_HOOKS_ENABLE_OTHER" > "$d/hooks-plugin/hooks/other.sh"
+out=$(bash "$SCRIPT" --project-dir "$d" 2>&1)
+if grep -qx 'ISSUE_COUNT=2' <<<"$out" && grep -q '^REASON=missing_from_catalog: .* (+1 more)$' <<<"$out" && valid "$out"; then
+    pass "two missing flags -> REASON= ends in (+1 more) and the block satisfies the contract"
+else
+    fail "two missing flags should emit REASON= with (+1 more): $out"
+fi
+rm -rf "$d"
 d=$(make_project "CLAUDE_HOOKS_ENABLE_SAMPLE" "CLAUDE_HOOKS_ENABLE_SAMPLE")
 out=$(bash "$SCRIPT" --project-dir "$d" 2>&1)
 if ! grep -q '^REASON=' <<<"$out" && valid "$out"; then

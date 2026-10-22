@@ -169,6 +169,19 @@ if grep -q '^REASON=' <<<"$out_ok"; then
 else
     PASS=$((PASS + 1)); echo "PASS: passing fixture carries no REASON="
 fi
+# Two breaks at once (a dropped marker and E-Prime re-enabled): REASON= counts the rest.
+R="$WORK/two"; seed "$R"
+grep -v 'precisely why' "$R/prose-plugin/styles/House/SignificanceAssertion.yml" > "$R/tmp" \
+    && mv "$R/tmp" "$R/prose-plugin/styles/House/SignificanceAssertion.yml"
+grep -v 'write-good.E-Prime = NO' "$R/prose-plugin/styles/.vale.ini" > "$R/tmp" \
+    && mv "$R/tmp" "$R/prose-plugin/styles/.vale.ini"
+out_two="$("$GUARD" "$R" 2>&1)"
+if grep -q '^REASON=.* (+[1-9][0-9]* more)$' <<<"$out_two" \
+   && printf '%s\n' "$out_two" | bash "$CONTRACT" --validate - >/dev/null 2>&1; then
+    PASS=$((PASS + 1)); echo "PASS: two findings -> REASON= carries (+N more) and the block validates"
+else
+    FAIL=$((FAIL + 1)); echo "FAIL: two findings should yield a contract-valid REASON= with (+N more)"; grep '^REASON=\|^ISSUE_COUNT' <<<"$out_two"
+fi
 for pair in "failing:$out_fail" "passing:$out_ok"; do
     if printf '%s\n' "${pair#*:}" | bash "$CONTRACT" --validate - >/dev/null 2>&1; then
         PASS=$((PASS + 1)); echo "PASS: ${pair%%:*} output satisfies the structured-output contract"

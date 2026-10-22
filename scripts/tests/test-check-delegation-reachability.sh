@@ -222,6 +222,14 @@ assert_contains "$out" "REASON=unreachable_delegation: " "B7 REASON= names the f
 assert_contains "$out" "SKILL.md:" "B8 REASON= names file:line"
 assert_contains "$out" "gated sibling presented as an agent action" "B9 REASON= carries the message"
 assert_eq "$(reason_valid "$out")" "true" "B10 ERROR output satisfies the contract"
+# Two imperative rows -> the REASON= names the first and counts the other.
+fx2="$tmp_root/b2"; build_fixture "$fx2" gated "Execution" "$IMPERATIVE
+| CI failure | Fix it via **\`/demo:feedback\`** (the canonical engine) |"
+out2="$(run_checker "$fx2")"
+assert_contains "$out2" "ISSUE_COUNT=2" "B11 two imperative rows -> two findings"
+assert_contains "$out2" " (+1 more)
+" "B12 REASON= ends in (+1 more)"
+assert_eq "$(reason_valid "$out2")" "true" "B13 two-finding output satisfies the contract"
 
 echo "TEST C: the SAME line, hedged toward the user, is clean"
 # Without this the guard could satisfy TEST B by flagging every mention.

@@ -103,6 +103,16 @@ valid() { printf '%s\n' "$1" | bash "$CONTRACT" --validate - >/dev/null 2>&1 && 
 assert "B REASON= names the first finding" "$(hasline "$out" 'REASON=coverage_below_floor: 1 of 16 canaries carry an evals.json, below the declared floor of 3')"
 assert "B ERROR output satisfies the contract" "$(valid "$out")"
 
+# Two findings (below the floor AND a stripped workflow invariant): REASON= names
+# the first and counts the other.
+stage b2 3 1
+wf="$fx/b2/.github/workflows/golden-set-evaluation.yml"
+grep -vF -- '::warning::' "$wf" > "$wf.tmp" && mv "$wf.tmp" "$wf"
+out="$(bash "$CHECK" --project-dir "$fx/b2" 2>&1)"
+assert "B two findings -> ISSUE_COUNT=2" "$(hasline "$out" 'ISSUE_COUNT=2')"
+assert "B two findings -> REASON= ends in (+1 more)" "$(has "$out" ' (+1 more)')"
+assert "B two-finding output satisfies the contract" "$(valid "$out")"
+
 # Guard integrity: the SAME fixture at a floor it meets must pass, so B's
 # failure is attributable to the floor and not to the fixture being broken.
 stage b_ok 1 1

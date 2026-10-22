@@ -113,6 +113,10 @@ out_fail="$(bash "$GUARD" "$no_ground" 2>&1)"
 out_ok="$(bash "$GUARD" "$clean" 2>&1)"
 assert_eq "failing fixture REASON= names the first finding" "yes" \
   "$(grep -qF 'REASON=.github/workflows/research-radar.yml: research-radar prompt lost the per-paper grounding requirement' <<<"$out_fail" && echo yes || echo no)"
+out_many="$(bash "$GUARD" "$empty" 2>&1)"
+assert_eq "seven findings: REASON= ends in (+6 more)" "1" "$(grep -c '^REASON=.* (+6 more)$' <<<"$out_many")"
+assert_eq "seven-finding output satisfies the structured-output contract" "0" \
+  "$(printf '%s\n' "$out_many" | bash "$CONTRACT" --validate - >/dev/null 2>&1; echo $?)"
 assert_eq "passing fixture carries no REASON=" "0" "$(grep -c '^REASON=' <<<"$out_ok")"
 assert_eq "failing output satisfies the structured-output contract" "0" \
   "$(printf '%s\n' "$out_fail" | bash "$CONTRACT" --validate - >/dev/null 2>&1; echo $?)"

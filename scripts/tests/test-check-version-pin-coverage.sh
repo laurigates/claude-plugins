@@ -723,19 +723,23 @@ node-version: 20
 ```
 MD
 r_warn_out="$(bash "$checker" --project-dir "$r_warn")"
+# The scan reports rows bottom-block first, so the uses: block goes ABOVE the
+# node-version block to make the WARN row precede the ERROR row in ISSUES:.
 cat > "$r_warn/demo-plugin/skills/demo/SKILL.md" <<'MD'
 # Demo
 
 ```yaml
-node-version: 20
+- uses: foo/bar@1
 ```
 
 ```yaml
-- uses: foo/bar@1
+node-version: 20
 ```
 MD
 r_mixed_out="$(bash "$checker" --project-dir "$r_warn")"
 rm -rf "$r_warn"
+assert "mixed fixture precondition: the WARN row precedes the ERROR row" \
+  "$([ "$(grep -m1 '^  - SEVERITY=' <<<"$r_mixed_out" | cut -c1-17)" = "  - SEVERITY=WARN" ] && echo true || echo false)"
 assert "WARN-only fixture is STATUS=WARN" "$([ "$(field "$r_warn_out" STATUS)" = "WARN" ] && echo true || echo false)"
 assert "WARN-only REASON= names the WARN finding" "$(contains "$r_warn_out" '^REASON=runtime_version_unmanaged: ')"
 assert "WARN-only output satisfies the structured-output contract" \

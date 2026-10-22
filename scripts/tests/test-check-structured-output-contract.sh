@@ -299,6 +299,23 @@ expect_exit "V20c: REASON= from the first ERROR row passes" "$rc" 0
 out="$(validate $'STATUS=ERROR\nREASON=a.md: token dropped\nISSUE_COUNT=1\nISSUES:\n  - SEVERITY=ERROR FILE=a.md MSG=token dropped')"; rc=$?
 expect_exit "V21: a TYPE-less row at the reported severity passes" "$rc" 0
 
+# Two rows at the reported severity with DIFFERENT types: the REASON must open with
+# the FIRST such row's TYPE, not the last (a first-vs-last mix-up passes every
+# single-type fixture).
+two_types=$'STATUS=ERROR\nREASON=first_kind: a.md (+1 more)\nISSUE_COUNT=2\nISSUES:\n  - SEVERITY=ERROR TYPE=first_kind MSG=a.md\n  - SEVERITY=ERROR TYPE=second_kind MSG=b.md'
+out="$(validate "$two_types")"; rc=$?
+expect_exit "V22: REASON= opening with the first row's TYPE passes" "$rc" 0
+out="$(validate "$(mutate 's/^REASON=first_kind: a.md/REASON=second_kind: b.md/' "$two_types")")"; rc=$?
+expect_exit "V22b: REASON= opening with the LAST row's TYPE fails" "$rc" 1
+expect_text "V22c: reason_wrong_finding" "$out" "TYPE=reason_wrong_finding"
+
+# Rows with no SEVERITY= key at all (several migrated scripts) have nothing to
+# compare against, so they must not fail severity provenance.
+out="$(validate $'STATUS=ERROR\nREASON=broken_thing: a.sh\nISSUE_COUNT=1\nISSUES:\n  - TYPE=broken_thing MSG=a.sh')"; rc=$?
+expect_exit "V23: rows without any SEVERITY= pass" "$rc" 0
+out="$(validate $'STATUS=ERROR\nREASON=broken_thing: a.sh\nISSUE_COUNT=1\nISSUES:\n  - SEVERITY=WARN TYPE=broken_thing MSG=a.sh')"; rc=$?
+expect_exit "V23b: control: a row WITH a mismatched SEVERITY= fails" "$rc" 1
+
 echo ""
 echo "Passed: $PASS, Failed: $FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

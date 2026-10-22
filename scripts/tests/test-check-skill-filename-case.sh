@@ -52,6 +52,20 @@ else
   ko "ERROR output REASON= names the offender"; echo "$out_bad"
 fi
 
+# Two offenders -> the REASON= names the first and counts the other (+1 more); the
+# row carries the TYPE= the REASON opens with, so --validate can tie them together.
+make_repo "$WORK/two" "skill.md"
+mkdir -p "$WORK/two/demo-plugin/skills/other"
+printf -- '---\nname: other\n---\n' > "$WORK/two/demo-plugin/skills/other/Skill.md"
+env -u GIT_DIR -u GIT_WORK_TREE git -C "$WORK/two" add -A
+out_two="$(run_guard "$WORK/two")"
+grep -qx 'ISSUE_COUNT=2' <<<"$out_two" && ok "two offenders -> ISSUE_COUNT=2" || ko "two offenders -> ISSUE_COUNT=2"
+grep -q '^REASON=non_canonical_skill_filename: .* (+1 more)$' <<<"$out_two" && ok "two offenders -> REASON= ends in (+1 more)" || ko "two offenders -> REASON= ends in (+1 more)"
+grep -q '^  - SEVERITY=ERROR TYPE=non_canonical_skill_filename FILE=' <<<"$out_two" && ok "ISSUES rows carry the TYPE= the REASON= opens with" || ko "ISSUES rows carry TYPE="
+if printf '%s\n' "$out_two" | bash "$CONTRACT" --validate - >/dev/null 2>&1; then
+  ok "two-offender output satisfies the structured-output contract"
+else ko "two-offender output rejected by --validate"; fi
+
 if printf '%s\n' "$out_ok" | bash "$CONTRACT" --validate - >/dev/null 2>&1; then
   ok "OK output satisfies the structured-output contract"
 else ko "OK output rejected by --validate"; fi
