@@ -579,6 +579,9 @@ repo_slug_of() {  # $1 = remote URL; prints OWNER/REPO or nothing
   case "$repo" in */*|'') return 0 ;; esac
   [ -n "$owner" ] || return 0
   case "$owner$repo" in *[!A-Za-z0-9._-]*) return 0 ;; esac
+  # `.` and `..` pass the character class but are path components, not names.
+  case "$owner" in .|..) return 0 ;; esac
+  case "$repo" in .|..) return 0 ;; esac
   printf '%s/%s' "$owner" "$repo"
 }
 
@@ -1566,7 +1569,9 @@ if [ "$with_blueprint" = true ]; then
     if [ "$bpid_rc" -eq 0 ]; then
       if [ -z "$bpid_raw" ]; then
         bpid_query_ok=true   # an empty answer is an empty list, as before
-      elif ! have jq || printf '%s' "$bpid_raw" | jq -e 'type == "array"' >/dev/null 2>&1; then
+      elif have jq && printf '%s' "$bpid_raw" | jq -e 'type == "array"' >/dev/null 2>&1; then
+        # Without jq the shape cannot be checked, so a non-empty answer stays
+        # unvalidated (false) rather than being trusted on its exit status.
         bpid_query_ok=true
         closed_bpid_json="$bpid_raw"
       fi

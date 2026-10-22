@@ -2707,7 +2707,8 @@ out=$(TASK_BPID_FAIL=1 run_at "$BP" --project demo --with-blueprint)
 bp=$(c1_section "$out" BLUEPRINT)
 check_line "C1a: failing bpid query reports BPID_QUERY_OK=false" "$bp" "BPID_QUERY_OK=false"
 check_line "C1a: ...beside the false zero it explains" "$bp" "UNDRAINED_COUNT=0"
-check_line "C1a: ...while task and jq are both genuinely available" "$bp" "TASK_AVAILABLE=true"
+check_line "C1a: ...while task is genuinely available" "$bp" "TASK_AVAILABLE=true"
+check_line "C1a: ...and jq is genuinely available" "$bp" "JQ_AVAILABLE=true"
 check_absent "C1a: a failed query lists no undrained WOs" "$bp" "UNDRAINED_WOS="
 check "C1a: the digest is still parse-stable after the failure" "$out" "=== END BLUEPRINT ==="
 
@@ -2747,6 +2748,9 @@ check_line "C1b: PRS reports jq absent" "$(c1_section "$out" PRS)" "JQ_AVAILABLE
 check_line "C1b: GITHUB_DRIFT reports jq absent" "$(c1_section "$out" GITHUB_DRIFT)" "JQ_AVAILABLE=false"
 check_line "C1b: ...beside the uncomputed zero it explains" \
   "$(c1_section "$out" BLUEPRINT)" "UNDRAINED_COUNT=0"
+# Without jq a non-empty answer cannot be shape-checked, so it is not "ok".
+check_line "C1b: jq absent + non-empty bpid answer -> BPID_QUERY_OK=false" \
+  "$(c1_section "$out" BLUEPRINT)" "BPID_QUERY_OK=false"
 
 # --- C1c: UNDRAINED_WOS_NO_EVIDENCE -----------------------------------------
 out=$(run_at "$BP" --project demo --with-blueprint)
@@ -2837,6 +2841,8 @@ check_eq "C1e: look-alike host -> empty"       "$(repo_of 'https://notgithub.com
 check_eq "C1e: file:// URL -> empty"           "$(repo_of 'file:///srv/laurigates/claude-plugins')" ""
 check_eq "C1e: local path -> empty"            "$(repo_of '/srv/git/claude-plugins')" ""
 check_eq "C1e: nested path -> empty"           "$(repo_of 'https://github.com/laurigates/claude-plugins/tree/main')" ""
+check_eq "C1e: dot-only repo segment -> empty" "$(repo_of 'https://github.com/a/..')" ""
+check_eq "C1e: dot-only owner segment -> empty" "$(repo_of 'https://github.com/../a')" ""
 check_eq "C1e: single segment -> empty"        "$(repo_of 'https://github.com/laurigates')" ""
 check_eq "C1e: ssh-config alias host -> empty" "$(repo_of 'git@gh-work:laurigates/claude-plugins.git')" ""
 # The key is always present, so empty is an answer, not an omission.

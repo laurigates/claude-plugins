@@ -267,7 +267,7 @@ full digest; `--summary` carries none of them.
 | `BPID_QUERY_OK` | `BLUEPRINT` | `true` only when the completed-`bpid` query exited 0 with a JSON array (or nothing). **`false` beside `UNDRAINED_COUNT=0` is the false zero**: an undeclared `bpid` UDA makes `task` reject the filter, and the count read as a clean "nothing to drain". Also `false` when the query was never attempted — read `MANIFEST=` / `TASK_AVAILABLE=` to tell which |
 | `UNDRAINED_WOS_NO_EVIDENCE` | `BLUEPRINT` | The subset of `UNDRAINED_WOS` none of whose closed tasks carries a non-blank annotation, so a drain has no completion evidence to cite. Present only when non-empty |
 | `TASK_n_BPID` | `TASKWARRIOR` | The blueprint work order a pending task is linked to, sanitised like `TASK_n_DESC`. Absent when unlinked |
-| `REPO` | `GIT` | `<owner>/<repo>` of the cwd checkout's `origin`, parsed from the URL with **no `gh` call**. Always emitted; empty when there is no origin or it is not an unambiguous GitHub `owner/repo` URL (another host, a local path, a nested path, an ssh-config alias host) |
+| `REPO` | `GIT` | `<owner>/<repo>` of the cwd checkout's `origin`, parsed from the URL with **no `gh` call**. Always emitted in the full digest (never in `--summary`); empty when there is no origin or it is not an unambiguous GitHub `owner/repo` URL (another host, a local path, a nested path, an ssh-config alias host) |
 
 `UNDRAINED_WOS`, `UNDRAINED_WOS_NO_EVIDENCE` and `INFLIGHT_WOS` flatten any
 tab or newline in a work-order id, so an id can never mint a second `KEY=` line.
