@@ -678,6 +678,26 @@ fi
 echo "ISSUE_COUNT=$issue_count"
 if [ "$issue_count" -gt 0 ]; then
   echo "STATUS=ERROR"
+  # REASON= is the first finding as `<TYPE>: <MSG>` (with FILE:LINE when the
+  # finding has one), one line, cut to 180 chars, plus ` (+N more)`
+  # (.claude/rules/structured-script-output.md, #2760).
+  first_type="${issues[0]#*TYPE=}"
+  first_type="${first_type%% *}"
+  first_where=""
+  case "${issues[0]}" in
+    *" FILE="*)
+      first_where="${issues[0]#* FILE=}"
+      first_where="${first_where%% *}"
+      case "${issues[0]}" in
+        *" LINE="*)
+          first_line="${issues[0]#* LINE=}"
+          first_where="$first_where:${first_line%% *}" ;;
+      esac
+      first_where="$first_where " ;;
+  esac
+  reason="$(printf '%s: %s%s' "$first_type" "$first_where" "${issues[0]#*MSG=}" | tr -s '[:space:]' ' ' | cut -c1-180)"
+  [ "$issue_count" -gt 1 ] && reason="$reason (+$((issue_count - 1)) more)"
+  echo "REASON=$reason"
   echo "ISSUES:"
   for entry in "${issues[@]}"; do
     echo "$entry"

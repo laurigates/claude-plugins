@@ -101,6 +101,17 @@ assert_empty "--issue-body empty when in sync" "$body_clean"
 body_drift="$(bash "$check" --project-dir "$b" --issue-body)"
 assert_has "--issue-body populated on drift" "$body_drift" "Plugin enablement drift"
 
+# --- TEST G: REASON= on ERROR, absent on OK, both contract-valid (#2760) ------
+contract="$script_dir/check-structured-output-contract.sh"
+valid() { printf '%s\n' "$1" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false; }
+assert_has "ERROR output names the first finding in REASON=" "$out_b" "^REASON=plugin_not_enabled: beta-plugin is published"
+assert_has "ERROR output satisfies the structured-output contract" "$(valid "$out_b")" "^true$"
+g="$tmp_root/g"
+make_fixture "$g" "$MKT" '{"enabledPlugins":{"alpha-plugin@test-mkt":true}}'
+assert_has "two findings yield a (+1 more) suffix" "$(bash "$check" --project-dir "$g")" "^REASON=marketplace_not_registered: .* (+1 more)$"
+assert_has "OK output satisfies the structured-output contract" "$(valid "$out_a")" "^true$"
+if grep -q '^REASON=' <<<"$out_a"; then ko "OK output carries no REASON="; else ok "OK output carries no REASON="; fi
+
 echo ""
 echo "RESULTS: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

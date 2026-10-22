@@ -69,6 +69,7 @@ files_scanned=0
 grants_seen=0
 issue_count=0
 findings=""
+first_reason=""
 
 while IFS= read -r f; do
   files_scanned=$((files_scanned + 1))
@@ -89,6 +90,7 @@ while IFS= read -r f; do
       # a grant entry is delimited by list punctuation or a backtick.
       if grep -qE "(^|[,\` ])${name}([,\` ]|$)" <<<"$line"; then
         issue_count=$((issue_count + 1))
+        [ -n "$first_reason" ] || first_reason="dead_tool_grant: ${f#./} grants ${name}: ${why}"
         findings="${findings}  - SEVERITY=ERROR TYPE=dead_tool_grant FILE=${f#./} TOOL=${name} FIX=${succ} MSG=${why}
 "
       fi
@@ -108,10 +110,14 @@ echo "FILES_SCANNED=$files_scanned"
 echo "SCANNED_EMPTY=$([ "$files_scanned" -eq 0 ] && echo true || echo false)"
 echo "GRANT_LINES=$grants_seen"
 echo "DENYLIST_SIZE=$(printf '%s\n' "$DENYLIST" | grep -c .)"
+# The nothing_scanned finding below is itself an ISSUES row, so ISSUE_COUNT
+# must count it (the contract requires ISSUE_COUNT == ISSUES rows).
+[ "$files_scanned" -eq 0 ] && issue_count=1
 echo "ISSUE_COUNT=$issue_count"
 # A walk that opened nothing must never read as clean (#2219/#2290).
 if [ "$files_scanned" -eq 0 ]; then
   echo "STATUS=ERROR"
+  echo "REASON=nothing_scanned: no markdown discovered under $ROOT_DIR"
   echo "ISSUES:"
   echo "  - SEVERITY=ERROR TYPE=nothing_scanned MSG=no markdown discovered under $ROOT_DIR"
   echo "=== END DEAD TOOL GRANTS ==="
@@ -119,6 +125,11 @@ if [ "$files_scanned" -eq 0 ]; then
 fi
 if [ "$issue_count" -gt 0 ]; then
   echo "STATUS=ERROR"
+  # REASON= is the first finding, one line, cut to 180 chars, plus ` (+N more)`
+  # (.claude/rules/structured-script-output.md, #2760).
+  reason="$(printf '%s' "$first_reason" | tr -s '[:space:]' ' ' | cut -c1-180)"
+  [ "$issue_count" -gt 1 ] && reason="$reason (+$((issue_count - 1)) more)"
+  echo "REASON=$reason"
   echo "ISSUES:"
   printf '%s' "$findings"
 else
