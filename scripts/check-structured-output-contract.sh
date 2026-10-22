@@ -31,7 +31,10 @@
 #
 #   --validate [FILE|-]: check one captured output block against the runtime
 #   contract (single STATUS= line, canonical value, integer ISSUE_COUNT= equal
-#   to the ISSUES: rows, REASON= present and bounded iff STATUS is not OK). The
+#   to the ISSUES: rows, REASON= present and bounded iff STATUS is not OK, and
+#   REASON= provenance: an ISSUES row at the reported severity, the first such
+#   row's TYPE= opening the REASON=, and a ` (+N more)` tail equal to
+#   ISSUE_COUNT-1). The
 #   test twins of the migrated scripts pipe their failing and passing fixture
 #   output through it.
 #
@@ -227,6 +230,46 @@ def sweep(root, strict):
     return 1 if (strict and status != "OK") else 0
 
 
+MORE_SUFFIX = re.compile(r" \(\+(\d+) more\)$")
+ROW_SEVERITY = re.compile(r"(?:^|\s)SEVERITY=(\S+)")
+ROW_TYPE = re.compile(r"(?:^|\s)TYPE=(\S+)")
+
+
+def check_reason_provenance(issues, status, count, reason, row_lines):
+    """REASON= must come from the first finding at the REPORTED severity.
+
+    Three drifts a presence-only check cannot see: a WARN status explained by
+    an INFO row (or an ERROR status by a lowercase `error` row), a ` (+N more)`
+    tail that disagrees with ISSUE_COUNT, and a REASON that names a different
+    finding than the first one at that severity.
+    """
+    if count is not None:
+        more = MORE_SUFFIX.search(reason)
+        if count > 1 and (not more or int(more.group(1)) != count - 1):
+            issues.append(("more_suffix_mismatch",
+                           "ISSUE_COUNT=%d needs a ' (+%d more)' tail on REASON=" % (count, count - 1)))
+        elif count <= 1 and more:
+            issues.append(("more_suffix_mismatch",
+                           "ISSUE_COUNT=%d but REASON= claims (+%s more)" % (count, more.group(1))))
+    if not row_lines:
+        return
+    severities = [(ROW_SEVERITY.search(r), r) for r in row_lines]
+    if not any(m for m, _ in severities):
+        return
+    at_status = [r for m, r in severities if m and m.group(1) == status]
+    if not at_status:
+        found = sorted({m.group(1) for m, _ in severities if m})
+        issues.append(("severity_mismatch",
+                       "STATUS=%s but no ISSUES row carries SEVERITY=%s (rows carry %s)"
+                       % (status, status, ",".join(found))))
+        return
+    first_type = ROW_TYPE.search(at_status[0].split(" MSG=", 1)[0])
+    if first_type and not reason.startswith(first_type.group(1) + ":"):
+        issues.append(("reason_wrong_finding",
+                       "REASON= should open with the first %s finding's TYPE=%s"
+                       % (status, first_type.group(1))))
+
+
 def validate(text, target):
     lines = text.splitlines()
     issues = []
@@ -236,12 +279,14 @@ def validate(text, target):
     reasons = [ln[len("REASON="):] for ln in lines if ln.startswith("REASON=")]
 
     rows = None
+    row_lines = []
     for idx, line in enumerate(lines):
         if line.rstrip() == "ISSUES:":
             rows = rows or 0
             nxt = idx + 1
             while nxt < len(lines) and re.match(r"^\s+- ", lines[nxt]):
                 rows += 1
+                row_lines.append(lines[nxt])
                 nxt += 1
 
     status = statuses[0] if len(statuses) == 1 else None
@@ -277,6 +322,9 @@ def validate(text, target):
         elif len(reason) > REASON_MAX:
             issues.append(("reason_too_long",
                            "REASON= is %d characters; the bound is %d" % (len(reason), REASON_MAX)))
+
+    if status in ("WARN", "ERROR") and reasons and reasons[0].strip():
+        check_reason_provenance(issues, status, count, reasons[0], row_lines)
 
     keys = [
         ("TARGET", target),

@@ -191,6 +191,22 @@ assert "R4: failing output satisfies the structured-output contract" \
   "$(bash "$contract" --validate - <<<"$r_fail" >/dev/null 2>&1 && echo true || echo false)"
 assert "R5: passing output satisfies the structured-output contract" \
   "$(bash "$contract" --validate - <<<"$r_pass" >/dev/null 2>&1 && echo true || echo false)"
+# R6-R9: severity provenance. An unparseable workflow is a WARN row; sorted first
+# it must NOT be what REASON= names once an ERROR row exists, and on its own it
+# reports STATUS=WARN with a WARN-derived REASON=.
+w="$fx/r-warn"; mkwf "$w"
+printf 'on: [push\n  bad: : yaml\n' > "$w/.github/workflows/a-broken.yml"
+r_warn="$(bash "$checker" --project-dir "$w" 2>&1)"
+assert "R6: unparseable-only fixture is STATUS=WARN" "$(contains "$r_warn" '^STATUS=WARN$')"
+assert "R7: WARN-only REASON= names the WARN finding" "$(contains "$r_warn" '^REASON=unparseable: ')"
+m="$fx/r-mixed"; mkwf "$m"; cp "$b"/.github/workflows/* "$m/.github/workflows/"
+printf 'on: [push\n  bad: : yaml\n' > "$m/.github/workflows/0-broken.yml"
+r_mixed="$(bash "$checker" --project-dir "$m" 2>&1)"
+assert "R8: mixed fixture is STATUS=ERROR" "$(contains "$r_mixed" '^STATUS=ERROR$')"
+assert "R8b: mixed REASON= names the ERROR finding, not the earlier WARN row" \
+  "$(grep -qE '^REASON=unreachable_script: ' <<<"$r_mixed" && echo true || echo false)"
+assert "R9: WARN and mixed outputs satisfy the structured-output contract" \
+  "$(bash "$contract" --validate - <<<"$r_warn" >/dev/null 2>&1 && bash "$contract" --validate - <<<"$r_mixed" >/dev/null 2>&1 && echo true || echo false)"
 
 echo ""
 echo "Passed: $pass_count  Failed: $fail_count"

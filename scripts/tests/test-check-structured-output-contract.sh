@@ -264,6 +264,41 @@ expect_line "V14b: target named" "$out" "TARGET=$WORK/block.txt"  # mktemp-canon
 bash "$GUARD" --validate "$WORK/no-such-file" >/dev/null 2>&1; rc=$?
 expect_exit "V15: unreadable --validate FILE exits 2" "$rc" 2
 
+# REASON= provenance (#2760 fold-in): presence alone let a WARN status be explained
+# by an INFO row, a lowercase `error` row pass for ERROR, and a (+N more) tail
+# drift from ISSUE_COUNT.
+info_block=$'=== X ===\nSTATUS=WARN\nREASON=nudge: a.md\nISSUE_COUNT=1\nISSUES:\n  - SEVERITY=INFO TYPE=nudge MSG=a.md\n=== END X ==='
+out="$(validate "$info_block")"; rc=$?
+expect_exit "V16: STATUS=WARN explained only by an INFO row fails" "$rc" 1
+expect_text "V16b: severity_mismatch" "$out" "TYPE=severity_mismatch"
+out="$(validate "$(mutate 's/SEVERITY=INFO/SEVERITY=WARN/' "$info_block")")"; rc=$?
+expect_exit "V16c: the same block with a WARN row passes" "$rc" 0
+
+out="$(validate "$(mutate 's/SEVERITY=ERROR/SEVERITY=error/' "$good_err")")"; rc=$?
+expect_exit "V17: lowercase SEVERITY=error under STATUS=ERROR fails" "$rc" 1
+expect_text "V17b: severity_mismatch" "$out" "TYPE=severity_mismatch"
+
+out="$(validate "$(mutate 's/ (+1 more)//' "$good_err")")"; rc=$?
+expect_exit "V18: ISSUE_COUNT=2 without a (+1 more) tail fails" "$rc" 1
+expect_text "V18b: more_suffix_mismatch" "$out" "TYPE=more_suffix_mismatch"
+out="$(validate "$(mutate 's/(+1 more)/(+5 more)/' "$good_err")")"; rc=$?
+expect_exit "V18c: a (+5 more) tail under ISSUE_COUNT=2 fails" "$rc" 1
+out="$(validate $'STATUS=ERROR\nREASON=broken_thing: a.sh (+1 more)\nISSUE_COUNT=1\nISSUES:\n  - SEVERITY=ERROR TYPE=broken_thing MSG=a.sh')"; rc=$?
+expect_exit "V19: a (+1 more) tail under ISSUE_COUNT=1 fails" "$rc" 1
+expect_text "V19b: more_suffix_mismatch" "$out" "TYPE=more_suffix_mismatch"
+
+mixed=$'STATUS=ERROR\nREASON=warn_kind: w.md (+1 more)\nISSUE_COUNT=2\nISSUES:\n  - SEVERITY=WARN TYPE=warn_kind MSG=w.md\n  - SEVERITY=ERROR TYPE=err_kind MSG=e.md'
+out="$(validate "$mixed")"; rc=$?
+expect_exit "V20: ERROR status whose REASON= names the WARN row fails" "$rc" 1
+expect_text "V20b: reason_wrong_finding" "$out" "TYPE=reason_wrong_finding"
+out="$(validate "$(mutate 's/^REASON=warn_kind: w.md/REASON=err_kind: e.md/' "$mixed")")"; rc=$?
+expect_exit "V20c: REASON= from the first ERROR row passes" "$rc" 0
+
+# Rows without a TYPE= key (FILE=/RULE= rows) have no type to compare, so only
+# severity and the tail are checked.
+out="$(validate $'STATUS=ERROR\nREASON=a.md: token dropped\nISSUE_COUNT=1\nISSUES:\n  - SEVERITY=ERROR FILE=a.md MSG=token dropped')"; rc=$?
+expect_exit "V21: a TYPE-less row at the reported severity passes" "$rc" 0
+
 echo ""
 echo "Passed: $PASS, Failed: $FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

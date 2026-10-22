@@ -674,6 +674,7 @@ root=$(mk_root R-warn)
 d=$(mk_skill "$root" demo-plugin demo-skill)
 mk_js "$d" audit.workflow.js "" low
 o_warn=$(out "$root")
+check "R: WARN fixture STATUS=WARN"           "WARN"  "$(field "$o_warn" STATUS)"
 check "R: WARN fixture REASON= names the WARN finding" "1" \
     "$(grep -c '^REASON=missing_model: ' <<<"$o_warn")"
 root=$(mk_root R-ok)

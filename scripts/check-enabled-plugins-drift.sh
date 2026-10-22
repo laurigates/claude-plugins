@@ -178,11 +178,9 @@ else
     # REASON= is the first finding at the reported severity as `<TYPE>: <MSG>`,
     # one line, cut to 180 chars, plus ` (+N more)` when other findings exist
     # (.claude/rules/structured-script-output.md, #2760).
-    reason_n=0
     reason=""
     for line in "${issues[@]}"; do
       case "$line" in *"SEVERITY=$overall_status "*) ;; *) continue ;; esac
-      reason_n=$((reason_n + 1))
       [ -z "$reason" ] || continue
       reason_type="${line#*TYPE=}"
       reason_type="${reason_type%% *}"

@@ -135,7 +135,7 @@ emit_section "$plugins_changed" "$issue_count" "$overall_status" "" "$first_nudg
 if [ "$issue_count" -gt 0 ]; then
   echo "ISSUES:"
   while IFS='|' read -r plugin_name first_path; do
-    echo "  - SEVERITY=INFO TYPE=readme_not_updated PLUGIN=$plugin_name STAGED=$first_path"
+    echo "  - SEVERITY=WARN TYPE=readme_not_updated PLUGIN=$plugin_name STAGED=$first_path"
   done < <(printf '%s\n' "${nudges[@]}" | sort)
 fi
 echo "=== END PLUGIN README CURRENCY ==="

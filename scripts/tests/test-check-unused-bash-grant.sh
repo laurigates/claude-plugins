@@ -257,6 +257,17 @@ assert "H4 failing output satisfies the structured-output contract" \
   "$(printf '%s\n' "$h_fail" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false)"
 assert "H5 passing output satisfies the structured-output contract" \
   "$(printf '%s\n' "$h_pass" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false)"
+# The missing_helper path is an ERROR with a real ISSUES row, so ISSUE_COUNT must
+# count it (it printed 0 beneath the row), and REASON= carries the cut path.
+nohelper="$(mktemp -d)"; [ -n "$nohelper" ] || exit 1
+cp "$CHECK" "$nohelper/check-unused-bash-grant.sh"
+h_missing="$(bash "$nohelper/check-unused-bash-grant.sh" --project-dir "$c" 2>/dev/null)"
+rm -rf "$nohelper"
+assert "H6 missing parser is STATUS=ERROR" "$(grep -q '^STATUS=ERROR$' <<<"$h_missing" && echo true || echo false)"
+assert "H7 missing parser counts its own finding (ISSUE_COUNT=1)" "$(grep -q '^ISSUE_COUNT=1$' <<<"$h_missing" && echo true || echo false)"
+assert "H8 missing parser REASON= names the type" "$(grep -q '^REASON=missing_helper: markdown parser not found at ' <<<"$h_missing" && echo true || echo false)"
+assert "H9 missing parser output satisfies the structured-output contract" \
+  "$(printf '%s\n' "$h_missing" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false)"
 
 echo ""
 echo "Passed: $pass_count, Failed: $fail_count"

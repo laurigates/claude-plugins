@@ -152,7 +152,8 @@ for fname in sorted(os.listdir(workflow_dir)):
         with open(full, encoding="utf-8") as fh:
             doc = yaml.safe_load(fh)
     except Exception as exc:  # noqa: BLE001 - report, don't crash the gate
-        rows.append(f"  - SEVERITY=WARN TYPE=unparseable WORKFLOW={fname} MSG={exc}")
+        # A YAML error is multi-line; collapsed so it stays ONE row under ISSUES:.
+        rows.append(f"  - SEVERITY=WARN TYPE=unparseable WORKFLOW={fname} MSG={' '.join(str(exc).split())}")
         continue
     if not isinstance(doc, dict):
         continue

@@ -98,7 +98,7 @@ if [ "$truth_count" -eq 0 ]; then
   echo "STATUS=ERROR"
   echo "REASON=broken_walk: resolved 0 skills/agents on disk"
   echo "ISSUES:"
-  echo "  - SEVERITY=error TYPE=broken_walk MSG=resolved 0 skills/agents on disk"
+  echo "  - SEVERITY=ERROR TYPE=broken_walk MSG=resolved 0 skills/agents on disk"
   echo "=== END HOOK CUE SKILL REFS ==="
   exit 1
 fi
@@ -161,9 +161,9 @@ scan_file() {
       hits=$((hits + 1))
       if [ "$enforced" = "true" ]; then
         if fix="$(suggest "$id")"; then
-          issues+=("  - SEVERITY=error TYPE=unresolvable_cue_skill_id FILE=${file#./} LINE=${line_no} ID=${id} FIX=${fix}")
+          issues+=("  - SEVERITY=ERROR TYPE=unresolvable_cue_skill_id FILE=${file#./} LINE=${line_no} ID=${id} FIX=${fix}")
         else
-          issues+=("  - SEVERITY=error TYPE=unresolvable_cue_skill_id FILE=${file#./} LINE=${line_no} ID=${id} FIX=<no skill or agent matches; check ${id%%:*}-plugin/skills/>")
+          issues+=("  - SEVERITY=ERROR TYPE=unresolvable_cue_skill_id FILE=${file#./} LINE=${line_no} ID=${id} FIX=<no skill or agent matches; check ${id%%:*}-plugin/skills/>")
         fi
         issue_count=$((issue_count + 1))
       else

@@ -233,8 +233,12 @@ trap 'rm -f "$scan_list" "$report"' EXIT
 # them — a false-positive storm is far worse than a hard error.
 if [ ! -x "$helper" ] && [ ! -f "$helper" ]; then
   echo "STATUS=ERROR"
-  echo "REASON=missing_helper: markdown parser not found at $helper"
-  echo "ISSUE_COUNT=0"
+  # REASON= goes through the same collapse + 180-char cut as every other path:
+  # $helper is an absolute path of unbounded length.
+  echo "REASON=$(printf 'missing_helper: markdown parser not found at %s' "$helper" | tr -s '[:space:]' ' ' | cut -c1-180)"
+  # The missing_helper row below IS a finding, so it is counted (ISSUE_COUNT must
+  # equal the ISSUES: rows).
+  echo "ISSUE_COUNT=1"
   echo "ISSUES:"
   echo "  - SEVERITY=ERROR TYPE=missing_helper MSG=markdown parser not found at $helper"
   echo "=== END UNUSED BASH GRANT ==="

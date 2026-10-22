@@ -201,9 +201,9 @@ assert_contains "$out" "SCOPE_IS_REPO_WIDE=true" "A5 audit set declared as repo-
 # turns A6 red, so a new declaration has to be argued in review, not slipped in.
 assert_eq "$(key_of "$out" ALLOWLISTED)" "ALLOWLISTED=0" "A6 real repo suppresses nothing (#2592)"
 assert_lacks "$out" "ALLOWLISTED_DELEGATIONS:" "A6b no declared residual is itemised"
-assert_lacks "$out" "TYPE=stale_allowlist_entry" "A6c no stale declaration is left behind"assert_lacks "$out" "REASON=" "A7 OK output carries no REASON="
+assert_lacks "$out" "TYPE=stale_allowlist_entry" "A6c no stale declaration is left behind"
+assert_lacks "$out" "REASON=" "A7 OK output carries no REASON="
 assert_eq "$(printf '%s\n' "$out" | bash "$repo_root/scripts/check-structured-output-contract.sh" --validate - >/dev/null 2>&1 && echo true || echo false)" "true" "A8 OK output satisfies the contract"
-
 
 echo "TEST B: imperative delegation to a GATED sibling is an ERROR"
 fx="$tmp_root/b"; build_fixture "$fx" gated "Execution" "$IMPERATIVE"

@@ -117,7 +117,7 @@ echo "ISSUE_COUNT=$issue_count"
 # A walk that opened nothing must never read as clean (#2219/#2290).
 if [ "$files_scanned" -eq 0 ]; then
   echo "STATUS=ERROR"
-  echo "REASON=nothing_scanned: no markdown discovered under $ROOT_DIR"
+  echo "REASON=$(printf 'nothing_scanned: no markdown discovered under %s' "$ROOT_DIR" | tr -s '[:space:]' ' ' | cut -c1-180)"
   echo "ISSUES:"
   echo "  - SEVERITY=ERROR TYPE=nothing_scanned MSG=no markdown discovered under $ROOT_DIR"
   echo "=== END DEAD TOOL GRANTS ==="
