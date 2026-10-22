@@ -1,6 +1,6 @@
 ---
 created: 2026-02-26
-modified: 2026-10-13
+modified: 2026-10-22
 reviewed: 2026-09-16
 paths:
   - ".claude/hooks/**"
@@ -14,13 +14,15 @@ Comprehensive reference for Claude Code hook events, schemas, and patterns. This
 
 > **Note (2.1.142)**: `SessionStart`, `Setup`, and `SubagentStart` accept only `type: "command"` hooks. Configuring a prompt- or agent-type hook for these events now surfaces a clear "use a command-type hook instead" error at load time, rather than silently ignoring the handler. See `.claude/rules/prompt-agent-hooks.md` for the events that do support prompt and agent hooks.
 
-> **Note (2.1.199)**: `SessionStart`, `Setup`, and `SubagentStart` hooks no longer hide stderr when exiting with code 2 — the error text now shows in the transcript, matching other command hooks.
-
 > **Note (2.1.280)**: `PermissionRequest` no longer runs `type: "agent"` hooks — their answer could never allow or deny the request. Configuring one shows an error pointing to `command` or `http` hooks.
 
 > **Note (2.1.281)**: `claude --bg` asks for workspace trust before running project hooks.
 
 > **Fail-closed (2.1.288, 2.1.295)**: Since 2.1.288, a `PreToolUse` or `PermissionRequest` call is **blocked** when matching its hooks fails or the tool input cannot be serialized to JSON; before, the hook was silently skipped. Every other command and HTTP hook still fails open unless it sets `onFailure: "block"` (2.1.295), which blocks the action when the hook cannot start, times out, or exits with an unexpected code. Set it only on safety hooks: a nudge that fails closed dead-ends work (`.claude/rules/hook-block-vs-nudge.md`). Since 2.1.296, a managed-settings `PreToolUse` hook denying with `"continue": false`, or a managed `prompt` hook that blocks, also ends the turn; before, it refused the call and the turn went on.
+
+> **Plugin-hook fail-closed (2.1.299)**: Extends the notes above. An action a plugin hook can block is **refused** when the hook cannot be handed the action or cannot hand back its answer, and a tool that already ran has its result withheld. Values nested deeper than 28,000 levels are refused; before, plugin hooks were skipped on very deeply nested tool input. On Windows, `PreToolUse`/`PermissionRequest` hooks that set no shell used to fail open when Git for Windows was missing; a guard that fails there now blocks the call.
+
+> **Version-history sidecar**: dated notes for bugs fixed long ago (matcher/`if` fixes 2.1.147-2.1.191, worktree `transcript_path`, `SessionStart` stderr, keep-alives, working-directory deletion) moved to [`docs/hooks-version-history.md`](../../docs/hooks-version-history.md). The behaviour described in this file is current; the sidecar records only what used to be broken.
 
 ## Hook Events
 
@@ -35,6 +37,8 @@ Comprehensive reference for Claude Code hook events, schemas, and patterns. This
 | `PostCompact` | After context compaction completes (2.1.76+) | matcher: `"manual"`, `"auto"`, `""` (all) |
 
 > **Note (2.1.214)**: A session that begins as a fork now reports source `"fork"` — previously it reported `"resume"`. A `SessionStart` hook matched only on `"resume"` no longer fires for forked sessions; add a `"fork"` matcher (or `""`) if it should.
+
+> **Note (2.1.299)**: `UserPromptSubmit` hooks run **before** a skill or custom slash command expands, so a hook that blocks the prompt also stops the command's embedded `!` shell lines. A skill's own front-matter `UserPromptSubmit` hook first runs on the prompt *after* the one that invokes the skill, so it cannot gate its own invocation. `SessionEnd` hooks now run on exit even while a background command is still running (2.1.300).
 
 ### Tool Execution Events
 
@@ -61,7 +65,7 @@ Comprehensive reference for Claude Code hook events, schemas, and patterns. This
 | `WorktreeCreate` | A new git worktree is created via `EnterWorktree` | none |
 | `WorktreeRemove` | A worktree is removed after a session exits | none |
 
-> **Note (2.1.141)**: Hooks fired after an `EnterWorktree` switch used to receive a `transcript_path` pointing at the pre-switch working directory, breaking transcript-reading helpers. The path now reflects the new worktree.
+> **Note (2.1.300, 2.1.301)**: Plugin `WorktreeCreate`/`WorktreeRemove` hooks run under `--worktree` (not yet with `--tmux`). Quitting no longer removes a `WorktreeCreate`-hook worktree that may hold unpushed commits without asking.
 
 ### Agent Teams Events (2.1.50+)
 
@@ -155,8 +159,6 @@ The command hook default was increased from 60 seconds in Claude Code 2.1.50.
 | `WorktreeRemove` | 30–60s | Cleanup operations |
 | `TeammateIdle` | 10–30s | Should assign work quickly |
 | `TaskCompleted` | 30–60s | Validation before acceptance |
-
-> **Note (2.1.239)**: Remote/web sessions now send keep-alives while a long `SessionStart`/`Setup` hook runs, so the container is no longer idle-reaped mid-hook — relevant to the 300–600s recommendation above.
 
 > **Note (2.1.285, 2.1.296)**: A synchronous hook that starts a background process (`some-daemon &`) holding stdout open no longer hangs Claude Code; the hook finishes shortly after its own process exits (2.1.285). To find a slow hook, run with `--debug`: command hooks on tool calls, prompts, SessionStart and Stop log their command, plugin, outcome and duration (2.1.296).
 
@@ -446,6 +448,8 @@ PreToolUse hooks wrap their JSON response in a `hookSpecificOutput` envelope:
 
 > **Note (2.1.89)**: A fourth `permissionDecision` value, `"defer"`, lets a headless (`-p`) session pause at the tool call instead of resolving it; resuming with `-p --resume` re-invokes the hook to re-evaluate the deferred call.
 
+> **Note (2.1.299, 2.1.301)**: The permission prompt for a plugin or skill hook's `ask` decision names that plugin or skill (2.1.301). A write (MCP tool, file or shell) that a `PreToolUse` hook allowed no longer runs in plan mode (2.1.299).
+
 #### Who reads `permissionDecisionReason`
 
 The three decisions differ in **audience**, which decides whether the agent can
@@ -487,6 +491,8 @@ Optionally modify the tool input before execution:
 ```
 
 > **Note (2.1.85)**: The same `updatedInput` + `permissionDecision: "allow"` shape can satisfy an `AskUserQuestion` call — a headless integration collects the answer through its own UI and hands it back as `updatedInput`, instead of the question reaching a terminal.
+
+> **Note (2.1.300)**: `updatedInput` from `PreToolUse` and `PermissionRequest` hooks is validated like Claude's own tool input: unknown keys are dropped, and input the tool rejects denies the call. A hook that rewrites input must emit a shape the tool accepts, or its rewrite becomes a denial.
 
 ### PostToolUse -- Replace Tool Output (2.1.121+)
 
@@ -592,6 +598,8 @@ Return nothing (exit 0) to display the message unchanged. This affects only what
   "reason": "Operation not permitted in this environment"
 }
 ```
+
+> **Note (2.1.299, 2.1.300; Cowork)**: Under Cowork auto mode a `PermissionRequest` hook can no longer approve shell commands or subagents (2.1.299), and a `setMode` update in a `PermissionRequest` allow is ignored (2.1.300).
 
 ### Stop / SubagentStop — Block or Allow
 
@@ -833,89 +841,7 @@ exit 0
 
 ## New Event Examples
 
-### WorktreeCreate — Set Up Worktree Environment
-
-```bash
-#!/bin/bash
-# .claude/hooks/worktree-create.sh
-INPUT=$(cat)
-WORKTREE_PATH=$(echo "$INPUT" | jq -r '.worktree_path')
-BRANCH=$(echo "$INPUT" | jq -r '.worktree_branch')
-
-# Install dependencies in the new worktree
-if [ -f "$WORKTREE_PATH/package.json" ]; then
-  (cd "$WORKTREE_PATH" && bun install --frozen-lockfile) 2>/dev/null
-fi
-
-echo "Worktree ready: $BRANCH at $WORKTREE_PATH" >&2
-exit 0
-```
-
-### WorktreeRemove — Clean Up After Worktree
-
-```bash
-#!/bin/bash
-# .claude/hooks/worktree-remove.sh
-INPUT=$(cat)
-WORKTREE_PATH=$(echo "$INPUT" | jq -r '.worktree_path')
-HAD_CHANGES=$(echo "$INPUT" | jq -r '.had_changes')
-
-# Alert if worktree had uncommitted changes
-if [ "$HAD_CHANGES" = "true" ]; then
-  echo "WARNING: Worktree $WORKTREE_PATH removed with uncommitted changes" >&2
-fi
-
-exit 0
-```
-
-### TeammateIdle — Assign Work to Idle Teammates
-
-```bash
-#!/bin/bash
-# .claude/hooks/teammate-idle.sh
-INPUT=$(cat)
-TEAMMATE=$(echo "$INPUT" | jq -r '.teammate_name')
-TEAM=$(echo "$INPUT" | jq -r '.team_name')
-
-# Log idle event for team lead awareness
-echo "$(date -Iseconds): Teammate $TEAMMATE is idle in team $TEAM" >> ~/.claude/team-activity.log
-
-exit 0
-```
-
-### TaskCompleted — Validate Before Accepting
-
-```bash
-#!/bin/bash
-# .claude/hooks/task-completed.sh
-INPUT=$(cat)
-TASK_TITLE=$(echo "$INPUT" | jq -r '.task_title')
-
-# Run tests if implementation task
-if echo "$TASK_TITLE" | grep -qi 'implement\|add\|fix\|refactor'; then
-  if ! npm test --bail 2>/dev/null; then
-    echo '{"decision": "block", "reason": "Tests must pass before task is accepted. Fix failing tests first."}'
-    exit 0
-  fi
-fi
-
-exit 0
-```
-
-### ConfigChange — Audit Configuration Changes
-
-```bash
-#!/bin/bash
-# .claude/hooks/config-change.sh
-INPUT=$(cat)
-CONFIG_KEY=$(echo "$INPUT" | jq -r '.config_key')
-NEW_VALUE=$(echo "$INPUT" | jq -c '.new_value')
-
-# Audit log all config changes
-echo "$(date -Iseconds) | CONFIG | $CONFIG_KEY = $NEW_VALUE" >> ~/.claude/config-audit.log
-
-exit 0
-```
+Worked `WorktreeCreate`, `WorktreeRemove`, `TeammateIdle`, `TaskCompleted` and `ConfigChange` scripts live in [`docs/hooks-event-examples.md`](../../docs/hooks-event-examples.md); the input fields each reads are under Input Schemas above.
 
 ---
 
@@ -973,8 +899,6 @@ Use async hooks for non-blocking side effects like logging, metrics, and notific
 > **Note (2.1.75)**: Async hook completion messages are suppressed by default. Use `--verbose` or transcript mode to see them.
 
 > **Note (2.1.295)**: Before 2.1.295, an async hook's JSON output was ignored when printed over several lines, and an async SessionStart hook's unchanged context was re-added on every resume. On older clients, emit async JSON on one line (`jq -c`).
-
-> **Note (2.1.239)**: If the session's working directory is deleted mid-session, hooks no longer fail with `posix_spawn ENOENT` — they now run from the project root or the user's home directory instead.
 
 ---
 
@@ -1141,14 +1065,6 @@ MCP tools use the naming pattern `mcp__<server>__<tool>`. Match them with regex 
 | `mcp__.*` | All MCP tools from any server |
 | `mcp__github__.*` | All tools from the `github` MCP server |
 | `mcp__github__create_pull_request` | Specific MCP tool |
-
-> **Note (2.1.147)**: Hook `if` conditions that scoped a command shape with arguments — e.g. `PowerShell(git push*)` — never matched; only the bare `PowerShell(*)` form worked. Argument-scoped `if` conditions now match as written.
-
-> **Note (2.1.163)**: Fixed hook `if: "Bash(...)"` conditions that fired on **every** Bash command containing `$()` or `$VAR` — command substitutions and variable expansions were over-matching. The condition now also matches commands inside subshells and backticks correctly, so `if: "Bash(git push*)"` fires for `$(git push ...)` and `` `git push ...` `` without falsely matching unrelated commands that merely contain a `$`.
-
-> **Note (2.1.176)**: Fixed hook `if` conditions for Read/Edit/Write tool **paths**. Patterns like `Edit(src/**)`, `Read(~/.ssh/**)`, and `Read(.env)` now match correctly — previously these path-scoped conditions silently failed to fire.
-
-> **Note (2.1.191)**: Fixed hooks with comma-separated matchers (e.g. `"Bash,PowerShell"`) silently never firing — they now match either tool.
 
 > **Note (2.1.195)**: A matcher naming a hyphenated identifier (e.g. `code-reviewer`, `mcp__brave-search`) now **exact-matches** rather than substring-matches. `mcp__brave-search` no longer matches `mcp__brave-search__search`; use `mcp__brave-search__.*` to match all of a hyphenated MCP server's tools.
 

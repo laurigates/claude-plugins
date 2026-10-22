@@ -4,7 +4,7 @@ description: Tool results that mean something other than they look — a pattern
 allowed-tools: Read, Glob, Grep, Bash(rg *), Bash(git grep *), Bash(git log *), Bash(git status *), Bash(git worktree *), Bash(gh api *), Bash(gh pr view *), Bash(python3 *), TodoWrite
 model: opus
 created: 2026-08-21
-modified: 2026-10-13
+modified: 2026-10-22
 compatibility: claude-code
 reviewed: 2026-08-21
 ---
@@ -69,9 +69,9 @@ See [references/search-traps.md](references/search-traps.md) before reporting a 
 
 See [references/search-traps.md](references/search-traps.md) when a `-g`/`--glob` filter is hunting a directory name.
 
-## Grep / Glob on an unreadable path reported "no matches" (before 2.1.292)
+## Grep / Glob "no matches" on an unreadable path or a failed search (before 2.1.292 / 2.1.301)
 
-See [references/search-traps.md](references/search-traps.md) when a pre-2.1.292 Grep or Glob "no matches" is about to count as absence.
+See [references/search-traps.md](references/search-traps.md) when a pre-2.1.301 Grep or Glob "no matches" is about to count as absence.
 
 ## One search tier is not the search universe
 

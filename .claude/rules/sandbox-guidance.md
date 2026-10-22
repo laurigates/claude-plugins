@@ -1,6 +1,6 @@
 ---
 created: 2026-03-03
-modified: 2026-10-13
+modified: 2026-10-22
 reviewed: 2026-09-16
 paths:
   - "**/skills/**"
@@ -123,6 +123,13 @@ A run of fixes made the Linux sandbox tolerate common repo shapes that previousl
 | 2.1.179 | A `sandbox.denyRead`/`allowRead` glob spanning a **large directory tree** no longer expands into an enormous Bash tool description — the glob is kept compact instead of enumerating every matched path, which had been inflating per-turn context. |
 
 If a sandboxed session previously failed to start in a repo that symlinks `.claude/` paths, that should now work without unlinking them.
+
+### Symlink, Plugin-Dir and Glob Hardening (2.1.299)
+
+- A sandboxed command can no longer write into a `--plugin-dir` folder; plugin code runs outside the sandbox, so a write there was a sandbox escape.
+- On macOS, a denied path was reachable through a symlink; fixed. `allowRead`/`allowWrite` globs are re-checked when their root is replaced by a symlink.
+- `denyRead`/`allowRead` globs containing braces, parentheses or backslashes parse the same in settings checks and in the sandbox, so such a deny no longer matches differently at the two layers.
+- Also fixed: the WSL2 `bwrap` mkdir failure, and an empty `.config.json` left by a sandboxed command that made sign-in, MCP and trust appear lost. If those symptoms appear on an older version, that file is the cause.
 
 ### Apple Events on macOS — `sandbox.allowAppleEvents` (2.1.181+)
 
@@ -371,6 +378,10 @@ Since 2.1.285, project settings cannot widen or turn off an admin-required sandb
 ### Failing Closed When the Sandbox Can't Start — `sandbox.failIfUnavailable` (2.1.83+)
 
 `sandbox.failIfUnavailable` exits with an error when the sandbox is enabled but cannot start, instead of silently running the command unsandboxed. Use it when a hard failure is preferable to an unnoticed unsandboxed fallback.
+
+### `claude remote-control --sandbox` Removed (2.1.300)
+
+`claude remote-control --sandbox` and `--no-sandbox` were removed and now exit with an error. Set `sandbox.enabled` in settings instead. The `/sandbox` menu option now reads "Sandbox commands", and `/sandbox` reports when its setting could not be saved (2.1.299).
 
 ## Multi-Agent Patterns in Sandbox
 

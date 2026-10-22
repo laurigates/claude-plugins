@@ -46,6 +46,7 @@ Each agent includes a `## Team Configuration` section documenting when to use it
 - **Task-oriented**: Each agent maps to a real user request
 - **Complete the job**: Agents finish what they start
 - **Small scope**: 3-20 steps per task
+- **Report before the limit**: Each agent sets `maxTurns` and carries a `## Turn Budget` section: at about 80% of the budget it stops investigating and delivers its report, marking unfinished areas as not verified. A run cut off at the limit returns nothing (#3152), so size briefs to the agent's limit and split large ones (`scripts/check-agent-turn-budget.sh` enforces the section)
 - **Generic + Skills**: Expertise lives in skills, agents are task runners
 - **Context isolation**: Verbose output stays in agent, only summaries return
 - **Team-aware**: Each agent documents its optimal team role
