@@ -6,7 +6,7 @@ description: Security vulnerability analysis. Scans code for OWASP top 10, secre
 tools: Glob, Grep, Read, Bash(semgrep *), Bash(bandit *), Bash(trufflehog *), Bash(gitleaks *), Bash(npm audit *), Bash(snyk *), Bash(git status *), Bash(git diff *), Bash(git log *), TodoWrite
 maxTurns: 25
 created: 2026-01-24
-modified: 2026-10-09
+modified: 2026-10-22
 reviewed: 2026-03-09
 ---
 
@@ -89,6 +89,12 @@ sk-[a-zA-Z0-9]{48}
 - `unsafe` blocks, raw pointer derefs
 - `.unwrap()` on user-controlled input
 - Missing input bounds checking
+
+## Turn Budget
+
+`maxTurns: 25` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 20 of 25), stop scanning and deliver the report in the Output Format below. Report the findings so far, and list each OWASP category, scanner, path or file you did not reach under **Not reviewed**. An unreviewed area must never read as a clean one.
+
+**Callers**: this agent has 25 turns. Scope a brief to one service or one class of check; split a wider audit across agents.
 
 ## Output Format
 

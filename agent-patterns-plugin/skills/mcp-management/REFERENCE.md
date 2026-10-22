@@ -162,7 +162,10 @@ done
 | Tool description or server instructions cut off | Sent up front: capped at 4,096 chars (2.1.296; 2,048 before). Loaded through tool search: cut at 16,384 (2.1.295). Raise with `CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH` (2.1.280) |
 | A server's tools absent from the session's tool list | `alwaysLoad: false` on the server defers all of its tools behind tool search (2.1.287); a tool whose own `_meta['anthropic/alwaysLoad']` is false stays deferred even when its `--mcp-config`, Agent SDK or plugin server is `alwaysLoad` (2.1.285) |
 | One tool missing, MCP error names it | A tool name over 128 characters is left out instead of failing every request (2.1.292) |
-| Server behaves differently after an upgrade, no config change | Stdio servers negotiate protocol 2026-07-28 by default on every install, Bedrock/Vertex/Foundry included (2.1.292); claude.ai connectors too (2.1.295). `MCP_PROTOCOL_NEGOTIATION=legacy` opts out |
+| Server behaves differently after an upgrade, no config change | Stdio servers negotiate protocol 2026-07-28 by default on every install, Bedrock/Vertex/Foundry included (2.1.292); claude.ai connectors too (2.1.295), and cloud and Remote Control connectors (2.1.299). `MCP_PROTOCOL_NEGOTIATION=legacy` opts out |
+| Connector-proxy or Anthropic-hosted MCP URL answers with a redirect and the call fails | No redirects are followed for these (2.1.299); point the config at the final URL |
+| A tool is present but its parameters are missing | The API rejected the tool's schema, so the tool is now sent without parameters instead of failing the request (2.1.300); fix the server's `inputSchema` |
+| A server omitting `resultType`, `ttlMs` or `cacheScope` misbehaved on the 2026-07-28 protocol | Fixed in 2.1.302; on an older client, have the server send them |
 | Server instructions missing from the context budget | `/context` shows MCP server instructions as their own row (2.1.283) |
 | Image returned by a tool needed as a file | Images from MCP tools are also saved to a file (2.1.283) |
 | Same remote server connected twice | Fixed for the same server spelled with different URLs (2.1.281) |

@@ -9,7 +9,7 @@ description: |
 tools: Read, Glob, Grep, Bash(cat *), Bash(jq *), Bash(find *), TodoWrite
 maxTurns: 20
 created: 2026-03-04
-modified: 2026-10-09
+modified: 2026-10-22
 reviewed: 2026-03-09
 ---
 
@@ -74,6 +74,12 @@ When only with-skill data is available (no baseline):
 | `tools` | Tool selection, permission patterns |
 | `structure` | Section organization, reference extraction |
 | `references` | Missing links to supporting files |
+
+## Turn Budget
+
+`maxTurns: 20` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 16 of 20), stop reading results and deliver `analysis.json`. Write `analysis.json` from the grading data you have read: keep only patterns and suggestions you can back with `evidence`, and add a `patterns` entry starting `Not verified:` that names the grading files or eval cases you did not reach, so partial coverage is never read as a full benchmark.
+
+**Callers**: this agent has 20 turns. Point the agent at a bounded set of grading files; split a large benchmark across runs.
 
 ## Output Format
 

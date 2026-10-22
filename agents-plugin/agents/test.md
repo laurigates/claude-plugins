@@ -6,7 +6,7 @@ description: Write and run tests. Analyzes code, writes appropriate tests, execu
 tools: Glob, Grep, Read, Edit, Write, Bash(npm test *), Bash(npm run test *), Bash(yarn test *), Bash(bun test *), Bash(pytest *), Bash(vitest *), Bash(jest *), Bash(cargo test *), Bash(go test *), Bash(git status *), Bash(git diff *), Bash(git log *), TodoWrite
 maxTurns: 20
 created: 2025-12-27
-modified: 2026-09-23
+modified: 2026-10-22
 reviewed: 2026-06-18
 ---
 
@@ -63,6 +63,12 @@ The harness blocks several common bash idioms — use the dedicated tool instead
 **Integration Tests** - Test component interactions
 - Real dependencies where practical
 - Test data flows between modules
+
+## Turn Budget
+
+`maxTurns: 20` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 16 of 20), stop writing and running tests and deliver the report in the Output Format below. Report the tests that ran with their results, list the files created or modified, and name the modules or test runs you did not reach under **Not verified**. Do not report PASSED for a suite you did not run.
+
+**Callers**: this agent has 20 turns. Scope a brief to one module or suite; split a larger testing task across agents.
 
 ## Output Format
 

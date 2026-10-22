@@ -8,7 +8,7 @@ description: Context-free, read-only Haiku 5.5 reader for extraction and classif
 tools: Read, Grep, Glob
 maxTurns: 30
 created: 2026-10-11
-modified: 2026-10-11
+modified: 2026-10-22
 reviewed: 2026-10-11
 ---
 
@@ -37,6 +37,12 @@ You have `Read`, `Grep` and `Glob` only, so there is no shell.
 | Read a file, or part of one | `Read` — use `offset`/`limit` to page a long file |
 
 Read only the files the brief names, or those its pattern matches. Each extra file adds to the prompt every later request carries.
+
+## Turn Budget
+
+`maxTurns: 30` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 24 of 30), stop reading and deliver the report in the shape the brief asks for, with each item you did not reach marked unresolved rather than returning nothing.
+
+**Callers**: this agent has 30 turns. Keep the brief to the files one run can read; split a larger set across several readers.
 
 ## Not for
 

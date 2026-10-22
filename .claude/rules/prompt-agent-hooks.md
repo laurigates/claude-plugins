@@ -1,6 +1,6 @@
 ---
 created: 2026-02-27
-modified: 2026-10-13
+modified: 2026-10-22
 reviewed: 2026-09-16
 paths:
   - ".claude/hooks/**"
@@ -132,6 +132,8 @@ Multi-turn subagent with tool access (Read, Grep, Glob, Bash). 60-second default
 | `timeout` | No | 60s | Seconds before canceling |
 | `statusMessage` | No | — | Custom spinner message while running |
 
+An agent hook honours its `model` since 2.1.300: aliases such as `haiku` resolve, and a subagent's model no longer overrides the hook's. If the model is unavailable the hook falls back to the **caller's** model; before 2.1.300 it fell back to **allowing the action**, a fail-open bug, so an older agent-hook gate with a `model` that might be unavailable was not a gate.
+
 ### MCP Tool Hook (2.1.118+)
 
 Hooks can invoke an MCP tool directly via `type: "mcp_tool"` instead of running a shell command or an LLM evaluation. The changelog entry names the capability but not its field-level config shape (e.g. which fields identify the target server and tool, or how arguments are supplied) — confirm the exact schema against code.claude.com/docs before authoring one.
@@ -240,6 +242,7 @@ Respond with {"ok": true} if [all checks pass], or {"ok": false, "reason": "spec
 - Reserve `agent` hooks for checks that genuinely require LLM judgment AND tool access
 - Set appropriate timeouts (don't use 120s when 30s suffices)
 - Use the `model` field to pick the cheapest model that works
+- Prompt and agent hooks run at most **12 of one event at a time** (2.1.302); the rest queue, so a prompt/agent hook on a high-fan-out event (`PreToolUse` during parallel tool calls) adds queueing latency on top of its own 1-60s
 
 ### Anti-Patterns
 
