@@ -1,6 +1,6 @@
 # Hook Event Examples
 
-Worked example scripts for the newer hook events. Moved out of [`.claude/rules/hooks-reference.md`](../.claude/rules/hooks-reference.md) to keep that path-scoped rule under the 50,000-char ceiling; the input fields each script reads are documented under "Input Schemas" there. Every script reads the event JSON from stdin and exits 0 unless it means to block.
+Worked example scripts for the newer hook events. Moved out of [`.claude/rules/hooks-reference.md`](../.claude/rules/hooks-reference.md) to keep that path-scoped rule under the 50,000-char ceiling; the input fields each script reads are documented under "Input Schemas" there. Every script reads the event JSON from stdin and exits 0. The `TaskCompleted` script blocks by printing a JSON `decision`, not through its exit code.
 
 ## WorktreeCreate — Set Up Worktree Environment
 

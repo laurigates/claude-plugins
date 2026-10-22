@@ -156,15 +156,18 @@ or says the path could not be read. The same shape survived for a failing search
 program (the `rg` or glob engine itself erroring): until 2.1.301 that too read as
 "no matches"; since 2.1.301 Grep and Glob return an **error** instead.
 
+- **On 2.1.292+**, report an unreadable-path message as "could not search
+  <path>", not as "not found".
 - **On 2.1.301+**, an error from Grep/Glob is a failed search, not an empty one:
-  report "could not search <path>" (unreadable path, 2.1.292+) or the error text,
-  never "not found". An empty result with no error is a real zero again, so the
-  control search is needed only for the pattern traps in this file, not for this one.
-- **On an older client, or reading an old transcript**, a "no matches" from
-  Grep/Glob is not evidence of absence until a control search against a term
-  known to be in that path also returns something.
-- **This narrows only the built-in tools.** `rg`/`git grep` through Bash still
-  exit 1 on no match and 2 on error; a pipeline that discards the status or
+  report the error text, never "not found". This removes the failing-program
+  false negative only; the pattern traps in this file still apply to an empty
+  result with no error.
+- **On a client older than 2.1.301, or reading an old transcript**, a "no
+  matches" from Grep/Glob is not evidence of absence until a control search
+  against a term known to be in that path also returns something.
+- **This narrows only the built-in tools.** Through Bash, `rg` exits 1 on no
+  match and 2 on error, and `git grep` exits 1 on no match and 128 on a fatal
+  error; a pipeline that discards the status or
   stderr (the pipeline traps in rejected-flags.md) still launders a failure into silence.
 
 ## One search tier is not the search universe

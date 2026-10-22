@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-10-22
+modified: 2026-10-14
 reviewed: 2026-09-16
 name: mcp-management
 description: Install, configure and troubleshoot MCP servers. Use when adding/enabling servers, editing .mcp.json, fixing OAuth, or when a server runs stale code after an upstream fix.
