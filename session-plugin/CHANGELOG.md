@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.13.8...session-plugin-v1.14.0) (2026-10-22)
+
+
+### Features
+
+* **session-plugin:** emit availability and linkage keys in session-survey.sh ([#3161](https://github.com/laurigates/claude-plugins/issues/3161)) ([7e1a31a](https://github.com/laurigates/claude-plugins/commit/7e1a31af897ecd473fc6f73a09616cb7cbc555dd)), closes [#2360](https://github.com/laurigates/claude-plugins/issues/2360)
+
 ## [1.13.8](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.13.7...session-plugin-v1.13.8) (2026-10-17)
 
 
