@@ -11,9 +11,9 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of the preflight → checkpoint
 | Skill | Command | Description |
 |-------|---------|-------------|
 | workflow-preflight | `/workflow:preflight` | Pre-work validation: check remote state, existing PRs, branch conflicts |
-| workflow-parallel-issues | `/workflow:parallel-issues` | Process multiple GitHub issues in parallel with worktree isolation |
-| workflow-ci-fix-pipeline | `/workflow:ci-fix` | Autonomous CI failure diagnosis and fix across PRs |
 | workflow-checkpoint-refactor | `/workflow:checkpoint-refactor` | Multi-phase refactoring with persistent state across sessions |
+| workflow-wave-dispatch | — | Sequential-wave dispatch for multi-agent work with cross-task dependencies: gate each wave on verification before the next starts |
+| workflow-verify-before-filing | — | Verify accumulated bug claims at upstream HEAD and dedup against trackers before filing issues |
 | workflow-interrupted-run-recovery | — | Recover a `Workflow` run killed mid-flight: salvage killed agents' worktrees, resume without duplicating PRs the completed agents opened |
 | workflow-scale-budget | — | Size a `Workflow` script's agent count before running it: cost per agent, per-item multipliers, theme grouping, re-drive design. `scripts/workflow-run-tally.sh` tallies a finished run's realised agents and tokens from its transcripts, and a session's total across its runs |
 
@@ -26,25 +26,6 @@ Run before starting any implementation work:
 ```
 /workflow:preflight 42
 /workflow:preflight feat/new-feature
-```
-
-### Parallel Issue Processing
-
-Process multiple issues simultaneously:
-
-```
-/workflow:parallel-issues 12 15 23
-/workflow:parallel-issues --all-open
-/workflow:parallel-issues --label=bug
-```
-
-### CI Fix Pipeline
-
-Fix failing CI checks across PRs:
-
-```
-/workflow:ci-fix 45
-/workflow:ci-fix --failing
 ```
 
 ### Checkpoint Refactoring
