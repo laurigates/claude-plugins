@@ -687,6 +687,24 @@ echo "SCANNED_EMPTY=$([ "$files_scanned" -eq 0 ] && echo true || echo false)"
 echo "AGENT_CALLS=$agent_calls"
 echo "PYTHON3_AVAILABLE=$([ "$python_ok" -eq 1 ] && echo true || echo false)"
 echo "STATUS=$status"
+if [ "$issue_count" -gt 0 ]; then
+    # REASON= is the first finding at the reported severity as `<TYPE>: <MSG>`,
+    # one line, cut to 180 chars, plus ` (+N more)`
+    # (.claude/rules/structured-script-output.md, #2760).
+    reason=""
+    for line in "${issues[@]}"; do
+        case "$line" in
+            *"SEVERITY=$status "*)
+                reason_type="${line#*TYPE=}"
+                reason_type="${reason_type%% *}"
+                reason="$reason_type: ${line#*MSG=}"
+                break ;;
+        esac
+    done
+    reason="$(printf '%s' "$reason" | tr -s '[:space:]' ' ' | cut -c1-180)"
+    [ "$issue_count" -gt 1 ] && reason="$reason (+$((issue_count - 1)) more)"
+    echo "REASON=$reason"
+fi
 echo "ISSUE_COUNT=$issue_count"
 echo "ERROR_COUNT=$error_count"
 echo "WARN_COUNT=$warn_count"

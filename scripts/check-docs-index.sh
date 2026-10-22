@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2015,SC2016
+# SC2016: the backticks and `$` in the README-row regexes are literal pattern text,
+# not expansions. SC2015: `[ a ] && [ b ] || continue` is a deliberate guard where
+# the `continue` is the intended fallthrough for either test failing.
 # Audit top-level documentation maps for mechanical drift (Layer 1 of #1460).
 #
 # Seven zero-false-positive checks:
@@ -475,6 +479,21 @@ else
   echo "README_ROW_PLUGINS=$readme_row_plugins"
   echo "RULES_CHECKED=$rules_checked"
   echo "STATUS=$overall_status"
+  if [ "$overall_status" != "OK" ]; then
+    # REASON= is the first finding at the reported severity as `<TYPE>: <MSG>`,
+    # one line, cut to 180 chars, plus ` (+N more)` when other findings exist
+    # (.claude/rules/structured-script-output.md, #2760).
+    reason=""
+    for line in "${issues[@]}"; do
+      case "$line" in *"SEVERITY=$overall_status "*) ;; *) continue ;; esac
+      [ -z "$reason" ] || continue
+      reason_type="${line#*TYPE=}"
+      reason_type="${reason_type%% *}"
+      reason="$(printf '%s: %s' "$reason_type" "${line#*MSG=}" | tr -s '[:space:]' ' ' | cut -c1-180)"
+    done
+    [ "$issue_count" -gt 1 ] && reason="$reason (+$((issue_count - 1)) more)"
+    echo "REASON=$reason"
+  fi
   echo "ISSUE_COUNT=$issue_count"
   if [ "$issue_count" -gt 0 ]; then
     echo "ISSUES:"

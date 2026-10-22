@@ -404,6 +404,22 @@ assert "N5: absent rule file does not fail membership" "$([ "$RC" -eq 0 ] && ech
 assert "N5: RULE_TABLE=absent reported" "$(has_line "$OUT" 'RULE_TABLE=absent')"
 
 # --- Summary -----------------------------------------------------------------
+# --- TEST R: REASON= on the ERROR path, absent on OK, contract-valid (#2760) --
+echo "=== TEST R: REASON= emission ==="
+contract="$repo_root/scripts/check-structured-output-contract.sh"
+run "$fx_c"
+r_fail="$OUT"
+run "$fx_b"
+r_pass="$OUT"
+assert "R1: failing fixture emits REASON= naming the first finding" \
+  "$(has_line "$r_fail" 'REASON=disallowed_model: must be one of: opus fable sonnet (haiku only after a per-workflow replay) (+1 more)')"
+assert "R2: exactly one REASON= line" "$([ "$(grep -c '^REASON=' <<<"$r_fail")" = "1" ] && echo true || echo false)"
+assert "R3: passing fixture emits no REASON=" "$([ "$(contains "$r_pass" '^REASON=')" = "false" ] && echo true || echo false)"
+assert "R4: failing output satisfies the structured-output contract" \
+  "$(grep -v '^Found ' <<<"$r_fail" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false)"
+assert "R5: passing output satisfies the structured-output contract" \
+  "$(bash "$contract" --validate - <<<"$r_pass" >/dev/null 2>&1 && echo true || echo false)"
+
 echo ""
 echo "Passed: $pass_count  Failed: $fail_count"
 [ "$fail_count" -eq 0 ]

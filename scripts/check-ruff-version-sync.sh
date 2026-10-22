@@ -115,6 +115,15 @@ echo "CI_PIN_COUNT=${#ci_pins[@]}"
 echo "CI_PINS=$(printf '%s,' ${ci_pins[@]+"${ci_pins[@]}"} | sed 's/,$//')"
 echo "CI_UNPINNED_COUNT=$ci_unpinned"
 echo "STATUS=$item_status"
+if [ "$issue_count" -gt 0 ]; then
+  # REASON= is the first finding as `<TYPE>: <MSG>`, one line, cut to 180 chars,
+  # plus ` (+N more)` (.claude/rules/structured-script-output.md, #2760).
+  first_type="${issues[0]#*TYPE=}"
+  first_type="${first_type%% *}"
+  reason="$(printf '%s: %s' "$first_type" "${issues[0]#*MSG=}" | tr -s '[:space:]' ' ' | cut -c1-180)"
+  [ "${#issues[@]}" -gt 1 ] && reason="$reason (+$((${#issues[@]} - 1)) more)"
+  echo "REASON=$reason"
+fi
 echo "ISSUE_COUNT=$issue_count"
 if [ "$issue_count" -gt 0 ]; then
   echo "ISSUES:"

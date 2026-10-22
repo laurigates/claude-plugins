@@ -118,6 +118,55 @@ else
 fi
 rm -rf "$d"
 
+# 5. REASON= on the ERROR path, absent on OK, both contract-valid (#2760).
+CONTRACT="$(cd "$(dirname "$0")/.." && pwd)/check-structured-output-contract.sh"
+valid() { printf '%s\n' "$1" | bash "$CONTRACT" --validate - >/dev/null 2>&1; }
+d=$(make_project "CLAUDE_HOOKS_ENABLE_SAMPLE" "")
+out=$(bash "$SCRIPT" --project-dir "$d" 2>&1)
+if grep -qx "REASON=missing_from_catalog: CLAUDE_HOOKS_ENABLE_SAMPLE read in a source but absent from hooks-plugin/docs/feature-flags.md" <<<"$out" \
+   && valid "$out"; then
+    pass "missing flag → REASON= names the flag and the block satisfies the contract"
+else
+    fail "missing flag should emit a contract-valid REASON=: $out"
+fi
+rm -rf "$d"
+# Two undocumented flags -> the REASON= names the first and counts the other.
+d=$(make_project "CLAUDE_HOOKS_ENABLE_SAMPLE" "")
+printf '#!/usr/bin/env bash\n[ "${%s:-}" = "1" ] && exit 0\n' "CLAUDE_HOOKS_ENABLE_OTHER" > "$d/hooks-plugin/hooks/other.sh"
+out=$(bash "$SCRIPT" --project-dir "$d" 2>&1)
+if grep -qx 'ISSUE_COUNT=2' <<<"$out" && grep -q '^REASON=missing_from_catalog: .* (+1 more)$' <<<"$out" && valid "$out"; then
+    pass "two missing flags -> REASON= ends in (+1 more) and the block satisfies the contract"
+else
+    fail "two missing flags should emit REASON= with (+1 more): $out"
+fi
+rm -rf "$d"
+d=$(make_project "CLAUDE_HOOKS_ENABLE_SAMPLE" "CLAUDE_HOOKS_ENABLE_SAMPLE")
+out=$(bash "$SCRIPT" --project-dir "$d" 2>&1)
+if ! grep -q '^REASON=' <<<"$out" && valid "$out"; then
+    pass "OK → no REASON= and the block satisfies the contract"
+else
+    fail "OK output should carry no REASON= and be contract-valid: $out"
+fi
+rm -rf "$d"
+d=$(mktemp -d)
+mkdir -p "$d/hooks-plugin/docs"
+printf '# Feature Flags Catalog\n' > "$d/hooks-plugin/docs/feature-flags.md"
+out=$(bash "$SCRIPT" --project-dir "$d" 2>&1)
+if grep -q '^REASON=nothing_scanned: ' <<<"$out" && valid "$out"; then
+    pass "nothing scanned → REASON=nothing_scanned, contract-valid"
+else
+    fail "nothing_scanned should emit a contract-valid REASON=: $out"
+fi
+rm -rf "$d"
+d=$(mktemp -d)
+out=$(bash "$SCRIPT" --project-dir "$d" 2>&1)
+if grep -qx 'REASON=missing_doc: catalog not found at hooks-plugin/docs/feature-flags.md' <<<"$out" && valid "$out"; then
+    pass "missing catalog → REASON=missing_doc, contract-valid"
+else
+    fail "missing_doc should emit a contract-valid REASON=: $out"
+fi
+rm -rf "$d"
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
