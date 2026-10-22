@@ -12,10 +12,15 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of the preflight → checkpoint
 |-------|---------|-------------|
 | workflow-preflight | `/workflow:preflight` | Pre-work validation: check remote state, existing PRs, branch conflicts |
 | workflow-checkpoint-refactor | `/workflow:checkpoint-refactor` | Multi-phase refactoring with persistent state across sessions |
-| workflow-wave-dispatch | — | Sequential-wave dispatch for multi-agent work with cross-task dependencies: gate each wave on verification before the next starts |
-| workflow-verify-before-filing | — | Verify accumulated bug claims at upstream HEAD and dedup against trackers before filing issues |
 | workflow-interrupted-run-recovery | — | Recover a `Workflow` run killed mid-flight: salvage killed agents' worktrees, resume without duplicating PRs the completed agents opened |
 | workflow-scale-budget | — | Size a `Workflow` script's agent count before running it: cost per agent, per-item multipliers, theme grouping, re-drive design. `scripts/workflow-run-tally.sh` tallies a finished run's realised agents and tokens from its transcripts, and a session's total across its runs |
+| workflow-verify-before-filing | `/workflow:verify-before-filing` | Verify accumulated bug claims at upstream HEAD and dedup against trackers before filing issues |
+| workflow-wave-dispatch | — | Sequential-wave dispatch for multi-agent work with cross-task dependencies, gating each wave on verification |
+
+Parallel issue processing and the CI-fix pipeline moved out of this plugin:
+
+- **Parallel issues** (formerly `/workflow:parallel-issues`) → `/git:issue --parallel` (git-plugin): issue to PR end-to-end, several issues at once.
+- **CI fix** (formerly `/workflow:ci-fix`) → `/git:fix-pr` (git-plugin) to fix a PR's failing checks; `/github:workflow-auto-fix` (github-actions-plugin) to set up a CI workflow that fixes failures automatically.
 
 ## Usage
 
