@@ -323,8 +323,12 @@ rm -rf "$proj"
 # ── CASE 11: no bare empty-array expansion under set -u (bash 3.2) ───────────
 # Static backstop for CASE 8/9 on a modern bash, where the crash cannot be
 # reproduced: every `"${arr[@]}"` must be guarded as `${arr[@]+"${arr[@]}"}`.
+# The strip deliberately has no `\1` backreference (#3147): macOS
+# /usr/bin/sed -E does not apply a backreference inside the pattern, so the
+# guarded form was never stripped there and every guarded line false-positived.
+# Matching the two names independently costs only the same-name check.
 bare="$(grep -vE '^[[:space:]]*#' "$SCRIPT" \
-    | sed -E 's/\$\{([A-Za-z_][A-Za-z0-9_]*)\[@\]\+"\$\{\1\[@\]\}"\}//g' \
+    | sed -E 's/\$\{[A-Za-z_][A-Za-z0-9_]*\[@\]\+"\$\{[A-Za-z_][A-Za-z0-9_]*\[@\]\}"\}//g' \
     | grep -nE '"\$\{[A-Za-z_][A-Za-z0-9_]*\[@\]\}"' || true)"
 assert_eq "case11: no bare \"\${arr[@]}\" expansion (crashes bash 3.2 under set -u)" "" "$bare"
 bash4="$(grep -vE '^[[:space:]]*#' "$SCRIPT" \
