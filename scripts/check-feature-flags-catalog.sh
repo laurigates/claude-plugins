@@ -59,6 +59,8 @@ echo "=== FEATURE FLAGS CATALOG ==="
 if [ ! -f "$DOC" ]; then
     echo "DOC=$DOC_REL"
     echo "STATUS=ERROR"
+    # REASON= is the first finding as `<TYPE>: <MSG>` (.claude/rules/structured-script-output.md, #2760).
+    echo "REASON=missing_doc: catalog not found at $DOC_REL"
     echo "ISSUE_COUNT=1"
     echo "ISSUES:"
     echo "  - SEVERITY=ERROR TYPE=missing_doc MSG=catalog not found at $DOC_REL"
@@ -158,6 +160,18 @@ echo "SOURCE_FLAG_COUNT=$source_count"
 echo "CATALOG_FLAG_COUNT=$catalog_count"
 echo "MISSING_COUNT=$missing_count"
 echo "STATUS=$overall"
+if [ "$issue_count" -gt 0 ]; then
+    # REASON= is the first finding as `<TYPE>: <MSG>`, one line, cut to 180
+    # chars, plus ` (+N more)` (.claude/rules/structured-script-output.md, #2760).
+    if [ "$nothing_scanned" -eq 1 ]; then
+        reason="nothing_scanned: no .sh or templates/ file found under $PROJECT_DIR; the walk misfired"
+    else
+        reason="missing_from_catalog: $(printf '%s\n' "$missing" | grep -m1 .) read in a source but absent from $DOC_REL"
+    fi
+    reason="$(printf '%s' "$reason" | tr -s '[:space:]' ' ' | cut -c1-180)"
+    [ "$issue_count" -gt 1 ] && reason="$reason (+$((issue_count - 1)) more)"
+    echo "REASON=$reason"
+fi
 echo "ISSUE_COUNT=$issue_count"
 
 if [ "$issue_count" -gt 0 ]; then

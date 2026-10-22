@@ -152,7 +152,8 @@ for fname in sorted(os.listdir(workflow_dir)):
         with open(full, encoding="utf-8") as fh:
             doc = yaml.safe_load(fh)
     except Exception as exc:  # noqa: BLE001 - report, don't crash the gate
-        rows.append(f"  - SEVERITY=WARN TYPE=unparseable WORKFLOW={fname} MSG={exc}")
+        # A YAML error is multi-line; collapsed so it stays ONE row under ISSUES:.
+        rows.append(f"  - SEVERITY=WARN TYPE=unparseable WORKFLOW={fname} MSG={' '.join(str(exc).split())}")
         continue
     if not isinstance(doc, dict):
         continue
@@ -192,6 +193,17 @@ print(f"WORKFLOWS_SCANNED={workflows_scanned}")
 print(f"SCANNED_EMPTY={'true' if workflows_scanned == 0 else 'false'}")
 print(f"PATH_FILTERED_INVOCATIONS={invocations_total}")
 print(f"STATUS={status}")
+if rows:
+    # REASON= is the first finding at the reported severity as `<TYPE>: <MSG>`,
+    # one line, cut to 180 chars, plus ` (+N more)`
+    # (.claude/rules/structured-script-output.md, #2760).
+    first = next((r for r in rows if f"SEVERITY={status} " in r), rows[0])
+    rtype = first.split("TYPE=", 1)[1].split(" ", 1)[0]
+    rmsg = first.split("MSG=", 1)[1]
+    reason = " ".join(f"{rtype}: {rmsg}".split())[:180]
+    if len(rows) > 1:
+        reason += f" (+{len(rows) - 1} more)"
+    print(f"REASON={reason}")
 print(f"ISSUE_COUNT={len(rows)}")
 print(f"ERROR_COUNT={errors}")
 if rows:

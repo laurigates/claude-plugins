@@ -202,6 +202,8 @@ assert_contains "$out" "SCOPE_IS_REPO_WIDE=true" "A5 audit set declared as repo-
 assert_eq "$(key_of "$out" ALLOWLISTED)" "ALLOWLISTED=0" "A6 real repo suppresses nothing (#2592)"
 assert_lacks "$out" "ALLOWLISTED_DELEGATIONS:" "A6b no declared residual is itemised"
 assert_lacks "$out" "TYPE=stale_allowlist_entry" "A6c no stale declaration is left behind"
+assert_lacks "$out" "REASON=" "A7 OK output carries no REASON="
+assert_eq "$(printf '%s\n' "$out" | bash "$repo_root/scripts/check-structured-output-contract.sh" --validate - >/dev/null 2>&1 && echo true || echo false)" "true" "A8 OK output satisfies the contract"
 
 echo "TEST B: imperative delegation to a GATED sibling is an ERROR"
 fx="$tmp_root/b"; build_fixture "$fx" gated "Execution" "$IMPERATIVE"
@@ -212,6 +214,22 @@ assert_contains "$out" "TYPE=unreachable_delegation" "B3 finding type"
 assert_contains "$out" "REF=/demo:feedback" "B4 names the reference"
 assert_contains "$out" "SECTION=Execution" "B5 names the section"
 assert_contains "$out" "ISSUE_COUNT=1" "B6 exactly one finding"
+
+# REASON= (#2760): first finding as `<TYPE>: <FILE:LINE> <MSG>`, contract-valid.
+contract="$repo_root/scripts/check-structured-output-contract.sh"
+reason_valid() { printf '%s\n' "$1" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false; }
+assert_contains "$out" "REASON=unreachable_delegation: " "B7 REASON= names the finding type"
+assert_contains "$out" "SKILL.md:" "B8 REASON= names file:line"
+assert_contains "$out" "gated sibling presented as an agent action" "B9 REASON= carries the message"
+assert_eq "$(reason_valid "$out")" "true" "B10 ERROR output satisfies the contract"
+# Two imperative rows -> the REASON= names the first and counts the other.
+fx2="$tmp_root/b2"; build_fixture "$fx2" gated "Execution" "$IMPERATIVE
+| CI failure | Fix it via **\`/demo:feedback\`** (the canonical engine) |"
+out2="$(run_checker "$fx2")"
+assert_contains "$out2" "ISSUE_COUNT=2" "B11 two imperative rows -> two findings"
+assert_contains "$out2" " (+1 more)
+" "B12 REASON= ends in (+1 more)"
+assert_eq "$(reason_valid "$out2")" "true" "B13 two-finding output satisfies the contract"
 
 echo "TEST C: the SAME line, hedged toward the user, is clean"
 # Without this the guard could satisfy TEST B by flagging every mention.

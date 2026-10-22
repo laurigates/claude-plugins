@@ -1,6 +1,6 @@
 ---
 created: 2026-05-14
-modified: 2026-09-23
+modified: 2026-10-22
 reviewed: 2026-07-04
 paths:
   - "**/*.sh"
@@ -98,14 +98,19 @@ finding count.
 `scripts/check-structured-output-contract.sh --strict` (pre-commit) sweeps
 every `scripts/check-*.sh` that emits `STATUS=`: canonical values, whether
 literal or traced through a shell or Python variable, plus `ISSUE_COUNT=`
-and `REASON=`. Scripts not yet migrated to `REASON=` are listed in
-`scripts/structured-output-reason-pending.txt`; the guard errors on an entry
-that now emits `REASON=`, so the list only shrinks. Static analysis cannot
+and `REASON=`. There is no exemption list: the #2760 rollout migrated every
+emitter and retired it, so a new `check-*.sh` without `REASON=` fails the
+sweep. Static analysis cannot
 prove the `REASON=` line sits on the non-OK path, so the same script's
 `--validate` mode checks a captured block (one canonical `STATUS=`, an
 integer `ISSUE_COUNT=` equal to the `ISSUES:` rows, `REASON=` present and
-bounded iff not `OK`). A script's test twin pipes its failing and passing
-fixture output through it.
+bounded iff not `OK`), and the REASON's provenance: some `ISSUES:` row must
+carry exactly `SEVERITY=<STATUS>` (a `WARN` status explained by an `INFO` row,
+or an `ERROR` status by a lowercase `error` row, fails), the first such row's
+`TYPE=` must open the `REASON=`, and the ` (+N more)` tail must equal
+`ISSUE_COUNT - 1`. A script's test twin pipes its failing and passing fixture
+output through it; a script with both `WARN` and `ERROR` rows also needs a
+mixed fixture, since only that shape shows which row `REASON=` names.
 
 ## Mini example
 

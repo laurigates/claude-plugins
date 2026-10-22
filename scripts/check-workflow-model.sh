@@ -283,6 +283,15 @@ echo "RULE_TABLE=$rule_table"
 echo "TABLE_ROWS=$table_rows_count"
 echo "MISSING_TABLE_ROWS=$missing_table_rows"
 echo "STATUS=$status"
+if [ "$issue_count" -gt 0 ]; then
+  # REASON= is the first finding as `<TYPE>: <MSG>`, one line, cut to 180
+  # chars, plus ` (+N more)` (.claude/rules/structured-script-output.md, #2760).
+  reason_type="${issues[0]#*TYPE=}"
+  reason_type="${reason_type%% *}"
+  reason="$(printf '%s: %s' "$reason_type" "${issues[0]#*MSG=}" | tr -s '[:space:]' ' ' | cut -c1-180)"
+  [ "$issue_count" -gt 1 ] && reason="$reason (+$((issue_count - 1)) more)"
+  echo "REASON=$reason"
+fi
 echo "ISSUE_COUNT=$issue_count"
 if [ "$issue_count" -gt 0 ]; then
   echo "ISSUES:"

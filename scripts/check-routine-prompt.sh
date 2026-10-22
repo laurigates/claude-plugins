@@ -160,6 +160,15 @@ echo "PROMPT_PRESENT=$([ -f "$PROMPT" ] && echo true || echo false)"
 echo "ROUTINES_DISCOVERED=$routines_discovered"
 echo "ROUTINES_GUARDED=${#GUARDED_PROMPTS[@]}"
 echo "STATUS=$status"
+if [ "$issue_count" -gt 0 ]; then
+    # REASON= is the first finding as `<FILE>: <MSG>`, one line, cut to 180
+    # chars, plus ` (+N more)` (.claude/rules/structured-script-output.md, #2760).
+    first_file="${issues[0]#*FILE=}"
+    first_file="${first_file%% *}"
+    reason="$(printf '%s: %s' "$first_file" "${issues[0]#*MSG=}" | tr -s '[:space:]' ' ' | cut -c1-180)"
+    [ "${#issues[@]}" -gt 1 ] && reason="$reason (+$((${#issues[@]} - 1)) more)"
+    echo "REASON=$reason"
+fi
 echo "ISSUE_COUNT=$issue_count"
 if [ "$issue_count" -gt 0 ]; then
     echo "ISSUES:"

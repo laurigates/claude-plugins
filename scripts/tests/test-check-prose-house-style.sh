@@ -153,6 +153,43 @@ expect "the same claim deleted outright is caught" ERROR "$R"
 R="$WORK/clean"; seed "$R"
 expect "pristine copy still passes" OK "$R"
 
+# --- 12. REASON= contract (#2760) ------------------------------------------
+# A failing fixture names its first finding; a passing one carries no REASON=;
+# both blocks satisfy check-structured-output-contract.sh --validate.
+CONTRACT="$REPO_ROOT/scripts/check-structured-output-contract.sh"
+out_fail="$("$GUARD" "$WORK/sig" 2>&1)"
+out_ok="$("$GUARD" "$WORK/clean" 2>&1)"
+if grep -qxF 'REASON=prose-plugin/styles/House/SignificanceAssertion.yml: significance marker dropped from the vale rule' <<<"$out_fail"; then
+    PASS=$((PASS + 1)); echo "PASS: failing fixture emits REASON= naming the first finding"
+else
+    FAIL=$((FAIL + 1)); echo "FAIL: failing fixture REASON= missing or wrong"; grep '^REASON=' <<<"$out_fail"
+fi
+if grep -q '^REASON=' <<<"$out_ok"; then
+    FAIL=$((FAIL + 1)); echo "FAIL: passing fixture must not emit REASON="
+else
+    PASS=$((PASS + 1)); echo "PASS: passing fixture carries no REASON="
+fi
+# Two breaks at once (a dropped marker and E-Prime re-enabled): REASON= counts the rest.
+R="$WORK/two"; seed "$R"
+grep -v 'precisely why' "$R/prose-plugin/styles/House/SignificanceAssertion.yml" > "$R/tmp" \
+    && mv "$R/tmp" "$R/prose-plugin/styles/House/SignificanceAssertion.yml"
+grep -v 'write-good.E-Prime = NO' "$R/prose-plugin/styles/.vale.ini" > "$R/tmp" \
+    && mv "$R/tmp" "$R/prose-plugin/styles/.vale.ini"
+out_two="$("$GUARD" "$R" 2>&1)"
+if grep -q '^REASON=.* (+[1-9][0-9]* more)$' <<<"$out_two" \
+   && printf '%s\n' "$out_two" | bash "$CONTRACT" --validate - >/dev/null 2>&1; then
+    PASS=$((PASS + 1)); echo "PASS: two findings -> REASON= carries (+N more) and the block validates"
+else
+    FAIL=$((FAIL + 1)); echo "FAIL: two findings should yield a contract-valid REASON= with (+N more)"; grep '^REASON=\|^ISSUE_COUNT' <<<"$out_two"
+fi
+for pair in "failing:$out_fail" "passing:$out_ok"; do
+    if printf '%s\n' "${pair#*:}" | bash "$CONTRACT" --validate - >/dev/null 2>&1; then
+        PASS=$((PASS + 1)); echo "PASS: ${pair%%:*} output satisfies the structured-output contract"
+    else
+        FAIL=$((FAIL + 1)); echo "FAIL: ${pair%%:*} output rejected by check-structured-output-contract.sh --validate"
+    fi
+done
+
 echo
 echo "PASS=$PASS FAIL=$FAIL"
 [ "$FAIL" -eq 0 ] || exit 1
