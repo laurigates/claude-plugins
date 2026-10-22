@@ -31,7 +31,7 @@
   "networking-plugin": "1.4.3",
   "obsidian-plugin": "1.3.6",
   "project-plugin": "1.21.12",
-  "prompt-engineering-plugin": "1.1.3",
+  "prompt-engineering-plugin": "1.1.4",
   "prose-plugin": "1.4.2",
   "python-plugin": "1.5.9",
   "rust-plugin": "1.7.2",
@@ -39,8 +39,8 @@
   "terraform-plugin": "1.7.11",
   "testing-plugin": "3.23.3",
   "tools-plugin": "2.13.6",
-  "typescript-plugin": "1.10.2",
+  "typescript-plugin": "1.10.3",
   "session-plugin": "1.14.0",
   "software-design-plugin": "1.2.0",
-  "workflow-orchestration-plugin": "1.14.0"
+  "workflow-orchestration-plugin": "1.14.1"
 }
