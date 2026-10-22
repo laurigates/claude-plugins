@@ -35,3 +35,18 @@ signal `GH_READY=false` gives for GitHub: `TASK_SCOPE=unknown` and
 
 `TASK_FAIL_DETAIL` is the first non-blank line of `task`'s stderr, bounded to
 200 characters.
+
+## Availability and linkage keys
+
+A zero is "nothing there" only when the query behind it ran. The full digest
+carries the keys that say so; `--summary` carries none of them. Full semantics:
+the plugin README, § Availability and linkage keys.
+
+| Key | Where | Read it as |
+|---|---|---|
+| `JQ_AVAILABLE` | `TASKWARRIOR`, `BLUEPRINT`, `PRS`, `GITHUB_DRIFT` | `false` means that section's rows and counts were never computed |
+| `BPID_QUERY_OK` | `BLUEPRINT` | `false` beside `UNDRAINED_COUNT=0` means the completed-`bpid` query failed; the zero is **unqueried**, not "nothing to drain" |
+| `TASK_AVAILABLE` | `BLUEPRINT` | The `task` binary exists (blueprint preconditions are readable from one section) |
+| `UNDRAINED_WOS_NO_EVIDENCE` | `BLUEPRINT` | WOs in `UNDRAINED_WOS` with no annotated closed task, so no evidence to hand `--evidence` |
+| `TASK_n_BPID` | `TASKWARRIOR` | The WO a pending task is linked to; absent when unlinked |
+| `REPO` | `GIT` | The cwd checkout's `<owner>/<repo>` from the origin URL, no `gh` call; empty when unresolvable |
