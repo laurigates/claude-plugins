@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.40.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.40.1...configure-plugin-v1.40.2) (2026-10-22)
+
+
+### Documentation
+
+* **rules:** apply the Claude Code 2.1.296–2.1.303 changelog follow-ups ([#3162](https://github.com/laurigates/claude-plugins/issues/3162)) ([d7ed199](https://github.com/laurigates/claude-plugins/commit/d7ed1997facacc4d2d64c1346d989c1da14e57cc)), closes [#3130](https://github.com/laurigates/claude-plugins/issues/3130)
+
 ## [1.40.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.40.0...configure-plugin-v1.40.1) (2026-10-20)
 
 

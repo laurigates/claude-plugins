@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.1](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.11.0...container-plugin-v2.11.1) (2026-10-22)
+
+
+### Bug Fixes
+
+* **agents:** deliver the report before maxTurns cuts an agent off ([#3158](https://github.com/laurigates/claude-plugins/issues/3158)) ([8dfa0a7](https://github.com/laurigates/claude-plugins/commit/8dfa0a7528bc08825bd4367984e884259cac49d6)), closes [#3152](https://github.com/laurigates/claude-plugins/issues/3152)
+
 ## [2.11.0](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.10.2...container-plugin-v2.11.0) (2026-10-10)
 
 
