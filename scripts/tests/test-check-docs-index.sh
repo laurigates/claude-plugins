@@ -475,6 +475,7 @@ strict_rc=$?
 assert "--strict should exit 1 on a phantom skill-table row" \
   "$([ "$strict_rc" = "1" ] && echo true || echo false)"
 rm -rf "$tbl_fx"
+
 echo "=== TEST R: REASON= on the non-OK path (#2760) ==="
 contract="$repo_root/scripts/check-structured-output-contract.sh"
 valid() { printf '%s\n' "$1" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false; }

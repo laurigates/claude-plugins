@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2015,SC2016
+# shellcheck disable=SC2016
 # SC2016: the backticks and `$` in the README-row regexes are literal pattern text,
-# not expansions. SC2015: `[ a ] && [ b ] || continue` is a deliberate guard where
-# the `continue` is the intended fallthrough for either test failing.
+# not expansions.
 # Audit top-level documentation maps for mechanical drift (Layer 1 of #1460).
 #
 # Eight zero-false-positive checks:
