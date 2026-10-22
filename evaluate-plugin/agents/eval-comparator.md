@@ -85,7 +85,7 @@ To maintain objectivity:
 
 ## Turn Budget
 
-`maxTurns: 12` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 10 of 12), stop scoring and deliver `comparison.json`. Write `comparison.json` with the scores you can justify from the outputs you have read. Do not set `A_passed` or `B_passed` for an assertion you did not check; list each one in `reasoning` under a `Not verified:` line, so an unchecked assertion never reads as passed or failed.
+`maxTurns: 12` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 10 of 12), stop scoring and deliver `comparison.json`. Write `comparison.json` with the scores you can justify from the outputs you have read. Do not set `A_passed` or `B_passed` for an assertion you did not check; list each one in `reasoning` under a `Not verified:` line, so an unchecked assertion never reads as passed or failed.
 
 **Callers**: this agent has 12 turns. Send one A/B pair per agent; split a multi-case comparison.
 

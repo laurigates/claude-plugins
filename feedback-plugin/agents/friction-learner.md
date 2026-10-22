@@ -301,7 +301,7 @@ Print a table: cluster → count → verdict → deliverable → PR URL.
 
 ## Turn Budget
 
-`maxTurns: 40` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 32 of 40), stop clustering and reproducing and deliver the report in the Output Format below. List the clusters you finished with their verdicts. Record a cluster you did not get to reproduce or verify as `NOT_REPRODUCIBLE` with a `Not verified` note rather than omitting it, open a PR only for clusters that carry a verdict, and say how many sessions or clusters were left unanalyzed.
+`maxTurns: 40` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 32 of 40), stop clustering and reproducing and deliver the report in the Output Format below. List the clusters you finished with their verdicts. Record a cluster you did not get to reproduce or verify as `NOT_REPRODUCIBLE` with a `Not verified` note rather than omitting it, open a PR only for clusters that carry a verdict, and say how many sessions or clusters were left unanalyzed.
 
 **Callers**: this agent has 40 turns. Keep the window narrow (a week or less) or name target repos; split a wide analysis across runs.
 

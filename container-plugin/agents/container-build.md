@@ -95,7 +95,7 @@ docker inspect <container> --format='{{.State}}' 2>&1
 
 ## Turn Budget
 
-`maxTurns: 15` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 12 of 15), stop building and tuning and deliver the report in the Output Format below. Set **Status** to what actually happened (`FAILED at step N`, or `SUCCESS` only for a build that finished), report the layers and size you measured, and list the optimization checks you did not reach as **Not verified** under Optimization Suggestions, so an unexamined area never reads as a clean one.
+`maxTurns: 15` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 12 of 15), stop building and tuning and deliver the report in the Output Format below. Set **Status** to what actually happened (`FAILED at step N`, or `SUCCESS` only for a build that finished), report the layers and size you measured, and list the optimization checks you did not reach as **Not verified** under Optimization Suggestions, so an unexamined area never reads as a clean one.
 
 **Callers**: this agent has 15 turns. Hand over one image per agent; split a multi-image or multi-stage-tuning brief.
 

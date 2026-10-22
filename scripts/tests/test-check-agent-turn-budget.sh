@@ -17,6 +17,7 @@
 #   G. a heading inside a code fence does not count as the section
 #   H. a worktree-shaped scan root still scans (#2219 class)
 #   I. an unknown argument exits 2
+#   K. a non-positive-integer maxTurns (quoted, zero) is bad_max_turns
 #   J. every failing and passing output satisfies the structured-output contract
 set -uo pipefail
 
@@ -86,7 +87,7 @@ good_body() {
   echo "\`maxTurns: $1\` ends the run. Once about 80% are used, stop investigating and deliver the report; mark the rest Not verified."
 }
 
-new_root() { local d; d="$(mktemp -d -p "$tmp_root")" || exit 2; [ -d "$d" ] || exit 2; echo "$d"; }
+new_root() { local d; d="$(mktemp -d "$tmp_root/case.XXXXXX")" || exit 2; [ -d "$d" ] || exit 2; echo "$d"; }
 
 # --- TEST A: the real repo -----------------------------------------------------
 echo "=== TEST A: real repo ==="
@@ -99,6 +100,11 @@ assert "A is not SCANNED_EMPTY" "$(contains "$out" 'SCANNED_EMPTY=false')"
 n_compliant="$(sed -n 's/^AGENTS_COMPLIANT=//p' <<<"$out")"
 assert "A found compliant agents (>= 22: every agent with a maxTurns limit)" "$([ "${n_compliant:-0}" -ge 22 ] && echo true || echo false)"
 assert "A review.md is among the agents with a limit" "$([ -f "$repo_root/agents-plugin/agents/review.md" ] && grep -q '^## Turn Budget$' "$repo_root/agents-plugin/agents/review.md" && echo true || echo false)"
+
+# No section may budget by tool calls: maxTurns counts turns, and a turn can batch
+# several calls, so a tool-call count reports far earlier than 80% of the limit.
+stale_wording="$(grep -rl 'Count your tool calls' "$repo_root"/*-plugin/agents 2>/dev/null | head -1)"
+assert "A no Turn Budget section counts tool calls instead of turns" "$([ -z "$stale_wording" ] && echo true || echo false)"
 
 # --- TEST B: compliant fixture --------------------------------------------------
 echo "=== TEST B: compliant fixture ==="
@@ -197,6 +203,16 @@ echo "=== TEST J: contract validation of the failing fixture ==="
 k_ok=false
 if printf '%s\n' "$failing_c" | bash "$contract" --validate >/dev/null 2>&1; then k_ok=true; fi
 assert "J failing fixture passes --validate" "$k_ok"
+
+# --- TEST K: maxTurns must be a positive integer ---------------------------------------------
+echo "=== TEST K: non-positive-integer maxTurns ==="
+for bad in '"25"' 0 abc; do
+  r="$(new_root)"
+  make_agent "$r" alpha "$bad" "$(good_body 25)"
+  out="$(bash "$checker" --project-dir "$r" 2>&1)"; rc=$?
+  assert "K maxTurns: $bad exits 1" "$(is_true "$([ $rc -eq 1 ] && echo true)")"
+  assert "K maxTurns: $bad TYPE=bad_max_turns" "$(contains "$out" 'TYPE=bad_max_turns')"
+done
 
 echo ""
 echo "=== RESULTS ==="

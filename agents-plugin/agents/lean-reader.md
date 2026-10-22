@@ -40,7 +40,7 @@ Read only the files the brief names, or those its pattern matches. Each extra fi
 
 ## Turn Budget
 
-`maxTurns: 30` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 24 of 30), stop reading and deliver the report in the shape the brief asks for. Return the result in the shape the brief asks for, with each item you did not reach marked unresolved, as above, rather than returning nothing.
+`maxTurns: 30` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 24 of 30), stop reading and deliver the report in the shape the brief asks for, with each item you did not reach marked unresolved rather than returning nothing.
 
 **Callers**: this agent has 30 turns. Keep the brief to the files one run can read; split a larger set across several readers.
 

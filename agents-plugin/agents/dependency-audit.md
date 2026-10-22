@@ -82,7 +82,7 @@ govulncheck ./... 2>/dev/null
 
 ## Turn Budget
 
-`maxTurns: 15` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 12 of 15), stop auditing and deliver the report in the Output Format below. Report the findings so far, and list each ecosystem, manifest or lockfile you did not scan under **Not scanned**, so an unaudited ecosystem never reads as clean.
+`maxTurns: 15` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 12 of 15), stop auditing and deliver the report in the Output Format below. Report the findings so far, and list each ecosystem, manifest or lockfile you did not scan under **Not scanned**, so an unaudited ecosystem never reads as clean.
 
 **Callers**: this agent has 15 turns. Scope a brief to one ecosystem or workspace; split a monorepo audit across agents.
 

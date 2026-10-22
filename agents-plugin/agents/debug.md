@@ -94,7 +94,7 @@ For simple linter warnings (unused imports, formatting):
 
 ## Turn Budget
 
-`maxTurns: 20` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 16 of 20), stop investigating and deliver the report in the Output Format below. Report the root cause as **Suspected (not confirmed)** when you have not reproduced it, list only the changes actually applied, and mark the Verification line **Not verified** when the fix has not been run. Commit work in progress first (see Checkpoint Discipline).
+`maxTurns: 20` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 16 of 20), stop investigating and deliver the report in the Output Format below. Report the root cause as **Suspected (not confirmed)** when you have not reproduced it, list only the changes actually applied, and mark the Verification line **Not verified** when the fix has not been run. Commit work in progress first (see Checkpoint Discipline).
 
 **Callers**: this agent has 20 turns. Hand over one bug per agent; split a multi-bug brief.
 

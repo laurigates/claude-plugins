@@ -105,7 +105,7 @@ Calculate total price for items with optional tax.
 
 ## Turn Budget
 
-`maxTurns: 15` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 12 of 15), stop writing and deliver the report in the Output Format below. Commit what is written (see Checkpoint Discipline), report the files created or updated, and list the pages or sections you did not reach under **Not documented**.
+`maxTurns: 15` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 12 of 15), stop writing and deliver the report in the Output Format below. Commit what is written (see Checkpoint Discipline), report the files created or updated, and list the pages or sections you did not reach under **Not documented**.
 
 **Callers**: this agent has 15 turns. Scope a brief to one area of the documentation; split a larger set across agents.
 

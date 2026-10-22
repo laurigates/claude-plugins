@@ -235,7 +235,7 @@ default-cap trap and the `state` / `mergedAt` fields).
 
 ## Turn Budget
 
-`maxTurns: 20` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 16 of 20), stop exploring and resolving and deliver the report in the Output Format below. Never stop halfway through a rebase, merge or cherry-pick without saying so: report **Status** as `ABORTED` or the real in-progress state, list the files still in conflict as **Not resolved**, give the Commands to Undo, and mark Tests **Not verified** when they were not run.
+`maxTurns: 20` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 16 of 20), stop exploring and resolving and deliver the report in the Output Format below. Never stop halfway through a rebase, merge or cherry-pick without saying so: report **Status** as `ABORTED` or the real in-progress state, list the files still in conflict as **Not resolved**, give the Commands to Undo, and mark Tests **Not verified** when they were not run.
 
 **Callers**: this agent has 20 turns. Hand over one operation per agent; split a multi-branch or multi-conflict brief.
 

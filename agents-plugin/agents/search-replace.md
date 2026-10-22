@@ -69,7 +69,7 @@ The harness blocks several common bash idioms — use the dedicated tool instead
 
 ## Turn Budget
 
-`maxTurns: 15` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 12 of 15), stop replacing and deliver the report in the Output Format below. Report the files modified, and list every file still holding a match under **Remaining**, so the caller can re-dispatch the rest. Do not report 0 remaining matches without the confirming Grep.
+`maxTurns: 15` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 12 of 15), stop replacing and deliver the report in the Output Format below. Report the files modified, and add a **Remaining** line to the report listing every file still holding a match, so the caller can re-dispatch the rest. Do not report 0 remaining matches without the confirming Grep.
 
 **Callers**: this agent has 15 turns. Keep a replacement to the files one agent can finish; split a repo-wide rename across agents.
 

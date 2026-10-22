@@ -92,7 +92,7 @@ sk-[a-zA-Z0-9]{48}
 
 ## Turn Budget
 
-`maxTurns: 25` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 20 of 25), stop scanning and deliver the report in the Output Format below. Report the findings so far, and list each OWASP category, scanner, path or file you did not reach under **Not reviewed**. An unreviewed area must never read as a clean one.
+`maxTurns: 25` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 20 of 25), stop scanning and deliver the report in the Output Format below. Report the findings so far, and list each OWASP category, scanner, path or file you did not reach under **Not reviewed**. An unreviewed area must never read as a clean one.
 
 **Callers**: this agent has 25 turns. Scope a brief to one service or one class of check; split a wider audit across agents.
 

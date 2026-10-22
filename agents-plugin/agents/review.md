@@ -73,7 +73,7 @@ The harness blocks several common bash idioms — use the dedicated tool instead
 
 ## Turn Budget
 
-`maxTurns: 25` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 20 of 25), stop investigating and deliver the report in the Output Format below. Report the findings you have verified. Label a finding you could not confirm against the files `SUSPECT`, and list every file, check or test run you did not reach under a **Not verified** line, so an unexamined area never reads as a clean one.
+`maxTurns: 25` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 20 of 25), stop investigating and deliver the report in the Output Format below. Report the findings you have verified. Label a finding you could not confirm against the files `SUSPECT`, and list every file, check or test run you did not reach under a **Not verified** line, so an unexamined area never reads as a clean one.
 
 **Callers**: this agent has 25 turns. Reading files, running tests and fetching references each cost a turn. A brief that needs several of them across many files or PRs will not fit, so split a large review across agents (one per PR or per area) rather than sending one brief.
 

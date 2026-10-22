@@ -116,7 +116,7 @@ for agent_file in ${agent_files[@]+"${agent_files[@]}"}; do
   with_limit=$((with_limit + 1))
 
   problem=""
-  if ! [[ "$turns" =~ ^[0-9]+$ ]]; then
+  if ! [[ "$turns" =~ ^[1-9][0-9]*$ ]]; then
     add_issue bad_max_turns "$agent_file" "maxTurns: $turns is not a positive integer"
     continue
   fi

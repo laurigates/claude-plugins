@@ -173,7 +173,7 @@ already shipped.
 
 ## Turn Budget
 
-`maxTurns: 20` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 16 of 20), stop transforming and deliver the report in the Output Format below. Commit what is done (see Checkpoint Discipline), report the changes that landed, and put the remainder under **Deferred**. For a closed-list assignment, end with the Completion Manifest and set `status: partial` when `COMPLETED < ASSIGNED`.
+`maxTurns: 20` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 16 of 20), stop transforming and deliver the report in the Output Format below. Commit what is done (see Checkpoint Discipline), report the changes that landed, and put the remainder under **Deferred**. For a closed-list assignment, end with the Completion Manifest and set `status: partial` when `COMPLETED < ASSIGNED`.
 
 **Callers**: this agent has 20 turns. Keep batches within the Batch size in Scope, and split a larger refactor across agents.
 

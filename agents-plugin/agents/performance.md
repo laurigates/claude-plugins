@@ -103,7 +103,7 @@ hyperfine 'command1' 'command2' 2>&1  # Comparative benchmarking
 
 ## Turn Budget
 
-`maxTurns: 25` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 20 of 25), stop profiling and deliver the report in the Output Format below. Report the bottlenecks you have measured, label an unmeasured suspicion **SUSPECT**, and list the components or benchmarks you did not reach under **Not verified**.
+`maxTurns: 25` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 20 of 25), stop profiling and deliver the report in the Output Format below. Report the bottlenecks you have measured, label an unmeasured suspicion **SUSPECT**, and list the components or benchmarks you did not reach under **Not verified**.
 
 **Callers**: this agent has 25 turns. Scope a brief to one component or benchmark; split a wider analysis across agents.
 

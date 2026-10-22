@@ -78,7 +78,7 @@ The harness blocks several common bash idioms — use the dedicated tool instead
 
 ## Turn Budget
 
-`maxTurns: 20` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 16 of 20), stop researching and deliver the report in the Output Format below. Report the findings so far with their sources, set **Confidence** to reflect the gaps, and list the questions or sources you did not reach under **Not verified**.
+`maxTurns: 20` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 16 of 20), stop researching and deliver the report in the Output Format below. Report the findings so far with their sources, set **Confidence** to reflect the gaps, and list the questions or sources you did not reach under **Not verified**.
 
 **Callers**: this agent has 20 turns. Hand over one question per agent; split a multi-part research brief.
 

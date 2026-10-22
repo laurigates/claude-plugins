@@ -87,7 +87,7 @@ Extract from plan output:
 
 ## Turn Budget
 
-`maxTurns: 15` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 12 of 15), stop running and analyzing and deliver the report in the Output Format below. Report **Status** from what ran (never `SUCCESS` for a plan or apply you did not finish), list the resource changes you saw, and name any workspace, module or check you did not reach as **Not verified** under Warnings.
+`maxTurns: 15` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 12 of 15), stop running and analyzing and deliver the report in the Output Format below. Report **Status** from what ran (never `SUCCESS` for a plan or apply you did not finish), list the resource changes you saw, and name any workspace, module or check you did not reach as **Not verified** under Warnings.
 
 **Callers**: this agent has 15 turns. Hand over one operation and environment per agent; split a multi-environment brief.
 

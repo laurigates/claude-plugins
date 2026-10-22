@@ -85,7 +85,7 @@ Example:
 
 ## Turn Budget
 
-`maxTurns: 30` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 24 of 30), stop routing and deliver the report in the Output Format below. Stop spawning agents, and report the agents already invoked with their results. List every finding not yet routed under **Remaining (Manual Attention)**. Each spawned agent spends its own turns, not yours, but your own reads and summaries count.
+`maxTurns: 30` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 24 of 30), stop routing and deliver the report in the Output Format below. Stop spawning agents, and report the agents already invoked with their results. List every finding not yet routed under **Remaining (Manual Attention)**. Each spawned agent spends its own turns, not yours, but your own reads and summaries count.
 
 **Callers**: this agent has 30 turns. Route a bounded set of findings; filter by severity or category and split a large attribute file across runs.
 

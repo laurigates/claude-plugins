@@ -125,7 +125,7 @@ jobs:
 
 ## Turn Budget
 
-`maxTurns: 15` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 12 of 15), stop configuring and deliver the report in the Output Format below. Report the files created or updated, and mark the Validation line **Not verified** for any workflow you did not check. Name any trigger or job you left unconfigured.
+`maxTurns: 15` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 12 of 15), stop configuring and deliver the report in the Output Format below. Report the files created or updated, and mark the Validation line **Not verified** for any workflow you did not check. Name any trigger or job you left unconfigured.
 
 **Callers**: this agent has 15 turns. Scope a brief to one pipeline; split a multi-pipeline setup across agents.
 
