@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.14.0...workflow-orchestration-plugin-v1.14.1) (2026-10-22)
+
+
+### Documentation
+
+* **repo:** drop phantom skill rows from plugin READMEs and gate them in check-docs-index ([#3159](https://github.com/laurigates/claude-plugins/issues/3159)) ([fcdefa7](https://github.com/laurigates/claude-plugins/commit/fcdefa7e890e578770da63858f8f5cb3e303a92d)), closes [#3149](https://github.com/laurigates/claude-plugins/issues/3149)
+
 ## [1.14.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.13.4...workflow-orchestration-plugin-v1.14.0) (2026-10-17)
 
 
