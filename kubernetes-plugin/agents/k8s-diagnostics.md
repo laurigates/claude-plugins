@@ -9,7 +9,7 @@ skills:
   - kubernetes-debugging
 maxTurns: 20
 created: 2026-01-24
-modified: 2026-06-18
+modified: 2026-10-22
 reviewed: 2026-06-18
 ---
 
@@ -86,6 +86,12 @@ kubectl get networkpolicy -n <ns> -o wide 2>&1
 | OOMKilled | Memory limit exceeded | Resource limits, app memory usage |
 | Evicted | Node pressure | Node conditions, pod priority |
 | CreateContainerError | Config/secret missing | Volumes, configmaps, secrets |
+
+## Turn Budget
+
+`maxTurns: 20` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 16 of 20), stop running diagnostics and deliver the report in the Output Format below. State the Root Cause as **Suspected (not confirmed)** when the evidence does not prove it, list only the evidence you actually collected, and name the resources, namespaces or checks you did not reach as **Not verified**.
+
+**Callers**: this agent has 20 turns. Hand over one failing workload or namespace per agent; split a broad cluster sweep.
 
 ## Output Format
 
