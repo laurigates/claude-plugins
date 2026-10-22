@@ -47,8 +47,13 @@ GS="evaluate-plugin/golden-set.json"
 
 issue_count=0
 findings=""
-note() { issue_count=$((issue_count + 1)); findings="${findings}  - SEVERITY=ERROR TYPE=$1 MSG=$2
-"; }
+first_finding=""
+note() {
+  issue_count=$((issue_count + 1))
+  [ -n "$first_finding" ] || first_finding="$1: $2"
+  findings="${findings}  - SEVERITY=ERROR TYPE=$1 MSG=$2
+"
+}
 
 wf_present=false
 gs_present=false
@@ -89,9 +94,16 @@ echo "GOLDEN_SET_PRESENT=$gs_present"
 echo "CANARIES_TOTAL=$total"
 echo "CANARIES_EVAL_READY=$ready"
 echo "COVERAGE_FLOOR=$floor"
+if [ "$issue_count" -gt 0 ]; then
+  # REASON= is the first finding as `<TYPE>: <MSG>`, one line, cut to 180
+  # chars, plus ` (+N more)` (.claude/rules/structured-script-output.md, #2760).
+  reason="$(printf '%s' "$first_finding" | tr -s '[:space:]' ' ' | cut -c1-180)"
+  [ "$issue_count" -gt 1 ] && reason="$reason (+$((issue_count - 1)) more)"
+fi
 echo "ISSUE_COUNT=$issue_count"
 if [ "$issue_count" -gt 0 ]; then
   echo "STATUS=ERROR"
+  echo "REASON=$reason"
   echo "ISSUES:"
   printf '%s' "$findings"
 else

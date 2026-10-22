@@ -47,6 +47,14 @@ emit_section() {
   echo "PLUGINS_CHANGED=$1"
   echo "PLUGINS_MISSING_README_UPDATE=$2"
   echo "STATUS=$3"
+  if [ "$3" != "OK" ]; then
+    # REASON= is the first finding as `<TYPE>: <MSG>`, one line, cut to 180
+    # chars, plus ` (+N more)` (.claude/rules/structured-script-output.md, #2760).
+    local rd_reason
+    rd_reason="$(printf 'readme_not_updated: %s' "${5:-}" | tr -s '[:space:]' ' ' | cut -c1-180)"
+    [ "$2" -gt 1 ] && rd_reason="$rd_reason (+$(($2 - 1)) more)"
+    echo "REASON=$rd_reason"
+  fi
   echo "ISSUE_COUNT=$2"
 }
 
@@ -118,7 +126,12 @@ if [ "$issue_count" -gt 0 ]; then
   done < <(printf '%s\n' "${nudges[@]}" | sort)
 fi
 
-emit_section "$plugins_changed" "$issue_count" "$overall_status"
+first_nudge=""
+if [ "$issue_count" -gt 0 ]; then
+  first_nudge="$(printf '%s\n' "${nudges[@]}" | sort | head -n 1)"
+  first_nudge="${first_nudge%%|*}: README.md not staged"
+fi
+emit_section "$plugins_changed" "$issue_count" "$overall_status" "" "$first_nudge"
 if [ "$issue_count" -gt 0 ]; then
   echo "ISSUES:"
   while IFS='|' read -r plugin_name first_path; do

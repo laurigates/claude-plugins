@@ -148,6 +148,18 @@ status="OK"
 echo "=== GIT SANDBOX GUARDS ==="
 echo "SCRIPTS_SCANNED=${#scripts[@]}"
 echo "STATUS=$status"
+if [ "$issue_count" -gt 0 ]; then
+    # REASON= is the first finding as `<FILE>:<LINE>: <MSG>` (rows carry no TYPE),
+    # one line, cut to 180 chars, plus ` (+N more)`
+    # (.claude/rules/structured-script-output.md, #2760).
+    first_file="${issues[0]#*FILE=}"
+    first_file="${first_file%% *}"
+    first_line="${issues[0]#*LINE=}"
+    first_line="${first_line%% *}"
+    reason="$(printf '%s:%s: %s' "$first_file" "$first_line" "${issues[0]#*MSG=}" | tr -s '[:space:]' ' ' | cut -c1-180)"
+    [ "$issue_count" -gt 1 ] && reason="$reason (+$((issue_count - 1)) more)"
+    echo "REASON=$reason"
+fi
 echo "ISSUE_COUNT=$issue_count"
 if [ "$issue_count" -gt 0 ]; then
     echo "ISSUES:"

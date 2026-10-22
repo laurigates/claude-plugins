@@ -5,12 +5,6 @@
 # from missing_reason, and reports an ERROR for any entry that now emits REASON=
 # or is no longer a STATUS= emitter, so this list can only shrink. Delete a
 # line in the same commit that migrates the script. Rollout: #2760.
-scripts/check-git-sandbox-guards.sh
-scripts/check-golden-set-coverage.sh
-scripts/check-hook-cue-skill-refs.sh
-scripts/check-issue-template-inheritance.sh
-scripts/check-loop-integrity.sh
-scripts/check-plugin-readme-currency.sh
 scripts/check-prose-house-style.sh
 scripts/check-research-radar-grounding.sh
 scripts/check-routine-prompt.sh

@@ -225,6 +225,13 @@ echo "SECURITY_LINK=$security_link"
 echo "QA_LINK=$qa_link"
 if [ ${#issues[@]} -gt 0 ]; then
   echo "STATUS=ERROR"
+  # REASON= is the first finding as `<TYPE>: <MSG>`, one line, cut to 180
+  # chars, plus ` (+N more)` (.claude/rules/structured-script-output.md, #2760).
+  first_type="${issues[0]#*TYPE=}"
+  first_type="${first_type%% *}"
+  reason="$(printf '%s: %s' "$first_type" "${issues[0]#*MSG=}" | tr -s '[:space:]' ' ' | cut -c1-180)"
+  [ ${#issues[@]} -gt 1 ] && reason="$reason (+$((${#issues[@]} - 1)) more)"
+  echo "REASON=$reason"
 else
   echo "STATUS=OK"
 fi

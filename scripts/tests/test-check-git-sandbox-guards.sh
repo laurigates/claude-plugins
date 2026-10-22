@@ -173,6 +173,24 @@ printf '{"hooks":{"PreToolUse":[{"hooks":[{"type":"command","command":"bash hook
   > "$d16/git-plugin/hooks/hooks.json"
 assert_count "test-*.sh registered in another plugin's hooks.json is not flagged" 0 "$d16"
 
+# 17. REASON= on ERROR names the first finding; absent on OK; both outputs satisfy
+#     the structured-output contract (#2760).
+CONTRACT="$SCRIPT_DIR/check-structured-output-contract.sh"
+assert_true() {
+  if [ "$2" = "true" ]; then printf "  PASS: %s\n" "$1"; PASS=$((PASS + 1)); else
+    printf "  FAIL: %s\n" "$1"; FAIL=$((FAIL + 1)); fi
+}
+out_bad="$(bash "$LINTER" "$d6" 2>&1)"
+out_ok="$(bash "$LINTER" "$d2" 2>&1)"
+grep -q '^REASON=.*unguarded mktemp -d.* (+1 more)$' <<<"$out_bad" && r=true || r=false
+assert_true "ERROR output carries a bounded REASON= with the (+N more) suffix" "$r"
+grep -q '^REASON=' <<<"$out_ok" && r=false || r=true
+assert_true "OK output carries no REASON=" "$r"
+printf '%s\n' "$out_bad" | bash "$CONTRACT" --validate - >/dev/null 2>&1 && r=true || r=false
+assert_true "ERROR output satisfies the structured-output contract" "$r"
+printf '%s\n' "$out_ok" | bash "$CONTRACT" --validate - >/dev/null 2>&1 && r=true || r=false
+assert_true "OK output satisfies the structured-output contract" "$r"
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ] && exit 0 || exit 1

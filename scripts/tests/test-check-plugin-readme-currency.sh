@@ -141,6 +141,17 @@ assert_has "I: unset seam nudges on the staged skill" "$out_i2" "STATUS=WARN"
 
 rm -rf "$sandbox"
 
+# --- TEST J: REASON= on WARN, absent on OK, both contract-valid (#2760) --------
+# The human NUDGE prose precedes the block, so validate from the section header.
+contract="$script_dir/check-structured-output-contract.sh"
+block() { sed -n '/^=== PLUGIN README CURRENCY ===$/,$p' <<<"$1"; }
+valid() { block "$1" | bash "$contract" --validate - >/dev/null 2>&1; }
+out_j="$(run $'alpha-plugin/skills/a/SKILL.md\nbeta-plugin/agents/b.md')"
+assert_has "J: WARN names the first finding (sorted) in REASON=" "$out_j" "^REASON=readme_not_updated: alpha-plugin: README.md not staged (+1 more)$"
+if valid "$out_j"; then ok "J: WARN output satisfies the structured-output contract"; else ko "J: WARN output satisfies the structured-output contract"; fi
+assert_lacks "J: OK output carries no REASON=" "$out_b" "^REASON="
+if valid "$out_b"; then ok "J: OK output satisfies the structured-output contract"; else ko "J: OK output satisfies the structured-output contract"; fi
+
 echo
 echo "=== check-plugin-readme-currency: $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

@@ -98,12 +98,18 @@ out="$(bash "$CHECK" --project-dir "$fx/b" 2>&1)"; rc=$?
 assert "B exits 1" "$([ $rc -eq 1 ] && echo true || echo false)"
 assert "B names the regression" "$(has "$out" 'coverage_below_floor')"
 assert "B quotes both numbers" "$(has "$out" '1 of 16')"
+CONTRACT="$repo_root/scripts/check-structured-output-contract.sh"
+valid() { printf '%s\n' "$1" | bash "$CONTRACT" --validate - >/dev/null 2>&1 && echo true || echo false; }
+assert "B REASON= names the first finding" "$(hasline "$out" 'REASON=coverage_below_floor: 1 of 16 canaries carry an evals.json, below the declared floor of 3')"
+assert "B ERROR output satisfies the contract" "$(valid "$out")"
 
 # Guard integrity: the SAME fixture at a floor it meets must pass, so B's
 # failure is attributable to the floor and not to the fixture being broken.
 stage b_ok 1 1
 out="$(bash "$CHECK" --project-dir "$fx/b_ok" 2>&1)"; rc=$?
 assert "B a met floor passes" "$([ $rc -eq 0 ] && echo true || echo false)"
+assert "B OK output carries no REASON=" "$([ "$(has "$out" 'REASON=')" = false ] && echo true || echo false)"
+assert "B OK output satisfies the contract" "$(valid "$out")"
 
 # --- C: an undeclared floor is an error -------------------------------------
 # Undeclared intent is unauditable (.claude/rules/generated-fleet-drift.md).
