@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-10-13
+modified: 2026-10-22
 reviewed: 2026-05-14
 description: Check and configure MCP servers for project integration. Use when setting up MCP servers, checking MCP status, or adding new servers to a project.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
@@ -146,3 +146,4 @@ After configuring `.mcp.json`, use these `/mcp` commands in Claude Code to manag
 - **Missing env var**: Warn but continue (server may work with defaults)
 - **Unknown server**: Report error with available server names
 - **Managed settings restrict MCP servers to plugins**: `claude mcp add` refuses and says what to do (2.1.284); before that it reported success and saved a server that never loaded. Report the restriction instead of adding the server another way
+- **Settings-file approval lists**: write `enabledMcpjsonServers` / `disabledMcpjsonServers` as arrays; a string value voided the whole settings file before 2.1.299. Client behaviors behind other MCP symptoms (redirects, protocol negotiation, schema rejection): `agent-patterns-plugin:mcp-management` REFERENCE.md
