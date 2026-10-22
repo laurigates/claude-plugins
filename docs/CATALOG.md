@@ -98,7 +98,7 @@
 |--------|-------:|-------:|-------------|
 | [hooks-plugin](../hooks-plugin/) | 4 | 0 | Claude Code hooks for enforcing best practices and workflow automation |
 | [taskwarrior-plugin](../taskwarrior-plugin/) | 9 | 0 | Coordination layer for multi-agent work using taskwarrior - parallel-safe queries, urgency scoring, and optional GitHub linkage via ghid/ghpr UDAs |
-| [workflow-orchestration-plugin](../workflow-orchestration-plugin/) | 6 | 0 | Workflow orchestration - parallel agents, CI pipelines, preflight checks, checkpoint refactoring |
+| [workflow-orchestration-plugin](../workflow-orchestration-plugin/) | 6 | 0 | Workflow orchestration - preflight checks, checkpoint refactoring, wave dispatch, run recovery and budgeting |
 
 ## Utilities
 

@@ -1,6 +1,6 @@
 # workflow-orchestration-plugin
 
-Workflow orchestration patterns for parallel agents, CI pipelines, preflight checks, and checkpoint-based refactoring. Addresses common friction in multi-branch operations, permission restrictions, and context limits.
+Workflow orchestration patterns for preflight checks, checkpoint-based refactoring, sequential-wave agent dispatch, and Workflow run recovery and budgeting. Addresses common friction in multi-branch operations, permission restrictions, and context limits.
 
 ## Flow
 
@@ -11,11 +11,16 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of the preflight → checkpoint
 | Skill | Command | Description |
 |-------|---------|-------------|
 | workflow-preflight | `/workflow:preflight` | Pre-work validation: check remote state, existing PRs, branch conflicts |
-| workflow-parallel-issues | `/workflow:parallel-issues` | Process multiple GitHub issues in parallel with worktree isolation |
-| workflow-ci-fix-pipeline | `/workflow:ci-fix` | Autonomous CI failure diagnosis and fix across PRs |
 | workflow-checkpoint-refactor | `/workflow:checkpoint-refactor` | Multi-phase refactoring with persistent state across sessions |
 | workflow-interrupted-run-recovery | — | Recover a `Workflow` run killed mid-flight: salvage killed agents' worktrees, resume without duplicating PRs the completed agents opened |
 | workflow-scale-budget | — | Size a `Workflow` script's agent count before running it: cost per agent, per-item multipliers, theme grouping, re-drive design. `scripts/workflow-run-tally.sh` tallies a finished run's realised agents and tokens from its transcripts, and a session's total across its runs |
+| workflow-verify-before-filing | `/workflow:verify-before-filing` | Verify accumulated bug claims at upstream HEAD and dedup against trackers before filing issues |
+| workflow-wave-dispatch | — | Sequential-wave dispatch for multi-agent work with cross-task dependencies, gating each wave on verification |
+
+Parallel issue processing and the CI-fix pipeline moved out of this plugin:
+
+- **Parallel issues** (formerly `/workflow:parallel-issues`) → `/git:issue --parallel` (git-plugin): issue to PR end-to-end, several issues at once.
+- **CI fix** (formerly `/workflow:ci-fix`) → `/git:fix-pr` (git-plugin) to fix a PR's failing checks; `/github:workflow-auto-fix` (github-actions-plugin) to set up a CI workflow that fixes failures automatically.
 
 ## Usage
 
@@ -26,25 +31,6 @@ Run before starting any implementation work:
 ```
 /workflow:preflight 42
 /workflow:preflight feat/new-feature
-```
-
-### Parallel Issue Processing
-
-Process multiple issues simultaneously:
-
-```
-/workflow:parallel-issues 12 15 23
-/workflow:parallel-issues --all-open
-/workflow:parallel-issues --label=bug
-```
-
-### CI Fix Pipeline
-
-Fix failing CI checks across PRs:
-
-```
-/workflow:ci-fix 45
-/workflow:ci-fix --failing
 ```
 
 ### Checkpoint Refactoring
@@ -63,11 +49,10 @@ Large refactors that survive context limits:
 These skills were designed based on analysis of common workflow friction:
 
 1. **Push delegation**: Sub-agents never push directly; the orchestrator handles all push/PR operations sequentially to avoid TLS errors and sandbox blocks
-2. **Worktree isolation**: Parallel agents always work in isolated worktrees to prevent branch conflicts
+2. **Worktree isolation**: Parallel agents work in isolated worktrees to prevent branch conflicts
 3. **Preflight validation**: Check remote state before starting work to avoid redundant effort
 4. **Persistent state**: Large refactors write progress to plan files so work survives context limits and session boundaries
-5. **Error recovery**: Every workflow includes recovery patterns for common failure modes
-6. **Body-file for PRs**: PR bodies are written to temp files to avoid heredoc escaping issues
+5. **Error recovery**: Interrupted `Workflow` runs and failed phases have documented recovery patterns
 
 ## Related Plugins
 

@@ -31,6 +31,10 @@
 #   J. only first-cell rows inside CLAUDE.md's `## Rules` section index a rule:
 #      a row stranded under another heading is flagged rule_not_indexed, and a
 #      prose mention elsewhere is NOT flagged rule_table_dangling (#2838 A-5)
+#   K. a plugin README skill table whose bare-name leading cell names no skill
+#      directory is flagged (ERROR readme_table_row_dangling); a row that
+#      resolves, a row under a "Planned" heading, and a non-skill table (Agent
+#      header) are NOT flagged (#3149)
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -415,6 +419,62 @@ assert "a prose mention outside the Rules table should NOT be flagged rule_table
 assert "RULES_IN_TABLE should count only the in-section row (1)" \
   "$([ "$(field "$rules_fx_out" RULES_IN_TABLE)" = "1" ] && echo true || echo false)"
 rm -rf "$rules_fx"
+
+echo "=== TEST K: README skill-table leading cells resolve to a directory (#3149) ==="
+tbl_fx="$(mktemp -d)"
+mkdir -p "$tbl_fx/.claude/rules" "$tbl_fx/zeta-plugin/skills/zeta-real" \
+  "$tbl_fx/zeta-plugin/skills/zeta-ground-short"
+printf '# stub\n' > "$tbl_fx/zeta-plugin/skills/zeta-real/SKILL.md"
+printf '# stub\n' > "$tbl_fx/zeta-plugin/skills/zeta-ground-short/SKILL.md"
+cat > "$tbl_fx/zeta-plugin/README.md" <<'EOF2'
+# zeta-plugin
+
+## Skills
+
+| Skill | Command | Description |
+|-------|---------|-------------|
+| zeta-real | `/zeta:real` | exists |
+| `zeta-phantom` | `/zeta:phantom` | no directory |
+| zeta-short | — | shorthand for nothing |
+| ground-short | — | shorthand for the longer zeta-ground-short dir |
+| zeta-ground-short | `/zeta:ground-short` | exists |
+
+## Planned Skills
+
+| Skill | Purpose |
+|-------|---------|
+| `zeta-future` | declared intent, not presence |
+
+## Agents
+
+| Agent | Description |
+|-------|-------------|
+| `zeta-agent` | not a skill table |
+EOF2
+tbl_out="$(bash "$checker" --project-dir "$tbl_fx")"
+assert "a phantom skill-table row should be flagged readme_table_row_dangling" \
+  "$(contains "$tbl_out" "readme_table_row_dangling.*zeta-phantom")"
+assert "a shorthand skill-table row should be flagged" \
+  "$(contains "$tbl_out" "readme_table_row_dangling.*zeta-short")"
+assert "a shorthand whose longer-named dir exists should be flagged (exact match, not suffix)" \
+  "$(contains "$tbl_out" "readme_table_row_dangling.*lists ground-short ")"
+assert "the full-name row for that dir should NOT be flagged" \
+  "$([ "$(contains "$tbl_out" "readme_table_row_dangling.*lists zeta-ground-short ")" = "false" ] && echo true || echo false)"
+assert "a resolving row should NOT be flagged" \
+  "$([ "$(contains "$tbl_out" "readme_table_row_dangling.*zeta-real")" = "false" ] && echo true || echo false)"
+assert "a row under a Planned heading should NOT be flagged" \
+  "$([ "$(contains "$tbl_out" "zeta-future")" = "false" ] && echo true || echo false)"
+assert "an Agent table should NOT be flagged" \
+  "$([ "$(contains "$tbl_out" "zeta-agent")" = "false" ] && echo true || echo false)"
+assert "readme_table_row_dangling must be ERROR so --strict gates it" \
+  "$(contains "$tbl_out" "SEVERITY=ERROR TYPE=readme_table_row_dangling")"
+assert "README_TABLE_ROWS should count the 5 scanned rows" \
+  "$([ "$(field "$tbl_out" README_TABLE_ROWS)" = "5" ] && echo true || echo false)"
+bash "$checker" --project-dir "$tbl_fx" --strict >/dev/null 2>&1
+strict_rc=$?
+assert "--strict should exit 1 on a phantom skill-table row" \
+  "$([ "$strict_rc" = "1" ] && echo true || echo false)"
+rm -rf "$tbl_fx"
 
 echo "=== TEST R: REASON= on the non-OK path (#2760) ==="
 contract="$repo_root/scripts/check-structured-output-contract.sh"
