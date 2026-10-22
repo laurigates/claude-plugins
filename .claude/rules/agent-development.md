@@ -1,6 +1,6 @@
 ---
 created: 2026-02-25
-modified: 2026-10-18
+modified: 2026-10-22
 reviewed: 2026-09-23
 paths:
   - "**/agents/**"
@@ -95,7 +95,7 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
 | `isolation` | string | No | `worktree` to run agent in an isolated git worktree |
 | `color` | string | No | Hex color for UI display |
 | `permissionMode` | string | No | `default`, `acceptEdits`, `dontAsk`, `bypassPermissions`, or `plan`. Before 2.1.292, `auto` entered auto mode even where auto mode was unavailable (disabled by settings, circuit breaker, or an unsupported model) |
-| `maxTurns` | number | No | Maximum agentic turns before agent stops |
+| `maxTurns` | number | No | Maximum agentic turns before agent stops. The cap ends the run with no report, so an agent that sets it needs a `## Turn Budget` section (stop at about 80%, deliver the report, mark unfinished work Not verified); `scripts/check-agent-turn-budget.sh` enforces it (#3152) |
 | `background` | bool | No | Set `true` to always run as a background task |
 | `memory` | string | No | Persistent memory scope: `user`, `project`, or `local` |
 | `skills` | list | No | Skill names to preload into agent context at startup; at most 32, each once (2.1.295) |
@@ -370,6 +370,7 @@ claude --agents '{"my-agent": {"description": "...", "prompt": "...", "tools": [
 - [ ] `isolation: worktree` added if agent needs filesystem-level git isolation
 - [ ] `permissionMode` set if non-default permission behavior is needed
 - [ ] `maxTurns` set if agent should be bounded
+- [ ] `## Turn Budget` section if `maxTurns` is set: names `maxTurns: <N>`, stops investigating at about 80%, delivers the report in the agent's own output format (`scripts/check-agent-turn-budget.sh`)
 - [ ] `memory` scope set if agent needs cross-session persistence
 - [ ] `skills` list populated if agent needs specific domain knowledge preloaded
 - [ ] `## Team Configuration` section documents teammate vs subagent recommendation

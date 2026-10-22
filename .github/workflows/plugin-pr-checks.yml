@@ -272,8 +272,9 @@ jobs:
         # not trigger it.
         run: bash scripts/check-evals-abstention.sh
 
-      - name: Check every plugin agent runs on opus
-        # Whole-repo invariant (every plugin agent must run on opus). Runs
+      - name: Check every plugin agent model is a valid task-shape tier
+        # Whole-repo invariant (every plugin agent declares a task-shape tier: opus,
+        # fable, sonnet with an explicit effort, or the lean haiku reader). Runs
         # unconditionally like the docs-index check below — the lint is cheap
         # and the self-test step above proves the guard before it gates the tree.
         run: bash scripts/check-agent-model.sh
