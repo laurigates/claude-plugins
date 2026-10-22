@@ -19,19 +19,13 @@
 #   - names the `80%` threshold, and
 #   - tells the agent to deliver a report.
 #
-# Rollout ratchet: scripts/agent-turn-budget-pending.txt lists agents (repo
-# relative paths) that set maxTurns but do not carry the section yet. A listed
-# agent is exempt; an entry that now complies, or that no longer exists or no
-# longer sets maxTurns, is itself an ERROR, so the list only shrinks. Test seam:
-# AGENT_TURN_BUDGET_PENDING overrides the list's path.
-#
 # Usage:
 #   bash scripts/check-agent-turn-budget.sh [--project-dir <path>]
 #
 # Output: structured KEY=VALUE per .claude/rules/structured-script-output.md.
 #
 # Exit codes:
-#   0 - every agent with maxTurns carries the section (or is pending)
+#   0 - every agent with maxTurns carries the section
 #   1 - one or more findings (STATUS=ERROR)
 #   2 - usage error, or discovery misfired (plugin dirs present, zero agents)
 
@@ -57,8 +51,6 @@ if [ -z "$proj_dir" ]; then
   proj_dir="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 fi
 proj_dir="$(cd "$proj_dir" && pwd)"
-
-pending_file="${AGENT_TURN_BUDGET_PENDING:-$proj_dir/scripts/agent-turn-budget-pending.txt}"
 
 # Discovery runs from INSIDE proj_dir against RELATIVE paths (#2219): an absolute
 # base would let the `*/.claude/worktrees/*` prune match the scan root itself
@@ -103,24 +95,6 @@ turn_budget_section() {
        insec { print }' "$1"
 }
 
-# Read the pending list: one repo-relative path per line, `#` comments allowed.
-pending=()
-if [ -f "$pending_file" ]; then
-  while IFS= read -r line; do
-    line="${line%%#*}"
-    line="$(printf '%s' "$line" | tr -d '\r' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
-    [ -n "$line" ] && pending+=("${line#./}")
-  done < "$pending_file"
-fi
-
-is_pending() {
-  local candidate="$1" entry
-  for entry in ${pending[@]+"${pending[@]}"}; do
-    [ "$entry" = "$candidate" ] && return 0
-  done
-  return 1
-}
-
 issue_count=0
 findings=""
 first_reason=""
@@ -135,13 +109,10 @@ add_issue() {
 scanned=${#agent_files[@]}
 with_limit=0
 compliant=0
-pending_hit=0
-declare -A seen_limit=()
 
 for agent_file in ${agent_files[@]+"${agent_files[@]}"}; do
   turns="$(frontmatter_turns "$agent_file")"
   [ -n "$turns" ] || continue
-  seen_limit["$agent_file"]=1
   with_limit=$((with_limit + 1))
 
   problem=""
@@ -161,14 +132,6 @@ for agent_file in ${agent_files[@]+"${agent_files[@]}"}; do
     problem="turn_budget_no_report|section does not tell the agent to deliver a report"
   fi
 
-  if is_pending "$agent_file"; then
-    pending_hit=$((pending_hit + 1))
-    if [ -z "$problem" ]; then
-      add_issue pending_now_compliant "$agent_file" "now carries a valid Turn Budget section; delete it from scripts/agent-turn-budget-pending.txt"
-    fi
-    continue
-  fi
-
   if [ -n "$problem" ]; then
     add_issue "${problem%%|*}" "$agent_file" "${problem#*|}"
   else
@@ -176,18 +139,10 @@ for agent_file in ${agent_files[@]+"${agent_files[@]}"}; do
   fi
 done
 
-# Ratchet: a pending entry must still name an agent that sets maxTurns.
-for entry in ${pending[@]+"${pending[@]}"}; do
-  if [ -z "${seen_limit[$entry]:-}" ]; then
-    add_issue pending_stale "$entry" "listed as pending but is not an agent file that sets maxTurns; delete it from scripts/agent-turn-budget-pending.txt"
-  fi
-done
-
 echo "=== AGENT TURN BUDGET ==="
 echo "AGENT_FILES_SCANNED=$scanned"
 echo "AGENTS_WITH_MAXTURNS=$with_limit"
 echo "AGENTS_COMPLIANT=$compliant"
-echo "AGENTS_PENDING=$pending_hit"
 if [ "$scanned" -eq 0 ]; then echo "SCANNED_EMPTY=true"; else echo "SCANNED_EMPTY=false"; fi
 echo "ISSUE_COUNT=$issue_count"
 if [ "$issue_count" -gt 0 ]; then

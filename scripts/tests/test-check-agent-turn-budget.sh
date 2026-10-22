@@ -15,11 +15,9 @@
 #   E. a section with no 80% threshold fails; one with no report instruction fails
 #   F. an agent that sets no maxTurns is not scanned for the section
 #   G. a heading inside a code fence does not count as the section
-#   H. the pending ratchet: a listed agent is exempt; a listed agent that now
-#      complies fails; a listed path that is not a maxTurns agent fails
-#   I. a worktree-shaped scan root still scans (#2219 class)
-#   J. an unknown argument exits 2
-#   K. every failing and passing output satisfies the structured-output contract
+#   H. a worktree-shaped scan root still scans (#2219 class)
+#   I. an unknown argument exits 2
+#   J. every failing and passing output satisfies the structured-output contract
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -99,7 +97,7 @@ assert "A output satisfies the contract" "$(validates "$out")"
 # Guard integrity: a checker that scanned nothing also prints STATUS=OK.
 assert "A is not SCANNED_EMPTY" "$(contains "$out" 'SCANNED_EMPTY=false')"
 n_compliant="$(sed -n 's/^AGENTS_COMPLIANT=//p' <<<"$out")"
-assert "A found compliant agents (>= 13: all of agents-plugin)" "$([ "${n_compliant:-0}" -ge 13 ] && echo true || echo false)"
+assert "A found compliant agents (>= 22: every agent with a maxTurns limit)" "$([ "${n_compliant:-0}" -ge 22 ] && echo true || echo false)"
 assert "A review.md is among the agents with a limit" "$([ -f "$repo_root/agents-plugin/agents/review.md" ] && grep -q '^## Turn Budget$' "$repo_root/agents-plugin/agents/review.md" && echo true || echo false)"
 
 # --- TEST B: compliant fixture --------------------------------------------------
@@ -179,50 +177,26 @@ out="$(bash "$checker" --project-dir "$r" 2>&1)"; rc=$?
 assert "G fenced heading exits 1" "$(is_true "$([ $rc -eq 1 ] && echo true)")"
 assert "G TYPE=missing_turn_budget" "$(contains "$out" 'TYPE=missing_turn_budget')"
 
-# --- TEST H: pending ratchet -----------------------------------------------------------
-echo "=== TEST H: pending ratchet ==="
-r="$(new_root)"
-make_agent "$r" legacy 20 "-"
-make_agent "$r" alpha 25 "$(good_body 25)"
-pend="$r/pending.txt"
-printf '# comment\ndemo-plugin/agents/legacy.md\n' > "$pend"
-out="$(AGENT_TURN_BUDGET_PENDING="$pend" bash "$checker" --project-dir "$r" 2>&1)"; rc=$?
-assert "H pending agent is exempt (exit 0)" "$(is_true "$([ $rc -eq 0 ] && echo true)")"
-assert "H pending agent counted" "$(contains "$out" 'AGENTS_PENDING=1')"
-assert "H exempt run satisfies the contract" "$(validates "$out")"
-# Without the list the same agent fails: the exemption is the list, nothing else.
-out="$(bash "$checker" --project-dir "$r" 2>&1)"; rc=$?
-assert "H unlisted agent fails" "$(is_true "$([ $rc -eq 1 ] && contains "$out" 'demo-plugin/agents/legacy.md')")"
-# A listed agent that now complies must leave the list.
-printf 'demo-plugin/agents/alpha.md\n' > "$pend"
-out="$(AGENT_TURN_BUDGET_PENDING="$pend" bash "$checker" --project-dir "$r" 2>&1)"; rc=$?
-assert "H compliant pending entry fails" "$(is_true "$([ $rc -eq 1 ] && contains "$out" 'TYPE=pending_now_compliant')")"
-assert "H ratchet failure satisfies the contract" "$(validates "$out")"
-# A listed path that is not a maxTurns agent is stale.
-printf 'demo-plugin/agents/gone.md\n' > "$pend"
-out="$(AGENT_TURN_BUDGET_PENDING="$pend" bash "$checker" --project-dir "$r" 2>&1)"; rc=$?
-assert "H stale pending entry fails" "$(is_true "$([ $rc -eq 1 ] && contains "$out" 'TYPE=pending_stale')")"
-
-# --- TEST I: worktree-shaped scan root (#2219 class) -------------------------------------
-echo "=== TEST I: scan root that is itself an agent worktree ==="
+# --- TEST H: worktree-shaped scan root (#2219 class) -------------------------------------
+echo "=== TEST H: scan root that is itself an agent worktree ==="
 wt_root="$tmp_root/.claude/worktrees/agent-fixture"
 mkdir -p "$wt_root"
 make_agent "$wt_root" alpha 25 "$(good_body 25)"
 out="$(bash "$checker" --project-dir "$wt_root" 2>&1)"; rc=$?
-assert "I exits 0" "$(is_true "$([ $rc -eq 0 ] && echo true)")"
-assert "I scanned the agent despite the worktree-shaped root" "$(contains "$out" 'AGENT_FILES_SCANNED=1')"
+assert "H exits 0" "$(is_true "$([ $rc -eq 0 ] && echo true)")"
+assert "H scanned the agent despite the worktree-shaped root" "$(contains "$out" 'AGENT_FILES_SCANNED=1')"
 
-# --- TEST J: unknown argument ---------------------------------------------------------------
-echo "=== TEST J: unknown argument ==="
+# --- TEST I: unknown argument ---------------------------------------------------------------
+echo "=== TEST I: unknown argument ==="
 out="$(bash "$checker" --bogus 2>&1)"; rc=$?
-assert "J exits 2" "$(is_true "$([ $rc -eq 2 ] && echo true)")"
-assert "J names the argument" "$(contains "$out" 'unknown argument: --bogus')"
+assert "I exits 2" "$(is_true "$([ $rc -eq 2 ] && echo true)")"
+assert "I names the argument" "$(contains "$out" 'unknown argument: --bogus')"
 
-# --- TEST K: the failing fixture, piped explicitly through --validate -----------------------
-echo "=== TEST K: contract validation of the failing fixture ==="
+# --- TEST J: the failing fixture, piped explicitly through --validate -----------------------
+echo "=== TEST J: contract validation of the failing fixture ==="
 k_ok=false
 if printf '%s\n' "$failing_c" | bash "$contract" --validate >/dev/null 2>&1; then k_ok=true; fi
-assert "K failing fixture passes --validate" "$k_ok"
+assert "J failing fixture passes --validate" "$k_ok"
 
 echo ""
 echo "=== RESULTS ==="

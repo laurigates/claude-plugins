@@ -8,7 +8,7 @@ description: |
 tools: Glob, Grep, Read, Bash(npm test *), Bash(npm run test *), Bash(npx vitest *), Bash(npx jest *), Bash(yarn test *), Bash(bun test *), Bash(bun run test *), Bash(pytest *), Bash(python -m pytest *), Bash(cargo test *), Bash(go test *), Bash(just *), TodoWrite
 maxTurns: 12
 created: 2026-02-12
-modified: 2026-09-02
+modified: 2026-10-22
 reviewed: 2026-09-02
 ---
 
@@ -128,6 +128,12 @@ Append the test pattern to filter:
 | jest | `npx jest --bail --silent PATTERN` |
 | cargo test | `cargo test PATTERN -- --format=terse` |
 | go test | `go test -run PATTERN ./...` |
+
+## Turn Budget
+
+`maxTurns: 12` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 10 of 12), stop diagnosing and deliver the report in the Output Format below. Quote the runner's own summary line for what ran, list the failures you have diagnosed, and name the suites, files or failures you did not reach as **Not verified** under Next Steps. A run that did not finish is `## Test Results: NOT RUN`, never a zero-failure summary.
+
+**Callers**: this agent has 12 turns. Hand over one suite or project per agent; split a monorepo-wide run.
 
 ## Output Format
 

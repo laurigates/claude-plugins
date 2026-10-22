@@ -9,7 +9,7 @@ description: |
 tools: Read, Glob, Grep, Bash(cat *), Bash(jq *), Bash(wc *), Bash(find *), TodoWrite
 maxTurns: 15
 created: 2026-03-04
-modified: 2026-10-09
+modified: 2026-10-22
 reviewed: 2026-03-09
 ---
 
@@ -126,6 +126,12 @@ Flag assertions that are too weak:
   fabricates under pressure grades the same as one that refuses honestly
 
 Suggest stronger alternatives when possible.
+
+## Turn Budget
+
+`maxTurns: 15` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 12 of 15), stop gathering evidence and deliver `grading.json`. Grade every assertion from the evidence you have. For an assertion you did not reach, set `passed: false`, `confidence: "low"` and `evidence: "Not verified: ran out of turns before ..."` (an assertion passes only with medium or high confidence, so an unchecked one can never pass); do the same with `verified: false` for an unchecked claim, and say in `eval_feedback` that grading was cut short. Keep `summary.total` equal to the full assertion count.
+
+**Callers**: this agent has 15 turns. Hand over one eval run per agent; split a multi-run brief.
 
 ## Output Format
 
