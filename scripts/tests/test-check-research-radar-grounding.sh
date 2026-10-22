@@ -29,6 +29,7 @@ FAIL=0
 
 WORK=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 [ -n "$WORK" ] && [ -d "$WORK" ] || { echo "bad sandbox dir" >&2; exit 1; }
+WORK=$(cd -P -- "$WORK" && pwd -P) || { echo "cannot resolve" >&2; exit 1; }
 trap 'rm -rf "$WORK"' EXIT
 
 [ -f "$REAL_WORKFLOW" ] || { echo "missing $REAL_WORKFLOW" >&2; exit 1; }
@@ -104,6 +105,19 @@ assert_eq "re-introduced no-source-read clause is flagged" "1" "$(run_key "$regr
 empty="$WORK/empty"; mkdir -p "$empty"
 assert_eq "absent workflow reports WORKFLOW_PRESENT=false" "false" "$(run_key "$empty" WORKFLOW_PRESENT)"
 assert_eq "absent workflow flags all seven assertions" "7" "$(run_key "$empty" ISSUE_COUNT)"
+
+# 7b. REASON= contract (#2760): failing fixture names the first finding, passing
+#     one carries none, and both satisfy check-structured-output-contract.sh.
+CONTRACT="$REPO_ROOT/scripts/check-structured-output-contract.sh"
+out_fail="$(bash "$GUARD" "$no_ground" 2>&1)"
+out_ok="$(bash "$GUARD" "$clean" 2>&1)"
+assert_eq "failing fixture REASON= names the first finding" "yes" \
+  "$(grep -qF 'REASON=.github/workflows/research-radar.yml: research-radar prompt lost the per-paper grounding requirement' <<<"$out_fail" && echo yes || echo no)"
+assert_eq "passing fixture carries no REASON=" "0" "$(grep -c '^REASON=' <<<"$out_ok")"
+assert_eq "failing output satisfies the structured-output contract" "0" \
+  "$(printf '%s\n' "$out_fail" | bash "$CONTRACT" --validate - >/dev/null 2>&1; echo $?)"
+assert_eq "passing output satisfies the structured-output contract" "0" \
+  "$(printf '%s\n' "$out_ok" | bash "$CONTRACT" --validate - >/dev/null 2>&1; echo $?)"
 
 # 8. --strict exit codes.
 if bash "$GUARD" --strict "$clean" >/dev/null 2>&1; then

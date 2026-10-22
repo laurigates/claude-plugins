@@ -75,6 +75,17 @@ check "skewed pins -> ERROR" "$out" "STATUS=ERROR"
 check "skewed pins -> version_skew" "$out" "TYPE=version_skew"
 check "skewed pins -> exit 1" "$rc" "1"
 
+# REASON= contract (#2760): the failing fixture names its first finding, the
+# passing one carries none, and both satisfy check-structured-output-contract.sh.
+CONTRACT="$REPO_ROOT/scripts/check-structured-output-contract.sh"
+check "skewed pins -> REASON= names the first finding" "$out" "REASON=version_skew: "
+printf '%s\n' "$out" | bash "$CONTRACT" --validate - >/dev/null 2>&1
+check "skewed pins -> output satisfies the contract" "$?" "0"
+ok_out="$(bash "$GUARD" --project-dir "$tmp_root/match" 2>&1)"
+if [[ "$ok_out" == *"REASON="* ]]; then check "matching pins -> no REASON=" "has REASON" "no REASON"; else check "matching pins -> no REASON=" "ok" "ok"; fi
+printf '%s\n' "$ok_out" | bash "$CONTRACT" --validate - >/dev/null 2>&1
+check "matching pins -> output satisfies the contract" "$?" "0"
+
 # --- C) unpinned CI invocation ---------------------------------------------
 make_fixture "$tmp_root/unpinned" "v0.15.8" "uvx ruff"
 out="$(bash "$GUARD" --project-dir "$tmp_root/unpinned" --strict 2>&1)"

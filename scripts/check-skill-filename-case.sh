@@ -38,6 +38,11 @@ echo "ISSUE_COUNT=$issue_count"
 
 if [ "$issue_count" -gt 0 ]; then
   echo "STATUS=ERROR"
+  # REASON= is the first finding as `<TYPE>: <MSG>`, cut to 180 chars, plus
+  # ` (+N more)` (.claude/rules/structured-script-output.md, #2760).
+  reason="$(printf 'non_canonical_skill_filename: %s: rename to SKILL.md (case-sensitive)' "${offenders[0]}" | tr -s '[:space:]' ' ' | cut -c1-180)"
+  [ "$issue_count" -gt 1 ] && reason="$reason (+$((issue_count - 1)) more)"
+  echo "REASON=$reason"
   echo "ISSUES:"
   for f in "${offenders[@]}"; do
     echo "  - SEVERITY=ERROR FILE=$f MSG=rename to SKILL.md (case-sensitive); Claude Code will not load it on a case-sensitive filesystem"

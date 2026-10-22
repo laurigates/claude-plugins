@@ -5,12 +5,6 @@
 # from missing_reason, and reports an ERROR for any entry that now emits REASON=
 # or is no longer a STATUS= emitter, so this list can only shrink. Delete a
 # line in the same commit that migrates the script. Rollout: #2760.
-scripts/check-prose-house-style.sh
-scripts/check-research-radar-grounding.sh
-scripts/check-routine-prompt.sh
-scripts/check-ruff-version-sync.sh
-scripts/check-skill-filename-case.sh
-scripts/check-subagent-types.sh
 scripts/check-taskcompleted-verification.sh
 scripts/check-unrendered-templates.sh
 scripts/check-unused-bash-grant.sh
