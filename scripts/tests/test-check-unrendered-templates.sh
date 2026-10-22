@@ -332,6 +332,28 @@ assert "worktree-shaped root still flags the defect" "$([ "$RC" -eq 1 ] && echo 
 assert "worktree-shaped root did not report nothing_scanned" "$(lacks "$OUT" 'TYPE=nothing_scanned')"
 
 # --- Summary -----------------------------------------------------------------
+# --- TEST R: REASON= on the ERROR path, absent on OK, contract-valid (#2760) --
+echo "=== TEST R: REASON= emission ==="
+contract="$repo_root/scripts/check-structured-output-contract.sh"
+run "$fx_b"
+r_fail="$OUT"
+r_ok_dir="$(mktemp -d)"
+[ -n "$r_ok_dir" ] || { echo "mktemp failed" >&2; exit 1; }
+make_skill "$r_ok_dir/demo-plugin/skills/thing/SKILL.md" 'A clean skill with a table.'
+run "$r_ok_dir"
+r_pass="$OUT"
+rm -rf "$r_ok_dir"
+assert "failing fixture emits REASON= naming the type and first token" \
+  "$(grep -qE '^REASON=unrendered_template_conditional: .+SKILL\.md:[0-9]+ \{\{ if PROJECT_TYPE == "python" \}\} \(\+7 more\)$' <<<"$r_fail" && echo true || echo false)"
+assert "failing fixture emits exactly one REASON= line" \
+  "$([ "$(grep -c '^REASON=' <<<"$r_fail")" = "1" ] && echo true || echo false)"
+assert "passing fixture emits no REASON=" "$(lacks "$r_pass" 'REASON=')"
+assert "passing control reports STATUS=OK" "$(contains "$r_pass" 'STATUS=OK')"
+assert "failing output satisfies the structured-output contract" \
+  "$(printf '%s\n' "$r_fail" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false)"
+assert "passing output satisfies the structured-output contract" \
+  "$(printf '%s\n' "$r_pass" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false)"
+
 echo ""
 echo "Passed: $pass_count  Failed: $fail_count"
 [ "$fail_count" -eq 0 ]

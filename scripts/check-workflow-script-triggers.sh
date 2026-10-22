@@ -192,6 +192,17 @@ print(f"WORKFLOWS_SCANNED={workflows_scanned}")
 print(f"SCANNED_EMPTY={'true' if workflows_scanned == 0 else 'false'}")
 print(f"PATH_FILTERED_INVOCATIONS={invocations_total}")
 print(f"STATUS={status}")
+if rows:
+    # REASON= is the first finding at the reported severity as `<TYPE>: <MSG>`,
+    # one line, cut to 180 chars, plus ` (+N more)`
+    # (.claude/rules/structured-script-output.md, #2760).
+    first = next((r for r in rows if f"SEVERITY={status} " in r), rows[0])
+    rtype = first.split("TYPE=", 1)[1].split(" ", 1)[0]
+    rmsg = first.split("MSG=", 1)[1]
+    reason = " ".join(f"{rtype}: {rmsg}".split())[:180]
+    if len(rows) > 1:
+        reason += f" (+{len(rows) - 1} more)"
+    print(f"REASON={reason}")
 print(f"ISSUE_COUNT={len(rows)}")
 print(f"ERROR_COUNT={errors}")
 if rows:

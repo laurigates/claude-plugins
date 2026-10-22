@@ -94,8 +94,12 @@ VERIFIER_ID="none"
 VERIFIER_SOURCE="none"
 AGENT_PROMPT_COUNT=0
 
+# First finding as `<RULE>: <MSG>`, for REASON= (#2760).
+first_finding=""
+
 add_issue() {
     issue_count=$((issue_count + 1))
+    [ -n "$first_finding" ] || first_finding="$1: $2"
     issues+=("  - SEVERITY=ERROR PROMPT=$VERIFIER_ID RULE=$1 MSG=$2")
 }
 
@@ -111,6 +115,14 @@ emit() {
     echo "PROMPT_CHARS=${2:-0}"
     echo "RULES_CHECKED=${3:-0}"
     echo "STATUS=$status"
+    if [ "$issue_count" -gt 0 ]; then
+        # REASON= is the first finding, one line, cut to 180 chars, plus
+        # ` (+N more)` (.claude/rules/structured-script-output.md, #2760).
+        local reason
+        reason="$(printf '%s' "$first_finding" | tr -s '[:space:]' ' ' | cut -c1-180)"
+        [ "$issue_count" -gt 1 ] && reason="$reason (+$((issue_count - 1)) more)"
+        echo "REASON=$reason"
+    fi
     echo "ISSUE_COUNT=$issue_count"
     if [ "$issue_count" -gt 0 ]; then
         echo "ISSUES:"

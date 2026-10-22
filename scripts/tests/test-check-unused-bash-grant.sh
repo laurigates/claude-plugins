@@ -240,6 +240,24 @@ assert "G2 emits the section footer"  "$(grep -q '^=== END UNUSED BASH GRANT ===
 assert "G3 emits ISSUE_COUNT even when non-zero" "$(grep -q '^ISSUE_COUNT=' <<<"$OUT" && echo true || echo false)"
 assert "G4 emits an ISSUES: block when findings exist" "$(grep -q '^ISSUES:$' <<<"$OUT" && echo true || echo false)"
 
+##########
+# H. REASON= on the WARN path (#2760)
+##########
+echo "=== H: REASON= emission ==="
+contract="$repo_root/scripts/check-structured-output-contract.sh"
+run_check "$c"
+h_fail="$OUT"
+run_check "$empty"
+h_pass="$OUT"
+assert "H1 failing fixture is STATUS=WARN" "$(grep -q '^STATUS=WARN$' <<<"$h_fail" && echo true || echo false)"
+assert "H2 failing fixture emits one REASON= naming the type" \
+  "$([ "$(grep -c '^REASON=unused_bash_grant: ' <<<"$h_fail")" = "1" ] && echo true || echo false)"
+assert "H3 passing fixture emits no REASON=" "$(grep -q '^REASON=' <<<"$h_pass" && echo false || echo true)"
+assert "H4 failing output satisfies the structured-output contract" \
+  "$(printf '%s\n' "$h_fail" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false)"
+assert "H5 passing output satisfies the structured-output contract" \
+  "$(printf '%s\n' "$h_pass" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false)"
+
 echo ""
 echo "Passed: $pass_count, Failed: $fail_count"
 [ "$fail_count" -eq 0 ]

@@ -152,6 +152,7 @@ if [ ${#skill_files[@]} -eq 0 ]; then
     echo "BASH_GRANTEES=0"
     echo "PLUGIN_DIRS=${#plugin_dirs[@]}"
     echo "STATUS=ERROR"
+    echo "REASON=nothing_scanned: ${#plugin_dirs[@]} plugin dirs but zero skills discovered; scan misfired (see #2219)"
     echo "ISSUE_COUNT=1"
     echo "ISSUES:"
     echo "  - SEVERITY=ERROR TYPE=nothing_scanned MSG=${#plugin_dirs[@]} plugin dirs but zero skills discovered; scan misfired (see #2219)"
@@ -232,6 +233,7 @@ trap 'rm -f "$scan_list" "$report"' EXIT
 # them — a false-positive storm is far worse than a hard error.
 if [ ! -x "$helper" ] && [ ! -f "$helper" ]; then
   echo "STATUS=ERROR"
+  echo "REASON=missing_helper: markdown parser not found at $helper"
   echo "ISSUE_COUNT=0"
   echo "ISSUES:"
   echo "  - SEVERITY=ERROR TYPE=missing_helper MSG=markdown parser not found at $helper"
@@ -314,6 +316,13 @@ if [ "$issues" -eq 0 ]; then
   echo "STATUS=OK"
 else
   echo "STATUS=WARN"
+  # REASON= is the first finding as `<TYPE>: <MSG>`, one line, cut to 180
+  # chars, plus ` (+N more)` (.claude/rules/structured-script-output.md, #2760).
+  first_skill="${issue_rows[0]#*SKILL=}"
+  first_skill="${first_skill%% MSG=*}"
+  reason="$(printf 'unused_bash_grant: %s grants Bash but no shell detected in the skill or its sidecars' "$first_skill" | tr -s '[:space:]' ' ' | cut -c1-180)"
+  [ "$issues" -gt 1 ] && reason="$reason (+$((issues - 1)) more)"
+  echo "REASON=$reason"
 fi
 echo "ISSUE_COUNT=$issues"
 if [ "$issues" -gt 0 ]; then

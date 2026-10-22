@@ -5,10 +5,3 @@
 # from missing_reason, and reports an ERROR for any entry that now emits REASON=
 # or is no longer a STATUS= emitter, so this list can only shrink. Delete a
 # line in the same commit that migrates the script. Rollout: #2760.
-scripts/check-taskcompleted-verification.sh
-scripts/check-unrendered-templates.sh
-scripts/check-unused-bash-grant.sh
-scripts/check-version-pin-coverage.sh
-scripts/check-workflow-js-model.sh
-scripts/check-workflow-model.sh
-scripts/check-workflow-script-triggers.sh

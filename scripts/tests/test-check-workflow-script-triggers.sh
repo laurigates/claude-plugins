@@ -177,6 +177,21 @@ out="$(bash "$checker" --project-dir "$h" --strict 2>&1)"; rc=$?
 assert "no workflow dir exits 0" "$(is_true "$([ $rc -eq 0 ] && echo true)")"
 assert "no workflow dir marks SCANNED_EMPTY=true" "$(contains "$out" 'SCANNED_EMPTY=true')"
 
+# --- TEST R: REASON= on the ERROR path, absent on OK, contract-valid (#2760) --
+echo "=== TEST R: REASON= emission ==="
+contract="$repo_root/scripts/check-structured-output-contract.sh"
+r_fail="$(bash "$checker" --project-dir "$b" 2>&1)"
+r_pass="$(bash "$checker" --project-dir "$h" 2>&1)"
+assert "R1: failing fixture emits one bounded REASON= with (+1 more)" \
+  "$(grep -qE '^REASON=unreachable_script: .*never runs it \(\+1 more\)$' <<<"$r_fail" && echo true || echo false)"
+assert "R2: exactly one REASON= line" "$([ "$(grep -c '^REASON=' <<<"$r_fail")" = "1" ] && echo true || echo false)"
+assert "R3: passing fixture emits no REASON=" \
+  "$(grep -q '^REASON=' <<<"$r_pass" && echo false || echo true)"
+assert "R4: failing output satisfies the structured-output contract" \
+  "$(bash "$contract" --validate - <<<"$r_fail" >/dev/null 2>&1 && echo true || echo false)"
+assert "R5: passing output satisfies the structured-output contract" \
+  "$(bash "$contract" --validate - <<<"$r_pass" >/dev/null 2>&1 && echo true || echo false)"
+
 echo ""
 echo "Passed: $pass_count  Failed: $fail_count"
 [ "$fail_count" -eq 0 ]
