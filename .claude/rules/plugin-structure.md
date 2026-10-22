@@ -1,6 +1,6 @@
 ---
 created: 2025-12-23
-modified: 2026-10-13
+modified: 2026-10-22
 reviewed: 2026-09-16
 paths:
   - "**/.claude-plugin/**"
@@ -145,6 +145,8 @@ LSP servers declared via `lspServers` show up in `claude plugin details` and `/p
 > **`claude plugin validate` checks (2.1.281, 2.1.283).** It fails `marketplace.json` names Claude Code cannot install, and `outputStyles` / `themes` / `monitors` / `lspServers` paths that are missing or resolve outside the plugin dir (2.1.283). It reports `.mcp.json` entries that would be silently dropped, undeclared `${user_config.*}` references and insecure MCP URLs, and warns on an unquoted `${CLAUDE_PLUGIN_ROOT}` in a shell-form hook (2.1.281). `privacyPolicyUrl` / `supportUrl` are accepted keys. This marketplace passed on 2.1.283 (checked 2026-09-28).
 >
 > Later additions: validate prints a paste-ready install line when a plugin's README has none, without changing the exit code even under `--strict` (2.1.295). Before 2.1.289 it skipped a plugin whose folder also held a marketplace manifest; no plugin folder here holds one, and CI does not run `claude plugin validate` (checked against `plugin-pr-checks.yml`, 2026-10-13), so no result here was affected.
+>
+> 2.1.299 added `claude plugin eval --disallow-tools` and a `disallowed_tools` field on an eval case, and a run that ends on an API error now scores 0 and fails the suite. `claude plugin validate` and `/plugin` name the mod hooks that are skipped where an organization manages Claude Code.
 
 ## Field Validation Rules
 
@@ -165,6 +167,8 @@ code-quality-plugin
 ```
 
 `anthropic-skills` is reserved (2.1.283): skill folders, command files and workflow commands in that namespace do not load, and an MCP server of that name lists no skills or prompts. A marketplace name that imitates a reserved marketplace name is refused (2.1.280). An install is refused when its plugin id differs from an installed one only in `.`, `-`, `@` or (macOS, Windows) case (2.1.285).
+
+Since 2.1.299 a skill or command whose file or folder name contains hidden, direction-changing or blank-like characters, `<` or `>` is not offered until it is renamed, and such a `name:` is ignored; this applies to plugin skill and command paths. Use plain kebab-case.
 
 ## Custom Component Paths
 
@@ -208,6 +212,8 @@ By default, Claude discovers components in standard directories. Override with e
   "hooks": "./config/hooks.json"
 }
 ```
+
+> **Plugin hooks fail closed (2.1.299).** An action a plugin hook can block is refused when the hook cannot be handed the action or cannot hand back its answer, and values nested deeper than 28,000 levels are refused; see `.claude/rules/hooks-reference.md`. Plugin `WorktreeCreate`/`WorktreeRemove` hooks run under `--worktree` (2.1.300).
 
 > **Note (2.1.141+)**: Plugin config commands can reference `${CLAUDE_PROJECT_DIR}` (the active project root), in addition to `${CLAUDE_PLUGIN_ROOT}`. Use it when a hook or command needs a path relative to the user's project rather than the plugin's own directory.
 
@@ -266,6 +272,8 @@ Admins can set `pluginSuggestionMarketplaces` in managed settings to allowlist t
 ### MCP Server Config Errors (2.1.141+)
 
 A plugin MCP server with an unset config variable (e.g. `"args": ["--api-key", "${MY_API_KEY}"]` where `MY_API_KEY` is missing) now surfaces a "config issue" message with a copy-pasteable fix-it hint, instead of the generic "connection failed" error that obscured the root cause.
+
+Under reftable repositories, plugin marketplaces re-cloned on every refresh and git plugins showed version "unknown"; both were fixed in 2.1.302. The PowerShell tool finds commands in a plugin's `bin/` since 2.1.302.
 
 ## Plugin Dependency Enforcement (2.1.143+)
 

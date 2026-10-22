@@ -1,6 +1,6 @@
 ---
 created: 2026-02-25
-modified: 2026-10-18
+modified: 2026-10-22
 reviewed: 2026-09-23
 paths:
   - "**/agents/**"
@@ -128,6 +128,8 @@ tools: Agent(worker, researcher), Read, Bash
 
 This is an allowlist — only `worker` and `researcher` can be spawned. To allow any subagent without restriction, use `Agent` without parentheses. If `Agent` is omitted, the agent cannot spawn any subagents. Every entry of a multi-entry `Agent(a, b)` list is honored as of 2.1.147; earlier releases kept only the last.
 
+Since 2.1.299 a `tools:` entry for an MCP server covers only the server it names, as MCP allow rules do (`agentic-permissions.md`). A server whose normalized name contains `__` must be listed as `mcp__<whole name>__*`; the shorter prefix `mcp__a` no longer matches a server named `a__b` or `a_`.
+
 #### Pin a deliberate roster with the allowlist, not prose
 
 When you have designed a fixed set of domain agents (frontend, database, security, …) and want the orchestrator to delegate **only** to them, encode that intent as the `Agent(name1, name2, …)` allowlist above — not as a prose instruction like "please only use my agents." The allowlist is harness-enforced and non-negotiable; a prose preference is a wish the model can override the moment it decides an ad-hoc agent fits the task better. This is the difference between an **invariant** (a boundary stated as a rule) and a **heuristic** (a suggestion the model weighs): models adhere to the former far more reliably, so the roster you actually depend on belongs in frontmatter.
@@ -231,7 +233,7 @@ Three mechanisms share the word "fork", and only the last one hands a subagent t
 | `context:` in **agent** frontmatter | an `agents/*.md` | Nothing changes. It is absent from the subagent frontmatter table, and Claude Code ignores unrecognized fields without an error. Measured inert in #2646: agents with and without it returned bit-identical `subagent_tokens` (2549), both blind to the parent turn |
 | The runtime `fork` subagent type | the `Agent` call, `subagent_type: "fork"` | The parent's whole conversation, system prompt, tools, and model ([sub-agents.md § Fork the current conversation](https://code.claude.com/docs/en/sub-agents#fork-the-current-conversation)) |
 
-A research agent that should keep verbose output out of the main window needs no field: a named agent already does. For work that needs the conversation so far, dispatch a fork instead of a named agent. A fork runs under its parent's permission mode (plan, `dontAsk`) and cannot exit plan mode (2.1.285).
+A research agent that should keep verbose output out of the main window needs no field: a named agent already does. For work that needs the conversation so far, dispatch a fork instead of a named agent. A fork runs under its parent's permission mode (plan, `dontAsk`) and cannot exit plan mode (2.1.285). Fork availability per surface (on by default in `-p`, the SDK, desktop and VS Code since 2.1.302; `CLAUDE_CODE_FORK_SUBAGENT=0` turns it off; `claude mcp serve` never offers it) lives in [`agent-runtime.md`](agent-runtime.md) § Runtime fork vs named agent.
 
 > **Runtime behaviour lives in [`agent-runtime.md`](agent-runtime.md):** runtime fork vs named agent, the subagent context budget, worktree isolation and `worktree.baseRef` (gitignored inputs such as `.env` reach a worktree only via `.worktreeinclude` — see `/configure:worktreeinclude`), background execution, dynamic-workflow caveats, `worktree.bgIsolation`, MCP policy for frontmatter servers, and the `claude agents` CLI.
 
@@ -281,7 +283,7 @@ For rules an agent **must not forget** between threads — the friction-mining o
 
 ## Agent Teams (Multi-Agent Collaboration)
 
-Team mechanics — the implicit team (2.1.178), `SendMessage` / `ListAgents` and cross-session messaging, team roles, and when to choose teams over subagents — live in the `agent-patterns-plugin:agent-teams` skill. Before 2.1.288, a plugin-defined agent spawned by name into a team ran with the default prompt, tools, `disallowedTools` and effort instead of its own. What stays here is the per-agent body convention:
+Team mechanics — the implicit team (2.1.178), `SendMessage` / `ListAgents` and cross-session messaging, team roles, and when to choose teams over subagents — live in the `agent-patterns-plugin:agent-teams` skill. Before 2.1.288, a plugin-defined agent spawned by name into a team ran with the default prompt, tools, `disallowedTools` and effort instead of its own. `SendMessage` finds a subagent by name again after a CLI restart and resume (2.1.299); a name given before the last compaction still needs the agent ID. Fixed too: background subagents in auto mode sent their final report twice (2.1.299), and messaged subagents vanished from `/tasks` after finishing (2.1.300). Foreground/background defaults per surface: `agent-runtime.md` § Background Execution. What stays here is the per-agent body convention:
 
 ### Team Configuration
 

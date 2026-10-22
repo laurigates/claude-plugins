@@ -1,6 +1,6 @@
 ---
 created: 2026-07-26
-modified: 2026-10-13
+modified: 2026-10-22
 reviewed: 2026-09-16
 paths:
   - "**/SKILL.md"
@@ -64,6 +64,8 @@ against a 200K budget even on a 1M-context session;
 per-model-ID behavior. The default Sonnet on the Anthropic API is Sonnet 5.5
 with a 1M window since 2.1.284, and the default Haiku is Haiku 5.5, also 1M,
 since 2.1.293.
+
+Two harness knobs change what a long session pays. **Idle compaction** (2.1.299) compacts a conversation of 200K+ tokens that has sat idle about 54 minutes, just before the 1-hour prompt cache expires, so the next turn does not re-read the whole context uncached. Tune the threshold with `CLAUDE_CODE_IDLE_COMPACT_MIN_TOKENS`, disable it with `"idleCompaction": false`, or toggle it from a `/config` row (2.1.302). A paused long session therefore resumes from a summary: keep state a successor needs in files, not in the transcript (`loop-integrity.md` Pillar 2). `CLAUDE_CODE_DISABLE_FILE_MENTIONS` (2.1.299) makes an `@` mention pass the path instead of the file's contents, so the model `Read`s only what it needs.
 
 Rules symlinked into `.claude/rules` from outside the project, or a symlinked
 `.claude` directory, trigger the external-imports approval prompt since 2.1.284;

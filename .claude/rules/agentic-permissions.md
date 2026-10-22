@@ -1,6 +1,6 @@
 ---
 created: 2026-01-16
-modified: 2026-10-13
+modified: 2026-10-22
 reviewed: 2026-09-16
 paths:
   - "**/skills/**"
@@ -20,7 +20,7 @@ Claude Code now ships several permission modes. The relevant ones for skill auth
 |------|--------------------------|------------------------|
 | `default` ("Manual" as of 2.1.200) | Reads only | Granular `allowed-tools` is the only way to avoid prompts. `--permission-mode manual` / `"defaultMode": "manual"` are accepted aliases. |
 | `acceptEdits` | Reads, file edits, common filesystem commands (`mkdir`, `touch`, `mv`, `cp`, `sed`, etc.) | Bash skills still benefit from narrow `Bash(<command> *)` patterns. |
-| `auto` | Everything that survives a classifier review | The starting mode when none is configured (2.1.284 interactive, 2.1.285 `-p`/Python SDK on third-party providers or telemetry off; `auto-mode.md`). Broad rules like `Bash(*)` and `Bash(python*)` are **dropped on entering auto mode**. Narrow rules like `Bash(git status *)` carry over and skip the classifier round-trip. |
+| `auto` | Everything that survives a classifier review | The starting mode when none is configured for interactive terminal and VS Code sessions (2.1.284). `-p`/SDK sessions start in `default` again on third-party providers, with telemetry off, or on a fresh install (2.1.302 reversed the 2.1.285 auto default); pass `--permission-mode auto` (`auto-mode.md`). Broad rules like `Bash(*)` and `Bash(python*)` are **dropped on entering auto mode**. Narrow rules like `Bash(git status *)` carry over and skip the classifier round-trip. |
 | `dontAsk` | Pre-approved tools only | Without granular `allow` rules, the skill cannot run. |
 | `bypassPermissions` | Everything, including protected paths (2.1.126) | No safety layer — granular permissions are unenforced but still document intent. |
 
@@ -135,7 +135,7 @@ Permission rules can match a tool's **input parameters**, not just its name, wit
 
 Pair `Agent(model:...)` deny rules with the pre-launch classifier check (`.claude/rules/agent-development.md` § Subagent Nesting Depth) to govern which subagents a session may spawn. `Agent(type)` deny rules and `Agent(x,y)` allowed-types restrictions are enforced for named subagent spawns only since 2.1.186. Admins can restrict models for the whole session with the managed `deniedModels` and `availableModelsMatch: "exact"` settings (2.1.283).
 
-### Wildcard and Glob Matching (2.1.166+ / 2.1.172+ / 2.1.178+ / 2.1.214 / 2.1.281)
+### Wildcard and Glob Matching (2.1.166+ / 2.1.172+ / 2.1.178+ / 2.1.214 / 2.1.281 / 2.1.299)
 
 A run of fixes made wildcard/glob handling in permission rules behave as written:
 
@@ -146,6 +146,7 @@ A run of fixes made wildcard/glob handling in permission rules behave as written
 | 2.1.178 | MCP **server-level** specs (`mcp__server`, `mcp__server__*`, `mcp__*`) in a subagent's `disallowedTools` now work — previously only fully-qualified `mcp__server__tool` names matched, so server-wide denials silently let MCP tools through. |
 | 2.1.214 | **BREAKING:** single-segment `dir/**` **allow** rules (e.g. `Edit(src/**)`) now match only `<cwd>/dir` — they no longer auto-approve a nested `dir/` anywhere in the tree. `deny`/`ask` rules keep their old any-depth match, so allow and deny/ask now genuinely differ for the same pattern shape. Write `**/dir/**` if you need any-depth **allow** matching. |
 | 2.1.281 | A permission rule containing a NUL byte matches nothing. |
+| 2.1.299 | **MCP allow rules cover only the server they name.** `mcp__a` no longer allows a server named `a__b` or `a_`; for a server whose normalized name contains `__`, write `mcp__<whole normalized name>__*` (the same in an agent's `tools:` list). Deny and ask rules for such a server now apply; they were silently ignored before, so an old deny on an `__`-named server was not protecting anything. |
 
 ## Shell Operator Protections
 
@@ -211,6 +212,7 @@ A further round tightened the permission analyzer itself:
 - (2.1.287–2.1.288) The dangerous-`rm` always-ask holds when the same command also redirects to a `~` or wildcard path (2.1.287), and inside a `bash -c`/`sh -c` script in bypass mode or under a shell allow rule (2.1.288). Whole-tool `Bash` allow rules and allowing hooks prompt for shell writes to files the file tools refuse outright, such as the host credentials file (2.1.287).
 - (2.1.288–2.1.296) Now prompt: a `BASHPID` assignment the shell would evaluate as arithmetic (2.1.288); read-only commands such as `rg` and `git grep` whose arguments the shell would expand as wildcards, `pyright`, which is no longer read-only, more forms of `ps`, and commands whose variable names zsh reads differently from bash (2.1.290); a `BASH_ARGV0` assignment that is then used (2.1.296). For-loops over glob patterns are checked more accurately since 2.1.295.
 - (2.1.289–2.1.290) Under sandbox auto-allow, deny and ask rules no longer miss a command behind an env-var prefix with an expanded value (`TZ="$HOME" rm -rf build`) or a bare assignment (2.1.289); and deny and ask rules no longer miss a name taken from a variable set as a prefix on `declare`/`typeset`/`export`/`readonly` (2.1.290).
+- (2.1.299) `rm` prompts on shell `-c` scripts that never run `rm` were fixed. A run-time-built `rm` inside a script Claude Code cannot read no longer prompts unless `CLAUDE_CODE_STRICT_INLINE_SHELL_RM_PROMPT=1`.
 
 ### Working-Directory Bypass Hardening (2.1.149, revisited 2.1.271/2.1.273/2.1.280)
 
@@ -478,6 +480,16 @@ The dialog now shows "Matched `Bash(git push *):ask` — confirm before push", g
 ### `permissions.defaultMode` in Background Sessions (2.1.143+)
 
 Background sessions launched from `claude agents` honor `permissions.defaultMode` from `settings.json`. Before 2.1.143, the background launcher overrode the configured default and started every session in `auto` mode — which silently expanded the permission surface for users who had deliberately chosen a stricter default. The fix means stricter modes (`default`, `dontAsk`) now apply consistently to both foreground and background sessions.
+
+### Hook-Driven Decisions: `updatedInput` and Plan Mode (2.1.299, 2.1.300)
+
+`updatedInput` returned by a `PreToolUse` or `PermissionRequest` hook is validated like Claude's own tool input: unknown keys are dropped, and input the tool rejects denies the call (2.1.300; `hooks-reference.md`). A write that a `PreToolUse` hook allowed no longer runs in plan mode (2.1.299).
+
+### OpenTelemetry `tool_decision` Fields (2.1.301, 2.1.302)
+
+The `tool_decision` event gains `classifier_verdict`, `permission_mode` and `classifier_category`, which tell a classifier decision apart from a rule decision when auditing why a call ran or was refused.
+
+Classifier model selection (2.1.302): `CLAUDE_CODE_AUTO_MODE_MODEL` picks the **client-side** classifier's model only, and a conversation too long for the server-side classifier's safety check is compacted instead of having every checked call denied; detail in `auto-mode.md`.
 
 ### Hook `if` Condition Matching (2.1.147+)
 
