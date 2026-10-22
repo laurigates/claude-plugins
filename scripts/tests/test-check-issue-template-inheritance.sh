@@ -117,6 +117,13 @@ assert_line "$out_b" "TEMPLATE_COUNT=0" "B: zero templates reported"
 # alone rather than to a checker that flags every local directory.
 assert_lacks "$out_b" "security_link_dropped" "B: security link not falsely flagged"
 assert_lacks "$out_b" "qa_link_dropped" "B: Q&A link not falsely flagged"
+CONTRACT="$REPO_ROOT/scripts/check-structured-output-contract.sh"
+valid() { printf '%s\n' "$1" | bash "$CONTRACT" --validate - >/dev/null 2>&1 && echo true || echo false; }
+assert_contains "$out_b" "
+REASON=templates_suppressed: .github/ISSUE_TEMPLATE exists but holds no renderable template" "B: REASON= names the first finding (#2760)"
+assert_eq "$(valid "$out_b")" "true" "B: ERROR output satisfies the structured-output contract"
+assert_eq "$(valid "$out_a")" "true" "A: OK output satisfies the structured-output contract"
+assert_lacks "$out_a" "REASON=" "A: OK output carries no REASON="
 
 # --- CASE C: templates present, security link dropped ------------------------
 C="$TMP_ROOT/c"; mkdir -p "$C/.github/ISSUE_TEMPLATE"
@@ -188,6 +195,12 @@ assert_line "$out_j" "SECURITY_LINK=missing" "J: commented security URL is not a
 assert_line "$out_j" "QA_LINK=missing" "J: commented Q&A URL is not a link"
 assert_contains "$out_j" "security_link_dropped" "J: security finding raised"
 assert_contains "$out_j" "qa_link_dropped" "J: Q&A finding raised"
+# Two findings: REASON= names the first and counts the other (#2760).
+assert_line "$out_j" "ISSUE_COUNT=2" "J: both findings counted"
+assert_contains "$out_j" "REASON=security_link_dropped: " "J: REASON= names the first finding"
+assert_contains "$out_j" " (+1 more)
+" "J: REASON= ends in (+1 more)"
+assert_eq "$(valid "$out_j")" "true" "J: two-finding output satisfies the structured-output contract"
 # Guard integrity: the same URLs on real `url:` lines must still read present,
 # so the comment strip cannot degrade into never matching anything.
 K="$TMP_ROOT/k"; mkdir -p "$K/.github/ISSUE_TEMPLATE"

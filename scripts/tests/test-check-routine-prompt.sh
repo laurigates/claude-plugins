@@ -146,6 +146,19 @@ empty="$WORK/empty"; mkdir -p "$empty/docs/routines"
 assert_eq "absent prompt reports PROMPT_PRESENT=false" "false" "$(run_key "$empty" PROMPT_PRESENT)"
 assert_eq "absent prompt sets STATUS=ERROR" "ERROR" "$(run_key "$empty" STATUS)"
 
+# 7b. REASON= contract (#2760): failing fixture names its first finding, the
+#     passing one carries none, and both satisfy --validate.
+CONTRACT="$REPO_ROOT/scripts/check-structured-output-contract.sh"
+out_fail="$(bash "$GUARD" "$empty" 2>&1)"
+out_ok="$(bash "$GUARD" "$clean" 2>&1)"
+assert_contains "failing fixture REASON= names the first finding" \
+  "REASON=docs/routines/resolve-claude-plugins-issues.md: missing file (" "$out_fail"
+assert_eq "passing fixture carries no REASON=" "0" "$(printf '%s\n' "$out_ok" | grep -c '^REASON=')"
+printf '%s\n' "$out_fail" | bash "$CONTRACT" --validate - >/dev/null 2>&1
+assert_eq "failing output satisfies the structured-output contract" "0" "$?"
+printf '%s\n' "$out_ok" | bash "$CONTRACT" --validate - >/dev/null 2>&1
+assert_eq "passing output satisfies the structured-output contract" "0" "$?"
+
 # 8. --strict exit codes on the compliant tree.
 if bash "$GUARD" --strict "$clean" >/dev/null 2>&1; then
   printf "  PASS: --strict exits 0 on a compliant prompt\n"; PASS=$((PASS + 1))

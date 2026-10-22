@@ -55,6 +55,32 @@ for pair in "LS|Glob" "BashOutput|Bash" "KillShell|TaskStop" "MultiEdit|Edit" "T
   assert "B $name names its successor $succ" "$(has "$out" "FIX=$succ")"
 done
 
+# --- G: REASON= on ERROR, absent on OK, both contract-valid (#2760) ----------
+echo "=== G: REASON= and the structured-output contract ==="
+CONTRACT="$repo_root/scripts/check-structured-output-contract.sh"
+valid() { printf '%s\n' "$1" | bash "$CONTRACT" --validate - >/dev/null 2>&1 && echo true || echo false; }
+mkskill g-bad "s" "allowed-tools: Read, MultiEdit, BashOutput"
+out="$(bash "$CHECK" --project-dir "$fx/g-bad" 2>&1)"
+assert "G REASON= names the first finding" "$(has "$out" 'REASON=dead_tool_grant: ')"
+assert "G REASON= counts the other finding" "$(has "$out" ' (+1 more)')"
+assert "G ERROR output satisfies the contract" "$(valid "$out")"
+mkskill g-ok "s" "allowed-tools: Read, Glob"
+out="$(bash "$CHECK" --project-dir "$fx/g-ok" 2>&1)"
+assert "G OK output carries no REASON=" "$([ "$(has "$out" 'REASON=')" = false ] && echo true || echo false)"
+assert "G OK output satisfies the contract" "$(valid "$out")"
+mkdir -p "$fx/g-empty"
+out="$(bash "$CHECK" --project-dir "$fx/g-empty" 2>&1)"
+assert "G nothing_scanned carries REASON=" "$(has "$out" 'REASON=nothing_scanned: ')"
+assert "G nothing_scanned output satisfies the contract" "$(valid "$out")"
+# The scan root is unbounded text; REASON= must still be one collapsed line cut
+# to the bound, never the raw path (a 200+ character path overflowed it).
+long_dir="$fx/g-long-$(printf 'x%.0s' $(seq 1 120))/$(printf 'y%.0s' $(seq 1 120))"
+mkdir -p "$long_dir"
+out="$(bash "$CHECK" --project-dir "$long_dir" 2>&1)"
+assert "G nothing_scanned under a long root is STATUS=ERROR" "$(has "$out" 'STATUS=ERROR')"
+assert "G long-root REASON= is cut to the bound" "$([ "$(sed -n 's/^REASON=//p' <<<"$out" | awk '{ print length($0) }')" -le 180 ] && echo true || echo false)"
+assert "G long-root output satisfies the contract" "$(valid "$out")"
+
 # --- C: the verbatim pre-sweep shapes ---------------------------------------
 # Real lines from the corpus before the sweep.
 echo "=== C: the verbatim pre-sweep grant lines ==="

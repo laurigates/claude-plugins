@@ -526,6 +526,23 @@ echo "VERSION_INPUT_COVERED=$version_input_covered"
 echo "TEMPLATE_FILES_SCANNED=$template_files_scanned"
 echo "TEMPLATE_PINS_COVERED=$template_pins_covered"
 echo "STATUS=$overall_status"
+if [ "$overall_status" != "OK" ]; then
+  # REASON= is the first finding at the reported severity as `<TYPE>: <MSG>`,
+  # one line, cut to 180 chars, plus ` (+N more)`
+  # (.claude/rules/structured-script-output.md, #2760).
+  reason=""
+  for line in "${issues[@]}"; do
+    case "$line" in
+      *"SEVERITY=$overall_status "*)
+        reason="${line#*TYPE=}"
+        reason="${reason/ MSG=/: }"
+        break ;;
+    esac
+  done
+  reason="$(printf '%s' "$reason" | tr -s '[:space:]' ' ' | cut -c1-180)"
+  [ "$issue_count" -gt 1 ] && reason="$reason (+$((issue_count - 1)) more)"
+  echo "REASON=$reason"
+fi
 echo "ISSUE_COUNT=$issue_count"
 if [ "$issue_count" -gt 0 ]; then
   echo "ISSUES:"

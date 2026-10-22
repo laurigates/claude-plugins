@@ -4,8 +4,7 @@
 # Two halves, matching the guard's two modes:
 #   sweep      -- planted scripts/check-*.sh fixtures: vocabulary drift (literal,
 #                 shell-variable, python-variable, inline $(...)), missing
-#                 REASON=, missing ISSUE_COUNT=, the pending ratchet in both
-#                 directions, an empty scan, and the real repo.
+#                 REASON=, missing ISSUE_COUNT=, an empty scan, and the real repo.
 #   --validate -- mutants of a captured output block: every runtime rule, plus
 #                 the #2714 shape (ISSUE_COUNT=0 beneath populated rows).
 # Each ERROR case is paired with a clean control so a guard that flags
@@ -80,8 +79,11 @@ expect_line "A2: real repo STATUS=OK" "$out" "STATUS=OK"
 expect_line "A3: real repo scanned something" "$out" "SCANNED_EMPTY=false"
 emitters="$(grep -m1 '^STATUS_EMITTERS=' <<<"$out" | cut -d= -f2)"
 if [ "${emitters:-0}" -ge 30 ]; then ok "A4: STATUS_EMITTERS >= 30 ($emitters)"; else bad "A4: STATUS_EMITTERS=$emitters"; fi
-pending_lines="$(grep -cvE '^[[:space:]]*(#|$)' "$REPO_ROOT/scripts/structured-output-reason-pending.txt")"
-expect_line "A5: REASON_PENDING matches the pending file" "$out" "REASON_PENDING=$pending_lines"
+expect_no_text "A5: no exemption list is reported" "$out" "REASON_PENDING"
+if [ ! -e "$REPO_ROOT/scripts/structured-output-reason-pending.txt" ]; then ok "A5b: pending list stays deleted (#2760)"; else bad "A5b: scripts/structured-output-reason-pending.txt is back"; fi
+all_emit="$(grep -m1 '^STATUS_EMITTERS=' <<<"$out" | cut -d= -f2)"
+all_reason="$(grep -m1 '^REASON_EMITTERS=' <<<"$out" | cut -d= -f2)"
+if [ -n "$all_emit" ] && [ "$all_emit" = "$all_reason" ]; then ok "A5c: every STATUS= emitter emits REASON= ($all_reason)"; else bad "A5c: STATUS_EMITTERS=$all_emit REASON_EMITTERS=$all_reason"; fi
 reason_emitters="$(grep -m1 '^REASON_EMITTERS=' <<<"$out" | cut -d= -f2)"
 if [ "${reason_emitters:-0}" -ge 6 ]; then ok "A6: REASON_EMITTERS >= 6 ($reason_emitters)"; else bad "A6: REASON_EMITTERS=$reason_emitters"; fi
 
@@ -158,7 +160,7 @@ expect_text "C11: REASON names the first finding" "$out" "REASON=noncanonical_st
 out="$(sweep "$root" --strict)"; rc=$?
 expect_exit "C12: --strict exits 1 on drift" "$rc" 1
 
-echo "=== D: missing REASON / ISSUE_COUNT, and the pending ratchet ==="
+echo "=== D: missing REASON / ISSUE_COUNT ==="
 root="$(new_root reason)"
 cat > "$root/scripts/check-noreason.sh" <<'EOF'
 #!/usr/bin/env bash
@@ -171,21 +173,12 @@ expect_exit "D1: missing REASON fails --strict" "$rc" 1
 expect_text "D2: missing_reason reported" "$out" "TYPE=missing_reason MSG=scripts/check-noreason.sh"
 expect_text "D3: missing_issue_count reported" "$out" "TYPE=missing_issue_count MSG=scripts/check-nocount.sh"
 expect_no_text "D4: REASON-emitting script not flagged missing_reason" "$out" "missing_reason MSG=scripts/check-nocount.sh"
+# A pending file left behind (or planted) must not exempt anything (#2760).
 printf 'scripts/check-noreason.sh  # awaiting rollout\n' > "$root/scripts/structured-output-reason-pending.txt"
-printf '#!/usr/bin/env bash\necho "STATUS=OK"\necho "REASON=x"\necho "ISSUE_COUNT=0"\n' > "$root/scripts/check-nocount.sh"
 out="$(sweep "$root" --strict)"; rc=$?
-expect_exit "D5: pending-listed script passes --strict" "$rc" 0
-expect_line "D6: REASON_PENDING=1" "$out" "REASON_PENDING=1"
-
-echo "=== E: stale pending entries (ratchet only shrinks) ==="
-root="$(new_root stale)"
-write_clean "$root/scripts/check-migrated.sh"
-printf 'scripts/check-migrated.sh\nscripts/check-gone.sh\n' > "$root/scripts/structured-output-reason-pending.txt"
-out="$(sweep "$root" --strict)"; rc=$?
-expect_exit "E1: stale pending fails --strict" "$rc" 1
-expect_text "E2: migrated script still listed is stale" "$out" "scripts/check-migrated.sh now emits REASON="
-expect_text "E3: missing script still listed is stale" "$out" "scripts/check-gone.sh is in"
-expect_line "E4: ISSUE_COUNT=2" "$out" "ISSUE_COUNT=2"
+expect_exit "D5: a stray pending file no longer exempts a script" "$rc" 1
+expect_text "D6: missing_reason still reported" "$out" "TYPE=missing_reason MSG=scripts/check-noreason.sh"
+expect_no_text "D7: no REASON_PENDING key" "$out" "REASON_PENDING"
 
 echo "=== F: empty scan is an error, not a clean pass ==="
 root="$WORK/empty"; mkdir -p "$root"
@@ -270,6 +263,58 @@ expect_exit "V14: --validate FILE passes" "$rc" 0
 expect_line "V14b: target named" "$out" "TARGET=$WORK/block.txt"  # mktemp-canonical: ok (TARGET echoes the argument verbatim)
 bash "$GUARD" --validate "$WORK/no-such-file" >/dev/null 2>&1; rc=$?
 expect_exit "V15: unreadable --validate FILE exits 2" "$rc" 2
+
+# REASON= provenance (#2760 fold-in): presence alone let a WARN status be explained
+# by an INFO row, a lowercase `error` row pass for ERROR, and a (+N more) tail
+# drift from ISSUE_COUNT.
+info_block=$'=== X ===\nSTATUS=WARN\nREASON=nudge: a.md\nISSUE_COUNT=1\nISSUES:\n  - SEVERITY=INFO TYPE=nudge MSG=a.md\n=== END X ==='
+out="$(validate "$info_block")"; rc=$?
+expect_exit "V16: STATUS=WARN explained only by an INFO row fails" "$rc" 1
+expect_text "V16b: severity_mismatch" "$out" "TYPE=severity_mismatch"
+out="$(validate "$(mutate 's/SEVERITY=INFO/SEVERITY=WARN/' "$info_block")")"; rc=$?
+expect_exit "V16c: the same block with a WARN row passes" "$rc" 0
+
+out="$(validate "$(mutate 's/SEVERITY=ERROR/SEVERITY=error/' "$good_err")")"; rc=$?
+expect_exit "V17: lowercase SEVERITY=error under STATUS=ERROR fails" "$rc" 1
+expect_text "V17b: severity_mismatch" "$out" "TYPE=severity_mismatch"
+
+out="$(validate "$(mutate 's/ (+1 more)//' "$good_err")")"; rc=$?
+expect_exit "V18: ISSUE_COUNT=2 without a (+1 more) tail fails" "$rc" 1
+expect_text "V18b: more_suffix_mismatch" "$out" "TYPE=more_suffix_mismatch"
+out="$(validate "$(mutate 's/(+1 more)/(+5 more)/' "$good_err")")"; rc=$?
+expect_exit "V18c: a (+5 more) tail under ISSUE_COUNT=2 fails" "$rc" 1
+out="$(validate $'STATUS=ERROR\nREASON=broken_thing: a.sh (+1 more)\nISSUE_COUNT=1\nISSUES:\n  - SEVERITY=ERROR TYPE=broken_thing MSG=a.sh')"; rc=$?
+expect_exit "V19: a (+1 more) tail under ISSUE_COUNT=1 fails" "$rc" 1
+expect_text "V19b: more_suffix_mismatch" "$out" "TYPE=more_suffix_mismatch"
+
+mixed=$'STATUS=ERROR\nREASON=warn_kind: w.md (+1 more)\nISSUE_COUNT=2\nISSUES:\n  - SEVERITY=WARN TYPE=warn_kind MSG=w.md\n  - SEVERITY=ERROR TYPE=err_kind MSG=e.md'
+out="$(validate "$mixed")"; rc=$?
+expect_exit "V20: ERROR status whose REASON= names the WARN row fails" "$rc" 1
+expect_text "V20b: reason_wrong_finding" "$out" "TYPE=reason_wrong_finding"
+out="$(validate "$(mutate 's/^REASON=warn_kind: w.md/REASON=err_kind: e.md/' "$mixed")")"; rc=$?
+expect_exit "V20c: REASON= from the first ERROR row passes" "$rc" 0
+
+# Rows without a TYPE= key (FILE=/RULE= rows) have no type to compare, so only
+# severity and the tail are checked.
+out="$(validate $'STATUS=ERROR\nREASON=a.md: token dropped\nISSUE_COUNT=1\nISSUES:\n  - SEVERITY=ERROR FILE=a.md MSG=token dropped')"; rc=$?
+expect_exit "V21: a TYPE-less row at the reported severity passes" "$rc" 0
+
+# Two rows at the reported severity with DIFFERENT types: the REASON must open with
+# the FIRST such row's TYPE, not the last (a first-vs-last mix-up passes every
+# single-type fixture).
+two_types=$'STATUS=ERROR\nREASON=first_kind: a.md (+1 more)\nISSUE_COUNT=2\nISSUES:\n  - SEVERITY=ERROR TYPE=first_kind MSG=a.md\n  - SEVERITY=ERROR TYPE=second_kind MSG=b.md'
+out="$(validate "$two_types")"; rc=$?
+expect_exit "V22: REASON= opening with the first row's TYPE passes" "$rc" 0
+out="$(validate "$(mutate 's/^REASON=first_kind: a.md/REASON=second_kind: b.md/' "$two_types")")"; rc=$?
+expect_exit "V22b: REASON= opening with the LAST row's TYPE fails" "$rc" 1
+expect_text "V22c: reason_wrong_finding" "$out" "TYPE=reason_wrong_finding"
+
+# Rows with no SEVERITY= key at all (several migrated scripts) have nothing to
+# compare against, so they must not fail severity provenance.
+out="$(validate $'STATUS=ERROR\nREASON=broken_thing: a.sh\nISSUE_COUNT=1\nISSUES:\n  - TYPE=broken_thing MSG=a.sh')"; rc=$?
+expect_exit "V23: rows without any SEVERITY= pass" "$rc" 0
+out="$(validate $'STATUS=ERROR\nREASON=broken_thing: a.sh\nISSUE_COUNT=1\nISSUES:\n  - SEVERITY=WARN TYPE=broken_thing MSG=a.sh')"; rc=$?
+expect_exit "V23b: control: a row WITH a mismatched SEVERITY= fails" "$rc" 1
 
 echo ""
 echo "Passed: $PASS, Failed: $FAIL"

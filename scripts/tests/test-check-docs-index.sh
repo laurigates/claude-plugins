@@ -475,6 +475,26 @@ strict_rc=$?
 assert "--strict should exit 1 on a phantom skill-table row" \
   "$([ "$strict_rc" = "1" ] && echo true || echo false)"
 rm -rf "$tbl_fx"
+echo "=== TEST R: REASON= on the non-OK path (#2760) ==="
+contract="$repo_root/scripts/check-structured-output-contract.sh"
+valid() { printf '%s\n' "$1" | bash "$contract" --validate - >/dev/null 2>&1 && echo true || echo false; }
+assert "OK output carries no REASON=" "$([ "$(contains "$real_out" "^REASON=")" = false ] && echo true || echo false)"
+assert "OK output satisfies the contract" "$(valid "$real_out")"
+assert "ERROR REASON= is the first ERROR finding as TYPE: MSG" \
+  "$(contains "$fx_out" "^REASON=[a-z_]*: ")"
+assert "ERROR REASON= names an ERROR-severity type, not a WARN one" \
+  "$(contains "$fx_out" "^REASON=\(plugin_map_drift\|rule_table_dangling\|diagram_node_dangling\|diagram_svg_node_missing\|diagram_svg_stale\|readme_row_dangling\): ")"
+assert "ERROR REASON= counts the other findings" "$(contains "$fx_out" "^REASON=.* (+[0-9]* more)$")"
+assert "ERROR output satisfies the contract" "$(valid "$fx_out")"
+warn_fx="$(mktemp -d)"
+mkdir -p "$warn_fx/.claude/rules"
+printf -- '---\nreviewed: 2026-07-04\n---\n# a\n' > "$warn_fx/.claude/rules/a.md"
+printf '## Rules\n| Rule | Purpose |\n|------|---------|\n' > "$warn_fx/CLAUDE.md"
+warn_out="$(bash "$checker" --project-dir "$warn_fx")"
+assert "WARN fixture reports STATUS=WARN" "$([ "$(field "$warn_out" STATUS)" = "WARN" ] && echo true || echo false)"
+assert "WARN REASON= names the first WARN finding" "$(contains "$warn_out" "^REASON=rule_not_indexed: a.md exists")"
+assert "WARN output satisfies the contract" "$(valid "$warn_out")"
+rm -rf "$warn_fx"
 
 echo ""
 echo "=== SUMMARY ==="

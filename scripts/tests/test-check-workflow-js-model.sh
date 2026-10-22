@@ -477,7 +477,7 @@ check "M2: missing framing literal STATUS"    "ERROR" "$(field "$o" STATUS)"
 check "M2: missing framing literal exit 1"    "1"     "$(run "$root" --strict)"
 check "M2: missing framing literal plain 0"   "0"     "$(run "$root")"
 # The message must be actionable: it names the exact literal to add.
-check "M2: message names the literal"         "1"     "$(printf '%s\n' "$o" | grep -c "not a script to run verbatim")"
+check "M2: message names the literal"         "1"     "$(printf '%s\n' "$o" | grep "^  - SEVERITY=" | grep -c "not a script to run verbatim")"
 # It is a finding about the FRAMING, not about reachability — the harness is
 # reachable here, so the orphan finding must not also fire.
 check "M2: reachable → no unreachable finding" "0"    "$(printf '%s\n' "$o" | grep -c 'TYPE=unreachable_workflow')"
@@ -657,6 +657,49 @@ o=$(PATH="$STUB/slow:$PATH" bash "$CHECK" --project-dir "$root" 2>&1)
 check "N12: two slow cold parses, STATUS=OK"     "OK" "$(field "$o" STATUS)"
 check "N12: no estimator_error"                  "0" "$(grep -c 'TYPE=estimator_error' <<<"$o")"
 check "N12: the stub's first call was slow"      "yes" "$([ -e "$STUB/slow/call0" ] && echo yes)"
+
+# ---------------------------------------------------------------------------
+# R. REASON= on the ERROR / WARN path, absent on OK, contract-valid (#2760).
+# ---------------------------------------------------------------------------
+CONTRACT="${REPO_ROOT}/scripts/check-structured-output-contract.sh"
+root=$(mk_root R-err)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_js "$d" audit.workflow.js opus ""
+o_err=$(out "$root")
+check "R: ERROR fixture STATUS=ERROR"        "ERROR" "$(field "$o_err" STATUS)"
+check "R: ERROR REASON= names the first ERROR finding" "1" \
+    "$(grep -c '^REASON=missing_effort: agent() needs an explicit opts.effort' <<<"$o_err")"
+check "R: exactly one REASON= line"          "1" "$(grep -c '^REASON=' <<<"$o_err")"
+root=$(mk_root R-warn)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_js "$d" audit.workflow.js "" low
+o_warn=$(out "$root")
+check "R: WARN fixture STATUS=WARN"           "WARN"  "$(field "$o_warn" STATUS)"
+check "R: WARN fixture REASON= names the WARN finding" "1" \
+    "$(grep -c '^REASON=missing_model: ' <<<"$o_warn")"
+# Mixed: one agent() with no model (WARN missing_model, reported first) and no
+# effort (ERROR missing_effort). STATUS=ERROR, so REASON= must skip the WARN row.
+root=$(mk_root R-mixed)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_js "$d" audit.workflow.js "" ""
+o_mixed=$(out "$root")
+check "R: mixed fixture STATUS=ERROR"        "ERROR" "$(field "$o_mixed" STATUS)"
+check "R: mixed fixture lists the WARN row before the ERROR row" "WARN" \
+    "$(grep -m1 '^  - SEVERITY=' <<<"$o_mixed" | sed 's/^  - SEVERITY=\([A-Z]*\).*/\1/')"
+check "R: mixed REASON= names the ERROR finding, not the earlier WARN row" "1" \
+    "$(grep -c '^REASON=missing_effort: .* (+1 more)$' <<<"$o_mixed")"
+root=$(mk_root R-ok)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_js "$d" audit.workflow.js opus low
+o_ok=$(out "$root")
+check "R: passing fixture STATUS=OK"         "OK" "$(field "$o_ok" STATUS)"
+check "R: passing fixture emits no REASON="  "0" "$(grep -c '^REASON=' <<<"$o_ok")"
+for label in err warn mixed ok; do
+    case "$label" in err) body="$o_err" ;; warn) body="$o_warn" ;; mixed) body="$o_mixed" ;; *) body="$o_ok" ;; esac
+    rc=0
+    printf '%s\n' "$body" | bash "$CONTRACT" --validate - >/dev/null 2>&1 || rc=$?
+    check "R: $label output satisfies the structured-output contract" "0" "$rc"
+done
 
 printf '\n%s: %d passed, %d failed\n' "$(basename "$0")" "$pass" "$fail"
 [ "$fail" -eq 0 ]

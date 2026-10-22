@@ -191,10 +191,25 @@ echo "UNQUALIFIED=$warns"
 
 if [ $errors -gt 0 ]; then
   echo "STATUS=ERROR"
+  reason_first="${error_lines[0]}"
 elif [ $warns -gt 0 ]; then
   echo "STATUS=WARN"
+  reason_first="${warn_lines[0]}"
 else
   echo "STATUS=OK"
+fi
+if [ $((errors + warns)) -gt 0 ]; then
+  # REASON= is the first finding at the reported severity as `<TYPE>: <FILE> <VALUE>`
+  # (+ MSG/FIX), one line, cut to 180 chars, plus ` (+N more)` (#2760).
+  reason_type="${reason_first#*TYPE=}"
+  reason_type="${reason_type%% *}"
+  reason_file="${reason_first#*FILE=}"
+  reason_file="${reason_file%% *}"
+  reason_value="${reason_first#*VALUE=}"
+  reason_value="${reason_value%% *}"
+  reason="$(printf '%s: %s names %s' "$reason_type" "$reason_file" "$reason_value" | tr -s '[:space:]' ' ' | cut -c1-180)"
+  [ $((errors + warns)) -gt 1 ] && reason="$reason (+$((errors + warns - 1)) more)"
+  echo "REASON=$reason"
 fi
 echo "ISSUE_COUNT=$((errors + warns))"
 

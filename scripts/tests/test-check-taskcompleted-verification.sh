@@ -452,6 +452,22 @@ out=$(run_guard "$n3_json")
 assert_contains "N3: prose about the working tree does NOT satisfy the rule" \
     "RULE=worktree_still_inspected" "$out"
 
+# ---------------------------------------------------------------------------
+echo "TEST R: REASON= on the ERROR path, absent on OK, contract-valid (#2760)"
+# ---------------------------------------------------------------------------
+CONTRACT="$SCRIPTS_DIR/check-structured-output-contract.sh"
+out_fail=$(run_guard "$prefix_json")
+out_pass=$(run_guard "$REAL_JSON")
+if grep -qE '^REASON=[a-z_]+: .+ \(\+[0-9]+ more\)$' <<<"$out_fail"; then
+    ok "R1: failing fixture emits one bounded REASON= with an (+N more) tail"
+else
+    bad "R1: failing fixture lacks a well-formed REASON= line"
+fi
+if [ "$(grep -c '^REASON=' <<<"$out_fail")" = "1" ]; then ok "R2: exactly one REASON= line"; else bad "R2: expected exactly one REASON= line"; fi
+if grep -q '^REASON=' <<<"$out_pass"; then bad "R3: passing run must not emit REASON="; else ok "R3: passing run emits no REASON="; fi
+if printf '%s\n' "$out_fail" | bash "$CONTRACT" --validate - >/dev/null 2>&1; then ok "R4: failing output satisfies the structured-output contract"; else bad "R4: failing output violates the contract"; fi
+if printf '%s\n' "$out_pass" | bash "$CONTRACT" --validate - >/dev/null 2>&1; then ok "R5: passing output satisfies the structured-output contract"; else bad "R5: passing output violates the contract"; fi
+
 echo ""
 echo "PASSED=$PASS FAILED=$FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

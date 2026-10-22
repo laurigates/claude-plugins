@@ -104,6 +104,8 @@ if [ "$scanned" -eq 0 ]; then
         echo "ISSUES:"
         echo "  - SEVERITY=ERROR TYPE=nothing_scanned MSG=plugin directories present but no files discovered"
         echo "STATUS=ERROR"
+        # REASON= is the first finding as `<TYPE>: <MSG>` (.claude/rules/structured-script-output.md, #2760).
+        echo "REASON=nothing_scanned: plugin directories present but no files discovered"
         exit 1
     fi
     echo "SCANNED_EMPTY=true"
@@ -114,6 +116,7 @@ fi
 
 issues=""
 count=0
+first_reason=""
 
 for entry in "${denylist[@]}"; do
     pattern="${entry%%|*}"
@@ -135,6 +138,7 @@ for entry in "${denylist[@]}"; do
         esac
 
         count=$((count + 1))
+        [ -n "$first_reason" ] || first_reason="dead_endpoint: ${file}:${lineno} uses ${pattern}, use ${replacement}"
         issues="${issues}  - SEVERITY=ERROR TYPE=dead_endpoint FILE=${file}:${lineno} ENDPOINT=${pattern} USE=${replacement} WHY=${reference}\n"
     # -H is load-bearing, not decoration: with a SINGLE file argument GNU grep
     # omits the filename prefix while BSD grep keeps it, so the FILE:LINE:TEXT
@@ -148,6 +152,10 @@ if [ "$count" -gt 0 ]; then
     echo "ISSUES:"
     printf '%b' "$issues"
     echo "STATUS=ERROR"
+    # REASON= is the first finding, one line, cut to 180 chars, plus ` (+N more)`.
+    reason="$(printf '%s' "$first_reason" | tr -s '[:space:]' ' ' | cut -c1-180)"
+    [ "$count" -gt 1 ] && reason="$reason (+$((count - 1)) more)"
+    echo "REASON=$reason"
     [ "$STRICT" -eq 1 ] && exit 1
     exit 0
 fi
