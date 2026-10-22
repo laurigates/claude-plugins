@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.23.3](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.23.2...testing-plugin-v3.23.3) (2026-10-22)
+
+
+### Bug Fixes
+
+* **agents:** deliver the report before maxTurns cuts an agent off ([#3158](https://github.com/laurigates/claude-plugins/issues/3158)) ([8dfa0a7](https://github.com/laurigates/claude-plugins/commit/8dfa0a7528bc08825bd4367984e884259cac49d6)), closes [#3152](https://github.com/laurigates/claude-plugins/issues/3152)
+
 ## [3.23.2](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.23.1...testing-plugin-v3.23.2) (2026-10-20)
 
 
