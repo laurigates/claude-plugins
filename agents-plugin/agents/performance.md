@@ -6,7 +6,7 @@ description: Performance analysis and profiling. Identifies bottlenecks, analyze
 tools: Glob, Grep, Read, Bash(hyperfine *), Bash(py-spy *), Bash(perf *), Bash(time *), Bash(npm run *), Bash(cargo bench *), Bash(go test -bench *), Bash(git status *), Bash(git diff *), TodoWrite
 maxTurns: 25
 created: 2026-01-24
-modified: 2026-10-09
+modified: 2026-10-22
 reviewed: 2026-06-18
 ---
 
@@ -100,6 +100,12 @@ hyperfine 'command1' 'command2' 2>&1  # Comparative benchmarking
 - Memory allocation patterns
 - I/O wait and disk usage
 - Network latency and throughput
+
+## Turn Budget
+
+`maxTurns: 25` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 20 of 25), stop profiling and deliver the report in the Output Format below. Report the bottlenecks you have measured, label an unmeasured suspicion **SUSPECT**, and list the components or benchmarks you did not reach under **Not verified**.
+
+**Callers**: this agent has 25 turns. Scope a brief to one component or benchmark; split a wider analysis across agents.
 
 ## Output Format
 

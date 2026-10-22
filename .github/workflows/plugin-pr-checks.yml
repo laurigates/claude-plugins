@@ -166,6 +166,7 @@ jobs:
             --only 'scripts/tests/test-check-agent-failure-contract.sh' \
             --only 'scripts/tests/test-check-agent-frontmatter-keys.sh' \
             --only 'scripts/tests/test-check-agent-model.sh' \
+            --only 'scripts/tests/test-check-agent-turn-budget.sh' \
             --only 'scripts/tests/test-check-auto-resolve-mergeability-poll.sh' \
             --only 'scripts/tests/test-check-blueprint-level3-templates.sh' \
             --only 'scripts/tests/test-check-configure-components.sh' \
@@ -276,6 +277,13 @@ jobs:
         # unconditionally like the docs-index check below — the lint is cheap
         # and the self-test step above proves the guard before it gates the tree.
         run: bash scripts/check-agent-model.sh
+
+      - name: Check every agent with maxTurns carries a Turn Budget section
+        # A maxTurns cap with no report-before-the-limit instruction ends the
+        # run mid-investigation with NO report (#3152: 5 of 6 review runs).
+        # Whole-repo invariant, cheap, unconditional like the model check above;
+        # the self-test in the scoped runner step proves the guard first.
+        run: bash scripts/check-agent-turn-budget.sh
 
       - name: Check agent frontmatter uses only fields Claude Code reads
         # Claude Code ignores an agent frontmatter key it does not recognize

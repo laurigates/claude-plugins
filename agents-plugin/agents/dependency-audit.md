@@ -6,7 +6,7 @@ description: Dependency vulnerability and freshness audit. Scans for outdated pa
 tools: Glob, Grep, Read, Bash(npm audit *), Bash(npm outdated *), Bash(npm ls *), Bash(yarn audit *), Bash(bun pm *), Bash(pip-audit *), Bash(pip list *), Bash(cargo audit *), Bash(snyk *), Bash(git status *), TodoWrite
 maxTurns: 15
 created: 2026-01-24
-modified: 2026-10-09
+modified: 2026-10-22
 reviewed: 2026-06-18
 ---
 
@@ -79,6 +79,12 @@ govulncheck ./... 2>/dev/null
 | High | Upgrade this sprint | XSS, SQL injection in dep |
 | Medium | Plan upgrade | DoS, info disclosure |
 | Low | Track for next update | Minor issues, theoretical |
+
+## Turn Budget
+
+`maxTurns: 15` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 12 of 15), stop auditing and deliver the report in the Output Format below. Report the findings so far, and list each ecosystem, manifest or lockfile you did not scan under **Not scanned**, so an unaudited ecosystem never reads as clean.
+
+**Callers**: this agent has 15 turns. Scope a brief to one ecosystem or workspace; split a monorepo audit across agents.
 
 ## Output Format
 

@@ -6,7 +6,7 @@ description: Scaffold a complete CI/CD setup for a repo — multiple GitHub Acti
 tools: Glob, Grep, Read, Edit, Write, Bash(gh pr *), Bash(gh run *), Bash(gh workflow *), Bash(npm *), Bash(yarn *), Bash(bun *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), TodoWrite
 maxTurns: 15
 created: 2025-12-27
-modified: 2026-06-17
+modified: 2026-10-22
 reviewed: 2026-06-17
 ---
 
@@ -122,6 +122,12 @@ jobs:
 - uses: Swatinem/rust-cache@v2
 - run: cargo test
 ```
+
+## Turn Budget
+
+`maxTurns: 15` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 12 of 15), stop configuring and deliver the report in the Output Format below. Report the files created or updated, and mark the Validation line **Not verified** for any workflow you did not check. Name any trigger or job you left unconfigured.
+
+**Callers**: this agent has 15 turns. Scope a brief to one pipeline; split a multi-pipeline setup across agents.
 
 ## Output Format
 

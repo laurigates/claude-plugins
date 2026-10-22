@@ -6,7 +6,7 @@ description: Route to specialized agents based on codebase health attributes. Re
 tools: Read, Glob, Grep, Agent(security-audit, test, refactor, debug, performance, review, docs), TodoWrite
 maxTurns: 30
 created: 2026-03-15
-modified: 2026-10-18
+modified: 2026-10-22
 reviewed: 2026-09-02
 ---
 
@@ -82,6 +82,12 @@ Example:
 - security: critical(4) + high(3) = 7 → route first
 - test_runner: high(3) = 3 → route second
 - docs: medium(2) = 2 → route third
+
+## Turn Budget
+
+`maxTurns: 30` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 24 of 30), stop routing and deliver the report in the Output Format below. Stop spawning agents, and report the agents already invoked with their results. List every finding not yet routed under **Remaining (Manual Attention)**. Each spawned agent spends its own turns, not yours, but your own reads and summaries count.
+
+**Callers**: this agent has 30 turns. Route a bounded set of findings; filter by severity or category and split a large attribute file across runs.
 
 ## Output Format
 

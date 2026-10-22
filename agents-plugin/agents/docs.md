@@ -6,7 +6,7 @@ description: Generate documentation from code. Creates README files, API referen
 tools: Glob, Grep, Read, Edit, Write, Bash(git status *), Bash(git diff *), Bash(git add *), Bash(git commit *), TodoWrite
 maxTurns: 15
 created: 2025-12-27
-modified: 2026-06-18
+modified: 2026-10-22
 reviewed: 2026-06-18
 ---
 
@@ -102,6 +102,12 @@ Calculate total price for items with optional tax.
 
 **Returns:** float - Total price including tax
 ```
+
+## Turn Budget
+
+`maxTurns: 15` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your tool calls. Once about 80% are used (about 12 of 15), stop writing and deliver the report in the Output Format below. Commit what is written (see Checkpoint Discipline), report the files created or updated, and list the pages or sections you did not reach under **Not documented**.
+
+**Callers**: this agent has 15 turns. Scope a brief to one area of the documentation; split a larger set across agents.
 
 ## Output Format
 
