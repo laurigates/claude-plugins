@@ -4,7 +4,7 @@ description: Write and configure custom agent definitions in Claude Code agents/
 user-invocable: false
 allowed-tools: Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-10-18
+modified: 2026-10-22
 compatibility: claude-code
 reviewed: 2026-09-23
 ---
@@ -58,7 +58,7 @@ the caller's conversation history, and no agent frontmatter field changes that.
 | Want | Use |
 |------|-----|
 | A delegate that keeps verbose work out of the main context | A named agent — isolation is the default, no field needed |
-| A subagent that already knows the conversation so far | `subagent_type: "fork"` on the `Agent` call (fork mode is off under `-p` unless `CLAUDE_CODE_FORK_SUBAGENT=1`) |
+| A subagent that already knows the conversation so far | `subagent_type: "fork"` on the `Agent` call (on by default in `-p`, the SDK, desktop and VS Code since 2.1.302; `CLAUDE_CODE_FORK_SUBAGENT=0` turns it off; `claude mcp serve` never offers it) |
 
 `context: fork` is a **skill** frontmatter field that runs a skill body in a
 new subagent. On an agent it is not a documented field, and Claude Code ignores

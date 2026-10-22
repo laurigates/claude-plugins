@@ -149,10 +149,22 @@ repos:
         files: '/agents/.*\.md$'
         pass_filenames: false
       - id: check-agent-model
-        name: every plugin agent runs on opus
+        name: every plugin agent model is a valid task-shape tier (opus, fable, sonnet+effort, lean haiku)
         entry: ./scripts/check-agent-model.sh
         language: script
         files: '/agents/.*\.md$'
+        pass_filenames: false
+      - id: check-agent-turn-budget
+        name: every plugin agent with maxTurns has a Turn Budget section (#3152)
+        entry: ./scripts/check-agent-turn-budget.sh
+        language: script
+        files: '(/agents/.*\.md|^scripts/check-agent-turn-budget\.sh)$'
+        pass_filenames: false
+      - id: test-check-agent-turn-budget
+        name: agent turn-budget guard regression
+        entry: ./scripts/tests/test-check-agent-turn-budget.sh
+        language: script
+        files: '^scripts/(check-agent-turn-budget\.sh|tests/test-check-agent-turn-budget\.sh)$'
         pass_filenames: false
       - id: check-agent-frontmatter-keys
         name: agent frontmatter uses only fields Claude Code reads (#2646)

@@ -12,7 +12,7 @@ color: "#E53E3E"
 tools: Bash(python3 *), Bash(jq *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(gh pr *), Bash(gh issue *), Bash(find *), Read, Write, Edit, Glob, Grep, TodoWrite
 maxTurns: 40
 created: 2026-04-16
-modified: 2026-10-09
+modified: 2026-10-22
 reviewed: 2026-04-28
 ---
 
@@ -298,6 +298,12 @@ drafts — PRs are never auto-merged.
 ### Step 7: Report summary to main session
 
 Print a table: cluster → count → verdict → deliverable → PR URL.
+
+## Turn Budget
+
+`maxTurns: 40` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 32 of 40), stop clustering and reproducing and deliver the report in the Output Format below. List the clusters you finished with their verdicts. Record a cluster you did not get to reproduce or verify as `NOT_REPRODUCIBLE` with a `Not verified` note rather than omitting it, open a PR only for clusters that carry a verdict, and say how many sessions or clusters were left unanalyzed.
+
+**Callers**: this agent has 40 turns. Keep the window narrow (a week or less) or name target repos; split a wide analysis across runs.
 
 ## Output Format
 

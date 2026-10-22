@@ -6,7 +6,7 @@ description: Diagnose and fix bugs. Finds root cause, implements fix, verifies s
 tools: Glob, Grep, Read, Edit, Write, Bash(npm *), Bash(yarn *), Bash(bun *), Bash(pytest *), Bash(python *), Bash(node *), Bash(cargo *), Bash(go *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git add *), Bash(git commit *), TodoWrite
 maxTurns: 20
 created: 2025-12-27
-modified: 2026-09-23
+modified: 2026-10-22
 reviewed: 2026-09-02
 ---
 
@@ -91,6 +91,12 @@ For simple linter warnings (unused imports, formatting):
 - Run auto-fix when available: `ruff check --fix`, `biome check --write`
 - Apply straightforward fixes directly
 - Don't change code meaning, only style
+
+## Turn Budget
+
+`maxTurns: 20` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 16 of 20), stop investigating and deliver the report in the Output Format below. Report the root cause as **Suspected (not confirmed)** when you have not reproduced it, list only the changes actually applied, and mark the Verification line **Not verified** when the fix has not been run. Commit work in progress first (see Checkpoint Discipline).
+
+**Callers**: this agent has 20 turns. Hand over one bug per agent; split a multi-bug brief.
 
 ## Output Format
 

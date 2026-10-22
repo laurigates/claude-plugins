@@ -1,6 +1,6 @@
 ---
 created: 2026-02-26
-modified: 2026-10-18
+modified: 2026-10-22
 reviewed: 2026-09-23
 paths:
   - "**/skills/**"
@@ -64,6 +64,7 @@ The audit script in this repo is the canonical example — it pairs a human repo
 | Plugin agent body missing `## Tool Selection` section (agents re-discover hook-blocked idioms) | `scripts/check-agent-tool-selection.sh` |
 | A looping skill loses its independent stop condition or compact-state-packet fields (checkpoint plan drops `Verifier result`/`Changed since last run`/`Exit condition`/the independent-verifier step, or a sibling skill loses its `loop-integrity.md` cross-reference) | `scripts/check-loop-integrity.sh --strict` (+ `scripts/tests/test-check-loop-integrity.sh`); wired into `.pre-commit-config.yaml` and `plugin-pr-checks.yml` (self-test + run). See `.claude/rules/loop-integrity.md` |
 | Plugin agent `model:` leaves the task-shape tiers (`inherit` or an unknown model), a `model: sonnet` agent has no explicit `effort:`, or a `model: haiku` agent is not a lean read-only reader (`omitClaudeMd: true`, `tools` limited to Read/Grep/Glob, explicit effort) | `scripts/check-agent-model.sh` (+ `scripts/tests/test-check-agent-model.sh` case J) |
+| A plugin agent sets `maxTurns` but has no `## Turn Budget` section, so the cap cuts the run off mid-investigation and it returns no report (#3152: 5 of 6 `review` runs) — or the section's `maxTurns: <N>` goes stale against the frontmatter, or it lacks the `80%` point or a report instruction | `scripts/check-agent-turn-budget.sh` (+ `scripts/tests/test-check-agent-turn-budget.sh`); no exemption list, every agent with `maxTurns` must comply. Wired into `.pre-commit-config.yaml` and `plugin-pr-checks.yml` |
 | Agent-dispatch skills lose the loud-failure contract (dispatched agents may surrender with one-word summaries) | `scripts/check-agent-failure-contract.sh` |
 | A skill body names a `subagent_type` that resolves to no agent (stale rename, invented name), so every dispatch it instructs fails at "Agent type not found" | `scripts/check-subagent-types.sh` (+ `scripts/tests/test-check-subagent-types.sh`); extend `BUILTIN_SUBAGENT_TYPES` for a new harness-provided type, or `SUBAGENT_TYPE_EXCEPTIONS` for a genuinely illustrative non-dispatch |
 | Skill description exceeds listing-budget length band (>200 WARN, >300 ERROR) | `scripts/plugin-compliance-check.sh` → `check_skill_descriptions()` (length axis); `audit-skill-descriptions.py --strict-length` in pre-commit + CI |

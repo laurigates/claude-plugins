@@ -6,7 +6,7 @@ description: Cross-platform search and replace across codebases using built-in t
 tools: Glob, Grep, Read, Edit, Write, TodoWrite
 maxTurns: 15
 created: 2026-03-11
-modified: 2026-09-02
+modified: 2026-10-22
 reviewed: 2026-09-02
 ---
 
@@ -66,6 +66,12 @@ The harness blocks several common bash idioms — use the dedicated tool instead
 - **Verify ambiguous patterns** — For short patterns (≤3 chars) or common identifiers (`id`, `name`, `type`), use Read to verify context before replacing
 - **Track progress** — work from the Grep match list captured in Step 1 and re-run the same Grep in Step 4; the two lists are what prevent missed or double-processed files
 - **Report failures** — Note any files that could not be processed (unique match issues, binary files)
+
+## Turn Budget
+
+`maxTurns: 15` ends the run when it is spent, and a run that ends mid-task returns no report at all (issue #3152). Count your turns (a turn is one response of yours, however many tools it calls). Once about 80% are used (about 12 of 15), stop replacing and deliver the report in the Output Format below. Report the files modified, and add a **Remaining** line to the report listing every file still holding a match, so the caller can re-dispatch the rest. Do not report 0 remaining matches without the confirming Grep.
+
+**Callers**: this agent has 15 turns. Keep a replacement to the files one agent can finish; split a repo-wide rename across agents.
 
 ## Output Format
 
