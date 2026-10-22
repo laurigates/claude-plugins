@@ -148,7 +148,13 @@ cat > "$STUB/task" <<'TASKSTUB'
 args="$*"
 if [ -n "${TASK_ARGV_LOG:-}" ]; then printf '%s\n' "$args" >> "$TASK_ARGV_LOG"; fi
 case "$args" in
-  *"bpid.any:"*) cat "$TASK_BPID_FIXTURE" 2>/dev/null || echo "[]" ;;
+  # TASK_BPID_FAIL reproduces an undeclared bpid UDA: task rejects the filter on
+  # stderr and exits non-zero with an EMPTY stdout (#2360).
+  *"bpid.any:"*)
+    if [ -n "${TASK_BPID_FAIL:-}" ]; then
+      echo "Error: Unrecognized attribute 'bpid'" >&2; exit 1
+    fi
+    cat "$TASK_BPID_FIXTURE" 2>/dev/null || echo "[]" ;;
   *"export"*)    cat "$TASK_ALL_FIXTURE" 2>/dev/null || echo "[]" ;;
   # An unknown call FAILS, loudly (#2569). Answering it with a valid empty
   # result would let a new call in the collector pass unexercised.
@@ -2643,6 +2649,218 @@ as_bad=$(grep -E '^UNGUARDED ' <<<"$as_out" || true)
 check_eq "AS: every array the reap path expands is length-guarded first" "$as_bad" ""
 check_count_line "AS control: the scan reads the guarded gh_pids and gh_list_jobs loops as guarded" \
   "$as_out" '^GUARDED (gh_pids|gh_list_jobs) ' 2
+
+# ============================================================================
+# C1 (#2360): availability and linkage keys the session-end proposal records
+# are built from — JQ_AVAILABLE, BPID_QUERY_OK, REPO, TASK_n_BPID,
+# UNDRAINED_WOS_NO_EVIDENCE. Every key has a paired positive and negative
+# control, and every test EXECUTES the collector on the stub seams.
+# ============================================================================
+unset TASK_BPID_FAIL GH_LIST_FAIL GH_DISCUSSION_FAIL GH_ARGV_LOG TASK_ARGV_LOG 2>/dev/null || true
+export GH_ISSUE_FIXTURE=/dev/null GH_PR_FIXTURE=/dev/null
+export TASK_ALL_FIXTURE=/dev/null TASK_BPID_FIXTURE=/dev/null
+
+c1_section() {  # $1 = digest, $2 = section name
+  printf '%s\n' "$1" | sed -n "/^=== $2 ===\$/,/^=== END $2 ===\$/p"
+}
+
+BP="$SANDBOX/c1-blueprint"
+mkrepo "$BP"
+mkdir -p "$BP/docs/blueprint"
+echo '{}' > "$BP/docs/blueprint/manifest.json"
+cat > "$BP/docs/blueprint/feature-tracker.json" <<'TRACKER'
+{
+  "tasks": {
+    "pending": [
+      {"id": "WO-045"}, {"id": "WO-046"}, {"id": "WO-050"}, {"id": "WO-099"}
+    ],
+    "in_progress": [],
+    "completed": []
+  }
+}
+TRACKER
+# WO-045: annotated task.  WO-046: task with no annotations.  WO-050: two tasks,
+# one bare and one annotated (some evidence exists).  WO-051 is closed but not
+# pending in the tracker, so it is not undrained at all.
+cat > "$SANDBOX/c1-bpid.json" <<'BPID'
+[
+ {"uuid":"c1-1","status":"completed","bpid":"WO-045","annotations":[{"description":"merged in PR #12"}]},
+ {"uuid":"c1-2","status":"completed","bpid":"WO-046"},
+ {"uuid":"c1-3","status":"completed","bpid":"WO-050","annotations":[]},
+ {"uuid":"c1-4","status":"completed","bpid":"WO-050","annotations":[{"description":"done, see PR #13"}]},
+ {"uuid":"c1-5","status":"completed","bpid":"WO-051"}
+]
+BPID
+export TASK_BPID_FIXTURE="$SANDBOX/c1-bpid.json"
+
+# --- C1a: BLUEPRINT availability echoes + the false-zero case ----------------
+out=$(run_at "$BP" --project demo --with-blueprint)
+bp=$(c1_section "$out" BLUEPRINT)
+check_line "C1a: TASK_AVAILABLE echoed in BLUEPRINT" "$bp" "TASK_AVAILABLE=true"
+check_line "C1a: JQ_AVAILABLE echoed in BLUEPRINT" "$bp" "JQ_AVAILABLE=true"
+check_line "C1a: a query that answered reports BPID_QUERY_OK=true" "$bp" "BPID_QUERY_OK=true"
+check_line "C1a control: the same fixture really has undrained WOs" "$bp" "UNDRAINED_COUNT=3"
+
+# The false zero: a failing bpid query is UNDRAINED_COUNT=0 beside
+# BPID_QUERY_OK=false — never a zero that reads green.
+out=$(TASK_BPID_FAIL=1 run_at "$BP" --project demo --with-blueprint)
+bp=$(c1_section "$out" BLUEPRINT)
+check_line "C1a: failing bpid query reports BPID_QUERY_OK=false" "$bp" "BPID_QUERY_OK=false"
+check_line "C1a: ...beside the false zero it explains" "$bp" "UNDRAINED_COUNT=0"
+check_line "C1a: ...while task and jq are both genuinely available" "$bp" "TASK_AVAILABLE=true"
+check_absent "C1a: a failed query lists no undrained WOs" "$bp" "UNDRAINED_WOS="
+check "C1a: the digest is still parse-stable after the failure" "$out" "=== END BLUEPRINT ==="
+
+# An exit-0 answer that is not a JSON array is a failed read too.
+echo '{"error":"not a list"}' > "$SANDBOX/c1-bpid-obj.json"
+out=$(TASK_BPID_FIXTURE="$SANDBOX/c1-bpid-obj.json" run_at "$BP" --project demo --with-blueprint)
+check_line "C1a: non-array stdout from an exit-0 query is BPID_QUERY_OK=false" \
+  "$(c1_section "$out" BLUEPRINT)" "BPID_QUERY_OK=false"
+
+# Empty stdout with exit 0 is the empty list (unchanged behaviour), not a failure.
+out=$(TASK_BPID_FIXTURE=/dev/null run_at "$BP" --project demo --with-blueprint)
+bp=$(c1_section "$out" BLUEPRINT)
+check_line "C1a control: empty stdout + exit 0 is an honest empty answer" "$bp" "BPID_QUERY_OK=true"
+check_line "C1a control: ...and an honest zero" "$bp" "UNDRAINED_COUNT=0"
+
+# Never attempted: no task binary, then no manifest.
+out=$(SESSION_SURVEY_TASK_BIN=/nonexistent/task run_at "$BP" --project demo --with-blueprint)
+bp=$(c1_section "$out" BLUEPRINT)
+check_line "C1a: no task binary -> TASK_AVAILABLE=false in BLUEPRINT" "$bp" "TASK_AVAILABLE=false"
+check_line "C1a: no task binary -> the query never answered" "$bp" "BPID_QUERY_OK=false"
+out=$(run_at "$REPO" --project demo --with-blueprint)
+bp=$(c1_section "$out" BLUEPRINT)
+check_line "C1a: no manifest -> MANIFEST=false" "$bp" "MANIFEST=false"
+check_line "C1a: no manifest -> the query was never attempted" "$bp" "BPID_QUERY_OK=false"
+
+# --- C1b: JQ_AVAILABLE per section, true and false ---------------------------
+out=$(run_at "$BP" --project demo --with-blueprint --with-dedup)
+check_line "C1b: TASKWARRIOR reports jq present" "$(c1_section "$out" TASKWARRIOR)" "JQ_AVAILABLE=true"
+check_line "C1b: PRS reports jq present" "$(c1_section "$out" PRS)" "JQ_AVAILABLE=true"
+check_line "C1b: GITHUB_DRIFT reports jq present" "$(c1_section "$out" GITHUB_DRIFT)" "JQ_AVAILABLE=true"
+check_eq "C1b fixture: the NOJQ PATH still lacks jq" \
+  "$(PATH="$NOJQ" command -v jq >/dev/null 2>&1 && echo present || echo absent)" "absent"
+out=$(PATH="$NOJQ" bash "$COLLECTOR" --project-dir "$BP" --project demo --with-blueprint --with-dedup 2>&1)
+check_line "C1b: TASKWARRIOR reports jq absent" "$(c1_section "$out" TASKWARRIOR)" "JQ_AVAILABLE=false"
+check_line "C1b: BLUEPRINT reports jq absent" "$(c1_section "$out" BLUEPRINT)" "JQ_AVAILABLE=false"
+check_line "C1b: PRS reports jq absent" "$(c1_section "$out" PRS)" "JQ_AVAILABLE=false"
+check_line "C1b: GITHUB_DRIFT reports jq absent" "$(c1_section "$out" GITHUB_DRIFT)" "JQ_AVAILABLE=false"
+check_line "C1b: ...beside the uncomputed zero it explains" \
+  "$(c1_section "$out" BLUEPRINT)" "UNDRAINED_COUNT=0"
+
+# --- C1c: UNDRAINED_WOS_NO_EVIDENCE -----------------------------------------
+out=$(run_at "$BP" --project demo --with-blueprint)
+bp=$(c1_section "$out" BLUEPRINT)
+check_line "C1c: undrained set is the closed-and-pending intersection" "$bp" "UNDRAINED_WOS=WO-045,WO-046,WO-050"
+check_line "C1c: the WO whose only task is bare is listed" "$bp" "UNDRAINED_WOS_NO_EVIDENCE=WO-046"
+check_count_line "C1c: exactly one NO_EVIDENCE line" "$bp" '^UNDRAINED_WOS_NO_EVIDENCE=' 1
+# Negative controls: WO-045 (annotated) and WO-050 (one of two tasks annotated)
+# have evidence; WO-051 is closed but not undrained; WO-099 is pending only.
+check_absent "C1c: an annotated WO is not listed" "$(grep '^UNDRAINED_WOS_NO_EVIDENCE=' <<<"$bp")" "WO-045"
+check_absent "C1c: a WO with ANY annotated task is not listed" "$(grep '^UNDRAINED_WOS_NO_EVIDENCE=' <<<"$bp")" "WO-050"
+check_absent "C1c: a closed-but-already-drained WO is not undrained" "$bp" "WO-051"
+# Every undrained WO annotated -> the key is absent, not empty.
+jq 'map(if .bpid == "WO-046" then . + {"annotations":[{"description":"shipped"}]} else . end)' \
+  "$SANDBOX/c1-bpid.json" > "$SANDBOX/c1-bpid-annotated.json"
+out=$(TASK_BPID_FIXTURE="$SANDBOX/c1-bpid-annotated.json" run_at "$BP" --project demo --with-blueprint)
+bp=$(c1_section "$out" BLUEPRINT)
+check_line "C1c control: still three undrained WOs" "$bp" "UNDRAINED_COUNT=3"
+check_absent "C1c: all annotated -> no NO_EVIDENCE key" "$bp" "UNDRAINED_WOS_NO_EVIDENCE"
+# A whitespace-only annotation is not evidence.
+jq 'map(if .bpid == "WO-045" then . + {"annotations":[{"description":"  "}]} else . end)' \
+  "$SANDBOX/c1-bpid.json" > "$SANDBOX/c1-bpid-blank.json"
+out=$(TASK_BPID_FIXTURE="$SANDBOX/c1-bpid-blank.json" run_at "$BP" --project demo --with-blueprint)
+check_line "C1c: a blank annotation does not count as evidence" \
+  "$(c1_section "$out" BLUEPRINT)" "UNDRAINED_WOS_NO_EVIDENCE=WO-045,WO-046"
+# A failed query lists nothing (no evidence claim about an unread store).
+out=$(TASK_BPID_FAIL=1 run_at "$BP" --project demo --with-blueprint)
+check_absent "C1c: failed query emits no NO_EVIDENCE" "$(c1_section "$out" BLUEPRINT)" "UNDRAINED_WOS_NO_EVIDENCE"
+
+# WO ids reach the digest through a joined list: a newline in one must not
+# mint a second KEY= line (the #2219 row-injection class).
+BPI="$SANDBOX/c1-inject"
+mkrepo "$BPI"
+mkdir -p "$BPI/docs/blueprint"
+echo '{}' > "$BPI/docs/blueprint/manifest.json"
+printf '%s' '{"tasks":{"pending":[{"id":"WO-7\nINJECTED=1"}],"in_progress":[{"id":"WO-8\nINFLIGHT_INJECTED=1"}],"completed":[]}}' \
+  > "$BPI/docs/blueprint/feature-tracker.json"
+printf '%s' '[{"uuid":"i-1","status":"completed","bpid":"WO-7\nINJECTED=1"}]' > "$SANDBOX/c1-bpid-inject.json"
+out=$(TASK_BPID_FIXTURE="$SANDBOX/c1-bpid-inject.json" run_at "$BPI" --project demo --with-blueprint)
+bp=$(c1_section "$out" BLUEPRINT)
+check_count_line "C1c: a newline in a WO id mints no INJECTED= line" "$bp" '^INJECTED=' 0
+check_count_line "C1c: ...nor an INFLIGHT_INJECTED= line" "$bp" '^INFLIGHT_INJECTED=' 0
+check_line "C1c: the id is flattened onto one UNDRAINED_WOS row" "$bp" "UNDRAINED_WOS=WO-7 INJECTED=1"
+check_line "C1c: ...and onto one NO_EVIDENCE row" "$bp" "UNDRAINED_WOS_NO_EVIDENCE=WO-7 INJECTED=1"
+check_line "C1c control: the in-flight id is flattened, not dropped" "$bp" "INFLIGHT_WOS=WO-8 INFLIGHT_INJECTED=1"
+
+# --- C1d: TASK_n_BPID --------------------------------------------------------
+# Row 1: bpid + ghid.  Row 2: neither.  Row 3: bpid but NO ghid (the empty
+# middle column must not shift).  Row 4: a bpid carrying a tab and a newline.
+cat > "$SANDBOX/c1-tasks.json" <<'TASKS'
+[
+ {"uuid":"t-1","project":"demo","description":"linked and tracked","modified":"20260601T101010Z","ghid":"2360","bpid":"WO-031"},
+ {"uuid":"t-2","project":"demo","description":"unlinked","modified":"20260601T101010Z"},
+ {"uuid":"t-3","project":"demo","description":"bpid only","modified":"20260601T101010Z","bpid":"WO-032"},
+ {"uuid":"t-4","project":"demo","description":"hostile bpid","modified":"20260601T101010Z","bpid":"WO-7\tx\nINJ=1"}
+]
+TASKS
+out=$(TASK_ALL_FIXTURE="$SANDBOX/c1-tasks.json" run)
+tw=$(c1_section "$out" TASKWARRIOR)
+check_line "C1d: a linked task carries its WO" "$tw" "TASK_1_BPID=WO-031"
+check_line "C1d: ...without disturbing the GHID column before it" "$tw" "TASK_1_GHID=2360"
+check_absent "C1d: an unlinked task emits no BPID row" "$tw" "TASK_2_BPID="
+check_line "C1d: a bpid with no ghid keeps its own column" "$tw" "TASK_3_BPID=WO-032"
+check_absent "C1d: ...and invents no GHID" "$tw" "TASK_3_GHID="
+check_line "C1d: tab and newline in a bpid are flattened to one row" "$tw" "TASK_4_BPID=WO-7 x INJ=1"
+check_count_line "C1d: a newline in a bpid mints no INJ= line" "$tw" '^INJ=' 0
+check_line "C1d: the description column is intact" "$tw" "TASK_3_DESC=bpid only"
+
+# --- C1e: REPO from the origin URL, without gh ------------------------------
+RP="$SANDBOX/c1-repo"
+mkrepo "$RP"
+repo_of() {  # $1 = origin URL ("" removes origin) -> the digest's REPO= value
+  git -C "$RP" remote remove origin 2>/dev/null || true
+  [ -z "$1" ] || git -C "$RP" remote add origin "$1"
+  run_at "$RP" --project demo | grep -m1 '^REPO=' | cut -d= -f2-
+}
+check_eq "C1e: https URL"                "$(repo_of 'https://github.com/laurigates/claude-plugins.git')" "laurigates/claude-plugins"
+check_eq "C1e: https URL without .git"   "$(repo_of 'https://github.com/laurigates/claude-plugins')" "laurigates/claude-plugins"
+check_eq "C1e: trailing slash"           "$(repo_of 'https://github.com/laurigates/claude-plugins/')" "laurigates/claude-plugins"
+check_eq "C1e: scp-style ssh"            "$(repo_of 'git@github.com:laurigates/claude-plugins.git')" "laurigates/claude-plugins"
+check_eq "C1e: ssh:// with port"         "$(repo_of 'ssh://git@github.com:22/laurigates/claude-plugins.git')" "laurigates/claude-plugins"
+check_eq "C1e: token in userinfo"        "$(repo_of 'https://x-access-token:abc123@github.com/laurigates/claude-plugins')" "laurigates/claude-plugins"
+check_eq "C1e: dots and dashes in names" "$(repo_of 'git@github.com:my-org/some.repo-name_2.git')" "my-org/some.repo-name_2"
+# Negative controls: each of these must be EMPTY, never a garbage slug.
+check_eq "C1e: no origin -> empty"             "$(repo_of '')" ""
+check_eq "C1e: non-GitHub host -> empty"       "$(repo_of 'https://gitlab.com/laurigates/claude-plugins.git')" ""
+check_eq "C1e: look-alike host -> empty"       "$(repo_of 'https://notgithub.com/laurigates/claude-plugins')" ""
+check_eq "C1e: file:// URL -> empty"           "$(repo_of 'file:///srv/laurigates/claude-plugins')" ""
+check_eq "C1e: local path -> empty"            "$(repo_of '/srv/git/claude-plugins')" ""
+check_eq "C1e: nested path -> empty"           "$(repo_of 'https://github.com/laurigates/claude-plugins/tree/main')" ""
+check_eq "C1e: single segment -> empty"        "$(repo_of 'https://github.com/laurigates')" ""
+check_eq "C1e: ssh-config alias host -> empty" "$(repo_of 'git@gh-work:laurigates/claude-plugins.git')" ""
+# The key is always present, so empty is an answer, not an omission.
+git -C "$RP" remote remove origin 2>/dev/null || true
+out=$(run_at "$RP" --project demo)
+check_line "C1e: REPO= is emitted (empty) even with no origin" "$(c1_section "$out" GIT)" "REPO="
+out=$(run_at "$SANDBOX" --project demo)
+check_line "C1e: not a git repo -> IN_GIT=false" "$out" "IN_GIT=false"
+check_line "C1e: not a git repo -> REPO= empty" "$(c1_section "$out" GIT)" "REPO="
+
+# No gh: the slug resolves with gh absent, and with gh present the collector
+# never asks gh for it.
+git -C "$RP" remote add origin 'git@github.com:laurigates/claude-plugins.git'
+out=$(SESSION_SURVEY_GH_BIN=/nonexistent/gh run_at "$RP" --project demo)
+check_line "C1e: gh absent is no obstacle to REPO" "$(c1_section "$out" GIT)" "REPO=laurigates/claude-plugins"
+check_line "C1e control: gh really was absent" "$out" "GH_READY=false"
+c1_gh_log="$SANDBOX/c1-gh-argv.log"
+: > "$c1_gh_log"
+out=$(GH_ARGV_LOG="$c1_gh_log" run_at "$RP" --project demo --with-dedup)
+check_line "C1e: REPO still resolves with gh present" "$(c1_section "$out" GIT)" "REPO=laurigates/claude-plugins"
+c1_gh_argv=$(cat "$c1_gh_log")
+check "C1e control: the gh argv log is live (the collector does call gh)" "$c1_gh_argv" "pr list"
+check_absent "C1e: no gh repo view" "$c1_gh_argv" "repo view"
+check_absent "C1e: no gh api repos lookup" "$c1_gh_argv" "api repos"
 
 echo "---"
 echo "PASS=$pass FAIL=$fail"

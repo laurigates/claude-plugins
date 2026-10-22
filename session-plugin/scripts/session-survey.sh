@@ -90,6 +90,10 @@ case "$gh_budget" in
 esac
 
 have() { command -v "$1" >/dev/null 2>&1; }
+# Echoed as JQ_AVAILABLE= in every section whose rows are projected through jq
+# (#2360): a jq-less run prints headers and zero counts that read as a clean
+# digest unless the absence is itself a key.
+if have jq; then jq_available=true; else jq_available=false; fi
 
 # Row separator for the taskwarrior projections below. NOT a tab: TAB is an IFS
 # *whitespace* character, so `IFS=$'\t' read` collapses a run of tabs into one
@@ -529,6 +533,59 @@ if [ "$in_git" = true ]; then
     project_remote_name="${project_remote_name##*/}"
     project_remote_name="${project_remote_name##*:}"
   fi
+fi
+
+# `<owner>/<repo>` of the cwd checkout's `origin`, parsed from the URL alone —
+# no `gh` call, so it resolves when gh is absent, unauthenticated or killed
+# (#2360). session-end's feedback pass needs the TARGET repo before it can build
+# a record, and `gh repo view` is a network round-trip that fails exactly where
+# the web sandbox is weakest. Read from $project_dir for the same reason as
+# project_remote_name above: the cwd's own checkout, not the #2441 outer repo.
+#
+# EMPTY unless the URL is unambiguously a GitHub `<owner>/<repo>` — a missing
+# origin, a local path, a `file://` URL, a non-GitHub host, a nested path or an
+# ssh-config alias host all yield "", never a garbage slug a consumer would
+# file an issue against. The empty answer is the safe one: the consumer falls
+# back to asking.
+repo_slug_of() {  # $1 = remote URL; prints OWNER/REPO or nothing
+  local url="$1" hostpart path owner repo
+  url="${url%/}"
+  url="${url%.git}"
+  url="${url%/}"
+  case "$url" in
+    file://*) return 0 ;;
+    *://*)  # scheme://[user[:token]@]host[:port]/owner/repo
+      hostpart="${url#*://}"
+      path="${hostpart#*/}"
+      [ "$path" != "$hostpart" ] || return 0
+      hostpart="${hostpart%%/*}"
+      ;;
+    *:*)    # scp-style: [user@]host:owner/repo
+      hostpart="${url%%:*}"
+      path="${url#*:}"
+      ;;
+    *) return 0 ;;
+  esac
+  hostpart="${hostpart##*@}"   # drop userinfo
+  hostpart="${hostpart%%:*}"   # drop port
+  case "${hostpart,,}" in
+    github.com|*.github.com) ;;
+    *) return 0 ;;
+  esac
+  case "$path" in */*) ;; *) return 0 ;; esac
+  owner="${path%%/*}"
+  repo="${path#*/}"
+  # Exactly two non-empty segments of GitHub-legal characters.
+  case "$repo" in */*|'') return 0 ;; esac
+  [ -n "$owner" ] || return 0
+  case "$owner$repo" in *[!A-Za-z0-9._-]*) return 0 ;; esac
+  printf '%s/%s' "$owner" "$repo"
+}
+
+repo_slug=""
+if [ "$in_git" = true ]; then
+  repo_origin_url=$("$git_bin" -C "$project_dir" remote get-url origin 2>/dev/null) || repo_origin_url=""
+  [ -n "$repo_origin_url" ] && repo_slug=$(repo_slug_of "$repo_origin_url")
 fi
 
 # ---------------------------------------------------------------------------
@@ -1350,6 +1407,10 @@ echo "GIT_CONFIDENCE=${git_confidence}"
 # Both present only on the `workspace-root` rung.
 [ -n "$git_root" ] && echo "GIT_ROOT=${git_root}"
 [ -n "$git_nested_repo" ] && echo "GIT_NESTED_REPO=${git_nested_repo}"
+# The cwd checkout's GitHub `<owner>/<repo>`, from the origin URL with no gh
+# call (#2360); empty when there is no origin or it is not an unambiguous
+# GitHub URL. Always emitted, so an empty value is an answer, not an omission.
+echo "REPO=${repo_slug}"
 echo "STATUS=OK"
 echo "=== END GIT ==="
 
@@ -1360,6 +1421,10 @@ echo "TASK_AVAILABLE=${task_available}"
 echo "TASK_STORE_REACHABLE=${task_store_reachable}"
 [ -n "$task_fail_reason" ] && echo "TASK_FAIL_REASON=${task_fail_reason}"
 [ -n "$task_fail_detail" ] && echo "TASK_FAIL_DETAIL=${task_fail_detail}"
+# Whether jq was on PATH (#2360). Without it every TASK_n_ row below is absent
+# and every count is a zero that was never computed — a consumer must read this
+# before trusting either.
+echo "JQ_AVAILABLE=${jq_available}"
 echo "OPEN_TASKS=${open_tasks}"
 # The slug ALONE, without its `.` subprojects — OPEN_TASKS' exact-equality half.
 echo "PROJECT_EXACT_TASKS=${project_exact_tasks}"
@@ -1385,7 +1450,7 @@ echo "RECENT_DAYS=${recent_days}"
 [ -n "$recent_days_invalid" ] && echo "RECENT_DAYS_INVALID=${recent_days_invalid}"
 if have jq && [ "$open_tasks" -gt 0 ] 2>/dev/null; then
   idx=0
-  while IFS="$US" read -r uuid desc active modified annot ghid; do
+  while IFS="$US" read -r uuid desc active modified annot ghid bpid; do
     idx=$((idx + 1))
     sd=$(days_since "$modified" 2>/dev/null || echo "")
     echo "TASK_${idx}_UUID=${uuid}"
@@ -1394,13 +1459,17 @@ if have jq && [ "$open_tasks" -gt 0 ] 2>/dev/null; then
     [ -n "$sd" ] && echo "TASK_${idx}_STALE_DAYS=${sd}"
     [ -n "$annot" ] && [ "$annot" != "null" ] && echo "TASK_${idx}_ANNOT=${annot}"
     [ -n "$ghid" ] && [ "$ghid" != "null" ] && echo "TASK_${idx}_GHID=${ghid}"
+    # The blueprint work-order this task is linked to (#2360), so session-end
+    # can predict which WOs a task close would drain. Absent when unlinked.
+    [ -n "$bpid" ] && [ "$bpid" != "null" ] && echo "TASK_${idx}_BPID=${bpid}"
   done < <(printf '%s' "$project_tasks_json" | jq -r --arg us "$US" '
     .[] | [ .uuid,
             (.description | gsub("[\t\r\n\u001f]";" ")),
             (((.tags // []) | index("ACTIVE")) != null),
             (.modified // ""),
             ((.annotations // []) | map(.description) | join(" | ") | gsub("[\t\r\n\u001f]";" ")),
-            (.ghid // "")
+            (.ghid // ""),
+            ((.bpid // "") | tostring | gsub("[\t\r\n\u001f]";" "))
           ] | join($us)' 2>/dev/null)
 fi
 if [ "${#recent_uuids[@]}" -gt 0 ]; then
@@ -1474,18 +1543,34 @@ if [ "$with_blueprint" = true ]; then
   closed_bpid_count=0
   undrained_count=0
   undrained_wos=""
+  undrained_no_evidence=""
   [ -f "$bp_manifest" ] && bp_manifest_present=true
   [ -f "$bp_tracker" ] && bp_tracker_present=true
 
   closed_bpid_json="[]"
+  # Whether the completed-bpid query ANSWERED (#2360). UNDRAINED_COUNT=0 means
+  # "nothing to drain" only when this is true: an undeclared bpid UDA makes
+  # `task` error on the filter, and folding that failure into `[]` is a false
+  # zero that passes every other precondition. False also when the query was
+  # never attempted (no manifest, no task binary); read MANIFEST= and
+  # TASK_AVAILABLE= to tell those apart.
+  bpid_query_ok=false
   if [ "$bp_manifest_present" = true ] && have "$task_bin"; then
     # A separate call by design: this queries COMPLETED tasks, which are
     # outside the pending snapshot above. No project: filter — the
-    # tracker-pending intersection below is the real scoper. The || guard is
-    # required: an undeclared bpid UDA makes task error on the filter instead
-    # of returning [].
-    closed_bpid_json=$("$task_bin" bpid.any: status:completed export 2>/dev/null || echo "[]")
-    [ -n "$closed_bpid_json" ] || closed_bpid_json="[]"
+    # tracker-pending intersection below is the real scoper. The exit status is
+    # kept, not swallowed: an undeclared bpid UDA makes task error on the
+    # filter instead of returning [], and stdout from a failed call is not data.
+    bpid_rc=0
+    bpid_raw=$("$task_bin" bpid.any: status:completed export 2>/dev/null) || bpid_rc=$?
+    if [ "$bpid_rc" -eq 0 ]; then
+      if [ -z "$bpid_raw" ]; then
+        bpid_query_ok=true   # an empty answer is an empty list, as before
+      elif ! have jq || printf '%s' "$bpid_raw" | jq -e 'type == "array"' >/dev/null 2>&1; then
+        bpid_query_ok=true
+        closed_bpid_json="$bpid_raw"
+      fi
+    fi
   fi
 
   if [ "$bp_manifest_present" = true ] && have jq; then
@@ -1496,7 +1581,7 @@ if [ "$with_blueprint" = true ]; then
       ready_count=$(jq '[(.features // []), [.phases[]?.features[]?]] | add | map(select(.status == "not_started")) | length' "$bp_tracker" 2>/dev/null || echo 0)
       blocked_count=$(jq '[(.features // []), [.phases[]?.features[]?]] | add | map(select(.status == "blocked")) | length' "$bp_tracker" 2>/dev/null || echo 0)
       inflight_count=$(jq '(.tasks.in_progress // []) | length' "$bp_tracker" 2>/dev/null || echo 0)
-      inflight_wos=$(jq -r '(.tasks.in_progress // []) | map(.id // empty) | join(",")' "$bp_tracker" 2>/dev/null || echo "")
+      inflight_wos=$(jq -r '(.tasks.in_progress // []) | map(.id // empty | tostring | gsub("[\t\r\n\u001f]";" ")) | join(",")' "$bp_tracker" 2>/dev/null || echo "")
       # Undrained: closed-bpid WO ids ∩ tracker tasks.pending[].id — the
       # session-end drain-pass qualify signal.
       undrained_json=$(printf '%s' "$closed_bpid_json" | jq -c --slurpfile t "$bp_tracker" '
@@ -1505,7 +1590,17 @@ if [ "$with_blueprint" = true ]; then
         | [ $closed[] | select(. as $w | $pending | index($w)) ]' 2>/dev/null || echo "[]")
       [ -n "$undrained_json" ] || undrained_json="[]"
       undrained_count=$(printf '%s' "$undrained_json" | jq 'length' 2>/dev/null || echo 0)
-      undrained_wos=$(printf '%s' "$undrained_json" | jq -r 'join(",")' 2>/dev/null || echo "")
+      undrained_wos=$(printf '%s' "$undrained_json" | jq -r 'map(tostring | gsub("[\t\r\n\u001f]";" ")) | join(",")' 2>/dev/null || echo "")
+      # Undrained WOs whose closed task(s) carry no annotation at all (#2360):
+      # nothing a drain could cite as completion evidence, so applying one
+      # would reach the sync skill's interactive evidence prompt.
+      undrained_no_evidence=$(printf '%s' "$closed_bpid_json" | jq -r --argjson u "$undrained_json" '
+        . as $tasks
+        | [ $u[] | . as $w
+            | select(([ $tasks[] | select(.bpid == $w)
+                        | select(any((.annotations // [])[]?; ((.description // "") | tostring | test("\\S")))) ] | length) == 0)
+            | tostring | gsub("[\t\r\n\u001f]";" ") ]
+        | join(",")' 2>/dev/null || echo "")
     fi
   fi
 
@@ -1518,6 +1613,16 @@ if [ "$with_blueprint" = true ]; then
   echo "CLOSED_BPID_COUNT=${closed_bpid_count}"
   echo "UNDRAINED_COUNT=${undrained_count}"
   [ "${undrained_count:-0}" -gt 0 ] 2>/dev/null && echo "UNDRAINED_WOS=${undrained_wos}"
+  # Subset of UNDRAINED_WOS with no annotated closed task (#2360). Present only
+  # when non-empty, like UNDRAINED_WOS; absent means every undrained WO has some.
+  [ -n "$undrained_no_evidence" ] && echo "UNDRAINED_WOS_NO_EVIDENCE=${undrained_no_evidence}"
+  # Availability of what the zeros above were computed from (#2360). A record
+  # may be minted from this section only when all three are true: TASK_AVAILABLE
+  # (the binary), JQ_AVAILABLE (the projection) and BPID_QUERY_OK (the query
+  # answered). Without them UNDRAINED_COUNT=0 is a zero that was never computed.
+  echo "TASK_AVAILABLE=${task_available}"
+  echo "JQ_AVAILABLE=${jq_available}"
+  echo "BPID_QUERY_OK=${bpid_query_ok}"
   echo "STATUS=OK"
   echo "=== END BLUEPRINT ==="
 fi
@@ -1556,6 +1661,9 @@ echo "GH_READY=${gh_ready}"
 [ "$gh_timeout" = true ] && echo "GH_TIMEOUT=true"
 echo "GH_BUDGET=${gh_budget}"
 [ -n "$gh_budget_invalid" ] && echo "GH_BUDGET_INVALID=${gh_budget_invalid}"
+# PR rows are projected through jq: without it PR_COUNT can be >0 beside no
+# PR_n_ rows (#2360).
+echo "JQ_AVAILABLE=${jq_available}"
 # `gh` runs with $git_state_dir as its cwd — the same directory the GIT section
 # reads — so it resolves the repo from that checkout's remote and the PR rows
 # describe the same repository GIT_SCOPE names (#2441). A call that never landed
@@ -1593,6 +1701,7 @@ if [ "$with_dedup" = true ]; then
   [ -n "$gh_fail_detail" ] && echo "GH_FAIL_DETAIL=${gh_fail_detail}"
   echo "ASSIGNED_ISSUES=${assigned_issues}"
   echo "DRIFT_COUNT=${drift_issues}"
+  echo "JQ_AVAILABLE=${jq_available}"
   if have jq && [ "$drift_issues" -gt 0 ] 2>/dev/null; then
     idx=0
     while IFS=$'\t' read -r num title url upd; do
