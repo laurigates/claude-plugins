@@ -23,9 +23,9 @@
 #     - emit only OK / WARN / ERROR, whether as a literal or through a variable
 #       whose literal assignments are traced in the same file
 #     - emit ISSUE_COUNT=
-#     - emit REASON=, unless listed in scripts/structured-output-reason-pending.txt
-#   The pending list is a ratchet: an entry that now emits REASON=, or is no
-#   longer a STATUS= emitter, is itself an error, so the list only shrinks.
+#     - emit REASON=
+#   The #2760 rollout migrated every emitter, so there is no exemption list: a
+#   new check script without REASON= fails the sweep outright.
 #   Static analysis proves REASON= is emitted somewhere; it cannot prove the
 #   line sits on the non-OK path. That half is --validate's job.
 #
@@ -170,15 +170,6 @@ def emit(title, keys, issues):
 
 def sweep(root, strict):
     os.chdir(root)
-    pending_rel = "scripts/structured-output-reason-pending.txt"
-    pending = []
-    if os.path.isfile(pending_rel):
-        with open(pending_rel, encoding="utf-8") as fh:
-            for raw in fh:
-                entry = raw.split("#", 1)[0].strip()
-                if entry:
-                    pending.append(entry)
-
     # Relative glob from inside the root (#2219): an absolute base under
     # .claude/worktrees/ cannot collapse the scan to nothing.
     scripts_dir = "scripts"
@@ -222,24 +213,15 @@ def sweep(root, strict):
                            "%s emits STATUS=%s; use OK, WARN or ERROR" % (rel, value)))
         if not info["count"]:
             issues.append(("missing_issue_count", "%s emits STATUS= but never ISSUE_COUNT=" % rel))
-        if not info["reason"] and rel not in pending:
+        if not info["reason"]:
             issues.append(("missing_reason",
                            "%s emits STATUS= but never REASON= on its non-OK path" % rel))
-
-    for rel in pending:
-        if rel not in emitters:
-            issues.append(("stale_pending",
-                           "%s is in %s but is not a STATUS= emitter; delete the entry" % (rel, pending_rel)))
-        elif emitters[rel]["reason"]:
-            issues.append(("stale_pending",
-                           "%s now emits REASON=; delete it from %s" % (rel, pending_rel)))
 
     keys = [
         ("SCRIPTS_SCANNED", len(candidates)),
         ("SCANNED_EMPTY", "true" if not candidates else "false"),
         ("STATUS_EMITTERS", len(emitters)),
         ("REASON_EMITTERS", sum(1 for info in emitters.values() if info["reason"])),
-        ("REASON_PENDING", len(pending)),
     ]
     status = emit("STRUCTURED OUTPUT CONTRACT", keys, issues)
     return 1 if (strict and status != "OK") else 0

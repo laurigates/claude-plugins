@@ -1,7 +1,0 @@
-# REASON= rollout ratchet for scripts/check-structured-output-contract.sh (#2691).
-#
-# Each line is a repo-relative scripts/check-*.sh that emits STATUS= but does
-# not yet emit REASON= on its non-OK path. The guard exempts a listed script
-# from missing_reason, and reports an ERROR for any entry that now emits REASON=
-# or is no longer a STATUS= emitter, so this list can only shrink. Delete a
-# line in the same commit that migrates the script. Rollout: #2760.

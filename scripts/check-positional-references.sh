@@ -21,9 +21,7 @@
 #              baseline (scripts/positional-references-baseline.txt,
 #              `path<TAB>count`); a file ABOVE its baseline is ERROR, a file not
 #              in the baseline starts at 0. A file BELOW its baseline is also
-#              ERROR (stale_baseline), the same way
-#              scripts/structured-output-reason-pending.txt fails an entry that
-#              no longer needs to be there -- so the ratchet only tightens.
+#              ERROR (stale_baseline), so the ratchet only tightens.
 #              `--update-baseline` rewrites it, lowering entries only (it
 #              seeds a missing baseline from the current counts, once).
 #   Out of scope: skill `templates/` (text emitted into other repos) and
