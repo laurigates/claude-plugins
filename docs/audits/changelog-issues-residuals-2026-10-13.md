@@ -46,6 +46,7 @@ The #3065 preamble also dates the cloud-session `/loop` wakeup revert to
 | `2906:skill-development:5` | Marketplace/claude.ai/npm plugins lose `allowed-tools` pre-approval under `allowManagedPermissionRulesOnly` | 2.1.284 | `skill-development.md` § Permission Patterns |
 | `2906:agent-development:1` | Plugin agent spawned by name keeps its own prompt, tools, effort | 2.1.288 | `agent-development.md` § Agent Teams; MCP PR checks `agent-teams` |
 | `2906:agent-development:10` | Fork subagents inherit the parent's permission mode | 2.1.285 | `agent-development.md` § `context: fork` |
+| `2906:agent-development:11` | `-p` + `CLAUDE_CODE_FORK_SUBAGENT=1` runs nested Agent calls in the foreground | 2.1.285 | Re-opened by #3130: the premise (fork off under `-p`, so the variable matters) ended in 2.1.302, when fork became the default in `-p`, the SDK, desktop and VS Code and a subagent's own `Agent` calls went foreground there. `agent-runtime.md` § Runtime fork vs named agent and § Background Execution; `custom-agent-definitions` SKILL.md |
 | `2906:agent-runtime:1` | Background-command time limit, unattended sessions only | 2.1.285 / 2.1.288 | `agent-runtime.md` § Background Execution |
 | `2906:agent-runtime:5` | `--bare` semantics | 2.1.286 | `agent-runtime.md` § Background Execution |
 | `2906:agentic-permissions:1` | Auto mode is the start mode for interactive sessions | 2.1.284 | `auto-mode.md` intro and mode table; `agentic-permissions.md` mode table |
@@ -106,7 +107,6 @@ The #3065 preamble also dates the cloud-session `/loop` wakeup revert to
 | `2906:agent-development:7` | Worktree subagents loaded CLAUDE.md twice | 2.1.286 | Bug fix (context cost only) |
 | `2906:agent-development:8` | Workflow subagents restarted from their prompt after a stall | 2.1.286 | Bug fix |
 | `2906:agent-development:9` | Teammate transcript `/compact` confirms target | 2.1.286 | Interactive UI |
-| `2906:agent-development:11` | `-p` + `CLAUDE_CODE_FORK_SUBAGENT=1` runs nested Agent calls in the foreground | 2.1.285 | No workflow here sets the variable |
 | `2906:agent-development:12` | Background subagent permission requests reach `--permission-prompt-tool` | 2.1.285 | SDK plumbing; no skill here uses `--permission-prompt-tool` |
 | `2906:agent-development:13` | Auto-mode subagent ends after handing back its report | 2.1.285 | Bug fix |
 | `2906:agent-development:14` | Late-awaited failed `agent()` no longer an unhandled rejection | 2.1.285 | Bug fix; `agent-runtime.md` already records the `.then` wrapper hazard, which is unchanged |

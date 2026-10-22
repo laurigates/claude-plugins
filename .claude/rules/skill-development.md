@@ -1,6 +1,6 @@
 ---
 created: 2025-12-20
-modified: 2026-10-18
+modified: 2026-10-22
 reviewed: 2026-09-16
 paths:
   - "**/skills/**"
@@ -37,6 +37,8 @@ Editing an existing skill hot-reloads, but **adding** a new skill directory need
 | `/reload-skills` command | Re-scans skill directories without restarting the session |
 | `SessionStart` hook returning `reloadSkills: true` | Makes newly installed skills available in the same session |
 
+Since 2.1.299 `/reload-skills` also re-sends the full skill list to the model, which is how to recover skills dropped from view after compaction (skills vanishing from the list after `/rewind` was fixed in 2.1.301).
+
 Use `/reload-skills` after scaffolding a new skill so it becomes invocable immediately. The `SessionStart` hook form is the way an installer hook (e.g. one that drops skills into place on session start) surfaces those skills without a restart.
 
 ### Nested `.claude/skills` Directories (2.1.178+)
@@ -71,6 +73,10 @@ Skills live in `<plugin-name>/skills/<skill-name>/SKILL.md` (or `skill.md`).
 > **Save `SKILL.md` as UTF-8 without a byte-order mark (2.1.239 fix).** A leading BOM caused Claude Code to silently ignore the entire file (agent, skill, or command) before this fix — worth checking first if a skill mysteriously never loads.
 
 > **`anthropic-skills` is a reserved namespace (2.1.283).** Skill folders, command files and workflow commands in the `anthropic-skills` namespace do not load. Do not name a plugin or skill namespace `anthropic-skills`.
+
+> **Unsafe names are not offered (2.1.299).** A skill or command whose file or folder name contains hidden, direction-changing or blank-like characters, `<` or `>` is not offered until renamed, and such a `name:` is ignored. The same applies to plugin skill and command paths. Keep names to lowercase letters, digits and hyphens (Naming Conventions below).
+
+> **Wrong-prefix invocation (2.1.299).** The Skill tool's "Unknown skill" error suggests the listed name when `anthropic-skills:` was added by mistake (see the reserved-namespace note above).
 
 > **Plugin load failures (2.1.283).** When a skill's plugin failed to load, the Skill tool says so. Before 2.1.283 it reported the skill as not installed, which pointed at the wrong fix.
 
@@ -172,6 +178,8 @@ Run helper: !`bash ${CLAUDE_SKILL_DIR}/scripts/helper.sh`
 ```
 
 Since 2.1.290, a `!` shell command containing raw control characters other than tab and newline is refused, with a message showing where they are.
+
+Since 2.1.301, substitution fills only the first 64 argument names, each up to 64 characters; a skill with more or longer names stalled before. Keep `args:` well inside both. Since 2.1.299, `UserPromptSubmit` hooks run **before** a skill or command expands, so a hook that blocks the prompt also stops the body's `!` shell lines; a skill's own frontmatter `UserPromptSubmit` hook first fires on the prompt *after* the one that invokes it (event order: `hooks-reference.md`). A `!` line no longer runs twice when a newer message interrupts it (2.1.299).
 
 > **Escaping a literal `$` (2.1.163+)**: a `$` immediately before a digit is treated as a positional substitution (`$0`, `$1`, …). To emit a **literal** `$` before a digit in a skill/command body, escape it as `\$` — e.g. write `\$5.00` to render `$5.00` instead of substituting argument 5. Only `$` followed by a digit needs escaping; a `$` before a letter or space is left alone.
 
