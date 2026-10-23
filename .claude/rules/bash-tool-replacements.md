@@ -1,6 +1,6 @@
 ---
 created: 2026-05-11
-modified: 2026-10-13
+modified: 2026-10-23
 reviewed: 2026-07-10
 ---
 
@@ -68,7 +68,8 @@ The hook's logic for each:
 - **`grep` / `rg`** — never blocked (demoted to the opt-in teach nudge, #1909/#1871). `Grep` is the context-efficient choice when present, but the Bash form always runs.
 - **`ls`** — never blocked (demoted to the opt-in teach nudge, #2036). `Glob` is the context-efficient choice for pattern listings when present, but the Bash form always runs.
 - **`cat` / `head` / `tail`** — blocked for a plain file read **that is the entire command**. Exempt: a pipeline (`cat file | jq`), a here-doc (`cat <<EOF`), a `/dev/stdin` or `/dev/null` path, and **any compound command** — a `&&`/`||` chain, a `;`-separated sequence, a subshell, or a command substitution (#2148). A trailing `# comment` does not count as a second statement, so `cat f.md  # notes` still blocks. As of #2008 this (and the `echo`/`printf`/`cat`-write and `sed -i` blocks) is decided **structurally** by `ast-grep --lang bash` rather than regex — a real parse tells a command apart from a string/heredoc-body/pipeline/argument, so the block **fails open** (no-op) where `ast-grep` is unavailable. It is a style nudge with no regex twin; the safety blocks (`chmod 777`, `curl|bash`, `git add -A`, …) stay pure-regex and fire everywhere.
-- **`echo`/`printf`/`cat` writes and `sed -i`** — unchanged by #2148. They guard file *mutation*, not context budget, so they still fire inside a compound command. Scratch writes pass: `/tmp`, a `mktemp -d` dir, or a git-ignored project `tmp/` (#2892, #2837).
+- **`cat` writes and `sed -i`** — unchanged by #2148. They guard file *mutation*, not context budget, so they still fire inside a compound command. Scratch writes pass: `/tmp`, a `mktemp -d` dir, or a git-ignored project `tmp/` (#2892, #2837). `sed -i` also passes when each edited file was copied with `cp` earlier in the same command (a mutation probe).
+- **`echo`/`printf` writes** — a non-blocking nudge: the command runs and the model gets a PreToolUse `additionalContext` note preferring Write. The rationale is in `.claude/rules/hook-block-vs-nudge.md`.
 
 ### Remote-exec commands are exempt (issue #1900)
 

@@ -204,6 +204,9 @@ COMMAND_SHELL_ONLY=$(strip_trailing_comments "$COMMAND_NO_HEREDOC")
 # shellcheck disable=SC2001  # bash pattern substitution can't do `[^']*` char class
 COMMAND_NO_STRINGS=$(echo "$COMMAND_SHELL_ONLY" | sed "s/'[^']*'//g; s/\"[^\"]*\"//g")
 
+# Non-blocking nudge text, emitted as additionalContext at the end of the hook.
+NUDGE_MSG=""
+
 # Function to output a blocking message (exit code 2 = blocking error)
 block() {
     echo "$1" >&2
@@ -608,18 +611,67 @@ See .claude/rules/bash-tool-replacements.md for the full table."
         done < <(jq -c '.[] | select(.ruleId == "sed-inplace") | .text' <<<"$AST_JSON" 2>/dev/null)
     }
 
+    # SNAPSHOT-THEN-MUTATE EXEMPTION for `sed -i`.
+    #
+    # Mutation probes copy a file aside, break it with `sed -i`, run the tests,
+    # and copy it back: `cp src/x.ts tmp/snap && sed -i '' 's/a/b/' src/x.ts &&
+    # bun test; cp tmp/snap src/x.ts`. The edit is deliberate and restorable, and
+    # Edit cannot express "mutate, test, restore" in one step. 2026-08-24..10-23
+    # transcripts: 132 of 471 sed-inplace blocks had a `cp` in the same command.
+    #
+    # Exempt when EVERY sed operand appears as a SOURCE argument of a `cp`
+    # earlier in the command (text before the first `sed`). The match is on the
+    # literal token, so `F=x.ts; cp $F b && sed -i … $F` matches too. A `cp`
+    # that only appears after the sed (the restore) grants nothing.
+    snapshotted_before_sed() {
+        local prefix="${COMMAND_SHELL_ONLY%%sed *}" seg p ok tok
+        local -a toks srcs
+        local -a sources=()
+        while IFS= read -r seg; do
+            read -r -a toks <<<"$seg"
+            [ "${toks[0]:-}" = "cp" ] || continue
+            srcs=()
+            for tok in "${toks[@]:1}"; do
+                case "$tok" in -*) continue ;; esac
+                srcs+=("$tok")
+            done
+            [ "${#srcs[@]}" -ge 2 ] || continue
+            sources+=("${srcs[@]:0:${#srcs[@]}-1}")
+        # BSD and GNU tr both pad a short SET2 with its last char: every
+        # separator becomes a newline.
+        done < <(printf '%s\n' "$prefix" | tr ';&|()' '\n')
+        [ "${#sources[@]}" -gt 0 ] || return 1
+        local n=0
+        while IFS= read -r p; do
+            n=$((n + 1))
+            ok=1
+            for tok in "${sources[@]}"; do
+                [ "$tok" = "$p" ] && { ok=0; break; }
+            done
+            [ "$ok" -eq 0 ] || return 1
+        done
+        [ "$n" -gt 0 ]
+    }
+
     if ast_matched "cat-write" && ! scratch_ctx; then
         block "REMINDER: Use the Write tool instead of 'cat > file' to create files. The Write tool is the proper way to write file contents."
     fi
 
+    # echo/printf > file is a NON-BLOCKING nudge, not an exit-2 block. Measured
+    # 2026-08-24..10-23: 147 blocks, of which a sampled third were scratch or
+    # log writes, and 24% were redone with another bash write anyway. Unlike
+    # `sed -i` there is no BSD/GNU failure mode to prevent. The remaining reason
+    # to prefer Write is /rewind coverage, which a nudge communicates without
+    # costing a turn. Emitted at the end of the hook so later safety blocks win.
     if ast_matched "echo-printf-write" && ! scratch_ctx && \
        ! { project_tmp_allowed && echo_write_dests | all_project_tmp; }; then
-        block "REMINDER: Use the Write tool instead of 'echo/printf > file' to create files. The Write tool properly handles file creation and provides better error handling. (Writes under /tmp, into a mktemp -d scratch dir, or into a git-ignored project tmp/ are allowed.)"
+        NUDGE_MSG="Note: prefer the Write tool over 'echo/printf > file' for repo files. Files changed only by Bash are not restored by /rewind, and hooks matching Write/Edit (formatters, guards) do not fire. (Scratch writes under /tmp, a mktemp -d dir, or a git-ignored project tmp/ are fine.)"
     fi
 
     if ast_matched "sed-inplace" && ! scratch_ctx && \
-       ! { project_tmp_allowed && sed_inplace_operands | all_project_tmp; }; then
-        block "REMINDER: Use the Edit tool instead of 'sed -i' to modify files. The Edit tool provides safer, more precise string replacements with proper error handling. (In-place edits under /tmp, in a mktemp -d scratch dir, or in a git-ignored project tmp/ are allowed.)"
+       ! { project_tmp_allowed && sed_inplace_operands | all_project_tmp; } && \
+       ! { sed_inplace_operands | snapshotted_before_sed; }; then
+        block "REMINDER: Use the Edit tool instead of 'sed -i' to modify files. Files changed only by Bash are not restored by /rewind (2.1.309+), hooks matching Edit (formatters, guards) do not fire, and BSD sed on macOS differs from GNU sed ('-i' needs a suffix argument, '\\n' is not a newline in replacements). (In-place edits under /tmp, in a mktemp -d scratch dir, in a git-ignored project tmp/, or of a file first snapshotted with 'cp' in the same command are allowed.)"
     fi
 fi
 
@@ -1065,5 +1117,9 @@ if grep -Eq '>\s*/dev/(sd|hd|nvme|vd|xvd)[a-z]' <<<"$COMMAND"; then
     block "REMINDER: Writing directly to a block device will destroy the filesystem. This is almost certainly not what you want."
 fi
 
-# If we get here, the command is allowed
+# If we get here, the command is allowed. A pending non-blocking nudge goes to
+# the model as PreToolUse additionalContext; the command still runs.
+if [ -n "$NUDGE_MSG" ]; then
+    jq -nc --arg m "$NUDGE_MSG" '{hookSpecificOutput: {hookEventName: "PreToolUse", additionalContext: $m}}'
+fi
 exit 0
