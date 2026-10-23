@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.14.1...workflow-orchestration-plugin-v1.15.0) (2026-10-23)
+
+
+### Features
+
+* **workflow-orchestration-plugin:** add --recon pre-wave checks to workflow-preflight ([#3144](https://github.com/laurigates/claude-plugins/issues/3144)) ([c1b94b5](https://github.com/laurigates/claude-plugins/commit/c1b94b5782a24923d3acb6f8d824a38b8fe298d0))
+
 ## [1.14.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.14.0...workflow-orchestration-plugin-v1.14.1) (2026-10-22)
 
 

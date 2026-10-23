@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.63.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.63.3...git-plugin-v2.63.4) (2026-10-23)
+
+
+### Documentation
+
+* **git-plugin:** add failed-call handling to gh-cli-agentic ([#3142](https://github.com/laurigates/claude-plugins/issues/3142)) ([cabedc6](https://github.com/laurigates/claude-plugins/commit/cabedc6b2bbab60d56e031d38b03e64f5a0784d8))
+* **git-plugin:** add the delta-apply route for stacked and overlapping PRs ([#3155](https://github.com/laurigates/claude-plugins/issues/3155)) ([96d89ea](https://github.com/laurigates/claude-plugins/commit/96d89ea6d43cb485f023ebe94a34bf9c684b0cbf))
+
 ## [2.63.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.63.2...git-plugin-v2.63.3) (2026-10-22)
 
 

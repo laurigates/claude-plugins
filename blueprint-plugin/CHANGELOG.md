@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.48.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.48.0...blueprint-plugin-v3.48.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** remove the sync-ids work copy when autorun is killed ([#3171](https://github.com/laurigates/claude-plugins/issues/3171)) ([02b7265](https://github.com/laurigates/claude-plugins/commit/02b7265923c74a7118021754d2e3a0ae2ca9d6c7)), closes [#3169](https://github.com/laurigates/claude-plugins/issues/3169)
+
 ## [3.48.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.47.6...blueprint-plugin-v3.48.0) (2026-10-18)
 
 

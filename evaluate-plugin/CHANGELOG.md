@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.17.9...evaluate-plugin-v1.18.0) (2026-10-23)
+
+
+### Features
+
+* **evaluate-plugin:** add a model-comparison harness with synthetic and real-issue tasks ([#3151](https://github.com/laurigates/claude-plugins/issues/3151)) ([dffe15e](https://github.com/laurigates/claude-plugins/commit/dffe15e6f74423863385fbd442cc85735ef17328))
+
 ## [1.17.9](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.17.8...evaluate-plugin-v1.17.9) (2026-10-22)
 
 
