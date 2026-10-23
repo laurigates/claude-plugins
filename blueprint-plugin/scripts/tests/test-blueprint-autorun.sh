@@ -12,6 +12,7 @@
 #   - agent-judgment due tasks are surfaced in DUE_AGENT_TASKS, never executed
 #   - enabled:false always wins over auto_run:true
 #   - on-change/on-demand schedules are never runner-due
+#   - a run killed mid-sweep (SIGTERM) leaves no manifest work copy (#3169)
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -249,6 +250,106 @@ out=$(bash "$AUTORUN" --project-dir "$sb" --report)
 assert_contains "J: report mode reports the reconcile" "STATE=reconcile" "$out"
 [ "$(cat "$sb/docs/blueprint/manifest.json")" = "$before" ] && ok "J: report mode mutates nothing" || notok "J: report mode wrote back"
 rm -rf "$sb"
+
+# ---- Test K: a killed sweep leaves no work copy behind (#3169) ----
+# The SessionStart probe runs the autorun under a 5 s hook timeout; on a big
+# repo the sweep outlives it and the harness kills the run. The work copy
+# (manifest.json.autorun.<pid>) must not survive the kill.
+#
+# Deterministic: a PATH-stubbed jq parks inside the per-document registration
+# call (the only jq call carrying `--arg id`) until a release file appears, so
+# the run is provably mid-sweep when the signal lands — no timing sleeps.
+real_jq=$(command -v jq)
+stub_dir=$(make_sandbox)
+cat > "$stub_dir/jq" <<'EOF'
+#!/usr/bin/env bash
+for a in "$@"; do
+    if [ "$a" = "id" ]; then
+        : > "$STUB_MARK"
+        i=0
+        while [ ! -f "$STUB_RELEASE" ] && [ "$i" -lt 200 ]; do
+            sleep 0.1
+            i=$((i + 1))
+        done
+        break
+    fi
+done
+exec "$REAL_JQ" "$@"
+EOF
+chmod +x "$stub_dir/jq"
+
+wait_for_file() {
+    # wait_for_file <path> — bounded poll (10 s); returns 1 on timeout
+    local i=0
+    while [ ! -e "$1" ] && [ "$i" -lt 100 ]; do
+        sleep 0.1
+        i=$((i + 1))
+    done
+    [ -e "$1" ]
+}
+
+wait_for_group_exit() {
+    # wait_for_group_exit <pgid> — bounded poll (10 s) until no process in the group remains
+    local i=0
+    while kill -0 -- "-$1" 2>/dev/null && [ "$i" -lt 100 ]; do
+        sleep 0.1
+        i=$((i + 1))
+    done
+}
+
+run_killed_sweep() {
+    # run_killed_sweep <label> <kill-target: group|parent>
+    local label="$1" target="$2" sb pid before leftover
+    sb=$(make_sandbox)
+    write_manifest "$sb" 1 true daily null
+    write_doc "$sb" "docs/adrs/0001-test.md" "ADR-0001"
+    before=$(cat "$sb/docs/blueprint/manifest.json")
+    # set -m gives the background run its own process group (pgid == pid), so
+    # a group kill reaches the run, its sweep subshell, and the stub — the
+    # shape of a harness tearing down a timed-out hook.
+    set -m
+    PATH="$stub_dir:$PATH" REAL_JQ="$real_jq" \
+        STUB_MARK="$sb/mark" STUB_RELEASE="$sb/release" \
+        bash "$AUTORUN" --project-dir "$sb" >/dev/null 2>&1 &
+    pid=$!
+    set +m
+    if ! wait_for_file "$sb/mark"; then
+        notok "K($label): sweep never reached the per-document jq call"
+        : > "$sb/release"
+        wait "$pid" 2>/dev/null
+        rm -rf "$sb"
+        return
+    fi
+    leftover=$(find "$sb/docs/blueprint" -name 'manifest.json.autorun.*' | wc -l | tr -d ' ')
+    [ "$leftover" != "0" ] && ok "K($label): work copy exists mid-sweep (test reaches the window)" \
+        || notok "K($label): no work copy mid-sweep — test no longer exercises the window"
+    if [ "$target" = "group" ]; then
+        kill -TERM -- "-$pid" 2>/dev/null
+    else
+        kill -TERM "$pid" 2>/dev/null
+        # The orphaned sweep runs on; let it finish.
+        : > "$sb/release"
+    fi
+    wait "$pid" 2>/dev/null
+    wait_for_group_exit "$pid"
+    : > "$sb/release"
+    leftover=$(find "$sb/docs/blueprint" -name 'manifest.json.autorun.*' | wc -l | tr -d ' ')
+    [ "$leftover" = "0" ] && ok "K($label): no work copy left behind after SIGTERM" \
+        || notok "K($label): $leftover work copies left behind after SIGTERM"
+    "$real_jq" -e . "$sb/docs/blueprint/manifest.json" >/dev/null 2>&1 \
+        && ok "K($label): live manifest is still valid JSON" \
+        || notok "K($label): live manifest is not valid JSON"
+    if [ "$target" = "group" ]; then
+        [ "$(cat "$sb/docs/blueprint/manifest.json")" = "$before" ] \
+            && ok "K($label): killed sweep left the live manifest unchanged" \
+            || notok "K($label): killed sweep modified the live manifest"
+    fi
+    rm -rf "$sb"
+}
+
+run_killed_sweep group group
+run_killed_sweep parent parent
+rm -rf "$stub_dir"
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ] || exit 1
