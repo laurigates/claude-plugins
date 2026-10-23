@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.14.0...session-plugin-v1.14.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* **session-plugin:** flag an unparseable feature tracker with TRACKER_PARSE_OK ([#3170](https://github.com/laurigates/claude-plugins/issues/3170)) ([cbee3b8](https://github.com/laurigates/claude-plugins/commit/cbee3b8d65c5861b4e0b1dfbeeee874a8a583c01))
+
 ## [1.14.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.13.8...session-plugin-v1.14.0) (2026-10-22)
 
 
