@@ -46,6 +46,7 @@ the plugin README, § Availability and linkage keys.
 |---|---|---|
 | `JQ_AVAILABLE` | `TASKWARRIOR`, `BLUEPRINT`, `PRS`, `GITHUB_DRIFT` | `false` means that section's rows and counts were never computed |
 | `BPID_QUERY_OK` | `BLUEPRINT` | `false` beside `UNDRAINED_COUNT=0` means the completed-`bpid` query failed; the zero is **unqueried**, not "nothing to drain" |
+| `TRACKER_PARSE_OK` | `BLUEPRINT` | `false` beside `TRACKER=true` means the feature tracker is unparseable; every tracker count, `UNDRAINED_COUNT=0` included, is **uncomputed**, not "nothing to drain" |
 | `TASK_AVAILABLE` | `BLUEPRINT` | The `task` binary exists (blueprint preconditions are readable from one section) |
 | `UNDRAINED_WOS_NO_EVIDENCE` | `BLUEPRINT` | WOs in `UNDRAINED_WOS` with no annotated closed task, so no evidence to hand `--evidence` |
 | `TASK_n_BPID` | `TASKWARRIOR` | The WO a pending task is linked to; absent when unlinked |

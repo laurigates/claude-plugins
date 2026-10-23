@@ -1549,6 +1549,18 @@ if [ "$with_blueprint" = true ]; then
   undrained_no_evidence=""
   [ -f "$bp_manifest" ] && bp_manifest_present=true
   [ -f "$bp_tracker" ] && bp_tracker_present=true
+  # Whether the tracker PARSES as a JSON object (#3163). Every tracker read
+  # below falls back to 0 / [] on a jq error, so `{not json` used to read as
+  # TRACKER=true + UNDRAINED_COUNT=0 with every availability key green — the
+  # BPID_QUERY_OK false-zero class again. The reads are gated on this probe, so
+  # a corrupt tracker yields uncomputed zeros beside TRACKER_PARSE_OK=false.
+  # False also when never probed (no tracker, no jq); read TRACKER= and
+  # JQ_AVAILABLE= to tell those apart.
+  tracker_parse_ok=false
+  if [ "$bp_tracker_present" = true ] && have jq \
+     && jq -e 'type == "object"' "$bp_tracker" >/dev/null 2>&1; then
+    tracker_parse_ok=true
+  fi
 
   closed_bpid_json="[]"
   # Whether the completed-bpid query ANSWERED (#2360). UNDRAINED_COUNT=0 means
@@ -1580,7 +1592,7 @@ if [ "$with_blueprint" = true ]; then
 
   if [ "$bp_manifest_present" = true ] && have jq; then
     closed_bpid_count=$(printf '%s' "$closed_bpid_json" | jq '[.[] | select(.bpid != null)] | length' 2>/dev/null || echo 0)
-    if [ "$bp_tracker_present" = true ]; then
+    if [ "$tracker_parse_ok" = true ]; then
       # Feature counts via explicit-path union — NOT recursive `.. | objects`,
       # which over-counts because phases[] carry their own `status`.
       ready_count=$(jq '[(.features // []), [.phases[]?.features[]?]] | add | map(select(.status == "not_started")) | length' "$bp_tracker" 2>/dev/null || echo 0)
@@ -1611,6 +1623,7 @@ if [ "$with_blueprint" = true ]; then
 
   echo "MANIFEST=${bp_manifest_present}"
   echo "TRACKER=${bp_tracker_present}"
+  echo "TRACKER_PARSE_OK=${tracker_parse_ok}"
   echo "READY_COUNT=${ready_count}"
   echo "BLOCKED_COUNT=${blocked_count}"
   echo "INFLIGHT_COUNT=${inflight_count}"
@@ -1624,7 +1637,9 @@ if [ "$with_blueprint" = true ]; then
   # Availability of what the zeros above were computed from (#2360). A record
   # may be minted from this section only when all three are true: TASK_AVAILABLE
   # (the binary), JQ_AVAILABLE (the projection) and BPID_QUERY_OK (the query
-  # answered). Without them UNDRAINED_COUNT=0 is a zero that was never computed.
+  # answered) — plus TRACKER_PARSE_OK (the tracker parsed, #3163), emitted
+  # beside TRACKER= above. Without them UNDRAINED_COUNT=0 is a zero that was
+  # never computed.
   echo "TASK_AVAILABLE=${task_available}"
   echo "JQ_AVAILABLE=${jq_available}"
   echo "BPID_QUERY_OK=${bpid_query_ok}"
