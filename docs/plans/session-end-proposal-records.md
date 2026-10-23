@@ -117,7 +117,7 @@ A pass's emit phase is **read-only, prompt-free, and makes no outward call**. An
 
 | pass | action | evidence key | tier | reversible |
 |---|---|---|---|---|
-| blueprint | drain | `collector:UNDRAINED_WOS=<WO-id>`, gated on `BLUEPRINT:TASK_AVAILABLE=true` ∧ `JQ_AVAILABLE=true` ∧ `BPID_QUERY_OK=true` **(new)** | **entailed** | git |
+| blueprint | drain | `collector:UNDRAINED_WOS=<WO-id>`, gated on `BLUEPRINT:TASK_AVAILABLE=true` ∧ `JQ_AVAILABLE=true` ∧ `BPID_QUERY_OK=true` **(new)** ∧ `TRACKER_PARSE_OK=true` (#3163) | **entailed** | git |
 
 One record per WO. Its evidence string, the FR status flips, the `.statistics` recalculation, `.last_updated`/`.current_phase`, the `task_registry` bookkeeping and the post-write integrity repair are **consequences of applying it**, folded into this record and never separately previewed or selectable. The Full-Sync-only discrepancy question is out of scope (session-end invokes `--drain-wave` only).
 
@@ -138,6 +138,7 @@ One record per WO. Its evidence string, the FR status flips, the `.statistics` r
 | No `task` binary | `TASK_AVAILABLE=false` / `TASK_SCOPE=none` | Suppress **tasksync** and **blueprint drain** (via the new BLUEPRINT echo). |
 | `jq` absent | `JQ_AVAILABLE=false` per section **(new)** | Suppress every record from that section. No record is `entailed` anywhere when jq is absent. |
 | `bpid` UDA undeclared / query errored | `BPID_QUERY_OK=false` **(new)** | Suppress the drain record. Without this key a false `UNDRAINED_COUNT=0` reads green on every precondition (CI2). |
+| `feature-tracker.json` unparseable or not a JSON object | `TRACKER_PARSE_OK=false` (#3163) | Suppress the drain record. The tracker-derived counts are 0 beside this key, the same false-zero shape as a failed bpid query. |
 | Tracker missing in a blueprint repo | `MANIFEST=true` ∧ `TRACKER=false` | Suppress drain; the zero was never computed. |
 | Not a blueprint repo | `MANIFEST=false` | No blueprint records. Report line **names the path checked** (`--project-dir`, not repo root). |
 | No slug matched | `TASK_SCOPE=all-projects-fallback` | Suppress all `TASK_n_`-derived records (those rows do not exist). `RECENT_TASK_n_` records are `judged` only. |
