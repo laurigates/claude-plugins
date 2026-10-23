@@ -144,11 +144,29 @@ is_deterministic() {
 # jq re-serialises the whole file, so an unconditional write would reformat a
 # hand-edited manifest on every session start and leave the tree dirty.
 #
+# The body is a subshell ( ... ), not a brace group, so the cleanup traps
+# below are scoped to the process that creates and owns the work copy and can
+# never replace a trap in the calling shell. `$$` is the top-level script's
+# PID even here (bash keeps $$ across subshells); it only names the file.
+#
+# Killed mid-sweep (the SessionStart probe's 5 s hook timeout does this on
+# big repos, #3169), the EXIT/INT/TERM traps remove the work copy and its
+# .tmp. The live manifest is only ever replaced by an atomic mv, so a kill
+# leaves it either untouched or fully updated. SIGKILL cannot be trapped.
+#
 # Prints "<docs_seen> <changed:true|false>".
-run_sync_ids() {
+run_sync_ids() (
     local docs_seen=0
     local doc_file frontmatter doc_id doc_status doc_title doc_created
     local work="${manifest}.autorun.$$"
+
+    # shellcheck disable=SC2329,SC2317  # invoked indirectly by the EXIT trap
+    sync_ids_cleanup() { rm -f "$work" "${work}.tmp"; }
+    trap sync_ids_cleanup EXIT
+    # Exit with the conventional 128+signal status so the run still dies;
+    # the EXIT trap then performs the cleanup.
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
 
     cp "$manifest" "$work" || return 1
 
@@ -207,7 +225,7 @@ run_sync_ids() {
 
     printf '%s %s' "$docs_seen" "$changed"
     return 0
-}
+)
 
 record_task_result() {
     # record_task_result <task> <result>
