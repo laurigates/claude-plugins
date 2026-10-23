@@ -26,11 +26,14 @@ burn the window recomputing), **determinism** (reliable correctness must be
 repeatable), and **independent enforcement** (a hook judges from outside, with no
 stake in the outcome).
 
-**Embodied by:** the global `offload-to-deterministic-substrate` rule and its
-children — `structured-script-output` (compact `STATUS=`/`KEY=VALUE` rollups),
-`drift-detection-triggering` (mount the existing sweep on a trigger; don't
-rewrite the logic), `bash-tool-replacements` + the `bash-antipatterns` hook,
-`tool-use-patterns` (one inline `python3`/`rg` pass over an agent fan-out).
+**Embodied by:** the `offload-to-deterministic-substrate` rule (canonical copy is
+a user-global rule; this repo's `.claude/rules/` copy holds the plugin-authoring
+deltas) and its children — `structured-script-output` (compact
+`STATUS=`/`KEY=VALUE` rollups), `drift-detection-triggering` (mount the existing
+sweep on a trigger; don't rewrite the logic), `bash-tool-replacements` + the
+`bash-antipatterns` hook, `agent-patterns-plugin:harness-tool-errors` (one inline
+`python3`/`rg` pass over an agent fan-out; promoted from the user-global
+`tool-use-patterns` rule).
 
 ## 2. One canonical home per fact — link, don't duplicate
 
@@ -68,10 +71,12 @@ truth — `origin/main`, the IaC, the full comment thread, the upstream HEAD —
 before patching, branching, or publishing.
 
 **Embodied by:** `git-plugin:git-upstream-fix-check`,
-`git-plugin:git-issue-scoping`, `concurrent-session-pr-check`,
-`shared-checkout-branch-isolation`, `squash-merge-orphans-post-merge-commits`,
-`textual-merge-duplicates-identical-additions`, `tool-migration-cutover` (verify
-the replacement is *operational*, not merely configured).
+`git-plugin:git-issue-scoping`, `concurrent-session-pr-check` and
+`shared-checkout-branch-isolation` (both `~/repos`-scope rules, outside this
+repo), `git-plugin:git-local-hazards` (commits added after a squash-merge are
+orphaned; a clean textual merge can duplicate identical additions),
+`migration-patterns-plugin:tool-migration-cutover` (verify the replacement is
+*operational*, not merely configured).
 
 ## 5. Codify the fix; don't promise to remember
 
@@ -82,7 +87,8 @@ substrate remembers so the agent doesn't have to.
 
 **Embodied by:** the `regression-testing` rule (a script check for every skill
 bug fixed), the `scripts/check-*.sh` suite the repo runs in pre-commit and CI,
-`local-ci-parity` (the local command and the CI step run the same checks).
+the user-global `local-ci-parity` rule (the local command and the CI step run
+the same checks).
 
 ## 6. Fail fast and loudly
 
@@ -92,10 +98,12 @@ diagnose; a silent wrong result is expensive and erodes trust in every signal
 around it. Dispatch skills carry an explicit loud-failure contract for exactly
 this reason.
 
-**Embodied by:** `code-quality` (fail fast / let it crash), the
-loud-failure-contract check for dispatch skills, `parallel-safe-queries` (a
-query that exits non-zero silently cancels its siblings — use the exit-0 variant
-so failure is visible, not swallowed).
+**Embodied by:** the user-global `code-quality` rule (fail fast / let it crash),
+the loud-failure-contract check for dispatch skills, `parallel-safe-queries` (a
+query that exits non-zero on an *empty* result silently cancels its sibling
+parallel calls, so "nothing found" masquerades as failure — use the
+machine-readable `--json`/`export` variant, which exits 0 with empty-but-valid
+output, so only a real failure fails).
 
 ## 7. Frame positively
 

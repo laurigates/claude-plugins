@@ -4,7 +4,7 @@
 
 # Claude Plugins
 
-> Experimental testing harness lives under experiments/claude-probe/.
+> Experiments (`claude-probe`, `skill-catalog-routing`, `subagent-compaction`) live under `experiments/`, each exposed as a `just` module.
 
 A curated collection of 44 Claude Code plugins providing 400+ skills and 22 agents for development workflows.
 
