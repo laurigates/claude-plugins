@@ -138,4 +138,101 @@ grep -q "^BRANCH_MATCHES=none$" <<<"$out6" || fail "expected BRANCH_MATCHES=none
 rm -rf "$r6"
 pass "no --issue keeps PR/issue lookup inert"
 
+grep -q "^GH_AUTH=" <<<"$out1" && fail "recon keys must stay absent without --recon:\n$out1"
+pass "no --recon emits no recon keys"
+
+# -----------------------------------------------------------------------------
+# Recon cases: a stub gh on PATH and a fixture home keep these hermetic.
+# -----------------------------------------------------------------------------
+command -v jq >/dev/null 2>&1 || fail "jq is required for the recon cases"
+stub_bin="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
+cat > "$stub_bin/gh" <<'STUB'
+#!/usr/bin/env bash
+# Emits what the real gh would print after --jq.
+case "$1 $2" in
+  "auth status") exit "${STUB_GH_AUTH_RC:-0}" ;;
+  "secret list") printf '%s\n' ${STUB_GH_SECRETS:-} ;;
+  "api repos/{owner}/{repo}/environments") printf '%s\n' ${STUB_GH_ENVS:-} ;;
+  "--version ") echo "STUB_GH_SENTINEL" ;;
+  *) exit 1 ;;
+esac
+STUB
+chmod +x "$stub_bin/gh"
+[ "$(PATH="$stub_bin:$PATH" gh --version)" = "STUB_GH_SENTINEL" ] || fail "stub gh is not first on PATH"
+
+fake_home="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
+# Physical path, so it prefixes the repo root git reports (/var -> /private/var on macOS).
+fake_home="$(cd "$fake_home" && pwd -P)"
+mkdir -p "$fake_home/.claude"
+cat > "$fake_home/.claude/settings.json" <<'JSON'
+{
+  "permissions": {
+    "defaultMode": "auto",
+    "deny": ["Bash(gh pr merge --admin *)", "Bash(rm -rf *)"],
+    "ask": ["Bash(git push *)"]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {"matcher": "Bash", "hooks": [{"type": "command", "command": "bash ~/.claude/hooks/merge-guard.sh"}]}
+    ]
+  }
+}
+JSON
+
+recon() { PATH="$stub_bin:$PATH" bash "$preflight" --no-fetch --base main --recon --home-dir "$fake_home" --project-dir "$@"; }
+
+# Case 7: authed, required secret present -> no blockers, gates and hooks listed
+r7="$(make_repo)"
+out7="$(STUB_GH_SECRETS="RELEASE_TOKEN OTHER" STUB_GH_ENVS="production" recon "$r7" --need-secret RELEASE_TOKEN)"
+grep -q "^GH_AUTH=ok$" <<<"$out7"                       || fail "expected GH_AUTH=ok:\n$out7"
+grep -q "^PERMISSION_MODE=auto$" <<<"$out7"             || fail "expected PERMISSION_MODE=auto:\n$out7"
+grep -q "^PERMISSION_MODE_SOURCE=user$" <<<"$out7"      || fail "expected PERMISSION_MODE_SOURCE=user:\n$out7"
+grep -qF "deny:Bash(gh pr merge --admin *)" <<<"$out7"  || fail "expected merge deny rule in PERMISSION_GATES:\n$out7"
+grep -qF "ask:Bash(git push *)" <<<"$out7"              || fail "expected push ask rule in PERMISSION_GATES:\n$out7"
+grep -qF "rm -rf" <<<"$out7"                            && fail "unrelated deny rule leaked into PERMISSION_GATES:\n$out7"
+grep -q "^PRETOOLUSE_HOOKS=merge-guard.sh$" <<<"$out7"  || fail "expected merge-guard.sh in PRETOOLUSE_HOOKS:\n$out7"
+grep -q "^REPO_SECRETS=RELEASE_TOKEN,OTHER$" <<<"$out7" || fail "expected REPO_SECRETS list:\n$out7"
+grep -q "^ENVIRONMENTS=production$" <<<"$out7"          || fail "expected ENVIRONMENTS=production:\n$out7"
+grep -q "^REPO_SECRETS_MISSING=none$" <<<"$out7"        || fail "expected REPO_SECRETS_MISSING=none:\n$out7"
+grep -q "^RECON_BLOCKERS=none$" <<<"$out7"              || fail "expected RECON_BLOCKERS=none:\n$out7"
+grep -q "^STATUS=OK$" <<<"$out7"                        || fail "expected STATUS=OK with no blockers:\n$out7"
+rm -rf "$r7"
+pass "recon, authed with secrets present -> no blockers"
+
+# Case 8: missing secret -> blocker, STATUS=WARN, headline unchanged
+r8="$(make_repo)"
+out8="$(STUB_GH_SECRETS="OTHER" recon "$r8" --need-secret RELEASE_TOKEN)"
+grep -q "^REPO_SECRETS_MISSING=RELEASE_TOKEN$" <<<"$out8" || fail "expected RELEASE_TOKEN missing:\n$out8"
+grep -q "^RECON_BLOCKERS=secrets$" <<<"$out8"             || fail "expected RECON_BLOCKERS=secrets:\n$out8"
+grep -q "^RECOMMENDATION=ready$" <<<"$out8"               || fail "recon must not change RECOMMENDATION:\n$out8"
+grep -q "^STATUS=WARN$" <<<"$out8"                        || fail "expected STATUS=WARN:\n$out8"
+grep -q "^ISSUE_COUNT=1$" <<<"$out8"                      || fail "expected ISSUE_COUNT=1:\n$out8"
+rm -rf "$r8"
+pass "recon, missing secret -> secrets blocker"
+
+# Case 9: gh logged out -> gh_auth blocker, secrets unknown
+r9="$(make_repo)"
+out9="$(STUB_GH_AUTH_RC=1 recon "$r9" --need-secret RELEASE_TOKEN)"
+grep -q "^GH_AUTH=failed$" <<<"$out9"                 || fail "expected GH_AUTH=failed:\n$out9"
+grep -q "^REPO_SECRETS=unknown$" <<<"$out9"           || fail "expected REPO_SECRETS=unknown:\n$out9"
+grep -q "^REPO_SECRETS_MISSING=unknown$" <<<"$out9"   || fail "expected REPO_SECRETS_MISSING=unknown:\n$out9"
+grep -q "^RECON_BLOCKERS=gh_auth,secrets$" <<<"$out9" || fail "expected gh_auth,secrets blockers:\n$out9"
+grep -q "^ISSUE_COUNT=2$" <<<"$out9"                  || fail "expected ISSUE_COUNT=2:\n$out9"
+rm -rf "$r9"
+pass "recon, gh logged out -> gh_auth blocker"
+
+# Case 10: a project file inside the home dir overrides and is labelled project
+r10="$(make_repo)"
+mv "$r10" "$fake_home/repo"
+r10="$fake_home/repo"
+mkdir -p "$r10/.claude"
+printf '{"permissions": {"defaultMode": "plan"}}\n' > "$r10/.claude/settings.json"
+out10="$(recon "$r10")"
+grep -q "^PERMISSION_MODE=plan$" <<<"$out10"           || fail "expected project PERMISSION_MODE=plan:\n$out10"
+grep -q "^PERMISSION_MODE_SOURCE=project$" <<<"$out10" || fail "expected PERMISSION_MODE_SOURCE=project:\n$out10"
+rm -rf "$r10"
+pass "recon, project defaultMode under home dir -> source project"
+
+rm -rf "$stub_bin" "$fake_home"
+
 echo "ALL PASS"

@@ -10,7 +10,7 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of the preflight → checkpoint
 
 | Skill | Command | Description |
 |-------|---------|-------------|
-| workflow-preflight | `/workflow:preflight` | Pre-work validation: check remote state, existing PRs, branch conflicts |
+| workflow-preflight | `/workflow:preflight` | Pre-work validation: check remote state, existing PRs, branch conflicts; `--recon` adds gh auth, merge gates and required secrets before an agent wave |
 | workflow-checkpoint-refactor | `/workflow:checkpoint-refactor` | Multi-phase refactoring with persistent state across sessions |
 | workflow-interrupted-run-recovery | — | Recover a `Workflow` run killed mid-flight: salvage killed agents' worktrees, resume without duplicating PRs the completed agents opened |
 | workflow-scale-budget | — | Size a `Workflow` script's agent count before running it: cost per agent, per-item multipliers, theme grouping, re-drive design. `scripts/workflow-run-tally.sh` tallies a finished run's realised agents and tokens from its transcripts, and a session's total across its runs |

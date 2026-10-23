@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-10-09
+modified: 2026-10-21
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -55,6 +55,7 @@ Before spawning, the orchestrator must verify:
 | Each agent gets a **unique** branch name | Prevents commits landing on the wrong branch when cwd resolution drifts |
 | **Fixed target branch name not already taken** (see Target-branch preflight below) | A conventional per-issue/milestone name is one two sessions pick identically; the collision otherwise surfaces only at end-of-task rename |
 | Shared counters snapshot (next ADR/PRP number, feature-tracker IDs) | Prevents numbering collisions in parallel doc writes |
+| `gh` auth, merge/push permission gates, required secrets: `workflow-orchestration-plugin:workflow-preflight` with `--recon` | A wave that cannot merge or release stalls at its last step; the approvals it needs get asked for before dispatch |
 
 If any check fails, **refuse to dispatch** and report the blocker. Do not
 "clean up" uncommitted user work — surface it and ask.
