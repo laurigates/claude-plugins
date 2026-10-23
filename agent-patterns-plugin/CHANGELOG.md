@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.53.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.52.1...agent-patterns-plugin-v2.53.0) (2026-10-23)
+
+
+### Features
+
+* **workflow-orchestration-plugin:** add --recon pre-wave checks to workflow-preflight ([#3144](https://github.com/laurigates/claude-plugins/issues/3144)) ([c1b94b5](https://github.com/laurigates/claude-plugins/commit/c1b94b5782a24923d3acb6f8d824a38b8fe298d0))
+
+
+### Documentation
+
+* **agent-patterns-plugin:** record opencode CLI traps for unattended review ([#3154](https://github.com/laurigates/claude-plugins/issues/3154)) ([983633b](https://github.com/laurigates/claude-plugins/commit/983633b146f7b6140005f5dc790822161182b9dd))
+
 ## [2.52.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.52.0...agent-patterns-plugin-v2.52.1) (2026-10-22)
 
 

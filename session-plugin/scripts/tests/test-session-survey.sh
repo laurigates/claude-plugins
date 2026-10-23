@@ -2734,6 +2734,38 @@ bp=$(c1_section "$out" BLUEPRINT)
 check_line "C1a: no manifest -> MANIFEST=false" "$bp" "MANIFEST=false"
 check_line "C1a: no manifest -> the query was never attempted" "$bp" "BPID_QUERY_OK=false"
 
+# --- C1e (#3163): TRACKER_PARSE_OK — a corrupt tracker is not a clean zero ---
+# Same false-zero class as BPID_QUERY_OK: every tracker read used to fall back
+# to `[]` / 0, so `{not json` read as TRACKER=true + UNDRAINED_COUNT=0 with
+# every availability key green.
+out=$(run_at "$BP" --project demo --with-blueprint)
+bp=$(c1_section "$out" BLUEPRINT)
+check_line "C1e: a valid tracker reports TRACKER_PARSE_OK=true" "$bp" "TRACKER_PARSE_OK=true"
+BPC="$SANDBOX/c1-corrupt"
+mkrepo "$BPC"
+mkdir -p "$BPC/docs/blueprint"
+echo '{}' > "$BPC/docs/blueprint/manifest.json"
+printf '%s\n' '{not json' > "$BPC/docs/blueprint/feature-tracker.json"
+# The bpid fixture closes WO-045, which a parseable tracker would hold pending.
+out=$(run_at "$BPC" --project demo --with-blueprint)
+bp=$(c1_section "$out" BLUEPRINT)
+check_line "C1e: a corrupt tracker reports TRACKER_PARSE_OK=false" "$bp" "TRACKER_PARSE_OK=false"
+check_line "C1e: ...while the file is present" "$bp" "TRACKER=true"
+check_line "C1e: ...and the bpid query genuinely answered" "$bp" "BPID_QUERY_OK=true"
+check_line "C1e: ...beside the uncomputed zero it explains" "$bp" "UNDRAINED_COUNT=0"
+check_absent "C1e: a corrupt tracker lists no undrained WOs" "$bp" "UNDRAINED_WOS="
+check "C1e: the digest is still parse-stable" "$out" "=== END BLUEPRINT ==="
+# A file that parses but is not an object is no tracker either.
+printf '%s\n' '[1,2]' > "$BPC/docs/blueprint/feature-tracker.json"
+out=$(run_at "$BPC" --project demo --with-blueprint)
+check_line "C1e: a non-object tracker reports TRACKER_PARSE_OK=false" \
+  "$(c1_section "$out" BLUEPRINT)" "TRACKER_PARSE_OK=false"
+# Not applicable: no tracker file -> false, read TRACKER= to tell it apart.
+out=$(run_at "$REPO" --project demo --with-blueprint)
+bp=$(c1_section "$out" BLUEPRINT)
+check_line "C1e: no tracker -> TRACKER=false" "$bp" "TRACKER=false"
+check_line "C1e: no tracker -> TRACKER_PARSE_OK=false (never probed)" "$bp" "TRACKER_PARSE_OK=false"
+
 # --- C1b: JQ_AVAILABLE per section, true and false ---------------------------
 out=$(run_at "$BP" --project demo --with-blueprint --with-dedup)
 check_line "C1b: TASKWARRIOR reports jq present" "$(c1_section "$out" TASKWARRIOR)" "JQ_AVAILABLE=true"
