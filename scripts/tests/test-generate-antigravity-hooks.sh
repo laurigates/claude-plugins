@@ -22,6 +22,13 @@
 #   K. ${CLAUDE_SKILL_DIR} that matches zero, several, or no path -> deny, never a guess
 set -euo pipefail
 
+# Clear every exported hook toggle so the developer's shell cannot change what
+# the hook under test decides (#3146); cases that need one set it per-invocation.
+while IFS= read -r _toggle; do
+  unset "$_toggle"
+done < <(compgen -v | grep -E '^CLAUDE_HOOKS_(DISABLE|ENABLE)_' || true)
+unset _toggle
+
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$script_dir/../.." && pwd)"
 generator="$repo_root/scripts/generate-antigravity-hooks.py"

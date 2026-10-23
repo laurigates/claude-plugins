@@ -25,6 +25,13 @@ set -euo pipefail
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
   GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX
 
+# Clear every exported hook toggle so the developer's shell cannot change what
+# the hook under test decides (#3146); cases that need one set it per-invocation.
+while IFS= read -r _toggle; do
+  unset "$_toggle"
+done < <(compgen -v | grep -E '^CLAUDE_HOOKS_(DISABLE|ENABLE)_' || true)
+unset _toggle
+
 HOOK="$(cd "$(dirname "$0")" && pwd)/branch-protection.sh"
 PASS=0
 FAIL=0
