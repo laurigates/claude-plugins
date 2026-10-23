@@ -101,7 +101,7 @@ for script in "${scripts[@]}"; do
                     first_unset=$(grep -nE "$GIT_UNSET_RE" "$script" 2>/dev/null | head -1 | cut -d: -f1)
                     if [ -z "$first_unset" ] || [ "$first_unset" -gt "$first_git" ]; then
                         issue_count=$((issue_count + 1))
-                        issues+=("  - SEVERITY=ERROR FILE=$rel LINE=$first_git MSG=hook test suite runs git without first unsetting GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR (issues #1745, #3080)")
+                        issues+=("  - SEVERITY=ERROR TYPE=missing_git_dir_unset FILE=$rel LINE=$first_git MSG=hook test suite runs git without first unsetting GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR (issues #1745, #3080)")
                     fi
                 fi
             fi
@@ -138,7 +138,7 @@ for script in "${scripts[@]}"; do
         fi
 
         issue_count=$((issue_count + 1))
-        issues+=("  - SEVERITY=ERROR FILE=$rel LINE=$lineno VAR=$var MSG=unguarded mktemp -d in a git-repo script (issue #1692)")
+        issues+=("  - SEVERITY=ERROR TYPE=unguarded_mktemp_dir FILE=$rel LINE=$lineno VAR=$var MSG=unguarded mktemp -d in a git-repo script (issue #1692)")
     done < <(grep -nE '^[[:space:]]*(local[[:space:]]+)?[A-Za-z_][A-Za-z0-9_]*=[[:space:]]*"?\$\(mktemp[[:space:]]+(-d|--directory)' "$script" 2>/dev/null)
 done
 
@@ -149,14 +149,15 @@ echo "=== GIT SANDBOX GUARDS ==="
 echo "SCRIPTS_SCANNED=${#scripts[@]}"
 echo "STATUS=$status"
 if [ "$issue_count" -gt 0 ]; then
-    # REASON= is the first finding as `<FILE>:<LINE>: <MSG>` (rows carry no TYPE),
-    # one line, cut to 180 chars, plus ` (+N more)`
+    # REASON= is the first finding as `<TYPE>: <FILE>:<LINE>: <MSG>`, one line, cut to 180 chars, plus ` (+N more)`
     # (.claude/rules/structured-script-output.md, #2760).
+    first_type="${issues[0]#*TYPE=}"
+    first_type="${first_type%% *}"
     first_file="${issues[0]#*FILE=}"
     first_file="${first_file%% *}"
     first_line="${issues[0]#*LINE=}"
     first_line="${first_line%% *}"
-    reason="$(printf '%s:%s: %s' "$first_file" "$first_line" "${issues[0]#*MSG=}" | tr -s '[:space:]' ' ' | cut -c1-180)"
+    reason="$(printf '%s: %s:%s: %s' "$first_type" "$first_file" "$first_line" "${issues[0]#*MSG=}" | tr -s '[:space:]' ' ' | cut -c1-180)"
     [ "$issue_count" -gt 1 ] && reason="$reason (+$((issue_count - 1)) more)"
     echo "REASON=$reason"
 fi

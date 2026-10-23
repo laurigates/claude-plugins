@@ -94,13 +94,25 @@ VERIFIER_ID="none"
 VERIFIER_SOURCE="none"
 AGENT_PROMPT_COUNT=0
 
-# First finding as `<RULE>: <MSG>`, for REASON= (#2760).
+# First finding as `<TYPE>: <MSG>` (or `<TYPE>: <RULE>: <MSG>` when the class
+# and the concept differ), for REASON= (#2760, #3165).
 first_finding=""
 
+# add_issue RULE MSG [TYPE] -- TYPE names the finding CLASS and defaults to
+# RULE, which suits the setup failures (plugin_json_missing, verifier_ambiguous,
+# ...) whose rule already is the class. The concept rules pass missing_concept
+# or forbidden_concept, so RULE= keeps naming the concept that broke.
 add_issue() {
+    local issue_type="${3:-$1}"
     issue_count=$((issue_count + 1))
-    [ -n "$first_finding" ] || first_finding="$1: $2"
-    issues+=("  - SEVERITY=ERROR PROMPT=$VERIFIER_ID RULE=$1 MSG=$2")
+    if [ -z "$first_finding" ]; then
+        if [ "$issue_type" = "$1" ]; then
+            first_finding="$issue_type: $2"
+        else
+            first_finding="$issue_type: $1: $2"
+        fi
+    fi
+    issues+=("  - SEVERITY=ERROR TYPE=$issue_type PROMPT=$VERIFIER_ID RULE=$1 MSG=$2")
 }
 
 emit() {
@@ -254,7 +266,7 @@ require_any() {
             return 0
         fi
     done
-    add_issue "$rule" "$msg"
+    add_issue "$rule" "$msg" missing_concept
 }
 
 # forbid_all RULE MSG PATTERN... — fail when ANY alternative matches.
@@ -265,7 +277,7 @@ forbid_all() {
     local pattern
     for pattern in "$@"; do
         if grep -Eqi -- "$pattern" "$prompt_file"; then
-            add_issue "$rule" "$msg"
+            add_issue "$rule" "$msg" forbidden_concept
             return 0
         fi
     done

@@ -159,7 +159,7 @@ expect "pristine copy still passes" OK "$R"
 CONTRACT="$REPO_ROOT/scripts/check-structured-output-contract.sh"
 out_fail="$("$GUARD" "$WORK/sig" 2>&1)"
 out_ok="$("$GUARD" "$WORK/clean" 2>&1)"
-if grep -qxF 'REASON=prose-plugin/styles/House/SignificanceAssertion.yml: significance marker dropped from the vale rule' <<<"$out_fail"; then
+if grep -qxF 'REASON=missing_token: prose-plugin/styles/House/SignificanceAssertion.yml: significance marker dropped from the vale rule' <<<"$out_fail"; then
     PASS=$((PASS + 1)); echo "PASS: failing fixture emits REASON= naming the first finding"
 else
     FAIL=$((FAIL + 1)); echo "FAIL: failing fixture REASON= missing or wrong"; grep '^REASON=' <<<"$out_fail"
@@ -181,6 +181,40 @@ if grep -q '^REASON=.* (+[1-9][0-9]* more)$' <<<"$out_two" \
     PASS=$((PASS + 1)); echo "PASS: two findings -> REASON= carries (+N more) and the block validates"
 else
     FAIL=$((FAIL + 1)); echo "FAIL: two findings should yield a contract-valid REASON= with (+N more)"; grep '^REASON=\|^ISSUE_COUNT' <<<"$out_two"
+fi
+# Every ISSUES row carries a TYPE= naming its finding class, and REASON= opens
+# with the first row's TYPE (#3165). One fixture per class the cases above build.
+type_cases=(
+    "sig:missing_token"
+    "drift:marker_drift"
+    "eprime:missing_token"
+    "wholesale:third_party_style_loaded"
+    "link:missing_rule_link"
+    "block:blocking_hook"
+    "gone:missing_token"
+)
+command -v jq >/dev/null 2>&1 && type_cases+=("unreg:unregistered_hook")
+for tc in "${type_cases[@]}"; do
+    fx="${tc%%:*}" want="${tc#*:}"
+    out_tc="$("$GUARD" "$WORK/$fx" 2>&1)"
+    if grep -q "^REASON=$want: " <<<"$out_tc" \
+       && grep -q "^  - SEVERITY=ERROR TYPE=$want FILE=" <<<"$out_tc" \
+       && ! grep -q '^  - SEVERITY=ERROR FILE=' <<<"$out_tc" \
+       && printf '%s\n' "$out_tc" | bash "$CONTRACT" --validate - >/dev/null 2>&1; then
+        PASS=$((PASS + 1)); echo "PASS: $fx fixture -> TYPE=$want row and REASON= prefix"
+    else
+        FAIL=$((FAIL + 1)); echo "FAIL: $fx fixture should yield TYPE=$want rows and a REASON=$want: prefix"
+        grep '^REASON=\|^  - ' <<<"$out_tc" | head -4
+    fi
+done
+# A missing file is its own class, distinct from a missing token.
+R="$WORK/nofile"; seed "$R"
+rm -f "$R/prose-plugin/styles/House/MeanSentenceLength.yml"
+out_nf="$("$GUARD" "$R" 2>&1)"
+if grep -q '^  - SEVERITY=ERROR TYPE=missing_file FILE=prose-plugin/styles/House/MeanSentenceLength.yml MSG=missing file (' <<<"$out_nf"; then
+    PASS=$((PASS + 1)); echo "PASS: missing file -> TYPE=missing_file row"
+else
+    FAIL=$((FAIL + 1)); echo "FAIL: missing file should yield a TYPE=missing_file row"; grep '^REASON=\|^  - ' <<<"$out_nf" | head -4
 fi
 for pair in "failing:$out_fail" "passing:$out_ok"; do
     if printf '%s\n' "${pair#*:}" | bash "$CONTRACT" --validate - >/dev/null 2>&1; then

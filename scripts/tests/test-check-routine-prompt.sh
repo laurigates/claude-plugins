@@ -152,7 +152,21 @@ CONTRACT="$REPO_ROOT/scripts/check-structured-output-contract.sh"
 out_fail="$(bash "$GUARD" "$empty" 2>&1)"
 out_ok="$(bash "$GUARD" "$clean" 2>&1)"
 assert_contains "failing fixture REASON= names the first finding" \
-  "REASON=docs/routines/resolve-claude-plugins-issues.md: missing file (" "$out_fail"
+  "REASON=missing_file: docs/routines/resolve-claude-plugins-issues.md: missing file (" "$out_fail"
+# Each ISSUES row carries a TYPE= naming its finding class, and REASON= opens
+# with the first row's TYPE (#3165).
+assert_eq "missing-file rows all carry TYPE=missing_file" \
+  "$(grep -c '^  - SEVERITY=ERROR ' <<<"$out_fail")" "$(grep -c '^  - SEVERITY=ERROR TYPE=missing_file FILE=' <<<"$out_fail")"
+strip_one="$WORK/strip-one"; seed "$strip_one"
+strip_token "$strip_one" "Do not fall through to (b)"
+out_tok="$(bash "$GUARD" "$strip_one" 2>&1)"
+assert_eq "missing-token REASON= opens with TYPE=missing_token" "1" "$(grep -c '^REASON=missing_token: docs/routines/resolve-claude-plugins-issues.md: ' <<<"$out_tok")"
+assert_eq "missing-token row carries TYPE=missing_token" "1" "$(grep -c '^  - SEVERITY=ERROR TYPE=missing_token FILE=docs/routines/resolve-claude-plugins-issues.md TOKEN=' <<<"$out_tok")"
+out_unguarded="$(bash "$GUARD" "$uncovered" 2>&1)"
+assert_eq "unguarded-routine REASON= opens with TYPE=unguarded_routine_prompt" "1" "$(grep -c '^REASON=unguarded_routine_prompt: docs/routines/second-routine.md: ' <<<"$out_unguarded")"
+assert_eq "unguarded-routine row carries TYPE=unguarded_routine_prompt" "1" "$(grep -c '^  - SEVERITY=ERROR TYPE=unguarded_routine_prompt FILE=docs/routines/second-routine.md MSG=' <<<"$out_unguarded")"
+printf '%s\n' "$out_unguarded" | bash "$CONTRACT" --validate - >/dev/null 2>&1
+assert_eq "unguarded-routine output satisfies the structured-output contract" "0" "$?"
 assert_eq "passing fixture carries no REASON=" "0" "$(printf '%s\n' "$out_ok" | grep -c '^REASON=')"
 printf '%s\n' "$out_fail" | bash "$CONTRACT" --validate - >/dev/null 2>&1
 assert_eq "failing output satisfies the structured-output contract" "0" "$?"

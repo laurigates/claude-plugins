@@ -184,6 +184,17 @@ out_bad="$(bash "$LINTER" "$d6" 2>&1)"
 out_ok="$(bash "$LINTER" "$d2" 2>&1)"
 grep -q '^REASON=.*unguarded mktemp -d.* (+1 more)$' <<<"$out_bad" && r=true || r=false
 assert_true "ERROR output carries a bounded REASON= with the (+N more) suffix" "$r"
+grep -q '^REASON=unguarded_mktemp_dir: test-indirect.sh:2: unguarded mktemp -d' <<<"$out_bad" && r=true || r=false
+assert_true "REASON= opens with the first row's TYPE= (#3165)" "$r"
+grep -q '^  - SEVERITY=ERROR TYPE=unguarded_mktemp_dir FILE=test-indirect.sh LINE=2 ' <<<"$out_bad" && r=true || r=false
+assert_true "rule-1 ISSUES rows carry TYPE=unguarded_mktemp_dir (#3165)" "$r"
+out_r2="$(bash "$LINTER" "$d9" 2>&1)"
+grep -q '^REASON=missing_git_dir_unset: hooks-plugin/hooks/test-x.sh:' <<<"$out_r2" && r=true || r=false
+assert_true "rule-2 REASON= opens with TYPE=missing_git_dir_unset (#3165)" "$r"
+grep -q '^  - SEVERITY=ERROR TYPE=missing_git_dir_unset FILE=hooks-plugin/hooks/test-x.sh LINE=' <<<"$out_r2" && r=true || r=false
+assert_true "rule-2 ISSUES rows carry TYPE=missing_git_dir_unset (#3165)" "$r"
+printf '%s\n' "$out_r2" | bash "$CONTRACT" --validate - >/dev/null 2>&1 && r=true || r=false
+assert_true "rule-2 ERROR output satisfies the structured-output contract" "$r"
 grep -q '^REASON=' <<<"$out_ok" && r=false || r=true
 assert_true "OK output carries no REASON=" "$r"
 printf '%s\n' "$out_bad" | bash "$CONTRACT" --validate - >/dev/null 2>&1 && r=true || r=false

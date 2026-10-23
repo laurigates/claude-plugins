@@ -89,12 +89,12 @@ require() {
     rel="${file#"$ROOT_DIR"/}"
     if [ ! -f "$file" ]; then
         issue_count=$((issue_count + 1))
-        issues+=("  - SEVERITY=ERROR FILE=$rel MSG=missing file ($msg)")
+        issues+=("  - SEVERITY=ERROR TYPE=missing_file FILE=$rel MSG=missing file ($msg)")
         return
     fi
     if ! grep -qF "$token" "$file"; then
         issue_count=$((issue_count + 1))
-        issues+=("  - SEVERITY=ERROR FILE=$rel TOKEN=\"$token\" MSG=$msg")
+        issues+=("  - SEVERITY=ERROR TYPE=missing_token FILE=$rel TOKEN=\"$token\" MSG=$msg")
     fi
 }
 
@@ -104,12 +104,12 @@ forbid() {
     rel="${file#"$ROOT_DIR"/}"
     if [ ! -f "$file" ]; then
         issue_count=$((issue_count + 1))
-        issues+=("  - SEVERITY=ERROR FILE=$rel MSG=missing file ($msg)")
+        issues+=("  - SEVERITY=ERROR TYPE=missing_file FILE=$rel MSG=missing file ($msg)")
         return
     fi
     if grep -qF "$token" "$file"; then
         issue_count=$((issue_count + 1))
-        issues+=("  - SEVERITY=ERROR FILE=$rel TOKEN=\"$token\" MSG=$msg")
+        issues+=("  - SEVERITY=ERROR TYPE=forbidden_token FILE=$rel TOKEN=\"$token\" MSG=$msg")
     fi
 }
 
@@ -138,11 +138,13 @@ echo "=== RESEARCH RADAR GROUNDING ==="
 echo "WORKFLOW_PRESENT=$([ -f "$WORKFLOW" ] && echo true || echo false)"
 echo "STATUS=$status"
 if [ "$issue_count" -gt 0 ]; then
-    # REASON= is the first finding as `<FILE>: <MSG>`, one line, cut to 180
+    # REASON= is the first finding as `<TYPE>: <FILE>: <MSG>`, one line, cut to 180
     # chars, plus ` (+N more)` (.claude/rules/structured-script-output.md, #2760).
+    first_type="${issues[0]#*TYPE=}"
+    first_type="${first_type%% *}"
     first_file="${issues[0]#*FILE=}"
     first_file="${first_file%% *}"
-    reason="$(printf '%s: %s' "$first_file" "${issues[0]#*MSG=}" | tr -s '[:space:]' ' ' | cut -c1-180)"
+    reason="$(printf '%s: %s: %s' "$first_type" "$first_file" "${issues[0]#*MSG=}" | tr -s '[:space:]' ' ' | cut -c1-180)"
     [ "${#issues[@]}" -gt 1 ] && reason="$reason (+$((${#issues[@]} - 1)) more)"
     echo "REASON=$reason"
 fi

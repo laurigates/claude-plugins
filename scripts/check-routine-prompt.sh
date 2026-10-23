@@ -59,12 +59,12 @@ require() {
     rel="${file#"$ROOT_DIR"/}"
     if [ ! -f "$file" ]; then
         issue_count=$((issue_count + 1))
-        issues+=("  - SEVERITY=ERROR FILE=$rel MSG=missing file ($msg)")
+        issues+=("  - SEVERITY=ERROR TYPE=missing_file FILE=$rel MSG=missing file ($msg)")
         return
     fi
     if ! grep -qF "$token" "$file"; then
         issue_count=$((issue_count + 1))
-        issues+=("  - SEVERITY=ERROR FILE=$rel TOKEN=\"$token\" MSG=$msg")
+        issues+=("  - SEVERITY=ERROR TYPE=missing_token FILE=$rel TOKEN=\"$token\" MSG=$msg")
     fi
 }
 
@@ -147,7 +147,7 @@ if [ -d "$ROUTINES_DIR" ]; then
         done
         if [ "$guarded" = false ]; then
             issue_count=$((issue_count + 1))
-            issues+=("  - SEVERITY=ERROR FILE=${found#"$ROOT_DIR"/} MSG=routine prompt is not asserted on (add it to GUARDED_PROMPTS with its own require calls)")
+            issues+=("  - SEVERITY=ERROR TYPE=unguarded_routine_prompt FILE=${found#"$ROOT_DIR"/} MSG=routine prompt is not asserted on (add it to GUARDED_PROMPTS with its own require calls)")
         fi
     done < <(find "$ROUTINES_DIR" -maxdepth 1 -type f -name '*.md' | sort)
 fi
@@ -161,11 +161,13 @@ echo "ROUTINES_DISCOVERED=$routines_discovered"
 echo "ROUTINES_GUARDED=${#GUARDED_PROMPTS[@]}"
 echo "STATUS=$status"
 if [ "$issue_count" -gt 0 ]; then
-    # REASON= is the first finding as `<FILE>: <MSG>`, one line, cut to 180
+    # REASON= is the first finding as `<TYPE>: <FILE>: <MSG>`, one line, cut to 180
     # chars, plus ` (+N more)` (.claude/rules/structured-script-output.md, #2760).
+    first_type="${issues[0]#*TYPE=}"
+    first_type="${first_type%% *}"
     first_file="${issues[0]#*FILE=}"
     first_file="${first_file%% *}"
-    reason="$(printf '%s: %s' "$first_file" "${issues[0]#*MSG=}" | tr -s '[:space:]' ' ' | cut -c1-180)"
+    reason="$(printf '%s: %s: %s' "$first_type" "$first_file" "${issues[0]#*MSG=}" | tr -s '[:space:]' ' ' | cut -c1-180)"
     [ "${#issues[@]}" -gt 1 ] && reason="$reason (+$((${#issues[@]} - 1)) more)"
     echo "REASON=$reason"
 fi

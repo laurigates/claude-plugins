@@ -112,8 +112,21 @@ CONTRACT="$REPO_ROOT/scripts/check-structured-output-contract.sh"
 out_fail="$(bash "$GUARD" "$no_ground" 2>&1)"
 out_ok="$(bash "$GUARD" "$clean" 2>&1)"
 assert_eq "failing fixture REASON= names the first finding" "yes" \
-  "$(grep -qF 'REASON=.github/workflows/research-radar.yml: research-radar prompt lost the per-paper grounding requirement' <<<"$out_fail" && echo yes || echo no)"
+  "$(grep -qF 'REASON=missing_token: .github/workflows/research-radar.yml: research-radar prompt lost the per-paper grounding requirement' <<<"$out_fail" && echo yes || echo no)"
+# Each ISSUES row carries a TYPE= naming its finding class; REASON= opens with
+# the first row's TYPE (#3165).
+assert_eq "missing-token row carries TYPE=missing_token" "1" \
+  "$(grep -c '^  - SEVERITY=ERROR TYPE=missing_token FILE=.github/workflows/research-radar.yml TOKEN=' <<<"$out_fail")"
+out_forbid="$(bash "$GUARD" "$regressed" 2>&1)"
+assert_eq "forbidden-token REASON= opens with TYPE=forbidden_token" "1" "$(grep -c '^REASON=forbidden_token: ' <<<"$out_forbid")"
+assert_eq "forbidden-token row carries TYPE=forbidden_token" "1" \
+  "$(grep -c '^  - SEVERITY=ERROR TYPE=forbidden_token FILE=.github/workflows/research-radar.yml TOKEN=' <<<"$out_forbid")"
+assert_eq "forbidden-token output satisfies the structured-output contract" "0" \
+  "$(printf '%s\n' "$out_forbid" | bash "$CONTRACT" --validate - >/dev/null 2>&1; echo $?)"
 out_many="$(bash "$GUARD" "$empty" 2>&1)"
+assert_eq "absent workflow: REASON= opens with TYPE=missing_file" "1" "$(grep -c '^REASON=missing_file: ' <<<"$out_many")"
+assert_eq "absent workflow: all seven rows carry TYPE=missing_file" "7" \
+  "$(grep -c '^  - SEVERITY=ERROR TYPE=missing_file FILE=' <<<"$out_many")"
 assert_eq "seven findings: REASON= ends in (+6 more)" "1" "$(grep -c '^REASON=.* (+6 more)$' <<<"$out_many")"
 assert_eq "seven-finding output satisfies the structured-output contract" "0" \
   "$(printf '%s\n' "$out_many" | bash "$CONTRACT" --validate - >/dev/null 2>&1; echo $?)"
