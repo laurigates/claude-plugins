@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.2](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.11.1...container-plugin-v2.11.2) (2026-10-23)
+
+
+### Documentation
+
+* **container-plugin:** add host-side generated assets pattern to skaffold-filesync ([#3141](https://github.com/laurigates/claude-plugins/issues/3141)) ([b0b08d4](https://github.com/laurigates/claude-plugins/commit/b0b08d4a6bb075883dc48a04b608aa1f56968f7e)), closes [#3136](https://github.com/laurigates/claude-plugins/issues/3136)
+
 ## [2.11.1](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.11.0...container-plugin-v2.11.1) (2026-10-22)
 
 

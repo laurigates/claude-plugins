@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.23.4](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.23.3...testing-plugin-v3.23.4) (2026-10-23)
+
+
+### Documentation
+
+* **testing-plugin:** isolate HOME, XDG dirs and git config in tests ([#3143](https://github.com/laurigates/claude-plugins/issues/3143)) ([80cdd26](https://github.com/laurigates/claude-plugins/commit/80cdd2659830573b5a3df6bc30a21e67d8962a4f))
+
 ## [3.23.3](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.23.2...testing-plugin-v3.23.3) (2026-10-22)
 
 
