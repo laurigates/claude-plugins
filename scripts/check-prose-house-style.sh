@@ -60,11 +60,11 @@ fail() { issue_count=$((issue_count + 1)); issues+=("  - $1"); }
 require() {
     local file="$1" token="$2" msg="$3" rel="${1#"$ROOT_DIR"/}"
     if [ ! -f "$file" ]; then
-        fail "SEVERITY=ERROR FILE=$rel MSG=missing file ($msg)"
+        fail "SEVERITY=ERROR TYPE=missing_file FILE=$rel MSG=missing file ($msg)"
         return
     fi
     grep -qiF -- "$token" "$file" || \
-        fail "SEVERITY=ERROR FILE=$rel TOKEN=\"$token\" MSG=$msg"
+        fail "SEVERITY=ERROR TYPE=missing_token FILE=$rel TOKEN=\"$token\" MSG=$msg"
 }
 
 # extract_distill_tokens LEVEL_LABEL -- pull the quoted token list out of
@@ -81,7 +81,7 @@ for marker in "${SIGNIFICANCE_MARKERS[@]}"; do
     require "$SIG_RULE" "$marker" "significance marker dropped from the vale rule"
     if [ -f "$TICS" ]; then
         grep -qiF -- "$marker" "$TICS" || \
-            fail "SEVERITY=ERROR FILE=${TICS#"$ROOT_DIR"/} TOKEN=\"$marker\" MSG=vale rule and script layer disagree on the significance markers"
+            fail "SEVERITY=ERROR TYPE=marker_drift FILE=${TICS#"$ROOT_DIR"/} TOKEN=\"$marker\" MSG=vale rule and script layer disagree on the significance markers"
     fi
 done
 [ -f "$SIG_RULE" ] && files_checked=$((files_checked + 1))
@@ -103,7 +103,7 @@ if [ -f "$DISTILL" ]; then
         require "$HOUSE/ThroatClearing.yml" "$tok" "throat-clearing token diverged from prose-distill level 4"
     done < <(extract_distill_tokens "Throat-clearing")
 else
-    fail "SEVERITY=ERROR FILE=prose-plugin/skills/prose-distill/SKILL.md MSG=missing; the Filler/Hedge/ThroatClearing lists have no source to check against"
+    fail "SEVERITY=ERROR TYPE=missing_file FILE=prose-plugin/skills/prose-distill/SKILL.md MSG=missing; the Filler/Hedge/ThroatClearing lists have no source to check against"
 fi
 
 # --- 3. E-Prime stays off ---------------------------------------------------
@@ -113,7 +113,7 @@ fi
 VALE_INI="$STYLES/.vale.ini"
 require "$VALE_INI" "write-good.E-Prime = NO" "E-Prime re-enabled or the explicit disable removed"
 if [ -f "$VALE_INI" ] && grep -qE '^BasedOnStyles\s*=.*(write-good|proselint)' "$VALE_INI"; then
-    fail "SEVERITY=ERROR FILE=${VALE_INI#"$ROOT_DIR"/} MSG=write-good/proselint loaded via BasedOnStyles; the third-party rules must stay a curated allowlist"
+    fail "SEVERITY=ERROR TYPE=third_party_style_loaded FILE=${VALE_INI#"$ROOT_DIR"/} MSG=write-good/proselint loaded via BasedOnStyles; the third-party rules must stay a curated allowlist"
 fi
 
 # --- 4. every House rule links back to its owning rule ----------------------
@@ -121,12 +121,12 @@ if [ -d "$HOUSE" ]; then
     while IFS= read -r yml; do
         files_checked=$((files_checked + 1))
         grep -qE '^link:\s*http' "$yml" || \
-            fail "SEVERITY=ERROR FILE=${yml#"$ROOT_DIR"/} MSG=no link: back to the rule that owns this criterion (docs-single-source)"
+            fail "SEVERITY=ERROR TYPE=missing_rule_link FILE=${yml#"$ROOT_DIR"/} MSG=no link: back to the rule that owns this criterion (docs-single-source)"
         grep -qE '^extends:\s*\w+' "$yml" || \
-            fail "SEVERITY=ERROR FILE=${yml#"$ROOT_DIR"/} MSG=no extends: -- not a valid vale rule"
+            fail "SEVERITY=ERROR TYPE=missing_extends FILE=${yml#"$ROOT_DIR"/} MSG=no extends: -- not a valid vale rule"
     done < <(find "$HOUSE" -name '*.yml' -type f | sort)
 else
-    fail "SEVERITY=ERROR FILE=prose-plugin/styles/House MSG=House style package missing"
+    fail "SEVERITY=ERROR TYPE=missing_file FILE=prose-plugin/styles/House MSG=House style package missing"
 fi
 
 # --- 5. the metric rule keeps its formula ----------------------------------
@@ -156,7 +156,7 @@ require_in_skill() {
             return
         fi
     done
-    fail "SEVERITY=ERROR FILE=prose-plugin/skills/prose-check/{SKILL,REFERENCE,references/*}.md TOKEN=\"$token\" MSG=$msg"
+    fail "SEVERITY=ERROR TYPE=missing_token FILE=prose-plugin/skills/prose-check/{SKILL,REFERENCE,references/*}.md TOKEN=\"$token\" MSG=$msg"
 }
 
 require_in_skill "candidates" "skill prose no longer frames findings as candidates rather than defects"
@@ -168,11 +168,11 @@ require "$ORCH" "FINDINGS_ARE=candidates_for_judgment_not_defects" "orchestrator
 require "$HOOK" "CLAUDE_HOOKS_ENABLE_PROSE_CHECK" "hook lost its opt-in guard"
 require "$HOOK" "updatedToolOutput" "hook no longer augments output; it may have become a blocker"
 if [ -f "$HOOK" ] && grep -qE '^\s*exit\s+2\b' "$HOOK"; then
-    fail "SEVERITY=ERROR FILE=${HOOK#"$ROOT_DIR"/} MSG=hook exits 2 (blocks); style must nudge, not block (hook-block-vs-nudge.md)"
+    fail "SEVERITY=ERROR TYPE=blocking_hook FILE=${HOOK#"$ROOT_DIR"/} MSG=hook exits 2 (blocks); style must nudge, not block (hook-block-vs-nudge.md)"
 fi
 if [ -f "$HOOK_MANIFEST" ] && command -v jq >/dev/null 2>&1; then
     grep -q 'prose-house-style-nudge.sh' "$HOOK_MANIFEST" || \
-        fail "SEVERITY=ERROR FILE=hooks-plugin/.claude-plugin/plugin.json MSG=hook not registered; it will never fire"
+        fail "SEVERITY=ERROR TYPE=unregistered_hook FILE=hooks-plugin/.claude-plugin/plugin.json MSG=hook not registered; it will never fire"
 fi
 
 # --- 9. every House rule can actually fire ---------------------------------
@@ -200,12 +200,12 @@ if command -v vale >/dev/null 2>&1 && [ -f "$CONTROL" ] && [ -d "$HOUSE" ]; then
         if grep -qF "House.$rule" <<<"$control_out"; then
             fired=$((fired + 1))
         else
-            fail "SEVERITY=ERROR FILE=${yml#"$ROOT_DIR"/} MSG=rule fires on nothing in the control fixture; it may be silently broken (check raw: concatenation and tokens: word boundaries)"
+            fail "SEVERITY=ERROR TYPE=rule_never_fires FILE=${yml#"$ROOT_DIR"/} MSG=rule fires on nothing in the control fixture; it may be silently broken (check raw: concatenation and tokens: word boundaries)"
         fi
     done < <(find "$HOUSE" -name '*.yml' -type f | sort)
     rules_exercised="$fired"
 elif [ ! -f "$CONTROL" ]; then
-    fail "SEVERITY=ERROR FILE=prose-plugin/skills/prose-check/fixtures/house-rule-control.md MSG=control fixture missing; House rules can no longer be proven to fire"
+    fail "SEVERITY=ERROR TYPE=missing_file FILE=prose-plugin/skills/prose-check/fixtures/house-rule-control.md MSG=control fixture missing; House rules can no longer be proven to fire"
 fi
 
 echo "=== PROSE HOUSE STYLE ==="
@@ -215,11 +215,13 @@ echo "RULES_EXERCISED=$rules_exercised"
 echo "SIGNIFICANCE_MARKERS=${#SIGNIFICANCE_MARKERS[@]}"
 echo "STATUS=$([ "$issue_count" -gt 0 ] && echo ERROR || echo OK)"
 if [ "$issue_count" -gt 0 ]; then
-    # REASON= is the first finding as `<FILE>: <MSG>`, one line, cut to 180
+    # REASON= is the first finding as `<TYPE>: <FILE>: <MSG>`, one line, cut to 180
     # chars, plus ` (+N more)` (.claude/rules/structured-script-output.md, #2760).
+    first_type="${issues[0]#*TYPE=}"
+    first_type="${first_type%% *}"
     first_file="${issues[0]#*FILE=}"
     first_file="${first_file%% *}"
-    reason="$(printf '%s: %s' "$first_file" "${issues[0]#*MSG=}" | tr -s '[:space:]' ' ' | cut -c1-180)"
+    reason="$(printf '%s: %s: %s' "$first_type" "$first_file" "${issues[0]#*MSG=}" | tr -s '[:space:]' ' ' | cut -c1-180)"
     [ "${#issues[@]}" -gt 1 ] && reason="$reason (+$((${#issues[@]} - 1)) more)"
     echo "REASON=$reason"
 fi

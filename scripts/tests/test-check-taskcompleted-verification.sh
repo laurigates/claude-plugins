@@ -468,6 +468,40 @@ if grep -q '^REASON=' <<<"$out_pass"; then bad "R3: passing run must not emit RE
 if printf '%s\n' "$out_fail" | bash "$CONTRACT" --validate - >/dev/null 2>&1; then ok "R4: failing output satisfies the structured-output contract"; else bad "R4: failing output violates the contract"; fi
 if printf '%s\n' "$out_pass" | bash "$CONTRACT" --validate - >/dev/null 2>&1; then ok "R5: passing output satisfies the structured-output contract"; else bad "R5: passing output violates the contract"; fi
 
+# ---------------------------------------------------------------------------
+echo "TEST T: every ISSUES row carries TYPE=, and REASON= opens with it (#3165)"
+# ---------------------------------------------------------------------------
+# TYPE= names the finding CLASS; RULE= keeps naming the concept. A dropped
+# required concept is missing_concept, a matched forbidden one is
+# forbidden_concept, and a setup failure is its own class (TYPE == RULE).
+if [ "$(grep -c '^  - SEVERITY=ERROR ' <<<"$out_fail")" = "$(grep -c '^  - SEVERITY=ERROR TYPE=[a-z_]* PROMPT=[^ ]* RULE=[a-z_]* MSG=' <<<"$out_fail")" ]; then
+    ok "T1: every failing-fixture row carries TYPE= before PROMPT=/RULE="
+else
+    bad "T1: some failing-fixture row lacks TYPE="
+fi
+first_rule=$(grep -m1 '^  - SEVERITY=ERROR ' <<<"$out_fail" | sed -E 's/.* RULE=([a-z_]+) .*/\1/')
+if grep -qE "^REASON=missing_concept: ${first_rule}: .+" <<<"$out_fail" \
+   && grep -qE "^  - SEVERITY=ERROR TYPE=missing_concept PROMPT=[^ ]+ RULE=${first_rule} " <<<"$out_fail"; then
+    ok "T2: a dropped concept is TYPE=missing_concept and REASON= reads missing_concept: <RULE>: <MSG>"
+else
+    bad "T2: dropped-concept REASON=/row lacks the missing_concept TYPE"; grep '^REASON=' <<<"$out_fail"
+fi
+out_forbid=$(run_guard "$e_json")
+if grep -qE '^  - SEVERITY=ERROR TYPE=forbidden_concept PROMPT=[^ ]+ RULE=base_ref_hardcoded ' <<<"$out_forbid" \
+   && printf '%s\n' "$out_forbid" | bash "$CONTRACT" --validate - >/dev/null 2>&1; then
+    ok "T3: a matched forbidden concept is TYPE=forbidden_concept and the block validates"
+else
+    bad "T3: forbidden-concept row lacks TYPE=forbidden_concept"; grep '^REASON=\|^  - ' <<<"$out_forbid"
+fi
+out_setup=$(run_guard "$WORK/does-not-exist.json")
+if grep -q '^REASON=plugin_json_missing: no such file: ' <<<"$out_setup" \
+   && grep -q '^  - SEVERITY=ERROR TYPE=plugin_json_missing PROMPT=none RULE=plugin_json_missing ' <<<"$out_setup" \
+   && printf '%s\n' "$out_setup" | bash "$CONTRACT" --validate - >/dev/null 2>&1; then
+    ok "T4: a setup failure is its own TYPE and REASON= opens with it"
+else
+    bad "T4: setup-failure REASON=/row lacks TYPE=plugin_json_missing"; grep '^REASON=\|^  - ' <<<"$out_setup"
+fi
+
 echo ""
 echo "PASSED=$PASS FAILED=$FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

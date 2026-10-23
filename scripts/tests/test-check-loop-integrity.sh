@@ -190,8 +190,18 @@ check_true() { # desc, condition-result
 }
 out_bad="$(bash "$GUARD" "$no_pillar1" 2>&1)"
 out_ok="$(bash "$GUARD" "$clean" 2>&1)"
-grep -qxF 'REASON=.claude/rules/loop-integrity.md: Pillar 1 (independent stop condition) dropped from the rule' <<<"$out_bad" && r=true || r=false
-check_true "ERROR output carries REASON= naming the first finding" "$r"
+grep -qxF 'REASON=missing_token: .claude/rules/loop-integrity.md: Pillar 1 (independent stop condition) dropped from the rule' <<<"$out_bad" && r=true || r=false
+check_true "ERROR output carries REASON= naming the first finding, opened by its TYPE= (#3165)" "$r"
+grep -q '^  - SEVERITY=ERROR TYPE=missing_token FILE=.claude/rules/loop-integrity.md TOKEN=' <<<"$out_bad" && r=true || r=false
+check_true "missing-token ISSUES row carries TYPE=missing_token (#3165)" "$r"
+nofile="$WORK/no_file"; seed_clean "$nofile"; rm -f "$nofile/$CK_REL"
+out_nofile="$(bash "$GUARD" "$nofile" 2>&1)"
+grep -q "^REASON=missing_file: $CK_REL: missing file (" <<<"$out_nofile" && r=true || r=false
+check_true "missing-file REASON= opens with TYPE=missing_file (#3165)" "$r"
+grep -q "^  - SEVERITY=ERROR TYPE=missing_file FILE=$CK_REL MSG=" <<<"$out_nofile" && r=true || r=false
+check_true "missing-file ISSUES row carries TYPE=missing_file (#3165)" "$r"
+printf '%s\n' "$out_nofile" | bash "$CONTRACT" --validate - >/dev/null 2>&1 && r=true || r=false
+check_true "missing-file ERROR output satisfies the structured-output contract" "$r"
 two="$WORK/two_findings"; seed_clean "$two"
 grep -v 'independently' "$two/$RULE_REL" > "$two/$RULE_REL.tmp" && mv "$two/$RULE_REL.tmp" "$two/$RULE_REL"
 grep -v 'Verifier result' "$two/$CK_REL" > "$two/$CK_REL.tmp" && mv "$two/$CK_REL.tmp" "$two/$CK_REL"
