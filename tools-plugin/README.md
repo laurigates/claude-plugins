@@ -41,6 +41,7 @@ Collection of general-purpose development utilities for file finding, text searc
 | `cli-smoke-recipes` | Advisory pattern for exposing transforming modules via CLI plus a bulk-smoke justfile recipe — decoders, codecs, parsers, formatters |
 | `imagemagick-conversion` | Image conversion and manipulation |
 | `hf-downloads` | Disk-safe Hugging Face model downloads — HF_HOME/xet cache redirection, gated-repo auth, staging pattern |
+| `apptainer` | Run OCI images as rootless batch jobs on a Linux GPU box — `--nv` passthrough, digest-pinned SIF files, cache off the root disk |
 
 ### Diagrams
 
