@@ -4,7 +4,7 @@ description: "Skaffold file sync — copy changed files to containers without re
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-21
-modified: 2026-05-09
+modified: 2026-10-21
 reviewed: 2026-04-25
 ---
 
@@ -361,6 +361,39 @@ deploy:
       - k8s/*.yaml
 ```
 
+## Host-Side Generated Assets
+
+When a build step produces a file the app serves (compiled CSS, bundled JS), run that step's watcher **on the host** and let an ordinary sync rule ship its output. No rebuild and no sidecar.
+
+```bash
+# justfile recipe body (e.g. `just k8s-up`)
+tailwindcss -i src/app/static/input.css -o src/app/static/app.css --watch=always --silent &
+trap 'kill $! 2>/dev/null' EXIT
+skaffold dev --port-forward
+```
+
+```yaml
+sync:
+  manual:
+    - src: "src/**/static/**"   # matches the watcher's OUTPUT (app.css), not its input
+      dest: /app
+```
+
+Verified (OrbStack, skaffold v2.25.0): a template class change → the host watcher rewrites `app.css` → Skaffold logs `Syncing 2 files` → the class is in the pod and in the served CSS. Ctrl-C stops both processes.
+
+| Rule | Why |
+|------|-----|
+| The sync rule must match the watcher's **output** path | Skaffold syncs files that changed on disk; a rule covering only the input never ships the generated asset |
+| Keep a backgrounded watcher alive when stdin closes | Tailwind v4 `--watch` exits when stdin closes, so CSS silently stops updating; use `--watch=always`. For Vite/esbuild, use their watch mode and confirm it survives backgrounding |
+| `trap … EXIT` before `skaffold dev` | Kills the watcher when the recipe exits, so no orphan keeps writing |
+| CI freshness checks use a one-shot build | Tailwind watch mode only **adds** classes; removed ones linger until a one-shot `tailwindcss -i … -o …`. Compare against that, never against watcher output |
+
+| Choose | When |
+|--------|------|
+| Host watcher + sync | Output lands in a path a sync rule already covers, or is **committed** to git |
+| Sidecar watcher in the pod | Output is neither committed nor needed on the host — a sidecar writes inside the pod, so a committed copy goes stale |
+| Full rebuild | The asset is produced only by the image build (multi-stage `RUN npm run build`) |
+
 ## Requirements and Limitations
 
 ### Container Requirements
@@ -375,7 +408,7 @@ deploy:
 
 | Scenario | Solution |
 |----------|----------|
-| Builder-generated files | Full rebuild required |
+| Builder-generated files (made inside the image build) | Full rebuild required — unless generated on the host into a synced path ([Host-Side Generated Assets](#host-side-generated-assets)) |
 | Files requiring compilation | Use hot-reload tools (nodemon, air) |
 | System files / package installs | Full rebuild required |
 | Permission changes | Full rebuild required |
