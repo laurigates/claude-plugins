@@ -1,0 +1,10 @@
+This is `pricesvc`, a quote service (Python 3.13, stdlib only). Read README.md
+for the intended behaviour and BUG_REPORT.md for an incident reported by the
+storefront team. Tests: `python3 -m unittest discover -s tests -t .`
+
+1. Find the root cause(s) of the incident and fix them in the code, so that the
+   service behaves as documented in README.md. Keep the existing caching and
+   retry behaviour that is working as intended, and do not break anything else.
+2. Write `diagnosis.md` explaining the causal chain: which components
+   contributed, how they combine to produce each symptom in the report, and
+   what you changed.

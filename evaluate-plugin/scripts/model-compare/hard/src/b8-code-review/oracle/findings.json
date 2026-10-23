@@ -1,0 +1,32 @@
+[
+ {
+  "file": "inventory/batching.py",
+  "line": 17,
+  "category": "off-by-one"
+ },
+ {
+  "file": "inventory/stock.py",
+  "line": 24,
+  "category": "concurrency"
+ },
+ {
+  "file": "inventory/search.py",
+  "line": 14,
+  "category": "injection"
+ },
+ {
+  "file": "inventory/tags.py",
+  "line": 8,
+  "category": "mutable-default"
+ },
+ {
+  "file": "inventory/importer.py",
+  "line": 30,
+  "category": "error-handling"
+ },
+ {
+  "file": "inventory/reservations.py",
+  "line": 28,
+  "category": "timezone"
+ }
+]

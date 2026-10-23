@@ -1,0 +1,5 @@
+# Built by make_tasks.py; rebuild with basic/validate.sh or hard/validate.sh
+basic/tasks/
+hard/tasks/
+hard/oracle/
+__pycache__/

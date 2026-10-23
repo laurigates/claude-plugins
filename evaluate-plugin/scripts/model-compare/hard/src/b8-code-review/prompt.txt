@@ -1,0 +1,14 @@
+Review a change before it is merged. change.patch is the unified diff; repo/
+contains the files as they are AFTER the change (paths in the patch are
+relative to repo/). The change is a mix of refactors and small features.
+
+Find the defects that this change introduces (behavioural regressions, bugs,
+security problems). Do not report style issues, and do not report changes
+that are behaviour-preserving. Precision matters: each finding on correct
+code costs points.
+
+Deliverable: findings.json - a JSON list of objects
+    {"file": "<path relative to repo/, e.g. inventory/stock.py>",
+      "line": <line number in the post-change file>,
+      "category": "<one of: off-by-one, concurrency, injection, mutable-default, error-handling, timezone, resource-leak, null-handling, performance, other>",
+      "note": "<one sentence>"}

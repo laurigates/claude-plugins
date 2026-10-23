@@ -144,6 +144,7 @@ tmp/eval-runs/<plugin-name>/<skill-name>/   # Gitignored: per-run staging
 | `scripts/render_matrix_report.py` | Render the cross-model delta report from a `model-matrix.json` (delta verdict, portability flag, `executable_on_haiku` executability flag, mixed-harness warning) |
 | `scripts/apply_fixture.sh` | Apply/tear down an eval's opt-in `fixture` block in an isolated temp workdir so context-needing skills can honestly execute |
 | `scripts/check_golden_set_evals.py` | Validate every golden-set canary's `evals.json` (all 13 check types, the `triggers` block) and run recorded probes (`scripts/tests/fixtures/golden-set-probes.json`, with `trace_file` / `workspace_setup` for trace and workspace checks) through the grader, so a suite counted toward `evalCoverageFloor` is shown to grade |
+| `scripts/model-compare/` | Compare models on the same work: two synthetic task sets with hidden graders (`basic/`, `hard/`, each with a `validate.sh` that proves its graders), `run_cell.sh` for lean headless cells, `run_issue.sh` for real issues in per-model worktrees, and a blind-review prompt; see its README |
 | `skills/evaluate-context-engineering/scripts/check-context-engineering.py` | Channel M scanner — deterministic C1–C6 proxies over the tree (`scripts/check-context-engineering.py` at the repo root is a shim onto it) |
 
 ## Context Engineering
@@ -174,6 +175,11 @@ Live smoke for the headless harness (real `claude -p` calls on haiku, asserted
 the plumbing. Routing is reported as `STATUS=WARN` (`WITH_SKILL_ROUTED=false`,
 trigger thresholds missed), not as a failure; haiku at n=1 did not route to
 `git-commit` on 2026-10-05.
+
+To compare **models** rather than skills (which model to delegate a piece of
+work to, at what cost), use `scripts/model-compare/`. The 2026-10 run on Haiku,
+Sonnet and Opus 5.5 is written up in
+[`docs/benchmarks/2026-10-model-comparison/`](../docs/benchmarks/2026-10-model-comparison/).
 
 The two weak-model gates are complementary: `/evaluate:legibility` reads a
 SKILL.md cold (comprehension), while `/evaluate:matrix` runs it on a weak model

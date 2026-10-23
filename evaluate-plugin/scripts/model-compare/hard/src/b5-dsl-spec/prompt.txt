@@ -1,0 +1,5 @@
+Implement the filter-expression language specified in SPEC.md in the existing
+stub `filterlang.py` (Python 3.13, standard library only; do not use eval/exec
+or the `ast` module on the input). examples.md has a few usage examples. Follow
+the specification exactly, including the exact error messages and column
+numbers. Write your own tests as you see fit.

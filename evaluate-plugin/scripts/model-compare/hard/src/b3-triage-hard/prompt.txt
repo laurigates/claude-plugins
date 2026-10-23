@@ -1,0 +1,19 @@
+ci.log is the full output of a failed CI job for a web-shop codebase (the source
+code is not available to you). A preliminary investigation established that the
+job's failures and errors come from exactly six independent root causes:
+
+  A: Database schema drift: the CI test database is restored from a stale snapshot that predates migration 0042 (adds the orders.currency column).
+  B: Time zone: the CI runner's local time zone is UTC, but parts of the code use naive local time while the tests assume Europe/Helsinki.
+  C: Dependency upgrade: the unpinned payment SDK (payfast-sdk) was upgraded to a new major version with breaking API changes.
+  D: Port collision: a local mock HTTP server could not bind its port because another server instance (left over from an earlier job or an earlier test) still held it.
+  E: Test pollution: an earlier test enables a feature flag in a process-wide cache and never resets it, changing behaviour of later tests.
+  F: Locale/encoding: the new CI base image has no UTF-8 locale configured (LANG/LC_ALL unset, C/POSIX locale, ASCII default encoding).
+
+Several failures are cascades: the exception that is visible in a test's report
+is not necessarily the root cause. Assign every failing or erroring test of
+this run to its root cause.
+
+Deliverable: triage.json - a JSON object mapping each failing/erroring test's
+node id, exactly as it appears in the "short test summary info" section (without
+the FAILED/ERROR prefix), to one letter A-F. List only tests that failed or
+errored in this run.

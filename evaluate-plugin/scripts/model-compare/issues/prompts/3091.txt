@@ -1,0 +1,10 @@
+Resolve GitHub issue #3091 in this repository (you have no GitHub access; the issue text is below). Follow the repository's conventions in CLAUDE.md and .claude/rules/. When done, commit your change locally with a conventional commit message that references the issue. Do not push and do not open a PR.
+
+--- Issue #3091: [Bug] health-plugin: check-hooks.sh reads hook timeouts as milliseconds ---
+## What
+`health-plugin/skills/health-check/scripts/check-hooks.sh` treats hook `timeout` values as milliseconds. Lines 102–106 store the value in `timeout_ms`, warn only above `60000`, and print the value with an `ms` suffix. Claude Code's hook `timeout` is measured in seconds, as #3079 established.
+## Why
+The checker has the same units mistake that #3079 fixes in the manifests. After #3088, every shipped timeout is 60 or less, so the `> 60000` check cannot flag a bad value. A 300-second timeout passes silently, and a millisecond value written by mistake (say 5000) is not caught either.
+## How
+Compare against seconds: warn above 60, and report any value of 1000 or more as a likely millisecond typo, using the same threshold as `scripts/check-hook-timeout-units.sh` from #3088. Print `s`, not `ms`. Add a test fixture for both cases.
+Refs #3079, #3088

@@ -1,0 +1,9 @@
+This repository contains a small billing/ledger module (package `billing/`,
+stdlib only, Python 3.13). BUG_REPORT.md lists issues reported by support and
+finance this sprint. Investigate each report, determine which ones are real
+defects, and fix the real ones in the code. Do not change behaviour that is
+correct according to the documented contracts (docstrings), and keep the public
+function signatures unchanged. Existing tests: `python3 -m unittest`.
+
+When you are done, write NOTES.md with one short paragraph per report saying
+whether it was a real bug and, if so, what the root cause was.
