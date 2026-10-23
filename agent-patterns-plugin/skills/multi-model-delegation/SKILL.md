@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite, mcp__pal-mcp-server__listmodels, mcp__pal-mcp-server__chat, mcp__pal-mcp-server__consensus, mcp__pal-mcp-server__thinkdeep
 model: opus
 created: 2026-07-17
-modified: 2026-10-09
+modified: 2026-10-21
 reviewed: 2026-08-21
 ---
 
@@ -152,6 +152,10 @@ When Step 5 refutes a claim, ask why the test suite could not answer it, then ad
 When PAL's MCP server is not connected, the same models are reachable directly
 over the OpenCode Go gateway — see [REFERENCE.md](REFERENCE.md) for that route's
 three failure modes.
+
+Scripting the `opencode run` CLI unattended has its own traps (permission
+prompts nobody answers, a shared SQLite lock, a free tier gated to OpenCode's own
+agent): [references/opencode-cli.md](references/opencode-cli.md).
 
 ## The Curated Excerpt Bundle
 
