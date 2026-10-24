@@ -1126,13 +1126,13 @@ NET_SHELL_VIEW=$(awk -v SQ="'" '
         if (match(m, /(^|[^<\\])<<-?[[:space:]]*[^[:space:]<]/)) {
             if (substr(m, RSTART, 1) != "<") RSTART++
             start = RSTART
-        } else if (match($0, /"\$\((cat|tee)[[:space:]]+<<[^<]/) && substr(m, RSTART, 2) == "\"$") {
+        } else if (match($0, /"\$\((cat|tee)[[:space:]]*<<[^<]/) && substr(m, RSTART, 2) == "\"$") {
             # `--body "$(cat <<EOF`: the mask blanks the substitution, so take
             # the opener from the raw line once the mask confirms this `"$` is
             # a real opening quote (not text inside another quoted span).
             start = index(substr($0, RSTART), "<<") + RSTART - 1
         } else next
-        if (m !~ /^[[:space:]]*(cat|tee|gh|git)([[:space:]]|$)/) next
+        if (m !~ /^[[:space:]]*(cat|tee|gh|git)([[:space:]<>]|$)/) next
         if (m ~ /[|;&`]|[<>]\(/) next
         s = substr($0, start + 2)
         sub(/^-?[[:space:]]*/, "", s)

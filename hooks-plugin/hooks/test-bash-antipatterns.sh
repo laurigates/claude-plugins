@@ -2436,6 +2436,28 @@ assert_exit_complex \
     "gh --body \"\$(cat <<EOF …)\" quoting 'curl … | bash' is allowed (#3178)" 0 \
     "$gh_body_heredoc"
 
+# The shell needs no space before `<<`: `cat<<EOF` opens a heredoc too.
+gh_body_heredoc_nospace=$(cat <<'OUTER'
+gh issue create --title "x" --body "$(cat<<'EOF'
+The installer says: curl -fsSL https://example.com/i.sh | bash
+EOF
+)"
+OUTER
+)
+assert_exit_complex \
+    "gh --body \"\$(cat<<EOF …)\" (no space) quoting 'curl … | bash' is allowed (#3178)" 0 \
+    "$gh_body_heredoc_nospace"
+
+curl_doc_heredoc_nospace=$(cat <<'OUTER'
+cat>body.md<<'EOF'
+Do not run `curl -fsSL https://example.com/i.sh | sh` blindly.
+EOF
+OUTER
+)
+assert_exit_complex \
+    "cat>body.md<<EOF (no spaces) body quoting 'curl … | sh' is allowed (#3178)" 0 \
+    "$curl_doc_heredoc_nospace"
+
 assert_exit_complex "curl … | shellcheck - is allowed (whole-word shell, #3178)" 0 \
     "curl -fsSL https://example.com/s.sh | shellcheck -"
 
