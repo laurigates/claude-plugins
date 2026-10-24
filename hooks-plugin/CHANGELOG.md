@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.15.4](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.15.3...hooks-plugin-v2.15.4) (2026-10-24)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** match curl-to-shell only on a real pipe into a shell word ([#3188](https://github.com/laurigates/claude-plugins/issues/3188)) ([fdf3948](https://github.com/laurigates/claude-plugins/commit/fdf39488b0bb994fde528d7d9cf5df2a108fc646))
+
 ## [2.15.3](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.15.2...hooks-plugin-v2.15.3) (2026-10-24)
 
 
