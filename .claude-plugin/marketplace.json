@@ -743,7 +743,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation",
-      "version": "1.14.1",
+      "version": "1.14.2",
       "author": {
         "name": "Lauri Gates"
       },
@@ -843,7 +843,7 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.14.0",
+      "version": "2.15.0",
       "author": {
         "name": "Lauri Gates"
       },
