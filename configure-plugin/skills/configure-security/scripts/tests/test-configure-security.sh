@@ -25,7 +25,7 @@ printf '{}' > "${full}/package.json"
 printf 'version: 2\nupdates: []\n' > "${full}/.github/dependabot.yml"
 printf 'name: CodeQL\njobs:\n  analyze:\n    steps:\n      - uses: github/codeql-action/analyze@v3\n' \
   > "${full}/.github/workflows/codeql.yml"
-printf '[allowlist]\n' > "${full}/.gitleaks.toml"
+printf '[extend]\nuseDefault = true\n\n[allowlist]\n' > "${full}/.gitleaks.toml"
 printf 'repos:\n  - repo: https://github.com/gitleaks/gitleaks\n' > "${full}/.pre-commit-config.yaml"
 printf '# Security Policy\n' > "${full}/SECURITY.md"
 
@@ -33,6 +33,7 @@ out1="$(bash "$check_script" --home-dir "$HOME" --project-dir "$full")"
 grep -q "^DEPENDABOT=true$" <<<"$out1" || fail "expected DEPENDABOT=true:\n$out1"
 grep -q "^CODEQL=true$" <<<"$out1" || fail "expected CODEQL=true:\n$out1"
 grep -q "^GITLEAKS_CONFIG=true$" <<<"$out1" || fail "expected GITLEAKS_CONFIG=true:\n$out1"
+grep -q "^GITLEAKS_RULES=default$" <<<"$out1" || fail "expected GITLEAKS_RULES=default:\n$out1"
 grep -q "^SECURITY_POLICY=true$" <<<"$out1" || fail "expected SECURITY_POLICY=true:\n$out1"
 grep -q "^PRE_COMMIT_GITLEAKS=true$" <<<"$out1" || fail "expected PRE_COMMIT_GITLEAKS=true:\n$out1"
 grep -q "^SECURITY_LAYERS_PRESENT=3$" <<<"$out1" || fail "expected SECURITY_LAYERS_PRESENT=3:\n$out1"
@@ -49,6 +50,7 @@ out2="$(bash "$check_script" --home-dir "$HOME" --project-dir "$bare")"
 grep -q "^DEPENDABOT=false$" <<<"$out2" || fail "expected DEPENDABOT=false:\n$out2"
 grep -q "^CODEQL=false$" <<<"$out2" || fail "expected CODEQL=false:\n$out2"
 grep -q "^GITLEAKS_CONFIG=false$" <<<"$out2" || fail "expected GITLEAKS_CONFIG=false:\n$out2"
+grep -q "^GITLEAKS_RULES=absent$" <<<"$out2" || fail "expected GITLEAKS_RULES=absent:\n$out2"
 grep -q "^SECURITY_POLICY=false$" <<<"$out2" || fail "expected SECURITY_POLICY=false:\n$out2"
 grep -q "^SECURITY_LAYERS_PRESENT=0$" <<<"$out2" || fail "expected SECURITY_LAYERS_PRESENT=0:\n$out2"
 grep -q "^STATUS=WARN$" <<<"$out2" || fail "expected STATUS=WARN for bare project:\n$out2"
@@ -185,7 +187,7 @@ printf '{}' > "${ctx}/package.json"
 printf 'version: 2\n' > "${ctx}/.github/dependabot.yml"
 printf '{"extends":["config:recommended"]}\n' > "${ctx}/renovate.json"
 printf 'name: CodeQL\n' > "${ctx}/.github/workflows/codeql.yml"
-printf '[allowlist]\n' > "${ctx}/.gitleaks.toml"
+printf '[extend]\nuseDefault = true\n\n[allowlist]\n' > "${ctx}/.gitleaks.toml"
 printf 'repos: []\n' > "${ctx}/.pre-commit-config.yaml"
 printf '# Security Policy\n' > "${ctx}/SECURITY.md"
 
@@ -414,7 +416,7 @@ rm -rf "$sast_i"
 sast_j="$(mktemp -d)" || { fail "mktemp -d failed"; }
 make_repo "$sast_j" "https://github.com/acme/demo.git"
 printf '{"extends":["config:recommended"]}\n' > "${sast_j}/renovate.json"
-printf '[allowlist]\n' > "${sast_j}/.gitleaks.toml"
+printf '[extend]\nuseDefault = true\n\n[allowlist]\n' > "${sast_j}/.gitleaks.toml"
 printf '# Security Policy\n' > "${sast_j}/SECURITY.md"
 run_sast_case "$sast_j" GH_STUB_OUT='true disabled'
 grep -q "^STATUS=OK$" <<<"$sast_out" \
@@ -429,5 +431,127 @@ rm -rf "$sast_j"
 
 rm -rf "$stub_bin"
 pass "missing-SAST severity is gated on CodeQL availability, with the reason reported (#2498)"
+
+# -----------------------------------------------------------------------------
+# Case 5: a .gitleaks.toml that loads ZERO rules is not a configured layer
+#   (Regression): GITLEAKS_CONFIG=true was set whenever the file existed, so an
+#   [allowlist]-only file counted as secret detection. gitleaks loads rules only
+#   from [[rules]] and [extend] (useDefault = true / path), so that file disables
+#   every rule, and gitleaks auto-discovers it — the pre-commit hook and
+#   gitleaks-action report "no leaks found" on every run. Four portfolio repos
+#   shipped exactly this shape.
+#
+#   Every fixture below runs the shipped collector. 5e then runs the REAL gitleaks
+#   over the same fixtures with a planted token, so the classifier is checked
+#   against the parser it imitates rather than against this file's assumptions.
+# -----------------------------------------------------------------------------
+gl_root="$(mktemp -d)" || { fail "mktemp -d failed"; }
+if [ -z "$gl_root" ] || [ ! -d "$gl_root" ]; then fail "bad gitleaks fixture dir"; fi
+
+# $1 = fixture name, $2 = printf format for .gitleaks.toml. Each fixture also gets
+# renovate.json + SECURITY.md, so the only layers that can vary are SAST (absent
+# everywhere) and secret detection. The allowlist path regex matches nothing a
+# fixture contains: a loose one (`x`) would allowlist canary.txt in 5e.
+make_gl() {
+  mkdir -p "${gl_root}/$1"
+  # shellcheck disable=SC2059  # $2 is the fixture's printf format by design
+  printf "$2" > "${gl_root}/$1/.gitleaks.toml"
+  printf '{"extends":["config:recommended"]}\n' > "${gl_root}/$1/renovate.json"
+  printf '# Security Policy\n' > "${gl_root}/$1/SECURITY.md"
+}
+allow_tail="\n[allowlist]\npaths = ['''^no-such-path$''']\n"
+
+# Zero-rule shapes — each must report `none` and raise the WARN.
+make_gl bare            "[allowlist]\npaths = ['''^no-such-path$''']\n"
+make_gl allowlists      "title = \"t\"\n\n[[allowlists]]\ndescription = \"a\"\npaths = ['''^no-such-path$''']\n"
+make_gl commented       "[extend]\n# useDefault = true\n${allow_tail}"
+make_gl use_default_off "[extend]\nuseDefault = false\n${allow_tail}"
+make_gl empty_path      "[extend]\npath = \"\"\n${allow_tail}"
+# A multi-line regex body that merely CONTAINS the extend lines is data, not config.
+make_gl multiline_body  "[allowlist]\nregexes = [\n'''\n[extend]\nuseDefault = true\n'''\n]\n"
+
+# Rule-loading shapes — each must report its source, count the layer, and not warn.
+make_gl extend_default  "[extend]\nuseDefault = true\n${allow_tail}"
+make_gl extend_case     "[Extend]\nUseDefault = true # viper reads keys case-insensitively\n${allow_tail}"
+make_gl extend_spaced   "[ extend ]\n  useDefault=true\n${allow_tail}"
+make_gl extend_dotted   "extend.useDefault = true\n${allow_tail}"
+make_gl extend_inline   "extend = { useDefault = true }\n${allow_tail}"
+make_gl extend_path     "[extend]\npath = \"base.toml\"\n${allow_tail}"
+printf '[extend]\nuseDefault = true\n' > "${gl_root}/extend_path/base.toml"
+make_gl custom_rules    "[[rules]]\nid = \"gh-pat\"\nregex = '''ghp_[0-9a-zA-Z]{36}'''\n${allow_tail}"
+
+gl_expect() {
+  # $1 = fixture, $2 = expected GITLEAKS_RULES value
+  local ge_out
+  ge_out="$(CONFIGURE_SECURITY_NO_GHAS_PROBE=1 bash "$check_script" --home-dir "$HOME" --project-dir "${gl_root}/$1")"
+  grep -q "^GITLEAKS_CONFIG=true$" <<<"$ge_out" || fail "$1: expected GITLEAKS_CONFIG=true:\n$ge_out"
+  grep -q "^GITLEAKS_RULES=$2$" <<<"$ge_out" || fail "$1: expected GITLEAKS_RULES=$2:\n$ge_out"
+  # The file exists, so the absent-config warning must never fire.
+  if grep -q "TYPE=missing_secret_detection" <<<"$ge_out"; then
+    fail "$1: missing_secret_detection must not fire when the file exists:\n$ge_out"
+  fi
+  if [ "$2" = "none" ]; then
+    grep -q "SEVERITY=WARN TYPE=inert_secret_detection" <<<"$ge_out" \
+      || fail "$1: expected the inert_secret_detection WARN:\n$ge_out"
+    grep -q "^SECURITY_LAYERS_PRESENT=1$" <<<"$ge_out" \
+      || fail "$1: a zero-rule config must not count as a layer (only Renovate should):\n$ge_out"
+    grep -q "^STATUS=WARN$" <<<"$ge_out" || fail "$1: expected STATUS=WARN:\n$ge_out"
+  else
+    if grep -q "TYPE=inert_secret_detection" <<<"$ge_out"; then
+      fail "$1: inert_secret_detection must be ABSENT when rules load:\n$ge_out"
+    fi
+    grep -q "^SECURITY_LAYERS_PRESENT=2$" <<<"$ge_out" \
+      || fail "$1: a rule-loading config must count as a layer:\n$ge_out"
+  fi
+}
+
+# 5a-5b — THE REPORTED DEFECT and its plural-table twin.
+gl_expect bare none
+gl_expect allowlists none
+# 5c — discriminators: text that looks like an extend but is not one.
+gl_expect commented none
+gl_expect use_default_off none
+gl_expect empty_path none
+gl_expect multiline_body none
+# 5d — GUARD INTEGRITY: every rule-loading spelling must still pass, or a
+# classifier that answered `none` for everything would satisfy 5a-5c.
+gl_expect extend_default default
+gl_expect extend_case default
+gl_expect extend_spaced default
+gl_expect extend_dotted default
+gl_expect extend_inline default
+gl_expect extend_path extend-path
+gl_expect custom_rules custom
+pass "a .gitleaks.toml that loads zero rules is reported inert and not counted as a layer"
+
+# 5e — the classifier agrees with gitleaks itself. Each fixture gets a freshly
+# generated token in the github-pat shape (never a literal, so this file cannot
+# trip a secret scan); gitleaks must find it exactly when the verdict says rules
+# load. Needs a gitleaks with the `dir` subcommand (8.19+).
+if command -v gitleaks >/dev/null 2>&1 && gitleaks dir --help >/dev/null 2>&1; then
+  gl_token="ghp_$(od -An -tx1 -N18 /dev/urandom | tr -d ' \n')"
+  [ "${#gl_token}" -eq 40 ] || fail "canary token generation failed: ${gl_token}"
+  gl_checked=0
+  for gl_dir in "${gl_root}"/*/; do
+    gl_name="$(basename "$gl_dir")"
+    printf 'token = "%s"\n' "$gl_token" > "${gl_dir}canary.txt"
+    gl_verdict="$(CONFIGURE_SECURITY_NO_GHAS_PROBE=1 bash "$check_script" --home-dir "$HOME" --project-dir "$gl_dir" \
+      | sed -n 's/^GITLEAKS_RULES=//p')"
+    # From inside the fixture, as a pre-commit hook runs: gitleaks resolves an
+    # [extend] path against the working directory, not the config file.
+    (cd "$gl_dir" && gitleaks dir . --no-banner --exit-code 7 --config .gitleaks.toml) >/dev/null 2>&1
+    gl_rc=$?
+    case "$gl_verdict" in
+      none) [ "$gl_rc" -eq 0 ] || fail "$gl_name: verdict none, but gitleaks exited $gl_rc (7 = it found the token)" ;;
+      *)    [ "$gl_rc" -eq 7 ] || fail "$gl_name: verdict $gl_verdict, but gitleaks exited $gl_rc instead of finding the token" ;;
+    esac
+    gl_checked=$((gl_checked + 1))
+  done
+  [ "$gl_checked" -eq 13 ] || fail "expected 13 fixtures cross-checked, got $gl_checked"
+  pass "gitleaks $(gitleaks version 2>/dev/null) finds the planted token exactly where GITLEAKS_RULES says rules load ($gl_checked fixtures)"
+else
+  echo "SKIP: gitleaks (8.19+) not on PATH — 5e cross-check against the real parser not run"
+fi
+rm -rf "$gl_root"
 
 echo "ALL TESTS PASSED"

@@ -7,8 +7,25 @@ Used by Step 2 (detect project languages and security posture) to read the `conf
 The `KEY=VALUE` lines
 report language detection (`LANG_JS`, `LANG_PYTHON`, `LANG_RUST`, `LANG_GO`) and
 the presence matrix (`DEPENDABOT`, `RENOVATE`, `DEPENDENCY_AUTOMATION`, `CODEQL`,
-`CODEQL_AVAILABLE`, `CODEQL_AVAILABILITY_REASON`, `GITLEAKS_CONFIG`,
+`CODEQL_AVAILABLE`, `CODEQL_AVAILABILITY_REASON`, `GITLEAKS_CONFIG`, `GITLEAKS_RULES`,
 `SECURITY_POLICY`, `TRUFFLEHOG`, `DEPENDENCY_REVIEW`, `SECURITY_LAYERS_PRESENT`).
+
+## Secret-detection rules
+
+`GITLEAKS_CONFIG` says only that `.gitleaks.toml` exists. `GITLEAKS_RULES` says
+whether it loads any rules, and only a rule-loading config counts toward
+`SECURITY_LAYERS_PRESENT`. gitleaks takes rules from `[[rules]]` tables and from
+`[extend]` alone, and it auto-discovers `.gitleaks.toml` in the scanned directory,
+so an allowlist-only file turns the pre-commit hook and gitleaks-action into scans
+that pass every time.
+
+| `GITLEAKS_RULES` | Config shape | Finding |
+|---|---|---|
+| `default` | `[extend] useDefault = true` (any spelling gitleaks accepts: dotted `extend.useDefault`, inline table, any key case) | none |
+| `extend-path` | `[extend] path = "<file>"`; the script does not follow the path | none |
+| `custom` | own `[[rules]]`, no `[extend]` | none |
+| `none` | `[allowlist]` / `[[allowlists]]` only, or `useDefault = false` | `SEVERITY=WARN TYPE=inert_secret_detection`; fix by adding `[extend]` / `useDefault = true` above the allowlist |
+| `absent` | no `.gitleaks.toml` | `SEVERITY=WARN TYPE=missing_secret_detection` |
 
 ## CodeQL availability
 
