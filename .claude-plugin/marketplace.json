@@ -4,7 +4,7 @@
   "owner": {
     "name": "Lauri Gates"
   },
-  "description": "A curated collection of 44 Claude Code plugins providing 380+ skills and 21 agents for development workflows \u2014 git, testing, CI/CD, configuration, infrastructure, and language ecosystems.",
+  "description": "A curated collection of 44 Claude Code plugins providing 380+ skills and 21 agents for development workflows — git, testing, CI/CD, configuration, infrastructure, and language ecosystems.",
   "plugins": [
     {
       "name": "accessibility-plugin",
@@ -659,7 +659,7 @@
     {
       "name": "prompt-engineering-plugin",
       "source": "./prompt-engineering-plugin",
-      "description": "Prompt engineering techniques for accurate, grounded Claude responses \u2014 anti-hallucination workflow with citation-backed analysis",
+      "description": "Prompt engineering techniques for accurate, grounded Claude responses — anti-hallucination workflow with citation-backed analysis",
       "version": "1.1.4",
       "author": {
         "name": "Lauri Gates"
