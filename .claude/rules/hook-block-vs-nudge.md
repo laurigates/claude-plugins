@@ -1,6 +1,6 @@
 ---
 created: 2026-06-29
-modified: 2026-10-13
+modified: 2026-10-23
 reviewed: 2026-07-04
 paths:
   - "**/hooks/**"
@@ -44,9 +44,19 @@ hard block.
 > arbitrary-execution form) and only blocked simple `find -name` searches. So it
 > did no safety work; it fired in subagents lacking `Glob` (dead-ends); and it
 > needed 4+ false-positive patches. It was demoted to the opt-in teach nudge in
-> `bash-antipatterns-teach.sh` (claude-plugins #1871). The `cat` / `sed` /
-> `echo > file` blocks **stayed** — those prevent real data-loss / correctness
-> problems, so the exit-2 is earned.
+> `bash-antipatterns-teach.sh` (claude-plugins #1871).
+>
+> The write blocks do **not** pass the test on data-loss grounds: the hook exempts
+> `cat <<EOF > file` (a full overwrite) and never sees `python -c`, `tee` or
+> `perl -pi`. The `sed -i` block keeps its exit-2 on **correctness** grounds
+> instead. Files changed only by Bash are not restored by `/rewind` (Claude Code
+> 2.1.309 moved `sed -i` out of that coverage). Hooks matching Edit/Write do not
+> fire on a Bash edit. About 11% of the 471 blocked `sed -i` calls measured
+> 2026-08-24..10-23 used a GNU-only form or `\n` in a replacement, which fails or
+> misbehaves under macOS BSD `sed`. After a block, the agent switched to Edit or
+> Write 70% of the time and was re-blocked on the next call under 1% of the time.
+> `echo`/`printf > file` has no such failure mode and drew more scratch-write
+> noise, so it was demoted to a non-blocking `additionalContext` nudge.
 
 ## Quick test before adding (or keeping) a hard block
 

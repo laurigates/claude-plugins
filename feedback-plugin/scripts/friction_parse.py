@@ -206,18 +206,19 @@ def canonical_signature(kind: str, tool: str, evidence: str) -> str:
             # gate could be written at all. See issue #2420.
             #
             # ORDERING. Each needle carries the detector's own quoted token
-            # rather than the shared lead-in, because three pairs share a
+            # rather than the shared lead-in, because detectors share a
             # phrase and a loose test placed first swallows its neighbour
             # silently (the shape PR #2421 hit):
             #   * "use the edit tool instead of"  -> 'sed -i' AND 'awk'
-            #   * "use the write tool instead of" -> 'echo/printf > file'
-            #     AND 'cat > file' (the cat-write detector, which is NOT in
-            #     this table and must keep falling through to `:other`)
+            #   * "use the write tool instead of" -> 'cat > file' (the
+            #     cat-write detector, which is NOT in this table and must
+            #     keep falling through to `:other`)
+            # echo/printf > file has no needle: since #3175 it is a
+            # non-blocking additionalContext nudge, never a block message.
             # test_friction_parse.py pins both the split and the ordering.
             for needle, detector in (
                 # Quoted-token needles first: the narrowest tests, and the
                 # ones whose shared lead-in would otherwise cross-match.
-                ("instead of 'echo/printf > file'", "echo-write"),
                 ("instead of 'sed -i'", "sed-inplace"),
                 ("instead of 'awk'", "awk-edit"),
                 # Unshared prose; order among these is not load-bearing.

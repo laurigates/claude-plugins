@@ -332,8 +332,9 @@ DETECTOR_FIXTURE = FIXTURES / "hook_detector_split"
 # read 74 ev / 45 sess / 42.9% prevalence / 42.2% same-session repeat; every
 # detector individually teaches well (max 15.2% repeat besides `awk`, n=2
 # sessions), so the 42.2% was an aggregation artifact.
+# echo-write was the eighth until #3175 demoted `echo/printf > file` to a
+# non-blocking nudge, which emits no block message for a needle to match.
 DETECTOR_SIGNATURES = (
-    "hook:bash-antipatterns:echo-write",
     "hook:bash-antipatterns:sed-inplace",
     "hook:bash-antipatterns:timeout",
     "hook:bash-antipatterns:git-add-broad",
@@ -392,9 +393,9 @@ def test_hook_other_dissolves_into_eight_detector_signatures():
 def test_detector_ordering_keeps_cat_write_out_of_echo_write():
     """Ordering pin: a shared lead-in must not swallow a sibling detector.
 
-    `cat > file` and `echo/printf > file` both say "Use the Write tool
-    instead of ...", so a needle keyed on that phrase rather than the quoted
-    token would absorb every cat-write block into `echo-write` silently --
+    `cat > file` says "Use the Write tool instead of ...", as the echo-write
+    block did before #3175, so a needle keyed on that phrase rather than a
+    quoted token would absorb cat-write blocks into a sibling silently --
     the shape PR #2421 hit, where a loose `cross-repo` test placed ahead of
     `worktree-gone` swallowed all 29 of the latter.
     """
@@ -407,13 +408,13 @@ def test_detector_ordering_keeps_cat_write_out_of_echo_write():
         f"cat-write was swallowed by a sibling detector: {cat_write[0]}"
     )
 
-    # Control for that negative: the detector whose lead-in it shares DID
-    # match, so the assertion above reflects ordering and not a dead needle.
-    echo_write = [
-        e for e in events if e["signature"] == "hook:bash-antipatterns:echo-write"
+    # Control for that negative: a sibling REMINDER-format detector DID
+    # match, so the assertion above reflects ordering and not a dead table.
+    sed_inplace = [
+        e for e in events if e["signature"] == "hook:bash-antipatterns:sed-inplace"
     ]
-    assert len(echo_write) == 1, (
-        f"echo-write did not fire, so the cat-write assertion proves nothing: "
+    assert len(sed_inplace) == 1, (
+        f"sed-inplace did not fire, so the cat-write assertion proves nothing: "
         f"{[e['signature'] for e in events]}"
     )
 

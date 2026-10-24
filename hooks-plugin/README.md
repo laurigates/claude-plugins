@@ -44,6 +44,12 @@ every destination is a literal `tmp/` or `./tmp/` path (no glob) that
 `git -C <cwd> check-ignore` reports ignored, and the command contains no
 `cd`/`pushd`/`popd`. A tracked `tmp/` still blocks (#2837).
 
+`echo`/`printf > file` no longer blocks. The command runs and the hook returns
+a PreToolUse `additionalContext` note preferring Write, because a Bash-only edit
+is not restored by `/rewind`. `sed -i` still blocks, except when every file it
+edits was copied with `cp` earlier in the same command (the mutation-probe
+shape `cp f tmp/snap && sed -i … f && test; cp tmp/snap f`).
+
 The read/write detectors (`cat`/`head`/`tail`, `echo`/`printf`/`cat` writes,
 `sed -i`, task-output reads) are classified **structurally** via
 `ast-grep --lang bash` — a real parse distinguishes a command from a

@@ -12,8 +12,8 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 |---------|----------|
 | `cat file` (whole command only — #2148) | Use **Read** tool instead |
 | `head`/`tail file` (whole command only — #2148) | Use **Read** tool with offset/limit |
-| `sed -i` on repo files (targets under `/tmp`, `/private/tmp`, `/var/folders`, `$TMPDIR` are exempt — #2052) | Use **Edit** tool instead |
-| `echo > file` | Use **Write** tool instead |
+| `sed -i` on repo files (targets under `/tmp`, `/private/tmp`, `/var/folders`, `$TMPDIR` are exempt — #2052; so is a file snapshotted with `cp` earlier in the same command, the mutation-probe shape) | Use **Edit** tool instead |
+| `echo > file` | **Non-blocking**: the command runs and the model gets an `additionalContext` note to prefer **Write** |
 | `cat > file` | Use **Write** tool instead |
 | `timeout cmd` | Remove timeout (Bash tool has its own, human approval time exceeds it anyway); append a `# allow-timeout` comment to bound a genuinely-never-exiting process (REPL, stdio server) — #2041 |
 | `cat/tail ...tasks/*.output` (whole command only — #2148) | Use **Read** tool on the output path (or pipe an extraction for large files) |

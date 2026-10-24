@@ -94,11 +94,19 @@ for dir in $PATH; do
 done
 IFS="$OLD_IFS"
 
+# A non-blocking nudge exits 0 and prints PreToolUse additionalContext on
+# stdout. Tests express it as the pseudo exit code NUDGE so "allowed silently"
+# (0), "nudged" (3) and "blocked" (2) stay distinct.
+NUDGE=3
+nudge_code() { [ "$1" -eq 0 ] && grep -q '"additionalContext"' <<<"$2"; }
+
 assert_exit_fakesg() {
     local desc="$1" expected="$2" cmd="$3"
     local json exit_code=0
     json=$(jq -nc --arg cmd "$cmd" '{tool_name:"Bash",tool_input:{command:$cmd}}')
-    printf '%s' "$json" | env PATH="$PATH_NO_ASTGREP" bash "$HOOK" >/dev/null 2>&1 || exit_code=$?
+    local out
+    out=$(printf '%s' "$json" | env PATH="$PATH_NO_ASTGREP" bash "$HOOK" 2>/dev/null) || exit_code=$?
+    nudge_code "$exit_code" "$out" && exit_code=$NUDGE
     if [ "$exit_code" -eq "$expected" ]; then
         printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
     else
@@ -196,7 +204,9 @@ assert_exit() {
     local json
     json=$(printf '{"tool_name":"Bash","tool_input":{"command":"%s"}}' "$cmd")
     local exit_code=0
-    printf '%s' "$json" | bash "$HOOK" >/dev/null 2>&1 || exit_code=$?
+    local out
+    out=$(printf '%s' "$json" | bash "$HOOK" 2>/dev/null) || exit_code=$?
+    nudge_code "$exit_code" "$out" && exit_code=$NUDGE
     if [ "$exit_code" -eq "$expected" ]; then
         printf "  PASS: %s\n" "$desc"
         PASS=$((PASS + 1))
@@ -353,11 +363,11 @@ echo ""
 echo "echo/printf file-write detection (true positives blocked, false negatives allowed):"
 
 assert_exit \
-    "echo text > file is blocked" 2 \
+    "echo text > file is nudged" $NUDGE \
     "echo hello > file.txt"
 
 assert_exit \
-    "printf text > file is blocked" 2 \
+    "printf text > file is nudged" $NUDGE \
     "printf hello > file.txt"
 
 assert_exit \
@@ -369,7 +379,7 @@ assert_exit \
     "echo exit=\$? >> /tmp/build.log"
 
 assert_exit \
-    "echo > ./tmp/ repo-relative path is still blocked when the hook input has no cwd" 2 \
+    "echo > ./tmp/ repo-relative path is still nudged when the hook input has no cwd" $NUDGE \
     "echo hi > ./tmp/notes.md"
 
 assert_exit \
@@ -392,7 +402,7 @@ assert_exit \
     "echo x > /dev/null"
 
 assert_exit \
-    "real file write with unrelated 2>/dev/null still blocks (issue #1701)" 2 \
+    "real file write with unrelated 2>/dev/null still nudges (issue #1701)" $NUDGE \
     "echo data > realfile.txt 2>/dev/null"
 
 # ── heredoc body false-positive regression ───────────────────────────────────
@@ -411,7 +421,9 @@ assert_exit_complex() {
     local json
     json=$(jq -nc --arg cmd "$cmd" '{tool_name:"Bash",tool_input:{command:$cmd}}')
     local exit_code=0
-    printf '%s' "$json" | bash "$HOOK" >/dev/null 2>&1 || exit_code=$?
+    local out
+    out=$(printf '%s' "$json" | bash "$HOOK" 2>/dev/null) || exit_code=$?
+    nudge_code "$exit_code" "$out" && exit_code=$NUDGE
     if [ "$exit_code" -eq "$expected" ]; then
         printf "  PASS: %s\n" "$desc"
         PASS=$((PASS + 1))
@@ -579,7 +591,7 @@ assert_exit_complex \
     'echo hi > /dev/tty'
 
 assert_exit_complex \
-    "echo to a real double-quoted-content file still blocks" 2 \
+    "echo to a real double-quoted-content file still nudges" $NUDGE \
     'echo "content" > realfile.txt'
 
 # ── `git commit -F <file>` is an accepted destination (issue #2462) ──────────
@@ -1337,11 +1349,11 @@ assert_exit \
     "grep -rin foo . | grep -v bar | sort | uniq -c | sort -rn"
 
 assert_exit_complex \
-    "GUARD INTEGRITY: echo text > file still blocked (#1701)" 2 \
+    "GUARD INTEGRITY: echo text > file still nudged (#1701)" $NUDGE \
     'echo "text" > somefile.txt'
 
 assert_exit \
-    "GUARD INTEGRITY: printf x > file still blocked (#1701)" 2 \
+    "GUARD INTEGRITY: printf x > file still nudged (#1701)" $NUDGE \
     "printf 'x' > out.md"
 
 # ── fd-redirect-to-/dev/null is not a file write (issues #1722, #1721) ────────
@@ -1372,7 +1384,7 @@ assert_exit \
     "echo hi > /dev/null"
 
 assert_exit \
-    "echo foo > out.txt is blocked (real file write; #1722 row 5)" 2 \
+    "echo foo > out.txt is nudged (real file write; #1722 row 5)" $NUDGE \
     "echo foo > out.txt"
 
 # #1721: an echo label whose only redirect is a 2>/dev/null inside a sibling
@@ -1387,15 +1399,15 @@ assert_exit_complex \
 
 # Guard integrity: the /dev/null strip must NOT weaken genuine file-write nudges.
 assert_exit_complex \
-    "GUARD INTEGRITY: echo \"text\" > file still blocked (#1722)" 2 \
+    "GUARD INTEGRITY: echo \"text\" > file still nudged (#1722)" $NUDGE \
     'echo "text" > file.md'
 
 assert_exit \
-    "GUARD INTEGRITY: printf ... > out.md still blocked (#1722)" 2 \
+    "GUARD INTEGRITY: printf ... > out.md still nudged (#1722)" $NUDGE \
     "printf 'x' > out.md"
 
 assert_exit_complex \
-    "GUARD INTEGRITY: #1701 mixed write echo x > realfile.txt 2>/dev/null still blocks" 2 \
+    "GUARD INTEGRITY: #1701 mixed write echo x > realfile.txt 2>/dev/null still nudges" $NUDGE \
     'echo data > realfile.txt 2>/dev/null'
 
 # ── head/tail as an identifier, not a file read (issue #1848) ─────────────────
@@ -1726,11 +1738,11 @@ assert_exit_complex \
     'T=$(mktemp -d); cd $T; sed -i s/a/b/ f'
 
 assert_exit \
-    "GUARD INTEGRITY: repo echo > file whose only /tmp is a stderr redirect still blocked (#2892)" 2 \
+    "GUARD INTEGRITY: repo echo > file whose only /tmp is a stderr redirect still nudged (#2892)" $NUDGE \
     "cd ~/repo; echo a > f 2>/tmp/log"
 
 assert_exit_complex \
-    "GUARD INTEGRITY: mktemp without -d (a file, not a dir) grants nothing (#2892)" 2 \
+    "GUARD INTEGRITY: mktemp without -d (a file, not a dir) grants nothing (#2892)" $NUDGE \
     'F=$(mktemp); echo a > f'
 
 assert_exit \
@@ -1738,7 +1750,7 @@ assert_exit \
     "cd ~/repo; cat > f"
 
 assert_exit \
-    "GUARD INTEGRITY: cd /tmpfoo then echo > file still blocked (#2892)" 2 \
+    "GUARD INTEGRITY: cd /tmpfoo then echo > file still nudged (#2892)" $NUDGE \
     "cd /tmpfoo; echo a > f"
 
 # Pinned trade-off, not a goal: scratch_ctx is decided for the whole command, so
@@ -1749,15 +1761,77 @@ assert_exit_complex \
     "ACCEPTED TRADE-OFF: an unused mktemp -d assignment exempts a repo echo write (#2892)" 0 \
     'T=$(mktemp -d); echo x > src/main.py'
 
-assert_stderr_contains \
-    "echo/printf block message names the mktemp -d and project tmp/ exemptions (#2892/#2837)" \
-    "into a mktemp -d scratch dir, or into a git-ignored project tmp/ are allowed" \
-    "echo hi > out.txt"
+# echo/printf > file is a non-blocking nudge: the text goes to stdout as
+# PreToolUse additionalContext, not to stderr.
+echo_nudge_out=$(jq -nc '{tool_name:"Bash",tool_input:{command:"echo hi > out.txt"}}' | bash "$HOOK" 2>/dev/null) || true
+if jq -e '.hookSpecificOutput.hookEventName == "PreToolUse" and (.hookSpecificOutput.additionalContext | contains("not restored by /rewind") and contains("a mktemp -d dir, or a git-ignored project tmp/ are fine"))' <<<"$echo_nudge_out" >/dev/null 2>&1; then
+    printf "  PASS: %s\n" "echo/printf nudge is PreToolUse additionalContext naming /rewind and the scratch exemptions"
+    PASS=$((PASS + 1))
+else
+    printf "  FAIL: %s\n    got: %s\n" "echo/printf nudge is PreToolUse additionalContext naming /rewind and the scratch exemptions" "$echo_nudge_out"
+    FAIL=$((FAIL + 1))
+fi
+
+assert_exit_complex \
+    "SAFETY: a later safety block still wins over a pending echo nudge" 2 \
+    "echo x > notes.txt; chmod 777 notes.txt"
 
 assert_stderr_contains \
     "sed -i block message names the mktemp -d and project tmp/ exemptions (#2892/#2837)" \
-    "in a mktemp -d scratch dir, or in a git-ignored project tmp/ are allowed" \
+    "in a mktemp -d scratch dir, in a git-ignored project tmp/, or of a file first snapshotted with 'cp' in the same command are allowed" \
     "sed -i 's/a/b/' src/main.py"
+
+assert_stderr_contains \
+    "sed -i block message names /rewind" \
+    "not restored by /rewind" \
+    "sed -i 's/a/b/' src/main.py"
+
+# ── sed -i snapshot-then-mutate exemption ─────────────────────────────────────
+# Mutation probes copy a file aside, break it with sed -i, run tests, and copy
+# it back. 132 of 471 sed-inplace blocks (2026-08-24..10-23) had a cp in the
+# same command.
+echo ""
+echo "sed -i of a file snapshotted with cp earlier in the same command is allowed:"
+
+assert_exit_complex \
+    "cp f tmp/snap && sed -i f && test; cp back is allowed" 0 \
+    "mkdir -p tmp && cp src/lib/x.ts tmp/snap.ts && sed -i '' 's/a/b/' src/lib/x.ts && bun run test; cp tmp/snap.ts src/lib/x.ts"
+
+assert_exit_complex \
+    "cp f /tmp/x.bak then sed -i f is allowed" 0 \
+    "cp src/a.py /tmp/a.bak && sed -i '' 's/x/y/' src/a.py && pytest -q; cp /tmp/a.bak src/a.py"
+
+assert_exit_complex \
+    "multi-source cp into a snapshot dir covers each sed operand" 0 \
+    "cp src/a.ts src/b.ts tmp/snap/ && sed -i '' 's/x/y/' src/a.ts src/b.ts && bun test"
+
+assert_exit_complex \
+    "cp with a flag still counts as a snapshot" 0 \
+    "cp -p src/a.c tmp/a.c.snap && sed -i '' 's/x/y/' src/a.c"
+
+assert_exit_complex \
+    "variable operand matches the same variable token in cp" 0 \
+    'F=src/tools/s.ts && cp $F tmp-s.bak && sed -i "" "s/a/b/" $F; cp tmp-s.bak $F'
+
+assert_exit_complex \
+    "GUARD INTEGRITY: cp of a DIFFERENT file grants nothing" 2 \
+    "cp src/other.ts /tmp/o.bak && sed -i '' 's/a/b/' src/x.ts"
+
+assert_exit_complex \
+    "GUARD INTEGRITY: snapshot of one of two sed operands grants nothing" 2 \
+    "cp src/a.ts /tmp/a.bak && sed -i '' 's/a/b/' src/a.ts src/b.ts"
+
+assert_exit_complex \
+    "GUARD INTEGRITY: a cp only AFTER the sed (a restore) grants nothing" 2 \
+    "sed -i '' 's/a/b/' src/x.ts && cp src/x.ts /tmp/after.bak"
+
+assert_exit_complex \
+    "GUARD INTEGRITY: a tab after sed does not let a restore cp count as a snapshot" 2 \
+    $'sed\t-i \'\' \'s/a/b/\' src/x.ts && cp src/x.ts /tmp/after.bak'
+
+assert_exit_complex \
+    "GUARD INTEGRITY: the file as cp DESTINATION is not a snapshot" 2 \
+    "cp /tmp/template.ts src/x.ts && sed -i '' 's/a/b/' src/x.ts"
 
 # ── a git-ignored project tmp/ is scratch, a tracked one is not (#2837) ───────
 # Regression: the user-global rules send scratch output to the project's tmp/
@@ -1805,7 +1879,9 @@ assert_exit_cwd() {
     local desc="$1" expected="$2" cwd="$3" cmd="$4"
     local json exit_code=0
     json=$(jq -nc --arg cmd "$cmd" --arg cwd "$cwd" '{tool_name:"Bash",cwd:$cwd,tool_input:{command:$cmd}}')
-    printf '%s' "$json" | bash "$HOOK" >/dev/null 2>&1 || exit_code=$?
+    local out
+    out=$(printf '%s' "$json" | bash "$HOOK" 2>/dev/null) || exit_code=$?
+    nudge_code "$exit_code" "$out" && exit_code=$NUDGE
     if [ "$exit_code" -eq "$expected" ]; then
         printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
     else
@@ -1834,7 +1910,7 @@ assert_exit_cwd \
     "$IGN_REPO" "sed -i '' -e 's/a/b/' ./tmp/a.txt"
 
 assert_exit_cwd \
-    "GUARD INTEGRITY: echo > tmp/a.txt where tmp/ is tracked still blocked (#2837)" 2 \
+    "GUARD INTEGRITY: echo > tmp/a.txt where tmp/ is tracked still nudged (#2837)" $NUDGE \
     "$TRK_REPO" "echo x > tmp/a.txt"
 
 assert_exit_cwd \
@@ -1842,11 +1918,11 @@ assert_exit_cwd \
     "$TRK_REPO" "sed -i 's/a/b/' tmp/a.txt"
 
 assert_exit_cwd \
-    "GUARD INTEGRITY: echo > a force-added tmp/ file under an ignore rule still blocked (#2837)" 2 \
+    "GUARD INTEGRITY: echo > a force-added tmp/ file under an ignore rule still nudged (#2837)" $NUDGE \
     "$FORCED_REPO" "echo x > tmp/a.txt"
 
 assert_exit_cwd \
-    "GUARD INTEGRITY: one repo destination beside a tmp/ one still blocks echo (#2837)" 2 \
+    "GUARD INTEGRITY: one repo destination beside a tmp/ one still nudges echo (#2837)" $NUDGE \
     "$IGN_REPO" "echo x > tmp/a.txt; echo y > src.txt"
 
 assert_exit_cwd \
@@ -1854,21 +1930,21 @@ assert_exit_cwd \
     "$IGN_REPO" "sed -i 's/a/b/' tmp/a.txt src/real.py"
 
 assert_exit_cwd \
-    "GUARD INTEGRITY: a cd before the tmp/ write voids the exemption (#2837)" 2 \
+    "GUARD INTEGRITY: a cd before the tmp/ write voids the exemption (#2837)" $NUDGE \
     "$IGN_REPO" "cd sub; echo x > tmp/a.txt"
 
 # A directory change in any position voids it, not only one at a statement
 # start: these four passed while the voiding regex anchored on `^`/`;&|(`.
 assert_exit_cwd \
-    "GUARD INTEGRITY: 'builtin cd' before the tmp/ write voids the exemption (#2837)" 2 \
+    "GUARD INTEGRITY: 'builtin cd' before the tmp/ write voids the exemption (#2837)" $NUDGE \
     "$IGN_REPO" "builtin cd sub; echo x > tmp/a.txt"
 
 assert_exit_cwd \
-    "GUARD INTEGRITY: 'if cd …; then' before the tmp/ write voids the exemption (#2837)" 2 \
+    "GUARD INTEGRITY: 'if cd …; then' before the tmp/ write voids the exemption (#2837)" $NUDGE \
     "$IGN_REPO" "if cd sub; then echo x > tmp/a.txt; fi"
 
 assert_exit_cwd \
-    "GUARD INTEGRITY: '{ cd …;' group before the tmp/ write voids the exemption (#2837)" 2 \
+    "GUARD INTEGRITY: '{ cd …;' group before the tmp/ write voids the exemption (#2837)" $NUDGE \
     "$IGN_REPO" "{ cd sub; echo x > tmp/a.txt; }"
 
 assert_exit_cwd \
@@ -1878,7 +1954,7 @@ assert_exit_cwd \
 # A glob destination is expanded by the shell; check-ignore on the literal
 # pattern says nothing about the tracked file it may expand to.
 assert_exit_cwd \
-    "GUARD INTEGRITY: echo > tmp/*.txt glob over a force-added file still blocked (#2837)" 2 \
+    "GUARD INTEGRITY: echo > tmp/*.txt glob over a force-added file still nudged (#2837)" $NUDGE \
     "$FORCED_REPO" "echo x > tmp/*.txt"
 
 assert_exit_cwd \
@@ -1886,7 +1962,7 @@ assert_exit_cwd \
     "$IGN_REPO" "sed -i 's/a/b/' tmp/?.txt"
 
 assert_exit_cwd \
-    "GUARD INTEGRITY: tmp/../ escaping the ignored dir still blocked (#2837)" 2 \
+    "GUARD INTEGRITY: tmp/../ escaping the ignored dir still nudged (#2837)" $NUDGE \
     "$IGN_REPO" "echo x > tmp/../src.txt"
 
 assert_exit_cwd \
@@ -2029,7 +2105,9 @@ assert_exit_noast() {
     local desc="$1" expected="$2" cmd="$3"
     local json exit_code=0
     json=$(jq -nc --arg cmd "$cmd" '{tool_name:"Bash",tool_input:{command:$cmd}}')
-    printf '%s' "$json" | CLAUDE_HOOKS_BASH_ANTIPATTERNS_NO_ASTGREP=1 bash "$HOOK" >/dev/null 2>&1 || exit_code=$?
+    local out
+    out=$(printf '%s' "$json" | CLAUDE_HOOKS_BASH_ANTIPATTERNS_NO_ASTGREP=1 bash "$HOOK" 2>/dev/null) || exit_code=$?
+    nudge_code "$exit_code" "$out" && exit_code=$NUDGE
     if [ "$exit_code" -eq "$expected" ]; then
         printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
     else
@@ -2105,7 +2183,7 @@ assert_exit \
 # comment that truncates the command — the real `> script.sh` write after the
 # quoted string still fires the echo/printf → file block.
 assert_exit_complex \
-    "GUARD INTEGRITY: quoted '#' does not hide a real file write after it (#2106)" 2 \
+    "GUARD INTEGRITY: quoted '#' does not hide a real file write after it (#2106)" $NUDGE \
     'echo "#!/bin/sh" > script.sh'
 
 # ── read block fires only when the read IS the whole command (issue #2148) ────
@@ -2188,7 +2266,7 @@ assert_exit \
 # y > f` does not match `has: {field: body, kind: command}` — a pre-existing
 # #2114-era under-detection, unrelated to and untouched by #2148.
 assert_exit_complex \
-    "GUARD: echo > file inside a compound command still blocks (writes unnarrowed, #2148)" 2 \
+    "GUARD: echo > file inside a compound command still nudges (writes unnarrowed, #2148)" $NUDGE \
     'cd /repo; echo "data" > realfile.txt'
 
 assert_exit \
@@ -2330,13 +2408,13 @@ done
 # or is asserted nowhere. Replacing any single message with `block "blocked"`
 # turns this suite red.
 #
-# Pinned at their original sites (task-output, cat/head/tail reads, echo/printf
-# and sed -i writes, timeout, push -u):
+# Pinned at their original sites (task-output, cat/head/tail reads, sed -i
+# writes, timeout, push -u). echo/printf writes are a nudge, not a block
+# message; their text is asserted by the additionalContext check instead:
 # hook-message-pin: TaskOutput tool was removed in 2.1.277
 # hook-message-pin: Read(file_path="/path/to/file.md")
 # hook-message-pin: offset=<total_lines - 50>, limit=50
-# hook-message-pin: into a mktemp -d scratch dir, or into a git-ignored project tmp/ are allowed
-# hook-message-pin: in a mktemp -d scratch dir, or in a git-ignored project tmp/ are allowed
+# hook-message-pin: or of a file first snapshotted with 'cp' in the same command are allowed
 # hook-message-pin: # allow-timeout
 echo ""
 echo "every block message carries its own guidance (#2727):"
