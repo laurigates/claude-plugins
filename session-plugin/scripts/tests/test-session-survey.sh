@@ -2900,6 +2900,55 @@ check "C1e control: the gh argv log is live (the collector does call gh)" "$c1_g
 check_absent "C1e: no gh repo view" "$c1_gh_argv" "repo view"
 check_absent "C1e: no gh api repos lookup" "$c1_gh_argv" "api repos"
 
+# ============================================================================
+# C2 (#3173): a WO is not undrained while ANY pending/active task still carries
+# its bpid. A WO tracked as several tasks used to read UNDRAINED_WOS=WO-NNN the
+# moment one follow-up closed, so the session-end auto-drain could move it to
+# completed while its main task was still open. The exclusion reuses the one
+# `(status:pending or +ACTIVE)` export — TASK_ALL_FIXTURE here.
+# ============================================================================
+# Same tracker and completed-bpid fixture as C1 (undrained = WO-045,046,050).
+# Pending snapshot: WO-045 keeps a pending task, WO-050 a started (+ACTIVE)
+# one, in ANOTHER project (the completed query is unscoped, so the exclusion
+# must be too). WO-046 has only an unrelated pending task. WO-099 is pending in
+# the tracker with a pending task but no closed one.
+cat > "$SANDBOX/c2-pending.json" <<'TASKS'
+[
+ {"uuid":"c2-1","project":"demo","status":"pending","description":"main WO-045 task","modified":"20260601T101010Z","bpid":"WO-045"},
+ {"uuid":"c2-2","project":"other","status":"pending","description":"WO-050 in flight","modified":"20260601T101010Z","start":"20260601T101010Z","bpid":"WO-050"},
+ {"uuid":"c2-3","project":"demo","status":"pending","description":"unlinked","modified":"20260601T101010Z"},
+ {"uuid":"c2-4","project":"demo","status":"pending","description":"WO-099 work","modified":"20260601T101010Z","bpid":"WO-099"}
+]
+TASKS
+c2_argv="$SANDBOX/c2-argv.log"
+: > "$c2_argv"
+out=$(TASK_ARGV_LOG="$c2_argv" TASK_ALL_FIXTURE="$SANDBOX/c2-pending.json" \
+  TASK_BPID_FIXTURE="$SANDBOX/c1-bpid.json" run_at "$BP" --project demo --with-blueprint)
+bp=$(c1_section "$out" BLUEPRINT)
+check_line "C2: a WO with a pending bpid task is not undrained" "$bp" "UNDRAINED_WOS=WO-046"
+check_line "C2: ...and the count agrees with the list" "$bp" "UNDRAINED_COUNT=1"
+check_absent "C2: WO-045 (pending sibling task) is not listed" "$(grep '^UNDRAINED_WOS=' <<<"$bp")" "WO-045"
+check_absent "C2: WO-050 (+ACTIVE sibling, other project) is not listed" "$(grep '^UNDRAINED_WOS=' <<<"$bp")" "WO-050"
+check_absent "C2: WO-099 (no closed task) is not listed" "$bp" "WO-099"
+# Downstream: the no-evidence list is a subset of the undrained list.
+check_line "C2: NO_EVIDENCE stays a subset of the reduced list" "$bp" "UNDRAINED_WOS_NO_EVIDENCE=WO-046"
+check_line "C2 control: the closed-bpid count is unchanged" "$bp" "CLOSED_BPID_COUNT=5"
+# The pending snapshot is reused, not re-exported.
+check_count_line "C2: exactly one pending/active export" "$(cat "$c2_argv")" 'status:pending or \+ACTIVE' 1
+# No regression: a WO whose bpid tasks are all completed is still undrained,
+# even when unrelated pending tasks exist.
+out=$(TASK_ALL_FIXTURE="$SANDBOX/c2-pending.json" TASK_BPID_FIXTURE="$SANDBOX/c1-bpid.json" \
+  run_at "$BP" --project demo --with-blueprint)
+check_line "C2 control: an all-completed WO is still undrained" \
+  "$(c1_section "$out" BLUEPRINT)" "UNDRAINED_WOS=WO-046"
+# Every sibling task closed -> the WO returns to the list.
+echo '[{"uuid":"c2-3","project":"demo","status":"pending","description":"unlinked","modified":"20260601T101010Z"}]' \
+  > "$SANDBOX/c2-unlinked.json"
+out=$(TASK_ALL_FIXTURE="$SANDBOX/c2-unlinked.json" TASK_BPID_FIXTURE="$SANDBOX/c1-bpid.json" \
+  run_at "$BP" --project demo --with-blueprint)
+check_line "C2 control: with no open sibling the full list returns" \
+  "$(c1_section "$out" BLUEPRINT)" "UNDRAINED_WOS=WO-045,WO-046,WO-050"
+
 echo "---"
 echo "PASS=$pass FAIL=$fail"
 [ "$fail" -eq 0 ]
