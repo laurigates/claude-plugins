@@ -847,7 +847,10 @@ See .claude/rules/bash-tool-replacements.md for the full table."
        ! sed_operands_resolve_to_project_tmp && \
        ! { sed_inplace_operands | snapshotted_before_sed; }; then
         if [ -n "$SED_UNRESOLVED" ]; then
-            block "REMINDER: Use the Edit tool instead of 'sed -i' to modify files. Files changed only by Bash are not restored by /rewind (2.1.309+), hooks matching Edit (formatters, guards) do not fire, and BSD sed on macOS differs from GNU sed ('-i' needs a suffix argument, '\\n' is not a newline in replacements). The operand '${SED_UNRESOLVED}' could not be resolved to a path (an unset or command-assigned variable, a command substitution, or a cd the hook cannot follow), so the tmp/ exemption could not be checked. Spell the path literally, or assign it once with VAR=/abs/path as its own statement."
+            # Worded without the "instead of 'sed -i'" lead-in on purpose:
+            # the friction fixture generator requires that needle to match
+            # exactly one deployed block message (#3179).
+            block "REMINDER: The 'sed -i' operand '${SED_UNRESOLVED}' could not be resolved to a path (an unset or command-assigned variable, a command substitution, or a cd the hook cannot follow), so the git-ignored tmp/ exemption could not be checked. Use the Edit tool for repo files: Bash-only edits are not restored by /rewind and skip Edit hooks. For a scratch file, spell the path literally, or assign it once with VAR=/abs/path as its own statement."
         fi
         block "REMINDER: Use the Edit tool instead of 'sed -i' to modify files. Files changed only by Bash are not restored by /rewind (2.1.309+), hooks matching Edit (formatters, guards) do not fire, and BSD sed on macOS differs from GNU sed ('-i' needs a suffix argument, '\\n' is not a newline in replacements). (In-place edits under /tmp, in a mktemp -d scratch dir, in a git-ignored project tmp/, or of a file first snapshotted with 'cp' in the same command are allowed.)"
     fi
