@@ -3,7 +3,7 @@ name: zsh-gotchas
 description: "Four zsh expansions that silently rewrite a command: $VAR:word modifiers, a leading =, no word splitting, `path` tied to PATH. Use when a zsh one-liner gives a wrong result or a tool seems missing."
 allowed-tools: Bash, Read
 created: 2026-09-21
-modified: 2026-09-21
+modified: 2026-10-24
 reviewed: 2026-09-21
 ---
 
@@ -148,6 +148,14 @@ and they say what each field is.
   argument; the tool reports an unknown option containing spaces.
 - Splitting on something other than whitespace: `${(s:,:)csv}` in zsh, not
   `IFS=, read`.
+- **Over ssh, when the remote login shell is zsh.** `ssh host '…'` hands the
+  command string to the remote user's login shell, so a bash-tested
+  `C="apptainer exec … colmap"; $C image_undistorter …` exits **127** there: the
+  whole string is looked up as one command name. Observed 2026-10-23 driving a
+  GPU box whose login shell was zsh — the same script body ran fine once fed to
+  bash. Run multi-line remote work as `ssh host bash -s <<'EOF' … EOF` (or
+  `ssh host bash script.sh`), and hold a command in a shell **function**
+  (`colmap() { apptainer exec … colmap "$@"; }`), never a string.
 
 ### The failure looks like a clean result, not an error
 
