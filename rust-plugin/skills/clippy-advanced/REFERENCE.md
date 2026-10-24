@@ -217,6 +217,46 @@ let y = {
 
 ## CI Integration
 
+### Pin the toolchain
+
+`dtolnay/rust-toolchain@stable` installs whatever stable is current when the job
+runs, so each Rust release's new clippy lints fail `-D warnings` on `main` with
+no PR in between. Pinning the action to a SHA does not change that: its
+`toolchain` input still defaults to `stable`. Commit a `rust-toolchain.toml` at
+the repository root instead:
+
+```toml
+[toolchain]
+channel = "1.99.1"  # an exact release, not "stable"; Renovate bumps it
+components = ["clippy", "rustfmt"]
+```
+
+- **Renovate bumps it.** Its built-in `rust-toolchain` manager reads this file
+  and opens a PR per release, so a new lint fails on that PR instead of on
+  `main`. When the repo groups updates (`group:allNonMajor`), give the toolchain
+  its own group with this `packageRules` entry. Without the `groupSlug` the bump
+  stays on the shared non-major branch, and a red toolchain PR blocks every
+  other update in that group.
+
+  ```json
+  { "matchManagers": ["rust-toolchain"], "groupName": "rust toolchain", "groupSlug": "rust-toolchain" }
+  ```
+
+- **Root, not a crate directory.** rustup looks for the file in the working
+  directory and its parents. A copy under `src-tauri/` or `server/` leaves steps
+  that run from the root (`rustup target add`, release jobs) on a different
+  toolchain.
+- **Install it in CI with `rustup toolchain install --no-self-update`.** With no
+  toolchain argument (rustup 1.28+, which GitHub-hosted runners carry) it
+  installs the toolchain the file names, with its `components`. Add per-job
+  extras from the repo directory (`rustup component add llvm-tools-preview`,
+  `rustup target add <triple>`); they land on the pinned toolchain.
+- **`dtolnay/rust-toolchain`'s `components:` input installs onto `stable`**, not
+  onto the pinned toolchain, so `cargo` never sees those components. A job that
+  keeps the action still builds with the pinned toolchain, because the file
+  overrides the `rustup default` the action sets, but it pays for an unused
+  stable install.
+
 ### GitHub Actions - Strict Linting
 
 ```yaml
@@ -233,9 +273,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
+      - name: Install the pinned toolchain
+        run: rustup toolchain install --no-self-update
 
       - uses: Swatinem/rust-cache@v2
 
@@ -264,9 +303,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
+      - name: Install the pinned toolchain
+        run: rustup toolchain install --no-self-update
 
       - uses: Swatinem/rust-cache@v2
 
@@ -481,10 +519,6 @@ cargo clippy --version
 rustup update
 ```
 
-**CI failures due to new lints:**
-```toml
-# Pin clippy version in rust-toolchain.toml
-[toolchain]
-channel = "1.75.0"
-components = ["clippy"]
-```
+**CI failures due to new lints:** the job installs a floating `stable`. Pin
+the compiler in a root `rust-toolchain.toml` so new lints arrive as a Renovate
+PR; see [Pin the toolchain](#pin-the-toolchain).
