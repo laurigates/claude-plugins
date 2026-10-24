@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.14.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.13.6...tools-plugin-v2.14.0) (2026-10-24)
+
+
+### Features
+
+* **tools-plugin:** add apptainer skill ([#3182](https://github.com/laurigates/claude-plugins/issues/3182)) ([2b5a4c8](https://github.com/laurigates/claude-plugins/commit/2b5a4c8a9220aa8e81f450ad77d164e5b37078cd))
+
 ## [2.13.6](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.13.5...tools-plugin-v2.13.6) (2026-10-14)
 
 
