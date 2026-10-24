@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Regenerate `t.jsonl` from the DEPLOYED bash-antipatterns.sh block messages.
 
-The eight REMINDER-format detector messages are EXTRACTED from the shipped
+The seven REMINDER-format detector messages are EXTRACTED from the shipped
 hook source, never retyped: a hand-copied message reads identically in a diff
 while matching a needle the real hook never emits, so a broken split and a
 clean one produce the same-looking fixture (see
@@ -29,11 +29,6 @@ WRAPPER = "PreToolUse:Bash hook error: [bash ${CLAUDE_PLUGIN_ROOT}/hooks/%s.sh]:
 # needle -> (fixture command, expected signature). The needle selects ONE
 # deployed `block "..."` message; the expectations are asserted by the tests.
 DETECTORS = [
-    (
-        "instead of 'echo/printf > file'",
-        "echo 'hello' > notes.md",
-        "hook:bash-antipatterns:echo-write",
-    ),
     (
         "instead of 'sed -i'",
         "sed -i '' 's/a/b/' src/app.py",
@@ -74,9 +69,10 @@ DETECTORS = [
 # Unmatched bash-antipatterns messages: `:other` must still catch both.
 #
 # `cat-write` is the load-bearing one. Its message shares the lead-in
-# "Use the Write tool instead of" with the echo-write detector, so a needle
-# keyed on that phrase instead of the quoted token would silently swallow it
-# -- the exact shape PR #2421 hit. It is deliberately NOT one of the eight.
+# "Use the Write tool instead of" with the retired echo-write block (a nudge
+# since #3175), so a needle keyed on that phrase instead of the quoted token
+# would silently swallow it -- the exact shape PR #2421 hit. It is
+# deliberately NOT one of the seven.
 OTHERS = [
     ("instead of 'cat > file'", "cat > notes.md", "hook:bash-antipatterns:other"),
 ]

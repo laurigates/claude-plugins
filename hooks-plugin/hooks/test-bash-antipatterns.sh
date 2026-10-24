@@ -1826,6 +1826,10 @@ assert_exit_complex \
     "sed -i '' 's/a/b/' src/x.ts && cp src/x.ts /tmp/after.bak"
 
 assert_exit_complex \
+    "GUARD INTEGRITY: a tab after sed does not let a restore cp count as a snapshot" 2 \
+    $'sed\t-i \'\' \'s/a/b/\' src/x.ts && cp src/x.ts /tmp/after.bak'
+
+assert_exit_complex \
     "GUARD INTEGRITY: the file as cp DESTINATION is not a snapshot" 2 \
     "cp /tmp/template.ts src/x.ts && sed -i '' 's/a/b/' src/x.ts"
 

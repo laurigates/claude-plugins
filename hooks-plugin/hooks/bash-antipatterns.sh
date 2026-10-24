@@ -624,7 +624,9 @@ See .claude/rules/bash-tool-replacements.md for the full table."
     # literal token, so `F=x.ts; cp $F b && sed -i … $F` matches too. A `cp`
     # that only appears after the sed (the restore) grants nothing.
     snapshotted_before_sed() {
-        local prefix="${COMMAND_SHELL_ONLY%%sed *}" seg p ok tok
+        # Any whitespace after `sed`: with a literal space only, `sed<TAB>-i`
+        # kept the whole command and a restore cp after the sed counted.
+        local prefix="${COMMAND_SHELL_ONLY%%sed[[:space:]]*}" seg p ok tok
         local -a toks srcs
         local -a sources=()
         while IFS= read -r seg; do
