@@ -183,13 +183,32 @@ jobs:
           gh pr close "$PR_NUMBER" --repo "$REPO" --delete-branch
           echo "::notice::Closed stale automated PR #$PR_NUMBER and deleted branch $HEAD_BRANCH"
 
+      # Pushes go out with the release-please GitHub App token, not the
+      # MY_RELEASE_PLEASE_TOKEN PAT: that PAT has no `workflow` scope, and all 9
+      # failed runs between 2026-09-24 and 2026-10-24 were GitHub rejecting a
+      # merge from main that changed a file under .github/workflows/ (run
+      # 39462940904: "refusing to allow a Personal Access Token to create or
+      # update workflow ... without `workflow` scope"). Each rejection left the
+      # PR conflicting, so the next push to main retried and failed again. The
+      # App needs "Workflows: write" for that class of merge; the merge step
+      # below reads the App's permission and skips the push when it is absent.
+      - name: Generate GitHub App token
+        if: steps.stale_check.outputs.is_stale_automated != 'true'
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          # `app-id`, as release-please.yml uses: actionlint 1.7.12 (the CI
+          # gate) does not know v3's `client-id` input yet.
+          app-id: ${{ vars.RELEASE_PLEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_PLEASE_PRIVATE_KEY }}
+
       - name: Checkout PR branch
         if: steps.stale_check.outputs.is_stale_automated != 'true'
         uses: actions/checkout@v6
         with:
           ref: ${{ steps.pr.outputs.head_branch }}
           fetch-depth: 0
-          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || github.token }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Merge base and resolve additive conflicts
         if: steps.stale_check.outputs.is_stale_automated != 'true'
@@ -200,6 +219,9 @@ jobs:
           # (.claude/rules/github-actions-security.md).
           PR_NUMBER: ${{ matrix.pr_number }}
           BASE_BRANCH: ${{ steps.pr.outputs.base_branch }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+          REPO: ${{ github.repository }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -214,6 +236,41 @@ jobs:
           # are left staged-as-conflicted for the Claude step below.
           if [ -f scripts/resolve-additive-conflicts.py ]; then
             python3 scripts/resolve-additive-conflicts.py || true
+          fi
+
+          # Would the merge change a workflow file on the PR branch? GitHub
+          # refuses that push unless the token can write workflows, so check the
+          # App's permission first instead of failing the push (and, for a
+          # semantic conflict, an Opus run) on every later push to main. An
+          # unreadable permission falls through to the push, which then fails
+          # loudly as before.
+          WF_FILES=$( { git diff --cached --name-only -- .github/workflows/; \
+            git diff --name-only --diff-filter=U -- .github/workflows/; } | sort -u)
+          if [ -n "$WF_FILES" ]; then
+            WF_PERM=$(gh api "apps/${APP_SLUG}" --jq '.permissions.workflows // "none"' 2>/dev/null || echo unknown)
+            if [ "$WF_PERM" != "write" ] && [ "$WF_PERM" != "unknown" ]; then
+              git merge --abort 2>/dev/null || git reset --hard HEAD
+              {
+                echo "needs_llm=false"
+                echo "outcome=blocked_workflows"
+              } >> "$GITHUB_OUTPUT"
+              echo "::warning::PR #$PR_NUMBER: merging $BASE_BRANCH changes workflow files, and the ${APP_SLUG} App has workflows=${WF_PERM}, so its token cannot push them. Skipped; the PR needs a manual merge of $BASE_BRANCH. Files: $(echo "$WF_FILES" | tr '\n' ' ')"
+              MARKER='<!-- auto-resolve-conflicts: workflow-files -->'
+              SEEN=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json comments \
+                --jq '[.comments[].body | select(contains("<!-- auto-resolve-conflicts: workflow-files -->"))] | length' 2>/dev/null || echo 0)
+              if [ "$SEEN" = "0" ]; then
+                {
+                  echo "Merging \`$BASE_BRANCH\` into this branch changes workflow files, which the conflict resolver cannot push: the \`${APP_SLUG}\` GitHub App token lacks the Workflows: write permission. Merge \`$BASE_BRANCH\` locally and push, or grant the App that permission (#3201)."
+                  echo ""
+                  # shellcheck disable=SC2016 # the backticks are Markdown code spans
+                  echo "$WF_FILES" | sed 's/^/- `/; s/$/`/'
+                  echo ""
+                  echo "$MARKER"
+                } > "$RUNNER_TEMP/blocked-comment.md"
+                gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file "$RUNNER_TEMP/blocked-comment.md"
+              fi
+              exit 0
+            fi
           fi
 
           # What still conflicts after the deterministic pass?
@@ -249,7 +306,7 @@ jobs:
       - name: Commit deterministic resolution
         if: steps.stale_check.outputs.is_stale_automated != 'true' && steps.merge.outputs.outcome == 'clean'
         env:
-          GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           # Untrusted run-context values routed through env, never
           # interpolated into the script body
           # (.claude/rules/github-actions-security.md).
@@ -267,7 +324,7 @@ jobs:
         if: steps.merge.outputs.needs_llm == 'true' && steps.stale_check.outputs.is_stale_automated != 'true'
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           # Every value below is attacker-supplied: whoever opens a PR controls
           # its title, both branch names and the conflicted path list. They are
           # bound to env vars and *printed from those vars* rather than
