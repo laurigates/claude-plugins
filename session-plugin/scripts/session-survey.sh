@@ -1599,12 +1599,19 @@ if [ "$with_blueprint" = true ]; then
       blocked_count=$(jq '[(.features // []), [.phases[]?.features[]?]] | add | map(select(.status == "blocked")) | length' "$bp_tracker" 2>/dev/null || echo 0)
       inflight_count=$(jq '(.tasks.in_progress // []) | length' "$bp_tracker" 2>/dev/null || echo 0)
       inflight_wos=$(jq -r '(.tasks.in_progress // []) | map(.id // empty | tostring | gsub("[\t\r\n\u001f]";" ")) | join(",")' "$bp_tracker" 2>/dev/null || echo "")
-      # Undrained: closed-bpid WO ids ∩ tracker tasks.pending[].id — the
-      # session-end drain-pass qualify signal.
-      undrained_json=$(printf '%s' "$closed_bpid_json" | jq -c --slurpfile t "$bp_tracker" '
+      # Undrained: closed-bpid WO ids ∩ tracker tasks.pending[].id, minus every
+      # bpid an OPEN task still carries — the session-end drain-pass qualify
+      # signal. A WO tracked as several tasks is not done when one follow-up
+      # closes while its main task is pending or +ACTIVE (#3173). The open set
+      # comes from the one `(status:pending or +ACTIVE)` export above (no
+      # second call), unscoped like the completed query, and is reduced to its
+      # unique bpids first so --argjson stays small.
+      open_bpids_json=$(printf '%s' "$all_tasks_json" | jq -c '[ .[] | .bpid // empty ] | unique' 2>/dev/null || echo "[]")
+      [ -n "$open_bpids_json" ] || open_bpids_json="[]"
+      undrained_json=$(printf '%s' "$closed_bpid_json" | jq -c --slurpfile t "$bp_tracker" --argjson open "$open_bpids_json" '
         ([ .[] | .bpid // empty ] | unique) as $closed
         | (($t[0].tasks.pending // []) | map(.id)) as $pending
-        | [ $closed[] | select(. as $w | $pending | index($w)) ]' 2>/dev/null || echo "[]")
+        | [ $closed[] | select(. as $w | ($pending | index($w)) and (($open | index($w)) | not)) ]' 2>/dev/null || echo "[]")
       [ -n "$undrained_json" ] || undrained_json="[]"
       undrained_count=$(printf '%s' "$undrained_json" | jq 'length' 2>/dev/null || echo 0)
       undrained_wos=$(printf '%s' "$undrained_json" | jq -r 'map(tostring | gsub("[\t\r\n\u001f]";" ")) | join(",")' 2>/dev/null || echo "")
