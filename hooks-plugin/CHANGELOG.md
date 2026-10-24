@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.15.5](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.15.4...hooks-plugin-v2.15.5) (2026-10-24)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** resolve cd-relative and $VAR operands for the sed -i tmp/ exemption ([#3189](https://github.com/laurigates/claude-plugins/issues/3189)) ([8072cc4](https://github.com/laurigates/claude-plugins/commit/8072cc45f14d0725173b7dda1fcbc09cb8066df9))
+
 ## [2.15.4](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.15.3...hooks-plugin-v2.15.4) (2026-10-24)
 
 
