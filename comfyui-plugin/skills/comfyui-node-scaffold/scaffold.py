@@ -2624,6 +2624,18 @@ BANNER_SVG = """\
 # `problem` and closed the tracking issue with "is **Active**" while the
 # registry still said Pending (observed 2026-08-16: comfyui-gallery-loader
 # 0.1.29 closed issue #106 at 16:39:39Z against a Pending API response).
+#
+# Each alert body ends with a hidden `<!-- registry-health ver=… problem=…
+# phantom=… -->` marker. A scheduled run whose verdict matches the newest
+# marker on the open issue posts nothing, and an unchanged `flagged` verdict
+# exits 0 with a ::warning:: (the commit status stays failure). Before this,
+# every daily run re-commented and exited 1: comfyui-image-browser#113 collected
+# 26 identical "0.1.33 is Flagged" comments under a title still naming 0.1.32,
+# and main's schedule was red every day with nothing new to act on. The other
+# problems keep exiting 1 while unchanged: Banned and Deleted break installs,
+# phantom-ahead misdirects them, and missing or stuck-pending means the publish
+# pipeline is stuck. A changed verdict comments once and retitles the issue. The open-issue lookup is not error-suppressed: a gh failure used
+# to read as "no open issue" and opened a duplicate.
 REGISTRY_HEALTH_YML = r"""name: Registry health
 
 # Feedback loop for Comfy Registry publishing. Checks that the version this
@@ -2638,6 +2650,9 @@ REGISTRY_HEALTH_YML = r"""name: Registry health
 #      goes Active. Flagged, Banned and Deleted issues name the version /install
 #      resolves to: Flagged still installs, Banned falls back to an older
 #      version, and Deleted is expected to (not yet verified against /install).
+#      Each alert carries a hidden marker; a run whose verdict matches the
+#      newest marker on the open issue posts nothing, and an unchanged Flagged
+#      verdict ends with a warning instead of failing the run.
 #
 # The registry security scan is async: a freshly published version is Pending
 # for a while before it flips to Active or Flagged. So a run triggered right
@@ -2821,12 +2836,40 @@ jobs:
           fi
 
           gh label create "$ISSUE_LABEL" --color FBCA04 --description "Comfy Registry publish health" --force >/dev/null 2>&1 || true
-          existing=$(gh issue list --label "$ISSUE_LABEL" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+          # No error suppression: a failed lookup must fail the run, not read
+          # as "no open issue" and open a duplicate.
+          existing=$(gh issue list --label "$ISSUE_LABEL" --state open --json number --jq '.[0].number')
 
           if [ -n "$problem" ]; then
-            echo "_Detected by the registry-health workflow on $(date -u +%FT%TZ)._" >> "$body"
-            if [ -n "$existing" ]; then gh issue comment "$existing" --body-file "$body"
-            else gh issue create --title "Registry: release ${ver} not healthy (${problem})" --label "$ISSUE_LABEL" --body-file "$body"; fi
+            # The marker identifies the verdict, so a repeat run can tell it
+            # already reported this one. It renders as nothing.
+            marker="<!-- registry-health ver=${ver} problem=${problem} phantom=${phantom:-none} -->"
+            title="Registry: release ${ver} not healthy (${problem})"
+            { echo "_Detected by the registry-health workflow on $(date -u +%FT%TZ)._"; echo "$marker"; } >> "$body"
+            unchanged=""
+            if [ -z "$existing" ]; then
+              gh issue create --title "$title" --label "$ISSUE_LABEL" --body-file "$body"
+            else
+              # Newest marker this workflow wrote, from the issue body or any
+              # comment; comments without a marker (people, older runs) are skipped.
+              alerts=$(gh issue view "$existing" --json body,comments \
+                --jq '[.body] + [.comments[].body] | map(select(contains("<!-- registry-health "))) | last // ""')
+              last=$(grep -oE '<!-- registry-health [^>]*-->' <<<"$alerts" | tail -n1 || true)
+              if [ "$last" = "$marker" ]; then
+                unchanged=1
+                echo "::notice::same verdict as the last alert on #${existing} (${ver} ${problem}); not commenting again"
+              else
+                gh issue comment "$existing" --body-file "$body"
+                gh issue edit "$existing" --title "$title"
+              fi
+            fi
+            # Flagged still installs, so an unchanged Flagged verdict needs no
+            # new action and should not turn the schedule red every day. The
+            # commit status set above stays failure, so the verdict stays visible.
+            if [ -n "$unchanged" ] && [ "$problem" = "flagged" ]; then
+              echo "::warning::release ${ver} is still flagged, unchanged since the last alert on #${existing}"
+              exit 0
+            fi
             echo "::error::release ${ver} is ${problem}"
             exit 1
           fi
