@@ -3,7 +3,7 @@ name: apptainer
 description: "Apptainer: run OCI images as rootless batch jobs with --nv GPU passthrough and digest-pinned SIFs. Use when running a CUDA tool without Docker, podman lacks GPU support, or a pull fills root."
 allowed-tools: Bash, Read
 created: 2026-10-23
-modified: 2026-10-23
+modified: 2026-10-24
 reviewed: 2026-10-23
 ---
 
@@ -44,7 +44,7 @@ install from EPEL RPMs. It needs `rpm2cpio`, which Debian/Ubuntu lack — see
 [REFERENCE.md](REFERENCE.md) for the stand-in and the full command. Check user
 namespaces first: `unshare -Ur true && echo ok`.
 
-## The Root-Disk Trap: Cache and Temp Default to `$HOME`
+## The Root-Disk Trap: Cache Under `$HOME`, Temp Under `/tmp`
 
 A pull downloads the OCI layers into `$APPTAINER_CACHEDIR` (default
 `~/.apptainer/cache`) and assembles the SIF under `$APPTAINER_TMPDIR` (default
@@ -62,11 +62,12 @@ The cache directory must be per-user; do not share one between accounts.
 ## Pull by Digest Into a Named File
 
 A tag can move; a digest cannot. Resolve the digest once, then pull into a file
-named for what it is:
+named for what it is. Docker Hub's `digest` already carries the `sha256:`
+prefix, so it follows the `@` as-is:
 
 ```sh
 curl -fsSL "https://hub.docker.com/v2/repositories/colmap/colmap/tags?page_size=5&ordering=last_updated" | jq -r '.results[] | "\(.name) \(.digest)"'
-apptainer pull /big/disk/images/colmap-20260929.8466.sif docker://colmap/colmap@sha256:<digest>
+apptainer pull /big/disk/images/colmap-20260929.8466.sif docker://colmap/colmap@<digest>
 ```
 
 `warn rootless{…} ignoring (usually) harmless EPERM on setxattr
