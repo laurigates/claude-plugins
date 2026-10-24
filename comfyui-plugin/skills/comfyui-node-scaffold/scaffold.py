@@ -2634,8 +2634,9 @@ BANNER_SVG = """\
 # and main's schedule was red every day with nothing new to act on. The other
 # problems keep exiting 1 while unchanged: Banned and Deleted break installs,
 # phantom-ahead misdirects them, and missing or stuck-pending means the publish
-# pipeline is stuck. A changed verdict comments once and retitles the issue. The open-issue lookup is not error-suppressed: a gh failure used
-# to read as "no open issue" and opened a duplicate.
+# pipeline is stuck. A changed verdict comments once and retitles the issue.
+# The open-issue lookup is not error-suppressed: a gh failure used to read as
+# "no open issue" and opened a duplicate.
 REGISTRY_HEALTH_YML = r"""name: Registry health
 
 # Feedback loop for Comfy Registry publishing. Checks that the version this
