@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.2](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.14.1...session-plugin-v1.14.2) (2026-10-24)
+
+
+### Bug Fixes
+
+* **session-plugin:** keep a work order out of the drain list while its bpid has pending tasks ([#3187](https://github.com/laurigates/claude-plugins/issues/3187)) ([3a8494a](https://github.com/laurigates/claude-plugins/commit/3a8494a9afd8f8a6d478e32a6a044dd27af375fc))
+
 ## [1.14.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.14.0...session-plugin-v1.14.1) (2026-10-23)
 
 

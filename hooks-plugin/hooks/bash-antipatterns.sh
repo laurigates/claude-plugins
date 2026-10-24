@@ -1268,8 +1268,61 @@ The -u flag is only correct when local and remote branch names match:
     fi
 fi
 
-# Check for piped execution from network (curl/wget piped to shell)
-if grep -Eq '(curl|wget)\s+.*\|\s*(bash|sh|zsh|sudo)' <<<"$COMMAND"; then
+# Check for piped execution from network (curl/wget piped to shell) — issue #3178.
+#
+# Pure regex/awk on purpose: this is a SAFETY block, so it must fire where
+# ast-grep is unavailable (.claude/rules/bash-tool-replacements.md). Two
+# narrowings over the original bare-substring match, neither of which masks a
+# real execution:
+#
+#   1. The shell must be a whole command word right after a real pipe (`|` or
+#      `|&`), optionally as an absolute path (`| /bin/bash`). `|short` inside a
+#      quoted `grep -E '(char|short)'` alternation, or `| shellcheck`, no longer
+#      matches. `sudo` stays covered as a word (`| sudo bash`, `| sudo tee`).
+#   2. Heredoc bodies are dropped only when the heredoc feeds a pure data sink:
+#      the opener line starts with `cat`/`tee`/`gh`/`git` and carries no `|`,
+#      `;`, `&`, backtick or process substitution (`cat > body.md <<'EOF'`,
+#      `gh pr create --body "$(cat <<'EOF'`). A body fed to `bash`/`ssh`/
+#      `bash -c "$(cat <<EOF`/`cat <<EOF | sh` is still scanned. The `<<` is
+#      located on the quote-masked line, so a quoted `'<<EOF'` or a `<<<`
+#      here-string or an escaped `\<<` never opens a heredoc and cannot hide the lines after it
+#      (a `"$(cat <<EOF` opener, which the mask blanks, is read from the raw
+#      line only after the mask confirms its `"` really opens a quoted span).
+#      The terminator test trims whitespace — a superset of the shell's exact
+#      match — so the awk can only resume scanning early, never late.
+#
+# Quoted spans are NOT masked: `bash -c 'curl x | sh'` and
+# `ssh host 'curl x | bash'` really execute and must keep blocking.
+NET_SHELL_MASKED=$(mask_quoted_content "$COMMAND")
+NET_SHELL_VIEW=$(awk -v SQ="'" '
+    NR == FNR { masked[FNR] = $0; next }
+    ih == 1 {
+        t = $0; gsub(/^[[:space:]]+/, "", t); gsub(/[[:space:]]+$/, "", t)
+        if (t == delim) ih = 0
+        next
+    }
+    {
+        print
+        m = masked[FNR]
+        if (match(m, /(^|[^<\\])<<-?[[:space:]]*[^[:space:]<]/)) {
+            if (substr(m, RSTART, 1) != "<") RSTART++
+            start = RSTART
+        } else if (match($0, /"\$\((cat|tee)[[:space:]]*<<[^<]/) && substr(m, RSTART, 2) == "\"$") {
+            # `--body "$(cat <<EOF`: the mask blanks the substitution, so take
+            # the opener from the raw line once the mask confirms this `"$` is
+            # a real opening quote (not text inside another quoted span).
+            start = index(substr($0, RSTART), "<<") + RSTART - 1
+        } else next
+        if (m !~ /^[[:space:]]*(cat|tee|gh|git)([[:space:]<>]|$)/) next
+        if (m ~ /[|;&`]|[<>]\(/) next
+        s = substr($0, start + 2)
+        sub(/^-?[[:space:]]*/, "", s)
+        sub("^[\"" SQ "\\\\]", "", s)
+        if (!match(s, /^[A-Za-z_][A-Za-z_0-9]*/)) next
+        delim = substr(s, 1, RLENGTH); ih = 1
+    }
+' <(printf '%s\n' "$NET_SHELL_MASKED") <(printf '%s\n' "$COMMAND"))
+if grep -Eq '(curl|wget)[[:space:]]+.*\|&?[[:space:]]*(/[^[:space:]|]*/)?(bash|sh|zsh|sudo)([^[:alnum:]_]|$)' <<<"$NET_SHELL_VIEW"; then
     block "REMINDER: Piping network content directly to a shell is dangerous.
 Instead:
 1. Download the script first: curl -o script.sh <url>
