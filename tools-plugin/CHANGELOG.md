@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.15.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.14.0...tools-plugin-v2.15.0) (2026-10-24)
+
+
+### Features
+
+* **tools-plugin:** zsh-gotchas covers commands sent over ssh to a zsh login shell ([#3184](https://github.com/laurigates/claude-plugins/issues/3184)) ([c107f54](https://github.com/laurigates/claude-plugins/commit/c107f54689f467a6e431e5f1582e9b1b781e3269))
+
 ## [2.14.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.13.6...tools-plugin-v2.14.0) (2026-10-24)
 
 
