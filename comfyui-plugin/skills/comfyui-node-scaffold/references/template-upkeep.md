@@ -21,23 +21,6 @@ this template and from each other. Entry point: [`../SKILL.md`](../SKILL.md) §
   @laurigates/comfy-modal-kit version`. `test-finishing-pass.sh` prints an
   advisory NOTE when the published latest falls outside the pinned range.
 
-## The committed-bundle gate depends on a gitops rule
-
-The emitted `ci.yml` fails a branch whose committed `web/dist` differs from a
-fresh `bun run build` ("Verify committed web/dist is up to date"), and the
-emitted `renovate.json` has no rebuild step. A Renovate bump of a bundled
-dependency such as `@laurigates/comfy-modal-kit` passes that gate only because
-the global Renovate config in `laurigates/gitops` (`renovate-config.js`, package
-rule "comfyui packs commit their bundle", added in laurigates/gitops#290) runs
-`bun run build` as a `postUpgradeTasks` command and commits `web/dist/**`.
-
-That rule selects packs with `matchRepositories: ["laurigates/comfyui-*"]`. A
-pack outside the glob gets no rebuild, and every Renovate PR that touches a
-bundled dependency fails the gate. `derive()` only warns when a name lacks the
-`comfyui-` prefix, so nothing here stops such a pack being generated. Keep new
-packs named `laurigates/comfyui-*`, or widen the gitops glob in the same change
-that adds one.
-
 ## Fleet drift (the packs vs this template)
 
 `--verify` grades **one** pack's finishing pass. The complementary question —
