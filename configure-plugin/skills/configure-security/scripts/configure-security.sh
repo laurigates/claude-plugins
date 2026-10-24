@@ -274,8 +274,9 @@ echo "GITLEAKS_CONFIG=${gitleaks_config}"
 # [allowlist] / [[allowlists]] loads ZERO rules. gitleaks auto-discovers
 # .gitleaks.toml in the scanned directory, so the pre-commit hook and
 # gitleaks-action then report "no leaks found" on every run. Four portfolio repos
-# shipped that shape. This mirrors gitleaks' own config translation, keys
-# case-insensitively as viper does, and does not follow an [extend] path.
+# shipped that shape (PR #3197). This mirrors gitleaks' own config
+# translation, keys case-insensitively as viper does, and does not follow an
+# [extend] path.
 #   default     -> [extend] useDefault = true (the built-in ruleset)
 #   extend-path -> [extend] path = "<file>" (rules come from that file)
 #   custom      -> own [[rules]] only

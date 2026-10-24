@@ -434,7 +434,7 @@ pass "missing-SAST severity is gated on CodeQL availability, with the reason rep
 
 # -----------------------------------------------------------------------------
 # Case 5: a .gitleaks.toml that loads ZERO rules is not a configured layer
-#   (Regression): GITLEAKS_CONFIG=true was set whenever the file existed, so an
+#   (Regression, PR #3197): GITLEAKS_CONFIG=true was set whenever the file existed, so an
 #   [allowlist]-only file counted as secret detection. gitleaks loads rules only
 #   from [[rules]] and [extend] (useDefault = true / path), so that file disables
 #   every rule, and gitleaks auto-discovers it — the pre-commit hook and
