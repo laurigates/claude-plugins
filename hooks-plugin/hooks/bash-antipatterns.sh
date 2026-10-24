@@ -701,6 +701,8 @@ See .claude/rules/bash-tool-replacements.md for the full table."
             [ "${BASH_REMATCH[1]}" = "$var_name" ] || continue
             val="${BASH_REMATCH[2]}"
             case "$val" in
+                # A quoted `~` stays literal (`T="~/x"`), never $HOME.
+                [\"\']~*) return 1 ;;
                 \'*\') val="${val#\'}"; val="${val%\'}" ;;
                 \"*\") val="${val#\"}"; val="${val%\"}" ;;
                 *[[:space:]]*) return 1 ;;

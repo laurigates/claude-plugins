@@ -2086,6 +2086,12 @@ else
         "$R_IGN" "T=$R_IGN/tmp; T=$R_IGN/src; sed -i '' 's|a|b|' \$T/x.py"
     assert_exit_cwd "GUARD INTEGRITY: T assigned only after the sed still blocked (#3179)" 2 \
         "$R_IGN" "sed -i '' 's|a|b|' \$T/smoke.sh; T=$R_IGN/tmp"
+    # R_IGN is physical (pwd -P); strip the physical $HOME so ~/<rel> names it.
+    R_IGN_REL="${R_IGN#"$(cd -P -- "$HOME" && pwd -P)"/}"
+    assert_exit_cwd "T=~/<repo>/tmp (unquoted, tilde expanded at assignment) is allowed (#3179)" 0 \
+        "$R_IGN" "T=~/$R_IGN_REL/tmp; sed -i '' 's|a|b|' \$T/smoke.sh"
+    assert_exit_cwd "GUARD INTEGRITY: T=\"~/<repo>/tmp\" (quoted, literal ~) still blocked (#3179)" 2 \
+        "$R_IGN" "T=\"~/$R_IGN_REL/tmp\"; sed -i '' 's|a|b|' \$T/smoke.sh"
 
     # Unresolvable operands block, and the message says so.
     assert_msg_cwd "GUARD INTEGRITY: \$UNSET/x blocks and names the unresolved operand (#3179)" 2 \
