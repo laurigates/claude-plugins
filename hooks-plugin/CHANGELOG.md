@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.15.3](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.15.2...hooks-plugin-v2.15.3) (2026-10-24)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** rebalance bash-antipatterns write blocks on measured friction ([#3175](https://github.com/laurigates/claude-plugins/issues/3175)) ([97e8ba8](https://github.com/laurigates/claude-plugins/commit/97e8ba82cc31b1f91e72b1dae10f7f1ede8c69b4))
+
 ## [2.15.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.15.1...hooks-plugin-v2.15.2) (2026-10-18)
 
 

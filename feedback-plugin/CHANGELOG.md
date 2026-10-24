@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.2](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.13.1...feedback-plugin-v1.13.2) (2026-10-24)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** rebalance bash-antipatterns write blocks on measured friction ([#3175](https://github.com/laurigates/claude-plugins/issues/3175)) ([97e8ba8](https://github.com/laurigates/claude-plugins/commit/97e8ba82cc31b1f91e72b1dae10f7f1ede8c69b4))
+
 ## [1.13.1](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.13.0...feedback-plugin-v1.13.1) (2026-10-22)
 
 
