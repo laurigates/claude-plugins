@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regression test for security-scan.sh's gitleaks section.
+# Regression test for security-scan.sh's gitleaks section (PR #3202).
 #
 # A .gitleaks.toml holding only [allowlist] loads zero gitleaks rules, so a scan
 # that reads it reports clean whatever the tree holds. security-scan.sh used to
