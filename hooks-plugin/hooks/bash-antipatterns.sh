@@ -655,6 +655,180 @@ See .claude/rules/bash-tool-replacements.md for the full table."
         [ "$n" -gt 0 ]
     }
 
+    # RESOLVED-OPERAND PROJECT tmp/ EXEMPTION for `sed -i` (#3179).
+    #
+    # The literal-only check above misses the two ways agents actually reach the
+    # ignored tmp/: `cd <repo>/tmp && sed -i … smoke.sh` and
+    # `T=<repo>/tmp; sed -i … $T/smoke.sh` (and the plain absolute
+    # `<repo>/tmp/smoke.sh`). Here each operand is resolved to an absolute path
+    # and held to the same criterion: it lies under `<root>/tmp/` of its git
+    # repo, and `git check-ignore` reports it ignored there.
+    #
+    # What the resolver trusts, and nothing more:
+    #   - cwd: the hook's `.cwd` when the command changes directory nowhere;
+    #     otherwise only a LEADING `cd <dir>` (first statement, after optional
+    #     literal assignments, followed by `&&` or `;`) whose target exists and
+    #     is the command's only `cd`/`pushd`/`popd`. Any other directory change
+    #     leaves the cwd unknown, so only absolute operands can qualify.
+    #   - variables: `$V` / `${V}` at the start of an operand, where `V=<literal>`
+    #     is a standalone statement before the first `sed` and V appears nowhere
+    #     else as a bare word (no reassignment, `read V`, `for V`, `V+=`). A
+    #     prefix assignment (`V=x sed … $V`) is not standalone: the shell expands
+    #     `$V` before it applies.
+    #   - paths: the deepest existing ancestor is resolved with `pwd -P`, so a
+    #     `..` or a symlinked tmp/ is judged by where it really points. A `..`
+    #     in the not-yet-existing remainder, a symlink operand, or a glob voids.
+    # An operand that still holds an expansion after this (`$UNSET/x`,
+    # `$(cmd)/x`, a variable assigned from a command) is UNRESOLVABLE; the block
+    # message then says so instead of repeating that tmp/ is allowed.
+    SED_UNRESOLVED=""
+    TMP_ASSIGN_RE='^([A-Za-z_][A-Za-z0-9_]*)=(.*)$'
+
+    # Prints the literal value of a variable the command assigns exactly once.
+    tmp_assigned_value() {
+        local var_name="$1" prefix seg val s count
+        prefix="${COMMAND_SHELL_ONLY%%sed[[:space:]]*}"
+        s="${COMMAND_SHELL_ONLY//"\${$var_name}"/ }"
+        s="${s//"\$$var_name"/ }"
+        count=$(tr -c 'A-Za-z0-9_' '\n' <<<"$s" | grep -cx -- "$var_name") || count=0
+        [ "$count" -eq 1 ] || return 1
+        prefix="${prefix//&&/$'\n'}"
+        prefix="${prefix//;/$'\n'}"
+        while IFS= read -r seg; do
+            seg="${seg#"${seg%%[![:space:]]*}"}"
+            seg="${seg%"${seg##*[![:space:]]}"}"
+            [[ "$seg" =~ $TMP_ASSIGN_RE ]] || continue
+            [ "${BASH_REMATCH[1]}" = "$var_name" ] || continue
+            val="${BASH_REMATCH[2]}"
+            case "$val" in
+                # A quoted `~` stays literal (`T="~/x"`), never $HOME.
+                [\"\']~*) return 1 ;;
+                \'*\') val="${val#\'}"; val="${val%\'}" ;;
+                \"*\") val="${val#\"}"; val="${val%\"}" ;;
+                *[[:space:]]*) return 1 ;;
+            esac
+            case "$val" in
+                ''|*[\"\'\$\`\\]*|*\**|*\?*|*\[*|*\{*) return 1 ;;
+            esac
+            printf '%s\n' "$val"
+            return 0
+        done <<<"$prefix"
+        return 1
+    }
+
+    # Expands a leading $V / ${V}; prints the result. Exit 3 = unresolvable.
+    tmp_expand_var() {
+        local p="$1" var_name rest val
+        if [[ "$p" =~ ^\$\{([A-Za-z_][A-Za-z0-9_]*)\}(.*)$ ]] || \
+           [[ "$p" =~ ^\$([A-Za-z_][A-Za-z0-9_]*)(/.*)?$ ]]; then
+            var_name="${BASH_REMATCH[1]}"; rest="${BASH_REMATCH[2]}"
+            val=$(tmp_assigned_value "$var_name") || return 3
+            p="$val$rest"
+        fi
+        case "$p" in *[\$\`]*) return 3 ;; esac
+        case "$p" in \~) p="$HOME" ;; \~/*) p="$HOME/${p#\~/}" ;; esac
+        printf '%s\n' "$p"
+    }
+
+    # The directory relative operands resolve against, or empty when unknown.
+    tmp_effective_cwd() {
+        local s="$COMMAND_SHELL_ONLY" changes target
+        changes=$(grep -oE '(^|[^[:alnum:]_./-])(cd|pushd|popd)([^[:alnum:]_./-]|$)' <<<"$s" | wc -l)
+        if [ "$changes" -eq 0 ]; then
+            [ -n "$HOOK_CWD" ] && [ -d "$HOOK_CWD" ] && printf '%s\n' "$HOOK_CWD"
+            return 0
+        fi
+        [ "$changes" -eq 1 ] || return 0
+        s="${s#"${s%%[![:space:]]*}"}"
+        while [[ "$s" =~ ^[A-Za-z_][A-Za-z0-9_]*=[^[:space:]\;\&\|]*[[:space:]]*(\;|\&\&)[[:space:]]*(.*)$ ]]; do
+            s="${BASH_REMATCH[2]}"
+        done
+        [[ "$s" =~ ^cd[[:space:]]+([^[:space:]\;\&\|]+)[[:space:]]*(\;|\&\&) ]] || return 0
+        target="${BASH_REMATCH[1]}"
+        case "$target" in
+            [\"\']~*|\'*\$*\') return 0 ;;
+            \'*\') target="${target#\'}"; target="${target%\'}" ;;
+            \"*\") target="${target#\"}"; target="${target%\"}" ;;
+        esac
+        target=$(tmp_expand_var "$target") || return 0
+        case "$target" in
+            -*|*[\"\'\\]*) return 0 ;;
+            /*) ;;
+            *) [ -n "$HOOK_CWD" ] && [ -d "$HOOK_CWD" ] || return 0
+               target="$HOOK_CWD/$target" ;;
+        esac
+        [ -d "$target" ] || return 0
+        (cd -P -- "$target" 2>/dev/null && pwd -P)
+    }
+
+    # True when an absolute path lies under <root>/tmp/ and is git-ignored.
+    project_tmp_abs() {
+        local p="$1" d rem phys root full rel
+        d=$(dirname -- "$p"); rem=$(basename -- "$p")
+        while [ ! -d "$d" ]; do
+            [ "$d" != "/" ] && [ "$d" != "." ] || return 1
+            rem="$(basename -- "$d")/$rem"; d=$(dirname -- "$d")
+        done
+        [[ "$rem" =~ $DOTDOT_RE ]] && return 1
+        phys=$(cd -P -- "$d" 2>/dev/null && pwd -P) || return 1
+        full="$phys/$rem"
+        [ -L "$full" ] && return 1
+        root=$(env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_COMMON_DIR \
+            git -C "$phys" rev-parse --show-toplevel 2>/dev/null) || return 1
+        [ -n "$root" ] || return 1
+        rel="${full#"$root"/}"
+        [ "$rel" != "$full" ] || return 1
+        [[ "$rel" =~ ^tmp/[^/] ]] || return 1
+        [[ "$rel" =~ $DOTDOT_RE ]] && return 1
+        env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_COMMON_DIR \
+            git -C "$root" check-ignore -q -- "$rel" 2>/dev/null
+    }
+
+    # True when EVERY sed -i operand resolves into an ignored <root>/tmp/.
+    # Sets SED_UNRESOLVED to the first operand that could not be resolved.
+    # Runs in the current shell (not a pipeline) so that assignment survives.
+    sed_operands_resolve_to_project_tmp() {
+        local op p eff ok=0 n=0 changes
+        local -a ops
+        mapfile -t ops < <(sed_inplace_operands)
+        eff=$(tmp_effective_cwd)
+        changes=$(grep -cE '(^|[^[:alnum:]_./-])(cd|pushd|popd)([^[:alnum:]_./-]|$)' <<<"$COMMAND_SHELL_ONLY") || changes=0
+        for op in "${ops[@]}"; do
+            n=$((n + 1))
+            p="$op"
+            case "$p" in
+                '?') ok=1; continue ;;
+                \'*\') p="${p#\'}"; p="${p%\'}"
+                       case "$p" in *[\$\`]*) ok=1; continue ;; esac ;;
+                \"*\") p="${p#\"}"; p="${p%\"}" ;;
+            esac
+            # A quoted `~` is a literal directory name, never $HOME.
+            case "$op" in [\"\']~*) ok=1; continue ;; esac
+            if ! p=$(tmp_expand_var "$p"); then
+                [ -n "$SED_UNRESOLVED" ] || SED_UNRESOLVED="$op"
+                ok=1; continue
+            fi
+            # Glob/brace characters (checked after `${V}` is expanded away):
+            # the shell, not this literal, picks the file.
+            case "$p" in *\**|*\?*|*\[*|*\{*|*\\*) ok=1; continue ;; esac
+            case "$p" in
+                /*) ;;
+                *)
+                    if [ -z "$eff" ]; then
+                        # A directory change the resolver cannot follow makes
+                        # the operand's location unknown, not merely repo-side.
+                        if [ "$changes" -gt 0 ] && [ -z "$SED_UNRESOLVED" ]; then
+                            SED_UNRESOLVED="$op"
+                        fi
+                        ok=1; continue
+                    fi
+                    p="$eff/$p" ;;
+            esac
+            project_tmp_abs "$p" || ok=1
+        done
+        [ "$n" -gt 0 ] && [ "$ok" -eq 0 ]
+    }
+
     if ast_matched "cat-write" && ! scratch_ctx; then
         block "REMINDER: Use the Write tool instead of 'cat > file' to create files. The Write tool is the proper way to write file contents."
     fi
@@ -672,7 +846,14 @@ See .claude/rules/bash-tool-replacements.md for the full table."
 
     if ast_matched "sed-inplace" && ! scratch_ctx && \
        ! { project_tmp_allowed && sed_inplace_operands | all_project_tmp; } && \
+       ! sed_operands_resolve_to_project_tmp && \
        ! { sed_inplace_operands | snapshotted_before_sed; }; then
+        if [ -n "$SED_UNRESOLVED" ]; then
+            # Worded without the "instead of 'sed -i'" lead-in on purpose:
+            # the friction fixture generator requires that needle to match
+            # exactly one deployed block message (#3179).
+            block "REMINDER: The 'sed -i' operand '${SED_UNRESOLVED}' could not be resolved to a path (an unset or command-assigned variable, a command substitution, or a cd the hook cannot follow), so the git-ignored tmp/ exemption could not be checked. Use the Edit tool for repo files: Bash-only edits are not restored by /rewind and skip Edit hooks. For a scratch file, spell the path literally, or assign it once with VAR=/abs/path as its own statement."
+        fi
         block "REMINDER: Use the Edit tool instead of 'sed -i' to modify files. Files changed only by Bash are not restored by /rewind (2.1.309+), hooks matching Edit (formatters, guards) do not fire, and BSD sed on macOS differs from GNU sed ('-i' needs a suffix argument, '\\n' is not a newline in replacements). (In-place edits under /tmp, in a mktemp -d scratch dir, in a git-ignored project tmp/, or of a file first snapshotted with 'cp' in the same command are allowed.)"
     fi
 fi

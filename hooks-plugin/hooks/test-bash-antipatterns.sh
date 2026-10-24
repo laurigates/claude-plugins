@@ -1971,6 +1971,143 @@ assert_exit_cwd \
 
 rm -rf "$IGN_REPO" "$TRK_REPO" "$FORCED_REPO"
 
+# ── sed -i tmp/ exemption resolves cd-relative and $VAR operands (#3179) ──────
+# Regression: the block message promised "in-place edits ... in a git-ignored
+# project tmp/ are allowed", but the exemption read only a literal tmp/ or
+# ./tmp/ operand in a command with no `cd`. Still blocked:
+#   cd <repo>/tmp && sed -i '' 's|a|b|' smoke.sh        (relative after cd)
+#   T=<repo>/tmp; sed -i '' 's|a|b|' $T/smoke.sh         (path in a variable)
+#   sed -i '' 's|a|b|' <repo>/tmp/smoke.sh               (absolute literal)
+# The fix resolves each operand (leading `cd`, literal `VAR=` assignments) to an
+# absolute path and applies the same criterion: under <root>/tmp/ and ignored.
+#
+# These sandboxes must NOT live under /tmp or /var/folders: the scratch-context
+# exemption allows any `cd /tmp/...` or `T=/tmp/...`, which would make every
+# case below pass for the wrong reason. They go under $HOME instead.
+echo ""
+echo "sed -i tmp/ exemption resolves cd-relative and \$VAR operands (#3179):"
+
+SCRATCH_ROOT_RE='^((/private)?/tmp|/var/folders)(/|$)'
+if [ -z "${HOME:-}" ] || [ ! -d "$HOME" ] || [ ! -w "$HOME" ] || [[ "$HOME" =~ $SCRATCH_ROOT_RE ]]; then
+    echo "  SKIP: \$HOME is unset, unwritable, or under a scratch root; #3179 cases need a non-scratch sandbox"
+else
+    new_home_repo() {
+        local d
+        d=$(mktemp -d "$HOME/.bash-antipatterns-3179.XXXXXX") || { echo "FATAL: mktemp -d failed" >&2; exit 1; }
+        [ -n "$d" ] && [ -d "$d" ] || { echo "FATAL: invalid sandbox dir '$d'" >&2; exit 1; }
+        d=$(cd -P -- "$d" && pwd -P) || { echo "FATAL: cannot resolve '$d'" >&2; exit 1; }
+        git -C "$d" init -q
+        mkdir -p "$d/tmp" "$d/src"
+        printf 'a\n' > "$d/tmp/smoke.sh"
+        printf 'a\n' > "$d/src/x.py"
+        printf '%s\n' "$d"
+    }
+
+    # R_IGN: tmp/ listed in .git/info/exclude (the issue's setup).
+    R_IGN=$(new_home_repo)
+    [ -n "$R_IGN" ] && [ -d "$R_IGN" ] || { echo "FATAL: invalid sandbox dir '$R_IGN'" >&2; exit 1; }
+    printf 'tmp/\n' >> "$R_IGN/.git/info/exclude"
+    # R_NOX: tmp/ not excluded at all.
+    R_NOX=$(new_home_repo)
+    [ -n "$R_NOX" ] && [ -d "$R_NOX" ] || { echo "FATAL: invalid sandbox dir '$R_NOX'" >&2; exit 1; }
+    # R_TRK: tmp/ excluded, but tmp/smoke.sh force-added (tracked is never ignored).
+    R_TRK=$(new_home_repo)
+    [ -n "$R_TRK" ] && [ -d "$R_TRK" ] || { echo "FATAL: invalid sandbox dir '$R_TRK'" >&2; exit 1; }
+    printf 'tmp/\n' >> "$R_TRK/.git/info/exclude"
+    git -C "$R_TRK" add -f tmp/smoke.sh
+
+    # Exit code AND a stderr substring (or its absence, with a leading '!').
+    assert_msg_cwd() {
+        local desc="$1" expected="$2" needle="$3" cwd="$4" cmd="$5"
+        local json exit_code=0 err ok=1
+        json=$(jq -nc --arg cmd "$cmd" --arg cwd "$cwd" '{tool_name:"Bash",cwd:$cwd,tool_input:{command:$cmd}}')
+        err=$(printf '%s' "$json" | bash "$HOOK" 2>&1 >/dev/null) || exit_code=$?
+        [ "$exit_code" -eq "$expected" ] || ok=0
+        case "$needle" in
+            '') ;;
+            '!'*) ! grep -qF -- "${needle#!}" <<<"$err" || ok=0 ;;
+            *) grep -qF -- "$needle" <<<"$err" || ok=0 ;;
+        esac
+        if [ "$ok" -eq 1 ]; then
+            printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
+        else
+            printf "  FAIL: %s (expected exit %d, got %d; stderr: %s)\n" "$desc" "$expected" "$exit_code" "${err:0:160}"; FAIL=$((FAIL + 1))
+        fi
+    }
+    # hook-message-pin: could not be resolved to a path
+    UNRES="could not be resolved to a path"
+
+    # Allowed: the issue's two repros plus the absolute and relative-cd forms.
+    assert_exit_cwd "issue repro 1: cd <repo>/tmp && sed -i relative operand is allowed (#3179)" 0 \
+        "$R_IGN" "cd $R_IGN/tmp && sed -i '' 's|a|b|' smoke.sh"
+    assert_exit_cwd "issue repro 2: T=<repo>/tmp; sed -i \$T/smoke.sh is allowed (#3179)" 0 \
+        "$R_IGN" "T=$R_IGN/tmp; sed -i '' 's|a|b|' \$T/smoke.sh"
+    assert_exit_cwd "T=<repo>/tmp && sed -i \"\${T}/smoke.sh\" (quoted, braced) is allowed (#3179)" 0 \
+        "$R_IGN" "T=\"$R_IGN/tmp\" && sed -i '' 's|a|b|' \"\${T}/smoke.sh\""
+    assert_exit_cwd "absolute literal <repo>/tmp/smoke.sh operand is allowed (#3179)" 0 \
+        "$R_IGN" "sed -i '' 's|a|b|' $R_IGN/tmp/smoke.sh"
+    assert_exit_cwd "cd tmp; sed -i relative operand (cd relative to .cwd) is allowed (#3179)" 0 \
+        "$R_IGN" "cd tmp; sed -i 's|a|b|' smoke.sh"
+    assert_exit_cwd "cd \$T after a literal T= assignment, then a relative operand, is allowed (#3179)" 0 \
+        "$R_IGN" "T=$R_IGN/tmp; cd \$T && sed -i 's|a|b|' smoke.sh"
+
+    # Guard integrity: tmp/ not ignored.
+    assert_exit_cwd "GUARD INTEGRITY: repro 1 where tmp/ is not excluded still blocked (#3179)" 2 \
+        "$R_NOX" "cd $R_NOX/tmp && sed -i '' 's|a|b|' smoke.sh"
+    assert_exit_cwd "GUARD INTEGRITY: repro 2 where tmp/ is not excluded still blocked (#3179)" 2 \
+        "$R_NOX" "T=$R_NOX/tmp; sed -i '' 's|a|b|' \$T/smoke.sh"
+    assert_exit_cwd "GUARD INTEGRITY: repro 1 on a tracked tmp/smoke.sh still blocked (#3179)" 2 \
+        "$R_TRK" "cd $R_TRK/tmp && sed -i '' 's|a|b|' smoke.sh"
+    assert_exit_cwd "GUARD INTEGRITY: absolute literal on a tracked tmp/smoke.sh still blocked (#3179)" 2 \
+        "$R_TRK" "sed -i '' 's|a|b|' $R_TRK/tmp/smoke.sh"
+
+    # Guard integrity: escaping tmp/, mixed operands, a non-ignored cd target.
+    assert_exit_cwd "GUARD INTEGRITY: cd <repo>/tmp && sed -i ../src/x.py still blocked (#3179)" 2 \
+        "$R_IGN" "cd $R_IGN/tmp && sed -i '' 's|a|b|' ../src/x.py"
+    assert_exit_cwd "GUARD INTEGRITY: cd <repo>/tmp && sed -i over smoke.sh AND ../src/x.py still blocked (#3179)" 2 \
+        "$R_IGN" "cd $R_IGN/tmp && sed -i '' 's|a|b|' smoke.sh ../src/x.py"
+    assert_exit_cwd "GUARD INTEGRITY: \$T/smoke.sh beside a repo src/x.py still blocked (#3179)" 2 \
+        "$R_IGN" "T=$R_IGN/tmp; sed -i '' 's|a|b|' \$T/smoke.sh src/x.py"
+    assert_exit_cwd "GUARD INTEGRITY: cd into non-ignored src/ then a relative operand still blocked (#3179)" 2 \
+        "$R_IGN" "cd $R_IGN/src && sed -i '' 's|a|b|' x.py"
+    assert_exit_cwd "GUARD INTEGRITY: absolute <repo>/tmp/../src/x.py still blocked (#3179)" 2 \
+        "$R_IGN" "sed -i '' 's|a|b|' $R_IGN/tmp/../src/x.py"
+    assert_exit_cwd "GUARD INTEGRITY: a second cd after the tmp/ cd still blocked (#3179)" 2 \
+        "$R_IGN" "cd $R_IGN/tmp && cd ../src && sed -i '' 's|a|b|' x.py"
+    assert_exit_cwd "GUARD INTEGRITY: cd inside a subshell, sed outside it, still blocked (#3179)" 2 \
+        "$R_IGN" "(cd $R_IGN/tmp) && sed -i '' 's|a|b|' x.py"
+    assert_exit_cwd "GUARD INTEGRITY: cd <repo>/tmp || sed -i (runs only if cd failed) still blocked (#3179)" 2 \
+        "$R_IGN" "cd $R_IGN/tmp || sed -i '' 's|a|b|' smoke.sh"
+
+    # Guard integrity: variables the hook cannot trust.
+    assert_exit_cwd "GUARD INTEGRITY: T=<tmp> sed … \$T (prefix assignment, unset at expansion) still blocked (#3179)" 2 \
+        "$R_IGN" "T=$R_IGN/tmp sed -i '' 's|a|b|' \$T/smoke.sh"
+    assert_exit_cwd "GUARD INTEGRITY: T reassigned to src/ before the sed still blocked (#3179)" 2 \
+        "$R_IGN" "T=$R_IGN/tmp; T=$R_IGN/src; sed -i '' 's|a|b|' \$T/x.py"
+    assert_exit_cwd "GUARD INTEGRITY: T assigned only after the sed still blocked (#3179)" 2 \
+        "$R_IGN" "sed -i '' 's|a|b|' \$T/smoke.sh; T=$R_IGN/tmp"
+    # R_IGN is physical (pwd -P); strip the physical $HOME so ~/<rel> names it.
+    R_IGN_REL="${R_IGN#"$(cd -P -- "$HOME" && pwd -P)"/}"
+    assert_exit_cwd "T=~/<repo>/tmp (unquoted, tilde expanded at assignment) is allowed (#3179)" 0 \
+        "$R_IGN" "T=~/$R_IGN_REL/tmp; sed -i '' 's|a|b|' \$T/smoke.sh"
+    assert_exit_cwd "GUARD INTEGRITY: T=\"~/<repo>/tmp\" (quoted, literal ~) still blocked (#3179)" 2 \
+        "$R_IGN" "T=\"~/$R_IGN_REL/tmp\"; sed -i '' 's|a|b|' \$T/smoke.sh"
+
+    # Unresolvable operands block, and the message says so.
+    assert_msg_cwd "GUARD INTEGRITY: \$UNSET/x blocks and names the unresolved operand (#3179)" 2 \
+        "$UNRES" "$R_IGN" "sed -i '' 's|a|b|' \$UNSET/x"
+    assert_msg_cwd "GUARD INTEGRITY: \$(cmd)/tmp/x blocks and names the unresolved operand (#3179)" 2 \
+        "$UNRES" "$R_IGN" "sed -i '' 's|a|b|' \$(git rev-parse --show-toplevel)/tmp/smoke.sh"
+    assert_msg_cwd "GUARD INTEGRITY: T=\$(pwd)/tmp; sed \$T/x blocks and names the unresolved operand (#3179)" 2 \
+        "$UNRES" "$R_IGN" "T=\$(pwd)/tmp; sed -i '' 's|a|b|' \$T/smoke.sh"
+    assert_msg_cwd "a resolvable repo operand keeps the existing message, no unresolved note (#3179)" 2 \
+        "!$UNRES" "$R_IGN" "sed -i '' 's|a|b|' src/x.py"
+
+    case "$R_IGN$R_NOX$R_TRK" in
+        "$HOME"/.bash-antipatterns-3179.*) rm -rf "$R_IGN" "$R_NOX" "$R_TRK" ;;
+    esac
+fi
+
 # ── stdin secret write via printf | <cli> --data-file=- (#2052 item 1) ────────
 # Regression guard: piping a secret to a CLI over STDIN is the recommended,
 # safest write path (never touches disk or the process table). It must never
