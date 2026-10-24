@@ -127,7 +127,7 @@ tree is still broken.
 Classic trip: `git mv old new`, edit `new`, then `git add new old` → the stale
 `old` aborts the add, and the commit ships the rename with pre-edit content.
 
-- **Rules**: one pathspec per `git add`, or only confirmed-present paths.
+- **Rules**: one `git add -- A B C` call listing only confirmed-present paths (run `git status --short` first). Never chain `git add` calls with `&&`: the `git-chain` hook blocks that shape.
   After `git mv` + edit, `git add <newname>` alone.
 - **Check**: `git status --short` before committing — the index column must
   show the change you intend.
