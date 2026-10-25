@@ -7,7 +7,7 @@
 # STATUS=inert_config / CONFIG=inert and count a finding, while a config that
 # extends the default ruleset keeps STATUS=clean / CONFIG=present.
 #
-# Cases A-D run the shipped script with a stub gitleaks that always reports
+# Cases A-D and F run the shipped script with a stub gitleaks that always reports
 # clean, so they need no gitleaks install. Case E runs the REAL gitleaks (when
 # present) over a committed, generated token: the bare-allowlist config must be
 # the one gitleaks misses, and the extended config the one it catches.
@@ -72,6 +72,11 @@ run_scan() {
 
 bare_cfg="[allowlist]\npaths = ['''^no-such-path$''']\n"
 extend_cfg="[extend]\nuseDefault = true\n\n[allowlist]\npaths = ['''^no-such-path$''']\n"
+# Spellings gitleaks 8.30.1 also loads the default rules for (PR #3202 review):
+# viper reads a quoted table name like a bare one and decodes a string
+# useDefault with strconv.ParseBool.
+quoted_cfg="[\"extend\"]\nuseDefault = true\n\n[allowlist]\npaths = ['''^no-such-path$''']\n"
+string_cfg="[extend]\nuseDefault = \"true\"\n\n[allowlist]\npaths = ['''^no-such-path$''']\n"
 
 # Case A — THE REPORTED DEFECT: an allowlist-only config.
 make_repo "${work}/a" "$bare_cfg"
@@ -106,15 +111,37 @@ grep -q "^CONFIG=missing$" <<<"$gl_section" || fail "D: expected CONFIG=missing:
 grep -q "^STATUS=clean$" <<<"$gl_section" || fail "D: expected STATUS=clean:\n$gl_section"
 pass "D: no .gitleaks.toml keeps CONFIG=missing / STATUS=clean"
 
+# Case F — a quoted ["extend"] header and a string useDefault = "true" load the
+# default rules, so neither is inert; both read inert_config before the review fix.
+for f_case in quoted string; do
+  if [ "$f_case" = quoted ]; then f_cfg="$quoted_cfg"; else f_cfg="$string_cfg"; fi
+  make_repo "${work}/f-${f_case}" "$f_cfg"
+  run_scan "${work}/f-${f_case}" "$stub_bin"
+  grep -q "^STATUS=clean$" <<<"$gl_section" || fail "F ${f_case}: expected STATUS=clean:\n$gl_section"
+  grep -q "^CONFIG=present$" <<<"$gl_section" || fail "F ${f_case}: expected CONFIG=present:\n$gl_section"
+  grep -q "^TOTAL_FINDINGS=0$" <<<"$scan_out" || fail "F ${f_case}: expected TOTAL_FINDINGS=0:\n$scan_out"
+  [ "$scan_rc" -eq 0 ] || fail "F ${f_case}: expected exit 0, got $scan_rc"
+done
+# ... while its zero-rule twin, useDefault = "false", is still inert.
+make_repo "${work}/f-false" "[extend]\nuseDefault = \"false\"\n\n[allowlist]\npaths = ['''^no-such-path$''']\n"
+run_scan "${work}/f-false" "$stub_bin"
+grep -q "^CONFIG=inert$" <<<"$gl_section" || fail "F false: expected CONFIG=inert:\n$gl_section"
+pass "F: [\"extend\"] and useDefault = \"true\" are not inert; useDefault = \"false\" is"
+
 # Case E — the real gitleaks agrees that the bare config is the one that misses
 # a committed token. The token is generated at runtime, never a literal.
 if command -v gitleaks >/dev/null 2>&1; then
   real_dir="$(dirname "$(command -v gitleaks)")"
   token="ghp_$(od -An -tx1 -N18 /dev/urandom | tr -d ' \n')"
   [ "${#token}" -eq 40 ] || fail "E: canary token generation failed: ${token}"
-  for e_case in bare extend; do
+  for e_case in bare extend quoted string; do
     e_dir="${work}/e-${e_case}"
-    if [ "$e_case" = bare ]; then make_repo "$e_dir" "$bare_cfg"; else make_repo "$e_dir" "$extend_cfg"; fi
+    case "$e_case" in
+      bare) make_repo "$e_dir" "$bare_cfg" ;;
+      extend) make_repo "$e_dir" "$extend_cfg" ;;
+      quoted) make_repo "$e_dir" "$quoted_cfg" ;;
+      string) make_repo "$e_dir" "$string_cfg" ;;
+    esac
     printf 'token = "%s"\n' "$token" > "${e_dir}/settings.txt"
     git -C "$e_dir" add -- settings.txt .gitignore .gitleaks.toml
     git -C "$e_dir" -c user.name=t -c user.email=t@example.invalid -c commit.gpgsign=false \
@@ -124,11 +151,13 @@ if command -v gitleaks >/dev/null 2>&1; then
       grep -q "^STATUS=inert_config$" <<<"$gl_section" \
         || fail "E: real gitleaks with the bare config should miss the token (inert_config):\n$gl_section"
     else
+      # For quoted/string this checks the premise case F rests on: gitleaks
+      # itself loads the default rules for those spellings.
       grep -q "^STATUS=secrets_found$" <<<"$gl_section" \
-        || fail "E: real gitleaks with [extend] useDefault = true should find the token:\n$gl_section"
+        || fail "E ${e_case}: real gitleaks should load the default rules and find the token:\n$gl_section"
     fi
   done
-  pass "E: gitleaks $(gitleaks version 2>/dev/null) misses a committed token under the bare config and finds it under [extend]"
+  pass "E: gitleaks $(gitleaks version 2>/dev/null) misses a committed token under the bare config and finds it under [extend], [\"extend\"] and useDefault = \"true\""
 else
   echo "SKIP: gitleaks not on PATH — case E against the real scanner not run"
 fi

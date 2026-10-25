@@ -22,28 +22,41 @@ findings=0
 # (useDefault = true, or path = <another config>), so a file holding just an
 # [allowlist] / [[allowlists]] loads ZERO rules. gitleaks auto-discovers that
 # file, and the scan below then reports clean whatever the tree holds. Keys are
-# matched case-insensitively, as gitleaks' viper loader reads them; multi-line
-# string bodies are skipped. configure-plugin's configure-security.sh carries
-# the same classifier.
+# matched in any case and bare or quoted (["extend"]), as gitleaks' viper loader
+# reads them; useDefault is decoded weakly, as viper does (true, a string
+# strconv.ParseBool reads as true, or a non-zero decimal number); multi-line
+# string bodies are skipped. Not recognised, so reported inert: a root
+# `rules = [ ... ]` array, and a useDefault written as a hex/octal/binary
+# literal, inf, nan or a triple-quoted string. configure-plugin's
+# configure-security.sh carries the same classifier.
 gitleaks_rule_source() {
   awk '
-    BEGIN { section = ""; in_ml = 0; dflt = 0; xpath = 0; custom = 0 }
+    function k(key_name) { return "[\"\047]?" key_name "[\"\047]?" }
+    function truthy(val,   mant) {
+      sub(/[,}#].*$/, "", val); sub(/^[[:space:]]+/, "", val); sub(/[[:space:]]+$/, "", val)
+      if (val == "true" || val ~ /^("(true|True|TRUE|t|T|1)"|\047(true|True|TRUE|t|T|1)\047)$/) return 1
+      val = tolower(val)
+      if (val !~ /^[-+]?[0-9][0-9_]*(\.[0-9][0-9_]*)?(e[-+]?[0-9][0-9_]*)?$/) return 0
+      mant = val; sub(/e.*$/, "", mant)
+      return (mant ~ /[1-9]/)
+    }
+    BEGIN { ws = "[[:space:]]*"; section = ""; in_ml = 0; dflt = 0; xpath = 0; custom = 0 }
     {
       line = tolower($0)
       quotes = gsub(/\047\047\047|"""/, "&", line)
       if (in_ml) { if (quotes % 2 == 1) in_ml = 0; next }
       if (quotes % 2 == 1) in_ml = 1
       if (line ~ /^[[:space:]]*(#|$)/) next
-      if (line ~ /^[[:space:]]*\[\[[[:space:]]*rules[[:space:]]*\]\]/) { custom = 1; section = "rules"; next }
-      if (line ~ /^[[:space:]]*\[[[:space:]]*extend[[:space:]]*\]/) { section = "extend"; next }
+      if (line ~ ("^" ws "\\[\\[" ws k("rules") ws "\\]\\]" ws "(#|$)")) { custom = 1; section = "rules"; next }
+      if (line ~ ("^" ws "\\[" ws k("extend") ws "\\]" ws "(#|$)")) { section = "extend"; next }
       if (line ~ /^[[:space:]]*\[/) { section = "other"; next }
       if (section != "extend" && section != "") next
-      prefix = (section == "") ? "extend[[:space:]]*\\.[[:space:]]*" : ""
-      if (line ~ ("^[[:space:]]*" prefix "usedefault[[:space:]]*=[[:space:]]*true([[:space:]#]|$)")) dflt = 1
-      if (line ~ ("^[[:space:]]*" prefix "path[[:space:]]*=[[:space:]]*(\"[^\"]+\"|\047[^\047]+\047)")) xpath = 1
-      if (section == "" && line ~ /^[[:space:]]*extend[[:space:]]*=[[:space:]]*\{/) {
-        if (line ~ /usedefault[[:space:]]*=[[:space:]]*true/) dflt = 1
-        if (line ~ /path[[:space:]]*=[[:space:]]*("[^"]+"|\047[^\047]+\047)/) xpath = 1
+      prefix = (section == "") ? k("extend") ws "\\." ws : ""
+      if (match(line, "^" ws prefix k("usedefault") ws "=") && truthy(substr($0, RSTART + RLENGTH))) dflt = 1
+      if (line ~ ("^" ws prefix k("path") ws "=" ws "(\"[^\"]+\"|\047[^\047]+\047)")) xpath = 1
+      if (section == "" && line ~ ("^" ws k("extend") ws "=" ws "\\{")) {
+        if (match(line, k("usedefault") ws "=") && truthy(substr($0, RSTART + RLENGTH))) dflt = 1
+        if (line ~ (k("path") ws "=" ws "(\"[^\"]+\"|\047[^\047]+\047)")) xpath = 1
       }
     }
     END {
