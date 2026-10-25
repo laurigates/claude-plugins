@@ -1271,9 +1271,9 @@ fi
 # Check for piped execution from network (curl/wget piped to shell) — issue #3178.
 #
 # Pure regex/awk on purpose: this is a SAFETY block, so it must fire where
-# ast-grep is unavailable (.claude/rules/bash-tool-replacements.md). Two
-# narrowings over the original bare-substring match, neither of which masks a
-# real execution:
+# ast-grep is unavailable (.claude/rules/bash-tool-replacements.md). Three
+# narrowings over the original bare-substring match, none of which masks a
+# real execution (the third, #3186, follows the heredoc awk):
 #
 #   1. The shell must be a whole command word right after a real pipe (`|` or
 #      `|&`), optionally as an absolute path (`| /bin/bash`). `|short` inside a
@@ -1291,8 +1291,9 @@ fi
 #      The terminator test trims whitespace — a superset of the shell's exact
 #      match — so the awk can only resume scanning early, never late.
 #
-# Quoted spans are NOT masked: `bash -c 'curl x | sh'` and
-# `ssh host 'curl x | bash'` really execute and must keep blocking.
+# Quoted spans are NOT masked in general: `bash -c 'curl x | sh'` and
+# `ssh host 'curl x | bash'` really execute and must keep blocking. The one
+# exception is a grep-family search pattern (narrowing 3, below).
 NET_SHELL_MASKED=$(mask_quoted_content "$COMMAND")
 NET_SHELL_VIEW=$(awk -v SQ="'" '
     NR == FNR { masked[FNR] = $0; next }
@@ -1322,6 +1323,51 @@ NET_SHELL_VIEW=$(awk -v SQ="'" '
         delim = substr(s, 1, RLENGTH); ih = 1
     }
 ' <(printf '%s\n' "$NET_SHELL_MASKED") <(printf '%s\n' "$COMMAND"))
+# 3. Quoted arguments of a grep-family command (grep/egrep/fgrep/rg) are blanked
+#    (issue #3186): a search pattern is never executed, yet
+#    `grep -E "rpm2cpio|curl |wget|sudo"` carries its own `curl ` and a
+#    word-bounded `|sudo`. Only that command's quoted spans are blanked; a
+#    double-quoted span holding `$(` or a backtick is kept (it executes), and so
+#    is every quoted span of any other command (`bash -c '…'`, `ssh host '…'`).
+#    What the rest of the pipeline does with grep's output is still scanned, so
+#    `curl x | grep -v '#' | bash` keeps blocking.
+NET_SHELL_VIEW=$(printf '%s\n' "$NET_SHELL_VIEW" | awk -v SQ="'" '
+    {
+        line = $0; n = length(line); out = ""; cmd = ""; word = ""; inword = 0
+        for (i = 1; i <= n; i++) {
+            c = substr(line, i, 1)
+            if (c == "\\" && i < n) { out = out c substr(line, i + 1, 1); i++; if (cmd == "") { word = word "x"; inword = 1 }; continue }
+            if (c == SQ || c == "\"") {
+                j = i + 1
+                while (j <= n) {
+                    d = substr(line, j, 1)
+                    if (c == "\"" && d == "\\") { j += 2; continue }
+                    if (d == c) break
+                    j++
+                }
+                span = substr(line, i + 1, j - i - 1)
+                if (j <= n && cmd ~ /^(grep|egrep|fgrep|rg)$/ && \
+                    !(c == "\"" && (index(span, "$(") || index(span, "`")))) {
+                    gsub(/./, " ", span)
+                }
+                out = out c span (j <= n ? c : "")
+                if (cmd == "") { word = word "x"; inword = 1 }
+                i = j
+                continue
+            }
+            out = out c
+            if (c ~ /[|;&()`]/) { cmd = ""; word = ""; inword = 0; continue }
+            if (c ~ /[[:space:]]/) {
+                if (inword && cmd == "" && word !~ /^[A-Za-z_][A-Za-z_0-9]*=/) {
+                    cmd = word; sub(/.*\//, "", cmd)
+                }
+                word = ""; inword = 0
+                continue
+            }
+            if (cmd == "") { word = word c; inword = 1 }
+        }
+        print out
+    }')
 if grep -Eq '(curl|wget)[[:space:]]+.*\|&?[[:space:]]*(/[^[:space:]|]*/)?(bash|sh|zsh|sudo)([^[:alnum:]_]|$)' <<<"$NET_SHELL_VIEW"; then
     block "REMINDER: Piping network content directly to a shell is dangerous.
 Instead:
