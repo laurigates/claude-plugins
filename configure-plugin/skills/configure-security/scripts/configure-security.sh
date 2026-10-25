@@ -275,8 +275,10 @@ echo "GITLEAKS_CONFIG=${gitleaks_config}"
 # .gitleaks.toml in the scanned directory, so the pre-commit hook and
 # gitleaks-action then report "no leaks found" on every run. Four portfolio repos
 # shipped that shape (PR #3197). This mirrors gitleaks' own config
-# translation, keys case-insensitively as viper does, and does not follow an
-# [extend] path.
+# translation: keys in any case and bare or quoted (["extend"],
+# 'extend'."useDefault"), as viper reads them; useDefault decoded weakly, as
+# viper does (true, a string strconv.ParseBool reads as true, or a non-zero
+# decimal number). It does not follow an [extend] path.
 #   default     -> [extend] useDefault = true (the built-in ruleset)
 #   extend-path -> [extend] path = "<file>" (rules come from that file)
 #   custom      -> own [[rules]] only
@@ -284,7 +286,20 @@ echo "GITLEAKS_CONFIG=${gitleaks_config}"
 #   absent      -> no .gitleaks.toml
 gitleaks_rule_source() {
   awk '
-    BEGIN { section = ""; in_ml = 0; dflt = 0; xpath = 0; custom = 0 }
+    # A key or table name, bare or in either quote style.
+    function k(key_name) { return "[\"\047]?" key_name "[\"\047]?" }
+    # Whether the text after "useDefault =" (original case) is a value gitleaks
+    # 8.30.1 decodes as true. Hex/octal/binary, inf, nan and triple-quoted
+    # strings are not recognised (references/detection-output.md).
+    function truthy(val,   mant) {
+      sub(/[,}#].*$/, "", val); sub(/^[[:space:]]+/, "", val); sub(/[[:space:]]+$/, "", val)
+      if (val == "true" || val ~ /^("(true|True|TRUE|t|T|1)"|\047(true|True|TRUE|t|T|1)\047)$/) return 1
+      val = tolower(val)
+      if (val !~ /^[-+]?[0-9][0-9_]*(\.[0-9][0-9_]*)?(e[-+]?[0-9][0-9_]*)?$/) return 0
+      mant = val; sub(/e.*$/, "", mant)
+      return (mant ~ /[1-9]/)
+    }
+    BEGIN { ws = "[[:space:]]*"; section = ""; in_ml = 0; dflt = 0; xpath = 0; custom = 0 }
     {
       line = tolower($0)
       # Skip the body of a multi-line string, so a regex that happens to contain
@@ -293,18 +308,21 @@ gitleaks_rule_source() {
       if (in_ml) { if (quotes % 2 == 1) in_ml = 0; next }
       if (quotes % 2 == 1) in_ml = 1
       if (line ~ /^[[:space:]]*(#|$)/) next
-      if (line ~ /^[[:space:]]*\[\[[[:space:]]*rules[[:space:]]*\]\]/) { custom = 1; section = "rules"; next }
-      if (line ~ /^[[:space:]]*\[[[:space:]]*extend[[:space:]]*\]/) { section = "extend"; next }
+      # A header ends its line (bar a comment), so an array element such as
+      # ["extend"], inside a multi-line value cannot pass for one.
+      if (line ~ ("^" ws "\\[\\[" ws k("rules") ws "\\]\\]" ws "(#|$)")) { custom = 1; section = "rules"; next }
+      if (line ~ ("^" ws "\\[" ws k("extend") ws "\\]" ws "(#|$)")) { section = "extend"; next }
       if (line ~ /^[[:space:]]*\[/) { section = "other"; next }
       # Keys count inside [extend], or at the root as a dotted extend.<key>.
       if (section != "extend" && section != "") next
-      prefix = (section == "") ? "extend[[:space:]]*\\.[[:space:]]*" : ""
-      if (line ~ ("^[[:space:]]*" prefix "usedefault[[:space:]]*=[[:space:]]*true([[:space:]#]|$)")) dflt = 1
-      if (line ~ ("^[[:space:]]*" prefix "path[[:space:]]*=[[:space:]]*(\"[^\"]+\"|\047[^\047]+\047)")) xpath = 1
+      prefix = (section == "") ? k("extend") ws "\\." ws : ""
+      # tolower keeps the length, so RSTART/RLENGTH index $0 as well.
+      if (match(line, "^" ws prefix k("usedefault") ws "=") && truthy(substr($0, RSTART + RLENGTH))) dflt = 1
+      if (line ~ ("^" ws prefix k("path") ws "=" ws "(\"[^\"]+\"|\047[^\047]+\047)")) xpath = 1
       # Root-level inline table: extend = { useDefault = true } / { path = "..." }
-      if (section == "" && line ~ /^[[:space:]]*extend[[:space:]]*=[[:space:]]*\{/) {
-        if (line ~ /usedefault[[:space:]]*=[[:space:]]*true/) dflt = 1
-        if (line ~ /path[[:space:]]*=[[:space:]]*("[^"]+"|\047[^\047]+\047)/) xpath = 1
+      if (section == "" && line ~ ("^" ws k("extend") ws "=" ws "\\{")) {
+        if (match(line, k("usedefault") ws "=") && truthy(substr($0, RSTART + RLENGTH))) dflt = 1
+        if (line ~ (k("path") ws "=" ws "(\"[^\"]+\"|\047[^\047]+\047)")) xpath = 1
       }
     }
     END {

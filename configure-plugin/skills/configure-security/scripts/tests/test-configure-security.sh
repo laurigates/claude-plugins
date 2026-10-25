@@ -480,6 +480,19 @@ make_gl extend_path     "[extend]\npath = \"base.toml\"\n${allow_tail}"
 printf '[extend]\nuseDefault = true\n' > "${gl_root}/extend_path/base.toml"
 make_gl custom_rules    "[[rules]]\nid = \"gh-pat\"\nregex = '''ghp_[0-9a-zA-Z]{36}'''\n${allow_tail}"
 
+# Spellings gitleaks 8.30.1 also accepts (PR #3197 review): viper reads quoted
+# keys like bare ones and decodes useDefault weakly (strconv.ParseBool strings,
+# non-zero numbers). Names stay distinct case-insensitively (macOS volumes).
+make_gl quoted_header   "[\"extend\"]\nuseDefault = true\n${allow_tail}"
+make_gl string_true     "[extend]\nuseDefault = \"true\"\n${allow_tail}"
+make_gl quoted_dotted   "'extend'.\"useDefault\" = 'T'\n${allow_tail}"
+make_gl quoted_inline   "\"extend\" = { \"useDefault\" = \"1\" }\n${allow_tail}"
+make_gl number_true     "[extend]\nuseDefault = 1\n${allow_tail}"
+make_gl quoted_rules    "[[\"rules\"]]\nid = \"gh-pat\"\nregex = '''ghp_[0-9a-zA-Z]{36}'''\n${allow_tail}"
+# ... and their zero-rule twins.
+make_gl string_false    "[extend]\nuseDefault = \"false\"\n${allow_tail}"
+make_gl number_zero     "[extend]\nuseDefault = 0.0\n${allow_tail}"
+
 gl_expect() {
   # $1 = fixture, $2 = expected GITLEAKS_RULES value
   local ge_out
@@ -522,6 +535,16 @@ gl_expect extend_dotted default
 gl_expect extend_inline default
 gl_expect extend_path extend-path
 gl_expect custom_rules custom
+# 5f — quoted keys and weakly-typed useDefault values. ["extend"] and
+# useDefault = "true" both read `none` before the review fix, a false WARN.
+gl_expect quoted_header default
+gl_expect string_true default
+gl_expect quoted_dotted default
+gl_expect quoted_inline default
+gl_expect number_true default
+gl_expect quoted_rules custom
+gl_expect string_false none
+gl_expect number_zero none
 pass "a .gitleaks.toml that loads zero rules is reported inert and not counted as a layer"
 
 # 5e — the classifier agrees with gitleaks itself. Each fixture gets a freshly
@@ -547,7 +570,7 @@ if command -v gitleaks >/dev/null 2>&1 && gitleaks dir --help >/dev/null 2>&1; t
     esac
     gl_checked=$((gl_checked + 1))
   done
-  [ "$gl_checked" -eq 13 ] || fail "expected 13 fixtures cross-checked, got $gl_checked"
+  [ "$gl_checked" -eq 21 ] || fail "expected 21 fixtures cross-checked, got $gl_checked"
   pass "gitleaks $(gitleaks version 2>/dev/null) finds the planted token exactly where GITLEAKS_RULES says rules load ($gl_checked fixtures)"
 else
   echo "SKIP: gitleaks (8.19+) not on PATH — 5e cross-check against the real parser not run"

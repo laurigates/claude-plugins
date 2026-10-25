@@ -21,11 +21,17 @@ that pass every time.
 
 | `GITLEAKS_RULES` | Config shape | Finding |
 |---|---|---|
-| `default` | `[extend] useDefault = true` (any spelling gitleaks accepts: dotted `extend.useDefault`, inline table, any key case) | none |
+| `default` | `[extend] useDefault = true`, as a table, dotted `extend.useDefault` or inline table; keys in any case, bare or quoted (`["extend"]`); the value `true`, a quoted `"true"` / `"True"` / `"TRUE"` / `"t"` / `"T"` / `"1"`, or a non-zero decimal number | none |
 | `extend-path` | `[extend] path = "<file>"`; the script does not follow the path | none |
-| `custom` | own `[[rules]]`, no `[extend]` | none |
-| `none` | `[allowlist]` / `[[allowlists]]` only, or `useDefault = false` | `SEVERITY=WARN TYPE=inert_secret_detection`; fix by adding `[extend]` / `useDefault = true` above the allowlist |
+| `custom` | own `[[rules]]` (or `[["rules"]]`), no `[extend]` | none |
+| `none` | `[allowlist]` / `[[allowlists]]` only, or a `useDefault` gitleaks reads as false (`false`, `"false"`, `0`) | `SEVERITY=WARN TYPE=inert_secret_detection`; fix by adding `[extend]` / `useDefault = true` above the allowlist |
 | `absent` | no `.gitleaks.toml` | `SEVERITY=WARN TYPE=missing_secret_detection` |
+
+Some spellings load rules in gitleaks 8.30.1 but report `none`, a false WARN on a
+working config: a root-level `rules = [ { ... } ]` array instead of `[[rules]]`
+tables, and a `useDefault` written as a hex, octal or binary literal, as `inf` or
+`nan`, or as a triple-quoted string. Case 5e of `scripts/tests/test-configure-security.sh` runs
+every fixture through the real gitleaks and fails on any verdict it disagrees with.
 
 ## CodeQL availability
 
