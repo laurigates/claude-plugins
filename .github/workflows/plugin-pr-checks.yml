@@ -26,6 +26,7 @@ permissions:
   contents: read
   pull-requests: write
   id-token: write
+  actions: read  # the skill review gate's previous-review lookup
 
 jobs:
   compliance:
@@ -106,23 +107,49 @@ jobs:
         # whose final diff held no SKILL.md. It also re-ran on every push.
         #
         # Runs only when the PR changes a SKILL.md, and, on a `synchronize`
-        # push, only when the PR's SKILL.md diff differs from the previous
-        # head's. Each diff is taken against its own merge-base with the base
-        # branch, so a rebase onto a newer main does not count as a change.
-        # A previous head that cannot be fetched (force-push, GC) counts as
+        # push, only when the PR's SKILL.md diff differs from the one at the
+        # newest earlier head whose `skill-review` job SUCCEEDED. The baseline
+        # is not github.event.before: with cancel-in-progress above, a newer
+        # push cancels the review of the previous head (12 of the 40 PR runs
+        # of 2026-10-24..25 were cancelled), and a review can also fail or be
+        # skipped because `compliance` failed. Comparing against the previous
+        # head would then skip a SKILL.md change that was never reviewed.
+        #
+        # Each diff is taken against its own merge-base with the base branch,
+        # so a rebase onto a newer main does not count as a change. A run list
+        # that cannot be read, no successful review on the branch, or a
+        # reviewed head that cannot be fetched (force-push, GC) all count as
         # changed, so the gate fails toward running the review.
         id: review_gate
         env:
+          GH_TOKEN: ${{ github.token }}
           BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
           EVENT_ACTION: ${{ github.event.action }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          BEFORE_SHA: ${{ github.event.before }}
           WORKFLOW_CHANGED: ${{ steps.changed.outputs.workflow_changed }}
         run: |
           skill_md_diff() {
             local base
             base=$(git merge-base "origin/$BASE_REF" "$1") || return 1
             git diff "$base" "$1" -- '*/skills/*/SKILL.md'
+          }
+          # Prints the head SHA of the newest run of this workflow on the PR
+          # branch whose `skill-review` job concluded success; nothing if none.
+          last_reviewed_sha() {
+            local runs id sha ok
+            runs=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow plugin-pr-checks.yml \
+              --branch "$HEAD_REF" --event pull_request --limit 30 \
+              --json databaseId,headSha --jq '.[] | "\(.databaseId) \(.headSha)"') || return 1
+            while read -r id sha; do
+              [ -n "$id" ] || continue
+              ok=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id/jobs" \
+                --jq 'any(.jobs[]; .name == "skill-review" and .conclusion == "success")') || continue
+              if [ "$ok" = "true" ]; then
+                echo "$sha"
+                return 0
+              fi
+            done <<<"$runs"
           }
           SKILL_MD_COUNT=$(git diff --name-only "origin/$BASE_REF...HEAD" -- '*/skills/*/SKILL.md' | grep -c . || true)
           RUN=true
@@ -133,16 +160,21 @@ jobs:
           elif [ "$WORKFLOW_CHANGED" = "true" ]; then
             RUN=false
             REASON="this PR modifies plugin-pr-checks.yml, which blocks the action's OIDC exchange"
-          elif [ "$EVENT_ACTION" = "synchronize" ] && [ -n "$BEFORE_SHA" ]; then
-            if ! git cat-file -e "${BEFORE_SHA}^{commit}" 2>/dev/null; then
-              git fetch --quiet --no-tags origin "$BEFORE_SHA" 2>/dev/null || true
-            fi
-            if git cat-file -e "${BEFORE_SHA}^{commit}" 2>/dev/null \
-              && now=$(skill_md_diff "$HEAD_SHA" | sha256sum) \
-              && prev=$(skill_md_diff "$BEFORE_SHA" | sha256sum) \
-              && [ "$now" = "$prev" ]; then
-              RUN=false
-              REASON="the SKILL.md diff is unchanged since ${BEFORE_SHA:0:7}"
+          elif [ "$EVENT_ACTION" = "synchronize" ]; then
+            REVIEWED_SHA=$(last_reviewed_sha) || REVIEWED_SHA=""
+            if [ -z "$REVIEWED_SHA" ]; then
+              REASON="${REASON}; no earlier head of this branch has a successful review"
+            else
+              if ! git cat-file -e "${REVIEWED_SHA}^{commit}" 2>/dev/null; then
+                git fetch --quiet --no-tags origin "$REVIEWED_SHA" 2>/dev/null || true
+              fi
+              if git cat-file -e "${REVIEWED_SHA}^{commit}" 2>/dev/null \
+                && now=$(skill_md_diff "$HEAD_SHA" | sha256sum) \
+                && prev=$(skill_md_diff "$REVIEWED_SHA" | sha256sum) \
+                && [ "$now" = "$prev" ]; then
+                RUN=false
+                REASON="the SKILL.md diff is unchanged since the last successful review, at ${REVIEWED_SHA:0:7}"
+              fi
             fi
           fi
           echo "run=$RUN" >> "$GITHUB_OUTPUT"
