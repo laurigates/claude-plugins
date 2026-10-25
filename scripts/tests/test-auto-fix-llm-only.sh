@@ -95,6 +95,10 @@ fixture mixed '{"jobs":[{"name":"compliance","conclusion":"failure","steps":[{"n
 fixture deterministic '{"jobs":[{"name":"compliance","conclusion":"failure","steps":[{"name":"Self-test every guard this job gates on","conclusion":"failure"}]}]}'
 fixture no_failed_step '{"jobs":[{"name":"compliance","conclusion":"failure","steps":[{"name":"Set up job","conclusion":"success"}]}]}'
 fixture no_failed_job '{"jobs":[{"name":"compliance","conclusion":"success","steps":[]}]}'
+# A failed job whose steps show no failure, beside a failed review. Only the
+# per-job `($failed | length) == 0` guard catches this one: without it the
+# job adds nothing to the list and the review's `true` alone passes `all`.
+fixture no_failed_step_beside_review '{"jobs":[{"name":"compliance","conclusion":"failure","steps":[{"name":"Run plugin compliance checks","conclusion":"success"}]},{"name":"skill-review","conclusion":"failure","steps":[{"name":"Claude Skill Quality Review","conclusion":"failure"}]}]}'
 
 run_ctx() { # <fixture path or FAIL> — prints the llm_only value
   : > "$work/out"
@@ -115,6 +119,7 @@ check "a failed skill-review delivery assertion is LLM-only"         "$work/skil
 check "a deterministic failure beside a Claude failure is not"       "$work/mixed.json"                false
 check "a deterministic failure alone is not"                         "$work/deterministic.json"        false
 check "a failed job with no failed step is not"                      "$work/no_failed_step.json"       false
+check "a failed job with no failed step beside a failed review is not" "$work/no_failed_step_beside_review.json" false
 check "a run with no failed job is not"                              "$work/no_failed_job.json"        false
 check "an unreadable job list is not"                                FAIL                              false
 
