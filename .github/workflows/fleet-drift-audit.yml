@@ -49,7 +49,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.12'  # tomllib needs >= 3.11
+          python-version: '3.15'  # tomllib needs >= 3.11
 
       # Guard-only: this job has to clone the fleet and run its own bespoke audit
       # step (below) between the guard and the issue creation, so the composite

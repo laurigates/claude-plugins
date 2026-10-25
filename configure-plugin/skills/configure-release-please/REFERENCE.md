@@ -53,7 +53,7 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/create-github-app-token@v3
+      - uses: actions/create-github-app-token@v3.3.0
         id: app-token
         with:
           app-id: ${{ vars.RELEASE_PLEASE_APP_ID }}

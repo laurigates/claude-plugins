@@ -136,7 +136,7 @@ jobs:
           fi
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.4.0
         with:
           ref: ${{ steps.ref.outputs.checkout_ref }}
           fetch-depth: 0
@@ -266,7 +266,7 @@ jobs:
       - name: Run Claude auto-fix analysis
         if: steps.dedup.outputs.skip != 'true'
         id: claude
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@v1.0.258
         with:
           anthropic_api_key: ${{ secrets.CLAUDE_API_KEY }}
 

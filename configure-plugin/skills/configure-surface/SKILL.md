@@ -119,7 +119,7 @@ not the binary it installs.
 
 ```yaml
 - repo: https://github.com/Connorrmcd6/surface
-  rev: v0.8.0   # --pin tag; Renovate-managed (github-tags)
+  rev: v0.9.0   # --pin tag; Renovate-managed (github-tags)
   hooks:
     - id: surf-lint   # anchors resolve
     - id: surf-check  # the gate — blocks on drift
@@ -135,8 +135,8 @@ jobs:
   surface:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - uses: Connorrmcd6/surface@091b937ae34ac81a02386604fed977dd24f1f0cf # v0.8.0
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: Connorrmcd6/surface@df2ba902d78a308c481be87a06ed2239b0beb352 # v0.9.0
         with:
           version: v0.8.0   # pins the BINARY; the input defaults to floating `latest`
           args: check

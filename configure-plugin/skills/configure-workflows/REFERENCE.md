@@ -60,11 +60,11 @@ jobs:
       id-token: write  # Required for provenance/SBOM attestations
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.1.0
 
-      - uses: docker/setup-buildx-action@v4
+      - uses: docker/setup-buildx-action@v4.4.1
 
-      - uses: docker/login-action@v4
+      - uses: docker/login-action@v4.6.0
         if: github.event_name != 'pull_request'
         with:
           registry: ${{ env.REGISTRY }}
@@ -72,7 +72,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - id: meta
-        uses: docker/metadata-action@v6
+        uses: docker/metadata-action@v6.2.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
@@ -88,7 +88,7 @@ jobs:
             type=match,pattern=.*-v(\d+),group=1
 
       - id: build-push
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@v7.4.0
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -134,7 +134,7 @@ For persisting BuildKit `--mount=type=cache` mounts across CI runs:
 ```yaml
 - name: Cache BuildKit mounts
   id: cache
-  uses: actions/cache@v5
+  uses: actions/cache@v5.1.0
   with:
     path: buildkit-cache
     key: ${{ runner.os }}-buildkit-${{ hashFiles('package.json', 'bun.lock') }}
@@ -142,7 +142,7 @@ For persisting BuildKit `--mount=type=cache` mounts across CI runs:
       ${{ runner.os }}-buildkit-
 
 - name: Inject BuildKit cache mounts
-  uses: reproducible-containers/buildkit-cache-dance@v3.3.0
+  uses: reproducible-containers/buildkit-cache-dance@v3.4.0
   with:
     cache-map: |
       {
@@ -169,9 +169,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.1.0
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6.5.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -273,7 +273,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.1.0
         with:
           ref: ${{ github.event.workflow_run.head_branch || github.ref }}
           fetch-depth: 0
@@ -286,7 +286,7 @@ jobs:
       # - Code generation or build prerequisites
       #
       # Examples:
-      #   - uses: actions/setup-node@v6
+      #   - uses: actions/setup-node@v6.5.0
       #     with:
       #       node-version: '22'
       #   - run: npm ci
@@ -366,7 +366,7 @@ jobs:
 
       - name: Run Claude auto-fix analysis
         if: steps.dedup.outputs.skip != 'true'
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@v1.0.258
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 

@@ -20,8 +20,8 @@ jobs:
       pull-requests: write
       id-token: write
     steps:
-      - uses: actions/checkout@v5
-      - uses: anthropics/claude-code-action@v1
+      - uses: actions/checkout@v5.1.0
+      - uses: anthropics/claude-code-action@v1.0.258
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           track_progress: true
@@ -56,8 +56,8 @@ jobs:
       pull-requests: write
       actions: read
     steps:
-      - uses: actions/checkout@v5
-      - uses: anthropics/claude-code-action@v1
+      - uses: actions/checkout@v5.1.0
+      - uses: anthropics/claude-code-action@v1.0.258
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
@@ -85,7 +85,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      - uses: anthropics/claude-code-action@v1
+      - uses: anthropics/claude-code-action@v1.0.258
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
@@ -116,8 +116,8 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v5
-      - uses: anthropics/claude-code-action@v1
+      - uses: actions/checkout@v5.1.0
+      - uses: anthropics/claude-code-action@v1.0.258
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
@@ -148,8 +148,8 @@ jobs:
       pull-requests: write
       issues: write
     steps:
-      - uses: actions/checkout@v5
-      - uses: anthropics/claude-code-action@v1
+      - uses: actions/checkout@v5.1.0
+      - uses: anthropics/claude-code-action@v1.0.258
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           trigger_phrase: "/claude-review"
@@ -182,11 +182,11 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5.1.0
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - uses: anthropics/claude-code-action@v1
+      - uses: anthropics/claude-code-action@v1.0.258
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |

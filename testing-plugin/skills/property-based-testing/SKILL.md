@@ -227,7 +227,7 @@ Hypothesis supports stateful testing via `RuleBasedStateMachine` for testing seq
       --hypothesis-seed=${{ github.run_number }}
 
 - name: Upload hypothesis database
-  uses: actions/upload-artifact@v4
+  uses: actions/upload-artifact@v4.6.2
   if: failure()
   with:
     name: hypothesis-examples

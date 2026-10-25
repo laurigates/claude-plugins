@@ -223,8 +223,8 @@ jobs:
   ruff:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/ruff-action@v3
+      - uses: actions/checkout@v4.4.0
+      - uses: astral-sh/ruff-action@v3.6.1
         with:
           args: 'check --output-format github'
 ```
@@ -235,7 +235,7 @@ Quick form — pre-commit hook:
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.0
+    rev: v0.17.1
     hooks:
       - id: ruff-check
         args: [--fix]

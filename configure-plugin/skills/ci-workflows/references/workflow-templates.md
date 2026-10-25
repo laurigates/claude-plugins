@@ -31,14 +31,14 @@ jobs:
       packages: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.1.0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@v4.4.1
 
       - name: Log in to Container Registry
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v4
+        uses: docker/login-action@v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -46,7 +46,7 @@ jobs:
 
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@v6
+        uses: docker/metadata-action@v6.2.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
@@ -56,7 +56,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
 
       - name: Build and push
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@v7.4.0
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -98,7 +98,7 @@ jobs:
   create-and-merge:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.1.0
 
       - name: Create Pull Request
         id: create-pr
@@ -159,10 +159,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.1.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v6.5.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -180,7 +180,7 @@ jobs:
         run: npm run test:coverage
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v6.0.2
         with:
           files: ./coverage/lcov.info
 ```

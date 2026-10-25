@@ -3,7 +3,7 @@ repos:
     # Keep in sync with the pinned `uvx ruff@<version>` steps in
     # plugin-pr-checks.yml — a version skew makes pre-commit and CI disagree
     # about formatting. Config: ruff.toml at the repo root.
-    rev: v0.15.8
+    rev: v0.17.1
     hooks:
       - id: ruff-check
         args: [--fix]

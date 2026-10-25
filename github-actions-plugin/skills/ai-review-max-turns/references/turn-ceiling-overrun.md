@@ -131,7 +131,7 @@ Not in your PR. Three options, in rising order of how much they change:
 
    ```yaml
    - id: review
-     uses: anthropics/claude-code-action@v1
+     uses: anthropics/claude-code-action@v1.0.258
      continue-on-error: true
      with:
        prompt: |
