@@ -126,10 +126,11 @@ The rule this plugin applies:
 | `validate-pr-issue-links.sh` | PreToolUse (Bash) | Enforce issue-closing links on PR creation |
 | `check-pr-metadata-on-push.sh` | PreToolUse (Bash) | Remind to align PR title/body with commits before push. Fires only for an **`OPEN`** PR — a branch whose PR is `MERGED` or `CLOSED` pushes through, since finished metadata is a historical record |
 | `check-branch-sync-on-push.sh` | PreToolUse (Bash) | Nudge (`ask`) before `commit`/`push` when the branch is behind origin or its PR is merged/closed. Evaluates the push **refspec destination** (`<sha>:refs/heads/<other>`), not HEAD — falling back to HEAD when the destination is ambiguous (multi-refspec) or still carries a shell metacharacter (`git push -u origin $(git branch --show-current)`), which would otherwise silence the hook; skips the behind-nudge for a force-push lease-pinned to the fetched origin tip (`--force-with-lease=<branch>:<sha>`) and drops the `git pull --rebase` advice on any other force-push (#2672). Cached per session+branch; opt out with `CLAUDE_HOOKS_DISABLE_BRANCH_SYNC=1`, tune TTL with `CLAUDE_HOOKS_BRANCH_SYNC_TTL` |
+| `check-pr-merge-method.sh` | PreToolUse (Bash) | Block a `gh pr merge --squash/--rebase/--merge` whose method disagrees with `scripts/pr-merge-method.py` (rule table: [merge-strategies.md](skills/github-pr-title/merge-strategies.md)). The message carries the corrected command; a human-applied `merge:squash` / `merge:rebase` label overrides. Fails open when `gh` or the PR is unreadable |
 | `git-drift-probe.sh` | SessionStart | Surface `pr_merged` / `branch_behind` / `changes_requested` drift on the current branch via the consolidated drift nudge |
 
-The three PreToolUse hooks decide whether the command *runs* `gh pr create`,
-`git push` or `git commit` on parsed command nodes (`ast-grep --lang bash`, via
+The four PreToolUse hooks decide whether the command *runs* `gh pr create`,
+`gh pr merge`, `git push` or `git commit` on parsed command nodes (`ast-grep --lang bash`, via
 `hooks/lib/parsed-commands.sh`), so a quoted argument, heredoc body, commit
 message or comment that only *mentions* one does not fire them; wrappers
 (`env`, `sudo`, `timeout`, `FOO=1`), `git -C <dir>` / git global options,

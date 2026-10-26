@@ -3,7 +3,7 @@ name: external-pr-trust
 description: Authorship as a precondition of merging — bot vs stranger classification, what a merge executes, the merge-guard hook. Use when bulk-merging PRs, or when a merge is denied for a non-self author.
 allowed-tools: Read, Grep, Glob, Bash(gh pr view *), Bash(gh pr list *), Bash(gh pr diff *), Bash(gh api *), Bash(gh search *), TodoWrite
 created: 2026-09-24
-modified: 2026-09-24
+modified: 2026-10-26
 reviewed: 2026-09-24
 ---
 
@@ -90,7 +90,11 @@ it. Instead:
    or dependency, say where the code comes from, whether the ref is a **commit
    SHA or a mutable tag**, and what it downloads or transmits at runtime.
 2. **Hand the merge back.** `ghsq -x` (which will demand the typed confirmation),
-   or `gh pr merge <n> --squash --delete-branch` run by the human.
+   or `gh pr merge <n> --squash --delete-branch` run by the human. Bot PRs
+   squash under the merge-method rule (`github-pr-title` →
+   [merge-strategies.md](../github-pr-title/merge-strategies.md)); a
+   stranger's multi-commit PR may get rebase instead, so read the method the
+   script reports before handing over the command.
 
 ## A bulk merge must issue one literal PR number per call
 
