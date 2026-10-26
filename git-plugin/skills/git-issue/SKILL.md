@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-10-14
+modified: 2026-10-26
 reviewed: 2026-09-02
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git fetch *), Bash(git pull *), Bash(git stash *), Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(gh label *), Bash(gh api *), Bash(gh workflow *), Bash(gh run *), Bash(pre-commit *), Read, Edit, Write, Grep, Glob, TodoWrite, AskUserQuestion, Task, mcp__github__create_pull_request, mcp__github__issue_read, mcp__github__list_issues
 description: "GitHub issue to PR end-to-end — branch, TDD implementation, PR — one issue or several in parallel. Use when asked to work on an issue, fix issue #N, or batch-process several."
@@ -212,6 +212,10 @@ discovers, which is why the grouping lane is always ONE agent.
 **Agent budget:** 1 + groups — one grouping agent plus one implementation agent per
 issue group. The wave width bounds concurrency, not the total. The scale guard asks before every run, because the list comes from the
 caller at runtime.
+
+This harness stops at commit-local branches with no independent check. To have
+each group verified by a fresh agent and repaired once before its PR opens, pass
+the partition as `units` to `workflow-orchestration-plugin:workflow-implement-verify`.
 
 **Skip the harness when:** a single issue was supplied — the modal case — or the
 partition collapses to one group because every issue conflicts with every other;
