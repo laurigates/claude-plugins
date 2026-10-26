@@ -1,11 +1,11 @@
 ---
 created: 2026-02-02
-modified: 2026-09-23
+modified: 2026-10-26
 reviewed: 2026-04-29
 description: "Pre-built Claude PR scans as claude-*.yml callers of the reusable security, quality and a11y workflows. Use when adding OWASP, secret, code-smell or WCAG review to pull requests."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), Bash(ls *), AskUserQuestion, TodoWrite
-args: "[--all] [--security] [--quality] [--a11y] [--list]"
-argument-hint: "[--all] [--security] [--quality] [--a11y] [--list]"
+args: "[--all] [--security] [--quality] [--a11y] [--merge-method] [--list]"
+argument-hint: "[--all] [--security] [--quality] [--a11y] [--merge-method] [--list]"
 name: configure-reusable-workflows
 ---
 
@@ -39,6 +39,7 @@ Parse from command arguments:
 - `--security`: Install security workflows only
 - `--quality`: Install quality workflows only
 - `--a11y`: Install accessibility workflows only
+- `--merge-method`: Install the merge-method PR check only
 - `--list`: List available workflows without installing
 
 ## Available Workflows
@@ -66,6 +67,12 @@ Parse from command arguments:
 | wcag | WCAG 2.1 compliance checking | `reusable-a11y-wcag.yml` |
 | aria | ARIA pattern validation | `reusable-a11y-aria.yml` |
 
+### PR governance
+
+| Workflow | Description | File |
+|----------|-------------|------|
+| merge-method | Non-required `merge-method` check run plus a `merge:rebase`/`merge:squash` label naming how to merge the PR. Deterministic: runs git-plugin's `pr-merge-method.py`, no Claude call, no secret | `reusable-merge-method.yml` |
+
 ## Execution
 
 Execute this reusable workflow installation:
@@ -85,7 +92,8 @@ Available workflow categories:
   [1] Security (secrets, owasp, deps)
   [2] Quality (typescript, code-smell, async)
   [3] Accessibility (wcag, aria)
-  [4] All workflows
+  [4] PR governance (merge-method)
+  [5] All workflows
 
 Which categories? (comma-separated, e.g., 1,2):
 ```
@@ -99,6 +107,8 @@ For each selected workflow, create a caller file in `.github/workflows/`.
 **Filename convention**: `claude-<category>-<name>.yml`
 
 Example: `claude-security-secrets.yml`
+
+Exception: the merge-method caller is `merge-method.yml` with `name: "PR: Merge method"`, since it calls no Claude model. Copy it from [REFERENCE.md](REFERENCE.md) rather than the generic caller template; it needs no secret, so skip Step 4 for it.
 
 **Display name convention**: The workflow's `name:` follows `<Domain>: <Action> [<target>]` (quoted because YAML treats `:` as a key separator). For these reusable callers, `Claude:` is the right domain. See `.claude/rules/workflow-naming.md` for the canonical rule and active domains. Example: `name: "Claude: Security secrets"`.
 
