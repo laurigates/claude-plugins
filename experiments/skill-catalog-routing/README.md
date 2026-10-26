@@ -129,7 +129,7 @@ per-model degradation slope (C4−C2) — the portability signal.
 
 ## Cost discipline
 
-Every run is a real `claude -p` call. The full matrix (15 arms × 70 tasks × N
+Every run is a real `claude -p` call. The full matrix (15 arms × 78 tasks × N
 runs) is large, so it is **gated**: the haiku pilot (2 arms × 20 tasks × 3 runs)
 must first show a clean C4 − C1 separation; only then does the haiku full ladder
 run, then sonnet/opus on a clean monotone curve. Effort is fixed `low` (routing
