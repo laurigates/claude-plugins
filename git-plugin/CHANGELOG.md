@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.65.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.64.1...git-plugin-v2.65.0) (2026-10-26)
+
+
+### Features
+
+* **workflow-orchestration-plugin:** add implement-verify and repair-round workflow templates ([#3230](https://github.com/laurigates/claude-plugins/issues/3230)) ([85ac3c9](https://github.com/laurigates/claude-plugins/commit/85ac3c9ba76ac4d065b259eb231c0ef12d21b24f))
+
 ## [2.64.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.64.0...git-plugin-v2.64.1) (2026-10-26)
 
 
