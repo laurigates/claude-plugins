@@ -1,0 +1,9 @@
+description: Cluster 1 (#2789) project-test-loop — edit the implementation and re-execute until green under an attempt cap is the bounded fix cycle, not a triage-and-plan pass.
+prompt: |
+  Three specs are red after my refactor. Keep changing the implementation and
+  re-executing them until everything is green — don't just give me a plan.
+  Give up and show me where you got stuck after five attempts.
+gold: project-plugin/project-test-loop
+near_miss: testing-plugin/test-analyze
+plugin: project-plugin
+cluster: 1
