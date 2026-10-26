@@ -1,5 +1,5 @@
 {
-  "description": "git-plugin hooks - PR validation, issue auto-close enforcement, and PR-branch drift detection",
+  "description": "git-plugin hooks - PR validation, issue auto-close enforcement, merge-method enforcement, and PR-branch drift detection",
   "hooks": {
     "SessionStart": [
       {
@@ -31,6 +31,11 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/check-branch-sync-on-push.sh\"",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/check-pr-merge-method.sh\"",
+            "timeout": 30
           }
         ]
       },
