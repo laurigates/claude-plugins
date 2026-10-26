@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.64.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.64.0...git-plugin-v2.64.1) (2026-10-26)
+
+
+### Documentation
+
+* **git-plugin:** drop checklists, headings and HTML comments from PR body templates ([033348d](https://github.com/laurigates/claude-plugins/commit/033348d5085977b1eb0108925d8171394b58feb9))
+* **git-plugin:** make merge-strategies.md the single source for merge method ([f923057](https://github.com/laurigates/claude-plugins/commit/f9230579bc985755154f290f272ac2c9c1dbd6f2))
+* **git-plugin:** state rule 4's reason without the rebase claim ([5c145c6](https://github.com/laurigates/claude-plugins/commit/5c145c6bdc740ba581e645ab40c3be87228848fa))
+* **git-plugin:** sync PR branches by rebase in git-conflicts ([3631dfd](https://github.com/laurigates/claude-plugins/commit/3631dfdbe759c33992ae2c5ed796cc8f658d278a))
+
 ## [2.64.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.63.4...git-plugin-v2.64.0) (2026-10-26)
 
 
