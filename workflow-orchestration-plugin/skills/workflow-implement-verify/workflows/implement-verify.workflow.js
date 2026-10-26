@@ -227,6 +227,8 @@ ${common(ctx)}
 
 Work in your own worktree:
   git fetch origin -q; git switch ${u.branch}
+  (If git says the branch is already used by another worktree, a finished agent forgot to detach:
+  find it with \`git worktree list\`, run \`git -C <that path> switch --detach\`, and retry.)
 ${ctx.setup.length ? `Bootstrap:\n${listOr(ctx.setup, '')}\n` : ''}
 Findings to close (from an independent verifier or review — verify each against the code before acting;
 reviewers can be wrong, so reject a wrong finding with evidence instead of "fixing" it):
@@ -275,6 +277,39 @@ const repairStage = (ctx) => (u, verdict) => {
     effort: 'high',
     isolation: 'worktree',
   })
+}
+
+// Combine an author's report with a repairer's. Arrays accumulate and the PR
+// text survives: a repairer that returns an empty pr_title or fixes_issues must
+// not erase what the author drafted. The repairer's head_sha and status win.
+const mergeRepair = (fix, rep) => ({
+  ...fix,
+  ...rep,
+  items: [...(fix.items ?? []), ...(rep.items ?? [])],
+  commits: [...(fix.commits ?? []), ...(rep.commits ?? [])],
+  gates: [...(fix.gates ?? []), ...(rep.gates ?? [])],
+  fixes_issues: [...new Set([...(fix.fixes_issues ?? []), ...(rep.fixes_issues ?? [])])],
+  refs_issues: [...new Set([...(fix.refs_issues ?? []), ...(rep.refs_issues ?? [])])],
+  followups: [...(fix.followups ?? []), ...(rep.followups ?? [])],
+  decisions_for_user: [...(fix.decisions_for_user ?? []), ...(rep.decisions_for_user ?? [])],
+  pr_title: rep.pr_title || fix.pr_title,
+  pr_body: rep.pr_body || fix.pr_body,
+  // A repairer that rejects every finding adds no commit and may say no-change;
+  // the branch still carries the author's work, so it is "done" for landing.
+  status: rep.status === 'no-change' ? 'done' : rep.status,
+})
+
+// Stage 3 of the pipeline. A dead repairer keeps the verifier's fix-needed
+// verdict (the verifier did answer), so the row stays FIX_NEEDED.
+const repairThenReverify = (ctxOf, rounds) => async (r) => {
+  const { u, fix, verdict } = r
+  const ctx = typeof ctxOf === 'function' ? ctxOf(u) : ctxOf
+  if (!rounds || verdict?.verdict !== 'fix-needed') return { ...r, merged: fix, repaired: false, final: verdict }
+  const rep = await repairStage(ctx)(u, verdict)
+  if (!rep) return { ...r, merged: fix, repaired: false, final: verdict }
+  const merged = mergeRepair(fix, rep)
+  const final = await verifyStage(ctx, 'Repair')(u, merged, `reverify:${u.id}`)
+  return { ...r, merged, repaired: true, final }
 }
 
 // <shared:end>
@@ -349,25 +384,17 @@ const rows = []
       if (!hasCommits(fix)) return { u, fix, verdict: null }
       return { u, fix, verdict: await verify(u, fix, `verify:${u.id}`) }
     },
-    async (r) => {
-      const { u, fix, verdict } = r
-      if (!REPAIR_ROUNDS || verdict?.verdict !== 'fix-needed') return { ...r, repaired: null, final: verdict }
-      const repaired = await repair(u, verdict)
-      if (!repaired) return { ...r, repaired: null, final: null }
-      const final = await reverify(u, { ...fix, ...repaired }, `reverify:${u.id}`)
-      return { ...r, repaired, final }
-    },
+    repairThenReverify(CTX, REPAIR_ROUNDS),
   )
   got.forEach((r, j) => {
     const u = UNITS[j]
     if (!r) return rows.push({ unit: u.id, branch: u.branch, status: 'FAILED', fix: null, verdicts: [] })
-    const fix = r.repaired ? { ...r.fix, ...r.repaired, items: [...r.fix.items, ...r.repaired.items] } : r.fix
     rows.push({
       unit: u.id,
       branch: u.branch,
       labels: u.labels,
-      status: rowStatus(r.repaired ?? r.fix, r.final, Boolean(r.repaired)),
-      fix,
+      status: rowStatus(r.merged, r.final, r.repaired),
+      fix: r.merged,
       verdicts: [r.verdict, r.repaired ? r.final : null].filter(Boolean),
     })
   })
@@ -423,7 +450,7 @@ ${JSON.stringify(finalisePlan, null, 1)}
 
 For each entry, in order:
 1. git log --oneline ${CTX.base}..<branch> must show only that unit's commits, and its tip must equal head_sha. If not, record "skipped" with the reason; do not repair it.
-2. gh pr list --head <branch> --state all --json number,state. MERGED → "skipped". OPEN → push and record "updated".
+2. gh pr list --head <branch> --state all --json number,state. MERGED or CLOSED → "skipped" (do not reopen). OPEN → push and record "updated".
 3. git push -u origin <head_sha>:refs/heads/<branch> (never force).
 4. If no PR exists: gh pr create --base ${CTX.base.replace(/^origin\//, '')} --head <branch> --title <pr_title> --body-file <tmp file> -a ${PR.assignee}${PR.labels.length ? ` -l ${PR.labels.join(',')}` : ''} plus the entry's labels. The body is pr_body, then "Fixes #n" / "Refs #n" lines from fixes/refs${PR.footer ? `, then:\n${PR.footer}` : ''}.
 Do not merge, approve, or request review from the PR author. Stop at the first push that fails and mark the rest "skipped".`,

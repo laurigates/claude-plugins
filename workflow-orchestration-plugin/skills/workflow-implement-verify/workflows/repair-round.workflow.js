@@ -212,6 +212,8 @@ ${common(ctx)}
 
 Work in your own worktree:
   git fetch origin -q; git switch ${u.branch}
+  (If git says the branch is already used by another worktree, a finished agent forgot to detach:
+  find it with \`git worktree list\`, run \`git -C <that path> switch --detach\`, and retry.)
 ${ctx.setup.length ? `Bootstrap:\n${listOr(ctx.setup, '')}\n` : ''}
 Findings to close (from an independent verifier or review — verify each against the code before acting;
 reviewers can be wrong, so reject a wrong finding with evidence instead of "fixing" it):
@@ -262,6 +264,39 @@ const repairStage = (ctx) => (u, verdict) => {
   })
 }
 
+// Combine an author's report with a repairer's. Arrays accumulate and the PR
+// text survives: a repairer that returns an empty pr_title or fixes_issues must
+// not erase what the author drafted. The repairer's head_sha and status win.
+const mergeRepair = (fix, rep) => ({
+  ...fix,
+  ...rep,
+  items: [...(fix.items ?? []), ...(rep.items ?? [])],
+  commits: [...(fix.commits ?? []), ...(rep.commits ?? [])],
+  gates: [...(fix.gates ?? []), ...(rep.gates ?? [])],
+  fixes_issues: [...new Set([...(fix.fixes_issues ?? []), ...(rep.fixes_issues ?? [])])],
+  refs_issues: [...new Set([...(fix.refs_issues ?? []), ...(rep.refs_issues ?? [])])],
+  followups: [...(fix.followups ?? []), ...(rep.followups ?? [])],
+  decisions_for_user: [...(fix.decisions_for_user ?? []), ...(rep.decisions_for_user ?? [])],
+  pr_title: rep.pr_title || fix.pr_title,
+  pr_body: rep.pr_body || fix.pr_body,
+  // A repairer that rejects every finding adds no commit and may say no-change;
+  // the branch still carries the author's work, so it is "done" for landing.
+  status: rep.status === 'no-change' ? 'done' : rep.status,
+})
+
+// Stage 3 of the pipeline. A dead repairer keeps the verifier's fix-needed
+// verdict (the verifier did answer), so the row stays FIX_NEEDED.
+const repairThenReverify = (ctxOf, rounds) => async (r) => {
+  const { u, fix, verdict } = r
+  const ctx = typeof ctxOf === 'function' ? ctxOf(u) : ctxOf
+  if (!rounds || verdict?.verdict !== 'fix-needed') return { ...r, merged: fix, repaired: false, final: verdict }
+  const rep = await repairStage(ctx)(u, verdict)
+  if (!rep) return { ...r, merged: fix, repaired: false, final: verdict }
+  const merged = mergeRepair(fix, rep)
+  const final = await verifyStage(ctx, 'Repair')(u, merged, `reverify:${u.id}`)
+  return { ...r, merged, repaired: true, final }
+}
+
 // <shared:end>
 
 // ---------------------------------------------------------------------------
@@ -275,6 +310,11 @@ if (UNITS.length < FLOOR) {
 if (UNITS.length > MAX_UNITS) {
   log(`${UNITS.length} units (> ${MAX_UNITS}) — split into several runs; abort without truncating`)
   return { abort: true, reason: 'over-cap', units: UNITS.map((u) => u.id) }
+}
+const dupBranches = UNITS.map((u) => u.branch).filter((b, i, a) => b && a.indexOf(b) !== i)
+if (dupBranches.length) {
+  log(`two units share a branch (${dupBranches.join(', ')}) — merge their findings into one unit; abort`)
+  return { abort: true, reason: 'shared-branch', branches: dupBranches }
 }
 const bad = UNITS.filter((u) => !u.branch || !u.findings.length)
 if (bad.length) {
@@ -309,25 +349,17 @@ const got = await pipeline(
     if (!hasCommitsOrRejections(fix)) return { u, fix, verdict: null }
     return { u, fix, verdict: await verifyStage(ctxFor(u), 'Verify')(u, fix, `verify:${u.id}`) }
   },
-  async (r) => {
-    const { u, fix, verdict } = r
-    if (!REPAIR_ROUNDS || verdict?.verdict !== 'fix-needed') return { ...r, repaired: null, final: verdict }
-    const repaired = await repairStage(ctxFor(u))(u, verdict)
-    if (!repaired) return { ...r, repaired: null, final: null }
-    const final = await verifyStage(ctxFor(u), 'Repair')(u, { ...fix, ...repaired }, `reverify:${u.id}`)
-    return { ...r, repaired, final }
-  },
+  repairThenReverify(ctxFor, REPAIR_ROUNDS),
 )
 
 const rows = got.map((r, j) => {
   const u = UNITS[j]
   if (!r) return { unit: u.id, branch: u.branch, status: 'FAILED', fix: null, verdicts: [] }
-  const fix = r.repaired ? { ...r.fix, ...r.repaired, items: [...r.fix.items, ...r.repaired.items] } : r.fix
   return {
     unit: u.id,
     branch: u.branch,
-    status: rowStatus(r.repaired ?? r.fix, r.final, Boolean(r.repaired)),
-    fix,
+    status: rowStatus(r.merged, r.final, r.repaired),
+    fix: r.merged,
     verdicts: [r.verdict, r.repaired ? r.final : null].filter(Boolean),
   }
 })
@@ -373,7 +405,7 @@ ${JSON.stringify(finalisePlan, null, 1)}
 
 For each entry, in order:
 1. gh pr list --head <branch> --state all --json number,state. A MERGED or CLOSED PR → "skipped" (a merged branch cannot take new commits).
-2. git fetch origin <branch>; git log --oneline origin/<branch>..<head_sha> must list only new commits on top of the remote tip. If the remote moved or the history diverged, record "skipped" with the reason; do not rebase or force.
+2. git fetch origin <branch>. If origin/<branch> does not exist, the branch was never pushed (for example a FIX_NEEDED row from implement-verify): skip this check, push in step 3, and record "pushed" with detail "branch created — no PR open". Otherwise git log --oneline origin/<branch>..<head_sha> must list only new commits on top of the remote tip; if the remote moved or the history diverged, record "skipped" with the reason; do not rebase or force.
 3. git push origin <head_sha>:refs/heads/<branch>.
 4. If pr_body_note is non-empty, append it to the PR body (gh pr edit --body-file).
 Do not merge or approve. Stop at the first failed push and mark the rest "skipped".`,

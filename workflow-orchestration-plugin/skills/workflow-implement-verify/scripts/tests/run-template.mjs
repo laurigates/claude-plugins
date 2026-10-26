@@ -102,10 +102,53 @@ const units = (ids) =>
   const r = await run({ ...units(['a', 'b']), land: 'local' }, (k, u) => (k === first ? fix(u) : verdict(u, 'pass')))
   check('land local → no finalise', !r.calls.includes('finalise') && r.result.finalisePlan.length === 2, r.calls)
 }
+// 8. A dead repairer keeps the verifier's answer: FIX_NEEDED, not UNVERIFIED.
+{
+  const r = await run(units(['a', 'b']), (k, u) =>
+    k === first ? fix(u) : k === 'verify' ? verdict(u, 'fix-needed') : k === 'repair' ? null : undefined)
+  check('dead repairer → FIX_NEEDED', statuses(r).a === 'FIX_NEEDED' && !r.calls.some((c) => c.startsWith('reverify')), statuses(r))
+}
+// 9. A repairer that rejects every finding (no-change) and then passes re-verify is landed.
+{
+  const r = await run(units(['a', 'b']), (k, u) =>
+    k === first ? fix(u) : k === 'verify' ? verdict(u, 'fix-needed') : k === 'repair' ? fix(u, { status: 'no-change' })
+      : k === 'reverify' ? verdict(u, 'pass') : { prs: [], pushed: [] })
+  check('repair no-change + pass → REPAIRED_PASS', statuses(r).a === 'REPAIRED_PASS' && r.result.finalisePlan.length === 2, statuses(r))
+}
+// 10. The author's PR text and issue links survive a repair that returns empty ones.
+{
+  const r = await run({ ...units(['a', 'b']), land: 'local' }, (k, u) =>
+    k === first ? fix(u, { pr_title: 'fix(a): t', pr_body: 'body', fixes_issues: [42], commits: ['abc1234 fix'] })
+      : k === 'verify' ? verdict(u, 'fix-needed')
+      : k === 'repair' ? fix(u, { head_sha: 'def5678', pr_title: '', pr_body: '', fixes_issues: [], commits: ['def5678 repair'] })
+      : verdict(u, 'pass'))
+  const row = r.result.rows.find((x) => x.unit === 'a')
+  check('repair keeps pr_title/body and Fixes', row.fix.pr_title === 'fix(a): t' && row.fix.pr_body === 'body' && row.fix.fixes_issues.includes(42), row.fix)
+  check('repair accumulates commits', row.fix.commits.length === 2 && row.fix.head_sha === 'def5678', row.fix)
+}
+// 11. Exactly at the cap: every unit gets a row (a narrower slice would drop one silently).
+{
+  const ids = ['a', 'b', 'c', 'd', 'e']
+  const r = await run({ ...units(ids), land: 'local' }, (k, u) => (k === first ? fix(u) : verdict(u, 'pass')))
+  check('5 units → 5 PASS rows', ids.every((id) => statuses(r)[id] === 'PASS') && r.result.rows.length === 5, statuses(r))
+}
+// 12. Only PASS/REPAIRED_PASS reach the landing plan.
+{
+  const r = await run(units(['a', 'b']), (k, u) => (k === first ? fix(u) : verdict(u, u === 'a' ? 'reject' : 'pass')))
+  check('REJECTED not landed', !r.result.finalisePlan.some((p) => p.unit === 'a') && r.result.finalisePlan.length === 1, r.result.finalisePlan)
+}
+// 13. Two units on one branch abort before any agent runs.
+{
+  const base = units(['a', 'b'])
+  base.units[1].branch = base.units[0].branch
+  const r = await run(base, () => fix('x'))
+  check('shared branch aborts', r.result.reason === 'shared-branch' && r.calls.length === 0, r.result)
+}
 if (isImpl) {
   // 8. no-change is its own outcome and skips the verifier.
   const r = await run(units(['a', 'b']), (k, u) => (k === 'implement' ? fix(u, { status: 'no-change' }) : verdict(u, 'pass')))
   check('no-change → NO_CHANGE, unverified', statuses(r).a === 'NO_CHANGE' && !r.calls.some((c) => c.startsWith('verify')), r.calls)
+  check('NO_CHANGE not landed', r.result.finalisePlan.length === 0 && !r.calls.includes('finalise'), r.result.finalisePlan)
   // 9. A single unit is below the floor.
   const one = await run(units(['a']), () => fix('a'))
   check('one unit aborts below floor', one.result.reason === 'below-floor' && one.calls.length === 0, one)
