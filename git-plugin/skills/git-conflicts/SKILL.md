@@ -5,7 +5,7 @@ allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git s
 args: "[file-or-pr] [--ours] [--theirs] [--push]"
 argument-hint: file path, PR number, --ours, --theirs, or --push
 created: 2026-03-01
-modified: 2026-06-18
+modified: 2026-10-26
 reviewed: 2026-05-23
 ---
 
@@ -51,8 +51,15 @@ Execute this conflict resolution workflow:
 2. If PR number provided and no active merge state:
    - Get PR details: `gh pr view <number> --json headRefName,baseRefName,mergeable`
    - Fetch base: `git fetch origin <base-branch>`
-   - Start merge: `git merge origin/<base-branch> --no-ff`
-   - If merge succeeds cleanly, report "No conflicts" and exit
+   - Pick the sync method:
+     - **Default — rebase:** `git rebase origin/<base-branch>`. A merge commit
+       in a PR branch forces the PR to squash-merge (rule 4 in `github-pr-title`
+       → [merge-strategies.md](../github-pr-title/merge-strategies.md)), so
+       rebasing keeps the PR rebase-eligible.
+     - **Fallback — merge:** `git merge origin/<base-branch> --no-ff` when the
+       branch is shared (someone else has commits on it, or another PR is based
+       on it) or a rebase is not allowed to force-push.
+   - If the sync succeeds cleanly, report "No conflicts" and exit
 3. If no PR number and no active merge state, detect from current branch:
    - `gh pr list --head $(git branch --show-current) --json number,baseRefName,mergeable`
    - Use the detected PR number and base branch; proceed as above
@@ -123,8 +130,10 @@ For each file from `git diff --name-only --diff-filter=U`:
 3. Check if rerere recorded anything: `git rerere status`
 4. Complete the operation:
    - If merging: `git commit --no-edit`
-   - If rebasing: `git rebase --continue`
-5. If `--push` flag: `git push origin $(git branch --show-current)`
+   - If rebasing: `git rebase --continue`; a rebase stops once per conflicting commit, so repeat Steps 3–4 until it finishes
+5. If `--push` flag: `git push origin $(git branch --show-current)` after a
+   merge, or `git push --force-with-lease origin $(git branch --show-current)`
+   after a rebase
 
 ### Step 5: Report results
 
@@ -164,7 +173,7 @@ Summarize what was resolved:
 
 ### Squash Merge Pitfall
 
-If the same conflicts keep recurring, the likely cause is squash merges. Squash-merging breaks the common ancestry chain, so stacked or sibling branches lose their merge base. Rerere mitigates this by replaying recorded resolutions, but the root fix is to avoid squash merges on branches with dependents. When a squashed base leaves a dependent carrying the now-collapsed commits, recover with `git rebase --onto origin/main <old-base-tip> <dependent>` (see the git-pr skill's Stacked PRs section).
+If the same conflicts keep recurring, the likely cause is squash merges. Squash-merging breaks the common ancestry chain, so stacked or sibling branches lose their merge base. Rerere mitigates this by replaying recorded resolutions, but the root fix is to rebase-merge branches with dependents (see [merge-strategies.md](../github-pr-title/merge-strategies.md)). When a squashed base leaves a dependent carrying the now-collapsed commits, recover with `git rebase --onto origin/main <old-base-tip> <dependent>` (see the git-pr skill's Stacked PRs section).
 
 ### When to Abort
 
