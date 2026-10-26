@@ -20,7 +20,7 @@ first match wins:
 | 1 | A human set the label `merge:squash` or `merge:rebase` | that label's method | Explicit override (`OVERRIDE=<label>`) |
 | 2 | Bot author, or a `release-please--*` head branch | squash | release-please documents squash and merge commits for release PRs, not rebase; release PRs carry one bot commit |
 | 3 | The PR has one commit | squash | Keeps ` (#N)` in the subject on `main` |
-| 4 | Any merge commit in the branch | squash | A merge commit cannot be rebased onto `main`. Rebase the branch onto `origin/main` to make it rebase-eligible |
+| 4 | Any merge commit in the branch | squash | A merge that synced `main` into the branch adds no change of its own and would not belong on `main`. Rebase the branch onto `origin/main` to make it rebase-eligible |
 | 5 | Any `fixup!`, `squash!` or `amend!` subject, or a review-churn subject: `address review`, `review findings`, `review gaps`, `review issues`, `after/from/per (code) review`, `apply suggestion`, `wip` (case-insensitive, anywhere in the subject) | squash | The churn would land as its own commits |
 | 6 | Any non-conventional subject | squash | release-please silently skips non-conventional commits |
 | 7 | Every commit has the same `(type, scope)` | squash | Single concern; one commit says it |
