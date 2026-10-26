@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.15.0...workflow-orchestration-plugin-v1.16.0) (2026-10-26)
+
+
+### Features
+
+* **workflow-orchestration-plugin:** add implement-verify and repair-round workflow templates ([#3230](https://github.com/laurigates/claude-plugins/issues/3230)) ([85ac3c9](https://github.com/laurigates/claude-plugins/commit/85ac3c9ba76ac4d065b259eb231c0ef12d21b24f))
+
 ## [1.15.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.14.1...workflow-orchestration-plugin-v1.15.0) (2026-10-23)
 
 
