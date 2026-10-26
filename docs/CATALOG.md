@@ -3,7 +3,7 @@
 
 # Plugin Catalog
 
-44 plugins, 443 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
+44 plugins, 444 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
 
 ## AI & Agents
 
@@ -98,7 +98,7 @@
 |--------|-------:|-------:|-------------|
 | [hooks-plugin](../hooks-plugin/) | 4 | 0 | Claude Code hooks for enforcing best practices and workflow automation |
 | [taskwarrior-plugin](../taskwarrior-plugin/) | 9 | 0 | Coordination layer for multi-agent work using taskwarrior - parallel-safe queries, urgency scoring, and optional GitHub linkage via ghid/ghpr UDAs |
-| [workflow-orchestration-plugin](../workflow-orchestration-plugin/) | 6 | 0 | Workflow orchestration - preflight checks, checkpoint refactoring, wave dispatch, run recovery and budgeting |
+| [workflow-orchestration-plugin](../workflow-orchestration-plugin/) | 7 | 0 | Workflow orchestration - preflight checks, checkpoint refactoring, wave dispatch, run recovery and budgeting |
 
 ## Utilities
 
