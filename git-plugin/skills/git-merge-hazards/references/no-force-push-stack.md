@@ -15,6 +15,13 @@ route guard, so they refuse unless `route` is `A`. The Case B block runs under
 `set -e`. Every merge passes `--no-ff`, so an operator's `merge.ff=only` cannot make
 one refuse. No chain pushes unless its gates hold.
 
+The route squash-merges the base: Classify compares the one squash commit's
+tree with the base's pre-squash tip. The child then carries a merge of `main`,
+so it squashes too (rule 4 in `github-pr-title` →
+[merge-strategies.md](../../github-pr-title/merge-strategies.md)). When the
+merge-method script recommends rebase for the base, use the rebase path in
+SKILL.md §2 instead of this route.
+
 ## Check the base first
 
 Retargeting first strands the child on `main` when the base refuses to merge, so
