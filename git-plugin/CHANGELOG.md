@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.64.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.63.4...git-plugin-v2.64.0) (2026-10-26)
+
+
+### Features
+
+* **git-plugin:** add rebase-vs-squash decision script and gh pr merge hook ([#3227](https://github.com/laurigates/claude-plugins/issues/3227)) ([8dded82](https://github.com/laurigates/claude-plugins/commit/8dded82e45a5723f823164b031430359ce4ff451))
+
 ## [2.63.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.63.3...git-plugin-v2.63.4) (2026-10-23)
 
 
