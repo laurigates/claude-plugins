@@ -11,15 +11,22 @@
 #   --prs        Merge order, comma-separated. A leading '#' is accepted.
 #   --review-ts  UTC time verification ended (YYYY-MM-DDTHH:MM:SSZ). Any
 #                non-merge commit newer than this is unreviewed (the §6 guard).
-#   --method     Merge method (default squash: update-branch adds a merge
-#                commit, and a branch with a merge commit squashes).
+#                A merge commit is one with two or more parents, read from
+#                GitHub; the subject line is not consulted.
+#   --method     Merge method for every PR. Without it, each PR takes the
+#                METHOD= that git-plugin/scripts/pr-merge-method.py prints for
+#                it after update-branch (a branch with a merge commit squashes),
+#                because the check-pr-merge-method hook cannot see inside this
+#                script either.
 #   --timeout    Per-PR wall-clock budget for CI to settle (default 1800).
 #   --fetch-dir  A clone to `git fetch origin` after each merge.
 #   MERGE_CHAIN_POLL_SECONDS  CI poll interval (default 20).
+#   MERGE_CHAIN_METHOD_CMD    Replaces pr-merge-method.py (tests use a stub).
 #
 # Per PR, in order: read state and author; `gh pr update-branch`; wait until
 # every check on the head completes and two consecutive reads agree; read
-# mergeStateStatus; refuse any non-merge commit newer than --review-ts; merge
+# mergeStateStatus; refuse any non-merge commit newer than --review-ts, and a
+# head that moved after CI settled; resolve the merge method; merge
 # with `--match-head-commit <full 40-char SHA>` (GitHub rejects a short SHA with
 # "Could not coerce value to GitObjectID"); read the state back.
 #
@@ -35,8 +42,10 @@
 # Authorship: the merge happens inside this script, where the PreToolUse
 # external-pr-merge-guard hook cannot see the PR number, so the script applies
 # the same rule itself (git-plugin:external-pr-trust): merge only PRs authored
-# by the authenticated user or a bot. Release-please and Renovate PRs are
-# skipped; they have their own merge flows.
+# by the authenticated user or a bot. Any other author, or one whose login
+# cannot be read, is skipped; an unreadable self login stops the run before any
+# PR is touched. Release-please and Renovate PRs are skipped; they have their
+# own merge flows.
 #
 # Exit: 0 when STATUS is OK or WARN, 1 on ERROR, 2 on a usage error.
 
@@ -45,7 +54,8 @@ set -uo pipefail
 MC_REPO=""
 MC_PRS=""
 MC_REVIEW_TS=""
-MC_METHOD="squash"
+MC_METHOD=""
+MC_METHOD_CMD="${MERGE_CHAIN_METHOD_CMD:-$(dirname "$0")/../../../scripts/pr-merge-method.py}"
 MC_TIMEOUT=1800
 MC_FETCH_DIR=""
 MC_POLL="${MERGE_CHAIN_POLL_SECONDS:-20}"
@@ -68,7 +78,7 @@ usage_error() {
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    -h|--help) sed -n '2,45p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,50p' "$0"; exit 0 ;;
     --repo|--prs|--review-ts|--method|--timeout|--fetch-dir)
       [ $# -ge 2 ] || usage_error "$1 needs a value" ;;
     *) usage_error "unknown argument $1" ;;
@@ -87,7 +97,8 @@ done
 [[ "$MC_REPO" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || usage_error "--repo OWNER/REPO is required"
 [[ "$MC_REVIEW_TS" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]] ||
   usage_error "--review-ts must be a UTC timestamp like 2026-10-27T08:00:00Z"
-[[ "$MC_METHOD" =~ ^(squash|merge|rebase)$ ]] || usage_error "--method must be squash, merge or rebase"
+[ -z "$MC_METHOD" ] || [[ "$MC_METHOD" =~ ^(squash|merge|rebase)$ ]] ||
+  usage_error "--method must be squash, merge or rebase"
 [[ "$MC_TIMEOUT" =~ ^[0-9]+$ ]] || usage_error "--timeout must be a whole number of seconds"
 [[ "$MC_POLL" =~ ^[0-9]+$ ]] || usage_error "MERGE_CHAIN_POLL_SECONDS must be a whole number"
 
@@ -103,6 +114,8 @@ done
 [ "${#MC_PR_LIST[@]}" -gt 0 ] || usage_error "--prs needs at least one PR number"
 command -v jq >/dev/null 2>&1 || usage_error "jq is required"
 command -v gh >/dev/null 2>&1 || usage_error "gh is required"
+[ -n "$MC_METHOD" ] || [ -x "$MC_METHOD_CMD" ] ||
+  usage_error "pass --method, or make $MC_METHOD_CMD available to choose it per PR"
 
 oneline() { tr '\n\r' '  ' | tr -s ' ' | sed 's/^ *//; s/ *$//' | cut -c1-160; }
 
@@ -111,13 +124,25 @@ PR_STATUS=""
 PR_REASON=""
 PR_HEAD=""
 PR_MERGE_COMMIT=""
+MC_SETTLED_HEAD=""
+
+# The §6 guard's read. GraphQL, because `gh pr view --json commits` carries no
+# parent count, and the parent count is what makes a commit a merge commit.
+# shellcheck disable=SC2016  # $owner etc. are GraphQL variables, not shell
+GUARD_QUERY='query($owner: String!, $name: String!, $number: Int!) {
+  repository(owner: $owner, name: $name) { pullRequest(number: $number) {
+    headRefOid
+    commits(last: 100) { totalCount
+      nodes { commit { oid committedDate messageHeadline parents { totalCount } } } }
+  } } }'
 
 result() { PR_STATUS="$1"; PR_REASON="${2:-}"; }
 
 view() { gh pr view "$1" -R "$MC_REPO" --json "$2" 2>/dev/null; }
 
 # Wait until the PR's checks have all completed on a stable head. Sets
-# PR_HEAD and MC_MS (mergeStateStatus) on success; calls result() and returns 1
+# PR_HEAD to every head it reads, so a stop reports the head it inspected, and
+# MC_SETTLED_HEAD and MC_MS (mergeStateStatus) on success; calls result() and returns 1
 # when the PR must stop here.
 wait_for_ci() {
   local n="$1" deadline polls=0 prev="" j state head ms total pending failed sig
@@ -130,24 +155,29 @@ wait_for_ci() {
     if [ "$state" = "MERGED" ]; then result SKIPPED "already_merged: merged while waiting for CI"; return 1; fi
     if [ "$state" != "OPEN" ]; then result SKIPPED "closed: state became $state while waiting for CI"; return 1; fi
     head=$(jq -r '.headRefOid // ""' <<<"$j")
+    [ -n "$head" ] && PR_HEAD="$head"
     ms=$(jq -r '.mergeStateStatus // ""' <<<"$j")
     # CheckRun carries status/conclusion; StatusContext carries state.
     total=$(jq '[.statusCheckRollup // [] | .[]] | length' <<<"$j") || { result ERROR "read_failed: unparseable checks JSON"; return 1; }
     pending=$(jq '[.statusCheckRollup // [] | .[]
         | select(if .__typename == "StatusContext" or (has("state") and (has("status") | not))
                  then (.state == "PENDING" or .state == "EXPECTED")
-                 else (.status != "COMPLETED") end)] | length' <<<"$j")
+                 else (.status != "COMPLETED") end)] | length' <<<"$j") ||
+      { result ERROR "read_failed: could not evaluate pending status checks"; return 1; }
     failed=$(jq -r '[.statusCheckRollup // [] | .[]
         | select(if .__typename == "StatusContext" or (has("state") and (has("status") | not))
                  then (.state == "FAILURE" or .state == "ERROR")
-                 else (.status == "COMPLETED" and ((.conclusion // "") | IN("FAILURE","CANCELLED","TIMED_OUT","ACTION_REQUIRED","STARTUP_FAILURE","STALE")))
+                 else (.status == "COMPLETED" and ((.conclusion // "") as $c
+                       | $c == "FAILURE" or $c == "CANCELLED" or $c == "TIMED_OUT"
+                         or $c == "ACTION_REQUIRED" or $c == "STARTUP_FAILURE" or $c == "STALE"))
                  end)
-        | (.name // .context // "?")] | join(", ")' <<<"$j")
+        | (.name // .context // "?")] | join(", ")' <<<"$j") ||
+      { result ERROR "read_failed: could not evaluate failed status checks"; return 1; }
     if [ -n "$failed" ]; then result CI_RED "check_failed: $failed"; return 1; fi
     if [ "$ms" = "DIRTY" ]; then result CONFLICT "dirty: mergeStateStatus=DIRTY, the branch conflicts with its base"; return 1; fi
     if [ "$pending" -eq 0 ] && [ "$ms" != "UNKNOWN" ] && { [ "$total" -gt 0 ] || [ "$polls" -ge "$MC_MIN_EMPTY_POLLS" ]; }; then
       sig="$head|$total|$ms"
-      if [ "$sig" = "$prev" ]; then PR_HEAD="$head"; MC_MS="$ms"; return 0; fi
+      if [ "$sig" = "$prev" ]; then MC_SETTLED_HEAD="$head"; MC_MS="$ms"; return 0; fi
       prev="$sig"
     else
       prev=""
@@ -162,7 +192,8 @@ wait_for_ci() {
 
 process_pr() {
   local n="$1" j state draft login is_bot head_ref out rc updates=0 late head mstate
-  PR_STATUS="" PR_REASON="" PR_HEAD="" PR_MERGE_COMMIT=""
+  local missing method
+  PR_STATUS="" PR_REASON="" PR_HEAD="" PR_MERGE_COMMIT="" MC_SETTLED_HEAD=""
 
   # 1. State and author.
   j=$(view "$n" state,isDraft,author,headRefName,headRefOid) ||
@@ -221,20 +252,42 @@ process_pr() {
 
   # 4. The §6 guard: no non-merge commit newer than the review, and the head
   #    must be the one CI just settled on. Fail closed on any read error.
-  j=$(view "$n" commits,headRefOid) || { result ERROR "read_failed: gh pr view $n --json commits failed"; return; }
-  late=$(jq -r --arg t "$MC_REVIEW_TS" '[.commits[] | select(.committedDate > $t)
-      | select((.messageHeadline | startswith("Merge")) | not)
+  j=$(gh api graphql -f query="$GUARD_QUERY" -F owner="${MC_REPO%%/*}" -F name="${MC_REPO#*/}" \
+        -F number="$n" 2>/dev/null) || { result ERROR "read_failed: commit list query for $n failed"; return; }
+  j=$(jq -ce '.data.repository.pullRequest | select(.headRefOid and .commits.nodes)' <<<"$j") ||
+    { result ERROR "read_failed: commit list query returned no pull request"; return; }
+  missing=$(jq -r '.commits.totalCount - (.commits.nodes | length)' <<<"$j") ||
+    { result ERROR "read_failed: could not count the commit list"; return; }
+  if [ "$missing" != 0 ]; then
+    result ERROR "commits_truncated: $missing older commits were not read, so the guard cannot clear them"; return
+  fi
+  late=$(jq -r --arg t "$MC_REVIEW_TS" '[.commits.nodes[].commit | select(.committedDate > $t)
+      | select((.parents.totalCount // 0) < 2)
       | "\(.oid[0:8]) \(.messageHeadline)"] | join("; ")' <<<"$j") ||
     { result ERROR "read_failed: could not evaluate the commit list"; return; }
   head=$(jq -r '.headRefOid // ""' <<<"$j")
+  [ -n "$head" ] && PR_HEAD="$head"
   if [ -n "$late" ]; then result GUARD_LATE_COMMIT "late_commits: $late"; return; fi
   if ! [[ "$head" =~ ^[0-9a-f]{40}$ ]]; then result ERROR "bad_head_sha: '$head' is not a full 40-character SHA"; return; fi
-  if [ "$head" != "$PR_HEAD" ]; then
-    result GUARD_LATE_COMMIT "head_moved: head changed from ${PR_HEAD:0:8} to ${head:0:8} after CI settled"; return
+  if [ "$head" != "$MC_SETTLED_HEAD" ]; then
+    result GUARD_LATE_COMMIT "head_moved: head changed from ${MC_SETTLED_HEAD:0:8} to ${head:0:8} after CI settled"; return
   fi
 
-  # 5. Merge pinned to that head, then read the state back.
-  out=$(gh pr merge "$n" -R "$MC_REPO" "--$MC_METHOD" --delete-branch --match-head-commit "$head" 2>&1); rc=$?
+  # 5a. The merge method: --method, else the rule pr-merge-method.py applies.
+  method="$MC_METHOD"
+  if [ -z "$method" ]; then
+    if ! out=$("$MC_METHOD_CMD" --repo "$MC_REPO" --pr "$n" 2>&1); then
+      method=$(sed -n 's/^REASON=//p' <<<"$out" | head -n 1)
+      result ERROR "method_unresolved: ${method:-$(oneline <<<"$out")}"; return
+    fi
+    method=$(sed -n 's/^METHOD=//p' <<<"$out" | head -n 1)
+    if ! [[ "$method" =~ ^(squash|merge|rebase)$ ]]; then
+      result ERROR "method_unresolved: pr-merge-method.py printed METHOD='$method'"; return
+    fi
+  fi
+
+  # 5b. Merge pinned to that head, then read the state back.
+  out=$(gh pr merge "$n" -R "$MC_REPO" "--$method" --delete-branch --match-head-commit "$head" 2>&1); rc=$?
   if [ "$rc" -ne 0 ]; then
     if grep -qE "$HEAD_MOVED_RE" <<<"$out"; then result GUARD_LATE_COMMIT "head_moved: $(oneline <<<"$out")"
     elif grep -qE "$PERMISSION_RE" <<<"$out"; then result DENIED "merge_denied: $(oneline <<<"$out")"

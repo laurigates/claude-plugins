@@ -7,6 +7,10 @@
 # CONFLICT (update-branch and DIRTY), CI_RED (failed check, timeout),
 # GUARD_LATE_COMMIT, DENIED (merge 403, BLOCKED) and the fail-closed ERROR.
 #
+# The §6 guard reads the commit list through `gh api graphql` (the parent count
+# decides what a merge commit is), and the merge method comes from a stub
+# standing in for pr-merge-method.py (MERGE_CHAIN_METHOD_CMD).
+#
 # Regressions pinned here:
 #   - the merge is pinned with the FULL 40-character head SHA. GitHub rejects a
 #     short one ("Could not coerce value to GitObjectID"); the stub does the
@@ -14,6 +18,10 @@
 #   - a failed commit-list read stops the PR instead of reading as "no late
 #     commits" (the first version of the §6 guard silently did nothing).
 #   - a stopping status ends the chain: no later PR is updated or merged.
+#   - a single-parent commit whose subject starts with "Merge" is not exempt
+#     from the guard; only a commit with two or more parents is.
+#   - a head that moves after CI settled stops the PR (head_moved).
+#   - an unevaluable check rollup is ERROR, not "no failed checks".
 #
 # Needs bash and jq.
 
@@ -63,10 +71,24 @@ case "$1 $2" in
     echo "${STUB_SELF:-me}"; exit 0 ;;
   "pr view")
     n="$3"; [ -f "$(f "$n")" ] || { echo "no pull requests found" >&2; exit 1; }
-    if [[ " $* " == *commits* ]] && [ "$(jq -r '._fail_commits_read // false' "$(f "$n")")" = true ]; then
+    jq 'with_entries(select(.key | startswith("_") | not))' "$(f "$n")"; exit 0 ;;
+  "api graphql")
+    n=""; for a in "$@"; do case "$a" in number=*) n="${a#number=}" ;; esac; done
+    [ -f "$(f "$n")" ] || { echo "GraphQL: Could not resolve to a PullRequest" >&2; exit 1; }
+    if [ "$(jq -r '._fail_commits_read // false' "$(f "$n")")" = true ]; then
       echo "HTTP 502: Bad Gateway" >&2; exit 1
     fi
-    jq 'with_entries(select(.key | startswith("_") | not))' "$(f "$n")"; exit 0 ;;
+    # _move_on_guard_read: a merge commit lands between CI settling and this read.
+    if [ "$(jq -r '._move_on_guard_read // false' "$(f "$n")")" = true ]; then
+      moved=$(printf 'b%039d' "$n")
+      save "$n" "._move_on_guard_read = false | .headRefOid = \"$moved\"
+        | .commits += [{oid: \"$moved\", committedDate: \"2026-10-27T09:10:00Z\", messageHeadline: \"Merge branch 'main' into \\(.headRefName)\", parents: 2}]"
+    fi
+    jq '{data: {repository: {pullRequest: {headRefOid,
+          commits: {totalCount: ((.commits | length) + (._extra_commits // 0)),
+                    nodes: [.commits[] | {commit: {oid, committedDate, messageHeadline,
+                      parents: (if .parents == "absent" then null else {totalCount: (.parents // 1)} end)}}]}}}}}' "$(f "$n")"
+    exit 0 ;;
   "pr update-branch")
     n="$3"; beh=$(jq -r '._update // "ok"' "$(f "$n")")
     case "$beh" in
@@ -75,9 +97,11 @@ case "$1 $2" in
       noop) echo "✓ PR branch already up to date"; exit 0 ;;
     esac
     new=$(printf 'a%039d' "$n")
+    # _ms_seq: mergeStateStatus after each successive update, then _ms_after.
     save "$n" ".headRefOid = \"$new\"
-      | .mergeStateStatus = (._ms_after // \"CLEAN\")
-      | .commits += [{oid: \"$new\", committedDate: \"2026-10-27T09:00:00Z\", messageHeadline: \"Merge branch 'main' into \(.headRefName)\"}]"
+      | .mergeStateStatus = (if (._ms_seq // []) | length > 0 then ._ms_seq[0] else (._ms_after // \"CLEAN\") end)
+      | ._ms_seq = ((._ms_seq // [])[1:])
+      | .commits += [{oid: \"$new\", committedDate: \"2026-10-27T09:00:00Z\", messageHeadline: \"Merge branch 'main' into \(.headRefName)\", parents: 2}]"
     if [ "$(jq -r '._late // false' "$(f "$n")")" = true ]; then
       late=$(printf 'c%039d' "$n")
       save "$n" ".headRefOid = \"$late\"
@@ -95,6 +119,7 @@ case "$1 $2" in
     fi
     case "$(jq -r '._merge // "ok"' "$(f "$n")")" in
       denied) echo "HTTP 403: Resource not accessible by integration" >&2; exit 1 ;;
+      queued) exit 0 ;;   # accepted, but the PR stays OPEN (merge queue)
     esac
     save "$n" ".state = \"MERGED\" | .mergeCommit = {oid: \"$(printf 'e%039d' "$n")\"}"
     exit 0 ;;
@@ -104,9 +129,25 @@ exit 64
 STUB
 chmod +x "$T/bin/gh"
 
+# Stub for pr-merge-method.py: METHOD= from the PR's _method (default squash).
+cat >"$T/bin/method-stub" <<'STUB'
+#!/usr/bin/env bash
+echo "STUB_METHOD $*" >>"$STUB_LOG"
+n=""; prev=""
+for a in "$@"; do [ "$prev" = "--pr" ] && n="$a"; prev="$a"; done
+m=$(jq -r '._method // "squash"' "$STUB_STATE/pr-$n.json")
+if [ "$m" = fail ]; then
+  printf '%s\n' "=== PR MERGE METHOD ===" "STATUS=ERROR" "REASON=fetch_failed: gh api failed" "=== END PR MERGE METHOD ==="
+  exit 1
+fi
+printf '%s\n' "=== PR MERGE METHOD ===" "METHOD=$m" "STATUS=OK" "=== END PR MERGE METHOD ==="
+STUB
+chmod +x "$T/bin/method-stub"
+
 export PATH="$T/bin:$PATH"
 export STUB_STATE="$T/state" STUB_LOG="$T/gh.log" STUB_SELF=me
 export MERGE_CHAIN_POLL_SECONDS=0
+export MERGE_CHAIN_METHOD_CMD="$T/bin/method-stub"
 
 # mkpr <n> [jq-overrides]
 mkpr() {
@@ -168,6 +209,21 @@ expect_line "single clean PR: STATUS=OK" "$(summary)" "STATUS=OK"
 expect_no "OK summary has no REASON" "$(summary)" "^REASON="
 validate_summary "OK summary passes the structured-output validator"
 
+# The method comes from pr-merge-method.py, asked after update-branch (which
+# adds the merge commit that rule 4 squashes); --method overrides it.
+mkpr 105 '._method = "rebase"'
+run_chain 105
+expect_line "#105 merged" "$(section 105)" "STATUS=MERGED"
+expect_has "the per-PR METHOD= is the merge flag" "$LOG" "^STUB_GH pr merge 105 -R o/r --rebase --delete-branch --match-head-commit a000000000000000000000000000000000000105$"
+expect_line "method asked after update-branch, before the merge" \
+  "$(grep -oE 'update-branch 105|STUB_METHOD --repo o/r --pr 105|pr merge 105' <<<"$LOG" | tr '\n' '|')" \
+  "update-branch 105|STUB_METHOD --repo o/r --pr 105|pr merge 105|"
+mkpr 106 '._method = "rebase"'
+run_chain 106 --method merge
+expect_has "--method overrides the per-PR method" "$LOG" "^STUB_GH pr merge 106 -R o/r --merge "
+expect_no "--method skips pr-merge-method.py" "$LOG" "STUB_METHOD"
+if [ -x "$SKILL_DIR/../../scripts/pr-merge-method.py" ]; then ok "default method command git-plugin/scripts/pr-merge-method.py exists and is executable"; else bad "git-plugin/scripts/pr-merge-method.py missing or not executable"; fi
+
 # ---- 2. SKIPPED: stranger, release-please, Renovate, closed ----------------
 echo "SKIPPED"
 mkpr 111 '.author = {login: "stranger", is_bot: false}'
@@ -199,6 +255,13 @@ expect_line "STOPPED_AT names it" "$(summary)" "STOPPED_AT=201"
 expect_has "summary REASON names the conflict" "$(summary)" "^REASON=CONFLICT: #201 update_branch_conflict"
 validate_summary "ERROR summary passes the validator"
 
+# A skip before the stop: the summary REASON must name the stop, not the skip.
+mkpr 204 '.author = {login: "stranger", is_bot: false}'
+mkpr 205 '._update = "conflict"'
+run_chain 204,205
+expect_has "summary REASON names the stopping PR, not the earlier skip" "$(summary)" "^REASON=CONFLICT: #205 update_branch_conflict.* \\(\\+1 more\\)$"
+expect_line "skip and stop both counted" "$(summary)" "ISSUE_COUNT=2"
+
 mkpr 203 '._update = "noop" | .mergeStateStatus = "DIRTY"'
 run_chain 203
 expect_has "DIRTY mergeStateStatus -> CONFLICT" "$(section 203)" "^STATUS=CONFLICT$"
@@ -213,6 +276,7 @@ run_chain 301,302
 expect_line "failed check -> CI_RED" "$(section 301)" "STATUS=CI_RED"
 expect_has "REASON names the failed check" "$(section 301)" "^REASON=check_failed: lint$"
 expect_no "no merge, next PR untouched" "$LOG" "pr merge|302"
+expect_line "HEAD_SHA is the post-update head whose checks failed" "$(section 301)" "HEAD_SHA=a000000000000000000000000000000000000301"
 
 mkpr 303 '.statusCheckRollup = [{__typename: "CheckRun", name: "slow", status: "IN_PROGRESS", conclusion: null}]'
 run_chain 303 --timeout 0
@@ -221,6 +285,29 @@ expect_has "pending forever -> CI_RED ci_timeout" "$(section 303)" "^REASON=ci_t
 mkpr 304 '.statusCheckRollup = [{__typename: "StatusContext", context: "ci/legacy", state: "ERROR"}]'
 run_chain 304
 expect_has "failed StatusContext -> CI_RED" "$(section 304)" "^REASON=check_failed: ci/legacy$"
+
+mkpr 305 '.statusCheckRollup = ["not-a-check"]'
+run_chain 305 --timeout 0
+expect_line "unevaluable check rollup -> ERROR" "$(section 305)" "STATUS=ERROR"
+expect_has "REASON says the checks could not be read" "$(section 305)" "^REASON=read_failed: could not evaluate"
+# Only the failed-check read breaks here (join() cannot join an object), so the
+# pending read says "nothing pending"; without a fallback the PR would merge.
+mkpr 308 '.statusCheckRollup = [{__typename: "CheckRun", name: {bad: 1}, status: "COMPLETED", conclusion: "FAILURE"}]'
+run_chain 308
+expect_line "unevaluable failed-check read -> ERROR" "$(section 308)" "REASON=read_failed: could not evaluate failed status checks"
+expect_no "no merge over an unread failed check" "$LOG" "pr merge"
+
+# BEHIND after CI settled: update again, at most MC_MAX_UPDATES (3) times.
+mkpr 306 '._ms_seq = ["BEHIND"]'
+run_chain 306
+expect_line "BEHIND once, then CLEAN -> merged" "$(section 306)" "STATUS=MERGED"
+expect_line "two update-branch calls" "$(grep -c 'pr update-branch 306' <<<"$LOG")" "2"
+mkpr 307 '._ms_after = "BEHIND"'
+run_chain 307
+expect_line "always BEHIND -> CI_RED" "$(section 307)" "STATUS=CI_RED"
+expect_line "REASON=still_behind after three updates" "$(section 307)" "REASON=still_behind: base moved during CI 3 times"
+expect_line "exactly three update-branch calls" "$(grep -c 'pr update-branch 307' <<<"$LOG")" "3"
+expect_no "no merge while still behind" "$LOG" "pr merge"
 
 # ---- 5. GUARD_LATE_COMMIT ---------------------------------------------------
 echo "GUARD_LATE_COMMIT"
@@ -234,6 +321,27 @@ mkpr 402 '.commits += [{oid: "d1", committedDate: "2026-10-27T07:59:59Z", messag
 run_chain 402
 expect_line "a commit before the review timestamp merges" "$(section 402)" "STATUS=MERGED"
 
+mkpr 403 '.commits += [{oid: "d2", committedDate: "2026-10-27T08:30:00Z", messageHeadline: "Merge the reviewed fix", parents: 1}]'
+run_chain 403
+expect_line "a single-parent 'Merge…' subject is not exempt" "$(section 403)" "STATUS=GUARD_LATE_COMMIT"
+expect_has "REASON names it" "$(section 403)" "^REASON=late_commits: d2 Merge the reviewed fix$"
+
+mkpr 404 '.commits += [{oid: "d3", committedDate: "2026-10-27T08:30:00Z", messageHeadline: "Merge branch main", parents: "absent"}]'
+run_chain 404
+expect_line "an unreadable parent count is not a merge commit" "$(section 404)" "STATUS=GUARD_LATE_COMMIT"
+
+mkpr 405 '._move_on_guard_read = true'
+run_chain 405
+expect_line "head moved after CI settled -> GUARD_LATE_COMMIT" "$(section 405)" "STATUS=GUARD_LATE_COMMIT"
+expect_line "REASON=head_moved, naming both heads" "$(section 405)" "REASON=head_moved: head changed from a0000000 to b0000000 after CI settled"
+expect_line "HEAD_SHA is the moved head" "$(section 405)" "HEAD_SHA=b000000000000000000000000000000000000405"
+expect_no "no merge when the head moved" "$LOG" "pr merge"
+
+mkpr 406 '._extra_commits = 1'
+run_chain 406
+expect_has "commits past the read window -> ERROR" "$(section 406)" "^REASON=commits_truncated:"
+expect_no "no merge over unread commits" "$LOG" "pr merge"
+
 # ---- 6. DENIED --------------------------------------------------------------
 echo "DENIED"
 mkpr 501 '._merge = "denied"'
@@ -246,7 +354,8 @@ expect_line "chain stops at the denial" "$(summary)" "REMAINING=501,502"
 
 mkpr 503 '._ms_after = "BLOCKED"'
 run_chain 503
-expect_has "green but BLOCKED -> DENIED" "$(section 503)" "^REASON=blocked_by_protection:"
+expect_line "green but BLOCKED -> DENIED" "$(section 503)" "STATUS=DENIED"
+expect_has "REASON names branch protection" "$(section 503)" "^REASON=blocked_by_protection:"
 
 # ---- 7. fail closed ---------------------------------------------------------
 echo "fail closed"
@@ -254,6 +363,17 @@ mkpr 601 '._fail_commits_read = true'
 run_chain 601
 expect_line "unreadable commit list -> ERROR, not clean" "$(section 601)" "STATUS=ERROR"
 expect_no "no merge after a failed guard read" "$LOG" "pr merge"
+
+mkpr 603 '._merge = "queued"'
+run_chain 603
+expect_line "merge exits 0 but the PR stays OPEN -> ERROR" "$(section 603)" "STATUS=ERROR"
+expect_has "REASON=not_merged_after_merge" "$(section 603)" "^REASON=not_merged_after_merge:"
+
+mkpr 604 '._method = "fail"'
+run_chain 604
+expect_line "unresolvable merge method -> ERROR" "$(section 604)" "STATUS=ERROR"
+expect_line "REASON carries the method script's reason" "$(section 604)" "REASON=method_unresolved: fetch_failed: gh api failed"
+expect_no "no merge without a method" "$LOG" "pr merge"
 
 mkpr 602
 export STUB_SELF_FAIL=1
@@ -273,10 +393,16 @@ OUT=$(bash "$CHAIN" --repo o/r --prs 1 --review-ts 2>&1); RC=$?
 expect_line "flag without a value exits 2" "$RC" "2"
 OUT=$(bash "$CHAIN" --repo o/r --prs '#1,x' --review-ts "$TS" 2>&1); RC=$?
 expect_line "non-numeric PR exits 2" "$RC" "2"
+OUT=$(MERGE_CHAIN_METHOD_CMD="$T/no-such-method-cmd" bash "$CHAIN" --repo o/r --prs 1 --review-ts "$TS" 2>&1); RC=$?
+expect_line "no --method and no method command exits 2" "$RC" "2"
 
 # ---- 9. the skill points at the script --------------------------------------
 echo "skill"
 if grep -q 'scripts/merge-chain.sh' "$SKILL_DIR/SKILL.md"; then ok "SKILL.md names scripts/merge-chain.sh"; else bad "SKILL.md does not name scripts/merge-chain.sh"; fi
+# external-pr-trust forbids helpers that hide a PR number from the merge guard;
+# it must name this script as the exception, or the two skills contradict.
+TRUST="$SKILL_DIR/../external-pr-trust/SKILL.md"
+if grep -q 'scripts/merge-chain.sh' "$TRUST"; then ok "external-pr-trust names merge-chain.sh as the sanctioned helper"; else bad "external-pr-trust does not name scripts/merge-chain.sh"; fi
 
 echo
 echo "passed=$pass failed=$fail"

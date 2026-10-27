@@ -23,15 +23,16 @@ bash "${CLAUDE_SKILL_DIR}/scripts/merge-chain.sh" --repo OWNER/REPO --prs 219,22
 | Flag | Meaning |
 |---|---|
 | `--prs` | Merge order. Put a PR that changes a bot which writes to PR branches **last** (§6). |
-| `--review-ts` | Required. Any non-merge commit newer than this is unreviewed and stops the PR. |
-| `--method` | `squash` by default: `update-branch` adds a merge commit, so the branch squashes. |
+| `--review-ts` | Required. Any non-merge commit newer than this is unreviewed and stops the PR. A merge commit is one with two or more parents; the subject line does not count. |
+| `--method` | Overrides the method for every PR. Without it, each PR takes the `METHOD=` that `git-plugin/scripts/pr-merge-method.py` prints after `update-branch`: a branch that gained a merge commit squashes, and one that needed no update follows the rest of the rule table. |
 | `--timeout` | Per-PR budget for CI to settle, in seconds (default 1800). |
 | `--fetch-dir` | A clone to `git fetch origin` after each merge, so a conflict agent starts from current `main`. |
 
 Per PR the script reads state and author, runs `gh pr update-branch`, waits
 until every check on the head has completed and two reads agree, reads
-`mergeStateStatus` (§4), applies the §6 guard, and merges with
-`--match-head-commit` and the **full 40-character** head SHA. GitHub rejects a
+`mergeStateStatus` (§4), applies the §6 guard (no late non-merge commit, and
+the head unchanged since CI settled), resolves the merge method, and merges
+with `--match-head-commit` and the **full 40-character** head SHA. GitHub rejects a
 short SHA ("Could not coerce value to GitObjectID"). It then reads the state
 back and requires `MERGED`.
 
@@ -78,12 +79,25 @@ reviewer, and `DENIED` needs the user.
 
 ## Denials
 
-If a permission or classifier denial blocks a merge command, do NOT retry it or
-route around it. Mark the PR blocked with reason 'permission denied' and report
-it. The script never retries a denied merge and never passes `--admin`.
+The rule, verbatim from the workflow runs this script replaces:
+
+> If a permission or classifier denial blocks a merge command, do NOT retry it
+> or route around it. Mark the PR blocked with reason 'permission denied', and
+> still prepare the PRs after it (refresh, CI) as far as possible without
+> merging them.
+
+The script keeps the first half: it never retries a denied merge and never
+passes `--admin`. It does not prepare the later PRs. A denial stops the chain
+like every other stopping status, because a later PR may depend on the denied
+one, and `REMAINING=` lists them so a re-run can pick them up once the denial
+is resolved.
 
 The PreToolUse `external-pr-merge-guard` hook cannot see the PR numbers this
 script merges, because they are inside the script. The script therefore applies
 the hook's authorship rule itself, failing closed: it merges only PRs authored
-by the authenticated user (`gh api user`) or by a bot, and it stops before
-touching any PR when that login cannot be read.
+by the authenticated user (`gh api user`) or by a bot, skips a PR whose author
+login cannot be read, and stops before touching any PR when its own login
+cannot be read. `git-plugin:external-pr-trust` names this script as the one
+sanctioned exception to its one-literal-number-per-call rule. The
+`check-pr-merge-method` hook is blind to it for the same reason, so the script
+asks `pr-merge-method.py` for the method itself unless `--method` is passed.

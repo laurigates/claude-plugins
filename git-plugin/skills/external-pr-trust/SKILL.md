@@ -3,7 +3,7 @@ name: external-pr-trust
 description: Authorship as a precondition of merging — bot vs stranger classification, what a merge executes, the merge-guard hook. Use when bulk-merging PRs, or when a merge is denied for a non-self author.
 allowed-tools: Read, Grep, Glob, Bash(gh pr view *), Bash(gh pr list *), Bash(gh pr diff *), Bash(gh api *), Bash(gh search *), TodoWrite
 created: 2026-09-24
-modified: 2026-10-26
+modified: 2026-10-27
 reviewed: 2026-09-24
 ---
 
@@ -128,6 +128,13 @@ before the first merge.
 The constraint is a feature, not friction to route around: it is what stops a
 stranger's PR from riding the same reflex. Do not build a helper that hides the
 number from the hook — that is the bypass the guard exists to prevent.
+
+One helper is sanctioned: `git-merge-hazards`' `scripts/merge-chain.sh`, which
+merges an ordered list of already-verified PRs. It applies the hook's rule
+inside the script: it merges only PRs authored by the `gh api user` login or a
+bot (`is_bot`, a `*[bot]` login or an `app/*` login), skips any other author and
+any PR whose author cannot be read, and stops before touching a PR when its own
+login cannot be read. Do not write another.
 
 The denial names the fix — "resolve shell variables to their literal values
 first … then merge with literal values one at a time" — so the recovery costs
