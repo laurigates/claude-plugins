@@ -137,7 +137,7 @@ When Step 5 refutes a claim, ask why the test suite could not answer it, then ad
 | Open design decision with a wide solution space and no conventional default — scoring models, architecture splits, API shape, migration strategy | Anything with a conventional default: pick it, state it, proceed |
 | Genuinely underdetermined trade-offs where an independent draw adds information | A lookup or doc read answers it |
 | | Seeking agreement on a decision already made — a model asked to validate **will** validate; you pay for confirmation, not information |
-| An independent single-model review: `chat` with the files and a neutral question | Reading a PAL `codereview`/`precommit`/`debug` expert's agreement as corroboration — it is anchored on your step-2 findings ([REFERENCE.md](REFERENCE.md#single-model-review-through-pal-workflow-tools)) |
+| An independent single-model review: `chat` with the files and a neutral question. Check every finding against the branch before acting: in a six-PR review on `kimi-k3`/`kimi-k2.7-code`/`glm-5.3` (laurigates/.github #85–#105, 2026-10), none of the four findings rated *high* held, and every fix that merged came from a *medium* or *low* finding | Reading a PAL `codereview`/`precommit`/`debug` expert's agreement as corroboration — it is anchored on your step-2 findings ([REFERENCE.md](REFERENCE.md#single-model-review-through-pal-workflow-tools)) |
 
 ## PAL Mechanics That Bite
 
@@ -148,6 +148,9 @@ When Step 5 refutes a claim, ask why the test suite could not answer it, then ad
 | `working_directory_absolute_path` must live inside `PAL_WORKSPACE_ROOT` | A scratchpad path outside the repo is rejected: `must reside within the PAL workspace root` | Work in `<repo>/tmp/<consult>/`, never a system temp dir |
 | `model_used` is **untrustworthy under concurrency** | Three *concurrent* `chat` calls returned `model_used` values rotated across each other while `provider_used` stayed request-consistent | Verify independence via `provider_used`, and pick models on **different providers** — a silently same-model pair breaks the disagreement-is-the-payload logic. [pal#68](https://github.com/laurigates/pal-mcp-server/issues/68) |
 | Registry models get retired upstream mid-consult | A `listmodels`-listed id 404s ("no longer available") | Pick a same-provider fallback *before* dispatching, and re-send the **identical** brief — a reworded one breaks the invariant |
+| `glm-5.3` at `thinking_mode: high` times out on large attachments (OpenCode Go) | `Request timed out` after one attempt, many minutes in; observed on PR diffs of ~1,200 and ~3,500 lines, while a 585-line diff finished | Use `thinking_mode: medium` for attachments over ~30K tokens; the same 3,500-line diff then completed |
+| OpenCode Go enforces a **5-hour usage window** | `429 GoUsageLimitError: Go usage limit exceeded` (`limitName: '5 hour'`), retried 4× then failed; hit after ~10 high-thinking review calls (one alone used ~123K tokens) | Budget the fan-out before dispatching; once tripped, every OpenCode Go model is unavailable until the window rolls, so finish the round on another provider or stop |
+| Models end a review by asking you to run web searches or send more files | A response of findings plus "please search for X and reply with the continuation_id"; one `kimi-k2.7-code` reply held no findings at all, only requests | Add "Do not ask for searches or more files; state uncertainty inline" to the brief. Verify the facts they asked about yourself (`gh api`, the pinned action source) rather than relaying them |
 
 When PAL's MCP server is not connected, the same models are reachable directly
 over the OpenCode Go gateway — see [REFERENCE.md](REFERENCE.md) for that route's
