@@ -93,12 +93,12 @@ like every other stopping status, because a later PR may depend on the denied
 one, and `REMAINING=` lists them so a re-run can pick them up once the denial
 is resolved.
 
-The PreToolUse `external-pr-merge-guard` hook cannot see the PR numbers this
-script merges, because they are inside the script. The script therefore applies
-the hook's authorship rule itself, failing closed: it merges only PRs authored
-by the authenticated user (`gh api user`) or by a bot, skips a PR whose author
+The PreToolUse `external-pr-merge-guard` hook reads `--repo` and `--prs` from
+the command and checks every listed PR's author before the script runs, so pass
+the numbers as literals; a list it cannot read is denied. The script repeats the
+check inside as a second layer, failing closed: it merges only PRs authored by
+the authenticated user (`gh api user`) or by a bot, skips a PR whose author
 login cannot be read, and stops before touching any PR when its own login
-cannot be read. `git-plugin:external-pr-trust` names this script as the one
-sanctioned exception to its one-literal-number-per-call rule. The
+cannot be read. The
 `check-pr-merge-method` hook is blind to it for the same reason, so the script
 asks `pr-merge-method.py` for the method itself unless `--method` is passed.

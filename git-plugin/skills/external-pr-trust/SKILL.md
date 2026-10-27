@@ -129,12 +129,14 @@ The constraint is a feature, not friction to route around: it is what stops a
 stranger's PR from riding the same reflex. Do not build a helper that hides the
 number from the hook — that is the bypass the guard exists to prevent.
 
-One helper is sanctioned: `git-merge-hazards`' `scripts/merge-chain.sh`, which
-merges an ordered list of already-verified PRs. It applies the hook's rule
-inside the script: it merges only PRs authored by the `gh api user` login or a
-bot (`is_bot`, a `*[bot]` login or an `app/*` login), skips any other author and
-any PR whose author cannot be read, and stops before touching a PR when its own
-login cannot be read. Do not write another.
+`git-merge-hazards`' `scripts/merge-chain.sh` is not such a helper. It merges an
+ordered list of already-verified PRs, and its `--repo` and `--prs` are literal
+text in the command, so the guard reads them and checks every listed PR like a
+literal `gh pr merge` before the script runs (an unreadable list is denied). The
+script repeats the authorship check inside as a second layer: it merges only
+PRs authored by the `gh api user` login or a bot, skips any other author and any
+PR whose author cannot be read, and stops before touching a PR when its own
+login cannot be read. Pass it the PR numbers as literals, never `--prs "$X"`.
 
 The denial names the fix — "resolve shell variables to their literal values
 first … then merge with literal values one at a time" — so the recovery costs

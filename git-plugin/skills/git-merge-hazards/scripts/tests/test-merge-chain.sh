@@ -457,9 +457,12 @@ expect_line "no --method and no method command exits 2" "$RC" "2"
 echo "skill"
 if grep -q 'scripts/merge-chain.sh' "$SKILL_DIR/SKILL.md"; then ok "SKILL.md names scripts/merge-chain.sh"; else bad "SKILL.md does not name scripts/merge-chain.sh"; fi
 # external-pr-trust forbids helpers that hide a PR number from the merge guard;
-# it must name this script as the exception, or the two skills contradict.
+# it must say why this script is not one, or the two skills contradict.
 TRUST="$SKILL_DIR/../external-pr-trust/SKILL.md"
-if grep -q 'scripts/merge-chain.sh' "$TRUST"; then ok "external-pr-trust names merge-chain.sh as the sanctioned helper"; else bad "external-pr-trust does not name scripts/merge-chain.sh"; fi
+if grep -q 'scripts/merge-chain.sh' "$TRUST"; then ok "external-pr-trust explains merge-chain.sh"; else bad "external-pr-trust does not name scripts/merge-chain.sh"; fi
+# The guard, not this script, is the authority: the hook must recognise the script.
+GUARD="$SKILL_DIR/../../../hooks-plugin/hooks/external-pr-merge-guard.sh"
+if [ ! -f "$GUARD" ] || grep -q 'merge-chain' "$GUARD"; then ok "external-pr-merge-guard recognises merge-chain.sh (or is absent in this tree)"; else bad "external-pr-merge-guard does not recognise merge-chain.sh"; fi
 
 echo
 echo "passed=$pass failed=$fail"

@@ -42,10 +42,11 @@
 # ERROR is the fail-closed catch-all: a read that failed, an unexpected state,
 # or an unclassified merge error. An unreadable result never means "clean".
 #
-# Authorship: the merge happens inside this script, where the PreToolUse
-# external-pr-merge-guard hook cannot see the PR number, so the script applies
-# the same rule itself (git-plugin:external-pr-trust): merge only PRs authored
-# by the authenticated user or a bot. Any other author, or one whose login
+# Authorship: the PreToolUse external-pr-merge-guard hook reads --repo/--prs
+# from the command and checks every listed PR before this script runs. The
+# script applies the same rule again as a second layer
+# (git-plugin:external-pr-trust): merge only PRs authored by the authenticated
+# user or a bot. Any other author, or one whose login
 # cannot be read, is skipped; an unreadable self login stops the run before any
 # PR is touched. Release-please and Renovate PRs are skipped; they have their
 # own merge flows.
