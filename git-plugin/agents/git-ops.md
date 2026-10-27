@@ -12,7 +12,7 @@ skills:
   - git-commit
 maxTurns: 20
 created: 2026-01-24
-modified: 2026-10-22
+modified: 2026-10-26
 reviewed: 2026-08-07
 ---
 
@@ -159,9 +159,10 @@ git bisect reset
 ### Branch Cleanup
 
 **Never delete branches on `git branch --merged`.** It is an *ancestry* check, so it
-under-reports on every **squash-merge** repo (the release-please / conventional-commit
-default): a squash collapses a branch into one fresh-SHA commit on the base, so the
-branch's own commits are never ancestors and a fully-landed branch reads as unmerged.
+under-reports on every repo that **squash- or rebase-merges** PRs: a squash collapses
+a branch into one fresh-SHA commit on the base, and a rebase merge rewrites each commit
+with a fresh SHA, so the branch's own commits are never ancestors and a fully-landed
+branch reads as unmerged.
 Piping that into `xargs git branch -d` is a **delete loop keyed on a signal known to be
 wrong** — the same defect already fixed for `git-plugin:deadbranch` (issue #1869).
 `-d` refuses the unsafe deletes today, but the classification is still wrong, and the

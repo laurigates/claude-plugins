@@ -56,6 +56,7 @@ kubernetes-plugin/hooks/test-inject-kubectl-dry-run.sh
 git-plugin/hooks/test-check-pr-metadata-on-push.sh
 git-plugin/hooks/test-validate-pr-issue-links.sh
 git-plugin/hooks/test-check-branch-sync-on-push.sh
+git-plugin/hooks/test-check-pr-merge-method.sh
 hooks-plugin/hooks/test-secret-protection.sh
 
 # uv  (workflow: "Set up uv")

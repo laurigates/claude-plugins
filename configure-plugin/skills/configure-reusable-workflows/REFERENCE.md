@@ -227,3 +227,28 @@ jobs:
       max-turns: 5
     secrets: inherit
 ```
+
+## PR Governance Caller Workflows
+
+### `.github/workflows/merge-method.yml`
+
+Recommends rebase or squash per PR (rule table: `git-plugin/skills/github-pr-title/merge-strategies.md`
+in claude-plugins). The check is never required. Writes made with `GITHUB_TOKEN`
+do not trigger new workflow runs, so the label the job sets cannot retrigger it.
+
+```yaml
+name: "PR: Merge method"
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled]
+
+permissions:
+  checks: write
+  pull-requests: write
+  contents: read
+
+jobs:
+  merge-method:
+    uses: laurigates/.github/.github/workflows/reusable-merge-method.yml@main
+```

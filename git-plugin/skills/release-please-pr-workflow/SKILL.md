@@ -1,6 +1,6 @@
 ---
 created: 2026-01-09
-modified: 2026-08-15
+modified: 2026-10-26
 reviewed: 2026-04-25
 name: release-please-pr-workflow
 description: "Merging release-please release PRs — batch merge, conflict resolution by closing and recreating the PR. Use when release PRs pile up or a release PR conflicts."
@@ -58,8 +58,15 @@ gh pr view <number> --json title,mergeable,mergeStateStatus
 
 ### Merge PRs
 
+Release PRs always squash-merge, whatever the house default for feature PRs
+(rebase unless there is a reason to squash). release-please documents squash
+and merge commits for release PRs and does not list rebase; the PR carries one
+bot commit, and rule 2 of the merge-method decision rule picks squash for a
+`release-please--*` head branch (`github-pr-title` →
+[merge-strategies.md](../github-pr-title/merge-strategies.md)).
+
 ```bash
-# Merge single PR (squash recommended for clean history)
+# Merge single PR
 gh pr merge <number> --squash
 
 # Merge multiple clean PRs sequentially
