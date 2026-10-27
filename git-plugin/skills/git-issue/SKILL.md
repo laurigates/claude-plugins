@@ -191,14 +191,19 @@ Two templates ship beside this skill.
 assessor per caller batch classifies each issue by whether an agent can finish it
 unattended and re-verifies its evidence at `origin/main`, then one slicing agent
 groups the `autonomous` issues into conflict-free slices. It returns `waves`, each
-a valid `units` list for `workflow-orchestration-plugin:workflow-implement-verify`,
-and lands nothing.
+`{ units, standalone }`, and lands nothing. A wave with `standalone: false` holds
+2–5 units and its `units` is a valid `args.units` for
+`workflow-orchestration-plugin:workflow-implement-verify`. A wave with
+`standalone: true` holds one unit, which implement-verify would abort below its
+floor of two, so implement it through this skill's single-issue flow.
 **Each is a TEMPLATE to adapt, not a script to run verbatim.**
 Read it, then rewrite it for the work in front of you.
 
 **Adapt freely:** the grouping, assessment, slicing and implementation agent
 prompts, the default wave width, the conflict heuristics, the deferral
-vocabulary, the per-project meaning of each triage class (`args.classes`), and the
+vocabulary, the per-project meaning of each triage class (`args.classes`, an
+object `{ <class>: "<what it also means here>" }`; an array aborts as
+`bad-classes`), and the
 project-specific test and commit commands.
 
 **Preserve across any adaptation:** (a) the loop bound is `args.issues` — the
@@ -225,8 +230,11 @@ whose assessment names an overlapping open PR or a blocker is deferred as
 `overlaps-open-pr` or `blocked`, on every path including the single-issue one
 that runs no slicer; after it, the projection validates the partition, adds
 a dependency between any two slices that share a file, defers a dependency cycle,
-and chunks each layer at implement-verify's 5-unit cap — so no wave can hand two
-units the same file, whatever the slicer returned.
+defers as `blocked` a slice that depends on a slice whose issues were all
+deferred, and splits each layer evenly between implement-verify's floor of two
+and cap of five (6 slices → 3 + 3, not 5 + 1), so only a one-slice layer yields a
+`standalone` wave — and no wave can hand two units the same file, whatever the
+slicer returned.
 
 **Agent budget:** 1 + groups — `issue-group-wave`: one grouping agent plus one
 implementation agent per issue group; `issue-triage`: one slicing agent plus one

@@ -32,6 +32,20 @@
  * a worktree, so the resume and finalise clauses of the sibling template do not
  * apply here.
  *
+ * args: { repo, checkout, base?, batches: [{ key, issues: [n], hint? }] | [[n]],
+ *         classes?: { <class>: '<what it also means here>' }, overlapPRs?: [n],
+ *         progress?: <git-triage.sh stdout> | { <n>: { merged_prs, close_candidate } },
+ *         parallel? }
+ * `classes` is an OBJECT keyed by a class of the closed enum — it refines a
+ * class's meaning, it cannot add or remove one. An array is rejected with an
+ * explicit abort, because a list of names has nothing to say about meaning.
+ *
+ * Returns { assessments, slices, deferred, waves, summary }. Each wave is
+ * { units, standalone }: a non-standalone wave's `units` (2–5 of them) is a
+ * valid `args.units` for workflow-implement-verify; a standalone wave holds one
+ * unit, which implement-verify would abort below its floor of two, so it goes
+ * through git-issue's linear single-issue path instead.
+ *
  * Three things this deliberately does NOT do:
  *   1. No slicing inside the assessors. Each assessor sees one batch; a slice
  *      plan built from one batch cannot see another batch's files.
@@ -62,8 +76,11 @@ const OVERLAP_PRS = (INPUT.overlapPRs ?? []).map(Number).filter((n) => Number.is
 // what a class means for this project through `args.classes`, never add a class.
 const CLASSES = ['autonomous', 'needs_human', 'decision_needed', 'needs_env', 'already_done', 'too_large', 'stale']
 const SLICER_DEFER = ['blocked', 'overlaps-open-pr', 'low-confidence']
-const CLASS_NOTES = Object.entries(INPUT.classes ?? {}).filter(([k]) => CLASSES.includes(k))
-const unknownClasses = Object.keys(INPUT.classes ?? {}).filter((k) => !CLASSES.includes(k))
+// `args.classes` is { <class>: '<note>' }. An array (or any non-object) would be
+// read as an empty map and silently ignored, so it is rejected below instead.
+const CLASSES_BAD = INPUT.classes != null && (Array.isArray(INPUT.classes) || typeof INPUT.classes !== 'object')
+const CLASS_NOTES = CLASSES_BAD ? [] : Object.entries(INPUT.classes ?? {}).filter(([k]) => CLASSES.includes(k))
+const unknownClasses = CLASSES_BAD ? [] : Object.keys(INPUT.classes ?? {}).filter((k) => !CLASSES.includes(k))
 if (unknownClasses.length) log(`args.classes keys outside the closed enum ignored: ${unknownClasses.join(', ')}`)
 
 // ADAPT the numbers, PRESERVE the shape. One batch is the linear path: an agent
@@ -73,6 +90,8 @@ const FLOOR = 2
 const WAVE = Number(INPUT.parallel) > 0 ? Number(INPUT.parallel) : 4
 // workflow-implement-verify's MAX_UNITS. A wave wider than this would abort there.
 const IMPL_MAX_UNITS = 5
+// workflow-implement-verify's FLOOR. A one-unit wave would abort there.
+const IMPL_FLOOR = 2
 
 // Batches: `{ key, issues: [n], hint? }`, or a bare array of numbers.
 const RAW_BATCHES = Array.isArray(INPUT) ? INPUT : (INPUT.batches ?? [])
@@ -247,6 +266,11 @@ READ-ONLY: you may read code and run gh/git queries; do not edit, commit, push o
 // Guards. Each returns an explicit, named abort — never a silent no-op.
 // ---------------------------------------------------------------------------
 
+if (CLASSES_BAD) {
+  log(`args.classes must be an object { <class>: '<what it also means here>' } keyed by ${CLASSES.join('|')}; got ${Array.isArray(INPUT.classes) ? 'an array' : typeof INPUT.classes}; abort`)
+  return { abort: true, reason: 'bad-classes', expected: '{ <class>: <note> }' }
+}
+
 if (!ISSUES.length) {
   log('no issues in args.batches — nothing to assess; abort')
   return { abort: true, reason: 'no-issues' }
@@ -313,7 +337,13 @@ const byNumber = new Map(assessments.map((a) => [a.number, a]))
 // files, or a blocker a person must supply, is deferred here, before slicing.
 // This holds on every path — including the single-issue one, which runs no
 // slicer — so a wave-0 dispatch never rests on the slicer noticing it.
-const isBlank = (s) => /^\s*(none|n\/a|-)?\s*$/i.test(String(s ?? ''))
+// Normalise (trim, lowercase, collapse whitespace, strip trailing punctuation)
+// before matching, so 'No blockers', 'None.', 'none identified' and 'N/A.' read
+// as no blocker rather than deferring an autonomous issue as `blocked`.
+const isBlank = (s) => {
+  const t = String(s ?? '').trim().toLowerCase().replace(/\s+/g, ' ').replace(/[\s.!;:,]+$/, '')
+  return t === '' || /^(no(ne)?( blockers?)?( identified)?|n\/?a|-)$/.test(t)
+}
 for (const a of assessments) {
   if (a.class !== 'autonomous') continue
   const prs = (a.overlap_prs ?? []).map(Number).filter((n) => Number.isInteger(n) && n > 0)
@@ -367,6 +397,10 @@ const uniqueId = (base) => {
   return id
 }
 
+// Names of slices the slicer proposed that kept no issue (every issue was
+// invented, deferred, or owned by an earlier slice). A slice depending on one
+// cannot be ordered after it, so step 3 defers it rather than dropping the edge.
+const emptied = new Set()
 ;(proposal.slices ?? []).forEach((s, i) => {
   const issues = []
   for (const raw of s.issues ?? []) {
@@ -383,6 +417,7 @@ const uniqueId = (base) => {
     }
   }
   if (issues.length) slices.push({ name: s.name, id: uniqueId(slug(s.name, i)), issues, files: s.files ?? [], depends_on: s.depends_on ?? [], brief: s.brief ?? '' })
+  else if (s.name) emptied.add(s.name)
 })
 
 for (const d of proposal.deferred ?? []) {
@@ -406,18 +441,39 @@ for (const s of slices) {
   if (!s.brief) s.brief = s.issues.map((n) => `#${n}: ${byNumber.get(n)?.scope ?? ''}`).join('\n')
 }
 
-// 3. Dependencies by id; unknown or self references dropped.
+// 3. Dependencies by id; unknown or self references dropped. A dependency on
+//    an emptied slice is not unknown — the work it named was deferred — so the
+//    dependant is deferred `blocked`, and so is anything depending on that.
 const idOf = new Map()
 for (const s of slices) {
   idOf.set(s.name, s.id)
   idOf.set(s.id, s.id)
 }
+const blockedBy = new Map()
 for (const s of slices) {
+  const onEmptied = s.depends_on.filter((d) => !idOf.has(d) && emptied.has(d))
+  if (onEmptied.length) blockedBy.set(s.id, `depends on slice(s) ${onEmptied.join(', ')}, whose issues were all deferred or discarded`)
   const deps = s.depends_on.map((d) => idOf.get(d)).filter((d) => d && d !== s.id)
-  const dropped = s.depends_on.filter((d) => !idOf.has(d))
+  const dropped = s.depends_on.filter((d) => !idOf.has(d) && !emptied.has(d))
   if (dropped.length) log(`slice ${s.id}: unknown depends_on dropped: ${dropped.join(', ')}`)
   s.depends_on = [...new Set(deps)]
 }
+for (let grew = true; grew; ) {
+  grew = false
+  for (const s of slices) {
+    if (blockedBy.has(s.id)) continue
+    const dep = s.depends_on.find((d) => blockedBy.has(d))
+    if (dep) {
+      blockedBy.set(s.id, `depends on slice ${dep}, which is deferred as blocked`)
+      grew = true
+    }
+  }
+}
+for (const [id, detail] of blockedBy) {
+  log(`slice ${id} ${detail}; deferred`)
+  for (const n of slices.find((s) => s.id === id).issues) defer(n, 'blocked', detail)
+}
+for (let k = slices.length - 1; k >= 0; k--) if (blockedBy.has(slices[k].id)) slices.splice(k, 1)
 
 // 4. File-overlap serialisation. Two slices sharing a file with no order
 //    between them get one: the later depends on the earlier. Exact path match,
@@ -459,15 +515,27 @@ for (const s of pending) {
 }
 const planned = slices.filter((s) => done.has(s.id))
 
-// 6. Waves: each is a valid `args.units` for workflow-implement-verify — its
-//    slices are independent of each other and own disjoint files — chunked at
-//    that template's unit cap.
+// 6. Waves. A layer's slices are independent of each other and own disjoint
+//    files. Each layer is split EVENLY into k = ceil(n / MAX) chunks, so no
+//    chunk exceeds implement-verify's unit cap and none drops below its floor
+//    of two (6 → 3+3, not 5+1). Only a one-slice layer yields a one-unit wave;
+//    it is marked `standalone`, because implement-verify aborts on it.
 const toUnit = (s) => ({ id: s.id, issues: s.issues, branch: `fix/${s.id}`, brief: s.brief, owns: s.files, labels: [] })
-const waves = layers.flatMap((layer) => {
+const chunkEvenly = (xs) => {
+  const k = Math.ceil(xs.length / IMPL_MAX_UNITS)
+  const base = Math.floor(xs.length / k)
+  const extra = xs.length % k
   const out = []
-  for (let k = 0; k < layer.length; k += IMPL_MAX_UNITS) out.push(layer.slice(k, k + IMPL_MAX_UNITS).map(toUnit))
+  for (let c = 0, at = 0; c < k; c++) {
+    const size = base + (c < extra ? 1 : 0)
+    out.push(xs.slice(at, at + size))
+    at += size
+  }
   return out
-})
+}
+const waves = layers.flatMap((layer) =>
+  chunkEvenly(layer).map((chunk) => ({ units: chunk.map(toUnit), standalone: chunk.length < IMPL_FLOOR })),
+)
 
 const summary = {
   issues: ISSUES.length,

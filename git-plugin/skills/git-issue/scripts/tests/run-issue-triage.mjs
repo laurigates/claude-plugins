@@ -57,7 +57,8 @@ const partitioned = (r, input) => {
   return input.every((n) => seen.get(n) === 1) && seen.size === input.length
 }
 const reasonOf = (r, n) => (r.result.deferred ?? []).find((d) => d.issue === n)?.reason
-const waveOf = (r, id) => (r.result.waves ?? []).findIndex((w) => w.some((u) => u.id === id))
+const waveOf = (r, id) => (r.result.waves ?? []).findIndex((w) => w.units.some((u) => u.id === id))
+const sizes = (r) => (r.result.waves ?? []).map((w) => w.units.length)
 
 const BATCHES = { batches: [{ key: 'a', issues: [1, 2, 3] }, { key: 'b', issues: [4, 5] }] }
 
@@ -122,7 +123,7 @@ const BATCHES = { batches: [{ key: 'a', issues: [1, 2, 3] }, { key: 'b', issues:
   check('assessment files are unioned into slice files', a.files.includes('src/shared.js'), a)
   // No wave holds two units that own the same file.
   const clash = (r.result.waves ?? []).some((w) => {
-    const owned = w.flatMap((u) => u.owns)
+    const owned = w.units.flatMap((u) => u.owns)
     return new Set(owned).size !== owned.length
   })
   check('no wave has two units owning one file', !clash, r.result.waves)
@@ -145,9 +146,9 @@ const BATCHES = { batches: [{ key: 'a', issues: [1, 2, 3] }, { key: 'b', issues:
     k === 'assess'
       ? u === 'a' ? assessed('a', [1, 2, 3, 4].map((n) => row(n))) : assessed('b', [5, 6, 7].map((n) => row(n)))
       : { slices: [1, 2, 3, 4, 5, 6, 7].map((n) => slice(`Slice ${n}!`, [n])), deferred: [] })
-  const u = r.result.waves[0][0]
+  const u = r.result.waves[0].units[0]
   check('unit shape: id, issues, branch fix/<id>, brief, owns', u.id === 'slice-1' && u.branch === 'fix/slice-1' && u.issues[0] === 1 && u.brief && Array.isArray(u.owns), u)
-  check('7 independent slices → waves of 5 and 2', r.result.waves.length === 2 && r.result.waves[0].length === 5 && r.result.waves[1].length === 2, r.result.waves.map((w) => w.length))
+  check('7 independent slices → even waves of 4 and 3', JSON.stringify(sizes(r)) === '[4,3]', sizes(r))
 }
 // 8. Below the floor and empty input abort before any agent runs.
 {
@@ -165,7 +166,7 @@ const BATCHES = { batches: [{ key: 'a', issues: [1, 2, 3] }, { key: 'b', issues:
   const oneA = await run(BATCHES, (k, u) =>
     u === 'a' ? assessed('a', [row(1), row(2, 'needs_human'), row(3, 'stale')])
               : assessed('b', [row(4, 'decision_needed'), row(5, 'needs_env')]))
-  check('one autonomous → standalone slice, no slice agent', !oneA.calls.includes('slice') && oneA.result.slices.length === 1 && oneA.result.waves[0][0].issues[0] === 1, oneA.result)
+  check('one autonomous → standalone slice, no slice agent', !oneA.calls.includes('slice') && oneA.result.slices.length === 1 && oneA.result.waves[0].units[0].issues[0] === 1, oneA.result)
 }
 // 10. A dead slicer is an abort that still hands back the assessments — never an unpartitioned plan.
 {
@@ -207,7 +208,7 @@ const BATCHES = { batches: [{ key: 'a', issues: [1, 2, 3] }, { key: 'b', issues:
   check('single autonomous with blockers → blocked, not dispatched',
     reasonOf(bl, 1) === 'blocked' && bl.result.slices.length === 0 && bl.result.waves.length === 0, bl.result)
   const none = await solo({ blockers: 'None' })
-  check('blockers "None" is not a blocker → standalone slice', none.result.slices.length === 1 && none.result.waves[0][0].issues[0] === 1, none.result)
+  check('blockers "None" is not a blocker → standalone slice', none.result.slices.length === 1 && none.result.waves[0].units[0].issues[0] === 1, none.result)
   check('partition holds on the single-issue deferral path', partitioned(ov, [1, 2, 3, 4, 5]) && partitioned(bl, [1, 2, 3, 4, 5]), [ov.result, bl.result])
 
   const many = await run(BATCHES, (k, u) =>
@@ -244,6 +245,88 @@ const BATCHES = { batches: [{ key: 'a', issues: [1, 2, 3] }, { key: 'b', issues:
   const p2 = await run(JSON.stringify({ ...five, parallel: '2' }), script)
   check('args.parallel=2 (stringified): 5 batches → chunks [2, 2, 1]', JSON.stringify(p2.chunks) === '[2,2,1]', p2.chunks)
   check('every batch still assessed under the wave bound', p2.calls.filter((c) => c.startsWith('assess:')).length === 5 && partitioned(p2, [1, 2, 3, 4, 5]), p2.calls)
+}
+
+// 16. Waves respect implement-verify's FLOOR as well as its cap: a layer is split evenly, and
+//     only a one-slice layer yields a one-unit wave, flagged standalone (implement-verify aborts on it).
+{
+  const indep = async (n) => {
+    const ids = Array.from({ length: n }, (_, i) => i + 1)
+    const half = Math.ceil(n / 2)
+    const batches = { batches: [{ key: 'a', issues: ids.slice(0, half) }, { key: 'b', issues: ids.slice(half) }] }
+    return run(batches, (k, u) =>
+      k === 'assess'
+        ? assessed(u, (u === 'a' ? ids.slice(0, half) : ids.slice(half)).map((x) => row(x)))
+        : { slices: ids.map((x) => slice(`s${x}`, [x])), deferred: [] })
+  }
+  const six = await indep(6)
+  check('6 independent slices → waves [3, 3], not [5, 1]', JSON.stringify(sizes(six)) === '[3,3]', sizes(six))
+  check('multi-unit waves are not standalone', six.result.waves.every((w) => w.standalone === false), six.result.waves.map((w) => w.standalone))
+  const many = await indep(21)
+  check('21 independent slices → waves [5, 4, 4, 4, 4]', JSON.stringify(sizes(many)) === '[5,4,4,4,4]', sizes(many))
+  check('no non-standalone wave is below 2 or above 5 units',
+    [six, many].every((r) => r.result.waves.every((w) => w.standalone || (w.units.length >= 2 && w.units.length <= 5))), [sizes(six), sizes(many)])
+
+  const two = await run(BATCHES, (k, u) =>
+    k === 'assess'
+      ? u === 'a' ? assessed('a', [row(1, 'autonomous', ['src/shared.js']), row(2, 'needs_human'), row(3, 'stale')])
+                  : assessed('b', [row(4, 'autonomous', ['src/shared.js']), row(5, 'needs_env')])
+      : { slices: [slice('one', [1]), slice('four', [4])], deferred: [] })
+  check('two overlapping slices → two one-unit waves, both standalone',
+    JSON.stringify(sizes(two)) === '[1,1]' && two.result.waves.every((w) => w.standalone === true), two.result.waves)
+  const solo = await run(BATCHES, (k, u) =>
+    u === 'a' ? assessed('a', [row(1), row(2, 'needs_human'), row(3, 'stale')])
+              : assessed('b', [row(4, 'decision_needed'), row(5, 'needs_env')]))
+  check('single-issue path → one standalone wave', solo.result.waves.length === 1 && solo.result.waves[0].standalone === true, solo.result.waves)
+}
+// 17. Blocker strings that say "no blocker" in ordinary words do not defer an autonomous issue.
+{
+  const solo = (blockers) => run(BATCHES, (k, u) =>
+    u === 'a' ? assessed('a', [row(1, 'autonomous', ['src/f1.js'], { blockers }), row(2, 'needs_human'), row(3, 'stale')])
+              : assessed('b', [row(4, 'decision_needed'), row(5, 'needs_env')]))
+  const blankish = ['No blockers', 'None.', 'none identified', 'N/A.', '  no blocker  ', 'NA', '-', '']
+  const got = []
+  for (const b of blankish) got.push([b, (await solo(b)).result.slices.length])
+  check('"No blockers" / "None." / "none identified" / "N/A." … read as no blocker', got.every(([, n]) => n === 1), got)
+  const real = await solo('No access to the staging bucket')
+  check('a real blocker starting with "No" is still blocked', reasonOf(real, 1) === 'blocked', real.result.deferred)
+}
+// 18. A slice depending on a slice the slicer emptied (all its issues non-sliceable) is deferred
+//     as blocked — and so is anything depending on it — instead of dispatching in wave 0.
+{
+  const r = await run(BATCHES, (k, u) =>
+    k === 'assess'
+      ? u === 'a' ? assessed('a', [row(1), row(2, 'needs_human'), row(3)]) : assessed('b', [row(4), row(5)])
+      : { slices: [slice('base', [2]), slice('child', [1], [], ['base']), slice('grandchild', [3], [], ['child']), slice('free', [4, 5])], deferred: [] })
+  check('dependant of an emptied slice → deferred blocked', reasonOf(r, 1) === 'blocked' && !r.result.slices.some((s) => s.name === 'child'), r.result)
+  check('transitive dependant → deferred blocked', reasonOf(r, 3) === 'blocked' && !r.result.slices.some((s) => s.name === 'grandchild'), r.result)
+  check('unrelated slice still dispatched in wave 0', waveOf(r, r.result.slices.find((s) => s.name === 'free')?.id) === 0, r.result.waves)
+  check('partition holds with an emptied dependency', partitioned(r, [1, 2, 3, 4, 5]), r.result)
+}
+// 19. A directory entry (ending '/') overlaps every path under it: the slices are serialised.
+{
+  const r = await run(BATCHES, (k, u) =>
+    k === 'assess'
+      ? u === 'a' ? assessed('a', [row(1, 'autonomous', ['src/lib/']), row(2, 'needs_human'), row(3, 'stale')])
+                  : assessed('b', [row(4, 'autonomous', ['src/lib/x.js']), row(5, 'needs_env')])
+      : { slices: [slice('dir', [1]), slice('file', [4])], deferred: [] })
+  const d = r.result.slices.find((s) => s.name === 'dir')
+  const f = r.result.slices.find((s) => s.name === 'file')
+  check("'src/lib/' and 'src/lib/x.js' land in different waves", waveOf(r, d.id) !== waveOf(r, f.id) && f.depends_on.includes(d.id), r.result.waves)
+  const sib = await run(BATCHES, (k, u) =>
+    k === 'assess'
+      ? u === 'a' ? assessed('a', [row(1, 'autonomous', ['src/lib/']), row(2, 'needs_human'), row(3, 'stale')])
+                  : assessed('b', [row(4, 'autonomous', ['src/library.js']), row(5, 'needs_env')])
+      : { slices: [slice('dir', [1]), slice('file', [4])], deferred: [] })
+  check("'src/lib/' does not overlap 'src/library.js'", sizes(sib).length === 1 && sizes(sib)[0] === 2, sizes(sib))
+}
+// 20. args.classes is an object keyed by class; an array is an explicit abort, not a silent no-op.
+{
+  const arr = await run({ ...BATCHES, classes: ['autonomous', 'needs_env'] }, () => undefined)
+  check('args.classes array → abort bad-classes, zero agents', arr.result.reason === 'bad-classes' && arr.calls.length === 0, arr.result)
+  const obj = await run({ ...BATCHES, classes: { needs_env: 'needs the GPU render box' } }, (k, u) =>
+    k === 'assess' ? assessed(u, (u === 'a' ? [1, 2, 3] : [4, 5]).map((n) => row(n))) : { slices: [slice('s', [1, 2, 3, 4, 5])], deferred: [] })
+  check('args.classes object note reaches the assessor brief', obj.prompts['assess:a'].includes('needs_env also means: needs the GPU render box'), obj.prompts['assess:a'])
 }
 
 process.exit(failed ? 1 : 0)

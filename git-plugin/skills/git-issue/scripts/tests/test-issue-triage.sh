@@ -13,8 +13,14 @@
 #     that runs no slicer;
 #   - the closed class and slicer-reason enums are exact (adding a value fails);
 #   - assessors run at most WAVE per parallel() call;
-#   - a dependency cycle is deferred, never dispatched;
-#   - waves are implement-verify `units`, chunked at its 5-unit cap;
+#   - a dependency cycle is deferred, never dispatched, and a dependant of a
+#     slice whose issues were all deferred is deferred `blocked`;
+#   - a directory entry ('src/lib/') overlaps every path under it;
+#   - "No blockers" / "None." / "N/A." do not read as a blocker;
+#   - waves are { units, standalone }, each layer split evenly between
+#     implement-verify's floor of 2 and cap of 5; only a one-slice layer is a
+#     one-unit `standalone` wave;
+#   - args.classes as an array aborts `bad-classes` rather than being ignored;
 #   - the floor/empty guards spend zero agents, and a dead slicer aborts
 #     with the assessments rather than returning an unpartitioned plan.
 set -euo pipefail
