@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-10-15
+modified: 2026-10-27
 reviewed: 2025-12-16
 name: mutation-testing
 description: "Mutation testing with Stryker (TS/JS) and mutmut (Python). Use when finding weak tests that pass on mutated code, or improving test quality through mutation analysis."
@@ -188,6 +188,33 @@ Two cheap additions close most of the gap:
 - **Assert on the message, not just the exception.** Match the mutation to an
   expected substring of the failure, so a masked result is a harness failure
   rather than a silent pass.
+
+## Workflow harness (template)
+
+`workflows/survivor-triage.workflow.js` ships beside this skill. **It is a TEMPLATE to adapt,
+not a script to run verbatim.** Read it, then rewrite it for the work in front of you. It runs
+Stages 1 and 2 of [references/triaging-large-survivor-sets.md](references/triaging-large-survivor-sets.md).
+
+**Adapt freely:** the agent prompts, `project`, the severity rubric and noise list,
+`staticMinTests` (default 5, per § "Static survivors under the Vitest runner are often false"), `integrationGlob`,
+`verifyKinds`, and the `MAX_CLUSTERS` / `VERIFY_MAX` caps.
+
+**Agent budget:** 14 — up to 8 read-only triage agents (one per caller cluster) and up to 6 skeptics (`verifyCap`, default 4, clamped to 6).
+
+**Preserve across any adaptation:** (a) the loop bound is the caller's `clusters`, cut by
+`CLUSTERS.slice(0, 8)` after an explicit over-cap abort, and the skeptics by a literal
+`slice(0, 6)`, never a prose "for each"; (b) the closed `kind` and `held | downgraded | refuted`
+enums, with a `held` that lacks a reproduction recorded as refuted and a dead skeptic returned
+unverified, never held; (c) the Rank barrier: every cluster's claims are sorted by severity
+before any skeptic starts, so the cap goes to the worst claims in the scan, not to the cluster
+that finished first; (d) whatever the cap or a dead skeptic leaves comes back in `unverified`
+in the claim shape, so `{ worktree, project, claims: <unverified> }` re-runs the same template
+as verify-only. `scripts/tests/test-survivor-triage.sh` pins (b)–(d).
+
+**Skip the harness when:** the scan is one cluster, or few enough survivors to read in one
+pass — that is a linear pass and the harness is pure overhead. The reference's stages remain
+the authoritative description of *what* each stage must produce; the harness only fixes *how*
+the work is split.
 
 ## Mutation Score Targets
 
