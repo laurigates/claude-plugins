@@ -117,7 +117,7 @@ python3 feedback-plugin/scripts/friction_open_prs.py \
   --target-repo laurigates/claude-plugins --dry-run
 ```
 
-Signatures currently recognized: `plan:entered-plan-mode`, `push:branch-has-open-pr`, `hook:pr-metadata`, `hook:branch-protection`, `hook:conventional-commit`, `hook:gitleaks`, `hook:pre-commit`, `error:<tool>:<class>`, `reject:<tool>`, `interrupt:user`.
+Signatures currently recognized: `plan:entered-plan-mode`, `push:branch-has-open-pr`, `hook:pr-metadata`, `hook:branch-protection`, `hook:conventional-commit`, `hook:gitleaks`, `hook:pre-commit`, `hook:external-pr-merge-guard`, `error:<tool>:<class>`, `reject:<tool>`, `interrupt:user`.
 
 Stop-hook output arrives as an `isMeta` user record (`Stop hook feedback:`), not a tool result, so it is parsed separately as `kind: stop_hook_feedback` and keyed on the emitting hook: `stop:git-stash-reminder:<auto-checkpoint|mixed|other>`, `stop:task-completeness`, `stop:no-calendar-estimates`, `stop:session-end-nudge`, `stop:subagent-output-check`, or `stop:unclassified`. Any other `<Event> hook feedback|error:` record surfaces as `hook-feedback:<event>` / `hook-error:<event>`. These clusters are reported for prevalence only; the fix for a noisy Stop hook lives in the hook. `friction_parse.py --list-prefixes` lists every hook-output prefix in the window and whether a dedicated branch handles it.
 

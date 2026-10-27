@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-10-26
 reviewed: 2026-05-09
 name: git-branch-pr-workflow
 description: "Branch management and PR workflows — git switch/restore, GitHub MCP. Use when creating branches, opening PRs, or working with feature branches."
@@ -147,8 +147,12 @@ Configure branch rules for linear history via GitHub MCP:
 # Configure via GitHub settings or MCP tools
 # - Require pull request reviews
 # - Require status checks to pass
-# - Enforce linear history (squash merge only)
+# - Enforce linear history (rebase and squash allowed, merge commits off)
 ```
+
+Which of rebase or squash a given PR uses is decided per PR — rebase by
+default, squash when there is a reason. Rule table and target repo settings:
+`github-pr-title` → [merge-strategies.md](../github-pr-title/merge-strategies.md).
 
 ## Branch Comparison: Always Use origin/main
 
@@ -203,26 +207,24 @@ Use conventional commit format in PR titles:
 
 ### PR Body Template
 
+Write the body as a commit body. On repos whose `squash_merge_commit_message`
+is `PR_BODY` (every laurigates repo except the release-please ones, see
+[merge-strategies.md](../github-pr-title/merge-strategies.md#repo-settings)), a
+squash-merged PR's body becomes the commit body. No headings,
+checklists or HTML comments:
+
 ```markdown
-## Summary
-Brief description of changes
+<1–3 sentences: what changed and why>
 
-## Changes
-- Bullet points of key changes
-- Link related work
+- <key change>
+- <key change>
 
-## Testing
-How changes were tested
-
-## Issue References
-<!-- Use GitHub autolink format - ALWAYS include relevant issues -->
 Closes #123
-<!-- Or use: Fixes #N, Resolves #N, Refs #N -->
 ```
 
 **Issue Reference Guidelines:**
 - Use `Closes #N` / `Fixes #N` / `Resolves #N` to auto-close issues on merge
-- Use `Refs #N` / `Related to #N` for context without auto-closing
+- Use `Refs #N` for context without auto-closing
 - Cross-repo: `Fixes owner/repo#N`
 - Multiple: `Fixes #1, fixes #2, fixes #3` (repeat keyword)
 

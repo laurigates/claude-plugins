@@ -26,6 +26,6 @@ Triaged by /git:triage on <date>."
 
 If `--auto-merge` was set and any PR is `ready-to-merge`, ask similarly. Merge with:
 ```bash
-gh pr merge <n> --repo $REPO --squash --auto
+gh pr merge <n> --repo $REPO --<method> --auto
 ```
-(`--squash` is the repo default for this project; for other repos, read `gh repo view --json squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed` and pick the first allowed strategy.)
+(`<method>` is the `METHOD=` that `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/pr-merge-method.py" --repo $REPO --pr <n>` prints — rebase by default, squash when there is a reason; rule table in `github-pr-title` → `merge-strategies.md`. If the repo disallows that method, `gh repo view --json squashMergeAllowed,rebaseMergeAllowed` shows which is allowed.)
