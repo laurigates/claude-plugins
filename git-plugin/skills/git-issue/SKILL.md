@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-10-26
+modified: 2026-10-27
 reviewed: 2026-09-02
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git fetch *), Bash(git pull *), Bash(git stash *), Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(gh label *), Bash(gh api *), Bash(gh workflow *), Bash(gh run *), Bash(pre-commit *), Read, Edit, Write, Grep, Glob, TodoWrite, AskUserQuestion, Task, mcp__github__create_pull_request, mcp__github__issue_read, mcp__github__list_issues
 description: "GitHub issue to PR end-to-end — branch, TDD implementation, PR — one issue or several in parallel. Use when asked to work on an issue, fix issue #N, or batch-process several."
@@ -185,13 +185,20 @@ When `--parallel` is set, spawn one agent per parallel group as described in [re
 
 ## Workflow harness (template)
 
-`workflows/issue-group-wave.workflow.js` ships beside this skill and covers the
-`--parallel` path only.
-**It is a TEMPLATE to adapt, not a script to run verbatim.**
+Two templates ship beside this skill.
+`workflows/issue-group-wave.workflow.js` covers the `--parallel` path only.
+`workflows/issue-triage.workflow.js` is the read-only pre-pass before it: one
+assessor per caller batch classifies each issue by whether an agent can finish it
+unattended and re-verifies its evidence at `origin/main`, then one slicing agent
+groups the `autonomous` issues into conflict-free slices. It returns `waves`, each
+a valid `units` list for `workflow-orchestration-plugin:workflow-implement-verify`,
+and lands nothing.
+**Each is a TEMPLATE to adapt, not a script to run verbatim.**
 Read it, then rewrite it for the work in front of you.
 
-**Adapt freely:** the grouping and implementation agent prompts, the default
-wave width, the conflict heuristics, the deferral vocabulary, and the
+**Adapt freely:** the grouping, assessment, slicing and implementation agent
+prompts, the default wave width, the conflict heuristics, the deferral
+vocabulary, the per-project meaning of each triage class (`args.classes`), and the
 project-specific test and commit commands.
 
 **Preserve across any adaptation:** (a) the loop bound is `args.issues` — the
@@ -207,13 +214,24 @@ failed one; (c) the Group stage is a real barrier — conflict detection is
 pairwise over the whole set (file overlap, opposing requirements, `blocked_by`
 chains, sub-issue ordering), so no group can be dispatched until every issue has
 been read, and you cannot partition work by a partition the work itself
-discovers, which is why the grouping lane is always ONE agent.
+discovers, which is why the grouping lane is always ONE agent. For
+`issue-triage`, also preserve: (d) the closed class enum
+`autonomous|needs_human|decision_needed|needs_env|already_done|too_large|stale`,
+where only `autonomous` is ever sliced and an environment need is `needs_env` plus
+a reason, never a new class; (e) the Slice stage is ONE agent over every batch's
+assessments, because two issues assessed in different batches can touch one
+file; (f) the plain-JS projection after it, which validates the partition, adds
+a dependency between any two slices that share a file, defers a dependency cycle,
+and chunks each layer at implement-verify's 5-unit cap — so no wave can hand two
+units the same file, whatever the slicer returned.
 
-**Agent budget:** 1 + groups — one grouping agent plus one implementation agent per
-issue group. The wave width bounds concurrency, not the total. The scale guard asks before every run, because the list comes from the
-caller at runtime.
+**Agent budget:** 1 + groups — `issue-group-wave`: one grouping agent plus one
+implementation agent per issue group; `issue-triage`: one slicing agent plus one
+assessment agent per caller batch (its groups are `args.batches`). The wave width
+bounds concurrency, not the total. The scale guard asks before every run, because
+the list comes from the caller at runtime.
 
-This harness stops at commit-local branches with no independent check. To have
+`issue-group-wave` stops at commit-local branches with no independent check. To have
 each group verified by a fresh agent and repaired once before its PR opens, pass
 the partition as `units` to `workflow-orchestration-plugin:workflow-implement-verify`.
 
@@ -221,7 +239,10 @@ the partition as `units` to `workflow-orchestration-plugin:workflow-implement-ve
 partition collapses to one group because every issue conflicts with every other;
 that is a linear pass and the harness is pure overhead (the template aborts
 below two issues, and returns the partition rather than dispatching when only
-one group survives). The steps above remain the authoritative description of
+one group survives). Skip `issue-triage` when the caller has one batch — one agent
+can assess and slice it in a single pass, and the template aborts below two
+batches; pass `git-triage.sh` output as `args.progress` rather than asking its
+assessors to re-derive merged-PR links. The steps above remain the authoritative description of
 *what* each stage must produce; the harness only fixes *how* the work is split.
 
 One thing the harness changes rather than splits: `AskUserQuestion` cannot run
@@ -229,8 +250,9 @@ inside a workflow, so the blocked-issue and sub-70%-confidence prompts above
 become **deferrals** the caller adjudicates — the issue is neither silently
 attempted nor silently dropped.
 
-Two clauses this template carries. Both are unconditional here — every
-fanned-out group runs in its own worktree, and this skill's deliverable is a PR:
+Two clauses `issue-group-wave` carries. Both are unconditional there — every
+fanned-out group runs in its own worktree, and this skill's deliverable is a PR.
+`issue-triage` dispatches no worktree agent and lands nothing:
 
 > Never `Workflow({resumeFromRunId})` to retry a few failed worktree agents — a
 > resume re-runs agents that already succeeded and opens duplicate PRs (#1868).
