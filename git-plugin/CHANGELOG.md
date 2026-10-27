@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.66.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.65.0...git-plugin-v2.66.0) (2026-10-27)
+
+
+### Features
+
+* **git-plugin:** add issue-triage workflow template to git-issue ([#3249](https://github.com/laurigates/claude-plugins/issues/3249)) ([2cb8d23](https://github.com/laurigates/claude-plugins/commit/2cb8d231d401540ead7d62d532e363de6e2d64d6))
+
 ## [2.65.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.64.1...git-plugin-v2.65.0) (2026-10-26)
 
 
