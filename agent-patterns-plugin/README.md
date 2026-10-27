@@ -187,6 +187,7 @@ Verify orchestrator premises (file counts, build state, artefact presence) befor
 - Verifier return-contract: Premise / Evidence / Verdict / Implicit assumptions
 - Cheapest-verifier table mapping premise shape to the right tool (`Glob`, `Grep`, read-only agent)
 - Anti-patterns catalog: name-equals-behaviour, stale-counter, symptom-not-cause
+- `workflows/recon-map.workflow.js` template: read-only mappers over a caller-supplied unit list (deterministic lists preferred, cap 10), then an optional critic, up to 3 gap-fillers, a verifier and a synthesizer; every claim cites file:line or command output
 
 #### `tool-result-traps`
 Tool results that mean something other than they look — an empty result, a green exit, and a well-formed line of output are each claims about mechanics, not content. Complements `verify-before-plan`: that one verifies a premise before a wave, this one distrusts the tool output a verdict is built on.
@@ -248,6 +249,7 @@ Adversarial second-pass review that tries to break code, designs, plans, or ADRs
 - Lens table delegating domain checklists to `code-review`, security-audit, `verify-before-plan`, `cold-read-gate`
 - Isolated opus reviewer with an inverted "find the fault" objective
 - Triage gate separating genuine faults from manufactured objections before acting
+- Workflow templates: `find-verify` (2–3 lens finders, cross-lens dedup and severity rank, capped refute-by-default verifiers, re-runnable `unverified` claims) and `design-review` (draft, 2–3 lens reviewers, evidence-backed revise)
 
 #### `execution-grounded-review`
 Verify an implementation meets its acceptance criteria by running the suite first, then tracing each criterion to execution evidence — the execution-grounded sibling of `adversarial-review`. The report lists narrative-changing limitations (unverified criteria, skipped steps, stale evidence) before the verdict, and states `none` explicitly when there are none. A red suite fails the verdict only on failures that are new against the merge-base.

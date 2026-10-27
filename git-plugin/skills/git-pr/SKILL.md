@@ -1,6 +1,6 @@
 ---
 created: 2026-01-21
-modified: 2026-10-09
+modified: 2026-10-26
 reviewed: 2026-06-10
 name: git-pr
 description: Create pull requests with descriptions, labels, and issue references. Use when user says "create PR", "open pull request", or "submit for review". From pushed branches.
@@ -98,11 +98,14 @@ EOF
 
 **Inside `<<'EOF'` (quoted delimiter), backticks, `$`, and `\` are already literal — never backslash-escape them.** A reflexive `\`` survives into the rendered PR description and needs a follow-up `gh pr edit --body-file` to clean up. (The `Write` tool → `--body-file` path above sidesteps the question entirely and stays the default for non-trivial bodies.)
 
-Body content of `/tmp/pr-body.md` — under squash-merge with *PR title and
-description* as the default message, this body **is the commit body on `main`**
-and release-please parses it (see `github-pr-title` →
-[merge-strategies.md](../github-pr-title/merge-strategies.md)). Write it as a
-commit message: prose first, footers last, no checklists or reviewer-only notes.
+Body content of `/tmp/pr-body.md` — the squash body follows the repo's
+`squash_merge_commit_message`: `COMMIT_MESSAGES` on release-please repos such as claude-plugins, `PR_BODY` elsewhere (OpenTofu-managed in laurigates/gitops `main.tf`; laurigates/gitops#318 moves release-please repos to `PR_BODY`). On a `PR_BODY` repo a
+squash-merged PR's body **is the commit body on `main`** and release-please
+parses it. Rebase is the default merge method, but
+single-commit and fixup-carrying PRs squash, so write every body as a commit
+message: prose first, footers last, no checklists, headings or reviewer-only
+notes. Method rule and body lint: `github-pr-title` →
+[merge-strategies.md](../github-pr-title/merge-strategies.md).
 
 ```markdown
 Add retry with backoff to the webhook dispatcher so transient 5xx
@@ -174,15 +177,15 @@ Examples:
 | Base branch | `gh pr create --base develop` |
 | Assignee | `gh pr create --assignee @me` |
 
-## Pre-merge Checklist Guidelines
+## Pre-merge Verification
 
-Include only actions **before** merging:
-- [ ] Tests pass locally
-- [ ] Code reviewed
-- [ ] Documentation updated
-- [ ] Breaking changes documented
+Keep pre-merge checks (tests pass, docs updated, breaking changes documented)
+out of the body: a squash merge on a `PR_BODY` repo copies the body into `git log`, where a
+`- [ ]` checklist is noise. Verify them through CI or say so in a PR comment.
 
-**Do NOT include post-merge steps in the checklist.** PR descriptions are closed and buried after merge — checklists embedded there are easily missed. Post-merge actions must be tracked as GitHub issues.
+Post-merge steps never go in the body either. PR descriptions are closed and
+buried after merge, so post-merge actions are tracked as GitHub issues and
+linked with `Refs #N` (see [REFERENCE.md](REFERENCE.md) § Post-Merge Follow-up Issues).
 
 ## Output
 
@@ -193,7 +196,7 @@ URL: https://github.com/org/repo/pull/42
 
 Related Issues:
   Fixes #123
-  Related: #456
+  Refs #456
 
 Status: Open
 ```
@@ -218,7 +221,7 @@ Status: Open
 | Check status | `gh pr checks` |
 | Verify closing keywords | `gh pr view <num> --json body --jq .body \| grep -oiE '(closes\|fixes\|resolves)[[:space:]]+#[0-9]+'` |
 | Check for stacked dependents | `gh pr list --base <head> --state open --json number,title` |
-| Merge stacked parent | `gh pr merge --squash` (omit `--delete-branch`) |
+| Merge stacked parent | `gh pr merge --<method>` (omit `--delete-branch`; method from [merge-strategies.md](../github-pr-title/merge-strategies.md)) |
 | Create follow-up issue | `gh issue create --title "[Chore] ..." --body-file /tmp/issue-body.md` |
 
 ## Agentic Optimizations

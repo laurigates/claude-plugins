@@ -587,6 +587,21 @@ def _parser_module():
     return mod
 
 
+def test_external_pr_merge_guard_block_has_own_signature():
+    """2026-W43: `external-pr-merge-guard.sh` denials ("Refusing to merge …")
+    had no needle, so they fell through to `hook:unclassified` -- 13 of the
+    18 unclassified hook_block events that week. They must now cluster under
+    their own key. Matching is case-folded, so the capitalised prose matches.
+    """
+    evidence = (
+        "PreToolUse:Bash hook error: [bash ${CLAUDE_PLUGIN_ROOT}/hooks/"
+        "external-pr-merge-guard.sh]: Refusing to merge laurigates/x#1: "
+        "the PR author is not you or a bot."
+    )
+    sig = _parser_module().canonical_signature("hook_block", "Bash", evidence)
+    assert sig == "hook:external-pr-merge-guard", sig
+
+
 def test_stop_hook_feedback_emits_one_event_per_record():
     """Issue #2659: a Stop-hook block reaches the transcript as an isMeta user
     record (`Stop hook feedback:\\n<reason>`), not a tool_result, so the parser

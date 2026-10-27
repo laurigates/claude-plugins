@@ -9,6 +9,7 @@
   ],
   "labels": ["dependencies"],
   "rangeStrategy": "pin",
+  "automergeStrategy": "squash",
   "timezone": "Europe/Helsinki",
   "prConcurrentLimit": 5,
   "prHourlyLimit": 2,
