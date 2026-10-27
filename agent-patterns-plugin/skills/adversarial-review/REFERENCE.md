@@ -85,3 +85,42 @@ It moves findings in both directions, and both are wins:
   cost of this shape is agent count, not context
 - `agent-patterns-plugin:tool-result-traps` — control-test the negatives the
   audit rests on
+
+## Workflow harnesses: what to preserve
+
+The SKILL.md framing section names the two templates; these are the clauses an
+adaptation must keep. Each is pinned by `scripts/tests/test-templates.sh`.
+
+1. **Lens bounds.** The lens list comes from the caller and must hold 2 or 3 lenses;
+   any other count aborts. It is never truncated, and duplicate lens keys abort.
+2. **Rank barrier (find-verify).** Duplicates at one `file:line` merge across lenses
+   into `raised_by`, because cross-model agreement is signal. The most severe wording
+   is kept, and every other claim at that location rides along in `also`. Two
+   different defects can share a line, so the verifier returns `distinct_also`: the
+   indexes of `also` entries that describe a different defect. Each comes back as
+   `unverified`. A verifier that does not rule on a non-empty `also` counts as dead.
+3. **Refute-by-default.** The verdict is the closed `confirmed | partially | refuted`
+   enum. A `confirmed` or `partially` verdict with no `reproduction` counts as a dead
+   verifier, so the code enforces it and not only the prompt.
+4. **Nothing dropped.** Findings past the cap, behind a dead verifier, or split off
+   from a merged entry return as `unverified` in the claims shape, so `args.claims`
+   re-runs Verify alone.
+5. **A fixed ref.** `target.ref` is required. An isolated verifier resolves it to a
+   SHA in the reviewed repo and detaches there; `HEAD` inside its own worktree names
+   the wrong commit.
+6. **Per-issue resolution (design-review).** Revise reads every review at once. Its
+   schema requires `resolution`, and the run reports `revised-incomplete` when any
+   lens has fewer rows than issues.
+7. **Honest status.** find-verify returns `unreviewed` when every finder died and
+   `partial` when one did. design-review returns `clean` only when every lens
+   answered `sound` with no issue. A dead lens gives `partial`, and a non-`sound`
+   verdict with no issue gives `inconsistent`.
+8. **Read-only.** Only the architect writes the spec file; every agent may write
+   scratch. Fixes are handed back, never committed.
+
+**Known deviation from the scale guard's ideal.** find-verify's verifiers run through
+a `verify()` helper with two call sites, one per isolation setting, and the cap is the
+variable `VERIFY_CAP`. The estimator counts neither, so the guard asks before every
+run of either template. One budget line covers both files only while each counts
+exactly the three lens agents. Verifiers run in waves of 5 (verify-before-filing's
+pacing), so a full cap plus control sample never starts 8 agents at once.
