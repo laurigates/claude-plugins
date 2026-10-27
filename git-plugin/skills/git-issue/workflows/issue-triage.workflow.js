@@ -18,6 +18,8 @@
  *                   are invisible to a per-batch slicer — that is the defect of
  *                   slicing inside each assessor, which is why this is a
  *                   separate stage and why it is ONE agent.
+ *   Pre-slice     — plain JS: an autonomous issue whose assessment names an
+ *                   overlapping open PR or a blocker is deferred before Slice.
  *   Projection    — plain JS, no agent: partition validation, file-overlap
  *                   serialisation, dependency layering, and chunking into waves
  *                   of `workflow-orchestration-plugin:workflow-implement-verify`
@@ -307,7 +309,18 @@ for (const a of assessments) {
   if (a.class !== 'autonomous') defer(a.number, CLASSES.includes(a.class) ? a.class : 'needs_human', a.reason ?? '')
 }
 const byNumber = new Map(assessments.map((a) => [a.number, a]))
-const SLICEABLE = assessments.filter((a) => a.class === 'autonomous').map((a) => a.number)
+// PRESERVE: an autonomous issue whose assessment names an open PR sharing its
+// files, or a blocker a person must supply, is deferred here, before slicing.
+// This holds on every path — including the single-issue one, which runs no
+// slicer — so a wave-0 dispatch never rests on the slicer noticing it.
+const isBlank = (s) => /^\s*(none|n\/a|-)?\s*$/i.test(String(s ?? ''))
+for (const a of assessments) {
+  if (a.class !== 'autonomous') continue
+  const prs = (a.overlap_prs ?? []).map(Number).filter((n) => Number.isInteger(n) && n > 0)
+  if (prs.length) defer(a.number, 'overlaps-open-pr', `assessment names open PR(s) ${prs.map((n) => `#${n}`).join(', ')}`)
+  else if (!isBlank(a.blockers)) defer(a.number, 'blocked', String(a.blockers))
+}
+const SLICEABLE = assessments.filter((a) => a.class === 'autonomous' && !placed.has(a.number)).map((a) => a.number)
 
 // ---------------------------------------------------------------------------
 // Slice — BARRIER. One agent over every assessment. Skipped when there is
@@ -361,7 +374,7 @@ const uniqueId = (base) => {
     if (!inputSet.has(n)) {
       log(`slice "${s.name}" names issue ${n} outside the input, discarded`)
     } else if (!sliceableSet.has(n)) {
-      log(`slice "${s.name}" names issue ${n}, classed ${byNumber.get(n)?.class ?? 'unassessed'}; the class wins`)
+      log(`slice "${s.name}" names issue ${n}, not sliceable (${deferred.find((d) => d.issue === n)?.reason ?? 'unassessed'}); the deferral wins`)
     } else if (owner.has(n)) {
       log(`issue ${n} placed in more than one slice, keeping "${owner.get(n)}"`)
     } else {

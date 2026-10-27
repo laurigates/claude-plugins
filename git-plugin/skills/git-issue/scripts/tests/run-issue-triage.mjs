@@ -8,20 +8,27 @@ const file = process.argv[2]
 const src = readFileSync(file, 'utf8').replace(/^export const meta/m, 'const meta')
 const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor
 const body = new AsyncFunction('agent', 'parallel', 'pipeline', 'phase', 'log', 'args', src)
-const parallel = async (thunks) => Promise.all(thunks.map((t) => t().catch(() => null)))
 
 async function run(argsIn, script) {
   const calls = []
   const prompts = {}
+  const schemas = {}
+  // thunks.length of each parallel() call: the in-flight bound on assessors.
+  const chunks = []
+  const parallel = async (thunks) => {
+    chunks.push(thunks.length)
+    return Promise.all(thunks.map((t) => t().catch(() => null)))
+  }
   const agent = async (prompt, opts) => {
     calls.push(opts.label)
     prompts[opts.label] = prompt
+    schemas[opts.label] = opts.schema
     const [kind, unit] = opts.label.split(':')
     const r = script(kind, unit, prompt)
     return r === undefined ? null : r
   }
   const result = await body(agent, parallel, async () => [], () => {}, () => {}, argsIn)
-  return { result, calls, prompts }
+  return { result, calls, prompts, schemas, chunks }
 }
 
 // One assessment row; `files` drives the overlap serialisation.
@@ -185,6 +192,58 @@ const BATCHES = { batches: [{ key: 'a', issues: [1, 2, 3] }, { key: 'b', issues:
     k === 'assess' ? (u === 'a' ? assessed('a', [row(1), row(2), row(3)]) : assessed('b', [row(4), row(5)]))
       : { slices: [slice('s', [1, 2, 3])], deferred: [{ issue: 4, reason: 'overlaps-open-pr', detail: '#12' }, { issue: 5, reason: 'blocked', detail: '#6' }] })
   check('slicer deferrals kept', reasonOf(r, 4) === 'overlaps-open-pr' && reasonOf(r, 5) === 'blocked', r.result.deferred)
+}
+// 13. An autonomous issue whose assessment names an open-PR overlap or a blocker is deferred
+//     before slicing — on the single-issue path that runs no slicer, and on the sliced path
+//     even when the slicer puts it in a slice.
+{
+  const solo = (extra) => run(BATCHES, (k, u) =>
+    u === 'a' ? assessed('a', [row(1, 'autonomous', ['src/f1.js'], extra), row(2, 'needs_human'), row(3, 'stale')])
+              : assessed('b', [row(4, 'decision_needed'), row(5, 'needs_env')]))
+  const ov = await solo({ overlap_prs: [42] })
+  check('single autonomous with overlap_prs → overlaps-open-pr, not dispatched',
+    reasonOf(ov, 1) === 'overlaps-open-pr' && ov.result.slices.length === 0 && ov.result.waves.length === 0 && !ov.calls.includes('slice'), ov.result)
+  const bl = await solo({ blockers: 'needs a maintainer to pick the API shape' })
+  check('single autonomous with blockers → blocked, not dispatched',
+    reasonOf(bl, 1) === 'blocked' && bl.result.slices.length === 0 && bl.result.waves.length === 0, bl.result)
+  const none = await solo({ blockers: 'None' })
+  check('blockers "None" is not a blocker → standalone slice', none.result.slices.length === 1 && none.result.waves[0][0].issues[0] === 1, none.result)
+  check('partition holds on the single-issue deferral path', partitioned(ov, [1, 2, 3, 4, 5]) && partitioned(bl, [1, 2, 3, 4, 5]), [ov.result, bl.result])
+
+  const many = await run(BATCHES, (k, u) =>
+    k === 'assess'
+      ? u === 'a' ? assessed('a', [row(1), row(2, 'autonomous', ['src/f2.js'], { overlap_prs: [7] }), row(3)])
+                  : assessed('b', [row(4), row(5, 'autonomous', ['src/f5.js'], { blockers: 'prod DB access' })])
+      : { slices: [slice('s', [1, 2, 3]), slice('t', [4, 5])], deferred: [] })
+  const sliceLine = many.prompts.slice.split('\n').find((l) => l.startsWith('Slice ONLY'))
+  check('flagged issues are not offered to the slicer', sliceLine === 'Slice ONLY these autonomous issues: 1, 3, 4', sliceLine)
+  check('flagged issues deferred even when the slicer slices them',
+    reasonOf(many, 2) === 'overlaps-open-pr' && reasonOf(many, 5) === 'blocked' && !many.result.slices.some((s) => s.issues.includes(2) || s.issues.includes(5)), many.result)
+  check('partition holds on the sliced deferral path', partitioned(many, [1, 2, 3, 4, 5]), many.result)
+}
+// 14. The closed enums are pinned: adding a class or a slicer reason must fail here.
+{
+  const r = await run(BATCHES, (k, u) =>
+    k === 'assess' ? (u === 'a' ? assessed('a', [row(1), row(2), row(3)]) : assessed('b', [row(4), row(5)]))
+      : { slices: [slice('s', [1, 2, 3, 4, 5])], deferred: [] })
+  const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b)
+  const classEnum = r.schemas['assess:a']?.properties?.issues?.items?.properties?.class?.enum
+  check('assess schema class enum is exactly the 7 closed classes',
+    eq(classEnum, ['autonomous', 'needs_human', 'decision_needed', 'needs_env', 'already_done', 'too_large', 'stale']) && eq(r.schemas['assess:b']?.properties?.issues?.items?.properties?.class?.enum, classEnum), classEnum)
+  const reasonEnum = r.schemas.slice?.properties?.deferred?.items?.properties?.reason?.enum
+  check('slice schema deferred.reason enum is exactly blocked|overlaps-open-pr|low-confidence',
+    eq(reasonEnum, ['blocked', 'overlaps-open-pr', 'low-confidence']), reasonEnum)
+}
+// 15. Assessors run <=WAVE in flight: one parallel() per chunk of WAVE batches.
+{
+  const keys = ['a', 'b', 'c', 'd', 'e']
+  const five = { batches: keys.map((key, i) => ({ key, issues: [i + 1] })) }
+  const script = (k, u) => k === 'assess' ? assessed(u, [row(keys.indexOf(u) + 1)]) : { slices: keys.map((_, i) => slice(`s${i + 1}`, [i + 1])), deferred: [] }
+  const dflt = await run(five, script)
+  check('default WAVE 4: 5 batches → parallel chunks [4, 1]', JSON.stringify(dflt.chunks) === '[4,1]', dflt.chunks)
+  const p2 = await run(JSON.stringify({ ...five, parallel: '2' }), script)
+  check('args.parallel=2 (stringified): 5 batches → chunks [2, 2, 1]', JSON.stringify(p2.chunks) === '[2,2,1]', p2.chunks)
+  check('every batch still assessed under the wave bound', p2.calls.filter((c) => c.startsWith('assess:')).length === 5 && partitioned(p2, [1, 2, 3, 4, 5]), p2.calls)
 }
 
 process.exit(failed ? 1 : 0)

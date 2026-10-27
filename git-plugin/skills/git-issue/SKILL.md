@@ -220,7 +220,10 @@ discovers, which is why the grouping lane is always ONE agent. For
 where only `autonomous` is ever sliced and an environment need is `needs_env` plus
 a reason, never a new class; (e) the Slice stage is ONE agent over every batch's
 assessments, because two issues assessed in different batches can touch one
-file; (f) the plain-JS projection after it, which validates the partition, adds
+file; (f) the plain-JS steps around it: before slicing, an `autonomous` issue
+whose assessment names an overlapping open PR or a blocker is deferred as
+`overlaps-open-pr` or `blocked`, on every path including the single-issue one
+that runs no slicer; after it, the projection validates the partition, adds
 a dependency between any two slices that share a file, defers a dependency cycle,
 and chunks each layer at implement-verify's 5-unit cap — so no wave can hand two
 units the same file, whatever the slicer returned.

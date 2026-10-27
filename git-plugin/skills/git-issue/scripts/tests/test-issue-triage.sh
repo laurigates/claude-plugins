@@ -8,6 +8,11 @@
 #     kept once, non-autonomous classes never sliced);
 #   - cross-batch file overlap is serialised into separate waves, so no wave
 #     hands implement-verify two units that own the same file;
+#   - an autonomous issue whose assessment names an open-PR overlap or a
+#     blocker is deferred before slicing, including the single-issue path
+#     that runs no slicer;
+#   - the closed class and slicer-reason enums are exact (adding a value fails);
+#   - assessors run at most WAVE per parallel() call;
 #   - a dependency cycle is deferred, never dispatched;
 #   - waves are implement-verify `units`, chunked at its 5-unit cap;
 #   - the floor/empty guards spend zero agents, and a dead slicer aborts
