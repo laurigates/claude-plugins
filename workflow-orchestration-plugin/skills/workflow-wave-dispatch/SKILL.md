@@ -4,7 +4,7 @@ description: Sequential-wave dispatch for multi-agent work with cross-task depen
 user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 created: 2026-04-24
-modified: 2026-09-02
+modified: 2026-10-26
 reviewed: 2026-09-02
 ---
 
@@ -54,6 +54,12 @@ Each wave is itself a `parallel-agent-dispatch` call. This skill covers
 wave **scheduling**: which waves exist, what gates between them, what to
 do when a gate fails. The gate *set* itself is the six-gate table in
 `agent-patterns-plugin:wave-based-dispatch` § Six-Gate Verification Table.
+
+An implementation wave whose units are known is one run of the
+`workflow-implement-verify` template, with `base` set to the branch the previous
+wave landed on. Keep the wave list in a plan file, not in a loop inside one
+script: a wave usually waits on a merge or a human decision, and a JS loop
+cannot wait across either.
 
 ## Scheduling Heuristics
 
