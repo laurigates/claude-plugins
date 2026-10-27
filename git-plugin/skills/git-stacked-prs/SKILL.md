@@ -4,7 +4,7 @@ description: "GitHub native stacked PRs via gh stack. Use when creating, syncing
 user-invocable: false
 allowed-tools: Bash, Read
 created: 2026-09-04
-modified: 2026-09-04
+modified: 2026-10-26
 reviewed: 2026-09-04
 ---
 
@@ -79,7 +79,7 @@ gh stack submit --auto --open               # auto-generated titles, ready for r
 
 Because `--auto` generates titles from commits, the commit subjects must already
 be conventional (`.claude/rules/conventional-commits.md`) — a PR title is what
-lands on squash-merge.
+lands on squash-merge, and each commit lands as-is on rebase-merge.
 
 ## Keeping the stack current
 
@@ -117,12 +117,26 @@ auto-retarget and CI behaviour above.
 ## Merging
 
 ```bash
-gh stack merge <stack-no | pr-no> --squash -y
+gh stack merge <stack-no | pr-no> --<method> -y
 ```
 
 Merge methods: `--merge`, `--squash`, `--rebase` (or `--merge-method <m>`).
 `-y` skips the confirmation prompt. PRs merge **bottom-to-top**; merging a
 mid-stack PR leaves the ones above open and retargeted.
+
+Pick `<method>` per PR with the merge-method rule (`github-pr-title` →
+[merge-strategies.md](../github-pr-title/merge-strategies.md)): rebase by
+default, squash when there is a reason. One `gh stack merge` applies one method
+to every PR it merges, so when the layers disagree, merge up to the last PR
+that shares a method (`gh stack merge <pr-no>`), then continue from there.
+`gh stack sync` rebases the remaining layers after either method.
+
+For an **ad-hoc** chain, prefer rebase-merging the parent: its commits land as
+patch-equivalent commits, so a plain `git rebase origin/main` drops them from
+the child. A squashed parent leaves no patch-equivalent commits, so a plain
+rebase replays the parent's commits on top of their own squash and conflicts;
+only `git rebase --onto <old-parent-tip>`, with the parent's tip recorded before
+the merge, avoids that (`git-merge-hazards` §2).
 
 ## Limits
 
@@ -163,7 +177,7 @@ operating on the same stack. Back off; do not force.
 | Non-interactive PR creation | `gh stack submit --auto --open` |
 | Disable hyperlink escapes in captured output | `GH_STACK_HYPERLINKS=0 gh stack view` |
 | Deterministic colours in logs | `GH_STACK_THEME=light` (or `dark`) |
-| Merge without prompting | `gh stack merge <n> --squash -y` |
+| Merge without prompting | `gh stack merge <n> --<method> -y` |
 | Sync and clean merged branches | `gh stack sync --prune` |
 
 `gh stack view --json` exits 0 with valid JSON on an empty result, so it is
@@ -180,7 +194,7 @@ view` exits 2 outside a stack and would cancel sibling calls in a batch.
 | Publish | `gh stack push && gh stack submit --auto --open` |
 | Refresh after trunk moves | `gh stack sync` |
 | Adopt an existing chain | `gh stack link <pr-a> <pr-b>` |
-| Merge the stack | `gh stack merge <n> --squash -y` |
+| Merge the stack | `gh stack merge <n> --<method> -y` |
 | Tear down | `gh stack unstack` |
 
 ## Related

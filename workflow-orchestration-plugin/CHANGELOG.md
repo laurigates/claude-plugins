@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.17.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.16.0...workflow-orchestration-plugin-v1.17.0) (2026-10-27)
+
+
+### Features
+
+* **workflow-orchestration-plugin:** add workflow-bake-off compete-and-judge template ([#3250](https://github.com/laurigates/claude-plugins/issues/3250)) ([658ac20](https://github.com/laurigates/claude-plugins/commit/658ac2073e4596a938c638e6c4d4f52569fa5ac3))
+
+## [1.16.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.15.0...workflow-orchestration-plugin-v1.16.0) (2026-10-26)
+
+
+### Features
+
+* **workflow-orchestration-plugin:** add implement-verify and repair-round workflow templates ([#3230](https://github.com/laurigates/claude-plugins/issues/3230)) ([85ac3c9](https://github.com/laurigates/claude-plugins/commit/85ac3c9ba76ac4d065b259eb231c0ef12d21b24f))
+
 ## [1.15.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.14.1...workflow-orchestration-plugin-v1.15.0) (2026-10-23)
 
 

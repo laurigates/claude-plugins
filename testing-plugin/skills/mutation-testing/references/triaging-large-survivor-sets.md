@@ -18,10 +18,13 @@ Split each scan's files into clusters of 3–10 related files and give each clus
 
    ```bash
    jq --arg f "src/orders/service.ts" \
-     '.files[$f].mutants[] | select(.status=="Survived" or .status=="NoCoverage")
+     '.files[$f].mutants[] | select((.status=="Survived" or .status=="NoCoverage")
+        and ((.static|not) or .testsCompleted > 5))
       | {id, mutatorName, replacement, status, line: .location.start.line}' \
      reports/mutation/mutation.json
    ```
+
+   The `testsCompleted > 5` clause drops static mutants that ran only against an unrelated test; see SKILL.md § "Static survivors under the Vitest runner are often false".
 
 2. The source file.
 3. The tests that cover it (`coveredBy` / `killedBy` in the report name them).
@@ -72,6 +75,8 @@ A triage agent claiming "source bug" is making a claim about production behaviou
 - Return one of *held*, *refuted* or *downgraded* (real but lower impact, or a test gap rather than a bug), with the reproduction.
 
 In the source run 31 claims went through this stage: 30 held, 1 was refuted, several were downgraded, and one headline example was corrected. The correction matters as much as the refutation, because a wrong headline example is the one everyone repeats.
+
+When there are more claims than skeptics you will pay for, rank every cluster's claims by severity first and give the cap to the top of that list, not to whichever cluster finished triage first. Carry the rest forward as unverified claims for a later verify-only pass rather than dropping them. `workflows/survivor-triage.workflow.js` (SKILL.md § "Workflow harness (template)") runs Stages 1 and 2 this way.
 
 For the skeptic pattern itself — isolation, the refute-by-default brief, when the stakes justify the cost — use `agent-patterns-plugin:adversarial-review`.
 

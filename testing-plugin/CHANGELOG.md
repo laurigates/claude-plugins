@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.24.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.23.4...testing-plugin-v3.24.0) (2026-10-27)
+
+
+### Features
+
+* **testing-plugin:** add survivor-triage workflow harness to mutation-testing ([#3244](https://github.com/laurigates/claude-plugins/issues/3244)) ([c66058f](https://github.com/laurigates/claude-plugins/commit/c66058f36173cb043db30cdcf1830187f22b5f66))
+
 ## [3.23.4](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.23.3...testing-plugin-v3.23.4) (2026-10-23)
 
 
