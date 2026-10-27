@@ -187,6 +187,7 @@ Verify orchestrator premises (file counts, build state, artefact presence) befor
 - Verifier return-contract: Premise / Evidence / Verdict / Implicit assumptions
 - Cheapest-verifier table mapping premise shape to the right tool (`Glob`, `Grep`, read-only agent)
 - Anti-patterns catalog: name-equals-behaviour, stale-counter, symptom-not-cause
+- `workflows/recon-map.workflow.js` template: read-only mappers over a caller-supplied unit list (deterministic lists preferred, cap 10), then an optional critic, up to 3 gap-fillers, a verifier and a synthesizer; every claim cites file:line or command output
 
 #### `tool-result-traps`
 Tool results that mean something other than they look — an empty result, a green exit, and a well-formed line of output are each claims about mechanics, not content. Complements `verify-before-plan`: that one verifies a premise before a wave, this one distrusts the tool output a verdict is built on.
