@@ -15,6 +15,7 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of the preflight → checkpoint
 | workflow-interrupted-run-recovery | — | Recover a `Workflow` run killed mid-flight: salvage killed agents' worktrees, resume without duplicating PRs the completed agents opened |
 | workflow-scale-budget | — | Size a `Workflow` script's agent count before running it: cost per agent, per-item multipliers, theme grouping, re-drive design. `scripts/workflow-run-tally.sh` tallies a finished run's realised agents and tokens from its transcripts, and a session's total across its runs |
 | workflow-implement-verify | — | `Workflow` templates: implement 2–5 units in worktrees with a fresh verifier each and at most one repair round, then open PRs sequentially; or close verifier findings on existing branches (`repair-round`) |
+| workflow-bake-off | — | `Workflow` template: 2–5 independent attempts, 1–3 lens judges, a winner computed in JS (Borda or a metric rule, deterministic tiebreaks), then an optional refine that grafts runner-up ideas; plus a protocol for measured A/B arms |
 | workflow-verify-before-filing | `/workflow:verify-before-filing` | Verify accumulated bug claims at upstream HEAD and dedup against trackers before filing issues |
 | workflow-wave-dispatch | — | Sequential-wave dispatch for multi-agent work with cross-task dependencies, gating each wave on verification |
 
