@@ -1,6 +1,6 @@
 {
   "accessibility-plugin": "2.3.6",
-  "agent-patterns-plugin": "2.53.0",
+  "agent-patterns-plugin": "2.54.0",
   "agents-plugin": "1.16.2",
   "api-plugin": "2.0.1",
   "bevy-plugin": "1.4.2",
@@ -37,7 +37,7 @@
   "rust-plugin": "1.7.2",
   "taskwarrior-plugin": "1.15.0",
   "terraform-plugin": "1.7.11",
-  "testing-plugin": "3.23.4",
+  "testing-plugin": "3.24.0",
   "tools-plugin": "2.15.0",
   "typescript-plugin": "1.10.3",
   "session-plugin": "1.14.2",

@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.54.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.53.0...agent-patterns-plugin-v2.54.0) (2026-10-27)
+
+
+### Features
+
+* **agent-patterns-plugin:** ship find-verify and design-review harnesses for adversarial-review ([#3243](https://github.com/laurigates/claude-plugins/issues/3243)) ([73ad28b](https://github.com/laurigates/claude-plugins/commit/73ad28b444c262c5687f6fdd3448d81f1b20c51a))
+
 ## [2.53.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.52.1...agent-patterns-plugin-v2.53.0) (2026-10-23)
 
 
