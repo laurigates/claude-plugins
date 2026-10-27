@@ -55,7 +55,7 @@ layout). They used 7–10 agents and 1.2–2.9 M tokens each.
 | Field | Meaning | Default |
 |---|---|---|
 | `context` | the brief every entrant and judge sees, including hard requirements | — |
-| `out` | absolute output directory; entry `k` writes only `${out}/${k}`, the refine writes `${out}/final` | — |
+| `out` | absolute output directory; entry `k` writes only `${out}/${k}`, judge `j` keeps scratch in `${out}/_judges/${j}`, the refine writes `${out}/final` | — |
 | `entries` | 2–5 `{ key, angle }`; order is the final tiebreak | — |
 | `judges` | 1–3 `{ key, lens }` | — |
 | `setup` | 0–2 `{ key, brief }` for what everyone must share (render harness, measurement script) | `[]` |
@@ -66,15 +66,16 @@ layout). They used 7–10 agents and 1.2–2.9 M tokens each.
 | `finish` | `refine` or `none` | `refine` |
 | `skills`, `decisions` | skills to name, user decisions to relay verbatim | — |
 
-Keys must match `[A-Za-z0-9][A-Za-z0-9_-]*` (they become directory names), be
-unique across setup, entries and judges, and not be `final`.
+Keys must match `[A-Za-z0-9][A-Za-z0-9_-]*` (they become directory names, and
+cannot start with `_`, so none can be `_judges`), be unique across setup,
+entries and judges, and not be `final`.
 
 ## How the winner is computed
 
 | Mode | Order |
 |---|---|
 | `borda` | Borda points (K−1−position over the K surviving entries, summed over judges), then mean score (one score per judge per entry), then caller order |
-| `metric` | meets acceptance per **every** measuring judge, then each `metric.keys` entry in turn (median across judges, missing values last), then caller order |
+| `metric` | meets acceptance per **every** measuring judge, then each `metric.keys` entry in turn (median across judges, one measurement row per judge per entry and one value per name in it, missing values last), then caller order |
 
 - Judges re-measure. An entrant's self-reported metrics and self-assessment are
   never used in the aggregation.
@@ -102,6 +103,11 @@ not a script to run verbatim.** Read it, then rewrite it for the work in front o
 `MAX_JUDGES` and `QUORUM`, the refine step (a decision document or a contract instead of a
 polished artefact), and the setup briefs.
 
+The design this template was cut from also has a baseline row (metric judges measure the
+unchanged starting point beside the entries) and a verify round after Refine (a verifier, one
+fix, one re-verify: up to 3 more agents). Neither is in the template; an adaptation that needs
+one adds it, with a scenario in the test.
+
 **Agent budget:** 11 — at most 2 setup agents, 5 entrants, 3 judges and 1 refine agent. A run without setup, with 3 entries, 3 judges and a refine, spawns 7.
 
 **Preserve across any adaptation:** (a) entries and judges come from the caller's `args`, cut
@@ -122,7 +128,9 @@ mutations happen **only** in the single sequential finalise stage, never inside 
 agent; that stage also deletes the losing branches and worktrees by name.
 
 **Skip the harness when:** there is one plausible approach, or one reviewer's opinion is the
-whole question. That is a linear pass, and the harness is pure overhead.
+whole question. That is a linear pass, and the harness is pure overhead. [Inputs](#inputs) and
+[How the winner is computed](#how-the-winner-is-computed) remain the authoritative description of
+*what* each stage must produce; the harness only fixes *how* the work is split.
 
 ## Measured arms
 

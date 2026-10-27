@@ -14,9 +14,11 @@
 #     A metric judge whose rows carry no finite metric value is not a panel
 #     member either: it would make every median null and crown entry 0.
 #   - Metric mode ranks on judge-measured numbers, never on an entrant's
-#     self-report or a judge's ranking; a missing value sorts last.
+#     self-report or a judge's ranking; a missing value sorts last, and a
+#     judge's repeated measurement row or value counts once.
 #   - Every judge's prompt lists every surviving entry (barrier (d)), and every
 #     verdict a judge returned reaches the result, unusable ones named.
+#   - Judge scratch sits under ${out}/_judges/, a name no key can take.
 #   - Over/under caps, duplicate or path-like keys, and a dead setup stage
 #     abort before any further agent is spawned.
 set -euo pipefail

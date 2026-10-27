@@ -119,14 +119,15 @@ const measured = (m) => (m.values ?? []).some((x) => METRIC.keys.some((k) => k.n
 // Metric: an entry meets acceptance only when every judge that measured it
 // says so; each metric is the median of the judges' measurements. Entrants'
 // self-reported numbers are never read here.
+// One row per judge per entry (its first measured row) and one value per
+// metric name in that row: a judge that repeats a row or a value gets no
+// extra vote in the median or in acceptance.
 const metricRows = (alive, verdicts) =>
   alive.map((key, order) => {
-    const ms = verdicts.flatMap((v) => (v.measurements ?? []).filter((m) => String(m.key) === key && measured(m)))
+    const ms = verdicts.map((v) => (v.measurements ?? []).find((m) => String(m.key) === key && measured(m))).filter(Boolean)
+    const valueOf = (m, name) => (m.values ?? []).find((x) => x.name === name && Number.isFinite(x.value))?.value
     const values = Object.fromEntries(
-      METRIC.keys.map((k) => [
-        k.name,
-        median(ms.flatMap((m) => (m.values ?? []).filter((x) => x.name === k.name && Number.isFinite(x.value)).map((x) => x.value))),
-      ]),
+      METRIC.keys.map((k) => [k.name, median(ms.map((m) => valueOf(m, k.name)).filter((v) => v !== undefined))]),
     )
     return { key, order, meets_acceptance: ms.length > 0 && ms.every((m) => m.meets_acceptance === true), measured_by: ms.length, values }
   })
@@ -313,7 +314,7 @@ Entries (key, directory, the entrant's own summary — a claim, not evidence):
 ${entries.map((e) => `  - ${e.key}: ${e.dir}\n    summary: ${e.summary}\n    self-assessment: ${e.self_assessment}`).join('\n')}
 
 Judge only what you see: open the artefacts in each directory and re-measure; never score a self-grade or summary.
-A claim that does not reproduce ranks above any other defect. Read-only: write scratch only under ${OUT}/judge-${j.key}/.
+A claim that does not reproduce ranks above any other defect. Read-only: write scratch only under ${OUT}/_judges/${j.key}/.
 Use the full 1-10 range rather than giving everyone the same score; a hard-requirement violation caps an entry at 4.
 Return a score row for every entry, a ranking listing every key exactly once (best first), and the ideas from any
 entry worth grafting into whichever entry wins.
@@ -355,6 +356,8 @@ winner without diluting it, and record every flagged idea as taken or not. Touch
 // Guards — each an explicit, named abort before any agent runs.
 // ---------------------------------------------------------------------------
 
+// A key cannot start with `_`, so no setup or entry directory can be `_judges`,
+// where judges keep their scratch.
 const KEY = /^[A-Za-z0-9][A-Za-z0-9_-]*$/
 const allKeys = [...SETUP, ...ENTRIES, ...JUDGES].map((x) => x.key)
 if (ENTRIES.length < FLOOR) return { abort: true, reason: 'below-floor', entries: ENTRIES.length }

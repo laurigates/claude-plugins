@@ -230,5 +230,37 @@ const REFINED = { dir: '/out/final', changes: '', grafted: [], files: [], remain
   check('no-quorum: unusable verdict kept in result.verdicts', nq.result.reason === 'no-quorum' && JSON.stringify(nq.result.verdicts.map((v) => v.judge)) === '["j1","j2"]', nq.result)
   check('no-quorum: unusable judge named in excluded_judges', JSON.stringify(nq.result.excluded_judges) === '["j2"]', nq.result.excluded_judges)
 }
+// 15. Metric mode: one measurement row per judge per entry, one value per metric name in it.
+//     A judge that repeats a row (or a value) must not outvote the other judge in the median.
+{
+  const row = (key, crossings, extra = {}) => ({ key, meets_acceptance: true, values: [{ name: 'crossings', value: crossings }, { name: 'length', value: 1 }], ...extra })
+  const judge = (m1) => (k, key) =>
+    k === 'enter' ? ENTRY(key)
+      : k === 'judge' ? VERDICT(['a', 'b'], undefined, { measurements: key === 'm1' ? m1 : [row('a', 9), row('b', 2)] })
+      : undefined
+  // Once each: a = median(1, 9) = 5, b = median(5, 2) = 3.5 → b (lower is better).
+  // Counting m1's three `a` rows: a = median(1, 1, 1, 9) = 1 → a.
+  const r = await run(METRIC_ARGS(['a', 'b'], ['m1', 'm2'], { finish: 'none' }), judge([row('a', 1), row('a', 1), row('a', 1), row('b', 5)]))
+  const a = r.result.standings.find((s) => s.key === 'a')
+  check('metric: a duplicated measurement row counts once', a.measured_by === 2 && a.values.crossings === 5, a)
+  check('metric: duplicated rows cannot flip the winner', r.result.winner === 'b', r.result.standings)
+  const v = await run(METRIC_ARGS(['a', 'b'], ['m1', 'm2'], { finish: 'none' }),
+    judge([row('a', 1, { values: [{ name: 'crossings', value: 1 }, { name: 'crossings', value: 1 }, { name: 'crossings', value: 1 }, { name: 'length', value: 1 }] }), row('b', 5)]))
+  check('metric: a repeated value inside one row counts once', v.result.winner === 'b' && v.result.standings.find((s) => s.key === 'a').values.crossings === 5, v.result.standings)
+  const acc = await run(METRIC_ARGS(['a', 'b'], ['m1', 'm2'], { finish: 'none' }), judge([row('a', 1), row('a', 1, { meets_acceptance: false }), row('b', 5)]))
+  check('metric: only a judge\'s first row for an entry votes on acceptance', acc.result.standings.find((s) => s.key === 'a').meets_acceptance === true, acc.result.standings)
+}
+// 16. Judge scratch lives under ${out}/_judges/, which no key can name, so an entry keyed
+//     like the old `judge-<key>` scratch dir is never written by a judge.
+{
+  const r = await run(base(['judge-j1', 'b'], ['j1'], { finish: 'none' }), (k, key) =>
+    k === 'enter' ? ENTRY(key) : k === 'judge' ? VERDICT(['b', 'judge-j1']) : undefined)
+  const jp = r.calls.find((c) => c.label === 'judge:j1').prompt
+  const scratch = jp.match(/scratch only under (\S+?)\/?\./)?.[1]
+  check('judge scratch is under _judges/', scratch === '/out/_judges/j1', scratch)
+  check('judge scratch is no entry directory', r.result.entries.every((e) => e.dir !== scratch && !scratch.startsWith(`${e.dir}/`)), [scratch, r.result.entries.map((e) => e.dir)])
+  const under = await run(base(['_judges', 'b'], ['j1']), () => ENTRY('x'))
+  check('a key cannot name the judges\' scratch dir', under.result.reason === 'bad-key' && under.calls.length === 0, under.result)
+}
 
 process.exit(failed ? 1 : 0)
