@@ -83,6 +83,9 @@ Worked instances, all from the migration eval:
 - **`adversarial-review`** — a skill whose stated precondition is "stakes are
   high, spend deliberately" would pay an opus gate agent on every invocation,
   *including the ones it refuses*.
+  Reopened 2026-10-27: the shipped `find-verify` and `design-review` templates
+  keep the gate in prose before the harness and abort below two lenses (see the
+  plan's rejected-table row).
 
 ## Platform guideline agrees (2.1.219+)
 
