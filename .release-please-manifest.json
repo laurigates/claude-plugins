@@ -1,6 +1,6 @@
 {
   "accessibility-plugin": "2.3.6",
-  "agent-patterns-plugin": "2.53.0",
+  "agent-patterns-plugin": "2.55.0",
   "agents-plugin": "1.16.2",
   "api-plugin": "2.0.1",
   "bevy-plugin": "1.4.2",
@@ -16,10 +16,10 @@
   "css-plugin": "1.2.3",
   "documentation-plugin": "1.13.3",
   "evaluate-plugin": "1.18.0",
-  "feedback-plugin": "1.13.2",
+  "feedback-plugin": "1.13.3",
   "finops-plugin": "1.4.4",
   "foundryvtt-plugin": "1.4.0",
-  "git-plugin": "2.65.0",
+  "git-plugin": "2.66.0",
   "github-actions-plugin": "1.13.4",
   "health-plugin": "1.23.6",
   "home-assistant-plugin": "1.4.1",
@@ -37,10 +37,10 @@
   "rust-plugin": "1.7.2",
   "taskwarrior-plugin": "1.15.0",
   "terraform-plugin": "1.7.11",
-  "testing-plugin": "3.23.4",
+  "testing-plugin": "3.24.0",
   "tools-plugin": "2.15.0",
   "typescript-plugin": "1.10.3",
   "session-plugin": "1.14.2",
   "software-design-plugin": "1.2.0",
-  "workflow-orchestration-plugin": "1.16.0"
+  "workflow-orchestration-plugin": "1.17.0"
 }

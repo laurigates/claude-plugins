@@ -28,7 +28,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.53.0",
+      "version": "2.55.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -332,7 +332,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.13.2",
+      "version": "1.13.3",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -392,7 +392,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.65.0",
+      "version": "2.66.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -822,7 +822,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.23.4",
+      "version": "3.24.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -879,7 +879,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - preflight checks, checkpoint refactoring, wave dispatch, run recovery and budgeting",
-      "version": "1.16.0",
+      "version": "1.17.0",
       "author": {
         "name": "Lauri Gates"
       },
