@@ -248,6 +248,7 @@ Adversarial second-pass review that tries to break code, designs, plans, or ADRs
 - Lens table delegating domain checklists to `code-review`, security-audit, `verify-before-plan`, `cold-read-gate`
 - Isolated opus reviewer with an inverted "find the fault" objective
 - Triage gate separating genuine faults from manufactured objections before acting
+- Workflow templates: `find-verify` (2–3 lens finders, cross-lens dedup and severity rank, capped refute-by-default verifiers, re-runnable `unverified` claims) and `design-review` (draft, 2–3 lens reviewers, evidence-backed revise)
 
 #### `execution-grounded-review`
 Verify an implementation meets its acceptance criteria by running the suite first, then tracing each criterion to execution evidence — the execution-grounded sibling of `adversarial-review`. The report lists narrative-changing limitations (unverified criteria, skipped steps, stale evidence) before the verdict, and states `none` explicitly when there are none. A red suite fails the verdict only on failures that are new against the merge-base.
