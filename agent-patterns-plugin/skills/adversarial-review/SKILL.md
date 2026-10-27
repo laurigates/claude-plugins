@@ -6,7 +6,7 @@ argument-hint: "path|PR|file|plan description; optional 'focus on X'"
 allowed-tools: Agent, Read, Glob, Grep, Bash(git diff *), Bash(git log *), Bash(gh pr view *), TodoWrite
 model: opus
 created: 2026-06-21
-modified: 2026-10-18
+modified: 2026-10-27
 compatibility: claude-code
 reviewed: 2026-09-02
 ---
@@ -154,6 +154,42 @@ the objections you dropped in triage and why. Apply or hand off the genuine
 fixes. Re-dispatch a fresh reviewer **only if the verdict was `flawed`**;
 do not loop more than twice — a third round means a structural problem the
 review can't resolve.
+
+## Workflow harness (template)
+
+`workflows/find-verify.workflow.js` (an existing change) and
+`workflows/design-review.workflow.js` (a spec drafted from recon) ship beside this
+skill. **Each is a TEMPLATE to adapt, not a script to run verbatim.** Read it, then
+rewrite it for the work in front of you. Step 1's precondition gate stays here in
+prose, before any harness runs; no gate agent goes inside it.
+
+**Adapt freely:** the lens prompts and the skills each lens invokes, `context`,
+`decided` and `measured`, `verifyCap` (≤ 6), `controlSample` (≤ 2), the verifier's
+run hint and isolation, and the spec sections. A find-verify lens may be an external
+model (`finder: { pal: '<model>' }`); check `mcp__pal__listmodels` first.
+
+**Agent budget:** 3 + 1 x <verifiers or architect passes> — the counted 3 are the lens agents (`lenses.slice(0, 3)` in both files); find-verify adds one verifier per ranked finding up to `verifyCap` plus the control sample (≤ 11 in all), design-review adds the drafter and the reviser (5).
+
+**Preserve across any adaptation:** (a) the lens list comes from the caller, aborts
+below 2 or above 3, and is never truncated; (b) find-verify's Rank barrier — merge
+duplicates across lenses into `raised_by` (cross-model agreement is signal), rank by
+severity, then cap — and its closed `confirmed | partially | refuted` verdict with
+refute-by-default; (c) nothing past the cap or behind a dead verifier is dropped: it
+returns as `unverified` in the claims shape, so `args.claims` re-runs Verify alone;
+(d) design-review's Revise reads every review at once and records each finding as
+accepted or rejected with evidence; (e) both are read-only and hand fixes back.
+
+Never `Workflow({resumeFromRunId})` to retry a few failed worktree agents — a resume
+re-runs agents that already succeeded and opens duplicate PRs (#1868). Re-dispatch the
+failed units fresh and sequentially after checking
+`gh pr list --head <branch> --state all --json number,state`.
+
+Push, PR creation, and GitHub mutations happen **only** in the single sequential
+finalise stage, never inside a fanned-out agent. These templates have no such stage.
+
+**Skip the harness when:** there is one lens on one target — dispatch one reviewer
+(Step 3) and triage inline. The Execution steps remain the authoritative description of
+*what* each stage must produce; the harness only fixes *how* the work is split.
 
 ## Anti-patterns
 
