@@ -99,16 +99,28 @@ repo's cost rule.
 
 ## The two shapes with no fit here
 
-Of the six shapes in the source taxonomy, two have **no** instance in this repo.
-That is a finding, not a gap to close later — do not go looking for one.
+Of the six shapes in the source taxonomy, two have **no** instance among this
+repo's own skills. That is a finding, not a gap to close later — do not go
+looking for one.
 
-**Tournament — no fit.** This repo's ranking signals are **deterministic scores**
-(`grade_deterministic.py`), not judgements. A comparator agent asked to rank an
-already-sorted list can only change the order on an exact tie, so the bracket
-launders a coin-flip into a decision that looks researched. The one skill whose
-thesis sounds tournament-shaped, `multi-model-delegation`, is the *inverse* of a
-judge: its value is the **disagreement**, resolved against the codebase, never by
-picking the more confident model.
+**Tournament — no fit for this repo's own skills; consumer projects ship
+`compete-and-judge`, provided the winner comes from JS aggregation or a metric
+script, never from a model reading the verdicts.** This repo's ranking signals
+are **deterministic scores** (`grade_deterministic.py`), not judgements. A
+comparator agent asked to rank an already-sorted list can only change the order
+on an exact tie, so the bracket launders a coin-flip into a decision that looks
+researched. The one skill whose thesis sounds tournament-shaped,
+`multi-model-delegation`, is the *inverse* of a judge: its value is the
+**disagreement**, resolved against the codebase, never by picking the more
+confident model.
+
+Consumer projects are different: 4 ad-hoc runs across 4 projects were
+tournaments judged on taste or on a shared metric, where no score existed before
+the judges looked. `workflow-orchestration-plugin:workflow-bake-off` ships the
+template for them. Its judges rank and measure, and plain JS computes the winner
+(Borda, or a lexicographic metric rule) with deterministic tiebreaks; a behaviour
+test pins that. An adaptation that hands the pick to a synthesizer agent "starting
+from the entry the judges favour" brings the coin-flip back.
 
 **Loop-until-done — no fit.** Every loop here is bounded by an **enumerable set
 before it starts** — that is a fan-out with a ceiling, not unknown-size work. The
