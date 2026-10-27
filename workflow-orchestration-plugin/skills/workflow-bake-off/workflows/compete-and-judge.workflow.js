@@ -102,17 +102,26 @@ const bordaRows = (alive, verdicts) =>
       const i = cleanRanking(v.ranking, alive).indexOf(key)
       return i < 0 ? 0 : alive.length - 1 - i
     })
-    const scores = verdicts.flatMap((v) => (v.scores ?? []).filter((s) => String(s.key) === key && Number.isFinite(s.score)).map((s) => s.score))
+    // One score per judge per entry (its first valid row): a duplicated row is not an extra vote.
+    const scores = verdicts
+      .map((v) => (v.scores ?? []).find((s) => String(s.key) === key && Number.isFinite(s.score)))
+      .filter(Boolean)
+      .map((s) => s.score)
     return { key, order, borda: points.reduce((a, b) => a + b, 0), mean: mean(scores) }
   })
 const bordaCore = (a, b) => b.borda - a.borda || desc(a.mean, b.mean)
+
+// A measurement row counts only when it carries a finite value for at least
+// one METRIC.keys name. A row with `values: []` measured nothing, and must not
+// vote on acceptance, fill a quorum, or close a ranking gap.
+const measured = (m) => (m.values ?? []).some((x) => METRIC.keys.some((k) => k.name === x.name) && Number.isFinite(x.value))
 
 // Metric: an entry meets acceptance only when every judge that measured it
 // says so; each metric is the median of the judges' measurements. Entrants'
 // self-reported numbers are never read here.
 const metricRows = (alive, verdicts) =>
   alive.map((key, order) => {
-    const ms = verdicts.flatMap((v) => (v.measurements ?? []).filter((m) => String(m.key) === key))
+    const ms = verdicts.flatMap((v) => (v.measurements ?? []).filter((m) => String(m.key) === key && measured(m)))
     const values = Object.fromEntries(
       METRIC.keys.map((k) => [
         k.name,
@@ -144,7 +153,7 @@ const aggregate = (alive, verdicts) => {
     .map((v) => ({
       judge: v.judge,
       missing: AGG === 'metric'
-        ? alive.filter((k) => !(v.measurements ?? []).some((m) => String(m.key) === k))
+        ? alive.filter((k) => !(v.measurements ?? []).some((m) => String(m.key) === k && measured(m)))
         : alive.filter((k) => !cleanRanking(v.ranking, alive).includes(k)),
     }))
     .filter((g) => g.missing.length)
@@ -154,7 +163,7 @@ const aggregate = (alive, verdicts) => {
 // A verdict counts toward quorum only when it carries something the
 // aggregation can use.
 const usable = (alive) => (v) =>
-  AGG === 'metric' ? (v.measurements ?? []).some((m) => alive.includes(String(m.key))) : cleanRanking(v.ranking, alive).length > 0
+  AGG === 'metric' ? (v.measurements ?? []).some((m) => alive.includes(String(m.key)) && measured(m)) : cleanRanking(v.ranking, alive).length > 0
 
 // ---------------------------------------------------------------------------
 // Schemas and prompts — ADAPT the prompts freely.
@@ -398,17 +407,21 @@ if (entries.length < FLOOR) return { abort: true, reason: 'too-few-entries', win
 // ---------------------------------------------------------------------------
 
 phase('Judge')
-const verdicts = (
+const returned = (
   await parallel(
     JUDGES.slice(0, 3).map((j) => () =>
       agent(JUDGE_PROMPT(j, entries), { label: `judge:${j.key}`, phase: 'Judge', schema: JUDGE_SCHEMA, model: 'opus', effort: 'high' })
         .then((v) => v && { ...v, judge: j.key })),
   )
-).filter((v) => v && usable(alive)(v))
+).filter(Boolean)
+const verdicts = returned.filter(usable(alive))
+// The result keeps every verdict a judge returned; these judges ran but are not counted.
+const excluded = returned.filter((v) => !usable(alive)(v)).map((v) => v.judge)
+if (excluded.length) log(`unusable verdict(s), not counted toward quorum: ${excluded.join(', ')}`)
 
 if (verdicts.length < QUORUM(JUDGES.length)) {
   log(`${verdicts.length} usable verdict(s) of ${JUDGES.length} (< quorum ${QUORUM(JUDGES.length)}) — no winner; re-judge rather than refine`)
-  return { abort: true, reason: 'no-quorum', winner: null, entries, verdicts, setup: setupOut }
+  return { abort: true, reason: 'no-quorum', winner: null, entries, verdicts: returned, excluded_judges: excluded, setup: setupOut }
 }
 
 // ---------------------------------------------------------------------------
@@ -427,7 +440,8 @@ const result = {
   ranking_gaps: agg.gaps,
   ...(AGG === 'metric' ? { winner_meets_acceptance: agg.standings[0].meets_acceptance } : {}),
   entries,
-  verdicts,
+  verdicts: returned,
+  excluded_judges: excluded,
   setup: setupOut,
 }
 

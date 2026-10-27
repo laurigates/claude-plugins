@@ -61,6 +61,10 @@ const borda = (r) => Object.fromEntries((r.result.standings ?? []).map((s) => [s
   check('refine runs once, on the computed winner', r.labels.filter((l) => l === 'refine').length === 1 && /winner is `b`/.test(refine.prompt), refine?.prompt?.slice(0, 200))
   check('no agent between Judge and Refine', r.labels.indexOf('refine') === r.labels.length - 1 && r.labels.slice(-2)[0].startsWith('judge:'), r.labels)
   check('every agent() pins model and effort', r.calls.every((c) => c.opts.model && c.opts.effort), r.calls.map((c) => c.opts))
+  const judgeCalls = r.calls.filter((c) => c.label.startsWith('judge:'))
+  check('every judge sees every surviving entry',
+    judgeCalls.length === 3 && judgeCalls.every((c) => ['a', 'b', 'c'].every((k) => c.prompt.includes(`${k}: /out/${k}`))),
+    judgeCalls.map((c) => c.prompt.slice(0, 300)))
 }
 // 2. An exact tie breaks on caller order, whatever order the verdicts arrive in.
 {
@@ -143,6 +147,8 @@ const borda = (r) => Object.fromEntries((r.result.standings ?? []).map((s) => [s
   const r = await run(base(['a', 'b', 'c'], ['j1'], { finish: 'none' }), (k, key) =>
     k === 'enter' ? (key === 'c' ? null : ENTRY(key)) : k === 'judge' ? VERDICT(['c', 'b', 'a']) : undefined)
   check('dead entrant is not ranked', r.result.winner === 'b' && !r.result.standings.some((s) => s.key === 'c'), r.result.standings)
+  const jp = r.calls.find((c) => c.label === 'judge:j1').prompt
+  check('judge sees the survivors and not the dead entrant', jp.includes('a: /out/a') && jp.includes('b: /out/b') && !jp.includes('c: /out/c'), jp.slice(0, 300))
   const solo = await run(base(['a', 'b'], ['j1']), (k, key) => (k === 'enter' && key === 'a' ? ENTRY(key) : undefined))
   check('one survivor → no judges', solo.result.reason === 'too-few-entries' && !solo.labels.some((l) => l.startsWith('judge:')), solo.labels)
 }
@@ -163,6 +169,66 @@ const borda = (r) => Object.fromEntries((r.result.standings ?? []).map((s) => [s
 {
   const r = await run(base(['a', 'b'], ['j1'], { finish: 'none' }), (k, key) => (k === 'enter' ? ENTRY(key) : VERDICT(['a', 'b'])))
   check('finish none → no refine', !r.labels.includes('refine') && r.result.refined === null, r.labels)
+}
+const METRIC_ARGS = (eKeys, jKeys, extra = {}) => base(eKeys, jKeys, {
+  aggregation: 'metric',
+  metric: { command: 'python3 measure.py <dir>', keys: [{ name: 'crossings', better: 'lower' }, { name: 'length', better: 'lower' }] },
+  ...extra,
+})
+const REFINED = { dir: '/out/final', changes: '', grafted: [], files: [], remaining_concerns: '' }
+// 11. Metric judges that measured nothing are not a quorum: an empty or unknown-name `values`
+//     row would otherwise make every median null, every entry "meet acceptance", and crown entry 0.
+{
+  const empty = (vals) => (k, key) =>
+    k === 'enter' ? ENTRY(key)
+      : k === 'judge' ? VERDICT(['c', 'b', 'a'], undefined, { measurements: ['a', 'b', 'c'].map((e) => ({ key: e, values: vals, meets_acceptance: true })) })
+      : k === 'refine' ? REFINED : undefined
+  const r = await run(METRIC_ARGS(['a', 'b', 'c'], ['m1', 'm2']), empty([]))
+  check('metric: judges with empty values → no-quorum', r.result.winner === null && r.result.reason === 'no-quorum', r.result)
+  check('metric: judges with empty values → no refine', !r.labels.includes('refine'), r.labels)
+  const unknown = await run(METRIC_ARGS(['a', 'b', 'c'], ['m1', 'm2']), empty([{ name: 'speed', value: 1 }]))
+  check('metric: values naming no metric key → no-quorum', unknown.result.winner === null && unknown.result.reason === 'no-quorum', unknown.result)
+}
+// 12. Metric mode: an entry with no finite value for a key sorts after every measured entry,
+//     and a judge that omitted an entry's row is reported in ranking_gaps.
+{
+  const r = await run(METRIC_ARGS(['c', 'a', 'b'], ['m1', 'm2'], { finish: 'none' }), (k, key) =>
+    k === 'enter' ? ENTRY(key)
+      : k === 'judge' ? VERDICT(['c', 'a', 'b'], undefined, {
+        measurements: [
+          { key: 'a', meets_acceptance: true, values: [{ name: 'crossings', value: 5 }, { name: 'length', value: 1 }] },
+          { key: 'b', meets_acceptance: true, values: [{ name: 'crossings', value: 2 }, { name: 'length', value: 1 }] },
+          // m1 measured only c's length; m2 left c out entirely.
+          ...(key === 'm1' ? [{ key: 'c', meets_acceptance: true, values: [{ name: 'length', value: 1 }] }] : []),
+        ],
+      }) : undefined)
+  check('metric: a missing value sorts last, even for lower-is-better', JSON.stringify(r.result.standings.map((s) => s.key)) === '["b","a","c"]', r.result.standings)
+  check('metric: the missing value stays null, not 0', r.result.standings.at(-1).values.crossings === null, r.result.standings.at(-1))
+  check('metric: an omitted measurement row is a ranking gap', JSON.stringify(r.result.ranking_gaps) === JSON.stringify([{ judge: 'm2', missing: ['c'] }]), r.result.ranking_gaps)
+}
+// 13. One score row per judge per entry: a duplicated row is not an extra vote in the mean-score tiebreak.
+{
+  const r = await run(base(['a', 'b'], ['j1', 'j2'], { finish: 'none' }), (k, key) =>
+    k === 'enter' ? ENTRY(key)
+      : k === 'judge' ? VERDICT(key === 'j1' ? ['a', 'b'] : ['b', 'a'],
+        key === 'j1' ? [score('a', 9), score('b', 1)] : [score('a', 1), score('b', 8), score('b', 8), score('b', 8)])
+      : undefined)
+  // Counted once: a = (9+1)/2 = 5, b = (1+8)/2 = 4.5 → a. Counted three times, b = 25/4 = 6.25 → b.
+  const means = Object.fromEntries(r.result.standings.map((s) => [s.key, s.mean]))
+  check('duplicated score row counts once in the mean', means.a === 5 && means.b === 4.5, means)
+  check('duplicated score rows cannot flip the tiebreak', r.result.winner === 'a', r.result.standings)
+}
+// 14. Every verdict a judge returned is in the result, with the unusable ones named, quorum or not.
+{
+  const unusable = VERDICT(['zz', 'yy'])
+  const r = await run(base(['a', 'b'], ['j1', 'j2', 'j3'], { finish: 'none' }), (k, key) =>
+    k === 'enter' ? ENTRY(key) : k === 'judge' ? (key === 'j3' ? unusable : VERDICT(['b', 'a'])) : undefined)
+  check('quorum: unusable verdict kept in result.verdicts', r.result.winner === 'b' && JSON.stringify(r.result.verdicts.map((v) => v.judge)) === '["j1","j2","j3"]', r.result.verdicts)
+  check('quorum: unusable judge named in excluded_judges', JSON.stringify(r.result.excluded_judges) === '["j3"]', r.result.excluded_judges)
+  const nq = await run(base(['a', 'b'], ['j1', 'j2', 'j3']), (k, key) =>
+    k === 'enter' ? ENTRY(key) : k === 'judge' ? (key === 'j1' ? VERDICT(['b', 'a']) : key === 'j2' ? unusable : undefined) : undefined)
+  check('no-quorum: unusable verdict kept in result.verdicts', nq.result.reason === 'no-quorum' && JSON.stringify(nq.result.verdicts.map((v) => v.judge)) === '["j1","j2"]', nq.result)
+  check('no-quorum: unusable judge named in excluded_judges', JSON.stringify(nq.result.excluded_judges) === '["j2"]', nq.result.excluded_judges)
 }
 
 process.exit(failed ? 1 : 0)

@@ -73,19 +73,25 @@ unique across setup, entries and judges, and not be `final`.
 
 | Mode | Order |
 |---|---|
-| `borda` | Borda points (K−1−position over the K surviving entries, summed over judges), then mean score, then caller order |
+| `borda` | Borda points (K−1−position over the K surviving entries, summed over judges), then mean score (one score per judge per entry), then caller order |
 | `metric` | meets acceptance per **every** measuring judge, then each `metric.keys` entry in turn (median across judges, missing values last), then caller order |
 
 - Judges re-measure. An entrant's self-reported metrics and self-assessment are
   never used in the aggregation.
 - A judge counts toward the quorum (2, or 1 when `judges` has one row) only if
-  it returned something the aggregation can use. Short of quorum, the run returns
-  `reason: no-quorum` and runs no refine agent.
+  it returned something the aggregation can use: a ranking naming a surviving
+  entry, or in `metric` mode a measurement row with a finite value for a
+  `metric.keys` name. A row with no such value counts as unmeasured everywhere:
+  in the quorum, in acceptance, and in `ranking_gaps`. Short of quorum, the run
+  returns `reason: no-quorum` and runs no refine agent.
 - A tie that reaches caller order is reported as `tie: true` with `tied_with`.
   List an incumbent first if it should keep ties.
 
 The result carries `winner`, `standings`, `ranking_gaps` (the entries each judge
-left unranked or unmeasured), every verdict and entry, and `refined`.
+left unranked or unmeasured), every entry, every verdict a judge returned
+(`verdicts`, including unusable ones, whose judges are listed in
+`excluded_judges`), and `refined`. A `no-quorum` result carries `verdicts` and
+`excluded_judges` too.
 
 ## Workflow harness (template)
 

@@ -6,12 +6,17 @@
 #
 #   - Borda points are K-1-position over the surviving entries; a partial,
 #     duplicated or unknown-key ranking cannot inflate an entry.
-#   - Ties break on mean score, then on caller order (args.entries), so the
+#   - Ties break on mean score (one score per judge per entry, so a duplicated
+#     row is not an extra vote), then on caller order (args.entries), so the
 #     same inputs always crown the same entry, whatever order verdicts arrive.
 #   - A panel below quorum crowns nobody. The ad-hoc runs this was distilled
 #     from sorted an all-zero tally and refined whichever entry came first.
+#     A metric judge whose rows carry no finite metric value is not a panel
+#     member either: it would make every median null and crown entry 0.
 #   - Metric mode ranks on judge-measured numbers, never on an entrant's
-#     self-report or a judge's ranking.
+#     self-report or a judge's ranking; a missing value sorts last.
+#   - Every judge's prompt lists every surviving entry (barrier (d)), and every
+#     verdict a judge returned reaches the result, unusable ones named.
 #   - Over/under caps, duplicate or path-like keys, and a dead setup stage
 #     abort before any further agent is spawned.
 set -euo pipefail
