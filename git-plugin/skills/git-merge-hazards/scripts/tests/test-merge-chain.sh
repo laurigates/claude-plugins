@@ -3,8 +3,8 @@
 #
 # Runs the real script against a stub `gh` on PATH that keeps per-PR state in
 # JSON files, so every STATUS the script can emit is driven end to end:
-# MERGED, SKIPPED (merged, closed, stranger, release-please, Renovate),
-# CONFLICT (update-branch and DIRTY), CI_RED (failed check, timeout),
+# MERGED, SKIPPED (merged, closed, draft, stranger, release-please, Renovate),
+# CONFLICT (update-branch and DIRTY), CI_RED (failed check, timeout, UNSTABLE),
 # GUARD_LATE_COMMIT, DENIED (merge 403, BLOCKED) and the fail-closed ERROR.
 #
 # The §6 guard reads the commit list through `gh api graphql` (the parent count
@@ -19,9 +19,12 @@
 #     commits" (the first version of the §6 guard silently did nothing).
 #   - a stopping status ends the chain: no later PR is updated or merged.
 #   - a single-parent commit whose subject starts with "Merge" is not exempt
-#     from the guard; only a commit with two or more parents is.
+#     from the guard, and neither is a two-parent merge committed by anyone but
+#     GitHub (noreply@github.com): a conflict agent's merge of main is new code.
 #   - a head that moves after CI settled stops the PR (head_moved).
 #   - an unevaluable check rollup is ERROR, not "no failed checks".
+#   - CI is settled only after two agreeing reads, and an empty rollup only
+#     after MC_MIN_EMPTY_POLLS reads; UNSTABLE is CI_RED; a draft is skipped.
 #
 # Needs bash and jq.
 
@@ -71,6 +74,13 @@ case "$1 $2" in
     echo "${STUB_SELF:-me}"; exit 0 ;;
   "pr view")
     n="$3"; [ -f "$(f "$n")" ] || { echo "no pull requests found" >&2; exit 1; }
+    # _rollup_seq: the check rollup each successive checks read returns; the
+    # last one sticks. Only reads that ask for statusCheckRollup consume it.
+    fields=""; prev=""
+    for a in "$@"; do [ "$prev" = "--json" ] && fields="$a"; prev="$a"; done
+    if [[ "$fields" == *statusCheckRollup* ]] && [ "$(jq '(._rollup_seq // []) | length' "$(f "$n")")" -gt 0 ]; then
+      save "$n" '.statusCheckRollup = ._rollup_seq[0] | ._rollup_seq = ._rollup_seq[1:]'
+    fi
     jq 'with_entries(select(.key | startswith("_") | not))' "$(f "$n")"; exit 0 ;;
   "api graphql")
     n=""; for a in "$@"; do case "$a" in number=*) n="${a#number=}" ;; esac; done
@@ -82,12 +92,13 @@ case "$1 $2" in
     if [ "$(jq -r '._move_on_guard_read // false' "$(f "$n")")" = true ]; then
       moved=$(printf 'b%039d' "$n")
       save "$n" "._move_on_guard_read = false | .headRefOid = \"$moved\"
-        | .commits += [{oid: \"$moved\", committedDate: \"2026-10-27T09:10:00Z\", messageHeadline: \"Merge branch 'main' into \\(.headRefName)\", parents: 2}]"
+        | .commits += [{oid: \"$moved\", committedDate: \"2026-10-27T09:10:00Z\", messageHeadline: \"Merge branch 'main' into \\(.headRefName)\", parents: 2, committer: \"noreply@github.com\"}]"
     fi
     jq '{data: {repository: {pullRequest: {headRefOid,
           commits: {totalCount: ((.commits | length) + (._extra_commits // 0)),
                     nodes: [.commits[] | {commit: {oid, committedDate, messageHeadline,
-                      parents: (if .parents == "absent" then null else {totalCount: (.parents // 1)} end)}}]}}}}}' "$(f "$n")"
+                      parents: (if .parents == "absent" then null else {totalCount: (.parents // 1)} end),
+                      committer: (if .committer == "absent" then null else {email: (.committer // "me@example.com")} end)}}]}}}}}' "$(f "$n")"
     exit 0 ;;
   "pr update-branch")
     n="$3"; beh=$(jq -r '._update // "ok"' "$(f "$n")")
@@ -101,7 +112,7 @@ case "$1 $2" in
     save "$n" ".headRefOid = \"$new\"
       | .mergeStateStatus = (if (._ms_seq // []) | length > 0 then ._ms_seq[0] else (._ms_after // \"CLEAN\") end)
       | ._ms_seq = ((._ms_seq // [])[1:])
-      | .commits += [{oid: \"$new\", committedDate: \"2026-10-27T09:00:00Z\", messageHeadline: \"Merge branch 'main' into \(.headRefName)\", parents: 2}]"
+      | .commits += [{oid: \"$new\", committedDate: \"2026-10-27T09:00:00Z\", messageHeadline: \"Merge branch 'main' into \(.headRefName)\", parents: 2, committer: \"noreply@github.com\"}]"
     if [ "$(jq -r '._late // false' "$(f "$n")")" = true ]; then
       late=$(printf 'c%039d' "$n")
       save "$n" ".headRefOid = \"$late\"
@@ -242,6 +253,11 @@ expect_line "summary lists skips" "$(summary)" "SKIPPED=111,112,113,114"
 expect_line "four skip rows" "$(summary)" "ISSUE_COUNT=4"
 validate_summary "multi-skip summary passes the validator"
 
+mkpr 116 '.isDraft = true'
+run_chain 116
+expect_has "draft skipped" "$(section 116)" "^REASON=draft:"
+expect_no "a draft is never updated or merged" "$LOG" "pr (update-branch|merge) 116"
+
 # ---- 3. CONFLICT ------------------------------------------------------------
 echo "CONFLICT"
 mkpr 201 '._update = "conflict"'
@@ -297,6 +313,35 @@ run_chain 308
 expect_line "unevaluable failed-check read -> ERROR" "$(section 308)" "REASON=read_failed: could not evaluate failed status checks"
 expect_no "no merge over an unread failed check" "$LOG" "pr merge"
 
+mkpr 309 '._ms_after = "UNSTABLE"'
+run_chain 309
+expect_line "UNSTABLE -> CI_RED" "$(section 309)" "STATUS=CI_RED"
+expect_has "REASON=unstable" "$(section 309)" "^REASON=unstable:"
+expect_no "no merge over UNSTABLE" "$LOG" "pr merge"
+
+# CI is settled only when two consecutive reads agree: here the first read is
+# all green and the second shows a check that registered late and failed.
+mkpr 310 '._rollup_seq = [[{__typename: "CheckRun", name: "test", status: "COMPLETED", conclusion: "SUCCESS"}],
+                          [{__typename: "CheckRun", name: "test", status: "COMPLETED", conclusion: "SUCCESS"},
+                           {__typename: "CheckRun", name: "late", status: "COMPLETED", conclusion: "FAILURE"}]]'
+run_chain 310
+expect_line "a check that appears on the second read -> CI_RED" "$(section 310)" "STATUS=CI_RED"
+expect_has "REASON names the late check" "$(section 310)" "^REASON=check_failed: late$"
+expect_no "no merge on one green read" "$LOG" "pr merge"
+
+# Zero checks: wait MC_MIN_EMPTY_POLLS (3) reads before believing the repo has
+# no CI, so a check that registers on the third read is still seen.
+mkpr 311 '.statusCheckRollup = [] | ._rollup_seq = [[], [],
+                          [{__typename: "CheckRun", name: "slow-start", status: "COMPLETED", conclusion: "FAILURE"}]]'
+run_chain 311
+expect_line "a check registering on read 3 after two empty reads -> CI_RED" "$(section 311)" "STATUS=CI_RED"
+expect_no "no merge before the empty-poll wait ends" "$LOG" "pr merge"
+mkpr 312 '.statusCheckRollup = []'
+run_chain 312
+expect_line "no checks at all merges after the wait" "$(section 312)" "STATUS=MERGED"
+expect_line "four checks reads: three to trust the empty set, one to agree" \
+  "$(grep -c 'pr view 312 .*statusCheckRollup' <<<"$LOG")" "4"
+
 # BEHIND after CI settled: update again, at most MC_MAX_UPDATES (3) times.
 mkpr 306 '._ms_seq = ["BEHIND"]'
 run_chain 306
@@ -329,6 +374,18 @@ expect_has "REASON names it" "$(section 403)" "^REASON=late_commits: d2 Merge th
 mkpr 404 '.commits += [{oid: "d3", committedDate: "2026-10-27T08:30:00Z", messageHeadline: "Merge branch main", parents: "absent"}]'
 run_chain 404
 expect_line "an unreadable parent count is not a merge commit" "$(section 404)" "STATUS=GUARD_LATE_COMMIT"
+
+# A two-parent merge is exempt only when GitHub committed it (update-branch).
+# A conflict agent that merges main into the branch commits it itself, and its
+# resolution is unreviewed code.
+mkpr 407 '.commits += [{oid: "d4", committedDate: "2026-10-27T08:30:00Z", messageHeadline: "Merge branch main into feat/x-407", parents: 2, committer: "agent@example.com"}]'
+run_chain 407
+expect_line "a late two-parent merge by another committer -> GUARD_LATE_COMMIT" "$(section 407)" "STATUS=GUARD_LATE_COMMIT"
+expect_has "REASON names the agent's merge" "$(section 407)" "^REASON=late_commits: d4 Merge branch main into feat/x-407$"
+expect_no "no merge over an agent's merge commit" "$LOG" "pr merge"
+mkpr 408 '.commits += [{oid: "d5", committedDate: "2026-10-27T08:30:00Z", messageHeadline: "Merge branch main", parents: 2, committer: "absent"}]'
+run_chain 408
+expect_line "a two-parent merge with no readable committer is not exempt" "$(section 408)" "STATUS=GUARD_LATE_COMMIT"
 
 mkpr 405 '._move_on_guard_read = true'
 run_chain 405

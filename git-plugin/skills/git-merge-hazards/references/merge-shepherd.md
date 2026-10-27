@@ -23,15 +23,15 @@ bash "${CLAUDE_SKILL_DIR}/scripts/merge-chain.sh" --repo OWNER/REPO --prs 219,22
 | Flag | Meaning |
 |---|---|
 | `--prs` | Merge order. Put a PR that changes a bot which writes to PR branches **last** (§6). |
-| `--review-ts` | Required. Any non-merge commit newer than this is unreviewed and stops the PR. A merge commit is one with two or more parents; the subject line does not count. |
+| `--review-ts` | Required. Any commit newer than this is unreviewed and stops the PR, except a merge commit GitHub made through `update-branch`: two or more parents **and** committer `noreply@github.com`. The subject line does not count, and a merge commit anyone else pushed is unreviewed like any other commit. |
 | `--method` | Overrides the method for every PR. Without it, each PR takes the `METHOD=` that `git-plugin/scripts/pr-merge-method.py` prints after `update-branch`: a branch that gained a merge commit squashes, and one that needed no update follows the rest of the rule table. |
 | `--timeout` | Per-PR budget for CI to settle, in seconds (default 1800). |
 | `--fetch-dir` | A clone to `git fetch origin` after each merge, so a conflict agent starts from current `main`. |
 
 Per PR the script reads state and author, runs `gh pr update-branch`, waits
 until every check on the head has completed and two reads agree, reads
-`mergeStateStatus` (§4), applies the §6 guard (no late non-merge commit, and
-the head unchanged since CI settled), resolves the merge method, and merges
+`mergeStateStatus` (§4), applies the §6 guard (no late commit other than
+GitHub's own update-branch merges, and the head unchanged since CI settled), resolves the merge method, and merges
 with `--match-head-commit` and the **full 40-character** head SHA. GitHub rejects a
 short SHA ("Could not coerce value to GitObjectID"). It then reads the state
 back and requires `MERGED`.
@@ -69,8 +69,9 @@ carries `REMAINING=`, the PRs still to merge, with the stopped PR first.
    branch through `workflow-orchestration-plugin:workflow-implement-verify`'s
    `repair-round` template, one unit, with a fresh verifier. Its finding names
    the resolution commit. Do not let the script merge an unverified fix. The
-   §6 guard would refuse it anyway, because the fix is newer than
-   `--review-ts`.
+   §6 guard refuses it on a re-run with the old `--review-ts`: the agent's
+   merge of `main` is a two-parent commit, but its committer is the agent, not
+   GitHub, so it is not exempt. That stop is the backstop, not the review.
 3. Re-run the script with `--prs` set to `REMAINING=` and a new `--review-ts`
    taken when that verification ended.
 

@@ -10,9 +10,12 @@
 #                checkout.
 #   --prs        Merge order, comma-separated. A leading '#' is accepted.
 #   --review-ts  UTC time verification ended (YYYY-MM-DDTHH:MM:SSZ). Any
-#                non-merge commit newer than this is unreviewed (the §6 guard).
-#                A merge commit is one with two or more parents, read from
-#                GitHub; the subject line is not consulted.
+#                commit newer than this is unreviewed (the §6 guard), except a
+#                merge commit GitHub made itself through update-branch: two or
+#                more parents AND committer email noreply@github.com, both read
+#                from GitHub. The subject line is not consulted, and a merge
+#                commit anyone else made (a conflict agent merging main into the
+#                branch) is unreviewed like any other commit.
 #   --method     Merge method for every PR. Without it, each PR takes the
 #                METHOD= that git-plugin/scripts/pr-merge-method.py prints for
 #                it after update-branch (a branch with a merge commit squashes),
@@ -25,8 +28,8 @@
 #
 # Per PR, in order: read state and author; `gh pr update-branch`; wait until
 # every check on the head completes and two consecutive reads agree; read
-# mergeStateStatus; refuse any non-merge commit newer than --review-ts, and a
-# head that moved after CI settled; resolve the merge method; merge
+# mergeStateStatus; refuse any commit newer than --review-ts other than a
+# GitHub-made update-branch merge, and a head that moved after CI settled; resolve the merge method; merge
 # with `--match-head-commit <full 40-char SHA>` (GitHub rejects a short SHA with
 # "Could not coerce value to GitObjectID"); read the state back.
 #
@@ -78,7 +81,7 @@ usage_error() {
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    -h|--help) sed -n '2,50p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,/^# Exit:/p' "$0"; exit 0 ;;
     --repo|--prs|--review-ts|--method|--timeout|--fetch-dir)
       [ $# -ge 2 ] || usage_error "$1 needs a value" ;;
     *) usage_error "unknown argument $1" ;;
@@ -127,13 +130,16 @@ PR_MERGE_COMMIT=""
 MC_SETTLED_HEAD=""
 
 # The §6 guard's read. GraphQL, because `gh pr view --json commits` carries no
-# parent count, and the parent count is what makes a commit a merge commit.
+# parent count. The exemption needs both the parent count and the committer:
+# update-branch merges are committed by GitHub (noreply@github.com), while a
+# merge a person or agent pushes carries their own committer, and its conflict
+# resolution is new code.
 # shellcheck disable=SC2016  # $owner etc. are GraphQL variables, not shell
 GUARD_QUERY='query($owner: String!, $name: String!, $number: Int!) {
   repository(owner: $owner, name: $name) { pullRequest(number: $number) {
     headRefOid
     commits(last: 100) { totalCount
-      nodes { commit { oid committedDate messageHeadline parents { totalCount } } } }
+      nodes { commit { oid committedDate messageHeadline parents { totalCount } committer { email } } } }
   } } }'
 
 result() { PR_STATUS="$1"; PR_REASON="${2:-}"; }
@@ -250,8 +256,9 @@ process_pr() {
     esac
   done
 
-  # 4. The §6 guard: no non-merge commit newer than the review, and the head
-  #    must be the one CI just settled on. Fail closed on any read error.
+  # 4. The §6 guard: no commit newer than the review except GitHub's own
+  #    update-branch merges, and the head must be the one CI just settled on.
+  #    Fail closed on any read error.
   j=$(gh api graphql -f query="$GUARD_QUERY" -F owner="${MC_REPO%%/*}" -F name="${MC_REPO#*/}" \
         -F number="$n" 2>/dev/null) || { result ERROR "read_failed: commit list query for $n failed"; return; }
   j=$(jq -ce '.data.repository.pullRequest | select(.headRefOid and .commits.nodes)' <<<"$j") ||
@@ -262,7 +269,7 @@ process_pr() {
     result ERROR "commits_truncated: $missing older commits were not read, so the guard cannot clear them"; return
   fi
   late=$(jq -r --arg t "$MC_REVIEW_TS" '[.commits.nodes[].commit | select(.committedDate > $t)
-      | select((.parents.totalCount // 0) < 2)
+      | select(((.parents.totalCount // 0) >= 2 and (.committer.email // "") == "noreply@github.com") | not)
       | "\(.oid[0:8]) \(.messageHeadline)"] | join("; ")' <<<"$j") ||
     { result ERROR "read_failed: could not evaluate the commit list"; return; }
   head=$(jq -r '.headRefOid // ""' <<<"$j")
