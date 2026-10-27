@@ -72,7 +72,9 @@ const check = (name, cond, detail) => {
     [base(['README.md']), 'unknown-kind'],
     [base(skills(2), { model: 'opus' }), 'bad-model'],
     [base(skills(2), { effort: 'huge' }), 'bad-effort'],
+    [base(skills(2), { verifyEffort: 'huge' }), 'bad-effort'],
     [base(skills(2), { batchSize: 0 }), 'bad-batch-size'],
+    [base(skills(2), { verifyBatchSize: 0 }), 'bad-batch-size'],
     [base(skills(2), { controlSample: -1 }), 'bad-control-sample'],
     [{ repo: '/repo', files: skills(2), model: 'haiku' }, 'no-artifact-path'],
     [base(skills(19), { batchSize: 1 }), 'over-cap'],
@@ -93,6 +95,24 @@ const check = (name, cond, detail) => {
   const cl = ofKind(r, 'classify'), vf = ofKind(r, 'verify')
   check('classifier model/effort from args', cl.every((c) => c.model === 'sonnet' && c.effort === 'low' && !c.agentType), cl)
   check('verifier is opus at high effort', vf.length === 1 && vf.every((c) => c.model === 'opus' && c.effort === 'high'), vf)
+  // Without a schema the runtime returns prose, not the {items}/{verdicts} object read below.
+  const enumOf = (c, list) => c.schema?.properties?.[list]?.items?.properties?.verdict?.enum
+    ?? c.schema?.properties?.[list]?.items?.properties?.final?.enum
+  const VERDICTS = ['switch', 'switch-stage', 'needs-test', 'keep']
+  check('classifier schema requires items over the verdict enum', cl.every((c) => c.schema?.required?.includes('items') && JSON.stringify(enumOf(c, 'items')) === JSON.stringify(VERDICTS)), cl.map((c) => c.schema))
+  check('verifier schema requires verdicts over the verdict enum', vf.every((c) => c.schema?.required?.includes('verdicts') && JSON.stringify(enumOf(c, 'verdicts')) === JSON.stringify(VERDICTS)), vf.map((c) => c.schema))
+}
+// 5b. The verifier sees the classifier's full judgement, not only its verdict:
+// the rationale and risks carry the "risks listed but not acted on" signal.
+{
+  const seen = []
+  await run(base(skills(2)), {
+    classify: (ps) => ({ items: ps.map((p) => item(p, 'needs-test', { target: 't', effort: 'medium', rationale: `why ${p}`, risks: ['AskUserQuestion'] })) }),
+    verify: (es) => { seen.push(...es); return { verdicts: es.map((e) => vitem(e.path, 'confirm', e.classifier.verdict)), classifier_quality_notes: 'n' } },
+  })
+  const full = (e) => e.role === 'candidate' && e.kind === 'skill' && e.classifier.verdict === 'needs-test' && e.classifier.target === 't'
+    && e.classifier.effort === 'medium' && e.classifier.rationale === `why ${e.path}` && JSON.stringify(e.classifier.risks) === '["AskUserQuestion"]'
+  check('verify entries carry role, kind and the classifier fields', seen.length === 2 && seen.every(full), seen)
 }
 // 6. lean puts the lean reader on classifiers only.
 {
@@ -128,6 +148,17 @@ const check = (name, cond, detail) => {
   check('dead verifier → unverified', r.result.rows.every((x) => x.disposition === 'unverified' && x.reason === 'dead-verifier'), r.result.rows)
   check('dead verifier → zero confirms', s.candidates.confirm === 0 && s.candidates.unverified === 3 && s.verifiers.dead === 1, s)
 }
+// 9b. An empty list for a non-empty batch is a dead agent, not a run of omissions.
+{
+  const files = skills(4)
+  const r = await run(base(files, { batchSize: 2 }), {
+    classify: (ps) => (ps.includes(files[0]) ? { items: [] } : { items: ps.map((p) => item(p, 'switch')) }),
+    verify: () => ({ verdicts: [], classifier_quality_notes: 'nothing' }),
+  })
+  const rows = byPath(r), s = r.result.summary
+  check('empty items → dead-classifier', rows[files[0]].reason === 'dead-classifier' && s.classifiers.dead === 1, [rows[files[0]], s.classifiers])
+  check('empty verdicts → dead-verifier', rows[files[2]].reason === 'dead-verifier' && s.verifiers.dead === 1, [rows[files[2]], s.verifiers])
+}
 // 10. A verifier that omits an entry leaves it unverified.
 {
   const files = skills(2)
@@ -148,17 +179,6 @@ const check = (name, cond, detail) => {
   const pick = (r) => r.result.rows.filter((x) => x.role === 'control').map((x) => x.path)
   check('default control sample = max(3, ceil(20/7))', pick(a).length === 3, pick(a))
   check('control sample is deterministic', JSON.stringify(pick(a)) === JSON.stringify(pick(b)), [pick(a), pick(b)])
-// 9b. An empty list for a non-empty batch is a dead agent, not a run of omissions.
-{
-  const files = skills(4)
-  const r = await run(base(files, { batchSize: 2 }), {
-    classify: (ps) => (ps.includes(files[0]) ? { items: [] } : { items: ps.map((p) => item(p, 'switch')) }),
-    verify: () => ({ verdicts: [], classifier_quality_notes: 'nothing' }),
-  })
-  const rows = byPath(r), s = r.result.summary
-  check('empty items → dead-classifier', rows[files[0]].reason === 'dead-classifier' && s.classifiers.dead === 1, [rows[files[0]], s.classifiers])
-  check('empty verdicts → dead-verifier', rows[files[2]].reason === 'dead-verifier' && s.verifiers.dead === 1, [rows[files[2]], s.verifiers])
-}
   check('no-invocation keep never sampled', !pick(a).includes(files[0]), pick(a))
   check('unsampled keeps recorded', a.result.rows.filter((x) => x.disposition === 'keep-unsampled').length === 18, a.result.summary)
   const zero = await run(base(files, { controlSample: 0 }), script)
