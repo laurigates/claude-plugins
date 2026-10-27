@@ -72,6 +72,12 @@ second committed copy would be a fleet-drift surface with nothing keeping the tw
 in step (`.claude/rules/generated-fleet-drift.md`). Registration is an
 **install-time** act performed against a checkout, not a second tracked file.
 
+The one file this repo does track there, `.claude/workflows/model-suitability-audit.workflow.js`,
+is not a copy: it is a repo-internal audit harness with no bundled twin, so it
+has no drift surface. Sessions in this checkout can start it by name, and it
+returns `{abort: true}` before its first `agent()` call when `args` are empty
+(`scripts/tests/test-model-suitability-audit-workflow.sh`).
+
 ## Installing the registration
 
 Neither directory exists by default (verified 2026-09-20: `~/.claude/workflows`

@@ -89,4 +89,5 @@ drift stays with Layer 1 so reviewers spend judgment only
 
 - Issue [#1460](https://github.com/laurigates/claude-plugins/issues/1460) — where both layers and this cadence were decided
 - `.claude/skills/docs-refresh/SKILL.md` — the fixer that consumes Layer 1 findings
+- `.claude/workflows/model-suitability-audit.workflow.js` — re-runs the `haiku-5.5-reevaluation-2026-10-10.md` sweep for a new candidate model (#3116); its header lists the args
 - `.claude/rules/docs-currency.md` — code and its docs land in the same commit
