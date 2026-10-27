@@ -160,24 +160,20 @@ review can't resolve.
 `workflows/find-verify.workflow.js` (an existing change) and
 `workflows/design-review.workflow.js` (a spec drafted from recon) ship beside this
 skill. **Each is a TEMPLATE to adapt, not a script to run verbatim.** Read it, then
-rewrite it for the work in front of you. Step 1's precondition gate stays here in
-prose, before any harness runs; no gate agent goes inside it.
+rewrite it for the work in front of you. Step 1's gate stays in prose here; no gate
+agent goes inside a harness.
 
-**Adapt freely:** the lens prompts and the skills each lens invokes, `context`,
-`decided` and `measured`, `verifyCap` (≤ 6), `controlSample` (≤ 2), the verifier's
-run hint and isolation, and the spec sections. A find-verify lens may be an external
-model (`finder: { pal: '<model>' }`); check `mcp__pal__listmodels` first.
+**Adapt freely:** lens prompts and their skills, `context`, `decided`, `measured`,
+`verifyCap` (≤ 6), `controlSample` (≤ 2), the verifier run hint and isolation, the
+spec sections. A find-verify lens may be an external model (`finder: { pal: '<model>' }`).
 
 **Agent budget:** 3 + 1 x <verifiers or architect passes> — the counted 3 are the lens agents (`lenses.slice(0, 3)` in both files); find-verify adds one verifier per ranked finding up to `verifyCap` plus the control sample (≤ 11 in all), design-review adds the drafter and the reviser (5).
 
-**Preserve across any adaptation:** (a) the lens list comes from the caller, aborts
-below 2 or above 3, and is never truncated; (b) find-verify's Rank barrier — merge
-duplicates across lenses into `raised_by` (cross-model agreement is signal), rank by
-severity, then cap — and its closed `confirmed | partially | refuted` verdict with
-refute-by-default; (c) nothing past the cap or behind a dead verifier is dropped: it
-returns as `unverified` in the claims shape, so `args.claims` re-runs Verify alone;
-(d) design-review's Revise reads every review at once and records each finding as
-accepted or rejected with evidence; (e) both are read-only and hand fixes back.
+**Preserve across any adaptation:** a caller-chosen lens list of 2–3, never
+truncated; the Rank barrier and refute-by-default verdict; nothing dropped past the
+cap, behind a dead verifier, or folded into a duplicate; a resolution row per design
+issue; read-only agents; a `status` that is never `clean` over a coverage gap. The
+full list is in [REFERENCE.md](REFERENCE.md#workflow-harnesses-what-to-preserve).
 
 Never `Workflow({resumeFromRunId})` to retry a few failed worktree agents — a resume
 re-runs agents that already succeeded and opens duplicate PRs (#1868). Re-dispatch the

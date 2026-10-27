@@ -19,8 +19,13 @@
  * Recon is an input, not a phase: run it earlier (or by hand) and pass the
  * report paths. A failed design run then does not repeat recon.
  *
- * Read-only for the repository: agents write only the spec file and scratch
- * experiments under `args.scratch`. Nothing commits, pushes or touches GitHub.
+ * Read-only for the repository: the architect writes only the spec file, and
+ * every agent may write scratch experiments under `args.scratch`. Nothing
+ * commits, pushes or touches GitHub.
+ *
+ * `status` is `clean` only when every lens returned a review, every verdict was
+ * `sound` and no issue was raised; `revised` only when the reviser returned a
+ * resolution row for every issue of every lens.
  */
 
 export const meta = {
@@ -108,15 +113,40 @@ const DESIGN_SCHEMA = {
       },
     },
     decisions_for_user: DECISIONS,
+    metrics: {
+      type: 'array',
+      description: 'optional: how the change is judged once shipped',
+      items: {
+        type: 'object',
+        required: ['name', 'definition', 'how_collected', 'baseline_expectation', 'target'],
+        additionalProperties: false,
+        properties: {
+          name: { type: 'string' },
+          definition: { type: 'string' },
+          how_collected: { type: 'string' },
+          baseline_expectation: { type: 'string' },
+          target: { type: 'string' },
+        },
+      },
+    },
+  },
+}
+// Revise returns the design plus one resolution row per review issue, required:
+// the per-issue accepted/rejected record is what makes the revise auditable.
+const REVISE_SCHEMA = {
+  ...DESIGN_SCHEMA,
+  required: [...DESIGN_SCHEMA.required, 'resolution'],
+  properties: {
+    ...DESIGN_SCHEMA.properties,
     resolution: {
       type: 'array',
-      description: 'Revise only: one row per review issue',
+      description: 'one row per review issue',
       items: {
         type: 'object',
         required: ['lens', 'issue', 'decision', 'evidence'],
         additionalProperties: false,
         properties: {
-          lens: { type: 'string' },
+          lens: { type: 'string', description: 'the lens key exactly as in the REVIEW header' },
           issue: { type: 'string' },
           decision: { type: 'string', enum: ['accepted', 'rejected'] },
           evidence: { type: 'string', description: 'the line read or the command run that decided it' },
@@ -158,7 +188,8 @@ const listOr = (xs, none) => (xs.length ? xs.map((x) => `  - ${x}`).join('\n') :
 const common = () => `${CTX.context}
 
 Code to read: ${CTX.root} at ${CTX.base}${CTX.head ? ` (head ${CTX.head})` : ''}; or \`git show ${CTX.base}:<path>\`.
-${CTX.main ? `Never touch the main checkout ${CTX.main}: it may hold someone else's uncommitted work.\n` : ''}Read-only for the repository: do not edit, stage, commit, push, comment, or touch the stash.
+${CTX.main ? `Never touch the main checkout ${CTX.main}: it may hold someone else's uncommitted work.\n` : ''}Do not edit tracked files. The only file outside scratch any stage writes is the spec ${SPEC}, and only the
+ARCHITECT writes it. Do not stage, commit, push, comment, or touch the stash.
 Scratch experiments go only under ${CTX.scratch} (mkdir -p).
 ${CTX.recon.length ? `Recon reports — read ALL of them first; they carry verified facts with file:line evidence:\n${listOr(CTX.recon, '')}\n` : ''}
 Decisions the user made — binding. Relay them as theirs; do not relitigate or widen them:
@@ -188,14 +219,14 @@ const REVISE_PROMPT = (reviews) => `${common()}
 You are the ARCHITECT again. Your draft is at ${SPEC}. Adversarial reviews follow. Reviews can be wrong:
 verify each issue against the source or by experiment before acting on it. Update ${SPEC} in place so it
 resolves every accepted issue, and append a "Review resolution" section listing each issue as accepted or
-rejected with the evidence. Return one resolution row per issue.
+rejected with the evidence. Return one resolution row per issue, with lens set to the review's lens key.
 
 ${reviews.map((r) => `===== REVIEW: ${r.lens} (${r.verdict}) =====\n${JSON.stringify(r.issues, null, 1)}`).join('\n\n')}`
 
 // PRESERVE: one literal call site per stage, so every model and effort is checkable.
 const draft = () => agent(DRAFT_PROMPT(), { label: 'architect:draft', phase: 'Draft', schema: DESIGN_SCHEMA, model: 'opus', effort: 'xhigh' })
 const revise = (reviews) =>
-  agent(REVISE_PROMPT(reviews), { label: 'architect:revise', phase: 'Revise', schema: DESIGN_SCHEMA, model: 'opus', effort: 'high' })
+  agent(REVISE_PROMPT(reviews), { label: 'architect:revise', phase: 'Revise', schema: REVISE_SCHEMA, model: 'opus', effort: 'high' })
 
 // ---------------------------------------------------------------------------
 // Guards — each an explicit, named abort.
@@ -245,12 +276,25 @@ if (reviewsFailed.length) log(`reviewer(s) returned nothing: ${reviewsFailed.joi
 if (!reviews.length) return { status: 'unreviewed', draft: drafted, reviews, reviewsFailed, final: null }
 const issues = reviews.reduce((n, r) => n + r.issues.length, 0)
 if (!issues) {
-  log('every reviewer returned zero issues — nothing to resolve; skipping Revise')
-  return { status: 'clean', draft: drafted, reviews, reviewsFailed, final: null }
+  // A lens that never reported, or an `unsound` verdict with no issue to act on,
+  // is not a clean spec either.
+  const notSound = reviews.filter((r) => r.verdict !== 'sound').map((r) => r.lens)
+  const status = reviewsFailed.length ? 'partial' : notSound.length ? 'inconsistent' : 'clean'
+  log(`no reviewer returned an issue — nothing to resolve; skipping Revise (${status})`)
+  return { status, draft: drafted, reviews, reviewsFailed, notSound, final: null }
 }
 if (!REVISE) return { status: 'reviewed', draft: drafted, reviews, reviewsFailed, final: null }
 
 phase('Revise')
 const final = await revise(reviews)
-if (!final) log('architect revise returned nothing — the spec on disk is the unrevised draft')
-return { status: final ? 'revised' : 'revise-failed', draft: drafted, reviews, reviewsFailed, final }
+if (!final) {
+  log('architect revise returned nothing — the spec on disk is the unrevised draft')
+  return { status: 'revise-failed', draft: drafted, reviews, reviewsFailed, final, unresolved: [] }
+}
+// Every lens's issues need as many resolution rows as it raised.
+const rows = Array.isArray(final.resolution) ? final.resolution : []
+const unresolved = reviews
+  .map((r) => ({ lens: r.lens, issues: r.issues.length, rows: rows.filter((x) => x && x.lens === r.lens).length }))
+  .filter((u) => u.rows < u.issues)
+if (unresolved.length) log(`revise left issues without a resolution row: ${unresolved.map((u) => `${u.lens} ${u.rows}/${u.issues}`).join(', ')}`)
+return { status: unresolved.length ? 'revised-incomplete' : 'revised', draft: drafted, reviews, reviewsFailed, final, unresolved }

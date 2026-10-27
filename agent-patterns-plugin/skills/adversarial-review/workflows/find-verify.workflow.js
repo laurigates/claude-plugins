@@ -23,6 +23,9 @@
  *
  * Verify-only re-run: pass a previous run's `unverified` list as `args.claims`.
  * Find is skipped and the claims go straight to Rank and Verify.
+ *
+ * `args.target.ref` is required: every agent reads the change from that ref, and
+ * an isolated verifier detaches its own worktree at the commit it resolves to.
  */
 
 export const meta = {
@@ -43,11 +46,16 @@ const MAX_LENSES = 3
 // unverified remainder; raise only with evidence.
 const MAX_VERIFY = 6
 const MAX_CONTROL = 2
+// Verifiers run in waves of this size (verify-before-filing's pacing), so a full
+// cap plus control sample never starts 8 opus agents at once.
+const WAVE = 5
 
 const T = INPUT.target ?? {}
 const CTX = {
   repo: T.repo ?? '<absolute path of the repo under review>',
-  ref: T.ref ?? 'HEAD',
+  // No default: 'HEAD' inside an isolated verifier's worktree names that
+  // worktree's commit, not the one under review. The guard below aborts.
+  ref: T.ref ?? '',
   base: T.base ?? 'origin/main',
   pr: T.pr ?? '',
   files: T.files ?? [],
@@ -57,8 +65,9 @@ const CTX = {
   constraints: INPUT.constraints ?? [],
   verifierRunHint: INPUT.verifierRunHint ?? '',
 }
+// null and '' mean "use the default" (Number(null) is the integer 0).
 const clampInt = (v, lo, hi, dflt) => {
-  const n = Number.isInteger(Number(v)) ? Number(v) : dflt
+  const n = v == null || v === '' ? dflt : Number.isInteger(Number(v)) ? Number(v) : dflt
   return Math.max(lo, Math.min(hi, n))
 }
 const VERIFY_CAP = clampInt(INPUT.verifyCap, 0, MAX_VERIFY, MAX_VERIFY)
@@ -85,6 +94,16 @@ const normSeverity = (s) => {
   if (['low', 'minor', 'nit', 'trivial'].includes(v)) return 'low'
   return 'medium'
 }
+// The part of a claim dedup folds into a kept entry's `also`.
+const brief = (c) => ({
+  lens: c.lens,
+  raised_by: c.raised_by,
+  title: c.title,
+  severity: c.severity,
+  claim: c.claim,
+  failure_scenario: c.failure_scenario,
+  suggested_fix: c.suggested_fix,
+})
 const normClaim = (f, lens) => ({
   title: String(f.title ?? f.summary ?? '').trim(),
   file: String(f.file ?? '').replace(/^\.\//, ''),
@@ -95,25 +114,28 @@ const normClaim = (f, lens) => ({
   suggested_fix: String(f.suggested_fix ?? f.proposed_fix ?? ''),
   lens: f.lens ?? lens ?? 'claims',
   raised_by: [...new Set([...(f.raised_by ?? []), f.lens ?? lens ?? 'claims'])],
+  also: Array.isArray(f.also) ? f.also.map((a) => brief(normClaim(a, a.lens))) : [],
 })
 const keyOf = (f) => (f.line > 0 ? `${f.file}:${f.line}` : `${f.file}#${f.title.toLowerCase()}`)
 
 // Merge duplicates instead of dropping them: a finding several lenses (or
 // several external models) raised is the agreement signal
 // agent-patterns-plugin:multi-model-delegation cares about. The merged entry
-// keeps the most severe wording.
+// keeps the most severe wording, and every other claim at that location rides
+// along in `also`: two different defects can share a file:line, so the verifier
+// rules on each one and a distinct one comes back `unverified`, never vanishes.
 const dedup = (claims) => {
   const byKey = new Map()
   for (const c of claims) {
     const k = keyOf(c)
     const prev = byKey.get(k)
     if (!prev) {
-      byKey.set(k, { ...c })
+      byKey.set(k, { ...c, also: [...c.also] })
       continue
     }
     const raised = [...new Set([...prev.raised_by, ...c.raised_by])]
-    const keep = SEVERITY[c.severity] < SEVERITY[prev.severity] ? c : prev
-    byKey.set(k, { ...keep, raised_by: raised })
+    const [keep, drop] = SEVERITY[c.severity] < SEVERITY[prev.severity] ? [c, prev] : [prev, c]
+    byKey.set(k, { ...keep, raised_by: raised, also: [...prev.also, ...c.also, brief(drop)] })
   }
   return [...byKey.values()]
 }
@@ -157,7 +179,7 @@ const FINDINGS_SCHEMA = {
 // A refutation for lack of a reproduction says so in `evidence`.
 const VERDICT_SCHEMA = {
   type: 'object',
-  required: ['verdict', 'evidence', 'corrected_claim', 'fix_recommendation', 'severity'],
+  required: ['verdict', 'evidence', 'corrected_claim', 'fix_recommendation', 'severity', 'distinct_also'],
   additionalProperties: false,
   properties: {
     verdict: { type: 'string', enum: ['confirmed', 'partially', 'refuted'] },
@@ -166,6 +188,11 @@ const VERDICT_SCHEMA = {
     corrected_claim: { type: 'string' },
     fix_recommendation: { type: 'string' },
     severity: { type: 'string', enum: ['high', 'medium', 'low'], description: 'your re-rating' },
+    distinct_also: {
+      type: 'array',
+      items: { type: 'integer' },
+      description: 'indexes of the "also reported" entries that describe a DIFFERENT defect; [] when none',
+    },
   },
 }
 
@@ -217,8 +244,10 @@ Before confirming, check: is the code path reachable in production (callers, rou
 an upstream caller or schema normalise the input away? Is the behaviour documented as intended? Does a test
 assert it on purpose?
 
-${ISOLATE ? `You are in your own worktree. Detach it at the ref before building or running anything:
-  git -C <your worktree> fetch -q origin && git -C <your worktree> switch --detach ${CTX.ref}
+${ISOLATE ? `You are in your own worktree. Detach it at the reviewed commit before building or running anything:
+  SHA=$(git -C ${CTX.repo} rev-parse --verify '${CTX.ref}^{commit}')
+  git -C <your worktree> switch --detach "$SHA"     (git -C <your worktree> fetch -q origin first if the object is missing)
+Never detach at a symbolic ref such as HEAD from inside your worktree: it names your worktree's commit, not the reviewed one.
 ` : ''}You may write and run a scratch test or script — in your own worktree or under ${CTX.repo}/tmp/ (git-ignored),
 deleted afterwards. Do not edit tracked source, stage, commit or push.${CTX.verifierRunHint ? `\nRun tests with: ${CTX.verifierRunHint}` : ''}
 
@@ -227,9 +256,15 @@ Location: ${f.file}${f.line ? `:${f.line}` : ''}
 Claim: ${f.claim}
 Failure scenario: ${f.failure_scenario}
 Suggested fix: ${f.suggested_fix}
-
-If confirmed or partially confirmed, give the reproduction and re-rate the severity. If you refute it because
-you could not reproduce it, start evidence with "could not reproduce:".`
+${f.also.length ? `
+Also reported at this location (merged here because it cites the same place):
+${f.also.map((a, j) => `  [${j}] ${a.raised_by.join(' + ')}, ${a.severity}: ${a.title} — ${a.claim} Failure: ${a.failure_scenario}`).join('\n')}
+Your verdict covers the finding above. Put in distinct_also the index of every entry that describes a DIFFERENT
+defect; each comes back unverified for its own verifier.
+` : ''}
+If confirmed or partially confirmed, give the reproduction — a verdict without one counts as a failed verifier —
+and re-rate the severity. If you refute it because you could not reproduce it, start evidence with
+"could not reproduce:". Return distinct_also as [] when nothing else is listed or all of it is this defect.`
 
 // PRESERVE: one literal call site per option set, so every model and effort is checkable.
 const verify = (f, i, control) => {
@@ -260,6 +295,10 @@ const dupKeys = LENSES.map((l) => l.key).filter((k, i, a) => a.indexOf(k) !== i)
 if (dupKeys.length) {
   log(`duplicate lens keys (${dupKeys.join(', ')}) — raised_by would conflate them; abort`)
   return { abort: true, reason: 'duplicate-lens', lenses: dupKeys }
+}
+if (!CTX.ref) {
+  log('args.target.ref is required — pass the branch, tag or SHA under review; abort')
+  return { abort: true, reason: 'no-ref' }
 }
 
 // ---------------------------------------------------------------------------
@@ -309,28 +348,53 @@ log(`${claims.length} finding(s), ${ranked.length} after dedup; verifying ${toVe
 
 phase('Verify')
 const picked = [...toVerify.map((f) => ({ f, control: false })), ...controls.map((f) => ({ f, control: true }))]
-const verdicts = await parallel(picked.map((p, i) => () => verify(p.f, i, p.control)))
+const verdicts = []
+for (let w = 0; w < picked.length; w += WAVE) {
+  const wave = picked.slice(w, w + WAVE)
+  verdicts.push(...(await parallel(wave.map((p, j) => () => verify(p.f, w + j, p.control)))))
+}
 
 const out = { confirmed: [], partially: [], refuted: [], unverified: [...rest] }
 const verifierFailed = []
 const control = { sampled: controls.length, confirmed: 0, partially: 0, refuted: 0, failed: 0 }
+// Indexes of the `also` entries the verifier called a different defect; null
+// when it did not rule on them.
+const distinctOf = (f, v) => {
+  if (!f.also.length) return []
+  if (!Array.isArray(v.distinct_also)) return null
+  return [...new Set(v.distinct_also)].filter((j) => Number.isInteger(j) && j >= 0 && j < f.also.length)
+}
 picked.forEach((p, i) => {
   const v = verdicts[i]
-  // A null or off-enum verdict is a dead verifier: the finding goes back to
-  // `unverified` so a verify-only re-run can pick it up. It is never dropped
-  // and never counted as refuted.
-  if (!v || !['confirmed', 'partially', 'refuted'].includes(v.verdict)) {
+  const onEnum = v && ['confirmed', 'partially', 'refuted'].includes(v.verdict)
+  // Refute-by-default is enforced here, not only in the prompt: a confirmation
+  // with no reproduction is not evidence.
+  const reproduced = onEnum && (v.verdict === 'refuted' || String(v.reproduction ?? '').trim() !== '')
+  const distinct = onEnum ? distinctOf(p.f, v) : null
+  // A null, off-enum, unreproduced or incomplete verdict is a dead verifier: the
+  // finding goes back to `unverified` so a verify-only re-run can pick it up. It
+  // is never dropped and never counted as refuted.
+  if (!onEnum || !reproduced || distinct === null) {
     verifierFailed.push(keyOf(p.f))
     out.unverified.push(p.f)
     if (p.control) control.failed++
     return
   }
-  out[v.verdict].push({ ...p.f, control: p.control, verdict: v })
+  const split = p.f.also.filter((_, j) => distinct.includes(j))
+  const same = p.f.also.filter((_, j) => !distinct.includes(j))
+  // A lens that raised only a split-off claim no longer agrees with this one.
+  const onlySplit = (l) => l !== p.f.lens && split.some((a) => a.raised_by.includes(l)) && !same.some((a) => a.raised_by.includes(l))
+  out[v.verdict].push({ ...p.f, raised_by: p.f.raised_by.filter((l) => !onlySplit(l)), also: same, control: p.control, verdict: v })
+  out.unverified.push(...split.map((a) => normClaim({ ...a, file: p.f.file, line: p.f.line }, a.lens)))
   if (p.control) control[v.verdict]++
 })
 if (verifierFailed.length) log(`verifier(s) returned nothing for: ${verifierFailed.join(', ')} — returned as unverified`)
 
+// Empty buckets after every finder died are a coverage gap, not a clean change.
+const status = !CLAIMS_IN && lensesFailed.length === LENSES.length ? 'unreviewed' : lensesFailed.length ? 'partial' : 'reviewed'
+
 return {
+  status,
   ...out,
   control,
   lensesFailed,
