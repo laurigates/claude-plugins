@@ -7,7 +7,16 @@ import { basename } from 'node:path'
 const file = process.argv[2]
 const src = readFileSync(file, 'utf8').replace(/^export const meta/m, 'const meta')
 const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor
-const body = new AsyncFunction('agent', 'parallel', 'pipeline', 'phase', 'log', 'args', src)
+const compile = (s) => new AsyncFunction('agent', 'parallel', 'pipeline', 'phase', 'log', 'args', s)
+const body = compile(src)
+// A variant of the template with one line rewritten, to test a duplicated guard
+// on its own. Fails the run if the pattern no longer matches (a silent no-op
+// patch would make the variant identical to the original).
+const patched = (re, to) => {
+  const out = src.replace(re, to)
+  if (out === src) throw new Error(`patch pattern ${re} did not match ${basename(file)}`)
+  return compile(out)
+}
 
 const parallel = async (thunks) => Promise.all(thunks.map((t) => t().catch(() => null)))
 const pipeline = async (items, ...stages) =>
@@ -28,20 +37,22 @@ const sleep = (ms) => new Promise((res) => setTimeout(res, ms))
 
 // script(kind, unit, prompt) → value | undefined (undefined = the agent died → null)
 // delay(kind, unit) → ms before the agent "returns", to model finishing order.
-async function run(argsIn, script, delay = () => 0) {
+async function run(argsIn, script, delay = () => 0, fn = body) {
   const calls = []
   const prompts = {}
+  const logs = []
   const agent = async (prompt, opts) => {
     const [kind, ...rest] = opts.label.split(':')
     const unit = rest.join(':')
-    calls.push({ kind, unit, model: opts.model, effort: opts.effort })
+    const claim = (prompt.match(/^Claim: (\S+:\S+) /m) ?? [])[1]
+    calls.push({ kind, unit, model: opts.model, effort: opts.effort, schema: opts.schema, claim })
     prompts[opts.label] = prompt
     await sleep(delay(kind, unit))
     const r = script(kind, unit, prompt)
     return r === undefined ? null : r
   }
-  const result = await body(agent, parallel, pipeline, () => {}, () => {}, argsIn)
-  return { result, calls, prompts }
+  const result = await fn(agent, parallel, pipeline, () => {}, (m) => logs.push(String(m)), argsIn)
+  return { result, calls, prompts, logs }
 }
 
 let failed = 0
@@ -153,6 +164,20 @@ const lateUnlessA = (k, u) => (k === 'triage' && u !== 'a' ? 20 : 0)
   check('duplicate cluster keys abort', dup.result.reason === 'bad-clusters' && dup.calls.length === 0, dup.result)
   const badClaim = await run({ worktree: '/abs/checkout', claims: [{ file: 'a.ts' }] }, () => verdict('held'))
   check('incomplete claim aborts', badClaim.result.reason === 'bad-claims' && badClaim.calls.length === 0, badClaim.result)
+  // Shape errors abort before any prompt is built; unguarded they threw inside the fan-out.
+  for (const [name, clusters] of [
+    ['files as a string', [{ key: 'a', files: 'src/a.ts' }, { key: 'b', files: ['src/b.ts'] }]],
+    ['clusters as an object', { a: ['src/a.ts'], b: ['src/b.ts'] }],
+    ['a null cluster', [null, { key: 'b', files: ['src/b.ts'] }]],
+  ]) {
+    let r
+    try {
+      r = await run({ ...base(['a', 'b']), clusters }, threeClusters)
+    } catch (e) {
+      r = { result: { threw: e.message }, calls: [] }
+    }
+    check(`${name} aborts as bad-clusters`, r.result.reason === 'bad-clusters' && r.calls.length === 0, r.result)
+  }
 }
 
 // 8. Exactly at the cluster cap every cluster runs (a narrower slice would drop one silently).
@@ -160,13 +185,39 @@ const lateUnlessA = (k, u) => (k === 'triage' && u !== 'a' ? 20 : 0)
   const keys = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
   const r = await run(base(keys), (k, u) => (k === 'triage' ? triage(u, []) : verdict('held')))
   check('8 clusters → 8 triage agents', r.calls.filter((c) => c.kind === 'triage').length === 8 && r.result.clusters.length === 8, r.calls.length)
+  // The literal slice(0, 8) must hold on its own: with MAX_CLUSTERS raised, the
+  // over-cap abort no longer fires and only the literal bounds the fan-out.
+  const loose = patched(/const MAX_CLUSTERS = \d+/, 'const MAX_CLUSTERS = 50')
+  const r9 = await run(base([...keys, 'i']), (k, u) => (k === 'triage' ? triage(u, []) : verdict('held')), () => 0, loose)
+  check('literal slice(0, 8) caps triage when MAX_CLUSTERS is raised', r9.calls.filter((c) => c.kind === 'triage').length === 8, r9.calls.length)
 }
 
-// 9. verifyCap above the hard ceiling is clamped to it; the rest come back unverified.
+// 9. verifyCap above the hard ceiling is clamped to it; the rest come back unverified
+//    as past the cap. VERIFY_MAX and the literal slice(0, 6) are both ceilings, so
+//    each is checked on its own: the clamp through its log line and the past-cap
+//    hand-back, the literal through a variant with VERIFY_MAX raised.
 {
   const claims = Array.from({ length: 9 }, (_, i) => finding('src/y.ts', String(i + 1), 'medium'))
   const r = await run({ worktree: '/abs/checkout', claims, verifyCap: 20 }, () => verdict('held'))
   check('verifyCap clamps to 6', verifyUnits(r).length === 6 && r.result.unverified.length === 3, { v: verifyUnits(r).length, u: r.result.unverified.length })
+  check('clamp is logged', r.logs.some((l) => l.startsWith('verifyCap 20 clamped to 6')), r.logs)
+  check('leftovers logged as past the cap, not as dead skeptics', r.logs.some((l) => l.startsWith('3 claim(s) past the cap of 6')), r.logs)
+  const skeptics = r.calls.filter((c) => c.kind === 'verify').map((c) => c.claim)
+  check('skeptics get the claims ranked 1–6', JSON.stringify(skeptics) === JSON.stringify(['1', '2', '3', '4', '5', '6'].map((n) => `src/y.ts:${n}`)), skeptics)
+  check('unverified holds exactly the claims ranked 7–9', JSON.stringify(r.result.unverified.map(claimKey)) === '["src/y.ts:7","src/y.ts:8","src/y.ts:9"]', r.result.unverified)
+
+  const loose = patched(/const VERIFY_MAX = \d+/, 'const VERIFY_MAX = 50')
+  const rl = await run({ worktree: '/abs/checkout', claims, verifyCap: 20 }, () => verdict('held'), () => 0, loose)
+  check('literal slice(0, 6) caps skeptics when VERIFY_MAX is raised', verifyUnits(rl).length === 6 && rl.result.unverified.length === 3, { v: verifyUnits(rl).length, u: rl.result.unverified.length })
+}
+
+// 10. The closed enums reach every agent call as its schema.
+{
+  const r = await run(base(['a', 'b', 'c'], { verifyCap: 3 }), threeClusters)
+  const triageEnums = r.calls.filter((c) => c.kind === 'triage').map((c) => c.schema?.properties?.findings?.items?.properties?.kind?.enum)
+  const verdictEnums = r.calls.filter((c) => c.kind === 'verify').map((c) => c.schema?.properties?.verdict?.enum)
+  check('triage schema closes kind to the four kinds', triageEnums.length === 3 && triageEnums.every((e) => JSON.stringify(e) === '["test-gap","source-bug","untested-function","dead-code"]'), triageEnums)
+  check('skeptic schema closes verdict to held|downgraded|refuted', verdictEnums.length === 3 && verdictEnums.every((e) => JSON.stringify(e) === '["held","downgraded","refuted"]'), verdictEnums)
 }
 
 process.exit(failed ? 1 : 0)

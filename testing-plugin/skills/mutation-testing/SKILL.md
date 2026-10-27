@@ -209,7 +209,7 @@ unverified, never held; (c) the Rank barrier: every cluster's claims are sorted 
 before any skeptic starts, so the cap goes to the worst claims in the scan, not to the cluster
 that finished first; (d) whatever the cap or a dead skeptic leaves comes back in `unverified`
 in the claim shape, so `{ worktree, project, claims: <unverified> }` re-runs the same template
-as verify-only. `scripts/tests/test-survivor-triage.sh` pins (b)–(d).
+as verify-only. `scripts/tests/test-survivor-triage.sh` pins (a)–(d), each literal slice on its own.
 
 **Skip the harness when:** the scan is one cluster, or few enough survivors to read in one
 pass — that is a linear pass and the harness is pure overhead. The reference's stages remain

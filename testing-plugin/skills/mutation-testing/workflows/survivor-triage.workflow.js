@@ -169,10 +169,16 @@ if (MODE === 'verify-only') {
   candidates = CLAIMS.map((f) => ({ kind: 'source-bug', evidence: '', ...f }))
 } else {
   if (!CTX.json) return abort('missing-args', '`json` (the Stryker mutation.json path) is required')
-  const CLUSTERS = parseList(INPUT.clusters ?? []).map((c) => ({ key: String(c.key ?? ''), files: c.files ?? [] }))
+  // Validate shapes before building prompts: a non-array `clusters` or a string
+  // `files` would otherwise throw inside the fan-out instead of aborting here.
+  const RAW = parseList(INPUT.clusters ?? [])
+  if (!Array.isArray(RAW) || RAW.some((c) => !c || typeof c !== 'object')) {
+    return abort('bad-clusters', '`clusters` must be an array of { key, files } objects')
+  }
+  const CLUSTERS = RAW.map((c) => ({ key: String(c.key ?? ''), files: c.files ?? [] }))
   const keys = new Set(CLUSTERS.map((c) => c.key))
-  if (CLUSTERS.some((c) => !c.key || !c.files.length) || keys.size !== CLUSTERS.length) {
-    return abort('bad-clusters', 'every cluster needs a unique key and at least one file')
+  if (CLUSTERS.some((c) => !c.key || !Array.isArray(c.files) || !c.files.length) || keys.size !== CLUSTERS.length) {
+    return abort('bad-clusters', 'every cluster needs a unique key and a non-empty `files` array')
   }
   if (CLUSTERS.length < FLOOR) return abort('below-floor', `${CLUSTERS.length} cluster(s): triage inline, the harness is overhead`)
   if (CLUSTERS.length > MAX_CLUSTERS) {

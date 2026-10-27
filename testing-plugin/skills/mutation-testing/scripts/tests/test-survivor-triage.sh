@@ -8,8 +8,10 @@
 #      first, and a follow-up run had to verify the claims it dropped.
 #   2. Every claim the cap (or a dead skeptic) leaves behind comes back in
 #      `unverified`, shaped so it can be passed straight back as `args.claims`.
-# Plus refute-by-default (held needs a reproduction), the static-mutant filter
-# in every triage brief, and zero-agent aborts.
+# Plus refute-by-default (held needs a reproduction), the closed kind/verdict
+# schemas on every agent call, the static-mutant filter in every triage brief,
+# each duplicated ceiling (MAX_CLUSTERS/slice(0, 8), VERIFY_MAX/slice(0, 6))
+# tested on its own, and zero-agent aborts, including malformed `clusters`.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
