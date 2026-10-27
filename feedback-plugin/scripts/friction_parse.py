@@ -244,6 +244,7 @@ def canonical_signature(kind: str, tool: str, evidence: str) -> str:
             ("conventional commit", "hook:conventional-commit"),
             ("gitleaks", "hook:gitleaks"),
             ("pre-commit", "hook:pre-commit"),
+            ("refusing to merge", "hook:external-pr-merge-guard"),
         ]:
             if needle in ev:
                 return sig
