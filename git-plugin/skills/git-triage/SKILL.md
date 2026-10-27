@@ -3,9 +3,9 @@ name: git-triage
 description: "Backlog sweep over open issues and PRs — staleness, cross-links, close/merge recommendations, no code changes. Use when grooming the backlog, deciding what to close, or pre-release cleanup."
 args: "[--type issues|prs|both] [--batch N] [--repo owner/name] [--days-stale-issue N] [--days-stale-pr N] [--auto-close] [--auto-merge] [--oldest-first]"
 argument-hint: "--type both --batch 10 (defaults: days-stale-issue=90, days-stale-pr=30, current repo)"
-allowed-tools: Bash(bash *), Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git log *), Bash(rg *), Read, Grep, Glob, AskUserQuestion
+allowed-tools: Bash(bash *), Bash(python3 *), Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git log *), Bash(rg *), Read, Grep, Glob, AskUserQuestion
 created: 2026-04-22
-modified: 2026-10-09
+modified: 2026-10-26
 reviewed: 2026-09-23
 ---
 

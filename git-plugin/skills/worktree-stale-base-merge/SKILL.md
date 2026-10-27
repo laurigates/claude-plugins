@@ -3,7 +3,7 @@ name: worktree-stale-base-merge
 description: "Merging a PR from a parallel worktree-agent branch, or any branch cut from an older main. Use when deciding whether a green CI check still means anything after sibling branches have landed."
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
 created: 2026-08-06
-modified: 2026-09-25
+modified: 2026-10-26
 reviewed: 2026-09-12
 ---
 
@@ -83,8 +83,12 @@ This resolves the stale base with **no force-push**, so it sidesteps the whole
 hazard family the rebase path carries: no `HEAD:`-refspec SHA race
 (`git-plugin:git-merge-hazards`, stacked-chain push-by-SHA), no empty-diff auto-close, no
 force-with-lease confirmation, and nothing destructive to recover from if it
-goes wrong. The squash-merge collapses the extra merge commit anyway, so the
-landed history is identical to the rebased version.
+goes wrong. The cost is the merge method: a branch with a merge commit
+squash-merges (rule 4 in `github-pr-title` →
+[merge-strategies.md](../github-pr-title/merge-strategies.md)), and the squash
+collapses the extra merge commit, so the landed content matches the rebased
+version. A branch whose commits should land individually (rebase-merge) needs
+the rebase in [§ The fix](#the-fix--rebase-in-the-worktree-then-re-verify) instead.
 
 **`gh pr update-branch` lies in both directions — never trust its message.**
 Observed 2026-07: it printed *"Cannot update PR branch due to conflicts"* twice
@@ -93,7 +97,8 @@ The message is not the signal; re-run the merge-base check above and believe
 that. Then let CI re-run and go green *on the new base* — that re-run is the
 entire point of the exercise.
 
-Reach for the rebase below when `update-branch` is wrong: a stacked child needs
+Reach for the rebase below when `update-branch` is wrong: the PR should
+rebase-merge, a stacked child needs
 the parent's SHAs to stay rebase-able, the repo requires linear history, or the
 branch is pinned to an agent worktree and you also need to re-run its tests
 there before pushing.
