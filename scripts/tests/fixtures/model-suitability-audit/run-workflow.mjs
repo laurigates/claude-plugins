@@ -25,7 +25,8 @@ async function run(argsIn, script = {}) {
     const entries = JSON.parse(prompt.match(/^ENTRIES=(.*)$/m)[1])
     return script.verify ? script.verify(entries, opts) : { verdicts: entries.map((e) => vitem(e.path, 'confirm', e.classifier.verdict)), classifier_quality_notes: 'ok' }
   }
-  const result = await body(agent, parallel, pipeline, () => {}, () => {}, argsIn)
+  // A throw is reported as a result so one scenario cannot take the rest down.
+  const result = await body(agent, parallel, pipeline, () => {}, () => {}, argsIn).catch((e) => ({ threw: String(e) }))
   return { result, calls }
 }
 
@@ -57,6 +58,11 @@ const check = (name, cond, detail) => {
   check('stringified args run', r.result.abort === false && ofKind(r, 'classify').length === 1, r.result)
   const bad = await run('{not json')
   check('non-JSON string → bad-args', bad.result.reason === 'bad-args' && bad.calls.length === 0, bad.result)
+  // JSON.parse('null') is null, and A.repo on null throws instead of aborting.
+  for (const s of ['null', '[]', '5']) {
+    const r = await run(s)
+    check(`args ${s} → bad-args, zero agents`, r.result?.reason === 'bad-args' && r.calls.length === 0, r.result)
+  }
 }
 // 3. Argument guards all abort with zero agents.
 {
@@ -142,6 +148,17 @@ const check = (name, cond, detail) => {
   const pick = (r) => r.result.rows.filter((x) => x.role === 'control').map((x) => x.path)
   check('default control sample = max(3, ceil(20/7))', pick(a).length === 3, pick(a))
   check('control sample is deterministic', JSON.stringify(pick(a)) === JSON.stringify(pick(b)), [pick(a), pick(b)])
+// 9b. An empty list for a non-empty batch is a dead agent, not a run of omissions.
+{
+  const files = skills(4)
+  const r = await run(base(files, { batchSize: 2 }), {
+    classify: (ps) => (ps.includes(files[0]) ? { items: [] } : { items: ps.map((p) => item(p, 'switch')) }),
+    verify: () => ({ verdicts: [], classifier_quality_notes: 'nothing' }),
+  })
+  const rows = byPath(r), s = r.result.summary
+  check('empty items → dead-classifier', rows[files[0]].reason === 'dead-classifier' && s.classifiers.dead === 1, [rows[files[0]], s.classifiers])
+  check('empty verdicts → dead-verifier', rows[files[2]].reason === 'dead-verifier' && s.verifiers.dead === 1, [rows[files[2]], s.verifiers])
+}
   check('no-invocation keep never sampled', !pick(a).includes(files[0]), pick(a))
   check('unsampled keeps recorded', a.result.rows.filter((x) => x.disposition === 'keep-unsampled').length === 18, a.result.summary)
   const zero = await run(base(files, { controlSample: 0 }), script)

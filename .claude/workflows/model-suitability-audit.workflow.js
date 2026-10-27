@@ -78,6 +78,8 @@ try {
 } catch {
   return abort('bad-args', 'args is a string that is not JSON')
 }
+// JSON.parse('null') is null; A.repo on it would throw instead of aborting.
+if (A === null || typeof A !== 'object' || Array.isArray(A)) return abort('bad-args', 'args must be an object or a JSON object string')
 
 const kindOf = (p) =>
   /(^|\/)SKILL\.md$/.test(p) ? 'skill'
@@ -225,7 +227,8 @@ const invented = []
 let deadClassifiers = 0
 batches.forEach((b, i) => {
   const r = classified[i]
-  const items = r && Array.isArray(r.items) ? r.items : null
+  // Batches are never empty, so an empty list is an agent that answered nothing.
+  const items = r && Array.isArray(r.items) && r.items.length ? r.items : null
   if (!items) deadClassifiers++
   const byPath = new Map()
   for (const it of items || []) {
@@ -283,7 +286,7 @@ const verifierNotes = []
 let deadVerifiers = 0
 vbatches.forEach((v, i) => {
   const out = i < MAX_VERIFIERS ? verified[i] : undefined
-  const list = out && Array.isArray(out.verdicts) ? out.verdicts : null
+  const list = out && Array.isArray(out.verdicts) && out.verdicts.length ? out.verdicts : null
   if (i < MAX_VERIFIERS && !list) deadVerifiers++
   if (list && out.classifier_quality_notes) verifierNotes.push({ verifier: v.label, notes: out.classifier_quality_notes })
   const byPath = new Map()

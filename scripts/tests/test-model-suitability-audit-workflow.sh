@@ -10,10 +10,12 @@
 #      name); a dead or silent classifier leaves files unclassified rather than
 #      sampled; a dead or silent verifier is never read as a confirmation; the
 #      control sample of keeps is deterministic; the verifier cap reports the
-#      remainder as unverified instead of dropping it.
+#      remainder as unverified instead of dropping it; an empty list from a
+#      non-empty batch counts as a dead agent.
 #
 # check-workflow-js-model.sh scans only */skills/*/workflows/*.js, so this test
-# is also where the explicit model + effort on every agent() call is pinned.
+# is also where the explicit model + effort and the structured-output schema on
+# every agent() call are pinned.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
