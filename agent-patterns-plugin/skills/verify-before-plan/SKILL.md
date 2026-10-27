@@ -136,8 +136,9 @@ current session has not confirmed it.** Time is the silent invalidator.
 **It is a TEMPLATE to adapt, not a script to run verbatim.** Read it, then rewrite it for the
 work in front of you. It scales this skill's premise check up to a whole repo, issue, PRD slice or portfolio: read-only mappers produce
 cited claims, then an optional critic, up to three gap-fillers, a verifier and a synthesizer turn
-them into verified facts and PR-sized work items. The result is returned and written to
-`<scratch>/recon.json`; nothing is committed, pushed or commented.
+them into verified facts and PR-sized work items. The result is returned, and the synthesizer
+also writes it to `<scratch>/recon.json` when it runs (`tail.synth: false` writes nothing there);
+nothing is committed, pushed or commented.
 
 **Prefer a deterministic unit list.** The width of the Map fan-out should come from a list that
 already exists: story files, the claims in an issue, the rows of a coverage script, the repos in a
@@ -148,7 +149,11 @@ so pass `units_source: 'hand-picked'` to have the run log it.
 
 **Adapt freely:** the prompts and `context`, the per-unit `brief` and tier (`opus`, `sonnet`, or
 `haiku` for a lean reader over pre-dumped `inputs`), `unit_kind` (`claims`, `ac`, `findings`), the
-`tail` switches, `coverage_cmd`, and the three caps.
+`tail` switches, `coverage_cmd`, and the three caps. Effort is fixed per tier (haiku `medium`,
+sonnet and opus `high`) so each call site stays checkable: a unit's own `effort` is ignored and
+logged, and a unit model outside `opus | sonnet | haiku` aborts with `bad-unit-model` rather than
+running as opus. Under `unit_kind: 'ac'` a missing AC must cite its negative evidence (the search
+plus its empty result, and the closest file:line) in `headRefs`, or it is dropped as uncited.
 
 **Agent budget:** 6 + 1 x units — Map spends one agent per unit (at most 10); the fixed 6 are the critic, three gap-fillers, the verifier and the synthesizer. The worst case is 16.
 
@@ -158,7 +163,11 @@ gap-fill is cut by `slice(0, 3)` and the rest come back as `unfilled_gaps`; (b) 
 read-only and every claim cites a file:line, an address, or a command plus its output; an item
 with no evidence is dropped in JS before Verify and Synthesize; (c) the closed verdict enum
 `confirmed | adjusted | rejected | unverifiable`, where a dead verifier or a missing verdict is
-`unverifiable`, never `confirmed`, and a rejected item never reaches the synthesizer; (d) every
+`unverifiable`, never `confirmed`, and a rejected item never reaches the synthesizer. An item the
+verify mode did not select gets a fifth, harness-assigned state, `not-checked`, which sits outside
+the verifier's enum: the synthesizer may build on it but never calls it confirmed. A claim the
+verifier cannot reproduce defaults to `unverifiable`, not `rejected`: it reaches the synthesizer
+as an open question, so a verifier that lacked access cannot silently delete a true claim; (d) every
 item from a haiku unit goes to the opus verifier whatever the verify mode; (e) the critic,
 verifier and synthesizer are barriers, because each judges coverage or consistency across every
 report. The behaviour is pinned by `scripts/tests/test-recon-map.sh`.

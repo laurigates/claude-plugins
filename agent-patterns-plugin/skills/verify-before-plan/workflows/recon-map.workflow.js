@@ -44,12 +44,15 @@ export const meta = {
 const INPUT = typeof args === 'string' ? JSON.parse(args) : (args ?? {})
 
 // ADAPT the numbers, PRESERVE the shape. The two caps are also written as
-// literal slices in the fan-outs below, where the scale guard can count them.
+// literal slices in the fan-outs below, where the scale guard can count them:
+// change MAX_UNITS and `UNITS.slice(0, 10)` together, and MAX_GAPFILL and
+// `toFill.slice(0, 3)` together (test-recon-map.sh fails when they differ).
 const MAX_UNITS = 10
 const MAX_GAPFILL = 3
 const MAX_VERIFY_ITEMS = 40
 
 const KINDS = ['claims', 'ac', 'findings']
+const TIERS = ['opus', 'sonnet', 'haiku']
 const MODES = ['none', 'non-holding', 'all']
 
 const CTX = {
@@ -76,11 +79,13 @@ const TAIL = {
 // Units come from the caller. A list some script or file already enumerates
 // (story files, issue claims, coverage rows) is preferred over hand-picked
 // lenses; `units_source` only labels which one this run used.
+// Effort is fixed per tier (see mapUnit), so a unit's own `effort` is not read.
 const ALL_UNITS = (INPUT.units ?? []).map((u, i) => ({
   key: String(u.key ?? `unit-${i + 1}`),
   brief: u.brief ?? '',
-  model: ['sonnet', 'haiku'].includes(u.model) ? u.model : 'opus',
+  model: u.model || 'opus',
   inputs: u.inputs ?? [],
+  effort: u.effort,
 }))
 
 // ---------------------------------------------------------------------------
@@ -99,6 +104,9 @@ if (!MODES.includes(TAIL.verify)) return abort('bad-verify-mode', `${TAIL.verify
 {
   const dup = ALL_UNITS.map((u) => u.key).filter((k, i, a) => a.indexOf(k) !== i)
   if (dup.length) return abort('duplicate-unit-key', dup.join(', '))
+  // An unknown tier aborts instead of silently running as opus.
+  const badModel = ALL_UNITS.filter((u) => !TIERS.includes(u.model)).map((u) => `${u.key}=${u.model}`)
+  if (badModel.length) return abort('bad-unit-model', `${badModel.join(', ')}; a unit model is one of ${TIERS.join(', ')}`)
   // A lean reader has Read/Grep/Glob and no project context: it may only read
   // artefacts something else already dumped.
   const blind = ALL_UNITS.filter((u) => u.model === 'haiku' && !u.inputs.length).map((u) => u.key)
@@ -108,6 +116,7 @@ if (!MODES.includes(TAIL.verify)) return abort('bad-verify-mode', `${TAIL.verify
 const UNITS = ALL_UNITS.slice(0, MAX_UNITS)
 const DROPPED = ALL_UNITS.slice(MAX_UNITS).map((u) => u.key)
 if (DROPPED.length) log(`${ALL_UNITS.length} units > cap ${MAX_UNITS}; dropped: ${DROPPED.join(', ')} — map them in a second run`)
+if (ALL_UNITS.some((u) => u.effort !== undefined)) log('units[].effort is ignored: effort is fixed per tier (haiku medium, sonnet high, opus high)')
 if (INPUT.units_source === 'hand-picked') log('units are hand-picked lenses; a deterministic unit list is preferred when one exists')
 
 // ---------------------------------------------------------------------------
@@ -145,7 +154,11 @@ const SCHEMAS = {
         index: { type: 'integer' },
         summary: str,
         status: { type: 'string', enum: ['satisfied', 'partial', 'missing', 'contradicted'] },
-        headRefs: { ...strs, description: 'file:line references read at the base ref' },
+        headRefs: {
+          ...strs,
+          description:
+            'file:line references read at the base ref; for a missing AC, the search you ran (command plus its empty output, control-tested) and the closest file:line',
+        },
         notes: str,
         remainingWork: str,
       }),
@@ -251,7 +264,8 @@ Do not ask questions; put anything that is the user's call in open questions.`
 // The output contract per kind. A lean reader gets only this part.
 const KIND_RULES = {
   claims: 'Return one items[] row per claim. status is holds | drifted | resolved | new | unverified.',
-  ac: 'Return one acs[] row per acceptance criterion, in order, index from 1. status is satisfied | partial | missing | contradicted. Record each stale citation in staleRefs with what is true now.',
+  ac: `Return one acs[] row per acceptance criterion, in order, index from 1. status is satisfied | partial | missing | contradicted. Record each stale citation in staleRefs with what is true now.
+A missing AC still cites its negative evidence: put in headRefs the search you ran (the command or Grep pattern plus its empty result, control-tested against a value you know is present) and the closest file:line. A row with empty headRefs is dropped as uncited and never reaches the plan.`,
   findings: `Return one findings[] row per defect, each with existing_pr_or_issue filled when an open PR or issue already addresses it
 (another session may be on it). Put every item you examined and found healthy in reviewed_ok with a one-line reason, so coverage is checkable.`,
 }
@@ -318,6 +332,8 @@ const extrasOf = (report) => Object.fromEntries(Object.entries(report).filter(([
 // Map — one agent per unit, cut by a literal slice the scale guard counts.
 // ---------------------------------------------------------------------------
 
+// The literal 10 must equal MAX_UNITS: UNITS is already cut, so a larger cap
+// here alone would change nothing, and a smaller one would mark units 'failed'.
 phase('Map')
 log(`${UNITS.length} units (${KIND}), tail: critic=${TAIL.critic} gapfill<=${TAIL.gapfill} verify=${TAIL.verify} synth=${TAIL.synth}`)
 const mapped = await parallel(UNITS.slice(0, 10).map((u) => () => mapUnit(u)))
@@ -351,7 +367,11 @@ ${CTX.coverage ? `1. Write each report below to ${unitsDir}/<key>.json (the repo
 ${CTX.coverage ? '3' : '2'}. Look for a check nobody ran, and for one shared cause reported separately by several units.
 Units whose mapper returned nothing: ${FAILED.length ? FAILED.join(', ') : '(none)'} — each is a gap.${DROPPED.length ? `\nUnits dropped over the cap (not a gap for this run): ${DROPPED.join(', ')}` : ''}
 
-Group the gaps by unit so at most ${Math.max(TAIL.gapfill, 1)} follow-up agents can fill them. Return an empty gaps array when coverage is complete and the evidence holds.
+${
+      TAIL.gapfill
+        ? `Group the gaps by unit so at most ${TAIL.gapfill} follow-up agents can fill them.`
+        : 'No follow-up agents will run in this run: group the gaps by unit; they are returned unfilled for a later run.'
+    } Return an empty gaps array when coverage is complete and the evidence holds.
 
 Reports:
 ${reportsJson(reports)}`,
@@ -486,9 +506,12 @@ ${verifyFailed ? 'THE VERIFIER RETURNED NOTHING: no item below was independently
 - Use only the items below. Items the verifier rejected and items with no evidence were removed before you; do not reintroduce them from memory.
 - An "adjusted" item: use its correction, not the original claim.
 - An "unverifiable" item is not a fact: list it under open_questions, or re-check it yourself and cite what you ran.
+- A "not-checked" item is the mapper's own cited claim; this run's verify mode did not select it. It may support work items, but never call it confirmed or verified.
 - Each work item is one PR, names its files, a done criterion a script or test can decide, and the item ids it rests on.
 - decisions_for_user holds only calls the code and docs cannot decide, each with a recommendation.
-${critique && CTX.coverage ? '' : `- First write each unit's report object to ${unitsDir}/<key>.json, so a later run can read it.\n`}${UNFILLED.length ? `- Gaps the run did not fill: ${JSON.stringify(UNFILLED)}\n` : ''}${DROPPED.length ? `- Units dropped over the cap, not mapped: ${DROPPED.join(', ')}\n` : ''}${FAILED.length ? `- Units whose mapper returned nothing: ${FAILED.join(', ')}\n` : ''}
+${critique && CTX.coverage ? '' : `- First write each unit's report object to ${unitsDir}/<key>.json, so a later run can read it.\n`}${UNFILLED.length ? `- Gaps the run did not fill: ${JSON.stringify(UNFILLED)}\n` : ''}${DROPPED.length ? `- Units dropped over the cap, not mapped: ${DROPPED.join(', ')}\n` : ''}${FAILED.length ? `- Units whose mapper returned nothing: ${FAILED.join(', ')}\n` : ''}${
+  UNCITED.length ? `- Items dropped for citing no evidence (not facts; list them under open_questions as unmapped): ${UNCITED.map((x) => x.id).join(', ')}\n` : ''
+}
 Write your result as JSON to ${CTX.scratch}/recon.json, then return the same object.
 
 Critic: ${JSON.stringify(critique)}

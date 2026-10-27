@@ -54,6 +54,9 @@ const ids = (r) => (r.result.verification?.selected ?? []).map((x) => x.id)
   check('12 units → 10 map agents', r.labels.filter((l) => l.startsWith('map:')).length === 10, r.labels)
   check('dropped units returned', JSON.stringify(r.result.dropped_units) === '["u11","u12"]', r.result.dropped_units)
   check('dropped units logged', r.logs.some((m) => m.includes('u11') && m.includes('u12')), r.logs)
+  // Without the cut at MAX_UNITS, u11 and u12 would come back as 'failed' units.
+  check('10 unit rows, every one ok', r.result.units.length === 10 && r.result.units.every((x) => x.status === 'ok'), r.result.units)
+  check('no unit reported as a dead mapper', !r.logs.some((m) => m.includes('mappers that returned nothing')), r.logs)
 }
 // 3. Guards abort before any agent runs.
 for (const [name, a, reason] of [
@@ -64,6 +67,7 @@ for (const [name, a, reason] of [
   ['missing root', { scratch: '/s', units: unitsOf(['a']) }, 'missing-root'],
   ['missing scratch', { root: '/r', units: unitsOf(['a']) }, 'missing-scratch'],
   ['unknown verify mode', { ...BASE, units: unitsOf(['a']), tail: { verify: 'some' } }, 'bad-verify-mode'],
+  ['unknown unit model', { ...BASE, units: [{ key: 'a', brief: 'b', model: 'fable' }] }, 'bad-unit-model'],
 ]) {
   const r = await run(a, () => claims('x', []))
   check(`${name} → abort ${reason}, zero agents`, r.result.abort === true && r.result.reason === reason && r.calls.length === 0, r.result)
@@ -79,6 +83,8 @@ for (const [name, a, reason] of [
   check('gapfill_cap 1 → 1 gap-filler', one.labels.filter((l) => l.startsWith('gapfill:')).length === 1 && one.result.unfilled_gaps.length === 4, one.labels)
   const zero = await run({ ...BASE, units: unitsOf(['a', 'b']), tail: { critic: true, gapfill_cap: 0, verify: 'none', synth: false } }, script)
   check('gapfill_cap 0 → no gap-filler', !zero.labels.some((l) => l.startsWith('gapfill:')), zero.labels)
+  check('gapfill_cap 0 → critic told no follow-up agents run', zero.prompt('critic').includes('No follow-up agents') && !/at most \d+ follow-up/.test(zero.prompt('critic')), zero.prompt('critic').slice(-600))
+  check('gapfill_cap 1 → critic told at most 1 follow-up agent', one.prompt('critic').includes('at most 1 follow-up agents'), '')
   check('gap-fill items join the item set', r.result.items.some((x) => x.unit === 'gapfill-1'), r.result.items.map((x) => x.unit))
 }
 // 5. critic:false → no critic and no gap-fill.
@@ -106,6 +112,8 @@ for (const [name, a, reason] of [
   const h = r.calls.find((c) => c.label === 'map:h')
   check('haiku unit → lean-reader + haiku + effort', h?.opts.model === 'haiku' && h?.opts.agentType === 'agents-plugin:lean-reader' && Boolean(h?.opts.effort), h?.opts)
   check('haiku brief names its pre-dumped inputs', h?.prompt.includes('/scratch/dump.txt'), '')
+  // The lean reader gets no COMMON block: these are its only read-only and evidence clauses.
+  check('haiku prompt carries READ-ONLY and file:line', h?.prompt.includes('READ-ONLY') && h?.prompt.includes('file:line'), h?.prompt)
   check('haiku items verified under verify:none', r.labels.includes('verify') && JSON.stringify(ids(r)) === '["h#1"]', ids(r))
 }
 // 8. A dead verifier confirms nothing.
@@ -154,14 +162,21 @@ for (const [name, a, reason] of [
   const r = await run({ ...BASE, units: unitsOf(['a', 'b']) }, (k) => (k === 'map' ? null : synthOut))
   check('no reports → abort no-reports, no tail', r.result.reason === 'no-reports' && r.labels.every((l) => l.startsWith('map:')), r.labels)
 }
-// 13. ac kind: satisfied with refs holds, partial is selected, no refs is uncited.
+// 13. ac kind: satisfied with refs holds; partial and a missing AC that cites its search are
+// selected and reach synth; a row with no refs is uncited, and synth is still told its id.
 {
-  const ac = (index, status, headRefs) => ({ index, summary: `ac${index}`, status, headRefs, notes: '', remainingWork: '' })
-  const r = await run({ ...BASE, unit_kind: 'ac', units: unitsOf(['s1', 's2']), tail: { critic: false, verify: 'non-holding', synth: false } }, (k, u) =>
-    k === 'map' ? { unit: u, story: u, acs: [ac(1, 'satisfied', ['a.ts:1']), ac(2, 'partial', ['a.ts:2']), ac(3, 'missing', [])], keyApis: [], staleRefs: [], risks: [], openQuestions: [] }
-      : k === 'verify' ? { verdicts: [] } : undefined)
+  const ac = (index, status, headRefs, summary = `ac${index}`) => ({ index, summary, status, headRefs, notes: '', remainingWork: status === 'missing' ? 'build it' : '' })
+  const search = ["rg -n 'exportCsv' src/ → (no output; control rg -n 'exportJson' src/ → src/x.ts:4)", 'src/x.ts:4']
+  const r = await run({ ...BASE, unit_kind: 'ac', units: unitsOf(['s1', 's2']), tail: { critic: false, verify: 'non-holding', synth: true } }, (k, u) =>
+    k === 'map' ? { unit: u, story: u, acs: [ac(1, 'satisfied', ['a.ts:1']), ac(2, 'partial', ['a.ts:2']), ac(3, 'missing', [], 'UNCITED-AC'), ac(4, 'missing', search, 'MISSING-AC')], keyApis: [], staleRefs: [], risks: [], openQuestions: [] }
+      : k === 'verify' ? { verdicts: [] } : k === 'synth' ? synthOut : undefined)
+  const sp = r.prompt('synth')
   check('ac: partial selected, satisfied not', ids(r).includes('s1#2') && !ids(r).includes('s1#1'), ids(r))
   check('ac: no headRefs → uncited', r.result.uncited.some((x) => x.id === 's1#3'), r.result.uncited)
+  check('ac: map prompt tells a missing AC to cite its search', r.prompt('map:s1').includes('A missing AC still cites its negative evidence'), '')
+  check('ac: missing AC with a cited search is verified and reaches synth', ids(r).includes('s1#4') && sp.includes('MISSING-AC'), ids(r))
+  // A missing AC is never silently invisible to synth: either its row or its dropped id is there.
+  check('ac: uncited AC text kept out of synth, its id listed as dropped', !sp.includes('UNCITED-AC') && /citing no evidence[^\n]*s1#3/.test(sp), sp.slice(0, 200))
 }
 // 14. findings kind: findings are non-holding; reviewed_ok joins only under verify:all.
 {
@@ -193,6 +208,36 @@ for (const [name, a, reason] of [
   check('read-only clause in every prompt', opusCalls.every((c) => c.prompt.includes('READ-ONLY')), r.labels)
   check('file:line clause in every prompt', opusCalls.every((c) => c.prompt.includes('file:line')), r.labels)
   check('no worktree isolation anywhere', r.calls.every((c) => c.opts.isolation === undefined), r.calls.map((c) => c.opts.isolation))
+}
+// 17. Verifier cap: 45 selected items → 40 to the verifier; the other 5 stay unverifiable even
+// when the verifier (wrongly) returns a verdict for them.
+{
+  const many = Array.from({ length: 45 }, (_, i) => item(`claim ${i + 1}`, 'drifted'))
+  const allConfirmed = { verdicts: many.map((_, i) => ({ id: `a#${i + 1}`, claim: '', verdict: 'confirmed', correction: '', evidence: 'x' })) }
+  const r = await run({ ...BASE, units: unitsOf(['a']), tail: { critic: false, verify: 'non-holding', synth: false } }, (k, u) =>
+    k === 'map' ? claims(u, many) : k === 'verify' ? allConfirmed : undefined)
+  const v = r.result.verification
+  const over = ['a#41', 'a#42', 'a#43', 'a#44', 'a#45']
+  check('over cap → over_cap holds the overflow ids', JSON.stringify(v.over_cap) === JSON.stringify(over), v.over_cap)
+  check('over cap → overflow verdicts unverifiable', over.every((id) => v.selected.find((x) => x.id === id)?.verdict === 'unverifiable'), v.selected.slice(-5))
+  check('over cap → in-cap verdicts applied', v.selected.find((x) => x.id === 'a#40')?.verdict === 'confirmed', v.selected[39])
+  const sent = (r.prompt('verify').match(/"id": "a#\d+"/g) ?? []).length
+  check('verifier prompt carries at most 40 items', sent === 40, sent)
+  check('over cap logged', r.logs.some((m) => m.includes('verifier cap 40')), r.logs)
+}
+// 18. Under verify:none every item reaches synth as "not-checked", and synth is told what that means.
+{
+  const r = await run({ ...BASE, units: unitsOf(['a']), tail: { critic: false, verify: 'none', synth: true } }, (k, u) =>
+    k === 'map' ? claims(u, [item('NOT-CHECKED-CLAIM', 'drifted')]) : k === 'synth' ? synthOut : undefined)
+  const sp = r.prompt('synth')
+  check('verify:none → item verdict not-checked', r.result.items.every((x) => x.verification.verdict === 'not-checked'), r.result.items)
+  check('synth defines not-checked', sp.includes('A "not-checked" item') && sp.includes('NOT-CHECKED-CLAIM'), '')
+}
+// 19. A unit's own effort is ignored and logged; the tier's effort is used.
+{
+  const r = await run({ ...BASE, units: [{ key: 'a', brief: 'b', model: 'sonnet', effort: 'low' }], tail: noTail }, (k, u) => (k === 'map' ? claims(u, [item('x')]) : undefined))
+  const a = r.calls.find((c) => c.label === 'map:a')
+  check('unit effort ignored → tier effort, logged', a?.opts.model === 'sonnet' && a?.opts.effort === 'high' && r.logs.some((m) => m.includes('effort is ignored')), { opts: a?.opts, logs: r.logs })
 }
 
 process.exit(failed ? 1 : 0)
