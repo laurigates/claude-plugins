@@ -336,7 +336,12 @@ glob, brace or zsh extglob (`-? x`, `{-R,x}`, `-@(R) x`), a variable command
 word in front of any merge route — `$GH pr merge`, `$GH api …/pulls/N/merge`,
 `$CURL -X PUT …/pulls/N/merge`, and any `$GH api graphql` call —
 xargs/parallel (they add arguments at run time), a shell
-reading its script from a pipe (`echo '…' | bash`), nested shell text whose
+reading its script from a pipe (`echo '…' | bash`) or a process substitution
+(`bash <(…)`, `source <(…)`, `bash < <(…)`, zsh `=(…)`), a call to a shell
+function defined in the same command (`f(){ "$@"; }; f gh pr merge 5`, a zsh
+anonymous `() { … } gh pr merge 5`, or a `gh()` function) whose arguments hold
+`merge`, a `pulls/N/merge` route, GraphQL or a `--prs` list — its body decides
+what runs, including an extra `-R` — nested shell text whose
 quoting leaves a literal quote or a dangling `-R` (`bash -c "… \"-R\" x"`,
 `eval "… -R" "x"`), a GraphQL merge mutation (it names the PR by node id), a
 GraphQL query read from `@file`/`--input`, a variable, or stdin (a pipe, a
@@ -375,8 +380,11 @@ run sequentially inside the hook's 20 s timeout.
 
 **Not covered:** a `gh` alias defined *before* the command (`gh alias set mm
 'pr merge'`, then `gh mm 5`) and any other script or binary that merges
-internally (merge-chain.sh under a different file name included) — the hook
-sees only the command text, not what it calls.
+internally (merge-chain.sh under a different file name included, a copy or
+symlink of `gh` under another name, or a merge run from another language such
+as `python3 -c "os.system(…)"`) — the hook sees only the command text, not what
+it calls. `merge-chain.sh` keeps its own authorship check as a second layer for
+this reason (issue #3262).
 
 **Which repository the PR is looked up in.** With `--repo`/`-R`, that
 repository. Otherwise the repository of the hook's cwd, with one exception
@@ -406,8 +414,8 @@ is reached through:
 
 | Position | Example |
 |----------|---------|
-| A wrapper that runs the wrapped command — including flags taking a separate value | `sudo -u ci`, `env -C dir`, `timeout`, `xargs`, `find -exec`, `parallel`, `watch`, `script`, `uv run` |
-| A shell invoker, including heredocs fed to a shell | `bash -c "…"`, `nix-shell --run`, `bash <<EOF`, `bash -s <<'EOF'` |
+| A wrapper that runs the wrapped command — including flags taking a separate value | `sudo -u ci`, `env -C dir`, `timeout`, `xargs`, `find -exec`, `parallel`, `watch`, `script`, `uv run`, `arch -arm64`, `screen -dm`, zsh `noglob`/`nocorrect`, `time -p`, `/usr/bin/time` |
+| A shell invoker, including heredocs fed to a shell | `bash -c "…"`, `eval "…"`, unquoted `eval gh pr merge …` (its words are joined and scanned as command text), `nix-shell --run`, `bash <<EOF`, `bash -s <<'EOF'` |
 | Command substitution | `` X=`gh pr merge 2231` ``, `$(gh pr merge 2231)` |
 | Redirections, which bash strips before `gh` sees argv | `gh pr merge 2>/dev/null 2231`, `xargs -n1 gh pr merge < prs.txt` |
 
