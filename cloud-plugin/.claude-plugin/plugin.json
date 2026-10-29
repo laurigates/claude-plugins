@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "cloud-plugin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Cloud provider operational skills - GCP today, provider-prefixed skill names (gcp-, hetzner-)",
   "author": {
     "name": "Lauri Gates"

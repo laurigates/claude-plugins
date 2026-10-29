@@ -1,6 +1,6 @@
 ---
 created: 2026-06-22
-modified: 2026-10-18
+modified: 2026-10-24
 reviewed: 2026-09-16
 paths:
   - ".github/workflows/**"
@@ -111,7 +111,6 @@ Every non-interactive workflow prompt (all rows except `claude.yml` @mentions) r
 | `github-workflow-auto-fix.yml` | `opus` / `medium` | Diagnose + fix CI failures |
 | `auto-resolve-conflicts.yml` (CLI) | `opus` / `medium` | Merge must understand both intents |
 | `claude.yml` (@mentions) | `opus` / `medium` | Interactive; pinned explicitly, no turn cap |
-| `claude-code-review.yml` | — | **Out of scope**: model lives in the external `laurigates/.github` reusable workflow; the guard skips it (classification, not allowlist) |
 
 The recurring `Plugin: Workflow model audit` workflow re-evaluates these picks
 monthly against real run health, measured per-run cost and turn draw, and
