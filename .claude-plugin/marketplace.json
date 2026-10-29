@@ -316,7 +316,7 @@
       "name": "documentation-plugin",
       "source": "./documentation-plugin",
       "description": "Documentation generation - API docs, README, LaTeX PDF conversion",
-      "version": "1.13.4",
+      "version": "1.14.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -508,7 +508,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.16.1",
+      "version": "2.17.0",
       "author": {
         "name": "Lauri Gates"
       },
