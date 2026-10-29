@@ -3,7 +3,7 @@ name: public-export-sanitization
 description: "Sanitize internal content before it goes public (repo, blog, talk). Use when publishing, to catch leaked project ids, service-account emails, hostnames, names, and repo-escaping links."
 allowed-tools: Bash(bash *), Read, Grep, Glob, Edit, TodoWrite
 created: 2026-09-24
-modified: 2026-10-09
+modified: 2026-10-26
 reviewed: 2026-09-24
 ---
 
@@ -91,6 +91,25 @@ diff"), so read each hit rather than counting them.
 
 It is **not** a secret scanner. Run `gitleaks` for tokens and keys; this catches
 *context* leakage, a different axis.
+
+## The automatic gate on public writes
+
+This plugin's `public-repo-leak-gate.sh` PreToolUse hook runs the same scanner
+on its own, at the moment of publication: on `git commit`, `gh pr`/`gh issue`
+writes, and GitHub MCP writes whose **destination** repo is public (or whose
+visibility could not be read). A hit asks before the write runs; private repos
+and clean text get no output. Two files beside your `--patterns` file tune it:
+
+- `.claude/public-export.patterns` — found by walking up from the destination
+  checkout (or set `CLAUDE_PUBLIC_EXPORT_PATTERNS`).
+- `.claude/public-export.exempt-owners` — one GitHub owner per line whose own
+  public repos may carry the org identifiers; they skip the org patterns but
+  keep the built-in shapes (or set `CLAUDE_PUBLIC_EXPORT_EXEMPT_OWNERS`).
+
+The gate covers individual writes. A whole-tree export still needs the manual
+run in "The tripwire: run it on every export" section, and so does a repo about
+to be flipped from private to public, because its entire history publishes at
+once.
 
 ## Curation rubric (per candidate doc or file)
 

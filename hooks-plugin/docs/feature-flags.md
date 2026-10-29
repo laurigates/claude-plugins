@@ -87,6 +87,12 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 |---|---|---|
 | `CLAUDE_HOOKS_DISABLE_CONFIG_DRIFT` | The rules/skills config-drift SessionStart probe alone (`CLAUDE_HOOKS_DISABLE_DRIFT_NUDGE` also silences it, via the aggregator) | `health-plugin/hooks/config-drift-probe.sh` |
 
+### documentation-plugin
+
+| Flag | Disables | Source |
+|---|---|---|
+| `CLAUDE_HOOKS_DISABLE_PUBLIC_LEAK_GATE` | The PreToolUse ask before a commit, `gh pr`/`gh issue` write or GitHub MCP write to a public repo whose text matches an internal-identifier pattern | `documentation-plugin/hooks/public-repo-leak-gate.sh` |
+
 ## Tunables (a value, not on/off)
 
 | Flag | Default | Controls | Source |
