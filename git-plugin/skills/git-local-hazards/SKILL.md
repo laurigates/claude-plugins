@@ -3,7 +3,7 @@ name: git-local-hazards
 description: Local git traps where a green command is wrong. Use when branching after a squash-merge, cutting a PR branch, after a clean merge or rebase, when a staged file vanishes, or before reset --hard.
 allowed-tools: Read, Grep, Glob, Bash(git *), Bash(gh pr list *), Bash(grep *), TodoWrite
 created: 2026-09-24
-modified: 2026-09-26
+modified: 2026-10-26
 reviewed: 2026-09-24
 ---
 
@@ -127,8 +127,12 @@ tree is still broken.
 Classic trip: `git mv old new`, edit `new`, then `git add new old` → the stale
 `old` aborts the add, and the commit ships the rename with pre-edit content.
 
-- **Rules**: one pathspec per `git add`, or only confirmed-present paths.
-  After `git mv` + edit, `git add <newname>` alone.
+- **Rules**: run `git status --short` first, then stage every
+  confirmed-present path in ONE `git add -- A B C`, and run `git commit` as a
+  separate call. List every path in that single call rather than chaining
+  `git add A && git add B` — the chain races on `index.lock` and the git-chain
+  hook blocks it (#3042). After `git mv` + edit, stage `<newname>`, not the
+  stale `<oldname>`.
 - **Check**: `git status --short` before committing — the index column must
   show the change you intend.
 - **Recovery**: the edit is still unstaged in the working tree; add and
