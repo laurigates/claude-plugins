@@ -464,6 +464,36 @@ if grep -q 'scripts/merge-chain.sh' "$TRUST"; then ok "external-pr-trust explain
 GUARD="$SKILL_DIR/../../../hooks-plugin/hooks/external-pr-merge-guard.sh"
 if [ ! -f "$GUARD" ] || grep -q 'merge-chain' "$GUARD"; then ok "external-pr-merge-guard recognises merge-chain.sh (or is absent in this tree)"; else bad "external-pr-merge-guard does not recognise merge-chain.sh"; fi
 
+# ---- 10. the docs state the script's exemption (#3254) ----------------------
+# The docs once exempted any commit whose subject starts with "Merge" and told
+# readers to refuse "any non-merge commit". The script exempts only a commit
+# with 2+ parents AND committer noreply@github.com, so a conflict agent's own
+# merge of main is refused. Run the hand-run snippet itself, not a grep of it.
+echo "docs"
+SMC="$SKILL_DIR/references/serial-merge-chain.md"
+stale=$(grep -rlE 'startswith\("Merge"\)|any non-merge commit|a non-merge commit after review' \
+  "$SKILL_DIR/SKILL.md" "$SKILL_DIR/references" 2>/dev/null)
+if [ -z "$stale" ]; then ok "no doc restates the subject-'Merge' / non-merge exemption"; else bad "stale exemption wording in: $stale"; fi
+mkdir -p "$T/snip/bin"
+awk '/^## The guard/{g=1} g&&/^```bash/{f=1;next} f&&/^```/{exit} f' "$SMC" |
+  sed 's/^START=.*/START=2026-10-27T08:00:00Z/' >"$T/snip/guard.sh"
+if bash -n "$T/snip/guard.sh" 2>/dev/null && [ -s "$T/snip/guard.sh" ]; then ok "the serial-merge-chain.md guard snippet parses"; else bad "the serial-merge-chain.md guard snippet is missing or does not parse"; fi
+cat >"$T/snip/bin/gh" <<'SNIPSTUB'
+#!/usr/bin/env bash
+if [ "$1 $2" = "api graphql" ]; then cat "$SNIP_JSON"; exit 0; fi
+echo "MERGED_BY_SNIPPET"
+SNIPSTUB
+chmod +x "$T/snip/bin/gh"
+snip_run() { # snip_run <parents> <committer email>: one commit after START
+  printf '{"data":{"repository":{"pullRequest":{"headRefOid":"%s","commits":{"totalCount":1,"nodes":[{"commit":{"oid":"d5d5d5d5d5","committedDate":"2026-10-27T09:00:00Z","messageHeadline":"Merge branch main into feat/x","parents":{"totalCount":%s},"committer":{"email":"%s"}}}]}}}}}' \
+    "$(printf 'a%.0s' $(seq 40))" "$1" "$2" >"$T/snip/pr.json"
+  PATH="$T/snip/bin:$PATH" SNIP_JSON="$T/snip/pr.json" owner=o name=r n=9 \
+    bash "$T/snip/guard.sh" 2>&1 | tail -n 1
+}
+expect_line "snippet: GitHub's update-branch merge is exempt" "$(snip_run 2 noreply@github.com)" "MERGED_BY_SNIPPET"
+expect_has "snippet: an agent's own merge of main is refused" "$(snip_run 2 agent@example.com)" "^STOP #9: unverified commits: d5d5d5d5 Merge branch main"
+expect_has "snippet: a single-parent 'Merge …' commit is refused" "$(snip_run 1 noreply@github.com)" "^STOP #9: unverified commits:"
+
 echo
 echo "passed=$pass failed=$fail"
 [ "$fail" -eq 0 ]
