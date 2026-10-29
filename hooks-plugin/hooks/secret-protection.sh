@@ -330,10 +330,16 @@ if [ "$TOOL_NAME" = "Bash" ] && [ -n "$COMMAND" ]; then
   #
   # Each regex below decides first; sp_confirm can only lift a block whose every
   # verb occurrence is exempt text (#2737, see the parsed-exemption header).
+  #
+  # The verb must be a whole command word (issue #3271): bounded on the left by
+  # line start or a byte that is not part of a word or filename (so `.env`,
+  # `dotenv`, `myenv`, `my-env` are not the `env` verb, while `/usr/bin/env`
+  # and `(echo` still are) and on the right by whitespace. Bracket expressions
+  # only — portable ERE for both `grep -E` and bash `=~` (bash 3.2, BSD grep).
   secret_var_verbs='(echo|printf|cat|env|printenv|export)'
   # shellcheck disable=SC2016  # $... is a grep pattern, not shell expansion
-  secret_var_re="${secret_var_verbs}"'[^|]*\$\{?[A-Za-z0-9_]*_(KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTH)[Ss]?\b'
-  if grep -Eq "$secret_var_re" <<<"$SP_VIEW" && sp_confirm "$secret_var_verbs" "$secret_var_re" 0; then
+  secret_var_re="(^${secret_var_verbs}|[^A-Za-z0-9_.-]${secret_var_verbs})"'[[:space:]][^|]*\$\{?[A-Za-z0-9_]*_(KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTH)[Ss]?\b'
+  if grep -Eq "$secret_var_re" <<<"$SP_VIEW" && sp_confirm "$secret_var_verbs" "$secret_var_re" 1; then
     block "BLOCKED: Command may expose secret environment variables.
 Use the application's configuration system instead of echoing secrets.
 ${OVERRIDE_NOTE}"

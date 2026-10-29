@@ -29,21 +29,50 @@ in the same chain, before anyone has seen it run on a real PR.
 ## The guard
 
 Record when verification ended, and refuse to merge if the PR gained any
-non-merge commit after it. Merge commits from update-branch are expected;
-anything else is unreviewed. Pin the merge to the head you just read, so a push
-between your read and the merge fails the merge instead of riding along.
+commit after it, with one exemption: a merge commit GitHub made itself through
+`update-branch`. The test is the one `scripts/merge-chain.sh` applies, and both
+halves are read from GitHub:
+
+- the commit has **two or more parents**, and
+- its **committer email is `noreply@github.com`**.
+
+The subject line is not consulted. A single-parent commit titled `Merge …` is
+unreviewed, and so is a real merge commit anyone else pushed: a conflict agent's
+own `Merge branch main into …` carries that agent's committer, and its conflict
+resolution is new code nobody reviewed. Pin the merge to the head you just
+read, so a push between your read and the merge fails the merge instead of
+riding along.
 
 ```bash
 START=$(date -u +%Y-%m-%dT%H:%M:%SZ)   # once, after the last review, before the loop
-# ...per PR, after update-branch and the wait for CLEAN:
-commits_json=$(gh pr view "$n" --json commits) || exit 1
-late=$(jq -r --arg t "$START" '[.commits[] | select(.committedDate > $t)
-  | select((.messageHeadline | startswith("Merge")) | not)
-  | "\(.oid[0:8]) \(.messageHeadline)"] | join("; ")' <<<"$commits_json") || exit 1
+# ...per PR, after update-branch and the wait for CLEAN (owner, name, n set):
+q='query($owner: String!, $name: String!, $number: Int!) {
+  repository(owner: $owner, name: $name) { pullRequest(number: $number) {
+    headRefOid
+    commits(last: 100) { totalCount
+      nodes { commit { oid committedDate messageHeadline parents { totalCount } committer { email } } } }
+  } } }'
+raw=$(gh api graphql -f query="$q" -F owner="$owner" -F name="$name" -F number="$n") || exit 1
+pr=$(jq -ce '.data.repository.pullRequest | select(.headRefOid and .commits.nodes)' <<<"$raw") || exit 1
+[ "$(jq '.commits.totalCount - (.commits.nodes | length)' <<<"$pr")" = 0 ] ||
+  { echo "STOP #$n: commit list truncated, the guard cannot clear it"; exit 1; }
+late=$(jq -r --arg t "$START" '[.commits.nodes[].commit | select(.committedDate > $t)
+  | select(((.parents.totalCount // 0) >= 2 and (.committer.email // "") == "noreply@github.com") | not)
+  | "\(.oid[0:8]) \(.messageHeadline)"] | join("; ")' <<<"$pr") || exit 1
 [ -n "$late" ] && { echo "STOP #$n: unverified commits: $late"; exit 1; }
-head=$(gh pr view "$n" --json headRefOid --jq .headRefOid)
-gh pr merge "$n" --squash --match-head-commit "$head"
+head=$(jq -r .headRefOid <<<"$pr")
+gh pr merge "$n" -R "$owner/$name" --squash --match-head-commit "$head"
 ```
+
+The read is GraphQL, as in the script, because `gh pr view --json commits`
+carries no parent count. Where GraphQL is unavailable,
+`gh api --paginate repos/<owner>/<repo>/pulls/<n>/commits` carries the same
+facts as `.parents | length`, `.commit.committer.email` and
+`.commit.committer.date`, up to 250 commits.
+
+`--match-head-commit` takes the full 40-character SHA, which `headRefOid`
+returns. An abbreviated one is rejected with `Could not coerce value "…" to
+GitObjectID`, and the PR is not merged.
 
 The chain squashes because `update-branch` adds a merge commit to each PR, and
 rule 4 of the merge-method decision rule sends any branch with a merge commit
@@ -63,6 +92,18 @@ needed no update and has no merge commit takes the `METHOD=` that
 - **Order the chain so behaviour changes go last**, or disable the bot
   (`gh workflow disable`, with a re-enable issue opened in the same step) for
   the duration of the chain.
+
+## Known limits of the exemption
+
+- **The committer email is a claim, not a proof.** Whoever creates a merge
+  commit sets its committer, so a hand-made merge recorded as
+  `noreply@github.com` passes. GraphQL's `signature { wasSignedByGitHub }` on
+  the commit cannot be forged that way and would harden the exemption;
+  `merge-chain.sh` does not check it yet.
+- **A merge made in GitHub's web conflict editor is also committed by GitHub**,
+  so it passes the exemption although it contains a conflict resolution. Treat
+  a web-editor resolution after review as unreviewed and move the review
+  timestamp only after reading it.
 
 ## Recovery when unverified commits already merged
 

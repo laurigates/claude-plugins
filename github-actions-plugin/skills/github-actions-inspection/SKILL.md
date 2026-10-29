@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-09-24
+modified: 2026-10-27
 reviewed: 2026-04-25
 name: github-actions-inspection
 description: "Failing step, stack trace, and test output from a completed GitHub Actions run; rerun failed jobs. Use when a CI check finished red and you need the error extracted from its log."
@@ -216,6 +216,7 @@ gh run list --limit 50 --json conclusion \
 | Dependency install | "Could not find package", "Version conflict" | Lock versions, use cache |
 | Environment | "Command not found", "Module not found" | Verify setup steps, check runner version |
 | Resource constraints | "out of disk space", "Process killed" | Clean artifacts, increase runner size |
+| Budget exhausted | Job `failure` with zero steps, `--log-failed` says `log not found`, every repo red at once | Read `gh api repos/<o>/<r>/check-runs/<job-id>/annotations`: "The job was not started because an Actions budget is preventing further use". Raise the budget; see `actions-billing-usage` § Budgets |
 
 ## Agentic Optimizations
 

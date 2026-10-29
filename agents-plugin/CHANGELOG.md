@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.3](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.16.2...agents-plugin-v1.16.3) (2026-10-29)
+
+
+### Bug Fixes
+
+* **agents-plugin:** pin the ci agent's Rust toolchain instead of floating stable ([#3206](https://github.com/laurigates/claude-plugins/issues/3206)) ([0b78c5b](https://github.com/laurigates/claude-plugins/commit/0b78c5b0c1ab10e04ee5e0e223736545c288415c))
+
 ## [1.16.2](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.16.1...agents-plugin-v1.16.2) (2026-10-22)
 
 

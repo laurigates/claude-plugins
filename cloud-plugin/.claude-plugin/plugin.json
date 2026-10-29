@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "cloud-plugin",
+  "version": "1.0.0",
+  "description": "Cloud provider operational skills - GCP today, provider-prefixed skill names (gcp-, hetzner-)",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "license": "MIT",
+  "keywords": [
+    "cloud",
+    "gcp",
+    "gcloud",
+    "compute-engine",
+    "throwaway-vm",
+    "benchmark",
+    "teardown",
+    "budget"
+  ]
+}

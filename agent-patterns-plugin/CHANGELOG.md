@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.55.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.55.0...agent-patterns-plugin-v2.55.1) (2026-10-29)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** record PAL review timeouts, the OpenCode Go usage cap and unreliable high findings ([#3240](https://github.com/laurigates/claude-plugins/issues/3240)) ([cc051f3](https://github.com/laurigates/claude-plugins/commit/cc051f39d11d30e285c597bd8ec814146ab3a56b))
+* record workflow landing, external-review and merge-pin learnings ([#3267](https://github.com/laurigates/claude-plugins/issues/3267)) ([854cbd6](https://github.com/laurigates/claude-plugins/commit/854cbd6c0f7dab29897c10e8351e5ba6b0133a8a))
+
 ## [2.55.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.54.0...agent-patterns-plugin-v2.55.0) (2026-10-27)
 
 
