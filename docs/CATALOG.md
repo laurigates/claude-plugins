@@ -3,7 +3,7 @@
 
 # Plugin Catalog
 
-44 plugins, 445 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
+45 plugins, 447 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
 
 ## AI & Agents
 
@@ -84,6 +84,7 @@
 |--------|-------:|-------:|-------------|
 | [communication-plugin](../communication-plugin/) | 2 | 0 | External communication formatting - Google Chat, ticket drafting |
 | [prose-plugin](../prose-plugin/) | 3 | 0 | Prose transformation and style control - synthesis, distillation, tone, voice, clarity, and consistency for written text |
+| [youtube-plugin](../youtube-plugin/) | 2 | 0 | YouTube publishing - Data API v3 upload, metadata edits and thumbnails, plus YouTube Studio browser scripting for org-only sharing |
 
 ## UX & Components
 
