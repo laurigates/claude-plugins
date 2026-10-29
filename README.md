@@ -6,7 +6,7 @@
 
 > Experiments (`claude-probe`, `skill-catalog-routing`, `subagent-compaction`) live under `experiments/`, each exposed as a `just` module.
 
-A curated collection of 46 Claude Code plugins providing 400+ skills and 22 agents for development workflows.
+A curated collection of 47 Claude Code plugins providing 400+ skills and 22 agents for development workflows.
 
 The same skills, subagents and safety hooks also run in **OpenCode**, **pi** and
 **Antigravity CLI**.

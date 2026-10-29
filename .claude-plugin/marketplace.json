@@ -896,6 +896,30 @@
       "category": "language"
     },
     {
+      "name": "video-plugin",
+      "source": "./video-plugin",
+      "description": "Video post-production with ffmpeg - YouTube chapter lines, music muxing that keeps chapters, thumbnails, frame review, chapter timeline bar and title card, beat-synced edge glow, karaoke lyrics",
+      "version": "1.0.0",
+      "author": {
+        "name": "Lauri Gates",
+        "url": "https://github.com/laurigates"
+      },
+      "license": "MIT",
+      "keywords": [
+        "video",
+        "ffmpeg",
+        "chapters",
+        "youtube",
+        "thumbnail",
+        "music",
+        "timeline",
+        "title-card",
+        "beat-tracking",
+        "karaoke"
+      ],
+      "category": "utilities"
+    },
+    {
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - preflight checks, checkpoint refactoring, wave dispatch, run recovery and budgeting",

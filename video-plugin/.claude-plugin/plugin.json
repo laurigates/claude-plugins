@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "video-plugin",
+  "version": "1.0.0",
+  "description": "Video post-production with ffmpeg — YouTube chapter lines, music muxing that keeps chapters, thumbnails, frame review, chapter timeline bar and title card, beat-synced edge glow, karaoke lyrics",
+  "author": {
+    "name": "Lauri Gates",
+    "url": "https://github.com/laurigates"
+  },
+  "repository": "https://github.com/laurigates/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "video",
+    "ffmpeg",
+    "ffprobe",
+    "chapters",
+    "youtube",
+    "thumbnail",
+    "music",
+    "mux",
+    "timeline",
+    "title-card",
+    "beat-tracking",
+    "glow",
+    "karaoke",
+    "av1",
+    "imagemagick"
+  ]
+}
