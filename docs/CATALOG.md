@@ -3,7 +3,7 @@
 
 # Plugin Catalog
 
-44 plugins, 445 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
+44 plugins, 446 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
 
 ## AI & Agents
 
@@ -106,7 +106,7 @@
 |--------|-------:|-------:|-------------|
 | [health-plugin](../health-plugin/) | 7 | 0 | Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers |
 | [macos-plugin](../macos-plugin/) | 8 | 0 | macOS-specific dev environment tooling - kitty session persistence, LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift |
-| [tools-plugin](../tools-plugin/) | 17 | 0 | General utilities - fd, rg, jq, shell, imagemagick |
+| [tools-plugin](../tools-plugin/) | 18 | 0 | General utilities - fd, rg, jq, shell, imagemagick |
 
 ## Game Development
 
