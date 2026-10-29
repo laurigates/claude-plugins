@@ -32,6 +32,7 @@
     "checkpoint",
     "repo-deletion-safety",
     "branch-base",
+    "worktree-location",
     "prose-style",
     "workflow-scale",
     "subagent-count",
@@ -79,6 +80,11 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/branch-base-guard.sh\"",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/worktree-location-guard.sh\"",
             "timeout": 5
           },
           {
