@@ -1,7 +1,7 @@
 ---
 created: 2026-03-02
-modified: 2026-06-14
-reviewed: 2026-06-10
+modified: 2026-10-29
+reviewed: 2026-10-29
 name: git-fork-workflow
 description: "Fork management and upstream sync. Use when working with forks, syncing with upstream, detecting divergence, or preparing commits for contribution."
 allowed-tools: Bash(bash *), Bash(git remote *), Bash(git fetch *), Bash(git log *), Bash(git status *), Bash(git diff *), Bash(git rev-list *), Bash(gh repo *), Read, Grep, Glob
@@ -195,6 +195,44 @@ When the environment **cannot reach upstream directly** — e.g. a Claude Code s
    ```
 
    List what's still pending with `git log --grep='Upstream-status: pending' upstream/main..origin/main`.
+
+### Keep the staging PR's text from reaching upstream
+
+A fork-internal PR or issue body is not private to the fork. GitHub autolinks
+`owner/repo#N`, `owner/repo@sha` and full issue/PR URLs in conversations, and
+"by default, references generate a backlink" on the referenced issue
+([Autolinked references and URLs](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/autolinked-references-and-urls)).
+The backlink is a `cross-referenced` timeline event ("The issue or pull request
+was referenced from another issue or pull request",
+[Issue event types](https://docs.github.com/en/rest/using-the-rest-api/issue-event-types#cross-referenced)),
+so upstream maintainers see your review PR before you have submitted anything.
+
+- **Wrap upstream and third-party references in backticks.** A code span is not
+  autolinked. Rendered via `gh api markdown -f mode=gfm -f context=<fork>`,
+  bare `owner/repo#1` became a link to upstream; `` `owner/repo#1` `` stayed a
+  `<code>` element. That shows the link is suppressed; whether every
+  backlink path (title, edits after posting) is also suppressed is unverified.
+- **For a clickable link without a backlink**, the docs give `redirect.github.com`
+  in place of `github.com` in the URL.
+- **A bare `#N` resolves in the repo it is written in.** In a fork PR body, or
+  in a commit message pushed to the fork, `#1` links the fork's `#1`, not
+  upstream's.
+
+Check the body file before publishing, then control-test the pattern against a
+line holding one bare and one backticked reference — only the bare one may match:
+
+```bash
+rg -nP '(?<!`)\b[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+[#@][0-9a-f]+\b' body.md
+rg -n 'https://github\.com/[^/ ]+/[^/ ]+/(issues|pull)/[0-9]+' body.md
+```
+
+The lookbehind only sees the character directly before the reference, so a
+reference in the middle of a longer code span or a fenced block also matches;
+review those by hand. The bare `user@sha` form is not covered.
+
+> Observed 2026-10 (`laurigates/dust#1`, a review PR in the fork before anything
+> went to `bootandy/dust`): references to the upstream issue and to third-party
+> repos' issues/PRs were backticked so they would not autolink from the fork.
 
 ### When to use vs. the Golden Rule
 
