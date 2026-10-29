@@ -40,6 +40,23 @@
 #     merge route (`$GH pr merge`, `$GH api …/pulls/N/merge`, `$GH api
 #     graphql`), xargs/parallel, a piped `| bash`, GraphQL merge mutations, and
 #     GraphQL queries fed on stdin are DENIED as unverifiable.
+#   - Running git-plugin's merge-chain.sh (`merge-chain.sh …`, `./…/merge-chain.sh`,
+#     `"${CLAUDE_PLUGIN_ROOT}/…/merge-chain.sh"`, `bash|sh|zsh <path>/merge-chain.sh`,
+#     `source …`) merges every PR in its --prs list through gh calls this hook
+#     never sees, so the command is checked as one merge per listed PR against
+#     --repo, BEFORE the script runs: one disallowed author denies the whole
+#     command, naming that PR. Detection is positional, as above, so a mention
+#     in prose, a quoted argument or a heredoc body is not an invocation. The
+#     arguments are read exactly as the script reads them (separate words;
+#     `--prs` comma-separated, spaces dropped, a leading `#` allowed). DENIED as
+#     unverifiable: no --repo or --prs, a non-integer entry, a `$var` or
+#     command substitution in --prs/--repo, an unquoted expansion or glob in
+#     any word (the script path included), an argument the script does not
+#     accept, and a script path that is a variable or glob given a --prs list.
+#     `-h`/`--help` merges nothing and is allowed. Cost: one `gh pr view` per
+#     listed PR (plus the one cached `gh api user`), sequential, within the
+#     hook's 20 s timeout — a timeout blocks (onFailure), so a very long list
+#     fails closed.
 #   - A crash after a command is recognised as a possible merge DENIES (EXIT
 #     trap). Without `onFailure: "block"` (any client before 2.1.295) a hook
 #     error is non-blocking, so dying would let the merge run; the trap keeps
@@ -57,7 +74,8 @@
 # are intentionally NOT honored, so agents cannot self-serve the bypass.
 #
 # Matches: Bash, mcp__github__merge_pull_request
-# Detects: gh pr merge / gh api PUT pulls/N/merge / MCP merge_pull_request
+# Detects: gh pr merge / gh api PUT pulls/N/merge / MCP merge_pull_request /
+#          merge-chain.sh --repo R --prs N,M (one check per listed PR)
 # Allows: your own PRs, bot PRs (release-please, renovate, dependabot, …), and
 #         every non-merge command
 
@@ -142,8 +160,9 @@ case "$TOOL_NAME" in
     # and it is deliberately loose: any `merge` (gh pr merge, the REST route,
     # the GraphQL mergePullRequest / enablePullRequestAutoMerge mutations) and
     # any `graphql` call (a query read from @file may hold a merge mutation;
-    # issue #2889).
-    if ! grep -Eiq 'merge|graphql' <<<"$(tr -d "\"'\\\\" <<<"$COMMAND")"; then
+    # issue #2889), and any `prs` (a merge-chain.sh PR list behind a script
+    # path this pass cannot name, such as `./m?rge-chain.sh --prs 5`).
+    if ! grep -Eiq 'merge|graphql|prs' <<<"$(tr -d "\"'\\\\" <<<"$COMMAND")"; then
       exit 0
     fi
     trap fail_closed_on_crash EXIT
@@ -415,9 +434,149 @@ case "$TOOL_NAME" in
         if (t ~ /pulls\/[^ \t]*\/merge/) { emit_other("api", "", "", (dynw ? "cmdword" : "apipath"), "", gpos); found++ }
         return found
       }
+      # --- merge-chain.sh (git-plugin:git-merge-hazards) --------------------
+      # The script merges every PR in its --prs list with `gh pr merge` calls
+      # this hook never sees, so a command that RUNS it is treated as one merge
+      # per listed PR, checked before the script starts. Its argument parser is
+      # mirrored exactly: separate-word --repo/--prs/--review-ts/--method/
+      # --timeout/--fetch-dir, -h/--help exits, anything else is a usage error.
+      #
+      # is_chain(t): word t names the script — its last path component, quotes
+      # and backslashes dropped, compared case-insensitively (macOS file
+      # systems are, so `Merge-Chain.sh` runs the same file).
+      function is_chain(t,   w) { scan(t); w = SV; gsub(QCH, "", w); sub(/.*\//, "", w); return (tolower(w) == "merge-chain.sh") }
+      # tokenize_into: tokenize() into XM/XO, leaving TM/TO/TP intact.
+      function tokenize_into(mm, oo,   n, i, s, c, nt) {
+        n = length(mm); nt = 0; i = 1
+        while (i <= n) {
+          c = substr(mm, i, 1)
+          if (c == " " || c == "\t" || c == "\n") { i++; continue }
+          s = i
+          while (i <= n) { c = substr(mm, i, 1); if (c == " " || c == "\t" || c == "\n") break; if (c == "\\") i++; i++ }
+          nt++; XM[nt] = substr(mm, s, i - s); XO[nt] = substr(oo, s, i - s)
+        }
+        return nt
+      }
+      # split_words(t): the shell words of t up to its first unquoted command
+      # separator, raw (quotes kept) in CAO/CAM[1..CN]. CSTOP is what ended
+      # it: a separator, "quote" for an unterminated quote, or "" at the end.
+      function split_words(t,   n, i, c, q, w, inw) {
+        CN = 0; CSTOP = ""; n = length(t); i = 1; q = 0; w = ""; inw = 0
+        while (i <= n) {
+          c = substr(t, i, 1)
+          if (q == 1) { w = w c; if (c == SQ) q = 0; i++; continue }
+          if (q == 2) {
+            if (c == "\\") { w = w c substr(t, i + 1, 1); i += 2; continue }
+            w = w c; if (c == DQ) q = 0; i++; continue
+          }
+          if (c == "\\") { w = w c substr(t, i + 1, 1); inw = 1; i += 2; continue }
+          if (c == SQ || c == DQ) { q = (c == SQ ? 1 : 2); w = w c; inw = 1; i++; continue }
+          if (c == " " || c == "\t") { if (inw) { CN++; CAO[CN] = w; CAM[CN] = w; w = ""; inw = 0 } i++; continue }
+          if (index(";|()\n", c) || c == BT || (c == "&" && w !~ /[<>]$/ && substr(t, i + 1, 1) != ">")) { CSTOP = c; break }
+          w = w c; inw = 1; i++
+        }
+        if (inw) { CN++; CAO[CN] = w; CAM[CN] = w }
+        if (q) CSTOP = "quote"
+      }
+      # runner_prefix(mm, oo): the statement is `[wrappers] bash|sh|… [opts]`
+      # with no -c — so a quoted word right after it is the SCRIPT path, and
+      # the words after its closing quote are the script arguments.
+      function runner_prefix(mm, oo,   nt, k, r, sv, prev) {
+        nt = tokenize_into(mm, oo); r = 0
+        for (k = 1; k <= nt; k++) { scan(XO[k]); sv = SV; gsub(QCH, "", sv); sub(/.*\//, "", sv); if (sv in shcmd && sv != "eval" && sv != "nix-shell") r = k }
+        if (!r) return 0
+        prev = ""
+        for (k = r + 1; k <= nt; k++) {
+          scan(XO[k])
+          if (SV ~ /^-[A-Za-z]*c/) return 0
+          if (SV !~ /^[-+]/ && prev !~ /^([-+][oO]|--rcfile|--init-file)$/) return 0
+          prev = SV
+        }
+        return 1
+      }
+      # has_prs(i0, nt): a word after token i0 is --prs, or names the script.
+      function has_prs(i0, nt,   j) {
+        for (j = i0 + 1; j <= nt; j++) { if (is_chain(TO[j])) return 1; scan(TO[j]); if (SV ~ /--prs/) return 1 }
+        return 0
+      }
+      # chain_parse(): read CAO/CAM[1..CN] as the script does. Returns 1 with
+      # CREPO and CPR[1..CNP] set, or 0 with CERR (help = no merge at all).
+      function chain_parse(   k, f, prs, np, e, P, hr, hp) {
+        CREPO = ""; CNP = 0; CERR = ""; CDET = ""; hr = 0; hp = 0; prs = ""
+        for (k = 1; k <= CN; k++) {
+          if (CAM[k] ~ ("^" RED)) { if (CAM[k] ~ ("^" RED "$")) k++; continue }
+          scan(CAO[k]); if (SCOMMENT) break
+          if (SUDYN || SGLOB) { CERR = "split"; CDET = CAO[k]; return 0 }
+          if (SV ~ QCH) { CERR = "quote"; CDET = CAO[k]; return 0 }
+          if (SDYN) { CERR = "unknown"; CDET = CAO[k]; return 0 }
+          f = SV
+          if (f == "-h" || f == "--help") { CERR = "help"; return 0 }
+          if (!(f in CVAL)) { CERR = "unknown"; CDET = f; return 0 }
+          k++
+          if (k > CN || CAM[k] ~ ("^" RED)) { CERR = "novalue"; CDET = f; return 0 }
+          scan(CAO[k])
+          if (SCOMMENT) { CERR = "novalue"; CDET = f; return 0 }
+          if (SUDYN || SGLOB) { CERR = "split"; CDET = CAO[k]; return 0 }
+          if (SV ~ QCH) { CERR = "quote"; CDET = CAO[k]; return 0 }
+          if (f == "--repo") { if (SDYN) { CERR = "dynrepo"; CDET = CAO[k]; return 0 } CREPO = SV; hr = 1 }
+          else if (f == "--prs") { if (SDYN) { CERR = "dynprs"; CDET = CAO[k]; return 0 } prs = SV; hp = 1 }
+        }
+        if (!hr) { CERR = "norepo"; return 0 }
+        if (CREPO !~ /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/) { CERR = "badrepo"; CDET = CREPO; return 0 }
+        if (!hp) { CERR = "noprs"; return 0 }
+        gsub(/ /, "", prs); np = split(prs, P, ",")
+        for (e = 1; e <= np; e++) {
+          sub(/^#/, "", P[e]); if (P[e] == "") continue
+          if (P[e] !~ /^[0-9]+$/) { CERR = "badprs"; CDET = P[e]; return 0 }
+          CNP++; CPR[CNP] = P[e]
+        }
+        if (!CNP) { CERR = "noprs"; return 0 }
+        return 1
+      }
+      # A merge-chain.sh invocation this hook cannot verify: one record whose
+      # UNV field carries the reason and SEL the offending word.
+      function emit_chain_fail(code, det, rep) {
+        gsub(/[\n\036\037]/, " ", det); gsub(/[\n\036\037]/, " ", rep)
+        printf "chain\037%s\037%s\037%s\037%s\037%s\n", det, rep, code, "", ""
+      }
+      # chain_stmt(ci, …): token ci of statement s names the script. Emit one
+      # merge record per listed PR, or one chain record saying why not.
+      function chain_stmt(ci, nt, s, a, b, off, wrapped, trunc, concat,   gpos, pq, pud, pre, script, pa, k, e, unv, prevc) {
+        scan(TO[ci]); pq = (SV ~ QCH); pud = (SUDYN || SGLOB)
+        gpos = a + off + TP[ci] - 1
+        pre = substr(buf, a, gpos - a)
+        CN = 0; for (k = ci + 1; k <= nt; k++) { CN++; CAO[CN] = TO[k]; CAM[CN] = TM[k] }
+        CSTOP = ""
+        # `bash "<path>/merge-chain.sh" --repo …`: a shell invoker makes the
+        # quoted path a statement of its own (see nest), and the arguments
+        # of the script follow its closing quote.
+        script = 0
+        prevc = (a > 1) ? substr(buf, a - 1, 1) : ""
+        if (ci == 1 && nt == 1 && s > 1 && (prevc == SQ || prevc == DQ) && b < n && substr(buf, b + 1, 1) == prevc) {
+          pa = st[s - 1]
+          if (runner_prefix(substr(m, pa, a - 1 - pa), substr(buf, pa, a - 1 - pa))) {
+            script = 1; pre = substr(buf, pa, a - 1 - pa)
+            split_words(substr(buf, b + 2))
+          }
+        }
+        if (pq) { emit_chain_fail("quote", TO[ci], ""); return }
+        if (!script && pud) { emit_chain_fail("split", TO[ci], ""); return }
+        if (!script && concat) { emit_chain_fail("quote", TO[ci], ""); return }
+        if (CSTOP == "(" || CSTOP == BT || CSTOP == "quote") { emit_chain_fail("unparsable", "", ""); return }
+        if (!chain_parse()) {
+          if (CERR != "help") emit_chain_fail(CERR, CDET, CREPO)
+          return
+        }
+        unv = (dequote(pre) ~ /(^|[ \t\/])(xargs|parallel)([ \t]|$)/) ? "stdinargs" : ""
+        for (e = 1; e <= CNP; e++) emit_merge("merge", CPR[e], CREPO, unv, gpos, a, wrapped, trunc)
+      }
       BEGIN {
         SQ = sprintf("%c", 39); DQ = "\""; BT = sprintf("%c", 96)
         QCH = "[" DQ SQ "\\\\]"
+        split("--repo --prs --review-ts --method --timeout --fetch-dir", cv, " ")
+        for (k in cv) CVAL[cv[k]] = 1
+        split("bash sh zsh ksh dash source .", rn, " ")
+        for (k in rn) RUNNER[rn[k]] = 1
         RED = "([0-9]*(<<<|>>|>[|]|>|<|<>|>&|<&)|&>>|&>)"
         split("--body --body-file --subject --author-email --match-head-commit --repo", lv, " ")
         for (k in lv) LVAL[lv[k]] = 1
@@ -687,8 +846,44 @@ case "$TOOL_NAME" in
           }
           for (i = 1; i <= nt; i++) {
             if (i > 1 && !wrapped) break
+            # merge-chain.sh run directly, or as the script of a shell
+            # (`bash <path>/merge-chain.sh …`, `source …`).
+            ci = 0
+            if (is_chain(TO[i])) ci = i
+            else {
+              scan(TO[i]); w = SV; gsub(QCH, "", w); w = base(w)
+              if (w in RUNNER) {
+                for (j = i + 1; j <= nt; j++) { scan(TO[j]); if (SCOMMENT) break; if (is_chain(TO[j])) { ci = j; break } }
+                # `bash "$P" --prs …` / `bash ./m?rge-chain.sh --prs …`: the
+                # script is not known, and it is given a PR list.
+                if (!ci && has_prs(i, nt)) {
+                  for (j = i + 1; j <= nt; j++) { scan(TO[j]); if (SDYN || SGLOB) { emit_chain_fail("cmdword", TO[j], ""); ci = -1; break } }
+                }
+              }
+            }
+            if (ci > 0) { chain_stmt(ci, nt, s, a, b, off, wrapped, trunc, concat); break }
+            if (ci < 0) break
             scan(TO[i]); w = base(SV); wdyn = SDYN
             gpos = a + off + TP[i] - 1
+            # A command word that is a variable or a glob, given a PR list (or
+            # the name of the script as an argument), may be merge-chain.sh — unless
+            # it is a wrapper argument and the script itself comes later.
+            if (wdyn || SGLOB) {
+              lc = 0; for (j = i + 1; j <= nt; j++) if (is_chain(TO[j])) lc = 1
+              cmdprs = (lc ? !wrapped : has_prs(i, nt))
+              # `bash "$P" --repo … --prs …`: the args follow the quoted word.
+              if (!cmdprs && i == 1 && nt == 1 && s > 1 && b < n) {
+                prevc = (a > 1) ? substr(buf, a - 1, 1) : ""
+                if ((prevc == SQ || prevc == DQ) && substr(buf, b + 1, 1) == prevc \
+                    && runner_prefix(substr(m, st[s - 1], a - 1 - st[s - 1]), substr(buf, st[s - 1], a - 1 - st[s - 1]))) {
+                  split_words(substr(buf, b + 2))
+                  for (j = 1; j <= CN; j++) { scan(CAO[j]); if (SV ~ /--prs/) cmdprs = 1 }
+                }
+                scan(TO[i])
+              }
+              if (cmdprs) { emit_chain_fail("cmdword", TO[i], ""); break }
+              scan(TO[i])
+            }
             if (w == "gh" || wdyn) {
               if (ghparse(i, nt)) {
                 if (w != "gh" && UNV == "") UNV = "cmdword"
@@ -760,7 +955,10 @@ case "$TOOL_NAME" in
 esac
 
 # One record per merge, \037-separated: KIND SEL REPO UNV FLAGS EXTRA.
-#   KIND   merge (gh pr merge) | api (REST pulls/N/merge) | graphql
+#   KIND   merge (gh pr merge, or one PR of a merge-chain.sh --prs list) |
+#          api (REST pulls/N/merge) | graphql | chain (a merge-chain.sh
+#          invocation whose list cannot be read; UNV is the reason, SEL the
+#          offending word)
 #   UNV    why the arguments cannot be verified: dyn (a shell variable or
 #          command substitution), glob (an unquoted glob/brace/extglob),
 #          quote (a literal quote or backslash left after one level of
@@ -878,6 +1076,28 @@ check_record() {
   WHAT="${PR_REPO:+$PR_REPO}${PR_SELECTOR:+#$PR_SELECTOR}"
   [ -z "$WHAT" ] && WHAT="the current branch's PR"
   local retry="Merge with literal values, one PR per command, naming the repository: gh pr merge <number> -R OWNER/REPO — each merge is checked individually."
+
+  # A merge-chain.sh invocation whose PR list or repository this hook cannot
+  # read. The script merges every PR in --prs, so not knowing the list is not
+  # knowing what it merges.
+  if [ "$kind" = "chain" ]; then
+    local what_chain="merge-chain.sh merges every PR in its --prs list, so this hook checks each one's author before the script runs" detail="$2" why
+    case "$unv" in
+      norepo)     why="it has no --repo OWNER/REPO argument" ;;
+      badrepo)    why="its --repo value '${detail}' is not OWNER/REPO" ;;
+      noprs)      why="it has no --prs list (or the list is empty)" ;;
+      badprs)     why="its --prs list holds '${detail}', which is not a PR number" ;;
+      dynprs)     why="its --prs value is a shell variable or command substitution (${detail}), so the PR numbers are not known until it runs" ;;
+      dynrepo)    why="its --repo value is a shell variable or command substitution (${detail}), so the repository is not known until it runs" ;;
+      split)      why="the word '${detail}' holds an unquoted variable, substitution, glob or brace, which the shell can expand into more arguments (another --prs or --repo)" ;;
+      quote)      why="the word '${detail}' still holds a quote or backslash after one level of quoting, or its quoted text is joined with more words (nested shell text), so this hook cannot be sure how the inner shell splits it" ;;
+      cmdword)    why="the script path '${detail}' is a shell variable, substitution or glob, so this hook cannot tell whether it is merge-chain.sh" ;;
+      novalue)    why="${detail} has no value" ;;
+      unknown)    why="'${detail}' is not an argument this hook can read (it accepts only separate words: --repo OWNER/REPO --prs N,M --review-ts T [--method M] [--timeout S] [--fetch-dir P])" ;;
+      *)          why="its arguments could not be parsed (a command substitution or unterminated quote cut them off)" ;;
+    esac
+    deny "Refusing to merge with merge-chain.sh: ${why}. ${what_chain}, and it cannot do that here. 'Cannot verify' is not 'safe'. ${NOT_PERMITTED} Retry with literal values: merge-chain.sh --repo OWNER/REPO --prs 219,220 --review-ts <UTC timestamp>"
+  fi
 
   # A bare backtick or `(` truncated the merge statement mid-argument (see the
   # structural pass). Deny BEFORE any `gh pr view` lookup: PR_SELECTOR/PR_REPO

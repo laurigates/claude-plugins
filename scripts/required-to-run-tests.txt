@@ -105,6 +105,13 @@ git-plugin/skills/git-merge-hazards/scripts/tests/test-push-refspec.sh
 # the run rather than skipping it (the test guards each one at its top).
 git-plugin/skills/git-merge-hazards/scripts/tests/test-no-force-stack.sh
 
+# Its only skip is a missing jq, which ubuntu-latest ships, so a skip here means
+# the suite stopped running. It drives merge-chain.sh end to end against a stub
+# gh: the authorship rule that stands in for the merge guard, the full-SHA
+# pin, and the late-commit and head-moved guards. Without it nothing notices a
+# change that lets the script merge a PR it should have stopped.
+git-plugin/skills/git-merge-hazards/scripts/tests/test-merge-chain.sh
+
 # Runs entirely off committed fixtures -- no gh, no network, no task binary --
 # so there is no environment in which skipping it is legitimate. A skip would
 # mean the fixtures or the checker moved, which is exactly the regression.
