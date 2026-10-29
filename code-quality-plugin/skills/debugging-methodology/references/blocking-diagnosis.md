@@ -3,8 +3,8 @@
 Open when a workload is slow but not CPU-bound: wall time grows while user time
 does not, system time rises, or adding threads stops helping. A CPU profiler
 (`perf record`, flame graphs) samples running threads, so time spent asleep
-does not appear in its output. Steps 1–4 find where threads
-sleep, then confirms which lock they queue on.
+does not appear in its output. Steps 1–3 find where threads
+sleep; step 4 confirms which lock they queue on.
 
 Linux only: steps 2 and 3 read `/proc` and kernel tracepoints. Run every step
 against a **control** — the same workload with the suspect feature off — because
@@ -26,7 +26,9 @@ the extra time is blocking in the kernel rather than computing.
 ## 2. Where threads wait — `wchan` sampling, no root needed
 
 `/proc/<pid>/task/<tid>/wchan` names the kernel function a sleeping thread is
-waiting in; field 3 of `/proc/<pid>/task/<tid>/stat` is its state. Sample every
+waiting in; the first field after the parenthesised name in
+`/proc/<pid>/task/<tid>/stat` is its state (field 3, but the name may contain
+spaces, so the script splits on the closing parenthesis). Sample every
 thread every few milliseconds while the workload loops, keep only blocked
 threads, and histogram:
 
@@ -43,7 +45,7 @@ end=$((SECONDS + duration))
 while [ $SECONDS -lt $end ]; do
     for pid in $(pgrep -P "$runner"); do
         for t in /proc/"$pid"/task/*; do
-            state=$(awk '{print $3}' "$t/stat" 2>/dev/null) || continue
+            state=$(sed 's/.*) //; s/ .*//' "$t/stat" 2>/dev/null) || continue
             case $state in S|D) echo "$(cat "$t/wchan" 2>/dev/null) $state" ;; esac
         done
     done >>"$samples"
@@ -109,8 +111,8 @@ Two tests turn the suspicion into a finding:
    the same data with more partitions. A wait that shrinks with the partition
    count is that lock.
 
-Report each comparison with its run-to-run spread: a difference inside the
-spread is no difference.
+Report each comparison with its run-to-run spread, and treat a difference
+inside the spread as no difference.
 
 ## Worked example — FIEMAP on reflinked XFS
 
