@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.28.1](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.28.0...code-quality-plugin-v1.28.1) (2026-10-29)
+
+
+### Documentation
+
+* **code-quality-plugin:** add blocking diagnosis to debugging-methodology ([#3283](https://github.com/laurigates/claude-plugins/issues/3283)) ([9c5745e](https://github.com/laurigates/claude-plugins/commit/9c5745ec428f846f1342855fd3fc2af030a27fbc))
+
 ## [1.28.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.27.8...code-quality-plugin-v1.28.0) (2026-10-18)
 
 

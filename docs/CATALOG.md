@@ -3,7 +3,7 @@
 
 # Plugin Catalog
 
-45 plugins, 447 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
+46 plugins, 448 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
 
 ## AI & Agents
 
@@ -64,6 +64,7 @@
 
 | Plugin | Skills | Agents | Description |
 |--------|-------:|-------:|-------------|
+| [cloud-plugin](../cloud-plugin/) | 1 | 0 | Cloud provider operational skills - GCP today, provider-prefixed skill names (gcp-, hetzner-) |
 | [configure-plugin](../configure-plugin/) | 48 | 0 | Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration |
 | [container-plugin](../container-plugin/) | 9 | 1 | Container development and deployment - Docker, registry, Skaffold |
 | [kubernetes-plugin](../kubernetes-plugin/) | 8 | 1 | Kubernetes and Helm operations - deployments, charts, releases |
