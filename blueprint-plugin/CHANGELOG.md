@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.48.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.48.1...blueprint-plugin-v3.48.2) (2026-10-29)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** keep updated_at in step with last_updated in the tracker sync hook ([#3241](https://github.com/laurigates/claude-plugins/issues/3241)) ([05b26ed](https://github.com/laurigates/claude-plugins/commit/05b26edc12bff6a4780390b12a432007a8938577)), closes [#3232](https://github.com/laurigates/claude-plugins/issues/3232)
+
 ## [3.48.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.48.0...blueprint-plugin-v3.48.1) (2026-10-23)
 
 
