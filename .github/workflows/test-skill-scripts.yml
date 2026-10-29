@@ -64,8 +64,13 @@ on:
       # audit harness against a stub runtime; a PR editing only the harness must run it.
       - '.claude/workflows/**'
       # scripts/tests/test-auto-fix-signature.sh extracts and runs the
-      # signature + issue-lookup step bodies of this workflow (#2744).
+      # signature + issue-lookup step bodies of this workflow (#2744), and
+      # test-auto-fix-llm-only.sh its failure-context step.
       - '.github/workflows/github-workflow-auto-fix.yml'
+      # scripts/tests/test-skill-review-gate.sh extracts and runs the Claude
+      # skill review gate step and asserts the review stays out of the
+      # required `compliance` job.
+      - '.github/workflows/plugin-pr-checks.yml'
       - '.github/workflows/test-skill-scripts.yml'
       # Case 7 of comfyui-node-scaffold's test-registry-health.sh pins the
       # install-fallback sentences in these three docs (#2994 follow-up). Without
@@ -112,6 +117,7 @@ on:
       - '.claude/rules/gh-json-fields.md'
       - 'testing-plugin/skills/test-tripwire/SKILL.md'
       - '.github/workflows/github-workflow-auto-fix.yml'
+      - '.github/workflows/plugin-pr-checks.yml'
 
 concurrency:
   group: test-skill-scripts-${{ github.event.pull_request.number || github.ref }}

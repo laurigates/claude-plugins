@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-10-25
 reviewed: 2026-04-25
 name: cargo-llvm-cov
 description: "cargo-llvm-cov: Rust code coverage with LLVM instrumentation. Use when measuring coverage, enforcing thresholds, generating reports, or integrating codecov/coveralls."
@@ -186,9 +186,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: llvm-tools-preview
+      - name: Install the pinned toolchain
+        run: rustup toolchain install --no-self-update
+      - name: Add llvm-tools to the pinned toolchain
+        run: rustup component add llvm-tools-preview
 
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@v2
@@ -220,9 +221,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: llvm-tools-preview
+      - name: Install the pinned toolchain
+        run: rustup toolchain install --no-self-update
+      - name: Add llvm-tools to the pinned toolchain
+        run: rustup component add llvm-tools-preview
 
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@v2
@@ -303,9 +305,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: llvm-tools-preview
+      - name: Install the pinned toolchain
+        run: rustup toolchain install --no-self-update
+      - name: Add llvm-tools to the pinned toolchain
+        run: rustup component add llvm-tools-preview
 
       - uses: Swatinem/rust-cache@v2
 

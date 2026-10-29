@@ -20,6 +20,14 @@ Comprehensive documentation tooling for generating API references, maintaining R
 | `docs-verify-machine-facts` | Verify machine-read values (`scutil`, `route`, `ifconfig`, local config) against the authoritative IaC before publishing |
 | `public-export-sanitization` | Scan an internal-to-public export for leaked identifiers and repo-escaping links (`check-public-export.sh`), then genericize |
 
+## Hooks
+
+| Hook | Event | Behaviour |
+|------|-------|-----------|
+| `public-repo-leak-gate.sh` | PreToolUse (Bash, GitHub MCP writes) | On `git commit`, `gh pr`/`gh issue` writes and GitHub MCP writes whose destination repo is **public** (or of unreadable visibility), scans the outbound text with `check-public-export.sh` and asks before publishing anything that matches an internal-identifier pattern. Silent for private, internal and local-only repos and for clean text. Opt out: `CLAUDE_HOOKS_DISABLE_PUBLIC_LEAK_GATE=1`. Design: [ADR-0025](../docs/adrs/0025-visibility-gated-public-leak-nudge.md) |
+
+`repo-visibility.sh` resolves a repo's visibility through `gh api` with a 24 h cache (`CLAUDE_REPO_VISIBILITY_TTL`); the gate is its only caller.
+
 ## Agents
 
 | Agent | Description |

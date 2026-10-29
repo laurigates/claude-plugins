@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.67.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.67.3...git-plugin-v2.67.4) (2026-10-29)
+
+
+### Bug Fixes
+
+* **git-plugin:** flag a zero-rule .gitleaks.toml and extend defaults in every snippet ([#3202](https://github.com/laurigates/claude-plugins/issues/3202)) ([3d332bf](https://github.com/laurigates/claude-plugins/commit/3d332bf036e712ac9367d1a90aa53e586bdca2ae))
+
+## [2.67.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.67.2...git-plugin-v2.67.3) (2026-10-29)
+
+
+### Bug Fixes
+
+* **git-plugin:** prescribe one git add call in git-local-hazards ([#3218](https://github.com/laurigates/claude-plugins/issues/3218)) ([f096ac9](https://github.com/laurigates/claude-plugins/commit/f096ac92d3e70c55b91c74e113bed8f819dff289)), closes [#3042](https://github.com/laurigates/claude-plugins/issues/3042)
+
+## [2.67.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.67.1...git-plugin-v2.67.2) (2026-10-29)
+
+
+### Documentation
+
+* **git-plugin:** match the merge-chain late-commit exemption in git-merge-hazards ([#3270](https://github.com/laurigates/claude-plugins/issues/3270)) ([b24d028](https://github.com/laurigates/claude-plugins/commit/b24d028d42bbdda46aaa4027ff2c7f951bb35b8d))
+
 ## [2.67.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.67.0...git-plugin-v2.67.1) (2026-10-29)
 
 

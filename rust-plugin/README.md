@@ -205,6 +205,12 @@ cargo audit
 
 ### GitHub Actions Example
 
+The jobs install the compiler named in a `rust-toolchain.toml` at the repository
+root, not a floating `stable`, so a new Rust release's clippy lints arrive as a
+Renovate PR instead of failing `-D warnings` on `main`. The file, the Renovate
+grouping and the rules for per-job components are in
+[clippy-advanced § Pin the toolchain](skills/clippy-advanced/REFERENCE.md#pin-the-toolchain).
+
 ```yaml
 name: Rust CI
 
@@ -218,9 +224,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rustfmt
+      # Installs the toolchain rust-toolchain.toml names, with its clippy + rustfmt
+      - run: rustup toolchain install --no-self-update
       - uses: Swatinem/rust-cache@v2
 
       - name: Clippy
@@ -233,9 +238,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: llvm-tools-preview
+      - run: rustup toolchain install --no-self-update
+      # Per-job extras go on the pinned toolchain, from the repo directory
+      - run: rustup component add llvm-tools-preview
       - uses: Swatinem/rust-cache@v2
 
       - name: Install tools
