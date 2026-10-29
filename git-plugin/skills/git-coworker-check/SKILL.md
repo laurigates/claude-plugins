@@ -5,7 +5,7 @@ args: "[--check | --claim | --release]"
 argument-hint: "[--claim | --release | --check (default)]"
 allowed-tools: Bash(bash *), Bash(git status *), Bash(git stash *), Bash(git rev-parse *), Read, TodoWrite
 created: 2026-04-21
-modified: 2026-10-02
+modified: 2026-10-29
 reviewed: 2026-05-19
 ---
 
@@ -18,7 +18,7 @@ destructive operations that could destroy its uncommitted changes.
 
 | Use this skill when... | Use a worktree instead when... |
 |------------------------|-------------------------------|
-| Session starts in a clone that may already be in use | You control the session and can create `git worktree add ../<task>` |
+| Session starts in a clone that may already be in use | You control the session and can enter a worktree (`EnterWorktree`, or `git worktree add .claude/worktrees/<task>`) |
 | About to run `git stash`, `git reset --hard`, `git checkout -- .` | You already know the working tree is yours alone |
 | `git status` shows files you don't remember touching | Baseline + markers are already confirming you are alone |
 | **Bulk-edit / commit-loop fan-out** about to start (per-plugin, per-package commits across many subdirectories) | Each iteration is already isolated in its own worktree |
@@ -42,7 +42,7 @@ The rule: **the orchestrator stops before fan-out if the playing field is conten
 | `drift_detected` | Inspect the new files. If they are yours from earlier in the session, proceed with explicit paths. If unknown, stop and ask. |
 | `worktree_leak_suspected` | A child worktree-isolated agent is leaking an untracked file into the parent (issue #1319). **Do not stage or stash the matching path.** Wait for the child's commit, then re-run the check before continuing. |
 | `bare_flip_suspected` | The shared checkout was flipped to `core.bare=true`, or a leaked `GIT_DIR` / `GIT_WORK_TREE` env points away from the repo (issue #1692). **Stop and recover** before any further git ops — see the Recovery section. Do not start the loop. |
-| `coworker_detected` | **Stop.** Recommend `git worktree add ../<repo>-<task>` for a fresh isolated checkout, or wait for the other session to finish. Do not start the loop. |
+| `coworker_detected` | **Stop.** Recommend a fresh isolated worktree under `<repo>/.claude/worktrees/<task>` (`EnterWorktree` for the session's own repo), or wait for the other session to finish. Do not start the loop. |
 
 For a worked example of the "stop and inspect" branch (#1277), see [references/field-evidence.md](references/field-evidence.md).
 
@@ -136,7 +136,7 @@ Print a short summary:
 ## Post-actions
 
 - On `drift_detected` or `coworker_detected`: do not run `git stash`, `git reset --hard`, `git checkout -- .`, or `git clean` in this session. Stage only explicit paths.
-- Suggest the user run `git worktree add ../$(basename $(git rev-parse --show-toplevel))-<task>` for a clean isolated checkout.
+- Suggest a clean isolated checkout: `EnterWorktree` for the session's own repo, or `git -C <repo> worktree add -b <branch> <repo>/.claude/worktrees/<task> origin/main` for another repo. `hooks-plugin`'s `worktree-location-guard.sh` denies paths outside `.claude/worktrees/`.
 
 ## Integration
 
