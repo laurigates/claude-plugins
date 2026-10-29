@@ -103,7 +103,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Install the pinned toolchain
+        run: rustup toolchain install --no-self-update
 
       - name: Install cargo-machete
         uses: taiki-e/install-action@v2
