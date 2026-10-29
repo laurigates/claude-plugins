@@ -21,7 +21,7 @@ When adding a workflow, pick the existing domain that fits or extend the table b
 | `Claude:` | Claude Code-driven workflows (PR reviews, @-mentions, scheduled reviews) |
 | `Plugin:` | Plugin infrastructure — PR checks, config validation, skill operations, scheduled audits |
 | `Release:` | release-please ecosystem — version bumps, changelog, release-PR doc audit, conflict repair, stuck-label cleanup |
-| `PR:` | Cross-cutting PR governance — labelling, conflict resolution, conventional-commit enforcement |
+| `PR:` | Cross-cutting PR governance — labelling, conflict resolution, conventional-commit enforcement, secret scanning |
 | `Auto-fix:` | Autonomous CI failure remediation triggered by `workflow_run` |
 | `Test:` | Repo test suites — skill-local regression tests, the adapters (skill-discovery core) suite |
 | `Sync:` | Cross-repo artifact sync — regenerate compiled prompts for the extracted agent CLIs and PR them to their standalone repos |
@@ -37,6 +37,7 @@ Claude: Research radar
 PR: Auto-label
 PR: Auto-resolve conflicts
 PR: Enforce conventional commits
+PR: Secret scan
 Plugin: Enablement drift
 Plugin: Fleet drift audit
 Plugin: Golden-set evaluation

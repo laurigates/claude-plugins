@@ -39,7 +39,7 @@ SAST Scanning:
   Bandit (Python)         configured                 [CONFIGURED | MISSING]
 
 Secret Detection:
-  Gitleaks                .gitleaks.toml             [CONFIGURED | MISSING]
+  Gitleaks                .gitleaks.toml             [CONFIGURED | INERT | MISSING]
   Pre-commit hook         .pre-commit-config.yaml    [CONFIGURED | MISSING]
   TruffleHog              .github/workflows/         [OPTIONAL | MISSING]
   Git history scanned     clean                      [CLEAN | SECRETS FOUND]
@@ -343,6 +343,10 @@ jobs:
 ```
 
 ### Gitleaks Configuration (`.gitleaks.toml`)
+
+Keep the `[extend]` block. Without it, or a `[[rules]]` table, gitleaks loads zero
+rules and reports no leaks on every scan; the detection script reports that as
+`GITLEAKS_RULES=none` (INERT in the compliance report).
 
 ```toml
 title = "Gitleaks Configuration"

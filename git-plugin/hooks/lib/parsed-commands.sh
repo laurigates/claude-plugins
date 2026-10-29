@@ -316,3 +316,48 @@ pc_find_gh_pr_create() {
     done
     [ "${#PC_HIT_SUB[@]}" -gt 0 ]
 }
+
+# Collect every `gh pr [-R <repo>] merge …` invocation. Returns 0 when found.
+# PC_HIT_C[k] holds a `-R/--repo` given BEFORE `merge` (one after it stays in
+# PC_HIT_ARGS, where `gh pr merge` itself accepts it).
+pc_find_gh_pr_merge() {
+    local node n i j args k repo
+    PC_HIT_SUB=()
+    PC_HIT_C=()
+    PC_HIT_ARGS=()
+    for node in ${PC_NODES[@]+"${PC_NODES[@]}"}; do
+        pc_tokenize "$node"
+        n=${#PC_TOK_VAL[@]}
+        for ((i = 0; i < n; i++)); do
+            [ "${PC_TOK_VAL[i]##*/}" = "gh" ] || continue
+            [ "${PC_TOK_VAL[i + 1]:-}" = "pr" ] || continue
+            j=$((i + 2))
+            repo=""
+            while [ "$j" -lt "$n" ]; do
+                case ${PC_TOK_VAL[j]} in
+                    -R | --repo)
+                        repo=${PC_TOK_VAL[j + 1]:-}
+                        j=$((j + 2))
+                        ;;
+                    --repo=*)
+                        repo=${PC_TOK_VAL[j]#--repo=}
+                        j=$((j + 1))
+                        ;;
+                    -R?*)
+                        repo=${PC_TOK_VAL[j]#-R}
+                        j=$((j + 1))
+                        ;;
+                    *) break ;;
+                esac
+            done
+            [ "${PC_TOK_VAL[j]:-}" = "merge" ] || continue
+            args=""
+            for ((k = j + 1; k < n; k++)); do args+="${PC_TOK_VAL[k]}$PC_SEP"; done
+            PC_HIT_SUB+=("merge")
+            PC_HIT_C+=("$repo")
+            PC_HIT_ARGS+=("$args")
+            break
+        done
+    done
+    [ "${#PC_HIT_SUB[@]}" -gt 0 ]
+}

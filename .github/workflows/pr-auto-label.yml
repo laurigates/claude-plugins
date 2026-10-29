@@ -92,9 +92,9 @@ jobs:
             esac
           done <<<"$files"
 
-          # Type label from the conventional-commit prefix. The PR title is the
-          # commit message on squash-merge, so it is already required to be
-          # conventional (`.claude/rules/conventional-commits.md`).
+          # Type label from the conventional-commit prefix. The PR title becomes
+          # the commit subject when the PR squash-merges, so it is already
+          # required to be conventional (`.claude/rules/conventional-commits.md`).
           commit_type="${PR_TITLE%%:*}"   # "feat(scope)!: x" -> "feat(scope)!"
           commit_type="${commit_type%%(*}" # -> "feat"
           commit_type="${commit_type%!}"   # "feat!" -> "feat"
