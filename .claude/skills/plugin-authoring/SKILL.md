@@ -137,7 +137,8 @@ is not on this list: the `generate-catalog` pre-commit hook rewrites it, or run
      "component": "new-plugin",
      "release-type": "simple",
      "extra-files": [
-       {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
+       {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"},
+       {"type": "json", "path": "/.claude-plugin/marketplace.json", "jsonpath": "$.plugins[?(@.name=='new-plugin')].version"}
      ],
      "changelog-sections": [
        {"type": "feat", "section": "Features"},
