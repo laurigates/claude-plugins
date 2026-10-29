@@ -40,9 +40,12 @@ its `comment` tag (`made with suno; created=…; id=<clip id>`):
 ffprobe -v error -show_entries format_tags=comment -of csv=p=0 song.m4a
 ```
 
-The `suno-console` plugin (local-only, browser console) downloads them with
-`sunoLib.downloadAlignedLyrics(id)`. The karaoke README has a DevTools one-liner
-that does the same.
+To download them, paste the DevTools one-liner from the karaoke README
+("Get the timed lyrics") into a logged-in suno.com tab, with the clip id filled
+in. It saves `aligned_lyrics.json` to Downloads. The local-only `suno-console`
+plugin adds `sunoLib.downloadAlignedLyrics(id)` for the same download; check
+that the installed copy's `sunoLib` has it before relying on it, since older
+copies do not.
 
 ## Running the CLI
 
