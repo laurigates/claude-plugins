@@ -38,8 +38,14 @@
 #   - An argument the shell expands at run time ($var, $(…), backticks, an
 #     unquoted glob/brace/extglob), a variable command word in front of any
 #     merge route (`$GH pr merge`, `$GH api …/pulls/N/merge`, `$GH api
-#     graphql`), xargs/parallel, a piped `| bash`, GraphQL merge mutations, and
-#     GraphQL queries fed on stdin are DENIED as unverifiable.
+#     graphql`), xargs/parallel, a piped `| bash`, a shell whose script is a
+#     process substitution (`bash <(…)`, `source <(…)`, zsh `=(…)`), a call to
+#     a shell function defined in the same command (`f(){ "$@"; }; f gh pr
+#     merge …`, zsh `() { … } gh pr merge …`) given merge or --prs arguments,
+#     GraphQL merge mutations, and GraphQL queries fed on stdin are DENIED as
+#     unverifiable (issue #3262 for the process-substitution and function
+#     forms). An unquoted `eval gh pr merge …` is scanned as nested command
+#     text, exactly like `eval "…"`.
 #   - Running git-plugin's merge-chain.sh (`merge-chain.sh …`, `./…/merge-chain.sh`,
 #     `"${CLAUDE_PLUGIN_ROOT}/…/merge-chain.sh"`, `bash|sh|zsh <path>/merge-chain.sh`,
 #     `source …`) merges every PR in its --prs list through gh calls this hook
@@ -570,6 +576,33 @@ case "$TOOL_NAME" in
         unv = (dequote(pre) ~ /(^|[ \t\/])(xargs|parallel)([ \t]|$)/) ? "stdinargs" : ""
         for (e = 1; e <= CNP; e++) emit_merge("merge", CPR[e], CREPO, unv, gpos, a, wrapped, trunc)
       }
+      # collect_funcs(t): record in FUNCS every shell function t defines —
+      # `name()`, `name ()`, `function name` (issue #3262). A call to one runs
+      # whatever its body says, so this hook cannot see into it.
+      function collect_funcs(t,   d) {
+        while (match(t, /(^|[^A-Za-z0-9_.:+@%,\/-])[A-Za-z_][A-Za-z0-9_.:+@%,-]*[ \t]*\([ \t]*\)/)) {
+          d = substr(t, RSTART, RLENGTH); t = substr(t, RSTART + RLENGTH)
+          sub(/[ \t]*\([ \t]*\)$/, "", d)
+          if (substr(d, 1, 1) !~ /[A-Za-z_]/) d = substr(d, 2)
+          FUNCS[d] = 1
+        }
+        while (match(t, /(^|[^A-Za-z0-9_-])function[ \t]+[A-Za-z0-9_.:+@%,-]+/)) {
+          d = substr(t, RSTART, RLENGTH); t = substr(t, RSTART + RLENGTH)
+          sub(/^.*function[ \t]+/, "", d)
+          FUNCS[d] = 1
+        }
+      }
+      # merge_args(i, nt): a word after token i is a merge or a merge-chain.sh
+      # PR list — `merge`, `--prs`, a pulls/N/merge route, a GraphQL call, or
+      # the script name.
+      function merge_args(i, nt,   j, v) {
+        for (j = i + 1; j <= nt; j++) {
+          scan(TO[j]); if (SCOMMENT) break
+          v = tolower(SV); gsub(QCH, "", v)
+          if (v == "merge" || v ~ /--prs|pulls\/[^ \t]*\/merge|graphql|merge-chain|mergepullrequest|automerge/) return 1
+        }
+        return 0
+      }
       BEGIN {
         SQ = sprintf("%c", 39); DQ = "\""; BT = sprintf("%c", 96)
         QCH = "[" DQ SQ "\\\\]"
@@ -580,7 +613,7 @@ case "$TOOL_NAME" in
         RED = "([0-9]*(<<<|>>|>[|]|>|<|<>|>&|<&)|&>>|&>)"
         split("--body --body-file --subject --author-email --match-head-commit --repo", lv, " ")
         for (k in lv) LVAL[lv[k]] = 1
-        split("command builtin exec nohup env stdbuf nice ionice setsid caffeinate sudo doas timeout xargs find parallel watch script flock chronic uv uvx npx bunx coproc unbuffer chrt taskset systemd-run firejail strace ltrace valgrind mise direnv ssh", wl, " ")
+        split("command builtin exec nohup env stdbuf nice ionice setsid caffeinate sudo doas timeout xargs find parallel watch script flock chronic uv uvx npx bunx coproc unbuffer chrt taskset systemd-run firejail strace ltrace valgrind mise direnv ssh arch noglob nocorrect screen time", wl, " ")
         for (k in wl) WRAP[wl[k]] = 1
         split("gh curl wget http https xh hurl", al, " ")
         for (k in al) API[al[k]] = 1
@@ -605,7 +638,9 @@ case "$TOOL_NAME" in
         split("watch script flock su runuser ssh tmux screen sg env", rl, " "); for (k in rl) strrun[rl[k]] = 1
 
         asg_re    = "^[A-Za-z_][A-Za-z0-9_]*=[^ \t]*"
-        kw_re     = "^(do|then|else|elif|if|while|until|time|!|[{])"
+        # bash `time -p` (POSIX output format): the option belongs to the
+        # keyword, so `time -p gh pr merge …` still runs gh (issue #3262).
+        kw_re     = "^(do|then|else|elif|if|while|until|time([ \t]+-p)?|!|[{])"
         kww_re    = "^(do|then|else|elif|if|while|until|time|!|[{])$"
         # A redirection is not a command word and not a PR selector: bash strips
         # it from the argv gh receives, so `gh pr merge 2>/dev/null 2231` really
@@ -613,14 +648,18 @@ case "$TOOL_NAME" in
         red_body  = "([0-9]*(<<<|>>|>|<|<>|>&|<&)|&>>|&>)"
         red_re    = "^" red_body
         # Wrappers that RUN another command, so the merge is theirs to execute.
-        wnames    = "command|builtin|exec|nohup|env|stdbuf|nice|ionice|setsid|caffeinate|sudo|doas|timeout|xargs|find|parallel|watch|script|flock|chronic|uv|uvx|npx|bunx|coproc|unbuffer|chrt|taskset|systemd-run|firejail|strace|ltrace|valgrind|mise|direnv|ssh"
+        # arch (macOS `arch -arm64 …`), noglob/nocorrect (zsh precommand
+        # modifiers) and screen (`screen -dm …`) were missing (issue #3262).
+        # `time` is a keyword here (kw_re); /usr/bin/time is caught by the
+        # WRAP lookup on the path-stripped command word.
+        wnames    = "command|builtin|exec|nohup|env|stdbuf|nice|ionice|setsid|caffeinate|sudo|doas|timeout|xargs|find|parallel|watch|script|flock|chronic|uv|uvx|npx|bunx|coproc|unbuffer|chrt|taskset|systemd-run|firejail|strace|ltrace|valgrind|mise|direnv|ssh|arch|noglob|nocorrect|screen"
         wrap_re   = "^(" wnames ")"
         wrapw_re  = "^(" wnames ")$"
         warg_re   = "^(-[^ \t]*|[0-9]+[smhd]?)"
 
         n = length(buf); m = ""; q = 0; nomask = 0; hsub = 0; hbt = 0; nsub = 0; capend = 0
         in_hd = 0; hd_delim = ""; hd_strip = 0; hd_nomask = 0; hd_unq = 0; curline = ""; pn = 0
-        ns = 1; st[1] = 1; cw = ""; cw_done = 0; nest = 0; wrapm = 0
+        ns = 1; st[1] = 1; cw = ""; cw_done = 0; nest = 0; wrapm = 0; ptime = 0
         i = 1
         while (i <= n) {
           c = substr(buf, i, 1)
@@ -694,7 +733,7 @@ case "$TOOL_NAME" in
           # `` ` `` splits like `(` does — legacy command substitution starts a
           # new command, so `X=`gh pr merge 5`` is a merge, not an assignment.
           if (c == ";" || c == "&" || c == "|" || c == "(" || c == ")" || c == BT || c == "\n") {
-            m = m c; st[++ns] = i + 1; cw = ""; cw_done = 0; nest = 0; wrapm = 0
+            m = m c; st[++ns] = i + 1; cw = ""; cw_done = 0; nest = 0; wrapm = 0; ptime = 0
             if (c == "\n" && pn > 0) {                   # queued heredoc starts here
               hd_delim = hdq[1]; hd_strip = hds[1]; hd_nomask = hdn[1]; hd_unq = hdu[1]
               for (k = 1; k < pn; k++) { hdq[k] = hdq[k+1]; hds[k] = hds[k+1]; hdn[k] = hdn[k+1]; hdu[k] = hdu[k+1] }
@@ -712,7 +751,8 @@ case "$TOOL_NAME" in
               if (cw ~ /^[A-Za-z_][A-Za-z0-9_]*=/) cw = ""    # leading assignment
               else if (cwb in shcmd) { cw_done = 1; nest = 1 }
               else if (cwb in strrun) { cw_done = 1; nest = 1 }
-              else if (cw ~ kww_re) cw = ""                   # shell keyword
+              else if (ptime && cw == "-p") { cw = ""; ptime = 0 }  # `time -p`
+              else if (cw ~ kww_re) { ptime = (cw == "time"); cw = "" }  # shell keyword
               else if (cwb ~ wrapw_re) { cw = ""; wrapm = 1 }  # `sudo`, `env`, …
               else if (wrapm) cw = ""                         # args of a wrapper
               else cw_done = 1
@@ -765,6 +805,10 @@ case "$TOOL_NAME" in
           if (pc == "&" || pc == ">" || pc == "<" || pc == "|" || nc == "&" || nc == ">") continue
           if (substr(m, k + 1) ~ /[^ \t\n]/) { hasbg = 1; break }
         }
+
+        # Functions defined in this command, or in the enclosing text when this
+        # is a command substitution handed back for a rescan.
+        collect_funcs(m); collect_funcs(dequote(OUTERPRE))
 
         for (s = 1; s <= ns; s++) {
           a = st[s]; b = st[s + 1] - 2
@@ -844,8 +888,47 @@ case "$TOOL_NAME" in
             rest = substr(m, b + 2); sub("[;&|()\n" BT "].*", "", rest)
             if (rest ~ /[^ \t]/) concat = 1
           }
+          # A shell whose script is a process substitution (`bash <(echo …)`,
+          # `source <(…)`, `bash < <(…)`, zsh `=(…)`) runs text this hook only
+          # saw as an argument of something else — unverifiable, like `| bash`
+          # (issue #3262). The `(` ends this statement, so it ends in `<`/`=`.
+          if (delimc == "(" && sm ~ /[<=][ \t]*$/) {
+            hasc = 0; psh = 0
+            for (i = 1; i <= nt; i++) {
+              if (i > 1 && !wrapped && !psh) break
+              scan(TO[i]); w = SV; gsub(QCH, "", w); w = base(w)
+              if (!psh && (w in RUNNER)) psh = 1
+              else if (psh && SV ~ /^-[A-Za-z]*c/) hasc = 1
+            }
+            if (psh && !hasc) { emit_merge("merge", "", "", "procsub", a + off, a, wrapped, 0); continue }
+          }
           for (i = 1; i <= nt; i++) {
             if (i > 1 && !wrapped) break
+            scan(TO[i]); fw = SV; gsub(QCH, "", fw)
+            # A call to a function defined in this command (`f(){ "$@"; };
+            # f gh pr merge 5 -R o/r`) runs what its body says, which may add
+            # its own -R: the arguments alone cannot be checked (issue #3262).
+            # zsh runs the trailing words of an anonymous function as its arguments:
+            # `() { "$@"; } gh pr merge 5` leaves a statement starting `}`.
+            if (((fw in FUNCS) || (i == 1 && TO[1] == "}")) && merge_args(i, nt)) {
+              emit_merge("merge", "", "", "func", a + off + TP[i] - 1, a, wrapped, 0); break
+            }
+            # Unquoted `eval gh pr merge …`: eval joins its words, after one
+            # level of quote removal, and runs them as a command line — so
+            # that text is nested command text, exactly like `eval "…"`, and
+            # is handed back for a scan of its own (issue #3262).
+            if (base(fw) == "eval") {
+              epos = a + off + TP[i] - 1
+              split_words(substr(buf, epos + length(TO[i])))
+              if (CSTOP == "quote") { CN = 0; for (j = i + 1; j <= nt; j++) { CN++; CAO[CN] = TO[j] } }
+              etxt = ""
+              for (j = 1; j <= CN; j++) {
+                scan(CAO[j]); if (SCOMMENT) break
+                if (j == 1 && SV == "--") continue             # `eval -- …`
+                etxt = etxt (etxt != "" ? " " : "") SV
+              }
+              if (etxt ~ /[^ \t]/) { nsub++; subt[nsub] = etxt; subp[nsub] = substr(buf, 1, epos - 1) }
+            }
             # merge-chain.sh run directly, or as the script of a shell
             # (`bash <path>/merge-chain.sh …`, `source …`).
             ci = 0
@@ -1126,6 +1209,10 @@ check_record() {
       deny "Refusing to merge ${WHAT}: an argument still holds a quote or backslash after one level of quoting (nested shell text such as bash -c \"… \\\"-R\\\" …\"), so this hook cannot be sure how the inner shell splits it into flags. ${NOT_PERMITTED} ${retry}" ;;
     stdin)
       deny "Refusing this command: a shell reads its script from a pipe (… | bash), so this hook cannot see whether — or what — it merges. ${NOT_PERMITTED} Run the merge as a plain command: ${retry}" ;;
+    procsub)
+      deny "Refusing this command: a shell reads its script from a process substitution (bash <(…), source <(…), bash < <(…), zsh =(…)), so this hook cannot see whether — or what — it merges, exactly as with … | bash. ${NOT_PERMITTED} Run the merge as a plain command: ${retry}" ;;
+    func)
+      deny "Refusing this command: it calls a shell function defined in this command with merge arguments (gh pr merge, a pulls/N/merge route, GraphQL, or a merge-chain.sh --prs list). The function body decides what actually runs — it can add its own -R/--repo or run something else — so this hook cannot tell which PR or repository is merged. ${NOT_PERMITTED} Call gh directly instead of through the function: ${retry}" ;;
     stdinargs)
       deny "Refusing to merge ${WHAT}: xargs/parallel add arguments read at run time, so this hook cannot tell which PR or repository gh will receive. ${NOT_PERMITTED} ${retry}" ;;
     dangling)

@@ -161,6 +161,18 @@ hooks-plugin/hooks/test-no-calendar-estimates.sh
 # has node, so a skip here means the runtime half silently stopped running.
 scripts/tests/test-export-pi-hooks.sh
 
+# Stub-runtime tests for the bundled *.workflow.js templates execute each
+# template under node with stubbed agent()/parallel(); their only skip is "node
+# not installed". Same terms as the pi bridge above: every CI runner has node,
+# so a skip means the template behaviour checks silently stopped running
+# (#3255).
+workflow-orchestration-plugin/skills/workflow-implement-verify/scripts/tests/test-templates.sh
+workflow-orchestration-plugin/skills/workflow-bake-off/scripts/tests/test-compete-and-judge.sh
+git-plugin/skills/git-issue/scripts/tests/test-issue-triage.sh
+agent-patterns-plugin/skills/adversarial-review/scripts/tests/test-templates.sh
+agent-patterns-plugin/skills/verify-before-plan/scripts/tests/test-recon-map.sh
+testing-plugin/skills/mutation-testing/scripts/tests/test-survivor-triage.sh
+
 # The Antigravity subagent export test's only skip is "PyYAML not available".
 # The runner's system python3 ships PyYAML (the suite PASSes in CI rather than
 # skipping), so a skip here means the agent-projection gate stopped running.

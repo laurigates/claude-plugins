@@ -223,6 +223,19 @@ in the fan-out itself — `for (const x of items.slice(0, N))`,
 copy held in a variable still asks, because the estimator does not resolve
 variables.
 
+The gate reads only the **first** `**Agent budget:**` line in a skill's framing
+section and checks it against every `.js` in that skill's `workflows/`, so two
+templates in one skill must share one budget whose integer terms equal both
+files' estimates. Moving an `agent()` call into a helper function is the usual
+way to make the estimates agree, at the cost of the scale guard asking before
+every run.
+
+A finalise agent inside the harness may push and open PRs, but it cannot merge
+them: auto mode denies a `gh pr merge` whose authorisation reaches the agent
+only through a workflow script ("relayed authorisation is not user consent").
+Return the PR numbers and merge from the main session, one literal
+`gh pr merge` per PR or a literal `merge-chain.sh --prs` list.
+
 Two clauses every template that dispatches `isolation:'worktree'` agents must
 **also** carry:
 
