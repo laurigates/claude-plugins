@@ -90,6 +90,26 @@ jobs:
             -q '.jobs[] | select(.conclusion == "failure") | "Job: \(.name)\nStatus: \(.conclusion)\nSteps:\n" + ([.steps[] | select(.conclusion == "failure") | "  - \(.name): \(.conclusion)"] | join("\n"))' \
             > "${CI_CONTEXT_DIR}/failed-jobs.txt" 2>/dev/null || echo "Could not retrieve job details" > "${CI_CONTEXT_DIR}/failed-jobs.txt"
 
+          # A run whose every failed step is an LLM step (a step named
+          # `Claude …`, or any step of plugin-pr-checks' `skill-review` job)
+          # failed on the model side: quota, a bot-actor refusal, an
+          # undelivered review. A code change cannot fix that, and on quota the
+          # Claude step below fails the same way (2026-10-09: eight auto-fix
+          # runs, each 1 turn, $0, is_error:true, e.g. run 37933730522 for
+          # failed run 37933197451). A failed job with no failed step, or a
+          # job list that cannot be read, counts as not LLM-only, so the
+          # analysis still runs.
+          # shellcheck disable=SC2016 # $job/$failed are jq variables
+          LLM_ONLY=$(gh run view "$RUN_ID" --json jobs --jq '
+            [.jobs[] | select(.conclusion == "failure") | . as $job
+             | ([.steps[]? | select(.conclusion == "failure")]) as $failed
+             | if ($failed | length) == 0 then false
+               else ($failed[] | ($job.name == "skill-review" or (.name | startswith("Claude "))))
+               end]
+            | length > 0 and all' 2>/dev/null || echo false)
+          [ "$LLM_ONLY" = "true" ] || LLM_ONLY=false
+          echo "llm_only=$LLM_ONLY" >> "$GITHUB_OUTPUT"
+
           # Find associated PR number
           PR_NUMBER=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number // empty' 2>/dev/null || echo "")
           echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
@@ -325,8 +345,15 @@ jobs:
           echo "Recent commits:"
           git log --oneline -5
 
+      - name: Report an LLM-only failure (gates the next step)
+        if: steps.context.outputs.llm_only == 'true'
+        env:
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          echo "::notice::Skipping auto-fix - every failed step of run ${RUN_ID} is a Claude step, so the failure is on the model side (quota, bot-actor refusal, undelivered comment), not in the code."
+
       - name: Analyze and fix with Claude
-        if: steps.context.outputs.recent_fix_count == '0'
+        if: steps.context.outputs.recent_fix_count == '0' && steps.context.outputs.llm_only != 'true'
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
