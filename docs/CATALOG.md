@@ -3,7 +3,7 @@
 
 # Plugin Catalog
 
-47 plugins, 455 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
+47 plugins, 456 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
 
 ## AI & Agents
 
@@ -51,7 +51,7 @@
 
 | Plugin | Skills | Agents | Description |
 |--------|-------:|-------:|-------------|
-| [testing-plugin](../testing-plugin/) | 18 | 1 | Test execution, TDD workflow, and testing strategies |
+| [testing-plugin](../testing-plugin/) | 19 | 1 | Test execution, TDD workflow, and testing strategies |
 
 ## CI/CD
 
