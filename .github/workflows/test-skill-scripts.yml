@@ -45,6 +45,9 @@ on:
       # `experiments/*/scripts/tests/test-*.sh` too (#2816), so a PR changing only
       # an experiment harness must fire this workflow to run its self-test.
       - 'experiments/**'
+      # scripts/tests/test-golden-set-sweep-guard.sh extracts and runs this
+      # workflow's duplicate-sweep guard step.
+      - '.github/workflows/golden-set-evaluation.yml'
       # test-grade-deterministic.sh reads the grader agent prompt and the skills'
       # evals.json files, which no other entry here matches. Without these, a PR
       # editing only eval-grader.md ran the suite in pre-commit but not in CI (#2890).
@@ -98,6 +101,7 @@ on:
       - 'scripts/**'
       - '.github/ISSUE_TEMPLATE/**'
       - 'experiments/**'
+      - '.github/workflows/golden-set-evaluation.yml'
       - 'evaluate-plugin/agents/**'
       - '**/evals.json'
       - '.github/actions/script-to-issue/**'
