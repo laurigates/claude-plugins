@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.3](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.7.2...rust-plugin-v1.7.3) (2026-10-29)
+
+
+### Bug Fixes
+
+* **rust-plugin:** pin the CI toolchain in rust-toolchain.toml instead of floating stable ([#3204](https://github.com/laurigates/claude-plugins/issues/3204)) ([19fa291](https://github.com/laurigates/claude-plugins/commit/19fa291ac2a6790946a5caf0d5c0a6c601ec566c))
+
 ## [1.7.2](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.7.1...rust-plugin-v1.7.2) (2026-10-10)
 
 
