@@ -4,8 +4,7 @@
     "config:recommended",
     ":semanticCommits",
     ":semanticCommitTypeAll(chore)",
-    "schedule:weekends",
-    "group:allNonMajor"
+    "schedule:weekends"
   ],
   "labels": ["dependencies"],
   "rangeStrategy": "pin",

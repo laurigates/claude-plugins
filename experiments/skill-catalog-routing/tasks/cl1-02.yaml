@@ -1,0 +1,9 @@
+description: Cluster 1 (#2789) test-run, name pattern — cases matched by name across many files is the runner's pattern mode, not the one-file fail-fast runner.
+prompt: |
+  Only execute the cases whose names contain "discount_rounding". They're
+  scattered across a handful of different spec files, so I can't point you at
+  one — filter by that name and skip everything else.
+gold: testing-plugin/test-run
+near_miss: testing-plugin/test-focus
+plugin: testing-plugin
+cluster: 1

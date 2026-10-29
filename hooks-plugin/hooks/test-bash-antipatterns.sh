@@ -971,6 +971,49 @@ assert_exit \
     "GUARD: task-output (.output) scrape still blocks (#1914)" 2 \
     "cat run.output | grep Error | grep -v warn | sed s/a/b/"
 
+# ── test-output block is scoped to ONE pipeline (issue #3236) ─────────────────
+# Regression: the grep-chain regex and the test-runner regex were each matched
+# against the WHOLE command, so a runner that wrote to a file in one statement
+# plus an unrelated grep pipe in a later `;`/`&&` statement was read as "runner
+# stdout through a grep chain" — and the runner regex's `[^|]*` crossed `;`, so
+# `cargo nextest run … ; echo test=$?` counted as `cargo … test`. Heredoc body
+# text (a gh issue body quoting such a command) also fired. Both conditions must
+# now hold in the SAME pipeline of the heredoc-stripped command.
+echo ""
+echo "test-output grep-chain block is scoped to a single pipeline (#3236):"
+
+assert_exit_complex \
+    "runner redirected to a file, then a separate-statement grep pipe chain is allowed (#3236)" 0 \
+    'cargo test > tmp/t.log 2>&1; grep FAIL tmp/t.log | grep -v ok | cut -c1-80'
+
+issue_3236_cmd=$(cat <<'OUTER'
+cargo fmt --all && cargo nextest run -p shoreline-post > tmp/post-test.log 2>&1; echo test=$?; grep -E 'FAIL|Summary' tmp/post-test.log; SHORELINE_TOOLS=configs/popos.local.toml just run reposalmi-laajasalo --stage post > tmp/post-laajasalo.log 2>&1; echo run=$?; grep '^post' tmp/post-laajasalo.log | cut -c1-140
+OUTER
+)
+assert_exit_complex \
+    "reported #3236 command (runner-to-file; greps in separate statements) is allowed" 0 \
+    "$issue_3236_cmd"
+
+issue_3236_heredoc_cmd=$(cat <<'OUTER'
+gh issue create --title x --body-file - <<'EOF'
+The hook blocked this:
+
+cargo test 2>&1 | grep FAIL | grep -v ok | cut -c1-80
+EOF
+OUTER
+)
+assert_exit_complex \
+    "heredoc body quoting a test-runner grep chain is allowed (#3236)" 0 \
+    "$issue_3236_heredoc_cmd"
+
+assert_exit \
+    "GUARD: runner stdout through grep|grep|cut in one pipeline still blocks (#3236)" 2 \
+    "cargo test 2>&1 | grep FAIL | grep -v ok | cut -c1-80"
+
+assert_exit_complex \
+    "GUARD: runner pipeline after an unrelated && statement still blocks (#3236)" 2 \
+    'cd crate && cargo test 2>&1 | grep FAIL | grep -v ok | cut -c1-80'
+
 # ── multi-grep test-output heuristic exempts source/config file greps (#1914) ──
 # Regression: the "Parsing test output with grep chains is fragile" heuristic
 # fired on a multi-pattern `grep -n 'app-id|fail-fast|…' reusable-*.yml | … | awk`

@@ -192,6 +192,7 @@ Install based on your project's tech stack and domain.
 | home-assistant-plugin | Home Assistant configuration management |
 | macos-plugin | macOS-specific operational tooling — kitty session persistence, LaunchServices health, incident postmortems, APFS disk-usage / space recovery, performance triage, and a repeatable threshold-scored benchmark suite |
 | blog-plugin | Writing project logs or technical posts |
+| youtube-plugin | Uploading and editing YouTube videos via the Data API v3, and org-only sharing in YouTube Studio |
 | communication-plugin | Formatting for Google Chat or ticket drafting |
 | css-plugin | Lightning CSS transpilation, UnoCSS atomic utility generation for style tooling |
 | accessibility-plugin | WCAG compliance and ARIA patterns |

@@ -1,0 +1,9 @@
+description: Cluster 1 (#2789) test-focus — one named spec file, headed, single worker, stop at first failure, is the single-file runner rather than a name-pattern run.
+prompt: |
+  Execute only src/cart/checkout.spec.ts, with the browser visible so I can
+  watch what happens, and stop at the very first failure. One worker, no
+  parallelism — the canvas rendering in that spec gets flaky otherwise.
+gold: testing-plugin/test-focus
+near_miss: testing-plugin/test-run
+plugin: testing-plugin
+cluster: 1

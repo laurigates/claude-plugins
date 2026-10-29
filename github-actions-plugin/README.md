@@ -99,6 +99,7 @@ All skills are located in the `skills/` directory:
   - The billing-usage endpoint (the old `/billing/actions` returns 410), filtered by bare repo name
   - Net vs gross, per-SKU grouping, explicit per-month calls for the trend, outcome distribution alongside minutes
   - Per-job rounding: fold trivial work into an existing job; skip with a job-level `if:`
+  - Budgets: a stop-usage budget fails every job with zero steps and no log; the cause is only in the check-run annotation. Org budgets API, repo budgets alert-only, no Terraform resource
 
 - **release-artifact-verification** - Confirming a release actually shipped
   - The publish job fails while the tag and GitHub release look perfect — check the artifact at its public address
