@@ -113,7 +113,8 @@
     "typescript-plugin@laurigates-claude-plugins": true,
     "workflow-orchestration-plugin@laurigates-claude-plugins": true,
     "session-plugin@laurigates-claude-plugins": true,
-    "software-design-plugin@laurigates-claude-plugins": true
+    "software-design-plugin@laurigates-claude-plugins": true,
+    "youtube-plugin@laurigates-claude-plugins": true
   },
   "extraKnownMarketplaces": {
     "laurigates-claude-plugins": {
