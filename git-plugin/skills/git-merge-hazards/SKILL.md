@@ -3,7 +3,7 @@ name: git-merge-hazards
 description: Traps in GitHub's merge machinery. Use when merging a PR, merging a stacked or serial PR chain, auditing whether a branch really landed, or merging over red CI.
 allowed-tools: Read, Grep, Glob, Bash(gh pr *), Bash(gh issue *), Bash(gh api *), Bash(git cherry *), Bash(git merge-tree *), Bash(git rev-parse *), Bash(git rev-list *), Bash(git log *), Bash(git reflog *), Bash(git rebase *), Bash(git merge *), Bash(git checkout *), Bash(git worktree *), Bash(git diff *), Bash(git add *), Bash(git commit *), Bash(git -C *), Bash(git merge-base *), Bash(grep *), Bash(awk *), Bash(jq *), Bash(git push *), Bash(git fetch *), Bash(git cat-file *), Bash(sleep *), Bash(just *), Bash(bash *), TodoWrite
 created: 2026-08-19
-modified: 2026-10-26
+modified: 2026-10-27
 reviewed: 2026-08-21
 ---
 
@@ -17,14 +17,11 @@ reviewed: 2026-08-21
 | Deciding whether a red PR can merge (§4) | Deciding whether a red AI-review check is a real finding → `github-actions-plugin:ai-review-max-turns` |
 | Merging an ad-hoc stacked chain (§2, §3) | Release-please PRs are piling up or conflicting → `git-plugin:release-please-pr-workflow` |
 
-The numbered sections are the verbatim text of the promoted
-`~/.claude/rules/pr-merge-hazards.md` rule. The maintainer notes on what differs
-from that rule, including the skill-only §2 bullets, are in
-[references/sync-notes.md](references/sync-notes.md).
+The numbered sections mirror the `~/.claude/rules/pr-merge-hazards.md` rule;
+differences: [references/sync-notes.md](references/sync-notes.md).
 
 Six traps in GitHub's merge machinery, one law: "PR merged" says nothing about
-*content* — and a red check is not proof of failure. Each: the trap, the
-5-second check, the fix. Sibling: `git-plugin:git-local-hazards` (local git).
+*content* — and a red check is not proof of failure. Sibling: `git-plugin:git-local-hazards` (local git).
 
 ## 1. `--merged` misses squash-merged branches
 
@@ -124,12 +121,19 @@ The trap is wider than negation: plain past tense, a markdown-linked cross-repo 
 
 ## 6. A serial merge chain merges commits nobody verified
 
-`gh pr update-branch` re-runs every `pull_request` workflow, and a retarget
-(`gh pr edit --base`) can start a bot too, so a bot that writes to PR branches can
-push after your review; its commits pass CI and merge unread. Before each merge, refuse any non-merge commit newer than your review
-timestamp, and merge with `--match-head-commit <sha>`. A PR that changes such a
-bot goes last in the chain. Guard snippet, the `gh --jq --arg` trap and
-recovery: [references/serial-merge-chain.md](references/serial-merge-chain.md).
+`gh pr update-branch` re-runs every `pull_request` workflow and a retarget
+(`gh pr edit --base`) can start a bot too, so a bot that writes to PR branches
+can push after review; its commits pass CI and merge unread. Before each
+merge, refuse any non-merge commit newer than your review and merge with
+`--match-head-commit <sha>`; a PR that changes such a bot goes last. Guard,
+`gh --jq --arg` trap, recovery: [references/serial-merge-chain.md](references/serial-merge-chain.md).
+
+## Merge shepherd
+
+For an ordered PR list run `scripts/merge-chain.sh`. Dispatch one agent only on
+`STATUS=CONFLICT`/`CI_RED`; its fix is unreviewed code, so route it through
+`workflow-orchestration-plugin:workflow-implement-verify`'s `repair-round`
+before resuming: [references/merge-shepherd.md](references/merge-shepherd.md).
 
 ## Agentic Optimizations
 
@@ -140,4 +144,3 @@ recovery: [references/serial-merge-chain.md](references/serial-merge-chain.md).
 | Merge-over-red evidence (§4) | `gh pr view <n> --json files --jq '.files[].path'` and `gh run list --branch main --workflow <wf> -L 1 --json conclusion,createdAt` |
 | Before a force-push (§3) | `git log --oneline origin/main..<sha>` — exactly the child's commits |
 | Who closed an issue (§5) | `gh issue view <n> --json closedByPullRequestsReferences,closedAt` |
-| Commits a PR gained after review (§6) | `gh pr view <n> --json commits`, filtered with `jq --arg` on `committedDate` |

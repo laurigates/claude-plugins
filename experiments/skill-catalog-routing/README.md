@@ -53,7 +53,7 @@ inject, for every arm including C0.
 | `catalogs/` | committed catalog variants (`catalog.{names,short,medium,full}.json`) + `catalog_manifest.json` (source SHA, hashes, provenance) |
 | `prompts/system-router.md` | the catalog-free router system prompt (JSON-out contract) |
 | `conditions.yaml` | 15 arms = 3 models × 5 catalog variants (effort fixed low) |
-| `tasks/*.yaml` | 70 labeled tasks: 30 route, 20 near-miss (10 pairs), 20 abstention (`gold: NONE`) |
+| `tasks/*.yaml` | 78 labeled tasks: 30 route (`r*`), 20 near-miss (`n*`, 10 pairs), 20 abstention (`z*`, `gold: NONE`), 8 cluster-1 test-runner (`cl1-*`, see below) |
 | `scripts/build-catalogs.py` | frontmatter → the 4 variants + manifest (structure-aware shortening, `--validate`) |
 | `scripts/check-tasks.py` | schema + lexical-leakage gate over the task set |
 | `scripts/build-arm-prompt.sh` | assemble router + injected catalog for an arm |
@@ -92,6 +92,32 @@ bash scripts/measure-catalog-tokens.sh
 If `just` is installed, the same recipes are `just <recipe>` (see `justfile` /
 the root `just skill-catalog-routing::<recipe>`).
 
+## Cluster-1 task set (`cl1-*`, #2789)
+
+Eight tasks for the seven test-runner descriptions #2607 rewrote under #2244:
+`test-run` (a bare run in `cl1-01`, a name-pattern run in `cl1-02`),
+`test-quick`, `test-full`, `test-focus`, `test-tier-selection`, `test-report`,
+and `project-plugin:project-test-loop`. Each sets `near_miss` to its natural
+sibling runner-up and carries `cluster: 1`. All are at `name_overlap = 0`.
+For `test-run`, both name tokens are in the generic list, so that score is
+trivially zero. The prefix is `cl1-`, not `c1-`, so it cannot be confused with
+the `C1` names-only arm.
+
+These are **new tasks, not a reconstruction** of #2607's `s01`–`s08`. Those
+lived only in a scratch copy of the harness and survive only as abridged
+prompts, so #2607's before/after numbers do not carry over to this set.
+
+**Pending:** the `haiku-C4` spot-check has not been re-run against this set
+with the fixed scorer (#2789 step 3). Run it from the repo with:
+
+```sh
+bash scripts/run-suite.sh --filter 'cl1-*' --conditions haiku-C4 --runs 1 --run-id cluster1
+scripts/compare.py cluster1
+```
+
+Read the `correct` column from the scored rows. Do not judge by reading
+`predicted` by hand.
+
 ## Metrics
 
 Per (model × arm), pooled over runs: **top-1** routing accuracy, **near-miss**
@@ -103,7 +129,7 @@ per-model degradation slope (C4−C2) — the portability signal.
 
 ## Cost discipline
 
-Every run is a real `claude -p` call. The full matrix (15 arms × 70 tasks × N
+Every run is a real `claude -p` call. The full matrix (15 arms × 78 tasks × N
 runs) is large, so it is **gated**: the haiku pilot (2 arms × 20 tasks × 3 runs)
 must first show a clean C4 − C1 separation; only then does the haiku full ladder
 run, then sonnet/opus on a clean monotone curve. Effort is fixed `low` (routing

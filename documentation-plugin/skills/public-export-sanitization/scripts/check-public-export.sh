@@ -63,7 +63,12 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 PATTERNS=(
   "GCP service-account email::\\b[a-z0-9][a-z0-9-]*@[a-z0-9-]+\\.iam\\.gserviceaccount\\.com\\b"
-  "GCP project number (12-digit)::\\b[0-9]{12}\\b"
+  # Not '\b[0-9]{12}\b': '.' is a word boundary, so that matched the fractional
+  # digits of a float (12800.711543199157, #3272). rg's engine has no
+  # lookbehind, so the neighbours are consumed instead -- harmless, since rg
+  # reports whole lines. A trailing '.' is allowed only when no digit follows
+  # (sentence end), so 123456789012.5 (a decimal's integer part) is excluded.
+  "GCP project number (12-digit)::(^|[^0-9A-Za-z_.])[0-9]{12}(\$|[^0-9A-Za-z_.]|\\.(\$|[^0-9]))"
   "Absolute home path::/(Users|home)/[a-z][a-z0-9_-]+/"
 )
 

@@ -66,7 +66,7 @@ Three composable skills that can be invoked individually or combined based on us
 | `git-branch-pr-workflow` | Git branching and PR workflow patterns |
 | `git-rebase-patterns` | Advanced rebase techniques (--reapply-cherry-picks, --update-refs, --onto, stacked PRs) |
 | `git-stacked-prs` | GitHub native stacked PRs via the `gh stack` extension — lifecycle, sync/rebase cascade, exit codes, and how a registered stack differs from an ad-hoc PR chain |
-| `git-merge-hazards` | Traps in GitHub's merge machinery — squash-merge detection authority order, stacked-base auto-close and the no-force merge-main route, push-by-SHA races and the `refs/heads/` refspec form, the rollup-completion CI gate, merging over red CI, negated closing keywords |
+| `git-merge-hazards` | Traps in GitHub's merge machinery — squash-merge detection authority order, stacked-base auto-close and the no-force merge-main route, push-by-SHA races and the `refs/heads/` refspec form, the rollup-completion CI gate, merging over red CI, negated closing keywords, and `merge-chain.sh`, which merges an ordered PR list and stops on a conflict or red CI |
 | `git-local-hazards` | Local git traps where exit 0 lies — commits orphaned after a squash-merge, stray local-`main` commits, duplicate additions from a clean merge, atomic `git add`, a "vanished" staged file, recovering `reset --hard` from a pre-commit stash |
 | `external-pr-trust` | Authorship as a precondition of merging — bot vs stranger classification across `gh` subcommands, what a merge executes, the merge-guard hook, one literal PR number per `gh pr merge` |
 | `github-comment-content` | What a PR or issue comment should say — cut every fact the GitHub page already renders, keep what it cannot show |

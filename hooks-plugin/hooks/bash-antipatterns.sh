@@ -1133,10 +1133,31 @@ if grep -Eq '(grep|rg)\b[^|;&]*\.(yml|yaml|md|json|ts|tsx|js|py|tf|toml|sh|rs|go
     IS_SOURCE_FILE_GREP=true
 fi
 
+# Scope both conditions to ONE pipeline (issue #3236). Matching the grep-chain
+# regex and TEST_OUTPUT_SOURCE_RE independently against the whole command let a
+# runner that writes to a file in one statement (`cargo nextest run … > t.log`)
+# pair with an unrelated grep pipe in a later `;`/`&&` statement — and the
+# runner regex's `[^|]*` crossed `;`, so `cargo nextest … ; echo test=$?` read as
+# `cargo … test`. Heredoc body text (a gh issue body quoting such a command) also
+# fired, since it never executes. So: take the heredoc- and comment-stripped
+# COMMAND_SHELL_ONLY view, split it into pipelines on `;`, `&&`, `||` and
+# newlines (never on a single `|`), and block only when one pipeline carries
+# both the test/task-output source and the grep|grep|sed/cut/awk chain. The
+# split is lexical (a `;` inside a quoted argument also splits), which only ever
+# errs toward allowing — this is a style block, not a safety one.
+IS_TEST_OUTPUT_GREP_CHAIN=false
+TEST_OUTPUT_PIPELINES=$(awk '{ gsub(/&&|\|\||;/, "\n"); print }' <<<"$COMMAND_SHELL_ONLY")
+while IFS= read -r test_output_pipeline; do
+    if grep -Eq 'grep.*\|.*grep.*\|.*(sed|cut|awk)' <<<"$test_output_pipeline" && \
+       grep -Eq "$TEST_OUTPUT_SOURCE_RE" <<<"$test_output_pipeline"; then
+        IS_TEST_OUTPUT_GREP_CHAIN=true
+        break
+    fi
+done <<<"$TEST_OUTPUT_PIPELINES"
+
 if [ "$IS_LOG_STREAM" = false ] && \
    [ "$IS_SOURCE_FILE_GREP" = false ] && \
-   grep -Eq 'grep.*\|.*grep.*\|.*(sed|cut|awk)' <<<"$COMMAND" && \
-   grep -Eq "$TEST_OUTPUT_SOURCE_RE" <<<"$COMMAND"; then
+   [ "$IS_TEST_OUTPUT_GREP_CHAIN" = true ]; then
     block "REMINDER: Parsing test output with grep chains is fragile. Better alternatives:
 - Use --reporter=json (Bun, Vitest, Jest) and parse with jq
 - Use --reporter=junit for CI-style XML output
