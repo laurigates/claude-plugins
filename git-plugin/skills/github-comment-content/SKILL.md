@@ -3,7 +3,7 @@ name: github-comment-content
 description: Decide what a PR or issue comment says — cut every fact the GitHub page already renders, keep what it cannot show. Use when writing a PR/issue comment, or briefing a cold-read gate on one.
 allowed-tools: Read, Bash(gh pr view *), Bash(gh issue view *), Bash(gh api *), TodoWrite
 created: 2026-09-24
-modified: 2026-09-24
+modified: 2026-10-29
 reviewed: 2026-09-24
 ---
 
@@ -102,5 +102,8 @@ Two consequences:
 - `agent-patterns-plugin:cold-read-gate` — the instrument this skill scopes.
 - `communication-plugin:ticket-drafting-guidelines` — register and structure
   once the content is decided; this skill decides the content.
+- `git-plugin:git-fork-workflow` § Keep the staging PR's text from reaching
+  upstream — a body or comment in a fork that names `owner/repo#N` puts a
+  backlink on that repo's issue.
 - The labels, assignees, and reviewers the UI renders are set through a
   metadata-hygiene checklist at PR creation (`git-plugin:git-pr`).
