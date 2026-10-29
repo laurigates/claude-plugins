@@ -190,6 +190,18 @@ repos:
         language: script
         files: '^scripts/(check-branch-containment-guidance\.sh|tests/test-check-branch-containment-guidance\.sh)$'
         pass_filenames: false
+      - id: check-staging-single-call
+        name: git add guidance prescribes one call, not one pathspec per add (#3042)
+        entry: ./scripts/check-staging-single-call.sh
+        language: script
+        files: '^([^/]+-plugin/.*\.md|\.claude/rules/.*\.md|scripts/check-staging-single-call\.sh)$'
+        pass_filenames: false
+      - id: check-staging-single-call-test
+        name: git add single-call guidance lint regression
+        entry: ./scripts/tests/test-check-staging-single-call.sh
+        language: script
+        files: '^scripts/(check-staging-single-call\.sh|tests/test-check-staging-single-call\.sh)$'
+        pass_filenames: false
       - id: check-unused-bash-grant
         name: no skill grants Bash without running shell
         entry: ./scripts/check-unused-bash-grant.sh --strict

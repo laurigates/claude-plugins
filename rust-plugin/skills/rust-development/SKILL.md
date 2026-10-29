@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-10-25
 reviewed: 2026-04-25
 name: rust-development
 description: Rust development — cargo, clippy, rustfmt, async, Tokio, Serde, memory safety. Use when mentioning Rust, cargo, ownership, lifetimes, fearless concurrency, or async programming.
@@ -184,5 +184,7 @@ pub type Result<T> = std::result::Result<T, AppError>;
 | `tracing` | Logging/diagnostics |
 | `anyhow` | Application errors |
 | `thiserror` | Library errors |
+
+**CI toolchain**: pin the compiler in a root `rust-toolchain.toml` that Renovate bumps, so a new release's lints arrive as a PR; see [clippy-advanced § Pin the toolchain](../clippy-advanced/REFERENCE.md#pin-the-toolchain).
 
 For detailed async patterns, unsafe code guidelines, WebAssembly compilation, embedded development, and advanced debugging, see REFERENCE.md.
