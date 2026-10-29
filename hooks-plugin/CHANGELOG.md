@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.17.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.17.0...hooks-plugin-v2.17.1) (2026-10-29)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** stop pipe-to-shell block matching grep-pattern text ([#3214](https://github.com/laurigates/claude-plugins/issues/3214)) ([067dc2b](https://github.com/laurigates/claude-plugins/commit/067dc2bed928862e858925707f34c6454ae838dc))
+
 ## [2.17.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.16.1...hooks-plugin-v2.17.0) (2026-10-29)
 
 
