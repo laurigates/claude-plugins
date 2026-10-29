@@ -9,6 +9,10 @@ the exceptions listed in this file. Read it when syncing that rule.
 - §5's follow-on subsections moved verbatim into `references/`; they are still
   rule text when syncing. §3's pointer moved too, but its registration-race text
   diverged (see **Diverged, not yet mirrored: §3's registration race**).
+- The `## Merge shepherd` section is skill-only: it points at
+  `scripts/merge-chain.sh` and [merge-shepherd.md](merge-shepherd.md). SKILL.md
+  sits at the 10,000-character band that `test-no-force-stack.sh` pins, so new
+  text goes in `references/`.
 - Skill-only, not in `pr-merge-hazards.md`: §6, §4's merge-endpoint pointer, and
   the three §2 bullets **Check the base first**, **No-force alternative** and
   **Delta-apply**. The chezmoi rule does not carry those three §2 bullets yet. Mirror them there, or the
