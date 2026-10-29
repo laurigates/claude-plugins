@@ -17,6 +17,57 @@ echo ""
 
 findings=0
 
+# Which rules a .gitleaks.toml loads: default | extend-path | custom | none.
+# gitleaks takes rules only from [[rules]] tables and from [extend]
+# (useDefault = true, or path = <another config>), so a file holding just an
+# [allowlist] / [[allowlists]] loads ZERO rules. gitleaks auto-discovers that
+# file, and the scan below then reports clean whatever the tree holds. Keys are
+# matched in any case and bare or quoted (["extend"]), as gitleaks' viper loader
+# reads them; useDefault is decoded weakly, as viper does (true, a string
+# strconv.ParseBool reads as true, or a non-zero decimal number); multi-line
+# string bodies are skipped. Not recognised, so reported inert: a root
+# `rules = [ ... ]` array, and a useDefault written as a hex/octal/binary
+# literal, inf, nan or a triple-quoted string. configure-plugin's
+# configure-security.sh carries the same classifier.
+gitleaks_rule_source() {
+  awk '
+    function k(key_name) { return "[\"\047]?" key_name "[\"\047]?" }
+    function truthy(val,   mant) {
+      sub(/[,}#].*$/, "", val); sub(/^[[:space:]]+/, "", val); sub(/[[:space:]]+$/, "", val)
+      if (val == "true" || val ~ /^("(true|True|TRUE|t|T|1)"|\047(true|True|TRUE|t|T|1)\047)$/) return 1
+      val = tolower(val)
+      if (val !~ /^[-+]?[0-9][0-9_]*(\.[0-9][0-9_]*)?(e[-+]?[0-9][0-9_]*)?$/) return 0
+      mant = val; sub(/e.*$/, "", mant)
+      return (mant ~ /[1-9]/)
+    }
+    BEGIN { ws = "[[:space:]]*"; section = ""; in_ml = 0; dflt = 0; xpath = 0; custom = 0 }
+    {
+      line = tolower($0)
+      quotes = gsub(/\047\047\047|"""/, "&", line)
+      if (in_ml) { if (quotes % 2 == 1) in_ml = 0; next }
+      if (quotes % 2 == 1) in_ml = 1
+      if (line ~ /^[[:space:]]*(#|$)/) next
+      if (line ~ ("^" ws "\\[\\[" ws k("rules") ws "\\]\\]" ws "(#|$)")) { custom = 1; section = "rules"; next }
+      if (line ~ ("^" ws "\\[" ws k("extend") ws "\\]" ws "(#|$)")) { section = "extend"; next }
+      if (line ~ /^[[:space:]]*\[/) { section = "other"; next }
+      if (section != "extend" && section != "") next
+      prefix = (section == "") ? k("extend") ws "\\." ws : ""
+      if (match(line, "^" ws prefix k("usedefault") ws "=") && truthy(substr($0, RSTART + RLENGTH))) dflt = 1
+      if (line ~ ("^" ws prefix k("path") ws "=" ws "(\"[^\"]+\"|\047[^\047]+\047)")) xpath = 1
+      if (section == "" && line ~ ("^" ws k("extend") ws "=" ws "\\{")) {
+        if (match(line, k("usedefault") ws "=") && truthy(substr($0, RSTART + RLENGTH))) dflt = 1
+        if (line ~ (k("path") ws "=" ws "(\"[^\"]+\"|\047[^\047]+\047)")) xpath = 1
+      }
+    }
+    END {
+      if (dflt) print "default"
+      else if (xpath) print "extend-path"
+      else if (custom) print "custom"
+      else print "none"
+    }
+  ' "$1"
+}
+
 # Check 1: gitleaks (if available)
 echo "--- GITLEAKS ---"
 if command -v gitleaks >/dev/null 2>&1; then
@@ -27,16 +78,25 @@ if command -v gitleaks >/dev/null 2>&1; then
     scan_output=$(gitleaks detect --source . --no-banner 2>&1)
     scan_exit=$?
   fi
+  gitleaks_rules=""
+  [ -f ".gitleaks.toml" ] && gitleaks_rules=$(gitleaks_rule_source ".gitleaks.toml")
   if [ $scan_exit -ne 0 ]; then
     echo "STATUS=secrets_found"
     echo "$scan_output" | head -20
+    findings=$((findings + 1))
+  elif [ "$gitleaks_rules" = "none" ]; then
+    # A clean result from a config with zero rules says nothing about the tree.
+    echo "STATUS=inert_config"
     findings=$((findings + 1))
   else
     echo "STATUS=clean"
   fi
 
   # Check for .gitleaks.toml config
-  if [ -f ".gitleaks.toml" ]; then
+  if [ "$gitleaks_rules" = "none" ]; then
+    echo "CONFIG=inert"
+    echo "HINT: .gitleaks.toml loads zero rules (no [extend] useDefault = true, no [[rules]]), so the scan checked nothing. Add [extend] useDefault = true above the [allowlist]"
+  elif [ -f ".gitleaks.toml" ]; then
     echo "CONFIG=present"
   else
     echo "CONFIG=missing"
