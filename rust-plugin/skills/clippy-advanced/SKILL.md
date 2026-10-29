@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-10-25
 reviewed: 2025-12-16
 name: clippy-advanced
 description: "Advanced Clippy configuration for Rust — custom rules, pedantic/nursery lints, clippy.toml, IDE and CI integration. Use when configuring or enforcing lint standards."
@@ -173,4 +173,4 @@ let x = value as u8;
 - [Configuration options](https://doc.rust-lang.org/clippy/configuration.html)
 - [rust-analyzer integration](https://rust-analyzer.github.io/manual.html)
 
-For detailed configuration examples, CI integration, IDE setup, and best practices, see [REFERENCE.md](REFERENCE.md).
+For detailed configuration examples, CI integration, IDE setup, and best practices, see [REFERENCE.md](REFERENCE.md). A CI job that gates on `-D warnings` needs a pinned compiler: [REFERENCE.md § Pin the toolchain](REFERENCE.md#pin-the-toolchain).

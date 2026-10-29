@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.5](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.14.4...comfyui-plugin-v1.14.5) (2026-10-29)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** stop registry-health repeating unchanged alerts ([#3196](https://github.com/laurigates/claude-plugins/issues/3196)) ([0d45506](https://github.com/laurigates/claude-plugins/commit/0d4550675e6ee797c859ff5e86b9ebd1ad909367))
+
 ## [1.14.4](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.14.3...comfyui-plugin-v1.14.4) (2026-10-29)
 
 

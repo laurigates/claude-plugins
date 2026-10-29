@@ -4,7 +4,7 @@
   "owner": {
     "name": "Lauri Gates"
   },
-  "description": "A curated collection of 45 Claude Code plugins providing 380+ skills and 21 agents for development workflows \u2014 git, testing, CI/CD, configuration, infrastructure, and language ecosystems.",
+  "description": "A curated collection of 45 Claude Code plugins providing 380+ skills and 21 agents for development workflows — git, testing, CI/CD, configuration, infrastructure, and language ecosystems.",
   "plugins": [
     {
       "name": "accessibility-plugin",
@@ -145,7 +145,7 @@
       "name": "cloud-plugin",
       "source": "./cloud-plugin",
       "description": "Cloud provider operational skills - GCP today, provider-prefixed skill names (gcp-, hetzner-)",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -205,7 +205,7 @@
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
       "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
-      "version": "1.14.4",
+      "version": "1.14.5",
       "author": {
         "name": "Lauri Gates"
       },
@@ -316,7 +316,7 @@
       "name": "documentation-plugin",
       "source": "./documentation-plugin",
       "description": "Documentation generation - API docs, README, LaTeX PDF conversion",
-      "version": "1.13.4",
+      "version": "1.14.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -412,7 +412,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.67.1",
+      "version": "2.67.4",
       "author": {
         "name": "Lauri Gates"
       },
@@ -508,7 +508,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.16.1",
+      "version": "2.17.1",
       "author": {
         "name": "Lauri Gates"
       },
@@ -679,7 +679,7 @@
     {
       "name": "prompt-engineering-plugin",
       "source": "./prompt-engineering-plugin",
-      "description": "Prompt engineering techniques for accurate, grounded Claude responses \u2014 anti-hallucination workflow with citation-backed analysis",
+      "description": "Prompt engineering techniques for accurate, grounded Claude responses — anti-hallucination workflow with citation-backed analysis",
       "version": "1.1.4",
       "author": {
         "name": "Lauri Gates"
@@ -746,7 +746,7 @@
       "name": "rust-plugin",
       "source": "./rust-plugin",
       "description": "Rust development - cargo, clippy, testing, memory safety",
-      "version": "1.7.2",
+      "version": "1.7.3",
       "author": {
         "name": "Lauri Gates"
       },
@@ -894,6 +894,30 @@
         "types"
       ],
       "category": "language"
+    },
+    {
+      "name": "video-plugin",
+      "source": "./video-plugin",
+      "description": "Video post-production with ffmpeg - YouTube chapter lines, music muxing that keeps chapters, thumbnails, frame review, chapter timeline bar and title card, beat-synced edge glow, karaoke lyrics",
+      "version": "1.0.0",
+      "author": {
+        "name": "Lauri Gates",
+        "url": "https://github.com/laurigates"
+      },
+      "license": "MIT",
+      "keywords": [
+        "video",
+        "ffmpeg",
+        "chapters",
+        "youtube",
+        "thumbnail",
+        "music",
+        "timeline",
+        "title-card",
+        "beat-tracking",
+        "karaoke"
+      ],
+      "category": "utilities"
     },
     {
       "name": "workflow-orchestration-plugin",

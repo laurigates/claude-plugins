@@ -120,8 +120,12 @@ jobs:
         run: |
           set -uo pipefail
           # --json | jq keeps the empty case exit-0 (.claude/rules/parallel-safe-queries.md).
+          # Only this sweep's own report counts as the previous run: the label
+          # also routes related chores (#2748, #2766), and counting those would
+          # switch the sweep off once the report closes (the #2729 class).
           EXISTING=$(gh issue list --label "golden-set-eval" --state open --limit 50 \
-            --json number --jq 'length')
+            --json number,title \
+            --jq '[.[] | select(.title | startswith("Golden-set cross-model sweep:"))] | length')
           if [ "$FORCE" = "true" ]; then
             echo "should_skip=false" >> "$GITHUB_OUTPUT"
           else
