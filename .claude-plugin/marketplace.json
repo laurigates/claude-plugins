@@ -919,6 +919,25 @@
         "worktree"
       ],
       "category": "automation"
+    },
+    {
+      "name": "youtube-plugin",
+      "source": "./youtube-plugin",
+      "description": "YouTube publishing - Data API v3 upload, metadata edits and thumbnails, plus YouTube Studio browser scripting for org-only sharing",
+      "version": "1.0.0",
+      "author": {
+        "name": "Lauri Gates"
+      },
+      "license": "MIT",
+      "keywords": [
+        "youtube",
+        "youtube-data-api",
+        "video-upload",
+        "youtube-studio",
+        "google-workspace",
+        "oauth"
+      ],
+      "category": "communication"
     }
   ]
 }

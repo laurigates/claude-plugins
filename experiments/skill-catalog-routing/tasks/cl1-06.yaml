@@ -1,0 +1,9 @@
+description: Cluster 1 (#2789) test-tier-selection — deciding which pyramid levels one specific change warrants, executing nothing, is the per-change decision, not a general strategy consult.
+prompt: |
+  My change touches a database migration and one React form component. Don't
+  execute anything yet — just tell me whether this warrants unit specs only, or
+  integration and end-to-end as well, given what it touches.
+gold: testing-plugin/test-tier-selection
+near_miss: testing-plugin/test-consult
+plugin: testing-plugin
+cluster: 1

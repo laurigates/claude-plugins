@@ -1,11 +1,11 @@
 ---
 name: debugging-methodology
-description: Systematic debugging for memory, performance, and system-level issues. Use when diagnosing memory leaks, tracing syscalls with strace/eBPF, profiling, or reasoning about races.
+description: Debugging for memory, performance, and system-level issues. Use when diagnosing memory leaks, tracing syscalls with strace/eBPF, profiling, finding lock contention, or reasoning about races.
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 model: opus
 created: 2025-12-27
-modified: 2026-09-24
+modified: 2026-10-29
 reviewed: 2026-04-25
 ---
 
@@ -20,6 +20,7 @@ Systematic approach to finding and fixing bugs.
 | Diagnosing a live bug, memory leak, race, or perf regression | Bug is hidden by a swallowed error → `code-hidden-failures --track errors` |
 | Reasoning about reproduction, isolation, and root cause | Bug is hidden by silent success-on-empty → `code-hidden-failures --track degradation` |
 | Choosing strace/eBPF/perf for system-level investigation | Reviewing surrounding code quality once root cause is known → `code-review` |
+| Finding where threads block: off-CPU waits, kernel lock queues, flat thread scaling | Workload runs on macOS (no `/proc`, no bpftrace) → `macos-plugin:macos-performance-triage` |
 | Documenting hypotheses and binary-searching the failure | Refactoring the buggy module after the fix → `code-refactor` |
 
 ## Core Principles
@@ -116,6 +117,17 @@ occurred. Siblings: `agent-patterns-plugin:probe-input-integrity` (an id *you*
 invent), `git-plugin:git-issue-scoping` and `git-plugin:git-upstream-fix-check`
 (don't trust the inherited framing), `agent-patterns-plugin:tool-result-traps`
 (a well-formed output that silently doesn't match reality).
+
+## Slow but Not CPU-Bound — Find Where Threads Block
+
+When wall time grows while user time stays flat, or adding threads stops
+helping, the time is spent asleep, where an on-CPU profiler does not sample.
+Compare voluntary context switches against a control
+(`/usr/bin/time -f "%e %U %S vol=%w"`), sample `/proc/<pid>/task/*/wchan`
+for blocked threads (no root), take deep off-CPU stacks with bpftrace on
+`sched:sched_switch` (root), then confirm the lock by removing your own locks
+and by changing the suspected lock's count. Method, script and a worked XFS
+example: [references/blocking-diagnosis.md](references/blocking-diagnosis.md).
 
 ## Debugging Questions
 

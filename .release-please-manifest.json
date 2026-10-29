@@ -43,5 +43,6 @@
   "session-plugin": "1.14.2",
   "software-design-plugin": "1.2.0",
   "video-plugin": "1.0.0",
-  "workflow-orchestration-plugin": "1.17.0"
+  "workflow-orchestration-plugin": "1.17.0",
+  "youtube-plugin": "1.0.0"
 }

@@ -110,5 +110,38 @@ printf 'Reviewed by Bob Jones.\n' > "$SANDBOX/names/.claude/r.md"
 printf 'Bob Jones' > "$SANDBOX/nonl.names"
 expect "F5: no-newline names entry matches under .claude/" 1 'Personal name: Bob Jones' -- --no-links --names "$SANDBOX/nonl.names" "$SANDBOX/names"
 
+# --- G: 12-digit project number vs decimal fractions (#3272) -------------------
+# '\b[0-9]{12}\b' matched the 12 fractional digits of a float ('.' is a word
+# boundary), flagging every 12-decimal measurement in a CSV fixture.
+gcp_case() { # NAME WANT(flag|clean) LINE
+  local test_name="$1" want="$2" line="$3" dir out
+  dir="$(mktemp -d "$SANDBOX/gcp.XXXXXX")"
+  printf '%s\n' "$line" > "$dir/data.txt"
+  out="$(bash "$CHECK" --no-links "$dir" 2>&1)"
+  if grep -q 'GCP project number' <<<"$out"; then
+    [[ "$want" == flag ]] && ok "$test_name" || { bad "$test_name (flagged, want clean)"; printf '%s\n' "$out" | sed 's/^/    /'; }
+  else
+    [[ "$want" == clean ]] && ok "$test_name" || { bad "$test_name (not flagged, want flag)"; printf '%s\n' "$out" | sed 's/^/    /'; }
+  fi
+}
+gcp_case "G1: 12 fractional digits are not a project number" clean 'sharp.jpg,12800.711543199157'
+gcp_case "G2: second decimal fixture row is clean" clean 'blurry.jpg,13433.692314702685'
+gcp_case "G3: number ending a sentence is flagged" flag 'Deployed to project 123456789012.'
+gcp_case "G4: bare number on its own line is flagged" flag '123456789012'
+gcp_case "G5: mid-sentence number is flagged" flag 'id 123456789012 here'
+gcp_case "G6: 12-digit integer part of a decimal is not flagged" clean 'value 123456789012.5'
+gcp_case "G7: 13-digit run is not flagged" clean 'big 1234567890123 number'
+gcp_case "G8: digits glued to letters stay unflagged (word boundary kept)" clean 'hash abc123456789012def'
+gcp_case "G9: number in a comma-separated field is flagged" flag 'name,123456789012,other'
+# The reported line is the whole source line, counted once per line.
+mkdir -p "$SANDBOX/gcpline"
+printf 'a 123456789012 b 210987654321.\n' > "$SANDBOX/gcpline/d.txt"
+out="$(bash "$CHECK" --no-links "$SANDBOX/gcpline" 2>&1)"
+if grep -qF 'GCP project number (12-digit)  (1)' <<<"$out" && grep -qF 'd.txt:1:a 123456789012 b 210987654321.' <<<"$out"; then
+  ok "G10: report prints the full line, counted once"
+else
+  bad "G10: report prints the full line, counted once"; printf '%s\n' "$out" | sed 's/^/    /'
+fi
+
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [[ "$fail" -eq 0 ]]
