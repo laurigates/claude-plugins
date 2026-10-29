@@ -1,6 +1,6 @@
 ---
 created: 2026-02-14
-modified: 2026-08-07
+modified: 2026-10-26
 reviewed: 2026-08-07
 ---
 
@@ -58,16 +58,26 @@ a wrong one mislabels every package the commit touched (`code-quality-plugin`
 release. To keep a plugin unpublished, change no files under its directory, or
 use a type that does not bump.
 
-## Merge strategy decides which text is parsed
+## Merge method decides which text is parsed
 
-| Strategy | release-please reads | PR title | PR body |
-|----------|---------------------|----------|---------|
-| Squash (repo default: PR title + description) | One commit: title as subject, body as body | Decides the bump | Parsed — `BREAKING CHANGE:`, `Release-As:`, and footer lines like `fix(x): …` all take effect |
-| Rebase / merge commit | Every branch commit individually | Ignored | Ignored |
+Rebase is the default; a PR squashes when the decision rule in
+`git-plugin/skills/github-pr-title/merge-strategies.md` gives a reason
+(one commit, merge commits, fixups or churn, a single concern, an in-PR
+correction, a bot or release PR).
 
-So under squash, write the PR body as a commit body (prose + footers, no
-checklists), and retitle a releasable PR before merge. Details and post-merge
-repair: `git-plugin/skills/github-pr-title/merge-strategies.md`.
+| Method | release-please reads | PR title | PR body |
+|--------|---------------------|----------|---------|
+| Squash | One commit: title as subject, the branch commits' messages as body (this repo's `squash_merge_commit_message` is `COMMIT_MESSAGES`) | Decides the bump | Ignored here; parsed on `PR_BODY` repos, where `BREAKING CHANGE:`, `Release-As:`, and footer lines like `fix(x): …` all take effect |
+| Rebase | Every branch commit individually | Ignored | Ignored |
+
+So every commit on a PR branch must be conventional and correctly scoped (it
+lands as-is under rebase), the PR title must be too (it lands under squash),
+and the PR body is written as a commit body (prose + footers, no checklists).
+This repo squashes with `COMMIT_MESSAGES`, set in laurigates/gitops `main.tf`
+for every release-please repo; laurigates/gitops#318 moves it to `PR_BODY`
+once release-please-action ships the fix for laurigates/.github#40, and the
+body then lands verbatim. Details, the repo settings, and post-merge repair
+are in the same file.
 
 ## Issue references
 

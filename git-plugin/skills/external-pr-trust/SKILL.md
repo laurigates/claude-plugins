@@ -3,7 +3,7 @@ name: external-pr-trust
 description: Authorship as a precondition of merging — bot vs stranger classification, what a merge executes, the merge-guard hook. Use when bulk-merging PRs, or when a merge is denied for a non-self author.
 allowed-tools: Read, Grep, Glob, Bash(gh pr view *), Bash(gh pr list *), Bash(gh pr diff *), Bash(gh api *), Bash(gh search *), TodoWrite
 created: 2026-09-24
-modified: 2026-09-24
+modified: 2026-10-27
 reviewed: 2026-09-24
 ---
 
@@ -90,7 +90,11 @@ it. Instead:
    or dependency, say where the code comes from, whether the ref is a **commit
    SHA or a mutable tag**, and what it downloads or transmits at runtime.
 2. **Hand the merge back.** `ghsq -x` (which will demand the typed confirmation),
-   or `gh pr merge <n> --squash --delete-branch` run by the human.
+   or `gh pr merge <n> --squash --delete-branch` run by the human. Bot PRs
+   squash under the merge-method rule (`github-pr-title` →
+   [merge-strategies.md](../github-pr-title/merge-strategies.md)); a
+   stranger's multi-commit PR may get rebase instead, so read the method the
+   script reports before handing over the command.
 
 ## A bulk merge must issue one literal PR number per call
 
@@ -124,6 +128,15 @@ before the first merge.
 The constraint is a feature, not friction to route around: it is what stops a
 stranger's PR from riding the same reflex. Do not build a helper that hides the
 number from the hook — that is the bypass the guard exists to prevent.
+
+`git-merge-hazards`' `scripts/merge-chain.sh` is not such a helper. It merges an
+ordered list of already-verified PRs, and its `--repo` and `--prs` are literal
+text in the command, so the guard reads them and checks every listed PR like a
+literal `gh pr merge` before the script runs (an unreadable list is denied). The
+script repeats the authorship check inside as a second layer: it merges only
+PRs authored by the `gh api user` login or a bot, skips any other author and any
+PR whose author cannot be read, and stops before touching a PR when its own
+login cannot be read. Pass it the PR numbers as literals, never `--prs "$X"`.
 
 The denial names the fix — "resolve shell variables to their literal values
 first … then merge with literal values one at a time" — so the recovery costs

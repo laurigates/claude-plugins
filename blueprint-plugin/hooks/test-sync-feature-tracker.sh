@@ -13,6 +13,8 @@
 #   - FR-NNN ids (object keys or array records) match like FRn / FRn.m (#3001)
 #   - completion_percentage is round(complete/total*1000)/10 and the written
 #     statistics pass blueprint-tracker-check.sh with zero divergence (#3001)
+#   - a pre-existing updated_at is set to the same date as last_updated, and
+#     is never added to a tracker that lacks it (#3232)
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -235,6 +237,33 @@ stats_pct=$(jq -r '.statistics.completion_percentage' "$proj/docs/blueprint/feat
 [ "$stats_pct" = "66.7" ] && ok "L: 2/3 completion is 66.7" || notok "L: completion=$stats_pct (want 66.7)"
 div=$(checker_divergence "$proj")
 [ "$div" = "0" ] && ok "L: FRn.m tracker agrees with tracker-check" || notok "L: tracker-check divergence=$div"
+rm -rf "$proj"
+
+# ---- #3232: a tracker carrying updated_at keeps it in step with last_updated ----
+# A consumer tracker with both fields had only last_updated bumped, so its
+# doc-drift check failed with "two update timestamps disagree".
+# Test M: updated_at present -> set to the same date as last_updated
+proj=$(make_project 1)
+jq '.updated_at = "2026-01-01"' "$proj/docs/blueprint/feature-tracker.json" \
+    > "$proj/docs/blueprint/feature-tracker.json.tmp" \
+    && mv "$proj/docs/blueprint/feature-tracker.json.tmp" "$proj/docs/blueprint/feature-tracker.json"
+write_prp "$proj" FR1.1
+run_hook "$proj" "docs/prps/fixture.md" X=1
+m_last=$(tracker_last "$proj")
+m_upd=$(jq -r '.updated_at' "$proj/docs/blueprint/feature-tracker.json")
+[ "$m_last" != "2026-01-01" ] && ok "M: last_updated refreshed" || notok "M: last_updated stale"
+[ "$m_upd" = "$m_last" ] && ok "M: updated_at matches last_updated" || notok "M: updated_at=$m_upd last_updated=$m_last"
+rm -rf "$proj"
+
+# Test N: no updated_at -> none added (schema defines only last_updated)
+proj=$(make_project 1)
+write_prp "$proj" FR1.1
+run_hook "$proj" "docs/prps/fixture.md" X=1
+if jq -e 'has("updated_at")' "$proj/docs/blueprint/feature-tracker.json" >/dev/null 2>&1; then
+    notok "N: updated_at was added to a tracker that lacked it"
+else
+    ok "N: no updated_at key added"
+fi
 rm -rf "$proj"
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"

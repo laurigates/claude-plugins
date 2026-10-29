@@ -11,7 +11,7 @@ Moved verbatim from `SKILL.md`. Compact `gh` commands for each triage operation.
 | PR check bucket summary | `gh pr checks <n> --repo $REPO --json name,state,conclusion,bucket` |
 | Single PR merge state | `gh pr view <n> --repo $REPO --json mergeable,mergeStateStatus` |
 | Close with evidence | `gh issue close <n> --repo $REPO --comment "<reason + PR ref>"` |
-| Squash-merge when green | `gh pr merge <n> --repo $REPO --squash --auto` |
+| Merge when green | `gh pr merge <n> --repo $REPO --<method> --auto` (method: `pr-merge-method.py`, see `guarded-writes.md`) |
 
 ## See Also
 

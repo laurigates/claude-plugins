@@ -1,6 +1,6 @@
 {
-  "lastCheckedVersion": "2.1.303",
-  "lastCheckedDate": "2026-10-19",
+  "lastCheckedVersion": "2.1.310",
+  "lastCheckedDate": "2026-10-26",
   "rewindNote": "Rewound from 2.1.257 to 2.1.185 on 2026-09-03. The excerpt is sliced from lastCheckedVersion forward, so the pointer must name the last version a review actually covered. 2.1.257 was written by the Fable 5.1 adaptation sweep (docs/audits/fable-5.1-adaptation-2026-09-02.md), whose declared window was 2.1.232-2.1.257 -- it advanced the pointer past 46 versions it never read. The automated changelog review had already gone silent after 2.1.185: 22 successful runs, 13 consecutive filing nothing, last tracking issue #1733 (2026-06-21). The blind spot's confirmed casualty was the subagent nesting ceiling in .claude/rules/agent-development.md, which instructed 5 levels after 2.1.217 disabled nesting by default and 2.1.219 set it to 3. CORRECTED 2026-09-16: that line was already fixed on 2026-09-02 (the file now carries a depth-3 default with a per-version history table); the fix and this note crossed in flight, so the 2.1.241 entry's claim that the rule 'still claims 5 levels' was stale when written. The rewind itself was still correct -- the unread ranges were real, and reviewing them found 6 further stale assertions the pointer had hidden.",
   "knownUnreviewedRanges": [
     {
@@ -30,6 +30,35 @@
   ],
   "changelogUrl": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
   "reviewedChanges": [
+    {
+      "version": "2.1.310",
+      "date": "2026-10-26",
+      "windowed": false,
+      "relevantChanges": [
+        "HIGH: skill hooks capped per source (repo, own folder, or plugin) at 1,024 hooks and 16,384 matcher characters per session; under a plugins-only hooks policy a main-conversation skill whose hooks are kept out loses its allowed-tools (2.1.304)",
+        "HIGH: Windows hook fail-open fixes - PreToolUse/PermissionRequest with quoted-string-only commands and no Git Bash (2.1.310), shell: powershell hooks without Git for Windows (2.1.309); PowerShell hooks now block on exit 2 (2.1.309)",
+        "HIGH: Bash permission bypasses fixed (redirect-can-fail variable trust, wrapped/prefixed cd before git, Edit(path) deny vs a redirect in a command with a subshell, PowerShell Set-Location) (2.1.309); sed -i now gets the standard Bash prompt with no simulated edit preview, and /rewind no longer restores it (2.1.309)",
+        "HIGH: sandbox security fixes - shell startup files ran outside the sandbox before each command, macOS denyWrite via symlinked folder, Linux write denies lifting after a background command outlived the session (2.1.309); new sandbox.allowNestedUserNamespaces, which upstream warns weakens file protections (2.1.305); excludedCommands ask before writing to write-list paths, and the unsandboxed fallback is refused, when the sandbox is enabled but cannot run (2.1.309)",
+        "HIGH: split-pane agent teammates now inherit the leader's tool deny rules and --tools rules (2.1.309); fork subagents launched together are told which launch is their own (2.1.307)",
+        "HIGH: allowedMcpServers no longer filters managed-mcp.json stdio servers that use ${VAR} only in env, so a server the allowlist left out loads on upgrade - use deniedMcpServers (2.1.305); Desktop path-mounted plugins lose allowed-tools under allowManagedPermissionRulesOnly (2.1.305); the --mcp-config file is protected from sandboxed commands and auto-accepted edits (2.1.309)",
+        "Workflow resume no longer re-runs completed pipeline()/parallel() agents; they are served from the journal (2.1.305) - bears on the #1868 re-dispatch-instead-of-resume guidance",
+        "Worktree isolation guard refuses locale-prefixed and zsh arithmetic commands; worktrees ignore git replace refs and skip on-demand object fetches (2.1.309); bare-repo worktrees start from the default branch and unchanged subagent worktrees are cleaned up (2.1.305); claude --worktree no longer removes the worktree and branch at exit without asking when HEAD is detached (2.1.304)",
+        "Skills: compaction re-sends the skill list and /reload-skills sends only new or changed skills (2.1.304); an --add-dir skill whose name is taken is offered as <folder>:<name> (2.1.309); skill once-hook cross-removal fixed (2.1.304)",
+        "Hooks misc: PreToolUse deny reason no longer replaced by an SDK callback-hook timeout error, plugin can no longer keep a headless run going past --max-turns (2.1.304); claude_code.safety_event OTel event (2.1.307); Monitor tool and plugin monitors on Bedrock/Vertex/Foundry and telemetry-off (2.1.310)",
+        "Claude Mods: tool.check decider: \"person\" and e.isReadOnly, settings.read hooks receive each settings layer, transcript line when a plugin skips a mod's hook, and claude plugin validate drops its mod-hook placement notes (2.1.304)",
+        "Permissions misc: dangerous rm/rmdir in bypass mode on Desktop/VS Code denied at once with a rewrite hint (2.1.309); rm -r of a mounted drive or top-level folder now prompts (2.1.304); claude ultrareview requires workspace trust (--trust-workspace / CLAUDE_CODE_DISABLE_ULTRAREVIEW_TRUST_CHECK=1) (2.1.309); /auto-mode-setup (2.1.304)",
+        "Context: a nested CLAUDE.md over the size limit loads only its start (2.1.309); MCP HTTP tool calls retried only when read-only or idempotent (2.1.307)",
+        "No deprecated identifiers referenced in repo code; the only removals (claude plugin validate mod-hook notes, the /fast research-preview label) are not referenced. Remaining bulk of the window is VS Code, Claude Tag, Code Review, cloud-session, self-hosted-runner and TUI fixes"
+      ],
+      "actionsRequired": [
+        "See issue #3238 for the rule update plan",
+        "No rule files were edited by this triage run; the tracking issue groups the bullets by file",
+        "Files needing follow-up edits: hooks-reference.md, skill-development.md, agent-development.md, agent-runtime.md, agentic-permissions.md (+ auto-mode.md), plugin-structure.md, sandbox-guidance.md, plus context-engineering.md, bash-tool-replacements.md, agent-coworker-detection.md / parallel-agent-dispatch, and the MCP-facing skills (mcp-management, configure-mcp)",
+        "Top follow-ups: document the skill hook cap (2.1.304), the Windows hook fail-open fixes beside the existing fail-closed notes (2.1.309/2.1.310), sandbox.allowNestedUserNamespaces and the startup-file escape fix (2.1.305/2.1.309), the allowedMcpServers behaviour change (2.1.305), and re-check the Workflow-resume anti-pattern against the 2.1.305 journal fix",
+        "Deprecated-identifier list was empty this run; no deprecations or renames in the window name anything referenced in the repo",
+        "Tracking issue #3238, as read back by the workflow: labels present: changelog-review, maintenance; assignee laurigates present"
+      ]
+    },
     {
       "version": "2.1.303",
       "date": "2026-10-19",

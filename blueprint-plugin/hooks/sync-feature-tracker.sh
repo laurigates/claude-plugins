@@ -7,8 +7,9 @@
 #
 # Bounded auto-apply on an unambiguous fact only: when the changed document
 # references feature codes that ALREADY EXIST in the tracker, refresh the
-# tracker's last_updated date and recompute the statistics block (a pure
-# function of the tracker itself). It never creates feature codes and never
+# tracker's last_updated date (and updated_at, only when the tracker already
+# carries that key, so the two never disagree; it is never added) and
+# recompute the statistics block (a pure function of the tracker itself). It never creates feature codes and never
 # changes a feature's status — those need judgment and stay with
 # /blueprint:feature-tracker-sync (p1 plan, Open Question 1).
 #
@@ -119,7 +120,7 @@ if [ -z "$matched" ] || [ "$matched" = "0" ]; then
     exit 0
 fi
 
-# Refresh last_updated and recompute statistics over the same record set and
+# Refresh last_updated (plus a pre-existing updated_at, #3232) and recompute statistics over the same record set and
 # with the same completion formula blueprint-tracker-check.sh verifies:
 # round(complete/total*1000)/10, one decimal place (51/52 -> 98.1, 1/2 -> 50).
 today=$(date -u +%Y-%m-%d)
@@ -127,6 +128,7 @@ jq --arg today "$today" "${JQ_DEFS}"'
     [.features // null | recs] as $feats |
     ([$feats[] | select(.status == "complete")] | length) as $done |
     .last_updated = $today |
+    (if has("updated_at") then .updated_at = $today else . end) |
     .statistics = {
         total_features: ($feats | length),
         complete: $done,

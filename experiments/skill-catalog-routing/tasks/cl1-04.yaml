@@ -1,0 +1,9 @@
+description: Cluster 1 (#2789) test-full — every level in pyramid order plus coverage before a commit is the all-tier pass, not the fast unit subset.
+prompt: |
+  Before I commit, exercise every level of the pyramid in order: unit first,
+  then integration, then end-to-end in the browser. Generate coverage numbers
+  at the end too. Don't skip anything, however slow it is.
+gold: testing-plugin/test-full
+near_miss: testing-plugin/test-quick
+plugin: testing-plugin
+cluster: 1

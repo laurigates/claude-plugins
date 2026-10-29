@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.55.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.55.0...agent-patterns-plugin-v2.55.1) (2026-10-29)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** record PAL review timeouts, the OpenCode Go usage cap and unreliable high findings ([#3240](https://github.com/laurigates/claude-plugins/issues/3240)) ([cc051f3](https://github.com/laurigates/claude-plugins/commit/cc051f39d11d30e285c597bd8ec814146ab3a56b))
+* record workflow landing, external-review and merge-pin learnings ([#3267](https://github.com/laurigates/claude-plugins/issues/3267)) ([854cbd6](https://github.com/laurigates/claude-plugins/commit/854cbd6c0f7dab29897c10e8351e5ba6b0133a8a))
+
+## [2.55.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.54.0...agent-patterns-plugin-v2.55.0) (2026-10-27)
+
+
+### Features
+
+* **agent-patterns-plugin:** add recon-map workflow template to verify-before-plan ([#3245](https://github.com/laurigates/claude-plugins/issues/3245)) ([c45f12b](https://github.com/laurigates/claude-plugins/commit/c45f12bb54969d8490d761c24e79fea24acb92db))
+
+## [2.54.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.53.0...agent-patterns-plugin-v2.54.0) (2026-10-27)
+
+
+### Features
+
+* **agent-patterns-plugin:** ship find-verify and design-review harnesses for adversarial-review ([#3243](https://github.com/laurigates/claude-plugins/issues/3243)) ([73ad28b](https://github.com/laurigates/claude-plugins/commit/73ad28b444c262c5687f6fdd3448d81f1b20c51a))
+
 ## [2.53.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.52.1...agent-patterns-plugin-v2.53.0) (2026-10-23)
 
 
