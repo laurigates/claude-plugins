@@ -1,0 +1,9 @@
+description: Cluster 1 (#2789) test-report — last-run pass/fail counts and existing coverage for a standup, explicitly no re-execution, is the cached-results view rather than the runner.
+prompt: |
+  Standup is in five minutes. What were the pass/fail counts and the coverage
+  percentage from the last time the suite executed, and has anything been
+  flaky lately? Don't kick off a new execution — use what's already there.
+gold: testing-plugin/test-report
+near_miss: testing-plugin/test-run
+plugin: testing-plugin
+cluster: 1
