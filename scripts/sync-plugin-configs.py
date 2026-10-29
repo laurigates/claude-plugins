@@ -107,9 +107,15 @@ def load_marketplace(repo_root: Path) -> dict:
 
 
 def save_json(path: Path, data: dict, sort_keys: bool = False) -> None:
-    """Save JSON file with consistent formatting."""
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2, sort_keys=sort_keys)
+    """Save JSON file with consistent formatting.
+
+    Non-ASCII text is written as-is (ensure_ascii=False), which is what
+    release-please's JSON writer produces when it updates marketplace.json.
+    With escapes, every release PR would also rewrite each `\\u2014` in a
+    description to a literal em dash, and the next --fix would undo it.
+    """
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, sort_keys=sort_keys, ensure_ascii=False)
         f.write("\n")
 
 
@@ -122,18 +128,35 @@ def infer_category(keywords: list[str]) -> str:
     return "development"  # Default category
 
 
+def expected_extra_files(plugin_name: str) -> list[dict]:
+    """The extra-files every plugin package needs in release-please-config.json.
+
+    The second entry makes release-please bump the plugin's own entry in the
+    root marketplace.json (a leading `/` is relative to the repo root, not the
+    package). Without it the first head of every release PR failed the
+    required `validate` check with a manifest/marketplace version mismatch
+    until the `sync-release-pr` job pushed a fix-up commit.
+    """
+    return [
+        {
+            "type": "json",
+            "path": ".claude-plugin/plugin.json",
+            "jsonpath": "$.version",
+        },
+        {
+            "type": "json",
+            "path": "/.claude-plugin/marketplace.json",
+            "jsonpath": f"$.plugins[?(@.name=='{plugin_name}')].version",
+        },
+    ]
+
+
 def create_release_please_package_config(plugin_name: str) -> dict:
     """Create a release-please package configuration for a plugin."""
     return {
         "component": plugin_name,
         "release-type": "simple",
-        "extra-files": [
-            {
-                "type": "json",
-                "path": ".claude-plugin/plugin.json",
-                "jsonpath": "$.version",
-            }
-        ],
+        "extra-files": expected_extra_files(plugin_name),
         "changelog-sections": DEFAULT_CHANGELOG_SECTIONS,
     }
 
@@ -167,6 +190,7 @@ def check_sync(repo_root: Path) -> tuple[list[str], dict]:
         "add_to_marketplace": [],
         "remove_from_marketplace": [],
         "version_mismatches": [],
+        "missing_extra_files": [],
     }
 
     # Load all data
@@ -193,6 +217,19 @@ def check_sync(repo_root: Path) -> tuple[list[str], dict]:
             f"Orphaned entry '{name}' in release-please-config.json (plugin directory not found)"
         )
         fixes["remove_from_release_config"].append(name)
+
+    # Check every package's extra-files still bump plugin.json and its own
+    # marketplace.json entry
+    packages = release_config.get("packages", {})
+    for name in sorted(plugin_names & release_config_packages):
+        present = packages[name].get("extra-files", [])
+        missing = [e for e in expected_extra_files(name) if e not in present]
+        for entry in missing:
+            issues.append(
+                f"Package '{name}' in release-please-config.json is missing extra-file {entry['path']} ({entry['jsonpath']})"
+            )
+        if missing:
+            fixes["missing_extra_files"].append(name)
 
     # Check for plugins missing from .release-please-manifest.json
     missing_from_manifest = plugin_names - manifest_plugins
@@ -262,8 +299,21 @@ def apply_fixes(repo_root: Path, fixes: dict) -> None:
     modified_files = []
 
     # Fix release-please-config.json
-    if fixes["add_to_release_config"] or fixes["remove_from_release_config"]:
+    if (
+        fixes["add_to_release_config"]
+        or fixes["remove_from_release_config"]
+        or fixes["missing_extra_files"]
+    ):
         packages = release_config.get("packages", {})
+
+        for name in fixes["missing_extra_files"]:
+            extra_files = packages[name].setdefault("extra-files", [])
+            for entry in expected_extra_files(name):
+                if entry not in extra_files:
+                    extra_files.append(entry)
+            print(
+                f"  Added missing extra-files to '{name}' in release-please-config.json"
+            )
 
         for name in fixes["add_to_release_config"]:
             packages[name] = create_release_please_package_config(name)
@@ -274,8 +324,10 @@ def apply_fixes(repo_root: Path, fixes: dict) -> None:
                 del packages[name]
                 print(f"  Removed '{name}' from release-please-config.json")
 
-        # Sort packages alphabetically
-        release_config["packages"] = dict(sorted(packages.items()))
+        # Sort packages alphabetically when the package set changed; an
+        # extra-files repair alone keeps the existing order.
+        if fixes["add_to_release_config"] or fixes["remove_from_release_config"]:
+            release_config["packages"] = dict(sorted(packages.items()))
         save_json(repo_root / "release-please-config.json", release_config)
         modified_files.append("release-please-config.json")
 

@@ -45,9 +45,20 @@ echo "=== TEST: workflow_changed is computed from a diff of this workflow file =
 assert "diff targets plugin-pr-checks.yml" \
   "$(contains 'plugin-pr-checks\.yml')"
 
-echo "=== TEST: Claude review step is gated on workflow_changed ==="
-assert "Claude review if-condition references workflow_changed" \
-  "$(contains_fixed "steps.changed.outputs.workflow_changed != 'true'")"
+# Since the review moved to the `skill-review` job, the gate is the
+# "Decide whether the Claude skill review runs" step in `compliance`: it reads
+# workflow_changed and sets the `skill_review` output the job's `if:` checks.
+# scripts/tests/test-skill-review-gate.sh runs that step and covers the
+# workflow_changed=true case behaviourally.
+echo "=== TEST: Claude review is gated on workflow_changed ==="
+# shellcheck disable=SC2016 # literal GitHub expression and shell text, not expansions
+assert "the review gate step reads workflow_changed" \
+  "$(contains_fixed 'WORKFLOW_CHANGED: ${{ steps.changed.outputs.workflow_changed }}')"
+# shellcheck disable=SC2016
+assert "the review gate does not run the review when the workflow changed" \
+  "$(contains_fixed '[ "$WORKFLOW_CHANGED" = "true" ]')"
+assert "the skill-review job is gated on the review gate output" \
+  "$(contains_fixed "needs.compliance.outputs.skill_review == 'true'")"
 
 echo
 echo "Passed: $pass_count  Failed: $fail_count"
