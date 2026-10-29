@@ -296,6 +296,22 @@ Known gaps: bare `git branch <name>` is deliberately out of scope (listing/delet
 
 **Tests:** `bash hooks-plugin/hooks/test-branch-base-guard.sh` (hermetic — fixture repos under `mktemp -d`).
 
+### worktree-location-guard.sh
+
+A PreToolUse hook that denies a hand-rolled `git worktree add` whose path lands outside the target repo's `<repo>/.claude/worktrees/`. Claude Code creates its own worktrees there; a sibling such as `../<repo>-wt-<task>` has no cleanup lifecycle and outlives its merged PR. The hook resolves the repo from `git -C <dir>` first, so a session working on another repo is pointed at *that* repo's `.claude/worktrees/`.
+
+| Aspect | Detail |
+|--------|--------|
+| Tier | **Deny** (`permissionDecision: "deny"`) with the corrected command in the reason. The fix is the same command with a different path, so the agent is never dead-ended, and no permission prompt reaches the user |
+| Fires on | `git [-C <dir>] worktree add … <path>` |
+| Allowed | `<main-repo>/.claude/worktrees/<name>` (resolved from `--git-common-dir`, so a session inside a linked worktree targets the main repo), and scratch worktrees under `$TMPDIR`, `/tmp`, `/private/tmp`, `/var/folders` |
+| Denied | Any other path, including a path nested inside another linked worktree |
+| Silent | Unresolvable paths (`$VAR`, `$(…)`, globs), quoted mentions, other `worktree` subcommands, non-repo cwd, remote-exec |
+
+**Toggle:** `export CLAUDE_HOOKS_DISABLE_WORKTREE_LOCATION_GUARD=1` in your shell environment. An inline prefix is intentionally ignored.
+
+**Tests:** `bash hooks-plugin/hooks/test-worktree-location-guard.sh` (fixture repos under `$HOME/.cache`, since the hook exempts temp dirs).
+
 ### external-pr-merge-guard.sh
 
 A PreToolUse hook that refuses to let an agent merge a pull request authored by anyone other than the authenticated user or a bot.
@@ -737,6 +753,7 @@ Every hook can be individually enabled or disabled via environment variables. Se
 | branch-protection.sh | `CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1` | Enabled |
 | repo-deletion-safety.sh | `CLAUDE_HOOKS_DISABLE_REPO_DELETION_SAFETY=1` | Enabled |
 | branch-base-guard.sh | `CLAUDE_HOOKS_DISABLE_BRANCH_BASE_GUARD=1` | Enabled |
+| worktree-location-guard.sh | `CLAUDE_HOOKS_DISABLE_WORKTREE_LOCATION_GUARD=1` | Enabled |
 | external-pr-merge-guard.sh | `CLAUDE_HOOKS_DISABLE_EXTERNAL_PR_MERGE=1` | Enabled |
 | auto-checkpoint.sh | `CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT=1` | Enabled |
 | permission-auto-approve.sh | `CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO=1` | Enabled |

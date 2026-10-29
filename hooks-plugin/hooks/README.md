@@ -734,3 +734,65 @@ Always **0**. The nudge is signalled by a `PreToolUse`
 `permissionDecision: "ask"` JSON envelope on stdout; absence of output means
 "allow silently". This hook deliberately does not use the `block()` / exit-2
 convention.
+
+## worktree-location-guard.sh
+
+A PreToolUse hook that denies a hand-rolled `git worktree add` whose path lands
+outside the target repo's `<repo>/.claude/worktrees/` — the directory Claude
+Code's own worktrees use, and the one `just -g worktree-audit` treats as `ok`.
+
+### Why This Hook Exists
+
+A worktree created by `EnterWorktree` has a lifecycle; one created by hand in
+Bash has none. The older convention `git worktree add ../<repo>-<task>` therefore
+leaves sibling checkouts that outlive their merged PRs. A 2026-10-29 sweep of
+`~/repos` found 12 such siblings (`infrastructure-wt-*`, `claude-plugins-wt-*`,
+…), all but one with a merged PR. Most came from sessions editing a repo other
+than their own, where `EnterWorktree` cannot help, so the hook resolves the repo
+from `git -C <dir>` before the hook input's `cwd`.
+
+It **denies** rather than asks. The corrected command differs only in its path,
+so the agent can always retry (no dead-end, `.claude/rules/hook-block-vs-nudge.md`
+test 3), and an `ask` would put a permission prompt in front of the user for a
+fix the agent can make itself.
+
+### Rules
+
+- **Allowed:** `<main-repo>/.claude/worktrees/<name>`. The main repo is resolved
+  from `--git-common-dir`, so a session inside a linked worktree is pointed at
+  the main repo's directory rather than its own.
+- **Allowed:** scratch worktrees under `$TMPDIR`, `/tmp`, `/private/tmp`,
+  `/var/folders` (the detached verification worktrees in
+  `git-plugin:git-merge-hazards`).
+- **Denied:** everything else, including a path nested inside another linked
+  worktree.
+- **Silent:** paths the hook cannot resolve without the shell (`$VAR`, `$(…)`,
+  backticks, globs), quoted mentions, other `worktree` subcommands, a non-repo
+  cwd, and `ssh`/`docker`/`podman`/`kubectl`/`nerdctl` remote-exec.
+
+Both sides are canonicalised (deepest existing ancestor through `pwd -P`) before
+comparison, so `..`, `~` and macOS's `/tmp` → `/private/tmp` symlink compare
+correctly.
+
+### Configuration
+
+| Variable | Default | Effect |
+|----------|---------|--------|
+| `CLAUDE_HOOKS_DISABLE_WORKTREE_LOCATION_GUARD` | unset | `1` disables the hook. Honored only from the operator's exported shell environment |
+
+### Testing
+
+```bash
+bash hooks-plugin/hooks/test-worktree-location-guard.sh   # 35 passed, 0 failed
+```
+
+The suite builds its fixture repos under `$HOME/.cache`, not `mktemp -d`: the
+hook exempts temp dirs, so fixtures there would be allowed wholesale. It
+extracts the suggested fix from the deny message and re-feeds it, asserting the
+hook allows its own correction.
+
+### Exit Codes
+
+Always **0**. The deny is signalled by a `PreToolUse`
+`permissionDecision: "deny"` JSON envelope on stdout. This hook deliberately
+does not use the `block()` / exit-2 convention.
