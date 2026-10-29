@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.16.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.16.0...hooks-plugin-v2.16.1) (2026-10-29)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** deny merge forms the guard parser missed ([ba68a2c](https://github.com/laurigates/claude-plugins/commit/ba68a2c402db9242866773e86202662a5ac17d90)), closes [#3262](https://github.com/laurigates/claude-plugins/issues/3262)
+* **hooks-plugin:** match secret-print verbs only at command position ([#3275](https://github.com/laurigates/claude-plugins/issues/3275)) ([d62f73e](https://github.com/laurigates/claude-plugins/commit/d62f73e2d0a593c37574bf7f0bd1100c3948dac3)), closes [#3271](https://github.com/laurigates/claude-plugins/issues/3271)
+* **hooks-plugin:** scope the test-output grep-chain block to one pipeline ([#3242](https://github.com/laurigates/claude-plugins/issues/3242)) ([152ece3](https://github.com/laurigates/claude-plugins/commit/152ece33eb9cca7e7b2d41a0af7afd5f72d9ae5f)), closes [#3236](https://github.com/laurigates/claude-plugins/issues/3236)
+
 ## [2.16.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.15.5...hooks-plugin-v2.16.0) (2026-10-27)
 
 

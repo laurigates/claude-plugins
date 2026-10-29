@@ -268,6 +268,44 @@
         }
       ]
     },
+    "cloud-plugin": {
+      "component": "cloud-plugin",
+      "release-type": "simple",
+      "extra-files": [
+        {
+          "type": "json",
+          "path": ".claude-plugin/plugin.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "/.claude-plugin/marketplace.json",
+          "jsonpath": "$.plugins[?(@.name=='cloud-plugin')].version"
+        }
+      ],
+      "changelog-sections": [
+        {
+          "type": "feat",
+          "section": "Features"
+        },
+        {
+          "type": "fix",
+          "section": "Bug Fixes"
+        },
+        {
+          "type": "perf",
+          "section": "Performance"
+        },
+        {
+          "type": "refactor",
+          "section": "Code Refactoring"
+        },
+        {
+          "type": "docs",
+          "section": "Documentation"
+        }
+      ]
+    },
     "code-quality-plugin": {
       "component": "code-quality-plugin",
       "release-type": "simple",
@@ -1649,6 +1687,44 @@
           "type": "json",
           "path": "/.claude-plugin/marketplace.json",
           "jsonpath": "$.plugins[?(@.name=='software-design-plugin')].version"
+        }
+      ],
+      "changelog-sections": [
+        {
+          "type": "feat",
+          "section": "Features"
+        },
+        {
+          "type": "fix",
+          "section": "Bug Fixes"
+        },
+        {
+          "type": "perf",
+          "section": "Performance"
+        },
+        {
+          "type": "refactor",
+          "section": "Code Refactoring"
+        },
+        {
+          "type": "docs",
+          "section": "Documentation"
+        }
+      ]
+    },
+    "youtube-plugin": {
+      "component": "youtube-plugin",
+      "release-type": "simple",
+      "extra-files": [
+        {
+          "type": "json",
+          "path": ".claude-plugin/plugin.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "/.claude-plugin/marketplace.json",
+          "jsonpath": "$.plugins[?(@.name=='youtube-plugin')].version"
         }
       ],
       "changelog-sections": [
