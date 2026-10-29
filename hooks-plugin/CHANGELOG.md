@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.16.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.15.5...hooks-plugin-v2.16.0) (2026-10-27)
+
+
+### Features
+
+* **hooks-plugin:** check every PR merge-chain.sh would merge in external-pr-merge-guard ([#3260](https://github.com/laurigates/claude-plugins/issues/3260)) ([ae941e9](https://github.com/laurigates/claude-plugins/commit/ae941e90f6a1d0c535dc6d3c37bd2f609a8753ea))
+
 ## [2.15.5](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.15.4...hooks-plugin-v2.15.5) (2026-10-24)
 
 

@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-10-05
+modified: 2026-10-24
 reviewed: 2026-09-04
 description: "Security scanning: dependency automation, SAST, secrets detection. Use when setting up Renovate/Dependabot, CodeQL, or TruffleHog in CI, or creating a SECURITY.md policy."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -81,6 +81,10 @@ probe's opt-out/timeout env vars are in
 [references/detection-output.md](references/detection-output.md) — read it when
 interpreting an unexpected key or reason.
 
+`GITLEAKS_RULES` is the secret-detection verdict, not `GITLEAKS_CONFIG`: `none`
+means `.gitleaks.toml` exists but loads zero rules (`inert_secret_detection`), so
+every gitleaks scan reading it reports no leaks.
+
 ### Step 3: Generate compliance report
 
 Print a formatted compliance report showing status for each security component across dependency auditing, SAST scanning, secret detection, and security policies.
@@ -137,7 +141,7 @@ For CodeQL workflow and Bandit configuration templates, see [REFERENCE.md](REFER
 ### Step 6: Configure secret detection (if --fix or user confirms)
 
 1. Install gitleaks: `brew install gitleaks` (or `go install github.com/gitleaks/gitleaks/v8@latest`)
-2. Create `.gitleaks.toml` with project-specific allowlists
+2. Create `.gitleaks.toml` that starts with `[extend] useDefault = true`, then add project-specific allowlists. On `GITLEAKS_RULES=none`, add that block to the existing file
 3. Run initial scan: `gitleaks detect --source .`
 4. Add pre-commit hook to `.pre-commit-config.yaml`
 5. Optionally configure TruffleHog workflow for CI

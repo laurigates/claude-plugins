@@ -1,0 +1,9 @@
+description: Cluster 1 (#2789) test-quick — unit-level only, limited to what changed since the last commit, under half a minute, is the fast unit subset rather than the generic runner.
+prompt: |
+  I tweaked a couple of helper functions. Give me a sanity pass over just the
+  unit-level specs affected since my last commit — leave out integration and
+  end-to-end entirely. I want an answer in under thirty seconds.
+gold: testing-plugin/test-quick
+near_miss: testing-plugin/test-run
+plugin: testing-plugin
+cluster: 1

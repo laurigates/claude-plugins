@@ -355,9 +355,28 @@ a hook error is non-blocking, so dying would let the merge run; the trap keeps
 that closed on every client. The hook is kept bash-3.2 clean (no `mapfile`, `declare -A`, `${v,,}`, …)
 because macOS `/bin/bash` is 3.2.
 
+**`merge-chain.sh` (git-plugin).** The script merges a PR list with gh calls
+the hook never sees, so the hook reads the list from the invocation and checks
+every PR before the script runs: `merge-chain.sh --repo OWNER/REPO --prs
+219,220 …` is checked like `gh pr merge 219 -R OWNER/REPO && gh pr merge 220 -R
+OWNER/REPO`, and one disallowed author denies the whole command, naming that
+PR. It is recognised as `merge-chain.sh …`, `./…/merge-chain.sh …`, a quoted
+path built from `${CLAUDE_PLUGIN_ROOT}` or `$HOME`, `bash|sh|zsh <path>/merge-chain.sh
+…`, `source …`, behind a wrapper, or inside `bash -c '…'`; a mention in prose, a
+quoted argument or a heredoc body is not an invocation. The arguments are read
+as the script reads them: separate words, `--prs` comma-separated with spaces
+dropped and a leading `#` allowed. Denied as unverifiable: no `--repo` or
+`--prs`, a non-integer entry, a variable or command substitution in `--prs` or
+`--repo`, an unquoted expansion or glob in any word (the script path included —
+quote `"$HOME/…/merge-chain.sh"`), an argument the script does not accept
+(`--repo=x` included), xargs, and a script path that is a variable or glob given
+a `--prs` list. `-h`/`--help` is allowed. Each listed PR costs one `gh pr view`,
+run sequentially inside the hook's 20 s timeout.
+
 **Not covered:** a `gh` alias defined *before* the command (`gh alias set mm
-'pr merge'`, then `gh mm 5`) and a script or binary that merges internally —
-the hook sees only the command text, not what it calls.
+'pr merge'`, then `gh mm 5`) and any other script or binary that merges
+internally (merge-chain.sh under a different file name included) — the hook
+sees only the command text, not what it calls.
 
 **Which repository the PR is looked up in.** With `--repo`/`-R`, that
 repository. Otherwise the repository of the hook's cwd, with one exception

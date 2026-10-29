@@ -6,7 +6,7 @@ description: Scaffold a complete CI/CD setup for a repo — multiple GitHub Acti
 tools: Glob, Grep, Read, Edit, Write, Bash(gh pr *), Bash(gh run *), Bash(gh workflow *), Bash(npm *), Bash(yarn *), Bash(bun *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), TodoWrite
 maxTurns: 15
 created: 2025-12-27
-modified: 2026-10-22
+modified: 2026-10-25
 reviewed: 2026-06-17
 ---
 
@@ -118,10 +118,19 @@ jobs:
 
 **Rust**
 ```yaml
-- uses: dtolnay/rust-toolchain@stable
+# Installs the toolchain the root rust-toolchain.toml names, with its components
+- run: rustup toolchain install --no-self-update
 - uses: Swatinem/rust-cache@v2
 - run: cargo test
 ```
+
+Commit a root `rust-toolchain.toml` with the workflow: `[toolchain]`,
+`channel = "<exact release, e.g. 1.99.1>"`, `components = ["clippy", "rustfmt"]`.
+`dtolnay/rust-toolchain@stable` moves to every new release, so its new clippy
+lints fail `-D warnings` on main with no PR; with the file, Renovate's
+`rust-toolchain` manager opens a bump PR instead. Add job-specific components
+from the repo directory (`rustup component add llvm-tools-preview`) so they land
+on the pinned toolchain. `rust-plugin:clippy-advanced` has the full pattern.
 
 ## Turn Budget
 

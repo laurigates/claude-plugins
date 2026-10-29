@@ -69,7 +69,7 @@ tasks/*.yaml (prompt + gold) ──────┴─► run-suite.sh ─► run
 
 ## Cost discipline
 
-Every run is a real `claude -p` call; the full matrix is 15 arms × 70 tasks × N
+Every run is a real `claude -p` call; the full matrix is 15 arms × 78 tasks × N
 runs. Gate it: haiku pilot (2 arms × 20 tasks × 3) → haiku full ladder → sonnet +
 opus. Effort is fixed `low`. Same-arm calls reuse a cached system prompt, so cost
 falls sharply after the first call per arm. `results/` is gitignored; the durable

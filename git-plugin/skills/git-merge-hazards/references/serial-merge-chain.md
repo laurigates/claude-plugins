@@ -45,6 +45,10 @@ head=$(gh pr view "$n" --json headRefOid --jq .headRefOid)
 gh pr merge "$n" --squash --match-head-commit "$head"
 ```
 
+`--match-head-commit` takes the full 40-character SHA, which `headRefOid`
+returns. An abbreviated one is rejected with `Could not coerce value "…" to
+GitObjectID`, and the PR is not merged.
+
 The chain squashes because `update-branch` adds a merge commit to each PR, and
 rule 4 of the merge-method decision rule sends any branch with a merge commit
 to squash (`github-pr-title` →
