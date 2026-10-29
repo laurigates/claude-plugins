@@ -60,6 +60,9 @@ on:
       # PR touching only either file must still run it.
       - '.github/actions/script-to-issue/**'
       - '.github/workflows/workflow-model-audit.yml'
+      # scripts/tests/test-model-suitability-audit-workflow.sh runs the repo-internal
+      # audit harness against a stub runtime; a PR editing only the harness must run it.
+      - '.claude/workflows/**'
       # scripts/tests/test-auto-fix-signature.sh extracts and runs the
       # signature + issue-lookup step bodies of this workflow (#2744).
       - '.github/workflows/github-workflow-auto-fix.yml'
@@ -98,6 +101,7 @@ on:
       - '**/evals.json'
       - '.github/actions/script-to-issue/**'
       - '.github/workflows/workflow-model-audit.yml'
+      - '.claude/workflows/**'
       # Mirrors the pull_request list above (see the #2994 note there).
       - 'comfyui-plugin/skills/comfy-cli/references/pitfalls.md'
       - 'comfyui-plugin/skills/comfyui-node-scaffold/references/registry-readiness.md'

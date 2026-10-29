@@ -51,7 +51,7 @@ merged into their configure siblings' `REFERENCE.md` files
 | Skill | Description |
 |-------|-------------|
 | `configure-workflows` | Whole-repo `.github/workflows/` audit: baseline workflows missing for the project type, and stale action pins |
-| `configure-reusable-workflows` | Install pre-built Claude PR scans as `claude-*.yml` callers (security, quality, a11y) |
+| `configure-reusable-workflows` | Install pre-built Claude PR scans as `claude-*.yml` callers (security, quality, a11y), and the deterministic `merge-method.yml` PR check |
 | `configure-release-please` | Release-please workflow, manifest, and config for a **single-package** repo (monorepo component tags live in `git-plugin:release-please-configuration`) |
 | `configure-pre-commit` | Set up `.pre-commit-config.yaml` with hooks for the project type |
 | `configure-github-pages` | GitHub Pages deployment |

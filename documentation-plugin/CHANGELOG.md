@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.4](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.13.3...documentation-plugin-v1.13.4) (2026-10-29)
+
+
+### Bug Fixes
+
+* **documentation-plugin:** stop GCP project-number pattern matching decimal fractions ([#3274](https://github.com/laurigates/claude-plugins/issues/3274)) ([db83857](https://github.com/laurigates/claude-plugins/commit/db838575702fe0c60ad26a408fadd67ca8dac3e7)), closes [#3272](https://github.com/laurigates/claude-plugins/issues/3272)
+
 ## [1.13.3](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.13.2...documentation-plugin-v1.13.3) (2026-10-10)
 
 

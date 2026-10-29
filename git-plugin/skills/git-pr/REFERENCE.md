@@ -6,60 +6,65 @@ Full PR description templates, main-branch push patterns, stacked-PR merge rules
 
 ### Standard Template
 
+The squash body follows the repo's `squash_merge_commit_message`:
+`COMMIT_MESSAGES` on release-please repos such as claude-plugins, `PR_BODY`
+elsewhere (OpenTofu-managed in laurigates/gitops `main.tf`;
+laurigates/gitops#318 moves release-please repos to `PR_BODY`). On a `PR_BODY`
+repo a squash-merged PR's body becomes the commit body on `main` — see
+[merge-strategies.md](../github-pr-title/merge-strategies.md). So the template
+is a commit body: plain prose, then footers. No headings, checklists or HTML
+comments; on `PR_BODY` repos the merge-method body lint flags all three.
+
 ```markdown
-## Summary
-Brief description of what this PR does.
+Add retry with backoff to the webhook dispatcher so transient 5xx responses
+from receivers no longer drop events. Receivers behind a cold-starting proxy
+returned 502 on the first delivery and the event was never retried.
 
-## Motivation
-Why this change is needed. Link to issue if applicable.
+- Retry up to 5 times with jittered exponential backoff
+- Record final failures in the dead-letter table
+- Expose the retry count as a metric
 
-## Changes
-- Key change 1
-- Key change 2
-- Key change 3
+Follow-up: #456 (run the schema migration after deploy), #457 (update the deployment runbook)
 
-## Pre-merge Checklist
-- [ ] Tests pass locally
-- [ ] Code reviewed
-- [ ] Documentation updated (if needed)
-
-## Follow-up Issues
-<!-- Post-merge actions tracked as separate issues so they survive PR closure -->
-- Closes #456 after merge: database migration for new schema
-- Refs #457: update deployment runbook
-
-## Related Issues
 Fixes #123
-Related: #124, #125
+Refs #124
+Refs #456
 ```
 
-### Section Guidelines
+### Body parts
 
-| Section | Purpose | Required |
-|---------|---------|----------|
-| Summary | What the PR does (1-2 sentences) | Yes |
-| Motivation | Why this change is needed | Yes |
-| Changes | Key changes as bullet points | Yes |
-| Pre-merge Checklist | Actions before merge only — never post-merge steps | If applicable |
-| Follow-up Issues | Links to issues tracking post-merge actions | If post-merge work exists |
-| Related Issues | Issue links at bottom | Yes |
+| Part | Purpose | Required |
+|------|---------|----------|
+| Opening paragraph | What the PR does and why (1–3 sentences) | Yes |
+| Change list | Key changes as bullet points | When there is more than one |
+| `Follow-up:` line | Issues tracking post-merge actions (see [§ Post-Merge Follow-up Issues](#post-merge-follow-up-issues)) | If post-merge work exists |
+| Footer block | Closing keywords and `Refs` lines, one per line, last paragraph | Yes |
+
+Pre-merge verification ("tests pass", "docs updated") goes in a PR comment or
+the CI checks, not in the body.
 
 ### Issue Linking Syntax
 
-Place at the **bottom** of the PR description:
+Place at the **bottom** of the PR description, one per line, with no blank
+lines between them:
 
 ```markdown
-## Related Issues
-Fixes #123              <!-- Auto-closes on merge -->
-Closes #456             <!-- Auto-closes on merge -->
-Resolves #789           <!-- Auto-closes on merge -->
-Related: #124, #125     <!-- Links without closing -->
+Fixes #123
+Closes #456
+Resolves #789
+Refs #124
 ```
+
+| Keyword | Effect |
+|---------|--------|
+| `Fixes #N` / `Closes #N` / `Resolves #N` | Auto-closes on merge |
+| `Refs #N` | Links without closing |
 
 **Rules:**
 - Use `Fixes`, `Closes`, or `Resolves` for issues this PR solves
-- Use `Related:` for issues that are related but not solved
-- Follow-up work should be created as new issues, not left in checklist
+- Use `Refs` for issues that are related but not solved, including follow-up
+  issues — `Closes #N after merge` still closes `#N` the moment the PR merges
+- Follow-up work should be created as new issues, not left in a checklist
 
 > **Do NOT use markdown tables to track linked issues.** GitHub's auto-close
 > machinery only fires on `Fixes #N` / `Closes #N` / `Resolves #N` keywords
@@ -108,9 +113,13 @@ bash "${CLAUDE_SKILL_DIR}/scripts/git-pr.sh" --home-dir "$HOME" --project-dir "$
 
 | Situation | Merge command |
 |-----------|---------------|
-| No dependents (leaf PR) | `gh pr merge --squash --delete-branch` (default) |
-| Has dependents | `gh pr merge --squash` — **omit `--delete-branch`** |
+| No dependents (leaf PR) | `gh pr merge --<method> --delete-branch` (default) |
+| Has dependents | `gh pr merge --<method>` — **omit `--delete-branch`** |
 | Has dependents, want to clean up | Re-target dependents first (see [§ Re-targeting dependents](#re-targeting-dependents)), then merge with `--delete-branch` |
+
+`<method>` is `rebase` or `squash`, whichever `pr-merge-method.py` reports
+([merge-strategies.md](../github-pr-title/merge-strategies.md)). Rebase is the
+default and keeps a stack cheap to update (next section).
 
 ### Re-targeting dependents
 
@@ -125,14 +134,16 @@ gh pr edit <dep-pr-num> --base "$(gh pr view --json baseRefName --jq .baseRefNam
 Once every dependent has been re-targeted (or you have explicitly chosen
 not to), it is safe to merge the parent with `--delete-branch`.
 
-### After a squash-merge: rebase dependents off the squashed commits
+### After the parent merges: rebase dependents onto the base
 
-Re-targeting alone keeps the dependent **open**, but its diff is still wrong.
-When the parent is **squash-merged** (the release-please / conventional-commit
-default), its commits collapse into one new commit on the base with a fresh
-SHA — so a re-targeted dependent still carries the parent's *original* commits
-in its history and now double-counts the parent's work. Drop them by replaying
-only the dependent's own commits onto the updated base:
+Re-targeting alone keeps the dependent **open**, but its history still carries
+the parent's *original* commits.
+
+- **Rebase-merged parent:** the parent's commits land on the base as
+  patch-equivalent commits, so a plain `git rebase origin/main` skips them.
+- **Squash-merged parent:** its commits collapse into one new commit with a
+  fresh SHA, so the dependent now double-counts the parent's work. Replay only
+  the dependent's own commits:
 
 ```bash
 git fetch origin
@@ -141,13 +152,12 @@ git push --force-with-lease origin <dependent-branch>
 git log --oneline origin/main..HEAD   # verify: only the dependent's own commits
 ```
 
+The `--onto` form is correct after either method, so use it when unsure.
 Capture `<old-parent-tip>` with `git rev-parse <parent-branch>` **before**
-merging the parent (the branch is deleted on merge, so grab the SHA first). A
-*merge*-merged parent keeps its patch-ids, so a plain `git rebase origin/main`
-auto-skips the duplicates instead — but squash is the common default, so assume
-the `--onto` form. If the dependent and the parent edited the same lines, expect
-a conflict here: resolve it once and let `git rerere` replay it across this and
-any sibling dependent (see the git-conflicts skill).
+merging the parent (the branch is deleted on merge, so grab the SHA first). If
+the dependent and the parent edited the same lines, expect a conflict here:
+resolve it once and let `git rerere` replay it across this and any sibling
+dependent (see the git-conflicts skill).
 
 ### Ad-hoc stacked PRs get no CI until retargeted
 
@@ -162,7 +172,7 @@ feature branch.
 
 ## Post-Merge Follow-up Issues
 
-When a PR requires actions **after** it is merged, create a separate GitHub issue for each follow-up. Link all follow-up issues in the PR description under a **Follow-up Issues** section.
+When a PR requires actions **after** it is merged, create a separate GitHub issue for each follow-up. Link all follow-up issues in the PR description on a `Follow-up:` line, with a `Refs #N` footer for each.
 
 **Why issues, not PR checklists:** Once a PR is merged and closed, its description is rarely revisited. A GitHub issue stays open and assignable until explicitly closed, ensuring the follow-up is not lost.
 
@@ -189,19 +199,19 @@ When a PR requires actions **after** it is merged, create a separate GitHub issu
    ```
 3. **Link** the newly created issues in the PR description:
    ```bash
-   gh pr edit <pr-number> --body "$(gh pr view <pr-number> --json body -q '.body')
-
-   ## Follow-up Issues
-   - #<issue-num>: run database migration
-   - #<issue-num>: update deployment runbook"
+   gh pr view <pr-number> --json body -q .body > /tmp/pr-body.md
+   # add a "Follow-up: #<n> (…), #<n> (…)" line above the footer block,
+   # and a "Refs #<n>" footer per follow-up issue
+   gh pr edit <pr-number> --body-file /tmp/pr-body.md
    ```
-4. **Do NOT** add post-merge steps to the Pre-merge Checklist.
+4. **Do NOT** add post-merge steps as a checklist in the body.
 
 ### Example: PR description with follow-up issues
 
 ```markdown
-## Follow-up Issues
-<!-- These issues track post-merge work and will stay open until completed -->
-- #456: run database migration for user_preferences table
-- #457: update production feature-flag config
+Follow-up: #456 (run database migration for user_preferences table), #457 (update production feature-flag config)
+
+Fixes #123
+Refs #456
+Refs #457
 ```

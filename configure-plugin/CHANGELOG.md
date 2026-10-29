@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.41.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.41.0...configure-plugin-v1.41.1) (2026-10-29)
+
+
+### Bug Fixes
+
+* **configure-plugin:** report a zero-rule .gitleaks.toml as inert secret detection ([#3197](https://github.com/laurigates/claude-plugins/issues/3197)) ([8216b76](https://github.com/laurigates/claude-plugins/commit/8216b76e312a8b0d74f697d3d5983bd5453695b1))
+
+## [1.41.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.40.2...configure-plugin-v1.41.0) (2026-10-26)
+
+
+### Features
+
+* **configure-plugin:** add merge-method caller to configure-reusable-workflows ([b2fad50](https://github.com/laurigates/claude-plugins/commit/b2fad507246a2e41059cd6369ec4a2c85dfb2083))
+
 ## [1.40.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.40.1...configure-plugin-v1.40.2) (2026-10-22)
 
 
