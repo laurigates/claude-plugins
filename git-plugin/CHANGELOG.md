@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.67.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.67.3...git-plugin-v2.67.4) (2026-10-29)
+
+
+### Bug Fixes
+
+* **git-plugin:** flag a zero-rule .gitleaks.toml and extend defaults in every snippet ([#3202](https://github.com/laurigates/claude-plugins/issues/3202)) ([3d332bf](https://github.com/laurigates/claude-plugins/commit/3d332bf036e712ac9367d1a90aa53e586bdca2ae))
+
 ## [2.67.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.67.2...git-plugin-v2.67.3) (2026-10-29)
 
 
