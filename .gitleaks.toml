@@ -1,5 +1,12 @@
 title = "gitleaks config"
 
+# Load gitleaks' built-in rules. Without this the file defines an allowlist and
+# no rules, so gitleaks loads zero rules and reports "no leaks found" for
+# anything, including a planted AWS key. `PR: Secret scan` plants a canary
+# before each scan and fails when it is not detected.
+[extend]
+useDefault = true
+
 [allowlist]
 description = "Allow test fixtures, documentation, and example configurations"
 paths = [
@@ -18,6 +25,9 @@ paths = [
 
   # Reusable workflow defining secret detection patterns (not actual secrets)
   '''\.github/workflows/reusable-security-secrets\.yml''',
+
+  # Placeholder credential in a Helm values example (`key: api-key-12345`)
+  '''kubernetes-plugin/skills/helm-values-management/REFERENCE\.md''',
 
   # Virtual environments
   '''\.venv/.*''',
