@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.67.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.67.0...git-plugin-v2.67.1) (2026-10-29)
+
+
+### Documentation
+
+* **git-plugin:** quote owner/repo#N in fork-internal review PRs ([#3282](https://github.com/laurigates/claude-plugins/issues/3282)) ([bec83bc](https://github.com/laurigates/claude-plugins/commit/bec83bcc3356d8eee9360339a30eb1a9a3553bce))
+* record workflow landing, external-review and merge-pin learnings ([#3267](https://github.com/laurigates/claude-plugins/issues/3267)) ([854cbd6](https://github.com/laurigates/claude-plugins/commit/854cbd6c0f7dab29897c10e8351e5ba6b0133a8a))
+
 ## [2.67.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.66.0...git-plugin-v2.67.0) (2026-10-27)
 
 
