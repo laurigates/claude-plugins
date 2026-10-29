@@ -35,7 +35,7 @@
   "prompt-engineering-plugin": "1.1.4",
   "prose-plugin": "1.4.2",
   "python-plugin": "1.5.9",
-  "rust-plugin": "1.7.2",
+  "rust-plugin": "1.7.3",
   "taskwarrior-plugin": "1.15.0",
   "terraform-plugin": "1.7.11",
   "testing-plugin": "3.24.0",
