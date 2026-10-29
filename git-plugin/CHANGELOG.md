@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.67.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.66.0...git-plugin-v2.67.0) (2026-10-27)
+
+
+### Features
+
+* **git-plugin:** add merge-chain.sh merge shepherd to git-merge-hazards ([#3251](https://github.com/laurigates/claude-plugins/issues/3251)) ([dfa3ea4](https://github.com/laurigates/claude-plugins/commit/dfa3ea489ad0979f0b3805da582676d2099904fa))
+
 ## [2.66.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.65.0...git-plugin-v2.66.0) (2026-10-27)
 
 
