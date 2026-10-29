@@ -77,6 +77,7 @@
     "bevy-plugin@laurigates-claude-plugins": true,
     "blog-plugin@laurigates-claude-plugins": true,
     "blueprint-plugin@laurigates-claude-plugins": true,
+    "cloud-plugin@laurigates-claude-plugins": true,
     "code-quality-plugin@laurigates-claude-plugins": true,
     "codebase-attributes-plugin@laurigates-claude-plugins": true,
     "comfyui-plugin@laurigates-claude-plugins": true,

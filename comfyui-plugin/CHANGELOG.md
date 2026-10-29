@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.4](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.14.3...comfyui-plugin-v1.14.4) (2026-10-29)
+
+
+### Documentation
+
+* **comfyui-plugin:** record the gitops dependency of the web/dist gate ([#3210](https://github.com/laurigates/claude-plugins/issues/3210)) ([c52c520](https://github.com/laurigates/claude-plugins/commit/c52c520a224109b66fb4e6d966aad7b93e576374))
+
 ## [1.14.3](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.14.2...comfyui-plugin-v1.14.3) (2026-10-20)
 
 
