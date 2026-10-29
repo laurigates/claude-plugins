@@ -75,7 +75,7 @@ JSON
     {
       "name": "mismatch-plugin",
       "version": "1.5.0",
-      "description": "A mismatch test plugin",
+      "description": "A mismatch test plugin \u2014 with an escaped em dash",
       "source": "./mismatch-plugin",
       "category": "development"
     }
@@ -199,6 +199,46 @@ print("%s|%s|%s" % (a.get("name","") if isinstance(a,dict) else "", a.get("url",
   grep -q "All plugin configurations are in sync!" <<<"$out3" \
     && pass "idempotency: reports all in sync" \
     || fail "idempotency: failed to report all in sync. Output: $out3"
+
+  # --- Test 4: release-please also bumps the plugin's marketplace.json entry ---
+  # Without the second extra-file the first head of every release PR failed
+  # the required `validate` check with a manifest/marketplace version mismatch
+  # (run 40076501766) until sync-release-pr pushed a fix-up commit.
+  echo "--- Testing marketplace extra-file ---"
+  extra_files() {
+    python3 -c 'import json,sys
+print(json.dumps(json.load(open(sys.argv[1]))["packages"][sys.argv[2]].get("extra-files", []), sort_keys=True))' \
+      "$repo/release-please-config.json" "$1"
+  }
+  expected_valid='[{"jsonpath": "$.version", "path": ".claude-plugin/plugin.json", "type": "json"}, {"jsonpath": "$.plugins[?(@.name=='"'"'valid-plugin'"'"')].version", "path": "/.claude-plugin/marketplace.json", "type": "json"}]'
+  [ "$(extra_files valid-plugin)" = "$expected_valid" ] \
+    && pass "fix mode: a new package bumps plugin.json and its own marketplace.json entry" \
+    || fail "fix mode: new package extra-files wrong. Got: $(extra_files valid-plugin)"
+
+  # Drop the marketplace entry from one package, as a hand-written config would.
+  python3 -c 'import json,sys
+p=sys.argv[1]; c=json.load(open(p))
+c["packages"]["valid-plugin"]["extra-files"]=c["packages"]["valid-plugin"]["extra-files"][:1]
+json.dump(c,open(p,"w"),indent=2)' "$repo/release-please-config.json"
+  rc4=0
+  out4=$(python3 "$SYNC_SCRIPT" --repo-root "$repo" 2>&1) || rc4=$?
+  [ "$rc4" -eq 1 ] && grep -qF "Package 'valid-plugin' in release-please-config.json is missing extra-file /.claude-plugin/marketplace.json" <<<"$out4" \
+    && pass "check mode: a package without the marketplace extra-file is reported" \
+    || fail "check mode: missing marketplace extra-file not reported (exit $rc4). Output: $out4"
+  python3 "$SYNC_SCRIPT" --fix --repo-root "$repo" >/dev/null 2>&1
+  [ "$(extra_files valid-plugin)" = "$expected_valid" ] \
+    && pass "fix mode: the missing marketplace extra-file is restored" \
+    || fail "fix mode: marketplace extra-file not restored. Got: $(extra_files valid-plugin)"
+
+  # release-please writes marketplace.json with literal non-ASCII text, so the
+  # fix path must too, or each release PR and each --fix rewrite the other's
+  # em dashes.
+  if grep -qF 'A mismatch test plugin — with an escaped em dash' "$repo/.claude-plugin/marketplace.json" \
+    && ! grep -qF '\u2014' "$repo/.claude-plugin/marketplace.json"; then
+    pass "fix mode: marketplace.json keeps non-ASCII text literal, as release-please writes it"
+  else
+    fail "fix mode: marketplace.json was written with \\u escapes"
+  fi
 
   rm -rf "$repo"
 fi
