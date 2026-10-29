@@ -42,7 +42,6 @@ Collection of general-purpose development utilities for file finding, text searc
 | `imagemagick-conversion` | Image conversion and manipulation |
 | `hf-downloads` | Disk-safe Hugging Face model downloads — HF_HOME/xet cache redirection, gated-repo auth, staging pattern |
 | `apptainer` | Run OCI images as rootless batch jobs on a Linux GPU box — `--nv` passthrough, digest-pinned SIF files, cache off the root disk |
-| `gcloud-throwaway-vm` | Throwaway Compute Engine VMs for controlled benchmarks — project per run, budget and teardown order, zone fallback, booting an older GCP kernel |
 
 ### Diagrams
 

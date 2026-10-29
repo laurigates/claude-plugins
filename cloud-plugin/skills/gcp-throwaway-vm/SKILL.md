@@ -1,5 +1,5 @@
 ---
-name: gcloud-throwaway-vm
+name: gcp-throwaway-vm
 description: "Throwaway GCE VMs for benchmarks: project per run, budget and teardown order, zone fallback, older GCP kernels. Use when renting a GCP VM to run a test, then deleting it."
 allowed-tools: Bash, Read
 created: 2026-10-29
