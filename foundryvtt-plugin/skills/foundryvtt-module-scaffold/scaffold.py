@@ -71,7 +71,7 @@ BIOME_VERSION = "2.4.15"
 TYPESCRIPT_VERSION = "^5.7.0"
 VITE_VERSION = "^6.0.0"
 VITE_STATIC_COPY_VERSION = "^2.2.0"
-VITEST_VERSION = "^3.0.0"
+VITEST_VERSION = "^4.1.11"
 
 # FoundryVTT compatibility defaults. `verified` tracks the version the local
 # harness pins; `minimum` is intentionally a little broader. Override per-module

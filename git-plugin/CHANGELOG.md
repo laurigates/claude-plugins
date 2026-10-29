@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.67.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.67.1...git-plugin-v2.67.2) (2026-10-29)
+
+
+### Documentation
+
+* **git-plugin:** match the merge-chain late-commit exemption in git-merge-hazards ([#3270](https://github.com/laurigates/claude-plugins/issues/3270)) ([b24d028](https://github.com/laurigates/claude-plugins/commit/b24d028d42bbdda46aaa4027ff2c7f951bb35b8d))
+
 ## [2.67.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.67.0...git-plugin-v2.67.1) (2026-10-29)
 
 
