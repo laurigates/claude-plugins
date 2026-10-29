@@ -1,0 +1,9 @@
+description: Cluster 1 (#2789) test-run, bare — an unknown framework and no tier, file, pattern, or fix cycle named is the plain auto-detecting runner, not the every-tier pyramid pass.
+prompt: |
+  I just cloned this repository and have no idea which framework its specs use.
+  Kick them off the normal way and tell me what passed and what failed. Nothing
+  special — no coverage, no particular file, I just want to know where it stands.
+gold: testing-plugin/test-run
+near_miss: testing-plugin/test-full
+plugin: testing-plugin
+cluster: 1

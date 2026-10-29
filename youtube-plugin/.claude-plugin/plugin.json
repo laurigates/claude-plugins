@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "youtube-plugin",
+  "version": "1.0.0",
+  "description": "YouTube publishing - Data API v3 upload, metadata edits and thumbnails, plus YouTube Studio browser scripting for org-only sharing",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "license": "MIT",
+  "keywords": [
+    "youtube",
+    "youtube-data-api",
+    "video-upload",
+    "youtube-studio",
+    "google-workspace",
+    "oauth"
+  ]
+}
