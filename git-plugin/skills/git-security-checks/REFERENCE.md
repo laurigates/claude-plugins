@@ -34,9 +34,13 @@ MIIEpAIBAAKCAQEA...  # gitleaks:allow
 
 ### Excluding Files
 
-In `.gitleaks.toml`:
+In `.gitleaks.toml`, under the `[extend]` block that loads the default rules (an
+`[allowlist]` on its own loads zero rules):
 
 ```toml
+[extend]
+useDefault = true
+
 [allowlist]
 paths = [
     '''package-lock\.json$''',

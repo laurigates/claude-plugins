@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-09-08
+modified: 2026-10-24
 reviewed: 2026-04-25
 name: git-security-checks
 description: "Pre-commit security validation and secret detection via gitleaks. Use when scanning for secrets, setting up gitleaks, or configuring .gitleaks.toml pre-commit security."
@@ -40,7 +40,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/git-security-checks/scripts/security-scan.sh"
 bash "${CLAUDE_PLUGIN_ROOT}/skills/git-security-checks/scripts/security-scan.sh" --staged-only
 ```
 
-The script checks: gitleaks scan, sensitive file patterns, .gitignore coverage, high-entropy strings in diffs, and pre-commit hook status. See [scripts/security-scan.sh](scripts/security-scan.sh) for details.
+The script checks: gitleaks scan (`STATUS=inert_config` when `.gitleaks.toml` loads zero rules), sensitive file patterns, .gitignore coverage, high-entropy strings in diffs, and pre-commit hook status. See [scripts/security-scan.sh](scripts/security-scan.sh) for details.
 
 ## Gitleaks Workflow
 
@@ -65,7 +65,7 @@ gitleaks detect --source . --verbose
 
 ### Configuration
 
-Create `.gitleaks.toml` for project-specific allowlists:
+Create `.gitleaks.toml` for project-specific allowlists. Keep the `[extend]` block: gitleaks loads rules only from `[extend]` and `[[rules]]`, so a file with just an `[allowlist]` loads zero rules and every scan reports clean. `scripts/security-scan.sh` reports that as `CONFIG=inert`.
 
 ```toml
 title = "Gitleaks Configuration"
@@ -104,7 +104,7 @@ gitleaks detect --source . --config .gitleaks.toml
 
 ### Managing False Positives
 
-Gitleaks provides three declarative methods for handling false positives:
+Gitleaks provides declarative methods for handling false positives. Every `.gitleaks.toml` snippet in this section starts with the `[extend]` block from [Configuration](#configuration), because the file replaces the built-in ruleset rather than adding to it.
 
 **1. Inline comments** — mark specific lines:
 
@@ -119,6 +119,9 @@ password = "test-fixture"  # gitleaks:allow
 **2. Path-based exclusions** — in `.gitleaks.toml`:
 
 ```toml
+[extend]
+useDefault = true
+
 [allowlist]
 paths = [
     '''test/fixtures/.*''',
@@ -130,6 +133,9 @@ paths = [
 **3. Regex-based allowlists** — for specific patterns:
 
 ```toml
+[extend]
+useDefault = true
+
 [allowlist]
 regexes = [
     '''example\.com''',
@@ -141,6 +147,9 @@ regexes = [
 **4. Per-rule allowlists** — target specific detection rules:
 
 ```toml
+[extend]
+useDefault = true
+
 [[rules]]
 id = "generic-api-key"
 description = "Generic API Key"
