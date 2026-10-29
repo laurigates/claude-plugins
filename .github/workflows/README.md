@@ -33,7 +33,6 @@ When adding a workflow, pick the existing domain that fits or extend the table b
 Auto-fix: CI failures
 Claude: @mentions
 Claude: Changelog review
-Claude: PR review
 Claude: Research radar
 PR: Auto-label
 PR: Auto-resolve conflicts

@@ -38,6 +38,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 | [0022](0022-adapter-over-export-for-foreign-harnesses.md) | Adapter over Export — Runtime Skill Discovery for Foreign Harnesses | Accepted | 2026-07 |
 | [0023](0023-adr-required-sections-narrowed.md) | ADR Required Sections Narrowed to Context, Decision, Consequences | Accepted | 2026-09 |
 | [0024](0024-blueprint-work-order-model-invocable.md) | Make `/blueprint:work-order` and `/blueprint:prp-execute` Model-Invocable (partially supersedes 0020) | Accepted | 2026-10 |
+| [0025](0025-visibility-gated-public-leak-nudge.md) | Gate Public-Repo Leaks at the Write, Keyed on the Destination's Visibility | Accepted | 2026-10 |
 
 ## Categories
 
@@ -78,6 +79,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 - ADR-0017: Hook-Based Behavioral Cues for Multi-Plugin Utilization
 - ADR-0018: Usage-Telemetry Scope for health-plugin
 - ADR-0019: Reject Shared-Library / @-Imports / Build-Time Templating for Skill DRY
+- ADR-0025: Gate Public-Repo Leaks at the Write, Keyed on the Destination's Visibility
 
 ## ADR Format
 
