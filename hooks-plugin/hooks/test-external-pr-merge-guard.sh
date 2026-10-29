@@ -573,6 +573,71 @@ while IFS=$'\t' read -r cwdk want cmd; do
     ck "#2889 [$cwdk] $cmd" "$want" "$(run_hook_in "$HOOK" "$WS/$cwdk" "$cmd")"
 done <<< "$MERGE_CORPUS"
 
+echo "== command forms the statement parser missed (issue #3262) =="
+# An adversarial pass on #3260 found forms that ran `gh pr merge` behind a
+# shape the parser did not read as a command. Every DENY row was ALLOWED
+# before #3262. Same layout as the #2889 corpus: cwd key, verdict, command.
+BYPASS_CORPUS=$(cat <<'CORPUS'
+own	DENY	f(){ "$@"; }; f gh pr merge 5 -R acme/ext
+own	DENY	f() { "$@"; }; f gh pr merge 5
+own	DENY	function f { "$@"; }; f gh pr merge 5 -R acme/ext
+own	DENY	run_it () { "$@"; }@NL@run_it gh pr merge 5 -R acme/ext
+own	DENY	f(){ "$@"; }; f "$S" --repo acme/ext --prs 5
+own	DENY	f(){ "$@"; }; echo "$(f gh pr merge 5 -R acme/ext)"
+own	DENY	gh(){ command gh "$@" -R acme/ext; }; gh pr merge 5 -R acme/own
+own	DENY	() { "$@"; } gh pr merge 5 -R acme/ext
+own	ALLOW	f(){ echo hi; }; f && gh pr merge 5
+own	ALLOW	f(){ git log "$@"; }; f --grep=merge
+own	ALLOW	f(){ "$@"; }; f gh pr view 5 --json mergedAt
+own	DENY	eval gh pr merge 5 -R acme/ext
+own	DENY	eval gh pr merge 5 \; gh pr merge 6 -R acme/ext
+own	DENY	eval gh pr "merge" 5 -R acme/ext
+own	DENY	eval gh pr merge 5 -R \$R
+own	DENY	command eval gh pr merge 5 -R acme/ext
+own	DENY	noglob eval gh pr merge 5 -R acme/ext
+own	DENY	eval -- gh pr merge 5 -R acme/ext
+own	DENY	eval gh pr merge 5 -R acme/ext # note
+own	DENY	bash -c 'eval gh pr merge 5 -R acme/ext'
+own	ALLOW	eval gh pr merge 5 -R acme/own
+own	ALLOW	eval echo gh pr merge 5 -R acme/ext
+own	DENY	arch -arm64 gh pr merge 5 -R acme/ext
+own	DENY	noglob gh pr merge 5 -R acme/ext
+own	DENY	nocorrect gh pr merge 5 -R acme/ext
+own	DENY	screen -dm gh pr merge 5 -R acme/ext
+own	DENY	time -p gh pr merge 5 -R acme/ext
+own	DENY	time -p bash -c 'gh pr merge 5 -R acme/ext'
+own	DENY	/usr/bin/time -p gh pr merge 5 -R acme/ext
+own	ALLOW	noglob gh pr merge 5 -R acme/own
+own	ALLOW	time -p gh pr merge 5
+own	ALLOW	time -p make
+own	ALLOW	noglob ls *
+own	ALLOW	time -p git merge main
+own	ALLOW	noglob git merge --ff-only origin/main
+own	DENY	bash <(echo 'gh pr merge 5 -R acme/ext')
+own	DENY	bash < <(echo 'gh pr merge 5 -R acme/ext')
+own	DENY	source <(echo 'gh pr merge 5 -R acme/ext')
+own	DENY	. <(echo 'gh pr merge 5 -R acme/ext')
+own	DENY	zsh =(echo 'gh pr merge 5 -R acme/ext')
+own	DENY	sudo bash <(printf 'gh pr merge 5')
+own	DENY	exec bash <(echo 'gh pr merge 5')
+own	DENY	bash /dev/fd/3 3< <(echo 'gh pr merge 5')
+own	ALLOW	cat <(echo 'gh pr merge 5 -R acme/ext')
+own	ALLOW	diff <(git log --merges) <(git log)
+CORPUS
+)
+while IFS=$'\t' read -r cwdk want cmd; do
+    [ -n "$cwdk" ] || continue
+    cmd=$(expand_ws "$cmd")
+    ck "#3262 [$cwdk] ${cmd//$'\n'/'\n'}" "$want" "$(run_hook_in "$HOOK" "$WS/$cwdk" "$cmd")"
+done <<< "$BYPASS_CORPUS"
+# The denials name the cause, so the agent knows what to change.
+STUB_AUTHOR=laurigates run "$(bash_json 'f(){ "$@"; }; f gh pr merge 2231')" >/dev/null
+ck "function-call merge denied"        DENY "$LAST_VERDICT"
+ck_reason "names the function call"    "function defined in this command"
+STUB_AUTHOR=laurigates run "$(bash_json "bash <(echo 'gh pr merge 2231')")" >/dev/null
+ck "process-substitution script denied" DENY "$LAST_VERDICT"
+ck_reason "names process substitution" "process substitution"
+
 # The verdict alone does not prove the repo flag was READ — a deny can come
 # from a fail-closed path. These pin that gh pr view was asked about the
 # repository gh would actually merge in.
