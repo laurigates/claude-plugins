@@ -119,8 +119,8 @@ key propagates. Retry in an `until` loop with a bound rather than a fixed
 2. Confirm `instances`, `disks`, `addresses` and `snapshots` lists are empty,
    and that each `list` call exited 0.
 3. Delete the budget (§ 2), while the project that enables its API still exists.
-4. `gcloud projects delete "$P" --quiet`. The project then sits in
-   `DELETE_REQUESTED` for 30 days (`gcloud projects describe "$P"
+4. `gcloud projects delete "$P" "$A" --quiet`. The project then sits in
+   `DELETE_REQUESTED` for 30 days (`gcloud projects describe "$P" "$A"
    --format='value(lifecycleState)'`).
 5. `gcloud config list`: active account and project unchanged.
 
@@ -131,8 +131,8 @@ Distribution packages can be too old for the test: Ubuntu 22.04's apt
 `cargo install --locked hyperfine` when the flag is needed.
 
 Observed 2026-10 (filesystem benchmarks on two `n2-standard-8` VMs with a
-100 GB `pd-ssd` data disk each, ~1.5 h, personal account): every trap in this skill
-was hit once. Cost was not measured.
+100 GB `pd-ssd` data disk each, ~1.5 h, personal account): the traps in this
+skill come from that run. Cost was not measured.
 
 ## Agentic Optimizations
 
@@ -141,8 +141,8 @@ was hit once. Cost was not measured.
 | Machine types in a zone | `gcloud compute machine-types list --zones=<z> --filter='name=n2-standard-8' --project="$P" "$A" --format='value(name)'` |
 | VM state | `gcloud compute instances list --project="$P" "$A" --format='value(name,zone.basename(),status)'` |
 | Leftover resources | `gcloud compute disks list --project="$P" "$A" --format='value(name)'` (also `addresses`, `snapshots`) |
-| Booted kernel | `gcloud compute ssh <vm> --zone=<z> --command='uname -r; uptime -s'` |
-| Project state | `gcloud projects describe "$P" --format='value(lifecycleState)'` |
+| Booted kernel | `gcloud compute ssh <vm> --zone=<z> --project="$P" "$A" --command='uname -r; uptime -s'` |
+| Project state | `gcloud projects describe "$P" "$A" --format='value(lifecycleState)'` |
 
 ## Related
 

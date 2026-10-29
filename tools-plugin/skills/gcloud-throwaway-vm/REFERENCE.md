@@ -10,7 +10,10 @@ GC=(--project=<bench-project-id> --account=<you@example.com>)
 
 ## Budget Alert
 
-The currency suffix must match the billing account's currency. Point
+Not run as written: these commands were reconstructed from the session's
+commands and `gcloud billing budgets create --help`. A currency suffix on
+`--budget-amount` is optional; if given, it must match the billing account's
+currency. Point
 `--billing-project` at a long-lived project with `billingbudgets.googleapis.com`
 enabled, so the budget can still be deleted after the throwaway project is gone.
 
@@ -61,13 +64,15 @@ means the image family is retired; no zone will help.
 ## Wait for SSH
 
 The first `gcloud compute ssh` after key generation can exit 255. Poll with a
-bound:
+bound. `--quiet` gives a newly generated key an empty passphrase, so the hidden
+`ssh-keygen` prompt cannot stall the loop. This function and the reboot loop in
+§ Older Kernel are generalized from the run, not copied from a script that ran.
 
 ```bash
 wait_ssh() {  # wait_ssh <vm> <zone>
     local i
     for i in $(seq 1 30); do
-        gcloud compute ssh "$1" --zone="$2" "${GC[@]}" --command=true 2>/dev/null && return 0
+        gcloud compute ssh "$1" --zone="$2" "${GC[@]}" --quiet --command=true 2>/dev/null && return 0
         sleep 10
     done
     echo "ssh to $1 not ready after 30 tries" >&2; return 1
