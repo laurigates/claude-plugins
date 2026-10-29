@@ -76,5 +76,5 @@ untracked work does not). When many sibling worktrees are active in one
 clone — high `LINKED_WORKTREE_COUNT`, or a `coworker_detected` /
 `bare_flip_suspected` verdict — **commit or stash new files promptly**
 rather than leaving them untracked, and prefer working in your own
-`git worktree add ../<repo>-<task>` so a flip in the shared checkout
+`git worktree add <repo>/.claude/worktrees/<task>` so a flip in the shared checkout
 cannot reach your tree.

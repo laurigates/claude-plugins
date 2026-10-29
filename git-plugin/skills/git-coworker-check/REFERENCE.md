@@ -301,8 +301,8 @@ branch a verifier reports on — is `agent-patterns-plugin:parallel-agent-dispat
 The robust answer to coworker collision is **worktrees**:
 
 ```
-git worktree add ../your-repo-task feat/your-thing
-cd ../your-repo-task
+git worktree add .claude/worktrees/your-task feat/your-thing
+cd .claude/worktrees/your-task
 # isolated working tree, separate HEAD, separate index
 ```
 
