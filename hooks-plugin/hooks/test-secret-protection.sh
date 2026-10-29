@@ -92,6 +92,50 @@ assert_exit \
     "echo \$..._CREDENTIALS (genuine secret ref) is blocked" 2 \
     "echo \"\$SERVICE_CREDENTIALS\""
 
+# ── secret-print verbs match only as a command word (issue #3271) ─────────────
+echo ""
+echo "'env' inside .env / dotenv / myenv is not the env verb (issue #3271):"
+
+assert_exit \
+    "source .env && tofu init with a token backend-config arg is allowed" 0 \
+    "source .env && tofu init -reconfigure -backend-config=\"access_token=\$GOOGLE_OAUTH_ACCESS_TOKEN\""
+
+assert_exit \
+    "dotenv run -- foo --token=\$X_TOKEN is allowed" 0 \
+    "dotenv run -- foo --token=\$X_TOKEN"
+
+assert_exit \
+    "myenv/bin/tool --key=\$SERVICE_API_KEY is allowed" 0 \
+    "myenv/bin/tool --key=\$SERVICE_API_KEY"
+
+assert_exit \
+    "echo \$GITHUB_TOKEN still blocks" 2 \
+    "echo \$GITHUB_TOKEN"
+
+assert_exit \
+    "source .env && echo \$GITHUB_TOKEN still blocks" 2 \
+    "source .env && echo \$GITHUB_TOKEN"
+
+assert_exit \
+    "env FOO=\$API_TOKEN cmd still blocks" 2 \
+    "env FOO=\$API_TOKEN cmd"
+
+assert_exit \
+    "/usr/bin/env FOO=\$API_TOKEN cmd still blocks" 2 \
+    "/usr/bin/env FOO=\$API_TOKEN cmd"
+
+assert_exit \
+    "export X=\$DB_PASSWORD still blocks" 2 \
+    "export X=\$DB_PASSWORD"
+
+assert_exit \
+    "cat <<<\$API_KEY still blocks" 2 \
+    "cat <<<\$API_KEY"
+
+assert_exit \
+    "(echo \$API_TOKEN) in a subshell still blocks" 2 \
+    "(echo \$API_TOKEN)"
+
 # ── full-environment dump still blocked ──────────────────────────────────────
 echo ""
 echo "bare env / printenv dump is still blocked:"

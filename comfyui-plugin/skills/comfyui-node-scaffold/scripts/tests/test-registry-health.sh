@@ -50,6 +50,13 @@
 #                     a sentence that drops Deleted fails. The scan must also exit
 #                     0: a crash in it cannot read as zero offenders. CI runs this
 #                     test on doc changes via test-skill-scripts.yml.
+#   8-13. Repeat runs against an open tracking issue, whose body is the alert an
+#                     earlier case really wrote. Unchanged Flagged -> no comment,
+#                     exit 0, status still failure (8), also with a human comment
+#                     after the alert (9). A new version -> one comment, retitle,
+#                     exit 1 (10). Unchanged Banned -> no comment, exit 1 (11). An
+#                     issue with no marker yet -> one comment (12). A failed issue
+#                     lookup fails the run without opening a duplicate (13).
 #
 # Requires python3 and jq; SKIPs cleanly when unavailable.
 
@@ -146,7 +153,23 @@ if [ "$1" = "api" ]; then
 fi
 if [ "$1" = "issue" ]; then
     case "$2" in
-        list) exit 0 ;;   # no open tracking issue
+        list)   # the open tracking issue number, if the case has one
+            if [ -f "${FIXTURE}/list.fail" ]; then echo "HTTP 502: Bad Gateway" >&2; exit 1; fi
+            cat "${FIXTURE}/existing" 2>/dev/null
+            exit 0 ;;
+        view)   # apply the caller's --jq to the case's canned issue JSON, as gh does
+            filter=""
+            while [ $# -gt 0 ]; do
+                [ "$1" = "--jq" ] && filter="$2"
+                shift
+            done
+            jq -r "$filter" "${FIXTURE}/issue.json"
+            exit $? ;;
+        edit)
+            while [ $# -gt 0 ]; do
+                [ "$1" = "--title" ] && printf '%s\n' "$2" >"${STUB_LOG}/title"
+                shift
+            done ;;
         create|comment)
             while [ $# -gt 0 ]; do
                 [ "$1" = "--body-file" ] && cp "$2" "${STUB_LOG}/body.md"
@@ -463,6 +486,90 @@ check "7: a Banned fall-back claim that names Deleted in its sentence passes" "0
 OWN_STATUS_ROW='| `NodeVersionStatusBanned` | not installable; installs fall back to an older version |'
 check "7: a status row naming only its own status stays exempt" "0" \
     "$(doc_offenders own-status-row "$OWN_STATUS_ROW")"
+
+# --------------------------------------------------------------------------- #
+# 8-13. Repeat runs against an OPEN tracking issue. Every scheduled day used to
+#    re-comment and exit 1 with nothing new (comfyui-image-browser#113: 26
+#    identical "0.1.33 is Flagged" comments). Each "previous alert" below is the
+#    body an earlier case actually wrote, so the marker is never retyped here.
+# --------------------------------------------------------------------------- #
+gh_called() { grep -c -- "$1" "${CASE_DIR}/log/gh.log" 2>/dev/null || true; }
+# open_issue <case> <number> <body-file> [comment-text...]: the case's open issue
+open_issue() {
+    local case_name="$1" number="$2" body_file="$3"
+    shift 3
+    printf '%s\n' "$number" >"${WORK}/${case_name}/fixture/existing"
+    jq -n --rawfile b "$body_file" '{body: $b, comments: ($ARGS.positional | map({body: .}))}' \
+        --args "$@" >"${WORK}/${case_name}/fixture/issue.json"
+}
+FLAGGED_ALERT="${WORK}/flagged/log/body.md"
+BANNED_ALERT="${WORK}/banned/log/body.md"
+check "8: the first alert carries a registry-health marker (guards 8-12 from vacuity)" "1" \
+    "$(grep -c '^<!-- registry-health .*-->$' "$FLAGGED_ALERT" 2>/dev/null || true)"
+
+# 8. Same Flagged verdict as the open issue's alert: no comment, exit 0, still red status.
+mkdir -p "${WORK}/flagged-repeat" && cp -R "${WORK}/flagged/fixture" "${WORK}/flagged-repeat/fixture"
+open_issue flagged-repeat 113 "$FLAGGED_ALERT"
+CASE_DIR="${WORK}/flagged-repeat"
+rc="$(run_case 0.1.33)"
+check "8: an unchanged Flagged verdict exits 0" "0" "$rc"
+check "8: ...and posts no comment" "0" "$(gh_called 'issue comment')"
+check "8: ...opens no new issue" "0" "$(gh_called 'issue create')"
+check "8: ...leaves the title alone" "0" "$(gh_called 'issue edit')"
+check "8: the commit status still reports the verdict" "failure" "$(state)"
+check "8: the run says why it passed" "1" \
+    "$(grep -c '::warning::release 0.1.33 is still flagged' "${CASE_DIR}/log/stdout" 2>/dev/null || true)"
+
+# 9. A person commented after the last alert: still unchanged (newest MARKER, not
+#    newest comment, decides).
+mkdir -p "${WORK}/flagged-triaged" && cp -R "${WORK}/flagged/fixture" "${WORK}/flagged-triaged/fixture"
+open_issue flagged-triaged 113 "$FLAGGED_ALERT" "Triage: real finding, fixed in #122; clears on the next release."
+CASE_DIR="${WORK}/flagged-triaged"
+rc="$(run_case 0.1.33)"
+check "9: a human comment after the alert does not trigger a repeat" "0" "$(gh_called 'issue comment')"
+check "9: ...and the run still exits 0" "0" "$rc"
+
+# 10. The open issue's alert is for an older version: comment once, retitle, exit 1.
+fixture flagged-old \
+    '[{"version":"0.1.32","status":"NodeVersionStatusFlagged","createdAt":"2026-08-27T00:00:00Z"}]' \
+    '{"version":"0.1.32","deprecated":false,"status":"NodeVersionStatusFlagged","createdAt":"2026-08-27T00:00:00Z"}' \
+    '{"latest_version":null}'
+CASE_DIR="${WORK}/flagged-old"
+rc="$(run_case 0.1.32)"
+check "10: control: the 0.1.32 first alert was written" "1" "$([ -s "${CASE_DIR}/log/body.md" ] && echo 1 || echo 0)"
+mkdir -p "${WORK}/flagged-newver" && cp -R "${WORK}/flagged/fixture" "${WORK}/flagged-newver/fixture"
+open_issue flagged-newver 113 "${WORK}/flagged-old/log/body.md"
+CASE_DIR="${WORK}/flagged-newver"
+rc="$(run_case 0.1.33)"
+check "10: a new flagged version comments on the open issue" "1" "$(gh_called 'issue comment')"
+check "10: ...retitles it to the current version" "Registry: release 0.1.33 not healthy (flagged)" \
+    "$(cat "${CASE_DIR}/log/title" 2>/dev/null || echo '<none>')"
+check "10: ...and exits 1, since it is news" "1" "$rc"
+
+# 11. Unchanged Banned: no repeat comment, but still exit 1 (installs are broken).
+mkdir -p "${WORK}/banned-repeat" && cp -R "${WORK}/banned/fixture" "${WORK}/banned-repeat/fixture"
+open_issue banned-repeat 49 "$BANNED_ALERT"
+CASE_DIR="${WORK}/banned-repeat"
+rc="$(run_case 0.1.30)"
+check "11: an unchanged Banned verdict posts no comment" "0" "$(gh_called 'issue comment')"
+check "11: ...and still exits 1" "1" "$rc"
+
+# 12. Legacy issue: comments written before the marker existed. Comment once.
+mkdir -p "${WORK}/flagged-legacy" && cp -R "${WORK}/flagged/fixture" "${WORK}/flagged-legacy/fixture"
+printf '%s\n' "Declared version **\`0.1.33\`** is **Flagged** by Comfy-Org registry moderation." >"${WORK}/legacy-body.md"
+open_issue flagged-legacy 113 "${WORK}/legacy-body.md" "Declared version **\`0.1.33\`** is **Flagged** by Comfy-Org registry moderation."
+CASE_DIR="${WORK}/flagged-legacy"
+rc="$(run_case 0.1.33)"
+check "12: an issue with no marker yet gets one marked comment" "1" "$(gh_called 'issue comment')"
+check "12: ...and that run exits 1" "1" "$rc"
+
+# 13. The open-issue lookup fails: the run must fail, not open a duplicate issue.
+mkdir -p "${WORK}/list-fail" && cp -R "${WORK}/flagged/fixture" "${WORK}/list-fail/fixture"
+: >"${WORK}/list-fail/fixture/list.fail"
+CASE_DIR="${WORK}/list-fail"
+rc="$(run_case 0.1.33)"
+check "13: a failed issue lookup fails the run" "1" "$([ "$rc" != "0" ] && echo 1 || echo 0)"
+check "13: ...without opening a duplicate issue" "0" "$(gh_called 'issue create')"
 
 printf '\n%s: %d passed, %d failed\n' "$(basename "$0")" "$pass" "$fail"
 [ "$fail" -eq 0 ] || exit 1
