@@ -4,7 +4,7 @@
   "owner": {
     "name": "Lauri Gates"
   },
-  "description": "A curated collection of 44 Claude Code plugins providing 380+ skills and 21 agents for development workflows \u2014 git, testing, CI/CD, configuration, infrastructure, and language ecosystems.",
+  "description": "A curated collection of 45 Claude Code plugins providing 380+ skills and 21 agents for development workflows \u2014 git, testing, CI/CD, configuration, infrastructure, and language ecosystems.",
   "plugins": [
     {
       "name": "accessibility-plugin",
@@ -140,6 +140,26 @@
         "portfolio-tracking"
       ],
       "category": "development"
+    },
+    {
+      "name": "cloud-plugin",
+      "source": "./cloud-plugin",
+      "description": "Cloud provider operational skills - GCP today, provider-prefixed skill names (gcp-, hetzner-)",
+      "version": "1.0.0",
+      "author": {
+        "name": "Lauri Gates"
+      },
+      "license": "MIT",
+      "keywords": [
+        "cloud",
+        "gcp",
+        "gcloud",
+        "compute-engine",
+        "throwaway-vm",
+        "benchmark",
+        "teardown"
+      ],
+      "category": "infrastructure"
     },
     {
       "name": "code-quality-plugin",
