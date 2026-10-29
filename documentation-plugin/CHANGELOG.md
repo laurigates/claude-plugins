@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.0](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.13.4...documentation-plugin-v1.14.0) (2026-10-29)
+
+
+### Features
+
+* **documentation-plugin:** gate public-repo leaks at the write, keyed on destination visibility ([#3226](https://github.com/laurigates/claude-plugins/issues/3226)) ([8c000be](https://github.com/laurigates/claude-plugins/commit/8c000be5a9332ced22e21c843f16882d68c0bd59))
+
 ## [1.13.4](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.13.3...documentation-plugin-v1.13.4) (2026-10-29)
 
 
