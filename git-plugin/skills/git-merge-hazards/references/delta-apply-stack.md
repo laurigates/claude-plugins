@@ -147,8 +147,10 @@ git fetch -q origin <child>
 
 Equal trees mean the bot's head carries exactly the verified content. Merge
 pinned to the bot's head (`--match-head-commit` with `git rev-parse origin/<child>`),
-after the [serial-merge-chain.md](serial-merge-chain.md) guard, which allows the
-bot's merge commit and refuses any non-merge commit. A different tree means the
+after the [serial-merge-chain.md](serial-merge-chain.md) guard. That guard
+refuses the bot's merge commit too: a workflow's commit carries the bot's own
+committer, not `noreply@github.com`, so only the equal-tree check clears it.
+Take the guard's review timestamp after that check. A different tree means the
 bot changed content: start again from the new head.
 
 ## Why these merges squash

@@ -7,6 +7,17 @@
     "schedule:weekends"
   ],
   "labels": ["dependencies"],
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/bower_components/**",
+    "**/vendor/**",
+    "**/examples/**",
+    "**/__tests__/**",
+    "**/test/**",
+    "**/tests/**",
+    "**/__fixtures__/**",
+    "test-fixtures/**"
+  ],
   "rangeStrategy": "pin",
   "automergeStrategy": "squash",
   "timezone": "Europe/Helsinki",

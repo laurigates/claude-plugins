@@ -146,7 +146,7 @@ Pre-assembled plugin lists for common project types. Foundation + Core + Quality
 | Core | blueprint, git, project, agents |
 | Quality | testing, code-quality, documentation |
 | Stack | terraform-plugin, container-plugin, kubernetes-plugin, github-actions-plugin |
-| Optional | networking-plugin, finops-plugin |
+| Optional | networking-plugin, finops-plugin, cloud-plugin |
 
 ## Always-Install Plugins
 
@@ -183,6 +183,7 @@ Install based on your project's tech stack and domain.
 | container-plugin | Project uses Docker containers |
 | kubernetes-plugin | Deploying to Kubernetes clusters |
 | terraform-plugin | Managing infrastructure as code |
+| cloud-plugin | Renting cloud VMs for a test or benchmark and tearing them down (GCP today; skills are provider-prefixed) |
 | github-actions-plugin | CI/CD with GitHub Actions |
 | finops-plugin | Optimizing GitHub Actions costs |
 | networking-plugin | Network diagnostics or load testing needed |
