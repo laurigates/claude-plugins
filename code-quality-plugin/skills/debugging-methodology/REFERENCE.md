@@ -79,6 +79,8 @@ sudo bpftrace -e 'uprobe:./myapp:main.handleRequest { printf("called\n"); }'
 - High-frequency syscalls
 - When you can't afford to slow down the process
 
+For off-CPU stacks (where threads sleep rather than run) and lock-queue diagnosis, see [references/blocking-diagnosis.md](references/blocking-diagnosis.md).
+
 ### Network Debugging
 ```bash
 # Packet capture

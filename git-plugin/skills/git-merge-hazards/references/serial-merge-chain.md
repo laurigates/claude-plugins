@@ -45,6 +45,17 @@ head=$(gh pr view "$n" --json headRefOid --jq .headRefOid)
 gh pr merge "$n" --squash --match-head-commit "$head"
 ```
 
+`--match-head-commit` takes the full 40-character SHA, which `headRefOid`
+returns. An abbreviated one is rejected with `Could not coerce value "…" to
+GitObjectID`, and the PR is not merged.
+
+The chain squashes because `update-branch` adds a merge commit to each PR, and
+rule 4 of the merge-method decision rule sends any branch with a merge commit
+to squash (`github-pr-title` →
+[merge-strategies.md](../../github-pr-title/merge-strategies.md)). A PR that
+needed no update and has no merge commit takes the `METHOD=` that
+`pr-merge-method.py` prints.
+
 - **Use `jq --arg`, not `gh … --jq --arg`.** `gh`'s `--jq` takes a single
   expression and rejects extra arguments ("accepts at most 1 arg(s)"). Inside
   `late=$(…)` that error leaves `late` empty, so the guard reads "no late

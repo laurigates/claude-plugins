@@ -4,11 +4,11 @@
     "config:recommended",
     ":semanticCommits",
     ":semanticCommitTypeAll(chore)",
-    "schedule:weekends",
-    "group:allNonMajor"
+    "schedule:weekends"
   ],
   "labels": ["dependencies"],
   "rangeStrategy": "pin",
+  "automergeStrategy": "squash",
   "timezone": "Europe/Helsinki",
   "prConcurrentLimit": 5,
   "prHourlyLimit": 2,
