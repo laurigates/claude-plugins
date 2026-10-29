@@ -1,6 +1,6 @@
 # Plugin Navigation Map
 
-Navigation guide for 45 plugins and 380+ skills. Start here.
+Navigation guide for 46 plugins and 380+ skills. Start here.
 
 ## Quick Start
 
