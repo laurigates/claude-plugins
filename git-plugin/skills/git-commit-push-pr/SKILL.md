@@ -1,9 +1,9 @@
 ---
 name: git-commit-push-pr
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-10-26
 reviewed: 2026-04-29
-allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git branch *), Bash(git remote *), Bash(gh pr *), Bash(gh label *), Bash(gh repo *), Bash(gh issue *), Bash(pre-commit *), Bash(find *), Read, Edit, Grep, Glob, TodoWrite, mcp__github__create_pull_request, mcp__github__list_issues, mcp__github__get_issue
+allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git branch *), Bash(git remote *), Bash(gh pr *), Bash(gh label *), Bash(gh repo *), Bash(gh issue *), Bash(pre-commit *), Bash(python3 *), Bash(find *), Read, Edit, Grep, Glob, TodoWrite, mcp__github__create_pull_request, mcp__github__list_issues, mcp__github__get_issue
 args: "[remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>] [--skip-issue-detection]"
 argument-hint: "[remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>] [--skip-issue-detection]"
 disable-model-invocation: true
@@ -134,14 +134,14 @@ Use `mcp__github__create_pull_request` with:
 - `head`: The remote branch name (e.g., `feat/auth-oauth2`)
 - `base`: `main`
 - `title`: Derived from commit message
-- `body`: Include summary, issue link if --issue provided, and a **Follow-up Issues** section listing any issues created in 5a. The MCP tool takes the body as a JSON string parameter — no shell escaping, so backticks and code fences pass through unchanged.
+- `body`: Include summary, issue link if --issue provided, and a `Follow-up:` line plus `Refs #N` footers for any issues created in 5a (plain prose, no headings or checklists — the body may become a commit body). The MCP tool takes the body as a JSON string parameter — no shell escaping, so backticks and code fences pass through unchanged.
 - `draft`: true if --draft flag set
 
 If falling back to `gh pr create` instead of the MCP tool, write the body to a tempfile and pass `--body-file /tmp/pr-body.md` (see the **Body content** rule in `github-issue-writing`).
 
 PR body structure when follow-up issues exist:
 
-The body becomes the squash commit body (see `github-pr-title` →
+The squash body follows the repo's `squash_merge_commit_message`: `COMMIT_MESSAGES` on release-please repos such as claude-plugins, `PR_BODY` elsewhere (OpenTofu-managed in laurigates/gitops `main.tf`; laurigates/gitops#318 moves release-please repos to `PR_BODY`). On a `PR_BODY` repo a squash-merged PR's body becomes the commit body (see `github-pr-title` →
 [merge-strategies.md](../github-pr-title/merge-strategies.md)) — prose, then footers:
 
 ```markdown
@@ -150,6 +150,8 @@ The body becomes the squash commit body (see `github-pr-title` →
 Follow-up: #456 (database migration), #457 (feature-flag config)
 
 Fixes #123
+Refs #456
+Refs #457
 ```
 
 If `--labels` provided, add labels after PR creation:
@@ -168,16 +170,16 @@ gh pr checks <pr-number> --watch --fail-fast
 
 **On success (exit 0)**:
 - Report: "All checks passed. PR #N is ready for merge."
-- Provide merge command: `gh pr merge <pr-number> --squash --delete-branch`
+- Provide merge command: `gh pr merge <pr-number> --<method> --delete-branch`, where `<method>` is the `METHOD=` that `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/pr-merge-method.py" --repo <owner>/<repo> --pr <pr-number>` prints (rebase by default; rule table in [merge-strategies.md](../github-pr-title/merge-strategies.md))
 
-> **Pitfall — `--delete-branch` from the PR's own working tree:** before running `gh pr merge <N> --squash --auto --delete-branch`, switch your working tree to `main` (or any branch other than the PR head). If your cwd or any worktree has the PR's branch checked out, the local-branch-delete step fails with `cannot delete branch 'X' used by worktree at Y` even though the server-side merge is queued correctly. The misleading error makes it look like the merge failed; confirm with `gh pr view <N> --json state`.
+> **Pitfall — `--delete-branch` from the PR's own working tree:** before running `gh pr merge <N> --<method> --auto --delete-branch`, switch your working tree to `main` (or any branch other than the PR head). If your cwd or any worktree has the PR's branch checked out, the local-branch-delete step fails with `cannot delete branch 'X' used by worktree at Y` even though the server-side merge is queued correctly. The misleading error makes it look like the merge failed; confirm with `gh pr view <N> --json state`.
 >
 > Safer two-step pattern:
 >
 > ```bash
 > git switch main
 > git pull
-> gh pr merge <pr-number> --squash --auto --delete-branch
+> gh pr merge <pr-number> --<method> --auto --delete-branch
 > ```
 
 **On failure (exit 1)**:

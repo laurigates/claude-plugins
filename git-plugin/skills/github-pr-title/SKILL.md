@@ -1,6 +1,6 @@
 ---
 created: 2026-01-30
-modified: 2026-10-02
+modified: 2026-10-26
 reviewed: 2026-04-25
 name: github-pr-title
 description: |
@@ -117,25 +117,28 @@ revert: feat(auth): add OAuth support
 | Deps | `build(deps): bump <pkg> to <ver>` |
 | Breaking | `feat(<scope>)!: change <what>` |
 
-## Merge Strategy and the PR Body
+## Merge Method and the PR Body
 
-The title only drives release-please under **squash** merge. Under rebase or
-merge-commit, each branch commit lands as-is and the PR title/body are discarded.
-With the repo setting *squash → PR title and description*, the **PR body becomes
-the commit body** and release-please parses it: a `BREAKING CHANGE:` footer
+The title only drives release-please under **squash** merge. Under rebase,
+each branch commit lands as-is and the PR title/body are discarded. The house
+default is rebase unless there is a reason to squash; single-commit PRs,
+release PRs and PRs with fixups squash, so the title still decides most
+releases. The squash body follows the repo's `squash_merge_commit_message`:
+`COMMIT_MESSAGES` on release-please repos such as claude-plugins, `PR_BODY` elsewhere (OpenTofu-managed in laurigates/gitops `main.tf`; laurigates/gitops#318 moves release-please repos to `PR_BODY`). On a `PR_BODY` repo the **PR body becomes the commit body** and
+release-please parses it: a `BREAKING CHANGE:` footer
 forces a major bump, a footer line shaped like `fix(x): …` adds an extra
 changelog entry, and `Release-As:` pins the version. Write the body as a commit
 body (prose + `Fixes #N` footers, no checklists).
 
-Strategy table, body shape, and post-merge repair (`BEGIN_COMMIT_OVERRIDE`):
-[merge-strategies.md](merge-strategies.md).
+Decision rule, method table, body shape, and post-merge repair
+(`BEGIN_COMMIT_OVERRIDE`): [merge-strategies.md](merge-strategies.md).
 
 ## Why This Matters
 
 **Conventional commit PR titles ensure:**
 
 1. **Accurate automation** - release-please reads PR titles to determine version bumps
-2. **Clean git history** - squash-and-merge uses PR title as commit message
+2. **Clean git history** - a squash merge uses the PR title as the commit subject
 3. **Searchable commits** - type prefix makes filtering easy
 4. **CHANGELOG accuracy** - commits are grouped by type in generated changelogs
 

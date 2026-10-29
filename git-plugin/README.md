@@ -66,7 +66,7 @@ Three composable skills that can be invoked individually or combined based on us
 | `git-branch-pr-workflow` | Git branching and PR workflow patterns |
 | `git-rebase-patterns` | Advanced rebase techniques (--reapply-cherry-picks, --update-refs, --onto, stacked PRs) |
 | `git-stacked-prs` | GitHub native stacked PRs via the `gh stack` extension — lifecycle, sync/rebase cascade, exit codes, and how a registered stack differs from an ad-hoc PR chain |
-| `git-merge-hazards` | Traps in GitHub's merge machinery — squash-merge detection authority order, stacked-base auto-close and the no-force merge-main route, push-by-SHA races and the `refs/heads/` refspec form, the rollup-completion CI gate, merging over red CI, negated closing keywords |
+| `git-merge-hazards` | Traps in GitHub's merge machinery — squash-merge detection authority order, stacked-base auto-close and the no-force merge-main route, push-by-SHA races and the `refs/heads/` refspec form, the rollup-completion CI gate, merging over red CI, negated closing keywords, and `merge-chain.sh`, which merges an ordered PR list and stops on a conflict or red CI |
 | `git-local-hazards` | Local git traps where exit 0 lies — commits orphaned after a squash-merge, stray local-`main` commits, duplicate additions from a clean merge, atomic `git add`, a "vanished" staged file, recovering `reset --hard` from a pre-commit stash |
 | `external-pr-trust` | Authorship as a precondition of merging — bot vs stranger classification across `gh` subcommands, what a merge executes, the merge-guard hook, one literal PR number per `gh pr merge` |
 | `github-comment-content` | What a PR or issue comment should say — cut every fact the GitHub page already renders, keep what it cannot show |
@@ -126,10 +126,11 @@ The rule this plugin applies:
 | `validate-pr-issue-links.sh` | PreToolUse (Bash) | Enforce issue-closing links on PR creation |
 | `check-pr-metadata-on-push.sh` | PreToolUse (Bash) | Remind to align PR title/body with commits before push. Fires only for an **`OPEN`** PR — a branch whose PR is `MERGED` or `CLOSED` pushes through, since finished metadata is a historical record |
 | `check-branch-sync-on-push.sh` | PreToolUse (Bash) | Nudge (`ask`) before `commit`/`push` when the branch is behind origin or its PR is merged/closed. Evaluates the push **refspec destination** (`<sha>:refs/heads/<other>`), not HEAD — falling back to HEAD when the destination is ambiguous (multi-refspec) or still carries a shell metacharacter (`git push -u origin $(git branch --show-current)`), which would otherwise silence the hook; skips the behind-nudge for a force-push lease-pinned to the fetched origin tip (`--force-with-lease=<branch>:<sha>`) and drops the `git pull --rebase` advice on any other force-push (#2672). Cached per session+branch; opt out with `CLAUDE_HOOKS_DISABLE_BRANCH_SYNC=1`, tune TTL with `CLAUDE_HOOKS_BRANCH_SYNC_TTL` |
+| `check-pr-merge-method.sh` | PreToolUse (Bash) | Block a `gh pr merge --squash/--rebase/--merge` whose method disagrees with `scripts/pr-merge-method.py` (rule table: [merge-strategies.md](skills/github-pr-title/merge-strategies.md)). The message carries the corrected command; a human-applied `merge:squash` / `merge:rebase` label overrides. Fails open when `gh` or the PR is unreadable |
 | `git-drift-probe.sh` | SessionStart | Surface `pr_merged` / `branch_behind` / `changes_requested` drift on the current branch via the consolidated drift nudge |
 
-The three PreToolUse hooks decide whether the command *runs* `gh pr create`,
-`git push` or `git commit` on parsed command nodes (`ast-grep --lang bash`, via
+The four PreToolUse hooks decide whether the command *runs* `gh pr create`,
+`gh pr merge`, `git push` or `git commit` on parsed command nodes (`ast-grep --lang bash`, via
 `hooks/lib/parsed-commands.sh`), so a quoted argument, heredoc body, commit
 message or comment that only *mentions* one does not fire them; wrappers
 (`env`, `sudo`, `timeout`, `FOO=1`), `git -C <dir>` / git global options,

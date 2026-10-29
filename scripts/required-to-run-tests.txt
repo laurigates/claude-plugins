@@ -56,6 +56,7 @@ kubernetes-plugin/hooks/test-inject-kubectl-dry-run.sh
 git-plugin/hooks/test-check-pr-metadata-on-push.sh
 git-plugin/hooks/test-validate-pr-issue-links.sh
 git-plugin/hooks/test-check-branch-sync-on-push.sh
+git-plugin/hooks/test-check-pr-merge-method.sh
 hooks-plugin/hooks/test-secret-protection.sh
 
 # uv  (workflow: "Set up uv")
@@ -103,6 +104,13 @@ git-plugin/skills/git-merge-hazards/scripts/tests/test-push-refspec.sh
 # body-size band check under python3; the runner ships both, and a missing one fails
 # the run rather than skipping it (the test guards each one at its top).
 git-plugin/skills/git-merge-hazards/scripts/tests/test-no-force-stack.sh
+
+# Its only skip is a missing jq, which ubuntu-latest ships, so a skip here means
+# the suite stopped running. It drives merge-chain.sh end to end against a stub
+# gh: the authorship rule that stands in for the merge guard, the full-SHA
+# pin, and the late-commit and head-moved guards. Without it nothing notices a
+# change that lets the script merge a PR it should have stopped.
+git-plugin/skills/git-merge-hazards/scripts/tests/test-merge-chain.sh
 
 # Runs entirely off committed fixtures -- no gh, no network, no task binary --
 # so there is no environment in which skipping it is legitimate. A skip would
@@ -152,6 +160,18 @@ hooks-plugin/hooks/test-no-calendar-estimates.sh
 # node with a stub pi; its only skip is "node not available". Every CI runner
 # has node, so a skip here means the runtime half silently stopped running.
 scripts/tests/test-export-pi-hooks.sh
+
+# Stub-runtime tests for the bundled *.workflow.js templates execute each
+# template under node with stubbed agent()/parallel(); their only skip is "node
+# not installed". Same terms as the pi bridge above: every CI runner has node,
+# so a skip means the template behaviour checks silently stopped running
+# (#3255).
+workflow-orchestration-plugin/skills/workflow-implement-verify/scripts/tests/test-templates.sh
+workflow-orchestration-plugin/skills/workflow-bake-off/scripts/tests/test-compete-and-judge.sh
+git-plugin/skills/git-issue/scripts/tests/test-issue-triage.sh
+agent-patterns-plugin/skills/adversarial-review/scripts/tests/test-templates.sh
+agent-patterns-plugin/skills/verify-before-plan/scripts/tests/test-recon-map.sh
+testing-plugin/skills/mutation-testing/scripts/tests/test-survivor-triage.sh
 
 # The Antigravity subagent export test's only skip is "PyYAML not available".
 # The runner's system python3 ships PyYAML (the suite PASSes in CI rather than

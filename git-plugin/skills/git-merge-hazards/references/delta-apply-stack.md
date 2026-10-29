@@ -147,13 +147,18 @@ git fetch -q origin <child>
 
 Equal trees mean the bot's head carries exactly the verified content. Merge
 pinned to the bot's head (`--match-head-commit` with `git rev-parse origin/<child>`),
-after the [serial-merge-chain.md](serial-merge-chain.md) guard, which allows the
-bot's merge commit and refuses any non-merge commit. A different tree means the
+after the [serial-merge-chain.md](serial-merge-chain.md) guard. That guard
+refuses the bot's merge commit too: a workflow's commit carries the bot's own
+committer, not `noreply@github.com`, so only the equal-tree check clears it.
+Take the guard's review timestamp after that check. A different tree means the
 bot changed content: start again from the new head.
 
-## Why squash per PR
+## Why these merges squash
 
-The repo had merge commits disabled (`mergeCommitAllowed: false`), so the stack
-could not be merged top-down with merge commits. Merging each PR with `--squash`
-in turn keeps one conventional commit per PR on `main`, which is what
+Each child carries the merge commit this recipe creates, and rule 4 of the
+merge-method decision rule sends any branch with a merge commit to squash
+(`github-pr-title` → [merge-strategies.md](../../github-pr-title/merge-strategies.md)).
+The repo also had merge commits disabled (`mergeCommitAllowed: false`), so the
+stack could not be merged top-down with merge commits. Squashing each PR in
+turn keeps one conventional commit per PR on `main`, which is what
 release-please reads.

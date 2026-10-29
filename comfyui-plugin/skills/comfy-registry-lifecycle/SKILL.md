@@ -1,6 +1,6 @@
 ---
 created: 2026-07-07
-modified: 2026-10-17
+modified: 2026-10-24
 reviewed: 2026-07-07
 name: comfy-registry-lifecycle
 description: >-
@@ -159,6 +159,9 @@ on demand) that looks up the `pyproject.toml` version in the registry and
 **fails + opens a `registry-health` issue** when that version is Flagged,
 Banned, Deleted, stuck Pending, missing, or outranked by a phantom — auto-closing when
 healthy — is the early-warning the publish pipeline lacks on its own.
+A daily run whose verdict matches the issue's last alert posts nothing, and an
+unchanged Flagged verdict ends with a warning instead of failing the run; the
+`Comfy Registry / scan` commit status stays red either way.
 On Flagged, Banned or Deleted it names the version `/install` actually resolves
 to — the number that says whether anyone's install is broken (Flagged: no;
 Banned: yes; Deleted: expected yes, not yet verified against `/install`). Only

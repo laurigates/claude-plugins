@@ -15,6 +15,13 @@ route guard, so they refuse unless `route` is `A`. The Case B block runs under
 `set -e`. Every merge passes `--no-ff`, so an operator's `merge.ff=only` cannot make
 one refuse. No chain pushes unless its gates hold.
 
+The route squash-merges the base: Classify compares the one squash commit's
+tree with the base's pre-squash tip. The child then carries a merge of `main`,
+so it squashes too (rule 4 in `github-pr-title` →
+[merge-strategies.md](../../github-pr-title/merge-strategies.md)). When the
+merge-method script recommends rebase for the base, use the rebase path in
+SKILL.md §2 instead of this route.
+
 ## Check the base first
 
 Retargeting first strands the child on `main` when the base refuses to merge, so
@@ -192,8 +199,8 @@ The fourth kind is a line relocation within a file. A line the child added, whic
 a bot then moves elsewhere in the same file, prints as the same `>` line, so the
 content lines do not change. The raw listing records only the file's status and
 mode, which a move leaves alone, so nothing in the route sees the move. The guard
-in [serial-merge-chain.md](serial-merge-chain.md) refuses a PR that gained any
-non-merge commit after review, so it covers a non-merge relocation commit.
+in [serial-merge-chain.md](serial-merge-chain.md) refuses any commit after
+review other than GitHub's own update-branch merge, so it covers a non-merge relocation commit.
 
 The recipes need git 2.38 or later, for `merge-tree --write-tree` in the Case A
 prediction. That also covers the `--output-indicator-*` flags.
@@ -336,7 +343,8 @@ for the head they read, so a changed child needs a fresh classification.
 
 Retargets and `update-branch` both trigger bot commits. Before each merge, run
 the guard in [serial-merge-chain.md](serial-merge-chain.md). It refuses a PR that
-gained a non-merge commit after review, and it pins the merge to the head it read.
+gained any commit after review other than GitHub's own update-branch merge, and it
+pins the merge to the head it read.
 
 ## After the push
 

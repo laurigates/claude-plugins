@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.3](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.13.2...feedback-plugin-v1.13.3) (2026-10-27)
+
+
+### Bug Fixes
+
+* **feedback-plugin:** give external-PR merge guard blocks their own friction signature ([#3195](https://github.com/laurigates/claude-plugins/issues/3195)) ([9825e07](https://github.com/laurigates/claude-plugins/commit/9825e075c7675a8b383e832b9810bfac141f0e3d))
+
 ## [1.13.2](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.13.1...feedback-plugin-v1.13.2) (2026-10-24)
 
 

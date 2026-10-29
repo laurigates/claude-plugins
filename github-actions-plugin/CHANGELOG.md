@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.5](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.13.4...github-actions-plugin-v1.13.5) (2026-10-29)
+
+
+### Documentation
+
+* **github-actions-plugin:** budget hard stop signature and budgets API ([#3258](https://github.com/laurigates/claude-plugins/issues/3258)) ([355e99b](https://github.com/laurigates/claude-plugins/commit/355e99b600ba0868bfa6b2a0bdeaf977a1b5526f))
+
 ## [1.13.4](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.13.3...github-actions-plugin-v1.13.4) (2026-10-10)
 
 

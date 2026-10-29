@@ -1,7 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "documentation-plugin",
-  "version": "1.13.3",
+  "hooks": "./hooks.json",
+  "version": "1.13.4",
   "description": "Documentation generation - API docs, README, LaTeX PDF conversion",
   "author": {
     "name": "Lauri Gates"

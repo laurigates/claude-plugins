@@ -1,0 +1,23 @@
+name: Merge Method
+
+# Posts the advisory `merge-method` check ("→ Rebase and merge (…)" /
+# "→ Squash and merge (…)") and the matching merge:rebase / merge:squash label.
+# Never required: see laurigates/.github reusable-merge-method.yml. A human-
+# applied merge:* label overrides; labeled/unlabeled re-run the check for it.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  checks: write
+  pull-requests: write
+  contents: read
+
+jobs:
+  merge-method:
+    uses: laurigates/.github/.github/workflows/reusable-merge-method.yml@main

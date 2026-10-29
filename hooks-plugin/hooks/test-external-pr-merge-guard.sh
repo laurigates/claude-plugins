@@ -91,6 +91,17 @@ case "$args" in
       # model that, or the loop case would look resolvable and the test would
       # assert against the wrong denial path.
       case "$args" in *'$'*) exit 1 ;; esac
+      # Per-PR mode (merge-chain.sh lists): STUB_PR_AUTHORS="219=me 220=x"
+      # answers each selector with its own author; an unlisted PR fails.
+      if [ -n "${STUB_PR_AUTHORS:-}" ]; then
+          author=""
+          for pair in $STUB_PR_AUTHORS; do
+              case "$pair" in "$3="*) author="${pair#*=}" ;; esac
+          done
+          [ -n "$author" ] || exit 1
+          printf '%s\t%s\t%s\t%s\t%s\n' "$3" "$author" false "a title" "https://example.invalid/pr"
+          exit 0
+      fi
       if [ -n "${STUB_REPO_AUTHORS:-}" ]; then
           author=""
           for pair in $STUB_REPO_AUTHORS; do
@@ -562,6 +573,71 @@ while IFS=$'\t' read -r cwdk want cmd; do
     ck "#2889 [$cwdk] $cmd" "$want" "$(run_hook_in "$HOOK" "$WS/$cwdk" "$cmd")"
 done <<< "$MERGE_CORPUS"
 
+echo "== command forms the statement parser missed (issue #3262) =="
+# An adversarial pass on #3260 found forms that ran `gh pr merge` behind a
+# shape the parser did not read as a command. Every DENY row was ALLOWED
+# before #3262. Same layout as the #2889 corpus: cwd key, verdict, command.
+BYPASS_CORPUS=$(cat <<'CORPUS'
+own	DENY	f(){ "$@"; }; f gh pr merge 5 -R acme/ext
+own	DENY	f() { "$@"; }; f gh pr merge 5
+own	DENY	function f { "$@"; }; f gh pr merge 5 -R acme/ext
+own	DENY	run_it () { "$@"; }@NL@run_it gh pr merge 5 -R acme/ext
+own	DENY	f(){ "$@"; }; f "$S" --repo acme/ext --prs 5
+own	DENY	f(){ "$@"; }; echo "$(f gh pr merge 5 -R acme/ext)"
+own	DENY	gh(){ command gh "$@" -R acme/ext; }; gh pr merge 5 -R acme/own
+own	DENY	() { "$@"; } gh pr merge 5 -R acme/ext
+own	ALLOW	f(){ echo hi; }; f && gh pr merge 5
+own	ALLOW	f(){ git log "$@"; }; f --grep=merge
+own	ALLOW	f(){ "$@"; }; f gh pr view 5 --json mergedAt
+own	DENY	eval gh pr merge 5 -R acme/ext
+own	DENY	eval gh pr merge 5 \; gh pr merge 6 -R acme/ext
+own	DENY	eval gh pr "merge" 5 -R acme/ext
+own	DENY	eval gh pr merge 5 -R \$R
+own	DENY	command eval gh pr merge 5 -R acme/ext
+own	DENY	noglob eval gh pr merge 5 -R acme/ext
+own	DENY	eval -- gh pr merge 5 -R acme/ext
+own	DENY	eval gh pr merge 5 -R acme/ext # note
+own	DENY	bash -c 'eval gh pr merge 5 -R acme/ext'
+own	ALLOW	eval gh pr merge 5 -R acme/own
+own	ALLOW	eval echo gh pr merge 5 -R acme/ext
+own	DENY	arch -arm64 gh pr merge 5 -R acme/ext
+own	DENY	noglob gh pr merge 5 -R acme/ext
+own	DENY	nocorrect gh pr merge 5 -R acme/ext
+own	DENY	screen -dm gh pr merge 5 -R acme/ext
+own	DENY	time -p gh pr merge 5 -R acme/ext
+own	DENY	time -p bash -c 'gh pr merge 5 -R acme/ext'
+own	DENY	/usr/bin/time -p gh pr merge 5 -R acme/ext
+own	ALLOW	noglob gh pr merge 5 -R acme/own
+own	ALLOW	time -p gh pr merge 5
+own	ALLOW	time -p make
+own	ALLOW	noglob ls *
+own	ALLOW	time -p git merge main
+own	ALLOW	noglob git merge --ff-only origin/main
+own	DENY	bash <(echo 'gh pr merge 5 -R acme/ext')
+own	DENY	bash < <(echo 'gh pr merge 5 -R acme/ext')
+own	DENY	source <(echo 'gh pr merge 5 -R acme/ext')
+own	DENY	. <(echo 'gh pr merge 5 -R acme/ext')
+own	DENY	zsh =(echo 'gh pr merge 5 -R acme/ext')
+own	DENY	sudo bash <(printf 'gh pr merge 5')
+own	DENY	exec bash <(echo 'gh pr merge 5')
+own	DENY	bash /dev/fd/3 3< <(echo 'gh pr merge 5')
+own	ALLOW	cat <(echo 'gh pr merge 5 -R acme/ext')
+own	ALLOW	diff <(git log --merges) <(git log)
+CORPUS
+)
+while IFS=$'\t' read -r cwdk want cmd; do
+    [ -n "$cwdk" ] || continue
+    cmd=$(expand_ws "$cmd")
+    ck "#3262 [$cwdk] ${cmd//$'\n'/'\n'}" "$want" "$(run_hook_in "$HOOK" "$WS/$cwdk" "$cmd")"
+done <<< "$BYPASS_CORPUS"
+# The denials name the cause, so the agent knows what to change.
+STUB_AUTHOR=laurigates run "$(bash_json 'f(){ "$@"; }; f gh pr merge 2231')" >/dev/null
+ck "function-call merge denied"        DENY "$LAST_VERDICT"
+ck_reason "names the function call"    "function defined in this command"
+STUB_AUTHOR=laurigates run "$(bash_json "bash <(echo 'gh pr merge 2231')")" >/dev/null
+ck "process-substitution script denied" DENY "$LAST_VERDICT"
+ck_reason "names process substitution" "process substitution"
+
 # The verdict alone does not prove the repo flag was READ — a deny can come
 # from a fail-closed path. These pin that gh pr view was asked about the
 # repository gh would actually merge in.
@@ -894,6 +970,87 @@ case "$LAST_REASON" in
     *) printf '  ok   case A retry hint does not echo unexpanded $R as a runnable command\n'; PASS=$((PASS + 1)) ;;
 esac
 unset STUB_AUTHOR STUB_NUM STUB_TITLE
+
+echo "== merge-chain.sh: every PR in --prs is checked before the script runs =="
+# git-plugin's merge-chain.sh merges a PR list with gh calls this hook never
+# sees, so the hook — the single authority on "may an agent merge this PR" —
+# reads the list from the invocation and checks each PR's author. Every DENY is
+# paired with an ALLOW control on the same shape, so no case passes by
+# blanket-denying anything that names the script.
+MC_SCRIPT='"${CLAUDE_PLUGIN_ROOT}/skills/git-merge-hazards/scripts/merge-chain.sh"'
+MC_ARGS='--repo laurigates/claude-plugins --prs 219,220,227 --review-ts 2026-10-27T08:00:00Z'
+MC_SELF='219=laurigates 220=laurigates 227=laurigates'
+MC_STRANGER='219=laurigates 220=joshua-trustabl 227=laurigates'
+# ck_chain <desc> <expected> <authors> <command> [reason substring]
+ck_chain() {
+    STUB_PR_AUTHORS="$3" run "$(bash_json "$4")" >/dev/null
+    ck "$1" "$2" "$LAST_VERDICT"
+    if [ -n "${5:-}" ]; then ck_reason "$1 — reason names it" "$5"; fi
+}
+ck_chain "all-self list"                     ALLOW "$MC_SELF"     "merge-chain.sh $MC_ARGS"
+ck_chain "one stranger denies the whole list" DENY "$MC_STRANGER" "merge-chain.sh $MC_ARGS" "laurigates/claude-plugins#220"
+ck_reason "one stranger — author named"      "joshua-trustabl"
+ck_chain "bot in the list"                   ALLOW '219=laurigates 220=renovate[bot] 227=app/release-please' "merge-chain.sh $MC_ARGS"
+# Every listed PR is looked up, against --repo — not just the first.
+log="$TMPDIR/chain.log"; : > "$log"
+STUB_LOG="$log" STUB_PR_AUTHORS="$MC_SELF" run "$(bash_json "merge-chain.sh $MC_ARGS")" >/dev/null
+for n in 219 220 227; do
+    if grep -qF "pr view $n --repo laurigates/claude-plugins " "$log"; then
+        printf '  ok   PR %s looked up in --repo\n' "$n"; PASS=$((PASS + 1))
+    else printf '  FAIL PR %s was not looked up in --repo\n' "$n"; FAIL=$((FAIL + 1)); fi
+done
+# The list is read as the script reads it: spaces dropped, a leading # allowed.
+ck_chain "spaces after commas (quoted)"      DENY "$MC_STRANGER" 'merge-chain.sh --repo laurigates/claude-plugins --prs "219, 220" --review-ts 2026-10-27T08:00:00Z' "#220"
+ck_chain "#-prefixed entries, all self"      ALLOW "$MC_SELF"     "merge-chain.sh --repo laurigates/claude-plugins --prs '#219,#220' --review-ts 2026-10-27T08:00:00Z"
+ck_chain "quoted substitution in --review-ts" ALLOW "$MC_SELF"    'merge-chain.sh --repo laurigates/claude-plugins --prs 219,220 --review-ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)"'
+
+echo "-- invocation shapes"
+ck_chain "./path, stranger"                  DENY "$MC_STRANGER" "./git-plugin/skills/git-merge-hazards/scripts/merge-chain.sh $MC_ARGS" "#220"
+ck_chain "./path, self"                      ALLOW "$MC_SELF"     "./git-plugin/skills/git-merge-hazards/scripts/merge-chain.sh $MC_ARGS"
+ck_chain "bash path, stranger"               DENY "$MC_STRANGER" "bash git-plugin/skills/git-merge-hazards/scripts/merge-chain.sh $MC_ARGS" "#220"
+ck_chain "bash path, self"                   ALLOW "$MC_SELF"     "bash git-plugin/skills/git-merge-hazards/scripts/merge-chain.sh $MC_ARGS"
+ck_chain "quoted \${CLAUDE_PLUGIN_ROOT} path, stranger" DENY "$MC_STRANGER" "$MC_SCRIPT $MC_ARGS" "#220"
+ck_chain "quoted \${CLAUDE_PLUGIN_ROOT} path, self"     ALLOW "$MC_SELF"     "$MC_SCRIPT $MC_ARGS"
+ck_chain "bash + quoted \${CLAUDE_PLUGIN_ROOT} path, stranger" DENY "$MC_STRANGER" "bash $MC_SCRIPT --repo laurigates/claude-plugins --prs \"219,220\" --review-ts 2026-10-27T08:00:00Z" "#220"
+ck_chain "bash + quoted \${CLAUDE_PLUGIN_ROOT} path, self"     ALLOW "$MC_SELF"     "bash $MC_SCRIPT --repo laurigates/claude-plugins --prs \"219,220\" --review-ts 2026-10-27T08:00:00Z"
+ck_chain "sh -e + quoted path, stranger"     DENY "$MC_STRANGER" "sh -e $MC_SCRIPT $MC_ARGS" "#220"
+ck_chain "zsh + quoted \$HOME path, stranger" DENY "$MC_STRANGER" "zsh \"\$HOME/.claude/merge-chain.sh\" $MC_ARGS" "#220"
+ck_chain "quoted \$HOME path, self"          ALLOW "$MC_SELF"     "\"\$HOME/.claude/merge-chain.sh\" $MC_ARGS"
+ck_chain "behind a wrapper, stranger"        DENY "$MC_STRANGER" "timeout 900 merge-chain.sh $MC_ARGS" "#220"
+ck_chain "case-insensitive name, stranger"   DENY "$MC_STRANGER" "./Merge-Chain.sh $MC_ARGS" "#220"
+ck_chain "inside bash -c, stranger"          DENY "$MC_STRANGER" "bash -c 'merge-chain.sh $MC_ARGS'" "#220"
+ck_chain "after a cd, stranger"              DENY "$MC_STRANGER" "cd /tmp && merge-chain.sh $MC_ARGS" "#220"
+
+echo "-- fail closed when the list or repository cannot be read"
+ck_chain "missing --repo"                    DENY "$MC_SELF" 'merge-chain.sh --prs 219,220 --review-ts 2026-10-27T08:00:00Z' "no --repo"
+ck_chain "missing --prs"                     DENY "$MC_SELF" 'merge-chain.sh --repo laurigates/claude-plugins --review-ts 2026-10-27T08:00:00Z' "no --prs"
+ck_chain '--prs "$X"'                        DENY "$MC_SELF" 'merge-chain.sh --repo laurigates/claude-plugins --prs "$X" --review-ts 2026-10-27T08:00:00Z' "shell variable or command substitution"
+ck_chain '--prs "$(gh pr list …)"'           DENY "$MC_SELF" 'merge-chain.sh --repo laurigates/claude-plugins --prs "$(gh pr list --json number --jq .[].number)" --review-ts 2026-10-27T08:00:00Z' "shell variable or command substitution"
+ck_chain '--repo "$R"'                       DENY "$MC_SELF" 'merge-chain.sh --repo "$R" --prs 219 --review-ts 2026-10-27T08:00:00Z' "--repo value is a shell variable"
+ck_chain "non-integer entry"                 DENY "$MC_SELF" 'merge-chain.sh --repo laurigates/claude-plugins --prs 219,abc --review-ts 2026-10-27T08:00:00Z' "'abc'"
+ck_chain "--repo= form (the script rejects it)" DENY "$MC_SELF" 'merge-chain.sh --repo=laurigates/claude-plugins --prs 219 --review-ts 2026-10-27T08:00:00Z' "not an argument"
+ck_chain "unquoted \$ARGS"                   DENY "$MC_SELF" 'merge-chain.sh --repo laurigates/claude-plugins --prs 219 $EXTRA' "unquoted"
+ck_chain "unquoted \$HOME path"              DENY "$MC_SELF" "\$HOME/merge-chain.sh $MC_ARGS" "unquoted"
+ck_chain "variable script path with --prs"   DENY "$MC_SELF" "\"\$MC\" $MC_ARGS" "cannot tell whether it is merge-chain.sh"
+ck_chain "bash + variable script path"       DENY "$MC_SELF" "bash \"\$MC\" $MC_ARGS" "cannot tell whether it is merge-chain.sh"
+ck_chain "globbed script name"               DENY "$MC_SELF" "./m?rge-chain.sh $MC_ARGS" "cannot tell whether it is merge-chain.sh"
+ck_chain "xargs supplies more arguments"     DENY "$MC_SELF" "echo --fetch-dir | xargs merge-chain.sh $MC_ARGS" "xargs"
+ck_chain "-h alone"                          ALLOW "$MC_SELF" 'merge-chain.sh -h'
+ck_chain "--help alone"                      ALLOW "$MC_SELF" "bash $MC_SCRIPT --help"
+ck_chain "variable script path without a PR list" ALLOW "$MC_SELF" '"$TOOL" --version'
+
+echo "-- a mention is not an invocation"
+ck_chain "echo of the command"               ALLOW "$MC_STRANGER" "echo \"next: merge-chain.sh $MC_ARGS\""
+ck_chain "cat heredoc body"                  ALLOW "$MC_STRANGER" "cat <<'EOF'
+merge-chain.sh $MC_ARGS
+EOF"
+ck_chain "gh pr create --body text"          ALLOW "$MC_STRANGER" "gh pr create --title x --body \"Run merge-chain.sh $MC_ARGS after review\""
+ck_chain "rg for the name"                   ALLOW "$MC_STRANGER" 'rg -n "merge-chain.sh --prs" git-plugin/'
+
+echo "-- combined with other merges"
+ck_chain "self chain + literal merge of a stranger" DENY "$MC_STRANGER" "merge-chain.sh --repo laurigates/claude-plugins --prs 219,227 --review-ts 2026-10-27T08:00:00Z && gh pr merge 220 -R laurigates/claude-plugins --squash" "#220"
+ck_chain "self chain + literal self merge"   ALLOW "$MC_SELF" "merge-chain.sh --repo laurigates/claude-plugins --prs 219 --review-ts 2026-10-27T08:00:00Z; gh pr merge 220 -R laurigates/claude-plugins --squash"
+ck_chain "two chains, the second has the stranger" DENY "$MC_STRANGER" "merge-chain.sh --repo laurigates/claude-plugins --prs 219 --review-ts 2026-10-27T08:00:00Z && merge-chain.sh --repo laurigates/claude-plugins --prs 227,220 --review-ts 2026-10-27T08:00:00Z" "#220"
 
 echo "== operator escape hatch =="
 out=$(printf '%s' "$(bash_json 'gh pr merge 2231 --squash')" \
