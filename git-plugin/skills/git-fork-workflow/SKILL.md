@@ -222,13 +222,14 @@ Check the body file before publishing, then control-test the pattern against a
 line holding one bare and one backticked reference — only the bare one may match:
 
 ```bash
-rg -nP '(?<!`)\b[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+[#@][0-9a-f]+\b' body.md
+rg -nP '(?<![`\w.-])[\w.-]+/[\w.-]+(#[0-9]+|@[0-9a-f]{7,40})\b' body.md
 rg -n 'https://github\.com/[^/ ]+/[^/ ]+/(issues|pull)/[0-9]+' body.md
 ```
 
-The lookbehind only sees the character directly before the reference, so a
-reference in the middle of a longer code span or a fenced block also matches;
-review those by hand. The bare `user@sha` form is not covered.
+The lookbehind only sees the character directly before the reference (it also
+rejects a match that starts inside a hyphenated or dotted owner name such as
+`my-org`), so a reference in the middle of a longer code span or a fenced block
+also matches; review those by hand. The bare `user@sha` form is not covered.
 
 > Observed 2026-10 (`laurigates/dust#1`, a review PR in the fork before anything
 > went to `bootandy/dust`): references to the upstream issue and to third-party
