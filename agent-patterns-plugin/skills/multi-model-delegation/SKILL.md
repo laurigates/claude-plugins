@@ -2,10 +2,10 @@
 name: multi-model-delegation
 description: Multi-model design consults via PAL (kimi, glm, gemini, gpt). Use when asking other models to brainstorm a design or reconciling their split answers.
 user-invocable: false
-allowed-tools: Read, Glob, Grep, TodoWrite, mcp__pal-mcp-server__listmodels, mcp__pal-mcp-server__chat, mcp__pal-mcp-server__consensus, mcp__pal-mcp-server__thinkdeep
+allowed-tools: Read, Glob, Grep, TodoWrite, mcp__pal__listmodels, mcp__pal__chat, mcp__pal__consensus, mcp__pal__thinkdeep
 model: opus
 created: 2026-07-17
-modified: 2026-10-21
+modified: 2026-10-30
 reviewed: 2026-08-21
 ---
 
@@ -43,15 +43,15 @@ So read the registration rather than a file — `claude mcp list` is
 authoritative in every scope, and `claude mcp get` names the scope that owns it:
 
 ```bash
-claude mcp list                 # "pal-mcp-server: pal-mcp-server  - ✔ Connected"
-claude mcp get pal-mcp-server   # Scope: Project config (shared via .mcp.json)
+claude mcp list                 # "pal: uvx pal-mcp-server@latest - ✔ Connected"
+claude mcp get pal              # Scope: Project config (shared via .mcp.json)
 ```
 
-With the common registration `pal-mcp-server`, `chat` is
-`mcp__pal-mcp-server__chat`; a repo that registers the same binary under a
-different key gets that key in the prefix instead. Every
-`mcp__pal-mcp-server__*` name below assumes that registration — substitute the
-key `claude mcp list` reports.
+The portfolio registers PAL under the key `pal` (the `mcpServers.pal` entry in
+configure-plugin's `policy/repo-baseline.json`, which `/configure:mcp` writes),
+so `chat` is `mcp__pal__chat`; a repo that registers the same server under a
+different key gets that key in the prefix instead. Every `mcp__pal__*` name
+below assumes that registration — substitute the key `claude mcp list` reports.
 
 If a lookup under the correct prefix still finds nothing, see
 [REFERENCE.md](REFERENCE.md) — that message has a second cause.
@@ -70,7 +70,7 @@ Execute a multi-model consult in these steps:
 
 ### Step 1: Resolve model IDs first
 
-Run `mcp__pal-mcp-server__listmodels` once at the start of the consult
+Run `mcp__pal__listmodels` once at the start of the consult
 whenever a model is named loosely ("kimi2.7", "glm5.2") — registry IDs (`kimi-k2.7-code`,
 `glm-5.2`) and their aliases (`kimi`, `glm`) rarely match what anyone types
 from memory.
@@ -78,7 +78,7 @@ from memory.
 ### Step 2: Brief every model with the same prompt
 
 Send the identical brief, verbatim, to each model — one
-`mcp__pal-mcp-server__chat` call per model — and collect every reply before
+`mcp__pal__chat` call per model — and collect every reply before
 judging any of them.
 Different prompts produce divergences that are artifacts of the framing, not
 of the problem — and afterward you cannot tell a real design tension from a

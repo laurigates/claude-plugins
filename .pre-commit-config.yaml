@@ -602,6 +602,18 @@ repos:
         language: system
         files: '^(\.claude-plugin/marketplace\.json|\.claude/settings\.json)$'
         pass_filenames: false
+      - id: check-repo-baseline-policy
+        name: repo baseline policy names only real plugins (#3318)
+        entry: bash ./scripts/check-repo-baseline-policy.sh --strict
+        language: system
+        files: '^(configure-plugin/(policy/.*\.json|skills/.*\.md)|\.claude-plugin/marketplace\.json|scripts/check-repo-baseline-policy\.sh)$'
+        pass_filenames: false
+      - id: test-check-repo-baseline-policy
+        name: repo baseline policy guard regression
+        entry: bash ./scripts/tests/test-check-repo-baseline-policy.sh
+        language: system
+        files: '^(scripts/(check-repo-baseline-policy\.sh|tests/test-check-repo-baseline-policy\.sh)|configure-plugin/policy/repo-baseline\.json|\.claude-plugin/marketplace\.json)$'
+        pass_filenames: false
       - id: check-feature-flags-catalog
         name: every plugin env flag is documented (feature-flags-catalog)
         entry: bash ./scripts/check-feature-flags-catalog.sh --strict

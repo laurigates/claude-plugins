@@ -12,7 +12,7 @@ Used by Step 3 (Configure .claude/settings.json) of `/configure:claude-plugins`.
 > | `.claude/settings.json` → `enabledPlugins` (Step 3) | `<plugin>@laurigates-claude-plugins` | The **`extraKnownMarketplaces` key** in the same stanza |
 > | `.github/workflows/claude*.yml` → `plugins:` (Steps 4–5) | `<plugin>@laurigates-claude-plugins` | The **`name` field** in `laurigates/claude-plugins/.claude-plugin/marketplace.json` |
 >
-> **Keep the key equal to the marketplace `name`.** A machine that added the marketplace with `/plugin marketplace add` already knows it as `laurigates-claude-plugins`; Claude Code registers each `extraKnownMarketplaces` key it does not already know, so any other key (the old template used `claude-plugins`) registers the same repo a second time, and that key's `enabledPlugins` entries point at the copy. A suffix that matches no marketplace key is silently ignored; a wrong suffix in the workflow `plugins:` block makes the action reject the run.
+> **Keep the key equal to the marketplace `name`.** A machine that added the marketplace with `/plugin marketplace add` already knows it as `laurigates-claude-plugins`; Claude Code registers each `extraKnownMarketplaces` key it does not already know, so any other key (the legacy keys are the policy's `settings.legacyMarketplaceAliases`) registers the same repo a second time, and that key's `enabledPlugins` entries point at the copy. A suffix that matches no marketplace key is silently ignored; a wrong suffix in the workflow `plugins:` block makes the action reject the run.
 
 ## Why `enabledPlugins` merge semantics matter
 
@@ -47,38 +47,31 @@ Add stack-specific entries based on detected project type:
 
 Use granular patterns only — do not add `Bash(bash *)` for CLI tools.
 
-## Full settings.json stanza to merge
+## Applying the repo baseline policy
 
-The `extraKnownMarketplaces` key (`laurigates-claude-plugins`, equal to the marketplace `name`) is what each `enabledPlugins` entry's `@laurigates-claude-plugins` suffix must match. The two stanzas are coupled — changing the key without also changing every suffix silently disables every plugin in `enabledPlugins`.
+The required settings keys live in one file, [`configure-plugin/policy/repo-baseline.json`](../../../policy/repo-baseline.json): the `$schema`, the marketplace stanza, the `enabledMcpjsonServers` approval floor, the legacy marketplace aliases, and the stack → plugin mapping. Read them from there; this file only says how to apply them. The policy is a **floor**: it names required keys, and everything else in a repo's settings passes through untouched.
 
-If an existing `.claude/settings.json` uses the old `claude-plugins` key, rename the key and every `@claude-plugins` suffix together.
+Rename legacy aliases first, then deep-merge `settings.floor`, then add `stacks[].plugins`. The order matters: a stack plugin added before the rename lands as `<plugin>@laurigates-claude-plugins: true` beside a legacy `<plugin>@<alias>: false`, and the rename then collides and loses the repo's explicit `false`.
+
+| Policy field | How to apply it to `.claude/settings.json` |
+|---|---|
+| `settings.legacyMarketplaceAliases` | Each is an old `extraKnownMarketplaces` key for the same marketplace (an entry whose `source.repo` is `laurigates/claude-plugins`). Rename the key **and** every `<plugin>@<alias>` suffix in `enabledPlugins` to the floor's key together. On a collision (both `<plugin>@<alias>` and `<plugin>@laurigates-claude-plugins` exist, or both marketplace keys), keep the canonical key and its value, drop the alias entry, and report the collision |
+| `settings.floor` | Deep-merge: objects merge key by key and lists are unioned. Where the floor names a key, the floor's value wins: the marketplace stanza ends with the floor's `source` and `autoUpdate: true` even if the repo had `autoUpdate: false` or another source. A key the floor does not name, inside the stanza or elsewhere, is kept |
+| `stacks[].detect` | Evaluated against the repo **root** listing only: `files` = exact names, `globs` = fnmatch on root names, `cargoDependency` = the name appears under `[dependencies]` or `[workspace.dependencies]` in the root `Cargo.toml` |
+| `stacks[].plugins` | Added as `true` only where the key is absent. An explicit `false` is never flipped |
+
+The marketplace key and every `@laurigates-claude-plugins` suffix are coupled — changing the key without also changing every suffix silently disables every plugin in `enabledPlugins`.
+
+After the floor is merged, add the permissions from [Stack-aware `permissions.allow` baseline](#stack-aware-permissionsallow-baseline) and the plugins selected in Step 2, as entries shaped like:
 
 ```json
 {
-  "permissions": {
-    "allow": [
-      "Bash(git:*)",
-      "Bash(gh:*)",
-      "Bash(pre-commit:*)",
-      "Bash(gitleaks:*)",
-      "Bash(python3:*)"
-      // ... plus stack-specific entries from the table above
-    ]
-  },
-  "extraKnownMarketplaces": {
-    "laurigates-claude-plugins": {                       // marketplace KEY == marketplace name (used by enabledPlugins suffix below)
-      "source": { "source": "github", "repo": "laurigates/claude-plugins" },
-      "autoUpdate": true
-    }
-  },
   "enabledPlugins": {
-    "<selected-plugin-1>@laurigates-claude-plugins": true, // suffix == extraKnownMarketplaces key
+    "<selected-plugin-1>@laurigates-claude-plugins": true,
     "<selected-plugin-2>@laurigates-claude-plugins": true
   }
 }
 ```
-
-Replace `<selected-plugin-N>` with the plugin names selected in Step 2.
 
 If `.claude/settings.json` already exists, **MERGE** without duplicating entries. Preserve any existing `hooks`, `env`, or other fields.
 

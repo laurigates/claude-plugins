@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-10-22
-reviewed: 2026-05-14
+modified: 2026-10-30
+reviewed: 2026-10-30
 description: Check and configure MCP servers for project integration. Use when setting up MCP servers, checking MCP status, or adding new servers to a project.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--core] [--server <name>]"
@@ -42,19 +42,14 @@ Parse these from `$ARGUMENTS`:
 
 - `--check-only`: Report current status, do not offer installation
 - `--fix`: Install servers without prompting for confirmation
-- `--core`: Install all core servers (`context7`, `sequential-thinking`)
+- `--core`: Install every core server (see Core Servers)
 - `--server <name>`: Install specific server by name (repeatable)
 
 If no flags provided, run interactive mode (detect → report → offer to install).
 
 ## Core Servers
 
-These servers should be installed in **all projects**:
-
-| Server | Purpose | Env Vars |
-|--------|---------|----------|
-| `context7` | Documentation context from Upstash | None |
-| `sequential-thinking` | Enhanced reasoning and planning | None |
+These servers should be installed in **all projects**. The core set is the `mcpServers` object of the [repo baseline policy](../../policy/repo-baseline.json) — `pal` (multi-model gateway), `context7` (library docs) and `sequential-thinking` (reasoning) — and its `settings.floor.enabledMcpjsonServers` approves the same set in `.claude/settings.json` (merged by `/configure:claude-plugins`). Take each entry's config from the policy, not from memory.
 
 ## Execution
 
@@ -66,6 +61,7 @@ First, test whether `.mcp.json` exists in the current working directory:
 
 - **If `.mcp.json` is absent** (the `Config exists` context line is empty, or `test -f .mcp.json` would fail): print "No `.mcp.json` found — starting fresh." and treat `mcpServers` as `{}` for the remainder of the workflow. Do **not** abort. Proceed to Step 2 so the user can still install core servers or specific servers via flags / interactive mode; Step 3 will create the file from scratch.
 - **If `.mcp.json` exists**: use the `Read` tool to load `.mcp.json` and parse the `mcpServers` object. List all configured servers and surface the result to subsequent steps. For each server, check its command type (`npx`, `bunx`, `uvx`, `go run`) and required env vars. Flag any servers with missing required environment variables.
+- **Check `pal` against the policy form.** A `pal` entry is in policy form when its `command` and `args` equal the policy's `mcpServers.pal` and every `env` key the policy names carries the policy's value. Anything else is legacy and needs normalization: a bare `pal-mcp-server` command, a `uvx --from git+…` source, `pal-mcp-server` without `@latest`, or an `env` value written as `$VAR` instead of `${VAR}`. Report it as `NOT POLICY FORM`.
 
 If `--check-only`, skip to Step 4 (report only).
 
@@ -73,19 +69,19 @@ If `--check-only`, skip to Step 4 (report only).
 
 Based on the flags:
 
-- **`--core`**: Select `context7` and `sequential-thinking`.
+- **`--core`**: Select every server in the policy's `mcpServers`.
 - **`--server <name>`**: Select the named server(s). Validate against the available servers in [REFERENCE.md](REFERENCE.md).
 - **No flags (interactive)**: Show the user what's installed vs available. Use AskUserQuestion to ask which servers to add. Suggest servers based on project context (e.g., suggest `playwright` if `playwright.config.*` exists).
 
-If all requested servers are already installed, report "All servers already configured" and stop.
+A `pal` entry that is present but not in policy form (Step 1) is selected for normalization in every mode except `--check-only`, whether or not it was requested; in interactive mode, include it in the AskUserQuestion confirmation. If every requested server is present and none needs normalization, report "All servers already configured" and stop.
 
 ### Step 3: Install selected servers
 
 For each selected server:
 
-1. Get the server configuration from [REFERENCE.md](REFERENCE.md).
+1. Get the server configuration: core servers from the policy's `mcpServers`, every other server from [REFERENCE.md](REFERENCE.md).
 2. If `.mcp.json` doesn't exist, create it with `{"mcpServers": {}}`.
-3. Merge the server config into the existing `mcpServers` object. Preserve existing servers.
+3. Merge the server config into the existing `mcpServers` object. Preserve every other server untouched. To normalize a legacy `pal` entry, set its `command` and `args` to the policy's and set each `env` key the policy names to the policy's value; keep any extra `env` keys the existing entry carries.
 4. Write the updated `.mcp.json` with proper JSON formatting.
 
 Handle git tracking:
@@ -136,7 +132,7 @@ After configuring `.mcp.json`, use these `/mcp` commands in Claude Code to manag
 |------|-------------|
 | `--check-only` | Report status without offering to install servers |
 | `--fix` | Install specified or suggested servers without prompting |
-| `--core` | Install all core servers (context7, sequential-thinking) |
+| `--core` | Install every core server in the policy's `mcpServers` |
 | `--server <name>` | Install specific server (can be repeated) |
 
 ## Error Handling

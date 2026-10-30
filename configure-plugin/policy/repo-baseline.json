@@ -1,0 +1,102 @@
+{
+  "$comment": "Floor for a repo's .claude/settings.json and .mcp.json. Required keys only: anything else in a repo passes through. Consumers: /configure:claude-plugins, /configure:mcp, and the portfolio reconciler (reads this file at a pinned ref). Validate with scripts/check-repo-baseline-policy.sh.",
+  "version": 1,
+  "settings": {
+    "floor": {
+      "$schema": "https://json.schemastore.org/claude-code-settings.json",
+      "extraKnownMarketplaces": {
+        "laurigates-claude-plugins": {
+          "source": {
+            "source": "github",
+            "repo": "laurigates/claude-plugins"
+          },
+          "autoUpdate": true
+        }
+      },
+      "enabledMcpjsonServers": [
+        "pal",
+        "context7",
+        "sequential-thinking"
+      ]
+    },
+    "legacyMarketplaceAliases": [
+      "claude-plugins",
+      "lgates-claude-plugins",
+      "laurigates-plugins"
+    ]
+  },
+  "officialMarketplace": {
+    "name": "claude-plugins-official",
+    "lspPlugins": [
+      "clangd-lsp",
+      "csharp-lsp",
+      "gopls-lsp",
+      "jdtls-lsp",
+      "kotlin-lsp",
+      "liquid-lsp",
+      "lua-lsp",
+      "php-lsp",
+      "pyright-lsp",
+      "ruby-lsp",
+      "rust-analyzer-lsp",
+      "swift-lsp",
+      "typescript-lsp"
+    ]
+  },
+  "stacks": [
+    {
+      "id": "rust",
+      "detect": { "files": ["Cargo.toml"] },
+      "plugins": [
+        "rust-plugin@laurigates-claude-plugins",
+        "rust-analyzer-lsp@claude-plugins-official"
+      ]
+    },
+    {
+      "id": "bevy",
+      "detect": { "files": ["Cargo.toml"], "cargoDependency": "bevy" },
+      "plugins": ["bevy-plugin@laurigates-claude-plugins"]
+    },
+    {
+      "id": "python",
+      "detect": { "files": ["pyproject.toml", "setup.py", "requirements.txt"] },
+      "plugins": ["python-plugin@laurigates-claude-plugins"]
+    },
+    {
+      "id": "typescript",
+      "detect": { "files": ["package.json"] },
+      "plugins": ["typescript-plugin@laurigates-claude-plugins"]
+    },
+    {
+      "id": "terraform",
+      "detect": { "globs": ["*.tf"] },
+      "plugins": ["terraform-plugin@laurigates-claude-plugins"]
+    },
+    {
+      "id": "container",
+      "detect": { "files": ["Dockerfile", "compose.yaml", "docker-compose.yml"] },
+      "plugins": ["container-plugin@laurigates-claude-plugins"]
+    }
+  ],
+  "mcpServers": {
+    "pal": {
+      "command": "uvx",
+      "args": ["pal-mcp-server@latest"],
+      "env": {
+        "CUSTOM_API_URL": "http://localhost:11434/v1",
+        "CUSTOM_API_KEY": "",
+        "DEFAULT_MODEL": "auto",
+        "GEMINI_API_KEY": "${GEMINI_API_KEY}",
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}"
+      }
+    },
+    "context7": {
+      "command": "bunx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    }
+  }
+}

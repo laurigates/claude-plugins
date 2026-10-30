@@ -1,8 +1,8 @@
 ---
 created: 2026-01-23
-modified: 2026-10-05
+modified: 2026-10-30
 compatibility: claude-code
-reviewed: 2026-09-02
+reviewed: 2026-10-30
 description: "Claude plugins marketplace setup: .claude/settings.json, GitHub Actions, plugin pinning. Use when onboarding to claude-plugins, setting up claude.yml, pinning plugins, or overriding global plugins."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(ls *), Bash(git remote *), Bash(gh api *), Bash(jq *), AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--exhaustive] [--plugins <plugin1,plugin2,...>] [--workflows] [--no-workflows]"
@@ -58,7 +58,7 @@ Parse from command arguments:
 
 ### Step 2: Select plugins
 
-If `--plugins` is not specified, map each detected indicator (`package.json`, `pyproject.toml`, `Cargo.toml`, `Dockerfile`, `.github/workflows/`, ESP-IDF, ESPHome, CMake) to its recommended plugin set using the table in [references/plugin-selection.md](references/plugin-selection.md); with no indicator, use the default set (`git-plugin`, `code-quality-plugin`, `testing-plugin`, `tools-plugin`).
+If `--plugins` is not specified, add the plugins of every [policy](../../policy/repo-baseline.json) stack whose `detect` matches the repo root, then the workflow plugins per indicator from [references/plugin-selection.md](references/plugin-selection.md); with no indicator, use the default set (`git-plugin`, `code-quality-plugin`, `testing-plugin`, `tools-plugin`).
 
 Always include: `configure-plugin`, `health-plugin`, `hooks-plugin`.
 
@@ -66,12 +66,12 @@ Always include: `configure-plugin`, `health-plugin`, `hooks-plugin`.
 
 Create or merge into `.claude/settings.json` (permissions, marketplace enrollment so web sessions retain plugin access, `enabledPlugins`).
 
-> **One suffix: `@laurigates-claude-plugins`.** `enabledPlugins` takes it from the extraKnownMarketplaces key, workflow `plugins:` from the marketplace `name` in marketplace.json; the stanza sets them equal. Any other key registers the marketplace twice; rename an old `claude-plugins` key and its suffixes together. Details: [references/settings-json.md](references/settings-json.md#suffix-forms).
+> **One suffix: `@laurigates-claude-plugins`.** `enabledPlugins` takes it from the extraKnownMarketplaces key, workflow `plugins:` from the marketplace `name` in marketplace.json; the stanza sets them equal. Any other key registers the marketplace twice; rename a key listed in the policy's `settings.legacyMarketplaceAliases` and its suffixes together. Details: [references/settings-json.md](references/settings-json.md#suffix-forms).
 
 Pick the mode: the default writes only the recommended plugins as `true` (lean, but globally-toggled plugins leak in); `--exhaustive` pins every marketplace plugin as `true`/`false` (drift-resistant). Rationale and mode table: [references/settings-json.md](references/settings-json.md).
 
 1. **Permissions** — always include the common baseline (`Bash(git:*)`, `Bash(gh:*)`, `Bash(pre-commit:*)`, `Bash(gitleaks:*)`, `Bash(python3:*)`) plus the stack-specific entries for the detected stack. Use granular patterns only — do not add `Bash(bash *)` for CLI tools. Per-stack table: same file.
-2. **Marketplace + `enabledPlugins`** — merge the full stanza from the same file (`extraKnownMarketplaces` key `laurigates-claude-plugins`, selected plugins as `<plugin>@laurigates-claude-plugins: true`).
+2. **Policy floor + `enabledPlugins`** — deep-merge the [policy's](../../policy/repo-baseline.json) `settings.floor`, then add the selected plugins as `<plugin>@laurigates-claude-plugins: true` ([merge rules](references/settings-json.md#applying-the-repo-baseline-policy)).
 3. **Exhaustive mode** (`--exhaustive` only) — enumerate both marketplaces, derive each boolean from repo context, preserve existing project values, and show the diff before writing. Signal table, baseline set, LSP list, diff format: [references/exhaustive-mode.md](references/exhaustive-mode.md).
 
 If `.claude/settings.json` already exists, **MERGE** without duplicating entries. Preserve any existing `hooks`, `env`, or other fields.

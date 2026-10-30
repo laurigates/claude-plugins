@@ -8,16 +8,11 @@ Build the full `enabledPlugins` map by reading every plugin name from the two re
 
 **Deriving each plugin's boolean.** Start from the Step 2 recommended set (those become `true`), then refine from repo context using the signals in this section's table. A plugin a value already exists for in the project's current `enabledPlugins` **wins over the suggestion** — only fill in *missing* entries from this logic, so a deliberate prior choice is never silently flipped.
 
+**Stack plugins come from the policy.** Every entry in the `stacks` array of [`configure-plugin/policy/repo-baseline.json`](../../../policy/repo-baseline.json) whose `detect` matches the repo root adds its `plugins` as `true` (the policy's detection rules are in [settings-json.md](settings-json.md#applying-the-repo-baseline-policy)). This section's signal table adds only what the policy does not cover:
+
 | Signal in repo | Suggest enabling |
 |---|---|
-| `pyproject.toml`, `requirements.txt`, `*.py` | `python-plugin` |
-| `Cargo.toml`, `*.rs` | `rust-plugin` (and `bevy-plugin` if Bevy is in deps) |
-| `go.mod`, `*.go` | `go-plugin` (if present in the marketplace) |
-| `package.json`, `*.ts`, `*.tsx` | `typescript-plugin` |
-| `*.tf`, `terraform/` | `terraform-plugin` |
-| `Dockerfile`, `compose.yaml` | `container-plugin` |
-| `Chart.yaml`, `kustomization.yaml`, `k8s/` | `kubernetes-plugin` / `helm-plugin` |
-| `flake.nix`, `default.nix` | `nix-plugin` |
+| `Chart.yaml`, `kustomization.yaml`, `k8s/` | `kubernetes-plugin` |
 | `langchain` in deps | `langchain-plugin` |
 | `home-assistant`/`hass` configs | `home-assistant-plugin` |
 | `.github/workflows/` | `github-actions-plugin` |
@@ -37,7 +32,7 @@ Always-useful baseline (enable unless the user says otherwise): `agents-plugin`,
      ```
    - Suffix each name with `@laurigates-claude-plugins` to match the existing stanza format.
 
-2. **Add the official LSP plugins** (`@claude-plugins-official`). The currently shipped names are: `pyright`, `typescript-language-server`, `rust-analyzer`, `gopls`, `swift-language-server`, `clangd`. Mark the LSP that matches the detected stack as `true`, the rest as `false`. If none match (no detectable stack), leave them all `false`.
+2. **Add the official LSP plugins** (`@claude-plugins-official`). The real plugin names are the policy's `officialMarketplace.lspPlugins` list ([repo-baseline.json](../../../policy/repo-baseline.json)); a name outside that list is not a plugin, and Claude Code silently ignores its key. Mark the LSP that matches the detected language as `true` (a policy stack may already name it), the rest as `false`. If none match (no detectable stack), leave them all `false`.
 
 3. **Compose the map** with all entries, alphabetised within each marketplace block. Suffix `@laurigates-claude-plugins` matches the `extraKnownMarketplaces` *key*, which is set to the marketplace `name` so workflows use the same suffix:
 
@@ -57,12 +52,9 @@ Always-useful baseline (enable unless the user says otherwise): `agents-plugin`,
     "typescript-plugin@laurigates-claude-plugins": true,
     "...": "...",
 
-    "clangd@claude-plugins-official": false,
-    "gopls@claude-plugins-official": false,
-    "pyright@claude-plugins-official": false,
-    "rust-analyzer@claude-plugins-official": false,
-    "swift-language-server@claude-plugins-official": false,
-    "typescript-language-server@claude-plugins-official": true
+    "pyright-lsp@claude-plugins-official": false,
+    "...": "...",
+    "typescript-lsp@claude-plugins-official": true
   }
 }
 ```

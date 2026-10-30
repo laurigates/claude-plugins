@@ -37,12 +37,13 @@
 # the broken form as an example.
 #
 # Regression (issue #2437): multi-model-delegation and test-analyze documented
-# PAL's tools with a hardcoded `mcp__pal__*` prefix. The callable prefix is
-# derived from the name the server is REGISTERED under, which for this repo's
-# PAL is `pal-mcp-server`, so every documented lookup missed. Because that
-# prefix is registration-dependent rather than universally wrong, its denylist
-# entry is PATH-SCOPED to the artifacts that carry the defect — see the
-# `scope` field below.
+# PAL's tools with a prefix that did not match the registration. The callable
+# prefix is derived from the name the server is REGISTERED under, so every
+# documented lookup missed. #3318 made `pal` the portfolio registration
+# (configure-plugin/policy/repo-baseline.json `mcpServers.pal`), so the entry
+# now denies the old `mcp__pal-mcp-server__` prefix. Because the prefix is
+# registration-dependent rather than universally wrong, its denylist entry is
+# PATH-SCOPED to the artifacts that document PAL — see the `scope` field below.
 #
 # Regression: git-pr-feedback referenced `mcp__github__resolve_review_thread`
 # in Step 6, Step 1A.7.4, the Agentic Optimizations table, REFERENCE.md
@@ -84,14 +85,16 @@ denylist=(
   "*"
   "use gh api graphql with the resolveReviewThread mutation: gh api graphql -f query='mutation(\$id:ID!){resolveReviewThread(input:{threadId:\$id}){thread{isResolved}}}' -F id=\"\$THREAD_ID\""
 
-  # PAL is registered here as `pal-mcp-server`, so the bare `mcp__pal__`
-  # prefix resolves to nothing (issue #2437). SCOPED to the two skills that
-  # document PAL and to the compiled prompts derived from them: a repo that
-  # registers PAL under the key `pal` has `mcp__pal__` as its CORRECT prefix,
-  # and this guard must not claim otherwise.
-  "mcp__pal__"
+  # The repo baseline policy registers PAL under the key `pal` (#3318), so the
+  # `mcp__pal-mcp-server__` prefix resolves to nothing in a repo configured from
+  # it (issue #2437 was the same defect in the other direction). SCOPED to the
+  # two skills that document PAL and to the compiled prompts derived from them:
+  # a repo that registers PAL under the key `pal-mcp-server` has
+  # `mcp__pal-mcp-server__` as its CORRECT prefix, and this guard must not
+  # claim otherwise.
+  "mcp__pal-mcp-server__"
   "*/multi-model-delegation/*|*/test-analyze/*|*/prompts/generated/*"
-  "the tool prefix is derived from the name the server is registered under -- this repo registers PAL as pal-mcp-server, so use mcp__pal-mcp-server__<tool>; confirm the registration with: claude mcp list"
+  "PAL is registered as \"pal\" -- see configure-plugin/policy/repo-baseline.json -- so use mcp__pal__<tool>; the tool prefix is derived from the name the server is registered under, confirm it with: claude mcp list"
 )
 
 # `case` alternation is SYNTACTIC — a `|` arriving inside a variable is a

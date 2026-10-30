@@ -575,6 +575,39 @@ check_skill_body() {
         issues+=("❌ ${plugin}/${skill_name}: references/settings-json.md must key the marketplace as \"laurigates-claude-plugins\" (the marketplace name), not \"claude-plugins\" (issue #1337)")
         has_errors=true
       fi
+      # Regression (#3318): the "Applying the repo baseline policy" table said
+      # an existing value the floor does not name is kept, but not that the
+      # floor's own values win, so a repo with `autoUpdate: false` or another
+      # source kept it. It also gave no order, so stack plugins added before
+      # the alias rename landed beside a legacy `x@<alias>` key (bypassing its
+      # explicit false), and no rule for an alias/canonical collision.
+      for token in "the floor's value wins" "Rename legacy aliases first" "keep the canonical key"; do
+        if ! grep -qF -- "$token" "$settings_ref"; then
+          issues+=("❌ ${plugin}/${skill_name}: references/settings-json.md must retain '${token}' (floor precedence and alias-rename order, #3318)")
+          has_errors=true
+        fi
+      done
+    fi
+
+    # Regression: configure-mcp's REFERENCE.md says a `pal` entry in a
+    # non-policy form (bare `pal-mcp-server`, `uvx --from git+…`, no `@latest`,
+    # a `$VAR` env value) is replaced by the policy entry, but the SKILL.md
+    # procedure stopped when every requested server was merely present and
+    # preserved existing entries, so /configure:mcp never fixed a legacy PAL
+    # entry (#3318). Invariants: the stop condition is qualified by
+    # normalization, the merge keeps extra env keys, and the unqualified stop
+    # sentence does not come back.
+    if [ "$skill_name" = "configure-mcp" ]; then
+      for token in "none needs normalization" "extra \`env\` keys"; do
+        if ! grep -qF -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '${token}' (a non-policy-form pal entry is normalized, not skipped as installed; #3318)")
+          has_errors=true
+        fi
+      done
+      if grep -qF 'If all requested servers are already installed, report "All servers already configured" and stop.' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md stops on 'already installed' without checking pal's policy form (#3318)")
+        has_errors=true
+      fi
     fi
 
     # Regression: task-add must emit the stable UUID alongside the numeric ID.
