@@ -82,11 +82,44 @@ strip_heredocs() {
 # invocations like `kubectl --context="prod" get pods` are preserved
 # because the `kubectl` token sits outside the quoted string.
 #
-# Heuristic — escaped quotes (`"\""`) inside strings are not perfectly
-# handled, but the common case (grep patterns, echo/printf arguments,
-# awk regexes, find -name patterns) is covered.
+# Regression (issue #3286): the previous sed pass worked line by line, so
+# a quoted argument spanning newlines (a `gh pr comment -b "..."` body, a
+# multi-paragraph `git commit -m "..."`) was never removed, and a later
+# line like "(kubectl auth was unavailable)" sat in command position.
+# This is a single awk scan over the whole input, so quoted strings are
+# removed across newlines while newlines OUTSIDE quotes are preserved
+# (command-position detection on later lines keeps working).
+#
+# Scan rules (a heuristic, not a full shell parser):
+#   - outside quotes, a backslash escapes the next character (`\'` does
+#     not open a string);
+#   - inside double quotes, a backslash escapes the next character
+#     (`\"` does not close the string);
+#   - inside single quotes, nothing is special until the closing `'`;
+#   - an unterminated quote fails safe: the rest of the input is emitted
+#     unstripped, so it is still checked.
+# Portable to BSD awk (macOS) and bash 3.2 — no GNU-only `sed -z`, no perl.
 strip_quoted_strings() {
-    sed -E -e "s/'[^']*'//g" -e 's/"[^"]*"//g'
+    awk '
+        { buf = (NR == 1) ? $0 : buf "\n" $0 }
+        END {
+            n = length(buf); q = ""; start = 0; out = ""
+            for (i = 1; i <= n; i++) {
+                c = substr(buf, i, 1)
+                if (q == "") {
+                    if (c == "\\") { out = out c substr(buf, i + 1, 1); i++ }
+                    else if (c == "\"" || c == "\047") { q = c; start = i }
+                    else out = out c
+                } else if (q == "\"" && c == "\\") {
+                    i++
+                } else if (c == q) {
+                    q = ""
+                }
+            }
+            if (q != "") out = out substr(buf, start)
+            print out
+        }
+    '
 }
 
 # Strip heredoc bodies, then quoted string contents, before checking
