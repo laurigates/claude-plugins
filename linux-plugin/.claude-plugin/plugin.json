@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "linux-plugin",
+  "version": "1.0.0",
+  "description": "Linux workstation operations - disk-usage forensics and space recovery across root and data drives, with a usual-suspects scanner for caches, build dirs, runner workspaces and model stores",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "license": "MIT",
+  "keywords": [
+    "linux",
+    "disk-usage",
+    "space-recovery",
+    "dust",
+    "du",
+    "df",
+    "cache-cleanup",
+    "reflink",
+    "xfs",
+    "zram",
+    "swapfile",
+    "self-hosted-runner",
+    "huggingface-cache",
+    "comfyui",
+    "rsync"
+  ]
+}

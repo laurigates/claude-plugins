@@ -98,6 +98,7 @@
     "hooks-plugin@laurigates-claude-plugins": true,
     "kubernetes-plugin@laurigates-claude-plugins": true,
     "langchain-plugin@laurigates-claude-plugins": true,
+    "linux-plugin@laurigates-claude-plugins": true,
     "macos-plugin@laurigates-claude-plugins": true,
     "migration-patterns-plugin@laurigates-claude-plugins": true,
     "networking-plugin@laurigates-claude-plugins": true,

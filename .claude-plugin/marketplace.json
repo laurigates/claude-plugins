@@ -565,6 +565,29 @@
       "category": "ai"
     },
     {
+      "name": "linux-plugin",
+      "source": "./linux-plugin",
+      "description": "Linux workstation operations - disk-usage forensics and space recovery across root and data drives, with a usual-suspects scanner for caches, build dirs, runner workspaces and model stores",
+      "version": "1.0.0",
+      "author": {
+        "name": "Lauri Gates"
+      },
+      "license": "MIT",
+      "keywords": [
+        "linux",
+        "disk-usage",
+        "space-recovery",
+        "dust",
+        "du",
+        "df",
+        "cache-cleanup",
+        "reflink",
+        "xfs",
+        "zram"
+      ],
+      "category": "development"
+    },
+    {
       "name": "macos-plugin",
       "source": "./macos-plugin",
       "description": "macOS-specific dev environment tooling - kitty session persistence, LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift",
