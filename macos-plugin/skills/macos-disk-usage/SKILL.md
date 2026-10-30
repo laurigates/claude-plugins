@@ -28,7 +28,7 @@ This skill is **macOS-only**. APFS containers, `diskutil apfs`, `tmutil` local s
 test "$(uname -s)" = "Darwin" || { echo "macos-plugin: not Darwin, refusing"; exit 1; }
 ```
 
-This skill **cross-references, does not duplicate**, `linux-plugin:linux-disk-usage` (root and data drives, `~/.cache`, apt/journalctl, runner workspaces, model stores). That skill ships a copy of `scripts/scan-suspects.sh` with a Linux catalog, so a scanner fix lands in both. The APFS / Time Machine / OrbStack angle below is the macOS-specific complement.
+This skill **cross-references, does not duplicate**, `linux-plugin:linux-disk-usage`, which ships a copy of `scripts/scan-suspects.sh`; port scanner fixes to both. The APFS / Time Machine / OrbStack angle below is the macOS-specific complement.
 
 ## Core Expertise
 
