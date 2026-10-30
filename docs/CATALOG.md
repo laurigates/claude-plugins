@@ -3,7 +3,7 @@
 
 # Plugin Catalog
 
-47 plugins, 456 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
+48 plugins, 457 skills, 22 agents. Install one in Claude Code with `claude plugin install <plugin>@laurigates-claude-plugins`; the [README](../README.md#supported-harnesses) covers the other harnesses.
 
 ## AI & Agents
 
@@ -24,6 +24,7 @@
 | [foundryvtt-plugin](../foundryvtt-plugin/) | 2 | 0 | FoundryVTT module lifecycle - scaffold a v13 module (Vite + TS + bun), create + seed the repo, open the gitops adoption PR |
 | [git-plugin](../git-plugin/) | 48 | 1 | Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management |
 | [home-assistant-plugin](../home-assistant-plugin/) | 4 | 0 | Home Assistant configuration management - YAML configuration, automations, scripts, scenes, and entity management for Home Assistant installations |
+| [linux-plugin](../linux-plugin/) | 1 | 0 | Linux workstation operations - disk-usage forensics and space recovery across root and data drives, with a usual-suspects scanner for caches, build dirs, runner workspaces and model stores |
 | [obsidian-plugin](../obsidian-plugin/) | 21 | 0 | Obsidian CLI operations - vault files, search, properties, tasks, plugins/themes, publish/sync, bases, command palette, file history, dev tools, workspaces, multi-vault, templates, and bookmarks |
 | [project-plugin](../project-plugin/) | 7 | 0 | Project initialization, management, and maintenance - setup, changelog review, and continuous development workflows |
 | [session-plugin](../session-plugin/) | 4 | 0 | Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation |
