@@ -2,7 +2,7 @@
 
 ## Server Configurations
 
-**Core servers come from the policy.** The canonical `.mcp.json` entries for the core servers (`pal`, `context7`, `sequential-thinking`) are the `mcpServers` object of [`configure-plugin/policy/repo-baseline.json`](../../policy/repo-baseline.json). Copy each entry from there verbatim: add a missing one, and replace a `pal` entry in any other form (a bare `pal-mcp-server` command, a `uvx --from git+…` source) with the policy entry. The same policy's `settings.floor.enabledMcpjsonServers` lists the servers `.claude/settings.json` approves.
+**Core servers come from the policy.** The canonical `.mcp.json` entries for the core servers (`pal`, `context7`, `sequential-thinking`) are the `mcpServers` object of [`configure-plugin/policy/repo-baseline.json`](../../policy/repo-baseline.json). Copy each entry from there verbatim: add a missing one, and replace a `pal` entry in any other form (a bare `pal-mcp-server` command, a `uvx --from git+…` source) with the policy entry's `command`, `args` and named `env` values, keeping any extra `env` keys it carries. The same policy's `settings.floor.enabledMcpjsonServers` lists the servers `.claude/settings.json` approves.
 
 Use these JSON configurations when adding the other servers to `.mcp.json`:
 

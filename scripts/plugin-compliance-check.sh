@@ -577,6 +577,27 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: configure-mcp's REFERENCE.md says a `pal` entry in a
+    # non-policy form (bare `pal-mcp-server`, `uvx --from git+…`, no `@latest`,
+    # a `$VAR` env value) is replaced by the policy entry, but the SKILL.md
+    # procedure stopped when every requested server was merely present and
+    # preserved existing entries, so /configure:mcp never fixed a legacy PAL
+    # entry (#3318). Invariants: the stop condition is qualified by
+    # normalization, the merge keeps extra env keys, and the unqualified stop
+    # sentence does not come back.
+    if [ "$skill_name" = "configure-mcp" ]; then
+      for token in "none needs normalization" "extra \`env\` keys"; do
+        if ! grep -qF -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '${token}' (a non-policy-form pal entry is normalized, not skipped as installed; #3318)")
+          has_errors=true
+        fi
+      done
+      if grep -qF 'If all requested servers are already installed, report "All servers already configured" and stop.' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md stops on 'already installed' without checking pal's policy form (#3318)")
+        has_errors=true
+      fi
+    fi
+
     # Regression: task-add must emit the stable UUID alongside the numeric ID.
     # Taskwarrior numeric IDs are a display index over pending tasks and shift
     # down by one whenever any other task is completed. A session that created
