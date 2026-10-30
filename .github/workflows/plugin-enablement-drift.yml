@@ -5,6 +5,10 @@ name: "Plugin: Enablement drift"
 # full plugin set. Triggers whenever either file changes — adding a plugin to
 # the marketplace without enabling it (or leaving a removed plugin enabled)
 # fails the check.
+#
+# The same job validates configure-plugin/policy/repo-baseline.json: every
+# plugin key the policy names, and every official LSP name the configure-plugin
+# skill docs cite, must resolve to a real plugin (#3318).
 
 on:
   pull_request:
@@ -14,12 +18,17 @@ on:
       - '.claude/settings.json'
       - 'scripts/check-enabled-plugins-drift.sh'
       - 'scripts/tests/test-check-enabled-plugins-drift.sh'
+      - 'configure-plugin/policy/**'
+      - 'configure-plugin/skills/**/*.md'
+      - 'scripts/check-repo-baseline-policy.sh'
+      - 'scripts/tests/test-check-repo-baseline-policy.sh'
       - '.github/workflows/plugin-enablement-drift.yml'
   push:
     branches: [main]
     paths:
       - '.claude-plugin/marketplace.json'
       - '.claude/settings.json'
+      - 'configure-plugin/policy/**'
 
 concurrency:
   group: plugin-enablement-drift-${{ github.event.pull_request.number || github.ref }}
@@ -45,3 +54,9 @@ jobs:
         # gates a single `exit "$exit_severity"`), so the plain run printed a
         # byte-identical report and the pair just doubled the log.
         run: bash scripts/check-enabled-plugins-drift.sh --strict
+
+      - name: Self-test the repo baseline policy guard
+        run: bash scripts/tests/test-check-repo-baseline-policy.sh
+
+      - name: Check the repo baseline policy
+        run: bash scripts/check-repo-baseline-policy.sh --strict
