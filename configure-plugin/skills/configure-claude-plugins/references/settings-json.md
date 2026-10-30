@@ -51,10 +51,12 @@ Use granular patterns only — do not add `Bash(bash *)` for CLI tools.
 
 The required settings keys live in one file, [`configure-plugin/policy/repo-baseline.json`](../../../policy/repo-baseline.json): the `$schema`, the marketplace stanza, the `enabledMcpjsonServers` approval floor, the legacy marketplace aliases, and the stack → plugin mapping. Read them from there; this file only says how to apply them. The policy is a **floor**: it names required keys, and everything else in a repo's settings passes through untouched.
 
+Rename legacy aliases first, then deep-merge `settings.floor`, then add `stacks[].plugins`. The order matters: a stack plugin added before the rename lands as `<plugin>@laurigates-claude-plugins: true` beside a legacy `<plugin>@<alias>: false`, and the rename then collides and loses the repo's explicit `false`.
+
 | Policy field | How to apply it to `.claude/settings.json` |
 |---|---|
-| `settings.floor` | Deep-merge: objects merge key by key, lists are unioned, and an existing value the floor does not name is kept |
-| `settings.legacyMarketplaceAliases` | Each is an old `extraKnownMarketplaces` key for the same marketplace (an entry whose `source.repo` is `laurigates/claude-plugins`). Rename the key **and** every `<plugin>@<alias>` suffix in `enabledPlugins` to the floor's key together |
+| `settings.legacyMarketplaceAliases` | Each is an old `extraKnownMarketplaces` key for the same marketplace (an entry whose `source.repo` is `laurigates/claude-plugins`). Rename the key **and** every `<plugin>@<alias>` suffix in `enabledPlugins` to the floor's key together. On a collision (both `<plugin>@<alias>` and `<plugin>@laurigates-claude-plugins` exist, or both marketplace keys), keep the canonical key and its value, drop the alias entry, and report the collision |
+| `settings.floor` | Deep-merge: objects merge key by key and lists are unioned. Where the floor names a key, the floor's value wins: the marketplace stanza ends with the floor's `source` and `autoUpdate: true` even if the repo had `autoUpdate: false` or another source. A key the floor does not name, inside the stanza or elsewhere, is kept |
 | `stacks[].detect` | Evaluated against the repo **root** listing only: `files` = exact names, `globs` = fnmatch on root names, `cargoDependency` = the name appears under `[dependencies]` or `[workspace.dependencies]` in the root `Cargo.toml` |
 | `stacks[].plugins` | Added as `true` only where the key is absent. An explicit `false` is never flipped |
 
