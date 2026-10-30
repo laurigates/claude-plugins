@@ -171,11 +171,27 @@ Examples:
 
 | Option | Command |
 |--------|---------|
-| Draft | `gh pr create --draft` |
+| Draft | `gh pr create --draft` — requires a [`## Draft status`](#draft-status) section |
 | Labels | `gh pr create --label "enhancement"` |
 | Reviewers | `gh pr create --reviewer user1,user2` |
 | Base branch | `gh pr create --base develop` |
 | Assignee | `gh pr create --assignee @me` |
+
+## Draft status
+
+A PR opened with `--draft` ends its body with a `## Draft status` section: what
+is incomplete, and the exact condition for `gh pr ready`. A draft without one
+gives nobody a reason to mark it ready, and an automated PR sweep surfaces it
+instead of readying it. Run `gh pr ready` yourself once the work is complete.
+
+| Dependency | How to record it |
+|------------|------------------|
+| PR in the same repo | Stack it: `--base <parent-branch>`; see `git-plugin:git-stacked-prs`. Name the parent in the section as a full URL |
+| PR in another repo | Full URL in the section: `Blocked by https://github.com/<owner>/<repo>/pull/<n>` |
+
+Write every blocking PR as a full URL; the sweep marks the draft ready only when
+all of them have merged. GitHub's `blocked_by` issue dependencies link issues
+only (`gh pr` has no `--blocked-by` flag), so the body is the record.
 
 ## Pre-merge Verification
 
