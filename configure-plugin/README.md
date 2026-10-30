@@ -196,6 +196,12 @@ The recommended starting point for any new repo. Runs the full onboarding workfl
 The `extraKnownMarketplaces` enrollment in `.claude/settings.json` is critical for
 ephemeral web sessions (claude.ai/code) — without it, plugins are lost on every new session.
 
+The required `.claude/settings.json` and `.mcp.json` keys (marketplace stanza,
+`enabledMcpjsonServers` floor, stack → plugin mapping, core MCP server entries)
+live in one machine-readable file, [`policy/repo-baseline.json`](policy/repo-baseline.json),
+which `/configure:claude-plugins`, `/configure:mcp` and the portfolio reconciler
+all read. `scripts/check-repo-baseline-policy.sh` in the repo root validates it.
+
 ### Set Up Claude Code on the Web
 
 ```bash

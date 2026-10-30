@@ -2,20 +2,15 @@
 
 ## Server Configurations
 
-Use these JSON configurations when adding servers to `.mcp.json`:
+**Core servers come from the policy.** The canonical `.mcp.json` entries for the core servers (`pal`, `context7`, `sequential-thinking`) are the `mcpServers` object of [`configure-plugin/policy/repo-baseline.json`](../../policy/repo-baseline.json). Copy each entry from there verbatim: add a missing one, and replace a `pal` entry in any other form (a bare `pal-mcp-server` command, a `uvx --from git+…` source) with the policy entry. The same policy's `settings.floor.enabledMcpjsonServers` lists the servers `.claude/settings.json` approves.
+
+Use these JSON configurations when adding the other servers to `.mcp.json`:
 
 ```json
 {
-  "pal": {
-    "command": "pal-mcp-server"
-  },
   "playwright": {
     "command": "bunx",
     "args": ["-y", "@playwright/mcp@latest"]
-  },
-  "context7": {
-    "command": "bunx",
-    "args": ["-y", "@upstash/context7-mcp"]
   },
   "github": {
     "command": "go",
@@ -32,10 +27,6 @@ Use these JSON configurations when adding servers to `.mcp.json`:
       "ARGOCD_SERVER": "${ARGOCD_SERVER}",
       "ARGOCD_AUTH_TOKEN": "${ARGOCD_AUTH_TOKEN}"
     }
-  },
-  "sequential-thinking": {
-    "command": "npx",
-    "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
   }
 }
 ```
@@ -54,8 +45,9 @@ to load.
 | `github` | `GITHUB_TOKEN` | `~/.api_tokens` |
 | `argocd-mcp` | `ARGOCD_SERVER`, `ARGOCD_AUTH_TOKEN` | project `.env` |
 | `sentry` | `SENTRY_AUTH_TOKEN` | `~/.api_tokens` |
+| `pal` | Optional: the `${VAR}` keys in the policy entry's `env` (`GEMINI_API_KEY`, `OPENAI_API_KEY`); with neither set, PAL uses only the local endpoint its `CUSTOM_API_URL` names | `~/.api_tokens` |
 
-Use `${VAR_NAME}` references in `.mcp.json` — never hardcode tokens.
+Use `${VAR_NAME}` references in `.mcp.json` — never hardcode tokens. Claude Code expands variables in a server's `command`, `args`, `env`, `url` and `headers`, and its docs list only two forms, `${VAR}` and `${VAR:-default}`. Write `${VAR}`: a bare `$VAR` is not one of the expanded forms. An unset `${VAR}` with no default is passed to the server as the literal text.
 
 ## Available Servers (Full Registry)
 
@@ -72,7 +64,7 @@ Use `${VAR_NAME}` references in `.mcp.json` — never hardcode tokens.
 - `github` - GitHub API integration (requires `GITHUB_TOKEN`)
 
 **Productivity:**
-- `pal` - PAL (Provider Abstraction Layer) - Multi-provider LLM integration (no env vars). Install once with `uv tool install git+https://github.com/laurigates/pal-mcp-server`; the `.mcp.json` entry then invokes the bare `pal-mcp-server` command instead of re-resolving the git source via `uvx` on every launch.
+- `pal` - PAL (Provider Abstraction Layer) - Multi-provider LLM integration. Runs from PyPI as `uvx pal-mcp-server@latest`, so each launch resolves the latest release and nothing is installed beforehand. Takes provider keys and a local endpoint through `env` (see the env-var table). Entry: the policy's `mcpServers.pal`.
 
 **Infrastructure & Monitoring:**
 - `argocd-mcp` - ArgoCD GitOps deployment management (requires `ARGOCD_SERVER`, `ARGOCD_AUTH_TOKEN`)
@@ -102,11 +94,13 @@ Config file: .mcp.json
 Installed Servers:
   github                    go run           [✅ CONFIGURED | ⚠️ NEEDS GITHUB_TOKEN]
   playwright                bunx             [✅ CONFIGURED]
-  pal                       uvx              [✅ CONFIGURED]
+  pal                       uvx              [✅ CONFIGURED | ⚠️ NOT POLICY FORM]
   context7                  bunx             [✅ CONFIGURED]
+  sequential-thinking       npx              [✅ CONFIGURED]
 
 Environment Variables:
   GITHUB_TOKEN              ~/.api_tokens    [✅ SET | ❌ MISSING]
+  GEMINI_API_KEY            ~/.api_tokens    [✅ SET | ⚠️ UNSET (optional, pal)]
 
 Git Tracking:
   .mcp.json                 .gitignore       [✅ IGNORED | ⚠️ TRACKED | ❌ NOT FOUND]

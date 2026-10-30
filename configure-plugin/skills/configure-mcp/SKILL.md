@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-10-22
-reviewed: 2026-05-14
+modified: 2026-10-30
+reviewed: 2026-10-30
 description: Check and configure MCP servers for project integration. Use when setting up MCP servers, checking MCP status, or adding new servers to a project.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--core] [--server <name>]"
@@ -42,19 +42,14 @@ Parse these from `$ARGUMENTS`:
 
 - `--check-only`: Report current status, do not offer installation
 - `--fix`: Install servers without prompting for confirmation
-- `--core`: Install all core servers (`context7`, `sequential-thinking`)
+- `--core`: Install every core server (see Core Servers)
 - `--server <name>`: Install specific server by name (repeatable)
 
 If no flags provided, run interactive mode (detect → report → offer to install).
 
 ## Core Servers
 
-These servers should be installed in **all projects**:
-
-| Server | Purpose | Env Vars |
-|--------|---------|----------|
-| `context7` | Documentation context from Upstash | None |
-| `sequential-thinking` | Enhanced reasoning and planning | None |
+These servers should be installed in **all projects**. The core set is the `mcpServers` object of the [repo baseline policy](../../policy/repo-baseline.json) — `pal` (multi-model gateway), `context7` (library docs) and `sequential-thinking` (reasoning) — and its `settings.floor.enabledMcpjsonServers` approves the same set in `.claude/settings.json` (merged by `/configure:claude-plugins`). Take each entry's config from the policy, not from memory.
 
 ## Execution
 
@@ -73,7 +68,7 @@ If `--check-only`, skip to Step 4 (report only).
 
 Based on the flags:
 
-- **`--core`**: Select `context7` and `sequential-thinking`.
+- **`--core`**: Select every server in the policy's `mcpServers`.
 - **`--server <name>`**: Select the named server(s). Validate against the available servers in [REFERENCE.md](REFERENCE.md).
 - **No flags (interactive)**: Show the user what's installed vs available. Use AskUserQuestion to ask which servers to add. Suggest servers based on project context (e.g., suggest `playwright` if `playwright.config.*` exists).
 
@@ -83,7 +78,7 @@ If all requested servers are already installed, report "All servers already conf
 
 For each selected server:
 
-1. Get the server configuration from [REFERENCE.md](REFERENCE.md).
+1. Get the server configuration: core servers from the policy's `mcpServers`, every other server from [REFERENCE.md](REFERENCE.md).
 2. If `.mcp.json` doesn't exist, create it with `{"mcpServers": {}}`.
 3. Merge the server config into the existing `mcpServers` object. Preserve existing servers.
 4. Write the updated `.mcp.json` with proper JSON formatting.
@@ -136,7 +131,7 @@ After configuring `.mcp.json`, use these `/mcp` commands in Claude Code to manag
 |------|-------------|
 | `--check-only` | Report status without offering to install servers |
 | `--fix` | Install specified or suggested servers without prompting |
-| `--core` | Install all core servers (context7, sequential-thinking) |
+| `--core` | Install every core server in the policy's `mcpServers` |
 | `--server <name>` | Install specific server (can be repeated) |
 
 ## Error Handling

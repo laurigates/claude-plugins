@@ -5,9 +5,9 @@ allowed-tools: Glob, Grep, Read, Write, Edit, Bash(git add *), Bash(git status *
 args: "[--check-only] [--skip-health] [--skip-migrations]"
 argument-hint: "[--check-only] [--skip-health] [--skip-migrations]"
 created: 2026-04-14
-modified: 2026-10-05
+modified: 2026-10-30
 compatibility: claude-code
-reviewed: 2026-10-07
+reviewed: 2026-10-30
 ---
 
 # /configure:repo
@@ -67,7 +67,7 @@ Invoke `/configure:claude-plugins --fix` using the SlashCommand tool.
 This step:
 - Selects recommended plugins based on detected stack
 - Writes `permissions.allow` (common + stack-aware) to `.claude/settings.json`
-- Writes `extraKnownMarketplaces` + `enabledPlugins` to `.claude/settings.json` (critical for web sessions)
+- Merges the repo baseline policy's settings floor (`$schema`, `extraKnownMarketplaces`, `enabledMcpjsonServers`) and writes `enabledPlugins` to `.claude/settings.json` (critical for web sessions)
 - Creates/updates `.github/workflows/claude.yml` and `claude-code-review.yml`
 
 ### Step 3: Configure SessionStart hook and install script
