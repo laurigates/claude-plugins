@@ -39,6 +39,12 @@
 #   Z1. references/brief-templates.md missing the **Budget** clause → exit 1
 #   Z2. references/brief-templates.md missing "do not merge" stage authority → exit 1
 #   Z3. parallel-agent-dispatch SKILL.md missing "Scope authority per stage" → exit 1
+#   Z4. references/worktree-hazards.md missing "## Draft status" → exit 1
+#   Z5. parallel-agent-dispatch SKILL.md missing "## Draft status" → exit 1
+#
+# Draft-status closing step: a draft PR with no `## Draft status` section is
+# never marked ready by the PR sweep. Guards Z4/Z5 keep the closing step in the
+# reference that owns it and the partial-blocker outcome in SKILL.md.
 #
 # Issue #2818: the refactor-brief template's **Budget** clause is the only
 # per-agent context bound a copied brief carries (no frontmatter field caps a
@@ -413,6 +419,22 @@ strip_marker "$fx_z3/agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.
 assert "Z3: dispatch SKILL.md missing the per-stage authority bullet fails (exit 1)" \
   "$([ "$(run_fixture "$fx_z3")" -eq 1 ] && echo true || echo false)"
 rm -rf "$fx_z3"
+
+# --- Guard Z4: worktree-hazards.md missing the draft-status closing step ---
+fx_z4="$(mktemp -d)"
+build_fixture "$fx_z4"
+strip_marker "$fx_z4/agent-patterns-plugin/skills/parallel-agent-dispatch/references/worktree-hazards.md" "## Draft status"
+assert "Z4: worktree-hazards.md missing the draft-status closing step fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_z4")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_z4"
+
+# --- Guard Z5: SKILL.md missing the draft-status requirement ---
+fx_z5="$(mktemp -d)"
+build_fixture "$fx_z5"
+strip_marker "$fx_z5/agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md" "## Draft status"
+assert "Z5: dispatch SKILL.md missing the draft-status requirement fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_z5")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_z5"
 
 echo "check-agent-failure-contract (#1601/#1868/#2039/#2143/#2447/#2614/#2646/#2818/#2902): ${pass_count} passed, ${fail_count} failed"
 [ "$fail_count" -eq 0 ]

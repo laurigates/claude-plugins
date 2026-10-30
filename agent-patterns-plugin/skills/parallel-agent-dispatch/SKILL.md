@@ -201,8 +201,8 @@ Tie the escalation to the Return Contract's `status` field:
 
 | Outcome | The agent must return |
 |---------|-----------------------|
-| **Success** | PR URL **plus one summary metric** (test/line delta) — `status: success` |
-| **Partial blocker** | Push the WIP, open a **draft PR**, return its URL **plus an explicit "what's blocked" list** — `status: partial` |
+| **Success** | PR URL **plus one summary metric** (test/line delta), after `gh pr ready` if the PR was opened as a draft — `status: success` |
+| **Partial blocker** | Push the WIP, open a **draft PR**, return its URL **plus an explicit "what's blocked" list**, and end the PR body with a `## Draft status` section naming the condition for `gh pr ready` ([worktree-hazards.md](references/worktree-hazards.md)) — `status: partial` |
 | **Total blocker** | Explain *exactly* what blocked it, which tools were denied, what it tried — `status: failed`. Never a bare `Terminal.` / `Done.` / `Stopped.` |
 
 The one-sentence contract to paste into every brief: **"Your final message is

@@ -294,6 +294,17 @@ require_marker "$worktree_hazards_md" "Workflow agents are unreachable" \
 require_marker "$worktree_hazards_md" "gated on the run's completion notification" \
   "the completion-gated, non-force cleanup condition (issue #2614)"
 
+# Draft-status closing step: an agent-opened draft PR that never says why it is
+# a draft stays one forever. The PR sweep readies a draft only when every PR URL
+# in its `## Draft status` section has merged, and surfaces a draft without the
+# section instead. references/worktree-hazards.md owns the closing step (beside
+# the draft-PR-early mitigation that creates the draft); SKILL.md's partial
+# outcome points at it.
+require_marker "$worktree_hazards_md" "## Draft status" \
+  "the draft-status closing step (gh pr ready or a ## Draft status section)"
+require_marker "$dispatch_skill" "## Draft status" \
+  "the draft-status requirement on the partial-blocker outcome"
+
 # Regression #2646: agent-development.md described `context: fork` two
 # contradictory ways — as isolation ("an independent context copy" in which
 # "the agent sees parent history") and as inheritance ("a named plugin agent
