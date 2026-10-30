@@ -4,7 +4,7 @@ description: macOS disk-usage forensics and space recovery on APFS. Use when df 
 user-invocable: false
 allowed-tools: Bash(bash *), Bash(uname *), Bash(df *), Bash(du *), Bash(find *), Bash(diskutil *), Bash(tmutil *), Bash(docker *), Bash(brew *), Bash(go *), Bash(pip *), Bash(uv *), Bash(dust *), Bash(dua *), Bash(gdu *), Bash(ncdu *), Bash(mise *), Bash(git *), Read, Grep, Glob, TodoWrite
 created: 2026-06-21
-modified: 2026-10-13
+modified: 2026-10-30
 reviewed: 2026-08-04
 ---
 
@@ -14,7 +14,7 @@ reviewed: 2026-08-04
 
 | Use this skill when... | Use something else when... |
 |------------------------|----------------------------|
-| `df` reports a volume near-full and you need the honest figure | The root disk on Linux is full — use the Linux-focused `disk-full-recovery` rule |
+| `df` reports a volume near-full and you need the honest figure | A Linux disk is full — use `linux-plugin:linux-disk-usage` |
 | Hunting "what's eating my disk" on macOS | General process forensics — use `ps`/`top` directly |
 | Reclaiming space from OrbStack/Docker, caches, or local snapshots | A GUI hang/freeze occurred — see `macos-incident-postmortem` |
 | `du` totals and free space disagree (purgeable snapshots, or CoW clones) | `launchservicesd` DB bloat specifically — see `launchservices-health` |
@@ -28,7 +28,7 @@ This skill is **macOS-only**. APFS containers, `diskutil apfs`, `tmutil` local s
 test "$(uname -s)" = "Darwin" || { echo "macos-plugin: not Darwin, refusing"; exit 1; }
 ```
 
-This skill **cross-references, does not duplicate**, the Linux-focused `disk-full-recovery` rule (root partition, `~/.cache`, apt/journalctl). The APFS / Time Machine / OrbStack angle below is the macOS-specific complement.
+This skill **cross-references, does not duplicate**, `linux-plugin:linux-disk-usage`, which ships a copy of `scripts/scan-suspects.sh`; port scanner fixes to both. The APFS / Time Machine / OrbStack angle below is the macOS-specific complement.
 
 ## Core Expertise
 
@@ -150,4 +150,4 @@ When a number does not reconcile or a cleanup command fails, open the symptom �
 
 - `launchservices-health` — when `launchservicesd` DB bloat (not disk usage) is the concern
 - `macos-incident-postmortem` — when a freeze/panic, not a full disk, is the symptom
-- `disk-full-recovery` (user-global rule) — the Linux-focused complement to this APFS-specific skill
+- `linux-plugin:linux-disk-usage` — the Linux complement to this APFS-specific skill
