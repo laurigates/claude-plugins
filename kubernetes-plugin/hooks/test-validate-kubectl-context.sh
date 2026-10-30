@@ -134,6 +134,53 @@ assert_exit \
     "pipe into kubectl with --context is allowed" 0 \
     '{"tool_name":"Bash","tool_input":{"command":"cat manifest.yaml | kubectl --context=staging apply -f -"}}'
 
+# ── Multi-line quoted-string false-positive regression tests ───────────────
+# Regression (issue #3286): quote stripping ran sed line by line, so a quoted
+# argument spanning newlines (a gh pr comment body, a multi-paragraph commit
+# message) was never removed. A later line such as "(kubectl auth ..." then
+# sat in command position — "(" counts as a separator — and was blocked.
+echo ""
+echo "Multi-line quoted-string false-positive regression (#3286):"
+
+assert_exit \
+    "kubectl in multi-line double-quoted gh pr comment body is allowed" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"gh pr comment 1 -b \"First line.\n\nNot verified (kubectl auth was unavailable).\""}}'
+
+assert_exit \
+    "kubectl in multi-line double-quoted commit message is allowed" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"subject\n\nbody mentions (kubectl get pods) here\""}}'
+
+assert_exit \
+    "kubectl in multi-line single-quoted argument is allowed" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"git commit -m '"'"'subject\n\n(kubectl get pods) in the body'"'"'"}}'
+
+assert_exit \
+    "helm in multi-line double-quoted argument is allowed" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"gh pr comment 1 -b \"Summary\n(helm install was not run)\""}}'
+
+# Protection preserved: a real invocation after a closed multi-line quote
+assert_exit \
+    "kubectl after a closed multi-line quote on the same line is blocked" 2 \
+    '{"tool_name":"Bash","tool_input":{"command":"echo \"a\nb\" && kubectl get pods"}}'
+
+assert_exit \
+    "kubectl on the line after a closed multi-line quote is blocked" 2 \
+    '{"tool_name":"Bash","tool_input":{"command":"echo \"a\nb\"\nkubectl get pods"}}'
+
+assert_exit \
+    "kubectl after a closed multi-line single quote is blocked" 2 \
+    '{"tool_name":"Bash","tool_input":{"command":"echo '"'"'a\nb'"'"'; kubectl get pods"}}'
+
+# Protection preserved: an escaped quote outside quotes does not open a string
+assert_exit \
+    "kubectl after an escaped quote outside quotes is blocked" 2 \
+    "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"echo \\\\' ; kubectl get pods\"}}"
+
+# Protection preserved: an unterminated quote does not swallow the rest
+assert_exit \
+    "kubectl after an unterminated quote is still blocked" 2 \
+    '{"tool_name":"Bash","tool_input":{"command":"echo \"oops\nkubectl get pods"}}'
+
 # ── Prose-substring false-positive regression tests ────────────────────────
 # Regression (issue #1544): the detection anchor allowed ANY whitespace before
 # the tool name, so a bare mention of "helm"/"kubectl" in prose that leaked past
