@@ -207,6 +207,45 @@ assert_exit \
     "cat .env.example .env (real secret last) is still blocked" 2 \
     "cat .env.example .env"
 
+# ── template followed by a backtick or punctuation (issue #3297) ─────────────
+# Prose that wraps the template in backticks or follows it with `,` / `.` / `)`
+# must still read as the template; the token used to keep the trailing char.
+echo ""
+echo ".env templates wrapped in backticks or followed by punctuation are allowed:"
+
+assert_exit \
+    "cat templates \`.env.example\` neither (backtick-wrapped template) is allowed" 0 \
+    "cat templates \`.env.example\` neither"
+
+assert_exit \
+    "cat templates .env.example, neither (trailing comma) is allowed" 0 \
+    "cat templates .env.example, neither"
+
+assert_exit \
+    "cat see .env.example. (trailing period) is allowed" 0 \
+    "cat see .env.example."
+
+assert_exit \
+    "cat (.env.sample) (trailing paren) is allowed" 0 \
+    "cat (.env.sample)"
+
+# True-positive controls: the trimming must not exempt a real secret.
+assert_exit \
+    "cat \`.env\` (backtick-wrapped real secret) is still blocked" 2 \
+    "cat \`.env\`"
+
+assert_exit \
+    "cat .env.local, (real secret + comma) is still blocked" 2 \
+    "cat .env.local,"
+
+assert_exit \
+    "cat .env. (real secret + period) is still blocked" 2 \
+    "cat .env."
+
+assert_exit \
+    "cat .env,.env.example (real secret before a comma) is still blocked" 2 \
+    "cat .env,.env.example"
+
 echo ""
 echo "reader verbs do not bridge ';' / '&&' / '||' to an unrelated .env mention:"
 

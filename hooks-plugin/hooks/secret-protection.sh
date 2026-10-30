@@ -415,10 +415,17 @@ ${OVERRIDE_NOTE}"
   # The exemption requires *every* .env token in the matched region to be a
   # template. Inspecting only the last one would let a real secret hide behind
   # a template in the same statement (`cat .env .env.example`).
+  #
+  # A token also stops at a backtick, comma or `)`, and loses trailing periods,
+  # so prose that wraps or punctuates the filename (`` `.env.example` ``,
+  # `.env.example,`, `.env.example.`) still reads as the template (issue
+  # #3297). The class lives in a single-quoted variable to keep the backtick
+  # out of the `$(...)` below (bash 3.2 parses a backtick there unreliably).
+  sp_env_tok_class='[^[:space:]|;&'"'"'"`,)]*'
   match_is_secret() {
     local env_tokens non_template
     if [ "$1" = '\.env\b' ]; then
-      env_tokens=$(echo "$2" | grep -oE "${1}[^[:space:]|;&'\"]*" || true)
+      env_tokens=$(echo "$2" | grep -oE "${1}${sp_env_tok_class}" | sed 's/\.*$//' || true)
       non_template=$(echo "$env_tokens" | grep -vE '\.(example|sample|template)$' || true)
       [ -n "$env_tokens" ] && [ -z "$non_template" ] && return 1
     fi
