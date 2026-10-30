@@ -2040,7 +2040,9 @@ else
         [ -n "$d" ] && [ -d "$d" ] || { echo "FATAL: invalid sandbox dir '$d'" >&2; exit 1; }
         d=$(cd -P -- "$d" && pwd -P) || { echo "FATAL: cannot resolve '$d'" >&2; exit 1; }
         git -C "$d" init -q
-        mkdir -p "$d/tmp" "$d/src"
+        # .git/info/ comes from the init template; a custom init.templateDir
+        # without it would make the exclude appends below abort the suite (#3280).
+        mkdir -p "$d/.git/info" "$d/tmp" "$d/src"
         printf 'a\n' > "$d/tmp/smoke.sh"
         printf 'a\n' > "$d/src/x.py"
         printf '%s\n' "$d"
