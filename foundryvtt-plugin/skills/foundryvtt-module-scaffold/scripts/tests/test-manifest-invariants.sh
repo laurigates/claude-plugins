@@ -166,6 +166,52 @@ for tz in Pacific/Kiritimati Etc/GMT+12; do
     check "TZ=${tz}: LICENSE year is the UTC year" "$utc_year_before" "$license_year"
 done
 
+echo "=== RENOVATE SEES EVERY SCAFFOLD PIN ==="
+
+# scaffold.py's *_VERSION constants duplicate the template's package.json pins,
+# and test-template-parity.sh fails the moment they differ. Renovate's npm
+# manager bumps only package.json; the constants are bumped by the scaffold.py
+# regex customManager in renovate.json, keyed on a `# renovate:` comment above
+# each one. A constant added without that comment, or a manager pattern that
+# stops matching the path, would let the next bump break parity again. So this
+# applies renovate.json's own patterns to scaffold.py and requires every
+# constant to be extracted, under the depName and value package.json uses.
+RENOVATE_JSON="${SCRIPT_DIR}/../../../../../renovate.json"
+TEMPLATE_PKG="${SCRIPT_DIR}/../../../../templates/foundryvtt-module/package.json"
+renovate_view="$(python3 - "$RENOVATE_JSON" "$SCAFFOLD" "$TEMPLATE_PKG" <<'PY'
+import json, re, sys
+from pathlib import Path
+
+renovate, scaffold, pkg = (Path(p).resolve() for p in sys.argv[1:4])
+rel = str(scaffold.relative_to(renovate.parent))
+src = scaffold.read_text()
+
+def js_to_py(rx):  # named groups only differ in syntax
+    return rx.replace("(?<", "(?P<")
+
+extracted = {}
+for mgr in json.loads(renovate.read_text()).get("customManagers", []):
+    if not any(re.search(p.strip("/"), rel) for p in mgr.get("managerFilePatterns", [])):
+        continue
+    for ms in mgr["matchStrings"]:
+        for m in re.finditer(js_to_py(ms), src):
+            extracted[m.group("depName")] = m.group("currentValue")
+
+constants = re.findall(r'^[A-Z_]+_VERSION = "', src, re.M)
+dev = json.loads(pkg.read_text())["devDependencies"]
+print(f"CONSTANTS={len(constants)}")
+print(f"EXTRACTED={len(extracted)}")
+print("MATCHES_TEMPLATE=" + ("yes" if extracted == dev else f"no extracted={extracted} template={dev}"))
+PY
+)"
+check "scaffold.py declares version constants" "yes" \
+    "$([ "$(grep -m1 '^CONSTANTS=' <<<"$renovate_view" | cut -d= -f2)" -gt 0 ] 2>/dev/null && echo yes || echo no)"
+check "renovate.json extracts every scaffold.py version constant" \
+    "$(grep -m1 '^CONSTANTS=' <<<"$renovate_view" | cut -d= -f2)" \
+    "$(grep -m1 '^EXTRACTED=' <<<"$renovate_view" | cut -d= -f2)"
+check "extracted pins equal the template's devDependencies" "yes" \
+    "$(grep -m1 '^MATCHES_TEMPLATE=' <<<"$renovate_view" | cut -d= -f2-)"
+
 echo "=== FRESH SCAFFOLD (no ERROR by construction) ==="
 
 run_verify "$PRISTINE"

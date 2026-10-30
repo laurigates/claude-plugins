@@ -90,6 +90,26 @@
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: extractVersion=(?<extractVersion>\\S+))?\\s+\\w+_VERSION:\\s*\"(?<currentValue>[^\"]+)\""
       ],
       "datasourceTemplate": "github-releases"
+    },
+    {
+      "customType": "regex",
+      "description": "Version constants in a skill's scaffold.py, annotated with `# renovate: datasource=... depName=...` above each <TOOL>_VERSION = \"x.y.z\" line. scaffold.py duplicates the pins of the cargo-generate template beside it (test-template-parity.sh asserts byte-identical output), so these must bump in the same PR as the template's package.json; they do, because both updates share a depName and so a branch name. depType mirrors the template's devDependencies so the automerge rule treats both halves alike.",
+      "managerFilePatterns": ["/(^|/)[^/]+-plugin/skills/[^/]+/scaffold\\.py$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+\\w+_VERSION = \"(?<currentValue>[^\"]+)\""
+      ],
+      "depTypeTemplate": "devDependencies"
+    },
+    {
+      "customType": "regex",
+      "description": "Biome version in a scaffold template's biome.json $schema URL. The npm manager does not read biome.json, yet scaffold.py renders it from BIOME_VERSION, so a biome bump that misses it breaks template parity. (The CI setup-biome `version:` input needs no entry: the built-in github-actions manager already extracts it as a uses-with dependency.)",
+      "managerFilePatterns": ["/(^|/)[^/]+-plugin/templates/.+/biome\\.json$/"],
+      "matchStrings": [
+        "https://biomejs\\.dev/schemas/(?<currentValue>[^/\"]+)/schema\\.json"
+      ],
+      "depNameTemplate": "@biomejs/biome",
+      "datasourceTemplate": "npm",
+      "depTypeTemplate": "devDependencies"
     }
   ],
   "pre-commit": {
@@ -116,6 +136,14 @@
       "description": "Pin to commit SHA / sha256 digests for the version pins inside skill markdown examples, with the human-readable version preserved as a trailing comment. Confined to skill markdown so the repo's own CI workflows keep their tag-form refs.",
       "matchFileNames": ["**/skills/**/*.md"],
       "pinDigests": true
+    },
+    {
+      "description": "Keep the foundry module scaffold's caret ranges as ranges. The global rangeStrategy `pin` would pin templates/foundryvtt-module/package.json, and the regex manager has no pin update for the matching scaffold.py constants, so the pin PR alone would break test-template-parity.sh. With `replace`, both managers compute the same new value and land on the same branch.",
+      "matchFileNames": [
+        "foundryvtt-plugin/templates/foundryvtt-module/package.json",
+        "foundryvtt-plugin/skills/foundryvtt-module-scaffold/scaffold.py"
+      ],
+      "rangeStrategy": "replace"
     },
     {
       "description": "Keep gitleaks in lockstep across scripts/install_pkgs.sh (github-releases) and .pre-commit-config.yaml (pre-commit manager) — they must bump together or install_pkgs.sh's pin drifts from the hook rev.",
