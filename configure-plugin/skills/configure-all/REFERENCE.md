@@ -96,6 +96,7 @@ components:
   dead-code: "2025.1"
   editor: "2025.1"
   security: "2025.1"
+  completions: "2025.1"
 
 # Documented deviations from standard
 deviations: []

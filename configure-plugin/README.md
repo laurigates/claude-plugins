@@ -57,6 +57,7 @@ merged into their configure siblings' `REFERENCE.md` files
 | `configure-github-pages` | GitHub Pages deployment |
 | `configure-argocd-automerge` | Auto-merge workflow for ArgoCD Image Updater branches |
 | `configure-claude-plugins` | Configure Claude Code plugin marketplace and GitHub Actions workflows |
+| `configure-completions` | Shell completions for a released CLI: generator subcommand, delivery through Homebrew, archives and installer docs, and a drift test |
 
 ### Git Metadata
 

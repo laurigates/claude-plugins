@@ -65,6 +65,10 @@ components:
     domain: ci-cd
     has_script: false
     types: all
+  - name: configure-completions
+    domain: ci-cd
+    has_script: false
+    types: all
   - name: configure-gitattributes
     domain: git-metadata
     has_script: false
