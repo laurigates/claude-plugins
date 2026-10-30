@@ -67,10 +67,21 @@ PUBLISHER_DEFAULT = "laurigates"
 
 # Pinned tool versions — kept in ONE place so a pin can never drift between
 # biome.json, the CI setup-biome step, and the justfile.
+#
+# Each must equal the pin in templates/foundryvtt-module/ or
+# test-template-parity.sh fails. Renovate bumps the template's package.json via
+# the npm manager and these constants via the `# renovate:` annotations
+# (renovate.json customManagers); both land in the same PR because the branch
+# name derives from depName.
+# renovate: datasource=npm depName=@biomejs/biome
 BIOME_VERSION = "2.4.15"
+# renovate: datasource=npm depName=typescript
 TYPESCRIPT_VERSION = "^5.7.0"
+# renovate: datasource=npm depName=vite
 VITE_VERSION = "^6.0.0"
+# renovate: datasource=npm depName=vite-plugin-static-copy
 VITE_STATIC_COPY_VERSION = "^2.2.0"
+# renovate: datasource=npm depName=vitest
 VITEST_VERSION = "^4.1.11"
 
 # FoundryVTT compatibility defaults. `verified` tracks the version the local

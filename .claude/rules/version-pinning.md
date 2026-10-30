@@ -123,6 +123,20 @@ refs exactly like this repo's own CI workflows — the `pinDigests` rule stays
 confined to skill markdown, which is where a hand-transcribed SHA is a hazard
 rather than an inconvenience.
 
+**A generator that duplicates its template's pins needs a manager of its own.**
+The foundry `scaffold.py` carries `*_VERSION` constants that must equal the
+cargo-generate template's pins, or `test-template-parity.sh` fails. No built-in
+manager reads Python constants, so each one carries a
+`# renovate: datasource=npm depName=<pkg>` comment that a regex customManager
+reads. The template's `biome.json` `$schema` URL gets a regex manager too. Both
+halves share a depName, so Renovate puts them on the same branch. The pair is
+also exempt from `rangeStrategy: pin`, which would pin only `package.json`. A
+renovate dry run against the old and new config showed every template update
+gaining a matching scaffold.py update with the same new value and branch.
+`test-manifest-invariants.sh` § RENOVATE SEES EVERY SCAFFOLD PIN applies
+`renovate.json`'s patterns to `scaffold.py` and fails when a constant is not
+extracted or disagrees with `package.json`.
+
 ## Authoring checklist
 
 - [ ] New executable pin uses one of the four managed shapes above
