@@ -27,7 +27,7 @@ Supporting detail for [SKILL.md](../SKILL.md). The **Prompt** section of SKILL.m
    - Identify patterns and root causes
 
 2. **Plan Fixes with PAL Planner**
-   - Use `mcp__pal-mcp-server__planner` for systematic planning
+   - Use `mcp__pal__planner` for systematic planning
    - Break down complex fixes into actionable steps
    - Identify dependencies between fixes
    - Estimate effort and priority

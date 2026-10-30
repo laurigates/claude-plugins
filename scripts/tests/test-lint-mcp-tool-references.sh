@@ -3,24 +3,27 @@
 # Regression test for scripts/lint-mcp-tool-references.sh
 #
 # Issue #2437: agent-patterns-plugin:multi-model-delegation and
-# testing-plugin:test-analyze documented PAL's MCP tools with a hardcoded
-# `mcp__pal__*` prefix. The callable prefix is derived from the name the server
-# is REGISTERED under (this repo registers PAL as `pal-mcp-server`), so every
-# documented lookup returned "No matching deferred tools found".
+# testing-plugin:test-analyze documented PAL's MCP tools with a prefix that did
+# not match the registration. The callable prefix is derived from the name the
+# server is REGISTERED under, so every documented lookup returned "No matching
+# deferred tools found". #3318 made `pal` the portfolio registration
+# (configure-plugin/policy/repo-baseline.json `mcpServers.pal`), so the entry now
+# denies the old `mcp__pal-mcp-server__` prefix and the fix is `mcp__pal__`.
 #
 # SEMANTIC, not syntactic: every case EXECUTES a copy of the real linter
 # against a planted fixture tree and asserts on its verdict. A grep of the
-# linter for the string `mcp__pal__` would pass against a denylist whose triple
+# linter for the string `mcp__pal-mcp-server__` would pass against a denylist whose triple
 # indexing is off by one (the array is read three entries at a time), which is
 # exactly the shape that would silently disable the entry.
 #
 # Two halves are weighted equally with detection:
 #
 #   NARROWNESS — a checker that flagged every `mcp__pal` occurrence would flag
-#   the FIX (`mcp__pal-mcp-server__chat`) and get reverted. And because
-#   `mcp__pal__` is the CORRECT callable prefix for any repo that registers the
-#   server under the key `pal`, the entry is PATH-SCOPED: it must NOT fire on a
-#   skill outside the artifact families that carry the #2437 defect.
+#   the FIX (`mcp__pal__chat`) and get reverted. And because
+#   `mcp__pal-mcp-server__` is the CORRECT callable prefix for any repo that
+#   registers the server under the key `pal-mcp-server`, the entry is
+#   PATH-SCOPED: it must NOT fire on a skill outside the artifact families that
+#   document PAL.
 #
 #   COVERAGE — the linter's walk is not repo-wide (see its header). The files it
 #   DOES claim to read (skill files, bundled `*.workflow.js`, the compiled
@@ -103,30 +106,30 @@ $real_out"
 fi
 
 # ---------------------------------------------------------------------------
-# CASE 1: the bare `mcp__pal__` prefix in a scoped skill body is an ERROR.
+# CASE 1: the bare `mcp__pal-mcp-server__` prefix in a scoped skill body is an ERROR.
 # ---------------------------------------------------------------------------
 fx="$(make_fixture)"
 cat >"$fx/demo-plugin/skills/multi-model-delegation/SKILL.md" <<'EOF'
 ---
 name: demo
 ---
-Run `mcp__pal__listmodels` once at the start of the consult.
+Run `mcp__pal-mcp-server__listmodels` once at the start of the consult.
 EOF
 run_fixture "$fx"
 out="$FIXTURE_OUT"
 if [ "$FIXTURE_EXIT" -eq 1 ] && grep -q 'multi-model-delegation/SKILL.md' <<<"$out"; then
-  ok "bare mcp__pal__ prefix in a scoped skill body is flagged"
+  ok "bare mcp__pal-mcp-server__ prefix in a scoped skill body is flagged"
 else
-  bad "bare mcp__pal__ prefix in a scoped skill body is flagged" "exit=$FIXTURE_EXIT
+  bad "bare mcp__pal-mcp-server__ prefix in a scoped skill body is flagged" "exit=$FIXTURE_EXIT
 $out"
 fi
-if grep -q 'pal-mcp-server' <<<"$out"; then
+if grep -q 'repo-baseline.json' <<<"$out" && grep -q 'mcp__pal__' <<<"$out"; then
   ok "the finding names the derived-prefix fix"
 else
   bad "the finding names the derived-prefix fix" "$out"
 fi
 # Message wording is pinned so a gratuitous reword is a deliberate, tested act.
-if grep -qF 'Tool:  mcp__pal__ (not exposed by its MCP server)' <<<"$out"; then
+if grep -qF 'Tool:  mcp__pal-mcp-server__ (not exposed by its MCP server)' <<<"$out"; then
   ok "the ERROR block's Tool: line keeps its wording"
 else
   bad "the ERROR block's Tool: line keeps its wording" "$out"
@@ -141,16 +144,16 @@ fx="$(make_fixture)"
 cat >"$fx/demo-plugin/skills/multi-model-delegation/SKILL.md" <<'EOF'
 ---
 name: demo
-allowed-tools: Read, mcp__pal__chat, mcp__pal__consensus
+allowed-tools: Read, mcp__pal-mcp-server__chat, mcp__pal-mcp-server__consensus
 ---
 Body with no tool names.
 EOF
 run_fixture "$fx"
 out="$FIXTURE_OUT"
 if [ "$FIXTURE_EXIT" -eq 1 ]; then
-  ok "bare mcp__pal__ prefix in allowed-tools is flagged"
+  ok "bare mcp__pal-mcp-server__ prefix in allowed-tools is flagged"
 else
-  bad "bare mcp__pal__ prefix in allowed-tools is flagged" "exit=$FIXTURE_EXIT
+  bad "bare mcp__pal-mcp-server__ prefix in allowed-tools is flagged" "exit=$FIXTURE_EXIT
 $out"
 fi
 rm -rf "$fx"
@@ -164,24 +167,24 @@ fx="$(make_fixture)"
 cat >"$fx/demo-plugin/skills/multi-model-delegation/SKILL.md" <<'EOF'
 ---
 name: demo
-allowed-tools: Read, mcp__pal-mcp-server__chat, mcp__pal-mcp-server__listmodels
+allowed-tools: Read, mcp__pal__chat, mcp__pal__listmodels
 ---
-PAL's tools are reachable as `mcp__<server-name>__<tool>`; with the common
-registration `pal-mcp-server` that is `mcp__pal-mcp-server__chat`.
+PAL's tools are reachable as `mcp__<server-name>__<tool>`; with the policy
+registration `pal` that is `mcp__pal__chat`.
 EOF
 run_fixture "$fx"
 out="$FIXTURE_OUT"
 if [ "$FIXTURE_EXIT" -eq 0 ]; then
-  ok "the mcp__pal-mcp-server__ prefix is NOT flagged"
+  ok "the mcp__pal__ prefix is NOT flagged"
 else
-  bad "the mcp__pal-mcp-server__ prefix is NOT flagged" "exit=$FIXTURE_EXIT
+  bad "the mcp__pal__ prefix is NOT flagged" "exit=$FIXTURE_EXIT
 $out"
 fi
 rm -rf "$fx"
 
 # ---------------------------------------------------------------------------
-# CASE 4 (NARROWNESS — the path scope): `mcp__pal__` is the CORRECT callable
-# prefix for a repo that registers the server under the key `pal`, so the entry
+# CASE 4 (NARROWNESS — the path scope): `mcp__pal-mcp-server__` is the CORRECT callable
+# prefix for a repo that registers the server under the key `pal-mcp-server`, so the entry
 # is scoped to the artifacts that carry the #2437 defect. A skill outside that
 # scope must NOT be flagged — otherwise the guard hardcodes exactly the
 # assumption the fix tells readers not to make.
@@ -190,17 +193,17 @@ fx="$(make_fixture)"
 cat >"$fx/demo-plugin/skills/other-demo/SKILL.md" <<'EOF'
 ---
 name: other-demo
-allowed-tools: Read, mcp__pal__chat
+allowed-tools: Read, mcp__pal-mcp-server__chat
 ---
-This repo registers the server under the key `pal`, so `mcp__pal__chat` is the
+This repo registers the server under the key `pal-mcp-server`, so `mcp__pal-mcp-server__chat` is the
 correct callable name here.
 EOF
 run_fixture "$fx"
 out="$FIXTURE_OUT"
 if [ "$FIXTURE_EXIT" -eq 0 ]; then
-  ok "mcp__pal__ outside the entry's path scope is NOT flagged"
+  ok "mcp__pal-mcp-server__ outside the entry's path scope is NOT flagged"
 else
-  bad "mcp__pal__ outside the entry's path scope is NOT flagged" "exit=$FIXTURE_EXIT
+  bad "mcp__pal-mcp-server__ outside the entry's path scope is NOT flagged" "exit=$FIXTURE_EXIT
 $out"
 fi
 rm -rf "$fx"
@@ -213,7 +216,7 @@ cat >"$fx/demo-plugin/skills/multi-model-delegation/SKILL.md" <<'EOF'
 ---
 name: demo
 ---
-> Gotcha: `mcp__pal__chat` resolves to nothing here — the prefix is derived
+> Gotcha: `mcp__pal-mcp-server__chat` resolves to nothing here — the prefix is derived
 > from the name the server is registered under.
 EOF
 run_fixture "$fx"
@@ -232,7 +235,7 @@ rm -rf "$fx"
 fx="$(make_fixture)"
 printf -- '---\nname: demo\n---\nclean body\n' \
   >"$fx/demo-plugin/skills/multi-model-delegation/SKILL.md"
-printf 'Call `mcp__pal__thinkdeep` for the deep dig.\n' \
+printf 'Call `mcp__pal-mcp-server__thinkdeep` for the deep dig.\n' \
   >"$fx/demo-plugin/skills/multi-model-delegation/REFERENCE.md"
 run_fixture "$fx"
 out="$FIXTURE_OUT"
@@ -254,7 +257,7 @@ fx="$(make_fixture)"
 printf -- '---\nname: demo\n---\nclean body\n' \
   >"$fx/demo-plugin/skills/multi-model-delegation/SKILL.md"
 mkdir -p "$fx/demo-plugin/skills/multi-model-delegation/references"
-printf 'Call `mcp__pal__thinkdeep` for the deep dig.\n' \
+printf 'Call `mcp__pal-mcp-server__thinkdeep` for the deep dig.\n' \
   >"$fx/demo-plugin/skills/multi-model-delegation/references/tools.md"
 run_fixture "$fx"
 out="$FIXTURE_OUT"
@@ -292,7 +295,7 @@ printf -- '---\nname: demo\n---\nclean body\n' \
   >"$fx/demo-plugin/skills/multi-model-delegation/SKILL.md"
 mkdir -p "$fx/demo-plugin/skills/multi-model-delegation/workflows"
 cat >"$fx/demo-plugin/skills/multi-model-delegation/workflows/demo.workflow.js" <<'EOF'
-/* `mcp__pal__planner` is NOT available inside a workflow. */
+/* `mcp__pal-mcp-server__planner` is NOT available inside a workflow. */
 EOF
 run_fixture "$fx"
 out="$FIXTURE_OUT"
@@ -423,7 +426,7 @@ cat >"$fx/dist/opencode/skills/multi-model-delegation/SKILL.md" <<'EOF'
 ---
 name: demo
 ---
-Run `mcp__pal__listmodels` once at the start of the consult.
+Run `mcp__pal-mcp-server__listmodels` once at the start of the consult.
 EOF
 cp "$fx/dist/opencode/skills/multi-model-delegation/SKILL.md" \
    "$fx/demo-plugin/skills/multi-model-delegation/SKILL.md"
