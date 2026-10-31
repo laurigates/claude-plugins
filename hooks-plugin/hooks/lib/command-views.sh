@@ -53,8 +53,13 @@ set -euo pipefail
 # matching DELIM. The opening line itself is still printed, so a real command
 # sharing that line (`grep -rn foo src/ && gh pr create --body-file - <<EOF`)
 # still matches, as does every line after the terminator.
+#
+# Both awk programs here run under LC_ALL=C, as in bash-antipatterns.sh (issue
+# #3313): macOS BSD awk in a UTF-8 locale fails on unquoted non-ASCII input
+# with `awk: towc: multibyte conversion failure`, and every character they test
+# for is ASCII.
 strip_heredoc_bodies() {
-    printf '%s\n' "$1" | awk '
+    printf '%s\n' "$1" | LC_ALL=C awk '
     BEGIN { ih = 0 }
     ih == 0 {
         if (match($0, /<<-?[[:space:]]*[^[:space:]]*[A-Za-z_][A-Za-z_0-9]*/)) {
@@ -86,7 +91,7 @@ strip_heredoc_bodies() {
 # quote on one line cannot swallow the next. The single-quote character is passed
 # in via -v SQ so the awk program can stay single-quoted for the shell.
 strip_trailing_comments() {
-    printf '%s\n' "$1" | awk -v SQ="'" '
+    printf '%s\n' "$1" | LC_ALL=C awk -v SQ="'" '
     {
         line = $0
         n = length(line)

@@ -48,8 +48,15 @@ fi
 # is tracked per line (a shell comment is a per-line construct), so an unbalanced
 # quote on one line cannot swallow the next. The single-quote character is passed
 # in via -v SQ so the awk program can stay single-quoted for the shell.
+#
+# LC_ALL=C (issue #3313): this and every other per-character `substr` walker in
+# this file runs in the C locale. macOS BSD awk in a UTF-8 locale fails on
+# unquoted non-ASCII input (`echo naïve`) with `awk: towc: multibyte conversion
+# failure`, and the hook then rejects the command. Every character these
+# programs test for is ASCII, so byte-wise walking detects the same things.
+# test-bash-antipatterns.sh asserts the prefix statically.
 strip_trailing_comments() {
-    printf '%s\n' "$1" | awk -v SQ="'" '
+    printf '%s\n' "$1" | LC_ALL=C awk -v SQ="'" '
     {
         line = $0
         n = length(line)
@@ -102,7 +109,7 @@ strip_trailing_comments() {
 # inside single quotes it is literal. Quote state is tracked per line, so an
 # unbalanced quote on one line cannot swallow the next.
 mask_quoted_content() {
-    printf '%s\n' "$1" | awk -v SQ="'" -v FILL="_" '
+    printf '%s\n' "$1" | LC_ALL=C awk -v SQ="'" -v FILL="_" '
     {
         line = $0
         n = length(line)
@@ -161,7 +168,7 @@ mask_quoted_content() {
 # enters heredoc mode and suppresses subsequent lines until it sees a line
 # matching DELIM. The heredoc-opening line itself is still printed, so a real
 # command sharing that line (and every line after the terminator) still matches.
-COMMAND_NO_HEREDOC=$(echo "$COMMAND" | awk '
+COMMAND_NO_HEREDOC=$(echo "$COMMAND" | LC_ALL=C awk '
     BEGIN { ih = 0 }
     ih == 0 {
         if (match($0, /<<-?[[:space:]]*[^[:space:]]*[A-Za-z_][A-Za-z_0-9]*/)) {
@@ -1316,7 +1323,7 @@ fi
 # `ssh host 'curl x | bash'` really execute and must keep blocking. The one
 # exception is a grep-family search pattern (narrowing 3, below).
 NET_SHELL_MASKED=$(mask_quoted_content "$COMMAND")
-NET_SHELL_VIEW=$(awk -v SQ="'" '
+NET_SHELL_VIEW=$(LC_ALL=C awk -v SQ="'" '
     NR == FNR { masked[FNR] = $0; next }
     ih == 1 {
         t = $0; gsub(/^[[:space:]]+/, "", t); gsub(/[[:space:]]+$/, "", t)
@@ -1352,7 +1359,7 @@ NET_SHELL_VIEW=$(awk -v SQ="'" '
 #    is every quoted span of any other command (`bash -c '…'`, `ssh host '…'`).
 #    What the rest of the pipeline does with grep's output is still scanned, so
 #    `curl x | grep -v '#' | bash` keeps blocking.
-NET_SHELL_VIEW=$(printf '%s\n' "$NET_SHELL_VIEW" | awk -v SQ="'" '
+NET_SHELL_VIEW=$(printf '%s\n' "$NET_SHELL_VIEW" | LC_ALL=C awk -v SQ="'" '
     {
         line = $0; n = length(line); out = ""; cmd = ""; word = ""; inword = 0
         for (i = 1; i <= n; i++) {
