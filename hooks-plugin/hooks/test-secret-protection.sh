@@ -64,6 +64,39 @@ assert_exit() {
 
 echo "=== secret-protection hook tests ==="
 
+# ── bash 3.2 parse: no backtick in a heredoc inside $( … ) (#3145, #3261) ─────
+# macOS /bin/bash 3.2 scans a `$( … )` body for backticks even inside a quoted
+# heredoc, so a literal backtick there opens a substitution that never closes:
+# the hook fails to parse, and onFailure "block" then blocks every Bash call.
+# bash 5 parses it fine, so this is a static check on the hook source.
+echo ""
+echo "bash 3.2 parse safety:"
+cmdsub_heredoc_backticks=$(awk '
+    in_body {
+        line = $0
+        if (strip) sub(/^\t+/, "", line)
+        if (line == delim) { in_body = 0; next }
+        if (index($0, "`")) printf "%d ", NR
+        next
+    }
+    /^[ \t]*#/ { next }
+    {
+        opens = ($0 ~ /\$\(/) || pending
+        pending = ($0 ~ /\$\([ \t]*$/)
+        if (opens && match($0, /<<-?[ \t]*["'"'"']?[A-Za-z_][A-Za-z0-9_]*/) && substr($0, RSTART, 3) != "<<<") {
+            tok = substr($0, RSTART, RLENGTH)
+            strip = (tok ~ /^<<-/)
+            gsub(/^<<-?[ \t]*["'"'"']?/, "", tok)
+            delim = tok; in_body = 1; pending = 0
+        }
+    }' "$HOOK")
+if [ -z "$cmdsub_heredoc_backticks" ]; then
+    printf "  PASS: no heredoc inside \$( … ) holds a backtick\n"; PASS=$((PASS + 1))
+else
+    printf "  FAIL: backtick in a heredoc inside \$( … ) at line(s) %s — bash 3.2 cannot parse it; fill the variable with read -r -d '' instead\n" "$cmdsub_heredoc_backticks"
+    FAIL=$((FAIL + 1))
+fi
+
 # ── secret-env false-positive regression (issue #1580) ───────────────────────
 echo ""
 echo "config NAME=value echoes are allowed; genuine secret var refs are blocked:"
