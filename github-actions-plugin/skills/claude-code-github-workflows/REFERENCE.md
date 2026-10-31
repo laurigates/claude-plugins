@@ -172,7 +172,7 @@ it unset), and upload it so a run's tool calls stay readable afterwards:
 ```yaml
 - name: Upload the execution log
   if: always()
-  uses: actions/upload-artifact@v7
+  uses: actions/upload-artifact@v7.0.2
   with:
     name: claude-execution-output
     path: ${{ steps.claude.outputs.execution_file || format('{0}/claude-execution-output.json', runner.temp) }}

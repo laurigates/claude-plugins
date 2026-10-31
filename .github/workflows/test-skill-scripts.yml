@@ -134,7 +134,7 @@ env:
   # renovate: datasource=github-releases depName=cargo-generate/cargo-generate extractVersion=^v(?<version>.*)$
   CARGO_GENERATE_VERSION: "0.23.14"
   # renovate: datasource=github-releases depName=GothenburgBitFactory/taskwarrior extractVersion=^v(?<version>.*)$
-  TASKWARRIOR_VERSION: "3.4.2"
+  TASKWARRIOR_VERSION: "3.5.0"
 
 jobs:
   test:

@@ -68,12 +68,12 @@ jobs:
       actions: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           fetch-depth: 1
 
       - name: Run Claude Code
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@v1.0.264
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
@@ -101,7 +101,7 @@ output:
 
 ```yaml
 - id: scan
-  uses: anthropics/claude-code-action@v1
+  uses: anthropics/claude-code-action@v1.0.264
   with:
     claude_args: >-
       --json-schema '{"type":"object","properties":{"total_issues":{"type":"integer"}},"required":["total_issues"]}'
@@ -179,7 +179,7 @@ claude_args: |
 ### Checkout Optimization
 ```yaml
 # Fast checkout for large repos
-- uses: actions/checkout@v5
+- uses: actions/checkout@v5.1.0
   with:
     fetch-depth: 1          # Shallow clone
     sparse-checkout: |      # Only needed paths

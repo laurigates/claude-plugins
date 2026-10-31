@@ -163,8 +163,8 @@ jobs:
   ruff:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/ruff-action@v3
+      - uses: actions/checkout@v4.4.0
+      - uses: astral-sh/ruff-action@v3.6.1
         with:
           args: 'check --output-format github'
           changed-files: 'true'   # lint only changed files
@@ -176,14 +176,14 @@ jobs:
   ruff-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.4.0
       - run: pip install ruff
       - run: ruff check --output-format github
 
   ruff-format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.4.0
       - run: pip install ruff
       - run: ruff format --check --diff
 ```
@@ -217,7 +217,7 @@ version: 2.1
 jobs:
   lint:
     docker:
-      - image: cimg/python:3.11
+      - image: cimg/python:3.15
     steps:
       - checkout
       - run: pip install ruff
