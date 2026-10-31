@@ -128,11 +128,19 @@ The foundry `scaffold.py` carries `*_VERSION` constants that must equal the
 cargo-generate template's pins, or `test-template-parity.sh` fails. No built-in
 manager reads Python constants, so each one carries a
 `# renovate: datasource=npm depName=<pkg>` comment that a regex customManager
-reads. The template's `biome.json` `$schema` URL gets a regex manager too. Both
-halves share a depName, so Renovate puts them on the same branch. The pair is
-also exempt from `rangeStrategy: pin`, which would pin only `package.json`. A
-renovate dry run against the old and new config showed every template update
-gaining a matching scaffold.py update with the same new value and branch.
+reads. Both halves share a depName, so Renovate puts them on the same branch.
+The pair is also exempt from `rangeStrategy: pin`, which would pin only
+`package.json`. A renovate dry run against the old and new config showed every
+template update gaining a matching scaffold.py update with the same new value
+and branch.
+
+Prefer removing a duplicate pin to managing it. The template used to repeat the
+biome version in the `biome.json` `$schema` URL and in the CI `setup-biome`
+`version:` input. The hosted runner (`renovate:43`) extracts neither, so
+generated repos drifted: package.json moved on while CI kept linting with the
+old biome. The template now points `$schema` at
+`./node_modules/@biomejs/biome/configuration_schema.json` and runs biome in CI
+via `bun run lint`, which leaves package.json as the only copy.
 `test-manifest-invariants.sh` § RENOVATE SEES EVERY SCAFFOLD PIN applies
 `renovate.json`'s patterns to `scaffold.py` and fails when a constant is not
 extracted or disagrees with `package.json`.
