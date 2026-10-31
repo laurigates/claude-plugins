@@ -101,13 +101,13 @@ jobs:
   unused-deps:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.4.0
 
       - name: Install the pinned toolchain
         run: rustup toolchain install --no-self-update
 
       - name: Install cargo-machete
-        uses: taiki-e/install-action@v2
+        uses: taiki-e/install-action@v2.87.32
         with:
           tool: cargo-machete
 
@@ -126,7 +126,7 @@ jobs:
   unused-deps:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.4.0
 
       - name: Check unused dependencies
         uses: bnjbvr/cargo-machete@main
@@ -143,14 +143,14 @@ jobs:
   unused-deps:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.4.0
 
       - uses: dtolnay/rust-toolchain@nightly
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2.9.3
 
       - name: Install cargo-udeps
-        uses: taiki-e/install-action@v2
+        uses: taiki-e/install-action@v2.87.32
         with:
           tool: cargo-udeps
 

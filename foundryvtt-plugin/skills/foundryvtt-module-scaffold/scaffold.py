@@ -74,7 +74,7 @@ PUBLISHER_DEFAULT = "laurigates"
 # (renovate.json customManagers); both land in the same PR because the branch
 # name derives from depName.
 # renovate: datasource=npm depName=@biomejs/biome
-BIOME_VERSION = "2.4.15"
+BIOME_VERSION = "2.6.3"
 # renovate: datasource=npm depName=typescript
 TYPESCRIPT_VERSION = "^5.7.0"
 # renovate: datasource=npm depName=vite

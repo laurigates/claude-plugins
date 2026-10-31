@@ -223,8 +223,8 @@ jobs:
   ruff:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/ruff-action@v3
+      - uses: actions/checkout@v4.4.0
+      - uses: astral-sh/ruff-action@v3.6.1
         with:
           args: 'check --output-format github'
 ```

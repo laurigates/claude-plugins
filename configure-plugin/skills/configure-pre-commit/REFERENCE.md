@@ -54,7 +54,7 @@ repos:
         stages: [commit-msg]
 
   - repo: https://github.com/biomejs/pre-commit
-    rev: v2.4.16
+    rev: v2.6.3
     hooks:
       - id: biome-check
         additional_dependencies: ["@biomejs/biome@2.4.16"]
