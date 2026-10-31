@@ -16,8 +16,10 @@ toolchain decision. The `app` variant adds `src/app.ts` + `templates/app.hbs`;
 
 ## Notes & deferrals
 
-- The biome pin is single-sourced in `scaffold.py`'s `BIOME_VERSION` constant so
-  `biome.json` and the CI `setup-biome` step never drift.
+- The generated repo pins biome once, in `package.json`. `biome.json` reads its
+  `$schema` from `node_modules`, and the CI lint job runs `bun run lint` after
+  `bun install`, so a Renovate biome bump changes the only copy and CI lints
+  with the bumped version.
 - Action/tool versions in the generated workflows are current as of scaffolding;
   the account-wide gitops Renovate App reads the emitted `renovate.json` and
   bumps them. No repo-local `renovate.yml` is emitted: a second runner kept a
