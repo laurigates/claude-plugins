@@ -243,5 +243,99 @@ json.dump(c,open(p,"w"),indent=2)' "$repo/release-please-config.json"
   rm -rf "$repo"
 fi
 
+# --- Test 5: --fix leaves existing release-please entries byte-identical (#3328) ---
+# Registering one plugin re-sorted the whole manifest with dict(sorted(...)),
+# moving entries the file keeps out of strict order (codebase-attributes-plugin
+# before code-quality-plugin), and reshuffled ~190 lines of the config. The fix
+# must add only the new entries' lines. Runs on a temp copy of the real files;
+# the real tree is never written.
+echo "--- Testing release-please order/format preservation ---"
+REAL_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+real_copy=$(mktemp -d) || real_copy=""
+if [ -z "$real_copy" ] || [ ! -d "$real_copy" ]; then
+  fail "order preservation: could not create temp dir"
+else
+  mkdir -p "$real_copy/.claude-plugin" "$real_copy/orig"
+  for f in release-please-config.json .release-please-manifest.json .claude-plugin/marketplace.json; do
+    cp "$REAL_ROOT/$f" "$real_copy/$f"
+    cp "$REAL_ROOT/$f" "$real_copy/orig/$(basename "$f")"
+  done
+  for pj in "$REAL_ROOT"/*/.claude-plugin/plugin.json; do
+    pdir=$(basename "$(dirname "$(dirname "$pj")")")
+    mkdir -p "$real_copy/$pdir/.claude-plugin"
+    cp "$pj" "$real_copy/$pdir/.claude-plugin/plugin.json"
+  done
+
+  python3 "$SYNC_SCRIPT" --fix --repo-root "$real_copy" >/dev/null 2>&1
+  if cmp -s "$real_copy/release-please-config.json" "$real_copy/orig/release-please-config.json" \
+    && cmp -s "$real_copy/.release-please-manifest.json" "$real_copy/orig/.release-please-manifest.json" \
+    && cmp -s "$real_copy/.claude-plugin/marketplace.json" "$real_copy/orig/marketplace.json"; then
+    pass "order preservation: --fix with nothing missing changes no file"
+  else
+    fail "order preservation: --fix with nothing missing changed a file"
+  fi
+
+  # One name that sorts after every entry, one that sorts in the middle.
+  for newp in zz-test-plugin dataviz-test-plugin; do
+    mkdir -p "$real_copy/$newp/.claude-plugin"
+    printf '{"name": "%s", "version": "0.1.0", "description": "fixture", "keywords": ["testing"]}\n' \
+      "$newp" > "$real_copy/$newp/.claude-plugin/plugin.json"
+  done
+  rc5=0
+  out5=$(python3 "$SYNC_SCRIPT" --fix --repo-root "$real_copy" 2>&1) || rc5=$?
+  [ "$rc5" -eq 0 ] \
+    && pass "order preservation: --fix adding two plugins exits 0" \
+    || fail "order preservation: --fix exit $rc5. Output: $out5"
+
+  # Diff check: every removed line must reappear with only a trailing comma
+  # added (at most one per new entry); every other added line belongs to a new
+  # entry; the original key order survives as-is.
+  for f in .release-please-manifest.json release-please-config.json; do
+    verdict=$(python3 - "$real_copy/orig/$(basename "$f")" "$real_copy/$f" "$f" <<'PY'
+import difflib, json, sys
+orig_path, new_path, name = sys.argv[1:4]
+orig = open(orig_path, encoding="utf-8").read()
+new = open(new_path, encoding="utf-8").read()
+new_names = {"zz-test-plugin", "dataviz-test-plugin"}
+problems = []
+if not new.endswith("}\n") or new.endswith("\n\n"):
+    problems.append("trailing newline changed")
+removed, added = [], []
+for line in difflib.ndiff(orig.splitlines(), new.splitlines()):
+    if line.startswith("- "):
+        removed.append(line[2:])
+    elif line.startswith("+ "):
+        added.append(line[2:])
+for r in removed:
+    if r + "," in added:
+        added.remove(r + ",")
+    else:
+        problems.append(f"existing line rewritten: {r!r}")
+if len(removed) > len(new_names):
+    problems.append(f"{len(removed)} existing lines changed")
+o, n = json.loads(orig), json.loads(new)
+if name == "release-please-config.json":
+    o, n = o["packages"], n["packages"]
+    expected_added = sum(len(json.dumps({k: n[k]}, indent=2).splitlines()) - 2 for k in new_names)
+else:
+    expected_added = len(new_names)
+kept = [k for k in n if k not in new_names]
+if kept != list(o):
+    problems.append("existing key order changed")
+if set(n) - set(o) != new_names:
+    problems.append(f"unexpected key set delta {sorted(set(n) - set(o))}")
+if len(added) != expected_added:
+    problems.append(f"{len(added)} added lines, expected {expected_added}")
+print("OK" if not problems else "; ".join(problems[:5]))
+PY
+)
+    [ "$verdict" = "OK" ] \
+      && pass "order preservation: $f diff is only the added entries" \
+      || fail "order preservation: $f — $verdict"
+  done
+
+  rm -rf "$real_copy"
+fi
+
 echo "=== Results: $PASS passed, $FAIL failed ==="
 [ "$FAIL" -eq 0 ]
