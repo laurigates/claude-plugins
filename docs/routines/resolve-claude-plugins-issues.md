@@ -28,9 +28,23 @@ Do all GitHub work with `gh` against that repo.
    (`gh pr list --state open --limit 100 --json number,title,body,headRefName`),
    collect every `#<n>` in the title/body and every `<n>` embedded in the branch
    name. Exclude those issues.
-3. Also exclude: issues labelled `wontfix`, `duplicate`, `on-hold`, or `epic`;
-   issues assigned to a human other than the repo owner; and pure discussion
-   threads with no actionable ask.
+3. Also exclude: issues labelled `wontfix`, `duplicate`, `on-hold`, `needs-human`,
+   or `epic`; issues assigned to a human other than the repo owner; and pure
+   discussion threads with no actionable ask.
+4. Map every remaining issue to its **group**. Related issues are grouped under an
+   `epic` tracking issue as native sub-issues, or under a milestone. For each
+   open `epic` issue, list its children:
+   `gh api repos/{owner}/{repo}/issues/<epic>/sub_issues --jq '.[] | select(.state=="open") | .number'`.
+   An issue's group is its parent epic; failing that, its milestone (the
+   `milestone` field of `gh issue view <n> --json milestone`); failing both, it
+   has none. An issue with a parent epic is in that epic's group even if it also
+   has a milestone.
+5. Find the ungrouped issues: run `bash scripts/check-issue-grouping.sh`. Every
+   `TYPE=ungrouped_issue` row is an open issue with no parent epic, no milestone,
+   and no exempt label. The exempt list (recurring machine-filed and feedback
+   issues, which stand alone by design) lives in `scripts/issue-grouping-exempt.txt`;
+   do not restate or extend it here. If the script reports `STATUS=ERROR`, say so
+   in the run summary and treat no issue as ungrouped this run.
 
 ## Step 2 — Classify every remaining issue: AUTONOMOUS or NEEDS-DECISION
 
@@ -196,56 +210,99 @@ Never silently truncate.
 issue number, which branch it took, and the anchor comment id (or `NO-ANCHOR`).
 A labelled issue that appears in no line is a bug in this step, not silence.
 
-## Step 4 — Order the actionable set
+## Step 4 — Build work units from groups, then order them
 
 Actionable = AUTONOMOUS issues, plus any issue unblocked in step 3(c).
 
-Build a dependency order from: GitHub `blocked_by`/`blocking` relations and
-sub-issue links (see the `git-plugin:git-issue-hierarchy` skill), explicit
-"depends on #n" / "after #n" text, and overlapping files in the likely diff.
+**The unit of work is the group, not the lone issue.** Issues in one group were
+grouped because their implementations interact; working them as separate
+parallel PRs produces changes that have to be reconciled afterwards. So:
 
-Drop from this run any issue blocked by an issue that is still open — including
-any issue still carrying the decision label. Emit the result as ordered waves:
-issues within a wave touch disjoint files, waves run in sequence.
+1. **Grouped issues.** For each group with at least one actionable member, look
+   at *all* its open members, not only the actionable ones. The actionable
+   members form one **work unit**. Members still blocked — carrying the decision
+   label, `needs-human`, or an open `blocked_by` — stay out of the unit and are
+   named in the run summary with the reason.
+   **Defer the whole group** when an actionable member's change would constrain
+   or conflict with a blocked sibling: they touch the same files, or the open
+   decision would change the shape of what the actionable member builds. Doing
+   the actionable half now would be redone once the decision lands. Name the
+   group and the blocking sibling in the summary.
+2. **Ungrouped issues** (step 1.5). Do not implement an ungrouped issue, unless
+   it is a **standalone fix**: AUTONOMOUS, and its likely diff touches a single
+   file (its own test and a `docs/regression-ledger.md` row do not count).
+   Report every other ungrouped issue in the run summary under `UNGROUPED`, with
+   the open epic it most plausibly belongs to if one fits. Do not attach it to
+   an epic yourself; the owner decides grouping. A standalone fix is a work unit
+   of one.
+3. **Exempt issues** (on the exempt list) are not grouped by design; each
+   actionable one is a work unit of one.
 
-Cap the run at **3 issues**, highest-value first, and name the deferred ones in
-the summary. **Issues unblocked by an owner reply in step 3(c) sort ahead of
-AUTONOMOUS issues** within that cap: the owner is waiting on those specifically,
-and a reply that loses the cap to fresher work is starved again every run it
-loses. If the cap defers a reply-unblocked issue anyway, say so explicitly in the
-summary and name it first among the deferred.
+Order the units with: GitHub `blocked_by`/`blocking` relations and sub-issue
+links (see the `git-plugin:git-issue-hierarchy` skill), explicit "depends on #n"
+/ "after #n" text, and overlapping files in the likely diff. Within a unit, order
+its members the same way. Drop from this run any issue blocked by an issue that
+is still open — including any issue still carrying the decision label. Emit the
+result as ordered waves: units within a wave touch disjoint files, waves run in
+sequence.
 
-## Step 5 — Dispatch a subagent per issue
+Cap the run at **3 work units and 6 issues in total**, highest-value first, and
+name the deferred ones in the summary. A group's work unit counts as one work
+unit however many members it has, and each member counts toward the 6-issue
+total. If one unit alone exceeds the issue total, take its first 6 members in
+dependency order and name the rest as deferred; never split the remainder off
+to another agent in the same run. **Issues unblocked by an owner reply in step
+3(c) sort ahead of AUTONOMOUS issues** within that cap — the unit containing one
+sorts ahead: the owner is waiting on those specifically, and a reply that loses
+the cap to fresher work is starved again every run it loses. If the cap defers a
+reply-unblocked issue anyway, say so explicitly in the summary and name it first
+among the deferred.
+
+## Step 5 — Dispatch one subagent per work unit
 
 Follow the `agent-patterns-plugin:parallel-agent-dispatch` and
 `workflow-orchestration-plugin:workflow-wave-dispatch` skills. Run waves
 sequentially; within a wave run at most 2 subagents concurrently. All subagents on
 Opus (effort `medium` is fine).
 
+**One subagent per work unit, never one per member.** A group's members go to
+the same subagent, which implements them in the order you give, one commit per
+issue, so each later change is written against the earlier ones.
+
 Each subagent brief is self-contained and states:
-- the issue number, title, and the single goal in one sentence,
-- the acceptance criteria you derived, as a checklist,
+- the epic or milestone (if any), each member's number and title, and the
+  unit's single goal in one sentence,
+- the open siblings left out of the unit and why, so the subagent keeps its
+  change compatible with them,
+- the acceptance criteria you derived, per member, as a checklist,
 - the files it may touch, and that it must not touch anything else,
 - the branch to cut: `git fetch origin && git switch -c <type>/<slug>-<issue-number> origin/main`
-  — always from `origin/main`, never from local `main`,
+  (for a group, use the epic's number, or the first member's when grouped by
+  milestone) — always from `origin/main`, never from local `main`,
 - the repo's own test/lint commands (read the justfile / package.json /
   pyproject.toml / Makefile first and pass the real commands, not guesses),
 - TDD: failing test first, then the implementation,
 - the named skills that apply to its work, since a fresh subagent cannot discover
   them on its own.
 
-If a subagent reports that the issue actually needs a decision, do not let it
+If a subagent reports that an issue actually needs a decision, do not let it
 guess: treat the issue as NEEDS-DECISION, apply step 3(a) to it, and discard its
-branch.
+branch. For a group, re-apply the defer-the-whole-group test from step 4 to the
+remaining members before keeping any of the unit's work.
 
-## Step 6 — One PR per completed issue, ready for review
+## Step 6 — One PR per completed work unit, ready for review
 
+- A work unit lands as one PR. Members that touch overlapping files are never
+  split across PRs. Only when the unit would exceed the ~15-file guardrail may
+  the same subagent split it into PRs stacked in dependency order, each PR
+  naming the others.
 - Conventional-commit title (`type(scope): imperative summary`) — release-please
   depends on it.
 - Body written to a file and passed with `--body-file`. Never `--body -`; `--body`
   takes a literal string and would post `-` as the entire description.
-- Use `Fixes #<n>` only when the PR fully resolves the issue. Otherwise write
-  `Related: #<n>`. Never let a closing verb precede an issue number you do not
+- Use `Fixes #<n>` only when the PR fully resolves the issue, one line per
+  member. Otherwise write `Related: #<n>`. Reference the epic as `Related: #<epic>`
+  — never close a tracking issue from a PR. Never let a closing verb precede an issue number you do not
   mean to close — GitHub matches the keyword without reading the sentence, so even
   "does not close #12" closes it.
 - Open it ready for review, not draft. Do not merge it, and do not close the issue.
@@ -267,9 +324,12 @@ branch.
 
 ## Step 7 — Finish quietly
 
-Write a run summary in your final message: issues examined, PRs opened with
-numbers, issues newly labelled for decision, issues unblocked by a reply, and
-everything deferred with the reason. Do not notify anyone. If nothing was
+Write a run summary in your final message: issues examined, work units built
+(each with its epic or milestone and members), PRs opened with numbers, issues
+newly labelled for decision, issues unblocked by a reply, groups deferred whole
+and the sibling that blocked them, an `UNGROUPED` list (every ungrouped issue
+from step 1.5 not worked as a standalone fix, with its suggested epic or
+`no fitting epic`), and everything else deferred with the reason. Do not notify anyone. If nothing was
 actionable and nothing new needed a decision, say exactly that and exit.
 
 <!-- END ROUTINE PROMPT -->

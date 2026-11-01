@@ -55,7 +55,29 @@ than checking comment length, adds an explicit no-anchor recovery branch instead
 of falling through to silence, requires the run summary to account for every
 labelled issue, and reserves `Proceeding on:` for actual unblocking.
 
+## Group-level work (2026-11)
+
+On 2026-11-01 backlog triage grouped related issues under `epic` tracking
+issues (as native sub-issues). The prompt originally dispatched one subagent and
+one PR per issue, so siblings whose implementations interact were built
+independently and reconciled afterwards. The prompt now treats an epic's (or
+milestone's) group as the unit of work, per `.claude/rules/issue-grouping.md`:
+
+| Rule | Prompt step |
+|------|-------------|
+| A group's actionable members go to one subagent and land as one PR, one commit per issue | 4, 5, 6 |
+| Blocked siblings (decision label, `needs-human`, open `blocked_by`) stay out and are named; the whole group is deferred when the actionable half would be redone after the decision | 4.1 |
+| Cap: 3 work units and 6 issues per run; a group counts as one unit, each member toward the 6 | 4 |
+| Ungrouped issues (no epic, no milestone, not exempt) come from `scripts/check-issue-grouping.sh` and are reported under `UNGROUPED`, not worked, unless the fix touches a single file | 1.5, 4.2, 7 |
+| The exempt list (recurring machine-filed and feedback issues) lives only in `scripts/issue-grouping-exempt.txt` | 1.5 |
+
+The live Routine runs whatever was last pasted into it, so these steps take
+effect only after the owner pastes the updated prompt.
+
 ## Related
+
+- `.claude/rules/issue-grouping.md` — why related issues are grouped, and how
+  new issues join a group.
 
 - `.claude/rules/loop-integrity.md` — the sibling failure class: a self-continuing
   loop that leaves no resumable state behind. An async decision queue is the same
