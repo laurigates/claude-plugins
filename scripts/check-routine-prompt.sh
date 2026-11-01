@@ -11,7 +11,10 @@
 #   4. carry an explicit NO-ANCHOR recovery branch rather than falling through to
 #      the silent "do nothing" branch,
 #   5. reserve "Proceeding on:" for an actually-unblocked issue,
-#   6. account for every labelled issue in the run summary.
+#   6. account for every labelled issue in the run summary,
+#   7. treat an epic's or milestone's group as the unit of work (one subagent
+#      and one PR per group), and report ungrouped issues found by
+#      scripts/check-issue-grouping.sh (.claude/rules/issue-grouping.md).
 #
 # WHY A SEMANTIC GUARD
 # Between 2026-08-11 and 2026-09-03 the live Routine stopped emitting its own
@@ -127,11 +130,40 @@ require "$PROMPT" "must account for every labelled issue" \
 require "$PROMPT" "sort ahead of" \
     "prompt lost the reply-unblocked priority rule (answered issues starve behind newer work)"
 
+# (7) Group-level work (.claude/rules/issue-grouping.md). Issues grouped under an
+#     epic or milestone are implemented together, because one PR per issue
+#     produces changes that have to be reconciled afterwards. A trim that
+#     restores per-issue dispatch reintroduces exactly that churn.
+require "$PROMPT" "The unit of work is the group, not the lone issue." \
+    "prompt lost the group-as-unit-of-work rule (issues in one epic get separate parallel PRs again)"
+require "$PROMPT" "One subagent per work unit, never one per member" \
+    "prompt lost one-subagent-per-group dispatch (siblings are implemented independently again)"
+require "$PROMPT" "Defer the whole group" \
+    "prompt lost the partial-group deferral (actionable siblings get built ahead of a blocking decision and redone)"
+require "$PROMPT" "3 work units and 6 issues in total" \
+    "prompt lost the group-aware run cap"
+require "$PROMPT" "never close a tracking issue from a PR" \
+    "prompt lost the rule that epics are referenced, not closed, by a group PR"
+# Ungrouped issues are surfaced, not silently worked or silently skipped. The
+# list comes from the script, so the exempt labels live in one place.
+require "$PROMPT" "check-issue-grouping.sh" \
+    "prompt stopped running the orphan check (ungrouped issues go unreported)"
+require "$PROMPT" "issue-grouping-exempt.txt" \
+    "prompt lost the pointer to the single exempt list (invites restating it inline, where it drifts)"
+require "$PROMPT" "UNGROUPED" \
+    "prompt lost the UNGROUPED run-summary list"
+require "$PROMPT" "standalone fix" \
+    "prompt lost the single-file standalone-fix exception for ungrouped issues"
+require "$PROMPT" "needs-human" \
+    "prompt lost the needs-human exclusion"
+
 # The doc that explains why all of the above exists.
 require "$README" "resolve-claude-plugins-issues.md" \
     "routines README lost its index entry for the prompt"
 require "$README" "update_trigger" \
     "routines README lost the note that the Routine must be updated by hand"
+require "$README" "issue-grouping.md" \
+    "routines README lost its pointer to the issue-grouping rule behind the group-level steps"
 
 # Coverage -- every prompt under docs/routines/ must be one this guard asserts
 # on. Without this the guard reports OK over a routine it never opened.
