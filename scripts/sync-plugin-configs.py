@@ -119,6 +119,20 @@ def save_json(path: Path, data: dict, sort_keys: bool = False) -> None:
         f.write("\n")
 
 
+def insert_preserving_order(mapping: dict, key: str, value) -> dict:
+    """Return a copy of mapping with key inserted, existing order untouched.
+
+    The release-please files are hand- and bot-edited and are not in strict
+    sorted order, so re-sorting them on every add rewrote unrelated lines
+    (#3328). The new key goes before the first existing key that sorts after
+    it — its sorted position in a sorted file, the end when it sorts last.
+    """
+    items = list(mapping.items())
+    index = next((i for i, (k, _) in enumerate(items) if k > key), len(items))
+    items.insert(index, (key, value))
+    return dict(items)
+
+
 def infer_category(keywords: list[str]) -> str:
     """Infer a marketplace category from plugin keywords."""
     keyword_set = set(k.lower() for k in keywords)
@@ -316,7 +330,9 @@ def apply_fixes(repo_root: Path, fixes: dict) -> None:
             )
 
         for name in fixes["add_to_release_config"]:
-            packages[name] = create_release_please_package_config(name)
+            packages = insert_preserving_order(
+                packages, name, create_release_please_package_config(name)
+            )
             print(f"  Added '{name}' to release-please-config.json")
 
         for name in fixes["remove_from_release_config"]:
@@ -324,10 +340,8 @@ def apply_fixes(repo_root: Path, fixes: dict) -> None:
                 del packages[name]
                 print(f"  Removed '{name}' from release-please-config.json")
 
-        # Sort packages alphabetically when the package set changed; an
-        # extra-files repair alone keeps the existing order.
-        if fixes["add_to_release_config"] or fixes["remove_from_release_config"]:
-            release_config["packages"] = dict(sorted(packages.items()))
+        # Existing entries keep their order and formatting (#3328).
+        release_config["packages"] = packages
         save_json(repo_root / "release-please-config.json", release_config)
         modified_files.append("release-please-config.json")
 
@@ -336,7 +350,7 @@ def apply_fixes(repo_root: Path, fixes: dict) -> None:
         for name in fixes["add_to_manifest"]:
             # Get version from plugin.json, default to 1.0.0
             version = plugins[name].get("version", "1.0.0")
-            manifest[name] = version
+            manifest = insert_preserving_order(manifest, name, version)
             print(f"  Added '{name}' (v{version}) to .release-please-manifest.json")
 
         for name in fixes["remove_from_manifest"]:
@@ -344,8 +358,7 @@ def apply_fixes(repo_root: Path, fixes: dict) -> None:
                 del manifest[name]
                 print(f"  Removed '{name}' from .release-please-manifest.json")
 
-        # Sort manifest alphabetically
-        manifest = dict(sorted(manifest.items()))
+        # Existing entries keep their order and formatting (#3328).
         save_json(repo_root / ".release-please-manifest.json", manifest)
         modified_files.append(".release-please-manifest.json")
 
