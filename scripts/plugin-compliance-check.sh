@@ -1361,12 +1361,14 @@ check_skill_body() {
     # rust-toolchain.toml names. Denylist over the whole corpus: no example step
     # may `uses:` the floating action (prose naming it stays allowed). Pin:
     # clippy-advanced/REFERENCE.md keeps the canonical section, the install
-    # command and the Renovate grouping rule (PR #3204).
+    # command and the Renovate grouping rule (PR #3204). The denylist covers
+    # every plugin's corpus: configure-github-pages shipped the same floating
+    # step in its rustdoc example (#3208).
+    if grep -qE '^[[:space:]]*(-[[:space:]]+)?uses:[[:space:]]*dtolnay/rust-toolchain@stable' <<<"$skill_corpus_unquoted"; then
+      issues+=("❌ ${plugin}/${skill_name}: a CI example installs dtolnay/rust-toolchain@stable (floating compiler); install the root rust-toolchain.toml pin with 'rustup toolchain install --no-self-update' (rust-plugin:clippy-advanced § Pin the toolchain)")
+      has_errors=true
+    fi
     if [ "$plugin" = "rust-plugin" ]; then
-      if grep -qE '^[[:space:]]*(-[[:space:]]+)?uses:[[:space:]]*dtolnay/rust-toolchain@stable' <<<"$skill_corpus_unquoted"; then
-        issues+=("❌ ${plugin}/${skill_name}: a CI example installs dtolnay/rust-toolchain@stable (floating compiler); install the root rust-toolchain.toml pin with 'rustup toolchain install --no-self-update' (clippy-advanced REFERENCE.md § Pin the toolchain)")
-        has_errors=true
-      fi
       if [ "$skill_name" = "clippy-advanced" ]; then
         local clippy_ref="${plugin}/skills/${skill_name}/REFERENCE.md"
         for token in '### Pin the toolchain' 'rustup toolchain install --no-self-update' '"matchManagers": ["rust-toolchain"]' '"groupSlug": "rust-toolchain"'; do
