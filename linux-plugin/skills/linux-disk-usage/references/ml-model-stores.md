@@ -69,4 +69,13 @@ git -C <custom_nodes>/<node> status --porcelain
 git -C <custom_nodes>/<node> log --branches --not --remotes --oneline
 ```
 
+**Before removing a custom node, or a script that belongs to one, search the workspace repo for what depends on it.** A clean upstream clone says the node itself can come back; it says nothing about your own code that needs it:
+
+```bash
+git -C <workspace> grep -n '<NodeClass>'          # workflows and scripts that build graphs with the node
+git -C <workspace> grep -nE 'import <module>|from <module> import'   # importers of a script you plan to delete
+```
+
+The first hit list is what breaks when the node goes. Removing ComfyUI-KittenTTS broke a recipe whose generator script refused to run without the `KittenTTS` node class, and that script turned out to be imported as a library by three other scripts and three tests, so deleting it would have broken those too. Keep a script that has importers. Where it needs the removed node, make it fail with a message naming what was removed.
+
 A running ComfyUI keeps the node loaded until it restarts. Leave past outputs and the core `comfy/ldm/<family>` code alone. The core code belongs to ComfyUI itself.
