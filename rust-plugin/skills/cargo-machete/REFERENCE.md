@@ -107,7 +107,7 @@ jobs:
         run: rustup toolchain install --no-self-update
 
       - name: Install cargo-machete
-        uses: taiki-e/install-action@v2.87.32
+        uses: taiki-e/install-action@v2.88.0
         with:
           tool: cargo-machete
 
@@ -150,7 +150,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2.9.3
 
       - name: Install cargo-udeps
-        uses: taiki-e/install-action@v2.87.32
+        uses: taiki-e/install-action@v2.88.0
         with:
           tool: cargo-udeps
 
