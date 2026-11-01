@@ -1267,6 +1267,20 @@ check_record() {
           --jq '[(.number|tostring), .author.login, (.author.is_bot|tostring), .title, .url] | @tsv' \
           </dev/null 2>/dev/null || true)
 
+  # REST fallback. `gh pr view` goes through GraphQL, which some environments
+  # refuse outright (Claude Code cloud sessions answer every GraphQL call with
+  # HTTP 403) while REST works, so the guard denied every merge there, own PRs
+  # included. Only an explicit OWNER/REPO and a numeric selector are looked up
+  # this way: without -R, gh picks the repository from remotes and its default
+  # setting, which this hook cannot reproduce exactly, and a lookup in the
+  # wrong repository would check the wrong PR's author.
+  local rest_repo_re='^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$'
+  if [ -z "$meta" ] && [[ "$PR_REPO" =~ $rest_repo_re ]] && [[ "$PR_SELECTOR" =~ ^[0-9]+$ ]]; then
+    meta=$(gh api "repos/$PR_REPO/pulls/$PR_SELECTOR" \
+            --jq '[(.number|tostring), .user.login, (.user.type == "Bot"|tostring), .title, .html_url] | @tsv' \
+            </dev/null 2>/dev/null || true)
+  fi
+
   if [ -z "$meta" ]; then
     # Belt and braces: the structural pass already denies a `$`/backtick
     # selector or repo, but a value reaching here unresolved still names the
@@ -1319,7 +1333,15 @@ check_record() {
 
   # Which touched paths actually execute something? That is the difference
   # between "a typo fix" and "code that runs in CI or on the operator's machine".
-  risky=$(gh pr view ${VIEW_ARGS[@]+"${VIEW_ARGS[@]}"} --json files --jq '.files[].path' </dev/null 2>/dev/null \
+  # Same GraphQL caveat as the author lookup: fall back to REST when the
+  # repository is known. The list only shapes the denial text; the PR is
+  # denied either way.
+  local files
+  files=$(gh pr view ${VIEW_ARGS[@]+"${VIEW_ARGS[@]}"} --json files --jq '.files[].path' </dev/null 2>/dev/null || true)
+  if [ -z "$files" ] && [ -n "$slug" ]; then
+    files=$(gh api --paginate "repos/$slug/pulls/$PR_NUM/files" --jq '.[].filename' </dev/null 2>/dev/null || true)
+  fi
+  risky=$(printf '%s\n' "$files" \
     | awk '
         /^\.github\/(workflows|actions)\// { print "    " $0 "  (CI executes this)"; next }
         /\.(sh|bash|zsh)$/                 { print "    " $0 "  (shell)"; next }

@@ -87,6 +87,9 @@ case "$args" in
       else printf '%s\n' "${STUB_SLUG-laurigates/claude-plugins}"; fi ;;
   *"--json number,title,author,url"*)
       [ -n "${STUB_VIEW_FAIL:-}" ] && exit 1
+      # STUB_GRAPHQL_FAIL models an environment that refuses GraphQL (Claude
+      # Code cloud sessions: HTTP 403) while REST works.
+      [ -n "${STUB_GRAPHQL_FAIL:-}" ] && exit 1
       # Real `gh pr view '$n'` cannot resolve an unexpanded shell variable —
       # model that, or the loop case would look resolvable and the test would
       # assert against the wrong denial path.
@@ -115,7 +118,18 @@ case "$args" in
         "${STUB_ISBOT-false}" "${STUB_TITLE-a title}" "https://example.invalid/pr" ;;
   *"pulls/"*"--jq .author_association")
       printf '%s\n' "${STUB_ASSOC-FIRST_TIME_CONTRIBUTOR}" ;;
+  # REST fallback for the author (`gh api repos/O/R/pulls/N`). STUB_REST_LOGIN
+  # and STUB_REST_TYPE model REST's rendering: a bot is "<name>[bot]" with
+  # type "Bot", never the "app/<name>" form `gh pr view` prints.
+  "api repos/"*"/pulls/"*"--jq "*".user.login"*)
+      [ -n "${STUB_REST_FAIL:-}" ] && exit 1
+      [ "${STUB_REST_TYPE-User}" = "Bot" ] && isbot=true || isbot=false
+      printf '%s\t%s\t%s\t%s\t%s\n' "${STUB_NUM-42}" "${STUB_REST_LOGIN-laurigates}" \
+        "$isbot" "${STUB_TITLE-a title}" "https://example.invalid/pr" ;;
+  "api --paginate repos/"*"/files --jq .[].filename")
+      printf '%s\n' ${STUB_FILES-.github/workflows/x.yml} ;;
   *"--json files"*)
+      [ -n "${STUB_GRAPHQL_FAIL:-}" ] && exit 1
       printf '%s\n' ${STUB_FILES-.github/workflows/x.yml} ;;
   *) echo "gh stub: unhandled: $args" >&2; exit 1 ;;
 esac
@@ -1051,6 +1065,23 @@ echo "-- combined with other merges"
 ck_chain "self chain + literal merge of a stranger" DENY "$MC_STRANGER" "merge-chain.sh --repo laurigates/claude-plugins --prs 219,227 --review-ts 2026-10-27T08:00:00Z && gh pr merge 220 -R laurigates/claude-plugins --squash" "#220"
 ck_chain "self chain + literal self merge"   ALLOW "$MC_SELF" "merge-chain.sh --repo laurigates/claude-plugins --prs 219 --review-ts 2026-10-27T08:00:00Z; gh pr merge 220 -R laurigates/claude-plugins --squash"
 ck_chain "two chains, the second has the stranger" DENY "$MC_STRANGER" "merge-chain.sh --repo laurigates/claude-plugins --prs 219 --review-ts 2026-10-27T08:00:00Z && merge-chain.sh --repo laurigates/claude-plugins --prs 227,220 --review-ts 2026-10-27T08:00:00Z" "#220"
+
+echo "== GraphQL refused, REST works (Claude Code cloud sessions) =="
+export STUB_GRAPHQL_FAIL=1
+MCP_OWN='{"tool_name":"mcp__github__merge_pull_request","cwd":"'"$TMPDIR"'","tool_input":{"owner":"laurigates","repo":"claude-plugins","pullNumber":42}}'
+ck "own PR via REST, -R"            ALLOW "$(STUB_REST_LOGIN=laurigates run "$(bash_json 'gh pr merge 42 -R laurigates/claude-plugins --squash')")"
+ck "own PR via REST, MCP tool"      ALLOW "$(STUB_REST_LOGIN=laurigates run "$MCP_OWN")"
+ck "bot via REST ([bot], type Bot)" ALLOW "$(STUB_REST_LOGIN='laurigates-renovate[bot]' STUB_REST_TYPE=Bot run "$(bash_json 'gh pr merge 42 -R laurigates/claude-plugins --squash')")"
+STUB_REST_LOGIN=joshua-trustabl STUB_NUM=2231 run "$(bash_json 'gh pr merge 2231 -R laurigates/claude-plugins --squash')" >/dev/null
+ck "stranger via REST is denied"    DENY "$LAST_VERDICT"
+ck_reason "REST denial names the author" "joshua-trustabl"
+ck_reason "REST file list still flags executable paths" ".github/workflows/x.yml  (CI executes this)"
+# Without -R, gh resolves the repository from remotes and its default setting;
+# the hook does not guess that for a REST lookup, so it fails closed.
+ck "no -R: no REST guess, denied"   DENY "$(STUB_REST_LOGIN=laurigates run "$(bash_json 'gh pr merge 42 --squash')")"
+ck "branch selector: no REST guess" DENY "$(STUB_REST_LOGIN=laurigates run "$(bash_json 'gh pr merge my-branch -R laurigates/claude-plugins --squash')")"
+ck "both lookups fail: denied"      DENY "$(STUB_REST_FAIL=1 run "$(bash_json 'gh pr merge 42 -R laurigates/claude-plugins --squash')")"
+unset STUB_GRAPHQL_FAIL
 
 echo "== operator escape hatch =="
 out=$(printf '%s' "$(bash_json 'gh pr merge 2231 --squash')" \
