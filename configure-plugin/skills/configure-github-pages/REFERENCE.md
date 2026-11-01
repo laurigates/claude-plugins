@@ -171,7 +171,7 @@ jobs:
 
 ## rustdoc (Rust)
 
-The build step installs the toolchain a root `rust-toolchain.toml` names, with its components. `dtolnay/rust-toolchain@stable` moves to every new release, so its new lints fail `-D warnings` on main with no PR; see `rust-plugin:clippy-advanced` § Pin the toolchain for the file and the Renovate rule that bumps it.
+The build step installs the toolchain a root `rust-toolchain.toml` names, with its components. `dtolnay/rust-toolchain@stable` moves to every new release; `cargo doc` only fails on that if the job sets `RUSTDOCFLAGS="-D warnings"`, but a pinned file keeps the docs build on the same compiler as the rest of CI. See `rust-plugin:clippy-advanced` § Pin the toolchain for the file and the Renovate rule that bumps it.
 
 ```yaml
 name: Documentation
