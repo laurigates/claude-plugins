@@ -171,6 +171,8 @@ jobs:
 
 ## rustdoc (Rust)
 
+The build step installs the toolchain a root `rust-toolchain.toml` names, with its components. `dtolnay/rust-toolchain@stable` moves to every new release, so its new lints fail `-D warnings` on main with no PR; see `rust-plugin:clippy-advanced` § Pin the toolchain for the file and the Renovate rule that bumps it.
+
 ```yaml
 name: Documentation
 
@@ -197,7 +199,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6.1.0
 
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Install the pinned toolchain
+        run: rustup toolchain install --no-self-update
 
       - name: Build documentation
         run: cargo doc --no-deps --all-features
