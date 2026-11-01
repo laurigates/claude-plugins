@@ -167,11 +167,11 @@ settings_files=(
 
 for settings_file in "${settings_files[@]}"; do
   if [ -f "$settings_file" ]; then
-    mcp_enabled=$(jq -r '.enabledMcpjsonServers // {} | length' "$settings_file" 2>/dev/null || echo "0")
+    mcp_enabled=$(jq -r '.enabledMcpjsonServers // [] | length' "$settings_file" 2>/dev/null || echo "0")
     if [ "$mcp_enabled" -gt 0 ]; then
       echo "ENABLED_MCP_SERVERS_IN=$(basename "$(dirname "$settings_file")")/$(basename "$settings_file") COUNT=${mcp_enabled}"
       if [ "$verbose_mode" = true ]; then
-        jq -r '.enabledMcpjsonServers // {} | to_entries[] | "  ENABLED: \(.key)=\(.value)"' "$settings_file" 2>/dev/null
+        jq -r '.enabledMcpjsonServers // [] | .[] | "  ENABLED: \(.)"' "$settings_file" 2>/dev/null
       fi
     fi
   fi
