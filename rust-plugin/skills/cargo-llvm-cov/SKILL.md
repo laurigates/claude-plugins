@@ -192,7 +192,7 @@ jobs:
         run: rustup component add llvm-tools-preview
 
       - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@v2.87.32
+        uses: taiki-e/install-action@v2.88.0
         with:
           tool: cargo-llvm-cov
 
@@ -227,7 +227,7 @@ jobs:
         run: rustup component add llvm-tools-preview
 
       - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@v2.87.32
+        uses: taiki-e/install-action@v2.88.0
         with:
           tool: cargo-llvm-cov
 
@@ -313,12 +313,12 @@ jobs:
       - uses: Swatinem/rust-cache@v2.9.3
 
       - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@v2.87.32
+        uses: taiki-e/install-action@v2.88.0
         with:
           tool: cargo-llvm-cov
 
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@v2.87.32
+        uses: taiki-e/install-action@v2.88.0
         with:
           tool: nextest
 

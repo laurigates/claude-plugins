@@ -23,7 +23,7 @@
   "author": "{{ author_name }}",
   "license": "MIT",
   "devDependencies": {
-    "@biomejs/biome": "2.6.3",
+    "@biomejs/biome": "2.6.4",
     "typescript": "^5.7.0",
     "vite": "^6.0.0",
     "vite-plugin-static-copy": "^2.2.0",
