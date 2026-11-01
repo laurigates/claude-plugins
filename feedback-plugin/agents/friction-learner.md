@@ -12,7 +12,7 @@ color: "#E53E3E"
 tools: Bash(python3 *), Bash(jq *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(gh pr *), Bash(gh issue *), Bash(find *), Read, Write, Edit, Glob, Grep, TodoWrite
 maxTurns: 40
 created: 2026-04-16
-modified: 2026-10-22
+modified: 2026-11-01
 reviewed: 2026-04-28
 ---
 
@@ -43,7 +43,7 @@ The harness blocks several common bash idioms — use the dedicated tool instead
 
 - **Input**: A time window (default: last 7 days) and a list of target rulesync repos
 - **Output**: One PR per repo with a proposed-rules diff, an evidence summary, and per-cluster verification verdicts
-- **Steps**: 8-20 (read fast-loop signal → parse → classify → cluster → corroborate → propose → verify → render → PR)
+- **Steps**: 8-20 (read fast-loop signal and stability markers → parse → classify → cluster → corroborate → propose → verify → render → PR)
 - **Value**: Converts recurring session pain into durable guardrails without manual log-reading
 
 ## When to Use
@@ -71,7 +71,7 @@ a JSON record. Friction signals come from these record shapes:
 
 ## Workflow
 
-### Step 0: Read pre-registered fast-loop signal (`session-feedback`)
+### Step 0: Read pre-registered fast-loop signal (`session-feedback`, `positive-feedback`)
 
 This agent is the **slow loop** of a two-speed feedback architecture (see
 `docs/archive/session-plugin-workflow.md`). The **fast loop** is
@@ -82,8 +82,15 @@ are **pre-registered hypotheses** about where friction lives: a human already
 noticed the pain in-context, which is exactly the signal the quantitative
 transcript clustering is structurally blind to.
 
-Before parsing transcripts, fetch the open fast-loop issues per target repo so
-they can corroborate and steer the clustering that follows.
+Positive findings are filed under `positive-feedback` **only** (they do not
+also carry `session-feedback`), so a fetch of one label never sees the other.
+Before parsing transcripts, fetch both sets per target repo: the open
+`session-feedback` set corroborates and steers the clustering that follows,
+and the `positive-feedback` set marks behaviour that works and must not
+regress. The positive fetch covers **any state** within a window (default the
+last 6 months), because this agent closes each positive issue once a weekly PR
+has cited it (Step 6). A closed positive issue is processed, not obsolete: it
+still marks praised behaviour for later runs.
 
 `$TARGET_REPO` is each repo from the run's target list — the repos the user
 named when invoking the agent (see the "Scope per user instruction" guardrail).
@@ -98,11 +105,35 @@ gh issue list -R "$TARGET_REPO" --state open --label session-feedback \
   --jq '.[] | {number, title}'
 ```
 
-(Omit `-R "$TARGET_REPO"` for the current repo.) Use `--json` so an empty
-result is `[]` and exits 0 — never the bare `gh issue list`, which exits 1 on
-no matches and would abort. Record each issue's `number` and the
-`<plugin>/<skill>` it names; this is the corroboration set used in Step 3 and
-the cross-link set used in Step 5. If no `session-feedback` issues are open,
+```bash
+python3 -c 'import datetime; print(datetime.date.today() - datetime.timedelta(days=183))'
+```
+
+Use the printed date as `$SINCE` (widen or narrow the window only when the
+user asks):
+
+```bash
+gh issue list -R "$TARGET_REPO" --state all --label positive-feedback \
+  --search "created:>=$SINCE" \
+  --limit 200 --json number,title,state,labels,body \
+  --jq '.[] | {number, title, state}'
+```
+
+(Omit `-R "$TARGET_REPO"` for the current repo.) Run the two fetches as
+separate calls: `--label a,b` matches only issues carrying **both** labels. Use
+`--json` so an empty result is `[]` and exits 0 — never the bare
+`gh issue list`, which exits 1 on no matches and would abort. Record each
+issue's `number`, `state`, and the `<plugin>/<skill>` (or hook) it names, from
+the body's `## Skill` section:
+
+| Set | From | Used in |
+|---|---|---|
+| Corroboration set | open `session-feedback` issues | Step 3 corroborate/escalate, Step 5 cross-links |
+| Stability markers | `positive-feedback` issues in any state, created in the window | Step 3 stability-marker check |
+| Newly read positives | the `OPEN` subset of the stability markers | Step 5 citation, Step 6 close |
+
+An issue returned by both calls is counted once, by the `## Category` its body
+states (`Positive feedback` → stability marker). If either set is empty,
 proceed normally — the slow loop still runs on transcript evidence alone.
 
 ### Step 1: Enumerate transcripts in window
@@ -195,6 +226,20 @@ A corroborated cluster carries more evidential weight than transcript counts
 alone — record the matching issue number(s) on the cluster so Step 5 can
 cross-link them.
 
+#### Respect stability markers (Step 0 positive set)
+
+A `positive-feedback` issue records a skill, hook, or pattern that worked in a
+real session, typically with the evidence of what it got right. Treat every
+one in the Step 0 window, open or closed, as a **stability marker**: a proposal
+that changes what the issue praises can regress it, and transcript clustering
+cannot see that, because working behaviour leaves no friction trace.
+
+| Proposal ↔ stability-marker relationship | Action |
+|---|---|
+| A proposal edits a skill, hook, or rule that a `positive-feedback` issue in the window praises | **Name the issue** on the cluster (`Preserves #<n>`) and state in the proposal why the change does not regress the praised behaviour (the praised section is untouched, or the change keeps the behaviour the issue's Evidence describes). If you cannot state that, downgrade the cluster to a watch item for human classification. |
+| A proposal would remove or reverse the exact behaviour a `positive-feedback` issue in the window praises | Do not prescribe it. Surface it under "Needs human classification" with both the friction evidence and the issue number: a human has to weigh the two signals. |
+| No proposal touches what the issue praises | No action on the cluster; still list the issue in Step 5. |
+
 #### Evidence gate (issue #1110)
 
 Plan-mode clusters (`plan:entered-plan-mode`, `reject:exitplanmode`) have
@@ -272,7 +317,12 @@ a `session-feedback` issue in Step 3, include the issue number(s) in the
 findings file — both in the per-cluster row (a `Refs #<n>` / `Corroborates
 #<n>` column) and as a `## Fast-loop signal` section listing each open
 `session-feedback` issue, whether the slow loop corroborated it, and the
-cluster/verdict it maps to. This closes the loop in both directions: the
+cluster/verdict it maps to, followed by each newly read (open)
+`positive-feedback` issue from Step 0 and the cluster(s) that touched what it
+praises (or `none`). This citation is what Step 6 closes the issue against, so
+list every newly read positive issue, even one no cluster touched. Every
+cluster whose proposal names a stability marker, open or closed, carries a
+`Preserves #<n>` entry in its row. This closes the loop in both directions: the
 weekly PR references the human-filed issues, and a reader of either can trace
 from a per-session hypothesis to its cross-session confirmation.
 
@@ -295,9 +345,27 @@ updates the existing PR instead of opening a new one. It also enforces the
 quiet-window guardrail (`--min-total-events`, default 5) and always creates
 drafts — PRs are never auto-merged.
 
+#### Close the cited positive-feedback issues
+
+Once the PR exists (not on `--dry-run`, and not in a quiet window where no PR
+opened), close each newly read `positive-feedback` issue that the PR body's
+`## Fast-loop signal` section cites, with a comment naming that PR. Closed
+means processed: the slow loop has read the issue and recorded it, and the
+issue keeps acting as a stability marker through the Step 0 window.
+
+```bash
+gh issue close "$N" -R "$TARGET_REPO" --reason completed \
+  --comment "Processed by friction-learner: cited as a stability marker in $PR_URL. Future runs keep reading it for 6 months."
+```
+
+(Omit `-R "$TARGET_REPO"` for the current repo.) Close only issues that carry
+`positive-feedback`, were open when Step 0 read them, and appear in the opened
+PR's body. A `session-feedback` issue is never closed here.
+
 ### Step 7: Report summary to main session
 
-Print a table: cluster → count → verdict → deliverable → PR URL.
+Print a table: cluster → count → verdict → deliverable → PR URL, then the
+`positive-feedback` issues closed in Step 6 (number → PR URL).
 
 ## Turn Budget
 
@@ -324,6 +392,7 @@ Clusters found: 7 (3 actionable)
 ## Guardrails
 
 - **Never auto-merge**. The agent only opens the PR; a human reviews evidence.
+- **Close only what a PR cites**. The one issue mutation this agent makes is closing a `positive-feedback` issue cited in an opened PR (Step 6). No PR, no close.
 - **Verification is read-only**. Never execute a mutating command to reproduce or verify a fix; hook-block reproductions rely on the hook's exit-2 preventing execution. Stay within the tool allowlist — outside it, record `NOT_REPRODUCIBLE`.
 - **Redact**. Strip absolute paths from `$HOME` downwards, and any token-looking strings matching `[A-Za-z0-9_-]{32,}`, before embedding evidence in PR bodies.
 - **Quiet windows**. If fewer than 5 friction events total, print the report to stdout and do NOT open a PR.

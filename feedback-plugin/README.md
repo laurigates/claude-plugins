@@ -12,7 +12,7 @@ Session feedback analysis — capture per-session skill bugs as GitHub issues, a
 
 | Agent | Description |
 |-------|-------------|
-| `friction-learner` | The **slow loop**: read open `session-feedback` issues as pre-registered signal, parse last week of transcripts, cluster interruptions/hook-blocks/rejections, corroborate/escalate clusters against the fast-loop issues, propose rule/skill/hook fixes, reproduce-and-verify each fix where safe, open one PR per target repo cross-linking the fast-loop issues |
+| `friction-learner` | The **slow loop**: read open `session-feedback` issues as pre-registered signal and `positive-feedback` issues (any state, last 6 months) as stability markers, closing each newly read one once its weekly PR cites it, parse last week of transcripts, cluster interruptions/hook-blocks/rejections, corroborate/escalate clusters against the fast-loop issues, propose rule/skill/hook fixes, reproduce-and-verify each fix where safe, open one PR per target repo cross-linking the fast-loop issues |
 
 ## Hooks
 
@@ -137,8 +137,25 @@ issues as **pre-registered signal**, corroborates or escalates them against its
 quantitative transcript clusters (a human-noticed pain confirmed by the data is
 the highest-confidence deliverable; a reported pain below the count threshold is
 escalated as a watch item), and cross-links the issue numbers in the PR body's
-`## Fast-loop signal` section. See `docs/archive/session-plugin-workflow.md` for the full
-architecture.
+`## Fast-loop signal` section. It also reads `positive-feedback` issues, in a
+separate query because positive findings carry that label alone, as
+**stability markers**: a proposal that changes a skill or hook one of them
+praises must name the issue (`Preserves #<n>`) and say why the praised behaviour
+survives, or it is downgraded to a watch item.
+
+A `positive-feedback` issue's lifecycle:
+
+| Stage | What happens |
+|---|---|
+| Filed | `/feedback:session` opens it with the `positive-feedback` label |
+| Cited | The next weekly run lists it in its PR's `## Fast-loop signal` section |
+| Closed | After opening that PR, the run closes the issue with a comment naming the PR. Closed means processed. No PR (quiet window, dry run) means no close |
+| Stability marker | Each run reads positive issues in **any** state created in the last 6 months, so a closed issue still guards the behaviour it praises |
+
+`scripts/check-friction-learner-fast-loop.sh` fails if Step 0 stops fetching
+either label, if the positive fetch stops covering closed issues and a date
+window, or if Step 6 stops closing cited issues. See
+`docs/archive/session-plugin-workflow.md` for the full architecture.
 
 ## Hooks
 
