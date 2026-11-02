@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # PreToolUse hook — auto-creates a git stash checkpoint before destructive operations
 #
-# Toggle: set CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT=1 to skip this hook
+# Toggle: opt-in. Off unless CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=1 (#2652).
+# Every recorded instance across the hook's issues was a false-positive stash
+# (out-of-repo, ignored or quoted `rm -rf` targets) and none a recovery, so the
+# default session creates no checkpoints. repo-deletion-safety.sh still blocks
+# deleting an unpushed repo, and git's reflog covers reset/checkout.
 #
 # Matches: Bash
 # Triggers on: git reset, git checkout -- (file restore), rm -rf, file overwrites
@@ -9,8 +13,8 @@
 
 set -euo pipefail
 
-# Toggle off
-[ "${CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT:-}" = "1" ] && exit 0
+# Opt-in: only the literal "1" enables the hook.
+[ "${CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT:-}" = "1" ] || exit 0
 
 INPUT=$(cat)
 

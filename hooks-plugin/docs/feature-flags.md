@@ -25,6 +25,7 @@ Three shapes:
 
 | Flag | Enables | Plugin · source |
 |---|---|---|
+| `CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT` | Auto-stash checkpoint before destructive git/`rm -rf` ops, and the stash reminder's report of those `auto-checkpoint before …` entries. Opt-in since #2652, when the former `CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT` opt-out was retired | hooks · `hooks/auto-checkpoint.sh` |
 | `CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH` | PostToolUse "teach" hook — augments tool output with a non-blocking nudge instead of blocking (carries the `find→Glob` and other soft nudges) | hooks · `hooks/bash-antipatterns-teach.sh` |
 | `CLAUDE_HOOKS_ENABLE_CALENDAR_ESTIMATES` | Stop hook nudging the agent to restate estimates in tokens / effort tiers instead of calendar time | hooks · `hooks/no-calendar-estimates.sh` |
 | `CLAUDE_HOOKS_ENABLE_EVENT_LOGGER` | Dev/debug hook logging every hook event to a file | hooks · `hooks/event-logger.sh` |
@@ -52,7 +53,6 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 | `CLAUDE_HOOKS_DISABLE_BRANCH_BASE_GUARD` | The `ask` nudge before cutting a branch from a local default branch that is ahead of its remote (**human-operator only**; the documented answer for a repo that legitimately develops on its default branch) | `hooks/branch-base-guard.sh` |
 | `CLAUDE_HOOKS_DISABLE_WORKTREE_LOCATION_GUARD` | The deny on a `git worktree add` path outside the target repo's `.claude/worktrees/` (**human-operator only**) | `hooks/worktree-location-guard.sh` |
 | `CLAUDE_HOOKS_DISABLE_EXTERNAL_PR_MERGE` | Blocking merges of PRs authored by someone other than you or a bot (**human-operator only** — inline prefixes are ignored so agents can't self-serve) | `hooks/external-pr-merge-guard.sh` |
-| `CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT` | Auto-stash checkpoint before destructive git/`rm -rf` ops | `hooks/auto-checkpoint.sh` |
 | `CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO` | Auto-approve/deny of safe/dangerous ops at PermissionRequest | `hooks/permission-auto-approve.sh` |
 | `CLAUDE_HOOKS_DISABLE_PERMISSION_REQUEST` | The permission-request hook | `skills/hooks-permission-request-hook/` |
 | `CLAUDE_HOOKS_DISABLE_TASK_COMPLETENESS` | Stop-hook heuristics for incomplete work (TODO/conflict markers/debug artifacts) | `hooks/task-completeness.sh` |

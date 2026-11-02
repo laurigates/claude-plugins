@@ -103,6 +103,10 @@ fi
 SESSION_ID="test-2306-$$"
 BASELINES="${CLAUDE_STASH_BASELINE_DIR:-$SANDBOX/baselines}"
 export CLAUDE_STASH_BASELINE_DIR="$BASELINES"
+# auto-checkpoint.sh is opt-in since #2652, and the reminder only judges its
+# entries for a session that opted in. The suite pins that opted-in behaviour;
+# the "#2652" section near the end unsets the flag to pin the default.
+export CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=1
 
 cleanup() {
   rm -rf "$SANDBOX"
@@ -641,6 +645,38 @@ run_stop "$REPO_A" >/dev/null
 ck "content committed before the bound → reported" REPORT "$LAST_VERDICT"
 git -C "$REPO_A" stash clear
 git -C "$REPO_A" branch -D stale >/dev/null 2>&1 || true
+reset_tree "$REPO_A"
+
+echo "== #2652: without the opt-in, checkpoint entries do not block Stop =="
+# auto-checkpoint.sh is off unless CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=1, and
+# the reminder's checkpoint branch goes with it: an `auto-checkpoint before …`
+# entry (left by a peer session or subagent that opted in) is not reported.
+# The checkpoint is made non-redundant on purpose, so filters 4 and 7 cannot be
+# what silences it.
+reset_baselines
+git -C "$REPO_A" stash clear
+reset_tree "$REPO_A"
+run_init "$REPO_A"
+make_checkpoint "$REPO_A" "auto-checkpoint before rm -rf (opt-in probe)"
+reset_tree "$REPO_A"
+unset CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT
+ck "flag unset: a non-redundant checkpoint → silent" SILENT "$(run_stop "$REPO_A")"
+# Twin: the gate covers checkpoint entries only. A hand-made stash beside the
+# checkpoint is still reported, and the checkpoint is not named with it.
+make_stash "$REPO_A" "hand work beside a checkpoint"
+reset_tree "$REPO_A"
+run_stop "$REPO_A" >/dev/null
+ck "flag unset: a hand-made stash is still reported" REPORT "$LAST_VERDICT"
+ck_reason "names the hand-made stash" "hand work beside a checkpoint"
+ck_reason_lacks "does not name the checkpoint" "opt-in probe"
+ck_reason "counts only the hand-made one" "Found 1 git stash"
+# Twin: with the flag set, the same checkpoint is reported as before.
+export CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=1
+forget_reported
+run_stop "$REPO_A" >/dev/null
+ck "flag set: the checkpoint is reported" REPORT "$LAST_VERDICT"
+ck_reason "names the checkpoint" "opt-in probe"
+git -C "$REPO_A" stash clear
 reset_tree "$REPO_A"
 
 echo
