@@ -24,6 +24,7 @@ Configuration Checks:
   Release type    node                                  [PASS | WRONG TYPE]
   Changelog       feat, fix sections                    [PASS | INCOMPLETE]
   Plugin          node-workspace                        [PASS | MISSING]
+  First release   tag or initial-version set            [PASS | 1.0.0 RISK]
 
 Overall: Fully compliant | X issues found
 ```
@@ -116,7 +117,64 @@ jobs:
 }
 ```
 
-Version `0.0.0` is a placeholder — release-please updates it automatically.
+`0.0.0` is safe only once the repository has a release tag. Before the first
+tag, release-please ignores the manifest and falls back to its default initial
+version, so the first release PR proposes `1.0.0` even for a 0.x project with
+no breaking commits. When bootstrapping a repo with no release tag, also set
+`initial-version` on the package in `release-please-config.json` — the version
+already in the package file, or `0.1.0` for a pre-1.0 project:
+
+```json
+{
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "initial-version": "0.1.0"
+    }
+  }
+}
+```
+
+After the first release the tag exists, the manifest is authoritative, and
+`initial-version` has no further effect.
+
+### Rust Workspaces
+
+A Cargo workspace that keeps its version in `[workspace.package]` uses
+`release-type: simple` with `Cargo.toml` as an extra file, and marks the
+version line so release-please knows which line to rewrite:
+
+```json
+{
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "initial-version": "0.1.0",
+      "extra-files": ["Cargo.toml"]
+    }
+  }
+}
+```
+
+```toml
+[workspace.package]
+version = "0.1.0" # x-release-please-version
+```
+
+release-please does not update `Cargo.lock`. If CI builds with `--locked`,
+the release PR fails until the lockfile matches the bumped version, so add a
+lock-sync job that runs on the release branch (`release-please--branches--main`
+by default): check it out, run `cargo update --workspace`, and commit the
+updated `Cargo.lock` back to that branch. Push with the release token so the
+commit triggers CI on the release PR.
+
+### Downstream Workflows on the Release Tag
+
+A tag or release created with `GITHUB_TOKEN` starts no other workflow. A
+release build that listens on `push: tags` or `release: published` (binary
+dist, container publish) therefore never runs if release-please used
+`GITHUB_TOKEN`. Whenever anything listens on the tag, release-please needs the
+App token (or PAT) — see [Token Configuration](#token-configuration).
 
 ### Immutable Releases: Draft, Attach, Publish
 
@@ -187,7 +245,9 @@ to switch to `MY_RELEASE_PLEASE_TOKEN`.
    must be new enough to run node24 actions.
 2. **Config**: valid release-type (`node`, `python`, `helm`, `simple`);
    changelog-sections include at least `feat` and `fix`
-3. **Manifest**: valid JSON; packages match the config
+3. **Manifest**: valid JSON; packages match the config; a `0.0.0` entry
+   with no release tag and no `initial-version` in the config FAILs (the
+   first release would be `1.0.0`)
 
 ## Protected Files
 

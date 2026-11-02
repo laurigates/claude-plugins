@@ -610,6 +610,33 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: configure-release-please bootstrapped a missing manifest at
+    # `0.0.0` and REFERENCE.md called that a harmless placeholder. With no
+    # release tag, release-please ignores the manifest and falls back to its
+    # default initial version, so the first release PR proposed 1.0.0 for a
+    # 0.x project (#3301). Invariants: the manifest bootstrap step and the
+    # manifest template both name `initial-version`, the audit flags the
+    # untagged 0.0.0 case, and the placeholder sentence does not come back.
+    if [ "$skill_name" = "configure-release-please" ]; then
+      rp_ref="$(dirname "$skill_file")/REFERENCE.md"
+      if ! grep -E '\*\*Missing manifest\*\*' "$skill_file" | grep -qF 'initial-version'; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md 'Missing manifest' fix must set 'initial-version' (an untagged 0.0.0 manifest releases 1.0.0; #3301)")
+        has_errors=true
+      fi
+      if ! grep -qF 'no release tag' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md manifest audit must flag a 0.0.0 manifest with no release tag and no initial-version (#3301)")
+        has_errors=true
+      fi
+      if ! grep -qF '"initial-version"' "$rp_ref"; then
+        issues+=("❌ ${plugin}/${skill_name}: REFERENCE.md manifest template must pair 0.0.0 with \"initial-version\" in the config (#3301)")
+        has_errors=true
+      fi
+      if grep -qF 'is a placeholder — release-please updates it automatically' "$rp_ref"; then
+        issues+=("❌ ${plugin}/${skill_name}: REFERENCE.md calls the 0.0.0 manifest a harmless placeholder (#3301)")
+        has_errors=true
+      fi
+    fi
+
     # Regression: task-add must emit the stable UUID alongside the numeric ID.
     # Taskwarrior numeric IDs are a display index over pending tasks and shift
     # down by one whenever any other task is completed. A session that created
