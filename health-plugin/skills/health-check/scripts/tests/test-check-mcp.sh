@@ -182,4 +182,25 @@ grep -q "^ISSUE_COUNT=1$" <<<"$out_g" \
   || fail "expected ISSUE_COUNT=1 for the malformed ancestor file, got:\n$out_g"
 pass "ancestor files are validated like project and home files"
 
+# -----------------------------------------------------------------------------
+# Case H (issue #3320): enabledMcpjsonServers is an array of server names.
+# --verbose must list each name, not array indices (`ENABLED: 0=pal`).
+# -----------------------------------------------------------------------------
+home_h="$(new_home home_h)"
+mkdir -p "${home_h}/.claude" "${home_h}/ws/child"
+cat > "${home_h}/.claude/settings.json" <<'JSON'
+{ "enabledMcpjsonServers": ["pal", "context7"] }
+JSON
+
+out_h="$(bash "$check_script" --home-dir "$home_h" --project-dir "${home_h}/ws/child" --verbose)"
+grep -q "^ENABLED_MCP_SERVERS_IN=.claude/settings.json COUNT=2$" <<<"$out_h" \
+  || fail "two enabled servers must report COUNT=2, got:\n$out_h"
+grep -q "^  ENABLED: pal$" <<<"$out_h" \
+  || fail "expected '  ENABLED: pal' in verbose output, got:\n$out_h"
+grep -q "^  ENABLED: context7$" <<<"$out_h" \
+  || fail "expected '  ENABLED: context7' in verbose output, got:\n$out_h"
+grep -q "ENABLED: 0=" <<<"$out_h" \
+  && fail "verbose output must not print array indices (ENABLED: 0=…):\n$out_h"
+pass "enabledMcpjsonServers is read as an array of server names"
+
 echo "ALL TESTS PASSED"
