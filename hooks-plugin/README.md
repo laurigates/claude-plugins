@@ -57,7 +57,8 @@ string/heredoc-body/pipeline/argument, retiring the regex false-positive
 treadmill (#1701/#1721/#1722/#1848/#2052/#2058) and the remote-exec guard
 (#1900). They are style nudges that **fail open** when `ast-grep` is absent
 (no regex twin, #2008); the safety blocks below stay pure-regex and fire in
-every context. The three **read** rules additionally require the read to be the
+every context, except inside a quoted heredoc body fed to `cat`/`tee`/`gh`/`git`
+with no pipe (#3363). The three **read** rules additionally require the read to be the
 **whole command** (#2148) — `cat f.md` blocks, `cd repo && cat f.md` and
 `ls d/; head -20 f` do not; the write rules are unscoped by that narrowing.
 
@@ -615,6 +616,9 @@ A `type: "prompt"` hook that evaluates subagent output completeness. Blocks vagu
 | Type | `prompt` (single-turn LLM call) |
 | Timeout | 30s |
 | Checks | Addresses original task, specificity, completeness |
+| Background wait | Output that says the subagent is waiting on its own background job or notification gets `ok: false` with a reason to collect that result (notification or task output) and finish the deliverable before stopping (#3194) |
+
+**Guard:** `bash scripts/check-subagent-stop-background-wait.sh --strict` pins the background-wait clause and the `ok`/`reason` contract.
 
 ### TaskCompleted — Implementation Verification (agent)
 

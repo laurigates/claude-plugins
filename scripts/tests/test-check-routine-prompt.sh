@@ -112,6 +112,12 @@ for token in \
   "issues/comments/<id> -X PATCH" \
   "Answer recorded, work deferred:" \
   "must account for every labelled issue" \
+  "The unit of work is the group, not the lone issue." \
+  "One subagent per work unit, never one per member" \
+  "Defer the whole group" \
+  "3 work units and 6 issues in total" \
+  "check-issue-grouping.sh" \
+  "UNGROUPED" \
   ; do
   slug="$WORK/strip-$(printf '%s' "$token" | tr -c 'a-zA-Z0-9' '-')"
   seed "$slug"

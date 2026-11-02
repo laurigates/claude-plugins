@@ -81,7 +81,8 @@ those reads a string / heredoc-body / argument node, never a command node, so
 they are never detected in the first place. (The `IS_REMOTE_EXEC` first-token
 suppression #1900 shipped was deleted by #2114.) Safety blocks are pure-regex
 and still fire on remote-exec commands — those hazards apply on the remote host
-too.
+too. The one text they skip is the body of a quoted heredoc (or an unquoted one
+with no `$(`/backtick) fed to `cat`/`tee`/`gh`/`git` with no pipe (#3363).
 
 ## Why this exists
 
