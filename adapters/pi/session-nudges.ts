@@ -43,7 +43,7 @@ export const END_TASK_CUE =
 
 /** The Stop hook's `reason`, verbatim, with or without the taskwarrior cue. */
 export function endNudgeReason(taskCue: boolean): string {
-  return `The user is winding down the session. Briefly offer to run the session-plugin:session-end orchestrator — it surveys the session once, previews which end-of-session passes qualify (session-wrap loose-thread capture, session-distill durable learnings, /feedback:session plugin feedback) and runs only what the user confirms in a single prompt.${taskCue ? END_TASK_CUE : ""} Offer only — never run it without explicit user confirmation. If nothing follow-up-worthy surfaced this session, acknowledge the wind-down and end.`;
+  return `The user is winding down the session. Briefly offer to run the session-plugin:session-end orchestrator — it surveys the session once, runs the reversible end-of-session passes (session-wrap loose-thread capture, session-distill durable learnings, updates to tasks the session touched, /feedback:session issues) and asks once at the end for outward-facing items such as journal entries or cross-repo PRs.${taskCue ? END_TASK_CUE : ""} Offer only — never run it without explicit user confirmation. If nothing follow-up-worthy surfaced this session, acknowledge the wind-down and end.`;
 }
 
 /** An end-of-session skill that owns the flow once it is running. */
