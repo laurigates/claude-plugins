@@ -1,16 +1,18 @@
 ---
 name: session-end
-description: End-of-session orchestrator. Previews which of wrap/distill/feedback/taskwarrior-sync qualify, single confirm, then sequence. Use when winding down a session.
+description: End-of-session orchestrator. Runs reversible wrap/distill/taskwarrior work at once, asks once for outward filings. Use when winding down a session.
 allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Skill, AskUserQuestion, TodoWrite
 created: 2026-06-10
-modified: 2026-10-09
+modified: 2026-11-02
 reviewed: 2026-06-24
 ---
 
 # session-end
 
-One survey, one preview, one confirmation — then run only the
-end-of-session passes that actually qualify. This is the orchestrator
+One survey, then the reversible work runs immediately and the
+outward-facing work waits for **one** question at the end — so a user who
+starts `/session-end` and walks away comes back to finished work and at
+most one question. This is the orchestrator
 over the five end-of-session passes, which otherwise compete for the wind-down
 moment (design decisions D3/D4, `docs/archive/session-plugin-workflow.md`).
 
@@ -29,8 +31,9 @@ tracker-sync — and what each captures are listed in
 ## Execution
 
 Execute this orchestration. **Not fully automatic by design**: filing
-GitHub issues and writing a journal are not `git restore`-able, so the
-single confirmation gate below is mandatory.
+third-party GitHub issues, opening cross-repo PRs and writing a journal
+are not `git restore`-able, so those wait for the Step 4 question. Everything that
+can be undone runs first, without asking.
 
 ### Step 1: Survey once
 
@@ -48,8 +51,8 @@ bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits --with
 ```
 
 Pass `--project <name>` to override the detected project. Hand the digest
-to the confirmed passes in Step 4 so they don't re-survey. `--with-dedup`
-is what populates the `GITHUB_DRIFT` section that Step 4's taskwarrior-sync
+to the passes in Steps 3–4 so they don't re-survey. `--with-dedup`
+is what populates the `GITHUB_DRIFT` section that Step 3's taskwarrior-sync
 redundancy test reads — without it the section is always empty and the
 guard silently runs against nothing. That section also carries `GH_READY`:
 `false` means it is present but **unqueried**, the same "not clean, just
@@ -72,7 +75,7 @@ conceptually only":
 bash "${CLAUDE_SKILL_DIR}/../../scripts/distill-survey.sh" --session-id "${CLAUDE_SESSION_ID}" --summary
 ```
 
-### Step 2: Qualify each pass
+### Step 2: Qualify each pass and sort its items into two lanes
 
 Apply each skill's own signal filter strictly; **silently skip passes
 that don't qualify** — offering an empty pass is the drown-in-signals
@@ -81,18 +84,39 @@ failure mode.
 | Pass | Qualifies when |
 |---|---|
 | Wrap | ≥1 genuine loose thread per session-wrap's LOG IT filter |
-| Distill | A durable, generalizable learning emerged AND the repo has a distillable surface (`.claude/rules/` or a justfile). Corroborate the mechanical half with the distill collector's `--summary` (below): `RECIPE_CANDIDATE_COUNT` / `HOT_FILE_COUNT` / `PROCESS_SIGNAL` > 0 means recipes/hot-files/process are worth a pass even if no conceptual rule emerged |
+| Distill | A durable, generalizable learning emerged AND the repo has a distillable surface (`.claude/rules/` or a justfile). Corroborate the mechanical half with the distill collector's `--summary` (Step 1): `RECIPE_CANDIDATE_COUNT` / `HOT_FILE_COUNT` / `PROCESS_SIGNAL` > 0 means recipes/hot-files/process are worth a pass even if no conceptual rule emerged |
 | Feedback | A plugin/skill behaved notably well or badly — bug, enhancement, or positive worth filing |
-| Taskwarrior sync | `TASK_AVAILABLE=true` AND `TASK_STORE_REACHABLE=true` AND (`OPEN_TASKS` ≥ 1 OR `RECENT_TASK_COUNT` ≥ 1 OR `PROJECT_AMBIGUOUS_TASKS` ≥ 1) in the Step 1 digest. When `TASK_AVAILABLE=true` and `TASK_STORE_REACHABLE=false`, the store was never read — **unqueried**, exactly like `GH_READY=false`, never an empty queue: do not skip silently; state `taskwarrior: not queried (<TASK_FAIL_REASON>)` in the Step 3 preview, quoting `TASK_FAIL_DETAIL` (remedies per reason: [references/survey-digest.md](references/survey-digest.md)). With `TASK_AVAILABLE=false` (`TASK_FAIL_REASON=no-cli`, no taskwarrior installed) skip the row silently — there is no store to report on. When `PROJECT_CONFIDENCE=low`, name the scope actually used (`TASK_SCOPE`, plus `PROJECT_RESOLVED` when set) in the Step 3 preview and offer `--project <slug>` — a low-confidence zero is an unqueried project, never a clean queue. When `PROJECT_AMBIGUOUS` is set, render the preview as `0 here, N under <slug>` and offer `--project <slug>`; this fires **even at `PROJECT_CONFIDENCE=high`**, because a user-asserted `--project` and a repo declaration both deliberately keep `high` — so the `low`-confidence escape below does not cover it. When `PROJECT_PREFIX_SIBLINGS` is present, name it in the preview as `N under <slugs>` and confirm the slug **before filing anything**: those slugs are what a `task project:<slug>` CLI check would have swept in, so a slug verified that way can be the wrong one and the follow-ups land in a sibling nobody reads |
+| Taskwarrior sync | `TASK_AVAILABLE=true`, `TASK_STORE_REACHABLE=true`, AND ≥1 **session-linked task**: one this session worked on, created, or made closeable (its `TASK_n_GHID` PR/issue merged or closed, or the conversation shows it done). Open tasks the session never touched — the project backlog, `RECENT_TASK_*` rows from other projects — never qualify the pass; see [Backlog is reported, never walked](#backlog-is-reported-never-walked) |
 | Blueprint tracker-sync | `UNDRAINED_COUNT` ≥ 1 in the Step 1 digest's `BLUEPRINT` section. Non-blueprint / tracker-missing repos auto-disqualify (count is 0) → silent skip. If `blueprint-plugin` isn't installed, note it and skip (as with Feedback) |
 
-**Blueprint auto-drain (ADR-0020 level 1):** when the qualifying repo's
-`docs/blueprint/manifest.json` enables and opts the feature-tracker-sync task
-into auto-running at autonomy level ≥ 1, that pass is **auto-confirmed** —
-leave it out of the Step 3 question, run it in Step 4 order, and report a
-one-line receipt in Step 5. All other passes still go through the Step 3
-confirmation. The gate requires all three fields (issue #2358) — run it as
-written, `auto` ⇒ auto-confirm, anything else ⇒ ask:
+**Taskwarrior scope keys.** When `TASK_AVAILABLE=true` and `TASK_STORE_REACHABLE=false`, the
+store was never read — **unqueried**, exactly like `GH_READY=false`, never an
+empty queue: state `taskwarrior: not queried (<TASK_FAIL_REASON>)` in the
+Step 5 report, quoting `TASK_FAIL_DETAIL` (remedies per reason:
+[references/survey-digest.md](references/survey-digest.md)). With
+`TASK_AVAILABLE=false` (`TASK_FAIL_REASON=no-cli`) skip silently. Before
+adding a task, confirm the slug: when `PROJECT_CONFIDENCE=low`,
+`PROJECT_AMBIGUOUS` is set (it fires even at `high`), or
+`PROJECT_PREFIX_SIBLINGS` is present, a new task could land in a sibling
+project nobody reads — move that add to the Ask lane and name the slugs
+(`0 here, N under <slug>`).
+
+**Sort every qualifying item into one of two lanes.** The lane decides
+whether it runs now or waits for the one question in Step 4:
+
+| Lane | Items | Why |
+|---|---|---|
+| **Act** — run in Step 3, no question | Feedback issues; taskwarrior annotate / modify / add on session-linked tasks; close a task **with evidence** (merged PR, closed issue, commit on the default branch); Wrap's taskwarrior writes; Distill `[UPDATE]` / `[NEW]` edits in the current repo; Blueprint tracker-sync drain | Undoable (`task undo`, `task <uuid> modify status:pending`, `git restore`), or — for feedback issues — triaged and acted on separately, so filing one decides nothing |
+| **Ask** — confirmed once in Step 4 | Wrap's GitHub follow-up issues, journal writes and upstream candidates; Distill `[PROMOTE]` PRs and `[REDUNDANT]` removals; a task add whose project slug is in doubt; closing a task without evidence | Outward-facing, destructive, or a guess — not `git restore`-able |
+
+A task close without evidence is a guess, so it goes in the Ask lane or
+becomes an annotation.
+
+**Blueprint auto-drain (ADR-0020 level 1):** the Blueprint drain sits in the Act
+lane only when the qualifying repo's `docs/blueprint/manifest.json` enables and
+opts the feature-tracker-sync task into auto-running at autonomy level ≥ 1;
+otherwise it goes in the Ask lane. The gate requires all three fields (issue
+#2358) — run it as written, `auto` ⇒ Act lane, anything else ⇒ Ask lane:
 
 ```sh
 jq -r 'if ((.automation.autonomy_level // 0) >= 1) and (.task_registry["feature-tracker-sync"].enabled == true) and (.task_registry["feature-tracker-sync"].auto_run == true) then "auto" else "ask" end' docs/blueprint/manifest.json 2>/dev/null
@@ -101,19 +125,76 @@ jq -r 'if ((.automation.autonomy_level // 0) >= 1) and (.task_registry["feature-
 For why all three are required and the safe default for a missing `enabled`
 key, see [REFERENCE.md](REFERENCE.md).
 
-If **nothing** qualifies, say so in one line and end — no preview, no
-question.
+If **nothing** qualifies, say so in one line and end — no question.
 
-### Step 3: One preview, one confirmation
+#### Backlog is reported, never walked
 
-Present a single compact preview: each qualifying pass with a one-line
-reason and its concrete payload (the wrap items; the distill proposal
-sketch; the feedback finding; the open taskwarrior items with their UUIDs;
-for blueprint: `Blueprint tracker-sync — N closed WO task(s) not drained
-from the feature tracker: WO-…`).
-Then **one AskUserQuestion** (multiSelect) listing the qualifying passes
-as options, qualifying ones described with their reasons. The user picks
-any subset; "Other" covers adjustments.
+Do not offer to walk open tasks the session did not touch, one by one or
+in bulk. In 62 recorded runs that offer was declined 20 of 29 times, and
+when it was accepted the usual per-task answer was "leave". Put one line
+in the Step 5 report instead —
+`taskwarrior: N other open tasks under project:<slug> untouched — /taskwarrior:task-status to review` —
+and stop there.
+
+### Step 3: Run the Act lane now
+
+Run the Act-lane work immediately, before asking anything. It needs the
+warm prompt cache and the full conversation: Distill reads the session's
+reasoning, and a session left idle for about an hour can be compacted into
+a summary. Run in this order, each via the Skill tool, or — where there is
+no Skill tool — read that skill's SKILL.md and follow it (inline for
+taskwarrior sync), passing the Step 1 survey so it doesn't re-survey:
+
+1. **Taskwarrior sync** — inline, before Wrap, so Wrap sees the updated
+   queue. Address tasks by stable UUID (`task +LATEST uuids` after
+   creation; `task <uuid> done` / `task <uuid> modify` for existing ones);
+   never use volatile numeric IDs. Annotate before closing. Any follow-up
+   obeys Wrap's redundancy test: an open PR or assigned issue in the Step 1
+   digest's `PRS` / `GITHUB_DRIFT` sections is already its own tracker —
+   annotate, never mirror it into a task.
+2. `session-plugin:session-wrap` with `--orchestrated` — Wrap applies its
+   taskwarrior items without its own preview/confirm, and returns its
+   journal, GitHub-issue and upstream items as `DEFERRED:` lines instead of
+   asking.
+3. **Blueprint tracker-sync** (Act lane only) — after passes 1–2, because
+   both mutate the queue. Re-derive the wave inline right before delegating
+   (never reuse the survey's `UNDRAINED_WOS` as the drain list); the
+   command is in [references/blueprint-drain.md](references/blueprint-drain.md).
+   Then invoke `/blueprint:blueprint-feature-tracker-sync --drain-wave <list>`
+   with **no** evidence flags — the sync skill sources evidence from
+   taskwarrior annotations itself (its priority order: files → inline →
+   annotation → ask). If the re-derived list is empty, report "already
+   drained". If `blueprint-plugin` isn't installed, note it and skip.
+4. `session-plugin:session-distill` with `--orchestrated` — applies
+   `[UPDATE]` / `[NEW]` in the current repo and returns `[PROMOTE]` and
+   `[REDUNDANT]` proposals as `DEFERRED:` lines.
+5. **Feedback** — `feedback-plugin:feedback-session --confirmed "<findings>"`
+   with the findings collected in Step 1. It files the ones that survive
+   dedup without its own review step. If it cannot resolve the target repo
+   without asking, it returns the findings as `DEFERRED:` lines instead. If
+   the feedback plugin isn't installed, note it and skip.
+
+### Step 4: One question for the Ask lane
+
+Gather the Ask-lane items: every `DEFERRED:` line from
+Step 3, a Blueprint drain that did not pass the auto gate, and any
+low-confidence task add. If there are none, skip to Step 5 — no question.
+
+Otherwise print a short receipt of what Step 3 already did (so the user can
+undo it), then ask **one AskUserQuestion** call: up to 4 questions grouped
+by destination (GitHub filings, `[PROMOTE]` PRs,
+journal / removals), each `multiSelect`, each option one concrete item. The
+user picks any subset; "Other" covers adjustments. Never ask a second
+round — the sub-skills already received their decisions.
+
+Then run the approved items:
+
+- **Wrap upstream candidates** — a *File now* candidate always routes
+  through `workflow-orchestration-plugin:workflow-verify-before-filing` →
+  `agent-patterns-plugin:cold-read-gate` → file; never blind. *Track for
+  later* is a `+upstream` taskwarrior task.
+- **Distill `[PROMOTE]`** — the throwaway-clone PR hand-off in session-distill.
+- **Everything else** — apply as described by its owning skill.
 
 Never end the turn on a freeform "y/n" text question — ending the turn
 fires Stop hooks mid-confirmation (the race that motivated this
@@ -121,55 +202,11 @@ orchestrator). AskUserQuestion keeps the turn open. Where `AskUserQuestion`
 is unavailable (a harness without the tool), ask in plain text and end the
 turn.
 
-### Step 4: Sequence the confirmed passes
-
-Run in this order, each via the Skill tool, or — where there is no Skill
-tool — read that skill's SKILL.md and follow it (inline for taskwarrior
-sync), passing along the Step 1 survey so they don't re-do it:
-
-1. **Taskwarrior sync** (if confirmed) — run inline before Wrap so Wrap
-   sees the updated queue state. For each open/active task: ask the user
-   (via AskUserQuestion) whether to mark done, update, or leave. Address
-   tasks by stable UUID (`task +LATEST uuids` after creation;
-   `task <uuid> done` / `task <uuid> modify` for existing tasks). Never
-   use volatile numeric IDs — they shift when other tasks complete. Any
-   follow-up added here obeys Wrap's redundancy test: an open PR or
-   assigned issue in the Step 1 digest's `PRS` / `GITHUB_DRIFT` sections
-   is already its own tracker — annotate, never mirror it into a task.
-2. `session-plugin:session-wrap` — closes/annotates/adds tasks so later
-   passes see the final queue state. Any **upstream issue/PR candidates**
-   it surfaces appear in the Step 3 preview and route per-candidate in
-   Wrap's own Step 4 (track-for-later vs verify-then-file) under this
-   mandatory confirmation gate — filing an upstream issue is not
-   `git restore`-able, exactly what the gate exists for. A *File now*
-   candidate always routes through
-   `workflow-orchestration-plugin:workflow-verify-before-filing` →
-   `agent-patterns-plugin:cold-read-gate` → file; never blind
-3. **Blueprint tracker-sync** (if confirmed) — runs after passes 1–2
-   because both mutate the taskwarrior queue and may close more WO-linked
-   tasks after the Step 1 survey. Re-derive the wave inline right before
-   delegating (never reuse the survey's `UNDRAINED_WOS` as the drain list):
-
-   The re-derive command (closed `bpid`s intersected with tracker
-   `tasks.pending`) is in
-   [references/blueprint-drain.md](references/blueprint-drain.md).
-
-   Then invoke `/blueprint:blueprint-feature-tracker-sync --drain-wave <list>`
-   with **no** evidence flags — the sync skill sources evidence from
-   taskwarrior annotations itself (its priority order: files → inline →
-   annotation → ask). If the re-derived list is empty, report "already
-   drained" and move on. Cross-plugin: if `blueprint-plugin` isn't
-   installed, note it and skip
-4. `session-plugin:session-distill` — apply mode per its own flow; the
-   user already confirmed the pass, so skip a second blanket prompt but
-   keep distill's per-category destructive-change prompts
-5. `feedback-plugin:feedback-session` — cross-plugin; if the feedback
-   plugin isn't installed, note it and skip
-
 ### Step 5: Report
 
-One short block: what each executed pass wrote (tasks touched / closed,
-files edited, issues filed) and which passes were skipped as not qualifying.
+One short block: what each pass wrote (tasks touched / closed with UUIDs,
+files edited, issues and PRs filed), which passes were skipped as not
+qualifying, the backlog line, and any `not queried` line.
 
 ## Seam: distill vs feedback
 
