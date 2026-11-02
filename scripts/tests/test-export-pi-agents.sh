@@ -24,6 +24,10 @@
 #   K. --model-map: a source pin naming a mapped tier (`opus=prov/x`) takes the
 #      map's target, every other agent falls through to --model, a target of
 #      `inherit` drops the key, unmatched tiers are reported, malformed maps exit 2
+#   L. read-only widening cohort (#2645): an agent with a scoped Bash(...) and no
+#      Write/Edit is REPORTED in READONLY_WIDENED=, and the real corpus's cohort
+#      equals the table in docs/pi-export.md § Subagents, so no agent joins the
+#      cohort (gains an unscoped shell in pi) without being listed there
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -394,6 +398,39 @@ assert "export-pi-agents recipe takes model_map=\"\" and passes --model-map" \
   "$(grep -qE '^export-pi-agents .*model_map=""' "$justfile" && grep -A 10 '^export-pi-agents' "$justfile" | grep -q -- '--model-map' && echo true || echo false)"
 assert "install-pi-agents recipe takes model_map=\"\" and passes --model-map" \
   "$(grep -qE '^install-pi-agents .*model_map=""' "$justfile" && grep -A 28 '^install-pi-agents' "$justfile" | grep -q -- '--model-map' && echo true || echo false)"
+
+echo "=== TEST L: read-only widening cohort (#2645) ==="
+# A separate source tree, so the counts asserted above stay unchanged.
+ro="$fixture/src-ro/ro-plugin/agents"
+mkdir -p "$ro"
+for spec in "reader:Read, Grep, Bash(cat *), Bash(jq *)" \
+            "writer:Read, Edit, Bash(git diff *)" \
+            "shell:Read, Bash" \
+            "plain:Read, Grep"; do
+  agent=${spec%%:*}; tools=${spec#*:}
+  printf -- '---\nname: %s\ndescription: The %s agent.\ntools: %s\n---\n\n# %s\n' \
+    "$agent" "$agent" "$tools" "$agent" > "$ro/$agent.md"
+done
+ro_out="$(python3 "$exporter" "$fixture/src-ro" "$fixture/out-ro" 2>&1)"
+# Only `reader` loses a scope with no Write/Edit: `writer` can already write,
+# `shell` declared an unscoped Bash (nothing widened), `plain` has no Bash.
+assert "a scoped-Bash agent without Write/Edit is reported in READONLY_WIDENED=" \
+  "$(grep -qx 'READONLY_WIDENED=ro-plugin/agents/reader.md' <<<"$ro_out" && echo true || echo false)"
+
+doc="$repo_root/docs/pi-export.md"
+# shellcheck disable=SC2016  # the backticks are literal markdown, not an expansion
+documented="$(awk '/<!-- readonly-widened:start -->/{f=1;next} /<!-- readonly-widened:end -->/{f=0} f' "$doc" \
+  | grep -oE '^\| `[a-z0-9-]+-plugin/agents/[a-z0-9-]+\.md`' | tr -d '|` ' | LC_ALL=C sort | paste -sd, -)"
+corpus_out="$(python3 "$exporter" "$repo_root" "$fixture/out-corpus" 2>&1)"
+actual="$(grep -m1 '^READONLY_WIDENED=' <<<"$corpus_out" | cut -d= -f2)"
+assert "docs/pi-export.md lists the read-only widened agents (table not empty)" \
+  "$([ -n "$documented" ] && echo true || echo false)"
+if [ "$actual" != "$documented" ]; then
+  echo "  corpus:     $actual" >&2
+  echo "  documented: $documented" >&2
+fi
+assert "the corpus's read-only widened cohort equals the documented list" \
+  "$([ -n "$actual" ] && [ "$actual" = "$documented" ] && echo true || echo false)"
 
 echo ""
 echo "=== SUMMARY ==="

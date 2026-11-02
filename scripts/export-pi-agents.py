@@ -16,9 +16,13 @@ both are reported rather than adjusted silently:
   1. **`Bash(<cmd> *)` scope is dropped.** pi's `tools:` is a name-only
      allowlist — there is no per-command scoping in the schema — so a scoped
      Claude Code grant becomes an unscoped `bash`. That is a *privilege
-     widening* (143 entries across the corpus today), counted as
-     `WIDENED_BASH=` and listed per agent. Nothing in this repo can narrow it;
-     it is a property of the target schema.
+     widening* (142 entries across the corpus today), counted as
+     `WIDENED_BASH=`. Nothing in this repo can narrow it; it is a property of
+     the target schema. Where it changes an agent's posture — a scoped `Bash`
+     grant on an agent with no `Write`/`Edit`, so the shell becomes its only
+     and now unrestricted write path — the agent is named in
+     `READONLY_WIDENED=` (#2645). That cohort is accepted and listed in
+     docs/pi-export.md § Subagents; the test suite fails when they diverge.
   2. **Claude-Code-only tools are dropped**, because no pi built-in exists for
      them: `TodoWrite`, `WebFetch`, `WebSearch`, `NotebookEdit`.
      They are reported as `DROPPED_TOOLS=` per agent.
@@ -375,6 +379,7 @@ def main(
     widened_total, nested_total, model_pins = 0, 0, 0
     dropped_by_tool: dict[str, int] = {}
     dropped_keys: dict[str, list[str]] = {}
+    readonly_widened: list[str] = []
 
     for src in sources:
         rel = src.relative_to(repo_root)
@@ -396,6 +401,10 @@ def main(
         (agents_out / src.name).write_text(text, encoding="utf-8")
         written += 1
         widened_total += widened
+        if widened and not {"write", "edit"} & set(builtins):
+            # Read-only by construction in Claude Code, write-capable through
+            # the unscoped shell in pi (#2645).
+            readonly_widened.append(str(rel))
         # Counted from what is EMITTED (the same rule `render` applies), so
         # `inherit` reports MODEL_PINS=0 rather than the source's count.
         if emitted_model(front.get("model"), model, model_map) is not None:
@@ -437,6 +446,7 @@ def main(
     print(f"MODEL_PINS={model_pins}")
     print(f"AGENTS_WITH_NESTING={nested_total}")
     print(f"WIDENED_BASH={widened_total}")
+    print("READONLY_WIDENED=" + ",".join(sorted(readonly_widened)))
     print(
         "DROPPED_TOOLS="
         + ",".join(f"{k}:{v}" for k, v in sorted(dropped_by_tool.items()))
