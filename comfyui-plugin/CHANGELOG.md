@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.14.5...comfyui-plugin-v1.15.0) (2026-11-02)
+
+
+### Features
+
+* **scripts:** guard placement phrases in the positional-reference check ([22be666](https://github.com/laurigates/claude-plugins/commit/22be666dccbff2f319055b78db28d3cdb76b51ae)), closes [#2955](https://github.com/laurigates/claude-plugins/issues/2955)
+
 ## [1.14.5](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.14.4...comfyui-plugin-v1.14.5) (2026-10-29)
 
 

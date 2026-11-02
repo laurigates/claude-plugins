@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.4](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.7.3...rust-plugin-v1.7.4) (2026-11-02)
+
+
+### Bug Fixes
+
+* **rust-plugin:** stop sharing a target dir when worktrees change a non-leaf crate ([6d905b0](https://github.com/laurigates/claude-plugins/commit/6d905b0ca3548cc9c6b1d60d238d597b5c7a5b99)), closes [#3351](https://github.com/laurigates/claude-plugins/issues/3351)
+
 ## [1.7.3](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.7.2...rust-plugin-v1.7.3) (2026-10-29)
 
 

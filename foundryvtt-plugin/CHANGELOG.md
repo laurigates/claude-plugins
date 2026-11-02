@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.0](https://github.com/laurigates/claude-plugins/compare/foundryvtt-plugin-v1.4.0...foundryvtt-plugin-v1.5.0) (2026-11-02)
+
+
+### Features
+
+* **scripts:** guard placement phrases in the positional-reference check ([22be666](https://github.com/laurigates/claude-plugins/commit/22be666dccbff2f319055b78db28d3cdb76b51ae)), closes [#2955](https://github.com/laurigates/claude-plugins/issues/2955)
+
+
+### Bug Fixes
+
+* **foundryvtt-plugin:** pin biome once, in package.json, in generated modules ([#3327](https://github.com/laurigates/claude-plugins/issues/3327)) ([d64c905](https://github.com/laurigates/claude-plugins/commit/d64c905979fee0ac946c53bcc5ad3ba27c1158d5))
+
 ## [1.4.0](https://github.com/laurigates/claude-plugins/compare/foundryvtt-plugin-v1.3.5...foundryvtt-plugin-v1.4.0) (2026-10-10)
 
 

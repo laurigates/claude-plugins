@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.25.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.24.0...testing-plugin-v3.25.0) (2026-11-02)
+
+
+### Features
+
+* **configure-plugin:** add machine-readable repo baseline policy and validator ([#3319](https://github.com/laurigates/claude-plugins/issues/3319)) ([8859ee4](https://github.com/laurigates/claude-plugins/commit/8859ee43baffe415cdc6cadf81b23a6427372cce))
+* **scripts:** guard placement phrases in the positional-reference check ([22be666](https://github.com/laurigates/claude-plugins/commit/22be666dccbff2f319055b78db28d3cdb76b51ae)), closes [#2955](https://github.com/laurigates/claude-plugins/issues/2955)
+* **testing-plugin:** add benchmark-controls skill ([#3284](https://github.com/laurigates/claude-plugins/issues/3284)) ([0bae160](https://github.com/laurigates/claude-plugins/commit/0bae160037fc90eeba2617416d186f4e574187b8))
+
 ## [3.24.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.23.4...testing-plugin-v3.24.0) (2026-10-27)
 
 

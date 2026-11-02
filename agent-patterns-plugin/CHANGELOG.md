@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.56.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.55.1...agent-patterns-plugin-v2.56.0) (2026-11-02)
+
+
+### Features
+
+* **agent-patterns-plugin:** drafts state why they are drafts ([#3315](https://github.com/laurigates/claude-plugins/issues/3315)) ([ff2681b](https://github.com/laurigates/claude-plugins/commit/ff2681b4997435ed48a6f8ec50e938a6267ac071))
+* **configure-plugin:** add machine-readable repo baseline policy and validator ([#3319](https://github.com/laurigates/claude-plugins/issues/3319)) ([8859ee4](https://github.com/laurigates/claude-plugins/commit/8859ee43baffe415cdc6cadf81b23a6427372cce))
+* **scripts:** guard placement phrases in the positional-reference check ([22be666](https://github.com/laurigates/claude-plugins/commit/22be666dccbff2f319055b78db28d3cdb76b51ae)), closes [#2955](https://github.com/laurigates/claude-plugins/issues/2955)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** point mcp-management at the repo-baseline policy ([2777afa](https://github.com/laurigates/claude-plugins/commit/2777afa3fbea9ee9fa0f3da61b3bc5449ad5d3c1)), closes [#3321](https://github.com/laurigates/claude-plugins/issues/3321)
+
 ## [2.55.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.55.0...agent-patterns-plugin-v2.55.1) (2026-10-29)
 
 

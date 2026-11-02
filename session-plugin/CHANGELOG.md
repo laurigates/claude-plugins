@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.15.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.14.2...session-plugin-v1.15.0) (2026-11-02)
+
+
+### Features
+
+* **session-plugin:** run reversible session-end passes first, ask once at the end ([#3371](https://github.com/laurigates/claude-plugins/issues/3371)) ([3a98ae2](https://github.com/laurigates/claude-plugins/commit/3a98ae280c63caf23e7464653e20f0a249d4e632))
+
+
+### Bug Fixes
+
+* **session-plugin:** gate the session-end nudge on the user's own last message ([10ecbb4](https://github.com/laurigates/claude-plugins/commit/10ecbb4c6dca15a8de073f4f54814dc9e15fda3b)), closes [#3180](https://github.com/laurigates/claude-plugins/issues/3180)
+* **session-plugin:** name the project after the main checkout in a linked worktree ([#3324](https://github.com/laurigates/claude-plugins/issues/3324)) ([c5fd8b5](https://github.com/laurigates/claude-plugins/commit/c5fd8b55209336351db5fc846aac73da8db5c996)), closes [#3314](https://github.com/laurigates/claude-plugins/issues/3314)
+
 ## [1.14.2](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.14.1...session-plugin-v1.14.2) (2026-10-24)
 
 

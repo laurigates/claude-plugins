@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.17.0...workflow-orchestration-plugin-v1.17.1) (2026-11-02)
+
+
+### Bug Fixes
+
+* **workflow-orchestration-plugin:** run preflight --issue gh calls from --project-dir ([0d21b98](https://github.com/laurigates/claude-plugins/commit/0d21b98efe7f92eff9353f6cd773d2b183fa2d35)), closes [#3148](https://github.com/laurigates/claude-plugins/issues/3148)
+
 ## [1.17.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.16.0...workflow-orchestration-plugin-v1.17.0) (2026-10-27)
 
 

@@ -28,7 +28,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.55.1",
+      "version": "2.56.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -122,7 +122,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking",
-      "version": "3.48.2",
+      "version": "3.49.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -205,7 +205,7 @@
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
       "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
-      "version": "1.14.5",
+      "version": "1.15.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -263,7 +263,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.41.1",
+      "version": "1.42.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -352,7 +352,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.13.3",
+      "version": "1.14.0",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -391,7 +391,7 @@
       "name": "foundryvtt-plugin",
       "source": "./foundryvtt-plugin",
       "description": "FoundryVTT module lifecycle - scaffold a v13 module (Vite + TS + bun), create + seed the repo, open the gitops adoption PR",
-      "version": "1.4.0",
+      "version": "1.5.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -412,7 +412,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.67.4",
+      "version": "2.68.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -462,7 +462,7 @@
       "name": "health-plugin",
       "source": "./health-plugin",
       "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
-      "version": "1.23.6",
+      "version": "1.24.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -508,7 +508,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.17.1",
+      "version": "2.18.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -529,7 +529,7 @@
       "name": "kubernetes-plugin",
       "source": "./kubernetes-plugin",
       "description": "Kubernetes and Helm operations - deployments, charts, releases",
-      "version": "1.10.1",
+      "version": "1.10.2",
       "author": {
         "name": "Lauri Gates"
       },
@@ -568,7 +568,7 @@
       "name": "linux-plugin",
       "source": "./linux-plugin",
       "description": "Linux workstation operations - disk-usage forensics and space recovery across root and data drives, with a usual-suspects scanner for caches, build dirs, runner workspaces and model stores",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -591,7 +591,7 @@
       "name": "macos-plugin",
       "source": "./macos-plugin",
       "description": "macOS-specific dev environment tooling - kitty session persistence, LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift",
-      "version": "1.9.3",
+      "version": "1.9.4",
       "author": {
         "name": "Lauri Gates",
         "url": "https://github.com/laurigates"
@@ -769,7 +769,7 @@
       "name": "rust-plugin",
       "source": "./rust-plugin",
       "description": "Rust development - cargo, clippy, testing, memory safety",
-      "version": "1.7.3",
+      "version": "1.7.4",
       "author": {
         "name": "Lauri Gates"
       },
@@ -786,7 +786,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation",
-      "version": "1.14.2",
+      "version": "1.15.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -865,7 +865,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.24.0",
+      "version": "3.25.0",
       "author": {
         "name": "Lauri Gates"
       },
@@ -946,7 +946,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - preflight checks, checkpoint refactoring, wave dispatch, run recovery and budgeting",
-      "version": "1.17.0",
+      "version": "1.17.1",
       "author": {
         "name": "Lauri Gates"
       },

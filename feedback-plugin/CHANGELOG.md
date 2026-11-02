@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.14.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.13.3...feedback-plugin-v1.14.0) (2026-11-02)
+
+
+### Features
+
+* **hooks-plugin:** tell subagents waiting on a background job to collect its result ([#3369](https://github.com/laurigates/claude-plugins/issues/3369)) ([3585053](https://github.com/laurigates/claude-plugins/commit/35850534b0a45d798a38ad3f18d435c8a58919cb))
+* **session-plugin:** run reversible session-end passes first, ask once at the end ([#3371](https://github.com/laurigates/claude-plugins/issues/3371)) ([3a98ae2](https://github.com/laurigates/claude-plugins/commit/3a98ae280c63caf23e7464653e20f0a249d4e632))
+
+
+### Bug Fixes
+
+* **feedback-plugin:** key awk multibyte crashes and unresolved sed operands in friction_parse ([#3366](https://github.com/laurigates/claude-plugins/issues/3366)) ([7e5c629](https://github.com/laurigates/claude-plugins/commit/7e5c629962ee12263bdcbbb6de5e2f21b780f22d))
+* **feedback-plugin:** read positive-feedback issues as stability markers in friction-learner ([#3358](https://github.com/laurigates/claude-plugins/issues/3358)) ([dcbe36c](https://github.com/laurigates/claude-plugins/commit/dcbe36c547ae59c16adfbb0ca45317dd997f648e)), closes [#3346](https://github.com/laurigates/claude-plugins/issues/3346)
+
 ## [1.13.3](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.13.2...feedback-plugin-v1.13.3) (2026-10-27)
 
 

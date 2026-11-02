@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.4](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.9.3...macos-plugin-v1.9.4) (2026-11-02)
+
+
+### Documentation
+
+* **macos-plugin:** point macos-disk-usage at linux-plugin:linux-disk-usage ([ab4dcfb](https://github.com/laurigates/claude-plugins/commit/ab4dcfb73968fb3456e7d2f37fbb21575803fcce))
+* **macos-plugin:** shorten linux-disk-usage cross-reference ([e19ca2e](https://github.com/laurigates/claude-plugins/commit/e19ca2ef07876e0889ef614b533b6b3ffd2fff2f))
+
 ## [1.9.3](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.9.2...macos-plugin-v1.9.3) (2026-10-18)
 
 

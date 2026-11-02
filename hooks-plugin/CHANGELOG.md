@@ -1,5 +1,33 @@
 # Changelog
 
+## [2.18.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.17.1...hooks-plugin-v2.18.0) (2026-11-02)
+
+
+### Features
+
+* **hooks-plugin:** add worktree-location-guard PreToolUse hook ([adc0a75](https://github.com/laurigates/claude-plugins/commit/adc0a75a27ed44fe6fd6fe242e3bc4b0ff054380))
+* **hooks-plugin:** point the merge guard's dyn refusal at GraphQL variables ([e93fdd3](https://github.com/laurigates/claude-plugins/commit/e93fdd383876b07a87f736500d355b1c8f7f4e1a)), closes [#3298](https://github.com/laurigates/claude-plugins/issues/3298)
+* **hooks-plugin:** tell subagents waiting on a background job to collect its result ([#3369](https://github.com/laurigates/claude-plugins/issues/3369)) ([3585053](https://github.com/laurigates/claude-plugins/commit/35850534b0a45d798a38ad3f18d435c8a58919cb))
+
+
+### Bug Fixes
+
+* **hooks-plugin:** bound the workflow scale estimate inside its 5 s hook budget ([2d0fc46](https://github.com/laurigates/claude-plugins/commit/2d0fc46b6eb7f71d8473da450a528b552cbd27ab)), closes [#3093](https://github.com/laurigates/claude-plugins/issues/3093)
+* **hooks-plugin:** build secret-protection rules without command substitution for bash 3.2 ([#3322](https://github.com/laurigates/claude-plugins/issues/3322)) ([d3659b2](https://github.com/laurigates/claude-plugins/commit/d3659b2c1784ad4f15c0abde5657385bc000fbd2)), closes [#3145](https://github.com/laurigates/claude-plugins/issues/3145) [#3261](https://github.com/laurigates/claude-plugins/issues/3261)
+* **hooks-plugin:** create .git/info before writing exclude in test sandboxes ([#3311](https://github.com/laurigates/claude-plugins/issues/3311)) ([3efcc45](https://github.com/laurigates/claude-plugins/commit/3efcc45e835727514ece1604d12542bbeb18c924)), closes [#3280](https://github.com/laurigates/claude-plugins/issues/3280)
+* **hooks-plugin:** exempt .env templates followed by a backtick or punctuation ([#3309](https://github.com/laurigates/claude-plugins/issues/3309)) ([ea4d560](https://github.com/laurigates/claude-plugins/commit/ea4d5607dc7cfec09193313caad01e39e6189762)), closes [#3297](https://github.com/laurigates/claude-plugins/issues/3297)
+* **hooks-plugin:** judge worktree checkpoints in the worktree that took them ([8d5a6ae](https://github.com/laurigates/claude-plugins/commit/8d5a6ae033007571779efcd053bdff0d0def5515)), closes [#3055](https://github.com/laurigates/claude-plugins/issues/3055)
+* **hooks-plugin:** look up the merge guard's PR author over REST when GraphQL is refused ([6f4ba4b](https://github.com/laurigates/claude-plugins/commit/6f4ba4b721e6b88738cbb653bdaf634204b4bdd4))
+* **hooks-plugin:** make auto-checkpoint opt-in and gate the reminder's checkpoint branch ([34ed2a9](https://github.com/laurigates/claude-plugins/commit/34ed2a9fe934b0d98095f2305f1a67d3ad8bbb22)), closes [#2652](https://github.com/laurigates/claude-plugins/issues/2652) [#3235](https://github.com/laurigates/claude-plugins/issues/3235)
+* **hooks-plugin:** run bash-antipatterns per-character awk walkers under LC_ALL=C ([#3323](https://github.com/laurigates/claude-plugins/issues/3323)) ([7d3c2be](https://github.com/laurigates/claude-plugins/commit/7d3c2be105626702f5803ad7dc496193c32b34b7)), closes [#3313](https://github.com/laurigates/claude-plugins/issues/3313)
+* **hooks-plugin:** skip data-only heredoc bodies in the bash-antipatterns safety regexes ([#3368](https://github.com/laurigates/claude-plugins/issues/3368)) ([526f4ec](https://github.com/laurigates/claude-plugins/commit/526f4ecc8e2b497a1fb530512e978bac1546d37f))
+* **hooks-plugin:** skip data-sink heredoc bodies in regex safety blocks ([526f4ec](https://github.com/laurigates/claude-plugins/commit/526f4ecc8e2b497a1fb530512e978bac1546d37f)), closes [#3363](https://github.com/laurigates/claude-plugins/issues/3363)
+
+
+### Documentation
+
+* **hooks-plugin:** link the merge guard ledger row to its issue ([bdd0582](https://github.com/laurigates/claude-plugins/commit/bdd0582f1a2ba53d21061835bfd72d45f2f954f4)), closes [#3353](https://github.com/laurigates/claude-plugins/issues/3353)
+
 ## [2.17.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.17.0...hooks-plugin-v2.17.1) (2026-10-29)
 
 
