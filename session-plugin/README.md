@@ -64,7 +64,14 @@ The Stop nudge is deliberately conservative:
 - counts only **genuine** user turns — tool results and slash-command
   expansions are excluded from both the turn floor and the wind-down
   phrase scan (a previous nudge matched a skill's own injected markdown
-  and fired mid-skill)
+  and fired mid-skill). Harness-injected user-role lines are excluded
+  too: `isMeta` records, any non-human `origin` kind (task notifications,
+  scheduled check-ins), and task-notification, system-reminder, webhook
+  and PR-activity `<wake>` bodies (#3180)
+- scans only the **latest** genuine user message for the wind-down phrase
+- stays **silent when the assistant's last message ends with a question
+  or proposes a next step** ("Next step", "Want me to", "Should I", …),
+  since the session is still mid-flow
 - stays **silent when session-wrap / session-end / session-distill is
   already in the transcript** — the skill owns the flow; the hook never
   races a pending confirmation

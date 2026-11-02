@@ -142,6 +142,72 @@ output=$(run_hook_output "sess-expansion" "$REPO_WITH_RULES" "$TRANSCRIPT")
 assert_silent "skill markdown in a command expansion does NOT trigger the wind-down gate" "$output"
 rm -f "$TRANSCRIPT"
 
+# ── #3180 gate B: harness-injected user-role lines are not user text ─────────
+# Real transcripts carry harness content on "role":"user" lines: task
+# notifications, PR-activity wake events, scheduled check-in bodies, system
+# reminders and isMeta records. On 2026-11-01 such lines fired the nudge twice
+# after a status report while none of the user's typed messages wound down.
+echo ""
+echo "harness-injected user-role lines (#3180 gate B):"
+TRANSCRIPT=$(make_transcript 10 "show me the open PRs")
+cat >> "$TRANSCRIPT" <<'JSONL'
+{"type":"user","message":{"role":"user","content":"<task-notification>\n<task-id>x</task-id>\n<summary>agent stopped; calling it done for now</summary>\n</task-notification>"},"origin":{"kind":"task-notification"}}
+{"type":"user","message":{"role":"user","content":"<wake reason=\"external-event\"><event source=\"github\">PR merged, wrap up the follow-ups</event></wake>"}}
+{"type":"user","message":{"role":"user","content":"Scheduled check-in: check-ins have stopped, calling it for this PR"},"origin":{"kind":"scheduled-task"}}
+{"type":"user","message":{"role":"user","content":"<system-reminder>The user may be done for the day.</system-reminder>"}}
+{"type":"user","isMeta":true,"message":{"role":"user","content":"Stop hook feedback: wrap up the session"}}
+JSONL
+output=$(run_hook_output "sess-harness-lines" "$REPO_WITH_RULES" "$TRANSCRIPT")
+assert_silent "harness notifications carrying wind-down wording do NOT trigger the nudge" "$output"
+rm -f "$TRANSCRIPT"
+
+# Queued messages: Claude Code records them as "type":"queue-operation" lines
+# with no "role":"user", so the role grep already drops them; a dequeued
+# message lands as an ordinary user record and goes through the filters above.
+TRANSCRIPT=$(make_transcript 10 "show me the open PRs")
+printf '{"type":"queue-operation","operation":"enqueue","content":"ok calling it for today"}\n' >> "$TRANSCRIPT"
+output=$(run_hook_output "sess-queue-op" "$REPO_WITH_RULES" "$TRANSCRIPT")
+assert_silent "queue-operation record carrying wind-down wording does NOT trigger the nudge" "$output"
+rm -f "$TRANSCRIPT"
+
+# Positive control in the real transcript shape: a human-origin line still fires.
+TRANSCRIPT=$(make_transcript 9 "step 9")
+printf '{"type":"user","message":{"role":"user","content":"ok, wrap up for the day"},"origin":{"kind":"human"}}\n' >> "$TRANSCRIPT"
+output=$(run_hook_output "sess-human-origin" "$REPO_WITH_RULES" "$TRANSCRIPT")
+assert_contains "human-origin wind-down line (real transcript shape) still nudges" '"decision":"block"' "$output"
+rm -f "$TRANSCRIPT"
+
+# ── #3180 gate A: only the latest genuine user message is scanned ────────────
+echo ""
+echo "latest genuine user message only (#3180 gate A):"
+TRANSCRIPT=$(make_transcript 9 "thats it for the tests, calling it there")
+printf '{"role":"user","content":"now refactor the parser"}\n' >> "$TRANSCRIPT"
+output=$(run_hook_output "sess-older-winddown" "$REPO_WITH_RULES" "$TRANSCRIPT")
+assert_silent "wind-down phrase one message back does NOT nudge" "$output"
+rm -f "$TRANSCRIPT"
+
+# ── #3180 gate C: assistant just asked a question or proposed a next step ────
+echo ""
+echo "assistant question / next-step proposal (#3180 gate C):"
+TRANSCRIPT=$(make_transcript 10 "wrap up for the day")
+printf '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Committed. Is the PR title right before you go?"}]}}\n' >> "$TRANSCRIPT"
+output=$(run_hook_output "sess-asst-question" "$REPO_WITH_RULES" "$TRANSCRIPT")
+assert_silent "assistant ending with a question does NOT nudge" "$output"
+rm -f "$TRANSCRIPT"
+
+TRANSCRIPT=$(make_transcript 10 "wrap up for the day")
+printf '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Status: 3 of 5 done.\\n\\nNext step: wire the parser into the CLI."}]}}\n' >> "$TRANSCRIPT"
+output=$(run_hook_output "sess-asst-nextstep" "$REPO_WITH_RULES" "$TRANSCRIPT")
+assert_silent "assistant proposing a next step does NOT nudge" "$output"
+rm -f "$TRANSCRIPT"
+
+# Positive control: a plain closing assistant message keeps the nudge.
+TRANSCRIPT=$(make_transcript 10 "wrap up for the day")
+printf '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"All changes are committed and pushed."}]}}\n' >> "$TRANSCRIPT"
+output=$(run_hook_output "sess-asst-plain" "$REPO_WITH_RULES" "$TRANSCRIPT")
+assert_contains "plain closing assistant message still nudges" '"decision":"block"' "$output"
+rm -f "$TRANSCRIPT"
+
 # ── in-progress guard: wrap/end/distill already invoked ──────────────────────
 echo ""
 echo "in-progress guard (skill owns the flow):"
