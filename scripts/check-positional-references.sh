@@ -37,6 +37,14 @@
 #     list on the next line is adjacency, not a pointer, and is not matched.
 #   * `described|mentioned|noted|... earlier|previously|later`, `see earlier`.
 #     "Stated earlier in the session" is time, not position, and is exempt.
+#   * Placement phrases with no direction word (#2955, Lauri chose "narrow
+#     phrase guard"): `stating inline`, `listed here`, `on this page`,
+#     `shown here`. They assume the text sits on the page that holds its
+#     target, which a split into references/ breaks ("Four consequences worth
+#     stating inline" survived the 2026-10 sweep). Only these multi-word
+#     phrases match; bare `inline` / `here` are too common to guard, so a
+#     novel phrasing is a known miss. Name the target instead ("in this
+#     table", "in this index").
 #   Exempt shapes: "none/neither/all/any/both/either of the above", "same as
 #   above", a table cell that BEGINS with Above/Below (a row-relative pointer
 #   inside one table), a comparative ("30%+ below", "or more above"), and a
@@ -141,6 +149,8 @@ PARTICIPLE = re.compile(
     r"(earlier|previously|later)\b"
     r"(?!\s+in\s+(the|this)\s+(same\s+)?(session|conversation|thread))", re.I)
 SEE = re.compile(r"\bsee\s+(earlier|later)\b", re.I)
+PLACEMENT = re.compile(
+    r"\b(stating\s+inline|listed\s+here|on\s+this\s+page|shown\s+here)\b", re.I)
 EXEMPT_BEFORE = re.compile(
     r"((none|neither|all|any|both|either)\s+of\s+the|same\s+as)\s*$"
     r"|(\d%\+?|\bor\s+more|\bor\s+less)\s*$"
@@ -173,7 +183,7 @@ def hits_in(line, next_line):
         if EXEMPT_BEFORE.search(EMPHASIS.sub("", masked[:m.start()])):
             continue
         found.append(m.group(0))
-    for rx in (STRUCTURAL, PARTICIPLE, SEE):
+    for rx in (STRUCTURAL, PARTICIPLE, SEE, PLACEMENT):
         found.extend(m.group(0) for m in rx.finditer(masked))
     return found
 

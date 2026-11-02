@@ -20,6 +20,12 @@
 #   F. a baseline entry for a file that is gone is ERROR
 #   G. an empty tree fails loudly (nothing_scanned), never a silent OK
 #   H. templates/, fixtures/ and .claude/worktrees/ are not scanned
+#   I. placement phrases with no direction word (#2955): "stating inline",
+#      "listed here", "on this page", "shown here" are ERROR in a reference
+#      file and count toward the SKILL.md ratchet; the control restores the
+#      evaluate-skill references/harness-adaptation.md "worth stating inline"
+#      wording and expects ERROR; code, quoted, blockquoted and fenced uses
+#      stay silent
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -205,6 +211,67 @@ done
 run "$root" "$root/baseline.txt"
 assert "pruned directories exit 0" "$(rc_is 0)"
 assert "only the SKILL.md was scanned" "$(contains "$OUT" '^FILES_SCANNED=1$')"
+
+echo "=== TEST I: placement phrases without a direction word (#2955) ==="
+root="$(new_tree i)"
+cat >"$root/demo-plugin/skills/demo/references/phrases.md" <<'EOF'
+# Phrases
+
+Every flag is listed here with its default.
+The layout is shown here for the default path.
+Nothing on this page loads automatically.
+Three caveats worth Stating Inline:
+EOF
+run "$root" "$root/baseline.txt"
+assert "placement phrases exit 1" "$(rc_is 1)"
+assert "'listed here' is caught" "$(contains "$OUT" "references/phrases.md:3 says 'listed here'")"
+assert "'shown here' is caught" "$(contains "$OUT" "references/phrases.md:4 says 'shown here'")"
+assert "'on this page' is caught" "$(contains "$OUT" "references/phrases.md:5 says 'on this page'")"
+assert "'stating inline' is caught, case-insensitively" \
+  "$(contains "$OUT" "references/phrases.md:6 says 'Stating Inline'")"
+assert "four phrase hits counted" "$(contains "$OUT" '^ISSUE_COUNT=4$')"
+assert "phrase failure satisfies the contract" "$(validates "$OUT")"
+
+# Control: the wording that motivated #2955, restored into a copy of the real file.
+root="$(new_tree i-control)"
+real_ref="$repo_root/evaluate-plugin/skills/evaluate-skill/references/harness-adaptation.md"
+ctl_ref="$root/demo-plugin/skills/demo/references/harness-adaptation.md"
+assert "control source file exists" "$([ -f "$real_ref" ] && echo true || echo false)"
+assert "control source carries exactly one 'Four consequences:' line" \
+  "$([ "$(grep -c '^Four consequences:$' "$real_ref")" = 1 ] && echo true || echo false)"
+sed 's/^Four consequences:$/Four consequences worth stating inline:/' "$real_ref" >"$ctl_ref"
+assert "control fixture carries the restored wording" \
+  "$(grep -q '^Four consequences worth stating inline:$' "$ctl_ref" && echo true || echo false)"
+run "$root" "$root/baseline.txt"
+assert "restored harness-adaptation wording exits 1" "$(rc_is 1)"
+assert "restored wording is reported" \
+  "$(contains "$OUT" "references/harness-adaptation.md:[0-9]* says 'stating inline'")"
+assert "restored wording is the only hit" "$(contains "$OUT" '^ISSUE_COUNT=1$')"
+cp "$real_ref" "$ctl_ref"
+run "$root" "$root/baseline.txt"
+assert "the current harness-adaptation.md is clean" "$(rc_is 0)"
+
+root="$(new_tree i-exempt)"
+cat >"$root/demo-plugin/skills/demo/references/clean.md" <<'EOF'
+# Clean
+
+Inline `listed here` is code, and "shown here" is a quoted phrase.
+
+> A blockquote may say on this page.
+
+```text
+stating inline inside a fence
+```
+EOF
+run "$root" "$root/baseline.txt"
+assert "code, quoted, blockquoted and fenced phrases exit 0" "$(rc_is 0)"
+
+root="$(new_tree i-ratchet)"
+printf -- '---\nname: demo\ndescription: Fixture.\n---\n\nEvery option is listed here.\n' \
+  >"$root/demo-plugin/skills/demo/SKILL.md"
+run "$root" "$root/baseline.txt"
+assert "a phrase in SKILL.md counts toward the ratchet" \
+  "$(contains "$OUT" 'skills/demo/SKILL.md has 1 positional reference(s), baseline 0')"
 
 echo ""
 echo "=== SUMMARY: $pass_count passed, $fail_count failed ==="

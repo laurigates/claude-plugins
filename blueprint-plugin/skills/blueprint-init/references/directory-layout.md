@@ -21,7 +21,7 @@ The tree Step 6 produces.
    **Claude configuration (in .claude/):** — initial rules are written under
    `structure.generated_rules_path` (default `.claude/rules/`; an isolated
    subdirectory like `.claude/rules/blueprint/` when Step 4a detected existing
-   content), shown here at the default location:
+   content), shown at the default location:
    ```
    .claude/
    ├── rules/                       # $RULES_DIR — generated_rules_path (default .claude/rules/)

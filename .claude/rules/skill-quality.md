@@ -245,15 +245,21 @@ moves between files, and a reference file is read out of order: the 2026-10
 split sweep moved text into `references/` and left "see above" pointing at
 nothing.
 
+The same holds for placement wording with no direction word. "Worth stating
+inline", "listed here", "on this page" and "shown here" assume the sentence
+still sits on the page that holds its target; write "in this table" or "in this
+index" instead.
+
 | File | Direction pointers |
 |---|---|
 | `SKILL.md` | Tolerated only inside one short list or step sequence in the same section ("the steps below"); everything else names its target. The ratchet counts the tolerated case too, so new text names its target |
 | `REFERENCE.md`, `references/*.md`, other skill sidecars | None — these are always read out of context |
 
-`scripts/check-positional-references.sh` enforces it: any hit in a reference
-file is an error, and each `SKILL.md` is held at its count in
-`scripts/positional-references-baseline.txt`, so a new pointer fails and the
-baseline only goes down.
+`scripts/check-positional-references.sh` enforces it, including those four
+placement phrases (multi-word only; bare *inline* and *here* are not matched):
+any hit in a reference file is an error, and each `SKILL.md` is held at its
+count in `scripts/positional-references-baseline.txt`, so a new pointer fails
+and the baseline only goes down.
 
 ### What Goes Where
 
