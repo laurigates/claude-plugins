@@ -37,7 +37,7 @@ Parse these from `$ARGUMENTS`:
 | Parameter | Description |
 |-----------|-------------|
 | `--dry-run` | Show findings without creating issues |
-| `--confirmed` | The caller already confirmed this exact set of seed findings with `AskUserQuestion` (set by `session-plugin:session-end`). Step 4 is satisfied for those findings; it asks only if Step 3 dedup changed the set |
+| `--confirmed` | The caller pre-approved filing the seed findings (set by `session-plugin:session-end`, which files feedback without asking because feedback issues are triaged separately). Skip Step 4 and file the findings that survive Step 3 dedup. If Step 1 would need `AskUserQuestion` to pick the target repo, file nothing and return each finding as a `DEFERRED: <finding>` line |
 | `--bugs-only` | Only report bugs (wrong/outdated guidance) |
 | `--enhancements-only` | Only report enhancement opportunities |
 | `--positive-only` | Only report positive feedback |
@@ -159,10 +159,9 @@ Let the user select which findings to file as issues (use multiSelect).
 
 If `--dry-run`, present findings and stop here.
 
-**`--confirmed` satisfies this step** when the seed findings reach Step 5
-unchanged by dedup: the caller's `AskUserQuestion` was the confirmation of
-that selection set. If dedup dropped or merged any finding, ask about the
-changed set.
+**`--confirmed` skips this step**: the caller pre-approved filing, and dedup
+only removes findings, so the filed set is never larger than what was
+approved.
 
 **Auto mode does not skip this step.** Filing a GitHub issue is not reversible via `git restore` — closing an issue leaves noise in the issue tracker and notifies subscribers. Always confirm the selection set before Step 5, regardless of mode. To skip the prompt entirely, the user can pass `--dry-run` and re-run after reviewing.
 
