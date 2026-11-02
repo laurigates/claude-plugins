@@ -55,7 +55,7 @@ that shadows or redefines one (a local `parallel`, a patched
 Parsing uses the vendored acorn parser under node (lib/workflow-scale-parse.cjs).
 A syntax error is PARSE_ERROR. A parser that crashes, or times out twice (the
 retry absorbs a cold node start; each attempt is limited to
-CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT seconds, default 4), is ANALYSIS_ERROR, as is an error while
+CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT seconds, default 2), is ANALYSIS_ERROR, as is an error while
 walking a parsed script; the guard asks on all three, and when a run of this
 file exits non-zero or prints no VERDICT. Only a machine without node falls
 back to the pre-parser estimator (lib/workflow-scale-estimate-fallback.py),
@@ -87,17 +87,20 @@ LOOPS = {
 NOT_LITERAL = "not a literal array or .slice(0, N)"
 
 
-PARSE_TIMEOUT_DEFAULT = 4.0
+PARSE_TIMEOUT_DEFAULT = 2.0
 
 
 def parse_timeout() -> float:
-    """Seconds per parser attempt: CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT, else 4.
+    """Seconds per parser attempt: CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT, else 2.
 
-    The hook keeps the 4 s default (it sits in front of an interactive tool
-    call). scripts/check-workflow-js-model.sh, a CI guard with no latency
-    budget, raises it so a cold node start on a loaded runner that outlasts
-    two 4 s attempts is not reported as estimator_error (#3005, #2975). A
-    value that is not a positive finite number means the default.
+    The hook keeps the 2 s default: two attempts take about 4 s at worst,
+    inside the hook's 5 s budget in plugin.json, so a double timeout reaches
+    ANALYSIS_ERROR and asks instead of the runtime killing the hook and the
+    Workflow call running unchecked (#3093). scripts/check-workflow-js-model.sh,
+    a CI guard with no latency budget, raises it so a cold node start on a
+    loaded runner that outlasts both attempts is not reported as
+    estimator_error (#3005, #2975). A value that is not a positive finite
+    number means the default.
     """
     raw = os.environ.get("CLAUDE_HOOKS_WORKFLOW_PARSE_TIMEOUT", "").strip()
     try:
