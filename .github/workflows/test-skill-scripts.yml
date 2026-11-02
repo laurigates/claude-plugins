@@ -58,6 +58,9 @@ on:
       # scripts/tests/test-auto-resolve-workflow-gate.sh extracts and runs the
       # merge step of this workflow.
       - '.github/workflows/auto-resolve-conflicts.yml'
+      # scripts/tests/test-obsidian-cli-changelog-transcript.sh pins this
+      # workflow's transcript redact + upload steps (#2765).
+      - '.github/workflows/obsidian-cli-changelog.yml'
       # Case I of scripts/tests/test-script-to-issue-guard.sh reads the
       # action's script wiring and workflow-model-audit's prefix/--title, so a
       # PR touching only either file must still run it.
@@ -110,6 +113,7 @@ on:
       - '.github/actions/script-to-issue/**'
       - '.github/workflows/workflow-model-audit.yml'
       - '.github/workflows/auto-resolve-conflicts.yml'
+      - '.github/workflows/obsidian-cli-changelog.yml'
       - '.claude/workflows/**'
       # Mirrors the pull_request list above (see the #2994 note there).
       - 'comfyui-plugin/skills/comfy-cli/references/pitfalls.md'
