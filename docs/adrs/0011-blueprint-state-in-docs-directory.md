@@ -1,6 +1,7 @@
 ---
 id: ADR-0011
 status: Accepted
+domain: documentation
 deciders: Blueprint Plugin Maintainers
 date: 2026-01-09
 created: 2026-01-09

@@ -2,9 +2,9 @@
 id: PRP-001
 implements:
   - PRD-001
-status: draft
+status: complete
 created: 2026-01-09
-modified: 2026-01-09
+modified: 2026-11-02
 reviewed: 2026-01-09
 confidence: 7/10
 domain: documentation
@@ -13,11 +13,13 @@ domain: documentation
 # PRP: Automatic Document Management
 
 **Created**: 2026-01-09
-**Modified**: 2026-01-09
-**Status**: Draft
+**Modified**: 2026-11-02
+**Status**: Complete
 **Priority**: P1 - High Impact Feature
 **Confidence**: 7/10
 **Related ADRs**: [ADR-0010](../adrs/0010-proactive-document-detection.md), [ADR-0011](../adrs/0011-blueprint-state-in-docs-directory.md)
+
+> **Complete (recorded 2026-11-02):** implemented as the `blueprint-plugin:document-detection` skill (PRD-001 is Completed). The subagent delegation steps below name agents that ADR-0009 deleted; the skill hands off to `/blueprint:derive-plans` and `/blueprint:prp-create` instead.
 
 ---
 
