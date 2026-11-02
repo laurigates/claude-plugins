@@ -295,7 +295,8 @@ jobs:
       - name: Gate plugin license and author metadata (#2698, #2699)
         # Whole-repo invariant, always-on: every */.claude-plugin/plugin.json
         # and every .claude-plugin/marketplace.json entry declares a `license`
-        # from the allowlist (["MIT"]) and an `author.name`. The full
+        # from the allowlist (["MIT"]), an `author.name` and a `repository`
+        # (#2772; `homepage` deliberately not required). The full
         # compliance run above cannot gate this: it is advisory (`|| true`) and
         # scoped to the changed plugins, so a marketplace.json-only edit would
         # never be checked. `--license-only` runs just these predicates over

@@ -15,5 +15,6 @@
   "author": {
     "name": "Lauri Gates"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "repository": "https://github.com/laurigates/claude-plugins"
 }
