@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-09-06
+modified: 2026-11-02
 reviewed: 2026-02-06
 name: justfile-expert
 description: Just command runner expertise — Justfile syntax, recipes, parameters, modules, shebang recipes. Use when authoring justfiles, project commands, or task automation.
@@ -197,6 +197,10 @@ open:
 open:
     start http://localhost:8080
 ```
+
+## Gotchas
+
+Sub-justfile settings and nested `just -f` calls, path arguments that resolve against the justfile directory, top-level backticks that run for every recipe, keep-awake wrappers, and notifier hooks: [references/gotchas.md](references/gotchas.md).
 
 ## Common Patterns
 
