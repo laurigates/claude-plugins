@@ -47,6 +47,8 @@
 #   O. dispatch-only (#2935): workflow_dispatch is the sole trigger, no
 #      pull_request/pull_request_target trigger, no PR head ref is read, and
 #      every `git push` targets the split branch
+#   P. a skill carrying a `<!-- skill-size-exception: <pinning check> -->`
+#      marker is skipped, matching the gate's WARN; an empty marker is not (#2954)
 #
 # SKILL_SPLITTER_WORKFLOW overrides the workflow under test, so L-O can be
 # shown red against a pre-fix file.
@@ -170,6 +172,23 @@ grep -v '^SKILL_SIZE_WARN_CHARS=' "$gate" > "$root/scripts/plugin-compliance-che
 missing_err=$(cd "$root" && bash scripts/select-split-candidates.sh --all 2>&1 >/dev/null); rc=$?
 assert_eq "K. a gate without the assignment makes the selector exit 2" "$rc" "2"
 assert_eq "K. ...and says why" "$(grep -c 'SKILL_SIZE_WARN_CHARS' <<<"$missing_err")" "1"
+cp "$gate" "$root/scripts/"
+
+# P (#2954): a skill carrying `<!-- skill-size-exception: <pinning check> -->`
+# is skipped; a marker that names no check does not exempt it.
+write_skill "$root/c-plugin/skills/marked/SKILL.md" 14000 30
+printf '<!-- skill-size-exception: scripts/check-loop-integrity.sh -->\n' >> "$root/c-plugin/skills/marked/SKILL.md"
+write_skill "$root/c-plugin/skills/empty-marker/SKILL.md" 13000 30
+printf '<!-- skill-size-exception: -->\n' >> "$root/c-plugin/skills/empty-marker/SKILL.md"
+write_skill "$root/c-plugin/skills/unmarked/SKILL.md" 12000 30
+assert_eq "P. a marked skill is skipped; empty-marker and unmarked skills are selected" \
+  "$(run_sel --plugin c-plugin)" \
+  "$(printf '%s\n' c-plugin/skills/empty-marker/SKILL.md c-plugin/skills/unmarked/SKILL.md)"
+assert_eq "P. an explicit path to a marked skill is skipped too" \
+  "$(run_sel c-plugin/skills/marked/SKILL.md)" ""
+grep -v '^SKILL_SIZE_EXCEPTION_RE=' "$gate" > "$root/scripts/plugin-compliance-check.sh"
+(cd "$root" && bash scripts/select-split-candidates.sh --all >/dev/null 2>&1); rc=$?
+assert_eq "P. a gate without the marker regex makes the selector exit 2" "$rc" "2"
 cp "$gate" "$root/scripts/"
 
 echo "=== skill-splitter workflow ($(basename "$workflow")) ==="
