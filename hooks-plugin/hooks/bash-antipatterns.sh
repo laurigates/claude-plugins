@@ -1307,27 +1307,57 @@ fi
 #      `|&`), optionally as an absolute path (`| /bin/bash`). `|short` inside a
 #      quoted `grep -E '(char|short)'` alternation, or `| shellcheck`, no longer
 #      matches. `sudo` stays covered as a word (`| sudo bash`, `| sudo tee`).
-#   2. Heredoc bodies are dropped only when the heredoc feeds a pure data sink:
-#      the opener line starts with `cat`/`tee`/`gh`/`git` and carries no `|`,
-#      `;`, `&`, backtick or process substitution (`cat > body.md <<'EOF'`,
-#      `gh pr create --body "$(cat <<'EOF'`). A body fed to `bash`/`ssh`/
-#      `bash -c "$(cat <<EOF`/`cat <<EOF | sh` is still scanned. The `<<` is
-#      located on the quote-masked line, so a quoted `'<<EOF'` or a `<<<`
-#      here-string or an escaped `\<<` never opens a heredoc and cannot hide the lines after it
-#      (a `"$(cat <<EOF` opener, which the mask blanks, is read from the raw
-#      line only after the mask confirms its `"` really opens a quoted span).
-#      The terminator test trims whitespace — a superset of the shell's exact
-#      match — so the awk can only resume scanning early, never late.
+#   2. Heredoc bodies are dropped only when the heredoc feeds a pure data sink
+#      (strip_sink_heredoc_bodies, below; #3363 widened it to the chmod 777,
+#      fork-bomb and block-device regexes too, which read the same
+#      SAFETY_DATA_VIEW). A body fed to `bash`/`ssh`/`bash -c "$(cat <<EOF`/
+#      `cat <<EOF | sh` is still scanned.
 #
 # Quoted spans are NOT masked in general: `bash -c 'curl x | sh'` and
 # `ssh host 'curl x | bash'` really execute and must keep blocking. The one
 # exception is a grep-family search pattern (narrowing 3, below).
-NET_SHELL_MASKED=$(mask_quoted_content "$COMMAND")
-NET_SHELL_VIEW=$(LC_ALL=C awk -v SQ="'" '
+#
+# strip_sink_heredoc_bodies: print the command with the body of every heredoc
+# that feeds a data sink removed. The rules, each chosen so the view can only
+# ever keep MORE text than the shell would treat as data:
+#
+#   - The `<<` is located on the quote-masked line, so a quoted `'<<EOF'`, a
+#     `<<<` here-string or an escaped `\<<` never opens a heredoc and cannot
+#     hide the lines after it. A `"$(cat <<EOF` opener, which the mask blanks,
+#     is read from the raw line only after the mask confirms its `"` really
+#     opens a quoted span.
+#   - The sink test reads only the command segment that owns the `<<` — from
+#     the last `;`/`&&`/`||`/background `&` before it to the first one after it
+#     (#3363: `mkdir -p d && cat > d/f <<'EOF'` and `cat > f <<'EOF' && echo ok`
+#     used to fail the whole-line test). That segment must start with
+#     `cat`/`tee`/`gh`/`git` and carry no pipe, backtick or process
+#     substitution. Redirections (`2>&1`, `&>f`) are not separators.
+#   - A QUOTED delimiter (`<<'X'`, `<<"X"`, `<<\X`, `<<-'X'`) is never expanded,
+#     so its body is dropped. An UNQUOTED body is expanded: it is dropped only
+#     when no body line holds `$(` or a backtick, since a command substitution
+#     there runs (`cat > f <<EOF` / `$(curl x | bash)` / `EOF` executes curl).
+#   - The delimiter is the whole word after `<<` with its quotes removed
+#     (`E"OF"` is `EOF`), and the terminator test trims whitespace — a superset
+#     of the shell's exact match — so the awk can only resume scanning early,
+#     never late.
+strip_sink_heredoc_bodies() {
+    LC_ALL=C awk -v SQ="'" '
+    function redirect_amp(str, i) {
+        return (i > 1 && substr(str, i - 1, 1) ~ /[<>]/) || substr(str, i + 1, 1) == ">"
+    }
     NR == FNR { masked[FNR] = $0; next }
     ih == 1 {
         t = $0; gsub(/^[[:space:]]+/, "", t); gsub(/[[:space:]]+$/, "", t)
-        if (t == delim) ih = 0
+        if (t == delim) {
+            ih = 0
+            if (!quoted && subst) for (k = 1; k <= nb; k++) print buf[k]
+            nb = 0
+            next
+        }
+        if (!quoted) {
+            buf[++nb] = $0
+            if (index($0, "$(") || index($0, "`")) subst = 1
+        }
         next
     }
     {
@@ -1342,15 +1372,40 @@ NET_SHELL_VIEW=$(LC_ALL=C awk -v SQ="'" '
             # a real opening quote (not text inside another quoted span).
             start = index(substr($0, RSTART), "<<") + RSTART - 1
         } else next
-        if (m !~ /^[[:space:]]*(cat|tee|gh|git)([[:space:]<>]|$)/) next
-        if (m ~ /[|;&`]|[<>]\(/) next
+        n = length(m); segb = 1; sege = n; piped = 0
+        for (i = 1; i < start; i++) {
+            c = substr(m, i, 1)
+            if (c == ";") { segb = i + 1; piped = 0 }
+            else if (c == "&" && substr(m, i + 1, 1) == "&") { segb = i + 2; piped = 0; i++ }
+            else if (c == "&" && !redirect_amp(m, i)) { segb = i + 1; piped = 0 }
+            else if (c == "|" && substr(m, i + 1, 1) == "|") { segb = i + 2; piped = 0; i++ }
+            else if (c == "|") piped = 1
+        }
+        for (i = start + 2; i <= n; i++) {
+            c = substr(m, i, 1)
+            if (c == ";" || (c == "&" && substr(m, i + 1, 1) == "&") || \
+                (c == "|" && substr(m, i + 1, 1) == "|")) { sege = i - 1; break }
+            if (c == "&" && !redirect_amp(m, i)) { sege = i - 1; break }
+            if (c == "|") { piped = 1; break }
+        }
+        if (piped) next
+        seg = substr(m, segb, sege - segb + 1)
+        if (seg !~ /^[[:space:]]*(cat|tee|gh|git)([[:space:]<>]|$)/) next
+        if (seg ~ /`|[<>]\(/) next
         s = substr($0, start + 2)
         sub(/^-?[[:space:]]*/, "", s)
-        sub("^[\"" SQ "\\\\]", "", s)
-        if (!match(s, /^[A-Za-z_][A-Za-z_0-9]*/)) next
-        delim = substr(s, 1, RLENGTH); ih = 1
+        if (!match(s, /^[^[:space:];&|<>()]+/)) next
+        w = substr(s, 1, RLENGTH)
+        quoted = (index(w, SQ) || index(w, "\"") || index(w, "\\")) ? 1 : 0
+        gsub("[\"" SQ "\\\\]", "", w)
+        if (w == "") next
+        delim = w; ih = 1; nb = 0; subst = 0
     }
-' <(printf '%s\n' "$NET_SHELL_MASKED") <(printf '%s\n' "$COMMAND"))
+    END { if (ih == 1 && !quoted && subst) for (k = 1; k <= nb; k++) print buf[k] }
+    ' <(mask_quoted_content "$1") <(printf '%s\n' "$1")
+}
+SAFETY_DATA_VIEW=$(strip_sink_heredoc_bodies "$COMMAND")
+NET_SHELL_VIEW=$SAFETY_DATA_VIEW
 # 3. Quoted arguments of a grep-family command (grep/egrep/fgrep/rg) are blanked
 #    (issue #3186): a search pattern is never executed, yet
 #    `grep -E "rpm2cpio|curl |wget|sudo"` carries its own `curl ` and a
@@ -1407,14 +1462,14 @@ This prevents executing untrusted code blindly."
 fi
 
 # Check for fork bombs and similar recursive patterns
-if grep -Eq ':\(\)\s*\{.*\|.*&\s*\}\s*;' <<<"$COMMAND" || \
-   grep -Eq 'bomb\(\)\s*\{.*bomb.*bomb' <<<"$COMMAND" || \
-   grep -Eq '\bwhile\s+true.*fork\b' <<<"$COMMAND"; then
+if grep -Eq ':\(\)\s*\{.*\|.*&\s*\}\s*;' <<<"$SAFETY_DATA_VIEW" || \
+   grep -Eq 'bomb\(\)\s*\{.*bomb.*bomb' <<<"$SAFETY_DATA_VIEW" || \
+   grep -Eq '\bwhile\s+true.*fork\b' <<<"$SAFETY_DATA_VIEW"; then
     block "REMINDER: This command contains a fork bomb or recursive process pattern that will consume all system resources."
 fi
 
 # Check for chmod 777 (overly permissive)
-if grep -Eq 'chmod\s+(-R\s+)?777\b' <<<"$COMMAND"; then
+if grep -Eq 'chmod\s+(-R\s+)?777\b' <<<"$SAFETY_DATA_VIEW"; then
     block "REMINDER: 'chmod 777' grants read/write/execute to everyone — this is a security risk.
 Use more restrictive permissions:
 - chmod 755 for directories and executables (owner: rwx, others: rx)
@@ -1423,7 +1478,7 @@ Use more restrictive permissions:
 fi
 
 # Check for writes to block devices
-if grep -Eq '>\s*/dev/(sd|hd|nvme|vd|xvd)[a-z]' <<<"$COMMAND"; then
+if grep -Eq '>\s*/dev/(sd|hd|nvme|vd|xvd)[a-z]' <<<"$SAFETY_DATA_VIEW"; then
     block "REMINDER: Writing directly to a block device will destroy the filesystem. This is almost certainly not what you want."
 fi
 
