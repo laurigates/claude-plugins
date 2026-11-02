@@ -587,6 +587,27 @@ def _parser_module():
     return mod
 
 
+def test_sed_unresolved_and_awk_crash_have_own_signatures():
+    """2026-W45: 34 `hook:bash-antipatterns:other` events were two shapes --
+    24 `awk: towc: multibyte conversion failure` crashes of the hook itself
+    (#3313) and 10 `sed -i` blocks naming an unresolved operand. Each gets its
+    own key; the unmatched control stays in `:other`.
+    """
+    prefix = (
+        "PreToolUse:Bash hook error: "
+        "[bash ${CLAUDE_PLUGIN_ROOT}/hooks/bash-antipatterns.sh]: "
+    )
+    mod = _parser_module()
+    cases = {
+        "the 'sed -i' operand '$f' could not be resolved to a file.": "sed-unresolved",
+        "awk: towc: multibyte conversion failure on: 'x'": "awk-multibyte-crash",
+        "REMINDER: 'some-future-antipattern' is not recognized.": "other",
+    }
+    for body, detector in cases.items():
+        sig = mod.canonical_signature("hook_block", "Bash", prefix + body)
+        assert sig == f"hook:bash-antipatterns:{detector}", (body, sig)
+
+
 def test_external_pr_merge_guard_block_has_own_signature():
     """2026-W43: `external-pr-merge-guard.sh` denials ("Refusing to merge …")
     had no needle, so they fell through to `hook:unclassified` -- 13 of the

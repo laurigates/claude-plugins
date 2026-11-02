@@ -220,6 +220,11 @@ def canonical_signature(kind: str, tool: str, evidence: str) -> str:
                 # Quoted-token needles first: the narrowest tests, and the
                 # ones whose shared lead-in would otherwise cross-match.
                 ("instead of 'sed -i'", "sed-inplace"),
+                # Not REMINDER-format: the sed block that names an operand it
+                # could not resolve, and the hook's own awk crash under a
+                # non-UTF-8 locale (#3313). Neither contains an earlier needle.
+                ("the 'sed -i' operand", "sed-unresolved"),
+                ("awk: towc: multibyte conversion failure", "awk-multibyte-crash"),
                 ("instead of 'awk'", "awk-edit"),
                 # Unshared prose; order among these is not load-bearing.
                 ("'timeout' command is usually unnecessary", "timeout"),
