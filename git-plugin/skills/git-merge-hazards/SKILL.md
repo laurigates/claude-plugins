@@ -3,7 +3,7 @@ name: git-merge-hazards
 description: Traps in GitHub's merge machinery. Use when merging a PR, merging a stacked or serial PR chain, auditing whether a branch really landed, or merging over red CI.
 allowed-tools: Read, Grep, Glob, Bash(gh pr *), Bash(gh issue *), Bash(gh api *), Bash(git cherry *), Bash(git merge-tree *), Bash(git rev-parse *), Bash(git rev-list *), Bash(git log *), Bash(git reflog *), Bash(git rebase *), Bash(git merge *), Bash(git checkout *), Bash(git worktree *), Bash(git diff *), Bash(git add *), Bash(git commit *), Bash(git -C *), Bash(git merge-base *), Bash(grep *), Bash(awk *), Bash(jq *), Bash(git push *), Bash(git fetch *), Bash(git cat-file *), Bash(sleep *), Bash(just *), Bash(bash *), TodoWrite
 created: 2026-08-19
-modified: 2026-10-28
+modified: 2026-11-02
 reviewed: 2026-08-21
 ---
 
@@ -100,6 +100,9 @@ run was 21 days old; main hadn't compiled for three weeks).
 A `500` from the merge call may be GitHub, not the PR: run the stale-SHA control in
 [references/merge-endpoint-failures.md](references/merge-endpoint-failures.md) before changing the PR.
 
+Several PRs, ruleset requiring branches up to date: run `scripts/merge-chain.sh`
+(§6); a plain merge leaves the rest `BEHIND`.
+
 ## 5. A **negated** closing keyword still closes the issue
 
 GitHub matches `close|fixes|resolves|…` + an issue reference without parsing the
@@ -130,10 +133,10 @@ PR changing that bot goes last. See [references/serial-merge-chain.md](reference
 
 ## Merge shepherd
 
-For an ordered PR list run `scripts/merge-chain.sh`. Dispatch one agent only on
-`STATUS=CONFLICT`/`CI_RED`; its fix is unreviewed code, so route it through
-`workflow-orchestration-plugin:workflow-implement-verify`'s `repair-round`
-before resuming: [references/merge-shepherd.md](references/merge-shepherd.md).
+For an ordered PR list run `scripts/merge-chain.sh`. An agent's `CONFLICT`/`CI_RED`
+fix is unreviewed: pass it through
+`workflow-orchestration-plugin:workflow-implement-verify`'s `repair-round`:
+[references/merge-shepherd.md](references/merge-shepherd.md).
 
 ## Agentic Optimizations
 
@@ -143,4 +146,3 @@ before resuming: [references/merge-shepherd.md](references/merge-shepherd.md).
 | Can a red PR merge? (§4) | `gh pr view <n> --json mergeStateStatus,mergeable` — `UNSTABLE` merges, `BLOCKED` refuses |
 | Merge-over-red evidence (§4) | `gh pr view <n> --json files --jq '.files[].path'` and `gh run list --branch main --workflow <wf> -L 1 --json conclusion,createdAt` |
 | Before a force-push (§3) | `git log --oneline origin/main..<sha>` — exactly the child's commits |
-| Who closed an issue (§5) | `gh issue view <n> --json closedByPullRequestsReferences,closedAt` |

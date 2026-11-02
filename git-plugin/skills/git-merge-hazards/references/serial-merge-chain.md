@@ -4,6 +4,35 @@ Detail for [§6 of SKILL.md](../SKILL.md#6-a-serial-merge-chain-merges-commits-n
 Open it before scripting a loop that updates, waits for, and merges several PRs
 in sequence.
 
+## When a batch of plain merges needs this chain
+
+§4 of SKILL.md says an `UNSTABLE` PR merges with a plain `gh pr merge`. That holds
+for one PR. When the branch ruleset requires branches to be up to date before
+merging, each merge moves `main` and leaves every remaining PR `BEHIND`, so only
+the first merge of a batch goes through. The rest fail with:
+
+```
+GraphQL: Repository rule violations found
+
+3 of 3 required status checks are expected.
+
+ (mergePullRequest)
+```
+
+That error (`Repository rule violations found` … `N of N required status checks
+are expected`) is the tell for a `BEHIND` PR under a strict ruleset: the PR is
+not red, it needs `gh pr update-branch` and a fresh CI run first. Check the
+ruleset before a multi-PR merge (`gh api repos/<owner>/<repo>/rules/branches/main`
+lists a `required_status_checks` rule whose `strict_required_status_checks_policy`
+is `true`), and if it is strict, run the PRs through `scripts/merge-chain.sh`,
+which updates, waits for the required checks, and merges each PR in turn.
+
+> 2026-10-29 (`laurigates/dotfiles`): four `UNSTABLE` PRs (#534, #533, #530,
+> #531) were batch-merged with `gh pr merge --squash`. #534 merged; the other
+> three went `BEHIND` and failed with that rule-violation error. Each then needed
+> `gh pr update-branch <n>`, `gh pr checks <n> --required --watch`, and
+> `gh pr merge --squash --match-head-commit <new head>`.
+
 ## The mechanism
 
 A serial merge loop runs, for each PR: `gh pr update-branch`, wait for green,
