@@ -1,6 +1,6 @@
 ---
 created: 2026-05-29
-modified: 2026-07-29
+modified: 2026-11-02
 reviewed: 2026-07-29
 paths:
   - "**/SKILL.md"
@@ -70,7 +70,7 @@ What is skill-scoped (update on merge/delete) vs what is **not**:
 Skills are **not** individually registered anywhere a plugin is — adding or
 deleting a skill needs no `marketplace.json` / release-config edit. (A
 subagent's generic "deletion checklist" got this wrong; verify against the
-actual `Plugin Lifecycle` section of the `/plugin-authoring` skill, which is
+actual `Plugin Lifecycle` section of the `/marketplace-authoring` skill, which is
 plugin-scoped.)
 
 Mechanics:
@@ -115,4 +115,4 @@ description carries the traceability instead.
 - `skill-quality.md` — size limits, description length band (≤200)
 - `skill-naming.md` — `plugin:skill` namespacing (the cross-plugin reference form)
 - `git-plugin:git-upstream-fix-check` / repo debugging discipline — the "verify the premise before acting" principle this rule applies to refactors
-- `/plugin-authoring` § Plugin Lifecycle — the **plugin**-level add/delete checklist (distinct from skill-level)
+- `/marketplace-authoring` § Plugin Lifecycle — the **plugin**-level add/delete checklist (distinct from skill-level)

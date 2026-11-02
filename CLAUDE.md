@@ -78,7 +78,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 
 ## Authoring Skills and Plugins
 
-Invoke `/plugin-authoring` — it carries the create-a-skill and create-a-user-invocable-skill frontmatter shapes, the seven metadata files a plugin add/delete must touch, and the development workflow. All four are procedures with a clear trigger, so they live in a skill rather than here (#2140).
+Invoke `/marketplace-authoring` — it carries the create-a-skill and create-a-user-invocable-skill frontmatter shapes, the seven metadata files a plugin add/delete must touch, and the development workflow. All four are procedures with a clear trigger, so they live in a skill rather than here (#2140).
 
 ## Agentic Optimization
 
