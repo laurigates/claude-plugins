@@ -50,6 +50,7 @@ JSON
   "description": "A plugin with explicit author and license",
   "author": {"name": "Fixture Author", "url": "https://example.invalid/fixture"},
   "license": "MIT",
+  "repository": "https://example.invalid/fixture-repo",
   "keywords": ["testing"]
 }
 JSON
@@ -180,6 +181,28 @@ print("%s|%s|%s" % (a.get("name","") if isinstance(a,dict) else "", a.get("url",
   [ "$licensed_meta" = "Fixture Author|https://example.invalid/fixture|MIT" ] \
     && pass "fix mode: generated entry mirrors the manifest's author + license" \
     || fail "fix mode: generated entry did not mirror manifest author/license. Got: '$licensed_meta'"
+
+  # #2772: a generated entry carries `repository` (homepage is deliberately
+  # omitted). valid-plugin's manifest has none, so it takes the marketplace
+  # default; licensed-plugin's entry mirrors its own manifest.
+  entry_field() {
+    python3 -c 'import json,sys
+e=[p for p in json.load(open(sys.argv[1]))["plugins"] if p["name"]==sys.argv[2]]
+print((e[0] if e else {}).get(sys.argv[3], "<absent>"))' \
+      "$repo/.claude-plugin/marketplace.json" "$1" "$2"
+  }
+  valid_repo=$(entry_field valid-plugin repository)
+  [ "$valid_repo" = "https://github.com/laurigates/claude-plugins" ] \
+    && pass "fix mode: generated entry carries the default repository" \
+    || fail "fix mode: generated entry lacks the default repository. Got: '$valid_repo'"
+  licensed_repo=$(entry_field licensed-plugin repository)
+  [ "$licensed_repo" = "https://example.invalid/fixture-repo" ] \
+    && pass "fix mode: generated entry mirrors the manifest's repository" \
+    || fail "fix mode: generated entry did not mirror manifest repository. Got: '$licensed_repo'"
+  valid_homepage=$(entry_field valid-plugin homepage)
+  [ "$valid_homepage" = "<absent>" ] \
+    && pass "fix mode: generated entry omits homepage" \
+    || fail "fix mode: generated entry carries homepage. Got: '$valid_homepage'"
 
   # Verify version mismatch was fixed in marketplace to match manifest
   marketplace_mismatch_version=$(grep -A 8 '"name": "mismatch-plugin"' "$repo/.claude-plugin/marketplace.json" | grep '"version"' | awk -F'"' '{print $4}')

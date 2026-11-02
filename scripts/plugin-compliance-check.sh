@@ -6,7 +6,7 @@ set -euo pipefail
 # Usage: ./scripts/plugin-compliance-check.sh [--license-only] [plugin1 plugin2 ...]
 # If no plugins are named, auto-detects all *-plugin directories
 #
-# --license-only (#2699): run ONLY the license/author metadata predicates over
+# --license-only (#2699): run ONLY the license/author/repository (#2772) metadata predicates over
 # each plugin.json and its marketplace.json entry, print the structured
 # === LICENSE === block, and exit 1 on any finding. This is the mode CI gates
 # on: the full run is advisory in plugin-pr-checks.yml (`|| true`, posted as a
@@ -81,18 +81,22 @@ entries_checked=0
 missing_license=0
 disallowed_license=0
 missing_author=0
+missing_repository=0
 
 # check_license_fields <plugin> <surface> <label> <json>
 #   surface: plugin.json | marketplace.json (the structured SURFACE= value)
 #   label:   prefix for the human-readable ❌ line
 # Every manifest and every marketplace entry must declare a `license` from
-# ALLOWED_LICENSES and an `author.name`. Both manifest schemas define `license`
-# as an SPDX string and `author` as an object with a required `name`, so a
-# non-string license or a bare-string author counts as missing. Each defect is
-# a blocking ❌ issue plus a structured row; returns 2 on any defect, else 0.
+# ALLOWED_LICENSES, an `author.name`, and a `repository` (#2772). Both manifest
+# schemas define `license` as an SPDX string, `author` as an object with a
+# required `name`, and `repository` as a string, so a non-string license or
+# repository, or a bare-string author, counts as missing. `homepage` is
+# deliberately not required: for a single-repo marketplace it would repeat the
+# repository URL (decision recorded on #2772, 2026-11-01). Each defect is a
+# blocking ❌ issue plus a structured row; returns 2 on any defect, else 0.
 check_license_fields() {
   local plugin="$1" surface="$2" label="$3" json="$4"
-  local license author_name allowed a status=0 is_allowed=false
+  local license author_name repository allowed a status=0 is_allowed=false
   allowed=$(IFS=,; echo "${ALLOWED_LICENSES[*]}")
 
   if [ "$surface" = "plugin.json" ]; then
@@ -103,6 +107,7 @@ check_license_fields() {
 
   license=$(jq -r '(.license | strings) // ""' <<<"$json" 2>/dev/null || echo "")
   author_name=$(jq -r '(.author | objects | .name | strings) // ""' <<<"$json" 2>/dev/null || echo "")
+  repository=$(jq -r '(.repository | strings) // ""' <<<"$json" 2>/dev/null || echo "")
 
   for a in "${ALLOWED_LICENSES[@]}"; do
     if [ "$license" = "$a" ]; then
@@ -129,6 +134,13 @@ check_license_fields() {
     status=2
   fi
 
+  if [ -z "$repository" ]; then
+    issues+=("❌ ${plugin}: ${label} missing 'repository'")
+    license_rows+=("  - SEVERITY=ERROR TYPE=missing_repository SURFACE=${surface} PLUGIN=${plugin}")
+    missing_repository=$((missing_repository + 1))
+    status=2
+  fi
+
   return "$status"
 }
 
@@ -146,6 +158,7 @@ emit_license_report() {
   echo "MISSING_LICENSE=${missing_license}"
   echo "DISALLOWED_LICENSE=${disallowed_license}"
   echo "MISSING_AUTHOR=${missing_author}"
+  echo "MISSING_REPOSITORY=${missing_repository}"
   echo "STATUS=${status}"
   echo "ISSUE_COUNT=${#license_rows[@]}"
   if [ ${#license_rows[@]} -gt 0 ]; then
