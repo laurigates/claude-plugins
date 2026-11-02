@@ -1,0 +1,29 @@
+# Issues exempt from the grouping requirement (.claude/rules/issue-grouping.md).
+#
+# Single source of truth: scripts/check-issue-grouping.sh reads this file, and
+# the issue-resolving Routine (docs/routines/resolve-claude-plugins-issues.md)
+# runs that script rather than restating the list.
+#
+# These are recurring machine-filed or feedback issues. Each one stands alone
+# (a dated report, a rolling dashboard, a feedback record), so grouping them
+# under an epic adds nothing. Their lifecycle is tracked in #3346.
+#
+# Format, one entry per line:
+#   label <name>     exempt any issue carrying this label
+#   title <regex>    exempt any issue whose title matches (jq test(), case-sensitive)
+label epic
+label research-radar
+label agentic-audit
+label infra-compliance
+label blueprint-health
+label golden-set-eval
+label changelog-review
+label stranded-work
+label fleet-drift
+label config-drift
+label positive-feedback
+label session-feedback
+label audit-liveness
+label docs-index
+label workflow-model-audit
+title ^Dependency Dashboard$
