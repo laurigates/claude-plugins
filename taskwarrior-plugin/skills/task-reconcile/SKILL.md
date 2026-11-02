@@ -5,7 +5,7 @@ args: "[--apply] [--project=<name>] [--all]"
 allowed-tools: Bash(task *), Bash(gh issue *), Bash(gh pr *), Bash(jq *), Bash(bash *), Bash(git rev-parse *), Read, TodoWrite
 argument-hint: optional --apply to close (default dry-run preview)
 created: 2026-06-20
-modified: 2026-07-17
+modified: 2026-11-02
 reviewed: 2026-07-02
 ---
 
@@ -20,7 +20,10 @@ A task is "linked" whether it carries a `ghid`/`ghpr` UDA **or** references an
 issue/PR in its description/annotation text (a `#N`, an `owner/repo#N`, or a
 `github.com/owner/repo/(issues|pull)/N` URL) — so tasks filed with a plain
 `#N` in the description are reconciled too, and a cross-repo `owner/repo#N` is
-checked against *that* repo, not the current one.
+checked against *that* repo, not the current one. Only a `ghid`/`ghpr` UDA can
+close a task: a task linked by text refs alone gets verdict `review` when its
+items are done, and is reported but never closed, because tasks often cite a
+merged PR as context for work that is still open (#3126).
 
 ## When to Use This Skill
 
@@ -76,13 +79,17 @@ bash "${CLAUDE_SKILL_DIR}/scripts/reconcile.sh" --project=PROJECT --project-dir 
 ```
 
 It emits one `TASK ...` line per linked task with its `refs` count, `upstream`
-state(s), a `verdict` (`live` / `issue-closed` / `pr-merged` / `pr-closed`), and
+state(s), a `verdict` (`live` / `issue-closed` / `pr-merged` / `pr-closed` /
+`review`), and
 the close `method` it would use (`bulk` / `done` / `keep`). A task with several
 refs is stale only when **every** ref is done — any open ref keeps it `live`,
 any unreadable ref keeps it (uncertain), and a `pr-closed` among them makes the
-aggregate `pr-closed` (kept out of the bounded auto-apply set). Render the stale
-set as a table for the user, and read the `STALE_COUNT` / `BULK_COUNT` /
-`DONE_COUNT` summary.
+aggregate `pr-closed` (kept out of the bounded auto-apply set). A task with no
+`ghid`/`ghpr` UDA whose text refs are all done is `review` (`method=keep`),
+counted in `REVIEW_COUNT` and never in `STALE_COUNT`. Render the stale set as a
+table for the user, list the `review` tasks separately for the user to check by
+hand, and read the `STALE_COUNT` / `REVIEW_COUNT` / `BULK_COUNT` / `DONE_COUNT`
+summary.
 
 ### Step 3: Confirm and apply
 
@@ -131,7 +138,7 @@ uncertainty). Suggest `/taskwarrior:task-status` to confirm the queue is clean.
 | `--project=<name>` | repo basename | Override the project filter |
 | `--all` | off | Reconcile across every project |
 | `--limit=N` | 200 | Max linked tasks to inspect |
-| `--only-verdicts=<csv>` | unset (all stale closeable) | Restrict the apply set to these verdicts (e.g. `pr-merged,issue-closed`); other stale verdicts (notably `pr-closed`) are reported `method=keep` but never closed. Used by the scheduled bounded auto-apply (`scripts/scheduled-reconcile.sh --apply`) |
+| `--only-verdicts=<csv>` | unset (all stale closeable) | Restrict the apply set to these verdicts (e.g. `pr-merged,issue-closed`); other stale verdicts (notably `pr-closed`) are reported `method=keep` but never closed. `review` is never closeable, even when listed. Used by the scheduled bounded auto-apply (`scripts/scheduled-reconcile.sh --apply`) |
 
 | Verdict | Meaning | Close method |
 |---------|---------|--------------|
@@ -139,6 +146,7 @@ uncertainty). Suggest `/taskwarrior:task-status` to confirm the queue is clean.
 | `issue-closed` | Every referenced issue is CLOSED (no merged/closed PR among them) | bulk / done |
 | `pr-merged` | A referenced PR is MERGED and no referenced item is still open | bulk / done |
 | `pr-closed` | A referenced PR is CLOSED unmerged (ambiguous — abandoned vs superseded) | bulk / done |
+| `review` | No `ghid`/`ghpr` UDA, and every text-ref item is closed or merged — the task may only cite it as context | keep (never closed) |
 
 ## Related
 
