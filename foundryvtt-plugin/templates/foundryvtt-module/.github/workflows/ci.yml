@@ -15,14 +15,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Biome
-        uses: biomejs/setup-biome@v2
-        with:
-          # Pin to the schema version declared in biome.json. Bump in lockstep
-          # via `biome migrate` when upgrading.
-          version: 2.4.15
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+      # Biome comes from package.json, the one place its version is pinned, so
+      # CI lints with the same biome as `bun run lint` and a Renovate bump is
+      # exercised by this job.
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
       - name: Biome check
-        run: biome check .
+        run: bun run lint
 
   typecheck-build:
     name: Typecheck & build (Vite)
