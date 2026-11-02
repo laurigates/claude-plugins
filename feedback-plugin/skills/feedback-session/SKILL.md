@@ -1,12 +1,12 @@
 ---
 name: feedback-session
 description: Analyze session for skill feedback and create GitHub issues. Use when a skill gave wrong guidance, a command failed, you found a better pattern, or a skill worked well.
-args: "[--dry-run] [--bugs-only] [--enhancements-only] [--positive-only] [--target-repo <owner/repo>] [plugin-name]"
+args: "[--dry-run] [--confirmed] [--bugs-only] [--enhancements-only] [--positive-only] [--target-repo <owner/repo>] [plugin-name]"
 allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh search *), Bash(git status *), Bash(git remote *), Read, Grep, Glob, AskUserQuestion, TodoWrite
 model: opus
-argument-hint: "--dry-run | --target-repo owner/repo | plugin-name"
+argument-hint: "--dry-run | --confirmed | --target-repo owner/repo | plugin-name"
 created: 2026-02-18
-modified: 2026-07-18
+modified: 2026-11-02
 compatibility: claude-code
 reviewed: 2026-06-28
 ---
@@ -37,6 +37,7 @@ Parse these from `$ARGUMENTS`:
 | Parameter | Description |
 |-----------|-------------|
 | `--dry-run` | Show findings without creating issues |
+| `--confirmed` | The caller already confirmed this exact set of seed findings with `AskUserQuestion` (set by `session-plugin:session-end`). Step 4 is satisfied for those findings; it asks only if Step 3 dedup changed the set |
 | `--bugs-only` | Only report bugs (wrong/outdated guidance) |
 | `--enhancements-only` | Only report enhancement opportunities |
 | `--positive-only` | Only report positive feedback |
@@ -157,6 +158,11 @@ Use the one-line finding format in [references/issue-format.md](references/issue
 Let the user select which findings to file as issues (use multiSelect).
 
 If `--dry-run`, present findings and stop here.
+
+**`--confirmed` satisfies this step** when the seed findings reach Step 5
+unchanged by dedup: the caller's `AskUserQuestion` was the confirmation of
+that selection set. If dedup dropped or merged any finding, ask about the
+changed set.
 
 **Auto mode does not skip this step.** Filing a GitHub issue is not reversible via `git restore` — closing an issue leaves noise in the issue tracker and notifies subscribers. Always confirm the selection set before Step 5, regardless of mode. To skip the prompt entirely, the user can pass `--dry-run` and re-run after reviewing.
 
