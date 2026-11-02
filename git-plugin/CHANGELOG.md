@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.68.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.68.0...git-plugin-v2.68.1) (2026-11-02)
+
+
+### Bug Fixes
+
+* **git-plugin:** ignore superseded cancelled runs in merge-chain CI gate ([#3380](https://github.com/laurigates/claude-plugins/issues/3380)) ([6af7938](https://github.com/laurigates/claude-plugins/commit/6af7938f5856163133d6ee884bc737c243115f7c))
+
 ## [2.68.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.67.4...git-plugin-v2.68.0) (2026-11-02)
 
 
