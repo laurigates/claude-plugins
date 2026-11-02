@@ -43,6 +43,12 @@
 #      the slash are NOT flagged (#3185)
 #   M. the check-docs-index pre-commit `files:` trigger selects a plugin
 #      README.md, the surface Checks 7 and 8 audit, and no nested README (#3164)
+#   N. a skill directory named nowhere in its plugin README is flagged (WARN
+#      readme_skill_missing) — a name that only prefixes a longer one does not
+#      count; a skill named plainly or by its `/<ns>:<name>` invocation is NOT
+#      flagged; a baselined omission is skipped, and a baseline entry that is now
+#      mentioned or whose directory is gone is flagged (WARN
+#      readme_baseline_stale) (#3164)
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -549,10 +555,44 @@ assert "pre-commit selects a plugin README (the Check 7/8 surface)" \
 assert "pre-commit still selects a plugin skill (existing trigger kept)" \
   "$(precommit_match 'git-plugin/skills/git-commit/SKILL.md')"
 assert "pre-commit still selects the root README.md" "$(precommit_match 'README.md')"
+assert "pre-commit selects the Check 10 README baseline" \
+  "$(precommit_match 'scripts/docs-index-readme-baseline.txt')"
 assert "pre-commit ignores a README nested in a plugin's non-catalogue directory" \
   "$(not_true "$(precommit_match 'git-plugin/hooks/README.md')")"
 assert "pre-commit ignores a README in a non-plugin directory" \
   "$(not_true "$(precommit_match 'docs/README.md')")"
+
+echo "=== TEST N: every skill directory is named in its plugin README (#3164) ==="
+rv_fx="$(mktemp -d)"
+if [ -z "$rv_fx" ] || [ ! -d "$rv_fx" ]; then echo "mktemp failed" >&2; exit 1; fi
+for rv_s in listed-skill gamma-thing missing-skill alpha-one based-skill; do
+  mkdir -p "$rv_fx/gamma-plugin/skills/$rv_s"
+  printf -- '---\nname: %s\n---\n# x\n' "$rv_s" > "$rv_fx/gamma-plugin/skills/$rv_s/SKILL.md"
+done
+# shellcheck disable=SC2016  # the backticks are literal markdown, not expansions
+printf '# gamma-plugin\n\n| Skill | What |\n|---|---|\n| `listed-skill` | plain name |\n| `/gamma:thing` | invocation form |\n\nSee also `alpha-one-two`, a longer name.\n' \
+  > "$rv_fx/gamma-plugin/README.md"
+mkdir -p "$rv_fx/scripts"
+printf '# baseline\ngamma-plugin/based-skill\ngamma-plugin/listed-skill\ngamma-plugin/ghost\n' \
+  > "$rv_fx/scripts/docs-index-readme-baseline.txt"
+rv_out="$(bash "$checker" --project-dir "$rv_fx")"
+assert "a skill named nowhere in its README should be flagged readme_skill_missing" \
+  "$(contains "$rv_out" "SEVERITY=WARN TYPE=readme_skill_missing MSG=gamma-plugin/skills/missing-skill/ ")"
+assert "a name that only prefixes a longer README mention should still be flagged" \
+  "$(contains "$rv_out" "TYPE=readme_skill_missing MSG=gamma-plugin/skills/alpha-one/ ")"
+assert "a skill named plainly should NOT be flagged" \
+  "$(not_true "$(contains "$rv_out" "readme_skill_missing MSG=gamma-plugin/skills/listed-skill/")")"
+assert "a skill named by its /<ns>:<name> invocation should NOT be flagged" \
+  "$(not_true "$(contains "$rv_out" "readme_skill_missing MSG=gamma-plugin/skills/gamma-thing/")")"
+assert "a baselined omission should NOT be flagged" \
+  "$(not_true "$(contains "$rv_out" "readme_skill_missing MSG=gamma-plugin/skills/based-skill/")")"
+assert "a baseline entry that is now mentioned should be flagged readme_baseline_stale" \
+  "$(contains "$rv_out" "SEVERITY=WARN TYPE=readme_baseline_stale MSG=gamma-plugin/listed-skill ")"
+assert "a baseline entry whose directory is gone should be flagged readme_baseline_stale" \
+  "$(contains "$rv_out" "TYPE=readme_baseline_stale MSG=gamma-plugin/ghost ")"
+assert "README_SKILLS_CHECKED should count the 5 skill directories" \
+  "$([ "$(field "$rv_out" README_SKILLS_CHECKED)" = "5" ] && echo true || echo false)"
+rm -rf "$rv_fx"
 
 echo "=== TEST R: REASON= on the non-OK path (#2760) ==="
 contract="$repo_root/scripts/check-structured-output-contract.sh"
