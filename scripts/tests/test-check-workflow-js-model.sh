@@ -42,7 +42,9 @@
 #      node on PATH (the lenient fallback) and a crashing parser (N9-N10),
 #      while a cold first parse that times out is retried (N11) and a cold
 #      start slower than the estimator's 4s default on two calls in a row
-#      still counts under the checker's longer parse timeout (N12).
+#      still counts under the checker's longer parse timeout (N12). A skill
+#      with several templates may declare one '**Agent budget (<file>):**'
+#      line per file, falling back to the bare line (N13-N16, #3265).
 
 set -uo pipefail
 # The checker's estimator timeout is its own default (30s) unless a case pins it.
@@ -525,9 +527,10 @@ mk_top_js() {
     } > "$1/workflows/audit.workflow.js"
 }
 
-# set_budget <skill-md> <declaration> — rewrite the fixture's declared budget.
+# set_budget <skill-md> <declaration> — rewrite the fixture's declared budget
+# (the bare line or any per-file lines collapse into one bare line).
 set_budget() {
-    awk -v d="$2" '/^\*\*Agent budget:\*\*/ { print "**Agent budget:** " d " — fixture."; skip = 1; next }
+    awk -v d="$2" '/^\*\*Agent budget( \([^)]*\))?:\*\*/ { if (done++) next; print "**Agent budget:** " d " — fixture."; skip = 1; next }
                    skip && /^[^ ]/ && !/^$/ && !/^>/ { next }
                    { skip = 0; print }' "$1" > "$1.tmp" && mv "$1.tmp" "$1"
 }
@@ -657,6 +660,50 @@ o=$(PATH="$STUB/slow:$PATH" bash "$CHECK" --project-dir "$root" 2>&1)
 check "N12: two slow cold parses, STATUS=OK"     "OK" "$(field "$o" STATUS)"
 check "N12: no estimator_error"                  "0" "$(grep -c 'TYPE=estimator_error' <<<"$o")"
 check "N12: the stub's first call was slow"      "yes" "$([ -e "$STUB/slow/call0" ] && echo yes)"
+
+# N13-N15 (#3265). Per-file budget lines: two templates in one skill whose
+# estimates differ (audit 2, solo 1) each declare
+# '**Agent budget (<file>.workflow.js):**', and a file with no per-file line
+# falls back to the bare '**Agent budget:**' line.
+# set_file_budgets <skill-md> <line>... — replace the budget paragraph with lines.
+set_file_budgets() {
+    local md="$1" marker="__BUDGET_LINES__"
+    shift
+    set_budget "$md" "$marker"
+    awk -v m="**Agent budget:** $marker — fixture." -v lines="$(printf '%s\n' "$@")" \
+        '$0 == m { printf "%s\n", lines; next } { print }' "$md" > "$md.tmp" && mv "$md.tmp" "$md"
+}
+root=$(mk_root N13)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_top_js "$d" no
+# shellcheck disable=SC2016  # JS template-literal backticks, not a substitution
+printf 'const a = await agent(`One.`, { label:%s, model:%s, effort:%s })\nreturn a\n' "'one'" "'opus'" "'low'" > "$d/workflows/solo.workflow.js"
+
+# N13. Each file declares its own estimate on its own line: both checked, OK.
+set_file_budgets "$d/SKILL.md" '**Agent budget (audit.workflow.js):** 2' '**Agent budget (solo.workflow.js):** 1 — fixed.'
+o=$(out "$root")
+check "N13: per-file lines STATUS=OK"       "OK" "$(field "$o" STATUS)"
+check "N13: both files checked"             "2"  "$(field "$o" AGENT_BUDGETS_CHECKED)"
+check "N13: solo row reads its own line"    "1"  "$(grep -c 'solo.workflow.js ESTIMATE=1 UNBOUNDED=0 BUDGET=1$' <<<"$o")"
+
+# N14. GUARD INTEGRITY for N13 — a per-file line that disagrees with its file
+#      fails, naming that file and only that file.
+set_file_budgets "$d/SKILL.md" '**Agent budget (audit.workflow.js):** 2' '**Agent budget (solo.workflow.js):** 3'
+o=$(out "$root")
+check "N14: wrong per-file line typed"      "1"  "$(budget_errors "$o")"
+check "N14: mismatch names solo"            "1"  "$(grep -c 'TYPE=agent_budget_mismatch FILE=.*solo.workflow.js' <<<"$o")"
+
+# N15. Only the bare line: it still applies to every file, so the file whose
+#      estimate differs fails. (The line names solo so the file stays reachable.)
+set_file_budgets "$d/SKILL.md" '**Agent budget:** 2 — for audit.workflow.js and solo.workflow.js.'
+o=$(out "$root")
+check "N15: bare line checks every file"    "2"  "$(field "$o" AGENT_BUDGETS_CHECKED)"
+check "N15: bare line mismatch names solo"  "1"  "$(grep -c 'TYPE=agent_budget_mismatch FILE=.*solo.workflow.js' <<<"$o")"
+
+# N16. A per-file line for one file, the bare line as the fallback for the other.
+set_file_budgets "$d/SKILL.md" '**Agent budget (solo.workflow.js):** 1' '**Agent budget:** 2'
+o=$(out "$root")
+check "N16: per-file + fallback STATUS=OK"  "OK" "$(field "$o" STATUS)"
 
 # ---------------------------------------------------------------------------
 # R. REASON= on the ERROR / WARN path, absent on OK, contract-valid (#2760).

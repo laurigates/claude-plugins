@@ -1,6 +1,6 @@
 ---
 created: 2026-07-29
-modified: 2026-10-27
+modified: 2026-11-02
 reviewed: 2026-09-16
 paths:
   - "*/skills/**/workflows/*.js"
@@ -202,6 +202,8 @@ not a script to run verbatim.** Read it, then rewrite it for the work in front o
 the project-specific commands].
 
 **Agent budget:** [N | C + k x <items>] — [which agents spend it].
+<!-- Several templates in one skill: one line per file instead, e.g.
+**Agent budget (<name>.workflow.js):** [N | C + k x <items>] -->
 
 **Preserve across any adaptation:** [(a) the loop bound comes from <the deterministic
 source>, never from a prose "for each"; (b) <the schema/enum that forces a determinate
@@ -223,12 +225,13 @@ in the fan-out itself — `for (const x of items.slice(0, N))`,
 copy held in a variable still asks, because the estimator does not resolve
 variables.
 
-The gate reads only the **first** `**Agent budget:**` line in a skill's framing
-section and checks it against every `.js` in that skill's `workflows/`, so two
-templates in one skill must share one budget whose integer terms equal both
-files' estimates. Moving an `agent()` call into a helper function is the usual
-way to make the estimates agree, at the cost of the scale guard asking before
-every run.
+When a skill bundles several templates, give each its own line,
+`**Agent budget (<name>.workflow.js):**`, and the gate checks each file against
+the line naming it (#3265). A file with no per-file line falls back to the first
+bare `**Agent budget:**` line, so a single-template skill needs nothing new.
+Before the per-file form, two templates had to share one budget, and authors
+hid `agent()` calls in helper functions to make the estimates agree, which made
+the scale guard ask before every run.
 
 A finalise agent inside the harness may push and open PRs, but it cannot merge
 them: auto mode denies a `gh pr merge` whose authorisation reaches the agent
