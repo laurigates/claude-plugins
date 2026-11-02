@@ -815,7 +815,10 @@ make_named_skill() {
 }
 
 # --- (a) configure-release-please: @v5 is the standard (#2757) --------------
-RP_TOKENS='Token: `create-github-app-token` reading `RELEASE_PLEASE_APP_ID`.'
+RP_TOKENS='Token: `create-github-app-token` reading `RELEASE_PLEASE_APP_ID`.
+- A `0.0.0` entry with no release tag and no `initial-version` is a FAIL.
+3. **Missing manifest**: Create with `0.0.0` and set `initial-version` in the config.'
+RP_INITIAL='Set "initial-version": "0.1.0" before the first tag.'
 RP_REF_V4='```yaml
 steps:
   - uses: googleapis/release-please-action@v4
@@ -823,7 +826,8 @@ steps:
 RP_REF_V5='```yaml
 steps:
   - uses: googleapis/release-please-action@v5
-```'
+```
+'"$RP_INITIAL"
 
 make_named_skill configure-release-please "- Action version: \`googleapis/release-please-action@v4\`
 $RP_TOKENS" "$RP_REF_V4"
@@ -848,6 +852,38 @@ $RP_TOKENS" "$RP_REF_V5"
 run_check; out_rp5="$OUT"; rc_rp5="$RC"
 assert_eq "release-please: the @v5 standard exits 0" "$rc_rp5" "0"
 assert_absent "release-please: the @v5 standard raises no #2757 issue" "$out_rp5" "#2757"
+assert_absent "release-please: the fixed manifest bootstrap raises no #3301 issue" "$out_rp5" "#3301"
+
+# (a2) #3301: the pre-fix manifest bootstrap — `0.0.0` with no initial-version,
+# and the "placeholder" sentence in REFERENCE.md — must fail on every axis.
+RP_SKILL_OLD="- Action version: \`googleapis/release-please-action@v5\`
+Token: \`create-github-app-token\` reading \`RELEASE_PLEASE_APP_ID\`.
+3. **Missing manifest**: Create with initial version \`0.0.0\`"
+RP_REF_OLD='```yaml
+steps:
+  - uses: googleapis/release-please-action@v5
+```
+Version `0.0.0` is a placeholder — release-please updates it automatically.'
+make_named_skill configure-release-please "$RP_SKILL_OLD" "$RP_REF_OLD"
+run_check; out_rp0="$OUT"; rc_rp0="$RC"
+assert_eq "release-please: a 0.0.0 bootstrap without initial-version exits 1" "$rc_rp0" "1"
+assert_contains "release-please: the manifest fix without initial-version is named" \
+  "$out_rp0" "'Missing manifest' fix must set 'initial-version'"
+assert_contains "release-please: the missing untagged-0.0.0 audit is named" \
+  "$out_rp0" "must flag a 0.0.0 manifest with no release tag"
+assert_contains "release-please: the REFERENCE template without initial-version is named" \
+  "$out_rp0" "REFERENCE.md manifest template must pair 0.0.0"
+assert_contains "release-please: the placeholder sentence is flagged" \
+  "$out_rp0" "calls the 0.0.0 manifest a harmless placeholder"
+
+# Guard: initial-version named elsewhere in SKILL.md but not on the
+# Missing-manifest line still fails — a shallow grep would pass it.
+make_named_skill configure-release-please "$RP_SKILL_OLD
+- A \`0.0.0\` entry with no release tag and no \`initial-version\` is a FAIL." "$RP_REF_V5"
+run_check; out_rpg="$OUT"; rc_rpg="$RC"
+assert_eq "release-please: initial-version off the Missing-manifest line exits 1" "$rc_rpg" "1"
+assert_contains "release-please: the Missing-manifest line is still flagged" \
+  "$out_rpg" "'Missing manifest' fix must set 'initial-version'"
 rm -rf "${root:?}/$PLUGIN/skills/configure-release-please"
 
 # --- (b) configure-workflows: Renovate is App-covered (#2745) ---------------

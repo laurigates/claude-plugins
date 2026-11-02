@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-10-09
+modified: 2026-11-02
 reviewed: 2026-06-24
 description: "release-please workflow file, manifest, and config for a single-package repo — setup and compliance audit. Use when adding release-please or upgrading release-please-action."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -89,6 +89,10 @@ Determine appropriate release-type from detected package files:
 **Manifest file checks**:
 - Valid JSON structure
 - Package paths match config
+- A `0.0.0` entry with no release tag for that package and no
+  `initial-version` on the matching config package is a FAIL: until the first
+  tag exists release-please ignores the manifest and falls back to its default
+  initial version, so the first release PR proposes `1.0.0`
 
 ### Step 4: Generate compliance report
 
@@ -100,7 +104,10 @@ For the report format, see [REFERENCE.md](REFERENCE.md).
 
 1. **Missing workflow**: Create from standard template
 2. **Missing config**: Create with detected release-type
-3. **Missing manifest**: Create with initial version `0.0.0`
+3. **Missing manifest**: Create with `0.0.0` and set `initial-version` on the package in `release-please-config.json`
+   whenever the repo has no release tag yet: the version already in the
+   package file, or `0.1.0` for a pre-1.0 project. Without it the first
+   release is `1.0.0`
 4. **Outdated action**: Update to v5
 5. **Wrong token**: Use the GitHub App-token pattern (preferred) or
    `MY_RELEASE_PLEASE_TOKEN` — never `GITHUB_TOKEN`. A workflow already on
@@ -139,6 +146,14 @@ components:
     so this is the standard that matches every other repo.
   - **`MY_RELEASE_PLEASE_TOKEN` PAT (legacy)** — a personal-access-token secret
     in repository settings. Still valid, but diverges from the org standard.
+- **Tag listeners need the release token too** — a tag or release created
+  with `GITHUB_TOKEN` starts no other workflow, so a downstream build on
+  `push: tags` (binary dist, container publish) never runs. Use the App token
+  (or PAT) whenever anything listens on the tag, not only so release PRs get CI
+- **First release version** — with no release tag the manifest is ignored;
+  set `initial-version` in the config or the first release is `1.0.0`
+- **Rust workspaces** — the `# x-release-please-version` marker and the
+  `Cargo.lock` sync step are in [REFERENCE.md](REFERENCE.md) § Rust Workspaces
 - CHANGELOG.md is managed by release-please - never edit manually
 - Version fields in package.json/pyproject.toml are managed automatically
 - Works with `conventional-pre-commit` hook for commit validation
