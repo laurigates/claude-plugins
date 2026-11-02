@@ -124,7 +124,13 @@
       "source": {
         "source": "github",
         "repo": "laurigates/claude-plugins"
-      }
+      },
+      "autoUpdate": true
     }
-  }
+  },
+  "enabledMcpjsonServers": [
+    "pal",
+    "context7",
+    "sequential-thinking"
+  ]
 }

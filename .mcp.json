@@ -10,7 +10,33 @@
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
       }
+    },
+    "pal": {
+      "command": "uvx",
+      "args": [
+        "pal-mcp-server@latest"
+      ],
+      "env": {
+        "CUSTOM_API_URL": "http://localhost:11434/v1",
+        "CUSTOM_API_KEY": "",
+        "DEFAULT_MODEL": "auto",
+        "GEMINI_API_KEY": "${GEMINI_API_KEY}",
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}"
+      }
+    },
+    "context7": {
+      "command": "bunx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ]
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
     }
   }
 }
-
