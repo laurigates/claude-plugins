@@ -1153,7 +1153,13 @@ repos:
         name: bash-antipatterns suite does not leak sandbox git ops via injected GIT_DIR (#1745)
         entry: bash ./hooks-plugin/hooks/test-bash-antipatterns-git-env-isolation.sh
         language: system
-        files: '^hooks-plugin/hooks/(test-bash-antipatterns\.sh|test-bash-antipatterns-git-env-isolation\.sh)$'
+        files: '^hooks-plugin/hooks/(test-bash-antipatterns\.sh|test-bash-safety\.sh|test-bash-antipatterns-git-env-isolation\.sh)$'
+        pass_filenames: false
+      - id: test-bash-safety
+        name: bash-safety hook detection regression (#2788)
+        entry: bash ./hooks-plugin/hooks/test-bash-safety.sh
+        language: system
+        files: '^hooks-plugin/hooks/(bash-safety\.sh|test-bash-safety\.sh)$'
         pass_filenames: false
       # The remaining hooks-plugin suites below. Every `hooks-plugin/hooks/test-*.sh`
       # file is ALREADY run in CI — `scripts/run-skill-script-tests.sh` discovers it

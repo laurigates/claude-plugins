@@ -420,7 +420,10 @@ order, so the first block wins. A script that is missing, crashes or times out
 fails open.
 
 **What is exported.** Only hooks named in the generator's `PI_SAFETY_ALLOWLIST`:
-branch protection, secret protection, repo-deletion safety, the external-PR
+branch protection, the Bash safety blocks (`bash-safety.sh`: broad staging,
+index-lock git chains, `git reset --hard`, the `push -u` footgun, network
+content piped to a shell, fork bombs, `chmod 777`, block-device writes), secret
+protection, repo-deletion safety, the external-PR
 merge guard, the branch-base guard, the three git-plugin PR/branch guards named
 in #2634, the terraform apply gate, both kubectl guards, the force-push guard,
 and the git drift probe with the aggregator that delivers its findings. Every
@@ -428,9 +431,9 @@ other hook is skipped **by name** and listed in the generator's report and in
 the extension's header. Three skips are deliberate rather than
 unclassified:
 
-- `bash-antipatterns.sh` mixes a few safety blocks with tool-hygiene blocks
-  whose remedy text names Claude Code's `Read`/`Grep` tools, so it is not
-  exported whole (#2788).
+- `bash-antipatterns.sh` holds tool-hygiene blocks whose remedy text names
+  Claude Code's `Read`/`Edit`/`Write` tools. Its safety blocks were split into
+  `bash-safety.sh`, which is exported (#2788).
 - `auto-checkpoint.sh` writes stash entries that only the `Stop` hook
   `git-stash-reminder.sh` surfaces, and `Stop` has no pi mapping here.
 - The drift probes other than git-plugin's, and session-plugin's two nudges
