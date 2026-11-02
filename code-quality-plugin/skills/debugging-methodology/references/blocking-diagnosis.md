@@ -111,6 +111,14 @@ Two tests turn the suspicion into a finding:
    the same data with more partitions. A wait that shrinks with the partition
    count is that lock.
 
+Test 2 works only if concurrent threads land on different partitions. A
+reduced reproducer that hands threads neighbouring work (consecutive files in
+one directory, keys in one shard) puts every thread on the same lock instance
+whatever the partition count, so the wait does not shrink and the lock looks
+innocent. Match the real workload's access pattern: shuffle the work list with
+a fixed seed, or run both orders and report both. The same-partition order is
+then a measurement in its own right, the worst case.
+
 Report each comparison with its run-to-run spread, and treat a difference
 inside the spread as no difference.
 
@@ -135,6 +143,12 @@ inside the spread as no difference.
 >    difference inside the ±69 ms run spread). The same data on XFS with
 >    `agcount=32` instead of 4 cut the run from 506 to 275 ms and voluntary
 >    context switches from 67,089 to 4,230.
+> 5. A reproducer without dust (2026-11, OrbStack, kernel 7.2.12, aarch64)
+>    first showed no AG-count effect: it fed threads files in directory order,
+>    so they shared an AG. With a shuffled order, 4 threads took 184.6 ms on 4
+>    AGs and 69.7 ms on 32. In directory order, 4 threads took 7.8× as long as
+>    one thread at either AG count. The harness is in
+>    `kernel-plugin:kernel-repro-harness`.
 >
 > Each shared-extent lookup reads the allocation group's AGF header buffer under
 > its buffer lock, and there is one AGF per allocation group, so the threads
