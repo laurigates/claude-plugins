@@ -8,6 +8,7 @@
 #   - Issue #2610: non-destructive stash creation preserving untracked files
 #     and modified tracked files in the working directory
 #   - Checkpoint stash created in `git stash list` before destructive operations
+#   - Issue #3055: the checkpoint message ends with `[worktree: <toplevel>]`
 #   - Untracked files still exist and are never deleted
 #   - Modified tracked files still exist with modifications intact
 #   - Issue #2652: the hook is opt-in. With CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT
@@ -39,6 +40,12 @@ if [ -z "$SANDBOX" ] || [ ! -d "$SANDBOX" ]; then
   echo "bad sandbox dir" >&2
   exit 1
 fi
+# Canonical, so the #3055 tag assertion (which compares a path git reports)
+# holds on macOS, where /var resolves to /private/var.
+SANDBOX=$(cd -P -- "$SANDBOX" && pwd -P) || {
+  echo "cannot resolve sandbox dir" >&2
+  exit 1
+}
 
 NON_GIT_DIR=$(mktemp -d) || {
   echo "mktemp -d failed" >&2
@@ -137,6 +144,19 @@ if grep -q "auto-checkpoint before rm -rf" <<<"$stash_list"; then
 else
   fail "rm -rf creates checkpoint stash in git stash list" "stash list was: '$stash_list'"
 fi
+
+# #3055: the message names the worktree that took the checkpoint, so the stash
+# reminder (which shares refs/stash with every worktree) can judge it there.
+expected_tag="[worktree: $(git -C "$SANDBOX" rev-parse --show-toplevel)]"
+ck_subject=$(git -C "$SANDBOX" stash list --format='%gs' | sed -n '1p')
+case "$ck_subject" in
+"auto-checkpoint before rm -rf ("*") ${expected_tag}")
+  pass "checkpoint message ends with its source worktree tag"
+  ;;
+*)
+  fail "checkpoint message ends with its source worktree tag" "subject was: '$ck_subject', expected tag '$expected_tag'"
+  ;;
+esac
 
 if grep -q "Created checkpoint stash before rm -rf" <<<"$stderr_out"; then
   pass "rm -rf prints checkpoint notice on stderr"

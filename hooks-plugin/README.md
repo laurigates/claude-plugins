@@ -97,6 +97,7 @@ A Stop hook that checks for git stashes **created during the current session**. 
 | `auto-checkpoint before …` session stash, `CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=1` | Block, recommend "verify against the working tree, then `git stash drop`" (#2686) |
 | `auto-checkpoint before …` session stash, flag unset (default) | Silent: the reminder's checkpoint branch is opt-in with `auto-checkpoint.sh` (#2652) |
 | Stash tree equals the working tree | Silent exit — it holds nothing the tree does not (#2686) |
+| Checkpoint tagged `[worktree: <path>]` matching that worktree, or (worktree removed) matching one branch path for path | Silent exit — judged where a worktree subagent took it (#3055) |
 | Already reported earlier this session | Silent exit — reviewing and keeping a stash clears the block (#2686) |
 | Only pre-existing stashes | Silent exit (no block) |
 | No stashes at all | Silent exit |
@@ -476,6 +477,8 @@ A PreToolUse hook that creates a git stash checkpoint before destructive operati
 | Destructive command whose tree matches `stash@{0}` (an `auto-checkpoint before …` entry) | Skipped — the protecting checkpoint already holds this content (#2736) |
 
 Skips checkpointing for build artifact removal (node_modules, dist, build, .next, etc.).
+
+Each message ends with `[worktree: <toplevel>]` naming the checkout that took it (#3055). `refs/stash` is shared by every worktree of a repo, so `git-stash-reminder.sh` uses the tag to judge a worktree subagent's checkpoint against that worktree instead of the parent's checkout.
 
 **Toggle:** `CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=1` enables it (only the literal `1`). The former opt-out `CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT` is no longer read. `git-stash-reminder.sh` reports `auto-checkpoint before …` entries only when the same flag is set.
 

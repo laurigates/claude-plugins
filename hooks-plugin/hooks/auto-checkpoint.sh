@@ -67,7 +67,17 @@ create_checkpoint() {
         fi
         ;;
       esac
-      if git stash store -m "auto-checkpoint before ${reason} (${timestamp})" "$commit" 2>/dev/null; then
+      # Tag the source worktree (#3055). refs/stash is shared by every
+      # worktree of a repo, so a checkpoint taken in a linked worktree (a
+      # subagent's) surfaces in the parent's stash reminder, which can only
+      # judge it against the worktree that took it. The "auto-checkpoint
+      # before " prefix stays first: git-stash-reminder.sh matches on it.
+      local toplevel tag=""
+      toplevel=$(git rev-parse --show-toplevel 2>/dev/null || true)
+      if [ -n "$toplevel" ]; then
+        tag=" [worktree: ${toplevel}]"
+      fi
+      if git stash store -m "auto-checkpoint before ${reason} (${timestamp})${tag}" "$commit" 2>/dev/null; then
         echo "Created checkpoint stash before ${reason}. Recover with: git stash list" >&2
       fi
     fi

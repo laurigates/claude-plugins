@@ -386,6 +386,7 @@ A Stop hook that checks for git stashes **created during the current session**. 
 | Session stash already reported this session | Silent exit — the block is clearable by review, not only by deletion (#2686) |
 | `git stash push -u` stash with an untracked payload | Always reported, even when its tracked tree matches (#2686) |
 | Session stash whose tree matches a commit reachable from a branch or remote ref | Silent exit — recoverable from history (#2735) |
+| Checkpoint tagged `[worktree: <path>]` whose tree equals that worktree's tree, or (worktree removed) whose every path matches one local or `origin/*` branch | Silent exit — judged where it was taken (#3055) |
 | Only pre-existing stashes | Silent exit (no block) |
 | No stashes at all | Silent exit |
 | No baseline file | Silent exit (avoids false positives) |
@@ -404,6 +405,7 @@ A Stop hook that checks for git stashes **created during the current session**. 
 7. Filters out stashes created **before** the session start
 8. Unless `CLAUDE_HOOKS_ENABLE_AUTO_CHECKPOINT=1`, filters out `auto-checkpoint before …` entries (#2652); hand-made stashes are unaffected. It also filters out stashes whose hashes are in the sibling `<baseline>.reported` file — this session has already surfaced them
 9. Filters out **redundant** stashes: `git diff --quiet <stash-sha>` exits 0, i.e. the stash's tree already equals the working tree. A stash with a 3rd parent (untracked payload, only `git stash push -u`) is never judged this way, because `git diff` cannot see that payload
+    A stash tagged `[worktree: <toplevel>]` by `auto-checkpoint.sh` (#3055) gets the same comparison run from that worktree while it is still a worktree of this repo. Once it is gone, the stash is filtered when every path in its tree has the same blob on one local or `origin/*` branch (the 50 most recently committed are scanned). An untagged stash is compared against the Stop cwd only
 10. Filters out stashes whose tree matches a commit already reachable from
     HEAD, the local branches, the remote refs or the tags (#2735) — the #2652
     shape of a checkpoint taken before a deletion whose files later landed on
