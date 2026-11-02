@@ -1154,6 +1154,18 @@ ck "merge on the line after a heredoc"    DENY "$(STUB_AUTHOR=joshua-trustabl ru
 ck "merge after an unquoted heredoc"      DENY "$(STUB_AUTHOR=joshua-trustabl run "$(bash_json "$(printf '%s\n' 'cat <<EOF' '$(date) hello' 'EOF' 'gh pr merge 2231 -R laurigates/claude-plugins')")")"
 ck "own merge after a heredoc"            ALLOW "$(STUB_AUTHOR=laurigates run "$(bash_json "$(printf '%s\n' "cat > d.txt <<'EOF'" '`$GH api graphql`' 'EOF' 'gh pr merge 2231 -R laurigates/claude-plugins')")")"
 
+echo "== GraphQL variables carry dynamic values (issue #3298) =="
+# The dyn refusal points at GraphQL variables, so that form must pass for a
+# non-merge mutation, or the advice would trap every caller in a loop. A merge
+# mutation named through a variable is still refused by node id.
+run "$(bash_json 'gh api graphql -f query="mutation{updateIssue(input:{id:\"$ID\",issueTypeId:\"$T\"}){issue{number}}}"')" >/dev/null
+ck "spliced double-quoted query is denied"   DENY "$LAST_VERDICT"
+ck_reason "dyn refusal suggests GraphQL variables" "pass dynamic values as GraphQL variables"
+ck "variables form of updateIssue passes"    ALLOW "$(run "$(bash_json 'gh api graphql -f query='"'"'mutation($id:ID!,$t:ID!){updateIssue(input:{id:$id,issueTypeId:$t}){issue{number}}}'"'"' -f id="$ID" -f t="$T"')")"
+run "$(bash_json 'gh api graphql -f query='"'"'mutation($id:ID!){mergePullRequest(input:{pullRequestId:$id}){clientMutationId}}'"'"' -f id="$ID"')" >/dev/null
+ck "variables form of mergePullRequest is denied" DENY "$LAST_VERDICT"
+ck_reason "merge by variable gets the node-id refusal" "it names the PR by node id"
+
 echo "== operator escape hatch =="
 out=$(printf '%s' "$(bash_json 'gh pr merge 2231 --squash')" \
       | STUB_AUTHOR=joshua-trustabl CLAUDE_HOOKS_DISABLE_EXTERNAL_PR_MERGE=1 \

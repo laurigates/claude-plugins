@@ -374,6 +374,10 @@ quoting leaves a literal quote or a dangling `-R` (`bash -c "… \"-R\" x"`,
 GraphQL query read from `@file`/`--input`, a variable, or stdin (a pipe, a
 heredoc, a `<<<` herestring or a `<` redirection other than `/dev/null`), and a
 REST route whose owner/repo/number is not literal (`repos/$R/pulls/5/merge`).
+A query with a value spliced in (`-f query="…\"$ID\"…"`) is a variable query;
+the refusal points at GraphQL variables instead, a literal query with the value
+passed as its own field (`-f query='mutation($id:ID!){…}' -f id="$ID"`), which
+is checked and passes unless it merges (#3298).
 Command substitutions inside double quotes and inside an unquoted heredoc
 (`<<EOF`, where markdown backticks execute) are scanned as commands; a `<<<`
 herestring is a plain redirection, so the lines after it are still scanned.
