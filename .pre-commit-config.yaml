@@ -409,6 +409,12 @@ repos:
         language: script
         files: '^(hooks-plugin/\.claude-plugin/plugin\.json|scripts/check-taskcompleted-verification\.sh)$'
         pass_filenames: false
+      - id: check-subagent-stop-background-wait
+        name: SubagentStop prompt keeps its background-wait check (#3194)
+        entry: ./scripts/check-subagent-stop-background-wait.sh --strict
+        language: script
+        files: '^(hooks-plugin/\.claude-plugin/plugin\.json|scripts/check-subagent-stop-background-wait\.sh)$'
+        pass_filenames: false
       - id: test-check-taskcompleted-verification
         name: TaskCompleted verification guard regression
         entry: ./scripts/tests/test-check-taskcompleted-verification.sh
