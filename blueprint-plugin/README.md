@@ -324,8 +324,11 @@ schedule interval has elapsed since `last_completed_at` (written back with
 (PostToolUse hooks); a deterministic `on-change` task (`sync-ids`) is also
 reconciled on every run, because the on-change signal misses edits made outside
 Claude Code and Bash edits outside the recorded change list. A reconcile that
-changes nothing leaves the manifest byte-identical. `on-demand` tasks never
-auto-run. At every level, ambient automation may at most *draft* work-order
+changes nothing leaves the manifest byte-identical. The sweep reads all
+frontmatter in one `awk` pass and registers it in one `jq` call, so it fits the
+probe's 5 s SessionStart hook timeout; a run the timeout kills is reported in
+the next session as an `autorun_incomplete` finding (remediation
+`/blueprint:sync-ids`). `on-demand` tasks never auto-run. At every level, ambient automation may at most *draft* work-order
 proposals (GitHub issues labeled `work-order-draft`); promotion is a separate,
 reviewed `/blueprint:work-order --from-issue N` run. `/blueprint:work-order` and
 `/blueprint:prp-execute` are model-invocable (ADR-0024), so a user can also
