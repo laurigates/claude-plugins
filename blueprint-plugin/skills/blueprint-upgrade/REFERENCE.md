@@ -10,7 +10,7 @@ Reference templates for `/blueprint:upgrade`: the v3.0.0 manifest schema produce
   "created_at": "[preserved]",
   "updated_at": "[now]",
   "created_by": {
-    "blueprint_plugin": "3.0.0"
+    "blueprint_plugin": "[plugin version, read from plugin.json]"
   },
   "project": {
     "name": "[preserved]",

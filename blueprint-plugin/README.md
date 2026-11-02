@@ -434,8 +434,14 @@ Both producers therefore call one writer:
 
 ```bash
 bash <plugin-root>/scripts/register-generated-rules.sh \
-  --source blueprint-init --plugin-version 3.4.0 development.md testing.md
+  --source blueprint-init \
+  --plugin-version "$(jq -r .version <plugin-root>/.claude-plugin/plugin.json)" \
+  development.md testing.md
 ```
+
+`--plugin-version`, like the manifest's `created_by.blueprint_plugin`, is the
+plugin version from `plugin.json`, read at run time — not the blueprint format
+version (#2950).
 
 The contract every site must agree on:
 

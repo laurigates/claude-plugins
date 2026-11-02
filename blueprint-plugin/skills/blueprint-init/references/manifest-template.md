@@ -10,7 +10,7 @@ The `docs/blueprint/manifest.json` that Step 7 writes.
   "created_at": "[ISO timestamp]",
   "updated_at": "[ISO timestamp]",
   "created_by": {
-    "blueprint_plugin": "3.3.0"
+    "blueprint_plugin": "[plugin version, read from plugin.json]"
   },
   "project": {
     "name": "[detected from package.json/pyproject.toml or directory name]",
@@ -126,5 +126,10 @@ The `docs/blueprint/manifest.json` that Step 7 writes.
 ```
 
 ## Notes
+
+`created_by.blueprint_plugin` is the **plugin** version from
+`blueprint-plugin/.claude-plugin/plugin.json`, read at run time (SKILL.md Step 7
+gives the `jq` command). It is not `format_version`, and it changes on every
+plugin release, so it is never written as a literal (issue #2950).
 
 Note: As of v3.2.0, progress tracking is consolidated into feature-tracker.json (work-overview.md removed).
