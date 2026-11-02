@@ -101,6 +101,16 @@
 #      branch goes with it: without the flag, an `auto-checkpoint before …`
 #      entry is not reported. Hand-made stashes are judged as before.
 #
+#   9. Source worktree (#3055). Filter 4 compares against the Stop hook's
+#      cwd, but refs/stash is shared, so a checkpoint a worktree subagent
+#      took never matched the parent's checkout. auto-checkpoint.sh tags its
+#      message `[worktree: <toplevel>]`; when that directory is still a
+#      worktree of this stash namespace the filter 4 comparison runs there,
+#      and once it is gone the stash is redundant only if every path in its
+#      tree matches one local or origin/* branch (bounded branch scan). The
+#      tag is part of the subject, so the report names the source. Untagged
+#      stashes keep filter 4 alone.
+#
 # All new filters fail toward REPORTING: an unreadable `.reported` file, an
 # errored `git diff` or any failure in the committed-content walk leaves the
 # stash in the report. Silence is the safe degradation for a false ALARM
@@ -179,6 +189,62 @@ stash_is_redundant() { # stash_is_redundant <cwd> <stash-sha>
     return 1
   fi
   git -C "$1" diff --quiet "$2" -- >/dev/null 2>&1
+}
+
+# The source worktree auto-checkpoint.sh names in a checkpoint's message as a
+# trailing `[worktree: <toplevel>]` tag (#3055, filter 9). Prints nothing for
+# an untagged subject.
+checkpoint_source() { # checkpoint_source <subject>
+  case "$1" in
+  *" [worktree: "*"]") ;;
+  *) return 0 ;;
+  esac
+  local src="${1##*" [worktree: "}"
+  printf '%s' "${src%]}"
+}
+
+# True when every path in the stash's tree has the same blob (and mode) on ONE
+# local or origin/* branch, i.e. the stash holds nothing a branch does not
+# (#3055, filter 9, option B). Paths the branch has and the stash lacks are
+# ignored: a branch may carry later files. The branch scan is bounded to the
+# most recently committed refs so a repo with many branches cannot stretch
+# the 10s Stop budget; a miss there costs a report, never a silence. Any git
+# failure, and a stash with an untracked payload (3rd parent, see
+# stash_is_redundant), returns non-zero: "not contained".
+STASH_CONTAINMENT_MAX_BRANCHES=50
+stash_contained_in_branch() { # stash_contained_in_branch <cwd> <stash-sha>
+  if git -C "$1" rev-parse --verify --quiet "$2^3" >/dev/null 2>&1; then
+    return 1
+  fi
+  local refs ref out
+  refs=$(git -C "$1" for-each-ref --sort=-committerdate \
+    --count="$STASH_CONTAINMENT_MAX_BRANCHES" --format='%(objectname)' \
+    refs/heads refs/remotes/origin 2>/dev/null || true)
+  while IFS= read -r ref; do
+    [ -z "$ref" ] && continue
+    # A = in the stash, not on the branch; M/T = differs. Empty = contained.
+    if out=$(git -C "$1" diff-tree -r --no-renames --name-only \
+      --diff-filter=AMT "$ref" "$2" 2>/dev/null) && [ -z "$out" ]; then
+      return 0
+    fi
+  done <<<"$refs"
+  return 1
+}
+
+# Filter 9 (#3055): judge a worktree-tagged stash where it came from. When the
+# tagged directory is still a worktree of THIS stash namespace, run the filter
+# 4 comparison there (option A); otherwise (removed, or a path now belonging
+# to something else) fall back to branch containment (option B). An untagged
+# stash returns non-zero, keeping the pre-#3055 behaviour.
+stash_redundant_at_source() { # stash_redundant_at_source <cwd> <stash-sha> <subject>
+  local src
+  src=$(checkpoint_source "$3")
+  [ -n "$src" ] || return 1
+  if [ -d "$src" ] && [ "$(stash_namespace "$src")" = "$STASH_ROOT" ]; then
+    stash_is_redundant "$src" "$2"
+    return
+  fi
+  stash_contained_in_branch "$1" "$2"
 }
 
 # Trees of commits whose content this session could not have added anything
@@ -374,6 +440,12 @@ while IFS='|' read -r hash ref ts subject; do
   # Filter 4: nothing to recover. Runs LAST of the filters because it is the
   # only one that costs a tree comparison (this hook's Stop timeout is 10s).
   if stash_is_redundant "$CWD" "$hash"; then
+    continue
+  fi
+
+  # Filter 9 (#3055): a checkpoint from a linked worktree, judged there or,
+  # once that worktree is gone, against the branches.
+  if stash_redundant_at_source "$CWD" "$hash" "$subject"; then
     continue
   fi
 

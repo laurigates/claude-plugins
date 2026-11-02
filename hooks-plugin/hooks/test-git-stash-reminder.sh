@@ -679,6 +679,96 @@ ck_reason "names the checkpoint" "opt-in probe"
 git -C "$REPO_A" stash clear
 reset_tree "$REPO_A"
 
+echo "== #3055: a worktree-tagged checkpoint is judged where it came from =="
+# Worktree subagents store checkpoints on the shared refs/stash, and the
+# parent's Stop runs in the main checkout, whose tree never matched them. The
+# `[worktree: <toplevel>]` tag lets the reminder compare against the source
+# worktree while it exists (option A), and fall back to branch containment
+# once it is gone (option B). An untagged stash keeps the old behaviour.
+#
+# make_tagged_checkpoint <dir> <content> <message> — the hook's create+store
+# pair, so the source worktree's tree equals the stash's tree.
+make_tagged_checkpoint() {
+  local dir="$1" content="$2" msg="$3" commit=""
+  printf '%s\n' "$content" >"$dir/file.txt"
+  commit=$(git -C "$dir" stash create)
+  git -C "$dir" stash store -m "$msg" "$commit"
+}
+WT_TOP=$(git -C "$REPO_A_WT" rev-parse --show-toplevel)
+reset_baselines
+git -C "$REPO_A" stash clear
+reset_tree "$REPO_A"
+run_init "$REPO_A"
+make_tagged_checkpoint "$REPO_A_WT" "agent work in wt" \
+  "auto-checkpoint before rm -rf (t1) [worktree: ${WT_TOP}]"
+ck "premise: the main checkout's tree differs from the stash" \
+  1 "$(probe_rc git -C "$REPO_A" diff --quiet 'stash@{0}' --)"
+ck "source worktree present and matching → silent" SILENT "$(run_stop "$REPO_A")"
+# Twin: the source worktree moves on, so the stash holds something again.
+printf 'agent moved on\n' >"$REPO_A_WT/file.txt"
+run_stop "$REPO_A" >/dev/null
+ck "source worktree diverged → reported" REPORT "$LAST_VERDICT"
+ck_reason "the report names the source worktree" "[worktree: ${WT_TOP}]"
+git -C "$REPO_A" stash clear
+reset_tree "$REPO_A_WT"
+
+# Untagged: the same shape without the tag is judged against the Stop cwd only.
+reset_baselines
+run_init "$REPO_A"
+make_tagged_checkpoint "$REPO_A_WT" "untagged agent work" \
+  "auto-checkpoint before rm -rf (t2)"
+run_stop "$REPO_A" >/dev/null
+ck "untagged checkpoint matching only the worktree → reported (unchanged)" REPORT "$LAST_VERDICT"
+git -C "$REPO_A" stash clear
+reset_tree "$REPO_A_WT"
+
+# Worktree removed, content on a branch. The branch commit carries an extra
+# file, so its tree is NOT the stash's tree and filter 7 cannot explain the
+# verdict: only per-path containment can.
+REPO_A_WT2="$SANDBOX/repo-a-wt2"
+git -C "$REPO_A" worktree add -q "$REPO_A_WT2" -b wt2
+WT2_TOP=$(git -C "$REPO_A_WT2" rev-parse --show-toplevel)
+reset_baselines
+run_init "$REPO_A"
+make_tagged_checkpoint "$REPO_A_WT2" "landed agent work" \
+  "auto-checkpoint before git restore (t3) [worktree: ${WT2_TOP}]"
+printf 'extra\n' >"$REPO_A_WT2/extra.txt"
+git -C "$REPO_A_WT2" add file.txt extra.txt
+git -C "$REPO_A_WT2" commit -q -m "agent PR"
+git -C "$REPO_A" worktree remove --force "$REPO_A_WT2"
+ck "premise: the source worktree is gone" 1 "$(probe_rc test -d "$REPO_A_WT2")"
+ck "premise: the branch tree is not the stash tree" 1 \
+  "$(probe_rc test "$(git -C "$REPO_A" rev-parse 'wt2^{tree}')" = "$(git -C "$REPO_A" rev-parse 'stash@{0}^{tree}')")"
+ck "worktree removed, every path matches a branch → silent" SILENT "$(run_stop "$REPO_A")"
+# Twin: unique content after removal is still reported.
+reset_baselines
+git -C "$REPO_A" stash clear
+run_init "$REPO_A"
+git -C "$REPO_A" worktree add -q "$REPO_A_WT2" -b wt3
+make_tagged_checkpoint "$REPO_A_WT2" "agent work never committed" \
+  "auto-checkpoint before rm -rf (t4) [worktree: ${WT2_TOP}]"
+git -C "$REPO_A" worktree remove --force "$REPO_A_WT2"
+run_stop "$REPO_A" >/dev/null
+ck "worktree removed, content on no branch → reported" REPORT "$LAST_VERDICT"
+ck_reason "names it" "(t4)"
+git -C "$REPO_A" stash clear
+
+# A tag naming a directory of ANOTHER repo is not a source worktree: the
+# comparison must not run there, even though that tree matches the stash.
+reset_baselines
+run_init "$REPO_A"
+git -C "$REPO_B" stash clear
+printf 'foreign content\n' >"$REPO_B/file.txt"
+printf 'foreign content\n' >"$REPO_A/file.txt"
+FOREIGN=$(git -C "$REPO_A" stash create)
+git -C "$REPO_A" stash store -m "auto-checkpoint before rm -rf (t5) [worktree: ${REPO_B}]" "$FOREIGN"
+reset_tree "$REPO_A"
+run_stop "$REPO_A" >/dev/null
+ck "a tag pointing into another repo → reported" REPORT "$LAST_VERDICT"
+git -C "$REPO_A" stash clear
+reset_tree "$REPO_A"
+reset_tree "$REPO_B"
+
 echo
 printf '%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
